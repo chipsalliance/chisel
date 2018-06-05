@@ -3,6 +3,7 @@
 package chisel3.tester
 
 import chisel3._
+import chisel3.experimental.MultiIOModule
 import firrtl.{ExecutionOptionsManager, HasFirrtlOptions}
 import firrtl_interpreter.HasInterpreterSuite
 
@@ -54,7 +55,7 @@ trait BackendInterface {
 
 /** Backend associated with a particular circuit, and can run tests
   */
-trait BackendInstance[T <: Module] extends BackendInterface {
+trait BackendInstance[T <: MultiIOModule] extends BackendInterface {
   /** Runs of tests are wrapped in this, for any special setup/teardown that needs to happen.
     * Takes the test function, which takes the module used as the testing interface.
     * TesterContext setup is done externally.
@@ -70,13 +71,13 @@ trait TestEnvInterface {
   // TODO: should these return boolean? or just assert out?
   /** Runs a test, given a specific instantiated backend.
     */
-  def test[T <: Module](tester: BackendInstance[T])(testFn: T => Unit): Unit
+  def test[T <: MultiIOModule](tester: BackendInstance[T])(testFn: T => Unit): Unit
   /** Runs a test, instantiating the default backend.
     */
-  def test[T <: Module](dutGen: => T)(testFn: T => Unit): Unit = {
+  def test[T <: MultiIOModule](dutGen: => T)(testFn: T => Unit): Unit = {
     test(Context.createDefaultTester(dutGen))(testFn)
   }
-  def test[T <: Module](dutGen: => T, options: ExecutionOptionsManager with HasChiselExecutionOptions with HasFirrtlOptions with HasInterpreterSuite)(testFn: T => Unit): Unit = {
+  def test[T <: MultiIOModule](dutGen: => T, options: ExecutionOptionsManager with HasChiselExecutionOptions with HasFirrtlOptions with HasInterpreterSuite)(testFn: T => Unit): Unit = {
     test(Context.createDefaultTester(dutGen, options))(testFn)
   }
 

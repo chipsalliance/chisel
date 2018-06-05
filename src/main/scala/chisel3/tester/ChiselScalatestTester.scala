@@ -8,6 +8,7 @@ import org.scalatest._
 import org.scalatest.exceptions.TestFailedException
 
 import chisel3._
+import chisel3.experimental.MultiIOModule
 
 trait ChiselScalatestTester extends Assertions with TestEnvInterface {
   protected val batchedFailures = mutable.ArrayBuffer[TestFailedException]()
@@ -40,7 +41,7 @@ trait ChiselScalatestTester extends Assertions with TestEnvInterface {
     }
   }
 
-  override def test[T <: Module](tester: BackendInstance[T])(testFn: T => Unit) {
+  override def test[T <: MultiIOModule](tester: BackendInstance[T])(testFn: T => Unit) {
     Context.run(tester, this, testFn)
   }
 }

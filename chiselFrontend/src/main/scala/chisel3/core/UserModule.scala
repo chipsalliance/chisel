@@ -36,6 +36,13 @@ abstract class UserModule(implicit moduleCompileOptions: CompileOptions)
   private var _firrtlPorts: Option[Seq[firrtl.Port]] = None
   lazy val getPorts = _firrtlPorts.get
 
+  private[core] def getChiselPorts: Seq[(String, Data)] = {
+    require(_closed, "Can't get ports before module close")
+    getModulePorts map { port =>
+      (port.getRef.asInstanceOf[ModuleIO].name, port)
+    }
+  }
+
   val compileOptions = moduleCompileOptions
 
   private[core] override def generateComponent(): Component = {
@@ -143,11 +150,11 @@ abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions)
   @chiselRuntimeDeprecated
   @deprecated("Module constructor with override _clock deprecated, use withClock", "chisel3")
   def this(_clock: Clock)(implicit moduleCompileOptions: CompileOptions) = this(Option(_clock), None)(moduleCompileOptions)
-  
+
   @chiselRuntimeDeprecated
   @deprecated("Module constructor with override _reset deprecated, use withReset", "chisel3")
   def this(_reset: Bool)(implicit moduleCompileOptions: CompileOptions)  = this(None, Option(_reset))(moduleCompileOptions)
-  
+
   @chiselRuntimeDeprecated
   @deprecated("Module constructor with override _clock, _reset deprecated, use withClockAndReset", "chisel3")
   def this(_clock: Clock, _reset: Bool)(implicit moduleCompileOptions: CompileOptions) = this(Option(_clock), Option(_reset))(moduleCompileOptions)

@@ -3,6 +3,7 @@
 package chisel3.tester
 
 import chisel3._
+import chisel3.experimental.{DataMirror, MultiIOModule}
 import java.util.concurrent.{Semaphore, ConcurrentLinkedQueue, TimeUnit}
 import scala.collection.mutable
 
@@ -10,7 +11,7 @@ import scala.collection.mutable
 import firrtl_interpreter._
 import treadle.{HasTreadleSuite, TreadleTester}
 
-class TreadleBackend[T <: Module](dut: T, tester: TreadleTester)
+class TreadleBackend[T <: MultiIOModule](dut: T, tester: TreadleTester)
     extends BackendInstance[T] with ThreadedBackend {
 
   def getModule: T = dut
@@ -25,7 +26,10 @@ class TreadleBackend[T <: Module](dut: T, tester: TreadleTester)
   })
 
   // TODO: the naming facility should be part of infrastructure not backend
-  protected val portNames: Map[Data, String] = (getDataNames("io", dut.io) ++ getDataNames("reset", dut.reset)).toMap
+  protected val portNames: Map[Data, String] = DataMirror.modulePorts(dut).flatMap { case (name, data) =>
+    getDataNames(name, data).toList
+  }.toMap
+
   protected def resolveName(signal: Data): String = {
     portNames.getOrElse(signal, signal.toString)
   }
@@ -176,7 +180,7 @@ object TreadleExecutive {
     (circuit.components find (_.name == circuit.name)).get.id
   }
 
-  def start[T <: Module](
+  def start[T <: MultiIOModule](
     dutGen: => T,
     options: Option[ExecutionOptionsManager
             with HasChiselExecutionOptions
