@@ -14,11 +14,15 @@ trait AbstractTesterThread {
 
 }
 
-class TesterThreadList(elts: Seq[AbstractTesterThread]) {
+class TesterThreadList(protected val elts: Seq[AbstractTesterThread]) {
   def toSeq(): Seq[AbstractTesterThread] = elts
 
   def join() {
     elts foreach { thread => Context().backend.join(thread) }
+  }
+
+  def ++(others: TesterThreadList): TesterThreadList = {
+    new TesterThreadList(elts ++ others.elts)
   }
 
   def fork(runnable: => Unit): TesterThreadList = {
