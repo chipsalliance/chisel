@@ -36,7 +36,7 @@ class TreadleBackend[T <: MultiIOModule](dut: T, tester: TreadleTester)
 
   override def pokeBits(signal: Bits, value: BigInt, priority: Int): Unit = {
     if (threadingChecker.doPoke(currentThread.get, signal, value, priority, new Throwable)) {
-      println(s"${portNames(signal)} <- $value")
+      // println(s"${portNames(signal)} <- $value")  // TODO: toggle-able debug mode
       tester.poke(portNames(signal), value)
     }
   }
@@ -47,14 +47,14 @@ class TreadleBackend[T <: MultiIOModule](dut: T, tester: TreadleTester)
     // TODO: properly determine clock
     threadingChecker.doPeek(currentThread.get, signal, dut.clock, new Throwable)
     val a = tester.peek(portNames(signal))
-    println(s"${portNames(signal)} -> $a")
+    // println(s"${portNames(signal)} -> $a")  // TODO: toggle-able debug mode
     a
   }
 
   override def expectBits(signal: Bits, value: BigInt, stale: Boolean): Unit = {
     require(!stale, "Stale peek not yet implemented")
 
-    println(s"${portNames(signal)} ?> $value")
+    // println(s"${portNames(signal)} ?> $value")  // TODO: toggle-able debug mode
     Context().env.testerExpect(value, peekBits(signal, stale), resolveName(signal), None)
   }
 
@@ -76,9 +76,9 @@ class TreadleBackend[T <: MultiIOModule](dut: T, tester: TreadleTester)
     threadingChecker.closeTimescope(newTimescope).foreach { case (data, valueOption) =>
       valueOption match {
         case Some(value) => tester.poke(portNames(data), value)
-          println(s"${portNames(data)} <- (revert) $value")
+          // println(s"${portNames(data)} <- (revert) $value")  // TODO: toggle-able debug mode
         case None => tester.poke(portNames(data), 0)  // TODO: randomize or 4-state sim
-          println(s"${portNames(data)} <- (revert) DC")
+          // println(s"${portNames(data)} <- (revert) DC")  // TODO: toggle-able debug mode
       }
     }
   }
@@ -125,7 +125,7 @@ class TreadleBackend[T <: MultiIOModule](dut: T, tester: TreadleTester)
       blockedThreads.remove(dut.clock)
       clockCounter.put(dut.clock, getClockCycle(dut.clock) + 1)
 
-      println(s"clock step")
+      // println(s"clock step")  // TODO: toggle-able debug mode
 
       // TODO: allow dependent clocks to step based on test stimulus generator
       // Unblock threads waiting on dependent clock
