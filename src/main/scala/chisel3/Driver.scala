@@ -92,10 +92,11 @@ object Driver extends BackendCompilationUtilities {
     */
   def elaborate[T <: RawModule](gen: () => T): Circuit = internal.Builder.build(Module(gen()))
 
+  def toFirrtl(ir: Circuit): firrtl.ir.Circuit = Converter.convert(ir)
+
   def emit[T <: RawModule](gen: () => T): String = Driver.emit(elaborate(gen))
 
-  def emit[T <: RawModule](ir: Circuit): String =
-    Converter.convert(ir).serialize
+  def emit[T <: RawModule](ir: Circuit): String = toFirrtl(ir).serialize
 
   /** Elaborates the Module specified in the gen function into Verilog
     *
