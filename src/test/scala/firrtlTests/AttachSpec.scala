@@ -107,6 +107,31 @@ class InoutVerilogSpec extends FirrtlFlatSpec {
     executeTest(input, check, compiler, Seq(dontTouch("Attaching.x")))
   }
 
+  it should "attach port to submodule port through a wire" in {
+    val compiler = new VerilogCompiler
+    val input =
+      """circuit Attaching :
+         |  module Attaching :
+         |    input an: Analog<3>
+         |    wire x: Analog
+         |    inst a of A
+         |    attach (x, a.an)
+         |    attach (x, an)
+         |  module A:
+         |    input an: Analog<3> """.stripMargin
+    val check =
+      """module Attaching(
+        |  inout [2:0] an
+        |);
+        |  A a (
+        |    .an(an)
+        |  );
+        |endmodule
+        |""".stripMargin.split("\n") map normalized
+    executeTest(input, check, compiler, Seq(dontTouch("Attaching.x")))
+  }
+
+
   it should "attach multiple sources" in {
     val compiler = new VerilogCompiler
     val input =
@@ -121,18 +146,13 @@ class InoutVerilogSpec extends FirrtlFlatSpec {
         |  inout  [2:0] a1,
         |  inout  [2:0] a2
         |);
-        |  wire [2:0] x;
         |  `ifdef SYNTHESIS
-        |    assign x = a1;
-        |    assign a1 = x;
-        |    assign x = a2;
-        |    assign a2 = x;
         |    assign a1 = a2;
         |    assign a2 = a1;
         |  `elsif verilator
         |    `error "Verilator does not support alias and thus cannot arbirarily connect bidirectional wires and ports"
         |  `else
-        |    alias x = a1 = a2;
+        |    alias a1 = a2;
         |  `endif
         |endmodule
         |""".stripMargin.split("\n") map normalized

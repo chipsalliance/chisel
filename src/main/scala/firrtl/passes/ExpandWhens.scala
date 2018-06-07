@@ -235,11 +235,12 @@ object ExpandWhens extends Pass {
     */
   private def combineAttaches(attaches: Seq[Attach]): Seq[Attach] = {
     // Helper type to add an ordering index to attached Expressions
-    case class AttachAcc(exprs: Seq[Expression], idx: Int)
+    case class AttachAcc(exprs: Seq[WrappedExpression], idx: Int)
     // Map from every attached expression to its corresponding AttachAcc
     //   (many keys will point to same value)
     val attachMap = mutable.HashMap.empty[WrappedExpression, AttachAcc]
-    for (Attach(_, exprs) <- attaches) {
+    for (Attach(_, es) <- attaches) {
+      val exprs = es.map(we(_))
       val acc = exprs.map(attachMap.get(_)).flatten match {
         case Seq() => // None of these expressions is present in the attachMap
           AttachAcc(exprs, attachMap.size)
@@ -247,9 +248,9 @@ object ExpandWhens extends Pass {
           val sorted = accs sortBy (_.idx)
           AttachAcc((sorted.map(_.exprs) :+ exprs).flatten.distinct, sorted.head.idx)
       }
-      attachMap ++= acc.exprs.map(e => (we(e) -> acc))
+      attachMap ++= acc.exprs.map(_ -> acc)
     }
-    attachMap.values.toList.distinct.map(acc => Attach(NoInfo, acc.exprs))
+    attachMap.values.toList.distinct.map(acc => Attach(NoInfo, acc.exprs.map(_.e1)))
   }
   // Searches nested scopes of defaults for lvalue
   // defaults uses mutable Map because we are searching LinkedHashMaps and conversion to immutable is VERY slow

@@ -396,6 +396,9 @@ class ConstantPropagation extends Transform {
         // Propagate connections to references
         case Connect(info, lhs, rref @ WRef(rname, _, NodeKind, _)) if !dontTouches.contains(rname) =>
           Connect(info, lhs, nodeMap(rname))
+        // If an Attach has at least 1 port, any wires are redundant and can be removed
+        case Attach(info, exprs) if exprs.exists(kind(_) == PortKind) =>
+          Attach(info, exprs.filterNot(kind(_) == WireKind))
         case other => other
       }
     }
