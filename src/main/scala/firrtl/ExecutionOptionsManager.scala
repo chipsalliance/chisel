@@ -186,7 +186,8 @@ case class FirrtlExecutionOptions(
     dontCheckCombLoops:     Boolean = false,
     noDCE:                  Boolean = false,
     annotationFileNames:    List[String] = List.empty,
-    firrtlCircuit:          Option[Circuit] = None)
+    firrtlCircuit:          Option[Circuit] = None
+)
 extends ComposableOptions {
 
   require(!(emitOneFilePerModule && outputFileNameOverride.nonEmpty),
