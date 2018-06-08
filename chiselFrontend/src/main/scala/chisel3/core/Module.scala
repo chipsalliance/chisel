@@ -75,6 +75,8 @@ object Module {
   def clock: Clock = Builder.forcedClock
   /** Returns the implicit Reset */
   def reset: Reset = Builder.forcedReset
+  /** Returns the current Module */
+  def currentModule: Option[BaseModule] = Builder.currentModule
 }
 
 /** Abstract base class for Modules, an instantiable organizational unit for RTL.

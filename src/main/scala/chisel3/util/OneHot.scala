@@ -46,7 +46,8 @@ object UIntToOH {
   def apply(in: UInt, width: Int): UInt = width match {
     case 0 => 0.U(0.W)
     case _ =>
-      val shiftAmount = in((log2Ceil(width) - 1) max 0, 0)
+      val shiftAmountWidth = log2Ceil(width)
+      val shiftAmount = in.pad(shiftAmountWidth)((shiftAmountWidth - 1) max 0, 0)
       (1.U << shiftAmount)(width - 1, 0)
   }
 }
