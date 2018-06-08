@@ -38,6 +38,14 @@ abstract class UserModule(implicit moduleCompileOptions: CompileOptions)
 
   val compileOptions = moduleCompileOptions
 
+  private[chisel3] def namePorts(names: HashMap[HasId, String]): Unit = {
+    for (port <- getModulePorts) {
+      val portName = port.suggestedName.orElse(names.get(port))
+      require(portName.isDefined, s"Unable to name port $port in $this")
+      port.setRef(ModuleIO(this, _namespace.name(portName.get)))
+    }
+  }
+
   private[core] override def generateComponent(): Component = {
     require(!_closed, "Can't generate module more than once")
     _closed = true
@@ -45,10 +53,7 @@ abstract class UserModule(implicit moduleCompileOptions: CompileOptions)
     val names = nameIds(classOf[UserModule])
 
     // Ports get first naming priority, since they are part of a Module's IO spec
-    for (port <- getModulePorts) {
-      require(names.contains(port), s"Unable to name port $port in $this")
-      port.setRef(ModuleIO(this, _namespace.name(names(port))))
-    }
+    namePorts(names)
 
     // Then everything else gets named
     for ((node, name) <- names) {
@@ -168,6 +173,16 @@ abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions)
     names.put(reset, "reset")
 
     names
+  }
+
+  private[chisel3] override def namePorts(names: HashMap[HasId, String]): Unit = {
+    for (port <- getModulePorts) {
+      require(port.suggestedName.isEmpty, s"Port $port has suggested name " +
+        s""""${port.suggestedName.get}" in Module $this. """ +
+        "suggestName is disallowed on Module ports. Try a MultiIOModule or RawModule.")
+      require(names.contains(port), s"Unable to name port $port in $this")
+      port.setRef(ModuleIO(this, _namespace.name(names(port))))
+    }
   }
 
   private[core] override def generateComponent(): Component = {

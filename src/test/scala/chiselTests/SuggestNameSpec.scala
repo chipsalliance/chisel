@@ -23,6 +23,17 @@ class SuggestNameMem extends NamedModuleTester {
   mem.suggestName("foo")
 }
 
+class SuggestNamePort extends NamedModuleTester {
+  val port = expectName(IO(Input(UInt(8.W))), "foo")
+  port.suggestName("foo")
+}
+
+class PrivatePort extends NamedModuleTester {
+  private val port = expectName(IO(Input(UInt(8.W))), "foo")
+  port.suggestName("foo")
+}
+
+
 class SuggestNameSpec extends ChiselFlatSpec {
 
   private def doTest(testMod: => NamedModuleTester): Unit = {
@@ -47,5 +58,13 @@ class SuggestNameSpec extends ChiselFlatSpec {
 
   it should "name mems" in {
     doTest(new SuggestNameMem)
+  }
+
+  it should "name ports" in {
+    doTest(new SuggestNamePort)
+  }
+
+  "Programmatic port creation" should "be supported" in {
+    doTest(new PrivatePort)
   }
 }
