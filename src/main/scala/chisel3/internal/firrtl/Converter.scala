@@ -226,7 +226,7 @@ private[chisel3] object Converter {
 
   def convert(component: Component): fir.DefModule = component match {
     case ctx @ DefModule(_, name, ports, cmds) =>
-      fir.Module(fir.NoInfo, name, ports.map(p => convert(p)), convert(cmds, ctx))
+      fir.Module(fir.NoInfo, name, ports.map(p => convert(p)), convert(cmds.toList, ctx))
     case ctx @ DefBlackBox(id, name, ports, topDir, params) =>
       fir.ExtModule(fir.NoInfo, name, ports.map(p => convert(p, topDir)), id.desiredName,
                     params.map { case (name, p) => convert(name, p) }.toSeq)
