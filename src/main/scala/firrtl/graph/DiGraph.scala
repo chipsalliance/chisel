@@ -162,9 +162,19 @@ class DiGraph[T] private[graph] (private[graph] val edges: LinkedHashMap[T, Link
     * @throws PathNotFoundException
     * @return a Seq[T] of nodes defining an arbitrary valid path
     */
-  def path(start: T, end: T): Seq[T] = {
+  def path(start: T, end: T): Seq[T] = path(start, end, Set.empty[T])
+  
+  /** Finds a path (if one exists) from one node to another, with a blacklist
+    *
+    * @param start the start node
+    * @param end the destination node
+    * @param blacklist list of nodes which break path, if encountered
+    * @throws PathNotFoundException
+    * @return a Seq[T] of nodes defining an arbitrary valid path
+    */
+  def path(start: T, end: T, blacklist: Set[T]): Seq[T] = {
     val nodePath = new mutable.ArrayBuffer[T]
-    val prev = BFS(start)
+    val prev = BFS(start, blacklist)
     nodePath += end
     while (nodePath.last != start && prev.contains(nodePath.last)) {
       nodePath += prev(nodePath.last)
