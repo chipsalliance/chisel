@@ -526,7 +526,7 @@ case class StringParam(name: String, value: StringLit) extends Param {
   * @note Firrtl doesn't guarantee anything about this String being legal in any backend
   */
 case class RawStringParam(name: String, value: String) extends Param {
-  override def serialize: String = super.serialize + s"'$value'"
+  override def serialize: String = super.serialize + s"'${value.replace("'", "\\'")}'"
 }
 
 /** Base class for modules */

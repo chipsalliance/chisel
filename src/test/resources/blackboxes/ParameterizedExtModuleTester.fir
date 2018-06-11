@@ -15,7 +15,7 @@ circuit ParameterizedExtModuleTester :
     output bar : UInt<16>
 
     defname = ParameterizedExtModule
-    parameter VALUE = 2
+    parameter VALUE = '2\'d2'
     parameter STRING = "two"
     parameter REAL = 2.6E50
     parameter TYP = 'bit [1:0]'

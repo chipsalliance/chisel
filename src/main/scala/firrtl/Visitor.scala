@@ -92,7 +92,7 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
       case (int, null, null, null) => IntParam(name, string2BigInt(int.getText))
       case (null, str, null, null) => StringParam(name, visitStringLit(str))
       case (null, null, dbl, null) => DoubleParam(name, dbl.getText.toDouble)
-      case (null, null, null, raw) => RawStringParam(name, raw.getText.tail.init) // Remove "\'"s
+      case (null, null, null, raw) => RawStringParam(name, raw.getText.tail.init.replace("\\'", "'")) // Remove "\'"s
       case _ => throwInternalError(s"visiting impossible parameter ${ctx.getText}")
     }
   }

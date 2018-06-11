@@ -324,7 +324,7 @@ RawString
 
 fragment
 UnquotedString
-  : ('\\"'|~[\r\n])+?
+  : ( '\\\'' | '\\"' | ~[\r\n] )+?
   ;
 
 FileInfo
