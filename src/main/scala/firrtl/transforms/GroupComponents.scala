@@ -181,7 +181,11 @@ class GroupComponents extends firrtl.Transform {
 
     def punchSignalOut(group: String, exp: Expression): String = {
       val portName = addPort(group, exp, Output)
-      groupStatements(group) += Connect(NoInfo, WRef(portName), exp)
+      val connectStatement = exp.tpe match {
+        case AnalogType(_) => Attach(NoInfo, Seq(WRef(portName), exp))
+        case _ => Connect(NoInfo, WRef(portName), exp)
+      }
+      groupStatements(group) += connectStatement
       portName
     }
 
