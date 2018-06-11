@@ -161,12 +161,20 @@ case class UIntLiteral(value: BigInt, width: Width) extends Literal {
   def mapType(f: Type => Type): Expression = this
   def mapWidth(f: Width => Width): Expression = UIntLiteral(value, f(width))
 }
+object UIntLiteral {
+  def minWidth(value: BigInt): Width = IntWidth(math.max(value.bitLength, 1))
+  def apply(value: BigInt): UIntLiteral = new UIntLiteral(value, minWidth(value))
+}
 case class SIntLiteral(value: BigInt, width: Width) extends Literal {
   def tpe = SIntType(width)
   def serialize = s"""SInt${width.serialize}("h""" + value.toString(16)+ """")"""
   def mapExpr(f: Expression => Expression): Expression = this
   def mapType(f: Type => Type): Expression = this
   def mapWidth(f: Width => Width): Expression = SIntLiteral(value, f(width))
+}
+object SIntLiteral {
+  def minWidth(value: BigInt): Width = IntWidth(value.bitLength + 1)
+  def apply(value: BigInt): SIntLiteral = new SIntLiteral(value, minWidth(value))
 }
 case class FixedLiteral(value: BigInt, width: Width, point: Width) extends Literal {
   def tpe = FixedType(width, point)

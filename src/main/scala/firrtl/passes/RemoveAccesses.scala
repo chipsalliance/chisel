@@ -54,7 +54,7 @@ object RemoveAccesses extends Pass {
       ls.zipWithIndex map {case (l, i) =>
         val c = (i / stride) % wrap
         val basex = l.base
-        val guardx = AND(l.guard,EQV(uint(c),e.index))
+        val guardx = AND(l.guard,EQV(UIntLiteral(c),e.index))
         Location(basex,guardx)
       }
   }

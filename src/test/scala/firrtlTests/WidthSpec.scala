@@ -22,6 +22,30 @@ class WidthSpec extends FirrtlFlatSpec {
     }
   }
 
+  case class LiteralWidthCheck(lit: BigInt, uIntWidth: Option[BigInt], sIntWidth: BigInt)
+  val litChecks = Seq(
+    LiteralWidthCheck(-4, None, 3),
+    LiteralWidthCheck(-3, None, 3),
+    LiteralWidthCheck(-2, None, 2),
+    LiteralWidthCheck(-1, None, 1),
+    LiteralWidthCheck(0, Some(1), 1), // TODO https://github.com/freechipsproject/firrtl/pull/530
+    LiteralWidthCheck(1, Some(1), 2),
+    LiteralWidthCheck(2, Some(2), 3),
+    LiteralWidthCheck(3, Some(2), 3),
+    LiteralWidthCheck(4, Some(3), 4)
+  )
+  for (LiteralWidthCheck(lit, uwo, sw) <- litChecks) {
+    import firrtl.ir.{UIntLiteral, SIntLiteral, IntWidth}
+    s"$lit" should s"have signed width $sw" in {
+      SIntLiteral(lit).width should equal (IntWidth(sw))
+    }
+    uwo.foreach { uw =>
+      it should s"have unsigned width $uw" in {
+        UIntLiteral(lit).width should equal (IntWidth(uw))
+      }
+    }
+  }
+
   "Dshl by 20 bits" should "result in an error" in {
     val passes = Seq(
       ToWorkingIR,

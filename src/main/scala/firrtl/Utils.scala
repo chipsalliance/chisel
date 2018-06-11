@@ -237,9 +237,8 @@ object Utils extends LazyLogging {
   def min(a: BigInt, b: BigInt): BigInt = if (a >= b) b else a
   def pow_minus_one(a: BigInt, b: BigInt): BigInt = a.pow(b.toInt) - 1
   val BoolType = UIntType(IntWidth(1))
-  val one  = UIntLiteral(BigInt(1), IntWidth(1))
-  val zero = UIntLiteral(BigInt(0), IntWidth(1))
-  def uint(i: BigInt): UIntLiteral = UIntLiteral(i, IntWidth(1 max i.bitLength))
+  val one  = UIntLiteral(1)
+  val zero = UIntLiteral(0)
 
   def create_exps(n: String, t: Type): Seq[Expression] =
     create_exps(WRef(n, t, ExpKind, UNKNOWNGENDER))
