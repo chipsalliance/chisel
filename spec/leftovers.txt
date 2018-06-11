@@ -68,7 +68,7 @@
 %\item Writing a correct circuit is difficult - avoid silent failures at all costs.
 %\item If annotations are held in the graph, every pass must properly propagate all %possible annotations.
 %\item A pass incorrectly propagating an annotation cannot be easily detected (silent %failure).
-%\item If annotations are held in an exteral data structure mapping names to %annotations, the structure must updated after every pass.
+%\item If annotations are held in an external data structure mapping names to %annotations, the structure must updated after every pass.
 %\item Incorrectly updating the structure will cause a mismatching of names between %circuit components and annotation entries, which is easily detected.
 %\item Thus, we feel the ability to detect failure outweighs the additional burden on %annotation writers.
 %\end{enumerate}
@@ -290,7 +290,7 @@
 %We cannot simply add vector/bundle types to LoFIRRTL as front-ends cannot easily %remove whens without removing the complex types as well.
 %Instead, one will need the expressiveness in FIRRTL to write a performant backend %which does not need to operate on LoFIRRTL.
 %
-%\item Why the stop statement have no arguements?
+%\item Why the stop statement have no arguments?
 %Like the enable for write-accessors, the lowering step will preserve the sequence of %when statements under which a simulation will stop.
 %
 %\item Why disallow zero-width wires? 
