@@ -53,8 +53,8 @@ private[chisel3] class ErrorLog {
 
     if (!deprecations.isEmpty) {
       println(s"$warnTag ${Console.YELLOW}There were ${deprecations.size} deprecated function(s) used." +
-          s" These may stop compiling in a future release, you are encouraged to fix these issues.${Console.RESET}")
-      println(s"$warnTag Line numbers for deprecations reported by Chisel may be inaccurate, enable scalac compiler deprecation warnings by either:")
+          s" These may stop compiling in a future release - you are encouraged to fix these issues.${Console.RESET}")
+      println(s"$warnTag Line numbers for deprecations reported by Chisel may be inaccurate; enable scalac compiler deprecation warnings via either of the following methods:")
       println(s"$warnTag   In the sbt interactive console, enter:")
       println(s"""$warnTag     set scalacOptions in ThisBuild ++= Seq("-unchecked", "-deprecation")""")
       println(s"$warnTag   or, in your build.sbt, add the line:")
