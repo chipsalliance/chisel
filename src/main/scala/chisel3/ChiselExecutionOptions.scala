@@ -2,7 +2,12 @@
 
 package chisel3
 
-import firrtl.ExecutionOptionsManager
+import firrtl.{
+  ExecutionOptionsManager,
+  OptionsView,
+  AnnotationSeq,
+  Viewer,
+  FirrtlViewer }
 import firrtl.annotations.{
   Annotation,
   NoTargetAnnotation }
@@ -47,20 +52,30 @@ case class ChiselExecutionOptions (
   saveAnnotations: Boolean   = true
 )
 
-trait HasChiselExecutionOptions {
-  self: ExecutionOptionsManager =>
+object ChiselViewer {
+  implicit object ChiselOptionsView extends OptionsView[ChiselExecutionOptions] {
+    def view(implicit options: AnnotationSeq): Option[ChiselExecutionOptions] = Some(
+      options
+        .collect{ case opt: ChiselOption => opt }
+        .foldLeft(ChiselExecutionOptions())( (c, x) =>
+          x match {
+            case NoRunFirrtlAnnotation         => c.copy(runFirrtlCompiler = false)
+            case DontSaveChirrtlAnnotation     => c.copy(saveChirrtl = false)
+            case DontSaveAnnotationsAnnotation => c.copy(saveAnnotations = false)
+          } ) )
+  }
+}
+
+trait HasChiselExecutionOptions { this: ExecutionOptionsManager =>
+  import firrtl.Viewer._
+  import chisel3.ChiselViewer._
 
   /** A [[ChiselExecutionOptions]] object generated from processing all
     * Chisel command line options
     */
-  lazy val chiselOptions: ChiselExecutionOptions = options
-    .collect{ case opt: ChiselOption => opt }
-    .foldLeft(ChiselExecutionOptions())( (c, x) =>
-      x match {
-        case NoRunFirrtlAnnotation         => c.copy(runFirrtlCompiler = false)
-        case DontSaveChirrtlAnnotation     => c.copy(saveChirrtl = false)
-        case DontSaveAnnotationsAnnotation => c.copy(saveAnnotations = false)
-      } )
+  @deprecated("Use view[ChiselExecutionOptions]", "3.2.0")
+  lazy val chiselOptions: ChiselExecutionOptions = view[ChiselExecutionOptions].getOrElse{
+    throw new Exception("Unable to parse Chisel command line options/annotations") }
 
   parser.note("Chisel Options")
 

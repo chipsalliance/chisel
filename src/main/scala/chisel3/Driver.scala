@@ -7,9 +7,12 @@ import chisel3.experimental.{RawModule, RunFirrtlTransform, ChiselAnnotation}
 
 import internal.firrtl._
 import firrtl.{ExecutionOptionsManager, HasFirrtlExecutionOptions, FirrtlExecutionSuccess, FirrtlExecutionFailure,
-  FirrtlExecutionResult, Transform}
+  FirrtlExecutionResult, Transform, FirrtlExecutionOptions}
 import firrtl.annotations.JsonProtocol
 import firrtl.util.{ BackendCompilationUtilities => FirrtlBackendCompilationUtilities }
+import firrtl.Viewer._
+import firrtl.FirrtlViewer._
+import chisel3.ChiselViewer._
 
 import java.io._
 import BuildInfo._
@@ -167,12 +170,15 @@ object Driver extends BackendCompilationUtilities {
     val firrtlString = Emitter.emit(circuit)
     val firrtlAnnos = circuit.annotations.map(_.toFirrtl)
 
-    val optionsManagerX = new ExecutionOptionsManager(
+    implicit val optionsManagerX = new ExecutionOptionsManager(
       optionsManager.applicationName,
       Array("--firrtl-source", firrtlString) ++ customTransformsArg(circuit),
       optionsManager.options ++ firrtlAnnos) with HasFirrtlExecutionOptions with HasChiselExecutionOptions
 
-    val (chiselOptions, firrtlOptions) = (optionsManagerX.chiselOptions, optionsManagerX.firrtlOptions)
+    val chiselOptions = view[ChiselExecutionOptions].getOrElse{
+      throw new Exception("Unable to parse Chisel options") }
+    val firrtlOptions = view[FirrtlExecutionOptions].getOrElse{
+      throw new Exception("Unable to parse Firrtl options") }
 
     if (chiselOptions.saveChirrtl)
       dumpFirrtl(circuit, Some(new File(firrtlOptions.getInputFileName(optionsManagerX))))
