@@ -69,7 +69,7 @@ case class CommonOptions(
 }
 
 /** Annotation that contains the [[CommonOptions]] target directory */
-case class TargetDirAnnotation(value: String) extends SingleStringAnnotation
+case class TargetDirAnnotation(value: String) extends NoTargetAnnotation
 
 trait HasCommonOptions {
   self: ExecutionOptionsManager =>

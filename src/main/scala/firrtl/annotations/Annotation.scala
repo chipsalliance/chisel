@@ -51,6 +51,7 @@ trait SingleTargetAnnotation[T <: Named] extends Annotation {
     })).getOrElse(List(this))
 }
 
+@deprecated("Just extend NoTargetAnnotation", "1.1")
 trait SingleStringAnnotation extends NoTargetAnnotation {
   def value: String
 }
