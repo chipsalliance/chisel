@@ -40,7 +40,8 @@ class RemoveWires extends Transform {
 
   // Transform netlist into DefNodes
   private def getOrderedNodes(
-      netlist: mutable.LinkedHashMap[WrappedExpression, (Expression, Info)]): Try[Seq[DefNode]] = {
+    netlist: mutable.LinkedHashMap[WrappedExpression, (Expression, Info)],
+    regInfo: mutable.Map[WrappedExpression, DefRegister]): Try[Seq[Statement]] = {
     val digraph = new MutableDiGraph[WrappedExpression]
     for ((sink, (expr, _)) <- netlist) {
       digraph.addVertex(sink)
@@ -55,9 +56,12 @@ class RemoveWires extends Transform {
     Try {
       val ordered = digraph.linearize.reverse
       ordered.map { key =>
-        val WRef(name, _,_,_) = key.e1
+        val WRef(name, _, kind, _) = key.e1
         val (rhs, info) = netlist(key)
-        DefNode(info, name, rhs)
+        kind match {
+          case RegKind => regInfo(key)
+          case _ => DefNode(info, name, rhs)
+        }
       }
     }
   }
@@ -71,6 +75,8 @@ class RemoveWires extends Transform {
     val netlist = mutable.LinkedHashMap.empty[WrappedExpression, (Expression, Info)]
     // Info at definition of wires for combining into node
     val wireInfo = mutable.HashMap.empty[WrappedExpression, Info]
+    // Additional info about registers
+    val regInfo = mutable.HashMap.empty[WrappedExpression, DefRegister]
 
     def onStmt(stmt: Statement): Statement = {
       stmt match {
@@ -78,6 +84,9 @@ class RemoveWires extends Transform {
           netlist(we(WRef(name))) = (expr, info)
         case wire: DefWire if !wire.tpe.isInstanceOf[AnalogType] => // Remove all non-Analog wires
           wireInfo(WRef(wire)) = wire.info
+        case reg: DefRegister =>
+          regInfo(we(WRef(reg))) = reg
+          netlist(we(WRef(reg))) = (reg.clock, reg.info)
         case decl: IsDeclaration => // Keep all declarations except for nodes and non-Analog wires
           decls += decl
         case con @ Connect(cinfo, lhs, rhs) => kind(lhs) match {
@@ -107,7 +116,7 @@ class RemoveWires extends Transform {
     m match {
       case mod @ Module(info, name, ports, body) =>
         onStmt(body)
-        getOrderedNodes(netlist) match {
+        getOrderedNodes(netlist, regInfo) match {
           case Success(logic) =>
             Module(info, name, ports, Block(decls ++ logic ++ otherStmts))
           // If we hit a CyclicException, just abort removing wires
