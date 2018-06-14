@@ -177,9 +177,6 @@ abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions)
 
   private[chisel3] override def namePorts(names: HashMap[HasId, String]): Unit = {
     for (port <- getModulePorts) {
-      require(port.suggestedName.isEmpty, s"Port $port has suggested name " +
-        s""""${port.suggestedName.get}" in Module $this. """ +
-        "suggestName is disallowed on Module ports. Try a MultiIOModule or RawModule.")
       require(names.contains(port), s"Unable to name port $port in $this")
       port.setRef(ModuleIO(this, _namespace.name(names(port))))
     }
