@@ -33,6 +33,17 @@ class PrivatePort extends NamedModuleTester {
   port.suggestName("foo")
 }
 
+class PortAdder(module: NamedModuleTester, name: String) {
+  import chisel3.experimental.IO
+  val foo = module.expectName(IO(Output(Bool())), name)
+  foo.suggestName(name)
+  foo := true.B
+}
+
+class CompositionalPorts extends NamedModuleTester {
+  val a = new PortAdder(this, "cheese")
+  val b = new PortAdder(this, "tart")
+}
 
 class SuggestNameSpec extends ChiselFlatSpec {
 
@@ -66,5 +77,9 @@ class SuggestNameSpec extends ChiselFlatSpec {
 
   "Programmatic port creation" should "be supported" in {
     doTest(new PrivatePort)
+  }
+
+  "Calling IO outside of a Module definition" should "be supported" in {
+    doTest(new CompositionalPorts)
   }
 }

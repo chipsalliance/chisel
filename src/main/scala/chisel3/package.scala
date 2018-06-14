@@ -1,6 +1,6 @@
 // See LICENSE for license details.
 
-import chisel3.core.CompileOptions
+import chisel3.core.{CompileOptions, IOImpl}
 
 /** The chisel3 package contains the chisel3 API.
   * It maps core components into the public chisel3 namespace.
@@ -425,6 +425,8 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     type MultiIOModule = chisel3.core.ImplicitModule
     type RawModule = chisel3.core.UserModule
     type ExtModule = chisel3.core.ExtModule
+
+    object IO extends IOImpl
 
     // Implicit conversions for BlackBox Parameters
     implicit def fromIntToIntParam(x: Int): IntParam = IntParam(BigInt(x))
