@@ -22,11 +22,12 @@ import firrtl.annotations.{
 }
 import firrtl.transform.TopWiring._
 
-
 /**
  * Tests TopWiring transformation
  */
-class TopWiringTests extends LowTransformSpec {
+class TopWiringTests extends LowTransformSpec with FirrtlRunners {
+  val testDir = createTestDirectory("TopWiringTests")
+  val testDirName = testDir.getPath
 
    def topWiringDummyOutputFilesFunction(dir: String, 
                                          mapping: Seq[((ComponentName, Type, Boolean, Seq[String], String), Int)], 
@@ -51,7 +52,7 @@ class TopWiringTests extends LowTransformSpec {
    }
 
    def transform = new TopWiringTransform
-   "The signal x in module C" should "be connected to Top port with topwiring prefix and outputfile in /tmp" in {
+   "The signal x in module C" should s"be connected to Top port with topwiring prefix and outputfile in $testDirName" in {
       val input =
          """circuit Top :
            |  module Top :
@@ -75,7 +76,7 @@ class TopWiringTests extends LowTransformSpec {
       val topwiringannos = Seq(TopWiringAnnotation(ComponentName(s"x", 
                                                                  ModuleName(s"C", CircuitName(s"Top"))), 
                                                    s"topwiring_"),
-                         TopWiringOutputFilesAnnotation(s"/tmp", topWiringTestOutputFilesFunction)) 
+                         TopWiringOutputFilesAnnotation(testDirName, topWiringTestOutputFilesFunction))
       val check =
          """circuit Top :
            |  module Top :
@@ -108,7 +109,7 @@ class TopWiringTests extends LowTransformSpec {
    }
 
    "The signal x in module C inst c1 and c2" should 
-    "be connected to Top port with topwiring prefix and outfile in /tmp" in {
+    s"be connected to Top port with topwiring prefix and outfile in $testDirName" in {
       val input =
          """circuit Top :
            |  module Top :
@@ -132,7 +133,7 @@ class TopWiringTests extends LowTransformSpec {
            """.stripMargin
       val topwiringannos = Seq(TopWiringAnnotation(ComponentName(s"x",
                                                     ModuleName(s"C", CircuitName(s"Top"))), s"topwiring_"),
-                               TopWiringOutputFilesAnnotation(s"/tmp", topWiringTestOutputFilesFunction))
+                               TopWiringOutputFilesAnnotation(testDirName, topWiringTestOutputFilesFunction))
       val check =
          """circuit Top :
            |  module Top :
@@ -172,7 +173,7 @@ class TopWiringTests extends LowTransformSpec {
    }
 
    "The signal x in module C" should 
-   "be connected to Top port with topwiring prefix and outputfile in /tmp, after name colission" in {
+   s"be connected to Top port with topwiring prefix and outputfile in $testDirName, after name colission" in {
       val input =
          """circuit Top :
            |  module Top :
@@ -200,7 +201,7 @@ class TopWiringTests extends LowTransformSpec {
       val topwiringannos = Seq(TopWiringAnnotation(ComponentName(s"x", 
                                                                  ModuleName(s"C", CircuitName(s"Top"))), 
                                                                  s"topwiring_"),
-                               TopWiringOutputFilesAnnotation(s"/tmp", topWiringTestOutputFilesFunction)) 
+                               TopWiringOutputFilesAnnotation(testDirName, topWiringTestOutputFilesFunction))
       val check =
          """circuit Top :
            |  module Top :
@@ -291,7 +292,7 @@ class TopWiringTests extends LowTransformSpec {
    }
 
    "The signal x in module C inst c1 and c2 and signal y in module A_" should 
-   "be connected to Top port with topwiring prefix and outfile in /tmp" in {
+   s"be connected to Top port with topwiring prefix and outfile in $testDirName" in {
       val input =
          """circuit Top :
            |  module Top :
@@ -321,7 +322,7 @@ class TopWiringTests extends LowTransformSpec {
                                TopWiringAnnotation(ComponentName(s"y", 
                                                                  ModuleName(s"A_", CircuitName(s"Top"))), 
                                                    s"topwiring_"),
-                         TopWiringOutputFilesAnnotation(s"/tmp", topWiringTestOutputFilesFunction))
+                         TopWiringOutputFilesAnnotation(testDirName, topWiringTestOutputFilesFunction))
       val check =
          """circuit Top :
            |  module Top :
@@ -366,7 +367,7 @@ class TopWiringTests extends LowTransformSpec {
    }
 
    "The signal x in module C inst c1 and c2 and signal y in module A_" should 
-   "be connected to Top port with topwiring and top2wiring prefix and outfile in /tmp" in {
+   s"be connected to Top port with topwiring and top2wiring prefix and outfile in $testDirName" in {
       val input =
          """circuit Top :
            |  module Top :
@@ -396,7 +397,7 @@ class TopWiringTests extends LowTransformSpec {
                                TopWiringAnnotation(ComponentName(s"y", 
                                                                  ModuleName(s"A_", CircuitName(s"Top"))), 
                                                    s"top2wiring_"),
-                         TopWiringOutputFilesAnnotation(s"/tmp", topWiringTestOutputFilesFunction))
+                         TopWiringOutputFilesAnnotation(testDirName, topWiringTestOutputFilesFunction))
       val check =
          """circuit Top :
            |  module Top :
