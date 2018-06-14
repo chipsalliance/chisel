@@ -11,7 +11,7 @@ import firrtl.annotations.{Annotation, NoTargetAnnotation}
   *
   * This must be mixed into a subclass of [[annotaiton.Annotation]]
   */
-sealed trait ChiselOption { self: Annotation => }
+sealed trait ChiselOption { this: Annotation => }
 
 /** Disables FIRRTL compiler execution
   *  - deasserts [[ChiselExecutionOptions.runFirrtlCompiler]]
