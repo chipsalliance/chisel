@@ -5,7 +5,8 @@ package chiselTests
 import java.io.File
 
 import chisel3._
-import firrtl.{FirrtlExecutionSuccess, ExecutionOptionsManager, HasFirrtlExecutionOptions}
+import firrtl.{FirrtlExecutionSuccess, HasFirrtlExecutionOptions}
+import firrtl.options.ExecutionOptionsManager
 import org.scalacheck.Test.Failed
 import org.scalatest.{FreeSpec, Matchers, Succeeded}
 

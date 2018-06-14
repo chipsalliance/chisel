@@ -3,11 +3,12 @@
 package chisel3
 
 import firrtl.{
+  AnnotationSeq,
+  FirrtlViewer }
+import firrtl.options.{
   ExecutionOptionsManager,
   OptionsView,
-  AnnotationSeq,
-  Viewer,
-  FirrtlViewer }
+  Viewer }
 import firrtl.annotations.{
   Annotation,
   NoTargetAnnotation }
@@ -67,7 +68,7 @@ object ChiselViewer {
 }
 
 trait HasChiselExecutionOptions { this: ExecutionOptionsManager =>
-  import firrtl.Viewer._
+  import firrtl.options.Viewer._
   import chisel3.ChiselViewer._
 
   /** A [[ChiselExecutionOptions]] object generated from processing all

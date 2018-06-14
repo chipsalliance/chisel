@@ -6,11 +6,12 @@ import chisel3.internal.firrtl.Emitter
 import chisel3.experimental.{RawModule, RunFirrtlTransform, ChiselAnnotation}
 
 import internal.firrtl._
-import firrtl.{ExecutionOptionsManager, HasFirrtlExecutionOptions, FirrtlExecutionSuccess, FirrtlExecutionFailure,
-  FirrtlExecutionResult, Transform, FirrtlExecutionOptions}
+import firrtl.{ HasFirrtlExecutionOptions, FirrtlExecutionSuccess, FirrtlExecutionFailure, FirrtlExecutionResult,
+  Transform, FirrtlExecutionOptions }
+import firrtl.options.ExecutionOptionsManager
 import firrtl.annotations.JsonProtocol
 import firrtl.util.{ BackendCompilationUtilities => FirrtlBackendCompilationUtilities }
-import firrtl.Viewer._
+import firrtl.options.Viewer._
 import firrtl.FirrtlViewer._
 import chisel3.ChiselViewer._
 
