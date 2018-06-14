@@ -2,16 +2,9 @@
 
 package chisel3
 
-import firrtl.{
-  AnnotationSeq,
-  FirrtlViewer }
-import firrtl.options.{
-  ExecutionOptionsManager,
-  OptionsView,
-  Viewer }
-import firrtl.annotations.{
-  Annotation,
-  NoTargetAnnotation }
+import firrtl.{AnnotationSeq, FirrtlViewer}
+import firrtl.options.{ExecutionOptionsManager, OptionsView, Viewer}
+import firrtl.annotations.{Annotation, NoTargetAnnotation}
 
 /** Indicates that a subclass is an [[firrtl.annotation.Annotation]] with
   * an option consummable by [[HasChiselExecutionOptions]]
