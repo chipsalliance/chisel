@@ -426,6 +426,9 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     type RawModule = chisel3.core.UserModule
     type ExtModule = chisel3.core.ExtModule
 
+    type ValName = chisel3.core.ValName
+    val ValName = chisel3.core.ValName
+
     object IO extends IOImpl
 
     // Implicit conversions for BlackBox Parameters

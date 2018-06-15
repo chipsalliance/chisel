@@ -80,21 +80,8 @@ object Module {
 }
 
 private[chisel3] trait IOImpl {
-  /** Constructs a port for the current Module
-    *
-    * This must wrap the datatype used to set the io field of any Module.
-    * i.e. All concrete modules must have defined io in this form:
-    * [lazy] val io[: io type] = IO(...[: io type])
-    *
-    * Items in [] are optional.
-    *
-    * The granted iodef must be a chisel type and not be bound to hardware.
-    *
-    * Also registers a Data as a port, also performing bindings. Cannot be called once ports are
-    * requested (so that all calls to ports will return the same information).
-    * Internal API.
-    */
-  def apply[T<:Data](iodef: T): T = {
+  // ValName free underlying implementation
+  private[chisel3] def build[T<:Data](iodef: T): T = {
     val module = Module.currentModule.get // Impossible to fail
     require(!module.isClosed, "Can't add more ports after module close")
     requireIsChiselType(iodef, "io type")
@@ -110,6 +97,24 @@ private[chisel3] trait IOImpl {
     }
     module.bindIoInPlace(iodefClone)
     iodefClone
+  }
+
+  /** Constructs a port for the current Module
+    *
+    * This must wrap the datatype used to set the io field of any Module.
+    * i.e. All concrete modules must have defined io in this form:
+    * [lazy] val io[: io type] = IO(...[: io type])
+    *
+    * Items in [] are optional.
+    *
+    * The granted iodef must be a chisel type and not be bound to hardware.
+    *
+    * Also registers a Data as a port, also performing bindings. Cannot be called once ports are
+    * requested (so that all calls to ports will return the same information).
+    * Internal API.
+    */
+  def apply[T <: Data](iodef: T)(implicit valName: ValName): T = {
+    build(iodef).suggestName(valName.name)
   }
 }
 // Only to be called by Module.IO
@@ -301,7 +306,7 @@ abstract class BaseModule extends HasId {
    * TODO(twigg): Specifically walk the Data definition to call out which nodes
    * are problematic.
    */
-  protected def IO[T<:Data](iodef: T): T = chisel3.core.IO.apply(iodef)
+  protected def IO[T<:Data](iodef: T): T = chisel3.core.IO.build(iodef)
 
   //
   // Internal Functions
