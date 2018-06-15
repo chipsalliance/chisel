@@ -9,59 +9,6 @@ import mill.modules.Jvm._
 
 import $file.CommonBuild
 
-// Define our own BuildInfo since mill doesn't currently have one.
-// It would be nice if we could put this in a separate file, but
-//  we encounter problems with `illegal inheritance from sealed trait BuildInfo`
-//  when it's in a separate file.
-trait BuildInfo extends ScalaModule { outer =>
-
-  def buildInfoPackageName: Option[String] = None
-
-  def buildInfoObjectName: String = "BuildInfo"
-
-  def buildInfoMembers: T[Map[String, String]] = T {
-    Map.empty[String, String]
-  }
-
-  private def generateBuildInfo(outputPath: Path, members: Map[String, String]) = {
-    val outputFile = outputPath / "BuildInfo.scala"
-    val internalMembers =
-      members
-        .map {
-          case (name, value) => s"""  val ${name}: String = "${value}""""
-        }
-        .mkString("\n")
-    write(outputFile,
-      s"""
-         |${buildInfoPackageName.map(p => s"package ${p}").getOrElse("")}
-         |case object ${buildInfoObjectName}{
-         |$internalMembers
-         |  override val toString: String = {
-         |    "buildInfoPackage: %s, version: %s, scalaVersion: %s" format (
-         |        buildInfoPackage, version, scalaVersion
-         |    )
-         |  }
-         |}
-       """.stripMargin)
-    outputPath
-  }
-
-  override def generatedSources = T {
-    super.generatedSources() :+ PathRef(generateBuildInfo(T.ctx().dest, buildInfoMembers()))
-  }
-}
-
-trait ThisBuildInfo extends BuildInfo with CrossModuleBase{
-  override def buildInfoPackageName = Some("chisel3")
-  override def buildInfoMembers = T {
-    Map[String, String](
-      "buildInfoPackage" -> buildInfoPackageName.get,
-      "version" -> "3.2-SNAPSHOT",
-      "scalaVersion" -> scalaVersion()
-    )
-  }
-}
-
 // An sbt layout with src in the top directory.
 trait CrossUnRootedSbtModule extends CrossSbtModule {
   override def millSourcePath = super.millSourcePath / ammonite.ops.up
@@ -171,7 +118,7 @@ class ChiselFrontendModule(val crossScalaVersion: String) extends UnpublishedChi
 }
 
 // This submodule is unrooted - its source directory is in the top level directory.
-class ChiselTopModule(val crossScalaVersion: String) extends PublishChiselModule with ThisBuildInfo with CrossUnRootedSbtModule {
+class ChiselTopModule(val crossScalaVersion: String) extends PublishChiselModule with CommonBuild.BuildInfo with CrossUnRootedSbtModule {
   override def moduleDeps = Seq(coreMacros(crossScalaVersion), chiselFrontend(crossScalaVersion))
 
   // In order to preserve our "all-in-one" policy for published jars,
@@ -202,22 +149,10 @@ class ChiselTopModule(val crossScalaVersion: String) extends PublishChiselModule
     localClasspath() ++ transitiveLocalClasspath()
   }
 
-  // Define some file filters to exclude unwanted files from created jars.
-  type JarFileFilter = (Path, RelPath) => Boolean
-  // Exclude any `.DS_Store` files
-  val noDS_StoreFiles: JarFileFilter = (p: Path, relPath: RelPath) => {
-    relPath.last != ".DS_Store"
-  }
-
-  // Exclude non-source files - accept all resource files, but only *.{java,scala} from source paths
-  val onlySourceFiles: JarFileFilter = (p: Path, relPath: RelPath) => {
-    p.last == "resources" || (relPath.ext == "scala" || relPath.ext == "java")
-  }
-
-  // Apply a sequence of file filters - only accept files which satisfy all filters.
-  // We expect this to be curried, the resulting file filter passed to createJar()
-  def forallFilters(fileFilters: Seq[JarFileFilter])(p: Path, relPath: RelPath): Boolean = {
-    fileFilters.forall(f => f(p, relPath))
+  // Override publishXmlDeps so we don't include dependencies on our sub-modules.
+  override def publishXmlDeps = T.task {
+    val ivyPomDeps = ivyDeps().map(resolvePublishDependency().apply(_))
+    ivyPomDeps
   }
 
   // We need to copy (and override) the `jar` and `docJar` targets so we can build
@@ -226,7 +161,7 @@ class ChiselTopModule(val crossScalaVersion: String) extends PublishChiselModule
     createJar(
       allModuleClasspath().map(_.path).filter(exists),
       mainClass(),
-      noDS_StoreFiles
+      CommonBuild.noDS_StoreFiles
     )
   }
 
@@ -253,11 +188,11 @@ class ChiselTopModule(val crossScalaVersion: String) extends PublishChiselModule
       mainArgs = (files ++ options).toSeq
     )
 
-    createJar(Agg(javadocDir), None, noDS_StoreFiles)(outDir)
+    createJar(Agg(javadocDir), None, CommonBuild.noDS_StoreFiles)(outDir)
   }
 
   def sourceJar = T {
-    createJar((allModuleSources() ++ allModuleResources()).map(_.path).filter(exists), None, forallFilters(Seq(noDS_StoreFiles, onlySourceFiles)))
+    createJar((allModuleSources() ++ allModuleResources()).map(_.path).filter(exists), None, CommonBuild.forallFilters(Seq(CommonBuild.noDS_StoreFiles, CommonBuild.onlySourceFiles)))
   }
 
   override def ivyDeps = Agg(
@@ -272,7 +207,16 @@ class ChiselTopModule(val crossScalaVersion: String) extends PublishChiselModule
     def testFrameworks = Seq("org.scalatest.tools.Framework")
   }
 
-  // This shouldn't be necessary - mill is supposed to figure out the main class.
+  // This is required for building a library, but not for a `run` target.
+  // In the latter case, mill will determine this on its own.
   def mainClass = Some("chisel3.Driver")
+
+  override def buildInfoMembers = T {
+    Map[String, String](
+      "buildInfoPackage" -> artifactName(),
+      "version" -> publishVersion(),
+      "scalaVersion" -> scalaVersion()
+    )
+  }
 
 }
