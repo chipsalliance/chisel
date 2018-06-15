@@ -94,7 +94,7 @@ def getVersion(dep: String, org: String = "edu.berkeley.cs") = {
 }
 
 // Define the common chisel module.
-trait CommonChiselModule extends CrossUnRootedSbtModule {
+trait CommonChiselModule extends CrossSbtModule {
   override def scalacOptions = chiselCompileOptions.scalacOptions ++ CommonBuild.scalacOptionsVersion(crossScalaVersion)
   override def javacOptions = CommonBuild.javacOptionsVersion(crossScalaVersion)
   val macroPlugins = Agg(ivy"org.scalamacros:::paradise:2.1.0")
@@ -145,8 +145,6 @@ object chisel3 extends Cross[ChiselTopModule](crossVersions: _*) {
   }
 
   def publishLocal = T{
-//    println(chisel3(crossVersions.head).artifactName())
-//    println(chisel3(crossVersions.head).publishVersion())
     chisel3(crossVersions.head).publishLocal()
   }
 
@@ -164,16 +162,16 @@ object coreMacros extends Cross[CoreMacrosModule](crossVersions: _*) {
 object chiselFrontend extends Cross[ChiselFrontendModule](crossVersions: _*) {
 }
 
+// These submodules follow the `mill` convention - their source is in sub-directory with the module name.
 class CoreMacrosModule(val crossScalaVersion: String) extends UnpublishedChiselModule {
-  def sources = T.sources{ pwd / 'coreMacros / 'src }
 }
 
 class ChiselFrontendModule(val crossScalaVersion: String) extends UnpublishedChiselModule {
   override def moduleDeps = Seq(coreMacros(crossScalaVersion))
-  def sources = T.sources{ pwd / 'chiselFrontend / 'src }
 }
 
-class ChiselTopModule(val crossScalaVersion: String) extends PublishChiselModule with ThisBuildInfo {
+// This submodule is unrooted - its source directory is in the top level directory.
+class ChiselTopModule(val crossScalaVersion: String) extends PublishChiselModule with ThisBuildInfo with CrossUnRootedSbtModule {
   override def moduleDeps = Seq(coreMacros(crossScalaVersion), chiselFrontend(crossScalaVersion))
 
   // In order to preserve our "all-in-one" policy for published jars,
@@ -204,12 +202,31 @@ class ChiselTopModule(val crossScalaVersion: String) extends PublishChiselModule
     localClasspath() ++ transitiveLocalClasspath()
   }
 
+  // Define some file filters to exclude unwanted files from created jars.
+  type JarFileFilter = (Path, RelPath) => Boolean
+  // Exclude any `.DS_Store` files
+  val noDS_StoreFiles: JarFileFilter = (p: Path, relPath: RelPath) => {
+    relPath.last != ".DS_Store"
+  }
+
+  // Exclude non-source files - accept all resource files, but only *.{java,scala} from source paths
+  val onlySourceFiles: JarFileFilter = (p: Path, relPath: RelPath) => {
+    p.last == "resources" || (relPath.ext == "scala" || relPath.ext == "java")
+  }
+
+  // Apply a sequence of file filters - only accept files which satisfy all filters.
+  // We expect this to be curried, the resulting file filter passed to createJar()
+  def forallFilters(fileFilters: Seq[JarFileFilter])(p: Path, relPath: RelPath): Boolean = {
+    fileFilters.forall(f => f(p, relPath))
+  }
+
   // We need to copy (and override) the `jar` and `docJar` targets so we can build
   //  single jars implementing our "all-in-one" policy.
   override def jar = T {
     createJar(
       allModuleClasspath().map(_.path).filter(exists),
-      mainClass()
+      mainClass(),
+      noDS_StoreFiles
     )
   }
 
@@ -236,11 +253,11 @@ class ChiselTopModule(val crossScalaVersion: String) extends PublishChiselModule
       mainArgs = (files ++ options).toSeq
     )
 
-    createJar(Agg(javadocDir))(outDir)
+    createJar(Agg(javadocDir), None, noDS_StoreFiles)(outDir)
   }
 
   def sourceJar = T {
-    createJar((allModuleSources() ++ allModuleResources()).map(_.path).filter(exists))
+    createJar((allModuleSources() ++ allModuleResources()).map(_.path).filter(exists), None, forallFilters(Seq(noDS_StoreFiles, onlySourceFiles)))
   }
 
   override def ivyDeps = Agg(
@@ -254,5 +271,8 @@ class ChiselTopModule(val crossScalaVersion: String) extends PublishChiselModule
     )
     def testFrameworks = Seq("org.scalatest.tools.Framework")
   }
+
+  // This shouldn't be necessary - mill is supposed to figure out the main class.
+  def mainClass = Some("chisel3.Driver")
 
 }
