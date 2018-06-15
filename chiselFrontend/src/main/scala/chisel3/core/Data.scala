@@ -108,7 +108,7 @@ private[core] object cloneSupertype {
                                                           compileOptions: CompileOptions): T = {
     require(!elts.isEmpty, s"can't create $createdType with no inputs")
 
-    if (elts forall {_.isInstanceOf[Bits]}) {
+    if (elts.head.isInstanceOf[Bits]) {
       val model: T = elts reduce { (elt1: T, elt2: T) => ((elt1, elt2) match {
         case (elt1: Bool, elt2: Bool) => elt1
         case (elt1: Bool, elt2: UInt) => elt2  // TODO: what happens with zero width UInts?
@@ -130,7 +130,7 @@ private[core] object cloneSupertype {
         }
         case (elt1, elt2) =>
           throw new AssertionError(
-            s"can't create $createdType with heterogeneous Bits types ${elt1.getClass} and ${elt2.getClass}")
+            s"can't create $createdType with heterogeneous types ${elt1.getClass} and ${elt2.getClass}")
       }).asInstanceOf[T] }
       model.cloneTypeFull
     }
@@ -198,7 +198,7 @@ object Flipped {
   * time) of bits, and must have methods to pack / unpack structured data to /
   * from bits.
   */
-abstract class Data extends HasId {
+abstract class Data extends HasId with NamedComponent {
   // This is a bad API that punches through object boundaries.
   @deprecated("pending removal once all instances replaced", "chisel3")
   private[chisel3] def flatten: IndexedSeq[Element] = {

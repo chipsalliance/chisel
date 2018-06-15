@@ -277,7 +277,7 @@ object VecInit {
     require(!elts.isEmpty)
     elts.foreach(requireIsHardware(_, "vec element"))
 
-    val vec = Wire(new Vec(cloneSupertype(elts, "Vec"), elts.length))
+    val vec = Wire(Vec(elts.length, cloneSupertype(elts, "Vec")))
 
     // TODO: try to remove the logic for this mess
     elts.head.direction match {
@@ -508,7 +508,7 @@ class AutoClonetypeException(message: String) extends ChiselException(message, n
   *   }
   * }}}
   */
-class Bundle(implicit compileOptions: CompileOptions) extends Record {
+abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
   override def className = "Bundle"
 
   /** The collection of [[Data]]
@@ -572,12 +572,29 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
 
     val clazz = this.getClass
 
-    def reflectError(desc: String): Nothing = {
+    def autoClonetypeError(desc: String): Nothing = {
       throw new AutoClonetypeException(s"Unable to automatically infer cloneType on $clazz: $desc")
     }
 
+    val mirror = runtimeMirror(clazz.getClassLoader)
+    val classSymbolOption = try {
+      Some(mirror.reflect(this).symbol)
+    } catch {
+      case e: scala.reflect.internal.Symbols#CyclicReference => None  // Workaround for a scala bug
+    }
+
+    val enclosingClassOption = (clazz.getEnclosingClass, classSymbolOption) match {
+      case (null, _) => None
+      case (_, Some(classSymbol)) if classSymbol.isStatic => None  // allows support for members of companion objects
+      case (outerClass, _) => Some(outerClass)
+    }
+
+    // For compatibility with pre-3.1, where null is tried as an argument to the constructor.
+    // This stores potential error messages which may be used later.
+    var outerClassError: Option[String] = None
+
     // Check if this is an inner class, and if so, try to get the outer instance
-    val outerClassInstance = Option(clazz.getEnclosingClass).map { outerClass =>
+    val outerClassInstance = enclosingClassOption.map { outerClass =>
       def canAssignOuterClass(x: Object) = outerClass.isAssignableFrom(x.getClass)
 
       val outerInstance = _outerInst match {
@@ -599,10 +616,14 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
                 case outer :: Nil =>
                   _outerInst = Some(outer)  // record the guess for future use
                   outer
-                case Nil => reflectError(s"Unable to determine instance of outer class $outerClass," +
-                    s" no candidates assignable to outer class types; examined $allOuterCandidates")
-                case candidates => reflectError(s"Unable to determine instance of outer class $outerClass," +
-                    s" multiple possible candidates $candidates assignable to outer class type")
+                case Nil =>  // TODO: replace with fatal autoClonetypeError once compatibility period is dropped
+                  outerClassError = Some(s"Unable to determine instance of outer class $outerClass," +
+                      s" no candidates assignable to outer class types; examined $allOuterCandidates")
+                  null
+                case candidates => // TODO: replace with fatal autoClonetypeError once compatibility period is dropped
+                  outerClassError = Some(s"Unable to determine instance of outer class $outerClass," +
+                      s" multiple possible candidates $candidates assignable to outer class type")
+                  null
               }
           }
       }
@@ -622,18 +643,24 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
         case (Nil, None) => // no arguments, no outer class, invoke constructor directly
           Some(ctor.newInstance().asInstanceOf[this.type])
         case (argType :: Nil, Some((_, outerInstance))) =>
-          if (argType isAssignableFrom outerInstance.getClass) {
+          if (outerInstance == null) {
+            Builder.deprecated(s"chisel3.1 autoclonetype failed, falling back to 3.0 behavior using null as the outer instance." +
+                s" Autoclonetype failure reason: ${outerClassError.get}",
+                Some(s"$clazz"))
+            Some(ctor.newInstance(outerInstance).asInstanceOf[this.type])
+          } else if (argType isAssignableFrom outerInstance.getClass) {
             Some(ctor.newInstance(outerInstance).asInstanceOf[this.type])
           } else {
             None
           }
         case _ => None
+
       }
       clone match {
         case Some(clone) =>
           clone._outerInst = this._outerInst
           if (!clone.typeEquivalent(this)) {
-            reflectError(s"automatically cloned $clone not type-equivalent to base." +
+            autoClonetypeError(s"automatically cloned $clone not type-equivalent to base." +
             " Constructor argument values were not inferred, ensure constructor is deterministic.")
           }
           return clone.asInstanceOf[this.type]
@@ -642,19 +669,14 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
     }
 
     // Get constructor parameters and accessible fields
-    val mirror = runtimeMirror(clazz.getClassLoader)
-    val classSymbol = try {
-      mirror.reflect(this).symbol
-    } catch {
-      case e: scala.reflect.internal.Symbols#CyclicReference => reflectError(s"got exception $e attempting Scala reflection." +
-          " This is known to occur with inner classes on anonymous outer classes." +
-          " In those cases, autoclonetype only works with no-argument constructors, or you can define a custom cloneType.")
-    }
+    val classSymbol = classSymbolOption.getOrElse(autoClonetypeError(s"scala reflection failed." +
+        " This is known to occur with inner classes on anonymous outer classes." +
+        " In those cases, autoclonetype only works with no-argument constructors, or you can define a custom cloneType."))
 
     val decls = classSymbol.typeSignature.decls
     val ctors = decls.collect { case meth: MethodSymbol if meth.isConstructor => meth }
     if (ctors.size != 1) {
-      reflectError(s"found multiple constructors ($ctors)." +
+      autoClonetypeError(s"found multiple constructors ($ctors)." +
           " Either remove all but the default constructor, or define a custom cloneType method.")
     }
     val ctor = ctors.head
@@ -663,7 +685,7 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
       case Nil => List()
       case ctorParams :: Nil => ctorParams
       case ctorParams :: ctorImplicits :: Nil => ctorParams ++ ctorImplicits
-      case _ => reflectError(s"internal error, unexpected ctorParamss = $ctorParamss")
+      case _ => autoClonetypeError(s"internal error, unexpected ctorParamss = $ctorParamss")
     }
     val ctorParamsNames = ctorParams.map(_.name.toString)
 
@@ -680,7 +702,7 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
         return clone
       } catch {
         case e @ (_: java.lang.reflect.InvocationTargetException | _: IllegalArgumentException) =>
-          reflectError(s"unexpected failure at constructor invocation, got $e.")
+          autoClonetypeError(s"unexpected failure at constructor invocation, got $e.")
       }
     }
 
@@ -699,7 +721,7 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
     val accessorsName = accessors.filter(_.isStable).map(_.name.toString)
     val paramsDiff = ctorParamsNames.toSet -- accessorsName.toSet
     if (!paramsDiff.isEmpty) {
-      reflectError(s"constructor has parameters (${paramsDiff.toList.sorted.mkString(", ")}) that are not both immutable and accessible." +
+      autoClonetypeError(s"constructor has parameters (${paramsDiff.toList.sorted.mkString(", ")}) that are not both immutable and accessible." +
           " Either make all parameters immutable and accessible (vals) so cloneType can be inferred, or define a custom cloneType method.")
     }
 
@@ -717,7 +739,7 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
       case (paramName, paramVal: Data) if paramVal.hasBinding => paramName
     }
     if (boundDataParamNames.nonEmpty) {
-      reflectError(s"constructor parameters (${boundDataParamNames.sorted.mkString(", ")}) have values that are hardware types, which is likely to cause subtle errors." +
+      autoClonetypeError(s"constructor parameters (${boundDataParamNames.sorted.mkString(", ")}) have values that are hardware types, which is likely to cause subtle errors." +
           " Use chisel types instead: use the value before it is turned to a hardware type (with Wire(...), Reg(...), etc) or use chiselTypeOf(...) to extract the chisel type.")
     }
 
@@ -729,14 +751,15 @@ class Bundle(implicit compileOptions: CompileOptions) extends Record {
 
     // Invoke ctor
     val classMirror = outerClassInstance match {
+      case Some((_, null)) => autoClonetypeError(outerClassError.get)  // deals with the null hack for 3.0 compatibility
       case Some((_, outerInstance)) => mirror.reflect(outerInstance).reflectClass(classSymbol)
-      case None => mirror.reflectClass(classSymbol)
+      case _ => mirror.reflectClass(classSymbol)
     }
     val clone = classMirror.reflectConstructor(ctor).apply(ctorParamsVals:_*).asInstanceOf[this.type]
     clone._outerInst = this._outerInst
 
     if (!clone.typeEquivalent(this)) {
-      reflectError(s"Automatically cloned $clone not type-equivalent to base $this." +
+      autoClonetypeError(s"Automatically cloned $clone not type-equivalent to base $this." +
           " Constructor argument values were inferred: ensure that variable names are consistent and have the same value throughout the constructor chain," +
           " and that the constructor is deterministic.")
     }

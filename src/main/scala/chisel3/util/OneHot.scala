@@ -47,7 +47,8 @@ object UIntToOH {
     case 0 => 0.U(0.W)
     case 1 => 1.U(1.W)
     case _ =>
-      val shiftAmount = in(log2Ceil(width) - 1, 0)
+      val shiftAmountWidth = log2Ceil(width)
+      val shiftAmount = in.pad(shiftAmountWidth)(shiftAmountWidth - 1, 0)
       (1.U << shiftAmount)(width - 1, 0)
   }
 }

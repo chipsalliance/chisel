@@ -1,5 +1,7 @@
 # Chisel3
 
+[![Join the chat at https://gitter.im/freechipsproject/chisel3](https://badges.gitter.im/freechipsproject/chisel3.svg)](https://gitter.im/freechipsproject/chisel3?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 Chisel is a new hardware construction language to support advanced hardware design and circuit generation.
 The latest version of [Chisel](https://chisel.eecs.berkeley.edu/) is Chisel3,
 which uses Firrtl as an intermediate hardware representation language.

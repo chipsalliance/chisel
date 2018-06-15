@@ -67,6 +67,9 @@ sealed abstract class Bits(width: Width, override val litArg: Option[LitArg])
   // Arguments for: self-checking code (can't do arithmetic on bits)
   // Arguments against: generates down to a FIRRTL UInt anyways
 
+  // If this is a literal, setRef so that we don't allocate a name
+  litArg.foreach(setRef)
+
   // Only used for in a few cases, hopefully to be removed
   private[core] def cloneTypeWidth(width: Width): this.type
 
@@ -190,8 +193,10 @@ sealed abstract class Bits(width: Width, override val litArg: Option[LitArg])
     */
   final def pad(that: Int): this.type = macro SourceInfoTransform.thatArg
 
-  def do_pad(that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type =
-    binop(sourceInfo, cloneTypeWidth(this.width max Width(that)), PadOp, that)
+  def do_pad(that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type = this.width match {
+    case KnownWidth(w) if w >= that => this
+    case _ => binop(sourceInfo, cloneTypeWidth(this.width max Width(that)), PadOp, that)
+  }
 
   /** Returns this wire bitwise-inverted. */
   final def unary_~ (): Bits = macro SourceInfoWhiteboxTransform.noArg

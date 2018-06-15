@@ -28,7 +28,8 @@ object requireIsHardware {
     }
     if (!node.hasBinding) {
       val prefix = if (msg.nonEmpty) s"$msg " else ""
-      throw Binding.ExpectedHardwareException(s"$prefix'$node' must be hardware, not a bare Chisel type")
+      throw Binding.ExpectedHardwareException(s"$prefix'$node' must be hardware, " +
+        "not a bare Chisel type. Perhaps you forgot to wrap it in Wire(_) or IO(_)?")
     }
   }
 }

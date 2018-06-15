@@ -16,9 +16,10 @@ import firrtl.{
   FirrtlExecutionSuccess,
   FirrtlExecutionFailure
 }
+import firrtl.util.BackendCompilationUtilities
 
 /** Common utility functions for Chisel unit tests. */
-trait ChiselRunners extends Assertions {
+trait ChiselRunners extends Assertions with BackendCompilationUtilities {
   def runTester(t: => BasicTester, additionalVResources: Seq[String] = Seq()): Boolean = {
     TesterDriver.execute(() => t, additionalVResources)
   }
@@ -43,9 +44,10 @@ trait ChiselRunners extends Assertions {
     * @return the Verilog code as a string.
     */
   def compile(t: => RawModule): String = {
+    val testDir = createTestDirectory(this.getClass.getSimpleName)
     val manager = new ExecutionOptionsManager("compile") with HasFirrtlOptions
                                                          with HasChiselExecutionOptions {
-      commonOptions = CommonOptions(targetDirName = "test_run_dir")
+      commonOptions = CommonOptions(targetDirName = testDir.toString)
     }
 
     Driver.execute(manager, () => t) match {
