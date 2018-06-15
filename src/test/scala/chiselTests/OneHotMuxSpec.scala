@@ -288,9 +288,16 @@ class DifferentBundleOneHotTester extends BasicTester {
 
 class UIntToOHTester extends BasicTester {
   val out = UIntToOH(1.U, 3)
-
   require(out.getWidth == 3)
   assert(out === 2.U)
+
+  val out2 = UIntToOH(0.U, 1)
+  require(out2.getWidth == 1)
+  assert(out2 === 1.U)
+
+  val out3 = UIntToOH(0.U, 0)
+  require(out3.getWidth == 1) // TODO Fix zero-width wires
+  assert(out3 === 0.U)
 
   stop()
 }
