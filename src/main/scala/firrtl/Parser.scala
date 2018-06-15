@@ -2,8 +2,6 @@
 
 package firrtl
 
-import java.io.{ByteArrayInputStream, SequenceInputStream}
-
 import org.antlr.v4.runtime._
 import org.antlr.v4.runtime.atn._
 import com.typesafe.scalalogging.LazyLogging
@@ -21,16 +19,20 @@ case class SyntaxErrorsException(message: String) extends ParserException(messag
 
 
 object Parser extends LazyLogging {
-  /** Takes Iterator over lines of FIRRTL, returns FirrtlNode (root node is Circuit) */
-  def parse(lines: Iterator[String], infoMode: InfoMode = UseInfo): Circuit = {
 
+  /** Parses a file in a given filename and returns a parsed [[Circuit]] */
+  def parseFile(filename: String, infoMode: InfoMode): Circuit =
+    parseCharStream(CharStreams.fromFileName(filename), infoMode)
+
+  /** Parses a String and returns a parsed [[Circuit]] */
+  def parseString(text: String, infoMode: InfoMode): Circuit =
+    parseCharStream(CharStreams.fromString(text), infoMode)
+
+  /** Parses a org.antlr.v4.runtime.CharStream and returns a parsed [[Circuit]] */
+  def parseCharStream(charStream: CharStream, infoMode: InfoMode): Circuit = {
     val (parseTimeMillis, cst) = time {
       val parser = {
-        import scala.collection.JavaConverters._
-        val inStream = new SequenceInputStream(
-          lines.map{s => new ByteArrayInputStream((s + "\n").getBytes("UTF-8")) }.asJavaEnumeration
-        )
-        val lexer = new FIRRTLLexer(new ANTLRInputStream(inStream))
+        val lexer = new FIRRTLLexer(charStream)
         new FIRRTLParser(new CommonTokenStream(lexer))
       }
 
@@ -55,10 +57,13 @@ object Parser extends LazyLogging {
 
     ast
   }
+  /** Takes Iterator over lines of FIRRTL, returns FirrtlNode (root node is Circuit) */
+  def parse(lines: Iterator[String], infoMode: InfoMode = UseInfo): Circuit =
+    parseString(lines.mkString("\n"), infoMode)
 
-  def parse(lines: Seq[String]): Circuit = parse(lines.iterator)
+  def parse(lines: Seq[String]): Circuit = parseString(lines.mkString("\n"), UseInfo)
 
-  def parse(text: String): Circuit = parse(text split "\n")
+  def parse(text: String): Circuit = parseString(text, UseInfo)
 
   sealed abstract class InfoMode
 

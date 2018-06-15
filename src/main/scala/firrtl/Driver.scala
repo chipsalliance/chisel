@@ -169,7 +169,7 @@ object Driver {
         throw new OptionsException(msg)
       }
       firrtlConfig.firrtlCircuit.getOrElse {
-        val source = firrtlConfig.firrtlSource.map(_.split("\n").toIterator).getOrElse {
+        firrtlConfig.firrtlSource.map(x => Parser.parseString(x, firrtlConfig.infoMode)).getOrElse {
           if (optionsManager.topName.isEmpty && firrtlConfig.inputFileNameOverride.isEmpty) {
             val message = "either top-name or input-file-override must be set"
             throw new OptionsException(message)
@@ -183,7 +183,7 @@ object Driver {
           }
           val inputFileName = firrtlConfig.getInputFileName(optionsManager)
           try {
-            io.Source.fromFile(inputFileName).getLines()
+            Parser.parseFile(inputFileName, firrtlConfig.infoMode)
           }
           catch {
             case _: FileNotFoundException =>
@@ -191,7 +191,6 @@ object Driver {
               throw new OptionsException(message)
           }
         }
-        Parser.parse(source, firrtlConfig.infoMode)
       }
     }
   }
