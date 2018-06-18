@@ -86,7 +86,9 @@ antlr4GenListener in Antlr4 := false // default = true
 
 antlr4PackageName in Antlr4 := Option("firrtl.antlr")
 
-antlr4Version in Antlr4 := "4.7"
+antlr4Version in Antlr4 := "4.7.1"
+
+javaSource in Antlr4 := (sourceManaged in Compile).value
 
 publishMavenStyle := true
 publishArtifact in Test := false
