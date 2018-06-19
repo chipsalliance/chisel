@@ -79,7 +79,7 @@ object Module {
   def currentModule: Option[BaseModule] = Builder.currentModule
 }
 
-private[chisel3] trait IOImpl {
+object IO {
   /** Constructs a port for the current Module
     *
     * This must wrap the datatype used to set the io field of any Module.
@@ -112,8 +112,6 @@ private[chisel3] trait IOImpl {
     iodefClone
   }
 }
-// Only to be called by Module.IO
-private[core] object IO extends IOImpl
 
 /** Abstract base class for Modules, an instantiable organizational unit for RTL.
   */

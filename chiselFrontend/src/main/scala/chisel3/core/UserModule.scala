@@ -40,11 +40,19 @@ abstract class UserModule(implicit moduleCompileOptions: CompileOptions)
 
   private[chisel3] def namePorts(names: HashMap[HasId, String]): Unit = {
     for (port <- getModulePorts) {
-      val portName = port.suggestedName.orElse(names.get(port))
-      require(portName.isDefined, s"Unable to name port $port in $this")
-      port.setRef(ModuleIO(this, _namespace.name(portName.get)))
+      port.suggestedName.orElse(names.get(port)) match {
+        case Some(name) =>
+          if (_namespace.contains(name)) {
+            Builder.error(s"""Unable to name port $port to "$name" in $this,""" +
+              " name is already taken by another port!")
+          }
+          port.setRef(ModuleIO(this, _namespace.name(name)))
+        case None => Builder.error(s"Unable to name port $port in $this, " +
+          "try making it a public field of the Module")
+      }
     }
   }
+
 
   private[core] override def generateComponent(): Component = {
     require(!_closed, "Can't generate module more than once")
@@ -177,8 +185,10 @@ abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions)
 
   private[chisel3] override def namePorts(names: HashMap[HasId, String]): Unit = {
     for (port <- getModulePorts) {
-      require(names.contains(port), s"Unable to name port $port in $this")
-      port.setRef(ModuleIO(this, _namespace.name(names(port))))
+      // This shoudl already have been caught
+      if (!names.contains(port)) throwException(s"Unable to name port $port in $this")
+      val name = names(port)
+      port.setRef(ModuleIO(this, _namespace.name(name)))
     }
   }
 
