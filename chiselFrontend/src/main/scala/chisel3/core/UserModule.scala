@@ -185,7 +185,7 @@ abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions)
 
   private[chisel3] override def namePorts(names: HashMap[HasId, String]): Unit = {
     for (port <- getModulePorts) {
-      // This shoudl already have been caught
+      // This should already have been caught
       if (!names.contains(port)) throwException(s"Unable to name port $port in $this")
       val name = names(port)
       port.setRef(ModuleIO(this, _namespace.name(name)))
