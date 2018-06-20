@@ -277,7 +277,7 @@ object VecInit {
     require(!elts.isEmpty)
     elts.foreach(requireIsHardware(_, "vec element"))
 
-    val vec = Wire(new Vec(cloneSupertype(elts, "Vec"), elts.length))
+    val vec = Wire(Vec(elts.length, cloneSupertype(elts, "Vec")))
 
     // TODO: try to remove the logic for this mess
     elts.head.direction match {
