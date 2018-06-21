@@ -4,8 +4,8 @@ package firrtl
 
 import scala.collection._
 import scala.io.Source
-import scala.sys.process.{BasicIO,stringSeqToProcess}
-import scala.util.{Try, Success, Failure}
+import scala.sys.process.{BasicIO, ProcessLogger, stringSeqToProcess}
+import scala.util.{Failure, Success, Try}
 import scala.util.control.ControlThrowable
 import java.io.{File, FileNotFoundException}
 
@@ -368,7 +368,7 @@ object FileUtils {
   def isCommandAvailable(cmd: Seq[String]): Boolean = {
     // Eat any output.
     val sb = new StringBuffer
-    val ioToDevNull = BasicIO(withIn = false, sb, None)
+    val ioToDevNull = BasicIO(withIn = false, ProcessLogger(line => sb.append(line)))
 
     try {
       cmd.run(ioToDevNull).exitValue == 0
