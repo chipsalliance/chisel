@@ -183,7 +183,7 @@ class DriverSpec extends FreeSpec with Matchers with BackendCompilationUtilities
         val optionsManager = new ExecutionOptionsManager("test") with HasFirrtlOptions
 
         optionsManager.parse(
-          Array("--infer-rw", "circuit")
+          Array("--infer-rw")
         ) should be(true)
 
         val firrtlOptions = optionsManager.firrtlOptions
@@ -334,7 +334,7 @@ class DriverSpec extends FreeSpec with Matchers with BackendCompilationUtilities
     val annoFile = new File(targetDir, "annotations.anno")
 
     optionsManager.parse(
-      Array("--infer-rw", "circuit", "-faf", annoFile.toString)
+      Array("--infer-rw", "-faf", annoFile.toString)
     ) should be(true)
 
     copyResourceToFile("/annotations/SampleAnnotations.anno.json", annoFile)

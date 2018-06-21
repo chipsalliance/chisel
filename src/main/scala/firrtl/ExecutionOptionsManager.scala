@@ -406,9 +406,8 @@ trait HasFirrtlOptions {
       """Inline one or more module (comma separated, no spaces) module looks like "MyModule" or "MyModule.myinstance"""
     }
 
-  parser.opt[String]("infer-rw")
+  parser.opt[Unit]("infer-rw")
     .abbr("firw")
-    .valueName ("<circuit>")
     .foreach { x =>
       firrtlOptions = firrtlOptions.copy(
         annotations = firrtlOptions.annotations :+ InferReadWriteAnnotation,
@@ -585,4 +584,3 @@ class ExecutionOptionsManager(val applicationName: String) extends HasParser(app
     s"$directoryName$baseName$normalizedSuffix"
   }
 }
-
