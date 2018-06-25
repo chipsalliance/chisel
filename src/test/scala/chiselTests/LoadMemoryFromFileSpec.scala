@@ -2,8 +2,11 @@
 
 package chiselTests
 
+import java.io.File
+
 import chisel3._
 import chisel3.util.ChiselLoadMemoryAnnotation
+import firrtl.FirrtlExecutionSuccess
 import org.scalatest.{FreeSpec, Matchers}
 
 //noinspection TypeAnnotation
@@ -39,10 +42,21 @@ class UsesMemLow(memoryDepth: Int, memoryType: Data) extends Module {
 
 
 class LoadMemoryFromFileSpec extends FreeSpec with Matchers {
+  val testDirName = "test_run_dir/load_memory_spec"
   "Users can specify a source file to load memory from" in {
-    Driver.execute(
-      args = Array("-X", "verilog", "--target-dir", "test_run_dir"),
+    val result = Driver.execute(
+      args = Array("-X", "verilog", "--target-dir", testDirName),
       dut = () => new UsesMem(memoryDepth = 8, memoryType = UInt(16.W))
     )
+
+    result match {
+      case ChiselExecutionSuccess(_, _, Some(FirrtlExecutionSuccess(_, _))) =>
+        val dir = new File(testDirName)
+        new File(dir, "UsesMem.UsesMem.memory.v").exists() should be (true)
+        new File(dir, "UsesMem.UsesMemLow.memory.v").exists() should be (true)
+        new File(dir, "firrtl_black_box_resource_files.f").exists() should be (true)
+      case _=>
+        throw new Exception("Failed compile")
+    }
   }
 }
