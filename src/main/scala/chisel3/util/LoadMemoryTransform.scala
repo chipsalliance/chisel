@@ -12,6 +12,7 @@ import firrtl.transforms.BlackBoxInlineAnno
 import firrtl.{CircuitForm, CircuitState, LowForm, Transform, VerilogEmitter, WDefInstance}
 
 import scala.collection.mutable
+import scala.util.matching.Regex
 
 /**
   * chisel implementation for load memory
@@ -23,9 +24,23 @@ import scala.collection.mutable
     with RunFirrtlTransform {
 
   if(! Seq("h","b").contains(hexOrBinary)) {
-    Builder.errors.error(
+    Builder.error(
       s"""LoadMemory from file $fileName format must be "h" or "b" not "$hexOrBinary" """
     )
+  }
+
+  if(fileName.isEmpty) {
+    Builder.warning(
+      s"""LoadMemory from file annotations file empty file name"""
+    )
+  }
+  val SuffixRegex: Regex = """.+\.[^\.]*""".r
+  fileName match {
+    case SuffixRegex(_*) =>
+      Builder.warning(
+        s"""LoadMemoryAnnotation fileName "$fileName" has extension ".txt" will still be appended"""
+      )
+    case _ =>
   }
 
   def transformClass : Class[LoadMemoryTransform] = classOf[LoadMemoryTransform]
@@ -42,10 +57,36 @@ import scala.collection.mutable
 case class LoadMemoryAnnotation(
   target: Named,
   fileName: String,
-  hexOrBinary: String = "h"
+  hexOrBinary: String = "h",
+  originalMemoryNameOpt: Option[String] = None
 ) extends SingleTargetAnnotation[Named] {
 
-  def duplicate(n: Named): LoadMemoryAnnotation = this.copy(target = n)
+  def getFileName: String = {
+    (target, originalMemoryNameOpt) match {
+      case (ComponentName(componentName, _), Some(originalMemoryName)) =>
+        if(componentName == originalMemoryName) {
+          fileName
+        }
+        else {
+          fileName + componentName.drop(originalMemoryName.length)
+        }
+      case _ =>
+        fileName
+    }
+  }
+
+  def duplicate(n: Named): LoadMemoryAnnotation = {
+//    if(n.serialize != target.serialize) {
+////      Builder.errors.error(s"LoadMemory[${target.serialize}] must be a simple memory, no bundles")
+//      throw new Exception(s"LoadMemory[${target.serialize}] must be a simple memory, no bundles")
+//    }
+    target match {
+      case ComponentName(componentName, _) =>
+        this.copy(target = n, originalMemoryNameOpt = Some(componentName))
+      case _ =>
+        this.copy(target = n)
+    }
+  }
 }
 
 /**
@@ -105,8 +146,8 @@ class CreateBindableMemoryLoaders(circuitState: CircuitState) extends Pass {
           val targetName = ma.target.serialize
           targetName == fullMemoryName
       } match {
-        case Some(LoadMemoryAnnotation(
-        ComponentName(componentName, moduleName: ModuleName), fileName: String, hexOrBinary
+        case Some(lma @ LoadMemoryAnnotation(
+        ComponentName(componentName, moduleName: ModuleName), _, hexOrBinary, _
         )) =>
 
           val writer = new java.io.StringWriter
@@ -117,10 +158,11 @@ class CreateBindableMemoryLoaders(circuitState: CircuitState) extends Pass {
 
               val moduleMap = circuitState.circuit.modules.map(m => m.name -> m).toMap
               val renderer = verilogEmitter.getRenderer(module, moduleMap)(writer)
+              val loadFileName = lma.getFileName + ".txt"
               renderer.emitVerilogBind(s"BindsTo_${moduleName.name}",
                 s"""
                    |initial begin
-                   |  $$readmem$hexOrBinary("$fileName", ${myModule.name}.$componentName);
+                   |  $$readmem$hexOrBinary("$loadFileName", ${myModule.name}.$componentName);
                    |end
                     """.stripMargin)
               val inLineText = writer.toString + "\n" +

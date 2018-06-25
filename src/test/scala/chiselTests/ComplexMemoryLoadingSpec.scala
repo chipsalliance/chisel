@@ -2,6 +2,8 @@
 
 package chiselTests
 
+import java.io.File
+
 import chisel3._
 import chisel3.util.{ChiselLoadMemoryAnnotation, log2Ceil}
 import firrtl.FirrtlExecutionSuccess
@@ -21,22 +23,35 @@ class HasComplexMemory(memoryDepth: Int) extends Module {
 
   val memory = Mem(memoryDepth, new MemoryShape)
 
-  chisel3.experimental.annotate(ChiselLoadMemoryAnnotation(memory, "test_run_dir/examples.LoadMemoryFromFileSpec1251342320/mem1.txt"))
+  chisel3.experimental.annotate(
+    ChiselLoadMemoryAnnotation(memory, "./mem")
+  )
+
   io.value := memory(io.address)
 }
 
 
 class ComplexMemoryLoadingSpec extends FreeSpec with Matchers {
+  val testDirName = "test_run_dir/complex_memory_load"
+
   "Users can specify a source file to load memory from" in {
     val result = Driver.execute(
-      args = Array("-X", "verilog", "--target-dir", "test_run_dir/ComplexMemorySpec"),
+      args = Array("-X", "verilog", "--target-dir", testDirName),
       dut = () => new HasComplexMemory(memoryDepth = 8)
     )
 
     result match {
       case ChiselExecutionSuccess(_, emitted, Some(FirrtlExecutionSuccess(emitType, firrtlEmitted))) =>
-        //        println(s"emitted code\n$emitted\nType: $emitType\nFirrtl emitted\n$firrtlEmitted")
-        println(s"Type: $emitType\nFirrtl emitted\n$firrtlEmitted")
+        val dir = new File(testDirName)
+        val memoryElements = Seq("a", "b", "c")
+
+        memoryElements.foreach { element =>
+          val file = new File(dir, s"HasComplexMemory.HasComplexMemory.memory_$element.v")
+          file.exists() should be (true)
+          val fileText = io.Source.fromFile(file).getLines().mkString("\n")
+          fileText should include (s"""$$readmemh("./mem_$element.txt", HasComplexMemory.memory_$element);""")
+        }
+
       case _=>
         println(s"Failed compile")
     }
