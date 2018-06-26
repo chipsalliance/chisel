@@ -3,7 +3,7 @@
 package chisel3.util
 
 import chisel3.MemBase
-import chisel3.core.{RunFirrtlTransform, annotate}
+import chisel3.core.{RunFirrtlTransform, annotate, ChiselAnnotation}
 import chisel3.internal.{Builder, InstanceId}
 import firrtl.annotations._
 import firrtl.ir.{Module => _, _}
@@ -20,15 +20,13 @@ import scala.util.matching.Regex
   * @param target        memory to load
   * @param fileName      name of input file
   * @param hexOrBinary   use $readmemh or $readmemb
-  */case class ChiselLoadMemoryAnnotation(target: InstanceId, fileName: String, hexOrBinary: String = "h")
-  extends chisel3.core.ChiselAnnotation
-    with RunFirrtlTransform {
-
-  if(! Seq("h","b").contains(hexOrBinary)) {
-    Builder.error(
-      s"""LoadMemory from file $fileName format must be "h" or "b" not "$hexOrBinary" """
-    )
-  }
+  */
+case class ChiselLoadMemoryAnnotation(
+  target     : InstanceId,
+  fileName   : String,
+  hexOrBinary: MemoryLoadFileType.FileType = MemoryLoadFileType.Hex
+)
+  extends ChiselAnnotation with RunFirrtlTransform {
 
   if(fileName.isEmpty) {
     Builder.warning(
@@ -44,14 +42,30 @@ import scala.util.matching.Regex
     case _ =>
   }
 
-  def transformClass : Class[LoadMemoryTransform] = classOf[LoadMemoryTransform]
+  def transformClass: Class[LoadMemoryTransform] = classOf[LoadMemoryTransform]
 
-  def toFirrtl: LoadMemoryAnnotation = LoadMemoryAnnotation(target.toNamed, fileName, hexOrBinary)
+  def toFirrtl: LoadMemoryAnnotation = {
+    LoadMemoryAnnotation(target.toNamed.asInstanceOf[ComponentName], fileName, hexOrBinary)
+  }
+}
+
+/**
+  * Enumeration of the two types of readmem statements available in verilog
+  */
+object MemoryLoadFileType extends Enumeration {
+  type FileType = Value
+
+  val Hex:    Value = Value("h")
+  val Binary: Value = Value("b")
 }
 
 object loadMemoryFromFile {
-  def apply(memory: MemBase[_], fileName: String, hexOrBinary: String = "h"): Unit = {
-    annotate(ChiselLoadMemoryAnnotation(memory, fileName, hexOrBinary))
+  def apply(
+    memory: MemBase[_],
+    fileName: String,
+    hexOrBinary: MemoryLoadFileType.FileType = MemoryLoadFileType.Hex
+  ): Unit = {
+    annotate(ChiselLoadMemoryAnnotation(memory, fileName))
   }
 }
 
@@ -62,36 +76,32 @@ object loadMemoryFromFile {
   * @param hexOrBinary   use $readmemh or $readmemb
   */
 case class LoadMemoryAnnotation(
-  target: Named,
+  target: ComponentName,
   fileName: String,
-  hexOrBinary: String = "h",
+  hexOrBinary: MemoryLoadFileType.FileType = MemoryLoadFileType.Hex,
   originalMemoryNameOpt: Option[String] = None
 ) extends SingleTargetAnnotation[Named] {
 
   def getFileName: String = {
-    (target, originalMemoryNameOpt) match {
-      case (ComponentName(componentName, _), Some(originalMemoryName)) =>
-        if(componentName == originalMemoryName) {
+    originalMemoryNameOpt match {
+      case Some(originalMemoryName) =>
+        if(target.name == originalMemoryName) {
           fileName
         }
         else {
-          fileName + componentName.drop(originalMemoryName.length)
+          fileName + target.name.drop(originalMemoryName.length)
         }
       case _ =>
         fileName
     }
   }
 
-  def duplicate(n: Named): LoadMemoryAnnotation = {
-//    if(n.serialize != target.serialize) {
-////      Builder.errors.error(s"LoadMemory[${target.serialize}] must be a simple memory, no bundles")
-//      throw new Exception(s"LoadMemory[${target.serialize}] must be a simple memory, no bundles")
-//    }
-    target match {
-      case ComponentName(componentName, _) =>
-        this.copy(target = n, originalMemoryNameOpt = Some(componentName))
+  def duplicate(newNamed: Named): LoadMemoryAnnotation = {
+    newNamed match {
+      case componentName: ComponentName =>
+        this.copy(target = componentName, originalMemoryNameOpt = Some(target.name))
       case _ =>
-        this.copy(target = n)
+        throw new Exception(s"Cannot annotate anything but a memory, invalid target ${newNamed.serialize}")
     }
   }
 }
@@ -104,6 +114,7 @@ case class LoadMemoryAnnotation(
   */
 //TODO: (chick) support a treadle or interpreter means of memory loading
 //TODO: (chick) can this only be done when backend is known to support this.
+//TODO: (chick) better integration with chisel end firrtl error systems
 //scalastyle:off method.length cyclomatic.complexity regex
 class CreateBindableMemoryLoaders(circuitState: CircuitState) extends Pass {
 
@@ -153,10 +164,7 @@ class CreateBindableMemoryLoaders(circuitState: CircuitState) extends Pass {
           val targetName = ma.target.serialize
           targetName == fullMemoryName
       } match {
-        case Some(lma @ LoadMemoryAnnotation(
-        ComponentName(componentName, moduleName: ModuleName), _, hexOrBinary, _
-        )) =>
-
+        case Some(lma @ LoadMemoryAnnotation(ComponentName(componentName, moduleName), _, hexOrBinary, _)) =>
           val writer = new java.io.StringWriter
           circuitState.circuit.modules
             .filter { module => module.name == moduleName.name }
