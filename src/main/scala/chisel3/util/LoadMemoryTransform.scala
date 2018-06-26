@@ -2,7 +2,8 @@
 
 package chisel3.util
 
-import chisel3.core.RunFirrtlTransform
+import chisel3.MemBase
+import chisel3.core.{RunFirrtlTransform, annotate}
 import chisel3.internal.{Builder, InstanceId}
 import firrtl.annotations._
 import firrtl.ir.{Module => _, _}
@@ -46,6 +47,12 @@ import scala.util.matching.Regex
   def transformClass : Class[LoadMemoryTransform] = classOf[LoadMemoryTransform]
 
   def toFirrtl: LoadMemoryAnnotation = LoadMemoryAnnotation(target.toNamed, fileName, hexOrBinary)
+}
+
+object loadMemoryFromFile {
+  def apply(memory: MemBase[_], fileName: String, hexOrBinary: String = "h"): Unit = {
+    annotate(ChiselLoadMemoryAnnotation(memory, fileName, hexOrBinary))
+  }
 }
 
 /**

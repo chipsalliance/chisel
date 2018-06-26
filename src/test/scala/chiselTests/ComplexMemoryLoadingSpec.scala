@@ -5,7 +5,7 @@ package chiselTests
 import java.io.File
 
 import chisel3._
-import chisel3.util.{ChiselLoadMemoryAnnotation, log2Ceil}
+import chisel3.util.{loadMemoryFromFile, log2Ceil}
 import firrtl.FirrtlExecutionSuccess
 import org.scalatest.{FreeSpec, Matchers}
 
@@ -23,9 +23,7 @@ class HasComplexMemory(memoryDepth: Int) extends Module {
 
   val memory = Mem(memoryDepth, new MemoryShape)
 
-  chisel3.experimental.annotate(
-    ChiselLoadMemoryAnnotation(memory, "./mem")
-  )
+  loadMemoryFromFile(memory, "./mem")
 
   io.value := memory(io.address)
 }

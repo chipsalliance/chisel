@@ -5,7 +5,7 @@ package chiselTests
 import java.io.{ByteArrayOutputStream, File, PrintStream}
 
 import chisel3._
-import chisel3.util.ChiselLoadMemoryAnnotation
+import chisel3.util.loadMemoryFromFile
 import firrtl.FirrtlExecutionSuccess
 import org.scalatest.{FreeSpec, Matchers}
 
@@ -18,8 +18,8 @@ class UsesMem(memoryDepth: Int, memoryType: Data) extends Module {
   })
 
   val memory = Mem(memoryDepth, memoryType)
+  loadMemoryFromFile(memory, "./mem1")
 
-  chisel3.experimental.annotate(ChiselLoadMemoryAnnotation(memory, "./mem1"))
   io.value := memory(io.address)
 
   val low = Module(new UsesMemLow(memoryDepth, memoryType))
@@ -36,7 +36,8 @@ class UsesMemLow(memoryDepth: Int, memoryType: Data) extends Module {
 
   val memory = Mem(memoryDepth, memoryType)
 
-  chisel3.experimental.annotate(ChiselLoadMemoryAnnotation(memory, "./mem2"))
+  loadMemoryFromFile(memory, "./mem2")
+
   io.value := memory(io.address)
 }
 
@@ -50,7 +51,8 @@ class FileHasSuffix(memoryDepth: Int, memoryType: Data) extends Module {
 
   val memory = Mem(memoryDepth, memoryType)
 
-  chisel3.experimental.annotate(ChiselLoadMemoryAnnotation(memory, "./mem1.txt"))
+  loadMemoryFromFile(memory, "./mem1.txt")
+
   io.value := memory(io.address)
 
   val low = Module(new UsesMemLow(memoryDepth, memoryType))
