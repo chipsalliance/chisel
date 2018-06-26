@@ -96,7 +96,7 @@ object Driver extends BackendCompilationUtilities {
 
   def emit[T <: RawModule](gen: () => T): String = Driver.emit(elaborate(gen))
 
-  def emit[T <: RawModule](ir: Circuit): String = toFirrtl(ir).serialize
+  def emit[T <: RawModule](ir: Circuit): String = Emitter.emit(ir)
 
   /** Elaborates the Module specified in the gen function into Verilog
     *
@@ -158,7 +158,7 @@ object Driver extends BackendCompilationUtilities {
     val firrtlCircuit = Converter.convert(circuit)
 
     // Still emit to leave an artifact (and because this always has been the behavior)
-    val firrtlString = firrtlCircuit.serialize
+    val firrtlString = Driver.emit(circuit)
     val firrtlFileName = firrtlOptions.getInputFileName(optionsManager)
     val firrtlFile = new File(firrtlFileName)
 
