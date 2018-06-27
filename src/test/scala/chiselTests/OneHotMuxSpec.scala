@@ -5,7 +5,7 @@ package chiselTests
 import Chisel.testers.BasicTester
 import chisel3._
 import chisel3.experimental.FixedPoint
-import chisel3.util.Mux1H
+import chisel3.util.{Mux1H, UIntToOH}
 import org.scalatest._
 
 //scalastyle:off magic.number
@@ -40,6 +40,17 @@ class OneHotMuxSpec extends FreeSpec with Matchers with ChiselRunners {
       assertTesterPasses(new DifferentBundleOneHotTester)
     }
   }
+  "UIntToOH with output width greater than 2^(input width)" in {
+    assertTesterPasses(new UIntToOHTester)
+  }
+  "UIntToOH should not accept width of zero (until zero-width wires are fixed" in {
+    intercept[java.lang.IllegalArgumentException] {
+      assertTesterPasses(new BasicTester {
+        val out = UIntToOH(0.U, 0)
+      })
+    }
+  }
+
 }
 
 class SimpleOneHotTester extends BasicTester {
@@ -283,4 +294,15 @@ class DifferentBundleOneHotTester extends BasicTester {
   stop()
 }
 
+class UIntToOHTester extends BasicTester {
+  val out = UIntToOH(1.U, 3)
+  require(out.getWidth == 3)
+  assert(out === 2.U)
+
+  val out2 = UIntToOH(0.U, 1)
+  require(out2.getWidth == 1)
+  assert(out2 === 1.U)
+
+  stop()
+}
 
