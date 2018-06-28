@@ -110,6 +110,15 @@ object Driver extends BackendCompilationUtilities {
     }
   }
 
+  /** Dumps the elaborated Circuit to FIRRTL
+    *
+    * If no File is given as input, it will dump to a default filename based on the name of the
+    * Top Module
+    *
+    * @param c Elaborated Chisel Circuit
+    * @param optName Optional File to dump to
+    * @return The File the circuit was dumped to
+    */
   def dumpFirrtl(ir: Circuit, optName: Option[File]): File = {
     val f = optName.getOrElse(new File(ir.name + ".fir"))
     val w = new FileWriter(f)
@@ -118,9 +127,19 @@ object Driver extends BackendCompilationUtilities {
     f
   }
 
-  def dumpProto(c: Circuit, optName: Option[File]): File = {
-    val f = optName.getOrElse(new File(c.name + ".fir"))
+  /** Dumps the elaborated Circuit to ProtoBuf
+    *
+    * If no File is given as input, it will dump to a default filename based on the name of the
+    * Top Module
+    *
+    * @param c Elaborated Chisel Circuit
+    * @param optFile Optional File to dump to
+    * @return The File the circuit was dumped to
+    */
+  def dumpProto(c: Circuit, optFile: Option[File]): File = {
+    val f = optFile.getOrElse(new File(c.name + ".pb"))
     val ostream = new java.io.FileOutputStream(f)
+    // Lazily convert modules to make intermediate objects garbage collectable
     val modules = c.components.map(m => () => Converter.convert(m))
     firrtl.proto.ToProto.writeToStreamFast(ostream, ir.NoInfo, modules, c.name)
     f
