@@ -99,7 +99,7 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId wi
 
     val port = pushCommand(
       DefMemPort(sourceInfo,
-       t.cloneTypeFull, Node(this), dir, i.ref, Node(Builder.forcedClock))
+       t.cloneTypeFull, Node(this), dir, i.ref, Builder.forcedClock.ref)
     ).id
     // Bind each element of port to being a MemoryPort
     port.bind(MemoryPortBinding(Builder.forcedUserModule))

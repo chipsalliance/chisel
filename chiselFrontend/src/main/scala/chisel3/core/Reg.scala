@@ -84,8 +84,8 @@ object RegInit {
       requireIsChiselType(t, "reg type")
     }
     val reg = t.cloneTypeFull
-    val clock = Node(Builder.forcedClock)
-    val reset = Node(Builder.forcedReset)
+    val clock = Builder.forcedClock.ref
+    val reset = Builder.forcedReset.ref
 
     reg.bind(RegBinding(Builder.forcedUserModule))
     requireIsHardware(init, "reg initializer")
