@@ -27,7 +27,7 @@ object requireIsHardware {
       case Some(x: BaseModule) => x._compatAutoWrapPorts
       case _ =>
     }
-    if (!node.hasBinding) {
+    if (!node.topBindingOpt.isDefined) {
       val prefix = if (msg.nonEmpty) s"$msg " else ""
       throw Binding.ExpectedHardwareException(s"$prefix'$node' must be hardware, " +
         "not a bare Chisel type. Perhaps you forgot to wrap it in Wire(_) or IO(_)?")
@@ -38,7 +38,7 @@ object requireIsHardware {
 /** Requires that a node is a chisel type (not hardware, "unbound")
   */
 object requireIsChiselType {
-  def apply(node: Data, msg: String = "") = if (node.hasBinding) {
+  def apply(node: Data, msg: String = "") = if (node.topBindingOpt.isDefined) {
     val prefix = if (msg.nonEmpty) s"$msg " else ""
     throw Binding.ExpectedChiselTypeException(s"$prefix'$node' must be a Chisel type, not hardware")
   }
@@ -102,7 +102,7 @@ case class RegBinding(enclosure: UserModule) extends ConstrainedBinding
 case class WireBinding(enclosure: UserModule) extends ConstrainedBinding
 
 case class ChildBinding(parent: Data) extends Binding {
-  def location = parent.binding.location
+  def location = parent.topBinding.location
 }
 // A DontCare element has a specific Binding, somewhat like a literal.
 // It is a source (RHS). It may only be connected/applied to sinks.
