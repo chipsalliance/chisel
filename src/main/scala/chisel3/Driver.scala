@@ -118,6 +118,14 @@ object Driver extends BackendCompilationUtilities {
     f
   }
 
+  def dumpProto(c: Circuit, optName: Option[File]): File = {
+    val f = optName.getOrElse(new File(c.name + ".fir"))
+    val ostream = new java.io.FileOutputStream(f)
+    val modules = c.components.map(m => () => Converter.convert(m))
+    firrtl.proto.ToProto.writeToStreamFast(ostream, ir.NoInfo, modules, c.name)
+    f
+  }
+
   private var target_dir: Option[String] = None
   def parseArgs(args: Array[String]): Unit = {
     for (i <- 0 until args.size) {
