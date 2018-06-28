@@ -68,6 +68,17 @@ libraryDependencies += "net.jcazevedo" %% "moultingyaml" % "0.4.0"
 
 libraryDependencies += "org.json4s" %% "json4s-native" % "3.5.3"
 
+// Java PB
+
+enablePlugins(ProtobufPlugin)
+
+sourceDirectory in ProtobufConfig := baseDirectory.value / "src" / "main" / "proto"
+
+protobufRunProtoc in ProtobufConfig := (args =>
+  com.github.os72.protocjar.Protoc.runProtoc("-v351" +: args.toArray))
+
+javaSource in ProtobufConfig := (sourceManaged in Compile).value
+
 // Assembly
 
 assemblyJarName in assembly := "firrtl.jar"

@@ -101,6 +101,12 @@ trait FirrtlMatchers extends Matchers {
     require(!s.contains("\n"))
     s.replaceAll("\\s+", " ").trim
   }
+  /** Helper to make circuits that are the same appear the same */
+  def canonicalize(circuit: Circuit): Circuit = {
+    import firrtl.Mappers._
+    def onModule(mod: DefModule) = mod.map(firrtl.Utils.squashEmpty)
+    circuit.map(onModule)
+  }
   def parse(str: String) = Parser.parse(str.split("\n").toIterator, UseInfo)
   /** Helper for executing tests
     * compiler will be run on input then emitted result will each be split into

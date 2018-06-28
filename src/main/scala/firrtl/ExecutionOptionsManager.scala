@@ -225,14 +225,15 @@ extends ComposableOptions {
     }
   }
 
-  /**
-    * build the input file name, taking overriding parameters
+  /** Get the name of the input file
     *
+    * @note Does not implicitly add a file extension to the input file
     * @param optionsManager this is needed to access build function and its common options
     * @return a properly constructed input file name
     */
   def getInputFileName(optionsManager: ExecutionOptionsManager): String = {
-    optionsManager.getBuildFileName("fir", inputFileNameOverride)
+    if (inputFileNameOverride.nonEmpty) inputFileNameOverride
+    else optionsManager.getBuildFileName("fir", inputFileNameOverride)
   }
   /** Get the user-specified [[OutputConfig]]
     *

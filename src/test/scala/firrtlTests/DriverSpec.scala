@@ -2,22 +2,18 @@
 
 package firrtlTests
 
-import java.io.{File, FileWriter}
-import org.scalatest.{FreeSpec, Matchers}
+import java.io.{File, FileInputStream, FileWriter}
 
+import org.scalatest.{FreeSpec, Matchers}
 import firrtl.passes.{InlineAnnotation, InlineInstances}
-import firrtl.passes.memlib.{
-  InferReadWrite,
-  InferReadWriteAnnotation,
-  ReplSeqMem,
-  ReplSeqMemAnnotation
-}
+import firrtl.passes.memlib.{InferReadWrite, InferReadWriteAnnotation, ReplSeqMem, ReplSeqMemAnnotation}
 import firrtl.transforms.BlackBoxTargetDirAnno
 import firrtl._
 import firrtl.annotations._
 import firrtl.util.BackendCompilationUtilities
 
-import scala.util.{Try, Success, Failure}
+import scala.io.Source
+import scala.util.{Failure, Success, Try}
 
 class ExceptingTransform extends Transform {
   def inputForm = HighForm
@@ -416,6 +412,28 @@ class DriverSpec extends FreeSpec with Matchers with BackendCompilationUtilities
     }
   }
 
+  "The Driver is sensitive to the file extension of input files" - {
+    val design = "GCDTester"
+    val outputDir = createTestDirectory("DriverFileExtensionSensitivity")
+    val verilogFromFir = new File(outputDir, s"$design.fromfir.v")
+    val verilogFromPb = new File(outputDir, s"$design.frompb.v")
+    val commonArgs = Array("-X", "verilog", "--info-mode", "use")
+    ".fir means FIRRTL file" in {
+      val inFile = new File(getClass.getResource(s"/integration/$design.fir").getFile)
+      val args = Array("-i", inFile.getAbsolutePath, "-o", verilogFromFir.getAbsolutePath) ++ commonArgs
+      Driver.execute(args)
+    }
+    ".pb means ProtoBuf file" in {
+      val inFile = new File(getClass.getResource(s"/integration/$design.pb").getFile)
+      val args = Array("-i", inFile.getAbsolutePath, "-o", verilogFromPb.getAbsolutePath) ++ commonArgs
+      Driver.execute(args)
+    }
+    "Both paths do the same thing" in {
+      val s1 = Source.fromFile(verilogFromFir).mkString
+      val s2 = Source.fromFile(verilogFromPb).mkString
+      s1 should equal (s2)
+    }
+  }
 
   "Directory deleter is handy for cleaning up after tests" - {
     "for example making a directory tree, and deleting it looks like" in {
