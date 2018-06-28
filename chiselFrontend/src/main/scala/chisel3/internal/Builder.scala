@@ -94,6 +94,7 @@ private[chisel3] trait HasId extends InstanceId {
     for(hook <- postname_hooks) { hook(name) }
     this
   }
+  private[chisel3] def suggestedName: Option[String] = suggested_name
   private[chisel3] def addPostnameHook(hook: String=>Unit): Unit = postname_hooks += hook
 
   // Uses a namespace to convert suggestion into a true name
