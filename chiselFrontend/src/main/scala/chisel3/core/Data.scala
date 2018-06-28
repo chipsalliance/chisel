@@ -88,7 +88,7 @@ object DataMirror {
 
   // Internal reflection-style APIs, subject to change and removal whenever.
   object internal {
-    def isSynthesizable(target: Data) = target.hasBinding
+    def isSynthesizable(target: Data) = target.topBindingOpt.isDefined
     // For those odd cases where you need to care about object reference and uniqueness
     def chiselTypeClone[T<:Data](target: Data): T = {
       target.cloneTypeFull.asInstanceOf[T]
@@ -241,10 +241,8 @@ abstract class Data extends HasId with NamedComponent {
   // This information is supplemental (more than is necessary to generate FIRRTL) and is used to
   // perform checks in Chisel, where more informative error messages are possible.
   private var _binding: Option[Binding] = None
-  private[core] def bindingOpt = _binding
-  private[core] def hasBinding = _binding.isDefined
   // Only valid after node is bound (synthesizable), crashes otherwise
-  private[core] def binding = _binding.get
+  protected def binding: Option[Binding] = _binding
   protected def binding_=(target: Binding) {
     if (_binding.isDefined) {
       throw Binding.RebindingException(s"Attempted reassignment of binding to $this")
@@ -253,7 +251,7 @@ abstract class Data extends HasId with NamedComponent {
   }
 
   private[core] def topBindingOpt: Option[TopBinding] = {
-    bindingOpt match {
+    _binding match {
       case Some(binding) => binding match {
         case ChildBinding(parent) => parent.topBindingOpt
         case binding: TopBinding => Some(binding)

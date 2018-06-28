@@ -72,11 +72,19 @@ sealed abstract class Bits(width: Width)
 
   def cloneType: this.type = cloneTypeWidth(width)
 
+  private[core] override def topBindingOpt: Option[TopBinding] = super.topBindingOpt match {
+    // Translate Bundle lit bindings to Element lit bindings
+    case Some(BundleLitBinding(litMap)) => litMap.get(this) match {
+      case Some(litArg) => Some(ElementLitBinding(litArg))
+      case _ => Some(DontCareBinding())
+    }
+    case topBindingOpt => topBindingOpt
+  }
+
   override def elementLitArg: Option[LitArg] = litArgOption
 
   protected def litArgOption: Option[LitArg] = topBindingOpt match {
     case Some(ElementLitBinding(litArg)) => Some(litArg)
-    case Some(BundleLitBinding(litMap)) => litMap.get(this)
     case _ => None
   }
 

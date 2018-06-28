@@ -738,7 +738,7 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     // (which could lead to data conflicts, since it's likely the user didn't know to re-bind them).
     // This is not guaranteed to catch all cases (for example, Data in Tuples or Iterables).
     val boundDataParamNames = ctorParamsNameVals.collect {
-      case (paramName, paramVal: Data) if paramVal.hasBinding => paramName
+      case (paramName, paramVal: Data) if paramVal.topBindingOpt.isDefined => paramName
     }
     if (boundDataParamNames.nonEmpty) {
       autoClonetypeError(s"constructor parameters (${boundDataParamNames.sorted.mkString(", ")}) have values that are hardware types, which is likely to cause subtle errors." +
