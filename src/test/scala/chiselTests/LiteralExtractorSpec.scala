@@ -63,8 +63,8 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
       def Lit(aVal: SInt, bVal: FixedPoint): InsideBundle = {
         val clone = cloneType
         clone.selfBind(BundleLitBinding(Map(
-          clone.x -> aVal.elementLitArg.get,
-          clone.y -> bVal.elementLitArg.get
+          clone.x -> litArgOfBits(aVal),
+          clone.y -> litArgOfBits(bVal)
         )))
         clone
       }
@@ -107,8 +107,8 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
       def Lit(aVal: UInt, bVal: Bool): MyBundle = {
         val clone = cloneType
         clone.selfBind(BundleLitBinding(Map(
-          clone.a -> aVal.elementLitArg.get,
-          clone.b -> bVal.elementLitArg.get
+          clone.a -> litArgOfBits(aVal),
+          clone.b -> litArgOfBits(bVal)
         )))
         clone
       }

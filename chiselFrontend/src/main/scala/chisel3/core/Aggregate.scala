@@ -64,6 +64,10 @@ sealed abstract class Aggregate extends Data {
 
   def litToBigIntOption: Option[BigInt] = ???  // TODO implement me
 
+  // Returns the LitArg of a Bits object.
+  // Internal API for Bundle literals, to copy the LitArg of argument literals into the top map.
+  protected def litArgOfBits(elt: Bits): LitArg = elt.litArgOption.get
+
   /** Returns a Seq of the immediate contents of this Aggregate, in order.
     */
   def getElements: Seq[Data]

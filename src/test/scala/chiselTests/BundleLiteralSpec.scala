@@ -21,8 +21,8 @@ class BundleLiteralSpec extends ChiselFlatSpec {
     def Lit(aVal: UInt, bVal: Bool): MyBundle = {
       val clone = cloneType
       clone.selfBind(BundleLitBinding(Map(
-        clone.a -> aVal.elementLitArg.get,
-        clone.b -> bVal.elementLitArg.get
+        clone.a -> litArgOfBits(aVal),
+        clone.b -> litArgOfBits(bVal)
       )))
       clone
     }
@@ -30,7 +30,7 @@ class BundleLiteralSpec extends ChiselFlatSpec {
     def Lit(aVal: UInt): MyBundle = {
       val clone = cloneType
       clone.selfBind(BundleLitBinding(Map(
-        clone.a -> aVal.elementLitArg.get
+        clone.a -> litArgOfBits(aVal)
       )))
       clone
     }
