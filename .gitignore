@@ -8,3 +8,6 @@ target/
 *.iml
 *.swp
 test_run_dir
+*~
+\#*\#
+.\#*
