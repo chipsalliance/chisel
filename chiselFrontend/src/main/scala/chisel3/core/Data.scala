@@ -250,14 +250,9 @@ abstract class Data extends HasId with NamedComponent {
     _binding = Some(target)
   }
 
-  private[core] def topBindingOpt: Option[TopBinding] = {
-    _binding match {
-      case Some(binding) => binding match {
-        case ChildBinding(parent) => parent.topBindingOpt
-        case binding: TopBinding => Some(binding)
-      }
-      case None => None
-    }
+  private[core] def topBindingOpt: Option[TopBinding] = _binding.map {
+    case ChildBinding(parent) => parent.topBinding
+    case bindingVal: TopBinding => bindingVal
   }
 
   private[core] def topBinding: TopBinding = topBindingOpt.get

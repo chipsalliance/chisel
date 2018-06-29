@@ -81,22 +81,15 @@ sealed abstract class Bits(width: Width)
     case topBindingOpt => topBindingOpt
   }
 
-  override def elementLitArg: Option[LitArg] = litArgOption
-
   protected def litArgOption: Option[LitArg] = topBindingOpt match {
     case Some(ElementLitBinding(litArg)) => Some(litArg)
     case _ => None
   }
 
-  override def litToBigIntOption: Option[BigInt] = litArgOption match {
-    case Some(litArg) => Some(litArg.num)
-    case _ => None
-  }
+  override def litToBigIntOption: Option[BigInt] = litArgOption.map(_.num)
+  private[chisel3] def litIsForcedWidth: Option[Boolean] = litArgOption.map(_.forcedWidth)
 
-  private[chisel3] def litIsForcedWidth: Option[Boolean] = litArgOption match {
-    case Some(litArg) => Some(litArg.forcedWidth)
-    case _ => None
-  }
+  override def elementLitArg: Option[LitArg] = litArgOption
 
   // provide bits-specific literal handling functionality here
   override private[chisel3] def ref: Arg = topBindingOpt match {
@@ -773,11 +766,10 @@ sealed class Bool() extends UInt(1.W) with Reset {
     new Bool().asInstanceOf[this.type]
   }
 
-  def litToBooleanOption: Option[Boolean] = litToBigIntOption match {
-    case Some(intVal) if intVal == 1 => Some(true)
-    case Some(intVal) if intVal == 0 => Some(false)
-    case Some(intVal) => throwException(s"Boolean with unexpected literal value $intVal")
-    case None => None
+  def litToBooleanOption: Option[Boolean] = litToBigIntOption.map {
+    case intVal if intVal == 1 => true
+    case intVal if intVal == 0 => false
+    case intVal => throwException(s"Boolean with unexpected literal value $intVal")
   }
 
   def litToBoolean: Boolean = litToBooleanOption.get
@@ -861,11 +853,9 @@ sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint)
     case _ => this badConnect that
   }
 
-  def litToDoubleOption: Option[Double] = litToBigIntOption match {
-    case Some(intVal) =>
-      val multiplier = math.pow(2, binaryPoint.get)
-      Some(intVal.toDouble / multiplier)
-    case _ => None
+  def litToDoubleOption: Option[Double] = litToBigIntOption.map { intVal =>
+    val multiplier = math.pow(2, binaryPoint.get)
+    intVal.toDouble / multiplier
   }
 
   def litToDouble: Double = litToDoubleOption.get
