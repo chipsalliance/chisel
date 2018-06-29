@@ -398,10 +398,6 @@ abstract class Data extends HasId with NamedComponent {
   @deprecated("isLit is deprecated, use litToBigIntOption or litTo*Option", "chisel3.2")
   def isLit(): Boolean = litArg.isDefined
 
-  // If this is an element literal, returns the LitArg bound to it.
-  // INTERNAL API, but this isn't protected to allow bundle literal constructors.
-  def elementLitArg: Option[LitArg] = None
-
   /**
    * If this is a literal that is representable as bits, returns the value as a BigInt.
    * If not a literal, or not representable as bits (for example, is or contains Analog), returns None.

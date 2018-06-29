@@ -81,15 +81,13 @@ sealed abstract class Bits(width: Width)
     case topBindingOpt => topBindingOpt
   }
 
-  protected def litArgOption: Option[LitArg] = topBindingOpt match {
+  private[core] def litArgOption: Option[LitArg] = topBindingOpt match {
     case Some(ElementLitBinding(litArg)) => Some(litArg)
     case _ => None
   }
 
   override def litToBigIntOption: Option[BigInt] = litArgOption.map(_.num)
-  private[chisel3] def litIsForcedWidth: Option[Boolean] = litArgOption.map(_.forcedWidth)
-
-  override def elementLitArg: Option[LitArg] = litArgOption
+  private[core] def litIsForcedWidth: Option[Boolean] = litArgOption.map(_.forcedWidth)
 
   // provide bits-specific literal handling functionality here
   override private[chisel3] def ref: Arg = topBindingOpt match {
