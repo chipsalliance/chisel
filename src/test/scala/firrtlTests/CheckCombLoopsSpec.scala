@@ -70,6 +70,21 @@ class CheckCombLoopsSpec extends SimpleTransformSpec {
     }
   }
 
+  "Single-element combinational loop" should "throw an exception" in {
+    val input = """circuit loop :
+                   |  module loop :
+                   |    output y : UInt<8>
+                   |    wire w : UInt<8>
+                   |    w <= w
+                   |    y <= w
+                   |""".stripMargin
+
+    val writer = new java.io.StringWriter
+    intercept[CheckCombLoops.CombLoopException] {
+      compile(CircuitState(parse(input), ChirrtlForm), writer)
+    }
+  }
+
   "Node combinational loop" should "throw an exception" in {
     val input = """circuit hasloops :
                    |  module hasloops :

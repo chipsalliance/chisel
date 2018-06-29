@@ -199,8 +199,12 @@ class CheckCombLoops extends Transform {
       val moduleGraph = DiGraph(internalDeps)
       moduleGraphs(m.name) = moduleGraph
       simplifiedModuleGraphs(m.name) = moduleGraphs(m.name).simplify((m.ports map { p => LogicNode(p.name) }).toSet)
-      for (scc <- moduleGraphs(m.name).findSCCs.filter(_.length > 1)) {
-        val sccSubgraph = moduleGraphs(m.name).subgraph(scc.toSet)
+      // Find combinational nodes with self-edges; this is *NOT* the same as length-1 SCCs!
+      for (unitLoopNode <- moduleGraph.getVertices.filter(v => moduleGraph.getEdges(v).contains(v))) {
+        errors.append(new CombLoopException(m.info, m.name, Seq(unitLoopNode.name)))
+      }
+      for (scc <- moduleGraph.findSCCs.filter(_.length > 1)) {
+        val sccSubgraph = moduleGraph.subgraph(scc.toSet)
         val cycle = findCycleInSCC(sccSubgraph)
         (cycle zip cycle.tail).foreach({ case (a,b) => require(moduleGraph.getEdges(a).contains(b)) })
         val expandedCycle = expandInstancePaths(m.name, moduleGraphs, moduleDeps, Seq(m.name), cycle.reverse)
