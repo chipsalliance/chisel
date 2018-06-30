@@ -71,7 +71,14 @@ final class WhenContext(sourceInfo: SourceInfo, cond: Option[() => Bool], block:
   if (firrtlDepth > 0) { pushCommand(AltBegin(sourceInfo)) }
   cond.foreach( c => pushCommand(WhenBegin(sourceInfo, c().ref)) )
   Builder.whenDepth += 1
-  block
+  try {
+    block
+  } catch {
+    case ret: scala.runtime.NonLocalReturnControl[_] =>
+      throwException("Cannot exit from a when() block with a \"return\"!" +
+        " Perhaps you meant to use Mux or a Wire as a return value?"
+      )
+  }
   Builder.whenDepth -= 1
   cond.foreach( c => pushCommand(WhenEnd(sourceInfo,firrtlDepth)) )
   if (cond.isEmpty) { pushCommand(OtherwiseEnd(sourceInfo,firrtlDepth)) }
