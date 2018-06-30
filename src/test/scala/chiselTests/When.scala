@@ -123,7 +123,6 @@ class WhenSpec extends ChiselFlatSpec {
           return io.bar
         }
         io.out := func()
-        println("Here!")
       })
     }
     e.getMessage should include ("Cannot exit from a \"when\" block with a \"return\"")
