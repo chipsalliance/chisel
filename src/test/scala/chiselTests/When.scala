@@ -118,6 +118,7 @@ class WhenSpec extends ChiselFlatSpec {
         })
         def func(): UInt = {
           when(io.cond) {
+            // This is bad, do not do this!!!
             return io.foo
           }
           return io.bar
