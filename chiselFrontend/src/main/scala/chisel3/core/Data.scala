@@ -385,29 +385,26 @@ abstract class Data extends HasId with NamedComponent {
   final def <> (that: Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = this.bulkConnect(that)(sourceInfo, connectionCompileOptions)
 
   @chiselRuntimeDeprecated
-  @deprecated("litArg is deprecated, use litToBigIntOption or litTo*Option", "chisel3.2")
+  @deprecated("litArg is deprecated, use litOption or litTo*Option", "chisel3.2")
   def litArg(): Option[LitArg] = topBindingOpt match {
     case Some(ElementLitBinding(litArg)) => Some(litArg)
     case Some(BundleLitBinding(litMap)) => None  // this API does not support Bundle literals
     case _ => None
   }
   @chiselRuntimeDeprecated
-  @deprecated("litValue deprecated, use litToBigInt or litTo*", "chisel3.2")
-  def litValue(): BigInt = litArg.get.num
-  @chiselRuntimeDeprecated
-  @deprecated("isLit is deprecated, use litToBigIntOption or litTo*Option", "chisel3.2")
+  @deprecated("isLit is deprecated, use litOption.isDefined", "chisel3.2")
   def isLit(): Boolean = litArg.isDefined
 
   /**
    * If this is a literal that is representable as bits, returns the value as a BigInt.
    * If not a literal, or not representable as bits (for example, is or contains Analog), returns None.
    */
-  def litToBigIntOption: Option[BigInt]
+  def litOption(): Option[BigInt]
 
   /**
    * Returns the literal value if this is a literal that is representable as bits, otherwise crashes.
    */
-  def litToBigInt: BigInt = litToBigIntOption.get
+  def litValue(): BigInt = litOption.get
 
   /** Returns the width, in bits, if currently known.
     * @throws java.util.NoSuchElementException if the width is not known. */
@@ -518,7 +515,7 @@ object DontCare extends Element(width = UnknownWidth()) {
   bind(DontCareBinding(), SpecifiedDirection.Output)
   override def cloneType = DontCare
 
-  override def litToBigIntOption = None
+  override def litOption = None
 
   def toPrintable: Printable = PString("DONTCARE")
 

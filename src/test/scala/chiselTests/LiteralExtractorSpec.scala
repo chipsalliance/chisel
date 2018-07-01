@@ -9,24 +9,24 @@ import chisel3.testers.BasicTester
 import org.scalatest._
 
 class LiteralExtractorSpec extends ChiselFlatSpec {
-  "litToBigInt" should "return the literal value" in {
-    assert(0.U.litToBigInt === BigInt(0))
-    assert(1.U.litToBigInt === BigInt(1))
-    assert(42.U.litToBigInt === BigInt(42))
-    assert(42.U.litToBigInt === 42.U.litToBigInt)
+  "litValue" should "return the literal value" in {
+    assert(0.U.litValue === BigInt(0))
+    assert(1.U.litValue === BigInt(1))
+    assert(42.U.litValue === BigInt(42))
+    assert(42.U.litValue === 42.U.litValue)
 
-    assert(0.S.litToBigInt === BigInt(0))
-    assert(-1.S.litToBigInt === BigInt(-1))
-    assert(-42.S.litToBigInt === BigInt(-42))
+    assert(0.S.litValue === BigInt(0))
+    assert(-1.S.litValue === BigInt(-1))
+    assert(-42.S.litValue === BigInt(-42))
 
-    assert(true.B.litToBigInt === BigInt(1))
-    assert(false.B.litToBigInt === BigInt(0))
+    assert(true.B.litValue === BigInt(1))
+    assert(false.B.litValue === BigInt(0))
 
-    assert(1.25.F(2.BP).litToBigInt === BigInt("101", 2))
-    assert(2.25.F(2.BP).litToBigInt === BigInt("1001", 2))
+    assert(1.25.F(2.BP).litValue === BigInt("101", 2))
+    assert(2.25.F(2.BP).litValue === BigInt("1001", 2))
 
-    assert(-1.25.F(2.BP).litToBigInt === BigInt("-101", 2))
-    assert(-2.25.F(2.BP).litToBigInt === BigInt("-1001", 2))
+    assert(-1.25.F(2.BP).litValue === BigInt("-101", 2))
+    assert(-2.25.F(2.BP).litValue === BigInt("-1001", 2))
   }
 
   "litToBoolean" should "return the literal value" in {
@@ -46,10 +46,10 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
     assert(1.25.F(1.BP).litToDouble == 1.5)
   }
 
-  "litToBigIntOption" should "return None for non-literal hardware" in {
+  "litOption" should "return None for non-literal hardware" in {
     elaborate { new RawModule {
       val a = Wire(UInt())
-      assert(a.litToBigIntOption == None)
+      assert(a.litOption == None)
     }}
   }
 
@@ -114,8 +114,8 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
       }
     }
     val myBundleLiteral = (new MyBundle).Lit(42.U, true.B)
-    assert(myBundleLiteral.a.litToBigInt == 42)
-    assert(myBundleLiteral.b.litToBigInt == 1)
+    assert(myBundleLiteral.a.litValue == 42)
+    assert(myBundleLiteral.b.litValue == 1)
     assert(myBundleLiteral.b.litToBoolean == true)
   }
 }

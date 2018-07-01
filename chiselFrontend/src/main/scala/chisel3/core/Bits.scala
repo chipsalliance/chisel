@@ -86,7 +86,7 @@ sealed abstract class Bits(width: Width)
     case _ => None
   }
 
-  override def litToBigIntOption: Option[BigInt] = litArgOption.map(_.num)
+  override def litOption: Option[BigInt] = litArgOption.map(_.num)
   private[core] def litIsForcedWidth: Option[Boolean] = litArgOption.map(_.forcedWidth)
 
   // provide bits-specific literal handling functionality here
@@ -764,7 +764,7 @@ sealed class Bool() extends UInt(1.W) with Reset {
     new Bool().asInstanceOf[this.type]
   }
 
-  def litToBooleanOption: Option[Boolean] = litToBigIntOption.map {
+  def litToBooleanOption: Option[Boolean] = litOption.map {
     case intVal if intVal == 1 => true
     case intVal if intVal == 0 => false
     case intVal => throwException(s"Boolean with unexpected literal value $intVal")
@@ -851,7 +851,7 @@ sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint)
     case _ => this badConnect that
   }
 
-  def litToDoubleOption: Option[Double] = litToBigIntOption.map { intVal =>
+  def litToDoubleOption: Option[Double] = litOption.map { intVal =>
     val multiplier = math.pow(2, binaryPoint.get)
     intVal.toDouble / multiplier
   }
@@ -1125,6 +1125,8 @@ final class Analog private (width: Width) extends Element(width) {
   private[core] override def typeEquivalent(that: Data): Boolean =
     that.isInstanceOf[Analog] && this.width == that.width
 
+  override def litOption = None
+
   def cloneType: this.type = new Analog(width).asInstanceOf[this.type]
 
   // Used to enforce single bulk connect of Analog types, multi-attach is still okay
@@ -1152,8 +1154,6 @@ final class Analog private (width: Width) extends Element(width) {
     }
     binding = target
   }
-
-  override def litToBigIntOption = None
 
   override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     throwException("Analog does not support asUInt")
