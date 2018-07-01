@@ -75,7 +75,7 @@ object BitPat {
     */
   def apply(x: UInt): BitPat = {
     val len = if (x.isWidthKnown) x.getWidth else 0
-    apply("b" + x.litToBigInt.toString(2).reverse.padTo(len, "0").reverse.mkString)
+    apply("b" + x.litValue.toString(2).reverse.padTo(len, "0").reverse.mkString)
   }
 }
 
