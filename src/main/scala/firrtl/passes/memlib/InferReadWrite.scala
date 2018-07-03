@@ -89,11 +89,12 @@ object InferReadWritePass extends Pass {
       val readwriters = collection.mutable.ArrayBuffer[String]()
       val namespace = Namespace(mem.readers ++ mem.writers ++ mem.readwriters)
       for (w <- mem.writers ; r <- mem.readers) {
-        val wp = getProductTerms(connects)(memPortField(mem, w, "en"))
-        val rp = getProductTerms(connects)(memPortField(mem, r, "en"))
+        val wenProductTerms = getProductTerms(connects)(memPortField(mem, w, "en"))
+        val renProductTerms = getProductTerms(connects)(memPortField(mem, r, "en"))
+        val proofOfMutualExclusion = wenProductTerms.find(a => renProductTerms exists (b => checkComplement(a, b)))
         val wclk = getOrigin(connects)(memPortField(mem, w, "clk"))
         val rclk = getOrigin(connects)(memPortField(mem, r, "clk"))
-        if (weq(wclk, rclk) && (wp exists (a => rp exists (b => checkComplement(a, b))))) {
+        if (weq(wclk, rclk) && proofOfMutualExclusion.nonEmpty) {
           val rw = namespace newName "rw"
           val rwExp = WSubField(WRef(mem.name), rw)
           readwriters += rw
@@ -104,10 +105,11 @@ object InferReadWritePass extends Pass {
           repl(memPortField(mem, r, "addr")) = EmptyExpression
           repl(memPortField(mem, r, "data")) = WSubField(rwExp, "rdata")
           repl(memPortField(mem, w, "clk"))  = EmptyExpression
-          repl(memPortField(mem, w, "en"))   = WSubField(rwExp, "wmode")
+          repl(memPortField(mem, w, "en"))   = EmptyExpression
           repl(memPortField(mem, w, "addr")) = EmptyExpression
           repl(memPortField(mem, w, "data")) = WSubField(rwExp, "wdata")
           repl(memPortField(mem, w, "mask")) = WSubField(rwExp, "wmask")
+          stmts += Connect(NoInfo, WSubField(rwExp, "wmode"), proofOfMutualExclusion.get)
           stmts += Connect(NoInfo, WSubField(rwExp, "clk"), wclk)
           stmts += Connect(NoInfo, WSubField(rwExp, "en"),
              DoPrim(Or, Seq(connects(memPortField(mem, r, "en")),

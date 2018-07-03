@@ -82,12 +82,10 @@ object RemoveCHIRRTL extends Transform {
       def set_enable(vec: Seq[MPort], en: String) = vec map (r =>
         Connect(sx.info, SubField(SubField(Reference(sx.name, ut), r.name, ut), en, BoolType), zero)
       )
-      def set_write(vec: Seq[MPort], data: String, mask: String) = vec flatMap {r =>
+      def set_write(vec: Seq[MPort], data: String, mask: String) = vec flatMap { r =>
         val tmask = createMask(sx.tpe)
-        IsInvalid(sx.info, SubField(SubField(Reference(sx.name, ut), r.name, ut), data, tdata)) +:
-             (create_exps(SubField(SubField(Reference(sx.name, ut), r.name, ut), mask, tmask))
-               map (Connect(sx.info, _, zero))
-             )
+        val portRef = SubField(Reference(sx.name, ut), r.name, ut)
+        Seq(IsInvalid(sx.info, SubField(portRef, data, tdata)), IsInvalid(sx.info, SubField(portRef, mask, tmask)))
       }
       val rds = (mports getOrElse (sx.name, EMPs)).readers
       val wrs = (mports getOrElse (sx.name, EMPs)).writers
@@ -109,12 +107,15 @@ object RemoveCHIRRTL extends Transform {
       val addrs = ArrayBuffer[String]()
       val clks = ArrayBuffer[String]()
       val ens = ArrayBuffer[String]()
+      val masks = ArrayBuffer.empty[Expression]
+      val portRef = SubField(Reference(sx.mem, ut), sx.name, ut)
       sx.direction match {
         case MReadWrite =>
-          refs(sx.name) = DataRef(SubField(Reference(sx.mem, ut), sx.name, ut), "rdata", "wdata", "wmask", rdwrite = true)
+          refs(sx.name) = DataRef(portRef, "rdata", "wdata", "wmask", rdwrite = true)
           addrs += "addr"
           clks += "clk"
           ens += "en"
+          masks ++= create_exps(SubField(portRef, "wmask", createMask(sx.tpe)))
           renames.rename(sx.name, s"${sx.mem}.${sx.name}.rdata")
           renames.rename(sx.name, s"${sx.mem}.${sx.name}.wdata")
           val es = create_all_exps(WRef(sx.name, sx.tpe))
@@ -124,10 +125,11 @@ object RemoveCHIRRTL extends Transform {
              case ((e, r), w) => renames.rename(e.serialize, Seq(r.serialize, w.serialize))
           }
         case MWrite =>
-          refs(sx.name) = DataRef(SubField(Reference(sx.mem, ut), sx.name, ut), "data", "data", "mask", rdwrite = false)
+          refs(sx.name) = DataRef(portRef, "data", "data", "mask", rdwrite = false)
           addrs += "addr"
           clks += "clk"
           ens += "en"
+          masks ++= create_exps(SubField(portRef, "mask", createMask(sx.tpe)))
           renames.rename(sx.name, s"${sx.mem}.${sx.name}.data")
           val es = create_all_exps(WRef(sx.name, sx.tpe))
           val ws = create_all_exps(WRef(s"${sx.mem}.${sx.name}.data", sx.tpe))
@@ -135,12 +137,12 @@ object RemoveCHIRRTL extends Transform {
             case (e, w) => renames.rename(e.serialize, w.serialize)
           }
         case MRead =>
-          refs(sx.name) = DataRef(SubField(Reference(sx.mem, ut), sx.name, ut), "data", "data", "blah", rdwrite = false)
+          refs(sx.name) = DataRef(portRef, "data", "data", "blah", rdwrite = false)
           addrs += "addr"
           clks += "clk"
           sx.exps.head match {
             case e: Reference if smems(sx.mem) =>
-              raddrs(e.name) = SubField(SubField(Reference(sx.mem, ut), sx.name, ut), "en", ut)
+              raddrs(e.name) = SubField(portRef, "en", ut)
             case _ => ens += "en"
           }
           renames.rename(sx.name, s"${sx.mem}.${sx.name}.data")
@@ -152,9 +154,11 @@ object RemoveCHIRRTL extends Transform {
         case MInfer => // do nothing if it's not being used
       }
       Block(
-        (addrs map (x => Connect(sx.info, SubField(SubField(Reference(sx.mem, ut), sx.name, ut), x, ut), sx.exps.head))) ++
-        (clks map (x => Connect(sx.info, SubField(SubField(Reference(sx.mem, ut), sx.name, ut), x, ut), sx.exps(1)))) ++
-        (ens map (x => Connect(sx.info,SubField(SubField(Reference(sx.mem,ut), sx.name, ut), x, ut), one))))
+        (addrs map (x => Connect(sx.info, SubField(portRef, x, ut), sx.exps.head))) ++
+        (clks map (x => Connect(sx.info, SubField(portRef, x, ut), sx.exps(1)))) ++
+        (ens map (x => Connect(sx.info,SubField(portRef, x, ut), one))) ++
+         masks.map(lhs => Connect(sx.info, lhs, zero))
+      )
     case sx => sx map collect_refs(mports, smems, types, refs, raddrs, renames)
   }
 

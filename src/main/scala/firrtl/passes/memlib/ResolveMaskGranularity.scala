@@ -65,7 +65,8 @@ object AnalysisUtils {
       if (nodeWidth == extractionWidth) getOrigin(connects)(args.head) else e
     case DoPrim((PrimOps.AsUInt | PrimOps.AsSInt | PrimOps.AsClock), args, _, _) => 
       getOrigin(connects)(args.head)
-    case ValidIf(cond, value, ClockType) => getOrigin(connects)(value)
+    // It is a correct optimization to treat ValidIf as a connection
+    case ValidIf(cond, value, _) => getOrigin(connects)(value)
     // note: this should stop on a reg, but will stack overflow for combinational loops (not allowed)
     case _: WRef | _: WSubField | _: WSubIndex | _: WSubAccess if kind(e) != RegKind =>
        connects get e.serialize match {

@@ -8,6 +8,7 @@ import firrtl.passes._
 import firrtl.transforms._
 import firrtl.passes.memlib._
 import annotations._
+import FirrtlCheckers._
 
 class ReplSeqMemSpec extends SimpleTransformSpec {
   def emitter = new LowFirrtlEmitter
@@ -66,7 +67,6 @@ circuit Top :
     val annos = Seq(ReplSeqMemAnnotation.parse("-c:Top:-o:"+confLoc))
     val res = compileAndEmit(CircuitState(parse(input), ChirrtlForm, annos))
     // Check correctness of firrtl
-    println(res.annotations)
     parse(res.getEmittedCircuit.value)
     (new java.io.File(confLoc)).delete()
   }
@@ -181,7 +181,8 @@ circuit Top :
       "asClock(a)" -> "a",
       "a" -> "a",
       "or(a, b)" -> "or(a, b)",
-      "bits(a, 0, 0)" -> "a"
+      "bits(a, 0, 0)" -> "a",
+      "validif(a, b)" -> "b"
     )
 
     tests foreach { case(hurdle, origin) => checkConnectOrigin(hurdle, origin) }
@@ -296,9 +297,88 @@ circuit CustomMemory :
     require(numExtMods == 1)
     (new java.io.File(confLoc)).delete()
   }
+
+  "ReplSeqMem" should "should not have a mask if there is none" in {
+    val input = """
+circuit CustomMemory :
+  module CustomMemory :
+    input clock : Clock
+    output io : { flip en : UInt<1>, out : UInt<8>[2], flip raddr : UInt<10>, flip waddr : UInt<10>, flip wdata : UInt<8>[2] }
+
+    smem mem : UInt<8>[2][1024]
+    read mport r = mem[io.raddr], clock
+    io.out <= r
+
+    when io.en :
+      write mport w = mem[io.waddr], clock
+      w <= io.wdata
+"""
+    val confLoc = "ReplSeqMemTests.confTEMP"
+    val annos = Seq(ReplSeqMemAnnotation.parse("-c:CustomMemory:-o:"+confLoc))
+    val res = compileAndEmit(CircuitState(parse(input), ChirrtlForm, annos))
+    res.getEmittedCircuit.value shouldNot include ("mask")
+    (new java.io.File(confLoc)).delete()
+  }
+
+  "ReplSeqMem" should "should not conjoin enable signal with mask condition" in {
+    val input = """
+circuit CustomMemory :
+  module CustomMemory :
+    input clock : Clock
+    output io : { flip en : UInt<1>, out : UInt<8>[2], flip raddr : UInt<10>, flip waddr : UInt<10>, flip wdata : UInt<8>[2], flip mask : UInt<8>[2] }
+
+    smem mem : UInt<8>[2][1024]
+    read mport r = mem[io.raddr], clock
+    io.out <= r
+
+    when io.en :
+      write mport w = mem[io.waddr], clock
+      when io.mask[0] :
+        w[0] <= io.wdata[0]
+      when io.mask[1] :
+        w[1] <= io.wdata[1]
+"""
+    val confLoc = "ReplSeqMemTests.confTEMP"
+    val annos = Seq(ReplSeqMemAnnotation.parse("-c:CustomMemory:-o:"+confLoc))
+    val res = compileAndEmit(CircuitState(parse(input), ChirrtlForm, annos))
+    // TODO Until RemoveCHIRRTL is removed, enable will still drive validif for mask
+    res should containLine ("mem.W0_mask_0 <= validif(io_en, io_mask_0)")
+    res should containLine ("mem.W0_mask_1 <= validif(io_en, io_mask_1)")
+    (new java.io.File(confLoc)).delete()
+  }
+
+  "ReplSeqMem" should "should not conjoin enable signal with wmask condition (RW Port)" in {
+    val input = """
+circuit CustomMemory :
+  module CustomMemory :
+    input clock : Clock
+    output io : { flip en : UInt<1>, out : UInt<8>[2], flip raddr : UInt<10>, flip waddr : UInt<10>, flip wdata : UInt<8>[2], flip mask : UInt<8>[2] }
+
+    io.out is invalid
+
+    smem mem : UInt<8>[2][1024]
+
+    when io.en :
+      write mport w = mem[io.waddr], clock
+      when io.mask[0] :
+        w[0] <= io.wdata[0]
+      when io.mask[1] :
+        w[1] <= io.wdata[1]
+    when not(io.en) :
+      read mport r = mem[io.raddr], clock
+      io.out <= r
+
+"""
+    val confLoc = "ReplSeqMemTests.confTEMP"
+    val annos = Seq(ReplSeqMemAnnotation.parse("-c:CustomMemory:-o:"+confLoc),
+                    InferReadWriteAnnotation)
+    val res = compileAndEmit(CircuitState(parse(input), ChirrtlForm, annos))
+    // TODO Until RemoveCHIRRTL is removed, enable will still drive validif for mask
+    res should containLine ("mem.RW0_wmask_0 <= validif(io_en, io_mask_0)")
+    res should containLine ("mem.RW0_wmask_1 <= validif(io_en, io_mask_1)")
+    (new java.io.File(confLoc)).delete()
+  }
 }
 
 // TODO: make more checks
-// readwrite vs. no readwrite
-// mask + no mask
 // conf
