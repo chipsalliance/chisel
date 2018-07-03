@@ -72,7 +72,11 @@ abstract class UserModule(implicit moduleCompileOptions: CompileOptions)
     for (id <- getIds) {
       id match {
         case id: BaseModule => id.forceName(default=id.desiredName, _namespace)
-        case id => id.forceName(default="_T", _namespace)
+        case id: Data => id.topBinding match {
+          case OpBinding(_) | MemoryPortBinding(_) | PortBinding(_) | RegBinding(_) | WireBinding(_) =>
+            id.forceName(default="_T", _namespace)
+          case _ =>
+        }
       }
       id._onModuleClose
     }
@@ -156,11 +160,11 @@ abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions)
   @chiselRuntimeDeprecated
   @deprecated("Module constructor with override _clock deprecated, use withClock", "chisel3")
   def this(_clock: Clock)(implicit moduleCompileOptions: CompileOptions) = this(Option(_clock), None)(moduleCompileOptions)
-  
+
   @chiselRuntimeDeprecated
   @deprecated("Module constructor with override _reset deprecated, use withReset", "chisel3")
   def this(_reset: Bool)(implicit moduleCompileOptions: CompileOptions)  = this(None, Option(_reset))(moduleCompileOptions)
-  
+
   @chiselRuntimeDeprecated
   @deprecated("Module constructor with override _clock, _reset deprecated, use withClockAndReset", "chisel3")
   def this(_clock: Clock, _reset: Bool)(implicit moduleCompileOptions: CompileOptions) = this(Option(_clock), Option(_reset))(moduleCompileOptions)

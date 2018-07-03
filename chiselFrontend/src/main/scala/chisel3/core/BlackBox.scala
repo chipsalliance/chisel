@@ -70,7 +70,6 @@ abstract class ExtModule(val params: Map[String, Param] = Map.empty[String, Para
     // While BlackBoxes are not supposed to have an implementation, we still need to call
     // _onModuleClose on all nodes (for example, Aggregates use it for recursive naming).
     for (id <- getIds) {
-      id.forceName(default="_T", _namespace)
       id._onModuleClose
     }
 
@@ -155,7 +154,6 @@ abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param
     // Doing so would cause the wrong names to be assigned, since their parent
     // is now the module itself instead of the io bundle.
     for (id <- getIds; if id ne io) {
-      id.forceName(default="_T", _namespace)
       id._onModuleClose
     }
 
