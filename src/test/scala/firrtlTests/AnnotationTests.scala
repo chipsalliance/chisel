@@ -420,6 +420,40 @@ abstract class AnnotationTests extends AnnotationSpec with Matchers {
     val y = AnnotationUtils.toNamed(x.serialize)
     require(x == y)
   }
+
+  "Annotations on empty aggregates" should "be deleted" in {
+    val compiler = new VerilogCompiler
+    val input =
+     """circuit Top :
+        |  module Top :
+        |    input x : { foo : UInt<8>, bar : {}, fizz : UInt<8>[0], buzz : UInt<0> }
+        |    output y : { foo : UInt<8>, bar : {}, fizz : UInt<8>[0], buzz : UInt<0> }
+        |    output a : {}
+        |    output b : UInt<8>[0]
+        |    y <= x
+        |""".stripMargin
+    val annos = Seq(
+      anno("x"), anno("y.bar"), anno("y.fizz"), anno("y.buzz"), anno("a"), anno("b")
+    )
+    val result = compiler.compile(CircuitState(parse(input), ChirrtlForm, annos), Nil)
+    val resultAnno = result.annotations.toSeq
+    resultAnno should contain (anno("x_foo"))
+    resultAnno should not contain (anno("a"))
+    resultAnno should not contain (anno("b"))
+    // Check both with and without dots because both are wrong
+    resultAnno should not contain (anno("y.bar"))
+    resultAnno should not contain (anno("y.fizz"))
+    resultAnno should not contain (anno("y.buzz"))
+    resultAnno should not contain (anno("x.bar"))
+    resultAnno should not contain (anno("x.fizz"))
+    resultAnno should not contain (anno("x.buzz"))
+    resultAnno should not contain (anno("y_bar"))
+    resultAnno should not contain (anno("y_fizz"))
+    resultAnno should not contain (anno("y_buzz"))
+    resultAnno should not contain (anno("x_bar"))
+    resultAnno should not contain (anno("x_fizz"))
+    resultAnno should not contain (anno("x_buzz"))
+  }
 }
 
 class LegacyAnnotationTests extends AnnotationTests {
@@ -464,6 +498,7 @@ class LegacyAnnotationTests extends AnnotationTests {
     }
     thrown.getMessage should include ("Illegal circuit name")
   }
+
 }
 
 class JsonAnnotationTests extends AnnotationTests with BackendCompilationUtilities {
