@@ -94,7 +94,7 @@ sealed abstract class Bits(width: Width)
     case Some(ElementLitBinding(litArg)) => litArg
     case Some(BundleLitBinding(litMap)) => litMap.get(this) match {
       case Some(litArg) => litArg
-      case _ => throwException(s"internal error: DontCare should be caught before connect")
+      case _ => throwException(s"internal error: DontCare should be caught before getting ref")
     }
     case _ => super.ref
   }
