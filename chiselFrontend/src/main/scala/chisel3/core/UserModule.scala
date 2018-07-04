@@ -72,11 +72,13 @@ abstract class UserModule(implicit moduleCompileOptions: CompileOptions)
     for (id <- getIds) {
       id match {
         case id: BaseModule => id.forceName(default=id.desiredName, _namespace)
-        case id: Data => id.topBinding match {
+        case id: MemBase[_] => id.forceName(default="_T", _namespace)
+        case id: Data if id.topBindingOpt.isDefined => id.topBinding match {
           case OpBinding(_) | MemoryPortBinding(_) | PortBinding(_) | RegBinding(_) | WireBinding(_) =>
             id.forceName(default="_T", _namespace)
-          case _ =>
+          case _ =>  // don't name literals
         }
+        case id: Data if id.topBindingOpt.isEmpty =>  // don't name unbound types
       }
       id._onModuleClose
     }
