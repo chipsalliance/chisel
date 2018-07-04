@@ -8,10 +8,8 @@ import chisel3.testers.BasicTester
 
 /* Printable Tests */
 class PrintableSpec extends FlatSpec with Matchers {
-  private val PrintfRegex = """\s*printf\((.*)\).*""".r
-  // This regex is brittle, it relies on the first two arguments of the printf
-  // not containing quotes, problematic if Chisel were to emit UInt<1>("h01")
-  // instead of the current UInt<1>(1) for the enable signal
+  // This regex is brittle, it specifically finds the clock and enable signals followed by commas
+  private val PrintfRegex = """\s*printf\(\w+, [^,]+,(.*)\).*""".r
   private val StringRegex = """([^"]*)"(.*?)"(.*)""".r
   private case class Printf(str: String, args: Seq[String])
   private def getPrintfs(firrtl: String): Seq[Printf] = {
