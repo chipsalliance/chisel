@@ -8,7 +8,7 @@ MILL ?= $(MILL_BIN) --color false
 # Fetch mill (if we don't have it).
 $(MILL_BIN):
 	$(MKDIR) $(dir $@)
-	$(CURL) -o $@ https://github.com/ucbjrl/mill/releases/download/v0.2.0-FDF/mill-0.2.0-FDF && chmod +x $@
+	$(CURL) -o $@ https://github.com/ucbjrl/mill/releases/download/v0.2.3-FDF/mill-0.2.3-FDF && chmod +x $@
 
 mill-tools:	$(MILL_BIN)
 
