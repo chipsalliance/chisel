@@ -10,8 +10,9 @@ import chisel3.internal.chiselRuntimeDeprecated
 
 /** Compute the log2 rounded up with min value of 1 */
 object log2Up {
-  @chiselRuntimeDeprecated
-  @deprecated("Use log2Ceil instead", "chisel3")
+  // Do not deprecate until zero-width wires fully work
+  //@chiselRuntimeDeprecated
+  //@deprecated("Use log2Ceil instead", "chisel3")
   def apply(in: BigInt): Int = Chisel.log2Up(in)
 }
 
@@ -26,8 +27,9 @@ object log2Ceil {
 
 /** Compute the log2 rounded down with min value of 1 */
 object log2Down {
-  @chiselRuntimeDeprecated
-  @deprecated("Use log2Floor instead", "chisel3")
+  // Do not deprecate until zero-width wires fully work
+  //@chiselRuntimeDeprecated
+  //@deprecated("Use log2Floor instead", "chisel3")
   def apply(in: BigInt): Int = Chisel.log2Down(in)
 }
 
