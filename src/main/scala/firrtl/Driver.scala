@@ -14,7 +14,7 @@ import logger.Logger
 import Parser.{IgnoreInfo, InfoMode}
 import annotations._
 import firrtl.annotations.AnnotationYamlProtocol._
-import firrtl.passes.PassException
+import firrtl.passes.{PassException, PassExceptions}
 import firrtl.transforms._
 import firrtl.Utils.throwInternalError
 
@@ -244,8 +244,9 @@ object Driver {
       catch {
         // Rethrow the exceptions which are expected or due to the runtime environment (out of memory, stack overflow)
         case p: ControlThrowable => throw p
-        case p: PassException  => throw p
-        case p: FIRRTLException => throw p
+        case p: PassException    => throw p
+        case p: PassExceptions   => throw p
+        case p: FIRRTLException  => throw p
         // Treat remaining exceptions as internal errors.
         case e: Exception => throwInternalError(exception = Some(e))
       }
