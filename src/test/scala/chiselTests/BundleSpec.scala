@@ -25,6 +25,11 @@ trait BundleSpecUtils {
     override def cloneType = (new BundleBar).asInstanceOf[this.type]
   }
 
+  class BadSeqBundle extends Bundle {
+    val bar = Seq(UInt(16.W), UInt(8.W), UInt(4.W))
+    override def cloneType = (new BadSeqBundle).asInstanceOf[this.type]
+  }
+
   class MyModule(output: Bundle, input: Bundle) extends Module {
     val io = IO(new Bundle {
       val in = Input(input)
@@ -67,5 +72,48 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils {
     (the [ChiselException] thrownBy {
       elaborate { new MyModule(new BundleFoo, new BundleFooBar) }
     }).getMessage should include ("Left Record missing field")
+  }
+
+  "Bundles" should "not be able to use Seq for constructing hardware" in {
+    (the[ChiselException] thrownBy {
+      elaborate {
+        new Module {
+          val io = IO(new Bundle {
+            val b = new BadSeqBundle
+          })
+        }
+      }
+    }).getMessage should include("Public Seq members cannot be used to define Bundle elements")
+  }
+
+  "Bundles" should "be allowed to have Seq if need be" in {
+    assertTesterPasses {
+      new BasicTester {
+        val m = Module(new Module {
+          val io = IO(new Bundle {
+            val b = new BadSeqBundle {
+              override def ignoreSeq = true
+            }
+          })
+        })
+        stop()
+      }
+    }
+  }
+
+  "Bundles" should "be allowed to have non-Chisel Seqs" in {
+    assertTesterPasses {
+      new BasicTester {
+        val m = Module(new Module {
+          val io = IO(new Bundle {
+            val f = Output(UInt(8.W))
+            val unrelated = (0 to 10).toSeq
+            val unrelated2 = Seq("Hello", "World", "Chisel")
+          })
+          io.f := 0.U
+        })
+        stop()
+      }
+    }
   }
 }
