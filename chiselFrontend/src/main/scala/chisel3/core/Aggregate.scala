@@ -539,17 +539,39 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     val nameMap = LinkedHashMap[String, Data]()
     val seen = HashSet[Data]()
     for (m <- getPublicFields(classOf[Bundle])) {
-      getBundleField(m) foreach { d =>
-        if (nameMap contains m.getName) {
-          require(nameMap(m.getName) eq d)
-        } else if (!seen(d)) {
-          nameMap(m.getName) = d
-          seen += d
-        }
+      getBundleField(m) match {
+        case Some(d: Data) =>
+          if (nameMap contains m.getName) {
+            require(nameMap(m.getName) eq d)
+          } else if (!seen(d)) {
+            nameMap(m.getName) = d
+            seen += d
+          }
+        case None =>
+          if (!ignoreSeq) {
+            m.invoke(this) match {
+              case s: scala.collection.Seq[Any] if s.nonEmpty => s.head match {
+                // Ignore empty Seq()
+                case d: Data => throwException("Public Seq members cannot be used to define Bundle elements " +
+                  s"(found public Seq member '${m.getName}'). " +
+                  "Either use a Vec() if all elements are of the same type, or HeterogeneousVec() if the elements " +
+                  "are of different types. If this Seq member is not intended to construct RTL, override ignoreSeq " +
+                  "to be true.")
+                case _ => // don't care about non-Data Seq
+              }
+              case _ => // not a Seq
+            }
+          }
       }
     }
     ListMap(nameMap.toSeq sortWith { case ((an, a), (bn, b)) => (a._id > b._id) || ((a eq b) && (an > bn)) }: _*)
   }
+
+  /**
+    * Override this to be true to avoid raising an error/exception when a Seq is a public member of the bundle.
+    * This is useful if you have public Seq fields in the Bundle that are unrelated to hardware construction.
+    */
+  def ignoreSeq: Boolean = false
 
   /** Returns a field's contained user-defined Bundle element if it appears to
     * be one, otherwise returns None.
