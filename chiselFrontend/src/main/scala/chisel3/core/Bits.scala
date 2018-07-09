@@ -592,8 +592,7 @@ trait UIntFactory {
     val lit = ULit(value, width)
     val result = new UInt(lit.width)
     // Bind result to being an Literal
-    result.bind(ElementLitBinding(lit))
-    result
+    lit.bindLitArg(result)
   }
 
   /** Create a UInt with the specified range */
@@ -745,8 +744,7 @@ trait SIntFactory {
   protected[chisel3] def Lit(value: BigInt, width: Width): SInt = {
     val lit = SLit(value, width)
     val result = new SInt(lit.width)
-    result.bind(ElementLitBinding(lit))
-    result
+    lit.bindLitArg(result)
   }
 }
 
@@ -816,8 +814,9 @@ trait BoolFactory {
    */
   protected[chisel3] def Lit(x: Boolean): Bool = {
     val result = new Bool()
-    result.bind(ElementLitBinding(ULit(if (x) 1 else 0, Width(1))))
-    result
+    val lit = ULit(if (x) 1 else 0, Width(1))
+    // Ensure we have something capable of generating a name.
+    lit.bindLitArg(result)
   }
 }
 
@@ -1074,8 +1073,8 @@ object FixedPoint {
   def apply(value: BigInt, width: Width, binaryPoint: BinaryPoint): FixedPoint = {
     val lit = FPLit(value, width, binaryPoint)
     val newLiteral = new FixedPoint(lit.width, lit.binaryPoint)
-    newLiteral.bind(ElementLitBinding(lit))
-    newLiteral
+    // Ensure we have something capable of generating a name.
+    lit.bindLitArg(newLiteral)
   }
 
   /**
