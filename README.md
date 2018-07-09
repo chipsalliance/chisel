@@ -43,7 +43,7 @@ This will walk you through installing Chisel and its dependencies:
     sudo apt-get install sbt
     ```
 1. Install Verilator.
-    We currently recommend Verilator version 3.904.
+    We currently recommend Verilator version 3.922.
     Follow these instructions to compile it from source.
     
     1. Install prerequisites (if not installed already):
@@ -59,7 +59,7 @@ This will walk you through installing Chisel and its dependencies:
     3. In the Verilator repository directory, check out a known good version:
         ```
         git pull
-        git checkout verilator_3_904
+        git checkout verilator_3_922
         ```
 
     4. In the Verilator repository directory, build and install:
