@@ -41,13 +41,13 @@ object InferWidths extends Pass {
       case wx => wx
     }
     def collectMinMax(w: Width): Width = w map collectMinMax match {
-      case MinWidth(args) => MinWidth(unique((args.foldLeft(Seq[Width]())) {
-        case (res, wxx: MinWidth) => res ++ wxx.args
-        case (res, wxx) => res :+ wxx
+      case MinWidth(args) => MinWidth(unique(args.foldLeft(List[Width]()) {
+        case (res, wxx: MinWidth) => wxx.args ++: res
+        case (res, wxx) => wxx +: res
       }))
-      case MaxWidth(args) => MaxWidth(unique((args.foldLeft(Seq[Width]())) {
-        case (res, wxx: MaxWidth) => res ++ wxx.args
-        case (res, wxx) => res :+ wxx
+      case MaxWidth(args) => MaxWidth(unique(args.foldLeft(List[Width]()) {
+        case (res, wxx: MaxWidth) => wxx.args ++: res
+        case (res, wxx) => wxx +: res
       }))
       case wx => wx
     }
