@@ -24,6 +24,14 @@ object CheckCombLoops {
 
 case object DontCheckCombLoopsAnnotation extends NoTargetAnnotation
 
+case class CombinationalPath(sink: ComponentName, sources: Seq[ComponentName]) extends Annotation {
+  override def update(renames: RenameMap): Seq[Annotation] = {
+    val newSources = sources.flatMap { s => renames.get(s).getOrElse(Seq(s)) }
+    val newSinks = renames.get(sink).getOrElse(Seq(sink))
+    newSinks.map(snk => CombinationalPath(snk, newSources))
+  }
+}
+
 /** Finds and detects combinational logic loops in a circuit, if any
   * exist. Returns the input circuit with no modifications.
   * 
@@ -181,7 +189,7 @@ class CheckCombLoops extends Transform {
    * and only if it combinationally depends on input Y. Associate this
    * reduced graph with the module for future use.
    */
-  private def run(c: Circuit): Circuit = {
+  private def run(c: Circuit): (Circuit, Seq[Annotation]) = {
     val errors = new Errors()
     /* TODO(magyar): deal with exmodules! No pass warnings currently
      *  exist. Maybe warn when iterating through modules.
@@ -211,8 +219,14 @@ class CheckCombLoops extends Transform {
         errors.append(new CombLoopException(m.info, m.name, expandedCycle))
       }
     }
+    val mn = ModuleName(c.main, CircuitName(c.main))
+    val annos = simplifiedModuleGraphs(c.main).getEdgeMap.collect { case (from, tos) if tos.nonEmpty =>
+      val sink = ComponentName(from.name, mn)
+      val sources = tos.map(x => ComponentName(x.name, mn))
+      CombinationalPath(sink, sources.toSeq)
+    }
     errors.trigger()
-    c
+    (c, annos.toSeq)
   }
 
   def execute(state: CircuitState): CircuitState = {
@@ -221,8 +235,8 @@ class CheckCombLoops extends Transform {
       logger.warn("Skipping Combinational Loop Detection")
       state
     } else {
-      val result = run(state.circuit)
-      CircuitState(result, outputForm, state.annotations, state.renames)
+      val (result, annos) = run(state.circuit)
+      CircuitState(result, outputForm, state.annotations ++ annos, state.renames)
     }
   }
 }

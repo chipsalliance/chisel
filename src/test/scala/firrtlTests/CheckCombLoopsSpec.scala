@@ -189,6 +189,35 @@ class CheckCombLoopsSpec extends SimpleTransformSpec {
       compile(CircuitState(parse(input), ChirrtlForm), writer)
     }
   }
+
+  "Circuit" should "create an annotation" in {
+    val input = """circuit hasnoloops :
+                  |  module thru :
+                  |    input in1 : UInt<1>
+                  |    input in2 : UInt<1>
+                  |    output out1 : UInt<1>
+                  |    output out2 : UInt<1>
+                  |    out1 <= in1
+                  |    out2 <= in2
+                  |  module hasnoloops :
+                  |    input clk : Clock
+                  |    input a : UInt<1>
+                  |    output b : UInt<1>
+                  |    wire x : UInt<1>
+                  |    inst inner of thru
+                  |    inner.in1 <= a
+                  |    x <= inner.out1
+                  |    inner.in2 <= x
+                  |    b <= inner.out2
+                  |""".stripMargin
+
+    val writer = new java.io.StringWriter
+    val cs = compile(CircuitState(parse(input), ChirrtlForm), writer)
+    val mn = ModuleName("hasnoloops", CircuitName("hasnoloops"))
+    cs.annotations.collect {
+      case c @ CombinationalPath(ComponentName("b", `mn`), Seq(ComponentName("a", `mn`))) => c
+    }.nonEmpty should be (true)
+  }
 }
 
 class CheckCombLoopsCommandLineSpec extends FirrtlFlatSpec {
