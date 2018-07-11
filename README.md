@@ -1,20 +1,20 @@
-# Chisel3
+# Chisel 3
 
 [![Join the chat at https://gitter.im/freechipsproject/chisel3](https://badges.gitter.im/freechipsproject/chisel3.svg)](https://gitter.im/freechipsproject/chisel3?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 Chisel is a new hardware construction language to support advanced hardware design and circuit generation.
-The latest version of [Chisel](https://chisel.eecs.berkeley.edu/) is Chisel3,
+The latest iteration of [Chisel](https://chisel.eecs.berkeley.edu/) is Chisel3,
 which uses Firrtl as an intermediate hardware representation language.
 
-Chisel3 releases are available as jars on Sonatype/Nexus/Maven and as tagged branches in the [Chisel3 repository](https://github.com/freechipsproject/chisel3/releases).
-The current Chisel3 release is 3.0.1
+Chisel3 releases are available as jars on Sonatype/Nexus/Maven and as tagged branches on the [releases tab](https://github.com/freechipsproject/chisel3/releases) of this repository.
+The latest release is 3.1.1.
 
-Please visit the [Wiki](https://github.com/ucb-bar/chisel3/wiki) for a more detailed description of Chisel3.
+Please visit the [Wiki](https://github.com/ucb-bar/chisel3/wiki) for documentation!
 
-The ScalaDoc for Chisel3 is available at the [API tab on the Chisel web site.](https://chisel.eecs.berkeley.edu/api/)
+The ScalaDoc for Chisel3 is available at the [API tab on the Chisel web site.](https://chisel.eecs.berkeley.edu/api/latest/index.html)
 
 ## Overview
-Chisel3 is much more modular than Chisel2, and the compilation pipeline looks like:
+The standard Chisel3 compilation pipeline looks like:
 - Chisel3 (Scala) to Firrtl (this is your "Chisel RTL").
 - [Firrtl](https://github.com/ucb-bar/firrtl) to Verilog (which can then be passed into FPGA or ASIC tools).
 - Verilog to C++ for simulation and testing using [Verilator](http://www.veripool.org/wiki/verilator).
@@ -23,8 +23,8 @@ Chisel3 is much more modular than Chisel2, and the compilation pipeline looks li
 This will walk you through installing Chisel and its dependencies:
 - [sbt](http://www.scala-sbt.org/), which is the preferred Scala build system and what Chisel uses.
 - [Firrtl](https://github.com/ucb-bar/firrtl), which compiles Chisel's IR down to Verilog.
-  If you're building from a release branch of chisel3, separate installation of Firrtl is no longer required: the required jar will be automatically downloaded by sbt.
-  If you're building chisel3 from the master branch, you'll need to follow the directions on the [firrtl project](https://github.com/ucb-bar/firrtl) to publish a local copy of the required jar.
+  If you're building from a release branch of Chisel3, separate installation of Firrtl is no longer required: the required jar will be automatically downloaded by sbt.
+  If you're building chisel3 from the master branch, you'll need to follow the directions on the [Firrtl repository](https://github.com/ucb-bar/firrtl) to publish a local copy of the required jar.
 - [Verilator](http://www.veripool.org/wiki/verilator), which compiles Verilog down to C++ for simulation.
   The included unit testing infrastructure uses this.
 
@@ -150,7 +150,7 @@ where `MyTestModule` is your top-level test circuit that extends
 ## For Chisel Developers
 This section describes how to get started developing Chisel itself, including
 how to test your version locally against other projects that pull in Chisel
-using [sbt's managed dependencies](http://www.scala-sbt.org/0.13/tutorial/Library-Dependencies.html).
+using [sbt's managed dependencies](https://www.scala-sbt.org/1.x/docs/Library-Dependencies.html).
 
 ### Compiling and Testing Chisel
 In the Chisel repository directory, run:
@@ -166,23 +166,23 @@ sbt test
 ### Running Projects Against Local Chisel
 Chisel3 is still undergoing rapid development and we haven't pusblished a
 stable version to the Nexus repository.
-You will need to build from source and `publish-local`.
+You will need to build from source and `publishLocal`.
 The repo version can be found in the build.sbt file.
 At last check it was:
 
-    version := "3.1-SNAPSHOT",
+    version := "3.2-SNAPSHOT",
 
 To publish your version of Chisel to the local Ivy (sbt's dependency manager)
 repository, run:
 ```
-sbt publish-local
+sbt publishLocal
 ```
 
 *PROTIP*: sbt can automatically run commands on a source change if you prefix
 the command with `~`. For example, the above command to publish Chisel locally
-becomes `sbt ~publish-local`.
+becomes `sbt ~publishLocal`.
 
-[sbt's manual](http://www.scala-sbt.org/0.13/docs/Publishing.html#Publishing+Locally)
+[sbt's manual](https://www.scala-sbt.org/1.x/docs/Publishing.html#Publishing+Locally)
 recommends that you use a `SNAPSHOT` version suffix to ensure that the local
 repository is checked for updates. Since the current default is a `SNAPSHOT`,
 and the version number is already incremented compared to the currently
@@ -194,7 +194,7 @@ subfolder to un-publish your local copy of Chisel.
 In order to have your projects use this version of Chisel, you should update
 the libraryDependencies setting in your project's build.sbt file to:
 ```
-libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.1-SNAPSHOT"
+libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.2-SNAPSHOT"
 ```
 
 The version specifier in libraryDependencies in the project's build.sbt should
@@ -206,22 +206,22 @@ match the version string in your local copy of Chisel's build.sbt.
 
 The Chisel3 compiler consists of these main parts:
 
-- **The frontend**, `chisel.*`, which is the publicly visible "API" of Chisel
+- **The frontend**, `chisel3.*`, which is the publicly visible "API" of Chisel
   and what is used in Chisel RTL. These just add data to the...
-- **The Builder**, `chisel.internal.Builder`, which maintains global state
+- **The Builder**, `chisel3.internal.Builder`, which maintains global state
   (like the currently open Module) and contains commands, generating...
-- **The intermediate data structures**, `chisel.firrtl.*`, which are
+- **The intermediate data structures**, `chisel3.firrtl.*`, which are
   syntactically very similar to Firrtl. Once the entire circuit has been
   elaborated, the top-level object (a `Circuit`) is then passed to...
-- **The Firrtl emitter**, `chisel.firrtl.Emitter`, which turns the
+- **The Firrtl emitter**, `chisel3.firrtl.Emitter`, which turns the
   intermediate data structures into a string that can be written out into a
   Firrtl file for further processing.
 
 Also included is:
-- **The standard library** of circuit generators, `chisel.util.*`. These
+- **The standard library** of circuit generators, `chisel3.util.*`. These
   contain commonly used interfaces and constructors (like `Decoupled`, which
   wraps a signal with a ready-valid pair) as well as fully parameterizable
   circuit generators (like arbiters and muxes).
-- **Driver utilities**, `chisel.Driver`, which contains compilation and test
+- **Driver utilities**, `chisel3.Driver`, which contains compilation and test
   functions that are invoked in the standard Verilog generation and simulation
   testing infrastructure. These can also be used as part of custom flows.
