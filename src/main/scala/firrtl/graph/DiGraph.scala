@@ -263,7 +263,7 @@ class DiGraph[T] private[graph] (private[graph] val edges: LinkedHashMap[T, Link
     * @param start the node to start at
     * @return a Map[T,Seq[Seq[T]]] where the value associated with v is the Seq of all paths from start to v
     */
-  def pathsInDAG(start: T): Map[T,Seq[Seq[T]]] = {
+  def pathsInDAG(start: T): LinkedHashMap[T,Seq[Seq[T]]] = {
     // paths(v) holds the set of paths from start to v
     val paths = new LinkedHashMap[T, mutable.Set[Seq[T]]]
     val queue = new mutable.Queue[T]

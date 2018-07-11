@@ -19,20 +19,19 @@ import firrtl.Mappers._
 class InstanceGraph(c: Circuit) {
 
   val moduleMap = c.modules.map({m => (m.name,m) }).toMap
-  private val instantiated = new mutable.HashSet[String]
+  private val instantiated = new mutable.LinkedHashSet[String]
   private val childInstances =
-    new mutable.HashMap[String,mutable.Set[WDefInstance]]
+    new mutable.LinkedHashMap[String, mutable.LinkedHashSet[WDefInstance]]
   for (m <- c.modules) {
-    childInstances(m.name) = new mutable.HashSet[WDefInstance]
+    childInstances(m.name) = new mutable.LinkedHashSet[WDefInstance]
     m map InstanceGraph.collectInstances(childInstances(m.name))
     instantiated ++= childInstances(m.name).map(i => i.module)
   }
 
-  private val uninstantiated = moduleMap.keySet -- instantiated
   private val instanceGraph = new MutableDiGraph[WDefInstance]
   private val instanceQueue = new mutable.Queue[WDefInstance]
 
-  uninstantiated.foreach({ subTop =>
+  for (subTop <- c.modules.view.map(_.name).filterNot(instantiated)) {
     val topInstance = WDefInstance(subTop,subTop)
     instanceQueue.enqueue(topInstance)
     while (instanceQueue.nonEmpty) {
@@ -46,7 +45,7 @@ class InstanceGraph(c: Circuit) {
         instanceGraph.addEdge(current,child)
       }
     }
-  })
+  }
 
   // The true top module (circuit main)
   private val trueTopInstance = WDefInstance(c.main, c.main)
@@ -61,7 +60,7 @@ class InstanceGraph(c: Circuit) {
   /** A list of absolute paths (each represented by a Seq of instances)
     * of all module instances in the Circuit.
     */
-  lazy val fullHierarchy: collection.Map[WDefInstance,Seq[Seq[WDefInstance]]] = graph.pathsInDAG(trueTopInstance)
+  lazy val fullHierarchy: mutable.LinkedHashMap[WDefInstance,Seq[Seq[WDefInstance]]] = graph.pathsInDAG(trueTopInstance)
 
   /** Finds the absolute paths (each represented by a Seq of instances
     * representing the chain of hierarchy) of all instances of a
@@ -94,11 +93,11 @@ class InstanceGraph(c: Circuit) {
     graph.transformNodes(_.module).linearize.map(moduleMap(_))
   }
 
-  
+
   /** Given a circuit, returns a map from module name to children
      * instance/module definitions
      */
-  def getChildrenInstances: scala.collection.Map[String,mutable.Set[WDefInstance]] = childInstances 
+  def getChildrenInstances: mutable.LinkedHashMap[String, mutable.LinkedHashSet[WDefInstance]] = childInstances
 
 
 }
