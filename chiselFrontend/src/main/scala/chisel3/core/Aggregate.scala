@@ -77,9 +77,9 @@ sealed abstract class Aggregate extends Data {
     // If the source is a DontCare, generate a DefInvalid for the sink,
     //  otherwise, issue a Connect.
     if (that == DontCare) {
-      pushCommand(DefInvalid(sourceInfo, this.lref))
+      pushCommand(DefInvalid(sourceInfo, Node(this)))
     } else {
-      pushCommand(BulkConnect(sourceInfo, this.lref, that.lref))
+      pushCommand(BulkConnect(sourceInfo, Node(this), Node(that)))
     }
   }
 
