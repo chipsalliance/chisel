@@ -66,8 +66,12 @@ object ZeroWidth extends Transform {
       else fields.flatMap(f => findRemovable(WSubField(expr, f.name, f.tpe, MALE), f.tpe))
     case VectorType(vtpe, size) =>
       if (size == 0) List(expr)
-      else findRemovable(WSubIndex(expr, 0, vtpe, MALE), vtpe).flatMap { e =>
-        (0 until size).map(i => e.asInstanceOf[WSubIndex].copy(value = i))
+      else { // Only invoke findRemovable multiple times if a zero-width element is found
+        val es0 = findRemovable(WSubIndex(expr, 0, vtpe, MALE), vtpe)
+        if (es0.isEmpty) es0
+        else {
+          es0 ++ (1 until size).flatMap(i => findRemovable(WSubIndex(expr, i, vtpe, MALE), vtpe))
+        }
       }
   }
 

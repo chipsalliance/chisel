@@ -430,10 +430,13 @@ abstract class AnnotationTests extends AnnotationSpec with Matchers {
         |    output y : { foo : UInt<8>, bar : {}, fizz : UInt<8>[0], buzz : UInt<0> }
         |    output a : {}
         |    output b : UInt<8>[0]
+        |    output c : { d : UInt<0>, e : UInt<8> }[2]
+        |    c is invalid
         |    y <= x
         |""".stripMargin
     val annos = Seq(
-      anno("x"), anno("y.bar"), anno("y.fizz"), anno("y.buzz"), anno("a"), anno("b")
+      anno("x"), anno("y.bar"), anno("y.fizz"), anno("y.buzz"), anno("a"), anno("b"), anno("c"),
+      anno("c[0].d"), anno("c[1].d")
     )
     val result = compiler.compile(CircuitState(parse(input), ChirrtlForm, annos), Nil)
     val resultAnno = result.annotations.toSeq
@@ -453,6 +456,13 @@ abstract class AnnotationTests extends AnnotationSpec with Matchers {
     resultAnno should not contain (anno("x_bar"))
     resultAnno should not contain (anno("x_fizz"))
     resultAnno should not contain (anno("x_buzz"))
+    resultAnno should not contain (anno("c"))
+    resultAnno should contain (anno("c_0_e"))
+    resultAnno should contain (anno("c_1_e"))
+    resultAnno should not contain (anno("c[0].d"))
+    resultAnno should not contain (anno("c[1].d"))
+    resultAnno should not contain (anno("c_0_d"))
+    resultAnno should not contain (anno("c_1_d"))
   }
 }
 
