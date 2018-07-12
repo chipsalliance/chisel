@@ -101,16 +101,6 @@ final class MixedVec[T <: Data](private val eltsIn: Seq[T]) extends Record with 
       a := b
   }
 
-  /** Strong bulk connect, assigning elements in this MixedVec from elements in a Vec.
-    *
-    * @note the lengths of this and that must match
-    */
-  def :=(that: Vec[T]): Unit = {
-    require(this.length == that.length)
-    for ((a, b) <- this zip that)
-      a := b
-  }
-
   /**
     * Get the length of this MixedVec.
     * @return Number of elements in this MixedVec.
