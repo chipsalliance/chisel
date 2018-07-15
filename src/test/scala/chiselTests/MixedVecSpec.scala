@@ -74,7 +74,7 @@ class MixedVecZeroEntryTester extends BasicTester {
   stop()
 }
 
-class MixedVecDynamicIndexTester(n: Int) extends BasicTester {
+class MixedVecUIntDynamicIndexTester(n: Int) extends BasicTester {
   val wire = Wire(MixedVec(Seq.fill(n) { UInt() }))
 
   val (cycle, done) = Counter(true.B, n)
@@ -90,6 +90,60 @@ class MixedVecDynamicIndexTester(n: Int) extends BasicTester {
   assert(wire(cycle) === cycle)
 
   when (done) { stop() }
+}
+
+class MixedVecTestBundle extends Bundle {
+  val x = UInt(8.W)
+  val y = UInt(8.W)
+}
+
+class MixedVecSmallTestBundle extends Bundle {
+  val x = UInt(3.W)
+  val y = UInt(3.W)
+}
+
+class MixedVecDynamicIndexTester extends BasicTester {
+  val wire = Wire(MixedVec(Seq(UInt(8.W), SInt(8.W), Bool(), new MixedVecTestBundle, new MixedVecSmallTestBundle)))
+
+  val val0 = 163.U(8.W)
+  val val1 = (-96).S(8.W)
+  val val2 = true.B
+  val val3 = 126.U(8.W)
+  val val4 = 6.U(3.W)
+
+  wire(0) := val0
+  wire(1) := val1
+  wire(2) := val2
+  val wire3 = wire(3).asInstanceOf[MixedVecTestBundle]
+  wire3.x := val3
+  wire3.y := val3
+  val wire4 = wire(4).asInstanceOf[MixedVecSmallTestBundle]
+  wire4.x := val4
+  wire4.y := val4
+
+  val (cycle, done) = Counter(true.B, wire.length)
+  val currentData = wire(cycle)
+
+  when(cycle === 0.U) {
+    assert(currentData === val0)
+  } .elsewhen(cycle === 1.U) {
+    // We need to trim the width appropriately before calling asSInt
+    assert(currentData(7, 0).asSInt === val1)
+  } .elsewhen(cycle === 2.U) {
+    assert(currentData === val2.asUInt)
+  } .elsewhen(cycle === 3.U) {
+    val currentBundle = currentData.asTypeOf(new MixedVecTestBundle)
+    assert(currentBundle.x === val3)
+    assert(currentBundle.y === val3)
+  } .otherwise {
+    val currentBundle = currentData.asTypeOf(new MixedVecSmallTestBundle)
+    assert(currentBundle.x === val4)
+    assert(currentBundle.y === val4)
+  }
+
+  when(done) {
+    stop()
+  }
 }
 
 class MixedVecFromVecTester extends BasicTester {
@@ -210,8 +264,12 @@ class MixedVecSpec extends ChiselPropSpec {
     assertTesterPasses { new MixedVecZeroEntryTester }
   }
 
-  property("MixedVecs should be dynamically indexable") {
-    assertTesterPasses{ new MixedVecDynamicIndexTester(4) }
+  property("MixedVecs of UInts should be dynamically indexable") {
+    assertTesterPasses{ new MixedVecUIntDynamicIndexTester(4) }
+  }
+
+  property("MixedVecs in general should be dynamically indexable") {
+    assertTesterPasses{ new MixedVecDynamicIndexTester }
   }
 
   property("MixedVecs should be creatable from Vecs") {
