@@ -36,9 +36,9 @@ abstract class Element(private[chisel3] val width: Width) extends Data {
     // If the source is a DontCare, generate a DefInvalid for the sink,
     //  otherwise, issue a Connect.
     if (that == DontCare) {
-      pushCommand(DefInvalid(sourceInfo, this.lref))
+      pushCommand(DefInvalid(sourceInfo, Node(this)))
     } else {
-      pushCommand(Connect(sourceInfo, this.lref, that.ref))
+      pushCommand(Connect(sourceInfo, Node(this), that.ref))
     }
   }
 }
@@ -61,19 +61,43 @@ private[chisel3] sealed trait ToBoolable extends Element {
   * bitwise operations.
   */
 //scalastyle:off number.of.methods
-sealed abstract class Bits(width: Width, override val litArg: Option[LitArg])
+sealed abstract class Bits(width: Width)
     extends Element(width) with ToBoolable {
   // TODO: perhaps make this concrete?
   // Arguments for: self-checking code (can't do arithmetic on bits)
   // Arguments against: generates down to a FIRRTL UInt anyways
 
-  // If this is a literal, setRef so that we don't allocate a name
-  litArg.foreach(setRef)
-
   // Only used for in a few cases, hopefully to be removed
   private[core] def cloneTypeWidth(width: Width): this.type
 
   def cloneType: this.type = cloneTypeWidth(width)
+
+  private[core] override def topBindingOpt: Option[TopBinding] = super.topBindingOpt match {
+    // Translate Bundle lit bindings to Element lit bindings
+    case Some(BundleLitBinding(litMap)) => litMap.get(this) match {
+      case Some(litArg) => Some(ElementLitBinding(litArg))
+      case _ => Some(DontCareBinding())
+    }
+    case topBindingOpt => topBindingOpt
+  }
+
+  private[core] def litArgOption: Option[LitArg] = topBindingOpt match {
+    case Some(ElementLitBinding(litArg)) => Some(litArg)
+    case _ => None
+  }
+
+  override def litOption: Option[BigInt] = litArgOption.map(_.num)
+  private[core] def litIsForcedWidth: Option[Boolean] = litArgOption.map(_.forcedWidth)
+
+  // provide bits-specific literal handling functionality here
+  override private[chisel3] def ref: Arg = topBindingOpt match {
+    case Some(ElementLitBinding(litArg)) => litArg
+    case Some(BundleLitBinding(litMap)) => litMap.get(this) match {
+      case Some(litArg) => litArg
+      case _ => throwException(s"internal error: DontCare should be caught before getting ref")
+    }
+    case _ => super.ref
+  }
 
   final def tail(n: Int): UInt = macro SourceInfoTransform.nArg
   final def head(n: Int): UInt = macro SourceInfoTransform.nArg
@@ -106,13 +130,8 @@ sealed abstract class Bits(width: Width, override val litArg: Option[LitArg])
     if (x < 0) {
       Builder.error(s"Negative bit indices are illegal (got $x)")
     }
-    if (isLit()) {
-      (((litValue() >> x.toInt) & 1) == 1).asBool
-    } else {
-
-      requireIsHardware(this, "bits to be indexed")
-      pushOp(DefPrim(sourceInfo, Bool(), BitsExtractOp, this.ref, ILit(x), ILit(x)))
-    }
+    requireIsHardware(this, "bits to be indexed")
+    pushOp(DefPrim(sourceInfo, Bool(), BitsExtractOp, this.ref, ILit(x), ILit(x)))
   }
 
   /** Returns the specified bit on this wire as a [[Bool]], statically
@@ -150,12 +169,8 @@ sealed abstract class Bits(width: Width, override val litArg: Option[LitArg])
       Builder.error(s"Invalid bit range ($x,$y)")
     }
     val w = x - y + 1
-    if (isLit()) {
-      ((litValue >> y) & ((BigInt(1) << w) - 1)).asUInt(w.W)
-    } else {
-      requireIsHardware(this, "bits to be sliced")
-      pushOp(DefPrim(sourceInfo, UInt(Width(w)), BitsExtractOp, this.ref, ILit(x), ILit(y)))
-    }
+    requireIsHardware(this, "bits to be sliced")
+    pushOp(DefPrim(sourceInfo, UInt(Width(w)), BitsExtractOp, this.ref, ILit(x), ILit(y)))
   }
 
   // REVIEW TODO: again, is this necessary? Or just have this and use implicits?
@@ -295,7 +310,7 @@ sealed abstract class Bits(width: Width, override val litArg: Option[LitArg])
     implicit val sourceInfo = DeprecatedSourceInfo
     do_asSInt
   }
-  
+
   @chiselRuntimeDeprecated
   @deprecated("Use asUInt, which makes the reinterpret cast more explicit", "chisel3")
   final def toUInt(implicit compileOptions: CompileOptions): UInt = {
@@ -428,8 +443,7 @@ abstract trait Num[T <: Data] {
 /** A data type for unsigned integers, represented as a binary bitvector.
   * Defines arithmetic operations between other integer types.
   */
-sealed class UInt private[core] (width: Width, lit: Option[ULit] = None)
-    extends Bits(width, lit) with Num[UInt] {
+sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt] {
 
   private[core] override def typeEquivalent(that: Data): Boolean =
     that.isInstanceOf[UInt] && this.width == that.width
@@ -576,9 +590,9 @@ trait UIntFactory {
    /** Create a UInt literal with specified width. */
   protected[chisel3] def Lit(value: BigInt, width: Width): UInt = {
     val lit = ULit(value, width)
-    val result = new UInt(lit.width, Some(lit))
+    val result = new UInt(lit.width)
     // Bind result to being an Literal
-    result.bind(LitBinding())
+    result.bind(ElementLitBinding(lit))
     result
   }
 
@@ -595,8 +609,7 @@ trait UIntFactory {
 object UInt extends UIntFactory
 object Bits extends UIntFactory
 
-sealed class SInt private[core] (width: Width, lit: Option[SLit] = None)
-    extends Bits(width, lit) with Num[SInt] {
+sealed class SInt private[core] (width: Width) extends Bits(width) with Num[SInt] {
 
   private[core] override def typeEquivalent(that: Data): Boolean =
     this.getClass == that.getClass && this.width == that.width  // TODO: should this be true for unspecified widths?
@@ -731,9 +744,8 @@ trait SIntFactory {
    /** Create an SInt literal with specified width. */
   protected[chisel3] def Lit(value: BigInt, width: Width): SInt = {
     val lit = SLit(value, width)
-    val result = new SInt(lit.width, Some(lit))
-    // Bind result to being an Literal
-    result.bind(LitBinding())
+    val result = new SInt(lit.width)
+    result.bind(ElementLitBinding(lit))
     result
   }
 }
@@ -746,11 +758,19 @@ sealed trait Reset extends Element with ToBoolable
 // operations on a Bool make sense?
 /** A data type for booleans, defined as a single bit indicating true or false.
   */
-sealed class Bool(lit: Option[ULit] = None) extends UInt(1.W, lit) with Reset {
+sealed class Bool() extends UInt(1.W) with Reset {
   private[core] override def cloneTypeWidth(w: Width): this.type = {
     require(!w.known || w.get == 1)
     new Bool().asInstanceOf[this.type]
   }
+
+  def litToBooleanOption: Option[Boolean] = litOption.map {
+    case intVal if intVal == 1 => true
+    case intVal if intVal == 0 => false
+    case intVal => throwException(s"Boolean with unexpected literal value $intVal")
+  }
+
+  def litToBoolean: Boolean = litToBooleanOption.get
 
   // REVIEW TODO: Why does this need to exist and have different conventions
   // than Bits?
@@ -795,9 +815,8 @@ trait BoolFactory {
   /** Creates Bool literal.
    */
   protected[chisel3] def Lit(x: Boolean): Bool = {
-    val result = new Bool(Some(ULit(if (x) 1 else 0, Width(1))))
-    // Bind result to being an Literal
-    result.bind(LitBinding())
+    val result = new Bool()
+    result.bind(ElementLitBinding(ULit(if (x) 1 else 0, Width(1))))
     result
   }
 }
@@ -817,8 +836,8 @@ object Bool extends BoolFactory
   *                    and thus use this field as a simple exponent
   * @param lit
   */
-sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint, lit: Option[FPLit] = None)
-    extends Bits(width, lit) with Num[FixedPoint] {
+sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint)
+    extends Bits(width) with Num[FixedPoint] {
   private[core] override def typeEquivalent(that: Data): Boolean = that match {
     case that: FixedPoint => this.width == that.width && this.binaryPoint == that.binaryPoint  // TODO: should this be true for unspecified widths?
     case _ => false
@@ -831,6 +850,13 @@ sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint, lit
     case _: FixedPoint|DontCare => super.connect(that)
     case _ => this badConnect that
   }
+
+  def litToDoubleOption: Option[Double] = litOption.map { intVal =>
+    val multiplier = math.pow(2, binaryPoint.get)
+    intVal.toDouble / multiplier
+  }
+
+  def litToDouble: Double = litToDoubleOption.get
 
   final def unary_- (): FixedPoint = macro SourceInfoTransform.noArg
   final def unary_-% (): FixedPoint = macro SourceInfoTransform.noArg
@@ -1047,8 +1073,8 @@ object FixedPoint {
   /** Create an FixedPoint port with specified width and binary position. */
   def apply(value: BigInt, width: Width, binaryPoint: BinaryPoint): FixedPoint = {
     val lit = FPLit(value, width, binaryPoint)
-    val newLiteral = new FixedPoint(lit.width, lit.binaryPoint, Some(lit))
-    newLiteral.bind(LitBinding())
+    val newLiteral = new FixedPoint(lit.width, lit.binaryPoint)
+    newLiteral.bind(ElementLitBinding(lit))
     newLiteral
   }
 
@@ -1098,6 +1124,8 @@ final class Analog private (width: Width) extends Element(width) {
 
   private[core] override def typeEquivalent(that: Data): Boolean =
     that.isInstanceOf[Analog] && this.width == that.width
+
+  override def litOption = None
 
   def cloneType: this.type = new Analog(width).asInstanceOf[this.type]
 

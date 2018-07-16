@@ -2,12 +2,15 @@
 
 package chisel3
 
-import chisel3.internal.firrtl.Emitter
-import chisel3.experimental.{RawModule, RunFirrtlTransform, ChiselAnnotation}
+import chisel3.internal.firrtl.Converter
+import chisel3.experimental.{RawModule, RunFirrtlTransform}
+
+import java.io._
+import net.jcazevedo.moultingyaml._
 
 import internal.firrtl._
 import firrtl.{ HasFirrtlExecutionOptions, FirrtlExecutionSuccess, FirrtlExecutionFailure, FirrtlExecutionResult,
-  Transform, FirrtlExecutionOptions, AnnotationSeq }
+  Transform, FirrtlExecutionOptions, AnnotationSeq, FirrtlCircuitAnnotation, ir => fir }
 import firrtl.options.ExecutionOptionsManager
 import firrtl.annotations.JsonProtocol
 import firrtl.util.{ BackendCompilationUtilities => FirrtlBackendCompilationUtilities }
@@ -85,7 +88,9 @@ object Driver extends BackendCompilationUtilities {
     */
   def elaborate[T <: RawModule](gen: () => T): Circuit = internal.Builder.build(Module(gen()))
 
-  def emit[T <: RawModule](gen: () => T): String = Emitter.emit(elaborate(gen))
+  def toFirrtl(ir: Circuit): fir.Circuit = Converter.convert(ir)
+
+  def emit[T <: RawModule](gen: () => T): String = Driver.emit(elaborate(gen))
 
   def emit[T <: RawModule](ir: Circuit): String = Emitter.emit(ir)
 
@@ -102,16 +107,19 @@ object Driver extends BackendCompilationUtilities {
     }
   }
 
-  /**
-    * Emit the CHIRRTL of a circuit
+  /** Dumps the elaborated Circuit to FIRRTL
     *
-    * @param ir The circuit to emit
-    * @param optName An optional filename (will use s"${ir.name}.fir" otherwise)
+    * If no File is given as input, it will dump to a default filename based on the name of the
+    * Top Module
+    *
+    * @param c Elaborated Chisel Circuit
+    * @param optName Optional File to dump to
+    * @return The File the circuit was dumped to
     */
   def dumpFirrtl(ir: Circuit, optName: Option[File]): File = {
     val f = optName.getOrElse(new File(ir.name + ".fir"))
     val w = new FileWriter(f)
-    w.write(Emitter.emit(ir))
+    w.write(Driver.emit(ir))
     w.close()
     f
   }
@@ -127,6 +135,24 @@ object Driver extends BackendCompilationUtilities {
     val w = new FileWriter(f)
     w.write(JsonProtocol.serialize(ir.annotations.map(_.toFirrtl)))
     w.close()
+    f
+  }
+
+  /** Dumps the elaborated Circuit to ProtoBuf
+    *
+    * If no File is given as input, it will dump to a default filename based on the name of the
+    * Top Module
+    *
+    * @param c Elaborated Chisel Circuit
+    * @param optFile Optional File to dump to
+    * @return The File the circuit was dumped to
+    */
+  def dumpProto(c: Circuit, optFile: Option[File]): File = {
+    val f = optFile.getOrElse(new File(c.name + ".pb"))
+    val ostream = new java.io.FileOutputStream(f)
+    // Lazily convert modules to make intermediate objects garbage collectable
+    val modules = c.components.map(m => () => Converter.convert(m))
+    firrtl.proto.ToProto.writeToStreamFast(ostream, fir.NoInfo, modules, c.name)
     f
   }
 
@@ -166,27 +192,33 @@ object Driver extends BackendCompilationUtilities {
     */
   def execute(args: Array[String], dut: () => RawModule, initAnnos: AnnotationSeq = Seq.empty): ChiselExecutionResult = {
     val circuit = elaborate(dut)
-    val firrtlString = Emitter.emit(circuit)
+    val firrtlCircuit = Converter.convert(circuit)
     val firrtlAnnos = circuit.annotations.map(_.toFirrtl)
-    val annotations = optionsManager.parse(args ++ Array("--firrtl-source", firrtlString) ++ customTransformsArg(circuit),
-                                           initAnnos ++ firrtlAnnos)
+    val annotations = optionsManager.parse(args ++ customTransformsArg(circuit),
+                                           initAnnos ++ firrtlAnnos :+ FirrtlCircuitAnnotation(firrtlCircuit))
 
-    val chiselOptions = view[ChiselExecutionOptions](annotations).getOrElse{
-      throw new Exception("Unable to parse Chisel options") }
     val firrtlOptions = view[FirrtlExecutionOptions](annotations).getOrElse{
       throw new Exception("Unable to parse Firrtl options") }
+    val chiselOptions = view[ChiselExecutionOptions](annotations).getOrElse{
+      throw new Exception("Unable to parse Chisel options") }
 
-    if (chiselOptions.saveChirrtl)
-      dumpFirrtl(circuit, Some(new File(firrtlOptions.getInputFileName)))
+    // Still emit to leave an artifact (and because this always has been the behavior)
+    val firrtlString = Driver.emit(circuit)
+    if (chiselOptions.saveChirrtl) {
+      val w = new FileWriter(new File(firrtlOptions.getInputFileName))
+      w.write(firrtlString)
+      w.close()
+    }
 
     if (chiselOptions.saveAnnotations)
       dumpAnnotations(circuit, Some(new File(firrtlOptions.getBuildFileName("anno.json"))))
 
-    val firrtlExecutionResult = if (chiselOptions.runFirrtlCompiler)
+    val firrtlExecutionResult = if(chiselOptions.runFirrtlCompiler) {
       Some(firrtl.Driver.execute(Array.empty, annotations))
-    else
+    }
+    else {
       None
-
+    }
     ChiselExecutionSuccess(Some(circuit), firrtlString, firrtlExecutionResult)
   }
 
