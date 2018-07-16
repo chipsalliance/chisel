@@ -3,7 +3,8 @@
 package chisel3
 
 import firrtl.AnnotationSeq
-import firrtl.annotations.{NoTargetAnnotation, HasScoptOptions}
+import firrtl.annotations.NoTargetAnnotation
+import firrtl.options.HasScoptOptions
 import scopt.OptionParser
 
 /** Indicates that a subclass is an [[firrtl.annotation.Annotation]] with
@@ -18,7 +19,7 @@ sealed trait ChiselOption extends HasScoptOptions
   *  - equivalent to command line option `-chnrf/--no-run-firrtl`
   */
 case object NoRunFirrtlAnnotation extends NoTargetAnnotation with ChiselOption {
-  def addOptions(implicit p: OptionParser[AnnotationSeq]): Unit = p.opt[Unit]("no-run-firrtl")
+  def addOptions(p: OptionParser[AnnotationSeq]): Unit = p.opt[Unit]("no-run-firrtl")
     .abbr("chnrf")
     .action( (x, c) => c :+ NoRunFirrtlAnnotation )
     .text("Stop after chisel emits chirrtl file")
@@ -29,7 +30,7 @@ case object NoRunFirrtlAnnotation extends NoTargetAnnotation with ChiselOption {
   *  - equivalent to command line option `--dont-save-chirrtl`
   */
 case object DontSaveChirrtlAnnotation extends NoTargetAnnotation with ChiselOption {
-  def addOptions(implicit p: OptionParser[AnnotationSeq]): Unit = p.opt[Unit]("dont-save-chirrtl")
+  def addOptions(p: OptionParser[AnnotationSeq]): Unit = p.opt[Unit]("dont-save-chirrtl")
     .action( (x, c) => c :+ DontSaveChirrtlAnnotation )
     .text("Do not save CHIRRTL output")
 }
@@ -39,7 +40,7 @@ case object DontSaveChirrtlAnnotation extends NoTargetAnnotation with ChiselOpti
   *  - equivalent to command line option `--dont-save-annotations`
   */
 case object DontSaveAnnotationsAnnotation extends NoTargetAnnotation with ChiselOption {
-  def addOptions(implicit p: OptionParser[AnnotationSeq]): Unit = p.opt[Unit]("dont-save-annotations")
+  def addOptions(p: OptionParser[AnnotationSeq]): Unit = p.opt[Unit]("dont-save-annotations")
     .action( (x, c) => c :+ DontSaveAnnotationsAnnotation )
     .text("Do not save Chisel Annotations")
 }

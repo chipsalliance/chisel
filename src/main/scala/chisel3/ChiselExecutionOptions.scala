@@ -22,7 +22,7 @@ case class ChiselExecutionOptions (
 
 object ChiselViewer {
   implicit object ChiselOptionsView extends OptionsView[ChiselExecutionOptions] {
-    def view(implicit options: AnnotationSeq): Option[ChiselExecutionOptions] = Some(
+    def view(options: AnnotationSeq): Option[ChiselExecutionOptions] = Some(
       options
         .collect{ case opt: ChiselOption => opt }
         .foldLeft(ChiselExecutionOptions())( (c, x) =>
@@ -38,17 +38,10 @@ trait HasChiselExecutionOptions { this: ExecutionOptionsManager =>
   import firrtl.options.Viewer._
   import chisel3.ChiselViewer._
 
-  /** A [[ChiselExecutionOptions]] object generated from processing all
-    * Chisel command line options
-    */
-  @deprecated("Use view[ChiselExecutionOptions]", "3.2.0")
-  lazy val chiselOptions: ChiselExecutionOptions = view[ChiselExecutionOptions].getOrElse{
-    throw new Exception("Unable to parse Chisel command line options/annotations") }
-
   parser.note("Chisel Options")
 
   Seq( NoRunFirrtlAnnotation,
        DontSaveChirrtlAnnotation,
        DontSaveAnnotationsAnnotation )
-    .map(_.addOptions)
+    .map(_.addOptions(parser))
 }

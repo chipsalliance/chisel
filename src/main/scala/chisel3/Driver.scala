@@ -7,7 +7,7 @@ import chisel3.experimental.{RawModule, RunFirrtlTransform, ChiselAnnotation}
 
 import internal.firrtl._
 import firrtl.{ HasFirrtlExecutionOptions, FirrtlExecutionSuccess, FirrtlExecutionFailure, FirrtlExecutionResult,
-  Transform, FirrtlExecutionOptions }
+  Transform, FirrtlExecutionOptions, AnnotationSeq }
 import firrtl.options.ExecutionOptionsManager
 import firrtl.annotations.JsonProtocol
 import firrtl.util.{ BackendCompilationUtilities => FirrtlBackendCompilationUtilities }
@@ -27,13 +27,9 @@ trait BackendCompilationUtilities extends FirrtlBackendCompilationUtilities {
     * @return       true if compiler completed successfully
     */
   def compileFirrtlToVerilog(prefix: String, dir: File): Boolean = {
-    val optionsManager = new ExecutionOptionsManager(
-      "chisel3",
-      Array("--top-name", prefix,
-            "--target-dir", dir.getAbsolutePath,
-            "--compiler", "verilog")) with HasChiselExecutionOptions with HasFirrtlExecutionOptions
+    val args = Array("--top-name", prefix, "--target-dir", dir.getAbsolutePath, "--compiler", "verilog")
 
-    firrtl.Driver.execute(optionsManager) match {
+    firrtl.Driver.execute(args) match {
       case _: FirrtlExecutionSuccess => true
       case _: FirrtlExecutionFailure => false
     }
@@ -78,6 +74,8 @@ case class ChiselExecutionFailure(message: String) extends ChiselExecutionResult
   * }}}
   */
 object Driver extends BackendCompilationUtilities {
+  val optionsManager = new ExecutionOptionsManager("chisel3") with HasChiselExecutionOptions
+      with HasFirrtlExecutionOptions
 
   /**
     * Elaborates the Module specified in the gen function into a Circuit
@@ -159,53 +157,37 @@ object Driver extends BackendCompilationUtilities {
       case _ => Array("") }
 
   /**
-    * Run the chisel3 compiler and possibly the firrtl compiler with options specified.
+    * Run the chisel3 compiler and possibly the firrtl compiler with options specified via an array of Strings
     *
-    * @param optionsManager The options specified
-    * @param dut            The device under test
-    * @return               An execution result with useful stuff, or failure with message
+    * @param args The options specified, command line style
+    * @param dut The device under test
+    * @param initAnnos Initial annotations (an alternative to args)
+    * @return An execution result with useful stuff, or failure with message
     */
-  def execute(optionsManager: ExecutionOptionsManager with HasChiselExecutionOptions with HasFirrtlExecutionOptions,
-              dut: () => RawModule): ChiselExecutionResult = {
+  def execute(args: Array[String], dut: () => RawModule, initAnnos: AnnotationSeq = Seq.empty): ChiselExecutionResult = {
     val circuit = elaborate(dut)
     val firrtlString = Emitter.emit(circuit)
     val firrtlAnnos = circuit.annotations.map(_.toFirrtl)
+    val annotations = optionsManager.parse(args ++ Array("--firrtl-source", firrtlString) ++ customTransformsArg(circuit),
+                                           initAnnos ++ firrtlAnnos)
 
-    implicit val optionsManagerX = new ExecutionOptionsManager(
-      optionsManager.applicationName,
-      Array("--firrtl-source", firrtlString) ++ customTransformsArg(circuit),
-      optionsManager.options ++ firrtlAnnos) with HasFirrtlExecutionOptions with HasChiselExecutionOptions
-
-    val chiselOptions = view[ChiselExecutionOptions].getOrElse{
+    val chiselOptions = view[ChiselExecutionOptions](annotations).getOrElse{
       throw new Exception("Unable to parse Chisel options") }
-    val firrtlOptions = view[FirrtlExecutionOptions].getOrElse{
+    val firrtlOptions = view[FirrtlExecutionOptions](annotations).getOrElse{
       throw new Exception("Unable to parse Firrtl options") }
 
     if (chiselOptions.saveChirrtl)
-      dumpFirrtl(circuit, Some(new File(firrtlOptions.getInputFileName(optionsManagerX))))
+      dumpFirrtl(circuit, Some(new File(firrtlOptions.getInputFileName)))
 
     if (chiselOptions.saveAnnotations)
-      dumpAnnotations(circuit, Some(new File(optionsManagerX.getBuildFileName("anno.json"))))
+      dumpAnnotations(circuit, Some(new File(firrtlOptions.getBuildFileName("anno.json"))))
 
     val firrtlExecutionResult = if (chiselOptions.runFirrtlCompiler)
-      Some(firrtl.Driver.execute(optionsManagerX))
+      Some(firrtl.Driver.execute(Array.empty, annotations))
     else
       None
 
     ChiselExecutionSuccess(Some(circuit), firrtlString, firrtlExecutionResult)
-  }
-
-  /**
-    * Run the chisel3 compiler and possibly the firrtl compiler with options specified via an array of Strings
-    *
-    * @param args   The options specified, command line style
-    * @param dut    The device under test
-    * @return       An execution result with useful stuff, or failure with message
-    */
-  def execute(args: Array[String], dut: () => RawModule): ChiselExecutionResult = {
-    val optionsManager = new ExecutionOptionsManager("chisel3", args)
-        with HasChiselExecutionOptions with HasFirrtlExecutionOptions
-    execute(optionsManager, dut)
   }
 
   /**

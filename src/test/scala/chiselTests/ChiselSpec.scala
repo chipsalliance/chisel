@@ -9,8 +9,7 @@ import org.scalacheck._
 import chisel3._
 import chisel3.experimental.RawModule
 import chisel3.testers._
-import firrtl.{HasFirrtlExecutionOptions, FirrtlExecutionSuccess, FirrtlExecutionFailure}
-import firrtl.options.ExecutionOptionsManager
+import firrtl.{FirrtlExecutionSuccess, FirrtlExecutionFailure}
 import firrtl.util.BackendCompilationUtilities
 
 /** Common utility functions for Chisel unit tests. */
