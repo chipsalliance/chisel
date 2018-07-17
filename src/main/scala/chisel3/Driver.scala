@@ -3,15 +3,15 @@
 package chisel3
 
 import chisel3.internal.firrtl.Converter
-import chisel3.experimental.{RawModule, RunFirrtlTransform}
+import chisel3.experimental.{ RawModule, RunFirrtlTransform }
 
 import java.io._
 import net.jcazevedo.moultingyaml._
 
 import internal.firrtl._
 import firrtl.{ HasFirrtlExecutionOptions, FirrtlExecutionSuccess, FirrtlExecutionFailure, FirrtlExecutionResult,
-  Transform, FirrtlExecutionOptions, AnnotationSeq, FirrtlCircuitAnnotation, ir => fir }
-import firrtl.options.ExecutionOptionsManager
+  Transform, FirrtlExecutionOptions, AnnotationSeq, FirrtlCircuitAnnotation, RunFirrtlTransformAnnotation, ir => fir }
+import firrtl.options.{ ExecutionOptionsManager, DriverExecutionResult }
 import firrtl.annotations.JsonProtocol
 import firrtl.util.{ BackendCompilationUtilities => FirrtlBackendCompilationUtilities }
 import firrtl.options.Viewer._
@@ -42,7 +42,7 @@ trait BackendCompilationUtilities extends FirrtlBackendCompilationUtilities {
 /**
   * This family provides return values from the chisel3 and possibly firrtl compile steps
   */
-trait ChiselExecutionResult
+trait ChiselExecutionResult extends DriverExecutionResult
 
 /**
   * Getting one of these indicates a successful Chisel run
@@ -76,7 +76,7 @@ case class ChiselExecutionFailure(message: String) extends ChiselExecutionResult
   * Driver.execute(args, () => new MyTopModule)
   * }}}
   */
-object Driver extends BackendCompilationUtilities {
+object Driver extends firrtl.options.Driver with BackendCompilationUtilities {
   val optionsManager = new ExecutionOptionsManager("chisel3") with HasChiselExecutionOptions
       with HasFirrtlExecutionOptions
 
@@ -177,10 +177,56 @@ object Driver extends BackendCompilationUtilities {
   private def customTransformsArg(ir: Circuit): Array[String] = ir.annotations
     .collect { case anno: RunFirrtlTransform => anno.transformClass }
     .distinct
-    .filterNot(_ == classOf[firrtl.Transform])
+    .filterNot(_ == classOf[Transform])
     .map{ transformClass: Class[_ <: Transform] => transformClass.getName } match {
       case a: Seq[String] if a.nonEmpty => Array("--custom-transforms") ++ a
       case _ => Array("") }
+
+  def execute(args: Array[String], initAnnos: AnnotationSeq): ChiselExecutionResult = {
+    /* ChiselCircuitAnnotation cannot be JSON serialized, so it is treated
+     * specially */
+    val (circuitAnnos, otherAnnos) = optionsManager.parse(args, initAnnos).partition {
+      case a: ChiselCircuitAnnotation => true
+      case _                          => false }
+
+    val annos = circuitAnnos.flatMap {
+      case ChiselCircuitAnnotation(chiselCircuit) =>
+        val addedTransforms = chiselCircuit.annotations
+          .collect { case anno: RunFirrtlTransform => anno.transformClass }
+          .distinct
+          .filterNot(_ == classOf[Transform])
+          .map{ RunFirrtlTransformAnnotation(_) }
+        val chirrtl = Converter.convert(chiselCircuit)
+        chiselCircuit.annotations.map(_.toFirrtl) ++ addedTransforms :+ FirrtlCircuitAnnotation(chirrtl)
+      case a => Seq(a)
+    } ++ otherAnnos
+
+    val chiselOptions = view[ChiselExecutionOptions](circuitAnnos ++ annos).getOrElse{
+      throw new Exception("Unable to parse Chisel options") }
+    val firrtlOptions = view[FirrtlExecutionOptions](annos).getOrElse{
+      throw new Exception("Unable to parse Firrtl options") }
+
+    val firrtlString = firrtlOptions.firrtlCircuit.get.serialize
+    if (chiselOptions.saveChirrtl) {
+      val w = new FileWriter(new File(firrtlOptions.getInputFileName))
+      w.write(firrtlString)
+      w.close()
+    }
+
+    if (chiselOptions.saveAnnotations) {
+      val f = new File(firrtlOptions.getBuildFileName("anno.json"))
+      val w = new FileWriter(f)
+      w.write(JsonProtocol.serialize(annos))
+      w.close()
+    }
+
+    val firrtlExecutionResult = if(chiselOptions.runFirrtlCompiler) {
+      Some(firrtl.Driver.execute(Array.empty, annos))
+    } else {
+      None
+    }
+    ChiselExecutionSuccess(chiselOptions.chiselCircuit, firrtlString, firrtlExecutionResult)
+  }
 
   /**
     * Run the chisel3 compiler and possibly the firrtl compiler with options specified via an array of Strings
@@ -190,48 +236,8 @@ object Driver extends BackendCompilationUtilities {
     * @param initAnnos Initial annotations (an alternative to args)
     * @return An execution result with useful stuff, or failure with message
     */
-  def execute(args: Array[String], dut: () => RawModule, initAnnos: AnnotationSeq = Seq.empty): ChiselExecutionResult = {
-    val circuit = elaborate(dut)
-    val firrtlCircuit = Converter.convert(circuit)
-    val firrtlAnnos = circuit.annotations.map(_.toFirrtl)
-    val annotations = optionsManager.parse(args ++ customTransformsArg(circuit),
-                                           initAnnos ++ firrtlAnnos :+ FirrtlCircuitAnnotation(firrtlCircuit))
-
-    val firrtlOptions = view[FirrtlExecutionOptions](annotations).getOrElse{
-      throw new Exception("Unable to parse Firrtl options") }
-    val chiselOptions = view[ChiselExecutionOptions](annotations).getOrElse{
-      throw new Exception("Unable to parse Chisel options") }
-
-    // Still emit to leave an artifact (and because this always has been the behavior)
-    val firrtlString = Driver.emit(circuit)
-    if (chiselOptions.saveChirrtl) {
-      val w = new FileWriter(new File(firrtlOptions.getInputFileName))
-      w.write(firrtlString)
-      w.close()
-    }
-
-    if (chiselOptions.saveAnnotations)
-      dumpAnnotations(circuit, Some(new File(firrtlOptions.getBuildFileName("anno.json"))))
-
-    val firrtlExecutionResult = if(chiselOptions.runFirrtlCompiler) {
-      Some(firrtl.Driver.execute(Array.empty, annotations))
-    }
-    else {
-      None
-    }
-    ChiselExecutionSuccess(Some(circuit), firrtlString, firrtlExecutionResult)
-  }
-
-  /**
-    * This is just here as command line way to see what the options are
-    * It will not successfully run
-    * TODO: Look into dynamic class loading as way to make this main useful
-    *
-    * @param args unused args
-    */
-  def main(args: Array[String]) {
-    execute(Array("--help"), null)
-  }
+  def execute(args: Array[String], dut: () => RawModule, initAnnos: AnnotationSeq = Seq.empty): ChiselExecutionResult =
+    execute(args, ChiselCircuitAnnotation(dut) +: initAnnos)
 
   val version = BuildInfo.version
   val chiselVersionString = BuildInfo.toString

@@ -5,7 +5,8 @@ package chiselTests
 import java.io.File
 
 import chisel3._
-import firrtl.{FirrtlExecutionSuccess, HasFirrtlExecutionOptions}
+import firrtl.{FirrtlExecutionSuccess, HasFirrtlExecutionOptions, FIRRTLException}
+import firrtl.annotations.Annotation
 import firrtl.options.ExecutionOptionsManager
 import org.scalacheck.Test.Failed
 import org.scalatest.{FreeSpec, Matchers, Succeeded}
@@ -69,7 +70,7 @@ class DriverSpec extends FreeSpec with Matchers {
       Driver.execute(args, () => new DummyModule) match {
         case ChiselExecutionSuccess(_, _, Some(_: FirrtlExecutionSuccess)) =>
           filesShouldExist(List("anno.json", "mid.fir"))
-          filesShouldNotExist(List("v", "hi.fir", "lo.fir"))
+          filesShouldNotExist(List("fir", "v", "hi.fir", "lo.fir"))
           Succeeded
         case _ =>
           Failed
@@ -126,8 +127,8 @@ class DriverSpec extends FreeSpec with Matchers {
 
     "execute returns a chisel execution result" in {
       val targetDir = "test_run_dir"
-      val args = Array("--compiler", "low", "--target-dir", targetDir)
-      val result = Driver.execute(args, () => new DummyModule)
+      val args = Array("--dut", "chiselTests.DummyModule", "--compiler", "low", "--target-dir", targetDir)
+      val result = Driver.execute(args, Seq[Annotation]())
       result shouldBe a[ChiselExecutionSuccess]
       val successResult = result.asInstanceOf[ChiselExecutionSuccess]
       successResult.emitted should include ("circuit DummyModule")
@@ -135,5 +136,26 @@ class DriverSpec extends FreeSpec with Matchers {
       dummyOutput.exists() should be(true)
       dummyOutput.delete()
     }
+  }
+
+  "Invalid options should be caught when" - {
+    def shouldExceptOnOptionsOrAnnotations(name: String, args: Array[String], annos: Seq[Annotation]) {
+      name in {
+        info("via annotations")
+        a [ChiselOptionsException] should be thrownBy (Driver.execute(Array[String](), Seq.fill(2)(annos).flatten))
+        info("via arguments")
+        a [ChiselOptionsException] should be thrownBy (Driver.execute(Array.fill(2)(args).flatten, Seq[Annotation]()))
+        info("via arguments and annotations")
+        a [ChiselOptionsException] should be thrownBy (Driver.execute(args, annos))
+      }
+    }
+
+    "no Chisel circuit is specified" in {
+      a [ChiselException] should be thrownBy (Driver.execute(Array[String](), Seq[Annotation]()))
+    }
+
+    shouldExceptOnOptionsOrAnnotations("multiple Chisel circuits are specified",
+                                       Array("--dut", "chiselTests.DummyModule"),
+                                       Seq(ChiselCircuitAnnotation(() => new DummyModule)))
   }
 }
