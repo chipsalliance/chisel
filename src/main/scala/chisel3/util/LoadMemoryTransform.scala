@@ -3,17 +3,16 @@
 package chisel3.util
 
 import chisel3.MemBase
-import chisel3.core.{RunFirrtlTransform, annotate, ChiselAnnotation}
+import chisel3.core.{ChiselAnnotation, RunFirrtlTransform, annotate}
 import chisel3.internal.{Builder, InstanceId}
 import firrtl.annotations._
 import firrtl.ir.{Module => _, _}
 import firrtl.passes.Pass
 import firrtl.passes.memlib.DefAnnotatedMemory
 import firrtl.transforms.BlackBoxInlineAnno
-import firrtl.{CircuitForm, CircuitState, LowForm, Transform, VerilogEmitter, WDefInstance}
+import firrtl.{CircuitForm, CircuitState, EmitCircuitAnnotation, LowForm, Transform, VerilogEmitter, WDefInstance}
 
 import scala.collection.mutable
-import scala.util.matching.Regex
 
 /**
   * chisel implementation for load memory
@@ -32,14 +31,6 @@ case class ChiselLoadMemoryAnnotation(
     Builder.warning(
       s"""LoadMemory from file annotations file empty file name"""
     )
-  }
-  val SuffixRegex: Regex = """.+\.[^\.]*""".r
-  fileName match {
-    case SuffixRegex(_*) =>
-      Builder.warning(
-        s"""LoadMemoryAnnotation fileName "$fileName" has extension ".txt" will still be appended"""
-      )
-    case _ =>
   }
 
   def transformClass: Class[LoadMemoryTransform] = classOf[LoadMemoryTransform]
@@ -82,19 +73,32 @@ case class LoadMemoryAnnotation(
   originalMemoryNameOpt: Option[String] = None
 ) extends SingleTargetAnnotation[Named] {
 
+  val (prefix, suffix) = {
+    fileName.split("""\.""").toList match {
+      case Nil =>
+        throw new Exception(s"empty filename not allowed in LoadMemoryAnnotation")
+      case name :: Nil =>
+        (name, "")
+      case other =>
+        (other.reverse.tail.reverse.mkString("."), "." + other.last)
+    }
+  }
+
   def getFileName: String = {
     originalMemoryNameOpt match {
       case Some(originalMemoryName) =>
         if(target.name == originalMemoryName) {
-          fileName
+          prefix
         }
         else {
-          fileName + target.name.drop(originalMemoryName.length)
+          prefix + target.name.drop(originalMemoryName.length)
         }
       case _ =>
         fileName
     }
   }
+
+  def getSuffix: String = suffix
 
   def duplicate(newNamed: Named): LoadMemoryAnnotation = {
     newNamed match {
@@ -117,6 +121,7 @@ case class LoadMemoryAnnotation(
 //TODO: (chick) better integration with chisel end firrtl error systems
 //scalastyle:off method.length cyclomatic.complexity regex
 class CreateBindableMemoryLoaders(circuitState: CircuitState) extends Pass {
+  var memoryCounter: Int = -1
 
   val annotations      : Seq[Annotation] = circuitState.annotations
   val memoryAnnotations: Seq[LoadMemoryAnnotation] = annotations.collect{ case m: LoadMemoryAnnotation => m }
@@ -173,15 +178,18 @@ class CreateBindableMemoryLoaders(circuitState: CircuitState) extends Pass {
 
               val moduleMap = circuitState.circuit.modules.map(m => m.name -> m).toMap
               val renderer = verilogEmitter.getRenderer(module, moduleMap)(writer)
-              val loadFileName = lma.getFileName + ".txt"
-              renderer.emitVerilogBind(s"BindsTo_${moduleName.name}",
+              val loadFileName = lma.getFileName + lma.getSuffix
+
+              memoryCounter += 1
+              val bindsToName = s"BindsTo_${memoryCounter}_${moduleName.name}"
+              renderer.emitVerilogBind(bindsToName,
                 s"""
                    |initial begin
                    |  $$readmem$hexOrBinary("$loadFileName", ${myModule.name}.$componentName);
                    |end
                     """.stripMargin)
               val inLineText = writer.toString + "\n" +
-                s"""bind ${myModule.name} BindsTo_${myModule.name} BindsTo_${myModule.name}_Inst(.*);"""
+                s"""bind ${myModule.name} $bindsToName ${bindsToName}_Inst(.*);"""
 
               val blackBoxInline = BlackBoxInlineAnno(
                 moduleName,
@@ -236,14 +244,35 @@ class CreateBindableMemoryLoaders(circuitState: CircuitState) extends Pass {
   }
 }
 
+/**
+  * This transform only is activated if verilog is being generated
+  * (determined by presence of the proper emit annotation)
+  * when activated it creates additional verilog files that contain
+  * modules bound to the modules that contain an initializable memory
+  *
+  * Currently the only non-verilog based simulation that can support loading
+  * memory from a file is treadle but it does not need this transform
+  * to do that.
+  */
 //noinspection ScalaStyle
 class LoadMemoryTransform extends Transform {
   def inputForm  : CircuitForm = LowForm
   def outputForm : CircuitForm = LowForm
 
   def execute(state: CircuitState): CircuitState = {
-    val bindLoaderTransform = new CreateBindableMemoryLoaders(state)
-    bindLoaderTransform.run(state.circuit)
-    state.copy(annotations = state.annotations ++ bindLoaderTransform.bindModules)
+    val isVerilog = state.annotations.exists {
+      case EmitCircuitAnnotation(emitter) =>
+        emitter == classOf[VerilogEmitter]
+      case _ =>
+        false
+    }
+    if(isVerilog) {
+      val bindLoaderTransform = new CreateBindableMemoryLoaders(state)
+      bindLoaderTransform.run(state.circuit)
+      state.copy(annotations = state.annotations ++ bindLoaderTransform.bindModules)
+    }
+    else {
+      state
+    }
   }
 }
