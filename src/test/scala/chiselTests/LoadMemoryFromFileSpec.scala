@@ -79,31 +79,4 @@ class LoadMemoryFromFileSpec extends FreeSpec with Matchers {
         throw new Exception("Failed compile")
     }
   }
-
-  "Load memory annotations should not have suffixes" in {
-    val testDirName = "test_run_dir/load_memory_suffix_spec"
-
-    val outputBuffer = new ByteArrayOutputStream()
-    Console.withOut(new PrintStream(outputBuffer)) {
-      val result = Driver.execute(
-        args = Array("-X", "verilog", "--target-dir", testDirName),
-        dut = () => new FileHasSuffix(memoryDepth = 8, memoryType = UInt(16.W))
-      )
-
-      result match {
-        case ChiselExecutionSuccess(_, _, Some(FirrtlExecutionSuccess(_, _))) =>
-          val dir = new File(testDirName)
-
-        case _ =>
-          throw new Exception("Failed compile")
-      }
-    }
-    val output = outputBuffer.toString
-
-    output should include (
-      s"""LoadMemoryAnnotation fileName "./mem1.txt" has extension ".txt" will still be appended"""
-    )
-    output should include ("""1 warning(s)""")
-  }
-
 }
