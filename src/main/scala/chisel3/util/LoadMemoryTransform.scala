@@ -152,10 +152,9 @@ class CreateBindableMemoryLoaders(circuitState: CircuitState) extends Pass {
     * walk the module and for memories that have LoadMemory annotations
     * generate the bindable modules for verilog emission
     *
-    * @param modulePrefix kind of a path to the current module
     * @param myModule     module being searched for memories
     */
-  def processModule(modulePrefix: String, myModule: DefModule): Unit = {
+  def processModule(myModule: DefModule): Unit = {
 
     def makePath(componentName: String): String = {
       circuitState.circuit.main + "." + myModule.name + "." + componentName
@@ -215,12 +214,6 @@ class CreateBindableMemoryLoaders(circuitState: CircuitState) extends Pass {
 
         case m: DefMemory          => processMemory(m.name)
 
-        case WDefInstance(_, _, moduleName, _) =>
-          val subModule = findModule(moduleName, circuitState.circuit)
-          val newPrefix = (if (modulePrefix.nonEmpty) modulePrefix + "." else "") + myModule.name
-
-          processModule(newPrefix, subModule)
-
         case _ =>
       }
     }
@@ -238,8 +231,7 @@ class CreateBindableMemoryLoaders(circuitState: CircuitState) extends Pass {
     * @return
     */
   def run(c: Circuit): Circuit = {
-    val topModule = findModule(c.main, c)
-    processModule(modulePrefix = c.main, topModule)
+    c.modules.foreach(processModule)
     c
   }
 }
