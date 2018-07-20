@@ -28,7 +28,7 @@ class SwitchContext[T <: Bits](cond: T, whenContext: Option[WhenContext], lits: 
   def is(v: Iterable[T])(block: => Unit): SwitchContext[T] = {
     if (!v.isEmpty) {
       val newLits = v.map { w =>
-        require(w.isLit, "is conditions must be literals!")
+        require(w.litOption.isDefined, "is condition must be literal")
         val value = w.litValue
         require(!lits.contains(value), "all is conditions must be mutually exclusive!")
         value

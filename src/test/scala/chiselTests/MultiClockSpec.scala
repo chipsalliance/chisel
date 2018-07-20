@@ -142,6 +142,18 @@ class MultiClockSpec extends ChiselFlatSpec {
       assert(withReset(this.reset) { 5 } == 5)
     })
   }
+  it should "support literal Bools" in {
+    assertTesterPasses(new BasicTester {
+      val reg = withReset(true.B) {
+        RegInit(6.U)
+      }
+      reg := reg - 1.U
+      // The reg is always in reset so will never decrement
+      chisel3.assert(reg === 6.U)
+      val (_, done) = Counter(true.B, 4)
+      when (done) { stop() }
+    })
+  }
 
   "withClockAndReset" should "return like a normal Scala block" in {
     elaborate(new BasicTester {

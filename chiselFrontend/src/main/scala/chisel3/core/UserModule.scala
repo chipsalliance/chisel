@@ -45,6 +45,22 @@ abstract class UserModule(implicit moduleCompileOptions: CompileOptions)
 
   val compileOptions = moduleCompileOptions
 
+  private[chisel3] def namePorts(names: HashMap[HasId, String]): Unit = {
+    for (port <- getModulePorts) {
+      port.suggestedName.orElse(names.get(port)) match {
+        case Some(name) =>
+          if (_namespace.contains(name)) {
+            Builder.error(s"""Unable to name port $port to "$name" in $this,""" +
+              " name is already taken by another port!")
+          }
+          port.setRef(ModuleIO(this, _namespace.name(name)))
+        case None => Builder.error(s"Unable to name port $port in $this, " +
+          "try making it a public field of the Module")
+      }
+    }
+  }
+
+
   private[core] override def generateComponent(): Component = {
     require(!_closed, "Can't generate module more than once")
     _closed = true
@@ -52,10 +68,7 @@ abstract class UserModule(implicit moduleCompileOptions: CompileOptions)
     val names = nameIds(classOf[UserModule])
 
     // Ports get first naming priority, since they are part of a Module's IO spec
-    for (port <- getModulePorts) {
-      require(names.contains(port), s"Unable to name port $port in $this")
-      port.setRef(ModuleIO(this, _namespace.name(names(port))))
-    }
+    namePorts(names)
 
     // Then everything else gets named
     for ((node, name) <- names) {
@@ -66,7 +79,13 @@ abstract class UserModule(implicit moduleCompileOptions: CompileOptions)
     for (id <- getIds) {
       id match {
         case id: BaseModule => id.forceName(default=id.desiredName, _namespace)
-        case id => id.forceName(default="_T", _namespace)
+        case id: MemBase[_] => id.forceName(default="_T", _namespace)
+        case id: Data if id.topBindingOpt.isDefined => id.topBinding match {
+          case OpBinding(_) | MemoryPortBinding(_) | PortBinding(_) | RegBinding(_) | WireBinding(_) =>
+            id.forceName(default="_T", _namespace)
+          case _ =>  // don't name literals
+        }
+        case id: Data if id.topBindingOpt.isEmpty =>  // don't name unbound types
       }
       id._onModuleClose
     }
@@ -175,6 +194,15 @@ abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions)
     names.put(reset, "reset")
 
     names
+  }
+
+  private[chisel3] override def namePorts(names: HashMap[HasId, String]): Unit = {
+    for (port <- getModulePorts) {
+      // This should already have been caught
+      if (!names.contains(port)) throwException(s"Unable to name port $port in $this")
+      val name = names(port)
+      port.setRef(ModuleIO(this, _namespace.name(name)))
+    }
   }
 
   private[core] override def generateComponent(): Component = {
