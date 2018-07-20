@@ -3,12 +3,12 @@
 package firrtl.passes
 
 import com.typesafe.scalalogging.LazyLogging
-
 import firrtl._
 import firrtl.ir._
 import firrtl.Utils._
 import firrtl.Mappers._
 import firrtl.PrimOps._
+import firrtl.transforms.ConstantPropagation
 
 import scala.collection.mutable
 
@@ -198,14 +198,9 @@ object Legalize extends Pass {
       e
     }
   }
-  private def legalizeBits(expr: DoPrim): Expression = {
-    lazy val (hi, low) = (expr.consts.head, expr.consts(1))
-    lazy val mask = (BigInt(1) << (hi - low + 1).toInt) - 1
-    lazy val width = IntWidth(hi - low + 1)
+  private def legalizeBitExtract(expr: DoPrim): Expression = {
     expr.args.head match {
-      case UIntLiteral(value, _) => UIntLiteral((value >> low.toInt) & mask, width)
-      case SIntLiteral(value, _) => SIntLiteral((value >> low.toInt) & mask, width)
-      //case FixedLiteral
+      case _: UIntLiteral | _: SIntLiteral => ConstantPropagation.constPropBitExtract(expr)
       case _ => expr
     }
   }
@@ -236,7 +231,7 @@ object Legalize extends Pass {
       case prim: DoPrim => prim.op match {
         case Shr => legalizeShiftRight(prim)
         case Pad => legalizePad(prim)
-        case Bits => legalizeBits(prim)
+        case Bits | Head | Tail => legalizeBitExtract(prim)
         case _ => prim
       }
       case e => e // respect pre-order traversal
