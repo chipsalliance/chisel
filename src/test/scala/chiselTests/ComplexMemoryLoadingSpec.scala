@@ -5,8 +5,9 @@ package chiselTests
 import java.io.File
 
 import chisel3._
-import chisel3.util.{MemoryLoadFileType, loadMemoryFromFile, log2Ceil}
+import chisel3.util.{loadMemoryFromFile, log2Ceil}
 import firrtl.FirrtlExecutionSuccess
+import firrtl.annotations.MemoryLoadFileType
 import org.scalatest.{FreeSpec, Matchers}
 
 class MemoryShape extends Bundle {
