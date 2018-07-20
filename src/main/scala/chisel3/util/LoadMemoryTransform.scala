@@ -116,7 +116,7 @@ class CreateBindableMemoryLoaders(circuitState: CircuitState) extends Pass {
 
               val moduleMap = circuitState.circuit.modules.map(m => m.name -> m).toMap
               val renderer = verilogEmitter.getRenderer(module, moduleMap)(writer)
-              val loadFileName = lma.getFileName + lma.getSuffix
+              val loadFileName = lma.getFileName
 
               memoryCounter += 1
               val bindsToName = s"BindsTo_${memoryCounter}_${moduleName.name}"
