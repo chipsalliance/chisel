@@ -6,7 +6,7 @@ import chisel3.core.SpecifiedDirection
 import chisel3.experimental._
 import chisel3.internal.sourceinfo.{NoSourceInfo, SourceLine}
 
-private[chisel3] object Emitter {
+/*private[chisel3]*/ object Emitter {
   def emit(circuit: Circuit): String = new Emitter(circuit).toString
 }
 

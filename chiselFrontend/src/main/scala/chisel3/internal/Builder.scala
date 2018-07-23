@@ -113,6 +113,16 @@ private[chisel3] trait HasId extends InstanceId {
   private[chisel3] def setRef(parent: HasId, index: UInt): Unit = setRef(Index(Node(parent), index.ref))
   private[chisel3] def getRef: Arg = _ref.get
 
+  def pathTo(m: BaseModule): Seq[String] = {
+    if(this == m) Nil
+    else {
+      _parent match {
+        case Some(p) => p.pathTo(m) ++ Seq(instanceName)
+        case None => Nil
+      }
+    }
+  }
+
   // Implementation of public methods.
   def instanceName: String = _parent match {
     case Some(p) => p._component match {
@@ -134,7 +144,7 @@ private[chisel3] trait HasId extends InstanceId {
     case None => throwException(s"$instanceName doesn't have a parent")
   }
   // TODO Should this be public?
-  protected def circuitName: String = _parent match {
+  def circuitName: String = _parent match {
     case None => instanceName
     case Some(p) => p.circuitName
   }
@@ -300,6 +310,18 @@ private[chisel3] object Builder {
       errors.info("Done elaborating.")
 
       Circuit(components.last.name, components, annotations)
+    }
+  }
+
+  def buildAndReturn[T <: UserModule](f: => T): (Circuit, T) = {
+    dynamicContextVar.withValue(Some(new DynamicContext())) {
+      errors.info("Elaborating design...")
+      val mod = f
+      mod.forceName(mod.name, globalNamespace)
+      errors.checkpoint()
+      errors.info("Done elaborating.")
+
+      (Circuit(components.last.name, components, annotations), mod)
     }
   }
   initializeSingletons()

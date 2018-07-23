@@ -3,19 +3,16 @@
 package chiselTests
 
 import java.io.File
+
 import org.scalatest._
 import org.scalatest.prop._
 import org.scalacheck._
 import chisel3._
+import chisel3.core.ChiselAnnotation
 import chisel3.experimental.RawModule
+import chisel3.internal.firrtl.Circuit
 import chisel3.testers._
-import firrtl.{
-  CommonOptions,
-  ExecutionOptionsManager,
-  HasFirrtlOptions,
-  FirrtlExecutionSuccess,
-  FirrtlExecutionFailure
-}
+import firrtl.{AnnotationSeq, CommonOptions, ExecutionOptionsManager, FirrtlExecutionFailure, FirrtlExecutionSuccess, HasFirrtlOptions}
 import firrtl.util.BackendCompilationUtilities
 
 /** Common utility functions for Chisel unit tests. */
@@ -37,6 +34,25 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
     * @return Firrtl representation as a String
     */
   def generateFirrtl(t: => RawModule): String = Driver.emit(() => t)
+
+  def newManager() = {
+    val testDir = createTestDirectory(this.getClass.getSimpleName)
+    new ExecutionOptionsManager("compile") with HasFirrtlOptions with HasChiselExecutionOptions {
+      commonOptions = CommonOptions(targetDirName = testDir.toString)
+    }
+  }
+
+  def compile(circuit: Circuit, annos: Seq[ChiselAnnotation]): String = {
+    Driver.execute(newManager(), circuit, annos) match {
+      case ChiselExecutionSuccess(_, _, Some(firrtlExecRes)) =>
+        firrtlExecRes match {
+          case FirrtlExecutionSuccess(_, verilog) => verilog
+          case FirrtlExecutionFailure(msg) => fail(msg)
+        }
+      case ChiselExecutionSuccess(_, _, None) => fail() // This shouldn't happen
+      case ChiselExecutionFailure(msg) => fail(msg)
+    }
+  }
 
   /** Compiles a Chisel Module to Verilog
     * NOTE: This uses the "test_run_dir" as the default directory for generated code.

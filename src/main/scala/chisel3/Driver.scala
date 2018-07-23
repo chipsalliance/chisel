@@ -4,16 +4,15 @@ package chisel3
 
 import chisel3.internal.firrtl.Emitter
 import chisel3.experimental.{RawModule, RunFirrtlTransform}
-
 import java.io._
-import net.jcazevedo.moultingyaml._
 
+import net.jcazevedo.moultingyaml._
 import internal.firrtl._
 import firrtl._
 import firrtl.annotations.{Annotation, JsonProtocol}
-import firrtl.util.{ BackendCompilationUtilities => FirrtlBackendCompilationUtilities }
-
+import firrtl.util.{BackendCompilationUtilities => FirrtlBackendCompilationUtilities}
 import _root_.firrtl.annotations.AnnotationYamlProtocol._
+import chisel3.core.ChiselAnnotation
 
 /**
   * The Driver provides methods to invoke the chisel3 compiler and the firrtl compiler.
@@ -92,6 +91,8 @@ object Driver extends BackendCompilationUtilities {
     */
   def elaborate[T <: RawModule](gen: () => T): Circuit = internal.Builder.build(Module(gen()))
 
+  def elaborateAndReturn[T <: RawModule](gen: () => T): (Circuit, T) = internal.Builder.buildAndReturn(Module(gen()))
+
   def emit[T <: RawModule](gen: () => T): String = Emitter.emit(elaborate(gen))
 
   def emit[T <: RawModule](ir: Circuit): String = Emitter.emit(ir)
@@ -127,17 +128,9 @@ object Driver extends BackendCompilationUtilities {
 
   def targetDir(): String = { target_dir getOrElse new File(".").getCanonicalPath }
 
-  /**
-    * Run the chisel3 compiler and possibly the firrtl compiler with options specified
- *
-    * @param optionsManager The options specified
-    * @param dut                    The device under test
-    * @return                       An execution result with useful stuff, or failure with message
-    */
-  def execute(
-      optionsManager: ExecutionOptionsManager with HasChiselExecutionOptions with HasFirrtlOptions,
-      dut: () => RawModule): ChiselExecutionResult = {
-    val circuit = elaborate(dut)
+  def execute(optionsManager: ExecutionOptionsManager with HasChiselExecutionOptions with HasFirrtlOptions,
+              circuit: Circuit,
+              annotations: Seq[ChiselAnnotation]): ChiselExecutionResult = {
 
     // this little hack let's us set the topName with the circuit name if it has not been set from args
     optionsManager.setTopNameIfNotSet(circuit.name)
@@ -154,9 +147,10 @@ object Driver extends BackendCompilationUtilities {
     w.write(firrtlString)
     w.close()
 
+    val allAnnotations = circuit.annotations ++ annotations
     val annotationFile = new File(optionsManager.getBuildFileName("anno.json"))
     val af = new FileWriter(annotationFile)
-    val firrtlAnnos = circuit.annotations.map(_.toFirrtl)
+    val firrtlAnnos = allAnnotations.map(_.toFirrtl)
     af.write(JsonProtocol.serialize(firrtlAnnos))
     af.close()
 
@@ -165,13 +159,13 @@ object Driver extends BackendCompilationUtilities {
       * @note Annotations targeting firrtl.Transform will not result in any
       *   transform being instantiated
       */
-    val transforms = circuit.annotations
-                       .collect { case anno: RunFirrtlTransform => anno.transformClass }
-                       .distinct
-                       .filterNot(_ == classOf[firrtl.Transform])
-                       .map { transformClass: Class[_ <: Transform] =>
-                         transformClass.newInstance()
-                       }
+    val transforms = allAnnotations
+      .collect { case anno: RunFirrtlTransform => anno.transformClass }
+      .distinct
+      .filterNot(_ == classOf[firrtl.Transform])
+      .map { transformClass: Class[_ <: Transform] =>
+        transformClass.newInstance()
+      }
     /* This passes the firrtl source and annotations directly to firrtl */
     optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(
       firrtlSource = Some(firrtlString),
@@ -185,6 +179,20 @@ object Driver extends BackendCompilationUtilities {
       None
     }
     ChiselExecutionSuccess(Some(circuit), firrtlString, firrtlExecutionResult)
+
+  }
+
+  /**
+    * Run the chisel3 compiler and possibly the firrtl compiler with options specified
+ *
+    * @param optionsManager The options specified
+    * @param dut                    The device under test
+    * @return                       An execution result with useful stuff, or failure with message
+    */
+  def execute(
+      optionsManager: ExecutionOptionsManager with HasChiselExecutionOptions with HasFirrtlOptions,
+      dut: () => RawModule): ChiselExecutionResult = {
+    execute(optionsManager, elaborate(dut), Nil)
   }
 
   /**
