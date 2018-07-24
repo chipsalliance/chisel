@@ -6,8 +6,9 @@ package ciclTests
 
 import chiselTests.ChiselPropSpec
 import chisel3._
-import chisel3.core.{BaseModule, ChiselAnnotation, RunFirrtlTransform}
+import chisel3.core.{BaseModule, ChiselAnnotation, RunFirrtlTransform, dontTouch}
 import chisel3.experimental.{MultiIOModule, RawModule, annotate}
+import ciclTests.BreakPoint.BreakPointAnnotation
 import firrtl.{AnnotationSeq, CircuitForm, CircuitState, HighForm, MidForm, RenameMap, Transform}
 import firrtl.annotations._
 import firrtl.ir.{Input => _, Module => _, Output => _, _}
@@ -49,7 +50,8 @@ class CICLSpec extends ChiselPropSpec {
     val (ir, b) = Driver.elaborateAndReturn(() => new B)
 
     //val bp = b.addBreakpoints
-    val bp = b.a1.addBreakpoints
+    val bps = b.a1.addBreakpoints
+    val bp = bps.head.asInstanceOf[BreakPointAnnotation]
 
     println(s"Within module ${bp.enclosingModule.name}, inject '${bp.instance.serialize}' and connect:")
     bp.refs.foreach {
@@ -57,7 +59,7 @@ class CICLSpec extends ChiselPropSpec {
     }
     println(s"To break with:\n${bp.module.serialize}")
 
-    val verilog = compile(ir, Seq(bp))
+    val verilog = compile(ir, bps)
     println(verilog)
     assert(countModules(verilog) === 3)
   }
@@ -171,6 +173,8 @@ object BreakPoint {
     }
     object X { val y = f(module, new MyCMR()) }
     val flag = IO(Output(chiselTypeOf(X.y))).suggestName("flag")
+
+    dontTouch(flag)
     flag := X.y
   }
 
@@ -182,7 +186,7 @@ object BreakPoint {
     * @tparam T Type of the root hardware
     * @return BreakPoint annotation
     */
-  def apply[T<: BaseModule](name: String, root: T, f: (T, CMR) => Data): BreakPointAnnotation = {
+  def apply[T<: BaseModule](name: String, root: T, f: (T, CMR) => Data): Seq[ChiselAnnotation] = {
 
     // Elaborate breakpoint
     val (chiselIR, dut) = Driver.elaborateAndReturn(() => new BreakPointModule(name, root, f))
@@ -201,8 +205,10 @@ object BreakPoint {
     val moduleName = ModuleName(root.name, circuitName)
     def toNamed(ref: Data): ComponentName = ComponentName(ref.pathTo(root).mkString("."), moduleName)
 
-    // Return Annotation
-    BreakPointAnnotation((dut.cmrs.toSeq ++ otherPorts).map{ case (from, to) => (toNamed(from), ComponentName(name + "." + to.toNamed.name, moduleName))}, root.toNamed, DefInstance(NoInfo, name, firrtlModule.name), firrtlModule)
+    // Return Annotations
+    Seq(
+      BreakPointAnnotation((dut.cmrs.toSeq ++ otherPorts).map{ case (from, to) => (toNamed(from), ComponentName(name + "." + to.toNamed.name, moduleName))}, root.toNamed, DefInstance(NoInfo, name, firrtlModule.name), firrtlModule)
+    ) ++ chiselIR.annotations
   }
 
 }
