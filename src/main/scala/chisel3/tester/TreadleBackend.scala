@@ -4,6 +4,7 @@ package chisel3.tester
 
 import chisel3._
 import chisel3.experimental.{DataMirror, MultiIOModule}
+import firrtl.transforms.CombinationalPath
 import java.util.concurrent.{Semaphore, ConcurrentLinkedQueue, TimeUnit}
 import scala.collection.mutable
 
@@ -202,9 +203,13 @@ object TreadleExecutive {
     chisel3.Driver.execute(optionsManager, () => dutGen) match {
       case ChiselExecutionSuccess(Some(circuit), _, Some(firrtlExecutionResult)) =>
         firrtlExecutionResult match {
-          case FirrtlExecutionSuccess(_, compiledFirrtl) =>
+          case success: FirrtlExecutionSuccess =>
             val dut = getTopModule(circuit).asInstanceOf[T]
-            val interpretiveTester = new TreadleTester(compiledFirrtl, optionsManager)
+            val interpretiveTester = new TreadleTester(success.emitted, optionsManager)
+            val paths = success.circuitState.annotations.collect {  // TODO: check modules?
+              case c: CombinationalPath => Seq(c.sink.name) ++ c.sources.map { _.name }
+            }
+            println(paths)
             new TreadleBackend(dut, interpretiveTester)
           case FirrtlExecutionFailure(message) =>
             throw new Exception(s"FirrtlBackend: failed firrtl compile message: $message")
