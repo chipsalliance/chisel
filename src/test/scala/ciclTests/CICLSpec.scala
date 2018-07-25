@@ -6,20 +6,9 @@ package ciclTests
 
 import chiselTests.ChiselPropSpec
 import chisel3._
-import chisel3.core.dontTouch
 import chisel3.experimental.MultiIOModule
-import chisel3.libs.BreakPoint.BreakPointAnnotation
-import chisel3.libs.aspect.ModuleAspect
-import chisel3.libs.transaction.TransactionEvent
-import chisel3.libs.AssertDelay
-import chisel3.libs.diagnostic.{DelayCounter, DelayCounterAnnotation}
-import chisel3.libs.transaction.CMR
-import firrtl.annotations._
-import firrtl.ir.{Input => _, Module => _, Output => _, _}
-import firrtl.passes.ToWorkingIR
-import firrtl.passes.wiring.WiringInfo
-
-import scala.collection.mutable
+import chisel3.libs.transaction.{TransactionEvent, CMR}
+import chisel3.libs.diagnostic.{DelayCounter, DelayCounterAnnotation, Histogram}
 
 class Buffer(delay: Int) extends MultiIOModule {
   val in = IO(Input(UInt(3.W)))
@@ -81,31 +70,15 @@ class CICLSpec extends ChiselPropSpec {
 
     val (ir, topA) = Driver.elaborateAndReturn(() => new Buffer(1))
 
-    val aspects = ModuleAspect("histogram", topA, () => new Histogram, (a: Buffer, histogram: Histogram) => {
-      Map(
-        a.clock -> histogram.clock,
-        a.reset -> histogram.reset,
-        a.regs(0) -> histogram.in
-      )
-    })
+    val aspects = Histogram("histReg0", topA, topA.regs(0), 100)
 
     val verilog = compile(ir, aspects)
     println(verilog)
     assert(countModules(verilog) === 2)
   }
-
 }
 
 
-class Histogram extends MultiIOModule {
-  val in = IO(Input(UInt(3.W)))
-  val out = IO(Output(UInt(3.W)))
-  val histMem = Mem(math.pow(2, in.getWidth).toInt, UInt(100.W))
-  val readPort = histMem.read(in)
-  histMem.write(in, readPort + 1.U)
-  out := readPort
-  dontTouch(out)
-}
 
 /**
   * Limitations:
