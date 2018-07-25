@@ -6,10 +6,11 @@ package ciclTests
 
 import chiselTests.ChiselPropSpec
 import chisel3._
-import chisel3.core.{BaseModule, ChiselAnnotation, RunFirrtlTransform, dontTouch}
-import chisel3.experimental.{MultiIOModule, RawModule, annotate}
-import ciclTests.BreakPoint.BreakPointAnnotation
-import firrtl.{AnnotationSeq, CircuitForm, CircuitState, HighForm, MidForm, RenameMap, Transform}
+import chisel3.core.dontTouch
+import chisel3.experimental.MultiIOModule
+import chisel3.libs.BreakPoint.BreakPointAnnotation
+import chisel3.libs.aspect.ModuleAspect
+import chisel3.libs.{AssertDelay, BreakPoint, CMR}
 import firrtl.annotations._
 import firrtl.ir.{Input => _, Module => _, Output => _, _}
 import firrtl.passes.ToWorkingIR
@@ -17,15 +18,7 @@ import firrtl.passes.wiring.WiringInfo
 
 import scala.collection.mutable
 
-class A extends MultiIOModule {
-  val in = IO(Input(UInt(3.W)))
-  val out = IO(Output(UInt(3.W)))
-  val myreg = RegNext(in)
-  out := myreg
-
-  def addBreakpoints = BreakPoint("bpA", this, (a: A, cmr: CMR) => { cmr(a.myreg) === 4.U })
-}
-
+/*
 class B extends MultiIOModule {
   val in = IO(Input(UInt(3.W)))
   val out = IO(Output(UInt(3.W)))
@@ -40,175 +33,110 @@ class B extends MultiIOModule {
     breakReg > 10.U && cmr(b.a1.myreg) < 20.U
   })
 }
+*/
+class Buffer(delay: Int) extends MultiIOModule {
+  val in = IO(Input(UInt(3.W)))
+  val out = IO(Output(UInt(3.W)))
+  val regs = Reg(t=Vec(delay, UInt(3.W)))
+  out := regs.foldLeft(in){ (source, r) =>
+    r := source
+    r
+  }
+}
 
 class CICLSpec extends ChiselPropSpec {
   private val ModuleRegex = """\s*module\s+(\w+)\b.*""".r
   def countModules(verilog: String): Int =
     (verilog split "\n"  collect { case ModuleRegex(name) => name }).size
 
-  property("Should return mem representation to create annotations") {
-    val (ir, b) = Driver.elaborateAndReturn(() => new B)
+  /**
+    * Limitations:
+    *   - Cannot add different breakpoints for different instances of the same module
+    *   - Must use CMR API for all references
+    */
+  property("Should inject transaction logic") {
 
-    //val bp = b.addBreakpoints
-    val bps = b.a1.addBreakpoints
-    val bp = bps.head.asInstanceOf[BreakPointAnnotation]
+    val (ir, b) = Driver.elaborateAndReturn(() => new Buffer(4))
 
-    println(s"Within module ${bp.enclosingModule.name}, inject '${bp.instance.serialize}' and connect:")
-    bp.refs.foreach {
-      case (from: ComponentName, to: ComponentName) => println(to.name + " <= " + from.name)
-    }
-    println(s"To break with:\n${bp.module.serialize}")
+    val bps = BreakPoint("bpA", b.a1, (a: A, cmr: CMR) => {
+      cmr(a.myreg) === 4.U
+    }) //++ b.addBreakpoints
 
     val verilog = compile(ir, bps)
     println(verilog)
     assert(countModules(verilog) === 3)
   }
-}
-
-abstract class CMR { def apply[T<:Data](ref: T): T }
-
-/**
-  *
-  */
-object BreakPoint {
-  class BreakPointTransform extends firrtl.Transform {
-    override def inputForm: CircuitForm = MidForm
-    override def outputForm: CircuitForm = HighForm
-
-    def onStmt(bps: Seq[BreakPointAnnotation])(s: Statement): Statement = {
-      if(bps.isEmpty) s else {
-        val newBody = mutable.ArrayBuffer[Statement]()
-        newBody += s
-        newBody ++= bps.map(_.instance)
-        Block(newBody)
-      }
-    }
-
-    override def execute(state: CircuitState): CircuitState = {
-      val bps = state.annotations.collect{ case b: BreakPointAnnotation => b}
-      val bpMap = bps.groupBy(_.enclosingModule.name)
-
-      val moduleMap = state.circuit.modules.map(m => m.name -> m).toMap
-
-      val newModules = state.circuit.modules.flatMap {
-        case m: firrtl.ir.Module =>
-          val myBreakPoints = bpMap.getOrElse(m.name, Nil)
-          val newM = m mapStmt onStmt(myBreakPoints)
-          newM +: myBreakPoints.map(_.module)
-        case x: ExtModule => Seq(x)
-      }
-
-      val newCircuit = state.circuit.copy(modules = newModules)
-      val newAnnotations = state.annotations.filter(!_.isInstanceOf[BreakPointAnnotation])
-
-      val wiringInfos = bps.flatMap{ case bp@BreakPointAnnotation(refs, enclosingModule, instance, module) =>
-        refs.map{ case (from, to) =>
-          WiringInfo(from, Seq(to), from.name)
-        }
-      }
-
-      val transforms = Seq(
-        new firrtl.IRToWorkingIR,
-        firrtl.passes.CheckHighForm,
-        firrtl.passes.ResolveKinds,
-        firrtl.passes.InferTypes,
-        firrtl.passes.CheckTypes,
-        firrtl.passes.Uniquify,
-        firrtl.passes.ResolveKinds,
-        firrtl.passes.InferTypes,
-        firrtl.passes.ResolveGenders,
-        firrtl.passes.CheckGenders,
-        firrtl.passes.InferWidths,
-        new firrtl.passes.wiring.Wiring(wiringInfos.toSeq),
-        new firrtl.IRToWorkingIR,
-        new firrtl.ResolveAndCheck
-      )
-
-      val finalState = transforms.foldLeft(state.copy(annotations = newAnnotations, circuit = newCircuit)) { (newState, xform) =>
-        val x = xform.runTransform(newState)
-        println(s"===${xform.getClass.getSimpleName}===")
-        println(x.circuit.serialize)
-        x
-      }
-      println(finalState.circuit.serialize)
-      finalState
-    }
-  }
-
-  case class BreakPointAnnotation(refs: Seq[(ComponentName, ComponentName)], enclosingModule: ModuleName, instance: DefInstance, module: firrtl.ir.DefModule) extends Annotation with RunFirrtlTransform {
-    override def toFirrtl: Annotation = this
-    override def transformClass: Class[_ <: Transform] = classOf[BreakPoint.BreakPointTransform]
-    private val errors = mutable.ArrayBuffer[String]()
-    private def rename[T<:Named](n: T, renames: RenameMap): T = (n, renames.get(n)) match {
-      case (m: ModuleName, Some(Seq(x: ModuleName))) => x.asInstanceOf[T]
-      case (c: ComponentName, Some(Seq(x: ComponentName))) => x.asInstanceOf[T]
-      case (_, None) => n
-      case (_, other) =>
-        errors += s"Bad rename in ${this.getClass}: $n to $other"
-        n
-    }
-    override def update(renames: RenameMap): Seq[Annotation] = {
-      val newRefs = refs.map { case (from, to) => (rename(from, renames), rename(to, renames)) }
-      val newEncl = rename(enclosingModule, renames)
-      if(errors.nonEmpty) {
-        throw new Exception(errors.mkString("\n"))
-      }
-      Seq(BreakPointAnnotation(newRefs, newEncl, instance, module))
-    }
-  }
-
-  private class BreakPointModule[T<:BaseModule](name: String, module: T, f: (T, CMR) => Data) extends MultiIOModule {
-    val ios = mutable.ArrayBuffer[Data]()
-    val cmrs = mutable.HashMap[Data, Data]()
-    val refs = mutable.HashSet[Data]()
-    class MyCMR extends CMR {
-      def apply[T<:Data](ref: T): T =
-        if(!refs.contains(ref)) {
-          val x = IO(Input(chiselTypeOf(ref)))
-          ios += x
-          cmrs += ((ref, x))
-          refs += ref
-          x
-        } else cmrs(ref).asInstanceOf[T]
-    }
-    object X { val y = f(module, new MyCMR()) }
-    val flag = IO(Output(chiselTypeOf(X.y))).suggestName("flag")
-
-    dontTouch(flag)
-    flag := X.y
-  }
 
   /**
-    *
-    * @param name Name of the hardware breakpoint instance
-    * @param root Location where the breakpoint will live
-    * @param f Function to build breakpoint hardware
-    * @tparam T Type of the root hardware
-    * @return BreakPoint annotation
+    * Limitations:
+    *   - Cannot check paths through children instances
+    *   - No cross module references
     */
-  def apply[T<: BaseModule](name: String, root: T, f: (T, CMR) => Data): Seq[ChiselAnnotation] = {
+  property("Should assert delays between signals") {
 
-    // Elaborate breakpoint
-    val (chiselIR, dut) = Driver.elaborateAndReturn(() => new BreakPointModule(name, root, f))
-
-    val otherPorts = root match {
-      case r: MultiIOModule => Seq((r.clock, dut.clock), (r.reset, dut.reset))
+    class A(nRegs: Int) extends MultiIOModule {
+      val in = IO(Input(UInt(3.W)))
+      val out = IO(Output(UInt(3.W)))
+      val regs = Reg(t=Vec(4, UInt(3.W)))
+      out := regs.foldLeft(in){ (source, r) =>
+        r := source
+        r
+      }
+      // Annotate as part of RTL description
+      annotate(AssertDelay(this, in, out, nRegs))
     }
 
-    // Build FIRRTL AST
-    val firrtlString = chisel3.internal.firrtl.Emitter.emit(chiselIR)
-    val firrtlIR = firrtl.Parser.parse(firrtlString)
-    val firrtlModule = firrtlIR.modules.head
+    // Errors if not correct delay
+    a [Exception] should be thrownBy {
+      compile(new A(3))
+    }
 
-    // Build Names for references
-    val circuitName = CircuitName(root.circuitName)
-    val moduleName = ModuleName(root.name, circuitName)
-    def toNamed(ref: Data): ComponentName = ComponentName(ref.pathTo(root).mkString("."), moduleName)
+    // No error if correct delay
+    val verilog = compile(new A(4))
 
-    // Return Annotations
-    Seq(
-      BreakPointAnnotation((dut.cmrs.toSeq ++ otherPorts).map{ case (from, to) => (toNamed(from), ComponentName(name + "." + to.toNamed.name, moduleName))}, root.toNamed, DefInstance(NoInfo, name, firrtlModule.name), firrtlModule)
-    ) ++ chiselIR.annotations
+    // Can add test-specific assertion
+    val (ir, top) = Driver.elaborateAndReturn(() => new A(4))
+    val badAssertion = AssertDelay(top, top.in, top.out, 3)
+    a [Exception] should be thrownBy {
+      compile(ir, Seq(badAssertion))
+    }
   }
 
+  property("Should track number of cycles in each state") {
+
+    val (ir, topA) = Driver.elaborateAndReturn(() => new A)
+
+    val aspects = ModuleAspect("histogram", topA, () => new Histogram, (a: A, histogram: Histogram) => {
+      Map(
+        a.clock -> histogram.clock,
+        a.reset -> histogram.reset,
+        a.reg -> histogram.in
+      )
+    })
+
+    val verilog = compile(ir, aspects)
+    println(verilog)
+    assert(countModules(verilog) === 2)
+  }
+
+}
+
+/* Histogram example for future use case
+*/
+class A extends MultiIOModule {
+  val in = IO(Input(UInt(3.W)))
+  val out = IO(Output(UInt(3.W)))
+  val reg = RegInit(UInt(3.W), 0.U)
+  reg := in
+  out := reg
+}
+
+class Histogram extends MultiIOModule {
+  val in = IO(Input(UInt(3.W)))
+  val out = IO(Output(UInt(3.W)))
+  val histMem = Mem(math.pow(2, in.getWidth).toInt, UInt(100.W))
+  val readPort = histMem.read(in)
+  histMem.write(in, readPort + 1.U)
+  out := readPort
+  dontTouch(out)
 }
