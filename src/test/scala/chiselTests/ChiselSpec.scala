@@ -12,7 +12,7 @@ import chisel3.core.ChiselAnnotation
 import chisel3.experimental.RawModule
 import chisel3.internal.firrtl.Circuit
 import chisel3.testers._
-import firrtl.{AnnotationSeq, CommonOptions, ExecutionOptionsManager, FirrtlExecutionFailure, FirrtlExecutionSuccess, HasFirrtlOptions}
+import firrtl.{AnnotationSeq, CircuitState, CommonOptions, ExecutionOptionsManager, FirrtlExecutionFailure, FirrtlExecutionSuccess, HasFirrtlOptions}
 import firrtl.util.BackendCompilationUtilities
 
 /** Common utility functions for Chisel unit tests. */
@@ -47,6 +47,18 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
       case ChiselExecutionSuccess(_, _, Some(firrtlExecRes)) =>
         firrtlExecRes match {
           case FirrtlExecutionSuccess(_, verilog) => verilog
+          case FirrtlExecutionFailure(msg) => fail(msg)
+        }
+      case ChiselExecutionSuccess(_, _, None) => fail() // This shouldn't happen
+      case ChiselExecutionFailure(msg) => fail(msg)
+    }
+  }
+
+  def compileAndReturn(circuit: Circuit, annos: Seq[ChiselAnnotation]): (String, CircuitState) = {
+    Driver.execute(newManager(), circuit, annos) match {
+      case ChiselExecutionSuccess(_, _, Some(firrtlExecRes)) =>
+        firrtlExecRes match {
+          case f@FirrtlExecutionSuccess(_, verilog) => (verilog, f.circuitState)
           case FirrtlExecutionFailure(msg) => fail(msg)
         }
       case ChiselExecutionSuccess(_, _, None) => fail() // This shouldn't happen

@@ -11,7 +11,8 @@ import chisel3.experimental.MultiIOModule
 import chisel3.libs.BreakPoint.BreakPointAnnotation
 import chisel3.libs.aspect.ModuleAspect
 import chisel3.libs.transaction.TransactionEvent
-import chisel3.libs.{AssertDelay}
+import chisel3.libs.AssertDelay
+import chisel3.libs.diagnostic.{DelayCounter, DelayCounterAnnotation}
 import chisel3.libs.transaction.CMR
 import firrtl.annotations._
 import firrtl.ir.{Input => _, Module => _, Output => _, _}
@@ -63,43 +64,28 @@ class CICLSpec extends ChiselPropSpec {
     */
   property("Should count delays between signals") {
 
-    class A(nRegs: Int) extends MultiIOModule {
-      val in = IO(Input(UInt(3.W)))
-      val out = IO(Output(UInt(3.W)))
-      val regs = Reg(t=Vec(4, UInt(3.W)))
-      out := regs.foldLeft(in){ (source, r) =>
-        r := source
-        r
-      }
-      // Annotate as part of RTL description
-      annotate(AssertDelay(this, in, out, nRegs))
-    }
+    val (ir, b) = Driver.elaborateAndReturn(() => new Buffer(4))
 
-    // Errors if not correct delay
-    a [Exception] should be thrownBy {
-      compile(new A(3))
-    }
+    val countDelays = DelayCounter(b, b.in, b.out)
 
-    // No error if correct delay
-    val verilog = compile(new A(4))
+    val (verilog, state) = compileAndReturn(ir, countDelays)
 
-    // Can add test-specific assertion
-    val (ir, top) = Driver.elaborateAndReturn(() => new A(4))
-    val badAssertion = AssertDelay(top, top.in, top.out, 3)
-    a [Exception] should be thrownBy {
-      compile(ir, Seq(badAssertion))
-    }
+    println(verilog)
+    assert(countModules(verilog) === 1)
+
+    val diagnostics = state.annotations.collect{case DelayCounterAnnotation(_, _, _, Some(delays)) => delays}
+    assert(diagnostics.size == 1 && diagnostics.head == Set(4))
   }
 
   property("Should track number of cycles in each state") {
 
-    val (ir, topA) = Driver.elaborateAndReturn(() => new A)
+    val (ir, topA) = Driver.elaborateAndReturn(() => new Buffer(1))
 
-    val aspects = ModuleAspect("histogram", topA, () => new Histogram, (a: A, histogram: Histogram) => {
+    val aspects = ModuleAspect("histogram", topA, () => new Histogram, (a: Buffer, histogram: Histogram) => {
       Map(
         a.clock -> histogram.clock,
         a.reset -> histogram.reset,
-        a.reg -> histogram.in
+        a.regs(0) -> histogram.in
       )
     })
 
@@ -110,15 +96,6 @@ class CICLSpec extends ChiselPropSpec {
 
 }
 
-/* Histogram example for future use case
-*/
-class A extends MultiIOModule {
-  val in = IO(Input(UInt(3.W)))
-  val out = IO(Output(UInt(3.W)))
-  val reg = RegInit(UInt(3.W), 0.U)
-  reg := in
-  out := reg
-}
 
 class Histogram extends MultiIOModule {
   val in = IO(Input(UInt(3.W)))
@@ -129,3 +106,39 @@ class Histogram extends MultiIOModule {
   out := readPort
   dontTouch(out)
 }
+
+/**
+  * Limitations:
+  *   - Cannot check paths through children instances
+  *   - No cross module references
+  */
+  /*
+property("Should count delays between signals") {
+
+  class A(nRegs: Int) extends MultiIOModule {
+    val in = IO(Input(UInt(3.W)))
+    val out = IO(Output(UInt(3.W)))
+    val regs = Reg(t=Vec(4, UInt(3.W)))
+    out := regs.foldLeft(in){ (source, r) =>
+      r := source
+      r
+    }
+    // Annotate as part of RTL description
+    annotate(AssertDelay(this, in, out, nRegs))
+  }
+
+  // Errors if not correct delay
+  a [Exception] should be thrownBy {
+  compile(new A(3))
+}
+
+  // No error if correct delay
+  val verilog = compile(new A(4))
+
+  // Can add test-specific assertion
+  val (ir, top) = Driver.elaborateAndReturn(() => new A(4))
+  val badAssertion = AssertDelay(top, top.in, top.out, 3)
+  a [Exception] should be thrownBy {
+  compile(ir, Seq(badAssertion))
+}
+*/
