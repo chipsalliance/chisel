@@ -10,7 +10,9 @@ import chisel3.core.dontTouch
 import chisel3.experimental.MultiIOModule
 import chisel3.libs.BreakPoint.BreakPointAnnotation
 import chisel3.libs.aspect.ModuleAspect
-import chisel3.libs.{AssertDelay, BreakPoint, CMR}
+import chisel3.libs.transaction.TransactionEvent
+import chisel3.libs.{AssertDelay}
+import chisel3.libs.transaction.CMR
 import firrtl.annotations._
 import firrtl.ir.{Input => _, Module => _, Output => _, _}
 import firrtl.passes.ToWorkingIR
@@ -18,26 +20,10 @@ import firrtl.passes.wiring.WiringInfo
 
 import scala.collection.mutable
 
-/*
-class B extends MultiIOModule {
-  val in = IO(Input(UInt(3.W)))
-  val out = IO(Output(UInt(3.W)))
-  val a1 = Module(new A)//.suggestName("blah")
-  a1.in := in
-  val a2 = Module(new A)
-  a2.in := a1.out
-  out := a2.out
-
-  def addBreakpoints = BreakPoint("bpB", this, (b: B, cmr: CMR) => {
-    val breakReg = RegNext(cmr(b.a1.myreg)).suggestName("breakReg")
-    breakReg > 10.U && cmr(b.a1.myreg) < 20.U
-  })
-}
-*/
 class Buffer(delay: Int) extends MultiIOModule {
   val in = IO(Input(UInt(3.W)))
   val out = IO(Output(UInt(3.W)))
-  val regs = Reg(t=Vec(delay, UInt(3.W)))
+  val regs = Seq.fill(delay)(Reg(UInt(3.W)))
   out := regs.foldLeft(in){ (source, r) =>
     r := source
     r
@@ -51,20 +37,23 @@ class CICLSpec extends ChiselPropSpec {
 
   /**
     * Limitations:
-    *   - Cannot add different breakpoints for different instances of the same module
+    *   - Cannot add different transactions for different instances of the same module
     *   - Must use CMR API for all references
+    *   - Cannot do instance annotations
     */
   property("Should inject transaction logic") {
 
     val (ir, b) = Driver.elaborateAndReturn(() => new Buffer(4))
 
-    val bps = BreakPoint("bpA", b.a1, (a: A, cmr: CMR) => {
-      cmr(a.myreg) === 4.U
-    }) //++ b.addBreakpoints
+    val xactions = TransactionEvent("bpA", b, (b: Buffer, cmr: CMR) => {
+      b.regs.map(cmr.apply).zipWithIndex.map {
+        case (reg, index) => reg === index.U
+      }.reduce(_ & _)
+    })
 
-    val verilog = compile(ir, bps)
+    val verilog = compile(ir, xactions)
     println(verilog)
-    assert(countModules(verilog) === 3)
+    assert(countModules(verilog) === 2)
   }
 
   /**
@@ -72,7 +61,7 @@ class CICLSpec extends ChiselPropSpec {
     *   - Cannot check paths through children instances
     *   - No cross module references
     */
-  property("Should assert delays between signals") {
+  property("Should count delays between signals") {
 
     class A(nRegs: Int) extends MultiIOModule {
       val in = IO(Input(UInt(3.W)))
