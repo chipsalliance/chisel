@@ -70,24 +70,6 @@ class CreateBindableMemoryLoaders(circuitState: CircuitState) extends Pass {
   val verilogEmitter   : VerilogEmitter = new VerilogEmitter
 
   /**
-    * finds the specified module name in the circuit
-    *
-    * @param moduleName name to find
-    * @param circuit circuit being analyzed
-    * @return the circuit, exception occurs in not found
-    */
-  def findModule(moduleName: String, circuit: Circuit): DefModule = {
-    circuit.modules.find(module => module.name == moduleName) match {
-      case Some(module: firrtl.ir.Module) =>
-        module
-      case Some(externalModule: DefModule) =>
-        externalModule
-      case _ =>
-        throw new Exception(s"Could not find module $moduleName in circuit $circuit")
-    }
-  }
-
-  /**
     * walk the module and for memories that have LoadMemory annotations
     * generate the bindable modules for verilog emission
     *

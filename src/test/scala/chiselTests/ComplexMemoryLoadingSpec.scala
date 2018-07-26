@@ -48,7 +48,7 @@ class ComplexMemoryLoadingSpec extends FreeSpec with Matchers {
           val file = new File(dir, s"HasComplexMemory.HasComplexMemory.memory_$element.v")
           file.exists() should be (true)
           val fileText = io.Source.fromFile(file).getLines().mkString("\n")
-          fileText should include (s"""$$readmemh("./mem_$element.txt", HasComplexMemory.memory_$element);""")
+          fileText should include (s"""$$readmemh("./mem_$element", HasComplexMemory.memory_$element);""")
         }
 
       case _=>
