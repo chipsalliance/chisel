@@ -4,7 +4,7 @@ package firrtlTests.transforms
 
 import firrtl.annotations.{Annotation, CircuitName, ModuleName}
 import firrtl.transforms._
-import firrtl.{FIRRTLException, Transform, VerilogCompiler}
+import firrtl.{FIRRTLException, Transform, VerilogCompiler, VerilogEmitter}
 import firrtlTests.{HighTransformSpec, LowTransformSpec}
 import org.scalacheck.Test.Failed
 import org.scalatest.{FreeSpec, Matchers, Succeeded}
@@ -63,7 +63,7 @@ class BlacklBoxSourceHelperTransformSpec extends LowTransformSpec {
   }
 
   "verilog compiler" should "have BlackBoxSourceHelper transform" in {
-    val verilogCompiler = new VerilogCompiler
+    val verilogCompiler = new VerilogEmitter
     verilogCompiler.transforms.map { x => x.getClass } should contain (classOf[BlackBoxSourceHelper])
   }
 }

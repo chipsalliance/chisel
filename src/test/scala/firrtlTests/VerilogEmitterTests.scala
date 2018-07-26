@@ -173,4 +173,63 @@ class VerilogEmitterSpec extends FirrtlFlatSpec {
       result should containLine ("assign out = in;")
     }
   }
+
+  "The verilog emitter" should "offer support for generating bindable forms of modules" in {
+    val emitter = new VerilogEmitter
+    val input =
+      """circuit Test :
+        |  module Test :
+        |    input a : UInt<25000>
+        |    output b : UInt
+        |    input c : UInt<32>
+        |    output d : UInt
+        |    input e : UInt<1>
+        |    input f : Analog<32>
+        |    b <= a
+        |    d <= add(c, e)
+        |""".stripMargin
+    val check =
+      """
+        |module BindsToTest(
+        |  input  [24999:0] a,
+        |  output [24999:0] b,
+        |  input  [31:0]    c,
+        |  output [32:0]    d,
+        |  input            e,
+        |  inout  [31:0]    f
+        |);
+        |
+        |$readmemh("file", memory);
+        |
+        |endmodule""".stripMargin.split("\n")
+
+    // We don't use executeTest because we care about the spacing in the result
+    val writer = new java.io.StringWriter
+
+    val initialState = CircuitState(parse(input), ChirrtlForm)
+    val compiler = new LowFirrtlCompiler()
+
+    val state = compiler.compile(initialState, Seq.empty)
+
+    val moduleMap = state.circuit.modules.map(m => m.name -> m).toMap
+
+    val module = state.circuit.modules.filter(module => module.name == "Test").collectFirst { case m: firrtl.ir.Module => m }.get
+
+    val renderer = emitter.getRenderer(module, moduleMap)(writer)
+
+    renderer.emitVerilogBind("BindsToTest",
+      """
+        |$readmemh("file", memory);
+        |
+        |""".stripMargin)
+    val lines = writer.toString.split("\n")
+
+    val outString = writer.toString
+
+    // This confirms that the module io's were emitted
+    for (c <- check) {
+      lines should contain (c)
+    }
+  }
+
 }
