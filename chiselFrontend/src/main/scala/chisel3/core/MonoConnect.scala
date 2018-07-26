@@ -142,7 +142,7 @@ object MonoConnect {
   private def issueConnect(sink: Element, source: Element)(implicit sourceInfo: SourceInfo): Unit = {
     // If the source is a DontCare, generate a DefInvalid for the sink,
     //  otherwise, issue a Connect.
-    source.binding match {
+    source.topBinding match {
       case b: DontCareBinding => pushCommand(DefInvalid(sourceInfo, sink.lref))
       case _ => pushCommand(Connect(sourceInfo, sink.lref, source.ref))
     }
@@ -154,8 +154,8 @@ object MonoConnect {
     import BindingDirection.{Internal, Input, Output} // Using extensively so import these
     // If source has no location, assume in context module
     // This can occur if is a literal, unbound will error previously
-    val sink_mod: BaseModule   = sink.binding.location.getOrElse(throw UnwritableSinkException)
-    val source_mod: BaseModule = source.binding.location.getOrElse(context_mod)
+    val sink_mod: BaseModule   = sink.topBinding.location.getOrElse(throw UnwritableSinkException)
+    val source_mod: BaseModule = source.topBinding.location.getOrElse(context_mod)
 
     val sink_direction = BindingDirection.from(sink.topBinding, sink.direction)
     val source_direction = BindingDirection.from(source.topBinding, source.direction)

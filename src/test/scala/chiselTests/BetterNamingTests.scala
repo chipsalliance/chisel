@@ -76,4 +76,17 @@ class BetterNamingTests extends ChiselFlatSpec {
     elaborate { module = new DigitFieldNamesInRecord; module }
     assert(module.getNameFailures() == Nil)
   }
+
+  "Literals" should "not impact temporary name suffixes" in {
+    class MyModule(withLits: Boolean) extends Module {
+      val io = IO(new Bundle {})
+      if (withLits) {
+        List(8.U, -3.S, 1.25.F(2.BP))
+      }
+      WireInit(3.U)
+    }
+    val withLits = chisel3.Driver.emit(() => new MyModule(true))
+    val noLits = chisel3.Driver.emit(() => new MyModule(false))
+    withLits should equal (noLits)
+  }
 }
