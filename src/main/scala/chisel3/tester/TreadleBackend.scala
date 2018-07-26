@@ -9,7 +9,6 @@ import java.util.concurrent.{Semaphore, ConcurrentLinkedQueue, TimeUnit}
 import scala.collection.mutable
 
 import scala.collection.mutable
-import firrtl_interpreter._
 import treadle.{HasTreadleSuite, TreadleTester}
 
 class TreadleBackend[T <: MultiIOModule](dut: T, tester: TreadleTester)
@@ -186,14 +185,13 @@ object TreadleExecutive {
     options: Option[ExecutionOptionsManager
             with HasChiselExecutionOptions
             with HasFirrtlOptions
-            with HasInterpreterSuite
             with HasTreadleSuite] = None): BackendInstance[T] = {
     val optionsManager = options match  {
       case Some(o: ExecutionOptionsManager) => o
 
       case None =>
         new ExecutionOptionsManager("chisel3")
-          with HasChiselExecutionOptions with HasFirrtlOptions with HasInterpreterSuite with HasTreadleSuite {
+          with HasChiselExecutionOptions with HasFirrtlOptions with HasTreadleSuite {
           commonOptions = CommonOptions(targetDirName = "test_run_dir")
         }
     }

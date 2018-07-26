@@ -5,7 +5,6 @@ package chisel3.tester
 import chisel3._
 import chisel3.experimental.MultiIOModule
 import firrtl.{ExecutionOptionsManager, HasFirrtlOptions}
-import firrtl_interpreter.HasInterpreterSuite
 
 class ThreadOrderDependentException(message: String) extends Exception(message)
 class SignalOverwriteException(message: String) extends Exception(message)
@@ -81,7 +80,7 @@ trait TestEnvInterface {
   def test[T <: MultiIOModule](dutGen: => T)(testFn: T => Unit): Unit = {
     test(Context.createDefaultTester(dutGen))(testFn)
   }
-  def test[T <: MultiIOModule](dutGen: => T, options: ExecutionOptionsManager with HasChiselExecutionOptions with HasFirrtlOptions with HasInterpreterSuite)(testFn: T => Unit): Unit = {
+  def test[T <: MultiIOModule](dutGen: => T, options: ExecutionOptionsManager with HasChiselExecutionOptions with HasFirrtlOptions)(testFn: T => Unit): Unit = {
     test(Context.createDefaultTester(dutGen, options))(testFn)
   }
 
@@ -100,5 +99,4 @@ trait TestEnvInterface {
 
 sealed trait ScalaSimulator
 
-object FirrtlInterpreterSimulator extends ScalaSimulator
 object TreadleSimulator extends ScalaSimulator
