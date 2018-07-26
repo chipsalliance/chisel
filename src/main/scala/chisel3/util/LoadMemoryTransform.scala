@@ -21,8 +21,8 @@ import scala.collection.mutable
   * @param hexOrBinary   use $readmemh or $readmemb
   */
 case class ChiselLoadMemoryAnnotation(
-  target     : InstanceId,
-  fileName   : String,
+  target:      InstanceId,
+  fileName:    String,
   hexOrBinary: MemoryLoadFileType.FileType = MemoryLoadFileType.Hex
 )
   extends ChiselAnnotation with RunFirrtlTransform {
@@ -62,12 +62,12 @@ object loadMemoryFromFile {
 class CreateBindableMemoryLoaders(circuitState: CircuitState) extends Pass {
   var memoryCounter: Int = -1
 
-  val annotations      : Seq[Annotation] = circuitState.annotations
+  val annotations:       Seq[Annotation] = circuitState.annotations
   val memoryAnnotations: Seq[LoadMemoryAnnotation] = annotations.collect{ case m: LoadMemoryAnnotation => m }
 
-  val bindModules      : mutable.ArrayBuffer[BlackBoxInlineAnno] = new mutable.ArrayBuffer()
+  val bindModules:       mutable.ArrayBuffer[BlackBoxInlineAnno] = new mutable.ArrayBuffer()
 
-  val verilogEmitter   : VerilogEmitter = new VerilogEmitter
+  val verilogEmitter:    VerilogEmitter = new VerilogEmitter
 
   /**
     * walk the module and for memories that have LoadMemory annotations
@@ -169,8 +169,8 @@ class CreateBindableMemoryLoaders(circuitState: CircuitState) extends Pass {
   */
 //noinspection ScalaStyle
 class LoadMemoryTransform extends Transform {
-  def inputForm  : CircuitForm = LowForm
-  def outputForm : CircuitForm = LowForm
+  def inputForm: CircuitForm  = LowForm
+  def outputForm: CircuitForm = LowForm
 
   def execute(state: CircuitState): CircuitState = {
     val isVerilog = state.annotations.exists {
