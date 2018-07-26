@@ -62,6 +62,12 @@ sealed abstract class Aggregate extends Data {
     }
   }
 
+  override def litOption = ???  // TODO implement me
+
+  // Returns the LitArg of a Bits object.
+  // Internal API for Bundle literals, to copy the LitArg of argument literals into the top map.
+  protected def litArgOfBits(elt: Bits): LitArg = elt.litArgOption.get
+
   /** Returns a Seq of the immediate contents of this Aggregate, in order.
     */
   def getElements: Seq[Data]
@@ -71,9 +77,9 @@ sealed abstract class Aggregate extends Data {
     // If the source is a DontCare, generate a DefInvalid for the sink,
     //  otherwise, issue a Connect.
     if (that == DontCare) {
-      pushCommand(DefInvalid(sourceInfo, this.lref))
+      pushCommand(DefInvalid(sourceInfo, Node(this)))
     } else {
-      pushCommand(BulkConnect(sourceInfo, this.lref, that.lref))
+      pushCommand(BulkConnect(sourceInfo, Node(this), Node(that)))
     }
   }
 
@@ -736,7 +742,7 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     // (which could lead to data conflicts, since it's likely the user didn't know to re-bind them).
     // This is not guaranteed to catch all cases (for example, Data in Tuples or Iterables).
     val boundDataParamNames = ctorParamsNameVals.collect {
-      case (paramName, paramVal: Data) if paramVal.hasBinding => paramName
+      case (paramName, paramVal: Data) if paramVal.topBindingOpt.isDefined => paramName
     }
     if (boundDataParamNames.nonEmpty) {
       autoClonetypeError(s"constructor parameters (${boundDataParamNames.sorted.mkString(", ")}) have values that are hardware types, which is likely to cause subtle errors." +
