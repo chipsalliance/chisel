@@ -7,7 +7,8 @@ package ciclTests
 import chiselTests.ChiselPropSpec
 import chisel3._
 import chisel3.experimental.MultiIOModule
-import chisel3.libs.transaction.{TransactionEvent, CMR}
+import chisel3.libs.aspect.{CrossModule, Snippet}
+import chisel3.libs.transaction.TransactionEvent
 import chisel3.libs.diagnostic.{DelayCounter, DelayCounterAnnotation, Histogram}
 
 class Buffer(delay: Int) extends MultiIOModule {
@@ -33,15 +34,30 @@ class CICLSpec extends ChiselPropSpec {
     */
   property("Should inject transaction logic") {
 
-    val (ir, b) = Driver.elaborateAndReturn(() => new Buffer(4))
+    val (ir, b) = Driver.elaborateAndReturn(() => new Buffer(1))
 
-    val xactions = TransactionEvent("bpA", b, (b: Buffer, cmr: CMR) => {
-      b.regs.map(cmr.apply).zipWithIndex.map {
-        case (reg, index) => reg === index.U
-      }.reduce(_ & _)
+    val xactions = TransactionEvent("is0123",  b, new Snippet[Buffer, Bool] {
+      override def snip(top: Buffer)  = {
+        top.regs.map(_.i).zipWithIndex.map {
+          case (reg, index) => reg === index.U
+        }.reduce(_ & _)
+      }
     })
+    xactions.foreach(println)
 
     val verilog = compile(ir, xactions)
+    println(verilog)
+    assert(countModules(verilog) === 2)
+  }
+
+  property("Should track number of cycles in each state") {
+
+    val (ir, topA) = Driver.elaborateAndReturn(() => new Buffer(1))
+
+    val aspects = Histogram("histReg0", topA, topA.regs(0), 100)
+    println(aspects)
+
+    val verilog = compile(ir, aspects)
     println(verilog)
     assert(countModules(verilog) === 2)
   }
@@ -55,7 +71,9 @@ class CICLSpec extends ChiselPropSpec {
 
     val (ir, b) = Driver.elaborateAndReturn(() => new Buffer(4))
 
-    val countDelays = DelayCounter(b, b.in, b.out)
+    val countDelays = CrossModule.withRoot(b) {
+      DelayCounter(b, b.in, b.out)
+    }
 
     val (verilog, state) = compileAndReturn(ir, countDelays)
 
@@ -66,16 +84,6 @@ class CICLSpec extends ChiselPropSpec {
     assert(diagnostics.size == 1 && diagnostics.head == Set(4))
   }
 
-  property("Should track number of cycles in each state") {
-
-    val (ir, topA) = Driver.elaborateAndReturn(() => new Buffer(1))
-
-    val aspects = Histogram("histReg0", topA, topA.regs(0), 100)
-
-    val verilog = compile(ir, aspects)
-    println(verilog)
-    assert(countModules(verilog) === 2)
-  }
 }
 
 
