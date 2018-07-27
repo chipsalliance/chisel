@@ -77,9 +77,13 @@ trait ThreadedBackend {
       val timescope = threadTimescopes(thread).last
       val pokeRecord = SignalPokeRecord(timescope, priority, value, trace)
       timescope.pokes.put(signal, pokeRecord)
-      signalPokes.getOrElseUpdate(signal, mutable.HashMap())
+      val signalTimescopeStack = signalPokes.getOrElseUpdate(signal, mutable.HashMap())
           .getOrElseUpdate(priority, mutable.ListBuffer())
-          .append(timescope)
+      // TODO: would it be sufficient to just look at the last element on the stack?
+      // what about in the presence of conflicitng pokes from different threads?
+      if (!signalTimescopeStack.contains(timescope)) {
+          signalTimescopeStack.append(timescope)
+      }
       priority <= (signalPokes(signal).keys foldLeft Int.MaxValue)(Math.min)
     }
 
