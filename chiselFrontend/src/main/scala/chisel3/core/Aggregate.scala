@@ -479,6 +479,21 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
   def toPrintable: Printable = toPrintableHelper(elements.toList)
 }
 
+/**
+  * Mix-in for Bundles that have arbitrary Seqs of Chisel types that aren't
+  * involved in hardware construction.
+  *
+  * Used to avoid raising an error/exception when a Seq is a public member of the
+  * bundle.
+  * This is useful if we those public Seq fields in the Bundle are unrelated to
+  * hardware construction.
+  */
+trait IgnoreSeqInBundle {
+  this: Bundle =>
+
+  override def ignoreSeq: Boolean = true
+}
+
 class AutoClonetypeException(message: String) extends ChiselException(message, null)
 
 /** Base class for data types defined as a bundle of other data types.
@@ -555,8 +570,8 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
                 case d: Data => throwException("Public Seq members cannot be used to define Bundle elements " +
                   s"(found public Seq member '${m.getName}'). " +
                   "Either use a Vec() if all elements are of the same type, or HeterogeneousVec() if the elements " +
-                  "are of different types. If this Seq member is not intended to construct RTL, override ignoreSeq " +
-                  "to be true.")
+                  "are of different types. If this Seq member is not intended to construct RTL, mix in the trait " +
+                  "IgnoreSeqInBundle.")
                 case _ => // don't care about non-Data Seq
               }
               case _ => // not a Seq
@@ -568,8 +583,7 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
   }
 
   /**
-    * Override this to be true to avoid raising an error/exception when a Seq is a public member of the bundle.
-    * This is useful if you have public Seq fields in the Bundle that are unrelated to hardware construction.
+    * Overridden by [[IgnoreSeqInBundle]] to allow arbitrary Seqs of Chisel elements.
     */
   def ignoreSeq: Boolean = false
 

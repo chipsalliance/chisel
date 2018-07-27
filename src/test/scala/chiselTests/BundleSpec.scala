@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.core.IgnoreSeqInBundle
 import chisel3.testers.BasicTester
 
 trait BundleSpecUtils {
@@ -91,9 +92,7 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils {
       new BasicTester {
         val m = Module(new Module {
           val io = IO(new Bundle {
-            val b = new BadSeqBundle {
-              override def ignoreSeq = true
-            }
+            val b = new BadSeqBundle with IgnoreSeqInBundle
           })
         })
         stop()
