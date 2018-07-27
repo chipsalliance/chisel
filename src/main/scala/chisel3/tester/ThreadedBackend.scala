@@ -11,7 +11,8 @@ import chisel3._
   * The backend must invoke concurrency functions as appropriate, eg during step() calls
   */
 trait ThreadedBackend {
-  protected class ThreadingChecker {
+  // combinationalPaths: map of sink Data to all source Data nodes.
+  protected class ThreadingChecker(combinationalPaths: Map[Data, Set[Data]]) {
     /** Desired threading checking behavior:
       * -> indicates following, from different thread
       * poke -> poke (higher priority): OK (result is order-independent)

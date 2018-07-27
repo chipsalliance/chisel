@@ -11,7 +11,8 @@ import scala.collection.mutable
 import scala.collection.mutable
 import treadle.{HasTreadleSuite, TreadleTester}
 
-class TreadleBackend[T <: MultiIOModule](dut: T, tester: TreadleTester)
+// TODO: is Seq[CombinationalPath] the right API here? It's unclear where name -> Data resolution should go
+class TreadleBackend[T <: MultiIOModule](dut: T, paths: Seq[CombinationalPath], tester: TreadleTester)
     extends BackendInstance[T] with ThreadedBackend {
 
   def getModule: T = dut
@@ -68,7 +69,18 @@ class TreadleBackend[T <: MultiIOModule](dut: T, tester: TreadleTester)
   }
 
   protected val lastClockValue: mutable.HashMap[Clock, Boolean] = mutable.HashMap()
-  protected val threadingChecker = new ThreadingChecker()
+
+  val nameToPorts = portNames.map { case (port, name) => name -> port }
+  val dutIoPaths = paths.filter { p =>  // only keep paths involving top-level IOs
+    p.sink.module.name == dut.name && p.sources.exists(_.module.name == dut.name)
+  } .map { p =>  // discard module names
+    p.sink.name -> p.sources.filter(_.module.name == dut.name).map(_.name)
+  } .map { case (sink, sources) =>  // convert to Data
+    // TODO graceful error message if there is an unexpected combinational path element?
+    nameToPorts(sink) -> sources.map(nameToPorts(_)).toSet
+  }.toMap
+
+  protected val threadingChecker = new ThreadingChecker(dutIoPaths)
 
   override def timescope(contents: => Unit): Unit = {
     val newTimescope = threadingChecker.newTimescope(currentThread.get)
@@ -205,19 +217,9 @@ object TreadleExecutive {
             val dut = getTopModule(circuit).asInstanceOf[T]
             val interpretiveTester = new TreadleTester(success.emitted, optionsManager)
             val paths = success.circuitState.annotations.collect {
-              case c: CombinationalPath => (Seq(c.sink) ++ c.sources).toSet
-            } .map { c =>  // ignore those in sub-modules, and only keep io names
-              c.filter { _.module.name == dut.name } .map { _.name }
-            } .filter { c =>
-              c.size > 1
+              case c: CombinationalPath => c
             }
-            // Paths may contain partially overlapping sets, merge them to get the full combinationally-dependent IOs
-            // Quick-and-nasty algorithm:
-            // Convert the List-of-Sets into a HashMap of String (IO name) to Set-of-Sets
-            // Start with an arbitrary HashMap key, merge its value Sets
-            // Traverse the Set elements, merging those sets, and removing the kets from the HashMap
-            println(paths)
-            new TreadleBackend(dut, interpretiveTester)
+            new TreadleBackend(dut, paths, interpretiveTester)
           case FirrtlExecutionFailure(message) =>
             throw new Exception(s"FirrtlBackend: failed firrtl compile message: $message")
         }
