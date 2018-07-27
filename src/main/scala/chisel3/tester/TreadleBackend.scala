@@ -204,9 +204,18 @@ object TreadleExecutive {
           case success: FirrtlExecutionSuccess =>
             val dut = getTopModule(circuit).asInstanceOf[T]
             val interpretiveTester = new TreadleTester(success.emitted, optionsManager)
-            val paths = success.circuitState.annotations.collect {  // TODO: check modules?
-              case c: CombinationalPath => Seq(c.sink.name) ++ c.sources.map { _.name }
+            val paths = success.circuitState.annotations.collect {
+              case c: CombinationalPath => (Seq(c.sink) ++ c.sources).toSet
+            } .map { c =>  // ignore those in sub-modules, and only keep io names
+              c.filter { _.module.name == dut.name } .map { _.name }
+            } .filter { c =>
+              c.size > 1
             }
+            // Paths may contain partially overlapping sets, merge them to get the full combinationally-dependent IOs
+            // Quick-and-nasty algorithm:
+            // Convert the List-of-Sets into a HashMap of String (IO name) to Set-of-Sets
+            // Start with an arbitrary HashMap key, merge its value Sets
+            // Traverse the Set elements, merging those sets, and removing the kets from the HashMap
             println(paths)
             new TreadleBackend(dut, interpretiveTester)
           case FirrtlExecutionFailure(message) =>
