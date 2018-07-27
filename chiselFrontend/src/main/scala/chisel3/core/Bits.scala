@@ -36,9 +36,9 @@ abstract class Element(private[chisel3] val width: Width) extends Data {
     // If the source is a DontCare, generate a DefInvalid for the sink,
     //  otherwise, issue a Connect.
     if (that == DontCare) {
-      pushCommand(DefInvalid(sourceInfo, this.lref))
+      pushCommand(DefInvalid(sourceInfo, Node(this)))
     } else {
-      pushCommand(Connect(sourceInfo, this.lref, that.ref))
+      pushCommand(Connect(sourceInfo, Node(this), that.ref))
     }
   }
 }
