@@ -29,7 +29,7 @@ object Histogram {
         encl.reset -> hist.reset,
         signal -> hist.in
       )
-    })
+    })._2
   }
 }
 
