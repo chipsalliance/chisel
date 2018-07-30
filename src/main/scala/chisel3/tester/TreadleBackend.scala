@@ -45,8 +45,7 @@ class TreadleBackend[T <: MultiIOModule](dut: T, paths: Seq[CombinationalPath], 
   override def peekBits(signal: Bits, stale: Boolean): BigInt = {
     require(!stale, "Stale peek not yet implemented")
 
-    // TODO: properly determine clock
-    threadingChecker.doPeek(currentThread.get, signal, dut.clock, new Throwable)
+    threadingChecker.doPeek(currentThread.get, signal, new Throwable)
     val a = tester.peek(portNames(signal))
     // println(s"${portNames(signal)} -> $a")  // TODO: toggle-able debug mode
     a
@@ -153,7 +152,6 @@ class TreadleBackend[T <: MultiIOModule](dut: T, paths: Seq[CombinationalPath], 
           if (currentValue) {  // rising edge
             unblockedThreads ++= blockedThreads.getOrElse(clock, Seq())
             blockedThreads.remove(clock)
-            threadingChecker.advanceClock(clock)
 
             clockCounter.put(clock, getClockCycle(clock) + 1)
           }

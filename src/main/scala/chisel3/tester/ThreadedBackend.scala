@@ -65,7 +65,7 @@ trait ThreadedBackend {
     protected val revertPokes = mutable.HashMap[Data, mutable.ListBuffer[PokeRecord]]()
 
     // Active peeks on a signal, lasts until the specified clock advances
-    protected val signalPeeks = mutable.HashMap[Clock, mutable.HashMap[Data, mutable.ListBuffer[PeekRecord]]]()
+    protected val signalPeeks = mutable.HashMap[Data, mutable.ListBuffer[PeekRecord]]()
 
     // All poke revert operations
 
@@ -90,9 +90,8 @@ trait ThreadedBackend {
     /**
      * Logs a peek operation for later checking.
      */
-    def doPeek(thread: TesterThread, signal: Data, clock: Clock, trace: Throwable): Unit = {
-      signalPeeks.getOrElseUpdate(clock, mutable.HashMap())
-          .getOrElseUpdate(signal, mutable.ListBuffer())
+    def doPeek(thread: TesterThread, signal: Data, trace: Throwable): Unit = {
+      signalPeeks.getOrElseUpdate(signal, mutable.ListBuffer())
           .append(PeekRecord(thread, trace))
     }
 
@@ -151,13 +150,6 @@ trait ThreadedBackend {
     }
 
     /**
-     * Called upon advancing the specified clock, allowing peeks to clear
-     */
-    def advanceClock(clock: Clock): Unit = {
-      signalPeeks.remove(clock)
-    }
-
-    /**
      * Starts a new timestep, checking if there were any conflicts on the previous timestep (and
      * throwing exceptions if there were).
      */
@@ -173,16 +165,7 @@ trait ThreadedBackend {
       }
 
       // check poke | peek dependencies
-      // Order keys by signal instead of clock
-      val signalPeeksBySignal = signalPeeks.toSeq.map({ case (clock, signalToPeeks) =>
-        signalToPeeks.toSeq  // to Seq[(Data, ListBuffer[PeekRecord])]
-      }).flatten.groupBy({ case (signal, peeks) =>
-        signal  // group top-level Map by signal
-      }).map({ case (signal, signalToPeeks) =>
-        (signal, signalToPeeks.map(_._2).flatten)  // flatten Seq[(..., ListBuffer[PeekRecord])] to Seq[PeekRecord]
-      })
-
-      signalPeeksBySignal foreach { case (signal, peeks) =>
+      signalPeeks foreach { case (signal, peeks) =>
         val peekThreads = peeks.map(_.thread).toSet
 
         // Get a list of threads that have affected the signal
@@ -221,6 +204,7 @@ trait ThreadedBackend {
         }
       }
       revertPokes.clear()
+      signalPeeks.clear()
     }
   }
 
