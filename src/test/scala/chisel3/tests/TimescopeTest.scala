@@ -6,9 +6,9 @@ import chisel3._
 import chisel3.tester._
 
 class TimescopeTest extends FlatSpec with ChiselScalatestTester {
-  behavior of "Testers2"
+  behavior of "Testers2 timescopes"
 
-  it should "revert signals at end of timescopes" in {
+  it should "revert signals at the end" in {
     test(new Module {
       val io = IO(new Bundle {
         val in = Input(UInt(8.W))
@@ -30,7 +30,7 @@ class TimescopeTest extends FlatSpec with ChiselScalatestTester {
     }
   }
 
-  it should "allow combinational operations within timescopes" in {
+  it should "allow combinational operations within" in {
     test(new Module {
       val io = IO(new Bundle {
         val in = Input(UInt(8.W))

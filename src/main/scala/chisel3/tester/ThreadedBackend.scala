@@ -184,23 +184,41 @@ trait ThreadedBackend {
 
       signalPeeksBySignal foreach { case (signal, peeks) =>
         val peekThreads = peeks.map(_.thread).toSet
-        val pokeThreads = signalPokes.get(signal) match {
-          case Some(priorityToTimescopes) =>
-            priorityToTimescopes(priorityToTimescopes.keySet.min).map(_.parent).toSet
-          case None => Set[TesterThread]()
-        }
-        val revertThreads = revertPokes.get(signal) match {
-          case Some(pokes) => pokes.map(_.thread).toSet
-          case None => Set[TesterThread]()
-        }
+
+        val pokeThreads = signalPokes.get(signal).map { priorityToTimescopes =>
+          priorityToTimescopes(priorityToTimescopes.keySet.min).map(_.parent)
+        }.toSet.flatten
+        val revertThreads = revertPokes.get(signal).map { pokes =>
+          pokes.map(_.thread)
+        }.toSet.flatten
+
+        val combPokeThreads = combinationalPaths.getOrElse(signal, Set()).map { source =>
+          signalPokes.get(source).map { priorityToTimescopes =>
+            priorityToTimescopes(priorityToTimescopes.keySet.min).map(_.parent)
+          }
+        }.flatten.toSet.flatten
+        val combRevertThreads = combinationalPaths.getOrElse(signal, Set()).map { source =>
+          revertPokes.get(source).map { pokes =>
+            pokes.map(_.thread)
+          }
+        }.flatten.toSet.flatten
+
         // TODO: better error reporting
         if (!(pokeThreads subsetOf peekThreads)) {
-          throw new ThreadOrderDependentException(s"poke on $signal conflicts with previous peeks")
+          throw new ThreadOrderDependentException(s"peek on $signal conflicts with pokes from other threads")
         }
         if (!(revertThreads subsetOf peekThreads)) {
-          throw new ThreadOrderDependentException(s"revert on $signal conflicts with previous peeks")
+          throw new ThreadOrderDependentException(s"peek on $signal conflicts with timescope revert from other threads")
+        }
+
+        if (!(combPokeThreads subsetOf peekThreads)) {
+          throw new ThreadOrderDependentException(s"peek on $signal conflicts with combinational impact of pokes from other threads")
+        }
+        if (!(combRevertThreads subsetOf peekThreads)) {
+          throw new ThreadOrderDependentException(s"peek on $signal conflicts with combinational impact of timescope revert from other threads")
         }
       }
+      revertPokes.clear()
     }
   }
 

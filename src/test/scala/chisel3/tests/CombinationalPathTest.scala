@@ -17,10 +17,9 @@ class CombinationalPathTest extends FlatSpec with ChiselScalatestTester {
         })
         io.out := io.in
       }) { c =>
+        c.io.in.poke(false.B)
         fork {
-          c.io.in.poke(true.B)
-        } .fork {
-          c.io.out.expect(true.B)
+          c.io.out.expect(false.B)
         }
       }
     }
@@ -45,10 +44,9 @@ class CombinationalPathTest extends FlatSpec with ChiselScalatestTester {
         innerModule.io.in := io.in
         io.out := innerModule.io.out
       }) { c =>
+        c.io.in.poke(false.B)
         fork {
-          c.io.in.poke(true.B)
-        } .fork {
-          c.io.out.expect(true.B)
+          c.io.out.expect(false.B)
         }
       }
     }
@@ -62,12 +60,11 @@ class CombinationalPathTest extends FlatSpec with ChiselScalatestTester {
           val in2 = Input(Bool())
           val out = Output(Bool())
         })
-        io.out := io.in1 || io.in2
+        io.out := io.in1 && io.in2
       }) { c =>
+        c.io.in1.poke(false.B)
         fork {
-          c.io.in1.poke(true.B)
-        } .fork {
-          c.io.out.expect(true.B)
+          c.io.out.expect(false.B)
         }
       }
     }
