@@ -24,25 +24,31 @@ class InstanceNameModule extends Module {
 
 class InstanceNameSpec extends ChiselFlatSpec {
   behavior of "instanceName"
-
+  val moduleName = "InstanceNameModule"
   var m: InstanceNameModule = _
   elaborate { m = new InstanceNameModule; m }
 
   it should "work with module IO" in {
-    println(m.io.pathName)
+    val io = m.io.pathName
+    assert(io == moduleName + ".io")
   }
 
   it should "work with internal vals" in {
-    println(m.x.pathName)
-    println(m.y.pathName)
-    println(m.z.pathName)
+    val x = m.x.pathName
+    val y = m.y.pathName
+    val z = m.z.pathName
+    assert(x == moduleName + ".UInt<2>(\"h03\")")
+    assert(y == moduleName + ".y")
+    assert(z == moduleName + ".z")
   }
 
   it should "work with bundle elements" in {
-    println(m.z.foo.pathName)
+    val foo = m.z.foo.pathName
+    assert(foo == moduleName + ".z.foo")
   }
 
   it should "work with modules" in {
-    println(m.q.pathName)
+    val q = m.q.pathName
+    assert(q == moduleName + ".q")
   }
 }
