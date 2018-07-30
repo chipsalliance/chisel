@@ -75,25 +75,6 @@ final class MixedVec[T <: Data](private val eltsIn: Seq[T]) extends Record with 
     */
   def apply(index: Int): T = elts(index)
 
-  /**
-    * Dynamically (via a mux) retrieve the element at the given index.
-    * This is implemented via a mux with the width of the widest element in this MixedVec.
-    * For example, a MixedVec of type Seq(UInt(4.W), UInt(8.W)) will create an 8-bit mux for this operation.
-    * Note: it is up to the user to process the resultant UInt (e.g. unflatten, etc).
-    *
-    * @param index Index to retrieve. If the index is out of range, it will return the first element.
-    * @return Retrieved index as a UInt with the width of the widest element.
-    */
-  def apply(index: UInt): UInt = {
-    requireIsHardware(index, "index must be hardware")
-
-    if (length < 1) {
-      throw new IndexOutOfBoundsException("Collection is empty")
-    }
-
-    MuxLookup(index, elts.head.asUInt, elts.zipWithIndex.map { case (el, el_index) => el_index.U -> el.asUInt })
-  }
-
   /** Strong bulk connect, assigning elements in this MixedVec from elements in a Seq.
     *
     * @note the lengths of this and that must match
