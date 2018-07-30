@@ -39,13 +39,7 @@ class BasicTest extends FlatSpec with ChiselScalatestTester {
   }
 
   it should "test combinational circuits" in {
-    test(new Module {
-      val io = IO(new Bundle {
-        val in = Input(UInt(8.W))
-        val out = Output(UInt(8.W))
-      })
-      io.out := io.in
-    }) { c =>
+    test(new PassthroughModule(UInt(8.W))) { c =>
       c.io.in.poke(0.U)
       c.io.out.expect(0.U)
       c.io.in.poke(42.U)

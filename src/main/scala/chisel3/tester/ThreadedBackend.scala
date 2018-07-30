@@ -185,6 +185,7 @@ trait ThreadedBackend {
       signalPeeksBySignal foreach { case (signal, peeks) =>
         val peekThreads = peeks.map(_.thread).toSet
 
+        // Get a list of threads that have affected the signal
         val pokeThreads = signalPokes.get(signal).map { priorityToTimescopes =>
           priorityToTimescopes(priorityToTimescopes.keySet.min).map(_.parent)
         }.toSet.flatten
@@ -192,16 +193,17 @@ trait ThreadedBackend {
           pokes.map(_.thread)
         }.toSet.flatten
 
-        val combPokeThreads = combinationalPaths.getOrElse(signal, Set()).map { source =>
+        // Get a list of threads that have affected a combinational source for the signal
+        val combPokeThreads = combinationalPaths.get(signal).toSet.flatten.map { source =>
           signalPokes.get(source).map { priorityToTimescopes =>
             priorityToTimescopes(priorityToTimescopes.keySet.min).map(_.parent)
           }
-        }.flatten.toSet.flatten
-        val combRevertThreads = combinationalPaths.getOrElse(signal, Set()).map { source =>
+        }.flatten.flatten
+        val combRevertThreads = combinationalPaths.get(signal).toSet.flatten.map { source =>
           revertPokes.get(source).map { pokes =>
             pokes.map(_.thread)
           }
-        }.flatten.toSet.flatten
+        }.flatten.flatten
 
         // TODO: better error reporting
         if (!(pokeThreads subsetOf peekThreads)) {
@@ -254,7 +256,7 @@ trait ThreadedBackend {
   protected var currentThread: Option[TesterThread] = None
   protected val driverSemaphore = new Semaphore(0)  // blocks runThreads() while it's running
 
-  // TODO: replace with concurrent data structures?
+  // TODO: does this need to be replaced with concurrent data structures?
   protected val activeThreads = mutable.ArrayBuffer[TesterThread]()  // list of threads scheduled for sequential execution
   protected val blockedThreads = mutable.HashMap[Clock, Seq[TesterThread]]()  // threads blocking on a clock edge
   protected val joinedThreads = mutable.HashMap[TesterThread, Seq[TesterThread]]()  // threads blocking on another thread

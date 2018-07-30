@@ -10,13 +10,7 @@ class CombinationalPathTest extends FlatSpec with ChiselScalatestTester {
 
   it should "detect combinationally-dependent operations across threads" in {
     assertThrows[ThreadOrderDependentException] {
-      test(new Module {
-        val io = IO(new Bundle {
-          val in = Input(Bool())
-          val out = Output(Bool())
-        })
-        io.out := io.in
-      }) { c =>
+      test(new PassthroughModule(Bool())) { c =>
         c.io.in.poke(false.B)
         fork {
           c.io.out.expect(false.B)
@@ -32,15 +26,7 @@ class CombinationalPathTest extends FlatSpec with ChiselScalatestTester {
           val in = Input(Bool())
           val out = Output(Bool())
         })
-
-        val innerModule = Module(new Module {
-          val io = IO(new Bundle {
-            val in = Input(Bool())
-            val out = Output(Bool())
-          })
-          io.out := io.in
-        })
-
+        val innerModule = Module(new PassthroughModule(Bool()))
         innerModule.io.in := io.in
         io.out := innerModule.io.out
       }) { c =>
