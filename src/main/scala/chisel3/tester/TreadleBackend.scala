@@ -14,7 +14,7 @@ import treadle.{HasTreadleSuite, TreadleTester}
 // TODO: is Seq[CombinationalPath] the right API here? It's unclear where name -> Data resolution should go
 class TreadleBackend[T <: MultiIOModule](dut: T, paths: Seq[CombinationalPath], tester: TreadleTester)
     extends BackendInstance[T] with ThreadedBackend {
-  val verbose: Boolean = true  // hard-coded debug flag
+  val verbose: Boolean = false  // hard-coded debug flag
   def getModule: T = dut
 
   /** Returns a Seq of (data reference, fully qualified element names) for the input.

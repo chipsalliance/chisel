@@ -42,6 +42,7 @@ trait ChiselScalatestTester extends Assertions with TestEnvInterface {
   }
 
   override def test[T <: MultiIOModule](tester: BackendInstance[T])(testFn: T => Unit) {
+    batchedFailures.clear()
     Context.run(tester, this, testFn)
   }
 }

@@ -11,9 +11,9 @@ class CombinationalPathTest extends FlatSpec with ChiselScalatestTester {
   it should "detect combinationally-dependent operations across threads" in {
     assertThrows[ThreadOrderDependentException] {
       test(new PassthroughModule(Bool())) { c =>
-        c.io.in.poke(false.B)
+        c.io.in.poke(true.B)
         fork {
-          c.io.out.expect(false.B)
+          c.io.out.expect(true.B)
         }
       }
     }
@@ -23,11 +23,11 @@ class CombinationalPathTest extends FlatSpec with ChiselScalatestTester {
     assertThrows[ThreadOrderDependentException] {
       test(new PassthroughModule(Bool())) { c =>
         fork {
-          c.io.in.poke(false.B)
+          c.io.in.poke(true.B)
           c.clock.step(2)
         } .fork {
           c.clock.step(1)
-          c.io.out.expect(false.B)
+          c.io.out.expect(true.B)
         } .join
       }
     }
@@ -37,11 +37,11 @@ class CombinationalPathTest extends FlatSpec with ChiselScalatestTester {
     assertThrows[ThreadOrderDependentException] {
       test(new PassthroughModule(Bool())) { c =>
         fork {
-          c.io.in.poke(false.B)
+          c.io.in.poke(true.B)
           c.clock.step(1)
         } .fork {
           c.clock.step(1)
-          c.io.out.expect(false.B)
+          c.io.out.expect(true.B)
         } .join
       }
     }
@@ -49,10 +49,10 @@ class CombinationalPathTest extends FlatSpec with ChiselScalatestTester {
 
   it should "allow higher priority combinationally-dependent operations" in {
     test(new PassthroughModule(Bool())) { c =>
-      c.io.in.weakPoke(true.B)
+      c.io.in.weakPoke(false.B)
       fork {
-        c.io.in.poke(false.B)
-        c.io.out.expect(false.B)
+        c.io.in.poke(true.B)
+        c.io.out.expect(true.B)
         c.clock.step(1)
       } .join
     }
@@ -61,13 +61,13 @@ class CombinationalPathTest extends FlatSpec with ChiselScalatestTester {
   it should "detect combinationally-dependent lower priority poke after a higher priority poke ends" in {
     assertThrows[ThreadOrderDependentException] {
       test(new PassthroughModule(Bool())) { c =>
-        c.io.in.weakPoke(true.B)
+        c.io.in.weakPoke(false.B)
         fork {
-          c.io.in.poke(false.B)
+          c.io.in.poke(true.B)
           c.clock.step(1)
         } .fork {
           c.clock.step(1)
-          c.io.out.expect(false.B)
+          c.io.out.expect(true.B)
         } .join
       }
     }
@@ -84,9 +84,9 @@ class CombinationalPathTest extends FlatSpec with ChiselScalatestTester {
         innerModule.io.in := io.in
         io.out := innerModule.io.out
       }) { c =>
-        c.io.in.poke(false.B)
+        c.io.in.poke(true.B)
         fork {
-          c.io.out.expect(false.B)
+          c.io.out.expect(true.B)
         }
       }
     }
@@ -100,11 +100,11 @@ class CombinationalPathTest extends FlatSpec with ChiselScalatestTester {
           val in2 = Input(Bool())
           val out = Output(Bool())
         })
-        io.out := io.in1 && io.in2
+        io.out := io.in1 || io.in2
       }) { c =>
-        c.io.in1.poke(false.B)
+        c.io.in1.poke(true.B)
         fork {
-          c.io.out.expect(false.B)
+          c.io.out.expect(true.B)
         }
       }
     }
