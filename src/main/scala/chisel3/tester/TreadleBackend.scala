@@ -14,7 +14,7 @@ import treadle.{HasTreadleSuite, TreadleTester}
 // TODO: is Seq[CombinationalPath] the right API here? It's unclear where name -> Data resolution should go
 class TreadleBackend[T <: MultiIOModule](dut: T, paths: Seq[CombinationalPath], tester: TreadleTester)
     extends BackendInstance[T] with ThreadedBackend {
-
+  val verbose: Boolean = true  // hard-coded debug flag
   def getModule: T = dut
 
   /** Returns a Seq of (data reference, fully qualified element names) for the input.
@@ -37,7 +37,7 @@ class TreadleBackend[T <: MultiIOModule](dut: T, paths: Seq[CombinationalPath], 
 
   override def pokeBits(signal: Bits, value: BigInt, priority: Int): Unit = {
     if (threadingChecker.doPoke(currentThread.get, signal, value, priority, new Throwable)) {
-      // println(s"${portNames(signal)} <- $value")  // TODO: toggle-able debug mode
+       if (verbose) println(s"${portNames(signal)} <- $value")
       tester.poke(portNames(signal), value)
     }
   }
@@ -47,14 +47,14 @@ class TreadleBackend[T <: MultiIOModule](dut: T, paths: Seq[CombinationalPath], 
 
     threadingChecker.doPeek(currentThread.get, signal, new Throwable)
     val a = tester.peek(portNames(signal))
-    // println(s"${portNames(signal)} -> $a")  // TODO: toggle-able debug mode
+    if (verbose) println(s"${portNames(signal)} -> $a")
     a
   }
 
   override def expectBits(signal: Bits, value: BigInt, stale: Boolean): Unit = {
     require(!stale, "Stale peek not yet implemented")
 
-    // println(s"${portNames(signal)} ?> $value")  // TODO: toggle-able debug mode
+    if (verbose) println(s"${portNames(signal)} ?> $value")
     Context().env.testerExpect(value, peekBits(signal, stale), resolveName(signal), None)
   }
 
@@ -87,9 +87,9 @@ class TreadleBackend[T <: MultiIOModule](dut: T, paths: Seq[CombinationalPath], 
     threadingChecker.closeTimescope(newTimescope).foreach { case (data, valueOption) =>
       valueOption match {
         case Some(value) => tester.poke(portNames(data), value)
-          // println(s"${portNames(data)} <- (revert) $value")  // TODO: toggle-able debug mode
+           if (verbose) println(s"${portNames(data)} <- (revert) $value")
         case None => tester.poke(portNames(data), 0)  // TODO: randomize or 4-state sim
-          // println(s"${portNames(data)} <- (revert) DC")  // TODO: toggle-able debug mode
+           if (verbose) println(s"${portNames(data)} <- (revert) DC")
       }
     }
   }
@@ -136,7 +136,7 @@ class TreadleBackend[T <: MultiIOModule](dut: T, paths: Seq[CombinationalPath], 
       blockedThreads.remove(dut.clock)
       clockCounter.put(dut.clock, getClockCycle(dut.clock) + 1)
 
-      // println(s"clock step")  // TODO: toggle-able debug mode
+       if (verbose) println(s"clock step")
 
       // TODO: allow dependent clocks to step based on test stimulus generator
       // Unblock threads waiting on dependent clock
