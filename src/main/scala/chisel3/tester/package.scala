@@ -14,16 +14,16 @@ package object tester {
   import chisel3.internal.firrtl.{LitArg, ULit, SLit}
   implicit class testableData[T <: Data](x: T) {
     protected def pokeWithPriority(value: T, priority: Int): Unit = (x, value) match {
-      case (x: Bool, value: Bool) => Context().backend.pokeBits(x, value.litToBigInt, priority)
+      case (x: Bool, value: Bool) => Context().backend.pokeBits(x, value.litValue, priority)
       // TODO can't happen because of type parameterization
       case (x: Bool, value: Bits) => throw new LiteralTypeException(s"can only poke signals of type Bool with Bool value")
-      case (x: Bits, value: UInt) => Context().backend.pokeBits(x, value.litToBigInt, priority)
-      case (x: SInt, value: SInt) => Context().backend.pokeBits(x, value.litToBigInt, priority)
+      case (x: Bits, value: UInt) => Context().backend.pokeBits(x, value.litValue, priority)
+      case (x: SInt, value: SInt) => Context().backend.pokeBits(x, value.litValue, priority)
       // TODO can't happen because of type parameterization
       case (x: Bits, value: SInt) => throw new LiteralTypeException(s"can only poke SInt value into signals of type SInt")
       case (x: FixedPoint, value: FixedPoint) => {
         require(x.binaryPoint == value.binaryPoint, "binary point mismatch")
-        Context().backend.pokeBits(x, value.litToBigInt, priority)
+        Context().backend.pokeBits(x, value.litValue, priority)
       }
       case x => throw new LiteralTypeException(s"don't know how to poke $x")
       // TODO: aggregate types
@@ -51,16 +51,16 @@ package object tester {
     def stalePeek(): T = peekWithStale(true)
 
     protected def expectWithStale(value: T, stale: Boolean): Unit = (x, value) match {
-      case (x: Bool, value: Bool) => Context().backend.expectBits(x, value.litToBigInt, stale)
+      case (x: Bool, value: Bool) => Context().backend.expectBits(x, value.litValue, stale)
       // TODO can't happen because of type paramterization
       case (x: Bool, value: Bits) => throw new LiteralTypeException(s"can only expect signals of type Bool with Bool value")
-      case (x: Bits, value: UInt) => Context().backend.expectBits(x, value.litToBigInt, stale)
-      case (x: SInt, value: SInt) => Context().backend.expectBits(x, value.litToBigInt, stale)
+      case (x: Bits, value: UInt) => Context().backend.expectBits(x, value.litValue, stale)
+      case (x: SInt, value: SInt) => Context().backend.expectBits(x, value.litValue, stale)
       // TODO can't happen because of type paramterization
       case (x: Bits, value: SInt) => throw new LiteralTypeException(s"can only expect SInt value from signals of type SInt")
       case (x: FixedPoint, value: FixedPoint) => {
         require(x.binaryPoint == value.binaryPoint, "binary point mismatch")
-        Context().backend.expectBits(x, value.litToBigInt, stale)
+        Context().backend.expectBits(x, value.litValue, stale)
       }
       case x => throw new LiteralTypeException(s"don't know how to expect $x")
       // TODO: aggregate types
@@ -76,35 +76,15 @@ package object tester {
     }
   }
 
-  implicit class litExtractableBits(x: Bits) {
-    def litToBigInt: BigInt = x.litArg match {
-      case Some(value: ULit) => value.n
-      case Some(value: SLit) => value.n
-      case Some(value: FPLit) => value.n
-      case Some(_) => throw new LiteralTypeException(s"$x of wrong type")
-      case None => throw new NotLiteralException(s"$x not a literal")
-    }
-
-    def litToInt: Int = litToBigInt.toInt
-  }
-
-  implicit class litExtractableBool(x: Bool) extends litExtractableBits(x) {
-    def litToBoolean: Boolean = litToInt match {
-      case 0 => false
-      case 1 => true
-      case x => throw new NotLiteralException(s"unexpected value $x from Bool")
-    }
-  }
-
-  implicit class litExtractableFixedPoint(x: FixedPoint) extends litExtractableBits(x) {
-    def litToDouble: Double = {
-      val multiplier = math.pow(2, x.binaryPoint.get)
-      litToBigInt.toDouble / multiplier
-    }
-  }
-
   def fork(runnable: => Unit): TesterThreadList = {
     new TesterThreadList(Seq(Context().backend.fork(runnable)))
+  }
+
+  // TODO: call-by-name doesn't work with varargs, is there a better way to do this?
+  def parallel(run1: => Unit, run2: => Unit): Unit = {
+    fork { run1 }
+      .fork { run2 }
+      .join
   }
 
   def timescope(contents: => Unit): Unit = {

@@ -14,14 +14,14 @@ package object TestAdapters {
     // TODO assumption this never goes out of scope
     x.valid.weakPoke(false.B)
 
-    def enqueueNow(data: T): TesterThreadList = fork {
+    def enqueueNow(data: T): Unit = timescope {
       x.ready.expect(true.B)
       x.bits.poke(data)
       x.valid.poke(true.B)
       clk.step(1)
     }
 
-    def enqueue(data: T): TesterThreadList = fork {
+    def enqueue(data: T): Unit = timescope {
       while (x.ready.peek().litToBoolean == false) {
         clk.step(1)
       }
@@ -30,9 +30,9 @@ package object TestAdapters {
       clk.step(1)
     }
 
-    def enqueueSeq(data: Seq[T]): TesterThreadList = fork {
+    def enqueueSeq(data: Seq[T]): Unit = timescope {
       for (elt <- data) {
-        enqueue(elt).join
+        enqueue(elt)
       }
     }
   }
@@ -41,14 +41,14 @@ package object TestAdapters {
     // TODO assumption this never goes out of scope
     x.ready.weakPoke(false.B)
 
-    def expectDequeueNow(data: T): TesterThreadList = fork {
+    def dequeueNowExpect(data: T): Unit = timescope {
       x.valid.expect(true.B)
       x.bits.expect(data)
       x.ready.poke(true.B)
       clk.step(1)
     }
 
-    def expectPeekNow(data: T): Unit = {
+    def expectPeek(data: T): Unit = {
       x.valid.expect(true.B)
       x.bits.expect(data)
     }
