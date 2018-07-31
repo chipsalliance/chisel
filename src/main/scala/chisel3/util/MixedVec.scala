@@ -8,7 +8,7 @@ import chisel3.internal.naming.chiselName
 
 import scala.collection.immutable.ListMap
 
-object MixedVecWireInit {
+object MixedVecInit {
   /**
     * Construct a new wire with the given bound values.
     * This is analogous to [[chisel3.core.VecInit]].
