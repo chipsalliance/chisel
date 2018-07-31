@@ -33,7 +33,7 @@ abstract class ReadyValidIO[+T <: Data](gen: T) extends Bundle
 
 object ReadyValidIO {
 
-  implicit class AddMethodsToReadyValid[T<:Data](val target: ReadyValidIO[T]) extends AnyVal {
+  implicit class AddMethodsToReadyValid[T<:Data](target: ReadyValidIO[T]) {
     def fire(): Bool = target.ready && target.valid
 
     /** push dat onto the output bits of this interface to let the consumer know it has happened.
