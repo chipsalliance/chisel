@@ -46,7 +46,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   val Clock = chisel3.core.Clock
   type Clock = chisel3.core.Clock
 
-  implicit class AddDirectionToData[T<:Data](val target: T) extends AnyVal {
+  implicit class AddDirectionToData[T<:Data](target: T) {
     @chiselRuntimeDeprecated
     @deprecated("Input(Data) should be used over Data.asInput", "chisel3")
     def asInput: T = Input(target)
@@ -60,7 +60,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     def flip(): T = Flipped(target)
   }
 
-  implicit class fromBitsable[T <: Data](val data: T) {
+  implicit class fromBitsable[T <: Data](data: T) {
     import chisel3.core.CompileOptions
     import chisel3.internal.sourceinfo.SourceInfo
 
@@ -71,7 +71,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     }
   }
 
-  implicit class cloneTypeable[T <: Data](val target: T) extends AnyVal {
+  implicit class cloneTypeable[T <: Data](target: T) {
     @chiselRuntimeDeprecated
     @deprecated("chiselCloneType is deprecated, use chiselTypeOf(...) to get the Chisel Type of a hardware object", "chisel3")
     def chiselCloneType: T = {
@@ -355,16 +355,16 @@ package object chisel3 {    // scalastyle:ignore package.object.name
 
   implicit def string2Printable(str: String): Printable = PString(str)
 
-  implicit class fromBigIntToLiteral(val x: BigInt) extends chisel3.core.fromBigIntToLiteral(x)
-  implicit class fromtIntToLiteral(val x: Int) extends chisel3.core.fromIntToLiteral(x)
-  implicit class fromtLongToLiteral(val x: Long) extends chisel3.core.fromLongToLiteral(x)
-  implicit class fromStringToLiteral(val x: String) extends chisel3.core.fromStringToLiteral(x)
-  implicit class fromBooleanToLiteral(val x: Boolean) extends chisel3.core.fromBooleanToLiteral(x)
-  implicit class fromDoubleToLiteral(val x: Double) extends chisel3.core.fromDoubleToLiteral(x)
-  implicit class fromIntToWidth(val x: Int) extends chisel3.core.fromIntToWidth(x)
-  implicit class fromIntToBinaryPoint(val x: Int) extends chisel3.core.fromIntToBinaryPoint(x)
+  implicit class fromBigIntToLiteral(x: BigInt) extends chisel3.core.fromBigIntToLiteral(x)
+  implicit class fromtIntToLiteral(x: Int) extends chisel3.core.fromIntToLiteral(x)
+  implicit class fromtLongToLiteral(x: Long) extends chisel3.core.fromLongToLiteral(x)
+  implicit class fromStringToLiteral(x: String) extends chisel3.core.fromStringToLiteral(x)
+  implicit class fromBooleanToLiteral(x: Boolean) extends chisel3.core.fromBooleanToLiteral(x)
+  implicit class fromDoubleToLiteral(x: Double) extends chisel3.core.fromDoubleToLiteral(x)
+  implicit class fromIntToWidth(x: Int) extends chisel3.core.fromIntToWidth(x)
+  implicit class fromIntToBinaryPoint(x: Int) extends chisel3.core.fromIntToBinaryPoint(x)
 
-  implicit class fromUIntToBitPatComparable(val x: UInt) {
+  implicit class fromUIntToBitPatComparable(x: UInt) {
     import scala.language.experimental.macros
     import internal.sourceinfo.{SourceInfo, SourceInfoTransform}
 
