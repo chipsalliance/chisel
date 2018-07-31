@@ -19,6 +19,9 @@ package object Chisel {     // scalastyle:ignore package.object.name
   case object OUTPUT extends Direction
   case object NODIR extends Direction
 
+  val Input   = chisel3.core.Input
+  val Output  = chisel3.core.Output
+
   object Flipped {
     def apply[T<:Data](target: T): T = chisel3.core.Flipped[T](target)
   }

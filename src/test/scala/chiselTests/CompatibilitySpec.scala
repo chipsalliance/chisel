@@ -322,4 +322,18 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
     })
   }
 
+  "Chisel3 IO constructs" should "be useable in Chisel2" in {
+    import Chisel._
+    elaborate(new Module {
+      val io = IO(new Bundle {
+        val in = Input(Bool())
+        val foo = Output(Bool())
+        val bar = Flipped(Bool())
+      })
+      Chisel.assert(io.in.dir == INPUT)
+      Chisel.assert(io.foo.dir == OUTPUT)
+      Chisel.assert(io.bar.dir == INPUT)
+    })
+  }
+
 }
