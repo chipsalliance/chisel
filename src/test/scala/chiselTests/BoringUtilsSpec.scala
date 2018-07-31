@@ -7,7 +7,7 @@ import java.io.File
 import chisel3._
 import chisel3.util.Counter
 import chisel3.testers.BasicTester
-import chisel3.util.BoringUtils
+import chisel3.util.experimental.BoringUtils
 import firrtl.{
   CommonOptions,
   ExecutionOptionsManager,

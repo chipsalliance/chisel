@@ -1,9 +1,9 @@
 // See LICENSE for license details.
 
-package chisel3.util
+package chisel3.util.experimental
 
 import chisel3._
-import chisel3.experimental._
+import chisel3.experimental.{BaseModule, ChiselAnnotation, RunFirrtlTransform}
 import chisel3.internal.{InstanceId, NamedComponent}
 import firrtl.transforms.DontTouchAnnotation
 import firrtl.passes.wiring.{WiringTransform, SourceAnnotation, SinkAnnotation}
