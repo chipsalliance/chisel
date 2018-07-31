@@ -130,8 +130,14 @@ sealed abstract class Bits(width: Width)
     if (x < 0) {
       Builder.error(s"Negative bit indices are illegal (got $x)")
     }
-    requireIsHardware(this, "bits to be indexed")
-    pushOp(DefPrim(sourceInfo, Bool(), BitsExtractOp, this.ref, ILit(x), ILit(x)))
+    // This preserves old behavior while a more more consistent API is under debate
+    // See https://github.com/freechipsproject/chisel3/issues/867
+    litOption.map { value =>
+      (((value >> x.toInt) & 1) == 1).asBool
+    }.getOrElse {
+      requireIsHardware(this, "bits to be indexed")
+      pushOp(DefPrim(sourceInfo, Bool(), BitsExtractOp, this.ref, ILit(x), ILit(x)))
+    }
   }
 
   /** Returns the specified bit on this wire as a [[Bool]], statically
@@ -169,8 +175,14 @@ sealed abstract class Bits(width: Width)
       Builder.error(s"Invalid bit range ($x,$y)")
     }
     val w = x - y + 1
-    requireIsHardware(this, "bits to be sliced")
-    pushOp(DefPrim(sourceInfo, UInt(Width(w)), BitsExtractOp, this.ref, ILit(x), ILit(y)))
+    // This preserves old behavior while a more more consistent API is under debate
+    // See https://github.com/freechipsproject/chisel3/issues/867
+    litOption.map { value =>
+      ((value >> y) & ((BigInt(1) << w) - 1)).asUInt(w.W)
+    }.getOrElse {
+      requireIsHardware(this, "bits to be sliced")
+      pushOp(DefPrim(sourceInfo, UInt(Width(w)), BitsExtractOp, this.ref, ILit(x), ILit(y)))
+    }
   }
 
   // REVIEW TODO: again, is this necessary? Or just have this and use implicits?
