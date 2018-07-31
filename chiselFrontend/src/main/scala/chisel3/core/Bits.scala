@@ -130,6 +130,8 @@ sealed abstract class Bits(width: Width)
     if (x < 0) {
       Builder.error(s"Negative bit indices are illegal (got $x)")
     }
+    // This preserves old behavior while a more more consistent API is under debate
+    // See https://github.com/freechipsproject/chisel3/issues/867
     litOption.map { value =>
       (((value >> x.toInt) & 1) == 1).asBool
     }.getOrElse {
@@ -173,6 +175,8 @@ sealed abstract class Bits(width: Width)
       Builder.error(s"Invalid bit range ($x,$y)")
     }
     val w = x - y + 1
+    // This preserves old behavior while a more more consistent API is under debate
+    // See https://github.com/freechipsproject/chisel3/issues/867
     litOption.map { value =>
       ((value >> y) & ((BigInt(1) << w) - 1)).asUInt(w.W)
     }.getOrElse {
