@@ -143,6 +143,15 @@ sealed abstract class Bits(width: Width)
 
   final def do_apply(x: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = apply(BigInt(x))
 
+  /** Returns the specified bit of an infinitely-padded copy of this wire
+    * as a [[Bool]], statically addressed.
+    *
+    * @note convenience method allowing direct use of Ints without implicits
+    */
+  final def i(x: Int): Bool = macro SourceInfoTransform.xArg
+
+  final def do_i(x: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = pad(x+1).apply(BigInt(x))
+
   /** Returns the specified bit on this wire as a [[Bool]], dynamically
     * addressed.
     */
