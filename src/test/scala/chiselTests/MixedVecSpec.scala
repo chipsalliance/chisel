@@ -9,7 +9,7 @@ import chisel3.util._
 import org.scalacheck.Shrink
 
 class MixedVecAssignTester(w: Int, values: List[Int]) extends BasicTester {
-  val v = MixedVecWireInit(values.map(v => v.U(w.W)))
+  val v = MixedVecInit(values.map(v => v.U(w.W)))
   for ((a, b) <- v.zip(values)) {
     assert(a === b.asUInt)
   }
@@ -17,7 +17,7 @@ class MixedVecAssignTester(w: Int, values: List[Int]) extends BasicTester {
 }
 
 class MixedVecRegTester(w: Int, values: List[Int]) extends BasicTester {
-  val valuesInit = MixedVecWireInit(values.map(v => v.U(w.W)))
+  val valuesInit = MixedVecInit(values.map(v => v.U(w.W)))
   val reg = Reg(MixedVec(chiselTypeOf(valuesInit)))
 
   val doneReg = RegInit(false.B)
@@ -44,7 +44,7 @@ class MixedVecIOPassthroughModule[T <: Data](hvec: MixedVec[T]) extends Module {
 }
 
 class MixedVecIOTester(boundVals: Seq[Data]) extends BasicTester {
-  val v = MixedVecWireInit(boundVals)
+  val v = MixedVecInit(boundVals)
   val dut = Module(new MixedVecIOPassthroughModule(MixedVec(chiselTypeOf(v))))
   dut.io.in := v
   for ((a, b) <- dut.io.out.zip(boundVals)) {
@@ -102,7 +102,7 @@ class MixedVecSmallTestBundle extends Bundle {
 
 class MixedVecFromVecTester extends BasicTester {
   val wire = Wire(MixedVec(Vec(3, UInt(8.W))))
-  wire := MixedVecWireInit(Seq(20.U, 40.U, 80.U))
+  wire := MixedVecInit(Seq(20.U, 40.U, 80.U))
 
   assert(wire(0) === 20.U)
   assert(wire(1) === 40.U)
