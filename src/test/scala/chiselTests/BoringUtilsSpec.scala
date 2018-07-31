@@ -17,7 +17,7 @@ import firrtl.{
   FirrtlExecutionFailure}
 import firrtl.passes.wiring.WiringTransform
 
-class InverterAfterWiring extends Module with BoringUtils {
+class InverterAfterWiring extends Module {
   val io = IO(new Bundle {
     val in = Input(Bool())
     val out = Output(Bool())
@@ -26,8 +26,8 @@ class InverterAfterWiring extends Module with BoringUtils {
   val notIn = ~io.in
   io.out := io.in
 
-  addSource(notIn, "id")
-  addSink(io.out, "id")
+  BoringUtils.addSource(notIn, "id")
+  BoringUtils.addSink(io.out, "id")
 }
 
 class InverterAfterWiringTester extends BasicTester {

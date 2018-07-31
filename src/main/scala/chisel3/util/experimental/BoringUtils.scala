@@ -3,7 +3,7 @@
 package chisel3.util.experimental
 
 import chisel3._
-import chisel3.experimental.{BaseModule, ChiselAnnotation, RunFirrtlTransform}
+import chisel3.experimental.{ChiselAnnotation, RunFirrtlTransform, annotate}
 import chisel3.internal.{InstanceId, NamedComponent}
 import firrtl.transforms.DontTouchAnnotation
 import firrtl.passes.wiring.{WiringTransform, SourceAnnotation, SinkAnnotation}
@@ -11,23 +11,22 @@ import firrtl.passes.wiring.{WiringTransform, SourceAnnotation, SinkAnnotation}
 /** Utilities for generating synthesizeable cross module references.
   *
   * @example {{{
-  * class ModuleA extends Module with BoringUtils {
+  * import chisel3.util.experimental.BoringUtils
+  * class ModuleA extends Module {
   *   val a = Reg(Bool())
-  *   addSource(a, "unique_identifier")
+  *   BoringUtils.addSource(a, "unique_identifier")
   * }
-  * class ModuleB extends Module with BoringUtils {
+  * class ModuleB extends Module {
   *   val b = Wire(Bool())
-  *   addSink(b, "unique_identifier")
+  *   BoringUtils.addSink(b, "unique_identifier")
   * }
-  * class ModuleC extends Module with BoringUtils {
+  * class ModuleC extends Module {
   *   val c = Wire(Bool())
-  *   addSink(c, "unique_identifier")
+  *   BoringUtils.addSink(c, "unique_identifier")
   * }
   * }}}
   */
-trait BoringUtils extends BaseModule {
-  self: BaseModule =>
-
+object BoringUtils {
   /** Add a named source cross module reference
     *
     * @param component source circuit component
