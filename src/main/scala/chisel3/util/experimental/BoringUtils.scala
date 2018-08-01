@@ -8,6 +8,8 @@ import chisel3.internal.{InstanceId, NamedComponent}
 import firrtl.transforms.DontTouchAnnotation
 import firrtl.passes.wiring.{WiringTransform, SourceAnnotation, SinkAnnotation}
 
+import scala.concurrent.SyncVar
+
 /** Utilities for generating synthesizeable cross module references.
   *
   * @example {{{
@@ -54,5 +56,11 @@ object BoringUtils {
       def transformClass = classOf[WiringTransform]
     }
     annotate(anno)
+  }
+
+  def bore(source: Data, sinks: Data*): Unit = {
+    def genName: String = source.instanceName
+    addSource(source, genName)
+    sinks.map(addSink(_, genName))
   }
 }

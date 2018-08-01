@@ -7,7 +7,7 @@ import java.io.File
 import chisel3._
 import chisel3.util.Counter
 import chisel3.testers.BasicTester
-import chisel3.experimental.MultiIOModule
+import chisel3.experimental.{MultiIOModule, BaseModule}
 import chisel3.util.experimental.BoringUtils
 import firrtl.{CommonOptions, ExecutionOptionsManager, HasFirrtlOptions, FirrtlExecutionOptions, FirrtlExecutionSuccess,
   FirrtlExecutionFailure}
@@ -54,40 +54,54 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
     runTester(new InverterAfterWiringTester) should be (true)
   }
 
-  class Foo(val width: Int) extends MultiIOModule with HasInput {
+  trait WireX { this: BaseModule =>
+    val width: Int
     val x = Wire(UInt(width.W))
-    x := in
-    BoringUtils.addSource(x, "uniqueId")
   }
 
-  class Bar(val width: Int) extends MultiIOModule with HasOutput {
-    val x = Wire(UInt(width.W))
+  trait BoringSink   { this: BaseModule with WireX => BoringUtils.addSink(x, "uniqueId")   }
+  trait BoringSource { this: BaseModule with WireX => BoringUtils.addSource(x, "uniqueId") }
+
+  class Foo(val width: Int) extends MultiIOModule with HasInput with WireX {
+    x := in
+  }
+
+  class Bar(val width: Int) extends MultiIOModule with HasOutput with WireX {
     out := x
     x := 0.U // Dummy connection to make this a valid circuit
-    BoringUtils.addSink(x, "uniqueId")
   }
 
-  class Top(val width: Int) extends MultiIOModule with HasInput with HasOutput {
-    val foo = Module(new Foo(width))
+  class TopViaAddSinkAddSource(val width: Int) extends MultiIOModule with HasInput with HasOutput {
+    val foo = Module(new Foo(width) with BoringSource)
+    val bar = Module(new Bar(width) with BoringSink)
     foo.in := in
-    val bar = Module(new Bar(width))
     out := bar.out
   }
 
-  class TopTester(width: Int) extends BasicTester {
-    val dut = Module(new Top(width))
+  class TopViaBore(val width: Int) extends MultiIOModule with HasInput with HasOutput {
+    val foo = Module(new Foo(width))
+    val bar = Module(new Bar(width))
+    foo.in := in
+    out := bar.out
+    BoringUtils.bore(foo.x, bar.x)
+  }
 
-    val inVec = VecInit(Range(0, math.pow(2, width).toInt).map(_.U))
+  abstract class TopTester extends BasicTester {
+    def dut: BaseModule with HasInput with HasOutput
+
+    val inVec = VecInit(Range(1, math.pow(2, dut.width).toInt).map(_.U))
     val (c, done) = Counter(true.B, inVec.size)
     dut.in := inVec(c)
-    printf("dut.in: 0x%x\n", dut.in)
-    printf("dut.out: 0x%x\n", dut.out)
     chisel3.assert(dut.out === dut.in)
 
     when (done) { stop() }
   }
 
-  it should "connect across modules" in {
-	  runTester(new TopTester(4)) should be (true)
+  it should "connect across modules via addSink/addSource" in {
+	  runTester(new TopTester{ lazy val dut = Module(new TopViaAddSinkAddSource(4)) }) should be (true)
+  }
+
+  it should "connect across modules via bore" in {
+	  runTester(new TopTester{ lazy val dut = Module(new TopViaBore(4)) }) should be (true)
   }
 }
