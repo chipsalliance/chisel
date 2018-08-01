@@ -12,7 +12,8 @@ import chisel3._
   */
 trait ThreadedBackend {
   // combinationalPaths: map of sink Data to all source Data nodes.
-  protected class ThreadingChecker(combinationalPaths: Map[Data, Set[Data]]) {
+  protected class ThreadingChecker(
+      combinationalPaths: Map[Data, Set[Data]], dataNames: Map[Data, String]) {
     /** Desired threading checking behavior:
       * -> indicates following, from different thread
       * poke -> poke (higher priority): OK (result is order-independent)
@@ -167,40 +168,46 @@ trait ThreadedBackend {
       // check poke | peek dependencies
       signalPeeks foreach { case (signal, peeks) =>
         val peekThreads = peeks.map(_.thread).toSet
+        // Pokes must be from every peeked thread, or alternatively stated,
+        // if there was one peek thread, all pokes must be from it;
+        // if there were multiple peek threads, there can be no pokes
+        val canPokeThreads: Set[TesterThread] = if (peekThreads.size == 1) peekThreads else Set()
 
-        // Get a list of threads that have affected the signal
-        val pokeThreads = signalPokes.get(signal).map { priorityToTimescopes =>
-          priorityToTimescopes(priorityToTimescopes.keySet.min).map(_.parent)
+        val otherPokeThreads = signalPokes.get(signal).filter { priorityToTimescopes =>
+          !(priorityToTimescopes(priorityToTimescopes.keySet.min).map(_.parent).toSet subsetOf canPokeThreads)
         }.toSet.flatten
-        val revertThreads = revertPokes.get(signal).map { pokes =>
-          pokes.map(_.thread)
+        val otherRevertThreads = revertPokes.get(signal).filter { pokes =>
+          !(pokes.map(_.thread).toSet subsetOf canPokeThreads)
         }.toSet.flatten
 
         // Get a list of threads that have affected a combinational source for the signal
-        val combPokeThreads = combinationalPaths.get(signal).toSet.flatten.map { source =>
-          signalPokes.get(source).map { priorityToTimescopes =>
-            priorityToTimescopes(priorityToTimescopes.keySet.min).map(_.parent)
-          }
-        }.flatten.flatten
-        val combRevertThreads = combinationalPaths.get(signal).toSet.flatten.map { source =>
-          revertPokes.get(source).map { pokes =>
-            pokes.map(_.thread)
-          }
-        }.flatten.flatten
+        val combPokeSignals = combinationalPaths.get(signal).toSet.flatten.filter { source =>
+          signalPokes.get(source).filter { priorityToTimescopes =>
+            !(priorityToTimescopes(priorityToTimescopes.keySet.min).map(_.parent).toSet subsetOf canPokeThreads)
+          }.isDefined
+        }
+        val combRevertSignals = combinationalPaths.get(signal).toSet.flatten.filter { source =>
+          revertPokes.get(source).filter { pokes =>
+            !(pokes.map(_.thread).toSet subsetOf canPokeThreads)
+          }.isDefined
+        }
 
+        val signalName = dataNames(signal)
         // TODO: better error reporting
-        if (!(pokeThreads subsetOf peekThreads)) {
-          throw new ThreadOrderDependentException(s"peek on $signal conflicts with pokes from other threads")
+        if (!otherPokeThreads.isEmpty) {
+          throw new ThreadOrderDependentException(s"peek on $signalName conflicts with pokes from other threads")
         }
-        if (!(revertThreads subsetOf peekThreads)) {
-          throw new ThreadOrderDependentException(s"peek on $signal conflicts with timescope revert from other threads")
+        if (!otherRevertThreads.isEmpty) {
+          throw new ThreadOrderDependentException(s"peek on $signalName conflicts with timescope revert from other threads")
         }
 
-        if (!(combPokeThreads subsetOf peekThreads)) {
-          throw new ThreadOrderDependentException(s"peek on $signal conflicts with combinational impact of pokes from other threads")
+        if (!combPokeSignals.isEmpty) {
+          val signalsStr = combPokeSignals.map(dataNames(_)).mkString(", ")
+          throw new ThreadOrderDependentException(s"peek on $signalName combinationally affected by pokes to $signalsStr from other threads")
         }
-        if (!(combRevertThreads subsetOf peekThreads)) {
-          throw new ThreadOrderDependentException(s"peek on $signal conflicts with combinational impact of timescope revert from other threads")
+        if (!combRevertSignals.isEmpty) {
+          val signalsStr = combRevertSignals.map(dataNames(_)).mkString(", ")
+          throw new ThreadOrderDependentException(s"peek on $signalName combinationally affected by timescope reverts to $signalsStr from other threads")
         }
       }
       revertPokes.clear()

@@ -79,7 +79,7 @@ class TreadleBackend[T <: MultiIOModule](dut: T, paths: Seq[CombinationalPath], 
     nameToPorts(sink) -> sources.map(nameToPorts(_)).toSet
   }.toMap
 
-  protected val threadingChecker = new ThreadingChecker(dutIoPaths)
+  protected val threadingChecker = new ThreadingChecker(dutIoPaths, portNames)
 
   override def timescope(contents: => Unit): Unit = {
     val newTimescope = threadingChecker.newTimescope(currentThread.get)
