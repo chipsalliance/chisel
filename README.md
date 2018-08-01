@@ -32,6 +32,7 @@ sbt assembly
 
 #### Other Tools
 * Firrtl syntax highlighting for Vim users: https://github.com/azidar/firrtl-syntax
+* Firrtl syntax highlighting for Sublime Text 3 users: https://github.com/codelec/highlight-firrtl
 * Firrtl mode for Emacs users: https://github.com/ibm/firrtl-mode
 * Chisel3, an embedded hardware DSL that generates Firrtl: https://github.com/ucb-bar/chisel3
 * Firrtl Interpreter: https://github.com/ucb-bar/firrtl-interpreter
