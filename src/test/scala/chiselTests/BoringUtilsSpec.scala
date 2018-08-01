@@ -6,7 +6,7 @@ import java.io.File
 
 import chisel3._
 import chisel3.util.Counter
-import chisel3.testers.BasicTester
+import chisel3.testers.{BasicTester, TesterDriver}
 import chisel3.util.experimental.BoringUtils
 import firrtl.{
   CommonOptions,
@@ -18,10 +18,12 @@ import firrtl.{
 import firrtl.passes.wiring.WiringTransform
 
 class InverterAfterWiring extends Module {
-  val io = IO(new Bundle {
-    val in = Input(Bool())
-    val out = Output(Bool())
-  })
+  val io = IO(
+    new Bundle {
+      val in = Input(Bool())
+      val out = Output(Bool())
+    }
+  )
 
   val notIn = ~io.in
   io.out := io.in
@@ -41,25 +43,8 @@ class InverterAfterWiringTester extends BasicTester {
   when (done) { stop() }
 }
 
-class BoringUtilsSpec extends ChiselFlatSpec with BackendCompilationUtilities {
+class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
   it should "connect within a module" in {
-    val target = "InverterAfterWiringTester"
-
-    val path = createTestDirectory(target)
-    val fname = new File(path, target)
-
-    val cppHarness =  new File(path, "top.cpp")
-    copyResourceToFile("/chisel3/top.cpp", cppHarness)
-
-    Driver.execute(Array(
-      "--target-dir", path.getAbsolutePath),
-      () => new InverterAfterWiringTester)
-    val passed = if ((verilogToCpp(target, path, Seq.empty, cppHarness) #&&
-        cppToExe(target, path)).! == 0) {
-      executeExpectingSuccess(target, path)
-    } else {
-      false
-    }
-    assert(passed)
+    runTester(new InverterAfterWiringTester) should be (true)
   }
 }
