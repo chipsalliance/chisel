@@ -11,7 +11,8 @@ import firrtl.annotations.{ModuleName, ComponentName}
 
 import scala.concurrent.SyncVar
 
-/** Utilities for generating synthesizeable cross module references.
+/** Utilities for generating synthesizeable cross module references
+  * ("boring" through a hierarchy).
   *
   * @example {{{
   * import chisel3.util.experimental.BoringUtils
@@ -30,6 +31,19 @@ import scala.concurrent.SyncVar
   * }}}
   */
 object BoringUtils {
+  /** A representation of a FIRRTL-like Namespace
+    *
+    * @param names used names
+    * @param indices the last numerical suffix used to mangle a given name
+    */
+  private case class Namespace(names: Set[String], indices: Map[String, BigInt])
+
+  /** A global, mutable store of the Namespace */
+  private val namespace: SyncVar[Namespace] = new SyncVar
+
+  /* Initialize the namespace */
+  namespace.put(Namespace(Set.empty, Map.empty.withDefaultValue(0)))
+
   /** Add a named source cross module reference
     *
     * @param component source circuit component
@@ -68,13 +82,33 @@ object BoringUtils {
       .map(annotate(_))
   }
 
+  /** Get a new name from the global namespace
+    *
+    * @param value the name you'd like to get
+    * @return the name safe in the global namespace
+    */
+  private def newName(value: String): String = {
+    val ns = namespace.take()
+
+    var valuex = value
+    var idx = ns.indices(value)
+    while (ns.names.contains(valuex)) {
+      valuex = s"${value}_$idx"
+      idx += 1
+    }
+    val nsx = ns.copy(names = ns.names + valuex, indices = ns.indices ++ Map(value -> idx))
+
+    namespace.put(nsx)
+    valuex
+  }
+
   /** Connect a source to one or more sinks
     *
     * @param source a source component
     * @param sinks one or more sink components
     */
-  def bore(source: Data, sinks: Data*): Unit = {
-    def genName: String = source.instanceName
+  def bore(source: Data, sinks: Seq[Data]): Unit = {
+    lazy val genName: String = newName(source.instanceName)
     addSource(source, genName)
     sinks.map(addSink(_, genName))
   }
