@@ -41,7 +41,7 @@ private class AspectTransform extends firrtl.Transform {
 
     val wiringInfos = bps.flatMap{ case bp@AspectAnnotation(refs, enclosingModule, instance, module) =>
       refs.map{ case (from, to) =>
-        WiringInfo(from, Seq(to), from.name)
+        WiringInfo(from.getComponentName, Seq(to.getComponentName), from.getComponentName.name)
       }
     }
 

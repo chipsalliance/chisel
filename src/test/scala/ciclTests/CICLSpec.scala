@@ -34,15 +34,17 @@ class CICLSpec extends ChiselPropSpec {
     */
   property("Should inject transaction logic") {
 
-    val (ir, b) = Driver.elaborateAndReturn(() => new Buffer(1))
+    val (ir, b) = Driver.elaborateAndReturn(() => new Buffer(4))
 
-    val xactions = TransactionEvent("is0123",  b, new Snippet[Buffer, Bool] {
-      override def snip(top: Buffer)  = {
-        top.regs.map(_.i).zipWithIndex.map {
-          case (reg, index) => reg === index.U
-        }.reduce(_ & _)
-      }
-    })
+    val xactions = CrossModule.withRoot(b){
+      TransactionEvent("is0123", b, new Snippet[Buffer, Bool] {
+        override def snip(top: Buffer)  = {
+          top.regs.zipWithIndex.map {
+            case (reg, index) => reg.i === index.U
+          }.reduce(_ && _)
+        }
+      })
+    }
     xactions.foreach(println)
 
     val verilog = compile(ir, xactions)
@@ -83,6 +85,10 @@ class CICLSpec extends ChiselPropSpec {
     val diagnostics = state.annotations.collect{case DelayCounterAnnotation(_, _, _, Some(delays)) => delays}
     assert(diagnostics.size == 1 && diagnostics.head == Set(4))
   }
+
+  /**
+    * Application - pattern match a name, given a circuit, and generate an annotation based on it
+    */
 
 }
 

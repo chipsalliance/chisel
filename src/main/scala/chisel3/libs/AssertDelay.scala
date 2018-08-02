@@ -106,7 +106,7 @@ object AssertDelay {
 
   /**
     *
-    * @param name Name of the hardware breakpoint instance
+    * @param name Ref of the hardware breakpoint instance
     * @param root Location where the breakpoint will live
     * @param f Function to build breakpoint hardware
     * @tparam T Type of the root hardware

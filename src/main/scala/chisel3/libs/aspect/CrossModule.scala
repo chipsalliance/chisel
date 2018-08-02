@@ -3,6 +3,7 @@ package chisel3.libs.aspect
 import chisel3._
 import chisel3.experimental.{BaseModule, MultiIOModule}
 import chisel3.internal.HasId
+import chisel3.libs.{Component, Instance, OfModule, SubComponent}
 import firrtl.annotations.{CircuitName, ComponentName, ModuleName}
 
 import scala.util.DynamicVariable
@@ -24,18 +25,23 @@ object CrossModule {
   class CrossModuleReference[T<:HasId](cmr: T){
     def ref: T = cmr
     def r: T = ref
-    def getNamed: ComponentName = {
+    def getNamed: Component = {
       val circuitName = CircuitName(ref.circuitName)
       val m = dynamicContextVar.value.getOrElse(getTop(cmr))
       val moduleName = ModuleName(m.name, circuitName)
-      def getName(h: HasId): Seq[String] = {
+      def getName(h: HasId): Seq[SubComponent] = {
+        val ofModule = h match {
+          case x: BaseModule => Seq(OfModule(x.name))
+          case other => Nil
+        }
         h match {
-          case a: Aspect => getName(a.parent) :+ a.instName
+          case a: Aspect =>
+            (getName(a.parent) :+ Instance(a.instName)) ++ ofModule
           case root: BaseModule if root.name == m.name => Nil
-          case other => other._parent.map(getName).getOrElse(Nil) :+ other.instanceName
+          case other => (other._parent.map(getName).getOrElse(Nil) :+ Instance(other.instanceName)) ++ ofModule
         }
       }
-      ComponentName(getName(ref).mkString("."), moduleName)
+      Component(Some(ref.circuitName), Some(m.name), getName(ref), None)
     }
     def path: Seq[String] =
       dynamicContextVar.value.map { m =>

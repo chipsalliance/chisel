@@ -13,7 +13,7 @@ object Histogram {
 
   /**
     *
-    * @param name Name of the hardware histogram instance
+    * @param name Ref of the hardware histogram instance
     * @param root Location where the breakpoint will live
     * @param signal Signal to histogram values
     * @param maxCount Max number of cycles to track a given signal value

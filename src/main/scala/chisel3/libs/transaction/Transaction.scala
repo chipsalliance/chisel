@@ -13,7 +13,7 @@ import firrtl.ir.{Input => _, Module => _, Output => _}
 object TransactionEvent {
   /**
     *
-    * @param name Name of the hardware breakpoint instance
+    * @param name Ref of the hardware breakpoint instance
     * @param f Function to build breakpoint hardware
     * @tparam T Type of the root hardware
     * @return TransactionEvent annotation
@@ -21,6 +21,7 @@ object TransactionEvent {
   def apply[M<: MultiIOModule, T<:Data](name: String, parent: M, f: Snippet[M, T]): Seq[ChiselAnnotation] = {
     val (dut, annos) = Aspect(name, parent, f)
     import CrossModule._
+    import chisel3.libs.Component.convertComponent2ComponentName
     SpecialSignal(dut.result.get.r.getNamed) +: annos
   }
   case class SpecialSignal(target: ComponentName) extends SingleTargetAnnotation[ComponentName] with ChiselAnnotation {
