@@ -5,8 +5,9 @@ package chisel3.util.experimental
 import chisel3._
 import chisel3.experimental.{ChiselAnnotation, RunFirrtlTransform, annotate}
 import chisel3.internal.{InstanceId, NamedComponent}
-import firrtl.transforms.DontTouchAnnotation
+import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
 import firrtl.passes.wiring.{WiringTransform, SourceAnnotation, SinkAnnotation}
+import firrtl.annotations.{ModuleName, ComponentName}
 
 import scala.concurrent.SyncVar
 
@@ -39,7 +40,9 @@ object BoringUtils {
           def toFirrtl = SourceAnnotation(component.toNamed, name)
           def transformClass = classOf[WiringTransform] },
         new ChiselAnnotation {
-          def toFirrtl = DontTouchAnnotation(component.toNamed) })
+          def toFirrtl = DontTouchAnnotation(component.toNamed) },
+        new ChiselAnnotation {
+          def toFirrtl = NoDedupAnnotation(component.toNamed.module) })
       .map(annotate(_))
   }
 
@@ -51,13 +54,25 @@ object BoringUtils {
     * a source identifier
     */
   def addSink(component: InstanceId, name: String): Unit = {
-    val anno = new ChiselAnnotation with RunFirrtlTransform {
-      def toFirrtl = SinkAnnotation(component.toNamed, name)
-      def transformClass = classOf[WiringTransform]
+    def moduleName = component.toNamed match {
+      case c: ModuleName => c
+      case c: ComponentName => c.module
+      case _ => throw new ChiselException("Can only add a Module or Component sink", null)
     }
-    annotate(anno)
+    Seq(
+      new ChiselAnnotation with RunFirrtlTransform {
+        def toFirrtl = SinkAnnotation(component.toNamed, name)
+        def transformClass = classOf[WiringTransform] },
+      new ChiselAnnotation {
+        def toFirrtl = NoDedupAnnotation(moduleName) } )
+      .map(annotate(_))
   }
 
+  /** Connect a source to one or more sinks
+    *
+    * @param source a source component
+    * @param sinks one or more sink components
+    */
   def bore(source: Data, sinks: Data*): Unit = {
     def genName: String = source.instanceName
     addSource(source, genName)

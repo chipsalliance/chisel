@@ -59,49 +59,38 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
     val x = Wire(UInt(width.W))
   }
 
-  trait BoringSink   { this: BaseModule with WireX => BoringUtils.addSink(x, "uniqueId")   }
-  trait BoringSource { this: BaseModule with WireX => BoringUtils.addSource(x, "uniqueId") }
-
   class Foo(val width: Int) extends MultiIOModule with HasInput with WireX {
     x := in
   }
 
   class Bar(val width: Int) extends MultiIOModule with HasOutput with WireX {
     out := x
-    x := 0.U // Dummy connection to make this a valid circuit
+    x := 0.U // Default value. Output is zero unless we bore...
   }
 
-  class TopViaAddSinkAddSource(val width: Int) extends MultiIOModule with HasInput with HasOutput {
-    val foo = Module(new Foo(width) with BoringSource)
-    val bar = Module(new Bar(width) with BoringSink)
-    foo.in := in
-    out := bar.out
-  }
-
-  class TopViaBore(val width: Int) extends MultiIOModule with HasInput with HasOutput {
+  class Top(val width: Int) extends MultiIOModule with HasInput with HasOutput {
     val foo = Module(new Foo(width))
     val bar = Module(new Bar(width))
     foo.in := in
     out := bar.out
-    BoringUtils.bore(foo.x, bar.x)
   }
 
-  abstract class TopTester extends BasicTester {
-    def dut: BaseModule with HasInput with HasOutput
+  class TopTester extends BasicTester {
+    val dut = Module(new Top(4))
+    val dut2 = Module(new Top(4))
+    BoringUtils.bore(dut.foo.x, dut.bar.x)
 
     val inVec = VecInit(Range(1, math.pow(2, dut.width).toInt).map(_.U))
     val (c, done) = Counter(true.B, inVec.size)
     dut.in := inVec(c)
+    dut2.in := inVec(c)
     chisel3.assert(dut.out === dut.in)
+    chisel3.assert(dut2.out === 0.U)
 
     when (done) { stop() }
   }
 
-  it should "connect across modules via addSink/addSource" in {
-	  runTester(new TopTester{ lazy val dut = Module(new TopViaAddSinkAddSource(4)) }) should be (true)
-  }
-
   it should "connect across modules via bore" in {
-	  runTester(new TopTester{ lazy val dut = Module(new TopViaBore(4)) }) should be (true)
+	  runTester(new TopTester) should be (true)
   }
 }
