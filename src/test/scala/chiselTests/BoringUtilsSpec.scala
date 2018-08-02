@@ -69,17 +69,22 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
   }
 
   class Top(val width: Int) extends MultiIOModule with HasInput with HasOutput {
-    val foo = Module(new Foo(width))
-    val foo2 = Module(new Foo(width))
-    val bar = Module(new Bar(width))
-    Seq(foo, foo2).map(_.in := in)
-    out := bar.out
+    // source(0) -> unused
+    // source(1) -> source
+    val source = Seq.fill(2)(Module(new Foo(width)))
+    // sink(0) -> unconnected, always outputs zero
+    // sink(1) -> sink
+    // sink(2) -> sink
+    val sink = Seq.fill(3)(Module(new Bar(width)))
+    source.map(_.in := in)
+    out := sink.tail.map(_.out).reduce(_ & _)
+    chisel3.assert(sink.head.out === 0.U)
   }
 
   class TopTester extends BasicTester {
     val dut = Module(new Top(4))
     val dut2 = Module(new Top(4))
-    BoringUtils.bore(dut.foo.x, dut.bar.x)
+    BoringUtils.bore(dut.source(1).x, Seq(dut.sink(1).x, dut.sink(2).x))
 
     val inVec = VecInit(Range(1, math.pow(2, dut.width).toInt).map(_.U))
     val (c, done) = Counter(true.B, inVec.size)
