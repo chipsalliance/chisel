@@ -70,8 +70,9 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
 
   class Top(val width: Int) extends MultiIOModule with HasInput with HasOutput {
     val foo = Module(new Foo(width))
+    val foo2 = Module(new Foo(width))
     val bar = Module(new Bar(width))
-    foo.in := in
+    Seq(foo, foo2).map(_.in := in)
     out := bar.out
   }
 
