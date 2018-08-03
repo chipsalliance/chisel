@@ -55,44 +55,39 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
   }
 
   trait WireX { this: BaseModule =>
-    val width: Int
-    val x = Wire(UInt(width.W))
+    val x = Wire(UInt(4.W))
   }
 
-  class Foo(val width: Int) extends MultiIOModule with HasInput with WireX {
-    x := in
+  class Constant(const: Int) extends MultiIOModule with WireX {
+    x := const.U
   }
 
-  class Bar(val width: Int) extends MultiIOModule with HasOutput with WireX {
-    out := x
+  object Constant { def apply(const: Int): Constant = Module(new Constant(const)) }
+
+  class Expect(const: Int) extends MultiIOModule with WireX {
     x := 0.U // Default value. Output is zero unless we bore...
+    chisel3.assert(x === const.U, "x (0x%x) was not const.U (0x%x)", x, const.U)
   }
 
-  class Top(val width: Int) extends MultiIOModule with HasInput with HasOutput {
-    // source(0) -> unused
-    // source(1) -> source
-    val source = Seq.fill(2)(Module(new Foo(width)))
-    // sink(0) -> unconnected, always outputs zero
-    // sink(1) -> sink
-    // sink(2) -> sink
-    val sink = Seq.fill(3)(Module(new Bar(width)))
-    source.map(_.in := in)
-    out := sink.tail.map(_.out).reduce(_ & _)
-    chisel3.assert(sink.head.out === 0.U)
+  object Expect { def apply(const: Int): Expect = Module(new Expect(const)) }
+
+  class Top(val width: Int) extends MultiIOModule {
+    /* source(0)   -> unconnected
+     * unconnected -> Seq(expect(0))
+     * source(1)   -> expect(1)
+     * source(2)   -> expect(2) */
+    val source = Seq(0, 1, 2).map(x => x -> Constant(x)).toMap
+    val expect = Map(0 -> Seq.fill(2)(Expect(0)),
+                     1 -> Seq.fill(1)(Expect(1)),
+                     2 -> Seq.fill(3)(Expect(2)))
   }
 
   class TopTester extends BasicTester {
     val dut = Module(new Top(4))
-    val dut2 = Module(new Top(4))
-    BoringUtils.bore(dut.source(1).x, Seq(dut.sink(1).x, dut.sink(2).x))
+    BoringUtils.bore(dut.source(1).x, dut.expect(1).map(_.x))
+    BoringUtils.bore(dut.source(2).x, dut.expect(2).map(_.x))
 
-    val inVec = VecInit(Range(1, math.pow(2, dut.width).toInt).map(_.U))
-    val (c, done) = Counter(true.B, inVec.size)
-    dut.in := inVec(c)
-    dut2.in := inVec(c)
-    chisel3.assert(dut.out === dut.in)
-    chisel3.assert(dut2.out === 0.U)
-
+    val (_, done) = Counter(true.B, 4)
     when (done) { stop() }
   }
 

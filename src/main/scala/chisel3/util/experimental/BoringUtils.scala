@@ -12,8 +12,14 @@ import firrtl.annotations.{ModuleName, ComponentName}
 import scala.concurrent.SyncVar
 import chisel3.internal.Namespace
 
+/** An exception related to BoringUtils
+  * @param message the exception message
+  */
+class BoringUtilsException(message: String) extends Exception(message)
+
 /** Utilities for generating synthesizeable cross module references
-  * ("boring" through a hierarchy).
+  * ("boring" through a hierarchy) from one source module to one or more
+  * sink modules.
   *
   * @example {{{
   * import chisel3.util.experimental.BoringUtils
@@ -32,49 +38,9 @@ import chisel3.internal.Namespace
   * }}}
   */
 object BoringUtils {
-  /** A namespace for boring ids */
+  /** A global namespace for boring ids */
   private val namespace: SyncVar[Namespace] = new SyncVar
-
-  /* Initialize the namespace */
   namespace.put(Namespace.empty)
-
-  /** Add a named source cross module reference
-    *
-    * @param component source circuit component
-    * @param name unique identifier for this source
-    */
-  def addSource(component: NamedComponent, name: String): Unit = {
-    Seq(new ChiselAnnotation with RunFirrtlTransform {
-          def toFirrtl = SourceAnnotation(component.toNamed, name)
-          def transformClass = classOf[WiringTransform] },
-        new ChiselAnnotation {
-          def toFirrtl = DontTouchAnnotation(component.toNamed) },
-        new ChiselAnnotation {
-          def toFirrtl = NoDedupAnnotation(component.toNamed.module) })
-      .map(annotate(_))
-  }
-
-  /** Add a named sink cross module reference. Multiple sinks may map to
-    * the same source.
-    *
-    * @param component sink circuit component
-    * @param name unique identifier for this sink that must resolve to
-    * a source identifier
-    */
-  def addSink(component: InstanceId, name: String): Unit = {
-    def moduleName = component.toNamed match {
-      case c: ModuleName => c
-      case c: ComponentName => c.module
-      case _ => throw new ChiselException("Can only add a Module or Component sink", null)
-    }
-    Seq(
-      new ChiselAnnotation with RunFirrtlTransform {
-        def toFirrtl = SinkAnnotation(component.toNamed, name)
-        def transformClass = classOf[WiringTransform] },
-      new ChiselAnnotation {
-        def toFirrtl = NoDedupAnnotation(moduleName) } )
-      .map(annotate(_))
-  }
 
   /** Get a new name from the global namespace
     *
@@ -88,14 +54,67 @@ object BoringUtils {
     valuex
   }
 
+  /** Check if a name exists in the namespace */
+  private def checkName(value: String): Boolean = namespace.get.contains(value)
+
+  /** Add a named source cross module reference
+    *
+    * @param component source circuit component
+    * @param name unique identifier for this source
+    * @param dedup enable dedupblication of modules
+    * @param forceUnique fail if a non-unique name parameter is used
+    * @return the mangled name used
+    */
+  def addSource(component: NamedComponent, name: String, dedup: Boolean = false, forceUnique: Boolean = false): String = {
+    if (forceUnique && checkName(name)) {
+      throw new BoringUtilsException(s"Source ID '$name' already exists in BoringUtils ID namespace") }
+    val id = newName(name)
+    val maybeDedup =
+      if (dedup) { Seq(new ChiselAnnotation { def toFirrtl = NoDedupAnnotation(component.toNamed.module) }) }
+      else       { Seq[ChiselAnnotation]()                                                                  }
+    val annotations =
+      Seq(new ChiselAnnotation with RunFirrtlTransform {
+            def toFirrtl = SourceAnnotation(component.toNamed, id)
+            def transformClass = classOf[WiringTransform] },
+          new ChiselAnnotation { def toFirrtl = DontTouchAnnotation(component.toNamed) } ) ++ maybeDedup
+
+    annotations.map(annotate(_))
+    id
+  }
+
+  /** Add a named sink cross module reference. Multiple sinks may map to
+    * the same source.
+    *
+    * @param component sink circuit component
+    * @param name unique identifier for this sink that must resolve to
+    * a source identifier
+    */
+  def addSink(component: InstanceId, name: String, dedup: Boolean = false, forceExists: Boolean = false): Unit = {
+    if (forceExists && !checkName(name)) {
+      throw new BoringUtilsException(s"Sink ID '$name' not found in BoringUtils ID namespace") }
+    def moduleName = component.toNamed match {
+      case c: ModuleName => c
+      case c: ComponentName => c.module
+      case _ => throw new ChiselException("Can only add a Module or Component sink", null)
+    }
+    val maybeDedup =
+      if (dedup) { Seq(new ChiselAnnotation { def toFirrtl = NoDedupAnnotation(moduleName) }) }
+      else       { Seq[ChiselAnnotation]()                                                    }
+    val annotations =
+      Seq(new ChiselAnnotation with RunFirrtlTransform {
+            def toFirrtl = SinkAnnotation(component.toNamed, name)
+            def transformClass = classOf[WiringTransform] })
+    annotations.map(annotate(_))
+  }
+
   /** Connect a source to one or more sinks
     *
     * @param source a source component
     * @param sinks one or more sink components
     */
-  def bore(source: Data, sinks: Seq[Data]): Unit = {
-    lazy val genName: String = newName(source.instanceName)
-    addSource(source, genName)
-    sinks.map(addSink(_, genName))
+  def bore(source: Data, sinks: Seq[Data]): String = {
+    lazy val genName = addSource(source, source.instanceName, true, false)
+    sinks.map(addSink(_, genName, true, true))
+    genName
   }
 }
