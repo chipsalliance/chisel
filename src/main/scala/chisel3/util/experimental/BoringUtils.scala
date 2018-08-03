@@ -10,6 +10,7 @@ import firrtl.passes.wiring.{WiringTransform, SourceAnnotation, SinkAnnotation}
 import firrtl.annotations.{ModuleName, ComponentName}
 
 import scala.concurrent.SyncVar
+import chisel3.internal.Namespace
 
 /** Utilities for generating synthesizeable cross module references
   * ("boring" through a hierarchy).
@@ -31,18 +32,11 @@ import scala.concurrent.SyncVar
   * }}}
   */
 object BoringUtils {
-  /** A representation of a FIRRTL-like Namespace
-    *
-    * @param names used names
-    * @param indices the last numerical suffix used to mangle a given name
-    */
-  private case class Namespace(names: Set[String], indices: Map[String, BigInt])
-
-  /** A global, mutable store of the Namespace */
+  /** A namespace for boring ids */
   private val namespace: SyncVar[Namespace] = new SyncVar
 
   /* Initialize the namespace */
-  namespace.put(Namespace(Set.empty, Map.empty.withDefaultValue(0)))
+  namespace.put(Namespace.empty)
 
   /** Add a named source cross module reference
     *
@@ -89,16 +83,8 @@ object BoringUtils {
     */
   private def newName(value: String): String = {
     val ns = namespace.take()
-
-    var valuex = value
-    var idx = ns.indices(value)
-    while (ns.names.contains(valuex)) {
-      valuex = s"${value}_$idx"
-      idx += 1
-    }
-    val nsx = ns.copy(names = ns.names + valuex, indices = ns.indices ++ Map(value -> idx))
-
-    namespace.put(nsx)
+    val valuex = ns.name(value)
+    namespace.put(ns)
     valuex
   }
 
