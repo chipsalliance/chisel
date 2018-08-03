@@ -6,7 +6,7 @@
 package chisel3.util
 
 import chisel3._
-import chisel3.experimental.{DataMirror, Direction}
+import chisel3.experimental.{DataMirror, Direction, requireIsChiselType}
 import chisel3.internal.naming._  // can't use chisel3_ version because of compile order
 
 /** An I/O Bundle containing 'valid' and 'ready' signals that handshake
@@ -199,7 +199,7 @@ class Queue[T <: Data](gen: T,
   }
 
   val genType = if (compileOptions.declaredTypeMustBeUnbound) {
-    experimental.requireIsChiselType(gen)
+    requireIsChiselType(gen)
     gen
   } else {
     if (DataMirror.internal.isSynthesizable(gen)) {
