@@ -4,6 +4,7 @@ sudo: false
 cache:
   directories:
     $HOME/.ivy2
+    $HOME/.sbt
     $INSTALL_DIR
 
 git:
