@@ -65,10 +65,8 @@ object BoringUtils {
     * @param forceUnique fail if a non-unique name parameter is used
     * @return the mangled name used
     */
-  def addSource(component: NamedComponent, name: String, dedup: Boolean = false, forceUnique: Boolean = false): String = {
-    if (forceUnique && checkName(name)) {
-      throw new BoringUtilsException(s"Source ID '$name' already exists in BoringUtils ID namespace") }
-    val id = newName(name)
+  def addSource(component: NamedComponent, name: String, dedup: Boolean = false, uniqueName: Boolean = false): String = {
+    val id = if (uniqueName) { newName(name) } else { name }
     val maybeDedup =
       if (dedup) { Seq(new ChiselAnnotation { def toFirrtl = NoDedupAnnotation(component.toNamed.module) }) }
       else       { Seq[ChiselAnnotation]()                                                                  }
@@ -113,7 +111,7 @@ object BoringUtils {
     * @param sinks one or more sink components
     */
   def bore(source: Data, sinks: Seq[Data]): String = {
-    lazy val genName = addSource(source, source.instanceName, true, false)
+    lazy val genName = addSource(source, source.instanceName, true, true)
     sinks.map(addSink(_, genName, true, true))
     genName
   }
