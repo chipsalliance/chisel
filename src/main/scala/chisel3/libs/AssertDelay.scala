@@ -53,7 +53,7 @@ object AssertDelay {
 
     override def execute(state: CircuitState): CircuitState = {
       val adas = state.annotations.collect{ case a: AssertDelayAnnotation => a}
-      val adaMap = adas.groupBy(_.enclosingModule.name)
+      val adaMap = adas.groupBy(_.enclosingModule.encapsulatingModule.get)
 
       val moduleMap = state.circuit.modules.map(m => m.name -> m).toMap
       val errors = mutable.ArrayBuffer[String]()
@@ -63,9 +63,9 @@ object AssertDelay {
       state.circuit.modules.foreach { m =>
         val connections = AnalysisUtils.getConnects(m)
         adaMap.getOrElse(m.name, Nil).map { case AssertDelayAnnotation(source, sink, _, delay) =>
-          val delays = countDelays(connections(sink.name), source.name, 0, connections)
+          val delays = countDelays(connections(sink.reference.last.value.toString), source.reference.last.value.toString, 0, connections)
           if(delays.size != 1 || delays.head != delay) {
-            errors += s"Delay from ${sink.name} to ${source.name} is not $delay, its $delays\n"
+            errors += s"Delay from ${sink} to ${source} is not $delay, its $delays\n"
           }
         }
       }
@@ -83,13 +83,12 @@ object AssertDelay {
     override def transformClass: Class[_ <: Transform] = classOf[AssertDelay.AssertDelayTransform]
   }
 
-  case class AssertDelayAnnotation(source: ComponentName, sink: ComponentName, enclosingModule: ModuleName, delay: Int) extends Annotation {
+  case class AssertDelayAnnotation(source: Component, sink: Component, enclosingModule: Component, delay: Int) extends Annotation {
     private val errors = mutable.ArrayBuffer[String]()
-    private def rename[T<:Named](n: T, renames: RenameMap): T = (n, renames.get(n)) match {
-      case (m: ModuleName, Some(Seq(x: ModuleName))) => x.asInstanceOf[T]
-      case (c: ComponentName, Some(Seq(x: ComponentName))) => x.asInstanceOf[T]
-      case (_, None) => n
-      case (_, other) =>
+    private def rename(n: Component, renames: RenameMap): Component = renames.get(n) match {
+      case Some(Seq(x: Component)) => x
+      case None => n
+      case other =>
         errors += s"Bad rename in ${this.getClass}: $n to $other"
         n
     }
@@ -113,11 +112,6 @@ object AssertDelay {
     * @return BreakPoint annotation
     */
   def apply[T<: BaseModule](root: T, source: Data, sink: Data, delay: Int): ChiselAnnotation = {
-
-    // Build Names for references
-    val circuitName = CircuitName(root.circuitName)
-    val moduleName = ModuleName(root.name, circuitName)
-    def toNamed(ref: Data): ComponentName = ComponentName(ref.pathTo(root).mkString("."), moduleName)
 
     // Return Annotations
     AssertDelayChiselAnnotation(source, sink, root, delay)

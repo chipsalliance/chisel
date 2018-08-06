@@ -25,9 +25,9 @@ object Histogram {
 
     Aspect(name, root, () => new Histogram(chiselTypeOf(signal), maxCount, name, root), (encl: T, hist: Histogram[S]) => {
       Map(
-        encl.clock -> hist.clock,
-        encl.reset -> hist.reset,
-        signal -> hist.in
+        encl.clock.toNamed -> encl.toNamed.inst(name).ref("clock"),
+        encl.reset.toNamed -> encl.toNamed.inst(name).ref("reset"),
+        signal.toNamed -> encl.toNamed.inst(name).ref("in")
       )
     })._2
   }

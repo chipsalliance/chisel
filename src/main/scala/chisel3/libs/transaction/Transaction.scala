@@ -20,9 +20,7 @@ object TransactionEvent {
     */
   def apply[M<: MultiIOModule, T<:Data](name: String, parent: M, f: Snippet[M, T]): Seq[ChiselAnnotation] = {
     val (dut, annos) = Aspect(name, parent, f)
-    import CrossModule._
-    import chisel3.libs.Component.convertComponent2ComponentName
-    SpecialSignal(dut.result.get.r.getNamed) +: annos
+    SpecialSignal(dut.result.get.toNamed) +: annos
   }
   case class SpecialSignal(target: ComponentName) extends SingleTargetAnnotation[ComponentName] with ChiselAnnotation {
     override def toFirrtl: Annotation = this

@@ -2,7 +2,7 @@ package chisel3.libs
 
 import chisel3._
 import chisel3.core.{BaseModule, ChiselAnnotation, RunFirrtlTransform, dontTouch}
-import chisel3.experimental.{MultiIOModule, RawModule, annotate}
+import chisel3.experimental.{MultiIOModule, RawModule, annotate, withRoot}
 import BreakPoint.BreakPointAnnotation
 import firrtl.{AnnotationSeq, CircuitForm, CircuitState, HighForm, MidForm, RenameMap, Transform}
 import firrtl.annotations._
@@ -33,7 +33,7 @@ object BreakPoint {
 
     override def execute(state: CircuitState): CircuitState = {
       val bps = state.annotations.collect{ case b: BreakPointAnnotation => b}
-      val bpMap = bps.groupBy(_.enclosingModule.name)
+      val bpMap = bps.groupBy(_.enclosingModule.encapsulatingModule.get)
 
       val moduleMap = state.circuit.modules.map(m => m.name -> m).toMap
 
@@ -50,7 +50,7 @@ object BreakPoint {
 
       val wiringInfos = bps.flatMap{ case bp@BreakPointAnnotation(refs, enclosingModule, instance, module) =>
         refs.map{ case (from, to) =>
-          WiringInfo(from, Seq(to), from.name)
+          WiringInfo(from, Seq(to), from.reference.last.value.toString)
         }
       }
 
@@ -84,13 +84,12 @@ object BreakPoint {
     }
   }
 
-  case class BreakPointAnnotation(refs: Seq[(ComponentName, ComponentName)], enclosingModule: ModuleName, instance: DefInstance, module: firrtl.ir.DefModule) extends Annotation with RunFirrtlTransform {
+  case class BreakPointAnnotation(refs: Seq[(Component, Component)], enclosingModule: Component, instance: DefInstance, module: firrtl.ir.DefModule) extends Annotation with RunFirrtlTransform {
     override def toFirrtl: Annotation = this
     override def transformClass: Class[_ <: Transform] = classOf[BreakPoint.BreakPointTransform]
     private val errors = mutable.ArrayBuffer[String]()
-    private def rename[T<:Named](n: T, renames: RenameMap): T = (n, renames.get(n)) match {
-      case (m: ModuleName, Some(Seq(x: ModuleName))) => x.asInstanceOf[T]
-      case (c: ComponentName, Some(Seq(x: ComponentName))) => x.asInstanceOf[T]
+    private def rename(n: Component, renames: RenameMap): Component = (n, renames.get(n)) match {
+      case (c: Component, Some(Seq(x: Component))) => x
       case (_, None) => n
       case (_, other) =>
         errors += s"Bad rename in ${this.getClass}: $n to $other"
@@ -150,14 +149,29 @@ object BreakPoint {
     val firrtlModule = firrtlIR.modules.head
 
     // Build Names for references
-    val circuitName = CircuitName(root.circuitName)
-    val moduleName = ModuleName(root.name, circuitName)
-    def toNamed(ref: Data): ComponentName = ComponentName(ref.pathTo(root).mkString("."), moduleName)
+    //val circuitName = CircuitName(root.circuitName)
+    //val moduleName = ModuleName(root.name, circuitName)
+    //def toNamed(ref: Data): ComponentName = ComponentName(ref.pathTo(root).mkString("."), moduleName)
 
     // Return Annotations
-    Seq(
-      BreakPointAnnotation((dut.cmrs.toSeq ++ otherPorts).map{ case (from, to) => (toNamed(from), ComponentName(name + "." + to.toNamed.name, moduleName))}, root.toNamed, DefInstance(NoInfo, name, firrtlModule.name), firrtlModule)
-    ) ++ chiselIR.annotations
+    withRoot(root){
+      Seq(
+        BreakPointAnnotation(
+          (dut.cmrs.toSeq ++ otherPorts).map {
+            case (from, to) =>
+              val tN = to.toNamed
+              import _root_.firrtl.annotations.SubComponent._
+              val newReference = tN.reference.reverse match {
+                case (r: Ref) :: tail => (Seq(r, OfModule(dut.name), Instance(name)) ++ tail).reverse
+              }
+              (from.toNamed, tN.copy(reference = newReference))
+          },
+          root.toNamed,
+          DefInstance(NoInfo, name, firrtlModule.name),
+          firrtlModule
+        )
+      ) ++ chiselIR.annotations
+    }
   }
 
 }

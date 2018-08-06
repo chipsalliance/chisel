@@ -4,11 +4,10 @@ package chisel3.internal
 
 import scala.util.DynamicVariable
 import scala.collection.mutable.{ArrayBuffer, HashMap}
-
 import chisel3._
 import core._
 import firrtl._
-import _root_.firrtl.annotations.{CircuitName, ComponentName, ModuleName, Named}
+import _root_.firrtl.annotations
 
 private[chisel3] class Namespace(keywords: Set[String]) {
   private val names = collection.mutable.HashMap[String, Long]()
@@ -68,7 +67,7 @@ trait InstanceId {
   def parentPathName: String
   def parentModName: String
   /** Returns a FIRRTL Named that refers to this object in the elaborated hardware graph */
-  def toNamed: Named
+  def toNamed: annotations.Component
 
 }
 
@@ -113,16 +112,6 @@ private[chisel3] trait HasId extends InstanceId {
   private[chisel3] def setRef(parent: HasId, index: UInt): Unit = setRef(Index(Node(parent), index.ref))
   private[chisel3] def getRef: Arg = _ref.get
 
-  def pathTo(m: BaseModule): Seq[String] = {
-    if(this == m) Nil
-    else {
-      _parent match {
-        case Some(p) => p.pathTo(m) ++ Seq(instanceName)
-        case None => Nil
-      }
-    }
-  }
-
   // Implementation of public methods.
   def instanceName: String = _parent match {
     case Some(p) => p._component match {
@@ -166,8 +155,10 @@ private[chisel3] trait NamedComponent extends HasId {
   /** Returns a FIRRTL ComponentName that references this object
     * @note Should not be called until circuit elaboration is complete
     */
-  final def toNamed: ComponentName =
-    ComponentName(this.instanceName, ModuleName(this.parentModName, CircuitName(this.circuitName)))
+  final def toNamed: annotations.Component = {
+    val parentComponent = _parent.getOrElse(throwException(s"$instanceName doesn't have a parent")).toNamed
+    parentComponent.ref(instanceName)
+  }
 }
 
 private[chisel3] class DynamicContext() {
@@ -185,6 +176,18 @@ private[chisel3] class DynamicContext() {
   val namingStack = new internal.naming.NamingStack
   // Record the Bundle instance, class name, method name, and reverse stack trace position of open Bundles
   val bundleStack: ArrayBuffer[(Bundle, String, String, Int)] = ArrayBuffer()
+  var rootModule: Option[BaseModule] = None
+}
+
+object withRoot {
+  def apply[T](m: BaseModule)(f: => T): T = apply(Some(m))(f)
+  def apply[T](m: Option[BaseModule])(f: => T): T = {
+    val prevRoot = Builder.root
+    Builder.setRoot_=(m)
+    val ret = f
+    Builder.setRoot_=(prevRoot)
+    ret
+  }
 }
 
 private[chisel3] object Builder {
@@ -206,6 +209,10 @@ private[chisel3] object Builder {
   def currentModule: Option[BaseModule] = dynamicContext.currentModule
   def currentModule_=(target: Option[BaseModule]): Unit = {
     dynamicContext.currentModule = target
+  }
+  def root: Option[BaseModule] = dynamicContext.rootModule
+  def setRoot_=(target: Option[BaseModule]): Unit = {
+    dynamicContext.rootModule = target
   }
   def forcedModule: BaseModule = currentModule match {
     case Some(module) => module

@@ -5,15 +5,13 @@ package chisel3.core
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.collection.JavaConversions._
 import scala.language.experimental.macros
-
 import java.util.IdentityHashMap
 
 import chisel3.internal._
 import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{InstTransform, SourceInfo}
-
-import _root_.firrtl.annotations.{CircuitName, ModuleName}
+import _root_.firrtl.annotations
 
 object Module {
   /** A wrapper method that all Module instantiations must be wrapped in
@@ -98,6 +96,7 @@ abstract class BaseModule extends HasId {
   // Module Construction Internals
   //
   protected var _closed = false
+  def isClosed: Boolean = _closed
 
   // Fresh Namespace because in Firrtl, Modules namespaces are disjoint with the global namespace
   private[core] val _namespace = Namespace.empty
@@ -146,7 +145,15 @@ abstract class BaseModule extends HasId {
   /** Returns a FIRRTL ModuleName that references this object
     * @note Should not be called until circuit elaboration is complete
     */
-  final def toNamed: ModuleName = ModuleName(this.name, CircuitName(this.circuitName))
+  final def toNamed: annotations.Component = {
+    require(_closed, "Cannot get name of this module before its elaboration")
+    if(_parent.isEmpty || (Builder.root.isDefined && Builder.root.get == this)) {
+      annotations.Component(Some(this.circuitName), Some(this.name), Nil, None)
+    } else {
+      val parentComponent = _parent.get.toNamed
+      parentComponent.inst(instanceName).of(name)
+    }
+  }
 
   /** Called at the Module.apply(...) level after this Module has finished elaborating.
     * Returns a map of nodes -> names, for named nodes.

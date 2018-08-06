@@ -6,8 +6,8 @@ package ciclTests
 
 import chiselTests.ChiselPropSpec
 import chisel3._
-import chisel3.experimental.MultiIOModule
-import chisel3.libs.aspect.{CrossModule, Snippet}
+import chisel3.experimental.{MultiIOModule, withRoot}
+import chisel3.libs.aspect.{Snippet}
 import chisel3.libs.transaction.TransactionEvent
 import chisel3.libs.diagnostic.{DelayCounter, DelayCounterAnnotation, Histogram}
 
@@ -21,6 +21,9 @@ class Buffer(delay: Int) extends MultiIOModule {
   }
 }
 
+/**
+  * TODO: How to set root when referencing during elaboration?
+  */
 class CICLSpec extends ChiselPropSpec {
   private val ModuleRegex = """\s*module\s+(\w+)\b.*""".r
   def countModules(verilog: String): Int =
@@ -36,7 +39,7 @@ class CICLSpec extends ChiselPropSpec {
 
     val (ir, b) = Driver.elaborateAndReturn(() => new Buffer(4))
 
-    val xactions = CrossModule.withRoot(b){
+    val xactions = withRoot(b){
       TransactionEvent("is0123", b, new Snippet[Buffer, Bool] {
         override def snip(top: Buffer)  = {
           top.regs.zipWithIndex.map {
@@ -56,7 +59,9 @@ class CICLSpec extends ChiselPropSpec {
 
     val (ir, topA) = Driver.elaborateAndReturn(() => new Buffer(1))
 
-    val aspects = Histogram("histReg0", topA, topA.regs(0), 100)
+    val aspects = withRoot(topA){
+      Histogram("histReg0", topA, topA.regs(0), 100)
+    }
     println(aspects)
 
     val verilog = compile(ir, aspects)
@@ -73,7 +78,7 @@ class CICLSpec extends ChiselPropSpec {
 
     val (ir, b) = Driver.elaborateAndReturn(() => new Buffer(4))
 
-    val countDelays = CrossModule.withRoot(b) {
+    val countDelays = withRoot(b) {
       DelayCounter(b, b.in, b.out)
     }
 

@@ -3,6 +3,7 @@ package chisel3.libs.aspect
 import chisel3.experimental.{BaseModule, ChiselAnnotation, MultiIOModule, RawModule}
 import chisel3.internal.firrtl.Circuit
 import chisel3.{Data, Driver}
+import firrtl.annotations.Component
 import firrtl.ir.{DefInstance, NoInfo}
 
 import scala.util.DynamicVariable
@@ -15,7 +16,6 @@ import scala.util.DynamicVariable
   *
   */
 object Aspect {
-  import CrossModule.ref2cmr
   private[aspect] val dynamicContextVar = new DynamicVariable[Option[MonitorModule]](None)
   private[aspect] def withAspect[S](m: MonitorModule)(thunk: => S): S = {
     dynamicContextVar.withValue(Some(m))(thunk)
@@ -26,14 +26,14 @@ object Aspect {
     val firrtlIR = firrtl.Parser.parse(firrtlString)
     firrtlIR.modules.head
   }
-  def getAnnotations(chiselIR: Circuit, dut: Aspect, connections: Seq[(Data, Data)], parent: BaseModule): Seq[ChiselAnnotation] = {
+  def getAnnotations(chiselIR: Circuit, dut: Aspect, connections: Seq[(Component, Component)], parent: BaseModule): Seq[ChiselAnnotation] = {
 
     val firrtlModule = getFirrtl(chiselIR)
 
     // Return Annotations
     Seq(
       AspectAnnotation(
-        connections.map{ case (from, to) => (from.r.getNamed, to.r.getNamed)},
+        connections,
         parent.toNamed,
         DefInstance(NoInfo, dut.instName, firrtlModule.name),
         firrtlModule)
@@ -45,7 +45,7 @@ object Aspect {
                                         f: Snippet[M, T]
                                        ): (MonitorModule, Seq[ChiselAnnotation]) = {
     val connections = (parent: M, dut: MonitorModule) => {
-      dut.cmrs.toMap ++ Map((parent.clock, dut.clock), (parent.reset, dut.reset))
+      dut.cmrComponent.toMap.mapValues(_()) ++ Map((parent.clock.toNamed, dut.instComponent.ref("clock")), (parent.reset.toNamed, dut.instComponent.ref("reset")))
     }
     apply(instanceName, parent, () => new MonitorModule(instanceName, parent).snip(f), connections)
   }
@@ -53,7 +53,7 @@ object Aspect {
   def apply[M<: MultiIOModule, S<:Aspect with RawModule](instanceName: String,
                                                          parent: M,
                                                          aspect: () => S,
-                                                         connections: (M, S) => Map[Data, Data]
+                                                         connections: (M, S) => Map[Component, Component]
                                                         ): (S, Seq[ChiselAnnotation]) = {
     // Elaborate aspect
     val (chiselIR, dut) = Driver.elaborateAndReturn(aspect)

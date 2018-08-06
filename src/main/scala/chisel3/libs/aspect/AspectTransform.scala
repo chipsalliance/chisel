@@ -24,7 +24,7 @@ private class AspectTransform extends firrtl.Transform {
 
   override def execute(state: CircuitState): CircuitState = {
     val bps = state.annotations.collect{ case b: AspectAnnotation => b}
-    val bpMap = bps.groupBy(_.enclosingModule.asInstanceOf[ModuleName].name)
+    val bpMap = bps.groupBy(_.enclosingModule.encapsulatingModule.get)
 
     val moduleMap = state.circuit.modules.map(m => m.name -> m).toMap
 
@@ -64,6 +64,8 @@ private class AspectTransform extends firrtl.Transform {
       new firrtl.IRToWorkingIR,
       new firrtl.ResolveAndCheck
     )
+    println(newCircuit.serialize)
+    println(wiringInfos.mkString("\n"))
 
     val finalState = transforms.foldLeft(state.copy(annotations = newAnnotations, circuit = newCircuit)) { (newState, xform) =>
       val x = xform.runTransform(newState)

@@ -420,6 +420,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     val withReset = chisel3.core.withReset
 
     val dontTouch = chisel3.core.dontTouch
+    val withRoot = chisel3.internal.withRoot
 
     type BaseModule = chisel3.core.BaseModule
     type MultiIOModule = chisel3.core.ImplicitModule

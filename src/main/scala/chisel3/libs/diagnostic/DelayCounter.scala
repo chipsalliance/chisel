@@ -1,8 +1,8 @@
 package chisel3.libs.diagnostic
 
-import chisel3._
+import chisel3.{Data, _}
 import chisel3.core.{BaseModule, ChiselAnnotation, RunFirrtlTransform, dontTouch}
-import chisel3.experimental.{MultiIOModule, RawModule, annotate}
+import chisel3.experimental.{MultiIOModule, RawModule, annotate, withRoot}
 import firrtl.{AnnotationSeq, CircuitForm, CircuitState, HighForm, LowForm, MidForm, RegKind, RenameMap, Transform, WRef}
 import firrtl.annotations._
 import firrtl.ir.{Input => _, Module => _, Output => _, _}
@@ -35,12 +35,14 @@ object DelayCounter {
   def apply[T<: BaseModule](root: T, source: Data, sink: Data): Seq[ChiselAnnotation] = {
 
     // Build Names for references
-    val circuitName = CircuitName(root.circuitName)
-    val moduleName = ModuleName(root.name, circuitName)
-    def toNamed(ref: Data): ComponentName = ComponentName(ref.pathTo(root).mkString("."), moduleName)
+    //val circuitName = CircuitName(root.circuitName)
+    //val moduleName = ModuleName(root.name, circuitName)
+    //def toNamed(ref: Data): ComponentName = ComponentName(ref.pathTo(root).mkString("."), moduleName)
 
     // Return Annotations
-    Seq(DelayCounterAnnotation(toNamed(source), toNamed(sink), root.toNamed, None))
+    withRoot(root){
+      Seq(DelayCounterAnnotation(source.toNamed, sink.toNamed, root.toNamed, None))
+    }
   }
 }
 
@@ -100,9 +102,8 @@ case class DelayCounterAnnotation(source: ComponentName, sink: ComponentName, en
   override def toFirrtl: Annotation = this
   override def transformClass: Class[_ <: Transform] = classOf[DelayCounterTransform]
   private val errors = mutable.ArrayBuffer[String]()
-  private def rename[T<:Named](n: T, renames: RenameMap): T = (n, renames.get(n)) match {
-    case (m: ModuleName, Some(Seq(x: ModuleName))) => x.asInstanceOf[T]
-    case (c: ComponentName, Some(Seq(x: ComponentName))) => x.asInstanceOf[T]
+  private def rename(n: Component, renames: RenameMap): Component = (n, renames.get(n)) match {
+    case (c: Component, Some(Seq(x: Component))) => x
     case (_, None) => n
     case (_, other) =>
       errors += s"Bad rename in ${this.getClass}: $n to $other"
