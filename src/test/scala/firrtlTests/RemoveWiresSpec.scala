@@ -150,4 +150,19 @@ class RemoveWiresSpec extends FirrtlFlatSpec {
     val names = orderedNames(result.circuit)
     names should be (Seq("a", "clock2", "b"))
   }
+
+  it should "order registers correctly" in {
+    val result = compileBody(s"""
+      |input clock : Clock
+      |input a : UInt<8>
+      |output c : UInt<8>
+      |wire w : UInt<8>
+      |node n = tail(add(w, UInt(1)), 1)
+      |reg r : UInt<8>, clock
+      |w <= tail(add(r, a), 1)
+      |c <= n""".stripMargin
+    )
+    // Check declaration before use is maintained
+    passes.CheckHighForm.execute(result)
+  }
 }

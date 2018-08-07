@@ -35,6 +35,8 @@ object WRef {
   def apply(wire: DefWire): WRef = new WRef(wire.name, wire.tpe, WireKind, UNKNOWNGENDER)
   /** Creates a WRef from a Register */
   def apply(reg: DefRegister): WRef = new WRef(reg.name, reg.tpe, RegKind, UNKNOWNGENDER)
+  /** Creates a WRef from a Node */
+  def apply(node: DefNode): WRef = new WRef(node.name, node.value.tpe, NodeKind, MALE)
   def apply(n: String, t: Type = UnknownType, k: Kind = ExpKind): WRef = new WRef(n, t, k, UNKNOWNGENDER)
 }
 case class WSubField(expr: Expression, name: String, tpe: Type, gender: Gender) extends Expression {
