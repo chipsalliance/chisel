@@ -22,13 +22,13 @@ class RemoveWires extends Transform {
   def inputForm = LowForm
   def outputForm = LowForm
 
-  // Extract all expressions that are references to a Wire or Node
+  // Extract all expressions that are references to a Node, Wire, or Reg
   // Since we are operating on LowForm, they can only be WRefs
-  private def extractNodeWireRefs(expr: Expression): Seq[WRef] = {
+  private def extractNodeWireRegRefs(expr: Expression): Seq[WRef] = {
     val refs = mutable.ArrayBuffer.empty[WRef]
     def rec(e: Expression): Expression = {
       e match {
-        case ref @ WRef(_,_, WireKind | NodeKind, _) => refs += ref
+        case ref @ WRef(_,_, WireKind | NodeKind | RegKind, _) => refs += ref
         case nested @ (_: Mux | _: DoPrim | _: ValidIf) => nested map rec
         case _ => // Do nothing
       }
@@ -45,7 +45,7 @@ class RemoveWires extends Transform {
     val digraph = new MutableDiGraph[WrappedExpression]
     for ((sink, (expr, _)) <- netlist) {
       digraph.addVertex(sink)
-      for (source <- extractNodeWireRefs(expr)) {
+      for (source <- extractNodeWireRegRefs(expr)) {
         digraph.addPairWithEdge(sink, source)
       }
     }
@@ -60,7 +60,7 @@ class RemoveWires extends Transform {
         val (rhs, info) = netlist(key)
         kind match {
           case RegKind => regInfo(key)
-          case _ => DefNode(info, name, rhs)
+          case WireKind | NodeKind => DefNode(info, name, rhs)
         }
       }
     }
@@ -80,8 +80,8 @@ class RemoveWires extends Transform {
 
     def onStmt(stmt: Statement): Statement = {
       stmt match {
-        case DefNode(info, name, expr) =>
-          netlist(we(WRef(name))) = (expr, info)
+        case node: DefNode =>
+          netlist(we(WRef(node))) = (node.value, node.info)
         case wire: DefWire if !wire.tpe.isInstanceOf[AnalogType] => // Remove all non-Analog wires
           wireInfo(WRef(wire)) = wire.info
         case reg: DefRegister =>
