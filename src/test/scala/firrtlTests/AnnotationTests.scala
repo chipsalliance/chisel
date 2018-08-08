@@ -625,4 +625,22 @@ class JsonAnnotationTests extends AnnotationTests with BackendCompilationUtiliti
         if msg.contains("JObject") =>
     }
   }
+
+  object DoNothingTransform extends Transform {
+    override def inputForm: CircuitForm = UnknownForm
+    override def outputForm: CircuitForm = UnknownForm
+
+    protected def execute(state: CircuitState): CircuitState = state
+  }
+
+  "annotation order" should "should be preserved" in {
+    val annos = Seq(anno("a"), anno("b"), anno("c"), anno("d"), anno("e"))
+    val input: String =
+      """circuit Top :
+         |  module Top :
+         |    input a : UInt<1>
+         |    node b = c""".stripMargin
+    val cr = DoNothingTransform.runTransform(CircuitState(parse(input), ChirrtlForm, annos))
+    cr.annotations.toSeq shouldEqual annos
+  }
 }
