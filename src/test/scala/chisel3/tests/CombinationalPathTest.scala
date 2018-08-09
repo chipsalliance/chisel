@@ -47,32 +47,6 @@ class CombinationalPathTest extends FlatSpec with ChiselScalatestTester {
     }
   }
 
-  it should "allow higher priority combinationally-dependent operations" in {
-    test(new PassthroughModule(Bool())) { c =>
-      c.io.in.weakPoke(false.B)
-      fork {
-        c.io.in.poke(true.B)
-        c.io.out.expect(true.B)
-        c.clock.step(1)
-      } .join
-    }
-  }
-
-  it should "detect combinationally-dependent lower priority poke after a higher priority poke ends" in {
-    assertThrows[ThreadOrderDependentException] {
-      test(new PassthroughModule(Bool())) { c =>
-        c.io.in.weakPoke(false.B)
-        fork {
-          c.io.in.poke(true.B)
-          c.clock.step(1)
-        } .fork {
-          c.clock.step(1)
-          c.io.out.expect(true.B)
-        } .join
-      }
-    }
-  }
-
   it should "detect combinationally-dependent operations through internal modules" in {
     assertThrows[ThreadOrderDependentException] {
       test(new Module {

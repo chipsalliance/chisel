@@ -30,7 +30,6 @@ package object tester {
     }
 
     def poke(value: T): Unit = pokeWithPriority(value, 0)
-    def weakPoke(value: T): Unit = pokeWithPriority(value, 1)
 
     protected def peekWithStale(stale: Boolean): T = x match {
       case (x: Bool) => Context().backend.peekBits(x, stale) match {

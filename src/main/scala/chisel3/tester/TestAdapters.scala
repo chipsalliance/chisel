@@ -12,7 +12,7 @@ package object TestAdapters {
   // TODO: clock should be optional
   class ReadyValidSource[T <: Data](x: ReadyValidIO[T], clk: Clock) {
     // TODO assumption this never goes out of scope
-    x.valid.weakPoke(false.B)
+    x.valid.poke(false.B)
 
     def enqueueNow(data: T): Unit = timescope {
       x.ready.expect(true.B)
@@ -39,7 +39,7 @@ package object TestAdapters {
 
   class ReadyValidSink[T <: Data](x: ReadyValidIO[T], clk: Clock) {
     // TODO assumption this never goes out of scope
-    x.ready.weakPoke(false.B)
+    x.ready.poke(false.B)
 
     def dequeueNowExpect(data: T): Unit = timescope {
       x.valid.expect(true.B)

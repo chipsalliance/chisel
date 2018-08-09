@@ -26,25 +26,6 @@ class ThreadSafetyTest extends FlatSpec with ChiselScalatestTester {
     }
   }
 
-  it should "disallow simultaneous pokes from two threads, even when overridden" in {
-    assertThrows[ThreadOrderDependentException] {
-      test(new Module {
-        val io = IO(new Bundle {
-          val in = Input(Bool())
-        })
-      }) { c =>
-        c.io.in.poke(true.B)
-        fork {
-          c.io.in.weakPoke(true.B)
-          c.clock.step(1)  // TODO: remove need for explicit clock
-        } .fork {
-          c.io.in.weakPoke(true.B)
-          c.clock.step(1)
-        } .join
-      }
-    }
-  }
-
   it should "disallow simultaneous peeks and pokes from two threads" in {
     assertThrows[ThreadOrderDependentException] {
       test(new Module {

@@ -17,15 +17,23 @@ trait ThreadedBackend {
   protected class ThreadingChecker(
       combinationalPaths: Map[Data, Set[Data]], dataNames: Map[Data, String]) {
     /** Desired threading checking behavior:
-      * -> indicates following, from different thread
-      * poke -> poke (higher priority): OK (result is order-independent)
-      * poke -> poke (same priority): not OK (result is order-dependent)
-      * poke -> peek (and reversed - equivalent to be order-independent): not OK (peek may be stale)
-      * poke -> peek of something in combinational shadow (and reversed): not OK
+      * At a high level, the sequence should be lexically unambiguous. Threads are started no earlier than the fork, but
+      * there are no other guarantees on execution order.
       *
-      * fringe cases: poke -> poke (higher priority), peek: probably should be OK, but unlikely to be necessary?
+      * Any sequence of peeks and pokes limited to a single thread are allowed.
       *
-      * Pokes and peeks are enforced through the end of the clock cycle.
+      * Cross-thread operations are allowed under timescope-like semantics:
+      * Pokes to a signal poked by another thread are allowed if the other pokes happened before
+      * the current thread spawned, and are from parent threads.
+      * A previous poke may not revert (by falling out of timescope) during this time.
+      * Peeks to a signal combinationally affect by pokes from other threads are allowed under the
+      * same rules.
+      *
+      * These edge cases are resolved as follows:
+      * In the same timestep, a thread reverts, parent (or a thread newly spawned by the parent) peeks:
+      *   The peek is invalid, it is thread-order-dependent, unless directly preceded by a poke
+      *   If directly preceded by a poke, the timestep revert happens before the end-of-timestep
+      *   thread check (so it doesn't complain) and must no-op when it detects a new poke
       *
       * In each discrete timestep, all actions should execute and batch up errors, so that thread
       * ordering errors can be generated in addition to any (false-positive) correctness errors:
@@ -48,7 +56,6 @@ trait ThreadedBackend {
 
     abstract class PokeRecord {
       def actionId: Int
-      def priority: Int
       def thread: TesterThread
     }
     case class SignalPokeRecord(timescope: Timescope, priority: Int, value: BigInt,
@@ -65,7 +72,7 @@ trait ThreadedBackend {
     // Active pokes on a signal, map of wire -> priority -> timescope
     // The stack of timescopes must all be from the same thread, this invariant must be checked before
     // pokes are committed to this data structure.
-    protected val signalPokes = mutable.HashMap[Data, mutable.HashMap[Int, mutable.ListBuffer[Timescope]]]()
+    protected val signalPokes = mutable.HashMap[Data, mutable.ListBuffer[Timescope]]()
     protected val revertPokes = mutable.HashMap[Data, mutable.ListBuffer[PokeRecord]]()
 
     // Active peeks on a signal, lasts until the specified clock advances
