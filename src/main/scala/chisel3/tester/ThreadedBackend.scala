@@ -11,6 +11,8 @@ import chisel3._
   * The backend must invoke concurrency functions as appropriate, eg during step() calls
   */
 trait ThreadedBackend {
+  var nextActionId: Int = 0  // counter for unique ID assigned to each poke action
+
   // combinationalPaths: map of sink Data to all source Data nodes.
   protected class ThreadingChecker(
       combinationalPaths: Map[Data, Set[Data]], dataNames: Map[Data, String]) {
@@ -45,17 +47,18 @@ trait ThreadedBackend {
     }
 
     abstract class PokeRecord {
+      def actionId: Int
       def priority: Int
       def thread: TesterThread
     }
     case class SignalPokeRecord(timescope: Timescope, priority: Int, value: BigInt,
-        trace: Throwable) extends PokeRecord {
+        actionId: Int, trace: Throwable) extends PokeRecord {
       override def thread = timescope.parent
     }
-    case class XPokeRecord(thread: TesterThread) extends PokeRecord {
+    case class XPokeRecord(thread: TesterThread, actionId: Int) extends PokeRecord {
       def priority: Int = Int.MaxValue
     }
-    case class PeekRecord(thread: TesterThread, trace: Throwable)
+    case class PeekRecord(thread: TesterThread, actionId: Int, trace: Throwable)
 
     protected val threadTimescopes = mutable.HashMap[TesterThread, mutable.ListBuffer[Timescope]]()
 
@@ -76,7 +79,8 @@ trait ThreadedBackend {
      */
     def doPoke(thread: TesterThread, signal: Data, value: BigInt, priority: Int, trace: Throwable): Boolean = {
       val timescope = threadTimescopes(thread).last
-      val pokeRecord = SignalPokeRecord(timescope, priority, value, trace)
+      val pokeRecord = SignalPokeRecord(timescope, priority, value, nextActionId, trace)
+      nextActionId = nextActionId + 1
       timescope.pokes.put(signal, pokeRecord)
       val signalTimescopeStack = signalPokes.getOrElseUpdate(signal, mutable.HashMap())
           .getOrElseUpdate(priority, mutable.ListBuffer())
@@ -93,7 +97,8 @@ trait ThreadedBackend {
      */
     def doPeek(thread: TesterThread, signal: Data, trace: Throwable): Unit = {
       signalPeeks.getOrElseUpdate(signal, mutable.ListBuffer())
-          .append(PeekRecord(thread, trace))
+          .append(PeekRecord(thread, nextActionId, trace))
+      nextActionId = nextActionId + 1
     }
 
     /**
@@ -134,7 +139,10 @@ trait ThreadedBackend {
       val revertMap = timescope.pokes.toMap map { case (data, pokeRecord) =>
         (data, signalPokes.get(data) match {
           case Some(pokesMap) => pokesMap(pokesMap.keys.min).last.pokes(data)
-          case None => XPokeRecord(timescope.parent)
+          case None =>
+            val record = XPokeRecord(timescope.parent, nextActionId)
+            nextActionId = nextActionId + 1
+            record
         })
       }
 
@@ -216,7 +224,9 @@ trait ThreadedBackend {
   }
 
 
-  protected class TesterThread(runnable: => Unit) extends AbstractTesterThread {
+  protected class TesterThread(runnable: => Unit,
+      val startingActionId: Int, val parents: Set[TesterThread])
+      extends AbstractTesterThread {
     val waiting = new Semaphore(0)
     var done: Boolean = false
 
@@ -314,7 +324,8 @@ trait ThreadedBackend {
   }
 
   def fork(runnable: => Unit): TesterThread = {
-    val newThread = new TesterThread(runnable)
+    val newThread = new TesterThread(runnable, nextActionId,
+        currentThread.map(_.parents).toSet.flatten ++ currentThread.toSet)
     allThreads += newThread
     activeThreads += newThread
     newThread.thread.start()

@@ -62,4 +62,18 @@ class ThreadSafetyTest extends FlatSpec with ChiselScalatestTester {
       }
     }
   }
+
+  it should "allow combinational checks from parent -> child thread" in {
+    test(new Module {
+      val io = IO(new Bundle {
+        val in = Input(Bool())
+      })
+    }) { c =>
+      c.io.in.poke(true.B)
+      fork {
+        c.io.in.expect(true.B)
+        c.clock.step(1)
+      } .join
+    }
+  }
 }
