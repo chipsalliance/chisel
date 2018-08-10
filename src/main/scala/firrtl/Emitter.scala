@@ -180,7 +180,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
       case (e: WSubAccess) => w write s"${LowerTypes.loweredName(e.expr)}[${LowerTypes.loweredName(e.index)}]"
       case (e: WSubIndex) => w write e.serialize
       case (e: Literal) => v_print(e)
-      case (e: VRandom) => w write s"{${e.nWords}{$$random}}"
+      case (e: VRandom) => w write s"{${e.nWords}{`RANDOM}}"
       case (t: GroundType) => w write stringify(t)
       case (t: VectorType) =>
         emit(t.tpe, top + 1)
@@ -663,13 +663,19 @@ class VerilogEmitter extends SeqTransform with Emitter {
         emit(Seq("`ifdef RANDOMIZE_MEM_INIT"))
         emit(Seq("`define RANDOMIZE"))
         emit(Seq("`endif"))
+        emit(Seq("`ifndef RANDOM"))
+        emit(Seq("`define RANDOM $random"))
+        emit(Seq("`endif"))
         emit(Seq("`ifdef RANDOMIZE"))
         emit(Seq("  integer initvar;"))
         emit(Seq("  initial begin"))
+        emit(Seq("    `ifdef INIT_RANDOM"))
+        emit(Seq("      `INIT_RANDOM"))
+        emit(Seq("    `endif"))
         // This enables test benches to set the random values at time 0.001,
-        //  then start the simulation later
+        //   then start the simulation later
         // Verilator does not support delay statements, so they are omitted.
-        emit(Seq("    `ifndef verilator"))
+        emit(Seq("    `ifndef VERILATOR"))
         emit(Seq("      #0.002 begin end"))
         emit(Seq("    `endif"))
         for (x <- initials) emit(Seq(tab, x))
