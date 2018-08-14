@@ -200,6 +200,7 @@ object Flipped {
   * from bits.
   *
   * @groupdesc Connect Utilities for connecting hardware components
+  * @define coll data
   */
 abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   // This is a bad API that punches through object boundaries.
@@ -384,7 +385,22 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     clone
   }
 
+  /** Connect this $coll to that $coll mono-directionally and element-wise.
+    *
+    * This uses the [[MonoConnect]] algorithm.
+    *
+    * @param that the $coll to connect to
+    * @group Connect
+    */
   final def := (that: Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = this.connect(that)(sourceInfo, connectionCompileOptions)
+
+  /** Connect this $coll to that $coll bi-directionally and element-wise.
+    *
+    * This uses the [[BiConnect]] algorithm.
+    *
+    * @param that the $coll to connect to
+    * @group Connect
+    */
   final def <> (that: Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = this.bulkConnect(that)(sourceInfo, connectionCompileOptions)
 
   @chiselRuntimeDeprecated
