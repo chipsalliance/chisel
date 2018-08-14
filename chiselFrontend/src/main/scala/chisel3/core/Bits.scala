@@ -58,14 +58,15 @@ private[chisel3] sealed trait ToBoolable extends Element {
   def do_toBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
 }
 
-/** A data type for values represented by a single bitvector. Provides basic
-  * bitwise operations.
+/** A data type for values represented by a single bitvector. This provides basic bitwise operations.
   *
   * @groupdesc Bitwise Bitwise hardware operators
+  * @define coll [[Bits]]
+  * @define sumWidthInt    @note The width of the returned $coll is `width of this` + `that`.
+  * @define sumWidth       @note The width of the returned $coll is `width of this` + `width of that`.
+  * @define unchangedWidth @note The width of the returned $coll is unchanged, i.e., the `width of this`.
   */
-//scalastyle:off number.of.methods
-sealed abstract class Bits(width: Width)
-    extends Element(width) with ToBoolable {
+sealed abstract class Bits(width: Width) extends Element(width) with ToBoolable { //scalastyle:off number.of.methods
   // TODO: perhaps make this concrete?
   // Arguments for: self-checking code (can't do arithmetic on bits)
   // Arguments against: generates down to a FIRRTL UInt anyways
@@ -102,7 +103,20 @@ sealed abstract class Bits(width: Width)
     case _ => super.ref
   }
 
+  /** Tail operator
+    *
+    * @param n the number of bits to remove
+    * @return This $coll with the `n` most significant bits removed.
+    * @group Bitwise
+    */
   final def tail(n: Int): UInt = macro SourceInfoTransform.nArg
+
+  /** Head operator
+    *
+    * @param n the number of bits to take
+    * @return The `n` most significant bits of this $coll
+    * @group Bitwise
+    */
   final def head(n: Int): UInt = macro SourceInfoTransform.nArg
 
   /** @group SourceInfoTransformMacro */
@@ -125,8 +139,10 @@ sealed abstract class Bits(width: Width)
     binop(sourceInfo, UInt(Width(n)), HeadOp, n)
   }
 
-  /** Returns the specified bit on this wire as a [[Bool]], statically
-    * addressed.
+  /** Returns the specified bit on this $coll as a [[Bool]], statically addressed.
+    *
+    * @param x an index
+    * @return the specified bit
     */
   final def apply(x: BigInt): Bool = macro SourceInfoTransform.xArg
 
@@ -145,18 +161,21 @@ sealed abstract class Bits(width: Width)
     }
   }
 
-  /** Returns the specified bit on this wire as a [[Bool]], statically
-    * addressed.
+  /** Returns the specified bit on this $coll as a [[Bool]], statically addressed.
     *
-    * @note convenience method allowing direct use of Ints without implicits
+    * @param x an index
+    * @return the specified bit
+    * @note convenience method allowing direct use of [[scala.Int]] without implicits
     */
   final def apply(x: Int): Bool = macro SourceInfoTransform.xArg
 
   /** @group SourceInfoTransformMacro */
   final def do_apply(x: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = apply(BigInt(x))
 
-  /** Returns the specified bit on this wire as a [[Bool]], dynamically
-    * addressed.
+  /** Returns the specified bit on this wire as a [[Bool]], dynamically addressed.
+    *
+    * @param x a hardware component whose value will be used for dynamic addressing
+    * @return the specified bit
     */
   final def apply(x: UInt): Bool = macro SourceInfoTransform.xArg
 
@@ -166,14 +185,16 @@ sealed abstract class Bits(width: Width)
     theBits(0)
   }
 
-  /** Returns a subset of bits on this wire from `hi` to `lo` (inclusive),
-    * statically addressed.
+  /** Returns a subset of bits on this $coll from `hi` to `lo` (inclusive), statically addressed.
     *
     * @example
     * {{{
     * myBits = 0x5 = 0b101
     * myBits(1,0) => 0b01  // extracts the two least significant bits
     * }}}
+    * @param x the high bit
+    * @param y the low bit
+    * @return a hardware component contain the requested bits
     */
   final def apply(x: Int, y: Int): UInt = macro SourceInfoTransform.xyArg
 
@@ -194,6 +215,17 @@ sealed abstract class Bits(width: Width)
   }
 
   // REVIEW TODO: again, is this necessary? Or just have this and use implicits?
+  /** Returns a subset of bits on this $coll from `hi` to `lo` (inclusive), statically addressed.
+    *
+    * @example
+    * {{{
+    * myBits = 0x5 = 0b101
+    * myBits(1,0) => 0b01  // extracts the two least significant bits
+    * }}}
+    * @param x the high bit
+    * @param y the low bit
+    * @return a hardware component contain the requested bits
+    */
   final def apply(x: BigInt, y: BigInt): UInt = macro SourceInfoTransform.xyArg
 
   /** @group SourceInfoTransformMacro */
@@ -223,9 +255,13 @@ sealed abstract class Bits(width: Width)
     pushOp(DefPrim(sourceInfo, Bool(), op, this.ref))
   }
 
-  /** Returns this wire zero padded up to the specified width.
+  /** Pad operator
     *
-    * @note for SInts only, this does sign extension
+    * @param that the width to pad to
+    * @return this @coll zero padded up to width `that`. If `that` is less than the width of the original component,
+    * this method returns the original component.
+    * @note For [[SInt]]s only, this will do sign extension.
+    * @group Bitwise
     */
   final def pad(that: Int): this.type = macro SourceInfoTransform.thatArg
 
@@ -235,13 +271,23 @@ sealed abstract class Bits(width: Width)
     case _ => binop(sourceInfo, cloneTypeWidth(this.width max Width(that)), PadOp, that)
   }
 
-  /** Returns this wire bitwise-inverted. */
+  /** Bitwise inversion operator
+    *
+    * @return this $coll with each bit inverted
+    * @group Bitwise
+    */
   final def unary_~ (): Bits = macro SourceInfoWhiteboxTransform.noArg
 
   /** @group SourceInfoTransformMacro */
   def do_unary_~ (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
 
-  /** Shift left operation */
+  /** Static left shift operator
+    *
+    * @param that an amount to shift by
+    * @return this $coll with `that` many zeros concatenated to its least significant end
+    * $sumWidthInt
+    * @group Bitwise
+    */
   // REVIEW TODO: redundant
   // REVIEW TODO: should these return this.type or Bits?
   final def << (that: BigInt): Bits = macro SourceInfoWhiteboxTransform.thatArg
@@ -249,75 +295,90 @@ sealed abstract class Bits(width: Width)
   /** @group SourceInfoTransformMacro */
   def do_<< (that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
 
-  /** Returns this wire statically left shifted by the specified amount,
-    * inserting zeros into the least significant bits.
+  /** Static left shift operator
     *
-    * The width of the output is `other` larger than the input.
+    * @param that an amount to shift by
+    * @return this $coll with `that` many zeros concatenated to its least significant end
+    * $sumWidthInt
+    * @group Bitwise
     */
   final def << (that: Int): Bits = macro SourceInfoWhiteboxTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
   def do_<< (that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
 
-  /** Returns this wire dynamically left shifted by the specified amount,
-    * inserting zeros into the least significant bits.
+  /** Dynamic left shift operator
     *
-    * The width of the output is `pow(2, width(other))` larger than the input.
+    * @param that a hardware component
+    * @return this $coll dynamically shifted left by `that` many places, shifting in zeros from the right
+    * @note The width of the returned $coll is `width of this + pow(2, width of that)`.
+    * @group Bitwise
     */
   final def << (that: UInt): Bits = macro SourceInfoWhiteboxTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
   def do_<< (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
 
-  /** Shift right operation */
+  /** Static right shift operator
+    *
+    * @param that an amount to shift by
+    * @return this $coll with `that` many least significant bits truncated
+    * $unchangedWidth
+    * @group Bitwise
+    */
   // REVIEW TODO: redundant
   final def >> (that: BigInt): Bits = macro SourceInfoWhiteboxTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
   def do_>> (that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
 
-  /** Returns this wire statically right shifted by the specified amount,
-    * inserting zeros into the most significant bits.
+  /** Static right shift operator
     *
-    * The width of the output is the same as the input.
+    * @param that an amount to shift by
+    * @return this $coll with `that` many least significant bits truncated
+    * $unchangedWidth
+    * @group Bitwise
     */
   final def >> (that: Int): Bits = macro SourceInfoWhiteboxTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
   def do_>> (that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
 
-  /** Returns this wire dynamically right shifted by the specified amount,
-    * inserting zeros into the most significant bits.
+  /** Dynamic right shift operator
     *
-    * The width of the output is the same as the input.
+    * @param that a hardware component
+    * @return this $coll dynamically shifted right by the value of `that` component, inserting zeros into the most
+    * significant bits.
+    * $unchangedWidth
+    * @group Bitwise
     */
   final def >> (that: UInt): Bits = macro SourceInfoWhiteboxTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
   def do_>> (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
 
-  /** Returns the contents of this wire as a [[Vec]] of [[Bool]]s.
-    */
+  /** Returns the contents of this wire as a [[scala.collection.Seq]] of [[Bool]]. */
   final def toBools(): Seq[Bool] = macro SourceInfoTransform.noArg
 
+  /** @group SourceInfoTransformMacro */
   def toBools(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Seq[Bool] =
     Seq.tabulate(this.getWidth)(i => this(i))
 
-  /** Reinterpret cast to a SInt.
+  /** Reinterpret this $coll as a [[SInt]]
     *
-    * @note value not guaranteed to be preserved: for example, an UInt of width
-    * 3 and value 7 (0b111) would become a SInt with value -1
+    * @note The value is not guaranteed to be preserved. For example, a [[UInt]] of width 3 and value 7 (0b111) would
+    * become a [[SInt]] with value -1.
     */
   final def asSInt(): SInt = macro SourceInfoTransform.noArg
 
   /** @group SourceInfoTransformMacro */
   def do_asSInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt
 
-  /** Reinterpret cast as a FixedPoint.
+  /** Reinterpret this $coll as a [[FixedPoint]].
     *
-    * @note value not guaranteed to be preserved: for example, an UInt of width
-    * 3 and value 7 (0b111) would become a FixedInt with value -1, the interpretation
-    * of the number is also affected by the specified binary point.  Caution advised
+    * @note The value is not guaranteed to be preserved. For example, a [[UInt]] of width 3 and value 7 (0b111) would
+    * become a [[FixedPoint]] with value -1. The interpretation of the number is also affected by the specified binary
+    * point. '''Caution is advised!'''
     */
   final def asFixedPoint(that: BinaryPoint): FixedPoint = macro SourceInfoTransform.thatArg
 
@@ -355,10 +416,12 @@ sealed abstract class Bits(width: Width)
     }
   }
 
-  /** Returns this wire concatenated with `other`, where this wire forms the
-    * most significant part and `other` forms the least significant part.
+  /** Concatenation operator
     *
-    * The width of the output is sum of the inputs.
+    * @param that a hardware component
+    * @return this $coll concatenated to the most significant end of `that`
+    * $sumWidth
+    * @group Bitwise
     */
   final def ## (that: Bits): UInt = macro SourceInfoTransform.thatArg
 
