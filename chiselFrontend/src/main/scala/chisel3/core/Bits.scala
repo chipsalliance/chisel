@@ -59,6 +59,8 @@ private[chisel3] sealed trait ToBoolable extends Element {
 
 /** A data type for values represented by a single bitvector. Provides basic
   * bitwise operations.
+  *
+  * @groupdesc Bitwise Bitwise hardware operators
   */
 //scalastyle:off number.of.methods
 sealed abstract class Bits(width: Width)
