@@ -364,6 +364,8 @@ sealed abstract class Bits(width: Width)
 // REVIEW TODO: Further discussion needed on what Num actually is.
 /** Abstract trait defining operations available on numeric-like wire data
   * types.
+  *
+  * @groupdesc Arithmetic Arithmetic hardware operators
   */
 abstract trait Num[T <: Data] {
   self: Num[T] =>
