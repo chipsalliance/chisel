@@ -919,6 +919,14 @@ trait UIntFactory {
 object UInt extends UIntFactory
 object Bits extends UIntFactory
 
+/** A data type for signed integers, represented as a binary bitvector. Defines arithmetic operations between other
+  * integer types.
+  *
+  * @define coll [[SInt]]
+  * @define numType $coll
+  * @define expandingWidth @note The width of the returned $coll is `width of this` + `1`.
+  * @define constantWidth  @note The width of the returned $coll is unchanged, i.e., `width of this`.
+  */
 sealed class SInt private[core] (width: Width) extends Bits(width) with Num[SInt] {
 
   private[core] override def typeEquivalent(that: Data): Boolean =
@@ -927,7 +935,20 @@ sealed class SInt private[core] (width: Width) extends Bits(width) with Num[SInt
   private[core] override def cloneTypeWidth(w: Width): this.type =
     new SInt(w).asInstanceOf[this.type]
 
+  /** Unary negation (expanding width)
+    *
+    * @return a hardware $coll equal to zero minus this $coll
+    * $expandingWidth
+    * @group Arithmetic
+    */
   final def unary_- (): SInt = macro SourceInfoTransform.noArg
+
+  /** Unary negation (constant width)
+    *
+    * @return a hardware $coll equal to zero minus `this` shifted right by one
+    * $constantWidth
+    * @group Arithmetic
+    */
   final def unary_-% (): SInt = macro SourceInfoTransform.noArg
 
   /** @group SourceInfoTransformMacro */
@@ -948,6 +969,14 @@ sealed class SInt private[core] (width: Width) extends Bits(width) with Num[SInt
   override def do_% (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
     binop(sourceInfo, SInt(this.width), RemOp, that)
 
+  /** Multiplication operator
+    *
+    * @param that a hardware $coll
+    * @return the product of this $coll and `that`
+    * $sumWidth
+    * $singleCycleMul
+    * @group Arithmetic
+    */
   final def * (that: UInt): SInt = macro SourceInfoTransform.thatArg
   /** @group SourceInfoTransformMacro */
   def do_* (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt = {
@@ -956,16 +985,39 @@ sealed class SInt private[core] (width: Width) extends Bits(width) with Num[SInt
     result.tail(1).asSInt
   }
 
-  /** add (width +1) operator
+  /** Addition operator (expanding width)
+    *
+    * @param that a hardware $coll
+    * @return the sum of this $coll and `that`
+    * $maxWidthPlusOne
+    * @group Arithmetic
     */
   final def +& (that: SInt): SInt = macro SourceInfoTransform.thatArg
-  /** add (no growth) operator
+
+  /** Addition operator (constant width)
+    *
+    * @param that a hardware $coll
+    * @return the sum of this $coll and `that` shifted right by one
+    * $maxWidth
+    * @group Arithmetic
     */
   final def +% (that: SInt): SInt = macro SourceInfoTransform.thatArg
-  /** subtract (width +1) operator
+
+  /** Subtraction operator (increasing width)
+    *
+    * @param that a hardware $coll
+    * @return the difference of this $coll less `that`
+    * $maxWidthPlusOne
+    * @group Arithmetic
     */
   final def -& (that: SInt): SInt = macro SourceInfoTransform.thatArg
-  /** subtract (no growth) operator
+
+  /** Subtraction operator (constant width)
+    *
+    * @param that a hardware $coll
+    * @return the difference of this $coll less `that` shifted right by one
+    * $maxWidth
+    * @group Arithmetic
     */
   final def -% (that: SInt): SInt = macro SourceInfoTransform.thatArg
 
@@ -982,8 +1034,31 @@ sealed class SInt private[core] (width: Width) extends Bits(width) with Num[SInt
   def do_-% (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
     (this -& that).tail(1).asSInt
 
+  /** Bitwise and operator
+    *
+    * @param that a hardware $coll
+    * @return the bitwise and of  this $coll and `that`
+    * $maxWidth
+    * @group Bitwise
+    */
   final def & (that: SInt): SInt = macro SourceInfoTransform.thatArg
+
+  /** Bitwise or operator
+    *
+    * @param that a hardware $coll
+    * @return the bitwise or of this $coll and `that`
+    * $maxWidth
+    * @group Bitwise
+    */
   final def | (that: SInt): SInt = macro SourceInfoTransform.thatArg
+
+  /** Bitwise exclusive or (xor) operator
+    *
+    * @param that a hardware $coll
+    * @return the bitwise xor of this $coll and `that`
+    * $maxWidth
+    * @group Bitwise
+    */
   final def ^ (that: SInt): SInt = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
@@ -996,9 +1071,7 @@ sealed class SInt private[core] (width: Width) extends Bits(width) with Num[SInt
   def do_^ (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
     binop(sourceInfo, UInt(this.width max that.width), BitXorOp, that).asSInt
 
-  /** Returns this wire bitwise-inverted.
-    * @group SourceInfoTransformMacro
-    */
+  /** @group SourceInfoTransformMacro */
   def do_unary_~ (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
     unop(sourceInfo, UInt(width = width), BitNotOp).asSInt
 
@@ -1010,7 +1083,21 @@ sealed class SInt private[core] (width: Width) extends Bits(width) with Num[SInt
   @chiselRuntimeDeprecated
   @deprecated("Use '=/=', which avoids potential precedence problems", "chisel3")
   final def != (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = this =/= that
+
+  /** Dynamic not equals operator
+    *
+    * @param that a hardware $coll
+    * @return a hardware [[Bool]] asserted if this $coll is not equal to `that`
+    * @group Comparison
+    */
   final def =/= (that: SInt): Bool = macro SourceInfoTransform.thatArg
+
+  /** Dynamic equals operator
+    *
+    * @param that a hardware $coll
+    * @return a hardware [[Bool]] asserted if this $coll is equal to `that`
+    * @group Comparison
+    */
   final def === (that: SInt): Bool = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
