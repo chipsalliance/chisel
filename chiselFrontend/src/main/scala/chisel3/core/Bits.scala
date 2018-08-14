@@ -442,12 +442,22 @@ sealed abstract class Bits(width: Width) extends Element(width) with ToBoolable 
 }
 
 // REVIEW TODO: Further discussion needed on what Num actually is.
-/** Abstract trait defining operations available on numeric-like wire data
-  * types.
+/** Abstract trait defining operations available on numeric-like hardware data types.
   *
+  * @tparam T the underlying type of the number
   * @groupdesc Arithmetic Arithmetic hardware operators
   * @groupdesc Comparison Comparison hardware operators
   * @groupdesc Logical Logical hardware operators
+  * @define coll numeric-like type
+  * @define numType hardware type
+  * @define canHaveHighCost can result in significant cycle time and area costs
+  * @define canGenerateA This method can generate a
+  * @define singleCycleMul  @note $canGenerateA single-cycle multiplier which $canHaveHighCost.
+  * @define singleCycleDiv  @note $canGenerateA single-cycle divider which $canHaveHighCost.
+  * @define maxWidth        @note The width of the returned $numType is `max(width of this, width of that)`.
+  * @define maxWidthPlusOne @note The width of the returned $numType is `max(width of this, width of that) + 1`.
+  * @define sumWidth        @note The width of the returned $numType is `width of this` + `width of that`.
+  * @define unchangedWidth  @note The width of the returned $numType is unchanged, i.e., the `width of this`.
   */
 abstract trait Num[T <: Data] {
   self: Num[T] =>
@@ -457,83 +467,129 @@ abstract trait Num[T <: Data] {
 
   // REVIEW TODO: double check ops conventions against FIRRTL
 
-  /** Outputs the sum of `this` and `b`. The resulting width is the max of the
-    * operands plus 1 (should not overflow).
+  /** Addition operator
+    *
+    * @param that a $numType
+    * @return the sum of this $coll and `that`
+    * $maxWidthPlusOne
+    * @group Arithmetic
     */
   final def + (that: T): T = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
   def do_+ (that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T
 
-  /** Outputs the product of `this` and `b`. The resulting width is the sum of
-    * the operands.
+  /** Multiplication operator
     *
-    * @note can generate a single-cycle multiplier, which can result in
-    * significant cycle time and area costs
+    * @param that a $numType
+    * @return the product of this $coll and `that`
+    * $sumWidth
+    * $singleCycleMul
+    * @group Arithmetic
     */
   final def * (that: T): T = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
   def do_* (that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T
 
-  /** Outputs the quotient of `this` and `b`.
+  /** Division operator
     *
-    * TODO: full rules
+    * @param that a $numType
+    * @return the quotient of this $coll divided by `that`
+    * $singleCycleDiv
+    * @todo full rules
+    * @group Arithmetic
     */
   final def / (that: T): T = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
   def do_/ (that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T
 
+  /** Modulo operator
+    *
+    * @param that a $numType
+    * @return the remainder of this $coll divided by `that`
+    * $singleCycleDiv
+    * @group Arithmetic
+    */
   final def % (that: T): T = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
   def do_% (that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T
 
-  /** Outputs the difference of `this` and `b`. The resulting width is the max
-   *  of the operands plus 1 (should not overflow).
+  /** Subtraction operator
+    *
+    * @param that a $numType
+    * @return the difference of this $coll less `that`
+    * $maxWidthPlusOne
+    * @group Arithmetic
     */
   final def - (that: T): T = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
   def do_- (that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T
 
-  /** Outputs true if `this` < `b`.
+  /** Less than operator
+    *
+    * @param that a $numType
+    * @return a hardware [[Bool]] asserted if this $coll is less than `that`
+    * @group Comparison
     */
   final def < (that: T): Bool = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
   def do_< (that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
 
-  /** Outputs true if `this` <= `b`.
+  /** Less than or equal to operator
+    *
+    * @param that a $numType
+    * @return a hardware [[Bool]] asserted if this $coll is less than or equal to `that`
+    * @group Comparison
     */
   final def <= (that: T): Bool = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
   def do_<= (that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
 
-  /** Outputs true if `this` > `b`.
+  /** Greater than operator
+    *
+    * @param that a hardware component
+    * @return a hardware [[Bool]] asserted if this $coll is greater than `that`
+    * @group Comparison
     */
   final def > (that: T): Bool = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
   def do_> (that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
 
-  /** Outputs true if `this` >= `b`.
+  /** Greater than or equal to operator
+    *
+    * @param that a hardware component
+    * @return a hardware [[Bool]] asserted if this $coll is greather than or equal to `that`
+    * @group Comparison
     */
   final def >= (that: T): Bool = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
   def do_>= (that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
 
-  /** Outputs the absolute value of `this`. The resulting width is the unchanged */
+  /** Absolute value operator
+    *
+    * @return a $numType with a value equal to the absolute value of this $coll
+    * $unchangedWidth
+    * @group Arithmetic
+    */
   final def abs(): T = macro SourceInfoTransform.noArg
 
   /** @group SourceInfoTransformMacro */
   def do_abs(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T
 
-  /** Outputs the minimum of `this` and `b`. The resulting width is the max of
-    * the operands.
+  /** Minimum operator
+    *
+    * @param that a hardware $coll
+    * @return a $numType with a value equal to the mimimum value of this $coll and `that`
+    * $maxWidth
+    * @group Arithmetic
     */
   final def min(that: T): T = macro SourceInfoTransform.thatArg
 
@@ -541,8 +597,12 @@ abstract trait Num[T <: Data] {
   def do_min(that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
     Mux(this < that, this.asInstanceOf[T], that)
 
-  /** Outputs the maximum of `this` and `b`. The resulting width is the max of
-    * the operands.
+  /** Maximum operator
+    *
+    * @param that a $numType
+    * @return a $numType with a value equal to the mimimum value of this $coll and `that`
+    * $maxWidth
+    * @group Arithmetic
     */
   final def max(that: T): T = macro SourceInfoTransform.thatArg
 
@@ -551,8 +611,10 @@ abstract trait Num[T <: Data] {
     Mux(this < that, that, this.asInstanceOf[T])
 }
 
-/** A data type for unsigned integers, represented as a binary bitvector.
-  * Defines arithmetic operations between other integer types.
+/** A data type for unsigned integers, represented as a binary bitvector. Defines arithmetic operations between other
+  * integer types.
+  *
+  * @define coll [[UInt]]
   */
 sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt] {
 
