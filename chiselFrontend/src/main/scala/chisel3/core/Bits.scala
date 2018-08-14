@@ -1281,17 +1281,19 @@ trait BoolFactory {
 object Bool extends BoolFactory
 
 //scalastyle:off number.of.methods
-/**
-  * A sealed class representing a fixed point number that has a bit width and a binary point
-  * The width and binary point may be inferred.
+/** A sealed class representing a fixed point number that has a bit width and a binary point The width and binary point
+  * may be inferred.
   *
   * IMPORTANT: The API provided here is experimental and may change in the future.
   *
   * @param width       bit width of the fixed point number
-  * @param binaryPoint the position of the binary point with respect to the right most bit of the width
-  *                    currently this should be positive but it is hoped to soon support negative points
-  *                    and thus use this field as a simple exponent
-  * @param lit
+  * @param binaryPoint the position of the binary point with respect to the right most bit of the width currently this
+  *                    should be positive but it is hoped to soon support negative points and thus use this field as a
+  *                    simple exponent
+  * @define coll [[FixedPoint]]
+  * @define numType $coll
+  * @define expandingWidth @note The width of the returned $coll is `width of this` + `1`.
+  * @define constantWidth  @note The width of the returned $coll is unchanged, i.e., `width of this`.
   */
 sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint)
     extends Bits(width) with Num[FixedPoint] {
@@ -1308,14 +1310,30 @@ sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint)
     case _ => this badConnect that
   }
 
+  /** Convert to a [[scala.Option]] of [[scala.Boolean]] */
   def litToDoubleOption: Option[Double] = litOption.map { intVal =>
     val multiplier = math.pow(2, binaryPoint.get)
     intVal.toDouble / multiplier
   }
 
+  /** Convert to a [[scala.Option]] */
   def litToDouble: Double = litToDoubleOption.get
 
+
+  /** Unary negation (expanding width)
+    *
+    * @return a hardware $coll equal to zero minus this $coll
+    * $expandingWidth
+    * @group Arithmetic
+    */
   final def unary_- (): FixedPoint = macro SourceInfoTransform.noArg
+
+  /** Unary negation (constant width)
+    *
+    * @return a hardware $coll equal to zero minus `this` shifted right by one
+    * $constantWidth
+    * @group Arithmetic
+    */
   final def unary_-% (): FixedPoint = macro SourceInfoTransform.noArg
 
   /** @group SourceInfoTransformMacro */
@@ -1336,23 +1354,67 @@ sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint)
   override def do_% (that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
     throwException(s"mod is illegal on FixedPoint types")
 
+
+  /** Multiplication operator
+    *
+    * @param that a hardware [[UInt]]
+    * @return the product of this $coll and `that`
+    * $sumWidth
+    * $singleCycleMul
+    * @group Arithmetic
+    */
   final def * (that: UInt): FixedPoint = macro SourceInfoTransform.thatArg
   /** @group SourceInfoTransformMacro */
   def do_* (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
     binop(sourceInfo, FixedPoint(this.width + that.width, binaryPoint), TimesOp, that)
 
+  /** Multiplication operator
+    *
+    * @param that a hardware [[SInt]]
+    * @return the product of this $coll and `that`
+    * $sumWidth
+    * $singleCycleMul
+    * @group Arithmetic
+    */
   final def * (that: SInt): FixedPoint = macro SourceInfoTransform.thatArg
   /** @group SourceInfoTransformMacro */
   def do_* (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
     binop(sourceInfo, FixedPoint(this.width + that.width, binaryPoint), TimesOp, that)
 
-  /** add (width +1) operator */
+  /** Addition operator (expanding width)
+    *
+    * @param that a hardware $coll
+    * @return the sum of this $coll and `that`
+    * $maxWidthPlusOne
+    * @group Arithmetic
+    */
   final def +& (that: FixedPoint): FixedPoint = macro SourceInfoTransform.thatArg
-  /** add (no growth) operator */
+
+  /** Addition operator (constant width)
+    *
+    * @param that a hardware $coll
+    * @return the sum of this $coll and `that` shifted right by one
+    * $maxWidth
+    * @group Arithmetic
+    */
   final def +% (that: FixedPoint): FixedPoint = macro SourceInfoTransform.thatArg
-  /** subtract (width +1) operator */
+
+  /** Subtraction operator (increasing width)
+    *
+    * @param that a hardware $coll
+    * @return the difference of this $coll less `that`
+    * $maxWidthPlusOne
+    * @group Arithmetic
+    */
   final def -& (that: FixedPoint): FixedPoint = macro SourceInfoTransform.thatArg
-  /** subtract (no growth) operator */
+
+  /** Subtraction operator (constant width)
+    *
+    * @param that a hardware $coll
+    * @return the difference of this $coll less `that` shifted right by one
+    * $maxWidth
+    * @group Arithmetic
+    */
   final def -% (that: FixedPoint): FixedPoint = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
@@ -1392,8 +1454,31 @@ sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint)
   def do_-% (that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
     (this -& that).tail(1).asFixedPoint(this.binaryPoint max that.binaryPoint)
 
+  /** Bitwise and operator
+    *
+    * @param that a hardware $coll
+    * @return the bitwise and of  this $coll and `that`
+    * $maxWidth
+    * @group Bitwise
+    */
   final def & (that: FixedPoint): FixedPoint = macro SourceInfoTransform.thatArg
+
+  /** Bitwise or operator
+    *
+    * @param that a hardware $coll
+    * @return the bitwise or of this $coll and `that`
+    * $maxWidth
+    * @group Bitwise
+    */
   final def | (that: FixedPoint): FixedPoint = macro SourceInfoTransform.thatArg
+
+  /** Bitwise exclusive or (xor) operator
+    *
+    * @param that a hardware $coll
+    * @return the bitwise xor of this $coll and `that`
+    * $maxWidth
+    * @group Bitwise
+    */
   final def ^ (that: FixedPoint): FixedPoint = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
@@ -1416,7 +1501,7 @@ sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint)
       binop(sourceInfo, FixedPoint(UnknownWidth(), KnownBinaryPoint(that)), SetBinaryPoint, that)
   }
 
-  /** Returns this wire bitwise-inverted. */
+  /** @group SourceInfoTransformMacro */
   def do_unary_~ (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
     throwException(s"Not is illegal on $this")
 
@@ -1427,7 +1512,21 @@ sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint)
   override def do_>= (that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, GreaterEqOp, that)
 
   final def != (that: FixedPoint): Bool = macro SourceInfoTransform.thatArg
+
+  /** Dynamic not equals operator
+    *
+    * @param that a hardware $coll
+    * @return a hardware [[Bool]] asserted if this $coll is not equal to `that`
+    * @group Comparison
+    */
   final def =/= (that: FixedPoint): Bool = macro SourceInfoTransform.thatArg
+
+  /** Dynamic equals operator
+    *
+    * @param that a hardware $coll
+    * @return a hardware [[Bool]] asserted if this $coll is equal to `that`
+    * @group Comparison
+    */
   final def === (that: FixedPoint): Bool = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
