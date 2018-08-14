@@ -7,7 +7,8 @@ import scala.language.experimental.macros
 import chisel3.internal._
 import chisel3.internal.Builder.{pushCommand, pushOp}
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo._
+import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform, UnlocatableSourceInfo, DeprecatedSourceInfo}
+import chisel3.util.SourceInfoDoc
 import chisel3.core.BiConnect.DontCareCantBeSink
 
 /** User-specified directions.
@@ -197,6 +198,8 @@ object Flipped {
   * must be representable as some number (need not be known at Chisel compile
   * time) of bits, and must have methods to pack / unpack structured data to /
   * from bits.
+  *
+  * @groupdesc Connect Utilities for connecting hardware components
   */
 abstract class Data extends HasId with NamedComponent {
   // This is a bad API that punches through object boundaries.
