@@ -366,6 +366,7 @@ sealed abstract class Bits(width: Width)
   * types.
   *
   * @groupdesc Arithmetic Arithmetic hardware operators
+  * @groupdesc Comparison Comparison hardware operators
   */
 abstract trait Num[T <: Data] {
   self: Num[T] =>
