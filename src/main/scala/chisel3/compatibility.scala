@@ -120,15 +120,18 @@ package object Chisel {     // scalastyle:ignore package.object.name
       apply(Seq.fill(n)(gen))
 
     def apply[T <: Data](elts: Seq[T]): Vec[T] = macro VecTransform.apply_elts
+    /** @group SourceInfoTransformMacro */
     def do_apply[T <: Data](elts: Seq[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
       chisel3.core.VecInit(elts)
 
     def apply[T <: Data](elt0: T, elts: T*): Vec[T] = macro VecTransform.apply_elt0
+    /** @group SourceInfoTransformMacro */
     def do_apply[T <: Data](elt0: T, elts: T*)
         (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
       chisel3.core.VecInit(elt0 +: elts.toSeq)
 
     def tabulate[T <: Data](n: Int)(gen: (Int) => T): Vec[T] = macro VecTransform.tabulate
+    /** @group SourceInfoTransformMacro */
     def do_tabulate[T <: Data](n: Int)(gen: (Int) => T)
         (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
       chisel3.core.VecInit.tabulate(n)(gen)

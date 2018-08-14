@@ -8,7 +8,7 @@ import chisel3.internal._
 import chisel3.internal.Builder.{pushCommand, pushOp}
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform, UnlocatableSourceInfo, DeprecatedSourceInfo}
-import chisel3.util.SourceInfoDoc
+import chisel3.SourceInfoDoc
 import chisel3.core.BiConnect.DontCareCantBeSink
 
 /** User-specified directions.
@@ -201,7 +201,7 @@ object Flipped {
   *
   * @groupdesc Connect Utilities for connecting hardware components
   */
-abstract class Data extends HasId with NamedComponent {
+abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   // This is a bad API that punches through object boundaries.
   @deprecated("pending removal once all instances replaced", "chisel3")
   private[chisel3] def flatten: IndexedSeq[Element] = {
@@ -435,6 +435,7 @@ abstract class Data extends HasId with NamedComponent {
     */
   def asTypeOf[T <: Data](that: T): T = macro SourceInfoTransform.thatArg
 
+  /** @group SourceInfoTransformMacro */
   def do_asTypeOf[T <: Data](that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     val thatCloned = Wire(that.cloneTypeFull)
     thatCloned.connectFromBits(this.asUInt())
@@ -455,6 +456,7 @@ abstract class Data extends HasId with NamedComponent {
     */
   final def asUInt(): UInt = macro SourceInfoTransform.noArg
 
+  /** @group SourceInfoTransformMacro */
   def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt
 
   /** Default pretty printing */
