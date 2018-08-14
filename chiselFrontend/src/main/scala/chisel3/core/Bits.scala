@@ -1171,6 +1171,9 @@ sealed trait Reset extends Element with ToBoolable
 // REVIEW TODO: Why does this extend UInt and not Bits? Does defining airth
 // operations on a Bool make sense?
 /** A data type for booleans, defined as a single bit indicating true or false.
+  *
+  * @define coll [[Bool]]
+  * @define numType $coll
   */
 sealed class Bool() extends UInt(1.W) with Reset {
   private[core] override def cloneTypeWidth(w: Width): this.type = {
@@ -1178,18 +1181,41 @@ sealed class Bool() extends UInt(1.W) with Reset {
     new Bool().asInstanceOf[this.type]
   }
 
+  /** Convert to a [[scala.Option]] of [[scala.Boolean]] */
   def litToBooleanOption: Option[Boolean] = litOption.map {
     case intVal if intVal == 1 => true
     case intVal if intVal == 0 => false
     case intVal => throwException(s"Boolean with unexpected literal value $intVal")
   }
 
+  /** Convert to a [[scala.Boolean]] */
   def litToBoolean: Boolean = litToBooleanOption.get
 
   // REVIEW TODO: Why does this need to exist and have different conventions
   // than Bits?
+
+  /** Bitwise and operator
+    *
+    * @param that a hardware $coll
+    * @return the bitwise and of  this $coll and `that`
+    * @group Bitwise
+    */
   final def & (that: Bool): Bool = macro SourceInfoTransform.thatArg
+
+  /** Bitwise or operator
+    *
+    * @param that a hardware $coll
+    * @return the bitwise or of this $coll and `that`
+    * @group Bitwise
+    */
   final def | (that: Bool): Bool = macro SourceInfoTransform.thatArg
+
+  /** Bitwise exclusive or (xor) operator
+    *
+    * @param that a hardware $coll
+    * @return the bitwise xor of this $coll and `that`
+    * @group Bitwise
+    */
   final def ^ (that: Bool): Bool = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
@@ -1202,27 +1228,35 @@ sealed class Bool() extends UInt(1.W) with Reset {
   def do_^ (that: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
     binop(sourceInfo, Bool(), BitXorOp, that)
 
-  /** Returns this wire bitwise-inverted.
-    * @group SourceInfoTransformMacro
-    */
+  /** @group SourceInfoTransformMacro */
   override def do_unary_~ (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
     unop(sourceInfo, Bool(), BitNotOp)
 
-  /** Outputs the logical OR of two Bools.
+  /** Logical or operator
+    *
+    * @param that a hardware $coll
+    * @return the lgocial or of this $coll and `that`
+    * @note this is equivalent to [[Bool.|]]
+    * @group Logical
     */
   def || (that: Bool): Bool = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
   def do_|| (that: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = this | that
 
-  /** Outputs the logical AND of two Bools.
-   */
+  /** Logical and operator
+    *
+    * @param that a hardware $coll
+    * @return the lgocial and of this $coll and `that`
+    * @note this is equivalent to [[Bool.&]]
+    * @group Logical
+    */
   def && (that: Bool): Bool = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
   def do_&& (that: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = this & that
 
-  /** Reinterprets this Bool as a Clock.  */
+  /** Reinterprets this $coll as a clock */
   def asClock(): Clock = macro SourceInfoTransform.noArg
 
   /** @group SourceInfoTransformMacro */
