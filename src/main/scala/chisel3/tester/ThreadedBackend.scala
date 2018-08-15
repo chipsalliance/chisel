@@ -23,17 +23,17 @@ trait ThreadedBackend {
       * Any sequence of peeks and pokes limited to a single thread are allowed.
       *
       * Cross-thread operations are allowed under timescope-like semantics:
-      * Pokes to a signal poked by another thread are allowed if the other pokes happened before
-      * the current thread spawned, and are from parent threads.
-      * A previous poke may not revert (by falling out of timescope) during this time.
-      * Peeks to a signal combinationally affect by pokes from other threads are allowed under the
-      * same rules.
+      * Peeks to a signal combinationally affect by pokes from other threads are allowed under similar rules:
+      * - the previous poke was done by a parent thread before the current thread spawned
       *
-      * These edge cases are resolved as follows:
-      * In the same timestep, a thread reverts, parent (or a thread newly spawned by the parent) peeks:
-      *   The peek is invalid, it is thread-order-dependent, unless directly preceded by a poke
-      *   If directly preceded by a poke, the timestep revert happens before the end-of-timestep
-      *   thread check (so it doesn't complain) and must no-op when it detects a new poke
+      * Pokes to a signal previously poked by another thread are allowed if:
+      * - (the condition for peeks also applies to pokes)
+      * - the poke is a subset (in time) of the previous poke
+      *
+      * One edge case is a end-of-timescope revert and poke from a different thread within the same timestep:
+      *   In this case, the revert must no-op if it is no longer on top of the timescope stack for a signal
+      *   (conflict checking is deferred until the end of the timestep)
+      *   Otherwise, conflict checking is the same as the usual case.
       *
       * In each discrete timestep, all actions should execute and batch up errors, so that thread
       * ordering errors can be generated in addition to any (false-positive) correctness errors:
@@ -142,7 +142,7 @@ trait ThreadedBackend {
         }
       }
 
-      // Get the PeekRecords of the value to revert to
+      // Get the PokeRecords of the value to revert to
       val revertMap = timescope.pokes.toMap map { case (data, pokeRecord) =>
         (data, signalPokes.get(data) match {
           case Some(pokesMap) => pokesMap(pokesMap.keys.min).last.pokes(data)
@@ -232,7 +232,7 @@ trait ThreadedBackend {
 
 
   protected class TesterThread(runnable: => Unit,
-      val startingActionId: Int, val parents: Set[TesterThread])
+      val startingActionId: Int, val parent: Option[TesterThread])
       extends AbstractTesterThread {
     val waiting = new Semaphore(0)
     var done: Boolean = false
