@@ -14,8 +14,10 @@ import chisel3.internal.firrtl.PrimOp._
 
 //scalastyle:off method.name
 
-/** Element is a leaf data type: it cannot contain other Data objects. Example
-  * uses are for representing primitive data types, like integers and bits.
+/** Element is a leaf data type: it cannot contain other [[Data]] objects. Example uses are for representing primitive
+  * data types, like integers and bits.
+  *
+  * @define coll element
   */
 abstract class Element(private[chisel3] val width: Width) extends Data {
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection) {
