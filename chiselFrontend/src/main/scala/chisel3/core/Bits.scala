@@ -45,14 +45,15 @@ abstract class Element(private[chisel3] val width: Width) extends Data {
   }
 }
 
-/** Exists to unify common interfaces of [[Bits]] and [[Reset]]
-  * Workaround because macros cannot override abstract methods
+/** Exists to unify common interfaces of [[Bits]] and [[Reset]].
+  *
+  * @note This is a workaround because macros cannot override abstract methods.
   */
 private[chisel3] sealed trait ToBoolable extends Element {
 
-  /** Casts this object to a [[Bool]]
+  /** Casts this $coll to a [[Bool]]
     *
-    * @note Width must be known and equal to 1
+    * @note The width must be known and equal to 1
     */
   final def toBool(): Bool = macro SourceInfoWhiteboxTransform.noArg
 
