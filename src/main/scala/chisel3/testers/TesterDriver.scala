@@ -5,6 +5,7 @@ package chisel3.testers
 import chisel3._
 import java.io._
 
+import chisel3.experimental.RunFirrtlTransform
 import firrtl.{Driver => _, _}
 
 object TesterDriver extends BackendCompilationUtilities {
@@ -25,6 +26,7 @@ object TesterDriver extends BackendCompilationUtilities {
 
     // For now, dump the IR out to a file
     Driver.dumpFirrtl(circuit, Some(new File(fname.toString + ".fir")))
+    val firrtlCircuit = Driver.toFirrtl(circuit)
 
     // Copy CPP harness and other Verilog sources from resources into files
     val cppHarness =  new File(path, "top.cpp")
@@ -37,9 +39,21 @@ object TesterDriver extends BackendCompilationUtilities {
     })
 
     // Compile firrtl
-    if (!compileFirrtlToVerilog(target, path)) {
-      return false
+    val transforms = circuit.annotations.collect { case anno: RunFirrtlTransform => anno.transformClass }.distinct
+      .filterNot(_ == classOf[Transform])
+      .map { transformClass: Class[_ <: Transform] => transformClass.newInstance() }
+    val annotations = circuit.annotations.map(_.toFirrtl).toList
+    val optionsManager = new ExecutionOptionsManager("chisel3") with HasChiselExecutionOptions with HasFirrtlOptions {
+      commonOptions = CommonOptions(topName = target, targetDirName = path.getAbsolutePath)
+      firrtlOptions = FirrtlExecutionOptions(compilerName = "verilog", annotations = annotations,
+                                             customTransforms = transforms,
+                                             firrtlCircuit = Some(firrtlCircuit))
     }
+    firrtl.Driver.execute(optionsManager) match {
+      case _: FirrtlExecutionFailure => return false
+      case _ =>
+    }
+
     // Use sys.Process to invoke a bunch of backend stuff, then run the resulting exe
     if ((verilogToCpp(target, path, additionalVFiles, cppHarness) #&&
         cppToExe(target, path)).! == 0) {

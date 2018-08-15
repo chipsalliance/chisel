@@ -26,13 +26,13 @@ package object Chisel {     // scalastyle:ignore package.object.name
     def apply[T<:Data](target: T): T = chisel3.core.Flipped[T](target)
   }
 
-  implicit class AddDirectionToData[T<:Data](val target: T) extends AnyVal {
+  implicit class AddDirectionToData[T<:Data](target: T) {
     def asInput: T = chisel3.core.Input(target)
     def asOutput: T = chisel3.core.Output(target)
     def flip(): T = chisel3.core.Flipped(target)
   }
 
-  implicit class AddDirMethodToData[T<:Data](val target: T) extends AnyVal {
+  implicit class AddDirMethodToData[T<:Data](target: T) {
     import chisel3.core.{DataMirror, ActualDirection, requireIsHardware}
     def dir: Direction = {
       requireIsHardware(target) // This has the side effect of calling _autoWrapPorts
@@ -46,7 +46,7 @@ package object Chisel {     // scalastyle:ignore package.object.name
       }
     }
   }
-  implicit class cloneTypeable[T <: Data](val target: T) extends AnyVal {
+  implicit class cloneTypeable[T <: Data](target: T) {
     import chisel3.core.DataMirror
     def chiselCloneType: T = {
       DataMirror.internal.chiselTypeClone(target).asInstanceOf[T]
@@ -80,7 +80,7 @@ package object Chisel {     // scalastyle:ignore package.object.name
   type Clock = chisel3.core.Clock
 
   // Implicit conversion to allow fromBits because it's being deprecated in chisel3
-  implicit class fromBitsable[T <: Data](val data: T) {
+  implicit class fromBitsable[T <: Data](data: T) {
     import chisel3.core.CompileOptions
     import chisel3.internal.sourceinfo.SourceInfo
 
@@ -352,12 +352,12 @@ package object Chisel {     // scalastyle:ignore package.object.name
   val when = chisel3.core.when
   type WhenContext = chisel3.core.WhenContext
 
-  implicit class fromBigIntToLiteral(val x: BigInt) extends chisel3.core.fromBigIntToLiteral(x)
-  implicit class fromtIntToLiteral(val x: Int) extends chisel3.core.fromIntToLiteral(x)
-  implicit class fromtLongToLiteral(val x: Long) extends chisel3.core.fromLongToLiteral(x)
-  implicit class fromStringToLiteral(val x: String) extends chisel3.core.fromStringToLiteral(x)
-  implicit class fromBooleanToLiteral(val x: Boolean) extends chisel3.core.fromBooleanToLiteral(x)
-  implicit class fromIntToWidth(val x: Int) extends chisel3.core.fromIntToWidth(x)
+  implicit class fromBigIntToLiteral(x: BigInt) extends chisel3.core.fromBigIntToLiteral(x)
+  implicit class fromtIntToLiteral(x: Int) extends chisel3.core.fromIntToLiteral(x)
+  implicit class fromtLongToLiteral(x: Long) extends chisel3.core.fromLongToLiteral(x)
+  implicit class fromStringToLiteral(x: String) extends chisel3.core.fromStringToLiteral(x)
+  implicit class fromBooleanToLiteral(x: Boolean) extends chisel3.core.fromBooleanToLiteral(x)
+  implicit class fromIntToWidth(x: Int) extends chisel3.core.fromIntToWidth(x)
 
   type BackendCompilationUtilities = firrtl.util.BackendCompilationUtilities
   val Driver = chisel3.Driver
