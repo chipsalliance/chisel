@@ -49,7 +49,7 @@ trait ThreadedBackend {
       *   Report batched test failures
       */
 
-    protected class Timescope(val parent: TesterThread) {
+    protected class Timescope(val parentThread: TesterThread, val parentTimescope: Option[Timescope]) {
       // Latest poke on a signal in this timescope
       val pokes = mutable.HashMap[Data, SignalPokeRecord]()
     }
@@ -69,9 +69,7 @@ trait ThreadedBackend {
 
     protected val threadTimescopes = mutable.HashMap[TesterThread, mutable.ListBuffer[Timescope]]()
 
-    // Active pokes on a signal, map of wire -> priority -> timescope
-    // The stack of timescopes must all be from the same thread, this invariant must be checked before
-    // pokes are committed to this data structure.
+    // Active pokes on a signal, map of wire -> timescope
     protected val signalPokes = mutable.HashMap[Data, mutable.ListBuffer[Timescope]]()
     protected val revertPokes = mutable.HashMap[Data, mutable.ListBuffer[PokeRecord]]()
 
@@ -84,19 +82,21 @@ trait ThreadedBackend {
      * Logs a poke operation for later checking.
      * Returns whether to execute it, based on priorities compared to other active pokes.
      */
-    def doPoke(thread: TesterThread, signal: Data, value: BigInt, priority: Int, trace: Throwable): Boolean = {
+    def doPoke(thread: TesterThread, signal: Data, value: BigInt, priority: Int, trace: Throwable): Unit = {
       val timescope = threadTimescopes(thread).last
       val pokeRecord = SignalPokeRecord(timescope, priority, value, nextActionId, trace)
-      nextActionId = nextActionId + 1
       timescope.pokes.put(signal, pokeRecord)
+      nextActionId = nextActionId + 1
+
       val signalTimescopeStack = signalPokes.getOrElseUpdate(signal, mutable.HashMap())
           .getOrElseUpdate(priority, mutable.ListBuffer())
-      // TODO: would it be sufficient to just look at the last element on the stack?
-      // what about in the presence of conflicitng pokes from different threads?
-      if (!signalTimescopeStack.contains(timescope)) {
-          signalTimescopeStack.append(timescope)
+      val signalTimescopeLast = signalTimescopeStack.lastOption
+
+      // Don't stack repeated copies of the same timescope.
+      // If the timescope exists but isn't the last on the stack, it will be caught during end-of-timestep checking.
+      if (!signalTimescopeLast.isDefined || signalTimescopeLast.get != timescope) {
+        signalTimescopeStack.append(timescope)
       }
-      priority <= (signalPokes(signal).keys foldLeft Int.MaxValue)(Math.min)
     }
 
     /**
@@ -119,10 +119,10 @@ trait ThreadedBackend {
     }
 
     /**
-     * Closes the specified timescope (which must be at the top of the timescopes stack in its
-     * parent thread), returns a map of wires to values of any signals that need to be updated.
+     * Closes the specified timescope, returns a map of wires to values of any signals that need to be updated.
      */
     def closeTimescope(timescope: Timescope): Map[Data, Option[BigInt]] = {
+      // Clear timescope from thread first
       val timescopeList = threadTimescopes(timescope.parent)
       require(timescopeList.last == timescope)
       timescopeList.trimEnd(1)
@@ -130,13 +130,12 @@ trait ThreadedBackend {
         threadTimescopes.remove(timescope.parent)
       }
 
-      // Clear the timescope from signal pokes
+      // TODO FINISH THIS
+      // Clear the timescope from signal pokes, and revert if this is the active poke
       timescope.pokes foreach { case (data, pokeRecord) =>
-        // TODO: can this be made a constant time operation?
-        signalPokes(data)(pokeRecord.priority) -= timescope
-        if (signalPokes(data)(pokeRecord.priority).isEmpty) {
-          signalPokes(data).remove(pokeRecord.priority)
-        }
+        // TODO: better error message when closing a timescope on the same timestep as a malformed operation
+        require(signalPokes(data).count(_ == timescope) == 1)
+        signalPokes(data) -= timescope
         if (signalPokes(data).isEmpty) {
           signalPokes.remove(data)
         }
