@@ -123,18 +123,18 @@ trait ThreadedBackend {
      */
     def closeTimescope(timescope: Timescope): Map[Data, Option[BigInt]] = {
       // Clear timescope from thread first
-      val timescopeList = threadTimescopes(timescope.parent)
+      val timescopeList = threadTimescopes(timescope.parentThread)
       require(timescopeList.last == timescope)
       timescopeList.trimEnd(1)
       if (timescopeList.isEmpty) {
-        threadTimescopes.remove(timescope.parent)
+        threadTimescopes.remove(timescope.parentThread)
       }
 
-      // TODO FINISH THIS
       // Clear the timescope from signal pokes, and revert if this is the active poke
-      timescope.pokes foreach { case (data, pokeRecord) =>
+      timescope.pokes.map { case (data, pokeRecord) =>
         // TODO: better error message when closing a timescope on the same timestep as a malformed operation
         require(signalPokes(data).count(_ == timescope) == 1)
+
         signalPokes(data) -= timescope
         if (signalPokes(data).isEmpty) {
           signalPokes.remove(data)
