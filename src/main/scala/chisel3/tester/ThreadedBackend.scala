@@ -60,7 +60,7 @@ trait ThreadedBackend {
     }
     case class SignalPokeRecord(timescope: Timescope, priority: Int, value: BigInt,
         actionId: Int, trace: Throwable) extends PokeRecord {
-      override def thread = timescope.parent
+      override def thread = timescope.parentThread
     }
     case class XPokeRecord(thread: TesterThread, actionId: Int) extends PokeRecord {
       def priority: Int = Int.MaxValue
@@ -71,7 +71,7 @@ trait ThreadedBackend {
 
     // Active pokes on a signal, map of wire -> timescope
     protected val signalPokes = mutable.HashMap[Data, mutable.ListBuffer[Timescope]]()
-    protected val revertPokes = mutable.HashMap[Data, mutable.ListBuffer[PokeRecord]]()
+    protected val revertPokes = mutable.HashMap[Data, mutable.ListBuffer[Timescope]]()
 
     // Active peeks on a signal, lasts until the specified clock advances
     protected val signalPeeks = mutable.HashMap[Data, mutable.ListBuffer[PeekRecord]]()
@@ -88,8 +88,7 @@ trait ThreadedBackend {
       timescope.pokes.put(signal, pokeRecord)
       nextActionId = nextActionId + 1
 
-      val signalTimescopeStack = signalPokes.getOrElseUpdate(signal, mutable.HashMap())
-          .getOrElseUpdate(priority, mutable.ListBuffer())
+      val signalTimescopeStack = signalPokes.getOrElseUpdate(signal, mutable.ListBuffer())
       val signalTimescopeLast = signalTimescopeStack.lastOption
 
       // Don't stack repeated copies of the same timescope.
@@ -111,9 +110,9 @@ trait ThreadedBackend {
     /**
      * Creates a new timescope in the specified thread.
      */
-    def newTimescope(parent: TesterThread): Timescope = {
-      val newTimescope = new Timescope(parent)
-      threadTimescopes.getOrElseUpdate(parent, mutable.ListBuffer()).append(
+    def newTimescope(parentThread: TesterThread, parentTimescope: Option[Timescope]): Timescope = {
+      val newTimescope = new Timescope(parentThread, parentTimescope)
+      threadTimescopes.getOrElseUpdate(parentThread, mutable.ListBuffer()).append(
           newTimescope)
       newTimescope
     }
@@ -131,37 +130,40 @@ trait ThreadedBackend {
       }
 
       // Clear the timescope from signal pokes, and revert if this is the active poke
-      timescope.pokes.map { case (data, pokeRecord) =>
+      // Return a list of PokeRecords to revert to
+      val revertMap = timescope.pokes.map { case (data, pokeRecord) =>
+        val dataPokes = signalPokes(data)
         // TODO: better error message when closing a timescope on the same timestep as a malformed operation
-        require(signalPokes(data).count(_ == timescope) == 1)
+        require(dataPokes.count(_ == timescope) == 1)
+
+        val revertRecord = if (dataPokes.size >= 2) {  // potentially something to revert to
+          if (dataPokes.last == timescope) {
+            Some((data, dataPokes(dataPokes.size - 2)))
+          } else {
+            None  // this isn't the last timescope, no-op
+          }
+        } else {  // revert to X
+          Some((data, XPokeRecord(timescope.parentThread, nextActionId)))
+        }
 
         signalPokes(data) -= timescope
         if (signalPokes(data).isEmpty) {
           signalPokes.remove(data)
         }
-      }
 
-      // Get the PokeRecords of the value to revert to
-      val revertMap = timescope.pokes.toMap map { case (data, pokeRecord) =>
-        (data, signalPokes.get(data) match {
-          case Some(pokesMap) => pokesMap(pokesMap.keys.min).last.pokes(data)
-          case None =>
-            val record = XPokeRecord(timescope.parent, nextActionId)
-            nextActionId = nextActionId + 1
-            record
-        })
-      }
+        revertRecord
+      }.flatten
+      nextActionId = nextActionId + 1
 
       // Register those pokes as happening on this timestep
-      revertMap foreach { case (data, pokeRecord) =>
-        revertPokes.getOrElseUpdate(data, mutable.ListBuffer()).append(
-            pokeRecord)
+      timescope.pokes foreach { case (data, _) =>
+        revertPokes.getOrElseUpdate(data, mutable.ListBuffer()).append(timescope)
       }
 
-      revertMap map { case (data, pokeRecord) => (data, pokeRecord match {
+      revertMap.map { case (data, pokeRecord) => (data, pokeRecord match {
         case signal: SignalPokeRecord => Some(signal.value)
         case _: XPokeRecord => None
-      } ) }
+      } ) }.toMap
     }
 
     /**
