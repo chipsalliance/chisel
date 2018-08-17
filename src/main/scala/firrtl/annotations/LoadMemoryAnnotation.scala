@@ -31,6 +31,8 @@ case class LoadMemoryAnnotation(
         throw new Exception(s"empty filename not allowed in LoadMemoryAnnotation")
       case name :: Nil =>
         (name, "")
+      case "" :: name :: Nil => // this case handles a filename that begins with dot and has no suffix
+        ("." + name, "")
       case other =>
         (other.reverse.tail.reverse.mkString("."), "." + other.last)
     }
