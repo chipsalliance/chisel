@@ -12,6 +12,7 @@ import chisel3._
   */
 trait ThreadedBackend {
   var nextActionId: Int = 0  // counter for unique ID assigned to each poke action
+  var timestepActionId: Int = 0  // action ID at beginning of this timestep
 
   // combinationalPaths: map of sink Data to all source Data nodes.
   protected class ThreadingChecker(
@@ -71,8 +72,9 @@ trait ThreadedBackend {
 
     // Active pokes on a signal, map of wire -> timescope
     protected val signalPokes = mutable.HashMap[Data, mutable.ListBuffer[Timescope]]()
-    protected val revertPokes = mutable.HashMap[Data, mutable.ListBuffer[Timescope]]()
 
+    // Timescopes that closed on this timestep, map of wire -> closed timescope
+    protected val revertPokes = mutable.HashMap[Data, mutable.ListBuffer[Timescope]]()
     // Active peeks on a signal, lasts until the specified clock advances
     protected val signalPeeks = mutable.HashMap[Data, mutable.ListBuffer[PeekRecord]]()
 
@@ -171,15 +173,49 @@ trait ThreadedBackend {
      * throwing exceptions if there were).
      */
     def timestep(): Unit = {
-      // check overlapped pokes from different threads with same priority
-      signalPokes foreach { case (signal, priorityToTimescopes) =>
-        priorityToTimescopes foreach { case (priority, timescopes) =>
-          val threads = timescopes.map(_.parent).distinct
-          if (threads.length > 1) {
-            throw new ThreadOrderDependentException(s"conflicting pokes on signal $signal at priority $priority from threads $threads")
+      // check that poke nestings are all well-ordered
+      // check that for each poke, all previous pokes:
+      // - happen in the order indicated by the timescope's parentTimescope, and
+      //   (note: this catches cases where a timescope in a parent thread goes out of scope before the child's timescope ends)
+      //   TODO: should this be signal dependent? in this case, threads and timescopes must also perfectly nest?
+      // - if from different threads: the previous poke must have occurred before its thread's immediate child spawned
+      signalPokes foreach { case (signal, timescopes) =>
+        timescopes.toSeq.sliding(2) foreach { case Seq(prev, next) =>
+          next.parentTimescope match {
+            case None => throw new ThreadOrderDependentException(s"conflicting pokes to $signal TODO better error")
+            case Some(parent) if parent != prev => throw new ThreadOrderDependentException(s"conflicting pokes to $signal TODO better error")
+            case Some(parent) if parent == prev =>
+              if (next.parentThread != prev.parentThread) {  // check that cross-thread timescope nestings are well-ordered
+                val nextSpawnedActionId = next.parentThread.parents(prev.parentThread)
+                if (prev.pokes(signal).actionId >= nextSpawnedActionId) {
+                  throw new ThreadOrderDependentException(s"conflicting pokes to $signal ")
+                }  // otherwise OK, previous poke was before the thread spawned
+              }
           }
         }
       }
+
+      // check poke and peek dependencies
+      // Note: pokes that start and end within the timestep still show up as a signal revert,
+      // and everything else is recorded in the timescopes
+      signalPeeks foreach { case (signal, peeks) =>
+        val sourceSignals = combinationalPaths(signal) + signal
+        sourceSignals foreach { sourceSignal =>
+          // check that for each peek, all pokes:
+          // - are from the same thread as the peek, or
+          // - are from a parent thread, and happened before its immediate child spawned, or
+          //   TODO: how much of this is redundant with the poke nesting checks?
+          // - are from a child thread, and happened after my immediate child spawned
+
+          // check that for each peek, all reverts:
+          // TODO: determine criteria, allowing limited intra-timestep reordering
+        }
+      }
+
+
+      timestepActionId = nextActionId
+
+
 
       // check poke | peek dependencies
       signalPeeks foreach { case (signal, peeks) =>
@@ -233,7 +269,7 @@ trait ThreadedBackend {
 
 
   protected class TesterThread(runnable: => Unit,
-      val startingActionId: Int, val parent: Option[TesterThread])
+      val parents: Map[TesterThread, Int])  // map of parent thread -> actionId of spawn from that thread
       extends AbstractTesterThread {
     val waiting = new Semaphore(0)
     var done: Boolean = false
