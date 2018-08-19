@@ -173,6 +173,8 @@ trait ThreadedBackend {
      * throwing exceptions if there were).
      */
     def timestep(): Unit = {
+      // TODO: batch up all errors to be reported simultaneously?
+
       // check that poke nestings are all well-ordered
       // check that for each poke, all previous pokes:
       // - happen in the order indicated by the timescope's parentTimescope, and
@@ -194,6 +196,7 @@ trait ThreadedBackend {
           }
         }
       }
+      // TODO: do some limited checking of reverts, particularly zero-duration timescopes?
 
       // check poke and peek dependencies
       // Note: pokes that start and end within the timestep still show up as a signal revert,
@@ -201,14 +204,18 @@ trait ThreadedBackend {
       signalPeeks foreach { case (signal, peeks) =>
         val sourceSignals = combinationalPaths(signal) + signal
         sourceSignals foreach { sourceSignal =>
-          // check that for each peek, all pokes:
+          // check that for each peek, any poke to a source signal:
           // - are from the same thread as the peek, or
           // - are from a parent thread, and happened before its immediate child spawned, or
           //   TODO: how much of this is redundant with the poke nesting checks?
           // - are from a child thread, and happened after my immediate child spawned
 
-          // check that for each peek, all reverts:
-          // TODO: determine criteria, allowing limited intra-timestep reordering
+          // reverts are checked to prevent peeks from being affected by a reverting sibling thread,
+          // since that poke will not show up at the end-of-timestep checks.
+          // any reverts to a source signal must be masked:
+          // - a poke from this, or a parent thread (up to, but not including, the common parent
+          //   with the reverted signal), must have started before the peek
+          // TODO: is checking against reverts needed?
         }
       }
 
