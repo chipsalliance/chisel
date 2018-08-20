@@ -204,18 +204,16 @@ trait ThreadedBackend {
       signalPeeks foreach { case (signal, peeks) =>
         val sourceSignals = combinationalPaths(signal) + signal
         sourceSignals foreach { sourceSignal =>
-          // check that for each peek, any poke to a source signal:
-          // - are from the same thread as the peek, or
-          // - are from a parent thread, and happened before its immediate child spawned, or
-          //   TODO: how much of this is redundant with the poke nesting checks?
-          // - are from a child thread, and happened after my immediate child spawned
-
-          // reverts are checked to prevent peeks from being affected by a reverting sibling thread,
-          // since that poke will not show up at the end-of-timestep checks.
-          // any reverts to a source signal must be masked:
-          // - a poke from this, or a parent thread (up to, but not including, the common parent
-          //   with the reverted signal), must have started before the peek
-          // TODO: is checking against reverts needed?
+          // check that for each peek, any poke to a source signal is unambiguous by going through the poke stack:
+          // - if the poke is from a child thread, and the peek is before my immediate child spawned, ignore and continue
+          //   (the peek result was overwritten, but following timescope semantics and are lexically unambiguous)
+          // - if the poke is from a child thread, otherwise: error (ambiguous depending on thread execution order)
+          // - if the poke is from this thread, and before this peek: stop (unambiguous)
+          // - if the poke is from this thread, otherwise: ignore and continue (try to find an unambiguous prior poke)
+          // - if the poke is from a parent thread, and was reverted to: error (revert relative to peek is thread execution order dependent)
+          // - if the poke is from a parent thread, and the poke happened before its immediate child spawned: stop (unambiguous)
+          // - if the poke is from a parent thread, otherwise: error (poke relative to peek is thread execution order dependent)
+          // - if the poke is from a sibling thread: error (dependent on thread execution order, or non-obvious parallelism effects)
         }
       }
 
