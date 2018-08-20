@@ -7,11 +7,8 @@ import java.io.File
 import chisel3._
 import chisel3.util.Counter
 import chisel3.testers.BasicTester
-import chisel3.experimental.{MultiIOModule, RawModule, BaseModule}
+import chisel3.experimental.{MultiIOModule, BaseModule}
 import chisel3.util.experimental.BoringUtils
-import firrtl.{CommonOptions, ExecutionOptionsManager, HasFirrtlOptions, FirrtlExecutionOptions, FirrtlExecutionSuccess,
-  FirrtlExecutionFailure}
-import firrtl.passes.wiring.WiringTransform
 
 abstract class ShouldntAssertTester(cyclesToWait: BigInt = 4) extends BasicTester {
   val dut: BaseModule

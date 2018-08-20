@@ -6,7 +6,8 @@ import chisel3._
 import java.io._
 
 import chisel3.experimental.RunFirrtlTransform
-import firrtl.{Driver => _, _}
+import firrtl.{Transform, RunFirrtlTransformAnnotation, FirrtlCircuitAnnotation, FirrtlExecutionFailure}
+import firrtl.options.ExecutionOptionsManager
 
 object TesterDriver extends BackendCompilationUtilities {
 
@@ -41,15 +42,12 @@ object TesterDriver extends BackendCompilationUtilities {
     // Compile firrtl
     val transforms = circuit.annotations.collect { case anno: RunFirrtlTransform => anno.transformClass }.distinct
       .filterNot(_ == classOf[Transform])
-      .map { transformClass: Class[_ <: Transform] => transformClass.newInstance() }
-    val annotations = circuit.annotations.map(_.toFirrtl).toList
-    val optionsManager = new ExecutionOptionsManager("chisel3") with HasChiselExecutionOptions with HasFirrtlOptions {
-      commonOptions = CommonOptions(topName = target, targetDirName = path.getAbsolutePath)
-      firrtlOptions = FirrtlExecutionOptions(compilerName = "verilog", annotations = annotations,
-                                             customTransforms = transforms,
-                                             firrtlCircuit = Some(firrtlCircuit))
-    }
-    firrtl.Driver.execute(optionsManager) match {
+      .map( RunFirrtlTransformAnnotation(_) )
+    val annotations = circuit.annotations.map(_.toFirrtl).toList ++ transforms
+    val args = Array("--top-name", target,
+                     "--target-dir", path.getAbsolutePath,
+                     "--compiler", "verilog")
+    firrtl.Driver.execute(args, FirrtlCircuitAnnotation(firrtlCircuit) +: annotations) match {
       case _: FirrtlExecutionFailure => return false
       case _ =>
     }
