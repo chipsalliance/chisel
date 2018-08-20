@@ -6,7 +6,7 @@
 package chisel3.util
 
 import chisel3._
-import chisel3.experimental.{DataMirror, Direction}
+import chisel3.experimental.{DataMirror, Direction, requireIsChiselType}
 import chisel3.internal.naming._  // can't use chisel3_ version because of compile order
 
 /** An I/O Bundle containing 'valid' and 'ready' signals that handshake
@@ -33,7 +33,7 @@ abstract class ReadyValidIO[+T <: Data](gen: T) extends Bundle
 
 object ReadyValidIO {
 
-  implicit class AddMethodsToReadyValid[T<:Data](val target: ReadyValidIO[T]) extends AnyVal {
+  implicit class AddMethodsToReadyValid[T<:Data](target: ReadyValidIO[T]) {
     def fire(): Bool = target.ready && target.valid
 
     /** push dat onto the output bits of this interface to let the consumer know it has happened.
@@ -199,7 +199,7 @@ class Queue[T <: Data](gen: T,
   }
 
   val genType = if (compileOptions.declaredTypeMustBeUnbound) {
-    experimental.requireIsChiselType(gen)
+    requireIsChiselType(gen)
     gen
   } else {
     if (DataMirror.internal.isSynthesizable(gen)) {
