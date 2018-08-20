@@ -5,10 +5,11 @@ package chiselTests
 import java.io.File
 
 import chisel3._
-import firrtl.{FirrtlExecutionSuccess, HasFirrtlExecutionOptions, FIRRTLException}
+import chisel3.experimental.RawModule
+import firrtl.{FirrtlExecutionSuccess, HasFirrtlExecutionOptions, FIRRTLException, TopNameAnnotation,
+  TargetDirAnnotation, CompilerNameAnnotation, AnnotationSeq}
 import firrtl.annotations.Annotation
 import firrtl.options.ExecutionOptionsManager
-import org.scalacheck.Test.Failed
 import org.scalatest.{FreeSpec, Matchers, Succeeded}
 
 class DummyModule extends Module {
@@ -19,18 +20,51 @@ class DummyModule extends Module {
   io.out := io.in
 }
 
-class DriverSpec extends FreeSpec with Matchers {
+class DriverSpec extends FreeSpec with Matchers with BackendCompilationUtilities {
 
   val name = "DummyModule"
+
+  /** Check that a sequence of files DOES exist
+    * @param exts files that should exist
+    * @param dir an implicit directory name to search in
+    * @return nothing as this is constructing a ScalaTest test
+    */
   def filesShouldExist(exts: Seq[String])(implicit dir: String): Unit = exts
     .foreach{ ext =>
       val dummyOutput = new File(dir, name + "." + ext)
+      info(s"DOES exist: $dummyOutput")
       dummyOutput.exists() should be (true)
       dummyOutput.delete() }
+
+  /** Check that a sequence of files DOES NOT exist
+    * @param exts files that shouldn't exist
+    * @param dir an implicit directory name to search in
+    * @return nothing as this is constructing a ScalaTest test
+    */
   def filesShouldNotExist(exts: Seq[String])(implicit dir: String): Unit = exts
     .foreach{ ext =>
       val dummyOutput = new File(dir, name + "." + ext)
+      info(s"DOES NOT exist: $dummyOutput")
       dummyOutput.exists should be (false) }
+
+  /** Break up a map of equivalent options/annotations into only options or annotations
+    * @param a a map of options to annotations
+    * @note It may make sense to change this to compute the cross product of all options
+    */
+  def optionsOrAnnotations(a: Map[Array[String], Annotation]): Seq[(Array[String], AnnotationSeq)] = Seq(
+    (a.keys.toArray.flatten, Seq.empty),
+    (Array.empty, a.values.toSeq)
+  )
+
+  /** Pretty prints options/arguments as only their options
+    * @param args an array of arguments
+    */
+  def collectOptions(args: Array[String]): String = args.filter(_.startsWith("-")).mkString(", ")
+
+  /** Pretty prints annotations as their class names
+    * @param annos a sequeunce of annotations
+    */
+  def collectAnnotations(annos: AnnotationSeq): String = annos.map(_.getClass.getSimpleName).mkString(", ")
 
   "Driver's execute methods are used to run chisel and firrtl" - {
     "options can be picked up from the command line with no args" in {
@@ -40,93 +74,90 @@ class DriverSpec extends FreeSpec with Matchers {
       Driver.execute(Array.empty[String], () => new DummyModule) match {
         case ChiselExecutionSuccess(_, _, Some(_: FirrtlExecutionSuccess)) =>
           filesShouldExist(List("anno.json", "fir", "v"))
-          Succeeded
-        case _ =>
-          Failed
+          succeed
+        case f =>
+          fail
       }
     }
 
-    "options can be picked up from the command line setting top name" in {
-      implicit val targetDir = "test_run_dir"
-      Driver.execute(Array(
-                       "-tn", name,
-                       "-td", targetDir,
-                       "--compiler", "low"), () => new DummyModule) match {
-        case ChiselExecutionSuccess(_, _, Some(_: FirrtlExecutionSuccess)) =>
-          filesShouldExist(List("anno.json", "fir", "lo.fir"))
-          filesShouldNotExist(List("v", "hi.fir", "mid.fir"))
-          Succeeded
-        case _ =>
-          Failed
+    "options can be picked up from the command line setting top name" - {
+      implicit val targetDir = createTestDirectory(this.getClass.getSimpleName).toString
+      val optionsAnnos = Map(Array("-tn", name)         -> TopNameAnnotation(name),
+                             Array("-td", targetDir)    -> TargetDirAnnotation(targetDir),
+                             Array("--compiler", "low") -> CompilerNameAnnotation("low"))
+      optionsOrAnnotations(optionsAnnos).map{ case (args, annos) =>
+        s"""For options: "${collectOptions(args)}", annotations: "${collectAnnotations(annos)}"""" in {
+          Driver.execute(args, () => new DummyModule, annos) match {
+            case ChiselExecutionSuccess(_, _, Some(_: FirrtlExecutionSuccess)) =>
+              filesShouldExist(List("anno.json", "fir", "lo.fir"))
+              filesShouldNotExist(List("v", "hi.fir", "mid.fir"))
+              succeed
+            case x =>
+              fail
+          }
+        }
       }
     }
 
-    "--dont-save-chirrtl should disable CHIRRTL emission" in {
-      implicit val targetDir = "test_run_dir"
-      val args = Array(
-        "--dont-save-chirrtl",
-        "--compiler", "middle",
-        "--target-dir", targetDir)
-      Driver.execute(args, () => new DummyModule) match {
-        case ChiselExecutionSuccess(_, _, Some(_: FirrtlExecutionSuccess)) =>
-          filesShouldExist(List("anno.json", "mid.fir"))
-          filesShouldNotExist(List("fir", "v", "hi.fir", "lo.fir"))
-          Succeeded
-        case _ =>
-          Failed
+    "option/arg --dont-save-chirrtl should disable CHIRRTL emission" - {
+      implicit val targetDir = createTestDirectory(this.getClass.getSimpleName).toString
+      val optionsAnnos = Map(Array("--dont-save-chirrtl")     -> DontSaveChirrtlAnnotation,
+                             Array("--compiler", "middle")    -> CompilerNameAnnotation("middle"),
+                             Array("--target-dir", targetDir) -> TargetDirAnnotation(targetDir))
+      optionsOrAnnotations(optionsAnnos).map{ case (args, annos) =>
+        s"""For options: "${collectOptions(args)}", annotations: "${collectAnnotations(annos)}"""" in {
+          Driver.execute(args, () => new DummyModule, annos) match {
+            case ChiselExecutionSuccess(_, _, Some(_: FirrtlExecutionSuccess)) =>
+              filesShouldExist(List("anno.json", "mid.fir"))
+              filesShouldNotExist(List("fir", "v", "hi.fir", "lo.fir"))
+              succeed
+            case _ =>
+              fail
+          }
+        }
       }
     }
 
-    "--dont-save-annotations should disable annotation emission" in {
-      implicit val targetDir = "test_run_dir"
-      val args = Array(
-        "--dont-save-annotations",
-        "--compiler", "high",
-        "--target-dir", targetDir)
-      Driver.execute(args, () => new DummyModule) match {
-        case ChiselExecutionSuccess(_, _, Some(_: FirrtlExecutionSuccess)) =>
-          filesShouldExist(List("hi.fir"))
-          filesShouldNotExist(List("v", "lo.fir", "mid.fir", "anno.json"))
-          Succeeded
-        case _ =>
-          Failed
+    "option/arg --dont-save-annotations should disable annotation emission" - {
+      implicit val targetDir = createTestDirectory(this.getClass.getSimpleName).toString
+      val optionsAnnos = Map(Array("--dont-save-annotations") -> DontSaveAnnotationsAnnotation,
+                             Array("--compiler", "high")      -> CompilerNameAnnotation("high"),
+                             Array("--target-dir", targetDir) -> TargetDirAnnotation(targetDir))
+      optionsOrAnnotations(optionsAnnos).map{ case (args, annos) =>
+        s"""For options: "${collectOptions(args)}", annotations: "${collectAnnotations(annos)}"""" in {
+          Driver.execute(args, () => new DummyModule, annos) match {
+            case ChiselExecutionSuccess(_, _, Some(_: FirrtlExecutionSuccess)) =>
+              filesShouldExist(List("hi.fir"))
+              filesShouldNotExist(List("v", "lo.fir", "mid.fir", "anno.json"))
+              succeed
+            case _ =>
+              fail
+          }
+        }
       }
     }
 
-    "--no-run-firrtl should emit CHIRRTL and not FIRRTL or Verilog" in {
-      implicit val targetDir = "test_run_dir"
-      val args = Array(
-        "--no-run-firrtl",
-        "--compiler", "verilog",
-        "--target-dir", targetDir)
-      Driver.execute(args, () => new DummyModule) match {
-        case ChiselExecutionSuccess(_, _, Some(_: FirrtlExecutionSuccess)) =>
-          filesShouldExist(List("anno.json", "fir"))
-          filesShouldNotExist(List("v", "hi.fir", "lo.fir", "mid.fir"))
-          Succeeded
-        case _ =>
-          Failed
-      }
-    }
-
-    "deprecated execute method still works" in {
-      implicit val targetDir = "test_run_dir"
-      val optionsManager = new ExecutionOptionsManager ("test") with HasFirrtlExecutionOptions
-          with HasChiselExecutionOptions
-      val args = Array( "-tn", name,
-                        "-td", targetDir )
-      Driver.execute(args, () => new DummyModule) match {
-        case ChiselExecutionSuccess(_, _, Some(_: FirrtlExecutionSuccess)) =>
-          filesShouldExist(List("anno.json", "fir", "v"))
-          filesShouldNotExist(List("hi.fir", "lo.fir", "mid.fir"))
-          Succeeded
-        case _ =>
-          Failed
+    "option/arg --no-run-firrtl should emit CHIRRTL and not FIRRTL or Verilog" - {
+      implicit val targetDir = createTestDirectory(this.getClass.getSimpleName).toString
+      val optionsAnnos = Map(Array("--no-run-firrtl")         -> NoRunFirrtlAnnotation,
+                             Array("--compiler", "verilog")   -> CompilerNameAnnotation("verilog"),
+                             Array("--target-dir", targetDir) -> TargetDirAnnotation(targetDir))
+      optionsOrAnnotations(optionsAnnos).foreach{ case (args, annos) =>
+        s"""For options: "${collectOptions(args)}", annotations: "${collectAnnotations(annos)}"""" in {
+          Driver.execute(args, () => new DummyModule, annos) match {
+            case ChiselExecutionSuccess(_, _, None) =>
+              filesShouldExist(List("anno.json", "fir"))
+              filesShouldNotExist(List("v", "hi.fir", "lo.fir", "mid.fir"))
+              succeed
+            case _ =>
+              fail
+          }
+        }
       }
     }
 
     "execute returns a chisel execution result" in {
-      val targetDir = "test_run_dir"
+      val targetDir = createTestDirectory(this.getClass.getSimpleName).toString
       val args = Array("--dut", "chiselTests.DummyModule", "--compiler", "low", "--target-dir", targetDir)
       val result = Driver.execute(args, Seq[Annotation]())
       result shouldBe a[ChiselExecutionSuccess]
