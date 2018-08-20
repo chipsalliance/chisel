@@ -2,14 +2,14 @@
 
 package chisel3.internal.firrtl
 import chisel3._
-import chisel3.core.SpecifiedDirection
+import chisel3.core.{SpecifiedDirection, TypePropagate}
 import chisel3.experimental._
-import chisel3.internal.sourceinfo.{NoSourceInfo, SourceLine, SourceInfo}
+import chisel3.internal.sourceinfo.{NoSourceInfo, SourceInfo, SourceLine}
 import firrtl.{ir => fir}
 import chisel3.internal.throwException
 
 import scala.annotation.tailrec
-import scala.collection.immutable.{Queue}
+import scala.collection.immutable.Queue
 
 private[chisel3] object Converter {
   // TODO modeled on unpack method on Printable, refactor?
@@ -42,6 +42,7 @@ private[chisel3] object Converter {
   // TODO
   //   * Memoize?
   //   * Move into the Chisel IR?
+  //scalastyle:off cyclomatic.complexity
   def convert(arg: Arg, ctx: Component): fir.Expression = arg match {
     case Node(id) =>
       convert(id.getRef, ctx)
@@ -70,6 +71,11 @@ private[chisel3] object Converter {
       val uint = convert(ULit(unsigned, fplit.width), ctx)
       val lit = bp.asInstanceOf[KnownBinaryPoint].value
       fir.DoPrim(firrtl.PrimOps.AsFixedPoint, Seq(uint), Seq(lit), fir.UnknownType)
+    case intervalLit @ IntervalLit(n, w, bp) =>
+      val unsigned = if (n < 0) (BigInt(1) << intervalLit.width.get) + n else n
+      val uint = convert(ULit(unsigned, intervalLit.width), ctx)
+      val lit = bp.asInstanceOf[KnownBinaryPoint].value
+      fir.DoPrim(firrtl.PrimOps.AsInterval, Seq(uint), Seq(lit), fir.UnknownType)
     case lit: ILit =>
       throwException(s"Internal Error! Unexpected ILit: $lit")
   }
@@ -214,6 +220,8 @@ private[chisel3] object Converter {
     case d: UInt => fir.UIntType(convert(d.width))
     case d: SInt => fir.SIntType(convert(d.width))
     case d: FixedPoint => fir.FixedType(convert(d.width), convert(d.binaryPoint))
+    case d: Interval =>
+      fir.IntervalType(d.range.lowerBound, d.range.upperBound, TypePropagate.chiselBinaryPointToFirrtlWidth(d.binaryPoint))
     case d: Analog => fir.AnalogType(convert(d.width))
     case d: Vec[_] => fir.VectorType(extractType(d.sample_element, clearDir), d.length)
     case d: Record =>

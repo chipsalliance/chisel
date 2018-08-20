@@ -439,6 +439,10 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     type FixedPoint = chisel3.core.FixedPoint
     val FixedPoint = chisel3.core.FixedPoint
 
+    // Fixed Point is experimental for now
+    type Interval = chisel3.core.Interval
+    val Interval = chisel3.core.Interval
+
     type ChiselAnnotation = chisel3.core.ChiselAnnotation
     val ChiselAnnotation = chisel3.core.ChiselAnnotation
     type RunFirrtlTransform = chisel3.core.RunFirrtlTransform
@@ -463,7 +467,8 @@ package object chisel3 {    // scalastyle:ignore package.object.name
         * UInt(range"[0, \${myInt + 2})")
         * }}}
         */
-      def range(args: Any*): (NumericBound[Int], NumericBound[Int]) = macro chisel3.internal.RangeTransform.apply
+//      def range(args: Any*): (NumericBound[Int], NumericBound[Int]) = macro chisel3.internal.RangeTransform.apply
+      def range(args: Any*): chisel3.internal.firrtl.IntervalRange = macro chisel3.internal.RangeTransform.apply
     }
 
     import scala.annotation.compileTimeOnly

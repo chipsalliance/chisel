@@ -11,8 +11,42 @@ import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, SourceInfoTransform, SourceInfoWhiteboxTransform,
   UIntTransform}
 import chisel3.internal.firrtl.PrimOp._
+import _root_.firrtl.ir.{Closed, Open, UnknownBound, Bound}
+import _root_.firrtl.passes.IsKnown
+import _root_.firrtl.{ir => firrtlir}
 
 //scalastyle:off method.name
+
+object TypePropagate {
+  def apply[T <: Bits](op: firrtlir.PrimOp, args: Seq[Bits], consts: Seq[Int]): T = {
+    val expArgs = args.map(toFirrtlType).map(_root_.firrtl.WRef("whatever", _, _root_.firrtl.ExpKind, _root_.firrtl.UNKNOWNGENDER))
+    val prim = firrtlir.DoPrim(op, expArgs, consts.map(BigInt(_)), firrtlir.UnknownType)
+    val tpe = _root_.firrtl.PrimOps.set_primop_type(prim).tpe
+    toChiselType(tpe).asInstanceOf[T]
+  }
+  def chiselWidthToFirrtlWidth(w: Width): firrtlir.Width = w match {
+    case chisel3.internal.firrtl.KnownWidth(n) => firrtlir.IntWidth(n)
+    case _ => firrtlir.UnknownWidth
+  }
+  def chiselBinaryPointToFirrtlWidth(w: BinaryPoint): firrtlir.Width = w match {
+    case chisel3.internal.firrtl.KnownBinaryPoint(n) => firrtlir.IntWidth(n)
+    case _ => firrtlir.UnknownWidth
+  }
+  def firrtlWidthToChiselWidth(w: firrtlir.Width): Width  = w match {
+    case firrtlir.IntWidth(n) => chisel3.internal.firrtl.KnownWidth(n.toInt)
+    case _ => UnknownWidth()
+  }
+  def toFirrtlType(t: Bits): firrtlir.Type = t match {
+    case u: UInt => firrtlir.UIntType(chiselWidthToFirrtlWidth(u.width))
+    case u: SInt => firrtlir.SIntType(chiselWidthToFirrtlWidth(u.width))
+    case f: FixedPoint => firrtlir.FixedType(chiselWidthToFirrtlWidth(f.width), chiselBinaryPointToFirrtlWidth(f.binaryPoint))
+    case i: Interval => firrtlir.IntervalType(i.range.lowerBound, i.range.upperBound, i.range.firrtlBinaryPoint)
+  }
+  def toChiselType(t: firrtlir.Type): Bits = t match {
+    case u: firrtlir.UIntType => UInt()
+    case i: firrtlir.IntervalType => Interval()
+  }
+}
 
 /** Element is a leaf data type: it cannot contain other Data objects. Example
   * uses are for representing primitive data types, like integers and bits.
@@ -307,6 +341,23 @@ sealed abstract class Bits(width: Width)
   def do_asFixedPoint(that: BinaryPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint = {
     throwException(s"Cannot call .asFixedPoint on $this")
   }
+  /** Reinterpret cast as a Interval.
+    *
+    * @note value not guaranteed to be preserved: for example, an UInt of width
+    * 3 and value 7 (0b111) would become a FixedInt with value -1, the interpretation
+    * of the number is also affected by the specified binary point.  Caution advised
+    */
+  final def asInterval(x: BinaryPoint, y: IntervalRange): Interval = macro SourceInfoTransform.xyArg
+
+  def do_asInterval(binaryPoint: BinaryPoint, range: IntervalRange)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    throwException(s"Cannot call .asInterval on $this")
+  }
+
+  final def asInterval(x: IntervalRange): Interval = macro SourceInfoTransform.xArg
+
+  def do_asInterval(range: IntervalRange)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    throwException(s"Cannot call .asInterval on $this")
+  }
 
   /** Reinterpret cast to Bits. */
   @chiselRuntimeDeprecated
@@ -586,6 +637,39 @@ sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt
     }
   }
 
+  override def do_asInterval(range: IntervalRange = IntervalRange.unknownRange)
+                            (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    (range.lower, range.upper, range.binaryPoint) match {
+      case (lx: IsKnown, ux: IsKnown, KnownBinaryPoint(bp)) =>
+        // No mechanism to pass open/close to firrtl so need to handle directly
+        // TODO: (chick) can we pass open/close to firrtl?
+        val l = lx match {
+          case Open(x) => x + BigDecimal(1) / BigDecimal(BigInt(1) << bp)
+          case Closed(x) => x
+        }
+        val u = ux match {
+          case Open(x) => x - BigDecimal(1) / BigDecimal(BigInt(1) << bp)
+          case Closed(x) => x
+        }
+        //TODO: (chick) Need to determine, what asInterval needs, and why it might need min and max as args -- CAN IT BE UNKNOWN?
+        // Angie's operation: Decimal -> Int -> Decimal loses information. Need to be conservative here?
+        val minBI = (l * BigDecimal(BigInt(1) << bp)).setScale(0, BigDecimal.RoundingMode.FLOOR).toBigIntExact.get
+        val maxBI = (u * BigDecimal(BigInt(1) << bp)).setScale(0, BigDecimal.RoundingMode.CEILING).toBigIntExact.get
+        pushOp(DefPrim(sourceInfo, Interval(width, range), AsIntervalOp, ref, ILit(minBI), ILit(maxBI), ILit(bp)))
+      case _ =>
+        throwException(
+          s"cannot call $this.asInterval($range), you must specify a known binaryPoint and range")
+    }
+  }
+//  def do_fromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type = {
+//    val res = Wire(this, null).asInstanceOf[this.type]
+//    res := (that match {
+//      case u: UInt => u
+//      case _ => that.asUInt
+//    })
+//    res
+//  }
+
   private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
       compileOptions: CompileOptions): Unit = {
     this := that.asUInt
@@ -607,14 +691,29 @@ trait UIntFactory {
     lit.bindLitArg(result)
   }
 
-  /** Create a UInt with the specified range */
-  def apply(range: Range): UInt = {
-    apply(range.getWidth)
+  /** Create a UInt with the specified range
+    * Because the ranges passed in are based on the bit widths of SInts which are the underlying type of
+    * interval we need to subtract 1 here before we create the UInt
+    */
+  def apply(range: IntervalRange): UInt = {
+    range.lower match {
+      case Closed(n) =>
+        if(n < 0) throw new IllegalArgumentException(s"Creating UInt: Invalid range with ${range.serialize}")
+      case Open(n) =>
+        if(n <= 0) throw new IllegalArgumentException(s"Creating UInt: Invalid range with ${range.serialize}")
+      case _ =>
+    }
+    val uIntWidth = range.getWidth match {
+      case KnownWidth(n) => KnownWidth((n - 1).max(0))
+      case unknownWidth: UnknownWidth => unknownWidth
+    }
+    apply(uIntWidth)
   }
-  /** Create a UInt with the specified range */
-  def apply(range: (NumericBound[Int], NumericBound[Int])): UInt = {
-    apply(KnownUIntRange(range._1, range._2))
-  }
+//TODO: Fix this later
+//  /** Create a UInt with the specified range */
+//  def apply(range: (NumericBound[Int], NumericBound[Int])): UInt = {
+//    apply(KnownUIntRange(range._1, range._2))
+//  }
 }
 
 object UInt extends UIntFactory
@@ -732,6 +831,31 @@ sealed class SInt private[core] (width: Width) extends Bits(width) with Num[SInt
     }
   }
 
+  override def do_asInterval(range: IntervalRange = IntervalRange.unknownRange)
+                            (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    (range.lower, range.upper, range.binaryPoint) match {
+      case (lx: IsKnown, ux: IsKnown, KnownBinaryPoint(bp)) =>
+        // No mechanism to pass open/close to firrtl so need to handle directly
+        // TODO: (chick) can we pass open/close to firrtl?
+        val l = lx match {
+          case Open(x) => x + BigDecimal(1) / BigDecimal(BigInt(1) << bp)
+          case Closed(x) => x
+        }
+        val u = ux match {
+          case Open(x) => x - BigDecimal(1) / BigDecimal(BigInt(1) << bp)
+          case Closed(x) => x
+        }
+        //TODO: (chick) Need to determine, what asInterval needs, and why it might need min and max as args -- CAN IT BE UNKNOWN?
+        // Angie's operation: Decimal -> Int -> Decimal loses information. Need to be conservative here?
+        val minBI = (l * BigDecimal(BigInt(1) << bp)).setScale(0, BigDecimal.RoundingMode.FLOOR).toBigIntExact.get
+        val maxBI = (u * BigDecimal(BigInt(1) << bp)).setScale(0, BigDecimal.RoundingMode.CEILING).toBigIntExact.get
+        pushOp(DefPrim(sourceInfo, Interval(width, range), AsIntervalOp, ref, ILit(minBI), ILit(maxBI), ILit(bp)))
+      case _ =>
+        throwException(
+          s"cannot call $this.asInterval($range), you must specify a known binaryPoint and range")
+    }
+  }
+
   private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) {
     this := that.asSInt
   }
@@ -744,13 +868,14 @@ trait SIntFactory {
   def apply(width: Width): SInt = new SInt(width)
 
   /** Create a SInt with the specified range */
-  def apply(range: Range): SInt = {
+  def apply(range: IntervalRange): SInt = {
     apply(range.getWidth)
   }
-  /** Create a SInt with the specified range */
-  def apply(range: (NumericBound[Int], NumericBound[Int])): SInt = {
-    apply(KnownSIntRange(range._1, range._2))
-  }
+//TODO: fix this later
+//  /** Create a SInt with the specified range */
+//  def apply(range: (NumericBound[Int], NumericBound[Int])): SInt = {
+//    apply(KnownSIntRange(range._1, range._2))
+//  }
 
    /** Create an SInt literal with specified width. */
   protected[chisel3] def Lit(value: BigInt, width: Width): SInt = {
@@ -1008,6 +1133,43 @@ sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint)
     }
   }
 
+  // TODO: (chick) -- this is an invalid PrimOp (not enough constant args)
+  def do_asInterval(binaryPoint: BinaryPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    binaryPoint match {
+      case KnownBinaryPoint(value) =>
+        //val iLit = ILit(value)
+        //pushOp(DefPrim(sourceInfo, Interval(width, binaryPoint), AsIntervalOp, ref, iLit))
+        throwException(s"INVALID asInterval")
+      case _ =>
+        throwException(s"cannot call $this.asInterval(binaryPoint=$binaryPoint), you must specify a known binaryPoint")
+    }
+  }
+
+  override def do_asInterval(range: IntervalRange = IntervalRange.unknownRange)
+                            (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    (range.lower, range.upper, range.binaryPoint) match {
+      case (lx: IsKnown, ux: IsKnown, KnownBinaryPoint(bp)) =>
+        // No mechanism to pass open/close to firrtl so need to handle directly
+        // TODO: (chick) can we pass open/close to firrtl?
+        val l = lx match {
+          case Open(x) => x + BigDecimal(1) / BigDecimal(BigInt(1) << bp)
+          case Closed(x) => x
+        }
+        val u = ux match {
+          case Open(x) => x - BigDecimal(1) / BigDecimal(BigInt(1) << bp)
+          case Closed(x) => x
+        }
+        //TODO: (chick) Need to determine, what asInterval needs, and why it might need min and max as args -- CAN IT BE UNKNOWN?
+        // Angie's operation: Decimal -> Int -> Decimal loses information. Need to be conservative here?
+        val minBI = (l * BigDecimal(BigInt(1) << bp)).setScale(0, BigDecimal.RoundingMode.FLOOR).toBigIntExact.get
+        val maxBI = (u * BigDecimal(BigInt(1) << bp)).setScale(0, BigDecimal.RoundingMode.CEILING).toBigIntExact.get
+        pushOp(DefPrim(sourceInfo, Interval(width, range), AsIntervalOp, ref, ILit(minBI), ILit(maxBI), ILit(bp)))
+      case _ =>
+        throwException(
+          s"cannot call $this.asInterval($range), you must specify a known binaryPoint and range")
+    }
+  }
+
   private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) {
     // TODO: redefine as just asFixedPoint on that, where FixedPoint.asFixedPoint just works.
     this := (that match {
@@ -1113,6 +1275,427 @@ object FixedPoint {
     result
   }
 
+}
+
+//scalastyle:off number.of.methods
+/**
+  * A sealed class representing a fixed point number that has a bit width and a binary point
+  * The width and binary point may be inferred.
+  *
+  * IMPORTANT: The API provided here is experimental and may change in the future.
+  *
+  * @param width       bit width of the fixed point number
+  * @param range       a range specifies min, max and binary point
+  */
+sealed class Interval private (width: Width, val range: chisel3.internal.firrtl.IntervalRange)
+  extends Bits(width) with Num[Interval] {
+  private[core] override def cloneTypeWidth(w: Width): this.type =
+    new Interval(w, range).asInstanceOf[this.type]
+
+  //  private[chisel3] def toType = s"Interval$width$binaryPoint"
+
+  // private[chisel3]
+  def toType = s"${range.serialize}"
+
+  private[core] override def typeEquivalent(that: Data): Boolean =
+    that.isInstanceOf[Interval] && this.width == that.width
+
+  def binaryPoint: BinaryPoint = range.binaryPoint
+
+  override def connect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = that match {
+    case _: Interval => super.connect(that)
+    case _ => this badConnect that
+  }
+
+  final def unary_-(): Interval = macro SourceInfoTransform.noArg
+  final def unary_-%(): Interval = macro SourceInfoTransform.noArg
+
+  def unary_-(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = Interval.fromBigInt(0) - this
+  def unary_-%(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = Interval.fromBigInt(0) -% this
+
+  /** add (default - growing) operator */
+  override def do_+(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
+    this +& that
+  /** subtract (default - growing) operator */
+  override def do_-(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
+    this -& that
+  override def do_*(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
+    binop(sourceInfo, Interval(this.width + that.width, this.range * that.range), TimesOp, that)
+
+  override def do_/(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
+    throwException(s"division is illegal on Interval types")
+  override def do_%(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
+    throwException(s"mod is illegal on Interval types")
+
+  /** add (width +1) operator */
+  final def +&(that: Interval): Interval = macro SourceInfoTransform.thatArg
+  /** add (no growth) operator */
+  final def +%(that: Interval): Interval = macro SourceInfoTransform.thatArg
+  /** subtract (width +1) operator */
+  final def -&(that: Interval): Interval = macro SourceInfoTransform.thatArg
+  /** subtract (no growth) operator */
+  final def -%(that: Interval): Interval = macro SourceInfoTransform.thatArg
+
+  def do_+&(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
+    binop(
+      sourceInfo,
+      Interval((this.width max that.width) + 1, this.range +& that.range),
+      AddOp, that)
+  def do_+%(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = throwException(s"Non-growing addition is not supported on Intervals")
+  def do_-&(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
+    binop(sourceInfo,
+      Interval((this.width max that.width) + 1, this.range -& that.range),
+      SubOp, that)
+  def do_-%(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = throwException(s"Non-growing subtraction is not supported on Intervals")
+
+  final def &(that: Interval): Interval = macro SourceInfoTransform.thatArg
+  final def |(that: Interval): Interval = macro SourceInfoTransform.thatArg
+  final def ^(that: Interval): Interval = macro SourceInfoTransform.thatArg
+
+  def do_&(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
+    throwException(s"And is illegal between $this and $that")
+  def do_|(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
+    throwException(s"Or is illegal between $this and $that")
+  def do_^(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
+    throwException(s"Xor is illegal between $this and $that")
+
+  final def setBinaryPoint(that: Int): Interval = macro SourceInfoTransform.thatArg
+
+  // Precision change changes range -- see firrtl PrimOps (requires floor)
+  // aaa.bbb -> aaa.bb for sbp(2)
+  // TODO: (chick) Match firrtl constraints
+  def do_setBinaryPoint(that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
+    binop(sourceInfo,
+      Interval(UnknownWidth(),
+        new IntervalRange(
+          UnknownBound, UnknownBound, IntervalRange.getBinaryPoint(that))), SetBinaryPoint, that)
+
+  final def shiftLeftBinaryPoint(that: Int): Interval = macro SourceInfoTransform.thatArg
+  // aaa.bbb -> aaa.bbb00 (bpsl(2)): increase precision
+  def do_shiftLeftBinaryPoint(that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    val newBinaryPoint = this.range.binaryPoint + BinaryPoint(that)
+    val newIntervalRange = IntervalRange(this.range.lower, this.range.upper, newBinaryPoint)
+    binop(sourceInfo, Interval(this.width + that, newIntervalRange), ShiftLeftBinaryPoint, that)
+  }
+
+  final def shiftRightBinaryPoint(that: Int): Interval = macro SourceInfoTransform.thatArg
+  // aaa.bbb -> aaa.b (bpsr(2)): decrease precision
+  def do_shiftRightBinaryPoint(that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    val newBinaryPoint = this.range.binaryPoint + BinaryPoint(-that)
+    // TODO: (chick) Match firrtl constraints -- decreasing precision changes ranges
+    val newIntervalRange = IntervalRange(UnknownBound, UnknownBound, newBinaryPoint)
+    // TODO: (chick) How to subtract width?
+    //binop(sourceInfo, Interval(this.width + KnownWidth(-that), newIntervalRange), ShiftRightBinaryPoint, that)
+    binop(sourceInfo, Interval(UnknownWidth(), newIntervalRange), ShiftRightBinaryPoint, that)
+  }
+
+  /** Returns this wire bitwise-inverted. */
+  def do_unary_~ (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
+    throwException(s"Not is illegal on $this")
+
+  // TODO(chick): Consider comparison with UInt and SInt
+  override def do_< (that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, LessOp, that)
+  override def do_> (that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, GreaterOp, that)
+  override def do_<= (that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, LessEqOp, that)
+  override def do_>= (that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, GreaterEqOp, that)
+
+  final def != (that: Interval): Bool = macro SourceInfoTransform.thatArg
+  final def =/= (that: Interval): Bool = macro SourceInfoTransform.thatArg
+  final def === (that: Interval): Bool = macro SourceInfoTransform.thatArg
+
+  def do_!= (that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, NotEqualOp, that)
+  def do_=/= (that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, NotEqualOp, that)
+  def do_=== (that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, EqualOp, that)
+
+//  final def abs(): UInt = macro SourceInfoTransform.noArg
+
+  def do_abs(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    Mux(this < Interval.fromBigInt(0), (Interval.fromBigInt(0) - this), this)
+  }
+
+  override def do_<< (that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
+    binop(sourceInfo, Interval(this.width + that, this.range << that), ShiftLeftOp, that)
+  override def do_<< (that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
+    do_<<(that.toInt)
+  override def do_<< (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    val newRange = that.width match {
+      // TODO: (chick) should be this.range << (2^(w) - 1); leave firrtl to figure this out for now
+      //case w: KnownWidth => this.range << w
+      case _ => IntervalRange(UnknownBound, UnknownBound, this.range.binaryPoint)
+    }
+    binop(sourceInfo,
+      Interval(this.width.dynamicShiftLeft(that.width), newRange),
+      DynamicShiftLeftOp, that)
+  }
+  override def do_>> (that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
+    binop(sourceInfo,
+      Interval(this.width.shiftRight(that), this.range >> that), ShiftRightOp, that)
+  override def do_>> (that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
+    do_>>(that.toInt)
+  override def do_>> (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    // Worst case range is when you shift by nothing
+    val newRange = this.range
+    binop(sourceInfo, Interval(this.width, newRange), DynamicShiftRightOp, that)
+  }
+
+  final def wrap(that: Interval): Interval = macro SourceInfoTransform.thatArg
+  // TODO: (chick) port correct firrtl constraints (requires 2^x)
+  def do_wrap(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    val dest = Interval(IntervalRange(UnknownBound, UnknownBound, this.range.binaryPoint))
+    val other = that
+    requireIsHardware(this, s"'this' ($this)")
+    requireIsHardware(other, s"'other' ($other)")
+    pushOp(DefPrim(sourceInfo, dest, WrapOp, this.ref, other.ref, ILit(0)))
+  }
+
+  // Reassign interval without actually adding any logic (possibly trim MSBs)
+  final def reassignInterval(that: Interval): Interval = macro SourceInfoTransform.thatArg
+  def do_reassignInterval(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    val dest = Interval(IntervalRange(UnknownBound, UnknownBound, this.range.binaryPoint))
+    val other = that
+    requireIsHardware(this, s"'this' ($this)")
+    requireIsHardware(other, s"'other' ($other)")
+    pushOp(DefPrim(sourceInfo, dest, WrapOp, this.ref, other.ref, ILit(1)))
+  }
+
+  // Conditionally reassign interval (if new interval is smaller) without actually adding any logic (possibly trim MSBs)
+  final def conditionalReassignInterval(that: Interval): Interval = macro SourceInfoTransform.thatArg
+  def do_conditionalReassignInterval(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    val dest = Interval(IntervalRange(UnknownBound, UnknownBound, this.range.binaryPoint))
+    val other = that
+    requireIsHardware(this, s"'this' ($this)")
+    requireIsHardware(other, s"'other' ($other)")
+    pushOp(DefPrim(sourceInfo, dest, WrapOp, this.ref, other.ref, ILit(2)))
+  }
+
+  final def wrap(that: UInt): Interval = macro SourceInfoTransform.thatArg
+  def do_wrap(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    //binop(sourceInfo, TypePropagate(_root_.firrtl.PrimOps.Wrap, Seq(this, that), Nil), WrapOp, that)
+    that.widthOption match {
+      case Some(w) =>
+        val u = BigDecimal(BigInt(1) << w) - 1
+        do_wrap(Wire(Interval(IntervalRange(Closed(0), Closed(u), BinaryPoint(0)))))
+      case _ =>
+        do_wrap(Wire(Interval(IntervalRange(Closed(0), UnknownBound, BinaryPoint(0)))))
+    }
+  }
+
+  final def wrap(that: SInt): Interval = macro SourceInfoTransform.thatArg
+  def do_wrap(that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    //binop(sourceInfo, TypePropagate(_root_.firrtl.PrimOps.Wrap, Seq(this, that), Nil), WrapOp, that)
+    this.widthOption match {
+      case Some(w) =>
+        val l = -BigDecimal(BigInt(1) << (that.getWidth - 1))
+        val u = BigDecimal(BigInt(1) << (that.getWidth - 1)) - 1
+        do_wrap(Wire(Interval(IntervalRange(Closed(l), Closed(u), BinaryPoint(0)))))
+      case _ =>
+        val l = -BigDecimal(BigInt(1) << (that.getWidth - 1))
+        val u = BigDecimal(BigInt(1) << (that.getWidth - 1)) - 1
+        do_wrap(Wire(Interval(IntervalRange(UnknownBound, UnknownBound, BinaryPoint(0)))))
+    }
+  }
+
+  final def wrap(that: IntervalRange): Interval = macro SourceInfoTransform.thatArg
+  def do_wrap(that: IntervalRange)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    do_wrap(Wire(Interval(that)))
+  }
+
+  final def clip(that: Interval): Interval = macro SourceInfoTransform.thatArg
+  def do_clip(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    binop(sourceInfo, Interval(IntervalRange(UnknownBound, UnknownBound, this.range.binaryPoint)), ClipOp, that)
+  }
+
+  final def clip(that: UInt): Interval = macro SourceInfoTransform.thatArg
+  def do_clip(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    require(that.widthKnown, "UInt clip width must be known")
+    val u = BigDecimal(BigInt(1) << that.getWidth) - 1
+    do_clip(Wire(Interval(IntervalRange(Closed(0), Closed(u), BinaryPoint(0)))))
+    // TODO: (chick) Can this be done w/o known width?
+    //binop(sourceInfo, TypePropagate(_root_.firrtl.PrimOps.Clip, Seq(this, that), Nil), ClipOp, that)
+  }
+
+  final def clip(that: SInt): Interval = macro SourceInfoTransform.thatArg
+  def do_clip(that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    // TODO: (chick) same as above
+    require(that.widthKnown, "SInt clip width must be known")
+    val l = -BigDecimal(BigInt(1) << (that.getWidth - 1))
+    val u = BigDecimal(BigInt(1) << (that.getWidth - 1)) - 1
+    do_clip(Wire(Interval(IntervalRange(Closed(l), Closed(u), BinaryPoint(0)))))
+    //binop(sourceInfo, TypePropagate(_root_.firrtl.PrimOps.Clip, Seq(this, that), Nil), ClipOp, that)
+  }
+
+  final def clip(that: IntervalRange): Interval = macro SourceInfoTransform.thatArg
+  def do_clip(that: IntervalRange)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    do_clip(Wire(Interval(that)))
+  }
+
+  override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
+    pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref))
+  }
+  override def do_asSInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt = {
+    pushOp(DefPrim(sourceInfo, SInt(this.width), AsSIntOp, ref))
+  }
+
+  override def do_asFixedPoint(binaryPoint: BinaryPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint = {
+    binaryPoint match {
+      case KnownBinaryPoint(value) =>
+        // TODO: (chick) Why is there both ILit and IntervalLit (?) -- seems like there's some butchering of notation?
+        val iLit = ILit(value)
+        pushOp(DefPrim(sourceInfo, FixedPoint(width, binaryPoint), AsFixedPointOp, ref, iLit))
+      case _ =>
+        throwException(
+          s"cannot call $this.asFixedPoint(binaryPoint=$binaryPoint), you must specify a known binaryPoint")
+    }
+  }
+
+  // TODO: (chick) INVALID -- not enough args
+  def do_asInterval(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    pushOp(DefPrim(sourceInfo, Interval(this.width, this.range), AsIntervalOp, ref))
+    throwException("asInterval INVALID")
+  }
+
+  // TODO: (chick) looks like this is wrong and only for FP?
+  def do_fromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type = {
+    /*val res = Wire(this, null).asInstanceOf[this.type]
+    res := (that match {
+      case fp: FixedPoint => fp.asSInt.asFixedPoint(this.binaryPoint)
+      case _ => that.asFixedPoint(this.binaryPoint)
+    })
+    res*/
+    throwException("fromBits INVALID for intervals")
+  }
+
+  private[core] override def connectFromBits(that: Bits)
+      (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) {
+    this := that.asInterval(this.binaryPoint, this.range)
+  }
+  //TODO(chick): Consider "convert" as an arithmetic conversion to UInt/SInt
+}
+
+/**
+  * Factory and convenience methods for the Interval class
+  * IMPORTANT: The API provided here is experimental and may change in the future.
+  */
+object Interval {
+  // TODO: (chick) -- formalize
+  /** Create a Interval type with inferred width and binary point. */
+  def apply(): Interval = apply(Width(), UnknownBinaryPoint)
+  /** Create a Interval type with specified width. */
+  def apply(width: Width): Interval = Interval(width, 0.BP)
+  /** Create a Interval type with specified width. */
+  def apply(width: Width, binaryPoint: BinaryPoint): Interval = {
+    Interval(width, new IntervalRange(UnknownBound, UnknownBound, IntervalRange.getBinaryPoint(binaryPoint)))
+  }
+
+  // TODO: (chick) Might want to round the range for asInterval as well?
+  /** Create a Interval type with specified width. */
+  def apply(width: Width, range: chisel3.internal.firrtl.IntervalRange): Interval = {
+    (range.lower, range.upper, range.binaryPoint) match {
+      case (lx: Bound, ux: Bound, KnownBinaryPoint(bp)) =>
+        // No mechanism to pass open/close to firrtl so need to handle directly -> convert to Closed
+        // TODO: (chick) can we pass open/close to firrtl?
+        val lower = lx match {
+          case Open(x) =>
+            val l = x + BigDecimal(1) / BigDecimal(BigInt(1) << bp)
+            val min = (l * BigDecimal(BigInt(1) << bp)).setScale(0, BigDecimal.RoundingMode.FLOOR) / BigDecimal(BigInt(1) << bp)
+            Closed(min)
+          case Closed(x) =>
+            val l = x
+            val min = (l * BigDecimal(BigInt(1) << bp)).setScale(0, BigDecimal.RoundingMode.FLOOR) / BigDecimal(BigInt(1) << bp)
+            Closed(min)
+          case _ =>
+            lx
+        }
+        val upper = ux match {
+          case Open(x) =>
+            val u = x - BigDecimal(1) / BigDecimal(BigInt(1) << bp)
+            val max = (u * BigDecimal(BigInt(1) << bp)).setScale(0, BigDecimal.RoundingMode.CEILING) / BigDecimal(BigInt(1) << bp)
+            Closed(max)
+          case Closed(x) =>
+            val u = x
+            val max = (u * BigDecimal(BigInt(1) << bp)).setScale(0, BigDecimal.RoundingMode.CEILING) / BigDecimal(BigInt(1) << bp)
+            Closed(max)
+          case _ =>
+            ux
+        }
+        val newRange = chisel3.internal.firrtl.IntervalRange(lower, upper, range.binaryPoint)
+        new Interval(width, newRange)
+      case _ =>
+        new Interval(width, range)
+    }
+  }
+
+  /** Create a Interval with the specified range */
+  def apply(range: IntervalRange): Interval = {
+    val result = apply(range.getWidth, range)
+    result
+  }
+
+  def fromBigInt(value: BigInt, width: Int = -1, binaryPoint: Int = 0): Interval =
+    // Passed to Firrtl as BigInt
+    if(width == -1) {
+      Interval.Lit(value, Width(), BinaryPoint(binaryPoint))
+    }
+    else {
+      Interval.Lit(value, Width(width), BinaryPoint(binaryPoint))
+    }
+  /** Create an Interval literal with inferred width from Double.
+    * Use PrivateObject to force users to specify width and binaryPoint by name
+    */
+  def fromDouble(value: Double, dummy: PrivateType = PrivateObject,
+                 width: Int = -1, binaryPoint: Int = 0): Interval = {
+    fromBigInt(
+      toBigInt(value, binaryPoint), width = width, binaryPoint = binaryPoint
+    )
+  }
+
+//  def apply(value: BigInt, width: Width, binaryPoint: BinaryPoint): Interval = {
+//    // TODO: (chick) Fundamental problem with the way IntervalLits are implemented in Chisel --
+//    // You need to perform an "asInterval" at some point, which requires conversion from double to
+//    // BigInt representation
+//    binaryPoint match {
+//      case KnownBinaryPoint(bp) =>
+//      case _ => throw new Exception("Lit bp must be known!")
+//    }
+//    // Double already converted to BigInt by multiplying up
+//    val lit = IntervalLit(value, width, binaryPoint)
+//    val range = IntervalRange(
+//        Closed(BigDecimal(value) / BigDecimal(BigInt(1) << binaryPoint.get)),
+//        Closed(BigDecimal(value) / BigDecimal(BigInt(1) << binaryPoint.get)),
+//        IntervalRange.getBinaryPoint(binaryPoint)
+//    )
+//    new Interval(lit.width, range, Some(lit))
+//  }
+
+  protected[chisel3] def Lit(value: BigInt, width: Width, binaryPoint: BinaryPoint): Interval = {
+    val lit = IntervalLit(value, width, binaryPoint)
+    val result = Interval(width, binaryPoint)
+    lit.bindLitArg(result)
+  }
+
+  /**
+    * How to create a bigint from a double with a specific binaryPoint
+    * @param x               a double value
+    * @param binaryPoint     a binaryPoint that you would like to use
+    * @return
+    */
+  def toBigInt(x: Double, binaryPoint    : Int): BigInt = {
+    val multiplier = BigInt(1) << binaryPoint
+    val result = BigInt(math.round(x * multiplier.doubleValue))
+    result
+  }
+
+  /**
+    * converts a bigInt with the given binaryPoint into the double representation
+    * @param i            a bigint
+    * @param binaryPoint  the implied binaryPoint of @i
+    * @return
+    */
+  def toDouble(i: BigInt, binaryPoint    : Int): Double = {
+    val multiplier = BigInt(1) << binaryPoint
+    val result = i.toDouble / multiplier.doubleValue
+    result
+  }
 }
 
 /** Data type for representing bidirectional bitvectors of a given width

@@ -9,6 +9,9 @@ import chisel3.internal.Builder.{pushCommand, pushOp}
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo._
 import chisel3.core.BiConnect.DontCareCantBeSink
+import _root_.firrtl.ir.{Closed, Open, UnknownBound, Bound}
+import _root_.firrtl.passes.IsKnown
+import _root_.firrtl.{ir => firrtlir}
 
 /** User-specified directions.
   */
@@ -127,6 +130,20 @@ private[core] object cloneSupertype {
               FixedPoint(Width(), (bp1 max bp2).BP)
             case _ => FixedPoint()
           }
+        }
+        case (elt1: Interval, elt2: Interval) => {
+//          (elt1.binaryPoint, elt2.binaryPoint, elt1.width, elt2.width) match {
+//            case (KnownBinaryPoint(bp1), KnownBinaryPoint(bp2), KnownWidth(w1), KnownWidth(w2)) =>
+//              val maxBinaryPoint = bp1 max bp2
+//              val maxIntegerWidth = (w1 - bp1) max (w2 - bp2)
+//              val mergedRange = elt1.range merge elt2.range
+//              val newRange = new IntervalRange(mergedRange.lower, mergedRange.upper, IntervalRange.getBinaryPoint(maxBinaryPoint))
+//              Interval((maxIntegerWidth + maxBinaryPoint).W, newRange)
+//            case (KnownBinaryPoint(bp1), KnownBinaryPoint(bp2), _, _) =>
+//              Interval(Width(), elt1.range merge elt2.range)
+//            case _ => Interval()
+//          }
+          Interval(UnknownWidth(), IntervalRange(firrtlir.UnknownBound, firrtlir.UnknownBound, firrtlir.UnknownWidth))
         }
         case (elt1, elt2) =>
           throw new AssertionError(

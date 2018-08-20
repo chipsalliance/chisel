@@ -5,7 +5,11 @@ package chisel3.internal.firrtl
 import chisel3._
 import core._
 import chisel3.internal._
-import chisel3.internal.sourceinfo.{SourceInfo, NoSourceInfo}
+import chisel3.internal.sourceinfo.{NoSourceInfo, SourceInfo}
+import _root_.firrtl.annotations.Annotation
+import _root_.firrtl.{ir => firrtlir}
+import _root_.firrtl.passes.{IsAdd, IsMax}
+import _root_.firrtl.PrimOps
 
 case class PrimOp(val name: String) {
   override def toString: String = name
@@ -43,7 +47,12 @@ object PrimOp {
   val AsUIntOp = PrimOp("asUInt")
   val AsSIntOp = PrimOp("asSInt")
   val AsFixedPointOp = PrimOp("asFixedPoint")
+  val AsIntervalOp = PrimOp("asInterval")
+  val WrapOp = PrimOp("wrap")
+  val ClipOp = PrimOp("clip")
   val SetBinaryPoint = PrimOp("bpset")
+  val ShiftLeftBinaryPoint = PrimOp("bpshl")
+  val ShiftRightBinaryPoint = PrimOp("bpshr")
   val AsClockOp = PrimOp("asClock")
 }
 
@@ -104,6 +113,14 @@ case class FPLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends LitArg(n
   def name: String = {
     val unsigned = if (n < 0) (BigInt(1) << width.get) + n else n
     s"asFixedPoint(${ULit(unsigned, width).name}, ${binaryPoint.asInstanceOf[KnownBinaryPoint].value})"
+  }
+  def minWidth: Int = 1 + n.bitLength
+}
+//TODO (chick) How to output this as unknow width
+case class IntervalLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends LitArg(n, w) {
+  def name: String = {
+    val unsigned = if (n < 0) (BigInt(1) << width.get) + n else n
+    s"asInterval(${ULit(unsigned, width).name}, ?, ${binaryPoint.asInstanceOf[KnownBinaryPoint].value})"
   }
   def minWidth: Int = 1 + n.bitLength
 }
@@ -170,6 +187,253 @@ sealed case class KnownSIntRange(min: NumericBound[Int], max: NumericBound[Int])
 
 }
 
+sealed trait RangeType {
+  def getWidth: Width
+
+  def * (that: IntervalRange): IntervalRange
+  def +& (that: IntervalRange): IntervalRange
+  def -& (that: IntervalRange): IntervalRange
+  def << (that: Int): IntervalRange
+  def >> (that: Int): IntervalRange
+  def << (that: KnownWidth): IntervalRange
+  def >> (that: KnownWidth): IntervalRange
+  def merge(that: IntervalRange): IntervalRange
+}
+
+sealed class IntervalRange(
+    val lowerBound: firrtlir.Bound,
+    val upperBound: firrtlir.Bound,
+    private[chisel3] val firrtlBinaryPoint: firrtlir.Width)
+  extends firrtlir.IntervalType(lowerBound, upperBound, firrtlBinaryPoint)
+  with RangeType {
+  (lower, upperBound) match {
+    case (firrtlir.Open(begin), firrtlir.Open(end)) =>
+      if(begin >= end) throw new IllegalArgumentException(s"Invalid range with ${serialize}")
+      binaryPoint match {
+        case KnownBinaryPoint(bp) =>
+          if(begin >= end - (BigDecimal(1) / BigDecimal(BigInt(1) << bp))) {
+            throw new IllegalArgumentException(s"Invalid range with ${serialize}")
+          }
+        case _ =>
+      }
+    case (firrtlir.Open(begin), firrtlir.Closed(end)) =>
+      if(begin >= end) throw new IllegalArgumentException(s"Invalid range with ${serialize}")
+    case (firrtlir.Closed(begin), firrtlir.Open(end)) =>
+      if(begin >= end) throw new IllegalArgumentException(s"Invalid range with ${serialize}")
+    case (firrtlir.Closed(begin), firrtlir.Closed(end)) =>
+      if(begin > end) throw new IllegalArgumentException(s"Invalid range with ${serialize}")
+    case _ =>
+  }
+
+  def getPossibleValues: Seq[Double] = {
+    (lower, upperBound, firrtlBinaryPoint) match {
+      case (firrtlir.Open(begin), firrtlir.Open(end), firrtlir.IntWidth(bp)) =>
+        (begin.doubleValue until end.doubleValue by math.pow(2, -bp.doubleValue)).toSeq.tail
+      case (firrtlir.Open(begin), firrtlir.Closed(end), firrtlir.IntWidth(bp)) =>
+        (begin.doubleValue to end.doubleValue by math.pow(2, -bp.doubleValue)).toSeq.tail
+      case (firrtlir.Closed(begin), firrtlir.Open(end), firrtlir.IntWidth(bp)) =>
+        (begin.doubleValue until end.doubleValue by math.pow(2, -bp.doubleValue)).toSeq
+      case (firrtlir.Closed(begin), firrtlir.Closed(end), firrtlir.IntWidth(bp)) =>
+        (begin.doubleValue to end.doubleValue by math.pow(2, -bp.doubleValue)).toSeq
+      case _ =>
+        throw new Exception("Bounds unknown. Cannot get possible values from IntervalRange.")
+    }
+  }
+
+  override def getWidth: Width = {
+    width match {
+      case firrtlir.IntWidth(n) => KnownWidth(n.toInt)
+      case firrtlir.UnknownWidth => UnknownWidth()
+    }
+  }
+
+  // TODO: (chick) How to implement properly? (Angie)
+  override def *(that: IntervalRange): IntervalRange = {
+    IntervalRange(firrtlir.UnknownBound, firrtlir.UnknownBound, firrtlir.UnknownWidth)
+  }
+
+  private def doFirrtlOp(op: firrtlir.PrimOp, that: IntervalRange): IntervalRange = {
+    PrimOps.set_primop_type(
+      firrtlir.DoPrim(op,
+        Seq(firrtlir.Reference("a", this), firrtlir.Reference("b", that)), Nil,firrtlir.UnknownType)
+    ).tpe match {
+      case i: firrtlir.IntervalType => IntervalRange(i.lower, i.upper, i.point)
+      case other => sys.error("BAD!")
+    }
+  }
+
+  private def doFirrtlOp(op: firrtlir.PrimOp, that: Int): IntervalRange = {
+    PrimOps.set_primop_type(
+      firrtlir.DoPrim(op,
+        Seq(firrtlir.Reference("a", this)), Seq(BigInt(that)), firrtlir.UnknownType)
+    ).tpe match {
+      case i: firrtlir.IntervalType => IntervalRange(i.lower, i.upper, i.point)
+      case other => sys.error("BAD!")
+    }
+  }
+
+  override def +&(that: IntervalRange): IntervalRange = {
+//    doFirrtlOp(PrimOps.Add, that)
+    IntervalRange(firrtlir.UnknownBound, firrtlir.UnknownBound, firrtlir.UnknownWidth)
+  }
+  private def getRange(op: firrtlir.PrimOp, tpe1: IntervalRange, tpe2: IntervalRange): IntervalRange = ???
+  override def -&(that: IntervalRange): IntervalRange = {
+//    doFirrtlOp(PrimOps.Sub, that)
+    IntervalRange(firrtlir.UnknownBound, firrtlir.UnknownBound, firrtlir.UnknownWidth)
+  }
+
+  private def shiftLeft(bound: firrtlir.Bound, n: Int): firrtlir.Bound = {
+    if(n < 1 ) {
+      bound
+    }
+    else {
+      val multiplier = BigDecimal(BigInt(1) << n)
+      bound match {
+        case firrtlir.Open(x) => firrtlir.Open(x * multiplier)
+        case firrtlir.Closed(x) => firrtlir.Closed(x * multiplier)
+        case _ => firrtlir.UnknownBound
+      }
+    }
+  }
+
+  private def shiftRight(bound: firrtlir.Bound, n: Int): firrtlir.Bound = {
+    if(n < 1 ) {
+      bound
+    }
+    else {
+      // Because of loss of significant digits, range changes too BUT to figure that out, you need to know BP
+      // TODO: (chick) -- can add bp info (if known); see firrtl primops
+      /*
+      val divisor = 1 << n
+      bound match {
+        case firrtlir.Open(x) => firrtlir.Open(x / divisor)
+        case firrtlir.Closed(x) => firrtlir.Closed(x / divisor)
+        case _ => bound
+      }
+      */
+      firrtlir.UnknownBound
+    }
+  }
+
+  override def <<(that: Int): IntervalRange = {
+    IntervalRange(
+      shiftLeft(lowerBound, that),
+      shiftLeft(upperBound, that),
+      binaryPoint
+    )
+  }
+
+  override def >>(that: Int): IntervalRange = {
+    IntervalRange(
+      shiftRight(lowerBound, that),
+      shiftRight(upperBound, that),
+      binaryPoint
+    )
+  }
+
+  override def <<(that: KnownWidth): IntervalRange = {
+    // TODO: (chick) requires being able to look at min/max of two possibly known bounds; see primop
+    IntervalRange(firrtlir.UnknownBound, firrtlir.UnknownBound, binaryPoint)
+  }
+
+  override def >>(that: KnownWidth): IntervalRange = {
+    // Worst case range is when this is not shifted
+    this
+  }
+
+  override def merge(that: IntervalRange): IntervalRange = ???
+
+  def binaryPoint: BinaryPoint = {
+    firrtlBinaryPoint match {
+      case firrtlir.IntWidth(n) =>
+        core.assert(n < Int.MaxValue, s"binary point value $n is out of range")
+        KnownBinaryPoint(n.toInt)
+      case _ => UnknownBinaryPoint
+    }
+  }
+}
+
+object IntervalRange {
+  def apply(lower: firrtlir.Bound, upper: firrtlir.Bound, firrtlBinaryPoint: firrtlir.Width): IntervalRange = {
+    new IntervalRange(lower, upper, firrtlBinaryPoint)
+  }
+
+  def apply(lower: firrtlir.Bound, upper: firrtlir.Bound, binaryPoint: BinaryPoint): IntervalRange = {
+    new IntervalRange(lower, upper, IntervalRange.getBinaryPoint(binaryPoint))
+  }
+
+  def apply(lower: firrtlir.Bound, upper: firrtlir.Bound, binaryPoint: Int): IntervalRange = {
+    IntervalRange(lower, upper, BinaryPoint(binaryPoint))
+  }
+
+  def unapply(arg: IntervalRange): Option[(firrtlir.Bound, firrtlir.Bound, BinaryPoint)] = {
+    return Some((arg.lower, arg.upper, arg.binaryPoint))
+  }
+
+  def getBound(isClosed: Boolean, value: String): firrtlir.Bound = {
+    if(value == "?") {
+      firrtlir.UnknownBound
+    }
+    else if(isClosed) {
+      firrtlir.Closed(BigDecimal(value))
+    }
+    else {
+      firrtlir.Open(BigDecimal(value))
+    }
+  }
+
+  def getBound(isClosed: Boolean, value: BigDecimal): firrtlir.Bound = {
+    if(isClosed) {
+      firrtlir.Closed(value)
+    }
+    else {
+      firrtlir.Open(value)
+    }
+  }
+
+  def getBound(isClosed: Boolean, value: Int): firrtlir.Bound = {
+    getBound(isClosed, (BigDecimal(value)))
+  }
+
+  def getBinaryPoint(s: String): firrtlir.Width = {
+    firrtlir.UnknownWidth
+  }
+
+  def getBinaryPoint(n: Int): firrtlir.Width = {
+    if(n < 0) {
+      firrtlir.UnknownWidth
+    }
+    else {
+      firrtlir.IntWidth(n)
+    }
+  }
+  def getBinaryPoint(n: BinaryPoint): firrtlir.Width = {
+    n match {
+      case UnknownBinaryPoint => firrtlir.UnknownWidth
+      case KnownBinaryPoint(w) => firrtlir.IntWidth(w)
+    }
+  }
+
+  def getRangeWidth(w: Width): firrtlir.Width = {
+    if(w.known) {
+      firrtlir.IntWidth(w.get)
+    }
+    else {
+      firrtlir.UnknownWidth
+    }
+  }
+  def getRangeWidth(binaryPoint: BinaryPoint): firrtlir.Width = {
+    if(binaryPoint.known) {
+      firrtlir.IntWidth(binaryPoint.get)
+    }
+    else {
+      firrtlir.UnknownWidth
+    }
+  }
+
+  def unknownRange: IntervalRange = new IntervalRange(firrtlir.UnknownBound, firrtlir.UnknownBound, firrtlir.UnknownWidth)
+}
+
 object Width {
   def apply(x: Int): Width = KnownWidth(x)
   def apply(): Width = UnknownWidth()
@@ -177,6 +441,7 @@ object Width {
 
 sealed abstract class Width {
   type W = Int
+  // These ops straight up add widths together
   def max(that: Width): Width = this.op(that, _ max _)
   def + (that: Width): Width = this.op(that, _ + _)
   def + (that: Int): Width = this.op(this, (a, b) => a + that)
@@ -217,9 +482,11 @@ sealed abstract class BinaryPoint {
   def max(that: BinaryPoint): BinaryPoint = this.op(that, _ max _)
   def + (that: BinaryPoint): BinaryPoint = this.op(that, _ + _)
   def + (that: Int): BinaryPoint = this.op(this, (a, b) => a + that)
-  def shiftRight(that: Int): BinaryPoint = this.op(this, (a, b) => 0 max (a - that))
-  def dynamicShiftLeft(that: BinaryPoint): BinaryPoint =
-    this.op(that, (a, b) => a + (1 << b) - 1)
+  // TODO: (chick) check -- going by the same reasoning as for W, the resultant BP should be
+  // operation dependent. BUT shr, dshl should NOT change bp
+  def shiftRight(that: Int): BinaryPoint = ??? //this.op(this, (a, b) => 0 max (a - that))
+  def dynamicShiftLeft(that: BinaryPoint): BinaryPoint = ???
+    // this.op(that, (a, b) => a + (1 << b) - 1)
 
   def known: Boolean
   def get: W
