@@ -214,6 +214,10 @@ trait ThreadedBackend {
           // - if the poke is from a parent thread, and the poke happened before its immediate child spawned: stop (unambiguous)
           // - if the poke is from a parent thread, otherwise: error (poke relative to peek is thread execution order dependent)
           // - if the poke is from a sibling thread: error (dependent on thread execution order, or non-obvious parallelism effects)
+          // TODO: handle cases where the peek is part of a reverted timestep
+          // alternative strategy:
+          // check up the timescope chain (starting from the peek timescope) for a unambiguous poke
+          // then check up the poke record chain to ensure there were no conflicts
         }
       }
 
