@@ -672,11 +672,16 @@ class VerilogEmitter extends SeqTransform with Emitter {
         emit(Seq("    `ifdef INIT_RANDOM"))
         emit(Seq("      `INIT_RANDOM"))
         emit(Seq("    `endif"))
-        // This enables test benches to set the random values at time 0.001,
-        //   then start the simulation later
+        // This enables testbenches to seed the random values at some time
+        // before `RANDOMIZE_DELAY (or the legacy value 0.002 if
+        // `RANDOMIZE_DELAY is not defined).
         // Verilator does not support delay statements, so they are omitted.
         emit(Seq("    `ifndef VERILATOR"))
-        emit(Seq("      #0.002 begin end"))
+        emit(Seq("      `ifdef RANDOMIZE_DELAY"))
+        emit(Seq("        #`RANDOMIZE_DELAY begin end"))
+        emit(Seq("      `else"))
+        emit(Seq("        #0.002 begin end"))
+        emit(Seq("      `endif"))
         emit(Seq("    `endif"))
         for (x <- initials) emit(Seq(tab, x))
         emit(Seq("  end"))
