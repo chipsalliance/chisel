@@ -112,11 +112,15 @@ private[chisel3] trait HasId extends InstanceId {
   private[chisel3] def setRef(parent: HasId, index: Int): Unit = setRef(Index(Node(parent), ILit(index)))
   private[chisel3] def setRef(parent: HasId, index: UInt): Unit = setRef(Index(Node(parent), index.ref))
   private[chisel3] def getRef: Arg = _ref.get
+  private[chisel3] def getOptionRef: Option[Arg] = _ref
 
   // Implementation of public methods.
   def instanceName: String = _parent match {
     case Some(p) => p._component match {
-      case Some(c) => getRef fullName c
+      case Some(c) => _ref match {
+        case Some(arg) => arg fullName c
+        case None => suggested_name.getOrElse("??")
+      }
       case None => throwException("signalName/pathName should be called after circuit elaboration")
     }
     case None => throwException("this cannot happen")

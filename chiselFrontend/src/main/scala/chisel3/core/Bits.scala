@@ -130,8 +130,14 @@ sealed abstract class Bits(width: Width)
     if (x < 0) {
       Builder.error(s"Negative bit indices are illegal (got $x)")
     }
-    requireIsHardware(this, "bits to be indexed")
-    pushOp(DefPrim(sourceInfo, Bool(), BitsExtractOp, this.ref, ILit(x), ILit(x)))
+    // This preserves old behavior while a more more consistent API is under debate
+    // See https://github.com/freechipsproject/chisel3/issues/867
+    litOption.map { value =>
+      (((value >> x.toInt) & 1) == 1).asBool
+    }.getOrElse {
+      requireIsHardware(this, "bits to be indexed")
+      pushOp(DefPrim(sourceInfo, Bool(), BitsExtractOp, this.ref, ILit(x), ILit(x)))
+    }
   }
 
   /** Returns the specified bit on this wire as a [[Bool]], statically
@@ -169,8 +175,14 @@ sealed abstract class Bits(width: Width)
       Builder.error(s"Invalid bit range ($x,$y)")
     }
     val w = x - y + 1
-    requireIsHardware(this, "bits to be sliced")
-    pushOp(DefPrim(sourceInfo, UInt(Width(w)), BitsExtractOp, this.ref, ILit(x), ILit(y)))
+    // This preserves old behavior while a more more consistent API is under debate
+    // See https://github.com/freechipsproject/chisel3/issues/867
+    litOption.map { value =>
+      ((value >> y) & ((BigInt(1) << w) - 1)).asUInt(w.W)
+    }.getOrElse {
+      requireIsHardware(this, "bits to be sliced")
+      pushOp(DefPrim(sourceInfo, UInt(Width(w)), BitsExtractOp, this.ref, ILit(x), ILit(y)))
+    }
   }
 
   // REVIEW TODO: again, is this necessary? Or just have this and use implicits?
@@ -592,8 +604,7 @@ trait UIntFactory {
     val lit = ULit(value, width)
     val result = new UInt(lit.width)
     // Bind result to being an Literal
-    result.bind(ElementLitBinding(lit))
-    result
+    lit.bindLitArg(result)
   }
 
   /** Create a UInt with the specified range */
@@ -745,8 +756,7 @@ trait SIntFactory {
   protected[chisel3] def Lit(value: BigInt, width: Width): SInt = {
     val lit = SLit(value, width)
     val result = new SInt(lit.width)
-    result.bind(ElementLitBinding(lit))
-    result
+    lit.bindLitArg(result)
   }
 }
 
@@ -816,8 +826,9 @@ trait BoolFactory {
    */
   protected[chisel3] def Lit(x: Boolean): Bool = {
     val result = new Bool()
-    result.bind(ElementLitBinding(ULit(if (x) 1 else 0, Width(1))))
-    result
+    val lit = ULit(if (x) 1 else 0, Width(1))
+    // Ensure we have something capable of generating a name.
+    lit.bindLitArg(result)
   }
 }
 
@@ -1074,8 +1085,8 @@ object FixedPoint {
   def apply(value: BigInt, width: Width, binaryPoint: BinaryPoint): FixedPoint = {
     val lit = FPLit(value, width, binaryPoint)
     val newLiteral = new FixedPoint(lit.width, lit.binaryPoint)
-    newLiteral.bind(ElementLitBinding(lit))
-    newLiteral
+    // Ensure we have something capable of generating a name.
+    lit.bindLitArg(newLiteral)
   }
 
   /**
