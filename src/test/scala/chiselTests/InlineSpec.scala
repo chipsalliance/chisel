@@ -3,11 +3,12 @@
 package chiselTests
 
 import chisel3._
-import chisel3.util.experimental.InlineInstance
+import chisel3.util.experimental.{InlineInstance, FlattenInstance}
 import chisel3.internal.firrtl.Circuit
 import firrtl.FirrtlExecutionSuccess
 import firrtl.passes.InlineAnnotation
 import firrtl.annotations.Annotation
+import firrtl.transforms.FlattenAnnotation
 import firrtl.analyses.InstanceGraph
 import firrtl.{ir => fir}
 import firrtl.WDefInstance
@@ -50,6 +51,25 @@ class InlineSpec extends FreeSpec with ChiselRunners with Matchers {
           "low FIRRTL should contain only instance z" in {
             val instances = collectInstances(firrtlResult.circuitState.circuit, Some("Top")).toSet
             Set("Top", "Top.x$sub", "Top.y$sub", "Top.z", "Top.z.sub") should be (instances)
+          }
+      }
+    }
+  }
+
+  "Module Flattening" - {
+    class Top extends Module with Internals {
+      val x = Module(new Qux with FlattenInstance)
+      x.io.a := io.a
+    }
+    "should compile to low FIRRTL" - {
+      Driver.execute(Array("-X", "low", "--target-dir", "test_run_dir"), () => new Top) match {
+        case ChiselExecutionSuccess(Some(chiselCircuit), chirrtl, Some(firrtlResult: FirrtlExecutionSuccess)) =>
+          "emitting ONE FlattenAnnotation at the CHIRRTL level" in {
+            chiselCircuit.annotations.map(_.toFirrtl).collect{ case a: FlattenAnnotation => a }.size should be (1)
+          }
+          "low FIRRTL should contain instance x only" in {
+            val instances = collectInstances(firrtlResult.circuitState.circuit, Some("Top")).toSet
+            Set("Top", "Top.x") should be (instances)
           }
       }
     }

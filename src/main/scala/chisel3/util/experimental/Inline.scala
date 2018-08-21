@@ -48,3 +48,38 @@ trait InlineInstance { self: BaseModule =>
         def toFirrtl: Annotation = NoDedupAnnotation(self.toNamed) })
     .map(chisel3.experimental.annotate(_))
 }
+
+/** Flattens an instance of a module
+  *
+  * @example {{{
+  * trait Internals { this: Module =>
+  *   val io = IO(new Bundle{ val a = Input(Bool()) })
+  * }
+  * class Foo extends Module with Internals with FlattenInstance
+  * class Bar extends Module with Internals {
+  *   val baz = Module(new Baz)
+  *   baz.io.a := io.a
+  * }
+  * class Baz extends Module with Internals
+  * /* The resulting instances will be:
+  *      - Top
+  *      - Top.x
+  *      - Top.y
+  *      - Top.z
+  *      - Top.z.baz */
+  * class Top extends Module with Internals {
+  *   val x = Module(new Foo)                      // x will be flattened
+  *   val y = Module(new Bar with FlattenInstance) // y will also be flattened
+  *   val z = Module(new Bar)                      // z will not be flattened
+  *   Seq(x, y, z).map(_.io.a := io.a)
+  * }
+  * }}}
+  */
+trait FlattenInstance { self: BaseModule =>
+  Seq(new ChiselAnnotation with RunFirrtlTransform {
+        def toFirrtl: Annotation = FlattenAnnotation(self.toNamed)
+        def transformClass: Class[_ <: Transform] = classOf[Flatten] },
+      new ChiselAnnotation {
+        def toFirrtl: Annotation = NoDedupAnnotation(self.toNamed) })
+  .map(chisel3.experimental.annotate(_))
+}
