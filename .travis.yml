@@ -39,16 +39,16 @@ jobs:
     - stage: test
       script:
         - verilator --version
-        - sbt ++2.11.12 $SBT_ARGS test
-    - stage: test
-      script:
-        - verilator --version
         - sbt ++2.12.4 $SBT_ARGS test
-    # For Chisel tests we just use the default version
     - stage: test
       script:
         - verilator --version
-        - sbt $SBT_ARGS clean assembly publishLocal
+        - sbt ++2.11.12 $SBT_ARGS test
+    # For Chisel tests we use the 2.11.12 version
+    - stage: test
+      script:
+        - verilator --version
+        - sbt ++2.11.12 $SBT_ARGS clean assembly publishLocal
         - bash .run_chisel_tests.sh
     - stage: test
       script:
