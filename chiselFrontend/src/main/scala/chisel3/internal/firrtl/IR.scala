@@ -116,11 +116,11 @@ case class FPLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends LitArg(n
   }
   def minWidth: Int = 1 + n.bitLength
 }
-//TODO (chick) How to output this as unknow width
+//TODO (chick) How to output this as unknown width
 case class IntervalLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends LitArg(n, w) {
   def name: String = {
     val unsigned = if (n < 0) (BigInt(1) << width.get) + n else n
-    s"asInterval(${ULit(unsigned, width).name}, ?, ${binaryPoint.asInstanceOf[KnownBinaryPoint].value})"
+    s"asInterval(${ULit(unsigned, width).name}, $minWidth, $minWidth, ${binaryPoint.asInstanceOf[KnownBinaryPoint].value})"
   }
   def minWidth: Int = 1 + n.bitLength
 }
