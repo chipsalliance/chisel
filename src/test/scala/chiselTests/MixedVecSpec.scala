@@ -159,6 +159,25 @@ class MixedVecSpec extends ChiselPropSpec {
   implicit val noShrinkListVal = Shrink[List[Int]](_ => Stream.empty)
   implicit val noShrinkInt = Shrink[Int](_ => Stream.empty)
 
+  property("MixedVec varargs API should work") {
+    assertTesterPasses {
+      new BasicTester {
+        val wire = Wire(MixedVec(UInt(1.W), UInt(8.W)))
+        wire(0) := 1.U
+        wire(1) := 101.U
+
+        chisel3.assert(wire(0) === 1.U)
+        chisel3.assert(wire(1) + 1.U === 102.U)
+
+        val wireInit = MixedVecInit(1.U, 101.U)
+        chisel3.assert(wireInit(0) === 1.U)
+        chisel3.assert(wireInit(1) + 1.U === 102.U)
+
+        stop()
+      }
+    }
+  }
+
   property("MixedVecs should be assignable") {
     forAll(safeUIntN(8)) { case (w: Int, v: List[Int]) =>
       assertTesterPasses {
