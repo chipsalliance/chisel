@@ -1,2 +1,3 @@
 firrtl.transforms.DeadCodeElimination
 firrtl.transforms.CheckCombLoops
+firrtl.passes.InlineInstances
