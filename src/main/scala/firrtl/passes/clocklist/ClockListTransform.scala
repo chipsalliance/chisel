@@ -57,9 +57,19 @@ Usage:
   }
 }
 
-class ClockListTransform extends Transform {
+class ClockListTransform extends Transform with RegisteredTransform {
   def inputForm = LowForm
   def outputForm = LowForm
+
+  def addOptions(parser: OptionParser[AnnotationSeq]): Unit = parser
+    .opt[String]("list-clocks")
+    .abbr("clks")
+    .valueName ("-c:<circuit>:-m:<module>:-o:<filename>")
+    .action( (x, c) => c ++ Seq(passes.clocklist.ClockListAnnotation.parse(x),
+                                RunFirrtlTransformAnnotation(new ClockListTransform)) )
+    .maxOccurs(1)
+    .text("List which signal drives each clock of every descendent of specified module")
+
   def passSeq(top: String, writer: Writer): Seq[Pass] =
     Seq(new ClockList(top, writer))
   def execute(state: CircuitState): CircuitState = {
