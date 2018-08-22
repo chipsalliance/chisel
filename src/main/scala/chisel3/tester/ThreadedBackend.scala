@@ -224,6 +224,10 @@ trait ThreadedBackend {
           // - any poke above the effective poke must either be from the same thread, or another thread whose immediate
           //   child spawned after the poke
           // - any other poke causes a thread execution order dependency error
+
+          // potential for peeks not being checked if ending on this timestep
+          // TODO: change thread ordering rules so newly spawned threads always execute after current threads finish
+          //   as a solution to pipelining?
         }
       }
 
