@@ -3,14 +3,14 @@
 package chisel3
 
 import chisel3.internal.firrtl.Converter
-import chisel3.experimental.{ RawModule, RunFirrtlTransform }
+import chisel3.experimental.RawModule
 
 import java.io._
 import net.jcazevedo.moultingyaml._
 
 import internal.firrtl._
 import firrtl.{ HasFirrtlExecutionOptions, FirrtlExecutionSuccess, FirrtlExecutionFailure, FirrtlExecutionResult,
-  Transform, FirrtlExecutionOptions, AnnotationSeq, FirrtlCircuitAnnotation, RunFirrtlTransformAnnotation, ir => fir }
+  FirrtlExecutionOptions, AnnotationSeq, ir => fir }
 import firrtl.options.{ ExecutionOptionsManager, DriverExecutionResult }
 import firrtl.annotations.JsonProtocol
 import firrtl.util.{ BackendCompilationUtilities => FirrtlBackendCompilationUtilities }
@@ -167,43 +167,24 @@ object Driver extends firrtl.options.Driver with BackendCompilationUtilities {
 
   def targetDir(): String = { target_dir getOrElse new File(".").getCanonicalPath }
 
-  /**
-    * Determine custom transforms FIRRTL Driver command line arguments,
-    * e.g., "--custom-transforms ..."
-    *
-    * @param ir A circuit that may contain annotations
-    * @return An array of command line arguments
-    */
-  private def customTransformsArg(ir: Circuit): Array[String] = ir.annotations
-    .collect { case anno: RunFirrtlTransform => anno.transformClass }
-    .distinct
-    .filterNot(_ == classOf[Transform])
-    .map{ transformClass: Class[_ <: Transform] => transformClass.getName } match {
-      case a: Seq[String] if a.nonEmpty => Array("--custom-transforms") ++ a
-      case _ => Array("") }
-
   def execute(args: Array[String], initAnnos: AnnotationSeq): ChiselExecutionResult = {
     /* ChiselCircuitAnnotation cannot be JSON serialized, so it is treated
      * specially */
-    val (circuitAnnos, otherAnnos) = optionsManager.parse(args, initAnnos).partition {
-      case a: ChiselCircuitAnnotation => true
-      case _                          => false }
 
-    val annos = circuitAnnos.flatMap {
-      case ChiselCircuitAnnotation(chiselCircuit) =>
-        val addedTransforms = chiselCircuit.annotations
-          .collect { case anno: RunFirrtlTransform => anno.transformClass }
-          .distinct
-          .filterNot(_ == classOf[Transform])
-          .map{ RunFirrtlTransformAnnotation(_) }
-        val chirrtl = Converter.convert(chiselCircuit)
-        chiselCircuit.annotations.map(_.toFirrtl) ++ addedTransforms :+ FirrtlCircuitAnnotation(chirrtl)
-      case a => Seq(a)
-    } ++ otherAnnos
+    val annosPostElaboration = optionsManager.parse(args, initAnnos).flatMap {
+      case a: ChiselDutGeneratorAnnotation => a.elaborate
+      case a                               => Seq(a)
+    }
 
-    val chiselOptions = view[ChiselExecutionOptions](circuitAnnos ++ annos).getOrElse{
+    val chiselOptions = view[ChiselExecutionOptions](annosPostElaboration).getOrElse{
       throw new Exception("Unable to parse Chisel options") }
-    val firrtlOptions = view[FirrtlExecutionOptions](annos).getOrElse{
+
+    val annosPostConversion = annosPostElaboration.flatMap {
+      case a: ChiselCircuitAnnotation => a.convert
+      case a                          => Seq(a)
+    }
+
+    val firrtlOptions = view[FirrtlExecutionOptions](annosPostConversion).getOrElse{
       throw new Exception("Unable to parse Firrtl options") }
 
     val firrtlString = firrtlOptions.firrtlCircuit.get.serialize
@@ -216,12 +197,12 @@ object Driver extends firrtl.options.Driver with BackendCompilationUtilities {
     if (chiselOptions.saveAnnotations) {
       val f = new File(firrtlOptions.getBuildFileName("anno.json"))
       val w = new FileWriter(f)
-      w.write(JsonProtocol.serialize(annos))
+      w.write(JsonProtocol.serialize(annosPostConversion))
       w.close()
     }
 
     val firrtlExecutionResult = if(chiselOptions.runFirrtlCompiler) {
-      Some(firrtl.Driver.execute(Array.empty, annos))
+      Some(firrtl.Driver.execute(Array.empty, annosPostConversion))
     } else {
       None
     }
@@ -237,7 +218,7 @@ object Driver extends firrtl.options.Driver with BackendCompilationUtilities {
     * @return An execution result with useful stuff, or failure with message
     */
   def execute(args: Array[String], dut: () => RawModule, initAnnos: AnnotationSeq = Seq.empty): ChiselExecutionResult =
-    execute(args, ChiselCircuitAnnotation(dut) +: initAnnos)
+    execute(args, ChiselDutGeneratorAnnotation(dut) +: initAnnos)
 
   val version = BuildInfo.version
   val chiselVersionString = BuildInfo.toString
