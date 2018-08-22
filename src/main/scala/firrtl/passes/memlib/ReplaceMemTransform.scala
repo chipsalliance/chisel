@@ -10,6 +10,8 @@ import AnalysisUtils._
 import Utils.error
 import java.io.{File, CharArrayWriter, PrintWriter}
 import wiring._
+import scopt.OptionParser
+import firrtl.stage.RunFirrtlTransformAnnotation
 
 sealed trait PassOption
 case object InputConfigFileName extends PassOption
@@ -19,11 +21,11 @@ case object PassModuleName extends PassOption
 
 object PassConfigUtil {
   type PassOptionMap = Map[PassOption, String]
- 
+
   def getPassOptions(t: String, usage: String = "") = {
     // can't use space to delimit sub arguments (otherwise, Driver.scala will throw error)
     val passArgList = t.split(":").toList
-    
+
     def nextPassOption(map: PassOptionMap, list: List[String]): PassOptionMap = {
       list match {
         case Nil => map

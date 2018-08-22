@@ -17,6 +17,7 @@ import firrtl.annotations.AnnotationYamlProtocol._
 import firrtl.passes.{PassException, PassExceptions}
 import firrtl.transforms._
 import firrtl.Utils.throwInternalError
+import firrtl.stage.TargetDirAnnotation
 
 
 /**

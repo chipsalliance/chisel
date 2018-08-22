@@ -14,6 +14,9 @@ import Utils._
 import memlib.AnalysisUtils._
 import memlib._
 import Mappers._
+import firrtl.options.RegisteredTransform
+import scopt.OptionParser
+import firrtl.stage.RunFirrtlTransformAnnotation
 
 case class ClockListAnnotation(target: ModuleName, outputConfig: String) extends
     SingleTargetAnnotation[ModuleName] {
