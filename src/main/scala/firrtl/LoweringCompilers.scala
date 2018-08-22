@@ -158,3 +158,8 @@ class MinimumVerilogCompiler extends Compiler {
   def transforms: Seq[Transform] = getLoweringTransforms(ChirrtlForm, LowForm) ++
     Seq(new MinimumLowFirrtlOptimization, new BlackBoxSourceHelper)
 }
+
+/** Currently just an alias for the [[VerilogCompiler]] */
+class SystemVerilogCompiler extends VerilogCompiler {
+  Driver.dramaticWarning("SystemVerilog Compiler behaves the same as the Verilog Compiler!")
+}
