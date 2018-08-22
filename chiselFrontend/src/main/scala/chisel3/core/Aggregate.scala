@@ -569,7 +569,7 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
                 // Ignore empty Seq()
                 case d: Data => throwException("Public Seq members cannot be used to define Bundle elements " +
                   s"(found public Seq member '${m.getName}'). " +
-                  "Either use a Vec() if all elements are of the same type, or HeterogeneousVec() if the elements " +
+                  "Either use a Vec if all elements are of the same type, or MixedVec if the elements " +
                   "are of different types. If this Seq member is not intended to construct RTL, mix in the trait " +
                   "IgnoreSeqInBundle.")
                 case _ => // don't care about non-Data Seq
