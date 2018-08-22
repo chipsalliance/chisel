@@ -24,6 +24,13 @@ object MixedVecInit {
     }
     hetVecWire
   }
+
+  /**
+    * Construct a new wire with the given bound values.
+    * This is analogous to [[chisel3.core.VecInit]].
+    * @return MixedVec with given values assigned
+    */
+  def apply[T <: Data](val0: T, vals: T*): MixedVec[T] = apply(val0 +: vals.toSeq)
 }
 
 object MixedVec {
@@ -33,6 +40,19 @@ object MixedVec {
     * @return MixedVec with the given types.
     */
   def apply[T <: Data](eltsIn: Seq[T]): MixedVec[T] = new MixedVec(eltsIn)
+
+  /**
+    * Create a MixedVec from that holds the given types.
+    * The types passed to this constructor must be Chisel types.
+    * @return MixedVec with the given types.
+    */
+  def apply[T <: Data](val0: T, vals: T*): MixedVec[T] = new MixedVec(val0 +: vals.toSeq)
+
+  /**
+    * Create a new MixedVec from an unbound MixedVec type.
+    * @return MixedVec with the given types.
+    */
+  def apply[T <: Data](mixedVec: MixedVec[T]): MixedVec[T] = new MixedVec(mixedVec.elts)
 
   /**
     * Create a MixedVec from the type of the given Vec.
