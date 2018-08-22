@@ -1,1 +1,2 @@
 firrtl.transforms.DeadCodeElimination
+firrtl.transforms.CheckCombLoops
