@@ -29,6 +29,15 @@ import scala.util.DynamicVariable
   */
 object LogLevel extends Enumeration {
   val Error, Warn, Info, Debug, Trace, None = Value
+
+  def apply(s: String): LogLevel.Value = s.toLowerCase match {
+    case "error" => LogLevel.Error
+    case "warn"  => LogLevel.Warn
+    case "info"  => LogLevel.Info
+    case "debug" => LogLevel.Debug
+    case "trace" => LogLevel.Trace
+    case level => throw new Exception("Unknown LogLevel '$level'")
+  }
 }
 
 /**
