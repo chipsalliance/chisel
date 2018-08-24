@@ -7,10 +7,8 @@ import chisel3.core.{ChiselAnnotation, RunFirrtlTransform, annotate}
 import chisel3.internal.{Builder, InstanceId}
 import firrtl.annotations.{MemoryLoadFileType, _}
 import firrtl.ir.{Module => _, _}
-import firrtl.passes.Pass
-import firrtl.passes.memlib.DefAnnotatedMemory
 import firrtl.transforms.BlackBoxInlineAnno
-import firrtl.{CircuitForm, CircuitState, EmitCircuitAnnotation, LowForm, Transform, VerilogEmitter, WDefInstance}
+import firrtl.{AnnotationSeq, CircuitForm, CircuitState, EmitCircuitAnnotation, LowForm, Transform, VerilogEmitter}
 
 import scala.collection.mutable
 
@@ -52,112 +50,6 @@ object loadMemoryFromFile {
 }
 
 /**
-  * This pass creates BlackBoxInlineAnno from the LoadMemoryAnnotations
-  * it does this even if the backend is not verilog.
-  *
-  * @param circuitState the target circuit state
-  */
-//TODO: (chick) better integration with chisel end firrtl error systems
-//scalastyle:off method.length cyclomatic.complexity regex
-class CreateBindableMemoryLoaders(circuitState: CircuitState) extends Pass {
-  var memoryCounter: Int = -1
-
-  val annotations:       Seq[Annotation] = circuitState.annotations
-  val memoryAnnotations: Seq[LoadMemoryAnnotation] = annotations.collect{ case m: LoadMemoryAnnotation => m }
-
-  val bindModules:       mutable.ArrayBuffer[BlackBoxInlineAnno] = new mutable.ArrayBuffer()
-
-  val verilogEmitter:    VerilogEmitter = new VerilogEmitter
-
-  /**
-    * walk the module and for memories that have LoadMemory annotations
-    * generate the bindable modules for verilog emission
-    *
-    * @param myModule     module being searched for memories
-    */
-  def processModule(myModule: DefModule): Unit = {
-
-    def makePath(componentName: String): String = {
-      circuitState.circuit.main + "." + myModule.name + "." + componentName
-    }
-
-    def processMemory(name: String): Unit = {
-      val fullMemoryName = makePath(s"$name")
-
-      memoryAnnotations.find {
-        ma: LoadMemoryAnnotation =>
-          val targetName = ma.target.serialize
-          targetName == fullMemoryName
-      } match {
-        case Some(lma @ LoadMemoryAnnotation(ComponentName(componentName, moduleName), _, hexOrBinary, _)) =>
-          val writer = new java.io.StringWriter
-          circuitState.circuit.modules
-            .filter { module => module.name == moduleName.name }
-            .collectFirst { case m: firrtl.ir.Module => m }
-            .foreach { module =>
-
-              val moduleMap = circuitState.circuit.modules.map(m => m.name -> m).toMap
-              val renderer = verilogEmitter.getRenderer(module, moduleMap)(writer)
-              val loadFileName = lma.getFileName
-
-              memoryCounter += 1
-              val bindsToName = s"BindsTo_${memoryCounter}_${moduleName.name}"
-              renderer.emitVerilogBind(bindsToName,
-                s"""
-                   |initial begin
-                   |  $$readmem$hexOrBinary("$loadFileName", ${myModule.name}.$componentName);
-                   |end
-                    """.stripMargin)
-              val inLineText = writer.toString + "\n" +
-                s"""bind ${myModule.name} $bindsToName ${bindsToName}_Inst(.*);"""
-
-              val blackBoxInline = BlackBoxInlineAnno(
-                moduleName,
-                moduleName.serialize + "." + componentName + ".v",
-                inLineText
-              )
-
-              bindModules += blackBoxInline
-            }
-
-        case _ =>
-      }
-    }
-
-    def processStatements(statement: Statement): Unit = {
-      statement match {
-        case block: Block =>
-          block.stmts.foreach { subStatement =>
-            processStatements(subStatement)
-          }
-
-        case m: DefAnnotatedMemory => processMemory(m.name)
-
-        case m: DefMemory          => processMemory(m.name)
-
-        case _ =>
-      }
-    }
-
-    myModule match {
-      case module: firrtl.ir.Module =>
-        processStatements(module.body)
-      case _ =>
-    }
-  }
-
-  /**
-    * run the pass
-    * @param c the circuit
-    * @return
-    */
-  def run(c: Circuit): Circuit = {
-    c.modules.foreach(processModule)
-    c
-  }
-}
-
-/**
   * This transform only is activated if verilog is being generated
   * (determined by presence of the proper emit annotation)
   * when activated it creates additional verilog files that contain
@@ -172,6 +64,98 @@ class LoadMemoryTransform extends Transform {
   def inputForm: CircuitForm  = LowForm
   def outputForm: CircuitForm = LowForm
 
+  private var memoryCounter: Int = -1
+
+  private val bindModules: mutable.ArrayBuffer[BlackBoxInlineAnno] = new mutable.ArrayBuffer()
+
+  private val verilogEmitter:    VerilogEmitter = new VerilogEmitter
+
+  /**
+    * run the pass
+    * @param circuit the circuit
+    * @param annotations all the annotations
+    * @return
+    */
+  def run(circuit: Circuit, annotations: AnnotationSeq): Circuit = {
+
+    val memoryAnnotations = {
+      annotations.collect{ case m: LoadMemoryAnnotation => m }.map { ma => ma.target.serialize -> ma }.toMap
+    }
+
+    val modulesByName = {
+      circuit.modules.collect { case m: firrtl.ir.Module => m }.map { module => module.name -> module }.toMap
+    }
+
+    /**
+      * walk the module and for memories that have LoadMemory annotations
+      * generate the bindable modules for verilog emission
+      *
+      * @param myModule     module being searched for memories
+      */
+    def processModule(myModule: DefModule): Unit = {
+
+      def makePath(componentName: String): String = {
+        circuit.main + "." + myModule.name + "." + componentName
+      }
+
+      def processMemory(name: String): Unit = {
+        val fullMemoryName = makePath(s"$name")
+
+        memoryAnnotations.get(fullMemoryName) match {
+          case Some(lma @ LoadMemoryAnnotation(ComponentName(componentName, moduleName), _, hexOrBinary, _)) =>
+            val writer = new java.io.StringWriter
+
+            modulesByName.get(moduleName.name).foreach { module =>
+                val moduleMap = circuit.modules.map(m => m.name -> m).toMap
+                val renderer = verilogEmitter.getRenderer(module, moduleMap)(writer)
+                val loadFileName = lma.getFileName
+
+                memoryCounter += 1
+                val bindsToName = s"BindsTo_${memoryCounter}_${moduleName.name}"
+                renderer.emitVerilogBind(bindsToName,
+                  s"""
+                     |initial begin
+                     |  $$readmem$hexOrBinary("$loadFileName", ${myModule.name}.$componentName);
+                     |end
+                      """.stripMargin)
+                val inLineText = writer.toString + "\n" +
+                  s"""bind ${myModule.name} $bindsToName ${bindsToName}_Inst(.*);"""
+
+                val blackBoxInline = BlackBoxInlineAnno(
+                  moduleName,
+                  moduleName.serialize + "." + componentName + ".v",
+                  inLineText
+                )
+
+                bindModules += blackBoxInline
+              }
+
+          case _ =>
+        }
+      }
+
+      def processStatements(statement: Statement): Unit = {
+        statement match {
+          case block: Block =>
+            block.stmts.foreach { subStatement =>
+              processStatements(subStatement)
+            }
+          case m: DefMemory          => processMemory(m.name)
+          case _ =>
+        }
+      }
+
+      myModule match {
+        case module: firrtl.ir.Module =>
+          processStatements(module.body)
+        case _ =>
+      }
+    }
+
+    circuit.modules.foreach(processModule)
+    circuit
+  }
+
   def execute(state: CircuitState): CircuitState = {
     val isVerilog = state.annotations.exists {
       case EmitCircuitAnnotation(emitter) =>
@@ -180,9 +164,8 @@ class LoadMemoryTransform extends Transform {
         false
     }
     if(isVerilog) {
-      val bindLoaderTransform = new CreateBindableMemoryLoaders(state)
-      bindLoaderTransform.run(state.circuit)
-      state.copy(annotations = state.annotations ++ bindLoaderTransform.bindModules)
+      run(state.circuit, state.annotations)
+      state.copy(annotations = state.annotations ++ bindModules)
     }
     else {
       state

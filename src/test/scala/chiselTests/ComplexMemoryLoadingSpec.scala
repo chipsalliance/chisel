@@ -52,7 +52,7 @@ class ComplexMemoryLoadingSpec extends FreeSpec with Matchers {
         }
 
       case _=>
-        println(s"Failed compile")
+        fail(s"Failed compile")
     }
   }
 }
