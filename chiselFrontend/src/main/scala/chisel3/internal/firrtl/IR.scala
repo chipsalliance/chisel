@@ -122,6 +122,10 @@ case class IntervalLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends Li
     val unsigned = if (n < 0) (BigInt(1) << width.get) + n else n
     s"asInterval(${ULit(unsigned, width).name}, $minWidth, $minWidth, ${binaryPoint.asInstanceOf[KnownBinaryPoint].value})"
   }
+  val range: IntervalRange = {
+    new IntervalRange(IntervalRange.getBound(isClosed = true, BigDecimal(n)),
+      IntervalRange.getBound(isClosed = true, BigDecimal(n)), IntervalRange.getRangeWidth(binaryPoint))
+  }
   def minWidth: Int = 1 + n.bitLength
 }
 
@@ -206,7 +210,8 @@ sealed class IntervalRange(
     private[chisel3] val firrtlBinaryPoint: firrtlir.Width)
   extends firrtlir.IntervalType(lowerBound, upperBound, firrtlBinaryPoint)
   with RangeType {
-  (lower, upperBound) match {
+
+  (lowerBound, upperBound) match {
     case (firrtlir.Open(begin), firrtlir.Open(end)) =>
       if(begin >= end) throw new IllegalArgumentException(s"Invalid range with ${serialize}")
       binaryPoint match {

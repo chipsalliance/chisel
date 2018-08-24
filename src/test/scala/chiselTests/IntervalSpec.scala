@@ -88,7 +88,7 @@ class IntervalAddTester extends BasicTester {
 
   val in1 = Wire(Interval(range"[0,4]"))
   val in2 = Wire(Interval(range"[0,4]"))
-  val in3 = Wire(Interval(range"[?,?]"))
+//  val in3 = Wire(Interval(range"[?,?]"))
 
   in1 := 2.I
   in2 := 2.I
@@ -108,12 +108,14 @@ class IntervalSetBinaryPointTester extends BasicTester {
 
   assert(in2.binaryPoint == KnownBinaryPoint(2))
 
-  val toShiftLeft = Wire(Interval(range"[0,4].4"))
+  in1 := 2.I
+
+  //val toShiftLeft = Wire(Interval(range"[0,4].4"))
   val shiftedLeft = in1.shiftLeftBinaryPoint(2)
 
   assert(shiftedLeft.binaryPoint == KnownBinaryPoint(6), s"Error: bpshl result ${shiftedLeft.range} expected bt = 2")
 
-  val toShiftRight = Wire(Interval(range"[0,4].4"))
+//  val toShiftRight = Wire(Interval(range"[0,4].4"))
   val shiftedRight = in1.shiftRightBinaryPoint(2)
 
   assert(shiftedRight.binaryPoint == KnownBinaryPoint(2), s"Error: bpshl result ${shiftedRight.range} expected bt = 2")
@@ -166,8 +168,8 @@ class IntervalWrapTester extends BasicTester {
   val in3 = in1.wrap(in2)
 
   //  assert(in3.range.lower == Closed(1), s"in3 lower ${in3.range.lower} expected ${Closed(1)}")
-  assert(in3.range.lower == UnknownBound, s"in3 lower ${in3.range.lower} expected ${Closed(1)}")
-  assert(in3.range.upper == UnknownBound, s"in3 upper ${in3.range.upper} expected ${Open(6)}")
+  assert(in3.range.lower == Closed(1), s"in3 lower ${in3.range.lower} expected ${Closed(1)}")
+  assert(in3.range.upper == Closed(5.9375), s"in3 upper ${in3.range.upper} expected ${Closed(5.9375)}")
   assert(in3.binaryPoint == KnownBinaryPoint(6), s"in3 binaryPoint ${in3.binaryPoint} expected ${KnownBinaryPoint(2)}")
 
   val enclosedRange = range"[-2, 5]"

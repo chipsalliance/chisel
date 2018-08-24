@@ -4,14 +4,12 @@ package chisel3.core
 
 import scala.language.experimental.macros
 import collection.mutable
-
 import chisel3.internal._
 import chisel3.internal.Builder.{pushCommand, pushOp}
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, SourceInfoTransform, SourceInfoWhiteboxTransform,
-  UIntTransform}
+import chisel3.internal.sourceinfo.{DeprecatedSourceInfo, SourceInfo, SourceInfoTransform, SourceInfoWhiteboxTransform, UIntTransform}
 import chisel3.internal.firrtl.PrimOp._
-import _root_.firrtl.ir.{Closed, Open, UnknownBound, Bound}
+import _root_.firrtl.ir.{Bound, Closed, Open, UnknownBound, IntWidth}
 import _root_.firrtl.passes.IsKnown
 import _root_.firrtl.{ir => firrtlir}
 
@@ -1295,7 +1293,40 @@ sealed class Interval private (width: Width, val range: chisel3.internal.firrtl.
   //  private[chisel3] def toType = s"Interval$width$binaryPoint"
 
   // private[chisel3]
-  def toType = s"${range.serialize}"
+//  def toType = s"${range.serialize}"
+  //TODO (chick) move this hack into firrtl if appropriate
+  //scalastyle:off cyclomatic.complexity
+  def toType: String = {
+    val zdec1 = """([+\-]?[0-9]\d*)(\.[0-9]*[1-9])(0*)""".r
+    val zdec2 = """([+\-]?[0-9]\d*)(\.0*)""".r
+    val dec = """([+\-]?[0-9]\d*)(\.[0-9]\d*)""".r
+    val int = """([+\-]?[0-9]\d*)""".r
+    def dec2string(v: BigDecimal): String = v.toString match {
+      case zdec1(x, y, z) => x + y
+      case zdec2(x, y) => x
+      case other => other
+    }
+
+    val lowerString = range.lower match {
+      case Open(l)      => s"(${dec2string(l)}, "
+      case Closed(l)    => s"[${dec2string(l)}, "
+      case UnknownBound => s"[?, "
+      case _  => s"[?, "
+    }
+    val upperString = range.upper match {
+      case Open(u)      => s"${dec2string(u)})"
+      case Closed(u)    => s"${dec2string(u)}]"
+      case UnknownBound => s"?]"
+      case _  => s"?]"
+    }
+    val bounds = lowerString + upperString
+
+    val pointString = range.binaryPoint match {
+      case KnownBinaryPoint(i)  => "." + i.toString
+      case _ => ""
+    }
+    "Interval" + bounds + pointString
+  }
 
   private[core] override def typeEquivalent(that: Data): Boolean =
     that.isInstanceOf[Interval] && this.width == that.width
@@ -1441,7 +1472,7 @@ sealed class Interval private (width: Width, val range: chisel3.internal.firrtl.
   final def wrap(that: Interval): Interval = macro SourceInfoTransform.thatArg
   // TODO: (chick) port correct firrtl constraints (requires 2^x)
   def do_wrap(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
-    val dest = Interval(IntervalRange(UnknownBound, UnknownBound, this.range.binaryPoint))
+    val dest = Interval(IntervalRange(that.range.lowerBound, that.range.upperBound, this.range.binaryPoint))
     val other = that
     requireIsHardware(this, s"'this' ($this)")
     requireIsHardware(other, s"'other' ($other)")
