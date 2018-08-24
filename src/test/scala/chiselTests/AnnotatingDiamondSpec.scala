@@ -145,6 +145,7 @@ class AnnotatingDiamondSpec extends FreeSpec with Matchers {
       Driver.execute(Array("--target-dir", "test_run_dir"), () => new TopOfDiamond) match {
         case ChiselExecutionSuccess(Some(circuit), emitted, _) =>
           val annos = circuit.annotations.map(_.toFirrtl)
+
           annos.count(_.isInstanceOf[IdentityAnnotation]) should be (10)
 
           annos.count {
@@ -156,7 +157,8 @@ class AnnotatingDiamondSpec extends FreeSpec with Matchers {
             case IdentityAnnotation(ModuleName("ModC_1", _), "ModC(32)") => true
             case _ => false
           } should be (1)
-        case _ =>
+        case failure =>
+          println(failure)
           assert(false)
       }
     }

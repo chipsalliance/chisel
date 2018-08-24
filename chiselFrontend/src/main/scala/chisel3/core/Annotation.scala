@@ -87,4 +87,3 @@ object dontTouch { // scalastyle:ignore object.name
     data
   }
 }
-

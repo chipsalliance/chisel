@@ -3,56 +3,36 @@
 package chisel3
 
 import chisel3.internal.firrtl.Converter
-import chisel3.experimental.{RawModule, RunFirrtlTransform}
+import chisel3.experimental.RawModule
 
 import java.io._
 import net.jcazevedo.moultingyaml._
 
 import internal.firrtl._
-import firrtl._
-import firrtl.annotations.{Annotation, JsonProtocol}
+import firrtl.{ HasFirrtlExecutionOptions, FirrtlExecutionSuccess, FirrtlExecutionFailure, FirrtlExecutionResult,
+  FirrtlExecutionOptions, AnnotationSeq, ir => fir }
+import firrtl.options.{ ExecutionOptionsManager, DriverExecutionResult }
+import firrtl.annotations.JsonProtocol
 import firrtl.util.{ BackendCompilationUtilities => FirrtlBackendCompilationUtilities }
+import firrtl.options.Viewer._
+import firrtl.FirrtlViewer._
+import chisel3.ChiselViewer._
 
-import _root_.firrtl.annotations.AnnotationYamlProtocol._
-
-/**
-  * The Driver provides methods to invoke the chisel3 compiler and the firrtl compiler.
-  * By default firrtl is automatically run after chisel.  an [[ExecutionOptionsManager]]
-  * is needed to manage options.  It can parser command line arguments or coordinate
-  * multiple chisel toolchain tools options.
-  *
-  * @example
-  *          {{{
-  *          val optionsManager = new ExecutionOptionsManager("chisel3")
-  *              with HasFirrtlOptions
-  *              with HasChiselExecutionOptions {
-  *            commonOptions = CommonOption(targetDirName = "my_target_dir")
-  *            chiselOptions = ChiselExecutionOptions(runFirrtlCompiler = false)
-  *          }
-  *          chisel3.Driver.execute(optionsManager, () => new Dut)
-  *          }}}
-  * or via command line arguments
-  * @example {{{
-  *          args = "--no-run-firrtl --target-dir my-target-dir".split(" +")
-  *          chisel3.execute(args, () => new DUT)
-  *          }}}
-  */
+import java.io._
 import BuildInfo._
 
 trait BackendCompilationUtilities extends FirrtlBackendCompilationUtilities {
-  /** Compile Chirrtl to Verilog by invoking Firrtl inside the same JVM
+  /**
+    * Compile Chirrtl to Verilog by invoking Firrtl inside the same JVM
     *
     * @param prefix basename of the file
     * @param dir    directory where file lives
     * @return       true if compiler completed successfully
     */
   def compileFirrtlToVerilog(prefix: String, dir: File): Boolean = {
-    val optionsManager = new ExecutionOptionsManager("chisel3") with HasChiselExecutionOptions with HasFirrtlOptions {
-      commonOptions = CommonOptions(topName = prefix, targetDirName = dir.getAbsolutePath)
-      firrtlOptions = FirrtlExecutionOptions(compilerName = "verilog")
-    }
+    val args = Array("--top-name", prefix, "--target-dir", dir.getAbsolutePath, "--compiler", "verilog")
 
-    firrtl.Driver.execute(optionsManager) match {
+    firrtl.Driver.execute(args) match {
       case _: FirrtlExecutionSuccess => true
       case _: FirrtlExecutionFailure => false
     }
@@ -62,50 +42,67 @@ trait BackendCompilationUtilities extends FirrtlBackendCompilationUtilities {
 /**
   * This family provides return values from the chisel3 and possibly firrtl compile steps
   */
-trait ChiselExecutionResult
+trait ChiselExecutionResult extends DriverExecutionResult
 
 /**
+  * Getting one of these indicates a successful Chisel run
   *
   * @param circuitOption  Optional circuit, has information like circuit name
   * @param emitted            The emitted Chirrrl text
   * @param firrtlResultOption Optional Firrtl result, @see ucb-bar/firrtl for details
   */
 case class ChiselExecutionSuccess(
-                                  circuitOption: Option[Circuit],
-                                  emitted: String,
-                                  firrtlResultOption: Option[FirrtlExecutionResult]
-                                  ) extends ChiselExecutionResult
+  circuitOption: Option[Circuit],
+  emitted: String,
+  firrtlResultOption: Option[FirrtlExecutionResult]) extends ChiselExecutionResult
 
 /**
   * Getting one of these indicates failure of some sort
- *
+  *
   * @param message  a clue perhaps will be provided in the here
   */
 case class ChiselExecutionFailure(message: String) extends ChiselExecutionResult
 
-object Driver extends BackendCompilationUtilities {
+/**
+  * The Driver provides methods to invoke the Chisel3 compiler and the
+  * FIRRTL compiler. By default FIRRTL is automatically run after chisel.
+  *
+  * @example
+  * {{{
+  * val args = Array(
+  *   "--top-name", "MyTopModule",     // The name of the top module
+  *   "--target-dir", "my_target_dir", // The work directory
+  *   "--compiler", "low" )            // The FIRRTL compiler to use
+  * Driver.execute(args, () => new MyTopModule)
+  * }}}
+  */
+object Driver extends firrtl.options.Driver with BackendCompilationUtilities {
+  val optionsManager = new ExecutionOptionsManager("chisel3") with HasChiselExecutionOptions
+      with HasFirrtlExecutionOptions
 
-  /** Elaborates the Module specified in the gen function into a Circuit
+  /**
+    * Elaborates the Module specified in the gen function into a Circuit
     *
     *  @param gen a function that creates a Module hierarchy
     *  @return the resulting Chisel IR in the form of a Circuit (TODO: Should be FIRRTL IR)
     */
   def elaborate[T <: RawModule](gen: () => T): Circuit = internal.Builder.build(Module(gen()))
 
-  def toFirrtl(ir: Circuit): firrtl.ir.Circuit = Converter.convert(ir)
+  def toFirrtl(ir: Circuit): fir.Circuit = Converter.convert(ir)
 
   def emit[T <: RawModule](gen: () => T): String = Driver.emit(elaborate(gen))
 
   def emit[T <: RawModule](ir: Circuit): String = Emitter.emit(ir)
 
-  /** Elaborates the Module specified in the gen function into Verilog
+  /**
+    * Elaborates the Module specified in the gen function into Verilog
     *
     *  @param gen a function that creates a Module hierarchy
     *  @return the resulting String containing the design in Verilog
     */
   def emitVerilog[T <: RawModule](gen: => T): String = {
     execute(Array[String](), { () => gen }) match {
-      case ChiselExecutionSuccess(_, _, Some(firrtl.FirrtlExecutionSuccess(_, verilog))) => verilog
+      case ChiselExecutionSuccess(_, _, Some(FirrtlExecutionSuccess(_, verilog))) => verilog
       case _ => sys.error("Cannot get Verilog!")
     }
   }
@@ -127,6 +124,20 @@ object Driver extends BackendCompilationUtilities {
     f
   }
 
+  /**
+    * Emit the annotations of a circuit
+    *
+    * @param ir The circuit containing annotations to be emitted
+    * @param optName An optional filename (will use s"${ir.name}.json" otherwise)
+    */
+  def dumpAnnotations(ir: Circuit, optName: Option[File]): File = {
+    val f = optName.getOrElse(new File(ir.name + ".json"))
+    val w = new FileWriter(f)
+    w.write(JsonProtocol.serialize(ir.annotations.map(_.toFirrtl)))
+    w.close()
+    f
+  }
+
   /** Dumps the elaborated Circuit to ProtoBuf
     *
     * If no File is given as input, it will dump to a default filename based on the name of the
@@ -141,7 +152,7 @@ object Driver extends BackendCompilationUtilities {
     val ostream = new java.io.FileOutputStream(f)
     // Lazily convert modules to make intermediate objects garbage collectable
     val modules = c.components.map(m => () => Converter.convert(m))
-    firrtl.proto.ToProto.writeToStreamFast(ostream, ir.NoInfo, modules, c.name)
+    firrtl.proto.ToProto.writeToStreamFast(ostream, fir.NoInfo, modules, c.name)
     f
   }
 
@@ -156,97 +167,58 @@ object Driver extends BackendCompilationUtilities {
 
   def targetDir(): String = { target_dir getOrElse new File(".").getCanonicalPath }
 
-  /**
-    * Run the chisel3 compiler and possibly the firrtl compiler with options specified
- *
-    * @param optionsManager The options specified
-    * @param dut                    The device under test
-    * @return                       An execution result with useful stuff, or failure with message
-    */
-  def execute(
-      optionsManager: ExecutionOptionsManager with HasChiselExecutionOptions with HasFirrtlOptions,
-      dut: () => RawModule): ChiselExecutionResult = {
-    val circuit = elaborate(dut)
+  def execute(args: Array[String], initAnnos: AnnotationSeq): ChiselExecutionResult = {
+    /* ChiselCircuitAnnotation cannot be JSON serialized, so it is treated
+     * specially */
 
-    // this little hack let's us set the topName with the circuit name if it has not been set from args
-    optionsManager.setTopNameIfNotSet(circuit.name)
+    val annosPostElaboration = optionsManager.parse(args, initAnnos).flatMap {
+      case a: ChiselDutGeneratorAnnotation => a.elaborate
+      case a                               => Seq(a)
+    }
 
-    val firrtlOptions = optionsManager.firrtlOptions
-    val chiselOptions = optionsManager.chiselOptions
+    val chiselOptions = view[ChiselExecutionOptions](annosPostElaboration).getOrElse{
+      throw new Exception("Unable to parse Chisel options") }
 
-    val firrtlCircuit = Converter.convert(circuit)
+    val annosPostConversion = annosPostElaboration.flatMap {
+      case a: ChiselCircuitAnnotation => a.convert
+      case a                          => Seq(a)
+    }
 
-    // Still emit to leave an artifact (and because this always has been the behavior)
-    val firrtlString = Driver.emit(circuit)
-    val firrtlFileName = firrtlOptions.getInputFileName(optionsManager)
-    val firrtlFile = new File(firrtlFileName)
+    val firrtlOptions = view[FirrtlExecutionOptions](annosPostConversion).getOrElse{
+      throw new Exception("Unable to parse Firrtl options") }
 
-    val w = new FileWriter(firrtlFile)
-    w.write(firrtlString)
-    w.close()
+    val firrtlString = firrtlOptions.firrtlCircuit.get.serialize
+    if (chiselOptions.saveChirrtl) {
+      val w = new FileWriter(new File(firrtlOptions.getInputFileName))
+      w.write(firrtlString)
+      w.close()
+    }
 
-    // Emit the annotations because it has always been the behavior
-    val annotationFile = new File(optionsManager.getBuildFileName("anno.json"))
-    val af = new FileWriter(annotationFile)
-    val firrtlAnnos = circuit.annotations.map(_.toFirrtl)
-    af.write(JsonProtocol.serialize(firrtlAnnos))
-    af.close()
-
-    /** Find the set of transform classes associated with annotations then
-      * instantiate an instance of each transform
-      * @note Annotations targeting firrtl.Transform will not result in any
-      *   transform being instantiated
-      */
-    val transforms = circuit.annotations
-                       .collect { case anno: RunFirrtlTransform => anno.transformClass }
-                       .distinct
-                       .filterNot(_ == classOf[firrtl.Transform])
-                       .map { transformClass: Class[_ <: Transform] =>
-                         transformClass.newInstance()
-                       }
-    /* This passes the firrtl source and annotations directly to firrtl */
-    optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(
-      firrtlCircuit = Some(firrtlCircuit),
-      annotations = optionsManager.firrtlOptions.annotations ++ firrtlAnnos,
-      customTransforms = optionsManager.firrtlOptions.customTransforms ++ transforms.toList)
+    if (chiselOptions.saveAnnotations) {
+      val f = new File(firrtlOptions.getBuildFileName("anno.json"))
+      val w = new FileWriter(f)
+      w.write(JsonProtocol.serialize(annosPostConversion))
+      w.close()
+    }
 
     val firrtlExecutionResult = if(chiselOptions.runFirrtlCompiler) {
-      Some(firrtl.Driver.execute(optionsManager))
-    }
-    else {
+      Some(firrtl.Driver.execute(Array.empty, annosPostConversion))
+    } else {
       None
     }
-    ChiselExecutionSuccess(Some(circuit), firrtlString, firrtlExecutionResult)
+    ChiselExecutionSuccess(chiselOptions.chiselCircuit, firrtlString, firrtlExecutionResult)
   }
 
   /**
     * Run the chisel3 compiler and possibly the firrtl compiler with options specified via an array of Strings
- *
-    * @param args   The options specified, command line style
-    * @param dut    The device under test
-    * @return       An execution result with useful stuff, or failure with message
-    */
-  def execute(args: Array[String], dut: () => RawModule): ChiselExecutionResult = {
-    val optionsManager = new ExecutionOptionsManager("chisel3") with HasChiselExecutionOptions with HasFirrtlOptions
-
-    optionsManager.parse(args) match {
-      case true =>
-        execute(optionsManager, dut)
-      case _ =>
-        ChiselExecutionFailure("could not parse results")
-    }
-  }
-
-  /**
-    * This is just here as command line way to see what the options are
-    * It will not successfully run
-    * TODO: Look into dynamic class loading as way to make this main useful
     *
-    * @param args unused args
+    * @param args The options specified, command line style
+    * @param dut The device under test
+    * @param initAnnos Initial annotations (an alternative to args)
+    * @return An execution result with useful stuff, or failure with message
     */
-  def main(args: Array[String]) {
-    execute(Array("--help"), null)
-  }
+  def execute(args: Array[String], dut: () => RawModule, initAnnos: AnnotationSeq = Seq.empty): ChiselExecutionResult =
+    execute(args, ChiselDutGeneratorAnnotation(dut) +: initAnnos)
 
   val version = BuildInfo.version
   val chiselVersionString = BuildInfo.toString

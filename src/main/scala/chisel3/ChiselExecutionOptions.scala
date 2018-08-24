@@ -2,33 +2,73 @@
 
 package chisel3
 
-import firrtl.{ExecutionOptionsManager, ComposableOptions}
+import firrtl.AnnotationSeq
+import firrtl.annotations.Annotation
+import firrtl.options.{ExecutionOptionsManager, OptionsView, Viewer}
+import chisel3.internal.firrtl.Circuit
 
-//TODO: provide support for running firrtl as separate process, could alternatively be controlled by external driver
-//TODO: provide option for not saving chirrtl file, instead calling firrtl with in memory chirrtl
-/**
-  * Options that are specific to chisel.
+class ChiselOptionsException(msg: String) extends ChiselException(msg, null)
+
+// TODO: provide support for running firrtl as separate process, could
+//       alternatively be controlled by external driver
+/** Options that control the execution of the Chisel compiler
   *
-  * @param runFirrtlCompiler when true just run chisel, when false run chisel then compile its output with firrtl
-  * @note this extends FirrtlExecutionOptions which extends CommonOptions providing easy access to down chain options
+  * @param runFirrtlCompiler run the FIRRTL compiler if true
+  * @param saveChirrtl save CHIRRTL output to a file if true
+  * @param saveAnnotations save CHIRRTL-time annotations to a file if true
+  * @param chiselCircuit a Chisel circuit
   */
-case class ChiselExecutionOptions(
-                                   runFirrtlCompiler: Boolean = true
-                                   // var runFirrtlAsProcess: Boolean = false
-                                 ) extends ComposableOptions
+case class ChiselExecutionOptions (
+  runFirrtlCompiler: Boolean     = true,
+  saveChirrtl: Boolean           = true,
+  saveAnnotations: Boolean       = true,
+  chiselCircuit: Option[Circuit] = None
+)
 
-trait HasChiselExecutionOptions {
-  self: ExecutionOptionsManager =>
-
-  var chiselOptions = ChiselExecutionOptions()
-
-  parser.note("chisel3 options")
-
-  parser.opt[Unit]("no-run-firrtl")
-    .abbr("chnrf")
-    .foreach { _ =>
-      chiselOptions = chiselOptions.copy(runFirrtlCompiler = false)
+object ChiselViewer {
+  implicit object ChiselOptionsView extends OptionsView[ChiselExecutionOptions] {
+    def checkAnnotations(annos: AnnotationSeq): AnnotationSeq = {
+      val c = collection.mutable.ListBuffer[Annotation]()
+      annos.foreach{
+        case a: ChiselCircuitAnnotation => c += a
+        case _                          =>
+      }
+      if (c.isEmpty) {
+        throw new ChiselOptionsException("No Chisel circuit specified via ChiselCircuitAnnotation or --dut") }
+      if (c.size > 1) {
+        throw new ChiselOptionsException(
+          "Only one Chisel circuit can be specified but found multiple ChiselCircuitAnnotation or --dut arguments") }
+      annos
     }
-    .text("Stop after chisel emits chirrtl file")
+
+    def view(options: AnnotationSeq): Option[ChiselExecutionOptions] = {
+      val annotationTransforms = Seq(checkAnnotations(_))
+
+      val preprocessedAnnotations = annotationTransforms.foldLeft(options)( (old, tx) => tx(old) )
+
+      val (chiselAnnos, nonChiselAnnos) = preprocessedAnnotations.partition {
+        case opt: ChiselOption => true
+        case _                 => false }
+
+      val x = chiselAnnos
+        .foldLeft(ChiselExecutionOptions())(
+          (c, x) => x match {
+            case NoRunFirrtlAnnotation           => c.copy(runFirrtlCompiler = false)
+            case DontSaveChirrtlAnnotation       => c.copy(saveChirrtl       = false)
+            case DontSaveAnnotationsAnnotation   => c.copy(saveAnnotations   = false)
+            case a: ChiselCircuitAnnotation      => c.copy(chiselCircuit     = Some(a.circuit)) })
+      Some(x)
+    }
+  }
 }
 
+trait HasChiselExecutionOptions { this: ExecutionOptionsManager =>
+  parser.note("Chisel Options")
+
+  // [todo] This could be handled with reflection via knownDirectSubclasses
+  Seq( NoRunFirrtlAnnotation,
+       DontSaveChirrtlAnnotation,
+       DontSaveAnnotationsAnnotation,
+       ChiselCircuitAnnotation() )
+    .map(_.addOptions(parser))
+}
