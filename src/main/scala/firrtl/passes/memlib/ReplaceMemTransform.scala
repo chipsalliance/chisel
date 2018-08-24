@@ -6,6 +6,7 @@ package memlib
 import firrtl._
 import firrtl.ir._
 import firrtl.annotations._
+import firrtl.options.HasScoptOptions
 import AnalysisUtils._
 import Utils.error
 import java.io.{File, CharArrayWriter, PrintWriter}
@@ -105,9 +106,19 @@ class SimpleTransform(p: Pass, form: CircuitForm) extends Transform {
 class SimpleMidTransform(p: Pass) extends SimpleTransform(p, MidForm)
 
 // SimpleRun instead of PassBased because of the arguments to passSeq
-class ReplSeqMem extends Transform {
+class ReplSeqMem extends Transform with HasScoptOptions {
   def inputForm = MidForm
   def outputForm = MidForm
+
+  def addOptions(parser: OptionParser[AnnotationSeq]): Unit = parser
+    .opt[String]("repl-seq-mem")
+    .abbr("frsq")
+    .valueName ("-c:<circuit>:-i:<filename>:-o:<filename>")
+    .action( (x, c) => c ++ Seq(passes.memlib.ReplSeqMemAnnotation.parse(x),
+                                RunFirrtlTransformAnnotation(new ReplSeqMem)) )
+    .maxOccurs(1)
+    .text("Replace sequential memories with blackboxes + configuration file")
+
   def transforms(inConfigFile: Option[YamlFileReader], outConfigFile: ConfWriter): Seq[Transform] =
     Seq(new SimpleMidTransform(Legalize),
         new SimpleMidTransform(ToMemIR),
