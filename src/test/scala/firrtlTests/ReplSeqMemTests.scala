@@ -264,6 +264,61 @@ circuit CustomMemory :
     (new java.io.File(confLoc)).delete()
   }
 
+  "ReplSeqMem" should "dedup mems with the same instance name as other mems (in other modules) marked NoDedup" in {
+    val input = """
+circuit CustomMemory :
+  module ChildMemory :
+    input clock : Clock
+    input reset : UInt<1>
+    output io : {flip rClk : Clock, flip rAddr : UInt<3>, dO : UInt<16>, flip wClk : Clock, flip wAddr : UInt<3>, flip wEn : UInt<1>, flip dI : UInt<16>}
+
+    smem mem_0 : UInt<16>[7]
+    read mport r1 = mem_0[io.rAddr], clock
+    io.dO <= r1
+    when io.wEn :
+      write mport w1 = mem_0[io.wAddr], clock
+      w1 <= io.dI
+
+  module CustomMemory :
+    input clock : Clock
+    input reset : UInt<1>
+    output io : {flip rClk : Clock, flip rAddr : UInt<3>, dO : UInt<16>, flip wClk : Clock, flip wAddr : UInt<3>, flip wEn : UInt<1>, flip dI : UInt<16>}
+
+    inst child of ChildMemory
+    child.clock <= clock
+    child.reset <= reset
+    io <- child.io
+
+    smem mem_0 : UInt<16>[7]
+    smem mem_1 : UInt<16>[7]
+    read mport r1 = mem_0[io.rAddr], clock
+    read mport r2 = mem_1[io.rAddr], clock
+    io.dO <= and(r1, and(r2, child.io.dO))
+    when io.wEn :
+      write mport w1 = mem_0[io.wAddr], clock
+      write mport w2 = mem_1[io.wAddr], clock
+      w1 <= io.dI
+      w2 <= io.dI
+"""
+    val confLoc = "ReplSeqMemTests.confTEMP"
+    val annos = Seq(
+      ReplSeqMemAnnotation.parse("-c:CustomMemory:-o:"+confLoc),
+      NoDedupMemAnnotation(ComponentName("mem_0", ModuleName("ChildMemory",CircuitName("CustomMemory")))))
+    val res = compileAndEmit(CircuitState(parse(input), ChirrtlForm, annos))
+    // Check correctness of firrtl
+    val circuit = parse(res.getEmittedCircuit.value)
+    val numExtMods = circuit.modules.count {
+      case e: ExtModule =>  true
+      case _ => false
+    }
+    // Note that there are 3 identical SeqMems in this test
+    // If the NoDedupMemAnnotation were ignored, we'd end up with just 1 ExtModule
+    // If the NoDedupMemAnnotation were handled incorrectly as it was prior to this test, there
+    //   would be 3 ExtModules
+    numExtMods should be (2)
+    (new java.io.File(confLoc)).delete()
+  }
+
   "ReplSeqMem" should "de-duplicate memories without an annotation " in {
     val input = """
 circuit CustomMemory :
