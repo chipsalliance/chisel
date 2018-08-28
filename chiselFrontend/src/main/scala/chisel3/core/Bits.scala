@@ -1277,7 +1277,17 @@ object FixedPoint {
 
 //scalastyle:off number.of.methods
 /**
-  * A sealed class representing a fixed point number that has a bit width and a binary point
+  * A sealed class representing a fixed point number that has a range, an additional
+  * parameter that can determine a minimum and maximum supported value.
+  * The range can be used to reduce the required widths particularly in primitive
+  * operations with other Intervals, the canonical example being
+  * {{{
+  *   val one = 1.I
+  *   val six = Seq.fill(6)(one).reduce(_ + _)
+  * }}}
+  * A UInt computed in this way would require
+  * a [[width]]
+  * binary point
   * The width and binary point may be inferred.
   *
   * IMPORTANT: The API provided here is experimental and may change in the future.
@@ -1334,7 +1344,7 @@ sealed class Interval private (width: Width, val range: chisel3.internal.firrtl.
   def binaryPoint: BinaryPoint = range.binaryPoint
 
   override def connect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = that match {
-    case _: Interval => super.connect(that)
+    case _: Interval|DontCare => super.connect(that)
     case _ => this badConnect that
   }
 
@@ -1469,6 +1479,11 @@ sealed class Interval private (width: Width, val range: chisel3.internal.firrtl.
     binop(sourceInfo, Interval(this.width, newRange), DynamicShiftRightOp, that)
   }
 
+  /**
+    * Wrap the value of this [[Interval]] based on the @param that Interval with a presumably smaller range.
+    * @param that
+    * @return
+    */
   final def wrap(that: Interval): Interval = macro SourceInfoTransform.thatArg
   // TODO: (chick) port correct firrtl constraints (requires 2^x)
   def do_wrap(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
@@ -1528,7 +1543,13 @@ sealed class Interval private (width: Width, val range: chisel3.internal.firrtl.
 
   final def wrap(that: IntervalRange): Interval = macro SourceInfoTransform.thatArg
   def do_wrap(that: IntervalRange)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
-    do_wrap(Wire(Interval(that)))
+    do_wrap(Wire(getDontCareWireFromRange(that)))
+  }
+
+  private def getDontCareWireFromRange(intervalRange: IntervalRange): Interval = {
+    val wireFromRange = Wire(Interval(intervalRange))
+    wireFromRange := DontCare
+    wireFromRange
   }
 
   final def clip(that: Interval): Interval = macro SourceInfoTransform.thatArg
@@ -1557,7 +1578,7 @@ sealed class Interval private (width: Width, val range: chisel3.internal.firrtl.
 
   final def clip(that: IntervalRange): Interval = macro SourceInfoTransform.thatArg
   def do_clip(that: IntervalRange)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
-    do_clip(Wire(Interval(that)))
+    do_clip(getDontCareWireFromRange(that))
   }
 
   override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
@@ -1579,13 +1600,13 @@ sealed class Interval private (width: Width, val range: chisel3.internal.firrtl.
     }
   }
 
-  // TODO: (chick) INVALID -- not enough args
+  // TODO: intervals chick INVALID -- not enough args
   def do_asInterval(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
     pushOp(DefPrim(sourceInfo, Interval(this.width, this.range), AsIntervalOp, ref))
     throwException("asInterval INVALID")
   }
 
-  // TODO: (chick) looks like this is wrong and only for FP?
+  // TODO: intervals chick looks like this is wrong and only for FP?
   def do_fromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type = {
     /*val res = Wire(this, null).asInstanceOf[this.type]
     res := (that match {
@@ -1600,7 +1621,7 @@ sealed class Interval private (width: Width, val range: chisel3.internal.firrtl.
       (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) {
     this := that.asInterval(this.binaryPoint, this.range)
   }
-  //TODO(chick): Consider "convert" as an arithmetic conversion to UInt/SInt
+  //TODO intervals chick Consider "convert" as an arithmetic conversion to UInt/SInt
 }
 
 /**
@@ -1679,24 +1700,6 @@ object Interval {
       toBigInt(value, binaryPoint), width = width, binaryPoint = binaryPoint
     )
   }
-
-//  def apply(value: BigInt, width: Width, binaryPoint: BinaryPoint): Interval = {
-//    // TODO: (chick) Fundamental problem with the way IntervalLits are implemented in Chisel --
-//    // You need to perform an "asInterval" at some point, which requires conversion from double to
-//    // BigInt representation
-//    binaryPoint match {
-//      case KnownBinaryPoint(bp) =>
-//      case _ => throw new Exception("Lit bp must be known!")
-//    }
-//    // Double already converted to BigInt by multiplying up
-//    val lit = IntervalLit(value, width, binaryPoint)
-//    val range = IntervalRange(
-//        Closed(BigDecimal(value) / BigDecimal(BigInt(1) << binaryPoint.get)),
-//        Closed(BigDecimal(value) / BigDecimal(BigInt(1) << binaryPoint.get)),
-//        IntervalRange.getBinaryPoint(binaryPoint)
-//    )
-//    new Interval(lit.width, range, Some(lit))
-//  }
 
   protected[chisel3] def Lit(value: BigInt, width: Width, binaryPoint: BinaryPoint): Interval = {
     val lit = IntervalLit(value, width, binaryPoint)

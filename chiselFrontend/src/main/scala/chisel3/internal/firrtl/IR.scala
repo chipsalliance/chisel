@@ -116,11 +116,11 @@ case class FPLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends LitArg(n
   }
   def minWidth: Int = 1 + n.bitLength
 }
-//TODO (chick) How to output this as unknown width
+
 case class IntervalLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends LitArg(n, w) {
   def name: String = {
     val unsigned = if (n < 0) (BigInt(1) << width.get) + n else n
-    s"asInterval(${ULit(unsigned, width).name}, $minWidth, $minWidth, ${binaryPoint.asInstanceOf[KnownBinaryPoint].value})"
+    s"asInterval(${ULit(unsigned, width).name}, ${n}, ${n}, ${binaryPoint.asInstanceOf[KnownBinaryPoint].value})"
   }
   val range: IntervalRange = {
     new IntervalRange(IntervalRange.getBound(isClosed = true, BigDecimal(n)),
@@ -301,22 +301,24 @@ sealed class IntervalRange(
     }
   }
 
-  private def shiftRight(bound: firrtlir.Bound, n: Int): firrtlir.Bound = {
+  private def shiftRight(bound: firrtlir.Bound, n: Int, binaryPoint: BinaryPoint): firrtlir.Bound = {
     if(n < 1 ) {
       bound
     }
     else {
+      // TODO intervals chick -- can add bp info (if known); see firrtl primops
       // Because of loss of significant digits, range changes too BUT to figure that out, you need to know BP
-      // TODO: (chick) -- can add bp info (if known); see firrtl primops
-      /*
-      val divisor = 1 << n
-      bound match {
-        case firrtlir.Open(x) => firrtlir.Open(x / divisor)
-        case firrtlir.Closed(x) => firrtlir.Closed(x / divisor)
-        case _ => bound
+      binaryPoint match {
+        case UnknownBinaryPoint => firrtlir.UnknownBound
+        case KnownBinaryPoint(value) =>
+          val divisor = 1 << n
+          bound match {
+            case firrtlir.Open(x)   => firrtlir.Open(x / divisor)
+            case firrtlir.Closed(x) => firrtlir.Closed(x / divisor)
+            case _ => bound
+          }
       }
-      */
-      firrtlir.UnknownBound
+
     }
   }
 
@@ -330,8 +332,8 @@ sealed class IntervalRange(
 
   override def >>(that: Int): IntervalRange = {
     IntervalRange(
-      shiftRight(lowerBound, that),
-      shiftRight(upperBound, that),
+      shiftRight(lowerBound, that, binaryPoint),
+      shiftRight(upperBound, that, binaryPoint),
       binaryPoint
     )
   }

@@ -75,7 +75,7 @@ class RangeSpec extends FreeSpec with Matchers {
       SInt(range"[0, 8)").getWidth should be (4)
       SInt(range"[0, 8]").getWidth should be (5)
       SInt(range"[-4, 4)").getWidth should be (3)
-      SInt(range"[0, 0]").getWidth should be (0)
+      SInt(range"[0, 0]").getWidth should be (1)
     }
 
     "Range should be left shiftable" in {
