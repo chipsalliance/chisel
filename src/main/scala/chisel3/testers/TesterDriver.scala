@@ -37,7 +37,7 @@ object TesterDriver extends BackendCompilationUtilities {
     // To that end, we need to minimize the amount of file name mangling we do.
     val additionalVFiles = additionalVResources.map((name: String) => {
       // Don't convert a leading '/' to an '_'. Just skip the leading '/'.
-      val nameWithoutLeadingSlash = if (name(0) == '/') name.substring(1) else name
+      val nameWithoutLeadingSlash = name.stripPrefix("/")
       val mangledResourceName = nameWithoutLeadingSlash.replace("/", "_")
       val out = new File(path, mangledResourceName)
       copyResourceToFile(name, out)
