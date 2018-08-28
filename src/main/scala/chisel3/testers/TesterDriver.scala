@@ -31,8 +31,14 @@ object TesterDriver extends BackendCompilationUtilities {
     // Copy CPP harness and other Verilog sources from resources into files
     val cppHarness =  new File(path, "top.cpp")
     copyResourceToFile("/chisel3/top.cpp", cppHarness)
+    // NOTE: firrtl.Driver.execute() may end up copying these same resources in its BlackBoxSourceHelper code.
+    // As long as the same names are used for the output files, and we avoid including duplicate files
+    //  in BackendCompilationUtilities.verilogToCpp(), we should be okay.
+    // To that end, we need to minimize the amount of file name mangling we do.
     val additionalVFiles = additionalVResources.map((name: String) => {
-      val mangledResourceName = name.replace("/", "_")
+      // Don't convert a leading '/' to an '_'. Just skip the leading '/'.
+      val nameWithoutLeadingSlash = if (name(0) == '/') name.substring(1) else name
+      val mangledResourceName = nameWithoutLeadingSlash.replace("/", "_")
       val out = new File(path, mangledResourceName)
       copyResourceToFile(name, out)
       out
