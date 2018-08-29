@@ -209,7 +209,7 @@ extends ComposableOptions {
       case "low"       => new LowFirrtlCompiler()
       case "middle"    => new MiddleFirrtlCompiler()
       case "verilog"   => new VerilogCompiler()
-      case "sverilog"  => new VerilogCompiler()
+      case "sverilog"  => new SystemVerilogCompiler()
     }
   }
 
