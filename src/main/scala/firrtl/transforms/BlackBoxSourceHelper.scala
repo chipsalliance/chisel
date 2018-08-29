@@ -70,12 +70,7 @@ class BlackBoxSourceHelper extends firrtl.Transform {
 
     val resourceFiles: ListSet[File] = annos.collect {
       case BlackBoxResourceAnno(_, resourceId) =>
-        val name = resourceId.split("/").last
-        val outFile = new File(targetDir, name)
-        (resourceId, outFile)
-    }.map { case (res, file) =>
-      BlackBoxSourceHelper.copyResourceToFile(res, file)
-      file
+        BlackBoxSourceHelper.writeResourceToDirectory(resourceId, targetDir)
     }
 
     val inlineFiles: ListSet[File] = annos.collect {
@@ -97,6 +92,19 @@ object BlackBoxSourceHelper {
   /**
     * finds the named resource and writes into the directory
     * @param name the name of the resource
+    * @param dir the directory in which to write the file
+    * @return the closed File object
+    */
+  def writeResourceToDirectory(name: String, dir: File): File = {
+    val fileName = name.split("/").last
+    val outFile = new File(dir, fileName)
+    copyResourceToFile(name, outFile)
+    outFile
+  }
+
+  /**
+    * finds the named resource and writes into the directory
+    * @param name the name of the resource
     * @param file the file to write it into
     */
   def copyResourceToFile(name: String, file: File) {
@@ -113,11 +121,13 @@ object BlackBoxSourceHelper {
 
   def writeFileList(files: ListSet[File], targetDir: File) {
     if (files.nonEmpty) {
-      // We need the absolute path here (or strip targetDir from the file path),
-      //  so verilator will create a path to the file that works from the targetDir.
-      //  Otherwise, when make tries to determine dependencies based on the *__ver.d file, we end up with errors like:
-      //    make[1]: *** No rule to make target `test_run_dir/examples.AccumBlackBox_PeekPokeTest_Verilator345491158/AccumBlackBox.v', needed by `.../chisel-testers/test_run_dir/examples.AccumBlackBox_PeekPokeTest_Verilator345491158/VAccumBlackBoxWrapper.h'.  Stop.
-      writeTextToFile(files.map(_.getAbsolutePath).mkString("\n"), new File(targetDir, fileListName))
+      // We need the canonical path here, so verilator will create a path to the file that works from the targetDir,
+      //  and, so we can compare the list of files automatically included, with an explicit list provided by the client
+      //  and reject duplicates.
+      // If the path isn't canonical, when make tries to determine dependencies based on the *__ver.d file, we end up with errors like:
+      //  make[1]: *** No rule to make target `test_run_dir/examples.AccumBlackBox_PeekPokeTest_Verilator345491158/AccumBlackBox.v', needed by `.../chisel-testers/test_run_dir/examples.AccumBlackBox_PeekPokeTest_Verilator345491158/VAccumBlackBoxWrapper.h'.  Stop.
+      //  or we end up including the same file multiple times.
+      writeTextToFile(files.map(_.getCanonicalPath).mkString("\n"), new File(targetDir, fileListName))
     }
   }
 

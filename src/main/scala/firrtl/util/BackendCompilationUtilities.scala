@@ -21,7 +21,10 @@ trait BackendCompilationUtilities {
     format.format(now)
   }
 
-  /** Copy the contents of a resource to a destination file.
+  /**
+    * Copy the contents of a resource to a destination file.
+    * @param name the name of the resource
+    * @param file the file to write it into
     */
   def copyResourceToFile(name: String, file: File) {
     val in = getClass.getResourceAsStream(name)
@@ -79,6 +82,12 @@ trait BackendCompilationUtilities {
     * all the files which are not included elsewhere. If multiple ones exist,
     * the compilation will fail.
     *
+    * If the file BlackBoxSourceHelper.fileListName exists in the output directory,
+    * it contains a list of source files to be included. Filter out any files in the vSources
+    * sequence that are in this file so we don't include the same file multiple times.
+    * This complication is an attempt to work-around the fact that clients used to have to
+    * explicitly include additional Verilog sources. Now, more of that is automatic.
+    *
     * @param dutFile name of the DUT .v without the .v extension
     * @param dir output directory
     * @param vSources list of additional Verilog sources to compile
@@ -94,8 +103,8 @@ trait BackendCompilationUtilities {
 
     val topModule = dutFile
 
+    val list_file = new File(dir, firrtl.transforms.BlackBoxSourceHelper.fileListName)
     val blackBoxVerilogList = {
-      val list_file = new File(dir, firrtl.transforms.BlackBoxSourceHelper.fileListName)
       if(list_file.exists()) {
         Seq("-f", list_file.getAbsolutePath)
       }
@@ -104,12 +113,24 @@ trait BackendCompilationUtilities {
       }
     }
 
+    // Don't include the same file multiple times.
+    // If it's in BlackBoxSourceHelper.fileListName, don't explicitly include it on the command line.
+    // Build a set of canonical file paths to use as a filter to exclude already included additional Verilog sources.
+    val blackBoxHelperFiles: Set[String] = {
+      if(list_file.exists()) {
+        io.Source.fromFile(list_file).getLines.toSet
+      }
+      else {
+        Set.empty
+      }
+    }
+    val vSourcesFiltered = vSources.filterNot(f => blackBoxHelperFiles.contains(f.getCanonicalPath))
     val command = Seq(
       "verilator",
       "--cc", s"${dir.getAbsolutePath}/$dutFile.v"
     ) ++
       blackBoxVerilogList ++
-      vSources.flatMap(file => Seq("-v", file.getAbsolutePath)) ++
+      vSourcesFiltered.flatMap(file => Seq("-v", file.getCanonicalPath)) ++
       Seq("--assert",
         "-Wno-fatal",
         "-Wno-WIDTH",
