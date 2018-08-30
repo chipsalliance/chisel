@@ -145,7 +145,7 @@ class MultiClockSpec extends ChiselFlatSpec {
   it should "support literal Bools" in {
     assertTesterPasses(new BasicTester {
       val reg = withReset(true.B) {
-        RegInit(6.U)
+        RegInit(6.U(3.W))
       }
       reg := reg - 1.U
       // The reg is always in reset so will never decrement

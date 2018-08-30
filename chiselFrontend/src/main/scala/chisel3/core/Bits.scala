@@ -1543,13 +1543,9 @@ sealed class Interval private (width: Width, val range: chisel3.internal.firrtl.
 
   final def wrap(that: IntervalRange): Interval = macro SourceInfoTransform.thatArg
   def do_wrap(that: IntervalRange)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
-    do_wrap(Wire(getDontCareWireFromRange(that)))
-  }
-
-  private def getDontCareWireFromRange(intervalRange: IntervalRange): Interval = {
-    val wireFromRange = Wire(Interval(intervalRange))
+    val wireFromRange = Wire(Interval(that))
     wireFromRange := DontCare
-    wireFromRange
+    do_wrap(wireFromRange)
   }
 
   final def clip(that: Interval): Interval = macro SourceInfoTransform.thatArg
@@ -1562,8 +1558,6 @@ sealed class Interval private (width: Width, val range: chisel3.internal.firrtl.
     require(that.widthKnown, "UInt clip width must be known")
     val u = BigDecimal(BigInt(1) << that.getWidth) - 1
     do_clip(Wire(Interval(IntervalRange(Closed(0), Closed(u), BinaryPoint(0)))))
-    // TODO: (chick) Can this be done w/o known width?
-    //binop(sourceInfo, TypePropagate(_root_.firrtl.PrimOps.Clip, Seq(this, that), Nil), ClipOp, that)
   }
 
   final def clip(that: SInt): Interval = macro SourceInfoTransform.thatArg
@@ -1573,12 +1567,14 @@ sealed class Interval private (width: Width, val range: chisel3.internal.firrtl.
     val l = -BigDecimal(BigInt(1) << (that.getWidth - 1))
     val u = BigDecimal(BigInt(1) << (that.getWidth - 1)) - 1
     do_clip(Wire(Interval(IntervalRange(Closed(l), Closed(u), BinaryPoint(0)))))
-    //binop(sourceInfo, TypePropagate(_root_.firrtl.PrimOps.Clip, Seq(this, that), Nil), ClipOp, that)
   }
 
   final def clip(that: IntervalRange): Interval = macro SourceInfoTransform.thatArg
   def do_clip(that: IntervalRange)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
-    do_clip(getDontCareWireFromRange(that))
+    val wireFromRange = Wire(Interval(that))
+    wireFromRange := DontCare
+    do_clip(wireFromRange)
+//    do_clip(getDontCareWireFromRange(that))
   }
 
   override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {

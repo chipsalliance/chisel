@@ -18,7 +18,7 @@ class CountTester(max: Int) extends BasicTester {
 }
 
 class EnableTester(seed: Int) extends BasicTester {
-  val ens = RegInit(seed.asUInt)
+  val ens = RegInit(seed.U(log2Up(seed+1).W))
   ens := ens >> 1
 
   val (cntEnVal, _) = Counter(ens(0), 32)
