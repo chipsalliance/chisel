@@ -319,6 +319,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
     * Gets a reference to a verilog renderer. This is used by the current standard verilog emission process
     * but allows access to individual portions, in particular, this function can be used to generate
     * the header for a verilog file without generating anything else.
+    *
     * @param m         the start module
     * @param moduleMap a way of finding other modules
     * @param writer    where rendering will be placed
@@ -329,14 +330,46 @@ class VerilogEmitter extends SeqTransform with Emitter {
   }
 
   /**
+    * Gets a reference to a verilog renderer. This is used by the current standard verilog emission process
+    * but allows access to individual portions, in particular, this function can be used to generate
+    * the header for a verilog file without generating anything else.
+    *
+    * @param descriptions comments to be emitted
+    * @param m            the start module
+    * @param moduleMap    a way of finding other modules
+    * @param writer       where rendering will be placed
+    * @return             the render reference
+    */
+  def getRenderer(descriptions: Seq[DescriptionAnnotation],
+    m: Module,
+    moduleMap: Map[String, DefModule])(implicit writer: Writer): VerilogRender = {
+    val newMod = new AddDescriptionNodes().executeModule(m, descriptions)
+
+    newMod match {
+      case DescribedMod(d, pds, m: Module) => new VerilogRender(d, pds, m, moduleMap)(writer)
+      case m: Module => new VerilogRender(m, moduleMap)(writer)
+    }
+  }
+
+  /**
     * Used by getRenderer, it has machinery to produce verilog from IR.
     * Making this a class allows access to particular parts of the verilog emission.
     *
-    * @param m         the start module
-    * @param moduleMap a map of modules so submodules can be discovered
-    * @param writer    where rendered information is placed.
+    * @param description      a description of the start module
+    * @param portDescriptions a map of port name to description
+    * @param m                the start module
+    * @param moduleMap        a map of modules so submodules can be discovered
+    * @param writer           where rendered information is placed.
     */
-  class VerilogRender(m: Module, moduleMap: Map[String, DefModule])(implicit writer: Writer) {
+  class VerilogRender(description: Description,
+    portDescriptions: Map[String, Description],
+    m: Module,
+    moduleMap: Map[String, DefModule])(implicit writer: Writer) {
+
+    def this(m: Module, moduleMap: Map[String, DefModule])(implicit writer: Writer) {
+      this(EmptyDescription, Map.empty, m, moduleMap)(writer)
+    }
+
     val netlist = mutable.LinkedHashMap[WrappedExpression, Expression]()
     val namespace = Namespace(m)
     namespace.newName("_RAND") // Start rand names at _RAND_0
@@ -484,6 +517,21 @@ class VerilogEmitter extends SeqTransform with Emitter {
       Seq("$fwrite(32'h80000002,", strx, ");")
     }
 
+    // turn strings into Seq[String] verilog comments
+    def build_comment(desc: String): Seq[Seq[String]] = {
+      val lines = desc.split("\n").toSeq
+
+      if (lines.size > 1) {
+        val lineSeqs = lines.tail.map {
+          case "" => Seq(" *")
+          case nonEmpty => Seq(" * ", nonEmpty)
+        }
+        Seq("/* ", lines.head) +: lineSeqs :+ Seq(" */")
+      } else {
+        Seq(Seq("// ", lines(0)))
+      }
+    }
+
     // Turn ports into Seq[String] and add to portdefs
     def build_ports(): Unit = {
       def padToMax(strs: Seq[String]): Seq[String] = {
@@ -506,133 +554,163 @@ class VerilogEmitter extends SeqTransform with Emitter {
       }
 
       // dirs are already padded
-      portdefs ++= (dirs, padToMax(tpes), m.ports).zipped.toSeq.zipWithIndex.map {
+      (dirs, padToMax(tpes), m.ports).zipped.toSeq.zipWithIndex.foreach {
         case ((dir, tpe, Port(info, name, _, _)), i) =>
-          if (i != m.ports.size - 1) Seq(dir, " ", tpe, " ", name, ",", info)
-          else Seq(dir, " ", tpe, " ", name, info)
+          portDescriptions.get(name) match {
+            case Some(DocString(s)) =>
+              portdefs += Seq("")
+              portdefs ++= build_comment(s.string)
+            case other =>
+          }
+
+          if (i != m.ports.size - 1) {
+            portdefs += Seq(dir, " ", tpe, " ", name, ",", info)
+          } else {
+            portdefs += Seq(dir, " ", tpe, " ", name, info)
+          }
       }
     }
 
-    def build_streams(s: Statement): Statement = s map build_streams match {
-      case sx@Connect(info, loc@WRef(_, _, PortKind | WireKind | InstanceKind, _), expr) =>
-        assign(loc, expr, info)
-        sx
-      case sx: DefWire =>
-        declare("wire", sx.name, sx.tpe, sx.info)
-        sx
-      case sx: DefRegister =>
-        declare("reg", sx.name, sx.tpe, sx.info)
-        val e = wref(sx.name, sx.tpe)
-        regUpdate(e, sx.clock)
-        initialize(e)
-        sx
-      case sx: DefNode =>
-        declare("wire", sx.name, sx.value.tpe, sx.info)
-        assign(WRef(sx.name, sx.value.tpe, NodeKind, MALE), sx.value, sx.info)
-        sx
-      case sx: Stop =>
-        simulate(sx.clk, sx.en, stop(sx.ret), Some("STOP_COND"), sx.info)
-        sx
-      case sx: Print =>
-        simulate(sx.clk, sx.en, printf(sx.string, sx.args), Some("PRINTF_COND"), sx.info)
-        sx
-      // If we are emitting an Attach, it must not have been removable in VerilogPrep
-      case sx: Attach =>
-        // For Synthesis
-        // Note that this is quadratic in the number of things attached
-        for (set <- sx.exprs.toSet.subsets(2)) {
-          val (a, b) = set.toSeq match {
-            case Seq(x, y) => (x, y)
+    def build_streams(s: Statement): Statement = {
+      val withoutDescription = s match {
+        case DescribedStmt(DocString(desc), stmt) =>
+          val comment = Seq("") +: build_comment(desc.string)
+          stmt match {
+            case sx: IsDeclaration =>
+              declares ++= comment
+            case sx =>
           }
-          // Synthesizable ones as well
-          attachSynAssigns += Seq("assign ", a, " = ", b, ";", sx.info)
-          attachSynAssigns += Seq("assign ", b, " = ", a, ";", sx.info)
-        }
-        // alias implementation for everything else
-        attachAliases += Seq("alias ", sx.exprs.flatMap(e => Seq(e, " = ")).init, ";", sx.info)
-        sx
-      case sx: WDefInstanceConnector =>
-        val (module, params) = moduleMap(sx.module) match {
-          case ExtModule(_, _, _, extname, params) => (extname, params)
-          case Module(_, name, _, _) => (name, Seq.empty)
-        }
-        val ps = if (params.nonEmpty) params map stringify mkString("#(", ", ", ") ") else ""
-        instdeclares += Seq(module, " ", ps, sx.name, " (", sx.info)
-        for (((port, ref), i) <- sx.portCons.zipWithIndex) {
-          val line = Seq(tab, ".", remove_root(port), "(", ref, ")")
-          if (i != sx.portCons.size - 1) instdeclares += Seq(line, ",")
-          else instdeclares += line
-        }
-        instdeclares += Seq(");")
-        sx
-      case sx: DefMemory =>
-        val fullSize = sx.depth * (sx.dataType match {
-          case GroundType(IntWidth(width)) => width
-        })
-        val decl = if (fullSize > (1 << 29)) "reg /* sparse */" else "reg"
-        declare(decl, sx.name, VectorType(sx.dataType, sx.depth), sx.info)
-        initialize_mem(sx)
-        if (sx.readLatency != 0 || sx.writeLatency != 1)
-          throw EmitterException("All memories should be transformed into " +
-            "blackboxes or combinational by previous passses")
-        for (r <- sx.readers) {
-          val data = memPortField(sx, r, "data")
-          val addr = memPortField(sx, r, "addr")
-          val en = memPortField(sx, r, "en")
-          // Ports should share an always@posedge, so can't have intermediary wire
-          val clk = netlist(memPortField(sx, r, "clk"))
+          stmt
+        case DescribedStmt(EmptyDescription, stmt) => stmt
+        case other => other
+      }
+      withoutDescription map build_streams match {
+        case sx@Connect(info, loc@WRef(_, _, PortKind | WireKind | InstanceKind, _), expr) =>
+          assign(loc, expr, info)
+          sx
+        case sx: DefWire =>
+          declare("wire", sx.name, sx.tpe, sx.info)
+          sx
+        case sx: DefRegister =>
+          declare("reg", sx.name, sx.tpe, sx.info)
+          val e = wref(sx.name, sx.tpe)
+          regUpdate(e, sx.clock)
+          initialize(e)
+          sx
+        case sx: DefNode =>
+          declare("wire", sx.name, sx.value.tpe, sx.info)
+          assign(WRef(sx.name, sx.value.tpe, NodeKind, MALE), sx.value, sx.info)
+          sx
+        case sx: Stop =>
+          simulate(sx.clk, sx.en, stop(sx.ret), Some("STOP_COND"), sx.info)
+          sx
+        case sx: Print =>
+          simulate(sx.clk, sx.en, printf(sx.string, sx.args), Some("PRINTF_COND"), sx.info)
+          sx
+        // If we are emitting an Attach, it must not have been removable in VerilogPrep
+        case sx: Attach =>
+          // For Synthesis
+          // Note that this is quadratic in the number of things attached
+          for (set <- sx.exprs.toSet.subsets(2)) {
+            val (a, b) = set.toSeq match {
+              case Seq(x, y) => (x, y)
+            }
+            // Synthesizable ones as well
+            attachSynAssigns += Seq("assign ", a, " = ", b, ";", sx.info)
+            attachSynAssigns += Seq("assign ", b, " = ", a, ";", sx.info)
+          }
+          // alias implementation for everything else
+          attachAliases += Seq("alias ", sx.exprs.flatMap(e => Seq(e, " = ")).init, ";", sx.info)
+          sx
+        case sx: WDefInstanceConnector =>
+          val (module, params) = moduleMap(sx.module) match {
+            case DescribedMod(_, _, ExtModule(_, _, _, extname, params)) => (extname, params)
+            case DescribedMod(_, _, Module(_, name, _, _)) => (name, Seq.empty)
+            case ExtModule(_, _, _, extname, params) => (extname, params)
+            case Module(_, name, _, _) => (name, Seq.empty)
+          }
+          val ps = if (params.nonEmpty) params map stringify mkString("#(", ", ", ") ") else ""
+          instdeclares += Seq(module, " ", ps, sx.name, " (", sx.info)
+          for (((port, ref), i) <- sx.portCons.zipWithIndex) {
+            val line = Seq(tab, ".", remove_root(port), "(", ref, ")")
+            if (i != sx.portCons.size - 1) instdeclares += Seq(line, ",")
+            else instdeclares += line
+          }
+          instdeclares += Seq(");")
+          sx
+        case sx: DefMemory =>
+          val fullSize = sx.depth * (sx.dataType match {
+            case GroundType(IntWidth(width)) => width
+          })
+          val decl = if (fullSize > (1 << 29)) "reg /* sparse */" else "reg"
+          declare(decl, sx.name, VectorType(sx.dataType, sx.depth), sx.info)
+          initialize_mem(sx)
+          if (sx.readLatency != 0 || sx.writeLatency != 1)
+            throw EmitterException("All memories should be transformed into " +
+              "blackboxes or combinational by previous passses")
+          for (r <- sx.readers) {
+            val data = memPortField(sx, r, "data")
+            val addr = memPortField(sx, r, "addr")
+            val en = memPortField(sx, r, "en")
+            // Ports should share an always@posedge, so can't have intermediary wire
+            val clk = netlist(memPortField(sx, r, "clk"))
 
-          declare("wire", LowerTypes.loweredName(data), data.tpe, sx.info)
-          declare("wire", LowerTypes.loweredName(addr), addr.tpe, sx.info)
-          // declare("wire", LowerTypes.loweredName(en), en.tpe)
+            declare("wire", LowerTypes.loweredName(data), data.tpe, sx.info)
+            declare("wire", LowerTypes.loweredName(addr), addr.tpe, sx.info)
+            // declare("wire", LowerTypes.loweredName(en), en.tpe)
 
-          //; Read port
-          assign(addr, netlist(addr), NoInfo) // Info should come from addr connection
-          // assign(en, netlist(en))     //;Connects value to m.r.en
-          val mem = WRef(sx.name, memType(sx), MemKind, UNKNOWNGENDER)
-          val memPort = WSubAccess(mem, addr, sx.dataType, UNKNOWNGENDER)
-          val depthValue = UIntLiteral(sx.depth, IntWidth(BigInt(sx.depth).bitLength))
-          val garbageGuard = DoPrim(Geq, Seq(addr, depthValue), Seq(), UnknownType)
+            //; Read port
+            assign(addr, netlist(addr), NoInfo) // Info should come from addr connection
+            // assign(en, netlist(en))     //;Connects value to m.r.en
+            val mem = WRef(sx.name, memType(sx), MemKind, UNKNOWNGENDER)
+            val memPort = WSubAccess(mem, addr, sx.dataType, UNKNOWNGENDER)
+            val depthValue = UIntLiteral(sx.depth, IntWidth(BigInt(sx.depth).bitLength))
+            val garbageGuard = DoPrim(Geq, Seq(addr, depthValue), Seq(), UnknownType)
 
-          if ((sx.depth & (sx.depth - 1)) == 0)
-            assign(data, memPort, sx.info)
-          else
-            garbageAssign(data, memPort, garbageGuard, sx.info)
-        }
+            if ((sx.depth & (sx.depth - 1)) == 0)
+              assign(data, memPort, sx.info)
+            else
+              garbageAssign(data, memPort, garbageGuard, sx.info)
+          }
 
-        for (w <- sx.writers) {
-          val data = memPortField(sx, w, "data")
-          val addr = memPortField(sx, w, "addr")
-          val mask = memPortField(sx, w, "mask")
-          val en = memPortField(sx, w, "en")
-          //Ports should share an always@posedge, so can't have intermediary wire
-          val clk = netlist(memPortField(sx, w, "clk"))
+          for (w <- sx.writers) {
+            val data = memPortField(sx, w, "data")
+            val addr = memPortField(sx, w, "addr")
+            val mask = memPortField(sx, w, "mask")
+            val en = memPortField(sx, w, "en")
+            //Ports should share an always@posedge, so can't have intermediary wire
+            val clk = netlist(memPortField(sx, w, "clk"))
 
-          declare("wire", LowerTypes.loweredName(data), data.tpe, sx.info)
-          declare("wire", LowerTypes.loweredName(addr), addr.tpe, sx.info)
-          declare("wire", LowerTypes.loweredName(mask), mask.tpe, sx.info)
-          declare("wire", LowerTypes.loweredName(en), en.tpe, sx.info)
+            declare("wire", LowerTypes.loweredName(data), data.tpe, sx.info)
+            declare("wire", LowerTypes.loweredName(addr), addr.tpe, sx.info)
+            declare("wire", LowerTypes.loweredName(mask), mask.tpe, sx.info)
+            declare("wire", LowerTypes.loweredName(en), en.tpe, sx.info)
 
-          // Write port
-          // Info should come from netlist
-          assign(data, netlist(data), NoInfo)
-          assign(addr, netlist(addr), NoInfo)
-          assign(mask, netlist(mask), NoInfo)
-          assign(en, netlist(en), NoInfo)
+            // Write port
+            // Info should come from netlist
+            assign(data, netlist(data), NoInfo)
+            assign(addr, netlist(addr), NoInfo)
+            assign(mask, netlist(mask), NoInfo)
+            assign(en, netlist(en), NoInfo)
 
-          val mem = WRef(sx.name, memType(sx), MemKind, UNKNOWNGENDER)
-          val memPort = WSubAccess(mem, addr, sx.dataType, UNKNOWNGENDER)
-          update(memPort, data, clk, AND(en, mask), sx.info)
-        }
+            val mem = WRef(sx.name, memType(sx), MemKind, UNKNOWNGENDER)
+            val memPort = WSubAccess(mem, addr, sx.dataType, UNKNOWNGENDER)
+            update(memPort, data, clk, AND(en, mask), sx.info)
+          }
 
-        if (sx.readwriters.nonEmpty)
-          throw EmitterException("All readwrite ports should be transformed into " +
-            "read & write ports by previous passes")
-        sx
-      case sx => sx
+          if (sx.readwriters.nonEmpty)
+            throw EmitterException("All readwrite ports should be transformed into " +
+              "read & write ports by previous passes")
+          sx
+        case sx => sx
+      }
     }
 
     def emit_streams() {
+      description match {
+        case DocString(s) => build_comment(s.string).foreach(emit(_))
+        case other =>
+      }
       emit(Seq("module ", m.name, "(", m.info))
       for (x <- portdefs) emit(Seq(tab, x))
       emit(Seq(");"))
@@ -721,6 +799,12 @@ class VerilogEmitter extends SeqTransform with Emitter {
     def emitVerilogBind(overrideName: String, body: String): DefModule = {
       build_netlist(m.body)
       build_ports()
+
+      description match {
+        case DocString(s) => build_comment(s.string).foreach(emit(_))
+        case other =>
+      }
+
       emit(Seq("module ", overrideName, "(", m.info))
       for (x <- portdefs) emit(Seq(tab, x))
 
@@ -729,7 +813,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
       emit(Seq("endmodule"), top = 0)
       m
     }
-   }
+  }
 
   /** Preamble for every emitted Verilog file */
   def transforms = Seq(
@@ -739,16 +823,20 @@ class VerilogEmitter extends SeqTransform with Emitter {
     new DeadCodeElimination,
     passes.VerilogModulusCleanup,
     passes.VerilogRename,
-    passes.VerilogPrep)
+    passes.VerilogPrep,
+    new AddDescriptionNodes)
 
   def emit(state: CircuitState, writer: Writer): Unit = {
     val circuit = runTransforms(state).circuit
     val moduleMap = circuit.modules.map(m => m.name -> m).toMap
     circuit.modules.foreach {
+      case dm @ DescribedMod(d, pds, m: Module) =>
+        val renderer = new VerilogRender(d, pds, m, moduleMap)(writer)
+        renderer.emit_verilog()
       case m: Module =>
         val renderer = new VerilogRender(m, moduleMap)(writer)
         renderer.emit_verilog()
-      case _: ExtModule => // do nothing
+      case _ => // do nothing
     }
   }
 
@@ -764,12 +852,17 @@ class VerilogEmitter extends SeqTransform with Emitter {
         val moduleMap = circuit.modules.map(m => m.name -> m).toMap
 
         circuit.modules flatMap {
+          case dm @ DescribedMod(d, pds, module: Module) =>
+            val writer = new java.io.StringWriter
+            val renderer = new VerilogRender(d, pds, module, moduleMap)(writer)
+            renderer.emit_verilog()
+            Some(EmittedVerilogModuleAnnotation(EmittedVerilogModule(module.name, writer.toString)))
           case module: Module =>
             val writer = new java.io.StringWriter
             val renderer = new VerilogRender(module, moduleMap)(writer)
             renderer.emit_verilog()
             Some(EmittedVerilogModuleAnnotation(EmittedVerilogModule(module.name, writer.toString)))
-          case _: ExtModule => None
+          case _ => None
         }
       case _ => Seq()
     }

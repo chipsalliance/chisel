@@ -331,7 +331,7 @@ object CompilerUtils extends LazyLogging {
   /** Generates a sequence of [[Transform]]s to lower a Firrtl circuit
     *
     * @param inputForm [[CircuitForm]] to lower from
-    * @param outputForm [[CircuitForm to lower to
+    * @param outputForm [[CircuitForm]] to lower to
     * @return Sequence of transforms that will lower if outputForm is lower than inputForm
     */
   def getLoweringTransforms(inputForm: CircuitForm, outputForm: CircuitForm): Seq[Transform] = {
