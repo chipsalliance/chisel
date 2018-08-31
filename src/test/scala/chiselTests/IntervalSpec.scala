@@ -301,18 +301,14 @@ class IntervalChainedMulTester extends BasicTester {
 
 //TODO intervals chick clean this up after firrtl issues resolved
 class IntervalChainedSubTester extends BasicTester {
-  //logger.Logger.setLevel(LogLevel.Info)
-
-//  val intervalResult = Wire(Interval())
   val intervalResult = Wire(Interval(KnownWidth(4), range"[0,32].0"))
-  val counter = RegInit(Interval(KnownWidth(4), range"[0,16].0"), 0.I())
 
+  val counter = RegInit(Interval(KnownWidth(4), range"[0,16].0"), 0.I())
   counter := counter + 1.I
 
   intervalResult := 17.I - counter
 
   printf("Interval result: %d\n", intervalResult.asSInt)
-  // assert(intervalResult === 15.I)
   when(counter.asUInt > 15.U) {
     stop()
   }
