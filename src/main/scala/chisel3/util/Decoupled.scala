@@ -6,24 +6,34 @@
 package chisel3.util
 
 import chisel3._
+import chisel3.experimental.{DataMirror, Direction, requireIsChiselType}
 import chisel3.internal.naming._  // can't use chisel3_ version because of compile order
 
 /** An I/O Bundle containing 'valid' and 'ready' signals that handshake
   * the transfer of data stored in the 'bits' subfield.
-  * The base protocol implied by the directionality is that the consumer
-  * uses the flipped interface. Actual semantics of ready/valid are
-  * enforced via use of concrete subclasses.
+  * The base protocol implied by the directionality is that
+  * the producer uses the interface as-is (outputs bits)
+  * while the consumer uses the flipped interface (inputs bits).
+  * The actual semantics of ready/valid are enforced via the use of concrete subclasses.
+  * @param gen the type of data to be wrapped in Ready/Valid
   */
 abstract class ReadyValidIO[+T <: Data](gen: T) extends Bundle
 {
+  // Compatibility hack for rocket-chip
+  private val genType = (DataMirror.internal.isSynthesizable(gen), chisel3.internal.Builder.currentModule) match {
+    case (true, Some(module: chisel3.core.ImplicitModule))
+        if !module.compileOptions.declaredTypeMustBeUnbound => chiselTypeOf(gen)
+    case _ => gen
+  }
+
   val ready = Input(Bool())
   val valid = Output(Bool())
-  val bits  = Output(gen.chiselCloneType)
+  val bits  = Output(genType)
 }
 
 object ReadyValidIO {
 
-  implicit class AddMethodsToReadyValid[T<:Data](val target: ReadyValidIO[T]) extends AnyVal {
+  implicit class AddMethodsToReadyValid[T<:Data](target: ReadyValidIO[T]) {
     def fire(): Bool = target.ready && target.valid
 
     /** push dat onto the output bits of this interface to let the consumer know it has happened.
@@ -41,13 +51,10 @@ object ReadyValidIO {
       */
     def noenq(): Unit = {
       target.valid := false.B
-      // We want the type from the following, not any existing binding.
-      target.bits := Wire(target.bits.cloneType)
     }
 
     /** Assert ready on this port and return the associated data bits.
       * This is typically used when valid has been asserted by the producer side.
-      * @param b ignored
       * @return the data for this device,
       */
     def deq(): T = {
@@ -68,6 +75,7 @@ object ReadyValidIO {
   * put valid data in 'bits', and 'ready' indicates that the consumer is ready
   * to accept the data this cycle. No requirements are placed on the signaling
   * of ready or valid.
+  * @param gen the type of data to be wrapped in DecoupledIO
   */
 class DecoupledIO[+T <: Data](gen: T) extends ReadyValidIO[T](gen)
 {
@@ -86,22 +94,20 @@ object Decoupled
     */
   @chiselName
   def apply[T <: Data](irr: IrrevocableIO[T]): DecoupledIO[T] = {
-    require(irr.bits.flatten forall (_.dir == OUTPUT), "Only safe to cast produced Irrevocable bits to Decoupled.")
+    require(DataMirror.directionOf(irr.bits) == Direction.Output, "Only safe to cast produced Irrevocable bits to Decoupled.")
     val d = Wire(new DecoupledIO(irr.bits))
     d.bits := irr.bits
     d.valid := irr.valid
     irr.ready := d.ready
     d
   }
-//  override def cloneType: this.type = {
-//    DeqIO(gen).asInstanceOf[this.type]
-//  }
 }
 
 /** A concrete subclass of ReadyValidIO that promises to not change
   * the value of 'bits' after a cycle where 'valid' is high and 'ready' is low.
   * Additionally, once 'valid' is raised it will never be lowered until after
   * 'ready' has also been raised.
+  * @param gen the type of data to be wrapped in IrrevocableIO
   */
 class IrrevocableIO[+T <: Data](gen: T) extends ReadyValidIO[T](gen)
 {
@@ -119,7 +125,7 @@ object Irrevocable
     * @note unsafe (and will error) on the consumer (output) side of an DecoupledIO
     */
   def apply[T <: Data](dec: DecoupledIO[T]): IrrevocableIO[T] = {
-    require(dec.bits.flatten forall (_.dir == INPUT), "Only safe to cast consumed Decoupled bits to Irrevocable.")
+    require(DataMirror.directionOf(dec.bits) == Direction.Input, "Only safe to cast consumed Decoupled bits to Irrevocable.")
     val i = Wire(new IrrevocableIO(dec.bits))
     dec.bits := i.bits
     dec.valid := i.valid
@@ -128,26 +134,36 @@ object Irrevocable
   }
 }
 
+/** Producer - drives (outputs) valid and bits, inputs ready.
+  * @param gen The type of data to enqueue
+  */
 object EnqIO {
   def apply[T<:Data](gen: T): DecoupledIO[T] = Decoupled(gen)
 }
+/** Consumer - drives (outputs) ready, inputs valid and bits.
+  * @param gen The type of data to dequeue
+  */
 object DeqIO {
   def apply[T<:Data](gen: T): DecoupledIO[T] = Flipped(Decoupled(gen))
 }
 
 /** An I/O Bundle for Queues
   * @param gen The type of data to queue
-  * @param entries The max number of entries in the queue */
-class QueueIO[T <: Data](gen: T, entries: Int) extends Bundle
-{
-  /** I/O to enqueue data, is [[Chisel.DecoupledIO]] flipped */
-  val enq = DeqIO(gen)
-  /** I/O to enqueue data, is [[Chisel.DecoupledIO]]*/
-  val deq = EnqIO(gen)
+  * @param entries The max number of entries in the queue.
+  */
+class QueueIO[T <: Data](private val gen: T, val entries: Int) extends Bundle
+{ // See github.com/freechipsproject/chisel3/issues/765 for why gen is a private val and proposed replacement APIs.
+
+  /* These may look inverted, because the names (enq/deq) are from the perspective of the client,
+   *  but internally, the queue implementation itself sits on the other side
+   *  of the interface so uses the flipped instance.
+   */
+  /** I/O to enqueue data (client is producer, and Queue object is consumer), is [[Chisel.DecoupledIO]] flipped. */
+  val enq = Flipped(EnqIO(gen))
+  /** I/O to dequeue data (client is consumer and Queue object is producer), is [[Chisel.DecoupledIO]]*/
+  val deq = Flipped(DeqIO(gen))
   /** The current amount of data in the queue */
   val count = Output(UInt(log2Ceil(entries + 1).W))
-
-  override def cloneType = new QueueIO(gen, entries).asInstanceOf[this.type]
 }
 
 /** A hardware module implementing a Queue
@@ -159,7 +175,7 @@ class QueueIO[T <: Data](gen: T, entries: Int) extends Bundle
   * The ''valid'' signals are coupled.
   *
   * @example {{{
-  * val q = new Queue(UInt(), 16)
+  * val q = Module(new Queue(UInt(), 16))
   * q.io.enq <> producer.io.out
   * consumer.io.in <> q.io.deq
   * }}}
@@ -168,15 +184,34 @@ class QueueIO[T <: Data](gen: T, entries: Int) extends Bundle
 class Queue[T <: Data](gen: T,
                        val entries: Int,
                        pipe: Boolean = false,
-                       flow: Boolean = false,
-                       override_reset: Option[Bool] = None)
-extends Module(override_reset=override_reset) {
-  def this(gen: T, entries: Int, pipe: Boolean, flow: Boolean, _reset: Bool) =
-    this(gen, entries, pipe, flow, Some(_reset))
+                       flow: Boolean = false)
+                      (implicit compileOptions: chisel3.core.CompileOptions)
+    extends Module() {
+  @deprecated("Module constructor with override _reset deprecated, use withReset", "chisel3")
+  def this(gen: T, entries: Int, pipe: Boolean, flow: Boolean, override_reset: Option[Bool]) = {
+    this(gen, entries, pipe, flow)
+    this.override_reset = override_reset
+  }
+  @deprecated("Module constructor with override _reset deprecated, use withReset", "chisel3")
+  def this(gen: T, entries: Int, pipe: Boolean, flow: Boolean, _reset: Bool) = {
+    this(gen, entries, pipe, flow)
+    this.override_reset = Some(_reset)
+  }
 
-  val io = IO(new QueueIO(gen, entries))
+  val genType = if (compileOptions.declaredTypeMustBeUnbound) {
+    requireIsChiselType(gen)
+    gen
+  } else {
+    if (DataMirror.internal.isSynthesizable(gen)) {
+      chiselTypeOf(gen)
+    } else {
+      gen
+    }
+  }
 
-  private val ram = Mem(entries, gen)
+  val io = IO(new QueueIO(genType, entries))
+
+  private val ram = Mem(entries, genType)
   private val enq_ptr = Counter(entries)
   private val deq_ptr = Counter(entries)
   private val maybe_full = RegInit(false.B)
@@ -184,8 +219,8 @@ extends Module(override_reset=override_reset) {
   private val ptr_match = enq_ptr.value === deq_ptr.value
   private val empty = ptr_match && !maybe_full
   private val full = ptr_match && maybe_full
-  private val do_enq = Wire(init=io.enq.fire())
-  private val do_deq = Wire(init=io.deq.fire())
+  private val do_enq = WireInit(io.enq.fire())
+  private val do_deq = WireInit(io.deq.fire())
 
   when (do_enq) {
     ram(enq_ptr.value) := io.enq.bits
@@ -194,7 +229,7 @@ extends Module(override_reset=override_reset) {
   when (do_deq) {
     deq_ptr.inc()
   }
-  when (do_enq != do_deq) {
+  when (do_enq =/= do_deq) {
     maybe_full := do_enq
   }
 
@@ -247,11 +282,20 @@ object Queue
       entries: Int = 2,
       pipe: Boolean = false,
       flow: Boolean = false): DecoupledIO[T] = {
-    val q = Module(new Queue(enq.bits.cloneType, entries, pipe, flow))
-    q.io.enq.valid := enq.valid // not using <> so that override is allowed
-    q.io.enq.bits := enq.bits
-    enq.ready := q.io.enq.ready
-    TransitName(q.io.deq, q)
+    if (entries == 0) {
+      val deq = Wire(new DecoupledIO(enq.bits))
+      deq.valid := enq.valid
+      deq.bits := enq.bits
+      enq.ready := deq.ready
+      deq
+    } else {
+      require(entries > 0)
+      val q = Module(new Queue(chiselTypeOf(enq.bits), entries, pipe, flow))
+      q.io.enq.valid := enq.valid // not using <> so that override is allowed
+      q.io.enq.bits := enq.bits
+      enq.ready := q.io.enq.ready
+      TransitName(q.io.deq, q)
+    }
   }
 
   /** Create a queue and supply a IrrevocableIO containing the product.
@@ -265,6 +309,7 @@ object Queue
       entries: Int = 2,
       pipe: Boolean = false,
       flow: Boolean = false): IrrevocableIO[T] = {
+    require(entries > 0) // Zero-entry queues don't guarantee Irrevocability
     val deq = apply(enq, entries, pipe, flow)
     val irr = Wire(new IrrevocableIO(deq.bits))
     irr.bits := deq.bits

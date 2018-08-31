@@ -5,10 +5,9 @@ package chiselTests
 import org.scalatest._
 
 import chisel3._
-import chisel3.experimental.FixedPoint
+import chisel3.experimental.{DataMirror, FixedPoint}
 import chisel3.testers.BasicTester
 import chisel3.util._
-import chisel3.core.DataMirror
 
 class AsBundleTester extends BasicTester {
   class MultiTypeBundle extends Bundle {
@@ -22,7 +21,7 @@ class AsBundleTester extends BasicTester {
 
   assert(bunFromBits.u === 4.U)
   assert(bunFromBits.s === -1.S)
-  assert(bunFromBits.fp === FixedPoint.fromDouble(-0.5, width=4, binaryPoint=3))
+  assert(bunFromBits.fp === FixedPoint.fromDouble(-0.5, 4.W, 3.BP))
 
   stop()
 }

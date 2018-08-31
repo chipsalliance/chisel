@@ -21,7 +21,7 @@ class IOCModuleVec(val n: Int) extends Module {
     val ins  = Vec(n, Input(UInt(32.W)))
     val outs = Vec(n, Output(UInt(32.W)))
   })
-  val pluses = Vec.fill(n){ Module(new IOCPlusOne).io }
+  val pluses = VecInit(Seq.fill(n){ Module(new IOCPlusOne).io })
   for (i <- 0 until n) {
     pluses(i).in := io.ins(i)
     io.outs(i)   := pluses(i).out
@@ -30,7 +30,7 @@ class IOCModuleVec(val n: Int) extends Module {
 
 class IOCModuleWire extends Module {
   val io = IO(new IOCSimpleIO)
-  val inc = Wire(Module(new IOCPlusOne).io.chiselCloneType)
+  val inc = Wire(chiselTypeOf(Module(new IOCPlusOne).io))
   inc.in := io.in
   io.out := inc.out
 }

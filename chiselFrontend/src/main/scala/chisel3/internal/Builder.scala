@@ -8,6 +8,7 @@ import scala.collection.mutable.{ArrayBuffer, HashMap}
 import chisel3._
 import core._
 import firrtl._
+import _root_.firrtl.annotations.{CircuitName, ComponentName, ModuleName, Named}
 
 private[chisel3] class Namespace(keywords: Set[String]) {
   private val names = collection.mutable.HashMap[String, Long]()
@@ -66,6 +67,9 @@ trait InstanceId {
   def pathName: String
   def parentPathName: String
   def parentModName: String
+  /** Returns a FIRRTL Named that refers to this object in the elaborated hardware graph */
+  def toNamed: Named
+
 }
 
 private[chisel3] trait HasId extends InstanceId {
@@ -74,11 +78,10 @@ private[chisel3] trait HasId extends InstanceId {
   _parent.foreach(_.addId(this))
 
   private[chisel3] val _id: Long = Builder.idGen.next
-  override def hashCode: Int = _id.toInt
-  override def equals(that: Any): Boolean = that match {
-    case x: HasId => _id == x._id
-    case _ => false
-  }
+
+  // TODO: remove this, but its removal seems to cause a nasty Scala compiler crash.
+  override def hashCode: Int = super.hashCode()
+  override def equals(that: Any): Boolean = super.equals(that)
 
   // Facilities for 'suggesting' a name to this.
   // Post-name hooks called to carry the suggestion to other candidates as needed
@@ -90,6 +93,7 @@ private[chisel3] trait HasId extends InstanceId {
     for(hook <- postname_hooks) { hook(name) }
     this
   }
+  private[chisel3] def suggestedName: Option[String] = suggested_name
   private[chisel3] def addPostnameHook(hook: String=>Unit): Unit = postname_hooks += hook
 
   // Uses a namespace to convert suggestion into a true name
@@ -108,11 +112,15 @@ private[chisel3] trait HasId extends InstanceId {
   private[chisel3] def setRef(parent: HasId, index: Int): Unit = setRef(Index(Node(parent), ILit(index)))
   private[chisel3] def setRef(parent: HasId, index: UInt): Unit = setRef(Index(Node(parent), index.ref))
   private[chisel3] def getRef: Arg = _ref.get
+  private[chisel3] def getOptionRef: Option[Arg] = _ref
 
   // Implementation of public methods.
   def instanceName: String = _parent match {
     case Some(p) => p._component match {
-      case Some(c) => getRef fullName c
+      case Some(c) => _ref match {
+        case Some(arg) => arg fullName c
+        case None => suggested_name.getOrElse("??")
+      }
       case None => throwException("signalName/pathName should be called after circuit elaboration")
     }
     case None => throwException("this cannot happen")
@@ -129,6 +137,11 @@ private[chisel3] trait HasId extends InstanceId {
     case Some(p) => p.name
     case None => throwException(s"$instanceName doesn't have a parent")
   }
+  // TODO Should this be public?
+  protected def circuitName: String = _parent match {
+    case None => instanceName
+    case Some(p) => p.circuitName
+  }
 
   private[chisel3] def getPublicFields(rootClass: Class[_]): Seq[java.lang.reflect.Method] = {
     // Suggest names to nodes using runtime reflection
@@ -142,9 +155,24 @@ private[chisel3] trait HasId extends InstanceId {
     this.getClass.getMethods.sortWith(_.getName < _.getName).filter(isPublicVal(_))
   }
 }
+/** Holds the implementation of toNamed for Data and MemBase */
+private[chisel3] trait NamedComponent extends HasId {
+  /** Returns a FIRRTL ComponentName that references this object
+    * @note Should not be called until circuit elaboration is complete
+    */
+  final def toNamed: ComponentName =
+    ComponentName(this.instanceName, ModuleName(this.parentModName, CircuitName(this.circuitName)))
+}
+
+// Mutable global state for chisel that can appear outside a Builder context
+private[chisel3] class ChiselContext() {
+  val idGen = new IdGen
+
+  // Record the Bundle instance, class name, method name, and reverse stack trace position of open Bundles
+  val bundleStack: ArrayBuffer[(Bundle, String, String, Int)] = ArrayBuffer()
+}
 
 private[chisel3] class DynamicContext() {
-  val idGen = new IdGen
   val globalNamespace = Namespace.empty
   val components = ArrayBuffer[Component]()
   val annotations = ArrayBuffer[ChiselAnnotation]()
@@ -161,16 +189,29 @@ private[chisel3] class DynamicContext() {
 private[chisel3] object Builder {
   // All global mutable state must be referenced via dynamicContextVar!!
   private val dynamicContextVar = new DynamicVariable[Option[DynamicContext]](None)
-  private def dynamicContext: DynamicContext =
-    dynamicContextVar.value.getOrElse(new DynamicContext)
+  private def dynamicContext: DynamicContext = {
+    require(dynamicContextVar.value.isDefined, "must be inside Builder context")
+    dynamicContextVar.value.get
+  }
 
-  def idGen: IdGen = dynamicContext.idGen
+  private val chiselContext = new DynamicVariable[ChiselContext](new ChiselContext)
+
+  // Initialize any singleton objects before user code inadvertently inherits them.
+  private def initializeSingletons(): Unit = {
+    val dummy = core.DontCare
+  }
+
+  def idGen: IdGen = chiselContext.value.idGen
+
   def globalNamespace: Namespace = dynamicContext.globalNamespace
   def components: ArrayBuffer[Component] = dynamicContext.components
   def annotations: ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
   def namingStack: internal.naming.NamingStack = dynamicContext.namingStack
 
-  def currentModule: Option[BaseModule] = dynamicContext.currentModule
+  def currentModule: Option[BaseModule] = dynamicContextVar.value match {
+    case Some(dyanmicContext) => dynamicContext.currentModule
+    case _ => None
+  }
   def currentModule_=(target: Option[BaseModule]): Unit = {
     dynamicContext.currentModule = target
   }
@@ -205,7 +246,7 @@ private[chisel3] object Builder {
     case None => throwException("Error: No implicit clock and reset.")
   }
   def forcedClock: Clock = forcedClockAndReset.clock
-  def forcedReset: Bool = forcedClockAndReset.reset
+  def forcedReset: Reset = forcedClockAndReset.reset
 
   // TODO(twigg): Ideally, binding checks and new bindings would all occur here
   // However, rest of frontend can't support this yet.
@@ -215,14 +256,49 @@ private[chisel3] object Builder {
   }
   def pushOp[T <: Data](cmd: DefPrim[T]): T = {
     // Bind each element of the returned Data to being a Op
-    Binding.bind(cmd.id, OpBinder(forcedUserModule), "Error: During op creation, fresh result")
+    cmd.id.bind(OpBinding(forcedUserModule))
     pushCommand(cmd).id
   }
 
+  // Called when Bundle construction begins, used to record a stack of open Bundle constructors to
+  // record candidates for Bundle autoclonetype. This is a best-effort guess.
+  // Returns the current stack of open Bundles
+  // Note: elt will NOT have finished construction, its elements cannot be accessed
+  def updateBundleStack(elt: Bundle): Seq[Bundle] = {
+    val stackElts = Thread.currentThread().getStackTrace()
+        .reverse  // so stack frame numbers are deterministic across calls
+        .dropRight(2)  // discard Thread.getStackTrace and updateBundleStack
+
+    // Determine where we are in the Bundle stack
+    val eltClassName = elt.getClass.getName
+    val eltStackPos = stackElts.map(_.getClassName).lastIndexOf(eltClassName)
+
+    // Prune the existing Bundle stack of closed Bundles
+    // If we know where we are in the stack, discard frames above that
+    val stackEltsTop = if (eltStackPos >= 0) eltStackPos else stackElts.size
+    val pruneLength = chiselContext.value.bundleStack.reverse.prefixLength { case (_, cname, mname, pos) =>
+      pos >= stackEltsTop || stackElts(pos).getClassName != cname || stackElts(pos).getMethodName != mname
+    }
+    chiselContext.value.bundleStack.trimEnd(pruneLength)
+
+    // Return the stack state before adding the most recent bundle
+    val lastStack = chiselContext.value.bundleStack.map(_._1).toSeq
+
+    // Append the current Bundle to the stack, if it's on the stack trace
+    if (eltStackPos >= 0) {
+      val stackElt = stackElts(eltStackPos)
+      chiselContext.value.bundleStack.append((elt, eltClassName, stackElt.getMethodName, eltStackPos))
+    }
+    // Otherwise discard the stack frame, this shouldn't fail noisily
+
+    lastStack
+  }
+
   def errors: ErrorLog = dynamicContext.errors
-  def error(m: => String): Unit = errors.error(m)
-  def warning(m: => String): Unit = errors.warning(m)
-  def deprecated(m: => String): Unit = errors.deprecated(m)
+  def error(m: => String): Unit = if (dynamicContextVar.value.isDefined) errors.error(m)
+  def warning(m: => String): Unit = if (dynamicContextVar.value.isDefined) errors.warning(m)
+  def deprecated(m: => String, location: Option[String] = None): Unit =
+    if (dynamicContextVar.value.isDefined) errors.deprecated(m, location)
 
   /** Record an exception as an error, and throw it.
     *
@@ -235,16 +311,19 @@ private[chisel3] object Builder {
   }
 
   def build[T <: UserModule](f: => T): Circuit = {
-    dynamicContextVar.withValue(Some(new DynamicContext())) {
-      errors.info("Elaborating design...")
-      val mod = f
-      mod.forceName(mod.name, globalNamespace)
-      errors.checkpoint()
-      errors.info("Done elaborating.")
+    chiselContext.withValue(new ChiselContext) {
+      dynamicContextVar.withValue(Some(new DynamicContext())) {
+        errors.info("Elaborating design...")
+        val mod = f
+        mod.forceName(mod.name, globalNamespace)
+        errors.checkpoint()
+        errors.info("Done elaborating.")
 
-      Circuit(components.last.name, components, annotations.map(_.toFirrtl))
-    }
+        Circuit(components.last.name, components, annotations)
+      }
+   }
   }
+  initializeSingletons()
 }
 
 /** Allows public access to the naming stack in Builder / DynamicContext.

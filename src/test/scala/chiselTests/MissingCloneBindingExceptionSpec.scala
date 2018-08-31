@@ -9,38 +9,34 @@ class MissingCloneBindingExceptionSpec extends ChiselFlatSpec with Matchers {
   ( the[ChiselException] thrownBy {
     import chisel3._
 
-    class TestIO(w: Int) extends Bundle {
-      val a = Vec(4, UInt(w.W)).asInput
-
-      //override def cloneType = (new TestIO(w)).asInstanceOf[this.type]
-    }
-
     class Test extends Module {
+      class TestIO(w: Int) extends Bundle {
+        val a = Input(Vec(4, UInt(w.W)))
+      }
+          
       val io = IO(new TestIO(32))
     }
 
     class TestTop extends Module {
       val io = IO(new Bundle {})
 
-      val subs = Vec.fill(2) {
+      val subs = VecInit(Seq.fill(2) {
         Module(new Test).io
-      }
+      })
     }
 
     elaborate(new TestTop)
-  }).getMessage should include("needs cloneType method")
+  }).getMessage should include("make all parameters immutable")
 
   behavior of "missing cloneType in Chisel2"
   ( the[ChiselException] thrownBy {
     import Chisel._
 
-    class TestIO(w: Int) extends Bundle {
-      val a = Vec(4, UInt(width = w)).asInput
-
-      //override def cloneType = (new TestIO(w)).asInstanceOf[this.type]
-    }
-
     class Test extends Module {
+      class TestIO(w: Int) extends Bundle {
+        val a = Vec(4, UInt(width = w)).asInput
+      }
+      
       val io = IO(new TestIO(32))
     }
 
@@ -53,5 +49,5 @@ class MissingCloneBindingExceptionSpec extends ChiselFlatSpec with Matchers {
     }
 
     elaborate(new TestTop)
-  }).getMessage should include("needs cloneType method")
+  }).getMessage should include("make all parameters immutable")
 }

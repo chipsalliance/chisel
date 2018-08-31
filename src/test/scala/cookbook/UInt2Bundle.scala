@@ -15,7 +15,7 @@ class UInt2Bundle extends CookbookTester(1) {
     val bar = UInt(4.W)
   }
   val uint = 0xb4.U
-  val bundle = (new MyBundle).fromBits(uint)
+  val bundle = uint.asTypeOf(new MyBundle)
   printf(p"$bundle") // Bundle(foo -> 11, bar -> 4)
 
   // Test

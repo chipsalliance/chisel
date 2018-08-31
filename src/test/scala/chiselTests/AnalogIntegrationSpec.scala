@@ -19,7 +19,7 @@ class AnalogBlackBoxPort extends Bundle {
 
 // This IO can be used for a single BlackBox or to group multiple
 // Has multiple ports for driving and checking but only one shared bus
-class AnalogBlackBoxIO(n: Int) extends Bundle {
+class AnalogBlackBoxIO(val n: Int) extends Bundle {
   require(n > 0)
   val bus = Analog(32.W)
   val port = Vec(n, new AnalogBlackBoxPort)
@@ -126,10 +126,10 @@ class AnalogIntegrationTester(mod: => AnalogDUTModule) extends BasicTester {
 class AnalogIntegrationSpec extends ChiselFlatSpec {
   behavior of "Verilator"
   it should "support simple bidirectional wires" in {
-    assertTesterPasses(new AnalogIntegrationTester(new AnalogSmallDUT), Seq("/AnalogBlackBox.v"))
+    assertTesterPasses(new AnalogIntegrationTester(new AnalogSmallDUT), Seq("/chisel3/AnalogBlackBox.v"))
   }
   // Use this test once Verilator supports alias
   ignore should "support arbitrary bidirectional wires" in {
-    assertTesterPasses(new AnalogIntegrationTester(new AnalogDUT), Seq("/AnalogBlackBox.v"))
+    assertTesterPasses(new AnalogIntegrationTester(new AnalogDUT), Seq("/chisel3/AnalogBlackBox.v"))
   }
 }

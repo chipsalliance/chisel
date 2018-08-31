@@ -6,7 +6,7 @@ import org.scalatest._
 import chisel3._
 import chisel3.testers.BasicTester
 
-class OptionBundle(hasIn: Boolean) extends Bundle {
+class OptionBundle(val hasIn: Boolean) extends Bundle {
   val in = if (hasIn) {
     Some(Input(Bool()))
   } else {
@@ -15,7 +15,7 @@ class OptionBundle(hasIn: Boolean) extends Bundle {
   val out = Output(Bool())
 }
 
-class OptionBundleModule(hasIn: Boolean) extends Module {
+class OptionBundleModule(val hasIn: Boolean) extends Module {
   val io = IO(new OptionBundle(hasIn))
   if (hasIn) {
     io.out := io.in.get

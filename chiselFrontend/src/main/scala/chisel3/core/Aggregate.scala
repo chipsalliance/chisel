@@ -15,13 +15,73 @@ import chisel3.internal.sourceinfo._
   * of) other Data objects.
   */
 sealed abstract class Aggregate extends Data {
+  private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection) {
+    binding = target
+
+    val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
+    for (child <- getElements) {
+      child.bind(ChildBinding(this), resolvedDirection)
+    }
+
+    // Check that children obey the directionality rules.
+    val childDirections = getElements.map(_.direction).toSet
+    direction = if (childDirections == Set()) {  // Sadly, Scala can't do set matching
+      // If empty, use my assigned direction
+      resolvedDirection match {
+        case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip => ActualDirection.Unspecified
+        case SpecifiedDirection.Output => ActualDirection.Output
+        case SpecifiedDirection.Input => ActualDirection.Input
+      }
+    } else if (childDirections == Set(ActualDirection.Unspecified)) {
+      ActualDirection.Unspecified
+    } else if (childDirections == Set(ActualDirection.Input)) {
+      ActualDirection.Input
+    } else if (childDirections == Set(ActualDirection.Output)) {
+      ActualDirection.Output
+    } else if (childDirections subsetOf
+        Set(ActualDirection.Output, ActualDirection.Input,
+            ActualDirection.Bidirectional(ActualDirection.Default),
+            ActualDirection.Bidirectional(ActualDirection.Flipped))) {
+      resolvedDirection match {
+        case SpecifiedDirection.Unspecified => ActualDirection.Bidirectional(ActualDirection.Default)
+        case SpecifiedDirection.Flip => ActualDirection.Bidirectional(ActualDirection.Flipped)
+        case _ => throw new RuntimeException("Unexpected forced Input / Output")
+      }
+    } else {
+      this match {
+        // Anything flies in compatibility mode
+        case t: Record if !t.compileOptions.dontAssumeDirectionality => resolvedDirection match {
+          case SpecifiedDirection.Unspecified => ActualDirection.Bidirectional(ActualDirection.Default)
+          case SpecifiedDirection.Flip => ActualDirection.Bidirectional(ActualDirection.Flipped)
+          case _ => ActualDirection.Bidirectional(ActualDirection.Default)
+        }
+        case _ =>
+          val childWithDirections = getElements zip getElements.map(_.direction)
+          throw Binding.MixedDirectionAggregateException(s"Aggregate '$this' can't have elements that are both directioned and undirectioned: $childWithDirections")
+      }
+    }
+  }
+
+  override def litOption = ???  // TODO implement me
+
+  // Returns the LitArg of a Bits object.
+  // Internal API for Bundle literals, to copy the LitArg of argument literals into the top map.
+  protected def litArgOfBits(elt: Bits): LitArg = elt.litArgOption.get
+
   /** Returns a Seq of the immediate contents of this Aggregate, in order.
     */
   def getElements: Seq[Data]
 
-  private[core] def width: Width = getElements.map(_.width).foldLeft(0.W)(_ + _)
-  private[core] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
-    pushCommand(BulkConnect(sourceInfo, this.lref, that.lref))
+  private[chisel3] def width: Width = getElements.map(_.width).foldLeft(0.W)(_ + _)
+  private[core] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
+    // If the source is a DontCare, generate a DefInvalid for the sink,
+    //  otherwise, issue a Connect.
+    if (that == DontCare) {
+      pushCommand(DefInvalid(sourceInfo, Node(this)))
+    } else {
+      pushCommand(BulkConnect(sourceInfo, Node(this), Node(that)))
+    }
+  }
 
   override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
     SeqUtils.do_asUInt(flatten.map(_.asUInt()))
@@ -29,7 +89,7 @@ sealed abstract class Aggregate extends Data {
   private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
       compileOptions: CompileOptions): Unit = {
     var i = 0
-    val bits = Wire(UInt(this.width), init=that)  // handles width padding
+    val bits = WireInit(UInt(this.width), that)  // handles width padding
     for (x <- flatten) {
       x.connectFromBits(bits(i + x.getWidth - 1, i))
       i += x.getWidth
@@ -37,99 +97,17 @@ sealed abstract class Aggregate extends Data {
   }
 }
 
-object Vec {
+trait VecFactory {
   /** Creates a new [[Vec]] with `n` entries of the specified data type.
     *
     * @note elements are NOT assigned by default and have no value
     */
-  def apply[T <: Data](n: Int, gen: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = new Vec(gen.chiselCloneType, n)
-
-  @deprecated("Vec argument order should be size, t; this will be removed by the official release", "chisel3")
-  def apply[T <: Data](gen: T, n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = new Vec(gen.chiselCloneType, n)
-
-  /** Creates a new [[Vec]] composed of elements of the input Seq of [[Data]]
-    * nodes.
-    *
-    * @note input elements should be of the same type (this is checked at the
-    * FIRRTL level, but not at the Scala / Chisel level)
-    * @note the width of all output elements is the width of the largest input
-    * element
-    * @note output elements are connected from the input elements
-    */
-  def apply[T <: Data](elts: Seq[T]): Vec[T] = macro VecTransform.apply_elts
-
-  def do_apply[T <: Data](elts: Seq[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = {
-    // REVIEW TODO: this should be removed in favor of the apply(elts: T*)
-    // varargs constructor, which is more in line with the style of the Scala
-    // collection API. However, a deprecation phase isn't possible, since
-    // changing apply(elt0, elts*) to apply(elts*) causes a function collision
-    // with apply(Seq) after type erasure. Workarounds by either introducing a
-    // DummyImplicit or additional type parameter will break some code.
-
-    // Check that types are homogeneous.  Width mismatch for Elements is safe.
-    require(!elts.isEmpty)
-
-    val vec = Wire(new Vec(cloneSupertype(elts, "Vec"), elts.length))
-
-    def doConnect(sink: T, source: T) = {
-      // TODO: this looks bad, and should feel bad. Replace with a better abstraction.
-      // NOTE: Must use elts.head instead of vec.sample_element because vec.sample_element has
-      //       WireBinding which does not have a direction
-      val hasDirectioned = elts.head match {
-        case t: Aggregate => t.flatten.exists(_.dir != Direction.Unspecified)
-        case t: Element => t.dir != Direction.Unspecified
-      }
-      if (hasDirectioned) {
-        sink bulkConnect source
-      } else {
-        sink connect source
-      }
+  def apply[T <: Data](n: Int, gen: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = {
+    if (compileOptions.declaredTypeMustBeUnbound) {
+      requireIsChiselType(gen, "vec type")
     }
-    for ((v, e) <- vec zip elts) {
-      doConnect(v, e)
-    }
-    vec
+    new Vec(gen.cloneTypeFull, n)
   }
-
-  /** Creates a new [[Vec]] composed of the input [[Data]] nodes.
-    *
-    * @note input elements should be of the same type (this is checked at the
-    * FIRRTL level, but not at the Scala / Chisel level)
-    * @note the width of all output elements is the width of the largest input
-    * element
-    * @note output elements are connected from the input elements
-    */
-  def apply[T <: Data](elt0: T, elts: T*): Vec[T] = macro VecTransform.apply_elt0
-
-  def do_apply[T <: Data](elt0: T, elts: T*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
-    apply(elt0 +: elts.toSeq)
-
-  /** Creates a new [[Vec]] of length `n` composed of the results of the given
-    * function applied over a range of integer values starting from 0.
-    *
-    * @param n number of elements in the vector (the function is applied from
-    * 0 to `n-1`)
-    * @param gen function that takes in an Int (the index) and returns a
-    * [[Data]] that becomes the output element
-    */
-  def tabulate[T <: Data](n: Int)(gen: (Int) => T): Vec[T] = macro VecTransform.tabulate
-
-  def do_tabulate[T <: Data](n: Int)(gen: (Int) => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
-    apply((0 until n).map(i => gen(i)))
-
-  /** Creates a new [[Vec]] of length `n` composed of the result of the given
-    * function repeatedly applied.
-    *
-    * @param n number of elements (amd the number of times the function is
-    * called)
-    * @param gen function that generates the [[Data]] that becomes the output
-    * element
-    */
-  @deprecated("Vec.fill(n)(gen) is deprecated. Please use Vec(Seq.fill(n)(gen))", "chisel3")
-  def fill[T <: Data](n: Int)(gen: => T): Vec[T] = macro VecTransform.fill
-
-  def do_fill[T <: Data](n: Int)(gen: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
-    apply(Seq.fill(n)(gen))
 
   /** Truncate an index to implement modulo-power-of-2 addressing. */
   private[core] def truncateIndex(idx: UInt, n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
@@ -141,14 +119,18 @@ object Vec {
   }
 }
 
+object Vec extends VecFactory
+
 /** A vector (array) of [[Data]] elements. Provides hardware versions of various
   * collection transformation functions found in software array implementations.
   *
-  * Careful consideration should be given over the use of [[Vec]] vs [[Seq]] or some other scala collection. In
-  * general [[Vec]] only needs to be used when there is a need to express the hardware collection in a [[Reg]]
-  * or IO [[Bundle]] or when access to elements of the array is indexed via a hardware signal.
+  * Careful consideration should be given over the use of [[Vec]] vs
+  * [[scala.collection.immutable.Seq Seq]] or some other Scala collection. In general [[Vec]] only
+  * needs to be used when there is a need to express the hardware collection in a [[Reg]] or IO
+  * [[Bundle]] or when access to elements of the array is indexed via a hardware signal.
   *
-  * Example of indexing into a [[Vec]] using a hardware address and where the [[Vec]] is defined in an IO [[Bundle]]
+  * Example of indexing into a [[Vec]] using a hardware address and where the [[Vec]] is defined in
+  * an IO [[Bundle]]
   *
   *  {{{
   *    val io = IO(new Bundle {
@@ -165,7 +147,7 @@ object Vec {
   *  - when multiple conflicting assignments are performed on a Vec element, the last one takes effect (unlike Mem, where the result is undefined)
   *  - Vecs, unlike classes in Scala's collection library, are propagated intact to FIRRTL as a vector type, which may make debugging easier
   */
-sealed class Vec[T <: Data] private (gen: => T, val length: Int)
+sealed class Vec[T <: Data] private[core] (gen: => T, val length: Int)
     extends Aggregate with VecLike[T] {
   private[core] override def typeEquivalent(that: Data): Boolean = that match {
     case that: Vec[T] =>
@@ -186,7 +168,7 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
   *
   * Needed specifically for the case when the Vec is length 0.
   */
-  private[core] val sample_element: T = gen
+  private[chisel3] val sample_element: T = gen
 
   // allElements current includes sample_element
   // This is somewhat weird although I think the best course of action here is
@@ -200,7 +182,9 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
     * @note the length of this Vec must match the length of the input Seq
     */
   def <> (that: Seq[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit = {
-    require(this.length == that.length)
+    if (this.length != that.length) {
+      Builder.error("Vec and Seq being bulk connected have different lengths!")
+    }
     for ((a, b) <- this zip that)
       a <> b
   }
@@ -223,17 +207,28 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
 
   /** Creates a dynamically indexed read or write accessor into the array.
     */
-  def apply(idx: UInt)(implicit compileOptions: CompileOptions): T = {
-    Binding.checkSynthesizable(idx ,s"'idx' ($idx)")
-    val port = gen
-    val i = Vec.truncateIndex(idx, length)(UnlocatableSourceInfo, compileOptions)
-    port.setRef(this, i)
+  override def apply(p: UInt): T = macro CompileOptionsTransform.pArg
 
-    // Bind each element of port to being whatever the base type is
-    // Using the head element as the sample_element
-    for((port_elem, model_elem) <- port.allElements zip sample_element.allElements) {
-      port_elem.binding = model_elem.binding
+  def do_apply(p: UInt)(implicit compileOptions: CompileOptions): T = {
+    requireIsHardware(p, "vec index")
+    val port = gen
+
+    // Reconstruct the resolvedDirection (in Aggregate.bind), since it's not stored.
+    // It may not be exactly equal to that value, but the results are the same.
+    val reconstructedResolvedDirection = direction match {
+      case ActualDirection.Input => SpecifiedDirection.Input
+      case ActualDirection.Output => SpecifiedDirection.Output
+      case ActualDirection.Bidirectional(ActualDirection.Default) | ActualDirection.Unspecified =>
+        SpecifiedDirection.Unspecified
+      case ActualDirection.Bidirectional(ActualDirection.Flipped) => SpecifiedDirection.Flip
     }
+    // TODO port technically isn't directly child of this data structure, but the result of some
+    // muxes / demuxes. However, this does make access consistent with the top-level bindings.
+    // Perhaps there's a cleaner way of accomplishing this...
+    port.bind(ChildBinding(this), reconstructedResolvedDirection)
+
+    val i = Vec.truncateIndex(p, length)(UnlocatableSourceInfo, compileOptions)
+    port.setRef(this, i)
 
     port
   }
@@ -242,19 +237,10 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
     */
   def apply(idx: Int): T = self(idx)
 
-  @deprecated("Use Vec.apply instead", "chisel3")
-  def read(idx: UInt)(implicit compileOptions: CompileOptions): T = apply(idx)
-
-  @deprecated("Use Vec.apply instead", "chisel3")
-  def write(idx: UInt, data: T)(implicit compileOptions: CompileOptions): Unit = {
-    apply(idx)(compileOptions).:=(data)(DeprecatedSourceInfo, compileOptions)
-  }
-
   override def cloneType: this.type = {
     new Vec(gen.cloneType, length).asInstanceOf[this.type]
   }
 
-  private[chisel3] def toType: String = s"${sample_element.toType}[$length]"
   override def getElements: Seq[Data] =
     (0 until length).map(apply(_))
 
@@ -304,21 +290,95 @@ sealed class Vec[T <: Data] private (gen: => T, val length: Int)
   }
 }
 
+object VecInit {
+  /** Creates a new [[Vec]] composed of elements of the input Seq of [[Data]]
+    * nodes.
+    *
+    * @note input elements should be of the same type (this is checked at the
+    * FIRRTL level, but not at the Scala / Chisel level)
+    * @note the width of all output elements is the width of the largest input
+    * element
+    * @note output elements are connected from the input elements
+    */
+  def apply[T <: Data](elts: Seq[T]): Vec[T] = macro VecTransform.apply_elts
+
+  def do_apply[T <: Data](elts: Seq[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = {
+    // REVIEW TODO: this should be removed in favor of the apply(elts: T*)
+    // varargs constructor, which is more in line with the style of the Scala
+    // collection API. However, a deprecation phase isn't possible, since
+    // changing apply(elt0, elts*) to apply(elts*) causes a function collision
+    // with apply(Seq) after type erasure. Workarounds by either introducing a
+    // DummyImplicit or additional type parameter will break some code.
+
+    // Check that types are homogeneous.  Width mismatch for Elements is safe.
+    require(!elts.isEmpty)
+    elts.foreach(requireIsHardware(_, "vec element"))
+
+    val vec = Wire(Vec(elts.length, cloneSupertype(elts, "Vec")))
+
+    // TODO: try to remove the logic for this mess
+    elts.head.direction match {
+      case ActualDirection.Input | ActualDirection.Output | ActualDirection.Unspecified =>
+        // When internal wires are involved, driver / sink must be specified explicitly, otherwise
+        // the system is unable to infer which is driver / sink
+        (vec zip elts).foreach(x => x._1 := x._2)
+      case ActualDirection.Bidirectional(_) =>
+        // For bidirectional, must issue a bulk connect so subelements are resolved correctly.
+        // Bulk connecting two wires may not succeed because Chisel frontend does not infer
+        // directions.
+        (vec zip elts).foreach(x => x._1 <> x._2)
+    }
+    vec
+  }
+
+  /** Creates a new [[Vec]] composed of the input [[Data]] nodes.
+    *
+    * @note input elements should be of the same type (this is checked at the
+    * FIRRTL level, but not at the Scala / Chisel level)
+    * @note the width of all output elements is the width of the largest input
+    * element
+    * @note output elements are connected from the input elements
+    */
+  def apply[T <: Data](elt0: T, elts: T*): Vec[T] = macro VecTransform.apply_elt0
+
+  def do_apply[T <: Data](elt0: T, elts: T*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
+    apply(elt0 +: elts.toSeq)
+
+  /** Creates a new [[Vec]] of length `n` composed of the results of the given
+    * function applied over a range of integer values starting from 0.
+    *
+    * @param n number of elements in the vector (the function is applied from
+    * 0 to `n-1`)
+    * @param gen function that takes in an Int (the index) and returns a
+    * [[Data]] that becomes the output element
+    */
+  def tabulate[T <: Data](n: Int)(gen: (Int) => T): Vec[T] = macro VecTransform.tabulate
+
+  def do_tabulate[T <: Data](n: Int)(gen: (Int) => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
+    apply((0 until n).map(i => gen(i)))
+}
+
 /** A trait for [[Vec]]s containing common hardware generators for collection
   * operations.
   */
 trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
-  def apply(idx: UInt)(implicit compileOptions: CompileOptions): T
+  def apply(p: UInt): T = macro CompileOptionsTransform.pArg
+
+  def do_apply(p: UInt)(implicit compileOptions: CompileOptions): T
 
   // IndexedSeq has its own hashCode/equals that we must not use
   override def hashCode: Int = super[HasId].hashCode
   override def equals(that: Any): Boolean = super[HasId].equals(that)
 
+  @chiselRuntimeDeprecated
   @deprecated("Use Vec.apply instead", "chisel3")
-  def read(idx: UInt)(implicit compileOptions: CompileOptions): T
+  def read(idx: UInt)(implicit compileOptions: CompileOptions): T = do_apply(idx)(compileOptions)
 
+  @chiselRuntimeDeprecated
   @deprecated("Use Vec.apply instead", "chisel3")
-  def write(idx: UInt, data: T)(implicit compileOptions: CompileOptions): Unit
+  def write(idx: UInt, data: T)(implicit compileOptions: CompileOptions): Unit = {
+    do_apply(idx)(compileOptions).:=(data)(DeprecatedSourceInfo, compileOptions)
+  }
 
   /** Outputs true if p outputs true for every element.
     */
@@ -356,14 +416,14 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
 
   /** Outputs the index of the first element for which p outputs true.
     */
-  def indexWhere(p: T => Bool): UInt = macro CompileOptionsTransform.pArg
+  def indexWhere(p: T => Bool): UInt = macro SourceInfoTransform.pArg
 
   def do_indexWhere(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     SeqUtils.priorityMux(indexWhereHelper(p))
 
   /** Outputs the index of the last element for which p outputs true.
     */
-  def lastIndexWhere(p: T => Bool): UInt = macro CompileOptionsTransform.pArg
+  def lastIndexWhere(p: T => Bool): UInt = macro SourceInfoTransform.pArg
 
   def do_lastIndexWhere(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     SeqUtils.priorityMux(indexWhereHelper(p).reverse)
@@ -378,7 +438,7 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
     * true is NOT checked (useful in cases where the condition doesn't always
     * hold, but the results are not used in those cases)
     */
-  def onlyIndexWhere(p: T => Bool): UInt = macro CompileOptionsTransform.pArg
+  def onlyIndexWhere(p: T => Bool): UInt = macro SourceInfoTransform.pArg
 
   def do_onlyIndexWhere(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     SeqUtils.oneHotMux(indexWhereHelper(p))
@@ -389,7 +449,7 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
   * Record should only be extended by libraries and fairly sophisticated generators.
   * RTL writers should use [[Bundle]].  See [[Record#elements]] for an example.
   */
-abstract class Record extends Aggregate {
+abstract class Record(private[chisel3] implicit val compileOptions: CompileOptions) extends Aggregate {
 
   /** The collection of [[Data]]
     *
@@ -410,14 +470,6 @@ abstract class Record extends Aggregate {
 
   /** Name for Pretty Printing */
   def className: String = this.getClass.getSimpleName
-
-  private[chisel3] def toType = {
-    def eltPort(elt: Data): String = {
-      val flipStr: String = if(Data.isFirrtlFlipped(elt)) "flip " else ""
-      s"${flipStr}${elt.getRef.name} : ${elt.toType}"
-    }
-    elements.toIndexedSeq.reverse.map(e => eltPort(e._2)).mkString("{", ", ", "}")
-  }
 
   private[core] override def typeEquivalent(that: Data): Boolean = that match {
     case that: Record =>
@@ -453,10 +505,27 @@ abstract class Record extends Aggregate {
   }
   /** Default "pretty-print" implementation
     * Analogous to printing a Map
-    * Results in "$className(elt0.name -> elt0.value, ...)"
+    * Results in "`\$className(elt0.name -> elt0.value, ...)`"
     */
   def toPrintable: Printable = toPrintableHelper(elements.toList)
 }
+
+/**
+  * Mix-in for Bundles that have arbitrary Seqs of Chisel types that aren't
+  * involved in hardware construction.
+  *
+  * Used to avoid raising an error/exception when a Seq is a public member of the
+  * bundle.
+  * This is useful if we those public Seq fields in the Bundle are unrelated to
+  * hardware construction.
+  */
+trait IgnoreSeqInBundle {
+  this: Bundle =>
+
+  override def ignoreSeq: Boolean = true
+}
+
+class AutoClonetypeException(message: String) extends ChiselException(message, null)
 
 /** Base class for data types defined as a bundle of other data types.
   *
@@ -491,7 +560,7 @@ abstract class Record extends Aggregate {
   *   }
   * }}}
   */
-class Bundle extends Record {
+abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
   override def className = "Bundle"
 
   /** The collection of [[Data]]
@@ -516,17 +585,38 @@ class Bundle extends Record {
     val nameMap = LinkedHashMap[String, Data]()
     val seen = HashSet[Data]()
     for (m <- getPublicFields(classOf[Bundle])) {
-      getBundleField(m) foreach { d =>
-        if (nameMap contains m.getName) {
-          require(nameMap(m.getName) eq d)
-        } else if (!seen(d)) {
-          nameMap(m.getName) = d
-          seen += d
-        }
+      getBundleField(m) match {
+        case Some(d: Data) =>
+          if (nameMap contains m.getName) {
+            require(nameMap(m.getName) eq d)
+          } else if (!seen(d)) {
+            nameMap(m.getName) = d
+            seen += d
+          }
+        case None =>
+          if (!ignoreSeq) {
+            m.invoke(this) match {
+              case s: scala.collection.Seq[Any] if s.nonEmpty => s.head match {
+                // Ignore empty Seq()
+                case d: Data => throwException("Public Seq members cannot be used to define Bundle elements " +
+                  s"(found public Seq member '${m.getName}'). " +
+                  "Either use a Vec if all elements are of the same type, or MixedVec if the elements " +
+                  "are of different types. If this Seq member is not intended to construct RTL, mix in the trait " +
+                  "IgnoreSeqInBundle.")
+                case _ => // don't care about non-Data Seq
+              }
+              case _ => // not a Seq
+            }
+          }
       }
     }
     ListMap(nameMap.toSeq sortWith { case ((an, a), (bn, b)) => (a._id > b._id) || ((a eq b) && (an > bn)) }: _*)
   }
+
+  /**
+    * Overridden by [[IgnoreSeqInBundle]] to allow arbitrary Seqs of Chisel elements.
+    */
+  def ignoreSeq: Boolean = false
 
   /** Returns a field's contained user-defined Bundle element if it appears to
     * be one, otherwise returns None.
@@ -537,44 +627,224 @@ class Bundle extends Record {
     case _ => None
   }
 
+  // Memoize the outer instance for autoclonetype, especially where this is context-dependent
+  // (like the outer module or enclosing Bundles).
+  private var _outerInst: Option[Object] = None
+
+  // For autoclonetype, record possible candidates for outer instance.
+  // _outerInst should always take precedence, since it should be propagated from the original
+  // object which has the most accurate context.
+  private val _containingModule: Option[BaseModule] = Builder.currentModule
+  private val _containingBundles: Seq[Bundle] = Builder.updateBundleStack(this)
+
   override def cloneType : this.type = {
-    // If the user did not provide a cloneType method, try invoking one of
-    // the following constructors, not all of which necessarily exist:
-    // - A zero-parameter constructor
-    // - A one-paramater constructor, with null as the argument
-    // - A one-parameter constructor for a nested Bundle, with the enclosing
-    //   parent Module as the argument
-    val constructor = this.getClass.getConstructors.head
-    try {
-      val args = Seq.fill(constructor.getParameterTypes.size)(null)
-      constructor.newInstance(args:_*).asInstanceOf[this.type]
-    } catch {
-      case e: java.lang.reflect.InvocationTargetException if e.getCause.isInstanceOf[java.lang.NullPointerException] =>
-        try {
-          constructor.newInstance(_parent.get).asInstanceOf[this.type]
-        } catch {
-          case _: java.lang.reflect.InvocationTargetException | _: java.lang.IllegalArgumentException =>
-            Builder.exception(s"Parameterized Bundle ${this.getClass} needs cloneType method. You are probably using " +
-              "an anonymous Bundle object that captures external state and hence is un-cloneTypeable")
-            this
-        }
-      case _: java.lang.reflect.InvocationTargetException | _: java.lang.IllegalArgumentException =>
-        Builder.exception(s"Parameterized Bundle ${this.getClass} needs cloneType method")
-        this
+    // This attempts to infer constructor and arguments to clone this Bundle subtype without
+    // requiring the user explicitly overriding cloneType.
+    import scala.language.existentials
+    import scala.reflect.runtime.universe._
+
+    val clazz = this.getClass
+
+    def autoClonetypeError(desc: String): Nothing = {
+      throw new AutoClonetypeException(s"Unable to automatically infer cloneType on $clazz: $desc")
     }
+
+    val mirror = runtimeMirror(clazz.getClassLoader)
+    val classSymbolOption = try {
+      Some(mirror.reflect(this).symbol)
+    } catch {
+      case e: scala.reflect.internal.Symbols#CyclicReference => None  // Workaround for a scala bug
+    }
+
+    val enclosingClassOption = (clazz.getEnclosingClass, classSymbolOption) match {
+      case (null, _) => None
+      case (_, Some(classSymbol)) if classSymbol.isStatic => None  // allows support for members of companion objects
+      case (outerClass, _) => Some(outerClass)
+    }
+
+    // For compatibility with pre-3.1, where null is tried as an argument to the constructor.
+    // This stores potential error messages which may be used later.
+    var outerClassError: Option[String] = None
+
+    // Check if this is an inner class, and if so, try to get the outer instance
+    val outerClassInstance = enclosingClassOption.map { outerClass =>
+      def canAssignOuterClass(x: Object) = outerClass.isAssignableFrom(x.getClass)
+
+      val outerInstance = _outerInst match {
+        case Some(outerInstance) => outerInstance  // use _outerInst if defined
+        case None =>  // determine outer instance if not already recorded
+          try {
+            // Prefer this if it works, but doesn't work in all cases, namely anonymous inner Bundles
+            val outer = clazz.getDeclaredField("$outer").get(this)
+            _outerInst = Some(outer)
+            outer
+          } catch {
+            case (_: NoSuchFieldException | _: IllegalAccessException) =>
+              // Fallback using guesses based on common patterns
+              val allOuterCandidates = Seq(
+                  _containingModule.toSeq,
+                  _containingBundles
+                ).flatten.distinct
+              allOuterCandidates.filter(canAssignOuterClass(_)) match {
+                case outer :: Nil =>
+                  _outerInst = Some(outer)  // record the guess for future use
+                  outer
+                case Nil =>  // TODO: replace with fatal autoClonetypeError once compatibility period is dropped
+                  outerClassError = Some(s"Unable to determine instance of outer class $outerClass," +
+                      s" no candidates assignable to outer class types; examined $allOuterCandidates")
+                  null
+                case candidates => // TODO: replace with fatal autoClonetypeError once compatibility period is dropped
+                  outerClassError = Some(s"Unable to determine instance of outer class $outerClass," +
+                      s" multiple possible candidates $candidates assignable to outer class type")
+                  null
+              }
+          }
+      }
+      (outerClass, outerInstance)
+    }
+
+    // If possible (constructor with no arguments), try Java reflection first
+    // This handles two cases that Scala reflection doesn't:
+    // 1. getting the ClassSymbol of a class with an anonymous outer class fails with a
+    //    CyclicReference exception
+    // 2. invoking the constructor of an anonymous inner class seems broken (it expects the outer
+    //    class as an argument, but fails because the number of arguments passed in is incorrect)
+    if (clazz.getConstructors.size == 1) {
+      var ctor = clazz.getConstructors.head
+      val argTypes = ctor.getParameterTypes.toList
+      val clone = (argTypes, outerClassInstance) match {
+        case (Nil, None) => // no arguments, no outer class, invoke constructor directly
+          Some(ctor.newInstance().asInstanceOf[this.type])
+        case (argType :: Nil, Some((_, outerInstance))) =>
+          if (outerInstance == null) {
+            Builder.deprecated(s"chisel3.1 autoclonetype failed, falling back to 3.0 behavior using null as the outer instance." +
+                s" Autoclonetype failure reason: ${outerClassError.get}",
+                Some(s"$clazz"))
+            Some(ctor.newInstance(outerInstance).asInstanceOf[this.type])
+          } else if (argType isAssignableFrom outerInstance.getClass) {
+            Some(ctor.newInstance(outerInstance).asInstanceOf[this.type])
+          } else {
+            None
+          }
+        case _ => None
+
+      }
+      clone match {
+        case Some(clone) =>
+          clone._outerInst = this._outerInst
+          if (!clone.typeEquivalent(this)) {
+            autoClonetypeError(s"automatically cloned $clone not type-equivalent to base." +
+            " Constructor argument values were not inferred, ensure constructor is deterministic.")
+          }
+          return clone.asInstanceOf[this.type]
+        case None =>
+      }
+    }
+
+    // Get constructor parameters and accessible fields
+    val classSymbol = classSymbolOption.getOrElse(autoClonetypeError(s"scala reflection failed." +
+        " This is known to occur with inner classes on anonymous outer classes." +
+        " In those cases, autoclonetype only works with no-argument constructors, or you can define a custom cloneType."))
+
+    val decls = classSymbol.typeSignature.decls
+    val ctors = decls.collect { case meth: MethodSymbol if meth.isConstructor => meth }
+    if (ctors.size != 1) {
+      autoClonetypeError(s"found multiple constructors ($ctors)." +
+          " Either remove all but the default constructor, or define a custom cloneType method.")
+    }
+    val ctor = ctors.head
+    val ctorParamss = ctor.paramLists
+    val ctorParams = ctorParamss match {
+      case Nil => List()
+      case ctorParams :: Nil => ctorParams
+      case ctorParams :: ctorImplicits :: Nil => ctorParams ++ ctorImplicits
+      case _ => autoClonetypeError(s"internal error, unexpected ctorParamss = $ctorParamss")
+    }
+    val ctorParamsNames = ctorParams.map(_.name.toString)
+
+    // Special case for anonymous inner classes: their constructor consists of just the outer class reference
+    // Scala reflection on anonymous inner class constructors seems broken
+    if (ctorParams.size == 1 && outerClassInstance.isDefined &&
+        ctorParams.head.typeSignature == mirror.classSymbol(outerClassInstance.get._1).toType) {
+      // Fall back onto Java reflection
+      val ctors = clazz.getConstructors
+      require(ctors.size == 1)  // should be consistent with Scala constructors
+      try {
+        val clone = ctors.head.newInstance(outerClassInstance.get._2).asInstanceOf[this.type]
+        clone._outerInst = this._outerInst
+        return clone
+      } catch {
+        case e @ (_: java.lang.reflect.InvocationTargetException | _: IllegalArgumentException) =>
+          autoClonetypeError(s"unexpected failure at constructor invocation, got $e.")
+      }
+    }
+
+    // Get all the class symbols up to (but not including) Bundle and get all the accessors.
+    // (each ClassSymbol's decls only includes those declared in the class itself)
+    val bundleClassSymbol = mirror.classSymbol(classOf[Bundle])
+    val superClassSymbols = classSymbol.baseClasses.takeWhile(_ != bundleClassSymbol)
+    val superClassDecls = superClassSymbols.map(_.typeSignature.decls).flatten
+    val accessors = superClassDecls.collect { case meth: MethodSymbol if meth.isParamAccessor => meth }
+
+    // Get constructor argument values
+    // Check that all ctor params are immutable and accessible. Immutability is required to avoid
+    // potential subtle bugs (like values changing after cloning).
+    // This also generates better error messages (all missing elements shown at once) instead of
+    // failing at the use site one at a time.
+    val accessorsName = accessors.filter(_.isStable).map(_.name.toString)
+    val paramsDiff = ctorParamsNames.toSet -- accessorsName.toSet
+    if (!paramsDiff.isEmpty) {
+      autoClonetypeError(s"constructor has parameters (${paramsDiff.toList.sorted.mkString(", ")}) that are not both immutable and accessible." +
+          " Either make all parameters immutable and accessible (vals) so cloneType can be inferred, or define a custom cloneType method.")
+    }
+
+    // Get all the argument values
+    val accessorsMap = accessors.map(accessor => accessor.name.toString -> accessor).toMap
+    val instanceReflect = mirror.reflect(this)
+    val ctorParamsNameVals = ctorParamsNames.map {
+      paramName => paramName -> instanceReflect.reflectMethod(accessorsMap(paramName)).apply()
+    }
+
+    // Opportunistic sanity check: ensure any arguments of type Data is not bound
+    // (which could lead to data conflicts, since it's likely the user didn't know to re-bind them).
+    // This is not guaranteed to catch all cases (for example, Data in Tuples or Iterables).
+    val boundDataParamNames = ctorParamsNameVals.collect {
+      case (paramName, paramVal: Data) if paramVal.topBindingOpt.isDefined => paramName
+    }
+    if (boundDataParamNames.nonEmpty) {
+      autoClonetypeError(s"constructor parameters (${boundDataParamNames.sorted.mkString(", ")}) have values that are hardware types, which is likely to cause subtle errors." +
+          " Use chisel types instead: use the value before it is turned to a hardware type (with Wire(...), Reg(...), etc) or use chiselTypeOf(...) to extract the chisel type.")
+    }
+
+    // Clone unbound parameters in case they are being used as bundle fields.
+    val ctorParamsVals = ctorParamsNameVals.map {
+      case (_, paramVal: Data) => paramVal.cloneTypeFull
+      case (_, paramVal) => paramVal
+    }
+
+    // Invoke ctor
+    val classMirror = outerClassInstance match {
+      case Some((_, null)) => autoClonetypeError(outerClassError.get)  // deals with the null hack for 3.0 compatibility
+      case Some((_, outerInstance)) => mirror.reflect(outerInstance).reflectClass(classSymbol)
+      case _ => mirror.reflectClass(classSymbol)
+    }
+    val clone = classMirror.reflectConstructor(ctor).apply(ctorParamsVals:_*).asInstanceOf[this.type]
+    clone._outerInst = this._outerInst
+
+    if (!clone.typeEquivalent(this)) {
+      autoClonetypeError(s"Automatically cloned $clone not type-equivalent to base $this." +
+          " Constructor argument values were inferred: ensure that variable names are consistent and have the same value throughout the constructor chain," +
+          " and that the constructor is deterministic.")
+    }
+
+    clone
   }
 
   /** Default "pretty-print" implementation
     * Analogous to printing a Map
-    * Results in "Bundle(elt0.name -> elt0.value, ...)"
+    * Results in "`Bundle(elt0.name -> elt0.value, ...)`"
     * @note The order is reversed from the order of elements in order to print
     *   the fields in the order they were defined
     */
   override def toPrintable: Printable = toPrintableHelper(elements.toList.reverse)
 }
-
-private[core] object Bundle {
-  val keywords = List("flip", "asInput", "asOutput", "cloneType", "chiselCloneType", "toBits",
-    "widthOption", "signalName", "signalPathName", "signalParent", "signalComponent")
-}
-

@@ -70,23 +70,16 @@ abstract class ExtModule(val params: Map[String, Param] = Map.empty[String, Para
     // While BlackBoxes are not supposed to have an implementation, we still need to call
     // _onModuleClose on all nodes (for example, Aggregates use it for recursive naming).
     for (id <- getIds) {
-      id.forceName(default="_T", _namespace)
       id._onModuleClose
     }
 
-    val firrtlPorts = for (port <- getModulePorts) yield {
-      // Port definitions need to know input or output at top-level.
-      // By FIRRTL semantics, 'flipped' becomes an Input
-      val direction = if(Data.isFirrtlFlipped(port)) Direction.Input else Direction.Output
-      Port(port, direction)
-    }
-
-    val component = DefBlackBox(this, name, firrtlPorts, params)
+    val firrtlPorts = getModulePorts map {port => Port(port, port.specifiedDirection)}
+    val component = DefBlackBox(this, name, firrtlPorts, SpecifiedDirection.Unspecified, params)
     _component = Some(component)
     component
   }
 
-  private[core] def initializeInParent() {
+  private[core] def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
     implicit val sourceInfo = UnlocatableSourceInfo
 
     for (x <- getModulePorts) {
@@ -132,12 +125,12 @@ abstract class ExtModule(val params: Map[String, Param] = Map.empty[String, Para
   */
 abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param])(implicit compileOptions: CompileOptions) extends BaseBlackBox {
   def io: Record
-  
+
   // Allow access to bindings from the compatibility package
-  protected def _ioPortBound() = portsContains(io)
+  protected def _compatIoPortBound() = portsContains(io)
 
   private[core] override def generateComponent(): Component = {
-    _autoWrapPorts()  // pre-IO(...) compatibility hack
+    _compatAutoWrapPorts()  // pre-IO(...) compatibility hack
 
     // Restrict IO to just io, clock, and reset
     require(io != null, "BlackBox must have io")
@@ -161,23 +154,16 @@ abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param
     // Doing so would cause the wrong names to be assigned, since their parent
     // is now the module itself instead of the io bundle.
     for (id <- getIds; if id ne io) {
-      id.forceName(default="_T", _namespace)
       id._onModuleClose
     }
 
-    val firrtlPorts = for ((_, port) <- namedPorts) yield {
-      // Port definitions need to know input or output at top-level.
-      // By FIRRTL semantics, 'flipped' becomes an Input
-      val direction = if(Data.isFirrtlFlipped(port)) Direction.Input else Direction.Output
-      Port(port, direction)
-    }
-
-    val component = DefBlackBox(this, name, firrtlPorts, params)
+    val firrtlPorts = namedPorts map {namedPort => Port(namedPort._2, namedPort._2.specifiedDirection)}
+    val component = DefBlackBox(this, name, firrtlPorts, io.specifiedDirection, params)
     _component = Some(component)
     component
   }
 
-  private[core] def initializeInParent() { 
+  private[core] def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
     for ((_, port) <- io.elements) {
       pushCommand(DefInvalid(UnlocatableSourceInfo, port.ref))
     }

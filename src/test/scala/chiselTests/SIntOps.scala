@@ -40,7 +40,7 @@ class SIntOps extends Module {
   io.lessout := a < b
   io.greatout := a > b
   io.eqout := a === b
-  io.noteqout := (a != b)
+  io.noteqout := (a =/= b)
   io.lesseqout := a <= b
   io.greateqout := a >= b
   // io.negout := -a(15, 0).toSInt
@@ -83,11 +83,34 @@ class SIntOpsTester(c: SIntOps) extends Tester(c) {
 }
 */
 
+class SIntLitExtractTester extends BasicTester {
+  assert(-5.S(1) === true.B)
+  assert(-5.S(2) === false.B)
+  assert(-5.S(100) === true.B)
+  assert(-5.S(3, 0) === "b1011".U)
+  assert(-5.S(9, 0) === "b1111111011".U)
+  assert(-5.S(4.W)(1) === true.B)
+  assert(-5.S(4.W)(2) === false.B)
+  assert(-5.S(4.W)(100) === true.B)
+  assert(-5.S(4.W)(3, 0) === "b1011".U)
+  assert(-5.S(4.W)(9, 0) === "b1111111011".U)
+  stop()
+}
+
 class SIntOpsSpec extends ChiselPropSpec {
 
   property("SIntOps should elaborate") {
     elaborate { new SIntOps }
   }
 
+  property("Negative shift amounts are invalid") {
+    a [ChiselException] should be thrownBy { elaborate(new NegativeShift(SInt())) }
+  }
+
   ignore("SIntOpsTester should return the correct result") { }
+
+  property("Bit extraction on literals should work for all non-negative indices") {
+    assertTesterPasses(new SIntLitExtractTester)
+  }
+
 }

@@ -91,6 +91,26 @@ class BadBoolConversion extends Module {
   io.b := io.u.toBool
 }
 
+class NegativeShift(t: => Bits) extends Module {
+  val io = IO(new Bundle {})
+  Reg(t) >> -1
+}
+
+class UIntLitExtractTester extends BasicTester {
+  assert("b101010".U(2) === false.B)
+  assert("b101010".U(3) === true.B)
+  assert("b101010".U(100) === false.B)
+  assert("b101010".U(3, 0) === "b1010".U)
+  assert("b101010".U(9, 0) === "b0000101010".U)
+
+  assert("b101010".U(6.W)(2) === false.B)
+  assert("b101010".U(6.W)(3) === true.B)
+  assert("b101010".U(6.W)(100) === false.B)
+  assert("b101010".U(6.W)(3, 0) === "b1010".U)
+  assert("b101010".U(6.W)(9, 0) === "b0000101010".U)
+  stop()
+}
+
 class UIntOpsSpec extends ChiselPropSpec with Matchers {
   // Disable shrinking on error.
   implicit val noShrinkListVal = Shrink[List[Int]](_ => Stream.empty)
@@ -110,6 +130,14 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers {
 
   property("UIntOpsTester should return the correct result") {
     assertTesterPasses { new UIntOpsTester(123, 7) }
+  }
+
+  property("Negative shift amounts are invalid") {
+    a [ChiselException] should be thrownBy { elaborate(new NegativeShift(UInt())) }
+  }
+
+  property("Bit extraction on literals should work for all non-negative indices") {
+    assertTesterPasses(new UIntLitExtractTester)
   }
 }
 

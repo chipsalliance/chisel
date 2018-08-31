@@ -13,7 +13,7 @@ class MulLookup(val w: Int) extends Module {
     val y   = Input(UInt(w.W))
     val z   = Output(UInt((2 * w).W))
   })
-  val tbl = Vec(
+  val tbl = VecInit(
     for {
       i <- 0 until 1 << w
       j <- 0 until 1 << w

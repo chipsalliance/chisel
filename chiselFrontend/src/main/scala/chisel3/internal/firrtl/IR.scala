@@ -7,8 +7,6 @@ import core._
 import chisel3.internal._
 import chisel3.internal.sourceinfo.{SourceInfo, NoSourceInfo}
 
-import _root_.firrtl.annotations.Annotation
-
 case class PrimOp(val name: String) {
   override def toString: String = name
 }
@@ -55,13 +53,26 @@ abstract class Arg {
 }
 
 case class Node(id: HasId) extends Arg {
-  override def fullName(ctx: Component): String = id.getRef.fullName(ctx)
-  def name: String = id.getRef.name
+  override def fullName(ctx: Component): String = id.getOptionRef match {
+    case Some(arg) => arg.fullName(ctx)
+    case None => id.suggestedName.getOrElse("??")
+  }
+  def name: String = id.getOptionRef match {
+    case Some(arg) => arg.name
+    case None => id.suggestedName.getOrElse("??")
+  }
 }
 
 abstract class LitArg(val num: BigInt, widthArg: Width) extends Arg {
   private[chisel3] def forcedWidth = widthArg.known
   private[chisel3] def width: Width = if (forcedWidth) widthArg else Width(minWidth)
+  override def fullName(ctx: Component): String = name
+  // Ensure the node representing this LitArg has a ref to it and a literal binding.
+  def bindLitArg[T <: Bits](bits: T): T = {
+    bits.bind(ElementLitBinding(this))
+    bits.setRef(this)
+    bits
+  }
 
   protected def minWidth: Int
   if (forcedWidth) {
@@ -260,13 +271,15 @@ case class DefSeqMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: Int) e
 case class DefMemPort[T <: Data](sourceInfo: SourceInfo, id: T, source: Node, dir: MemPortDirection, index: Arg, clock: Arg) extends Definition
 case class DefInstance(sourceInfo: SourceInfo, id: BaseModule, ports: Seq[Port]) extends Definition
 case class WhenBegin(sourceInfo: SourceInfo, pred: Arg) extends Command
-case class WhenEnd(sourceInfo: SourceInfo) extends Command
+case class WhenEnd(sourceInfo: SourceInfo, firrtlDepth: Int, hasAlt: Boolean = false) extends Command
+case class AltBegin(sourceInfo: SourceInfo) extends Command
+case class OtherwiseEnd(sourceInfo: SourceInfo, firrtlDepth: Int) extends Command
 case class Connect(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
 case class BulkConnect(sourceInfo: SourceInfo, loc1: Node, loc2: Node) extends Command
 case class Attach(sourceInfo: SourceInfo, locs: Seq[Node]) extends Command
 case class ConnectInit(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
 case class Stop(sourceInfo: SourceInfo, clock: Arg, ret: Int) extends Command
-case class Port(id: Data, dir: Direction)
+case class Port(id: Data, dir: SpecifiedDirection)
 case class Printf(sourceInfo: SourceInfo, clock: Arg, pable: Printable) extends Command
 abstract class Component extends Arg {
   def id: BaseModule
@@ -274,6 +287,6 @@ abstract class Component extends Arg {
   def ports: Seq[Port]
 }
 case class DefModule(id: UserModule, name: String, ports: Seq[Port], commands: Seq[Command]) extends Component
-case class DefBlackBox(id: BaseBlackBox, name: String, ports: Seq[Port], params: Map[String, Param]) extends Component
+case class DefBlackBox(id: BaseBlackBox, name: String, ports: Seq[Port], topDir: SpecifiedDirection, params: Map[String, Param]) extends Component
 
-case class Circuit(name: String, components: Seq[Component], annotations: Seq[Annotation] = Seq.empty)
+case class Circuit(name: String, components: Seq[Component], annotations: Seq[ChiselAnnotation] = Seq.empty)

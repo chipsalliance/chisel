@@ -14,7 +14,9 @@ import chisel3.internal.naming.chiselName  // can't use chisel3_ version because
   * @param gen data type
   * @param n number of inputs
   */
-class ArbiterIO[T <: Data](gen: T, n: Int) extends Bundle {
+class ArbiterIO[T <: Data](private val gen: T, val n: Int) extends Bundle {
+  // See github.com/freechipsproject/chisel3/issues/765 for why gen is a private val and proposed replacement APIs.
+
   val in  = Flipped(Vec(n, Decoupled(gen)))
   val out = Decoupled(gen)
   val chosen = Output(UInt(log2Ceil(n).W))
@@ -70,7 +72,7 @@ class LockingRRArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[
     (0 until n).map(i => ctrl(i) && grantMask(i) || ctrl(i + n))
   }
 
-  override protected lazy val choice = Wire(init=(n-1).asUInt)
+  override protected lazy val choice = WireInit((n-1).asUInt)
   for (i <- n-2 to 0 by -1)
     when (io.in(i).valid) { choice := i.asUInt }
   for (i <- n-1 to 1 by -1)
@@ -81,7 +83,7 @@ class LockingArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T 
     extends LockingArbiterLike[T](gen, n, count, needsLock) {
   protected def grant: Seq[Bool] = ArbiterCtrl(io.in.map(_.valid))
 
-  override protected lazy val choice = Wire(init=(n-1).asUInt)
+  override protected lazy val choice = WireInit((n-1).asUInt)
   for (i <- n-2 to 0 by -1)
     when (io.in(i).valid) { choice := i.asUInt }
 }
@@ -89,8 +91,10 @@ class LockingArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T 
 /** Hardware module that is used to sequence n producers into 1 consumer.
   * Producers are chosen in round robin order.
   *
+  * @param gen data type
+  * @param n number of inputs
   * @example {{{
-  * val arb = new RRArbiter(2, UInt())
+  * val arb = Module(new RRArbiter(UInt(), 2))
   * arb.io.in(0) <> producer0.io.out
   * arb.io.in(1) <> producer1.io.out
   * consumer.io.in <> arb.io.out
@@ -102,8 +106,11 @@ class RRArbiter[T <: Data](gen:T, n: Int) extends LockingRRArbiter[T](gen, n, 1)
 /** Hardware module that is used to sequence n producers into 1 consumer.
   * Priority is given to lower producer.
   *
+  * @param gen data type
+  * @param n number of inputs
+  *
   * @example {{{
-  * val arb = Module(new Arbiter(2, UInt()))
+  * val arb = Module(new Arbiter(UInt(), 2))
   * arb.io.in(0) <> producer0.io.out
   * arb.io.in(1) <> producer1.io.out
   * consumer.io.in <> arb.io.out

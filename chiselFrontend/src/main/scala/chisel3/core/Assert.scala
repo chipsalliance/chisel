@@ -23,9 +23,10 @@ object assert { // scalastyle:ignore object.name
     * and single reset).
     *
     * @param cond condition, assertion fires (simulation fails) when false
-    * @param message optional message to print when the assertion fires
+    * @param message optional format string to print when the assertion fires
     * @param data optional bits to print in the message formatting
     *
+    * @note See [[printf.apply(fmt:String* printf]] for format string documentation
     * @note currently cannot be used in core Chisel / libraries because macro
     * defs need to be compiled first and the SBT project is not set up to do
     * that
@@ -51,13 +52,15 @@ object assert { // scalastyle:ignore object.name
   }
 
   def apply_impl_do(cond: Bool, line: String, message: Option[String], data: Bits*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) {
-    when (!(cond || Builder.forcedReset)) {
+    val escLine = line.replaceAll("%", "%%")
+    when (!(cond || Module.reset.toBool)) {
       val fmt = message match {
-        case Some(str) => s"Assertion failed: $str\n    at $line\n"
-        case None => s"Assertion failed\n    at $line\n"
+        case Some(msg) =>
+          s"Assertion failed: $msg\n    at $escLine\n"
+        case None => s"Assertion failed\n    at $escLine\n"
       }
-      printf.printfWithoutReset(fmt.replaceAll("%", "%%"), data:_*)
-      pushCommand(Stop(sourceInfo, Node(Builder.forcedClock), 1))
+      printf.printfWithoutReset(fmt, data:_*)
+      pushCommand(Stop(sourceInfo, Builder.forcedClock.ref, 1))
     }
   }
 
@@ -77,8 +80,8 @@ object assert { // scalastyle:ignore object.name
 object stop { // scalastyle:ignore object.name
   /** Terminate execution with a failure code. */
   def apply(code: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit = {
-    when (!Builder.forcedReset) {
-      pushCommand(Stop(sourceInfo, Node(Builder.forcedClock), code))
+    when (!Module.reset.toBool) {
+      pushCommand(Stop(sourceInfo, Builder.forcedClock.ref, code))
     }
   }
 

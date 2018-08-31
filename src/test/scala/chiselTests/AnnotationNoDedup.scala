@@ -3,16 +3,14 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.ChiselAnnotation
+import chisel3.experimental.{annotate, ChiselAnnotation}
 import firrtl.FirrtlExecutionSuccess
-import firrtl.transforms.DedupModules
+import firrtl.transforms.NoDedupAnnotation
 import org.scalatest.{FreeSpec, Matchers}
 
-trait NoDedupAnnotator {
-  self: Module =>
-
-  def doNotDedup(module: Module): Unit = {
-    annotate(ChiselAnnotation(module, classOf[DedupModules], "nodedup!"))
+object doNotDedup {
+  def apply(module: Module): Unit = {
+    annotate(new ChiselAnnotation { def toFirrtl = NoDedupAnnotation(module.toNamed) })
   }
 }
 
@@ -24,7 +22,7 @@ class MuchUsedModule extends Module {
   io.out := io.in +% 1.U
 }
 
-class UsesMuchUsedModule(addAnnos: Boolean) extends Module with NoDedupAnnotator{
+class UsesMuchUsedModule(addAnnos: Boolean) extends Module {
   val io = IO(new Bundle {
     val in = Input(UInt(16.W))
     val out = Output(UInt(16.W))
@@ -49,7 +47,7 @@ class UsesMuchUsedModule(addAnnos: Boolean) extends Module with NoDedupAnnotator
 
 class AnnotationNoDedup extends FreeSpec with Matchers {
   "Firrtl provides transform that reduces identical modules to a single instance" - {
-    "Annotations can be added which will defeat this deduplication for specific modules instances" in {
+    "Annotations can be added which will prevent this deduplication for specific modules instances" in {
       Driver.execute(Array("-X", "low", "--target-dir", "test_run_dir"), () => new UsesMuchUsedModule(addAnnos = true)) match {
         case ChiselExecutionSuccess(_, _, Some(firrtlResult: FirrtlExecutionSuccess)) =>
           val lowFirrtl = firrtlResult.emitted
@@ -62,7 +60,7 @@ class AnnotationNoDedup extends FreeSpec with Matchers {
         case _ =>
       }
     }
-    "Turning off these nnotations dedup all the occurrences" in {
+    "Turning off these annotations dedups all the occurrences" in {
       Driver.execute(Array("-X", "low", "--target-dir", "test_run_dir"), () => new UsesMuchUsedModule(addAnnos = false)) match {
         case ChiselExecutionSuccess(_, _, Some(firrtlResult: FirrtlExecutionSuccess)) =>
           val lowFirrtl = firrtlResult.emitted

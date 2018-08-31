@@ -5,7 +5,7 @@ package chiselTests
 import Chisel.testers.BasicTester
 import chisel3._
 import chisel3.experimental.FixedPoint
-import chisel3.util.Mux1H
+import chisel3.util.{Mux1H, UIntToOH}
 import org.scalatest._
 
 //scalastyle:off magic.number
@@ -40,6 +40,17 @@ class OneHotMuxSpec extends FreeSpec with Matchers with ChiselRunners {
       assertTesterPasses(new DifferentBundleOneHotTester)
     }
   }
+  "UIntToOH with output width greater than 2^(input width)" in {
+    assertTesterPasses(new UIntToOHTester)
+  }
+  "UIntToOH should not accept width of zero (until zero-width wires are fixed" in {
+    intercept[java.lang.IllegalArgumentException] {
+      assertTesterPasses(new BasicTester {
+        val out = UIntToOH(0.U, 0)
+      })
+    }
+  }
+
 }
 
 class SimpleOneHotTester extends BasicTester {
@@ -126,10 +137,10 @@ object Agg1 extends HasMakeLit[Agg1] {
     val (d: Double, e: Double, f: Double, g: Double) = (x, x * 2.0, x * 3.0, x * 4.0)
 
     val w = Wire(new Agg1)
-    w.v(0) := Wire(d.F(4.BP))
-    w.v(1) := Wire(e.F(4.BP))
-    w.a.f1 := Wire(f.F(3.BP))
-    w.a.f2 := Wire(g.F(5.BP))
+    w.v(0) := d.F(4.BP)
+    w.v(1) := e.F(4.BP)
+    w.a.f1 := f.F(3.BP)
+    w.a.f2 := g.F(5.BP)
     w
   }
 }
@@ -147,10 +158,10 @@ object Agg2 extends HasMakeLit[Agg2] {
     val (d: Double, e: Double, f: Double, g: Double) = (x, x * 2.0, x * 3.0, x * 4.0)
 
     val w = Wire(new Agg2)
-    w.v(0) := Wire(d.F(4.BP))
-    w.v(1) := Wire(e.F(4.BP))
-    w.a.f1 := Wire(f.F(3.BP))
-    w.a.f2 := Wire(g.F(5.BP))
+    w.v(0) := d.F(4.BP)
+    w.v(1) := e.F(4.BP)
+    w.a.f1 := f.F(3.BP)
+    w.a.f2 := g.F(5.BP)
     w
   }
 }
@@ -283,4 +294,15 @@ class DifferentBundleOneHotTester extends BasicTester {
   stop()
 }
 
+class UIntToOHTester extends BasicTester {
+  val out = UIntToOH(1.U, 3)
+  require(out.getWidth == 3)
+  assert(out === 2.U)
+
+  val out2 = UIntToOH(0.U, 1)
+  require(out2.getWidth == 1)
+  assert(out2 === 1.U)
+
+  stop()
+}
 

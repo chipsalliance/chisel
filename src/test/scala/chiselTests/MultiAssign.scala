@@ -26,11 +26,6 @@ class LastAssignTester() extends BasicTester {
   }
 }
 
-class ReassignmentTester() extends BasicTester {
-  val test = 15.U
-  test := 7.U
-}
-
 class MultiAssignSpec extends ChiselFlatSpec {
   "The last assignment" should "be used when multiple assignments happen" in {
     assertTesterPasses{ new LastAssignTester }
@@ -38,9 +33,35 @@ class MultiAssignSpec extends ChiselFlatSpec {
 }
 
 class IllegalAssignSpec extends ChiselFlatSpec {
-  "Reassignments to non-wire types" should "be disallowed" in {
+  "Reassignments to literals" should "be disallowed" in {
     intercept[chisel3.internal.ChiselException] {
-      assertTesterFails{ new ReassignmentTester }
+      elaborate{ new BasicTester {
+        15.U := 7.U
+      }}
+    }
+  }
+  
+  "Reassignments to ops" should "be disallowed" in {
+    intercept[chisel3.internal.ChiselException] {
+      elaborate{ new BasicTester {
+        (15.U + 1.U) := 7.U
+      }}
+    }
+  }
+  
+  "Reassignments to bit slices" should "be disallowed" in {
+    intercept[chisel3.internal.ChiselException] {
+      elaborate{ new BasicTester {
+        (15.U)(1, 0) := 7.U
+      }}
+    }
+  }
+  
+  "Bulk-connecting two read-only nodes" should "be disallowed" in {
+    intercept[chisel3.internal.ChiselException] {
+      elaborate{ new BasicTester {
+        (15.U + 1.U) <> 7.U
+      }}
     }
   }
 }

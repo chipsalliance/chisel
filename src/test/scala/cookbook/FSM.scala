@@ -47,8 +47,8 @@ class DetectTwoOnesTester extends CookbookTester(10) {
   val dut = Module(new DetectTwoOnes)
 
   // Inputs and expected results
-  val inputs: Vec[Bool] = Vec(false.B, true.B, false.B, true.B, true.B, true.B, false.B, true.B, true.B, false.B)
-  val expected: Vec[Bool] = Vec(false.B, false.B, false.B, false.B, false.B, true.B, true.B, false.B, false.B, true.B)
+  val inputs: Vec[Bool] = VecInit(false.B, true.B, false.B, true.B, true.B, true.B, false.B, true.B, true.B, false.B)
+  val expected: Vec[Bool] = VecInit(false.B, false.B, false.B, false.B, false.B, true.B, true.B, false.B, false.B, true.B)
 
   dut.io.in := inputs(cycle)
   assert(dut.io.out === expected(cycle))

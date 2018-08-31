@@ -11,17 +11,26 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
   behavior of "Chisel compatibility layer"
 
   it should "accept direction arguments" in {
-    val directionArgument: Direction = Gen.oneOf(INPUT, OUTPUT, NODIR).sample.get
-    val b = Bool(directionArgument)
-    b shouldBe a [Bool]
-    b.getWidth shouldEqual 1
-    b.dir shouldEqual(directionArgument)
-    // Choose a random width
-    val width = Gen.choose(1, 2048).sample.get
-    val u = UInt(directionArgument, width)
-    u shouldBe a [UInt]
-    u.getWidth shouldEqual width
-    u.dir shouldEqual(directionArgument)
+    elaborate(new Module {
+      // Choose a random direction
+      val directionArgument: Direction = Gen.oneOf(INPUT, OUTPUT, NODIR).sample.get
+      val expectedDirection = directionArgument match {
+        case NODIR => OUTPUT
+        case other => other
+      }
+      // Choose a random width
+      val width = Gen.choose(1, 2048).sample.get
+      val io = new Bundle {
+        val b = Bool(directionArgument)
+        val u = UInt(directionArgument, width)
+      }
+      io.b shouldBe a [Bool]
+      io.b.getWidth shouldEqual 1
+      io.b.dir shouldEqual (expectedDirection)
+      io.u shouldBe a [UInt]
+      io.u.getWidth shouldEqual width
+      io.u.dir shouldEqual (expectedDirection)
+    })
   }
 
   it should "accept single argument U/SInt factory methods" in {
@@ -60,7 +69,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
   it should "successfully compile a complete module" in {
     class Dummy extends Module {
       // The following just checks that we can create objects with nothing more than the Chisel compatibility package.
-      val io = new Bundle
+      val io = new Bundle {}
       val data = UInt(width = 3)
       new ArbiterIO(data, 2) shouldBe a [ArbiterIO[_]]
       new LockingRRArbiter(data, 2, 2, None) shouldBe a [LockingRRArbiter[_]]
@@ -161,6 +170,14 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
     elaborate { new Chisel2CompatibleRisc }
   }
 
+  it should "not try to assign directions to Analog" in {
+    elaborate(new Module {
+      val io = new Bundle {
+        val port = chisel3.experimental.Analog(32.W)
+      }
+    })
+  }
+
 
   class SmallBundle extends Bundle {
     val f1 = UInt(width = 4)
@@ -241,4 +258,82 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
     }
     elaborate { new DirectionLessConnectionModule() }
   }
+
+  "Vec ports" should "give default directions to children so they can be used in chisel3.util" in {
+    import Chisel._
+    elaborate(new Module {
+      val io = new Bundle {
+        val in = Vec(1, UInt(width = 8)).flip
+        val out = UInt(width = 8)
+      }
+      io.out := RegEnable(io.in(0), true.B)
+    })
+  }
+
+  "Reset" should "still walk, talk, and quack like a Bool" in {
+    import Chisel._
+    elaborate(new Module {
+      val io = new Bundle {
+        val in = Bool(INPUT)
+        val out = Bool(OUTPUT)
+      }
+      io.out := io.in && reset
+    })
+  }
+
+  "Data.dir" should "give the correct direction for io" in {
+    import Chisel._
+    elaborate(new Module {
+      val io = (new Bundle {
+        val foo = Bool(OUTPUT)
+        val bar = Bool().flip
+      }).flip
+      Chisel.assert(io.foo.dir == INPUT)
+      Chisel.assert(io.bar.dir == OUTPUT)
+    })
+  }
+
+  // Note: This is a regression (see https://github.com/freechipsproject/chisel3/issues/668)
+  it should "fail for Chisel types" in {
+    import Chisel._
+    an [chisel3.core.Binding.ExpectedHardwareException] should be thrownBy {
+      elaborate(new Module {
+        val io = new Bundle { }
+        UInt(INPUT).dir
+      })
+    }
+  }
+
+  "Mux return value" should "be able to be used on the RHS" in {
+    import Chisel._
+    elaborate(new Module {
+      val gen = new Bundle { val foo = UInt(width = 8) }
+      val io = new Bundle {
+        val a = Vec(2, UInt(width = 8)).asInput
+        val b = Vec(2, UInt(width = 8)).asInput
+        val c = gen.asInput
+        val d = gen.asInput
+        val en = Bool(INPUT)
+        val y = Vec(2, UInt(width = 8)).asOutput
+        val z = gen.asOutput
+      }
+      io.y := Mux(io.en, io.a, io.b)
+      io.z := Mux(io.en, io.c, io.d)
+    })
+  }
+
+  "Chisel3 IO constructs" should "be useable in Chisel2" in {
+    import Chisel._
+    elaborate(new Module {
+      val io = IO(new Bundle {
+        val in = Input(Bool())
+        val foo = Output(Bool())
+        val bar = Flipped(Bool())
+      })
+      Chisel.assert(io.in.dir == INPUT)
+      Chisel.assert(io.foo.dir == OUTPUT)
+      Chisel.assert(io.bar.dir == INPUT)
+    })
+  }
+
 }

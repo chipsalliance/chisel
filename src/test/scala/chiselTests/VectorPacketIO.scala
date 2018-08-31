@@ -27,7 +27,7 @@ class Packet extends Bundle {
   * lines also.
   * The problem does not occur if the Vec is taken out
   */
-class VectorPacketIO(n: Int) extends Bundle {
+class VectorPacketIO(val n: Int) extends Bundle {
   val ins  = Vec(n, chisel3.util.DeqIO(new Packet()))
   val outs = Vec(n, chisel3.util.EnqIO(new Packet()))
 }
@@ -40,13 +40,19 @@ class BrokenVectorPacketModule extends Module {
   val n  = 4
   val io = IO(new VectorPacketIO(n))
 
+  // Avoid a "Reference io is not fully initialized" error from firrtl.
+  for (i <- 0 until n) {
+    io.outs(i) <> io.ins(i)
+  }
+
   /* the following method of initializing the circuit may change in the future */
   io.ins.foreach(_.nodeq())
   io.outs.foreach(_.noenq())
 }
 
 class VectorPacketIOUnitTester extends BasicTester {
-  val device_under_test = Module(new BrokenVectorPacketModule)
+  val dut = Module(new BrokenVectorPacketModule)
+  dut.io <> DontCare
 
   // This counter just makes the test end quicker
   val c = Counter(1)

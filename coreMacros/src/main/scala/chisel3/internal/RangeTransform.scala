@@ -9,6 +9,8 @@ import scala.language.experimental.macros
 import scala.reflect.macros.blackbox.Context
 import scala.reflect.macros.whitebox
 
+// Workaround for https://github.com/sbt/sbt/issues/3966
+object RangeTransform
 class RangeTransform(val c: Context) {
   import c.universe._
   def apply(args: c.Tree*): c.Tree = {

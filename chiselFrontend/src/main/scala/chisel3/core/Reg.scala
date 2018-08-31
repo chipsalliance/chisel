@@ -17,12 +17,12 @@ object Reg {
     */
   def apply[T <: Data](t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     if (compileOptions.declaredTypeMustBeUnbound) {
-      Binding.checkUnbound(t, s"t ($t) must be unbound Type. Try using cloneType?")
+      requireIsChiselType(t, "reg type")
     }
-    val reg = t.chiselCloneType
+    val reg = t.cloneTypeFull
     val clock = Node(Builder.forcedClock)
 
-    Binding.bind(reg, RegBinder(Builder.forcedUserModule), "Error: t")
+    reg.bind(RegBinding(Builder.forcedUserModule))
     pushCommand(DefReg(sourceInfo, reg, clock))
     reg
   }
@@ -36,11 +36,11 @@ object RegNext {
   def apply[T <: Data](next: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     val model = (next match {
       case next: Bits => next.cloneTypeWidth(Width())
-      case next => next.chiselCloneType
+      case next => next.cloneTypeFull
     }).asInstanceOf[T]
     val reg = Reg(model)
 
-    Binding.checkSynthesizable(next, s"'next' ($next)")  // TODO: move into connect?
+    requireIsHardware(next, "reg next")
     reg := next
 
     reg
@@ -53,11 +53,11 @@ object RegNext {
   def apply[T <: Data](next: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     val model = (next match {
       case next: Bits => next.cloneTypeWidth(Width())
-      case next => next.chiselCloneType
+      case next => next.cloneTypeFull
     }).asInstanceOf[T]
     val reg = RegInit(model, init)  // TODO: this makes NO sense
 
-    Binding.checkSynthesizable(next, s"'next' ($next)")  // TODO: move into connect?
+    requireIsHardware(next, "reg next")
     reg := next
 
     reg
@@ -69,13 +69,10 @@ object RegInit {
     * Register type is inferred from the initializer.
     */
   def apply[T <: Data](init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
-    val model = (init.litArg match {
+    val model = (init match {
       // For e.g. Reg(init=UInt(0, k)), fix the Reg's width to k
-      case Some(lit) if lit.forcedWidth => init.chiselCloneType
-      case _ => init match {
-        case init: Bits => init.cloneTypeWidth(Width())
-        case init => init.chiselCloneType
-      }
+      case init: Bits if init.litIsForcedWidth == Some(false) => init.cloneTypeWidth(Width())
+      case init => init.cloneTypeFull
     }).asInstanceOf[T]
     RegInit(model, init)
   }
@@ -84,14 +81,14 @@ object RegInit {
     */
   def apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     if (compileOptions.declaredTypeMustBeUnbound) {
-      Binding.checkUnbound(t, s"t ($t) must be unbound Type. Try using cloneType?")
+      requireIsChiselType(t, "reg type")
     }
-    val reg = t.chiselCloneType
-    val clock = Node(Builder.forcedClock)
-    val reset = Node(Builder.forcedReset)
+    val reg = t.cloneTypeFull
+    val clock = Builder.forcedClock.ref
+    val reset = Builder.forcedReset.ref
 
-    Binding.bind(reg, RegBinder(Builder.forcedUserModule), "Error: t")
-    Binding.checkSynthesizable(init, s"'init' ($init)")
+    reg.bind(RegBinding(Builder.forcedUserModule))
+    requireIsHardware(init, "reg initializer")
     pushCommand(DefRegInit(sourceInfo, reg, clock, reset, init.ref))
     reg
   }

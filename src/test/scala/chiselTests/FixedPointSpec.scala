@@ -32,9 +32,9 @@ class FixedPointFromBitsTester extends BasicTester {
   val sint_result = FixedPoint.fromDouble(-1.5, 4.W, 1.BP)
   val fp_result   = FixedPoint.fromDouble(1.5, 4.W, 1.BP)
 
-  val uint2fp = fp_tpe.fromBits(uint)
-  val sint2fp = fp_tpe.fromBits(sint)
-  val fp2fp   = fp_tpe.fromBits(fp)
+  val uint2fp = uint.asTypeOf(fp_tpe)
+  val sint2fp = sint.asTypeOf(fp_tpe)
+  val fp2fp   = fp.asTypeOf(fp_tpe)
 
   val uintToFp = uint.asFixedPoint(1.BP)
   val sintToFp = sint.asFixedPoint(1.BP)
@@ -108,9 +108,26 @@ class SBPTester extends BasicTester {
   assert(dut.io.out === 3.0.F(0.BP))
 
   val test = Wire(FixedPoint(10.W, 5.BP))
+  // Initialize test, avoiding a "Reference test is not fully initialized" error from firrtl.
+  test := 0.0.F(5.BP)
   val q = test.setBinaryPoint(18)
   assert(q.getWidth.U === 23.U)
 
+  stop()
+}
+
+class FixedPointLitExtractTester extends BasicTester {
+  assert(-4.75.F(2.BP)(1) === false.B)
+  assert(-4.75.F(2.BP)(2) === true.B)
+  assert(-4.75.F(2.BP)(100) === true.B)
+  assert(-4.75.F(2.BP)(3, 0) === "b1101".U)
+  assert(-4.75.F(2.BP)(9, 0) === "b1111101101".U)
+
+  assert(-4.75.F(6.W, 2.BP)(1) === false.B)
+  assert(-4.75.F(6.W, 2.BP)(2) === true.B)
+  assert(-4.75.F(6.W, 2.BP)(100) === true.B)
+  assert(-4.75.F(6.W, 2.BP)(3, 0) === "b1101".U)
+  assert(-4.75.F(6.W, 2.BP)(9, 0) === "b1111101101".U)
   stop()
 }
 
@@ -123,5 +140,11 @@ class FixedPointSpec extends ChiselPropSpec {
   }
   property("should mux different widths and binary points") {
     assertTesterPasses { new FixedPointMuxTester }
+  }
+  property("Negative shift amounts are invalid") {
+    a [ChiselException] should be thrownBy { elaborate(new NegativeShift(FixedPoint(1.W, 0.BP))) }
+  }
+  property("Bit extraction on literals should work for all non-negative indices") {
+    assertTesterPasses(new FixedPointLitExtractTester)
   }
 }
