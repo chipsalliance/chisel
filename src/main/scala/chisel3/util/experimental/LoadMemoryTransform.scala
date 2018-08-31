@@ -4,7 +4,7 @@ package chisel3.util.experimental
 
 import chisel3._
 import chisel3.experimental.annotate
-import chisel3.InstanceId
+// import chisel3.InstanceId
 import chisel3.experimental.{ChiselAnnotation, RunFirrtlTransform}
 import firrtl.annotations.{MemoryLoadFileType, _}
 import firrtl.ir.{Module => _, _}
@@ -14,67 +14,14 @@ import firrtl.{AnnotationSeq, CircuitForm, CircuitState, EmitCircuitAnnotation, 
 
 import scala.collection.mutable
 
-/** Use this annotation to load a memory from a text file by using verilator and verilog's $readmemh or $readmemb
-  * The treadle backend can also recognize this annotation and load memory at run-time.
-  *
-  * This annotation triggers the [[LoadMemoryTransform]] which will take add the verilog directive to
-  * the relevant module by using the creating separate modules that are bound to the modules containing
-  * the memories to be loaded.
-  *
-  * ==Example module==
-  *
-  * Consider a simple Module containing a memory
-  * {{{
-  * import chisel3._
-  * class UsesMem(memoryDepth: Int, memoryType: Data) extends Module {
-  *   val io = IO(new Bundle {
-  *     val address = Input(UInt(memoryType.getWidth.W))
-  *     val value   = Output(memoryType)
-  *   })
-  *   val memory = Mem(memoryDepth, memoryType)
-  *   io.value := memory(io.address)
-  * }
-  * }}}
-  *
-  * ==Above module with annotation==
-  *
-  * To load this memory from a file /workspace/workdir/mem1.hex.txt
-  * Just add an import and annotate the memory
-  * {{{
-  * import chisel3._
-  * import chisel3.util.experimental.loadMemoryFromFile   // <<-- new import here
-  * class UsesMem(memoryDepth: Int, memoryType: Data) extends Module {
-  *   val io = IO(new Bundle {
-  *     val address = Input(UInt(memoryType.getWidth.W))
-  *     val value   = Output(memoryType)
-  *   })
-  *   val memory = Mem(memoryDepth, memoryType)
-  *   io.value := memory(io.address)
-  *   loadMemoryFromFile(memory, "/workspace/workdir/mem1.hex.txt")  // <<-- Note the annotation here
-  * }
-  * }}}
-  *
-  * ==Example file format==
-  * A memory file should consist of ascii text in either hex or binary format
-  * Example (a file containing the decimal values 0, 7, 14, 21):
-  * {{{
-  *   0
-  *   7
-  *   d
-  *  15
-  * }}}
-  * Binary file is similarly constructed.
-  *
-  * ==More info==
-  * See the LoadMemoryFromFileSpec.scala in the test suite for more examples
-  * @see <a href="https://github.com/freechipsproject/chisel3/wiki/Chisel-Memories">Load Memories in the Chisel wiki</a>
-  *
+/** This is the annotation created when using [[loadMemoryFromFile]], it records the memory, the load file
+  * and the format of the file.
   * @param target        memory to load
   * @param fileName      name of input file
   * @param hexOrBinary   use $readmemh or $readmemb, i.e. hex or binary text input, default is hex
   */
-case class ChiselLoadMemoryAnnotation(
-  target:      InstanceId,
+case class ChiselLoadMemoryAnnotation[T <: Data](
+  target:      MemBase[T],
   fileName:    String,
   hexOrBinary: MemoryLoadFileType.FileType = MemoryLoadFileType.Hex
 )
@@ -95,8 +42,64 @@ case class ChiselLoadMemoryAnnotation(
 
 
 object loadMemoryFromFile {
-  def apply(
-    memory: MemBase[_],
+  /** Use this annotation generator to load a memory from a text file by using verilator and
+    *  verilog's $readmemh or $readmemb.
+    *  The treadle backend can also recognize this annotation and load memory at run-time.
+    *
+    * This annotation triggers the [[LoadMemoryTransform]] which will take add the verilog directive to
+      * the relevant module by using the creating separate modules that are bound to the modules containing
+    * the memories to be loaded.
+    *
+    * ==Example module==
+    *
+    * Consider a simple Module containing a memory
+      * {{{
+        * import chisel3._
+        * class UsesMem(memoryDepth: Int, memoryType: Data) extends Module {
+          *   val io = IO(new Bundle {
+            *     val address = Input(UInt(memoryType.getWidth.W))
+            *     val value   = Output(memoryType)
+            *   })
+          *   val memory = Mem(memoryDepth, memoryType)
+          *   io.value := memory(io.address)
+          * }
+        * }}}
+    *
+    * ==Above module with annotation==
+      *
+    * To load this memory from a file /workspace/workdir/mem1.hex.txt
+    * Just add an import and annotate the memory
+      * {{{
+        * import chisel3._
+        * import chisel3.util.experimental.loadMemoryFromFile   // <<-- new import here
+        * class UsesMem(memoryDepth: Int, memoryType: Data) extends Module {
+          *   val io = IO(new Bundle {
+            *     val address = Input(UInt(memoryType.getWidth.W))
+            *     val value   = Output(memoryType)
+            *   })
+          *   val memory = Mem(memoryDepth, memoryType)
+          *   io.value := memory(io.address)
+          *   loadMemoryFromFile(memory, "/workspace/workdir/mem1.hex.txt")  // <<-- Note the annotation here
+          * }
+        * }}}
+    *
+    * ==Example file format==
+      * A memory file should consist of ascii text in either hex or binary format
+    * Example (a file containing the decimal values 0, 7, 14, 21):
+      * {{{
+        *   0
+        *   7
+        *   d
+        *  15
+        * }}}
+    * Binary file is similarly constructed.
+    *
+    * ==More info==
+    * See the LoadMemoryFromFileSpec.scala in the test suite for more examples
+    * @see <a href="https://github.com/freechipsproject/chisel3/wiki/Chisel-Memories">Load Memories in the wiki</a>
+    */
+  def apply[T <: Data](
+    memory: MemBase[T],
     fileName: String,
     hexOrBinary: MemoryLoadFileType.FileType = MemoryLoadFileType.Hex
   ): Unit = {
@@ -114,7 +117,7 @@ object loadMemoryFromFile {
   * memory from a file is treadle but it does not need this transform
   * to do that.
   */
-//noinspection ScalaStyle
+//scalastyle:off method.length
 class LoadMemoryTransform extends Transform {
   def inputForm: CircuitForm  = LowForm
   def outputForm: CircuitForm = LowForm
@@ -137,14 +140,14 @@ class LoadMemoryTransform extends Transform {
       .groupBy(_.target.serialize)
     val memoryAnnotations = groups.map { case (key, annos) =>
         if (annos.size > 1) {
-          throw new Exception(s"Multiple (${annos.size} found for memory $key one LoadMemoryAnnotation is allowed per memory")
+          throw new Exception(
+            s"Multiple (${annos.size} found for memory $key one LoadMemoryAnnotation is allowed per memory"
+          )
         }
         key -> annos.head
       }
 
-    val modulesByName = {
-      circuit.modules.collect { case m: firrtl.ir.Module => m }.map { module => module.name -> module }.toMap
-    }
+    val modulesByName = circuit.modules.collect { case module: firrtl.ir.Module =>  module.name -> module }.toMap
 
     /**
       * walk the module and for memories that have LoadMemory annotations

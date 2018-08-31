@@ -2,7 +2,7 @@
 
 package chiselTests
 
-import java.io.{ByteArrayOutputStream, File, PrintStream}
+import java.io.File
 
 import chisel3._
 import chisel3.util.experimental.loadMemoryFromFile
@@ -11,7 +11,6 @@ import firrtl.FirrtlExecutionSuccess
 import firrtl.annotations.MemoryLoadFileType
 import org.scalatest.{FreeSpec, Matchers}
 
-//noinspection TypeAnnotation
 class UsesThreeMems(memoryDepth: Int, memoryType: Data) extends Module {
   val io = IO(new Bundle {
     val address = Input(UInt(memoryType.getWidth.W))
@@ -48,9 +47,6 @@ class UsesMem(memoryDepth: Int, memoryType: Data) extends Module {
   val low1 = Module(new UsesMemLow(memoryDepth, memoryType))
   val low2 = Module(new UsesMemLow(memoryDepth, memoryType))
 
-//  doNotDedup(low1)
-//  doNotDedup(low2)
-
   low2.io.address := io.address
   low1.io.address := io.address
   io.value1 := low1.io.value
@@ -70,7 +66,6 @@ class UsesMemLow(memoryDepth: Int, memoryType: Data) extends Module {
   io.value := memory(io.address)
 }
 
-//noinspection TypeAnnotation
 class FileHasSuffix(memoryDepth: Int, memoryType: Data) extends Module {
   val io = IO(new Bundle {
     val address = Input(UInt(memoryType.getWidth.W))
@@ -121,8 +116,7 @@ class LoadMemoryFromFileSpec extends FreeSpec with Matchers {
     file.exists() should be (true)
     mem.foreach( m => {
       info(s"Memory $m is referenced in $file")
-      val found = io.Source.fromFile(file).getLines
-        .foldLeft(false){ case (found, line) => found || line.contains(s"""readmemh("$m"""") }
+      val found = io.Source.fromFile(file).getLines.exists { _.contains(s"""readmemh("$m"""") }
       found should be (true)
     } )
     file.delete()
@@ -174,7 +168,7 @@ class LoadMemoryFromFileSpec extends FreeSpec with Matchers {
     )
 
     result match {
-      case ChiselExecutionSuccess(_, emitted, Some(FirrtlExecutionSuccess(emitType, firrtlEmitted))) =>
+      case ChiselExecutionSuccess(_, _, Some(FirrtlExecutionSuccess(emitType, firrtlEmitted))) =>
         val dir = new File(complexTestDirName)
         val memoryElements = Seq("a", "b", "c")
 
