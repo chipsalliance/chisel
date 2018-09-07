@@ -12,10 +12,11 @@ import chisel3.internal._
 import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{InstTransform, SourceInfo}
+import chisel3.SourceInfoDoc
 
 import _root_.firrtl.annotations.{CircuitName, ModuleName}
 
-object Module {
+object Module extends SourceInfoDoc {
   /** A wrapper method that all Module instantiations must be wrapped in
     * (necessary to help Chisel track internal state).
     *
@@ -25,6 +26,7 @@ object Module {
     */
   def apply[T <: BaseModule](bc: => T): T = macro InstTransform.apply[T]
 
+  /** @group SourceInfoTransformMacro */
   def do_apply[T <: BaseModule](bc: => T)
                                (implicit sourceInfo: SourceInfo,
                                          compileOptions: CompileOptions): T = {

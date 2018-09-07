@@ -50,11 +50,11 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     @chiselRuntimeDeprecated
     @deprecated("Input(Data) should be used over Data.asInput", "chisel3")
     def asInput: T = Input(target)
-    
+
     @chiselRuntimeDeprecated
     @deprecated("Output(Data) should be used over Data.asOutput", "chisel3")
     def asOutput: T = Output(target)
-    
+
     @chiselRuntimeDeprecated
     @deprecated("Flipped(Data) should be used over Data.flip", "chisel3")
     def flip(): T = Flipped(target)
@@ -152,7 +152,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     @chiselRuntimeDeprecated
     @deprecated("use n.U", "chisel3, will be removed by end of 2017")
     def apply(n: String): UInt = n.asUInt
-    
+
     /** Create a UInt literal with fixed width. */
     @chiselRuntimeDeprecated
     @deprecated("use n.U(width.W)", "chisel3, will be removed by end of 2017")
@@ -192,7 +192,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     @chiselRuntimeDeprecated
     @deprecated("use SInt(width.W)", "chisel3, will be removed by end of 2017")
     def width(width: Int): SInt = apply(width.W)
-    
+
     /** Create an SInt type with specified width. */
     @chiselRuntimeDeprecated
     @deprecated("use SInt(width)", "chisel3, will be removed by end of 2017")
@@ -202,7 +202,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     @chiselRuntimeDeprecated
     @deprecated("use value.S", "chisel3, will be removed by end of 2017")
     def apply(value: BigInt): SInt = value.asSInt
-    
+
     /** Create an SInt literal with fixed width. */
     @chiselRuntimeDeprecated
     @deprecated("use value.S(width.W)", "chisel3, will be removed by end of 2017")
@@ -257,7 +257,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   val SeqMem = chisel3.core.SyncReadMem
   @deprecated("Use 'SyncReadMem'", "chisel3")
   type SeqMem[T <: Data] = chisel3.core.SyncReadMem[T]
-  
+
   val Module = chisel3.core.Module
   type Module = chisel3.core.LegacyModule
 
@@ -367,18 +367,20 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   implicit class fromIntToWidth(x: Int) extends chisel3.core.fromIntToWidth(x)
   implicit class fromIntToBinaryPoint(x: Int) extends chisel3.core.fromIntToBinaryPoint(x)
 
-  implicit class fromUIntToBitPatComparable(x: UInt) {
+  implicit class fromUIntToBitPatComparable(x: UInt) extends chisel3.SourceInfoDoc {
     import scala.language.experimental.macros
     import internal.sourceinfo.{SourceInfo, SourceInfoTransform}
 
     final def === (that: BitPat): Bool = macro SourceInfoTransform.thatArg
     final def =/= (that: BitPat): Bool = macro SourceInfoTransform.thatArg
 
+    /** @group SourceInfoTransformMacro */
     def do_=== (that: BitPat)  // scalastyle:ignore method.name
         (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that === x
+    /** @group SourceInfoTransformMacro */
     def do_=/= (that: BitPat)  // scalastyle:ignore method.name
         (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that =/= x
-        
+
     final def != (that: BitPat): Bool = macro SourceInfoTransform.thatArg
     @chiselRuntimeDeprecated
     @deprecated("Use '=/=', which avoids potential precedence problems", "chisel3")

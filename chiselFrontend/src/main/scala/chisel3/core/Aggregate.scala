@@ -10,6 +10,7 @@ import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo._
+import chisel3.SourceInfoDoc
 
 /** An abstract class for data types that solely consist of (are an aggregate
   * of) other Data objects.
@@ -97,7 +98,7 @@ sealed abstract class Aggregate extends Data {
   }
 }
 
-trait VecFactory {
+trait VecFactory extends SourceInfoDoc {
   /** Creates a new [[Vec]] with `n` entries of the specified data type.
     *
     * @note elements are NOT assigned by default and have no value
@@ -209,6 +210,7 @@ sealed class Vec[T <: Data] private[core] (gen: => T, val length: Int)
     */
   override def apply(p: UInt): T = macro CompileOptionsTransform.pArg
 
+  /** @group SourceInfoTransformMacro */
   def do_apply(p: UInt)(implicit compileOptions: CompileOptions): T = {
     requireIsHardware(p, "vec index")
     val port = gen
@@ -259,7 +261,7 @@ sealed class Vec[T <: Data] private[core] (gen: => T, val length: Int)
   }
 }
 
-object VecInit {
+object VecInit extends SourceInfoDoc {
   /** Creates a new [[Vec]] composed of elements of the input Seq of [[Data]]
     * nodes.
     *
@@ -271,6 +273,7 @@ object VecInit {
     */
   def apply[T <: Data](elts: Seq[T]): Vec[T] = macro VecTransform.apply_elts
 
+  /** @group SourceInfoTransformMacro */
   def do_apply[T <: Data](elts: Seq[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = {
     // REVIEW TODO: this should be removed in favor of the apply(elts: T*)
     // varargs constructor, which is more in line with the style of the Scala
@@ -310,6 +313,7 @@ object VecInit {
     */
   def apply[T <: Data](elt0: T, elts: T*): Vec[T] = macro VecTransform.apply_elt0
 
+  /** @group SourceInfoTransformMacro */
   def do_apply[T <: Data](elt0: T, elts: T*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
     apply(elt0 +: elts.toSeq)
 
@@ -323,6 +327,7 @@ object VecInit {
     */
   def tabulate[T <: Data](n: Int)(gen: (Int) => T): Vec[T] = macro VecTransform.tabulate
 
+  /** @group SourceInfoTransformMacro */
   def do_tabulate[T <: Data](n: Int)(gen: (Int) => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
     apply((0 until n).map(i => gen(i)))
 }
@@ -330,9 +335,10 @@ object VecInit {
 /** A trait for [[Vec]]s containing common hardware generators for collection
   * operations.
   */
-trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
+trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId with SourceInfoDoc {
   def apply(p: UInt): T = macro CompileOptionsTransform.pArg
 
+  /** @group SourceInfoTransformMacro */
   def do_apply(p: UInt)(implicit compileOptions: CompileOptions): T
 
   // IndexedSeq has its own hashCode/equals that we must not use
@@ -353,6 +359,7 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
     */
   def forall(p: T => Bool): Bool = macro SourceInfoTransform.pArg
 
+  /** @group SourceInfoTransformMacro */
   def do_forall(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
     (this map p).fold(true.B)(_ && _)
 
@@ -360,6 +367,7 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
     */
   def exists(p: T => Bool): Bool = macro SourceInfoTransform.pArg
 
+  /** @group SourceInfoTransformMacro */
   def do_exists(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
     (this map p).fold(false.B)(_ || _)
 
@@ -368,6 +376,7 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
     */
   def contains(x: T)(implicit ev: T <:< UInt): Bool = macro VecTransform.contains
 
+  /** @group SourceInfoTransformMacro */
   def do_contains(x: T)(implicit sourceInfo: SourceInfo, ev: T <:< UInt, compileOptions: CompileOptions): Bool =
     this.exists(_ === x)
 
@@ -375,6 +384,7 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
     */
   def count(p: T => Bool): UInt = macro SourceInfoTransform.pArg
 
+  /** @group SourceInfoTransformMacro */
   def do_count(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     SeqUtils.count(this map p)
 
@@ -387,6 +397,7 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
     */
   def indexWhere(p: T => Bool): UInt = macro SourceInfoTransform.pArg
 
+  /** @group SourceInfoTransformMacro */
   def do_indexWhere(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     SeqUtils.priorityMux(indexWhereHelper(p))
 
@@ -394,6 +405,7 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
     */
   def lastIndexWhere(p: T => Bool): UInt = macro SourceInfoTransform.pArg
 
+  /** @group SourceInfoTransformMacro */
   def do_lastIndexWhere(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     SeqUtils.priorityMux(indexWhereHelper(p).reverse)
 
@@ -409,6 +421,7 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
     */
   def onlyIndexWhere(p: T => Bool): UInt = macro SourceInfoTransform.pArg
 
+  /** @group SourceInfoTransformMacro */
   def do_onlyIndexWhere(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     SeqUtils.oneHotMux(indexWhereHelper(p))
 }

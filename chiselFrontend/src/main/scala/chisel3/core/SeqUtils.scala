@@ -18,6 +18,7 @@ private[chisel3] object SeqUtils {
     */
   def asUInt[T <: Bits](in: Seq[T]): UInt = macro SourceInfoTransform.inArg
 
+  /** @group SourceInfoTransformMacros */
   def do_asUInt[T <: Bits](in: Seq[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
     if (in.tail.isEmpty) {
       in.head.asUInt
@@ -32,6 +33,7 @@ private[chisel3] object SeqUtils {
     */
   def count(in: Seq[Bool]): UInt = macro SourceInfoTransform.inArg
 
+  /** @group SourceInfoTransformMacros */
   def do_count(in: Seq[Bool])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = in.size match {
     case 0 => 0.U
     case 1 => in.head
@@ -42,6 +44,7 @@ private[chisel3] object SeqUtils {
     */
   def priorityMux[T <: Data](in: Seq[(Bool, T)]): T = macro SourceInfoTransform.inArg
 
+  /** @group SourceInfoTransformMacros */
   def do_priorityMux[T <: Data](in: Seq[(Bool, T)])
                                (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     if (in.size == 1) {
@@ -60,6 +63,7 @@ private[chisel3] object SeqUtils {
   def oneHotMux[T <: Data](in: Iterable[(Bool, T)]): T = macro SourceInfoTransform.inArg
 
   //scalastyle:off method.length cyclomatic.complexity
+  /** @group SourceInfoTransformMacros */
   def do_oneHotMux[T <: Data](in: Iterable[(Bool, T)])
                              (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     if (in.tail.isEmpty) {
