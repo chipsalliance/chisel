@@ -245,6 +245,8 @@ package object chisel3 {    // scalastyle:ignore package.object.name
 
   type BlackBox = chisel3.core.BlackBox
 
+  type InstanceId = chisel3.internal.InstanceId
+
   val Mem = chisel3.core.Mem
   type MemBase[T <: Data] = chisel3.core.MemBase[T]
   type Mem[T <: Data] = chisel3.core.Mem[T]
