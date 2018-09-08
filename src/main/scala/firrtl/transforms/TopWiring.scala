@@ -1,5 +1,5 @@
 // See LICENSE for license details.
-package firrtl.transform
+package firrtl.transforms
 package TopWiring
 
 import firrtl._
@@ -198,7 +198,7 @@ class TopWiringTransform extends Transform {
                 }
                 path.size match {
                    case 1 => {
-                       val leafRef = WRef(path.head.mkString("_"))
+                       val leafRef = WRef(path.head.mkString(""))
                        Connect(NoInfo, modRef, leafRef)
                    }
                    case _ =>  {
@@ -251,19 +251,21 @@ class TopWiringTransform extends Transform {
                           (String,Seq[((ComponentName, Type, Boolean, InstPath, String), Int)],
                                         CircuitState) => CircuitState)] = state.annotations.collect {
          case TopWiringOutputFilesAnnotation(td,of) => (td, of) }
-
     // Do actual work of this transform
     val sources = getSourcesMap(state)
-    val portnamesmap : mutable.Map[String,String] = mutable.Map()
-    val instgraph = new firrtl.analyses.InstanceGraph(state.circuit)
-    val namespacemap = state.circuit.modules.map{ case m => (m.name -> Namespace(m)) }.toMap
-    val modulesx = state.circuit.modules map onModule(sources, portnamesmap, instgraph, namespacemap)
-    val newCircuit = state.circuit.copy(modules = modulesx)
-    val fixedCircuit = fixupCircuit(newCircuit)
-    val mappings = sources(state.circuit.main).zipWithIndex
+    val (nstate, nmappings) = if (sources.nonEmpty) {
+      val portnamesmap: mutable.Map[String,String] = mutable.Map()
+      val instgraph = new firrtl.analyses.InstanceGraph(state.circuit)
+      val namespacemap = state.circuit.modules.map{ case m => (m.name -> Namespace(m)) }.toMap
+      val modulesx = state.circuit.modules map onModule(sources, portnamesmap, instgraph, namespacemap)
+      val newCircuit = state.circuit.copy(modules = modulesx)
+      val fixedCircuit = fixupCircuit(newCircuit)
+      val mappings = sources(state.circuit.main).zipWithIndex
+      (state.copy(circuit = fixedCircuit), mappings)
+    }
+    else { (state, List.empty) }
     //Generate output files based on the mapping.
-    outputTuples.map { case (dir, outputfunction) => outputfunction(dir, mappings, state) }
-    // fin.
-    state.copy(circuit = fixedCircuit)
+    outputTuples.map { case (dir, outputfunction) => outputfunction(dir, nmappings, nstate) }
+    nstate
   }
 }
