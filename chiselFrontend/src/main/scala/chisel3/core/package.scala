@@ -23,7 +23,7 @@ package chisel3 {
     * interpreting calls that have a non-Width parameter as a chained apply, otherwise things like
     * `0.asUInt(16)` (instead of `16.W`) compile without error and produce undesired results.
     */
-    implicit class fromBigIntToLiteral(val bigint: BigInt) {
+    implicit class fromBigIntToLiteral(bigint: BigInt) {
       /** Int to UInt conversion, recommended style for constants.
         */
       def U: UInt = UInt.Lit(bigint, Width())  // scalastyle:ignore method.name
@@ -51,10 +51,10 @@ package chisel3 {
       def asSInt(width: Width): SInt = SInt.Lit(bigint, width)
     }
 
-    implicit class fromIntToLiteral(val int: Int) extends fromBigIntToLiteral(int)
-    implicit class fromLongToLiteral(val long: Long) extends fromBigIntToLiteral(long)
+    implicit class fromIntToLiteral(int: Int) extends fromBigIntToLiteral(int)
+    implicit class fromLongToLiteral(long: Long) extends fromBigIntToLiteral(long)
 
-    implicit class fromStringToLiteral(val str: String) {
+    implicit class fromStringToLiteral(str: String) {
       /** String to UInt parse, recommended style for constants.
         */
       def U: UInt = str.asUInt() // scalastyle:ignore method.name
@@ -85,7 +85,7 @@ package chisel3 {
       }
     }
 
-    implicit class fromBooleanToLiteral(val boolean: Boolean) {
+    implicit class fromBooleanToLiteral(boolean: Boolean) {
       /** Boolean to Bool conversion, recommended style for constants.
         */
       def B: Bool = Bool.Lit(boolean)  // scalastyle:ignore method.name
@@ -96,7 +96,7 @@ package chisel3 {
     }
 
     //scalastyle:off method.name
-    implicit class fromDoubleToLiteral(val double: Double) {
+    implicit class fromDoubleToLiteral(double: Double) {
       @deprecated("Use notation <double>.F(<binary_point>.BP) instead", "chisel3")
       def F(binaryPoint: Int): FixedPoint = FixedPoint.fromDouble(double, binaryPoint = binaryPoint)
       def F(binaryPoint: BinaryPoint): FixedPoint = {
@@ -107,11 +107,11 @@ package chisel3 {
       }
     }
 
-    implicit class fromIntToWidth(val int: Int) {
+    implicit class fromIntToWidth(int: Int) {
       def W: Width = Width(int)  // scalastyle:ignore method.name
     }
 
-    implicit class fromIntToBinaryPoint(val int: Int) {
+    implicit class fromIntToBinaryPoint(int: Int) {
       def BP: BinaryPoint = BinaryPoint(int)  // scalastyle:ignore method.name
     }
   }
