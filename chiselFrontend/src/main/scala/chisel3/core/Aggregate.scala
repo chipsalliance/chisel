@@ -63,7 +63,7 @@ sealed abstract class Aggregate extends Data {
     }
   }
 
-  override def litOption = ???  // TODO implement me
+  override def litOption: Option[BigInt] = ???  // TODO implement me
 
   // Returns the LitArg of a Bits object.
   // Internal API for Bundle literals, to copy the LitArg of argument literals into the top map.
