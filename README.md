@@ -7,7 +7,7 @@ The latest iteration of [Chisel](https://chisel.eecs.berkeley.edu/) is Chisel3,
 which uses Firrtl as an intermediate hardware representation language.
 
 Chisel3 releases are available as jars on Sonatype/Nexus/Maven and as tagged branches on the [releases tab](https://github.com/freechipsproject/chisel3/releases) of this repository.
-The latest release is 3.1.2.
+The latest release is [3.1.3](https://github.com/freechipsproject/chisel3/releases/tag/v3.1.3).
 
 Please visit the [Wiki](https://github.com/ucb-bar/chisel3/wiki) for documentation!
 
