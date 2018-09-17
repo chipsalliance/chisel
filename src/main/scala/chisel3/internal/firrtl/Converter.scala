@@ -211,6 +211,7 @@ private[chisel3] object Converter {
 
   def extractType(data: Data, clearDir: Boolean = false): fir.Type = data match {
     case _: Clock => fir.ClockType
+    case d: EnumType => fir.UIntType(convert(d.width))
     case d: UInt => fir.UIntType(convert(d.width))
     case d: SInt => fir.SIntType(convert(d.width))
     case d: FixedPoint => fir.FixedType(convert(d.width), convert(d.binaryPoint))

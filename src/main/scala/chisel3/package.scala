@@ -243,6 +243,10 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   object Bool extends BoolFactory
   val Mux = chisel3.core.Mux
 
+  type EnumType = chisel3.core.EnumType
+  type StrongEnum[T <: EnumType] = chisel3.core.StrongEnum[T]
+  val EnumAnnotations = chisel3.core.EnumAnnotations
+
   type BlackBox = chisel3.core.BlackBox
 
   type InstanceId = chisel3.internal.InstanceId

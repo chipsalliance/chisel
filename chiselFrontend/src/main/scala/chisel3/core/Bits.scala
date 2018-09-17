@@ -17,7 +17,7 @@ import chisel3.internal.firrtl.PrimOp._
 /** Element is a leaf data type: it cannot contain other Data objects. Example
   * uses are for representing primitive data types, like integers and bits.
   */
-abstract class Element(private[chisel3] val width: Width) extends Data {
+abstract class Element extends Data {
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection) {
     binding = target
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
@@ -61,8 +61,8 @@ private[chisel3] sealed trait ToBoolable extends Element {
   * bitwise operations.
   */
 //scalastyle:off number.of.methods
-sealed abstract class Bits(width: Width)
-    extends Element(width) with ToBoolable {
+sealed abstract class Bits(private[chisel3] val width: Width)
+    extends Element with ToBoolable {
   // TODO: perhaps make this concrete?
   // Arguments for: self-checking code (can't do arithmetic on bits)
   // Arguments against: generates down to a FIRRTL UInt anyways
@@ -1130,7 +1130,7 @@ object FixedPoint {
   *
   * @note This API is experimental and subject to change
   */
-final class Analog private (width: Width) extends Element(width) {
+final class Analog private (private[chisel3] val width: Width) extends Element {
   require(width.known, "Since Analog is only for use in BlackBoxes, width must be known")
 
   private[core] override def typeEquivalent(that: Data): Boolean =
