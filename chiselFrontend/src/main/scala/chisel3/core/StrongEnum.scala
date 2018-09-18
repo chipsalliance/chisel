@@ -14,13 +14,13 @@ import chisel3.internal.{Builder, InstanceId, throwException}
 import firrtl.annotations._
 
 object EnumExceptions {
-  case class EnumTypeMismatch(message: String) extends Exception(message)
-  case class EnumHasNoCompanionObject(message: String) extends Exception(message)
-  case class NonLiteralEnum(message: String) extends Exception(message)
-  case class NonIncreasingEnum(message: String) extends Exception(message)
-  case class IllegalDefinitionOfEnum(message: String) extends Exception(message)
-  case class IllegalCastToEnum(message: String) extends Exception(message)
-  case class NoEmptyConstructor(message: String) extends Exception(message)
+  case class EnumTypeMismatchException(message: String) extends Exception(message)
+  case class EnumHasNoCompanionObjectException(message: String) extends Exception(message)
+  case class NonLiteralEnumException(message: String) extends Exception(message)
+  case class NonIncreasingEnumException(message: String) extends Exception(message)
+  case class IllegalDefinitionOfEnumException(message: String) extends Exception(message)
+  case class IllegalCastToEnumException(message: String) extends Exception(message)
+  case class NoEmptyConstructorException(message: String) extends Exception(message)
 }
 
 object EnumAnnotations {
@@ -113,7 +113,7 @@ abstract class EnumType(selfAnnotating: Boolean = true) extends Element {
       currentMirror.reflectModule(companionModule).instance.asInstanceOf[StrongEnum[this.type]]
     } catch {
       case ex: java.lang.ClassNotFoundException =>
-        throw EnumHasNoCompanionObject(s"$enumTypeName's companion object was not found")
+        throw EnumHasNoCompanionObjectException(s"$enumTypeName's companion object was not found")
     }
 
   private[chisel3] override def width: Width = companionObject.width
@@ -138,7 +138,7 @@ abstract class EnumType(selfAnnotating: Boolean = true) extends Element {
   // TODO: See if there is a way to catch this at compile-time
   def checkTypeEquivalency(that: EnumType): Unit =
     if (!typeEquivalent(that))
-      throw EnumTypeMismatch(s"${this.getClass.getName} and ${that.getClass.getName} are different enum types")
+      throw EnumTypeMismatchException(s"${this.getClass.getName} and ${that.getClass.getName} are different enum types")
 
   def toPrintable: Printable = FullName(this) // TODO: Find a better pretty printer
 }
@@ -213,9 +213,9 @@ abstract class StrongEnum[T <: EnumType : ClassTag] {
     // TODO: These throw ExceptionInInitializerError which can be confusing to the user. Get rid of the error, and just
     // throw an exception
     if (!id.litOption.isDefined)
-      throw NonLiteralEnum(s"$enumTypeName defined with a non-literal type in companion object")
+      throw NonLiteralEnumException(s"$enumTypeName defined with a non-literal type in companion object")
     if (id.litValue() <= this.id)
-      throw NonIncreasingEnum(s"Enums must be strictly increasing: $enumTypeName")
+      throw NonIncreasingEnumException(s"Enums must be strictly increasing: $enumTypeName")
 
     this.id = id.litValue()
     Value
@@ -252,7 +252,7 @@ abstract class StrongEnum[T <: EnumType : ClassTag] {
       implicitly[ClassTag[T]].runtimeClass.getDeclaredConstructor()
       getClass.getDeclaredConstructor()
     } catch {
-      case ex: NoSuchMethodException => throw NoEmptyConstructor(s"$enumTypeName does not have a no-args constructor. Did you declare it inside a class?")
+      case ex: NoSuchMethodException => throw NoEmptyConstructorException(s"$enumTypeName does not have a no-args constructor. Did you declare it inside a class?")
     }
   }
 
@@ -271,6 +271,6 @@ abstract class StrongEnum[T <: EnumType : ClassTag] {
     val childInstance = constructor.newInstance()
 
     if (childInstance.enum_names.length != childInstance.enum_instances.length)
-      throw IllegalDefinitionOfEnum(s"$enumTypeName defined illegally. Did you forget to call Value when defining a new enum?")
+      throw IllegalDefinitionOfEnumException(s"$enumTypeName defined illegally. Did you forget to call Value when defining a new enum?")
   }
 }

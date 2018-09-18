@@ -198,16 +198,19 @@ class StrongEnumFSMTester extends BasicTester {
 }
 
 class StrongEnumSpec extends ChiselFlatSpec {
+  import chisel3.core.EnumExceptions._
+  import chisel3.internal.ChiselException
+
   behavior of "Strong enum tester"
 
   it should "fail to instantiate enums without a companion class" in {
-    an [Exception] should be thrownBy {
+    an [EnumHasNoCompanionObjectException] should be thrownBy {
       elaborate(new SimpleConnector(new EnumWithoutCompanionObj(), new EnumWithoutCompanionObj()))
     }
   }
 
   it should "fail to instantiate non-literal enums in a companion object" in {
-    an [Error] should be thrownBy {
+    an [ExceptionInInitializerError] should be thrownBy {
       elaborate(new SimpleConnector(new NonLiteralEnumType(), new NonLiteralEnumType()))
     }
   }
@@ -217,13 +220,13 @@ class StrongEnumSpec extends ChiselFlatSpec {
   }
 
   it should "fail to connect a strong enum to a UInt" in {
-    an [Exception] should be thrownBy {
+    a [ChiselException] should be thrownBy {
       elaborate(new SimpleConnector(EnumExample(), UInt()))
     }
   }
 
   it should "fail to connect enums of different types" in {
-    an [Exception] should be thrownBy {
+    an [ChiselException] should be thrownBy {
       elaborate(new SimpleConnector(EnumExample(), OtherEnum()))
     }
   }
@@ -237,7 +240,7 @@ class StrongEnumSpec extends ChiselFlatSpec {
   }
 
   it should "catch illegal literal casts to enums" in {
-    an [Exception] should be thrownBy {
+    an [ChiselException] should be thrownBy {
       elaborate(new CastToInvalidEnumTester)
     }
   }
@@ -247,7 +250,7 @@ class StrongEnumSpec extends ChiselFlatSpec {
   }
 
   it should "fail to compare enums of different types" in {
-    an [Exception] should be thrownBy {
+    an [EnumTypeMismatchException] should be thrownBy {
       elaborate(new InvalidEnumOpsTester)
     }
   }
