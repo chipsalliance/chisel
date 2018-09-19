@@ -120,14 +120,14 @@ abstract class EnumType(selfAnnotating: Boolean = true) extends Element {
 
   private[chisel3] override def width: Width = companionObject.width
 
-  def isValid: Bool = {
+  def isValid(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
     if (!companionObject.finishedInstantiation)
       throwException(s"Not all enums values have been defined yet")
 
     if (litOption.isDefined) {
       true.B
     } else {
-      def mux_builder(enums: Seq[this.type]): Bool = enums match {
+      def mux_builder(enums: List[this.type]): Bool = enums match {
         case Nil => false.B
         case e :: es => Mux(this === e, true.B, mux_builder(es))
       }
@@ -263,7 +263,7 @@ abstract class StrongEnum[T <: EnumType : ClassTag] {
     result
   }
 
-  def castFromNonLit(n: UInt): T = {
+  def castFromNonLit(n: UInt)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): T = {
     if (n.litOption.isDefined) {
       apply(n)
     } else if (!n.isWidthKnown) {
