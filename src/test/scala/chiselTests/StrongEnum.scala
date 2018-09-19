@@ -4,6 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.core.{EnumAnnotations, EnumExceptions}
+import chisel3.internal.firrtl.UnknownWidth
 import chisel3.util._
 import chisel3.testers.BasicTester
 import firrtl.annotations.ComponentName
@@ -48,13 +49,36 @@ class CastToUInt extends Module {
   io.out := io.in.asUInt()
 }
 
-class CastToEnum extends Module {
+class CastFromLit(in: UInt) extends Module {
   val io = IO(new Bundle {
-    val in = Input(UInt())
+    val out = Output(EnumExample())
+    val valid = Output(Bool())
+  })
+
+  io.out := EnumExample(in)
+  io.valid := io.out.isValid
+}
+
+class CastFromNonLit extends Module {
+  val io = IO(new Bundle {
+    val in = Input(UInt(EnumExample.getWidth.W))
+    val out = Output(EnumExample())
+    val valid = Output(Bool())
+  })
+
+  io.out := EnumExample.castFromNonLit(io.in)
+  io.valid := io.out.isValid
+}
+
+class CastFromNonLitWidth(w: Option[Int] = None) extends Module {
+  val width = if (w.isDefined) w.get.W else UnknownWidth()
+
+  override val io = IO(new Bundle {
+    val in = Input(UInt(width))
     val out = Output(EnumExample())
   })
 
-  io.out := EnumExample(io.in)
+  io.out := EnumExample.castFromNonLit(io.in)
 }
 
 class EnumOps(xType: EnumType, yType: EnumType) extends Module {
@@ -133,20 +157,41 @@ class CastToUIntTester extends BasicTester {
   stop()
 }
 
-class CastToEnumTester extends BasicTester {
+class CastFromLitTester extends BasicTester {
   for ((enum,lit) <- EnumExample.all zip EnumExample.litValues) {
-    val mod = Module(new CastToEnum)
+    val mod = Module(new CastFromLit(lit))
+    assert(mod.io.out === enum)
+    assert(mod.io.valid === true.B)
+  }
+  stop()
+}
+
+class CastFromNonLitTester extends BasicTester {
+  for ((enum,lit) <- EnumExample.all zip EnumExample.litValues) {
+    val mod = Module(new CastFromNonLit)
     mod.io.in := lit
     assert(mod.io.out === enum)
+    assert(mod.io.valid === true.B)
   }
+
+  import scala.util.Random
+  val invalid_values = (for(i <- 0 until 200) yield Random.nextInt((1 << EnumExample.getWidth)-1)).
+    filter(!EnumExample.litValues.map(_.litValue).contains(_)).
+    map(_.U)
+
+  for (invalid_val <- invalid_values) {
+    val mod = Module(new CastFromNonLit)
+    mod.io.in := invalid_val
+
+    assert(mod.io.valid === false.B)
+  }
+
   stop()
 }
 
 class CastToInvalidEnumTester extends BasicTester {
   val invalid_value: UInt = EnumExample.litValues.last + 1.U
-  val mod = Module(new CastToEnum {
-    io.out := invalid_value
-  })
+  Module(new CastFromLit(invalid_value))
 }
 
 class EnumOpsTester extends BasicTester {
@@ -238,13 +283,32 @@ class StrongEnumSpec extends ChiselFlatSpec {
     assertTesterPasses(new CastToUIntTester)
   }
 
-  it should "cast UInts to enums correctly" in {
-    assertTesterPasses(new CastToEnumTester)
+  it should "cast literal UInts to enums correctly" in {
+    assertTesterPasses(new CastFromLitTester)
   }
 
-  it should "catch illegal literal casts to enums" in {
-    an [ChiselException] should be thrownBy {
+  it should "cast non-literal UInts to enums correctly and detect illegal casts" in {
+    assertTesterPasses(new CastFromNonLitTester)
+  }
+
+  it should "prevent illegal literal casts to enums" in {
+    a [ChiselException] should be thrownBy {
       elaborate(new CastToInvalidEnumTester)
+    }
+  }
+
+  it should "only allow non-literal casts to enums if the width is smaller than or equal to the enum width" in {
+    for (w <- 0 to EnumExample.getWidth)
+      elaborate(new CastFromNonLitWidth(Some(w)))
+
+    a [ChiselException] should be thrownBy {
+      elaborate(new CastFromNonLitWidth)
+    }
+
+    for (w <- (EnumExample.getWidth+1) to (EnumExample.getWidth+100)) {
+      a [ChiselException] should be thrownBy {
+        elaborate(new CastFromNonLitWidth(Some(w)))
+      }
     }
   }
 
@@ -276,41 +340,47 @@ class StrongEnumAnnotationSpec extends FreeSpec with Matchers {
 
   "Test that strong enums annotate themselves appropriately" in {
 
-    Driver.execute(Array("--target-dir", "test_run_dir"), () => new StrongEnumFSM) match {
-      case ChiselExecutionSuccess(Some(circuit), emitted, _) =>
-        val annos = circuit.annotations.map(_.toFirrtl)
+    def test() = {
+      Driver.execute(Array("--target-dir", "test_run_dir"), () => new StrongEnumFSM) match {
+        case ChiselExecutionSuccess(Some(circuit), emitted, _) =>
+          val annos = circuit.annotations.map(_.toFirrtl)
 
-        val enumDefAnnos = annos.collect { case a: EnumDefAnnotation => a }
-        val enumCompAnnos = annos.collect { case a: EnumComponentAnnotation => a }
+          val enumDefAnnos = annos.collect { case a: EnumDefAnnotation => a }
+          val enumCompAnnos = annos.collect { case a: EnumComponentAnnotation => a }
 
-        // Check that the global annotation is correct
-        enumDefAnnos.exists {
-          case EnumDefAnnotation(name, map) =>
-            name.endsWith("State") &&
-              map.size == StrongEnumFSM.State.correct_annotation_map.size &&
-              map.forall {
-                case (k, v) =>
-                  val correctValue = StrongEnumFSM.State.correct_annotation_map(k)
+          // Check that the global annotation is correct
+          enumDefAnnos.exists {
+            case EnumDefAnnotation(name, map) =>
+              name.endsWith("State") &&
+                map.size == StrongEnumFSM.State.correct_annotation_map.size &&
+                map.forall {
+                  case (k, v) =>
+                    val correctValue = StrongEnumFSM.State.correct_annotation_map(k)
 
-                  val correctValLit = correctValue.litValue()
-                  val vLitValue = v.litValue()
+                    val correctValLit = correctValue.litValue()
+                    val vLitValue = v.litValue()
 
-                  correctValue.getWidth == v.getWidth && correctValue.litValue() == v.litValue()
-              }
-          case _ => false
-        } should be(true)
+                    correctValue.getWidth == v.getWidth && correctValue.litValue() == v.litValue()
+                }
+            case _ => false
+          } should be(true)
 
-        // Check that the component annotations are correct
-        enumCompAnnos.count {
-          case EnumComponentAnnotation(target, enumName) =>
-            val ComponentName(targetName, _) = target
-            (targetName == "state" && enumName.endsWith("State")) ||
-              (targetName == "io.state" && enumName.endsWith("State"))
-          case _ => false
-        } should be(2)
+          // Check that the component annotations are correct
+          enumCompAnnos.count {
+            case EnumComponentAnnotation(target, enumName) =>
+              val ComponentName(targetName, _) = target
+              (targetName == "state" && enumName.endsWith("State")) ||
+                (targetName == "io.state" && enumName.endsWith("State"))
+            case _ => false
+          } should be(2)
 
-      case _ =>
-        assert(false)
+        case _ =>
+          assert(false)
+      }
     }
+
+    // We run this test twice, to test for an older bug where only the first circuit would be annotated
+    test()
+    test()
   }
 }

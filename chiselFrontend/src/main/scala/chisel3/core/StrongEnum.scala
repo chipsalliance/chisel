@@ -45,7 +45,7 @@ import EnumExceptions._
 import EnumAnnotations._
 
 abstract class EnumType(selfAnnotating: Boolean = true) extends Element {
-  def cloneType: this.type = getClass.getConstructor().newInstance().asInstanceOf[this.type]
+  override def cloneType: this.type = getClass.getConstructor().newInstance().asInstanceOf[this.type]
 
   private[core] override def topBindingOpt: Option[TopBinding] = super.topBindingOpt match {
     // Translate Bundle lit bindings to Element lit bindings
@@ -120,6 +120,22 @@ abstract class EnumType(selfAnnotating: Boolean = true) extends Element {
 
   private[chisel3] override def width: Width = companionObject.width
 
+  def isValid: Bool = {
+    if (!companionObject.finishedInstantiation)
+      throwException(s"Not all enums values have been defined yet")
+
+    if (litOption.isDefined) {
+      true.B
+    } else {
+      def mux_builder(enums: Seq[this.type]): Bool = enums match {
+        case Nil => false.B
+        case e :: es => Mux(this === e, true.B, mux_builder(es))
+      }
+
+      mux_builder(companionObject.all)
+    }
+  }
+
   private[core] def bindToLiteral(bits: UInt): Unit = {
     val litNum = bits.litOption.get
     val lit = ULit(litNum, width) // We must make sure to use the enum's width, rather than the UInt's width
@@ -191,6 +207,9 @@ abstract class StrongEnum[T <: EnumType : ClassTag] {
   private[core] def globalAnnotation: EnumDefChiselAnnotation =
     EnumDefChiselAnnotation(enumTypeName, (enum_names, enum_values.map(_.U(width))).zipped.toMap)
 
+  private[core] def finishedInstantiation: Boolean =
+    enum_names.length == enum_instances.length
+
   private def newEnum()(implicit ct: ClassTag[T]): T =
     ct.runtimeClass.newInstance.asInstanceOf[T]
 
@@ -198,7 +217,7 @@ abstract class StrongEnum[T <: EnumType : ClassTag] {
   // the companion class's name in a more robust way.
   private val enumTypeName = getClass.getName.init
 
-  def getWidth: BigInt = width.get
+  def getWidth: Int = width.get
 
   def all: List[T] = enum_instances.toList
 
@@ -233,16 +252,28 @@ abstract class StrongEnum[T <: EnumType : ClassTag] {
   def apply(): T = newEnum()
 
   def apply(n: UInt)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): T = {
-    if (n.litOption.isDefined) {
-      if (!enum_values.contains(n.litValue)) {
-        throwException(s"${n.litValue}.U is not a valid value for $enumTypeName")
-      }
+    if (!n.litOption.isDefined) {
+      throwException(s"Illegal cast from non-literal UInt to $enumTypeName. Use castFromNonLit instead")
+    } else if (!enum_values.contains(n.litValue)) {
+      throwException(s"${n.litValue}.U is not a valid value for $enumTypeName")
+    }
 
-      val result = newEnum()
-      result.bindToLiteral(n)
-      result
+    val result = newEnum()
+    result.bindToLiteral(n)
+    result
+  }
+
+  def castFromNonLit(n: UInt): T = {
+    if (!n.isWidthKnown) {
+      throwException(s"Non-literal UInts being cast to $enumTypeName must have a defined width")
+    } else if (n.getWidth > this.getWidth) {
+      throwException(s"The UInt being cast to $enumTypeName is wider than $enumTypeName's width ($getWidth)")
+    }
+
+    if (n.litOption.isDefined) {
+      apply(n)
     } else {
-      Builder.warning(s"A non-literal UInt is being cast to $enumTypeName. No automatic bounds checking will be done!")
+      Builder.warning(s"A non-literal UInt is being cast to $enumTypeName. You can check that the value is legal by calling isValid")
 
       val glue = Wire(new UnsafeEnum(width))
       glue := n
@@ -280,7 +311,7 @@ abstract class StrongEnum[T <: EnumType : ClassTag] {
     constructor.setAccessible(true)
     val childInstance = constructor.newInstance()
 
-    if (childInstance.enum_names.length != childInstance.enum_instances.length) {
+    if (!childInstance.finishedInstantiation) {
       throw IllegalDefinitionOfEnumException(s"$enumTypeName defined illegally. Did you forget to call Value when defining a new enum?")
     }
   }
