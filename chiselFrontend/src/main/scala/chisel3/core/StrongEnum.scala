@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 package chisel3.core
 
 import scala.language.experimental.macros
@@ -107,8 +109,8 @@ abstract class EnumType(selfAnnotating: Boolean = true) extends Element {
   override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     pushOp(DefPrim(sourceInfo, UInt(width), AsUIntOp, ref))
 
-  val companionModule = currentMirror.reflect(this).symbol.companion.asModule
-  val companionObject =
+  private val companionModule = currentMirror.reflect(this).symbol.companion.asModule
+  private val companionObject =
     try {
       currentMirror.reflectModule(companionModule).instance.asInstanceOf[StrongEnum[this.type]]
     } catch {
@@ -129,16 +131,26 @@ abstract class EnumType(selfAnnotating: Boolean = true) extends Element {
 
     // If we try to annotate something that is bound to a literal, we get a FIRRTL annotation exception.
     // To workaround that, we only annotate enums that are not bound to literals.
-    if (selfAnnotating && !litOption.isDefined)
-      annotate(EnumComponentChiselAnnotation(this, enumTypeName))
+    if (selfAnnotating && !litOption.isDefined) {
+      annotateEnum()
+    }
+  }
+
+  private def annotateEnum(): Unit = {
+    annotate(EnumComponentChiselAnnotation(this, enumTypeName))
+
+    if (!Builder.annotations.contains(companionObject.globalAnnotation)) {
+      annotate(companionObject.globalAnnotation)
+    }
   }
 
   private def enumTypeName: String = getClass.getName
 
   // TODO: See if there is a way to catch this at compile-time
   def checkTypeEquivalency(that: EnumType): Unit =
-    if (!typeEquivalent(that))
+    if (!typeEquivalent(that)) {
       throw EnumTypeMismatchException(s"${this.getClass.getName} and ${that.getClass.getName} are different enum types")
+    }
 
   def toPrintable: Printable = FullName(this) // TODO: Find a better pretty printer
 }
@@ -162,7 +174,6 @@ abstract class StrongEnum[T <: EnumType : ClassTag] {
 
   private def getEnumNames(implicit ct: ClassTag[T]): Seq[String] = {
     val mirror = runtimeMirror(this.getClass.getClassLoader)
-    val reflection  = mirror.reflect(this)
 
     // We use Java reflection to get all the enum fields, and then we use Scala reflection to sort them in declaration
     // order. TODO: Use only Scala reflection here
@@ -177,9 +188,8 @@ abstract class StrongEnum[T <: EnumType : ClassTag] {
   private def bindAllEnums(): Unit =
     (enum_instances, enum_values).zipped.foreach((inst, v) => inst.bindToLiteral(v.U(width)))
 
-  private def createAnnotation(): Unit =
-    annotate(EnumDefChiselAnnotation(enumTypeName,
-      (enum_names, enum_values.map(_.U(width))).zipped.toMap))
+  private[core] def globalAnnotation: EnumDefChiselAnnotation =
+    EnumDefChiselAnnotation(enumTypeName, (enum_names, enum_values.map(_.U(width))).zipped.toMap)
 
   private def newEnum()(implicit ct: ClassTag[T]): T =
     ct.runtimeClass.newInstance.asInstanceOf[T]
@@ -200,10 +210,9 @@ abstract class StrongEnum[T <: EnumType : ClassTag] {
     width = (1 max id.bitLength).W
     id += 1
 
-    // Check whether we've instantiated all the enums
+    // Instantiate all the enums when Value is called for the last time
     if (enum_instances.length == enum_names.length && isTopLevelConstructor) {
       bindAllEnums()
-      createAnnotation()
     }
 
     result
@@ -225,8 +234,9 @@ abstract class StrongEnum[T <: EnumType : ClassTag] {
 
   def apply(n: UInt)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): T = {
     if (n.litOption.isDefined) {
-      if (!enum_values.contains(n.litValue))
+      if (!enum_values.contains(n.litValue)) {
         throwException(s"${n.litValue}.U is not a valid value for $enumTypeName")
+      }
 
       val result = newEnum()
       result.bindToLiteral(n)
@@ -270,7 +280,8 @@ abstract class StrongEnum[T <: EnumType : ClassTag] {
     constructor.setAccessible(true)
     val childInstance = constructor.newInstance()
 
-    if (childInstance.enum_names.length != childInstance.enum_instances.length)
+    if (childInstance.enum_names.length != childInstance.enum_instances.length) {
       throw IllegalDefinitionOfEnumException(s"$enumTypeName defined illegally. Did you forget to call Value when defining a new enum?")
+    }
   }
 }

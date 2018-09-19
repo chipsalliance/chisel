@@ -88,17 +88,20 @@ object StrongEnumFSM {
 }
 
 class StrongEnumFSM extends Module {
+  import StrongEnumFSM.State
+  import StrongEnumFSM.State._
+
   // This FSM detects two 1's one after the other
   val io = IO(new Bundle {
     val in = Input(Bool())
     val out = Output(Bool())
+    val state = Output(State())
   })
-
-  import StrongEnumFSM.State._
 
   val state = RegInit(sNone)
 
   io.out := (state === sTwo1s)
+  io.state := state
 
   switch (state) {
     is (sNone) {
@@ -269,15 +272,20 @@ class StrongEnumSpec extends ChiselFlatSpec {
 }
 
 class StrongEnumAnnotationSpec extends FreeSpec with Matchers {
+  import EnumAnnotations._
+
   "Test that strong enums annotate themselves appropriately" in {
 
     Driver.execute(Array("--target-dir", "test_run_dir"), () => new StrongEnumFSM) match {
       case ChiselExecutionSuccess(Some(circuit), emitted, _) =>
         val annos = circuit.annotations.map(_.toFirrtl)
 
+        val enumDefAnnos = annos.collect { case a: EnumDefAnnotation => a }
+        val enumCompAnnos = annos.collect { case a: EnumComponentAnnotation => a }
+
         // Check that the global annotation is correct
-        annos.exists {
-          case EnumAnnotations.EnumDefAnnotation(name, map) =>
+        enumDefAnnos.exists {
+          case EnumDefAnnotation(name, map) =>
             name.endsWith("State") &&
               map.size == StrongEnumFSM.State.correct_annotation_map.size &&
               map.forall {
@@ -293,12 +301,14 @@ class StrongEnumAnnotationSpec extends FreeSpec with Matchers {
         } should be(true)
 
         // Check that the component annotations are correct
-        annos.exists {
-          case EnumAnnotations.EnumComponentAnnotation(target, enumName) =>
+        enumCompAnnos.count {
+          case EnumComponentAnnotation(target, enumName) =>
             val ComponentName(targetName, _) = target
-            targetName == "state" && enumName.endsWith("State")
+            (targetName == "state" && enumName.endsWith("State")) ||
+              (targetName == "io.state" && enumName.endsWith("State"))
           case _ => false
-        } should be(true)
+        } should be(2)
+
       case _ =>
         assert(false)
     }
