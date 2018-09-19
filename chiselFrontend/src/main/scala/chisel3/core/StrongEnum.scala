@@ -264,14 +264,12 @@ abstract class StrongEnum[T <: EnumType : ClassTag] {
   }
 
   def castFromNonLit(n: UInt): T = {
-    if (!n.isWidthKnown) {
+    if (n.litOption.isDefined) {
+      apply(n)
+    } else if (!n.isWidthKnown) {
       throwException(s"Non-literal UInts being cast to $enumTypeName must have a defined width")
     } else if (n.getWidth > this.getWidth) {
       throwException(s"The UInt being cast to $enumTypeName is wider than $enumTypeName's width ($getWidth)")
-    }
-
-    if (n.litOption.isDefined) {
-      apply(n)
     } else {
       Builder.warning(s"A non-literal UInt is being cast to $enumTypeName. You can check that the value is legal by calling isValid")
 
