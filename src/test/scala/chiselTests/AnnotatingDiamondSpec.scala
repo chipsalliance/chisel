@@ -3,16 +3,13 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.{annotate, ChiselAnnotation, RunFirrtlTransform}
+import chisel3.core.{EnumAnnotations, FixedPoint}
+import chisel3.experimental.{ChiselAnnotation, RunFirrtlTransform, annotate}
 import chisel3.internal.InstanceId
+import chisel3.internal.firrtl.BinaryPoint
 import chisel3.testers.BasicTester
 import firrtl.{CircuitState, LowForm, Transform}
-import firrtl.annotations.{
-  Annotation,
-  SingleTargetAnnotation,
-  ModuleName,
-  Named
-}
+import firrtl.annotations.{Annotation, ModuleName, Named, SingleTargetAnnotation}
 import org.scalatest._
 
 /** These annotations and the IdentityTransform class serve as an example of how to write a
@@ -98,14 +95,39 @@ class ModB(widthB: Int) extends Module {
   modC.io.in := io.in
   io.out := modC.io.out
 
+  val reg = RegInit(MyEnum.enum)
+
   identify(io.in, s"modB.io.in annotated from inside modB")
 }
+
+class MyEnum extends EnumType
+object MyEnum extends StrongEnum[MyEnum] {
+  val enum, e2 = Value
+  val e3 = Value(5.U)
+  val e4, e10, e11 = Value
+}
+
+/*class OtherEnum extends EnumType
+object OtherEnum extends StrongEnum[OtherEnum] {
+  val err = Value
+}*/
 
 class TopOfDiamond extends Module {
   val io = IO(new Bundle {
     val in   = Input(UInt(32.W))
-    val out  = Output(UInt(32.W))
+    // val out  = Output(UInt(32.W))
+    val out = Output(MyEnum())
   })
+
+  val wire = WireInit(MyEnum.enum)
+  println(MyEnum.e11.litValue)
+
+  val uiWire = WireInit(1.U)
+
+  wire :=  MyEnum(uiWire)// OtherEnum.err
+
+  val m = Mux(wire === MyEnum.enum, wire, MyEnum.e2)
+
   val x = Reg(UInt(32.W))
   val y = Reg(UInt(32.W))
 
@@ -117,7 +139,8 @@ class TopOfDiamond extends Module {
   modB.io.in := x
 
   y := modA.io.out + modB.io.out
-  io.out := y
+  // io.out := y
+  io.out := m//.asUInt()
 
   identify(this, s"TopOfDiamond\nWith\nSome new lines")
 
@@ -156,6 +179,27 @@ class AnnotatingDiamondSpec extends FreeSpec with Matchers {
             case IdentityAnnotation(ModuleName("ModC_1", _), "ModC(32)") => true
             case _ => false
           } should be (1)
+
+          println(s"Enum defs:")
+          annos.foreach {
+            case EnumAnnotations.EnumDefAnnotation(name, m) =>
+              print(s"\t$name: ")
+              for ((k,v) <- m) {
+                print(s"($k -> ${v.litValue()}), ")
+              }
+              println()
+            case _ =>
+          }
+
+          println(s"Enum comps:")
+          annos.foreach {
+            case EnumAnnotations.EnumComponentAnnotation(target, eName) =>
+              println(s"\t$target: $eName")
+            case _ =>
+          }
+
+          println("\n\n-----------\n\n")
+          println(emitted)
         case _ =>
           assert(false)
       }

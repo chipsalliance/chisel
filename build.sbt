@@ -102,7 +102,7 @@ lazy val chiselSettings = Seq (
   libraryDependencies ++= Seq(
     "org.scalatest" %% "scalatest" % "3.0.1" % "test",
     "org.scalacheck" %% "scalacheck" % "1.13.4" % "test",
-    "com.github.scopt" %% "scopt" % "3.6.0"
+    "com.github.scopt" %% "scopt" % "3.7.0"
   ),
 
   // Tests from other projects may still run concurrently.
@@ -140,6 +140,8 @@ lazy val chisel = (project in file(".")).
     scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
     scalacOptions in Compile in doc ++= Seq(
       "-diagrams",
+      "-groups",
+      "-skip-packages", "chisel3.internal",
       "-diagrams-max-classes", "25",
       "-doc-version", version.value,
       "-doc-title", name.value,
