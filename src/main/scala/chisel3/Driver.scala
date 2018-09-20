@@ -68,7 +68,7 @@ trait ChiselExecutionResult
   *
   * @param circuitOption  Optional circuit, has information like circuit name
   * @param emitted            The emitted Chirrrl text
-  * @param firrtlResultOption Optional Firrtl result, @see ucb-bar/firrtl for details
+  * @param firrtlResultOption Optional Firrtl result, @see freechipsproject/firrtl for details
   */
 case class ChiselExecutionSuccess(
                                   circuitOption: Option[Circuit],
@@ -77,9 +77,9 @@ case class ChiselExecutionSuccess(
                                   ) extends ChiselExecutionResult
 
 /**
-  * Getting one of these indicates failure of some sort
- *
-  * @param message  a clue perhaps will be provided in the here
+  * Getting one of these indicates failure of some sort.
+  *
+  * @param message A clue might be provided here.
   */
 case class ChiselExecutionFailure(message: String) extends ChiselExecutionResult
 
