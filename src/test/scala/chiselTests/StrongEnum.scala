@@ -31,6 +31,20 @@ object NonLiteralEnumType extends StrongEnum[NonLiteralEnumType] {
   val nonLit = Value(UInt())
 }
 
+class EnumWithEarlyIsValid extends EnumType
+object EnumWithEarlyIsValid extends StrongEnum[EnumWithEarlyIsValid] {
+  val s1 = Value
+  val isV = s1.isValid
+  val s2 = Value
+}
+
+class EnumWithEarlyNext extends EnumType
+object EnumWithEarlyNext extends StrongEnum[EnumWithEarlyNext] {
+  val s1 = Value
+  val n = s1.next
+  val s2 = Value
+}
+
 class SimpleConnector(inType: Data, outType: Data) extends Module {
   val io = IO(new Bundle {
     val in = Input(inType)
@@ -66,7 +80,7 @@ class CastFromNonLit extends Module {
     val valid = Output(Bool())
   })
 
-  io.out := EnumExample.castFromNonLit(io.in)
+  io.out := EnumExample.fromBits(io.in)
   io.valid := io.out.isValid
 }
 
@@ -78,7 +92,7 @@ class CastFromNonLitWidth(w: Option[Int] = None) extends Module {
     val out = Output(EnumExample())
   })
 
-  io.out := EnumExample.castFromNonLit(io.in)
+  io.out := EnumExample.fromBits(io.in)
 }
 
 class EnumOps(xType: EnumType, yType: EnumType) extends Module {
@@ -174,8 +188,7 @@ class CastFromNonLitTester extends BasicTester {
     assert(mod.io.valid === true.B)
   }
 
-  import scala.util.Random
-  val invalid_values = (for(i <- 0 until 200) yield Random.nextInt((1 << EnumExample.getWidth)-1)).
+  val invalid_values = (1 until (1 << EnumExample.getWidth)).
     filter(!EnumExample.litValues.map(_.litValue).contains(_)).
     map(_.U)
 
@@ -227,18 +240,42 @@ class IsLitTester extends BasicTester {
   stop()
 }
 
+class NextTester extends BasicTester {
+  for ((e,n) <- EnumExample.all.zip(EnumExample.litValues.tail :+ EnumExample.litValues.head)) {
+    assert(e.next.litValue == n.litValue)
+    val w = WireInit(e)
+    assert(w.next === EnumExample(n))
+  }
+  stop()
+}
+
+class WidthTester extends BasicTester {
+  assert(EnumExample.getWidth == EnumExample.litValues.last.getWidth)
+  assert(EnumExample.all.forall(_.getWidth == EnumExample.litValues.last.getWidth))
+  assert(EnumExample.all.forall{e =>
+    val w = WireInit(e)
+    w.getWidth == EnumExample.litValues.last.getWidth
+  })
+  stop()
+}
+
 class StrongEnumFSMTester extends BasicTester {
+  import StrongEnumFSM.State
+  import StrongEnumFSM.State._
+
   val dut = Module(new StrongEnumFSM)
 
   // Inputs and expected results
   val inputs: Vec[Bool] = VecInit(false.B, true.B, false.B, true.B, true.B, true.B, false.B, true.B, true.B, false.B)
   val expected: Vec[Bool] = VecInit(false.B, false.B, false.B, false.B, false.B, true.B, true.B, false.B, false.B, true.B)
+  val expected_state: Vec[State] = VecInit(sNone, sNone, sOne1, sNone, sOne1, sTwo1s, sTwo1s, sNone, sOne1, sTwo1s)
 
   val cntr = Counter(inputs.length)
   val cycle = cntr.value
 
   dut.io.in := inputs(cycle)
   assert(dut.io.out === expected(cycle))
+  assert(dut.io.state === expected_state(cycle))
 
   when(cntr.inc()) {
     stop()
@@ -260,6 +297,18 @@ class StrongEnumSpec extends ChiselFlatSpec {
   it should "fail to instantiate non-literal enums in a companion object" in {
     an [ExceptionInInitializerError] should be thrownBy {
       elaborate(new SimpleConnector(new NonLiteralEnumType(), new NonLiteralEnumType()))
+    }
+  }
+
+  it should "fail to call isValid early" in {
+    an [ExceptionInInitializerError] should be thrownBy {
+      elaborate(new SimpleConnector(EnumWithEarlyIsValid(), EnumWithEarlyIsValid()))
+    }
+  }
+
+  it should "fail to call next early" in {
+    an [ExceptionInInitializerError] should be thrownBy {
+      elaborate(new SimpleConnector(EnumWithEarlyNext(), EnumWithEarlyNext()))
     }
   }
 
@@ -326,8 +375,12 @@ class StrongEnumSpec extends ChiselFlatSpec {
     assertTesterPasses(new IsLitTester)
   }
 
+  it should "return the correct next values for enums" in {
+    assertTesterPasses(new NextTester)
+  }
+
   it should "return the correct widths for enums" in {
-    EnumExample.getWidth == EnumExample.litValues.last.getWidth
+    assertTesterPasses(new WidthTester)
   }
 
   "StrongEnum FSM" should "work" in {

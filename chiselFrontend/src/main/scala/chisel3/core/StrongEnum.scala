@@ -116,23 +116,44 @@ abstract class EnumType(selfAnnotating: Boolean = true) extends Element {
     } catch {
       case ex: java.lang.ClassNotFoundException =>
         throw EnumHasNoCompanionObjectException(s"$enumTypeName's companion object was not found")
+      case default => throw default
     }
 
   private[chisel3] override def width: Width = companionObject.width
 
   def isValid(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
-    if (!companionObject.finishedInstantiation)
+    if (!companionObject.finishedInstantiation) {
       throwException(s"Not all enums values have been defined yet")
+    }
 
     if (litOption.isDefined) {
       true.B
     } else {
-      def mux_builder(enums: List[this.type]): Bool = enums match {
+      def muxBuilder(enums: List[this.type]): Bool = enums match {
         case Nil => false.B
-        case e :: es => Mux(this === e, true.B, mux_builder(es))
+        case e :: es => Mux(this === e, true.B, muxBuilder(es))
       }
 
-      mux_builder(companionObject.all)
+      muxBuilder(companionObject.all)
+    }
+  }
+
+  def next(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type = {
+    if (!companionObject.finishedInstantiation) {
+      throwException(s"Not all enums values have been defined yet")
+    }
+
+    if (litOption.isDefined) {
+      val index = companionObject.all.indexOf(this)
+      if (index < companionObject.all.length-1) companionObject.all(index+1)
+      else companionObject.all.head
+    } else {
+      def muxBuilder(enums: List[this.type], first_enum: this.type): this.type = enums match {
+        case e :: Nil => first_enum
+        case e :: e_next :: es => Mux(this === e, e_next, muxBuilder(e_next :: es, first_enum))
+      }
+
+      muxBuilder(companionObject.all, companionObject.all.head)
     }
   }
 
@@ -253,17 +274,19 @@ abstract class StrongEnum[T <: EnumType : ClassTag] {
 
   def apply(n: UInt)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): T = {
     if (!n.litOption.isDefined) {
-      throwException(s"Illegal cast from non-literal UInt to $enumTypeName. Use castFromNonLit instead")
-    } else if (!enum_values.contains(n.litValue)) {
-      throwException(s"${n.litValue}.U is not a valid value for $enumTypeName")
+      throwException(s"Illegal cast from non-literal UInt to $enumTypeName. Use fromBits instead")
     }
 
-    val result = newEnum()
-    result.bindToLiteral(n)
-    result
+    val result = enum_instances.find(_.litValue == n.litValue)
+
+    if (result.isEmpty) {
+      throwException(s"${n.litValue}.U is not a valid value for $enumTypeName")
+    } else {
+      result.get
+    }
   }
 
-  def castFromNonLit(n: UInt)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): T = {
+  def fromBits(n: UInt)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): T = {
     if (n.litOption.isDefined) {
       apply(n)
     } else if (!n.isWidthKnown) {
