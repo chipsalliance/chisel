@@ -7,16 +7,24 @@ import chisel3.util._
 
 /* ### How do I create a finite state machine?
  *
- * Use Chisel Enum to construct the states and switch & is to construct the FSM
+ * Use Chisel StrongEnum to construct the states and switch & is to construct the FSM
  * control logic
  */
+
+object DetectTwoOnes {
+  class State extends EnumType
+  object State extends StrongEnum[State] {
+    val sNone, sOne1, sTwo1s = Value
+  }
+}
+
 class DetectTwoOnes extends Module {
   val io = IO(new Bundle {
     val in = Input(Bool())
     val out = Output(Bool())
   })
 
-  val sNone :: sOne1 :: sTwo1s :: Nil = Enum(3)
+  import DetectTwoOnes.State._
   val state = RegInit(sNone)
 
   io.out := (state === sTwo1s)
