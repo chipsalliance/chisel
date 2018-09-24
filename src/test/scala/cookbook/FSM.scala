@@ -11,20 +11,17 @@ import chisel3.util._
  * control logic
  */
 
-object DetectTwoOnes {
-  class State extends EnumType
-  object State extends StrongEnum[State] {
-    val sNone, sOne1, sTwo1s = Value
-  }
-}
-
 class DetectTwoOnes extends Module {
   val io = IO(new Bundle {
     val in = Input(Bool())
     val out = Output(Bool())
   })
 
-  import DetectTwoOnes.State._
+  object State extends ChiselEnum {
+    val sNone, sOne1, sTwo1s = Value
+  }
+  import State._
+
   val state = RegInit(sNone)
 
   io.out := (state === sTwo1s)

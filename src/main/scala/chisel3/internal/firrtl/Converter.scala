@@ -2,7 +2,7 @@
 
 package chisel3.internal.firrtl
 import chisel3._
-import chisel3.core.SpecifiedDirection
+import chisel3.core.{SpecifiedDirection, EnumType}
 import chisel3.experimental._
 import chisel3.internal.sourceinfo.{NoSourceInfo, SourceLine, SourceInfo}
 import firrtl.{ir => fir}

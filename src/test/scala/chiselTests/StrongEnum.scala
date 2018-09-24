@@ -3,46 +3,33 @@
 package chiselTests
 
 import chisel3._
-import chisel3.core.{EnumAnnotations, EnumExceptions}
+import chisel3.core.EnumAnnotations
 import chisel3.internal.firrtl.UnknownWidth
 import chisel3.util._
 import chisel3.testers.BasicTester
 import firrtl.annotations.ComponentName
 import org.scalatest.{FreeSpec, Matchers}
 
-class EnumExample extends EnumType
-object EnumExample extends StrongEnum[EnumExample] {
+object EnumExample extends ChiselEnum {
   val e0, e1, e2 = Value
+
   val e100 = Value(100.U)
-  val e101 = Value
+  val e101 = Value(101.U)
 
   val litValues = List(0.U, 1.U, 2.U, 100.U, 101.U)
 }
 
-class OtherEnum extends EnumType
-object OtherEnum extends StrongEnum[OtherEnum] {
+object OtherEnum extends ChiselEnum {
   val otherEnum = Value
 }
 
-class EnumWithoutCompanionObj extends EnumType
-
-class NonLiteralEnumType extends EnumType
-object NonLiteralEnumType extends StrongEnum[NonLiteralEnumType] {
+object NonLiteralEnumType extends ChiselEnum {
   val nonLit = Value(UInt())
 }
 
-class EnumWithEarlyIsValid extends EnumType
-object EnumWithEarlyIsValid extends StrongEnum[EnumWithEarlyIsValid] {
-  val s1 = Value
-  val isV = s1.isValid
-  val s2 = Value
-}
-
-class EnumWithEarlyNext extends EnumType
-object EnumWithEarlyNext extends StrongEnum[EnumWithEarlyNext] {
-  val s1 = Value
-  val n = s1.next
-  val s2 = Value
+object NonIncreasingEnum extends ChiselEnum {
+  val x = Value(2.U)
+  val y = Value(2.U)
 }
 
 class SimpleConnector(inType: Data, outType: Data) extends Module {
@@ -95,10 +82,10 @@ class CastFromNonLitWidth(w: Option[Int] = None) extends Module {
   io.out := EnumExample.fromBits(io.in)
 }
 
-class EnumOps(xType: EnumType, yType: EnumType) extends Module {
+class EnumOps(val xType: ChiselEnum, val yType: ChiselEnum) extends Module {
   val io = IO(new Bundle {
-    val x = Input(xType)
-    val y = Input(yType)
+    val x = Input(xType())
+    val y = Input(yType())
 
     val lt = Output(Bool())
     val le = Output(Bool())
@@ -117,11 +104,10 @@ class EnumOps(xType: EnumType, yType: EnumType) extends Module {
 }
 
 object StrongEnumFSM {
-  class State extends EnumType
-  object State extends StrongEnum[State] {
+  object State extends ChiselEnum {
     val sNone, sOne1, sTwo1s = Value
 
-    val correct_annotation_map = Map[String, UInt]("sNone" -> 0.U(2.W), "sOne1" -> 1.U(2.W), "sTwo1s" -> 2.U(2.W))
+    val correct_annotation_map = Map[String, BigInt]("sNone" -> 0, "sOne1" -> 1, "sTwo1s" -> 2)
   }
 }
 
@@ -210,7 +196,7 @@ class CastToInvalidEnumTester extends BasicTester {
 class EnumOpsTester extends BasicTester {
   for (x <- EnumExample.all;
        y <- EnumExample.all) {
-    val mod = Module(new EnumOps(EnumExample(), EnumExample()))
+    val mod = Module(new EnumOps(EnumExample, EnumExample))
     mod.io.x := x
     mod.io.y := y
 
@@ -225,7 +211,7 @@ class EnumOpsTester extends BasicTester {
 }
 
 class InvalidEnumOpsTester extends BasicTester {
-  val mod = Module(new EnumOps(EnumExample(), OtherEnum()))
+  val mod = Module(new EnumOps(EnumExample, OtherEnum))
   mod.io.x := EnumExample.e0
   mod.io.y := OtherEnum.otherEnum
 }
@@ -268,7 +254,7 @@ class StrongEnumFSMTester extends BasicTester {
   // Inputs and expected results
   val inputs: Vec[Bool] = VecInit(false.B, true.B, false.B, true.B, true.B, true.B, false.B, true.B, true.B, false.B)
   val expected: Vec[Bool] = VecInit(false.B, false.B, false.B, false.B, false.B, true.B, true.B, false.B, false.B, true.B)
-  val expected_state: Vec[State] = VecInit(sNone, sNone, sOne1, sNone, sOne1, sTwo1s, sTwo1s, sNone, sOne1, sTwo1s)
+  val expected_state = VecInit(sNone, sNone, sOne1, sNone, sOne1, sTwo1s, sTwo1s, sNone, sOne1, sTwo1s)
 
   val cntr = Counter(inputs.length)
   val cycle = cntr.value
@@ -283,32 +269,19 @@ class StrongEnumFSMTester extends BasicTester {
 }
 
 class StrongEnumSpec extends ChiselFlatSpec {
-  import chisel3.core.EnumExceptions._
   import chisel3.internal.ChiselException
 
   behavior of "Strong enum tester"
 
-  it should "fail to instantiate enums without a companion class" in {
-    an [EnumHasNoCompanionObjectException] should be thrownBy {
-      elaborate(new SimpleConnector(new EnumWithoutCompanionObj(), new EnumWithoutCompanionObj()))
+  it should "fail to instantiate non-literal enums with the Value function" in {
+    an [ExceptionInInitializerError] should be thrownBy {
+      elaborate(new SimpleConnector(NonLiteralEnumType(), NonLiteralEnumType()))
     }
   }
 
-  it should "fail to instantiate non-literal enums in a companion object" in {
+  it should "fail to instantiate non-increasing enums with the Value function" in {
     an [ExceptionInInitializerError] should be thrownBy {
-      elaborate(new SimpleConnector(new NonLiteralEnumType(), new NonLiteralEnumType()))
-    }
-  }
-
-  it should "fail to call isValid early" in {
-    an [ExceptionInInitializerError] should be thrownBy {
-      elaborate(new SimpleConnector(EnumWithEarlyIsValid(), EnumWithEarlyIsValid()))
-    }
-  }
-
-  it should "fail to call next early" in {
-    an [ExceptionInInitializerError] should be thrownBy {
-      elaborate(new SimpleConnector(EnumWithEarlyNext(), EnumWithEarlyNext()))
+      elaborate(new SimpleConnector(NonIncreasingEnum(), NonIncreasingEnum()))
     }
   }
 
@@ -366,7 +339,7 @@ class StrongEnumSpec extends ChiselFlatSpec {
   }
 
   it should "fail to compare enums of different types" in {
-    an [EnumTypeMismatchException] should be thrownBy {
+    a [ChiselException] should be thrownBy {
       elaborate(new InvalidEnumOpsTester)
     }
   }
@@ -381,6 +354,13 @@ class StrongEnumSpec extends ChiselFlatSpec {
 
   it should "return the correct widths for enums" in {
     assertTesterPasses(new WidthTester)
+  }
+
+  it should "maintain Scala-level type-safety" in {
+    def foo(e: EnumExample.E) = {}
+
+    "foo(EnumExample.e1); foo(EnumExample.e1.next)" should compile
+    "foo(OtherEnum.otherEnum)" shouldNot compile
   }
 
   "StrongEnum FSM" should "work" in {
@@ -401,6 +381,16 @@ class StrongEnumAnnotationSpec extends FreeSpec with Matchers {
           val enumDefAnnos = annos.collect { case a: EnumDefAnnotation => a }
           val enumCompAnnos = annos.collect { case a: EnumComponentAnnotation => a }
 
+          // Print the annotations out onto the screen
+          println("Enum definitions:")
+          enumDefAnnos.foreach {
+            case EnumDefAnnotation(enumTypeName, definition) => println(s"\t$enumTypeName: $definition")
+          }
+          println("Enum components:")
+          enumCompAnnos.foreach{
+            case EnumComponentAnnotation(target, enumTypeName) => println(s"\t$target => $enumTypeName")
+          }
+
           // Check that the global annotation is correct
           enumDefAnnos.exists {
             case EnumDefAnnotation(name, map) =>
@@ -409,11 +399,7 @@ class StrongEnumAnnotationSpec extends FreeSpec with Matchers {
                 map.forall {
                   case (k, v) =>
                     val correctValue = StrongEnumFSM.State.correct_annotation_map(k)
-
-                    val correctValLit = correctValue.litValue()
-                    val vLitValue = v.litValue()
-
-                    correctValue.getWidth == v.getWidth && correctValue.litValue() == v.litValue()
+                    correctValue == v
                 }
             case _ => false
           } should be(true)

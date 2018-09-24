@@ -81,7 +81,7 @@ object MonoConnect {
         elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
       case (sink_e: EnumType, source_e: UnsafeEnum) =>
         elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
-      case (sink_e: EnumType, source_e: EnumType) if sink_e.getClass.equals(source_e.getClass) =>
+      case (sink_e: EnumType, source_e: EnumType) if sink_e.typeEquivalent(source_e) =>
         elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
       case (sink_e: UnsafeEnum, source_e: UInt) =>
         elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)

@@ -3,9 +3,7 @@
 package chisel3.core
 
 import scala.language.experimental.macros
-import scala.reflect.ClassTag
-import scala.reflect.runtime.currentMirror
-import scala.reflect.runtime.universe.{MethodSymbol, runtimeMirror}
+import scala.reflect.macros.blackbox.Context
 import scala.collection.mutable
 
 import chisel3.internal.Builder.pushOp
@@ -15,15 +13,6 @@ import chisel3.internal.sourceinfo._
 import chisel3.internal.{Builder, InstanceId, throwException}
 import firrtl.annotations._
 
-object EnumExceptions {
-  case class EnumTypeMismatchException(message: String) extends Exception(message)
-  case class EnumHasNoCompanionObjectException(message: String) extends Exception(message)
-  case class NonLiteralEnumException(message: String) extends Exception(message)
-  case class NonIncreasingEnumException(message: String) extends Exception(message)
-  case class IllegalDefinitionOfEnumException(message: String) extends Exception(message)
-  case class IllegalCastToEnumException(message: String) extends Exception(message)
-  case class NoEmptyConstructorException(message: String) extends Exception(message)
-}
 
 object EnumAnnotations {
   case class EnumComponentAnnotation(target: Named, enumTypeName: String) extends SingleTargetAnnotation[Named] {
@@ -34,18 +23,17 @@ object EnumAnnotations {
     def toFirrtl = EnumComponentAnnotation(target.toNamed, enumTypeName)
   }
 
-  case class EnumDefAnnotation(enumTypeName: String, definition: Map[String, UInt]) extends NoTargetAnnotation
+  case class EnumDefAnnotation(enumTypeName: String, definition: Map[String, BigInt]) extends NoTargetAnnotation
 
-  case class EnumDefChiselAnnotation(enumTypeName: String, definition: Map[String, UInt]) extends ChiselAnnotation {
+  case class EnumDefChiselAnnotation(enumTypeName: String, definition: Map[String, BigInt]) extends ChiselAnnotation {
     override def toFirrtl: Annotation = EnumDefAnnotation(enumTypeName, definition)
   }
 }
-
-import EnumExceptions._
 import EnumAnnotations._
 
-abstract class EnumType(selfAnnotating: Boolean = true) extends Element {
-  override def cloneType: this.type = getClass.getConstructor().newInstance().asInstanceOf[this.type]
+
+abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolean = true) extends Element {
+  override def cloneType: this.type = factory().asInstanceOf[this.type]
 
   private[core] override def topBindingOpt: Option[TopBinding] = super.topBindingOpt match {
     // Translate Bundle lit bindings to Element lit bindings
@@ -78,12 +66,16 @@ abstract class EnumType(selfAnnotating: Boolean = true) extends Element {
     requireIsHardware(this, "bits operated on")
     requireIsHardware(other, "bits operated on")
 
-    checkTypeEquivalency(other)
+    if(!this.typeEquivalent(other))
+      throwException(s"Enum types are not equivalent: ${this.enumTypeName}, ${other.enumTypeName}")
 
     pushOp(DefPrim(sourceInfo, Bool(), op, this.ref, other.ref))
   }
 
-  private[core] override def typeEquivalent(that: Data): Boolean = this.getClass == that.getClass
+  private[core] override def typeEquivalent(that: Data): Boolean = {
+    this.getClass == that.getClass &&
+    this.factory == that.asInstanceOf[EnumType].factory
+  }
 
   // This isn't actually used anywhere (and it would throw an exception anyway). But it has to be defined since we
   // inherit it from Data.
@@ -109,57 +101,41 @@ abstract class EnumType(selfAnnotating: Boolean = true) extends Element {
   override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     pushOp(DefPrim(sourceInfo, UInt(width), AsUIntOp, ref))
 
-  private val companionModule = currentMirror.reflect(this).symbol.companion.asModule
-  private val companionObject =
-    try {
-      currentMirror.reflectModule(companionModule).instance.asInstanceOf[StrongEnum[this.type]]
-    } catch {
-      case ex: java.lang.ClassNotFoundException =>
-        throw EnumHasNoCompanionObjectException(s"$enumTypeName's companion object was not found")
-      case default => throw default
-    }
-
-  private[chisel3] override def width: Width = companionObject.width
+  protected[chisel3] override def width: Width = factory.width
 
   def isValid(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
-    if (!companionObject.finishedInstantiation) {
-      throwException(s"Not all enums values have been defined yet")
-    }
-
     if (litOption.isDefined) {
       true.B
     } else {
-      def muxBuilder(enums: List[this.type]): Bool = enums match {
+      def muxBuilder(enums: List[EnumType]): Bool = enums match {
         case Nil => false.B
         case e :: es => Mux(this === e, true.B, muxBuilder(es))
       }
 
-      muxBuilder(companionObject.all)
+      muxBuilder(factory.all.toList)
     }
   }
 
   def next(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type = {
-    if (!companionObject.finishedInstantiation) {
-      throwException(s"Not all enums values have been defined yet")
-    }
-
     if (litOption.isDefined) {
-      val index = companionObject.all.indexOf(this)
-      if (index < companionObject.all.length-1) companionObject.all(index+1)
-      else companionObject.all.head
+      val index = factory.all.indexOf(this)
+
+      if (index < factory.all.length-1)
+        factory.all(index+1).asInstanceOf[this.type]
+      else
+        factory.all.head.asInstanceOf[this.type]
     } else {
-      def muxBuilder(enums: List[this.type], first_enum: this.type): this.type = enums match {
+      def muxBuilder(enums: List[EnumType], first_enum: EnumType): EnumType = enums match {
         case e :: Nil => first_enum
         case e :: e_next :: es => Mux(this === e, e_next, muxBuilder(e_next :: es, first_enum))
       }
 
-      muxBuilder(companionObject.all, companionObject.all.head)
+      muxBuilder(factory.all.toList, factory.all.head).asInstanceOf[this.type]
     }
   }
 
-  private[core] def bindToLiteral(bits: UInt): Unit = {
-    val litNum = bits.litOption.get
-    val lit = ULit(litNum, width) // We must make sure to use the enum's width, rather than the UInt's width
+  private[core] def bindToLiteral(num: BigInt, w: Width): Unit = {
+    val lit = ULit(num, w)
     lit.bindLitArg(this)
   }
 
@@ -176,104 +152,70 @@ abstract class EnumType(selfAnnotating: Boolean = true) extends Element {
   private def annotateEnum(): Unit = {
     annotate(EnumComponentChiselAnnotation(this, enumTypeName))
 
-    if (!Builder.annotations.contains(companionObject.globalAnnotation)) {
-      annotate(companionObject.globalAnnotation)
+    if (!Builder.annotations.contains(factory.globalAnnotation)) {
+      annotate(factory.globalAnnotation)
     }
   }
 
-  private def enumTypeName: String = getClass.getName
-
-  // TODO: See if there is a way to catch this at compile-time
-  def checkTypeEquivalency(that: EnumType): Unit =
-    if (!typeEquivalent(that)) {
-      throw EnumTypeMismatchException(s"${this.getClass.getName} and ${that.getClass.getName} are different enum types")
-    }
+  protected def enumTypeName: String = factory.enumTypeName
 
   def toPrintable: Printable = FullName(this) // TODO: Find a better pretty printer
 }
 
-// This is an enum type that can be connected directly to UInts. It is used as a "glue" to cast non-literal UInts
-// to enums.
-sealed private[chisel3] class UnsafeEnum(override val width: Width) extends EnumType(selfAnnotating = false) {
-  override def cloneType: this.type = getClass.getConstructor(classOf[Width]).newInstance(width).asInstanceOf[this.type]
-}
-private object UnsafeEnum extends StrongEnum[UnsafeEnum] {
-  override def checkEmptyConstructorExists(): Unit = {}
-}
 
-abstract class StrongEnum[T <: EnumType : ClassTag] {
-  private var id: BigInt = 0
-  private[core] var width: Width = 0.W
+abstract class EnumFactory {
+  class E extends EnumType(this)
 
-  private val enum_names = getEnumNames
-  private val enum_values = mutable.ArrayBuffer.empty[BigInt]
-  private val enum_instances = mutable.ArrayBuffer.empty[T]
+  var id: BigInt = 0
+  var width: Width = 0.W
 
-  private def getEnumNames(implicit ct: ClassTag[T]): Seq[String] = {
-    val mirror = runtimeMirror(this.getClass.getClassLoader)
-
-    // We use Java reflection to get all the enum fields, and then we use Scala reflection to sort them in declaration
-    // order. TODO: Use only Scala reflection here
-    val fields = getClass.getDeclaredFields.filter(_.getType == ct.runtimeClass).map(_.getName)
-    val getters = mirror.classSymbol(this.getClass).toType.members.sorted.collect {
-      case m: MethodSymbol if m.isGetter => m.name.toString
-    }
-
-    getters.filter(fields.contains(_))
-  }
-
-  private def bindAllEnums(): Unit =
-    (enum_instances, enum_values).zipped.foreach((inst, v) => inst.bindToLiteral(v.U(width)))
+  val enum_names = mutable.ArrayBuffer.empty[String]
+  val enum_values = mutable.ArrayBuffer.empty[BigInt]
+  val enum_instances = mutable.ArrayBuffer.empty[E]
 
   private[core] def globalAnnotation: EnumDefChiselAnnotation =
-    EnumDefChiselAnnotation(enumTypeName, (enum_names, enum_values.map(_.U(width))).zipped.toMap)
+    EnumDefChiselAnnotation(enumTypeName, (enum_names, enum_values).zipped.toMap)
 
-  private[core] def finishedInstantiation: Boolean =
-    enum_names.length == enum_instances.length
-
-  private def newEnum()(implicit ct: ClassTag[T]): T =
-    ct.runtimeClass.newInstance.asInstanceOf[T]
-
-  // TODO: This depends upon undocumented behavior (which, to be fair, is unlikely to change). Use reflection to find
-  // the companion class's name in a more robust way.
-  private val enumTypeName = getClass.getName.init
+  private[core] val enumTypeName = getClass.getName.init
 
   def getWidth: Int = width.get
 
-  def all: List[T] = enum_instances.toList
+  def all: Seq[E] = enum_instances.toSeq
 
-  def Value: T = {
-    val result = newEnum()
+  def Value: E = macro EnumMacros.ValImpl
+  def Value(id: UInt): E = macro EnumMacros.ValCustomImpl
+
+  def do_Value(names: Seq[String]): E = {
+    val result = new E
+    enum_names ++= names.filter(!enum_names.contains(_))
     enum_instances.append(result)
     enum_values.append(id)
+
+    // We have to use UnknownWidth here, because we don't actually know what the final width will be
+    result.bindToLiteral(id, UnknownWidth())
 
     width = (1 max id.bitLength).W
     id += 1
 
-    // Instantiate all the enums when Value is called for the last time
-    if (enum_instances.length == enum_names.length && isTopLevelConstructor) {
-      bindAllEnums()
-    }
-
     result
   }
 
-  def Value(id: UInt): T = {
+  def do_Value(names: Seq[String], id: UInt): E = {
     // TODO: These throw ExceptionInInitializerError which can be confusing to the user. Get rid of the error, and just
     // throw an exception
     if (!id.litOption.isDefined)
-      throw NonLiteralEnumException(s"$enumTypeName defined with a non-literal type in companion object")
-    if (id.litValue() <= this.id)
-      throw NonIncreasingEnumException(s"Enums must be strictly increasing: $enumTypeName")
+      throwException(s"$enumTypeName defined with a non-literal type")
+    if (id.litValue() < this.id)
+      throwException(s"Enums must be strictly increasing: $enumTypeName")
 
     this.id = id.litValue()
-    Value
+    do_Value(names)
   }
 
-  def apply(): T = newEnum()
+  def apply(): E = new E
 
-  def apply(n: UInt)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): T = {
-    if (!n.litOption.isDefined) {
+  def apply(n: UInt)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): E = {
+    if (n.litOption.isEmpty) {
       throwException(s"Illegal cast from non-literal UInt to $enumTypeName. Use fromBits instead")
     }
 
@@ -286,7 +228,7 @@ abstract class StrongEnum[T <: EnumType : ClassTag] {
     }
   }
 
-  def fromBits(n: UInt)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): T = {
+  def fromBits(n: UInt)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): E = {
     if (n.litOption.isDefined) {
       apply(n)
     } else if (!n.isWidthKnown) {
@@ -298,42 +240,48 @@ abstract class StrongEnum[T <: EnumType : ClassTag] {
 
       val glue = Wire(new UnsafeEnum(width))
       glue := n
-      val result = Wire(newEnum())
+      val result = Wire(new E)
       result := glue
       result
     }
   }
+}
 
-  // StrongEnum basically has a recursive constructor. It instantiates a copy of itself internally, so that it can
-  // make sure that all EnumType's inside of it were instantiated using the "Value" function. However, in order to
-  // instantiate its copy, as well as to instantiate new enums, it has to make sure that it has a no-args constructor
-  // as it won't know what parameters to add otherwise.
 
-  protected def checkEmptyConstructorExists(): Unit = {
-    try {
-      implicitly[ClassTag[T]].runtimeClass.getDeclaredConstructor()
-      getClass.getDeclaredConstructor()
-    } catch {
-      case ex: NoSuchMethodException => throw NoEmptyConstructorException(s"$enumTypeName does not have a no-args constructor. Did you declare it inside a class?")
-    }
+object EnumMacros {
+  def ValImpl(c: Context) : c.Tree = {
+    import c.universe._
+    val names = getNames(c)
+    q"""this.do_Value(Seq(..$names))"""
   }
 
-  private val isTopLevelConstructor: Boolean = {
-    val stack_trace = Thread.currentThread().getStackTrace
-    val constructorName = "<init>"
-
-    stack_trace.count(se => se.getClassName.equals(getClass.getName) && se.getMethodName.equals(constructorName)) == 1
+  def ValCustomImpl(c: Context)(id: c.Expr[UInt]) = {
+    import c.universe._
+    val names = getNames(c)
+    q"""this.do_Value(Seq(..$names), $id)"""
   }
 
-  if (isTopLevelConstructor) {
-    checkEmptyConstructorExists()
+  // Much thanks to Travis Brown for this solution:
+  // stackoverflow.com/questions/18450203/retrieve-the-name-of-the-value-a-scala-macro-invocation-will-be-assigned-to
+  def getNames(c: Context): Seq[String] = {
+    import c.universe._
 
-    val constructor = getClass.getDeclaredConstructor()
-    constructor.setAccessible(true)
-    val childInstance = constructor.newInstance()
-
-    if (!childInstance.finishedInstantiation) {
-      throw IllegalDefinitionOfEnumException(s"$enumTypeName defined illegally. Did you forget to call Value when defining a new enum?")
+    val names = c.enclosingClass.collect {
+      case ValDef(_, name, _, rhs)
+        if rhs.pos == c.macroApplication.pos => name.decoded
     }
+
+    if (names.isEmpty)
+      c.abort(c.enclosingPosition, "Value cannot be called without assigning to an enum")
+
+    names
   }
 }
+
+
+// This is an enum type that can be connected directly to UInts. It is used as a "glue" to cast non-literal UInts
+// to enums.
+private[chisel3] class UnsafeEnum(override val width: Width) extends EnumType(UnsafeEnum, selfAnnotating = false) {
+  override def cloneType: this.type = new UnsafeEnum(width).asInstanceOf[this.type]
+}
+private object UnsafeEnum extends EnumFactory
