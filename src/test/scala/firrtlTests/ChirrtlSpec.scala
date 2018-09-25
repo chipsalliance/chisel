@@ -16,7 +16,7 @@ class ChirrtlSpec extends FirrtlFlatSpec {
     CInferTypes,
     CInferMDir,
     RemoveCHIRRTL,
-    ToWorkingIR,            
+    ToWorkingIR,
     CheckHighForm,
     ResolveKinds,
     InferTypes,
@@ -68,6 +68,15 @@ class ChirrtlSpec extends FirrtlFlatSpec {
       val circuit = Parser.parse(input.split("\n").toIterator)
       transforms.foldLeft(CircuitState(circuit, UnknownForm)) {
         (c: CircuitState, p: Transform) => p.runTransform(c)
+      }
+    }
+  }
+
+  behavior of "Uniqueness"
+  for ((description, input) <- CheckSpec.nonUniqueExamples) {
+    it should s"be asserted for $description" in {
+      assertThrows[CheckChirrtl.NotUniqueException] {
+        Seq(ToWorkingIR, CheckChirrtl).foldLeft(Parser.parse(input)){ case (c, tx) => tx.run(c) }
       }
     }
   }
