@@ -357,7 +357,7 @@ class StrongEnumSpec extends ChiselFlatSpec {
   }
 
   it should "maintain Scala-level type-safety" in {
-    def foo(e: EnumExample.E) = {}
+    def foo(e: EnumExample.Value) = {}
 
     "foo(EnumExample.e1); foo(EnumExample.e1.next)" should compile
     "foo(OtherEnum.otherEnum)" shouldNot compile
