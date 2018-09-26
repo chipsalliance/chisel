@@ -282,4 +282,32 @@ class CheckSpec extends FlatSpec with Matchers {
       }
     }
   }
+
+  behavior of "Uniqueness"
+  for ((description, input) <- CheckSpec.nonUniqueExamples) {
+    it should s"be asserted for $description" in {
+      assertThrows[CheckHighForm.NotUniqueException] {
+        Seq(ToWorkingIR, CheckHighForm).foldLeft(Parser.parse(input)){ case (c, tx) => tx.run(c) }
+      }
+    }
+  }
 }
+
+object CheckSpec {
+  val nonUniqueExamples = List(
+    ("two ports with the same name",
+     """|circuit Top:
+        |  module Top:
+        |    input a: UInt<1>
+        |    input a: UInt<1>""".stripMargin),
+    ("two nodes with the same name",
+     """|circuit Top:
+        |  module Top:
+        |    node a = UInt<1>("h0")
+        |    node a = UInt<1>("h0")""".stripMargin),
+    ("a port and a node with the same name",
+     """|circuit Top:
+        |  module Top:
+        |    input a: UInt<1>
+        |    node a = UInt<1>("h0") """.stripMargin) )
+  }

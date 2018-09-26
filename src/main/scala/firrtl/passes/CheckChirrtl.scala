@@ -31,8 +31,6 @@ object CheckChirrtl extends Pass {
   class NoTopModuleException(info: Info, name: String) extends PassException(
     s"$info: A single module must be named $name.")
 
-  // TODO FIXME
-  // - Do we need to check for uniquness on port names?
   def run (c: Circuit): Circuit = {
     val errors = new Errors()
     val moduleNames = (c.modules map (_.name)).toSet
@@ -105,6 +103,8 @@ object CheckChirrtl extends Pass {
     }
 
     def checkChirrtlP(mname: String, names: NameSet)(p: Port): Port = {
+      if (names(p.name))
+        errors append new NotUniqueException(NoInfo, mname, p.name)
       names += p.name
       (p.tpe map checkChirrtlT(p.info, mname)
              map checkChirrtlW(p.info, mname))
