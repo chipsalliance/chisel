@@ -517,6 +517,84 @@ class TopWiringTests extends LowTransformSpec with FirrtlRunners {
       execute(input, check, topwiringannos)
    }
 
+
+   "The signal fullword in module C inst c1 and c2 and signal fullword in module B" should
+   s"be connected to Top port with topwiring prefix" in {
+      val input =
+         """circuit Top :
+           |  module Top :
+           |    inst a1 of A
+           |    inst a2 of A_
+           |  module A :
+           |    output fullword: UInt<1>
+           |    fullword <= UInt(1)
+           |    inst b1 of B
+           |  module A_ :
+           |    output fullword: UInt<1>
+           |    wire y : UInt<1>
+           |    y <= UInt(1)
+           |    fullword <= UInt(1)
+           |  module B :
+           |    output fullword: UInt<1>
+           |    fullword <= UInt(1)
+           |    inst c1 of C
+           |    inst c2 of C
+           |  module C:
+           |    output fullword: UInt<1>
+           |    fullword <= UInt(0)
+           """.stripMargin
+     val topwiringannos = Seq(TopWiringAnnotation(ComponentName(s"fullword",
+                                                                 ModuleName(s"C", CircuitName(s"Top"))),
+                                                   s"topwiring_"),
+                               TopWiringAnnotation(ComponentName(s"fullword",
+                                                                 ModuleName(s"B", CircuitName(s"Top"))),
+                                                   s"topwiring_"))
+     val check =
+         """circuit Top :
+           |  module Top :
+           |    output topwiring_a1_b1_fullword: UInt<1>
+           |    output topwiring_a1_b1_c1_fullword: UInt<1>
+           |    output topwiring_a1_b1_c2_fullword: UInt<1>
+           |    inst a1 of A
+           |    inst a2 of A_
+           |    topwiring_a1_b1_fullword <= a1.topwiring_b1_fullword
+           |    topwiring_a1_b1_c1_fullword <= a1.topwiring_b1_c1_fullword
+           |    topwiring_a1_b1_c2_fullword <= a1.topwiring_b1_c2_fullword
+           |  module A :
+           |    output fullword: UInt<1>
+           |    output topwiring_b1_fullword: UInt<1>
+           |    output topwiring_b1_c1_fullword: UInt<1>
+           |    output topwiring_b1_c2_fullword: UInt<1>
+           |    inst b1 of B
+           |    fullword <= UInt(1)
+           |    topwiring_b1_fullword <= b1.topwiring_fullword
+           |    topwiring_b1_c1_fullword <= b1.topwiring_c1_fullword
+           |    topwiring_b1_c2_fullword <= b1.topwiring_c2_fullword
+           |  module A_ :
+           |    output fullword: UInt<1>
+           |    node y = UInt<1>("h1")
+           |    fullword <= UInt(1)
+           |  module B :
+           |    output fullword: UInt<1>
+           |    output topwiring_fullword: UInt<1>
+           |    output topwiring_c1_fullword: UInt<1>
+           |    output topwiring_c2_fullword: UInt<1>
+           |    inst c1 of C
+           |    inst c2 of C
+           |    fullword <= UInt(1)
+           |    topwiring_fullword <= fullword
+           |    topwiring_c1_fullword <= c1.topwiring_fullword
+           |    topwiring_c2_fullword <= c2.topwiring_fullword
+           |  module C:
+           |    output fullword: UInt<1>
+           |    output topwiring_fullword: UInt<1>
+           |    fullword <= UInt(0)
+           |    topwiring_fullword <= fullword
+           """.stripMargin
+      execute(input, check, topwiringannos)
+   }
+
+
    "TopWiringTransform" should "do nothing if run without TopWiring* annotations" in {
      val input = """|circuit Top :
                     |  module Top :

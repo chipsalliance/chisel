@@ -150,7 +150,7 @@ class TopWiringTransform extends Transform {
           sourcemods.get(module).map( _.map { case (a,b,c,path,p) => (a,b,c, inst +: path, p)})
       }.flatten
       if (seqChildren.nonEmpty) {
-        sourcemods(mod.name) = seqChildren
+        sourcemods(mod.name) = sourcemods.getOrElse(mod.name, Seq()) ++ seqChildren
       }
     }
 
