@@ -9,6 +9,7 @@ import firrtl.WrappedExpression._
 import firrtl.WrappedType._
 import scala.collection.mutable
 import scala.collection.mutable.{StringBuilder, ArrayBuffer, LinkedHashMap, HashMap, HashSet}
+import scala.util.matching.Regex
 import java.io.PrintWriter
 import logger.LazyLogging
 
@@ -691,6 +692,22 @@ object Utils extends LazyLogging {
     "SYNTHESIS",
     "PRINTF_COND",
     "VCS")
+
+  /** Expand a name into its prefixes, e.g., 'foo_bar__baz' becomes 'Seq[foo_, foo_bar__, foo_bar__baz]'. This can be used
+    * to produce better names when generating prefix unique names.
+    * @param name a signal name
+    * @param prefixDelim a prefix delimiter (default is "_")
+    * @return the signal name and any prefixes
+    */
+  def expandPrefixes(name: String, prefixDelim: String = "_"): Seq[String] = {
+    val regex = ("(" + Regex.quote(prefixDelim) + ")+[A-Za-z0-9$]").r
+
+    name +: regex
+      .findAllMatchIn(name)
+      .map(_.end - 1)
+      .toSeq
+      .foldLeft(Seq[String]()){ case (seq, id) => seq :+ name.splitAt(id)._1 }
+  }
 }
 
 object MemoizedHash {
