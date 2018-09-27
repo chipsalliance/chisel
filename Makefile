@@ -9,8 +9,13 @@ scala_jar ?= $(install_dir)/firrtl.jar
 scala_src := $(shell find src -type f \( -name "*.scala" -o -path "*/resources/*" \))
 
 clean:
+	$(MAKE) -C $(root_dir)/spec clean
 	rm -f $(install_dir)/firrtl.jar
 	$(SBT) "clean"
+
+.PHONY : specification
+specification:
+	$(MAKE) -C $(root_dir)/spec all
 
 build:	build-scala
 

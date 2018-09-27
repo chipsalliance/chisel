@@ -43,7 +43,15 @@
 \rhead{Version \version}
 \renewcommand{\headrulewidth}{0.4pt}
 \renewcommand{\footrulewidth}{0.4pt}
-\lstset{basicstyle=\footnotesize\ttfamily,breaklines=true}
+\lstset{
+    basicstyle=\footnotesize\ttfamily,
+    breaklines=true,
+    numberstyle=\tiny,
+    captionpos=b,
+    caption=\lstname,
+    morekeywords={circuit,module,input,output,flip,wire,reg,is,invalid,when,else,skip},
+    keywordstyle=\color{blue}
+}
 
 \begin{document}
 \maketitle
@@ -104,37 +112,37 @@ This research was partially funded by DARPA Award Number HR0011-12-2-0016, the C
 \subsection{Circuits}
 All FIRRTL circuits consist of a list of modules, each representing a hardware block that can be instantiated. The circuit must specify the name of the top-level module.
 
-\begin{verbatim}
+\begin{lstlisting}
 circuit MyTop :
    module MyTop :
       ...
    module MyModule :
       ...   
-\end{verbatim}   
+\end{lstlisting}   
 
 \subsection{Modules}
 Each module has a given name, a list of ports, and a statement representing the circuit connections within the module. A module port is specified by its \pd{direction}, which may be input or output, a name, and the data type of the port. 
 
 The following example declares a module with one input port, one output port, and one statement connecting the input port to the output port. See section \ref{connects} for details on the connect statement.
 
-\begin{verbatim}
+\begin{lstlisting}
 module MyModule :
    input foo: UInt
    output bar: UInt
    bar <= foo
-\end{verbatim}  
+\end{lstlisting}  
 
 Note that a module definition does {\em not} indicate that the module will be physically present in the final circuit. Refer to the description of the instance statement for details on how to instantiate a module (section \ref{instances}).
 
 \subsection{Externally Defined Modules}
 Externally defined modules consist of a given name, and a list of ports, whose types and names must match its external definition.
 
-\begin{verbatim}
+\begin{lstlisting}
 extmodule MyExternalModule :
    input foo: UInt
    output bar: UInt
    output baz: SInt
-\end{verbatim}  
+\end{lstlisting}  
 
 
 % The following example is the port declaration of a module that spans two clock domains.
@@ -160,77 +168,77 @@ There are three ground types in FIRRTL: an unsigned integer type, a signed integ
 
 Both unsigned and signed integer types may optionally be given a known positive integer bit width.
 
-\begin{verbatim}
+\begin{lstlisting}
 UInt<10>
 SInt<32>
-\end{verbatim}  
+\end{lstlisting}  
 
 Alternatively, if the bit width is omitted, it will be automatically inferred by FIRRTL's width inferencer, as detailed in section \ref{width_inference}.
 
-\begin{verbatim}
+\begin{lstlisting}
 UInt
 SInt
-\end{verbatim}  
+\end{lstlisting}  
 
 \subsubsection{Clock Type}
 
 The clock type is used to describe wires and ports meant for carrying clock signals. The usage of components with clock types are restricted. Clock signals cannot be used in most primitive operations, and clock signals can only be connected to components that have been declared with the clock type. 
 
 The clock type is specified as follows:
-\begin{verbatim}
+\begin{lstlisting}
 Clock
-\end{verbatim}  
+\end{lstlisting}  
 
 \subsection{Vector Types}
 
 A vector type is used to express an ordered sequence of elements of a given type. The length of the sequence must be non-negative and known. 
 
 The following example specifies a ten element vector of 16-bit unsigned integers.
-\begin{verbatim}
+\begin{lstlisting}
 UInt<16>[10]
-\end{verbatim}  
+\end{lstlisting}  
 
 The next example specifies a ten element vector of unsigned integers of omitted but identical bit widths.
-\begin{verbatim}
+\begin{lstlisting}
 UInt[10]
-\end{verbatim}
+\end{lstlisting}
 
 Note that any type, including other aggregate types, may be used as the element type of the vector. The following example specifies a twenty element vector, each of which is a ten element vector of 16-bit unsigned integers.
-\begin{verbatim}
+\begin{lstlisting}
 UInt<16>[10][20]
-\end{verbatim} 
+\end{lstlisting} 
 
 \subsection{Bundle Types}
 
 A bundle type is used to express a collection of nested and named types. All fields in a bundle type must have a given name, and type. 
 
 The following is an example of a possible type for representing a complex number. It has two fields, \verb|real|, and \verb|imag|, both 10-bit signed integers.
-\begin{verbatim}
+\begin{lstlisting}
 {real:SInt<10>, imag:SInt<10>}
-\end{verbatim}
+\end{lstlisting}
 
 Additionally, a field may optionally be declared with a {\em flipped} orientation.
-\begin{verbatim}
+\begin{lstlisting}
 {word:UInt<32>, valid:UInt<1>, flip ready:UInt<1>}
-\end{verbatim}
+\end{lstlisting}
 In a connection between circuit components with bundle types, the data carried by the flipped fields flow in the opposite direction as the data carried by the non-flipped fields.
 
 As an example, consider a module output port declared with the following type:
-\begin{verbatim}
+\begin{lstlisting}
 output a: {word:UInt<32>, valid:UInt<1>, flip ready:UInt<1>}
-\end{verbatim}
+\end{lstlisting}
 In a connection to the \verb|a| port, the data carried by the \verb|word| and \verb|valid| subfields will flow out of the module, while data carried by the \verb|ready| subfield will flow into the module. More details about how the bundle field orientation affects connections are explained in section \ref{connects}.
 
 As in the case of vector types, a bundle field may be declared with any type, including other aggregate types. 
-\begin{verbatim}
+\begin{lstlisting}
 {real: {word:UInt<32>, valid:UInt<1>, flip ready:UInt<1>}
  imag: {word:UInt<32>, valid:UInt<1>, flip ready:UInt<1>}}
-\end{verbatim}
+\end{lstlisting}
 
 When calculating the final direction of data flow, the orientation of a field is applied recursively to all nested types in the field. As an example, consider the following module port declared with a bundle type containing a nested bundle type.
-\begin{verbatim}
+\begin{lstlisting}
 output myport: {a: UInt, flip b: {c: UInt, flip d:UInt}}
-\end{verbatim}
+\end{lstlisting}
 In a connection to \verb|myport|, the \verb|a| subfield flows out of the module. The \verb|c| subfield contained in the \verb|b| subfield flows into the module, and the \verb|d| subfield contained in the \verb|b| subfield flows out of the module.
 
 \subsection{Passive Types} \label{passive_types}
@@ -289,12 +297,12 @@ Statements are used to describe the components within a module and how they inte
 The connect statement is used to specify a physically wired connection between two circuit components.
 
 The following example demonstrates connecting a module's input port to its output port, where port \verb|myinput| is connected to port \verb|myoutput|.
-\begin{verbatim}
+\begin{lstlisting}
 module MyModule :
    input myinput: UInt
    output myoutput: UInt
    myoutput <= myinput
-\end{verbatim}
+\end{lstlisting}
 
 In order for a connection to be legal the following conditions must hold:
 \begin{enumerate}
@@ -328,22 +336,22 @@ Partial connect statements from a narrower ground type component to a wider grou
 Intuitively, bundle fields with matching names will be connected appropriately, while bundle fields not present in both types will be ignored. Similarly, vectors with mismatched lengths will be connected up to the shorter length, and the remaining subelements are ignored. The full algorithm is detailed in section \ref{partial_connection_algorithm}.
 
 The following example demonstrates partially connecting a module's input port to its output port, where port \verb|myinput| is connected to port \verb|myoutput|.
-\begin{verbatim}
+\begin{lstlisting}
 module MyModule :
    input myinput: {flip a:UInt, b:UInt[2]}
    output myoutput: {flip a:UInt, b:UInt[3], c:UInt}
    myoutput <- myinput
-\end{verbatim}
+\end{lstlisting}
 
 The above example is equivalent to the following:
-\begin{verbatim}
+\begin{lstlisting}
 module MyModule :
    input myinput: {flip a:UInt, b:UInt[2]}
    output myoutput: {flip a:UInt, b:UInt[3], c:UInt}
    myinput.a <- myoutput.a
    myoutput.b[0] <- myinput.b[0]
    myoutput.b[1] <- myinput.b[1]
-\end{verbatim}
+\end{lstlisting}
 For details on the syntax and semantics of the subfield expression, subindex expression, and statement groups, see sections \ref{subfields}, \ref{subindices}, and \ref{statement_groups}.
 
 \subsubsection{The Partial Connection Algorithm} \label{partial_connection_algorithm}
@@ -358,7 +366,7 @@ A partial (or reverse partial) connect statement between two bundle typed compon
 
 An ordered sequence of one or more statements can be grouped into a single statement, called a statement group. The following example demonstrates a statement group composed of three connect statements.
 
-\begin{verbatim}
+\begin{lstlisting}
 module MyModule :
    input a: UInt
    input b: UInt
@@ -367,7 +375,7 @@ module MyModule :
    myport1 <= a
    myport1 <= b
    myport2 <= a
-\end{verbatim}
+\end{lstlisting}
 
 \subsubsection{Last Connect Semantics}\label{last_connect}
 Ordering of statements is significant in a statement group. Intuitively, during elaboration, statements execute in order, and the effects of later statements take precedence over earlier ones. In the previous example, in the resultant circuit, port \verb|b| will be connected to \verb|myport1|, and port \verb|a| will be connected to \verb|myport2|. 
@@ -375,42 +383,42 @@ Ordering of statements is significant in a statement group. Intuitively, during 
 Note that connect and partial connect statements have equal priority, and later connect or partial connect statements always take priority over earlier connect or partial connect statements. Conditional statements are also affected by last connect semantics, and for details see section \ref{conditional_last_connect}.
 
 In the case where a connection to a circuit component with an aggregate type is followed by a connection to a subelement of that component, only the connection to the subelement is overwritten. Connections to the other subelements remain unaffected. In the following example, in the resultant circuit, the \verb|c| subelement of port \verb|portx| will be connected to the \verb|c| subelement of \verb|myport|, and port \verb|porty| will be connected to the \verb|b| subelement of \verb|myport|.
-\begin{verbatim}
+\begin{lstlisting}
 module MyModule :
    input portx: {b:UInt, c:UInt}
    input porty: UInt
    output myport: {b:UInt, c:UInt}
    myport <= portx
    myport.b <= porty
-\end{verbatim}
+\end{lstlisting}
 The above circuit can be rewritten equivalently as follows.
-\begin{verbatim}
+\begin{lstlisting}
 module MyModule :
    input portx: {b:UInt, c:UInt}
    input porty: UInt
    output myport: {b:UInt, c:UInt}
    myport.b <= porty
    myport.c <= portx.c
-\end{verbatim}
+\end{lstlisting}
 
 In the case where a connection to a subelement of an aggregate circuit component is followed by a connection to the entire circuit component, the later connection overwrites the earlier connections completely.
 
-\begin{verbatim}
+\begin{lstlisting}
 module MyModule :
    input portx: {b:UInt, c:UInt}
    input porty: UInt
    output myport: {b:UInt, c:UInt}
    myport.b <= porty
    myport <= portx
-\end{verbatim}
+\end{lstlisting}
 The above circuit can be rewritten equivalently as follows.
-\begin{verbatim}
+\begin{lstlisting}
 module MyModule :
    input portx: {b:UInt, c:UInt}
    input porty: UInt
    output myport: {b:UInt, c:UInt}
    myport <= portx
-\end{verbatim}
+\end{lstlisting}
 
 See section \ref{subfields} for more details about subfield expressions.
 
@@ -418,16 +426,16 @@ See section \ref{subfields} for more details about subfield expressions.
 The empty statement does nothing and is used simply as a placeholder where a statement is expected. It is specified using the \verb|skip| keyword.
 
 The following example:
-\begin{verbatim}
+\begin{lstlisting}
 a <= b
 skip
 c <= d
-\end{verbatim}
+\end{lstlisting}
 can be equivalently expressed as:
-\begin{verbatim}
+\begin{lstlisting}
 a <= b
 c <= d
-\end{verbatim}
+\end{lstlisting}
 
 The empty statement is most often used as the \verb|else| branch in a conditional statement, or as a convenient placeholder for removed components during transformational passes. See section \ref{conditionals} for details on the conditional statement.
 
@@ -436,46 +444,46 @@ A wire is a named combinational circuit component that can be connected to and f
 
 The following example demonstrates instantiating a wire with the given name \verb|mywire| and type \verb|UInt|.
 
-\begin{verbatim}
+\begin{lstlisting}
 wire mywire : UInt
-\end{verbatim}
+\end{lstlisting}
 
 \subsection{Registers}
 A register is a named stateful circuit component.
 
 The following example demonstrates instantiating a register with the given name \verb|myreg|, type \verb|SInt|, and is driven by the clock signal \verb|myclock|. 
 
-\begin{verbatim}
+\begin{lstlisting}
 wire myclock: Clock
 reg myreg: SInt, myclock
 ...
-\end{verbatim}
+\end{lstlisting}
 
 Optionally, for the purposes of circuit initialization, a register can be declared with a reset signal and value. In the following example, \verb|myreg| is assigned the value \verb|myinit| when the signal \verb|myreset| is high.
 
-\begin{verbatim}
+\begin{lstlisting}
 wire myclock: Clock
 wire myreset: UInt<1>
 wire myinit: SInt
 reg myreg: SInt, myclock with: (reset => (myreset, myinit))
 ...
-\end{verbatim}
+\end{lstlisting}
 
 Note that the clock signal for a register must be of type \verb|clock|, the reset signal must be a single bit \verb|UInt|, and the type of initialization value must match the declared type of the register.
 
 \subsection{Invalidates}
 An invalidate statement is used to indicate that a circuit component contains indeterminate values. It is specified as follows:
 
-\begin{verbatim}
+\begin{lstlisting}
 wire w:UInt
 w is invalid
-\end{verbatim}
+\end{lstlisting}
 
 Invalidate statements can be applied to any circuit component of any type. However, if the circuit component cannot be connected to, then the statement has no effect on the component. This allows the invalidate statement to be applied to any component, to explicitly ignore initialization coverage errors.
 
 The following example demonstrates the effect of invalidating a variety of circuit components with aggregate types. See section \ref{invalidate_algorithm} for details on the algorithm for determining what is invalidated.
 
-\begin{verbatim}
+\begin{lstlisting}
 module MyModule :
    input in: {flip a:UInt, b:UInt}
    output out: {flip a:UInt, b:UInt}
@@ -483,9 +491,9 @@ module MyModule :
    in is invalid
    out is invalid
    w is invalid
-\end{verbatim}
+\end{lstlisting}
 is equivalent to the following:
-\begin{verbatim}
+\begin{lstlisting}
 module MyModule :
    input in: {flip a:UInt, b:UInt}
    output out: {flip a:UInt, b:UInt}
@@ -494,7 +502,7 @@ module MyModule :
    out.b is invalid
    w.a is invalid
    w.b is invalid
-\end{verbatim}
+\end{lstlisting}
 
 For the purposes of simulation, invalidated components are initialized to random values, and operations involving indeterminate values produce undefined behaviour. This is useful for early detection of errors in simulation.
 
@@ -510,20 +518,20 @@ A node is simply a named intermediate value in a circuit. The node must be initi
 
 The following example demonstrates instantiating a node with the given name \verb|mynode| initialized with the output of a multiplexor (see section \ref{multiplexors}).
 
-\begin{verbatim}
+\begin{lstlisting}
 wire pred: UInt<1>
 wire a: SInt
 wire b: SInt
 node mynode = mux(pred, a, b)
 ...
-\end{verbatim}
+\end{lstlisting}
 
 \subsection{Conditionals}\label{conditionals}
 Connections within a conditional statement that connect to previously declared components hold only when the given condition is high. The condition must have a 1-bit unsigned integer type.
 
 In the following example, the wire \verb|x| is connected to the input \verb|a| only when the \verb|en| signal is high. Otherwise, the wire \verb|x| is connected to the input \verb|b|. 
 
-\begin{verbatim}
+\begin{lstlisting}
 module MyModule :
    input a: UInt
    input b: UInt
@@ -533,14 +541,14 @@ module MyModule :
       x <= a
    else :
       x <= b  
-\end{verbatim}
+\end{lstlisting}
 
 \subsubsection{Syntactic Shorthands}
 The \verb|else| branch of a conditional statement may be omitted, in which case a default \verb|else| branch is supplied consisting of the empty statement.
 
 Thus the following example:
 
-\begin{verbatim}
+\begin{lstlisting}
 module MyModule :
    input a: UInt
    input b: UInt
@@ -548,11 +556,11 @@ module MyModule :
    wire x: UInt
    when en :
       x <= a
-\end{verbatim}
+\end{lstlisting}
 
 can be equivalently expressed as:
 
-\begin{verbatim}
+\begin{lstlisting}
 module MyModule :
    input a: UInt
    input b: UInt
@@ -562,13 +570,13 @@ module MyModule :
       x <= a
    else : 
       skip   
-\end{verbatim}
+\end{lstlisting}
 
 To aid readability of long chains of conditional statements, the colon following the \verb|else| keyword may be omitted if the \verb|else| branch consists of a single conditional statement.
 
 Thus the following example:
 
-\begin{verbatim}
+\begin{lstlisting}
 module MyModule :
    input a: UInt
    input b: UInt
@@ -588,11 +596,11 @@ module MyModule :
             x <= c  
          else :
             x <= d       
-\end{verbatim}
+\end{lstlisting}
 
 can be equivalently written as:
 
-\begin{verbatim}
+\begin{lstlisting}
 module MyModule :
    input a: UInt
    input b: UInt
@@ -610,12 +618,12 @@ module MyModule :
       x <= c  
    else :
       x <= d       
-\end{verbatim}
+\end{lstlisting}
 
 \subsubsection{Nested Declarations}
 If a component is declared within a conditional statement, connections to the component are unaffected by the condition. In the following example, register \verb|myreg1| is always connected to \verb|a|, and register \verb|myreg2| is always connected to \verb|b|.
 
-\begin{verbatim}
+\begin{lstlisting}
 module MyModule :
    input a: UInt
    input b: UInt
@@ -627,7 +635,7 @@ module MyModule :
    else :
       reg myreg2 : UInt, clk
       myreg2 <= b
-\end{verbatim}
+\end{lstlisting}
 
 Intuitively, a line can be drawn between a connection (or partial connection) to a component and that component's declaration. All conditional statements that are crossed by the line apply to that connection (or partial connection).
 
@@ -636,14 +644,14 @@ Because of the conditional statement, it is possible to syntactically express ci
 
 In the following example, the wire \verb|a| is connected to the wire \verb|w| when \verb|en| is high, but it is not specified what is connected to \verb|w| when \verb|en| is low.
 
-\begin{verbatim}
+\begin{lstlisting}
 module MyModule :
    input en: UInt<1>   
    input a: UInt
    wire w: UInt
    when en :
       w <= a
-\end{verbatim}
+\end{lstlisting}
 
 This is an illegal FIRRTL circuit and an error will be thrown during compilation. All wires, memory ports, instance ports, and module ports that can be connected to must be connected to under all conditions. Registers do not need to be connected to under all conditions, as it will keep its previous value if unconnected.
 
@@ -654,7 +662,7 @@ The conditional statement creates a new {\em scope} within each of its \verb|whe
 In the case where a connection to a circuit component is followed by a conditional statement containing a connection to the same component, the connection is overwritten only when the condition holds. Intuitively, a multiplexor is generated such that when the condition is low, the multiplexor returns the old value, and otherwise returns the new value. For details about the multiplexor, see section \ref{multiplexors}.
 
 The following example:
-\begin{verbatim}
+\begin{lstlisting}
 wire a: UInt
 wire b: UInt
 wire c: UInt<1>
@@ -663,19 +671,19 @@ w <= a
 when c :
    w <= b
 ...   
-\end{verbatim}
+\end{lstlisting}
 can be rewritten equivalently using a multiplexor as follows:
-\begin{verbatim}
+\begin{lstlisting}
 wire a: UInt
 wire b: UInt
 wire c: UInt<1>
 wire w: UInt
 w <= mux(c, b, a)
 ...
-\end{verbatim}
+\end{lstlisting}
 
 In the case where an invalid statement is followed by a conditional statement containing a connect to the invalidated component, the resulting connection to the component can be expressed using a conditionally valid expression. See section \ref{conditionally_valids} for more details about the conditionally valid expression.
-\begin{verbatim}
+\begin{lstlisting}
 wire a: UInt
 wire c: UInt<1>
 wire w: UInt
@@ -683,20 +691,20 @@ w is invalid
 when c :
    w <= a
 ...   
-\end{verbatim}
+\end{lstlisting}
 can be rewritten equivalently as follows:
-\begin{verbatim}
+\begin{lstlisting}
 wire a: UInt
 wire c: UInt<1>
 wire w: UInt
 w <= validif(c, a)
 ...
-\end{verbatim}
+\end{lstlisting}
 
 The behaviour of conditional connections to circuit components with aggregate types can be modeled by first expanding each connect into individual connect statements on its ground elements (see section \ref{connection_algorithm} and \ref{partial_connection_algorithm} for the connection and partial connection algorithms) and then applying the conditional last connect semantics.
 
 For example, the following snippet:
-\begin{verbatim}
+\begin{lstlisting}
 wire x: {a:UInt, b:UInt}
 wire y: {a:UInt, b:UInt}
 wire c: UInt<1>
@@ -705,9 +713,9 @@ w <= x
 when c :
    w <= y
 ...   
-\end{verbatim}
+\end{lstlisting}
 can be rewritten equivalently as follows:
-\begin{verbatim}
+\begin{lstlisting}
 wire x: {a:UInt, b:UInt}
 wire y: {a:UInt, b:UInt}
 wire c: UInt<1>
@@ -715,12 +723,12 @@ wire w: {a:UInt, b:UInt}
 w.a <= mux(c, y.a, x.a)
 w.b <= mux(c, y.b, x.b)
 ...
-\end{verbatim}
+\end{lstlisting}
 
 Similar to the behavior of aggregate types under last connect semantics (see section \ref{last_connect}), the conditional connects to a subelement of an aggregate component only generates a multiplexor for the subelement that is overwritten.
 
 For example, the following snippet:
-\begin{verbatim}
+\begin{lstlisting}
 wire x: {a:UInt, b:UInt}
 wire y: UInt
 wire c: UInt<1>
@@ -729,9 +737,9 @@ w <= x
 when c :
    w.a <= y
 ...   
-\end{verbatim}
+\end{lstlisting}
 can be rewritten equivalently as follows:
-\begin{verbatim}
+\begin{lstlisting}
 wire x: {a:UInt, b:UInt}
 wire y: UInt
 wire c: UInt<1>
@@ -739,7 +747,7 @@ wire w: {a:UInt, b:UInt}
 w.a <= mux(c, y, x.a)
 w.b <= x.b
 ...
-\end{verbatim}
+\end{lstlisting}
 
 \subsection{Memories}
 A memory is an abstract representation of a hardware memory. It is characterized by the following parameters.
@@ -753,7 +761,7 @@ A memory is an abstract representation of a hardware memory. It is characterized
 \end{enumerate}
 
 The following example demonstrates instantiating a memory containing 256 complex numbers, each with 16-bit signed integer fields for its real and imaginary components. It has two read ports, \verb|r1| and \verb|r2|, and one write port, \verb|w|. It is combinationally read (read latency is zero cycles) and has a write latency of one cycle. Finally, its read-under-write behavior is undefined.
-\begin{verbatim}
+\begin{lstlisting}
 mem mymem :
   data-type => {real:SInt<16>, imag:SInt<16>}
   depth => 256
@@ -763,10 +771,10 @@ mem mymem :
   read-latency => 0
   write-latency => 1
   read-under-write => undefined
-\end{verbatim}
+\end{lstlisting}
 
 In the example above, the type of \verb|mymem| is:
-\begin{verbatim}
+\begin{lstlisting}
 {flip r1: {flip data: {real:SInt<16>, imag:SInt<16>}, 
            addr: UInt<8>, 
            en: UInt<1>, 
@@ -780,33 +788,33 @@ In the example above, the type of \verb|mymem| is:
           addr: UInt<8>, 
           en: UInt<1>, 
           clk: Clock}}
-\end{verbatim}
+\end{lstlisting}
 
 The following sections describe how a memory's field types are calculated and the behavior of each type of memory port.
 
 \subsubsection{Read Ports}
 If a memory is declared with element type \verb|T|, has a size less than or equal to $2^N$, then its read ports have type:
-\begin{verbatim}
+\begin{lstlisting}
 {flip data:T, addr:UInt<N>, en:UInt<1>, clk:Clock}
-\end{verbatim}
+\end{lstlisting}
 
 If the \verb|en| field is high, then the element value associated with the address in the \verb|addr| field can be retrieved by reading from the \verb|data| field after the appropriate read latency. If the \verb|en| field is low, then the value in the \verb|data| field, after the appropriate read latency, is undefined. The port is driven by the clock signal in the \verb|clk| field.
 
 \subsubsection{Write Ports}
 If a memory is declared with element type \verb|T|, has a size less than or equal to $2^N$, then its write ports have type:
-\begin{verbatim}
+\begin{lstlisting}
 {data:T, mask:M, addr:UInt<N>, en:UInt<1>, clk:Clock}
-\end{verbatim}
+\end{lstlisting}
 where \verb|M| is the mask type calculated from the element type \verb|T|. Intuitively, the mask type mirrors the aggregate structure of the element type except with all ground types replaced with a single bit unsigned integer type. The {\em non-masked portion} of the data value is defined as the set of data value leaf subelements where the corresponding mask leaf subelement is high.
 
 If the \verb|en| field is high, then the non-masked portion of the \verb|data| field value is written, after the appropriate write latency, to the location indicated by the \verb|addr| field. If the \verb|en| field is low, then no value is written after the appropriate write latency. The port is driven by the clock signal in the \verb|clk| field.
 
 \subsubsection{Readwrite Ports}
 Finally, the readwrite ports have type:
-\begin{verbatim}
+\begin{lstlisting}
 {wmode:UInt<1>, flip rdata:T, wdata:T, wmask:M, 
  addr:UInt<N>, en:UInt<1>, clk:Clock}
-\end{verbatim}
+\end{lstlisting}
 A readwrite port is a single port that, on a given cycle, can be used either as a read or a write port. If the readwrite port is not in write mode (the \verb|wmode| field is low), then the \verb|rdata|, \verb|addr|, \verb|en|, and \verb|clk| fields constitute its read port fields, and should be used accordingly. If the readwrite port is in write mode (the \verb|wmode| field is high), then the \verb|wdata|, \verb|wmask|, \verb|addr|, \verb|en|, and \verb|clk| fields constitute its write port fields, and should be used accordingly. 
 
 \subsubsection{Read Under Write Behaviour}
@@ -826,7 +834,7 @@ In all cases, if a memory location is written to by more than one port on the sa
 \subsection{Instances}\label{instances}
 FIRRTL modules are instantiated with the instance statement. The following example demonstrates creating an instance named \verb|myinstance| of the \verb|MyModule| module within the top level module \verb|Top|. 
 
-\begin{verbatim}
+\begin{lstlisting}
 circuit Top :
    module MyModule :
       input a: UInt
@@ -834,7 +842,7 @@ circuit Top :
       b <= a
    module Top :
       inst myinstance of MyModule   
-\end{verbatim}
+\end{lstlisting}
 
 The resulting instance has a bundle type. Each port of the instantiated module is represented by a field in the bundle with the same name and type as the port. The fields corresponding to input ports are flipped to indicate their data flows in the opposite direction as the output ports. The \verb|myinstance| instance in the example above has type \verb|{flip a:UInt, b:UInt}|.
 
@@ -847,26 +855,26 @@ The stop statement is used to halt simulations of the circuit. Backends are free
 
 A stop statement requires a clock signal, a halt condition signal that has a single bit unsigned integer type, and an integer exit code.
 
-\begin{verbatim}
+\begin{lstlisting}
 wire clk:Clock
 wire halt:UInt<1>
 stop(clk,halt,42)
 ...
-\end{verbatim}
+\end{lstlisting}
 
 \subsection{Formatted Prints}
 The formatted print statement is used to print a formatted string during simulations of the circuit. Backends are free to generate hardware that relays this information to a hardware test harness, but this is not required by the FIRRTL specification.
 
 A printf statement requires a clock signal, a print condition signal, a format string, and a variable list of argument signals. The condition signal must be a single bit unsigned integer type, and the argument signals must each have a ground type.
 
-\begin{verbatim}
+\begin{lstlisting}
 wire clk:Clock
 wire condition:UInt<1>
 wire a:UInt
 wire b:UInt
 printf(clk, condition, "a in hex: %x, b in decimal:%d.\n", a, b)
 ...
-\end{verbatim}
+\end{lstlisting}
 
 On each positive clock edge, when the condition signal is high, the printf statement prints out the format string where its argument placeholders are substituted with the value of the corresponding argument.
 
@@ -896,14 +904,14 @@ FIRRTL expressions are used for creating literal unsigned and signed integers, f
 \subsection{Unsigned Integers}
 
 A literal unsigned integer can be created given a non-negative integer value and an optional positive bit width. The following example creates a 10-bit unsigned integer representing the number 42. 
-\begin{verbatim}
+\begin{lstlisting}
 UInt<10>(42)
-\end{verbatim}
+\end{lstlisting}
 
 Note that it is an error to supply a bit width that is not large enough to fit the given value. If the bit width is omitted, then the minimum number of bits necessary to fit the given value will be inferred.
-\begin{verbatim}
+\begin{lstlisting}
 UInt(42)
-\end{verbatim}
+\end{lstlisting}
 
 \subsection{Unsigned Integers from Literal Bits}
 
@@ -917,31 +925,31 @@ The following radices are supported:
 \end{enumerate}
 
 If a bit width is not given, the number of bits in the bit representation is directly represented by the string. The following examples create a 8-bit integer representing the number 13.
-\begin{verbatim}
+\begin{lstlisting}
 UInt("b00001101")
 UInt("h0D")
-\end{verbatim}
+\end{lstlisting}
 
 If the provided bit width is larger than the number of bits required to represent the string's value, then the resulting value is equivalent to the string zero-extended up to the provided bit width. If the provided bit width is smaller than the number of bits represented by the string, then the resulting value is equivalent to the string truncated down to the provided bit width. All truncated bits must be zero.
 
 The following examples create a 7-bit integer representing the number 13.
-\begin{verbatim}
+\begin{lstlisting}
 UInt<7>("b00001101")
 UInt<7>("o015")
 UInt<7>("hD")
-\end{verbatim}
+\end{lstlisting}
 
 \subsection{Signed Integers}
 
 Similar to unsigned integers, a literal signed integer can be created given an integer value and an optional positive bit width. The following example creates a 10-bit unsigned integer representing the number -42. 
-\begin{verbatim}
+\begin{lstlisting}
 SInt<10>(-42)
-\end{verbatim}
+\end{lstlisting}
 
 Note that it is an error to supply a bit width that is not large enough to fit the given value using two's complement representation. If the bit width is omitted, then the minimum number of bits necessary to fit the given value will be inferred.
-\begin{verbatim}
+\begin{lstlisting}
 SInt(-42)
-\end{verbatim}
+\end{lstlisting}
 
 \subsection{Signed Integers from Literal Bits}
 
@@ -950,10 +958,10 @@ Similar to unsigned integers, a literal signed integer can alternatively be crea
 The bit representation contains a binary, octal or hex indicator, followed by an optional sign, followed by the value.
 
 If a bit width is not given, the number of bits in the bit representation is the minimal bitwidth to represent the value represented by the string. The following examples create a 8-bit integer representing the number -13.
-\begin{verbatim}
+\begin{lstlisting}
 SInt("b-1101")
 SInt("h-d")
-\end{verbatim}
+\end{lstlisting}
 
 If the provided bit width is larger than the number of bits represented by the string, then the resulting value is unchanged.
 It is an error to provide a bit width smaller than the number of bits required to represent the string's value.
@@ -963,12 +971,12 @@ A reference is simply a name that refers to a previously declared circuit compon
 
 The following example connects a reference expression \verb|in|, referring to the previously declared port \verb|in|, to the reference expression \verb|out|, referring to the previously declared port \verb|out|.
 
-\begin{verbatim}
+\begin{lstlisting}
 module MyModule :
    input in: UInt
    output out: UInt
    out <= in
-\end{verbatim}
+\end{lstlisting}
 
 In the rest of the document, for brevity, the names of components will be used to refer to a reference expression to that component. Thus, the above example will be rewritten as ``the port \verb|in| is connected to the port \verb|out|''.
 
@@ -976,38 +984,38 @@ In the rest of the document, for brevity, the names of components will be used t
 The subfield expression refers to a subelement of an expression with a bundle type.
 
 The following example connects the \verb|in| port to the \verb|a| subelement of the \verb|out| port. 
-\begin{verbatim}
+\begin{lstlisting}
 module MyModule :
    input in: UInt
    output out: {a:UInt, b:UInt}
    out.a <= in
-\end{verbatim}
+\end{lstlisting}
 
 \subsection{Subindices}\label{subindices}
 The subindex expression statically refers, by index, to a subelement of an expression with a vector type. The index must be a non-negative integer and cannot be equal to or exceed the length of the vector it indexes.
 
 The following example connects the \verb|in| port to the fifth subelement of the \verb|out| port. 
-\begin{verbatim}
+\begin{lstlisting}
 module MyModule :
    input in: UInt
    output out: UInt[10]
    out[4] <= in
-\end{verbatim}
+\end{lstlisting}
 
 \subsection{Subaccesses}
 The subaccess expression dynamically refers to a subelement of a vector-typed expression using a calculated index. The index must be an expression with an unsigned integer type.
 
 The following example connects the n'th subelement of the \verb|in| port to the \verb|out| port.
-\begin{verbatim}
+\begin{lstlisting}
 module MyModule :
    input in: UInt[3]
    input n: UInt<2>
    output out: UInt
    out <= in[n]
-\end{verbatim}
+\end{lstlisting}
 
 A connection from a subaccess expression can be modeled by conditionally connecting from every subelement in the vector, where the condition holds when the dynamic index is equal to the subelement's static index.
-\begin{verbatim}
+\begin{lstlisting}
 module MyModule :
    input in: UInt[3]
    input n: UInt<2>
@@ -1020,10 +1028,10 @@ module MyModule :
       out <= in[2]            
    else :
       out is invalid
-\end{verbatim}
+\end{lstlisting}
 
 The following example connects the \verb|in| port to the n'th subelement of the \verb|out| port. All other subelements of the \verb|out| port are connected from the corresponding subelements of the \verb|default| port.
-\begin{verbatim}
+\begin{lstlisting}
 module MyModule :
    input in: UInt
    input default: UInt[3]
@@ -1031,10 +1039,10 @@ module MyModule :
    output out: UInt[3]
    out <= default
    out[n] <= in
-\end{verbatim}
+\end{lstlisting}
 
 A connection to a subaccess expression can be modeled by conditionally connecting to every subelement in the vector, where the condition holds when the dynamic index is equal to the subelement's static index.
-\begin{verbatim}
+\begin{lstlisting}
 module MyModule :
    input in: UInt
    input default: UInt[3]
@@ -1047,10 +1055,10 @@ module MyModule :
       out[1] <= in
    else when eq(n, UInt(2)) :
       out[2] <= in
-\end{verbatim}
+\end{lstlisting}
 
 The following example connects the \verb|in| port to the m'th \verb|UInt| subelement of the n'th vector-typed subelement of the \verb|out| port. All other subelements of the \verb|out| port are connected from the corresponding subelements of the \verb|default| port.
-\begin{verbatim}
+\begin{lstlisting}
 module MyModule :
    input in: UInt
    input default: UInt[2][2]
@@ -1059,10 +1067,10 @@ module MyModule :
    output out: UInt[2][2]
    out <= default
    out[n][m] <= in
-\end{verbatim}
+\end{lstlisting}
 
 A connection to an expression containing multiple nested subaccess expressions can also be modeled by conditionally connecting to every subelement in the expression. However the condition holds only when all dynamic indices are equal to all of the subelement's static indices.
-\begin{verbatim}
+\begin{lstlisting}
 module MyModule :
    input in: UInt
    input default: UInt[2][2]
@@ -1078,21 +1086,21 @@ module MyModule :
       out[1][0] <= in
    else when and(eq(n, UInt(1)), eq(m, UInt(1))) :
       out[1][1] <= in                  
-\end{verbatim}
+\end{lstlisting}
 
 \subsection{Multiplexors}\label{multiplexors}
 
 A multiplexor outputs one of two input expressions depending on the value of an unsigned single bit selection signal. 
 
 The following example connects to the \verb|c| port the result of selecting between the \verb|a| and \verb|b| ports. The \verb|a| port is selected when the \verb|sel| signal is high, otherwise the \verb|b| port is selected.
-\begin{verbatim}
+\begin{lstlisting}
 module MyModule :
    input a: UInt
    input b: UInt
    input sel: UInt<1>   
    output c: UInt
    c <= mux(sel, a, b)
-\end{verbatim}
+\end{lstlisting}
 
 A multiplexor expression is legal only if the following holds.
 \begin{enumerate}
@@ -1106,13 +1114,13 @@ A multiplexor expression is legal only if the following holds.
 A conditionally valid expression is expressed as an input expression guarded with an unsigned single bit valid signal. It outputs the input expression when the valid signal is high, otherwise the result is undefined.
 
 The following example connects the \verb|a| port to the \verb|c| port when the \verb|valid| signal is high. Otherwise, the value of the \verb|c| port is undefined.
-\begin{verbatim}
+\begin{lstlisting}
 module MyModule :
    input a: UInt
    input valid: UInt<1>   
    output c: UInt
    c <= validif(valid, a)
-\end{verbatim}
+\end{lstlisting}
 
 A conditionally valid expression is legal only if the following holds.
 \begin{enumerate}
@@ -1127,17 +1135,17 @@ Conditional statements can be equivalently expressed as multiplexors and conditi
 All fundamental operations on ground types are expressed as a FIRRTL primitive operation. In general, each operation takes some number of argument expressions, along with some number of static integer literal parameters. 
 
 The general form of a primitive operation is expressed as follows:
-\begin{verbatim}
+\begin{lstlisting}
 op(arg0, arg1, ..., argn, int0, int1, ..., intm)
-\end{verbatim}
+\end{lstlisting}
 
 The following examples of primitive operations demonstrate adding two expressions, \verb|a| and \verb|b|, shifting expression \verb|a| left by 3 bits, selecting the fourth bit through and including the seventh bit in the \verb|a| expression, and interpreting the expression \verb|x| as a Clock typed signal.
-\begin{verbatim}
+\begin{lstlisting}
 add(a, b)
 shl(a, 3)
 bits(a, 7, 4)
 asClock(x)
-\end{verbatim}
+\end{lstlisting}
 
 Section \ref{primitives} will describe the format and semantics of each primitive operation.
 
@@ -1246,9 +1254,9 @@ rem & (num,den) & () & (UInt,UInt) & UInt & min(w\ts{num},w\ts{den})\\
 }}
 \end{figure}
 The modulus operation yields the remainder from dividing \vv{num} by \vv{den}, keeping the sign of the numerator. Together with the divide operator, the modulus operator satisfies the relationship below:
-\begin{verbatim}
+\begin{lstlisting}
 num = add(mul(den,div(num,den)),rem(num,den))}
-\end{verbatim}
+\end{lstlisting}
 
 \subsection{Comparison Operations}
 
@@ -1623,7 +1631,7 @@ The additional restrictions give LoFIRRTL a direct correspondence to a circuit n
 Low level circuit transformations can be conveniently written by first lowering a circuit to its LoFIRRTL form, then operating on the restricted (and thus simpler) subset of constructs. Note that circuit transformations are still free to generate high level constructs as they can simply be lowered again.
 
 The following module:
-\begin{verbatim}
+\begin{lstlisting}
 module MyModule :
    input in: {a:UInt<1>, b:UInt<2>[3]}
    input clk: Clock
@@ -1635,9 +1643,9 @@ module MyModule :
    when c :
       r[1] <= in.a
    out <= r[0]   
-\end{verbatim}
+\end{lstlisting}
 is rewritten as the following equivalent LoFIRRTL circuit by the lowering transform.
-\begin{verbatim}
+\begin{lstlisting}
 module MyModule :
    input in$a: UInt<1>
    input in$b$0: UInt<2>
@@ -1654,7 +1662,7 @@ module MyModule :
    r$1 <= mux(c, in$a, in$b$1)
    r$2 <= in$b$2
    out <= r$0
-\end{verbatim}
+\end{lstlisting}
 
 \section{Details about Syntax}
 
@@ -1676,23 +1684,23 @@ Comments begin with a semicolon and extend until the end of the line. Commas are
 Block structuring is indicated using indentation. Statements are combined into statement groups by surrounding them with parenthesis. A colon at the {\em end of a line} will automatically surround the next indented region with parenthesis and thus create a statement group.
 
 The following statement:
-\begin{verbatim}
+\begin{lstlisting}
 when c :
    a <= b
 else :
    c <= d
    e <= f
-\end{verbatim}
+\end{lstlisting}
 can be equivalently expressed on a single line as follows.
-\begin{verbatim}
+\begin{lstlisting}
 when c : (a <= b) else : (c <= d, e <= f)
-\end{verbatim}
+\end{lstlisting}
 
 All circuits, modules, ports and statements can optionally be followed with the info token \verb|@[fileinfo]| where fileinfo is a string containing the source file information from where it was generated.
 
 The following example shows the info tokens included:
 
-\begin{verbatim}
+\begin{lstlisting}
 circuit Top : @["myfile.txt: 14, 8"] 
    module Top : @["myfile.txt: 15, 2"]
      output out:UInt @["myfile.txt: 16, 3"]
@@ -1705,7 +1713,7 @@ circuit Top : @["myfile.txt: 14, 8"]
      else :
        a <= d @["myfile.txt: 29, 17"]
      out <= add(a,a) @["myfile.txt: 34, 4"]
-\end{verbatim}
+\end{lstlisting}
 
 \section{FIRRTL Language Definition}
 \newcommand{\pipe}{\textbar}
