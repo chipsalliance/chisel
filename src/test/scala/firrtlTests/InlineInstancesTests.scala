@@ -46,11 +46,11 @@ class InlineInstancesTests extends LowTransformSpec {
            |  module Top :
            |    input a : UInt<32>
            |    output b : UInt<32>
-           |    wire i$a : UInt<32>
-           |    wire i$b : UInt<32>
-           |    i$b <= i$a
-           |    b <= i$b
-           |    i$a <= a""".stripMargin
+           |    wire i_a : UInt<32>
+           |    wire i_b : UInt<32>
+           |    i_b <= i_a
+           |    b <= i_b
+           |    i_a <= a""".stripMargin
       execute(input, check, Seq(inline("Inline")))
    }
 
@@ -74,15 +74,15 @@ class InlineInstancesTests extends LowTransformSpec {
            |  module Top :
            |    input a : UInt<32>
            |    output b : UInt<32>
-           |    wire i0$a : UInt<32>
-           |    wire i0$b : UInt<32>
-           |    i0$b <= i0$a
-           |    wire i1$a : UInt<32>
-           |    wire i1$b : UInt<32>
-           |    i1$b <= i1$a
-           |    b <= i1$b
-           |    i0$a <= a
-           |    i1$a <= i0$b""".stripMargin
+           |    wire i0_a : UInt<32>
+           |    wire i0_b : UInt<32>
+           |    i0_b <= i0_a
+           |    wire i1_a : UInt<32>
+           |    wire i1_b : UInt<32>
+           |    i1_b <= i1_a
+           |    b <= i1_b
+           |    i0_a <= a
+           |    i1_a <= i0_b""".stripMargin
       execute(input, check, Seq(inline("Simple")))
    }
 
@@ -106,13 +106,13 @@ class InlineInstancesTests extends LowTransformSpec {
            |  module Top :
            |    input a : UInt<32>
            |    output b : UInt<32>
-           |    wire i0$a : UInt<32>
-           |    wire i0$b : UInt<32>
-           |    i0$b <= i0$a
+           |    wire i0_a : UInt<32>
+           |    wire i0_b : UInt<32>
+           |    i0_b <= i0_a
            |    inst i1 of Simple
            |    b <= i1.b
-           |    i0$a <= a
-           |    i1.a <= i0$b
+           |    i0_a <= a
+           |    i1.a <= i0_b
            |  module Simple :
            |    input a : UInt<32>
            |    output b : UInt<32>
@@ -146,21 +146,21 @@ class InlineInstancesTests extends LowTransformSpec {
            |  module Top :
            |    input a : UInt<32>
            |    output b : UInt<32>
-           |    wire i0$a : UInt<32>
-           |    wire i0$b : UInt<32>
-           |    i0$b <= i0$a
+           |    wire i0_a : UInt<32>
+           |    wire i0_b : UInt<32>
+           |    i0_b <= i0_a
            |    inst i1 of B
            |    b <= i1.b
-           |    i0$a <= a
-           |    i1.a <= i0$b
+           |    i0_a <= a
+           |    i1.a <= i0_b
            |  module B :
            |    input a : UInt<32>
            |    output b : UInt<32>
-           |    wire i$a : UInt<32>
-           |    wire i$b : UInt<32>
-           |    i$b <= i$a
-           |    b <= i$b
-           |    i$a <= a""".stripMargin
+           |    wire i_a : UInt<32>
+           |    wire i_b : UInt<32>
+           |    i_b <= i_a
+           |    b <= i_b
+           |    i_a <= a""".stripMargin
       execute(input, check, Seq(inline("A")))
    }
 
@@ -188,19 +188,112 @@ class InlineInstancesTests extends LowTransformSpec {
            |  module Top :
            |    input a : UInt<32>
            |    output b : UInt<32>
-           |    wire i$a : UInt<32>
-           |    wire i$b : UInt<32>
-           |    inst i$i of B
-           |    i$b <= i$i.b
-           |    i$i.a <= i$a
-           |    b <= i$b
-           |    i$a <= a
+           |    wire i_a : UInt<32>
+           |    wire i_b : UInt<32>
+           |    inst i_i of B
+           |    i_b <= i_i.b
+           |    i_i.a <= i_a
+           |    b <= i_b
+           |    i_a <= a
            |  module B :
            |    input a : UInt<32>
            |    output b : UInt<32>
            |    b <= a""".stripMargin
       execute(input, check, Seq(inline("A")))
    }
+
+  "A module with nested inlines" should "still prepend prefixes" in {
+    val input =
+      """|circuit Top:
+         |  module Top:
+         |    inst foo of Foo
+         |  module Foo:
+         |    inst bar of Bar
+         |    inst baz of Bar
+         |    node foo = UInt<1>("h0")
+         |  module Bar:
+         |    node bar = UInt<1>("h0")
+         |""".stripMargin
+    val check =
+      """|circuit Top:
+         |  module Top:
+         |    node foo_bar_bar = UInt<1>("h0")
+         |    inst foo_baz of Bar
+         |    node foo_foo = UInt<1>("h0")
+         |  module Bar:
+         |    node bar = UInt<1>("h0")
+         |""".stripMargin
+    execute(input, check, Seq(inline("Foo"), inline("Foo.bar")))
+  }
+
+  "An inlined module" should "NOT be prefix unique" in {
+    val input =
+      """|circuit Top:
+         |  module Top:
+         |    inst a of A
+         |    node a_foo = UInt<1>("h0")
+         |    node a__bar = UInt<1>("h0")
+         |  module A:
+         |    node bar = UInt<1>("h0")
+         |""".stripMargin
+    val check =
+      """|circuit Top:
+         |  module Top:
+         |    node a_bar = UInt<1>("h0")
+         |    node a_foo = UInt<1>("h0")
+         |    node a__bar = UInt<1>("h0")
+         |""".stripMargin
+    execute(input, check, Seq(inline("A")))
+  }
+
+  /* This test is mutually exclusive with the above */
+  ignore should "be prefix unique" in {
+    val input =
+      """|circuit Top:
+         |  module Top:
+         |    inst a of A
+         |    node a_foo = UInt<1>("h0")
+         |    node a__bar = UInt<1>("h0")
+         |  module A:
+         |    node bar = UInt<1>("h0")
+         |""".stripMargin
+    val check =
+      """|circuit Top:
+         |  module Top:
+         |    node a___bar = UInt<1>("h0")
+         |    node a_foo = UInt<1>("h0")
+         |    node a__bar = UInt<1>("h0")
+         |""".stripMargin
+    execute(input, check, Seq(inline("A")))
+  }
+
+  it should "uniquify sanely" in {
+    val input =
+      """|circuit Top:
+         |  module Top:
+         |    inst foo of Foo
+         |    node foo_ = UInt<1>("h0")
+         |    node foo__bar = UInt<1>("h0")
+         |  module Foo:
+         |    inst bar of Bar
+         |    inst baz of Bar
+         |    node foo = UInt<1>("h0")
+         |  module Bar:
+         |    node bar = UInt<1>("h0")
+         |""".stripMargin
+    val check =
+      """|circuit Top:
+         |  module Top:
+         |    node foo__bar_bar = UInt<1>("h0")
+         |    inst foo__baz of Bar
+         |    node foo__foo = UInt<1>("h0")
+         |    node foo_ = UInt<1>("h0")
+         |    node foo__bar = UInt<1>("h0")
+         |  module Bar:
+         |    node bar = UInt<1>("h0")
+         |""".stripMargin
+    execute(input, check, Seq(inline("Foo"), inline("Foo.bar")))
+  }
 
    // ---- Errors ----
    // 1) ext module
