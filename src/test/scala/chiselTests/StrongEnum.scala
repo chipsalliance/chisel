@@ -287,6 +287,7 @@ class StrongEnumSpec extends ChiselFlatSpec {
 
   it should "connect enums of the same type" in {
     elaborate(new SimpleConnector(EnumExample(), EnumExample()))
+    elaborate(new SimpleConnector(EnumExample(), EnumExample.Type()))
   }
 
   it should "fail to connect a strong enum to a UInt" in {
@@ -296,8 +297,12 @@ class StrongEnumSpec extends ChiselFlatSpec {
   }
 
   it should "fail to connect enums of different types" in {
-    an [ChiselException] should be thrownBy {
+    a [ChiselException] should be thrownBy {
       elaborate(new SimpleConnector(EnumExample(), OtherEnum()))
+    }
+
+    a [ChiselException] should be thrownBy {
+      elaborate(new SimpleConnector(EnumExample.Type(), OtherEnum.Type()))
     }
   }
 
@@ -357,7 +362,7 @@ class StrongEnumSpec extends ChiselFlatSpec {
   }
 
   it should "maintain Scala-level type-safety" in {
-    def foo(e: EnumExample.Value) = {}
+    def foo(e: EnumExample.Type) = {}
 
     "foo(EnumExample.e1); foo(EnumExample.e1.next)" should compile
     "foo(OtherEnum.otherEnum)" shouldNot compile

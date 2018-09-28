@@ -164,14 +164,17 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
 
 
 abstract class EnumFactory {
-  class Value extends EnumType(this)
+  class Type extends EnumType(this)
+  object Type {
+    def apply(): Type = EnumFactory.this.apply()
+  }
 
   var id: BigInt = 0
   var width: Width = 0.W
 
   val enum_names = mutable.ArrayBuffer.empty[String]
   val enum_values = mutable.ArrayBuffer.empty[BigInt]
-  val enum_instances = mutable.ArrayBuffer.empty[Value]
+  val enum_instances = mutable.ArrayBuffer.empty[Type]
 
   private[core] def globalAnnotation: EnumDefChiselAnnotation =
     EnumDefChiselAnnotation(enumTypeName, (enum_names, enum_values).zipped.toMap)
@@ -180,13 +183,13 @@ abstract class EnumFactory {
 
   def getWidth: Int = width.get
 
-  def all: Seq[Value] = enum_instances.toSeq
+  def all: Seq[Type] = enum_instances.toSeq
 
-  def Value: Value = macro EnumMacros.ValImpl
-  def Value(id: UInt): Value = macro EnumMacros.ValCustomImpl
+  protected def Value: Type = macro EnumMacros.ValImpl
+  protected def Value(id: UInt): Type = macro EnumMacros.ValCustomImpl
 
-  def do_Value(names: Seq[String]): Value = {
-    val result = new Value
+  protected def do_Value(names: Seq[String]): Type = {
+    val result = new Type
     enum_names ++= names.filter(!enum_names.contains(_))
     enum_instances.append(result)
     enum_values.append(id)
@@ -200,7 +203,7 @@ abstract class EnumFactory {
     result
   }
 
-  def do_Value(names: Seq[String], id: UInt): Value = {
+  protected def do_Value(names: Seq[String], id: UInt): Type = {
     // TODO: These throw ExceptionInInitializerError which can be confusing to the user. Get rid of the error, and just
     // throw an exception
     if (!id.litOption.isDefined)
@@ -212,9 +215,9 @@ abstract class EnumFactory {
     do_Value(names)
   }
 
-  def apply(): Value = new Value
+  def apply(): Type = new Type
 
-  def apply(n: UInt)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Value = {
+  def apply(n: UInt)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Type = {
     if (n.litOption.isEmpty) {
       throwException(s"Illegal cast from non-literal UInt to $enumTypeName. Use fromBits instead")
     }
@@ -228,7 +231,7 @@ abstract class EnumFactory {
     }
   }
 
-  def fromBits(n: UInt)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Value = {
+  def fromBits(n: UInt)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Type = {
     if (n.litOption.isDefined) {
       apply(n)
     } else if (!n.isWidthKnown) {
@@ -240,7 +243,7 @@ abstract class EnumFactory {
 
       val glue = Wire(new UnsafeEnum(width))
       glue := n
-      val result = Wire(new Value)
+      val result = Wire(new Type)
       result := glue
       result
     }
@@ -248,7 +251,7 @@ abstract class EnumFactory {
 }
 
 
-object EnumMacros {
+private[core] object EnumMacros {
   def ValImpl(c: Context) : c.Tree = {
     import c.universe._
     val names = getNames(c)
