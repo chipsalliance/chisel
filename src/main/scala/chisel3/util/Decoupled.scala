@@ -51,6 +51,7 @@ object ReadyValidIO {
       */
     def noenq(): Unit = {
       target.valid := false.B
+      target.bits := DontCare
     }
 
     /** Assert ready on this port and return the associated data bits.
