@@ -2,7 +2,7 @@
 
 package firrtl.transforms
 
-import java.io.{File, FileNotFoundException, FileOutputStream, PrintWriter}
+import java.io.{File, FileNotFoundException, FileInputStream, FileOutputStream, PrintWriter}
 
 import firrtl._
 import firrtl.Utils.throwInternalError
@@ -27,6 +27,12 @@ case class BlackBoxInlineAnno(target: ModuleName, name: String, text: String) ex
     with SingleTargetAnnotation[ModuleName] {
   def duplicate(n: ModuleName) = this.copy(target = n)
   override def serialize: String = s"inline\n$name\n$text"
+}
+
+case class BlackBoxPathAnno(target: ModuleName, path: String) extends BlackBoxHelperAnno
+    with SingleTargetAnnotation[ModuleName] {
+  def duplicate(n: ModuleName) = this.copy(target = n)
+  override def serialize: String = s"path\n$path"
 }
 
 /** Handle source for Verilog ExtModules (BlackBoxes)
@@ -71,6 +77,16 @@ class BlackBoxSourceHelper extends firrtl.Transform {
     val resourceFiles: ListSet[File] = annos.collect {
       case BlackBoxResourceAnno(_, resourceId) =>
         BlackBoxSourceHelper.writeResourceToDirectory(resourceId, targetDir)
+      case BlackBoxPathAnno(_, path) =>
+        val fileName = path.split("/").last
+        val fromFile = new File(path)
+        val toFile = new File(targetDir, fileName)
+
+        val inputStream = new FileInputStream(fromFile).getChannel
+        val outputStream = new FileOutputStream(toFile).getChannel
+        outputStream.transferFrom(inputStream, 0, Long.MaxValue)
+
+        toFile
     }
 
     val inlineFiles: ListSet[File] = annos.collect {
