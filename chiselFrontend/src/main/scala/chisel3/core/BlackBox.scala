@@ -140,7 +140,8 @@ abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param
     require(!_closed, "Can't generate module more than once")
     _closed = true
 
-    val namedPorts = io.elements.toSeq
+    val namedPorts = io.elements.toSeq.reverse  // ListMaps are stored in reverse order
+
     // setRef is not called on the actual io.
     // There is a risk of user improperly attempting to connect directly with io
     // Long term solution will be to define BlackBox IO differently as part of
