@@ -86,6 +86,7 @@ object DataMirror {
     requireIsHardware(target, "node requested directionality on")
     target.direction
   }
+  def modulePorts(target: BaseModule): Map[String, Data] = target.getChiselPorts
 
   // Internal reflection-style APIs, subject to change and removal whenever.
   object internal {
