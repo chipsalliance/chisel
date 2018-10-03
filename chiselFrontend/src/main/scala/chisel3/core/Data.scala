@@ -87,6 +87,10 @@ object DataMirror {
     target.direction
   }
 
+  // TODO: maybe move to something like Driver or DriverUtils, since this is mainly for interacting
+  // with compiled artifacts (vs. elaboration-time reflection)?
+  def modulePorts(target: BaseModule): Seq[(String, Data)] = target.getChiselPorts
+
   // Internal reflection-style APIs, subject to change and removal whenever.
   object internal {
     def isSynthesizable(target: Data) = target.topBindingOpt.isDefined

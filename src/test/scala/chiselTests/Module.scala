@@ -126,4 +126,16 @@ class ModuleSpec extends ChiselPropSpec {
       assert(checkModule(this))
     })
   }
+  property("DataMirror.modulePorts should work") {
+    elaborate(new Module {
+      val io = IO(new Bundle { })
+      val m = Module(new chisel3.experimental.MultiIOModule {
+        val a = IO(UInt(8.W))
+        val b = IO(Bool())
+      })
+      assert(chisel3.experimental.DataMirror.modulePorts(m) == Seq(
+          "clock" -> m.clock, "reset" -> m.reset,
+          "a" -> m.a, "b" -> m.b))
+    })
+  }
 }

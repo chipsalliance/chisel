@@ -187,6 +187,22 @@ abstract class BaseModule extends HasId {
     */
   final def toNamed: ModuleName = ModuleName(this.name, CircuitName(this.circuitName))
 
+  /**
+   * Internal API. Returns a list of this module's generated top-level ports as a map of a String
+   * (FIRRTL name) to the IO object. Only valid after the module is closed.
+   *
+   * Note: for BlackBoxes (but not ExtModules), this returns the contents of the top-level io
+   * object, consistent with what is emitted in FIRRTL.
+   *
+   * TODO: Use SeqMap/VectorMap when those data structures become available.
+   */
+  private[core] def getChiselPorts: Seq[(String, Data)] = {
+    require(_closed, "Can't get ports before module close")
+    _component.get.ports.map { port =>
+      (port.id.getRef.asInstanceOf[ModuleIO].name, port.id)
+    }
+  }
+
   /** Called at the Module.apply(...) level after this Module has finished elaborating.
     * Returns a map of nodes -> names, for named nodes.
     *
