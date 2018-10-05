@@ -48,12 +48,11 @@ import chisel3._
 ## Imports
 Avoid wildcard ( ._ ) imports, with the exception of chisel3._
 All other imports must call out used methods.
-import chisel3._ must be first and separated from remaining imports with extra
-blank line.
+`import chisel3._` must be first, and separated from remaining imports with an extra blank line.
 
 **Reason:** This makes it clear where methods are defined.
 
-Remaining imports must be listed alphabetically.
+Any remaining imports must be listed alphabetically.
 
 ```scala
 import chisel3._
@@ -101,8 +100,8 @@ into seperate methods.
 
 ## Module Classes and Instances
 
-Modules can take different forms in Chisel. First, in the verilog sense where
-you instance the module and then hook it up. In this case Module(new MyMod()) is
+Modules can take different forms in Chisel. The first form is similar to Verilog, where
+you instance the module and then hook it up. In this case `Module(new MyMod())` is
 returning a reference to the module.
 
 ```scala
@@ -110,9 +109,9 @@ val myMod = Module(new MyMod())
 myMod.io <> hookUp
 ```
 
-Second, in a more programmatic inline style with factory methods. In this case
+The second form is a more programmatic inline style with factory methods. In this case,
 Queue is actually returning the part of the IO bundle representing the queue's
-output. The factory method takes the input IO to the queue and an optional param
+output. The factory method takes the input IO to the queue and an optional parameter
 for depth.
 
 ```scala

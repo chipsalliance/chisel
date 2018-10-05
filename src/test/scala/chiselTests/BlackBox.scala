@@ -172,4 +172,12 @@ class BlackBoxSpec extends ChiselFlatSpec {
     assertTesterPasses({ new BlackBoxWithParamsTester },
         Seq("/chisel3/BlackBoxTest.v"))
   }
+  "DataMirror.modulePorts" should "work with BlackBox" in {
+    elaborate(new Module {
+      val io = IO(new Bundle { })
+      val m = Module(new BlackBoxPassthrough)
+      assert(chisel3.experimental.DataMirror.modulePorts(m) == Seq(
+          "in" -> m.io.in, "out" -> m.io.out))
+    })
+  }
 }

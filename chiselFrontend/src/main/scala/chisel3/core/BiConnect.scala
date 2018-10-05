@@ -186,7 +186,7 @@ object BiConnect {
     // Source and sink are ambiguous in the case of a Bi/Bulk Connect (<>).
     // If either is a DontCareBinding, just issue a DefInvalid for the other,
     //  otherwise, issue a Connect.
-    (left.binding, right.binding) match {
+    (left.topBinding, right.topBinding) match {
       case (lb: DontCareBinding, _) => pushCommand(DefInvalid(sourceInfo, right.lref))
       case (_, rb: DontCareBinding) => pushCommand(DefInvalid(sourceInfo, left.lref))
       case (_, _) => pushCommand(Connect(sourceInfo, right.lref, left.ref))
@@ -197,7 +197,7 @@ object BiConnect {
     // Source and sink are ambiguous in the case of a Bi/Bulk Connect (<>).
     // If either is a DontCareBinding, just issue a DefInvalid for the other,
     //  otherwise, issue a Connect.
-    (left.binding, right.binding) match {
+    (left.topBinding, right.topBinding) match {
       case (lb: DontCareBinding, _) => pushCommand(DefInvalid(sourceInfo, right.lref))
       case (_, rb: DontCareBinding) => pushCommand(DefInvalid(sourceInfo, left.lref))
       case (_, _) => pushCommand(Connect(sourceInfo, left.lref, right.ref))

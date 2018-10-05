@@ -53,13 +53,26 @@ abstract class Arg {
 }
 
 case class Node(id: HasId) extends Arg {
-  override def fullName(ctx: Component): String = id.getRef.fullName(ctx)
-  def name: String = id.getRef.name
+  override def fullName(ctx: Component): String = id.getOptionRef match {
+    case Some(arg) => arg.fullName(ctx)
+    case None => id.suggestedName.getOrElse("??")
+  }
+  def name: String = id.getOptionRef match {
+    case Some(arg) => arg.name
+    case None => id.suggestedName.getOrElse("??")
+  }
 }
 
 abstract class LitArg(val num: BigInt, widthArg: Width) extends Arg {
   private[chisel3] def forcedWidth = widthArg.known
   private[chisel3] def width: Width = if (forcedWidth) widthArg else Width(minWidth)
+  override def fullName(ctx: Component): String = name
+  // Ensure the node representing this LitArg has a ref to it and a literal binding.
+  def bindLitArg[T <: Bits](bits: T): T = {
+    bits.bind(ElementLitBinding(this))
+    bits.setRef(this)
+    bits
+  }
 
   protected def minWidth: Int
   if (forcedWidth) {

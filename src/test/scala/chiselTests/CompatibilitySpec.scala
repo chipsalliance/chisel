@@ -304,4 +304,36 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
     }
   }
 
+  "Mux return value" should "be able to be used on the RHS" in {
+    import Chisel._
+    elaborate(new Module {
+      val gen = new Bundle { val foo = UInt(width = 8) }
+      val io = new Bundle {
+        val a = Vec(2, UInt(width = 8)).asInput
+        val b = Vec(2, UInt(width = 8)).asInput
+        val c = gen.asInput
+        val d = gen.asInput
+        val en = Bool(INPUT)
+        val y = Vec(2, UInt(width = 8)).asOutput
+        val z = gen.asOutput
+      }
+      io.y := Mux(io.en, io.a, io.b)
+      io.z := Mux(io.en, io.c, io.d)
+    })
+  }
+
+  "Chisel3 IO constructs" should "be useable in Chisel2" in {
+    import Chisel._
+    elaborate(new Module {
+      val io = IO(new Bundle {
+        val in = Input(Bool())
+        val foo = Output(Bool())
+        val bar = Flipped(Bool())
+      })
+      Chisel.assert(io.in.dir == INPUT)
+      Chisel.assert(io.foo.dir == OUTPUT)
+      Chisel.assert(io.bar.dir == INPUT)
+    })
+  }
+
 }
