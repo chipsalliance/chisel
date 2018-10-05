@@ -822,7 +822,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
     new FlattenRegUpdate,
     new DeadCodeElimination,
     passes.VerilogModulusCleanup,
-    passes.VerilogRename,
+    new VerilogRename,
     passes.VerilogPrep,
     new AddDescriptionNodes)
 

@@ -9,6 +9,7 @@ import firrtl._
 import firrtl.annotations._
 import firrtl.ir.Circuit
 import firrtl.passes._
+import firrtl.transforms.VerilogRename
 import firrtl.Parser.IgnoreInfo
 import FirrtlCheckers._
 
@@ -262,7 +263,7 @@ class VerilogEmitterSpec extends FirrtlFlatSpec {
          |    fork_ <= const_
          |""".stripMargin
     val state = CircuitState(parse(input), UnknownForm, Seq.empty, None)
-    val output = Seq( ToWorkingIR, ResolveKinds, InferTypes, VerilogRename )
+    val output = Seq( ToWorkingIR, ResolveKinds, InferTypes, new VerilogRename )
       .foldLeft(state){ case (c, tx) => tx.runTransform(c) }
     Seq( CheckHighForm )
       .foldLeft(output.circuit){ case (c, tx) => tx.run(c) }
