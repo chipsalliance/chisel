@@ -71,7 +71,7 @@ trait PublishChiselModule extends CommonChiselModule with PublishModule {
 //  other PublishModules.
 trait UnpublishedChiselModule extends PublishChiselModule
 
-val crossVersions = Seq("2.11.12", "2.12.4")
+val crossVersions = Seq("2.12.4", "2.11.12")
 
 // Make this available to external tools.
 object chisel3 extends Cross[ChiselTopModule](crossVersions: _*) {
