@@ -9,7 +9,7 @@ import firrtl.transforms.{BlackBoxPathAnno, BlackBoxResourceAnno, BlackBoxInline
 trait HasBlackBoxResource extends BlackBox {
   self: BlackBox =>
 
-  @deprecated("Use addResource instead", "1.2")
+  @deprecated("Use addResource instead", "3.2")
   def setResource(blackBoxResource: String): Unit = addResource(blackBoxResource)
 
   def addResource(blackBoxResource: String): Unit = {
