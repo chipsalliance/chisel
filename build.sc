@@ -41,7 +41,9 @@ def getVersion(dep: String, org: String = "edu.berkeley.cs") = {
 }
 
 // Define the common chisel module.
-trait CommonChiselModule extends CrossSbtModule {
+trait CommonChiselModule extends SbtModule {
+  // Normally defined in CrossSbtModule, our submodules don't have it by default
+  def crossScalaVersion: String
   override def scalacOptions = chiselCompileOptions.scalacOptions ++ CommonBuild.scalacOptionsVersion(crossScalaVersion)
   override def javacOptions = CommonBuild.javacOptionsVersion(crossScalaVersion)
   val macroPlugins = Agg(ivy"org.scalamacros:::paradise:2.1.0")
@@ -100,26 +102,23 @@ object chisel3 extends Cross[ChiselTopModule](crossVersions: _*) {
   }
 }
 
-object coreMacros extends Cross[CoreMacrosModule](crossVersions: _*) {
-}
-
-// Perhaps a better method would be to subsume the ChiselFrontEnd sources,
-//  and reduce things to two modules - coreMacros and ChiselTopModule (chisel3).
-// We could redefine `sources` in the top module to include `pwd / 'chiselFrontend / 'src`
-object chiselFrontend extends Cross[ChiselFrontendModule](crossVersions: _*) {
-}
-
-// These submodules follow the `mill` convention - their source is in sub-directory with the module name.
-class CoreMacrosModule(val crossScalaVersion: String) extends UnpublishedChiselModule {
-}
-
-class ChiselFrontendModule(val crossScalaVersion: String) extends UnpublishedChiselModule {
-  override def moduleDeps = Seq(coreMacros(crossScalaVersion))
-}
+class ChiselTopModule(val crossScalaVersion: String) extends AbstractChiselModule
 
 // This submodule is unrooted - its source directory is in the top level directory.
-class ChiselTopModule(val crossScalaVersion: String) extends PublishChiselModule with CommonBuild.BuildInfo with CrossUnRootedSbtModule {
-  override def moduleDeps = Seq(coreMacros(crossScalaVersion), chiselFrontend(crossScalaVersion))
+trait AbstractChiselModule extends PublishChiselModule with CommonBuild.BuildInfo with CrossUnRootedSbtModule { top =>
+
+  override def moduleDeps = Seq(coreMacros, chiselFrontend)
+
+  object coreMacros extends UnpublishedChiselModule {
+    def crossScalaVersion = top.crossScalaVersion
+    def scalaVersion = crossScalaVersion
+  }
+
+  object chiselFrontend extends UnpublishedChiselModule {
+    def crossScalaVersion = top.crossScalaVersion
+    def scalaVersion = crossScalaVersion
+    def moduleDeps = Seq(coreMacros)
+  }
 
   // In order to preserve our "all-in-one" policy for published jars,
   //  we define allModuleSources() to include transitive sources, and define
