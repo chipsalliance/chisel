@@ -9,11 +9,6 @@ import mill.modules.Jvm._
 
 import $file.CommonBuild
 
-// An sbt layout with src in the top directory.
-trait CrossUnRootedSbtModule extends CrossSbtModule {
-  override def millSourcePath = super.millSourcePath / ammonite.ops.up
-}
-
 object chiselCompileOptions {
   def scalacOptions = Seq(
     "-deprecation",
@@ -104,10 +99,7 @@ object chisel3 extends Cross[ChiselTopModule](crossVersions: _*) {
 
 class ChiselTopModule(val crossScalaVersion: String) extends AbstractChiselModule
 
-// This submodule is unrooted - its source directory is in the top level directory.
-trait AbstractChiselModule extends PublishChiselModule with CommonBuild.BuildInfo with CrossUnRootedSbtModule { top =>
-
-  override def moduleDeps = Seq(coreMacros, chiselFrontend)
+trait AbstractChiselModule extends PublishChiselModule with CommonBuild.BuildInfo with CrossSbtModule { top =>
 
   object coreMacros extends UnpublishedChiselModule {
     def crossScalaVersion = top.crossScalaVersion
@@ -119,6 +111,11 @@ trait AbstractChiselModule extends PublishChiselModule with CommonBuild.BuildInf
     def scalaVersion = crossScalaVersion
     def moduleDeps = Seq(coreMacros)
   }
+
+  override def moduleDeps = Seq(coreMacros, chiselFrontend)
+
+  // This submodule is unrooted - its source directory is in the top level directory.
+  override def millSourcePath = super.millSourcePath / ammonite.ops.up
 
   // In order to preserve our "all-in-one" policy for published jars,
   //  we define allModuleSources() to include transitive sources, and define
