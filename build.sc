@@ -9,6 +9,11 @@ import mill.modules.Jvm._
 
 import $file.CommonBuild
 
+/** Utility types for changing a dependency between Ivy and Module (source) */
+sealed trait IvyOrModuleDep
+case class IvyDep(dep: Dep) extends IvyOrModuleDep
+case class ModuleDep(dep: PublishModule) extends IvyOrModuleDep
+
 object chiselCompileOptions {
   def scalacOptions = Seq(
     "-deprecation",
@@ -27,6 +32,8 @@ object chiselCompileOptions {
   )
 }
 
+val crossVersions = Seq("2.12.4", "2.11.12")
+
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
 val defaultVersions = Map("firrtl" -> "1.2-SNAPSHOT")
 
@@ -39,13 +46,18 @@ def getVersion(dep: String, org: String = "edu.berkeley.cs") = {
 trait CommonChiselModule extends SbtModule {
   // Normally defined in CrossSbtModule, our submodules don't have it by default
   def crossScalaVersion: String
+  // This build uses an ivy dependency but allows overriding with a module (source) dependency
+  def firrtlDep: IvyOrModuleDep
   override def scalacOptions = chiselCompileOptions.scalacOptions ++ CommonBuild.scalacOptionsVersion(crossScalaVersion)
   override def javacOptions = CommonBuild.javacOptionsVersion(crossScalaVersion)
   val macroPlugins = Agg(ivy"org.scalamacros:::paradise:2.1.0")
   def scalacPluginIvyDeps = macroPlugins
   def compileIvyDeps = macroPlugins
-  def chiselDeps = Agg("firrtl").map { d => getVersion(d) }
-  override def ivyDeps = chiselDeps
+  def chiselDeps = firrtlDep match {
+    case IvyDep(dep) => Agg(dep)
+    case ModuleDep(_) => Agg()
+  }
+  override def ivyDeps = T { chiselDeps }
 }
 
 trait PublishChiselModule extends CommonChiselModule with PublishModule {
@@ -63,12 +75,6 @@ trait PublishChiselModule extends CommonChiselModule with PublishModule {
     )
   )
 }
-
-// If would be nice if we didn't need to do this, but PublishModule may only be dependent on
-//  other PublishModules.
-trait UnpublishedChiselModule extends PublishChiselModule
-
-val crossVersions = Seq("2.12.4", "2.11.12")
 
 // Make this available to external tools.
 object chisel3 extends Cross[ChiselTopModule](crossVersions: _*) {
@@ -97,19 +103,32 @@ object chisel3 extends Cross[ChiselTopModule](crossVersions: _*) {
   }
 }
 
-class ChiselTopModule(val crossScalaVersion: String) extends AbstractChiselModule
+class ChiselTopModule(val crossScalaVersion: String) extends AbstractChiselModule {
+  // This build uses an ivy dependency but allows overriding with a module (source) dependency
+  def firrtlDep: IvyOrModuleDep = IvyDep(getVersion("firrtl"))
+}
 
 trait AbstractChiselModule extends PublishChiselModule with CommonBuild.BuildInfo with CrossSbtModule { top =>
+
+  // If would be nice if we didn't need to do this, but PublishModule may only be dependent on
+  //  other PublishModules.
+  trait UnpublishedChiselModule extends PublishChiselModule
+
 
   object coreMacros extends UnpublishedChiselModule {
     def crossScalaVersion = top.crossScalaVersion
     def scalaVersion = crossScalaVersion
+    def firrtlDep: IvyOrModuleDep = top.firrtlDep
   }
 
   object chiselFrontend extends UnpublishedChiselModule {
     def crossScalaVersion = top.crossScalaVersion
     def scalaVersion = crossScalaVersion
-    def moduleDeps = Seq(coreMacros)
+    def moduleDeps = Seq(coreMacros) ++ (firrtlDep match {
+      case ModuleDep(dep) => Seq(dep)
+      case IvyDep(_) => Seq()
+    })
+    def firrtlDep: IvyOrModuleDep = top.firrtlDep
   }
 
   override def moduleDeps = Seq(coreMacros, chiselFrontend)
@@ -214,5 +233,4 @@ trait AbstractChiselModule extends PublishChiselModule with CommonBuild.BuildInf
       "scalaVersion" -> scalaVersion()
     )
   }
-
 }
