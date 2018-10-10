@@ -9,10 +9,10 @@ import mill.modules.Jvm._
 
 import $file.CommonBuild
 
-// An sbt layout with src in the top directory.
-trait CrossUnRootedSbtModule extends CrossSbtModule {
-  override def millSourcePath = super.millSourcePath / ammonite.ops.up
-}
+/** Utility types for changing a dependency between Ivy and Module (source) */
+sealed trait IvyOrModuleDep
+case class IvyDep(dep: Dep) extends IvyOrModuleDep
+case class ModuleDep(dep: PublishModule) extends IvyOrModuleDep
 
 object chiselCompileOptions {
   def scalacOptions = Seq(
@@ -32,6 +32,8 @@ object chiselCompileOptions {
   )
 }
 
+val crossVersions = Seq("2.12.4", "2.11.12")
+
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
 val defaultVersions = Map("firrtl" -> "1.2-SNAPSHOT")
 
@@ -41,14 +43,21 @@ def getVersion(dep: String, org: String = "edu.berkeley.cs") = {
 }
 
 // Define the common chisel module.
-trait CommonChiselModule extends CrossSbtModule {
+trait CommonChiselModule extends SbtModule {
+  // Normally defined in CrossSbtModule, our submodules don't have it by default
+  def crossScalaVersion: String
+  // This build uses an ivy dependency but allows overriding with a module (source) dependency
+  def firrtlDep: IvyOrModuleDep
   override def scalacOptions = chiselCompileOptions.scalacOptions ++ CommonBuild.scalacOptionsVersion(crossScalaVersion)
   override def javacOptions = CommonBuild.javacOptionsVersion(crossScalaVersion)
   val macroPlugins = Agg(ivy"org.scalamacros:::paradise:2.1.0")
   def scalacPluginIvyDeps = macroPlugins
   def compileIvyDeps = macroPlugins
-  def chiselDeps = Agg("firrtl").map { d => getVersion(d) }
-  override def ivyDeps = chiselDeps
+  def chiselDeps = firrtlDep match {
+    case IvyDep(dep) => Agg(dep)
+    case ModuleDep(_) => Agg()
+  }
+  override def ivyDeps = T { chiselDeps }
 }
 
 trait PublishChiselModule extends CommonChiselModule with PublishModule {
@@ -66,12 +75,6 @@ trait PublishChiselModule extends CommonChiselModule with PublishModule {
     )
   )
 }
-
-// If would be nice if we didn't need to do this, but PublishModule may only be dependent on
-//  other PublishModules.
-trait UnpublishedChiselModule extends PublishChiselModule
-
-val crossVersions = Seq("2.11.12", "2.12.4")
 
 // Make this available to external tools.
 object chisel3 extends Cross[ChiselTopModule](crossVersions: _*) {
@@ -100,26 +103,38 @@ object chisel3 extends Cross[ChiselTopModule](crossVersions: _*) {
   }
 }
 
-object coreMacros extends Cross[CoreMacrosModule](crossVersions: _*) {
+class ChiselTopModule(val crossScalaVersion: String) extends AbstractChiselModule {
+  // This build uses an ivy dependency but allows overriding with a module (source) dependency
+  def firrtlDep: IvyOrModuleDep = IvyDep(getVersion("firrtl"))
 }
 
-// Perhaps a better method would be to subsume the ChiselFrontEnd sources,
-//  and reduce things to two modules - coreMacros and ChiselTopModule (chisel3).
-// We could redefine `sources` in the top module to include `pwd / 'chiselFrontend / 'src`
-object chiselFrontend extends Cross[ChiselFrontendModule](crossVersions: _*) {
-}
+trait AbstractChiselModule extends PublishChiselModule with CommonBuild.BuildInfo with CrossSbtModule { top =>
 
-// These submodules follow the `mill` convention - their source is in sub-directory with the module name.
-class CoreMacrosModule(val crossScalaVersion: String) extends UnpublishedChiselModule {
-}
+  // If would be nice if we didn't need to do this, but PublishModule may only be dependent on
+  //  other PublishModules.
+  trait UnpublishedChiselModule extends PublishChiselModule
 
-class ChiselFrontendModule(val crossScalaVersion: String) extends UnpublishedChiselModule {
-  override def moduleDeps = Seq(coreMacros(crossScalaVersion))
-}
 
-// This submodule is unrooted - its source directory is in the top level directory.
-class ChiselTopModule(val crossScalaVersion: String) extends PublishChiselModule with CommonBuild.BuildInfo with CrossUnRootedSbtModule {
-  override def moduleDeps = Seq(coreMacros(crossScalaVersion), chiselFrontend(crossScalaVersion))
+  object coreMacros extends UnpublishedChiselModule {
+    def crossScalaVersion = top.crossScalaVersion
+    def scalaVersion = crossScalaVersion
+    def firrtlDep: IvyOrModuleDep = top.firrtlDep
+  }
+
+  object chiselFrontend extends UnpublishedChiselModule {
+    def crossScalaVersion = top.crossScalaVersion
+    def scalaVersion = crossScalaVersion
+    def moduleDeps = Seq(coreMacros) ++ (firrtlDep match {
+      case ModuleDep(dep) => Seq(dep)
+      case IvyDep(_) => Seq()
+    })
+    def firrtlDep: IvyOrModuleDep = top.firrtlDep
+  }
+
+  override def moduleDeps = Seq(coreMacros, chiselFrontend)
+
+  // This submodule is unrooted - its source directory is in the top level directory.
+  override def millSourcePath = super.millSourcePath / ammonite.ops.up
 
   // In order to preserve our "all-in-one" policy for published jars,
   //  we define allModuleSources() to include transitive sources, and define
@@ -218,5 +233,4 @@ class ChiselTopModule(val crossScalaVersion: String) extends PublishChiselModule
       "scalaVersion" -> scalaVersion()
     )
   }
-
 }
