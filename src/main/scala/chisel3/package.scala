@@ -420,6 +420,9 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     val Analog = chisel3.core.Analog
     val attach = chisel3.core.attach
 
+    type ChiselEnum = chisel3.core.EnumFactory
+    val EnumAnnotations = chisel3.core.EnumAnnotations
+
     val withClockAndReset = chisel3.core.withClockAndReset
     val withClock = chisel3.core.withClock
     val withReset = chisel3.core.withReset
