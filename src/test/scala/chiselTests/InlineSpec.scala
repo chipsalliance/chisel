@@ -50,7 +50,7 @@ class InlineSpec extends FreeSpec with ChiselRunners with Matchers {
           }
           "low FIRRTL should contain only instance z" in {
             val instances = collectInstances(firrtlResult.circuitState.circuit, Some("Top")).toSet
-            Set("Top", "Top.x$sub", "Top.y$sub", "Top.z", "Top.z.sub") should be (instances)
+            Set("Top", "Top.x_sub", "Top.y_sub", "Top.z", "Top.z.sub") should be (instances)
           }
       }
     }

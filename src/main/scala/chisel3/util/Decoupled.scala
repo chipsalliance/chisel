@@ -36,7 +36,7 @@ object ReadyValidIO {
   implicit class AddMethodsToReadyValid[T<:Data](target: ReadyValidIO[T]) {
     def fire(): Bool = target.ready && target.valid
 
-    /** push dat onto the output bits of this interface to let the consumer know it has happened.
+    /** Push dat onto the output bits of this interface to let the consumer know it has happened.
       * @param dat the values to assign to bits.
       * @return    dat.
       */
@@ -47,22 +47,23 @@ object ReadyValidIO {
     }
 
     /** Indicate no enqueue occurs. Valid is set to false, and bits are
-      * connected to an uninitialized wire
+      * connected to an uninitialized wire.
       */
     def noenq(): Unit = {
       target.valid := false.B
+      target.bits := DontCare
     }
 
     /** Assert ready on this port and return the associated data bits.
       * This is typically used when valid has been asserted by the producer side.
-      * @return the data for this device,
+      * @return The data bits.
       */
     def deq(): T = {
       target.ready := true.B
       target.bits
     }
 
-    /** Indicate no dequeue occurs. Ready is set to false
+    /** Indicate no dequeue occurs. Ready is set to false.
       */
     def nodeq(): Unit = {
       target.ready := false.B

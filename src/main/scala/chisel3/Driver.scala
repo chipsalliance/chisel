@@ -127,6 +127,20 @@ object Driver extends BackendCompilationUtilities {
     f
   }
 
+  /**
+    * Emit the annotations of a circuit
+    *
+    * @param ir The circuit containing annotations to be emitted
+    * @param optName An optional filename (will use s"${ir.name}.json" otherwise)
+    */
+  def dumpAnnotations(ir: Circuit, optName: Option[File]): File = {
+    val f = optName.getOrElse(new File(ir.name + ".anno.json"))
+    val w = new FileWriter(f)
+    w.write(JsonProtocol.serialize(ir.annotations.map(_.toFirrtl)))
+    w.close()
+    f
+  }
+
   /** Dumps the elaborated Circuit to ProtoBuf
     *
     * If no File is given as input, it will dump to a default filename based on the name of the
