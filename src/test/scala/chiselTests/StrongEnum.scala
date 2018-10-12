@@ -3,11 +3,10 @@
 package chiselTests
 
 import chisel3._
-import chisel3.core.EnumAnnotations
+import chisel3.experimental.ChiselEnum
 import chisel3.internal.firrtl.UnknownWidth
 import chisel3.util._
 import chisel3.testers.BasicTester
-import firrtl.annotations.ComponentName
 import org.scalatest.{FreeSpec, Matchers}
 
 object EnumExample extends ChiselEnum {
@@ -67,7 +66,7 @@ class CastFromNonLit extends Module {
     val valid = Output(Bool())
   })
 
-  io.out := EnumExample.fromBits(io.in)
+  io.out := EnumExample(io.in)
   io.valid := io.out.isValid
 }
 
@@ -79,7 +78,7 @@ class CastFromNonLitWidth(w: Option[Int] = None) extends Module {
     val out = Output(EnumExample())
   })
 
-  io.out := EnumExample.fromBits(io.in)
+  io.out := EnumExample(io.in)
 }
 
 class EnumOps(val xType: ChiselEnum, val yType: ChiselEnum) extends Module {
@@ -374,7 +373,8 @@ class StrongEnumSpec extends ChiselFlatSpec {
 }
 
 class StrongEnumAnnotationSpec extends FreeSpec with Matchers {
-  import EnumAnnotations._
+  import chisel3.experimental.EnumAnnotations._
+  import firrtl.annotations.ComponentName
 
   "Test that strong enums annotate themselves appropriately" in {
 

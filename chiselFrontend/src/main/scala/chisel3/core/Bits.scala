@@ -20,6 +20,10 @@ import chisel3.internal.firrtl.PrimOp._
   * @define coll element
   */
 abstract class Element extends Data {
+  private[chisel3] final def allElements: Seq[Element] = Seq(this)
+  def widthKnown: Boolean = width.known
+  def name: String = getRef.name
+
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection) {
     binding = target
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
@@ -30,9 +34,32 @@ abstract class Element extends Data {
     }
   }
 
-  private[chisel3] final def allElements: Seq[Element] = Seq(this)
-  def widthKnown: Boolean = width.known
-  def name: String = getRef.name
+  private[core] override def topBindingOpt: Option[TopBinding] = super.topBindingOpt match {
+    // Translate Bundle lit bindings to Element lit bindings
+    case Some(BundleLitBinding(litMap)) => litMap.get(this) match {
+      case Some(litArg) => Some(ElementLitBinding(litArg))
+      case _ => Some(DontCareBinding())
+    }
+    case topBindingOpt => topBindingOpt
+  }
+
+  private[core] def litArgOption: Option[LitArg] = topBindingOpt match {
+    case Some(ElementLitBinding(litArg)) => Some(litArg)
+    case _ => None
+  }
+
+  override def litOption: Option[BigInt] = litArgOption.map(_.num)
+  private[core] def litIsForcedWidth: Option[Boolean] = litArgOption.map(_.forcedWidth)
+
+  // provide bits-specific literal handling functionality here
+  override private[chisel3] def ref: Arg = topBindingOpt match {
+    case Some(ElementLitBinding(litArg)) => litArg
+    case Some(BundleLitBinding(litMap)) => litMap.get(this) match {
+      case Some(litArg) => litArg
+      case _ => throwException(s"internal error: DontCare should be caught before getting ref")
+    }
+    case _ => super.ref
+  }
 
   private[core] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
     // If the source is a DontCare, generate a DefInvalid for the sink,
@@ -78,33 +105,6 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
   private[core] def cloneTypeWidth(width: Width): this.type
 
   def cloneType: this.type = cloneTypeWidth(width)
-
-  private[core] override def topBindingOpt: Option[TopBinding] = super.topBindingOpt match {
-    // Translate Bundle lit bindings to Element lit bindings
-    case Some(BundleLitBinding(litMap)) => litMap.get(this) match {
-      case Some(litArg) => Some(ElementLitBinding(litArg))
-      case _ => Some(DontCareBinding())
-    }
-    case topBindingOpt => topBindingOpt
-  }
-
-  private[core] def litArgOption: Option[LitArg] = topBindingOpt match {
-    case Some(ElementLitBinding(litArg)) => Some(litArg)
-    case _ => None
-  }
-
-  override def litOption: Option[BigInt] = litArgOption.map(_.num)
-  private[core] def litIsForcedWidth: Option[Boolean] = litArgOption.map(_.forcedWidth)
-
-  // provide bits-specific literal handling functionality here
-  override private[chisel3] def ref: Arg = topBindingOpt match {
-    case Some(ElementLitBinding(litArg)) => litArg
-    case Some(BundleLitBinding(litMap)) => litMap.get(this) match {
-      case Some(litArg) => litArg
-      case _ => throwException(s"internal error: DontCare should be caught before getting ref")
-    }
-    case _ => super.ref
-  }
 
   /** Tail operator
     *

@@ -35,33 +35,6 @@ import EnumAnnotations._
 abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolean = true) extends Element {
   override def cloneType: this.type = factory().asInstanceOf[this.type]
 
-  private[core] override def topBindingOpt: Option[TopBinding] = super.topBindingOpt match {
-    // Translate Bundle lit bindings to Element lit bindings
-    case Some(BundleLitBinding(litMap)) => litMap.get(this) match {
-      case Some(litArg) => Some(ElementLitBinding(litArg))
-      case _ => Some(DontCareBinding())
-    }
-    case topBindingOpt => topBindingOpt
-  }
-
-  private[core] def litArgOption: Option[LitArg] = topBindingOpt match {
-    case Some(ElementLitBinding(litArg)) => Some(litArg)
-    case _ => None
-  }
-
-  override def litOption: Option[BigInt] = litArgOption.map(_.num)
-  private[core] def litIsForcedWidth: Option[Boolean] = litArgOption.map(_.forcedWidth)
-
-  // provide bits-specific literal handling functionality here
-  override private[chisel3] def ref: Arg = topBindingOpt match {
-    case Some(ElementLitBinding(litArg)) => litArg
-    case Some(BundleLitBinding(litMap)) => litMap.get(this) match {
-      case Some(litArg) => litArg
-      case _ => throwException(s"internal error: DontCare should be caught before getting ref")
-    }
-    case _ => super.ref
-  }
-
   private[core] def compop(sourceInfo: SourceInfo, op: PrimOp, other: EnumType): Bool = {
     requireIsHardware(this, "bits operated on")
     requireIsHardware(other, "bits operated on")
@@ -80,9 +53,7 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
   // This isn't actually used anywhere (and it would throw an exception anyway). But it has to be defined since we
   // inherit it from Data.
   private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
-      compileOptions: CompileOptions): Unit = {
-    this := that.asUInt
-  }
+      compileOptions: CompileOptions): Unit = ???
 
   final def === (that: EnumType): Bool = macro SourceInfoTransform.thatArg
   final def =/= (that: EnumType): Bool = macro SourceInfoTransform.thatArg
@@ -107,12 +78,7 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
     if (litOption.isDefined) {
       true.B
     } else {
-      def muxBuilder(enums: List[EnumType]): Bool = enums match {
-        case Nil => false.B
-        case e :: es => Mux(this === e, true.B, muxBuilder(es))
-      }
-
-      muxBuilder(factory.all.toList)
+      factory.all.map(this === _).reduce(_ || _)
     }
   }
 
@@ -125,12 +91,9 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
       else
         factory.all.head.asInstanceOf[this.type]
     } else {
-      def muxBuilder(enums: List[EnumType], first_enum: EnumType): EnumType = enums match {
-        case e :: Nil => first_enum
-        case e :: e_next :: es => Mux(this === e, e_next, muxBuilder(e_next :: es, first_enum))
-      }
-
-      muxBuilder(factory.all.toList, factory.all.head).asInstanceOf[this.type]
+      val enums_with_nexts = factory.all zip (factory.all.tail :+ factory.all.head)
+      val next_enum = SeqUtils.priorityMux(enums_with_nexts.map { case (e,n) => (this === e, n) } )
+      next_enum.asInstanceOf[this.type]
     }
   }
 
@@ -144,7 +107,7 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
 
     // If we try to annotate something that is bound to a literal, we get a FIRRTL annotation exception.
     // To workaround that, we only annotate enums that are not bound to literals.
-    if (selfAnnotating && !litOption.isDefined) {
+    if (selfAnnotating && litOption.isEmpty) {
       annotateEnum()
     }
   }
@@ -169,33 +132,36 @@ abstract class EnumFactory {
     def apply(): Type = EnumFactory.this.apply()
   }
 
-  var id: BigInt = 0
-  var width: Width = 0.W
+  private var id: BigInt = 0
+  private[core] var width: Width = 0.W
 
-  val enum_names = mutable.ArrayBuffer.empty[String]
-  val enum_values = mutable.ArrayBuffer.empty[BigInt]
-  val enum_instances = mutable.ArrayBuffer.empty[Type]
+  private case class EnumRecord(inst: Type, name: String)
+  private val enum_records = mutable.ArrayBuffer.empty[EnumRecord]
 
-  private[core] def globalAnnotation: EnumDefChiselAnnotation =
-    EnumDefChiselAnnotation(enumTypeName, (enum_names, enum_values).zipped.toMap)
+  private def enumNames = enum_records.map(_.name).toSeq
+  private def enumValues = enum_records.map(_.inst.litValue()).toSeq
+  private def enumInstances = enum_records.map(_.inst).toSeq
 
   private[core] val enumTypeName = getClass.getName.init
 
+  private[core] def globalAnnotation: EnumDefChiselAnnotation =
+    EnumDefChiselAnnotation(enumTypeName, (enumNames, enumValues).zipped.toMap)
+
   def getWidth: Int = width.get
 
-  def all: Seq[Type] = enum_instances.toSeq
+  def all: Seq[Type] = enumInstances
 
   protected def Value: Type = macro EnumMacros.ValImpl
   protected def Value(id: UInt): Type = macro EnumMacros.ValCustomImpl
 
   protected def do_Value(names: Seq[String]): Type = {
     val result = new Type
-    enum_names ++= names.filter(!enum_names.contains(_))
-    enum_instances.append(result)
-    enum_values.append(id)
 
     // We have to use UnknownWidth here, because we don't actually know what the final width will be
     result.bindToLiteral(id, UnknownWidth())
+
+    val result_name = names.find(!enumNames.contains(_)).get
+    enum_records.append(EnumRecord(result, result_name))
 
     width = (1 max id.bitLength).W
     id += 1
@@ -206,7 +172,7 @@ abstract class EnumFactory {
   protected def do_Value(names: Seq[String], id: UInt): Type = {
     // TODO: These throw ExceptionInInitializerError which can be confusing to the user. Get rid of the error, and just
     // throw an exception
-    if (!id.litOption.isDefined)
+    if (id.litOption.isEmpty)
       throwException(s"$enumTypeName defined with a non-literal type")
     if (id.litValue() < this.id)
       throwException(s"Enums must be strictly increasing: $enumTypeName")
@@ -218,28 +184,20 @@ abstract class EnumFactory {
   def apply(): Type = new Type
 
   def apply(n: UInt)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Type = {
-    if (n.litOption.isEmpty) {
-      throwException(s"Illegal cast from non-literal UInt to $enumTypeName. Use fromBits instead")
-    }
-
-    val result = enum_instances.find(_.litValue == n.litValue)
-
-    if (result.isEmpty) {
-      throwException(s"${n.litValue}.U is not a valid value for $enumTypeName")
-    } else {
-      result.get
-    }
-  }
-
-  def fromBits(n: UInt)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Type = {
     if (n.litOption.isDefined) {
-      apply(n)
+      val result = enumInstances.find(_.litValue == n.litValue)
+
+      if (result.isEmpty) {
+        throwException(s"${n.litValue}.U is not a valid value for $enumTypeName")
+      } else {
+        result.get
+      }
     } else if (!n.isWidthKnown) {
       throwException(s"Non-literal UInts being cast to $enumTypeName must have a defined width")
     } else if (n.getWidth > this.getWidth) {
       throwException(s"The UInt being cast to $enumTypeName is wider than $enumTypeName's width ($getWidth)")
     } else {
-      Builder.warning(s"A non-literal UInt is being cast to $enumTypeName. You can check that the value is legal by calling isValid")
+      Builder.warning(s"A non-literal UInt is being cast to $enumTypeName. You can check that its value is legal by calling isValid")
 
       val glue = Wire(new UnsafeEnum(width))
       glue := n

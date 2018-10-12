@@ -243,9 +243,6 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   object Bool extends BoolFactory
   val Mux = chisel3.core.Mux
 
-  type ChiselEnum = chisel3.core.EnumFactory
-  val EnumAnnotations = chisel3.core.EnumAnnotations
-
   type BlackBox = chisel3.core.BlackBox
 
   type InstanceId = chisel3.internal.InstanceId
@@ -422,6 +419,9 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     type Analog = chisel3.core.Analog
     val Analog = chisel3.core.Analog
     val attach = chisel3.core.attach
+
+    type ChiselEnum = chisel3.core.EnumFactory
+    val EnumAnnotations = chisel3.core.EnumAnnotations
 
     val withClockAndReset = chisel3.core.withClockAndReset
     val withClock = chisel3.core.withClock

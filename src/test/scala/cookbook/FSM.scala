@@ -4,6 +4,7 @@ package cookbook
 
 import chisel3._
 import chisel3.util._
+import chisel3.experimental.ChiselEnum
 
 /* ### How do I create a finite state machine?
  *
@@ -20,28 +21,27 @@ class DetectTwoOnes extends Module {
   object State extends ChiselEnum {
     val sNone, sOne1, sTwo1s = Value
   }
-  import State._
 
-  val state = RegInit(sNone)
+  val state = RegInit(State.sNone)
 
-  io.out := (state === sTwo1s)
+  io.out := (state === State.sTwo1s)
 
   switch (state) {
-    is (sNone) {
+    is (State.sNone) {
       when (io.in) {
-        state := sOne1
+        state := State.sOne1
       }
     }
-    is (sOne1) {
+    is (State.sOne1) {
       when (io.in) {
-        state := sTwo1s
+        state := State.sTwo1s
       } .otherwise {
-        state := sNone
+        state := State.sNone
       }
     }
-    is (sTwo1s) {
+    is (State.sTwo1s) {
       when (!io.in) {
-        state := sNone
+        state := State.sNone
       }
     }
   }
