@@ -247,25 +247,6 @@ object Legalize extends Pass {
   }
 }
 
-object VerilogRename extends Pass {
-  def verilogRenameN(n: String): String =
-    if (v_keywords(n)) "%s$".format(n) else n
-
-  def verilogRenameE(e: Expression): Expression = e match {
-    case ex: WRef => ex copy (name = verilogRenameN(ex.name))
-    case ex => ex map verilogRenameE
-  }
-
-  def verilogRenameS(s: Statement): Statement =
-    s map verilogRenameS map verilogRenameE map verilogRenameN
-
-  def verilogRenameP(p: Port): Port =
-    p copy (name = verilogRenameN(p.name))
-
-  def run(c: Circuit): Circuit =
-    c copy (modules = c.modules map (_ map verilogRenameP map verilogRenameS))
-}
-
 /** Makes changes to the Firrtl AST to make Verilog emission easier
   *
   * - For each instance, adds wires to connect to each port

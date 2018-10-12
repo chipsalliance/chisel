@@ -9,6 +9,7 @@ import firrtl._
 import firrtl.annotations._
 import firrtl.ir.Circuit
 import firrtl.passes._
+import firrtl.transforms.VerilogRename
 import firrtl.Parser.IgnoreInfo
 import FirrtlCheckers._
 
@@ -230,6 +231,43 @@ class VerilogEmitterSpec extends FirrtlFlatSpec {
     for (c <- check) {
       lines should contain (c)
     }
+  }
+
+  "Verilog name conflicts" should "be resolved" in {
+    val input =
+      """|circuit parameter:
+         |  module parameter:
+         |    input always: UInt<1>
+         |    output always$: UInt<1>
+         |    inst assign of endmodule
+         |    node always_ = not(always)
+         |    node always__ = and(always_, assign.fork)
+         |    always$ <= always__
+         |  module endmodule:
+         |    output fork: UInt<1>
+         |    node const = add(UInt<4>("h1"), UInt<3>("h2"))
+         |    fork <= const
+         |""".stripMargin
+    val check_firrtl =
+      """|circuit parameter_:
+         |  module parameter_:
+         |    input always___: UInt<1>
+         |    output always$: UInt<1>
+         |    inst assign_ of endmodule_
+         |    node always_ = not(always___)
+         |    node always__ = and(always_, assign_.fork_)
+         |    always$ <= always__
+         |  module endmodule_:
+         |    output fork_: UInt<1>
+         |    node const_ = add(UInt<4>("h1"), UInt<3>("h2"))
+         |    fork_ <= const_
+         |""".stripMargin
+    val state = CircuitState(parse(input), UnknownForm, Seq.empty, None)
+    val output = Seq( ToWorkingIR, ResolveKinds, InferTypes, new VerilogRename )
+      .foldLeft(state){ case (c, tx) => tx.runTransform(c) }
+    Seq( CheckHighForm )
+      .foldLeft(output.circuit){ case (c, tx) => tx.run(c) }
+    output.circuit.serialize should be (parse(check_firrtl).serialize)
   }
 
 }
