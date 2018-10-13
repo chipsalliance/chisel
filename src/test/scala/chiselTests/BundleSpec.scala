@@ -4,6 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.core.IgnoreSeqInBundle
+import chisel3.internal.GetReferenceException
 import chisel3.testers.BasicTester
 
 trait BundleSpecUtils {
@@ -114,5 +115,31 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils {
         stop()
       }
     }
+  }
+}
+
+class BundleWithoutCloneTypeProblem extends ChiselPropSpec {
+  property("Bundles should not freak out if you forget cloneType") {
+    intercept[GetReferenceException] {
+      val a = new Bundle {
+        val b = UInt(4.W)
+      }
+
+      runTester(
+        new BasicTester {
+          val m = Module(new Module {
+            val d = Wire(new Bundle {
+              val e = a // forgot cloneType
+            })
+            val io = IO(new Bundle {
+              val c = Output(a.cloneType)
+            })
+            io.c := d.e
+            d.e.b := 0.U
+            stop()
+          })
+        }
+      )
+    }.getMessage should include("Cannot emit ports for Bundle with fields e, perhaps you forgot a cloneType")
   }
 }
