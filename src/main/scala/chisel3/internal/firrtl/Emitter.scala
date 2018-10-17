@@ -2,8 +2,9 @@
 
 package chisel3.internal.firrtl
 import chisel3._
-import chisel3.core.{SpecifiedDirection, EnumType}
+import chisel3.core.{EnumType, SpecifiedDirection}
 import chisel3.experimental._
+import chisel3.internal.GetReferenceException
 import chisel3.internal.sourceinfo.{NoSourceInfo, SourceLine}
 
 private[chisel3] object Emitter {
@@ -26,6 +27,7 @@ private class Emitter(circuit: Circuit) {
     s"$dirString ${e.id.getRef.name} : ${emitType(e.id, clearDir)}"
   }
 
+  //scalastyle:off cyclomatic.complexity
   private def emitType(d: Data, clearDir: Boolean = false): String = d match {
     case d: Clock => "Clock"
     case d: chisel3.core.EnumType => s"UInt${d.width}"
@@ -41,7 +43,14 @@ private class Emitter(circuit: Circuit) {
         case (true, _) =>
           s"${elt.getRef.name} : ${emitType(elt, true)}"
         case (false, SpecifiedDirection.Unspecified | SpecifiedDirection.Output) =>
-          s"${elt.getRef.name} : ${emitType(elt, false)}"
+          try {
+            s"${elt.getRef.name} : ${emitType(elt, false)}"
+          }
+          catch {
+            case getRef: GetReferenceException =>
+              throw new GetReferenceException(s"Cannot emit ports for ${d.className}" +
+                      s" with fields ${d.elements.keys.mkString(",")}, perhaps cloneType is not defined")
+          }
         case (false, SpecifiedDirection.Flip | SpecifiedDirection.Input) =>
           s"flip ${elt.getRef.name} : ${emitType(elt, false)}"
       }
