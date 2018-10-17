@@ -49,7 +49,7 @@ private class Emitter(circuit: Circuit) {
           catch {
             case getRef: GetReferenceException =>
               throw new GetReferenceException(s"Cannot emit ports for ${d.className}" +
-                      s" with fields ${d.elements.keys.mkString(",")}, perhaps cloneType is not defined")
+                      s" with fields ${d.elements.keys.mkString(",")}, perhaps you forgot a cloneType")
           }
         case (false, SpecifiedDirection.Flip | SpecifiedDirection.Input) =>
           s"flip ${elt.getRef.name} : ${emitType(elt, false)}"
