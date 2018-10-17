@@ -72,6 +72,8 @@ trait InstanceId {
 
 }
 
+class GetReferenceException(message: String) extends Exception(message)
+
 private[chisel3] trait HasId extends InstanceId {
   private[chisel3] def _onModuleClose: Unit = {} // scalastyle:ignore method.name
   private[chisel3] val _parent: Option[BaseModule] = Builder.currentModule
@@ -111,7 +113,7 @@ private[chisel3] trait HasId extends InstanceId {
   private[chisel3] def setRef(parent: HasId, name: String): Unit = setRef(Slot(Node(parent), name))
   private[chisel3] def setRef(parent: HasId, index: Int): Unit = setRef(Index(Node(parent), ILit(index)))
   private[chisel3] def setRef(parent: HasId, index: UInt): Unit = setRef(Index(Node(parent), index.ref))
-  private[chisel3] def getRef: Arg = _ref.get
+  private[chisel3] def getRef: Arg = _ref.getOrElse(throw new GetReferenceException(s"bad .getRef on None"))
   private[chisel3] def getOptionRef: Option[Arg] = _ref
 
   // Implementation of public methods.
