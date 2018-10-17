@@ -140,6 +140,6 @@ class BundleWithoutCloneTypeProblem extends ChiselPropSpec {
           })
         }
       )
-    }.getMessage should include("Cannot emit ports for Bundle with fields e, perhaps cloneType is not defined")
+    }.getMessage should include("Cannot emit ports for Bundle with fields e, perhaps you forgot a cloneType")
   }
 }
