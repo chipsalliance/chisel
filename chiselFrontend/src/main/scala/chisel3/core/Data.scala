@@ -533,9 +533,11 @@ object WireInit {
 /** RHS (source) for Invalidate API.
   * Causes connection logic to emit a DefInvalid when connected to an output port (or wire).
   */
-object DontCare extends Element(width = UnknownWidth()) {
+object DontCare extends Element {
   // This object should be initialized before we execute any user code that refers to it,
   //  otherwise this "Chisel" object will end up on the UserModule's id list.
+
+  private[chisel3] override val width: Width = UnknownWidth()
 
   bind(DontCareBinding(), SpecifiedDirection.Output)
   override def cloneType = DontCare

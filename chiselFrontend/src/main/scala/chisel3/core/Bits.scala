@@ -19,7 +19,11 @@ import chisel3.internal.firrtl.PrimOp._
   *
   * @define coll element
   */
-abstract class Element(private[chisel3] val width: Width) extends Data {
+abstract class Element extends Data {
+  private[chisel3] final def allElements: Seq[Element] = Seq(this)
+  def widthKnown: Boolean = width.known
+  def name: String = getRef.name
+
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection) {
     binding = target
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
@@ -30,9 +34,32 @@ abstract class Element(private[chisel3] val width: Width) extends Data {
     }
   }
 
-  private[chisel3] final def allElements: Seq[Element] = Seq(this)
-  def widthKnown: Boolean = width.known
-  def name: String = getRef.name
+  private[core] override def topBindingOpt: Option[TopBinding] = super.topBindingOpt match {
+    // Translate Bundle lit bindings to Element lit bindings
+    case Some(BundleLitBinding(litMap)) => litMap.get(this) match {
+      case Some(litArg) => Some(ElementLitBinding(litArg))
+      case _ => Some(DontCareBinding())
+    }
+    case topBindingOpt => topBindingOpt
+  }
+
+  private[core] def litArgOption: Option[LitArg] = topBindingOpt match {
+    case Some(ElementLitBinding(litArg)) => Some(litArg)
+    case _ => None
+  }
+
+  override def litOption: Option[BigInt] = litArgOption.map(_.num)
+  private[core] def litIsForcedWidth: Option[Boolean] = litArgOption.map(_.forcedWidth)
+
+  // provide bits-specific literal handling functionality here
+  override private[chisel3] def ref: Arg = topBindingOpt match {
+    case Some(ElementLitBinding(litArg)) => litArg
+    case Some(BundleLitBinding(litMap)) => litMap.get(this) match {
+      case Some(litArg) => litArg
+      case _ => throwException(s"internal error: DontCare should be caught before getting ref")
+    }
+    case _ => super.ref
+  }
 
   private[core] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
     // If the source is a DontCare, generate a DefInvalid for the sink,
@@ -69,7 +96,7 @@ private[chisel3] sealed trait ToBoolable extends Element {
   * @define sumWidth       @note The width of the returned $coll is `width of this` + `width of that`.
   * @define unchangedWidth @note The width of the returned $coll is unchanged, i.e., the `width of this`.
   */
-sealed abstract class Bits(width: Width) extends Element(width) with ToBoolable { //scalastyle:off number.of.methods
+sealed abstract class Bits(private[chisel3] val width: Width) extends Element with ToBoolable { //scalastyle:off number.of.methods
   // TODO: perhaps make this concrete?
   // Arguments for: self-checking code (can't do arithmetic on bits)
   // Arguments against: generates down to a FIRRTL UInt anyways
@@ -78,33 +105,6 @@ sealed abstract class Bits(width: Width) extends Element(width) with ToBoolable 
   private[core] def cloneTypeWidth(width: Width): this.type
 
   def cloneType: this.type = cloneTypeWidth(width)
-
-  private[core] override def topBindingOpt: Option[TopBinding] = super.topBindingOpt match {
-    // Translate Bundle lit bindings to Element lit bindings
-    case Some(BundleLitBinding(litMap)) => litMap.get(this) match {
-      case Some(litArg) => Some(ElementLitBinding(litArg))
-      case _ => Some(DontCareBinding())
-    }
-    case topBindingOpt => topBindingOpt
-  }
-
-  private[core] def litArgOption: Option[LitArg] = topBindingOpt match {
-    case Some(ElementLitBinding(litArg)) => Some(litArg)
-    case _ => None
-  }
-
-  override def litOption: Option[BigInt] = litArgOption.map(_.num)
-  private[core] def litIsForcedWidth: Option[Boolean] = litArgOption.map(_.forcedWidth)
-
-  // provide bits-specific literal handling functionality here
-  override private[chisel3] def ref: Arg = topBindingOpt match {
-    case Some(ElementLitBinding(litArg)) => litArg
-    case Some(BundleLitBinding(litMap)) => litMap.get(this) match {
-      case Some(litArg) => litArg
-      case _ => throwException(s"internal error: DontCare should be caught before getting ref")
-    }
-    case _ => super.ref
-  }
 
   /** Tail operator
     *
@@ -1693,7 +1693,7 @@ object FixedPoint {
   *
   * @note This API is experimental and subject to change
   */
-final class Analog private (width: Width) extends Element(width) {
+final class Analog private (private[chisel3] val width: Width) extends Element {
   require(width.known, "Since Analog is only for use in BlackBoxes, width must be known")
 
   private[core] override def typeEquivalent(that: Data): Boolean =
