@@ -545,6 +545,16 @@ class AutoClonetypeException(message: String) extends ChiselException(message, n
 abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
   override def className = "Bundle"
 
+  private val fields = new HashSet[Data]
+  protected def Field[T <: Data](f: T): T = {
+    if (compileOptions.declaredTypeMustBeUnbound) {
+      requireIsChiselType(f, "Field type")
+    }
+    val clone = f.cloneType.asInstanceOf[T]
+    fields += clone
+    clone
+  }
+
   /** The collection of [[Data]]
     *
     * Elements defined earlier in the Bundle are higher order upon
@@ -566,7 +576,15 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
   final lazy val elements: ListMap[String, Data] = {
     val nameMap = LinkedHashMap[String, Data]()
     val seen = HashSet[Data]()
-    for (m <- getPublicFields(classOf[Bundle])) {
+    val publicMemberOptions = getPublicFields(classOf[Bundle])
+    // Check for consistent use of fields -> either all public data vals are fields, or none are
+    if (fields.nonEmpty) {
+      val publicDataMembers: Set[Data] = publicMemberOptions.flatMap(getBundleField(_)).toSet
+      if (publicDataMembers != fields) throwException(s"Field(...) must be called on all public vals of type Data or none")
+    }
+
+
+    for (m <- publicMemberOptions) {
       getBundleField(m) match {
         case Some(d: Data) =>
           if (nameMap contains m.getName) {

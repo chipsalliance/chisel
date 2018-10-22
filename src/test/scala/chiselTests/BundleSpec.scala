@@ -4,7 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.core.IgnoreSeqInBundle
-import chisel3.internal.GetReferenceException
+import chisel3.internal.{GetReferenceException, ChiselException}
 import chisel3.testers.BasicTester
 
 trait BundleSpecUtils {
@@ -140,6 +140,48 @@ class BundleWithoutCloneTypeProblem extends ChiselPropSpec {
           })
         }
       )
-    }.getMessage should include("Cannot emit ports for Bundle with fields e, perhaps you forgot a cloneType")
+    }.getMessage should include("Cannot emit field(s) e for Bundle, perhaps you forgot a Field(...)")
   }
+}
+
+class FieldSpec extends ChiselFlatSpec {
+
+  class Fields extends Bundle {
+    val a = Field(UInt(16.W))
+    val b = Field(UInt(16.W))
+  }
+
+  class InconsistentFields extends Bundle {
+    val a = Field(UInt(16.W))
+    val b = UInt(16.W)
+  }
+
+  "Consistent use of Field(...)" should "yield a cloneable bundle" in {
+    elaborate {
+      new Module {
+        val io = IO(new Bundle {
+          val i = Input(new Fields)
+          val o = Output(new Fields)
+        })
+        io.o.a := io.i.a
+        io.o.b := io.i.b
+      }
+    }
+  }
+
+  "Inconsistent use of Field(...)" should "generate an error" in {
+    (the[ChiselException] thrownBy {
+      elaborate {
+        new Module {
+          val io = IO(new Bundle {
+            val i = Input(new InconsistentFields)
+            val o = Output(new InconsistentFields)
+          })
+          io.o.a := io.i.a
+          io.o.b := io.i.b
+        }
+      }
+    }).getMessage should include("Field(...) must be called on all public vals of type Data or none")
+  }
+
 }
