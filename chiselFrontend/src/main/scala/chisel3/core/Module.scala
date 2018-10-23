@@ -49,7 +49,7 @@ object Module {
     val module: T = bc  // bc is actually evaluated here
 
     if (Builder.whenDepth != 0) {
-      throwException("Internal Error! When depth is != 0, this should not be possible")
+      throwException("Internal Error! when() scope depth is != 0, this should have been caught!")
     }
     if (Builder.readyForModuleConstr) {
       throwException("Error: attempted to instantiate a Module, but nothing happened. " +
@@ -75,6 +75,8 @@ object Module {
   def clock: Clock = Builder.forcedClock
   /** Returns the implicit Reset */
   def reset: Reset = Builder.forcedReset
+  /** Returns the current Module */
+  def currentModule: Option[BaseModule] = Builder.currentModule
 }
 
 /** Abstract base class for Modules, an instantiable organizational unit for RTL.

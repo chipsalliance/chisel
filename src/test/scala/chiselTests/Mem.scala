@@ -33,6 +33,17 @@ class SyncReadMemTester extends BasicTester {
   }
 }
 
+class SyncReadMemWithZeroWidthTester extends BasicTester {
+  val (cnt, _) = Counter(true.B, 3)
+  val mem      = SyncReadMem(2, UInt(0.W))
+  val rdata    = mem.read(0.U, true.B)
+
+  switch (cnt) {
+    is (1.U) { assert(rdata === 0.U) }
+    is (2.U) { stop() }
+  }
+}
+
 class MemorySpec extends ChiselPropSpec {
   property("Mem of Vec should work") {
     assertTesterPasses { new MemVecTester }
@@ -40,5 +51,9 @@ class MemorySpec extends ChiselPropSpec {
 
   property("SyncReadMem should work") {
     assertTesterPasses { new SyncReadMemTester }
+  }
+
+  property("SyncReadMem should work with zero width entry") {
+    assertTesterPasses { new SyncReadMemWithZeroWidthTester }
   }
 }

@@ -277,7 +277,7 @@ object VecInit {
     require(!elts.isEmpty)
     elts.foreach(requireIsHardware(_, "vec element"))
 
-    val vec = Wire(new Vec(cloneSupertype(elts, "Vec"), elts.length))
+    val vec = Wire(Vec(elts.length, cloneSupertype(elts, "Vec")))
 
     // TODO: try to remove the logic for this mess
     elts.head.direction match {
@@ -473,6 +473,21 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
   def toPrintable: Printable = toPrintableHelper(elements.toList)
 }
 
+/**
+  * Mix-in for Bundles that have arbitrary Seqs of Chisel types that aren't
+  * involved in hardware construction.
+  *
+  * Used to avoid raising an error/exception when a Seq is a public member of the
+  * bundle.
+  * This is useful if we those public Seq fields in the Bundle are unrelated to
+  * hardware construction.
+  */
+trait IgnoreSeqInBundle {
+  this: Bundle =>
+
+  override def ignoreSeq: Boolean = true
+}
+
 class AutoClonetypeException(message: String) extends ChiselException(message, null)
 
 /** Base class for data types defined as a bundle of other data types.
@@ -533,17 +548,38 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     val nameMap = LinkedHashMap[String, Data]()
     val seen = HashSet[Data]()
     for (m <- getPublicFields(classOf[Bundle])) {
-      getBundleField(m) foreach { d =>
-        if (nameMap contains m.getName) {
-          require(nameMap(m.getName) eq d)
-        } else if (!seen(d)) {
-          nameMap(m.getName) = d
-          seen += d
-        }
+      getBundleField(m) match {
+        case Some(d: Data) =>
+          if (nameMap contains m.getName) {
+            require(nameMap(m.getName) eq d)
+          } else if (!seen(d)) {
+            nameMap(m.getName) = d
+            seen += d
+          }
+        case None =>
+          if (!ignoreSeq) {
+            m.invoke(this) match {
+              case s: scala.collection.Seq[Any] if s.nonEmpty => s.head match {
+                // Ignore empty Seq()
+                case d: Data => throwException("Public Seq members cannot be used to define Bundle elements " +
+                  s"(found public Seq member '${m.getName}'). " +
+                  "Either use a Vec if all elements are of the same type, or MixedVec if the elements " +
+                  "are of different types. If this Seq member is not intended to construct RTL, mix in the trait " +
+                  "IgnoreSeqInBundle.")
+                case _ => // don't care about non-Data Seq
+              }
+              case _ => // not a Seq
+            }
+          }
       }
     }
     ListMap(nameMap.toSeq sortWith { case ((an, a), (bn, b)) => (a._id > b._id) || ((a eq b) && (an > bn)) }: _*)
   }
+
+  /**
+    * Overridden by [[IgnoreSeqInBundle]] to allow arbitrary Seqs of Chisel elements.
+    */
+  def ignoreSeq: Boolean = false
 
   /** Returns a field's contained user-defined Bundle element if it appears to
     * be one, otherwise returns None.
