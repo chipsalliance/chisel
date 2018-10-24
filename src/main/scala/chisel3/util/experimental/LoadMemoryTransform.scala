@@ -10,7 +10,7 @@ import firrtl.annotations.{MemoryLoadFileType, _}
 import firrtl.ir.{Module => _, _}
 import firrtl.transforms.BlackBoxInlineAnno
 import firrtl.Mappers._
-import firrtl.{AnnotationSeq, CircuitForm, CircuitState, EmitCircuitAnnotation, LowForm, Transform, VerilogEmitter}
+import firrtl.{AnnotationSeq, CircuitForm, CircuitState, EmitterAnnotation, LowForm, Transform, VerilogEmitter}
 
 import scala.collection.mutable
 
@@ -219,7 +219,7 @@ class LoadMemoryTransform extends Transform {
 
   def execute(state: CircuitState): CircuitState = {
     val isVerilog = state.annotations.exists {
-      case EmitCircuitAnnotation(emitter) =>
+      case EmitterAnnotation(emitter) =>
         emitter == classOf[VerilogEmitter]
       case _ =>
         false
