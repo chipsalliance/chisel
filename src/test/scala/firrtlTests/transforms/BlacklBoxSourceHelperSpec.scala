@@ -105,5 +105,24 @@ class BlacklBoxSourceHelperTransformSpec extends LowTransformSpec {
     val verilogCompiler = new VerilogEmitter
     verilogCompiler.transforms.map { x => x.getClass } should contain (classOf[BlackBoxSourceHelper])
   }
-}
 
+  behavior of "BlackBox resources that do not exist"
+
+  it should "provide a useful error message for BlackBoxResourceAnno" in {
+    val annos = Seq( BlackBoxTargetDirAnno("test_run_dir"),
+                     BlackBoxResourceAnno(moduleName, "/blackboxes/IDontExist.v") )
+
+    (the [BlackBoxNotFoundException] thrownBy { execute(input, "", annos) })
+      .getMessage should include ("Did you misspell it?")
+  }
+
+  it should "provide a useful error message for BlackBoxPathAnno" in {
+    val absPath = new java.io.File("src/test/resources/blackboxes/IDontExist.v").getCanonicalPath
+    val annos = Seq( BlackBoxTargetDirAnno("test_run_dir"),
+                     BlackBoxPathAnno(moduleName, absPath) )
+
+    (the [BlackBoxNotFoundException] thrownBy { execute(input, "", annos) })
+      .getMessage should include ("Did you misspell it?")
+  }
+
+}
