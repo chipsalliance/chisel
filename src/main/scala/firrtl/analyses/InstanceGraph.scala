@@ -3,12 +3,12 @@
 package firrtl.analyses
 
 import scala.collection.mutable
-
 import firrtl._
 import firrtl.ir._
 import firrtl.graph._
 import firrtl.Utils._
 import firrtl.Mappers._
+import firrtl.annotations.TargetToken.{Instance, OfModule}
 
 
 /** A class representing the instance hierarchy of a working IR Circuit
@@ -98,6 +98,12 @@ class InstanceGraph(c: Circuit) {
      * instance/module definitions
      */
   def getChildrenInstances: mutable.LinkedHashMap[String, mutable.LinkedHashSet[WDefInstance]] = childInstances
+
+  /** Given a circuit, returns a map from module name to children
+    * instance/module [[firrtl.annotations.TargetToken]]s
+    */
+  def getChildrenInstanceOfModule: mutable.LinkedHashMap[String, mutable.LinkedHashSet[(Instance, OfModule)]] =
+    childInstances.map(kv => kv._1 -> kv._2.map(i => (Instance(i.name), OfModule(i.module))))
 
 
 }

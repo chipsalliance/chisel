@@ -178,7 +178,7 @@ object Utils extends LazyLogging {
     error("Internal Error! %sPlease file an issue at https://github.com/ucb-bar/firrtl/issues".format(string), throwable)
   }
 
-  private[firrtl] def time[R](block: => R): (Double, R) = {
+  def time[R](block: => R): (Double, R) = {
     val t0 = System.nanoTime()
     val result = block
     val t1 = System.nanoTime()

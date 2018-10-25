@@ -12,6 +12,7 @@ import firrtl.PrimOps._
 import firrtl.graph.DiGraph
 import firrtl.WrappedExpression.weq
 import firrtl.analyses.InstanceGraph
+import firrtl.annotations.TargetToken.Ref
 
 import annotation.tailrec
 import collection.mutable
@@ -46,10 +47,12 @@ object ConstantPropagation {
   }
 }
 
-class ConstantPropagation extends Transform {
+class ConstantPropagation extends Transform with ResolvedAnnotationPaths {
   import ConstantPropagation._
   def inputForm = LowForm
   def outputForm = LowForm
+
+  override val annotationClasses: Traversable[Class[_]] = Seq(classOf[DontTouchAnnotation])
 
   trait FoldCommutativeOp {
     def fold(c1: Literal, c2: Literal): Expression
@@ -520,7 +523,7 @@ class ConstantPropagation extends Transform {
 
   def execute(state: CircuitState): CircuitState = {
     val dontTouches: Seq[(String, String)] = state.annotations.collect {
-      case DontTouchAnnotation(ComponentName(c, ModuleName(m, _))) => m -> c
+      case DontTouchAnnotation(Target(_, Some(m), Seq(Ref(c)))) => m -> c
     }
     // Map from module name to component names
     val dontTouchMap: Map[String, Set[String]] =

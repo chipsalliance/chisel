@@ -30,7 +30,7 @@ import java.io.{File, FileWriter}
   * circumstances of their instantiation in their parent module, they will still not be removed. To
   * remove such modules, use the [[NoDedupAnnotation]] to prevent deduplication.
   */
-class DeadCodeElimination extends Transform {
+class DeadCodeElimination extends Transform with ResolvedAnnotationPaths {
   def inputForm = LowForm
   def outputForm = LowForm
 
@@ -321,9 +321,12 @@ class DeadCodeElimination extends Transform {
     state.copy(circuit = newCircuit, renames = Some(renames))
   }
 
+  override val annotationClasses: Traversable[Class[_]] =
+    Seq(classOf[DontTouchAnnotation], classOf[OptimizableExtModuleAnnotation])
+
   def execute(state: CircuitState): CircuitState = {
     val dontTouches: Seq[LogicNode] = state.annotations.collect {
-      case DontTouchAnnotation(component) => LogicNode(component)
+      case DontTouchAnnotation(component: ReferenceTarget) if component.isLocal => LogicNode(component)
     }
     val doTouchExtMods: Seq[String] = state.annotations.collect {
       case OptimizableExtModuleAnnotation(ModuleName(name, _)) => name
