@@ -62,6 +62,12 @@ class ModuleRewrap extends Module {
   val inst2 = Module(inst)
 }
 
+class ModuleWrapper(gen: => Module) extends Module {
+  val io = IO(new Bundle{})
+  val child = Module(gen)
+  override lazy val desiredName = s"${child.desiredName}Wrapper"
+}
+
 class ModuleSpec extends ChiselPropSpec {
 
   property("ModuleVec should elaborate") {
@@ -137,5 +143,8 @@ class ModuleSpec extends ChiselPropSpec {
           "clock" -> m.clock, "reset" -> m.reset,
           "a" -> m.a, "b" -> m.b))
     })
+  }
+  property("A desiredName parameterized by a submodule should work") {
+    Driver.elaborate(() => new ModuleWrapper(new ModuleWire)).name should be ("ModuleWireWrapper")
   }
 }
