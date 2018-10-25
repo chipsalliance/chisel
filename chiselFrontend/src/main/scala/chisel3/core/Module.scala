@@ -180,7 +180,13 @@ abstract class BaseModule extends HasId {
   def desiredName = this.getClass.getName.split('.').last
 
   /** Legalized name of this module. */
-  final lazy val name = Builder.globalNamespace.name(desiredName)
+  final lazy val name = try {
+    Builder.globalNamespace.name(desiredName)
+  } catch {
+    case e: NullPointerException => throwException(
+      s"Error: desiredName of ${this.getClass.getName} is null. Did you evaluate 'name' before all values needed by desiredName were available?", e)
+    case t: Throwable => throw t
+  }
 
   /** Returns a FIRRTL ModuleName that references this object
     * @note Should not be called until circuit elaboration is complete
