@@ -24,6 +24,12 @@ package chisel3 {
     * `0.asUInt(16)` (instead of `16.W`) compile without error and produce undesired results.
     */
     implicit class fromBigIntToLiteral(bigint: BigInt) {
+      /** Int to Bool conversion, allowing compact syntax like 1.B and 0.B
+       */
+      def B: Bool = {
+        require(bigint == 0 || bigint == 1)
+        Bool.Lit(if (bigint == 1) true else false)
+      }
       /** Int to UInt conversion, recommended style for constants.
         */
       def U: UInt = UInt.Lit(bigint, Width())  // scalastyle:ignore method.name
