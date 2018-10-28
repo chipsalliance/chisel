@@ -35,39 +35,11 @@ object JsonProtocol {
     { case named: ComponentName => JString(named.serialize) }
   ))
 
-
-  class TargetSerializer extends CustomSerializer[Target](format => (
-    { case JString(s) => Target.deserialize(s) },
-    { case named: Target => JString(named.serialize) }
-  ))
-  class GenericTargetSerializer extends CustomSerializer[GenericTarget](format => (
-    { case JString(s) => Target.deserialize(s).asInstanceOf[GenericTarget] },
-    { case named: GenericTarget => JString(named.serialize) }
-  ))
-  class CircuitTargetSerializer extends CustomSerializer[CircuitTarget](format => (
-    { case JString(s) => Target.deserialize(s).asInstanceOf[CircuitTarget] },
-    { case named: CircuitTarget => JString(named.serialize) }
-  ))
-  class ModuleTargetSerializer extends CustomSerializer[ModuleTarget](format => (
-    { case JString(s) => Target.deserialize(s).asInstanceOf[ModuleTarget] },
-    { case named: ModuleTarget => JString(named.serialize) }
-  ))
-  class InstanceTargetSerializer extends CustomSerializer[InstanceTarget](format => (
-    { case JString(s) => Target.deserialize(s).asInstanceOf[InstanceTarget] },
-    { case named: InstanceTarget => JString(named.serialize) }
-  ))
-  class ReferenceTargetSerializer extends CustomSerializer[ReferenceTarget](format => (
-    { case JString(s) => Target.deserialize(s).asInstanceOf[ReferenceTarget] },
-    { case named: ReferenceTarget => JString(named.serialize) }
-  ))
-
   /** Construct Json formatter for annotations */
   def jsonFormat(tags: Seq[Class[_ <: Annotation]]) = {
     Serialization.formats(FullTypeHints(tags.toList)).withTypeHintFieldName("class") +
       new TransformClassSerializer + new NamedSerializer + new CircuitNameSerializer +
-      new ModuleNameSerializer + new ComponentNameSerializer + new TargetSerializer +
-      new GenericTargetSerializer + new CircuitTargetSerializer + new ModuleTargetSerializer +
-      new InstanceTargetSerializer + new ReferenceTargetSerializer
+      new ModuleNameSerializer + new ComponentNameSerializer
   }
 
   /** Serialize annotations to a String for emission */

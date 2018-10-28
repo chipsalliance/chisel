@@ -346,43 +346,6 @@ class InlineInstancesTests extends LowTransformSpec {
            |    b <= a""".stripMargin
       failingexecute(input, Seq(inline("A")))
    }
-
-  "Jack's Bug" should "not fail" in {
-
-    val input = """circuit Top :
-                  |  module Top :
-                  |    input a : UInt<32>
-                  |    output b : UInt<32>
-                  |    inst i of Inline
-                  |    i.a <= a
-                  |    b <= i.b
-                  |  module Inline :
-                  |    input a : UInt<32>
-                  |    output b : UInt<32>
-                  |    inst child of InlineChild
-                  |    child.a <= a
-                  |    b <= child.b
-                  |  module InlineChild :
-                  |    input a : UInt<32>
-                  |    output b : UInt<32>
-                  |    b <= a""".stripMargin
-    val check = """circuit Top :
-                  |  module Top :
-                  |    input a : UInt<32>
-                  |    output b : UInt<32>
-                  |    wire i_a : UInt<32>
-                  |    wire i_b : UInt<32>
-                  |    inst i_child of InlineChild
-                  |    i_b <= i_child.b
-                  |    i_child.a <= i_a
-                  |    b <= i_b
-                  |    i_a <= a
-                  |  module InlineChild :
-                  |    input a : UInt<32>
-                  |    output b : UInt<32>
-                  |    b <= a""".stripMargin
-    execute(input, check, Seq(inline("Inline")))
-  }
 }
 
 // Execution driven tests for inlining modules

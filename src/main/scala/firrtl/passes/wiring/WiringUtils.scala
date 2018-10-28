@@ -182,7 +182,7 @@ object WiringUtils {
       .collect { case (k, v) if sinkInsts.contains(k) => (k, v.flatten) }.toMap
   }
 
-  /** Helper script to extract a module name from a named Module or Target */
+  /** Helper script to extract a module name from a named Module or Component */
   def getModuleName(n: Named): String = {
     n match {
       case ModuleName(m, _)                   => m

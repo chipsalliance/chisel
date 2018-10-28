@@ -68,6 +68,7 @@ abstract class AnnotationTests extends AnnotationSpec with Matchers {
     val tname = transform.name
     val inlineAnn = InlineAnnotation(CircuitName("Top"))
     val result = compiler.compile(CircuitState(parse(input), ChirrtlForm, Seq(inlineAnn)), Seq(transform))
+    println(result.annotations.head)
     result.annotations.head should matchPattern {
       case DeletedAnnotation(`tname`, `inlineAnn`) =>
     }
@@ -191,7 +192,7 @@ abstract class AnnotationTests extends AnnotationSpec with Matchers {
       anno("w.a"), anno("w.b[0]"), anno("w.b[1]"),
       anno("r.a"), anno("r.b[0]"), anno("r.b[1]"),
       anno("write.a"), anno("write.b[0]"), anno("write.b[1]"),
-      dontTouch("Top.r"), dontTouch("Top.w"), dontTouch("Top.mem")
+      dontTouch("Top.r"), dontTouch("Top.w")
     )
     val result = compiler.compile(CircuitState(parse(input), ChirrtlForm, annos), Nil)
     val resultAnno = result.annotations.toSeq
