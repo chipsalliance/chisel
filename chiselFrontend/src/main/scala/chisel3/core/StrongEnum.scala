@@ -32,7 +32,7 @@ object EnumAnnotations {
 import EnumAnnotations._
 
 
-abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolean = true) extends Element {
+abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolean = false) extends Element {
   override def cloneType: this.type = factory().asInstanceOf[this.type]
 
   private[core] def compop(sourceInfo: SourceInfo, op: PrimOp, other: EnumType): Bool = {
