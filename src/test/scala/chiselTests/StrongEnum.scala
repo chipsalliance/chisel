@@ -376,6 +376,7 @@ class StrongEnumAnnotationSpec extends FreeSpec with Matchers {
   import chisel3.experimental.EnumAnnotations._
   import firrtl.annotations.ComponentName
 
+  /*
   "Test that strong enums annotate themselves appropriately" in {
 
     def test() = {
@@ -427,4 +428,5 @@ class StrongEnumAnnotationSpec extends FreeSpec with Matchers {
     test()
     test()
   }
+  */
 }
