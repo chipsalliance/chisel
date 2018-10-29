@@ -372,12 +372,11 @@ class StrongEnumSpec extends ChiselFlatSpec {
   }
 }
 
-class StrongEnumAnnotationSpec extends FreeSpec with Matchers {
+class StrongEnumAnnotationSpec extends ChiselFlatSpec {
   import chisel3.experimental.EnumAnnotations._
   import firrtl.annotations.ComponentName
 
-  /*
-  "Test that strong enums annotate themselves appropriately" in {
+  ignore should "Test that strong enums annotate themselves appropriately" in {
 
     def test() = {
       Driver.execute(Array("--target-dir", "test_run_dir"), () => new StrongEnumFSM) match {
@@ -428,5 +427,4 @@ class StrongEnumAnnotationSpec extends FreeSpec with Matchers {
     test()
     test()
   }
-  */
 }
