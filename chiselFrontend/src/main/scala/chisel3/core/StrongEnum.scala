@@ -102,18 +102,11 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
     lit.bindLitArg(this)
   }
 
-  override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
-    super.bind(target, parentDirection)
-
-    // If we try to annotate something that is bound to a literal, we get a FIRRTL annotation exception.
-    // To workaround that, we only annotate enums that are not bound to literals.
-    if (selfAnnotating && litOption.isEmpty) {
-      annotateEnum()
-    }
-  }
-
   private def annotateEnum(): Unit = {
-    annotate(EnumComponentChiselAnnotation(this, enumTypeName))
+    val anno = EnumComponentChiselAnnotation(this, enumTypeName)
+    if (!Builder.annotations.contains(anno)) {
+      annotate(anno)
+    }
 
     if (!Builder.annotations.contains(factory.globalAnnotation)) {
       annotate(factory.globalAnnotation)
@@ -123,6 +116,13 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
   protected def enumTypeName: String = factory.enumTypeName
 
   def toPrintable: Printable = FullName(this) // TODO: Find a better pretty printer
+
+  override private[chisel3] def connect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = {
+    if (selfAnnotating && litOption.isEmpty) {
+      annotateEnum()
+    }
+    super.connect(that)
+  }
 }
 
 
