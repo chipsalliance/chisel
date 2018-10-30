@@ -10,6 +10,7 @@ import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo._
+import chisel3.SourceInfoDoc
 
 /** An abstract class for data types that solely consist of (are an aggregate
   * of) other Data objects.
@@ -62,6 +63,12 @@ sealed abstract class Aggregate extends Data {
     }
   }
 
+  override def litOption: Option[BigInt] = ???  // TODO implement me
+
+  // Returns the LitArg of a Bits object.
+  // Internal API for Bundle literals, to copy the LitArg of argument literals into the top map.
+  protected def litArgOfBits(elt: Bits): LitArg = elt.litArgOption.get
+
   /** Returns a Seq of the immediate contents of this Aggregate, in order.
     */
   def getElements: Seq[Data]
@@ -71,9 +78,9 @@ sealed abstract class Aggregate extends Data {
     // If the source is a DontCare, generate a DefInvalid for the sink,
     //  otherwise, issue a Connect.
     if (that == DontCare) {
-      pushCommand(DefInvalid(sourceInfo, this.lref))
+      pushCommand(DefInvalid(sourceInfo, Node(this)))
     } else {
-      pushCommand(BulkConnect(sourceInfo, this.lref, that.lref))
+      pushCommand(BulkConnect(sourceInfo, Node(this), Node(that)))
     }
   }
 
@@ -91,7 +98,7 @@ sealed abstract class Aggregate extends Data {
   }
 }
 
-trait VecFactory {
+trait VecFactory extends SourceInfoDoc {
   /** Creates a new [[Vec]] with `n` entries of the specified data type.
     *
     * @note elements are NOT assigned by default and have no value
@@ -203,6 +210,7 @@ sealed class Vec[T <: Data] private[core] (gen: => T, val length: Int)
     */
   override def apply(p: UInt): T = macro CompileOptionsTransform.pArg
 
+  /** @group SourceInfoTransformMacro */
   def do_apply(p: UInt)(implicit compileOptions: CompileOptions): T = {
     requireIsHardware(p, "vec index")
     val port = gen
@@ -253,7 +261,7 @@ sealed class Vec[T <: Data] private[core] (gen: => T, val length: Int)
   }
 }
 
-object VecInit {
+object VecInit extends SourceInfoDoc {
   /** Creates a new [[Vec]] composed of elements of the input Seq of [[Data]]
     * nodes.
     *
@@ -265,6 +273,7 @@ object VecInit {
     */
   def apply[T <: Data](elts: Seq[T]): Vec[T] = macro VecTransform.apply_elts
 
+  /** @group SourceInfoTransformMacro */
   def do_apply[T <: Data](elts: Seq[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = {
     // REVIEW TODO: this should be removed in favor of the apply(elts: T*)
     // varargs constructor, which is more in line with the style of the Scala
@@ -304,6 +313,7 @@ object VecInit {
     */
   def apply[T <: Data](elt0: T, elts: T*): Vec[T] = macro VecTransform.apply_elt0
 
+  /** @group SourceInfoTransformMacro */
   def do_apply[T <: Data](elt0: T, elts: T*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
     apply(elt0 +: elts.toSeq)
 
@@ -317,6 +327,7 @@ object VecInit {
     */
   def tabulate[T <: Data](n: Int)(gen: (Int) => T): Vec[T] = macro VecTransform.tabulate
 
+  /** @group SourceInfoTransformMacro */
   def do_tabulate[T <: Data](n: Int)(gen: (Int) => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
     apply((0 until n).map(i => gen(i)))
 }
@@ -324,9 +335,10 @@ object VecInit {
 /** A trait for [[Vec]]s containing common hardware generators for collection
   * operations.
   */
-trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
+trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId with SourceInfoDoc {
   def apply(p: UInt): T = macro CompileOptionsTransform.pArg
 
+  /** @group SourceInfoTransformMacro */
   def do_apply(p: UInt)(implicit compileOptions: CompileOptions): T
 
   // IndexedSeq has its own hashCode/equals that we must not use
@@ -347,6 +359,7 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
     */
   def forall(p: T => Bool): Bool = macro SourceInfoTransform.pArg
 
+  /** @group SourceInfoTransformMacro */
   def do_forall(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
     (this map p).fold(true.B)(_ && _)
 
@@ -354,6 +367,7 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
     */
   def exists(p: T => Bool): Bool = macro SourceInfoTransform.pArg
 
+  /** @group SourceInfoTransformMacro */
   def do_exists(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
     (this map p).fold(false.B)(_ || _)
 
@@ -362,6 +376,7 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
     */
   def contains(x: T)(implicit ev: T <:< UInt): Bool = macro VecTransform.contains
 
+  /** @group SourceInfoTransformMacro */
   def do_contains(x: T)(implicit sourceInfo: SourceInfo, ev: T <:< UInt, compileOptions: CompileOptions): Bool =
     this.exists(_ === x)
 
@@ -369,6 +384,7 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
     */
   def count(p: T => Bool): UInt = macro SourceInfoTransform.pArg
 
+  /** @group SourceInfoTransformMacro */
   def do_count(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     SeqUtils.count(this map p)
 
@@ -381,6 +397,7 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
     */
   def indexWhere(p: T => Bool): UInt = macro SourceInfoTransform.pArg
 
+  /** @group SourceInfoTransformMacro */
   def do_indexWhere(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     SeqUtils.priorityMux(indexWhereHelper(p))
 
@@ -388,6 +405,7 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
     */
   def lastIndexWhere(p: T => Bool): UInt = macro SourceInfoTransform.pArg
 
+  /** @group SourceInfoTransformMacro */
   def do_lastIndexWhere(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     SeqUtils.priorityMux(indexWhereHelper(p).reverse)
 
@@ -403,6 +421,7 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId {
     */
   def onlyIndexWhere(p: T => Bool): UInt = macro SourceInfoTransform.pArg
 
+  /** @group SourceInfoTransformMacro */
   def do_onlyIndexWhere(p: T => Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     SeqUtils.oneHotMux(indexWhereHelper(p))
 }
@@ -473,6 +492,21 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
   def toPrintable: Printable = toPrintableHelper(elements.toList)
 }
 
+/**
+  * Mix-in for Bundles that have arbitrary Seqs of Chisel types that aren't
+  * involved in hardware construction.
+  *
+  * Used to avoid raising an error/exception when a Seq is a public member of the
+  * bundle.
+  * This is useful if we those public Seq fields in the Bundle are unrelated to
+  * hardware construction.
+  */
+trait IgnoreSeqInBundle {
+  this: Bundle =>
+
+  override def ignoreSeq: Boolean = true
+}
+
 class AutoClonetypeException(message: String) extends ChiselException(message, null)
 
 /** Base class for data types defined as a bundle of other data types.
@@ -533,17 +567,38 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     val nameMap = LinkedHashMap[String, Data]()
     val seen = HashSet[Data]()
     for (m <- getPublicFields(classOf[Bundle])) {
-      getBundleField(m) foreach { d =>
-        if (nameMap contains m.getName) {
-          require(nameMap(m.getName) eq d)
-        } else if (!seen(d)) {
-          nameMap(m.getName) = d
-          seen += d
-        }
+      getBundleField(m) match {
+        case Some(d: Data) =>
+          if (nameMap contains m.getName) {
+            require(nameMap(m.getName) eq d)
+          } else if (!seen(d)) {
+            nameMap(m.getName) = d
+            seen += d
+          }
+        case None =>
+          if (!ignoreSeq) {
+            m.invoke(this) match {
+              case s: scala.collection.Seq[Any] if s.nonEmpty => s.head match {
+                // Ignore empty Seq()
+                case d: Data => throwException("Public Seq members cannot be used to define Bundle elements " +
+                  s"(found public Seq member '${m.getName}'). " +
+                  "Either use a Vec if all elements are of the same type, or MixedVec if the elements " +
+                  "are of different types. If this Seq member is not intended to construct RTL, mix in the trait " +
+                  "IgnoreSeqInBundle.")
+                case _ => // don't care about non-Data Seq
+              }
+              case _ => // not a Seq
+            }
+          }
       }
     }
     ListMap(nameMap.toSeq sortWith { case ((an, a), (bn, b)) => (a._id > b._id) || ((a eq b) && (an > bn)) }: _*)
   }
+
+  /**
+    * Overridden by [[IgnoreSeqInBundle]] to allow arbitrary Seqs of Chisel elements.
+    */
+  def ignoreSeq: Boolean = false
 
   /** Returns a field's contained user-defined Bundle element if it appears to
     * be one, otherwise returns None.
@@ -736,7 +791,7 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     // (which could lead to data conflicts, since it's likely the user didn't know to re-bind them).
     // This is not guaranteed to catch all cases (for example, Data in Tuples or Iterables).
     val boundDataParamNames = ctorParamsNameVals.collect {
-      case (paramName, paramVal: Data) if paramVal.hasBinding => paramName
+      case (paramName, paramVal: Data) if paramVal.topBindingOpt.isDefined => paramName
     }
     if (boundDataParamNames.nonEmpty) {
       autoClonetypeError(s"constructor parameters (${boundDataParamNames.sorted.mkString(", ")}) have values that are hardware types, which is likely to cause subtle errors." +
