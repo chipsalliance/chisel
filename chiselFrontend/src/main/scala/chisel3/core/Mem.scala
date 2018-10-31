@@ -8,6 +8,7 @@ import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform, UnlocatableSourceInfo, MemTransform}
+import chisel3.SourceInfoDoc
 
 object Mem {
   @chiselRuntimeDeprecated
@@ -20,6 +21,8 @@ object Mem {
     * @param t data type of memory element
     */
   def apply[T <: Data](size: Int, t: T): Mem[T] = macro MemTransform.apply[T]
+
+  /** @group SourceInfoTransformMacro */
   def do_apply[T <: Data](size: Int, t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Mem[T] = {
     if (compileOptions.declaredTypeMustBeUnbound) {
       requireIsChiselType(t, "memory type")
@@ -31,7 +34,7 @@ object Mem {
   }
 }
 
-sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId with NamedComponent {
+sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId with NamedComponent with SourceInfoDoc {
   // REVIEW TODO: make accessors (static/dynamic, read/write) combinations consistent.
 
   /** Creates a read accessor into the memory with static addressing. See the
@@ -39,6 +42,7 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId wi
     */
   def apply(x: Int): T = macro SourceInfoTransform.xArg
 
+  /** @group SourceInfoTransformMacro */
   def do_apply(idx: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     require(idx >= 0 && idx < length)
     apply(idx.asUInt)
@@ -49,6 +53,7 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId wi
     */
   def apply(x: UInt): T = macro SourceInfoTransform.xArg
 
+  /** @group SourceInfoTransformMacro */
   def do_apply(idx: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
     makePort(sourceInfo, idx, MemPortDirection.INFER)
 
@@ -57,6 +62,7 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId wi
     */
   def read(x: UInt): T = macro SourceInfoTransform.xArg
 
+  /** @group SourceInfoTransformMacro */
   def do_read(idx: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
     makePort(sourceInfo, idx, MemPortDirection.READ)
 
@@ -130,6 +136,7 @@ object SyncReadMem {
     */
   def apply[T <: Data](size: Int, t: T): SyncReadMem[T] = macro MemTransform.apply[T]
 
+  /** @group SourceInfoTransformMacro */
   def do_apply[T <: Data](size: Int, t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SyncReadMem[T] = {
     if (compileOptions.declaredTypeMustBeUnbound) {
       requireIsChiselType(t, "memory type")
@@ -154,6 +161,7 @@ object SyncReadMem {
 sealed class SyncReadMem[T <: Data] private (t: T, n: Int) extends MemBase[T](t, n) {
   def read(x: UInt, en: Bool): T = macro SourceInfoTransform.xEnArg
 
+  /** @group SourceInfoTransformMacro */
   def do_read(addr: UInt, enable: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     val a = Wire(UInt())
     a := DontCare

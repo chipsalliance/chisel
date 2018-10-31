@@ -46,21 +46,21 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   val Clock = chisel3.core.Clock
   type Clock = chisel3.core.Clock
 
-  implicit class AddDirectionToData[T<:Data](val target: T) extends AnyVal {
+  implicit class AddDirectionToData[T<:Data](target: T) {
     @chiselRuntimeDeprecated
     @deprecated("Input(Data) should be used over Data.asInput", "chisel3")
     def asInput: T = Input(target)
-    
+
     @chiselRuntimeDeprecated
     @deprecated("Output(Data) should be used over Data.asOutput", "chisel3")
     def asOutput: T = Output(target)
-    
+
     @chiselRuntimeDeprecated
     @deprecated("Flipped(Data) should be used over Data.flip", "chisel3")
     def flip(): T = Flipped(target)
   }
 
-  implicit class fromBitsable[T <: Data](val data: T) {
+  implicit class fromBitsable[T <: Data](data: T) {
     import chisel3.core.CompileOptions
     import chisel3.internal.sourceinfo.SourceInfo
 
@@ -71,7 +71,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     }
   }
 
-  implicit class cloneTypeable[T <: Data](val target: T) extends AnyVal {
+  implicit class cloneTypeable[T <: Data](target: T) {
     @chiselRuntimeDeprecated
     @deprecated("chiselCloneType is deprecated, use chiselTypeOf(...) to get the Chisel Type of a hardware object", "chisel3")
     def chiselCloneType: T = {
@@ -119,6 +119,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   type Vec[T <: Data] = chisel3.core.Vec[T]
   type VecLike[T <: Data] = chisel3.core.VecLike[T]
   type Bundle = chisel3.core.Bundle
+  type IgnoreSeqInBundle = chisel3.core.IgnoreSeqInBundle
   type Record = chisel3.core.Record
 
   val assert = chisel3.core.assert
@@ -151,7 +152,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     @chiselRuntimeDeprecated
     @deprecated("use n.U", "chisel3, will be removed by end of 2017")
     def apply(n: String): UInt = n.asUInt
-    
+
     /** Create a UInt literal with fixed width. */
     @chiselRuntimeDeprecated
     @deprecated("use n.U(width.W)", "chisel3, will be removed by end of 2017")
@@ -191,7 +192,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     @chiselRuntimeDeprecated
     @deprecated("use SInt(width.W)", "chisel3, will be removed by end of 2017")
     def width(width: Int): SInt = apply(width.W)
-    
+
     /** Create an SInt type with specified width. */
     @chiselRuntimeDeprecated
     @deprecated("use SInt(width)", "chisel3, will be removed by end of 2017")
@@ -201,7 +202,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     @chiselRuntimeDeprecated
     @deprecated("use value.S", "chisel3, will be removed by end of 2017")
     def apply(value: BigInt): SInt = value.asSInt
-    
+
     /** Create an SInt literal with fixed width. */
     @chiselRuntimeDeprecated
     @deprecated("use value.S(width.W)", "chisel3, will be removed by end of 2017")
@@ -244,6 +245,8 @@ package object chisel3 {    // scalastyle:ignore package.object.name
 
   type BlackBox = chisel3.core.BlackBox
 
+  type InstanceId = chisel3.internal.InstanceId
+
   val Mem = chisel3.core.Mem
   type MemBase[T <: Data] = chisel3.core.MemBase[T]
   type Mem[T <: Data] = chisel3.core.Mem[T]
@@ -254,7 +257,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   val SeqMem = chisel3.core.SyncReadMem
   @deprecated("Use 'SyncReadMem'", "chisel3")
   type SeqMem[T <: Data] = chisel3.core.SyncReadMem[T]
-  
+
   val Module = chisel3.core.Module
   type Module = chisel3.core.LegacyModule
 
@@ -355,27 +358,29 @@ package object chisel3 {    // scalastyle:ignore package.object.name
 
   implicit def string2Printable(str: String): Printable = PString(str)
 
-  implicit class fromBigIntToLiteral(val x: BigInt) extends chisel3.core.fromBigIntToLiteral(x)
-  implicit class fromtIntToLiteral(val x: Int) extends chisel3.core.fromIntToLiteral(x)
-  implicit class fromtLongToLiteral(val x: Long) extends chisel3.core.fromLongToLiteral(x)
-  implicit class fromStringToLiteral(val x: String) extends chisel3.core.fromStringToLiteral(x)
-  implicit class fromBooleanToLiteral(val x: Boolean) extends chisel3.core.fromBooleanToLiteral(x)
-  implicit class fromDoubleToLiteral(val x: Double) extends chisel3.core.fromDoubleToLiteral(x)
-  implicit class fromIntToWidth(val x: Int) extends chisel3.core.fromIntToWidth(x)
-  implicit class fromIntToBinaryPoint(val x: Int) extends chisel3.core.fromIntToBinaryPoint(x)
+  implicit class fromBigIntToLiteral(x: BigInt) extends chisel3.core.fromBigIntToLiteral(x)
+  implicit class fromtIntToLiteral(x: Int) extends chisel3.core.fromIntToLiteral(x)
+  implicit class fromtLongToLiteral(x: Long) extends chisel3.core.fromLongToLiteral(x)
+  implicit class fromStringToLiteral(x: String) extends chisel3.core.fromStringToLiteral(x)
+  implicit class fromBooleanToLiteral(x: Boolean) extends chisel3.core.fromBooleanToLiteral(x)
+  implicit class fromDoubleToLiteral(x: Double) extends chisel3.core.fromDoubleToLiteral(x)
+  implicit class fromIntToWidth(x: Int) extends chisel3.core.fromIntToWidth(x)
+  implicit class fromIntToBinaryPoint(x: Int) extends chisel3.core.fromIntToBinaryPoint(x)
 
-  implicit class fromUIntToBitPatComparable(val x: UInt) {
+  implicit class fromUIntToBitPatComparable(x: UInt) extends chisel3.SourceInfoDoc {
     import scala.language.experimental.macros
     import internal.sourceinfo.{SourceInfo, SourceInfoTransform}
 
     final def === (that: BitPat): Bool = macro SourceInfoTransform.thatArg
     final def =/= (that: BitPat): Bool = macro SourceInfoTransform.thatArg
 
+    /** @group SourceInfoTransformMacro */
     def do_=== (that: BitPat)  // scalastyle:ignore method.name
         (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that === x
+    /** @group SourceInfoTransformMacro */
     def do_=/= (that: BitPat)  // scalastyle:ignore method.name
         (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that =/= x
-        
+
     final def != (that: BitPat): Bool = macro SourceInfoTransform.thatArg
     @chiselRuntimeDeprecated
     @deprecated("Use '=/=', which avoids potential precedence problems", "chisel3")
@@ -414,6 +419,9 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     type Analog = chisel3.core.Analog
     val Analog = chisel3.core.Analog
     val attach = chisel3.core.attach
+
+    type ChiselEnum = chisel3.core.EnumFactory
+    val EnumAnnotations = chisel3.core.EnumAnnotations
 
     val withClockAndReset = chisel3.core.withClockAndReset
     val withClock = chisel3.core.withClock

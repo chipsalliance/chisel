@@ -37,8 +37,8 @@ lazy val commonSettings = Seq (
   version := "3.2-SNAPSHOT",
   git.remoteRepo := "git@github.com:freechipsproject/chisel3.git",
   autoAPIMappings := true,
-  scalaVersion := "2.11.12",
-  crossScalaVersions := Seq("2.11.12", "2.12.4"),
+  scalaVersion := "2.12.6",
+  crossScalaVersions := Seq("2.12.6", "2.11.12"),
   scalacOptions := Seq("-deprecation", "-feature") ++ scalacOptionsVersion(scalaVersion.value),
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
@@ -57,12 +57,11 @@ lazy val commonSettings = Seq (
   }
 )
 
-lazy val chiselSettings = Seq (
-  name := "chisel3",
-
+lazy val publishSettings = Seq (
   publishMavenStyle := true,
   publishArtifact in Test := false,
   pomIncludeRepository := { x => false },
+  // Don't add 'scm' elements if we have a git.remoteRepo definition.
   pomExtra := <url>http://chisel.eecs.berkeley.edu/</url>
     <licenses>
       <license>
@@ -71,10 +70,6 @@ lazy val chiselSettings = Seq (
         <distribution>repo</distribution>
       </license>
     </licenses>
-    <scm>
-      <url>https://github.com/freechipsproject/chisel3.git</url>
-      <connection>scm:git:github.com/freechipsproject/chisel3.git</connection>
-    </scm>
     <developers>
       <developer>
         <id>jackbackrack</id>
@@ -92,17 +87,16 @@ lazy val chiselSettings = Seq (
     else {
       Some("releases" at nexus + "service/local/staging/deploy/maven2")
     }
-  },
+  }
+)
 
-  resolvers ++= Seq(
-    Resolver.sonatypeRepo("snapshots"),
-    Resolver.sonatypeRepo("releases")
-  ),
+lazy val chiselSettings = Seq (
+  name := "chisel3",
 
   libraryDependencies ++= Seq(
     "org.scalatest" %% "scalatest" % "3.0.1" % "test",
     "org.scalacheck" %% "scalacheck" % "1.13.4" % "test",
-    "com.github.scopt" %% "scopt" % "3.6.0"
+    "com.github.scopt" %% "scopt" % "3.7.0"
   ),
 
   // Tests from other projects may still run concurrently.
@@ -145,6 +139,7 @@ lazy val chisel = (project in file(".")).
   ).
   settings(commonSettings: _*).
   settings(chiselSettings: _*).
+  settings(publishSettings: _*).
   // Prevent separate JARs from being generated for coreMacros and chiselFrontend.
   dependsOn(coreMacros % "compile-internal;test-internal").
   dependsOn(chiselFrontend % "compile-internal;test-internal").
@@ -152,6 +147,8 @@ lazy val chisel = (project in file(".")).
     scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
     scalacOptions in Compile in doc ++= Seq(
       "-diagrams",
+      "-groups",
+      "-skip-packages", "chisel3.internal",
       "-diagrams-max-classes", "25",
       "-doc-version", version.value,
       "-doc-title", name.value,

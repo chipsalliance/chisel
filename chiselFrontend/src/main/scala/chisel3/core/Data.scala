@@ -7,7 +7,8 @@ import scala.language.experimental.macros
 import chisel3.internal._
 import chisel3.internal.Builder.{pushCommand, pushOp}
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo._
+import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform, UnlocatableSourceInfo, DeprecatedSourceInfo}
+import chisel3.SourceInfoDoc
 import chisel3.core.BiConnect.DontCareCantBeSink
 
 /** User-specified directions.
@@ -85,6 +86,10 @@ object DataMirror {
     requireIsHardware(target, "node requested directionality on")
     target.direction
   }
+
+  // TODO: maybe move to something like Driver or DriverUtils, since this is mainly for interacting
+  // with compiled artifacts (vs. elaboration-time reflection)?
+  def modulePorts(target: BaseModule): Seq[(String, Data)] = target.getChiselPorts
 
   // Internal reflection-style APIs, subject to change and removal whenever.
   object internal {
@@ -197,8 +202,11 @@ object Flipped {
   * must be representable as some number (need not be known at Chisel compile
   * time) of bits, and must have methods to pack / unpack structured data to /
   * from bits.
+  *
+  * @groupdesc Connect Utilities for connecting hardware components
+  * @define coll data
   */
-abstract class Data extends HasId with NamedComponent {
+abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   // This is a bad API that punches through object boundaries.
   @deprecated("pending removal once all instances replaced", "chisel3")
   private[chisel3] def flatten: IndexedSeq[Element] = {
@@ -381,7 +389,22 @@ abstract class Data extends HasId with NamedComponent {
     clone
   }
 
+  /** Connect this $coll to that $coll mono-directionally and element-wise.
+    *
+    * This uses the [[MonoConnect]] algorithm.
+    *
+    * @param that the $coll to connect to
+    * @group Connect
+    */
   final def := (that: Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = this.connect(that)(sourceInfo, connectionCompileOptions)
+
+  /** Connect this $coll to that $coll bi-directionally and element-wise.
+    *
+    * This uses the [[BiConnect]] algorithm.
+    *
+    * @param that the $coll to connect to
+    * @group Connect
+    */
   final def <> (that: Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = this.bulkConnect(that)(sourceInfo, connectionCompileOptions)
 
   @chiselRuntimeDeprecated
@@ -432,6 +455,7 @@ abstract class Data extends HasId with NamedComponent {
     */
   def asTypeOf[T <: Data](that: T): T = macro SourceInfoTransform.thatArg
 
+  /** @group SourceInfoTransformMacro */
   def do_asTypeOf[T <: Data](that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     val thatCloned = Wire(that.cloneTypeFull)
     thatCloned.connectFromBits(this.asUInt())
@@ -452,6 +476,7 @@ abstract class Data extends HasId with NamedComponent {
     */
   final def asUInt(): UInt = macro SourceInfoTransform.noArg
 
+  /** @group SourceInfoTransformMacro */
   def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt
 
   /** Default pretty printing */
@@ -508,9 +533,11 @@ object WireInit {
 /** RHS (source) for Invalidate API.
   * Causes connection logic to emit a DefInvalid when connected to an output port (or wire).
   */
-object DontCare extends Element(width = UnknownWidth()) {
+object DontCare extends Element {
   // This object should be initialized before we execute any user code that refers to it,
   //  otherwise this "Chisel" object will end up on the UserModule's id list.
+
+  private[chisel3] override val width: Width = UnknownWidth()
 
   bind(DontCareBinding(), SpecifiedDirection.Output)
   override def cloneType = DontCare
