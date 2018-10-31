@@ -39,14 +39,6 @@ jobs:
           ls -l
           git clone --depth 10 --branch $FIRRTL_BRANCH "$FIRRTL_REPO" firrtl && (cd firrtl && git checkout $FIRRTL_REV)
           echo $FIRRTL_REV && (cd firrtl && git log -1 > ../firrtl.log)
-          # git clone --depth 10 "$CIRCLE_REPOSITORY_URL" chisel3 && (cd chisel3 && git checkout $CHISEL_REV && git reset --hard "$CIRCLE_SHA1")
-
-    # Download and cache dependencies
-    - restore_cache:
-        keys:
-        - v1-dependencies-{{ .Branch }}-{{ .Revision }}-{{ checksum "firrtl.log" }}
-        # fallback to using the latest cache if no exact match is found
-        - v1-dependencies-
 
     - save_cache:
         paths:
@@ -63,7 +55,6 @@ jobs:
         - .sbt
         - .ssh
         - repo
-        - firrtl.log
 
   build-firrtl:
     <<: *defaultImageUserWDEnv
@@ -99,7 +90,6 @@ jobs:
         - .sbt
         - .ssh
         - repo
-        - firrtl.log
 
   build-chisel:
     <<: *defaultImageUserWDEnv
@@ -131,7 +121,6 @@ jobs:
         - .sbt
         - .ssh
         - repo
-        - firrtl.log
 
   test-chisel:
     <<: *defaultImageUserWDEnv
