@@ -17,7 +17,7 @@ defaultImageUserWDEnv: &defaultImageUserWDEnv
     FIRRTL_REPO: git@github.com:freechipsproject/firrtl.git
     FIRRTL_BRANCH: master
     FIRRTL_REV: master
-    SBT_ARGS: "-Dsbt.log.noformat=true"
+    SBT_ARGS: ""
 
 
 version: 2
@@ -43,17 +43,14 @@ jobs:
     - save_cache:
         paths:
         - ~/.m2
-        - ~/.ivy2/cache
+        - ~/.ivy2
         - ~/.sbt
+        - ~/.ssh
         key: v1-dependencies-{{ .Branch }}-{{ .Revision }}-{{ checksum "firrtl.log" }}
 
     - persist_to_workspace:
         root: /home/chisel
         paths:
-        - .m2
-        - .ivy2/local
-        - .sbt
-        - .ssh
         - repo
 
   build-firrtl:
@@ -78,17 +75,14 @@ jobs:
     - save_cache:
         paths:
         - ~/.m2
-        - ~/.ivy2/cache
+        - ~/.ivy2
         - ~/.sbt
+        - ~/.ssh
         key: v1-dependencies-{{ .Branch }}-{{ .Revision }}-{{ checksum "firrtl.log" }}
 
     - persist_to_workspace:
         root: /home/chisel
         paths:
-        - .m2
-        - .ivy2/local
-        - .sbt
-        - .ssh
         - repo
 
   build-chisel:
@@ -110,16 +104,13 @@ jobs:
     - save_cache:
         paths:
         - ~/.m2
-        - ~/.ivy2/cache
+        - ~/.ivy2
         - ~/.sbt
+        - ~/.ssh
         key: v1-dependencies-{{ .Branch }}-{{ .Revision }}-{{ checksum "firrtl.log" }}
     - persist_to_workspace:
         root: /home/chisel
         paths:
-        - .m2
-        - .ivy2/local
-        - .sbt
-        - .ssh
         - repo
 
   test-chisel:
