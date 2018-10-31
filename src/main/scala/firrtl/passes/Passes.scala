@@ -125,13 +125,13 @@ object ExpandConnects extends Pass {
           case sx: DefMemory => genders(sx.name) = MALE; sx
           case sx: DefNode => genders(sx.name) = MALE; sx
           case sx: IsInvalid =>
-            val invalids = (create_exps(sx.expr) foldLeft Seq[Statement]())(
-               (invalids,  expx) => gender(set_gender(expx)) match {
-                  case BIGENDER => invalids :+ IsInvalid(sx.info, expx)
-                  case FEMALE => invalids :+ IsInvalid(sx.info, expx)
-                  case _ => invalids
+            val invalids = create_exps(sx.expr).flatMap { case expx =>
+               gender(set_gender(expx)) match {
+                  case BIGENDER => Some(IsInvalid(sx.info, expx))
+                  case FEMALE => Some(IsInvalid(sx.info, expx))
+                  case _ => None
                }
-            )
+            }
             invalids.size match {
                case 0 => EmptyStmt
                case 1 => invalids.head
