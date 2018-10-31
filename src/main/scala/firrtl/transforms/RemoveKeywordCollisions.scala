@@ -65,9 +65,9 @@ class RemoveKeywordCollisions(keywords: Set[String]) extends Transform {
     }
 
     namedx match {
-      case ComponentName(n, _) :: Nil => n
-      case ModuleName(n, _)    :: Nil => n
-      case CircuitName(n)      :: Nil => n
+      case Seq(ComponentName(n, _)) => n
+      case Seq(ModuleName(n, _))    => n
+      case Seq(CircuitName(n))      => n
       case x => throw new PassException(
         s"Verilog renaming shouldn't result in multiple renames, but found '$named -> $namedx'")
     }
@@ -189,7 +189,7 @@ class RemoveKeywordCollisions(keywords: Set[String]) extends Transform {
 
     // Rename the circuit if the top module was renamed
     val mainx = renames.get(ModuleName(c.main, CircuitName(c.main))) match {
-      case Some(ModuleName(m, _) :: Nil) =>
+      case Some(Seq(ModuleName(m, _))) =>
         renames.rename(CircuitName(c.main), CircuitName(m))
         m
       case x@ Some(_) => throw new PassException(
