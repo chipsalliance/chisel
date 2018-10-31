@@ -15,7 +15,8 @@ defaultImageUserWDEnv: &defaultImageUserWDEnv
     TERM: dumb
     CHISEL_REV: origin/master
     FIRRTL_REPO: git@github.com:freechipsproject/firrtl.git
-    FIRRTL_REV: origin/master
+    FIRRTL_BRANCH: master
+    FIRRTL_REV: master
     SBT_ARGS: "-Dsbt.log.noformat=true"
 
 
@@ -34,7 +35,7 @@ jobs:
         command: |
           date > date.prep
           printenv
-          git clone --depth 10 --branch $CIRCLE_BRANCH "$FIRRTL_REPO" firrtl && (cd firrtl && git checkout $FIRRTL_REV)
+          git clone --depth 10 --branch $FIRRTL_BRANCH "$FIRRTL_REPO" firrtl && (cd firrtl && git checkout $FIRRTL_REV)
           echo $FIRRTL_REV && (cd firrtl && git log -1 > ../firrtl.log)
           # git clone --depth 10 "$CIRCLE_REPOSITORY_URL" chisel3 && (cd chisel3 && git checkout $CHISEL_REV && git reset --hard "$CIRCLE_SHA1")
 
