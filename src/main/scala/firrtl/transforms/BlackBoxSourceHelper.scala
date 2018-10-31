@@ -106,7 +106,9 @@ class BlackBoxSourceHelper extends firrtl.Transform {
       file
     }
 
-    BlackBoxSourceHelper.writeFileList(resourceFiles ++ inlineFiles, targetDir)
+    // Issue #917 - We don't want to list Verilog header files ("*.vh") in our file list - they will automatically be included by reference.
+    val verilogSourcesOnly = (resourceFiles ++ inlineFiles).filterNot( _.getName().endsWith(".vh"))
+    BlackBoxSourceHelper.writeFileList(verilogSourcesOnly, targetDir)
 
     state
   }

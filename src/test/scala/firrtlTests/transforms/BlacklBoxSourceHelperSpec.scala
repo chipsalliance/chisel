@@ -106,6 +106,39 @@ class BlacklBoxSourceHelperTransformSpec extends LowTransformSpec {
     verilogCompiler.transforms.map { x => x.getClass } should contain (classOf[BlackBoxSourceHelper])
   }
 
+  "verilog header files" should "be available but not mentioned in the file list" in {
+    // Issue #917 - We don't want to list Verilog header files ("*.vh") in our file list.
+    // We don't actually verify that the generated verilog code works,
+    //  we just ensure that the correct files end up where they're expected.
+
+    // We're taking the liberty of recycling the above code with a few minor edits to change the external module name.
+    val sourceModuleName = "AdderExtModule"
+    val replacedModuleName = "ParameterizedViaHeaderAdderExtModule"
+    val pInput = input.replaceAll(sourceModuleName, replacedModuleName)
+    val pOutput = output.replaceAll(sourceModuleName, replacedModuleName)
+
+    // We'll copy the following resources to the test_run_dir via BlackBoxResourceAnno's
+    val resourceNames = Seq("ParameterizedViaHeaderAdderExtModule.v", "VerilogHeaderFile.vh")
+
+    val annos = Seq(
+      BlackBoxTargetDirAnno("test_run_dir")) ++ resourceNames.map{ n => BlackBoxResourceAnno(moduleName, "/blackboxes/" + n)}
+
+    execute(pInput, pOutput, annos)
+
+    // Our resource files should exist in the test_run_dir,
+    for (n <- resourceNames)
+      new java.io.File("test_run_dir/" + n).exists should be (true)
+
+    //  but our file list should not include the verilog header file.
+    val fileListFile = new java.io.File(s"test_run_dir/${BlackBoxSourceHelper.fileListName}")
+    fileListFile.exists should be (true)
+    val fileListFileSource = io.Source.fromFile(fileListFile)
+    val fileList = fileListFileSource.getLines.mkString
+    fileListFileSource.close()
+    fileList.contains("ParameterizedViaHeaderAdderExtModule.v") should be (true)
+    fileList.contains("VerilogHeaderFile.vh") should be (false)
+  }
+
   behavior of "BlackBox resources that do not exist"
 
   it should "provide a useful error message for BlackBoxResourceAnno" in {
