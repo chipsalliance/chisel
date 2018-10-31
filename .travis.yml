@@ -17,6 +17,11 @@ env:
     PATH=$PATH:$VERILATOR_ROOT/bin:$TRAVIS_BUILD_DIR/utils/bin
     SBT_ARGS="-Dsbt.log.noformat=true"
 
+before_script:
+  - OLDEST_SHARED=`git log --format=%H $TRAVIS_COMMIT_RANGE | tail -n1`
+  - OLDEST_COMMIT=`git log --format=%H | tail -n1`
+  - if [ $OLDEST_SHARED == $OLDEST_COMMIT ]; then git fetch --unshallow; fi
+
 stages:
   - prepare
   - test
