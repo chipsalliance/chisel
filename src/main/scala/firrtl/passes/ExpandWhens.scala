@@ -206,12 +206,12 @@ object ExpandWhens extends Pass {
   private def getFemaleRefs(n: String, t: Type, g: Gender): Seq[Expression] = {
     def getGender(t: Type, i: Int, g: Gender): Gender = times(g, get_flip(t, i, Default))
     val exps = create_exps(WRef(n, t, ExpKind, g))
-    (exps.zipWithIndex foldLeft Seq[Expression]()){
-      case (expsx, (exp, j)) => exp.tpe match {
-        case AnalogType(w) => expsx
+    exps.zipWithIndex.flatMap { case (exp, j) =>
+      exp.tpe match {
+        case AnalogType(w) => None
         case _ => getGender(t, j, g) match {
-          case (BIGENDER | FEMALE) => expsx :+ exp
-          case _ => expsx
+          case (BIGENDER | FEMALE) => Some(exp)
+          case _ => None
         }
       }
     }
