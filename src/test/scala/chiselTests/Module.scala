@@ -62,6 +62,19 @@ class ModuleRewrap extends Module {
   val inst2 = Module(inst)
 }
 
+class ModuleWrapper(gen: => Module) extends Module {
+  val io = IO(new Bundle{})
+  val child = Module(gen)
+  override val desiredName = s"${child.desiredName}Wrapper"
+}
+
+class NullModuleWrapper extends Module {
+  val io = IO(new Bundle{})
+  override lazy val desiredName = s"${child.desiredName}Wrapper"
+  println(s"My name is ${name}")
+  val child = Module(new ModuleWire)
+}
+
 class ModuleSpec extends ChiselPropSpec {
 
   property("ModuleVec should elaborate") {
@@ -137,5 +150,12 @@ class ModuleSpec extends ChiselPropSpec {
           "clock" -> m.clock, "reset" -> m.reset,
           "a" -> m.a, "b" -> m.b))
     })
+  }
+  property("A desiredName parameterized by a submodule should work") {
+    Driver.elaborate(() => new ModuleWrapper(new ModuleWire)).name should be ("ModuleWireWrapper")
+  }
+  property("A name generating a null pointer exception should provide a good error message") {
+    (the [Exception] thrownBy (Driver.elaborate(() => new NullModuleWrapper)))
+      .getMessage should include ("desiredName of chiselTests.NullModuleWrapper is null")
   }
 }
