@@ -42,9 +42,6 @@ jobs:
 
     - save_cache:
         paths:
-        - ~/.m2
-        - ~/.ivy2
-        - ~/.sbt
         - ~/.ssh
         key: v1-dependencies-{{ .Branch }}-{{ .Revision }}-{{ checksum "firrtl.log" }}
 
@@ -52,6 +49,9 @@ jobs:
         root: /home/chisel
         paths:
         - repo
+        - .ivy2
+        - .m2
+        - .sbt
 
   build-firrtl:
     <<: *defaultImageUserWDEnv
@@ -72,18 +72,13 @@ jobs:
           date > date.firrtl
           (cd firrtl && cat /dev/null | sbt $SBT_ARGS +publishLocal)
 
-    - save_cache:
-        paths:
-        - ~/.m2
-        - ~/.ivy2
-        - ~/.sbt
-        - ~/.ssh
-        key: v1-dependencies-{{ .Branch }}-{{ .Revision }}-{{ checksum "firrtl.log" }}
-
     - persist_to_workspace:
         root: /home/chisel
         paths:
         - repo
+        - .ivy2
+        - .m2
+        - .sbt
 
   build-chisel:
     <<: *defaultImageUserWDEnv
@@ -101,17 +96,13 @@ jobs:
     # publish chisel
     - run: date > date.chisel3 && (cd chisel3 && sbt $SBT_ARGS +publishLocal)
 
-    - save_cache:
-        paths:
-        - ~/.m2
-        - ~/.ivy2
-        - ~/.sbt
-        - ~/.ssh
-        key: v1-dependencies-{{ .Branch }}-{{ .Revision }}-{{ checksum "firrtl.log" }}
     - persist_to_workspace:
         root: /home/chisel
         paths:
         - repo
+        - .ivy2
+        - .m2
+        - .sbt
 
   test-chisel:
     <<: *defaultImageUserWDEnv
