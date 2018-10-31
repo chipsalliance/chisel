@@ -4,6 +4,7 @@ package transforms
 
 import firrtl.annotations._
 import firrtl.passes.PassException
+import firrtl.transforms
 
 /** Indicate that DCE should not be run */
 case object NoDCEAnnotation extends NoTargetAnnotation
@@ -12,13 +13,14 @@ case object NoDCEAnnotation extends NoTargetAnnotation
   *
   * DCE treats the component as a top-level sink of the circuit
   */
-case class DontTouchAnnotation(target: ComponentName) extends SingleTargetAnnotation[ComponentName] {
-  def duplicate(n: ComponentName) = this.copy(n)
+case class DontTouchAnnotation(target: ReferenceTarget) extends SingleTargetAnnotation[ReferenceTarget] {
+  def targets = Seq(target)
+  def duplicate(n: ReferenceTarget) = this.copy(n)
 }
 
 object DontTouchAnnotation {
   class DontTouchNotFoundException(module: String, component: String) extends PassException(
-    s"Component marked dontTouch ($module.$component) not found!\n" +
+    s"Target marked dontTouch ($module.$component) not found!\n" +
     "It was probably accidentally deleted. Please check that your custom transforms are not" +
     "responsible and then file an issue on Github."
   )

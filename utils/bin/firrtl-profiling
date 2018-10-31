@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# This may be a brittle way to find $(root_dir)/utils/bin, is there a better way?
+path=`dirname "$0"`
+cmd="java -agentlib:hprof=cpu=samples,depth=100,interval=7,lineno=y,thread=y,file=output.hprof -cp ${path}/firrtl.jar firrtl.Driver ${@:1}"
+eval $cmd
+

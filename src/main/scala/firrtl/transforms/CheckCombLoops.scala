@@ -26,9 +26,9 @@ case object DontCheckCombLoopsAnnotation extends NoTargetAnnotation
 
 case class CombinationalPath(sink: ComponentName, sources: Seq[ComponentName]) extends Annotation {
   override def update(renames: RenameMap): Seq[Annotation] = {
-    val newSources = sources.flatMap { s => renames.get(s).getOrElse(Seq(s)) }
-    val newSinks = renames.get(sink).getOrElse(Seq(sink))
-    newSinks.map(snk => CombinationalPath(snk, newSources))
+    val newSources: Seq[IsComponent] = sources.flatMap { s => renames.get(s).getOrElse(Seq(s.toTarget)) }.collect {case x: IsComponent if x.isLocal => x}
+    val newSinks = renames.get(sink).getOrElse(Seq(sink.toTarget)).collect { case x: IsComponent if x.isLocal => x}
+    newSinks.map(snk => CombinationalPath(snk.toNamed, newSources.map(_.toNamed)))
   }
 }
 

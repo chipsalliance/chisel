@@ -36,7 +36,7 @@ object Uniquify extends Transform {
   def outputForm = UnknownForm
   private case class UniquifyException(msg: String) extends FIRRTLException(msg)
   private def error(msg: String)(implicit sinfo: Info, mname: String) =
-    throw new UniquifyException(s"$sinfo: [module $mname] $msg")
+    throw new UniquifyException(s"$sinfo: [moduleOpt $mname] $msg")
 
   // For creation of rename map
   private case class NameMapNode(name: String, elts: Map[String, NameMapNode])
@@ -45,7 +45,7 @@ object Uniquify extends Transform {
   // We don't add an _ in the collision check because elts could be Seq("")
   //   In this case, we're just really checking if prefix itself collides
   @tailrec
-  private [firrtl] def findValidPrefix(
+  def findValidPrefix(
       prefix: String,
       elts: Seq[String],
       namespace: collection.mutable.HashSet[String]): String = {

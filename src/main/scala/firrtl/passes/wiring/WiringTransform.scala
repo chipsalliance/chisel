@@ -26,7 +26,7 @@ case class SinkAnnotation(target: Named, pin: String) extends
   def duplicate(n: Named) = this.copy(target = n)
 }
 
-/** Wires a Module's Source Component to one or more Sink
+/** Wires a Module's Source Target to one or more Sink
   * Modules/Components
   *
   * Sinks are wired to their closest source through their lowest
