@@ -263,12 +263,12 @@ object InferWidths extends Pass {
           val n = get_size(s.loc.tpe)
           val locs = create_exps(s.loc)
           val exps = create_exps(s.expr)
-          v ++= ((locs zip exps).zipWithIndex flatMap {case ((locx, expx), i) =>
-            get_flip(s.loc.tpe, i, Default) match {
+          v ++= locs.zip(exps).flatMap { case (locx, expx) =>
+            to_flip(gender(locx)) match {
               case Default => get_constraints_t(locx.tpe, expx.tpe)//WGeq(getWidth(locx), getWidth(expx))
               case Flip => get_constraints_t(expx.tpe, locx.tpe)//WGeq(getWidth(expx), getWidth(locx))
             }
-          })
+          }
         case (s: PartialConnect) =>
           val ls = get_valid_points(s.loc.tpe, s.expr.tpe, Default, Default)
           val locs = create_exps(s.loc)
@@ -276,7 +276,7 @@ object InferWidths extends Pass {
           v ++= (ls flatMap {case (x, y) =>
             val locx = locs(x)
             val expx = exps(y)
-            get_flip(s.loc.tpe, x, Default) match {
+            to_flip(gender(locx)) match {
               case Default => get_constraints_t(locx.tpe, expx.tpe)//WGeq(getWidth(locx), getWidth(expx))
               case Flip => get_constraints_t(expx.tpe, locx.tpe)//WGeq(getWidth(expx), getWidth(locx))
             }

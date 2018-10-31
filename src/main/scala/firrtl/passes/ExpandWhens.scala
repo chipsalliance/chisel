@@ -204,12 +204,11 @@ object ExpandWhens extends Pass {
 
   /** Returns all references to all Female leaf subcomponents of a reference */
   private def getFemaleRefs(n: String, t: Type, g: Gender): Seq[Expression] = {
-    def getGender(t: Type, i: Int, g: Gender): Gender = times(g, get_flip(t, i, Default))
     val exps = create_exps(WRef(n, t, ExpKind, g))
-    exps.zipWithIndex.flatMap { case (exp, j) =>
+    exps.flatMap { case exp =>
       exp.tpe match {
         case AnalogType(w) => None
-        case _ => getGender(t, j, g) match {
+        case _ => gender(exp) match {
           case (BIGENDER | FEMALE) => Some(exp)
           case _ => None
         }
