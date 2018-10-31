@@ -2,6 +2,7 @@
 #
 # Check https://circleci.com/docs/2.0/sample-config/ for more details
 #
+# Use the chisel3-tools image to build and run FIRRTL and chisel tests.
 defaultImageUserWDEnv: &defaultImageUserWDEnv
   docker:
   - image: ucbbar/chisel3-tools
