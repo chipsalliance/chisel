@@ -29,7 +29,8 @@ jobs:
     steps:
 
     # Perform a "default" checkout to get ssh set up.
-    - checkout "chisel3"
+    - checkout 
+      path: "chisel3"
 
     - run:
         command: |
