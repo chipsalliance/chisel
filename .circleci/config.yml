@@ -1,0 +1,228 @@
+# Scala CircleCI 2.0 configuration file
+#
+# Check https://circleci.com/docs/2.0/sample-config/ for more details
+#
+defaultImageUserWDEnv: &defaultImageUserWDEnv
+  docker:
+  - image: ucbbar/chisel3-tools
+    user: "chisel"
+
+  working_directory: ~/repo
+
+  environment:
+    # Customize the JVM maximum heap limit
+    JVM_OPTS: -Xmx3200m
+    TERM: dumb
+    CHISEL_REV: origin/master
+    FIRRTL_REPO: git@github.com:freechipsproject/firrtl.git
+    FIRRTL_REV: origin/master
+    SBT_ARGS: "-Dsbt.log.noformat=true"
+
+aliases:
+  # Shallow Clone
+- &checkout-shallow
+  name: Checkout
+  command: |
+    #!/bin/sh
+    set -e
+
+    # Workaround old docker images with incorrect $HOME
+    # check https://github.com/docker/docker/issues/2968 for details
+    if [ "${HOME}" = "/" ]
+    then
+      export HOME=$(getent passwd $(id -un) | cut -d: -f6)
+    fi
+
+    mkdir -p ~/.ssh
+
+    echo 'github.com ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAq2A7hRGmdnm9tUDbO9IDSwBK6TbQa+PXYPCPy6rbTrTtw7PHkccKrpp0yVhp5HdEIcKr6pLlVDBfOLX9QUsyCOV0wzfjIJNlGEYsdlLJizHhbn2mUjvSAHQqZETYP81eFzLQNnPHt4EVVUh7VfDESU84KezmD5QlWpXLmvU31/yMf+Se8xhHTvKSCZIFImWwoG6mbUoWf9nzpIoaSjB+weqqUUmpaaasXVal72J+UX2B+2RPW3RcT0eOzQgqlJL3RKrTJvdsjE3JEAvGq3lGHSZXy28G3skua2SmVi/w4yCE6gbODqnTWlg7+wC604ydGXA8VJiS5ap43JXiUFFAaQ==
+    bitbucket.org ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAubiN81eDcafrgMeLzaFPsw2kNvEcqTKl/VqLat/MaB33pZy0y3rJZtnqwR2qOOvbwKZYKiEO1O6VqNEBxKvJJelCq0dTXWT5pbO2gDXC6h6QDXCaHo6pOHGPUy+YBaGQRGuSusMEASYiWunYN0vCAI8QaXnWMXNMdFP3jHAJH0eDsoiGnLPBlBp4TNm6rYI74nMzgz3B9IikW4WVK+dc8KZJZWYjAuORU3jc1c/NPskD2ASinf8v3xnfXeukU0sJ5N6m5E8VLjObPEO+mN2t/FZTMZLiFqPWc/ALSqnMnnhwrNi2rbfg/rd/IpL8Le3pSBne8+seeFVBoGqzHM9yXw==
+    ' >> ~/.ssh/known_hosts
+
+    (umask 077; touch ~/.ssh/id_rsa)
+    chmod 0600 ~/.ssh/id_rsa
+    (cat <<EOF > ~/.ssh/id_rsa
+    $CHECKOUT_KEY
+    EOF
+    )
+
+    # use git+ssh instead of https
+    git config --global url."ssh://git@github.com".insteadOf "https://github.com" || true
+
+    if [ -e /home/circleci/project/.git ]
+    then
+        cd /home/circleci/project
+        git remote set-url origin "$CIRCLE_REPOSITORY_URL" || true
+    else
+        mkdir -p /home/circleci/project
+        cd /home/circleci/project
+        git clone --depth=1 "$CIRCLE_REPOSITORY_URL" .
+     fi
+
+     if [ -n "$CIRCLE_TAG" ]
+     then
+       git fetch --depth=10 --force origin "refs/tags/${CIRCLE_TAG}"
+     elif [[ "$CIRCLE_BRANCH" =~ ^pull\/* ]]
+     then
+     # For PR from Fork
+       git fetch --depth=10 --force origin "$CIRCLE_BRANCH/head:remotes/origin/$CIRCLE_BRANCH"
+     else
+       git fetch --depth=10 --force origin "$CIRCLE_BRANCH:remotes/origin/$CIRCLE_BRANCH"
+     fi
+
+    if [ -n "$CIRCLE_TAG" ]
+    then
+        git reset --hard "$CIRCLE_SHA1"
+        git checkout -q "$CIRCLE_TAG"
+    elif [ -n "$CIRCLE_BRANCH" ]
+    then
+        git reset --hard "$CIRCLE_SHA1"
+        git checkout -q -B "$CIRCLE_BRANCH"
+    fi
+
+    git reset --hard "$CIRCLE_SHA1"
+
+version: 2
+
+jobs:
+  build-prep:
+    <<: *defaultImageUserWDEnv
+
+    steps:
+
+    - run:
+        command: |
+          date > date.prep
+          printenv
+          git clone --depth 10 --branch $CIRCLE_BRANCH "$FIRRTL_REPO" firrtl && (cd firrtl && git checkout $FIRRTL_REV)
+          echo $FIRRTL_REV && (cd firrtl && git log -1 > ../firrtl.log)
+          #git clone --depth 10 "$CIRCLE_REPOSITORY_URL" chisel3 && (cd chisel3 && git checkout $CHISEL_REV && git reset --hard "$CIRCLE_SHA1")
+          *checkout-shallow
+
+    # Download and cache dependencies
+    - restore_cache:
+        keys:
+        - v1-dependencies-{{ .Branch }}-{{ .Revision }}-{{ checksum "firrtl.log" }}
+        # fallback to using the latest cache if no exact match is found
+        - v1-dependencies-
+
+    - save_cache:
+        paths:
+        - ~/.m2
+        - ~/.ivy2/cache
+        - ~/.sbt
+        key: v1-dependencies-{{ .Branch }}-{{ .Revision }}-{{ checksum "firrtl.log" }}
+
+    - persist_to_workspace:
+        root: /home/chisel
+        paths:
+        - .m2
+        - .ivy2/local
+        - .sbt
+        - .ssh
+        - repo
+        - firrtl.log
+
+  build-firrtl:
+    <<: *defaultImageUserWDEnv
+
+    steps:
+    - attach_workspace:
+        at: /home/chisel
+
+    - restore_cache:
+        keys:
+        - v1-dependencies-{{ .Branch }}-{{ .Revision }}-{{ checksum "firrtl.log" }}
+        # fallback to using the latest cache if no exact match is found
+        - v1-dependencies-
+
+    # publish FIRRTL
+    - run:
+        command: |
+          date > date.firrtl
+          (cd firrtl && cat /dev/null | sbt $SBT_ARGS +publishLocal)
+
+    - save_cache:
+        paths:
+        - ~/.m2
+        - ~/.ivy2/cache
+        - ~/.sbt
+        key: v1-dependencies-{{ .Branch }}-{{ .Revision }}-{{ checksum "firrtl.log" }}
+
+    - persist_to_workspace:
+        root: /home/chisel
+        paths:
+        - .m2
+        - .ivy2/local
+        - .sbt
+        - .ssh
+        - repo
+        - firrtl.log
+
+  build-chisel:
+    <<: *defaultImageUserWDEnv
+
+    steps:
+    - attach_workspace:
+        at: /home/chisel
+    # Download and cache dependencies
+    - restore_cache:
+        keys:
+        - v1-dependencies-{{ .Branch }}-{{ .Revision }}-{{ checksum "firrtl.log" }}
+        # fallback to using the latest cache if no exact match is found
+        - v1-dependencies-
+
+    # publish chisel
+    - run: date > date.chisel3 && (cd chisel3 && sbt $SBT_ARGS +publishLocal)
+
+    - save_cache:
+        paths:
+        - ~/.m2
+        - ~/.ivy2/cache
+        - ~/.sbt
+        key: v1-dependencies-{{ .Branch }}-{{ .Revision }}-{{ checksum "firrtl.log" }}
+    - persist_to_workspace:
+        root: /home/chisel
+        paths:
+        - .m2
+        - .ivy2/local
+        - .sbt
+        - .ssh
+        - repo
+        - firrtl.log
+
+  test-chisel:
+    <<: *defaultImageUserWDEnv
+
+    steps:
+    - attach_workspace:
+        at: /home/chisel
+    - restore_cache:
+        keys:
+        - v1-dependencies-{{ .Branch }}-{{ .Revision }}-{{ checksum "firrtl.log" }}
+        # fallback to using the latest cache if no exact match is found
+        - v1-dependencies-
+
+    # Set environment
+    - run: echo 'export PATH="/opt/verilator/verilator_3_922/bin:/opt/yosys/bin:$PATH"' >> $BASH_ENV
+    # We seem to have memory leaks in chisel tests -
+    # we run out of memory trying to "sbt +test" but a single "sbt test" passes.
+    - run:
+        command: |
+          (cd chisel3 && sbt $SBT_ARGS test)
+
+workflows:
+  version: 2
+
+  build_and_test:
+    jobs:
+    - build-prep
+    - build-firrtl:
+        requires:
+        - build-prep
+    - build-chisel:
+        requires:
+        - build-firrtl
+    - test-chisel:
+        requires:
+        - build-chisel
