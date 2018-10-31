@@ -15,72 +15,10 @@ defaultImageUserWDEnv: &defaultImageUserWDEnv
     TERM: dumb
     CHISEL_REV: origin/master
     FIRRTL_REPO: git@github.com:freechipsproject/firrtl.git
-    FIRRTL_REV: origin/master
-    SBT_ARGS: "-Dsbt.log.noformat=true"
+    FIRRTL_BRANCH: master
+    FIRRTL_REV: master
+    SBT_ARGS: ""
 
-aliases:
-  # Shallow Clone
-- &checkout-shallow
-  name: Checkout
-  command: |
-    #!/bin/sh
-    set -e
-
-    # Workaround old docker images with incorrect $HOME
-    # check https://github.com/docker/docker/issues/2968 for details
-    if [ "${HOME}" = "/" ]
-    then
-      export HOME=$(getent passwd $(id -un) | cut -d: -f6)
-    fi
-
-    mkdir -p ~/.ssh
-
-    echo 'github.com ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAq2A7hRGmdnm9tUDbO9IDSwBK6TbQa+PXYPCPy6rbTrTtw7PHkccKrpp0yVhp5HdEIcKr6pLlVDBfOLX9QUsyCOV0wzfjIJNlGEYsdlLJizHhbn2mUjvSAHQqZETYP81eFzLQNnPHt4EVVUh7VfDESU84KezmD5QlWpXLmvU31/yMf+Se8xhHTvKSCZIFImWwoG6mbUoWf9nzpIoaSjB+weqqUUmpaaasXVal72J+UX2B+2RPW3RcT0eOzQgqlJL3RKrTJvdsjE3JEAvGq3lGHSZXy28G3skua2SmVi/w4yCE6gbODqnTWlg7+wC604ydGXA8VJiS5ap43JXiUFFAaQ==
-    bitbucket.org ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAubiN81eDcafrgMeLzaFPsw2kNvEcqTKl/VqLat/MaB33pZy0y3rJZtnqwR2qOOvbwKZYKiEO1O6VqNEBxKvJJelCq0dTXWT5pbO2gDXC6h6QDXCaHo6pOHGPUy+YBaGQRGuSusMEASYiWunYN0vCAI8QaXnWMXNMdFP3jHAJH0eDsoiGnLPBlBp4TNm6rYI74nMzgz3B9IikW4WVK+dc8KZJZWYjAuORU3jc1c/NPskD2ASinf8v3xnfXeukU0sJ5N6m5E8VLjObPEO+mN2t/FZTMZLiFqPWc/ALSqnMnnhwrNi2rbfg/rd/IpL8Le3pSBne8+seeFVBoGqzHM9yXw==
-    ' >> ~/.ssh/known_hosts
-
-    (umask 077; touch ~/.ssh/id_rsa)
-    chmod 0600 ~/.ssh/id_rsa
-    (cat <<EOF > ~/.ssh/id_rsa
-    $CHECKOUT_KEY
-    EOF
-    )
-
-    # use git+ssh instead of https
-    git config --global url."ssh://git@github.com".insteadOf "https://github.com" || true
-
-    if [ -e /home/circleci/project/.git ]
-    then
-        cd /home/circleci/project
-        git remote set-url origin "$CIRCLE_REPOSITORY_URL" || true
-    else
-        mkdir -p /home/circleci/project
-        cd /home/circleci/project
-        git clone --depth=1 "$CIRCLE_REPOSITORY_URL" .
-     fi
-
-     if [ -n "$CIRCLE_TAG" ]
-     then
-       git fetch --depth=10 --force origin "refs/tags/${CIRCLE_TAG}"
-     elif [[ "$CIRCLE_BRANCH" =~ ^pull\/* ]]
-     then
-     # For PR from Fork
-       git fetch --depth=10 --force origin "$CIRCLE_BRANCH/head:remotes/origin/$CIRCLE_BRANCH"
-     else
-       git fetch --depth=10 --force origin "$CIRCLE_BRANCH:remotes/origin/$CIRCLE_BRANCH"
-     fi
-
-    if [ -n "$CIRCLE_TAG" ]
-    then
-        git reset --hard "$CIRCLE_SHA1"
-        git checkout -q "$CIRCLE_TAG"
-    elif [ -n "$CIRCLE_BRANCH" ]
-    then
-        git reset --hard "$CIRCLE_SHA1"
-        git checkout -q -B "$CIRCLE_BRANCH"
-    fi
-
-    git reset --hard "$CIRCLE_SHA1"
 
 version: 2
 
@@ -90,38 +28,30 @@ jobs:
 
     steps:
 
+    # Perform a "default" checkout to get ssh set up.
+    - checkout:
+        path: chisel3
+
     - run:
         command: |
           date > date.prep
           printenv
-          git clone --depth 10 --branch $CIRCLE_BRANCH "$FIRRTL_REPO" firrtl && (cd firrtl && git checkout $FIRRTL_REV)
+          ls -l
+          git clone --depth 10 --branch $FIRRTL_BRANCH "$FIRRTL_REPO" firrtl && (cd firrtl && git checkout $FIRRTL_REV)
           echo $FIRRTL_REV && (cd firrtl && git log -1 > ../firrtl.log)
-          #git clone --depth 10 "$CIRCLE_REPOSITORY_URL" chisel3 && (cd chisel3 && git checkout $CHISEL_REV && git reset --hard "$CIRCLE_SHA1")
-          *checkout-shallow
-
-    # Download and cache dependencies
-    - restore_cache:
-        keys:
-        - v1-dependencies-{{ .Branch }}-{{ .Revision }}-{{ checksum "firrtl.log" }}
-        # fallback to using the latest cache if no exact match is found
-        - v1-dependencies-
 
     - save_cache:
         paths:
-        - ~/.m2
-        - ~/.ivy2/cache
-        - ~/.sbt
+        - ~/.ssh
         key: v1-dependencies-{{ .Branch }}-{{ .Revision }}-{{ checksum "firrtl.log" }}
 
     - persist_to_workspace:
         root: /home/chisel
         paths:
-        - .m2
-        - .ivy2/local
-        - .sbt
-        - .ssh
         - repo
-        - firrtl.log
+        - .ivy2
+        - .m2
+        - .sbt
 
   build-firrtl:
     <<: *defaultImageUserWDEnv
@@ -142,22 +72,13 @@ jobs:
           date > date.firrtl
           (cd firrtl && cat /dev/null | sbt $SBT_ARGS +publishLocal)
 
-    - save_cache:
-        paths:
-        - ~/.m2
-        - ~/.ivy2/cache
-        - ~/.sbt
-        key: v1-dependencies-{{ .Branch }}-{{ .Revision }}-{{ checksum "firrtl.log" }}
-
     - persist_to_workspace:
         root: /home/chisel
         paths:
-        - .m2
-        - .ivy2/local
-        - .sbt
-        - .ssh
         - repo
-        - firrtl.log
+        - .ivy2
+        - .m2
+        - .sbt
 
   build-chisel:
     <<: *defaultImageUserWDEnv
@@ -175,21 +96,13 @@ jobs:
     # publish chisel
     - run: date > date.chisel3 && (cd chisel3 && sbt $SBT_ARGS +publishLocal)
 
-    - save_cache:
-        paths:
-        - ~/.m2
-        - ~/.ivy2/cache
-        - ~/.sbt
-        key: v1-dependencies-{{ .Branch }}-{{ .Revision }}-{{ checksum "firrtl.log" }}
     - persist_to_workspace:
         root: /home/chisel
         paths:
-        - .m2
-        - .ivy2/local
-        - .sbt
-        - .ssh
         - repo
-        - firrtl.log
+        - .ivy2
+        - .m2
+        - .sbt
 
   test-chisel:
     <<: *defaultImageUserWDEnv
