@@ -30,7 +30,7 @@ jobs:
 
     # Perform a "default" checkout to get ssh set up.
     - checkout 
-      path: "chisel3"
+      path: chisel3
 
     - run:
         command: |
