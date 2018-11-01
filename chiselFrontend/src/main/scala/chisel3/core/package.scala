@@ -26,9 +26,10 @@ package chisel3 {
     implicit class fromBigIntToLiteral(bigint: BigInt) {
       /** Int to Bool conversion, allowing compact syntax like 1.B and 0.B
        */
-      def B: Bool = {
-        require(bigint == 0 || bigint == 1)
-        Bool.Lit(if (bigint == 1) true else false)
+      def B: Bool = bigint match {
+        case bigint if bigint == 0 => Bool.Lit(false)
+        case bigint if bigint == 1 => Bool.Lit(true)
+        case bigint => Builder.error(s"Cannot convert $bigint to Bool, must be 0 or 1"); Bool.Lit(false)
       }
       /** Int to UInt conversion, recommended style for constants.
         */
