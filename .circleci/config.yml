@@ -41,10 +41,6 @@ jobs:
           git clone --depth 10 --branch $FIRRTL_BRANCH "$FIRRTL_REPO" firrtl && (cd firrtl && git checkout $FIRRTL_REV)
           echo $FIRRTL_REV && (cd firrtl && git log -1 > ../firrtl.log)
 
-    - save_cache:
-        paths:
-        - ~/.ssh
-        key: v1-dependencies-{{ .Branch }}-{{ .Revision }}-{{ checksum "firrtl.log" }}
 
     - persist_to_workspace:
         root: /home/chisel
@@ -60,12 +56,6 @@ jobs:
     steps:
     - attach_workspace:
         at: /home/chisel
-
-    - restore_cache:
-        keys:
-        - v1-dependencies-{{ .Branch }}-{{ .Revision }}-{{ checksum "firrtl.log" }}
-        # fallback to using the latest cache if no exact match is found
-        - v1-dependencies-
 
     # publish FIRRTL
     - run:
@@ -89,12 +79,6 @@ jobs:
     steps:
     - attach_workspace:
         at: /home/chisel
-    # Download and cache dependencies
-    - restore_cache:
-        keys:
-        - v1-dependencies-{{ .Branch }}-{{ .Revision }}-{{ checksum "firrtl.log" }}
-        # fallback to using the latest cache if no exact match is found
-        - v1-dependencies-
 
     # publish chisel
     - run: date > date.chisel3 && (cd chisel3 && sbt $SBT_ARGS +publishLocal)
@@ -107,24 +91,37 @@ jobs:
         - .m2
         - .sbt
 
-  test-chisel:
+  test-chisel-2.11:
     <<: *defaultImageUserWDEnv
 
     steps:
     - attach_workspace:
         at: /home/chisel
-    - restore_cache:
-        keys:
-        - v1-dependencies-{{ .Branch }}-{{ .Revision }}-{{ checksum "firrtl.log" }}
-        # fallback to using the latest cache if no exact match is found
-        - v1-dependencies-
 
     # Set environment
     - run: echo 'export PATH="/opt/verilator/verilator_3_922/bin:/opt/yosys/bin:$PATH"' >> $BASH_ENV
 
+    # We seem to have memory leaks in chisel tests -
+    # we run out of memory trying to "sbt +test" but a single "sbt test" passes.
     - run:
         command: |
-          (cd chisel3 && sbt $SBT_ARGS +test)
+          (cd chisel3 && sbt $SBT_ARGS "++2.11.12" test)
+
+  test-chisel-2.12:
+    <<: *defaultImageUserWDEnv
+
+    steps:
+    - attach_workspace:
+        at: /home/chisel
+
+    # Set environment
+    - run: echo 'export PATH="/opt/verilator/verilator_3_922/bin:/opt/yosys/bin:$PATH"' >> $BASH_ENV
+
+    # We seem to have memory leaks in chisel tests -
+    # we run out of memory trying to "sbt +test" but a single "sbt test" passes.
+    - run:
+        command: |
+          (cd chisel3 && sbt $SBT_ARGS "++2.12.6" test)
 
   checkstyle-chisel:
     <<: *defaultImageUserWDEnv
@@ -132,11 +129,6 @@ jobs:
     steps:
     - attach_workspace:
         at: /home/chisel
-    - restore_cache:
-        keys:
-        - v1-dependencies-{{ .Branch }}-{{ .Revision }}-{{ checksum "firrtl.log" }}
-        # fallback to using the latest cache if no exact match is found
-        - v1-dependencies-
 
     - run:
         command: |
@@ -151,7 +143,10 @@ workflows:
     - build-firrtl:
         requires:
         - build-prep
-    - test-chisel:
+    - test-chisel-2.11:
+        requires:
+        - build-firrtl
+    - test-chisel-2.12:
         requires:
         - build-firrtl
     - checkstyle-chisel:
