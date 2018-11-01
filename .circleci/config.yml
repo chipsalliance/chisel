@@ -81,6 +81,8 @@ jobs:
         - .m2
         - .sbt
 
+  # Define a pure build chisel - currently unused since we can compile and test chisel in one step
+  #  and we don't have downstream jobs that need the published version of chisel.
   build-chisel:
     <<: *defaultImageUserWDEnv
 
@@ -119,11 +121,26 @@ jobs:
 
     # Set environment
     - run: echo 'export PATH="/opt/verilator/verilator_3_922/bin:/opt/yosys/bin:$PATH"' >> $BASH_ENV
-    # We seem to have memory leaks in chisel tests -
-    # we run out of memory trying to "sbt +test" but a single "sbt test" passes.
+
     - run:
         command: |
-          (cd chisel3 && sbt $SBT_ARGS test)
+          (cd chisel3 && sbt $SBT_ARGS +test)
+
+  checkstyle-chisel:
+    <<: *defaultImageUserWDEnv
+
+    steps:
+    - attach_workspace:
+        at: /home/chisel
+    - restore_cache:
+        keys:
+        - v1-dependencies-{{ .Branch }}-{{ .Revision }}-{{ checksum "firrtl.log" }}
+        # fallback to using the latest cache if no exact match is found
+        - v1-dependencies-
+
+    - run:
+        command: |
+          (cd chisel3 && sbt $SBT_ARGS scalastyle  test:scalastyle)
 
 workflows:
   version: 2
@@ -134,9 +151,9 @@ workflows:
     - build-firrtl:
         requires:
         - build-prep
-    - build-chisel:
-        requires:
-        - build-firrtl
     - test-chisel:
         requires:
-        - build-chisel
+        - build-firrtl
+    - checkstyle-chisel:
+        requires:
+        - build-firrtl
