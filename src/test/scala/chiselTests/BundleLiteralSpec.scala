@@ -15,12 +15,12 @@ class BundleLiteralSpec extends ChiselFlatSpec {
 
     // Bundle literal constructor code, which will be auto-generated using macro annotations in
     // the future.
-    import chisel3.core.BundleLitBinding
-    import chisel3.internal.firrtl.{ULit, Width}
+    import chisel3.core.AggregateLitBinding
+    import chisel3.internal.firrtl.{LitArg, ULit, Width}
     // Full bundle literal constructor
     def Lit(aVal: UInt, bVal: Bool): MyBundle = {
       val clone = cloneType
-      clone.selfBind(BundleLitBinding(Map(
+      clone.selfBind(AggregateLitBinding(Map[Data, LitArg](
         clone.a -> litArgOfBits(aVal),
         clone.b -> litArgOfBits(bVal)
       )))
@@ -29,7 +29,7 @@ class BundleLiteralSpec extends ChiselFlatSpec {
     // Partial bundle literal constructor
     def Lit(aVal: UInt): MyBundle = {
       val clone = cloneType
-      clone.selfBind(BundleLitBinding(Map(
+      clone.selfBind(AggregateLitBinding(Map[Data, LitArg](
         clone.a -> litArgOfBits(aVal)
       )))
       clone

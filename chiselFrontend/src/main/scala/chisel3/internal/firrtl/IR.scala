@@ -63,49 +63,74 @@ case class Node(id: HasId) extends Arg {
   }
 }
 
-abstract class LitArg(val num: BigInt, widthArg: Width) extends Arg {
+sealed trait LitArg extends Arg {
+  def display: String = name
+  val widthArg: Width
   private[chisel3] def forcedWidth = widthArg.known
   private[chisel3] def width: Width = if (forcedWidth) widthArg else Width(minWidth)
   override def fullName(ctx: Component): String = name
+  def bindLitArg[T <: Element](elem: T): T
+
+  protected[internal] def minWidth: Int
+  // if (forcedWidth) {
+  //   require(widthArg.get >= minWidth,
+  //     s"The literal value ${display} was elaborated with a specified width of ${widthArg.get} bits, but at least ${minWidth} bits are required.")
+  // }
+}
+
+sealed trait BitsLitArg extends LitArg {
+  val num: BigInt
+  override def display = num.toString
   // Ensure the node representing this LitArg has a ref to it and a literal binding.
   def bindLitArg[T <: Element](elem: T): T = {
     elem.bind(ElementLitBinding(this))
     elem.setRef(this)
     elem
   }
-
-  protected def minWidth: Int
-  if (forcedWidth) {
-    require(widthArg.get >= minWidth,
-      s"The literal value ${num} was elaborated with a specified width of ${widthArg.get} bits, but at least ${minWidth} bits are required.")
-  }
 }
+
+class AggregateLitArg(val litMap: Map[Data, LitArg]) extends LitArg {
+  def name: String = "{" + litMap.map({case (d, l) => s"$d : ${l.name}," }) + "}"
+  def bindLitArg[T <: Element](elem: T): T = {
+    elem.bind(AggregateLitBinding(this))
+    elem.setRef(this)
+    elem
+  }
+  protected[internal] def minWidth = litMap.values.map(_.minWidth).sum
+  val widthArg = UnknownWidth()
+}
+
+object AggregateLitArg {
+  def apply(litMap: Map[Data, LitArg]): AggregateLitArg = new AggregateLitArg(litMap)
+  def unapply(l: AggregateLitArg): Some[Map[Data, LitArg]] = Some(l.litMap)
+}
+
 
 case class ILit(n: BigInt) extends Arg {
   def name: String = n.toString
 }
 
-case class ULit(n: BigInt, w: Width) extends LitArg(n, w) {
+case class ULit(num: BigInt, widthArg: Width) extends BitsLitArg {
   def name: String = "UInt" + width + "(\"h0" + num.toString(16) + "\")"
-  def minWidth: Int = 1 max n.bitLength
+  def minWidth: Int = 1 max num.bitLength
 
-  require(n >= 0, s"UInt literal ${n} is negative")
+  require(num >= 0, s"UInt literal ${num} is negative")
 }
 
-case class SLit(n: BigInt, w: Width) extends LitArg(n, w) {
+case class SLit(num: BigInt, widthArg: Width) extends BitsLitArg {
   def name: String = {
-    val unsigned = if (n < 0) (BigInt(1) << width.get) + n else n
+    val unsigned = if (num < 0) (BigInt(1) << width.get) + num else num
     s"asSInt(${ULit(unsigned, width).name})"
   }
-  def minWidth: Int = 1 + n.bitLength
+  def minWidth: Int = 1 + num.bitLength
 }
 
-case class FPLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends LitArg(n, w) {
+case class FPLit(num: BigInt, widthArg: Width, binaryPoint: BinaryPoint) extends BitsLitArg {
   def name: String = {
-    val unsigned = if (n < 0) (BigInt(1) << width.get) + n else n
+    val unsigned = if (num < 0) (BigInt(1) << width.get) + num else num
     s"asFixedPoint(${ULit(unsigned, width).name}, ${binaryPoint.asInstanceOf[KnownBinaryPoint].value})"
   }
-  def minWidth: Int = 1 + n.bitLength
+  def minWidth: Int = 1 + num.bitLength
 }
 
 case class Ref(name: String) extends Arg

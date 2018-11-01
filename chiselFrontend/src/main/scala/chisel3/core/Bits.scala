@@ -36,14 +36,14 @@ abstract class Element extends Data {
 
   private[core] override def topBindingOpt: Option[TopBinding] = super.topBindingOpt match {
     // Translate Bundle lit bindings to Element lit bindings
-    case Some(BundleLitBinding(litMap)) => litMap.get(this) match {
-      case Some(litArg) => Some(ElementLitBinding(litArg))
+    case Some(AggregateLitBinding(litArg)) => litArg.litMap.get(this) match {
+      case Some(litArg: BitsLitArg) => Some(ElementLitBinding(litArg))
       case _ => Some(DontCareBinding())
     }
     case topBindingOpt => topBindingOpt
   }
 
-  private[core] def litArgOption: Option[LitArg] = topBindingOpt match {
+  private[core] def litArgOption: Option[BitsLitArg] = topBindingOpt match {
     case Some(ElementLitBinding(litArg)) => Some(litArg)
     case _ => None
   }
@@ -53,11 +53,7 @@ abstract class Element extends Data {
 
   // provide bits-specific literal handling functionality here
   override private[chisel3] def ref: Arg = topBindingOpt match {
-    case Some(ElementLitBinding(litArg)) => litArg
-    case Some(BundleLitBinding(litMap)) => litMap.get(this) match {
-      case Some(litArg) => litArg
-      case _ => throwException(s"internal error: DontCare should be caught before getting ref")
-    }
+    case Some(LitBinding(litArg)) => litArg
     case _ => super.ref
   }
 
