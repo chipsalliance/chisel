@@ -69,7 +69,6 @@ sealed trait LitArg extends Arg {
   private[chisel3] def forcedWidth = widthArg.known
   private[chisel3] def width: Width = if (forcedWidth) widthArg else Width(minWidth)
   override def fullName(ctx: Component): String = name
-  def bindLitArg[T <: Element](elem: T): T
 
   protected[internal] def minWidth: Int
   // if (forcedWidth) {
@@ -89,20 +88,20 @@ sealed trait BitsLitArg extends LitArg {
   }
 }
 
-class AggregateLitArg(val litMap: Map[Data, LitArg]) extends LitArg {
-  def name: String = "{" + litMap.map({case (d, l) => s"$d : ${l.name}," }) + "}"
-  def bindLitArg[T <: Element](elem: T): T = {
+class AggregateLit(val litMap: Seq[(String, Data, LitArg)]) extends LitArg {
+  def name: String = "{" + (litMap.map({case (n, d, l) => s"$n : ${l.name}" }) mkString ", ") + "}"
+  def bindLitArg[T <: Data](elem: T): T = {
     elem.bind(AggregateLitBinding(this))
     elem.setRef(this)
     elem
   }
-  protected[internal] def minWidth = litMap.values.map(_.minWidth).sum
+  protected[internal] def minWidth = litMap.map(_._3.minWidth).sum
   val widthArg = UnknownWidth()
 }
 
-object AggregateLitArg {
-  def apply(litMap: Map[Data, LitArg]): AggregateLitArg = new AggregateLitArg(litMap)
-  def unapply(l: AggregateLitArg): Some[Map[Data, LitArg]] = Some(l.litMap)
+object AggregateLit {
+  def apply(litMap: Seq[(String, Data, LitArg)]): AggregateLit = new AggregateLit(litMap)
+  def unapply(l: AggregateLit): Some[Seq[(String, Data, LitArg)]] = Some(l.litMap)
 }
 
 

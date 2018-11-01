@@ -20,21 +20,41 @@ class BundleLiteralSpec extends ChiselFlatSpec {
     // Full bundle literal constructor
     def Lit(aVal: UInt, bVal: Bool): MyBundle = {
       val clone = cloneType
-      clone.selfBind(AggregateLitBinding(Map[Data, LitArg](
-        clone.a -> litArgOfBits(aVal),
-        clone.b -> litArgOfBits(bVal)
-      )))
+      clone.selfBind(AggregateLitBinding(clone.elements.map(_ match {
+        case (n, clone.a) => (n, clone.a, litArgOfBits(aVal))
+        case (n, clone.b) => (n, clone.b, litArgOfBits(bVal))
+      }).toSeq))
       clone
     }
     // Partial bundle literal constructor
     def Lit(aVal: UInt): MyBundle = {
       val clone = cloneType
-      clone.selfBind(AggregateLitBinding(Map[Data, LitArg](
-        clone.a -> litArgOfBits(aVal)
-      )))
+      clone.selfBind(AggregateLitBinding(clone.elements.flatMap(_ match {
+        case (n, clone.a) => Some((n, clone.a, litArgOfBits(aVal)))
+        case _ => None
+      }).toSeq))
       clone
     }
   }
+
+  class MyOuterBundle extends Bundle {
+    val c = UInt(8.W)
+    val d = new MyBundle
+
+    // Bundle literal constructor code, which will be auto-generated using macro annotations in
+    // the future.
+    import chisel3.core.AggregateLitBinding
+    import chisel3.internal.firrtl.{AggregateLit, LitArg, ULit, Width}
+    // Full bundle literal constructor
+    def Lit(aVal: UInt, bVal: Bool, cVal: UInt): MyOuterBundle = {
+      val clone = cloneType
+      AggregateLit(clone.elements.map(_ match {
+        case (n, clone.c) => (n, clone.c, litArgOfBits(cVal))
+        case (n, clone.d) => (n, clone.d, (new MyBundle).Lit(aVal, bVal).litArg.get)
+      }).toSeq).bindLitArg(clone)
+    }
+  }
+
 
   "bundle literals" should "work in RTL" in {
     val outsideBundleLit = (new MyBundle).Lit(42.U, true.B)
@@ -69,6 +89,26 @@ class BundleLiteralSpec extends ChiselFlatSpec {
       bundleWire := bundleLit
 
       chisel3.assert(bundleWire.a === 42.U)
+
+      stop()
+    } }
+  }
+
+  "bundles inside of bundles" should "work in RTL" in {
+    assertTesterPasses{ new BasicTester{
+      val bundleLit = (new MyOuterBundle).Lit(42.U, true.B, 22.U)
+      chisel3.assert(bundleLit.c === 22.U)
+      // TODO!!!
+      // chisel3.assert(bundleLit.d.a === 42.U)
+      // chisel3.assert(bundleLit.d.b === true.B)
+
+      val bundleWire = Wire(new MyOuterBundle)
+      bundleWire := bundleLit
+
+      chisel3.assert(bundleWire.c === 22.U)
+      // TODO!!!
+      // chisel3.assert(bundleWire.d.a === 42.U)
+      // chisel3.assert(bundleWire.d.b === true.B)
 
       stop()
     } }

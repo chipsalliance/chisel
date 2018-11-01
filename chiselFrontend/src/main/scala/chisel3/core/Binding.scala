@@ -2,7 +2,7 @@ package chisel3.core
 
 import chisel3.internal.ChiselException
 import chisel3.internal.Builder.{forcedModule}
-import chisel3.internal.firrtl.{AggregateLitArg, BitsLitArg, LitArg}
+import chisel3.internal.firrtl.{AggregateLit, BitsLitArg, LitArg}
 
 object Binding {
   class BindingException(message: String) extends ChiselException(message)
@@ -119,7 +119,7 @@ object LitBinding {
 // Literal binding attached to a element that is not part of a Bundle.
 case class ElementLitBinding(litArg: BitsLitArg) extends LitBinding
 // Literal binding attached to the root of a Bundle, containing literal values of its children.
-case class AggregateLitBinding(litArg: AggregateLitArg) extends LitBinding
+case class AggregateLitBinding(litArg: AggregateLit) extends LitBinding
 object AggregateLitBinding {
-  def apply(litMap: Map[Data, LitArg]): AggregateLitBinding = AggregateLitBinding(AggregateLitArg(litMap))
+  def apply(litMap: Seq[(String, Data, LitArg)]): AggregateLitBinding = AggregateLitBinding(AggregateLit(litMap))
 }
