@@ -105,7 +105,7 @@ jobs:
       # we run out of memory trying to "sbt +test" but a single "sbt test" passes.
       - run:
           command: |
-          (cd chisel3 && sbt $SBT_ARGS "++2.11.12" test)
+            (cd chisel3 && sbt $SBT_ARGS "++2.11.12" test)
 
   test-chisel-2.12:
     <<: *defaultImageUserWDEnv
