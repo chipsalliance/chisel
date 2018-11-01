@@ -47,15 +47,15 @@ object LowerTypes extends Transform {
       val name = root + loweredName(e)
       renames.rename(root + e.serialize, name)
       Seq(name)
-    case (t: BundleType) => t.fields.foldLeft(Seq[String]()){(names, f) =>
+    case (t: BundleType) => t.fields.flatMap { f =>
       val subNames = renameExps(renames, WSubField(e, f.name, f.tpe, times(gender(e), f.flip)), root)
       renames.rename(root + e.serialize, subNames)
-      names ++ subNames
+      subNames
     }
-    case (t: VectorType) => (0 until t.size).foldLeft(Seq[String]()){(names, i) =>
+    case (t: VectorType) => (0 until t.size).flatMap { i =>
       val subNames = renameExps(renames, WSubIndex(e, i, t.tpe,gender(e)), root)
       renames.rename(root + e.serialize, subNames)
-      names ++ subNames
+      subNames
     }
   }
 

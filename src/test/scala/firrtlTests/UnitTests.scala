@@ -95,6 +95,7 @@ class UnitTests extends FirrtlFlatSpec {
       ResolveKinds,
       InferTypes,
       CheckTypes,
+      ResolveGenders,
       ExpandConnects)
     val input =
      """circuit Unit :

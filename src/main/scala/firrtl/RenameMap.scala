@@ -308,7 +308,7 @@ final class RenameMap private () {
       case (x, Seq(y)) if x == y =>
       case _ =>
         tos.foreach{recordSensitivity(from, _)}
-        val existing = underlying.getOrElse(from, Seq.empty)
+        val existing = underlying.getOrElse(from, Vector.empty)
         val updated = existing ++ tos
         underlying(from) = updated
         getCache.clear()

@@ -128,18 +128,18 @@ class InlineInstances extends Transform {
         val port = ComponentName(s"$ref.$field", currentModule)
         val inst = ComponentName(s"$ref", currentModule)
         (renames.get(port), renames.get(inst)) match {
-          case (Some(p :: Nil), _)              =>
+          case (Some(Seq(p)), _)              =>
             p.toTarget match {
               case ReferenceTarget(_, _, Seq(), r, Seq(TargetToken.Field(f))) => wsf.copy(expr = wr.copy(name = r), name = f)
               case ReferenceTarget(_, _, Seq(), r, Seq()) => WRef(r, tpe, WireKind, gen)
             }
-          case (None,           Some(i :: Nil)) => wsf.map(appendRefPrefix(currentModule, renames))
+          case (None,           Some(Seq(i))) => wsf.map(appendRefPrefix(currentModule, renames))
           case (None,           None)           => wsf
         }
       case wr@ WRef(name, _, _, _) =>
         val comp = ComponentName(name, currentModule)
         renames.get(comp).orElse(Some(Seq(comp))) match {
-          case Some(car :: Nil) => wr.copy(name=car.name)
+          case Some(Seq(car)) => wr.copy(name=car.name)
           case c@ Some(_)       => throw new PassException(
             s"Inlining found mlutiple renames for ref $comp -> $c. This should be impossible...")
         }

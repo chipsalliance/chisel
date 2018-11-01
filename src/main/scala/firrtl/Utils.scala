@@ -256,10 +256,9 @@ object Utils extends LazyLogging {
     case ex: ValidIf => create_exps(ex.value) map (e1 => ValidIf(ex.cond, e1, e1.tpe))
     case ex => ex.tpe match {
       case (_: GroundType) => Seq(ex)
-      case (t: BundleType) => (t.fields foldLeft Seq[Expression]())((exps, f) =>
-        exps ++ create_exps(WSubField(ex, f.name, f.tpe,times(gender(ex), f.flip))))
-      case (t: VectorType) => (0 until t.size foldLeft Seq[Expression]())((exps, i) =>
-        exps ++ create_exps(WSubIndex(ex, i, t.tpe,gender(ex))))
+      case t: BundleType =>
+        t.fields.flatMap(f => create_exps(WSubField(ex, f.name, f.tpe,times(gender(ex), f.flip))))
+      case t: VectorType => (0 until t.size).flatMap(i => create_exps(WSubIndex(ex, i, t.tpe,gender(ex))))
     }
   }
 
@@ -301,6 +300,7 @@ object Utils extends LazyLogging {
     onExp(expression)
     ReferenceTarget(main, module, Nil, ref, tokens)
   }
+   @deprecated("get_flip is fundamentally slow, use to_flip(gender(expr))", "1.2")
    def get_flip(t: Type, i: Int, f: Orientation): Orientation = {
      if (i >= get_size(t)) throwInternalError(s"get_flip: shouldn't be here - $i >= get_size($t)")
      t match {
