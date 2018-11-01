@@ -81,7 +81,7 @@ jobs:
           at: /home/chisel
 
       # publish chisel
-      - run: date > date.chisel3 && (cd chisel3 && sbt $SBT_ARGS +publishLocal)
+      - run: date > date.chisel3 && (cd chisel3 && cat /dev/null | sbt $SBT_ARGS +publishLocal)
 
       - persist_to_workspace:
           root: /home/chisel
@@ -105,7 +105,7 @@ jobs:
       # we run out of memory trying to "sbt +test" but a single "sbt test" passes.
       - run:
           command: |
-            (cd chisel3 && sbt $SBT_ARGS "++2.11.12" test)
+            (cd chisel3 && cat /dev/null | sbt $SBT_ARGS "++2.11.12" test)
 
   test-chisel-2.12:
     <<: *defaultImageUserWDEnv
@@ -121,7 +121,7 @@ jobs:
       # we run out of memory trying to "sbt +test" but a single "sbt test" passes.
       - run:
           command: |
-            (cd chisel3 && sbt $SBT_ARGS "++2.12.6" test)
+            (cd chisel3 && cat /dev/null | sbt $SBT_ARGS "++2.12.6" test)
 
   checkstyle-chisel:
     <<: *defaultImageUserWDEnv
@@ -132,7 +132,7 @@ jobs:
 
       - run:
           command: |
-            (cd chisel3 && sbt $SBT_ARGS scalastyle  test:scalastyle)
+            (cd chisel3 && cat /dev/null | sbt $SBT_ARGS scalastyle | gawk -e '/scalastyle Found [0-9]+ warnings/ { if ($4 > 40) exit 1 }')
 
 workflows:
   version: 2
