@@ -99,8 +99,11 @@ lazy val chiselSettings = Seq (
     "com.github.scopt" %% "scopt" % "3.7.0"
   ),
 
-  // Tests from other projects may still run concurrently.
-  parallelExecution in Test := true,
+  // Tests from other projects may still run concurrently
+  //  if we're not running with -DminimalResources.
+  // Another option would be to experiment with:
+  //  concurrentRestrictions in Global += Tags.limit(Tags.Test, 1),
+  Test / parallelExecution := !sys.props.contains("minimalResources"),
 
   javacOptions ++= javacOptionsVersion(scalaVersion.value)
 )
