@@ -135,7 +135,7 @@ jobs:
 
       - run:
           command: |
-            (cd chisel3 && cat /dev/null | sbt $SBT_ARGS scalastyle | gawk -e '/scalastyle Found [0-9]+ warnings/ { if ($4 > ENVIRON["CHECKSTYLE_LIMIT"]) exit 1 }')
+            (cd chisel3 && cat /dev/null | sbt $SBT_ARGS scalastyle | gawk -v WARN_FAIL=2 -e '/scalastyle Found [0-9]+ warnings/ { print $0; if ($3 > ENVIRON["CHECKSTYLE_LIMIT"]) WARN_FAIL=1; else if (WARN_FAIL == 2) WARN_FAIL=0 }' -e 'END { exit WARN_FAIL}')
 
 workflows:
   version: 2
