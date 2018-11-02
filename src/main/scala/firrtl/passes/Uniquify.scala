@@ -355,7 +355,9 @@ object Uniquify extends Transform {
         portTypeMap += (m.name -> uniquePortsType)
 
         ports zip uniquePortsType.fields map { case (p, f) =>
-          renames.rename(p.name, f.name)
+          (Utils.create_exps(p.name, p.tpe) zip Utils.create_exps(f.name, f.tpe)) foreach {
+            case (from, to) => renames.rename(from.serialize, to.serialize)
+          }
           Port(p.info, f.name, p.direction, f.tpe)
         }
       }

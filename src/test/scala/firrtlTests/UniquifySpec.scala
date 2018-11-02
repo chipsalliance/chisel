@@ -9,6 +9,9 @@ import firrtl.Parser
 import firrtl.ir.Circuit
 import firrtl.passes._
 import firrtl._
+import firrtl.annotations._
+import firrtl.annotations.TargetToken._
+import firrtl.transforms.DontTouchAnnotation
 
 class UniquifySpec extends FirrtlFlatSpec {
 
@@ -20,9 +23,11 @@ class UniquifySpec extends FirrtlFlatSpec {
     Uniquify
   )
 
-  private def executeTest(input: String, expected: Seq[String]) = {
+  private def executeTest(input: String, expected: Seq[String]): Unit = executeTest(input, expected, Seq.empty, Seq.empty)
+  private def executeTest(input: String, expected: Seq[String],
+    inputAnnos: Seq[Annotation], expectedAnnos: Seq[Annotation]): Unit = {
     val circuit = Parser.parse(input.split("\n").toIterator)
-    val result = transforms.foldLeft(CircuitState(circuit, UnknownForm)) {
+    val result = transforms.foldLeft(CircuitState(circuit, UnknownForm, inputAnnos)) {
       (c: CircuitState, p: Transform) => p.runTransform(c)
     }
     val c = result.circuit
@@ -31,6 +36,8 @@ class UniquifySpec extends FirrtlFlatSpec {
     expected foreach { e =>
       lines should contain(e)
     }
+
+    result.annotations.toSeq should equal(expectedAnnos)
   }
 
   behavior of "Uniquify"
@@ -48,7 +55,13 @@ class UniquifySpec extends FirrtlFlatSpec {
       "output a_0_c_ : UInt<5>",
       "output a__0 : UInt<6>") map normalized
 
-    executeTest(input, expected)
+    val inputAnnos = Seq(DontTouchAnnotation(ReferenceTarget("Test", "Test", Seq.empty, "a", Seq(Index(0), Field("b")))),
+      DontTouchAnnotation(ReferenceTarget("Test", "Test", Seq.empty, "a", Seq(Index(0), Field("c"), Index(0), Field("e")))))
+
+    val expectedAnnos = Seq(DontTouchAnnotation(ReferenceTarget("Test", "Test", Seq.empty, "a__", Seq(Index(0), Field("b")))),
+      DontTouchAnnotation(ReferenceTarget("Test", "Test", Seq.empty, "a__", Seq(Index(0), Field("c_"), Index(0), Field("e")))))
+
+    executeTest(input, expected, inputAnnos, expectedAnnos)
   }
 
   it should "rename colliding registers" in {
