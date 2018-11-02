@@ -92,7 +92,7 @@ jobs:
             - .m2
             - .sbt
 
-  test-chisel:
+  test-chisel-2.11:
     <<: *defaultImageUserWDEnv
 
     steps:
@@ -102,11 +102,29 @@ jobs:
       # Set environment
       - run: echo 'export PATH="/opt/verilator/verilator_3_922/bin:/opt/yosys/bin:$PATH"' >> $BASH_ENV
 
-      # We seem to have memory leaks in chisel tests -
-      # we run out of memory trying to "sbt +test" but a single "sbt test" passes.
+      # The -DminimalResources flag causes sbt to run tests sequentially,
+      #  so we could actually use "sbt +test" to run all the crossVersioned tests.
+      # We currently run them separately so we can run them in parallel.
       - run:
           command: |
-            (cd chisel3 && cat /dev/null | sbt $SBT_ARGS -DminimalResources +test)
+            (cd chisel3 && cat /dev/null | sbt $SBT_ARGS -DminimalResources "++2.11.12" test)
+
+  test-chisel-2.12:
+    <<: *defaultImageUserWDEnv
+
+    steps:
+      - attach_workspace:
+          at: /home/chisel
+
+      # Set environment
+      - run: echo 'export PATH="/opt/verilator/verilator_3_922/bin:/opt/yosys/bin:$PATH"' >> $BASH_ENV
+
+      # The -DminimalResources flag causes sbt to run tests sequentially,
+      #  so we could actually use "sbt +test" to run all the crossVersioned tests.
+      # We currently run them separately so we can run them in parallel.
+      - run:
+          command: |
+            (cd chisel3 && cat /dev/null | sbt $SBT_ARGS -DminimalResources "++2.12.6" test)
 
   checkstyle-chisel:
     <<: *defaultImageUserWDEnv
@@ -128,7 +146,10 @@ workflows:
       - build-firrtl:
           requires:
             - build-prep
-      - test-chisel:
+      - test-chisel-2.11:
+          requires:
+            - build-firrtl
+      - test-chisel-2.12:
           requires:
             - build-firrtl
       - checkstyle-chisel:
