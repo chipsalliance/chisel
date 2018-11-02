@@ -154,5 +154,10 @@ workflows:
           requires:
             - build-firrtl
       - checkstyle-chisel:
+          # Strictly speaking, this is only dependent on build-firrtl,
+          #  but it is faster than the test jobs so if it fails,
+          #  it fails the entire build before we get a chance to complete the tests.
+          # If we make it dependent on at least one of the tests,
+          #  there's a better chance to see if the tests fail before we flag a style failure
           requires:
-            - build-firrtl
+            - test-chisel-2.12
