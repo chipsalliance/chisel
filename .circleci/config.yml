@@ -2,10 +2,11 @@
 #
 # Check https://circleci.com/docs/2.0/sample-config/ for more details
 #
+# Use the chisel3-tools image to build and run FIRRTL and chisel tests.
 defaultImageUserWDEnv: &defaultImageUserWDEnv
   docker:
-  - image: ucbbar/chisel3-tools
-    user: "chisel"
+    - image: ucbbar/chisel3-tools
+      user: "chisel"
 
   working_directory: ~/repo
 
@@ -17,6 +18,7 @@ defaultImageUserWDEnv: &defaultImageUserWDEnv
     FIRRTL_REPO: git@github.com:freechipsproject/firrtl.git
     FIRRTL_BRANCH: master
     FIRRTL_REV: master
+    CHECKSTYLE_LIMIT: 40
     SBT_ARGS: ""
 
 
@@ -29,113 +31,106 @@ jobs:
     steps:
 
     # Perform a "default" checkout to get ssh set up.
-    - checkout:
-        path: chisel3
+      - checkout:
+          path: chisel3
 
-    - run:
-        command: |
-          date > date.prep
-          printenv
-          ls -l
-          git clone --depth 10 --branch $FIRRTL_BRANCH "$FIRRTL_REPO" firrtl && (cd firrtl && git checkout $FIRRTL_REV)
-          echo $FIRRTL_REV && (cd firrtl && git log -1 > ../firrtl.log)
+      - run:
+          command: |
+            date > date.prep
+            printenv
+            ls -l
+            git clone --depth 10 --branch $FIRRTL_BRANCH "$FIRRTL_REPO" firrtl && (cd firrtl && git checkout $FIRRTL_REV)
+            echo $FIRRTL_REV && (cd firrtl && git log -1 > ../firrtl.log)
 
-    - save_cache:
-        paths:
-        - ~/.ssh
-        key: v1-dependencies-{{ .Branch }}-{{ .Revision }}-{{ checksum "firrtl.log" }}
 
-    - persist_to_workspace:
-        root: /home/chisel
-        paths:
-        - repo
-        - .ivy2
-        - .m2
-        - .sbt
+      - persist_to_workspace:
+          root: /home/chisel
+          paths:
+            - repo
+            - .ivy2
+            - .m2
+            - .sbt
 
   build-firrtl:
     <<: *defaultImageUserWDEnv
 
     steps:
-    - attach_workspace:
-        at: /home/chisel
+      - attach_workspace:
+          at: /home/chisel
 
-    - restore_cache:
-        keys:
-        - v1-dependencies-{{ .Branch }}-{{ .Revision }}-{{ checksum "firrtl.log" }}
-        # fallback to using the latest cache if no exact match is found
-        - v1-dependencies-
+      # publish FIRRTL
+      - run:
+          command: |
+            date > date.firrtl
+            (cd firrtl && cat /dev/null | sbt $SBT_ARGS +publishLocal)
 
-    # publish FIRRTL
-    - run:
-        command: |
-          date > date.firrtl
-          (cd firrtl && cat /dev/null | sbt $SBT_ARGS +publishLocal)
+      - persist_to_workspace:
+          root: /home/chisel
+          paths:
+            - repo
+            - .ivy2
+            - .m2
+            - .sbt
 
-    - persist_to_workspace:
-        root: /home/chisel
-        paths:
-        - repo
-        - .ivy2
-        - .m2
-        - .sbt
-
+  # Define a pure build chisel - currently unused since we can compile and test chisel in one step
+  #  and we don't have downstream jobs that need the published version of chisel.
   build-chisel:
     <<: *defaultImageUserWDEnv
 
     steps:
-    - attach_workspace:
-        at: /home/chisel
-    # Download and cache dependencies
-    - restore_cache:
-        keys:
-        - v1-dependencies-{{ .Branch }}-{{ .Revision }}-{{ checksum "firrtl.log" }}
-        # fallback to using the latest cache if no exact match is found
-        - v1-dependencies-
+      - attach_workspace:
+          at: /home/chisel
 
-    # publish chisel
-    - run: date > date.chisel3 && (cd chisel3 && sbt $SBT_ARGS +publishLocal)
+      # publish chisel
+      - run: date > date.chisel3 && (cd chisel3 && cat /dev/null | sbt $SBT_ARGS +publishLocal)
 
-    - persist_to_workspace:
-        root: /home/chisel
-        paths:
-        - repo
-        - .ivy2
-        - .m2
-        - .sbt
+      - persist_to_workspace:
+          root: /home/chisel
+          paths:
+            - repo
+            - .ivy2
+            - .m2
+            - .sbt
 
   test-chisel:
     <<: *defaultImageUserWDEnv
 
     steps:
-    - attach_workspace:
-        at: /home/chisel
-    - restore_cache:
-        keys:
-        - v1-dependencies-{{ .Branch }}-{{ .Revision }}-{{ checksum "firrtl.log" }}
-        # fallback to using the latest cache if no exact match is found
-        - v1-dependencies-
+      - attach_workspace:
+          at: /home/chisel
 
-    # Set environment
-    - run: echo 'export PATH="/opt/verilator/verilator_3_922/bin:/opt/yosys/bin:$PATH"' >> $BASH_ENV
-    # We seem to have memory leaks in chisel tests -
-    # we run out of memory trying to "sbt +test" but a single "sbt test" passes.
-    - run:
-        command: |
-          (cd chisel3 && sbt $SBT_ARGS test)
+      # Set environment
+      - run: echo 'export PATH="/opt/verilator/verilator_3_922/bin:/opt/yosys/bin:$PATH"' >> $BASH_ENV
+
+      # We seem to have memory leaks in chisel tests -
+      # we run out of memory trying to "sbt +test" but a single "sbt test" passes.
+      - run:
+          command: |
+            (cd chisel3 && cat /dev/null | sbt $SBT_ARGS -DminimalResources +test)
+
+  checkstyle-chisel:
+    <<: *defaultImageUserWDEnv
+
+    steps:
+      - attach_workspace:
+          at: /home/chisel
+
+      - run:
+          command: |
+            (cd chisel3 && cat /dev/null | sbt $SBT_ARGS scalastyle | gawk -e '/scalastyle Found [0-9]+ warnings/ { if ($4 > ENVIRON["CHECKSTYLE_LIMIT"]) exit 1 }')
 
 workflows:
   version: 2
 
   build_and_test:
     jobs:
-    - build-prep
-    - build-firrtl:
-        requires:
-        - build-prep
-    - build-chisel:
-        requires:
-        - build-firrtl
-    - test-chisel:
-        requires:
-        - build-chisel
+      - build-prep
+      - build-firrtl:
+          requires:
+            - build-prep
+      - test-chisel:
+          requires:
+            - build-firrtl
+      - checkstyle-chisel:
+          requires:
+            - build-firrtl
