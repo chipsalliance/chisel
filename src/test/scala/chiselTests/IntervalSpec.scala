@@ -158,15 +158,15 @@ class IntervalWrapTester extends BasicTester {
   val u1 = Wire(UInt(3.W))
   val r1 = Reg(UInt())
   r1 := u1
-  val t2 = t1.wrap(u1)
-  val t3 = t1.wrap(r1)
+  val t2 = t1.squeeze(u1)
+  val t3 = t1.squeeze(r1)
 
   assert(t2.range.upper == Closed(7), s"t1 upper ${t2.range.upper} expected ${Closed(7)}")
   assert(t3.range.upper == UnknownBound, s"t1 upper ${t3.range.upper} expected $UnknownBound")
 
   val in1 = Wire(Interval(range"[0,15].6"))
   val in2 = Wire(Interval(range"[1,6).4"))
-  val in3 = in1.wrap(in2)
+  val in3 = in1.squeeze(in2)
 
   //  assert(in3.range.lower == Closed(1), s"in3 lower ${in3.range.lower} expected ${Closed(1)}")
   assert(in3.range.lower == Closed(1), s"in3 lower ${in3.range.lower} expected ${Closed(1)}")
@@ -182,13 +182,13 @@ class IntervalWrapTester extends BasicTester {
   val disjointLeft = Wire(Interval(range"[-14,-7]"))
   val disjointRight = Wire(Interval(range"[7,11]"))
 
-  val w1 = base.wrap(enclosed)
-  val w2 = base.wrap(enclosing)
-  val w3 = base.wrap(overlapLeft)
-  val w4 = base.wrap(overlapRight)
-  val w5 = base.wrap(disjointLeft)
-  val w6 = base.wrap(disjointRight)
-  val w7 = base.wrap(enclosedRange)
+  val w1 = base.squeeze(enclosed)
+  val w2 = base.squeeze(enclosing)
+  val w3 = base.squeeze(overlapLeft)
+  val w4 = base.squeeze(overlapRight)
+  val w5 = base.squeeze(disjointLeft)
+  val w6 = base.squeeze(disjointRight)
+  val w7 = base.squeeze(enclosedRange)
 
   base := 6.I()
 

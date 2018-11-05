@@ -10,7 +10,7 @@ import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{DeprecatedSourceInfo, SourceInfo, SourceInfoTransform, SourceInfoWhiteboxTransform, UIntTransform}
 import chisel3.internal.firrtl.PrimOp._
 import _root_.firrtl.ir.{Bound, Closed, Open, UnknownBound, IntWidth}
-import _root_.firrtl.passes.IsKnown
+import _root_.firrtl.constraint.IsKnown
 import _root_.firrtl.{ir => firrtlir}
 
 //scalastyle:off method.name
@@ -1484,14 +1484,15 @@ sealed class Interval private (width: Width, val range: chisel3.internal.firrtl.
     * @param that
     * @return
     */
-  final def wrap(that: Interval): Interval = macro SourceInfoTransform.thatArg
+  final def squeeze(that: Interval): Interval = macro SourceInfoTransform.thatArg
   // TODO: (chick) port correct firrtl constraints (requires 2^x)
-  def do_wrap(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+  def do_squeeze(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
     val dest = Interval(IntervalRange(that.range.lowerBound, that.range.upperBound, this.range.binaryPoint))
     val other = that
     requireIsHardware(this, s"'this' ($this)")
     requireIsHardware(other, s"'other' ($other)")
-    pushOp(DefPrim(sourceInfo, dest, WrapOp, this.ref, other.ref, ILit(0)))
+//    pushOp(DefPrim(sourceInfo, dest, SqueezeOp, this.ref, other.ref, ILit(0)))
+    pushOp(DefPrim(sourceInfo, dest, SqueezeOp, this.ref, other.ref))
   }
 
   // Reassign interval without actually adding any logic (possibly trim MSBs)
@@ -1501,7 +1502,8 @@ sealed class Interval private (width: Width, val range: chisel3.internal.firrtl.
     val other = that
     requireIsHardware(this, s"'this' ($this)")
     requireIsHardware(other, s"'other' ($other)")
-    pushOp(DefPrim(sourceInfo, dest, WrapOp, this.ref, other.ref, ILit(1)))
+//    pushOp(DefPrim(sourceInfo, dest, SqueezeOp, this.ref, other.ref, ILit(1)))
+    pushOp(DefPrim(sourceInfo, dest, SqueezeOp, this.ref, other.ref))
   }
 
   // Conditionally reassign interval (if new interval is smaller) without actually adding any logic (possibly trim MSBs)
@@ -1511,41 +1513,42 @@ sealed class Interval private (width: Width, val range: chisel3.internal.firrtl.
     val other = that
     requireIsHardware(this, s"'this' ($this)")
     requireIsHardware(other, s"'other' ($other)")
-    pushOp(DefPrim(sourceInfo, dest, WrapOp, this.ref, other.ref, ILit(2)))
+//    pushOp(DefPrim(sourceInfo, dest, SqueezeOp, this.ref, other.ref, ILit(2)))
+    pushOp(DefPrim(sourceInfo, dest, SqueezeOp, this.ref, other.ref))
   }
 
-  final def wrap(that: UInt): Interval = macro SourceInfoTransform.thatArg
-  def do_wrap(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
-    //binop(sourceInfo, TypePropagate(_root_.firrtl.PrimOps.Wrap, Seq(this, that), Nil), WrapOp, that)
+  final def squeeze(that: UInt): Interval = macro SourceInfoTransform.thatArg
+  def do_squeeze(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    //binop(sourceInfo, TypePropagate(_root_.firrtl.PrimOps.Wrap, Seq(this, that), Nil), SqueezeOp, that)
     that.widthOption match {
       case Some(w) =>
         val u = BigDecimal(BigInt(1) << w) - 1
-        do_wrap(Wire(Interval(IntervalRange(Closed(0), Closed(u), BinaryPoint(0)))))
+        do_squeeze(Wire(Interval(IntervalRange(Closed(0), Closed(u), BinaryPoint(0)))))
       case _ =>
-        do_wrap(Wire(Interval(IntervalRange(Closed(0), UnknownBound, BinaryPoint(0)))))
+        do_squeeze(Wire(Interval(IntervalRange(Closed(0), UnknownBound, BinaryPoint(0)))))
     }
   }
 
-  final def wrap(that: SInt): Interval = macro SourceInfoTransform.thatArg
-  def do_wrap(that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
-    //binop(sourceInfo, TypePropagate(_root_.firrtl.PrimOps.Wrap, Seq(this, that), Nil), WrapOp, that)
+  final def squeeze(that: SInt): Interval = macro SourceInfoTransform.thatArg
+  def do_squeeze(that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    //binop(sourceInfo, TypePropagate(_root_.firrtl.PrimOps.Wrap, Seq(this, that), Nil), SqueezeOp, that)
     this.widthOption match {
       case Some(w) =>
         val l = -BigDecimal(BigInt(1) << (that.getWidth - 1))
         val u = BigDecimal(BigInt(1) << (that.getWidth - 1)) - 1
-        do_wrap(Wire(Interval(IntervalRange(Closed(l), Closed(u), BinaryPoint(0)))))
+        do_squeeze(Wire(Interval(IntervalRange(Closed(l), Closed(u), BinaryPoint(0)))))
       case _ =>
         val l = -BigDecimal(BigInt(1) << (that.getWidth - 1))
         val u = BigDecimal(BigInt(1) << (that.getWidth - 1)) - 1
-        do_wrap(Wire(Interval(IntervalRange(UnknownBound, UnknownBound, BinaryPoint(0)))))
+        do_squeeze(Wire(Interval(IntervalRange(UnknownBound, UnknownBound, BinaryPoint(0)))))
     }
   }
 
-  final def wrap(that: IntervalRange): Interval = macro SourceInfoTransform.thatArg
-  def do_wrap(that: IntervalRange)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+  final def squeeze(that: IntervalRange): Interval = macro SourceInfoTransform.thatArg
+  def do_squeeze(that: IntervalRange)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
     val wireFromRange = Wire(Interval(that))
     wireFromRange := DontCare
-    do_wrap(wireFromRange)
+    do_squeeze(wireFromRange)
   }
 
   final def clip(that: Interval): Interval = macro SourceInfoTransform.thatArg

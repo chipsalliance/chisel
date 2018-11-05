@@ -6,9 +6,7 @@ import chisel3._
 import core._
 import chisel3.internal._
 import chisel3.internal.sourceinfo.{NoSourceInfo, SourceInfo}
-import _root_.firrtl.annotations.Annotation
 import _root_.firrtl.{ir => firrtlir}
-import _root_.firrtl.passes.{IsAdd, IsMax}
 import _root_.firrtl.PrimOps
 
 case class PrimOp(val name: String) {
@@ -48,7 +46,7 @@ object PrimOp {
   val AsSIntOp = PrimOp("asSInt")
   val AsFixedPointOp = PrimOp("asFixedPoint")
   val AsIntervalOp = PrimOp("asInterval")
-  val WrapOp = PrimOp("wrap")
+  val SqueezeOp = PrimOp("squeeze")
   val ClipOp = PrimOp("clip")
   val SetBinaryPoint = PrimOp("bpset")
   val ShiftLeftBinaryPoint = PrimOp("bpshl")

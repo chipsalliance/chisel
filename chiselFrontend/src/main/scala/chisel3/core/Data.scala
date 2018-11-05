@@ -10,7 +10,7 @@ import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo._
 import chisel3.core.BiConnect.DontCareCantBeSink
 import _root_.firrtl.ir.{Closed, Open, UnknownBound, Bound}
-import _root_.firrtl.passes.IsKnown
+import _root_.firrtl.constraint.IsKnown
 import _root_.firrtl.{ir => firrtlir}
 
 /** User-specified directions.
