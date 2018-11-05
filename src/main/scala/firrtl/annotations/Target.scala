@@ -55,6 +55,32 @@ sealed trait Target extends Named {
     }
   }
 
+  /** Pretty serialization, ideal for error messages. Cannot be deserialized.
+    * @return Human-readable serialization
+    */
+  def prettyPrint(tab: String = ""): String = {
+    val circuitString = s"""${tab}circuit ${circuitOpt.getOrElse("???")}:"""
+    val moduleString = s"""\n$tab└── module ${moduleOpt.getOrElse("???")}:"""
+    var depth = 4
+    val tokenString = tokens.map {
+      case Ref(r) => val rx = s"""\n$tab${" "*depth}└── $r"""; depth += 4; rx
+      case Instance(i) => val ix = s"""\n$tab${" "*depth}└── inst $i """; ix
+      case OfModule(o) => val ox = s"of $o:"; depth += 4; ox
+      case Field(f) => s".$f"
+      case Index(v) => s"[$v]"
+      case Clock => s"@clock"
+      case Reset => s"@reset"
+      case Init => s"@init"
+    }.mkString("")
+
+    (moduleOpt.isEmpty, tokens.isEmpty) match {
+      case (true, true) => circuitString
+      case (_, true) => circuitString + moduleString
+      case (_, _) => circuitString + moduleString + tokenString
+    }
+  }
+
+
   /** @return Converts this [[Target]] into a [[GenericTarget]] */
   def toGenericTarget: GenericTarget = GenericTarget(circuitOpt, moduleOpt, tokens.toVector)
 
