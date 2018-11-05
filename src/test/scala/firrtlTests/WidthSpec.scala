@@ -156,4 +156,29 @@ class WidthSpec extends FirrtlFlatSpec {
       executeTest(input, check, passes)
     }
   }
+
+  behavior of "CheckWidths.UniferredWidth"
+
+  it should "provide a good error message with a full target if a user forgets an assign" in {
+    val passes = Seq(
+      ToWorkingIR,
+      ResolveKinds,
+      InferTypes,
+      CheckTypes,
+      ResolveGenders,
+      InferWidths,
+      CheckWidths)
+    val input =
+      """|circuit Foo :
+         |  module Foo :
+         |    input clock : Clock
+         |    inst bar of Bar
+         |  module Bar :
+         |    wire a: { b : UInt<1>, c : { d : UInt<1>, e : UInt } }
+         |""".stripMargin
+    val msg = intercept[CheckWidths.UninferredWidth] { executeTest(input, Nil, passes) }
+      .getMessage should include ("""|    circuit Foo:
+                                     |    └── module Bar:
+                                     |        └── a.c.e""".stripMargin)
+  }
 }

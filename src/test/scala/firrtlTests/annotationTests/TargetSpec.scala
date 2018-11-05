@@ -55,5 +55,31 @@ class TargetSpec extends FirrtlPropSpec {
       assert(Target.deserialize(t.serialize) == t, s"$t does not properly serialize/deserialize")
     }
   }
+  property("Pretty Printer should work") {
+    val circuit = CircuitTarget("A")
+    val top = circuit.module("B")
+    val targets = Seq(
+      (circuit, "circuit A:"),
+      (top,
+       """|circuit A:
+          |└── module B:""".stripMargin),
+      (top.instOf("c", "C"),
+       """|circuit A:
+          |└── module B:
+          |    └── inst c of C:""".stripMargin),
+      (top.ref("r"),
+       """|circuit A:
+          |└── module B:
+          |    └── r""".stripMargin),
+      (top.ref("r").index(1).field("hi").clock,
+       """|circuit A:
+          |└── module B:
+          |    └── r[1].hi@clock""".stripMargin),
+      (GenericTarget(None, None, Vector(Ref("r"))),
+       """|circuit ???:
+          |└── module ???:
+          |    └── r""".stripMargin)
+    )
+    targets.foreach { case (t, str) => assert(t.prettyPrint() == str, s"$t didn't properly prettyPrint") }
+  }
 }
-
