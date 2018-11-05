@@ -1,32 +1,54 @@
-# Scala CircleCI 2.0 configuration file
+# Scala CircleCI 2.1 configuration file
 #
 # Check https://circleci.com/docs/2.0/sample-config/ for more details
 #
-# Use the chisel3-tools image to build and run FIRRTL and chisel tests.
-defaultImageUserWDEnv: &defaultImageUserWDEnv
-  docker:
-    - image: ucbbar/chisel3-tools
-      user: "chisel"
 
-  working_directory: ~/repo
+version: 2.1
 
-  environment:
-    # Customize the JVM maximum heap limit
-    JVM_OPTS: -Xmx3200m
-    TERM: dumb
-    CHISEL_REV: origin/master
-    FIRRTL_REPO: git@github.com:freechipsproject/firrtl.git
-    FIRRTL_BRANCH: master
-    FIRRTL_REV: master
-    CHECKSTYLE_LIMIT: 40
-    SBT_ARGS: ""
+executors:
+  chisel-executor:
+    # Use the chisel3-tools image to build and run FIRRTL and chisel tests.
+    docker:
+      - image: ucbbar/chisel3-tools
+        user: "chisel"
 
+    working_directory: ~/repo
 
-version: 2
+    environment:
+      # Customize the JVM maximum heap limit
+      JVM_OPTS: -Xmx3200m
+      TERM: dumb
+      CHISEL_REV: origin/master
+      FIRRTL_REPO: git@github.com:freechipsproject/firrtl.git
+      FIRRTL_BRANCH: master
+      FIRRTL_REV: master
+      CHECKSTYLE_LIMIT: 40
+      SBT_ARGS: ""
+
+commands:
+  test-chisel:
+    description: "Run chisel tests with a specific Scala version"
+    parameters:
+      scalaVersion:
+        type: string
+        default: ""
+    steps:
+      - attach_workspace:
+          at: /home/chisel
+
+      # Set environment
+      - run: echo 'export PATH="/opt/verilator/verilator_3_922/bin:/opt/yosys/bin:$PATH"' >> $BASH_ENV
+
+      # The -DminimalResources flag causes sbt to run tests sequentially,
+      #  so we could actually use "sbt +test" to run all the crossVersioned tests.
+      # We currently run them separately so we can run them in parallel.
+      - run:
+          command: |
+            (cd chisel3 && cat /dev/null | sbt $SBT_ARGS -DminimalResources << parameters.scalaVersion >> test)
 
 jobs:
   build-prep:
-    <<: *defaultImageUserWDEnv
+    executor: chisel-executor
 
     steps:
 
@@ -52,7 +74,7 @@ jobs:
             - .sbt
 
   build-firrtl:
-    <<: *defaultImageUserWDEnv
+    executor: chisel-executor
 
     steps:
       - attach_workspace:
@@ -75,7 +97,7 @@ jobs:
   # Define a pure build chisel - currently unused since we can compile and test chisel in one step
   #  and we don't have downstream jobs that need the published version of chisel.
   build-chisel:
-    <<: *defaultImageUserWDEnv
+    executor: chisel-executor
 
     steps:
       - attach_workspace:
@@ -92,43 +114,20 @@ jobs:
             - .m2
             - .sbt
 
-  test-chisel-2.11:
-    <<: *defaultImageUserWDEnv
-
+  test-chisel-2_11:
+    executor: chisel-executor
     steps:
-      - attach_workspace:
-          at: /home/chisel
+      - test-chisel:
+          scalaVersion: "++2.11.12"
 
-      # Set environment
-      - run: echo 'export PATH="/opt/verilator/verilator_3_922/bin:/opt/yosys/bin:$PATH"' >> $BASH_ENV
-
-      # The -DminimalResources flag causes sbt to run tests sequentially,
-      #  so we could actually use "sbt +test" to run all the crossVersioned tests.
-      # We currently run them separately so we can run them in parallel.
-      - run:
-          command: |
-            (cd chisel3 && cat /dev/null | sbt $SBT_ARGS -DminimalResources "++2.11.12" test)
-
-  test-chisel-2.12:
-    <<: *defaultImageUserWDEnv
-
+  test-chisel-2_12:
+    executor: chisel-executor
     steps:
-      - attach_workspace:
-          at: /home/chisel
-
-      # Set environment
-      - run: echo 'export PATH="/opt/verilator/verilator_3_922/bin:/opt/yosys/bin:$PATH"' >> $BASH_ENV
-
-      # The -DminimalResources flag causes sbt to run tests sequentially,
-      #  so we could actually use "sbt +test" to run all the crossVersioned tests.
-      # We currently run them separately so we can run them in parallel.
-      - run:
-          command: |
-            (cd chisel3 && cat /dev/null | sbt $SBT_ARGS -DminimalResources "++2.12.6" test)
+      - test-chisel:
+          scalaVersion: "++2.12.6"
 
   checkstyle-chisel:
-    <<: *defaultImageUserWDEnv
-
+    executor: chisel-executor
     steps:
       - attach_workspace:
           at: /home/chisel
@@ -139,7 +138,6 @@ jobs:
             (cd chisel3 && cat /dev/null | sbt $SBT_ARGS scalastyle | gawk -v WARN_FAIL=2 -e '/scalastyle Found [0-9]+ warnings/ { print $0; if ($4 > ENVIRON["CHECKSTYLE_LIMIT"]) WARN_FAIL=1; else if (WARN_FAIL == 2) WARN_FAIL=0 }' -e 'END { exit WARN_FAIL}')
 
 workflows:
-  version: 2
 
   build_and_test:
     jobs:
@@ -147,10 +145,10 @@ workflows:
       - build-firrtl:
           requires:
             - build-prep
-      - test-chisel-2.11:
+      - test-chisel-2_11:
           requires:
             - build-firrtl
-      - test-chisel-2.12:
+      - test-chisel-2_12:
           requires:
             - build-firrtl
       - checkstyle-chisel:
@@ -160,4 +158,4 @@ workflows:
           # If we make it dependent on at least one of the tests,
           #  there's a better chance to see if the tests fail before we flag a style failure
           requires:
-            - test-chisel-2.12
+            - test-chisel-2_12
