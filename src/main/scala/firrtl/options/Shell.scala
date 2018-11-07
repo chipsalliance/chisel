@@ -38,7 +38,7 @@ class Shell(val applicationName: String) {
   lazy val registeredTransforms: Seq[RegisteredTransform] = {
     val transforms = scala.collection.mutable.ArrayBuffer[RegisteredTransform]()
     val iter = ServiceLoader.load(classOf[RegisteredTransform]).iterator()
-    parser.note("FIRRTL Transform Options")
+    if (iter.hasNext) { parser.note("FIRRTL Transform Options") }
     while (iter.hasNext) {
       val tx = iter.next()
       transforms += tx
@@ -53,8 +53,12 @@ class Shell(val applicationName: String) {
     * line options via methods of [[Shell.parser]]
     */
   def parse(args: Array[String], initAnnos: AnnotationSeq = Seq.empty): AnnotationSeq = {
-    registeredTransforms
-    registeredLibraries
+    val rtString = registeredTransforms.map(r => s"\n  - ${r.getClass.getName}").mkString
+    val rlString = registeredLibraries.map(l => s"\n  - ${l.getClass.getName}").mkString
+    parser.note(s"""|
+                    |The following FIRRTL transforms registered command line options:$rtString
+                    |The following libraries registered command line options:$rlString""".stripMargin)
+
     parser
       .parse(args, initAnnos)
       .getOrElse(throw new OptionsException("Failed to parse command line options", new IllegalArgumentException))
