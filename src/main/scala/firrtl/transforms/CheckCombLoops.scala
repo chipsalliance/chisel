@@ -15,6 +15,8 @@ import firrtl.annotations._
 import firrtl.Utils.throwInternalError
 import firrtl.graph.{MutableDiGraph,DiGraph}
 import firrtl.analyses.InstanceGraph
+import firrtl.options.RegisteredTransform
+import scopt.OptionParser
 
 object CheckCombLoops {
   class CombLoopException(info: Info, mname: String, cycle: Seq[String]) extends PassException(
@@ -42,11 +44,17 @@ case class CombinationalPath(sink: ComponentName, sources: Seq[ComponentName]) e
   * @note The pass cannot find loops that pass through ExtModules
   * @note The pass will throw exceptions on "false paths"
   */
-class CheckCombLoops extends Transform {
+class CheckCombLoops extends Transform with RegisteredTransform {
   def inputForm = LowForm
   def outputForm = LowForm
 
   import CheckCombLoops._
+
+  def addOptions(parser: OptionParser[AnnotationSeq]): Unit = parser
+    .opt[Unit]("no-check-comb-loops")
+    .action( (x, c) => c :+ DontCheckCombLoopsAnnotation )
+    .maxOccurs(1)
+    .text("Do NOT check for combinational loops (not recommended)")
 
   /*
    * A case class that represents a net in the circuit. This is

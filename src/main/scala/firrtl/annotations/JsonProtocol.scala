@@ -34,6 +34,17 @@ object JsonProtocol {
     { case JString(s) => AnnotationUtils.toNamed(s).asInstanceOf[ComponentName] },
     { case named: ComponentName => JString(named.serialize) }
   ))
+  class TransformSerializer extends CustomSerializer[Transform](format => (
+    { case JString(s) =>
+      try {
+        Class.forName(s).asInstanceOf[Class[_ <: Transform]].newInstance()
+      } catch {
+        case e: java.lang.InstantiationException => throw new FIRRTLException(
+          "NoSuchMethodException during construction of serialized Transform. Is your Transform an inner class?", e)
+        case t: Throwable => throw t
+      }},
+    { case x: Transform => JString(x.getClass.getName) }
+  ))
 
 
   class TargetSerializer extends CustomSerializer[Target](format => (
@@ -67,7 +78,7 @@ object JsonProtocol {
       new TransformClassSerializer + new NamedSerializer + new CircuitNameSerializer +
       new ModuleNameSerializer + new ComponentNameSerializer + new TargetSerializer +
       new GenericTargetSerializer + new CircuitTargetSerializer + new ModuleTargetSerializer +
-      new InstanceTargetSerializer + new ReferenceTargetSerializer
+      new InstanceTargetSerializer + new ReferenceTargetSerializer + new TransformSerializer
   }
 
   /** Serialize annotations to a String for emission */
