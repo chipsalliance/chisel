@@ -6,7 +6,23 @@ import scala.collection.mutable.{ArrayBuffer, LinkedHashMap}
 
 import chisel3.core._
 
-class ChiselException(message: String, cause: Throwable) extends Exception(message, cause)
+class ChiselException(message: String, cause: Throwable = null) extends Exception(message, cause) {
+
+  val blacklistPackages = Set("chisel3", "scala", "java", "sun", "sbt")
+
+  /** trims both the top and bottom of stack trace of elements belonging to [[blackListPackages]]
+    */
+  def pruneStackTrace(): Unit = {
+    def isBlacklisted(ste: StackTraceElement) = {
+      val packageName = ste.getClassName().takeWhile(_ != '.')
+      blacklistPackages.contains(packageName)
+    }
+
+    val prunnedLeft = getStackTrace().dropWhile(isBlacklisted)
+    val prunnedReverse = prunnedLeft.reverse.dropWhile(isBlacklisted)
+    setStackTrace(prunnedReverse.reverse)
+  }
+}
 
 private[chisel3] object throwException {
   def apply(s: String, t: Throwable = null): Nothing =
@@ -14,6 +30,12 @@ private[chisel3] object throwException {
 }
 
 /** Records and reports runtime errors and warnings. */
+private[chisel3] object ErrorLog {
+  val depTag = s"[${Console.BLUE}deprecated${Console.RESET}]"
+  val warnTag = s"[${Console.YELLOW}warn${Console.RESET}]"
+  val errTag = s"[${Console.RED}error${Console.RESET}]"
+}
+
 private[chisel3] class ErrorLog {
   /** Log an error message */
   def error(m: => String): Unit =
@@ -43,33 +65,30 @@ private[chisel3] class ErrorLog {
 
   /** Throw an exception if any errors have yet occurred. */
   def checkpoint(): Unit = {
-    val depTag = s"[${Console.BLUE}deprecated${Console.RESET}]"
-    val warnTag = s"[${Console.YELLOW}warn${Console.RESET}]"
-    val errTag = s"[${Console.RED}error${Console.RESET}]"
     deprecations.foreach { case ((message, sourceLoc), count) =>
-      println(s"$depTag $sourceLoc ($count calls): $message")
+      println(s"${ErrorLog.depTag} $sourceLoc ($count calls): $message")
     }
     errors foreach println
 
     if (!deprecations.isEmpty) {
-      println(s"$warnTag ${Console.YELLOW}There were ${deprecations.size} deprecated function(s) used." +
+      println(s"${ErrorLog.warnTag} ${Console.YELLOW}There were ${deprecations.size} deprecated function(s) used." +
           s" These may stop compiling in a future release - you are encouraged to fix these issues.${Console.RESET}")
-      println(s"$warnTag Line numbers for deprecations reported by Chisel may be inaccurate; enable scalac compiler deprecation warnings via either of the following methods:")
-      println(s"$warnTag   In the sbt interactive console, enter:")
-      println(s"""$warnTag     set scalacOptions in ThisBuild ++= Seq("-unchecked", "-deprecation")""")
-      println(s"$warnTag   or, in your build.sbt, add the line:")
-      println(s"""$warnTag     scalacOptions := Seq("-unchecked", "-deprecation")""")
+      println(s"${ErrorLog.warnTag} Line numbers for deprecations reported by Chisel may be inaccurate; enable scalac compiler deprecation warnings via either of the following methods:")
+      println(s"${ErrorLog.warnTag}   In the sbt interactive console, enter:")
+      println(s"""${ErrorLog.warnTag}     set scalacOptions in ThisBuild ++= Seq("-unchecked", "-deprecation")""")
+      println(s"${ErrorLog.warnTag}   or, in your build.sbt, add the line:")
+      println(s"""${ErrorLog.warnTag}     scalacOptions := Seq("-unchecked", "-deprecation")""")
     }
 
     val allErrors = errors.filter(_.isFatal)
     val allWarnings = errors.filter(!_.isFatal)
 
     if (!allWarnings.isEmpty && !allErrors.isEmpty) {
-      println(s"$errTag There were ${Console.RED}${allErrors.size} error(s)${Console.RESET} and ${Console.YELLOW}${allWarnings.size} warning(s)${Console.RESET} during hardware elaboration.")
+      println(s"${ErrorLog.errTag} There were ${Console.RED}${allErrors.size} error(s)${Console.RESET} and ${Console.YELLOW}${allWarnings.size} warning(s)${Console.RESET} during hardware elaboration.")
     } else if (!allWarnings.isEmpty) {
-      println(s"$warnTag There were ${Console.YELLOW}${allWarnings.size} warning(s)${Console.RESET} during hardware elaboration.")
+      println(s"${ErrorLog.warnTag} There were ${Console.YELLOW}${allWarnings.size} warning(s)${Console.RESET} during hardware elaboration.")
     } else if (!allErrors.isEmpty) {
-      println(s"$errTag There were ${Console.RED}${allErrors.size} error(s)${Console.RESET} during hardware elaboration.")
+      println(s"${ErrorLog.errTag} There were ${Console.RED}${allErrors.size} error(s)${Console.RESET} during hardware elaboration.")
     }
 
     if (!allErrors.isEmpty) {

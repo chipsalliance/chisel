@@ -507,7 +507,7 @@ trait IgnoreSeqInBundle {
   override def ignoreSeq: Boolean = true
 }
 
-class AutoClonetypeException(message: String) extends ChiselException(message, null)
+class AutoClonetypeException(message: String) extends ChiselException(message)
 
 /** Base class for data types defined as a bundle of other data types.
   *

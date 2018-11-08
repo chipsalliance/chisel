@@ -2,6 +2,7 @@
 
 package chisel3.core
 
+import chisel3.internal.ChiselException
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.{Connect, DefInvalid}
 import scala.language.experimental.macros
@@ -23,7 +24,7 @@ import chisel3.internal.sourceinfo._
 
 object BiConnect {
   // These are all the possible exceptions that can be thrown.
-  case class BiConnectException(message: String) extends Exception(message)
+  case class BiConnectException(message: String) extends ChiselException(message)
   // These are from element-level connection
   def BothDriversException =
     BiConnectException(": Both Left and Right are drivers")
