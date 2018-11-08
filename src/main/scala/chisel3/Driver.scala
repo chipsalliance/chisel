@@ -187,7 +187,7 @@ object Driver extends BackendCompilationUtilities {
       case ce: ChiselException =>
         val sw = new StringWriter
         if (!optionsManager.chiselOptions.printFullStackTrace) {
-          ce.pruneStackTrace
+          ce.trimStackTrace
         }
         ce.printStackTrace(new PrintWriter(sw))
         sw.toString.lines.foreach(line => println(s"${ErrorLog.errTag} $line"))
