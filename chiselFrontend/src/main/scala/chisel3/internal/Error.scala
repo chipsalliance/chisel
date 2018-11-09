@@ -20,7 +20,7 @@ class ChiselException(message: String, cause: Throwable = null) extends Exceptio
 
     val trimmedLeft = getStackTrace().dropWhile(isBlacklisted)
     val trimmedReverse = trimmedLeft.reverse.dropWhile(isBlacklisted)
-    trimmedReverse
+    trimmedReverse.reverse
   }
 
   def chiselStackTrace: String = {
