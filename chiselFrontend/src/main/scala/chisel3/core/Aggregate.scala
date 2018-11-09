@@ -426,6 +426,59 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId with Source
     SeqUtils.oneHotMux(indexWhereHelper(p))
 }
 
+
+abstract class FastRecord(private[chisel3] implicit val compileOptions: CompileOptions) extends Aggregate {
+
+  val elementsHash: Map[String, Data]
+  val elementsOrder: Seq[String]
+
+  def elements(): Seq[(String, Data)] = for (element <- elementsOrder) yield (element, elementsHash(element))
+
+  /** Name for Pretty Printing */
+  def className: String = this.getClass.getSimpleName
+
+  private[core] override def typeEquivalent(that: Data): Boolean = that match {
+    case that: Record =>
+      this.getClass == that.getClass &&
+        this.elements.size == that.elements.size &&
+        this.elements.forall{case (name, model) =>
+          that.elements.contains(name) &&
+            (that.elements(name) typeEquivalent model)}
+    case _ => false
+  }
+
+  // NOTE: This sets up dependent references, it can be done before closing the Module
+  private[chisel3] override def _onModuleClose: Unit = { // scalastyle:ignore method.name
+    // Since Bundle names this via reflection, it is impossible for two elements to have the same
+    // identifier; however, Namespace sanitizes identifiers to make them legal for Firrtl/Verilog
+    // which can cause collisions
+    val _namespace = Namespace.empty
+    for ((name, elt) <- elements) { elt.setRef(this, _namespace.name(name, leadingDigitOk=true)) }
+  }
+
+  private[chisel3] final def allElements: Seq[Element] = elements.toIndexedSeq.flatMap(_._2.allElements)
+//  private[chisel3] final def allElements: Seq[Element] = elementsIndexedSeq.flatMap(_._2.allElements)
+
+  override def getElements: Seq[Data] = elements.toIndexedSeq.map(_._2)
+//  override def getElements: Seq[Data] = elementsIndexedSeq.map(_._2)
+
+  // Helper because Bundle elements are reversed before printing
+  private[chisel3] def toPrintableHelper(elts: Seq[(String, Data)]): Printable = {
+    val xs =
+      if (elts.isEmpty) List.empty[Printable] // special case because of dropRight below
+      else elts flatMap { case (name, data) =>
+        List(PString(s"$name -> "), data.toPrintable, PString(", "))
+      } dropRight 1 // Remove trailing ", "
+    PString(s"$className(") + Printables(xs) + PString(")")
+  }
+  /** Default "pretty-print" implementation
+    * Analogous to printing a Map
+    * Results in "`\$className(elt0.name -> elt0.value, ...)`"
+    */
+  def toPrintable: Printable = toPrintableHelper(elements.toList)
+}
+
+
 /** Base class for Aggregates based on key values pairs of String and Data
   *
   * Record should only be extended by libraries and fairly sophisticated generators.

@@ -121,6 +121,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   type Bundle = chisel3.core.Bundle
   type IgnoreSeqInBundle = chisel3.core.IgnoreSeqInBundle
   type Record = chisel3.core.Record
+  type FastRecord = chisel3.core.FastRecord
 
   val assert = chisel3.core.assert
 
