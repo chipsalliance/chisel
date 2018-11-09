@@ -185,12 +185,14 @@ object Driver extends BackendCompilationUtilities {
       Some(elaborate(dut))
     } catch {
       case ce: ChiselException =>
-        val sw = new StringWriter
-        if (!optionsManager.chiselOptions.printFullStackTrace) {
-          ce.trimStackTrace
+        val stackTrace = if (!optionsManager.chiselOptions.printFullStackTrace) {
+          ce.chiselStackTrace
+        } else {
+          val sw = new StringWriter
+          ce.printStackTrace(new PrintWriter(sw))
+          sw.toString
         }
-        ce.printStackTrace(new PrintWriter(sw))
-        sw.toString.lines.foreach(line => println(s"${ErrorLog.errTag} $line"))
+        stackTrace.lines.foreach(line => println(s"${ErrorLog.errTag} $line"))
         None
     }
 

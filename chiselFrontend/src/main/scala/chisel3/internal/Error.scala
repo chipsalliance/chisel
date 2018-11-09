@@ -12,7 +12,7 @@ class ChiselException(message: String, cause: Throwable = null) extends Exceptio
 
   /** trims both the top and bottom of stack trace of elements belonging to [[blackListPackages]]
     */
-  def trimStackTrace(): Unit = {
+  def trimmedStackTrace: Array[StackTraceElement] = {
     def isBlacklisted(ste: StackTraceElement) = {
       val packageName = ste.getClassName().takeWhile(_ != '.')
       blacklistPackages.contains(packageName)
@@ -20,7 +20,17 @@ class ChiselException(message: String, cause: Throwable = null) extends Exceptio
 
     val trimmedLeft = getStackTrace().dropWhile(isBlacklisted)
     val trimmedReverse = trimmedLeft.reverse.dropWhile(isBlacklisted)
-    setStackTrace(trimmedReverse.reverse)
+    trimmedReverse
+  }
+
+  def chiselStackTrace: String = {
+    val trimmed = trimmedStackTrace
+    val sw = new java.io.StringWriter
+    sw.write(toString + "\n")
+    sw.write("\t...\n")
+    trimmed.foreach(ste => sw.write(s"\tat $ste\n"))
+    sw.write("\t... (Stack trace trimmed to user code only, rerun with --full-stacktrace if you wish to see the full stack trace)\n")
+    sw.toString
   }
 }
 
