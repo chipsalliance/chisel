@@ -26,6 +26,16 @@ private class Emitter(circuit: Circuit) {
     s"$dirString ${e.id.getRef.name} : ${emitType(e.id, clearDir)}"
   }
 
+  private def eltPort(childClearDir: Boolean): Data => String = {
+    (elt) => (childClearDir, firrtlUserDirOf(elt)) match {
+      case (true, _) =>
+        s"${elt.getRef.name} : ${emitType(elt, true)}"
+      case (false, SpecifiedDirection.Unspecified | SpecifiedDirection.Output) =>
+        s"${elt.getRef.name} : ${emitType(elt, false)}"
+      case (false, SpecifiedDirection.Flip | SpecifiedDirection.Input) =>
+        s"flip ${elt.getRef.name} : ${emitType(elt, false)}"
+    }
+  }
   private def emitType(d: Data, clearDir: Boolean = false): String = d match {
     case d: Clock => "Clock"
     case d: chisel3.core.EnumType => s"UInt${d.width}"
@@ -36,16 +46,13 @@ private class Emitter(circuit: Circuit) {
     case d: Vec[_] => s"${emitType(d.sample_element, clearDir)}[${d.length}]"
     case d: Record => {
       val childClearDir = clearDir ||
-          d.specifiedDirection == SpecifiedDirection.Input || d.specifiedDirection == SpecifiedDirection.Output
-      def eltPort(elt: Data): String = (childClearDir, firrtlUserDirOf(elt)) match {
-        case (true, _) =>
-          s"${elt.getRef.name} : ${emitType(elt, true)}"
-        case (false, SpecifiedDirection.Unspecified | SpecifiedDirection.Output) =>
-          s"${elt.getRef.name} : ${emitType(elt, false)}"
-        case (false, SpecifiedDirection.Flip | SpecifiedDirection.Input) =>
-          s"flip ${elt.getRef.name} : ${emitType(elt, false)}"
-      }
-      d.elements.toIndexedSeq.reverse.map(e => eltPort(e._2)).mkString("{", ", ", "}")
+        d.specifiedDirection == SpecifiedDirection.Input || d.specifiedDirection == SpecifiedDirection.Output
+      d.elements.toIndexedSeq.reverse.map(e => eltPort(childClearDir)(e._2)).mkString("{", ", ", "}")
+    }
+    case d: FastRecord => {
+      val childClearDir = clearDir ||
+        d.specifiedDirection == SpecifiedDirection.Input || d.specifiedDirection == SpecifiedDirection.Output
+      d.elements.toIndexedSeq.reverse.map(e => eltPort(childClearDir)(e._2)).mkString("{", ", ", "}")
     }
   }
 

@@ -44,6 +44,15 @@ private[chisel3] object Converter {
   //   * Move into the Chisel IR?
   def convert(arg: Arg, ctx: Component): fir.Expression = arg match {
     case Node(id) =>
+      id.getOptionRef match {
+        case None => {
+          println(s"arg: $arg")
+          println(s"id: $id")
+          println(s"node: ${Node(id)}")
+          println(s"ctx: ${ctx.name}")
+        }
+        case _ => {}
+      }
       convert(id.getRef, ctx)
     case Ref(name) =>
       fir.Reference(name, fir.UnknownType)
@@ -209,6 +218,16 @@ private[chisel3] object Converter {
     case d => d.specifiedDirection
   }
 
+  private def eltField(childClearDir: Boolean): Data => fir.Field = {
+    (elt) => (childClearDir, firrtlUserDirOf(elt)) match {
+      case (true, _) => fir.Field(elt.getRef.name, fir.Default, extractType(elt, true))
+      case (false, SpecifiedDirection.Unspecified | SpecifiedDirection.Output) =>
+        fir.Field(elt.getRef.name, fir.Default, extractType(elt, false))
+      case (false, SpecifiedDirection.Flip | SpecifiedDirection.Input) =>
+        fir.Field(elt.getRef.name, fir.Flip, extractType(elt, false))
+    }
+  }
+
   def extractType(data: Data, clearDir: Boolean = false): fir.Type = data match {
     case _: Clock => fir.ClockType
     case d: EnumType => fir.UIntType(convert(d.width))
@@ -220,14 +239,11 @@ private[chisel3] object Converter {
     case d: Record =>
       val childClearDir = clearDir ||
         d.specifiedDirection == SpecifiedDirection.Input || d.specifiedDirection == SpecifiedDirection.Output
-      def eltField(elt: Data): fir.Field = (childClearDir, firrtlUserDirOf(elt)) match {
-        case (true, _) => fir.Field(elt.getRef.name, fir.Default, extractType(elt, true))
-        case (false, SpecifiedDirection.Unspecified | SpecifiedDirection.Output) =>
-          fir.Field(elt.getRef.name, fir.Default, extractType(elt, false))
-        case (false, SpecifiedDirection.Flip | SpecifiedDirection.Input) =>
-          fir.Field(elt.getRef.name, fir.Flip, extractType(elt, false))
-      }
-      fir.BundleType(d.elements.toIndexedSeq.reverse.map { case (_, e) => eltField(e) })
+      fir.BundleType(d.elements.toIndexedSeq.reverse.map { case (_, e) => eltField(childClearDir)(e) })
+    case d: FastRecord =>
+      val childClearDir = clearDir ||
+        d.specifiedDirection == SpecifiedDirection.Input || d.specifiedDirection == SpecifiedDirection.Output
+      fir.BundleType(d.elements.toIndexedSeq.reverse.map { case (_, e) => eltField(childClearDir)(e) })
     }
 
   def convert(name: String, param: Param): fir.Param = param match {

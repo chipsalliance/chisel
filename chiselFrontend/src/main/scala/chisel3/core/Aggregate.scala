@@ -429,21 +429,23 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId with Source
 
 abstract class FastRecord(private[chisel3] implicit val compileOptions: CompileOptions) extends Aggregate {
 
+  val elementsOrder: List[String]
   val elementsHash: Map[String, Data]
-  val elementsOrder: Seq[String]
 
-  def elements(): Seq[(String, Data)] = for (element <- elementsOrder) yield (element, elementsHash(element))
+  def elementsSeq(): Seq[(String, Data)] = for (element <- elementsOrder) yield (element, elementsHash(element))
+  def elements(): ListMap[String, Data] = ListMap(elementsSeq():_*)
 
   /** Name for Pretty Printing */
   def className: String = this.getClass.getSimpleName
 
   private[core] override def typeEquivalent(that: Data): Boolean = that match {
-    case that: Record =>
+    case that: FastRecord =>
       this.getClass == that.getClass &&
-        this.elements.size == that.elements.size &&
-        this.elements.forall{case (name, model) =>
-          that.elements.contains(name) &&
-            (that.elements(name) typeEquivalent model)}
+        this.elementsHash.size == that.elementsHash.size &&
+        this.elementsHash.forall{case (name, model) =>
+          that.elementsHash.contains(name) &&
+            (that.elementsHash(name) typeEquivalent model)}
+    // TODO(tdb-alcorn) Handle type equivalence to Record? And the converse in Record.typeEquivalent
     case _ => false
   }
 
@@ -453,14 +455,12 @@ abstract class FastRecord(private[chisel3] implicit val compileOptions: CompileO
     // identifier; however, Namespace sanitizes identifiers to make them legal for Firrtl/Verilog
     // which can cause collisions
     val _namespace = Namespace.empty
-    for ((name, elt) <- elements) { elt.setRef(this, _namespace.name(name, leadingDigitOk=true)) }
+    for ((name, elt) <- elementsSeq) { elt.setRef(this, _namespace.name(name, leadingDigitOk=true)) }
   }
 
-  private[chisel3] final def allElements: Seq[Element] = elements.toIndexedSeq.flatMap(_._2.allElements)
-//  private[chisel3] final def allElements: Seq[Element] = elementsIndexedSeq.flatMap(_._2.allElements)
+  private[chisel3] final def allElements: Seq[Element] = elementsSeq.toIndexedSeq.flatMap(_._2.allElements)
 
-  override def getElements: Seq[Data] = elements.toIndexedSeq.map(_._2)
-//  override def getElements: Seq[Data] = elementsIndexedSeq.map(_._2)
+  override def getElements: Seq[Data] = elementsSeq.toIndexedSeq.map(_._2)
 
   // Helper because Bundle elements are reversed before printing
   private[chisel3] def toPrintableHelper(elts: Seq[(String, Data)]): Printable = {
@@ -475,7 +475,7 @@ abstract class FastRecord(private[chisel3] implicit val compileOptions: CompileO
     * Analogous to printing a Map
     * Results in "`\$className(elt0.name -> elt0.value, ...)`"
     */
-  def toPrintable: Printable = toPrintableHelper(elements.toList)
+  def toPrintable: Printable = toPrintableHelper(elementsSeq.toList)
 }
 
 
