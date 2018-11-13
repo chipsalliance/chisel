@@ -5,7 +5,6 @@ package chisel3.core
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox.Context
 import scala.collection.mutable
-
 import chisel3.internal.Builder.pushOp
 import chisel3.internal.firrtl.PrimOp._
 import chisel3.internal.firrtl._
@@ -15,32 +14,41 @@ import firrtl.annotations._
 
 
 object EnumAnnotations {
-  case class EnumComponentAnnotation(target: Named, enumTypeName: String) extends SingleTargetAnnotation[Named] {
+  case class EnumComponentAnnotation(target: Named, typeName: String) extends SingleTargetAnnotation[Named] {
     def duplicate(n: Named) = this.copy(target = n)
   }
 
-  case class EnumComponentChiselAnnotation(target: InstanceId, enumTypeName: String) extends ChiselAnnotation {
-    def toFirrtl = EnumComponentAnnotation(target.toNamed, enumTypeName)
+  case class EnumComponentChiselAnnotation(target: InstanceId, typeName: String) extends ChiselAnnotation {
+    override def toFirrtl = EnumComponentAnnotation(target.toNamed, typeName)
   }
 
-  case class EnumDefAnnotation(enumTypeName: String, definition: Map[String, BigInt]) extends NoTargetAnnotation
+  case class EnumVecAnnotation(target: Named, typeName: String, fields: Seq[Seq[String]]) extends SingleTargetAnnotation[Named] {
+    def duplicate(n: Named) = this.copy(target = n)
+  }
 
-  case class EnumDefChiselAnnotation(enumTypeName: String, definition: Map[String, BigInt]) extends ChiselAnnotation {
-    override def toFirrtl: Annotation = EnumDefAnnotation(enumTypeName, definition)
+  case class EnumVecChiselAnnotation(target: InstanceId, typeName: String, fields: Seq[Seq[String]]) extends ChiselAnnotation {
+    override def toFirrtl = EnumVecAnnotation(target.toNamed, typeName, fields)
+  }
+
+  case class EnumDefAnnotation(typeName: String, definition: Map[String, BigInt]) extends NoTargetAnnotation
+
+  case class EnumDefChiselAnnotation(typeName: String, definition: Map[String, BigInt]) extends ChiselAnnotation {
+    override def toFirrtl: Annotation = EnumDefAnnotation(typeName, definition)
   }
 }
 import EnumAnnotations._
 
 
-abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolean = false) extends Element {
+abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolean = true) extends Element {
   override def cloneType: this.type = factory().asInstanceOf[this.type]
 
   private[core] def compop(sourceInfo: SourceInfo, op: PrimOp, other: EnumType): Bool = {
     requireIsHardware(this, "bits operated on")
     requireIsHardware(other, "bits operated on")
 
-    if(!this.typeEquivalent(other))
-      throwException(s"Enum types are not equivalent: ${this.enumTypeName}, ${other.enumTypeName}")
+    if(!this.typeEquivalent(other)) {
+      throwException(s"Enum types are not equivalent: ${this.typeName}, ${other.typeName}")
+    }
 
     pushOp(DefPrim(sourceInfo, Bool(), op, this.ref, other.ref))
   }
@@ -84,12 +92,8 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
 
   def next(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type = {
     if (litOption.isDefined) {
-      val index = factory.all.indexOf(this)
-
-      if (index < factory.all.length-1)
-        factory.all(index+1).asInstanceOf[this.type]
-      else
-        factory.all.head.asInstanceOf[this.type]
+      val index = (factory.all.indexOf(this) + 1) % factory.all.length
+      factory.all(index).asInstanceOf[this.type]
     } else {
       val enums_with_nexts = factory.all zip (factory.all.tail :+ factory.all.head)
       val next_enum = SeqUtils.priorityMux(enums_with_nexts.map { case (e,n) => (this === e, n) } )
@@ -102,25 +106,60 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
     lit.bindLitArg(this)
   }
 
-  override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
+  override private[chisel3] def bind(target: Binding, parentDirection: SpecifiedDirection = SpecifiedDirection.Unspecified) = {
     super.bind(target, parentDirection)
 
-    // If we try to annotate something that is bound to a literal, we get a FIRRTL annotation exception.
-    // To workaround that, we only annotate enums that are not bound to literals.
+    // Make sure we only annotate hardware and not literals
     if (selfAnnotating && litOption.isEmpty) {
       annotateEnum()
     }
   }
 
+  // This function conducts a depth-wise search to find all enum-type fields within a vector or bundle (or vector of bundles)
+  private def enumFields(d: Aggregate): Seq[Seq[String]] = d match {
+    case v: Vec[_] => v.sample_element match {
+      case b: Bundle => enumFields (b)
+      case _ => Seq ()
+    }
+    case b: Bundle =>
+      b.elements.collect {
+        case (name, e: EnumType) if this.typeEquivalent(e) => Seq(Seq(name))
+        case (name, v: Vec[_]) if this.typeEquivalent(v.sample_element) => Seq(Seq(name))
+        case (name, b2: Bundle) => enumFields(b2).map(name +: _)
+      }.flatten.toSeq
+  }
+
+  private def outerMostVec(d: Data = this): Option[Vec[_]] = {
+    val currentVecOpt = d match {
+      case v: Vec[_] => Some(v)
+      case _ => None
+    }
+
+    d.binding match {
+      case Some(ChildBinding(parent)) => outerMostVec(parent) match {
+        case outer @ Some(_) => outer
+        case None => currentVecOpt
+      }
+      case _ => currentVecOpt
+    }
+  }
+
   private def annotateEnum(): Unit = {
-    annotate(EnumComponentChiselAnnotation(this, enumTypeName))
+    val anno = outerMostVec() match {
+      case Some(v) => EnumVecChiselAnnotation(v, typeName, enumFields(v))
+      case None => EnumComponentChiselAnnotation(this, typeName)
+    }
+
+    if (!Builder.annotations.contains(anno)) {
+      annotate(anno)
+    }
 
     if (!Builder.annotations.contains(factory.globalAnnotation)) {
       annotate(factory.globalAnnotation)
     }
   }
 
-  protected def enumTypeName: String = factory.enumTypeName
+  protected def typeName: String = factory.enumTypeName
 
   def toPrintable: Printable = FullName(this) // TODO: Find a better pretty printer
 }
@@ -185,19 +224,16 @@ abstract class EnumFactory {
 
   def apply(n: UInt)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Type = {
     if (n.litOption.isDefined) {
-      val result = enumInstances.find(_.litValue == n.litValue)
-
-      if (result.isEmpty) {
-        throwException(s"${n.litValue}.U is not a valid value for $enumTypeName")
-      } else {
-        result.get
+      enumInstances.find(_.litValue == n.litValue) match {
+        case Some(result) => result
+        case None => throwException(s"${n.litValue} is not a valid value for $enumTypeName")
       }
     } else if (!n.isWidthKnown) {
       throwException(s"Non-literal UInts being cast to $enumTypeName must have a defined width")
     } else if (n.getWidth > this.getWidth) {
       throwException(s"The UInt being cast to $enumTypeName is wider than $enumTypeName's width ($getWidth)")
     } else {
-      Builder.warning(s"A non-literal UInt is being cast to $enumTypeName. You can check that its value is legal by calling isValid")
+      Builder.warning(s"Casting non-literal UInt to $enumTypeName. You can check that its value is legal by calling isValid")
 
       val glue = Wire(new UnsafeEnum(width))
       glue := n
@@ -210,13 +246,13 @@ abstract class EnumFactory {
 
 
 private[core] object EnumMacros {
-  def ValImpl(c: Context) : c.Tree = {
+  def ValImpl(c: Context): c.Tree = {
     import c.universe._
     val names = getNames(c)
     q"""this.do_Value(Seq(..$names))"""
   }
 
-  def ValCustomImpl(c: Context)(id: c.Expr[UInt]) = {
+  def ValCustomImpl(c: Context)(id: c.Expr[UInt]): c.Tree = {
     import c.universe._
     val names = getNames(c)
     q"""this.do_Value(Seq(..$names), $id)"""

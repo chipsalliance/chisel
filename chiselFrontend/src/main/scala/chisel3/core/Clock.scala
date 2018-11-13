@@ -12,8 +12,10 @@ object Clock {
 }
 
 // TODO: Document this.
-sealed class Clock(private[chisel3] val width: Width = Width(1)) extends Element {
+sealed class Clock extends Element {
   def cloneType: this.type = Clock().asInstanceOf[this.type]
+
+  private[chisel3] override val width: Width = Width(1)
 
   private[core] def typeEquivalent(that: Data): Boolean =
     this.getClass == that.getClass
