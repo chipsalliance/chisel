@@ -436,6 +436,28 @@ package object chisel3 {    // scalastyle:ignore package.object.name
 
     val IO = chisel3.core.IO
 
+    // Rocket Chip-style clonemodule
+
+    /** A record containing the results of CloneModuleAsRecord
+      * The apply method is retrieves the element with the supplied name.
+      */
+    type ClonePorts = chisel3.core.BaseModule.ClonePorts
+
+    object CloneModuleAsRecord {
+      /** Clones an existing module and returns a record of all its top-level ports.
+        * Each element of the record is named with a string matching the
+        * corresponding port's name and shares the port's type.
+        * @example {{{
+        * val q1 = Module(new Queue(UInt(32.W), 2))
+        * val q2_io = CloneModuleAsRecord(q1)("io").asInstanceOf[q1.io.type]
+        * q2_io.enq <> q1.io.deq
+        * }}}
+        */
+      def apply(proto: BaseModule)(implicit sourceInfo: chisel3.internal.sourceinfo.SourceInfo, compileOptions: chisel3.core.CompileOptions): ClonePorts = {
+        chisel3.core.BaseModule.cloneIORecord(proto)
+      }
+    }
+
     // Implicit conversions for BlackBox Parameters
     implicit def fromIntToIntParam(x: Int): IntParam = IntParam(BigInt(x))
     implicit def fromLongToIntParam(x: Long): IntParam = IntParam(BigInt(x))
