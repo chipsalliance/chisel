@@ -59,6 +59,9 @@ trait FirrtlRunners extends BackendCompilationUtilities {
     val compiler = new MinimumVerilogCompiler
     val prefix = circuit.main
     val testDir = createTestDirectory(prefix + "_equivalence_test")
+    val firrtlWriter = new PrintWriter(s"${testDir.getAbsolutePath}/$prefix.fir")
+    firrtlWriter.write(input)
+    firrtlWriter.close()
 
     val customVerilog = compiler.compileAndEmit(CircuitState(circuit, HighForm, customAnnotations),
       new GetNamespace +: new RenameTop(s"${prefix}_custom") +: customTransforms)

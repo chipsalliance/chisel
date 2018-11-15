@@ -246,7 +246,29 @@ class VerilogEmitter extends SeqTransform with Emitter {
        case _: UIntLiteral | _: SIntLiteral | _: WRef | _: WSubField =>
        case _ => throw EmitterException(s"Can't emit ${e.getClass.getName} as PrimOp argument")
      }
-     doprim.args foreach checkArgumentLegality
+
+     def checkCatArgumentLegality(e: Expression): Unit = e match {
+       case _: UIntLiteral | _: SIntLiteral | _: WRef | _: WSubField =>
+       case DoPrim(Cat, args, _, _) => args foreach(checkCatArgumentLegality)
+       case _ => throw EmitterException(s"Can't emit ${e.getClass.getName} as PrimOp argument")
+     }
+
+     def castCatArgs(a0: Expression, a1: Expression): Seq[Any] = {
+       val a0Seq = a0 match {
+         case cat@DoPrim(PrimOps.Cat, args, _, _) => castCatArgs(args.head, args(1))
+         case _ => Seq(cast(a0))
+       }
+       val a1Seq = a1 match {
+         case cat@DoPrim(PrimOps.Cat, args, _, _) => castCatArgs(args.head, args(1))
+         case _ => Seq(cast(a1))
+       }
+       a0Seq ++ Seq(",") ++ a1Seq
+     }
+
+     doprim.op match {
+       case Cat => doprim.args foreach(checkCatArgumentLegality)
+       case other => doprim.args foreach checkArgumentLegality
+     }
      doprim.op match {
        case Add => Seq(cast_if(a0), " + ", cast_if(a1))
        case Addw => Seq(cast_if(a0), " + ", cast_if(a1))
@@ -298,7 +320,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
        case Andr => Seq("&", cast(a0))
        case Orr => Seq("|", cast(a0))
        case Xorr => Seq("^", cast(a0))
-       case Cat => Seq("{", cast(a0), ",", cast(a1), "}")
+       case Cat => "{" +: (castCatArgs(a0, a1) :+ "}")
        // If selecting zeroth bit and single-bit wire, just emit the wire
        case Bits if c0 == 0 && c1 == 0 && bitWidth(a0.tpe) == BigInt(1) => Seq(a0)
        case Bits if c0 == c1 => Seq(a0, "[", c0, "]")
