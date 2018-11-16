@@ -93,6 +93,9 @@ lazy val publishSettings = Seq (
 lazy val chiselSettings = Seq (
   name := "chisel3",
 
+// sbt 1.2.6 fails with `Symbol 'term org.junit' is missing from the classpath`
+// when compiling tests under 2.11.12
+// An explicit dependency on junit seems to alleviate this.
   libraryDependencies ++= Seq(
     "junit" % "junit" % "4.12" % "test",
     "org.scalatest" %% "scalatest" % "3.0.5" % "test",
