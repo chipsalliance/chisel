@@ -26,10 +26,7 @@ class OptionsViewSpec extends FlatSpec with Matchers {
       case _                  => foo
     }
 
-    def view(options: AnnotationSeq): Option[Foo] = {
-      val annoSeq = options.foldLeft(Foo())(append)
-      Some(annoSeq)
-    }
+    def view(options: AnnotationSeq): Foo = options.foldLeft(Foo())(append)
   }
 
   /* An OptionsView that converts an AnnotationSeq to Option[Bar] */
@@ -39,10 +36,7 @@ class OptionsViewSpec extends FlatSpec with Matchers {
       case _                 => bar
     }
 
-    def view(options: AnnotationSeq): Option[Bar] = {
-      val annoSeq = options.foldLeft(Bar())(append)
-      Some(annoSeq)
-    }
+    def view(options: AnnotationSeq): Bar = options.foldLeft(Bar())(append)
   }
 
   behavior of "OptionsView"
@@ -52,10 +46,10 @@ class OptionsViewSpec extends FlatSpec with Matchers {
     val annos = Seq(NameAnnotation("foo"), ValueAnnotation(42))
 
     info("Foo conversion okay")
-    FooView.view(annos) should be (Some(Foo(Some("foo"), Some(42))))
+    FooView.view(annos) should be (Foo(Some("foo"), Some(42)))
 
     info("Bar conversion okay")
-    BarView.view(annos) should be (Some(Bar("foo")))
+    BarView.view(annos) should be (Bar("foo"))
   }
 
   behavior of "Viewer"
@@ -67,9 +61,9 @@ class OptionsViewSpec extends FlatSpec with Matchers {
     val annos = Seq[Annotation]()
 
     info("Foo view okay")
-    view[Foo](annos) should be (Some(Foo(None, None)))
+    view[Foo](annos) should be (Foo(None, None))
 
     info("Bar view okay")
-    view[Bar](annos) should be (Some(Bar()))
+    view[Bar](annos) should be (Bar())
   }
 }

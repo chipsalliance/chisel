@@ -19,7 +19,7 @@ case class OptionsException(msg: String, cause: Throwable = null) extends Except
 class Shell(val applicationName: String) {
 
   /** Command line argument parser (OptionParser) with modifications */
-  final val parser = new OptionParser[AnnotationSeq](applicationName) with DoNotTerminateOnExit with DuplicateHandling
+  final val parser = new OptionParser[AnnotationSeq](applicationName) with DuplicateHandling
 
   /** Contains all discovered [[RegisteredLibrary]] */
   lazy val registeredLibraries: Seq[RegisteredLibrary] = {
@@ -60,4 +60,8 @@ class Shell(val applicationName: String) {
       .getOrElse(throw new OptionsException("Failed to parse command line options", new IllegalArgumentException))
   }
 
+  parser.note("Shell Options")
+  Seq( InputAnnotationFileAnnotation(),
+       TargetDirAnnotation() )
+    .map(_.addOptions(parser))
 }
