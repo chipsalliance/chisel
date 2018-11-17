@@ -22,6 +22,7 @@ class RemoveKeywordCollisions(keywords: Set[String]) extends Transform {
   val inputForm: CircuitForm = LowForm
   val outputForm: CircuitForm = LowForm
   private type Renames = mutable.HashMap[String, String]
+  private type ModuleType = mutable.HashMap[String, ir.Type]
   private val inlineDelim = "_"
 
   /** Generate a new name, by appending underscores, that will not conflict with the existing namespace
@@ -82,7 +83,9 @@ class RemoveKeywordCollisions(keywords: Set[String]) extends Transform {
     * @note This is not intended for fixing arbitrary types, only [[BundleType]] in instance [[WRef]]s
     */
   private def onType(t: ir.Type)
-                    (implicit renames: RenameMap, ns: Namespace, scope: Option[ModuleName]): ir.Type = t match {
+                    (implicit renames: RenameMap,
+                     ns: Namespace,
+                     scope: Option[ModuleName]): ir.Type = t match {
     case b: ir.BundleType => b.copy(fields = b.fields.map(f => f.copy(name = onName(f.name))))
     case _                 => t
   }
@@ -95,8 +98,11 @@ class RemoveKeywordCollisions(keywords: Set[String]) extends Transform {
     * @return an [[Expression]] without keyword conflicts
     */
   private def onExpression(e: ir.Expression)
-                          (implicit renames: RenameMap, ns: Namespace, scope: Option[ModuleName],
-                           iToM: mutable.Map[ComponentName, ModuleName]): ir.Expression = e match {
+                          (implicit renames: RenameMap,
+                           ns: Namespace,
+                           scope: Option[ModuleName],
+                           iToM: mutable.Map[ComponentName, ModuleName],
+                           modType: ModuleType): ir.Expression = e match {
     case wsf@ WSubField(wr@ WRef(name, _, InstanceKind, _), port, _, _) =>
       val subInst = ComponentName(name, scope.get)
       val subModule = iToM(subInst)
@@ -104,7 +110,7 @@ class RemoveKeywordCollisions(keywords: Set[String]) extends Transform {
 
       val wrx = wr.copy(
         name = renames.get(subInst).orElse(Some(Seq(subInst))).get.head.name,
-        tpe = onType(wr.tpe)(renames, ns, Some(subModule)))
+        tpe = modType(subModule.name))
 
       wsf.copy(
         expr = wrx,
@@ -120,8 +126,11 @@ class RemoveKeywordCollisions(keywords: Set[String]) extends Transform {
     * @return a [[Statement]] without keyword conflicts
     */
   private def onStatement(s: ir.Statement)
-                         (implicit renames: RenameMap, ns: Namespace, scope: Option[ModuleName],
-                          iToM: mutable.Map[ComponentName, ModuleName]): ir.Statement = s match {
+                         (implicit renames: RenameMap,
+                          ns: Namespace,
+                          scope: Option[ModuleName],
+                          iToM: mutable.Map[ComponentName, ModuleName],
+                          modType: ModuleType): ir.Statement = s match {
     case wdi: WDefInstance =>
       val subModule = ModuleName(wdi.module, scope.get.circuit)
       val modulex = renames.get(subModule).orElse(Some(Seq(subModule))).get.head.name
@@ -151,19 +160,27 @@ class RemoveKeywordCollisions(keywords: Set[String]) extends Transform {
     * @param circuit the enclosing [[CircuitName]]
     * @return a [[DefModule]] without keyword conflicts
     */
-  private def onModule(renames: RenameMap, circuit: CircuitName)(m: ir.DefModule): ir.DefModule = {
+  private def onModule(renames: RenameMap,
+                       circuit: CircuitName,
+                       modType: ModuleType)
+                      (m: ir.DefModule): ir.DefModule = {
     implicit val moduleNamespace: Namespace = Namespace(m)
     implicit val scope: Option[ModuleName] = Some(ModuleName(m.name, circuit))
     implicit val r: RenameMap = renames
+    implicit val mType: ModuleType = modType
 
     // Store local renames of refs to instances to their renamed modules. This is needed when renaming port connections
     // on subfields where only the local instance name is available.
     implicit val iToM: mutable.Map[ComponentName, ModuleName] = mutable.Map.empty
 
-    m
+    val mx = m
       .map(onPort)
       .map(onStatement)
       .map(onName(_: String)(renames, moduleNamespace, Some(circuit)))
+
+    // Must happen after renaming the name and ports of the module itself
+    mType += (mx.name -> onType(Utils.module_type(mx)))
+    mx
   }
 
   /** Fix any Verilog keyword collisions in a [[firrtl.ir Circuit]]
@@ -174,11 +191,12 @@ class RemoveKeywordCollisions(keywords: Set[String]) extends Transform {
   def run(c: ir.Circuit, renames: RenameMap = RenameMap()): ir.Circuit = {
     implicit val circuitNamespace: Namespace = Namespace(c)
     implicit val scope: Option[CircuitName] = Some(CircuitName(c.main))
+    val modType: ModuleType = new ModuleType()
 
     // Rename all modules from leafs to root in one pass while updating a shared rename map. Going from leafs to roots
     // ensures that the rename map is safe for parents to blindly consult.
     val modulesx: Map[ModuleName, Seq[ir.DefModule]] = new InstanceGraph(c).moduleOrder.reverse
-      .map(onModule(renames, scope.get))
+      .map(onModule(renames, scope.get, modType))
       .groupBy(m => ModuleName(m.name, scope.get))
 
     // Reorder the renamed modules into the original circuit order.
