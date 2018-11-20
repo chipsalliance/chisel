@@ -173,7 +173,7 @@ object Driver extends BackendCompilationUtilities {
 
   /**
     * Run the chisel3 compiler and possibly the firrtl compiler with options specified
- *
+    *
     * @param optionsManager The options specified
     * @param dut                    The device under test
     * @return                       An execution result with useful stuff, or failure with message

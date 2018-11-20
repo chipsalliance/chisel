@@ -9,8 +9,11 @@ import chisel3.core._
 class ChiselException(message: String, cause: Throwable = null) extends Exception(message, cause) {
 
   val blacklistPackages = Set("chisel3", "scala", "java", "sun", "sbt")
+  val builderName = "chisel3.internal.Builder"
 
-  /** trims both the top and bottom of stack trace of elements belonging to [[blackListPackages]]
+  /** trims the top of the stack of elements belonging to [[blacklistPackages]]
+    * then trims the bottom elements until it reaches [[builderName]]
+    * then continues trimming elements belonging to [[blacklistPackages]]
     */
   def trimmedStackTrace: Array[StackTraceElement] = {
     def isBlacklisted(ste: StackTraceElement) = {
@@ -18,9 +21,11 @@ class ChiselException(message: String, cause: Throwable = null) extends Exceptio
       blacklistPackages.contains(packageName)
     }
 
-    val trimmedLeft = getStackTrace().dropWhile(isBlacklisted)
-    val trimmedReverse = trimmedLeft.reverse.dropWhile(isBlacklisted)
-    trimmedReverse.reverse
+    val trimmedLeft = getStackTrace().view.dropWhile(isBlacklisted)
+    val trimmedReverse = trimmedLeft.reverse
+      .dropWhile(ste => !ste.getClassName.startsWith(builderName))
+      .dropWhile(isBlacklisted)
+    trimmedReverse.reverse.toArray
   }
 
   def chiselStackTrace: String = {
