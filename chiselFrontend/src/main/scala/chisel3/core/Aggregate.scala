@@ -240,7 +240,7 @@ sealed class Vec[T <: Data] private[core] (gen: => T, val length: Int)
   def apply(idx: Int): T = self(idx)
 
   override def cloneType: this.type = {
-    new Vec(gen.cloneType, length).asInstanceOf[this.type]
+    new Vec(gen.cloneTypeFull, length).asInstanceOf[this.type]
   }
 
   override def getElements: Seq[Data] =
