@@ -25,7 +25,11 @@ sealed abstract class Aggregate extends Data {
     }
 
     // Check that children obey the directionality rules.
-    val childDirections = getElements.map(_.direction).toSet
+    val childDirections = getElements.collect({
+      case elt: Element => elt.direction
+      // Don't check the directions of empty aggregates
+      case agg: Aggregate if agg.getElements.nonEmpty => agg.direction
+    }).toSet
     direction = if (childDirections == Set()) {  // Sadly, Scala can't do set matching
       // If empty, use my assigned direction
       resolvedDirection match {

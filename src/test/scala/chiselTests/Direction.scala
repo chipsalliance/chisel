@@ -62,4 +62,34 @@ class DirectionSpec extends ChiselPropSpec with Matchers {
   property("Top-level forced outputs should be assignable") {
     elaborate(new TopDirectionOutput)
   }
+
+  property("Empty Vecs should not cause direction errors") {
+    elaborate(new Module {
+      val io = IO(new Bundle {
+        val foo = Input(UInt(8.W))
+        val x = Vec(0, Output(UInt(8.W)))
+      })
+    })
+    elaborate(new Module {
+      val io = IO(new Bundle {
+        val foo = Input(UInt(8.W))
+        val x = Flipped(Vec(0, Output(UInt(8.W))))
+      })
+    })
+  }
+
+  property("Empty Bundles should not cause direction errors") {
+    elaborate(new Module {
+      val io = IO(new Bundle {
+        val foo = Input(UInt(8.W))
+        val x = new Bundle {}
+      })
+    })
+    elaborate(new Module {
+      val io = IO(new Bundle {
+        val foo = Input(UInt(8.W))
+        val x = Flipped(new Bundle {})
+      })
+    })
+  }
 }
