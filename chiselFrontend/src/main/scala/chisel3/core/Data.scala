@@ -69,6 +69,12 @@ object ActualDirection {
   case object Flipped extends BidirectionalDirection
 
   case class Bidirectional(dir: BidirectionalDirection) extends ActualDirection
+
+  def fromSpecified(direction: SpecifiedDirection): ActualDirection = direction match {
+    case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip => ActualDirection.Unspecified
+    case SpecifiedDirection.Output => ActualDirection.Output
+    case SpecifiedDirection.Input => ActualDirection.Input
+  }
 }
 
 object debug {  // scalastyle:ignore object.name

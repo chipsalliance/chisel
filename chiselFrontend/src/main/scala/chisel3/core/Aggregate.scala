@@ -25,18 +25,22 @@ sealed abstract class Aggregate extends Data {
     }
 
     // Check that children obey the directionality rules.
-    val childDirections = getElements.collect({
-      case elt: Element => elt.direction
-      // Don't check the directions of empty aggregates
-      case agg: Aggregate if agg.getElements.nonEmpty => agg.direction
-    }).toSet
+    val childDirections = this match {
+      case vec: Vec[_] =>
+        // Use direction of sample_element, must bind it to get an ActualDirection
+        vec.sample_element.bind(ChildBinding(this), resolvedDirection)
+        Set(vec.sample_element.direction)
+      case rec: Record =>
+        getElements.collect({
+          case elt: Element => elt.direction
+          case vec: Vec[_] => vec.direction
+          // Don't check the directions of empty Records (see https://github.com/freechipsproject/chisel3/pull/946)
+          case rec: Record if rec.getElements.nonEmpty => rec.direction
+        }).toSet
+    }
     direction = if (childDirections == Set()) {  // Sadly, Scala can't do set matching
       // If empty, use my assigned direction
-      resolvedDirection match {
-        case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip => ActualDirection.Unspecified
-        case SpecifiedDirection.Output => ActualDirection.Output
-        case SpecifiedDirection.Input => ActualDirection.Input
-      }
+      ActualDirection.fromSpecified(resolvedDirection)
     } else if (childDirections == Set(ActualDirection.Unspecified)) {
       ActualDirection.Unspecified
     } else if (childDirections == Set(ActualDirection.Input)) {

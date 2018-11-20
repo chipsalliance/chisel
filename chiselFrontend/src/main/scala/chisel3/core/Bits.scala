@@ -27,11 +27,7 @@ abstract class Element extends Data {
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection) {
     binding = target
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
-    direction = resolvedDirection match {
-      case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip => ActualDirection.Unspecified
-      case SpecifiedDirection.Output => ActualDirection.Output
-      case SpecifiedDirection.Input => ActualDirection.Input
-    }
+    direction = ActualDirection.fromSpecified(resolvedDirection)
   }
 
   private[core] override def topBindingOpt: Option[TopBinding] = super.topBindingOpt match {
