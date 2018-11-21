@@ -80,7 +80,7 @@ class GoodBoolConversion extends Module {
     val u = Input(UInt(1.W))
     val b = Output(Bool())
   })
-  io.b := io.u.toBool
+  io.b := io.u.asBool
 }
 
 class BadBoolConversion extends Module {
@@ -88,7 +88,7 @@ class BadBoolConversion extends Module {
     val u = Input(UInt(5.W))
     val b = Output(Bool())
   })
-  io.b := io.u.toBool
+  io.b := io.u.asBool
 }
 
 class NegativeShift(t: => Bits) extends Module {

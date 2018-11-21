@@ -13,5 +13,5 @@ object ImplicitConversions {
   // The explicit fromIntToLiteral resolves an ambiguous conversion between fromIntToLiteral and
   // UInt.asUInt.
   implicit def intToUInt(x: Int): UInt = chisel3.core.fromIntToLiteral(x).asUInt
-  implicit def booleanToBool(x: Boolean): Bool = x.asBool
+  implicit def booleanToBool(x: Boolean): Bool = x.B
 }

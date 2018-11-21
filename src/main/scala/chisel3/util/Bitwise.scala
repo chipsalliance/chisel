@@ -69,7 +69,7 @@ object Fill {
       case 0 => UInt(0.W)
       case 1 => x
       case _ if x.isWidthKnown && x.getWidth == 1 =>
-        Mux(x.toBool, ((BigInt(1) << n) - 1).asUInt(n.W), 0.U(n.W))
+        Mux(x.asBool, ((BigInt(1) << n) - 1).asUInt(n.W), 0.U(n.W))
       case _ =>
         val nBits = log2Ceil(n + 1)
         val p2 = Array.ofDim[UInt](nBits)
