@@ -140,13 +140,13 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers {
     assertTesterPasses(new UIntLitExtractTester)
   }
 
-  property("toBools should support chained apply") {
+  property("asBools should support chained apply") {
     elaborate(new Module {
       val io = IO(new Bundle {
         val in = Input(UInt(8.W))
         val out = Output(Bool())
       })
-      io.out := io.in.toBools()(2)
+      io.out := io.in.asBools()(2)
     })
   }
 }

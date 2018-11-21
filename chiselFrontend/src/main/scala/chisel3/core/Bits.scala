@@ -364,7 +364,15 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
   final def toBools(): Seq[Bool] = macro SourceInfoTransform.noArg
 
   /** @group SourceInfoTransformMacro */
-  def do_toBools(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Seq[Bool] =
+  @chiselRuntimeDeprecated
+  @deprecated("Use asBools instead", "3.2")
+  def do_toBools(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Seq[Bool] = do_asBools
+
+  /** Returns the contents of this wire as a [[scala.collection.Seq]] of [[Bool]]. */
+  final def asBools(): Seq[Bool] = macro SourceInfoTransform.noArg
+
+  /** @group SourceInfoTransformMacro */
+  def do_asBools(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Seq[Bool] =
     Seq.tabulate(this.getWidth)(i => this(i))
 
   /** Reinterpret this $coll as a [[SInt]]

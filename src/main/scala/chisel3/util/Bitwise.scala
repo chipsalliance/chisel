@@ -24,7 +24,7 @@ object FillInterleaved {
     *
     * Output data-equivalent to in(size(in)-1) (n times) ## ... ## in(1) (n times) ## in(0) (n times)
     */
-  def apply(n: Int, in: UInt): UInt = apply(n, in.toBools)
+  def apply(n: Int, in: UInt): UInt = apply(n, in.asBools)
 
   /** Creates n repetitions of each bit of x in order.
     *
