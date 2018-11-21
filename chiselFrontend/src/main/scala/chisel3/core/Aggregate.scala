@@ -28,7 +28,7 @@ sealed abstract class Aggregate extends Data {
     val childDirections = this match {
       case vec: Vec[_] =>
         // Use direction of sample_element, must bind it to get an ActualDirection
-        vec.sample_element.bind(ChildBinding(this), resolvedDirection)
+        vec.sample_element.bind(SampleElementBinding(vec), resolvedDirection)
         Set(vec.sample_element.direction)
       case rec: Record =>
         getElements.collect({
