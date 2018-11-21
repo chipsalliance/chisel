@@ -139,5 +139,15 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers {
   property("Bit extraction on literals should work for all non-negative indices") {
     assertTesterPasses(new UIntLitExtractTester)
   }
+
+  property("toBools should support chained apply") {
+    elaborate(new Module {
+      val io = IO(new Bundle {
+        val in = Input(UInt(8.W))
+        val out = Output(Bool())
+      })
+      io.out := io.in.toBools()(2)
+    })
+  }
 }
 

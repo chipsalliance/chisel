@@ -364,7 +364,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
   final def toBools(): Seq[Bool] = macro SourceInfoTransform.noArg
 
   /** @group SourceInfoTransformMacro */
-  def toBools(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Seq[Bool] =
+  def do_toBools(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Seq[Bool] =
     Seq.tabulate(this.getWidth)(i => this(i))
 
   /** Reinterpret this $coll as a [[SInt]]
