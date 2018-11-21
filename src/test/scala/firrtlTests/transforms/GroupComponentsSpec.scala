@@ -8,7 +8,7 @@ import firrtl.ir._
 
 import FirrtlCheckers._
 
-class GroupComponentsSpec extends LowTransformSpec {
+class GroupComponentsSpec extends MiddleTransformSpec {
   def transform = new GroupComponents()
   val top = "Top"
   def topComp(name: String): ComponentName = ComponentName(name, ModuleName(top, CircuitName(top)))
@@ -71,15 +71,18 @@ class GroupComponentsSpec extends LowTransformSpec {
         |    output out: UInt<16>
         |    inst inst of Child
         |    node n = UInt<16>("h0")
-        |    inst.in_IN <= in
-        |    node a = UInt<16>("h0")
-        |    node b = a
+        |    wire a : UInt<16>
+        |    wire b : UInt<16>
         |    out <= inst.w_OUT
+        |    inst.in_IN <= in
+        |    a <= UInt<16>("h0")
+        |    b <= a
         |  module Child :
-        |    input in_IN : UInt<16>
         |    output w_OUT : UInt<16>
-        |    node w = in_IN
+        |    input in_IN : UInt<16>
+        |    wire w : UInt<16>
         |    w_OUT <= w
+        |    w <= in_IN
       """.stripMargin
     execute(input, check, groups)
   }

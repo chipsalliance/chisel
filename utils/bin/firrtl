@@ -2,6 +2,5 @@
 
 # This may be a brittle way to find $(root_dir)/utils/bin, is there a better way?
 path=`dirname "$0"`
-cmd="java -cp ${path}/firrtl.jar firrtl.Driver ${@:1}"
+cmd="java -cp ${path}/firrtl.jar firrtl.stage.FirrtlMain ${@:1}"
 eval $cmd
-

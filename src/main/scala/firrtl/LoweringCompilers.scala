@@ -3,6 +3,7 @@
 package firrtl
 
 import firrtl.transforms.IdentityTransform
+import firrtl.options.StageUtils
 
 sealed abstract class CoreTransform extends SeqTransform
 
@@ -134,7 +135,7 @@ import firrtl.transforms.BlackBoxSourceHelper
   * Primarily useful for changing between .fir and .pb serialized formats
   */
 class NoneCompiler extends Compiler {
-  def emitter = new ChirrtlEmitter
+  val emitter = new ChirrtlEmitter
   def transforms: Seq[Transform] = Seq(new IdentityTransform(ChirrtlForm))
 }
 
@@ -142,37 +143,38 @@ class NoneCompiler extends Compiler {
   * Will replace Chirrtl constructs with Firrtl
   */
 class HighFirrtlCompiler extends Compiler {
-  def emitter = new HighFirrtlEmitter
+  val emitter = new HighFirrtlEmitter
   def transforms: Seq[Transform] = getLoweringTransforms(ChirrtlForm, HighForm)
 }
 
 /** Emits middle Firrtl input circuit */
 class MiddleFirrtlCompiler extends Compiler {
-  def emitter = new MiddleFirrtlEmitter
+  val emitter = new MiddleFirrtlEmitter
   def transforms: Seq[Transform] = getLoweringTransforms(ChirrtlForm, MidForm)
 }
 
 /** Emits lowered input circuit */
 class LowFirrtlCompiler extends Compiler {
-  def emitter = new LowFirrtlEmitter
+  val emitter = new LowFirrtlEmitter
   def transforms: Seq[Transform] = getLoweringTransforms(ChirrtlForm, LowForm)
 }
 
 /** Emits Verilog */
 class VerilogCompiler extends Compiler {
-  def emitter = new VerilogEmitter
+  val emitter = new VerilogEmitter
   def transforms: Seq[Transform] = getLoweringTransforms(ChirrtlForm, LowForm) ++
     Seq(new LowFirrtlOptimization)
 }
 
 /** Emits Verilog without optimizations */
 class MinimumVerilogCompiler extends Compiler {
-  def emitter = new MinimumVerilogEmitter
+  val emitter = new MinimumVerilogEmitter
   def transforms: Seq[Transform] = getLoweringTransforms(ChirrtlForm, LowForm) ++
     Seq(new MinimumLowFirrtlOptimization)
 }
 
 /** Currently just an alias for the [[VerilogCompiler]] */
 class SystemVerilogCompiler extends VerilogCompiler {
-  Driver.dramaticWarning("SystemVerilog Compiler behaves the same as the Verilog Compiler!")
+  override val emitter = new SystemVerilogEmitter
+  StageUtils.dramaticWarning("SystemVerilog Compiler behaves the same as the Verilog Compiler!")
 }

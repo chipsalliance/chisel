@@ -4,14 +4,11 @@ package firrtl.options
 
 import firrtl.AnnotationSeq
 
+import logger.{LogLevelAnnotation, ClassLogLevelAnnotation, LogFileAnnotation, LogClassNamesAnnotation}
+
 import scopt.OptionParser
 
 import java.util.ServiceLoader
-
-/** Indicate an error in [[firrtl.options]]
-  * @param msg a message to print
-  */
-case class OptionsException(msg: String, cause: Throwable = null) extends Exception(msg, cause)
 
 /** A utility for working with command line options
   * @param applicationName the application associated with these command line options
@@ -19,7 +16,7 @@ case class OptionsException(msg: String, cause: Throwable = null) extends Except
 class Shell(val applicationName: String) {
 
   /** Command line argument parser (OptionParser) with modifications */
-  final val parser = new OptionParser[AnnotationSeq](applicationName) with DuplicateHandling
+  final val parser = new OptionParser[AnnotationSeq](applicationName) with DuplicateHandling with ExceptOnError
 
   /** Contains all discovered [[RegisteredLibrary]] */
   lazy val registeredLibraries: Seq[RegisteredLibrary] = {
@@ -31,6 +28,7 @@ class Shell(val applicationName: String) {
       parser.note(lib.name)
       lib.addOptions(parser)
     }
+
     libraries
   }
 
@@ -44,6 +42,7 @@ class Shell(val applicationName: String) {
       transforms += tx
       tx.addOptions(parser)
     }
+
     transforms
   }
 
@@ -53,19 +52,38 @@ class Shell(val applicationName: String) {
     * line options via methods of [[Shell.parser]]
     */
   def parse(args: Array[String], initAnnos: AnnotationSeq = Seq.empty): AnnotationSeq = {
-    val rtString = registeredTransforms.map(r => s"\n  - ${r.getClass.getName}").mkString
-    val rlString = registeredLibraries.map(l => s"\n  - ${l.getClass.getName}").mkString
-    parser.note(s"""|
-                    |The following FIRRTL transforms registered command line options:$rtString
-                    |The following libraries registered command line options:$rlString""".stripMargin)
-
+    registeredTransforms
+    registeredLibraries
     parser
-      .parse(args, initAnnos)
+      .parse(args, initAnnos.reverse)
       .getOrElse(throw new OptionsException("Failed to parse command line options", new IllegalArgumentException))
+      .reverse
   }
 
   parser.note("Shell Options")
-  Seq( InputAnnotationFileAnnotation(),
-       TargetDirAnnotation() )
+  Seq( TargetDirAnnotation,
+       ProgramArgsAnnotation,
+       InputAnnotationFileAnnotation,
+       OutputAnnotationFileAnnotation )
+    .map(_.addOptions(parser))
+
+  parser.opt[Unit]("show-registrations")
+    .action{ (_, c) =>
+      val rtString = registeredTransforms.map(r => s"\n  - ${r.getClass.getName}").mkString
+      val rlString = registeredLibraries.map(l => s"\n  - ${l.getClass.getName}").mkString
+
+      println(s"""|The following FIRRTL transforms registered command line options:$rtString
+                  |The following libraries registered command line options:$rlString""".stripMargin)
+      c }
+    .unbounded()
+    .text("print discovered registered libraries and transforms")
+
+  parser.help("help").text("prints this usage text")
+
+  parser.note("Logging Options")
+  Seq( LogLevelAnnotation,
+       ClassLogLevelAnnotation,
+       LogFileAnnotation,
+       LogClassNamesAnnotation )
     .map(_.addOptions(parser))
 }

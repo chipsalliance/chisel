@@ -10,7 +10,14 @@ import scopt.OptionParser
   */
 trait HasScoptOptions {
 
-  /** This method will be called to add options to an OptionParser
+  /** This method will be called to add options to an OptionParser ('''OPTIONS SHOULD BE PREPENDED''')
+    *
+    *
+    * '''The ordering of [[firrtl.annotations.Annotation Annotation]] is important and has meaning for parallel
+    * compilations. For deterministic behavior, you should always prepend any annotations to the [[firrtl.AnnotationSeq
+    * AnnotationSeq]]. The [[firrtl.AnnotationSeq AnnotationSeq]] will be automatically reversed after a [[Stage]]
+    * parses it.'''
+    *
     * @param p an option parser
     */
   def addOptions(p: OptionParser[AnnotationSeq]): Unit

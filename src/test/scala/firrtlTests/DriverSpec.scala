@@ -206,18 +206,35 @@ class DriverSpec extends FreeSpec with Matchers with BackendCompilationUtilities
   }
 
   // Deprecated
-  "Annotations can be read implicitly from the name of the circuit" in {
+  "Annotations can be read implicitly from the name of the circuit" - {
+    val input = """|circuit foo :
+                   |  module foo :
+                   |    input x : UInt<8>
+                   |    output y : UInt<8>
+                   |    y <= x""".stripMargin
     val top = "foo"
     val optionsManager = new ExecutionOptionsManager("test") with HasFirrtlOptions {
       commonOptions = commonOptions.copy(topName = top)
+      firrtlOptions = firrtlOptions.copy(firrtlSource = Some(input))
     }
     val annoFile = new File(optionsManager.commonOptions.targetDirName, top + ".anno")
-    copyResourceToFile("/annotations/SampleAnnotations.anno", annoFile)
-    optionsManager.firrtlOptions.annotations.length should be(0)
-    val annos = Driver.getAnnotations(optionsManager)
-    annos.length should be(12) // 9 from circuit plus 3 general purpose
-    annos.count(_.isInstanceOf[InlineAnnotation]) should be(9)
-    annoFile.delete()
+    "Using Driver.getAnnotations" in {
+      copyResourceToFile("/annotations/SampleAnnotations.anno", annoFile)
+      optionsManager.firrtlOptions.annotations.length should be(0)
+      val annos = Driver.getAnnotations(optionsManager)
+      annos.length should be(12) // 9 from circuit plus 3 general purpose
+      annos.count(_.isInstanceOf[InlineAnnotation]) should be(9)
+      annoFile.delete()
+    }
+    "Using Driver.execute" in {
+      copyResourceToFile("/annotations/SampleAnnotations.anno", annoFile)
+      Driver.execute(optionsManager) match {
+        case r: FirrtlExecutionSuccess =>
+          val annos = r.circuitState.annotations
+          annos.count(_.isInstanceOf[InlineAnnotation]) should be(9)
+      }
+      annoFile.delete()
+    }
   }
 
   // Deprecated
