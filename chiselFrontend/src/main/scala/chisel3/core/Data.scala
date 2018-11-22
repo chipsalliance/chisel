@@ -265,7 +265,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   }
 
   private[core] def topBindingOpt: Option[TopBinding] = _binding.flatMap {
-    case ChildBinding(parent) => Some(parent.topBinding)
+    case ChildBinding(parent) => parent.topBindingOpt // Parent could be a SampleElement itself
     case bindingVal: TopBinding => Some(bindingVal)
     case _: SampleElementBinding[_] => None
   }
