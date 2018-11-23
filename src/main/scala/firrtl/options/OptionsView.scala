@@ -12,7 +12,8 @@ trait OptionsView[T] {
   /** Convert an [[AnnotationSeq]] to some other type
     * @param options some annotations
     */
-  def view(options: AnnotationSeq): Option[T]
+  def view(options: AnnotationSeq): T
+
 }
 
 /** A shim to manage multiple "views" of an [[AnnotationSeq]] */
@@ -23,5 +24,6 @@ object Viewer {
     * @param optionsView a converter of options to the requested type
     * @tparam T the type to which the input [[AnnotationSeq]] should be viewed as
     */
-  def view[T](options: AnnotationSeq)(implicit optionsView: OptionsView[T]): Option[T] = optionsView.view(options)
+  def view[T](options: AnnotationSeq)(implicit optionsView: OptionsView[T]): T = optionsView.view(options)
+
 }
