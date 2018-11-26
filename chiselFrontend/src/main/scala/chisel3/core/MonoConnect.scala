@@ -2,6 +2,7 @@
 
 package chisel3.core
 
+import chisel3.internal.ChiselException
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.{Connect, DefInvalid}
 import scala.language.experimental.macros
@@ -33,7 +34,7 @@ import chisel3.internal.sourceinfo.SourceInfo
 
 object MonoConnect {
   // These are all the possible exceptions that can be thrown.
-  case class MonoConnectException(message: String) extends Exception(message)
+  case class MonoConnectException(message: String) extends ChiselException(message)
   // These are from element-level connection
   def UnreadableSourceException =
     MonoConnectException(": Source is unreadable from current module.")
