@@ -58,7 +58,9 @@ object RecordBench extends Bench.LocalTime {
     }
     measure method "random access" in {
       using(records) in {
-        r => r.randomElement
+        r => for (i <- 0 until 100) {
+          r.randomElement
+        }
       }
     }
   }
@@ -76,7 +78,9 @@ object RecordBench extends Bench.LocalTime {
     }
     measure method "random access" in {
       using(fastRecords) in {
-        r => r.randomElement
+        r => for (i <- 0 until 100) {
+          r.randomElement
+        }
       }
     }
   }
