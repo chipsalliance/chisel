@@ -30,13 +30,14 @@ def javacOptionsVersion(scalaVersion: String): Seq[String] = {
   }
 }
 
+lazy val Benchmark = config("bench") extend Test
+
 val defaultVersions = Map("firrtl" -> "1.2-SNAPSHOT")
 
 lazy val commonSettings = Seq (
   organization := "edu.berkeley.cs",
-//  version := "3.2-SNAPSHOT",
-  version := "3.3-SNAPSHOT",
-  git.remoteRepo := "git@github.com:tdb-alcorn/chisel3.git",
+  version := "3.2-SNAPSHOT",
+  git.remoteRepo := "git@github.com:freechipsproject/chisel3.git",
   autoAPIMappings := true,
   scalaVersion := "2.12.6",
   crossScalaVersions := Seq("2.12.6", "2.11.12"),
@@ -97,7 +98,8 @@ lazy val chiselSettings = Seq (
   libraryDependencies ++= Seq(
     "org.scalatest" %% "scalatest" % "3.0.1" % "test",
     "org.scalacheck" %% "scalacheck" % "1.13.4" % "test",
-    "com.github.scopt" %% "scopt" % "3.7.0"
+    "com.github.scopt" %% "scopt" % "3.7.0",
+    "com.storm-enroute" %% "scalameter" % "0.10" % "bench"
   ),
 
   // Tests from other projects may still run concurrently
@@ -105,6 +107,10 @@ lazy val chiselSettings = Seq (
   // Another option would be to experiment with:
   //  concurrentRestrictions in Global += Tags.limit(Tags.Test, 1),
   Test / parallelExecution := !sys.props.contains("minimalResources"),
+
+  testFrameworks += new TestFramework("org.scalameter.ScalaMeterFramework"),
+  parallelExecution in Benchmark := false,
+  logBuffered := false,
 
   javacOptions ++= javacOptionsVersion(scalaVersion.value)
 )
@@ -132,6 +138,12 @@ lazy val chisel = (project in file(".")).
   settings(commonSettings: _*).
   settings(chiselSettings: _*).
   settings(publishSettings: _*).
+  configs(
+    Benchmark
+  ).
+  settings(
+    inConfig(Benchmark)(Defaults.testSettings): _*
+  ).
   // Prevent separate JARs from being generated for coreMacros and chiselFrontend.
   dependsOn(coreMacros % "compile-internal;test-internal").
   dependsOn(chiselFrontend % "compile-internal;test-internal").
