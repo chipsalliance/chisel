@@ -112,6 +112,7 @@ sealed abstract class FirrtlEmitter(form: CircuitForm) extends Transform with Em
 }
 
 // ***** Start actual Emitters *****
+class ChirrtlEmitter extends FirrtlEmitter(ChirrtlForm)
 class HighFirrtlEmitter extends FirrtlEmitter(HighForm)
 class MiddleFirrtlEmitter extends FirrtlEmitter(MidForm)
 class LowFirrtlEmitter extends FirrtlEmitter(LowForm)

@@ -364,6 +364,7 @@ class DriverSpec extends FreeSpec with Matchers with BackendCompilationUtilities
 
     "To a single file with file extension depending on the compiler by default" in {
       Seq(
+        "none" -> "./Top.fir",
         "low" -> "./Top.lo.fir",
         "high" -> "./Top.hi.fir",
         "middle" -> "./Top.mid.fir",
@@ -383,6 +384,7 @@ class DriverSpec extends FreeSpec with Matchers with BackendCompilationUtilities
     }
     "To a single file per module if OneFilePerModule is specified" in {
       Seq(
+        "none" -> Seq("./Top.fir", "./Child.fir"),
         "low" -> Seq("./Top.lo.fir", "./Child.lo.fir"),
         "high" -> Seq("./Top.hi.fir", "./Child.hi.fir"),
         "middle" -> Seq("./Top.mid.fir", "./Child.mid.fir"),

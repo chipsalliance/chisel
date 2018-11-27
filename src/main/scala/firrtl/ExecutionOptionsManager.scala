@@ -202,6 +202,7 @@ extends ComposableOptions {
 
   def compiler: Compiler = {
     compilerName match {
+      case "none"      => new NoneCompiler()
       case "high"      => new HighFirrtlCompiler()
       case "low"       => new LowFirrtlCompiler()
       case "middle"    => new MiddleFirrtlCompiler()
@@ -215,8 +216,9 @@ extends ComposableOptions {
       case "verilog"   => "v"
       case "sverilog"  => "sv"
       case "low"       => "lo.fir"
-      case "high"      => "hi.fir"
       case "middle"    => "mid.fir"
+      case "high"      => "hi.fir"
+      case "none"      => "fir"
       case _ =>
         throw new Exception(s"Illegal compiler name $compilerName")
     }
@@ -260,6 +262,7 @@ extends ComposableOptions {
   def getEmitterAnnos(optionsManager: ExecutionOptionsManager): Seq[Annotation] = {
     // TODO should this be a public function?
     val emitter = compilerName match {
+      case "none" => classOf[ChirrtlEmitter]
       case "high" => classOf[HighFirrtlEmitter]
       case "middle" => classOf[MiddleFirrtlEmitter]
       case "low" => classOf[LowFirrtlEmitter]
@@ -341,12 +344,12 @@ trait HasFirrtlOptions {
 
   parser.opt[String]("compiler")
     .abbr("X")
-    .valueName ("<high|middle|low|verilog|sverilog>")
+    .valueName ("<high|middle|low|verilog|sverilog|none>")
     .foreach { x =>
       firrtlOptions = firrtlOptions.copy(compilerName = x)
     }
     .validate { x =>
-      if (Array("high", "middle", "low", "verilog", "sverilog").contains(x.toLowerCase)) parser.success
+      if (Array("high", "middle", "low", "verilog", "sverilog", "none").contains(x.toLowerCase)) parser.success
       else parser.failure(s"$x not a legal compiler")
     }.text {
       s"compiler to use, default is ${firrtlOptions.compilerName}"
