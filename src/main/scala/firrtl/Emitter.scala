@@ -125,6 +125,9 @@ case class VRandom(width: BigInt) extends Expression {
   def mapExpr(f: Expression => Expression): Expression = this
   def mapType(f: Type => Type): Expression = this
   def mapWidth(f: Width => Width): Expression = this
+  def foreachExpr(f: Expression => Unit): Unit = Unit
+  def foreachType(f: Type => Unit): Unit = Unit
+  def foreachWidth(f: Width => Unit): Unit = Unit
 }
 
 class VerilogEmitter extends SeqTransform with Emitter {

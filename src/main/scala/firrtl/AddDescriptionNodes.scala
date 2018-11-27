@@ -36,6 +36,11 @@ private case class DescribedStmt(description: Description, stmt: Statement) exte
   def mapType(f: Type => Type): Statement = this.copy(stmt = stmt.mapType(f))
   def mapString(f: String => String): Statement = this.copy(stmt = stmt.mapString(f))
   def mapInfo(f: Info => Info): Statement = this.copy(stmt = stmt.mapInfo(f))
+  def foreachStmt(f: Statement => Unit): Unit = f(stmt)
+  def foreachExpr(f: Expression => Unit): Unit = stmt.foreachExpr(f)
+  def foreachType(f: Type => Unit): Unit = stmt.foreachType(f)
+  def foreachString(f: String => Unit): Unit = stmt.foreachString(f)
+  def foreachInfo(f: Info => Unit): Unit = stmt.foreachInfo(f)
 }
 
 private case class DescribedMod(description: Description,
@@ -49,6 +54,10 @@ private case class DescribedMod(description: Description,
   def mapPort(f: Port => Port): DefModule = this.copy(mod = mod.mapPort(f))
   def mapString(f: String => String): DefModule = this.copy(mod = mod.mapString(f))
   def mapInfo(f: Info => Info): DefModule = this.copy(mod = mod.mapInfo(f))
+  def foreachStmt(f: Statement => Unit): Unit = mod.foreachStmt(f)
+  def foreachPort(f: Port => Unit): Unit = mod.foreachPort(f)
+  def foreachString(f: String => Unit): Unit = mod.foreachString(f)
+  def foreachInfo(f: Info => Unit): Unit = mod.foreachInfo(f)
 }
 
 /** Wraps modules or statements with their respective described nodes.

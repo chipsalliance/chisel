@@ -29,6 +29,9 @@ case class WRef(name: String, tpe: Type, kind: Kind, gender: Gender) extends Exp
   def mapExpr(f: Expression => Expression): Expression = this
   def mapType(f: Type => Type): Expression = this.copy(tpe = f(tpe))
   def mapWidth(f: Width => Width): Expression = this
+  def foreachExpr(f: Expression => Unit): Unit = Unit
+  def foreachType(f: Type => Unit): Unit = f(tpe)
+  def foreachWidth(f: Width => Unit): Unit = Unit
 }
 object WRef {
   /** Creates a WRef from a Wire */
@@ -44,6 +47,9 @@ case class WSubField(expr: Expression, name: String, tpe: Type, gender: Gender) 
   def mapExpr(f: Expression => Expression): Expression = this.copy(expr = f(expr))
   def mapType(f: Type => Type): Expression = this.copy(tpe = f(tpe))
   def mapWidth(f: Width => Width): Expression = this
+  def foreachExpr(f: Expression => Unit): Unit = f(expr)
+  def foreachType(f: Type => Unit): Unit = f(tpe)
+  def foreachWidth(f: Width => Unit): Unit = Unit
 }
 object WSubField {
   def apply(expr: Expression, n: String): WSubField = new WSubField(expr, n, field_type(expr.tpe, n), UNKNOWNGENDER)
@@ -54,12 +60,18 @@ case class WSubIndex(expr: Expression, value: Int, tpe: Type, gender: Gender) ex
   def mapExpr(f: Expression => Expression): Expression = this.copy(expr = f(expr))
   def mapType(f: Type => Type): Expression = this.copy(tpe = f(tpe))
   def mapWidth(f: Width => Width): Expression = this
+  def foreachExpr(f: Expression => Unit): Unit = f(expr)
+  def foreachType(f: Type => Unit): Unit = f(tpe)
+  def foreachWidth(f: Width => Unit): Unit = Unit
 }
 case class WSubAccess(expr: Expression, index: Expression, tpe: Type, gender: Gender) extends Expression {
   def serialize: String = s"${expr.serialize}[${index.serialize}]"
   def mapExpr(f: Expression => Expression): Expression = this.copy(expr = f(expr), index = f(index))
   def mapType(f: Type => Type): Expression = this.copy(tpe = f(tpe))
   def mapWidth(f: Width => Width): Expression = this
+  def foreachExpr(f: Expression => Unit): Unit = { f(expr); f(index) }
+  def foreachType(f: Type => Unit): Unit = f(tpe)
+  def foreachWidth(f: Width => Unit): Unit = Unit
 }
 case object WVoid extends Expression {
   def tpe = UnknownType
@@ -67,6 +79,9 @@ case object WVoid extends Expression {
   def mapExpr(f: Expression => Expression): Expression = this
   def mapType(f: Type => Type): Expression = this
   def mapWidth(f: Width => Width): Expression = this
+  def foreachExpr(f: Expression => Unit): Unit = Unit
+  def foreachType(f: Type => Unit): Unit = Unit
+  def foreachWidth(f: Width => Unit): Unit = Unit
 }
 case object WInvalid extends Expression {
   def tpe = UnknownType
@@ -74,6 +89,9 @@ case object WInvalid extends Expression {
   def mapExpr(f: Expression => Expression): Expression = this
   def mapType(f: Type => Type): Expression = this
   def mapWidth(f: Width => Width): Expression = this
+  def foreachExpr(f: Expression => Unit): Unit = Unit
+  def foreachType(f: Type => Unit): Unit = Unit
+  def foreachWidth(f: Width => Unit): Unit = Unit
 }
 // Useful for splitting then remerging references
 case object EmptyExpression extends Expression {
@@ -82,6 +100,9 @@ case object EmptyExpression extends Expression {
   def mapExpr(f: Expression => Expression): Expression = this
   def mapType(f: Type => Type): Expression = this
   def mapWidth(f: Width => Width): Expression = this
+  def foreachExpr(f: Expression => Unit): Unit = Unit
+  def foreachType(f: Type => Unit): Unit = Unit
+  def foreachWidth(f: Width => Unit): Unit = Unit
 }
 case class WDefInstance(info: Info, name: String, module: String, tpe: Type) extends Statement with IsDeclaration {
   def serialize: String = s"inst $name of $module" + info.serialize
@@ -90,6 +111,11 @@ case class WDefInstance(info: Info, name: String, module: String, tpe: Type) ext
   def mapType(f: Type => Type): Statement = this.copy(tpe = f(tpe))
   def mapString(f: String => String): Statement = this.copy(name = f(name))
   def mapInfo(f: Info => Info): Statement = this.copy(f(info))
+  def foreachStmt(f: Statement => Unit): Unit = Unit
+  def foreachExpr(f: Expression => Unit): Unit = Unit
+  def foreachType(f: Type => Unit): Unit = f(tpe)
+  def foreachString(f: String => Unit): Unit = f(name)
+  def foreachInfo(f: Info => Unit): Unit = f(info)
 }
 object WDefInstance {
   def apply(name: String, module: String): WDefInstance = new WDefInstance(NoInfo, name, module, UnknownType)
@@ -108,6 +134,11 @@ case class WDefInstanceConnector(
   def mapType(f: Type => Type): Statement = this.copy(tpe = f(tpe))
   def mapString(f: String => String): Statement = this.copy(name = f(name))
   def mapInfo(f: Info => Info): Statement = this.copy(f(info))
+  def foreachStmt(f: Statement => Unit): Unit = Unit
+  def foreachExpr(f: Expression => Unit): Unit = portCons foreach { case (e1, e2) => (f(e1), f(e2)) }
+  def foreachType(f: Type => Unit): Unit = f(tpe)
+  def foreachString(f: String => Unit): Unit = f(name)
+  def foreachInfo(f: Info => Unit): Unit = f(info)
 }
 
 // Resultant width is the same as the maximum input width
@@ -285,6 +316,11 @@ case class CDefMemory(
   def mapType(f: Type => Type): Statement = this.copy(tpe = f(tpe))
   def mapString(f: String => String): Statement = this.copy(name = f(name))
   def mapInfo(f: Info => Info): Statement = this.copy(f(info))
+  def foreachStmt(f: Statement => Unit): Unit = Unit
+  def foreachExpr(f: Expression => Unit): Unit = Unit
+  def foreachType(f: Type => Unit): Unit = f(tpe)
+  def foreachString(f: String => Unit): Unit = f(name)
+  def foreachInfo(f: Info => Unit): Unit = f(info)
 }
 case class CDefMPort(info: Info,
     name: String,
@@ -301,5 +337,10 @@ case class CDefMPort(info: Info,
   def mapType(f: Type => Type): Statement = this.copy(tpe = f(tpe))
   def mapString(f: String => String): Statement = this.copy(name = f(name))
   def mapInfo(f: Info => Info): Statement = this.copy(f(info))
+  def foreachStmt(f: Statement => Unit): Unit = Unit
+  def foreachExpr(f: Expression => Unit): Unit = exps.foreach(f)
+  def foreachType(f: Type => Unit): Unit = f(tpe)
+  def foreachString(f: String => Unit): Unit = f(name)
+  def foreachInfo(f: Info => Unit): Unit = f(info)
 }
 
