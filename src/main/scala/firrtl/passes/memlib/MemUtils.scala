@@ -63,7 +63,7 @@ object MemPortUtils {
   )
 
   // Todo: merge it with memToBundle
-  def memType(mem: DefMemory): Type = {
+  def memType(mem: DefMemory): BundleType = {
     val rType = BundleType(defaultPortSeq(mem) :+
       Field("data", Flip, mem.dataType))
     val wType = BundleType(defaultPortSeq(mem) ++ Seq(
