@@ -429,9 +429,9 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
    */
   def litValue(): BigInt = litOption.get
 
-  /** Returns the width, in bits, if currently known.
-    * @throws java.util.NoSuchElementException if the width is not known. */
-  final def getWidth: Int = width.get
+  /** Returns the width, in bits, if currently known. */
+  final def getWidth: Int =
+    if (isWidthKnown) width.get else throwException(s"Width of $this is unknown!")
   /** Returns whether the width is currently known. */
   final def isWidthKnown: Boolean = width.known
   /** Returns Some(width) if the width is known, else None. */
