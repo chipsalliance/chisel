@@ -13,7 +13,6 @@ import ClockListUtils._
 import Utils._
 import memlib.AnalysisUtils._
 import memlib._
-import Mappers._
 
 object ClockListUtils {
   /** Returns a list of clock outputs from instances of external modules

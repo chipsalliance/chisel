@@ -14,7 +14,7 @@ import firrtl.ir._
 import firrtl.passes._
 import firrtl.transforms._
 import firrtl.annotations._
-import firrtl.Mappers._
+import firrtl.traversals.Foreachers._
 import firrtl.PrimOps._
 import firrtl.WrappedExpression._
 import Utils._
@@ -69,15 +69,11 @@ sealed abstract class FirrtlEmitter(form: CircuitForm) extends Transform with Em
     def collectInstantiatedModules(mod: Module, map: Map[String, DefModule]): Seq[DefModule] = {
       // Use list instead of set to maintain order
       val modules = mutable.ArrayBuffer.empty[DefModule]
-      def onStmt(stmt: Statement): Statement = stmt match {
-        case DefInstance(_, _, name) =>
-          modules += map(name)
-          stmt
-        case WDefInstance(_, _, name, _) =>
-          modules += map(name)
-          stmt
+      def onStmt(stmt: Statement): Unit = stmt match {
+        case DefInstance(_, _, name) => modules += map(name)
+        case WDefInstance(_, _, name, _) => modules += map(name)
         case _: WDefInstanceConnector => throwInternalError(s"unrecognized statement: $stmt")
-        case other => other map onStmt
+        case other => other.foreach(onStmt)
       }
       onStmt(mod.body)
       modules.distinct
@@ -399,16 +395,16 @@ class VerilogEmitter extends SeqTransform with Emitter {
     val netlist = mutable.LinkedHashMap[WrappedExpression, Expression]()
     val namespace = Namespace(m)
     namespace.newName("_RAND") // Start rand names at _RAND_0
-    def build_netlist(s: Statement): Statement = s map build_netlist match {
-      case sx: Connect =>
-        netlist(sx.loc) = sx.expr
-        sx
-      case sx: IsInvalid => error("Should have removed these!")
-      case sx: DefNode =>
-        val e = WRef(sx.name, sx.value.tpe, NodeKind, MALE)
-        netlist(e) = sx.value
-        sx
-      case sx => sx
+    def build_netlist(s: Statement): Unit = {
+      s.foreach(build_netlist)
+      s match {
+        case sx: Connect => netlist(sx.loc) = sx.expr
+        case sx: IsInvalid => error("Should have removed these!")
+        case sx: DefNode =>
+          val e = WRef(sx.name, sx.value.tpe, NodeKind, MALE)
+          netlist(e) = sx.value
+        case _ =>
+      }
     }
 
     val portdefs = ArrayBuffer[Seq[Any]]()
@@ -597,7 +593,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
       }
     }
 
-    def build_streams(s: Statement): Statement = {
+    def build_streams(s: Statement): Unit = {
       val withoutDescription = s match {
         case DescribedStmt(DocString(desc), stmt) =>
           val comment = Seq("") +: build_comment(desc.string)
@@ -610,29 +606,24 @@ class VerilogEmitter extends SeqTransform with Emitter {
         case DescribedStmt(EmptyDescription, stmt) => stmt
         case other => other
       }
-      withoutDescription map build_streams match {
+      withoutDescription.foreach(build_streams)
+      withoutDescription match {
         case sx@Connect(info, loc@WRef(_, _, PortKind | WireKind | InstanceKind, _), expr) =>
           assign(loc, expr, info)
-          sx
         case sx: DefWire =>
           declare("wire", sx.name, sx.tpe, sx.info)
-          sx
         case sx: DefRegister =>
           declare("reg", sx.name, sx.tpe, sx.info)
           val e = wref(sx.name, sx.tpe)
           regUpdate(e, sx.clock)
           initialize(e)
-          sx
         case sx: DefNode =>
           declare("wire", sx.name, sx.value.tpe, sx.info)
           assign(WRef(sx.name, sx.value.tpe, NodeKind, MALE), sx.value, sx.info)
-          sx
         case sx: Stop =>
           simulate(sx.clk, sx.en, stop(sx.ret), Some("STOP_COND"), sx.info)
-          sx
         case sx: Print =>
           simulate(sx.clk, sx.en, printf(sx.string, sx.args), Some("PRINTF_COND"), sx.info)
-          sx
         // If we are emitting an Attach, it must not have been removable in VerilogPrep
         case sx: Attach =>
           // For Synthesis
@@ -647,7 +638,6 @@ class VerilogEmitter extends SeqTransform with Emitter {
           }
           // alias implementation for everything else
           attachAliases += Seq("alias ", sx.exprs.flatMap(e => Seq(e, " = ")).init, ";", sx.info)
-          sx
         case sx: WDefInstanceConnector =>
           val (module, params) = moduleMap(sx.module) match {
             case DescribedMod(_, _, ExtModule(_, _, _, extname, params)) => (extname, params)
@@ -663,7 +653,6 @@ class VerilogEmitter extends SeqTransform with Emitter {
             else instdeclares += line
           }
           instdeclares += Seq(");")
-          sx
         case sx: DefMemory =>
           val fullSize = sx.depth * (sx.dataType match {
             case GroundType(IntWidth(width)) => width
@@ -727,8 +716,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
           if (sx.readwriters.nonEmpty)
             throw EmitterException("All readwrite ports should be transformed into " +
               "read & write ports by previous passes")
-          sx
-        case sx => sx
+        case _ =>
       }
     }
 

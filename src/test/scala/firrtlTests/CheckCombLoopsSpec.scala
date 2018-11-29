@@ -6,7 +6,6 @@ import firrtl._
 import firrtl.ir._
 import firrtl.passes._
 import firrtl.transforms._
-import firrtl.Mappers._
 import annotations._
 import java.io.File
 import java.nio.file.Paths

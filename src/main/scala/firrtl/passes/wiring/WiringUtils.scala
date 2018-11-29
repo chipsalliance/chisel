@@ -7,6 +7,7 @@ import firrtl._
 import firrtl.ir._
 import firrtl.Utils._
 import firrtl.Mappers._
+import firrtl.traversals.Foreachers._
 import scala.collection.mutable
 import firrtl.annotations._
 import firrtl.annotations.AnnotationUtils._
@@ -84,18 +85,16 @@ object WiringUtils {
   @deprecated("Use DiGraph/InstanceGraph", "1.1.1")
   def getChildrenMap(c: Circuit): ChildrenMap = {
     val childrenMap = new ChildrenMap()
-    def getChildren(mname: String)(s: Statement): Statement = s match {
+    def getChildren(mname: String)(s: Statement): Unit = s match {
       case s: WDefInstance =>
         childrenMap(mname) = childrenMap(mname) :+ (s.name, s.module)
-        s
       case s: DefInstance =>
         childrenMap(mname) = childrenMap(mname) :+ (s.name, s.module)
-        s
-      case s => s map getChildren(mname)
+      case s => s.foreach(getChildren(mname))
     }
     c.modules.foreach{ m =>
       childrenMap(m.name) = Nil
-      m map getChildren(m.name)
+      m.foreach(getChildren(m.name))
     }
     childrenMap
   }

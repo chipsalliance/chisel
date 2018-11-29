@@ -7,6 +7,7 @@ import firrtl._
 import firrtl.ir._
 import firrtl.Utils._
 import firrtl.Mappers._
+import firrtl.traversals.Foreachers._
 import firrtl.PrimOps._
 import MemPortUtils._
 
@@ -20,15 +21,10 @@ object VerilogMemDelays extends Pass {
   private def NOT(e: Expression) = DoPrim(Not, Seq(e), Nil, BoolType)
   private def AND(e1: Expression, e2: Expression) = DoPrim(And, Seq(e1, e2), Nil, BoolType)
 
-  def buildNetlist(netlist: Netlist)(s: Statement): Statement = {
-    s match {
-      case Connect(_, loc, expr) => kind(loc) match {
-        case MemKind => netlist(loc) = expr
-        case _ =>
-      }
-      case _ =>
-    }
-    s map buildNetlist(netlist)
+  def buildNetlist(netlist: Netlist)(s: Statement): Unit = s match {
+    case Connect(_, loc, expr) if (kind(loc) == MemKind) => netlist(loc) = expr
+    case _ =>
+    s.foreach(buildNetlist(netlist))
   }
 
   def memDelayStmt(
@@ -154,8 +150,8 @@ object VerilogMemDelays extends Pass {
     val namespace = Namespace(m)
     val repl = new Netlist
     val extraStmts = mutable.ArrayBuffer.empty[Statement]
-    m.map(buildNetlist(netlist))
-     .map(memDelayStmt(netlist, namespace, repl, extraStmts))
+    m.foreach(buildNetlist(netlist))
+    m.map(memDelayStmt(netlist, namespace, repl, extraStmts))
      .map(replaceStmt(repl))
      .map(appendStmts(extraStmts))
   }

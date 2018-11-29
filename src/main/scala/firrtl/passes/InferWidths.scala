@@ -10,6 +10,7 @@ import firrtl._
 import firrtl.ir._
 import firrtl.Utils._
 import firrtl.Mappers._
+import firrtl.traversals.Foreachers._
 
 object InferWidths extends Pass {
   type ConstraintMap = collection.mutable.LinkedHashMap[String, Width]
@@ -239,7 +240,7 @@ object InferWidths extends Pass {
       case (t1: VectorType, t2: VectorType) => get_constraints_t(t1.tpe, t2.tpe)
     }
 
-    def get_constraints_e(e: Expression): Expression = {
+    def get_constraints_e(e: Expression): Unit = {
       e match {
         case (e: Mux) => v ++= Seq(
           WGeq(getWidth(e.cond), IntWidth(1)),
@@ -247,7 +248,7 @@ object InferWidths extends Pass {
         )
         case _ =>
       }
-      e map get_constraints_e
+      e.foreach(get_constraints_e)
     }
 
     def get_constraints_declared_type (t: Type): Type = t match {
@@ -257,7 +258,7 @@ object InferWidths extends Pass {
       case _ => t map get_constraints_declared_type
     }
 
-    def get_constraints_s(s: Statement): Statement = {
+    def get_constraints_s(s: Statement): Unit = {
       s map get_constraints_declared_type match {
         case (s: Connect) =>
           val n = get_size(s.loc.tpe)
@@ -294,11 +295,12 @@ object InferWidths extends Pass {
           v ++= widths.tail map (WGeq(widths.head, _))
         case _ =>
       }
-      s map get_constraints_e map get_constraints_s
+      s.foreach(get_constraints_e)
+      s.foreach(get_constraints_s)
     }
 
-    c.modules foreach (_ map get_constraints_s)
-    c.modules foreach (_.ports foreach {p => get_constraints_declared_type(p.tpe)})
+    c.modules.foreach(_.foreach(get_constraints_s))
+    c.modules.foreach(_.ports.foreach({p => get_constraints_declared_type(p.tpe)}))
 
     //println("======== ALL CONSTRAINTS ========")
     //for(x <- v) println(x)

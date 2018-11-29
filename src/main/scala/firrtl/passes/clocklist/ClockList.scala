@@ -14,7 +14,6 @@ import ClockListUtils._
 import Utils._
 import memlib.AnalysisUtils._
 import memlib._
-import Mappers._
 
 /** Starting with a top module, determine the clock origins of each child instance.
  *  Write the result to writer.

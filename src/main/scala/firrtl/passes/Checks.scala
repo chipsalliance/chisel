@@ -6,7 +6,6 @@ import firrtl._
 import firrtl.ir._
 import firrtl.PrimOps._
 import firrtl.Utils._
-import firrtl.Mappers._
 import firrtl.traversals.Foreachers._
 import firrtl.WrappedType._
 
@@ -539,7 +538,7 @@ object CheckGenders extends Pass {
           check_gender(info, mname, genders, FEMALE)(s.loc)
           check_gender(info, mname, genders, MALE)(s.expr)
         case (s: Print) =>
-          s.args map check_gender(info, mname, genders, MALE)
+          s.args foreach check_gender(info, mname, genders, MALE)
           check_gender(info, mname, genders, MALE)(s.en)
           check_gender(info, mname, genders, MALE)(s.clk)
         case (s: PartialConnect) =>

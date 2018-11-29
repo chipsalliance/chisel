@@ -5,7 +5,7 @@ package firrtl.passes
 import firrtl._
 import firrtl.ir._
 import firrtl.Utils._
-import firrtl.Mappers._
+import firrtl.traversals.Foreachers._
 
 import annotation.tailrec
 
@@ -41,35 +41,31 @@ object CheckInitialization extends Pass {
       def hasVoidExpr(e: Expression): (Boolean, Seq[Expression]) = {
         var void = false
         val voidDeps = collection.mutable.ArrayBuffer[Expression]()
-        def hasVoid(e: Expression): Expression = e match {
+        def hasVoid(e: Expression): Unit = e match {
           case WVoid =>
             void = true
-            e
           case (_: WRef | _: WSubField) =>
             if (voidExprs.contains(e)) {
               void = true
               voidDeps += e
             }
-            e
-          case _ => e map hasVoid
+          case _ => e.foreach(hasVoid)
         }
         hasVoid(e)
         (void, voidDeps)
       }
-      def checkInitS(s: Statement): Statement = {
+      def checkInitS(s: Statement): Unit = {
         s match {
           case con: Connect =>
             val (hasVoid, voidDeps) = hasVoidExpr(con.expr)
             if (hasVoid) voidExprs(con.loc) = VoidExpr(con, voidDeps)
-            con
           case node: DefNode =>
             val (hasVoid, voidDeps) = hasVoidExpr(node.value)
             if (hasVoid) {
               val nodeRef = WRef(node.name, node.value.tpe, NodeKind, MALE)
               voidExprs(nodeRef) = VoidExpr(node, voidDeps)
             }
-            node
-          case sx => sx map checkInitS
+          case sx => sx.foreach(checkInitS)
         }
       }
       checkInitS(m.body)
@@ -85,7 +81,7 @@ object CheckInitialization extends Pass {
       }
     }
 
-    c.modules foreach {
+    c.modules.foreach {
       case m: Module => checkInitM(m)
       case m => // Do nothing
     }
