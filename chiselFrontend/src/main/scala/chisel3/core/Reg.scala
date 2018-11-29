@@ -70,8 +70,8 @@ object RegInit {
     */
   def apply[T <: Data](init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     val model = (init match {
-      // For e.g. Reg(init=UInt(0, k)), fix the Reg's width to k
-      case init: Bits if init.litIsForcedWidth == Some(false) => init.cloneTypeWidth(Width())
+      // If init is a literal without forced width OR any non-literal, let width be inferred
+      case init: Bits if !init.litIsForcedWidth.getOrElse(false) => init.cloneTypeWidth(Width())
       case init => init.cloneTypeFull
     }).asInstanceOf[T]
     RegInit(model, init)

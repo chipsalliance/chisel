@@ -507,8 +507,8 @@ object Wire extends WireFactory
 object WireInit {
   def apply[T <: Data](init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     val model = (init match {
-      // For e.g. Wire(init=0.U(k.W)), fix the Reg's width to k
-      case init: Bits if init.litIsForcedWidth == Some(false) => init.cloneTypeWidth(Width())
+      // If init is a literal without forced width OR any non-literal, let width be inferred
+      case init: Bits if !init.litIsForcedWidth.getOrElse(false) => init.cloneTypeWidth(Width())
       case _ => init.cloneTypeFull
     }).asInstanceOf[T]
     apply(model, init)
