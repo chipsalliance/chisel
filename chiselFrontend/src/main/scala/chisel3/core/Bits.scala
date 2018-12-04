@@ -82,6 +82,15 @@ private[chisel3] sealed trait ToBoolable extends Element {
     *
     * @note The width must be known and equal to 1
     */
+  final def asBool(): Bool = macro SourceInfoWhiteboxTransform.noArg
+
+  /** @group SourceInfoTransformMacro */
+  def do_asBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
+
+  /** Casts this $coll to a [[Bool]]
+    *
+    * @note The width must be known and equal to 1
+    */
   final def toBool(): Bool = macro SourceInfoWhiteboxTransform.noArg
 
   /** @group SourceInfoTransformMacro */
@@ -364,7 +373,15 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
   final def toBools(): Seq[Bool] = macro SourceInfoTransform.noArg
 
   /** @group SourceInfoTransformMacro */
-  def toBools(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Seq[Bool] =
+  @chiselRuntimeDeprecated
+  @deprecated("Use asBools instead", "3.2")
+  def do_toBools(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Seq[Bool] = do_asBools
+
+  /** Returns the contents of this wire as a [[scala.collection.Seq]] of [[Bool]]. */
+  final def asBools(): Seq[Bool] = macro SourceInfoTransform.noArg
+
+  /** @group SourceInfoTransformMacro */
+  def do_asBools(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Seq[Bool] =
     Seq.tabulate(this.getWidth)(i => this(i))
 
   /** Reinterpret this $coll as a [[SInt]]
@@ -412,12 +429,16 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     do_asUInt
   }
 
-  final def do_toBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
+  final def do_asBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
     width match {
       case KnownWidth(1) => this(0)
-      case _ => throwException(s"can't covert UInt<$width> to Bool")
+      case _ => throwException(s"can't covert ${this.getClass.getSimpleName}$width to Bool")
     }
   }
+
+  @chiselRuntimeDeprecated
+  @deprecated("Use asBool instead", "3.2")
+  final def do_toBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = do_asBool
 
   /** Concatenation operator
     *
