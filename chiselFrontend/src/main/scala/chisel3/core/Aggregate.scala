@@ -18,6 +18,8 @@ import chisel3.SourceInfoDoc
 sealed abstract class Aggregate extends Data {
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection) {
     binding = target
+    // Clear bundle stack whenever we bind
+    Builder.clearBundleStack()
 
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
     for (child <- getElements) {
@@ -612,6 +614,9 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
   // Memoize the outer instance for autoclonetype, especially where this is context-dependent
   // (like the outer module or enclosing Bundles).
   private var _outerInst: Option[Object] = None
+  // Remember which Bundle this Bundle was cloned from, enables determining if multiple candidates
+  // for outer are equivalent in autoclonetype
+  private var _clonedFrom: Option[Bundle] = None
 
   // For autoclonetype, record possible candidates for outer instance.
   // _outerInst should always take precedence, since it should be propagated from the original
@@ -650,7 +655,16 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
 
     // Check if this is an inner class, and if so, try to get the outer instance
     val outerClassInstance = enclosingClassOption.map { outerClass =>
-      def canAssignOuterClass(x: Object) = outerClass.isAssignableFrom(x.getClass)
+      def filterCandidates(l: List[HasId]): List[HasId] = {
+        val seen = new java.util.IdentityHashMap[HasId, Boolean]
+        l.filter(x => outerClass.isAssignableFrom(x.getClass))
+         .foldLeft(List.empty[HasId]) {
+           case (acc, bun: Bundle) =>
+             bun._clonedFrom.foreach(p => seen.put(p, true))
+             if (seen.containsKey(bun)) acc else bun +: acc
+           case (acc, obj) => obj +: acc
+         }
+      }
 
       val outerInstance = _outerInst match {
         case Some(outerInstance) => outerInstance  // use _outerInst if defined
@@ -663,11 +677,11 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
           } catch {
             case (_: NoSuchFieldException | _: IllegalAccessException) =>
               // Fallback using guesses based on common patterns
-              val allOuterCandidates = Seq(
+              val allOuterCandidates = List(
                   _containingModule.toSeq,
                   _containingBundles
                 ).flatten.distinct
-              allOuterCandidates.filter(canAssignOuterClass(_)) match {
+              filterCandidates(allOuterCandidates) match {
                 case outer :: Nil =>
                   _outerInst = Some(outer)  // record the guess for future use
                   outer
@@ -754,6 +768,7 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
       try {
         val clone = ctors.head.newInstance(outerClassInstance.get._2).asInstanceOf[this.type]
         clone._outerInst = this._outerInst
+        clone._clonedFrom = Some(this)
         return clone
       } catch {
         case e @ (_: java.lang.reflect.InvocationTargetException | _: IllegalArgumentException) =>
@@ -812,6 +827,7 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     }
     val clone = classMirror.reflectConstructor(ctor).apply(ctorParamsVals:_*).asInstanceOf[this.type]
     clone._outerInst = this._outerInst
+    clone._clonedFrom = Some(this)
 
     if (!clone.typeEquivalent(this)) {
       autoClonetypeError(s"Automatically cloned $clone not type-equivalent to base $this." +

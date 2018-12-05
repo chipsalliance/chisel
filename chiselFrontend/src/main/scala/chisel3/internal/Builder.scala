@@ -168,8 +168,8 @@ private[chisel3] trait NamedComponent extends HasId {
 private[chisel3] class ChiselContext() {
   val idGen = new IdGen
 
-  // Record the Bundle instance, class name, method name, and reverse stack trace position of open Bundles
-  val bundleStack: ArrayBuffer[(Bundle, String, String, Int)] = ArrayBuffer()
+  // Record Bundles as they're constructed to help guess outer object for anonymous, inner Bundles
+  var bundleStack: List[Bundle] = Nil
 }
 
 private[chisel3] class DynamicContext() {
@@ -265,33 +265,12 @@ private[chisel3] object Builder {
   // Returns the current stack of open Bundles
   // Note: elt will NOT have finished construction, its elements cannot be accessed
   def updateBundleStack(elt: Bundle): Seq[Bundle] = {
-    val stackElts = Thread.currentThread().getStackTrace()
-        .reverse  // so stack frame numbers are deterministic across calls
-        .dropRight(2)  // discard Thread.getStackTrace and updateBundleStack
-
-    // Determine where we are in the Bundle stack
-    val eltClassName = elt.getClass.getName
-    val eltStackPos = stackElts.map(_.getClassName).lastIndexOf(eltClassName)
-
-    // Prune the existing Bundle stack of closed Bundles
-    // If we know where we are in the stack, discard frames above that
-    val stackEltsTop = if (eltStackPos >= 0) eltStackPos else stackElts.size
-    val pruneLength = chiselContext.value.bundleStack.reverse.prefixLength { case (_, cname, mname, pos) =>
-      pos >= stackEltsTop || stackElts(pos).getClassName != cname || stackElts(pos).getMethodName != mname
-    }
-    chiselContext.value.bundleStack.trimEnd(pruneLength)
-
-    // Return the stack state before adding the most recent bundle
-    val lastStack = chiselContext.value.bundleStack.map(_._1).toSeq
-
-    // Append the current Bundle to the stack, if it's on the stack trace
-    if (eltStackPos >= 0) {
-      val stackElt = stackElts(eltStackPos)
-      chiselContext.value.bundleStack.append((elt, eltClassName, stackElt.getMethodName, eltStackPos))
-    }
-    // Otherwise discard the stack frame, this shouldn't fail noisily
-
-    lastStack
+    val res = elt +: chiselContext.value.bundleStack
+    chiselContext.value.bundleStack = res
+    res.tail
+  }
+  def clearBundleStack(): Unit = {
+    chiselContext.value.bundleStack = Nil
   }
 
   def errors: ErrorLog = dynamicContext.errors
