@@ -335,7 +335,7 @@ object DedupModules {
         // Build tag
         val builder = new mutable.ArrayBuffer[Any]()
         agnosticModule.ports.foreach { builder ++= _.serialize }
-        builder ++= agnosticAnnos
+        builder += agnosticAnnos
 
         agnosticModule match {
           case Module(i, n, ps, b) => builder ++= fastSerializedHash(b).toString()//.serialize

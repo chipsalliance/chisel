@@ -376,6 +376,34 @@ class DedupModuleTests extends HighTransformSpec {
       """.stripMargin
     execute(input, check, Seq(dontTouch("A.b"), dontTouch("A_.b")))
   }
+  "The module A and A_" should "be deduped with same annotation targets when there are a lot" in {
+    val input =
+      """circuit Top :
+        |  module Top :
+        |    inst a1 of A
+        |    inst a2 of A_
+        |  module A :
+        |    output x: UInt<1>[100]
+        |    wire b: UInt<1>[100]
+        |    x <= b
+        |  module A_ :
+        |    output x: UInt<1>[100]
+        |    wire b: UInt<1>[100]
+        |    x <= b
+      """.stripMargin
+    val check =
+      """circuit Top :
+        |  module Top :
+        |    inst a1 of A
+        |    inst a2 of A
+        |  module A :
+        |    output x: UInt<1>[100]
+        |    wire b: UInt<1>[100]
+        |    x <= b
+      """.stripMargin
+    val annos = (0 until 100).flatMap(i => Seq(dontTouch(s"A.b[$i]"), dontTouch(s"A_.b[$i]")))
+    execute(input, check, annos)
+  }
   "The module A and A_" should "not be deduped with same annotations with same multi-targets, but which have different root modules" in {
     val input =
       """circuit Top :
