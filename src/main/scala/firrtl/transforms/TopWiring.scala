@@ -36,8 +36,8 @@ case class TopWiringAnnotation(target: ComponentName, prefix: String) extends
   * @note This *does* work for deduped modules
   */
 class TopWiringTransform extends Transform {
-  def inputForm: CircuitForm = LowForm
-  def outputForm: CircuitForm = LowForm
+  def inputForm: CircuitForm = MidForm
+  def outputForm: CircuitForm = MidForm
 
   type InstPath = Seq[String]
 
