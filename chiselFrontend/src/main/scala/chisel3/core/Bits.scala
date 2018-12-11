@@ -738,10 +738,10 @@ sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt
     (this +& that).tail(1)
   /** @group SourceInfoTransformMacro */
   def do_-& (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
-    binop(sourceInfo, SInt((this.width max that.width) + 1), SubOp, that).asUInt
+    (this subtractAsSInt that).asUInt
   /** @group SourceInfoTransformMacro */
   def do_-% (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
-    (this -& that).tail(1)
+    (this subtractAsSInt that).tail(1)
 
   /** Bitwise and operator
     *
@@ -913,6 +913,9 @@ sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt
       compileOptions: CompileOptions): Unit = {
     this := that.asUInt
   }
+
+  private def subtractAsSInt(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
+    binop(sourceInfo, SInt((this.width max that.width) + 1), SubOp, that)
 }
 
 // This is currently a factory because both Bits and UInt inherit it.
