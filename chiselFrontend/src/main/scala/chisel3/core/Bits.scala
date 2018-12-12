@@ -212,14 +212,19 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
 
   /** @group SourceInfoTransformMacro */
   final def do_apply(x: Int, y: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
-    if (x < y || y < 0) {
+    if (x < 0 || y < 0) {
       Builder.error(s"Invalid bit range ($x,$y)")
     }
-    val w = x - y + 1
+    val w = Math.abs(x - y) + 1
     // This preserves old behavior while a more more consistent API is under debate
     // See https://github.com/freechipsproject/chisel3/issues/867
     litOption.map { value =>
-      ((value >> y) & ((BigInt(1) << w) - 1)).asUInt(w.W)
+      if x > y ((value >> y) & ((BigInt(1) << w) - 1)).asUInt(w.W)
+      else Array.range(0,w).zipWithIndex.map{case (bit, i) => {
+        val trimmedValue = value >> x
+        if(i < (w+1)/2) (trimmedValue << ((w-1)-(i*2)) & (BigInt(1) << (w-1-i))).asUInt(w.W)
+        else (trimmedValue >> ((w-1)-((w-1-i)*2)) & (BigInt(1) << (w-1-i))).asUInt(w.W)
+      }}.reduce((n1, n2) => n1 | n2)
     }.getOrElse {
       requireIsHardware(this, "bits to be sliced")
       pushOp(DefPrim(sourceInfo, UInt(Width(w)), BitsExtractOp, this.ref, ILit(x), ILit(y)))
