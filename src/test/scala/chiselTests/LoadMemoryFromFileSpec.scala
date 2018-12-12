@@ -9,6 +9,8 @@ import chisel3.util.experimental.loadMemoryFromFile
 import chisel3.util.log2Ceil
 import firrtl.FirrtlExecutionSuccess
 import firrtl.annotations.MemoryLoadFileType
+import firrtl.transforms.BlackBoxSourceHelper
+
 import org.scalatest.{FreeSpec, Matchers}
 
 class UsesThreeMems(memoryDepth: Int, memoryType: Data) extends Module {
@@ -134,7 +136,7 @@ class LoadMemoryFromFileSpec extends FreeSpec with Matchers {
         val dir = new File(testDirName)
         fileExistsWithMem(new File(dir, "UsesMem.UsesMem.memory.v"), Some("./mem1"))
         fileExistsWithMem(new File(dir, "UsesMem.UsesMemLow.memory.v"), Some("./mem2"))
-        fileExistsWithMem(new File(dir, "firrtl_black_box_resource_files.f"))
+        fileExistsWithMem(new File(dir, BlackBoxSourceHelper.fileListName))
       case _=>
         throw new Exception("Failed compile")
     }
@@ -154,7 +156,7 @@ class LoadMemoryFromFileSpec extends FreeSpec with Matchers {
         fileExistsWithMem( new File(dir, "UsesThreeMems.UsesThreeMems.memory1.v"), Some("./mem1"))
         fileExistsWithMem( new File(dir, "UsesThreeMems.UsesThreeMems.memory2.v"), Some("./mem1"))
         fileExistsWithMem( new File(dir, "UsesThreeMems.UsesThreeMems.memory3.v"), Some("./mem1"))
-        fileExistsWithMem( new File(dir, "firrtl_black_box_resource_files.f"))
+        fileExistsWithMem( new File(dir, BlackBoxSourceHelper.fileListName))
       case _=>
         throw new Exception("Failed compile")
     }  }
