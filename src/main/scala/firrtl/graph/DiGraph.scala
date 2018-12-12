@@ -349,8 +349,8 @@ class DiGraph[T] private[graph] (private[graph] val edges: LinkedHashMap[T, Link
     * @return a DiGraph[T] containing all vertices and edges of each graph
     */
   def +(that: DiGraph[T]): DiGraph[T] = {
-    val eprime = edges.clone
-    that.edges.map({ case (k, v) => eprime.getOrElseUpdate(k, new LinkedHashSet[T]) ++= v })
+    val eprime = edges.map({ case (k, v) => (k, v.clone) })
+    that.edges.foreach({ case (k, v) => eprime.getOrElseUpdate(k, new LinkedHashSet[T]) ++= v })
     new DiGraph(eprime)
   }
 }
