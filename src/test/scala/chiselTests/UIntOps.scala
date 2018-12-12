@@ -107,7 +107,10 @@ class UIntLitExtractTester extends BasicTester {
   assert("b101010".U(6.W)(3) === true.B)
   assert("b101010".U(6.W)(100) === false.B)
   assert("b101010".U(6.W)(3, 0) === "b1010".U)
+  assert("b101010".U(6.W)(0, 3) === "b0101".U)
+  assert("b111100".U(6.W)(1, 4) === "b0111".U)
   assert("b101010".U(6.W)(9, 0) === "b0000101010".U)
+  assert("b101010".U(6.W)(0, 9) === "b0101010000".U)
   stop()
 }
 
