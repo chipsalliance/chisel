@@ -219,7 +219,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     // This preserves old behavior while a more more consistent API is under debate
     // See https://github.com/freechipsproject/chisel3/issues/867
     litOption.map { value =>
-      if x > y ((value >> y) & ((BigInt(1) << w) - 1)).asUInt(w.W)
+      if (x > y) ((value >> y) & ((BigInt(1) << w) - 1)).asUInt(w.W)
       else Array.range(0,w).zipWithIndex.map{case (bit, i) => {
         val trimmedValue = value >> x
         if(i < (w+1)/2) (trimmedValue << ((w-1)-(i*2)) & (BigInt(1) << (w-1-i))).asUInt(w.W)
