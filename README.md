@@ -1,4 +1,6 @@
-# Chisel 3
+![Chisel 3](https://raw.githubusercontent.com/freechipsproject/chisel3/master/doc/images/chisel_logo.svg?sanitize=true)
+
+#
 
 [![Join the chat at https://gitter.im/freechipsproject/chisel3](https://badges.gitter.im/freechipsproject/chisel3.svg)](https://gitter.im/freechipsproject/chisel3?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
@@ -164,11 +166,9 @@ sbt test
 ```
 
 ### Running Projects Against Local Chisel
-Chisel3 is still undergoing rapid development and we haven't pusblished a
-stable version to the Nexus repository.
-You will need to build from source and `publishLocal`.
+To use the development version of Chisel (`master` branch), you will need to build from source and `publishLocal`.
 The repo version can be found in the build.sbt file.
-At last check it was:
+As of the time of writing it was:
 
     version := "3.2-SNAPSHOT",
 
