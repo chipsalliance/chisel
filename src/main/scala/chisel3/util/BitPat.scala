@@ -88,15 +88,17 @@ object BitPat {
   * "b10001".U === BitPat("b101??") // evaluates to false.B
   * }}}
   */
-sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) {
+sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) extends SourceInfoDoc {
   def getWidth: Int = width
   def === (that: UInt): Bool = macro SourceInfoTransform.thatArg
   def =/= (that: UInt): Bool = macro SourceInfoTransform.thatArg
 
+  /** @group SourceInfoTransformMacro */
   def do_=== (that: UInt)  // scalastyle:ignore method.name
       (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
     value.asUInt === (that & mask.asUInt)
   }
+  /** @group SourceInfoTransformMacro */
   def do_=/= (that: UInt)  // scalastyle:ignore method.name
       (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
     !(this === that)

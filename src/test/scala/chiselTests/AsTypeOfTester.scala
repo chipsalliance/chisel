@@ -51,7 +51,7 @@ class AsTypeOfTruncationTester extends BasicTester {
 }
 
 class ResetAsTypeOfBoolTester extends BasicTester {
-  assert(reset.asTypeOf(Bool()) === reset.toBool)
+  assert(reset.asTypeOf(Bool()) === reset.asBool)
   stop()
 }
 

@@ -9,8 +9,9 @@ import chisel3.internal.Builder.{pushOp}
 import chisel3.internal.sourceinfo.{SourceInfo, MuxTransform}
 import chisel3.internal.firrtl._
 import chisel3.internal.firrtl.PrimOp._
+import chisel3.SourceInfoDoc
 
-object Mux {
+object Mux extends SourceInfoDoc {
   /** Creates a mux, whose output is one of the inputs depending on the
     * value of the condition.
     *
@@ -24,6 +25,7 @@ object Mux {
     */
   def apply[T <: Data](cond: Bool, con: T, alt: T): T = macro MuxTransform.apply[T]
 
+  /** @group SourceInfoTransformMacro */
   def do_apply[T <: Data](cond: Bool, con: T, alt: T)(implicit sourceInfo: SourceInfo,
       compileOptions: CompileOptions): T = {
     requireIsHardware(cond, "mux condition")

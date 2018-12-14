@@ -36,7 +36,8 @@ case class ChiselLoadMemoryAnnotation[T <: Data](
   def transformClass: Class[LoadMemoryTransform] = classOf[LoadMemoryTransform]
 
   def toFirrtl: LoadMemoryAnnotation = {
-    LoadMemoryAnnotation(target.toNamed.asInstanceOf[ComponentName], fileName, hexOrBinary)
+    val tx = target.toNamed.asInstanceOf[ComponentName]
+    LoadMemoryAnnotation(tx, fileName, hexOrBinary, Some(tx.name))
   }
 }
 

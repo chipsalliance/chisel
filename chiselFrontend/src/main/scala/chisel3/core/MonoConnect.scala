@@ -2,6 +2,7 @@
 
 package chisel3.core
 
+import chisel3.internal.ChiselException
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.{Connect, DefInvalid}
 import scala.language.experimental.macros
@@ -33,7 +34,7 @@ import chisel3.internal.sourceinfo.SourceInfo
 
 object MonoConnect {
   // These are all the possible exceptions that can be thrown.
-  case class MonoConnectException(message: String) extends Exception(message)
+  case class MonoConnectException(message: String) extends ChiselException(message)
   // These are from element-level connection
   def UnreadableSourceException =
     MonoConnectException(": Source is unreadable from current module.")
@@ -78,6 +79,12 @@ object MonoConnect {
       case (sink_e: FixedPoint, source_e: FixedPoint) =>
         elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
       case (sink_e: Clock, source_e: Clock) =>
+        elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
+      case (sink_e: EnumType, source_e: UnsafeEnum) =>
+        elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
+      case (sink_e: EnumType, source_e: EnumType) if sink_e.typeEquivalent(source_e) =>
+        elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
+      case (sink_e: UnsafeEnum, source_e: UInt) =>
         elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
 
       // Handle Vec case

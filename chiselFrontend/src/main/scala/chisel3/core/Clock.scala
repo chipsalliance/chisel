@@ -12,7 +12,7 @@ object Clock {
 }
 
 // TODO: Document this.
-sealed class Clock extends Element(Width(1)) {
+sealed class Clock(private[chisel3] val width: Width = Width(1)) extends Element {
   def cloneType: this.type = Clock().asInstanceOf[this.type]
 
   private[core] def typeEquivalent(that: Data): Boolean =

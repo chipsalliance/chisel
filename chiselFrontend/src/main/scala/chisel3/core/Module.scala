@@ -12,10 +12,11 @@ import chisel3.internal._
 import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{InstTransform, SourceInfo}
+import chisel3.SourceInfoDoc
 
 import _root_.firrtl.annotations.{CircuitName, ModuleName}
 
-object Module {
+object Module extends SourceInfoDoc {
   /** A wrapper method that all Module instantiations must be wrapped in
     * (necessary to help Chisel track internal state).
     *
@@ -25,6 +26,7 @@ object Module {
     */
   def apply[T <: BaseModule](bc: => T): T = macro InstTransform.apply[T]
 
+  /** @group SourceInfoTransformMacro */
   def do_apply[T <: BaseModule](bc: => T)
                                (implicit sourceInfo: SourceInfo,
                                          compileOptions: CompileOptions): T = {
@@ -178,12 +180,34 @@ abstract class BaseModule extends HasId {
   def desiredName = this.getClass.getName.split('.').last
 
   /** Legalized name of this module. */
-  final val name = Builder.globalNamespace.name(desiredName)
+  final lazy val name = try {
+    Builder.globalNamespace.name(desiredName)
+  } catch {
+    case e: NullPointerException => throwException(
+      s"Error: desiredName of ${this.getClass.getName} is null. Did you evaluate 'name' before all values needed by desiredName were available?", e)
+    case t: Throwable => throw t
+  }
 
   /** Returns a FIRRTL ModuleName that references this object
     * @note Should not be called until circuit elaboration is complete
     */
   final def toNamed: ModuleName = ModuleName(this.name, CircuitName(this.circuitName))
+
+  /**
+   * Internal API. Returns a list of this module's generated top-level ports as a map of a String
+   * (FIRRTL name) to the IO object. Only valid after the module is closed.
+   *
+   * Note: for BlackBoxes (but not ExtModules), this returns the contents of the top-level io
+   * object, consistent with what is emitted in FIRRTL.
+   *
+   * TODO: Use SeqMap/VectorMap when those data structures become available.
+   */
+  private[core] def getChiselPorts: Seq[(String, Data)] = {
+    require(_closed, "Can't get ports before module close")
+    _component.get.ports.map { port =>
+      (port.id.getRef.asInstanceOf[ModuleIO].name, port.id)
+    }
+  }
 
   /** Called at the Module.apply(...) level after this Module has finished elaborating.
     * Returns a map of nodes -> names, for named nodes.

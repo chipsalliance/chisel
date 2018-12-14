@@ -80,7 +80,7 @@ class GoodBoolConversion extends Module {
     val u = Input(UInt(1.W))
     val b = Output(Bool())
   })
-  io.b := io.u.toBool
+  io.b := io.u.asBool
 }
 
 class BadBoolConversion extends Module {
@@ -88,7 +88,7 @@ class BadBoolConversion extends Module {
     val u = Input(UInt(5.W))
     val b = Output(Bool())
   })
-  io.b := io.u.toBool
+  io.b := io.u.asBool
 }
 
 class NegativeShift(t: => Bits) extends Module {
@@ -138,6 +138,16 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers {
 
   property("Bit extraction on literals should work for all non-negative indices") {
     assertTesterPasses(new UIntLitExtractTester)
+  }
+
+  property("asBools should support chained apply") {
+    elaborate(new Module {
+      val io = IO(new Bundle {
+        val in = Input(UInt(8.W))
+        val out = Output(Bool())
+      })
+      io.out := io.in.asBools()(2)
+    })
   }
 }
 
