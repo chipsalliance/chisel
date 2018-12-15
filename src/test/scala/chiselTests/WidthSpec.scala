@@ -4,6 +4,19 @@ package chiselTests
 
 import chisel3._
 
+class SimpleBundle extends Bundle {
+  val x = UInt(4.W)
+  val y = UInt()
+}
+object SimpleBundle {
+  def intoWire(): SimpleBundle = {
+    val w = Wire(new SimpleBundle)
+    w.x := 0.U(4.W)
+    w.y := 0.U(4.W)
+    w
+  }
+}
+
 class WidthSpec extends ChiselFlatSpec {
   "Literals without specified widths" should "get the minimum legal width" in {
     "hdeadbeef".U.getWidth should be (32)
@@ -14,18 +27,73 @@ class WidthSpec extends ChiselFlatSpec {
     1.U.getWidth should be (1)
     1.S.getWidth should be (2)
   }
+}
 
-  behavior of "WireInit (Single Argument)"
+abstract class WireRegWidthSpecImpl extends ChiselFlatSpec {
+  def name: String
+  def builder[T <: Data](x: T): T
+
+  behavior of name
+
+  it should "set the width if the template type has a set width" in {
+    assertKnownWidth(4) {
+      builder(UInt(4.W))
+    }
+    assertKnownWidth(4) {
+      val w = builder(new SimpleBundle)
+      w := SimpleBundle.intoWire()
+      w.x
+    }
+    assertKnownWidth(4) {
+      val x = builder(Vec(1, UInt(4.W)))
+      x(0)
+    }
+  }
+
+  it should "infer the width if the template type has no width" in {
+    assertInferredWidth(4) {
+      val w = builder(UInt())
+      w := 0.U(4.W)
+      w
+    }
+    assertInferredWidth(4) {
+      val w = builder(new SimpleBundle)
+      w := SimpleBundle.intoWire()
+      w.y
+    }
+    assertInferredWidth(4) {
+      val w = builder(Vec(1, UInt()))
+      w(0) := 0.U(4.W)
+      w(0)
+    }
+  }
+}
+
+class WireWidthSpec extends WireRegWidthSpecImpl {
+  def name = "Wire"
+  def builder[T <: Data](x: T): T = Wire(x)
+}
+class RegWidthSpec extends WireRegWidthSpecImpl {
+  def name = "Reg"
+  def builder[T <: Data](x: T): T = Reg(x)
+}
+
+abstract class WireInitRegInitSpecImpl extends ChiselFlatSpec {
+  def name: String
+  def builder1[T <: Data](x: T): T
+  def builder2[T <: Data](x: T, y: T): T
+
+  behavior of s"$name (Single Argument)"
 
   it should "set width if passed a literal with forced width" in {
     assertKnownWidth(4) {
-      WireInit(3.U(4.W))
+      builder1(3.U(4.W))
     }
   }
 
   it should "NOT set width if passed a literal without a forced width" in {
     assertInferredWidth(4) {
-      val w = WireInit(3.U)
+      val w = builder1(3.U)
       w := 3.U(4.W)
       w
     }
@@ -34,11 +102,34 @@ class WidthSpec extends ChiselFlatSpec {
   it should "NOT set width if passed a non-literal" in {
     assertInferredWidth(4) {
       val w = WireInit(3.U(4.W))
-      WireInit(w)
+      builder1(w)
     }
   }
 
-  behavior of "WireInit (Double Argument)"
+  it should "copy the widths of aggregates" in {
+    assertInferredWidth(4) {
+      val w = builder1(SimpleBundle.intoWire())
+      w.y
+    }
+    assertKnownWidth(4) {
+      val w = builder1(SimpleBundle.intoWire())
+      w.x
+    }
+    assertInferredWidth(4) {
+      val x = Wire(Vec(1, UInt()))
+      x(0) := 0.U(4.W)
+      val w = builder1(x)
+      w(0)
+    }
+    assertKnownWidth(4) {
+      val x = Wire(Vec(1, UInt(4.W)))
+      x(0) := 0.U(4.W)
+      val w = builder1(x)
+      w(0)
+    }
+  }
+
+  behavior of s"$name (Double Argument)"
 
   it should "set the width if the template type has a set width" in {
     assertKnownWidth(4) {
@@ -46,6 +137,16 @@ class WidthSpec extends ChiselFlatSpec {
     }
     assertKnownWidth(4) {
       WireInit(UInt(4.W), 0.U(2.W))
+    }
+    assertKnownWidth(4) {
+      val w = WireInit(new SimpleBundle, SimpleBundle.intoWire())
+      w.x
+    }
+    assertKnownWidth(4) {
+      val x = Wire(Vec(1, UInt()))
+      x(0) := 0.U(4.W)
+      val w = WireInit(Vec(1, UInt(4.W)), x)
+      w(0)
     }
   }
 
@@ -60,53 +161,28 @@ class WidthSpec extends ChiselFlatSpec {
         w
       }
     }
-  }
-
-  behavior of "RegInit (Single Argument)"
-
-  it should "set width if passed a literal with forced width" in {
-    assertKnownWidth(4) {
-      RegInit(3.U(4.W))
-    }
-  }
-
-  it should "NOT set width if passed a literal without a forced width" in {
     assertInferredWidth(4) {
-      val w = RegInit(3.U)
-      w := 3.U(4.W)
-      w
+      val w = WireInit(new SimpleBundle, SimpleBundle.intoWire())
+      w.y
     }
-  }
-
-  it should "NOT set width if passed a non-literal" in {
     assertInferredWidth(4) {
-      val w = WireInit(3.U(4.W))
-      RegInit(w)
+      val x = Wire(Vec(1, UInt()))
+      x(0) := 0.U(4.W)
+      val w = WireInit(Vec(1, UInt()), x)
+      w(0)
     }
   }
+}
 
-  behavior of "RegInit (Double Argument)"
+class WireInitWidthSpec extends WireInitRegInitSpecImpl {
+  def name = "WireInit"
+  def builder1[T <: Data](x: T): T = WireInit(x)
+  def builder2[T <: Data](x: T, y: T): T = WireInit(x, y)
+}
 
-  it should "set the width if the template type has a set width" in {
-    assertKnownWidth(4) {
-      RegInit(UInt(4.W), 0.U)
-    }
-    assertKnownWidth(4) {
-      RegInit(UInt(4.W), 0.U(2.W))
-    }
-  }
-
-  it should "infer the width if the template type has no width" in {
-    val templates = Seq(
-      () => 0.U, () => 0.U(2.W), () => WireInit(0.U), () => WireInit(0.U(2.W))
-    )
-    for (gen <- templates) {
-      assertInferredWidth(4) {
-        val w = RegInit(UInt(), gen())
-        w := 0.U(4.W)
-        w
-      }
-    }
-  }
+class RegInitWidthSpec extends WireInitRegInitSpecImpl {
+  def name = "RegInit"
+  def builder1[T <: Data](x: T): T = RegInit(x)
+  def builder2[T <: Data](x: T, y: T): T = RegInit(x, y)
 }
 
