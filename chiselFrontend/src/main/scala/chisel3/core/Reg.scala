@@ -9,6 +9,27 @@ import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{SourceInfo}
 
+/** Utility for constructing hardware registers
+  *
+  * =Width Inference=
+  * The width of a `Reg` (inferred or not) will be copied from the type template
+  * {{{
+  * val r0 = Reg(UInt()) // width is inferred
+  * val r1 = Reg(UInt(8.W)) // width is set to 8
+  *
+  * val r2 = Reg(Vec(4, UInt())) // width is inferred
+  * val r3 = Reg(Vec(4, UInt(8.W))) // width of each element is set to 8
+  *
+  * class MyBundle {
+  *   val unknown = UInt()
+  *   val known   = UInt(8.W)
+  * }
+  * val r4 = Reg(new MyBundle)
+  * // Width of r4.unknown is inferred
+  * // Width of r4.known is set to 8
+  * }}}
+  *
+  */
 object Reg {
   /** Creates a register without initialization (reset is ignored). Value does
     * not change unless assigned to (using the := operator).
@@ -64,6 +85,59 @@ object RegNext {
   }
 }
 
+/** Utility for constructing hardware registers with an initialization value.
+  *
+  * The register is set to the initialization value when the current implicit `reset` is high
+  *
+  * =Width Inference=
+  *
+  * The two forms of `RegInit` have differing width inference semantics:
+  *
+  * ==Single Argument==
+  * There are 4 cases of type inference for single argument `RegInit`:
+  *
+  * 1. Literal [[Bits]] initializer: width will be set to match
+  * {{{
+  * val r1 = RegInit(1.U) // width will be inferred to be 1
+  * val r2 = RegInit(1.U(8.W)) // width is set to 8
+  * }}}
+  *
+  * 2. Non-Literal [[Element]] initializer - width will be inferred
+  * {{{
+  * val x = Wire(UInt())
+  * val y = Wire(UInt(8.W))
+  * val r1 = RegInit(x) // width will be inferred
+  * val r2 = RegInit(y) // width will be inferred
+  * }}}
+  *
+  * 3. [[Aggregate]] initializer - width will be set to match the aggregate
+  *
+  * {{{
+  * class MyBundle {
+  *   val unknown = UInt()
+  *   val known   = UInt(8.W)
+  * }
+  * val w1 = Reg(new MyBundle)
+  * val w2 = RegInit(w1)
+  * // Width of w2.unknown is inferred
+  * // Width of w2.known is set to 8
+  * }}}
+  *
+  * ==Double Argument==
+  * The width inference semantics for `RegInit` with two arguments match those of [[Reg]]. The
+  * first argument to `RegInit` is the type template which defines the width of the `Reg` in
+  * exactly the same way as the only argument to [[Wire]].
+  *
+  * More explicitly, you can reason about `RegInit` with multiple arguments as if it were defined
+  * as:
+  * {{{
+  * def RegInit[T <: Data](t: T, init: T): T = {
+  *   val x = Reg(t)
+  *   x := init
+  *   x
+  * }
+  * }}}
+  */
 object RegInit {
   /** Returns a register pre-initialized (on reset) to the specified value.
     * Register type is inferred from the initializer.

@@ -502,8 +502,80 @@ trait WireFactory {
   }
 }
 
+/** Utility for constructing hardware wires
+  *
+  * =Width Inference=
+  * The width of a `Wire` (inferred or not) will be copied from the type template
+  * {{{
+  * val w0 = Wire(UInt()) // width is inferred
+  * val w1 = Wire(UInt(8.W)) // width is set to 8
+  *
+  * val w2 = Wire(Vec(4, UInt())) // width is inferred
+  * val w3 = Wire(Vec(4, UInt(8.W))) // width of each element is set to 8
+  *
+  * class MyBundle {
+  *   val unknown = UInt()
+  *   val known   = UInt(8.W)
+  * }
+  * val w4 = Wire(new MyBundle)
+  * // Width of w4.unknown is inferred
+  * // Width of w4.known is set to 8
+  * }}}
+  *
+  */
 object Wire extends WireFactory
 
+/** Utility for constructing hardware wires with a default connection
+  *
+  * =Width Inference=
+  *
+  * The two forms of `WireInit` have differing width inference semantics:
+  *
+  * ==Single Argument==
+  * There are 3 cases of type inference for single argument `WireInit`:
+  *
+  * 1. Literal [[Bits]] initializer: width will be set to match
+  * {{{
+  * val w1 = WireInit(1.U) // width will be inferred to be 1
+  * val w2 = WireInit(1.U(8.W)) // width is set to 8
+  * }}}
+  *
+  * 2. Non-Literal [[Element]] initializer - width will be inferred
+  * {{{
+  * val x = Wire(UInt())
+  * val y = Wire(UInt(8.W))
+  * val w1 = WireInit(x) // width will be inferred
+  * val w2 = WireInit(y) // width will be inferred
+  * }}}
+  *
+  * 3. [[Aggregate]] initializer - width will be set to match the aggregate
+  *
+  * {{{
+  * class MyBundle {
+  *   val unknown = UInt()
+  *   val known   = UInt(8.W)
+  * }
+  * val w1 = Wire(new MyBundle)
+  * val w2 = WireInit(w1)
+  * // Width of w2.unknown is inferred
+  * // Width of w2.known is set to 8
+  * }}}
+  *
+  * ==Double Argument==
+  * The width inference semantics for `WireInit` with two arguments match those of [[Wire]]. The
+  * first argument to `WireInit` is the type template which defines the width of the `Wire` in
+  * exactly the same way as the only argument to [[Wire]].
+  *
+  * More explicitly, you can reason about `WireInit` with multiple arguments as if it were defined
+  * as:
+  * {{{
+  * def WireInit[T <: Data](t: T, init: T): T = {
+  *   val x = Wire(t)
+  *   x := init
+  *   x
+  * }
+  * }}}
+  */
 object WireInit {
   def apply[T <: Data](init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     val model = (init match {
