@@ -484,6 +484,10 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 }
 
 trait WireFactory {
+  /** @usecase def apply[T <: Data](t: T): T
+    *   Construct a [[Wire]] from a type template
+    *   @param t The template from which to construct this wire
+    */
   def apply[T <: Data](t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     if (compileOptions.declaredTypeMustBeUnbound) {
       requireIsChiselType(t, "wire type")
@@ -504,8 +508,7 @@ trait WireFactory {
 
 /** Utility for constructing hardware wires
   *
-  * =Width Inference=
-  * The width of a `Wire` (inferred or not) will be copied from the type template
+  * The width of a `Wire` (inferred or not) is copied from the type template
   * {{{
   * val w0 = Wire(UInt()) // width is inferred
   * val w1 = Wire(UInt(8.W)) // width is set to 8
@@ -527,12 +530,13 @@ object Wire extends WireFactory
 
 /** Utility for constructing hardware wires with a default connection
   *
-  * =Width Inference=
-  *
-  * The two forms of `WireInit` have differing width inference semantics:
+  * The two forms of `WireInit` differ in how the type and width of the resulting [[Wire]] are
+  * specified.
   *
   * ==Single Argument==
-  * There are 3 cases of type inference for single argument `WireInit`:
+  * The single argument form is for specifying the type and default value with a single argument.
+  *
+  * There are 3 cases of width inference for single argument `WireInit`:
   *
   * 1. Literal [[Bits]] initializer: width will be set to match
   * {{{
@@ -562,6 +566,9 @@ object Wire extends WireFactory
   * }}}
   *
   * ==Double Argument==
+  * The double argument form allows the type of the [[Wire]] and the default connection to be
+  * specified independently.
+  *
   * The width inference semantics for `WireInit` with two arguments match those of [[Wire]]. The
   * first argument to `WireInit` is the type template which defines the width of the `Wire` in
   * exactly the same way as the only argument to [[Wire]].
@@ -575,16 +582,11 @@ object Wire extends WireFactory
   *   x
   * }
   * }}}
+  *
+  * @note The `Init` in `WireInit` refers to a `default` connection. This is in contrast to
+  * [[RegInit]] where the `Init` refers to a value on reset.
   */
 object WireInit {
-  def apply[T <: Data](init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
-    val model = (init match {
-      // If init is a literal without forced width OR any non-literal, let width be inferred
-      case init: Bits if !init.litIsForcedWidth.getOrElse(false) => init.cloneTypeWidth(Width())
-      case _ => init.cloneTypeFull
-    }).asInstanceOf[T]
-    apply(model, init)
-  }
 
   private def applyImpl[T <: Data](t: T, init: Data)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     implicit val noSourceInfo = UnlocatableSourceInfo
@@ -594,11 +596,37 @@ object WireInit {
     x
   }
 
+  /** @usecase def apply[T <: Data](t: T, init: DontCare.type): T
+    *   Construct a [[Wire]] with a type template and a [[DontCare]] default
+    *   @param t The type template used to construct this [[Wire]]
+    *   @param init The default connection to this [[Wire]], can only be [[DontCare]]
+    *   @note This is really just a specialized form of `apply[T <: Data](t: T, init: T): T` with [[DontCare]]
+    *   as `init`
+    */
+  def apply[T <: Data](t: T, init: DontCare.type)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    applyImpl(t, init)
+  }
+
+  /** @usecase def apply[T <: Data](t: T, init: T): T
+    *   Construct a [[Wire]] with a type template and a default connection
+    *   @param t The type template used to construct this [[Wire]]
+    *   @param init The hardware value that will serve as the default value
+    */
   def apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     applyImpl(t, init)
   }
-  def apply[T <: Data](t: T, init: DontCare.type)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
-    applyImpl(t, init)
+
+  /** @usecase def apply[T <: Data](init: T): T
+    *   Construct a [[Wire]] with a default connection
+    *   @param init The hardware value that will serve as a type template and default value
+    */
+  def apply[T <: Data](init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    val model = (init match {
+      // If init is a literal without forced width OR any non-literal, let width be inferred
+      case init: Bits if !init.litIsForcedWidth.getOrElse(false) => init.cloneTypeWidth(Width())
+      case _ => init.cloneTypeFull
+    }).asInstanceOf[T]
+    apply(model, init)
   }
 }
 

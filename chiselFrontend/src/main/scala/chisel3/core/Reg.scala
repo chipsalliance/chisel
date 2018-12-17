@@ -11,8 +11,7 @@ import chisel3.internal.sourceinfo.{SourceInfo}
 
 /** Utility for constructing hardware registers
   *
-  * =Width Inference=
-  * The width of a `Reg` (inferred or not) will be copied from the type template
+  * The width of a `Reg` (inferred or not) is copied from the type template
   * {{{
   * val r0 = Reg(UInt()) // width is inferred
   * val r1 = Reg(UInt(8.W)) // width is set to 8
@@ -31,10 +30,10 @@ import chisel3.internal.sourceinfo.{SourceInfo}
   *
   */
 object Reg {
-  /** Creates a register without initialization (reset is ignored). Value does
-    * not change unless assigned to (using the := operator).
-    *
-    * @param t: data type for the register
+  /** @usecase def apply[T <: Data](t: T): T
+    *   Construct a [[Reg]] from a type template with no initialization value (reset is ignored).
+    *   Value will not change unless the [[Reg]] is given a connection.
+    *   @param t The template from which to construct this wire
     */
   def apply[T <: Data](t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     if (compileOptions.declaredTypeMustBeUnbound) {
@@ -89,12 +88,13 @@ object RegNext {
   *
   * The register is set to the initialization value when the current implicit `reset` is high
   *
-  * =Width Inference=
-  *
-  * The two forms of `RegInit` have differing width inference semantics:
+  * The two forms of `RegInit` differ in how the type and width of the resulting [[Reg]] are
+  * specified.
   *
   * ==Single Argument==
-  * There are 4 cases of type inference for single argument `RegInit`:
+  * The single argument form is for specifying the type and default value with a single argument.
+  *
+  * There are 3 cases of type inference for single argument `RegInit`:
   *
   * 1. Literal [[Bits]] initializer: width will be set to match
   * {{{
@@ -124,6 +124,9 @@ object RegNext {
   * }}}
   *
   * ==Double Argument==
+  * The double argument form allows the type of the [[Reg]] and the default connection to be
+  * specified independently.
+  *
   * The width inference semantics for `RegInit` with two arguments match those of [[Reg]]. The
   * first argument to `RegInit` is the type template which defines the width of the `Reg` in
   * exactly the same way as the only argument to [[Wire]].
@@ -139,19 +142,10 @@ object RegNext {
   * }}}
   */
 object RegInit {
-  /** Returns a register pre-initialized (on reset) to the specified value.
-    * Register type is inferred from the initializer.
-    */
-  def apply[T <: Data](init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
-    val model = (init match {
-      // If init is a literal without forced width OR any non-literal, let width be inferred
-      case init: Bits if !init.litIsForcedWidth.getOrElse(false) => init.cloneTypeWidth(Width())
-      case init => init.cloneTypeFull
-    }).asInstanceOf[T]
-    RegInit(model, init)
-  }
-
-  /** Creates a register given an explicit type and an initialization (reset) value.
+  /** @usecase def apply[T <: Data](t: T, init: T): T
+    *   Construct a [[Reg]] from a type template initialized to the specified value on reset
+    *   @param t The type template used to construct this [[Reg]]
+    *   @param init The value the [[Reg]] is initialized to on reset
     */
   def apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     if (compileOptions.declaredTypeMustBeUnbound) {
@@ -166,4 +160,18 @@ object RegInit {
     pushCommand(DefRegInit(sourceInfo, reg, clock, reset, init.ref))
     reg
   }
+
+  /** @usecase def apply[T <: Data](init: T): T
+    *   Construct a [[Reg]] initialized on reset to the specified value.
+    *   @param init Initial value that serves as a type template and reset value
+    */
+  def apply[T <: Data](init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    val model = (init match {
+      // If init is a literal without forced width OR any non-literal, let width be inferred
+      case init: Bits if !init.litIsForcedWidth.getOrElse(false) => init.cloneTypeWidth(Width())
+      case init => init.cloneTypeFull
+    }).asInstanceOf[T]
+    RegInit(model, init)
+  }
+
 }
