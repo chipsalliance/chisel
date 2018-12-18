@@ -91,7 +91,7 @@ However, Verilator works in [WSL](https://docs.microsoft.com/en-us/windows/wsl/i
 
 Alternatively, if you're using [PeekPokeTester](https://github.com/freechipsproject/chisel-testers) or the [Testers2 alpha](https://github.com/ucb-bar/chisel-testers2), you can use [treadle](https://github.com/freechipsproject/treadle) as the simulation engine.
 Treadle is a FIRRTL simulator written in Scala, and works on any platform that can run Scala code.
-It can simulate any pure Chisel design, but cannot simulate Verilog code and hence will not work on BlackBoxes / ExtModules which do not have corresponding greybox definition.
+It can simulate any pure Chisel design, but cannot simulate Verilog code and hence will not work on BlackBoxes / ExtModules which do not have corresponding greybox definitions.
 
 There are no issues with generating Verilog from Chisel, which can be pushed to FPGA or ASIC tools.
 
