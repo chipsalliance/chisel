@@ -97,8 +97,6 @@ object RegNext {
   * non-Bits arguments, the type will be copied from the argument. See the following examples for
   * more details:
   *
-  * There are 3 cases of type inference for single argument `RegInit`:
-  *
   * 1. Literal [[Bits]] initializer: width will be set to match
   * {{{
   * val r1 = RegInit(1.U) // width will be inferred to be 1
