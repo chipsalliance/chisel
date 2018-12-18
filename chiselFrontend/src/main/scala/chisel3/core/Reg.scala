@@ -92,7 +92,10 @@ object RegNext {
   * specified.
   *
   * ==Single Argument==
-  * The single argument form is for specifying the type and default value with a single argument.
+  * The single argument form uses the argument to specify both the type and reset value. For
+  * non-literal [[Bits]], the width of the [[Reg]] will be inferred. For literal [[Bits]] and all
+  * non-Bits arguments, the type will be copied from the argument. See the following examples for
+  * more details:
   *
   * There are 3 cases of type inference for single argument `RegInit`:
   *

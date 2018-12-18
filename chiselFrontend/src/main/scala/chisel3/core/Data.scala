@@ -534,9 +534,10 @@ object Wire extends WireFactory
   * specified.
   *
   * ==Single Argument==
-  * The single argument form is for specifying the type and default value with a single argument.
-  *
-  * There are 3 cases of width inference for single argument `WireInit`:
+  * The single argument form uses the argument to specify both the type and default connection. For
+  * non-literal [[Bits]], the width of the [[Wire]] will be inferred. For literal [[Bits]] and all
+  * non-Bits arguments, the type will be copied from the argument. See the following examples for
+  * more details:
   *
   * 1. Literal [[Bits]] initializer: width will be set to match
   * {{{
