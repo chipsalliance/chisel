@@ -108,6 +108,23 @@ circuit foo :
     parse(res.getEmittedCircuit.value)
   }
 
+  "An mport that refers to an undefined memory" should "have a helpful error message" in {
+    val input =
+      """circuit testTestModule :
+         |  module testTestModule :
+         |    input clock : Clock
+         |    input reset : UInt<1>
+         |    output io : {flip in : UInt<10>, out : UInt<10>}
+         |
+         |    node _T_10 = bits(io.in, 1, 0)
+         |    read mport _T_11 = m[_T_10], clock
+         |    io.out <= _T_11""".stripMargin
+
+    intercept[PassException]{
+      (new LowFirrtlCompiler).compile(CircuitState(parse(input), ChirrtlForm), Seq()).circuit
+    }.getMessage should startWith ("Undefined memory m referenced by mport _T_11")
+  }
+
   ignore should "Memories should not have validif on port clocks when declared in a when" in {
     val input =
       """;buildInfoPackage: chisel3, version: 3.0-SNAPSHOT, scalaVersion: 2.11.11, sbtVersion: 0.13.16, builtAtString: 2017-10-06 20:55:20.367, builtAtMillis: 1507323320367
