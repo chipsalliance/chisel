@@ -2,6 +2,8 @@
 
 package firrtl
 
+import firrtl.transforms.IdentityTransform
+
 sealed abstract class CoreTransform extends SeqTransform
 
 /** This transforms "CHIRRTL", the chisel3 IR, to "Firrtl". Note the resulting
@@ -132,7 +134,7 @@ import firrtl.transforms.BlackBoxSourceHelper
   */
 class NoneCompiler extends Compiler {
   def emitter = new ChirrtlEmitter
-  def transforms: Seq[Transform] = Seq.empty
+  def transforms: Seq[Transform] = Seq(new IdentityTransform(ChirrtlForm))
 }
 
 /** Emits input circuit
