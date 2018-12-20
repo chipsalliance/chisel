@@ -75,10 +75,7 @@ private[chisel3] object Converter {
       val unsigned = if (n < 0) (BigInt(1) << intervalLit.width.get) + n else n
       val uint = convert(ULit(unsigned, intervalLit.width), ctx)
       val lit = bp.asInstanceOf[KnownBinaryPoint].value
-      //TODO (chick) need to case this all out I think
-      val lowerBound = intervalLit.minWidth
-      val upperBound = intervalLit.minWidth
-      fir.DoPrim(firrtl.PrimOps.AsInterval, Seq(uint), Seq(lowerBound, upperBound, lit), fir.UnknownType)
+      fir.DoPrim(firrtl.PrimOps.AsInterval, Seq(uint), Seq(n, n, lit), fir.UnknownType)
     case lit: ILit =>
       throwException(s"Internal Error! Unexpected ILit: $lit")
   }

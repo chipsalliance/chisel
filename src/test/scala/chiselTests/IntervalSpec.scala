@@ -2,17 +2,17 @@
 
 package chiselTests
 
+import _root_.firrtl.ir.{Closed, UnknownBound}
 import chisel3._
+import chisel3.core.FixedPoint
 import chisel3.experimental.{ChiselRange, Interval}
-import chisel3.internal.firrtl.{IntervalRange, KnownBinaryPoint, KnownWidth}
+import chisel3.internal.firrtl.{IntervalRange, KnownBinaryPoint}
 import chisel3.internal.sourceinfo.{SourceInfo, UnlocatableSourceInfo}
 import chisel3.testers.BasicTester
 import cookbook.CookbookTester
-import logger.LogLevel
-import _root_.firrtl.ir.{Closed, Open, UnknownBound}
+import org.scalatest.{FreeSpec, Matchers}
 
 import scala.language.reflectiveCalls
-import org.scalatest.{FreeSpec, Matchers}
 
 //scalastyle:off magic.number
 
@@ -27,7 +27,6 @@ class IntervalTest1 extends Module {
 }
 
 class IntervalTester extends CookbookTester(10) {
-  //logger.Logger.setLevel(LogLevel.Info)
   val dut = Module(new IntervalTest1)
 
   dut.io.in1 := 4.I()
@@ -51,7 +50,6 @@ class IntervalTest2 extends Module {
 }
 
 class IntervalTester2 extends CookbookTester(10) {
-  //logger.Logger.setLevel(LogLevel.Info)
   val dut = Module(new IntervalTest2)
 
   dut.io.p := 1.U
@@ -85,8 +83,6 @@ class SIntTest1Tester extends CookbookTester(10) {
 }
 
 class IntervalAddTester extends BasicTester {
-  //logger.Logger.setLevel(LogLevel.Info)
-
   val in1 = Wire(Interval(range"[0,4]"))
   val in2 = Wire(Interval(range"[0,4]"))
 //  val in3 = Wire(Interval(range"[?,?]"))
@@ -111,12 +107,10 @@ class IntervalSetBinaryPointTester extends BasicTester {
 
   in1 := 2.I
 
-  //val toShiftLeft = Wire(Interval(range"[0,4].4"))
   val shiftedLeft = in1.shiftLeftBinaryPoint(2)
 
   assert(shiftedLeft.binaryPoint == KnownBinaryPoint(6), s"Error: bpshl result ${shiftedLeft.range} expected bt = 2")
 
-//  val toShiftRight = Wire(Interval(range"[0,4].4"))
   val shiftedRight = in1.shiftRightBinaryPoint(2)
 
   assert(shiftedRight.binaryPoint == KnownBinaryPoint(2), s"Error: bpshl result ${shiftedRight.range} expected bt = 2")
@@ -127,11 +121,6 @@ class IntervalSetBinaryPointTester extends BasicTester {
 class MoreIntervalShiftTester extends BasicTester {
   implicit val sourceinfo: SourceInfo = UnlocatableSourceInfo
 
-  for {
-    rangeMin <- 0 to 0
-  } {
-
-  }
   val in1 = Wire(Interval(range"[0,4].4"))
   val in2 = in1.setBinaryPoint(2)
 
@@ -150,45 +139,123 @@ class MoreIntervalShiftTester extends BasicTester {
   stop()
 }
 
+/**
+  * This is a reality check not a test. Makes it easier to figure out
+  * what is going on in other places
+  * @param range        a range for inputs
+  * @param targetRange  a range for outputs
+  * @param startNum     start here
+  * @param endNum       end here
+  * @param incNum       increment by this
+  */
+class ClipSqueezeWrapDemo(
+  range: IntervalRange,
+  targetRange: IntervalRange,
+  startNum: Double,
+  endNum: Double,
+  incNum: Double
+) extends BasicTester {
+
+  val binaryPointAsInt = range.binaryPoint.asInstanceOf[KnownBinaryPoint].value
+  val startValue = Interval.fromDouble(startNum, binaryPoint = binaryPointAsInt)
+  val increment = Interval.fromDouble(incNum, binaryPoint = binaryPointAsInt)
+  val endValue  = Interval.fromDouble(endNum, binaryPoint = binaryPointAsInt)
+
+  val counter = RegInit(Interval(range), startValue)
+
+  counter := (counter + increment).squeeze(counter)
+  when(counter > endValue) {
+    stop()
+  }
+
+  val clipped  = counter.clip(0.U.asInterval(targetRange))
+  val squeezed = counter.squeeze(0.U.asInterval(targetRange))
+  val wrapped  = counter.wrap(0.U.asInterval(targetRange))
+
+  when(counter === startValue) {
+    printf(s"Target range is ${range}\n")
+    printf("value     clip      squeeze      wrap\n")
+  }
+
+  printf("       %d       %d          %d         %d\n",
+    counter.asSInt, clipped.asSInt, squeezed.asSInt, wrapped.asSInt)
+}
+
+class SqueezeFunctionalityTester(
+  range: IntervalRange,
+  startNum: BigDecimal,
+  endNum: BigDecimal,
+  increment: BigDecimal
+) extends BasicTester {
+
+  val counter = RegInit(0.U(10.W))
+  counter := counter + 1.U
+  when(counter > 10.U) {
+    stop()
+  }
+
+  val squeezeInterval = Wire(Interval(range))
+  squeezeInterval := 0.I
+
+  val squoozen = Wire(Interval(range))
+
+  val ss = WireInit(Interval(range), (-10).S.asInterval(range))
+
+  val toSqueeze = counter.asInterval(range) - ss
+
+  squoozen := toSqueeze.squeeze(squeezeInterval)
+
+  printf(s"SqueezeTest %d    %d.squeeze($range) => %d\n", counter, toSqueeze.asSInt, squoozen.asSInt)
+}
+
+/**
+  * Demonstrate a simple counter register with an Interval type
+  */
+class IntervalRegisterTester extends BasicTester {
+  val range = range"[-2,5]"
+  val counter = RegInit(Interval(range), (-1).I)
+  counter := (counter + 1.I).squeeze(counter)  // this works with other types, why not Interval
+  when(counter > 4.I) {
+    stop()
+  }
+}
 
 class IntervalWrapTester extends BasicTester {
-  implicit val sourceinfo: SourceInfo = UnlocatableSourceInfo
-
-  val t1 = Wire(Interval(range"[-20, 19]"))
-  val u1 = Wire(UInt(3.W))
-  val r1 = Reg(UInt())
+  val t1 = Wire(Interval(range"[-2, 12]"))
+  t1 := -2.I
+  val u1 = 0.U(3.W)
+  val r1 = RegInit(u1)
   r1 := u1
-  val t2 = t1.squeeze(u1)
-  val t3 = t1.squeeze(r1)
+  val t2 = t1.wrap(u1)
+  val t3 = t1.wrap(r1)
 
   assert(t2.range.upper == Closed(7), s"t1 upper ${t2.range.upper} expected ${Closed(7)}")
-  assert(t3.range.upper == UnknownBound, s"t1 upper ${t3.range.upper} expected $UnknownBound")
+  assert(t3.range.upper == Closed(7), s"t1 upper ${t3.range.upper} expected $UnknownBound")
 
-  val in1 = Wire(Interval(range"[0,15].6"))
-  val in2 = Wire(Interval(range"[1,6).4"))
-  val in3 = in1.squeeze(in2)
+  val in1 = WireInit(Interval(range"[0,9].6"), 0.I)
+  val in2 = WireInit(Interval(range"[1,6).4"), 2.I)
+  val in3 = in1.wrap(in2)
 
-  //  assert(in3.range.lower == Closed(1), s"in3 lower ${in3.range.lower} expected ${Closed(1)}")
   assert(in3.range.lower == Closed(1), s"in3 lower ${in3.range.lower} expected ${Closed(1)}")
   assert(in3.range.upper == Closed(5.9375), s"in3 upper ${in3.range.upper} expected ${Closed(5.9375)}")
   assert(in3.binaryPoint == KnownBinaryPoint(6), s"in3 binaryPoint ${in3.binaryPoint} expected ${KnownBinaryPoint(2)}")
 
   val enclosedRange = range"[-2, 5]"
   val base = Wire(Interval(range"[-4, 6]"))
-  val enclosed = Wire(Interval(enclosedRange))
-  val enclosing = Wire(Interval(range"[-6, 8]"))
-  val overlapLeft = Wire(Interval(range"[-10,-2]"))
-  val overlapRight = Wire(Interval(range"[-1,10]"))
-  val disjointLeft = Wire(Interval(range"[-14,-7]"))
-  val disjointRight = Wire(Interval(range"[7,11]"))
+  val enclosed = WireInit(Interval(enclosedRange), 0.I)
+  val enclosing = WireInit(Interval(range"[-6, 8]"), 0.I)
+  val overlapLeft = WireInit(Interval(range"[-10,-2]"), -3.I)
+  val overlapRight = WireInit(Interval(range"[-1,10]"), 0.I)
+//  val disjointLeft = WireInit(Interval(range"[-7,-5]"), -6.I)
+//  val disjointRight = WireInit(Interval(range"[7,9]"), 8.I)
 
-  val w1 = base.squeeze(enclosed)
-  val w2 = base.squeeze(enclosing)
-  val w3 = base.squeeze(overlapLeft)
-  val w4 = base.squeeze(overlapRight)
-  val w5 = base.squeeze(disjointLeft)
-  val w6 = base.squeeze(disjointRight)
-  val w7 = base.squeeze(enclosedRange)
+  val w1 = base.wrap(enclosed)
+  val w2 = base.wrap(enclosing)
+  val w3 = base.wrap(overlapLeft)
+  val w4 = base.wrap(overlapRight)
+//  val w5 = base.wrap(disjointLeft)
+//  val w6 = base.wrap(disjointRight)
+  val w7 = base.wrap(enclosedRange)
 
   base := 6.I()
 
@@ -196,10 +263,10 @@ class IntervalWrapTester extends BasicTester {
   assert(w2 === 6.I())
   assert(w3 === (-3).I())
   assert(w4 === 6.I())
-  assert(w5 === (-8).I())
-  //TODO (chick, adam) Why is this not 10.I
-  // assert(w6 === 10.I())
-  printf("w6 is %d\n", w6.asSInt())
+//  assert(w5 === (-8).I())
+//  //TODO (chick, adam) Why is this not 10.I
+//  // assert(w6 === 10.I())
+//  printf("w6 is %d\n", w6.asSInt())
 
   assert(w7 === (-2).I())
 
@@ -211,16 +278,14 @@ class IntervalWrapTester extends BasicTester {
   println(s"enclosing ${w2.range.lower} ${w2.range.upper}")
   println(s"overlapLeft ${w3.range.lower} ${w3.range.upper}")
   println(s"overlapRight ${w4.range.lower} ${w4.range.upper}")
-  println(s"disjointLeft ${w5.range.lower} ${w5.range.upper}")
-  println(s"disjointRight ${w6.range.lower} ${w6.range.upper}")
+//  println(s"disjointLeft ${w5.range.lower} ${w5.range.upper}")
+//  println(s"disjointRight ${w6.range.lower} ${w6.range.upper}")
   println(s"enclosed from string ${w7.range.lower} ${w7.range.upper}")
 
   stop()
 }
 
 class IntervalClipTester extends BasicTester {
-  implicit val sourceinfo: SourceInfo = UnlocatableSourceInfo
-
   val enclosedRange = range"[-2, 5]"
   val base = Wire(Interval(range"[-4, 6]"))
   val enclosed = Wire(Interval(enclosedRange))
@@ -268,8 +333,6 @@ class IntervalClipTester extends BasicTester {
 }
 
 class IntervalChainedAddTester extends BasicTester {
-  //logger.Logger.setLevel(LogLevel.Info)
-
   val intervalResult = Wire(Interval())
   val uintResult = Wire(UInt())
 
@@ -284,8 +347,6 @@ class IntervalChainedAddTester extends BasicTester {
 }
 
 class IntervalChainedMulTester extends BasicTester {
-  //logger.Logger.setLevel(LogLevel.Info)
-
   val intervalResult = Wire(Interval())
   val uintResult = Wire(UInt())
 
@@ -299,35 +360,35 @@ class IntervalChainedMulTester extends BasicTester {
   stop()
 }
 
-//TODO intervals chick clean this up after firrtl issues resolved
-class IntervalChainedSubTester extends BasicTester {
-  val intervalResult = Wire(Interval(KnownWidth(4), range"[0,32].0"))
-
-  val counter = RegInit(Interval(KnownWidth(4), range"[0,16].0"), 0.I())
-  counter := counter + 1.I
-
-  intervalResult := 17.I - counter
-
+class IntervalChainedSubTesterSimple extends BasicTester {
+  val intervalResult = Wire(Interval())
+  intervalResult := 17.I - 2.I // -& 2.I -& 2.I -& 2.I -& 2.I -& 2.I
   printf("Interval result: %d\n", intervalResult.asSInt)
-  when(counter.asUInt > 15.U) {
-    stop()
-  }
+  assert(intervalResult === 15.I)
+  stop()
 }
-//class IntervalChainedSubTester extends BasicTester {
-//  //logger.Logger.setLevel(LogLevel.Info)
-//
-//  val intervalResult = Wire(Interval())
-//  val uIntResult = Wire(UInt())
-//
-//  intervalResult := 17.I - 2.I - 2.I - 2.I - 2.I - 2.I - 2.I
-//  uIntResult := 17.U -& 2.U -& 2.U -& 2.U -& 2.U -& 2.U -& 2.U
-//
-//  printf("Interval result: %d\n", intervalResult.asUInt)
-//  printf("UInt result: %d\n", uIntResult)
-//  assert(intervalResult === 5.I)
-//  assert(uIntResult === 5.U)
-//  stop()
-//}
+
+class IntervalChainedSubTester extends BasicTester {
+  val intervalResult1 = Wire(Interval())
+  val intervalResult2 = Wire(Interval())
+  val uIntResult = Wire(UInt())
+  val sIntResult = Wire(SInt())
+  val fixedResult = Wire(FixedPoint())
+
+  intervalResult1 := 17.I - 2.I - 2.I - 2.I - 2.I - 2.I - 2.I // gives same result as -& operand version below
+  intervalResult2 := 17.I -& 2.I -& 2.I -& 2.I -& 2.I -& 2.I -& 2.I
+  uIntResult := 17.U -& 2.U -& 2.U -& 2.U -& 2.U -& 2.U -& 2.U
+  fixedResult := 17.0.F(0.BP) -& 2.0.F(0.BP) -& 2.0.F(0.BP) -& 2.0.F(0.BP) -& 2.0.F(0.BP) -& 2.0.F(0.BP) -& 2.0.F(0.BP)
+  sIntResult := 17.S -& 2.S -& 2.S -& 2.S -& 2.S -& 2.S -& 2.S
+
+  assert(uIntResult === 5.U)
+  assert(sIntResult === 5.S)
+  assert(fixedResult.asUInt === 5.U)
+  assert(intervalResult1 === 5.I)
+  assert(intervalResult2 === 5.I)
+
+  stop()
+}
 
 class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
   "Test a simple interval add" in {
@@ -345,8 +406,27 @@ class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
   "Intervals can have binary points set" in {
     assertTesterPasses{ new IntervalSetBinaryPointTester }
   }
+  "Let's take a look at the results of squeeze over small range" in {
+    assertTesterPasses{ new ClipSqueezeWrapDemo(
+      range = range"[-10,33].0",
+      targetRange = range"[-4,17].0",
+      startNum = -4.0, endNum = 30.0, incNum = 1.0
+    )}
+    assertTesterPasses{ new ClipSqueezeWrapDemo(
+      range = range"[-2,5].1",
+      targetRange = range"[-1,3].1",
+      startNum = -2.0, endNum = 5.0, incNum = 0.5
+    )}
+  }
+  "Intervals can be squeezed into another intervals range" in {
+    assertTesterPasses{ new SqueezeFunctionalityTester(range"[-2,5]",
+      BigDecimal(-10), BigDecimal(10), BigDecimal(1.0)) }
+  }
   "Intervals can be wrapped with wrap operator" in {
     assertTesterPasses{ new IntervalWrapTester }
+  }
+  "Intervals can be used to construct registers" in {
+    assertTesterPasses{ new IntervalRegisterTester }
   }
   "Intervals can be clipped with clip (saturate) operator" in {
     assertTesterPasses{ new IntervalClipTester }
@@ -368,4 +448,76 @@ class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
         assert(false, "Failed to generate chirrtl")
     }
   }
+
+  "Test clip, wrap and a variety of ranges" - {
+    """range"[0.0,10.0].2" => range"[2,6].2""" in {
+      assertTesterPasses( new BasicTester {
+
+        val sourceRange = range"[0.0,10.0].2"
+        val targetRange = range"[2,6].2"
+
+        val sourceSimulator = ScalaIntervalSimulator(sourceRange)
+        val targetSimulator = ScalaIntervalSimulator(targetRange)
+
+        for (sourceValue <- sourceSimulator.allValues) {
+          val clippedValue = Wire(Interval(targetRange))
+          clippedValue := sourceSimulator.makeLit(sourceValue).clip(clippedValue)
+
+          val goldClippedValue = targetSimulator.makeLit(targetSimulator.clip(sourceValue))
+
+          // Useful for debugging
+          // printf(s"source value $sourceValue clipped gold value %d compare to clipped value %d\n",
+          //  goldClippedValue.asSInt, clippedValue.asSInt)
+
+          chisel3.assert(goldClippedValue === clippedValue)
+
+          val wrappedValue = Wire(Interval(targetRange))
+          wrappedValue := sourceSimulator.makeLit(sourceValue).wrap(wrappedValue)
+
+          val goldWrappedValue = targetSimulator.makeLit(targetSimulator.wrap(sourceValue))
+
+          // Useful for debugging
+          // printf(s"source value $sourceValue wrapped gold value %d compare to wrapped value %d\n",
+          //  goldWrappedValue.asSInt, wrappedValue.asSInt)
+
+          chisel3.assert(goldWrappedValue === wrappedValue)
+        }
+
+        stop()
+      })
+    }
+  }
+
+  "Test squeeze over a variety of ranges" - {
+    """range"[2,6].2""" in {
+      assertTesterPasses( new BasicTester {
+
+
+        val sourceRange = range"[0.0,10.0].2"
+        val targetRange = range"[2,6].3"
+        val out = Wire(Interval(targetRange))
+        val in = Interval.fromDouble(0.0, binaryPoint = 2)
+        out := in.clip(out)
+
+        printf("in = %d out = %d\n", in.asSInt, out.asSInt)
+
+//        val sourceSimulator = ScalaIntervalSimulator(sourceRange)
+//        val targetSimulator = ScalaIntervalSimulator(targetRange)
+//
+//        for (sourceValue <- sourceSimulator.allValues) {
+//          val clippedValue = Wire(Interval(targetRange))
+//          clippedValue := sourceSimulator.makeLit(sourceValue).clip(clippedValue)
+//
+//          val goldClippedValue = targetSimulator.makeLit(targetSimulator.clip(sourceValue))
+//          printf(s"source value $sourceValue clipped gold value %d compare to clipped value %d\n",
+//          goldClippedValue.asSInt, clippedValue.asSInt)
+//
+//          chisel3.assert(goldClippedValue === clippedValue)
+//        }
+
+        stop()
+      })
+    }
+  }
 }
+

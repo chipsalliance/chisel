@@ -46,6 +46,7 @@ object PrimOp {
   val AsSIntOp = PrimOp("asSInt")
   val AsFixedPointOp = PrimOp("asFixedPoint")
   val AsIntervalOp = PrimOp("asInterval")
+  val WrapOp = PrimOp("wrap")
   val SqueezeOp = PrimOp("squeeze")
   val ClipOp = PrimOp("clip")
   val SetBinaryPoint = PrimOp("bpset")

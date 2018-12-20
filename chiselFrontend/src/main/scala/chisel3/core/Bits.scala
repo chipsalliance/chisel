@@ -1275,7 +1275,7 @@ object FixedPoint {
 
 }
 
-//scalastyle:off number.of.methods
+//scalastyle:off number.of.methods cyclomatic.complexity
 /**
   * A sealed class representing a fixed point number that has a range, an additional
   * parameter that can determine a minimum and maximum supported value.
@@ -1285,8 +1285,7 @@ object FixedPoint {
   *   val one = 1.I
   *   val six = Seq.fill(6)(one).reduce(_ + _)
   * }}}
-  * A UInt computed in this way would require
-  * a [[width]]
+  * A UInt computed in this way would require a [[Width]]
   * binary point
   * The width and binary point may be inferred.
   *
@@ -1295,16 +1294,11 @@ object FixedPoint {
   * @param width       bit width of the fixed point number
   * @param range       a range specifies min, max and binary point
   */
-sealed class Interval private (width: Width, val range: chisel3.internal.firrtl.IntervalRange)
+sealed class Interval private[chisel3] (width: Width, val range: chisel3.internal.firrtl.IntervalRange)
   extends Bits(width) with Num[Interval] {
   private[core] override def cloneTypeWidth(w: Width): this.type =
     new Interval(w, range).asInstanceOf[this.type]
 
-  //  private[chisel3] def toType = s"Interval$width$binaryPoint"
-
-  // private[chisel3]
-//  def toType = s"${range.serialize}"
-  //TODO (chick) move this hack into firrtl if appropriate
   //scalastyle:off cyclomatic.complexity
   def toType: String = {
     val zdec1 = """([+\-]?[0-9]\d*)(\.[0-9]*[1-9])(0*)""".r
@@ -1343,16 +1337,22 @@ sealed class Interval private (width: Width, val range: chisel3.internal.firrtl.
 
   def binaryPoint: BinaryPoint = range.binaryPoint
 
-  override def connect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = that match {
-    case _: Interval|DontCare => super.connect(that)
-    case _ => this badConnect that
+  override def connect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = {
+    that match {
+      case _: Interval|DontCare => super.connect(that)
+      case _ => this badConnect that
+    }
   }
 
   final def unary_-(): Interval = macro SourceInfoTransform.noArg
   final def unary_-%(): Interval = macro SourceInfoTransform.noArg
 
-  def unary_-(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = Interval.fromBigInt(0) - this
-  def unary_-%(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = Interval.fromBigInt(0) -% this
+  def unary_-(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    Interval.fromBigInt(0) - this
+  }
+  def unary_-%(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    Interval.fromBigInt(0) -% this
+  }
 
   /** add (default - growing) operator */
   override def do_+(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
@@ -1382,12 +1382,16 @@ sealed class Interval private (width: Width, val range: chisel3.internal.firrtl.
       sourceInfo,
       Interval((this.width max that.width) + 1, this.range +& that.range),
       AddOp, that)
-  def do_+%(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = throwException(s"Non-growing addition is not supported on Intervals")
+  def do_+%(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    throwException(s"Non-growing addition is not supported on Intervals: ${sourceInfo}")
+  }
   def do_-&(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
     binop(sourceInfo,
       Interval((this.width max that.width) + 1, this.range -& that.range),
       SubOp, that)
-  def do_-%(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = throwException(s"Non-growing subtraction is not supported on Intervals")
+  def do_-%(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    throwException(s"Non-growing subtraction is not supported on Intervals: ${sourceInfo}, try squeeze")
+  }
 
   final def &(that: Interval): Interval = macro SourceInfoTransform.thatArg
   final def |(that: Interval): Interval = macro SourceInfoTransform.thatArg
@@ -1471,8 +1475,10 @@ sealed class Interval private (width: Width, val range: chisel3.internal.firrtl.
   override def do_>> (that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
     binop(sourceInfo,
       Interval(this.width.shiftRight(that), this.range >> that), ShiftRightOp, that)
+
   override def do_>> (that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
     do_>>(that.toInt)
+
   override def do_>> (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
     // Worst case range is when you shift by nothing
     val newRange = this.range
@@ -1480,18 +1486,44 @@ sealed class Interval private (width: Width, val range: chisel3.internal.firrtl.
   }
 
   /**
-    * Wrap the value of this [[Interval]] based on the @param that Interval with a presumably smaller range.
+    * Wrap the value of this [[Interval]] into the range of a different Interval with a presumably smaller range.
     * @param that
     * @return
     */
-  final def squeeze(that: Interval): Interval = macro SourceInfoTransform.thatArg
-  // TODO: (chick) port correct firrtl constraints (requires 2^x)
-  def do_squeeze(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+  final def wrap(that: Interval): Interval = macro SourceInfoTransform.thatArg
+
+  def do_wrap(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    (that.range.lowerBound, that.range.upperBound) match {
+      case (lower: IsKnown, upperBound: IsKnown) =>
+        // things are good, we have known ranges
+      case _ =>
+        throwException("wrap requires an Interval argument with known lower and upper bounds")
+    }
     val dest = Interval(IntervalRange(that.range.lowerBound, that.range.upperBound, this.range.binaryPoint))
     val other = that
     requireIsHardware(this, s"'this' ($this)")
     requireIsHardware(other, s"'other' ($other)")
-//    pushOp(DefPrim(sourceInfo, dest, SqueezeOp, this.ref, other.ref, ILit(0)))
+    pushOp(DefPrim(sourceInfo, dest, WrapOp, this.ref, other.ref))
+  }
+
+  /**
+    * Squeeze the value of this [[Interval]] into the range of a different Interval with a presumably smaller range.
+    * @param that
+    * @return
+    */
+  final def squeeze(that: Interval): Interval = macro SourceInfoTransform.thatArg
+
+  def do_squeeze(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    (that.range.lowerBound, that.range.upperBound) match {
+      case (lower: IsKnown, upperBound: IsKnown) =>
+        // things are good, we have known ranges
+      case _ =>
+        throwException("squeeze requires an Interval argument with known lower and upper bounds")
+    }
+    val dest = Interval(IntervalRange(that.range.lowerBound, that.range.upperBound, this.range.binaryPoint))
+    val other = that
+    requireIsHardware(this, s"'this' ($this)")
+    requireIsHardware(other, s"'other' ($other)")
     pushOp(DefPrim(sourceInfo, dest, SqueezeOp, this.ref, other.ref))
   }
 
@@ -1517,38 +1549,109 @@ sealed class Interval private (width: Width, val range: chisel3.internal.firrtl.
     pushOp(DefPrim(sourceInfo, dest, SqueezeOp, this.ref, other.ref))
   }
 
+  /**
+    * Wrap this interval into the range determined by that UInt
+    * Currently, that must have a defined width
+    * @param that an UInt whose properties determine the squeezing
+    * @return
+    */
+  final def wrap(that: UInt): Interval = macro SourceInfoTransform.thatArg
+  def do_wrap(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    //binop(sourceInfo, TypePropagate(_root_.firrtl.PrimOps.Wrap, Seq(this, that), Nil), WrapOp, that)
+    that.widthOption match {
+      case Some(w) =>
+        val u = BigDecimal(BigInt(1) << w) - 1
+        do_wrap(0.U.asInterval(IntervalRange(Closed(0), Closed(u), BinaryPoint(0))))
+      case _ =>
+        throwException("wrap requires an UInt argument with a known width")
+    }
+  }
+
+  /**
+    * Wrap this interval into the range determined by an SInt
+    * Currently, that must have a defined width
+    * @param that an SInt whose properties determine the squeezing
+    * @return
+    */
+  final def wrap(that: SInt): Interval = macro SourceInfoTransform.thatArg
+  def do_wrap(that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    //binop(sourceInfo, TypePropagate(_root_.firrtl.PrimOps.Wrap, Seq(this, that), Nil), WrapOp, that)
+    that.widthOption match {
+      case Some(w) =>
+        val l = -BigDecimal(BigInt(1) << (that.getWidth - 1))
+        val u = BigDecimal(BigInt(1) << (that.getWidth - 1)) - 1
+        do_wrap(Wire(Interval(IntervalRange(Closed(l), Closed(u), BinaryPoint(0)))))
+      case _ =>
+        throwException("wrap requires an SInt argument with a known width")
+    }
+  }
+
+  /**
+    * Wrap this interval into the range determined by an IntervalRange
+    * Currently, that must have a defined width
+    * @param that an Interval whose properties determine the squeezing
+    * @return
+    */
+  final def wrap(that: IntervalRange): Interval = macro SourceInfoTransform.thatArg
+  def do_wrap(that: IntervalRange)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    (that.lowerBound, that.upperBound) match {
+      case (lower: IsKnown, upperBound: IsKnown) =>
+        do_wrap(0.U.asInterval(IntervalRange(that.lowerBound, that.upperBound, that.binaryPoint)))
+      case _ =>
+        throwException("wrap requires an Interval argument with known lower and upper bounds")
+    }
+  }
+
+  /**
+    * Squeeze this interval into the range determined by that UInt
+    * Currently, that must have a defined width
+    * @param that an UInt whose properties determine the squeezing
+    * @return
+    */
   final def squeeze(that: UInt): Interval = macro SourceInfoTransform.thatArg
   def do_squeeze(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
     //binop(sourceInfo, TypePropagate(_root_.firrtl.PrimOps.Wrap, Seq(this, that), Nil), SqueezeOp, that)
     that.widthOption match {
       case Some(w) =>
         val u = BigDecimal(BigInt(1) << w) - 1
-        do_squeeze(Wire(Interval(IntervalRange(Closed(0), Closed(u), BinaryPoint(0)))))
+        do_squeeze(0.U.asInterval(IntervalRange(Closed(0), Closed(u), BinaryPoint(0))))
       case _ =>
-        do_squeeze(Wire(Interval(IntervalRange(Closed(0), UnknownBound, BinaryPoint(0)))))
+        throwException("squeeze requires an UInt argument with a known width")
     }
   }
 
+  /**
+    * Squeeze this interval into the range determined by an SInt
+    * Currently, that must have a defined width
+    * @param that an SInt whose properties determine the squeezing
+    * @return
+    */
   final def squeeze(that: SInt): Interval = macro SourceInfoTransform.thatArg
   def do_squeeze(that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
     //binop(sourceInfo, TypePropagate(_root_.firrtl.PrimOps.Wrap, Seq(this, that), Nil), SqueezeOp, that)
-    this.widthOption match {
+    that.widthOption match {
       case Some(w) =>
         val l = -BigDecimal(BigInt(1) << (that.getWidth - 1))
         val u = BigDecimal(BigInt(1) << (that.getWidth - 1)) - 1
         do_squeeze(Wire(Interval(IntervalRange(Closed(l), Closed(u), BinaryPoint(0)))))
       case _ =>
-        val l = -BigDecimal(BigInt(1) << (that.getWidth - 1))
-        val u = BigDecimal(BigInt(1) << (that.getWidth - 1)) - 1
-        do_squeeze(Wire(Interval(IntervalRange(UnknownBound, UnknownBound, BinaryPoint(0)))))
+        throwException("squeeze requires an SInt argument with a known width")
     }
   }
 
+  /**
+    * Squeeze this interval into the range determined by an IntervalRange
+    * Currently, that must have a defined width
+    * @param that an Interval whose properties determine the squeezing
+    * @return
+    */
   final def squeeze(that: IntervalRange): Interval = macro SourceInfoTransform.thatArg
   def do_squeeze(that: IntervalRange)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
-    val wireFromRange = Wire(Interval(that))
-    wireFromRange := DontCare
-    do_squeeze(wireFromRange)
+    val intervalLitOpt = Interval.getSmallestLegalLit(that)
+    val intervalLit    = intervalLitOpt.getOrElse(
+      throwException("squeeze requires an Interval argument with known lower and upper bounds")
+    )
+    do_squeeze(intervalLit)
   }
 
   final def clip(that: Interval): Interval = macro SourceInfoTransform.thatArg
@@ -1682,14 +1785,24 @@ object Interval {
     result
   }
 
-  def fromBigInt(value: BigInt, width: Int = -1, binaryPoint: Int = 0): Interval =
+  /**
+    * Make an interval from this BigInt, the BigInt is treated as bits
+    * So lower binaryPoint number of bits will treated as mantissa
+    * @param value
+    * @param width
+    * @param binaryPoint
+    * @return
+    */
+  def fromBigInt(value: BigInt, width: Int = -1, binaryPoint: Int = 0): Interval = {
     // Passed to Firrtl as BigInt
-    if(width == -1) {
+    if (width == -1) {
       Interval.Lit(value, Width(), BinaryPoint(binaryPoint))
     }
     else {
       Interval.Lit(value, Width(width), BinaryPoint(binaryPoint))
     }
+  }
+
   /** Create an Interval literal with inferred width from Double.
     * Use PrivateObject to force users to specify width and binaryPoint by name
     */
@@ -1700,38 +1813,93 @@ object Interval {
     )
   }
 
+  /** Create an Interval literal with inferred width from Double.
+    * Use PrivateObject to force users to specify width and binaryPoint by name
+    */
+  def fromBigDecimal(value: Double, dummy: PrivateType = PrivateObject,
+                 width: Int = -1, binaryPoint: Int = 0): Interval = {
+    fromBigInt(
+      toBigInt(value, binaryPoint), width = width, binaryPoint = binaryPoint
+    )
+  }
+
   protected[chisel3] def Lit(value: BigInt, width: Width, binaryPoint: BinaryPoint): Interval = {
     val lit = IntervalLit(value, width, binaryPoint)
-    val result = Interval(width, binaryPoint)
+    val bound = firrtlir.Closed(Interval.toDouble(value, binaryPoint.asInstanceOf[KnownBinaryPoint].value))
+    val result = new Interval(width, IntervalRange(bound, bound, binaryPoint))
     lit.bindLitArg(result)
   }
 
   /**
-    * How to create a bigint from a double with a specific binaryPoint
+    * How to create a BigInt from a double with a specific binaryPoint
     * @param x               a double value
     * @param binaryPoint     a binaryPoint that you would like to use
     * @return
     */
-  def toBigInt(x: Double, binaryPoint    : Int): BigInt = {
+  def toBigInt(x: Double, binaryPoint: Int): BigInt = {
     val multiplier = BigInt(1) << binaryPoint
     val result = BigInt(math.round(x * multiplier.doubleValue))
     result
   }
 
   /**
+    * How to create a BigInt from a BigDecimal with a specific binaryPoint
+    * @param x               a BigDecimal value
+    * @param binaryPoint     a binaryPoint that you would like to use
+    * @return
+    */
+  def toBigInt(b: BigDecimal, bp: Int): BigInt = {
+    (b * math.pow(2.0, bp.toDouble)).toBigInt
+  }
+
+  /**
     * converts a bigInt with the given binaryPoint into the double representation
-    * @param i            a bigint
+    * @param i            a BigInt
     * @param binaryPoint  the implied binaryPoint of @i
     * @return
     */
-  def toDouble(i: BigInt, binaryPoint    : Int): Double = {
+  def toDouble(i: BigInt, binaryPoint: Int): Double = {
     val multiplier = BigInt(1) << binaryPoint
     val result = i.toDouble / multiplier.doubleValue
     result
   }
+
+  /**
+    * This returns the smallest number that can legally fit in range, if possible
+    * If the lower bound or binary point is not known then return None
+    * @param range use to figure low number
+    * @return
+    */
+  def getSmallestLegalLit(range: IntervalRange): Option[Interval] = {
+    (range.lowerBound, range.binaryPoint) match {
+      case (Closed(lowerBound), KnownBinaryPoint(bp)) =>
+        Some(Interval.Lit(toBigInt(lowerBound.toDouble, bp), width = range.getWidth, range.binaryPoint))
+      case (Open(lowerBound), KnownBinaryPoint(bp)) =>
+        Some(Interval.Lit(toBigInt(lowerBound.toDouble, bp) + BigInt(1), width = range.getWidth, range.binaryPoint))
+      case _ =>
+        None
+    }
+  }
+
+  /**
+    * This returns the largest number that can legally fit in range, if possible
+    * If the upper bound or binary point is not known then return None
+    * @param range use to figure low number
+    * @return
+    */
+  def getLargestLegalLit(range: IntervalRange): Option[Interval] = {
+    (range.upperBound, range.binaryPoint) match {
+      case (Closed(upperBound), KnownBinaryPoint(bp)) =>
+        Some(Interval.Lit(toBigInt(upperBound.toDouble, bp), width = range.getWidth, range.binaryPoint))
+      case (Open(upperBound), KnownBinaryPoint(bp)) =>
+        Some(Interval.Lit(toBigInt(upperBound.toDouble, bp) - BigInt(1), width = range.getWidth, range.binaryPoint))
+      case _ =>
+        None
+    }
+  }
 }
 
-/** Data type for representing bidirectional bitvectors of a given width
+/** Data type for representing bidirectional bit-vectors of a given width
   *
   * Analog support is limited to allowing wiring up of Verilog BlackBoxes with bidirectional (inout)
   * pins. There is currently no support for reading or writing of Analog types within Chisel code.
