@@ -2,6 +2,7 @@
 
 package chisel3
 
+import chisel3.internal.ErrorLog
 import chisel3.internal.firrtl.Converter
 import chisel3.experimental.{RawModule, RunFirrtlTransform}
 
@@ -68,7 +69,7 @@ trait ChiselExecutionResult
   *
   * @param circuitOption  Optional circuit, has information like circuit name
   * @param emitted            The emitted Chirrrl text
-  * @param firrtlResultOption Optional Firrtl result, @see ucb-bar/firrtl for details
+  * @param firrtlResultOption Optional Firrtl result, @see freechipsproject/firrtl for details
   */
 case class ChiselExecutionSuccess(
                                   circuitOption: Option[Circuit],
@@ -77,9 +78,9 @@ case class ChiselExecutionSuccess(
                                   ) extends ChiselExecutionResult
 
 /**
-  * Getting one of these indicates failure of some sort
- *
-  * @param message  a clue perhaps will be provided in the here
+  * Getting one of these indicates failure of some sort.
+  *
+  * @param message A clue might be provided here.
   */
 case class ChiselExecutionFailure(message: String) extends ChiselExecutionResult
 
@@ -127,6 +128,20 @@ object Driver extends BackendCompilationUtilities {
     f
   }
 
+  /**
+    * Emit the annotations of a circuit
+    *
+    * @param ir The circuit containing annotations to be emitted
+    * @param optName An optional filename (will use s"${ir.name}.json" otherwise)
+    */
+  def dumpAnnotations(ir: Circuit, optName: Option[File]): File = {
+    val f = optName.getOrElse(new File(ir.name + ".anno.json"))
+    val w = new FileWriter(f)
+    w.write(JsonProtocol.serialize(ir.annotations.map(_.toFirrtl)))
+    w.close()
+    f
+  }
+
   /** Dumps the elaborated Circuit to ProtoBuf
     *
     * If no File is given as input, it will dump to a default filename based on the name of the
@@ -158,7 +173,7 @@ object Driver extends BackendCompilationUtilities {
 
   /**
     * Run the chisel3 compiler and possibly the firrtl compiler with options specified
- *
+    *
     * @param optionsManager The options specified
     * @param dut                    The device under test
     * @return                       An execution result with useful stuff, or failure with message
@@ -166,57 +181,72 @@ object Driver extends BackendCompilationUtilities {
   def execute(
       optionsManager: ExecutionOptionsManager with HasChiselExecutionOptions with HasFirrtlOptions,
       dut: () => RawModule): ChiselExecutionResult = {
-    val circuit = elaborate(dut)
-
-    // this little hack let's us set the topName with the circuit name if it has not been set from args
-    optionsManager.setTopNameIfNotSet(circuit.name)
-
-    val firrtlOptions = optionsManager.firrtlOptions
-    val chiselOptions = optionsManager.chiselOptions
-
-    val firrtlCircuit = Converter.convert(circuit)
-
-    // Still emit to leave an artifact (and because this always has been the behavior)
-    val firrtlString = Driver.emit(circuit)
-    val firrtlFileName = firrtlOptions.getInputFileName(optionsManager)
-    val firrtlFile = new File(firrtlFileName)
-
-    val w = new FileWriter(firrtlFile)
-    w.write(firrtlString)
-    w.close()
-
-    // Emit the annotations because it has always been the behavior
-    val annotationFile = new File(optionsManager.getBuildFileName("anno.json"))
-    val af = new FileWriter(annotationFile)
-    val firrtlAnnos = circuit.annotations.map(_.toFirrtl)
-    af.write(JsonProtocol.serialize(firrtlAnnos))
-    af.close()
-
-    /** Find the set of transform classes associated with annotations then
-      * instantiate an instance of each transform
-      * @note Annotations targeting firrtl.Transform will not result in any
-      *   transform being instantiated
-      */
-    val transforms = circuit.annotations
-                       .collect { case anno: RunFirrtlTransform => anno.transformClass }
-                       .distinct
-                       .filterNot(_ == classOf[firrtl.Transform])
-                       .map { transformClass: Class[_ <: Transform] =>
-                         transformClass.newInstance()
-                       }
-    /* This passes the firrtl source and annotations directly to firrtl */
-    optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(
-      firrtlCircuit = Some(firrtlCircuit),
-      annotations = optionsManager.firrtlOptions.annotations ++ firrtlAnnos,
-      customTransforms = optionsManager.firrtlOptions.customTransforms ++ transforms.toList)
-
-    val firrtlExecutionResult = if(chiselOptions.runFirrtlCompiler) {
-      Some(firrtl.Driver.execute(optionsManager))
+    val circuitOpt = try {
+      Some(elaborate(dut))
+    } catch {
+      case ce: ChiselException =>
+        val stackTrace = if (!optionsManager.chiselOptions.printFullStackTrace) {
+          ce.chiselStackTrace
+        } else {
+          val sw = new StringWriter
+          ce.printStackTrace(new PrintWriter(sw))
+          sw.toString
+        }
+        stackTrace.lines.foreach(line => println(s"${ErrorLog.errTag} $line"))
+        None
     }
-    else {
-      None
-    }
-    ChiselExecutionSuccess(Some(circuit), firrtlString, firrtlExecutionResult)
+
+    circuitOpt.map { circuit =>
+      // this little hack let's us set the topName with the circuit name if it has not been set from args
+      optionsManager.setTopNameIfNotSet(circuit.name)
+
+      val firrtlOptions = optionsManager.firrtlOptions
+      val chiselOptions = optionsManager.chiselOptions
+
+      val firrtlCircuit = Converter.convert(circuit)
+
+      // Still emit to leave an artifact (and because this always has been the behavior)
+      val firrtlString = Driver.emit(circuit)
+      val firrtlFileName = firrtlOptions.getInputFileName(optionsManager)
+      val firrtlFile = new File(firrtlFileName)
+
+      val w = new FileWriter(firrtlFile)
+      w.write(firrtlString)
+      w.close()
+
+      // Emit the annotations because it has always been the behavior
+      val annotationFile = new File(optionsManager.getBuildFileName("anno.json"))
+      val af = new FileWriter(annotationFile)
+      val firrtlAnnos = circuit.annotations.map(_.toFirrtl)
+      af.write(JsonProtocol.serialize(firrtlAnnos))
+      af.close()
+
+      /** Find the set of transform classes associated with annotations then
+        * instantiate an instance of each transform
+        * @note Annotations targeting firrtl.Transform will not result in any
+        *   transform being instantiated
+        */
+      val transforms = circuit.annotations
+                         .collect { case anno: RunFirrtlTransform => anno.transformClass }
+                         .distinct
+                         .filterNot(_ == classOf[firrtl.Transform])
+                         .map { transformClass: Class[_ <: Transform] =>
+                           transformClass.newInstance()
+                         }
+      /* This passes the firrtl source and annotations directly to firrtl */
+      optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(
+        firrtlCircuit = Some(firrtlCircuit),
+        annotations = optionsManager.firrtlOptions.annotations ++ firrtlAnnos,
+        customTransforms = optionsManager.firrtlOptions.customTransforms ++ transforms.toList)
+
+      val firrtlExecutionResult = if(chiselOptions.runFirrtlCompiler) {
+        Some(firrtl.Driver.execute(optionsManager))
+      }
+      else {
+        None
+      }
+      ChiselExecutionSuccess(Some(circuit), firrtlString, firrtlExecutionResult)
+    }.getOrElse(ChiselExecutionFailure("could not elaborate circuit"))
   }
 
   /**

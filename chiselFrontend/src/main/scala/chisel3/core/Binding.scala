@@ -1,10 +1,11 @@
 package chisel3.core
 
+import chisel3.internal.ChiselException
 import chisel3.internal.Builder.{forcedModule}
 import chisel3.internal.firrtl.LitArg
 
 object Binding {
-  class BindingException(message: String) extends Exception(message)
+  class BindingException(message: String) extends ChiselException(message)
   /** A function expected a Chisel type but got a hardware object
     */
   case class ExpectedChiselTypeException(message: String) extends BindingException(message)

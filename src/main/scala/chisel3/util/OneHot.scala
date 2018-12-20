@@ -36,7 +36,7 @@ object OHToUInt {
   */
 object PriorityEncoder {
   def apply(in: Seq[Bool]): UInt = PriorityMux(in, (0 until in.size).map(_.asUInt))
-  def apply(in: Bits): UInt = apply(in.toBools)
+  def apply(in: Bits): UInt = apply(in.asBools)
 }
 
 /** Returns the one hot encoding of the input UInt.

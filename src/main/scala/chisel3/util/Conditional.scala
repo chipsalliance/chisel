@@ -24,7 +24,7 @@ object unless {  // scalastyle:ignore object.name
   * user-facing API.
   * @note DO NOT USE. This API is subject to change without warning.
   */
-class SwitchContext[T <: Bits](cond: T, whenContext: Option[WhenContext], lits: Set[BigInt]) {
+class SwitchContext[T <: Element](cond: T, whenContext: Option[WhenContext], lits: Set[BigInt]) {
   def is(v: Iterable[T])(block: => Unit): SwitchContext[T] = {
     if (!v.isEmpty) {
       val newLits = v.map { w =>
@@ -60,19 +60,19 @@ object is {   // scalastyle:ignore object.name
   // TODO: Begin deprecation of non-type-parameterized is statements.
   /** Executes `block` if the switch condition is equal to any of the values in `v`.
     */
-  def apply(v: Iterable[Bits])(block: => Unit) {
+  def apply(v: Iterable[Element])(block: => Unit) {
     require(false, "The 'is' keyword may not be used outside of a switch.")
   }
 
   /** Executes `block` if the switch condition is equal to `v`.
     */
-  def apply(v: Bits)(block: => Unit) {
+  def apply(v: Element)(block: => Unit) {
     require(false, "The 'is' keyword may not be used outside of a switch.")
   }
 
   /** Executes `block` if the switch condition is equal to any of the values in the argument list.
     */
-  def apply(v: Bits, vr: Bits*)(block: => Unit) {
+  def apply(v: Element, vr: Element*)(block: => Unit) {
     require(false, "The 'is' keyword may not be used outside of a switch.")
   }
 }
@@ -91,7 +91,7 @@ object is {   // scalastyle:ignore object.name
   * }}}
   */
 object switch {  // scalastyle:ignore object.name
-  def apply[T <: Bits](cond: T)(x: => Unit): Unit = macro impl
+  def apply[T <: Element](cond: T)(x: => Unit): Unit = macro impl
   def impl(c: Context)(cond: c.Tree)(x: c.Tree): c.Tree = { import c.universe._
     val q"..$body" = x
     val res = body.foldLeft(q"""new SwitchContext($cond, None, Set.empty)""") {
