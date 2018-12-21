@@ -40,6 +40,11 @@ object WRef {
   def apply(reg: DefRegister): WRef = new WRef(reg.name, reg.tpe, RegKind, UNKNOWNGENDER)
   /** Creates a WRef from a Node */
   def apply(node: DefNode): WRef = new WRef(node.name, node.value.tpe, NodeKind, MALE)
+  /** Creates a WRef from a Port */
+  def apply(port: Port): WRef = new WRef(port.name, port.tpe, PortKind, UNKNOWNGENDER)
+  /** Creates a WRef from a WDefInstance */
+  def apply(wi: WDefInstance): WRef = new WRef(wi.name, wi.tpe, InstanceKind, UNKNOWNGENDER)
+  /** Creates a WRef from an arbitrary string name */
   def apply(n: String, t: Type = UnknownType, k: Kind = ExpKind): WRef = new WRef(n, t, k, UNKNOWNGENDER)
 }
 case class WSubField(expr: Expression, name: String, tpe: Type, gender: Gender) extends Expression {
