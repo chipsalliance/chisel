@@ -373,6 +373,10 @@ trait Compiler extends LazyLogging {
     */
   def transforms: Seq[Transform]
 
+  require(transforms.size >= 1,
+          s"Compiler transforms for '${this.getClass.getName}' must have at least ONE Transform! " +
+            "Use IdentityTransform if you need an identity/no-op transform.")
+
   // Similar to (input|output)Form on [[Transform]] but derived from this Compiler's transforms
   def inputForm: CircuitForm = transforms.head.inputForm
   def outputForm: CircuitForm = transforms.last.outputForm
