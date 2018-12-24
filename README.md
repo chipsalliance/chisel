@@ -48,17 +48,17 @@ This will walk you through installing Chisel and its dependencies:
 1. Install Verilator.
     We currently recommend Verilator version 3.922.
     Follow these instructions to compile it from source.
-    
+
     1. Install prerequisites (if not installed already):
         ```
         sudo apt-get install git make autoconf g++ flex bison
         ```
-    
+
     2. Clone the Verilator repository:
         ```
         git clone http://git.veripool.org/git/verilator
         ```
-    
+
     3. In the Verilator repository directory, check out a known good version:
         ```
         git pull
@@ -82,7 +82,18 @@ yaourt -S firrtl-git verilator sbt
 
 ### Windows
 
-*TODO: write me. If you __really__ want to see this happen, let us know by filing a bug report!*
+[Download and install sbt for Windows](https://www.scala-sbt.org/download.html).
+
+#### Simulation on Windows
+
+The chisel3 regression tests use Verilator as the simulator, but Verilator does not work well on Windows natively.
+However, Verilator works in [WSL](https://docs.microsoft.com/en-us/windows/wsl/install-win10) or in other Linux-compatible environments like Cygwin.
+
+Alternatively, if you're using [PeekPokeTester](https://github.com/freechipsproject/chisel-testers) or the [Testers2 alpha](https://github.com/ucb-bar/chisel-testers2), you can use [treadle](https://github.com/freechipsproject/treadle) as the simulation engine.
+Treadle is a FIRRTL simulator written in Scala, and works on any platform that can run Scala code.
+It can simulate any pure Chisel design, but cannot simulate Verilog code and hence will not work on BlackBoxes / ExtModules which do not have corresponding greybox definitions.
+
+There are no issues with generating Verilog from Chisel, which can be pushed to FPGA or ASIC tools.
 
 ### Mac OS X
 
