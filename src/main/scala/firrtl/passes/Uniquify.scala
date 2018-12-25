@@ -3,13 +3,15 @@
 package firrtl.passes
 
 import com.typesafe.scalalogging.LazyLogging
-import scala.annotation.tailrec
 
+import scala.annotation.tailrec
 import firrtl._
 import firrtl.ir._
 import firrtl.Utils._
 import firrtl.Mappers._
 import MemPortUtils.memType
+
+import scala.collection.mutable
 
 /** Resolve name collisions that would occur in [[LowerTypes]]
   *
@@ -78,36 +80,43 @@ object Uniquify extends Transform {
       t: BundleType,
       namespace: collection.mutable.HashSet[String])
       (implicit sinfo: Info, mname: String): BundleType = {
-    def recUniquifyNames(t: Type, namespace: collection.mutable.HashSet[String]): Type = t match {
+    def recUniquifyNames(t: Type, namespace: collection.mutable.HashSet[String]): (Type, Seq[String]) = t match {
       case tx: BundleType =>
         // First add everything
-        val newFields = tx.fields map { f =>
+        val newFieldsAndElts = tx.fields map { f =>
           val newName = findValidPrefix(f.name, Seq(""), namespace)
           namespace += newName
           Field(newName, f.flip, f.tpe)
         } map { f => f.tpe match {
-          case _: GroundType => f
+          case _: GroundType => (f, Seq[String](f.name))
           case _ =>
-            val tpe = recUniquifyNames(f.tpe, collection.mutable.HashSet())
-            val elts = enumerateNames(tpe)
+            val (tpe, eltsx) = recUniquifyNames(f.tpe, collection.mutable.HashSet())
             // Need leading _ for findValidPrefix, it doesn't add _ for checks
-            val eltsNames = elts map (e => "_" + LowerTypes.loweredName(e))
+            val eltsNames: Seq[String] = eltsx map (e => "_" + e)
             val prefix = findValidPrefix(f.name, eltsNames, namespace)
             // We added f.name in previous map, delete if we change it
             if (prefix != f.name) {
               namespace -= f.name
               namespace += prefix
             }
-            namespace ++= (elts map (e => LowerTypes.loweredName(prefix +: e)))
-            Field(prefix, f.flip, tpe)
+            val newElts: Seq[String] = eltsx map (e => LowerTypes.loweredName(prefix +: Seq(e)))
+            namespace ++= newElts
+            (Field(prefix, f.flip, tpe), prefix +: newElts)
           }
         }
-        BundleType(newFields)
+        val (newFields, elts) = newFieldsAndElts.unzip
+        (BundleType(newFields), elts.flatten)
       case tx: VectorType =>
-        VectorType(recUniquifyNames(tx.tpe, namespace), tx.size)
-      case tx => tx
+        val (tpe, elts) = recUniquifyNames(tx.tpe, namespace)
+        val newElts = ((0 until tx.size) map (i => i.toString)) ++
+          ((0 until tx.size) flatMap { i =>
+            elts map (e => LowerTypes.loweredName(Seq(i.toString, e)))
+          })
+        (VectorType(tpe, tx.size), newElts)
+      case tx => (tx, Nil)
     }
-    recUniquifyNames(t, namespace) match {
+    val (tpe, _) = recUniquifyNames(t, namespace)
+    tpe match {
       case tx: BundleType => tx
       case tx => throwInternalError(s"uniquifyNames: shouldn't be here - $tx")
     }

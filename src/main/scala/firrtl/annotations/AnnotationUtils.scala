@@ -51,8 +51,8 @@ object AnnotationUtils {
     case Some(_) =>
       val i = s.indexWhere(c => "[].".contains(c))
       s.slice(0, i) match {
-        case "" => Seq(s(i).toString) ++ tokenize(s.drop(i + 1))
-        case x => Seq(x, s(i).toString) ++ tokenize(s.drop(i + 1))
+        case "" => s(i).toString +: tokenize(s.drop(i + 1))
+        case x => x +: s(i).toString +: tokenize(s.drop(i + 1))
       }
     case None if s == "" => Nil
     case None => Seq(s)

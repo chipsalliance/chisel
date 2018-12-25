@@ -283,4 +283,23 @@ class UniquifySpec extends FirrtlFlatSpec {
 
     executeTest(input, expected)
   }
+
+  it should "quickly rename deep bundles" in {
+    def mkType(i: Int): String = {
+      if(i == 0) "UInt<8>" else s"{x: ${mkType(i - 1)}}"
+    }
+
+    val depth = 500
+
+    val input =
+      s"""circuit Test:
+         |  module Test :
+         |    input in: ${mkType(depth)}
+         |    output out: ${mkType(depth)}
+         |    out <= in
+         |""".stripMargin
+
+    val (ms, _) = Utils.time(compileToVerilog(input))
+    (ms < 8000) shouldBe true
+  }
 }
