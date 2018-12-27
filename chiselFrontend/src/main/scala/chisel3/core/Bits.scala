@@ -34,16 +34,6 @@ abstract class Element extends Data {
     }
   }
 
-  private[core] override def topBindingOpt: Option[TopBinding] = super.topBindingOpt match {
-    // Translate Bundle lit bindings to Element lit bindings
-    // case Some(BundleLitBinding(litArg)) => litArg.litMap.collectFirst({ case (_, d, v) if d == this => v }) match {
-    //   case Some(VectorLitBinding(litSeq)) => Nonde
-    //   case Some(litArg: BitsLitArg) => Some(ElementLitBinding(litArg))
-    //   case _ => Some(DontCareBinding())
-    // }
-    case topBindingOpt => topBindingOpt
-  }
-
   private[core] def litArgOption: Option[BitsLitArg] = topBindingOpt match {
     case Some(ElementLitBinding(litArg)) => Some(litArg)
     case _ => None

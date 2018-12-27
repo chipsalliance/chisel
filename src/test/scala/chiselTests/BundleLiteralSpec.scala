@@ -3,7 +3,8 @@
 package chiselTests
 
 import chisel3._
-import chisel3.core.FixedPoint
+import chisel3.core.{BundleLitBinding, FixedPoint}
+import chisel3.internal.firrtl.BundleLit
 import chisel3.experimental.RawModule
 import chisel3.testers.BasicTester
 import org.scalatest._
@@ -17,21 +18,23 @@ class BundleLiteralSpec extends ChiselFlatSpec {
     // the future.
     import chisel3.core.BundleLitBinding
     import chisel3.internal.firrtl.{LitArg, ULit, Width}
+    def LitArg(aVal: UInt, bVal: Bool): BundleLit = BundleLit(Seq(
+        ("a", litArgOfBits(aVal)),
+        ("b", litArgOfBits(bVal))
+      ))
+    def LitArg(aVal: UInt): BundleLit = BundleLit(Seq(
+        ("a", litArgOfBits(aVal))
+      ))
     // Full bundle literal constructor
     def Lit(aVal: UInt, bVal: Bool): MyBundle = {
       val clone = cloneType
-      clone.selfBind(BundleLitBinding(Seq(
-        ("a", litArgOfBits(aVal)),
-        ("b", litArgOfBits(bVal))
-      )))
+      clone.selfBind(BundleLitBinding(LitArg(aVal, bVal)))
       clone
     }
     // Partial bundle literal constructor
     def Lit(aVal: UInt): MyBundle = {
       val clone = cloneType
-      clone.selfBind(BundleLitBinding(Seq(
-        ("a", litArgOfBits(aVal))
-      )))
+      clone.selfBind(BundleLitBinding(LitArg(aVal)))
       clone
     }
   }
@@ -49,7 +52,7 @@ class BundleLiteralSpec extends ChiselFlatSpec {
       val clone = cloneType
       BundleLit(Seq(
         ("c", litArgOfBits(cVal)),
-        ("d", (new MyBundle).Lit(aVal, bVal).litArg.get)
+        ("d", (new MyBundle).LitArg(aVal, bVal))
       )).bindLitArg(clone)
     }
   }
