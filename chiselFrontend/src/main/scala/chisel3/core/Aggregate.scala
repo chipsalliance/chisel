@@ -21,6 +21,7 @@ sealed abstract class Aggregate extends Data {
 
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
     (this, target) match {
+      // Records that have a bundleLitBinding bind all children with lit bindings
       case (r: Record, BundleLitBinding(BundleLit(lm))) =>
         val litMap = lm.toMap
         for ((n: String, d) <- r.elements) {
@@ -31,10 +32,12 @@ sealed abstract class Aggregate extends Data {
               d.bind(DontCareBinding(), resolvedDirection)
           }
         }
+        // Vecs that have a VectorLitBinding bind all elements with lit bindings
       case (v: Vec[_], VectorLitBinding(VectorLit(litSeq))) =>
         for ((child, litArg) <- getElements zip litSeq) {
           child.bind(LitBinding(litArg), resolvedDirection)
         }
+      // Everything else gets a child binding
       case _ => for (child <- getElements) {
         child.bind(ChildBinding(this), resolvedDirection)
       }
