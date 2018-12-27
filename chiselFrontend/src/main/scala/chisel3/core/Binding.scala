@@ -2,7 +2,7 @@ package chisel3.core
 
 import chisel3.internal.ChiselException
 import chisel3.internal.Builder.{forcedModule}
-import chisel3.internal.firrtl.{AggregateLit, BitsLitArg, LitArg}
+import chisel3.internal.firrtl.{BitsLitArg, BundleLit, LitArg, VectorLit}
 
 object Binding {
   class BindingException(message: String) extends ChiselException(message)
@@ -113,13 +113,19 @@ sealed trait LitBinding extends UnconstrainedBinding with ReadOnlyBinding
 object LitBinding {
   def unapply(lb: LitBinding): Some[LitArg] = lb match {
     case ElementLitBinding(litArg) => Some(litArg)
-    case AggregateLitBinding(litArg) => Some(litArg)
+    case BundleLitBinding(litArg) => Some(litArg)
+    case VectorLitBinding(litArg) => Some(litArg)
   }
 }
 // Literal binding attached to a element that is not part of a Bundle.
 case class ElementLitBinding(litArg: BitsLitArg) extends LitBinding
 // Literal binding attached to the root of a Bundle, containing literal values of its children.
-case class AggregateLitBinding(litArg: AggregateLit) extends LitBinding
-object AggregateLitBinding {
-  def apply(litMap: Seq[(String, Data, LitArg)]): AggregateLitBinding = AggregateLitBinding(AggregateLit(litMap))
+case class BundleLitBinding(litArg: BundleLit) extends LitBinding
+object BundleLitBinding {
+  def apply(litMap: Seq[(String, LitArg)]): BundleLitBinding = BundleLitBinding(BundleLit(litMap))
+}
+
+case class VectorLitBinding(litArg: VectorLit) extends LitBinding
+object VectorLitBinding {
+  def apply(litSeq: Seq[LitArg]): VectorLitBinding = VectorLitBinding(VectorLit(litSeq))
 }

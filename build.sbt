@@ -54,11 +54,7 @@ lazy val commonSettings = Seq (
         //  otherwise let sbt fetch the appropriate version.
         "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep))
     }
-  },
-  resolvers ++= Seq (
-    Resolver.sonatypeRepo("snapshots"),
-    Resolver.sonatypeRepo("releases")
-  ),
+  }
 )
 
 lazy val publishSettings = Seq (

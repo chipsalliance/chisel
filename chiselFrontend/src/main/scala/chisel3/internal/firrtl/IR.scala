@@ -88,22 +88,27 @@ sealed trait BitsLitArg extends LitArg {
   }
 }
 
-class AggregateLit(val litMap: Seq[(String, Data, LitArg)]) extends LitArg {
-  def name: String = "{" + (litMap.map({case (n, d, l) => s"$n : ${l.name}" }) mkString ", ") + "}"
+case class VectorLit(val litSeq: Seq[LitArg]) extends LitArg {
+  def name: String = "[" + litSeq.map(_.name).mkString(", ") + "]"
   def bindLitArg[T <: Data](elem: T): T = {
-    elem.bind(AggregateLitBinding(this))
+    elem.bind(VectorLitBinding(this))
     elem.setRef(this)
     elem
   }
-  protected[internal] def minWidth = litMap.map(_._3.minWidth).sum
+  protected[internal] def minWidth = litSeq.map(_.minWidth).sum
   val widthArg = UnknownWidth()
 }
 
-object AggregateLit {
-  def apply(litMap: Seq[(String, Data, LitArg)]): AggregateLit = new AggregateLit(litMap)
-  def unapply(l: AggregateLit): Some[Seq[(String, Data, LitArg)]] = Some(l.litMap)
+case class BundleLit(val litMap: Seq[(String, LitArg)]) extends LitArg {
+  def name: String = "{" + (litMap.map({case (n, l) => s"$n : ${l.name}" }) mkString ", ") + "}"
+  def bindLitArg[T <: Data](elem: T): T = {
+    elem.bind(BundleLitBinding(this))
+    elem.setRef(this)
+    elem
+  }
+  protected[internal] def minWidth = litMap.map(_._2.minWidth).sum
+  val widthArg = UnknownWidth()
 }
-
 
 case class ILit(n: BigInt) extends Arg {
   def name: String = n.toString

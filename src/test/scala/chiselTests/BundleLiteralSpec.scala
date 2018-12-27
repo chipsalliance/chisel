@@ -15,24 +15,23 @@ class BundleLiteralSpec extends ChiselFlatSpec {
 
     // Bundle literal constructor code, which will be auto-generated using macro annotations in
     // the future.
-    import chisel3.core.AggregateLitBinding
+    import chisel3.core.BundleLitBinding
     import chisel3.internal.firrtl.{LitArg, ULit, Width}
     // Full bundle literal constructor
     def Lit(aVal: UInt, bVal: Bool): MyBundle = {
       val clone = cloneType
-      clone.selfBind(AggregateLitBinding(clone.elements.map(_ match {
-        case (n, clone.a) => (n, clone.a, litArgOfBits(aVal))
-        case (n, clone.b) => (n, clone.b, litArgOfBits(bVal))
-      }).toSeq))
+      clone.selfBind(BundleLitBinding(Seq(
+        ("a", litArgOfBits(aVal)),
+        ("b", litArgOfBits(bVal))
+      )))
       clone
     }
     // Partial bundle literal constructor
     def Lit(aVal: UInt): MyBundle = {
       val clone = cloneType
-      clone.selfBind(AggregateLitBinding(clone.elements.flatMap(_ match {
-        case (n, clone.a) => Some((n, clone.a, litArgOfBits(aVal)))
-        case _ => None
-      }).toSeq))
+      clone.selfBind(BundleLitBinding(Seq(
+        ("a", litArgOfBits(aVal))
+      )))
       clone
     }
   }
@@ -43,15 +42,15 @@ class BundleLiteralSpec extends ChiselFlatSpec {
 
     // Bundle literal constructor code, which will be auto-generated using macro annotations in
     // the future.
-    import chisel3.core.AggregateLitBinding
-    import chisel3.internal.firrtl.{AggregateLit, LitArg, ULit, Width}
+    import chisel3.core.BundleLitBinding
+    import chisel3.internal.firrtl.{BundleLit, LitArg, ULit, Width}
     // Full bundle literal constructor
     def Lit(aVal: UInt, bVal: Bool, cVal: UInt): MyOuterBundle = {
       val clone = cloneType
-      AggregateLit(clone.elements.map(_ match {
-        case (n, clone.c) => (n, clone.c, litArgOfBits(cVal))
-        case (n, clone.d) => (n, clone.d, (new MyBundle).Lit(aVal, bVal).litArg.get)
-      }).toSeq).bindLitArg(clone)
+      BundleLit(Seq(
+        ("c", litArgOfBits(cVal)),
+        ("d", (new MyBundle).Lit(aVal, bVal).litArg.get)
+      )).bindLitArg(clone)
     }
   }
 

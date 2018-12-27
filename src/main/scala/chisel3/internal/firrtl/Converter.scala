@@ -56,10 +56,14 @@ private[chisel3] object Converter {
     case ModuleIO(mod, name) =>
       if (mod eq ctx.id) fir.Reference(name, fir.UnknownType)
       else fir.SubField(fir.Reference(mod.getRef.name, fir.UnknownType), name, fir.UnknownType)
-    case a @ AggregateLit(map) =>
-      fir.BundleLiteral(map.map({ case (n, _, v) => convert(v, ctx) match {
+    case BundleLit(map) =>
+      fir.BundleLiteral(map.map({ case (n, v) => convert(v, ctx) match {
         case l: fir.Literal => (n, l)
       }}))
+    case VectorLit(list) =>
+      fir.VectorExpression(list.map { e => convert(e, ctx) match {
+        case l: fir.Literal => l
+      }}, fir.UnknownType)
     case u @ ULit(n, UnknownWidth()) =>
       fir.UIntLiteral(n, fir.IntWidth(u.minWidth))
     case ULit(n, w) =>
