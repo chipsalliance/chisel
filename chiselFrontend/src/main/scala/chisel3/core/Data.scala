@@ -410,7 +410,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   @chiselRuntimeDeprecated
   @deprecated("litArg is deprecated, use litOption or litTo*Option", "chisel3.2")
   def litArg(): Option[LitArg] = topBindingOpt match {
-    case Some(LitBinding(litArg)) => Some(litArg)
+    case Some(ElementLitBinding(litArg)) => Some(litArg)
     case _ => None
   }
   @chiselRuntimeDeprecated
