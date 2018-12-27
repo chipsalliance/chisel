@@ -8,6 +8,7 @@ import chisel3.experimental.{RawModule, RunFirrtlTransform}
 
 import java.io._
 import net.jcazevedo.moultingyaml._
+import scala.collection.JavaConverters._
 
 import internal.firrtl._
 import firrtl._
@@ -192,7 +193,7 @@ object Driver extends BackendCompilationUtilities {
           ce.printStackTrace(new PrintWriter(sw))
           sw.toString
         }
-        stackTrace.lines.foreach(line => println(s"${ErrorLog.errTag} $line"))
+        stackTrace.lines.iterator().asScala.foreach(line => println(s"${ErrorLog.errTag} $line"))
         None
     }
 
