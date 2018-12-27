@@ -20,8 +20,24 @@ sealed abstract class Aggregate extends Data {
     binding = target
 
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
-    for (child <- getElements) {
-      child.bind(ChildBinding(this), resolvedDirection)
+    (this, target) match {
+      case (r: Record, BundleLitBinding(BundleLit(lm))) =>
+        val litMap = lm.toMap
+        for ((n: String, d) <- r.elements) {
+          litMap.get(n) match {
+            case Some(litArg) =>
+              d.bind(LitBinding(litArg), resolvedDirection)
+            case None =>
+              d.bind(DontCareBinding(), resolvedDirection)
+          }
+        }
+      case (v: Vec[_], VectorLitBinding(VectorLit(litSeq))) =>
+        for ((child, litArg) <- getElements zip litSeq) {
+          child.bind(LitBinding(litArg), resolvedDirection)
+        }
+      case _ => for (child <- getElements) {
+        child.bind(ChildBinding(this), resolvedDirection)
+      }
     }
 
     // Check that children obey the directionality rules.

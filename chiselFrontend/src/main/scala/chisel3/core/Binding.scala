@@ -111,6 +111,11 @@ case class DontCareBinding() extends UnconstrainedBinding
 
 sealed trait LitBinding extends UnconstrainedBinding with ReadOnlyBinding
 object LitBinding {
+  def apply(la: LitArg): LitBinding = la match {
+    case e: BitsLitArg => ElementLitBinding(e)
+    case b: BundleLit => BundleLitBinding(b)
+    case v: VectorLit => VectorLitBinding(v)
+  }
   def unapply(lb: LitBinding): Some[LitArg] = lb match {
     case ElementLitBinding(litArg) => Some(litArg)
     case BundleLitBinding(litArg) => Some(litArg)

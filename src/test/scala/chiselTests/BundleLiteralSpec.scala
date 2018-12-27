@@ -97,17 +97,15 @@ class BundleLiteralSpec extends ChiselFlatSpec {
     assertTesterPasses{ new BasicTester{
       val bundleLit = (new MyOuterBundle).Lit(42.U, true.B, 22.U)
       chisel3.assert(bundleLit.c === 22.U)
-      // TODO!!!
-      // chisel3.assert(bundleLit.d.a === 42.U)
-      // chisel3.assert(bundleLit.d.b === true.B)
+      chisel3.assert(bundleLit.d.a === 42.U)
+      chisel3.assert(bundleLit.d.b === true.B)
 
       val bundleWire = Wire(new MyOuterBundle)
       bundleWire := bundleLit
 
       chisel3.assert(bundleWire.c === 22.U)
-      // TODO!!!
-      // chisel3.assert(bundleWire.d.a === 42.U)
-      // chisel3.assert(bundleWire.d.b === true.B)
+      chisel3.assert(bundleWire.d.a === 42.U)
+      chisel3.assert(bundleWire.d.b === true.B)
 
       stop()
     } }
