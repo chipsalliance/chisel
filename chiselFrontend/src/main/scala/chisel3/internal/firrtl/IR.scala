@@ -71,10 +71,6 @@ sealed trait LitArg extends Arg {
   override def fullName(ctx: Component): String = name
 
   protected[internal] def minWidth: Int
-  // if (forcedWidth) {
-  //   require(widthArg.get >= minWidth,
-  //     s"The literal value ${display} was elaborated with a specified width of ${widthArg.get} bits, but at least ${minWidth} bits are required.")
-  // }
 }
 
 sealed trait BitsLitArg extends LitArg {
