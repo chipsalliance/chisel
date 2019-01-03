@@ -4,7 +4,7 @@ import firrtl._
 import firrtl.Mappers._
 import firrtl.ir._
 import firrtl.annotations.{Annotation, ComponentName}
-import firrtl.passes.{InferTypes, LowerTypes, MemPortUtils}
+import firrtl.passes.{InferTypes, LowerTypes, MemPortUtils, ResolveKinds}
 import firrtl.Utils.kind
 import firrtl.graph.{DiGraph, MutableDiGraph}
 
@@ -62,7 +62,7 @@ class GroupComponents extends firrtl.Transform {
       case other => Seq(other)
     }
     val cs = state.copy(circuit = state.circuit.copy(modules = newModules))
-    val csx = InferTypes.execute(cs)
+    val csx = ResolveKinds.execute(InferTypes.execute(cs))
     csx
   }
 
