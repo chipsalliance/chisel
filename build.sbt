@@ -114,11 +114,11 @@ lazy val chiselSettings = Seq (
 
 lazy val coreMacros = (project in file("coreMacros")).
   settings(commonSettings: _*).
-  settings(publishArtifact := false)
+  settings(skip in publish := true)
 
 lazy val chiselFrontend = (project in file("chiselFrontend")).
   settings(commonSettings: _*).
-  settings(publishArtifact := false).
+  settings(skip in publish := true).
   dependsOn(coreMacros)
 
 // This will always be the root project, even if we are a sub-project.
@@ -138,6 +138,7 @@ lazy val chisel = (project in file(".")).
   // Prevent separate JARs from being generated for coreMacros and chiselFrontend.
   dependsOn(coreMacros % "compile-internal;test-internal").
   dependsOn(chiselFrontend % "compile-internal;test-internal").
+  aggregate(coreMacros, chiselFrontend).
   settings(
     scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
     scalacOptions in Compile in doc ++= Seq(
