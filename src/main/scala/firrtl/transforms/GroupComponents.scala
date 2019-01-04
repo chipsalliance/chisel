@@ -119,6 +119,11 @@ class GroupComponents extends firrtl.Transform {
       }
     }
 
+    // Unused nodes are not reachable from any group nor the root--add them to root group
+    for ((v, _) <- deps.getEdgeMap) {
+      reachableNodes.getOrElseUpdate(v, mutable.Set(""))
+    }
+
     // Add nodes who are reached by a single group, to that group
     reachableNodes.foreach { case (node, membership) =>
       if(membership.size == 1) {
@@ -307,7 +312,9 @@ class GroupComponents extends firrtl.Transform {
     }
     def onStmt(stmt: Statement): Unit = stmt match {
       case w: WDefInstance =>
-      case h: IsDeclaration => h map onExpr(WRef(h.name))
+      case h: IsDeclaration =>
+        bidirGraph.addVertex(h.name)
+        h map onExpr(WRef(h.name))
       case Attach(_, exprs) => // Add edge between each expression
         exprs.tail map onExpr(getWRef(exprs.head))
       case Connect(_, loc, expr) =>

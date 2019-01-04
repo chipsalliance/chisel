@@ -46,6 +46,43 @@ class GroupComponentsSpec extends LowTransformSpec {
       """.stripMargin
     execute(input, check, groups)
   }
+  "Grouping" should "work even when there are unused nodes" in {
+    val input =
+    s"""circuit $top :
+        |  module $top :
+        |    input in: UInt<16>
+        |    output out: UInt<16>
+        |    node n = UInt<16>("h0")
+        |    wire w : UInt<16>
+        |    wire a : UInt<16>
+        |    wire b : UInt<16>
+        |    a <= UInt<16>("h0")
+        |    b <= a
+        |    w <= in
+        |    out <= w
+      """.stripMargin
+    val groups = Seq(
+      GroupAnnotation(Seq(topComp("w")), "Child", "inst", Some("_OUT"), Some("_IN"))
+    )
+    val check =
+     s"""circuit Top :
+        |  module $top :
+        |    input in: UInt<16>
+        |    output out: UInt<16>
+        |    inst inst of Child
+        |    node n = UInt<16>("h0")
+        |    inst.in_IN <= in
+        |    node a = UInt<16>("h0")
+        |    node b = a
+        |    out <= inst.w_OUT
+        |  module Child :
+        |    input in_IN : UInt<16>
+        |    output w_OUT : UInt<16>
+        |    node w = in_IN
+        |    w_OUT <= w
+      """.stripMargin
+    execute(input, check, groups)
+  }
 
   "The two sets of instances" should "be grouped" in {
     val input =
