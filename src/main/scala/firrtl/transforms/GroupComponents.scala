@@ -4,7 +4,7 @@ import firrtl._
 import firrtl.Mappers._
 import firrtl.ir._
 import firrtl.annotations.{Annotation, ComponentName}
-import firrtl.passes.{InferTypes, LowerTypes, MemPortUtils}
+import firrtl.passes.{InferTypes, LowerTypes, MemPortUtils, ResolveKinds}
 import firrtl.Utils.kind
 import firrtl.graph.{DiGraph, MutableDiGraph}
 
@@ -62,7 +62,7 @@ class GroupComponents extends firrtl.Transform {
       case other => Seq(other)
     }
     val cs = state.copy(circuit = state.circuit.copy(modules = newModules))
-    val csx = InferTypes.execute(cs)
+    val csx = ResolveKinds.execute(InferTypes.execute(cs))
     csx
   }
 
@@ -117,6 +117,11 @@ class GroupComponents extends firrtl.Transform {
       deps.reachableFrom(label, notSet(label)) foreach { node =>
         reachableNodes.getOrElseUpdate(node, mutable.Set.empty[String]) += label
       }
+    }
+
+    // Unused nodes are not reachable from any group nor the root--add them to root group
+    for ((v, _) <- deps.getEdgeMap) {
+      reachableNodes.getOrElseUpdate(v, mutable.Set(""))
     }
 
     // Add nodes who are reached by a single group, to that group
@@ -307,7 +312,9 @@ class GroupComponents extends firrtl.Transform {
     }
     def onStmt(stmt: Statement): Unit = stmt match {
       case w: WDefInstance =>
-      case h: IsDeclaration => h map onExpr(WRef(h.name))
+      case h: IsDeclaration =>
+        bidirGraph.addVertex(h.name)
+        h map onExpr(WRef(h.name))
       case Attach(_, exprs) => // Add edge between each expression
         exprs.tail map onExpr(getWRef(exprs.head))
       case Connect(_, loc, expr) =>
