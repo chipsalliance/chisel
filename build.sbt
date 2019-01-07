@@ -33,6 +33,10 @@ def javacOptionsVersion(scalaVersion: String): Seq[String] = {
 val defaultVersions = Map("firrtl" -> "1.2-SNAPSHOT")
 
 lazy val commonSettings = Seq (
+  resolvers ++= Seq(
+    Resolver.sonatypeRepo("snapshots"),
+    Resolver.sonatypeRepo("releases")
+  ),
   organization := "edu.berkeley.cs",
   version := "3.2-SNAPSHOT",
   git.remoteRepo := "git@github.com:freechipsproject/chisel3.git",
