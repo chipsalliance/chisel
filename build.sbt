@@ -42,6 +42,7 @@ lazy val commonSettings = Seq (
   scalacOptions := Seq("-deprecation", "-feature") ++ scalacOptionsVersion(scalaVersion.value),
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
+  (scalastyleConfig in Test) := (baseDirectory in root).value / "scalastyle-test-config.xml",
   // Use the root project's unmanaged base for all sub-projects.
   unmanagedBase := (unmanagedBase in root).value,
   // Since we want to examine the classpath to determine if a dependency on firrtl is required,

@@ -13,6 +13,7 @@ import scala.reflect.macros.whitebox
 object RangeTransform
 class RangeTransform(val c: Context) {
   import c.universe._
+  // scalastyle:off method.length line.size.limit
   def apply(args: c.Tree*): c.Tree = {
     val stringTrees = c.prefix.tree match {
       case q"$_(scala.StringContext.apply(..$strings))" => strings
@@ -22,6 +23,7 @@ class RangeTransform(val c: Context) {
       case Literal(Constant(string: String)) => string
       case _ => c.abort(c.enclosingPosition, s"Range macro unable to parse StringContext element, got: ${showRaw(tree)}")
     } }
+    // scalastyle:on line.size.limit
 
     var nextStringIndex: Int = 1
     var nextArgIndex: Int = 0

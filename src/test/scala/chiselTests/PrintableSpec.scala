@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 package chiselTests
 
 import org.scalatest.{FlatSpec, Matchers}
@@ -105,10 +107,10 @@ class PrintableSpec extends FlatSpec with Matchers {
     }
     class MyBundle extends Bundle {
       val foo = UInt(32.W)
-      override def cloneType = (new MyBundle).asInstanceOf[this.type]
+      override def cloneType: this.type = (new MyBundle).asInstanceOf[this.type]
     }
     class MyModule extends BasicTester {
-      override def desiredName = "MyModule"
+      override def desiredName: String = "MyModule"
       val myWire = Wire(new MyBundle)
       val myInst = Module(new MySubModule)
       printf(p"${Name(myWire.foo)}")
@@ -116,7 +118,7 @@ class PrintableSpec extends FlatSpec with Matchers {
       printf(p"${FullName(myInst.io.fizz)}")
     }
     val firrtl = Driver.emit(() => new MyModule)
-    println(firrtl)
+    println(firrtl) // scalastyle:ignore regex
     getPrintfs(firrtl) match {
       case Seq(Printf("foo", Seq()),
                Printf("myWire.foo", Seq()),

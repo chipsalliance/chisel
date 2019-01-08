@@ -4,7 +4,7 @@
   *  while moving to the more standard package naming convention `chisel3` (lowercase c).
   */
 
-package object Chisel {     // scalastyle:ignore package.object.name
+package object Chisel {     // scalastyle:ignore package.object.name number.of.types number.of.methods
   import chisel3.internal.firrtl.Width
 
   import scala.language.experimental.macros
@@ -389,7 +389,7 @@ package object Chisel {     // scalastyle:ignore package.object.name
   // Deprecated as of Chsiel3
   @throws(classOf[Exception])
   object throwException {
-    def apply(s: String, t: Throwable = null) = {
+    def apply(s: String, t: Throwable = null): Nothing = {
       val xcpt = new Exception(s, t)
       throw xcpt
     }

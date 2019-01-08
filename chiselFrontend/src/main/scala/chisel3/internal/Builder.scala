@@ -146,8 +146,11 @@ private[chisel3] trait HasId extends InstanceId {
   private[chisel3] def getPublicFields(rootClass: Class[_]): Seq[java.lang.reflect.Method] = {
     // Suggest names to nodes using runtime reflection
     def getValNames(c: Class[_]): Set[String] = {
-      if (c == rootClass) Set()
-      else getValNames(c.getSuperclass) ++ c.getDeclaredFields.map(_.getName)
+      if (c == rootClass) {
+        Set()
+      } else {
+        getValNames(c.getSuperclass) ++ c.getDeclaredFields.map(_.getName)
+      }
     }
     val valNames = getValNames(this.getClass)
     def isPublicVal(m: java.lang.reflect.Method) =
@@ -225,7 +228,7 @@ private[chisel3] object Builder {
   def forcedUserModule: UserModule = currentModule match {
     case Some(module: UserModule) => module
     case _ => throwException(
-      "Error: Not in a UserModule. Likely cause: Missed Module() wrap, bare chisel API call, or attempting to construct hardware inside a BlackBox."
+      "Error: Not in a UserModule. Likely cause: Missed Module() wrap, bare chisel API call, or attempting to construct hardware inside a BlackBox." // scalastyle:ignore line.size.limit
       // A bare api call is, e.g. calling Wire() from the scala console).
     )
   }
@@ -331,5 +334,5 @@ private[chisel3] object Builder {
   * objects.
   */
 object DynamicNamingStack {
-  def apply() = Builder.namingStack
+  def apply(): internal.naming.NamingStack = Builder.namingStack
 }

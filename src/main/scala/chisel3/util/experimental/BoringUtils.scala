@@ -136,7 +136,7 @@ object BoringUtils {
     * @note if a uniqueName is not specified, the returned name may differ
     * from the user-provided name
     */
-  def addSource(component: NamedComponent, name: String, dedup: Boolean = false, uniqueName: Boolean = false): String = {
+  def addSource(component: NamedComponent, name: String, dedup: Boolean = false, uniqueName: Boolean = false): String = { // scalastyle:ignore line.size.limit
     val id = if (uniqueName) { newName(name) } else { name }
     val maybeDedup =
       if (dedup) { Seq(new ChiselAnnotation { def toFirrtl = NoDedupAnnotation(component.toNamed.module) }) }

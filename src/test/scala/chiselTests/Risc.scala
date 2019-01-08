@@ -54,6 +54,7 @@ class Risc extends Module {
   }
 }
 
+// scalastyle:off regex
 /*
 class RiscTester(c: Risc) extends Tester(c) {
   def wr(addr: BigInt, data: BigInt)  = {
@@ -111,6 +112,7 @@ class RiscTester(c: Risc) extends Tester(c) {
   expect(c.io.out, 4)
 }
 */
+// scalastyle:on regex
 
 class RiscSpec extends ChiselPropSpec {
 

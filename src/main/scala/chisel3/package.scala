@@ -73,7 +73,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
 
   implicit class cloneTypeable[T <: Data](target: T) {
     @chiselRuntimeDeprecated
-    @deprecated("chiselCloneType is deprecated, use chiselTypeOf(...) to get the Chisel Type of a hardware object", "chisel3")
+    @deprecated("chiselCloneType is deprecated, use chiselTypeOf(...) to get the Chisel Type of a hardware object", "chisel3") // scalastyle:ignore line.size.limit
     def chiselCloneType: T = {
       target.cloneTypeFull.asInstanceOf[T]
     }

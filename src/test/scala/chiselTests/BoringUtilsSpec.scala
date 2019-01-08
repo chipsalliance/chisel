@@ -78,6 +78,6 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
   behavior of "BoringUtils.bore"
 
   it should "connect across modules using BoringUtils.bore" in {
-	  runTester(new TopTester) should be (true)
+    runTester(new TopTester) should be (true)
   }
 }

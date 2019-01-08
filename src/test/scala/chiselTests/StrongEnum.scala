@@ -7,7 +7,7 @@ import chisel3.experimental.ChiselEnum
 import chisel3.internal.firrtl.UnknownWidth
 import chisel3.util._
 import chisel3.testers.BasicTester
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.{Assertion, FreeSpec, Matchers}
 
 object EnumExample extends ChiselEnum {
   val e0, e1, e2 = Value
@@ -252,7 +252,7 @@ class StrongEnumFSMTester extends BasicTester {
 
   // Inputs and expected results
   val inputs: Vec[Bool] = VecInit(false.B, true.B, false.B, true.B, true.B, true.B, false.B, true.B, true.B, false.B)
-  val expected: Vec[Bool] = VecInit(false.B, false.B, false.B, false.B, false.B, true.B, true.B, false.B, false.B, true.B)
+  val expected: Vec[Bool] = VecInit(false.B, false.B, false.B, false.B, false.B, true.B, true.B, false.B, false.B, true.B) // scalastyle:ignore line.size.limit
   val expected_state = VecInit(sNone, sNone, sOne1, sNone, sOne1, sTwo1s, sTwo1s, sNone, sOne1, sTwo1s)
 
   val cntr = Counter(inputs.length)
@@ -331,7 +331,7 @@ class StrongEnumSpec extends ChiselFlatSpec {
       elaborate(new CastFromNonLitWidth)
     }
 
-    for (w <- (EnumExample.getWidth+1) to (EnumExample.getWidth+100)) {
+    for (w <- (EnumExample.getWidth + 1) to (EnumExample.getWidth + 100)) {
       a [ChiselException] should be thrownBy {
         elaborate(new CastFromNonLitWidth(Some(w)))
       }
@@ -361,7 +361,7 @@ class StrongEnumSpec extends ChiselFlatSpec {
   }
 
   it should "maintain Scala-level type-safety" in {
-    def foo(e: EnumExample.Type) = {}
+    def foo(e: EnumExample.Type): Unit = {}
 
     "foo(EnumExample.e1); foo(EnumExample.e1.next)" should compile
     "foo(OtherEnum.otherEnum)" shouldNot compile
@@ -378,7 +378,8 @@ class StrongEnumAnnotationSpec extends ChiselFlatSpec {
 
   ignore should "Test that strong enums annotate themselves appropriately" in {
 
-    def test() = {
+    // scalastyle:off regex
+    def test(): Assertion = {// scalastyle:ignore cyclomatic.complexity
       Driver.execute(Array("--target-dir", "test_run_dir"), () => new StrongEnumFSM) match {
         case ChiselExecutionSuccess(Some(circuit), emitted, _) =>
           val annos = circuit.annotations.map(_.toFirrtl)
@@ -421,6 +422,7 @@ class StrongEnumAnnotationSpec extends ChiselFlatSpec {
         case _ =>
           assert(false)
       }
+      // scalastyle:on regex
     }
 
     // We run this test twice, to test for an older bug where only the first circuit would be annotated
