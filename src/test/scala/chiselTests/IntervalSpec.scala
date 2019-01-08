@@ -461,6 +461,9 @@ class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
           println(s"$kindString $operation got No exception")
         }
         catch {
+          case e: FIRRTLException =>
+            println(s"We don't want firrtl exceptions to hit user")
+            throw e
           case t: Throwable =>
             println(s"$kindString $operation got exception ${t.getClass} ${t.getMessage}")
         }
@@ -536,6 +539,7 @@ class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
         catch {
           case e: firrtl.FIRRTLException =>
             println(s"Wrong error FirrtlException")
+            throw e
         }
       }
       "clip disjoint from Module gives internal error" in {
@@ -556,6 +560,7 @@ class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
         catch {
           case e: firrtl.FIRRTLException =>
             println(s"Wrong error FirrtlException")
+            throw e
         }
       }
       "wrap disjoint from Module gives internal error" in {
@@ -644,6 +649,7 @@ class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
       io.out := intervalResult
     })
     println(s"LoFirrtl\n$loFirrtl")
+    // why does this modify the port io width
     loFirrtl.contains("output io_out : SInt<6>") should be (true)
 
   }
