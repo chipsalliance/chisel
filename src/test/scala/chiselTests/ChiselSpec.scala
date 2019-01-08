@@ -87,6 +87,29 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
       case ChiselExecutionFailure(msg) => fail(msg)
     }
   }
+  /** Compiles a Chisel Module to Verilog
+    * NOTE: This uses the "test_run_dir" as the default directory for generated code.
+    * @param t the generator for the module
+    * @return the Verilog code as a string.
+    */
+  def makeLoFirrtl(compilerName: String)(t: => RawModule): String = {
+    val testDir = createTestDirectory(this.getClass.getSimpleName)
+    val manager = new ExecutionOptionsManager("compile") with HasFirrtlOptions
+                                                         with HasChiselExecutionOptions {
+      commonOptions = CommonOptions(targetDirName = testDir.toString)
+      firrtlOptions = firrtlOptions.copy(compilerName = compilerName)
+    }
+
+    Driver.execute(manager, () => t) match {
+      case ChiselExecutionSuccess(_, _, Some(firrtlExecRes)) =>
+        firrtlExecRes match {
+          case FirrtlExecutionSuccess(_, verilog) => verilog
+          case FirrtlExecutionFailure(msg) => fail(msg)
+        }
+      case ChiselExecutionSuccess(_, _, None) => fail() // This shouldn't happen
+      case ChiselExecutionFailure(msg) => fail(msg)
+    }
+  }
 }
 
 /** Spec base class for BDD-style testers. */

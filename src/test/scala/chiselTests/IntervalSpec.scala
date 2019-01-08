@@ -4,8 +4,8 @@ package chiselTests
 
 import _root_.firrtl.ir.Closed
 import chisel3._
-import chisel3.core.FixedPoint
-import chisel3.experimental.{ChiselRange, Interval}
+import chisel3.core.{FixedPoint, stop}
+import chisel3.experimental.{ChiselRange, Interval, RawModule}
 import chisel3.internal.firrtl.{IntervalRange, KnownBinaryPoint}
 import chisel3.internal.sourceinfo.{SourceInfo, UnlocatableSourceInfo}
 import chisel3.testers.BasicTester
@@ -287,11 +287,11 @@ class IntervalChainedAddTester extends BasicTester {
   val intervalResult = Wire(Interval())
   val uintResult = Wire(UInt())
 
-  intervalResult := 2.I + 2.I + 2.I + 2.I + 2.I + 2.I + 2.I
-  uintResult := 2.U +& 2.U +& 2.U +& 2.U +& 2.U +& 2.U +& 2.U
+  intervalResult := 1.I + 1.I + 1.I + 1.I + 1.I + 1.I + 1.I
+  uintResult := 1.U +& 1.U +& 1.U +& 1.U +& 1.U +& 1.U +& 1.U
 
-  assert(intervalResult === 14.I)
-  assert(uintResult === 14.U)
+  assert(intervalResult === 7.I)
+  assert(uintResult === 7.U)
   stop()
 }
 
@@ -361,7 +361,8 @@ class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
   "Intervals can be wrapped with wrap operator" in {
     assertTesterPasses{ new IntervalWrapTester }
   }
-  "Interval compile pathologies" - {
+
+  "Interval compile pathologies: clip, wrap, and squeeze have different behavior" - {
     "wrap target range is completely left of source" in {
       intercept[FIRRTLException] {
         assertTesterPasses(new BasicTester {
@@ -369,6 +370,7 @@ class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
           base := 6.I
           val disjointLeft = WireInit(Interval(range"[-7,-5]"), (-6).I)
           val w5 = base.wrap(disjointLeft)
+          stop()
         })
       }
     }
@@ -379,9 +381,205 @@ class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
           base := 6.I
           val disjointLeft = WireInit(Interval(range"[7,10]"), 8.I)
           val w5 = base.wrap(disjointLeft)
+          stop()
         })
       }
     }
+    "clip target range is completely left of source" in {
+      intercept[FIRRTLException] {
+        assertTesterPasses(new BasicTester {
+          val base = Wire(Interval(range"[-4, 6]"))
+          base := 6.I
+          val disjointLeft = WireInit(Interval(range"[-7,-5]"), (-6).I)
+          val w5 = base.clip(disjointLeft)
+          stop()
+        })
+      }
+    }
+    "clip target range is completely right of source" in {
+      intercept[FIRRTLException] {
+        assertTesterPasses(new BasicTester {
+          val base = Wire(Interval(range"[-4, 6]"))
+          base := 6.I
+          val disjointLeft = WireInit(Interval(range"[7,10]"), 8.I)
+          val w5 = base.clip(disjointLeft)
+          stop()
+        })
+      }
+    }
+    "squeeze target range is completely right of source" in {
+      intercept[FIRRTLException] {
+        assertTesterPasses(new BasicTester {
+          val base = Wire(Interval(range"[-4, 6]"))
+          base := 6.I
+          val disjointLeft = WireInit(Interval(range"[7,10]"), 8.I)
+          val w5 = base.squeeze(disjointLeft)
+          stop()
+        })
+      }
+    }
+    "squeeze target range is completely left of source" in {
+      intercept[FIRRTLException] {
+        assertTesterPasses(new BasicTester {
+          val base = Wire(Interval(range"[-4, 6]"))
+          base := 6.I
+          val disjointLeft = WireInit(Interval(range"[-7, -5]"), 8.I)
+          val w5 = base.squeeze(disjointLeft)
+          stop()
+        })
+      }
+    }
+
+    def makeCircuit(operation: String, sourceRange: IntervalRange, targetRange: IntervalRange): RawModule = {
+      new Module {
+        val io = IO(new Bundle { val out = Output(Interval())})
+        val base = Wire(Interval(sourceRange))
+        base := 6.I
+
+        val disjointLeft = WireInit(Interval(targetRange), 8.I)
+        val w5 = operation match {
+          case "clip" => base.clip(disjointLeft)
+          case "wrap" => base.wrap(disjointLeft)
+          case "squeeze" => base.squeeze(disjointLeft)
+        }
+        io.out := w5
+      }
+    }
+
+    "disjoint ranges should error when used with clip, wrap and squeeze" - {
+
+      def doTest(disjointLeft: Boolean, operation: String): Unit = {
+        val kindString = s"disjoint ${if (disjointLeft) "left" else "right"}"
+        val (rangeA, rangeB) = if(disjointLeft) {
+          (range"[-4, 6]", range"[7,10]")
+        }
+        else {
+          (range"[7,10]", range"[-4, 6]")
+        }
+        try {
+          makeLoFirrtl("low")(makeCircuit(operation, rangeA, rangeB))
+          println(s"$kindString $operation got No exception")
+        }
+        catch {
+          case t: Throwable =>
+            println(s"$kindString $operation got exception ${t.getClass} ${t.getMessage}")
+        }
+      }
+
+      "Range A disjoint left, operation clip should generate useful error" in {
+        doTest(disjointLeft= true, "clip")
+      }
+      "Range A disjoint left, operation wrap should generate useful error" in {
+        doTest(disjointLeft= true, "wrap")
+      }
+      "Range A disjoint left, operation squeeze should generate useful error" in {
+        doTest(disjointLeft= true, "squeeze")
+      }
+
+      "Range A disjoint right, operation clip should generate useful error" in {
+        doTest(disjointLeft= false, "clip")
+      }
+      "Range A disjoint right, operation wrap should generate useful error" in {
+        doTest(disjointLeft= false, "wrap")
+      }
+      "Range A disjoint right, operation squeeze should generate useful error" in {
+        doTest(disjointLeft= false, "squeeze")
+      }
+    }
+
+    "Errors are sometimes inconsistent or incorrectly labelled as Firrtl Internal Error" - {
+      "squeeze disjoint is not internal error when defined in BasicTester" in {
+        try {
+          val loFirrtl = makeLoFirrtl("low")(new BasicTester {
+            val base = Wire(Interval(range"[-4, 6]"))
+            val base2 = Wire(Interval(range"[-4, 6]"))
+            base := 6.I
+            base2 := 5.I
+            val disjointLeft = WireInit(Interval(range"[7,10]"), 8.I)
+            val w5 = base.squeeze(disjointLeft)
+            stop()
+          })
+          println(s"Why is this not an error")
+        }
+        catch {
+          case e: firrtl.FIRRTLException =>
+            println(s"Wrong error FirrtlException")
+        }
+      }
+      "wrap disjoint is not internal error when defined in BasicTester" in {
+        val loFirrtl = makeLoFirrtl("low")(new BasicTester {
+          val base = Wire(Interval(range"[-4, 6]"))
+          val base2 = Wire(Interval(range"[-4, 6]"))
+          base := 6.I
+          base2 := 5.I
+          val disjointLeft = WireInit(Interval(range"[7,10]"), 8.I)
+          val w5 = base.squeeze(disjointLeft)
+          stop()
+        })
+        println(s"Why is this not an error")
+      }
+      "squeeze disjoint from Module gives internal error" in {
+        try {
+          val loFirrtl = makeLoFirrtl("lo")(new Module {
+            val io = IO(new Bundle {
+              val out = Output(Interval())
+            })
+            val base = Wire(Interval(range"[-4, 6]"))
+            base := 6.I
+
+            val disjointLeft = WireInit(Interval(range"[7,10]"), 8.I)
+            val w5 = base.squeeze(disjointLeft)
+            io.out := w5
+          })
+          println(s"LoFirrtl\n$loFirrtl")
+        }
+        catch {
+          case e: firrtl.FIRRTLException =>
+            println(s"Wrong error FirrtlException")
+        }
+      }
+      "clip disjoint from Module gives internal error" in {
+        try {
+          val loFirrtl = makeLoFirrtl("lo")(new Module {
+            val io = IO(new Bundle {
+              val out = Output(Interval())
+            })
+            val base = Wire(Interval(range"[-4, 6]"))
+            base := 6.I
+
+            val disjointLeft = WireInit(Interval(range"[7,10]"), 8.I)
+            val w5 = base.clip(disjointLeft)
+            io.out := w5
+          })
+          println(s"LoFirrtl\n$loFirrtl")
+        }
+        catch {
+          case e: firrtl.FIRRTLException =>
+            println(s"Wrong error FirrtlException")
+        }
+      }
+      "wrap disjoint from Module gives internal error" in {
+        try {
+          val loFirrtl = makeLoFirrtl("lo")(new Module {
+            val io = IO(new Bundle {
+              val out = Output(Interval())
+            })
+            val base = Wire(Interval(range"[-4, 6]"))
+            base := 6.I
+
+            val disjointLeft = WireInit(Interval(range"[7,10]"), 8.I)
+            val w5 = base.wrap(disjointLeft)
+            io.out := w5
+          })
+          println(s"LoFirrtl\n$loFirrtl")
+        }
+        catch {
+          case e: firrtl.FIRRTLException =>
+            println(s"Wrong error FirrtlException")
+        }
+      }
+    }
+
     "assign literal out of range of interval" in {
       intercept[firrtl.passes.CheckTypes.InvalidConnect] {
         assertTesterPasses(new BasicTester {
@@ -391,6 +589,38 @@ class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
       }
     }
   }
+
+  "Intervals should catch assignment of literals outside of range" - {
+    "when literal is too small" in {
+      try {
+        val loFirrtl = makeLoFirrtl("lo")(new Module {
+          val io = IO(new Bundle {val out = Output(Interval())})
+          val base = Wire(Interval(range"[-4, 6]"))
+          base := (-8).I
+          io.out := base
+        })
+      }
+      catch {
+        case e: firrtl.FIRRTLException =>
+          println(s"Wrong error FirrtlException")
+      }
+    }
+    "when literal is too big" in {
+      try {
+        val loFirrtl = makeLoFirrtl("lo")(new Module {
+          val io = IO(new Bundle {val out = Output(Interval())})
+          val base = Wire(Interval(range"[-4, 6]"))
+          base := (66).I
+          io.out := base
+        })
+      }
+      catch {
+        case e: firrtl.FIRRTLException =>
+          println(s"Wrong error FirrtlException")
+      }
+    }
+  }
+
   "Intervals can be used to construct registers" in {
     assertTesterPasses{ new IntervalRegisterTester }
   }
@@ -399,6 +629,23 @@ class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
   }
   "Intervals adds same answer as UInt" in {
     assertTesterPasses{ new IntervalChainedAddTester }
+  }
+  "Intervals should produce canonically smaller ranges via inference" in {
+    val loFirrtl = makeLoFirrtl("low")(new Module {
+      val io = IO(new Bundle {
+        val in  = Input(Interval(range"[0,1]"))
+        val out = Output(Interval(6.W))
+      })
+
+      val intervalResult = Wire(Interval())
+
+      // intervalResult := 1.I * 1.I * 1.I * 1.I * 1.I * 1.I * 1.I
+      intervalResult := 1.I + 1.I + 1.I + 1.I + 1.I + 1.I + 1.I
+      io.out := intervalResult
+    })
+    println(s"LoFirrtl\n$loFirrtl")
+    loFirrtl.contains("output io_out : SInt<6>") should be (true)
+
   }
   "Intervals muls same answer as UInt" in {
     assertTesterPasses{ new IntervalChainedMulTester }

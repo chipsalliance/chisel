@@ -1,11 +1,13 @@
-// Useful utilities for tests
+// See LICENSE for license details.
 
 package chiselTests
 
+// Useful utilities for tests
+
+import _root_.firrtl.{ir => firrtlir}
 import chisel3._
 import chisel3.experimental._
 import chisel3.internal.firrtl.{IntervalRange, KnownBinaryPoint}
-import _root_.firrtl.{ir => firrtlir}
 import org.scalatest.{FreeSpec, Matchers}
 
 class PassthroughModuleIO extends Bundle {
@@ -14,7 +16,7 @@ class PassthroughModuleIO extends Bundle {
 }
 
 trait AbstractPassthroughModule extends RawModule {
-  val io = IO(new PassthroughModuleIO)
+  val io: PassthroughModuleIO = IO(new PassthroughModuleIO)
   io.out := io.in
 }
 
@@ -24,14 +26,14 @@ class PassthroughRawModule extends RawModule with AbstractPassthroughModule
 
 case class ScalaIntervalSimulator(intervalRange: IntervalRange) {
   val binaryPoint: Int = intervalRange.binaryPoint.asInstanceOf[KnownBinaryPoint].value
-  val epsilon = 1.0 / math.pow(2.0, binaryPoint.toDouble)
+  val epsilon: Double = 1.0 / math.pow(2.0, binaryPoint.toDouble)
 
   val (lower, upper) = (intervalRange.lowerBound, intervalRange.upperBound) match {
 
-    case (firrtlir.Closed(lower), firrtlir.Closed(upper)) => (lower, upper)
-    case (firrtlir.Closed(lower), firrtlir.Open(upper))   => (lower, upper - epsilon)
-    case (firrtlir.Open(lower),   firrtlir.Closed(upper)) => (lower + epsilon, upper)
-    case (firrtlir.Open(lower),   firrtlir.Open(upper))   => (lower + epsilon, upper - epsilon)
+    case (firrtlir.Closed(lower1), firrtlir.Closed(upper1)) => (lower1, upper1)
+    case (firrtlir.Closed(lower1), firrtlir.Open(upper1))   => (lower1, upper1 - epsilon)
+    case (firrtlir.Open(lower1),   firrtlir.Closed(upper1)) => (lower1 + epsilon, upper1)
+    case (firrtlir.Open(lower1),   firrtlir.Open(upper1))   => (lower1 + epsilon, upper1 - epsilon)
     case _ =>
       throw new Exception(s"lower and upper bounds must be defined, range here is $intervalRange")
   }
