@@ -192,7 +192,7 @@ object Driver extends BackendCompilationUtilities {
           ce.printStackTrace(new PrintWriter(sw))
           sw.toString
         }
-        stackTrace.lines.foreach(line => println(s"${ErrorLog.errTag} $line")) // scalastyle:ignore regex
+        Predef.augmentString(stackTrace).lines.foreach(line => println(s"${ErrorLog.errTag} $line")) // scalastyle:ignore regex
         None
     }
 
