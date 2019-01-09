@@ -1,7 +1,7 @@
 package chisel3.core
 
-import chisel3.internal.ChiselException
-import chisel3.internal.Builder.{forcedModule}
+import chisel3.internal.{Builder, ChiselException}
+import chisel3.internal.Builder.forcedModule
 import chisel3.internal.firrtl.LitArg
 
 object Binding {
@@ -30,8 +30,8 @@ object requireIsHardware {
     }
     if (!node.topBindingOpt.isDefined) {
       val prefix = if (msg.nonEmpty) s"$msg " else ""
-      throw Binding.ExpectedHardwareException(s"$prefix'$node' must be hardware, " +
-        "not a bare Chisel type. Perhaps you forgot to wrap it in Wire(_) or IO(_)?")
+      Builder.exception(Binding.ExpectedHardwareException(s"$prefix'$node' must be hardware, " +
+        "not a bare Chisel type. Perhaps you forgot to wrap it in Wire(_) or IO(_)?"))
     }
   }
 }
@@ -41,7 +41,7 @@ object requireIsHardware {
 object requireIsChiselType {
   def apply(node: Data, msg: String = "") = if (node.topBindingOpt.isDefined) {
     val prefix = if (msg.nonEmpty) s"$msg " else ""
-    throw Binding.ExpectedChiselTypeException(s"$prefix'$node' must be a Chisel type, not hardware")
+    Builder.exception(Binding.ExpectedChiselTypeException(s"$prefix'$node' must be a Chisel type, not hardware"))
   }
 }
 
@@ -65,7 +65,7 @@ object BindingDirection {
       case PortBinding(_) => direction match {
         case ActualDirection.Output => Output
         case ActualDirection.Input => Input
-        case dir => throw new RuntimeException(s"Unexpected port element direction '$dir'")
+        case dir => Builder.exception(new RuntimeException(s"Unexpected port element direction '$dir'"))
       }
       case _ => Internal
     }

@@ -75,7 +75,7 @@ final class WhenContext(sourceInfo: SourceInfo, cond: Option[() => Bool], block:
     block
   } catch {
     case ret: scala.runtime.NonLocalReturnControl[_] =>
-      throwException("Cannot exit from a when() block with a \"return\"!" +
+      Builder.exception("Cannot exit from a when() block with a \"return\"!" +
         " Perhaps you meant to use Mux or a Wire as a return value?"
       )
   }

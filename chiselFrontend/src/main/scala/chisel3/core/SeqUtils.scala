@@ -2,7 +2,7 @@
 
 package chisel3.core
 
-import chisel3.internal.throwException
+import chisel3.internal.Builder
 
 import scala.language.experimental.macros
 import chisel3.internal.sourceinfo._
@@ -114,7 +114,7 @@ private[chisel3] object SeqUtils {
             buildAndOrMultiplexor(in)
           }
           else {
-            throwException(s"Cannot Mux1H with aggregates with inferred widths")
+            Builder.exception(s"Cannot Mux1H with aggregates with inferred widths")
           }
 
         case _ =>

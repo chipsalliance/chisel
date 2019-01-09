@@ -11,6 +11,7 @@ import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo._
 import chisel3.SourceInfoDoc
+import chisel3.internal.Builder
 
 /** An abstract class for data types that solely consist of (are an aggregate
   * of) other Data objects.
@@ -46,7 +47,10 @@ sealed abstract class Aggregate extends Data {
       resolvedDirection match {
         case SpecifiedDirection.Unspecified => ActualDirection.Bidirectional(ActualDirection.Default)
         case SpecifiedDirection.Flip => ActualDirection.Bidirectional(ActualDirection.Flipped)
-        case _ => throw new RuntimeException("Unexpected forced Input / Output")
+        case _ => {
+          Builder.exception(new RuntimeException("Unexpected forced Input / Output"))
+          ActualDirection.Unspecified
+        }
       }
     } else {
       this match {
@@ -58,7 +62,8 @@ sealed abstract class Aggregate extends Data {
         }
         case _ =>
           val childWithDirections = getElements zip getElements.map(_.direction)
-          throw Binding.MixedDirectionAggregateException(s"Aggregate '$this' can't have elements that are both directioned and undirectioned: $childWithDirections")
+          Builder.exception(Binding.MixedDirectionAggregateException(s"Aggregate '$this' can't have elements that are both directioned and undirectioned: $childWithDirections"))
+          ActualDirection.Unspecified
       }
     }
   }
@@ -580,7 +585,8 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
             m.invoke(this) match {
               case s: scala.collection.Seq[Any] if s.nonEmpty => s.head match {
                 // Ignore empty Seq()
-                case d: Data => throwException("Public Seq members cannot be used to define Bundle elements " +
+                case d: Data =>
+                  Builder.exception("Public Seq members cannot be used to define Bundle elements " +
                   s"(found public Seq member '${m.getName}'). " +
                   "Either use a Vec if all elements are of the same type, or MixedVec if the elements " +
                   "are of different types. If this Seq member is not intended to construct RTL, mix in the trait " +

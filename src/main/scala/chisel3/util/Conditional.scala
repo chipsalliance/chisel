@@ -11,6 +11,7 @@ import scala.reflect.runtime.universe._
 import scala.reflect.macros.blackbox._
 
 import chisel3._
+import chisel3.internal.Builder
 
 object unless {  // scalastyle:ignore object.name
   /** Does the same thing as [[when$ when]], but with the condition inverted.
@@ -99,7 +100,9 @@ object switch {  // scalastyle:ignore object.name
         // TODO: remove when Chisel compatibility package is removed
         case q"Chisel.`package`.is.apply( ..$params )( ..$body )" => q"$acc.is( ..$params )( ..$body )"
         case q"chisel3.util.is.apply( ..$params )( ..$body )" => q"$acc.is( ..$params )( ..$body )"
-        case b => throw new Exception(s"Cannot include blocks that do not begin with is() in switch.")
+        case b =>
+          Builder.exception(new ChiselException(s"Cannot include blocks that do not begin with is() in switch."))
+          q""
       }
     }
     q"""{ $res }"""

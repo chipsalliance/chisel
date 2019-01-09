@@ -4,7 +4,6 @@ package chisel3.core
 
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
-import chisel3.internal.throwException
 import chisel3.internal.sourceinfo.{SourceInfo, UnlocatableSourceInfo}
 
 /** Parameters for BlackBoxes */

@@ -6,7 +6,6 @@
 
 package object Chisel {     // scalastyle:ignore package.object.name
   import chisel3.internal.firrtl.Width
-
   import scala.language.experimental.macros
   import scala.annotation.StaticAnnotation
   import scala.annotation.compileTimeOnly

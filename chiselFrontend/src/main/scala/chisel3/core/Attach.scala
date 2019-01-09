@@ -15,7 +15,7 @@ object attach {  // scalastyle:ignore object.name
 
   // Actual implementation
   private[core] def impl(elts: Seq[Analog], contextModule: UserModule)(implicit sourceInfo: SourceInfo): Unit = {
-    if (Builder.whenDepth != 0) throw ConditionalAttachException
+    if (Builder.whenDepth != 0) Builder.exception(ConditionalAttachException)
 
     // TODO Check that references are valid and can be attached
 
@@ -38,7 +38,7 @@ object attach {  // scalastyle:ignore object.name
       impl(elts, Builder.forcedUserModule)
     } catch {
       case AttachException(message) =>
-        throwException(elts.mkString("Attaching (", ", ", s") failed @$message"))
+        Builder.exception(elts.mkString("Attaching (", ", ", s") failed @$message"))
     }
   }
 }

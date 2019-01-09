@@ -9,6 +9,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   import scala.language.implicitConversions
 
   import internal.firrtl.Width
+  import internal.Builder
 
   import util.BitPat
 
@@ -298,7 +299,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
       } else if (init ne null) {
         RegInit(init)
       } else {
-        throwException("cannot infer type")
+        Builder.exception("cannot infer type")
       }
     }
   }

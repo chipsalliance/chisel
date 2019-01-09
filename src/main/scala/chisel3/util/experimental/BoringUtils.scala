@@ -4,7 +4,7 @@ package chisel3.util.experimental
 
 import chisel3._
 import chisel3.experimental.{ChiselAnnotation, RunFirrtlTransform, annotate}
-import chisel3.internal.{InstanceId, NamedComponent}
+import chisel3.internal.{Builder, ChiselException, InstanceId, NamedComponent}
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
 import firrtl.passes.wiring.{WiringTransform, SourceAnnotation, SinkAnnotation}
 import firrtl.annotations.{ModuleName, ComponentName}
@@ -165,20 +165,32 @@ object BoringUtils {
     */
   def addSink(component: InstanceId, name: String, dedup: Boolean = false, forceExists: Boolean = false): Unit = {
     if (forceExists && !checkName(name)) {
-      throw new BoringUtilsException(s"Sink ID '$name' not found in BoringUtils ID namespace") }
-    def moduleName = component.toNamed match {
-      case c: ModuleName => c
-      case c: ComponentName => c.module
-      case _ => throw new ChiselException("Can only add a Module or Component sink", null)
+      Builder.exception(new BoringUtilsException(s"Sink ID '$name' not found in BoringUtils ID namespace"))
+    } else {
+      def moduleName = component.toNamed match {
+        case c: ModuleName => c
+        case c: ComponentName => c.module
+        case _ =>
+          Builder.exception(new ChiselException("Can only add a Module or Component sink", null))
+      }
+
+      val maybeDedup =
+        if (dedup) {
+          Seq(new ChiselAnnotation {
+            def toFirrtl = NoDedupAnnotation(moduleName)
+          })
+        }
+        else {
+          Seq[ChiselAnnotation]()
+        }
+      val annotations =
+        Seq(new ChiselAnnotation with RunFirrtlTransform {
+          def toFirrtl = SinkAnnotation(component.toNamed, name)
+
+          def transformClass = classOf[WiringTransform]
+        })
+      annotations.map(annotate(_))
     }
-    val maybeDedup =
-      if (dedup) { Seq(new ChiselAnnotation { def toFirrtl = NoDedupAnnotation(moduleName) }) }
-      else       { Seq[ChiselAnnotation]()                                                    }
-    val annotations =
-      Seq(new ChiselAnnotation with RunFirrtlTransform {
-            def toFirrtl = SinkAnnotation(component.toNamed, name)
-            def transformClass = classOf[WiringTransform] })
-    annotations.map(annotate(_))
   }
 
   /** Connect a source to one or more sinks

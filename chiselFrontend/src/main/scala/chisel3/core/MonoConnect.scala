@@ -2,9 +2,10 @@
 
 package chisel3.core
 
-import chisel3.internal.ChiselException
+import chisel3.internal.{Builder, ChiselException}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.{Connect, DefInvalid}
+
 import scala.language.experimental.macros
 import chisel3.internal.sourceinfo.SourceInfo
 
@@ -89,13 +90,13 @@ object MonoConnect {
 
       // Handle Vec case
       case (sink_v: Vec[Data @unchecked], source_v: Vec[Data @unchecked]) =>
-        if(sink_v.length != source_v.length) { throw MismatchedVecException }
+        if(sink_v.length != source_v.length) { Builder.exception(MismatchedVecException) }
         for(idx <- 0 until sink_v.length) {
           try {
             implicit val compileOptions = connectCompileOptions
             connect(sourceInfo, connectCompileOptions, sink_v(idx), source_v(idx), context_mod)
           } catch {
-            case MonoConnectException(message) => throw MonoConnectException(s"($idx)$message")
+            case MonoConnectException(message) => Builder.exception(MonoConnectException(s"($idx)$message"))
           }
         }
       // Handle Vec connected to DontCare. Apply the DontCare to individual elements.
@@ -105,7 +106,7 @@ object MonoConnect {
             implicit val compileOptions = connectCompileOptions
             connect(sourceInfo, connectCompileOptions, sink_v(idx), source, context_mod)
           } catch {
-            case MonoConnectException(message) => throw MonoConnectException(s"($idx)$message")
+            case MonoConnectException(message) => Builder.exception(MonoConnectException(s"($idx)$message"))
           }
         }
 
@@ -118,12 +119,12 @@ object MonoConnect {
               case Some(source_sub) => connect(sourceInfo, connectCompileOptions, sink_sub, source_sub, context_mod)
               case None => {
                 if (connectCompileOptions.connectFieldsMustMatch) {
-                  throw MissingFieldException(field)
+                  Builder.exception(MissingFieldException(field))
                 }
               }
             }
           } catch {
-            case MonoConnectException(message) => throw MonoConnectException(s".$field$message")
+            case MonoConnectException(message) => Builder.exception(MonoConnectException(s".$field$message"))
           }
         }
       // Handle Record connected to DontCare. Apply the DontCare to individual elements.
@@ -133,16 +134,16 @@ object MonoConnect {
           try {
             connect(sourceInfo, connectCompileOptions, sink_sub, source, context_mod)
           } catch {
-            case MonoConnectException(message) => throw MonoConnectException(s".$field$message")
+            case MonoConnectException(message) => Builder.exception(MonoConnectException(s".$field$message"))
           }
         }
 
       // Source is DontCare - it may be connected to anything. It generates a defInvalid for the sink.
       case (sink, DontCare) => pushCommand(DefInvalid(sourceInfo, sink.lref))
       // DontCare as a sink is illegal.
-      case (DontCare, _) => throw DontCareCantBeSink
+      case (DontCare, _) => Builder.exception(DontCareCantBeSink)
       // Sink and source are different subtypes of data so fail
-      case (sink, source) => throw MismatchedException(sink.toString, source.toString)
+      case (sink, source) => Builder.exception(MismatchedException(sink.toString, source.toString))
     }
 
   // This function (finally) issues the connection operation
@@ -161,7 +162,7 @@ object MonoConnect {
     import BindingDirection.{Internal, Input, Output} // Using extensively so import these
     // If source has no location, assume in context module
     // This can occur if is a literal, unbound will error previously
-    val sink_mod: BaseModule   = sink.topBinding.location.getOrElse(throw UnwritableSinkException)
+    val sink_mod: BaseModule   = sink.topBinding.location.getOrElse(Builder.exception(UnwritableSinkException))
     val source_mod: BaseModule = source.topBinding.location.getOrElse(context_mod)
 
     val sink_direction = BindingDirection.from(sink.topBinding, sink.direction)
@@ -174,7 +175,7 @@ object MonoConnect {
         //    CURRENT MOD   CURRENT MOD
         case (Output,       _) => issueConnect(sink, source)
         case (Internal,     _) => issueConnect(sink, source)
-        case (Input,        _) => throw UnwritableSinkException
+        case (Input,        _) => Builder.exception(UnwritableSinkException)
       }
     }
 
@@ -193,11 +194,11 @@ object MonoConnect {
           if (!(connectCompileOptions.dontAssumeDirectionality)) {
             issueConnect(sink, source)
           } else {
-            throw UnreadableSourceException
+            Builder.exception(UnreadableSourceException)
           }
         }
         case (Input,        Output) if (!(connectCompileOptions.dontTryConnectionsSwapped)) => issueConnect(source, sink)
-        case (Input,        _)    => throw UnwritableSinkException
+        case (Input,        _)    => Builder.exception(UnwritableSinkException)
       }
     }
 
@@ -209,8 +210,8 @@ object MonoConnect {
         //    SINK          SOURCE
         //    CHILD MOD     CURRENT MOD
         case (Input,        _) => issueConnect(sink, source)
-        case (Output,       _) => throw UnwritableSinkException
-        case (Internal,     _) => throw UnwritableSinkException
+        case (Output,       _) => Builder.exception(UnwritableSinkException)
+        case (Internal,     _) => Builder.exception(UnwritableSinkException)
       }
     }
 
@@ -226,20 +227,20 @@ object MonoConnect {
         //    CHILD MOD     CHILD MOD
         case (Input,        Input)  => issueConnect(sink, source)
         case (Input,        Output) => issueConnect(sink, source)
-        case (Output,       _)      => throw UnwritableSinkException
+        case (Output,       _)      => Builder.exception(UnwritableSinkException)
         case (_,            Internal) => {
           if (!(connectCompileOptions.dontAssumeDirectionality)) {
             issueConnect(sink, source)
           } else {
-            throw UnreadableSourceException
+            Builder.exception(UnreadableSourceException)
           }
         }
-        case (Internal,     _)      => throw UnwritableSinkException
+        case (Internal,     _)      => Builder.exception(UnwritableSinkException)
       }
     }
 
     // Not quite sure where left and right are compared to current module
     // so just error out
-    else throw UnknownRelationException
+    else Builder.exception(UnknownRelationException)
   }
 }

@@ -42,6 +42,8 @@ class ChiselException(message: String, cause: Throwable = null) extends Exceptio
 private[chisel3] object throwException {
   def apply(s: String, t: Throwable = null): Nothing =
     throw new ChiselException(s, t)
+  def apply(e: Exception): Nothing =
+    throw e
 }
 
 /** Records and reports runtime errors and warnings. */
