@@ -177,7 +177,7 @@ object BoringUtils {
     val annotations =
       Seq(new ChiselAnnotation with RunFirrtlTransform {
             def toFirrtl = SinkAnnotation(component.toNamed, name)
-            def transformClass = classOf[WiringTransform] })
+            def transformClass = classOf[WiringTransform] }) ++ maybeDedup
     annotations.map(annotate(_))
   }
 
