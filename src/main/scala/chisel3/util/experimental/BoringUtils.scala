@@ -165,7 +165,7 @@ object BoringUtils {
     */
   def addSink(component: InstanceId, name: String, dedup: Boolean = false, forceExists: Boolean = false): Unit = {
     if (forceExists && !checkName(name)) {
-      Builder.exception(new BoringUtilsException(s"Sink ID '$name' not found in BoringUtils ID namespace"))
+      Builder.exception(new BoringUtilsException(s"Sink ID '$name' not found in BoringUtils ID namespace"), {})
     } else {
       def moduleName = component.toNamed match {
         case c: ModuleName => c

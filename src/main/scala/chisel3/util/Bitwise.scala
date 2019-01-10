@@ -67,8 +67,7 @@ object Fill {
   def apply(n: Int, x: UInt): UInt = {
     n match {
       case _ if n < 0 =>
-        Builder.exception(new IllegalArgumentException(s"n (=$n) must be nonnegative integer."))
-        UInt(0.W)
+        Builder.exception(new IllegalArgumentException(s"n (=$n) must be nonnegative integer."), UInt(0.W))
       case 0 => UInt(0.W)
       case 1 => x
       case _ if x.isWidthKnown && x.getWidth == 1 =>
@@ -94,10 +93,8 @@ object Fill {
   */
 object Reverse {
   private def doit(in: UInt, length: Int): UInt = length match {
-    case _ if length < 0 => {
-      Builder.exception(new IllegalArgumentException(s"length (=$length) must be nonnegative integer."))
-      in
-    }
+    case _ if length < 0 =>
+      Builder.exception(new IllegalArgumentException(s"length (=$length) must be nonnegative integer."), 0.U)
     case _ if length <= 1 => in
     case _ if isPow2(length) && length >= 8 && length <= 64 =>
       // This esoterica improves simulation performance

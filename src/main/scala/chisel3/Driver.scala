@@ -2,19 +2,14 @@
 
 package chisel3
 
-import chisel3.internal.ErrorLog
+import chisel3.internal.{Builder, ErrorLog}
 import chisel3.internal.firrtl.Converter
 import chisel3.experimental.{RawModule, RunFirrtlTransform}
-
 import java.io._
-import net.jcazevedo.moultingyaml._
-
 import internal.firrtl._
 import firrtl._
 import firrtl.annotations.{Annotation, JsonProtocol}
-import firrtl.util.{ BackendCompilationUtilities => FirrtlBackendCompilationUtilities }
-
-import _root_.firrtl.annotations.AnnotationYamlProtocol._
+import firrtl.util.{BackendCompilationUtilities => FirrtlBackendCompilationUtilities}
 
 /**
   * The Driver provides methods to invoke the chisel3 compiler and the firrtl compiler.
@@ -279,6 +274,12 @@ object Driver extends BackendCompilationUtilities {
   def main(args: Array[String]) {
     execute(Array("--help"), null)
   }
+
+  /**
+    * getErrors - return the error messages generated for this run.
+    * @return a sequence (possibly empty) of error messages for this run.
+    */
+  def getErrorMsgs: Seq[String] = Builder.lastRunErrorMsgs
 
   val version = BuildInfo.version
   val chiselVersionString = BuildInfo.toString

@@ -48,8 +48,7 @@ sealed abstract class Aggregate extends Data {
         case SpecifiedDirection.Unspecified => ActualDirection.Bidirectional(ActualDirection.Default)
         case SpecifiedDirection.Flip => ActualDirection.Bidirectional(ActualDirection.Flipped)
         case _ => {
-          Builder.exception(new RuntimeException("Unexpected forced Input / Output"))
-          ActualDirection.Unspecified
+          Builder.exception(new RuntimeException("Unexpected forced Input / Output"), ActualDirection.Unspecified)
         }
       }
     } else {
@@ -62,8 +61,7 @@ sealed abstract class Aggregate extends Data {
         }
         case _ =>
           val childWithDirections = getElements zip getElements.map(_.direction)
-          Builder.exception(Binding.MixedDirectionAggregateException(s"Aggregate '$this' can't have elements that are both directioned and undirectioned: $childWithDirections"))
-          ActualDirection.Unspecified
+          Builder.exception(Binding.MixedDirectionAggregateException(s"Aggregate '$this' can't have elements that are both directioned and undirectioned: $childWithDirections"), ActualDirection.Unspecified)
       }
     }
   }
@@ -590,7 +588,7 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
                   s"(found public Seq member '${m.getName}'). " +
                   "Either use a Vec if all elements are of the same type, or MixedVec if the elements " +
                   "are of different types. If this Seq member is not intended to construct RTL, mix in the trait " +
-                  "IgnoreSeqInBundle.")
+                  "IgnoreSeqInBundle.", {})
                 case _ => // don't care about non-Data Seq
               }
               case _ => // not a Seq

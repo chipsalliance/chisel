@@ -15,11 +15,14 @@ object attach {  // scalastyle:ignore object.name
 
   // Actual implementation
   private[core] def impl(elts: Seq[Analog], contextModule: UserModule)(implicit sourceInfo: SourceInfo): Unit = {
-    if (Builder.whenDepth != 0) Builder.exception(ConditionalAttachException)
+    if (Builder.whenDepth != 0) {
+      Builder.exception(ConditionalAttachException)
+    } else {
 
-    // TODO Check that references are valid and can be attached
+      // TODO Check that references are valid and can be attached
 
-    pushCommand(Attach(sourceInfo, elts.map(_.lref)))
+      pushCommand(Attach(sourceInfo, elts.map(_.lref)))
+    }
   }
 
   /** Create an electrical connection between [[Analog]] components

@@ -143,11 +143,14 @@ private[chisel3] class ErrorLog {
 
   private val startTime = System.currentTimeMillis
   private def elapsedTime: Long = System.currentTimeMillis - startTime
+
+  def getErrorMsgs: Seq[String] = errors.map(_.message)
 }
 
 private abstract class LogEntry(msg: => String, line: Option[StackTraceElement]) {
   def isFatal: Boolean = false
   def format: String
+  def message: String = msg
 
   override def toString: String = line match {
     case Some(l) => s"${format} ${l.getFileName}:${l.getLineNumber}: ${msg} in class ${l.getClassName}"
