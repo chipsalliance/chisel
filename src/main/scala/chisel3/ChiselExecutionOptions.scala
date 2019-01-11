@@ -2,7 +2,9 @@
 
 package chisel3
 
-import firrtl.{ExecutionOptionsManager, ComposableOptions}
+import chisel3.stage.{NoRunFirrtlCompilerAnnotation, PrintFullStackTraceAnnotation}
+
+import firrtl.{AnnotationSeq, ExecutionOptionsManager, ComposableOptions}
 
 //TODO: provide support for running firrtl as separate process, could alternatively be controlled by external driver
 //TODO: provide option for not saving chirrtl file, instead calling firrtl with in memory chirrtl
@@ -16,7 +18,13 @@ case class ChiselExecutionOptions(
                                    runFirrtlCompiler: Boolean = true,
                                    printFullStackTrace: Boolean = false
                                    // var runFirrtlAsProcess: Boolean = false
-                                 ) extends ComposableOptions
+                                 ) extends ComposableOptions {
+
+  def toAnnotations: AnnotationSeq =
+    (if (!runFirrtlCompiler) { Seq(NoRunFirrtlCompilerAnnotation) } else { Seq() }) ++
+      (if (printFullStackTrace) { Some(PrintFullStackTraceAnnotation) } else { None })
+
+}
 
 trait HasChiselExecutionOptions {
   self: ExecutionOptionsManager =>
