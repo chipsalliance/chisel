@@ -67,6 +67,11 @@ class NamedModule extends NamedModuleTester {
     val myA = expectName(1.U + myNested, "test_myA")
     val myB = expectName(myA +& 2.U, "test_myB")
     val myC = expectName(myB +& 3.U, "test_myC")
+
+    val myD = Seq(myC +& 1.U, myC +& 2.U)
+    for ((d, i) <- myD.zipWithIndex)
+      expectName(d, s"test_myD_$i")
+
     myC +& 4.U  // named at enclosing scope
   }
 
