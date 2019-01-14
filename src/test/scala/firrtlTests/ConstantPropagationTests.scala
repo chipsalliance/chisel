@@ -734,6 +734,24 @@ class ConstantPropagationSingleModule extends ConstantPropagationSpec {
       """.stripMargin
     (parse(exec(input))) should be(parse(check))
   }
+
+  // Optimizing this mux gives: z <= pad(UInt<2>(0), 4)
+  // Thus this checks that we then optimize that pad
+  "ConstProp" should "optimize nested Expressions" in {
+    val input =
+      """circuit Top :
+        |  module Top :
+        |    output z : UInt<4>
+        |    z <= mux(UInt(1), UInt<2>(0), UInt<4>(0))
+      """.stripMargin
+    val check =
+      """circuit Top :
+        |  module Top :
+        |    output z : UInt<4>
+        |    z <= UInt<4>("h0")
+      """.stripMargin
+    (parse(exec(input))) should be(parse(check))
+  }
 }
 
 // More sophisticated tests of the full compiler
