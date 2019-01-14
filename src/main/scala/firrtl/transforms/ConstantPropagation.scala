@@ -67,7 +67,7 @@ class ConstantPropagation extends Transform with ResolvedAnnotationPaths {
   }
 
   object FoldADD extends FoldCommutativeOp {
-    def fold(c1: Literal, c2: Literal) = (c1, c2) match {
+    def fold(c1: Literal, c2: Literal) = ((c1, c2): @unchecked) match {
       case (_: UIntLiteral, _: UIntLiteral) => UIntLiteral(c1.value + c2.value, (c1.width max c2.width) + IntWidth(1))
       case (_: SIntLiteral, _: SIntLiteral) => SIntLiteral(c1.value + c2.value, (c1.width max c2.width) + IntWidth(1))
     }
