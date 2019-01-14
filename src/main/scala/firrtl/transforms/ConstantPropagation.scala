@@ -137,6 +137,13 @@ class ConstantPropagation extends Transform with ResolvedAnnotationPaths {
     }
   }
 
+  private def foldDynamicShiftLeft(e: DoPrim) = e.args.last match {
+    case UIntLiteral(v, IntWidth(w)) =>
+      val shl = DoPrim(Shl, Seq(e.args.head), Seq(v), UnknownType)
+      pad(PrimOps.set_primop_type(shl), e.tpe)
+    case _ => e
+  }
+
   private def foldShiftRight(e: DoPrim) = e.consts.head.toInt match {
     case 0 => e.args.head
     case x => e.args.head match {
@@ -147,6 +154,14 @@ class ConstantPropagation extends Transform with ResolvedAnnotationPaths {
       case _ => e
     }
   }
+
+  private def foldDynamicShiftRight(e: DoPrim) = e.args.last match {
+    case UIntLiteral(v, IntWidth(w)) =>
+      val shr = DoPrim(Shr, Seq(e.args.head), Seq(v), UnknownType)
+      pad(PrimOps.set_primop_type(shr), e.tpe)
+    case _ => e
+  }
+
 
   private def foldComparison(e: DoPrim) = {
     def foldIfZeroedArg(x: Expression): Expression = {
@@ -221,7 +236,9 @@ class ConstantPropagation extends Transform with ResolvedAnnotationPaths {
 
   private def constPropPrim(e: DoPrim): Expression = e.op match {
     case Shl => foldShiftLeft(e)
+    case Dshl => foldDynamicShiftLeft(e)
     case Shr => foldShiftRight(e)
+    case Dshr => foldDynamicShiftRight(e)
     case Cat => foldConcat(e)
     case Add => FoldADD(e)
     case And => FoldAND(e)

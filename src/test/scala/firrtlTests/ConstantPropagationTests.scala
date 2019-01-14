@@ -1122,6 +1122,77 @@ class ConstantPropagationIntegrationSpec extends LowTransformSpec {
         |    z <= _T_61""".stripMargin
     execute(input, check, Seq.empty)
   }
+
+  behavior of "ConstProp"
+
+  it should "optimize shl of constants" in {
+    val input =
+      """circuit Top :
+        |  module Top :
+        |    output z : UInt<7>
+        |    z <= shl(UInt(5), 4)
+      """.stripMargin
+    val check =
+      """circuit Top :
+        |  module Top :
+        |    output z : UInt<7>
+        |    z <= UInt<7>("h50")
+      """.stripMargin
+    execute(input, check, Seq.empty)
+  }
+
+  it should "optimize shr of constants" in {
+    val input =
+      """circuit Top :
+        |  module Top :
+        |    output z : UInt<1>
+        |    z <= shr(UInt(5), 2)
+      """.stripMargin
+    val check =
+      """circuit Top :
+        |  module Top :
+        |    output z : UInt<1>
+        |    z <= UInt<1>("h1")
+      """.stripMargin
+    execute(input, check, Seq.empty)
+  }
+
+  // Due to #866, we need dshl optimized away or it'll become a dshlw and error in parsing
+  // Include cat to verify width is correct
+  it should "optimize dshl of constant" in {
+    val input =
+      """circuit Top :
+        |  module Top :
+        |    output z : UInt<8>
+        |    node n = dshl(UInt<1>(0), UInt<2>(0))
+        |    z <= cat(UInt<4>("hf"), n)
+      """.stripMargin
+    val check =
+      """circuit Top :
+        |  module Top :
+        |    output z : UInt<8>
+        |    z <= UInt<8>("hf0")
+      """.stripMargin
+    execute(input, check, Seq.empty)
+  }
+
+  // Include cat and constants to verify width is correct
+  it should "optimize dshr of constant" in {
+    val input =
+      """circuit Top :
+        |  module Top :
+        |    output z : UInt<8>
+        |    node n = dshr(UInt<4>(0), UInt<2>(2))
+        |    z <= cat(UInt<4>("hf"), n)
+      """.stripMargin
+    val check =
+      """circuit Top :
+        |  module Top :
+        |    output z : UInt<8>
+        |    z <= UInt<8>("hf0")
+      """.stripMargin
+    execute(input, check, Seq.empty)
+  }
 }
 
 
