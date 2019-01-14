@@ -3,9 +3,13 @@
 package chisel3
 
 import firrtl._
+import firrtl.annotations.DeletedAnnotation
 import firrtl.options.OptionsView
+import firrtl.stage.FirrtlCircuitAnnotation
 
+import chisel3.internal.firrtl.{Circuit => ChiselCircuit}
 import chisel3.stage.ChiselOptions
+import chisel3.stage.phases.{Convert, Emitter}
 
 package object stage {
 
@@ -21,6 +25,35 @@ package object stage {
           case ChiselCircuitAnnotation(a)            => c.copy(chiselCircuit = Some(a))
         }
       }
+
+  }
+
+  private [chisel3] implicit object ChiselExecutionResultView extends OptionsView[ChiselExecutionResult] {
+
+    def view(options: AnnotationSeq): ChiselExecutionResult = {
+      var chiselCircuit: Option[ChiselCircuit] = None
+      var chirrtlCircuit: Option[String] = None
+
+      options.foreach {
+        case DeletedAnnotation(Convert.name, ChiselCircuitAnnotation(a)) => chiselCircuit = Some(a)
+        case DeletedAnnotation(Emitter.name, EmittedFirrtlCircuitAnnotation(EmittedFirrtlCircuit(_, a, _))) =>
+          chirrtlCircuit = Some(a)
+        case _ =>
+      }
+
+      val emittedRes = options
+        .collect{ case DeletedAnnotation(firrtl.stage.phases.WriteEmitted.name, a: EmittedAnnotation[_]) => a.value.value }
+        .mkString("\n")
+
+      val fResult = firrtl.stage.phases.DriverCompatibility.firrtlResultView(options)
+
+      (chiselCircuit, chirrtlCircuit) match {
+        case (None, _)          => ChiselExecutionFailure("Failed to elaborate Chisel circuit")
+        case (Some(_), None)    => ChiselExecutionFailure("Failed to convert Chisel circuit to FIRRTL")
+        case (Some(a), Some(b)) => ChiselExecutionSuccess( Some(a), b, Some(fResult))
+      }
+
+    }
 
   }
 
