@@ -28,6 +28,7 @@ class DriverSpec extends FreeSpec with Matchers {
           val exts = List("anno.json", "fir", "v")
           for (ext <- exts) {
             val dummyOutput = new File(targetDir, "DummyModule" + "." + ext)
+            info(s"${dummyOutput.toString} exists")
             dummyOutput.exists() should be(true)
             dummyOutput.delete()
           }
@@ -44,6 +45,7 @@ class DriverSpec extends FreeSpec with Matchers {
           val exts = List("anno.json", "fir", "v")
           for (ext <- exts) {
             val dummyOutput = new File(targetDir, "dm" + "." + ext)
+            info(s"${dummyOutput.toString} exists")
             dummyOutput.exists() should be(true)
             dummyOutput.delete()
           }
@@ -53,14 +55,21 @@ class DriverSpec extends FreeSpec with Matchers {
       }
 
     }
+
     "execute returns a chisel execution result" in {
       val targetDir = "test_run_dir"
       val args = Array("--compiler", "low", "--target-dir", targetDir)
+
+      info("Driver returned a ChiselExecutionSuccess")
       val result = Driver.execute(args, () => new DummyModule)
       result shouldBe a[ChiselExecutionSuccess]
+
+      info("emitted circuit included 'circuit DummyModule'")
       val successResult = result.asInstanceOf[ChiselExecutionSuccess]
       successResult.emitted should include ("circuit DummyModule")
+
       val dummyOutput = new File(targetDir, "DummyModule.lo.fir")
+      info(s"${dummyOutput.toString} exists")
       dummyOutput.exists() should be(true)
       dummyOutput.delete()
     }
