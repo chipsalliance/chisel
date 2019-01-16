@@ -455,7 +455,7 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
   override def toString: String = {
     val bindingString = topBindingOpt match {
       case Some(BundleLitBinding(_)) =>
-        val contents = elements.map { case (name, data) =>
+        val contents = elements.toList.reverse.map { case (name, data) =>
           s"$name=$data"
         }.mkString(", ")
         s"($contents)"
@@ -559,8 +559,6 @@ class AutoClonetypeException(message: String) extends ChiselException(message)
   * }}}
   */
 abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
-  override def className = "Bundle"
-
   /** The collection of [[Data]]
     *
     * Elements defined earlier in the Bundle are higher order upon

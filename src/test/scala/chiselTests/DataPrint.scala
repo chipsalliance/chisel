@@ -12,6 +12,26 @@ class DataPrintSpec extends ChiselFlatSpec with Matchers {
     val sNone, sOne, sTwo = Value
   }
 
+  // TODO: dedup w/ BundleLiteralSpec
+  class BundleTest extends Bundle {
+    val a = UInt(8.W)
+    val b = Bool()
+
+    // Bundle literal constructor code, which will be auto-generated using macro annotations in
+    // the future.
+    import chisel3.core.BundleLitBinding
+    import chisel3.internal.firrtl.{ULit, Width}
+    // Full bundle literal constructor
+    def Lit(aVal: UInt, bVal: Bool): BundleTest = {
+      val clone = cloneType
+      clone.selfBind(BundleLitBinding(Map(
+        clone.a -> litArgOfBits(aVal),
+        clone.b -> litArgOfBits(bVal)
+      )))
+      clone
+    }
+  }
+
   "Data types" should "have a meaningful string representation" in {
     elaborate { new RawModule {
       UInt().toString should be ("UInt")
@@ -20,17 +40,21 @@ class DataPrintSpec extends ChiselFlatSpec with Matchers {
       Bool().toString should be ("Bool")
       Clock().toString should be ("Clock")
       FixedPoint(5.W, 3.BP).toString should be ("FixedPoint<5><<3>>")
-      EnumTest.Type.toString should be ("EnumTest")
+      Vec(3, UInt(2.W)).toString should be ("Vec<3, UInt<2>>")
+      EnumTest.Type().toString should be ("chiselTests.DataPrintSpec$EnumTest")
+      (new BundleTest).toString should be ("BundleTest")
     } }
   }
 
-  class BoundDataModule extends MultiIOModule {
+  class BoundDataModule extends MultiIOModule {  // not in the test to avoid anon naming suffixes
     Wire(UInt()).toString should be("UInt(Wire in DataPrintSpec$BoundDataModule)")
     Reg(SInt()).toString should be("SInt(Reg in DataPrintSpec$BoundDataModule)")
-    IO(Bool()).toString should be("Bool(IO in DataPrintSpec$BoundDataModule)")
+    val io = IO(Bool())  // needs a name so elaboration doesn't fail
+    io.toString should be("Bool(IO in DataPrintSpec$BoundDataModule)")
     val m = Mem(4, UInt(2.W))
     m(2).toString should be("UInt<2>(MemPort in DataPrintSpec$BoundDataModule)")
-    (2.U + 2.U) should be("UInt<2>(OpResult in DataPrintSpec$BoundDataModule)")
+    (2.U + 2.U).toString should be("UInt<2>(OpResult in DataPrintSpec$BoundDataModule)")
+    Wire(Vec(3, UInt(2.W))).toString should be ("Vec<3, UInt<2>>(Wire in DataPrintSpec$BoundDataModule)")
   }
 
   "Bound data types" should "have a meaningful string representation" in {
@@ -49,6 +73,7 @@ class DataPrintSpec extends ChiselFlatSpec with Matchers {
       EnumTest.sNone.toString should be ("chiselTests.DataPrintSpec$EnumTest(0=sNone)")
       EnumTest.sTwo.toString should be ("chiselTests.DataPrintSpec$EnumTest(2=sTwo)")
       EnumTest(1.U).toString should be ("chiselTests.DataPrintSpec$EnumTest(1=sOne)")
+      (new BundleTest).Lit(2.U, false.B).toString should be ("BundleTest(a=UInt<8>(2), b=Bool(false))")
     } }
   }
 }
