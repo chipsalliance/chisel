@@ -96,21 +96,38 @@ sealed trait ReadOnlyBinding extends TopBinding
 
 // TODO(twigg): Ops between unenclosed nodes can also be unenclosed
 // However, Chisel currently binds all op results to a module
-case class OpBinding(enclosure: UserModule) extends ConstrainedBinding with ReadOnlyBinding
-case class MemoryPortBinding(enclosure: UserModule) extends ConstrainedBinding
-case class PortBinding(enclosure: BaseModule) extends ConstrainedBinding
-case class RegBinding(enclosure: UserModule) extends ConstrainedBinding
-case class WireBinding(enclosure: UserModule) extends ConstrainedBinding
+case class OpBinding(enclosure: UserModule) extends ConstrainedBinding with ReadOnlyBinding {
+  override def toString: String = s"OpResult@$enclosure"
+}
+case class MemoryPortBinding(enclosure: UserModule) extends ConstrainedBinding {
+  override def toString: String = s"MemoryPort@$enclosure"
+}
+case class PortBinding(enclosure: BaseModule) extends ConstrainedBinding {
+  override def toString: String = s"IO@$enclosure"
+}
+case class RegBinding(enclosure: UserModule) extends ConstrainedBinding {
+  override def toString: String = s"Reg@$enclosure"
+}
+case class WireBinding(enclosure: UserModule) extends ConstrainedBinding {
+  override def toString: String = s"Wire@$enclosure"
+}
 
 case class ChildBinding(parent: Data) extends Binding {
   def location = parent.topBinding.location
+  override def toString: String = s"Child"
 }
 // A DontCare element has a specific Binding, somewhat like a literal.
 // It is a source (RHS). It may only be connected/applied to sinks.
-case class DontCareBinding() extends UnconstrainedBinding
+case class DontCareBinding() extends UnconstrainedBinding {
+  override def toString: String = s"DontCare"
+}
 
 sealed trait LitBinding extends UnconstrainedBinding with ReadOnlyBinding
 // Literal binding attached to a element that is not part of a Bundle.
-case class ElementLitBinding(litArg: LitArg) extends LitBinding
+case class ElementLitBinding(litArg: LitArg) extends LitBinding {
+  override def toString: String = s"Literal(${litArg.num})"
+}
 // Literal binding attached to the root of a Bundle, containing literal values of its children.
-case class BundleLitBinding(litMap: Map[Data, LitArg]) extends LitBinding
+case class BundleLitBinding(litMap: Map[Data, LitArg]) extends LitBinding {
+  override def toString: String = s"BundleLiteral"
+}

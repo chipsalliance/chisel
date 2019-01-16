@@ -289,6 +289,21 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     _direction = Some(actualDirection)
   }
 
+  // User-friendly representation of the binding as a helper function for toString.
+  // Provides a unhelpful fallback for literals, which should have custom rendering per
+  // Data-subtype.
+  protected def bindingToString: String = topBindingOpt match {
+    case None => ""
+    case Some(OpBinding(enclosure)) => s"(OpResult in $enclosure)"
+    case Some(MemoryPortBinding(enclosure)) => s"(MemPort in $enclosure)"
+    case Some(PortBinding(enclosure)) => s"(IO in $enclosure)"
+    case Some(RegBinding(enclosure)) => s"(Reg in $enclosure)"
+    case Some(WireBinding(enclosure)) => s"(Wire in $enclosure)"
+    case Some(DontCareBinding()) => s"(DontCare)"
+    case Some(ElementLitBinding(litArg)) => s"(unhandled literal)"
+    case Some(BundleLitBinding(litMap)) => s"(unhandled bundle literal)"
+  }
+
   // Return ALL elements at root of this type.
   // Contasts with flatten, which returns just Bits
   // TODO: refactor away this, this is outside the scope of Data
@@ -642,6 +657,8 @@ object DontCare extends Element {
 
   bind(DontCareBinding(), SpecifiedDirection.Output)
   override def cloneType = DontCare
+
+  override def toString: String = "DontCare"
 
   override def litOption = None
 

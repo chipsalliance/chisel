@@ -150,6 +150,10 @@ object Vec extends VecFactory
   */
 sealed class Vec[T <: Data] private[core] (gen: => T, val length: Int)
     extends Aggregate with VecLike[T] {
+  override def toString: String = {
+    s"Vec<$length, $sample_element>$bindingString"
+  }
+
   private[core] override def typeEquivalent(that: Data): Boolean = that match {
     case that: Vec[T] =>
       this.length == that.length &&
@@ -448,6 +452,18 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     *   assert(uint === "hbeefdead".U) // This will pass
     * }}}
     */
+  override def toString: String = {
+    val bindingString = topBindingOpt match {
+      case Some(BundleLitBinding(_)) =>
+        val contents = elements.map { case (name, data) =>
+          s"$name=$data"
+        }.mkString(", ")
+        s"($contents)"
+      case _ => bundleToString
+    }
+    s"$className$bindingString"
+  }
+
   val elements: ListMap[String, Data]
 
   /** Name for Pretty Printing */
