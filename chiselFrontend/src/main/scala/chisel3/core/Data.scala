@@ -294,11 +294,11 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   // Data-subtype.
   protected def bindingToString: String = topBindingOpt match {
     case None => ""
-    case Some(OpBinding(enclosure)) => s"(OpResult in $enclosure)"
-    case Some(MemoryPortBinding(enclosure)) => s"(MemPort in $enclosure)"
-    case Some(PortBinding(enclosure)) => s"(IO in $enclosure)"
-    case Some(RegBinding(enclosure)) => s"(Reg in $enclosure)"
-    case Some(WireBinding(enclosure)) => s"(Wire in $enclosure)"
+    case Some(OpBinding(enclosure)) => s"(OpResult in ${enclosure.desiredName})"
+    case Some(MemoryPortBinding(enclosure)) => s"(MemPort in ${enclosure.desiredName})"
+    case Some(PortBinding(enclosure)) => s"(IO in ${enclosure.desiredName})"
+    case Some(RegBinding(enclosure)) => s"(Reg in ${enclosure.desiredName})"
+    case Some(WireBinding(enclosure)) => s"(Wire in ${enclosure.desiredName})"
     case Some(DontCareBinding()) => s"(DontCare)"
     case Some(ElementLitBinding(litArg)) => s"(unhandled literal)"
     case Some(BundleLitBinding(litMap)) => s"(unhandled bundle literal)"

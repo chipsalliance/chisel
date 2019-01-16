@@ -151,7 +151,7 @@ object Vec extends VecFactory
 sealed class Vec[T <: Data] private[core] (gen: => T, val length: Int)
     extends Aggregate with VecLike[T] {
   override def toString: String = {
-    s"Vec<$length, $sample_element>$bindingString"
+    s"Vec<$length, $sample_element>$bindingToString"
   }
 
   private[core] override def typeEquivalent(that: Data): Boolean = that match {
@@ -459,7 +459,7 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
           s"$name=$data"
         }.mkString(", ")
         s"($contents)"
-      case _ => bundleToString
+      case _ => bindingToString
     }
     s"$className$bindingString"
   }

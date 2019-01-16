@@ -2,16 +2,53 @@
 
 package chiselTests
 
-import chisel3._
-import chisel3.testers.BasicTester
-import chisel3.experimental.RawModule
+import org.scalatest._
 
-class DataPrintSpec extends ChiselFlatSpec {
+import chisel3._
+import chisel3.experimental.{ChiselEnum, FixedPoint, RawModule, MultiIOModule}
+
+class DataPrintSpec extends ChiselFlatSpec with Matchers {
+  object EnumTest extends ChiselEnum {
+    val sNone, sOne, sTwo = Value
+  }
+
   "Data types" should "have a meaningful string representation" in {
-    elaborate {
-      new RawModule {
-        println(UInt(8.W))
-      }
-    }
+    elaborate { new RawModule {
+      UInt().toString should be ("UInt")
+      UInt(8.W).toString should be ("UInt<8>")
+      SInt(15.W).toString should be ("SInt<15>")
+      Bool().toString should be ("Bool")
+      Clock().toString should be ("Clock")
+      FixedPoint(5.W, 3.BP).toString should be ("FixedPoint<5><<3>>")
+      EnumTest.Type.toString should be ("EnumTest")
+    } }
+  }
+
+  class BoundDataModule extends MultiIOModule {
+    Wire(UInt()).toString should be("UInt(Wire in DataPrintSpec$BoundDataModule)")
+    Reg(SInt()).toString should be("SInt(Reg in DataPrintSpec$BoundDataModule)")
+    IO(Bool()).toString should be("Bool(IO in DataPrintSpec$BoundDataModule)")
+    val m = Mem(4, UInt(2.W))
+    m(2).toString should be("UInt<2>(MemPort in DataPrintSpec$BoundDataModule)")
+    (2.U + 2.U) should be("UInt<2>(OpResult in DataPrintSpec$BoundDataModule)")
+  }
+
+  "Bound data types" should "have a meaningful string representation" in {
+    elaborate { new BoundDataModule }
+  }
+
+  "Literals" should "have a meaningful string representation" in {
+    elaborate { new RawModule {
+      3.U.toString should be ("UInt<2>(3)")
+      3.U(5.W).toString should be ("UInt<5>(3)")
+      -1.S.toString should be ("SInt<1>(-1)")
+      false.B.toString should be ("Bool(false)")
+      true.B.toString should be ("Bool(true)")
+      2.25.F(6.W, 2.BP).toString should be ("FixedPoint<6><<2>>(2.25)")
+      -2.25.F(6.W, 2.BP).toString should be ("FixedPoint<6><<2>>(-2.25)")
+      EnumTest.sNone.toString should be ("chiselTests.DataPrintSpec$EnumTest(0=sNone)")
+      EnumTest.sTwo.toString should be ("chiselTests.DataPrintSpec$EnumTest(2=sTwo)")
+      EnumTest(1.U).toString should be ("chiselTests.DataPrintSpec$EnumTest(1=sOne)")
+    } }
   }
 }

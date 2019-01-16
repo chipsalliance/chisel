@@ -1223,7 +1223,7 @@ sealed trait Reset extends Element with ToBoolable
 sealed class Bool() extends UInt(1.W) with Reset {
   override def toString: String = {
     val bindingString = litToBooleanOption match {
-      case Some(value) => s"(value)"
+      case Some(value) => s"($value)"
       case _ => bindingToString
     }
     s"Bool$bindingString"
@@ -1352,7 +1352,7 @@ sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint)
     extends Bits(width) with Num[FixedPoint] {
   override def toString: String = {
     val bindingString = litToDoubleOption match {
-      case Some(value) => s"(value)"
+      case Some(value) => s"($value)"
       case _ => bindingToString
     }
     s"FixedPoint$width$binaryPoint$bindingString"
