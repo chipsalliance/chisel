@@ -658,7 +658,7 @@ object DontCare extends Element {
   bind(DontCareBinding(), SpecifiedDirection.Output)
   override def cloneType = DontCare
 
-  override def toString: String = "DontCare"
+  override def toString: String = "DontCare()"
 
   override def litOption = None
 
