@@ -528,9 +528,60 @@ trait WireFactory {
   */
 object Wire extends WireFactory
 
+object WireInit {
+
+  private def applyImpl[T <: Data](t: T, init: Data)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    implicit val noSourceInfo = UnlocatableSourceInfo
+    val x = Wire(t)
+    requireIsHardware(init, "wire initializer")
+    x := init
+    x
+  }
+
+  /** @usecase def apply[T <: Data](t: T, init: DontCare.type): T
+    *   Construct a [[Wire]] with a type template and a [[DontCare]] default
+    *   @param t The type template used to construct this [[Wire]]
+    *   @param init The default connection to this [[Wire]], can only be [[DontCare]]
+    *   @note This is really just a specialized form of `apply[T <: Data](t: T, init: T): T` with [[DontCare]]
+    *   as `init`
+    */
+
+  @chiselRuntimeDeprecated
+  @deprecated("WireInit is deprecated, use WireDefault", "chisel3.2")
+  def apply[T <: Data](t: T, init: DontCare.type)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    applyImpl(t, init)
+  }
+
+  /** @usecase def apply[T <: Data](t: T, init: T): T
+    *   Construct a [[Wire]] with a type template and a default connection
+    *   @param t The type template used to construct this [[Wire]]
+    *   @param init The hardware value that will serve as the default value
+    */
+  @chiselRuntimeDeprecated
+  @deprecated("WireInit is deprecated, use WireDefault", "chisel3.2")
+  def apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    applyImpl(t, init)
+  }
+
+  /** @usecase def apply[T <: Data](init: T): T
+    *   Construct a [[Wire]] with a default connection
+    *   @param init The hardware value that will serve as a type template and default value
+    */
+  @chiselRuntimeDeprecated
+  @deprecated("WireInit is deprecated, use WireDefault", "chisel3.2")
+  def apply[T <: Data](init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    val model = (init match {
+      // If init is a literal without forced width OR any non-literal, let width be inferred
+      case init: Bits if !init.litIsForcedWidth.getOrElse(false) => init.cloneTypeWidth(Width())
+      case _ => init.cloneTypeFull
+    }).asInstanceOf[T]
+    apply(model, init)
+  }
+}
+
 /** Utility for constructing hardware wires with a default connection
   *
-  * The two forms of `WireInit` differ in how the type and width of the resulting [[Wire]] are
+  * The two forms of `WireDefault` differ in how the type and width of the resulting [[Wire]] are
   * specified.
   *
   * ==Single Argument==
@@ -541,16 +592,16 @@ object Wire extends WireFactory
   *
   * 1. Literal [[Bits]] initializer: width will be set to match
   * {{{
-  * val w1 = WireInit(1.U) // width will be inferred to be 1
-  * val w2 = WireInit(1.U(8.W)) // width is set to 8
+  * val w1 = WireDefault(1.U) // width will be inferred to be 1
+  * val w2 = WireDefault(1.U(8.W)) // width is set to 8
   * }}}
   *
   * 2. Non-Literal [[Element]] initializer - width will be inferred
   * {{{
   * val x = Wire(UInt())
   * val y = Wire(UInt(8.W))
-  * val w1 = WireInit(x) // width will be inferred
-  * val w2 = WireInit(y) // width will be inferred
+  * val w1 = WireDefault(x) // width will be inferred
+  * val w2 = WireDefault(y) // width will be inferred
   * }}}
   *
   * 3. [[Aggregate]] initializer - width will be set to match the aggregate
@@ -561,7 +612,7 @@ object Wire extends WireFactory
   *   val known   = UInt(8.W)
   * }
   * val w1 = Wire(new MyBundle)
-  * val w2 = WireInit(w1)
+  * val w2 = WireDefault(w1)
   * // Width of w2.unknown is inferred
   * // Width of w2.known is set to 8
   * }}}
@@ -570,24 +621,24 @@ object Wire extends WireFactory
   * The double argument form allows the type of the [[Wire]] and the default connection to be
   * specified independently.
   *
-  * The width inference semantics for `WireInit` with two arguments match those of [[Wire]]. The
-  * first argument to `WireInit` is the type template which defines the width of the `Wire` in
+  * The width inference semantics for `WireDefault` with two arguments match those of [[Wire]]. The
+  * first argument to `WireDefault` is the type template which defines the width of the `Wire` in
   * exactly the same way as the only argument to [[Wire]].
   *
-  * More explicitly, you can reason about `WireInit` with multiple arguments as if it were defined
+  * More explicitly, you can reason about `WireDefault` with multiple arguments as if it were defined
   * as:
   * {{{
-  * def WireInit[T <: Data](t: T, init: T): T = {
+  * def WireDefault[T <: Data](t: T, init: T): T = {
   *   val x = Wire(t)
   *   x := init
   *   x
   * }
   * }}}
   *
-  * @note The `Init` in `WireInit` refers to a `default` connection. This is in contrast to
+  * @note The `Default` in `WireDefault` refers to a `default` connection. This is in contrast to
   * [[RegInit]] where the `Init` refers to a value on reset.
   */
-object WireInit {
+object WireDefault {
 
   private def applyImpl[T <: Data](t: T, init: Data)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     implicit val noSourceInfo = UnlocatableSourceInfo
@@ -658,3 +709,4 @@ object DontCare extends Element {
   // DontCare's only match themselves.
   private[core] def typeEquivalent(that: chisel3.core.Data): Boolean = that == DontCare
 }
+

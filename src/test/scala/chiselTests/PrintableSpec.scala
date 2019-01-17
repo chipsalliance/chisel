@@ -65,7 +65,7 @@ class PrintableSpec extends FlatSpec with Matchers {
   }
   it should "generate proper printf for simple Decimal printing" in {
     class MyModule extends BasicTester {
-      val myWire = WireInit(1234.U)
+      val myWire = WireDefault(1234.U)
       printf(p"myWire = ${Decimal(myWire)}")
     }
     val firrtl = Driver.emit(() => new MyModule)
@@ -142,8 +142,8 @@ class PrintableSpec extends FlatSpec with Matchers {
   }
   it should "print UInts and SInts as Decimal by default" in {
     class MyModule extends BasicTester {
-      val myUInt = WireInit(0.U)
-      val mySInt = WireInit(-1.S)
+      val myUInt = WireDefault(0.U)
+      val mySInt = WireDefault(-1.S)
       printf(p"$myUInt & $mySInt")
     }
     val firrtl = Driver.emit(() => new MyModule)

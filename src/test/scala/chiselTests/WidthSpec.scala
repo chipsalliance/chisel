@@ -78,7 +78,7 @@ class RegWidthSpec extends WireRegWidthSpecImpl {
   def builder[T <: Data](x: T): T = Reg(x)
 }
 
-abstract class WireInitRegInitSpecImpl extends ChiselFlatSpec {
+abstract class WireDefaultRegInitSpecImpl extends ChiselFlatSpec {
   def name: String
   def builder1[T <: Data](x: T): T
   def builder2[T <: Data](x: T, y: T): T
@@ -101,7 +101,7 @@ abstract class WireInitRegInitSpecImpl extends ChiselFlatSpec {
 
   it should "NOT set width if passed a non-literal" in {
     assertInferredWidth(4) {
-      val w = WireInit(3.U(4.W))
+      val w = WireDefault(3.U(4.W))
       builder1(w)
     }
   }
@@ -133,54 +133,54 @@ abstract class WireInitRegInitSpecImpl extends ChiselFlatSpec {
 
   it should "set the width if the template type has a set width" in {
     assertKnownWidth(4) {
-      WireInit(UInt(4.W), 0.U)
+      WireDefault(UInt(4.W), 0.U)
     }
     assertKnownWidth(4) {
-      WireInit(UInt(4.W), 0.U(2.W))
+      WireDefault(UInt(4.W), 0.U(2.W))
     }
     assertKnownWidth(4) {
-      val w = WireInit(new SimpleBundle, SimpleBundle.intoWire())
+      val w = WireDefault(new SimpleBundle, SimpleBundle.intoWire())
       w.x
     }
     assertKnownWidth(4) {
       val x = Wire(Vec(1, UInt()))
       x(0) := 0.U(4.W)
-      val w = WireInit(Vec(1, UInt(4.W)), x)
+      val w = WireDefault(Vec(1, UInt(4.W)), x)
       w(0)
     }
   }
 
   it should "infer the width if the template type has no width" in {
     val templates = Seq(
-      () => 0.U, () => 0.U(2.W), () => WireInit(0.U), () => WireInit(0.U(2.W))
+      () => 0.U, () => 0.U(2.W), () => WireDefault(0.U), () => WireDefault(0.U(2.W))
     )
     for (gen <- templates) {
       assertInferredWidth(4) {
-        val w = WireInit(UInt(), gen())
+        val w = WireDefault(UInt(), gen())
         w := 0.U(4.W)
         w
       }
     }
     assertInferredWidth(4) {
-      val w = WireInit(new SimpleBundle, SimpleBundle.intoWire())
+      val w = WireDefault(new SimpleBundle, SimpleBundle.intoWire())
       w.y
     }
     assertInferredWidth(4) {
       val x = Wire(Vec(1, UInt()))
       x(0) := 0.U(4.W)
-      val w = WireInit(Vec(1, UInt()), x)
+      val w = WireDefault(Vec(1, UInt()), x)
       w(0)
     }
   }
 }
 
-class WireInitWidthSpec extends WireInitRegInitSpecImpl {
-  def name = "WireInit"
-  def builder1[T <: Data](x: T): T = WireInit(x)
-  def builder2[T <: Data](x: T, y: T): T = WireInit(x, y)
+class WireDefaultWidthSpec extends WireDefaultRegInitSpecImpl {
+  def name = "WireDefault"
+  def builder1[T <: Data](x: T): T = WireDefault(x)
+  def builder2[T <: Data](x: T, y: T): T = WireDefault(x, y)
 }
 
-class RegInitWidthSpec extends WireInitRegInitSpecImpl {
+class RegInitWidthSpec extends WireDefaultRegInitSpecImpl {
   def name = "RegInit"
   def builder1[T <: Data](x: T): T = RegInit(x)
   def builder2[T <: Data](x: T, y: T): T = RegInit(x, y)
