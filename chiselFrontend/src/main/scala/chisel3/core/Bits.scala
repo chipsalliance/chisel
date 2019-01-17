@@ -384,10 +384,10 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
   def do_asBools(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Seq[Bool] =
     Seq.tabulate(this.getWidth)(i => this(i))
 
-  /** Reinterpret this $coll as a [[SInt]]
+  /** Reinterpret this $coll as an [[SInt]]
     *
-    * @note The value is not guaranteed to be preserved. For example, a [[UInt]] of width 3 and value 7 (0b111) would
-    * become a [[SInt]] with value -1.
+    * @note The arithmetic value is not preserved if the most-significant bit is set. For example, a [[UInt]] of
+    * width 3 and value 7 (0b111) would become an [[SInt]] of width 3 and value -1.
     */
   final def asSInt(): SInt = macro SourceInfoTransform.noArg
 
