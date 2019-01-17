@@ -852,7 +852,7 @@ sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt
 
   /** Unary not
     *
-    * @return a hardware [[Bool]] asserted if the least significant bit of this $coll is zero
+    * @return a hardware [[Bool]] asserted if this $coll equals zero
     * @group Bitwise
     */
   final def unary_! () : Bool = macro SourceInfoTransform.noArg
