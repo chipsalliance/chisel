@@ -323,7 +323,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     *
     * @param that a hardware component
     * @return this $coll dynamically shifted left by `that` many places, shifting in zeros from the right
-    * @note The width of the returned $coll is `width of this + pow(2, width of that)`.
+    * @note The width of the returned $coll is `width of this + pow(2, width of that) - 1`.
     * @group Bitwise
     */
   final def << (that: UInt): Bits = macro SourceInfoWhiteboxTransform.thatArg
