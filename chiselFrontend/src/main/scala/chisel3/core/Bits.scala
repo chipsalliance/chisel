@@ -655,7 +655,7 @@ sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt
   /** Unary negation (expanding width)
     *
     * @return a $coll equal to zero minus this $coll
-    * $expandingWidth
+    * $constantWidth
     * @group Arithmetic
     */
   final def unary_- (): UInt = macro SourceInfoTransform.noArg
@@ -969,7 +969,7 @@ sealed class SInt private[core] (width: Width) extends Bits(width) with Num[SInt
   /** Unary negation (expanding width)
     *
     * @return a hardware $coll equal to zero minus this $coll
-    * $expandingWidth
+    * $constantWidth
     * @group Arithmetic
     */
   final def unary_- (): SInt = macro SourceInfoTransform.noArg
