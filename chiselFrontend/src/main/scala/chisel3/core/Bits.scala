@@ -475,9 +475,9 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
   * @define coll numeric-like type
   * @define numType hardware type
   * @define canHaveHighCost can result in significant cycle time and area costs
-  * @define canGenerateA This method can generate a
-  * @define singleCycleMul  @note $canGenerateA single-cycle multiplier which $canHaveHighCost.
-  * @define singleCycleDiv  @note $canGenerateA single-cycle divider which $canHaveHighCost.
+  * @define canGenerateA This method generates a
+  * @define singleCycleMul  @note $canGenerateA fully combinational multiplier which $canHaveHighCost.
+  * @define singleCycleDiv  @note $canGenerateA fully combinational divider which $canHaveHighCost.
   * @define maxWidth        @note The width of the returned $numType is `max(width of this, width of that)`.
   * @define maxWidthPlusOne @note The width of the returned $numType is `max(width of this, width of that) + 1`.
   * @define sumWidth        @note The width of the returned $numType is `width of this` + `width of that`.
