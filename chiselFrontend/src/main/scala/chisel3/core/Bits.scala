@@ -812,7 +812,11 @@ sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt
   /** @group SourceInfoTransformMacro */
   def do_orR(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = this =/= 0.U
   /** @group SourceInfoTransformMacro */
-  def do_andR(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = ~this === 0.U
+  def do_andR(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = width match {
+    // Generate a simpler expression if the width is known
+    case KnownWidth(w) => this === ((BigInt(1) << w) - 1).U
+    case UnknownWidth() =>  ~this === 0.U
+  }
   /** @group SourceInfoTransformMacro */
   def do_xorR(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = redop(sourceInfo, XorReduceOp)
 
