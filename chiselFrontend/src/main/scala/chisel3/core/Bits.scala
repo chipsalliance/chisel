@@ -323,7 +323,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     *
     * @param that a hardware component
     * @return this $coll dynamically shifted left by `that` many places, shifting in zeros from the right
-    * @note The width of the returned $coll is `width of this + pow(2, width of that)`.
+    * @note The width of the returned $coll is `width of this + pow(2, width of that) - 1`.
     * @group Bitwise
     */
   final def << (that: UInt): Bits = macro SourceInfoWhiteboxTransform.thatArg
@@ -384,10 +384,10 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
   def do_asBools(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Seq[Bool] =
     Seq.tabulate(this.getWidth)(i => this(i))
 
-  /** Reinterpret this $coll as a [[SInt]]
+  /** Reinterpret this $coll as an [[SInt]]
     *
-    * @note The value is not guaranteed to be preserved. For example, a [[UInt]] of width 3 and value 7 (0b111) would
-    * become a [[SInt]] with value -1.
+    * @note The arithmetic value is not preserved if the most-significant bit is set. For example, a [[UInt]] of
+    * width 3 and value 7 (0b111) would become an [[SInt]] of width 3 and value -1.
     */
   final def asSInt(): SInt = macro SourceInfoTransform.noArg
 
@@ -475,9 +475,9 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
   * @define coll numeric-like type
   * @define numType hardware type
   * @define canHaveHighCost can result in significant cycle time and area costs
-  * @define canGenerateA This method can generate a
-  * @define singleCycleMul  @note $canGenerateA single-cycle multiplier which $canHaveHighCost.
-  * @define singleCycleDiv  @note $canGenerateA single-cycle divider which $canHaveHighCost.
+  * @define canGenerateA This method generates a
+  * @define singleCycleMul  @note $canGenerateA fully combinational multiplier which $canHaveHighCost.
+  * @define singleCycleDiv  @note $canGenerateA fully combinational divider which $canHaveHighCost.
   * @define maxWidth        @note The width of the returned $numType is `max(width of this, width of that)`.
   * @define maxWidthPlusOne @note The width of the returned $numType is `max(width of this, width of that) + 1`.
   * @define sumWidth        @note The width of the returned $numType is `width of this` + `width of that`.
@@ -655,7 +655,7 @@ sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt
   /** Unary negation (expanding width)
     *
     * @return a $coll equal to zero minus this $coll
-    * $expandingWidth
+    * $constantWidth
     * @group Arithmetic
     */
   final def unary_- (): UInt = macro SourceInfoTransform.noArg
@@ -852,7 +852,7 @@ sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt
 
   /** Unary not
     *
-    * @return a hardware [[Bool]] asserted if the least significant bit of this $coll is zero
+    * @return a hardware [[Bool]] asserted if this $coll equals zero
     * @group Bitwise
     */
   final def unary_! () : Bool = macro SourceInfoTransform.noArg
@@ -969,7 +969,7 @@ sealed class SInt private[core] (width: Width) extends Bits(width) with Num[SInt
   /** Unary negation (expanding width)
     *
     * @return a hardware $coll equal to zero minus this $coll
-    * $expandingWidth
+    * $constantWidth
     * @group Arithmetic
     */
   final def unary_- (): SInt = macro SourceInfoTransform.noArg
