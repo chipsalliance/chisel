@@ -2,8 +2,6 @@
 
 enablePlugins(SiteScaladocPlugin)
 
-enablePlugins(GhpagesPlugin)
-
 def scalacOptionsVersion(scalaVersion: String): Seq[String] = {
   Seq() ++ {
     // If we're building with Scala > 2.11, enable the compile option
@@ -39,7 +37,6 @@ lazy val commonSettings = Seq (
   ),
   organization := "edu.berkeley.cs",
   version := "3.2-SNAPSHOT",
-  git.remoteRepo := "git@github.com:freechipsproject/chisel3.git",
   autoAPIMappings := true,
   scalaVersion := "2.12.6",
   crossScalaVersions := Seq("2.12.6", "2.11.12"),
