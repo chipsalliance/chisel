@@ -41,7 +41,7 @@ class DataPrintSpec extends ChiselFlatSpec with Matchers {
       Clock().toString should be ("Clock")
       FixedPoint(5.W, 3.BP).toString should be ("FixedPoint<5><<3>>")
       Vec(3, UInt(2.W)).toString should be ("UInt<2>[3]")
-      EnumTest.Type().toString should be ("chiselTests.DataPrintSpec$EnumTest")
+      EnumTest.Type().toString should be ("EnumTest")
       (new BundleTest).toString should be ("BundleTest")
     } }
   }
@@ -80,9 +80,9 @@ class DataPrintSpec extends ChiselFlatSpec with Matchers {
       true.B.toString should be ("Bool(true)")
       2.25.F(6.W, 2.BP).toString should be ("FixedPoint<6><<2>>(2.25)")
       -2.25.F(6.W, 2.BP).toString should be ("FixedPoint<6><<2>>(-2.25)")
-      EnumTest.sNone.toString should be ("chiselTests.DataPrintSpec$EnumTest(0=sNone)")
-      EnumTest.sTwo.toString should be ("chiselTests.DataPrintSpec$EnumTest(2=sTwo)")
-      EnumTest(1.U).toString should be ("chiselTests.DataPrintSpec$EnumTest(1=sOne)")
+      EnumTest.sNone.toString should be ("EnumTest(0=sNone)")
+      EnumTest.sTwo.toString should be ("EnumTest(2=sTwo)")
+      EnumTest(1.U).toString should be ("EnumTest(1=sOne)")
       (new BundleTest).Lit(2.U, false.B).toString should be ("BundleTest(a=UInt<8>(2), b=Bool(false))")
 
       DontCare.toString should be ("DontCare()")
