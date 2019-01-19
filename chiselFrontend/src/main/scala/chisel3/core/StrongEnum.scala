@@ -37,7 +37,7 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
     val bindingString = litOption match {
       case Some(value) => factory.nameOfValue(value) match {
         case Some(name) => s"($value=$name)"
-        case None => s"($value)"
+        case None => s"($value=(invalid))"
       }
       case _ => bindingToString
     }

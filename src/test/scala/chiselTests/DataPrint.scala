@@ -40,7 +40,7 @@ class DataPrintSpec extends ChiselFlatSpec with Matchers {
       Bool().toString should be ("Bool")
       Clock().toString should be ("Clock")
       FixedPoint(5.W, 3.BP).toString should be ("FixedPoint<5><<3>>")
-      Vec(3, UInt(2.W)).toString should be ("Vec<3, UInt<2>>")
+      Vec(3, UInt(2.W)).toString should be ("UInt<2>[3]")
       EnumTest.Type().toString should be ("chiselTests.DataPrintSpec$EnumTest")
       (new BundleTest).toString should be ("BundleTest")
     } }
@@ -49,12 +49,22 @@ class DataPrintSpec extends ChiselFlatSpec with Matchers {
   class BoundDataModule extends MultiIOModule {  // not in the test to avoid anon naming suffixes
     Wire(UInt()).toString should be("UInt(Wire in DataPrintSpec$BoundDataModule)")
     Reg(SInt()).toString should be("SInt(Reg in DataPrintSpec$BoundDataModule)")
-    val io = IO(Bool())  // needs a name so elaboration doesn't fail
-    io.toString should be("Bool(IO in DataPrintSpec$BoundDataModule)")
+    val io = IO(Output(Bool()))  // needs a name so elaboration doesn't fail
+    io.toString should be("Bool(IO in unelaborated DataPrintSpec$BoundDataModule)")
     val m = Mem(4, UInt(2.W))
     m(2).toString should be("UInt<2>(MemPort in DataPrintSpec$BoundDataModule)")
     (2.U + 2.U).toString should be("UInt<2>(OpResult in DataPrintSpec$BoundDataModule)")
-    Wire(Vec(3, UInt(2.W))).toString should be ("Vec<3, UInt<2>>(Wire in DataPrintSpec$BoundDataModule)")
+    Wire(Vec(3, UInt(2.W))).toString should be ("UInt<2>[3](Wire in DataPrintSpec$BoundDataModule)")
+
+    class InnerModule extends MultiIOModule {
+      val io = IO(Output(new Bundle {
+        val a = UInt(4.W)
+      }))
+    }
+    val inner = Module(new InnerModule)
+
+    inner.clock.toString should be ("Clock(IO clock in DataPrintSpec$BoundDataModule$InnerModule)")
+    inner.io.a.toString should be ("UInt<4>(IO io_a in DataPrintSpec$BoundDataModule$InnerModule)")
   }
 
   "Bound data types" should "have a meaningful string representation" in {

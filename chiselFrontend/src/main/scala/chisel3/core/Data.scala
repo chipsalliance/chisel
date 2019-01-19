@@ -87,9 +87,22 @@ object DataMirror {
     target.direction
   }
 
+  // Returns the top-level module ports
   // TODO: maybe move to something like Driver or DriverUtils, since this is mainly for interacting
   // with compiled artifacts (vs. elaboration-time reflection)?
   def modulePorts(target: BaseModule): Seq[(String, Data)] = target.getChiselPorts
+
+  // Returns all module ports with underscore-qualified names
+  def fullModulePorts(target: BaseModule): Seq[(String, Data)] = {
+    def getPortNames(name: String, data: Data): Seq[(String, Data)] = Seq(name -> data) ++ (data match {
+      case _: Element => Seq()
+      case r: Record => r.elements.toSeq flatMap { case (eltName, elt) => getPortNames(s"${name}_${eltName}", elt) }
+      case v: Vec[_] => v.zipWithIndex flatMap { case (elt, index) => getPortNames(s"${name}_${index}", elt) }
+    })
+    modulePorts(target).flatMap { case (name, data) =>
+      getPortNames(name, data).toList
+    }
+  }
 
   // Internal reflection-style APIs, subject to change and removal whenever.
   object internal {
@@ -296,7 +309,12 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     case None => ""
     case Some(OpBinding(enclosure)) => s"(OpResult in ${enclosure.desiredName})"
     case Some(MemoryPortBinding(enclosure)) => s"(MemPort in ${enclosure.desiredName})"
-    case Some(PortBinding(enclosure)) => s"(IO in ${enclosure.desiredName})"
+    case Some(PortBinding(enclosure)) if !enclosure.isClosed => s"(IO in unelaborated ${enclosure.desiredName})"
+    case Some(PortBinding(enclosure)) if enclosure.isClosed =>
+      DataMirror.fullModulePorts(enclosure).find(_._2 == this) match {
+        case Some((name, _)) => s"(IO $name in ${enclosure.desiredName})"
+        case None => s"(IO (unknown) in ${enclosure.desiredName})"
+      }
     case Some(RegBinding(enclosure)) => s"(Reg in ${enclosure.desiredName})"
     case Some(WireBinding(enclosure)) => s"(Wire in ${enclosure.desiredName})"
     case Some(DontCareBinding()) => s"(DontCare)"
