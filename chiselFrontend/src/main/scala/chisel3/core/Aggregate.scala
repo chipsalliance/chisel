@@ -559,6 +559,10 @@ class AutoClonetypeException(message: String) extends ChiselException(message)
   * }}}
   */
 abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
+  override def className: String = this.getClass.getSimpleName match {
+    case "" => "Bundle"  // fallback for anonymous Bundle case
+    case name => name
+  }
   /** The collection of [[Data]]
     *
     * Elements defined earlier in the Bundle are higher order upon

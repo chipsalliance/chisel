@@ -43,7 +43,7 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
     }
     // Use getSimpleName instead of enumTypeName because for debugging purposes the fully qualified name isn't
     // necessary (compared to for the Enum annotation), and it's more consistent with Bundle printing.
-    s"${this.getClass.getSimpleName}$bindingString"
+    s"${factory.getClass.getSimpleName.init}$bindingString"
   }
 
   override def cloneType: this.type = factory().asInstanceOf[this.type]
