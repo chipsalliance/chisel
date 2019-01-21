@@ -734,6 +734,24 @@ class ConstantPropagationSingleModule extends ConstantPropagationSpec {
       """.stripMargin
     (parse(exec(input))) should be(parse(check))
   }
+
+  // Optimizing this mux gives: z <= pad(UInt<2>(0), 4)
+  // Thus this checks that we then optimize that pad
+  "ConstProp" should "optimize nested Expressions" in {
+    val input =
+      """circuit Top :
+        |  module Top :
+        |    output z : UInt<4>
+        |    z <= mux(UInt(1), UInt<2>(0), UInt<4>(0))
+      """.stripMargin
+    val check =
+      """circuit Top :
+        |  module Top :
+        |    output z : UInt<4>
+        |    z <= UInt<4>("h0")
+      """.stripMargin
+    (parse(exec(input))) should be(parse(check))
+  }
 }
 
 // More sophisticated tests of the full compiler
@@ -1102,6 +1120,77 @@ class ConstantPropagationIntegrationSpec extends LowTransformSpec {
         |    input _T_61 : UInt<1>
         |    output z : UInt<1>
         |    z <= _T_61""".stripMargin
+    execute(input, check, Seq.empty)
+  }
+
+  behavior of "ConstProp"
+
+  it should "optimize shl of constants" in {
+    val input =
+      """circuit Top :
+        |  module Top :
+        |    output z : UInt<7>
+        |    z <= shl(UInt(5), 4)
+      """.stripMargin
+    val check =
+      """circuit Top :
+        |  module Top :
+        |    output z : UInt<7>
+        |    z <= UInt<7>("h50")
+      """.stripMargin
+    execute(input, check, Seq.empty)
+  }
+
+  it should "optimize shr of constants" in {
+    val input =
+      """circuit Top :
+        |  module Top :
+        |    output z : UInt<1>
+        |    z <= shr(UInt(5), 2)
+      """.stripMargin
+    val check =
+      """circuit Top :
+        |  module Top :
+        |    output z : UInt<1>
+        |    z <= UInt<1>("h1")
+      """.stripMargin
+    execute(input, check, Seq.empty)
+  }
+
+  // Due to #866, we need dshl optimized away or it'll become a dshlw and error in parsing
+  // Include cat to verify width is correct
+  it should "optimize dshl of constant" in {
+    val input =
+      """circuit Top :
+        |  module Top :
+        |    output z : UInt<8>
+        |    node n = dshl(UInt<1>(0), UInt<2>(0))
+        |    z <= cat(UInt<4>("hf"), n)
+      """.stripMargin
+    val check =
+      """circuit Top :
+        |  module Top :
+        |    output z : UInt<8>
+        |    z <= UInt<8>("hf0")
+      """.stripMargin
+    execute(input, check, Seq.empty)
+  }
+
+  // Include cat and constants to verify width is correct
+  it should "optimize dshr of constant" in {
+    val input =
+      """circuit Top :
+        |  module Top :
+        |    output z : UInt<8>
+        |    node n = dshr(UInt<4>(0), UInt<2>(2))
+        |    z <= cat(UInt<4>("hf"), n)
+      """.stripMargin
+    val check =
+      """circuit Top :
+        |  module Top :
+        |    output z : UInt<8>
+        |    z <= UInt<8>("hf0")
+      """.stripMargin
     execute(input, check, Seq.empty)
   }
 }

@@ -12,6 +12,7 @@ import firrtl._
 import firrtl.annotations._
 import firrtl.annotations.TargetToken._
 import firrtl.transforms.DontTouchAnnotation
+import firrtl.util.TestOptions
 
 class UniquifySpec extends FirrtlFlatSpec {
 
@@ -282,5 +283,32 @@ class UniquifySpec extends FirrtlFlatSpec {
       "node mod_a_b = mod_.a_b") map normalized
 
     executeTest(input, expected)
+  }
+
+  it should "quickly rename deep bundles" in {
+    // We use a fixed time to determine if this test passed or failed.
+    // This test would pass under normal conditions, but would fail during coverage tests.
+    // Since executions times vary significantly under coverage testing, we check a global
+    //  to see if timing measurements are accurate enough to enforce the timing checks.
+    val maxMs = 8000.0
+
+    def mkType(i: Int): String = {
+      if(i == 0) "UInt<8>" else s"{x: ${mkType(i - 1)}}"
+    }
+
+    val depth = 500
+
+    val input =
+      s"""circuit Test:
+         |  module Test :
+         |    input in: ${mkType(depth)}
+         |    output out: ${mkType(depth)}
+         |    out <= in
+         |""".stripMargin
+
+    val (renameMs, _) = Utils.time(compileToVerilog(input))
+
+    if (TestOptions.accurateTiming)
+      renameMs shouldBe < (maxMs)
   }
 }

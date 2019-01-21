@@ -165,6 +165,92 @@ class CheckCombLoopsSpec extends SimpleTransformSpec {
     }
   }
 
+  "Combinational loop through an annotated ExtModule" should "throw an exception" in {
+    val input = """circuit hasloops :
+                   |  extmodule blackbox :
+                   |    input in : UInt<1>
+                   |    output out : UInt<1>
+                   |  module hasloops :
+                   |    input clk : Clock
+                   |    input a : UInt<1>
+                   |    input b : UInt<1>
+                   |    output c : UInt<1>
+                   |    output d : UInt<1>
+                   |    wire y : UInt<1>
+                   |    wire z : UInt<1>
+                   |    c <= b
+                   |    inst inner of blackbox
+                   |    inner.in <= y
+                   |    z <= inner.out
+                   |    y <= z
+                   |    d <= z
+                   |""".stripMargin
+
+    val mt = ModuleTarget("hasloops", "blackbox")
+    val annos = AnnotationSeq(Seq(ExtModulePathAnnotation(mt.ref("in"), mt.ref("out"))))
+    val writer = new java.io.StringWriter
+    intercept[CheckCombLoops.CombLoopException] {
+      compile(CircuitState(parse(input), ChirrtlForm, annos), writer)
+    }
+  }
+
+  "Loop-free circuit with ExtModulePathAnnotations" should "not throw an exception" in {
+    val input = """circuit hasnoloops :
+                   |  extmodule blackbox :
+                   |    input in1 : UInt<1>
+                   |    input in2 : UInt<1>
+                   |    output out1 : UInt<1>
+                   |    output out2 : UInt<1>
+                   |  module hasnoloops :
+                   |    input clk : Clock
+                   |    input a : UInt<1>
+                   |    output b : UInt<1>
+                   |    wire x : UInt<1>
+                   |    inst inner of blackbox
+                   |    inner.in1 <= a
+                   |    x <= inner.out1
+                   |    inner.in2 <= x
+                   |    b <= inner.out2
+                   |""".stripMargin
+
+    val mt = ModuleTarget("hasnoloops", "blackbox")
+    val annos = AnnotationSeq(Seq(
+      ExtModulePathAnnotation(mt.ref("in1"), mt.ref("out1")),
+      ExtModulePathAnnotation(mt.ref("in2"), mt.ref("out2"))))
+    val writer = new java.io.StringWriter
+    compile(CircuitState(parse(input), ChirrtlForm, annos), writer)
+  }
+
+  "Combinational loop through an output RHS reference" should "throw an exception" in {
+    val input = """circuit hasloops :
+                   |  module thru :
+                   |    input in : UInt<1>
+                   |    output tmp : UInt<1>
+                   |    output out : UInt<1>
+                   |    tmp <= in
+                   |    out <= tmp
+                   |  module hasloops :
+                   |    input clk : Clock
+                   |    input a : UInt<1>
+                   |    input b : UInt<1>
+                   |    output c : UInt<1>
+                   |    output d : UInt<1>
+                   |    wire y : UInt<1>
+                   |    wire z : UInt<1>
+                   |    c <= b
+                   |    inst inner of thru
+                   |    inner.in <= y
+                   |    z <= inner.out
+                   |    y <= z
+                   |    d <= z
+                   |""".stripMargin
+
+    val writer = new java.io.StringWriter
+    intercept[CheckCombLoops.CombLoopException] {
+      compile(CircuitState(parse(input), ChirrtlForm), writer)
+    }
+  }
+
   "Multiple simple loops in one SCC" should "throw an exception" in {
     val input = """circuit hasloops :
                    |  module hasloops :

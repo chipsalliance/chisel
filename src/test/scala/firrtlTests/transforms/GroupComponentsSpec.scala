@@ -3,6 +3,10 @@ package transforms
 
 import firrtl.annotations.{CircuitName, ComponentName, ModuleName}
 import firrtl.transforms.{GroupAnnotation, GroupComponents}
+import firrtl._
+import firrtl.ir._
+
+import FirrtlCheckers._
 
 class GroupComponentsSpec extends LowTransformSpec {
   def transform = new GroupComponents()
@@ -39,6 +43,43 @@ class GroupComponentsSpec extends LowTransformSpec {
         |    reg r: UInt<16>, clk_IN
         |    r_OUT <= r
         |    r <= data_IN
+      """.stripMargin
+    execute(input, check, groups)
+  }
+  "Grouping" should "work even when there are unused nodes" in {
+    val input =
+    s"""circuit $top :
+        |  module $top :
+        |    input in: UInt<16>
+        |    output out: UInt<16>
+        |    node n = UInt<16>("h0")
+        |    wire w : UInt<16>
+        |    wire a : UInt<16>
+        |    wire b : UInt<16>
+        |    a <= UInt<16>("h0")
+        |    b <= a
+        |    w <= in
+        |    out <= w
+      """.stripMargin
+    val groups = Seq(
+      GroupAnnotation(Seq(topComp("w")), "Child", "inst", Some("_OUT"), Some("_IN"))
+    )
+    val check =
+     s"""circuit Top :
+        |  module $top :
+        |    input in: UInt<16>
+        |    output out: UInt<16>
+        |    inst inst of Child
+        |    node n = UInt<16>("h0")
+        |    inst.in_IN <= in
+        |    node a = UInt<16>("h0")
+        |    node b = a
+        |    out <= inst.w_OUT
+        |  module Child :
+        |    input in_IN : UInt<16>
+        |    output w_OUT : UInt<16>
+        |    node w = in_IN
+        |    w_OUT <= w
       """.stripMargin
     execute(input, check, groups)
   }
@@ -286,5 +327,37 @@ class GroupComponentsSpec extends LowTransformSpec {
          |    second_0 <= second
       """.stripMargin
     execute(input, check, groups)
+  }
+}
+
+class GroupComponentsIntegrationSpec extends FirrtlFlatSpec {
+  def topComp(name: String): ComponentName = ComponentName(name, ModuleName("Top", CircuitName("Top")))
+  "Grouping" should "properly set kinds" in {
+    val input =
+     """circuit Top :
+        |  module Top :
+        |    input clk: Clock
+        |    input data: UInt<16>
+        |    output out: UInt<16>
+        |    reg r: UInt<16>, clk
+        |    r <= data
+        |    out <= r
+      """.stripMargin
+    val groups = Seq(
+      GroupAnnotation(Seq(topComp("r")), "MyModule", "inst", Some("_OUT"), Some("_IN"))
+    )
+    val result = (new VerilogCompiler).compileAndEmit(
+      CircuitState(parse(input), ChirrtlForm, groups),
+      Seq(new GroupComponents)
+    )
+    result should containTree {
+      case Connect(_, WSubField(WRef("inst",_, InstanceKind,_), "data_IN", _,_), WRef("data",_,_,_)) => true
+    }
+    result should containTree {
+      case Connect(_, WSubField(WRef("inst",_, InstanceKind,_), "clk_IN", _,_), WRef("clk",_,_,_)) => true
+    }
+    result should containTree {
+      case Connect(_, WRef("out",_,_,_), WSubField(WRef("inst",_, InstanceKind,_), "r_OUT", _,_)) => true
+    }
   }
 }

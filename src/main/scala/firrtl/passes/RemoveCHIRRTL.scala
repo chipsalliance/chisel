@@ -103,7 +103,11 @@ object RemoveCHIRRTL extends Transform {
                   rds map (_.name), wrs map (_.name), rws map (_.name))
       Block(mem +: stmts)
     case sx: CDefMPort =>
-      types(sx.name) = types(sx.mem)
+      types.get(sx.mem) match {
+        case Some(mem) => types(sx.name) = mem
+        case None =>
+          throw new PassException(s"Undefined memory ${sx.mem} referenced by mport ${sx.name}")
+      }
       val addrs = ArrayBuffer[String]()
       val clks = ArrayBuffer[String]()
       val ens = ArrayBuffer[String]()
