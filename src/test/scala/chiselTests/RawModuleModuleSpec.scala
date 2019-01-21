@@ -59,7 +59,7 @@ class ImplicitModuleDirectlyInRawModuleTester extends BasicTester {
   stop()
 }
 
-class RawModuleSpec extends ChiselFlatSpec {
+class RawModuleModuleSpec extends ChiselFlatSpec {
   "RawModule" should "elaborate" in {
     elaborate { new RawModuleWithImplicitModule }
   }

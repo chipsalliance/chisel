@@ -14,7 +14,7 @@ import chisel3.internal.sourceinfo.UnlocatableSourceInfo
 
 /** Abstract base class for Modules that contain Chisel RTL.
   */
-abstract class UserModule(implicit moduleCompileOptions: CompileOptions)
+abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
     extends BaseModule {
   //
   // RTL construction internals
@@ -58,7 +58,7 @@ abstract class UserModule(implicit moduleCompileOptions: CompileOptions)
     require(!_closed, "Can't generate module more than once")
     _closed = true
 
-    val names = nameIds(classOf[UserModule])
+    val names = nameIds(classOf[RawModule])
 
     // Ports get first naming priority, since they are part of a Module's IO spec
     namePorts(names)
@@ -117,8 +117,8 @@ abstract class UserModule(implicit moduleCompileOptions: CompileOptions)
   *
   * @note Module instantiations must be wrapped in a Module() call.
   */
-abstract class ImplicitModule(implicit moduleCompileOptions: CompileOptions)
-    extends UserModule {
+abstract class MultiIOModule(implicit moduleCompileOptions: CompileOptions)
+    extends RawModule {
   // Implicit clock and reset pins
   val clock: Clock = IO(Input(Clock()))
   val reset: Reset = IO(Input(Bool()))
@@ -143,7 +143,7 @@ abstract class ImplicitModule(implicit moduleCompileOptions: CompileOptions)
   * in a withClock/withReset/withClockAndReset block, or directly hook up clock or reset IO pins.
   */
 abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions)
-    extends ImplicitModule {
+    extends MultiIOModule {
   // These are to be phased out
   protected var override_clock: Option[Clock] = None
   protected var override_reset: Option[Bool] = None
