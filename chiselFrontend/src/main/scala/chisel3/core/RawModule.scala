@@ -13,7 +13,8 @@ import chisel3.internal.firrtl.{Command => _, _}
 import chisel3.internal.sourceinfo.UnlocatableSourceInfo
 
 /** Abstract base class for Modules that contain Chisel RTL.
-This abstract base class is a user-defined module which does not include implicit clock and reset and supports multiple IO() declarations.
+  * This abstract base class is a user-defined module which does not include implicit clock and reset and supports
+  * multiple IO() declarations.
   */
 abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
     extends BaseModule {
