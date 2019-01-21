@@ -13,6 +13,7 @@ import chisel3.internal.firrtl.{Command => _, _}
 import chisel3.internal.sourceinfo.UnlocatableSourceInfo
 
 /** Abstract base class for Modules that contain Chisel RTL.
+This abstract base class is a user-defined module which does not include implicit clock and reset and supports multiple IO() declarations.
   */
 abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
     extends BaseModule {
@@ -114,6 +115,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
 /** Abstract base class for Modules, which behave much like Verilog modules.
   * These may contain both logic and state which are written in the Module
   * body (constructor).
+  * This abstract base class includes an implicit clock and reset.
   *
   * @note Module instantiations must be wrapped in a Module() call.
   */
