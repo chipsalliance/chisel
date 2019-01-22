@@ -62,7 +62,6 @@ class DataPrintSpec extends ChiselFlatSpec with Matchers {
       }))
     }
     val inner = Module(new InnerModule)
-
     inner.clock.toString should be ("Clock(IO clock in DataPrintSpec$BoundDataModule$InnerModule)")
     inner.io.a.toString should be ("UInt<4>(IO io_a in DataPrintSpec$BoundDataModule$InnerModule)")
   }
