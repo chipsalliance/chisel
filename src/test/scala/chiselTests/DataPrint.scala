@@ -85,7 +85,7 @@ class DataPrintSpec extends ChiselFlatSpec with Matchers {
       (new BundleTest).Lit(2.U, false.B).toString should be ("BundleTest(a=UInt<8>(2), b=Bool(false))")
       new Bundle {
         val a = UInt(8.W)
-      }.toString should be ("Bundle")
+      }.toString should be ("AnonymousBundle")
       DontCare.toString should be ("DontCare()")
     } }
   }
