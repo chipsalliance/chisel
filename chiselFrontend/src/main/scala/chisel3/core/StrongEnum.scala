@@ -33,6 +33,19 @@ import EnumAnnotations._
 
 
 abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolean = false) extends Element {
+  override def toString: String = {
+    val bindingString = litOption match {
+      case Some(value) => factory.nameOfValue(value) match {
+        case Some(name) => s"($value=$name)"
+        case None => s"($value=(invalid))"
+      }
+      case _ => bindingToString
+    }
+    // Use getSimpleName instead of enumTypeName because for debugging purposes the fully qualified name isn't
+    // necessary (compared to for the Enum annotation), and it's more consistent with Bundle printing.
+    s"${factory.getClass.getSimpleName.init}$bindingString"
+  }
+
   override def cloneType: this.type = factory().asInstanceOf[this.type]
 
   private[core] def compop(sourceInfo: SourceInfo, op: PrimOp, other: EnumType): Bool = {
@@ -150,6 +163,10 @@ abstract class EnumFactory {
   def getWidth: Int = width.get
 
   def all: Seq[Type] = enumInstances
+
+  private[chisel3] def nameOfValue(id: BigInt): Option[String] = {
+    enum_records.find(_.inst.litValue() == id).map(_.name)
+  }
 
   protected def Value: Type = macro EnumMacros.ValImpl
   protected def Value(id: UInt): Type = macro EnumMacros.ValCustomImpl
