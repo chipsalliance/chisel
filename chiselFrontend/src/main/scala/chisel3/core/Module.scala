@@ -134,7 +134,7 @@ object BaseModule {
     if (!compileOptions.explicitInvalidate) {
       pushCommand(DefInvalid(sourceInfo, clonePorts.ref))
     }
-    if (proto.isInstanceOf[ImplicitModule]) {
+    if (proto.isInstanceOf[MultiIOModule]) {
       clonePorts("clock") := Module.clock
       clonePorts("reset") := Module.reset
     }
