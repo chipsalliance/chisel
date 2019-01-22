@@ -7,16 +7,25 @@ import java.io.File
 import chisel3._
 import chisel3.util.Counter
 import chisel3.testers.BasicTester
-import chisel3.experimental.{MultiIOModule, RawModule, BaseModule}
+import chisel3.experimental.{BaseModule, ChiselAnnotation, MultiIOModule, RawModule, RunFirrtlTransform}
 import chisel3.util.experimental.BoringUtils
-import firrtl.{CommonOptions, ExecutionOptionsManager, HasFirrtlOptions, FirrtlExecutionOptions, FirrtlExecutionSuccess,
-  FirrtlExecutionFailure}
-import firrtl.passes.wiring.WiringTransform
+
+import firrtl.{CircuitForm, CircuitState, ChirrtlForm, Transform}
+import firrtl.annotations.NoTargetAnnotation
+import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
+import firrtl.passes.wiring.WiringException
 
 abstract class ShouldntAssertTester(cyclesToWait: BigInt = 4) extends BasicTester {
   val dut: BaseModule
   val (_, done) = Counter(true.B, 2)
   when (done) { stop() }
+}
+
+class StripNoDedupAnnotation extends Transform {
+  def inputForm: CircuitForm = ChirrtlForm
+  def outputForm: CircuitForm = ChirrtlForm
+  def execute(state: CircuitState): CircuitState =
+    state.copy(annotations = state.annotations.filter{ case _: NoDedupAnnotation => false; case _ => true })
 }
 
 class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
@@ -42,37 +51,47 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
 
   trait WireX { this: BaseModule =>
     val x = Wire(UInt(4.W))
+    chisel3.experimental.annotate(new ChiselAnnotation{ def toFirrtl = DontTouchAnnotation(x.toNamed) })
   }
 
-  class Constant(const: Int) extends MultiIOModule with WireX {
-    x := const.U
+  class Source extends RawModule with WireX {
+    val in = IO(Input(UInt()))
+    x := in
   }
 
-  object Constant { def apply(const: Int): Constant = Module(new Constant(const)) }
-
-  class Expect(const: Int) extends MultiIOModule with WireX {
+  class Sink extends RawModule with WireX {
+    val out = IO(Output(UInt()))
     x := 0.U // Default value. Output is zero unless we bore...
-    chisel3.assert(x === const.U, "x (0x%x) was not const.U (0x%x)", x, const.U)
+    out := x
   }
 
-  object Expect { def apply(const: Int): Expect = Module(new Expect(const)) }
-
-  // After boring, this will have the following connections:
-  //   - source(0)   -> unconnected
-  //   - unconnected -> expect(0)
-  //   - source(1)   -> expect(1)
-  //   - source(2)   -> expect(2)
   class Top(val width: Int) extends MultiIOModule {
-    val source = Seq(0, 1, 2).map(x => x -> Constant(x)).toMap
-    val expect = Map(0 -> Seq.fill(2)(Expect(0)),
-                     1 -> Seq.fill(1)(Expect(1)),
-                     2 -> Seq.fill(3)(Expect(2)))
+    /* From the perspective of deduplication, all sources are identical and all sinks are identical. */
+    val sources = Seq.fill(3)(Module(new Source))
+    val sinks = Seq.fill(6)(Module(new Sink))
+
+    /* Sources are differentiated by their input connections only. */
+    sources.zip(Seq(0, 1, 2)).map{ case (a, b) => a.in := b.U }
+
+    /* Sinks are differentiated by their post-boring outputs. */
+    sinks.zip(Seq(0, 1, 1, 2, 2, 2)).map{ case (a, b) => chisel3.assert(a.out === b.U) }
   }
 
+  /** This is testing a complicated wiring pattern and exercising the necessity of disabling deduplication for sources and
+    * sinks. Without disabling deduplication, this test will fail.
+    */
   class TopTester extends ShouldntAssertTester {
     val dut = Module(new Top(4))
-    BoringUtils.bore(dut.source(1).x, dut.expect(1).map(_.x))
-    BoringUtils.bore(dut.source(2).x, dut.expect(2).map(_.x))
+    BoringUtils.bore(dut.sources(1).x, Seq(dut.sinks(1).x, dut.sinks(2).x))
+    BoringUtils.bore(dut.sources(2).x, Seq(dut.sinks(3).x, dut.sinks(4).x, dut.sinks(5).x))
+  }
+
+  trait FailViaDedup { this: TopTester =>
+    case object FooAnnotation extends NoTargetAnnotation
+    chisel3.experimental.annotate(
+      new ChiselAnnotation with RunFirrtlTransform {
+        def toFirrtl = FooAnnotation
+        def transformClass = classOf[StripNoDedupAnnotation] } )
   }
 
   behavior of "BoringUtils.bore"
@@ -80,4 +99,10 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
   it should "connect across modules using BoringUtils.bore" in {
 	  runTester(new TopTester) should be (true)
   }
+
+  it should "throw an exception if NoDedupAnnotations are removed" in {
+    intercept[WiringException] { runTester(new TopTester with FailViaDedup) }
+      .getMessage should startWith ("Unable to determine source mapping for sink")
+  }
+
 }

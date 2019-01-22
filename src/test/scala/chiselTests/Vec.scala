@@ -265,4 +265,13 @@ class VecSpec extends ChiselPropSpec {
       })
     }
   }
+
+  property("It should be possible to initialize a Vec with DontCare") {
+    elaborate(new Module {
+      val io = IO(new Bundle {
+        val out = Output(Vec(4, UInt(8.W)))
+      })
+      io.out := VecInit(Seq(4.U, 5.U, DontCare, 2.U))
+    })
+  }
 }

@@ -2,6 +2,7 @@
 
 package chisel3.core
 
+import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.collection.JavaConversions._
 import scala.language.experimental.macros
@@ -112,6 +113,32 @@ object IO {
     }
     module.bindIoInPlace(iodefClone)
     iodefClone
+  }
+}
+
+object BaseModule {
+  private[chisel3] class ClonePorts (elts: Data*)(implicit compileOptions: CompileOptions) extends Record {
+    val elements = ListMap(elts.map(d => d.instanceName -> d.cloneTypeFull): _*)
+    def apply(field: String) = elements(field)
+    override def cloneType = (new ClonePorts(elts: _*)).asInstanceOf[this.type]
+  }
+
+  private[chisel3] def cloneIORecord(proto: BaseModule)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): ClonePorts = {
+    require(proto.isClosed, "Can't clone a module before module close")
+    val clonePorts = new ClonePorts(proto.getModulePorts: _*)
+    clonePorts.bind(WireBinding(Builder.forcedUserModule))
+    val cloneInstance = new DefInstance(sourceInfo, proto, proto._component.get.ports) {
+      override def name = clonePorts.getRef.name
+    }
+    pushCommand(cloneInstance)
+    if (!compileOptions.explicitInvalidate) {
+      pushCommand(DefInvalid(sourceInfo, clonePorts.ref))
+    }
+    if (proto.isInstanceOf[MultiIOModule]) {
+      clonePorts("clock") := Module.clock
+      clonePorts("reset") := Module.reset
+    }
+    clonePorts
   }
 }
 
