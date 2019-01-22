@@ -4,10 +4,6 @@
 
 enablePlugins(SiteScaladocPlugin)
 
-enablePlugins(GhpagesPlugin)
-
-git.remoteRepo := "git@github.com:freechipsproject/firrtl.git"
-
 // Firrtl code
 
 organization := "edu.berkeley.cs"
@@ -109,7 +105,8 @@ javaSource in Antlr4 := (sourceManaged in Compile).value
 publishMavenStyle := true
 publishArtifact in Test := false
 pomIncludeRepository := { x => false }
-// Don't add 'scm' elements if we have a git.remoteRepo definition.
+// Don't add 'scm' elements if we have a git.remoteRepo definition,
+//  but since we don't (with the removal of ghpages), add them in below.
 pomExtra := <url>http://chisel.eecs.berkeley.edu/</url>
   <licenses>
     <license>
@@ -118,6 +115,10 @@ pomExtra := <url>http://chisel.eecs.berkeley.edu/</url>
       <distribution>repo</distribution>
     </license>
   </licenses>
+  <scm>
+    <url>https://github.com/freechipsproject/firrtl.git</url>
+    <connection>scm:git:github.com/freechipsproject/firrtl.git</connection>
+  </scm>
   <developers>
     <developer>
       <id>jackbackrack</id>
