@@ -430,8 +430,8 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     val dontTouch = chisel3.core.dontTouch
 
     type BaseModule = chisel3.core.BaseModule
-    type MultiIOModule = chisel3.core.ImplicitModule
-    type RawModule = chisel3.core.UserModule
+    type RawModule = chisel3.core.RawModule
+    type MultiIOModule = chisel3.core.MultiIOModule
     type ExtModule = chisel3.core.ExtModule
 
     val IO = chisel3.core.IO
