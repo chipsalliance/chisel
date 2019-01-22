@@ -113,8 +113,11 @@ private[core] object cloneSupertype {
                                                           compileOptions: CompileOptions): T = {
     require(!elts.isEmpty, s"can't create $createdType with no inputs")
 
-    if (elts.head.isInstanceOf[Bits]) {
-      val model: T = elts reduce { (elt1: T, elt2: T) => ((elt1, elt2) match {
+    val filteredElts = elts.filter(_ != DontCare)
+    require(!filteredElts.isEmpty, s"can't create $createdType with only DontCare inputs")
+
+    if (filteredElts.head.isInstanceOf[Bits]) {
+      val model: T = filteredElts reduce { (elt1: T, elt2: T) => ((elt1, elt2) match {
         case (elt1: Bool, elt2: Bool) => elt1
         case (elt1: Bool, elt2: UInt) => elt2  // TODO: what happens with zero width UInts?
         case (elt1: UInt, elt2: Bool) => elt1  // TODO: what happens with zero width UInts?
@@ -140,13 +143,13 @@ private[core] object cloneSupertype {
       model.cloneTypeFull
     }
     else {
-      for (elt <- elts.tail) {
-        require(elt.getClass == elts.head.getClass,
-          s"can't create $createdType with heterogeneous types ${elts.head.getClass} and ${elt.getClass}")
-        require(elt typeEquivalent elts.head,
-          s"can't create $createdType with non-equivalent types ${elts.head} and ${elt}")
+      for (elt <- filteredElts.tail) {
+        require(elt.getClass == filteredElts.head.getClass,
+          s"can't create $createdType with heterogeneous types ${filteredElts.head.getClass} and ${elt.getClass}")
+        require(elt typeEquivalent filteredElts.head,
+          s"can't create $createdType with non-equivalent types ${filteredElts.head} and ${elt}")
       }
-      elts.head.cloneTypeFull
+      filteredElts.head.cloneTypeFull
     }
   }
 }
