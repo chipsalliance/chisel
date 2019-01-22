@@ -14,7 +14,7 @@ object attach {  // scalastyle:ignore object.name
     AttachException(": Conditional attach is not allowed!")
 
   // Actual implementation
-  private[core] def impl(elts: Seq[Analog], contextModule: UserModule)(implicit sourceInfo: SourceInfo): Unit = {
+  private[core] def impl(elts: Seq[Analog], contextModule: RawModule)(implicit sourceInfo: SourceInfo): Unit = {
     if (Builder.whenDepth != 0) throw ConditionalAttachException
 
     // TODO Check that references are valid and can be attached

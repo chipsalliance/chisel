@@ -55,7 +55,7 @@ object BiConnect {
   * during the recursive decent and then rethrow them with extra information added.
   * This gives the user a 'path' to where in the connections things went wrong.
   */
-  def connect(sourceInfo: SourceInfo, connectCompileOptions: CompileOptions, left: Data, right: Data, context_mod: UserModule): Unit = {
+  def connect(sourceInfo: SourceInfo, connectCompileOptions: CompileOptions, left: Data, right: Data, context_mod: RawModule): Unit = {
     (left, right) match {
       // Handle element case (root case)
       case (left_a: Analog, right_a: Analog) =>
@@ -154,7 +154,7 @@ object BiConnect {
                     connectCompileOptions: CompileOptions,
                     left_r: Record,
                     right_r: Record,
-                    context_mod: UserModule): Unit = {
+                    context_mod: RawModule): Unit = {
     // Verify right has no extra fields that left doesn't have
     for((field, right_sub) <- right_r.elements) {
       if(!left_r.elements.isDefinedAt(field)) {
@@ -207,7 +207,7 @@ object BiConnect {
 
   // This function checks if element-level connection operation allowed.
   // Then it either issues it or throws the appropriate exception.
-  def elemConnect(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions, left: Element, right: Element, context_mod: UserModule): Unit = {
+  def elemConnect(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions, left: Element, right: Element, context_mod: RawModule): Unit = {
     import BindingDirection.{Internal, Input, Output} // Using extensively so import these
     // If left or right have no location, assume in context module
     // This can occur if one of them is a literal, unbound will error previously
@@ -313,7 +313,7 @@ object BiConnect {
 
   // This function checks if analog element-level attaching is allowed
   // Then it either issues it or throws the appropriate exception.
-  def analogAttach(implicit sourceInfo: SourceInfo, left: Analog, right: Analog, contextModule: UserModule): Unit = {
+  def analogAttach(implicit sourceInfo: SourceInfo, left: Analog, right: Analog, contextModule: RawModule): Unit = {
     // Error if left or right is BICONNECTED in the current module already
     for (elt <- left :: right :: Nil) {
       elt.biConnectLocs.get(contextModule) match {
