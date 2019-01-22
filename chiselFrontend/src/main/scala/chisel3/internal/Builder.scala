@@ -222,8 +222,8 @@ private[chisel3] object Builder {
       // A bare api call is, e.g. calling Wire() from the scala console).
     )
   }
-  def forcedUserModule: UserModule = currentModule match {
-    case Some(module: UserModule) => module
+  def forcedUserModule: RawModule = currentModule match {
+    case Some(module: RawModule) => module
     case _ => throwException(
       "Error: Not in a UserModule. Likely cause: Missed Module() wrap, bare chisel API call, or attempting to construct hardware inside a BlackBox."
       // A bare api call is, e.g. calling Wire() from the scala console).
@@ -325,7 +325,7 @@ private[chisel3] object Builder {
     throwException(m)
   }
 
-  def build[T <: UserModule](f: => T): Circuit = {
+  def build[T <: RawModule](f: => T): Circuit = {
     chiselContext.withValue(new ChiselContext) {
       dynamicContextVar.withValue(Some(new DynamicContext())) {
         errors.info("Elaborating design...")
