@@ -2,8 +2,6 @@
 
 enablePlugins(SiteScaladocPlugin)
 
-enablePlugins(GhpagesPlugin)
-
 def scalacOptionsVersion(scalaVersion: String): Seq[String] = {
   Seq() ++ {
     // If we're building with Scala > 2.11, enable the compile option
@@ -39,7 +37,6 @@ lazy val commonSettings = Seq (
   ),
   organization := "edu.berkeley.cs",
   version := "3.2-SNAPSHOT",
-  git.remoteRepo := "git@github.com:freechipsproject/chisel3.git",
   autoAPIMappings := true,
   scalaVersion := "2.12.6",
   crossScalaVersions := Seq("2.12.6", "2.11.12"),
@@ -65,7 +62,8 @@ lazy val publishSettings = Seq (
   publishMavenStyle := true,
   publishArtifact in Test := false,
   pomIncludeRepository := { x => false },
-  // Don't add 'scm' elements if we have a git.remoteRepo definition.
+  // Don't add 'scm' elements if we have a git.remoteRepo definition,
+  //  but since we don't (with the removal of ghpages), add them in below.
   pomExtra := <url>http://chisel.eecs.berkeley.edu/</url>
     <licenses>
       <license>
@@ -74,6 +72,10 @@ lazy val publishSettings = Seq (
         <distribution>repo</distribution>
       </license>
     </licenses>
+    <scm>
+      <url>https://github.com/freechipsproject/chisel3.git</url>
+      <connection>scm:git:github.com/freechipsproject/chisel3.git</connection>
+    </scm>
     <developers>
       <developer>
         <id>jackbackrack</id>
