@@ -20,6 +20,19 @@ object RegEnable {
     when (enable) { r := next }
     r
   }
+
+  /** Returns a register from a Valid value that updates to the given value when Valid is true.  
+   */
+  def apply[T <: Data](next: Valid[T]): T = {
+    RegEnable(next.bits, next.valid)
+  }
+
+  /** Returns a register with reset initialization from a Valid value that updates to the given value when Valid is true.  
+   */
+  def apply[T <: Data](next: Valid[T], init: T): T = {
+    RegEnable(next.bits, init, next.valid)
+  }
+
 }
 
 object ShiftRegister
