@@ -644,6 +644,13 @@ abstract trait Num[T <: Data] {
   * @define constantWidth  @note The width of the returned $coll is unchanged, i.e., `width of this`.
   */
 sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt] {
+  override def toString: String = {
+    val bindingString = litOption match {
+      case Some(value) => s"($value)"
+      case _ => bindingToString
+    }
+    s"UInt$width$bindingString"
+  }
 
   private[core] override def typeEquivalent(that: Data): Boolean =
     that.isInstanceOf[UInt] && this.width == that.width
@@ -959,6 +966,13 @@ object Bits extends UIntFactory
   * @define constantWidth  @note The width of the returned $coll is unchanged, i.e., `width of this`.
   */
 sealed class SInt private[core] (width: Width) extends Bits(width) with Num[SInt] {
+  override def toString: String = {
+    val bindingString = litOption match {
+      case Some(value) => s"($value)"
+      case _ => bindingToString
+    }
+    s"SInt$width$bindingString"
+  }
 
   private[core] override def typeEquivalent(that: Data): Boolean =
     this.getClass == that.getClass && this.width == that.width  // TODO: should this be true for unspecified widths?
@@ -1207,6 +1221,14 @@ sealed trait Reset extends Element with ToBoolable
   * @define numType $coll
   */
 sealed class Bool() extends UInt(1.W) with Reset {
+  override def toString: String = {
+    val bindingString = litToBooleanOption match {
+      case Some(value) => s"($value)"
+      case _ => bindingToString
+    }
+    s"Bool$bindingString"
+  }
+
   private[core] override def cloneTypeWidth(w: Width): this.type = {
     require(!w.known || w.get == 1)
     new Bool().asInstanceOf[this.type]
@@ -1328,6 +1350,14 @@ object Bool extends BoolFactory
   */
 sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint)
     extends Bits(width) with Num[FixedPoint] {
+  override def toString: String = {
+    val bindingString = litToDoubleOption match {
+      case Some(value) => s"($value)"
+      case _ => bindingToString
+    }
+    s"FixedPoint$width$binaryPoint$bindingString"
+  }
+
   private[core] override def typeEquivalent(that: Data): Boolean = that match {
     case that: FixedPoint => this.width == that.width && this.binaryPoint == that.binaryPoint  // TODO: should this be true for unspecified widths?
     case _ => false
@@ -1723,6 +1753,10 @@ object FixedPoint {
   */
 final class Analog private (private[chisel3] val width: Width) extends Element {
   require(width.known, "Since Analog is only for use in BlackBoxes, width must be known")
+
+  override def toString: String = {
+    s"Analog$width$bindingToString"
+  }
 
   private[core] override def typeEquivalent(that: Data): Boolean =
     that.isInstanceOf[Analog] && this.width == that.width

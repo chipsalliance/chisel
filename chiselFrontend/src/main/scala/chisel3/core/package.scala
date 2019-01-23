@@ -121,5 +121,13 @@ package chisel3 {
     implicit class fromIntToBinaryPoint(int: Int) {
       def BP: BinaryPoint = BinaryPoint(int)  // scalastyle:ignore method.name
     }
+
+    // These provide temporary compatibility for those who foolishly imported from chisel3.core
+    @deprecated("Avoid importing from chisel3.core, these are not public APIs and may change at any time. " +
+      " Use chisel3.experimental.RawModule instead.", "since the beginning of time")
+    type UserModule = chisel3.core.RawModule
+    @deprecated("Avoid importing from chisel3.core, these are not public APIs and may change at any time. " +
+      "Use chisel3.experimental.MultiIOModule instead.", "since the beginning of time")
+    type ImplicitModule = chisel3.core.MultiIOModule
   }
 }
