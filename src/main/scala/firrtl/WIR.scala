@@ -152,8 +152,6 @@ case object Addw extends PrimOp { override def toString = "addw" }
 case object Subw extends PrimOp { override def toString = "subw" }
 // Resultant width is the same as input argument width
 case object Dshlw extends PrimOp { override def toString = "dshlw" }
-// Resultant width is the same as input argument width
-case object Shlw extends PrimOp { override def toString = "shlw" }
 
 object WrappedExpression {
   def apply(e: Expression) = new WrappedExpression(e)

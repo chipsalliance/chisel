@@ -303,8 +303,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
          case (_: SIntType) => Seq(cast(a0)," >>> ", a1)
          case (_) => Seq(cast(a0), " >> ", a1)
        }
-       case Shlw => Seq(cast(a0), " << ", c0)
-       case Shl => Seq(cast(a0), " << ", c0)
+       case Shl => if (c0 > 0) Seq("{", cast(a0), s", $c0'h0}") else Seq(cast(a0))
        case Shr if c0 >= bitWidth(a0.tpe) =>
          error("Verilog emitter does not support SHIFT_RIGHT >= arg width")
        case Shr => Seq(a0,"[", bitWidth(a0.tpe) - 1, ":", c0, "]")

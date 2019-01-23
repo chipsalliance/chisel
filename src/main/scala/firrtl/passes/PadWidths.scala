@@ -44,9 +44,6 @@ object PadWidths extends Pass {
       case Dshl =>
         // special case as args aren't all same width
         ex copy (op = Dshlw, args = Seq(fixup(width(ex.tpe))(ex.args.head), ex.args(1)))
-      case Shl =>
-        // special case as arg should be same width as result
-        ex copy (op = Shlw, args = Seq(fixup(width(ex.tpe))(ex.args.head)))
       case _ => ex
     }
     case ex => ex

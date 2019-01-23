@@ -437,4 +437,16 @@ class UnitTests extends FirrtlFlatSpec {
 
     result should containTree { case Connect(_, `out`, mgen) => true }
   }
+
+  "Shl" should "be emitted in Verilog as concat" in {
+    val input =
+      """circuit Unit :
+        |  module Unit :
+        |    input in : UInt<4>
+        |    output out : UInt<8>
+        |    out <= shl(in, 4)
+        |""".stripMargin
+    val res = (new VerilogCompiler).compileAndEmit(CircuitState(parse(input), ChirrtlForm))
+    res should containLine ("assign out = {in, 4'h0};")
+  }
 }
