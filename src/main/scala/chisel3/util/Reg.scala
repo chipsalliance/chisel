@@ -21,16 +21,28 @@ object RegEnable {
     r
   }
 
-  /** Returns a register from a Valid value that updates to the given value when Valid is true.  
+  /** Returns a register from a Valid value that updates to the given value when Valid is true.
    */
   def apply[T <: Data](next: Valid[T]): T = {
     RegEnable(next.bits, next.valid)
   }
 
-  /** Returns a register with reset initialization from a Valid value that updates to the given value when Valid is true.  
+  /** Returns a register with reset initialization from a Valid value that updates to the given value when Valid is true.
    */
   def apply[T <: Data](next: Valid[T], init: T): T = {
     RegEnable(next.bits, init, next.valid)
+  }
+
+  /** Returns a register from a ReadyValidIO value that updates to the given value when ready and valid are both true.
+   */
+  def apply[T <: Data](next: ReadyValidIO[T]): T = {
+    RegEnable(next.bits, next.ready && next.valid)
+  }
+
+  /** Returns a register with reset initialization from a ReadyValidIO value that updates to the given value when ready and valid are both true.
+   */
+  def apply[T <: Data](next: ReadyValidIO[T], init: T): T = {
+    RegEnable(next.bits, init, next.ready && next.valid)
   }
 
 }
