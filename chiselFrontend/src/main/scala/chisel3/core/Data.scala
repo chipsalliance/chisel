@@ -87,9 +87,22 @@ object DataMirror {
     target.direction
   }
 
+  // Returns the top-level module ports
   // TODO: maybe move to something like Driver or DriverUtils, since this is mainly for interacting
   // with compiled artifacts (vs. elaboration-time reflection)?
   def modulePorts(target: BaseModule): Seq[(String, Data)] = target.getChiselPorts
+
+  // Returns all module ports with underscore-qualified names
+  def fullModulePorts(target: BaseModule): Seq[(String, Data)] = {
+    def getPortNames(name: String, data: Data): Seq[(String, Data)] = Seq(name -> data) ++ (data match {
+      case _: Element => Seq()
+      case r: Record => r.elements.toSeq flatMap { case (eltName, elt) => getPortNames(s"${name}_${eltName}", elt) }
+      case v: Vec[_] => v.zipWithIndex flatMap { case (elt, index) => getPortNames(s"${name}_${index}", elt) }
+    })
+    modulePorts(target).flatMap { case (name, data) =>
+      getPortNames(name, data).toList
+    }
+  }
 
   // Internal reflection-style APIs, subject to change and removal whenever.
   object internal {
@@ -113,8 +126,11 @@ private[core] object cloneSupertype {
                                                           compileOptions: CompileOptions): T = {
     require(!elts.isEmpty, s"can't create $createdType with no inputs")
 
-    if (elts.head.isInstanceOf[Bits]) {
-      val model: T = elts reduce { (elt1: T, elt2: T) => ((elt1, elt2) match {
+    val filteredElts = elts.filter(_ != DontCare)
+    require(!filteredElts.isEmpty, s"can't create $createdType with only DontCare inputs")
+
+    if (filteredElts.head.isInstanceOf[Bits]) {
+      val model: T = filteredElts reduce { (elt1: T, elt2: T) => ((elt1, elt2) match {
         case (elt1: Bool, elt2: Bool) => elt1
         case (elt1: Bool, elt2: UInt) => elt2  // TODO: what happens with zero width UInts?
         case (elt1: UInt, elt2: Bool) => elt1  // TODO: what happens with zero width UInts?
@@ -140,13 +156,13 @@ private[core] object cloneSupertype {
       model.cloneTypeFull
     }
     else {
-      for (elt <- elts.tail) {
-        require(elt.getClass == elts.head.getClass,
-          s"can't create $createdType with heterogeneous types ${elts.head.getClass} and ${elt.getClass}")
-        require(elt typeEquivalent elts.head,
-          s"can't create $createdType with non-equivalent types ${elts.head} and ${elt}")
+      for (elt <- filteredElts.tail) {
+        require(elt.getClass == filteredElts.head.getClass,
+          s"can't create $createdType with heterogeneous types ${filteredElts.head.getClass} and ${elt.getClass}")
+        require(elt typeEquivalent filteredElts.head,
+          s"can't create $createdType with non-equivalent types ${filteredElts.head} and ${elt}")
       }
-      elts.head.cloneTypeFull
+      filteredElts.head.cloneTypeFull
     }
   }
 }
@@ -289,6 +305,26 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     _direction = Some(actualDirection)
   }
 
+  // User-friendly representation of the binding as a helper function for toString.
+  // Provides a unhelpful fallback for literals, which should have custom rendering per
+  // Data-subtype.
+  protected def bindingToString: String = topBindingOpt match {
+    case None => ""
+    case Some(OpBinding(enclosure)) => s"(OpResult in ${enclosure.desiredName})"
+    case Some(MemoryPortBinding(enclosure)) => s"(MemPort in ${enclosure.desiredName})"
+    case Some(PortBinding(enclosure)) if !enclosure.isClosed => s"(IO in unelaborated ${enclosure.desiredName})"
+    case Some(PortBinding(enclosure)) if enclosure.isClosed =>
+      DataMirror.fullModulePorts(enclosure).find(_._2 == this) match {
+        case Some((name, _)) => s"(IO $name in ${enclosure.desiredName})"
+        case None => s"(IO (unknown) in ${enclosure.desiredName})"
+      }
+    case Some(RegBinding(enclosure)) => s"(Reg in ${enclosure.desiredName})"
+    case Some(WireBinding(enclosure)) => s"(Wire in ${enclosure.desiredName})"
+    case Some(DontCareBinding()) => s"(DontCare)"
+    case Some(ElementLitBinding(litArg)) => s"(unhandled literal)"
+    case Some(BundleLitBinding(litMap)) => s"(unhandled bundle literal)"
+  }
+
   // Return ALL elements at root of this type.
   // Contasts with flatten, which returns just Bits
   // TODO: refactor away this, this is outside the scope of Data
@@ -429,9 +465,9 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
    */
   def litValue(): BigInt = litOption.get
 
-  /** Returns the width, in bits, if currently known.
-    * @throws java.util.NoSuchElementException if the width is not known. */
-  final def getWidth: Int = width.get
+  /** Returns the width, in bits, if currently known. */
+  final def getWidth: Int =
+    if (isWidthKnown) width.get else throwException(s"Width of $this is unknown!")
   /** Returns whether the width is currently known. */
   final def isWidthKnown: Boolean = width.known
   /** Returns Some(width) if the width is known, else None. */
@@ -484,6 +520,10 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 }
 
 trait WireFactory {
+  /** @usecase def apply[T <: Data](t: T): T
+    *   Construct a [[Wire]] from a type template
+    *   @param t The template from which to construct this wire
+    */
   def apply[T <: Data](t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     if (compileOptions.declaredTypeMustBeUnbound) {
       requireIsChiselType(t, "wire type")
@@ -502,17 +542,88 @@ trait WireFactory {
   }
 }
 
+/** Utility for constructing hardware wires
+  *
+  * The width of a `Wire` (inferred or not) is copied from the type template
+  * {{{
+  * val w0 = Wire(UInt()) // width is inferred
+  * val w1 = Wire(UInt(8.W)) // width is set to 8
+  *
+  * val w2 = Wire(Vec(4, UInt())) // width is inferred
+  * val w3 = Wire(Vec(4, UInt(8.W))) // width of each element is set to 8
+  *
+  * class MyBundle {
+  *   val unknown = UInt()
+  *   val known   = UInt(8.W)
+  * }
+  * val w4 = Wire(new MyBundle)
+  * // Width of w4.unknown is inferred
+  * // Width of w4.known is set to 8
+  * }}}
+  *
+  */
 object Wire extends WireFactory
 
+/** Utility for constructing hardware wires with a default connection
+  *
+  * The two forms of `WireInit` differ in how the type and width of the resulting [[Wire]] are
+  * specified.
+  *
+  * ==Single Argument==
+  * The single argument form uses the argument to specify both the type and default connection. For
+  * non-literal [[Bits]], the width of the [[Wire]] will be inferred. For literal [[Bits]] and all
+  * non-Bits arguments, the type will be copied from the argument. See the following examples for
+  * more details:
+  *
+  * 1. Literal [[Bits]] initializer: width will be set to match
+  * {{{
+  * val w1 = WireInit(1.U) // width will be inferred to be 1
+  * val w2 = WireInit(1.U(8.W)) // width is set to 8
+  * }}}
+  *
+  * 2. Non-Literal [[Element]] initializer - width will be inferred
+  * {{{
+  * val x = Wire(UInt())
+  * val y = Wire(UInt(8.W))
+  * val w1 = WireInit(x) // width will be inferred
+  * val w2 = WireInit(y) // width will be inferred
+  * }}}
+  *
+  * 3. [[Aggregate]] initializer - width will be set to match the aggregate
+  *
+  * {{{
+  * class MyBundle {
+  *   val unknown = UInt()
+  *   val known   = UInt(8.W)
+  * }
+  * val w1 = Wire(new MyBundle)
+  * val w2 = WireInit(w1)
+  * // Width of w2.unknown is inferred
+  * // Width of w2.known is set to 8
+  * }}}
+  *
+  * ==Double Argument==
+  * The double argument form allows the type of the [[Wire]] and the default connection to be
+  * specified independently.
+  *
+  * The width inference semantics for `WireInit` with two arguments match those of [[Wire]]. The
+  * first argument to `WireInit` is the type template which defines the width of the `Wire` in
+  * exactly the same way as the only argument to [[Wire]].
+  *
+  * More explicitly, you can reason about `WireInit` with multiple arguments as if it were defined
+  * as:
+  * {{{
+  * def WireInit[T <: Data](t: T, init: T): T = {
+  *   val x = Wire(t)
+  *   x := init
+  *   x
+  * }
+  * }}}
+  *
+  * @note The `Init` in `WireInit` refers to a `default` connection. This is in contrast to
+  * [[RegInit]] where the `Init` refers to a value on reset.
+  */
 object WireInit {
-  def apply[T <: Data](init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
-    val model = (init match {
-      // For e.g. Wire(init=0.U(k.W)), fix the Reg's width to k
-      case init: Bits if init.litIsForcedWidth == Some(false) => init.cloneTypeWidth(Width())
-      case _ => init.cloneTypeFull
-    }).asInstanceOf[T]
-    apply(model, init)
-  }
 
   private def applyImpl[T <: Data](t: T, init: Data)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     implicit val noSourceInfo = UnlocatableSourceInfo
@@ -522,11 +633,37 @@ object WireInit {
     x
   }
 
+  /** @usecase def apply[T <: Data](t: T, init: DontCare.type): T
+    *   Construct a [[Wire]] with a type template and a [[DontCare]] default
+    *   @param t The type template used to construct this [[Wire]]
+    *   @param init The default connection to this [[Wire]], can only be [[DontCare]]
+    *   @note This is really just a specialized form of `apply[T <: Data](t: T, init: T): T` with [[DontCare]]
+    *   as `init`
+    */
+  def apply[T <: Data](t: T, init: DontCare.type)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    applyImpl(t, init)
+  }
+
+  /** @usecase def apply[T <: Data](t: T, init: T): T
+    *   Construct a [[Wire]] with a type template and a default connection
+    *   @param t The type template used to construct this [[Wire]]
+    *   @param init The hardware value that will serve as the default value
+    */
   def apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     applyImpl(t, init)
   }
-  def apply[T <: Data](t: T, init: DontCare.type)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
-    applyImpl(t, init)
+
+  /** @usecase def apply[T <: Data](init: T): T
+    *   Construct a [[Wire]] with a default connection
+    *   @param init The hardware value that will serve as a type template and default value
+    */
+  def apply[T <: Data](init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    val model = (init match {
+      // If init is a literal without forced width OR any non-literal, let width be inferred
+      case init: Bits if !init.litIsForcedWidth.getOrElse(false) => init.cloneTypeWidth(Width())
+      case _ => init.cloneTypeFull
+    }).asInstanceOf[T]
+    apply(model, init)
   }
 }
 
@@ -541,6 +678,8 @@ object DontCare extends Element {
 
   bind(DontCareBinding(), SpecifiedDirection.Output)
   override def cloneType = DontCare
+
+  override def toString: String = "DontCare()"
 
   override def litOption = None
 

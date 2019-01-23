@@ -222,8 +222,8 @@ private[chisel3] object Builder {
       // A bare api call is, e.g. calling Wire() from the scala console).
     )
   }
-  def forcedUserModule: UserModule = currentModule match {
-    case Some(module: UserModule) => module
+  def forcedUserModule: RawModule = currentModule match {
+    case Some(module: RawModule) => module
     case _ => throwException(
       "Error: Not in a UserModule. Likely cause: Missed Module() wrap, bare chisel API call, or attempting to construct hardware inside a BlackBox."
       // A bare api call is, e.g. calling Wire() from the scala console).
@@ -294,6 +294,21 @@ private[chisel3] object Builder {
     lastStack
   }
 
+  /** Recursively suggests names to supported "container" classes
+    * Arbitrary nestings of supported classes are allowed so long as the
+    * innermost element is of type HasId
+    * (Note: Map is Iterable[Tuple2[_,_]] and thus excluded)
+    */
+  def nameRecursively(prefix: String, nameMe: Any, namer: (HasId, String) => Unit): Unit = nameMe match {
+    case (id: HasId) => namer(id, prefix)
+    case Some(elt) => nameRecursively(prefix, elt, namer)
+    case (iter: Iterable[_]) if iter.hasDefiniteSize =>
+      for ((elt, i) <- iter.zipWithIndex) {
+        nameRecursively(s"${prefix}_${i}", elt, namer)
+      }
+    case _ => // Do nothing
+  }
+
   def errors: ErrorLog = dynamicContext.errors
   def error(m: => String): Unit = if (dynamicContextVar.value.isDefined) errors.error(m)
   def warning(m: => String): Unit = if (dynamicContextVar.value.isDefined) errors.warning(m)
@@ -310,7 +325,7 @@ private[chisel3] object Builder {
     throwException(m)
   }
 
-  def build[T <: UserModule](f: => T): Circuit = {
+  def build[T <: RawModule](f: => T): Circuit = {
     chiselContext.withValue(new ChiselContext) {
       dynamicContextVar.withValue(Some(new DynamicContext())) {
         errors.info("Elaborating design...")

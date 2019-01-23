@@ -31,6 +31,33 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
   }
   def elaborate(t: => RawModule): Unit = Driver.elaborate(() => t)
 
+  def assertKnownWidth(expected: Int)(gen: => Data): Unit = {
+    assertTesterPasses(new BasicTester {
+      val x = gen
+      assert(x.getWidth === expected)
+      // Sanity check that firrtl doesn't change the width
+      x := 0.U.asTypeOf(chiselTypeOf(x))
+      val (_, done) = chisel3.util.Counter(true.B, 2)
+      when (done) {
+        chisel3.assert(~(x.asUInt) === -1.S(expected.W).asUInt)
+        stop()
+      }
+    })
+  }
+
+  def assertInferredWidth(expected: Int)(gen: => Data): Unit = {
+    assertTesterPasses(new BasicTester {
+      val x = gen
+      assert(!x.isWidthKnown, s"Asserting that width should be inferred yet width is known to Chisel!")
+      x := 0.U.asTypeOf(chiselTypeOf(x))
+      val (_, done) = chisel3.util.Counter(true.B, 2)
+      when (done) {
+        chisel3.assert(~(x.asUInt) === -1.S(expected.W).asUInt)
+        stop()
+      }
+    })
+  }
+
   /** Given a generator, return the Firrtl that it generates.
     *
     * @param t Module generator
@@ -63,7 +90,59 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
 }
 
 /** Spec base class for BDD-style testers. */
-class ChiselFlatSpec extends FlatSpec with ChiselRunners with Matchers
+abstract class ChiselFlatSpec extends FlatSpec with ChiselRunners with Matchers
+
+class ChiselTestUtilitiesSpec extends ChiselFlatSpec {
+  import org.scalatest.exceptions.TestFailedException
+  // Who tests the testers?
+  "assertKnownWidth" should "error when the expected width is wrong" in {
+    a [TestFailedException] shouldBe thrownBy {
+      assertKnownWidth(7) {
+        Wire(UInt(8.W))
+      }
+    }
+  }
+
+  it should "error when the width is unknown" in {
+    a [ChiselException] shouldBe thrownBy {
+      assertKnownWidth(7) {
+        Wire(UInt())
+      }
+    }
+  }
+
+  it should "work if the width is correct" in {
+    assertKnownWidth(8) {
+      Wire(UInt(8.W))
+    }
+  }
+
+  "assertInferredWidth" should "error if the width is known" in {
+    a [TestFailedException] shouldBe thrownBy {
+      assertInferredWidth(8) {
+        Wire(UInt(8.W))
+      }
+    }
+  }
+
+  it should "error if the expected width is wrong" in {
+    a [TestFailedException] shouldBe thrownBy {
+      assertInferredWidth(8) {
+        val w = Wire(UInt())
+        w := 2.U(2.W)
+        w
+      }
+    }
+  }
+
+  it should "pass if the width is correct" in {
+    assertInferredWidth(4) {
+      val w = Wire(UInt())
+      w := 2.U(4.W)
+      w
+    }
+  }
+}
 
 /** Spec base class for property-based testers. */
 class ChiselPropSpec extends PropSpec with ChiselRunners with PropertyChecks with Matchers {

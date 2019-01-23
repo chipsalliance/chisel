@@ -53,7 +53,7 @@ object assert { // scalastyle:ignore object.name
 
   def apply_impl_do(cond: Bool, line: String, message: Option[String], data: Bits*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) {
     val escLine = line.replaceAll("%", "%%")
-    when (!(cond || Module.reset.toBool)) {
+    when (!(cond || Module.reset.asBool)) {
       val fmt = message match {
         case Some(msg) =>
           s"Assertion failed: $msg\n    at $escLine\n"
@@ -80,7 +80,7 @@ object assert { // scalastyle:ignore object.name
 object stop { // scalastyle:ignore object.name
   /** Terminate execution with a failure code. */
   def apply(code: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit = {
-    when (!Module.reset.toBool) {
+    when (!Module.reset.asBool) {
       pushCommand(Stop(sourceInfo, Builder.forcedClock.ref, code))
     }
   }
