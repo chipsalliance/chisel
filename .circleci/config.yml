@@ -37,7 +37,7 @@ commands:
           at: /home/chisel
 
       # Set environment
-      - run: echo 'export PATH="/opt/verilator/verilator_3_922/bin:/opt/yosys/bin:$PATH"' >> $BASH_ENV
+      - run: echo 'export PATH="/opt/verilator/verilator_4_006/bin:/opt/yosys/bin:$PATH"' >> $BASH_ENV
 
       # The -DminimalResources flag causes sbt to run tests sequentially,
       #  so we could actually use "sbt +test" to run all the crossVersioned tests.
@@ -124,7 +124,7 @@ jobs:
     executor: chisel-executor
     steps:
       - test-chisel:
-          scalaVersion: "++2.12.6"
+          scalaVersion: "++2.12.7"
 
   checkstyle-chisel:
     executor: chisel-executor
