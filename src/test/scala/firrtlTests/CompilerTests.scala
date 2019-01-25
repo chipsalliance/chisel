@@ -13,6 +13,7 @@ import firrtl.{
   Compiler,
   HighFirrtlCompiler,
   MiddleFirrtlCompiler,
+  MinimumVerilogCompiler,
   LowFirrtlCompiler,
   Parser,
   VerilogCompiler
@@ -152,4 +153,32 @@ class VerilogCompilerSpec extends CompilerSpec with Matchers {
    "A circuit's verilog output" should "match the given string and not have RANDOMIZE if no invalids" in {
       getOutput should be (check)
    }
+}
+
+class MinimumVerilogCompilerSpec extends CompilerSpec with Matchers {
+  val input = """|circuit Top:
+                 |  module Top:
+                 |    output b: UInt<1>[2]
+                 |    node c = UInt<1>("h0")
+                 |    node d = UInt<1>("h0")
+                 |    b[0] <= UInt<1>("h0")
+                 |    b[1] <= c
+                 |""".stripMargin
+  val check = """|module Top(
+                 |  output  b_0,
+                 |  output  b_1
+                 |);
+                 |  wire  c;
+                 |  wire  d;
+                 |  assign c = 1'h0;
+                 |  assign d = 1'h0;
+                 |  assign b_0 = 1'h0;
+                 |  assign b_1 = c;
+                 |endmodule
+                 |""".stripMargin
+  def compiler = new MinimumVerilogCompiler()
+
+  "A circuit's minimum Verilog output" should "not have constants propagated or dead code eliminated" in {
+    getOutput should be (check)
+  }
 }
