@@ -564,56 +564,6 @@ trait WireFactory {
   */
 object Wire extends WireFactory
 
-object WireInit {
-
-  private def applyImpl[T <: Data](t: T, init: Data)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
-    implicit val noSourceInfo = UnlocatableSourceInfo
-    val x = Wire(t)
-    requireIsHardware(init, "wire initializer")
-    x := init
-    x
-  }
-
-  /** @usecase def apply[T <: Data](t: T, init: DontCare.type): T
-    *   Construct a [[Wire]] with a type template and a [[DontCare]] default
-    *   @param t The type template used to construct this [[Wire]]
-    *   @param init The default connection to this [[Wire]], can only be [[DontCare]]
-    *   @note This is really just a specialized form of `apply[T <: Data](t: T, init: T): T` with [[DontCare]]
-    *   as `init`
-    */
-
-  @chiselRuntimeDeprecated
-  @deprecated("WireInit is deprecated, use WireDefault", "chisel3.2")
-  def apply[T <: Data](t: T, init: DontCare.type)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
-    applyImpl(t, init)
-  }
-
-  /** @usecase def apply[T <: Data](t: T, init: T): T
-    *   Construct a [[Wire]] with a type template and a default connection
-    *   @param t The type template used to construct this [[Wire]]
-    *   @param init The hardware value that will serve as the default value
-    */
-  @chiselRuntimeDeprecated
-  @deprecated("WireInit is deprecated, use WireDefault", "chisel3.2")
-  def apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
-    applyImpl(t, init)
-  }
-
-  /** @usecase def apply[T <: Data](init: T): T
-    *   Construct a [[Wire]] with a default connection
-    *   @param init The hardware value that will serve as a type template and default value
-    */
-  @chiselRuntimeDeprecated
-  @deprecated("WireInit is deprecated, use WireDefault", "chisel3.2")
-  def apply[T <: Data](init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
-    val model = (init match {
-      // If init is a literal without forced width OR any non-literal, let width be inferred
-      case init: Bits if !init.litIsForcedWidth.getOrElse(false) => init.cloneTypeWidth(Width())
-      case _ => init.cloneTypeFull
-    }).asInstanceOf[T]
-    apply(model, init)
-  }
-}
 
 /** Utility for constructing hardware wires with a default connection
   *

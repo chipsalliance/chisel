@@ -41,7 +41,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     def apply[T <: Data](t: T, init: DontCare.type)(implicit compileOptions: CompileOptions): T =
       chisel3.core.WireDefault(t, init)
   }
-  val WireInit = chisel3.core.WireInit
+  val WireInit = chisel3.core.WireDefault
   val WireDefault = chisel3.core.WireDefault
 
   val Clock = chisel3.core.Clock
