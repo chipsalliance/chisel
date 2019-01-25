@@ -64,7 +64,7 @@ object MonoConnect {
       connectCompileOptions: CompileOptions,
       sink: Data,
       source: Data,
-      context_mod: UserModule): Unit =
+      context_mod: RawModule): Unit =
     (sink, source) match {
 
       // Handle legal element cases, note (Bool, Bool) is caught by the first two, as Bool is a UInt
@@ -157,7 +157,7 @@ object MonoConnect {
 
   // This function checks if element-level connection operation allowed.
   // Then it either issues it or throws the appropriate exception.
-  def elemConnect(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions, sink: Element, source: Element, context_mod: UserModule): Unit = {
+  def elemConnect(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions, sink: Element, source: Element, context_mod: RawModule): Unit = {
     import BindingDirection.{Internal, Input, Output} // Using extensively so import these
     // If source has no location, assume in context module
     // This can occur if is a literal, unbound will error previously

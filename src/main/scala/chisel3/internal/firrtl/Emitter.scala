@@ -110,7 +110,7 @@ private class Emitter(circuit: Circuit) {
     */
   private def moduleDecl(m: Component): String = m.id match {
     case _: chisel3.core.BaseBlackBox => newline + s"extmodule ${m.name} : "
-    case _: chisel3.core.UserModule => newline + s"module ${m.name} : "
+    case _: chisel3.core.RawModule => newline + s"module ${m.name} : "
   }
 
   /** Generates the FIRRTL module definition.

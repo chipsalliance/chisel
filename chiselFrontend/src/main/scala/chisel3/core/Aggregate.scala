@@ -150,6 +150,10 @@ object Vec extends VecFactory
   */
 sealed class Vec[T <: Data] private[core] (gen: => T, val length: Int)
     extends Aggregate with VecLike[T] {
+  override def toString: String = {
+    s"$sample_element[$length]$bindingToString"
+  }
+
   private[core] override def typeEquivalent(that: Data): Boolean = that match {
     case that: Vec[T] =>
       this.length == that.length &&
@@ -448,6 +452,18 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     *   assert(uint === "hbeefdead".U) // This will pass
     * }}}
     */
+  override def toString: String = {
+    val bindingString = topBindingOpt match {
+      case Some(BundleLitBinding(_)) =>
+        val contents = elements.toList.reverse.map { case (name, data) =>
+          s"$name=$data"
+        }.mkString(", ")
+        s"($contents)"
+      case _ => bindingToString
+    }
+    s"$className$bindingString"
+  }
+
   val elements: ListMap[String, Data]
 
   /** Name for Pretty Printing */
@@ -543,8 +559,11 @@ class AutoClonetypeException(message: String) extends ChiselException(message)
   * }}}
   */
 abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
-  override def className = "Bundle"
-
+  override def className: String = this.getClass.getSimpleName match {
+    case name if name.startsWith("$anon$") => "AnonymousBundle"  // fallback for anonymous Bundle case
+    case "" => "AnonymousBundle"  // ditto, but on other platforms
+    case name => name
+  }
   /** The collection of [[Data]]
     *
     * Elements defined earlier in the Bundle are higher order upon

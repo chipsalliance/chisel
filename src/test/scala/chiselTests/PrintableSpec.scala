@@ -177,7 +177,7 @@ class PrintableSpec extends FlatSpec with Matchers {
     }
     val firrtl = Driver.emit(() => new MyModule)
     getPrintfs(firrtl) match {
-      case Seq(Printf("Bundle(foo -> %d, bar -> %d)",
+      case Seq(Printf("AnonymousBundle(foo -> %d, bar -> %d)",
                Seq("myBun.foo", "myBun.bar"))) =>
       case e => fail()
     }

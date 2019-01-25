@@ -21,7 +21,7 @@ abstract class ReadyValidIO[+T <: Data](gen: T) extends Bundle
 {
   // Compatibility hack for rocket-chip
   private val genType = (DataMirror.internal.isSynthesizable(gen), chisel3.internal.Builder.currentModule) match {
-    case (true, Some(module: chisel3.core.ImplicitModule))
+    case (true, Some(module: chisel3.core.MultiIOModule))
         if !module.compileOptions.declaredTypeMustBeUnbound => chiselTypeOf(gen)
     case _ => gen
   }

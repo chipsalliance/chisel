@@ -96,11 +96,11 @@ sealed trait ReadOnlyBinding extends TopBinding
 
 // TODO(twigg): Ops between unenclosed nodes can also be unenclosed
 // However, Chisel currently binds all op results to a module
-case class OpBinding(enclosure: UserModule) extends ConstrainedBinding with ReadOnlyBinding
-case class MemoryPortBinding(enclosure: UserModule) extends ConstrainedBinding
+case class OpBinding(enclosure: RawModule) extends ConstrainedBinding with ReadOnlyBinding
+case class MemoryPortBinding(enclosure: RawModule) extends ConstrainedBinding
 case class PortBinding(enclosure: BaseModule) extends ConstrainedBinding
-case class RegBinding(enclosure: UserModule) extends ConstrainedBinding
-case class WireBinding(enclosure: UserModule) extends ConstrainedBinding
+case class RegBinding(enclosure: RawModule) extends ConstrainedBinding
+case class WireBinding(enclosure: RawModule) extends ConstrainedBinding
 
 case class ChildBinding(parent: Data) extends Binding {
   def location = parent.topBinding.location

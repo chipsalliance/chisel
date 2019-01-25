@@ -87,9 +87,22 @@ object DataMirror {
     target.direction
   }
 
+  // Returns the top-level module ports
   // TODO: maybe move to something like Driver or DriverUtils, since this is mainly for interacting
   // with compiled artifacts (vs. elaboration-time reflection)?
   def modulePorts(target: BaseModule): Seq[(String, Data)] = target.getChiselPorts
+
+  // Returns all module ports with underscore-qualified names
+  def fullModulePorts(target: BaseModule): Seq[(String, Data)] = {
+    def getPortNames(name: String, data: Data): Seq[(String, Data)] = Seq(name -> data) ++ (data match {
+      case _: Element => Seq()
+      case r: Record => r.elements.toSeq flatMap { case (eltName, elt) => getPortNames(s"${name}_${eltName}", elt) }
+      case v: Vec[_] => v.zipWithIndex flatMap { case (elt, index) => getPortNames(s"${name}_${index}", elt) }
+    })
+    modulePorts(target).flatMap { case (name, data) =>
+      getPortNames(name, data).toList
+    }
+  }
 
   // Internal reflection-style APIs, subject to change and removal whenever.
   object internal {
@@ -113,8 +126,11 @@ private[core] object cloneSupertype {
                                                           compileOptions: CompileOptions): T = {
     require(!elts.isEmpty, s"can't create $createdType with no inputs")
 
-    if (elts.head.isInstanceOf[Bits]) {
-      val model: T = elts reduce { (elt1: T, elt2: T) => ((elt1, elt2) match {
+    val filteredElts = elts.filter(_ != DontCare)
+    require(!filteredElts.isEmpty, s"can't create $createdType with only DontCare inputs")
+
+    if (filteredElts.head.isInstanceOf[Bits]) {
+      val model: T = filteredElts reduce { (elt1: T, elt2: T) => ((elt1, elt2) match {
         case (elt1: Bool, elt2: Bool) => elt1
         case (elt1: Bool, elt2: UInt) => elt2  // TODO: what happens with zero width UInts?
         case (elt1: UInt, elt2: Bool) => elt1  // TODO: what happens with zero width UInts?
@@ -140,13 +156,13 @@ private[core] object cloneSupertype {
       model.cloneTypeFull
     }
     else {
-      for (elt <- elts.tail) {
-        require(elt.getClass == elts.head.getClass,
-          s"can't create $createdType with heterogeneous types ${elts.head.getClass} and ${elt.getClass}")
-        require(elt typeEquivalent elts.head,
-          s"can't create $createdType with non-equivalent types ${elts.head} and ${elt}")
+      for (elt <- filteredElts.tail) {
+        require(elt.getClass == filteredElts.head.getClass,
+          s"can't create $createdType with heterogeneous types ${filteredElts.head.getClass} and ${elt.getClass}")
+        require(elt typeEquivalent filteredElts.head,
+          s"can't create $createdType with non-equivalent types ${filteredElts.head} and ${elt}")
       }
-      elts.head.cloneTypeFull
+      filteredElts.head.cloneTypeFull
     }
   }
 }
@@ -287,6 +303,26 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       throw Binding.RebindingException(s"Attempted reassignment of resolved direction to $this")
     }
     _direction = Some(actualDirection)
+  }
+
+  // User-friendly representation of the binding as a helper function for toString.
+  // Provides a unhelpful fallback for literals, which should have custom rendering per
+  // Data-subtype.
+  protected def bindingToString: String = topBindingOpt match {
+    case None => ""
+    case Some(OpBinding(enclosure)) => s"(OpResult in ${enclosure.desiredName})"
+    case Some(MemoryPortBinding(enclosure)) => s"(MemPort in ${enclosure.desiredName})"
+    case Some(PortBinding(enclosure)) if !enclosure.isClosed => s"(IO in unelaborated ${enclosure.desiredName})"
+    case Some(PortBinding(enclosure)) if enclosure.isClosed =>
+      DataMirror.fullModulePorts(enclosure).find(_._2 == this) match {
+        case Some((name, _)) => s"(IO $name in ${enclosure.desiredName})"
+        case None => s"(IO (unknown) in ${enclosure.desiredName})"
+      }
+    case Some(RegBinding(enclosure)) => s"(Reg in ${enclosure.desiredName})"
+    case Some(WireBinding(enclosure)) => s"(Wire in ${enclosure.desiredName})"
+    case Some(DontCareBinding()) => s"(DontCare)"
+    case Some(ElementLitBinding(litArg)) => s"(unhandled literal)"
+    case Some(BundleLitBinding(litMap)) => s"(unhandled bundle literal)"
   }
 
   // Return ALL elements at root of this type.
@@ -693,6 +729,8 @@ object DontCare extends Element {
 
   bind(DontCareBinding(), SpecifiedDirection.Output)
   override def cloneType = DontCare
+
+  override def toString: String = "DontCare()"
 
   override def litOption = None
 
