@@ -60,10 +60,10 @@ package object Chisel {     // scalastyle:ignore package.object.name
     import chisel3.core.CompileOptions
 
     def apply[T <: Data](dummy: Int = 0, init: T)(implicit compileOptions: CompileOptions): T =
-      chisel3.core.WireInit(init)
+      chisel3.core.WireDefault(init)
 
     def apply[T <: Data](t: T, init: T)(implicit compileOptions: CompileOptions): T =
-      chisel3.core.WireInit(t, init)
+      chisel3.core.WireDefault(t, init)
   }
   object Clock {
     def apply(): Clock = new Clock
