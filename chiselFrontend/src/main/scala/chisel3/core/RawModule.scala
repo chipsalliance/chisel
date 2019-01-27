@@ -124,7 +124,11 @@ abstract class MultiIOModule(implicit moduleCompileOptions: CompileOptions)
     extends RawModule {
   // Implicit clock and reset pins
   val clock: Clock = IO(Input(Clock()))
-  val reset: Reset = IO(Input(Bool()))
+  val reset: Reset = {
+    // Default if no outer reset is synchronous reset
+    val gen = Builder.outerReset.map(_.cloneType).getOrElse(Bool())
+    IO(Input(gen))
+  }
 
   // Setup ClockAndReset
   Builder.currentClockAndReset = Some(ClockAndReset(clock, reset))

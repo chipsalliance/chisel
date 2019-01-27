@@ -28,6 +28,7 @@ private class Emitter(circuit: Circuit) {
 
   private def emitType(d: Data, clearDir: Boolean = false): String = d match {
     case d: Clock => "Clock"
+    case d: AsyncReset => "AsyncReset"
     case d: chisel3.core.EnumType => s"UInt${d.width}"
     case d: UInt => s"UInt${d.width}"
     case d: SInt => s"SInt${d.width}"

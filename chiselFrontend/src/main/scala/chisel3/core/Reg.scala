@@ -153,12 +153,15 @@ object RegInit {
       requireIsChiselType(t, "reg type")
     }
     val reg = t.cloneTypeFull
-    val clock = Builder.forcedClock.ref
-    val reset = Builder.forcedReset.ref
+    val clock = Builder.forcedClock
+    val reset = Builder.forcedReset
+    if (reset.isInstanceOf[AsyncReset] && init.litOption.isEmpty) {
+      Builder.error(s"Register $this with async reset has non-literal reset value")
+    }
 
     reg.bind(RegBinding(Builder.forcedUserModule))
     requireIsHardware(init, "reg initializer")
-    pushCommand(DefRegInit(sourceInfo, reg, clock, reset, init.ref))
+    pushCommand(DefRegInit(sourceInfo, reg, clock.ref, reset.ref, init.ref))
     reg
   }
 

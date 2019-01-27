@@ -80,6 +80,8 @@ object MonoConnect {
         elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
       case (sink_e: Clock, source_e: Clock) =>
         elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
+      case (sink_e: AsyncReset, source_e: AsyncReset) =>
+        elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
       case (sink_e: EnumType, source_e: UnsafeEnum) =>
         elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
       case (sink_e: EnumType, source_e: EnumType) if sink_e.typeEquivalent(source_e) =>

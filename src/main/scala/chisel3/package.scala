@@ -421,6 +421,10 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     val Analog = chisel3.core.Analog
     val attach = chisel3.core.attach
 
+    type Reset = chisel3.core.Reset
+    type AsyncReset = chisel3.core.AsyncReset
+    val AsyncReset = chisel3.core.AsyncReset
+
     type ChiselEnum = chisel3.core.EnumFactory
     val EnumAnnotations = chisel3.core.EnumAnnotations
 

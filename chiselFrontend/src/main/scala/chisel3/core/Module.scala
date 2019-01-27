@@ -43,6 +43,8 @@ object Module extends SourceInfoDoc {
     // Save then clear clock and reset to prevent leaking scope, must be set again in the Module
     val clockAndReset: Option[ClockAndReset] = Builder.currentClockAndReset
     Builder.currentClockAndReset = None
+    // Record the outer reset for determining type of implicit reset in MultiIOModules
+    Builder.outerReset = clockAndReset.map(_.reset)
 
     // Execute the module, this has the following side effects:
     //   - set currentModule
