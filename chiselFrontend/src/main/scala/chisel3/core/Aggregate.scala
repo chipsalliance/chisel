@@ -90,7 +90,7 @@ sealed abstract class Aggregate extends Data {
   private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
       compileOptions: CompileOptions): Unit = {
     var i = 0
-    val bits = WireInit(UInt(this.width), that)  // handles width padding
+    val bits = WireDefault(UInt(this.width), that)  // handles width padding
     for (x <- flatten) {
       x.connectFromBits(bits(i + x.getWidth - 1, i))
       i += x.getWidth

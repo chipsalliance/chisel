@@ -118,7 +118,7 @@ class AnalogSpec extends ChiselFlatSpec {
   it should "NOT be connectable to UInts" in {
     a [Exception] should be thrownBy {
       runTester { new BasicTester {
-        val uint = WireInit(0.U(32.W))
+        val uint = WireDefault(0.U(32.W))
         val sint = Wire(Analog(32.W))
         sint := uint
       }}

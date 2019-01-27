@@ -66,8 +66,8 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers {
     elaborate {
       class TestModule(w: Int) extends Module {
         val io = IO(new BundleWithAnonymousInner(w) )
-        val w0 = WireInit(io)
-        val w1 = WireInit(io.inner)
+        val w0 = WireDefault(io)
+        val w1 = WireDefault(io.inner)
       }
       new TestModule(8)
     }
@@ -82,8 +82,8 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers {
         val io = IO(new Bundle {
           val inner = Input(bun)
         })
-        val w0 = WireInit(io)
-        val w1 = WireInit(io.inner)
+        val w0 = WireDefault(io)
+        val w1 = WireDefault(io.inner)
       }
       new TestModule(8)
     }
