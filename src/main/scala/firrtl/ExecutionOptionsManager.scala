@@ -90,7 +90,7 @@ trait HasCommonOptions {
     .text(s"This options defines a work directory for intermediate files, default is ${commonOptions.targetDirName}")
 
   parser.opt[String]("log-level")
-    .abbr("ll").valueName("<Error|Warn|Info|Debug|Trace>")
+    .abbr("ll").valueName("<error|warn|info|debug|trace>")
     .foreach { x =>
       val level = x.toLowerCase match {
         case "error" => LogLevel.Error
@@ -105,10 +105,10 @@ trait HasCommonOptions {
       if (Array("error", "warn", "info", "debug", "trace").contains(x.toLowerCase)) parser.success
       else parser.failure(s"$x bad value must be one of error|warn|info|debug|trace")
     }
-    .text(s"This options defines a work directory for intermediate files, default is ${commonOptions.targetDirName}")
+    .text(s"This options defines global log level, default is ${commonOptions.globalLogLevel}")
 
   parser.opt[Seq[String]]("class-log-level")
-    .abbr("cll").valueName("<FullClassName:[Error|Warn|Info|Debug|Trace]>[,...]")
+    .abbr("cll").valueName("<FullClassName:[error|warn|info|debug|trace]>[,...]")
     .foreach { x =>
       val logAssignments = x.map { y =>
         val className :: levelName :: _ = y.split(":").toList
@@ -128,7 +128,7 @@ trait HasCommonOptions {
       commonOptions = commonOptions.copy(classLogLevels = commonOptions.classLogLevels ++ logAssignments)
 
     }
-    .text(s"This options defines a work directory for intermediate files, default is ${commonOptions.targetDirName}")
+    .text(s"This options defines class log level, default is ${commonOptions.classLogLevels}")
 
   parser.opt[Unit]("log-to-file")
     .abbr("ltf")
