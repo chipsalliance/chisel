@@ -71,6 +71,52 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     }
   }
 
+  implicit class toBoolable[T <: Bits](bits: T) {
+    import scala.language.experimental.macros
+    import chisel3.core.CompileOptions
+    import chisel3.internal.sourceinfo._
+
+    /** Returns the contents of this wire as a [[scala.collection.Seq]] of [[Bool]]. */
+    final def toBools(): Seq[Bool] = macro SourceInfoTransform.noArg
+
+    /** @group SourceInfoTransformMacro */
+    @chiselRuntimeDeprecated
+    @deprecated("Use asBools instead", "3.2")
+    def do_toBools(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Seq[Bool] =
+      bits.do_asBools
+
+    /** Casts this $coll to a [[Bool]]
+      *
+      * @note The width must be known and equal to 1
+      */
+    final def toBool(): Bool = macro SourceInfoWhiteboxTransform.noArg
+
+    /** @group SourceInfoTransformMacro */
+    @chiselRuntimeDeprecated
+    @deprecated("Use asBool instead", "3.2")
+    def do_toBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+      bits.do_asBool
+  }
+
+
+  implicit class toBoolableReset[T <: chisel3.core.Reset](reset: T) {
+    import scala.language.experimental.macros
+    import chisel3.core.CompileOptions
+    import chisel3.internal.sourceinfo._
+
+    /** Casts this $coll to a [[Bool]]
+      *
+      * @note The width must be known and equal to 1
+      */
+    final def toBool(): Bool = macro SourceInfoWhiteboxTransform.noArg
+
+    /** @group SourceInfoTransformMacro */
+    @chiselRuntimeDeprecated
+    @deprecated("Use asBool instead", "3.2")
+    def do_toBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+      reset.do_asBool
+  }
+
   implicit class cloneTypeable[T <: Data](target: T) {
     @chiselRuntimeDeprecated
     @deprecated("chiselCloneType is deprecated, use chiselTypeOf(...) to get the Chisel Type of a hardware object", "chisel3")

@@ -53,6 +53,61 @@ package object Chisel {     // scalastyle:ignore package.object.name
     }
   }
 
+  implicit class toBoolable[T <: Bits](target: T) {
+    import chisel3.core.CompileOptions
+    import chisel3.internal.sourceinfo._
+
+    /** Casts this $coll to a [[Bool]]
+      *
+      * @note The width must be known and equal to 1
+      */
+    final def toBool(): Bool = macro SourceInfoWhiteboxTransform.noArg
+
+    /** @group SourceInfoTransformMacro */
+    def do_toBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+      target.do_asBool
+
+    /** Returns the contents of this wire as a [[scala.collection.Seq]] of [[Bool]]. */
+    final def toBools(): Seq[Bool] = macro SourceInfoTransform.noArg
+
+    /** @group SourceInfoTransformMacro */
+    def do_toBools(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Seq[Bool] =
+      target.do_asBools
+  }
+
+  implicit class toBoolableBool(bool: Bool) {
+    import scala.language.experimental.macros
+    import chisel3.core.CompileOptions
+    import chisel3.internal.sourceinfo._
+
+    /** Casts this $coll to a [[Bool]]
+      *
+      * @note The width must be known and equal to 1
+      */
+    final def toBool(): Bool = macro SourceInfoWhiteboxTransform.noArg
+
+    /** @group SourceInfoTransformMacro */
+    def do_toBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+      bool.do_asBool
+  }
+
+
+  implicit class toBoolableReset[T <: chisel3.core.Reset](reset: T) {
+    import scala.language.experimental.macros
+    import chisel3.core.CompileOptions
+    import chisel3.internal.sourceinfo._
+
+    /** Casts this $coll to a [[Bool]]
+      *
+      * @note The width must be known and equal to 1
+      */
+    final def toBool(): Bool = macro SourceInfoWhiteboxTransform.noArg
+
+    /** @group SourceInfoTransformMacro */
+    def do_toBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+      reset.do_asBool
+  }
+
   type ChiselException = chisel3.internal.ChiselException
 
   type Data = chisel3.core.Data

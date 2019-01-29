@@ -76,7 +76,7 @@ abstract class Element extends Data {
   *
   * @note This is a workaround because macros cannot override abstract methods.
   */
-private[chisel3] sealed trait ToBoolable extends Element {
+private[chisel3] sealed trait AsBoolable extends Element {
 
   /** Casts this $coll to a [[Bool]]
     *
@@ -86,15 +86,6 @@ private[chisel3] sealed trait ToBoolable extends Element {
 
   /** @group SourceInfoTransformMacro */
   def do_asBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
-
-  /** Casts this $coll to a [[Bool]]
-    *
-    * @note The width must be known and equal to 1
-    */
-  final def toBool(): Bool = macro SourceInfoWhiteboxTransform.noArg
-
-  /** @group SourceInfoTransformMacro */
-  def do_toBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
 }
 
 /** A data type for values represented by a single bitvector. This provides basic bitwise operations.
@@ -105,7 +96,7 @@ private[chisel3] sealed trait ToBoolable extends Element {
   * @define sumWidth       @note The width of the returned $coll is `width of this` + `width of that`.
   * @define unchangedWidth @note The width of the returned $coll is unchanged, i.e., the `width of this`.
   */
-sealed abstract class Bits(private[chisel3] val width: Width) extends Element with ToBoolable { //scalastyle:off number.of.methods
+sealed abstract class Bits(private[chisel3] val width: Width) extends Element with AsBoolable { //scalastyle:off number.of.methods
   // TODO: perhaps make this concrete?
   // Arguments for: self-checking code (can't do arithmetic on bits)
   // Arguments against: generates down to a FIRRTL UInt anyways
@@ -370,14 +361,6 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
   def do_>> (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
 
   /** Returns the contents of this wire as a [[scala.collection.Seq]] of [[Bool]]. */
-  final def toBools(): Seq[Bool] = macro SourceInfoTransform.noArg
-
-  /** @group SourceInfoTransformMacro */
-  @chiselRuntimeDeprecated
-  @deprecated("Use asBools instead", "3.2")
-  def do_toBools(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Seq[Bool] = do_asBools
-
-  /** Returns the contents of this wire as a [[scala.collection.Seq]] of [[Bool]]. */
   final def asBools(): Seq[Bool] = macro SourceInfoTransform.noArg
 
   /** @group SourceInfoTransformMacro */
@@ -435,10 +418,6 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
       case _ => throwException(s"can't covert ${this.getClass.getSimpleName}$width to Bool")
     }
   }
-
-  @chiselRuntimeDeprecated
-  @deprecated("Use asBool instead", "3.2")
-  final def do_toBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = do_asBool
 
   /** Concatenation operator
     *
@@ -1193,7 +1172,7 @@ trait SIntFactory {
 
 object SInt extends SIntFactory
 
-sealed trait Reset extends Element with ToBoolable
+sealed trait Reset extends Element with AsBoolable
 
 // REVIEW TODO: Why does this extend UInt and not Bits? Does defining airth
 // operations on a Bool make sense?
