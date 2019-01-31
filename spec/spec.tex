@@ -1614,19 +1614,31 @@ A set of names are defined to be {\em prefix unique} if there exists no two name
 
 As an example \verb|firetruck$y$z| shares a prefix with \verb|firetruck$y| and \verb|firetruck|, but does not share a prefix with \verb|fire|.
 
-\section{The Lowered FIRRTL Form}
+\section{The Lowered FIRRTL Forms}
 
-The lowered FIRRTL form, LoFIRRTL, is a restricted subset of the FIRRTL language that omits many of the higher level constructs. All conformant FIRRTL compilers must provide a {\em lowering transformation} that transforms arbitrary FIRRTL circuits into equivalent LoFIRRTL circuits.
+The lowered FIRRTL forms, MidFIRRTL and LoFIRRTL, are increasingly restrictive subsets of the FIRRTL language that omit many of the higher level constructs. All conformant FIRRTL compilers must provide a {\em lowering transformation} that transforms arbitrary FIRRTL circuits into equivalent LoFIRRTL circuits. However, there are no additional requirements related to accepting or producing MidFIRRTL, as the LoFIRRTL output of the lowering transformation will already be a legal subset of MidFIRRTL.
 
-A FIRRTL circuit is defined to be a valid LoFIRRTL circuit if it obeys the following restrictions:
+\subsection{MidFIRRTL}
+
+A FIRRTL circuit is defined to be a valid MidFIRRTL circuit if it obeys the following restrictions:
 \begin{itemize}
-\item All components must be declared with a ground type and explicit widths.
-\item The partial connect statement is not used.
+\item All widths must be explicitly defined.
 \item The conditional statement is not used.
 \item All components are connected to exactly once.
 \end{itemize}
 
-The additional restrictions give LoFIRRTL a direct correspondence to a circuit netlist.
+\subsection{LoFIRRTL}
+
+A FIRRTL circuit is defined to be a valid LoFIRRTL circuit if it obeys the following restrictions:
+\begin{itemize}
+\item All widths must be explicitly defined.
+\item The conditional statement is not used.
+\item All components are connected to exactly once.
+\item All components must be declared with a ground type.
+\item The partial connect statement is not used.
+\end{itemize}
+
+The first three restrictions follow from the fact that any LoFIRRTL circuit is also a legal MidFIRRTL circuit. The additional restrictions give LoFIRRTL a direct correspondence to a circuit netlist.
 
 Low level circuit transformations can be conveniently written by first lowering a circuit to its LoFIRRTL form, then operating on the restricted (and thus simpler) subset of constructs. Note that circuit transformations are still free to generate high level constructs as they can simply be lowered again.
 
