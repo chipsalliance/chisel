@@ -7,6 +7,25 @@ import firrtl._
 import firrtl.ir._
 import Utils.indent
 
+object DefAnnotatedMemory {
+  def apply(m: DefMemory): DefAnnotatedMemory = {
+    new DefAnnotatedMemory(
+      m.info,
+      m.name,
+      m.dataType,
+      m.depth,
+      m.writeLatency,
+      m.readLatency,
+      m.readers,
+      m.writers,
+      m.readwriters,
+      m.readUnderWrite,
+      None, // mask granularity annotation
+      None  // No reference yet to another memory
+    )
+  }
+}
+
 case class DefAnnotatedMemory(
     info: Info,
     name: String,

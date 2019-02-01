@@ -19,20 +19,7 @@ object ToMemIR extends Pass {
   def updateStmts(s: Statement): Statement = s match {
     case m: DefMemory if m.readLatency == 1 && m.writeLatency == 1 &&
         (m.writers.length + m.readwriters.length) == 1 && m.readers.length <= 1 =>
-      DefAnnotatedMemory(
-        m.info,
-        m.name,
-        m.dataType,
-        m.depth,
-        m.writeLatency,
-        m.readLatency,
-        m.readers,
-        m.writers,
-        m.readwriters,
-        m.readUnderWrite,
-        None, // mask granularity annotation
-        None  // No reference yet to another memory
-      )
+      DefAnnotatedMemory(m)
     case sx => sx map updateStmts
   }
 
