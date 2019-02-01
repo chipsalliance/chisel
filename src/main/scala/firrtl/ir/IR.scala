@@ -58,15 +58,13 @@ trait HasInfo {
 trait IsDeclaration extends HasName with HasInfo
 
 case class StringLit(string: String) extends FirrtlNode {
+  import org.apache.commons.text.StringEscapeUtils
   /** Returns an escaped and quoted String */
   def escape: String = {
-    import scala.reflect.runtime.universe._
-    Literal(Constant(string)).toString
+    "\"" + serialize + "\""
   }
-  def serialize: String = {
-    val str = escape
-    str.slice(1, str.size - 1)
-  }
+  def serialize: String = StringEscapeUtils.escapeJava(string)
+
   /** Format the string for Verilog */
   def verilogFormat: StringLit = {
     StringLit(string.replaceAll("%x", "%h"))
@@ -81,6 +79,7 @@ case class StringLit(string: String) extends FirrtlNode {
   }
 }
 object StringLit {
+  import org.apache.commons.text.StringEscapeUtils
   /** Maps characters to ASCII for Verilog emission */
   private def toASCII(char: Char): List[Char] = char match {
     case nonASCII if !nonASCII.isValidByte => List('?')
@@ -94,8 +93,7 @@ object StringLit {
 
   /** Create a StringLit from a raw parsed String */
   def unescape(raw: String): StringLit = {
-    val str = StringContext.processEscapes(raw)
-    StringLit(str)
+    StringLit(StringEscapeUtils.unescapeJava(raw))
   }
 }
 

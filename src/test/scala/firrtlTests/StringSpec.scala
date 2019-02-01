@@ -59,16 +59,16 @@ class StringSpec extends FirrtlPropSpec {
 
   // Whitelist is [0x20 - 0x7e]
   val whitelist =
-    """ !\"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ""" +
+    """ !\"#$%&\''()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ""" +
     """[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~"""
 
   property(s"Character whitelist should be supported: [$whitelist] ") {
     val lit = StringLit.unescape(whitelist)
+    // We accept \' but don't bother escaping it ourselves
+    val res = whitelist.replaceAll("""\\'""", "'")
     // Check result
-    assert(lit.serialize == whitelist)
-    // Scala likes to escape ' as \', Verilog doesn't
-    val verilogWhitelist = whitelist.replaceAll("""\\'""", "'")
-    assert(lit.verilogEscape.tail.init == verilogWhitelist)
+    assert(lit.serialize == res)
+    assert(lit.verilogEscape.tail.init == res)
   }
 
   // Valid escapes = \n, \t, \\, \", \'

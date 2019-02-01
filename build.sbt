@@ -69,6 +69,8 @@ libraryDependencies += "net.jcazevedo" %% "moultingyaml" % "0.4.0"
 
 libraryDependencies += "org.json4s" %% "json4s-native" % "3.6.1"
 
+libraryDependencies += "org.apache.commons" % "commons-text" % "1.6"
+
 // Java PB
 
 enablePlugins(ProtobufPlugin)
