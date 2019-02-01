@@ -78,7 +78,7 @@ trait PublishChiselModule extends CommonChiselModule with PublishModule {
 
 // Make this available to external tools.
 object chisel3 extends Cross[ChiselTopModule](crossVersions: _*) {
-  def defaultVersion(ev: Evaluator[Any]) = T.command{
+  def defaultVersion(ev: Evaluator) = T.command{
     println(crossVersions.head)
   }
 
@@ -175,8 +175,7 @@ trait AbstractChiselModule extends PublishChiselModule with CommonBuild.BuildInf
   override def jar = T {
     createJar(
       allModuleClasspath().map(_.path).filter(exists),
-      mainClass(),
-      CommonBuild.noDS_StoreFiles
+      mainClass()
     )
   }
 
@@ -203,11 +202,11 @@ trait AbstractChiselModule extends PublishChiselModule with CommonBuild.BuildInf
       mainArgs = (files ++ options).toSeq
     )
 
-    createJar(Agg(javadocDir), None, CommonBuild.noDS_StoreFiles)(outDir)
+    createJar(Agg(javadocDir), None)(outDir)
   }
 
   def sourceJar = T {
-    createJar((allModuleSources() ++ allModuleResources()).map(_.path).filter(exists), None, CommonBuild.forallFilters(Seq(CommonBuild.noDS_StoreFiles, CommonBuild.onlySourceFiles)))
+    createJar((allModuleSources() ++ allModuleResources()).map(_.path).filter(exists), None)
   }
 
   override def ivyDeps = Agg(
