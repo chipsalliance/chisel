@@ -196,7 +196,7 @@ trait AbstractChiselModule extends PublishChiselModule with CommonBuild.BuildInf
     val pluginOptions = scalacPluginClasspath().map(pluginPathRef => s"-Xplugin:${pluginPathRef.path}")
     val options = Seq("-d", javadocDir.toNIO.toString, "-usejavacp") ++ pluginOptions ++ scalacOptions()
 
-    if (files.nonEmpty) subprocess(
+    if (files.nonEmpty) runSubprocess(
       "scala.tools.nsc.ScalaDoc",
       scalaCompilerClasspath().map(_.path) ++ compileClasspath().filter(_.path.ext != "pom").map(_.path),
       mainArgs = (files ++ options).toSeq
