@@ -19,7 +19,7 @@ import firrtl.Utils.throwInternalError
 import firrtl.stage.{FirrtlExecutionResultView, FirrtlStage}
 import firrtl.stage.phases.DriverCompatibility
 import firrtl.options.{StageUtils, Phase}
-import firrtl.options.Viewer.view
+import firrtl.options.Viewer
 
 
 /**
@@ -229,7 +229,7 @@ object Driver {
       case e: firrtl.options.OptionsException => return FirrtlExecutionFailure(e.message)
     }
 
-    view[FirrtlExecutionResult](annosx)
+    Viewer[FirrtlExecutionResult].view(annosx)
   }
 
   /**

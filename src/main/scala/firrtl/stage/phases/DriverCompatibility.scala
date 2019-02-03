@@ -41,7 +41,7 @@ object DriverCompatibility {
     */
   @deprecated("FirrtlExecutionResult is deprecated as part of the Stage/Phase refactor. Migrate to FirrtlStage.", "1.2")
   def firrtlResultView(annotations: AnnotationSeq): FirrtlExecutionResult =
-    Viewer.view[FirrtlExecutionResult](annotations)
+    Viewer[FirrtlExecutionResult].view(annotations)
 
   /** Holds the name of the top (main) module in an input circuit
     * @param value top module name
@@ -97,7 +97,7 @@ object DriverCompatibility {
     * @param annotations input annotations to extract targetDir from
     * @return the target directory
     */
-  private def targetDir(annotations: AnnotationSeq): String = Viewer.view[StageOptions](annotations).targetDir
+  private def targetDir(annotations: AnnotationSeq): String = Viewer[StageOptions].view(annotations).targetDir
 
   /** Add an implicit annotation file derived from the determined top name of the circuit if no
     * [[firrtl.options.InputAnnotationFileAnnotation InputAnnotationFileAnnotation]] is present.
@@ -165,7 +165,7 @@ object DriverCompatibility {
       } else if (main.nonEmpty) {
         StageUtils.dramaticWarning(
           s"Implicit reading of the input file is deprecated! Use an explict --input-file argument.")
-        FirrtlFileAnnotation(Viewer.view[StageOptions](annotations).getBuildFileName(s"${main.get}.fir")) +: annotations
+        FirrtlFileAnnotation(Viewer[StageOptions].view(annotations).getBuildFileName(s"${main.get}.fir")) +: annotations
       } else {
         annotations
       }

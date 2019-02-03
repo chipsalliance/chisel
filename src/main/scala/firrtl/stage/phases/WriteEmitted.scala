@@ -28,8 +28,8 @@ class WriteEmitted extends Phase {
 
   /** Write any [[EmittedAnnotation]]s in an [[AnnotationSeq]] to files. Written [[EmittedAnnotation]]s are deleted. */
   def transform(annotations: AnnotationSeq): AnnotationSeq = {
-    val fopts = Viewer.view[FirrtlOptions](annotations)
-    val sopts = Viewer.view[StageOptions](annotations)
+    val fopts = Viewer[FirrtlOptions].view(annotations)
+    val sopts = Viewer[StageOptions].view(annotations)
 
     annotations.flatMap {
       case a: EmittedModuleAnnotation[_] =>

@@ -41,7 +41,7 @@ package object stage {
     private lazy val dummyWriteEmitted = new WriteEmitted
 
     def view(options: AnnotationSeq): FirrtlExecutionResult = {
-      val fopts = Viewer.view[FirrtlOptions](options)
+      val fopts = Viewer[FirrtlOptions].view(options)
       val emittedRes = options
         .collect{ case DeletedAnnotation(dummyWriteEmitted.name, a: EmittedAnnotation[_]) => a.value.value }
         .mkString("\n")

@@ -25,8 +25,7 @@ class AddImplicitOutputFile extends Phase {
     annotations
       .collectFirst { case _: OutputFileAnnotation | _: EmitAllModulesAnnotation => annotations }
       .getOrElse {
-        val topName = Viewer
-          .view[FirrtlOptions](annotations)
+        val topName = Viewer[FirrtlOptions].view(annotations)
           .firrtlCircuit
           .map(_.main)
           .getOrElse("a")
