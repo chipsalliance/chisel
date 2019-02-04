@@ -10,14 +10,14 @@ import firrtl.stage.{FirrtlCli, FirrtlStage}
 object ChiselStage extends Stage {
   val shell: Shell = new Shell("chisel") with ChiselCli with FirrtlCli
 
-  private val phases: Seq[Phase] = Seq(
-    chisel3.stage.phases.Checks,
-    chisel3.stage.phases.Elaborate,
-    chisel3.stage.phases.AddImplicitOutputFile,
-    chisel3.stage.phases.AddImplicitOutputAnnotationFile,
-    chisel3.stage.phases.Emitter,
-    chisel3.stage.phases.Convert
-  )
+  private val phases: Seq[Phase] =
+    Seq( chisel3.stage.phases.Checks,
+         chisel3.stage.phases.Elaborate,
+         chisel3.stage.phases.AddImplicitOutputFile,
+         chisel3.stage.phases.AddImplicitOutputAnnotationFile,
+         chisel3.stage.phases.Emitter,
+         chisel3.stage.phases.Convert )
+      .map(firrtl.options.phases.DeletedWrapper(_))
 
   def run(annotations: AnnotationSeq): AnnotationSeq = {
     val cOpts = view[ChiselOptions](annotations)
@@ -26,7 +26,7 @@ object ChiselStage extends Stage {
     (phases ++
        (if (cOpts.runFirrtlCompiler) { Some(FirrtlStage) }
         else                         { Seq.empty         }))
-      .foldLeft(annotations)( (a, f) => f.runTransform(a) )
+      .foldLeft(annotations)( (a, f) => f.transform(a) )
   }
 
 }

@@ -191,16 +191,16 @@ object Driver extends BackendCompilationUtilities {
          optionsManager.firrtlOptions.toAnnotations ++
          optionsManager.commonOptions.toAnnotations)
 
-    val phases: Seq[Phase] = Seq(
-      DriverCompatibility.AddImplicitOutputFile,
-      DriverCompatibility.AddImplicitOutputAnnotationFile,
-      firrtl.stage.phases.DriverCompatibility.AddImplicitOutputFile,
-      firrtl.stage.phases.DriverCompatibility.AddImplicitEmitter,
-      ChiselStage
-    )
+    val phases: Seq[Phase] =
+      Seq( DriverCompatibility.AddImplicitOutputFile,
+           DriverCompatibility.AddImplicitOutputAnnotationFile,
+           firrtl.stage.phases.DriverCompatibility.AddImplicitOutputFile,
+           firrtl.stage.phases.DriverCompatibility.AddImplicitEmitter,
+           ChiselStage )
+        .map(firrtl.options.phases.DeletedWrapper(_))
 
     val annosx = try {
-      phases.foldLeft(annos)( (a, p) => p.runTransform(a) )
+      phases.foldLeft(annos)( (a, p) => p.transform(a) )
     } catch {
       case ce: ChiselException =>
         val stackTrace = if (!optionsManager.chiselOptions.printFullStackTrace) {

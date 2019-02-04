@@ -4,7 +4,7 @@ package chisel3.stage
 
 import firrtl.AnnotationSeq
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
-import firrtl.options.{HasScoptOptions, OptionsException, Unserializable}
+import firrtl.options.{HasShellOptions, OptionsException, ShellOption, Unserializable}
 
 import chisel3.{ChiselException, Module}
 import chisel3.experimental.RawModule
@@ -20,26 +20,26 @@ sealed trait ChiselOption extends Unserializable { this: Annotation => }
 
 /** Disable the execution of the FIRRTL compiler by Chisel
   */
-case object NoRunFirrtlCompilerAnnotation extends NoTargetAnnotation with ChiselOption with HasScoptOptions {
+case object NoRunFirrtlCompilerAnnotation extends NoTargetAnnotation with ChiselOption with HasShellOptions {
 
-  def addOptions(p: OptionParser[AnnotationSeq]): Unit = p
-    .opt[Unit]("no-run-firrtl")
-    .abbr("chnrf")
-    .action( (x, c) => NoRunFirrtlCompilerAnnotation +: c )
-    .unbounded()
-    .text("Stop after chisel emits chirrtl file")
+  val options = Seq(
+    new ShellOption[Unit](
+      longOption = "no-run-firrtl",
+      toAnnotationSeq = _ => Seq(NoRunFirrtlCompilerAnnotation),
+      helpText = "Do not run the FIRRTL compiler (generate FIRRTL IR from Chisel and exit)",
+      shortOption = Some("chnrf") ) )
 
 }
 
 /** On an exception, this will cause the full stack trace to be printed as opposed to a pruned stack trace.
   */
-case object PrintFullStackTraceAnnotation extends NoTargetAnnotation with ChiselOption with HasScoptOptions {
+case object PrintFullStackTraceAnnotation extends NoTargetAnnotation with ChiselOption with HasShellOptions {
 
-  def addOptions(p: OptionParser[AnnotationSeq]): Unit = p
-    .opt[Unit]("full-stacktrace")
-    .action( (x, c) => PrintFullStackTraceAnnotation +: c )
-    .unbounded()
-    .text("Do not trim stack trace")
+  val options = Seq(
+    new ShellOption[Unit](
+      longOption = "full-stacktrace",
+      toAnnotationSeq = _ => Seq(PrintFullStackTraceAnnotation),
+      helpText = "Show full stack trace when an exception is thrown" ) )
 
 }
 
@@ -60,7 +60,7 @@ case class ChiselGeneratorAnnotation(gen: () => RawModule) extends NoTargetAnnot
 
 }
 
-object ChiselGeneratorAnnotation extends HasScoptOptions {
+object ChiselGeneratorAnnotation extends HasShellOptions {
 
   /** Construct a [[ChiselGeneratorAnnotation]] with a generator function that will try to construct a Chisel Module from
     * using that Module's name. The Module must both exist in the class path and not take parameters.
@@ -80,11 +80,12 @@ object ChiselGeneratorAnnotation extends HasScoptOptions {
     ChiselGeneratorAnnotation(gen)
   }
 
-  def addOptions(p: OptionParser[AnnotationSeq]): Unit = p
-    .opt[String]("module")
-    .action{ (x, c) => ChiselGeneratorAnnotation(x) +: c }
-    .unbounded()
-    .text("The name of a Chisel module (in the classpath) to elaborate")
+  val options = Seq(
+    new ShellOption[String](
+      longOption = "module",
+      toAnnotationSeq = (a: String) => Seq(ChiselGeneratorAnnotation(a)),
+      helpText = "The name of a Chisel module to elaborate (module must be in the classpath)",
+      helpValueName = Some("<package>.<module>") ) )
 
 }
 
@@ -95,13 +96,13 @@ case class ChiselCircuitAnnotation(circuit: Circuit) extends NoTargetAnnotation 
 
 case class ChiselOutputFileAnnotation(file: String) extends NoTargetAnnotation with ChiselOption
 
-object ChiselOutputFileAnnotation extends HasScoptOptions {
+object ChiselOutputFileAnnotation extends HasShellOptions {
 
-  def addOptions(p: OptionParser[AnnotationSeq]): Unit = p
-    .opt[String]("chisel-output-file")
-    .valueName("FILE")
-    .action( (x, c) => ChiselOutputFileAnnotation(x) +: c )
-    .unbounded()
-    .text("sets an output file name for the Chisel-generated FIRRTL circuit")
+  val options = Seq(
+    new ShellOption[String](
+      longOption = "chisel-output-file",
+      toAnnotationSeq = (a: String) => Seq(ChiselOutputFileAnnotation(a)),
+      helpText = "Write Chisel-generated FIRRTL to this file (default: <circuit-main>.fir)",
+      helpValueName = Some("<file>") ) )
 
 }
