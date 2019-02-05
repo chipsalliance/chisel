@@ -119,6 +119,7 @@ class MinimumLowFirrtlOptimization extends CoreTransform {
   def inputForm = LowForm
   def outputForm = LowForm
   def transforms = Seq(
+    passes.RemoveValidIf,
     passes.Legalize,
     passes.memlib.VerilogMemDelays, // TODO move to Verilog emitter
     passes.SplitExpressions)
