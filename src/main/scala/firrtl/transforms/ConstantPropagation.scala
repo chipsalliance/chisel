@@ -45,6 +45,17 @@ object ConstantPropagation {
       case _ => e
     }
   }
+
+  def foldShiftRight(e: DoPrim) = e.consts.head.toInt match {
+    case 0 => e.args.head
+    case x => e.args.head match {
+      // TODO when amount >= x.width, return a zero-width wire
+      case UIntLiteral(v, IntWidth(w)) => UIntLiteral(v >> x, IntWidth((w - x) max 1))
+      // take sign bit if shift amount is larger than arg width
+      case SIntLiteral(v, IntWidth(w)) => SIntLiteral(v >> x, IntWidth((w - x) max 1))
+      case _ => e
+    }
+  }
 }
 
 class ConstantPropagation extends Transform with ResolvedAnnotationPaths {
@@ -142,17 +153,6 @@ class ConstantPropagation extends Transform with ResolvedAnnotationPaths {
       val shl = DoPrim(Shl, Seq(e.args.head), Seq(v), UnknownType)
       pad(PrimOps.set_primop_type(shl), e.tpe)
     case _ => e
-  }
-
-  private def foldShiftRight(e: DoPrim) = e.consts.head.toInt match {
-    case 0 => e.args.head
-    case x => e.args.head match {
-      // TODO when amount >= x.width, return a zero-width wire
-      case UIntLiteral(v, IntWidth(w)) => UIntLiteral(v >> x, IntWidth((w - x) max 1))
-      // take sign bit if shift amount is larger than arg width
-      case SIntLiteral(v, IntWidth(w)) => SIntLiteral(v >> x, IntWidth((w - x) max 1))
-      case _ => e
-    }
   }
 
   private def foldDynamicShiftRight(e: DoPrim) = e.args.last match {

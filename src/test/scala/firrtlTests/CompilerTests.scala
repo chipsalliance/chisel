@@ -158,19 +158,25 @@ class VerilogCompilerSpec extends CompilerSpec with Matchers {
 class MinimumVerilogCompilerSpec extends CompilerSpec with Matchers {
   val input = """|circuit Top:
                  |  module Top:
-                 |    output b: UInt<1>[2]
-                 |    node c = UInt<1>("h1")
-                 |    b[0] <= c
-                 |    b[1] is invalid
+                 |    output b: UInt<1>[3]
+                 |    node c = bits(UInt<3>("h7"), 2, 2)
+                 |    node d = shr(UInt<3>("h7"), 2)
+                 |    b[0] is invalid
+                 |    b[1] <= c
+                 |    b[2] <= d
                  |""".stripMargin
   val check = """|module Top(
                  |  output  b_0,
-                 |  output  b_1
+                 |  output  b_1,
+                 |  output  b_2
                  |);
                  |  wire  c;
+                 |  wire  d;
                  |  assign c = 1'h1;
-                 |  assign b_0 = c;
-                 |  assign b_1 = 1'h0;
+                 |  assign d = 1'h1;
+                 |  assign b_0 = 1'h0;
+                 |  assign b_1 = c;
+                 |  assign b_2 = d;
                  |endmodule
                  |""".stripMargin
   def compiler = new MinimumVerilogCompiler()
