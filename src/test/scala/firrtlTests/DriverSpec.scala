@@ -371,7 +371,9 @@ class DriverSpec extends FreeSpec with Matchers with BackendCompilationUtilities
         "low" -> "./Top.lo.fir",
         "high" -> "./Top.hi.fir",
         "middle" -> "./Top.mid.fir",
-        "verilog" -> "./Top.v"
+        "verilog" -> "./Top.v",
+        "mverilog" -> "./Top.v",
+        "sverilog" -> "./Top.sv"
       ).foreach { case (compilerName, expectedOutputFileName) =>
         val manager = new ExecutionOptionsManager("test") with HasFirrtlOptions {
           commonOptions = CommonOptions(topName = "Top")
@@ -391,7 +393,9 @@ class DriverSpec extends FreeSpec with Matchers with BackendCompilationUtilities
         "low" -> Seq("./Top.lo.fir", "./Child.lo.fir"),
         "high" -> Seq("./Top.hi.fir", "./Child.hi.fir"),
         "middle" -> Seq("./Top.mid.fir", "./Child.mid.fir"),
-        "verilog" -> Seq("./Top.v", "./Child.v")
+        "verilog" -> Seq("./Top.v", "./Child.v"),
+        "mverilog" -> Seq("./Top.v", "./Child.v"),
+        "sverilog" -> Seq("./Top.sv", "./Child.sv")
       ).foreach { case (compilerName, expectedOutputFileNames) =>
         println(s"$compilerName -> $expectedOutputFileNames")
         val manager = new ExecutionOptionsManager("test") with HasFirrtlOptions {

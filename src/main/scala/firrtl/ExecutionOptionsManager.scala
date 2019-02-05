@@ -207,18 +207,19 @@ extends ComposableOptions {
       case "low"       => new LowFirrtlCompiler()
       case "middle"    => new MiddleFirrtlCompiler()
       case "verilog"   => new VerilogCompiler()
+      case "mverilog"  => new MinimumVerilogCompiler()
       case "sverilog"  => new SystemVerilogCompiler()
     }
   }
 
   def outputSuffix: String = {
     compilerName match {
-      case "verilog"   => "v"
-      case "sverilog"  => "sv"
-      case "low"       => "lo.fir"
-      case "middle"    => "mid.fir"
-      case "high"      => "hi.fir"
-      case "none"      => "fir"
+      case "verilog" | "mverilog" => "v"
+      case "sverilog"             => "sv"
+      case "low"                  => "lo.fir"
+      case "middle"               => "mid.fir"
+      case "high"                 => "hi.fir"
+      case "none"                 => "fir"
       case _ =>
         throw new Exception(s"Illegal compiler name $compilerName")
     }
@@ -267,6 +268,7 @@ extends ComposableOptions {
       case "middle" => classOf[MiddleFirrtlEmitter]
       case "low" => classOf[LowFirrtlEmitter]
       case "verilog" => classOf[VerilogEmitter]
+      case "mverilog" => classOf[MinimumVerilogEmitter]
       case "sverilog" => classOf[VerilogEmitter]
     }
     getOutputConfig(optionsManager) match {
@@ -344,13 +346,16 @@ trait HasFirrtlOptions {
 
   parser.opt[String]("compiler")
     .abbr("X")
-    .valueName ("<high|middle|low|verilog|sverilog|none>")
+    .valueName ("<high|middle|low|verilog|mverilog|sverilog|none>")
     .foreach { x =>
       firrtlOptions = firrtlOptions.copy(compilerName = x)
     }
     .validate { x =>
-      if (Array("high", "middle", "low", "verilog", "sverilog", "none").contains(x.toLowerCase)) parser.success
-      else parser.failure(s"$x not a legal compiler")
+      if (Array("high", "middle", "low", "verilog", "mverilog", "sverilog", "none").contains(x.toLowerCase)) {
+        parser.success
+      } else {
+        parser.failure(s"$x not a legal compiler")
+      }
     }.text {
       s"compiler to use, default is ${firrtlOptions.compilerName}"
     }
@@ -492,7 +497,8 @@ object FirrtlExecutionSuccess {
   * Indicates a successful execution of the firrtl compiler, returning the compiled result and
   * the type of compile
   *
-  * @param emitType  The name of the compiler used, currently "high", "middle", "low", "verilog", or "sverilog"
+  * @param emitType The name of the compiler used, currently "high", "middle", "low", "verilog", "mverilog", or
+  * "sverilog"
   * @param emitted   The emitted result of compilation
   */
 class FirrtlExecutionSuccess(

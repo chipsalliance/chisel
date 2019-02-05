@@ -882,3 +882,13 @@ class VerilogEmitter extends SeqTransform with Emitter {
     state.copy(annotations = newAnnos ++ state.annotations)
   }
 }
+
+class MinimumVerilogEmitter extends VerilogEmitter with Emitter {
+
+
+  override def transforms = super.transforms.filter{
+    case _: DeadCodeElimination => false
+    case _ => true
+  }
+
+}
