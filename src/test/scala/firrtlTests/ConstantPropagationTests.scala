@@ -1005,6 +1005,61 @@ class ConstantPropagationIntegrationSpec extends LowTransformSpec {
     execute(input, check, Seq.empty)
   }
 
+  "Registers with constant reset and connection to the same constant" should "be replaced with that constant" in {
+      val input =
+        """circuit Top :
+          |  module Top :
+          |    input clock : Clock
+          |    input reset : UInt<1>
+          |    input cond : UInt<1>
+          |    output z : UInt<8>
+          |    reg r : UInt<8>, clock with : (reset => (reset, UInt<4>("hb")))
+          |    when cond :
+          |      r <= UInt<4>("hb")
+          |    z <= r""".stripMargin
+      val check =
+        """circuit Top :
+          |  module Top :
+          |    input clock : Clock
+          |    input reset : UInt<1>
+          |    input cond : UInt<1>
+          |    output z : UInt<8>
+          |    z <= UInt<8>("hb")""".stripMargin
+    execute(input, check, Seq.empty)
+  }
+
+  "A register with constant reset and all connection to either itself or the same constant" should "be replaced with that constant" in {
+      val input =
+        """circuit Top :
+          |  module Top :
+          |    input clock : Clock
+          |    input reset : UInt<1>
+          |    input cmd : UInt<3>
+          |    output z : UInt<8>
+          |    reg r : UInt<8>, clock with : (reset => (reset, UInt<4>("h7")))
+          |    r <= r
+          |    when eq(cmd, UInt<3>("h0")) :
+          |      r <= UInt<3>("h7")
+          |    else :
+          |      when eq(cmd, UInt<3>("h1")) :
+          |        r <= r
+          |      else :
+          |        when eq(cmd, UInt<3>("h2")) :
+          |          r <= UInt<4>("h7")
+          |        else :
+          |          r <= r
+          |    z <= r""".stripMargin
+      val check =
+        """circuit Top :
+          |  module Top :
+          |    input clock : Clock
+          |    input reset : UInt<1>
+          |    input cmd : UInt<3>
+          |    output z : UInt<8>
+          |    z <= UInt<8>("h7")""".stripMargin
+    execute(input, check, Seq.empty)
+  }
+
   "Registers with ONLY constant connection" should "be replaced with that constant" in {
       val input =
         """circuit Top :
