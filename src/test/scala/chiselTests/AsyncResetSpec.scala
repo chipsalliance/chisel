@@ -12,10 +12,10 @@ class AsyncResetTester extends BasicTester {
   // First rising edge when count === 3
   val slowClk = cDiv.asClock
 
-  val (count, done) = Counter(true.B, 8)
+  val (count, done) = Counter(true.B, 16)
 
   val asyncResetNext = RegInit(false.B)
-  asyncResetNext := count === 0.U
+  asyncResetNext := count === 4.U
   val asyncReset = asyncResetNext.asAsyncReset
 
   val reg = withClockAndReset(slowClk, asyncReset) {
@@ -23,9 +23,12 @@ class AsyncResetTester extends BasicTester {
   }
   reg := 5.U // Normal connection
 
-  when (count > 0.U && count < 3.U) {
+  when (count === 3.U) {
+    assert(reg === 5.U)
+  }
+  when (count >= 5.U && count < 7.U) {
     assert(reg === 123.U)
-  } .elsewhen (count >= 3.U) {
+  } .elsewhen (count >= 7.U) {
     assert(reg === 5.U)
   }
 
@@ -80,6 +83,17 @@ class AsyncResetSpec extends ChiselFlatSpec {
       elaborate(new BasicTester {
         val x = WireInit(123.U)
         withReset(reset.asAsyncReset)(RegInit(x))
+      })
+    }
+  }
+
+  it should "NOT be allowed to connect directly to a Bool" in {
+    a [ChiselException] shouldBe thrownBy {
+      elaborate(new BasicTester {
+        val queue = Module(new Queue(UInt(8.W), 4))
+        queue.io <> DontCare
+        val areset = reset.asAsyncReset
+        queue.reset := areset
       })
     }
   }
