@@ -81,7 +81,7 @@ Usage:
 
 Required Arguments:
   -o<filename>         Specify the output configuration file
-  -c<compiler>         Specify the target circuit
+  -c<circuit>          Specify the target circuit
 
 Optional Arguments:
   -i<filename>         Specify the input configuration file (for additional optimizations)
