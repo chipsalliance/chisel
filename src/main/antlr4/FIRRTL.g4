@@ -56,6 +56,7 @@ type
   | 'SInt' ('<' intLit '>')?
   | 'Fixed' ('<' intLit '>')? ('<' '<' intLit '>' '>')?
   | 'Clock'
+  | 'AsyncReset'
   | 'Analog' ('<' intLit '>')?
   | '{' field* '}'        // Bundle
   | type '[' intLit ']'   // Vector
@@ -253,6 +254,7 @@ primop
   | 'neq('
   | 'pad('
   | 'asUInt('
+  | 'asAsyncReset('
   | 'asSInt('
   | 'asClock('
   | 'shl('

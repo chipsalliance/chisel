@@ -223,6 +223,7 @@ class WrappedType(val t: Type) {
       case (_: UIntType, _: UIntType) => true
       case (_: SIntType, _: SIntType) => true
       case (ClockType, ClockType) => true
+      case (AsyncResetType, AsyncResetType) => true
       case (_: FixedType, _: FixedType) => true
       // Analog totally skips out of the Firrtl type system.
       // The only way Analog can play with another Analog component is through Attach.

@@ -240,6 +240,7 @@ object FromProto {
       case SINT_TYPE_FIELD_NUMBER => convert(tpe.getSintType)
       case FIXED_TYPE_FIELD_NUMBER => convert(tpe.getFixedType)
       case CLOCK_TYPE_FIELD_NUMBER => ir.ClockType
+      case ASYNC_RESET_TYPE_FIELD_NUMBER => ir.AsyncResetType
       case ANALOG_TYPE_FIELD_NUMBER => convert(tpe.getAnalogType)
       case BUNDLE_TYPE_FIELD_NUMBER =>
         ir.BundleType(tpe.getBundleType.getFieldList.asScala.map(convert(_)))

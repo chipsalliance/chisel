@@ -22,7 +22,8 @@ class RemoveReset extends Transform {
     val resets = mutable.HashMap.empty[String, Reset]
     def onStmt(stmt: Statement): Statement = {
       stmt match {
-        case reg @ DefRegister(_, rname, _, _, reset, init) if reset != Utils.zero =>
+        case reg @ DefRegister(_, rname, _, _, reset, init)
+            if reset != Utils.zero && reset.tpe != AsyncResetType =>
           // Add register reset to map
           resets(rname) = Reset(reset, init)
           reg.copy(reset = Utils.zero, init = WRef(reg))

@@ -130,6 +130,7 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
             case 2 => FixedType(getWidth(ctx.intLit(0)), getWidth(ctx.intLit(1)))
           }
           case "Clock" => ClockType
+          case "AsyncReset" => AsyncResetType
           case "Analog" => if (ctx.getChildCount > 1) AnalogType(IntWidth(string2BigInt(ctx.intLit(0).getText)))
           else AnalogType(UnknownWidth)
           case "{" => BundleType(ctx.field.asScala.map(visitField))

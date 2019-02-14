@@ -80,6 +80,7 @@ object ToProto {
     AsSInt -> Op.OP_AS_SINT,
     AsClock -> Op.OP_AS_CLOCK,
     AsFixedPoint -> Op.OP_AS_FIXED_POINT,
+    AsAsyncReset -> Op.OP_AS_ASYNC_RESET,
     Shl -> Op.OP_SHIFT_LEFT,
     Shr -> Op.OP_SHIFT_RIGHT,
     Dshl -> Op.OP_DYNAMIC_SHIFT_LEFT,
@@ -335,6 +336,9 @@ object ToProto {
       case ir.ClockType =>
         val ct = Firrtl.Type.ClockType.newBuilder()
         tb.setClockType(ct)
+      case ir.AsyncResetType =>
+        val at = Firrtl.Type.AsyncResetType.newBuilder()
+        tb.setAsyncResetType(at)
       case ir.AnalogType(width) =>
         val at = Firrtl.Type.AnalogType.newBuilder()
           convert(width).foreach(at.setWidth)

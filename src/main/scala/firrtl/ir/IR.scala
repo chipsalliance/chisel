@@ -591,6 +591,12 @@ case object ClockType extends GroundType {
   def mapWidth(f: Width => Width): Type = this
   def foreachWidth(f: Width => Unit): Unit = Unit
 }
+case object AsyncResetType extends GroundType {
+  val width = IntWidth(1)
+  def serialize: String = "AsyncReset"
+  def mapWidth(f: Width => Width): Type = this
+  def foreachWidth(f: Width => Unit): Unit = Unit
+}
 case class AnalogType(width: Width) extends GroundType {
   def serialize: String = "Analog" + width.serialize
   def mapWidth(f: Width => Width): Type = AnalogType(f(width))

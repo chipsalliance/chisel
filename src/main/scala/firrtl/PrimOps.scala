@@ -39,6 +39,8 @@ object PrimOps extends LazyLogging {
   case object AsSInt extends PrimOp { override def toString = "asSInt" }
   /** Interpret As Clock */
   case object AsClock extends PrimOp { override def toString = "asClock" }
+  /** Interpret As AsyncReset */
+  case object AsAsyncReset extends PrimOp { override def toString = "asAsyncReset" }
   /** Static Shift Left */
   case object Shl extends PrimOp { override def toString = "shl" }
   /** Static Shift Right */
@@ -83,8 +85,9 @@ object PrimOps extends LazyLogging {
   case object BPSet extends PrimOp { override def toString = "bpset" }
 
   private lazy val builtinPrimOps: Seq[PrimOp] =
-    Seq(Add, Sub, Mul, Div, Rem, Lt, Leq, Gt, Geq, Eq, Neq, Pad, AsUInt, AsSInt, AsClock, Shl, Shr,
-        Dshl, Dshr, Neg, Cvt, Not, And, Or, Xor, Andr, Orr, Xorr, Cat, Bits, Head, Tail, AsFixedPoint, BPShl, BPShr, BPSet)
+    Seq(Add, Sub, Mul, Div, Rem, Lt, Leq, Gt, Geq, Eq, Neq, Pad, AsUInt, AsSInt, AsClock,
+      AsAsyncReset, Shl, Shr, Dshl, Dshr, Neg, Cvt, Not, And, Or, Xor, Andr, Orr, Xorr, Cat, Bits,
+      Head, Tail, AsFixedPoint, BPShl, BPShr, BPSet)
   private lazy val strToPrimOp: Map[String, PrimOp] = builtinPrimOps.map { case op : PrimOp=> op.toString -> op }.toMap
 
   /** Seq of String representations of [[ir.PrimOp]]s */
@@ -203,6 +206,7 @@ object PrimOps extends LazyLogging {
         case _: FixedType => UIntType(w1)
         case ClockType => UIntType(IntWidth(1))
         case AnalogType(w) => UIntType(w1)
+        case AsyncResetType => UIntType(IntWidth(1))
         case _ => UnknownType
       }
       case AsSInt => t1 match {
@@ -211,6 +215,7 @@ object PrimOps extends LazyLogging {
         case _: FixedType => SIntType(w1)
         case ClockType => SIntType(IntWidth(1))
         case _: AnalogType => SIntType(w1)
+        case AsyncResetType => SIntType(IntWidth(1))
         case _ => UnknownType
       }
       case AsFixedPoint => t1 match {
@@ -219,6 +224,7 @@ object PrimOps extends LazyLogging {
         case _: FixedType => FixedType(w1, c1)
         case ClockType => FixedType(IntWidth(1), c1)
         case _: AnalogType => FixedType(w1, c1)
+        case AsyncResetType => FixedType(IntWidth(1), c1)
         case _ => UnknownType
       }
       case AsClock => t1 match {
@@ -226,6 +232,15 @@ object PrimOps extends LazyLogging {
         case _: SIntType => ClockType
         case ClockType => ClockType
         case _: AnalogType => ClockType
+        case AsyncResetType => ClockType
+        case _ => UnknownType
+      }
+      case AsAsyncReset => t1 match {
+        case _: UIntType => AsyncResetType
+        case _: SIntType => AsyncResetType
+        case ClockType => AsyncResetType
+        case _: AnalogType => AsyncResetType
+        case AsyncResetType => AsyncResetType
         case _ => UnknownType
       }
       case Shl => t1 match {

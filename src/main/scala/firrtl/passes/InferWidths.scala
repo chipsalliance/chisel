@@ -228,6 +228,7 @@ object InferWidths extends Pass {
       case (t1: UIntType, t2: UIntType) => Seq(WGeq(t1.width, t2.width))
       case (t1: SIntType, t2: SIntType) => Seq(WGeq(t1.width, t2.width))
       case (ClockType, ClockType) => Nil
+      case (AsyncResetType, AsyncResetType) => Nil
       case (FixedType(w1, p1), FixedType(w2, p2)) => Seq(WGeq(w1,w2), WGeq(p1,p2))
       case (AnalogType(w1), AnalogType(w2)) => Seq(WGeq(w1,w2), WGeq(w2,w1))
       case (t1: BundleType, t2: BundleType) =>
@@ -282,10 +283,13 @@ object InferWidths extends Pass {
               case Flip => get_constraints_t(expx.tpe, locx.tpe)//WGeq(getWidth(expx), getWidth(locx))
             }
           })
-        case (s: DefRegister) => v ++= (
-           get_constraints_t(s.reset.tpe, UIntType(IntWidth(1))) ++
-           get_constraints_t(UIntType(IntWidth(1)), s.reset.tpe) ++ 
-           get_constraints_t(s.tpe, s.init.tpe))
+        case (s: DefRegister) =>
+          if (s.reset.tpe != AsyncResetType ) {
+            v ++= (
+               get_constraints_t(s.reset.tpe, UIntType(IntWidth(1))) ++
+               get_constraints_t(UIntType(IntWidth(1)), s.reset.tpe))
+           }
+          v ++= get_constraints_t(s.tpe, s.init.tpe)
         case (s:Conditionally) => v ++= 
            get_constraints_t(s.pred.tpe, UIntType(IntWidth(1))) ++
            get_constraints_t(UIntType(IntWidth(1)), s.pred.tpe)

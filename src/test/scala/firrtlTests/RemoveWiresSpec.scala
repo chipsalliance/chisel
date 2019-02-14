@@ -165,4 +165,21 @@ class RemoveWiresSpec extends FirrtlFlatSpec {
     // Check declaration before use is maintained
     passes.CheckHighForm.execute(result)
   }
+
+  it should "order registers with async reset correctly" in {
+    val result = compileBody(s"""
+      |input clock : Clock
+      |input reset : UInt<1>
+      |input in : UInt<8>
+      |output out : UInt<8>
+      |wire areset : AsyncReset
+      |reg r : UInt<8>, clock with : (reset => (areset, UInt(0)))
+      |areset <= asAsyncReset(reset)
+      |r <= in
+      |out <= r
+      |""".stripMargin
+    )
+    // Check declaration before use is maintained
+    passes.CheckHighForm.execute(result)
+  }
 }

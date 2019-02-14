@@ -388,6 +388,7 @@ object Utils extends LazyLogging {
   def mux_type(e1: Expression, e2: Expression): Type = mux_type(e1.tpe, e2.tpe)
   def mux_type(t1: Type, t2: Type): Type = (t1, t2) match {
     case (ClockType, ClockType) => ClockType
+    case (AsyncResetType, AsyncResetType) => AsyncResetType
     case (t1: UIntType, t2: UIntType) => UIntType(UnknownWidth)
     case (t1: SIntType, t2: SIntType) => SIntType(UnknownWidth)
     case (t1: FixedType, t2: FixedType) => FixedType(UnknownWidth, UnknownWidth)
@@ -406,6 +407,7 @@ object Utils extends LazyLogging {
     }
     (t1, t2) match {
       case (ClockType, ClockType) => ClockType
+      case (AsyncResetType, AsyncResetType) => AsyncResetType
       case (t1x: UIntType, t2x: UIntType) => UIntType(wmax(t1x.width, t2x.width))
       case (t1x: SIntType, t2x: SIntType) => SIntType(wmax(t1x.width, t2x.width))
       case (FixedType(w1, p1), FixedType(w2, p2)) =>

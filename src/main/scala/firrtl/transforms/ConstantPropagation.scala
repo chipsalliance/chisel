@@ -350,6 +350,8 @@ class ConstantPropagation extends Transform with ResolvedAnnotationPaths {
     // Keep track of any submodule inputs we drive with a constant
     // (can have more than 1 of the same submodule)
     val constSubInputs = mutable.HashMap.empty[String, mutable.HashMap[String, Seq[Literal]]]
+    // AsyncReset registers don't have reset turned into a mux so we must be careful
+    val asyncResetRegs = mutable.HashSet.empty[String]
 
     // Copy constant mapping for constant inputs (except ones marked dontTouch!)
     nodeMap ++= constInputs.filterNot { case (pname, _) => dontTouches.contains(pname) }
@@ -405,6 +407,8 @@ class ConstantPropagation extends Transform with ResolvedAnnotationPaths {
       // Record things that should be propagated
       stmtx match {
         case x: DefNode if !dontTouches.contains(x.name) => propagateRef(x.name, x.value)
+        case reg: DefRegister if reg.reset.tpe == AsyncResetType =>
+          asyncResetRegs += reg.name
         case Connect(_, WRef(wname, wtpe, WireKind, _), expr: Literal) if !dontTouches.contains(wname) =>
           val exprx = constPropExpression(nodeMap, instMap, constSubOutputs)(pad(expr, wtpe))
           propagateRef(wname, exprx)
@@ -414,7 +418,7 @@ class ConstantPropagation extends Transform with ResolvedAnnotationPaths {
           constOutputs(pname) = paddedLit
         // Const prop registers that are driven by a mux tree containing only instances of one constant or self-assigns
         // This requires that reset has been made explicit
-        case Connect(_, lref @ WRef(lname, ltpe, RegKind, _), rhs) if !dontTouches.contains(lname) =>
+        case Connect(_, lref @ WRef(lname, ltpe, RegKind, _), rhs) if !dontTouches(lname) && !asyncResetRegs(lname) =>
           /** Checks if an RHS expression e of a register assignment is convertible to a constant assignment.
             * Here, this means that e must be 1) a literal, 2) a self-connect, or 3) a mux tree of cases (1) and (2).
             * In case (3), it also recursively checks that the two mux cases are convertible to constants and
