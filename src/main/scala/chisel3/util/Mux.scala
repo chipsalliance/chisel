@@ -75,7 +75,7 @@ object MuxLookup {
   * high enable signal.
   *
   * @example {{{
-  * MuxCase(default, Array(c1 -> a, c2 -> b, ...))
+  * MuxCase(default, Array(c1 -> a, c2 -> b))
   * }}}
   */
   */
