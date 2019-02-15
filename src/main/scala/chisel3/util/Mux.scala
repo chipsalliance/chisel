@@ -54,7 +54,7 @@ object PriorityMux {
   *
   * @example {{{
   * MuxLookup(idx, default, 
-  *     Array(0.U -> a, 1.U -> b, ...))   
+  *     Array(0.U -> a, 1.U -> b))   
   * }}}
   */
 object MuxLookup {
