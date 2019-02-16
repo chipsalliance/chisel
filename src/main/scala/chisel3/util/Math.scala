@@ -72,6 +72,8 @@ object log2Down {
 
 /** Compute the log2 of a Scala integer, rounded down.
   *
+  * Can be useful in computing the next-smallest power of two.
+  *
   * @example {{{
   * log2Floor(1) = 0
   * log2Floor(2) = 1
