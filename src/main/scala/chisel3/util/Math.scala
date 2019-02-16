@@ -39,10 +39,10 @@ object log2Up {
   * zero-width wires.
   *
   * @example {{{
-  * log2Up(1) = 0
-  * log2Up(2) = 1
-  * log2Up(3) = 2
-  * log2Up(4) = 2
+  * log2Ceil(1) = 0
+  * log2Ceil(2) = 1
+  * log2Ceil(3) = 2
+  * log2Ceil(4) = 2
   * }}}
   */
 object log2Ceil {
