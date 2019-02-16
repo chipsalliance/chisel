@@ -12,7 +12,7 @@ import chisel3.core.SeqUtils
   * select signal. Returns the output of the Mux tree.
   * 
   * @example {{{
-  * val hotValue = chisel3.util.oneHotMux(Seq(
+  * val hotValue = chisel3.util.Mux1H(Seq(
   *  io.selector(0) -> 2.U,
   *  io.selector(1) -> 4.U,
   *  io.selector(2) -> 8.U,
