@@ -6,43 +6,44 @@ import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
 
-class LFSR16 extends Module {
-  val io = IO(new Bundle {
-    val inc = Input(Bool())
-    val out = Output(UInt(16.W))
-  })
-  val res = RegInit(1.U(16.W))
-  when (io.inc) {
-    val nxt_res = Cat(res(0)^res(2)^res(3)^res(5), res(15,1))
-    res := nxt_res
+/**
+  * This test creates two 4 sided dice.
+  * each cycle it adds them together and adds a count to the bin corresponding to that value
+  * The asserts check that the bins show the correct distribution.
+  */
+//scalastyle:off magic.number
+class LSFRTester extends BasicTester {
+  val bins = Reg(Vec(8, UInt(32.W)))
+
+  // Use tap points on each LFSR so values are more independent
+  val die0 = Cat(Seq.tabulate(2) { i => LFSR16()(i) })
+  val die1 = Cat(Seq.tabulate(2) { i => LFSR16()(i + 2) })
+
+  val (trial, done) = Counter(true.B, 100000)
+
+  val rollValue = die0 +& die1  // Note +& is critical because sum will need an extra bit.
+
+  bins(rollValue) := bins(rollValue) + 1.U
+
+  when(done) {
+    printf("bins: %d %d %d %d %d %d %d %d\n",
+      bins(0), bins(1), bins(2), bins(3), bins(4), bins(5), bins(6), bins(7))
+
+    // test that the distribution feels right.
+    assert(bins(1) > bins(0))
+    assert(bins(2) > bins(1))
+    assert(bins(3) > bins(2))
+    assert(bins(4) < bins(3))
+    assert(bins(5) < bins(4))
+    assert(bins(6) < bins(5))
+    assert(bins(7) === 0.U)
+
+    stop()
   }
-  io.out := res
 }
-
-
-/*
-class LFSR16Tester(c: LFSR16) extends Tester(c) {
-  var res = 1
-  for (t <- 0 until 16) {
-    val inc = rnd.nextInt(2)
-    poke(c.io.inc, inc)
-    step(1)
-    if (inc == 1) {
-      val bit = ((res >> 0) ^ (res >> 2) ^ (res >> 3) ^ (res >> 5) ) & 1;
-      res = (res >> 1) | (bit << 15);
-    }
-    expect(c.io.out, res)
-  }
-}
-*/
-
-//TODO: Use chisel3.util version instead?
 
 class LFSRSpec extends ChiselPropSpec {
-
-  property("LFSR16 should elaborate") {
-    elaborate { new LFSR16 }
+  property("LFSR16 can be used to produce pseudo-random numbers, this tests the distribution") {
+    assertTesterPasses{ new LSFRTester }
   }
-
-  ignore("LFSR16 should return the correct result") { }
 }
