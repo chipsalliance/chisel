@@ -11,6 +11,7 @@ import chisel3.util._
   * each cycle it adds them together and adds a count to the bin corresponding to that value
   * The asserts check that the bins show the correct distribution.
   */
+//noinspection TypeAnnotation
 //scalastyle:off magic.number
 class LSFRTester extends BasicTester {
   val bins = Reg(Vec(8, UInt(32.W)))
