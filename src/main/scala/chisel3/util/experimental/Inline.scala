@@ -28,8 +28,8 @@ import firrtl.annotations.{CircuitName, ModuleName, ComponentName, Annotation}
   * class Bar extends Module with Internals with HasSub
   * /* The resulting instances will be:
   *  - Top
-  *  - Top.x$sub
-  *  - Top.y$sub
+  *  - Top.x\$sub
+  *  - Top.y\$sub
   *  - Top.z
   *  - Top.z.sub */
   * class Top extends Module with Internals {

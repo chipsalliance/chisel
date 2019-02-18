@@ -18,7 +18,7 @@ import chisel3.internal.Namespace
 class BoringUtilsException(message: String) extends Exception(message)
 
 /** Utilities for generating synthesizable cross module references that "bore" through the hierarchy. The underlying
-  * cross module connects are handled by FIRRTL's Wiring Transform ([[firrtl.passes.wiring.WiringTransform]]).
+  * cross module connects are handled by FIRRTL's Wiring Transform.
   *
   * Consider the following exmple where you want to connect a component in one module to a component in another. Module
   * `Constant` has a wire tied to `42` and `Expect` will assert unless connected to `42`:

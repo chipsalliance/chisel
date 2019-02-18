@@ -151,7 +151,7 @@ object Driver extends BackendCompilationUtilities {
     * Emit the annotations of a circuit
     *
     * @param ir The circuit containing annotations to be emitted
-    * @param optName An optional filename (will use s"${ir.name}.json" otherwise)
+    * @param optName An optional filename (will use s"\${ir.name}.json" otherwise)
     */
   def dumpAnnotations(ir: Circuit, optName: Option[File]): File = {
     val f = optName.getOrElse(new File(ir.name + ".anno.json"))

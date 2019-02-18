@@ -1285,7 +1285,7 @@ sealed class Bool() extends UInt(1.W) with Reset {
     *
     * @param that a hardware $coll
     * @return the lgocial or of this $coll and `that`
-    * @note this is equivalent to [[Bool.|]]
+    * @note this is equivalent to [[Bool!.|(that:chisel3\.core\.Bool)* Bool.|)]]
     * @group Logical
     */
   def || (that: Bool): Bool = macro SourceInfoTransform.thatArg
@@ -1297,7 +1297,7 @@ sealed class Bool() extends UInt(1.W) with Reset {
     *
     * @param that a hardware $coll
     * @return the lgocial and of this $coll and `that`
-    * @note this is equivalent to [[Bool.&]]
+    * @note this is equivalent to [[Bool!.&(that:chisel3\.core\.Bool)* Bool.&]]
     * @group Logical
     */
   def && (that: Bool): Bool = macro SourceInfoTransform.thatArg

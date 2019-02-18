@@ -498,7 +498,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
     case Some(BundleLitBinding(litMap)) => None  // this API does not support Bundle literals
     case _ => None
   }
- 
+
   def isLit(): Boolean = litArg.isDefined
 
   /**
@@ -680,7 +680,7 @@ object WireDefault {
     x
   }
 
-  /** Construct a [[Wire]] with a type template and a [[DontCare]] default
+  /** Construct a [[Wire]] with a type template and a [[chisel3.DontCare]] default
     * @param t The type template used to construct this [[Wire]]
     * @param init The default connection to this [[Wire]], can only be [[DontCare]]
     * @note This is really just a specialized form of `apply[T <: Data](t: T, init: T): T` with [[DontCare]] as `init`
@@ -740,4 +740,3 @@ private[chisel3] object DontCare extends Element {
   // DontCare's only match themselves.
   private[core] def typeEquivalent(that: chisel3.core.Data): Boolean = that == DontCare
 }
-
