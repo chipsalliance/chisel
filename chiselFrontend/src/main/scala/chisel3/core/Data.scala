@@ -567,9 +567,8 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
 }
 
 trait WireFactory {
-  /** @usecase def apply[T <: Data](t: T): T
-    *   Construct a [[Wire]] from a type template
-    *   @param t The template from which to construct this wire
+  /** Construct a [[Wire]] from a type template
+    * @param t The template from which to construct this wire
     */
   def apply[T <: Data](t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     if (compileOptions.declaredTypeMustBeUnbound) {
@@ -681,29 +680,25 @@ object WireDefault {
     x
   }
 
-  /** @usecase def apply[T <: Data](t: T, init: DontCare.type): T
-    *   Construct a [[Wire]] with a type template and a [[DontCare]] default
-    *   @param t The type template used to construct this [[Wire]]
-    *   @param init The default connection to this [[Wire]], can only be [[DontCare]]
-    *   @note This is really just a specialized form of `apply[T <: Data](t: T, init: T): T` with [[DontCare]]
-    *   as `init`
+  /** Construct a [[Wire]] with a type template and a [[DontCare]] default
+    * @param t The type template used to construct this [[Wire]]
+    * @param init The default connection to this [[Wire]], can only be [[DontCare]]
+    * @note This is really just a specialized form of `apply[T <: Data](t: T, init: T): T` with [[DontCare]] as `init`
     */
   def apply[T <: Data](t: T, init: DontCare.type)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = { // scalastyle:ignore line.size.limit
     applyImpl(t, init)
   }
 
-  /** @usecase def apply[T <: Data](t: T, init: T): T
-    *   Construct a [[Wire]] with a type template and a default connection
-    *   @param t The type template used to construct this [[Wire]]
-    *   @param init The hardware value that will serve as the default value
+  /** Construct a [[Wire]] with a type template and a default connection
+    * @param t The type template used to construct this [[Wire]]
+    * @param init The hardware value that will serve as the default value
     */
   def apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     applyImpl(t, init)
   }
 
-  /** @usecase def apply[T <: Data](init: T): T
-    *   Construct a [[Wire]] with a default connection
-    *   @param init The hardware value that will serve as a type template and default value
+  /** Construct a [[Wire]] with a default connection
+    * @param init The hardware value that will serve as a type template and default value
     */
   def apply[T <: Data](init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     val model = (init match {
