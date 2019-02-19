@@ -111,6 +111,7 @@ object Pipe {
     */
   @chiselName
   def apply[T <: Data](enqValid: Bool, enqBits: T, latency: Int)(implicit compileOptions: CompileOptions): Valid[T] = {
+    require(latency >= 0, "Pipe latency must be greater than or equal to zero!")
     if (latency == 0) {
       val out = Wire(Valid(chiselTypeOf(enqBits)))
       out.valid := enqValid
