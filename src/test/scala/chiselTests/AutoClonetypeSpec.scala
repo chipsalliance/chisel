@@ -156,7 +156,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec {
   "Nested directioned anonymous Bundles" should "not need clonetype" in {
     elaborate { new Module {
       val io = IO(new NestedAnonymousBundle)
-      val a = WireInit(io)
+      val a = WireDefault(io)
       io.a.a := 1.U
     } }
   }
@@ -169,7 +169,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec {
         }
       }
       val io = IO((new InnerClassThing).createBundle)
-      val a = WireInit(io)
+      val a = WireDefault(io)
     } }
   }
 }

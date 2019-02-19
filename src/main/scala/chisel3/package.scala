@@ -27,21 +27,22 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     import chisel3.core.CompileOptions
 
     @chiselRuntimeDeprecated
-    @deprecated("Wire(init=init) is deprecated, use WireInit(init) instead", "chisel3")
+    @deprecated("Wire(init=init) is deprecated, use WireDefault(init) instead", "chisel3")
     def apply[T <: Data](dummy: Int = 0, init: T)(implicit compileOptions: CompileOptions): T =
-      chisel3.core.WireInit(init)
+      chisel3.core.WireDefault(init)
 
     @chiselRuntimeDeprecated
-    @deprecated("Wire(t, init) is deprecated, use WireInit(t, init) instead", "chisel3")
+    @deprecated("Wire(t, init) is deprecated, use WireDefault(t, init) instead", "chisel3")
     def apply[T <: Data](t: T, init: T)(implicit compileOptions: CompileOptions): T =
-      chisel3.core.WireInit(t, init)
+      chisel3.core.WireDefault(t, init)
 
     @chiselRuntimeDeprecated
-    @deprecated("Wire(t, init) is deprecated, use WireInit(t, init) instead", "chisel3")
+    @deprecated("Wire(t, init) is deprecated, use WireDefault(t, init) instead", "chisel3")
     def apply[T <: Data](t: T, init: DontCare.type)(implicit compileOptions: CompileOptions): T =
-      chisel3.core.WireInit(t, init)
+      chisel3.core.WireDefault(t, init)
   }
-  val WireInit = chisel3.core.WireInit
+  val WireInit = chisel3.core.WireDefault
+  val WireDefault = chisel3.core.WireDefault
 
   val Clock = chisel3.core.Clock
   type Clock = chisel3.core.Clock
