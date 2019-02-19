@@ -8,7 +8,6 @@ package chisel3.util
 import chisel3._
 import chisel3.core.CompileOptions
 import chisel3.experimental.DataMirror
-import chisel3.internal.naming.chiselName  // can't use chisel3_ version because of compile order
 
 /** A [[Bundle]] that adds a `valid` bit to some data. This indicates that the user expects a "valid" interface between
   * a producer and a consumer. Here, the producer asserts the `valid` bit when data on the `bits` line contains valid
@@ -109,7 +108,6 @@ object Pipe {
     * @param latency the number of pipeline stages
     * @return $returnType
     */
-  @chiselName
   def apply[T <: Data](enqValid: Bool, enqBits: T, latency: Int)(implicit compileOptions: CompileOptions): Valid[T] = {
     require(latency >= 0, "Pipe latency must be greater than or equal to zero!")
     if (latency == 0) {
@@ -120,7 +118,10 @@ object Pipe {
     } else {
       val v = RegNext(enqValid, false.B)
       val b = RegEnable(enqBits, enqValid)
-      apply(v, b, latency-1)(compileOptions)
+      val out = apply(v, b, latency-1)(compileOptions)
+
+      TransitName.withSuffix("Pipe_valid")(out, v)
+      TransitName.withSuffix("Pipe_bits")(out, b)
     }
   }
 
