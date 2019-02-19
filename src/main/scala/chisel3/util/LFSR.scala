@@ -8,10 +8,10 @@ package chisel3.util
 import chisel3._
 import chisel3.internal.naming.chiselName  // can't use chisel3_ version because of compile order
 
-/** LSFR16 generates a 16-bit linear feedback shift register, returning the register contents.
-  * May be useful for generating a pseudo-random sequence.
+/** LFSR16 generates a 16-bit linear feedback shift register, returning the register contents.
+  * This is useful for generating a pseudo-random sequence.
   *
-  * The example, taken from the unit tests.
+  * The example below, taken from the unit tests, creates two 4-sided dice using `LFSR16` primitives:
   * @example {{{
   *   val bins = Reg(Vec(8, UInt(32.W)))
   *
