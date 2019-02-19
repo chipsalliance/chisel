@@ -13,14 +13,14 @@ import chisel3.util._
   */
 //noinspection TypeAnnotation
 //scalastyle:off magic.number
-class LSFRTester extends BasicTester {
+class LFSRTester extends BasicTester {
   val bins = Reg(Vec(8, UInt(32.W)))
 
   // Use tap points on each LFSR so values are more independent
   val die0 = Cat(Seq.tabulate(2) { i => LFSR16()(i) })
   val die1 = Cat(Seq.tabulate(2) { i => LFSR16()(i + 2) })
 
-  val (trial, done) = Counter(true.B, 100000)
+  val (trial, done) = Counter(true.B, 10000)
 
   val rollValue = die0 +& die1  // Note +& is critical because sum will need an extra bit.
 
@@ -43,8 +43,24 @@ class LSFRTester extends BasicTester {
   }
 }
 
+class LFSR16MaxPeriod extends BasicTester {
+
+  val lfsr16 = LFSR16()
+  val started = RegNext(true.B, false.B)
+
+  val (_, wrap) = Counter(started, math.pow(2.0, 16).toInt - 1)
+  when (lfsr16 === 1.U && started) {
+    chisel3.assert(wrap)
+    stop()
+  }
+}
+
 class LFSRSpec extends ChiselPropSpec {
   property("LFSR16 can be used to produce pseudo-random numbers, this tests the distribution") {
-    assertTesterPasses{ new LSFRTester }
+    assertTesterPasses{ new LFSRTester }
+  }
+
+  property("LFSR16 period tester, Period should 2^16 - 1") {
+    assertTesterPasses { new LFSR16MaxPeriod }
   }
 }
