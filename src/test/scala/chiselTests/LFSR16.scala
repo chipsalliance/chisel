@@ -26,8 +26,7 @@ class LFSRTester extends BasicTester {
   bins(rollValue) := bins(rollValue) + 1.U
 
   when(done) {
-    printf("bins: %d %d %d %d %d %d %d %d\n",
-      bins(0), bins(1), bins(2), bins(3), bins(4), bins(5), bins(6), bins(7))
+    printf(p"bins: $bins\n") // Note using the printable interpolator p"" to print out a Vec
 
     // test that the distribution feels right.
     assert(bins(1) > bins(0))
