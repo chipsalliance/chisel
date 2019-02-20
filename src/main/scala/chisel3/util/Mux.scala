@@ -10,7 +10,7 @@ import chisel3.core.SeqUtils
 
 /** Builds a Mux tree out of the input signal vector using a one hot encoded
   * select signal. Returns the output of the Mux tree.
-  * 
+  *
   * @example {{{
   * val hotValue = chisel3.util.Mux1H(Seq(
   *  io.selector(0) -> 2.U,
@@ -53,8 +53,8 @@ object PriorityMux {
 /** Creates a cascade of n Muxs to search for a key value.
   *
   * @example {{{
-  * MuxLookup(idx, default, 
-  *     Array(0.U -> a, 1.U -> b))   
+  * MuxLookup(idx, default,
+  *     Array(0.U -> a, 1.U -> b))
   * }}}
   */
 object MuxLookup {
@@ -77,7 +77,6 @@ object MuxLookup {
   * @example {{{
   * MuxCase(default, Array(c1 -> a, c2 -> b))
   * }}}
-  */
   */
 object MuxCase {
   /** @param default the default value if none are enabled
