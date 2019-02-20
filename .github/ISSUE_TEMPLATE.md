@@ -4,7 +4,7 @@ This repository's issues are reserved for feature requests and bug reports.
 Please select the item best describing the issue in each category and delete the other items.
 -->
 <!-- choose all that apply -->
-**Type of issue**: bug report | feature request | other enhancement
+**Type of issue**: bug report | feature request | documentation | other enhancement
 
 <!-- choose one -->
 **Impact**: no functional change | API addition (no impact on existing code) | API modification | unknown
