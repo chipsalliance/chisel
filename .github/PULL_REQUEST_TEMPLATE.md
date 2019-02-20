@@ -4,7 +4,7 @@ Please select the item best describing the pull request in each category and del
 **Related issue**: <!-- if applicable -->
 
 <!-- choose one -->
-**Type of change**: bug report | feature request | other enhancement
+**Type of change**: bug report | feature request | documentation | other enhancement
 
 <!-- choose one -->
 **Impact**: no functional change | API addition (no impact on existing code) | API modification
