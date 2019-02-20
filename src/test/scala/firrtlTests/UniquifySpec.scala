@@ -286,29 +286,34 @@ class UniquifySpec extends FirrtlFlatSpec {
   }
 
   it should "quickly rename deep bundles" in {
-    // We use a fixed time to determine if this test passed or failed.
+    val depth = 500
+    // We previously used a fixed time to determine if this test passed or failed.
     // This test would pass under normal conditions, but would fail during coverage tests.
-    // Since executions times vary significantly under coverage testing, we check a global
+    // Instead of using a fixed time, we run the test once (with a rename depth of 1), and record the time,
+    //  then run it again with a depth of 500 and verify that the difference is below a fixed threshold.
+    // Additionally, since executions times vary significantly under coverage testing, we check a global
     //  to see if timing measurements are accurate enough to enforce the timing checks.
-    val maxMs = 8000.0
+    val threshold = depth * 2.0
 
     def mkType(i: Int): String = {
       if(i == 0) "UInt<8>" else s"{x: ${mkType(i - 1)}}"
     }
-
-    val depth = 500
-
-    val input =
-      s"""circuit Test:
-         |  module Test :
-         |    input in: ${mkType(depth)}
-         |    output out: ${mkType(depth)}
-         |    out <= in
-         |""".stripMargin
-
-    val (renameMs, _) = Utils.time(compileToVerilog(input))
+    val (baseMs: Double, renameMs: Double) = {
+      for (depth <- List(1, depth)) yield {
+        val input = s"""circuit Test:
+                       |  module Test :
+                       |    input in: ${mkType(depth)}
+                       |    output out: ${mkType(depth)}
+                       |    out <= in
+                       |""".stripMargin
+        val (ms, _) = Utils.time(compileToVerilog(input))
+        ms
+      }
+    } match {
+      case List(base, rename) => (base, rename)
+    }
 
     if (TestOptions.accurateTiming)
-      renameMs shouldBe < (maxMs)
+      renameMs shouldBe < (baseMs * threshold)
   }
 }
