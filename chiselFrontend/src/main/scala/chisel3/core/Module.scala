@@ -2,6 +2,7 @@
 
 package chisel3.core
 
+import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.collection.JavaConversions._
 import scala.language.experimental.macros
@@ -115,6 +116,32 @@ object IO {
   }
 }
 
+object BaseModule {
+  private[chisel3] class ClonePorts (elts: Data*)(implicit compileOptions: CompileOptions) extends Record {
+    val elements = ListMap(elts.map(d => d.instanceName -> d.cloneTypeFull): _*)
+    def apply(field: String) = elements(field)
+    override def cloneType = (new ClonePorts(elts: _*)).asInstanceOf[this.type]
+  }
+
+  private[chisel3] def cloneIORecord(proto: BaseModule)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): ClonePorts = {
+    require(proto.isClosed, "Can't clone a module before module close")
+    val clonePorts = new ClonePorts(proto.getModulePorts: _*)
+    clonePorts.bind(WireBinding(Builder.forcedUserModule))
+    val cloneInstance = new DefInstance(sourceInfo, proto, proto._component.get.ports) {
+      override def name = clonePorts.getRef.name
+    }
+    pushCommand(cloneInstance)
+    if (!compileOptions.explicitInvalidate) {
+      pushCommand(DefInvalid(sourceInfo, clonePorts.ref))
+    }
+    if (proto.isInstanceOf[MultiIOModule]) {
+      clonePorts("clock") := Module.clock
+      clonePorts("reset") := Module.reset
+    }
+    clonePorts
+  }
+}
+
 /** Abstract base class for Modules, an instantiable organizational unit for RTL.
   */
 // TODO: seal this?
@@ -225,22 +252,6 @@ abstract class BaseModule extends HasId {
       }
     }
 
-    /** Recursively suggests names to supported "container" classes
-      * Arbitrary nestings of supported classes are allowed so long as the
-      * innermost element is of type HasId
-      * (Note: Map is Iterable[Tuple2[_,_]] and thus excluded)
-      */
-    def nameRecursively(prefix: String, nameMe: Any): Unit =
-      nameMe match {
-        case (id: HasId) => name(id, prefix)
-        case Some(elt) => nameRecursively(prefix, elt)
-        case (iter: Iterable[_]) if iter.hasDefiniteSize =>
-          for ((elt, i) <- iter.zipWithIndex) {
-            nameRecursively(s"${prefix}_${i}", elt)
-          }
-        case _ => // Do nothing
-      }
-
     /** Scala generates names like chisel3$util$Queue$$ram for private vals
       * This extracts the part after $$ for names like this and leaves names
       * without $$ unchanged
@@ -248,7 +259,7 @@ abstract class BaseModule extends HasId {
     def cleanName(name: String): String = name.split("""\$\$""").lastOption.getOrElse(name)
 
     for (m <- getPublicFields(rootClass)) {
-      nameRecursively(cleanName(m.getName), m.invoke(this))
+      Builder.nameRecursively(cleanName(m.getName), m.invoke(this), name)
     }
 
     names

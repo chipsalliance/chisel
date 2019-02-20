@@ -16,7 +16,7 @@ package chisel3
   *
   *   The equivalent public-facing methods do not have the `do_` prefix or have the same name. Use and look at the
   *   documentation for those. If you want left shift, use `<<`, not `do_<<`. If you want comversion to a [[Seq]] of
-  *   [[Bool]]s look at the `toBools` above, not the one below. Users can safely ignore every method in this group!
+  *   [[Bool]]s look at the `asBools` above, not the one below. Users can safely ignore every method in this group!
   *   <br>
   *   <br>
   *

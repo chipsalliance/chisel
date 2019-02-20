@@ -32,6 +32,9 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
   "litToBoolean" should "return the literal value" in {
     assert(true.B.litToBoolean === true)
     assert(false.B.litToBoolean === false)
+
+    assert(1.B.litToBoolean === true)
+    assert(0.B.litToBoolean === false)
   }
 
   "litToDouble" should "return the literal value" in {

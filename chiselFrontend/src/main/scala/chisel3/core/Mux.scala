@@ -32,6 +32,20 @@ object Mux extends SourceInfoDoc {
     requireIsHardware(con, "mux true value")
     requireIsHardware(alt, "mux false value")
     val d = cloneSupertype(Seq(con, alt), "Mux")
-    pushOp(DefPrim(sourceInfo, d, MultiplexOp, cond.ref, con.ref, alt.ref))
+    val conRef = con match {  // this matches chisel semantics (DontCare as object) to firrtl semantics (invalidate)
+      case DontCare =>
+        val dcWire = Wire(d)
+        dcWire := DontCare
+        dcWire.ref
+      case _ => con.ref
+    }
+    val altRef = alt match {
+      case DontCare =>
+        val dcWire = Wire(d)
+        dcWire := DontCare
+        dcWire.ref
+      case _ => alt.ref
+    }
+    pushOp(DefPrim(sourceInfo, d, MultiplexOp, cond.ref, conRef, altRef))
   }
 }
