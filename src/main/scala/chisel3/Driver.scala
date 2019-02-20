@@ -192,7 +192,7 @@ object Driver extends BackendCompilationUtilities {
           ce.printStackTrace(new PrintWriter(sw))
           sw.toString
         }
-        stackTrace.lines.foreach(line => println(s"${ErrorLog.errTag} $line"))
+        Predef.augmentString(stackTrace).lines.foreach(line => println(s"${ErrorLog.errTag} $line"))
         None
     }
 

@@ -54,7 +54,7 @@ class VendingMachineGenerator(
 
   val width = log2Ceil(maxValue + 1).W
   val value = RegInit(0.asUInt(width))
-  val incValue = WireInit(0.asUInt(width))
+  val incValue = WireDefault(0.asUInt(width))
   val doDispense = value >= (sodaCost / minCoin).U
 
   when (doDispense) {

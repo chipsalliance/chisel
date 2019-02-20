@@ -69,7 +69,7 @@ class MixedVecZeroEntryTester extends BasicTester {
     val io = IO(Output(bundleWithZeroEntryVec))
     io.foo := false.B
   })
-  WireInit(m.io.bar)
+  WireDefault(m.io.bar)
 
   stop()
 }

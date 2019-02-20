@@ -26,12 +26,12 @@ class PerNameIndexing(count: Int) extends NamedModuleTester {
 // Note this only checks Iterable[Chisel.Data] which excludes Maps
 class IterableNaming extends NamedModuleTester {
   val seq = Seq.tabulate(3) { i =>
-    Seq.tabulate(2) { j => expectName(WireInit((i * j).U), s"seq_${i}_${j}") }
+    Seq.tabulate(2) { j => expectName(WireDefault((i * j).U), s"seq_${i}_${j}") }
   }
-  val optSet = Some(Set(expectName(WireInit(0.U), "optSet_0"),
-                        expectName(WireInit(1.U), "optSet_1"),
-                        expectName(WireInit(2.U), "optSet_2"),
-                        expectName(WireInit(3.U), "optSet_3")))
+  val optSet = Some(Set(expectName(WireDefault(0.U), "optSet_0"),
+                        expectName(WireDefault(1.U), "optSet_1"),
+                        expectName(WireDefault(2.U), "optSet_2"),
+                        expectName(WireDefault(3.U), "optSet_3")))
 
   val stack = mutable.Stack[Module]()
   for (i <- 0 until 4) {
@@ -83,7 +83,7 @@ class BetterNamingTests extends ChiselFlatSpec {
       if (withLits) {
         List(8.U, -3.S, 1.25.F(2.BP))
       }
-      WireInit(3.U)
+      WireDefault(3.U)
     }
     val withLits = chisel3.Driver.emit(() => new MyModule(true))
     val noLits = chisel3.Driver.emit(() => new MyModule(false))

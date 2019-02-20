@@ -11,7 +11,7 @@ class EnumSpec extends ChiselFlatSpec {
   "1-entry Enums" should "work" in {
     assertTesterPasses(new BasicTester {
       val onlyState :: Nil = Enum(1)
-      val wire = WireInit(onlyState)
+      val wire = WireDefault(onlyState)
       chisel3.assert(wire === onlyState)
       stop()
     })

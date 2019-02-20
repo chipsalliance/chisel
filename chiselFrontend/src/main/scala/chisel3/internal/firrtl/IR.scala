@@ -286,7 +286,7 @@ abstract class Component extends Arg {
   def name: String
   def ports: Seq[Port]
 }
-case class DefModule(id: UserModule, name: String, ports: Seq[Port], commands: Seq[Command]) extends Component
+case class DefModule(id: RawModule, name: String, ports: Seq[Port], commands: Seq[Command]) extends Component
 case class DefBlackBox(id: BaseBlackBox, name: String, ports: Seq[Port], topDir: SpecifiedDirection, params: Map[String, Param]) extends Component
 
 case class Circuit(name: String, components: Seq[Component], annotations: Seq[ChiselAnnotation] = Seq.empty)
