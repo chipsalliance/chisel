@@ -112,7 +112,10 @@ may not be instantiated are greyed out):
 
 ![Image](doc/images/type_hierarchy.png?raw=true)
 
-### [Chisel Tutorial](https://github.com/ucb-bar/chisel-tutorial)
+### Learning Chisel
+* [Chisel Bootcamp](https://github.com/freechipsproject/chisel-bootcamp), a collection of interactive Jupyter notebooks that teach Chisel
+* [Chisel Tutorial](https://github.com/ucb-bar/chisel-tutorial), a collection of exercises utlizing `sbt`
+
 
 ## For Hardware Engineers
 This section describes how to get started using Chisel to create a new RTL
