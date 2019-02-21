@@ -4,6 +4,11 @@
 
 [![Join the chat at https://gitter.im/freechipsproject/firrtl](https://badges.gitter.im/freechipsproject/firrtl.svg)](https://gitter.im/freechipsproject/firrtl?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![Build Status](https://travis-ci.org/freechipsproject/firrtl.svg?branch=master)](https://travis-ci.org/freechipsproject/firrtl)
+[![Mergify Status][mergify-status]][mergify]
+
+[mergify]: https://mergify.io
+[mergify-status]: https://gh.mergify.io/badges/:freechipsproject/:firrtl.png?style=cut
+
 #### Flexible Internal Representation for RTL
 
  Firrtl is an intermediate representation (IR) for digital circuits designed as a platform for writing circuit-level transformations.
