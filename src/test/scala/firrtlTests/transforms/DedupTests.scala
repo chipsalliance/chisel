@@ -532,5 +532,26 @@ class DedupModuleTests extends HighTransformSpec {
     cs.annotations.toSeq should not contain (SingleTargetDummyAnnotation(A.ref("x")))
     cs.deletedAnnotations.isEmpty should be (true)
   }
+  "main" should "not be deduped even if it's the last module" in {
+    val input =
+      """circuit main:
+        |  module dupe:
+        |    input in: UInt<8>
+        |    output out: UInt<8>
+        |    out <= in
+        |  module main:
+        |    input in:  UInt<8>
+        |    output out: UInt<8>
+        |    out <= in
+      """.stripMargin
+    val check =
+      """circuit main:
+        |  module main:
+        |    input in:  UInt<8>
+        |    output out: UInt<8>
+        |    out <= in
+      """.stripMargin
+    execute(input, check, Seq.empty)
+  }
 }
 
