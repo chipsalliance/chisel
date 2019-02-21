@@ -294,12 +294,15 @@ class UniquifySpec extends FirrtlFlatSpec {
     // Additionally, since executions times vary significantly under coverage testing, we check a global
     //  to see if timing measurements are accurate enough to enforce the timing checks.
     val threshold = depth * 2.0
-
+    // As of 20-Feb-2019, this still fails occasionally:
+    //  [info]   9038.99351 was not less than 6113.865 (UniquifySpec.scala:317)
+    // Run the "quick" test three times and choose the longest time as the basis.
+    val nCalibrationRuns = 3
     def mkType(i: Int): String = {
       if(i == 0) "UInt<8>" else s"{x: ${mkType(i - 1)}}"
     }
-    val (baseMs: Double, renameMs: Double) = {
-      for (depth <- List(1, depth)) yield {
+    val timesMs = (
+      for (depth <- (List.fill(nCalibrationRuns)(1) :+ depth)) yield {
         val input = s"""circuit Test:
                        |  module Test :
                        |    input in: ${mkType(depth)}
@@ -308,11 +311,11 @@ class UniquifySpec extends FirrtlFlatSpec {
                        |""".stripMargin
         val (ms, _) = Utils.time(compileToVerilog(input))
         ms
-      }
-    } match {
-      case List(base, rename) => (base, rename)
-    }
-
+        }
+    ).toArray
+    // The baseMs will be the maximum of the first calibration runs
+    val baseMs = timesMs.slice(0, nCalibrationRuns - 1).max
+    val renameMs = timesMs(nCalibrationRuns)
     if (TestOptions.accurateTiming)
       renameMs shouldBe < (baseMs * threshold)
   }
