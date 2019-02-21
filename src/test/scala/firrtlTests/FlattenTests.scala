@@ -224,4 +224,14 @@ class FlattenTests extends LowTransformSpec {
           |    b <= a""".stripMargin
      execute(input, check, Seq(flatten("Inline1")))
   }
+  "The Flatten transform" should "do nothing if no flatten annotations are present" in{
+    val input =
+      """|circuit Foo:
+         |  module Foo:
+         |    input a: UInt<1>
+         |    output b: UInt<1>
+         |    b <= a
+         |""".stripMargin
+    execute(input, input, Seq.empty)
+  }
 }
