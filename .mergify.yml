@@ -1,0 +1,23 @@
+pull_request_rules:
+  - name: remove outdated reviews
+    conditions:
+      - base=master
+    actions:
+      dismiss_reviews:
+
+pull_request_rules:
+  - name: automatic squash-and-merge on CI success and review
+    conditions:
+      - status-success=continuous-integration/travis-ci/pr
+      - "#approved-reviews-by>=1"
+      - "#review-requested=0"
+      - "#changes-requested-reviews-by=0"
+      - "#commented-reviews-by=0"
+      - base=master
+      - label="Please Merge"
+      - label!="DO NOT MERGE"
+    actions:
+      merge:
+        method: squash
+        strict: smart
+        strict_method: merge
