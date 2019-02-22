@@ -14,7 +14,7 @@ class ReplaceAccessesSpec extends FirrtlFlatSpec {
     ResolveKinds,
     InferTypes,
     ResolveGenders,
-    InferWidths,
+    new InferWidths,
     ReplaceAccesses)
   protected def exec(input: String) = {
     transforms.foldLeft(CircuitState(parse(input), UnknownForm)) {

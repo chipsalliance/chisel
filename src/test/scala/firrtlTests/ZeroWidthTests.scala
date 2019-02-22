@@ -16,7 +16,7 @@ class ZeroWidthTests extends FirrtlFlatSpec {
       ResolveKinds,
       InferTypes,
       ResolveGenders,
-      InferWidths,
+      new InferWidths,
       ZeroWidth)
   private def exec (input: String) = {
     val circuit = parse(input)

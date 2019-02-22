@@ -158,7 +158,7 @@ class UnitTests extends FirrtlFlatSpec {
       ResolveKinds,
       InferTypes,
       ResolveGenders,
-      InferWidths,
+      new InferWidths,
       SplitExpressions
     )
     val input =
@@ -182,7 +182,7 @@ class UnitTests extends FirrtlFlatSpec {
       ResolveKinds,
       InferTypes,
       ResolveGenders,
-      InferWidths,
+      new InferWidths,
       PadWidths
     )
     val input =
@@ -203,7 +203,7 @@ class UnitTests extends FirrtlFlatSpec {
       ResolveKinds,
       InferTypes,
       ResolveGenders,
-      InferWidths,
+      new InferWidths,
       PullMuxes,
       ExpandConnects,
       RemoveAccesses,
@@ -243,15 +243,15 @@ class UnitTests extends FirrtlFlatSpec {
       ResolveKinds,
       InferTypes,
       ResolveGenders,
-      InferWidths,
+      new InferWidths,
       CheckWidths)
     val input =
       """circuit Unit :
         |  module Unit :
         |    node x = bits(UInt(1), 100, 0)""".stripMargin
     intercept[CheckWidths.BitsWidthException] {
-      passes.foldLeft(Parser.parse(input.split("\n").toIterator)) {
-        (c: Circuit, p: Pass) => p.run(c)
+      passes.foldLeft(CircuitState(Parser.parse(input.split("\n").toIterator), UnknownForm)) {
+        (c: CircuitState, p: Transform) => p.runTransform(c)
       }
     }
   }
@@ -262,15 +262,15 @@ class UnitTests extends FirrtlFlatSpec {
       ResolveKinds,
       InferTypes,
       ResolveGenders,
-      InferWidths,
+      new InferWidths,
       CheckWidths)
     val input =
       """circuit Unit :
         |  module Unit :
         |    node x = head(UInt(1), 100)""".stripMargin
     intercept[CheckWidths.HeadWidthException] {
-      passes.foldLeft(Parser.parse(input.split("\n").toIterator)) {
-        (c: Circuit, p: Pass) => p.run(c)
+      passes.foldLeft(CircuitState(Parser.parse(input.split("\n").toIterator), UnknownForm)) {
+        (c: CircuitState, p: Transform) => p.runTransform(c)
       }
     }
   }
@@ -281,15 +281,15 @@ class UnitTests extends FirrtlFlatSpec {
       ResolveKinds,
       InferTypes,
       ResolveGenders,
-      InferWidths,
+      new InferWidths,
       CheckWidths)
     val input =
       """circuit Unit :
         |  module Unit :
         |    node x = tail(UInt(1), 100)""".stripMargin
     intercept[CheckWidths.TailWidthException] {
-      passes.foldLeft(Parser.parse(input.split("\n").toIterator)) {
-        (c: Circuit, p: Pass) => p.run(c)
+      passes.foldLeft(CircuitState(Parser.parse(input.split("\n").toIterator), UnknownForm)) {
+        (c: CircuitState, p: Transform) => p.runTransform(c)
       }
     }
   }
@@ -308,8 +308,8 @@ class UnitTests extends FirrtlFlatSpec {
         |    bar <- foo
         |""".stripMargin
     intercept[PassException] {
-      passes.foldLeft(Parser.parse(input.split("\n").toIterator)) {
-        (c: Circuit, p: Pass) => p.run(c)
+      passes.foldLeft(CircuitState(Parser.parse(input.split("\n").toIterator), UnknownForm)) {
+        (c: CircuitState, p: Transform) => p.runTransform(c)
       }
     }
   }
@@ -389,7 +389,7 @@ class UnitTests extends FirrtlFlatSpec {
       ResolveKinds,
       InferTypes,
       ResolveGenders,
-      InferWidths,
+      new InferWidths,
       PullMuxes,
       ExpandConnects,
       RemoveAccesses,

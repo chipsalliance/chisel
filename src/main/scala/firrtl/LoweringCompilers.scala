@@ -44,7 +44,7 @@ class ResolveAndCheck extends CoreTransform {
     passes.InferTypes,
     passes.ResolveGenders,
     passes.CheckGenders,
-    passes.InferWidths,
+    new passes.InferWidths,
     passes.CheckWidths)
 }
 
@@ -68,7 +68,7 @@ class HighFirrtlToMiddleFirrtl extends CoreTransform {
     passes.InferTypes,
     passes.CheckTypes,
     passes.ResolveGenders,
-    passes.InferWidths,
+    new passes.InferWidths,
     passes.CheckWidths,
     passes.ConvertFixedToSInt,
     passes.ZeroWidth,
@@ -87,7 +87,7 @@ class MiddleFirrtlToLowFirrtl extends CoreTransform {
     passes.ResolveKinds,
     passes.InferTypes,
     passes.ResolveGenders,
-    passes.InferWidths,
+    new passes.InferWidths,
     passes.Legalize,
     new firrtl.transforms.RemoveReset,
     new firrtl.transforms.CheckCombLoops,

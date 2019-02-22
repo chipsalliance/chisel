@@ -22,7 +22,7 @@ class ExpandWhensSpec extends FirrtlFlatSpec {
     InferTypes,
     ResolveGenders,
     CheckGenders,
-    InferWidths,
+    new InferWidths,
     CheckWidths,
     PullMuxes,
     ExpandConnects,

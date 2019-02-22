@@ -33,7 +33,7 @@ trait Pass extends Transform {
 
 // Error handling
 class PassException(message: String) extends Exception(message)
-class PassExceptions(exceptions: Seq[PassException]) extends Exception("\n" + exceptions.mkString("\n"))
+class PassExceptions(val exceptions: Seq[PassException]) extends Exception("\n" + exceptions.mkString("\n"))
 class Errors {
   val errors = collection.mutable.ArrayBuffer[PassException]()
   def append(pe: PassException) = errors.append(pe)

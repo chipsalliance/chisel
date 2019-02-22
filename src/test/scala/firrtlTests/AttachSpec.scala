@@ -411,7 +411,7 @@ class AttachAnalogSpec extends FirrtlFlatSpec {
       ResolveKinds,
       InferTypes,
       CheckTypes,
-      InferWidths,
+      new InferWidths,
       CheckWidths)
     val input =
       """circuit Unit :
@@ -422,8 +422,8 @@ class AttachAnalogSpec extends FirrtlFlatSpec {
         |  extmodule A :
         |    output o: Analog<2> """.stripMargin
     intercept[CheckWidths.AttachWidthsNotEqual] {
-      passes.foldLeft(parse(input)) {
-        (c: Circuit, p: Pass) => p.run(c)
+      passes.foldLeft(CircuitState(parse(input), UnknownForm)) {
+        (c: CircuitState, p: Transform) => p.runTransform(c)
       }
     }
   }

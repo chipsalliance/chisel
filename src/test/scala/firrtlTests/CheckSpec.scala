@@ -5,7 +5,7 @@ package firrtlTests
 import java.io._
 import org.scalatest._
 import org.scalatest.prop._
-import firrtl.Parser
+import firrtl.{Parser, CircuitState, UnknownForm, Transform}
 import firrtl.ir.Circuit
 import firrtl.passes.{Pass,ToWorkingIR,CheckHighForm,ResolveKinds,InferTypes,CheckTypes,PassException,InferWidths,CheckWidths,ResolveGenders,CheckGenders}
 
@@ -153,7 +153,7 @@ class CheckSpec extends FlatSpec with Matchers {
       CheckTypes,
       ResolveGenders,
       CheckGenders,
-      InferWidths,
+      new InferWidths,
       CheckWidths)
     val input =
       """
@@ -180,8 +180,8 @@ class CheckSpec extends FlatSpec with Matchers {
           |    sub.io.debug_clk <= io.jtag.TCK
           |
           |""".stripMargin
-    passes.foldLeft(Parser.parse(input.split("\n").toIterator)) {
-      (c: Circuit, p: Pass) => p.run(c)
+    passes.foldLeft(CircuitState(Parser.parse(input.split("\n").toIterator), UnknownForm)) {
+      (c: CircuitState, p: Transform) => p.runTransform(c)
     }
   }
 

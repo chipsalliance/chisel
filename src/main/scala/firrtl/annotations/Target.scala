@@ -3,7 +3,8 @@
 package firrtl
 package annotations
 
-import firrtl.ir.Expression
+import firrtl.ir.{Expression, Type}
+import firrtl.Utils.{sub_type, field_type}
 import AnnotationUtils.{toExp, validComponentName, validModuleName}
 import TargetToken._
 
@@ -552,6 +553,24 @@ case class ReferenceTarget(circuit: String,
 
   /** @return The clock signal of this reference, must be to a [[firrtl.ir.DefRegister]] */
   def clock: ReferenceTarget = ReferenceTarget(circuit, module, path, ref, component :+ Clock)
+
+  /** @param the type of this target's ref
+    * @return the type of the subcomponent specified by this target's component
+    */
+  def componentType(baseType: Type): Type = componentType(baseType, tokens)
+
+  private def componentType(baseType: Type, tokens: Seq[TargetToken]): Type = {
+    if (tokens.isEmpty) {
+      baseType
+    } else {
+      val headType = tokens.head match {
+        case Index(idx) => sub_type(baseType)
+        case Field(field) => field_type(baseType, field)
+        case _: Ref => baseType
+      }
+      componentType(headType, tokens.tail)
+    }
+  }
 
   override def circuitOpt: Option[String] = Some(circuit)
 

@@ -25,7 +25,7 @@ class ClockListTests extends FirrtlFlatSpec {
     ResolveKinds,
     InferTypes,
     ResolveGenders,
-    InferWidths
+    new InferWidths
   )
 
   "Getting clock list" should "work" in {
@@ -75,9 +75,9 @@ class ClockListTests extends FirrtlFlatSpec {
     |Good Origin of h$b.clock is h$clkGen.clk2
     |Good Origin of h$c.clock is h$clkGen.clk3
     |""".stripMargin
-    val c = passes.foldLeft(parse(input)) {
-      (c: Circuit, p: Pass) => p.run(c)
-    }
+    val c = passes.foldLeft(CircuitState(parse(input), UnknownForm)) {
+      (c: CircuitState, p: Transform) => p.runTransform(c)
+    }.circuit
     val writer = new StringWriter()
     val retC = new ClockList("HTop", writer).run(c)
     (writer.toString) should be (check)
@@ -106,9 +106,9 @@ class ClockListTests extends FirrtlFlatSpec {
     |Good Origin of b.clock is clkB
     |Good Origin of b$c.clock is clock
     |""".stripMargin
-    val c = passes.foldLeft(parse(input)) {
-      (c: Circuit, p: Pass) => p.run(c)
-    }
+    val c = passes.foldLeft(CircuitState(parse(input), UnknownForm)) {
+      (c: CircuitState, p: Transform) => p.runTransform(c)
+    }.circuit
     val writer = new StringWriter()
     val retC = new ClockList("A", writer).run(c)
     (writer.toString) should be (check)
@@ -139,9 +139,9 @@ class ClockListTests extends FirrtlFlatSpec {
     |Good Origin of clock is clock
     |Good Origin of c.clock is clkC
     |""".stripMargin
-    val c = passes.foldLeft(parse(input)) {
-      (c: Circuit, p: Pass) => p.run(c)
-    }
+    val c = passes.foldLeft(CircuitState(parse(input), UnknownForm)) {
+      (c: CircuitState, p: Transform) => p.runTransform(c)
+    }.circuit
     val writer = new StringWriter()
     val retC = new ClockList("B", writer).run(c)
     (writer.toString) should be (check)
