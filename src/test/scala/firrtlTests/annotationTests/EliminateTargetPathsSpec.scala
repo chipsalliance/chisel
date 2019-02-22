@@ -260,16 +260,19 @@ class EliminateTargetPathsSpec extends FirrtlPropSpec with FirrtlMatchers {
         |    m2.i <= m1.o
         |    o <= m2.o
       """.stripMargin
-    intercept[NoSuchTargetException] {
+    val e1 = the [CustomTransformException] thrownBy {
       val Top_m1 = Top.instOf("m1", "MiddleX")
       val inputState = CircuitState(parse(input), ChirrtlForm, Seq(DummyAnnotation(Top_m1)))
       new LowFirrtlCompiler().compile(inputState, customTransforms)
     }
-    intercept[NoSuchTargetException] {
+    e1.cause shouldBe a [NoSuchTargetException]
+
+    val e2 = the [CustomTransformException] thrownBy {
       val Top_m2 = Top.instOf("x2", "Middle")
       val inputState = CircuitState(parse(input), ChirrtlForm, Seq(DummyAnnotation(Top_m2)))
       new LowFirrtlCompiler().compile(inputState, customTransforms)
     }
+    e2.cause shouldBe a [NoSuchTargetException]
   }
 
   property("No name conflicts between two new modules") {

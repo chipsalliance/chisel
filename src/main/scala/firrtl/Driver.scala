@@ -248,6 +248,8 @@ object Driver {
         case p: PassException    => throw p
         case p: PassExceptions   => throw p
         case p: FIRRTLException  => throw p
+        // Propagate exceptions from custom transforms
+        case CustomTransformException(cause) => throw cause
         // Treat remaining exceptions as internal errors.
         case e: Exception => throwInternalError(exception = Some(e))
       }

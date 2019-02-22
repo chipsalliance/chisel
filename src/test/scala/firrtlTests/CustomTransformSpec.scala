@@ -46,5 +46,30 @@ class CustomTransformSpec extends FirrtlFlatSpec {
 
     runFirrtlTest("CustomTransform", "/features", customTransforms = List(new ReplaceExtModuleTransform))
   }
+
+  they should "not cause \"Internal Errors\"" in {
+    val input = """
+      |circuit test :
+      |  module test :
+      |    output out : UInt
+      |    out <= UInt(123)""".stripMargin
+    val errorString = "My Custom Transform failed!"
+    class ErroringTransform extends Transform {
+      def inputForm = HighForm
+      def outputForm = HighForm
+      def execute(state: CircuitState): CircuitState = {
+        require(false, errorString)
+        state
+      }
+    }
+    val optionsManager = new ExecutionOptionsManager("test") with HasFirrtlOptions {
+      firrtlOptions = FirrtlExecutionOptions(
+        firrtlSource = Some(input),
+        customTransforms = List(new ErroringTransform))
+    }
+    (the [java.lang.IllegalArgumentException] thrownBy {
+      Driver.execute(optionsManager)
+    }).getMessage should include (errorString)
+  }
 }
 

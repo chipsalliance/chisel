@@ -135,8 +135,11 @@ circuit sram6t :
 """.stripMargin
 
     val annos = Seq(memlib.InferReadWriteAnnotation)
-    intercept[InferReadWriteCheckException] {
+    intercept[Exception] {
       compileAndEmit(CircuitState(parse(input), ChirrtlForm, annos))
+    } match {
+      case CustomTransformException(_: InferReadWriteCheckException) => // success
+      case _ => fail()
     }
   }
 
