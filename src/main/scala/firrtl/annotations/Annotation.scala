@@ -34,7 +34,7 @@ trait Annotation extends Product {
     }.foldRight(Seq.empty[Target])((seq, c) => c ++ seq)
   }
 
-  /** Returns all [[Target]] members in this annotation
+  /** Returns all [[firrtl.annotations.Target Target]] members in this annotation
     * @return
     */
   def getTargets: Seq[Target] = extractComponents(productIterator.toSeq)
@@ -210,4 +210,3 @@ private[firrtl] object LegacyAnnotation {
 case class DeletedAnnotation(xFormName: String, anno: Annotation) extends NoTargetAnnotation {
   override def serialize: String = s"""DELETED by $xFormName\n${anno.serialize}"""
 }
-

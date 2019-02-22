@@ -14,11 +14,10 @@ import scala.collection.mutable
 
 /** Ledger tracks [[firrtl.ir.Circuit]] statistics
   *
-  * In this lesson, we want to count the number of muxes in each
-  *  module in our design.
+  * In this lesson, we want to count the number of muxes in each module in our design.
   *
-  * This [[Ledger]] class will be passed along as we walk our
-  *  circuit, and help us count each [[Mux]] we find.
+  * This [[Ledger]] class will be passed along as we walk our circuit, and help us count each [[firrtl.ir.Mux Mux]] we
+  * find.
   *
   * See [[lesson1.AnalyzeCircuit]]
   */
@@ -47,18 +46,18 @@ class Ledger {
 
 /** AnalyzeCircuit Transform
   *
-  * Walks [[firrtl.ir.Circuit]], and records the number of muxes it finds, per module.
+  * Walks [[firrtl.ir.Circuit Circuit]], and records the number of muxes it finds, per module.
   *
-  * While some compiler frameworks operate on graphs, we represent a Firrtl
-  * circuit using a tree representation:
-  *   - A Firrtl [[Circuit]] contains a sequence of [[DefModule]]s.
-  *   - A [[DefModule]] contains a sequence of [[Port]]s, and maybe a [[Statement]].
-  *   - A [[Statement]] can contain other [[Statement]]s, or [[Expression]]s.
-  *   - A [[Expression]] can contain other [[Expression]]s.
-  * 
-  * To visit all Firrtl IR nodes in a circuit, we write functions that recursively
-  *  walk down this tree. To record statistics, we will pass along the [[Ledger]]
-  *  class and use it when we come across a [[Mux]].
+  * While some compiler frameworks operate on graphs, we represent a Firrtl circuit using a tree representation:
+  *   - A Firrtl [[firrtl.ir.Circuit Circuit]] contains a sequence of [[firrtl.ir.DefModule DefModule]]s.
+  *   - A [[firrtl.ir.DefModule DefModule]] contains a sequence of [[firrtl.ir.Port Port]]s, and maybe a
+  *     [[firrtl.ir.Statement Statement]].
+  *   - A [[firrtl.ir.Statement Statement]] can contain other [[firrtl.ir.Statement Statement]]s, or
+  *     [[firrtl.ir.Expression Expression]]s.
+  *   - A [[firrtl.ir.Expression Expression]] can contain other [[firrtl.ir.Expression Expression]]s.
+  *
+  * To visit all Firrtl IR nodes in a circuit, we write functions that recursively walk down this tree. To record
+  * statistics, we will pass along the [[Ledger]] class and use it when we come across a [[firrtl.ir.Mux Mux]].
   *
   * See the following links for more detailed explanations:
   * Firrtl's IR:
@@ -69,73 +68,81 @@ class Ledger {
   *   - https://github.com/ucb-bar/firrtl/wiki/Common-Pass-Idioms
   */
 class AnalyzeCircuit extends Transform {
-  // Requires the [[Circuit]] form to be "low"
+  /** Requires the [[firrtl.ir.Circuit Circuit]] form to be "low" */
   def inputForm = LowForm
-  // Indicates the output [[Circuit]] form to be "low"
+  /** Indicates the output [[firrtl.ir.Circuit Circuit]] form to be "low" */
   def outputForm = LowForm
 
-  // Called by [[Compiler]] to run your pass. [[CircuitState]] contains
-  // the circuit and its form, as well as other related data.
+  /** Called by [[firrtl.Compiler Compiler]] to run your pass. [[firrtl.CircuitState CircuitState]] contains the circuit
+    * and its form, as well as other related data.
+    */
   def execute(state: CircuitState): CircuitState = {
     val ledger = new Ledger()
     val circuit = state.circuit
 
-    // Execute the function walkModule(ledger) on every [[DefModule]] in
-    // circuit, returning a new [[Circuit]] with new [[Seq]] of [[DefModule]].
-    //   - "higher order functions" - using a function as an object
-    //   - "function currying" - partial argument notation
-    //   - "infix notation" - fancy function calling syntax
-    //   - "map" - classic functional programming concept
-    //   - discard the returned new [[Circuit]] because circuit is unmodified
+    /* Execute the function walkModule(ledger) on every [[firrtl.ir.DefModule DefModule]] in circuit, returning a new
+     * [[Circuit]] with new [[scala.collection.Seq Seq]] of [[firrtl.ir.DefModule DefModule]].
+     *   - "higher order functions" - using a function as an object
+     *   - "function currying" - partial argument notation
+     *   - "infix notation" - fancy function calling syntax
+     *   - "map" - classic functional programming concept
+     *   - discard the returned new [[firrtl.ir.Circuit Circuit]] because circuit is unmodified
+     */
     circuit map walkModule(ledger)
 
     // Print our ledger
     println(ledger.serialize)
 
-    // Return an unchanged [[CircuitState]]
+    // Return an unchanged [[firrtl.CircuitState CircuitState]]
     state
   }
 
-  // Deeply visits every [[Statement]] in m.
+  /** Deeply visits every [[firrtl.ir.Statement Statement]] in m. */
   def walkModule(ledger: Ledger)(m: DefModule): DefModule = {
     // Set ledger to current module name
     ledger.setModuleName(m.name)
 
-    // Execute the function walkStatement(ledger) on every [[Statement]] in m.
-    //   - return the new [[DefModule]] (in this case, its identical to m)
-    //   - if m does not contain [[Statement]], map returns m.
+    /* Execute the function walkStatement(ledger) on every [[firrtl.ir.Statement Statement]] in m.
+     *   - return the new [[firrtl.ir.DefModule DefModule]] (in this case, its identical to m)
+     *   - if m does not contain [[firrtl.ir.Statement Statement]], map returns m.
+     */
     m map walkStatement(ledger)
   }
 
-  // Deeply visits every [[Statement]] and [[Expression]] in s.
+  /** Deeply visits every [[firrtl.ir.Statement Statement]] and [[firrtl.ir.Expression Expression]] in s. */
   def walkStatement(ledger: Ledger)(s: Statement): Statement = {
 
-    // Execute the function walkExpression(ledger) on every [[Expression]] in s.
-    //   - discard the new [[Statement]] (in this case, its identical to s)
-    //   - if s does not contain [[Expression]], map returns s.
+    /* Execute the function walkExpression(ledger) on every [[firrtl.ir.Expression Expression]] in s.
+     *   - discard the new [[firrtl.ir.Statement Statement]] (in this case, its identical to s)
+     *   - if s does not contain [[firrtl.ir.Expression Expression]], map returns s.
+     */
     s map walkExpression(ledger)
 
-    // Execute the function walkStatement(ledger) on every [[Statement]] in s.
-    //   - return the new [[Statement]] (in this case, its identical to s)
-    //   - if s does not contain [[Statement]], map returns s.
+    /* Execute the function walkStatement(ledger) on every [[firrtl.ir.Statement Statement]] in s.
+     *   - return the new [[firrtl.ir.Statement Statement]] (in this case, its identical to s)
+     *   - if s does not contain [[firrtl.ir.Statement Statement]], map returns s.
+     */
     s map walkStatement(ledger)
   }
 
-  // Deeply visits every [[Expression]] in e.
-  //   - "post-order traversal" - handle e's children [[Expression]] before e
+  /** Deeply visits every [[firrtl.ir.Expression Expression]] in e.
+    *   - "post-order traversal"
+    *   - handle e's children [[firrtl.ir.Expression Expression]] before e
+    */
   def walkExpression(ledger: Ledger)(e: Expression): Expression = {
 
-    // Execute the function walkExpression(ledger) on every [[Expression]] in e.
-    //   - return the new [[Expression]] (in this case, its identical to e)
-    //   - if s does not contain [[Expression]], map returns e.
+    /** Execute the function walkExpression(ledger) on every [[firrtl.ir.Expression Expression]] in e.
+      *   - return the new [[firrtl.ir.Expression Expression]] (in this case, its identical to e)
+      *   - if s does not contain [[firrtl.ir.Expression Expression]], map returns e.
+      */
     val visited = e map walkExpression(ledger)
 
     visited match {
-      // If e is a [[Mux]], increment our ledger and return e.
+      // If e is a [[firrtl.ir.Mux Mux]], increment our ledger and return e.
       case Mux(cond, tval, fval, tpe) =>
         ledger.foundMux
         e
-      // If e is not a [[Mux]], return e.
+      // If e is not a [[firrtl.ir.Mux Mux]], return e.
       case notmux => notmux
     }
   }

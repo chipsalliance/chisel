@@ -3,7 +3,6 @@
 package firrtl
 
 import scala.collection.mutable
-import scala.collection.mutable.HashSet
 import firrtl.ir._
 
 class Namespace private {
@@ -39,8 +38,8 @@ class Namespace private {
 
   def newTemp: String = newName(tempNamePrefix)
 
-  /** Create a copy of the [[scala.collection.mutable.HashSet HashSet]] backing this [[Namespace]]
-    * @return a copy of the underlying [[scala.collection.mutable.HashSet HashSet]]
+  /** Create a copy of the HashSet backing this [[Namespace]]
+    * @return a copy of the underlying HashSet
     */
   def cloneUnderlying: mutable.HashSet[String] = namespace.clone
 }
@@ -83,4 +82,3 @@ object Namespace {
     namespace
   }
 }
-

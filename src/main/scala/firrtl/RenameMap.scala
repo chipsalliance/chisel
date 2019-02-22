@@ -37,32 +37,38 @@ object RenameMap {
 // TODO This should probably be refactored into immutable and mutable versions
 final class RenameMap private () {
 
-  /** Record that the from [[CircuitTarget]] is renamed to another [[CircuitTarget]]
+  /** Record that the from [[firrtl.annotations.CircuitTarget CircuitTarget]] is renamed to another
+    * [[firrtl.annotations.CircuitTarget CircuitTarget]]
     * @param from
     * @param to
     */
   def record(from: CircuitTarget, to: CircuitTarget): Unit = completeRename(from, Seq(to))
 
-  /** Record that the from [[CircuitTarget]] is renamed to another sequence of [[CircuitTarget]]s
+  /** Record that the from [[firrtl.annotations.CircuitTarget CircuitTarget]] is renamed to another sequence of
+    * [[firrtl.annotations.CircuitTarget CircuitTarget]]s
     * @param from
     * @param tos
     */
   def record(from: CircuitTarget, tos: Seq[CircuitTarget]): Unit = completeRename(from, tos)
 
-  /** Record that the from [[IsMember]] is renamed to another [[IsMember]]
+  /** Record that the from [[firrtl.annotations.IsMember Member]] is renamed to another [[firrtl.annotations.IsMember
+    * IsMember]]
     * @param from
     * @param to
     */
   def record(from: IsMember, to: IsMember): Unit = completeRename(from, Seq(to))
 
-  /** Record that the from [[IsMember]] is renamed to another sequence of [[IsMember]]s
+  /** Record that the from [[firrtl.annotations.IsMember IsMember]] is renamed to another sequence of
+    * [[firrtl.annotations.IsMember IsMember]]s
     * @param from
     * @param tos
     */
   def record(from: IsMember, tos: Seq[IsMember]): Unit = completeRename(from, tos)
 
-  /** Records that the keys in map are also renamed to their corresponding value seqs.
-    * Only ([[CircuitTarget]] -> Seq[ [[CircuitTarget]] ]) and ([[IsMember]] -> Seq[ [[IsMember]] ]) key/value allowed
+  /** Records that the keys in map are also renamed to their corresponding value seqs. Only
+    * ([[firrtl.annotations.CircuitTarget CircuitTarget]] -> Seq[ [[firrtl.annotations.CircuitTarget CircuitTarget]] ])
+    * and ([[firrtl.annotations.IsMember IsMember]] -> Seq[ [[firrtl.annotations.IsMember IsMember]] ]) key/value
+    * allowed
     * @param map
     */
   def recordAll(map: collection.Map[CompleteTarget, Seq[CompleteTarget]]): Unit =
@@ -73,30 +79,30 @@ final class RenameMap private () {
       case other => Utils.throwInternalError(s"Illegal rename: ${other._1} -> ${other._2}")
     }
 
-  /** Records that a [[CompleteTarget]] is deleted
+  /** Records that a [[firrtl.annotations.CompleteTarget CompleteTarget]] is deleted
     * @param name
     */
   def delete(name: CompleteTarget): Unit = underlying(name) = Seq.empty
 
-  /** Renames a [[CompleteTarget]]
+  /** Renames a [[firrtl.annotations.CompleteTarget CompleteTarget]]
     * @param t target to rename
     * @return renamed targets
     */
   def apply(t: CompleteTarget): Seq[CompleteTarget] = completeGet(t).getOrElse(Seq(t))
 
-  /** Get renames of a [[CircuitTarget]]
+  /** Get renames of a [[firrtl.annotations.CircuitTarget CircuitTarget]]
     * @param key Target referencing the original circuit
     * @return Optionally return sequence of targets that key remaps to
     */
   def get(key: CompleteTarget): Option[Seq[CompleteTarget]] = completeGet(key)
 
-  /** Get renames of a [[CircuitTarget]]
+  /** Get renames of a [[firrtl.annotations.CircuitTarget CircuitTarget]]
     * @param key Target referencing the original circuit
     * @return Optionally return sequence of targets that key remaps to
     */
   def get(key: CircuitTarget): Option[Seq[CircuitTarget]] = completeGet(key).map( _.map { case x: CircuitTarget => x } )
 
-  /** Get renames of a [[IsMember]]
+  /** Get renames of a [[firrtl.annotations.IsMember IsMember]]
     * @param key Target referencing the original member of the circuit
     * @return Optionally return sequence of targets that key remaps to
     */
@@ -165,7 +171,7 @@ final class RenameMap private () {
     }
   }
 
-  /** Get renames of a [[CompleteTarget]]
+  /** Get renames of a [[firrtl.annotations.CompleteTarget CompleteTarget]]
     * @param key Target referencing the original circuit
     * @return Optionally return sequence of targets that key remaps to
     */
@@ -315,7 +321,7 @@ final class RenameMap private () {
     }
   }
 
-  /* DEPRECATED ACCESSOR/SETTOR METHODS WITH [[Named]] */
+  /* DEPRECATED ACCESSOR/SETTOR METHODS WITH [[firrtl.ir.Named Named]] */
 
   @deprecated("Use record with CircuitTarget instead, this will be removed in 1.3", "1.2")
   def rename(from: Named, to: Named): Unit = rename(from, Seq(to))
@@ -420,5 +426,3 @@ final class RenameMap private () {
   @deprecated("Use typesafe rename defs instead, this will be removed in 1.3", "1.2")
   def delete(names: Seq[String]): Unit = names.foreach(delete(_))
 }
-
-

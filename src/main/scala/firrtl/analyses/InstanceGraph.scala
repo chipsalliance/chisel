@@ -74,7 +74,7 @@ class InstanceGraph(c: Circuit) {
     instances flatMap { i => fullHierarchy(i) }
   }
 
-  /** An `[[EulerTour]]` representation of the `[[DiGraph]]` */
+  /** An [[firrtl.graph.EulerTour EulerTour]] representation of the [[firrtl.graph.DiGraph DiGraph]] */
   lazy val tour = EulerTour(graph, trueTopInstance)
 
   /** Finds the lowest common ancestor instances for two module names in

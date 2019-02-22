@@ -15,12 +15,11 @@ import firrtl.Mappers._
 import scala.collection.mutable
 
 /** Ledger tracks [[firrtl.ir.Circuit]] statistics
-  * 
-  * In this lesson, we want to calculate the number of muxes, not just in 
-  *  a module, but also in any instances it has of other modules, etc.
   *
-  * To do this, we need to update our Ledger class to keep track of this
-  *  module instance information
+  * In this lesson, we want to calculate the number of muxes, not just in a module, but also in any instances it has of
+  * other modules, etc.
+  *
+  * To do this, we need to update our Ledger class to keep track of this module instance information
   *
   * See [[lesson2.AnalyzeCircuit]]
   */
@@ -63,39 +62,37 @@ class Ledger {
 
 /** AnalyzeCircuit Transform
   *
-  * Walks [[firrtl.ir.Circuit]], and records the number of muxes and instances it
-  *  finds, per module.
+  * Walks [[firrtl.ir.Circuit]], and records the number of muxes and instances it finds, per module.
   *
-  * While the Firrtl parser emits a bare form of the IR (located in firrtl.ir._),
-  *  it is often useful to have more information in these case classes. To do this,
-  *  the Firrtl compiler has mirror "working" classes for the following IR
-  *  nodes (which contain additional fields):
+  * While the Firrtl parser emits a bare form of the IR (located in firrtl.ir._), it is often useful to have more
+  * information in these case classes. To do this, the Firrtl compiler has mirror "working" classes for the following IR
+  * nodes (which contain additional fields):
   *   - DefInstance -> WDefInstance
   *   - SubAccess -> WSubAccess
   *   - SubIndex -> WSubIndex
   *   - SubField -> WSubField
   *   - Reference -> WRef
   *
-  * Take a look at [[ToWorkingIR]] in src/main/scala/firrtl/passes/Passes.scala
-  *  to see how Firrtl IR nodes are replaced with working IR nodes.
+  * Take a look at [[firrtl.passes.ToWorkingIR ToWorkginIR]] in
+  * [[https://github.com/freechipsproject/firrtl/tree/master/src/main/scala/firrtl/passes
+  * src/main/scala/firrtl/passes/Passes.scala]] to see how Firrtl IR nodes are replaced with working IR nodes.
   *
-  * Future lessons will explain the WIR's additional fields. For now, it is
-  *  enough to know that the transform [[ResolveAndCheck]] populates these
-  *  fields, and checks the legality of the circuit. If your transform is
-  *  creating new WIR nodes, use the following "unknown" values in the WIR
-  *  node, and then call [[ResolveAndCheck]] at the end of your transform:
+  * Future lessons will explain the WIR's additional fields. For now, it is enough to know that the transform
+  * [[firrtl.ResolveAndCheck]] populates these fields, and checks the legality of the circuit. If your transform is
+  * creating new WIR nodes, use the following "unknown" values in the WIR node, and then call [[firrtl.ResolveAndCheck]]
+  * at the end of your transform:
   *   - Kind -> ExpKind
   *   - Gender -> UNKNOWNGENDER
   *   - Type -> UnknownType
   *
-  * The following [[CircuitForm]]s require WIR instead of IR nodes:
+  * The following [[firrtl.CircuitForm]]s require WIR instead of IR nodes:
   *   - HighForm
   *   - MidForm
   *   - LowForm
   *
   * See the following links for more detailed explanations:
   * IR vs Working IR
-  *   - TODO(izraelevitz) 
+  *   - TODO(izraelevitz)
   */
 class AnalyzeCircuit extends Transform {
   def inputForm = LowForm
@@ -128,11 +125,11 @@ class AnalyzeCircuit extends Transform {
   // Deeply visits every [[Statement]] and [[Expression]] in s.
   def walkStatement(ledger: Ledger)(s: Statement): Statement = {
     // Map the functions walkStatement(ledger) and walkExpression(ledger)
-    val visited = s map walkStatement(ledger) map walkExpression(ledger) 
+    val visited = s map walkStatement(ledger) map walkExpression(ledger)
     visited match {
       // IR node [[DefInstance]] is previously replaced by WDefInstance, a
       //  "working" IR node
-      case DefInstance(info, name, module) => 
+      case DefInstance(info, name, module) =>
         Utils.error("All DefInstances should have been replaced by WDefInstances")
       // Working IR Node [[WDefInstance]] is what the compiler uses
       // See src/main/scala/firrtl/WIR.scala for all working IR nodes
