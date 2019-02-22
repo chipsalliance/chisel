@@ -5,9 +5,7 @@ if [ ! -f $INSTALL_DIR/bin/yosys ]; then
   git clone https://github.com/cliffordwolf/yosys.git
   cd yosys
   git pull
-  git checkout yosys-0.7
-  # Workaround moving ABC repo
-  git apply ../.fix_yosys_abc.patch
+  git checkout yosys-0.8
   make
   make PREFIX=$INSTALL_DIR install
 fi
