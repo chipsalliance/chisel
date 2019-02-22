@@ -159,7 +159,18 @@ scalacOptions in Compile in doc ++= Seq(
   "-diagrams-max-classes", "25",
   "-doc-version", version.value,
   "-doc-title", name.value,
-  "-doc-root-content", baseDirectory.value+"/root-doc.txt"
+  "-doc-root-content", baseDirectory.value+"/root-doc.txt",
+  "-sourcepath", (baseDirectory in ThisBuild).value.toString,
+  "-doc-source-url",
+  {
+    val branch =
+      if (version.value.endsWith("-SNAPSHOT")) {
+        "master"
+      } else {
+        s"v${version.value}"
+      }
+    s"https://github.com/freechipsproject/firrtl/tree/$branch€{FILE_PATH}.scala"
+  }
 ) ++ scalacOptionsVersion(scalaVersion.value)
 
 fork := true
