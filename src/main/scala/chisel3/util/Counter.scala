@@ -6,28 +6,7 @@ import chisel3._
 import chisel3.internal.naming.chiselName  // can't use chisel3_ version because of compile order
 
 @deprecated("Counter class shouldn't be used, as it is not a Chisel Module. Use Counter.apply instead.", "3.2")
-class Counter(val n: Int) {
-  require(n >= 0)
-  val value = if (n > 1) RegInit(0.U(log2Ceil(n).W)) else 0.U
-
-  /** Increment the counter, returning whether the counter currently is at the
-    * maximum and will wrap. The incremented value is registered and will be
-    * visible on the next cycle.
-    */
-  def inc(): Bool = {
-    if (n > 1) {
-      val wrap = value === (n-1).asUInt
-      value := value + 1.U
-      if (!isPow2(n)) {
-        when (wrap) { value := 0.U }
-      }
-      wrap
-    } else {
-      true.B
-    }
-  }
-}
-
+type Counter = Counter.Counter
 
 /** Used to generate an inline hardware counter
   *
@@ -55,7 +34,7 @@ object Counter
     * maximum output value of the counter), need not be a power of two
     */
   @chiselName
-  private class Counter(val n: Int) {
+  class Counter(val n: Int) {
     require(n >= 0)
     val value = if (n > 1) RegInit(0.U(log2Ceil(n).W)) else 0.U
   
@@ -77,7 +56,7 @@ object Counter
     }
   }
 
-  /** Generate an inlined hardware counter with the specified number of counts.
+  /** Generate a Counter class that is an inlined hardware counter with the specified number of counts.
     */
   def apply(n: Int): Counter = new Counter(n)
 
