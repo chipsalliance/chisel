@@ -10,15 +10,15 @@ import scala.collection.mutable
 
 object ReplaceTruncatingArithmetic {
 
-  /** Mapping from references to the [[Expression]]s that drive them */
+  /** Mapping from references to the [[firrtl.ir.Expression Expression]]s that drive them */
   type Netlist = mutable.HashMap[WrappedExpression, Expression]
 
   private val SeqBIOne = Seq(BigInt(1))
 
   /** Replaces truncating arithmetic in an Expression
     *
-    * @param netlist a '''mutable''' HashMap mapping references to [[DefNode]]s to their connected
-    * [[Expression]]s. It is '''not''' mutated in this function
+    * @param netlist a '''mutable''' HashMap mapping references to [[firrtl.ir.DefNode DefNode]]s to their connected
+    * [[firrtl.ir.Expression Expression]]s. It is '''not''' mutated in this function
     * @param expr the Expression being transformed
     * @return Returns expr with truncating arithmetic replaced
     */
@@ -35,8 +35,9 @@ object ReplaceTruncatingArithmetic {
 
   /** Replaces truncating arithmetic in a Statement
     *
-    * @param netlist a '''mutable''' HashMap mapping references to [[DefNode]]s to their connected
-    * [[Expression]]s. This function '''will''' mutate it if stmt contains a [[DefNode]]
+    * @param netlist a '''mutable''' HashMap mapping references to [[firrtl.ir.DefNode DefNode]]s to their connected
+    * [[firrtl.ir.Expression Expression]]s. This function '''will''' mutate it if stmt contains a [[firrtl.ir.DefNode
+    * DefNode]]
     * @param stmt the Statement being searched for nodes and transformed
     * @return Returns stmt with truncating arithmetic replaced
     */
@@ -70,4 +71,3 @@ class ReplaceTruncatingArithmetic extends Transform {
     state.copy(circuit = state.circuit.copy(modules = modulesx))
   }
 }
-

@@ -4,8 +4,7 @@ package firrtl.annotations
 
 import java.io.File
 
-/**
-  * Enumeration of the two types of readmem statements available in verilog
+/** Enumeration of the two types of `readmem` statements available in Verilog.
   */
 object MemoryLoadFileType extends Enumeration {
   type FileType = Value
@@ -14,11 +13,10 @@ object MemoryLoadFileType extends Enumeration {
   val Binary: Value = Value("b")
 }
 
-/**
-  * Firrtl implementation for load memory
+/** Firrtl implementation for load memory
   * @param target        memory to load
   * @param fileName      name of input file
-  * @param hexOrBinary   use $readmemh or $readmemb
+  * @param hexOrBinary   use `\$readmemh` or `\$readmemb`
   */
 case class LoadMemoryAnnotation(
   target: ComponentName,

@@ -115,7 +115,7 @@ case object LogClassNamesAnnotation extends NoTargetAnnotation with FirrtlOption
 
 /** Additional arguments
   *  - set with any trailing option on the command line
-  * @param value one [[scala.String]] argument
+  * @param value one [[scala.Predef.String String]] argument
   */
 case class ProgramArgsAnnotation(value: String) extends NoTargetAnnotation with FirrtlOption {
   def addOptions(p: OptionParser[AnnotationSeq]): Unit = p.arg[String]("<arg>...")
@@ -193,9 +193,9 @@ case class InfoModeAnnotation(value: String = "append") extends NoTargetAnnotati
     .text(s"specifies the source info handling, default is ${FirrtlExecutionOptions().infoModeName}")
 }
 
-/** Holds a [[scala.String]] containing FIRRTL source to read as input
+/** Holds a [[scala.Predef.String String]] containing FIRRTL source to read as input
   *  - set with `--firrtl-source`
-  * @param value FIRRTL source as a [[scala.String]]
+  * @param value FIRRTL source as a [[scala.Predef.String String]]
   */
 case class FirrtlSourceAnnotation(value: String) extends NoTargetAnnotation with FirrtlOption {
   def addOptions(p: OptionParser[AnnotationSeq]): Unit = p.opt[String]("firrtl-source")
@@ -282,7 +282,7 @@ object RunFirrtlTransformAnnotation {
   private [firrtl] def apply(): RunFirrtlTransformAnnotation = RunFirrtlTransformAnnotation(new firrtl.transforms.VerilogRename)
 }
 
-/** Holds a FIRRTL [[Circuit]]
+/** Holds a FIRRTL [[firrtl.ir.Circuit Circuit]]
   * @param value a circuit
   */
 case class FirrtlCircuitAnnotation(value: Circuit) extends NoTargetAnnotation with FirrtlOption {

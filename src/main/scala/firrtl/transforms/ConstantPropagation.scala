@@ -313,24 +313,24 @@ class ConstantPropagation extends Transform with ResolvedAnnotationPaths {
     else constPropExpression(nodeMap, instMap, constSubOutputs)(propagated)
   }
 
-  /** Constant propagate a Module
-    *
-    * Two pass process
-    * 1. Propagate constants in expressions and forward propagate references
-    * 2. Propagate references again for backwards reference (Wires)
-    * TODO Replacing all wires with nodes makes the second pass unnecessary
-    *   However, preserving decent names DOES require a second pass
-    *   Replacing all wires with nodes makes it unnecessary for preserving decent names to trigger an
-    *   extra iteration though
-    *
-    * @param m the Module to run constant propagation on
-    * @param dontTouches names of components local to m that should not be propagated across
-    * @param instMap map of instance names to Module name
-    * @param constInputs map of names of m's input ports to literal driving it (if applicable)
-    * @param constSubOutputs Map of Module name to Map of output port name to literal driving it
-    * @return (Constpropped Module, Map of output port names to literal value,
-    *   Map of submodule modulenames to Map of input port names to literal values)
-    */
+  /* Constant propagate a Module
+   *
+   * Two pass process
+   * 1. Propagate constants in expressions and forward propagate references
+   * 2. Propagate references again for backwards reference (Wires)
+   * TODO Replacing all wires with nodes makes the second pass unnecessary
+   *   However, preserving decent names DOES require a second pass
+   *   Replacing all wires with nodes makes it unnecessary for preserving decent names to trigger an
+   *   extra iteration though
+   *
+   * @param m the Module to run constant propagation on
+   * @param dontTouches names of components local to m that should not be propagated across
+   * @param instMap map of instance names to Module name
+   * @param constInputs map of names of m's input ports to literal driving it (if applicable)
+   * @param constSubOutputs Map of Module name to Map of output port name to literal driving it
+   * @return (Constpropped Module, Map of output port names to literal value,
+   *   Map of submodule modulenames to Map of input port names to literal values)
+   */
   @tailrec
   private def constPropModule(
       m: Module,
@@ -419,14 +419,15 @@ class ConstantPropagation extends Transform with ResolvedAnnotationPaths {
         // Const prop registers that are driven by a mux tree containing only instances of one constant or self-assigns
         // This requires that reset has been made explicit
         case Connect(_, lref @ WRef(lname, ltpe, RegKind, _), rhs) if !dontTouches(lname) && !asyncResetRegs(lname) =>
-          /** Checks if an RHS expression e of a register assignment is convertible to a constant assignment.
-            * Here, this means that e must be 1) a literal, 2) a self-connect, or 3) a mux tree of cases (1) and (2).
-            * In case (3), it also recursively checks that the two mux cases are convertible to constants and
-            * uses pattern matching on the returned options to check that they are convertible to the *same* constant.
-            * When encountering a node reference, it expands the node by to its RHS assignment and recurses.
-            *
-            * @return an option containing the literal or self-connect that e is convertible to, if any
-            */
+
+          /* Checks if an RHS expression e of a register assignment is convertible to a constant assignment.
+           * Here, this means that e must be 1) a literal, 2) a self-connect, or 3) a mux tree of cases (1) and (2).
+           * In case (3), it also recursively checks that the two mux cases are convertible to constants and
+           * uses pattern matching on the returned options to check that they are convertible to the *same* constant.
+           * When encountering a node reference, it expands the node by to its RHS assignment and recurses.
+           *
+           * @return an option containing the literal or self-connect that e is convertible to, if any
+           */
           def regConstant(e: Expression): Option[Expression] = e match {
             case lit: Literal => Some(pad(lit, ltpe))
             case WRef(regName, _, RegKind, _) if (regName == lname) => Some(e)

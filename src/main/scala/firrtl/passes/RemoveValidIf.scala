@@ -7,7 +7,7 @@ import firrtl.ir._
 import Utils.throwInternalError
 import WrappedExpression.weq
 
-/** Remove ValidIf and replace IsInvalid with a connection to zero */
+/** Remove [[firrtl.ir.ValidIf ValidIf]] and replace [[firrtl.ir.IsInvalid IsInvalid]] with a connection to zero */
 object RemoveValidIf extends Pass {
 
   val UIntZero = Utils.zero
@@ -15,8 +15,8 @@ object RemoveValidIf extends Pass {
   val ClockZero = DoPrim(PrimOps.AsClock, Seq(UIntZero), Seq.empty, ClockType)
   val FixedZero = FixedLiteral(BigInt(0), IntWidth(1), IntWidth(0))
 
-  /** Returns an [[Expression]] equal to zero for a given [[GroundType]]
-    * @note Accepts [[Type]] but dyanmically expects [[GroundType]]
+  /** Returns an [[firrtl.ir.Expression Expression]] equal to zero for a given [[firrtl.ir.GroundType GroundType]]
+    * @note Accepts [[firrtl.ir.Type Type]] but dyanmically expects [[firrtl.ir.GroundType GroundType]]
     */
   def getGroundZero(tpe: Type): Expression = tpe match {
     case _: UIntType => UIntZero

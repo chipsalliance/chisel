@@ -13,7 +13,7 @@ import scala.collection.mutable
 case class MaxCatLenAnnotation(maxCatLen: Int) extends NoTargetAnnotation
 
 object CombineCats {
-  /** Mapping from references to the [[Expression]]s that drive them paired with their Cat length */
+  /** Mapping from references to the [[firrtl.ir.Expression Expression]]s that drive them paired with their Cat length */
   type Netlist = mutable.HashMap[WrappedExpression, (Int, Expression)]
 
   def expandCatArgs(maxCatLen: Int, netlist: Netlist)(expr: Expression): (Int, Expression) = expr match {
@@ -65,4 +65,3 @@ class CombineCats extends Transform {
     state.copy(circuit = state.circuit.copy(modules = modulesx))
   }
 }
-

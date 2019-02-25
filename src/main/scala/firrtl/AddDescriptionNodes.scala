@@ -60,10 +60,9 @@ private case class DescribedMod(description: Description,
   def foreachInfo(f: Info => Unit): Unit = mod.foreachInfo(f)
 }
 
-/** Wraps modules or statements with their respective described nodes.
-  * Descriptions come from [[DescriptionAnnotation]]. Describing a
-  * module or any of its ports will turn it into a [[DescribedMod]].
-  * Describing a Statement will turn it into a [[DescribedStmt]]
+/** Wraps modules or statements with their respective described nodes. Descriptions come from [[DescriptionAnnotation]].
+  * Describing a module or any of its ports will turn it into a `DescribedMod`. Describing a Statement will turn it into
+  * a (private) `DescribedStmt`.
   *
   * @note should only be used by VerilogEmitter, described nodes will
   *       break other transforms.
