@@ -18,13 +18,12 @@ import chisel3._
   *                element (will have the same index in the output).
   *
   * @example {{{
-  *   ListLookup(1.U,  // address for comparison
-  *       List(      00.U, 01.U, 02.U)   // default "row" if none of the following cases match
-  *       List(1.U, (10.U, 11.U, 12.U),  // this "row" hardware-selected based off address 1.U
-  *            2.U, (20.U, 21.U, 22.U)
-  *       )
-  *   )  // hardware-evaluates to List(10.U, 11.U, 12.U)
-  *   // Note: if given address 0.U, the above would hardware evaluate to List(00.U, 01.U, 02.U)
+  * ListLookup(2.U,  // address for comparison
+  *                          List(10.U, 11.U, 12.U),   // default "row" if none of the following cases match
+  *     Array(BitPat(2.U) -> List(20.U, 21.U, 22.U),  // this "row" hardware-selected based off address 2.U
+  *           BitPat(3.U) -> List(30.U, 31.U, 32.U))
+  * ) // hardware-evaluates to List(20.U, 21.U, 22.U)
+  * // Note: if given address 0.U, the above would hardware evaluate to List(00.U, 01.U, 02.U)
   * }}}
   */
 object ListLookup {
