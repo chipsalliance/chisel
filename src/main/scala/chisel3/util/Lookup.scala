@@ -13,7 +13,7 @@ import chisel3._
   *
   * @param addr common select for cases, shared (same) across all list elements
   * @param default default value for each list element, should the address not match any case
-  * @param mapping list of cases, where each entry consists of a BitPat (compared against addr) and
+  * @param mapping list of cases, where each entry consists of a [[chisel3.util.BitPat BitPath]] (compared against addr) and
   *                a list of elements (same length as default) that is the output value for that
   *                element (will have the same index in the output).
   *
@@ -37,7 +37,7 @@ object ListLookup {
 }
 
 /** Muxes between cases based on whether an address matches any pattern for a case.
-  * Similar to MuxLookup, but uses BitPat for address comparison.
+  * Similar to [[chisel3.util.MuxLookup MuxLookup]], but uses [[chisel3.util.BitPat BitPat]] for address comparison.
   *
   * @note This appears to be an odd, specialized operator that we haven't seen used much, and seems
   *       to be a holdover from chisel2. This may be deprecated and removed, usage is not
@@ -45,7 +45,7 @@ object ListLookup {
   *
   * @param addr address to select between cases
   * @param default default value should the address not match any case
-  * @mapping list of cases, where each entry consists of a BitPat (compared against addr) and the
+  * @param mapping list of cases, where each entry consists of a [[chisel3.util.BitPat BitPat]] (compared against addr) and the
   *          output value if the BitPat matches
   */
 object Lookup {
