@@ -25,6 +25,8 @@ object CheckHighForm extends Pass {
     s"$info: [module $mname] Poison $name cannot be a bundle type with flips.")
   class MemWithFlipException(info: Info, mname: String, name: String) extends PassException(
     s"$info: [module $mname] Memory $name cannot be a bundle type with flips.")
+  class RegWithFlipException(info: Info, mname: String, name: String) extends PassException(
+    s"$info: [module $mname] Register $name cannot be a bundle type with flips.")
   class InvalidAccessException(info: Info, mname: String) extends PassException(
     s"$info: [module $mname] Invalid access to non-reference.")
   class ModuleNotDefinedException(info: Info, mname: String, name: String) extends PassException(
@@ -166,13 +168,11 @@ object CheckHighForm extends Pass {
       val info = get_info(s) match {case NoInfo => minfo case x => x}
       s foreach checkName(info, mname, names)
       s match {
-        case DefRegister(info, name, _,_, reset, init) if reset.tpe == AsyncResetType =>
-          init match {
-            case _: Literal => // okay
-            case nonlit =>
-              val e = new NonLiteralAsyncResetValueException(info, mname, name, nonlit.serialize)
-              errors.append(e)
-          }
+        case DefRegister(info, name, tpe, _, reset, init) =>
+          if (hasFlip(tpe))
+            errors.append(new RegWithFlipException(info, mname, name))
+          if (reset.tpe == AsyncResetType && !init.isInstanceOf[Literal])
+            errors.append(new NonLiteralAsyncResetValueException(info, mname, name, init.serialize))
         case sx: DefMemory =>
           if (hasFlip(sx.dataType))
             errors.append(new MemWithFlipException(info, mname, sx.name))
