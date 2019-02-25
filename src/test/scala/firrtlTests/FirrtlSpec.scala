@@ -18,12 +18,21 @@ import firrtl.analyses.{GetNamespace, InstanceGraph, ModuleNamespaceAnnotation}
 import firrtl.annotations._
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation, RenameModules}
 import firrtl.util.BackendCompilationUtilities
-
 import scala.collection.mutable
+
+class CheckLowForm extends SeqTransform {
+  def inputForm = LowForm
+  def outputForm = LowForm
+  def transforms = Seq(
+    passes.CheckHighForm
+  )
+}
 
 trait FirrtlRunners extends BackendCompilationUtilities {
 
   val cppHarnessResourceName: String = "/firrtl/testTop.cpp"
+  /** Extra transforms to run by default */
+  val extraCheckTransforms = Seq(new CheckLowForm)
 
   private class RenameTop(newTopPrefix: String) extends Transform {
     def inputForm: LowForm.type = LowForm
@@ -85,7 +94,7 @@ trait FirrtlRunners extends BackendCompilationUtilities {
   def compileToVerilog(input: String, annotations: AnnotationSeq = Seq.empty): String = {
     val circuit = Parser.parse(input.split("\n").toIterator)
     val compiler = new VerilogCompiler
-    val res = compiler.compileAndEmit(CircuitState(circuit, HighForm, annotations))
+    val res = compiler.compileAndEmit(CircuitState(circuit, HighForm, annotations), extraCheckTransforms)
     res.getEmittedCircuit.value
   }
   /** Compile a Firrtl file
@@ -106,7 +115,7 @@ trait FirrtlRunners extends BackendCompilationUtilities {
       commonOptions = CommonOptions(topName = prefix, targetDirName = testDir.getPath)
       firrtlOptions = FirrtlExecutionOptions(
                         infoModeName = "ignore",
-                        customTransforms = customTransforms,
+                        customTransforms = customTransforms ++ extraCheckTransforms,
                         annotations = annotations.toList)
     }
     firrtl.Driver.execute(optionsManager)
