@@ -17,10 +17,10 @@ import chisel3.internal.chiselRuntimeDeprecated
   * This will be deprecated when zero-width wires is supported.
   *
   * @example {{{
-  * log2Up(1) = 1
-  * log2Up(2) = 1
-  * log2Up(3) = 2
-  * log2Up(4) = 2
+  * log2Up(1)  // returns 1
+  * log2Up(2)  // returns 1
+  * log2Up(3)  // returns 2
+  * log2Up(4)  // returns 2
   * }}}
   */
 object log2Up {
@@ -39,10 +39,10 @@ object log2Up {
   * zero-width wires.
   *
   * @example {{{
-  * log2Ceil(1) = 0
-  * log2Ceil(2) = 1
-  * log2Ceil(3) = 2
-  * log2Ceil(4) = 2
+  * log2Ceil(1)  // returns 0
+  * log2Ceil(2)  // returns 1
+  * log2Ceil(3)  // returns 2
+  * log2Ceil(4)  // returns 2
   * }}}
   */
 object log2Ceil {
@@ -56,10 +56,10 @@ object log2Ceil {
 /** Compute the log2 of a Scala integer, rounded down, with min value of 1.
   *
   * @example {{{
-  * log2Down(1) = 1
-  * log2Down(2) = 1
-  * log2Down(3) = 1
-  * log2Down(4) = 2
+  * log2Down(1)  // returns 1
+  * log2Down(2)  // returns 1
+  * log2Down(3)  // returns 1
+  * log2Down(4)  // returns 2
   * }}}
   */
 object log2Down {
@@ -75,10 +75,10 @@ object log2Down {
   * Can be useful in computing the next-smallest power of two.
   *
   * @example {{{
-  * log2Floor(1) = 0
-  * log2Floor(2) = 1
-  * log2Floor(3) = 1
-  * log2Floor(4) = 2
+  * log2Floor(1)  // returns 0
+  * log2Floor(2)  // returns 1
+  * log2Floor(3)  // returns 1
+  * log2Floor(4)  // returns 2
   * }}}
   */
 object log2Floor {
@@ -89,10 +89,10 @@ object log2Floor {
 /** Returns whether a Scala integer is a power of two.
   *
   * @example {{{
-  * isPow2(1) = true
-  * isPow2(2) = true
-  * isPow2(3) = false
-  * isPow2(4) = true
+  * isPow2(1)  // returns true
+  * isPow2(2)  // returns true
+  * isPow2(3)  // returns false
+  * isPow2(4)  // returns true
   * }}}
   */
 object isPow2 {
