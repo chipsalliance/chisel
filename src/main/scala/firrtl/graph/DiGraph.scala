@@ -109,6 +109,30 @@ class DiGraph[T] private[graph] (private[graph] val edges: LinkedHashMap[T, Link
     order.reverse.toSeq
   }
 
+  /**
+    * Finds a Seq of Nodes that form a loop
+    * @param node Node to start loop path search from.
+    * @return     The found Seq, the Seq is empty if there is no loop
+    */
+  def findLoopAtNode(node: T): Seq[T] = {
+    var foundPath = Seq.empty[T]
+    getEdges(node).exists { vertex =>
+      try {
+        foundPath = path(vertex, node, blacklist = Set.empty)
+        true
+      }
+      catch {
+        case _: PathNotFoundException =>
+          foundPath = Seq.empty[T]
+          false
+        case t: Throwable =>
+          throw t
+
+      }
+    }
+    foundPath
+  }
+
   /** Performs breadth-first search on the directed graph
     *
     * @param root the start node

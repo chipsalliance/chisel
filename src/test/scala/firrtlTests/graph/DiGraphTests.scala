@@ -2,13 +2,10 @@
 
 package firrtlTests.graph
 
-import java.io._
-import org.scalatest._
-import org.scalatest.prop._
-import org.scalatest.Matchers._
 import firrtl.graph._
 import firrtlTests._
 
+//scalastyle:off magic.number
 class DiGraphTests extends FirrtlFlatSpec {
 
   val acyclicGraph = DiGraph(Map(
@@ -109,5 +106,48 @@ class DiGraphTests extends FirrtlFlatSpec {
   it should "work on multi-rooted graphs" in {
     val graph = DiGraph(Map("a" -> Set[String](), "b" -> Set[String]()))
     graph.linearize.toSet should be (graph.getVertices)
+  }
+
+  "acyclic graph" should "be rendered" in {
+    val acyclicGraph2 = DiGraph(Map(
+      "a" -> Set("b","c"),
+      "b" -> Set("d", "x", "z"),
+      "c" -> Set("d", "x"),
+      "d" -> Set("e", "k", "l"),
+      "x" -> Set("e"),
+      "z" -> Set("e", "j"),
+      "j" -> Set("k", "l", "c"),
+      "k" -> Set("l"),
+      "l" -> Set("e"),
+      "e" -> Set.empty[String]
+    ))
+    val render = new RenderDiGraph(acyclicGraph2)
+    val dotLines = render.toDotRanked.split("\n")
+
+    dotLines.count(s => s.contains("rank=same")) should be (4)
+    dotLines.exists(s => s.contains(""""b" -> { "d" "x" "z" };""")) should be (true)
+    dotLines.exists(s => s.contains("""rankdir="LR";""")) should be (true)
+  }
+
+  "subgraphs containing cycles" should "be rendered with loop edges in red, can override orientation" in {
+    val cyclicGraph2 = DiGraph(Map(
+      "a" -> Set("b","c"),
+      "b" -> Set("d", "x", "z"),
+      "c" -> Set("d", "x"),
+      "d" -> Set("e", "k", "l"),
+      "x" -> Set("e"),
+      "z" -> Set("e", "j"),
+      "j" -> Set("k", "l", "c"),
+      "k" -> Set("l"),
+      "l" -> Set("e"),
+      "e" -> Set("c")
+    ))
+    val render = new RenderDiGraph(cyclicGraph2, rankDir = "TB")
+    val dotLines = render.showOnlyTheLoopAsDot.split("\n")
+
+    dotLines.count(s => s.contains("rank=same")) should be (4)
+    dotLines.count(s => s.contains("""[color=red,penwidth=3.0];""")) should be (3)
+    dotLines.exists(s => s.contains(""""d" -> "k";""")) should be (true)
+    dotLines.exists(s => s.contains("""rankdir="TB";""")) should be (true)
   }
 }
