@@ -7,6 +7,7 @@ import firrtl.Parser._
 import firrtl.ir.Circuit
 import firrtl.passes.memlib.{InferReadWriteAnnotation, ReplSeqMemAnnotation}
 import firrtl.passes.clocklist.ClockListAnnotation
+import firrtl.transforms.NoCircuitDedupAnnotation
 import logger.LogLevel
 import scopt.OptionParser
 
@@ -475,6 +476,15 @@ trait HasFirrtlOptions {
     }.text {
       "Do NOT run dead code elimination"
     }
+
+  parser.opt[Unit]("no-dedup")
+    .foreach { _ =>
+      firrtlOptions = firrtlOptions.copy(
+        annotations = firrtlOptions.annotations :+ NoCircuitDedupAnnotation
+      )
+    }.text {
+    "Do NOT dedup modules"
+  }
 
   parser.note("")
 }
