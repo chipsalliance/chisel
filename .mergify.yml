@@ -10,6 +10,7 @@ pull_request_rules:
     conditions:
       - status-success=continuous-integration/travis-ci/pr
       - "#approved-reviews-by>=1"
+      - "#changes-requested-reviews-by=0"
       - base=master
       - label="Please Merge"
       - label!="DO NOT MERGE"
