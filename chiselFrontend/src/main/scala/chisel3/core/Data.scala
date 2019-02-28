@@ -7,7 +7,8 @@ import scala.language.experimental.macros
 import chisel3.internal._
 import chisel3.internal.Builder.{pushCommand, pushOp}
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo._
+import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform, UnlocatableSourceInfo, DeprecatedSourceInfo}
+import chisel3.SourceInfoDoc
 import chisel3.core.BiConnect.DontCareCantBeSink
 
 /** User-specified directions.
@@ -86,9 +87,26 @@ object DataMirror {
     target.direction
   }
 
+  // Returns the top-level module ports
+  // TODO: maybe move to something like Driver or DriverUtils, since this is mainly for interacting
+  // with compiled artifacts (vs. elaboration-time reflection)?
+  def modulePorts(target: BaseModule): Seq[(String, Data)] = target.getChiselPorts
+
+  // Returns all module ports with underscore-qualified names
+  def fullModulePorts(target: BaseModule): Seq[(String, Data)] = {
+    def getPortNames(name: String, data: Data): Seq[(String, Data)] = Seq(name -> data) ++ (data match {
+      case _: Element => Seq()
+      case r: Record => r.elements.toSeq flatMap { case (eltName, elt) => getPortNames(s"${name}_${eltName}", elt) }
+      case v: Vec[_] => v.zipWithIndex flatMap { case (elt, index) => getPortNames(s"${name}_${index}", elt) }
+    })
+    modulePorts(target).flatMap { case (name, data) =>
+      getPortNames(name, data).toList
+    }
+  }
+
   // Internal reflection-style APIs, subject to change and removal whenever.
   object internal {
-    def isSynthesizable(target: Data) = target.hasBinding
+    def isSynthesizable(target: Data) = target.topBindingOpt.isDefined
     // For those odd cases where you need to care about object reference and uniqueness
     def chiselTypeClone[T<:Data](target: Data): T = {
       target.cloneTypeFull.asInstanceOf[T]
@@ -108,8 +126,11 @@ private[core] object cloneSupertype {
                                                           compileOptions: CompileOptions): T = {
     require(!elts.isEmpty, s"can't create $createdType with no inputs")
 
-    if (elts.head.isInstanceOf[Bits]) {
-      val model: T = elts reduce { (elt1: T, elt2: T) => ((elt1, elt2) match {
+    val filteredElts = elts.filter(_ != DontCare)
+    require(!filteredElts.isEmpty, s"can't create $createdType with only DontCare inputs")
+
+    if (filteredElts.head.isInstanceOf[Bits]) {
+      val model: T = filteredElts reduce { (elt1: T, elt2: T) => ((elt1, elt2) match {
         case (elt1: Bool, elt2: Bool) => elt1
         case (elt1: Bool, elt2: UInt) => elt2  // TODO: what happens with zero width UInts?
         case (elt1: UInt, elt2: Bool) => elt1  // TODO: what happens with zero width UInts?
@@ -135,13 +156,13 @@ private[core] object cloneSupertype {
       model.cloneTypeFull
     }
     else {
-      for (elt <- elts.tail) {
-        require(elt.getClass == elts.head.getClass,
-          s"can't create $createdType with heterogeneous types ${elts.head.getClass} and ${elt.getClass}")
-        require(elt typeEquivalent elts.head,
-          s"can't create $createdType with non-equivalent types ${elts.head} and ${elt}")
+      for (elt <- filteredElts.tail) {
+        require(elt.getClass == filteredElts.head.getClass,
+          s"can't create $createdType with heterogeneous types ${filteredElts.head.getClass} and ${elt.getClass}")
+        require(elt typeEquivalent filteredElts.head,
+          s"can't create $createdType with non-equivalent types ${filteredElts.head} and ${elt}")
       }
-      elts.head.cloneTypeFull
+      filteredElts.head.cloneTypeFull
     }
   }
 }
@@ -197,8 +218,11 @@ object Flipped {
   * must be representable as some number (need not be known at Chisel compile
   * time) of bits, and must have methods to pack / unpack structured data to /
   * from bits.
+  *
+  * @groupdesc Connect Utilities for connecting hardware components
+  * @define coll data
   */
-abstract class Data extends HasId with NamedComponent {
+abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   // This is a bad API that punches through object boundaries.
   @deprecated("pending removal once all instances replaced", "chisel3")
   private[chisel3] def flatten: IndexedSeq[Element] = {
@@ -241,10 +265,8 @@ abstract class Data extends HasId with NamedComponent {
   // This information is supplemental (more than is necessary to generate FIRRTL) and is used to
   // perform checks in Chisel, where more informative error messages are possible.
   private var _binding: Option[Binding] = None
-  private[core] def bindingOpt = _binding
-  private[core] def hasBinding = _binding.isDefined
   // Only valid after node is bound (synthesizable), crashes otherwise
-  private[core] def binding = _binding.get
+  protected def binding: Option[Binding] = _binding
   protected def binding_=(target: Binding) {
     if (_binding.isDefined) {
       throw Binding.RebindingException(s"Attempted reassignment of binding to $this")
@@ -252,12 +274,12 @@ abstract class Data extends HasId with NamedComponent {
     _binding = Some(target)
   }
 
-  private[core] def topBinding: TopBinding = {
-    binding match {
-      case ChildBinding(parent) => parent.topBinding
-      case topBinding: TopBinding => topBinding
-    }
+  private[core] def topBindingOpt: Option[TopBinding] = _binding.map {
+    case ChildBinding(parent) => parent.topBinding
+    case bindingVal: TopBinding => bindingVal
   }
+
+  private[core] def topBinding: TopBinding = topBindingOpt.get
 
   /** Binds this node to the hardware graph.
     * parentDirection is the direction of the parent node, or Unspecified (default) if the target
@@ -265,6 +287,8 @@ abstract class Data extends HasId with NamedComponent {
     * binding and direction are valid after this call completes.
     */
   private[chisel3] def bind(target: Binding, parentDirection: SpecifiedDirection = SpecifiedDirection.Unspecified)
+  // Variant of bind that can be called from subclasses, used for bundle literals
+  protected def selfBind(target: Binding) = bind(target)
 
   // Both _direction and _resolvedUserDirection are saved versions of computed variables (for
   // efficiency, avoid expensive recomputation of frequent operations).
@@ -279,6 +303,26 @@ abstract class Data extends HasId with NamedComponent {
       throw Binding.RebindingException(s"Attempted reassignment of resolved direction to $this")
     }
     _direction = Some(actualDirection)
+  }
+
+  // User-friendly representation of the binding as a helper function for toString.
+  // Provides a unhelpful fallback for literals, which should have custom rendering per
+  // Data-subtype.
+  protected def bindingToString: String = topBindingOpt match {
+    case None => ""
+    case Some(OpBinding(enclosure)) => s"(OpResult in ${enclosure.desiredName})"
+    case Some(MemoryPortBinding(enclosure)) => s"(MemPort in ${enclosure.desiredName})"
+    case Some(PortBinding(enclosure)) if !enclosure.isClosed => s"(IO in unelaborated ${enclosure.desiredName})"
+    case Some(PortBinding(enclosure)) if enclosure.isClosed =>
+      DataMirror.fullModulePorts(enclosure).find(_._2 == this) match {
+        case Some((name, _)) => s"(IO $name in ${enclosure.desiredName})"
+        case None => s"(IO (unknown) in ${enclosure.desiredName})"
+      }
+    case Some(RegBinding(enclosure)) => s"(Reg in ${enclosure.desiredName})"
+    case Some(WireBinding(enclosure)) => s"(Wire in ${enclosure.desiredName})"
+    case Some(DontCareBinding()) => s"(DontCare)"
+    case Some(ElementLitBinding(litArg)) => s"(unhandled literal)"
+    case Some(BundleLitBinding(litMap)) => s"(unhandled bundle literal)"
   }
 
   // Return ALL elements at root of this type.
@@ -336,8 +380,27 @@ abstract class Data extends HasId with NamedComponent {
     */
   private[core] def typeEquivalent(that: Data): Boolean
 
-  private[chisel3] def lref: Node = Node(this)
-  private[chisel3] def ref: Arg = if (isLit) litArg.get else lref
+  // Internal API: returns a ref that can be assigned to, if consistent with the binding
+  private[chisel3] def lref: Node = {
+    requireIsHardware(this)
+    topBindingOpt match {
+      case Some(binding: ReadOnlyBinding) => throwException(s"internal error: attempted to generate LHS ref to ReadOnlyBinding $binding")
+      case Some(binding: TopBinding) => Node(this)
+      case opt => throwException(s"internal error: unknown binding $opt in generating LHS ref")
+    }
+  }
+
+
+  // Internal API: returns a ref, if bound. Literals should override this as needed.
+  private[chisel3] def ref: Arg = {
+    requireIsHardware(this)
+    topBindingOpt match {
+      case Some(binding: LitBinding) => throwException(s"internal error: can't handle literal binding $binding")
+      case Some(binding: TopBinding) => Node(this)
+      case opt => throwException(s"internal error: unknown binding $opt in generating LHS ref")
+    }
+  }
+
   private[chisel3] def width: Width
   private[core] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit
 
@@ -362,15 +425,49 @@ abstract class Data extends HasId with NamedComponent {
     clone
   }
 
+  /** Connect this $coll to that $coll mono-directionally and element-wise.
+    *
+    * This uses the [[MonoConnect]] algorithm.
+    *
+    * @param that the $coll to connect to
+    * @group Connect
+    */
   final def := (that: Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = this.connect(that)(sourceInfo, connectionCompileOptions)
+
+  /** Connect this $coll to that $coll bi-directionally and element-wise.
+    *
+    * This uses the [[BiConnect]] algorithm.
+    *
+    * @param that the $coll to connect to
+    * @group Connect
+    */
   final def <> (that: Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = this.bulkConnect(that)(sourceInfo, connectionCompileOptions)
-  def litArg(): Option[LitArg] = None
-  def litValue(): BigInt = litArg.get.num
+
+  @chiselRuntimeDeprecated
+  @deprecated("litArg is deprecated, use litOption or litTo*Option", "chisel3.2")
+  def litArg(): Option[LitArg] = topBindingOpt match {
+    case Some(ElementLitBinding(litArg)) => Some(litArg)
+    case Some(BundleLitBinding(litMap)) => None  // this API does not support Bundle literals
+    case _ => None
+  }
+  @chiselRuntimeDeprecated
+  @deprecated("isLit is deprecated, use litOption.isDefined", "chisel3.2")
   def isLit(): Boolean = litArg.isDefined
 
-  /** Returns the width, in bits, if currently known.
-    * @throws java.util.NoSuchElementException if the width is not known. */
-  final def getWidth: Int = width.get
+  /**
+   * If this is a literal that is representable as bits, returns the value as a BigInt.
+   * If not a literal, or not representable as bits (for example, is or contains Analog), returns None.
+   */
+  def litOption(): Option[BigInt]
+
+  /**
+   * Returns the literal value if this is a literal that is representable as bits, otherwise crashes.
+   */
+  def litValue(): BigInt = litOption.get
+
+  /** Returns the width, in bits, if currently known. */
+  final def getWidth: Int =
+    if (isWidthKnown) width.get else throwException(s"Width of $this is unknown!")
   /** Returns whether the width is currently known. */
   final def isWidthKnown: Boolean = width.known
   /** Returns Some(width) if the width is known, else None. */
@@ -394,6 +491,7 @@ abstract class Data extends HasId with NamedComponent {
     */
   def asTypeOf[T <: Data](that: T): T = macro SourceInfoTransform.thatArg
 
+  /** @group SourceInfoTransformMacro */
   def do_asTypeOf[T <: Data](that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     val thatCloned = Wire(that.cloneTypeFull)
     thatCloned.connectFromBits(this.asUInt())
@@ -414,6 +512,7 @@ abstract class Data extends HasId with NamedComponent {
     */
   final def asUInt(): UInt = macro SourceInfoTransform.noArg
 
+  /** @group SourceInfoTransformMacro */
   def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt
 
   /** Default pretty printing */
@@ -421,6 +520,10 @@ abstract class Data extends HasId with NamedComponent {
 }
 
 trait WireFactory {
+  /** @usecase def apply[T <: Data](t: T): T
+    *   Construct a [[Wire]] from a type template
+    *   @param t The template from which to construct this wire
+    */
   def apply[T <: Data](t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     if (compileOptions.declaredTypeMustBeUnbound) {
       requireIsChiselType(t, "wire type")
@@ -439,20 +542,89 @@ trait WireFactory {
   }
 }
 
+/** Utility for constructing hardware wires
+  *
+  * The width of a `Wire` (inferred or not) is copied from the type template
+  * {{{
+  * val w0 = Wire(UInt()) // width is inferred
+  * val w1 = Wire(UInt(8.W)) // width is set to 8
+  *
+  * val w2 = Wire(Vec(4, UInt())) // width is inferred
+  * val w3 = Wire(Vec(4, UInt(8.W))) // width of each element is set to 8
+  *
+  * class MyBundle {
+  *   val unknown = UInt()
+  *   val known   = UInt(8.W)
+  * }
+  * val w4 = Wire(new MyBundle)
+  * // Width of w4.unknown is inferred
+  * // Width of w4.known is set to 8
+  * }}}
+  *
+  */
 object Wire extends WireFactory
 
-object WireInit {
-  def apply[T <: Data](init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
-    val model = (init.litArg match {
-      // For e.g. Wire(init=0.U(k.W)), fix the Reg's width to k
-      case Some(lit) if lit.forcedWidth => init.cloneTypeFull
-      case _ => init match {
-        case init: Bits => init.cloneTypeWidth(Width())
-        case init => init.cloneTypeFull
-      }
-    }).asInstanceOf[T]
-    apply(model, init)
-  }
+
+/** Utility for constructing hardware wires with a default connection
+  *
+  * The two forms of `WireDefault` differ in how the type and width of the resulting [[Wire]] are
+  * specified.
+  *
+  * ==Single Argument==
+  * The single argument form uses the argument to specify both the type and default connection. For
+  * non-literal [[Bits]], the width of the [[Wire]] will be inferred. For literal [[Bits]] and all
+  * non-Bits arguments, the type will be copied from the argument. See the following examples for
+  * more details:
+  *
+  * 1. Literal [[Bits]] initializer: width will be set to match
+  * {{{
+  * val w1 = WireDefault(1.U) // width will be inferred to be 1
+  * val w2 = WireDefault(1.U(8.W)) // width is set to 8
+  * }}}
+  *
+  * 2. Non-Literal [[Element]] initializer - width will be inferred
+  * {{{
+  * val x = Wire(UInt())
+  * val y = Wire(UInt(8.W))
+  * val w1 = WireDefault(x) // width will be inferred
+  * val w2 = WireDefault(y) // width will be inferred
+  * }}}
+  *
+  * 3. [[Aggregate]] initializer - width will be set to match the aggregate
+  *
+  * {{{
+  * class MyBundle {
+  *   val unknown = UInt()
+  *   val known   = UInt(8.W)
+  * }
+  * val w1 = Wire(new MyBundle)
+  * val w2 = WireDefault(w1)
+  * // Width of w2.unknown is inferred
+  * // Width of w2.known is set to 8
+  * }}}
+  *
+  * ==Double Argument==
+  * The double argument form allows the type of the [[Wire]] and the default connection to be
+  * specified independently.
+  *
+  * The width inference semantics for `WireDefault` with two arguments match those of [[Wire]]. The
+  * first argument to `WireDefault` is the type template which defines the width of the `Wire` in
+  * exactly the same way as the only argument to [[Wire]].
+  *
+  * More explicitly, you can reason about `WireDefault` with multiple arguments as if it were defined
+  * as:
+  * {{{
+  * def WireDefault[T <: Data](t: T, init: T): T = {
+  *   val x = Wire(t)
+  *   x := init
+  *   x
+  * }
+  * }}}
+  *
+  * @note The `Default` in `WireDefault` refers to a `default` connection. This is in contrast to
+  * [[RegInit]] where the `Init` refers to a value on reset.
+  */
+object WireDefault {
 
   private def applyImpl[T <: Data](t: T, init: Data)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     implicit val noSourceInfo = UnlocatableSourceInfo
@@ -462,23 +634,55 @@ object WireInit {
     x
   }
 
+  /** @usecase def apply[T <: Data](t: T, init: DontCare.type): T
+    *   Construct a [[Wire]] with a type template and a [[DontCare]] default
+    *   @param t The type template used to construct this [[Wire]]
+    *   @param init The default connection to this [[Wire]], can only be [[DontCare]]
+    *   @note This is really just a specialized form of `apply[T <: Data](t: T, init: T): T` with [[DontCare]]
+    *   as `init`
+    */
+  def apply[T <: Data](t: T, init: DontCare.type)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    applyImpl(t, init)
+  }
+
+  /** @usecase def apply[T <: Data](t: T, init: T): T
+    *   Construct a [[Wire]] with a type template and a default connection
+    *   @param t The type template used to construct this [[Wire]]
+    *   @param init The hardware value that will serve as the default value
+    */
   def apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     applyImpl(t, init)
   }
-  def apply[T <: Data](t: T, init: DontCare.type)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
-    applyImpl(t, init)
+
+  /** @usecase def apply[T <: Data](init: T): T
+    *   Construct a [[Wire]] with a default connection
+    *   @param init The hardware value that will serve as a type template and default value
+    */
+  def apply[T <: Data](init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    val model = (init match {
+      // If init is a literal without forced width OR any non-literal, let width be inferred
+      case init: Bits if !init.litIsForcedWidth.getOrElse(false) => init.cloneTypeWidth(Width())
+      case _ => init.cloneTypeFull
+    }).asInstanceOf[T]
+    apply(model, init)
   }
 }
 
 /** RHS (source) for Invalidate API.
   * Causes connection logic to emit a DefInvalid when connected to an output port (or wire).
   */
-object DontCare extends Element(width = UnknownWidth()) {
+object DontCare extends Element {
   // This object should be initialized before we execute any user code that refers to it,
   //  otherwise this "Chisel" object will end up on the UserModule's id list.
 
+  private[chisel3] override val width: Width = UnknownWidth()
+
   bind(DontCareBinding(), SpecifiedDirection.Output)
   override def cloneType = DontCare
+
+  override def toString: String = "DontCare()"
+
+  override def litOption = None
 
   def toPrintable: Printable = PString("DONTCARE")
 
@@ -493,3 +697,4 @@ object DontCare extends Element(width = UnknownWidth()) {
   // DontCare's only match themselves.
   private[core] def typeEquivalent(that: chisel3.core.Data): Boolean = that == DontCare
 }
+

@@ -8,10 +8,8 @@ import chisel3.testers.BasicTester
 
 /* Printable Tests */
 class PrintableSpec extends FlatSpec with Matchers {
-  private val PrintfRegex = """\s*printf\((.*)\).*""".r
-  // This regex is brittle, it relies on the first two arguments of the printf
-  // not containing quotes, problematic if Chisel were to emit UInt<1>("h01")
-  // instead of the current UInt<1>(1) for the enable signal
+  // This regex is brittle, it specifically finds the clock and enable signals followed by commas
+  private val PrintfRegex = """\s*printf\(\w+, [^,]+,(.*)\).*""".r
   private val StringRegex = """([^"]*)"(.*?)"(.*)""".r
   private case class Printf(str: String, args: Seq[String])
   private def getPrintfs(firrtl: String): Seq[Printf] = {
@@ -67,7 +65,7 @@ class PrintableSpec extends FlatSpec with Matchers {
   }
   it should "generate proper printf for simple Decimal printing" in {
     class MyModule extends BasicTester {
-      val myWire = WireInit(1234.U)
+      val myWire = WireDefault(1234.U)
       printf(p"myWire = ${Decimal(myWire)}")
     }
     val firrtl = Driver.emit(() => new MyModule)
@@ -144,8 +142,8 @@ class PrintableSpec extends FlatSpec with Matchers {
   }
   it should "print UInts and SInts as Decimal by default" in {
     class MyModule extends BasicTester {
-      val myUInt = WireInit(0.U)
-      val mySInt = WireInit(-1.S)
+      val myUInt = WireDefault(0.U)
+      val mySInt = WireDefault(-1.S)
       printf(p"$myUInt & $mySInt")
     }
     val firrtl = Driver.emit(() => new MyModule)
@@ -179,7 +177,7 @@ class PrintableSpec extends FlatSpec with Matchers {
     }
     val firrtl = Driver.emit(() => new MyModule)
     getPrintfs(firrtl) match {
-      case Seq(Printf("Bundle(foo -> %d, bar -> %d)",
+      case Seq(Printf("AnonymousBundle(foo -> %d, bar -> %d)",
                Seq("myBun.foo", "myBun.bar"))) =>
       case e => fail()
     }

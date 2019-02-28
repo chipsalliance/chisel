@@ -4,16 +4,14 @@ package chiselTests
 
 import chisel3._
 import chisel3.internal.InstanceId
-import chisel3.experimental.{chiselName, dump}
+import chisel3.experimental.{chiselName, dump, MultiIOModule}
 import org.scalatest._
 import org.scalatest.prop._
 import chisel3.testers.BasicTester
 
 import scala.collection.mutable.ListBuffer
 
-trait NamedModuleTester extends Module {
-  val io = IO(new Bundle() {})  // Named module testers don't need IO
-
+trait NamedModuleTester extends MultiIOModule {
   val expectedNameMap = ListBuffer[(InstanceId, String)]()
   val expectedModuleNameMap = ListBuffer[(Module, String)]()
 
@@ -69,6 +67,11 @@ class NamedModule extends NamedModuleTester {
     val myA = expectName(1.U + myNested, "test_myA")
     val myB = expectName(myA +& 2.U, "test_myB")
     val myC = expectName(myB +& 3.U, "test_myC")
+
+    val myD = Seq(myC +& 1.U, myC +& 2.U)
+    for ((d, i) <- myD.zipWithIndex)
+      expectName(d, s"test_myD_$i")
+
     myC +& 4.U  // named at enclosing scope
   }
 

@@ -2,6 +2,7 @@
 
 package chisel3.core
 
+import chisel3.internal.ChiselException
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.{Connect, DefInvalid}
 import scala.language.experimental.macros
@@ -33,7 +34,7 @@ import chisel3.internal.sourceinfo.SourceInfo
 
 object MonoConnect {
   // These are all the possible exceptions that can be thrown.
-  case class MonoConnectException(message: String) extends Exception(message)
+  case class MonoConnectException(message: String) extends ChiselException(message)
   // These are from element-level connection
   def UnreadableSourceException =
     MonoConnectException(": Source is unreadable from current module.")
@@ -63,7 +64,7 @@ object MonoConnect {
       connectCompileOptions: CompileOptions,
       sink: Data,
       source: Data,
-      context_mod: UserModule): Unit =
+      context_mod: RawModule): Unit =
     (sink, source) match {
 
       // Handle legal element cases, note (Bool, Bool) is caught by the first two, as Bool is a UInt
@@ -78,6 +79,12 @@ object MonoConnect {
       case (sink_e: FixedPoint, source_e: FixedPoint) =>
         elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
       case (sink_e: Clock, source_e: Clock) =>
+        elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
+      case (sink_e: EnumType, source_e: UnsafeEnum) =>
+        elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
+      case (sink_e: EnumType, source_e: EnumType) if sink_e.typeEquivalent(source_e) =>
+        elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
+      case (sink_e: UnsafeEnum, source_e: UInt) =>
         elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
 
       // Handle Vec case
@@ -142,7 +149,7 @@ object MonoConnect {
   private def issueConnect(sink: Element, source: Element)(implicit sourceInfo: SourceInfo): Unit = {
     // If the source is a DontCare, generate a DefInvalid for the sink,
     //  otherwise, issue a Connect.
-    source.binding match {
+    source.topBinding match {
       case b: DontCareBinding => pushCommand(DefInvalid(sourceInfo, sink.lref))
       case _ => pushCommand(Connect(sourceInfo, sink.lref, source.ref))
     }
@@ -150,12 +157,12 @@ object MonoConnect {
 
   // This function checks if element-level connection operation allowed.
   // Then it either issues it or throws the appropriate exception.
-  def elemConnect(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions, sink: Element, source: Element, context_mod: UserModule): Unit = {
+  def elemConnect(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions, sink: Element, source: Element, context_mod: RawModule): Unit = {
     import BindingDirection.{Internal, Input, Output} // Using extensively so import these
     // If source has no location, assume in context module
     // This can occur if is a literal, unbound will error previously
-    val sink_mod: BaseModule   = sink.binding.location.getOrElse(throw UnwritableSinkException)
-    val source_mod: BaseModule = source.binding.location.getOrElse(context_mod)
+    val sink_mod: BaseModule   = sink.topBinding.location.getOrElse(throw UnwritableSinkException)
+    val source_mod: BaseModule = source.topBinding.location.getOrElse(context_mod)
 
     val sink_direction = BindingDirection.from(sink.topBinding, sink.direction)
     val source_direction = BindingDirection.from(source.topBinding, source.direction)

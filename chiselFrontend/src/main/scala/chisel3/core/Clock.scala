@@ -12,7 +12,9 @@ object Clock {
 }
 
 // TODO: Document this.
-sealed class Clock extends Element(Width(1)) {
+sealed class Clock(private[chisel3] val width: Width = Width(1)) extends Element {
+  override def toString: String = s"Clock$bindingToString"
+
   def cloneType: this.type = Clock().asInstanceOf[this.type]
 
   private[core] def typeEquivalent(that: Data): Boolean =
@@ -22,6 +24,8 @@ sealed class Clock extends Element(Width(1)) {
     case _: Clock => super.connect(that)(sourceInfo, connectCompileOptions)
     case _ => super.badConnect(that)(sourceInfo)
   }
+
+  override def litOption = None
 
   /** Not really supported */
   def toPrintable: Printable = PString("CLOCK")

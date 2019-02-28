@@ -2,6 +2,7 @@
 
 package chisel3.core
 
+import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.collection.JavaConversions._
 import scala.language.experimental.macros
@@ -11,9 +12,11 @@ import chisel3.internal._
 import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{InstTransform, SourceInfo}
+import chisel3.SourceInfoDoc
 import _root_.firrtl.annotations
 
-object Module {
+
+object Module extends SourceInfoDoc {
   /** A wrapper method that all Module instantiations must be wrapped in
     * (necessary to help Chisel track internal state).
     *
@@ -23,6 +26,7 @@ object Module {
     */
   def apply[T <: BaseModule](bc: => T): T = macro InstTransform.apply[T]
 
+  /** @group SourceInfoTransformMacro */
   def do_apply[T <: BaseModule](bc: => T)
                                (implicit sourceInfo: SourceInfo,
                                          compileOptions: CompileOptions): T = {
@@ -47,7 +51,7 @@ object Module {
     val module: T = bc  // bc is actually evaluated here
 
     if (Builder.whenDepth != 0) {
-      throwException("Internal Error! When depth is != 0, this should not be possible")
+      throwException("Internal Error! when() scope depth is != 0, this should have been caught!")
     }
     if (Builder.readyForModuleConstr) {
       throwException("Error: attempted to instantiate a Module, but nothing happened. " +
@@ -77,6 +81,66 @@ object Module {
   def currentModule: Option[BaseModule] = Builder.currentModule
 }
 
+object IO {
+  /** Constructs a port for the current Module
+    *
+    * This must wrap the datatype used to set the io field of any Module.
+    * i.e. All concrete modules must have defined io in this form:
+    * [lazy] val io[: io type] = IO(...[: io type])
+    *
+    * Items in [] are optional.
+    *
+    * The granted iodef must be a chisel type and not be bound to hardware.
+    *
+    * Also registers a Data as a port, also performing bindings. Cannot be called once ports are
+    * requested (so that all calls to ports will return the same information).
+    * Internal API.
+    */
+  def apply[T<:Data](iodef: T): T = {
+    val module = Module.currentModule.get // Impossible to fail
+    require(!module.isClosed, "Can't add more ports after module close")
+    requireIsChiselType(iodef, "io type")
+
+    // Clone the IO so we preserve immutability of data types
+    val iodefClone = try {
+      iodef.cloneTypeFull
+    } catch {
+      // For now this is going to be just a deprecation so we don't suddenly break everyone's code
+      case e: AutoClonetypeException =>
+        Builder.deprecated(e.getMessage, Some(s"${iodef.getClass}"))
+        iodef
+    }
+    module.bindIoInPlace(iodefClone)
+    iodefClone
+  }
+}
+
+object BaseModule {
+  private[chisel3] class ClonePorts (elts: Data*)(implicit compileOptions: CompileOptions) extends Record {
+    val elements = ListMap(elts.map(d => d.instanceName -> d.cloneTypeFull): _*)
+    def apply(field: String) = elements(field)
+    override def cloneType = (new ClonePorts(elts: _*)).asInstanceOf[this.type]
+  }
+
+  private[chisel3] def cloneIORecord(proto: BaseModule)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): ClonePorts = {
+    require(proto.isClosed, "Can't clone a module before module close")
+    val clonePorts = new ClonePorts(proto.getModulePorts: _*)
+    clonePorts.bind(WireBinding(Builder.forcedUserModule))
+    val cloneInstance = new DefInstance(sourceInfo, proto, proto._component.get.ports) {
+      override def name = clonePorts.getRef.name
+    }
+    pushCommand(cloneInstance)
+    if (!compileOptions.explicitInvalidate) {
+      pushCommand(DefInvalid(sourceInfo, clonePorts.ref))
+    }
+    if (proto.isInstanceOf[MultiIOModule]) {
+      clonePorts("clock") := Module.clock
+      clonePorts("reset") := Module.reset
+    }
+    clonePorts
+  }
+}
+
 /** Abstract base class for Modules, an instantiable organizational unit for RTL.
   */
 // TODO: seal this?
@@ -97,6 +161,9 @@ abstract class BaseModule extends HasId {
   //
   protected var _closed = false
   def isClosed: Boolean = _closed
+
+  /** Internal check if a Module is closed */
+  private[core] def isClosed = _closed
 
   // Fresh Namespace because in Firrtl, Modules namespaces are disjoint with the global namespace
   private[core] val _namespace = Namespace.empty
@@ -140,7 +207,13 @@ abstract class BaseModule extends HasId {
   def desiredName = this.getClass.getName.split('.').last
 
   /** Legalized name of this module. */
-  final val name = Builder.globalNamespace.name(desiredName)
+  final lazy val name = try {
+    Builder.globalNamespace.name(desiredName)
+  } catch {
+    case e: NullPointerException => throwException(
+      s"Error: desiredName of ${this.getClass.getName} is null. Did you evaluate 'name' before all values needed by desiredName were available?", e)
+    case t: Throwable => throw t
+  }
 
   /** Returns a FIRRTL ModuleName that references this object
     * @note Should not be called until circuit elaboration is complete
@@ -152,6 +225,22 @@ abstract class BaseModule extends HasId {
     } else {
       val parentComponent = _parent.get.toNamed
       parentComponent.inst(instanceName).of(name)
+    }
+  }
+
+  /**
+   * Internal API. Returns a list of this module's generated top-level ports as a map of a String
+   * (FIRRTL name) to the IO object. Only valid after the module is closed.
+   *
+   * Note: for BlackBoxes (but not ExtModules), this returns the contents of the top-level io
+   * object, consistent with what is emitted in FIRRTL.
+   *
+   * TODO: Use SeqMap/VectorMap when those data structures become available.
+   */
+  private[core] def getChiselPorts: Seq[(String, Data)] = {
+    require(_closed, "Can't get ports before module close")
+    _component.get.ports.map { port =>
+      (port.id.getRef.asInstanceOf[ModuleIO].name, port.id)
     }
   }
 
@@ -171,22 +260,6 @@ abstract class BaseModule extends HasId {
       }
     }
 
-    /** Recursively suggests names to supported "container" classes
-      * Arbitrary nestings of supported classes are allowed so long as the
-      * innermost element is of type HasId
-      * (Note: Map is Iterable[Tuple2[_,_]] and thus excluded)
-      */
-    def nameRecursively(prefix: String, nameMe: Any): Unit =
-      nameMe match {
-        case (id: HasId) => name(id, prefix)
-        case Some(elt) => nameRecursively(prefix, elt)
-        case (iter: Iterable[_]) if iter.hasDefiniteSize =>
-          for ((elt, i) <- iter.zipWithIndex) {
-            nameRecursively(s"${prefix}_${i}", elt)
-          }
-        case _ => // Do nothing
-      }
-
     /** Scala generates names like chisel3$util$Queue$$ram for private vals
       * This extracts the part after $$ for names like this and leaves names
       * without $$ unchanged
@@ -194,7 +267,7 @@ abstract class BaseModule extends HasId {
     def cleanName(name: String): String = name.split("""\$\$""").lastOption.getOrElse(name)
 
     for (m <- getPublicFields(rootClass)) {
-      nameRecursively(cleanName(m.getName), m.invoke(this))
+      Builder.nameRecursively(cleanName(m.getName), m.invoke(this), name)
     }
 
     names
@@ -250,6 +323,8 @@ abstract class BaseModule extends HasId {
     iodef.bind(PortBinding(this))
     _ports += iodef
   }
+  /** Private accessor for _bindIoInPlace */
+  private[core] def bindIoInPlace(iodef: Data): Unit = _bindIoInPlace(iodef)
 
   /**
    * This must wrap the datatype used to set the io field of any Module.
@@ -267,22 +342,7 @@ abstract class BaseModule extends HasId {
    * TODO(twigg): Specifically walk the Data definition to call out which nodes
    * are problematic.
    */
-  protected def IO[T<:Data](iodef: T): T = {
-    require(!_closed, "Can't add more ports after module close")
-    requireIsChiselType(iodef, "io type")
-
-    // Clone the IO so we preserve immutability of data types
-    val iodefClone = try {
-      iodef.cloneTypeFull
-    } catch {
-      // For now this is going to be just a deprecation so we don't suddenly break everyone's code
-      case e: AutoClonetypeException =>
-        Builder.deprecated(e.getMessage, Some(s"${iodef.getClass}"))
-        iodef
-    }
-    _bindIoInPlace(iodefClone)
-    iodefClone
-  }
+  protected def IO[T<:Data](iodef: T): T = chisel3.core.IO.apply(iodef)
 
   //
   // Internal Functions

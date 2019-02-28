@@ -11,6 +11,10 @@ import chisel3._
   *
   * Inverse operation of [[UIntToOH]].
   *
+  * @example {{{
+  * OHToUInt("b0100".U) // results in 2.U
+  * }}}
+  *
   * @note assumes exactly one high bit, results undefined otherwise
   */
 object OHToUInt {
@@ -32,28 +36,42 @@ object OHToUInt {
 
 /** Returns the bit position of the least-significant high bit of the input bitvector.
   *
+  * @example {{{
+  * PriorityEncoder("b0110".U) // results in 1.U
+  * }}}
+  *
   * Multiple bits may be high in the input.
   */
 object PriorityEncoder {
   def apply(in: Seq[Bool]): UInt = PriorityMux(in, (0 until in.size).map(_.asUInt))
-  def apply(in: Bits): UInt = apply(in.toBools)
+  def apply(in: Bits): UInt = apply(in.asBools)
 }
 
 /** Returns the one hot encoding of the input UInt.
+  *
+  * @example {{{
+  * UIntToOH(2.U) // results in "b0100".U
+  * }}}
+  *
   */
 object UIntToOH {
   def apply(in: UInt): UInt = 1.U << in
   def apply(in: UInt, width: Int): UInt = width match {
     case 0 => 0.U(0.W)
+    case 1 => 1.U(1.W)
     case _ =>
       val shiftAmountWidth = log2Ceil(width)
-      val shiftAmount = in.pad(shiftAmountWidth)((shiftAmountWidth - 1) max 0, 0)
+      val shiftAmount = in.pad(shiftAmountWidth)(shiftAmountWidth - 1, 0)
       (1.U << shiftAmount)(width - 1, 0)
   }
 }
 
 /** Returns a bit vector in which only the least-significant 1 bit in the input vector, if any,
   * is set.
+  *
+  * @example {{{
+  * PriorityEncoderOH((false.B, true.B, true.B, false.B)) // results in (false.B, false.B, true.B, false.B)
+  * }}}
   */
 object PriorityEncoderOH {
   private def encode(in: Seq[Bool]): UInt = {

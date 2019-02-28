@@ -86,14 +86,14 @@ object printf { // scalastyle:ignore object.name
     * @param pable [[Printable]] to print
     */
   def apply(pable: Printable)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit = {
-    when (!Module.reset.toBool) {
+    when (!Module.reset.asBool) {
       printfWithoutReset(pable)
     }
   }
 
   private[chisel3] def printfWithoutReset(pable: Printable)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit = {
     val clock = Builder.forcedClock
-    pushCommand(Printf(sourceInfo, Node(clock), pable))
+    pushCommand(Printf(sourceInfo, clock.ref, pable))
   }
   private[chisel3] def printfWithoutReset(fmt: String, data: Bits*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit =
     printfWithoutReset(Printable.pack(fmt, data:_*))

@@ -6,7 +6,7 @@
 package chisel3.util
 
 import chisel3._
-import chisel3.experimental.{DataMirror, Direction}
+import chisel3.experimental.{DataMirror, Direction, requireIsChiselType}
 import chisel3.internal.naming._  // can't use chisel3_ version because of compile order
 
 /** An I/O Bundle containing 'valid' and 'ready' signals that handshake
@@ -21,7 +21,7 @@ abstract class ReadyValidIO[+T <: Data](gen: T) extends Bundle
 {
   // Compatibility hack for rocket-chip
   private val genType = (DataMirror.internal.isSynthesizable(gen), chisel3.internal.Builder.currentModule) match {
-    case (true, Some(module: chisel3.core.ImplicitModule))
+    case (true, Some(module: chisel3.core.MultiIOModule))
         if !module.compileOptions.declaredTypeMustBeUnbound => chiselTypeOf(gen)
     case _ => gen
   }
@@ -33,10 +33,10 @@ abstract class ReadyValidIO[+T <: Data](gen: T) extends Bundle
 
 object ReadyValidIO {
 
-  implicit class AddMethodsToReadyValid[T<:Data](val target: ReadyValidIO[T]) extends AnyVal {
+  implicit class AddMethodsToReadyValid[T<:Data](target: ReadyValidIO[T]) {
     def fire(): Bool = target.ready && target.valid
 
-    /** push dat onto the output bits of this interface to let the consumer know it has happened.
+    /** Push dat onto the output bits of this interface to let the consumer know it has happened.
       * @param dat the values to assign to bits.
       * @return    dat.
       */
@@ -47,22 +47,23 @@ object ReadyValidIO {
     }
 
     /** Indicate no enqueue occurs. Valid is set to false, and bits are
-      * connected to an uninitialized wire
+      * connected to an uninitialized wire.
       */
     def noenq(): Unit = {
       target.valid := false.B
+      target.bits := DontCare
     }
 
     /** Assert ready on this port and return the associated data bits.
       * This is typically used when valid has been asserted by the producer side.
-      * @return the data for this device,
+      * @return The data bits.
       */
     def deq(): T = {
       target.ready := true.B
       target.bits
     }
 
-    /** Indicate no dequeue occurs. Ready is set to false
+    /** Indicate no dequeue occurs. Ready is set to false.
       */
     def nodeq(): Unit = {
       target.ready := false.B
@@ -199,7 +200,7 @@ class Queue[T <: Data](gen: T,
   }
 
   val genType = if (compileOptions.declaredTypeMustBeUnbound) {
-    experimental.requireIsChiselType(gen)
+    requireIsChiselType(gen)
     gen
   } else {
     if (DataMirror.internal.isSynthesizable(gen)) {
@@ -219,8 +220,8 @@ class Queue[T <: Data](gen: T,
   private val ptr_match = enq_ptr.value === deq_ptr.value
   private val empty = ptr_match && !maybe_full
   private val full = ptr_match && maybe_full
-  private val do_enq = WireInit(io.enq.fire())
-  private val do_deq = WireInit(io.deq.fire())
+  private val do_enq = WireDefault(io.enq.fire())
+  private val do_deq = WireDefault(io.deq.fire())
 
   when (do_enq) {
     ram(enq_ptr.value) := io.enq.bits
@@ -252,7 +253,7 @@ class Queue[T <: Data](gen: T,
 
   private val ptr_diff = enq_ptr.value - deq_ptr.value
   if (isPow2(entries)) {
-    io.count := Cat(maybe_full && ptr_match, ptr_diff)
+    io.count := Mux(maybe_full && ptr_match, entries.U, 0.U) | ptr_diff
   } else {
     io.count := Mux(ptr_match,
                     Mux(maybe_full,

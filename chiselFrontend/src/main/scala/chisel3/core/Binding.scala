@@ -1,9 +1,11 @@
 package chisel3.core
 
+import chisel3.internal.ChiselException
 import chisel3.internal.Builder.{forcedModule}
+import chisel3.internal.firrtl.LitArg
 
 object Binding {
-  class BindingException(message: String) extends Exception(message)
+  class BindingException(message: String) extends ChiselException(message)
   /** A function expected a Chisel type but got a hardware object
     */
   case class ExpectedChiselTypeException(message: String) extends BindingException(message)
@@ -26,9 +28,10 @@ object requireIsHardware {
       case Some(x: BaseModule) => x._compatAutoWrapPorts
       case _ =>
     }
-    if (!node.hasBinding) {
+    if (!node.topBindingOpt.isDefined) {
       val prefix = if (msg.nonEmpty) s"$msg " else ""
-      throw Binding.ExpectedHardwareException(s"$prefix'$node' must be hardware, not a bare Chisel type")
+      throw Binding.ExpectedHardwareException(s"$prefix'$node' must be hardware, " +
+        "not a bare Chisel type. Perhaps you forgot to wrap it in Wire(_) or IO(_)?")
     }
   }
 }
@@ -36,7 +39,7 @@ object requireIsHardware {
 /** Requires that a node is a chisel type (not hardware, "unbound")
   */
 object requireIsChiselType {
-  def apply(node: Data, msg: String = "") = if (node.hasBinding) {
+  def apply(node: Data, msg: String = "") = if (node.topBindingOpt.isDefined) {
     val prefix = if (msg.nonEmpty) s"$msg " else ""
     throw Binding.ExpectedChiselTypeException(s"$prefix'$node' must be a Chisel type, not hardware")
   }
@@ -91,19 +94,23 @@ sealed trait ConstrainedBinding extends TopBinding {
 // A binding representing a data that cannot be (re)assigned to.
 sealed trait ReadOnlyBinding extends TopBinding
 
-// TODO literal info here
-case class LitBinding() extends UnconstrainedBinding with ReadOnlyBinding
 // TODO(twigg): Ops between unenclosed nodes can also be unenclosed
 // However, Chisel currently binds all op results to a module
-case class OpBinding(enclosure: UserModule) extends ConstrainedBinding with ReadOnlyBinding
-case class MemoryPortBinding(enclosure: UserModule) extends ConstrainedBinding
+case class OpBinding(enclosure: RawModule) extends ConstrainedBinding with ReadOnlyBinding
+case class MemoryPortBinding(enclosure: RawModule) extends ConstrainedBinding
 case class PortBinding(enclosure: BaseModule) extends ConstrainedBinding
-case class RegBinding(enclosure: UserModule) extends ConstrainedBinding
-case class WireBinding(enclosure: UserModule) extends ConstrainedBinding
+case class RegBinding(enclosure: RawModule) extends ConstrainedBinding
+case class WireBinding(enclosure: RawModule) extends ConstrainedBinding
 
 case class ChildBinding(parent: Data) extends Binding {
-  def location = parent.binding.location
+  def location = parent.topBinding.location
 }
 // A DontCare element has a specific Binding, somewhat like a literal.
 // It is a source (RHS). It may only be connected/applied to sinks.
 case class DontCareBinding() extends UnconstrainedBinding
+
+sealed trait LitBinding extends UnconstrainedBinding with ReadOnlyBinding
+// Literal binding attached to a element that is not part of a Bundle.
+case class ElementLitBinding(litArg: LitArg) extends LitBinding
+// Literal binding attached to the root of a Bundle, containing literal values of its children.
+case class BundleLitBinding(litMap: Map[Data, LitArg]) extends LitBinding

@@ -116,6 +116,21 @@ class SBPTester extends BasicTester {
   stop()
 }
 
+class FixedPointLitExtractTester extends BasicTester {
+  assert(-4.75.F(2.BP)(1) === false.B)
+  assert(-4.75.F(2.BP)(2) === true.B)
+  assert(-4.75.F(2.BP)(100) === true.B)
+  assert(-4.75.F(2.BP)(3, 0) === "b1101".U)
+  assert(-4.75.F(2.BP)(9, 0) === "b1111101101".U)
+
+  assert(-4.75.F(6.W, 2.BP)(1) === false.B)
+  assert(-4.75.F(6.W, 2.BP)(2) === true.B)
+  assert(-4.75.F(6.W, 2.BP)(100) === true.B)
+  assert(-4.75.F(6.W, 2.BP)(3, 0) === "b1101".U)
+  assert(-4.75.F(6.W, 2.BP)(9, 0) === "b1111101101".U)
+  stop()
+}
+
 class FixedPointSpec extends ChiselPropSpec {
   property("should allow set binary point") {
     assertTesterPasses { new SBPTester }
@@ -128,5 +143,8 @@ class FixedPointSpec extends ChiselPropSpec {
   }
   property("Negative shift amounts are invalid") {
     a [ChiselException] should be thrownBy { elaborate(new NegativeShift(FixedPoint(1.W, 0.BP))) }
+  }
+  property("Bit extraction on literals should work for all non-negative indices") {
+    assertTesterPasses(new FixedPointLitExtractTester)
   }
 }

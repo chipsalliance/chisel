@@ -77,11 +77,10 @@ private[chisel3] trait HasId extends InstanceId {
   _parent.foreach(_.addId(this))
 
   private[chisel3] val _id: Long = Builder.idGen.next
-  override def hashCode: Int = _id.toInt
-  override def equals(that: Any): Boolean = that match {
-    case x: HasId => _id == x._id
-    case _ => false
-  }
+
+  // TODO: remove this, but its removal seems to cause a nasty Scala compiler crash.
+  override def hashCode: Int = super.hashCode()
+  override def equals(that: Any): Boolean = super.equals(that)
 
   // Facilities for 'suggesting' a name to this.
   // Post-name hooks called to carry the suggestion to other candidates as needed
@@ -93,6 +92,7 @@ private[chisel3] trait HasId extends InstanceId {
     for(hook <- postname_hooks) { hook(name) }
     this
   }
+  private[chisel3] def suggestedName: Option[String] = suggested_name
   private[chisel3] def addPostnameHook(hook: String=>Unit): Unit = postname_hooks += hook
 
   // Uses a namespace to convert suggestion into a true name
@@ -111,11 +111,15 @@ private[chisel3] trait HasId extends InstanceId {
   private[chisel3] def setRef(parent: HasId, index: Int): Unit = setRef(Index(Node(parent), ILit(index)))
   private[chisel3] def setRef(parent: HasId, index: UInt): Unit = setRef(Index(Node(parent), index.ref))
   private[chisel3] def getRef: Arg = _ref.get
+  private[chisel3] def getOptionRef: Option[Arg] = _ref
 
   // Implementation of public methods.
   def instanceName: String = _parent match {
     case Some(p) => p._component match {
-      case Some(c) => getRef fullName c
+      case Some(c) => _ref match {
+        case Some(arg) => arg fullName c
+        case None => suggested_name.getOrElse("??")
+      }
       case None => throwException("signalName/pathName should be called after circuit elaboration")
     }
     case None => throwException("this cannot happen")
@@ -161,8 +165,15 @@ private[chisel3] trait NamedComponent extends HasId {
   }
 }
 
-private[chisel3] class DynamicContext() {
+// Mutable global state for chisel that can appear outside a Builder context
+private[chisel3] class ChiselContext() {
   val idGen = new IdGen
+
+  // Record the Bundle instance, class name, method name, and reverse stack trace position of open Bundles
+  val bundleStack: ArrayBuffer[(Bundle, String, String, Int)] = ArrayBuffer()
+}
+
+private[chisel3] class DynamicContext() {
   val globalNamespace = Namespace.empty
   val components = ArrayBuffer[Component]()
   val annotations = ArrayBuffer[ChiselAnnotation]()
@@ -193,20 +204,29 @@ object withRoot {
 private[chisel3] object Builder {
   // All global mutable state must be referenced via dynamicContextVar!!
   private val dynamicContextVar = new DynamicVariable[Option[DynamicContext]](None)
-  private def dynamicContext: DynamicContext =
-    dynamicContextVar.value.getOrElse(new DynamicContext)
+  private def dynamicContext: DynamicContext = {
+    require(dynamicContextVar.value.isDefined, "must be inside Builder context")
+    dynamicContextVar.value.get
+  }
+
+  private val chiselContext = new DynamicVariable[ChiselContext](new ChiselContext)
 
   // Initialize any singleton objects before user code inadvertently inherits them.
   private def initializeSingletons(): Unit = {
     val dummy = core.DontCare
   }
-  def idGen: IdGen = dynamicContext.idGen
+
+  def idGen: IdGen = chiselContext.value.idGen
+
   def globalNamespace: Namespace = dynamicContext.globalNamespace
   def components: ArrayBuffer[Component] = dynamicContext.components
   def annotations: ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
   def namingStack: internal.naming.NamingStack = dynamicContext.namingStack
 
-  def currentModule: Option[BaseModule] = dynamicContext.currentModule
+  def currentModule: Option[BaseModule] = dynamicContextVar.value match {
+    case Some(dyanmicContext) => dynamicContext.currentModule
+    case _ => None
+  }
   def currentModule_=(target: Option[BaseModule]): Unit = {
     dynamicContext.currentModule = target
   }
@@ -221,8 +241,8 @@ private[chisel3] object Builder {
       // A bare api call is, e.g. calling Wire() from the scala console).
     )
   }
-  def forcedUserModule: UserModule = currentModule match {
-    case Some(module: UserModule) => module
+  def forcedUserModule: RawModule = currentModule match {
+    case Some(module: RawModule) => module
     case _ => throwException(
       "Error: Not in a UserModule. Likely cause: Missed Module() wrap, bare chisel API call, or attempting to construct hardware inside a BlackBox."
       // A bare api call is, e.g. calling Wire() from the scala console).
@@ -275,28 +295,44 @@ private[chisel3] object Builder {
     // Prune the existing Bundle stack of closed Bundles
     // If we know where we are in the stack, discard frames above that
     val stackEltsTop = if (eltStackPos >= 0) eltStackPos else stackElts.size
-    val pruneLength = dynamicContext.bundleStack.reverse.prefixLength { case (_, cname, mname, pos) =>
+    val pruneLength = chiselContext.value.bundleStack.reverse.prefixLength { case (_, cname, mname, pos) =>
       pos >= stackEltsTop || stackElts(pos).getClassName != cname || stackElts(pos).getMethodName != mname
     }
-    dynamicContext.bundleStack.trimEnd(pruneLength)
+    chiselContext.value.bundleStack.trimEnd(pruneLength)
 
     // Return the stack state before adding the most recent bundle
-    val lastStack = dynamicContext.bundleStack.map(_._1).toSeq
+    val lastStack = chiselContext.value.bundleStack.map(_._1).toSeq
 
     // Append the current Bundle to the stack, if it's on the stack trace
     if (eltStackPos >= 0) {
       val stackElt = stackElts(eltStackPos)
-      dynamicContext.bundleStack.append((elt, eltClassName, stackElt.getMethodName, eltStackPos))
+      chiselContext.value.bundleStack.append((elt, eltClassName, stackElt.getMethodName, eltStackPos))
     }
     // Otherwise discard the stack frame, this shouldn't fail noisily
 
     lastStack
   }
 
+  /** Recursively suggests names to supported "container" classes
+    * Arbitrary nestings of supported classes are allowed so long as the
+    * innermost element is of type HasId
+    * (Note: Map is Iterable[Tuple2[_,_]] and thus excluded)
+    */
+  def nameRecursively(prefix: String, nameMe: Any, namer: (HasId, String) => Unit): Unit = nameMe match {
+    case (id: HasId) => namer(id, prefix)
+    case Some(elt) => nameRecursively(prefix, elt, namer)
+    case (iter: Iterable[_]) if iter.hasDefiniteSize =>
+      for ((elt, i) <- iter.zipWithIndex) {
+        nameRecursively(s"${prefix}_${i}", elt, namer)
+      }
+    case _ => // Do nothing
+  }
+
   def errors: ErrorLog = dynamicContext.errors
-  def error(m: => String): Unit = errors.error(m)
-  def warning(m: => String): Unit = errors.warning(m)
-  def deprecated(m: => String, location: Option[String] = None): Unit = errors.deprecated(m, location)
+  def error(m: => String): Unit = if (dynamicContextVar.value.isDefined) errors.error(m)
+  def warning(m: => String): Unit = if (dynamicContextVar.value.isDefined) errors.warning(m)
+  def deprecated(m: => String, location: Option[String] = None): Unit =
+    if (dynamicContextVar.value.isDefined) errors.deprecated(m, location)
 
   /** Record an exception as an error, and throw it.
     *
@@ -308,16 +344,18 @@ private[chisel3] object Builder {
     throwException(m)
   }
 
-  def build[T <: UserModule](f: => T): Circuit = {
-    dynamicContextVar.withValue(Some(new DynamicContext())) {
-      errors.info("Elaborating design...")
-      val mod = f
-      mod.forceName(mod.name, globalNamespace)
-      errors.checkpoint()
-      errors.info("Done elaborating.")
+  def build[T <: RawModule](f: => T): Circuit = {
+    chiselContext.withValue(new ChiselContext) {
+      dynamicContextVar.withValue(Some(new DynamicContext())) {
+        errors.info("Elaborating design...")
+        val mod = f
+        mod.forceName(mod.name, globalNamespace)
+        errors.checkpoint()
+        errors.info("Done elaborating.")
 
-      Circuit(components.last.name, components, annotations)
-    }
+        Circuit(components.last.name, components, annotations)
+      }
+   }
   }
 
   def buildAndReturn[T <: UserModule](f: => T): (Circuit, T) = {

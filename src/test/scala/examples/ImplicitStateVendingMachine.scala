@@ -9,7 +9,7 @@ import chisel3._
 class ImplicitStateVendingMachine extends SimpleVendingMachine {
   // We let the value of nickel be 1 and dime be 2 for efficiency reasons
   val value = RegInit(0.asUInt(3.W))
-  val incValue = WireInit(0.asUInt(3.W))
+  val incValue = WireDefault(0.asUInt(3.W))
   val doDispense = value >= 4.U // 4 * nickel as 1 == $0.20
 
   when (doDispense) {

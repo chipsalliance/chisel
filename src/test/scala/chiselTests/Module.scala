@@ -3,7 +3,6 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.{withClock, withReset}
 
 class SimpleIO extends Bundle {
   val in  = Input(UInt(32.W))
@@ -60,6 +59,19 @@ class ModuleRewrap extends Module {
   val io = IO(new SimpleIO)
   val inst = Module(new PlusOne)
   val inst2 = Module(inst)
+}
+
+class ModuleWrapper(gen: => Module) extends Module {
+  val io = IO(new Bundle{})
+  val child = Module(gen)
+  override val desiredName = s"${child.desiredName}Wrapper"
+}
+
+class NullModuleWrapper extends Module {
+  val io = IO(new Bundle{})
+  override lazy val desiredName = s"${child.desiredName}Wrapper"
+  println(s"My name is ${name}")
+  val child = Module(new ModuleWire)
 }
 
 class ModuleSpec extends ChiselPropSpec {
@@ -125,5 +137,24 @@ class ModuleSpec extends ChiselPropSpec {
       assert(Module.currentModule.get eq this)
       assert(checkModule(this))
     })
+  }
+  property("DataMirror.modulePorts should work") {
+    elaborate(new Module {
+      val io = IO(new Bundle { })
+      val m = Module(new chisel3.experimental.MultiIOModule {
+        val a = IO(UInt(8.W))
+        val b = IO(Bool())
+      })
+      assert(chisel3.experimental.DataMirror.modulePorts(m) == Seq(
+          "clock" -> m.clock, "reset" -> m.reset,
+          "a" -> m.a, "b" -> m.b))
+    })
+  }
+  property("A desiredName parameterized by a submodule should work") {
+    Driver.elaborate(() => new ModuleWrapper(new ModuleWire)).name should be ("ModuleWireWrapper")
+  }
+  property("A name generating a null pointer exception should provide a good error message") {
+    (the [Exception] thrownBy (Driver.elaborate(() => new NullModuleWrapper)))
+      .getMessage should include ("desiredName of chiselTests.NullModuleWrapper is null")
   }
 }
