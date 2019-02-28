@@ -19,7 +19,7 @@ object TransactionEvent {
     * @return TransactionEvent annotation
     */
   def apply[M<: MultiIOModule, T<:Data](name: String, parent: M, f: Snippet[M, T]): Seq[ChiselAnnotation] = {
-    val (dut, annos) = Aspect(name, parent, f)
+    val (dut, annos) = AspectModule(name, parent, f)
     SpecialSignal(dut.result.get.toNamed) +: annos
   }
   case class SpecialSignal(target: ComponentName) extends SingleTargetAnnotation[ComponentName] with ChiselAnnotation {

@@ -9,11 +9,11 @@ abstract class Snippet[M<:MultiIOModule, D<:HasId] {
   implicit def ref2cmSink[T<:Data](ref: T): CrossModuleSink[T] = CrossModuleSink(ref)
 
   case class CrossModuleSource[T<:Data](cmr: T) {
-    def ref: T = Aspect.dynamicContextVar.value.get.addInput(cmr)
+    def ref: T = AspectModule.dynamicContextVar.value.get.addInput(cmr)
     def i: T = ref
   }
   case class CrossModuleSink[T<:Data](cmr: T) {
-    def ref: T = Aspect.dynamicContextVar.value.get.addOutput(cmr)
+    def ref: T = AspectModule.dynamicContextVar.value.get.addOutput(cmr)
     def o: T = ref
   }
 

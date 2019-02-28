@@ -3,7 +3,7 @@ package chisel3.libs.diagnostic
 import chisel3._
 import chisel3.core.{ChiselAnnotation, dontTouch}
 import chisel3.experimental.{BaseModule, MultiIOModule}
-import chisel3.libs.aspect.Aspect
+import chisel3.libs.aspect.AspectModule
 import firrtl.ir.{Input => _, Module => _, Output => _}
 
 /**
@@ -23,7 +23,7 @@ object Histogram {
     */
   def apply[T<: MultiIOModule, S<:Bits](name: String, root: T, signal: S, maxCount: Int): Seq[ChiselAnnotation] = {
 
-    Aspect(name, root, () => new Histogram(chiselTypeOf(signal), maxCount, name, root), (encl: T, hist: Histogram[S]) => {
+    AspectModule(name, root, () => new Histogram(chiselTypeOf(signal), maxCount, name, root), (encl: T, hist: Histogram[S]) => {
       Map(
         encl.clock.toNamed -> encl.toNamed.inst(name).ref("clock"),
         encl.reset.toNamed -> encl.toNamed.inst(name).ref("reset"),
@@ -33,7 +33,7 @@ object Histogram {
   }
 }
 
-class Histogram[T<:Bits](signalType: => T, maxCount: Int, val instName: String, val parent: BaseModule) extends MultiIOModule with Aspect {
+class Histogram[T<:Bits](signalType: => T, maxCount: Int, val instName: String, val parent: BaseModule) extends MultiIOModule with AspectModule {
   val in = IO(Input(signalType))
   val out = IO(Output(signalType))
   val histMem = Mem(math.pow(2, in.getWidth).toInt, chiselTypeOf(maxCount.U))

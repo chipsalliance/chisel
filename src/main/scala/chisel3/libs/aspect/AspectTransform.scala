@@ -13,33 +13,33 @@ private class AspectTransform extends firrtl.Transform {
   override def inputForm: CircuitForm = MidForm
   override def outputForm: CircuitForm = HighForm
 
-  def onStmt(bps: Seq[AspectAnnotation])(s: Statement): Statement = {
-    if(bps.isEmpty) s else {
-      val newBody = mutable.ArrayBuffer[Statement]()
-      newBody += s
-      newBody ++= bps.map(_.instance)
-      Block(newBody)
+  def onStmt(aspects: Seq[AspectAnnotation])(body: Statement): Statement = {
+    if(aspects.isEmpty) body else {
+      aspects.foldLeft(body) { (s, a) => a.inject(a.component)(s) }
     }
   }
 
   override def execute(state: CircuitState): CircuitState = {
-    val bps = state.annotations.collect{ case b: AspectAnnotation => b}
-    val bpMap = bps.groupBy(_.enclosingModule.encapsulatingModule.get)
+    val aspects = state.annotations.collect{ case b: AspectAnnotation => b}
+    val resolver = firrtl.annotations.ComponentExpansion(state.circuit)
+    val expandedAspects = aspects.flatMap { a: AspectAnnotation => resolver.resolve(a.component).map{c => a.copy(component = c)} }
+
+    val aspectMap = expandedAspects.groupBy(_.component.encapsulatingModule.get)
 
     val moduleMap = state.circuit.modules.map(m => m.name -> m).toMap
 
     val newModules = state.circuit.modules.flatMap {
       case m: firrtl.ir.Module =>
-        val myModuleAspects = bpMap.getOrElse(m.name, Nil)
+        val myModuleAspects = aspectMap.getOrElse(m.name, Nil)
         val newM = m mapStmt onStmt(myModuleAspects)
-        newM +: myModuleAspects.map(_.module)
+        newM +: myModuleAspects.flatMap(_.modules)
       case x: ExtModule => Seq(x)
     }
 
     val newCircuit = state.circuit.copy(modules = newModules)
     val newAnnotations = state.annotations.filter(!_.isInstanceOf[AspectAnnotation])
 
-    val wiringInfos = bps.flatMap{ case bp@AspectAnnotation(refs, enclosingModule, instance, module) =>
+    val wiringInfos = aspects.flatMap{ case bp@AspectAnnotation(refs, enclosingModule, _, module) =>
       refs.map{ case (from, to) =>
         WiringInfo(from.getComponentName, Seq(to.getComponentName), from.getComponentName.name)
       }

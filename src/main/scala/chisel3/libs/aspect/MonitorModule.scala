@@ -7,7 +7,7 @@ import firrtl.annotations.Component
 import scala.collection.mutable
 
 
-class MonitorModule(val instName: String, val parent: BaseModule) extends MultiIOModule with Aspect {
+class MonitorModule(val instName: String, val parent: BaseModule) extends MultiIOModule with AspectModule {
   //override val instanceName = instName
   val ios = mutable.ArrayBuffer[Data]()
   val cmrData = mutable.HashMap[Data, Data]()
@@ -36,7 +36,7 @@ class MonitorModule(val instName: String, val parent: BaseModule) extends MultiI
     } else cmrData(ref).asInstanceOf[D]
   }
   def snip[M<:MultiIOModule, D<:Data](s: Snippet[M, D]): MonitorModule = {
-    Aspect.withAspect(this) {
+    AspectModule.withAspect(this) {
       val flag = s.snip(parent.asInstanceOf[M])
       result = Some(flag)
       dontTouch(flag)

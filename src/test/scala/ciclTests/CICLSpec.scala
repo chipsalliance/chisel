@@ -7,9 +7,12 @@ package ciclTests
 import chiselTests.ChiselPropSpec
 import chisel3._
 import chisel3.experimental.{MultiIOModule, withRoot}
-import chisel3.libs.aspect.{Snippet}
+import chisel3.libs.aspect.{AspectAnnotation, AspectInjector, Snippet}
 import chisel3.libs.transaction.TransactionEvent
 import chisel3.libs.diagnostic.{DelayCounter, DelayCounterAnnotation, Histogram}
+import _root_.firrtl.ir.{Input => _, Output => _, _}
+import firrtl.{MALE, PortKind, WRef}
+import firrtl.annotations.Component
 
 class Buffer(delay: Int) extends MultiIOModule {
   val in = IO(Input(UInt(3.W)))
@@ -94,6 +97,34 @@ class CICLSpec extends ChiselPropSpec {
   /**
     * Application - pattern match a name, given a circuit, and generate an annotation based on it
     */
+  //property("Should initialize all registers to 0") {
+  //  val (ir, buffer) = Driver.elaborateAndReturn(() => new Buffer(4))
+
+  //  buffer.toNamed.regs.whenResolved { regs: Seq[Component] =>
+  //    regs.foreach { r => r := 0.U }
+  //  }
+
+  //  val regsInitAnno = withRoot(buffer) {
+  //    AspectAnnotation(
+  //      Seq.empty[(Component, Component)],
+  //      buffer.toNamed.regs,
+  //      {
+  //        (c: Component) => {
+  //          case DefRegister(info, name, tpe, clock, reset, _) if name == c.reference.last.value =>
+  //            DefRegister(info, name, tpe, clock, WRef("reset", UIntType(IntWidth(1)), PortKind, MALE), UIntLiteral(BigInt(0)))
+  //          case other => other
+  //        }
+  //      },
+  //      //InitRegs,
+  //      Nil
+  //    )
+  //  }
+
+  //  val (verilog, state) = compileAndReturn(ir, Seq(regsInitAnno))
+
+  //  println(verilog)
+  //  assert(countModules(verilog) === 1)
+  //}
 
 }
 
@@ -134,3 +165,15 @@ property("Should count delays between signals") {
   compile(ir, Seq(badAssertion))
 }
 */
+
+object InitRegs extends AspectInjector {
+  override def onStmt(c: Component)(s: Statement): Statement = s match {
+    case DefRegister(info, name, tpe, clock, reset, _) if name == c.reference.last.value =>
+      DefRegister(info, name, tpe, clock, WRef("reset", UIntType(IntWidth(1)), PortKind, MALE), UIntLiteral(BigInt(0)))
+    case other => other mapStmt onStmt(c)
+  }
+}
+
+/*
+look at midas/firesim, distill examples
+ */

@@ -16,7 +16,7 @@ import scala.util.DynamicVariable
 //  //}
 //  //def getRoot: MultiIOModule = dynamicContextVar.value.get
 //  //private def getTop(m: HasId): BaseModule = (m, m._parent) match {
-//  //  case (b: Aspect, None) => getTop(b.parent)
+//  //  case (b: AspectModule, None) => getTop(b.parent)
 //  //  case (b: BaseModule, None) => b
 //  //  case (_, Some(p)) => getTop(p)
 //  //  case other => throw new Exception("Cannot find top!")
@@ -35,7 +35,7 @@ import scala.util.DynamicVariable
 //      //    case other => Nil
 //      //  }
 //      //  h match {
-//      //    case a: Aspect => (getName(a.parent) :+ Instance(a.instName)) ++ ofModule
+//      //    case a: AspectModule => (getName(a.parent) :+ Instance(a.instName)) ++ ofModule
 //      //    case root: BaseModule if root.name == m.name => Nil
 //      //    case inst: BaseModule => (inst._parent.map(getName).getOrElse(Nil) :+ Instance(inst.instanceName)) ++ ofModule
 //      //    case other => other._parent.map(getName).getOrElse(Nil) :+ Ref(other.instanceName)
