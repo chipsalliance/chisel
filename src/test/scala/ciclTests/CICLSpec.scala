@@ -6,7 +6,7 @@ package ciclTests
 
 import chiselTests.ChiselPropSpec
 import chisel3._
-import chisel3.experimental.{MultiIOModule, withRoot}
+import chisel3.experimental.withRoot
 import chisel3.libs.aspect.{AspectAnnotation, AspectInjector, Snippet}
 import chisel3.libs.transaction.TransactionEvent
 import chisel3.libs.diagnostic.{DelayCounter, DelayCounterAnnotation, Histogram}

@@ -218,13 +218,13 @@ abstract class BaseModule extends HasId {
   /** Returns a FIRRTL ModuleName that references this object
     * @note Should not be called until circuit elaboration is complete
     */
-  final def toNamed: annotations.Component = {
+  final def toNamed: annotations.IsModule = {
     require(_closed, "Cannot get name of this module before its elaboration")
     if(_parent.isEmpty || (Builder.root.isDefined && Builder.root.get == this)) {
-      annotations.Component(Some(this.circuitName), Some(this.name), Nil, None)
+      annotations.ModuleTarget(this.circuitName, this.name)
     } else {
       val parentComponent = _parent.get.toNamed
-      parentComponent.inst(instanceName).of(name)
+      parentComponent.instOf(instanceName, name)
     }
   }
 

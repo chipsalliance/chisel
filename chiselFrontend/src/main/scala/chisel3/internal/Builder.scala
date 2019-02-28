@@ -67,7 +67,7 @@ trait InstanceId {
   def parentPathName: String
   def parentModName: String
   /** Returns a FIRRTL Named that refers to this object in the elaborated hardware graph */
-  def toNamed: annotations.Component
+  def toNamed: annotations.IsMember
 
 }
 
@@ -159,7 +159,7 @@ private[chisel3] trait NamedComponent extends HasId {
   /** Returns a FIRRTL ComponentName that references this object
     * @note Should not be called until circuit elaboration is complete
     */
-  final def toNamed: annotations.Component = {
+  final def toNamed: ReferenceTarget = {
     val parentComponent = _parent.getOrElse(throwException(s"$instanceName doesn't have a parent")).toNamed
     parentComponent.ref(instanceName)
   }
