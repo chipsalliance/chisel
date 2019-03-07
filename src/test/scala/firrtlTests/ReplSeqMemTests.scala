@@ -27,6 +27,16 @@ class ReplSeqMemSpec extends SimpleTransformSpec {
     }
   )
 
+  def checkMemConf(filename: String, mems: Set[MemConf]) {
+    // Read the mem conf
+    val file = scala.io.Source.fromFile(filename)
+    val text = try file.mkString finally file.close()
+    // Verify that this does not throw an exception
+    val fromConf = MemConf.fromString(text)
+    // Verify the mems in the conf are the same as the expected ones
+    require(Set(fromConf: _*) == mems, "Parsed conf set:\n  {\n  " + fromConf.mkString("  ") + "  }\n  must be the same as reference conf set: \n  {\n  " + mems.toSeq.mkString("  ") + "  }\n")
+  }
+
   "ReplSeqMem" should "generate blackbox wrappers for mems of bundle type" in {
     val input = """
 circuit Top : 
@@ -63,11 +73,17 @@ circuit Top :
     read mport R1 = entries_info2[head_ptr], clock
     io2.commit_entry.bits.info <- R1
 """.stripMargin
+    val mems = Set(
+      MemConf("entries_info_ext", 24, 30, Map(WritePort -> 1, ReadPort -> 1), None),
+      MemConf("entries_info2_ext", 24, 30, Map(MaskedWritePort -> 1, ReadPort -> 1), Some(10))
+    )
     val confLoc = "ReplSeqMemTests.confTEMP"
     val annos = Seq(ReplSeqMemAnnotation.parse("-c:Top:-o:"+confLoc))
     val res = compileAndEmit(CircuitState(parse(input), ChirrtlForm, annos))
     // Check correctness of firrtl
     parse(res.getEmittedCircuit.value)
+    // Check the emitted conf
+    checkMemConf(confLoc, mems)
     (new java.io.File(confLoc)).delete()
   }
 
@@ -85,11 +101,14 @@ circuit Top :
       when p_valid : 
         write mport T_155 = mem[p_address], clock
 """.stripMargin
+    val mems = Set(MemConf("mem_ext", 32, 64, Map(MaskedWritePort -> 1), Some(64)))
     val confLoc = "ReplSeqMemTests.confTEMP"
     val annos = Seq(ReplSeqMemAnnotation.parse("-c:Top:-o:"+confLoc))
     val res = compileAndEmit(CircuitState(parse(input), ChirrtlForm, annos))
     // Check correctness of firrtl
     parse(res.getEmittedCircuit.value)
+    // Check the emitted conf
+    checkMemConf(confLoc, mems)
     (new java.io.File(confLoc)).delete()
   }
 
@@ -110,11 +129,14 @@ circuit CustomMemory :
       _T_18 <= io.dI
       skip 
 """.stripMargin
+    val mems = Set(MemConf("mem_ext", 7, 16, Map(WritePort -> 1, ReadPort -> 1), None))
     val confLoc = "ReplSeqMemTests.confTEMP"
     val annos = Seq(ReplSeqMemAnnotation.parse("-c:CustomMemory:-o:"+confLoc))
     val res = compileAndEmit(CircuitState(parse(input), ChirrtlForm, annos))
     // Check correctness of firrtl
     parse(res.getEmittedCircuit.value)
+    // Check the emitted conf
+    checkMemConf(confLoc, mems)
     (new java.io.File(confLoc)).delete()
   }
 
@@ -135,11 +157,14 @@ circuit CustomMemory :
       _T_18 <= io.dI
       skip 
 """.stripMargin
+    val mems = Set(MemConf("mem_ext", 7, 16, Map(WritePort -> 1, ReadPort -> 1), None))
     val confLoc = "ReplSeqMemTests.confTEMP"
     val annos = Seq(ReplSeqMemAnnotation.parse("-c:CustomMemory:-o:"+confLoc))
     val res = compileAndEmit(CircuitState(parse(input), ChirrtlForm, annos))
     // Check correctness of firrtl
     parse(res.getEmittedCircuit.value)
+    // Check the emitted conf
+    checkMemConf(confLoc, mems)
     (new java.io.File(confLoc)).delete()
   }
 
@@ -188,6 +213,7 @@ circuit Top :
     tests foreach { case(hurdle, origin) => checkConnectOrigin(hurdle, origin) }
 
   }
+
   "ReplSeqMem" should "not de-duplicate memories with the nodedupe annotation " in {
     val input = """
 circuit CustomMemory :
@@ -209,6 +235,10 @@ circuit CustomMemory :
       _T_20 <= io.dI
       skip
 """
+    val mems = Set(
+      MemConf("mem_0_ext", 7, 16, Map(WritePort -> 1, ReadPort -> 1), None),
+      MemConf("mem_1_ext", 7, 16, Map(WritePort -> 1, ReadPort -> 1), None)
+    )
     val confLoc = "ReplSeqMemTests.confTEMP"
     val annos = Seq(
       ReplSeqMemAnnotation.parse("-c:CustomMemory:-o:"+confLoc),
@@ -221,6 +251,8 @@ circuit CustomMemory :
       case _ => false
     }
     numExtMods should be (2)
+    // Check the emitted conf
+    checkMemConf(confLoc, mems)
     (new java.io.File(confLoc)).delete()
   }
 
@@ -249,6 +281,10 @@ circuit CustomMemory :
       _T_22 <= io.dI
       skip
 """
+    val mems = Set(
+      MemConf("mem_0_ext", 7, 16, Map(WritePort -> 1, ReadPort -> 1), None),
+      MemConf("mem_1_ext", 7, 16, Map(WritePort -> 1, ReadPort -> 1), None)
+    )
     val confLoc = "ReplSeqMemTests.confTEMP"
     val annos = Seq(
       ReplSeqMemAnnotation.parse("-c:CustomMemory:-o:"+confLoc),
@@ -261,6 +297,8 @@ circuit CustomMemory :
       case _ => false
     }
     numExtMods should be (2)
+    // Check the emitted conf
+    checkMemConf(confLoc, mems)
     (new java.io.File(confLoc)).delete()
   }
 
@@ -300,6 +338,10 @@ circuit CustomMemory :
       w1 <= io.dI
       w2 <= io.dI
 """
+    val mems = Set(
+      MemConf("mem_0_ext", 7, 16, Map(WritePort -> 1, ReadPort -> 1), None),
+      MemConf("mem_0_0_ext", 7, 16, Map(WritePort -> 1, ReadPort -> 1), None)
+    )
     val confLoc = "ReplSeqMemTests.confTEMP"
     val annos = Seq(
       ReplSeqMemAnnotation.parse("-c:CustomMemory:-o:"+confLoc),
@@ -316,6 +358,8 @@ circuit CustomMemory :
     // If the NoDedupMemAnnotation were handled incorrectly as it was prior to this test, there
     //   would be 3 ExtModules
     numExtMods should be (2)
+    // Check the emitted conf
+    checkMemConf(confLoc, mems)
     (new java.io.File(confLoc)).delete()
   }
 
@@ -340,6 +384,7 @@ circuit CustomMemory :
       _T_20 <= io.dI
       skip
 """
+    val mems = Set(MemConf("mem_0_ext", 7, 16, Map(WritePort -> 1, ReadPort -> 1), None))
     val confLoc = "ReplSeqMemTests.confTEMP"
     val annos = Seq(ReplSeqMemAnnotation.parse("-c:CustomMemory:-o:"+confLoc))
     val res = compileAndEmit(CircuitState(parse(input), ChirrtlForm, annos))
@@ -353,7 +398,7 @@ circuit CustomMemory :
     (new java.io.File(confLoc)).delete()
   }
 
-  "ReplSeqMem" should "should not have a mask if there is none" in {
+  "ReplSeqMem" should "not have a mask if there is none" in {
     val input = """
 circuit CustomMemory :
   module CustomMemory :
@@ -368,14 +413,17 @@ circuit CustomMemory :
       write mport w = mem[io.waddr], clock
       w <= io.wdata
 """
+    val mems = Set(MemConf("mem_ext", 1024, 16, Map(WritePort -> 1, ReadPort -> 1), None))
     val confLoc = "ReplSeqMemTests.confTEMP"
     val annos = Seq(ReplSeqMemAnnotation.parse("-c:CustomMemory:-o:"+confLoc))
     val res = compileAndEmit(CircuitState(parse(input), ChirrtlForm, annos))
     res.getEmittedCircuit.value shouldNot include ("mask")
+    // Check the emitted conf
+    checkMemConf(confLoc, mems)
     (new java.io.File(confLoc)).delete()
   }
 
-  "ReplSeqMem" should "should not conjoin enable signal with mask condition" in {
+  "ReplSeqMem" should "not conjoin enable signal with mask condition" in {
     val input = """
 circuit CustomMemory :
   module CustomMemory :
@@ -393,16 +441,19 @@ circuit CustomMemory :
       when io.mask[1] :
         w[1] <= io.wdata[1]
 """
+    val mems = Set(MemConf("mem_ext", 1024, 16, Map(MaskedWritePort -> 1, ReadPort -> 1), Some(8)))
     val confLoc = "ReplSeqMemTests.confTEMP"
     val annos = Seq(ReplSeqMemAnnotation.parse("-c:CustomMemory:-o:"+confLoc))
     val res = compileAndEmit(CircuitState(parse(input), ChirrtlForm, annos))
     // TODO Until RemoveCHIRRTL is removed, enable will still drive validif for mask
     res should containLine ("mem.W0_mask_0 <= validif(io_en, io_mask_0)")
     res should containLine ("mem.W0_mask_1 <= validif(io_en, io_mask_1)")
+    // Check the emitted conf
+    checkMemConf(confLoc, mems)
     (new java.io.File(confLoc)).delete()
   }
 
-  "ReplSeqMem" should "should not conjoin enable signal with wmask condition (RW Port)" in {
+  "ReplSeqMem" should "not conjoin enable signal with wmask condition (RW Port)" in {
     val input = """
 circuit CustomMemory :
   module CustomMemory :
@@ -424,6 +475,7 @@ circuit CustomMemory :
       io.out <= r
 
 """
+    val mems = Set(MemConf("mem_ext", 1024, 16, Map(MaskedReadWritePort -> 1), Some(8)))
     val confLoc = "ReplSeqMemTests.confTEMP"
     val annos = Seq(ReplSeqMemAnnotation.parse("-c:CustomMemory:-o:"+confLoc),
                     InferReadWriteAnnotation)
@@ -431,9 +483,10 @@ circuit CustomMemory :
     // TODO Until RemoveCHIRRTL is removed, enable will still drive validif for mask
     res should containLine ("mem.RW0_wmask_0 <= validif(io_en, io_mask_0)")
     res should containLine ("mem.RW0_wmask_1 <= validif(io_en, io_mask_1)")
+    // Check the emitted conf
+    checkMemConf(confLoc, mems)
     (new java.io.File(confLoc)).delete()
   }
 }
 
 // TODO: make more checks
-// conf
