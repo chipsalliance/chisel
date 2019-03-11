@@ -105,14 +105,15 @@ brew install sbt verilator
 If you are migrating to Chisel3 from Chisel2, please visit
 [Chisel3 vs Chisel2](https://github.com/ucb-bar/chisel3/wiki/Chisel3-vs-Chisel2)
 
+### Resources for Learning Chisel
+* [Chisel Bootcamp](https://github.com/freechipsproject/chisel-bootcamp), a collection of interactive Jupyter notebooks that teach Chisel
+* [Chisel Tutorial](https://github.com/ucb-bar/chisel-tutorial), a collection of exercises utlizing `sbt`
 
 ### Data Types Overview
 These are the base data types for defining circuit wires (abstract types which
 may not be instantiated are greyed out):
 
 ![Image](doc/images/type_hierarchy.png?raw=true)
-
-### [Chisel Tutorial](https://github.com/ucb-bar/chisel-tutorial)
 
 ## For Hardware Engineers
 This section describes how to get started using Chisel to create a new RTL
