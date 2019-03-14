@@ -16,6 +16,8 @@ class PopCountTester(n: Int) extends BasicTester {
   val result = PopCount(x.asBools)
   val expected = x.asBools.foldLeft(0.U)(_ +& _)
   assert(result === expected)
+
+  require(result.getWidth == BigInt(n).bitLength)
 }
 
 class PopCountSpec extends ChiselPropSpec {
