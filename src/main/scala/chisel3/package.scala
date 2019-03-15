@@ -79,7 +79,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
 
   implicit class cloneTypeable[T <: Data](target: T) {
     @chiselRuntimeDeprecated
-    @deprecated("chiselCloneType is deprecated, use chiselTypeOf(...) to get the Chisel Type of a hardware object", "chisel3")
+    @deprecated("chiselCloneType is deprecated, use chiselTypeOf(...) to get the Chisel Type of a hardware object", "chisel3") // scalastyle:ignore line.size.limit
     def chiselCloneType: T = {
       target.cloneTypeFull.asInstanceOf[T]
     }
@@ -462,7 +462,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
         * q2_io.enq <> q1.io.deq
         * }}}
         */
-      def apply(proto: BaseModule)(implicit sourceInfo: chisel3.internal.sourceinfo.SourceInfo, compileOptions: chisel3.core.CompileOptions): ClonePorts = {
+      def apply(proto: BaseModule)(implicit sourceInfo: chisel3.internal.sourceinfo.SourceInfo, compileOptions: chisel3.core.CompileOptions): ClonePorts = { // scalastyle:ignore line.size.limit
         chisel3.core.BaseModule.cloneIORecord(proto)
       }
     }

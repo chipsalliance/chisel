@@ -1,0 +1,56 @@
+package chiselTests
+
+import chisel3._
+import chisel3.util._
+import firrtl._
+import firrtl.passes.PassException
+import org.scalatest.Matchers
+
+class DumpWhen extends ChiselPropSpec with Matchers {
+  class WhenTester(explicitInit: Boolean) extends Module {
+    val io = new Bundle()
+    val cnt = Counter(4)
+    when(true.B) {
+      cnt.inc()
+    }
+
+    val out = Wire(UInt(3.W))
+    // If we don't assign to "out" outside of the when chain, either with a real value or DontCare,
+    //  we'll get a:
+    //  Reference out is not fully initialized.
+    if (explicitInit)
+      out := DontCare
+
+    when(cnt.value === 0.U) {
+      out := 1.U
+    }.elsewhen(cnt.value === 1.U) {
+      out := 2.U
+    }.elsewhen(cnt.value === 2.U) {
+      out := 3.U
+    }.otherwise {
+      out := 0.U
+    }
+  }
+
+  property("when's should be compileable to high firrtl regardless of explicit invalidation") {
+    val highFirrtlOutput = generateFirrtl(new WhenTester(false))
+    println(highFirrtlOutput)
+  }
+
+  property("when's should be compileable to low firrtl regardless of explicit invalidation") {
+    val manager = new ExecutionOptionsManager("WhenTester") with HasChiselExecutionOptions with HasFirrtlOptions {
+      commonOptions = CommonOptions(topName = "WhenTester")
+      firrtlOptions = FirrtlExecutionOptions(compilerName = "verilog")
+    }
+    val explicitInit = true
+    if ((explicitInit)) {
+      val output = chisel3.Driver.execute(manager, () => new WhenTester(explicitInit))
+      println(output)
+    } else {
+      val exception = intercept[PassException] {
+        val output = chisel3.Driver.execute(manager, () => new WhenTester(explicitInit))
+      }
+      println(exception)
+    }
+  }
+}

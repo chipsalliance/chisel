@@ -34,7 +34,7 @@ class ChiselException(message: String, cause: Throwable = null) extends Exceptio
     sw.write(toString + "\n")
     sw.write("\t...\n")
     trimmed.foreach(ste => sw.write(s"\tat $ste\n"))
-    sw.write("\t... (Stack trace trimmed to user code only, rerun with --full-stacktrace if you wish to see the full stack trace)\n")
+    sw.write("\t... (Stack trace trimmed to user code only, rerun with --full-stacktrace if you wish to see the full stack trace)\n") // scalastyle:ignore line.size.limit
     sw.toString
   }
 }
@@ -80,6 +80,7 @@ private[chisel3] class ErrorLog {
 
   /** Throw an exception if any errors have yet occurred. */
   def checkpoint(): Unit = {
+    // scalastyle:off line.size.limit regex
     deprecations.foreach { case ((message, sourceLoc), count) =>
       println(s"${ErrorLog.depTag} $sourceLoc ($count calls): $message")
     }
@@ -112,6 +113,7 @@ private[chisel3] class ErrorLog {
       // No fatal errors, clear accumulated warnings since they've been reported
       errors.clear()
     }
+    // scalastyle:on line.size.limit regex
   }
 
   /** Returns the best guess at the first stack frame that belongs to user code.

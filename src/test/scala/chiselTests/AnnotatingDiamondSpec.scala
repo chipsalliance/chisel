@@ -6,7 +6,7 @@ import chisel3._
 import chisel3.experimental.{annotate, ChiselAnnotation, RunFirrtlTransform}
 import chisel3.internal.InstanceId
 import chisel3.testers.BasicTester
-import firrtl.{CircuitState, LowForm, Transform}
+import firrtl.{CircuitForm, CircuitState, LowForm, Transform}
 import firrtl.annotations.{
   Annotation,
   SingleTargetAnnotation,
@@ -19,15 +19,15 @@ import org.scalatest._
   * Chisel/Firrtl library
   */
 case class IdentityAnnotation(target: Named, value: String) extends SingleTargetAnnotation[Named] {
-  def duplicate(n: Named) = this.copy(target = n)
+  def duplicate(n: Named): IdentityAnnotation = this.copy(target = n)
 }
 /** ChiselAnnotation that corresponds to the above FIRRTL annotation */
 case class IdentityChiselAnnotation(target: InstanceId, value: String)
     extends ChiselAnnotation with RunFirrtlTransform {
-  def toFirrtl = IdentityAnnotation(target.toNamed, value)
-  def transformClass = classOf[IdentityTransform]
+  def toFirrtl: IdentityAnnotation = IdentityAnnotation(target.toNamed, value)
+  def transformClass: Class[IdentityTransform] = classOf[IdentityTransform]
 }
-object identify {
+object identify { // scalastyle:ignore object.name
   def apply(component: InstanceId, value: String): Unit = {
     val anno = IdentityChiselAnnotation(component, value)
     annotate(anno)
@@ -35,8 +35,8 @@ object identify {
 }
 
 class IdentityTransform extends Transform {
-  def inputForm = LowForm
-  def outputForm = LowForm
+  def inputForm: CircuitForm = LowForm
+  def outputForm: CircuitForm = LowForm
 
   def execute(state: CircuitState): CircuitState = {
     val annosx = state.annotations.map {

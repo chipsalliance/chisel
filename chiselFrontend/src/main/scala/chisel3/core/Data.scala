@@ -28,7 +28,7 @@ object SpecifiedDirection {
     */
   case object Flip extends SpecifiedDirection
 
-  def flip(dir: SpecifiedDirection) = dir match {
+  def flip(dir: SpecifiedDirection): SpecifiedDirection = dir match {
     case Unspecified => Flip
     case Flip => Unspecified
     case Output => Input
@@ -38,7 +38,7 @@ object SpecifiedDirection {
   /** Returns the effective SpecifiedDirection of this node given the parent's effective SpecifiedDirection
     * and the user-specified SpecifiedDirection of this node.
     */
-  def fromParent(parentDirection: SpecifiedDirection, thisDirection: SpecifiedDirection) =
+  def fromParent(parentDirection: SpecifiedDirection, thisDirection: SpecifiedDirection): SpecifiedDirection =
     (parentDirection, thisDirection) match {
       case (SpecifiedDirection.Output, _) => SpecifiedDirection.Output
       case (SpecifiedDirection.Input, _) => SpecifiedDirection.Input
@@ -105,8 +105,8 @@ object DataMirror {
   }
 
   // Internal reflection-style APIs, subject to change and removal whenever.
-  object internal {
-    def isSynthesizable(target: Data) = target.topBindingOpt.isDefined
+  object internal { // scalastyle:ignore object.name
+    def isSynthesizable(target: Data): Boolean = target.topBindingOpt.isDefined
     // For those odd cases where you need to care about object reference and uniqueness
     def chiselTypeClone[T<:Data](target: Data): T = {
       target.cloneTypeFull.asInstanceOf[T]
@@ -222,7 +222,7 @@ object Flipped {
   * @groupdesc Connect Utilities for connecting hardware components
   * @define coll data
   */
-abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
+abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // scalastyle:ignore number.of.methods
   // This is a bad API that punches through object boundaries.
   @deprecated("pending removal once all instances replaced", "chisel3")
   private[chisel3] def flatten: IndexedSeq[Element] = {
@@ -252,7 +252,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     * the compatibility layer where, at the elements, Flip is Input and unspecified is Output.
     * DO NOT USE OUTSIDE THIS PURPOSE. THIS OPERATION IS DANGEROUS!
     */
-  private[core] def _assignCompatibilityExplicitDirection: Unit = {
+  private[core] def _assignCompatibilityExplicitDirection: Unit = { // scalastyle:off method.name
     (this, _specifiedDirection) match {
       case (_: Analog, _) => // nothing to do
       case (_, SpecifiedDirection.Unspecified) => _specifiedDirection = SpecifiedDirection.Output
@@ -332,7 +332,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 
   private[core] def badConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
     throwException(s"cannot connect ${this} and ${that}")
-  private[chisel3] def connect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = {
+  private[chisel3] def connect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = { // scalastyle:ignore line.size.limit
     if (connectCompileOptions.checkSynthesizable) {
       requireIsHardware(this, "data to be connected")
       requireIsHardware(that, "data to be connected")
@@ -352,7 +352,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       this legacyConnect that
     }
   }
-  private[chisel3] def bulkConnect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = {
+  private[chisel3] def bulkConnect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = { // scalastyle:ignore line.size.limit
     if (connectCompileOptions.checkSynthesizable) {
       requireIsHardware(this, s"data to be bulk-connected")
       requireIsHardware(that, s"data to be bulk-connected")
@@ -384,7 +384,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   private[chisel3] def lref: Node = {
     requireIsHardware(this)
     topBindingOpt match {
-      case Some(binding: ReadOnlyBinding) => throwException(s"internal error: attempted to generate LHS ref to ReadOnlyBinding $binding")
+      case Some(binding: ReadOnlyBinding) => throwException(s"internal error: attempted to generate LHS ref to ReadOnlyBinding $binding") // scalastyle:ignore line.size.limit
       case Some(binding: TopBinding) => Node(this)
       case opt => throwException(s"internal error: unknown binding $opt in generating LHS ref")
     }
@@ -432,7 +432,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     * @param that the $coll to connect to
     * @group Connect
     */
-  final def := (that: Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = this.connect(that)(sourceInfo, connectionCompileOptions)
+  final def := (that: Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = this.connect(that)(sourceInfo, connectionCompileOptions) // scalastyle:ignore line.size.limit
 
   /** Connect this $coll to that $coll bi-directionally and element-wise.
     *
@@ -441,7 +441,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     * @param that the $coll to connect to
     * @group Connect
     */
-  final def <> (that: Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = this.bulkConnect(that)(sourceInfo, connectionCompileOptions)
+  final def <> (that: Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = this.bulkConnect(that)(sourceInfo, connectionCompileOptions) // scalastyle:ignore line.size.limit
 
   @chiselRuntimeDeprecated
   @deprecated("litArg is deprecated, use litOption or litTo*Option", "chisel3.2")
@@ -626,7 +626,7 @@ object Wire extends WireFactory
   */
 object WireDefault {
 
-  private def applyImpl[T <: Data](t: T, init: Data)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+  private def applyImpl[T <: Data](t: T, init: Data)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = { // scalastyle:ignore line.size.limit
     implicit val noSourceInfo = UnlocatableSourceInfo
     val x = Wire(t)
     requireIsHardware(init, "wire initializer")
@@ -641,7 +641,7 @@ object WireDefault {
     *   @note This is really just a specialized form of `apply[T <: Data](t: T, init: T): T` with [[DontCare]]
     *   as `init`
     */
-  def apply[T <: Data](t: T, init: DontCare.type)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+  def apply[T <: Data](t: T, init: DontCare.type)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = { // scalastyle:ignore line.size.limit
     applyImpl(t, init)
   }
 
@@ -678,19 +678,19 @@ object DontCare extends Element {
   private[chisel3] override val width: Width = UnknownWidth()
 
   bind(DontCareBinding(), SpecifiedDirection.Output)
-  override def cloneType = DontCare
+  override def cloneType: this.type = DontCare
 
   override def toString: String = "DontCare()"
 
-  override def litOption = None
+  override def litOption: Option[BigInt] = None
 
   def toPrintable: Printable = PString("DONTCARE")
 
-  private[core] def connectFromBits(that: chisel3.core.Bits)(implicit sourceInfo:  SourceInfo, compileOptions: CompileOptions): Unit = {
+  private[core] def connectFromBits(that: chisel3.core.Bits)(implicit sourceInfo:  SourceInfo, compileOptions: CompileOptions): Unit = { // scalastyle:ignore line.size.limit
     Builder.error("connectFromBits: DontCare cannot be a connection sink (LHS)")
   }
 
-  def do_asUInt(implicit sourceInfo: chisel3.internal.sourceinfo.SourceInfo, compileOptions: CompileOptions): chisel3.core.UInt = {
+  def do_asUInt(implicit sourceInfo: chisel3.internal.sourceinfo.SourceInfo, compileOptions: CompileOptions): chisel3.core.UInt = { // scalastyle:ignore line.size.limit
     Builder.error("DontCare does not have a UInt representation")
     0.U
   }

@@ -1,0 +1,21 @@
+// See LICENSE for license details.
+
+package chiselTests
+
+import tags.RequiresBackend
+import chisel3._
+import chisel3.testers.BasicTester
+
+class BoolTester extends BasicTester {
+  val b1 = true.B
+  val b2 = b1.toBool
+  assert(b1 === b2)
+  stop()
+}
+
+@RequiresBackend
+class BoolSpec extends ChiselPropSpec {
+  property("Bools should compile and match") {
+    assertTesterPasses{ new BoolTester }
+  }
+}
