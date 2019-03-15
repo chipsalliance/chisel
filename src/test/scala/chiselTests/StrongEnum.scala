@@ -391,7 +391,7 @@ class StrongEnumAnnotator extends Module {
     val vec = Vec(5, EnumExample())
     val inner_bundle1 = new Bundle {
       val x = UInt(4.W)
-      val y = Vec(3, UInt())
+      val y = Vec(3, UInt(4.W))
       val e = EnumExample()
       val v = Vec(3, EnumExample())
     }
@@ -401,17 +401,6 @@ class StrongEnumAnnotator extends Module {
     }
     val inner_bundle4 = new Bundle {
       val inner_inner_bundle = new Bundle {}
-    }
-
-    def init(): Unit = {
-      field := e0
-      other := OtherEnum.otherEnum
-      vec.foreach(_ := e0)
-      inner_bundle1.x := 0.U
-      inner_bundle1.y.foreach(_ := 0.U)
-      inner_bundle1.e := e0
-      inner_bundle1.v.foreach(_ := e0)
-      inner_bundle3.x := false.B
     }
   }
 
@@ -425,18 +414,16 @@ class StrongEnumAnnotator extends Module {
   io.out := e101
   io.other := OtherEnum.otherEnum
   simple := e100
-  bund.init()
-  vec_of_bundles.foreach(_.init())
+  bund := DontCare
+  vec_of_bundles := DontCare
 
-  // All variables starting with "ignored" must not be annotated
+  // Make sure that dynamically indexing into a Vec of enums will not cause an elaboration error.
+  // The components created here will not be annotated.
   val cycle = RegInit(0.U)
   cycle := cycle + 1.U
 
-  val ignore = EnumExample()
-  val ignore_vec = Vec(1, EnumExample())
-  val ignore_indexed1 = vec(cycle)
-  val ignore_indexed2 = vec_of_vecs(cycle)(cycle)
-  val ignore_indexed3 = vec_of_bundles(cycle)
+  val indexed1 = vec_of_vecs(cycle)(cycle)
+  val indexed2 = vec_of_bundles(cycle)
 }
 
 class StrongEnumAnnotationSpec extends FreeSpec with Matchers {
@@ -522,21 +509,11 @@ class StrongEnumAnnotationSpec extends FreeSpec with Matchers {
 
   // Because temporary variables might be formed and annotated, we do not check that every component or vector
   // annotation is accounted for in the correct results listed above
-  def allCorrectComps(annos: Seq[EnumComponentAnnotation], corrects: Seq[CorrectCompAnno]): Boolean = {
-    corrects.forall(c => annos.exists(isCorrect(_, c))) &&
-      annos.forall(_.target match {
-        case ComponentName(name, _) => !name.startsWith("ignore_")
-        case _ => throw new Exception("Unknown target type in EnumComponentAnnotation")
-      })
-  }
+  def allCorrectComps(annos: Seq[EnumComponentAnnotation], corrects: Seq[CorrectCompAnno]): Boolean =
+    corrects.forall(c => annos.exists(isCorrect(_, c)))
 
-  def allCorrectVecs(annos: Seq[EnumVecAnnotation], corrects: Seq[CorrectVecAnno]): Boolean = {
-    corrects.forall(c => annos.exists(isCorrect(_, c))) &&
-      annos.forall(_.target match {
-        case ComponentName(name, _) => !name.startsWith("ignore_")
-        case _ => throw new Exception("Unknown target type in EnumVecAnnotation")
-      })
-  }
+  def allCorrectVecs(annos: Seq[EnumVecAnnotation], corrects: Seq[CorrectVecAnno]): Boolean =
+    corrects.forall(c => annos.exists(isCorrect(_, c)))
 
   def test() {
     Driver.execute(Array("--target-dir", "test_run_dir"), () => new StrongEnumAnnotator) match {

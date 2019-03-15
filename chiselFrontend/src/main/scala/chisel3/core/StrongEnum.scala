@@ -14,6 +14,12 @@ import firrtl.annotations._
 
 
 object EnumAnnotations {
+
+  /** An annotation for strong enum instances that are ''not'' inside of Vecs
+    *
+    * @param target the enum instance being annotated
+    * @param typeName the name of the enum's type (e.g. ''"mypackage.MyEnum"'')
+    */
   case class EnumComponentAnnotation(target: Named, typeName: String) extends SingleTargetAnnotation[Named] {
     def duplicate(n: Named) = this.copy(target = n)
   }
@@ -22,6 +28,27 @@ object EnumAnnotations {
     override def toFirrtl = EnumComponentAnnotation(target.toNamed, typeName)
   }
 
+  /** An annotation for Vecs of strong enums.
+    *
+    * The ''fields'' parameter deserves special attention, since it may be difficult to understand. Suppose you create a the following Vec:
+
+    *               {{{
+    *               VecInit(new Bundle {
+    *                 val e = MyEnum()
+    *                 val b = new Bundle {
+    *                   val inner_e = MyEnum()
+    *                 }
+    *                 val v = Vec(3, MyEnum())
+    *               }
+    *               }}}
+    *
+    *               Then, the ''fields'' parameter will be: ''Seq(Seq("e"), Seq("b", "inner_e"), Seq("v"))''. Note that for any Vec that doesn't contain Bundles, this field will simply be an empty Seq.
+    *
+    * @param target the Vec being annotated
+    * @param typeName the name of the enum's type (e.g. ''"mypackage.MyEnum"'')
+    * @param fields a list of all chains of elements leading from the Vec instance to its inner enum fields.
+    *
+    */
   case class EnumVecAnnotation(target: Named, typeName: String, fields: Seq[Seq[String]]) extends SingleTargetAnnotation[Named] {
     def duplicate(n: Named) = this.copy(target = n)
   }
@@ -30,6 +57,11 @@ object EnumAnnotations {
     override def toFirrtl = EnumVecAnnotation(target.toNamed, typeName, fields)
   }
 
+  /** An annotation for enum types (rather than enum ''instances'').
+    *
+    * @param typeName the name of the enum's type (e.g. ''"mypackage.MyEnum"'')
+    * @param definition a map describing which integer values correspond to which enum names
+    */
   case class EnumDefAnnotation(typeName: String, definition: Map[String, BigInt]) extends NoTargetAnnotation
 
   case class EnumDefChiselAnnotation(typeName: String, definition: Map[String, BigInt]) extends ChiselAnnotation {
@@ -106,7 +138,7 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
     lit.bindLitArg(this)
   }
 
-  override private[chisel3] def bind(target: Binding, parentDirection: SpecifiedDirection = SpecifiedDirection.Unspecified) = {
+  override private[chisel3] def bind(target: Binding, parentDirection: SpecifiedDirection = SpecifiedDirection.Unspecified): Unit = {
     super.bind(target, parentDirection)
 
     // Make sure we only annotate hardware and not literals
@@ -265,7 +297,7 @@ private[core] object EnumMacros {
 
     val names = c.enclosingClass.collect {
       case ValDef(_, name, _, rhs)
-        if rhs.pos == c.macroApplication.pos => name.decoded
+        if rhs.pos == c.macroApplication.pos => name.decodedName.toString
     }
 
     if (names.isEmpty)
