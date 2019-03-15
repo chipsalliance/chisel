@@ -8,12 +8,20 @@ import chisel3.internal.naming.chiselName
 
 import scala.collection.immutable.ListMap
 
+/**
+  * Create a MixedVec wire with default values as specified, and type of each element inferred from
+  * those default values.
+  *
+  * This is analogous to [[chisel3.core.VecInit]].
+  * @return MixedVec with given values assigned
+  *
+  * @example {{{
+  * MixedVecInit(Seq(100.U(8.W), 10000.U(16.W), 101.U(32.W)))
+  * }}}
+  */
 object MixedVecInit {
   /**
-    * Construct a new wire with the given bound values.
-    * This is analogous to [[chisel3.core.VecInit]].
-    * @param vals Values to create a MixedVec with and assign
-    * @return MixedVec with given values assigned
+    * Create a MixedVec wire from a Seq of values.
     */
   def apply[T <: Data](vals: Seq[T]): MixedVec[T] = {
     // Create a wire of this type.
@@ -26,39 +34,39 @@ object MixedVecInit {
   }
 
   /**
-    * Construct a new wire with the given bound values.
-    * This is analogous to [[chisel3.core.VecInit]].
-    * @return MixedVec with given values assigned
+    * Create a MixedVec wire from a varargs list of values.
     */
   def apply[T <: Data](val0: T, vals: T*): MixedVec[T] = apply(val0 +: vals.toSeq)
 }
 
+/**
+  * Create a MixedVec type, given element types. Inputs must be Chisel types which have no value
+  * (not hardware types).
+  *
+  * @return MixedVec with the given types.
+  */
 object MixedVec {
   /**
-    * Create a MixedVec from that holds the given types.
-    * @param eltsIn Element types. Must be Chisel types.
-    * @return MixedVec with the given types.
+    * Create a MixedVec type from a Seq of Chisel types.
     */
   def apply[T <: Data](eltsIn: Seq[T]): MixedVec[T] = new MixedVec(eltsIn)
 
   /**
-    * Create a MixedVec from that holds the given types.
-    * The types passed to this constructor must be Chisel types.
-    * @return MixedVec with the given types.
+    * Create a MixedVec type from a varargs list of Chisel types.
     */
   def apply[T <: Data](val0: T, vals: T*): MixedVec[T] = new MixedVec(val0 +: vals.toSeq)
 
   /**
-    * Create a new MixedVec from an unbound MixedVec type.
-    * @return MixedVec with the given types.
+    * Create a new MixedVec type from an unbound MixedVec type.
     */
   def apply[T <: Data](mixedVec: MixedVec[T]): MixedVec[T] = new MixedVec(mixedVec.elts)
 
   /**
-    * Create a MixedVec from the type of the given Vec.
-    * For example, given a Vec(2, UInt(8.W)), this creates MixedVec(Seq.fill(2){UInt(8.W)}).
-    * @param vec Vec to use as template
-    * @return MixedVec analogous to the given Vec.
+    * Create a MixedVec type from the type of the given Vec.
+    *
+    * @example {{{
+    * MixedVec(Vec(2, UInt(8.W))) = MixedVec(Seq.fill(2){UInt(8.W)})
+    * }}}
     */
   def apply[T <: Data](vec: Vec[T]): MixedVec[T] = {
     MixedVec(Seq.fill(vec.length)(vec.sample_element))
