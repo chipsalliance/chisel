@@ -47,6 +47,11 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   val Clock = chisel3.core.Clock
   type Clock = chisel3.core.Clock
 
+  // Clock and reset scoping functions
+  val withClockAndReset = chisel3.core.withClockAndReset
+  val withClock = chisel3.core.withClock
+  val withReset = chisel3.core.withReset
+
   implicit class AddDirectionToData[T<:Data](target: T) {
     @chiselRuntimeDeprecated
     @deprecated("Input(Data) should be used over Data.asInput", "chisel3")
@@ -424,8 +429,11 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     type ChiselEnum = chisel3.core.EnumFactory
     val EnumAnnotations = chisel3.core.EnumAnnotations
 
+    @deprecated("Use the version in chisel3._", "chisel3.2")
     val withClockAndReset = chisel3.core.withClockAndReset
+    @deprecated("Use the version in chisel3._", "chisel3.2")
     val withClock = chisel3.core.withClock
+    @deprecated("Use the version in chisel3._", "chisel3.2")
     val withReset = chisel3.core.withReset
 
     val dontTouch = chisel3.core.dontTouch

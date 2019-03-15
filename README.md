@@ -46,7 +46,7 @@ This will walk you through installing Chisel and its dependencies:
     sudo apt-get install sbt
     ```
 1. Install Verilator.
-    We currently recommend Verilator version 3.922.
+    We currently recommend Verilator version 4.006.
     Follow these instructions to compile it from source.
 
     1. Install prerequisites (if not installed already):
@@ -62,7 +62,7 @@ This will walk you through installing Chisel and its dependencies:
     3. In the Verilator repository directory, check out a known good version:
         ```
         git pull
-        git checkout verilator_3_922
+        git checkout verilator_4_006
         ```
 
     4. In the Verilator repository directory, build and install:
@@ -105,14 +105,15 @@ brew install sbt verilator
 If you are migrating to Chisel3 from Chisel2, please visit
 [Chisel3 vs Chisel2](https://github.com/ucb-bar/chisel3/wiki/Chisel3-vs-Chisel2)
 
+### Resources for Learning Chisel
+* [Chisel Bootcamp](https://github.com/freechipsproject/chisel-bootcamp), a collection of interactive Jupyter notebooks that teach Chisel
+* [Chisel Tutorial](https://github.com/ucb-bar/chisel-tutorial), a collection of exercises utlizing `sbt`
 
 ### Data Types Overview
 These are the base data types for defining circuit wires (abstract types which
 may not be instantiated are greyed out):
 
 ![Image](doc/images/type_hierarchy.png?raw=true)
-
-### [Chisel Tutorial](https://github.com/ucb-bar/chisel-tutorial)
 
 ## For Hardware Engineers
 This section describes how to get started using Chisel to create a new RTL
