@@ -15,7 +15,7 @@ import chisel3.internal.chiselRuntimeDeprecated
   *
   * @example {{{
   * val state_on :: state_off :: Nil = Enum(2)
-  * val current_state = WireInit(state_off)
+  * val current_state = WireDefault(state_off)
   * switch (current_state) {
   *   is (state_on) {
   *     ...

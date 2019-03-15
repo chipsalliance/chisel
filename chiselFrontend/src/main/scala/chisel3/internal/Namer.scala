@@ -84,10 +84,7 @@ class NamingContext {
     closed = true
     for ((ref, suffix) <- items) {
       // First name the top-level object
-      ref match {
-        case nameable: chisel3.internal.HasId => nameable.suggestName(prefix + suffix)
-        case _ =>
-      }
+      chisel3.internal.Builder.nameRecursively(prefix + suffix, ref, (id, name) => id.suggestName(name))
 
       // Then recurse into descendant contexts
       if (descendants.containsKey(ref)) {

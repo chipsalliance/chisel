@@ -217,7 +217,7 @@ class InvalidEnumOpsTester extends BasicTester {
 
 class IsLitTester extends BasicTester {
   for (e <- EnumExample.all) {
-    val wire = WireInit(e)
+    val wire = WireDefault(e)
 
     assert(e.isLit())
     assert(!wire.isLit())
@@ -228,7 +228,7 @@ class IsLitTester extends BasicTester {
 class NextTester extends BasicTester {
   for ((e,n) <- EnumExample.all.zip(EnumExample.litValues.tail :+ EnumExample.litValues.head)) {
     assert(e.next.litValue == n.litValue)
-    val w = WireInit(e)
+    val w = WireDefault(e)
     assert(w.next === EnumExample(n))
   }
   stop()
@@ -238,7 +238,7 @@ class WidthTester extends BasicTester {
   assert(EnumExample.getWidth == EnumExample.litValues.last.getWidth)
   assert(EnumExample.all.forall(_.getWidth == EnumExample.litValues.last.getWidth))
   assert(EnumExample.all.forall{e =>
-    val w = WireInit(e)
+    val w = WireDefault(e)
     w.getWidth == EnumExample.litValues.last.getWidth
   })
   stop()

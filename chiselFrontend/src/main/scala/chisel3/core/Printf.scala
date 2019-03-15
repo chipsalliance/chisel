@@ -86,7 +86,7 @@ object printf { // scalastyle:ignore object.name
     * @param pable [[Printable]] to print
     */
   def apply(pable: Printable)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit = {
-    when (!Module.reset.toBool) {
+    when (!Module.reset.asBool) {
       printfWithoutReset(pable)
     }
   }

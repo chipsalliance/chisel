@@ -27,24 +27,30 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     import chisel3.core.CompileOptions
 
     @chiselRuntimeDeprecated
-    @deprecated("Wire(init=init) is deprecated, use WireInit(init) instead", "chisel3")
+    @deprecated("Wire(init=init) is deprecated, use WireDefault(init) instead", "chisel3")
     def apply[T <: Data](dummy: Int = 0, init: T)(implicit compileOptions: CompileOptions): T =
-      chisel3.core.WireInit(init)
+      chisel3.core.WireDefault(init)
 
     @chiselRuntimeDeprecated
-    @deprecated("Wire(t, init) is deprecated, use WireInit(t, init) instead", "chisel3")
+    @deprecated("Wire(t, init) is deprecated, use WireDefault(t, init) instead", "chisel3")
     def apply[T <: Data](t: T, init: T)(implicit compileOptions: CompileOptions): T =
-      chisel3.core.WireInit(t, init)
+      chisel3.core.WireDefault(t, init)
 
     @chiselRuntimeDeprecated
-    @deprecated("Wire(t, init) is deprecated, use WireInit(t, init) instead", "chisel3")
+    @deprecated("Wire(t, init) is deprecated, use WireDefault(t, init) instead", "chisel3")
     def apply[T <: Data](t: T, init: DontCare.type)(implicit compileOptions: CompileOptions): T =
-      chisel3.core.WireInit(t, init)
+      chisel3.core.WireDefault(t, init)
   }
-  val WireInit = chisel3.core.WireInit
+  val WireInit = chisel3.core.WireDefault
+  val WireDefault = chisel3.core.WireDefault
 
   val Clock = chisel3.core.Clock
   type Clock = chisel3.core.Clock
+
+  // Clock and reset scoping functions
+  val withClockAndReset = chisel3.core.withClockAndReset
+  val withClock = chisel3.core.withClock
+  val withReset = chisel3.core.withReset
 
   implicit class AddDirectionToData[T<:Data](target: T) {
     @chiselRuntimeDeprecated
@@ -423,18 +429,43 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     type ChiselEnum = chisel3.core.EnumFactory
     val EnumAnnotations = chisel3.core.EnumAnnotations
 
+    @deprecated("Use the version in chisel3._", "chisel3.2")
     val withClockAndReset = chisel3.core.withClockAndReset
+    @deprecated("Use the version in chisel3._", "chisel3.2")
     val withClock = chisel3.core.withClock
+    @deprecated("Use the version in chisel3._", "chisel3.2")
     val withReset = chisel3.core.withReset
 
     val dontTouch = chisel3.core.dontTouch
 
     type BaseModule = chisel3.core.BaseModule
-    type MultiIOModule = chisel3.core.ImplicitModule
-    type RawModule = chisel3.core.UserModule
+    type RawModule = chisel3.core.RawModule
+    type MultiIOModule = chisel3.core.MultiIOModule
     type ExtModule = chisel3.core.ExtModule
 
     val IO = chisel3.core.IO
+
+    // Rocket Chip-style clonemodule
+
+    /** A record containing the results of CloneModuleAsRecord
+      * The apply method is retrieves the element with the supplied name.
+      */
+    type ClonePorts = chisel3.core.BaseModule.ClonePorts
+
+    object CloneModuleAsRecord {
+      /** Clones an existing module and returns a record of all its top-level ports.
+        * Each element of the record is named with a string matching the
+        * corresponding port's name and shares the port's type.
+        * @example {{{
+        * val q1 = Module(new Queue(UInt(32.W), 2))
+        * val q2_io = CloneModuleAsRecord(q1)("io").asInstanceOf[q1.io.type]
+        * q2_io.enq <> q1.io.deq
+        * }}}
+        */
+      def apply(proto: BaseModule)(implicit sourceInfo: chisel3.internal.sourceinfo.SourceInfo, compileOptions: chisel3.core.CompileOptions): ClonePorts = {
+        chisel3.core.BaseModule.cloneIORecord(proto)
+      }
+    }
 
     // Implicit conversions for BlackBox Parameters
     implicit def fromIntToIntParam(x: Int): IntParam = IntParam(BigInt(x))

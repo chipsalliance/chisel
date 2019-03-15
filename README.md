@@ -46,23 +46,23 @@ This will walk you through installing Chisel and its dependencies:
     sudo apt-get install sbt
     ```
 1. Install Verilator.
-    We currently recommend Verilator version 3.922.
+    We currently recommend Verilator version 4.006.
     Follow these instructions to compile it from source.
-    
+
     1. Install prerequisites (if not installed already):
         ```
         sudo apt-get install git make autoconf g++ flex bison
         ```
-    
+
     2. Clone the Verilator repository:
         ```
         git clone http://git.veripool.org/git/verilator
         ```
-    
+
     3. In the Verilator repository directory, check out a known good version:
         ```
         git pull
-        git checkout verilator_3_922
+        git checkout verilator_4_006
         ```
 
     4. In the Verilator repository directory, build and install:
@@ -82,7 +82,18 @@ yaourt -S firrtl-git verilator sbt
 
 ### Windows
 
-*TODO: write me. If you __really__ want to see this happen, let us know by filing a bug report!*
+[Download and install sbt for Windows](https://www.scala-sbt.org/download.html).
+
+#### Simulation on Windows
+
+The chisel3 regression tests use Verilator as the simulator, but Verilator does not work well on Windows natively.
+However, Verilator works in [WSL](https://docs.microsoft.com/en-us/windows/wsl/install-win10) or in other Linux-compatible environments like Cygwin.
+
+Alternatively, if you're using [PeekPokeTester](https://github.com/freechipsproject/chisel-testers) or the [Testers2 alpha](https://github.com/ucb-bar/chisel-testers2), you can use [treadle](https://github.com/freechipsproject/treadle) as the simulation engine.
+Treadle is a FIRRTL simulator written in Scala, and works on any platform that can run Scala code.
+It can simulate any pure Chisel design, but cannot simulate Verilog code and hence will not work on BlackBoxes / ExtModules which do not have corresponding greybox definitions.
+
+There are no issues with generating Verilog from Chisel, which can be pushed to FPGA or ASIC tools.
 
 ### Mac OS X
 
@@ -94,14 +105,15 @@ brew install sbt verilator
 If you are migrating to Chisel3 from Chisel2, please visit
 [Chisel3 vs Chisel2](https://github.com/ucb-bar/chisel3/wiki/Chisel3-vs-Chisel2)
 
+### Resources for Learning Chisel
+* [Chisel Bootcamp](https://github.com/freechipsproject/chisel-bootcamp), a collection of interactive Jupyter notebooks that teach Chisel
+* [Chisel Tutorial](https://github.com/ucb-bar/chisel-tutorial), a collection of exercises utlizing `sbt`
 
 ### Data Types Overview
 These are the base data types for defining circuit wires (abstract types which
 may not be instantiated are greyed out):
 
 ![Image](doc/images/type_hierarchy.png?raw=true)
-
-### [Chisel Tutorial](https://github.com/ucb-bar/chisel-tutorial)
 
 ## For Hardware Engineers
 This section describes how to get started using Chisel to create a new RTL
@@ -167,11 +179,9 @@ sbt test
 ```
 
 ### Running Projects Against Local Chisel
-Chisel3 is still undergoing rapid development and we haven't pusblished a
-stable version to the Nexus repository.
-You will need to build from source and `publishLocal`.
+To use the development version of Chisel (`master` branch), you will need to build from source and `publishLocal`.
 The repo version can be found in the build.sbt file.
-At last check it was:
+As of the time of writing it was:
 
     version := "3.2-SNAPSHOT",
 
