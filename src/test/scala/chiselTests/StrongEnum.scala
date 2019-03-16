@@ -135,7 +135,7 @@ class StrongEnumFSM extends Module {
     is (sOne1) {
       when (io.in) {
         state := sTwo1s
-      }.otherwise {
+      } .otherwise {
         state := sNone
       }
     }
