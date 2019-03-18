@@ -12,7 +12,7 @@ import chisel3.internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, SourceInfo
   UIntTransform}
 import chisel3.internal.firrtl.PrimOp._
 
-//scalastyle:off method.name
+// scalastyle:off method.name line.size.limit file.size.limit
 
 /** Element is a leaf data type: it cannot contain other [[Data]] objects. Example uses are for representing primitive
   * data types, like integers and bits.
@@ -77,6 +77,15 @@ abstract class Element extends Data {
   * @note This is a workaround because macros cannot override abstract methods.
   */
 private[chisel3] sealed trait ToBoolable extends Element {
+
+  /** Casts this $coll to a [[Bool]]
+    *
+    * @note The width must be known and equal to 1
+    */
+  final def asBool(): Bool = macro SourceInfoWhiteboxTransform.noArg
+
+  /** @group SourceInfoTransformMacro */
+  def do_asBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
 
   /** Casts this $coll to a [[Bool]]
     *
@@ -314,7 +323,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     *
     * @param that a hardware component
     * @return this $coll dynamically shifted left by `that` many places, shifting in zeros from the right
-    * @note The width of the returned $coll is `width of this + pow(2, width of that)`.
+    * @note The width of the returned $coll is `width of this + pow(2, width of that) - 1`.
     * @group Bitwise
     */
   final def << (that: UInt): Bits = macro SourceInfoWhiteboxTransform.thatArg
@@ -364,13 +373,21 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
   final def toBools(): Seq[Bool] = macro SourceInfoTransform.noArg
 
   /** @group SourceInfoTransformMacro */
-  def toBools(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Seq[Bool] =
+  @chiselRuntimeDeprecated
+  @deprecated("Use asBools instead", "3.2")
+  def do_toBools(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Seq[Bool] = do_asBools
+
+  /** Returns the contents of this wire as a [[scala.collection.Seq]] of [[Bool]]. */
+  final def asBools(): Seq[Bool] = macro SourceInfoTransform.noArg
+
+  /** @group SourceInfoTransformMacro */
+  def do_asBools(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Seq[Bool] =
     Seq.tabulate(this.getWidth)(i => this(i))
 
-  /** Reinterpret this $coll as a [[SInt]]
+  /** Reinterpret this $coll as an [[SInt]]
     *
-    * @note The value is not guaranteed to be preserved. For example, a [[UInt]] of width 3 and value 7 (0b111) would
-    * become a [[SInt]] with value -1.
+    * @note The arithmetic value is not preserved if the most-significant bit is set. For example, a [[UInt]] of
+    * width 3 and value 7 (0b111) would become an [[SInt]] of width 3 and value -1.
     */
   final def asSInt(): SInt = macro SourceInfoTransform.noArg
 
@@ -412,12 +429,16 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     do_asUInt
   }
 
-  final def do_toBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
+  final def do_asBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
     width match {
       case KnownWidth(1) => this(0)
-      case _ => throwException(s"can't covert UInt<$width> to Bool")
+      case _ => throwException(s"can't covert ${this.getClass.getSimpleName}$width to Bool")
     }
   }
+
+  @chiselRuntimeDeprecated
+  @deprecated("Use asBool instead", "3.2")
+  final def do_toBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = do_asBool
 
   /** Concatenation operator
     *
@@ -454,9 +475,9 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
   * @define coll numeric-like type
   * @define numType hardware type
   * @define canHaveHighCost can result in significant cycle time and area costs
-  * @define canGenerateA This method can generate a
-  * @define singleCycleMul  @note $canGenerateA single-cycle multiplier which $canHaveHighCost.
-  * @define singleCycleDiv  @note $canGenerateA single-cycle divider which $canHaveHighCost.
+  * @define canGenerateA This method generates a
+  * @define singleCycleMul  @note $canGenerateA fully combinational multiplier which $canHaveHighCost.
+  * @define singleCycleDiv  @note $canGenerateA fully combinational divider which $canHaveHighCost.
   * @define maxWidth        @note The width of the returned $numType is `max(width of this, width of that)`.
   * @define maxWidthPlusOne @note The width of the returned $numType is `max(width of this, width of that) + 1`.
   * @define sumWidth        @note The width of the returned $numType is `width of this` + `width of that`.
@@ -623,6 +644,13 @@ abstract trait Num[T <: Data] {
   * @define constantWidth  @note The width of the returned $coll is unchanged, i.e., `width of this`.
   */
 sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt] {
+  override def toString: String = {
+    val bindingString = litOption match {
+      case Some(value) => s"($value)"
+      case _ => bindingToString
+    }
+    s"UInt$width$bindingString"
+  }
 
   private[core] override def typeEquivalent(that: Data): Boolean =
     that.isInstanceOf[UInt] && this.width == that.width
@@ -634,7 +662,7 @@ sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt
   /** Unary negation (expanding width)
     *
     * @return a $coll equal to zero minus this $coll
-    * $expandingWidth
+    * $constantWidth
     * @group Arithmetic
     */
   final def unary_- (): UInt = macro SourceInfoTransform.noArg
@@ -717,10 +745,10 @@ sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt
     (this +& that).tail(1)
   /** @group SourceInfoTransformMacro */
   def do_-& (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
-    binop(sourceInfo, SInt((this.width max that.width) + 1), SubOp, that).asUInt
+    (this subtractAsSInt that).asUInt
   /** @group SourceInfoTransformMacro */
   def do_-% (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
-    (this -& that).tail(1)
+    (this subtractAsSInt that).tail(1)
 
   /** Bitwise and operator
     *
@@ -791,7 +819,11 @@ sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt
   /** @group SourceInfoTransformMacro */
   def do_orR(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = this =/= 0.U
   /** @group SourceInfoTransformMacro */
-  def do_andR(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = ~this === 0.U
+  def do_andR(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = width match {
+    // Generate a simpler expression if the width is known
+    case KnownWidth(w) => this === ((BigInt(1) << w) - 1).U
+    case UnknownWidth() =>  ~this === 0.U
+  }
   /** @group SourceInfoTransformMacro */
   def do_xorR(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = redop(sourceInfo, XorReduceOp)
 
@@ -827,7 +859,7 @@ sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt
 
   /** Unary not
     *
-    * @return a hardware [[Bool]] asserted if the least significant bit of this $coll is zero
+    * @return a hardware [[Bool]] asserted if this $coll equals zero
     * @group Bitwise
     */
   final def unary_! () : Bool = macro SourceInfoTransform.noArg
@@ -892,6 +924,9 @@ sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt
       compileOptions: CompileOptions): Unit = {
     this := that.asUInt
   }
+
+  private def subtractAsSInt(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
+    binop(sourceInfo, SInt((this.width max that.width) + 1), SubOp, that)
 }
 
 // This is currently a factory because both Bits and UInt inherit it.
@@ -931,6 +966,13 @@ object Bits extends UIntFactory
   * @define constantWidth  @note The width of the returned $coll is unchanged, i.e., `width of this`.
   */
 sealed class SInt private[core] (width: Width) extends Bits(width) with Num[SInt] {
+  override def toString: String = {
+    val bindingString = litOption match {
+      case Some(value) => s"($value)"
+      case _ => bindingToString
+    }
+    s"SInt$width$bindingString"
+  }
 
   private[core] override def typeEquivalent(that: Data): Boolean =
     this.getClass == that.getClass && this.width == that.width  // TODO: should this be true for unspecified widths?
@@ -941,7 +983,7 @@ sealed class SInt private[core] (width: Width) extends Bits(width) with Num[SInt
   /** Unary negation (expanding width)
     *
     * @return a hardware $coll equal to zero minus this $coll
-    * $expandingWidth
+    * $constantWidth
     * @group Arithmetic
     */
   final def unary_- (): SInt = macro SourceInfoTransform.noArg
@@ -1179,6 +1221,14 @@ sealed trait Reset extends Element with ToBoolable
   * @define numType $coll
   */
 sealed class Bool() extends UInt(1.W) with Reset {
+  override def toString: String = {
+    val bindingString = litToBooleanOption match {
+      case Some(value) => s"($value)"
+      case _ => bindingToString
+    }
+    s"Bool$bindingString"
+  }
+
   private[core] override def cloneTypeWidth(w: Width): this.type = {
     require(!w.known || w.get == 1)
     new Bool().asInstanceOf[this.type]
@@ -1300,6 +1350,14 @@ object Bool extends BoolFactory
   */
 sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint)
     extends Bits(width) with Num[FixedPoint] {
+  override def toString: String = {
+    val bindingString = litToDoubleOption match {
+      case Some(value) => s"($value)"
+      case _ => bindingToString
+    }
+    s"FixedPoint$width$binaryPoint$bindingString"
+  }
+
   private[core] override def typeEquivalent(that: Data): Boolean = that match {
     case that: FixedPoint => this.width == that.width && this.binaryPoint == that.binaryPoint  // TODO: should this be true for unspecified widths?
     case _ => false
@@ -1696,17 +1754,21 @@ object FixedPoint {
 final class Analog private (private[chisel3] val width: Width) extends Element {
   require(width.known, "Since Analog is only for use in BlackBoxes, width must be known")
 
+  override def toString: String = {
+    s"Analog$width$bindingToString"
+  }
+
   private[core] override def typeEquivalent(that: Data): Boolean =
     that.isInstanceOf[Analog] && this.width == that.width
 
-  override def litOption = None
+  override def litOption: Option[BigInt] = None
 
   def cloneType: this.type = new Analog(width).asInstanceOf[this.type]
 
   // Used to enforce single bulk connect of Analog types, multi-attach is still okay
   // Note that this really means 1 bulk connect per Module because a port can
   //   be connected in the parent module as well
-  private[core] val biConnectLocs = mutable.Map.empty[UserModule, SourceInfo]
+  private[core] val biConnectLocs = mutable.Map.empty[RawModule, SourceInfo]
 
   // Define setter/getter pairing
   // Analog can only be bound to Ports and Wires (and Unbound)

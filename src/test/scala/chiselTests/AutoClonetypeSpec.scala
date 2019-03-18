@@ -25,7 +25,7 @@ class BaseBundleVal(val i: Int) extends Bundle {
 class SubBundle(i: Int, val i2: Int) extends BaseBundleVal(i) {
   val inner2 = UInt(i2.W)
 }
-class SubBundleInvalid(i: Int, val i2: Int) extends BaseBundleVal(i+1) {
+class SubBundleInvalid(i: Int, val i2: Int) extends BaseBundleVal(i + 1) {
   val inner2 = UInt(i2.W)
 }
 
@@ -156,7 +156,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec {
   "Nested directioned anonymous Bundles" should "not need clonetype" in {
     elaborate { new Module {
       val io = IO(new NestedAnonymousBundle)
-      val a = WireInit(io)
+      val a = WireDefault(io)
       io.a.a := 1.U
     } }
   }
@@ -164,12 +164,12 @@ class AutoClonetypeSpec extends ChiselFlatSpec {
   "3.0 null compatibility" should "not need clonetype" in {
     elaborate { new Module {
       class InnerClassThing {
-        def createBundle = new Bundle {
+        def createBundle: Bundle = new Bundle {
           val a = Output(UInt(8.W))
         }
       }
       val io = IO((new InnerClassThing).createBundle)
-      val a = WireInit(io)
+      val a = WireDefault(io)
     } }
   }
 }

@@ -10,7 +10,7 @@ import chisel3.util._
 class FailingAssertTester() extends BasicTester {
   assert(false.B)
   // Wait to come out of reset
-  val (_, done) = Counter(!reset.toBool, 4)
+  val (_, done) = Counter(!reset.asBool, 4)
   when (done) {
     stop()
   }
@@ -19,7 +19,7 @@ class FailingAssertTester() extends BasicTester {
 class SucceedingAssertTester() extends BasicTester {
   assert(true.B)
   // Wait to come out of reset
-  val (_, done) = Counter(!reset.toBool, 4)
+  val (_, done) = Counter(!reset.asBool, 4)
   when (done) {
     stop()
   }
@@ -38,7 +38,7 @@ class PipelinedResetTester extends BasicTester {
 
   module.reset := RegNext(RegNext(RegNext(reset)))
 
-  val (_, done) = Counter(!reset.toBool, 4)
+  val (_, done) = Counter(!reset.asBool, 4)
   when (done) {
     stop()
   }

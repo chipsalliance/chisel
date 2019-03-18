@@ -6,6 +6,10 @@ import chisel3._
 
 object RegEnable {
   /** Returns a register with the specified next, update enable gate, and no reset initialization.
+    *
+    * @example {{{
+    * val regWithEnable = RegEnable(nextVal, ena)
+    * }}}
     */
   def apply[T <: Data](next: T, enable: Bool): T = {
     val r = Reg(chiselTypeOf(next))
@@ -14,6 +18,10 @@ object RegEnable {
   }
 
   /** Returns a register with the specified next, update enable gate, and reset initialization.
+    *
+    * @example {{{
+    * val regWithEnableAndReset = RegEnable(nextVal, 0.U, ena)
+    * }}}
     */
   def apply[T <: Data](next: T, init: T, enable: Bool): T = {
     val r = RegInit(init)
@@ -29,6 +37,10 @@ object ShiftRegister
     * @param in input to delay
     * @param n number of cycles to delay
     * @param en enable the shift
+    *
+    * @example {{{
+    * val regDelayTwo = ShiftRegister(nextVal, 2, ena)
+    * }}}
     */
   def apply[T <: Data](in: T, n: Int, en: Bool = true.B): T = {
     // The order of tests reflects the expected use cases.
@@ -45,6 +57,10 @@ object ShiftRegister
     * @param n number of cycles to delay
     * @param resetData reset value for each register in the shift
     * @param en enable the shift
+    *
+    * @example {{{
+    * val regDelayTwoReset = ShiftRegister(nextVal, 2, 0.U, ena)
+    * }}}
     */
   def apply[T <: Data](in: T, n: Int, resetData: T, en: Bool): T = {
     // The order of tests reflects the expected use cases.

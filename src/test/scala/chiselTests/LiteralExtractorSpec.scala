@@ -32,6 +32,9 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
   "litToBoolean" should "return the literal value" in {
     assert(true.B.litToBoolean === true)
     assert(false.B.litToBoolean === false)
+
+    assert(1.B.litToBoolean === true)
+    assert(0.B.litToBoolean === false)
   }
 
   "litToDouble" should "return the literal value" in {
@@ -60,7 +63,7 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
       val y = FixedPoint(8.W, 4.BP)
 
       import chisel3.core.BundleLitBinding
-      def Lit(aVal: SInt, bVal: FixedPoint): InsideBundle = {
+      def Lit(aVal: SInt, bVal: FixedPoint): InsideBundle = { // scalastyle:ignore method.name
         val clone = cloneType
         clone.selfBind(BundleLitBinding(Map(
           clone.x -> litArgOfBits(aVal),
@@ -75,7 +78,7 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
 
       // the following errors with "assertion failed"
 
-      println(outsideLiteral === insideLiteral)
+      println(outsideLiteral === insideLiteral) // scalastyle:ignore regex
       // chisel3.core.assert(outsideLiteral === insideLiteral)
 
       // the following lines of code error
@@ -104,7 +107,7 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
       // the future.
       import chisel3.core.BundleLitBinding
       import chisel3.internal.firrtl.{ULit, Width}
-      def Lit(aVal: UInt, bVal: Bool): MyBundle = {
+      def Lit(aVal: UInt, bVal: Bool): MyBundle = { // scalastyle:ignore method.name
         val clone = cloneType
         clone.selfBind(BundleLitBinding(Map(
           clone.a -> litArgOfBits(aVal),

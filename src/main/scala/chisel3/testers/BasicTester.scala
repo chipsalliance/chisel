@@ -25,7 +25,7 @@ class BasicTester extends Module() {
     */
   def stop()(implicit sourceInfo: SourceInfo) {
     // TODO: rewrite this using library-style SourceInfo passing.
-    when (!reset.toBool) {
+    when (!reset.asBool) {
       pushCommand(Stop(sourceInfo, clock.ref, 0))
     }
   }

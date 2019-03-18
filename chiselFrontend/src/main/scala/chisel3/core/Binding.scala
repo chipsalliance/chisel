@@ -1,10 +1,13 @@
+// See LICENSE for license details.
+
 package chisel3.core
 
+import chisel3.internal.ChiselException
 import chisel3.internal.Builder.{forcedModule}
 import chisel3.internal.firrtl.LitArg
 
 object Binding {
-  class BindingException(message: String) extends Exception(message)
+  class BindingException(message: String) extends ChiselException(message)
   /** A function expected a Chisel type but got a hardware object
     */
   case class ExpectedChiselTypeException(message: String) extends BindingException(message)
@@ -22,7 +25,7 @@ object Binding {
 /** Requires that a node is hardware ("bound")
   */
 object requireIsHardware {
-  def apply(node: Data, msg: String = "") = {
+  def apply(node: Data, msg: String = ""): Unit = {
     node._parent match {  // Compatibility layer hack
       case Some(x: BaseModule) => x._compatAutoWrapPorts
       case _ =>
@@ -38,7 +41,7 @@ object requireIsHardware {
 /** Requires that a node is a chisel type (not hardware, "unbound")
   */
 object requireIsChiselType {
-  def apply(node: Data, msg: String = "") = if (node.topBindingOpt.isDefined) {
+  def apply(node: Data, msg: String = ""): Unit = if (node.topBindingOpt.isDefined) {
     val prefix = if (msg.nonEmpty) s"$msg " else ""
     throw Binding.ExpectedChiselTypeException(s"$prefix'$node' must be a Chisel type, not hardware")
   }
@@ -59,7 +62,7 @@ object BindingDirection {
 
   /** Determine the BindingDirection of an Element given its top binding and resolved direction.
     */
-  def from(binding: TopBinding, direction: ActualDirection) = {
+  def from(binding: TopBinding, direction: ActualDirection): BindingDirection = {
     binding match {
       case PortBinding(_) => direction match {
         case ActualDirection.Output => Output
@@ -81,13 +84,13 @@ sealed trait TopBinding extends Binding
 // Constrained-ness refers to whether 'bound by Module boundaries'
 // An unconstrained binding, like a literal, can be read by everyone
 sealed trait UnconstrainedBinding extends TopBinding {
-  def location = None
+  def location: Option[BaseModule] = None
 }
 // A constrained binding can only be read/written by specific modules
 // Location will track where this Module is
 sealed trait ConstrainedBinding extends TopBinding {
   def enclosure: BaseModule
-  def location = Some(enclosure)
+  def location: Option[BaseModule] = Some(enclosure)
 }
 
 // A binding representing a data that cannot be (re)assigned to.
@@ -95,14 +98,14 @@ sealed trait ReadOnlyBinding extends TopBinding
 
 // TODO(twigg): Ops between unenclosed nodes can also be unenclosed
 // However, Chisel currently binds all op results to a module
-case class OpBinding(enclosure: UserModule) extends ConstrainedBinding with ReadOnlyBinding
-case class MemoryPortBinding(enclosure: UserModule) extends ConstrainedBinding
+case class OpBinding(enclosure: RawModule) extends ConstrainedBinding with ReadOnlyBinding
+case class MemoryPortBinding(enclosure: RawModule) extends ConstrainedBinding
 case class PortBinding(enclosure: BaseModule) extends ConstrainedBinding
-case class RegBinding(enclosure: UserModule) extends ConstrainedBinding
-case class WireBinding(enclosure: UserModule) extends ConstrainedBinding
+case class RegBinding(enclosure: RawModule) extends ConstrainedBinding
+case class WireBinding(enclosure: RawModule) extends ConstrainedBinding
 
 case class ChildBinding(parent: Data) extends Binding {
-  def location = parent.topBinding.location
+  def location: Option[BaseModule] = parent.topBinding.location
 }
 // A DontCare element has a specific Binding, somewhat like a literal.
 // It is a source (RHS). It may only be connected/applied to sinks.

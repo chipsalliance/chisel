@@ -123,11 +123,11 @@ abstract class ExtModule(val params: Map[String, Param] = Map.empty[String, Para
   * }}}
   * @note The parameters API is experimental and may change
   */
-abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param])(implicit compileOptions: CompileOptions) extends BaseBlackBox {
+abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param])(implicit compileOptions: CompileOptions) extends BaseBlackBox { // scalastyle:ignore line.size.limit
   def io: Record
 
   // Allow access to bindings from the compatibility package
-  protected def _compatIoPortBound() = portsContains(io)
+  protected def _compatIoPortBound() = portsContains(io) // scalastyle:ignore method.name
 
   private[core] override def generateComponent(): Component = {
     _compatAutoWrapPorts()  // pre-IO(...) compatibility hack

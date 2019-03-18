@@ -3,7 +3,6 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.{withClock, withReset}
 
 class SimpleIO extends Bundle {
   val in  = Input(UInt(32.W))
@@ -71,7 +70,7 @@ class ModuleWrapper(gen: => Module) extends Module {
 class NullModuleWrapper extends Module {
   val io = IO(new Bundle{})
   override lazy val desiredName = s"${child.desiredName}Wrapper"
-  println(s"My name is ${name}")
+  println(s"My name is ${name}") // scalastyle:ignore regex
   val child = Module(new ModuleWire)
 }
 
