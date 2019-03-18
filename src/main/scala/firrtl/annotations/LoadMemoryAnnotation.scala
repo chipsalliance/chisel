@@ -4,13 +4,25 @@ package firrtl.annotations
 
 import java.io.File
 
-/** Enumeration of the two types of `readmem` statements available in Verilog.
-  */
-object MemoryLoadFileType extends Enumeration {
-  type FileType = Value
+import firrtl.FIRRTLException
 
-  val Hex:    Value = Value("h")
-  val Binary: Value = Value("b")
+/** Representation of the two types of `readmem` statements available in Verilog.
+  */
+sealed abstract class MemoryLoadFileType(val value: String) {
+  def serialize: String = value
+}
+
+object MemoryLoadFileType {
+  // purely for backwards compatibility with chisel3's ChiselLoadMemoryAnnotation
+  type FileType = MemoryLoadFileType
+
+  case object Hex extends MemoryLoadFileType("h")
+  case object Binary extends MemoryLoadFileType("b")
+  def deserialize(s: String): MemoryLoadFileType = s match {
+    case "h" => MemoryLoadFileType.Hex
+    case "b" => MemoryLoadFileType.Binary
+    case _ => throw new FIRRTLException(s"Unrecognized MemoryLoadFileType: $s")
+  }
 }
 
 /** Firrtl implementation for load memory
@@ -21,7 +33,7 @@ object MemoryLoadFileType extends Enumeration {
 case class LoadMemoryAnnotation(
   target: ComponentName,
   fileName: String,
-  hexOrBinary: MemoryLoadFileType.FileType = MemoryLoadFileType.Hex,
+  hexOrBinary: MemoryLoadFileType = MemoryLoadFileType.Hex,
   originalMemoryNameOpt: Option[String] = None
 ) extends SingleTargetAnnotation[Named] {
 

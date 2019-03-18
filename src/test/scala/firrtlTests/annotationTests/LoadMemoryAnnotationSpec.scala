@@ -2,7 +2,7 @@
 
 package firrtlTests.annotationTests
 
-import firrtl.annotations.{CircuitName, ComponentName, LoadMemoryAnnotation, ModuleName}
+import firrtl.annotations._
 import org.scalatest.{FreeSpec, Matchers}
 
 class LoadMemoryAnnotationSpec extends FreeSpec with Matchers {
@@ -25,5 +25,17 @@ class LoadMemoryAnnotationSpec extends FreeSpec with Matchers {
 
       lma.getFileName should be("./target/scala-2.12/test-classes/init_mem_subdata")
     }
+  }
+  "LoadMemoryAnnotation should be correctly parsed from a string" in {
+    val lma = new LoadMemoryAnnotation(
+      ComponentName("ram", ModuleName("ModuleMem", CircuitName("CircuitMem"))),
+      "CircuitMem.ModuleMem.ram.dat",
+      hexOrBinary = MemoryLoadFileType.Binary,
+      originalMemoryNameOpt = Some("memory")
+    )
+
+    val annoString = JsonProtocol.serializeTry(Seq(lma)).get
+    val loadedAnnos = JsonProtocol.deserializeTry(annoString).get
+    lma should equal(loadedAnnos.head)
   }
 }

@@ -45,7 +45,10 @@ object JsonProtocol {
       }},
     { case x: Transform => JString(x.getClass.getName) }
   ))
-
+  class LoadMemoryFileTypeSerializer extends CustomSerializer[MemoryLoadFileType](format => (
+    { case JString(s) => MemoryLoadFileType.deserialize(s) },
+    { case named: MemoryLoadFileType => JString(named.serialize) }
+  ))
 
   class TargetSerializer extends CustomSerializer[Target](format => (
     { case JString(s) => Target.deserialize(s) },
@@ -78,7 +81,8 @@ object JsonProtocol {
       new TransformClassSerializer + new NamedSerializer + new CircuitNameSerializer +
       new ModuleNameSerializer + new ComponentNameSerializer + new TargetSerializer +
       new GenericTargetSerializer + new CircuitTargetSerializer + new ModuleTargetSerializer +
-      new InstanceTargetSerializer + new ReferenceTargetSerializer + new TransformSerializer
+      new InstanceTargetSerializer + new ReferenceTargetSerializer + new TransformSerializer  +
+      new LoadMemoryFileTypeSerializer
   }
 
   /** Serialize annotations to a String for emission */
