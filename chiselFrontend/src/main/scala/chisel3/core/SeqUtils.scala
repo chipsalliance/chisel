@@ -37,7 +37,9 @@ private[chisel3] object SeqUtils {
   def do_count(in: Seq[Bool])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = in.size match {
     case 0 => 0.U
     case 1 => in.head
-    case n => count(in take n/2) +& count(in drop n/2)
+    case n =>
+      val sum = count(in take n/2) +& count(in drop n/2)
+      sum(BigInt(n).bitLength - 1, 0)
   }
 
   /** Returns the data value corresponding to the first true predicate.
