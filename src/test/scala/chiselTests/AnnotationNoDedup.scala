@@ -46,6 +46,7 @@ class UsesMuchUsedModule(addAnnos: Boolean) extends Module {
 }
 
 class AnnotationNoDedup extends FreeSpec with Matchers {
+  // scalastyle:off line.size.limit
   "Firrtl provides transform that reduces identical modules to a single instance" - {
     "Annotations can be added which will prevent this deduplication for specific modules instances" in {
       Driver.execute(Array("-X", "low", "--target-dir", "test_run_dir"), () => new UsesMuchUsedModule(addAnnos = true)) match {
@@ -74,4 +75,5 @@ class AnnotationNoDedup extends FreeSpec with Matchers {
       }
     }
   }
+  // scalastyle:on line.size.limit
 }

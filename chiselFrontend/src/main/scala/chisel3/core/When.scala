@@ -28,11 +28,11 @@ object when {  // scalastyle:ignore object.name
     * }}}
     */
 
-  def apply(cond: => Bool)(block: => Unit)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): WhenContext = {
+  def apply(cond: => Bool)(block: => Unit)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): WhenContext = { // scalastyle:ignore line.size.limit
     new WhenContext(sourceInfo, Some(() => cond), block)
   }
 }
- 
+
 /**  A WhenContext may represent a when, and elsewhen, or an
   *  otherwise. Since FIRRTL does not have an "elsif" statement,
   *  alternatives must be mapped to nested if-else statements inside
@@ -51,8 +51,8 @@ final class WhenContext(sourceInfo: SourceInfo, cond: Option[() => Bool], block:
     * declaration and assignment of the Bool node of the predicate in
     * the correct place.
     */
-  def elsewhen (elseCond: => Bool)(block: => Unit)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): WhenContext = {
-    new WhenContext(sourceInfo, Some(() => elseCond), block, firrtlDepth+1)
+  def elsewhen (elseCond: => Bool)(block: => Unit)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): WhenContext = { // scalastyle:ignore line.size.limit
+    new WhenContext(sourceInfo, Some(() => elseCond), block, firrtlDepth + 1)
   }
 
   /** This block of logic gets executed only if the above conditions
@@ -63,10 +63,10 @@ final class WhenContext(sourceInfo: SourceInfo, cond: Option[() => Bool], block:
     * place.
     */
   def otherwise(block: => Unit)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit =
-    new WhenContext(sourceInfo, None, block, firrtlDepth+1)
+    new WhenContext(sourceInfo, None, block, firrtlDepth + 1)
 
   /*
-   * 
+   *
    */
   if (firrtlDepth > 0) { pushCommand(AltBegin(sourceInfo)) }
   cond.foreach( c => pushCommand(WhenBegin(sourceInfo, c().ref)) )

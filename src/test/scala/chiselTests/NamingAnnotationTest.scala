@@ -54,7 +54,7 @@ trait NamedModuleTester extends MultiIOModule {
 @chiselName
 class NamedModule extends NamedModuleTester {
   @chiselName
-  def FunctionMockupInner(): UInt = {
+  def FunctionMockupInner(): UInt = { // scalastyle:ignore method.name
     val my2A = 1.U
     val my2B = expectName(my2A +& 2.U, "test_myNested_my2B")
     val my2C = my2B +& 3.U  // should get named at enclosing scope
@@ -62,7 +62,7 @@ class NamedModule extends NamedModuleTester {
   }
 
   @chiselName
-  def FunctionMockup(): UInt = {
+  def FunctionMockup(): UInt = { // scalastyle:ignore method.name
     val myNested = expectName(FunctionMockupInner(), "test_myNested")
     val myA = expectName(1.U + myNested, "test_myA")
     val myB = expectName(myA +& 2.U, "test_myB")
@@ -76,14 +76,14 @@ class NamedModule extends NamedModuleTester {
   }
 
   // chiselName "implicitly" applied
-  def ImplicitlyNamed(): UInt = {
+  def ImplicitlyNamed(): UInt = { // scalastyle:ignore method.name
     val implicitA = expectName(1.U + 2.U, "test3_implicitA")
     val implicitB = expectName(implicitA + 3.U, "test3_implicitB")
     implicitB + 2.U  // named at enclosing scope
   }
 
   // Ensure this applies a partial name if there is no return value
-  def NoReturnFunction() {
+  def NoReturnFunction() { // scalastyle:ignore method.name
     val noreturn = expectName(1.U + 2.U, "noreturn")
   }
 
@@ -132,7 +132,7 @@ class NameCollisionModule extends NamedModuleTester {
   */
 class NonNamedModule extends NamedModuleTester {
   @chiselName
-  def NamedFunction(): UInt = {
+  def NamedFunction(): UInt = { // scalastyle:ignore method.name
     val myVal = 1.U + 2.U
     myVal
   }
@@ -145,12 +145,12 @@ class NonNamedModule extends NamedModuleTester {
   */
 object NonNamedHelper {
   @chiselName
-  def NamedFunction(): UInt = {
+  def NamedFunction(): UInt = { // scalastyle:ignore method.name
     val myVal = 1.U + 2.U
     myVal
   }
 
-  def NonNamedFunction() : UInt = {
+  def NonNamedFunction() : UInt = { // scalastyle:ignore method.name
     val myVal = NamedFunction()
     myVal
   }

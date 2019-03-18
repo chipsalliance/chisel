@@ -20,17 +20,17 @@ sealed class Clock(private[chisel3] val width: Width = Width(1)) extends Element
   private[core] def typeEquivalent(that: Data): Boolean =
     this.getClass == that.getClass
 
-  override def connect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = that match {
+  override def connect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = that match { // scalastyle:ignore line.size.limit
     case _: Clock => super.connect(that)(sourceInfo, connectCompileOptions)
     case _ => super.badConnect(that)(sourceInfo)
   }
 
-  override def litOption = None
+  override def litOption: Option[BigInt] = None
 
   /** Not really supported */
   def toPrintable: Printable = PString("CLOCK")
 
-  override def do_asUInt(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): UInt = pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref))
+  override def do_asUInt(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): UInt = pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref)) // scalastyle:ignore line.size.limit
   private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
       compileOptions: CompileOptions): Unit = {
     this := that
