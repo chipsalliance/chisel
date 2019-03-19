@@ -487,6 +487,28 @@ circuit CustomMemory :
     checkMemConf(confLoc, mems)
     (new java.io.File(confLoc)).delete()
   }
+
+  "ReplSeqMem" should "produce an empty conf file with no SeqMems" in {
+    val input = """
+circuit NoMemsHere :
+  module NoMemsHere :
+    input clock : Clock
+    input in : UInt<8>
+    output out : UInt<8>
+
+    out is invalid
+
+    out <= in
+"""
+    val mems = Set.empty[MemConf]
+    val confLoc = "ReplSeqMemTests.confTEMP"
+    val annos = Seq(ReplSeqMemAnnotation.parse("-c:CustomMemory:-o:"+confLoc),
+                    InferReadWriteAnnotation)
+    val res = compileAndEmit(CircuitState(parse(input), ChirrtlForm, annos))
+    // Check the emitted conf
+    checkMemConf(confLoc, mems)
+    (new java.io.File(confLoc)).delete()
+  }
 }
 
 // TODO: make more checks
