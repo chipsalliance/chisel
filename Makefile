@@ -4,7 +4,7 @@ MKDIR ?= mkdir -p
 CURL ?= curl -L
 MILL_BIN ?= $(HOME)/bin/mill
 MILL ?= $(MILL_BIN) --color false
-MILL_REMOTE_RELEASE ?= https://github.com/ucbjrl/mill/releases/download/v0.2.6-FDF/mill-0.2.6-FDF
+MILL_REMOTE_RELEASE ?= https://github.com/lihaoyi/mill/releases/download/0.3.5/0.3.5
 
 # Fetch mill (if we don't have it).
 $(MILL_BIN):
