@@ -125,6 +125,18 @@ lazy val coreMacros = (project in file("coreMacros")).
 lazy val chiselFrontend = (project in file("chiselFrontend")).
   settings(commonSettings: _*).
   settings(publishArtifact := false).
+  settings(
+    scalacOptions := scalacOptions.value ++ Seq(
+      "-deprecation",
+      "-explaintypes",
+      "-feature",
+      "-language:reflectiveCalls",
+      "-unchecked",
+      "-Xcheckinit",
+      "-Xlint:infer-any"
+//      "-Xlint:missing-interpolator"
+    )
+  ).
   dependsOn(coreMacros)
 
 // This will always be the root project, even if we are a sub-project.
