@@ -28,7 +28,7 @@ def javacOptionsVersion(scalaVersion: String): Seq[String] = {
   }
 }
 
-val defaultVersions = Map("firrtl" -> "1.2-SNAPSHOT")
+val defaultVersions = Map("firrtl" -> "1.2-ASPECT")
 
 lazy val commonSettings = Seq (
   resolvers ++= Seq(
