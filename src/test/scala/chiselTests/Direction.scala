@@ -4,7 +4,7 @@ package chiselTests
 
 import org.scalatest._
 import chisel3._
-import chisel3.util.Decoupled
+import chisel3.experimental.RawModule
 
 class DirectionedBundle extends Bundle {
   val in = Input(UInt(32.W))

@@ -5,6 +5,7 @@ package chisel3.experimental
 import scala.language.existentials
 
 import chisel3.internal.{Builder, InstanceId}
+import chisel3.{CompileOptions, Data}
 import firrtl.Transform
 import firrtl.annotations.Annotation
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}

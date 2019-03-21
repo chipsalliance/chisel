@@ -21,7 +21,7 @@ abstract class ReadyValidIO[+T <: Data](gen: T) extends Bundle
 {
   // Compatibility hack for rocket-chip
   private val genType = (DataMirror.internal.isSynthesizable(gen), chisel3.internal.Builder.currentModule) match {
-    case (true, Some(module: chisel3.core.MultiIOModule))
+    case (true, Some(module: MultiIOModule))
         if !module.compileOptions.declaredTypeMustBeUnbound => chiselTypeOf(gen)
     case _ => gen
   }
@@ -186,7 +186,7 @@ class Queue[T <: Data](gen: T,
                        val entries: Int,
                        pipe: Boolean = false,
                        flow: Boolean = false)
-                      (implicit compileOptions: chisel3.core.CompileOptions)
+                      (implicit compileOptions: chisel3.CompileOptions)
     extends Module() {
   @deprecated("Module constructor with override _reset deprecated, use withReset", "chisel3")
   def this(gen: T, entries: Int, pipe: Boolean, flow: Boolean, override_reset: Option[Bool]) = {

@@ -1,6 +1,6 @@
 // See LICENSE for license details.
 
-package chisel3.core
+package chisel3
 
 import scala.language.experimental.macros
 

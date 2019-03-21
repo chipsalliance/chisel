@@ -3,13 +3,12 @@
 package chiselTests
 
 import chisel3._
-import chisel3.core.Binding.BindingException
-import chisel3.core.CompileOptions._
+import chisel3.CompileOptions._
 
 class CompileOptionsSpec extends ChiselFlatSpec {
 
-  abstract class StrictModule extends Module()(chisel3.core.ExplicitCompileOptions.Strict)
-  abstract class NotStrictModule extends Module()(chisel3.core.ExplicitCompileOptions.NotStrict)
+  abstract class StrictModule extends Module()(chisel3.ExplicitCompileOptions.Strict)
+  abstract class NotStrictModule extends Module()(chisel3.ExplicitCompileOptions.NotStrict)
 
   class SmallBundle extends Bundle {
     val f1 = UInt(4.W)
@@ -24,7 +23,7 @@ class CompileOptionsSpec extends ChiselFlatSpec {
   // scalastyle:off line.size.limit
   "A Module with missing bundle fields when compiled with implicit Strict.CompileOption " should "throw an exception" in {
     a [ChiselException] should be thrownBy {
-      import chisel3.core.ExplicitCompileOptions.Strict
+      import chisel3.ExplicitCompileOptions.Strict
 
       class ConnectFieldMismatchModule extends Module {
         val io = IO(new Bundle {
@@ -38,7 +37,7 @@ class CompileOptionsSpec extends ChiselFlatSpec {
   }
 
   "A Module with missing bundle fields when compiled with implicit NotStrict.CompileOption " should "not throw an exception" in {
-    import chisel3.core.ExplicitCompileOptions.NotStrict
+    import chisel3.ExplicitCompileOptions.NotStrict
 
     class ConnectFieldMismatchModule extends Module {
       val io = IO(new Bundle {
@@ -52,7 +51,7 @@ class CompileOptionsSpec extends ChiselFlatSpec {
 
   "A Module in which a Reg is created with a bound type when compiled with implicit Strict.CompileOption " should "throw an exception" in {
     a [BindingException] should be thrownBy {
-      import chisel3.core.ExplicitCompileOptions.Strict
+      import chisel3.ExplicitCompileOptions.Strict
 
       class CreateRegFromBoundTypeModule extends Module {
         val io = IO(new Bundle {
@@ -66,7 +65,7 @@ class CompileOptionsSpec extends ChiselFlatSpec {
   }
 
   "A Module in which a Reg is created with a bound type when compiled with implicit NotStrict.CompileOption " should "not throw an exception" in {
-    import chisel3.core.ExplicitCompileOptions.NotStrict
+    import chisel3.ExplicitCompileOptions.NotStrict
 
     class CreateRegFromBoundTypeModule extends Module {
       val io = IO(new Bundle {
@@ -79,7 +78,7 @@ class CompileOptionsSpec extends ChiselFlatSpec {
   }
 
   "A Module with wrapped IO when compiled with implicit Strict.CompileOption " should "not throw an exception" in {
-    import chisel3.core.ExplicitCompileOptions.Strict
+    import chisel3.ExplicitCompileOptions.Strict
 
     class RequireIOWrapModule extends Module {
       val io = IO(new Bundle {
@@ -93,7 +92,7 @@ class CompileOptionsSpec extends ChiselFlatSpec {
 
   "A Module with unwrapped IO when compiled with implicit Strict.CompileOption " should "throw an exception" in {
     a [BindingException] should be thrownBy {
-      import chisel3.core.ExplicitCompileOptions.Strict
+      import chisel3.ExplicitCompileOptions.Strict
 
       class RequireIOWrapModule extends Module {
         val io = new Bundle {
@@ -110,7 +109,7 @@ class CompileOptionsSpec extends ChiselFlatSpec {
 
   "A Module connecting output as source to input as sink when compiled with implicit Strict.CompileOption " should "throw an exception" in {
     a [ChiselException] should be thrownBy {
-      import chisel3.core.ExplicitCompileOptions.Strict
+      import chisel3.ExplicitCompileOptions.Strict
 
       class SimpleModule extends Module {
         val io = IO(new Bundle {
@@ -127,7 +126,7 @@ class CompileOptionsSpec extends ChiselFlatSpec {
   }
 
   "A Module connecting output as source to input as sink when compiled with implicit NotStrict.CompileOption " should "not throw an exception" in {
-    import chisel3.core.ExplicitCompileOptions.NotStrict
+    import chisel3.ExplicitCompileOptions.NotStrict
 
     class SimpleModule extends Module {
       val io = IO(new Bundle {
@@ -145,8 +144,8 @@ class CompileOptionsSpec extends ChiselFlatSpec {
   "A Module with directionless connections when compiled with implicit Strict.CompileOption " should "throw an exception" in {
     a [ChiselException] should be thrownBy {
       // Verify we can suppress the inclusion of default compileOptions
-      import Chisel.{defaultCompileOptions => _, _}
-      import chisel3.core.ExplicitCompileOptions.Strict
+      import Chisel.{defaultCompileOptions => _}
+      import chisel3.ExplicitCompileOptions.Strict
 
       class SimpleModule extends Module {
         val io = IO(new Bundle {
@@ -167,7 +166,7 @@ class CompileOptionsSpec extends ChiselFlatSpec {
   }
 
   "A Module with directionless connections when compiled with implicit NotStrict.CompileOption " should "not throw an exception" in {
-    import chisel3.core.ExplicitCompileOptions.NotStrict
+    import chisel3.ExplicitCompileOptions.NotStrict
 
     class SimpleModule extends Module {
       val io = IO(new Bundle {

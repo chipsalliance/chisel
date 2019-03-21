@@ -8,17 +8,7 @@ package chisel3
   * non-experimental, you must explicitly import this package to use its contents.
   */
 package object experimental {  // scalastyle:ignore object.name
-
-  // BlackBox Parameters
-  type Param = chisel3.Param
-  type IntParam = chisel3.IntParam
-  val IntParam = chisel3.IntParam
-  type DoubleParam = chisel3.DoubleParam
-  val DoubleParam = chisel3.DoubleParam
-  type StringParam = chisel3.StringParam
-  val StringParam = chisel3.StringParam
-  type RawParam = chisel3.RawParam
-  val RawParam = chisel3.RawParam
+  import scala.language.implicitConversions
 
   // Implicit conversions for BlackBox Parameters
   implicit def fromIntToIntParam(x: Int): IntParam = IntParam(BigInt(x))
@@ -28,6 +18,13 @@ package object experimental {  // scalastyle:ignore object.name
   implicit def fromStringToStringParam(x: String): StringParam = StringParam(x)
 
   type ChiselEnum = EnumFactory
+
+  @deprecated("Use the version in chisel3._", "chisel3.2")
+  val withClockAndReset = chisel3.withClockAndReset
+  @deprecated("Use the version in chisel3._", "chisel3.2")
+  val withClock = chisel3.withClock
+  @deprecated("Use the version in chisel3._", "chisel3.2")
+  val withReset = chisel3.withReset
 
   // Rocket Chip-style clonemodule
 

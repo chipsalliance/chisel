@@ -3,9 +3,8 @@
 package chisel3.internal
 
 import scala.reflect.macros.whitebox.Context
+import scala.annotation.{StaticAnnotation, compileTimeOnly}
 import scala.language.experimental.macros
-import scala.annotation.StaticAnnotation
-import scala.annotation.compileTimeOnly
 
 // Workaround for https://github.com/sbt/sbt/issues/3966
 object RuntimeDeprecatedTransform

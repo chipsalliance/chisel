@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.experimental.DataMirror
 
 class SimpleIO extends Bundle {
   val in  = Input(UInt(32.W))
@@ -145,7 +146,7 @@ class ModuleSpec extends ChiselPropSpec {
         val a = IO(UInt(8.W))
         val b = IO(Bool())
       })
-      assert(chisel3.experimental.DataMirror.modulePorts(m) == Seq(
+      assert(DataMirror.modulePorts(m) == Seq(
           "clock" -> m.clock, "reset" -> m.reset,
           "a" -> m.a, "b" -> m.b))
     })

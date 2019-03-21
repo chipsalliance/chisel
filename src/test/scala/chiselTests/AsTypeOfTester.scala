@@ -2,12 +2,9 @@
 
 package chiselTests
 
-import org.scalatest._
-
 import chisel3._
 import chisel3.experimental.{DataMirror, FixedPoint, ChiselEnum}
 import chisel3.testers.BasicTester
-import chisel3.util._
 
 class AsTypeOfBundleTester extends BasicTester {
   class MultiTypeBundle extends Bundle {

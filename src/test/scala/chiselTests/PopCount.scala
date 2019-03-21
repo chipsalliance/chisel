@@ -4,8 +4,6 @@ package chiselTests
 
 import chisel3._
 import chisel3.util.PopCount
-import org.scalatest._
-import org.scalatest.prop._
 import chisel3.testers.BasicTester
 
 class PopCountTester(n: Int) extends BasicTester {

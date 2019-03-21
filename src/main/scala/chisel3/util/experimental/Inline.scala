@@ -3,12 +3,11 @@
 package chisel3.util.experimental
 
 import chisel3._
-import chisel3.internal.InstanceId
 import chisel3.experimental.{BaseModule, ChiselAnnotation, RunFirrtlTransform}
 import firrtl.Transform
 import firrtl.passes.{InlineAnnotation, InlineInstances}
 import firrtl.transforms.{NoDedupAnnotation, FlattenAnnotation, Flatten}
-import firrtl.annotations.{CircuitName, ModuleName, ComponentName, Annotation}
+import firrtl.annotations.Annotation
 
 /** Inlines an instance of a module
   *

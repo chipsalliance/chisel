@@ -3,10 +3,10 @@
 package chisel3.internal
 
 import scala.util.DynamicVariable
-import scala.collection.mutable.{ArrayBuffer, HashMap}
+import scala.collection.mutable.ArrayBuffer
 import chisel3._
-import core._
-import firrtl._
+import chisel3.experimental._
+import chisel3.internal.firrtl._
 import _root_.firrtl.annotations.{CircuitName, ComponentName, ModuleName, Named}
 
 private[chisel3] class Namespace(keywords: Set[String]) {

@@ -4,8 +4,6 @@ package chisel3.internal
 
 import scala.collection.mutable.{ArrayBuffer, LinkedHashMap}
 
-import chisel3.core._
-
 class ChiselException(message: String, cause: Throwable = null) extends Exception(message, cause) {
 
   val blacklistPackages = Set("chisel3", "scala", "java", "sun", "sbt")
@@ -126,7 +124,7 @@ private[chisel3] class ErrorLog {
           "java.",
           "scala.",
           "chisel3.internal.",
-          "chisel3.core.",
+          "chisel3.experimental.",
           "chisel3.package$"  // for some compatibility / deprecated types
           )
       !chiselPrefixes.filter(className.startsWith(_)).isEmpty
