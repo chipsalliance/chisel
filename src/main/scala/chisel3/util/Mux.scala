@@ -6,7 +6,6 @@
 package chisel3.util
 
 import chisel3._
-import chisel3.core.SeqUtils
 
 /** Builds a Mux tree out of the input signal vector using a one hot encoded
   * select signal. Returns the output of the Mux tree.

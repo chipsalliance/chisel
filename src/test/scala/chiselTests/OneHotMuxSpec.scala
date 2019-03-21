@@ -2,10 +2,11 @@
 
 package chiselTests
 
-import Chisel.testers.BasicTester
+import chisel3.testers.BasicTester
 import chisel3._
-import chisel3.experimental.FixedPoint
 import chisel3.util.{Mux1H, UIntToOH}
+import chisel3.experimental.FixedPoint
+
 import org.scalatest._
 
 //scalastyle:off magic.number

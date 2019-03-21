@@ -1,146 +1,17 @@
 // See LICENSE for license details.
 
-package chisel3.core
+package chisel3.experimental
+
+import chisel3.internal.{PortBinding, WireBinding}
+import chisel3.internal.Builder.{readyForModuleConstr, pushCommand}
+import chisel3.internal.firrtl.{Component, DefInstance, DefInvalid, ModuleIO}
+import chisel3.internal.{Builder, HasId, Namespace, throwException}
+import chisel3.internal.sourceinfo.SourceInfo
+import chisel3.{Aggregate, CompileOptions, Data, Element, Module, Record, SpecifiedDirection, Vec}
+import firrtl.annotations.{CircuitName, ModuleName}
 
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer, HashMap}
-import scala.collection.JavaConversions._
-import scala.language.experimental.macros
-
-import java.util.IdentityHashMap
-
-import chisel3.internal._
-import chisel3.internal.Builder._
-import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.{InstTransform, SourceInfo}
-import chisel3.SourceInfoDoc
-
-import _root_.firrtl.annotations.{CircuitName, ModuleName}
-
-object Module extends SourceInfoDoc {
-  /** A wrapper method that all Module instantiations must be wrapped in
-    * (necessary to help Chisel track internal state).
-    *
-    * @param bc the Module being created
-    *
-    * @return the input module `m` with Chisel metadata properly set
-    */
-  def apply[T <: BaseModule](bc: => T): T = macro InstTransform.apply[T]
-
-  /** @group SourceInfoTransformMacro */
-  def do_apply[T <: BaseModule](bc: => T)
-                               (implicit sourceInfo: SourceInfo,
-                                         compileOptions: CompileOptions): T = {
-    if (Builder.readyForModuleConstr) {
-      throwException("Error: Called Module() twice without instantiating a Module." +
-                     sourceInfo.makeMessage(" See " + _))
-    }
-    Builder.readyForModuleConstr = true
-
-    val parent = Builder.currentModule
-    val whenDepth: Int = Builder.whenDepth
-
-    // Save then clear clock and reset to prevent leaking scope, must be set again in the Module
-    val clockAndReset: Option[ClockAndReset] = Builder.currentClockAndReset
-    Builder.currentClockAndReset = None
-
-    // Execute the module, this has the following side effects:
-    //   - set currentModule
-    //   - unset readyForModuleConstr
-    //   - reset whenDepth to 0
-    //   - set currentClockAndReset
-    val module: T = bc  // bc is actually evaluated here
-
-    if (Builder.whenDepth != 0) {
-      throwException("Internal Error! when() scope depth is != 0, this should have been caught!")
-    }
-    if (Builder.readyForModuleConstr) {
-      throwException("Error: attempted to instantiate a Module, but nothing happened. " +
-                     "This is probably due to rewrapping a Module instance with Module()." +
-                     sourceInfo.makeMessage(" See " + _))
-    }
-    Builder.currentModule = parent // Back to parent!
-    Builder.whenDepth = whenDepth
-    Builder.currentClockAndReset = clockAndReset // Back to clock and reset scope
-
-    val component = module.generateComponent()
-    Builder.components += component
-
-    // Handle connections at enclosing scope
-    if(!Builder.currentModule.isEmpty) {
-      pushCommand(DefInstance(sourceInfo, module, component.ports))
-      module.initializeInParent(compileOptions)
-    }
-    module
-  }
-
-  /** Returns the implicit Clock */
-  def clock: Clock = Builder.forcedClock
-  /** Returns the implicit Reset */
-  def reset: Reset = Builder.forcedReset
-  /** Returns the current Module */
-  def currentModule: Option[BaseModule] = Builder.currentModule
-}
-
-object IO {
-  /** Constructs a port for the current Module
-    *
-    * This must wrap the datatype used to set the io field of any Module.
-    * i.e. All concrete modules must have defined io in this form:
-    * [lazy] val io[: io type] = IO(...[: io type])
-    *
-    * Items in [] are optional.
-    *
-    * The granted iodef must be a chisel type and not be bound to hardware.
-    *
-    * Also registers a Data as a port, also performing bindings. Cannot be called once ports are
-    * requested (so that all calls to ports will return the same information).
-    * Internal API.
-    */
-  def apply[T<:Data](iodef: T): T = {
-    val module = Module.currentModule.get // Impossible to fail
-    require(!module.isClosed, "Can't add more ports after module close")
-    requireIsChiselType(iodef, "io type")
-
-    // Clone the IO so we preserve immutability of data types
-    val iodefClone = try {
-      iodef.cloneTypeFull
-    } catch {
-      // For now this is going to be just a deprecation so we don't suddenly break everyone's code
-      case e: AutoClonetypeException =>
-        Builder.deprecated(e.getMessage, Some(s"${iodef.getClass}"))
-        iodef
-    }
-    module.bindIoInPlace(iodefClone)
-    iodefClone
-  }
-}
-
-object BaseModule {
-  private[chisel3] class ClonePorts (elts: Data*)(implicit compileOptions: CompileOptions) extends Record {
-    val elements = ListMap(elts.map(d => d.instanceName -> d.cloneTypeFull): _*)
-    def apply(field: String) = elements(field)
-    override def cloneType = (new ClonePorts(elts: _*)).asInstanceOf[this.type]
-  }
-
-  private[chisel3] def cloneIORecord(proto: BaseModule)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): ClonePorts = {
-    require(proto.isClosed, "Can't clone a module before module close")
-    val clonePorts = new ClonePorts(proto.getModulePorts: _*)
-    clonePorts.bind(WireBinding(Builder.forcedUserModule))
-    val cloneInstance = new DefInstance(sourceInfo, proto, proto._component.get.ports) {
-      override def name = clonePorts.getRef.name
-    }
-    pushCommand(cloneInstance)
-    if (!compileOptions.explicitInvalidate) {
-      pushCommand(DefInvalid(sourceInfo, clonePorts.ref))
-    }
-    if (proto.isInstanceOf[MultiIOModule]) {
-      clonePorts("clock") := Module.clock
-      clonePorts("reset") := Module.reset
-    }
-    clonePorts
-  }
-}
 
 /** Abstract base class for Modules, an instantiable organizational unit for RTL.
   */
@@ -163,10 +34,10 @@ abstract class BaseModule extends HasId {
   protected var _closed = false
 
   /** Internal check if a Module is closed */
-  private[core] def isClosed = _closed
+  private[chisel3] def isClosed = _closed
 
   // Fresh Namespace because in Firrtl, Modules namespaces are disjoint with the global namespace
-  private[core] val _namespace = Namespace.empty
+  private[chisel3] val _namespace = Namespace.empty
   private val _ids = ArrayBuffer[HasId]()
   private[chisel3] def addId(d: HasId) {
     require(!_closed, "Can't write to module after module close")
@@ -192,11 +63,11 @@ abstract class BaseModule extends HasId {
   /** Generates the FIRRTL Component (Module or Blackbox) of this Module.
     * Also closes the module so no more construction can happen inside.
     */
-  private[core] def generateComponent(): Component
+  private[chisel3] def generateComponent(): Component
 
   /** Sets up this module in the parent context
     */
-  private[core] def initializeInParent(parentCompileOptions: CompileOptions): Unit
+  private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit
 
   //
   // Chisel Internals
@@ -229,7 +100,7 @@ abstract class BaseModule extends HasId {
    *
    * TODO: Use SeqMap/VectorMap when those data structures become available.
    */
-  private[core] def getChiselPorts: Seq[(String, Data)] = {
+  private[chisel3] def getChiselPorts: Seq[(String, Data)] = {
     require(_closed, "Can't get ports before module close")
     _component.get.ports.map { port =>
       (port.id.getRef.asInstanceOf[ModuleIO].name, port.id)
@@ -316,7 +187,7 @@ abstract class BaseModule extends HasId {
     _ports += iodef
   }
   /** Private accessor for _bindIoInPlace */
-  private[core] def bindIoInPlace(iodef: Data): Unit = _bindIoInPlace(iodef)
+  private[chisel3] def bindIoInPlace(iodef: Data): Unit = _bindIoInPlace(iodef)
 
   /**
    * This must wrap the datatype used to set the io field of any Module.
@@ -334,7 +205,7 @@ abstract class BaseModule extends HasId {
    * TODO(twigg): Specifically walk the Data definition to call out which nodes
    * are problematic.
    */
-  protected def IO[T<:Data](iodef: T): T = chisel3.core.IO.apply(iodef) // scalastyle:ignore method.name
+  protected def IO[T<:Data](iodef: T): T = chisel3.experimental.IO.apply(iodef) // scalastyle:ignore method.name
 
   //
   // Internal Functions
@@ -350,4 +221,30 @@ abstract class BaseModule extends HasId {
       case Some(c) => getRef fullName c
     }
 
+}
+
+object BaseModule {
+  private[chisel3] class ClonePorts (elts: Data*)(implicit compileOptions: CompileOptions) extends chisel3.Record {
+    val elements = ListMap(elts.map(d => d.instanceName -> d.cloneTypeFull): _*)
+    def apply(field: String) = elements(field)
+    override def cloneType = (new ClonePorts(elts: _*)).asInstanceOf[this.type]
+  }
+
+  private[chisel3] def cloneIORecord(proto: BaseModule)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): ClonePorts = {
+    require(proto.isClosed, "Can't clone a module before module close")
+    val clonePorts = new ClonePorts(proto.getModulePorts: _*)
+    clonePorts.bind(WireBinding(Builder.forcedUserModule))
+    val cloneInstance = new DefInstance(sourceInfo, proto, proto._component.get.ports) {
+      override def name = clonePorts.getRef.name
+    }
+    pushCommand(cloneInstance)
+    if (!compileOptions.explicitInvalidate) {
+      pushCommand(DefInvalid(sourceInfo, clonePorts.ref))
+    }
+    if (proto.isInstanceOf[MultiIOModule]) {
+      clonePorts("clock") := Module.clock
+      clonePorts("reset") := Module.reset
+    }
+    clonePorts
+  }
 }

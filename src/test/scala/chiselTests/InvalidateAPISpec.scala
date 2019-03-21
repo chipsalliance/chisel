@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.core.BiConnect.BiConnectException
+import chisel3.internal.ChiselException
 import chisel3.util.Counter
 import firrtl.passes.CheckInitialization.RefNotInitializedException
 import firrtl.util.BackendCompilationUtilities
@@ -23,7 +23,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompila
 
   // scalastyle:off line.size.limit
   property("an output connected to DontCare should emit a Firrtl \"is invalid\" with Strict CompileOptions") {
-    import chisel3.core.ExplicitCompileOptions.Strict
+    import chisel3.ExplicitCompileOptions.Strict
     class ModuleWithDontCare extends Module {
       val io = IO(new TrivialInterface)
       io.out := DontCare
@@ -34,7 +34,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompila
   }
 
   property("an output without a DontCare should NOT emit a Firrtl \"is invalid\" with Strict CompileOptions") {
-    import chisel3.core.ExplicitCompileOptions.Strict
+    import chisel3.ExplicitCompileOptions.Strict
     class ModuleWithoutDontCare extends Module {
       val io = IO(new TrivialInterface)
       io.out := io.in
@@ -44,7 +44,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompila
   }
 
   property("an output without a DontCare should emit a Firrtl \"is invalid\" with NotStrict CompileOptions") {
-    import chisel3.core.ExplicitCompileOptions.NotStrict
+    import chisel3.ExplicitCompileOptions.NotStrict
     class ModuleWithoutDontCare extends Module {
       val io = IO(new TrivialInterface)
       io.out := io.in
@@ -54,7 +54,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompila
   }
 
   property("a bundle with a DontCare should emit a Firrtl \"is invalid\" with Strict CompileOptions") {
-    import chisel3.core.ExplicitCompileOptions.Strict
+    import chisel3.ExplicitCompileOptions.Strict
     class ModuleWithoutDontCare extends Module {
       val io = IO(new TrivialInterface)
       io <> DontCare
@@ -65,7 +65,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompila
   }
 
   property("a Vec with a DontCare should emit a Firrtl \"is invalid\" with Strict CompileOptions and bulk connect") {
-    import chisel3.core.ExplicitCompileOptions.Strict
+    import chisel3.ExplicitCompileOptions.Strict
     val nElements = 5
     class ModuleWithoutDontCare extends Module {
       val io = IO(new Bundle {
@@ -79,7 +79,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompila
   }
 
   property("a Vec with a DontCare should emit a Firrtl \"is invalid\" with Strict CompileOptions and mono connect") {
-    import chisel3.core.ExplicitCompileOptions.Strict
+    import chisel3.ExplicitCompileOptions.Strict
     val nElements = 5
     class ModuleWithoutDontCare extends Module {
       val io = IO(new Bundle {
@@ -93,7 +93,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompila
   }
 
   property("a DontCare cannot be a connection sink (LHS) for := ") {
-    import chisel3.core.ExplicitCompileOptions.Strict
+    import chisel3.ExplicitCompileOptions.Strict
     class ModuleWithDontCareSink extends Module {
       val io = IO(new TrivialInterface)
       DontCare := io.in
@@ -105,19 +105,19 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompila
   }
 
   property("a DontCare cannot be a connection sink (LHS) for <>") {
-    import chisel3.core.ExplicitCompileOptions.Strict
+    import chisel3.ExplicitCompileOptions.Strict
     class ModuleWithDontCareSink extends Module {
       val io = IO(new TrivialInterface)
       DontCare <> io.in
     }
-    val exception = intercept[BiConnectException] {
+    val exception = intercept[ChiselException] {
       elaborate(new ModuleWithDontCareSink)
     }
     exception.getMessage should include("DontCare cannot be a connection sink (LHS)")
   }
 
   property("FIRRTL should complain about partial initialization with Strict CompileOptions and conditional connect") {
-    import chisel3.core.ExplicitCompileOptions.Strict
+    import chisel3.ExplicitCompileOptions.Strict
     class ModuleWithIncompleteAssignment extends Module {
       val io = IO(new Bundle {
         val out = Output(Bool())
@@ -134,7 +134,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompila
  }
 
   property("FIRRTL should not complain about partial initialization with Strict CompileOptions and conditional connect after unconditional connect") {
-    import chisel3.core.ExplicitCompileOptions.Strict
+    import chisel3.ExplicitCompileOptions.Strict
     class ModuleWithUnconditionalAssignment extends Module {
       val io = IO(new Bundle {
         val out = Output(Bool())
@@ -149,7 +149,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompila
   }
 
   property("FIRRTL should not complain about partial initialization with Strict CompileOptions and conditional connect with otherwise clause") {
-    import chisel3.core.ExplicitCompileOptions.Strict
+    import chisel3.ExplicitCompileOptions.Strict
     class ModuleWithConditionalAndOtherwiseAssignment extends Module {
       val io = IO(new Bundle {
         val out = Output(Bool())
@@ -166,9 +166,9 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompila
   }
 
   property("an output without a DontCare should NOT emit a Firrtl \"is invalid\" with overriden NotStrict CompileOptions") {
-    import chisel3.core.ExplicitCompileOptions.NotStrict
+    import chisel3.ExplicitCompileOptions.NotStrict
     class ModuleWithoutDontCare extends Module {
-      override val compileOptions = chisel3.core.ExplicitCompileOptions.NotStrict.copy(explicitInvalidate = true)
+      override val compileOptions = chisel3.ExplicitCompileOptions.NotStrict.copy(explicitInvalidate = true)
       val io = IO(new TrivialInterface)
       io.out := io.in
     }
@@ -177,8 +177,8 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompila
   }
 
   property("an output without a DontCare should NOT emit a Firrtl \"is invalid\" with overriden NotStrict CompileOptions module definition") {
-    import chisel3.core.ExplicitCompileOptions.NotStrict
-    abstract class ExplicitInvalidateModule extends Module()(chisel3.core.ExplicitCompileOptions.NotStrict.copy(explicitInvalidate = true))
+    import chisel3.ExplicitCompileOptions.NotStrict
+    abstract class ExplicitInvalidateModule extends Module()(chisel3.ExplicitCompileOptions.NotStrict.copy(explicitInvalidate = true))
     class ModuleWithoutDontCare extends ExplicitInvalidateModule {
       val io = IO(new TrivialInterface)
       io.out := io.in
@@ -188,9 +188,9 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompila
   }
 
   property("an output without a DontCare should emit a Firrtl \"is invalid\" with overriden Strict CompileOptions") {
-    import chisel3.core.ExplicitCompileOptions.Strict
+    import chisel3.ExplicitCompileOptions.Strict
     class ModuleWithoutDontCare extends Module {
-      override val compileOptions = chisel3.core.ExplicitCompileOptions.Strict.copy(explicitInvalidate = false)
+      override val compileOptions = chisel3.ExplicitCompileOptions.Strict.copy(explicitInvalidate = false)
       val io = IO(new TrivialInterface)
       io.out := io.in
     }
@@ -199,8 +199,8 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompila
   }
 
   property("an output without a DontCare should emit a Firrtl \"is invalid\" with overriden Strict CompileOptions module definition") {
-    import chisel3.core.ExplicitCompileOptions.Strict
-    abstract class ImplicitInvalidateModule extends Module()(chisel3.core.ExplicitCompileOptions.NotStrict.copy(explicitInvalidate = false))
+    import chisel3.ExplicitCompileOptions.Strict
+    abstract class ImplicitInvalidateModule extends Module()(chisel3.ExplicitCompileOptions.NotStrict.copy(explicitInvalidate = false))
     class ModuleWithoutDontCare extends ImplicitInvalidateModule {
       val io = IO(new TrivialInterface)
       io.out := io.in

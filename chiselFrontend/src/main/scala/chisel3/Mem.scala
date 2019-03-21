@@ -1,14 +1,13 @@
 // See LICENSE for license details.
 
-package chisel3.core
+package chisel3
+
+import chisel3.internal.Builder.pushCommand
+import chisel3.internal._
+import chisel3.internal.firrtl._
+import chisel3.internal.sourceinfo.{MemTransform, SourceInfo, SourceInfoTransform, UnlocatableSourceInfo}
 
 import scala.language.experimental.macros
-
-import chisel3.internal._
-import chisel3.internal.Builder.pushCommand
-import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform, UnlocatableSourceInfo, MemTransform}
-import chisel3.SourceInfoDoc
 
 object Mem {
   // scalastyle:off line.size.limit
@@ -123,7 +122,7 @@ sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId wi
   * @note when multiple conflicting writes are performed on a Mem element, the
   * result is undefined (unlike Vec, where the last assignment wins)
   */
-sealed class Mem[T <: Data] private (t: T, length: Int) extends MemBase(t, length)
+sealed class Mem[T <: Data] private (t: T, length: Int) extends chisel3.MemBase(t, length)
 
 object SyncReadMem {
   @chiselRuntimeDeprecated
@@ -159,7 +158,7 @@ object SyncReadMem {
   * @note when multiple conflicting writes are performed on a Mem element, the
   * result is undefined (unlike Vec, where the last assignment wins)
   */
-sealed class SyncReadMem[T <: Data] private (t: T, n: Int) extends MemBase[T](t, n) {
+sealed class SyncReadMem[T <: Data] private (t: T, n: Int) extends chisel3.MemBase[T](t, n) {
   def read(x: UInt, en: Bool): T = macro SourceInfoTransform.xEnArg
 
   /** @group SourceInfoTransformMacro */

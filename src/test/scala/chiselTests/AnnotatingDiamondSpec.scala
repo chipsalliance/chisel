@@ -3,16 +3,11 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.{annotate, ChiselAnnotation, RunFirrtlTransform}
+import chisel3.experimental.{ChiselAnnotation, RunFirrtlTransform, annotate}
 import chisel3.internal.InstanceId
 import chisel3.testers.BasicTester
 import firrtl.{CircuitForm, CircuitState, LowForm, Transform}
-import firrtl.annotations.{
-  Annotation,
-  SingleTargetAnnotation,
-  ModuleName,
-  Named
-}
+import firrtl.annotations.{Annotation, ModuleName, Named, SingleTargetAnnotation}
 import org.scalatest._
 
 /** These annotations and the IdentityTransform class serve as an example of how to write a

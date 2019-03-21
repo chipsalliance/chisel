@@ -1,16 +1,16 @@
 // See LICENSE for license details.
 
-package chisel3.core
+package chisel3
 
-import scala.collection.immutable.ListMap
-import scala.collection.mutable.{ArrayBuffer, HashSet, LinkedHashMap}
-import scala.language.experimental.macros
-
-import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
+import chisel3.internal._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo._
-import chisel3.SourceInfoDoc
+import chisel3.experimental.BaseModule
+
+import scala.collection.immutable.ListMap
+import scala.collection.mutable.{HashSet, LinkedHashMap}
+import scala.language.experimental.macros
 
 /** An abstract class for data types that solely consist of (are an aggregate
   * of) other Data objects.
@@ -74,7 +74,7 @@ sealed abstract class Aggregate extends Data {
   def getElements: Seq[Data]
 
   private[chisel3] def width: Width = getElements.map(_.width).foldLeft(0.W)(_ + _)
-  private[core] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
+  private[chisel3] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
     // If the source is a DontCare, generate a DefInvalid for the sink,
     //  otherwise, issue a Connect.
     if (that == DontCare) {
@@ -87,7 +87,7 @@ sealed abstract class Aggregate extends Data {
   override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
     SeqUtils.do_asUInt(flatten.map(_.asUInt()))
   }
-  private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
+  private[chisel3] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
       compileOptions: CompileOptions): Unit = {
     var i = 0
     val bits = WireDefault(UInt(this.width), that)  // handles width padding
@@ -107,11 +107,11 @@ trait VecFactory extends SourceInfoDoc {
     if (compileOptions.declaredTypeMustBeUnbound) {
       requireIsChiselType(gen, "vec type")
     }
-    new Vec(gen.cloneTypeFull, n)
+    new chisel3.Vec(gen.cloneTypeFull, n)
   }
 
   /** Truncate an index to implement modulo-power-of-2 addressing. */
-  private[core] def truncateIndex(idx: UInt, n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = { // scalastyle:ignore line.size.limit
+  private[chisel3] def truncateIndex(idx: UInt, n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = { // scalastyle:ignore line.size.limit
     // scalastyle:off if.brace
     val w = BigInt(n-1).bitLength
     if (n <= 1) 0.U
@@ -122,7 +122,6 @@ trait VecFactory extends SourceInfoDoc {
   }
 }
 
-object Vec extends VecFactory
 // scalastyle:off line.size.limit
 /** A vector (array) of [[Data]] elements. Provides hardware versions of various
   * collection transformation functions found in software array implementations.
@@ -151,13 +150,13 @@ object Vec extends VecFactory
   *  - Vecs, unlike classes in Scala's collection library, are propagated intact to FIRRTL as a vector type, which may make debugging easier
   */
 // scalastyle:on line.size.limit
-sealed class Vec[T <: Data] private[core] (gen: => T, val length: Int)
-    extends Aggregate with VecLike[T] {
+sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
+    extends chisel3.Aggregate with VecLike[T] {
   override def toString: String = {
     s"$sample_element[$length]$bindingToString"
   }
 
-  private[core] override def typeEquivalent(that: Data): Boolean = that match {
+  private[chisel3] override def typeEquivalent(that: Data): Boolean = that match {
     case that: Vec[T] =>
       this.length == that.length &&
       (this.sample_element typeEquivalent that.sample_element)
@@ -247,7 +246,7 @@ sealed class Vec[T <: Data] private[core] (gen: => T, val length: Int)
   def apply(idx: Int): T = self(idx)
 
   override def cloneType: this.type = {
-    new Vec(gen.cloneTypeFull, length).asInstanceOf[this.type]
+    new chisel3.Vec(gen.cloneTypeFull, length).asInstanceOf[this.type]
   }
 
   override def getElements: Seq[Data] =
@@ -440,7 +439,7 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId with Source
   * Record should only be extended by libraries and fairly sophisticated generators.
   * RTL writers should use [[Bundle]].  See [[Record#elements]] for an example.
   */
-abstract class Record(private[chisel3] implicit val compileOptions: CompileOptions) extends Aggregate {
+abstract class Record(private[chisel3] implicit val compileOptions: CompileOptions) extends chisel3.Aggregate {
 
   /** The collection of [[Data]]
     *
@@ -474,7 +473,7 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
   /** Name for Pretty Printing */
   def className: String = this.getClass.getSimpleName
 
-  private[core] override def typeEquivalent(that: Data): Boolean = that match {
+  private[chisel3] override def typeEquivalent(that: Data): Boolean = that match {
     case that: Record =>
       this.getClass == that.getClass &&
       this.elements.size == that.elements.size &&

@@ -4,7 +4,7 @@ package chiselTests
 
 import org.scalatest._
 import chisel3._
-import chisel3.util.Decoupled
+import chisel3.experimental.DataMirror
 
 class DirectionedBundle extends Bundle {
   val in = Input(UInt(32.W))
@@ -42,6 +42,8 @@ class TopDirectionOutput extends Module {
 
 class DirectionSpec extends ChiselPropSpec with Matchers {
 
+  import chisel3.SpecifiedDirection
+
   //TODO: In Chisel3 these are actually FIRRTL errors. Remove from tests?
 
   property("Outputs should be assignable") {
@@ -61,8 +63,7 @@ class DirectionSpec extends ChiselPropSpec with Matchers {
     elaborate(new TopDirectionOutput)
   }
 
-  import chisel3.experimental.{MultiIOModule, DataMirror, Direction}
-  import chisel3.core.SpecifiedDirection
+  import chisel3.experimental.{MultiIOModule, Direction}
 
   property("Directions should be preserved through cloning and binding of Bundles") {
     elaborate(new MultiIOModule {

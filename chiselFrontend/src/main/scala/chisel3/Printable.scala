@@ -1,16 +1,11 @@
 // See LICENSE for license details.
 
-package chisel3.core
+package chisel3
 
 import chisel3.internal.firrtl.Component
-import chisel3.internal.HasId
 
 import scala.collection.mutable
-
-import java.util.{
-  MissingFormatArgumentException,
-  UnknownFormatConversionException
-}
+import java.util.{MissingFormatArgumentException, UnknownFormatConversionException}
 
 /** Superclass of things that can be printed in the resulting circuit
   *

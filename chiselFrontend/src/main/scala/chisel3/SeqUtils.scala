@@ -1,11 +1,13 @@
 // See LICENSE for license details.
 
-package chisel3.core
+package chisel3
 
 import chisel3.internal.throwException
+import chisel3.internal.sourceinfo._
+import chisel3.experimental.FixedPoint
+import experimental.FixedPoint.Implicits._
 
 import scala.language.experimental.macros
-import chisel3.internal.sourceinfo._
 
 //scalastyle:off method.name
 

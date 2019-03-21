@@ -1,15 +1,12 @@
-// See LICENSE for license details.
+package chisel3
 
-package chisel3.core
+import chisel3.internal.requireIsHardware
+import chisel3.internal.Builder.pushOp
+import chisel3.internal.firrtl.DefPrim
+import chisel3.internal.firrtl.PrimOp.MultiplexOp
+import chisel3.internal.sourceinfo.{MuxTransform, SourceInfo}
 
 import scala.language.experimental.macros
-
-import chisel3.internal._
-import chisel3.internal.Builder.{pushOp}
-import chisel3.internal.sourceinfo.{SourceInfo, MuxTransform}
-import chisel3.internal.firrtl._
-import chisel3.internal.firrtl.PrimOp._
-import chisel3.SourceInfoDoc
 
 object Mux extends SourceInfoDoc {
   /** Creates a mux, whose output is one of the inputs depending on the

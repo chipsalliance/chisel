@@ -2,6 +2,8 @@
 
 package chiselTests
 
+import chisel3._
+
 class ModuleExplicitResetSpec extends ChiselFlatSpec  {
 
   "A Module with an explicit reset in compatibility mode" should "elaborate" in {

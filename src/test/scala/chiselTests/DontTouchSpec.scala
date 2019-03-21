@@ -52,7 +52,7 @@ class DontTouchSpec extends ChiselFlatSpec {
     }
   }
   "Dont touch" should "only work on bound hardware" in {
-    a [chisel3.core.Binding.BindingException] should be thrownBy {
+    a [chisel3.Binding.BindingException] should be thrownBy {
       elaborate(new Module {
         val io = IO(new Bundle { })
         dontTouch(new Bundle { val a = UInt(32.W) } )

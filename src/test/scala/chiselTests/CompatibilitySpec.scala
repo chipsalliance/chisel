@@ -2,6 +2,7 @@
 
 package chiselTests
 
+import chisel3.Bundle
 import org.scalacheck.Gen
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 
@@ -20,7 +21,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
       }
       // Choose a random width
       val width = Gen.choose(1, 2048).sample.get
-      val io = new Bundle {
+      val io = new chisel3.Bundle {
         val b = Bool(directionArgument)
         val u = UInt(directionArgument, width)
       }
@@ -69,7 +70,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
   it should "successfully compile a complete module" in {
     class Dummy extends Module {
       // The following just checks that we can create objects with nothing more than the Chisel compatibility package.
-      val io = new Bundle {}
+      val io = new chisel3.Bundle {}
       val data = UInt(width = 3)
       new ArbiterIO(data, 2) shouldBe a [ArbiterIO[_]]
       new LockingRRArbiter(data, 2, 2, None) shouldBe a [LockingRRArbiter[_]]
@@ -119,7 +120,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
   }
   // Verify we can elaborate a design expressed in Chisel2
   class Chisel2CompatibleRisc extends Module {
-    val io = new Bundle {
+    val io = new chisel3.Bundle {
       val isWr   = Bool(INPUT)
       val wrAddr = UInt(INPUT, 8)
       val wrData = Bits(INPUT, 32)
@@ -171,15 +172,16 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
   }
 
   it should "not try to assign directions to Analog" in {
+    import chisel3.internal.firrtl.KnownWidth
     elaborate(new Module {
-      val io = new Bundle {
-        val port = chisel3.experimental.Analog(32.W)
+      val io = new chisel3.Bundle {
+        val port = chisel3.Analog(KnownWidth(32))
       }
     })
   }
 
 
-  class SmallBundle extends Bundle {
+  class SmallBundle extends chisel3.Bundle {
     val f1 = UInt(width = 4)
     val f2 = UInt(width = 5)
     override def cloneType: this.type = (new SmallBundle).asInstanceOf[this.type]
@@ -205,7 +207,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
   "A Module in which a Reg is created with a bound type when compiled with the Chisel compatibility package" should "not throw an exception" in {
 
     class CreateRegFromBoundTypeModule extends Module {
-      val io = new Bundle {
+      val io = new chisel3.Bundle {
         val in = (new SmallBundle).asInput
         val out = (new BigBundle).asOutput
       }
@@ -217,7 +219,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
   "A Module with unwrapped IO when compiled with the Chisel compatibility package" should "not throw an exception" in {
 
     class RequireIOWrapModule extends Module {
-      val io = new Bundle {
+      val io = new chisel3.Bundle {
         val in = UInt(width = 32).asInput
         val out = Bool().asOutput
       }
@@ -229,7 +231,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
   "A Module connecting output as source to input as sink when compiled with the Chisel compatibility package" should "not throw an exception" in {
 
     class SimpleModule extends Module {
-      val io = new Bundle {
+      val io = new chisel3.Bundle {
         val in = (UInt(width = 3)).asInput
         val out = (UInt(width = 4)).asOutput
       }
@@ -244,7 +246,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
   "A Module with directionless connections when compiled with the Chisel compatibility package" should "not throw an exception" in {
 
     class SimpleModule extends Module {
-      val io = new Bundle {
+      val io = new chisel3.Bundle {
         val in = (UInt(width = 3)).asInput
         val out = (UInt(width = 4)).asOutput
       }
@@ -263,18 +265,18 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
   "Vec ports" should "give default directions to children so they can be used in chisel3.util" in {
     import Chisel._
     elaborate(new Module {
-      val io = new Bundle {
+      val io = new chisel3.Bundle {
         val in = Vec(1, UInt(width = 8)).flip
         val out = UInt(width = 8)
       }
-      io.out := RegEnable(io.in(0), true.B)
+      io.out := RegEnable(io.in(0), Bool(true))
     })
   }
 
   "Reset" should "still walk, talk, and quack like a Bool" in {
     import Chisel._
     elaborate(new Module {
-      val io = new Bundle {
+      val io = new chisel3.Bundle {
         val in = Bool(INPUT)
         val out = Bool(OUTPUT)
       }
@@ -285,7 +287,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
   "Data.dir" should "give the correct direction for io" in {
     import Chisel._
     elaborate(new Module {
-      val io = (new Bundle {
+      val io = (new chisel3.Bundle {
         val foo = Bool(OUTPUT)
         val bar = Bool().flip
       }).flip
@@ -297,9 +299,9 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
   // Note: This is a regression (see https://github.com/freechipsproject/chisel3/issues/668)
   it should "fail for Chisel types" in {
     import Chisel._
-    an [chisel3.core.Binding.ExpectedHardwareException] should be thrownBy {
+    an [chisel3.Binding.ExpectedHardwareException] should be thrownBy {
       elaborate(new Module {
-        val io = new Bundle { }
+        val io = new chisel3.Bundle { }
         UInt(INPUT).dir
       })
     }
@@ -308,8 +310,8 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
   "Mux return value" should "be able to be used on the RHS" in {
     import Chisel._
     elaborate(new Module {
-      val gen = new Bundle { val foo = UInt(width = 8) }
-      val io = new Bundle {
+      val gen = new chisel3.Bundle { val foo = UInt(width = 8) }
+      val io = new chisel3.Bundle {
         val a = Vec(2, UInt(width = 8)).asInput
         val b = Vec(2, UInt(width = 8)).asInput
         val c = gen.asInput
@@ -326,7 +328,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
   "Chisel3 IO constructs" should "be useable in Chisel2" in {
     import Chisel._
     elaborate(new Module {
-      val io = IO(new Bundle {
+      val io = IO(new chisel3.Bundle {
         val in = Input(Bool())
         val foo = Output(Bool())
         val bar = Flipped(Bool())
