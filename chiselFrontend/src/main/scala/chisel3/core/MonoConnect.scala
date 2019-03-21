@@ -2,11 +2,13 @@
 
 package chisel3.core
 
-import chisel3.internal.ChiselException
-import chisel3.internal.Builder.pushCommand
-import chisel3.internal.firrtl.{Connect, DefInvalid}
+import chisel3._
+import internal.ChiselException
+import internal.Builder.pushCommand
+import internal.firrtl.{Connect, DefInvalid}
+
 import scala.language.experimental.macros
-import chisel3.internal.sourceinfo.SourceInfo
+import internal.sourceinfo.SourceInfo
 
 /**
 * MonoConnect.connect executes a mono-directional connection element-wise.

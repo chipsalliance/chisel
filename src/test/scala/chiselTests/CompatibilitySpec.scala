@@ -171,9 +171,10 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
   }
 
   it should "not try to assign directions to Analog" in {
+    import chisel3.internal.firrtl.KnownWidth
     elaborate(new Module {
       val io = new Bundle {
-        val port = chisel3.experimental.Analog(32.W)
+        val port = chisel3.Analog(KnownWidth(32))
       }
     })
   }
@@ -267,7 +268,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
         val in = Vec(1, UInt(width = 8)).flip
         val out = UInt(width = 8)
       }
-      io.out := RegEnable(io.in(0), true.B)
+      io.out := RegEnable(io.in(0), Bool(true))
     })
   }
 

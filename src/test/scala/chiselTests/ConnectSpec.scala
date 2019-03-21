@@ -3,7 +3,6 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.{Analog, FixedPoint}
 import chisel3.testers.BasicTester
 
 abstract class CrossCheck extends Bundle {

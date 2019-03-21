@@ -6,15 +6,13 @@ import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.collection.JavaConversions._
 import scala.language.experimental.macros
-
 import java.util.IdentityHashMap
 
 import chisel3.internal._
 import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{InstTransform, SourceInfo}
-import chisel3.SourceInfoDoc
-
+import chisel3._
 import _root_.firrtl.annotations.{CircuitName, ModuleName}
 
 object Module extends SourceInfoDoc {
@@ -163,7 +161,7 @@ abstract class BaseModule extends HasId {
   protected var _closed = false
 
   /** Internal check if a Module is closed */
-  private[core] def isClosed = _closed
+  private[chisel3] def isClosed = _closed
 
   // Fresh Namespace because in Firrtl, Modules namespaces are disjoint with the global namespace
   private[core] val _namespace = Namespace.empty
@@ -179,7 +177,7 @@ abstract class BaseModule extends HasId {
 
   private val _ports = new ArrayBuffer[Data]()
   // getPorts unfortunately already used for tester compatibility
-  protected def getModulePorts = {
+  private[chisel3] def getModulePorts = {
     require(_closed, "Can't get ports before module close")
     _ports.toSeq
   }
@@ -229,7 +227,7 @@ abstract class BaseModule extends HasId {
    *
    * TODO: Use SeqMap/VectorMap when those data structures become available.
    */
-  private[core] def getChiselPorts: Seq[(String, Data)] = {
+  private[chisel3] def getChiselPorts: Seq[(String, Data)] = {
     require(_closed, "Can't get ports before module close")
     _component.get.ports.map { port =>
       (port.id.getRef.asInstanceOf[ModuleIO].name, port.id)

@@ -3,7 +3,6 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.FixedPoint
 import chisel3.internal.firrtl.{BinaryPoint, Width}
 import chisel3.testers.BasicTester
 import org.scalatest._

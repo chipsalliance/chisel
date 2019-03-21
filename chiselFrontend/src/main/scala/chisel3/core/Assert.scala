@@ -2,9 +2,10 @@
 
 package chisel3.core
 
+import chisel3.{Bits, Bool}
+
 import scala.reflect.macros.blackbox.Context
 import scala.language.experimental.macros
-
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._

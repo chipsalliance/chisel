@@ -3,13 +3,12 @@
 package chisel3.core
 
 import scala.language.experimental.macros
-
 import chisel3.internal._
-import chisel3.internal.Builder.{pushOp}
-import chisel3.internal.sourceinfo.{SourceInfo, MuxTransform}
+import chisel3.internal.Builder.pushOp
+import chisel3.internal.sourceinfo.{MuxTransform, SourceInfo}
 import chisel3.internal.firrtl._
 import chisel3.internal.firrtl.PrimOp._
-import chisel3.SourceInfoDoc
+import chisel3._
 
 object Mux extends SourceInfoDoc {
   /** Creates a mux, whose output is one of the inputs depending on the

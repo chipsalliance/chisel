@@ -2,12 +2,13 @@
 
 package chisel3.core
 
-import scala.language.experimental.macros
+import chisel3.Bool
 
+import scala.language.experimental.macros
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.{SourceInfo}
+import chisel3.internal.sourceinfo.SourceInfo
 
 object when {  // scalastyle:ignore object.name
   /** Create a `when` condition block, where whether a block of logic is

@@ -2,6 +2,7 @@
 
 package chisel3.core
 
+import chisel3._
 import chisel3.internal.throwException
 
 import scala.language.experimental.macros

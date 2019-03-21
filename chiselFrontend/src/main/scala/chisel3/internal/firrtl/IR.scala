@@ -4,8 +4,8 @@ package chisel3.internal.firrtl
 
 import chisel3._
 import core._
-import chisel3.internal._
-import chisel3.internal.sourceinfo.{SourceInfo, NoSourceInfo}
+import internal._
+import internal.sourceinfo.{SourceInfo, NoSourceInfo}
 
 // scalastyle:off number.of.types
 

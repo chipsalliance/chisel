@@ -2,10 +2,11 @@
 
 package chisel3.core
 
+import chisel3._
+
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox.Context
 import scala.collection.mutable
-
 import chisel3.internal.Builder.pushOp
 import chisel3.internal.firrtl.PrimOp._
 import chisel3.internal.firrtl._
@@ -59,14 +60,14 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
     pushOp(DefPrim(sourceInfo, Bool(), op, this.ref, other.ref))
   }
 
-  private[core] override def typeEquivalent(that: Data): Boolean = {
+  private[chisel3] override def typeEquivalent(that: Data): Boolean = {
     this.getClass == that.getClass &&
     this.factory == that.asInstanceOf[EnumType].factory
   }
 
   // This isn't actually used anywhere (and it would throw an exception anyway). But it has to be defined since we
   // inherit it from Data.
-  private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
+  private[chisel3] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
       compileOptions: CompileOptions): Unit = ???
 
   final def === (that: EnumType): Bool = macro SourceInfoTransform.thatArg

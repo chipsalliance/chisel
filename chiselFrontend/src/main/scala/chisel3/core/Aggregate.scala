@@ -5,12 +5,11 @@ package chisel3.core
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer, HashSet, LinkedHashMap}
 import scala.language.experimental.macros
-
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo._
-import chisel3.SourceInfoDoc
+import chisel3._
 
 /** An abstract class for data types that solely consist of (are an aggregate
   * of) other Data objects.
@@ -74,7 +73,7 @@ sealed abstract class Aggregate extends Data {
   def getElements: Seq[Data]
 
   private[chisel3] def width: Width = getElements.map(_.width).foldLeft(0.W)(_ + _)
-  private[core] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
+  private[chisel3] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
     // If the source is a DontCare, generate a DefInvalid for the sink,
     //  otherwise, issue a Connect.
     if (that == DontCare) {
@@ -87,7 +86,7 @@ sealed abstract class Aggregate extends Data {
   override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
     SeqUtils.do_asUInt(flatten.map(_.asUInt()))
   }
-  private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
+  private[chisel3] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
       compileOptions: CompileOptions): Unit = {
     var i = 0
     val bits = WireDefault(UInt(this.width), that)  // handles width padding
@@ -157,7 +156,7 @@ sealed class Vec[T <: Data] private[core] (gen: => T, val length: Int)
     s"$sample_element[$length]$bindingToString"
   }
 
-  private[core] override def typeEquivalent(that: Data): Boolean = that match {
+  private[chisel3] override def typeEquivalent(that: Data): Boolean = that match {
     case that: Vec[T] =>
       this.length == that.length &&
       (this.sample_element typeEquivalent that.sample_element)
@@ -474,7 +473,7 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
   /** Name for Pretty Printing */
   def className: String = this.getClass.getSimpleName
 
-  private[core] override def typeEquivalent(that: Data): Boolean = that match {
+  private[chisel3] override def typeEquivalent(that: Data): Boolean = that match {
     case that: Record =>
       this.getClass == that.getClass &&
       this.elements.size == that.elements.size &&

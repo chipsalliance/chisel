@@ -2,8 +2,9 @@
 
 package chisel3.core
 
-import scala.language.experimental.macros
+import chisel3.Bits
 
+import scala.language.experimental.macros
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._

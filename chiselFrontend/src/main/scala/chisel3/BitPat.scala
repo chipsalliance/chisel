@@ -1,12 +1,12 @@
 // See LICENSE for license details.
 
-package chisel3.util
+package chisel3
 
-import scala.language.experimental.macros
-import chisel3._
 import chisel3.core.CompileOptions
 import chisel3.internal.chiselRuntimeDeprecated
 import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform}
+
+import scala.language.experimental.macros
 
 object BitPat {
   /** Parses a bit pattern string into (bits, mask, width).

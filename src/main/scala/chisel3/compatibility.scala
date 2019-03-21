@@ -1,3 +1,4 @@
+import chisel3.{BitPat, Data, Flipped, _}
 // See LICENSE for license details.
 
 /** The Chisel compatibility package allows legacy users to continue using the `Chisel` (capital C) package name
@@ -19,21 +20,21 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
   case object OUTPUT extends Direction
   case object NODIR extends Direction
 
-  val Input   = chisel3.core.Input
-  val Output  = chisel3.core.Output
+  val Input   = chisel3.Input
+  val Output  = chisel3.Output
 
   object Flipped {
-    def apply[T<:Data](target: T): T = chisel3.core.Flipped[T](target)
+    def apply[T<:chisel3.Data](target: T): T = chisel3.Flipped[T](target)
   }
 
-  implicit class AddDirectionToData[T<:Data](target: T) {
-    def asInput: T = chisel3.core.Input(target)
-    def asOutput: T = chisel3.core.Output(target)
-    def flip(): T = chisel3.core.Flipped(target)
+  implicit class AddDirectionToData[T<:chisel3.Data](target: T) {
+    def asInput: T = chisel3.Input(target)
+    def asOutput: T = Output(target)
+    def flip(): T = chisel3.Flipped(target)
   }
 
-  implicit class AddDirMethodToData[T<:Data](target: T) {
-    import chisel3.core.{DataMirror, ActualDirection, requireIsHardware}
+  implicit class AddDirMethodToData[T<:chisel3.Data](target: T) {
+    import chisel3.core.requireIsHardware
     def dir: Direction = {
       requireIsHardware(target) // This has the side effect of calling _autoWrapPorts
       target match {
@@ -46,8 +47,10 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
       }
     }
   }
-  implicit class cloneTypeable[T <: Data](target: T) {
-    import chisel3.core.DataMirror
+  implicit class cloneTypeable[T <: chisel3.Data](target: T) {
+
+    import chisel3.DataMirror
+
     def chiselCloneType: T = {
       DataMirror.internal.chiselTypeClone(target).asInstanceOf[T]
     }
@@ -55,15 +58,15 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
 
   type ChiselException = chisel3.internal.ChiselException
 
-  type Data = chisel3.core.Data
-  object Wire extends chisel3.core.WireFactory {
+  type Data = chisel3.Data
+  object Wire extends WireFactory {
     import chisel3.core.CompileOptions
 
-    def apply[T <: Data](dummy: Int = 0, init: T)(implicit compileOptions: CompileOptions): T =
-      chisel3.core.WireDefault(init)
+    def apply[T <: chisel3.Data](dummy: Int = 0, init: T)(implicit compileOptions: CompileOptions): T =
+      chisel3.WireDefault(init)
 
-    def apply[T <: Data](t: T, init: T)(implicit compileOptions: CompileOptions): T =
-      chisel3.core.WireDefault(t, init)
+    def apply[T <: chisel3.Data](t: T, init: T)(implicit compileOptions: CompileOptions): T =
+      chisel3.WireDefault(t, init)
   }
   object Clock {
     def apply(): Clock = new Clock
@@ -71,8 +74,8 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
     def apply(dir: Direction): Clock = {
       val result = apply()
       dir match {
-        case INPUT => chisel3.core.Input(result)
-        case OUTPUT => chisel3.core.Output(result)
+        case INPUT => chisel3.Input(result)
+        case OUTPUT => chisel3.Output(result)
         case _ => result
       }
     }
@@ -80,7 +83,7 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
   type Clock = chisel3.core.Clock
 
   // Implicit conversion to allow fromBits because it's being deprecated in chisel3
-  implicit class fromBitsable[T <: Data](data: T) {
+  implicit class fromBitsable[T <: chisel3.Data](data: T) {
     import chisel3.core.CompileOptions
     import chisel3.internal.sourceinfo.SourceInfo
 
@@ -94,7 +97,7 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
       * @note does NOT check bit widths, may drop bits during assignment
       * @note what fromBits assigs to must have known widths
       */
-    def fromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    def fromBits(that: chisel3.Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
       that.asTypeOf(data)
     }
   }
@@ -105,39 +108,39 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
     import chisel3.internal.sourceinfo._
 
     @deprecated("Vec argument order should be size, t; this will be removed by the official release", "chisel3")
-    def apply[T <: Data](gen: T, n: Int)(implicit compileOptions: CompileOptions): Vec[T] =
+    def apply[T <: chisel3.Data](gen: T, n: Int)(implicit compileOptions: CompileOptions): Vec[T] =
       apply(n, gen)
 
     /** Creates a new [[Vec]] of length `n` composed of the result of the given
       * function repeatedly applied.
       *
-      * @param n number of elements (and the number of times the function is
-      * called)
-      * @param gen function that generates the [[Data]] that becomes the output
-      * element
+      * @param n   number of elements (and the number of times the function is
+      *            called)
+      * @param gen function that generates the [[chisel3.Data]] that becomes the output
+      *            element
       */
-    def fill[T <: Data](n: Int)(gen: => T)(implicit compileOptions: CompileOptions): Vec[T] =
+    def fill[T <: chisel3.Data](n: Int)(gen: => T)(implicit compileOptions: CompileOptions): Vec[T] =
       apply(Seq.fill(n)(gen))
 
-    def apply[T <: Data](elts: Seq[T]): Vec[T] = macro VecTransform.apply_elts
+    def apply[T <: chisel3.Data](elts: Seq[T]): Vec[T] = macro VecTransform.apply_elts
     /** @group SourceInfoTransformMacro */
-    def do_apply[T <: Data](elts: Seq[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
+    def do_apply[T <: chisel3.Data](elts: Seq[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
       chisel3.core.VecInit(elts)
 
-    def apply[T <: Data](elt0: T, elts: T*): Vec[T] = macro VecTransform.apply_elt0
+    def apply[T <: chisel3.Data](elt0: T, elts: T*): Vec[T] = macro VecTransform.apply_elt0
     /** @group SourceInfoTransformMacro */
-    def do_apply[T <: Data](elt0: T, elts: T*)
-        (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
+    def do_apply[T <: chisel3.Data](elt0: T, elts: T*)
+                                   (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
       chisel3.core.VecInit(elt0 +: elts.toSeq)
 
-    def tabulate[T <: Data](n: Int)(gen: (Int) => T): Vec[T] = macro VecTransform.tabulate
+    def tabulate[T <: chisel3.Data](n: Int)(gen: (Int) => T): Vec[T] = macro VecTransform.tabulate
     /** @group SourceInfoTransformMacro */
-    def do_tabulate[T <: Data](n: Int)(gen: (Int) => T)
-        (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
+    def do_tabulate[T <: chisel3.Data](n: Int)(gen: (Int) => T)
+                                      (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
       chisel3.core.VecInit.tabulate(n)(gen)
   }
-  type Vec[T <: Data] = chisel3.core.Vec[T]
-  type VecLike[T <: Data] = chisel3.core.VecLike[T]
+  type Vec[T <: chisel3.Data] = chisel3.core.Vec[T]
+  type VecLike[T <: chisel3.Data] = chisel3.core.VecLike[T]
   type Record = chisel3.core.Record
   type Bundle = chisel3.core.Bundle
 
@@ -146,39 +149,39 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
 
   /** This contains literal constructor factory methods that are deprecated as of Chisel3.
     */
-  trait UIntFactory extends chisel3.core.UIntFactory {
+  trait UIntFactory extends chisel3.UIntFactoryBase {
     /** Create a UInt literal with inferred width. */
-    def apply(n: String): UInt = n.asUInt
+    def apply(n: String): chisel3.UInt = n.asUInt
     /** Create a UInt literal with fixed width. */
-    def apply(n: String, width: Int): UInt = n.asUInt(width.W)
+    def apply(n: String, width: Int): chisel3.UInt = n.asUInt(width.W)
 
     /** Create a UInt literal with specified width. */
-    def apply(value: BigInt, width: Width): UInt = value.asUInt(width)
+    def apply(value: BigInt, width: Width): chisel3.UInt = value.asUInt(width)
 
     /** Create a UInt literal with fixed width. */
-    def apply(value: BigInt, width: Int): UInt = value.asUInt(width.W)
+    def apply(value: BigInt, width: Int): chisel3.UInt = value.asUInt(width.W)
 
     /** Create a UInt with a specified width - compatibility with Chisel2. */
     // NOTE: This resolves UInt(width = 32)
-    def apply(dir: Option[Direction] = None, width: Int): UInt = apply(width.W)
+    def apply(dir: Option[Direction] = None, width: Int): chisel3.UInt = apply(width.W)
     /** Create a UInt literal with inferred width.- compatibility with Chisel2. */
-    def apply(value: BigInt): UInt = value.asUInt
+    def apply(value: BigInt): chisel3.UInt = value.asUInt
 
     /** Create a UInt with a specified direction and width - compatibility with Chisel2. */
-    def apply(dir: Direction, width: Int): UInt = apply(dir, width.W)
+    def apply(dir: Direction, width: Int): chisel3.UInt = apply(dir, width.W)
     /** Create a UInt with a specified direction, but unspecified width - compatibility with Chisel2. */
-    def apply(dir: Direction): UInt = apply(dir, Width())
-    def apply(dir: Direction, width: Width): UInt = {
+    def apply(dir: Direction): chisel3.UInt = apply(dir, Width())
+    def apply(dir: Direction, width: Width): chisel3.UInt = {
       val result = apply(width)
       dir match {
-        case INPUT => chisel3.core.Input(result)
-        case OUTPUT => chisel3.core.Output(result)
+        case INPUT => chisel3.Input(result)
+        case OUTPUT => chisel3.Output(result)
         case NODIR => result
       }
     }
 
     /** Create a UInt with a specified width */
-    def width(width: Int): UInt = apply(width.W)
+    def width(width: Int): chisel3.UInt = apply(width.W)
 
     /** Create a UInt port with specified width. */
     def width(width: Width): UInt = apply(width)
@@ -186,34 +189,34 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
 
   /** This contains literal constructor factory methods that are deprecated as of Chisel3.
     */
-  trait SIntFactory extends chisel3.core.SIntFactory {
+  trait SIntFactory extends chisel3.SIntFactoryBase {
     /** Create a SInt type or port with fixed width. */
-    def width(width: Int): SInt = apply(width.W)
+    def width(width: Int): chisel3.SInt = apply(width.W)
     /** Create an SInt type with specified width. */
-    def width(width: Width): SInt = apply(width)
+    def width(width: Width): chisel3.SInt = apply(width)
 
     /** Create an SInt literal with inferred width. */
-    def apply(value: BigInt): SInt = value.asSInt
+    def apply(value: BigInt): chisel3.SInt = value.asSInt
     /** Create an SInt literal with fixed width. */
     def apply(value: BigInt, width: Int): SInt = value.asSInt(width.W)
 
     /** Create an SInt literal with specified width. */
-    def apply(value: BigInt, width: Width): SInt = value.asSInt(width)
+    def apply(value: BigInt, width: Width): chisel3.SInt = value.asSInt(width)
 
-    def Lit(value: BigInt): SInt = value.asSInt // scalastyle:ignore method.name
-    def Lit(value: BigInt, width: Int): SInt = value.asSInt(width.W) // scalastyle:ignore method.name
+    def Lit(value: BigInt): chisel3.SInt = value.asSInt // scalastyle:ignore method.name
+    def Lit(value: BigInt, width: Int): chisel3.SInt = value.asSInt(width.W) // scalastyle:ignore method.name
 
     /** Create a SInt with a specified width - compatibility with Chisel2. */
-    def apply(dir: Option[Direction] = None, width: Int): SInt = apply(width.W)
+    def apply(dir: Option[Direction] = None, width: Int): chisel3.SInt = apply(width.W)
     /** Create a SInt with a specified direction and width - compatibility with Chisel2. */
-    def apply(dir: Direction, width: Int): SInt = apply(dir, width.W)
+    def apply(dir: Direction, width: Int): chisel3.SInt = apply(dir, width.W)
     /** Create a SInt with a specified direction, but unspecified width - compatibility with Chisel2. */
-    def apply(dir: Direction): SInt = apply(dir, Width())
-    def apply(dir: Direction, width: Width): SInt = {
+    def apply(dir: Direction): chisel3.SInt = apply(dir, Width())
+    def apply(dir: Direction, width: Width): chisel3.SInt = {
       val result = apply(width)
       dir match {
-        case INPUT => chisel3.core.Input(result)
-        case OUTPUT => chisel3.core.Output(result)
+        case INPUT => chisel3.Input(result)
+        case OUTPUT => chisel3.Output(result)
         case NODIR => result
       }
     }
@@ -221,36 +224,36 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
 
   /** This contains literal constructor factory methods that are deprecated as of Chisel3.
     */
-  trait BoolFactory extends chisel3.core.BoolFactory {
+  trait BoolFactory extends chisel3.BoolFactoryBase {
     /** Creates Bool literal.
       */
-    def apply(x: Boolean): Bool = x.B
+    def apply(x: Boolean): chisel3.Bool = x.B
 
     /** Create a UInt with a specified direction and width - compatibility with Chisel2. */
-    def apply(dir: Direction): Bool = {
+    def apply(dir: Direction): chisel3.Bool = {
       val result = apply()
       dir match {
-        case INPUT => chisel3.core.Input(result)
-        case OUTPUT => chisel3.core.Output(result)
+        case INPUT => chisel3.Input(result)
+        case OUTPUT => chisel3.Output(result)
         case NODIR => result
       }
     }
   }
 
-  type Element = chisel3.core.Element
-  type Bits = chisel3.core.Bits
+  type Element = chisel3.Element
+  type Bits = chisel3.Bits
   object Bits extends UIntFactory
-  type Num[T <: Data] = chisel3.core.Num[T]
-  type UInt = chisel3.core.UInt
+  type Num[T <: chisel3.Data] = chisel3.Num[T]
+  type UInt = chisel3.UInt
   object UInt extends UIntFactory
-  type SInt = chisel3.core.SInt
+  type SInt = chisel3.SInt
   object SInt extends SIntFactory
-  type Bool = chisel3.core.Bool
+  type Bool = chisel3.Bool
   object Bool extends BoolFactory
   val Mux = chisel3.core.Mux
-  type Reset = chisel3.core.Reset
+  type Reset = chisel3.Reset
 
-  implicit def resetToBool(reset: Reset): Bool = reset.asBool
+  implicit def resetToBool(reset: Reset): chisel3.Bool = reset.asBool
 
   import chisel3.core.Param
   abstract class BlackBox(params: Map[String, Param] = Map.empty[String, Param]) extends chisel3.core.BlackBox(params) {
@@ -263,10 +266,10 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
     }
   }
   val Mem = chisel3.core.Mem
-  type MemBase[T <: Data] = chisel3.core.MemBase[T]
-  type Mem[T <: Data] = chisel3.core.Mem[T]
+  type MemBase[T <: chisel3.Data] = chisel3.core.MemBase[T]
+  type Mem[T <: chisel3.Data] = chisel3.core.Mem[T]
   val SeqMem = chisel3.core.SyncReadMem
-  type SeqMem[T <: Data] = chisel3.core.SyncReadMem[T]
+  type SeqMem[T <: chisel3.Data] = chisel3.core.SyncReadMem[T]
 
   import chisel3.core.CompileOptions
   abstract class CompatibilityModule(implicit moduleCompileOptions: CompileOptions)
@@ -276,7 +279,7 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
     // Also provides the clock / reset constructors, which were used before withClock happened.
 
     // Provide a non-deprecated constructor
-    def this(override_clock: Option[Clock]=None, override_reset: Option[Bool]=None)
+    def this(override_clock: Option[Clock]=None, override_reset: Option[chisel3.Bool]=None)
         (implicit moduleCompileOptions: CompileOptions) = {
       this()
       this.override_clock = override_clock
@@ -284,7 +287,7 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
     }
     def this(_clock: Clock)(implicit moduleCompileOptions: CompileOptions) =
       this(Option(_clock), None)(moduleCompileOptions)
-    def this(_reset: Bool)(implicit moduleCompileOptions: CompileOptions)  =
+    def this(_reset: chisel3.Bool)(implicit moduleCompileOptions: CompileOptions)  =
       this(None, Option(_reset))(moduleCompileOptions)
     def this(_clock: Clock, _reset: Bool)(implicit moduleCompileOptions: CompileOptions) =
       this(Option(_clock), Option(_reset))(moduleCompileOptions)
@@ -310,7 +313,7 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
     // Passthrough for chisel3.core.Reg
     // Single-element constructor to avoid issues caused by null default args in a type
     // parameterized scope.
-    def apply[T <: Data](t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
+    def apply[T <: chisel3.Data](t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
       chisel3.core.Reg(t)
 
     /** Creates a register with optional next and initialization values.
@@ -326,8 +329,8 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
       * is a valid value. In those cases, you can either use the outType only Reg
       * constructor or pass in `null.asInstanceOf[T]`.
       */
-    def apply[T <: Data](t: T = null, next: T = null, init: T = null)
-        (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    def apply[T <: chisel3.Data](t: T = null, next: T = null, init: T = null)
+                                (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
       if (t ne null) {
         val reg = if (init ne null) {
           RegInit(t, init)
@@ -355,12 +358,12 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
   val when = chisel3.core.when
   type WhenContext = chisel3.core.WhenContext
 
-  implicit class fromBigIntToLiteral(x: BigInt) extends chisel3.core.fromBigIntToLiteral(x)
-  implicit class fromtIntToLiteral(x: Int) extends chisel3.core.fromIntToLiteral(x)
-  implicit class fromtLongToLiteral(x: Long) extends chisel3.core.fromLongToLiteral(x)
-  implicit class fromStringToLiteral(x: String) extends chisel3.core.fromStringToLiteral(x)
-  implicit class fromBooleanToLiteral(x: Boolean) extends chisel3.core.fromBooleanToLiteral(x)
-  implicit class fromIntToWidth(x: Int) extends chisel3.core.fromIntToWidth(x)
+//  implicit class fromBigIntToLiteral(x: BigInt) extends core.fromBigIntToLiteral(x)
+//  implicit class fromtIntToLiteral(x: Int) extends chisel3.core.fromIntToLiteral(x)
+//  implicit class fromtLongToLiteral(x: Long) extends chisel3.core.fromLongToLiteral(x)
+//  implicit class fromStringToLiteral(x: String) extends chisel3.core.fromStringToLiteral(x)
+//  implicit class fromBooleanToLiteral(x: Boolean) extends chisel3.core.fromBooleanToLiteral(x)
+//  implicit class fromIntToWidth(x: Int) extends chisel3.core.fromIntToWidth(x)
 
   type BackendCompilationUtilities = firrtl.util.BackendCompilationUtilities
   val Driver = chisel3.Driver
@@ -383,7 +386,7 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
 
   @deprecated("debug doesn't do anything in Chisel3 as no pruning happens in the frontend", "chisel3")
   object debug {  // scalastyle:ignore object.name
-    def apply (arg: Data): Data = arg
+    def apply (arg: chisel3.Data): chisel3.Data = arg
   }
 
   // Deprecated as of Chsiel3
@@ -419,15 +422,15 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
     def apply(in: Int): Int = apply(BigInt(in))
   }
 
-  val BitPat = chisel3.util.BitPat
-  type BitPat = chisel3.util.BitPat
+  val BitPat = chisel3.BitPat
+  type BitPat = chisel3.BitPat
 
-  type ArbiterIO[T <: Data] = chisel3.util.ArbiterIO[T]
+  type ArbiterIO[T <: chisel3.Data] = chisel3.util.ArbiterIO[T]
   type LockingArbiterLike[T <: Data] = chisel3.util.LockingArbiterLike[T]
-  type LockingRRArbiter[T <: Data] = chisel3.util.LockingRRArbiter[T]
-  type LockingArbiter[T <: Data] = chisel3.util.LockingArbiter[T]
-  type RRArbiter[T <: Data] = chisel3.util.RRArbiter[T]
-  type Arbiter[T <: Data] = chisel3.util.Arbiter[T]
+  type LockingRRArbiter[T <: chisel3.Data] = chisel3.util.LockingRRArbiter[T]
+  type LockingArbiter[T <: chisel3.Data] = chisel3.util.LockingArbiter[T]
+  type RRArbiter[T <: chisel3.Data] = chisel3.util.RRArbiter[T]
+  type Arbiter[T <: chisel3.Data] = chisel3.util.Arbiter[T]
 
   val FillInterleaved = chisel3.util.FillInterleaved
   val PopCount = chisel3.util.PopCount
@@ -446,11 +449,11 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
   type Counter = chisel3.util.Counter
   val Counter = chisel3.util.Counter
 
-  type DecoupledIO[+T <: Data] = chisel3.util.DecoupledIO[T]
+  type DecoupledIO[+T <: chisel3.Data] = chisel3.util.DecoupledIO[T]
   val DecoupledIO = chisel3.util.Decoupled
   val Decoupled = chisel3.util.Decoupled
-  type QueueIO[T <: Data] = chisel3.util.QueueIO[T]
-  type Queue[T <: Data] = chisel3.util.Queue[T]
+  type QueueIO[T <: chisel3.Data] = chisel3.util.QueueIO[T]
+  type Queue[T <: chisel3.Data] = chisel3.util.Queue[T]
   val Queue = chisel3.util.Queue
 
   object Enum extends chisel3.util.Enum {
@@ -471,8 +474,8 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
       * }
       * }}}
       */
-    def apply[T <: Bits](nodeType: T, n: Int): List[T] = {
-      require(nodeType.isInstanceOf[UInt], "Only UInt supported for enums")
+    def apply[T <: chisel3.Bits](nodeType: T, n: Int): List[T] = {
+      require(nodeType.isInstanceOf[chisel3.UInt], "Only UInt supported for enums")
       require(!nodeType.widthKnown, "Bit width may no longer be specified for enums")
       apply(n).asInstanceOf[List[T]]
     }
@@ -487,8 +490,8 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
       * Deprecation is only to nag users to do something safer.
       */
     @deprecated("Use list-based Enum", "not soon enough")
-    def apply[T <: Bits](nodeType: T, l: Symbol *): Map[Symbol, T] = {
-      require(nodeType.isInstanceOf[UInt], "Only UInt supported for enums")
+    def apply[T <: chisel3.Bits](nodeType: T, l: Symbol *): Map[Symbol, T] = {
+      require(nodeType.isInstanceOf[chisel3.UInt], "Only UInt supported for enums")
       require(!nodeType.widthKnown, "Bit width may no longer be specified for enums")
       (l zip createValues(l.length)).toMap.asInstanceOf[Map[Symbol, T]]
     }
@@ -503,8 +506,8 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
       * Deprecation is only to nag users to do something safer.
       */
     @deprecated("Use list-based Enum", "not soon enough")
-    def apply[T <: Bits](nodeType: T, l: List[Symbol]): Map[Symbol, T] = {
-      require(nodeType.isInstanceOf[UInt], "Only UInt supported for enums")
+    def apply[T <: chisel3.Bits](nodeType: T, l: List[Symbol]): Map[Symbol, T] = {
+      require(nodeType.isInstanceOf[chisel3.UInt], "Only UInt supported for enums")
       require(!nodeType.widthKnown, "Bit width may no longer be specified for enums")
       (l zip createValues(l.length)).toMap.asInstanceOf[Map[Symbol, T]]
     }
@@ -528,10 +531,10 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
   val RegEnable = chisel3.util.RegEnable
   val ShiftRegister = chisel3.util.ShiftRegister
 
-  type ValidIO[+T <: Data] = chisel3.util.Valid[T]
+  type ValidIO[+T <: chisel3.Data] = chisel3.util.Valid[T]
   val Valid = chisel3.util.Valid
   val Pipe = chisel3.util.Pipe
-  type Pipe[T <: Data] = chisel3.util.Pipe[T]
+  type Pipe[T <: chisel3.Data] = chisel3.util.Pipe[T]
 
 
   /** Package for experimental features, which may have their API changed, be removed, etc.

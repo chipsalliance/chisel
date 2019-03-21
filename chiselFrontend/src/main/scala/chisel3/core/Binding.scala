@@ -2,8 +2,9 @@
 
 package chisel3.core
 
+import chisel3.{ActualDirection, Data}
 import chisel3.internal.ChiselException
-import chisel3.internal.Builder.{forcedModule}
+import chisel3.internal.Builder.forcedModule
 import chisel3.internal.firrtl.LitArg
 
 object Binding {

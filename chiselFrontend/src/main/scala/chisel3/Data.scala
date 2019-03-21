@@ -1,15 +1,15 @@
 // See LICENSE for license details.
 
-package chisel3.core
+package chisel3
+
+import core._
+import core.MonoConnect.DontCareCantBeSink
+import internal.Builder.pushCommand
+import internal._
+import internal.firrtl._
+import internal.sourceinfo.{DeprecatedSourceInfo, SourceInfo, SourceInfoTransform, UnlocatableSourceInfo}
 
 import scala.language.experimental.macros
-
-import chisel3.internal._
-import chisel3.internal.Builder.{pushCommand, pushOp}
-import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform, UnlocatableSourceInfo, DeprecatedSourceInfo}
-import chisel3.SourceInfoDoc
-import chisel3.core.BiConnect.DontCareCantBeSink
 
 /** User-specified directions.
   */
@@ -121,7 +121,7 @@ object DataMirror {
   * - Otherwise: fail
   */
 //scalastyle:off cyclomatic.complexity
-private[core] object cloneSupertype {
+private[chisel3] object cloneSupertype {
   def apply[T <: Data](elts: Seq[T], createdType: String)(implicit sourceInfo: SourceInfo,
                                                           compileOptions: CompileOptions): T = {
     require(!elts.isEmpty, s"can't create $createdType with no inputs")
@@ -237,7 +237,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
   // Note that the actual direction of this node can differ from child and parent specifiedDirection.
   private var _specifiedDirection: SpecifiedDirection = SpecifiedDirection.Unspecified
   private[chisel3] def specifiedDirection: SpecifiedDirection = _specifiedDirection
-  private[core] def specifiedDirection_=(direction: SpecifiedDirection) = {
+  private[chisel3] def specifiedDirection_=(direction: SpecifiedDirection) = {
     if (_specifiedDirection != SpecifiedDirection.Unspecified) {
       this match {
         // Anything flies in compatibility mode
@@ -252,7 +252,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
     * the compatibility layer where, at the elements, Flip is Input and unspecified is Output.
     * DO NOT USE OUTSIDE THIS PURPOSE. THIS OPERATION IS DANGEROUS!
     */
-  private[core] def _assignCompatibilityExplicitDirection: Unit = { // scalastyle:off method.name
+  private[chisel3] def _assignCompatibilityExplicitDirection: Unit = { // scalastyle:off method.name
     (this, _specifiedDirection) match {
       case (_: Analog, _) => // nothing to do
       case (_, SpecifiedDirection.Unspecified) => _specifiedDirection = SpecifiedDirection.Output
@@ -274,12 +274,12 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
     _binding = Some(target)
   }
 
-  private[core] def topBindingOpt: Option[TopBinding] = _binding.map {
+  private[chisel3] def topBindingOpt: Option[TopBinding] = _binding.map {
     case ChildBinding(parent) => parent.topBinding
     case bindingVal: TopBinding => bindingVal
   }
 
-  private[core] def topBinding: TopBinding = topBindingOpt.get
+  private[chisel3] def topBinding: TopBinding = topBindingOpt.get
 
   /** Binds this node to the hardware graph.
     * parentDirection is the direction of the parent node, or Unspecified (default) if the target
@@ -298,7 +298,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
   private var _direction: Option[ActualDirection] = None
 
   private[chisel3] def direction: ActualDirection = _direction.get
-  private[core] def direction_=(actualDirection: ActualDirection) {
+  private[chisel3] def direction_=(actualDirection: ActualDirection) {
     if (_direction.isDefined) {
       throw Binding.RebindingException(s"Attempted reassignment of resolved direction to $this")
     }
@@ -330,7 +330,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
   // TODO: refactor away this, this is outside the scope of Data
   private[chisel3] def allElements: Seq[Element]
 
-  private[core] def badConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
+  private[chisel3] def badConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
     throwException(s"cannot connect ${this} and ${that}")
   private[chisel3] def connect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = { // scalastyle:ignore line.size.limit
     if (connectCompileOptions.checkSynthesizable) {
@@ -378,7 +378,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
   /** Whether this Data has the same model ("data type") as that Data.
     * Data subtypes should overload this with checks against their own type.
     */
-  private[core] def typeEquivalent(that: Data): Boolean
+  private[chisel3] def typeEquivalent(that: Data): Boolean
 
   // Internal API: returns a ref that can be assigned to, if consistent with the binding
   private[chisel3] def lref: Node = {
@@ -402,7 +402,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
   }
 
   private[chisel3] def width: Width
-  private[core] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit
+  private[chisel3] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit
 
   /** Internal API; Chisel users should look at chisel3.chiselTypeOf(...).
     *
@@ -500,7 +500,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
 
   /** Assigns this node from Bits type. Internal implementation for asTypeOf.
     */
-  private[core] def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
+  private[chisel3] def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
       compileOptions: CompileOptions): Unit
 
   /** Reinterpret cast to UInt.
@@ -686,15 +686,15 @@ object DontCare extends Element {
 
   def toPrintable: Printable = PString("DONTCARE")
 
-  private[core] def connectFromBits(that: chisel3.core.Bits)(implicit sourceInfo:  SourceInfo, compileOptions: CompileOptions): Unit = { // scalastyle:ignore line.size.limit
+  private[chisel3] def connectFromBits(that: Bits)(implicit sourceInfo:  SourceInfo, compileOptions: CompileOptions): Unit = { // scalastyle:ignore line.size.limit
     Builder.error("connectFromBits: DontCare cannot be a connection sink (LHS)")
   }
 
-  def do_asUInt(implicit sourceInfo: chisel3.internal.sourceinfo.SourceInfo, compileOptions: CompileOptions): chisel3.core.UInt = { // scalastyle:ignore line.size.limit
+  def do_asUInt(implicit sourceInfo: internal.sourceinfo.SourceInfo, compileOptions: CompileOptions): UInt = { // scalastyle:ignore line.size.limit
     Builder.error("DontCare does not have a UInt representation")
     0.U
   }
   // DontCare's only match themselves.
-  private[core] def typeEquivalent(that: chisel3.core.Data): Boolean = that == DontCare
+  private[chisel3] def typeEquivalent(that: Data): Boolean = that == DontCare
 }
 

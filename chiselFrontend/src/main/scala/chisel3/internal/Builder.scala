@@ -4,7 +4,6 @@ package chisel3.internal
 
 import scala.util.DynamicVariable
 import scala.collection.mutable.{ArrayBuffer, HashMap}
-
 import chisel3._
 import core._
 import firrtl._
@@ -201,7 +200,7 @@ private[chisel3] object Builder {
 
   // Initialize any singleton objects before user code inadvertently inherits them.
   private def initializeSingletons(): Unit = {
-    val dummy = core.DontCare
+    val dummy = chisel3.DontCare
   }
 
   def idGen: IdGen = chiselContext.value.idGen

@@ -3,12 +3,11 @@
 package chisel3.core
 
 import scala.language.experimental.macros
-
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform, UnlocatableSourceInfo, MemTransform}
-import chisel3.SourceInfoDoc
+import chisel3.internal.sourceinfo.{MemTransform, SourceInfo, SourceInfoTransform, UnlocatableSourceInfo}
+import chisel3._
 
 object Mem {
   // scalastyle:off line.size.limit

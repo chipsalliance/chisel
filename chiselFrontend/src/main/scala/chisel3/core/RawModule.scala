@@ -2,10 +2,11 @@
 
 package chisel3.core
 
+import chisel3.{Bool, Data, Input, Reset}
+
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.collection.JavaConversions._
 import scala.language.experimental.macros
-
 import chisel3.internal._
 import chisel3.internal.Builder._
 import chisel3.internal.firrtl._

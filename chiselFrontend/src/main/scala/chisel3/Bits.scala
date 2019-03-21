@@ -1,16 +1,16 @@
 // See LICENSE for license details.
 
-package chisel3.core
+package chisel3
 
+import core._
+import internal.Builder.{pushCommand, pushOp}
+import internal._
+import internal.firrtl.PrimOp._
+import internal.firrtl._
+import internal.sourceinfo._
+
+import scala.collection.mutable
 import scala.language.experimental.macros
-import collection.mutable
-
-import chisel3.internal._
-import chisel3.internal.Builder.{pushCommand, pushOp}
-import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, SourceInfoTransform, SourceInfoWhiteboxTransform,
-  UIntTransform}
-import chisel3.internal.firrtl.PrimOp._
 
 // scalastyle:off method.name line.size.limit file.size.limit
 
@@ -34,7 +34,7 @@ abstract class Element extends Data {
     }
   }
 
-  private[core] override def topBindingOpt: Option[TopBinding] = super.topBindingOpt match {
+  private[chisel3] override def topBindingOpt: Option[TopBinding] = super.topBindingOpt match {
     // Translate Bundle lit bindings to Element lit bindings
     case Some(BundleLitBinding(litMap)) => litMap.get(this) match {
       case Some(litArg) => Some(ElementLitBinding(litArg))
@@ -43,13 +43,13 @@ abstract class Element extends Data {
     case topBindingOpt => topBindingOpt
   }
 
-  private[core] def litArgOption: Option[LitArg] = topBindingOpt match {
+  private[chisel3] def litArgOption: Option[LitArg] = topBindingOpt match {
     case Some(ElementLitBinding(litArg)) => Some(litArg)
     case _ => None
   }
 
   override def litOption: Option[BigInt] = litArgOption.map(_.num)
-  private[core] def litIsForcedWidth: Option[Boolean] = litArgOption.map(_.forcedWidth)
+  private[chisel3] def litIsForcedWidth: Option[Boolean] = litArgOption.map(_.forcedWidth)
 
   // provide bits-specific literal handling functionality here
   override private[chisel3] def ref: Arg = topBindingOpt match {
@@ -61,7 +61,7 @@ abstract class Element extends Data {
     case _ => super.ref
   }
 
-  private[core] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
+  private[chisel3] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
     // If the source is a DontCare, generate a DefInvalid for the sink,
     //  otherwise, issue a Connect.
     if (that == DontCare) {
@@ -111,7 +111,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
   // Arguments against: generates down to a FIRRTL UInt anyways
 
   // Only used for in a few cases, hopefully to be removed
-  private[core] def cloneTypeWidth(width: Width): this.type
+  private[chisel3] def cloneTypeWidth(width: Width): this.type
 
   def cloneType: this.type = cloneTypeWidth(width)
 
@@ -244,25 +244,25 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
   final def do_apply(x: BigInt, y: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     apply(x.toInt, y.toInt)
 
-  private[core] def unop[T <: Data](sourceInfo: SourceInfo, dest: T, op: PrimOp): T = {
+  private[chisel3] def unop[T <: Data](sourceInfo: SourceInfo, dest: T, op: PrimOp): T = {
     requireIsHardware(this, "bits operated on")
     pushOp(DefPrim(sourceInfo, dest, op, this.ref))
   }
-  private[core] def binop[T <: Data](sourceInfo: SourceInfo, dest: T, op: PrimOp, other: BigInt): T = {
+  private[chisel3] def binop[T <: Data](sourceInfo: SourceInfo, dest: T, op: PrimOp, other: BigInt): T = {
     requireIsHardware(this, "bits operated on")
     pushOp(DefPrim(sourceInfo, dest, op, this.ref, ILit(other)))
   }
-  private[core] def binop[T <: Data](sourceInfo: SourceInfo, dest: T, op: PrimOp, other: Bits): T = {
+  private[chisel3] def binop[T <: Data](sourceInfo: SourceInfo, dest: T, op: PrimOp, other: Bits): T = {
     requireIsHardware(this, "bits operated on")
     requireIsHardware(other, "bits operated on")
     pushOp(DefPrim(sourceInfo, dest, op, this.ref, other.ref))
   }
-  private[core] def compop(sourceInfo: SourceInfo, op: PrimOp, other: Bits): Bool = {
+  private[chisel3] def compop(sourceInfo: SourceInfo, op: PrimOp, other: Bits): Bool = {
     requireIsHardware(this, "bits operated on")
     requireIsHardware(other, "bits operated on")
     pushOp(DefPrim(sourceInfo, Bool(), op, this.ref, other.ref))
   }
-  private[core] def redop(sourceInfo: SourceInfo, op: PrimOp): Bool = {
+  private[chisel3] def redop(sourceInfo: SourceInfo, op: PrimOp): Bool = {
     requireIsHardware(this, "bits operated on")
     pushOp(DefPrim(sourceInfo, Bool(), op, this.ref))
   }
@@ -643,7 +643,7 @@ abstract trait Num[T <: Data] {
   * @define expandingWidth @note The width of the returned $coll is `width of this` + `1`.
   * @define constantWidth  @note The width of the returned $coll is unchanged, i.e., `width of this`.
   */
-sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt] {
+sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[UInt] {
   override def toString: String = {
     val bindingString = litOption match {
       case Some(value) => s"($value)"
@@ -652,10 +652,10 @@ sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt
     s"UInt$width$bindingString"
   }
 
-  private[core] override def typeEquivalent(that: Data): Boolean =
+  private[chisel3] override def typeEquivalent(that: Data): Boolean =
     that.isInstanceOf[UInt] && this.width == that.width
 
-  private[core] override def cloneTypeWidth(w: Width): this.type =
+  private[chisel3] override def cloneTypeWidth(w: Width): this.type =
     new UInt(w).asInstanceOf[this.type]
 
   // TODO: refactor to share documentation with Num or add independent scaladoc
@@ -920,7 +920,7 @@ sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt
     }
   }
 
-  private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
+  private[chisel3] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
       compileOptions: CompileOptions): Unit = {
     this := that.asUInt
   }
@@ -930,7 +930,7 @@ sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt
 }
 
 // This is currently a factory because both Bits and UInt inherit it.
-trait UIntFactory {
+trait UIntFactoryBase {
   /** Create a UInt type with inferred width. */
   def apply(): UInt = apply(Width())
   /** Create a UInt port with specified width. */
@@ -954,8 +954,8 @@ trait UIntFactory {
   }
 }
 
-object UInt extends UIntFactory
-object Bits extends UIntFactory
+object UInt extends UIntFactoryBase
+object Bits extends UIntFactoryBase
 
 /** A data type for signed integers, represented as a binary bitvector. Defines arithmetic operations between other
   * integer types.
@@ -965,7 +965,7 @@ object Bits extends UIntFactory
   * @define expandingWidth @note The width of the returned $coll is `width of this` + `1`.
   * @define constantWidth  @note The width of the returned $coll is unchanged, i.e., `width of this`.
   */
-sealed class SInt private[core] (width: Width) extends Bits(width) with Num[SInt] {
+sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[SInt] {
   override def toString: String = {
     val bindingString = litOption match {
       case Some(value) => s"($value)"
@@ -974,10 +974,10 @@ sealed class SInt private[core] (width: Width) extends Bits(width) with Num[SInt
     s"SInt$width$bindingString"
   }
 
-  private[core] override def typeEquivalent(that: Data): Boolean =
+  private[chisel3] override def typeEquivalent(that: Data): Boolean =
     this.getClass == that.getClass && this.width == that.width  // TODO: should this be true for unspecified widths?
 
-  private[core] override def cloneTypeWidth(w: Width): this.type =
+  private[chisel3] override def cloneTypeWidth(w: Width): this.type =
     new SInt(w).asInstanceOf[this.type]
 
   /** Unary negation (expanding width)
@@ -1181,12 +1181,12 @@ sealed class SInt private[core] (width: Width) extends Bits(width) with Num[SInt
     }
   }
 
-  private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) {
+  private[chisel3] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) {
     this := that.asSInt
   }
 }
 
-trait SIntFactory {
+trait SIntFactoryBase {
   /** Create an SInt type with inferred width. */
   def apply(): SInt = apply(Width())
   /** Create a SInt type or port with fixed width. */
@@ -1209,7 +1209,7 @@ trait SIntFactory {
   }
 }
 
-object SInt extends SIntFactory
+object SInt extends SIntFactoryBase
 
 sealed trait Reset extends Element with ToBoolable
 
@@ -1229,7 +1229,7 @@ sealed class Bool() extends UInt(1.W) with Reset {
     s"Bool$bindingString"
   }
 
-  private[core] override def cloneTypeWidth(w: Width): this.type = {
+  private[chisel3] override def cloneTypeWidth(w: Width): this.type = {
     require(!w.known || w.get == 1)
     new Bool().asInstanceOf[this.type]
   }
@@ -1316,7 +1316,7 @@ sealed class Bool() extends UInt(1.W) with Reset {
   def do_asClock(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Clock = pushOp(DefPrim(sourceInfo, Clock(), AsClockOp, ref))
 }
 
-trait BoolFactory {
+trait BoolFactoryBase {
   /** Creates an empty Bool.
    */
   def apply(): Bool = new Bool()
@@ -1331,7 +1331,7 @@ trait BoolFactory {
   }
 }
 
-object Bool extends BoolFactory
+object Bool extends BoolFactoryBase
 
 //scalastyle:off number.of.methods
 /** A sealed class representing a fixed point number that has a bit width and a binary point The width and binary point
@@ -1358,12 +1358,12 @@ sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint)
     s"FixedPoint$width$binaryPoint$bindingString"
   }
 
-  private[core] override def typeEquivalent(that: Data): Boolean = that match {
+  private[chisel3] override def typeEquivalent(that: Data): Boolean = that match {
     case that: FixedPoint => this.width == that.width && this.binaryPoint == that.binaryPoint  // TODO: should this be true for unspecified widths?
     case _ => false
   }
 
-  private[core] override def cloneTypeWidth(w: Width): this.type =
+  private[chisel3] override def cloneTypeWidth(w: Width): this.type =
     new FixedPoint(w, binaryPoint).asInstanceOf[this.type]
 
   override def connect (that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = that match {
@@ -1599,7 +1599,6 @@ sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint)
 
   def do_abs(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint = {
     // TODO: remove this once we have CompileOptions threaded through the macro system.
-    import chisel3.core.ExplicitCompileOptions.NotStrict
     Mux(this < 0.F(0.BP), 0.F(0.BP) - this, this)
   }
 
@@ -1629,7 +1628,7 @@ sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint)
     }
   }
 
-  private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) {
+  private[chisel3] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) {
     // TODO: redefine as just asFixedPoint on that, where FixedPoint.asFixedPoint just works.
     this := (that match {
       case fp: FixedPoint => fp.asSInt.asFixedPoint(this.binaryPoint)
@@ -1758,7 +1757,7 @@ final class Analog private (private[chisel3] val width: Width) extends Element {
     s"Analog$width$bindingToString"
   }
 
-  private[core] override def typeEquivalent(that: Data): Boolean =
+  private[chisel3] override def typeEquivalent(that: Data): Boolean =
     that.isInstanceOf[Analog] && this.width == that.width
 
   override def litOption: Option[BigInt] = None
@@ -1768,7 +1767,7 @@ final class Analog private (private[chisel3] val width: Width) extends Element {
   // Used to enforce single bulk connect of Analog types, multi-attach is still okay
   // Note that this really means 1 bulk connect per Module because a port can
   //   be connected in the parent module as well
-  private[core] val biConnectLocs = mutable.Map.empty[RawModule, SourceInfo]
+  private[chisel3] val biConnectLocs = mutable.Map.empty[RawModule, SourceInfo]
 
   // Define setter/getter pairing
   // Analog can only be bound to Ports and Wires (and Unbound)
@@ -1794,7 +1793,7 @@ final class Analog private (private[chisel3] val width: Width) extends Element {
   override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     throwException("Analog does not support asUInt")
 
-  private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
+  private[chisel3] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
       compileOptions: CompileOptions): Unit = {
     throwException("Analog does not support connectFromBits")
   }
