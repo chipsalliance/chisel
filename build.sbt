@@ -128,6 +128,18 @@ lazy val chiselFrontend = (project in file("chiselFrontend")).
   settings(commonSettings: _*).
   // Prevent separate JARs from being generated for chiselFrontend.
   settings(skip in publish := true).
+  settings(
+    scalacOptions := scalacOptions.value ++ Seq(
+      "-deprecation",
+      "-explaintypes",
+      "-feature",
+      "-language:reflectiveCalls",
+      "-unchecked",
+      "-Xcheckinit",
+      "-Xlint:infer-any"
+//      "-Xlint:missing-interpolator"
+    )
+  ).
   dependsOn(coreMacros)
 
 // This will always be the root project, even if we are a sub-project.
