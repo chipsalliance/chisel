@@ -266,7 +266,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
   // perform checks in Chisel, where more informative error messages are possible.
   private var _binding: Option[Binding] = None
   // Only valid after node is bound (synthesizable), crashes otherwise
-  protected def binding: Option[Binding] = _binding
+  protected[core] def binding: Option[Binding] = _binding
   protected def binding_=(target: Binding) {
     if (_binding.isDefined) {
       throw Binding.RebindingException(s"Attempted reassignment of binding to $this")
