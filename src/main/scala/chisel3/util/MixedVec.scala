@@ -4,7 +4,6 @@ package chisel3.util
 
 import chisel3._
 import chisel3.core.{Data, requireIsChiselType, requireIsHardware}
-import chisel3.internal.naming.chiselName
 
 import scala.collection.immutable.ListMap
 
@@ -86,7 +85,6 @@ object MixedVec {
   * v(2) := 101.U(32.W)
   * }}}
   */
-@chiselName
 final class MixedVec[T <: Data](private val eltsIn: Seq[T]) extends Record with collection.IndexedSeq[T] {
   // We want to create MixedVec only with Chisel types.
   if (compileOptions.declaredTypeMustBeUnbound) {
