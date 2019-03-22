@@ -32,10 +32,10 @@ object assert { // scalastyle:ignore object.name
     * that
     */
   // Macros currently can't take default arguments, so we need two functions to emulate defaults.
-  def apply(cond: Bool, message: String, data: Bits*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit = macro apply_impl_msg_data
+  def apply(cond: Bool, message: String, data: Bits*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit = macro apply_impl_msg_data // scalastyle:ignore line.size.limit
   def apply(cond: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit = macro apply_impl
 
-  def apply_impl_msg_data(c: Context)(cond: c.Tree, message: c.Tree, data: c.Tree*)(sourceInfo: c.Tree, compileOptions: c.Tree): c.Tree = {
+  def apply_impl_msg_data(c: Context)(cond: c.Tree, message: c.Tree, data: c.Tree*)(sourceInfo: c.Tree, compileOptions: c.Tree): c.Tree = { // scalastyle:ignore line.size.limit
     import c.universe._
     val p = c.enclosingPosition
     val condStr = s"${p.source.file.name}:${p.line} ${p.lineContent.trim}"
@@ -51,7 +51,7 @@ object assert { // scalastyle:ignore object.name
     q"$apply_impl_do($cond, $condStr, _root_.scala.None)($sourceInfo, $compileOptions)"
   }
 
-  def apply_impl_do(cond: Bool, line: String, message: Option[String], data: Bits*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) {
+  def apply_impl_do(cond: Bool, line: String, message: Option[String], data: Bits*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) { // scalastyle:ignore line.size.limit
     val escLine = line.replaceAll("%", "%%")
     when (!(cond || Module.reset.asBool)) {
       val fmt = message match {

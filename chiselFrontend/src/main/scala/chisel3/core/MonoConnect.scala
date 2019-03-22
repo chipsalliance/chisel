@@ -33,6 +33,7 @@ import chisel3.internal.sourceinfo.SourceInfo
 */
 
 object MonoConnect {
+  // scalastyle:off method.name public.methods.have.type
   // These are all the possible exceptions that can be thrown.
   case class MonoConnectException(message: String) extends ChiselException(message)
   // These are from element-level connection
@@ -51,6 +52,7 @@ object MonoConnect {
     MonoConnectException(s": Sink ($sink) and Source ($source) have different types.")
   def DontCareCantBeSink =
     MonoConnectException(": DontCare cannot be a connection sink (LHS)")
+  // scalastyle:on method.name public.methods.have.type
 
   /** This function is what recursively tries to connect a sink and source together
   *
@@ -58,8 +60,7 @@ object MonoConnect {
   * during the recursive decent and then rethrow them with extra information added.
   * This gives the user a 'path' to where in the connections things went wrong.
   */
-  //scalastyle:off cyclomatic.complexity method.length
-  def connect(
+  def connect(  //scalastyle:off cyclomatic.complexity method.length
       sourceInfo: SourceInfo,
       connectCompileOptions: CompileOptions,
       sink: Data,
@@ -157,7 +158,7 @@ object MonoConnect {
 
   // This function checks if element-level connection operation allowed.
   // Then it either issues it or throws the appropriate exception.
-  def elemConnect(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions, sink: Element, source: Element, context_mod: RawModule): Unit = {
+  def elemConnect(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions, sink: Element, source: Element, context_mod: RawModule): Unit = { // scalastyle:ignore line.size.limit
     import BindingDirection.{Internal, Input, Output} // Using extensively so import these
     // If source has no location, assume in context module
     // This can occur if is a literal, unbound will error previously
@@ -196,7 +197,7 @@ object MonoConnect {
             throw UnreadableSourceException
           }
         }
-        case (Input,        Output) if (!(connectCompileOptions.dontTryConnectionsSwapped)) => issueConnect(source, sink)
+        case (Input,        Output) if (!(connectCompileOptions.dontTryConnectionsSwapped)) => issueConnect(source, sink) // scalastyle:ignore line.size.limit
         case (Input,        _)    => throw UnwritableSinkException
       }
     }

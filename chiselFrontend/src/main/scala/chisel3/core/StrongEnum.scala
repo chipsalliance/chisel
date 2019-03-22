@@ -14,18 +14,17 @@ import firrtl.annotations._
 
 
 object EnumAnnotations {
-
   /** An annotation for strong enum instances that are ''not'' inside of Vecs
     *
     * @param target the enum instance being annotated
     * @param typeName the name of the enum's type (e.g. ''"mypackage.MyEnum"'')
     */
-  case class EnumComponentAnnotation(target: Named, typeName: String) extends SingleTargetAnnotation[Named] {
-    def duplicate(n: Named) = this.copy(target = n)
+  case class EnumComponentAnnotation(target: Named, enumTypeName: String) extends SingleTargetAnnotation[Named] {
+    def duplicate(n: Named): EnumComponentAnnotation = this.copy(target = n)
   }
 
-  case class EnumComponentChiselAnnotation(target: InstanceId, typeName: String) extends ChiselAnnotation {
-    override def toFirrtl = EnumComponentAnnotation(target.toNamed, typeName)
+  case class EnumComponentChiselAnnotation(target: InstanceId, enumTypeName: String) extends ChiselAnnotation {
+    def toFirrtl: EnumComponentAnnotation = EnumComponentAnnotation(target.toNamed, enumTypeName)
   }
 
   /** An annotation for Vecs of strong enums.
@@ -92,7 +91,7 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
     requireIsHardware(other, "bits operated on")
 
     if(!this.typeEquivalent(other)) {
-      throwException(s"Enum types are not equivalent: ${this.typeName}, ${other.typeName}")
+      throwException(s"Enum types are not equivalent: ${this.enumTypeName}, ${other.enumTypeName}")
     }
 
     pushOp(DefPrim(sourceInfo, Bool(), op, this.ref, other.ref))
@@ -115,12 +114,14 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
   final def > (that: EnumType): Bool = macro SourceInfoTransform.thatArg
   final def >= (that: EnumType): Bool = macro SourceInfoTransform.thatArg
 
+  // scalastyle:off line.size.limit method.name
   def do_=== (that: EnumType)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, EqualOp, that)
   def do_=/= (that: EnumType)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, NotEqualOp, that)
   def do_< (that: EnumType)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, LessOp, that)
   def do_> (that: EnumType)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, GreaterOp, that)
   def do_<= (that: EnumType)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, LessEqOp, that)
   def do_>= (that: EnumType)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, GreaterEqOp, that)
+  // scalastyle:on line.size.limit method.name
 
   override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     pushOp(DefPrim(sourceInfo, UInt(width), AsUIntOp, ref))
@@ -137,8 +138,13 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
 
   def next(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type = {
     if (litOption.isDefined) {
-      val index = (factory.all.indexOf(this) + 1) % factory.all.length
-      factory.all(index).asInstanceOf[this.type]
+      val index = factory.all.indexOf(this)
+
+      if (index < factory.all.length-1) {
+        factory.all(index + 1).asInstanceOf[this.type]
+      } else {
+        factory.all.head.asInstanceOf[this.type]
+      }
     } else {
       val enums_with_nexts = factory.all zip (factory.all.tail :+ factory.all.head)
       val next_enum = SeqUtils.priorityMux(enums_with_nexts.map { case (e,n) => (this === e, n) } )
@@ -191,8 +197,8 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
 
   private def annotateEnum(): Unit = {
     val anno = outerMostVec() match {
-      case Some(v) => EnumVecChiselAnnotation(v, typeName, enumFields(v))
-      case None => EnumComponentChiselAnnotation(this, typeName)
+      case Some(v) => EnumVecChiselAnnotation(v, enumTypeName, enumFields(v))
+      case None => EnumComponentChiselAnnotation(this, enumTypeName)
     }
 
     if (!Builder.annotations.contains(anno)) {
@@ -204,7 +210,7 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
     }
   }
 
-  protected def typeName: String = factory.enumTypeName
+  protected def enumTypeName: String = factory.enumTypeName
 
   def toPrintable: Printable = FullName(this) // TODO: Find a better pretty printer
 }
@@ -239,8 +245,8 @@ abstract class EnumFactory {
     enum_records.find(_.inst.litValue() == id).map(_.name)
   }
 
-  protected def Value: Type = macro EnumMacros.ValImpl
-  protected def Value(id: UInt): Type = macro EnumMacros.ValCustomImpl
+  protected def Value: Type = macro EnumMacros.ValImpl // scalastyle:off method.name
+  protected def Value(id: UInt): Type = macro EnumMacros.ValCustomImpl // scalastyle:off method.name
 
   protected def do_Value(names: Seq[String]): Type = {
     val result = new Type
@@ -260,10 +266,12 @@ abstract class EnumFactory {
   protected def do_Value(names: Seq[String], id: UInt): Type = {
     // TODO: These throw ExceptionInInitializerError which can be confusing to the user. Get rid of the error, and just
     // throw an exception
-    if (id.litOption.isEmpty)
+    if (id.litOption.isEmpty) {
       throwException(s"$enumTypeName defined with a non-literal type")
-    if (id.litValue() < this.id)
+    }
+    if (id.litValue() < this.id) {
       throwException(s"Enums must be strictly increasing: $enumTypeName")
+    }
 
     this.id = id.litValue()
     do_Value(names)
@@ -272,6 +280,7 @@ abstract class EnumFactory {
   def apply(): Type = new Type
 
   def apply(n: UInt)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Type = {
+    // scalastyle:off line.size.limit
     if (n.litOption.isDefined) {
       enumInstances.find(_.litValue == n.litValue) match {
         case Some(result) => result
@@ -291,17 +300,18 @@ abstract class EnumFactory {
       result
     }
   }
+  // scalastyle:on line.size.limit
 }
 
 
 private[core] object EnumMacros {
-  def ValImpl(c: Context): c.Tree = {
+  def ValImpl(c: Context) : c.Tree = { // scalastyle:off method.name
     import c.universe._
     val names = getNames(c)
     q"""this.do_Value(Seq(..$names))"""
   }
 
-  def ValCustomImpl(c: Context)(id: c.Expr[UInt]): c.Tree = {
+  def ValCustomImpl(c: Context)(id: c.Expr[UInt]): c.universe.Tree = { // scalastyle:off method.name
     import c.universe._
     val names = getNames(c)
     q"""this.do_Value(Seq(..$names), $id)"""
@@ -317,8 +327,9 @@ private[core] object EnumMacros {
         if rhs.pos == c.macroApplication.pos => name.decodedName.toString
     }
 
-    if (names.isEmpty)
+    if (names.isEmpty) {
       c.abort(c.enclosingPosition, "Value cannot be called without assigning to an enum")
+    }
 
     names
   }

@@ -7,7 +7,7 @@ import chisel3.experimental.ChiselEnum
 import chisel3.internal.firrtl.UnknownWidth
 import chisel3.util._
 import chisel3.testers.BasicTester
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.{Assertion, FreeSpec, Matchers}
 
 object EnumExample extends ChiselEnum {
   val e0, e1, e2 = Value
@@ -252,7 +252,7 @@ class StrongEnumFSMTester extends BasicTester {
 
   // Inputs and expected results
   val inputs: Vec[Bool] = VecInit(false.B, true.B, false.B, true.B, true.B, true.B, false.B, true.B, true.B, false.B)
-  val expected: Vec[Bool] = VecInit(false.B, false.B, false.B, false.B, false.B, true.B, true.B, false.B, false.B, true.B)
+  val expected: Vec[Bool] = VecInit(false.B, false.B, false.B, false.B, false.B, true.B, true.B, false.B, false.B, true.B) // scalastyle:ignore line.size.limit
   val expected_state = VecInit(sNone, sNone, sOne1, sNone, sOne1, sTwo1s, sTwo1s, sNone, sOne1, sTwo1s)
 
   val cntr = Counter(inputs.length)
@@ -331,7 +331,7 @@ class StrongEnumSpec extends ChiselFlatSpec {
       elaborate(new CastFromNonLitWidth)
     }
 
-    for (w <- (EnumExample.getWidth+1) to (EnumExample.getWidth+100)) {
+    for (w <- (EnumExample.getWidth + 1) to (EnumExample.getWidth + 100)) {
       a [ChiselException] should be thrownBy {
         elaborate(new CastFromNonLitWidth(Some(w)))
       }
@@ -361,7 +361,7 @@ class StrongEnumSpec extends ChiselFlatSpec {
   }
 
   it should "maintain Scala-level type-safety" in {
-    def foo(e: EnumExample.Type) = {}
+    def foo(e: EnumExample.Type): Unit = {}
 
     "foo(EnumExample.e1); foo(EnumExample.e1.next)" should compile
     "foo(OtherEnum.otherEnum)" shouldNot compile
@@ -461,6 +461,7 @@ class StrongEnumAnnotationSpec extends FreeSpec with Matchers {
     CorrectVecAnno("bund.inner_bundle1.v", enumExampleName, Set())
   )
 
+  // scalastyle:off regex
   def printAnnos(annos: Seq[Annotation]) {
     println("Enum definitions:")
     annos.foreach {
@@ -478,6 +479,7 @@ class StrongEnumAnnotationSpec extends FreeSpec with Matchers {
       case _ =>
     }
   }
+  // scalastyle:on regex
 
   def isCorrect(anno: EnumDefAnnotation, correct: CorrectDefAnno): Boolean = {
     (anno.typeName == correct.typeName ||
@@ -490,7 +492,7 @@ class StrongEnumAnnotationSpec extends FreeSpec with Matchers {
       case ComponentName(name, _) => name == correct.targetName
       case _ => throw new Exception("Unknown target type in EnumComponentAnnotation")
     }) &&
-      (anno.typeName == correct.typeName || anno.typeName.endsWith("." + correct.typeName))
+      (anno.enumTypeName == correct.typeName || anno.enumTypeName.endsWith("." + correct.typeName))
   }
 
   def isCorrect(anno: EnumVecAnnotation, correct: CorrectVecAnno): Boolean = {
