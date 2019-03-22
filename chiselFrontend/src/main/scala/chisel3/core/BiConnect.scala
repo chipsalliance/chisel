@@ -2,7 +2,7 @@
 
 package chisel3.core
 
-import chisel3.{Analog, Data, DontCare, Element}
+import chisel3.{Analog, Data, DontCare, Element, Record, Vec}
 import chisel3.internal.ChiselException
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.{Connect, DefInvalid}

@@ -2,7 +2,7 @@
 
 package chisel3.core
 
-import chisel3.{Bool, Data, Input, Reset}
+import chisel3.{Bool, Clock, Data, Input, MemBase, Record, Reset}
 
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.collection.JavaConversions._

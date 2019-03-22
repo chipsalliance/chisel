@@ -4,7 +4,7 @@ package chisel3.util
 
 import chisel3._
 import chisel3.experimental.{ChiselAnnotation, RunFirrtlTransform}
-import firrtl.transforms.{BlackBoxPathAnno, BlackBoxResourceAnno, BlackBoxInlineAnno, BlackBoxSourceHelper}
+import firrtl.transforms.{BlackBoxInlineAnno, BlackBoxPathAnno, BlackBoxResourceAnno, BlackBoxSourceHelper}
 
 trait HasBlackBoxResource extends BlackBox {
   self: BlackBox =>

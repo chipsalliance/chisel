@@ -2,7 +2,7 @@
 
 package chisel3.core
 
-import chisel3.SpecifiedDirection
+import chisel3.{Record, SpecifiedDirection}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.internal.throwException

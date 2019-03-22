@@ -1,3 +1,5 @@
+import chisel3.{Bundle, Clock, IgnoreSeqInBundle, Mem, MemBase, Record, Reg, SyncReadMem, VecInit, VecLike, printf}
+
 package object chisel3 {    // scalastyle:ignore package.object.name
   import core.CompileOptions
   import internal.firrtl.{BinaryPoint, Port, Width}
@@ -149,9 +151,6 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   }
   val WireInit = WireDefault
 
-  val Clock = core.Clock
-  type Clock = core.Clock
-
   // Clock and reset scoping functions
   val withClockAndReset = core.withClockAndReset
   val withClock = core.withClock
@@ -188,46 +187,39 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     }
   }
 
-  type Aggregate = core.Aggregate
-  object Vec extends core.VecFactory {
+  object Vec extends VecFactory {
     import scala.language.experimental.macros
 
     @chiselRuntimeDeprecated
     @deprecated("Vec argument order should be size, t; this will be removed by the official release", "chisel3")
-    def apply[T <: Data](gen: T, n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
+    def apply[T <: Data](gen: T, n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): chisel3.Vec[T] =
       apply(n, gen)
 
     @chiselRuntimeDeprecated
     @deprecated("Vec.fill(n)(gen) is deprecated, use VecInit(Seq.fill(n)(gen)) instead", "chisel3")
-    def fill[T <: Data](n: Int)(gen: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
+    def fill[T <: Data](n: Int)(gen: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): chisel3.Vec[T] =
       apply(Seq.fill(n)(gen))
 
-    def apply[T <: Data](elts: Seq[T]): Vec[T] = macro VecTransform.apply_elts
+    def apply[T <: Data](elts: Seq[T]): chisel3.Vec[T] = macro VecTransform.apply_elts
     @chiselRuntimeDeprecated
     @deprecated("Vec(elts) is deprecated, use VecInit(elts) instead", "chisel3")
-    def do_apply[T <: Data](elts: Seq[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
-      core.VecInit(elts)
+    def do_apply[T <: Data](elts: Seq[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): chisel3.Vec[T] =
+      chisel3.VecInit(elts)
 
-    def apply[T <: Data](elt0: T, elts: T*): Vec[T] = macro VecTransform.apply_elt0
+    def apply[T <: Data](elt0: T, elts: T*): chisel3.Vec[T] = macro VecTransform.apply_elt0
     @chiselRuntimeDeprecated
     @deprecated("Vec(elt0, ...) is deprecated, use VecInit(elt0, ...) instead", "chisel3")
     def do_apply[T <: Data](elt0: T, elts: T*)
-        (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
-      core.VecInit(elt0 +: elts.toSeq)
+        (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): chisel3.Vec[T] =
+      VecInit(elt0 +: elts.toSeq)
 
-    def tabulate[T <: Data](n: Int)(gen: (Int) => T): Vec[T] = macro VecTransform.tabulate
+    def tabulate[T <: Data](n: Int)(gen: (Int) => T): chisel3.Vec[T] = macro VecTransform.tabulate
     @chiselRuntimeDeprecated
     @deprecated("Vec.tabulate(n)(gen) is deprecated, use VecInit.tabulate(n)(gen) instead", "chisel3")
     def do_tabulate[T <: Data](n: Int)(gen: (Int) => T)
-        (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
-      core.VecInit.tabulate(n)(gen)
+        (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): chisel3.Vec[T] =
+      chisel3.VecInit.tabulate(n)(gen)
   }
-  val VecInit = core.VecInit
-  type Vec[T <: Data] = core.Vec[T]
-  type VecLike[T <: Data] = core.VecLike[T]
-  type Bundle = core.Bundle
-  type IgnoreSeqInBundle = core.IgnoreSeqInBundle
-  type Record = core.Record
 
   val assert = core.assert
 
@@ -347,58 +339,13 @@ package object chisel3 {    // scalastyle:ignore package.object.name
 
   type InstanceId = internal.InstanceId
 
-  val Mem = core.Mem
-  type MemBase[T <: Data] = core.MemBase[T]
-  type Mem[T <: Data] = core.Mem[T]
-  val SyncReadMem = core.SyncReadMem
-  type SyncReadMem[T <: Data] = core.SyncReadMem[T]
-
   @deprecated("Use 'SyncReadMem'", "chisel3")
-  val SeqMem = core.SyncReadMem
+  val SeqMem = chisel3.SyncReadMem
   @deprecated("Use 'SyncReadMem'", "chisel3")
-  type SeqMem[T <: Data] = core.SyncReadMem[T]
+  type SeqMem[T <: Data] = SyncReadMem[T]
 
   val Module = core.Module
   type Module = core.LegacyModule
-
-  val printf = core.printf
-
-  val RegNext = core.RegNext
-  val RegInit = core.RegInit
-  object Reg {
-
-    // Passthrough for core.Reg
-    // TODO: make val Reg = core.Reg once we eliminate the legacy Reg constructor
-    def apply[T <: Data](t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
-      core.Reg(t)
-
-    @chiselRuntimeDeprecated
-    @deprecated("Use Reg(t), RegNext(next, [init]) or RegInit([t], init) instead", "chisel3")
-    def apply[T <: Data](t: T = null, next: T = null, init: T = null)
-        (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
-      if (t ne null) {
-        val reg = if (init ne null) {
-          RegInit(t, init)
-        } else {
-          core.Reg(t)
-        }
-        if (next ne null) {
-          reg := next
-        }
-        reg
-      } else if (next ne null) {
-        if (init ne null) {
-          RegNext(next, init)
-        } else {
-          RegNext(next)
-        }
-      } else if (init ne null) {
-        RegInit(init)
-      } else {
-        throwException("cannot infer type")
-      }
-    }
-  }
 
   val when = core.when
   type WhenContext = core.WhenContext

@@ -14,6 +14,7 @@ import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{InstTransform, SourceInfo}
 import chisel3._
 import _root_.firrtl.annotations.{CircuitName, ModuleName}
+import chisel3.experimental.ChiselEnum
 
 object Module extends SourceInfoDoc {
   /** A wrapper method that all Module instantiations must be wrapped in
@@ -115,7 +116,7 @@ object IO {
 }
 
 object BaseModule {
-  private[chisel3] class ClonePorts (elts: Data*)(implicit compileOptions: CompileOptions) extends Record {
+  private[chisel3] class ClonePorts (elts: Data*)(implicit compileOptions: CompileOptions) extends chisel3.Record {
     val elements = ListMap(elts.map(d => d.instanceName -> d.cloneTypeFull): _*)
     def apply(field: String) = elements(field)
     override def cloneType = (new ClonePorts(elts: _*)).asInstanceOf[this.type]

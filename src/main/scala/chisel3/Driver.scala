@@ -5,15 +5,13 @@ package chisel3
 import chisel3.internal.ErrorLog
 import chisel3.internal.firrtl.Converter
 import chisel3.experimental.{RawModule, RunFirrtlTransform}
-
 import java.io._
-import net.jcazevedo.moultingyaml._
 
+import net.jcazevedo.moultingyaml._
 import internal.firrtl._
 import firrtl._
 import firrtl.annotations.{Annotation, JsonProtocol}
-import firrtl.util.{ BackendCompilationUtilities => FirrtlBackendCompilationUtilities }
-
+import firrtl.util.{BackendCompilationUtilities => FirrtlBackendCompilationUtilities}
 import _root_.firrtl.annotations.AnnotationYamlProtocol._
 
 /**

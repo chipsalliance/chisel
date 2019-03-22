@@ -2,6 +2,8 @@
 
 package chiselTests
 
+import chisel3.{Bundle, Record}
+
 import collection.immutable.ListMap
 
 // Keep Chisel._ separate from chisel3._ below
@@ -15,7 +17,7 @@ object CompatibilityComponents {
 
     override def cloneType: this.type = (new ChiselBundle).asInstanceOf[this.type]
   }
-  class ChiselRecord extends Record {
+  class ChiselRecord extends chisel3.Record {
     val elements = ListMap("a" -> UInt(width = 32), "b" -> UInt(width = 32).flip)
     override def cloneType: this.type = (new ChiselRecord).asInstanceOf[this.type]
   }
@@ -45,14 +47,14 @@ object Chisel3Components {
   import chisel3._
   import CompatibilityComponents._
 
-  class Chisel3Bundle extends Bundle {
+  class Chisel3Bundle extends chisel3.Bundle {
     val a = Output(UInt(32.W))
     val b = Input(UInt(32.W))
 
     override def cloneType: this.type = (new Chisel3Bundle).asInstanceOf[this.type]
   }
 
-  class Chisel3Record extends Record {
+  class Chisel3Record extends chisel3.Record {
     val elements = ListMap("a" -> Output(UInt(32.W)), "b" -> Input(UInt(32.W)))
     override def cloneType: this.type = (new Chisel3Record).asInstanceOf[this.type]
   }
@@ -226,7 +228,7 @@ class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec {
     compile {
       import Chisel._
       new Module {
-        val io = new Bundle {
+        val io = new chisel3.Bundle {
           val in = UInt(INPUT, width = 32)
           val cond = Bool(INPUT)
           val out = UInt(OUTPUT, width = 32)

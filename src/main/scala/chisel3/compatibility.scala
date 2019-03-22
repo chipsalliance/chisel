@@ -1,4 +1,4 @@
-import chisel3.{BitPat, Data, Flipped, _}
+import chisel3.{Aggregate, BitPat, Bundle, Data, Flipped, Mem, MemBase, Record, Reg, Vec, VecLike, printf, _}
 // See LICENSE for license details.
 
 /** The Chisel compatibility package allows legacy users to continue using the `Chisel` (capital C) package name
@@ -80,7 +80,7 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
       }
     }
   }
-  type Clock = chisel3.core.Clock
+  type Clock = chisel3.Clock
 
   // Implicit conversion to allow fromBits because it's being deprecated in chisel3
   implicit class fromBitsable[T <: chisel3.Data](data: T) {
@@ -102,16 +102,15 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
     }
   }
 
-  type Aggregate = chisel3.core.Aggregate
-  object Vec extends chisel3.core.VecFactory {
+  object Vec extends VecFactory {
     import chisel3.core.CompileOptions
     import chisel3.internal.sourceinfo._
 
     @deprecated("Vec argument order should be size, t; this will be removed by the official release", "chisel3")
-    def apply[T <: chisel3.Data](gen: T, n: Int)(implicit compileOptions: CompileOptions): Vec[T] =
+    def apply[T <: chisel3.Data](gen: T, n: Int)(implicit compileOptions: CompileOptions): chisel3.Vec[T] =
       apply(n, gen)
 
-    /** Creates a new [[Vec]] of length `n` composed of the result of the given
+    /** Creates a new [[chisel3.Vec]] of length `n` composed of the result of the given
       * function repeatedly applied.
       *
       * @param n   number of elements (and the number of times the function is
@@ -119,30 +118,30 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
       * @param gen function that generates the [[chisel3.Data]] that becomes the output
       *            element
       */
-    def fill[T <: chisel3.Data](n: Int)(gen: => T)(implicit compileOptions: CompileOptions): Vec[T] =
+    def fill[T <: chisel3.Data](n: Int)(gen: => T)(implicit compileOptions: CompileOptions): chisel3.Vec[T] =
       apply(Seq.fill(n)(gen))
 
     def apply[T <: chisel3.Data](elts: Seq[T]): Vec[T] = macro VecTransform.apply_elts
     /** @group SourceInfoTransformMacro */
-    def do_apply[T <: chisel3.Data](elts: Seq[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
-      chisel3.core.VecInit(elts)
+    def do_apply[T <: chisel3.Data](elts: Seq[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): chisel3.Vec[T] =
+      chisel3.VecInit(elts)
 
-    def apply[T <: chisel3.Data](elt0: T, elts: T*): Vec[T] = macro VecTransform.apply_elt0
+    def apply[T <: chisel3.Data](elt0: T, elts: T*): chisel3.Vec[T] = macro VecTransform.apply_elt0
     /** @group SourceInfoTransformMacro */
     def do_apply[T <: chisel3.Data](elt0: T, elts: T*)
-                                   (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
-      chisel3.core.VecInit(elt0 +: elts.toSeq)
+                                   (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): chisel3.Vec[T] =
+      chisel3.VecInit(elt0 +: elts.toSeq)
 
-    def tabulate[T <: chisel3.Data](n: Int)(gen: (Int) => T): Vec[T] = macro VecTransform.tabulate
+    def tabulate[T <: chisel3.Data](n: Int)(gen: (Int) => T): chisel3.Vec[T] = macro VecTransform.tabulate
     /** @group SourceInfoTransformMacro */
     def do_tabulate[T <: chisel3.Data](n: Int)(gen: (Int) => T)
-                                      (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
-      chisel3.core.VecInit.tabulate(n)(gen)
+                                      (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): chisel3.Vec[T] =
+      chisel3.VecInit.tabulate(n)(gen)
   }
-  type Vec[T <: chisel3.Data] = chisel3.core.Vec[T]
-  type VecLike[T <: chisel3.Data] = chisel3.core.VecLike[T]
-  type Record = chisel3.core.Record
-  type Bundle = chisel3.core.Bundle
+  type Vec[T <: chisel3.Data] = chisel3.Vec[T]
+  type VecLike[T <: chisel3.Data] = chisel3.VecLike[T]
+  type Record = chisel3.Record
+  type Bundle = chisel3.Bundle
 
   val assert = chisel3.core.assert
   val stop = chisel3.core.stop
@@ -265,11 +264,11 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
       }
     }
   }
-  val Mem = chisel3.core.Mem
-  type MemBase[T <: chisel3.Data] = chisel3.core.MemBase[T]
-  type Mem[T <: chisel3.Data] = chisel3.core.Mem[T]
-  val SeqMem = chisel3.core.SyncReadMem
-  type SeqMem[T <: chisel3.Data] = chisel3.core.SyncReadMem[T]
+  val Mem = chisel3.Mem
+  type MemBase[T <: chisel3.Data] = chisel3.MemBase[T]
+  type Mem[T <: chisel3.Data] = chisel3.Mem[T]
+  val SeqMem = chisel3.SyncReadMem
+  type SeqMem[T <: chisel3.Data] = SyncReadMem[T]
 
   import chisel3.core.CompileOptions
   abstract class CompatibilityModule(implicit moduleCompileOptions: CompileOptions)
@@ -302,10 +301,10 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
   val Module = chisel3.core.Module
   type Module = CompatibilityModule
 
-  val printf = chisel3.core.printf
+  val printf = chisel3.printf
 
-  val RegNext = chisel3.core.RegNext
-  val RegInit = chisel3.core.RegInit
+  val RegNext = chisel3.RegNext
+  val RegInit = chisel3.RegInit
   object Reg {
     import chisel3.core.{Binding, CompileOptions}
     import chisel3.internal.sourceinfo.SourceInfo
@@ -314,7 +313,7 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
     // Single-element constructor to avoid issues caused by null default args in a type
     // parameterized scope.
     def apply[T <: chisel3.Data](t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
-      chisel3.core.Reg(t)
+      chisel3.Reg(t)
 
     /** Creates a register with optional next and initialization values.
       *
@@ -335,7 +334,7 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
         val reg = if (init ne null) {
           RegInit(t, init)
         } else {
-          chisel3.core.Reg(t)
+          Reg(t)
         }
         if (next ne null) {
           reg := next

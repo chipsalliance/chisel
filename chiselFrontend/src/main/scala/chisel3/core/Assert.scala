@@ -2,7 +2,7 @@
 
 package chisel3.core
 
-import chisel3.{Bits, Bool}
+import chisel3.{Bits, Bool, printf}
 
 import scala.reflect.macros.blackbox.Context
 import scala.language.experimental.macros

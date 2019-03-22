@@ -2,6 +2,7 @@
 
 package chiselTests
 import Chisel.ChiselException
+import chisel3.Bundle
 import org.scalatest._
 
 class MissingCloneBindingExceptionSpec extends ChiselFlatSpec with Matchers {
@@ -41,7 +42,7 @@ class MissingCloneBindingExceptionSpec extends ChiselFlatSpec with Matchers {
     }
 
     class TestTop extends Module {
-      val io = IO(new Bundle {})
+      val io = IO(new chisel3.Bundle {})
 
       val subs = Vec.fill(2) {
         Module(new Test).io

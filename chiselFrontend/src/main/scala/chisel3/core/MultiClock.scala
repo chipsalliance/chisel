@@ -2,7 +2,7 @@
 
 package chisel3.core
 
-import chisel3.Reset
+import chisel3.{Clock, Reset}
 
 import scala.language.experimental.macros
 import chisel3.internal._

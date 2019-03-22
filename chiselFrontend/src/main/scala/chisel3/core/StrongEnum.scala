@@ -3,6 +3,7 @@
 package chisel3.core
 
 import chisel3._
+import chisel3.experimental.{ChiselAnnotation, annotate}
 
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox.Context
