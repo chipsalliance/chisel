@@ -183,4 +183,16 @@ class AutoClonetypeSpec extends ChiselFlatSpec {
       } }
     }
   }
+
+  "Aliased fields from inadequate autoclonetype" should "be caught" in {
+    a [ChiselException] should be thrownBy {
+      class BadBundle(val typeTuple: (Data, Int)) extends Bundle {
+        val a = typeTuple
+      }
+
+      elaborate { new Module {
+        val io = IO(Output(new BadBundle(UInt(8.W), 1)))
+      } }
+    }
+  }
 }
