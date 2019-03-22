@@ -172,4 +172,15 @@ class AutoClonetypeSpec extends ChiselFlatSpec {
       val a = WireDefault(io)
     } }
   }
+
+  "Aliased fields" should "be caught" in {
+    a [ChiselException] should be thrownBy {
+      elaborate { new Module {
+        val bundleFieldType = UInt(8.W)
+        val io = IO(Output(new Bundle {
+          val a = bundleFieldType
+        }))
+      } }
+    }
+  }
 }

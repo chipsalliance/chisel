@@ -658,6 +658,25 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
       throw new AutoClonetypeException(s"Unable to automatically infer cloneType on $clazz: $desc")
     }
 
+    def validateClone(clone: Bundle): Unit = {
+      if (!clone.typeEquivalent(this)) {
+        // scalastyle:off line.size.limit
+        autoClonetypeError(s"Automatically cloned $clone not type-equivalent to base $this." +
+          " Constructor argument values were inferred: ensure that variable names are consistent and have the same value throughout the constructor chain," +
+          " and that the constructor is deterministic.")
+        // scalastyle:on line.size.limit
+      }
+
+      for ((name, field) <- elements) {
+        if (clone.elements(name) eq field) {
+          autoClonetypeError(s"Automatically cloned $clone has field $name aliased with base $this." +
+            " In the future, this can be solved by wrapping the field in Field(...)," +
+            " see https://github.com/freechipsproject/chisel3/pull/909." +
+            " For now, ensure Chisel types used in the Bundle definition are passed through constructor arguments.")
+        }
+      }
+    }
+
     val mirror = runtimeMirror(clazz.getClassLoader)
     val classSymbolOption = try {
       Some(mirror.reflect(this).symbol)
@@ -745,6 +764,8 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
             autoClonetypeError(s"automatically cloned $clone not type-equivalent to base." +
             " Constructor argument values were not inferred, ensure constructor is deterministic.")
           }
+
+          validateClone(clone)
           return clone.asInstanceOf[this.type]
         case None =>
       }
@@ -781,6 +802,8 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
       try {
         val clone = ctors.head.newInstance(outerClassInstance.get._2).asInstanceOf[this.type]
         clone._outerInst = this._outerInst
+
+        validateClone(clone)
         return clone
       } catch {
         case e @ (_: java.lang.reflect.InvocationTargetException | _: IllegalArgumentException) =>
@@ -844,14 +867,7 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     val clone = classMirror.reflectConstructor(ctor).apply(ctorParamsVals:_*).asInstanceOf[this.type]
     clone._outerInst = this._outerInst
 
-    if (!clone.typeEquivalent(this)) {
-      // scalastyle:off line.size.limit
-      autoClonetypeError(s"Automatically cloned $clone not type-equivalent to base $this." +
-          " Constructor argument values were inferred: ensure that variable names are consistent and have the same value throughout the constructor chain," +
-          " and that the constructor is deterministic.")
-      // scalastyle:on line.size.limit
-    }
-
+    validateClone(clone)
     clone
   }
 
