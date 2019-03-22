@@ -450,8 +450,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
     case Some(BundleLitBinding(litMap)) => None  // this API does not support Bundle literals
     case _ => None
   }
-  @chiselRuntimeDeprecated
-  @deprecated("isLit is deprecated, use litOption.isDefined", "chisel3.2")
+ 
   def isLit(): Boolean = litArg.isDefined
 
   /**
