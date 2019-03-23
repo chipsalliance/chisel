@@ -13,11 +13,11 @@ object CompatibilityComponents {
     val a = UInt(width = 32)
     val b = UInt(width = 32).flip
 
-    override def cloneType = (new ChiselBundle).asInstanceOf[this.type]
+    override def cloneType: this.type = (new ChiselBundle).asInstanceOf[this.type]
   }
   class ChiselRecord extends Record {
     val elements = ListMap("a" -> UInt(width = 32), "b" -> UInt(width = 32).flip)
-    override def cloneType = (new ChiselRecord).asInstanceOf[this.type]
+    override def cloneType: this.type = (new ChiselRecord).asInstanceOf[this.type]
   }
 
   abstract class ChiselDriverModule(_io: => Record) extends Module {
@@ -49,12 +49,12 @@ object Chisel3Components {
     val a = Output(UInt(32.W))
     val b = Input(UInt(32.W))
 
-    override def cloneType = (new Chisel3Bundle).asInstanceOf[this.type]
+    override def cloneType: this.type = (new Chisel3Bundle).asInstanceOf[this.type]
   }
 
   class Chisel3Record extends Record {
     val elements = ListMap("a" -> Output(UInt(32.W)), "b" -> Input(UInt(32.W)))
-    override def cloneType = (new Chisel3Record).asInstanceOf[this.type]
+    override def cloneType: this.type = (new Chisel3Record).asInstanceOf[this.type]
   }
 
   abstract class Chisel3DriverModule(_io: => Record) extends Module {

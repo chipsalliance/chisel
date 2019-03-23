@@ -22,7 +22,7 @@ import scala.reflect.macros.whitebox
 trait SourceInfoTransformMacro {
   val c: Context
   import c.universe._
-  def thisObj = c.prefix.tree
+  def thisObj: Tree = c.prefix.tree
   def implicitSourceInfo = q"implicitly[_root_.chisel3.internal.sourceinfo.SourceInfo]"
   def implicitCompileOptions = q"implicitly[_root_.chisel3.core.CompileOptions]"
 }
@@ -94,10 +94,10 @@ abstract class AutoSourceTransform extends SourceInfoTransformMacro {
   /** Returns the TermName of the transformed function, which is the applied function name with do_
     * prepended.
     */
-  def doFuncTerm = {
+  def doFuncTerm: TermName = {
     val funcName = c.macroApplication match {
       case q"$_.$funcName[..$_](...$_)" => funcName
-      case _ => throw new Exception(s"Chisel Internal Error: Could not resolve function name from macro application: ${showCode(c.macroApplication)}")
+      case _ => throw new Exception(s"Chisel Internal Error: Could not resolve function name from macro application: ${showCode(c.macroApplication)}") // scalastyle:ignore line.size.limit
     }
     TermName("do_" + funcName)
   }

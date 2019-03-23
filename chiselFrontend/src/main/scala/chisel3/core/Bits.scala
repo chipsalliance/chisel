@@ -12,7 +12,7 @@ import chisel3.internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, SourceInfo
   UIntTransform}
 import chisel3.internal.firrtl.PrimOp._
 
-//scalastyle:off method.name
+// scalastyle:off method.name line.size.limit file.size.limit
 
 /** Element is a leaf data type: it cannot contain other [[Data]] objects. Example uses are for representing primitive
   * data types, like integers and bits.
@@ -1761,7 +1761,7 @@ final class Analog private (private[chisel3] val width: Width) extends Element {
   private[core] override def typeEquivalent(that: Data): Boolean =
     that.isInstanceOf[Analog] && this.width == that.width
 
-  override def litOption = None
+  override def litOption: Option[BigInt] = None
 
   def cloneType: this.type = new Analog(width).asInstanceOf[this.type]
 
