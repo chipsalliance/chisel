@@ -266,7 +266,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
   // perform checks in Chisel, where more informative error messages are possible.
   private var _binding: Option[Binding] = None
   // Only valid after node is bound (synthesizable), crashes otherwise
-  protected def binding: Option[Binding] = _binding
+  protected[core] def binding: Option[Binding] = _binding
   protected def binding_=(target: Binding) {
     if (_binding.isDefined) {
       throw Binding.RebindingException(s"Attempted reassignment of binding to $this")
@@ -314,7 +314,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
     case Some(MemoryPortBinding(enclosure)) => s"(MemPort in ${enclosure.desiredName})"
     case Some(PortBinding(enclosure)) if !enclosure.isClosed => s"(IO in unelaborated ${enclosure.desiredName})"
     case Some(PortBinding(enclosure)) if enclosure.isClosed =>
-      DataMirror.fullModulePorts(enclosure).find(_._2 == this) match {
+      DataMirror.fullModulePorts(enclosure).find(_._2 eq this) match {
         case Some((name, _)) => s"(IO $name in ${enclosure.desiredName})"
         case None => s"(IO (unknown) in ${enclosure.desiredName})"
       }
@@ -450,8 +450,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
     case Some(BundleLitBinding(litMap)) => None  // this API does not support Bundle literals
     case _ => None
   }
-  @chiselRuntimeDeprecated
-  @deprecated("isLit is deprecated, use litOption.isDefined", "chisel3.2")
+ 
   def isLit(): Boolean = litArg.isDefined
 
   /**

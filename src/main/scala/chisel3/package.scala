@@ -437,6 +437,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     val withReset = chisel3.core.withReset
 
     val dontTouch = chisel3.core.dontTouch
+    val doNotDedup = chisel3.core.doNotDedup
 
     type BaseModule = chisel3.core.BaseModule
     type RawModule = chisel3.core.RawModule
