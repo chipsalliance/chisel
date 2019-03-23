@@ -118,7 +118,8 @@ object dontTouch { // scalastyle:ignore object.name
   *
   *  io.out(0) := fullAdder(io.a, io.b, "mod1")
   *  io.out(1) := fullAdder(io.a, io.b, "mod2")
-  *}
+  * }
+  * }}}
   *
   * @note Calling this on [[Data]] creates an annotation that Chisel emits to a separate annotations
   * file. This file must be passed to FIRRTL independently of the `.fir` file. The execute methods
