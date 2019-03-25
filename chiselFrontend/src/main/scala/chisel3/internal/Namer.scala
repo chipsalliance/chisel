@@ -41,7 +41,33 @@ import java.util.IdentityHashMap
 /** Base class for naming contexts, providing the basic API consisting of naming calls and
   * ability to take descendant naming contexts.
   */
-class NamingContext {
+sealed trait NamingContextInterface {
+  /** Suggest a name (that will be propagated to FIRRTL) for an object, then returns the object
+    * itself (so this can be inserted transparently anywhere).
+    * Is a no-op (so safe) when applied on objects that aren't named, including non-Chisel data
+    * types.
+    */
+  def name[T](obj: T, name: String): T
+
+  /** Gives this context a naming prefix (which may be empty, "", for a top-level Module context)
+    * so that actual naming calls (HasId.suggestName) can happen.
+    * Recursively names descendants, for those whose return value have an associated name.
+    */
+  def name_prefix(prefix: String)
+}
+
+/** Dummy implementation to allow for naming annotations in a non-Builder context.
+  */
+object DummyNamer extends NamingContextInterface {
+  def name[T](obj: T, name: String): T = obj
+
+  def name_prefix(prefix: String): Unit = {
+  }
+}
+
+/** Actual namer functionality.
+  */
+class NamingContext extends NamingContextInterface {
   val descendants = new IdentityHashMap[AnyRef, ListBuffer[NamingContext]]()
   val anonymousDescendants = ListBuffer[NamingContext]()
   val items = ListBuffer[(AnyRef, String)]()
@@ -62,11 +88,6 @@ class NamingContext {
     anonymousDescendants += descendant
   }
 
-  /** Suggest a name (that will be propagated to FIRRTL) for an object, then returns the object
-    * itself (so this can be inserted transparently anywhere).
-    * Is a no-op (so safe) when applied on objects that aren't named, including non-Chisel data
-    * types.
-    */
   def name[T](obj: T, name: String): T = {
     assert(!closed, "Can't name elements after name_prefix called")
     obj match {
@@ -76,11 +97,7 @@ class NamingContext {
     obj
   }
 
-  /** Gives this context a naming prefix (which may be empty, "", for a top-level Module context)
-    * so that actual naming calls (HasId.suggestName) can happen.
-    * Recursively names descendants, for those whose return value have an associated name.
-    */
-  def name_prefix(prefix: String) {
+  def name_prefix(prefix: String): Unit = {
     closed = true
     for ((ref, suffix) <- items) {
       // First name the top-level object
@@ -126,7 +143,7 @@ class NamingStack {
     *
     * Will assert out if the context being popped isn't the topmost on the stack.
     */
-  def pop_return_context[T <: Any](prefix_ref: T, until: NamingContext): T = {
+  def pop_return_context[T <: Any](prefix_ref: T, until: NamingContext): Unit = {
     assert(naming_stack.top == until)
     naming_stack.pop()
     if (!naming_stack.isEmpty) {
@@ -134,15 +151,6 @@ class NamingStack {
         case prefix_ref: AnyRef => naming_stack.top.add_descendant(prefix_ref, until)
         case _ => naming_stack.top.add_anonymous_descendant(until)
       }
-
     }
-    prefix_ref
-  }
-
-  /** Same as pop_return_context, but for cases where there is no return value (like Module scope).
-   */
-  def pop_context(until: NamingContext) {
-    assert(naming_stack.top == until)
-    naming_stack.pop()
   }
 }

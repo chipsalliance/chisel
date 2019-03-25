@@ -53,7 +53,7 @@ class NamingTransforms(val c: Context) {
   import c.universe._
   import Flag._
 
-  val globalNamingStack = q"_root_.chisel3.internal.DynamicNamingStack()"
+  val globalNamingStack = q"_root_.chisel3.internal.DynamicNamingStack"
 
   /** Base transformer that provides the val name transform.
     * Should not be instantiated, since by default this will recurse everywhere and break the
@@ -125,7 +125,7 @@ class NamingTransforms(val c: Context) {
     val $contextVar = $globalNamingStack.push_context()
     ..$transformedBody
     $contextVar.name_prefix("")
-    $globalNamingStack.pop_context($contextVar)
+    $globalNamingStack.pop_return_context((), $contextVar)
     """
   }
 
