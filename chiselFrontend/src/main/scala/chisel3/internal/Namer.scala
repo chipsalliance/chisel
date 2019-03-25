@@ -53,7 +53,7 @@ sealed trait NamingContextInterface {
     * so that actual naming calls (HasId.suggestName) can happen.
     * Recursively names descendants, for those whose return value have an associated name.
     */
-  def name_prefix(prefix: String)
+  def namePrefix(prefix: String)
 }
 
 /** Dummy implementation to allow for naming annotations in a non-Builder context.
@@ -61,7 +61,7 @@ sealed trait NamingContextInterface {
 object DummyNamer extends NamingContextInterface {
   def name[T](obj: T, name: String): T = obj
 
-  def name_prefix(prefix: String): Unit = {
+  def namePrefix(prefix: String): Unit = {
   }
 }
 
@@ -77,15 +77,15 @@ class NamingContext extends NamingContextInterface {
     * prefixed with the name given to the reference object, if the reference object is named in the
     * scope of this context.
     */
-  def add_descendant(ref: AnyRef, descendant: NamingContext) {
-    if (!descendants.containsKey(ref)) {
-      descendants.put(ref, ListBuffer[NamingContext]())
+  def addDescendant(ref: Any, descendant: NamingContext) {
+    ref match {
+      case ref: AnyRef =>
+        if (!descendants.containsKey(ref)) {
+          descendants.put(ref, ListBuffer[NamingContext]())
+        }
+        descendants.get(ref) += descendant
+      case _ => anonymousDescendants += descendant
     }
-    descendants.get(ref) += descendant
-  }
-
-  def add_anonymous_descendant(descendant: NamingContext) {
-    anonymousDescendants += descendant
   }
 
   def name[T](obj: T, name: String): T = {
@@ -97,7 +97,7 @@ class NamingContext extends NamingContextInterface {
     obj
   }
 
-  def name_prefix(prefix: String): Unit = {
+  def namePrefix(prefix: String): Unit = {
     closed = true
     for ((ref, suffix) <- items) {
       // First name the top-level object
@@ -106,7 +106,7 @@ class NamingContext extends NamingContextInterface {
       // Then recurse into descendant contexts
       if (descendants.containsKey(ref)) {
         for (descendant <- descendants.get(ref)) {
-          descendant.name_prefix(prefix + suffix + "_")
+          descendant.namePrefix(prefix + suffix + "_")
         }
         descendants.remove(ref)
       }
@@ -114,10 +114,10 @@ class NamingContext extends NamingContextInterface {
 
     for (descendant <- descendants.values().flatten) {
       // Where we have a broken naming link, just ignore the missing parts
-      descendant.name_prefix(prefix)
+      descendant.namePrefix(prefix)
     }
     for (descendant <- anonymousDescendants) {
-      descendant.name_prefix(prefix)
+      descendant.namePrefix(prefix)
     }
   }
 }
@@ -126,14 +126,14 @@ class NamingContext extends NamingContextInterface {
   * contexts as functions are called / finished.
   */
 class NamingStack {
-  val naming_stack = Stack[NamingContext]()
+  val namingStack = Stack[NamingContext]()
 
   /** Creates a new naming context, where all items in the context will have their names prefixed
     * with some yet-to-be-determined prefix from object names in an enclosing scope.
     */
-  def push_context(): NamingContext = {
+  def pushContext(): NamingContext = {
     val context = new NamingContext
-    naming_stack.push(context)
+    namingStack.push(context)
     context
   }
 
@@ -143,14 +143,11 @@ class NamingStack {
     *
     * Will assert out if the context being popped isn't the topmost on the stack.
     */
-  def pop_return_context[T <: Any](prefix_ref: T, until: NamingContext): Unit = {
-    assert(naming_stack.top == until)
-    naming_stack.pop()
-    if (!naming_stack.isEmpty) {
-      prefix_ref match {
-        case prefix_ref: AnyRef => naming_stack.top.add_descendant(prefix_ref, until)
-        case _ => naming_stack.top.add_anonymous_descendant(until)
-      }
+  def popContext[T <: Any](prefix_ref: T, until: NamingContext): Unit = {
+    assert(namingStack.top == until)
+    namingStack.pop()
+    if (!namingStack.isEmpty) {
+      namingStack.top.addDescendant(prefix_ref, until)
     }
   }
 }
