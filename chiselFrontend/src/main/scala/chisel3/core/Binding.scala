@@ -87,7 +87,7 @@ sealed trait UnconstrainedBinding extends TopBinding {
   def location: Option[BaseModule] = None
 }
 // A constrained binding can only be read/written by specific modules
-// Location will track where this Module is
+// Location will track where this Module is, and the bound object can be referenced in FIRRTL
 sealed trait ConstrainedBinding extends TopBinding {
   def enclosure: BaseModule
   def location: Option[BaseModule] = Some(enclosure)
