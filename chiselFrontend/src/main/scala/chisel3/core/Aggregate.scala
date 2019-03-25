@@ -669,7 +669,7 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
             " In the future, this can be solved by wrapping the field in Field(...)," +
             " see https://github.com/freechipsproject/chisel3/pull/909." +
             " For now, ensure Chisel types used in the Bundle definition are passed through constructor arguments," +
-            " or wrapped in Input(...), Output(...), or Fliuped(...) if appropriate.")
+            " or wrapped in Input(...), Output(...), or Flipped(...) if appropriate.")
         }
       }
     }
