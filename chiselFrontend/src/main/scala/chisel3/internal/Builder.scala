@@ -362,10 +362,10 @@ object DynamicNamingStack {
     until match {
       case internal.naming.DummyNamer =>
         require(Builder.namingStackOption.isEmpty,
-          "Builder context must remain stable throughout a chiselName invocation")
+          "Builder context must remain stable throughout a chiselName-annotated function invocation")
       case context: internal.naming.NamingContext =>
         require(Builder.namingStackOption.isDefined,
-          "Builder context must remain stable throughout a chiselName invocation")
+          "Builder context must remain stable throughout a chiselName-annotated function invocation")
         Builder.namingStackOption.get.pop_return_context(prefix_ref, context)
     }
     prefix_ref
