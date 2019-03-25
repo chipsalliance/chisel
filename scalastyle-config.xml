@@ -95,7 +95,7 @@
  </check>
  <check level="warning" class="org.scalastyle.scalariform.MethodNamesChecker" enabled="true">
   <parameters>
-   <parameter name="regex"><![CDATA[^[a-z][A-Za-z0-9]*$]]></parameter>
+   <parameter name="regex"><![CDATA[^[a-z][A-Za-z0-9_]*(_=)?$]]></parameter>
    <parameter name="ignoreRegex"><![CDATA[^(\+[&%]?|\-[&%]?|\*|/|%|&|\||\^|<|>|\|\||&&|:=|<>|<=|>=|!=|===|=/=|<<|>>|##|unary_(~|\-%?|!))$]]></parameter>
   </parameters>
  </check>
