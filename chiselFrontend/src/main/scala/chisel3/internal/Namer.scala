@@ -80,10 +80,7 @@ class NamingContext extends NamingContextInterface {
   def addDescendant(ref: Any, descendant: NamingContext) {
     ref match {
       case ref: AnyRef =>
-        if (!descendants.containsKey(ref)) {
-          descendants.put(ref, ListBuffer[NamingContext]())
-        }
-        descendants.get(ref) += descendant
+        descendants.getOrElseUpdate(ref, ListBuffer[NamingContext]()) += descendant
       case _ => anonymousDescendants += descendant
     }
   }
@@ -143,11 +140,11 @@ class NamingStack {
     *
     * Will assert out if the context being popped isn't the topmost on the stack.
     */
-  def popContext[T <: Any](prefix_ref: T, until: NamingContext): Unit = {
+  def popContext[T <: Any](prefixRef: T, until: NamingContext): Unit = {
     assert(namingStack.top == until)
     namingStack.pop()
     if (!namingStack.isEmpty) {
-      namingStack.top.addDescendant(prefix_ref, until)
+      namingStack.top.addDescendant(prefixRef, until)
     }
   }
 }

@@ -358,7 +358,7 @@ object DynamicNamingStack {
     }
   }
 
-  def popReturnContext[T <: Any](prefix_ref: T, until: internal.naming.NamingContextInterface): T = {
+  def popReturnContext[T <: Any](prefixRef: T, until: internal.naming.NamingContextInterface): T = {
     until match {
       case internal.naming.DummyNamer =>
         require(Builder.namingStackOption.isEmpty,
@@ -366,8 +366,8 @@ object DynamicNamingStack {
       case context: internal.naming.NamingContext =>
         require(Builder.namingStackOption.isDefined,
           "Builder context must remain stable throughout a chiselName-annotated function invocation")
-        Builder.namingStackOption.get.popContext(prefix_ref, context)
+        Builder.namingStackOption.get.popContext(prefixRef, context)
     }
-    prefix_ref
+    prefixRef
   }
 }
