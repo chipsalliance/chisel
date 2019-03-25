@@ -26,7 +26,7 @@ package chisel3 {
     implicit class fromBigIntToLiteral(bigint: BigInt) {
       /** Int to Bool conversion, allowing compact syntax like 1.B and 0.B
        */
-      def B: Bool = bigint match {
+      def B: Bool = bigint match { // scalastyle:ignore method.name
         case bigint if bigint == 0 => Bool.Lit(false)
         case bigint if bigint == 1 => Bool.Lit(true)
         case bigint => Builder.error(s"Cannot convert $bigint to Bool, must be 0 or 1"); Bool.Lit(false)
@@ -121,5 +121,13 @@ package chisel3 {
     implicit class fromIntToBinaryPoint(int: Int) {
       def BP: BinaryPoint = BinaryPoint(int)  // scalastyle:ignore method.name
     }
+
+    // These provide temporary compatibility for those who foolishly imported from chisel3.core
+    @deprecated("Avoid importing from chisel3.core, these are not public APIs and may change at any time. " +
+      " Use chisel3.experimental.RawModule instead.", "since the beginning of time")
+    type UserModule = chisel3.core.RawModule
+    @deprecated("Avoid importing from chisel3.core, these are not public APIs and may change at any time. " +
+      "Use chisel3.experimental.MultiIOModule instead.", "since the beginning of time")
+    type ImplicitModule = chisel3.core.MultiIOModule
   }
 }

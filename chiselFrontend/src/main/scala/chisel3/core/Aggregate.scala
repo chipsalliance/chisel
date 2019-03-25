@@ -16,7 +16,7 @@ import chisel3.SourceInfoDoc
   * of) other Data objects.
   */
 sealed abstract class Aggregate extends Data {
-  private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection) {
+  private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection) { // scalastyle:ignore cyclomatic.complexity line.size.limit
     binding = target
 
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
@@ -66,7 +66,7 @@ sealed abstract class Aggregate extends Data {
         }
         case _ =>
           val childWithDirections = getElements zip getElements.map(_.direction)
-          throw Binding.MixedDirectionAggregateException(s"Aggregate '$this' can't have elements that are both directioned and undirectioned: $childWithDirections")
+          throw Binding.MixedDirectionAggregateException(s"Aggregate '$this' can't have elements that are both directioned and undirectioned: $childWithDirections") // scalastyle:ignore line.size.limit
       }
     }
   }
@@ -98,7 +98,7 @@ sealed abstract class Aggregate extends Data {
   private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
       compileOptions: CompileOptions): Unit = {
     var i = 0
-    val bits = WireInit(UInt(this.width), that)  // handles width padding
+    val bits = WireDefault(UInt(this.width), that)  // handles width padding
     for (x <- flatten) {
       x.connectFromBits(bits(i + x.getWidth - 1, i))
       i += x.getWidth
@@ -119,17 +119,19 @@ trait VecFactory extends SourceInfoDoc {
   }
 
   /** Truncate an index to implement modulo-power-of-2 addressing. */
-  private[core] def truncateIndex(idx: UInt, n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
+  private[core] def truncateIndex(idx: UInt, n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = { // scalastyle:ignore line.size.limit
+    // scalastyle:off if.brace
     val w = BigInt(n-1).bitLength
     if (n <= 1) 0.U
     else if (idx.width.known && idx.width.get <= w) idx
     else if (idx.width.known) idx(w-1,0)
     else (idx | 0.U(w.W))(w-1,0)
+    // scalastyle:on if.brace
   }
 }
 
 object Vec extends VecFactory
-
+// scalastyle:off line.size.limit
 /** A vector (array) of [[Data]] elements. Provides hardware versions of various
   * collection transformation functions found in software array implementations.
   *
@@ -156,8 +158,13 @@ object Vec extends VecFactory
   *  - when multiple conflicting assignments are performed on a Vec element, the last one takes effect (unlike Mem, where the result is undefined)
   *  - Vecs, unlike classes in Scala's collection library, are propagated intact to FIRRTL as a vector type, which may make debugging easier
   */
+// scalastyle:on line.size.limit
 sealed class Vec[T <: Data] private[core] (gen: => T, val length: Int)
     extends Aggregate with VecLike[T] {
+  override def toString: String = {
+    s"$sample_element[$length]$bindingToString"
+  }
+
   private[core] override def typeEquivalent(that: Data): Boolean = that match {
     case that: Vec[T] =>
       this.length == that.length &&
@@ -199,7 +206,7 @@ sealed class Vec[T <: Data] private[core] (gen: => T, val length: Int)
   }
 
   // TODO: eliminate once assign(Seq) isn't ambiguous with assign(Data) since Vec extends Seq and Data
-  def <> (that: Vec[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit = this bulkConnect that.asInstanceOf[Data]
+  def <> (that: Vec[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit = this bulkConnect that.asInstanceOf[Data] // scalastyle:ignore line.size.limit
 
   /** Strong bulk connect, assigning elements in this Vec from elements in a Seq.
     *
@@ -262,9 +269,11 @@ sealed class Vec[T <: Data] private[core] (gen: => T, val length: Int)
     * Results in "Vec(elt0, elt1, ...)"
     */
   def toPrintable: Printable = {
+    // scalastyle:off if.brace
     val elts =
       if (length == 0) List.empty[Printable]
       else self flatMap (e => List(e.toPrintable, PString(", "))) dropRight 1
+    // scalastyle:on if.brace
     PString("Vec(") + Printables(elts) + PString(")")
   }
 }
@@ -336,7 +345,7 @@ object VecInit extends SourceInfoDoc {
   def tabulate[T <: Data](n: Int)(gen: (Int) => T): Vec[T] = macro VecTransform.tabulate
 
   /** @group SourceInfoTransformMacro */
-  def do_tabulate[T <: Data](n: Int)(gen: (Int) => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
+  def do_tabulate[T <: Data](n: Int)(gen: (Int) => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =  // scalastyle:ignore line.size.limit
     apply((0 until n).map(i => gen(i)))
 }
 
@@ -456,6 +465,18 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     *   assert(uint === "hbeefdead".U) // This will pass
     * }}}
     */
+  override def toString: String = {
+    val bindingString = topBindingOpt match {
+      case Some(BundleLitBinding(_)) =>
+        val contents = elements.toList.reverse.map { case (name, data) =>
+          s"$name=$data"
+        }.mkString(", ")
+        s"($contents)"
+      case _ => bindingToString
+    }
+    s"$className$bindingString"
+  }
+
   val elements: ListMap[String, Data]
 
   /** Name for Pretty Printing */
@@ -486,11 +507,13 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
 
   // Helper because Bundle elements are reversed before printing
   private[chisel3] def toPrintableHelper(elts: Seq[(String, Data)]): Printable = {
+    // scalastyle:off if.brace
     val xs =
       if (elts.isEmpty) List.empty[Printable] // special case because of dropRight below
       else elts flatMap { case (name, data) =>
              List(PString(s"$name -> "), data.toPrintable, PString(", "))
            } dropRight 1 // Remove trailing ", "
+    // scalastyle:on if.brace
     PString(s"$className(") + Printables(xs) + PString(")")
   }
   /** Default "pretty-print" implementation
@@ -515,7 +538,7 @@ trait IgnoreSeqInBundle {
   override def ignoreSeq: Boolean = true
 }
 
-class AutoClonetypeException(message: String) extends ChiselException(message, null)
+class AutoClonetypeException(message: String) extends ChiselException(message)
 
 /** Base class for data types defined as a bundle of other data types.
   *
@@ -551,8 +574,11 @@ class AutoClonetypeException(message: String) extends ChiselException(message, n
   * }}}
   */
 abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
-  override def className = "Bundle"
-
+  override def className: String = this.getClass.getSimpleName match {
+    case name if name.startsWith("$anon$") => "AnonymousBundle"  // fallback for anonymous Bundle case
+    case "" => "AnonymousBundle"  // ditto, but on other platforms
+    case name => name
+  }
   /** The collection of [[Data]]
     *
     * Elements defined earlier in the Bundle are higher order upon
@@ -601,6 +627,7 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
       }
     }
     ListMap(nameMap.toSeq sortWith { case ((an, a), (bn, b)) => (a._id > b._id) || ((a eq b) && (an > bn)) }: _*)
+    // scalastyle:ignore method.length
   }
 
   /**
@@ -627,7 +654,7 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
   private val _containingModule: Option[BaseModule] = Builder.currentModule
   private val _containingBundles: Seq[Bundle] = Builder.updateBundleStack(this)
 
-  override def cloneType : this.type = {
+  override def cloneType : this.type = { // scalastyle:ignore cyclomatic.complexity method.length
     // This attempts to infer constructor and arguments to clone this Bundle subtype without
     // requiring the user explicitly overriding cloneType.
     import scala.language.existentials
@@ -637,6 +664,22 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
 
     def autoClonetypeError(desc: String): Nothing = {
       throw new AutoClonetypeException(s"Unable to automatically infer cloneType on $clazz: $desc")
+    }
+
+    def validateClone(clone: Bundle, equivDiagnostic: String): Unit = {
+      if (!clone.typeEquivalent(this)) {
+        autoClonetypeError(s"Automatically cloned $clone not type-equivalent to base $this. " + equivDiagnostic)
+      }
+
+      for ((name, field) <- elements) {
+        if (clone.elements(name) eq field) {
+          autoClonetypeError(s"Automatically cloned $clone has field $name aliased with base $this." +
+            " In the future, this can be solved by wrapping the field in Field(...)," +
+            " see https://github.com/freechipsproject/chisel3/pull/909." +
+            " For now, ensure Chisel types used in the Bundle definition are passed through constructor arguments," +
+            " or wrapped in Input(...), Output(...), or Flipped(...) if appropriate.")
+        }
+      }
     }
 
     val mirror = runtimeMirror(clazz.getClassLoader)
@@ -707,7 +750,7 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
           Some(ctor.newInstance().asInstanceOf[this.type])
         case (argType :: Nil, Some((_, outerInstance))) =>
           if (outerInstance == null) {
-            Builder.deprecated(s"chisel3.1 autoclonetype failed, falling back to 3.0 behavior using null as the outer instance." +
+            Builder.deprecated(s"chisel3.1 autoclonetype failed, falling back to 3.0 behavior using null as the outer instance." + // scalastyle:ignore line.size.limit
                 s" Autoclonetype failure reason: ${outerClassError.get}",
                 Some(s"$clazz"))
             Some(ctor.newInstance(outerInstance).asInstanceOf[this.type])
@@ -722,10 +765,7 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
       clone match {
         case Some(clone) =>
           clone._outerInst = this._outerInst
-          if (!clone.typeEquivalent(this)) {
-            autoClonetypeError(s"automatically cloned $clone not type-equivalent to base." +
-            " Constructor argument values were not inferred, ensure constructor is deterministic.")
-          }
+          validateClone(clone, "Constructor argument values were not inferred, ensure constructor is deterministic.")
           return clone.asInstanceOf[this.type]
         case None =>
       }
@@ -734,7 +774,7 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     // Get constructor parameters and accessible fields
     val classSymbol = classSymbolOption.getOrElse(autoClonetypeError(s"scala reflection failed." +
         " This is known to occur with inner classes on anonymous outer classes." +
-        " In those cases, autoclonetype only works with no-argument constructors, or you can define a custom cloneType."))
+        " In those cases, autoclonetype only works with no-argument constructors, or you can define a custom cloneType.")) // scalastyle:ignore line.size.limit
 
     val decls = classSymbol.typeSignature.decls
     val ctors = decls.collect { case meth: MethodSymbol if meth.isConstructor => meth }
@@ -762,6 +802,8 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
       try {
         val clone = ctors.head.newInstance(outerClassInstance.get._2).asInstanceOf[this.type]
         clone._outerInst = this._outerInst
+
+        validateClone(clone, "Outer class instance was inferred, ensure constructor is deterministic.")
         return clone
       } catch {
         case e @ (_: java.lang.reflect.InvocationTargetException | _: IllegalArgumentException) =>
@@ -784,8 +826,10 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     val accessorsName = accessors.filter(_.isStable).map(_.name.toString)
     val paramsDiff = ctorParamsNames.toSet -- accessorsName.toSet
     if (!paramsDiff.isEmpty) {
+      // scalastyle:off line.size.limit
       autoClonetypeError(s"constructor has parameters (${paramsDiff.toList.sorted.mkString(", ")}) that are not both immutable and accessible." +
           " Either make all parameters immutable and accessible (vals) so cloneType can be inferred, or define a custom cloneType method.")
+      // scalastyle:on line.size.limit
     }
 
     // Get all the argument values
@@ -802,8 +846,10 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
       case (paramName, paramVal: Data) if paramVal.topBindingOpt.isDefined => paramName
     }
     if (boundDataParamNames.nonEmpty) {
+      // scalastyle:off line.size.limit
       autoClonetypeError(s"constructor parameters (${boundDataParamNames.sorted.mkString(", ")}) have values that are hardware types, which is likely to cause subtle errors." +
           " Use chisel types instead: use the value before it is turned to a hardware type (with Wire(...), Reg(...), etc) or use chiselTypeOf(...) to extract the chisel type.")
+      // scalastyle:on line.size.limit
     }
 
     // Clone unbound parameters in case they are being used as bundle fields.
@@ -821,12 +867,11 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     val clone = classMirror.reflectConstructor(ctor).apply(ctorParamsVals:_*).asInstanceOf[this.type]
     clone._outerInst = this._outerInst
 
-    if (!clone.typeEquivalent(this)) {
-      autoClonetypeError(s"Automatically cloned $clone not type-equivalent to base $this." +
-          " Constructor argument values were inferred: ensure that variable names are consistent and have the same value throughout the constructor chain," +
-          " and that the constructor is deterministic.")
-    }
-
+    validateClone(clone,
+      "Constructor argument values were inferred:" +
+        " ensure that variable names are consistent and have the same value throughout the constructor chain," +
+        " and that the constructor is deterministic."
+    )
     clone
   }
 
@@ -837,4 +882,6 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     *   the fields in the order they were defined
     */
   override def toPrintable: Printable = toPrintableHelper(elements.toList.reverse)
+  // scalastyle:off method.length
 }
+// scalastyle:off file.size.limit

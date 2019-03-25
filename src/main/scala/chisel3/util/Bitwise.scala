@@ -24,7 +24,7 @@ object FillInterleaved {
     *
     * Output data-equivalent to in(size(in)-1) (n times) ## ... ## in(1) (n times) ## in(0) (n times)
     */
-  def apply(n: Int, in: UInt): UInt = apply(n, in.toBools)
+  def apply(n: Int, in: UInt): UInt = apply(n, in.asBools)
 
   /** Creates n repetitions of each bit of x in order.
     *
@@ -69,7 +69,7 @@ object Fill {
       case 0 => UInt(0.W)
       case 1 => x
       case _ if x.isWidthKnown && x.getWidth == 1 =>
-        Mux(x.toBool, ((BigInt(1) << n) - 1).asUInt(n.W), 0.U(n.W))
+        Mux(x.asBool, ((BigInt(1) << n) - 1).asUInt(n.W), 0.U(n.W))
       case _ =>
         val nBits = log2Ceil(n + 1)
         val p2 = Array.ofDim[UInt](nBits)
@@ -90,7 +90,7 @@ object Fill {
   * }}}
   */
 object Reverse {
-  private def doit(in: UInt, length: Int): UInt = length match {
+  private def doit(in: UInt, length: Int): UInt = length match { // scalastyle:ignore cyclomatic.complexity
     case _ if length < 0 => throw new IllegalArgumentException(s"length (=$length) must be nonnegative integer.")
     case _ if length <= 1 => in
     case _ if isPow2(length) && length >= 8 && length <= 64 =>

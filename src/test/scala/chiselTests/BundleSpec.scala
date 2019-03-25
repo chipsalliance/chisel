@@ -10,25 +10,25 @@ trait BundleSpecUtils {
   class BundleFooBar extends Bundle {
     val foo = UInt(16.W)
     val bar = UInt(16.W)
-    override def cloneType = (new BundleFooBar).asInstanceOf[this.type]
+    override def cloneType: this.type = (new BundleFooBar).asInstanceOf[this.type]
   }
   class BundleBarFoo extends Bundle {
     val bar = UInt(16.W)
     val foo = UInt(16.W)
-    override def cloneType = (new BundleBarFoo).asInstanceOf[this.type]
+    override def cloneType: this.type = (new BundleBarFoo).asInstanceOf[this.type]
   }
   class BundleFoo extends Bundle {
     val foo = UInt(16.W)
-    override def cloneType = (new BundleFoo).asInstanceOf[this.type]
+    override def cloneType: this.type = (new BundleFoo).asInstanceOf[this.type]
   }
   class BundleBar extends Bundle {
     val bar = UInt(16.W)
-    override def cloneType = (new BundleBar).asInstanceOf[this.type]
+    override def cloneType: this.type = (new BundleBar).asInstanceOf[this.type]
   }
 
   class BadSeqBundle extends Bundle {
     val bar = Seq(UInt(16.W), UInt(8.W), UInt(4.W))
-    override def cloneType = (new BadSeqBundle).asInstanceOf[this.type]
+    override def cloneType: this.type = (new BadSeqBundle).asInstanceOf[this.type]
   }
 
   class MyModule(output: Bundle, input: Bundle) extends Module {

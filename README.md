@@ -4,13 +4,13 @@
 
 [![Join the chat at https://gitter.im/freechipsproject/chisel3](https://badges.gitter.im/freechipsproject/chisel3.svg)](https://gitter.im/freechipsproject/chisel3?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![CircleCI](https://circleci.com/gh/freechipsproject/chisel3/tree/master.svg?style=shield)](https://circleci.com/gh/freechipsproject/chisel3/tree/master)
+[![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/freechipsproject/chisel3.svg?label=release)](https://github.com/freechipsproject/chisel3/releases/latest)
 
 Chisel is a new hardware construction language to support advanced hardware design and circuit generation.
 The latest iteration of [Chisel](https://chisel.eecs.berkeley.edu/) is Chisel3,
 which uses Firrtl as an intermediate hardware representation language.
 
 Chisel3 releases are available as jars on Sonatype/Nexus/Maven and as tagged branches on the [releases tab](https://github.com/freechipsproject/chisel3/releases) of this repository.
-The latest release is [3.1.3](https://github.com/freechipsproject/chisel3/releases/tag/v3.1.3).
 
 Please visit the [Wiki](https://github.com/ucb-bar/chisel3/wiki) for documentation!
 
@@ -46,23 +46,23 @@ This will walk you through installing Chisel and its dependencies:
     sudo apt-get install sbt
     ```
 1. Install Verilator.
-    We currently recommend Verilator version 3.922.
+    We currently recommend Verilator version 4.006.
     Follow these instructions to compile it from source.
-    
+
     1. Install prerequisites (if not installed already):
         ```
         sudo apt-get install git make autoconf g++ flex bison
         ```
-    
+
     2. Clone the Verilator repository:
         ```
         git clone http://git.veripool.org/git/verilator
         ```
-    
+
     3. In the Verilator repository directory, check out a known good version:
         ```
         git pull
-        git checkout verilator_3_922
+        git checkout verilator_4_006
         ```
 
     4. In the Verilator repository directory, build and install:
@@ -82,7 +82,18 @@ yaourt -S firrtl-git verilator sbt
 
 ### Windows
 
-*TODO: write me. If you __really__ want to see this happen, let us know by filing a bug report!*
+[Download and install sbt for Windows](https://www.scala-sbt.org/download.html).
+
+#### Simulation on Windows
+
+The chisel3 regression tests use Verilator as the simulator, but Verilator does not work well on Windows natively.
+However, Verilator works in [WSL](https://docs.microsoft.com/en-us/windows/wsl/install-win10) or in other Linux-compatible environments like Cygwin.
+
+Alternatively, if you're using [PeekPokeTester](https://github.com/freechipsproject/chisel-testers) or the [Testers2 alpha](https://github.com/ucb-bar/chisel-testers2), you can use [treadle](https://github.com/freechipsproject/treadle) as the simulation engine.
+Treadle is a FIRRTL simulator written in Scala, and works on any platform that can run Scala code.
+It can simulate any pure Chisel design, but cannot simulate Verilog code and hence will not work on BlackBoxes / ExtModules which do not have corresponding greybox definitions.
+
+There are no issues with generating Verilog from Chisel, which can be pushed to FPGA or ASIC tools.
 
 ### Mac OS X
 
@@ -94,14 +105,15 @@ brew install sbt verilator
 If you are migrating to Chisel3 from Chisel2, please visit
 [Chisel3 vs Chisel2](https://github.com/ucb-bar/chisel3/wiki/Chisel3-vs-Chisel2)
 
+### Resources for Learning Chisel
+* [Chisel Bootcamp](https://github.com/freechipsproject/chisel-bootcamp), a collection of interactive Jupyter notebooks that teach Chisel
+* [Chisel Tutorial](https://github.com/ucb-bar/chisel-tutorial), a collection of exercises utlizing `sbt`
 
 ### Data Types Overview
 These are the base data types for defining circuit wires (abstract types which
 may not be instantiated are greyed out):
 
 ![Image](doc/images/type_hierarchy.png?raw=true)
-
-### [Chisel Tutorial](https://github.com/ucb-bar/chisel-tutorial)
 
 ## For Hardware Engineers
 This section describes how to get started using Chisel to create a new RTL

@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 package chiselTests
 
 import org.scalatest.{FlatSpec, Matchers}
@@ -65,7 +67,7 @@ class PrintableSpec extends FlatSpec with Matchers {
   }
   it should "generate proper printf for simple Decimal printing" in {
     class MyModule extends BasicTester {
-      val myWire = WireInit(1234.U)
+      val myWire = WireDefault(1234.U)
       printf(p"myWire = ${Decimal(myWire)}")
     }
     val firrtl = Driver.emit(() => new MyModule)
@@ -105,10 +107,10 @@ class PrintableSpec extends FlatSpec with Matchers {
     }
     class MyBundle extends Bundle {
       val foo = UInt(32.W)
-      override def cloneType = (new MyBundle).asInstanceOf[this.type]
+      override def cloneType: this.type = (new MyBundle).asInstanceOf[this.type]
     }
     class MyModule extends BasicTester {
-      override def desiredName = "MyModule"
+      override def desiredName: String = "MyModule"
       val myWire = Wire(new MyBundle)
       val myInst = Module(new MySubModule)
       printf(p"${Name(myWire.foo)}")
@@ -116,7 +118,7 @@ class PrintableSpec extends FlatSpec with Matchers {
       printf(p"${FullName(myInst.io.fizz)}")
     }
     val firrtl = Driver.emit(() => new MyModule)
-    println(firrtl)
+    println(firrtl) // scalastyle:ignore regex
     getPrintfs(firrtl) match {
       case Seq(Printf("foo", Seq()),
                Printf("myWire.foo", Seq()),
@@ -142,8 +144,8 @@ class PrintableSpec extends FlatSpec with Matchers {
   }
   it should "print UInts and SInts as Decimal by default" in {
     class MyModule extends BasicTester {
-      val myUInt = WireInit(0.U)
-      val mySInt = WireInit(-1.S)
+      val myUInt = WireDefault(0.U)
+      val mySInt = WireDefault(-1.S)
       printf(p"$myUInt & $mySInt")
     }
     val firrtl = Driver.emit(() => new MyModule)
@@ -177,7 +179,7 @@ class PrintableSpec extends FlatSpec with Matchers {
     }
     val firrtl = Driver.emit(() => new MyModule)
     getPrintfs(firrtl) match {
-      case Seq(Printf("Bundle(foo -> %d, bar -> %d)",
+      case Seq(Printf("AnonymousBundle(foo -> %d, bar -> %d)",
                Seq("myBun.foo", "myBun.bar"))) =>
       case e => fail()
     }

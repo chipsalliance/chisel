@@ -18,7 +18,7 @@ class BundleLiteralSpec extends ChiselFlatSpec {
     import chisel3.core.BundleLitBinding
     import chisel3.internal.firrtl.{ULit, Width}
     // Full bundle literal constructor
-    def Lit(aVal: UInt, bVal: Bool): MyBundle = {
+    def Lit(aVal: UInt, bVal: Bool): MyBundle = { // scalastyle:ignore method.name
       val clone = cloneType
       clone.selfBind(BundleLitBinding(Map(
         clone.a -> litArgOfBits(aVal),
@@ -27,7 +27,7 @@ class BundleLiteralSpec extends ChiselFlatSpec {
       clone
     }
     // Partial bundle literal constructor
-    def Lit(aVal: UInt): MyBundle = {
+    def Lit(aVal: UInt): MyBundle = { // scalastyle:ignore method.name
       val clone = cloneType
       clone.selfBind(BundleLitBinding(Map(
         clone.a -> litArgOfBits(aVal)

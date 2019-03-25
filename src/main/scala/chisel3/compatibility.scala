@@ -4,7 +4,7 @@
   *  while moving to the more standard package naming convention `chisel3` (lowercase c).
   */
 
-package object Chisel {     // scalastyle:ignore package.object.name
+package object Chisel {     // scalastyle:ignore package.object.name number.of.types number.of.methods
   import chisel3.internal.firrtl.Width
 
   import scala.language.experimental.macros
@@ -60,10 +60,10 @@ package object Chisel {     // scalastyle:ignore package.object.name
     import chisel3.core.CompileOptions
 
     def apply[T <: Data](dummy: Int = 0, init: T)(implicit compileOptions: CompileOptions): T =
-      chisel3.core.WireInit(init)
+      chisel3.core.WireDefault(init)
 
     def apply[T <: Data](t: T, init: T)(implicit compileOptions: CompileOptions): T =
-      chisel3.core.WireInit(t, init)
+      chisel3.core.WireDefault(t, init)
   }
   object Clock {
     def apply(): Clock = new Clock
@@ -250,7 +250,7 @@ package object Chisel {     // scalastyle:ignore package.object.name
   val Mux = chisel3.core.Mux
   type Reset = chisel3.core.Reset
 
-  implicit def resetToBool(reset: Reset): Bool = reset.toBool
+  implicit def resetToBool(reset: Reset): Bool = reset.asBool
 
   import chisel3.core.Param
   abstract class BlackBox(params: Map[String, Param] = Map.empty[String, Param]) extends chisel3.core.BlackBox(params) {
@@ -389,7 +389,7 @@ package object Chisel {     // scalastyle:ignore package.object.name
   // Deprecated as of Chsiel3
   @throws(classOf[Exception])
   object throwException {
-    def apply(s: String, t: Throwable = null) = {
+    def apply(s: String, t: Throwable = null): Nothing = {
       val xcpt = new Exception(s, t)
       throw xcpt
     }

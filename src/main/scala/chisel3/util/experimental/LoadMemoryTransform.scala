@@ -168,6 +168,10 @@ class LoadMemoryTransform extends Transform {
         memoryAnnotations.get(fullMemoryName) match {
           case Some(lma @ LoadMemoryAnnotation(ComponentName(componentName, moduleName), _, hexOrBinary, _)) =>
             val writer = new java.io.StringWriter
+            val readmem = hexOrBinary match {
+              case MemoryLoadFileType.Binary => "$readmemb"
+              case MemoryLoadFileType.Hex => "$readmemh"
+            }
 
             modulesByName.get(moduleName.name).foreach { module =>
                 val renderer = verilogEmitter.getRenderer(module, modulesByName)(writer)
@@ -178,7 +182,7 @@ class LoadMemoryTransform extends Transform {
                 renderer.emitVerilogBind(bindsToName,
                   s"""
                      |initial begin
-                     |  $$readmem$hexOrBinary("$loadFileName", ${myModule.name}.$componentName);
+                     |  $readmem("$loadFileName", ${myModule.name}.$componentName);
                      |end
                       """.stripMargin)
                 val inLineText = writer.toString + "\n" +

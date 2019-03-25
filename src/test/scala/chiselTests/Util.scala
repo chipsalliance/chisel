@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 // Useful utilities for tests
 
 package chiselTests
