@@ -200,7 +200,14 @@ private[chisel3] object Builder {
 
   // Initialize any singleton objects before user code inadvertently inherits them.
   private def initializeSingletons(): Unit = {
-    val dummy = core.DontCare
+    // This used to contain:
+    //    val dummy = core.DontCare
+    //  but this would occasionally produce hangs dues to static initialization deadlock
+    //  when Builder initialization collided with chisel3.package initialization of the DontCare value.
+    // See:
+    //  http://ternarysearch.blogspot.com/2013/07/static-initialization-deadlock.html
+    //  https://bugs.openjdk.java.net/browse/JDK-8037567
+    //  https://stackoverflow.com/questions/28631656/runnable-thread-state-but-in-object-wait
   }
 
   def namingStackOption: Option[internal.naming.NamingStack] = dynamicContextVar.value.map(_.namingStack)
