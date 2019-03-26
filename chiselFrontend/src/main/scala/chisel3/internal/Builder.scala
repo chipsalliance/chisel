@@ -203,7 +203,7 @@ private[chisel3] object Builder {
     val dummy = core.DontCare
   }
 
-  def namingStackOption: Option[internal.naming.NamingStack]= dynamicContextVar.value.map(_.namingStack)
+  def namingStackOption: Option[internal.naming.NamingStack] = dynamicContextVar.value.map(_.namingStack)
 
   def idGen: IdGen = chiselContext.value.idGen
 
