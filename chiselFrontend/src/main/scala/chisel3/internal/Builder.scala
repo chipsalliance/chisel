@@ -4,7 +4,6 @@ package chisel3.internal
 
 import scala.util.DynamicVariable
 import scala.collection.mutable.{ArrayBuffer, HashMap}
-
 import chisel3._
 import core._
 import firrtl._
@@ -204,6 +203,8 @@ private[chisel3] object Builder {
     val dummy = core.DontCare
   }
 
+  def namingStackOption: Option[internal.naming.NamingStack] = dynamicContextVar.value.map(_.namingStack)
+
   def idGen: IdGen = chiselContext.value.idGen
 
   def globalNamespace: Namespace = dynamicContext.globalNamespace
@@ -344,10 +345,29 @@ private[chisel3] object Builder {
   initializeSingletons()
 }
 
-/** Allows public access to the naming stack in Builder / DynamicContext.
+/** Allows public access to the naming stack in Builder / DynamicContext, and handles invocations
+  * outside a Builder context.
   * Necessary because naming macros expand in user code and don't have access into private[chisel3]
   * objects.
   */
 object DynamicNamingStack {
-  def apply(): internal.naming.NamingStack = Builder.namingStack
+  def pushContext(): internal.naming.NamingContextInterface = {
+    Builder.namingStackOption match {
+      case Some(namingStack) => namingStack.pushContext()
+      case None => internal.naming.DummyNamer
+    }
+  }
+
+  def popReturnContext[T <: Any](prefixRef: T, until: internal.naming.NamingContextInterface): T = {
+    until match {
+      case internal.naming.DummyNamer =>
+        require(Builder.namingStackOption.isEmpty,
+          "Builder context must remain stable throughout a chiselName-annotated function invocation")
+      case context: internal.naming.NamingContext =>
+        require(Builder.namingStackOption.isDefined,
+          "Builder context must remain stable throughout a chiselName-annotated function invocation")
+        Builder.namingStackOption.get.popContext(prefixRef, context)
+    }
+    prefixRef
+  }
 }
