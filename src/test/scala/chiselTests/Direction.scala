@@ -93,7 +93,6 @@ class DirectionSpec extends ChiselPropSpec with Matchers {
     }
   }
 
-
   property("Empty Bundles should not cause direction errors") {
     elaborate(new Module {
       val io = IO(new Bundle {

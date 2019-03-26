@@ -16,7 +16,7 @@ import chisel3.SourceInfoDoc
   * of) other Data objects.
   */
 sealed abstract class Aggregate extends Data {
-  private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection) { // scalastyle:ignore cyclomatic.complexity line.size.limit
+  private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection) {
     binding = target
 
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
@@ -25,49 +25,13 @@ sealed abstract class Aggregate extends Data {
     }
 
     // Check that children obey the directionality rules.
-    val childDirections = this match {
-      case vec: Vec[_] =>
-        // Use direction of sample_element, must bind it to get an ActualDirection
-        vec.sample_element.bind(SampleElementBinding(vec), resolvedDirection)
-        Set(vec.sample_element.direction)
-      case rec: Record =>
-        getElements.collect({
-          case elt: Element => elt.direction
-          case vec: Vec[_] => vec.direction
-          // Don't check the directions of empty Records (see https://github.com/freechipsproject/chisel3/pull/946)
-          case rec: Record if rec.getElements.nonEmpty => rec.direction
-        }).toSet
-    }
-    direction = if (childDirections == Set()) {  // Sadly, Scala can't do set matching
-      // If empty, use my assigned direction
-      ActualDirection.fromSpecified(resolvedDirection)
-    } else if (childDirections == Set(ActualDirection.Unspecified)) {
-      ActualDirection.Unspecified
-    } else if (childDirections == Set(ActualDirection.Input)) {
-      ActualDirection.Input
-    } else if (childDirections == Set(ActualDirection.Output)) {
-      ActualDirection.Output
-    } else if (childDirections subsetOf
-        Set(ActualDirection.Output, ActualDirection.Input,
-            ActualDirection.Bidirectional(ActualDirection.Default),
-            ActualDirection.Bidirectional(ActualDirection.Flipped))) {
-      resolvedDirection match {
-        case SpecifiedDirection.Unspecified => ActualDirection.Bidirectional(ActualDirection.Default)
-        case SpecifiedDirection.Flip => ActualDirection.Bidirectional(ActualDirection.Flipped)
-        case _ => throw new RuntimeException("Unexpected forced Input / Output")
-      }
-    } else {
-      this match {
-        // Anything flies in compatibility mode
-        case t: Record if !t.compileOptions.dontAssumeDirectionality => resolvedDirection match {
-          case SpecifiedDirection.Unspecified => ActualDirection.Bidirectional(ActualDirection.Default)
-          case SpecifiedDirection.Flip => ActualDirection.Bidirectional(ActualDirection.Flipped)
-          case _ => ActualDirection.Bidirectional(ActualDirection.Default)
-        }
-        case _ =>
-          val childWithDirections = getElements zip getElements.map(_.direction)
-          throw Binding.MixedDirectionAggregateException(s"Aggregate '$this' can't have elements that are both directioned and undirectioned: $childWithDirections") // scalastyle:ignore line.size.limit
-      }
+    val childDirections = getElements.map(_.direction).toSet - ActualDirection.Empty
+    direction = ActualDirection.fromChildren(childDirections, resolvedDirection) match {
+      case Some(dir) => dir
+      case None =>
+        val childWithDirections = getElements zip getElements.map(_.direction)
+        throw Binding.MixedDirectionAggregateException(
+            s"Aggregate '$this' can't have elements that are both directioned and undirectioned: $childWithDirections")
     }
   }
 
@@ -172,10 +136,26 @@ sealed class Vec[T <: Data] private[core] (gen: => T, val length: Int)
     case _ => false
   }
 
+  private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection) {
+    binding = target
+
+    val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
+    sample_element.bind(SampleElementBinding(this), resolvedDirection)
+    for (child <- getElements) {  // assume that all children are the same
+      child.bind(ChildBinding(this), resolvedDirection)
+    }
+
+    // Note: this differs from the Aggregate.bind behavior on an empty Vec, since this looks at the
+    // sample element instead of actual elements.
+    direction = sample_element.direction
+  }
+
   // Note: the constructor takes a gen() function instead of a Seq to enforce
   // that all elements must be the same and because it makes FIRRTL generation
   // simpler.
   private val self: Seq[T] = Vector.fill(length)(gen)
+  for ((elt, i) <- self.zipWithIndex)
+    elt.setRef(this, i)
 
   /**
   * sample_element 'tracks' all changes to the elements.
@@ -260,9 +240,6 @@ sealed class Vec[T <: Data] private[core] (gen: => T, val length: Int)
 
   override def getElements: Seq[Data] =
     (0 until length).map(apply(_))
-
-  for ((elt, i) <- self.zipWithIndex)
-    elt.setRef(this, i)
 
   /** Default "pretty-print" implementation
     * Analogous to printing a Seq
@@ -449,6 +426,19 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId with Source
   * RTL writers should use [[Bundle]].  See [[Record#elements]] for an example.
   */
 abstract class Record(private[chisel3] implicit val compileOptions: CompileOptions) extends Aggregate {
+  private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
+    try {
+      super.bind(target, parentDirection)
+    } catch {  // nasty compatibility mode shim, where anything flies
+      case e: Binding.MixedDirectionAggregateException if !compileOptions.dontAssumeDirectionality =>
+        val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
+        resolvedDirection match {
+          case SpecifiedDirection.Unspecified => ActualDirection.Bidirectional(ActualDirection.Default)
+          case SpecifiedDirection.Flip => ActualDirection.Bidirectional(ActualDirection.Flipped)
+          case _ => ActualDirection.Bidirectional(ActualDirection.Default)
+        }
+    }
+  }
 
   /** The collection of [[Data]]
     *
