@@ -202,7 +202,7 @@ private[chisel3] object Builder {
   private def initializeSingletons(): Unit = {
     // This used to contain:
     //    val dummy = core.DontCare
-    //  but this would occasionally produce hangs dues to static initialization deadlock
+    //  but this would occasionally produce hangs due to static initialization deadlock
     //  when Builder initialization collided with chisel3.package initialization of the DontCare value.
     // See:
     //  http://ternarysearch.blogspot.com/2013/07/static-initialization-deadlock.html
