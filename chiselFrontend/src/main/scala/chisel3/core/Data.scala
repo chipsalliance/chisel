@@ -670,9 +670,10 @@ object WireDefault {
 /** RHS (source) for Invalidate API.
   * Causes connection logic to emit a DefInvalid when connected to an output port (or wire).
   */
-object DontCare extends Element {
+private[chisel3] object DontCare extends Element {
   // This object should be initialized before we execute any user code that refers to it,
   //  otherwise this "Chisel" object will end up on the UserModule's id list.
+  // We make it private to chisel3 so it has to be accessed through the package object.
 
   private[chisel3] override val width: Width = UnknownWidth()
 
