@@ -13,7 +13,7 @@ import scala.collection.mutable
 
 /** Removes all [[firrtl.WSubAccess]] from circuit
   */
-object RemoveAccesses extends Pass {
+class RemoveAccesses extends Pass {
   private def AND(e1: Expression, e2: Expression) =
     if(e1 == one) e2
     else if(e2 == one) e1
@@ -164,5 +164,16 @@ object RemoveAccesses extends Pass {
       case m: ExtModule => m
       case m: Module => remove_m(m)
     })
+  }
+}
+
+object RemoveAccesses extends Pass {
+  def apply: Pass = {
+    new RemoveAccesses()
+  }
+
+  def run(c: Circuit): Circuit = {
+    val t = new RemoveAccesses
+    t.run(c)
   }
 }
