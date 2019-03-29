@@ -116,7 +116,7 @@ class DirectionSpec extends ChiselPropSpec with Matchers {
     })
   }
 
-  property("Empty directioned Bundles should not cause direction errors") {
+  property("Explicitly directioned but empty Bundles should cause direction errors") {
     an [Exception] should be thrownBy {
       elaborate(new Module {
         val io = IO(new Bundle {
