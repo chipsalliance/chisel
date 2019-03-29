@@ -169,6 +169,14 @@ class AnalogSpec extends ChiselFlatSpec {
         wires(0) <> wires(2)
       })
     }
+    a [ChiselException] should be thrownBy {
+      elaborate(new Module {
+        val io = IO(new Bundle {})
+        val wires = List.fill(2)(Wire(Analog(32.W)))
+        wires(0) <> DontCare
+        wires(0) <> wires(1)
+      })
+    }
   }
 
   it should "allow DontCare connection" in {
