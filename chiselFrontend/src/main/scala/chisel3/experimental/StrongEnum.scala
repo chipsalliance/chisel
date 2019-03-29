@@ -1,13 +1,14 @@
 // See LICENSE for license details.
 
-package chisel3.experimental
+package chisel3
+package experimental
 
 import chisel3._
 import chisel3.internal.Builder.pushOp
 import chisel3.internal.firrtl.PrimOp._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo._
-import chisel3.internal.{Binding, Builder, InstanceId, throwException}
+import chisel3.internal.{Binding, Builder, ChildBinding, ConstrainedBinding, InstanceId, throwException}
 import firrtl.annotations._
 
 import scala.collection.mutable
@@ -162,7 +163,7 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
     super.bind(target, parentDirection)
 
     // Make sure we only annotate hardware and not literals
-    if (selfAnnotating && litOption.isEmpty) {
+    if (selfAnnotating && topBindingOpt.isDefined && topBindingOpt.get.isInstanceOf[ConstrainedBinding]) {
       annotateEnum()
     }
   }

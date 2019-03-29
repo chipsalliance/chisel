@@ -54,6 +54,10 @@ object SpecifiedDirection {
 sealed abstract class ActualDirection
 
 object ActualDirection {
+  /** The object does not exist / is empty and hence has no direction
+    */
+  case object Empty extends ActualDirection
+
   /** Undirectioned, struct-like
     */
   case object Unspecified extends ActualDirection
@@ -69,6 +73,42 @@ object ActualDirection {
   case object Flipped extends BidirectionalDirection
 
   case class Bidirectional(dir: BidirectionalDirection) extends ActualDirection
+
+  def fromSpecified(direction: SpecifiedDirection): ActualDirection = direction match {
+    case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip => ActualDirection.Unspecified
+    case SpecifiedDirection.Output => ActualDirection.Output
+    case SpecifiedDirection.Input => ActualDirection.Input
+  }
+
+  /** Determine the actual binding of a container given directions of its children.
+    * Returns None in the case of mixed specified / unspecified directionality.
+    */
+  def fromChildren(childDirections: Set[ActualDirection], containerDirection: SpecifiedDirection):
+      Option[ActualDirection] = {
+    if (childDirections == Set()) {  // Sadly, Scala can't do set matching
+      ActualDirection.fromSpecified(containerDirection) match {
+        case ActualDirection.Unspecified => Some(ActualDirection.Empty)  // empty direction if relative / no direction
+        case dir => Some(dir)  // use assigned direction if specified
+      }
+    } else if (childDirections == Set(ActualDirection.Unspecified)) {
+      Some(ActualDirection.Unspecified)
+    } else if (childDirections == Set(ActualDirection.Input)) {
+      Some(ActualDirection.Input)
+    } else if (childDirections == Set(ActualDirection.Output)) {
+      Some(ActualDirection.Output)
+    } else if (childDirections subsetOf
+      Set(ActualDirection.Output, ActualDirection.Input,
+        ActualDirection.Bidirectional(ActualDirection.Default),
+        ActualDirection.Bidirectional(ActualDirection.Flipped))) {
+      containerDirection match {
+        case SpecifiedDirection.Unspecified => Some(ActualDirection.Bidirectional(ActualDirection.Default))
+        case SpecifiedDirection.Flip => Some(ActualDirection.Bidirectional(ActualDirection.Flipped))
+        case _ => throw new RuntimeException("Unexpected forced Input / Output")
+      }
+    } else {
+      None
+    }
+  }
 }
 
 object debug {  // scalastyle:ignore object.name
@@ -89,7 +129,7 @@ private[chisel3] object cloneSupertype {
                                                           compileOptions: CompileOptions): T = {
     require(!elts.isEmpty, s"can't create $createdType with no inputs")
 
-    val filteredElts = elts.filter(_ != DontCare)
+    val filteredElts = elts.filter(_ != internal.DontCare)
     require(!filteredElts.isEmpty, s"can't create $createdType with only DontCare inputs")
 
     if (filteredElts.head.isInstanceOf[Bits]) {
@@ -229,7 +269,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
   // perform checks in Chisel, where more informative error messages are possible.
   private var _binding: Option[Binding] = None
   // Only valid after node is bound (synthesizable), crashes otherwise
-  protected[core] def binding: Option[Binding] = _binding
+  protected[chisel3] def binding: Option[Binding] = _binding
   protected def binding_=(target: Binding) {
     if (_binding.isDefined) {
       throw Binding.RebindingException(s"Attempted reassignment of binding to $this")
@@ -237,9 +277,14 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
     _binding = Some(target)
   }
 
-  private[chisel3] def topBindingOpt: Option[TopBinding] = _binding.map {
-    case ChildBinding(parent) => parent.topBinding
-    case bindingVal: TopBinding => bindingVal
+  private[chisel3] def topBindingOpt: Option[TopBinding] = _binding.flatMap {
+    case ChildBinding(parent) => parent.topBindingOpt
+    case bindingVal: TopBinding => Some(bindingVal)
+    case _: SampleElementBinding[_] => None
+      // TODO: technically, it's bound, but it's more of a ghost binding and None is probably the most appropriate
+      // Note: sample elements should not be user-accessible, so there's not really a good reason to access its
+      // top binding. However, we can't make this assert out right not because a larger refactoring is needed.
+      // See https://github.com/freechipsproject/chisel3/pull/946
   }
 
   private[chisel3] def topBinding: TopBinding = topBindingOpt.get
@@ -597,13 +642,13 @@ object WireDefault {
   }
 
   /** @usecase def apply[T <: Data](t: T, init: DontCare.type): T
-    *   Construct a [[Wire]] with a type template and a [[DontCare]] default
+    *          Construct a [[Wire]] with a type template and a [[internal.DontCare]] default
     *   @param t The type template used to construct this [[Wire]]
-    *   @param init The default connection to this [[Wire]], can only be [[DontCare]]
-    *   @note This is really just a specialized form of `apply[T <: Data](t: T, init: T): T` with [[DontCare]]
+    *   @param init The default connection to this [[Wire]], can only be [[internal.DontCare]]
+    *   @note This is really just a specialized form of `apply[T <: Data](t: T, init: T): T` with [[internal.DontCare]]
     *   as `init`
     */
-  def apply[T <: Data](t: T, init: DontCare.type)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = { // scalastyle:ignore line.size.limit
+  def apply[T <: Data](t: T, init: internal.DontCare.type)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = { // scalastyle:ignore line.size.limit
     applyImpl(t, init)
   }
 
@@ -629,35 +674,3 @@ object WireDefault {
     apply(model, init)
   }
 }
-
-/** RHS (source) for Invalidate API.
-  * Causes connection logic to emit a DefInvalid when connected to an output port (or wire).
-  */
-private[chisel3] object DontCare extends Element {
-  // This object should be initialized before we execute any user code that refers to it,
-  //  otherwise this "Chisel" object will end up on the UserModule's id list.
-  // We make it private to chisel3 so it has to be accessed through the package object.
-
-  private[chisel3] override val width: Width = UnknownWidth()
-
-  bind(DontCareBinding(), SpecifiedDirection.Output)
-  override def cloneType: this.type = DontCare
-
-  override def toString: String = "DontCare()"
-
-  override def litOption: Option[BigInt] = None
-
-  def toPrintable: Printable = PString("DONTCARE")
-
-  private[chisel3] def connectFromBits(that: Bits)(implicit sourceInfo:  SourceInfo, compileOptions: CompileOptions): Unit = { // scalastyle:ignore line.size.limit
-    Builder.error("connectFromBits: DontCare cannot be a connection sink (LHS)")
-  }
-
-  def do_asUInt(implicit sourceInfo: internal.sourceinfo.SourceInfo, compileOptions: CompileOptions): UInt = { // scalastyle:ignore line.size.limit
-    Builder.error("DontCare does not have a UInt representation")
-    0.U
-  }
-  // DontCare's only match themselves.
-  private[chisel3] def typeEquivalent(that: Data): Boolean = that == DontCare
-}
-

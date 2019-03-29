@@ -6,7 +6,7 @@ import chisel3.internal.{Builder, InstanceId}
 import chisel3.{CompileOptions, Data}
 import firrtl.Transform
 import firrtl.annotations.Annotation
-import firrtl.transforms.DontTouchAnnotation
+import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
 
 import scala.language.existentials
 

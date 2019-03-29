@@ -30,16 +30,16 @@ object Mux extends SourceInfoDoc {
     requireIsHardware(alt, "mux false value")
     val d = cloneSupertype(Seq(con, alt), "Mux")
     val conRef = con match {  // this matches chisel semantics (DontCare as object) to firrtl semantics (invalidate)
-      case DontCare =>
+      case internal.DontCare =>
         val dcWire = Wire(d)
-        dcWire := DontCare
+        dcWire := internal.DontCare
         dcWire.ref
       case _ => con.ref
     }
     val altRef = alt match {
-      case DontCare =>
+      case internal.DontCare =>
         val dcWire = Wire(d)
-        dcWire := DontCare
+        dcWire := internal.DontCare
         dcWire.ref
       case _ => alt.ref
     }

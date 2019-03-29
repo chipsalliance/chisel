@@ -5,7 +5,7 @@
 
 package chisel3.util
 
-import chisel3._
+import chisel3.{internal, _}
 import chisel3.experimental.{DataMirror, Direction, MultiIOModule, requireIsChiselType}
 import chisel3.internal.naming._  // can't use chisel3_ version because of compile order
 
@@ -51,7 +51,7 @@ object ReadyValidIO {
       */
     def noenq(): Unit = {
       target.valid := false.B
-      target.bits := DontCare
+      target.bits := internal.DontCare
     }
 
     /** Assert ready on this port and return the associated data bits.

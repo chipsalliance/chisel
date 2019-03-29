@@ -6,7 +6,7 @@ import chisel3.experimental.{Analog, BaseModule, RawModule, attach}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.{Connect, DefInvalid}
 import chisel3.internal.sourceinfo._
-import chisel3.{CompileOptions, Data, DontCare, Element, ExplicitCompileOptions, Record, Vec}
+import chisel3.{CompileOptions, Data, Element, ExplicitCompileOptions, Record, Vec}
 
 import scala.language.experimental.macros
 
