@@ -449,6 +449,23 @@ class DCETests extends FirrtlFlatSpec {
     // Check for register update
     verilog should include regex ("""(?m)if \(a\) begin\n\s*r <= x;\s*end""")
   }
+
+  "Emitted Verilog" should "not contain dead print or stop statements" in {
+    val input = parse(
+      """circuit test :
+        |  module test :
+        |    input clock : Clock
+        |    when UInt<1>(0) :
+        |      printf(clock, UInt<1>(1), "o hai")
+        |      stop(clock, UInt<1>(1), 1)""".stripMargin
+    )
+
+    val state = CircuitState(input, ChirrtlForm)
+    val result = (new VerilogCompiler).compileAndEmit(state, List.empty)
+    val verilog = result.getEmittedCircuit.value
+    verilog shouldNot include regex ("""fwrite""")
+    verilog shouldNot include regex ("""fatal""")
+  }
 }
 
 class DCECommandLineSpec extends FirrtlFlatSpec {
