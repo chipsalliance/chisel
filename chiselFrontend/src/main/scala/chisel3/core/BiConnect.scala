@@ -66,6 +66,8 @@ object BiConnect {
           // If attach fails, convert to BiConnectException
           case attach.AttachException(message) => throw BiConnectException(message)
         }
+      case (left_a: Analog, DontCare) => pushCommand(DefInvalid(sourceInfo, left_a.lref))
+      case (DontCare, right_a: Analog) => pushCommand(DefInvalid(sourceInfo, right_a.lref))
       case (left_e: Element, right_e: Element) => {
         elemConnect(sourceInfo, connectCompileOptions, left_e, right_e, context_mod)
         // TODO(twigg): Verify the element-level classes are connectable

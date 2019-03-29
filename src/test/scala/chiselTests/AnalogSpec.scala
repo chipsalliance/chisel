@@ -171,6 +171,21 @@ class AnalogSpec extends ChiselFlatSpec {
     }
   }
 
+  it should "allow DontCare connection" in {
+    elaborate(new Module {
+      val io = IO(new Bundle {
+        val a = Analog(1.W)
+      })
+      io.a := DontCare
+    })
+    elaborate(new Module {
+      val io = IO(new Bundle {
+        val a = Analog(1.W)
+      })
+      io.a <> DontCare
+    })
+  }
+
   it should "work with 3 blackboxes attached" in {
     assertTesterPasses(new AnalogTester {
       val mods = Seq.fill(2)(Module(new AnalogReaderBlackBox))
