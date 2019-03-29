@@ -54,6 +54,10 @@ object SpecifiedDirection {
 sealed abstract class ActualDirection
 
 object ActualDirection {
+  /** The object does not exist / is empty and hence has no direction
+    */
+  case object Empty extends ActualDirection
+
   /** Undirectioned, struct-like
     */
   case object Unspecified extends ActualDirection
@@ -69,6 +73,42 @@ object ActualDirection {
   case object Flipped extends BidirectionalDirection
 
   case class Bidirectional(dir: BidirectionalDirection) extends ActualDirection
+
+  def fromSpecified(direction: SpecifiedDirection): ActualDirection = direction match {
+    case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip => ActualDirection.Unspecified
+    case SpecifiedDirection.Output => ActualDirection.Output
+    case SpecifiedDirection.Input => ActualDirection.Input
+  }
+
+  /** Determine the actual binding of a container given directions of its children.
+    * Returns None in the case of mixed specified / unspecified directionality.
+    */
+  def fromChildren(childDirections: Set[ActualDirection], containerDirection: SpecifiedDirection):
+      Option[ActualDirection] = {
+    if (childDirections == Set()) {  // Sadly, Scala can't do set matching
+      ActualDirection.fromSpecified(containerDirection) match {
+        case ActualDirection.Unspecified => Some(ActualDirection.Empty)  // empty direction if relative / no direction
+        case dir => Some(dir)  // use assigned direction if specified
+      }
+    } else if (childDirections == Set(ActualDirection.Unspecified)) {
+      Some(ActualDirection.Unspecified)
+    } else if (childDirections == Set(ActualDirection.Input)) {
+      Some(ActualDirection.Input)
+    } else if (childDirections == Set(ActualDirection.Output)) {
+      Some(ActualDirection.Output)
+    } else if (childDirections subsetOf
+      Set(ActualDirection.Output, ActualDirection.Input,
+        ActualDirection.Bidirectional(ActualDirection.Default),
+        ActualDirection.Bidirectional(ActualDirection.Flipped))) {
+      containerDirection match {
+        case SpecifiedDirection.Unspecified => Some(ActualDirection.Bidirectional(ActualDirection.Default))
+        case SpecifiedDirection.Flip => Some(ActualDirection.Bidirectional(ActualDirection.Flipped))
+        case _ => throw new RuntimeException("Unexpected forced Input / Output")
+      }
+    } else {
+      None
+    }
+  }
 }
 
 object debug {  // scalastyle:ignore object.name
@@ -274,9 +314,14 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
     _binding = Some(target)
   }
 
-  private[core] def topBindingOpt: Option[TopBinding] = _binding.map {
-    case ChildBinding(parent) => parent.topBinding
-    case bindingVal: TopBinding => bindingVal
+  private[core] def topBindingOpt: Option[TopBinding] = _binding.flatMap {
+    case ChildBinding(parent) => parent.topBindingOpt
+    case bindingVal: TopBinding => Some(bindingVal)
+    case _: SampleElementBinding[_] => None
+      // TODO: technically, it's bound, but it's more of a ghost binding and None is probably the most appropriate
+      // Note: sample elements should not be user-accessible, so there's not really a good reason to access its
+      // top binding. However, we can't make this assert out right not because a larger refactoring is needed.
+      // See https://github.com/freechipsproject/chisel3/pull/946
   }
 
   private[core] def topBinding: TopBinding = topBindingOpt.get
