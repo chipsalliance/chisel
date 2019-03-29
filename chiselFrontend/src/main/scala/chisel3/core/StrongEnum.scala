@@ -1,6 +1,7 @@
 // See LICENSE for license details.
 
-package chisel3.core
+package chisel3
+package experimental
 
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox.Context
@@ -9,7 +10,7 @@ import chisel3.internal.Builder.pushOp
 import chisel3.internal.firrtl.PrimOp._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo._
-import chisel3.internal.{Builder, InstanceId, throwException}
+import chisel3.internal.{Binding, Builder, ChildBinding, ConstrainedBinding, InstanceId, throwException}
 import firrtl.annotations._
 
 

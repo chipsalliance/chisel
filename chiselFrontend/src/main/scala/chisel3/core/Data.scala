@@ -166,7 +166,7 @@ private[core] object cloneSupertype {
                                                           compileOptions: CompileOptions): T = {
     require(!elts.isEmpty, s"can't create $createdType with no inputs")
 
-    val filteredElts = elts.filter(_ != DontCare)
+    val filteredElts = elts.filter(_ != internal.DontCare)
     require(!filteredElts.isEmpty, s"can't create $createdType with only DontCare inputs")
 
     if (filteredElts.head.isInstanceOf[Bits]) {
@@ -306,7 +306,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
   // perform checks in Chisel, where more informative error messages are possible.
   private var _binding: Option[Binding] = None
   // Only valid after node is bound (synthesizable), crashes otherwise
-  protected[core] def binding: Option[Binding] = _binding
+  protected[chisel3] def binding: Option[Binding] = _binding
   protected def binding_=(target: Binding) {
     if (_binding.isDefined) {
       throw Binding.RebindingException(s"Attempted reassignment of binding to $this")
@@ -679,13 +679,13 @@ object WireDefault {
   }
 
   /** @usecase def apply[T <: Data](t: T, init: DontCare.type): T
-    *   Construct a [[Wire]] with a type template and a [[DontCare]] default
+    *          Construct a [[Wire]] with a type template and a [[internal.DontCare]] default
     *   @param t The type template used to construct this [[Wire]]
-    *   @param init The default connection to this [[Wire]], can only be [[DontCare]]
-    *   @note This is really just a specialized form of `apply[T <: Data](t: T, init: T): T` with [[DontCare]]
+    *   @param init The default connection to this [[Wire]], can only be [[internal.DontCare]]
+    *   @note This is really just a specialized form of `apply[T <: Data](t: T, init: T): T` with [[internal.DontCare]]
     *   as `init`
     */
-  def apply[T <: Data](t: T, init: DontCare.type)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = { // scalastyle:ignore line.size.limit
+  def apply[T <: Data](t: T, init: internal.DontCare.type)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = { // scalastyle:ignore line.size.limit
     applyImpl(t, init)
   }
 
@@ -742,4 +742,3 @@ private[chisel3] object DontCare extends Element {
   // DontCare's only match themselves.
   private[core] def typeEquivalent(that: chisel3.core.Data): Boolean = that == DontCare
 }
-
