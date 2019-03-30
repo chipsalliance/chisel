@@ -56,6 +56,39 @@ object ConstantPropagation {
       case _ => e
     }
   }
+
+
+ /**********************************************
+  * REGISTER CONSTANT PROPAGATION HELPER TYPES *
+  **********************************************/
+
+  // A utility class that is somewhat like an Option but with two variants containing Nothing.
+  // for register constant propagation (register or literal).
+  private abstract class ConstPropBinding[+T] {
+    def resolve[V >: T](that: ConstPropBinding[V]): ConstPropBinding[V] = (this, that) match {
+      case (x, y) if (x == y) => x
+      case (x, UnboundConstant) => x
+      case (UnboundConstant, y) => y
+      case _ => NonConstant
+    }
+  }
+
+  // BoundConstant means that it has exactly the one allowable source of that type.
+  private case class BoundConstant[T](value: T) extends ConstPropBinding[T]
+
+  // NonConstant indicates multiple distinct sources.
+  private case object NonConstant extends ConstPropBinding[Nothing]
+
+  // UnboundConstant means that a node does not yet have a source of the two allowable types
+  private case object UnboundConstant extends ConstPropBinding[Nothing]
+
+  // A RegCPEntry tracks whether a given signal could be part of a register constant propagation
+  // loop. It contains const prop bindings for a register name and a literal, which represent the
+  // fact that a constant propagation loop can include both self-assignments and consistent literals.
+  private case class RegCPEntry(r: ConstPropBinding[String], l: ConstPropBinding[Literal]) {
+    def resolve(that: RegCPEntry) = RegCPEntry(r.resolve(that.r), l.resolve(that.l))
+  }
+
 }
 
 class ConstantPropagation extends Transform with ResolvedAnnotationPaths {
@@ -353,6 +386,12 @@ class ConstantPropagation extends Transform with ResolvedAnnotationPaths {
     // AsyncReset registers don't have reset turned into a mux so we must be careful
     val asyncResetRegs = mutable.HashSet.empty[String]
 
+    // Register constant propagation is intrinsically more complicated, as it is not feed-forward.
+    // Therefore, we must store some memoized information about how nodes can be canditates for
+    // forming part of a register const-prop "self-loop," where a register gets some combination of
+    // self-assignments and assignments of the same literal value.
+    val nodeRegCPEntries = new mutable.HashMap[String, RegCPEntry]
+
     // Copy constant mapping for constant inputs (except ones marked dontTouch!)
     nodeMap ++= constInputs.filterNot { case (pname, _) => dontTouches.contains(pname) }
 
@@ -389,7 +428,6 @@ class ConstantPropagation extends Transform with ResolvedAnnotationPaths {
       case other => other map backPropStmt
     }
 
-
     // When propagating a reference, check if we want to keep the name that would be deleted
     def propagateRef(lname: String, value: Expression): Unit = {
       value match {
@@ -420,30 +458,36 @@ class ConstantPropagation extends Transform with ResolvedAnnotationPaths {
         // This requires that reset has been made explicit
         case Connect(_, lref @ WRef(lname, ltpe, RegKind, _), rhs) if !dontTouches(lname) && !asyncResetRegs(lname) =>
 
-          /* Checks if an RHS expression e of a register assignment is convertible to a constant assignment.
-           * Here, this means that e must be 1) a literal, 2) a self-connect, or 3) a mux tree of cases (1) and (2).
-           * In case (3), it also recursively checks that the two mux cases are convertible to constants and
-           * uses pattern matching on the returned options to check that they are convertible to the *same* constant.
-           * When encountering a node reference, it expands the node by to its RHS assignment and recurses.
-           *
-           * @return an option containing the literal or self-connect that e is convertible to, if any
-           */
-          def regConstant(e: Expression): Option[Expression] = e match {
-            case lit: Literal => Some(pad(lit, ltpe))
-            case WRef(regName, _, RegKind, _) if (regName == lname) => Some(e)
-            case WRef(nodeName, _, NodeKind, _) => nodeMap.get(nodeName).flatMap(regConstant(_))
-            case Mux(_, tval, fval, _) => (regConstant(tval), regConstant(fval)) match {
-              case (Some(wr: WRef), Some(x)) if weq(lref, wr) => Some(x) // Mux(_, selfassign, <constRHSCandidate>)
-              case (Some(x), Some(wr: WRef)) if weq(lref, wr) => Some(x) // Mux(_, <constRHSCandidate>, selfassign)
-              case (x, y) if (x == y) => x                               // No-op mux
-              case _ => None                                             // At least one case not constant-convertible
-            }
-            case _ => None
+         /* Checks if an RHS expression e of a register assignment is convertible to a constant assignment.
+          * Here, this means that e must be 1) a literal, 2) a self-connect, or 3) a mux tree of
+          * cases (1) and (2).  In case (3), it also recursively checks that the two mux cases can
+          * be resolved: each side is allowed one candidate register and one candidate literal to
+          * appear in their source trees, referring to the potential constant propagation case that
+          * they could allow. If the two are compatible (no different bound sources of either of
+          * the two types), they can be resolved by combining sources. Otherwise, they propagate
+          * NonConstant values.  When encountering a node reference, it expands the node by to its
+          * RHS assignment and recurses.
+          *
+          * @return a RegCPEntry describing the constant prop-compatible sources driving this expression
+          */
+          def regConstant(e: Expression): RegCPEntry = e match {
+            case lit: Literal => RegCPEntry(UnboundConstant, BoundConstant(lit))
+            case WRef(regName, _, RegKind, _) => RegCPEntry(BoundConstant(regName), UnboundConstant)
+            case WRef(nodeName, _, NodeKind, _) if nodeMap.contains(nodeName) =>
+              nodeRegCPEntries.getOrElseUpdate(nodeName, { regConstant(nodeMap(nodeName)) })
+            case Mux(_, tval, fval, _) => regConstant(tval).resolve(regConstant(fval))
+            case _ => RegCPEntry(NonConstant, NonConstant)
           }
-          def cpExp(e: Expression) = constPropExpression(nodeMap, instMap, constSubOutputs)(e)
-          regConstant(rhs).foreach {
-            case wr: WRef => nodeMap(lname) = cpExp(pad(passes.RemoveValidIf.getGroundZero(ltpe), ltpe))
-            case e => nodeMap(lname) = cpExp(e)
+          def zero = passes.RemoveValidIf.getGroundZero(ltpe)
+          def padCPExp(e: Expression) = constPropExpression(nodeMap, instMap, constSubOutputs)(pad(e, ltpe))
+          regConstant(rhs) match {
+            case RegCPEntry(BoundConstant(`lname`), litBinding) => litBinding match {
+              case UnboundConstant => nodeMap(lname) = padCPExp(zero) // only self-assigns -> replace with zero
+              case BoundConstant(lit) => nodeMap(lname) = padCPExp(lit) // self + lit assigns -> replace with lit
+              case _ =>
+            }
+            case RegCPEntry(UnboundConstant, BoundConstant(lit)) => nodeMap(lname) = padCPExp(lit) // only lit assigns
+            case _ =>
           }
         // Mark instance inputs connected to a constant
         case Connect(_, lref @ WSubField(WRef(inst, _, InstanceKind, _), port, ptpe, _), lit: Literal) =>

@@ -52,4 +52,4 @@ class RobCompilationTest extends CompilationTest("Rob", "/regress")
 class RocketCoreCompilationTest extends CompilationTest("RocketCore", "/regress")
 class ICacheCompilationTest extends CompilationTest("ICache", "/regress")
 class FPUCompilationTest extends CompilationTest("FPU", "/regress")
-
+class HwachaSequencerCompilationTest extends CompilationTest("HwachaSequencer", "/regress")
