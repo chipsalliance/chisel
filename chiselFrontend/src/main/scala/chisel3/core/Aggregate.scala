@@ -444,18 +444,22 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     requireIsChiselType(this, "bundle literal constructor model")
     val clone = cloneType
 
-    def getRecursiveElements(data: Data): Seq[Data] = data match {
+    def getRecursiveFields(data: Data): Seq[Data] = data match {
       case data: Element => Seq(data)
-      case data: Aggregate => data.getElements.map(getRecursiveElements(_)).fold(Seq(data)) { _ ++ _ }
+      case data: Aggregate => data.getElements.map(getRecursiveFields(_)).fold(Seq(data)) { _ ++ _ }
     }
-    val cloneElements = getRecursiveElements(clone).toSet
+    val cloneElements = getRecursiveFields(clone).toSet
 
     val bundleLitMap = elems.map { fn => fn(clone) }.map { case (field, value) =>
       if (!cloneElements.contains(field)) {
-        throw new BundleLiteralException(s"")
+        throw new BundleLiteralException(s"field $field (with value $value) is not a field," +
+            s" ensure the field is specified as a function returning a field on an object of class ${this.getClass}," +
+            s" eg '_.a' to select hypothetical bundle field 'a'"
+        )
       }
-      require(cloneElements.contains(field))
-      require(value.isLit())
+      if (!value.isLit()) {
+        throw new BundleLiteralException(s"field $field has non-literal value $value")
+      }
       (field, value) match {
         case (field: Bits, value: Bits) =>
           field -> litArgOfBits(value)
@@ -465,9 +469,14 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
           throw new BundleLiteralException(
               s"Cannot construct Bundle literal with field $field of class ${field.getClass}")
       }
-    }.toMap
-    val
-    clone.selfBind(BundleLitBinding(bundleLitMap))
+    }  // don't convert to a Map yet to preserve duplicate keys
+    val duplicates = bundleLitMap.map(_._1).groupBy(identity).collect { case (x, elts) if elts.size > 1 => x }
+    if (!duplicates.isEmpty) {
+      // TODO: resolve the field back to a name - we can't do this yet because Aggregate only
+      // returns elements without a name path
+      throw new BundleLiteralException(s"Duplicate fields $duplicates in Bundle literal constructor")
+    }
+    clone.selfBind(BundleLitBinding(bundleLitMap.toMap))
     clone
   }
 
