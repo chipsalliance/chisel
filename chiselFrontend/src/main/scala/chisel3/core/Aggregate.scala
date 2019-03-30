@@ -450,21 +450,35 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     }
     val cloneElements = getRecursiveFields(clone).toSet
 
-    val bundleLitMap = elems.map { fn => fn(clone) }.map { case (field, value) =>
+    val bundleLitMap = elems.map { fn => fn(clone) }.flatMap { case (field, value) =>
       if (!cloneElements.contains(field)) {
         throw new BundleLiteralException(s"field $field (with value $value) is not a field," +
             s" ensure the field is specified as a function returning a field on an object of class ${this.getClass}," +
-            s" eg '_.a' to select hypothetical bundle field 'a'"
-        )
-      }
-      if (!value.isLit()) {
-        throw new BundleLiteralException(s"field $field has non-literal value $value")
+            s" eg '_.a' to select hypothetical bundle field 'a'")
       }
       (field, value) match {
         case (field: Bits, value: Bits) =>
-          field -> litArgOfBits(value)
-        case (field: Aggregate, value: Aggregate) =>
-          field -> litArgOfBits(0.U)
+          if (!value.isLit) {
+            throw new BundleLiteralException(s"Field $field has non-literal value $value")
+          }
+          Seq(field -> litArgOfBits(value))
+        case (field: Aggregate, value: Aggregate) =>  // copy over the value's litMap
+          if (!(field typeEquivalent value)) {
+            throw new BundleLiteralException(s"Value $value not type equivlent to field $field")
+          }
+          val targetBinding = value.topBinding match {
+            case litBinding: BundleLitBinding => litBinding
+            case _ => throw new BundleLiteralException(s"Field $field has non-literal value $value")
+          }
+          val targetFields = getRecursiveFields(value)
+          val myFields = getRecursiveFields(field)
+          (myFields zip targetFields).flatMap { case (myField, targetField) =>
+            require(myField typeEquivalent targetField)  // assume fields returned in same, deterministic order
+            targetBinding.litMap.get(targetField) match {
+              case None => None
+              case Some(litArg) => Some(myField -> litArg)
+            }
+          }
         case (field, _) =>
           throw new BundleLiteralException(
               s"Cannot construct Bundle literal with field $field of class ${field.getClass}")

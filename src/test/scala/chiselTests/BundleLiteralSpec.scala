@@ -62,18 +62,30 @@ class BundleLiteralSpec extends ChiselFlatSpec {
 
   "contained bundles" should "work" in {
     assertTesterPasses{ new BasicTester{
-//      val explicitBundleLit = (new MyOuterBundle).Lit(_.a -> (new MyBundle).Lit(_.a -> 42.U, _.b -> true.B))
-//      chisel3.assert(explicitBundleLit.a.a === 42.U)
-//      chisel3.assert(explicitBundleLit.a.b === true.B)
+      // Specify the inner Bundle value as a Bundle literal
+      val explicitBundleLit = (new MyOuterBundle).Lit(
+        _.a -> (new MyBundle).Lit(_.a -> 42.U, _.b -> true.B)
+      )
+      chisel3.assert(explicitBundleLit.a.a === 42.U)
+      chisel3.assert(explicitBundleLit.a.b === true.B)
 
+      // Specify the inner Bundle fields directly
       val expandedBundleLit = (new MyOuterBundle).Lit(
         _.a.a -> 42.U, _.a.b -> true.B,
-        _.b.c -> false.B, _.b.d -> 244.U
+        _.b.c -> false.B, _.b.d -> 255.U
       )
       chisel3.assert(expandedBundleLit.a.a === 42.U)
       chisel3.assert(expandedBundleLit.a.b === true.B)
       chisel3.assert(expandedBundleLit.b.c === false.B)
       chisel3.assert(expandedBundleLit.b.d === 255.U)
+
+      // Anonymously contruct the inner Bundle literal
+      // A bit of weird syntax that depends on implementation details of the Bundle literal constructor
+      val childBundleLit = (new MyOuterBundle).Lit(
+        b => b.b -> b.b.Lit(_.c -> false.B, _.d -> 255.U)
+      )
+      chisel3.assert(childBundleLit.b.c === false.B)
+      chisel3.assert(childBundleLit.b.d === 255.U)
 
       stop()
     } }
