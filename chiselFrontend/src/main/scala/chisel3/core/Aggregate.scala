@@ -440,6 +440,37 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     }
   }
 
+  def Lit(elems: (this.type => (Data, Data))*): this.type = {  // scalastyle:ignore method.name
+    requireIsChiselType(this, "bundle literal constructor model")
+    val clone = cloneType
+
+    def getRecursiveElements(data: Data): Seq[Data] = data match {
+      case data: Element => Seq(data)
+      case data: Aggregate => data.getElements.map(getRecursiveElements(_)).fold(Seq(data)) { _ ++ _ }
+    }
+    val cloneElements = getRecursiveElements(clone).toSet
+
+    val bundleLitMap = elems.map { fn => fn(clone) }.map { case (field, value) =>
+      if (!cloneElements.contains(field)) {
+        throw new BundleLiteralException(s"")
+      }
+      require(cloneElements.contains(field))
+      require(value.isLit())
+      (field, value) match {
+        case (field: Bits, value: Bits) =>
+          field -> litArgOfBits(value)
+        case (field: Aggregate, value: Aggregate) =>
+          field -> litArgOfBits(0.U)
+        case (field, _) =>
+          throw new BundleLiteralException(
+              s"Cannot construct Bundle literal with field $field of class ${field.getClass}")
+      }
+    }.toMap
+    val
+    clone.selfBind(BundleLitBinding(bundleLitMap))
+    clone
+  }
+
   /** The collection of [[Data]]
     *
     * This underlying datastructure is a ListMap because the elements must
@@ -529,6 +560,7 @@ trait IgnoreSeqInBundle {
 }
 
 class AutoClonetypeException(message: String) extends ChiselException(message)
+class BundleLiteralException(message: String) extends ChiselException(message)
 
 /** Base class for data types defined as a bundle of other data types.
   *
