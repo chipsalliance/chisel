@@ -12,6 +12,8 @@ import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo._
 import chisel3.SourceInfoDoc
 
+class AliasedAggregateFieldException(message: String) extends ChiselException(message)
+
 /** An abstract class for data types that solely consist of (are an aggregate
   * of) other Data objects.
   */
@@ -20,6 +22,10 @@ sealed abstract class Aggregate extends Data {
     binding = target
 
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
+    val duplicates = getElements.groupBy(identity).collect { case (x, elts) if elts.size > 1 => x }
+    if (!duplicates.isEmpty) {
+      throw new AliasedAggregateFieldException(s"Aggregate $this contains aliased fields $duplicates")
+    }
     for (child <- getElements) {
       child.bind(ChildBinding(this), resolvedDirection)
     }
@@ -589,15 +595,13 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     */
   final lazy val elements: ListMap[String, Data] = {
     val nameMap = LinkedHashMap[String, Data]()
-    val seen = HashSet[Data]()
     for (m <- getPublicFields(classOf[Bundle])) {
       getBundleField(m) match {
         case Some(d: Data) =>
           if (nameMap contains m.getName) {
             require(nameMap(m.getName) eq d)
-          } else if (!seen(d)) {
+          } else {
             nameMap(m.getName) = d
-            seen += d
           }
         case None =>
           if (!ignoreSeq) {
