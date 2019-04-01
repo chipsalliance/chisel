@@ -61,6 +61,72 @@ class DirectionSpec extends ChiselPropSpec with Matchers {
     elaborate(new TopDirectionOutput)
   }
 
+  property("Empty Vecs with directioned sample_element should not cause direction errors") {
+    elaborate(new Module {
+      val io = IO(new Bundle {
+        val foo = Input(UInt(8.W))
+        val x = Vec(0, Output(UInt(8.W)))
+      })
+    })
+    elaborate(new Module {
+      val io = IO(new Bundle {
+        val foo = Input(UInt(8.W))
+        val x = Flipped(Vec(0, Output(UInt(8.W))))
+      })
+    })
+    elaborate(new Module {
+      val io = IO(new Bundle {
+        val foo = Input(UInt(8.W))
+        val x = Output(Vec(0, UInt(8.W)))
+      })
+    })
+  }
+
+  property("Empty Vecs with no direction on the sample_element *should* cause direction errors") {
+    an [Exception] should be thrownBy {
+      elaborate(new Module {
+        val io = IO(new Bundle {
+          val foo = Input(UInt(8.W))
+          val x = Vec(0, UInt(8.W))
+        })
+      })
+    }
+  }
+
+  property("Empty Bundles should not cause direction errors") {
+    elaborate(new Module {
+      val io = IO(new Bundle {
+        val foo = Input(UInt(8.W))
+        val x = new Bundle {}
+      })
+    })
+    elaborate(new Module {
+      val io = IO(new Bundle {
+        val foo = Input(UInt(8.W))
+        val x = Flipped(new Bundle {})
+      })
+    })
+    elaborate(new Module {
+      val io = IO(new Bundle {
+        val foo = Input(UInt(8.W))
+        val x = new Bundle {
+          val y = if (false) Some(Input(UInt(8.W))) else None
+        }
+      })
+    })
+  }
+
+  property("Explicitly directioned but empty Bundles should cause direction errors") {
+    an [Exception] should be thrownBy {
+      elaborate(new Module {
+        val io = IO(new Bundle {
+          val foo = UInt(8.W)
+          val x = Input(new Bundle {})
+        })
+      })
+    }
+  }
+
   import chisel3.experimental.{MultiIOModule, DataMirror, Direction}
   import chisel3.core.SpecifiedDirection
 
