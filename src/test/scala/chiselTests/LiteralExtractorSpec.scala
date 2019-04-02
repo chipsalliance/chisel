@@ -5,7 +5,6 @@ package chiselTests
 import chisel3.{FixedPoint, _}
 import chisel3.experimental.RawModule
 import chisel3.testers.BasicTester
-import org.scalatest._
 
 class LiteralExtractorSpec extends ChiselFlatSpec {
   "litValue" should "return the literal value" in {
@@ -78,15 +77,15 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
       // the following errors with "assertion failed"
 
       println(outsideLiteral === insideLiteral) // scalastyle:ignore regex
-      // chisel3.core.assert(outsideLiteral === insideLiteral)
+      // chisel3.assert(outsideLiteral === insideLiteral)
 
       // the following lines of code error
       // with "chisel3.core.BundleLitBinding cannot be cast to chisel3.core.ElementLitBinding"
 
-      chisel3.core.assert(outsideLiteral.x === insideLiteral.x)
-      chisel3.core.assert(outsideLiteral.y === insideLiteral.y)
-      chisel3.core.assert(outsideLiteral.x === 7.S)
-      chisel3.core.assert(outsideLiteral.y === 6.125.F(4.BP))
+      chisel3.assert(outsideLiteral.x === insideLiteral.x)
+      chisel3.assert(outsideLiteral.y === insideLiteral.y)
+      chisel3.assert(outsideLiteral.x === 7.S)
+      chisel3.assert(outsideLiteral.y === 6.125.F(4.BP))
 
       stop()
     }

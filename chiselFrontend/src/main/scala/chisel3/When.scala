@@ -1,8 +1,6 @@
 // See LICENSE for license details.
 
-package chisel3.core
-
-import chisel3.Bool
+package chisel3
 
 import scala.language.experimental.macros
 import chisel3.internal._

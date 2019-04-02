@@ -2,7 +2,6 @@
 
 package chisel3
 
-import chisel3.core.CompileOptions
 import chisel3.internal.chiselRuntimeDeprecated
 import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform}
 

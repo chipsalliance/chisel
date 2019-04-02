@@ -122,7 +122,6 @@ trait VecFactory extends SourceInfoDoc {
   }
 }
 
-object Vec extends VecFactory
 // scalastyle:off line.size.limit
 /** A vector (array) of [[Data]] elements. Provides hardware versions of various
   * collection transformation functions found in software array implementations.

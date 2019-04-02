@@ -9,6 +9,8 @@ import internal.firrtl.PrimOp._
 import internal.firrtl._
 import internal.sourceinfo._
 
+import chisel3.experimental.RawModule
+
 import scala.collection.mutable
 import scala.language.experimental.macros
 

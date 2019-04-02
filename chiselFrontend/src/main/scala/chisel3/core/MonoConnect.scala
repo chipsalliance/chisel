@@ -6,6 +6,7 @@ import chisel3._
 import internal.ChiselException
 import internal.Builder.pushCommand
 import internal.firrtl.{Connect, DefInvalid}
+import chisel3.experimental.{EnumType, RawModule, UnsafeEnum}
 
 import scala.language.experimental.macros
 import internal.sourceinfo.SourceInfo

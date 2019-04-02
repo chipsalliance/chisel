@@ -1,6 +1,6 @@
 // See LICENSE for license details.
 
-package chisel3.core
+package chisel3
 
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer, HashMap}
@@ -14,7 +14,8 @@ import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{InstTransform, SourceInfo}
 import chisel3._
 import _root_.firrtl.annotations.{CircuitName, ModuleName}
-import chisel3.experimental.ChiselEnum
+import chisel3.core.{PortBinding, WireBinding, requireIsChiselType}
+import chisel3.experimental._
 
 object Module extends SourceInfoDoc {
   /** A wrapper method that all Module instantiations must be wrapped in
@@ -165,7 +166,7 @@ abstract class BaseModule extends HasId {
   private[chisel3] def isClosed = _closed
 
   // Fresh Namespace because in Firrtl, Modules namespaces are disjoint with the global namespace
-  private[core] val _namespace = Namespace.empty
+  private[chisel3] val _namespace = Namespace.empty
   private val _ids = ArrayBuffer[HasId]()
   private[chisel3] def addId(d: HasId) {
     require(!_closed, "Can't write to module after module close")
@@ -191,11 +192,11 @@ abstract class BaseModule extends HasId {
   /** Generates the FIRRTL Component (Module or Blackbox) of this Module.
     * Also closes the module so no more construction can happen inside.
     */
-  private[core] def generateComponent(): Component
+  private[chisel3] def generateComponent(): Component
 
   /** Sets up this module in the parent context
     */
-  private[core] def initializeInParent(parentCompileOptions: CompileOptions): Unit
+  private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit
 
   //
   // Chisel Internals
@@ -315,7 +316,7 @@ abstract class BaseModule extends HasId {
     _ports += iodef
   }
   /** Private accessor for _bindIoInPlace */
-  private[core] def bindIoInPlace(iodef: Data): Unit = _bindIoInPlace(iodef)
+  private[chisel3] def bindIoInPlace(iodef: Data): Unit = _bindIoInPlace(iodef)
 
   /**
    * This must wrap the datatype used to set the io field of any Module.
@@ -333,7 +334,7 @@ abstract class BaseModule extends HasId {
    * TODO(twigg): Specifically walk the Data definition to call out which nodes
    * are problematic.
    */
-  protected def IO[T<:Data](iodef: T): T = chisel3.core.IO.apply(iodef) // scalastyle:ignore method.name
+  protected def IO[T<:Data](iodef: T): T = chisel3.IO.apply(iodef) // scalastyle:ignore method.name
 
   //
   // Internal Functions

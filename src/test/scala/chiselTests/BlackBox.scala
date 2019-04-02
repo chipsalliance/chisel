@@ -9,7 +9,7 @@ import chisel3._
 import chisel3.experimental._
 import chisel3.testers.BasicTester
 import chisel3.util._
-//import chisel3.core.ExplicitCompileOptions.Strict
+//import chisel3.ExplicitCompileOptions.Strict
 
 class BlackBoxInverter extends BlackBox {
   val io = IO(new Bundle() {

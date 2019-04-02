@@ -2,10 +2,11 @@
 
 package chisel3.core
 
-import chisel3.{Analog, Data, DontCare, Element, Record, Vec}
+import chisel3.{Analog, BaseModule, CompileOptions, Data, DontCare, Element, ExplicitCompileOptions, Record, Vec}
 import chisel3.internal.ChiselException
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.{Connect, DefInvalid}
+import chisel3.experimental.{RawModule, attach}
 
 import scala.language.experimental.macros
 import chisel3.internal.sourceinfo._

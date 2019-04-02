@@ -2,7 +2,6 @@
 
 package chisel3
 
-import chisel3.core.CompileOptions
 import chisel3.internal.Builder.pushOp
 import chisel3.internal.firrtl.PrimOp.AsUIntOp
 import chisel3.internal.firrtl._

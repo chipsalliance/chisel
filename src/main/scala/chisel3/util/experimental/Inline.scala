@@ -4,7 +4,7 @@ package chisel3.util.experimental
 
 import chisel3._
 import chisel3.internal.InstanceId
-import chisel3.experimental.{BaseModule, ChiselAnnotation, RunFirrtlTransform}
+import chisel3.experimental.{ChiselAnnotation, RunFirrtlTransform}
 import firrtl.Transform
 import firrtl.passes.{InlineAnnotation, InlineInstances}
 import firrtl.transforms.{Flatten, FlattenAnnotation, NoDedupAnnotation}

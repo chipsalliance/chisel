@@ -7,7 +7,7 @@ import java.io.File
 import chisel3._
 import chisel3.util.Counter
 import chisel3.testers.BasicTester
-import chisel3.experimental.{BaseModule, ChiselAnnotation, MultiIOModule, RawModule, RunFirrtlTransform}
+import chisel3.experimental.{ChiselAnnotation, MultiIOModule, RawModule, RunFirrtlTransform}
 import chisel3.util.experimental.BoringUtils
 import firrtl.{ChirrtlForm, CircuitForm, CircuitState, Transform}
 import firrtl.annotations.{Annotation, NoTargetAnnotation}

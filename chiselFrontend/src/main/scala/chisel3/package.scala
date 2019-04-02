@@ -1,7 +1,6 @@
-import chisel3.{Bundle, Clock, IgnoreSeqInBundle, Mem, MemBase, Record, Reg, SyncReadMem, VecInit, VecLike, printf}
+import chisel3.{Bundle, Clock, IgnoreSeqInBundle, Mem, MemBase, Mux, Record, Reg, SyncReadMem, VecInit, VecLike, printf}
 
 package object chisel3 {    // scalastyle:ignore package.object.name
-  import core.CompileOptions
   import internal.firrtl.{BinaryPoint, Port, Width}
   import internal.sourceinfo.{SourceInfo, VecTransform}
   import internal.{Builder, chiselRuntimeDeprecated, throwException}
@@ -127,10 +126,10 @@ package object chisel3 {    // scalastyle:ignore package.object.name
       // These provide temporary compatibility for those who foolishly imported from chisel3.core
       @deprecated("Avoid importing from chisel3.core, these are not public APIs and may change at any time. " +
         " Use chisel3.experimental.RawModule instead.", "since the beginning of time")
-      type UserModule = core.RawModule
+      type UserModule = chisel3.experimental.RawModule
       @deprecated("Avoid importing from chisel3.core, these are not public APIs and may change at any time. " +
         "Use chisel3.experimental.MultiIOModule instead.", "since the beginning of time")
-      type ImplicitModule = core.MultiIOModule
+      type ImplicitModule = chisel3.experimental.MultiIOModule
 
   object Wire extends WireFactory {
 
@@ -150,11 +149,6 @@ package object chisel3 {    // scalastyle:ignore package.object.name
       WireDefault(t, init)
   }
   val WireInit = WireDefault
-
-  // Clock and reset scoping functions
-  val withClockAndReset = core.withClockAndReset
-  val withClock = core.withClock
-  val withReset = core.withReset
 
   implicit class AddDirectionToData[T<:Data](target: T) {
     @chiselRuntimeDeprecated
@@ -220,8 +214,6 @@ package object chisel3 {    // scalastyle:ignore package.object.name
         (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): chisel3.Vec[T] =
       chisel3.VecInit.tabulate(n)(gen)
   }
-
-  val assert = core.assert
 
   // Some possible regex replacements for the literal specifier deprecation:
   // (note: these are not guaranteed to handle all edge cases! check all replacements!)
@@ -333,9 +325,6 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   object UInt extends UIntFactory
   object SInt extends SIntFactory
   object Bool extends BoolFactory
-  val Mux = core.Mux
-
-  type BlackBox = core.BlackBox
 
   type InstanceId = internal.InstanceId
 
@@ -344,33 +333,8 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   @deprecated("Use 'SyncReadMem'", "chisel3")
   type SeqMem[T <: Data] = SyncReadMem[T]
 
-  val Module = core.Module
-  type Module = core.LegacyModule
-
-  val when = core.when
-  type WhenContext = core.WhenContext
-
-  type Printable = core.Printable
-  val Printable = core.Printable
-  type Printables = core.Printables
-  val Printables = core.Printables
-  type PString = core.PString
-  val PString = core.PString
-  type FirrtlFormat = core.FirrtlFormat
-  val FirrtlFormat = core.FirrtlFormat
-  type Decimal = core.Decimal
-  val Decimal = core.Decimal
-  type Hexadecimal = core.Hexadecimal
-  val Hexadecimal = core.Hexadecimal
-  type Binary = core.Binary
-  val Binary = core.Binary
-  type Character = core.Character
-  val Character = core.Character
-  type Name = core.Name
-  val Name = core.Name
-  type FullName = core.FullName
-  val FullName = core.FullName
-  val Percent = core.Percent
+  type Module = chisel3.experimental.LegacyModule
+  type MultiIOModule = chisel3.experimental.MultiIOModule
 
   /** Implicit for custom Printable string interpolator */
   implicit class PrintableHelper(val sc: StringContext) extends AnyVal {
@@ -432,102 +396,4 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     a.allElements
   }
   def getModulePorts(m: Module): Seq[Port] = m.getPorts
-
-  /** Package for experimental features, which may have their API changed, be removed, etc.
-    *
-    * Because its contents won't necessarily have the same level of stability and support as
-    * non-experimental, you must explicitly import this package to use its contents.
-    */
-  object experimental {  // scalastyle:ignore object.name
-    type Param = core.Param
-    type IntParam = core.IntParam
-    val IntParam = core.IntParam
-    type DoubleParam = core.DoubleParam
-    val DoubleParam = core.DoubleParam
-    type StringParam = core.StringParam
-    val StringParam = core.StringParam
-    type RawParam = core.RawParam
-    val RawParam = core.RawParam
-
-    val attach = core.attach
-
-    type ChiselEnum = core.EnumFactory
-    val EnumAnnotations = core.EnumAnnotations
-
-    @deprecated("Use the version in chisel3._", "chisel3.2")
-    val withClockAndReset = core.withClockAndReset
-    @deprecated("Use the version in chisel3._", "chisel3.2")
-    val withClock = core.withClock
-    @deprecated("Use the version in chisel3._", "chisel3.2")
-    val withReset = core.withReset
-
-    val dontTouch = core.dontTouch
-
-    type BaseModule = core.BaseModule
-    type RawModule = core.RawModule
-    type MultiIOModule = core.MultiIOModule
-    type ExtModule = core.ExtModule
-
-    val IO = core.IO
-
-    // Rocket Chip-style clonemodule
-
-    /** A record containing the results of CloneModuleAsRecord
-      * The apply method is retrieves the element with the supplied name.
-      */
-    type ClonePorts = core.BaseModule.ClonePorts
-
-    object CloneModuleAsRecord {
-      /** Clones an existing module and returns a record of all its top-level ports.
-        * Each element of the record is named with a string matching the
-        * corresponding port's name and shares the port's type.
-        * @example {{{
-        * val q1 = Module(new Queue(UInt(32.W), 2))
-        * val q2_io = CloneModuleAsRecord(q1)("io").asInstanceOf[q1.io.type]
-        * q2_io.enq <> q1.io.deq
-        * }}}
-        */
-      def apply(proto: BaseModule)(implicit sourceInfo: internal.sourceinfo.SourceInfo, compileOptions: core.CompileOptions): ClonePorts = { // scalastyle:ignore line.size.limit
-        core.BaseModule.cloneIORecord(proto)
-      }
-    }
-
-    // Implicit conversions for BlackBox Parameters
-    implicit def fromIntToIntParam(x: Int): IntParam = IntParam(BigInt(x))
-    implicit def fromLongToIntParam(x: Long): IntParam = IntParam(BigInt(x))
-    implicit def fromBigIntToIntParam(x: BigInt): IntParam = IntParam(x)
-    implicit def fromDoubleToDoubleParam(x: Double): DoubleParam = DoubleParam(x)
-    implicit def fromStringToStringParam(x: String): StringParam = StringParam(x)
-
-    type ChiselAnnotation = core.ChiselAnnotation
-    val ChiselAnnotation = core.ChiselAnnotation
-    type RunFirrtlTransform = core.RunFirrtlTransform
-
-    val annotate = core.annotate
-
-    val requireIsHardware = core.requireIsHardware
-    val requireIsChiselType = core.requireIsChiselType
-    type Direction = ActualDirection
-    val Direction = ActualDirection
-
-    implicit class ChiselRange(val sc: StringContext) extends AnyVal {
-      import internal.firrtl.NumericBound
-
-      import scala.language.experimental.macros
-
-      /** Specifies a range using mathematical range notation. Variables can be interpolated using
-        * standard string interpolation syntax.
-        * @example {{{
-        * UInt(range"[0, 2)")
-        * UInt(range"[0, \$myInt)")
-        * UInt(range"[0, \${myInt + 2})")
-        * }}}
-        */
-      def range(args: Any*): (NumericBound[Int], NumericBound[Int]) = macro internal.RangeTransform.apply
-    }
-
-    class dump extends internal.naming.dump  // scalastyle:ignore class.name
-    class treedump extends internal.naming.treedump  // scalastyle:ignore class.name
-    class chiselName extends internal.naming.chiselName  // scalastyle:ignore class.name
-  }
 }

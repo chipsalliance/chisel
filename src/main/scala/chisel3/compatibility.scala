@@ -1,4 +1,4 @@
-import chisel3.{Aggregate, BitPat, Bundle, Data, Flipped, Mem, MemBase, Record, Reg, Vec, VecLike, printf, _}
+import chisel3.{Aggregate, BitPat, Bundle, Data, Flipped, Mem, MemBase, Mux, Record, Reg, Vec, VecLike, printf, _}
 // See LICENSE for license details.
 
 /** The Chisel compatibility package allows legacy users to continue using the `Chisel` (capital C) package name
@@ -13,7 +13,7 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
   import scala.annotation.compileTimeOnly
   import scala.language.implicitConversions
 
-  implicit val defaultCompileOptions = chisel3.core.ExplicitCompileOptions.NotStrict
+  implicit val defaultCompileOptions = chisel3.ExplicitCompileOptions.NotStrict
 
   abstract class Direction
   case object INPUT extends Direction
@@ -60,7 +60,7 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
 
   type Data = chisel3.Data
   object Wire extends WireFactory {
-    import chisel3.core.CompileOptions
+    import chisel3.CompileOptions
 
     def apply[T <: chisel3.Data](dummy: Int = 0, init: T)(implicit compileOptions: CompileOptions): T =
       chisel3.WireDefault(init)
@@ -84,7 +84,7 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
 
   // Implicit conversion to allow fromBits because it's being deprecated in chisel3
   implicit class fromBitsable[T <: chisel3.Data](data: T) {
-    import chisel3.core.CompileOptions
+    import chisel3.CompileOptions
     import chisel3.internal.sourceinfo.SourceInfo
 
     /** Creates an new instance of this type, unpacking the input Bits into
@@ -103,7 +103,7 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
   }
 
   object Vec extends VecFactory {
-    import chisel3.core.CompileOptions
+    import chisel3.CompileOptions
     import chisel3.internal.sourceinfo._
 
     @deprecated("Vec argument order should be size, t; this will be removed by the official release", "chisel3")
@@ -143,8 +143,8 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
   type Record = chisel3.Record
   type Bundle = chisel3.Bundle
 
-  val assert = chisel3.core.assert
-  val stop = chisel3.core.stop
+  val assert = chisel3.assert
+  val stop = chisel3.stop
 
   /** This contains literal constructor factory methods that are deprecated as of Chisel3.
     */
@@ -249,13 +249,13 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
   object SInt extends SIntFactory
   type Bool = chisel3.Bool
   object Bool extends BoolFactory
-  val Mux = chisel3.core.Mux
+  val Mux = chisel3.Mux
   type Reset = chisel3.Reset
 
   implicit def resetToBool(reset: Reset): chisel3.Bool = reset.asBool
 
-  import chisel3.core.Param
-  abstract class BlackBox(params: Map[String, Param] = Map.empty[String, Param]) extends chisel3.core.BlackBox(params) {
+  import chisel3.Param
+  abstract class BlackBox(params: Map[String, Param] = Map.empty[String, Param]) extends chisel3.BlackBox(params) {
     // This class auto-wraps the BlackBox with IO(...), allowing legacy code (where IO(...) wasn't
     // required) to build.
     override def _compatAutoWrapPorts(): Unit = { // scalastyle:ignore method.name
@@ -270,9 +270,9 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
   val SeqMem = chisel3.SyncReadMem
   type SeqMem[T <: chisel3.Data] = SyncReadMem[T]
 
-  import chisel3.core.CompileOptions
+  import chisel3.CompileOptions
   abstract class CompatibilityModule(implicit moduleCompileOptions: CompileOptions)
-      extends chisel3.core.LegacyModule {
+      extends chisel3.experimental.LegacyModule {
     // This class auto-wraps the Module IO with IO(...), allowing legacy code (where IO(...) wasn't
     // required) to build.
     // Also provides the clock / reset constructors, which were used before withClock happened.
@@ -298,7 +298,7 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
     }
   }
 
-  val Module = chisel3.core.Module
+  val Module = chisel3.Module
   type Module = CompatibilityModule
 
   val printf = chisel3.printf
@@ -306,7 +306,7 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
   val RegNext = chisel3.RegNext
   val RegInit = chisel3.RegInit
   object Reg {
-    import chisel3.core.{Binding, CompileOptions}
+    import chisel3.CompileOptions
     import chisel3.internal.sourceinfo.SourceInfo
 
     // Passthrough for chisel3.core.Reg
@@ -354,8 +354,8 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
     }
   }
 
-  val when = chisel3.core.when
-  type WhenContext = chisel3.core.WhenContext
+  val when = chisel3.when
+  type WhenContext = chisel3.WhenContext
 
 //  implicit class fromBigIntToLiteral(x: BigInt) extends core.fromBigIntToLiteral(x)
 //  implicit class fromtIntToLiteral(x: Int) extends chisel3.core.fromIntToLiteral(x)

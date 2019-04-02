@@ -1,8 +1,7 @@
 // See LICENSE for license details.
 
-package chisel3.core
+package chisel3
 
-import chisel3._
 import chisel3.internal.throwException
 
 import scala.language.experimental.macros

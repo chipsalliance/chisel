@@ -7,6 +7,7 @@ import chisel3.experimental.ChiselAnnotation
 import core._
 import internal._
 import internal.sourceinfo.{NoSourceInfo, SourceInfo}
+import chisel3.experimental.RawModule
 
 // scalastyle:off number.of.types
 

@@ -3,7 +3,6 @@
 package chisel3.util
 
 import chisel3._
-import chisel3.core.SeqUtils
 
 /** Concatenates elements of the input, in order, together.
   *

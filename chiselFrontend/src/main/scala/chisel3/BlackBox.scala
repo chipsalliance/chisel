@@ -1,12 +1,10 @@
 // See LICENSE for license details.
 
-package chisel3.core
+package chisel3
 
-import chisel3.{Record, SpecifiedDirection}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
-import chisel3.internal.throwException
-import chisel3.internal.sourceinfo.{SourceInfo, UnlocatableSourceInfo}
+import chisel3.internal.sourceinfo.UnlocatableSourceInfo
 
 /** Parameters for BlackBoxes */
 sealed abstract class Param
@@ -55,7 +53,7 @@ abstract class BaseBlackBox extends BaseModule
   * @note The parameters API is experimental and may change
   */
 abstract class ExtModule(val params: Map[String, Param] = Map.empty[String, Param]) extends BaseBlackBox {
-  private[core] override def generateComponent(): Component = {
+  private[chisel3] override def generateComponent(): Component = {
     require(!_closed, "Can't generate module more than once")
     _closed = true
 
@@ -80,7 +78,7 @@ abstract class ExtModule(val params: Map[String, Param] = Map.empty[String, Para
     component
   }
 
-  private[core] def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
+  private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
     implicit val sourceInfo = UnlocatableSourceInfo
 
     for (x <- getModulePorts) {
@@ -130,7 +128,7 @@ abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param
   // Allow access to bindings from the compatibility package
   protected def _compatIoPortBound() = portsContains(io) // scalastyle:ignore method.name
 
-  private[core] override def generateComponent(): Component = {
+  private[chisel3] override def generateComponent(): Component = {
     _compatAutoWrapPorts()  // pre-IO(...) compatibility hack
 
     // Restrict IO to just io, clock, and reset
@@ -165,7 +163,7 @@ abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param
     component
   }
 
-  private[core] def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
+  private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
     for ((_, port) <- io.elements) {
       pushCommand(DefInvalid(UnlocatableSourceInfo, port.ref))
     }

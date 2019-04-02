@@ -1,6 +1,6 @@
 // See LICENSE for license details.
 
-package chisel3.core
+package chisel3.experimental
 
 import chisel3.Analog
 import chisel3.internal._
@@ -15,7 +15,7 @@ object attach {  // scalastyle:ignore object.name
     AttachException(": Conditional attach is not allowed!")
 
   // Actual implementation
-  private[core] def impl(elts: Seq[Analog], contextModule: RawModule)(implicit sourceInfo: SourceInfo): Unit = {
+  private[chisel3] def impl(elts: Seq[Analog], contextModule: RawModule)(implicit sourceInfo: SourceInfo): Unit = {
     if (Builder.whenDepth != 0) throw ConditionalAttachException
 
     // TODO Check that references are valid and can be attached

@@ -1,6 +1,6 @@
 // See LICENSE for license details.
 
-package chisel3.core
+package chisel3
 
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox.Context
@@ -29,7 +29,7 @@ object CompileOptions {
 
   def materialize_impl(c: Context): c.Tree = {
     import c.universe._
-    q"_root_.chisel3.core.ExplicitCompileOptions.Strict"
+    q"_root_.chisel3.ExplicitCompileOptions.Strict"
   }
 }
 

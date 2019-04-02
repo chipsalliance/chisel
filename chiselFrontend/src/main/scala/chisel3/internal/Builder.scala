@@ -8,7 +8,7 @@ import chisel3._
 import core._
 import firrtl._
 import _root_.firrtl.annotations.{CircuitName, ComponentName, ModuleName, Named}
-import chisel3.experimental.ChiselAnnotation
+import chisel3.experimental._
 
 private[chisel3] class Namespace(keywords: Set[String]) {
   private val names = collection.mutable.HashMap[String, Long]()

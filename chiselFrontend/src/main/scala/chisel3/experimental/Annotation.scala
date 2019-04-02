@@ -1,13 +1,14 @@
 // See LICENSE for license details.
 
-package chisel3.core
+package chisel3.experimental
 
-import chisel3.Data
+import chisel3.core.requireIsHardware
+import chisel3.{CompileOptions, Data}
 
 import scala.language.existentials
 import chisel3.internal.{Builder, InstanceId}
 import firrtl.Transform
-import firrtl.annotations.{Annotation, CircuitName, ComponentName, ModuleName}
+import firrtl.annotations.Annotation
 import firrtl.transforms.DontTouchAnnotation
 
 /** Interface for Annotations in Chisel
@@ -88,4 +89,3 @@ object dontTouch { // scalastyle:ignore object.name
     data
   }
 }
-
