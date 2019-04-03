@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 import chisel3.{Bundle, Clock, IgnoreSeqInBundle, Mem, MemBase, Mux, Record, Reg, SyncReadMem, VecInit, VecLike, printf}
 
 package object chisel3 {    // scalastyle:ignore package.object.name
