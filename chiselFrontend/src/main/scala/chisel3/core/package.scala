@@ -2,6 +2,8 @@
 
 package chisel3
 
+import chisel3.experimental.ExtModule
+
 package object core {
 /**
   * These definitions exist to deal with those clients that relied on chisel3.core
@@ -191,22 +193,22 @@ package object core {
   val EnumAnnotations = chisel3.experimental.EnumAnnotations
 
   @deprecated("Use the version in chisel3._", "chisel3.2")
-  val withClockAndReset = chisel3.withClockAndReset
+  val withClockAndReset = chisel3.experimental.withClockAndReset
   @deprecated("Use the version in chisel3._", "chisel3.2")
-  val withClock = chisel3.withClock
+  val withClock = chisel3.experimental.withClock
   @deprecated("Use the version in chisel3._", "chisel3.2")
-  val withReset = chisel3.withReset
+  val withReset = chisel3.experimental.withReset
 
   @deprecated("Use the version in chisel3._", "chisel3")
   val dontTouch = chisel3.experimental.dontTouch
 
   @deprecated("Use the version in chisel3._", "chisel3")
-  type BaseModule = chisel3.BaseModule
+  type BaseModule = chisel3.experimental.BaseModule
   @deprecated("Use the version in chisel3._", "chisel3")
-  type ExtModule = chisel3.ExtModule
+  type ExtModule = chisel3.experimental.ExtModule
 
   @deprecated("Use the version in chisel3._", "chisel3")
-  val IO = chisel3.IO
+  val IO = chisel3.experimental.IO
 
   @deprecated("Use the version in chisel3._", "chisel3")
   type FixedPoint = chisel3.FixedPoint
@@ -224,7 +226,7 @@ package object core {
   val annotate = chisel3.experimental.annotate
 
   @deprecated("Use the version in chisel3._", "chisel3")
-  val DataMirror = chisel3.DataMirror
+  val DataMirror = chisel3.experimental.DataMirror
   @deprecated("Use the version in chisel3._", "chisel3")
   type Direction = chisel3.ActualDirection
   @deprecated("Use the version in chisel3._", "chisel3")

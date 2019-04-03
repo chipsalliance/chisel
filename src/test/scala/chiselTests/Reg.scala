@@ -2,12 +2,10 @@
 
 package chiselTests
 
-import firrtl.ir.Input
-import org.scalatest._
-import org.scalatest.prop._
-import chisel3.{DataMirror, _}
+import chisel3._
 import chisel3.util._
 import chisel3.testers.BasicTester
+import chisel3.experimental.DataMirror
 
 class RegSpec extends ChiselFlatSpec {
   "Reg" should "be of the same type and width as t" in {

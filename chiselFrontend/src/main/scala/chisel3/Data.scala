@@ -8,6 +8,7 @@ import internal.Builder.pushCommand
 import internal._
 import internal.firrtl._
 import internal.sourceinfo.{DeprecatedSourceInfo, SourceInfo, SourceInfoTransform, UnlocatableSourceInfo}
+import experimental.{BaseModule, DataMirror}
 
 import scala.language.experimental.macros
 
@@ -75,43 +76,6 @@ object debug {  // scalastyle:ignore object.name
   @chiselRuntimeDeprecated
   @deprecated("debug doesn't do anything in Chisel3 as no pruning happens in the frontend", "chisel3")
   def apply (arg: Data): Data = arg
-}
-
-/** Experimental hardware construction reflection API
-  */
-object DataMirror {
-  def widthOf(target: Data): Width = target.width
-  def specifiedDirectionOf(target: Data): SpecifiedDirection = target.specifiedDirection
-  def directionOf(target: Data): ActualDirection = {
-    requireIsHardware(target, "node requested directionality on")
-    target.direction
-  }
-
-  // Returns the top-level module ports
-  // TODO: maybe move to something like Driver or DriverUtils, since this is mainly for interacting
-  // with compiled artifacts (vs. elaboration-time reflection)?
-  def modulePorts(target: BaseModule): Seq[(String, Data)] = target.getChiselPorts
-
-  // Returns all module ports with underscore-qualified names
-  def fullModulePorts(target: BaseModule): Seq[(String, Data)] = {
-    def getPortNames(name: String, data: Data): Seq[(String, Data)] = Seq(name -> data) ++ (data match {
-      case _: Element => Seq()
-      case r: Record => r.elements.toSeq flatMap { case (eltName, elt) => getPortNames(s"${name}_${eltName}", elt) }
-      case v: Vec[_] => v.zipWithIndex flatMap { case (elt, index) => getPortNames(s"${name}_${index}", elt) }
-    })
-    modulePorts(target).flatMap { case (name, data) =>
-      getPortNames(name, data).toList
-    }
-  }
-
-  // Internal reflection-style APIs, subject to change and removal whenever.
-  object internal { // scalastyle:ignore object.name
-    def isSynthesizable(target: Data): Boolean = target.topBindingOpt.isDefined
-    // For those odd cases where you need to care about object reference and uniqueness
-    def chiselTypeClone[T<:Data](target: Data): T = {
-      target.cloneTypeFull.asInstanceOf[T]
-    }
-  }
 }
 
 /** Creates a clone of the super-type of the input elements. Super-type is defined as:

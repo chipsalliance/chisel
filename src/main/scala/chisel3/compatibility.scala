@@ -35,7 +35,9 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
 
   implicit class AddDirMethodToData[T<:Data](target: T) {
     import chisel3.core.requireIsHardware
-    import chisel3.{DataMirror, ActualDirection}
+    import chisel3. ActualDirection
+    import chisel3.experimental.DataMirror
+
     def dir: Direction = {
       requireIsHardware(target) // This has the side effect of calling _autoWrapPorts
       target match {
@@ -49,7 +51,7 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
     }
   }
   implicit class cloneTypeable[T <: Data](target: T) {
-    import chisel3.DataMirror
+    import chisel3.experimental.DataMirror
     def chiselCloneType: T = {
       DataMirror.internal.chiselTypeClone(target).asInstanceOf[T]
     }

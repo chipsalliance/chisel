@@ -6,7 +6,7 @@
 package chisel3.util
 
 import chisel3._
-import chisel3.experimental.{Direction, requireIsChiselType}
+import chisel3.experimental.{DataMirror, Direction, MultiIOModule, requireIsChiselType}
 import chisel3.internal.naming._  // can't use chisel3_ version because of compile order
 
 /** An I/O Bundle containing 'valid' and 'ready' signals that handshake
@@ -21,7 +21,7 @@ abstract class ReadyValidIO[+T <: Data](gen: T) extends Bundle
 {
   // Compatibility hack for rocket-chip
   private val genType = (DataMirror.internal.isSynthesizable(gen), chisel3.internal.Builder.currentModule) match {
-    case (true, Some(module: chisel3.MultiIOModule))
+    case (true, Some(module: MultiIOModule))
         if !module.compileOptions.declaredTypeMustBeUnbound => chiselTypeOf(gen)
     case _ => gen
   }

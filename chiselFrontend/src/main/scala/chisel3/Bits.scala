@@ -956,8 +956,8 @@ trait UIntFactoryBase {
   }
 }
 
-object UInt extends UIntFactoryBase
-object Bits extends UIntFactoryBase
+//object UInt extends UIntFactoryBase
+//object Bits extends UIntFactoryBase
 
 /** A data type for signed integers, represented as a binary bitvector. Defines arithmetic operations between other
   * integer types.

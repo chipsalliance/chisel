@@ -336,7 +336,6 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   type SeqMem[T <: Data] = SyncReadMem[T]
 
   type Module = chisel3.experimental.LegacyModule
-  type MultiIOModule = chisel3.experimental.MultiIOModule
 
   /** Implicit for custom Printable string interpolator */
   implicit class PrintableHelper(val sc: StringContext) extends AnyVal {

@@ -2,11 +2,9 @@
 
 package chisel3.core
 
-import chisel3.{ActualDirection, Data}
+import chisel3.ActualDirection
 import chisel3.internal.ChiselException
 import chisel3.internal.firrtl.LitArg
-import chisel3.BaseModule
-import chisel3.experimental.RawModule
 
 object Binding {
   class BindingException(message: String) extends ChiselException(message)
