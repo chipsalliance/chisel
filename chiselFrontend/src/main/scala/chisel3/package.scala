@@ -367,28 +367,6 @@ package object chisel3 {    // scalastyle:ignore package.object.name
 
   implicit def string2Printable(str: String): Printable = PString(str)
 
-  implicit class fromUIntToBitPatComparable(x: UInt) extends SourceInfoDoc {
-    import internal.sourceinfo.{SourceInfo, SourceInfoTransform}
-
-    import scala.language.experimental.macros
-
-    final def === (that: BitPat): Bool = macro SourceInfoTransform.thatArg
-    final def =/= (that: BitPat): Bool = macro SourceInfoTransform.thatArg
-
-    /** @group SourceInfoTransformMacro */
-    def do_=== (that: BitPat)  // scalastyle:ignore method.name
-        (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that === x
-    /** @group SourceInfoTransformMacro */
-    def do_=/= (that: BitPat)  // scalastyle:ignore method.name
-        (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that =/= x
-
-    final def != (that: BitPat): Bool = macro SourceInfoTransform.thatArg
-    @chiselRuntimeDeprecated
-    @deprecated("Use '=/=', which avoids potential precedence problems", "chisel3")
-    def do_!= (that: BitPat)  // scalastyle:ignore method.name
-        (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that != x
-  }
-
 
   type ChiselException = internal.ChiselException
 

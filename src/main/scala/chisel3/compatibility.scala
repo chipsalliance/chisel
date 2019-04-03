@@ -3,7 +3,7 @@
 /** The Chisel compatibility package allows legacy users to continue using the `Chisel` (capital C) package name
   *  while moving to the more standard package naming convention `chisel3` (lowercase c).
   */
-import chisel3.{Aggregate, BitPat, Bundle, Data, Flipped, Mem, MemBase, Mux, Record, Reg, Vec, VecLike, printf, _}
+import chisel3.{Aggregate, Bundle, Data, Flipped, Mem, MemBase, Mux, Record, Reg, Vec, VecLike, printf, _}
 
 package object Chisel {     // scalastyle:ignore package.object.name number.of.types number.of.methods
   import chisel3.internal.firrtl.Width
@@ -423,8 +423,8 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
     def apply(in: Int): Int = apply(BigInt(in))
   }
 
-  val BitPat = chisel3.BitPat
-  type BitPat = chisel3.BitPat
+  val BitPat = chisel3.util.BitPat
+  type BitPat = chisel3.util.BitPat
 
   type ArbiterIO[T <: Data] = chisel3.util.ArbiterIO[T]
   type LockingArbiterLike[T <: Data] = chisel3.util.LockingArbiterLike[T]

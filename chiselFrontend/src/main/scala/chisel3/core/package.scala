@@ -103,6 +103,8 @@ package object core {
   val Module = chisel3.Module
   @deprecated("Use the version in chisel3._", "chisel3")
   type Module = chisel3.Module
+  @deprecated("Use chisel3.experimental.RawModule", "chisel3")
+  type UserModule = chisel3.experimental.RawModule
 
   @deprecated("Use the version in chisel3._", "chisel3")
   val printf = chisel3.printf
@@ -228,7 +230,7 @@ package object core {
   @deprecated("Use the version in chisel3._", "chisel3")
   val DataMirror = chisel3.experimental.DataMirror
   @deprecated("Use the version in chisel3._", "chisel3")
-  type Direction = chisel3.ActualDirection
+  type ActualDirection = chisel3.ActualDirection
   @deprecated("Use the version in chisel3._", "chisel3")
-  val Direction = chisel3.ActualDirection
+  val ActualDirection = chisel3.ActualDirection
 }
