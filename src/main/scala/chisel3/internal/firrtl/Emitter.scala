@@ -1,9 +1,8 @@
 // See LICENSE for license details.
 
 package chisel3.internal.firrtl
-import chisel3._
+import chisel3.{Clock, Data, FixedPoint, Record, SInt, SpecifiedDirection, UInt, Vec, printf}
 import chisel3.experimental._
-import chisel3.internal.sourceinfo.{NoSourceInfo, SourceLine}
 
 private[chisel3] object Emitter {
   def emit(circuit: Circuit): String = new Emitter(circuit).toString
@@ -178,7 +177,7 @@ private class Emitter(circuit: Circuit) {
   private def withIndent(f: => Unit) { indent(); f; unindent() }
 
   private val res = new StringBuilder()
-  res ++= s";${Driver.chiselVersionString}\n"
+  res ++= s";${chisel3.Driver.chiselVersionString}\n"
   res ++= s"circuit ${circuit.name} : "
   withIndent { circuit.components.foreach(c => res ++= emit(c)) }
   res ++= newline

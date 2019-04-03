@@ -50,7 +50,7 @@ abstract class BaseModule extends HasId {
 
   private val _ports = new ArrayBuffer[Data]()
   // getPorts unfortunately already used for tester compatibility
-  private[chisel3] def getModulePorts = {
+  protected def getModulePorts = {
     require(_closed, "Can't get ports before module close")
     _ports.toSeq
   }

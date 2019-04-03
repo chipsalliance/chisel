@@ -10,6 +10,27 @@ package chisel3
   */
 package object experimental {  // scalastyle:ignore object.name
 
+  // BlackBox Parameters
+  type Param = chisel3.Param
+  type IntParam = chisel3.IntParam
+  val IntParam = chisel3.IntParam
+  type DoubleParam = chisel3.DoubleParam
+  val DoubleParam = chisel3.DoubleParam
+  type StringParam = chisel3.StringParam
+  val StringParam = chisel3.StringParam
+  type RawParam = chisel3.RawParam
+  val RawParam = chisel3.RawParam
+
+  // Implicit conversions for BlackBox Parameters
+  implicit def fromIntToIntParam(x: Int): IntParam = IntParam(BigInt(x))
+  implicit def fromLongToIntParam(x: Long): IntParam = IntParam(BigInt(x))
+  implicit def fromBigIntToIntParam(x: BigInt): IntParam = IntParam(x)
+  implicit def fromDoubleToDoubleParam(x: Double): DoubleParam = DoubleParam(x)
+  implicit def fromStringToStringParam(x: String): StringParam = StringParam(x)
+
+  type Analog = chisel3.Analog
+  val Analog = chisel3.Analog
+
   type ChiselEnum = EnumFactory
 
   // Rocket Chip-style clonemodule
@@ -33,13 +54,6 @@ package object experimental {  // scalastyle:ignore object.name
       BaseModule.cloneIORecord(proto)
     }
   }
-
-  // Implicit conversions for BlackBox Parameters
-  implicit def fromIntToIntParam(x: Int): IntParam = IntParam(BigInt(x))
-  implicit def fromLongToIntParam(x: Long): IntParam = IntParam(BigInt(x))
-  implicit def fromBigIntToIntParam(x: BigInt): IntParam = IntParam(x)
-  implicit def fromDoubleToDoubleParam(x: Double): DoubleParam = DoubleParam(x)
-  implicit def fromStringToStringParam(x: String): StringParam = StringParam(x)
 
   val requireIsHardware = core.requireIsHardware
   val requireIsChiselType = core.requireIsChiselType

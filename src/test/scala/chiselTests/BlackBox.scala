@@ -2,7 +2,7 @@
 
 package chiselTests
 
-import chisel3._
+import chisel3.{RawParam => _, _}
 import chisel3.experimental._
 import chisel3.testers.BasicTester
 import chisel3.util._
