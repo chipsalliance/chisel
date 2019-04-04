@@ -186,30 +186,32 @@ package object core {
   type Analog = chisel3.Analog
   @deprecated("Use the version in chisel3._", "chisel3")
   val Analog = chisel3.Analog
-  @deprecated("Use the version in chisel3._", "chisel3")
+  @deprecated("Use the version in chisel3.experimental._", "chisel3")
   val attach = chisel3.experimental.attach
 
-  @deprecated("Use the version in chisel3._", "chisel3")
+  @deprecated("Use the version in chisel3.experimental._", "chisel3")
+  type EnumType = chisel3.experimental.EnumType
+  @deprecated("Use the version in chisel3.experimental._", "chisel3")
   type EnumFactory = chisel3.experimental.EnumFactory
-  @deprecated("Use the version in chisel3._", "chisel3")
+  @deprecated("Use the version in chisel3.experimental._", "chisel3")
   val EnumAnnotations = chisel3.experimental.EnumAnnotations
 
-  @deprecated("Use the version in chisel3._", "chisel3.2")
+  @deprecated("Use the version in chisel3.experimental._", "chisel3.2")
   val withClockAndReset = chisel3.experimental.withClockAndReset
-  @deprecated("Use the version in chisel3._", "chisel3.2")
+  @deprecated("Use the version in chisel3.experimental._", "chisel3.2")
   val withClock = chisel3.experimental.withClock
-  @deprecated("Use the version in chisel3._", "chisel3.2")
+  @deprecated("Use the version in chisel3.experimental._", "chisel3.2")
   val withReset = chisel3.experimental.withReset
 
-  @deprecated("Use the version in chisel3._", "chisel3")
+  @deprecated("Use the version in chisel3.experimental._", "chisel3")
   val dontTouch = chisel3.experimental.dontTouch
 
-  @deprecated("Use the version in chisel3._", "chisel3")
+  @deprecated("Use the version in chisel3.experimental._", "chisel3")
   type BaseModule = chisel3.experimental.BaseModule
-  @deprecated("Use the version in chisel3._", "chisel3")
+  @deprecated("Use the version in chisel3.experimental._", "chisel3")
   type ExtModule = chisel3.experimental.ExtModule
 
-  @deprecated("Use the version in chisel3._", "chisel3")
+  @deprecated("Use the version in chisel3.experimental._", "chisel3")
   val IO = chisel3.experimental.IO
 
   @deprecated("Use the version in chisel3._", "chisel3")
@@ -217,17 +219,17 @@ package object core {
   @deprecated("Use the version in chisel3._", "chisel3")
   val FixedPoint = chisel3.FixedPoint
 
-  @deprecated("Use the version in chisel3._", "chisel3")
+  @deprecated("Use the version in chisel3.experimental._", "chisel3")
   type ChiselAnnotation = chisel3.experimental.ChiselAnnotation
-  @deprecated("Use the version in chisel3._", "chisel3")
+  @deprecated("Use the version in chisel3.experimental._", "chisel3")
   val ChiselAnnotation = chisel3.experimental.ChiselAnnotation
-  @deprecated("Use the version in chisel3._", "chisel3")
+  @deprecated("Use the version in chisel3.experimental._", "chisel3")
   type RunFirrtlTransform = chisel3.experimental.RunFirrtlTransform
 
-  @deprecated("Use the version in chisel3._", "chisel3")
+  @deprecated("Use the version in chisel3.experimental._", "chisel3")
   val annotate = chisel3.experimental.annotate
 
-  @deprecated("Use the version in chisel3._", "chisel3")
+  @deprecated("Use the version in chisel3.experimental._", "chisel3")
   val DataMirror = chisel3.experimental.DataMirror
   @deprecated("Use the version in chisel3._", "chisel3")
   type ActualDirection = chisel3.ActualDirection
