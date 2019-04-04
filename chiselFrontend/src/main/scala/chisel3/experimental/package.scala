@@ -28,6 +28,10 @@ package object experimental {  // scalastyle:ignore object.name
   implicit def fromDoubleToDoubleParam(x: Double): DoubleParam = DoubleParam(x)
   implicit def fromStringToStringParam(x: String): StringParam = StringParam(x)
 
+  // Fixed Point is experimental for now
+  type FixedPoint = chisel3.FixedPoint
+  val FixedPoint = chisel3.FixedPoint
+
   type Analog = chisel3.Analog
   val Analog = chisel3.Analog
 
