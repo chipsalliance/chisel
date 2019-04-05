@@ -11,6 +11,7 @@ import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform, Unlocatable
 import chisel3.SourceInfoDoc
 
 object Mem {
+  // scalastyle:off line.size.limit
   @chiselRuntimeDeprecated
   @deprecated("Mem argument order should be size, t; this will be removed by the official release", "chisel3")
   def apply[T <: Data](t: T, size: Int)(implicit compileOptions: CompileOptions): Mem[T] = do_apply(size, t)(UnlocatableSourceInfo, compileOptions)

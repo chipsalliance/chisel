@@ -23,6 +23,7 @@ import chisel3.internal.sourceinfo._
 */
 
 object BiConnect {
+  // scalastyle:off method.name public.methods.have.type
   // These are all the possible exceptions that can be thrown.
   case class BiConnectException(message: String) extends ChiselException(message)
   // These are from element-level connection
@@ -47,7 +48,7 @@ object BiConnect {
     BiConnectException(sourceInfo.makeMessage(": Analog previously bulk connected at " + _))
   def DontCareCantBeSink =
     BiConnectException(": DontCare cannot be a connection sink (LHS)")
-
+  // scalastyle:on method.name public.methods.have.type
 
   /** This function is what recursively tries to connect a left and right together
   *
@@ -55,7 +56,7 @@ object BiConnect {
   * during the recursive decent and then rethrow them with extra information added.
   * This gives the user a 'path' to where in the connections things went wrong.
   */
-  def connect(sourceInfo: SourceInfo, connectCompileOptions: CompileOptions, left: Data, right: Data, context_mod: RawModule): Unit = {
+  def connect(sourceInfo: SourceInfo, connectCompileOptions: CompileOptions, left: Data, right: Data, context_mod: RawModule): Unit = { // scalastyle:ignore line.size.limit cyclomatic.complexity method.length
     (left, right) match {
       // Handle element case (root case)
       case (left_a: Analog, right_a: Analog) =>
@@ -207,7 +208,7 @@ object BiConnect {
 
   // This function checks if element-level connection operation allowed.
   // Then it either issues it or throws the appropriate exception.
-  def elemConnect(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions, left: Element, right: Element, context_mod: RawModule): Unit = {
+  def elemConnect(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions, left: Element, right: Element, context_mod: RawModule): Unit = { // scalastyle:ignore line.size.limit cyclomatic.complexity method.length
     import BindingDirection.{Internal, Input, Output} // Using extensively so import these
     // If left or right have no location, assume in context module
     // This can occur if one of them is a literal, unbound will error previously

@@ -51,9 +51,8 @@ class DebugTransforms(val c: Context) {
 object NamingTransforms
 class NamingTransforms(val c: Context) {
   import c.universe._
-  import Flag._
 
-  val globalNamingStack = q"_root_.chisel3.internal.DynamicNamingStack()"
+  val globalNamingStack = q"_root_.chisel3.internal.DynamicNamingStack"
 
   /** Base transformer that provides the val name transform.
     * Should not be instantiated, since by default this will recurse everywhere and break the
@@ -62,7 +61,7 @@ class NamingTransforms(val c: Context) {
   trait ValNameTransformer extends Transformer {
     val contextVar: TermName
 
-    override def transform(tree: Tree) = tree match {
+    override def transform(tree: Tree): Tree = tree match {
       // Intentionally not prefixed with $mods, since modifiers usually mean the val definition
       // is in a non-transformable location, like as a parameter list.
       // TODO: is this exhaustive / correct in all cases?
@@ -79,8 +78,8 @@ class NamingTransforms(val c: Context) {
     * classes and applies the naming transform on inner functions.
     */
   class ModuleTransformer(val contextVar: TermName) extends ValNameTransformer {
-    override def transform(tree: Tree) = tree match {
-      case q"$mods class $tpname[..$tparams] $ctorMods(...$paramss) extends { ..$earlydefns } with ..$parents { $self => ..$stats }" =>
+    override def transform(tree: Tree): Tree = tree match {
+      case q"$mods class $tpname[..$tparams] $ctorMods(...$paramss) extends { ..$earlydefns } with ..$parents { $self => ..$stats }" => // scalastyle:ignore line.size.limit
         tree  // don't recurse into inner classes
       case q"$mods trait $tpname[..$tparams] extends { ..$earlydefns } with ..$parents { $self => ..$stats }" =>
         tree  // don't recurse into inner classes
@@ -105,9 +104,9 @@ class NamingTransforms(val c: Context) {
   /** Method-specific val name transform, handling the return case.
     */
   class MethodTransformer(val contextVar: TermName) extends ValNameTransformer {
-    override def transform(tree: Tree) = tree match {
+    override def transform(tree: Tree): Tree = tree match {
       // TODO: better error messages when returning nothing
-      case q"return $expr" => q"return $globalNamingStack.pop_return_context($expr, $contextVar)"
+      case q"return $expr" => q"return $globalNamingStack.popReturnContext($expr, $contextVar)"
       // Do not recurse into methods
       case q"$mods def $tname[..$tparams](...$paramss): $tpt = $expr" => tree
       case other => super.transform(other)
@@ -117,28 +116,28 @@ class NamingTransforms(val c: Context) {
   /** Applies the val name transform to a module body. Pretty straightforward, since Module is
     * the naming top level.
     */
-  def transformModuleBody(stats: List[c.Tree]) = {
+  def transformModuleBody(stats: List[c.Tree]): Tree = {
     val contextVar = TermName(c.freshName("namingContext"))
     val transformedBody = (new ModuleTransformer(contextVar)).transformTrees(stats)
 
     q"""
-    val $contextVar = $globalNamingStack.push_context()
+    val $contextVar = $globalNamingStack.pushContext()
     ..$transformedBody
-    $contextVar.name_prefix("")
-    $globalNamingStack.pop_context($contextVar)
+    $contextVar.namePrefix("")
+    $globalNamingStack.popReturnContext((), $contextVar)
     """
   }
 
   /** Applies the val name transform to a method body, doing additional bookkeeping with the
     * context to allow names to propagate and prefix through the function call stack.
     */
-  def transformHierarchicalMethod(expr: c.Tree) = {
+  def transformHierarchicalMethod(expr: c.Tree): Tree = {
     val contextVar = TermName(c.freshName("namingContext"))
     val transformedBody = (new MethodTransformer(contextVar)).transform(expr)
 
     q"""{
-      val $contextVar = $globalNamingStack.push_context()
-      $globalNamingStack.pop_return_context($transformedBody, $contextVar)
+      val $contextVar = $globalNamingStack.pushContext()
+      $globalNamingStack.popReturnContext($transformedBody, $contextVar)
     }
     """
   }
@@ -161,6 +160,7 @@ class NamingTransforms(val c: Context) {
     var namedElts: Int = 0
 
     val transformed = annottees.map(annottee => annottee match {
+      // scalastyle:off line.size.limit
       case q"$mods class $tpname[..$tparams] $ctorMods(...$paramss) extends { ..$earlydefns } with ..$parents { $self => ..$stats }" => {
         val transformedStats = transformModuleBody(stats)
         namedElts += 1
@@ -181,20 +181,21 @@ class NamingTransforms(val c: Context) {
     if (namedElts != 1) {
       c.abort(c.enclosingPosition, s"@chiselName annotation did not match exactly one valid tree, got:\r\n${annottees.map(tree => showCode(tree)).mkString("\r\n\r\n")}")
     }
+    // scalastyle:on line.size.limit
 
     q"..$transformed"
   }
 }
 
 @compileTimeOnly("enable macro paradise to expand macro annotations")
-class dump extends StaticAnnotation {
+class dump extends StaticAnnotation { // scalastyle:ignore class.name
   def macroTransform(annottees: Any*): Any = macro chisel3.internal.naming.DebugTransforms.dump
 }
 @compileTimeOnly("enable macro paradise to expand macro annotations")
-class treedump extends StaticAnnotation {
+class treedump extends StaticAnnotation { // scalastyle:ignore class.name
   def macroTransform(annottees: Any*): Any = macro chisel3.internal.naming.DebugTransforms.treedump
 }
 @compileTimeOnly("enable macro paradise to expand macro annotations")
-class chiselName extends StaticAnnotation {
+class chiselName extends StaticAnnotation { // scalastyle:ignore class.name
   def macroTransform(annottees: Any*): Any = macro chisel3.internal.naming.NamingTransforms.chiselName
 }

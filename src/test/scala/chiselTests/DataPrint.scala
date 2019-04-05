@@ -22,7 +22,7 @@ class DataPrintSpec extends ChiselFlatSpec with Matchers {
     import chisel3.core.BundleLitBinding
     import chisel3.internal.firrtl.{ULit, Width}
     // Full bundle literal constructor
-    def Lit(aVal: UInt, bVal: Bool): BundleTest = {
+    def Lit(aVal: UInt, bVal: Bool): BundleTest = { // scalastyle:ignore method.name
       val clone = cloneType
       clone.selfBind(BundleLitBinding(Map(
         clone.a -> litArgOfBits(aVal),

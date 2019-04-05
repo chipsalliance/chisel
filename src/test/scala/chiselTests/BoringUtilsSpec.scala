@@ -11,7 +11,7 @@ import chisel3.experimental.{BaseModule, ChiselAnnotation, MultiIOModule, RawMod
 import chisel3.util.experimental.BoringUtils
 
 import firrtl.{CircuitForm, CircuitState, ChirrtlForm, Transform}
-import firrtl.annotations.NoTargetAnnotation
+import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
 import firrtl.passes.wiring.WiringException
 
@@ -51,7 +51,9 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
 
   trait WireX { this: BaseModule =>
     val x = Wire(UInt(4.W))
-    chisel3.experimental.annotate(new ChiselAnnotation{ def toFirrtl = DontTouchAnnotation(x.toNamed) })
+    chisel3.experimental.annotate(new ChiselAnnotation {
+      def toFirrtl: Annotation = DontTouchAnnotation(x.toNamed)
+    })
   }
 
   class Source extends RawModule with WireX {
@@ -77,8 +79,9 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
     sinks.zip(Seq(0, 1, 1, 2, 2, 2)).map{ case (a, b) => chisel3.assert(a.out === b.U) }
   }
 
-  /** This is testing a complicated wiring pattern and exercising the necessity of disabling deduplication for sources and
-    * sinks. Without disabling deduplication, this test will fail.
+  /** This is testing a complicated wiring pattern and exercising
+    * the necessity of disabling deduplication for sources and sinks.
+    * Without disabling deduplication, this test will fail.
     */
   class TopTester extends ShouldntAssertTester {
     val dut = Module(new Top(4))
@@ -90,14 +93,14 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
     case object FooAnnotation extends NoTargetAnnotation
     chisel3.experimental.annotate(
       new ChiselAnnotation with RunFirrtlTransform {
-        def toFirrtl = FooAnnotation
-        def transformClass = classOf[StripNoDedupAnnotation] } )
+        def toFirrtl: Annotation = FooAnnotation
+        def transformClass: Class[_ <: Transform] = classOf[StripNoDedupAnnotation] } )
   }
 
   behavior of "BoringUtils.bore"
 
   it should "connect across modules using BoringUtils.bore" in {
-	  runTester(new TopTester) should be (true)
+    runTester(new TopTester) should be (true)
   }
 
   it should "throw an exception if NoDedupAnnotations are removed" in {
