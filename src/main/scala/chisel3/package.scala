@@ -422,6 +422,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     val attach = chisel3.core.attach
 
     type Reset = chisel3.core.Reset
+    val Reset = chisel3.core.Reset
     type AsyncReset = chisel3.core.AsyncReset
     val AsyncReset = chisel3.core.AsyncReset
 

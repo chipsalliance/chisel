@@ -2,7 +2,7 @@
 
 package chisel3.internal.firrtl
 import chisel3._
-import chisel3.core.{SpecifiedDirection, EnumType}
+import chisel3.core.{SpecifiedDirection, EnumType, ResetType}
 import chisel3.experimental._
 import chisel3.internal.sourceinfo.{NoSourceInfo, SourceLine}
 
@@ -27,8 +27,9 @@ private class Emitter(circuit: Circuit) {
   }
 
   private def emitType(d: Data, clearDir: Boolean = false): String = d match {
-    case d: Clock => "Clock"
-    case d: AsyncReset => "AsyncReset"
+    case _: Clock => "Clock"
+    case _: AsyncReset => "AsyncReset"
+    case _: ResetType => "Reset"
     case d: chisel3.core.EnumType => s"UInt${d.width}"
     case d: UInt => s"UInt${d.width}"
     case d: SInt => s"SInt${d.width}"

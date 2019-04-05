@@ -1219,6 +1219,53 @@ sealed trait Reset extends Element with ToBoolable {
   def do_asAsyncReset(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): AsyncReset
 }
 
+object Reset {
+  def apply(): Reset = new ResetType
+}
+
+/** "Abstract" Reset Type that can be inferred to be either [[AsyncReset]] or [[Bool]]
+  *
+  * @note This shares a common interface with [[AsyncReset]] and [[Bool]] but is not an actual super
+  * type of them
+  */
+// Due to Bool inheriting from abstract class UInt, Reset cannot be class itself
+final class ResetType(private[chisel3] val width: Width = Width(1)) extends Element with Reset {
+  override def toString: String = s"Reset$bindingToString"
+
+  def cloneType: this.type = Reset().asInstanceOf[this.type]
+
+  private[core] def typeEquivalent(that: Data): Boolean =
+    this.getClass == that.getClass
+
+  override def connect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = that match {
+    case _: Reset => super.connect(that)(sourceInfo, connectCompileOptions)
+    case _ => super.badConnect(that)(sourceInfo)
+  }
+
+  override def litOption = None
+
+  /** Not really supported */
+  def toPrintable: Printable = PString("Reset")
+
+  override def do_asUInt(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): UInt = pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref))
+
+  private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
+      compileOptions: CompileOptions): Unit = {
+    this := that
+  }
+
+  /** @group SourceInfoTransformMacro */
+  def do_asAsyncReset(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): AsyncReset =
+    pushOp(DefPrim(sourceInfo, AsyncReset(), AsAsyncResetOp, ref))
+
+  /** @group SourceInfoTransformMacro */
+  def do_asBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+    pushOp(DefPrim(sourceInfo, Bool(), AsUIntOp, ref))
+
+  /** @group SourceInfoTransformMacro */
+  def do_toBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = do_asBool
+}
+
 object AsyncReset {
   def apply(): AsyncReset = new AsyncReset
 }
@@ -1243,9 +1290,11 @@ sealed class AsyncReset(private[chisel3] val width: Width = Width(1)) extends El
   def toPrintable: Printable = PString("AsyncReset")
 
   override def do_asUInt(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): UInt = pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref))
+
+  // TODO Is this right?
   private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
       compileOptions: CompileOptions): Unit = {
-    this := that
+    this := that.asBool.asAsyncReset
   }
 
   /** @group SourceInfoTransformMacro */
