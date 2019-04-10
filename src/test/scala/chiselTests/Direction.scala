@@ -128,7 +128,6 @@ class DirectionSpec extends ChiselPropSpec with Matchers {
   }
 
   import chisel3.experimental.{MultiIOModule, DataMirror, Direction, RawModule}
-  import chisel3.core.SpecifiedDirection
 
   property("Directions should be preserved through cloning and binding of Bundles") {
     elaborate(new MultiIOModule {
