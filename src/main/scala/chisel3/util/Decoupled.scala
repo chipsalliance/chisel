@@ -104,6 +104,20 @@ object Decoupled
   }
 }
 
+
+/** Decoupled Output from the point of view of a module - drives (outputs) valid and bits, inputs ready.
+  * @param gen The type of data to enqueue
+  */
+object DecoupledOut {
+  def apply[T<:Data](gen: T): DecoupledIO[T] = Decoupled(gen)
+}
+/** Decoupled Input from the point of view of a module - drives (outputs) ready, inputs valid and bits.
+  * @param gen The type of data to dequeue
+  */
+object DecoupledIn {
+  def apply[T<:Data](gen: T): DecoupledIO[T] = Flipped(Decoupled(gen))
+}
+
 /** A concrete subclass of ReadyValidIO that promises to not change
   * the value of 'bits' after a cycle where 'valid' is high and 'ready' is low.
   * Additionally, once 'valid' is raised it will never be lowered until after
