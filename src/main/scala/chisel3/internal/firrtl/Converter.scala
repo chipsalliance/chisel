@@ -1,8 +1,8 @@
 // See LICENSE for license details.
 
 package chisel3.internal.firrtl
-import chisel3.{Clock, Data, FirrtlFormat, FixedPoint, FullName, Name, PString, Percent, Printable, Printables, Record, SInt, SpecifiedDirection, UInt, Vec}
-import chisel3.experimental.EnumType
+import chisel3.{Clock, Data, FirrtlFormat, FullName, Name, PString, Percent, Printable, Printables, Record, SInt, SpecifiedDirection, UInt, Vec}
+import chisel3.experimental.{EnumType, FixedPoint}
 import chisel3.experimental._
 import chisel3.internal.sourceinfo.{NoSourceInfo, SourceInfo, SourceLine}
 import firrtl.{ir => fir}

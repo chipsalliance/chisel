@@ -1,7 +1,7 @@
 // See LICENSE for license details.
 
 package chisel3.internal.firrtl
-import chisel3.{Clock, Data, FixedPoint, Record, SInt, SpecifiedDirection, UInt, Vec, printf}
+import chisel3.{Clock, Data, Record, SInt, SpecifiedDirection, UInt, Vec, printf}
 import chisel3.experimental._
 
 private[chisel3] object Emitter {

@@ -2,10 +2,8 @@
 
 package chiselTests
 
-import chisel3.{FixedPoint, _}
-import chisel3.experimental.RawModule
+import chisel3._
 import chisel3.testers.BasicTester
-import org.scalatest._
 
 class BundleLiteralSpec extends ChiselFlatSpec {
   class MyBundle extends Bundle {

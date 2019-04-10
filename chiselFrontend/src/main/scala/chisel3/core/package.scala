@@ -214,10 +214,10 @@ package object core {
   @deprecated("Use the version in chisel3.experimental._", "chisel3")
   val IO = chisel3.experimental.IO
 
-  @deprecated("Use the version in chisel3._", "chisel3")
-  type FixedPoint = chisel3.FixedPoint
-  @deprecated("Use the version in chisel3._", "chisel3")
-  val FixedPoint = chisel3.FixedPoint
+  @deprecated("Use the version in chisel3.experimental._", "chisel3")
+  type FixedPoint = chisel3.experimental.FixedPoint
+  @deprecated("Use the version in chisel3.experimental._", "chisel3")
+  val FixedPoint = chisel3.experimental.FixedPoint
 
   @deprecated("Use the version in chisel3.experimental._", "chisel3")
   type ChiselAnnotation = chisel3.experimental.ChiselAnnotation

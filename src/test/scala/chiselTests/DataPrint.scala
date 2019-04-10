@@ -5,7 +5,7 @@ package chiselTests
 import org.scalatest._
 
 import chisel3._
-import chisel3.experimental.{ChiselEnum, RawModule, MultiIOModule}
+import chisel3.experimental.{ChiselEnum, FixedPoint, MultiIOModule, RawModule}
 
 class DataPrintSpec extends ChiselFlatSpec with Matchers {
   object EnumTest extends ChiselEnum {

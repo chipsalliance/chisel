@@ -8,7 +8,9 @@ import internal.Builder.pushCommand
 import internal._
 import internal.firrtl._
 import internal.sourceinfo.{DeprecatedSourceInfo, SourceInfo, SourceInfoTransform, UnlocatableSourceInfo}
-import experimental.{BaseModule, DataMirror}
+import experimental.DataMirror
+import experimental.FixedPoint
+import experimental.FixedPoint.Implicits._
 
 import scala.language.experimental.macros
 

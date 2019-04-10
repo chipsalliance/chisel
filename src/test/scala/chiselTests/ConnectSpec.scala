@@ -4,6 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.testers.BasicTester
+import chisel3.experimental.FixedPoint
 
 abstract class CrossCheck extends Bundle {
   val in: Data

@@ -4,6 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.experimental.DataMirror
+import chisel3.experimental.FixedPoint
 import chisel3.testers.BasicTester
 
 class AsBundleTester extends BasicTester {

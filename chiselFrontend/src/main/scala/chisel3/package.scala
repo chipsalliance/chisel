@@ -105,24 +105,13 @@ package object chisel3 {    // scalastyle:ignore package.object.name
         def asBool(): Bool = Bool.Lit(boolean)
       }
 
-      //scalastyle:off method.name
-      implicit class fromDoubleToLiteral(double: Double) {
-        @deprecated("Use notation <double>.F(<binary_point>.BP) instead", "chisel3")
-        def F(binaryPoint: Int): FixedPoint = FixedPoint.fromDouble(double, binaryPoint = binaryPoint)
-        def F(binaryPoint: BinaryPoint): FixedPoint = {
-          FixedPoint.fromDouble(double, Width(), binaryPoint)
-        }
-        def F(width: Width, binaryPoint: BinaryPoint): FixedPoint = {
-          FixedPoint.fromDouble(double, width, binaryPoint)
-        }
-      }
+      // Fixed Point is experimental for now, but we alias the implicit conversion classes here
+      //  to minimize disruption with existing code.
+      implicit class fromDoubleToLiteral(double: Double) extends experimental.FixedPoint.Implicits.fromDoubleToLiteral(double)
+      implicit class fromIntToBinaryPoint(int: Int) extends experimental.FixedPoint.Implicits.fromIntToBinaryPoint(int)
 
       implicit class fromIntToWidth(int: Int) {
         def W: Width = Width(int)  // scalastyle:ignore method.name
-      }
-
-      implicit class fromIntToBinaryPoint(int: Int) {
-        def BP: BinaryPoint = BinaryPoint(int)  // scalastyle:ignore method.name
       }
 
       // These provide temporary compatibility for those who foolishly imported from chisel3.core
@@ -366,7 +355,6 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   }
 
   implicit def string2Printable(str: String): Printable = PString(str)
-
 
   type ChiselException = internal.ChiselException
 
