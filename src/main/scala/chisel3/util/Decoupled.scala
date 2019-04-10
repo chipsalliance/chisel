@@ -5,6 +5,8 @@
 
 package chisel3.util
 
+import scala.language.dynamics
+
 import chisel3._
 import chisel3.experimental.{DataMirror, Direction, requireIsChiselType}
 import chisel3.internal.naming._  // can't use chisel3_ version because of compile order
@@ -78,9 +80,13 @@ object ReadyValidIO {
   * of ready or valid.
   * @param gen the type of data to be wrapped in DecoupledIO
   */
-class DecoupledIO[+T <: Data](gen: T) extends ReadyValidIO[T](gen)
-{
+class DecoupledIO[+T <: Data](gen: T) extends ReadyValidIO[T](gen) with Dynamic {
   override def cloneType: this.type = new DecoupledIO(gen).asInstanceOf[this.type]
+  def selectDynamic(name: String) = {
+    this.bits match {
+      case b: Bundle => b.elements(name)
+    }
+  }
 }
 
 /** This factory adds a decoupled handshaking protocol to a data bundle. */
