@@ -117,9 +117,9 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
     ctx.getChild(0) match {
       case term: TerminalNode =>
         term.getText match {
-          case "UInt" => if (ctx.getChildCount > 1) UIntType(IntWidth(string2BigInt(ctx.intLit(0).getText)))
+          case "UInt" => if (ctx.getChildCount > 1) UIntType(getWidth(ctx.intLit(0)))
           else UIntType(UnknownWidth)
-          case "SInt" => if (ctx.getChildCount > 1) SIntType(IntWidth(string2BigInt(ctx.intLit(0).getText)))
+          case "SInt" => if (ctx.getChildCount > 1) SIntType(getWidth(ctx.intLit(0)))
           else SIntType(UnknownWidth)
           case "Fixed" => ctx.intLit.size match {
             case 0 => FixedType(UnknownWidth, UnknownWidth)
@@ -131,7 +131,7 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
           }
           case "Clock" => ClockType
           case "AsyncReset" => AsyncResetType
-          case "Analog" => if (ctx.getChildCount > 1) AnalogType(IntWidth(string2BigInt(ctx.intLit(0).getText)))
+          case "Analog" => if (ctx.getChildCount > 1) AnalogType(getWidth(ctx.intLit(0)))
           else AnalogType(UnknownWidth)
           case "{" => BundleType(ctx.field.asScala.map(visitField))
         }
