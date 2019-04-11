@@ -66,6 +66,21 @@ class LowerTypesSpec extends FirrtlFlatSpec {
     executeTest(input, expected)
   }
 
+  it should "lower mixed-direction ports" in {
+    val input =
+      """circuit Test :
+        |  module Test :
+        |    input foo : {flip a : UInt<1>, b : UInt<1>}[1]
+        |    foo is invalid
+      """.stripMargin
+    val expected = Seq(
+      "output foo_0_a : UInt<1>",
+      "input foo_0_b : UInt<1>"
+    ) map normalized
+
+    executeTest(input, expected)
+  }
+
   it should "lower registers" in {
     val input =
       """circuit Test :
