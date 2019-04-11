@@ -5,7 +5,7 @@ package chisel3.internal.firrtl
 import chisel3._
 import core._
 import chisel3.internal._
-import chisel3.internal.sourceinfo.{SourceInfo, NoSourceInfo}
+import chisel3.internal.sourceinfo.{NoSourceInfo, SourceInfo}
 
 // scalastyle:off number.of.types
 
@@ -293,3 +293,4 @@ case class DefModule(id: RawModule, name: String, ports: Seq[Port], commands: Se
 case class DefBlackBox(id: BaseBlackBox, name: String, ports: Seq[Port], topDir: SpecifiedDirection, params: Map[String, Param]) extends Component
 
 case class Circuit(name: String, components: Seq[Component], annotations: Seq[ChiselAnnotation] = Seq.empty)
+

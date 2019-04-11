@@ -5,6 +5,7 @@ package chisel3.testers
 import chisel3._
 import java.io._
 
+import chisel3.aop.Aspect
 import chisel3.experimental.RunFirrtlTransform
 import firrtl.{Driver => _, _}
 import firrtl.transforms.BlackBoxSourceHelper.writeResourceToDirectory
@@ -14,20 +15,24 @@ object TesterDriver extends BackendCompilationUtilities {
   /** For use with modules that should successfully be elaborated by the
     * frontend, and which can be turned into executables with assertions. */
   def execute(t: () => BasicTester,
-              additionalVResources: Seq[String] = Seq()): Boolean = {
+              additionalVResources: Seq[String] = Seq(),
+              aspects: Seq[Aspect[_, _]] = Seq()
+             ): Boolean = {
     // Invoke the chisel compiler to get the circuit's IR
     val circuit = Driver.elaborate(finishWrapper(t))
 
+    val aspectedCircuit = circuit.copy(annotations = aspects ++ circuit.annotations)
+
     // Set up a bunch of file handlers based on a random temp filename,
     // plus the quirks of Verilator's naming conventions
-    val target = circuit.name
+    val target = aspectedCircuit.name
 
     val path = createTestDirectory(target)
     val fname = new File(path, target)
 
     // For now, dump the IR out to a file
-    Driver.dumpFirrtl(circuit, Some(new File(fname.toString + ".fir")))
-    val firrtlCircuit = Driver.toFirrtl(circuit)
+    Driver.dumpFirrtl(aspectedCircuit, Some(new File(fname.toString + ".fir")))
+    val firrtlCircuit = Driver.toFirrtl(aspectedCircuit)
 
     // Copy CPP harness and other Verilog sources from resources into files
     val cppHarness =  new File(path, "top.cpp")
@@ -41,13 +46,13 @@ object TesterDriver extends BackendCompilationUtilities {
     })
 
     // Compile firrtl
-    val transforms = circuit.annotations.collect { case anno: RunFirrtlTransform => anno.transformClass }.distinct
+    val transforms = aspectedCircuit.annotations.collect { case anno: RunFirrtlTransform => anno.transformClass }.distinct
       .filterNot(_ == classOf[Transform])
       .map { transformClass: Class[_ <: Transform] => transformClass.newInstance() }
-    val annotations = circuit.annotations.map(_.toFirrtl).toList
+    val newAnnotations = aspectedCircuit.annotations.map(_.toFirrtl).toList
     val optionsManager = new ExecutionOptionsManager("chisel3") with HasChiselExecutionOptions with HasFirrtlOptions {
       commonOptions = CommonOptions(topName = target, targetDirName = path.getAbsolutePath)
-      firrtlOptions = FirrtlExecutionOptions(compilerName = "verilog", annotations = annotations,
+      firrtlOptions = FirrtlExecutionOptions(compilerName = "verilog", annotations = newAnnotations,
                                              customTransforms = transforms,
                                              firrtlCircuit = Some(firrtlCircuit))
     }

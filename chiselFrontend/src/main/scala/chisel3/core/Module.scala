@@ -15,7 +15,7 @@ import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{InstTransform, SourceInfo}
 import chisel3.SourceInfoDoc
 
-import _root_.firrtl.annotations.{CircuitName, ModuleName}
+import _root_.firrtl.annotations.{ModuleTarget, ModuleName}
 
 object Module extends SourceInfoDoc {
   /** A wrapper method that all Module instantiations must be wrapped in
@@ -218,7 +218,8 @@ abstract class BaseModule extends HasId {
   /** Returns a FIRRTL ModuleName that references this object
     * @note Should not be called until circuit elaboration is complete
     */
-  final def toNamed: ModuleName = ModuleName(this.name, CircuitName(this.circuitName))
+  final def toNamed: ModuleName = toTarget.toNamed
+  final def toTarget: ModuleTarget = ModuleTarget(this.circuitName, this.name)
 
   /**
    * Internal API. Returns a list of this module's generated top-level ports as a map of a String

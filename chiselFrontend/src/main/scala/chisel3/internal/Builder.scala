@@ -7,7 +7,7 @@ import scala.collection.mutable.{ArrayBuffer, HashMap}
 import chisel3._
 import core._
 import firrtl._
-import _root_.firrtl.annotations.{CircuitName, ComponentName, ModuleName, Named}
+import _root_.firrtl.annotations.{CircuitName, ComponentName, ModuleName, IsMember, ReferenceTarget, Named}
 
 private[chisel3] class Namespace(keywords: Set[String]) {
   private val names = collection.mutable.HashMap[String, Long]()
@@ -66,8 +66,9 @@ trait InstanceId {
   def pathName: String
   def parentPathName: String
   def parentModName: String
-  /** Returns a FIRRTL Named that refers to this object in the elaborated hardware graph */
+  /** Returns a FIRRTL IsMember that refers to this object in the elaborated hardware graph */
   def toNamed: Named
+  def toTarget: IsMember
 
 }
 
@@ -164,6 +165,7 @@ private[chisel3] trait NamedComponent extends HasId {
     */
   final def toNamed: ComponentName =
     ComponentName(this.instanceName, ModuleName(this.parentModName, CircuitName(this.circuitName)))
+  final def toTarget: ReferenceTarget = toNamed.toTarget
 }
 
 // Mutable global state for chisel that can appear outside a Builder context
@@ -345,7 +347,7 @@ private[chisel3] object Builder {
         errors.checkpoint()
         errors.info("Done elaborating.")
 
-        Circuit(components.last.name, components, annotations)
+        Circuit(components.last.name, components, aop.DesignAnnotation(mod) +: annotations)
       }
    }
   }
