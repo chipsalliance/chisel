@@ -53,7 +53,6 @@ object ExplicitCompileOptions {
 
   // Collection of "not strict" connection compile options.
   // These provide compatibility with existing code.
-  // import chisel3.core.ExplicitCompileOptions.NotStrict
   implicit val NotStrict = new CompileOptionsClass (
     connectFieldsMustMatch = false,
     declaredTypeMustBeUnbound = false,
@@ -64,7 +63,6 @@ object ExplicitCompileOptions {
   )
 
   // Collection of "strict" connection compile options, preferred for new code.
-  // import chisel3.core.ExplicitCompileOptions.Strict
   implicit val Strict = new CompileOptionsClass (
     connectFieldsMustMatch = true,
     declaredTypeMustBeUnbound = true,

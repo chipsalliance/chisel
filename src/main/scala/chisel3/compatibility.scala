@@ -311,7 +311,7 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
     import chisel3.CompileOptions
     import chisel3.internal.sourceinfo.SourceInfo
 
-    // Passthrough for chisel3.core.Reg
+    // Passthrough for chisel3.Reg
     // Single-element constructor to avoid issues caused by null default args in a type
     // parameterized scope.
     def apply[T <: Data](t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
