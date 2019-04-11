@@ -2,10 +2,10 @@
 
 package chisel3
 
-import chisel3.experimental.ExtModule
-
 package object core {
-/**
+  import chisel3.internal.firrtl.Width
+
+  /**
   * These definitions exist to deal with those clients that relied on chisel3.core
   * They will be deprecated in the future.
   */
@@ -186,6 +186,9 @@ package object core {
   type Analog = chisel3.Analog
   @deprecated("Use the version in chisel3._", "chisel3")
   val Analog = chisel3.Analog
+  @deprecated("Use the version in chisel3._", "chisel3")
+  implicit class fromIntToWidth(int: Int) extends chisel3.fromIntToWidth(int)
+
   @deprecated("Use the version in chisel3.experimental._", "chisel3")
   val attach = chisel3.experimental.attach
 
@@ -218,6 +221,10 @@ package object core {
   type FixedPoint = chisel3.experimental.FixedPoint
   @deprecated("Use the version in chisel3.experimental._", "chisel3")
   val FixedPoint = chisel3.experimental.FixedPoint
+  @deprecated("Use the version in chisel3.experimental._", "chisel3")
+  implicit class fromDoubleToLiteral(double: Double) extends experimental.FixedPoint.Implicits.fromDoubleToLiteral(double)
+  @deprecated("Use the version in chisel3.experimental._", "chisel3")
+  implicit class fromIntToBinaryPoint(int: Int) extends experimental.FixedPoint.Implicits.fromIntToBinaryPoint(int)
 
   @deprecated("Use the version in chisel3.experimental._", "chisel3")
   type ChiselAnnotation = chisel3.experimental.ChiselAnnotation
