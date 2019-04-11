@@ -33,6 +33,9 @@ package object core {
   type Clock = chisel3.Clock
 
   @deprecated("Use the version in chisel3._", "chisel3")
+  type Reset = chisel3.Reset
+
+  @deprecated("Use the version in chisel3._", "chisel3")
   type Aggregate = chisel3.Aggregate
 
   @deprecated("Use the version in chisel3._", "chisel3")
