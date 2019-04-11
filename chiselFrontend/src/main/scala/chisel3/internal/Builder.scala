@@ -183,7 +183,7 @@ private[chisel3] class DynamicContext() {
   // Used to distinguish between no Module() wrapping, multiple wrappings, and rewrapping
   var readyForModuleConstr: Boolean = false
   var whenDepth: Int = 0 // Depth of when nesting
-  var currentClockAndReset: Option[ClockAndReset] = None
+  var currentClockAndReset: ClockAndReset = ClockAndReset.empty
   val errors = new ErrorLog
   val namingStack = new internal.naming.NamingStack
 }
@@ -248,16 +248,25 @@ private[chisel3] object Builder {
   def whenDepth_=(target: Int): Unit = {
     dynamicContext.whenDepth = target
   }
-  def currentClockAndReset: Option[ClockAndReset] = dynamicContext.currentClockAndReset
-  def currentClockAndReset_=(target: Option[ClockAndReset]): Unit = {
+  def currentClockAndReset: ClockAndReset = dynamicContext.currentClockAndReset
+  def currentClockAndReset_=(target: ClockAndReset): Unit = {
     dynamicContext.currentClockAndReset = target
   }
   def forcedClockAndReset: ClockAndReset = currentClockAndReset match {
-    case Some(clockAndReset) => clockAndReset
-    case None => throwException("Error: No implicit clock and reset.")
+    case clockAndReset @ ClockAndReset(Some(clock), Some(reset)) => clockAndReset
+    case ClockAndReset(Some(clock), None) =>
+      throwException("Error: No implicit reset.")
+    case ClockAndReset(None, _) =>
+      throwException("Error: No implicit clock.")
+    case _ =>
+      throwException("Error: No implicit clock and reset.")
   }
-  def forcedClock: Clock = forcedClockAndReset.clock
-  def forcedReset: Reset = forcedClockAndReset.reset
+  def forcedClock: Clock = currentClockAndReset.clockOpt.getOrElse(
+    throwException("Error: No implicit clock.")
+  )
+  def forcedReset: Reset = currentClockAndReset.resetOpt.getOrElse(
+    throwException("Error: No implicit reset.")
+  )
 
   // TODO(twigg): Ideally, binding checks and new bindings would all occur here
   // However, rest of frontend can't support this yet.

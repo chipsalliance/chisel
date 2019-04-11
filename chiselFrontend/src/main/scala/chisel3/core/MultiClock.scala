@@ -9,7 +9,24 @@ import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{SourceInfo}
 
-private[chisel3] final case class ClockAndReset(clock: Clock, reset: Reset)
+private[chisel3] final class ClockAndReset(val clockOpt: Option[Clock], val resetOpt: Option[Reset]) {
+  def clock: Clock = clockOpt.get
+  def reset: Reset = resetOpt.get
+
+  def setClock(newClock: Clock): ClockAndReset = new ClockAndReset(Some(newClock), resetOpt)
+  def setReset(newReset: Reset): ClockAndReset = new ClockAndReset(clockOpt, Some(newReset))
+}
+
+private[chisel3] final object ClockAndReset {
+  def apply(clock: Clock, reset: Reset): ClockAndReset = {
+    new ClockAndReset(Some(clock), Some(reset))
+  }
+  def empty: ClockAndReset = new ClockAndReset(None, None)
+
+  def unapply(arg: ClockAndReset): Option[(Option[Clock], Option[Reset])] = {
+    Some((arg.clockOpt, arg.resetOpt))
+  }
+}
 
 object withClockAndReset {  // scalastyle:ignore object.name
   /** Creates a new Clock and Reset scope
@@ -22,7 +39,7 @@ object withClockAndReset {  // scalastyle:ignore object.name
   def apply[T](clock: Clock, reset: Reset)(block: => T): T = {
     // Save parentScope
     val parentScope = Builder.currentClockAndReset
-    Builder.currentClockAndReset = Some(ClockAndReset(clock, reset))
+    Builder.currentClockAndReset = ClockAndReset(clock, reset)
     val res = block // execute block
     // Return to old scope
     Builder.currentClockAndReset = parentScope
@@ -37,8 +54,15 @@ object withClock {  // scalastyle:ignore object.name
     * @param block the block of code to run with new implicit Clock
     * @return the result of the block
     */
-  def apply[T](clock: Clock)(block: => T): T =
-    withClockAndReset(clock, Module.reset)(block)
+  def apply[T](clock: Clock)(block: => T): T =  {
+    // Save parentScope
+    val parentScope = Builder.currentClockAndReset
+    Builder.currentClockAndReset = Builder.currentClockAndReset.setClock(clock)
+    val res = block // execute block
+    // Return to old scope
+    Builder.currentClockAndReset = parentScope
+    res
+  }
 }
 
 object withReset {  // scalastyle:ignore object.name
@@ -48,7 +72,15 @@ object withReset {  // scalastyle:ignore object.name
     * @param block the block of code to run with new implicit Reset
     * @return the result of the block
     */
-  def apply[T](reset: Reset)(block: => T): T =
-    withClockAndReset(Module.clock, reset)(block)
+  def apply[T](reset: Reset)(block: => T): T = {
+    // Save parentScope
+    val parentScope = Builder.currentClockAndReset
+    Builder.currentClockAndReset = Builder.currentClockAndReset.setReset(reset)
+    val res = block // execute block
+    // Return to old scope
+    Builder.currentClockAndReset = parentScope
+    res
+  }
+
 }
 
