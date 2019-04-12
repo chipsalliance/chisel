@@ -1,8 +1,7 @@
-package chisel3
-package aop
+package chisel3.aop
 
-import chisel3.core.{BaseModule, Module, MultiIOModule, RawModule, RunFirrtlTransform}
-import chisel3.internal.HasId
+import chisel3.core.{BaseModule, Data, Module, ModuleAspect, MultiIOModule, RawModule, RunFirrtlTransform, withClockAndReset}
+import chisel3.internal.{Builder, HasId}
 import chisel3.internal.firrtl.DefModule
 import firrtl.{AnnotationSeq, RenameMap, Transform}
 import firrtl.annotations._
@@ -12,43 +11,56 @@ import scala.reflect.runtime.universe.TypeTag
 
 case class AddStatements(module: String, s: firrtl.ir.Statement) extends NoTargetAnnotation
 
-abstract class AspectInfo[DUT <: RawModule](implicit tag: TypeTag[DUT]) {
-  def getRot(dut: DUT): RawModule
-  def inject(dut: DUT): AnnotationSeq
-  def toAnnotation: AnnotationSeq
-}
+object Aspect {
 
-abstract class Aspect[T <: RawModule, R](implicit tag: TypeTag[T]) extends Annotation with RunFirrtlTransform {
-  abstract class AbstractModule(circuit: String, moduleName: String) extends MultiIOModule {
-    override def circuitName: String = circuit
-    override def desiredName:String = moduleName
-  }
-
-  def resolveAspectInfo(aspectInfo: R): AnnotationSeq
-
-  def collectAspectInfo(dut: T): R
-
-  def transformClass: Class[_ <: Transform]
-
-  final def untypedResolveAspect(dut: RawModule): AnnotationSeq = {
-    val typedDut = dut.asInstanceOf[T]
-    //var annotations: AnnotationSeq = Seq.empty[Annotation]
-    var aspectInfo: Option[R] = None
-    val dutTarget = dut.toTarget
-    val chiselIR = internal.Builder.build(Module(new AbstractModule(dutTarget.circuit, dut.name) {
-      aspectInfo = Some(collectAspectInfo(typedDut))
+  def toAnnotation[T <: RawModule](module: T, inject: T => Unit): AddStatements = {
+    val chiselIR = Builder.build(Module(new ModuleAspect(module) {
+      inject(module)
     }))
-    val annotations = resolveAspectInfo(aspectInfo.get)
-    getFirrtl(chiselIR) match {
-      case m: firrtl.ir.Module => AddStatements(dut.name, m.body) +: annotations
-      case other => annotations
+    val comps = chiselIR.components.map {
+      case x: DefModule if x.name == module.name => x.copy(id = module)
+      case other => other
+    }
+    getFirrtl(chiselIR.copy(components = comps)) match {
+      case m: firrtl.ir.Module => AddStatements(module.name, m.body)
+      case other => sys.error(s"Got $other, was expected a Module!")
     }
   }
 
+  def getFirrtl(chiselIR: chisel3.internal.firrtl.Circuit): firrtl.ir.DefModule = {
+    chisel3.internal.firrtl.Converter.convert(chiselIR).modules.head
+  }
+}
+
+abstract class Aspect[DUT <: RawModule, M <: RawModule](selectRoot: DUT => M)(implicit tag: TypeTag[DUT]) {
+  def toAnnotation(dut: DUT): Annotation
+}
+
+case class InjectingAspect[DUT <: RawModule, M <: RawModule](selectRoot: DUT => M, injection: M => Unit)(implicit tag: TypeTag[DUT]) extends Aspect[DUT, M](selectRoot) {
+  def toAnnotation(dut: DUT): Annotation = {
+    //selectRoot(dut) match {
+    //  case x: MultiIOModule => Aspect.toAnnotation(selectRoot(dut), injection)
+    //  case x: RawModule => Aspect.toAnnotation(selectRoot(dut), injection)
+    //}
+    Aspect.toAnnotation(selectRoot(dut), injection)
+  }
+}
+
+abstract class AnnotatingAspect[DUT <: RawModule, M <: RawModule](selectRoot: DUT => M, selectSignals: M => Seq[Data])(implicit tag: TypeTag[DUT]) extends Aspect[DUT, M](selectRoot) {
+  def toTargets(dut: DUT): Seq[ReferenceTarget] = selectSignals(selectRoot(dut)).map(_.toTarget)
+  def toAnnotation(dut: DUT): Annotation
+}
+
+abstract class Concern[T <: RawModule, R <: Aspect[T, _]](implicit tag: TypeTag[T]) extends Annotation with RunFirrtlTransform {
+
+  def aspects: Seq[R]
+
+  def resolveAspects(dut: RawModule): AnnotationSeq = {
+    aspects.map(_.toAnnotation(dut.asInstanceOf[T]))
+  }
+
+  def transformClass: Class[_ <: Transform] = classOf[Transform]
+
   override def update(renames: RenameMap): Seq[Annotation] = Seq(this)
   override def toFirrtl: Annotation = this
-
-  def getFirrtl(chiselIR: chisel3.internal.firrtl.Circuit): firrtl.ir.DefModule = {
-    internal.firrtl.Converter.convert(chiselIR).modules.head
-  }
 }

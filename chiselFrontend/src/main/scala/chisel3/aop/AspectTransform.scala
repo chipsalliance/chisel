@@ -13,12 +13,12 @@ class AspectTransform extends Transform {
   override def execute(state: CircuitState): CircuitState = {
     val dut = state.annotations.collectFirst { case DesignAnnotation(dut) => dut }.get
 
-    val aspects = state.annotations.collect { case a: Aspect[_, _] => a }
+    val concerns = state.annotations.collect { case a: Concern[_, _] => a }
 
     val addStmtMap = mutable.HashMap[String, Seq[Statement]]()
 
-    val annotations = aspects.flatMap { aspect =>
-      aspect.untypedResolveAspect(dut).flatMap {
+    val annotations = concerns.flatMap { concern =>
+      concern.resolveAspects(dut).flatMap {
         case AddStatements(module, s) =>
           addStmtMap(module) = s +: addStmtMap.getOrElse(module, Nil)
           Nil
@@ -28,7 +28,10 @@ class AspectTransform extends Transform {
 
     val newCircuit = state.circuit.map { m: DefModule =>
       m match {
-        case m: Module if addStmtMap.contains(m.name) => m.copy(body = Block(m.body +: addStmtMap(m.name)))
+        case m: Module if addStmtMap.contains(m.name) =>
+          val newM = m.copy(body = Block(m.body +: addStmtMap(m.name)))
+          println(newM.serialize)
+          newM
         case m: ExtModule if addStmtMap.contains(m.name) => Module(m.info, m.name, m.ports, Block(addStmtMap(m.name)))
         case other: DefModule => other
       }

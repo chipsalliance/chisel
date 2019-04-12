@@ -145,8 +145,7 @@ object BaseModule {
 /** Abstract base class for Modules, an instantiable organizational unit for RTL.
   */
 // TODO: seal this?
-abstract class BaseModule extends HasId {
-  //
+abstract class BaseModule extends HasId { //
   // Builder Internals - this tracks which Module RTL construction belongs to.
   //
   if (!Builder.readyForModuleConstr) {

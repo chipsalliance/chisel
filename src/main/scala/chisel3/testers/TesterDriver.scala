@@ -5,7 +5,7 @@ package chisel3.testers
 import chisel3._
 import java.io._
 
-import chisel3.aop.Aspect
+import chisel3.aop.{Aspect, Concern}
 import chisel3.experimental.RunFirrtlTransform
 import firrtl.{Driver => _, _}
 import firrtl.transforms.BlackBoxSourceHelper.writeResourceToDirectory
@@ -16,12 +16,12 @@ object TesterDriver extends BackendCompilationUtilities {
     * frontend, and which can be turned into executables with assertions. */
   def execute(t: () => BasicTester,
               additionalVResources: Seq[String] = Seq(),
-              aspects: Seq[Aspect[_, _]] = Seq()
+              concerns: Seq[Concern[_, _]] = Seq()
              ): Boolean = {
     // Invoke the chisel compiler to get the circuit's IR
     val circuit = Driver.elaborate(finishWrapper(t))
 
-    val aspectedCircuit = circuit.copy(annotations = aspects ++ circuit.annotations)
+    val aspectedCircuit = circuit.copy(annotations = concerns ++ circuit.annotations)
 
     // Set up a bunch of file handlers based on a random temp filename,
     // plus the quirks of Verilator's naming conventions
