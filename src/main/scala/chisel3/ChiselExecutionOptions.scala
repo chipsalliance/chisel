@@ -2,7 +2,7 @@
 
 package chisel3
 
-import firrtl.{ExecutionOptionsManager, ComposableOptions}
+import firrtl.{ComposableOptions, ExecutionOptionsManager}
 
 //TODO: provide support for running firrtl as separate process, could alternatively be controlled by external driver
 //TODO: provide option for not saving chirrtl file, instead calling firrtl with in memory chirrtl

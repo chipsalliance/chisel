@@ -2,12 +2,11 @@
 
 package examples
 
-import chiselTests.ChiselFlatSpec
-import chisel3.testers.BasicTester
 import chisel3._
+import chisel3.testers.BasicTester
 import chisel3.util._
-
-import VendingMachineUtils._
+import chiselTests.ChiselFlatSpec
+import examples.VendingMachineUtils._
 
 class VendingMachineIO(val legalCoins: Seq[Coin]) extends Bundle {
   require(legalCoins.size >= 1, "The vending machine must accept at least 1 coin!")

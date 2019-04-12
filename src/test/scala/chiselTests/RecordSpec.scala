@@ -3,9 +3,9 @@
 package chiselTests
 
 import chisel3._
+import chisel3.experimental.{DataMirror, requireIsChiselType}
 import chisel3.testers.BasicTester
 import chisel3.util.{Counter, Queue}
-import chisel3.experimental.{DataMirror, requireIsChiselType}
 
 import scala.collection.immutable.ListMap
 

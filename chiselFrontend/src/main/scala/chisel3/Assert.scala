@@ -2,12 +2,13 @@
 
 package chisel3
 
-import scala.reflect.macros.blackbox.Context
-import scala.language.experimental.macros
-import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
+import chisel3.internal._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.SourceInfo
+
+import scala.language.experimental.macros
+import scala.reflect.macros.blackbox.Context
 
 object assert { // scalastyle:ignore object.name
   /** Checks for a condition to be valid in the circuit at all times. If the

@@ -2,9 +2,7 @@
 
 package chiselTests
 
-import chisel3.{Bundle, Record}
-
-import collection.immutable.ListMap
+import scala.collection.immutable.ListMap
 
 // Keep Chisel._ separate from chisel3._ below
 object CompatibilityComponents {
@@ -44,8 +42,8 @@ object CompatibilityComponents {
 }
 
 object Chisel3Components {
-  import chisel3._
   import CompatibilityComponents._
+  import chisel3._
 
   class Chisel3Bundle extends chisel3.Bundle {
     val a = Output(UInt(32.W))
@@ -83,9 +81,9 @@ object Chisel3Components {
 class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec {
 
   "Modules defined in the Chisel._" should "successfully bulk connect in chisel3._" in {
+    import CompatibilityComponents._
     import chisel3._
     import chisel3.testers.BasicTester
-    import CompatibilityComponents._
 
     assertTesterPasses(new BasicTester {
       val a = Module(new ChiselBundleModuleA)
@@ -103,8 +101,8 @@ class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec {
 
   "Moduless defined in the chisel3._" should "successfully bulk connect in Chisel._" in {
     import Chisel._
-    import chisel3.testers.BasicTester
     import Chisel3Components._
+    import chisel3.testers.BasicTester
 
     assertTesterPasses(new BasicTester {
       val a = Module(new Chisel3BundleModuleA)
@@ -122,9 +120,9 @@ class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec {
 
 
   "Bundles defined in Chisel._" should "work in chisel3._ Modules" in {
+    import Chisel3Components._
     import chisel3._
     import chisel3.testers.BasicTester
-    import Chisel3Components._
 
     assertTesterPasses(new BasicTester {
       val a = Module(new Chisel3ModuleChiselBundleA)
@@ -141,9 +139,9 @@ class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec {
   }
 
   "Bundles defined in chisel3._" should "work in Chisel._ Modules" in {
+    import CompatibilityComponents._
     import chisel3._
     import chisel3.testers.BasicTester
-    import CompatibilityComponents._
 
     assertTesterPasses(new BasicTester {
       val a = Module(new ChiselModuleChisel3BundleA)
@@ -162,10 +160,10 @@ class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec {
 
   "Similar Bundles defined in the chisel3._ and Chisel._" should
       "successfully bulk connect in chisel3._" in {
-    import chisel3._
-    import chisel3.testers.BasicTester
     import Chisel3Components._
     import CompatibilityComponents._
+    import chisel3._
+    import chisel3.testers.BasicTester
 
     assertTesterPasses(new BasicTester {
       val a = Module(new ChiselBundleModuleA)
@@ -194,9 +192,9 @@ class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec {
   }
   they should "successfully bulk connect in Chisel._" in {
     import Chisel._
-    import chisel3.testers.BasicTester
     import Chisel3Components._
     import CompatibilityComponents._
+    import chisel3.testers.BasicTester
 
     assertTesterPasses(new BasicTester {
       val a = Module(new ChiselBundleModuleA)

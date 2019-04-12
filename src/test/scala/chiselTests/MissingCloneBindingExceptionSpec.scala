@@ -2,7 +2,6 @@
 
 package chiselTests
 import Chisel.ChiselException
-import chisel3.Bundle
 import org.scalatest._
 
 class MissingCloneBindingExceptionSpec extends ChiselFlatSpec with Matchers {

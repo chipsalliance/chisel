@@ -2,10 +2,10 @@
 
 package chiselTests
 
-import chisel3.{Analog => _, _}
-import chisel3.util._
-import chisel3.testers.BasicTester
 import chisel3.experimental._
+import chisel3.testers.BasicTester
+import chisel3.util._
+import chisel3.{Analog => _, _}
 
 /* This test is different from AnalogSpec in that it uses more complicated black boxes that can each
  * drive the bidirectional bus. It was created to evaluate Analog with synthesis tools since the

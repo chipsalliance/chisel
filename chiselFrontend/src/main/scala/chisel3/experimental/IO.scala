@@ -2,8 +2,8 @@
 
 package chisel3.experimental
 
-import chisel3.{AutoClonetypeException, Data, Module}
 import chisel3.internal.Builder
+import chisel3.{AutoClonetypeException, Data, Module}
 
 
 object IO {

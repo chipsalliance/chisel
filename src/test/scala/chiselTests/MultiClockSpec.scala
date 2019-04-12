@@ -4,8 +4,8 @@ package chiselTests
 
 import chisel3._
 import chisel3.experimental.{withClock, withClockAndReset, withReset}
-import chisel3.util.Counter
 import chisel3.testers.BasicTester
+import chisel3.util.Counter
 
 /** Multi-clock test of a Reg using a different clock via withClock */
 class ClockDividerTest extends BasicTester {

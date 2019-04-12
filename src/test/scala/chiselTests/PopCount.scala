@@ -3,10 +3,8 @@
 package chiselTests
 
 import chisel3._
-import chisel3.util.PopCount
-import org.scalatest._
-import org.scalatest.prop._
 import chisel3.testers.BasicTester
+import chisel3.util.PopCount
 
 class PopCountTester(n: Int) extends BasicTester {
   val x = RegInit(0.U(n.W))

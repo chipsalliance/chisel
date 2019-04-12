@@ -1,9 +1,9 @@
 package chisel3
 
-import chisel3.internal.requireIsHardware
 import chisel3.internal.Builder.pushOp
 import chisel3.internal.firrtl.DefPrim
 import chisel3.internal.firrtl.PrimOp.MultiplexOp
+import chisel3.internal.requireIsHardware
 import chisel3.internal.sourceinfo.{MuxTransform, SourceInfo}
 
 import scala.language.experimental.macros

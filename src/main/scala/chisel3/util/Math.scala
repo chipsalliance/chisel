@@ -5,9 +5,6 @@
 
 package chisel3.util
 
-import chisel3._
-import chisel3.internal.chiselRuntimeDeprecated
-
 /** Compute the log2 of a Scala integer, rounded up, with min value of 1.
   * Useful for getting the number of bits needed to represent some number of states (in - 1),
   * To get the number of bits needed to represent some number n, use log2Up(n + 1).

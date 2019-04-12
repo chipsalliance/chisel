@@ -1,8 +1,8 @@
 // See LICENSE for license details.
 
 package chisel3.internal.firrtl
-import chisel3.{Clock, Data, Record, SInt, SpecifiedDirection, UInt, Vec, printf}
 import chisel3.experimental._
+import chisel3.{Clock, Data, Record, SInt, SpecifiedDirection, UInt, Vec, printf}
 
 private[chisel3] object Emitter {
   def emit(circuit: Circuit): String = new Emitter(circuit).toString

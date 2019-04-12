@@ -2,13 +2,12 @@
 
 package chisel3.experimental
 
-import chisel3.internal.{PortBinding, WireBinding}
-import chisel3.internal.Builder.{readyForModuleConstr, pushCommand}
+import chisel3.internal.Builder.{pushCommand, readyForModuleConstr}
 import chisel3.internal.firrtl.{Component, DefInstance, DefInvalid, ModuleIO}
-import chisel3.internal.{Builder, HasId, Namespace, throwException}
 import chisel3.internal.sourceinfo.SourceInfo
+import chisel3.internal._
 import chisel3.{Aggregate, CompileOptions, Data, Element, Module, Record, SpecifiedDirection, Vec}
-import firrtl.annotations.{CircuitName, ModuleName}
+import _root_.firrtl.annotations.{CircuitName, ModuleName}
 
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer, HashMap}

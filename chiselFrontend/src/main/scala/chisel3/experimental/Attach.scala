@@ -2,9 +2,8 @@
 
 package chisel3.experimental
 
-import chisel3.Analog
-import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
+import chisel3.internal._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.SourceInfo
 

@@ -2,10 +2,9 @@
 
 package chisel3
 
-import chisel3.internal.throwException
-import chisel3.internal.sourceinfo._
 import chisel3.experimental.FixedPoint
-import experimental.FixedPoint.Implicits._
+import chisel3.internal.sourceinfo._
+import chisel3.internal.throwException
 
 import scala.language.experimental.macros
 

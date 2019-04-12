@@ -2,10 +2,9 @@
 
 package chisel3.util
 
-import chisel3._
-import chisel3.{Bool, CompileOptions, SourceInfoDoc, UInt}
 import chisel3.internal.chiselRuntimeDeprecated
 import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform}
+import chisel3.{Bool, CompileOptions, SourceInfoDoc, UInt, _}
 
 import scala.language.experimental.macros
 

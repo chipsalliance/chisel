@@ -2,8 +2,8 @@
 
 package chiselTests
 
-import chisel3._
 import chisel3.Binding.BindingException
+import chisel3._
 import org.scalatest._
 
 class IOCSimpleIO extends Bundle {

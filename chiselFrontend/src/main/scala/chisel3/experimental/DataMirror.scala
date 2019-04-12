@@ -2,8 +2,8 @@
 
 package chisel3.experimental
 
-import chisel3.{ActualDirection, Data, Element, Record, SpecifiedDirection, Vec}
 import chisel3.internal.firrtl.Width
+import chisel3.{ActualDirection, Data, Element, Record, SpecifiedDirection, Vec}
 
 
 /** Experimental hardware construction reflection API

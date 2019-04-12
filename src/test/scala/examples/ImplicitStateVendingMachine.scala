@@ -2,8 +2,8 @@
 
 package examples
 
-import chiselTests.ChiselFlatSpec
 import chisel3._
+import chiselTests.ChiselFlatSpec
 
 // Vending machine implemented with an implicit state machine
 class ImplicitStateVendingMachine extends SimpleVendingMachine {

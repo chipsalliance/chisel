@@ -2,14 +2,12 @@
 
 package chisel3
 
-import internal.MonoConnect.DontCareCantBeSink
-import internal.Builder.pushCommand
-import internal._
-import internal.firrtl._
-import internal.sourceinfo.{DeprecatedSourceInfo, SourceInfo, SourceInfoTransform, UnlocatableSourceInfo}
-import experimental.DataMirror
-import experimental.FixedPoint
-import experimental.FixedPoint.Implicits._
+import chisel3.experimental.{DataMirror, FixedPoint}
+import chisel3.internal.Builder.pushCommand
+import chisel3.internal.MonoConnect.DontCareCantBeSink
+import chisel3.internal._
+import chisel3.internal.firrtl._
+import chisel3.internal.sourceinfo.{DeprecatedSourceInfo, SourceInfo, SourceInfoTransform, UnlocatableSourceInfo}
 
 import scala.language.experimental.macros
 

@@ -5,9 +5,9 @@ package chiselTests
 import chisel3._
 import chisel3.experimental.ChiselEnum
 import chisel3.internal.firrtl.UnknownWidth
-import chisel3.util._
 import chisel3.testers.BasicTester
-import org.scalatest.{Assertion, FreeSpec, Matchers}
+import chisel3.util._
+import org.scalatest.Assertion
 
 object EnumExample extends ChiselEnum {
   val e0, e1, e2 = Value
@@ -245,7 +245,6 @@ class WidthTester extends BasicTester {
 }
 
 class StrongEnumFSMTester extends BasicTester {
-  import StrongEnumFSM.State
   import StrongEnumFSM.State._
 
   val dut = Module(new StrongEnumFSM)
