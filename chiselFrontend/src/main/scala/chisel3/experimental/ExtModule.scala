@@ -3,7 +3,7 @@ package chisel3.experimental
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.UnlocatableSourceInfo
-import chisel3.{BaseBlackBox, CompileOptions, Param, SpecifiedDirection}
+import chisel3.{BaseBlackBox, CompileOptions, SpecifiedDirection}
 
 /** Defines a black box, which is a module that can be referenced from within
   * Chisel, but is not defined in the emitted Verilog. Useful for connecting

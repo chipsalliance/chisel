@@ -2,13 +2,10 @@
 
 package chiselTests
 
-import org.scalatest._
-import org.scalatest.prop._
-import org.scalacheck._
-
 import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
+import org.scalacheck._
 
 class ThingsPassThroughTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int) extends BasicTester {
   val q = Module(new Queue(UInt(bitWidth.W), queueDepth))

@@ -3,8 +3,8 @@
 package chisel3.util
 
 import chisel3._
-import chisel3.internal.{requireIsChiselType, requireIsHardware}
 import chisel3.internal.naming.chiselName
+import chisel3.internal.requireIsChiselType
 
 import scala.collection.immutable.ListMap
 

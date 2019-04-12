@@ -3,7 +3,6 @@
 package chisel3.experimental
 
 import chisel3._
-
 import chisel3.internal.Builder.pushOp
 import chisel3.internal.firrtl.PrimOp._
 import chisel3.internal.firrtl._
@@ -11,9 +10,9 @@ import chisel3.internal.sourceinfo._
 import chisel3.internal.{Binding, Builder, InstanceId, throwException}
 import firrtl.annotations._
 
+import scala.collection.mutable
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox.Context
-import scala.collection.mutable
 
 object EnumAnnotations {
   case class EnumComponentAnnotation(target: Named, enumTypeName: String) extends SingleTargetAnnotation[Named] {
@@ -30,7 +29,7 @@ object EnumAnnotations {
     override def toFirrtl: Annotation = EnumDefAnnotation(enumTypeName, definition)
   }
 }
-import EnumAnnotations._
+import chisel3.experimental.EnumAnnotations._
 
 
 abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolean = false) extends Element {

@@ -2,11 +2,12 @@
 
 package chisel3
 
-import chisel3.internal._
+import chisel3.experimental._
 import chisel3.internal.Builder._
+import chisel3.internal._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{InstTransform, SourceInfo}
-import chisel3.experimental._
+
 import scala.language.experimental.macros
 
 object Module extends SourceInfoDoc {

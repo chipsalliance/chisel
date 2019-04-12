@@ -2,9 +2,9 @@
 
 package chiselTests
 
-import chisel3._
 import chisel3.Binding.BindingException
 import chisel3.CompileOptions._
+import chisel3._
 
 class CompileOptionsSpec extends ChiselFlatSpec {
 

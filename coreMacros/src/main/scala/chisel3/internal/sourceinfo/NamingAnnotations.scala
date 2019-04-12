@@ -12,10 +12,9 @@
 
 package chisel3.internal.naming
 
-import scala.reflect.macros.whitebox.Context
+import scala.annotation.{StaticAnnotation, compileTimeOnly}
 import scala.language.experimental.macros
-import scala.annotation.StaticAnnotation
-import scala.annotation.compileTimeOnly
+import scala.reflect.macros.whitebox.Context
 
 // Workaround for https://github.com/sbt/sbt/issues/3966
 object DebugTransforms
@@ -51,7 +50,6 @@ class DebugTransforms(val c: Context) {
 object NamingTransforms
 class NamingTransforms(val c: Context) {
   import c.universe._
-  import Flag._
 
   val globalNamingStack = q"_root_.chisel3.internal.DynamicNamingStack()"
 

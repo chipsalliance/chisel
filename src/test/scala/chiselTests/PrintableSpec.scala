@@ -2,11 +2,9 @@
 
 package chiselTests
 
-import org.scalatest.{FlatSpec, Matchers}
-import scala.collection.mutable
-
 import chisel3._
 import chisel3.testers.BasicTester
+import org.scalatest.{FlatSpec, Matchers}
 
 /* Printable Tests */
 class PrintableSpec extends FlatSpec with Matchers {

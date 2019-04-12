@@ -2,13 +2,11 @@
 
 package chisel3.testers
 import chisel3._
+import chisel3.internal.Builder.pushCommand
+import chisel3.internal.firrtl._
+import chisel3.internal.sourceinfo.SourceInfo
 
 import scala.language.experimental.macros
-
-import internal._
-import internal.Builder.pushCommand
-import internal.firrtl._
-import internal.sourceinfo.SourceInfo
 //import chisel3.ExplicitCompileOptions.NotStrict
 
 class BasicTester extends Module() {

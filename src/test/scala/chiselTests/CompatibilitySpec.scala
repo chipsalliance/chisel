@@ -2,7 +2,6 @@
 
 package chiselTests
 
-import chisel3.Bundle
 import org.scalacheck.Gen
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 

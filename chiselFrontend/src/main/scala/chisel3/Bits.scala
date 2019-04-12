@@ -2,13 +2,12 @@
 
 package chisel3
 
-import internal.Builder.{pushCommand, pushOp}
-import internal._
-import internal.firrtl.PrimOp._
-import internal.firrtl._
-import internal.sourceinfo._
-
 import chisel3.experimental.{FixedPoint, RawModule}
+import chisel3.internal.Builder.{pushCommand, pushOp}
+import chisel3.internal._
+import chisel3.internal.firrtl.PrimOp._
+import chisel3.internal.firrtl._
+import chisel3.internal.sourceinfo._
 
 import scala.collection.mutable
 import scala.language.experimental.macros

@@ -3,7 +3,7 @@
 /** The Chisel compatibility package allows legacy users to continue using the `Chisel` (capital C) package name
   *  while moving to the more standard package naming convention `chisel3` (lowercase c).
   */
-import chisel3.{Aggregate, Bundle, Data, Flipped, Mem, MemBase, Mux, Record, Reg, Vec, VecLike, printf, _}
+import chisel3._
 
 package object Chisel {     // scalastyle:ignore package.object.name number.of.types number.of.methods
   import chisel3.internal.firrtl.Width
@@ -32,9 +32,9 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
   }
 
   implicit class AddDirMethodToData[T<:Data](target: T) {
-    import chisel3.internal.requireIsHardware
-    import chisel3. ActualDirection
+    import chisel3.ActualDirection
     import chisel3.experimental.DataMirror
+    import chisel3.internal.requireIsHardware
 
     def dir: Direction = {
       requireIsHardware(target) // This has the side effect of calling _autoWrapPorts
@@ -542,7 +542,6 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
     * non-experimental, you must explicitly import this package to use its contents.
     */
   object experimental {  // scalastyle:ignore object.name
-    import scala.annotation.compileTimeOnly
 
     class dump extends chisel3.internal.naming.dump  // scalastyle:ignore class.name
     class treedump extends chisel3.internal.naming.treedump  // scalastyle:ignore class.name

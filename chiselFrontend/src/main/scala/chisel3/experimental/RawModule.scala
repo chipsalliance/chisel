@@ -3,12 +3,10 @@
 package chisel3.experimental
 
 import chisel3._
-import chisel3.internal.{OpBinding, MemoryPortBinding, PortBinding, RegBinding, WireBinding}
-import chisel3.internal._
 import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
-import chisel3.internal.firrtl.{Command => _, _}
 import chisel3.internal.sourceinfo.UnlocatableSourceInfo
+import chisel3.internal.{MemoryPortBinding, OpBinding, PortBinding, RegBinding, WireBinding, _}
 
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.language.experimental.macros

@@ -4,9 +4,9 @@ package chisel3.util.experimental
 
 import chisel3.experimental.{BaseModule, ChiselAnnotation, RunFirrtlTransform}
 import firrtl.Transform
+import firrtl.annotations.Annotation
 import firrtl.passes.{InlineAnnotation, InlineInstances}
 import firrtl.transforms.{Flatten, FlattenAnnotation, NoDedupAnnotation}
-import firrtl.annotations.{Annotation, CircuitName, ComponentName, ModuleName}
 
 /** Inlines an instance of a module
   *

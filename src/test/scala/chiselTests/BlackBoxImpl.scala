@@ -5,7 +5,7 @@ package chiselTests
 import java.io.File
 
 import chisel3._
-import chisel3.util.{HasBlackBoxInline, HasBlackBoxResource, HasBlackBoxPath}
+import chisel3.util.{HasBlackBoxInline, HasBlackBoxPath, HasBlackBoxResource}
 import firrtl.FirrtlExecutionSuccess
 import org.scalacheck.Test.Failed
 import org.scalatest.{FreeSpec, Matchers, Succeeded}

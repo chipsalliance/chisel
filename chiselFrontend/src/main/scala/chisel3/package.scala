@@ -1,12 +1,9 @@
 // See LICENSE for license details.
 
-//import chisel3.internal.ChiselException
-//import chisel3.{Bundle, Clock, IgnoreSeqInBundle, Mem, MemBase, Mux, Record, Reg, SyncReadMem, VecInit, VecLike, printf}
-
 package object chisel3 {    // scalastyle:ignore package.object.name
   import internal.firrtl.{Port, Width}
   import internal.sourceinfo.{SourceInfo, VecTransform}
-  import internal.{Builder, chiselRuntimeDeprecated, throwException}
+  import internal.{Builder, chiselRuntimeDeprecated}
 
   import scala.language.implicitConversions
 

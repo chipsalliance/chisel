@@ -3,11 +3,8 @@
 package chiselTests
 
 import chisel3._
+import chisel3.experimental.{MultiIOModule, chiselName}
 import chisel3.internal.InstanceId
-import chisel3.experimental.{chiselName, dump, MultiIOModule}
-import org.scalatest._
-import org.scalatest.prop._
-import chisel3.testers.BasicTester
 
 import scala.collection.mutable.ListBuffer
 

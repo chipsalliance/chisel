@@ -3,7 +3,6 @@
 package chisel3
 
 package object core {
-  import chisel3.internal.firrtl.Width
 
   /**
   * These definitions exist to deal with those clients that relied on chisel3.core

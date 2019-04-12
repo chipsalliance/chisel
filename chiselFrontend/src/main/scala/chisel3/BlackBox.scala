@@ -2,10 +2,10 @@
 
 package chisel3
 
+import chisel3.experimental.BaseModule
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.UnlocatableSourceInfo
-import chisel3.experimental.BaseModule
 
 /** Parameters for BlackBoxes */
 sealed abstract class Param

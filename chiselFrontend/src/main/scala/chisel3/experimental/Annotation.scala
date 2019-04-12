@@ -2,8 +2,8 @@
 
 package chisel3.experimental
 
-import chisel3.{CompileOptions, Data}
 import chisel3.internal.{Builder, InstanceId}
+import chisel3.{CompileOptions, Data}
 import firrtl.Transform
 import firrtl.annotations.Annotation
 import firrtl.transforms.DontTouchAnnotation
