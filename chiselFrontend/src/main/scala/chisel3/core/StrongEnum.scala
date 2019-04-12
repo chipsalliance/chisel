@@ -102,10 +102,10 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
     this.factory == that.asInstanceOf[EnumType].factory
   }
 
-  // This isn't actually used anywhere (and it would throw an exception anyway). But it has to be defined since we
-  // inherit it from Data.
   private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
-      compileOptions: CompileOptions): Unit = ???
+      compileOptions: CompileOptions): Unit = {
+    this := factory.apply(that.asUInt)
+  }
 
   final def === (that: EnumType): Bool = macro SourceInfoTransform.thatArg
   final def =/= (that: EnumType): Bool = macro SourceInfoTransform.thatArg
