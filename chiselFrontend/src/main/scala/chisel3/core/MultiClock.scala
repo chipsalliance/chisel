@@ -59,7 +59,7 @@ object withReset {  // scalastyle:ignore object.name
   def apply[T](reset: Reset)(block: => T): T = {
     // Save parentScope
     val parentReset = Builder.currentReset
-    Builder.currentReset = Builder.currentReset
+    Builder.currentReset = Some(reset)
     val res = block // execute block
     // Return to old scope
     Builder.currentReset = parentReset
