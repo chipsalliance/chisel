@@ -183,11 +183,13 @@ private[chisel3] class DynamicContext() {
   // Used to distinguish between no Module() wrapping, multiple wrappings, and rewrapping
   var readyForModuleConstr: Boolean = false
   var whenDepth: Int = 0 // Depth of when nesting
-  var currentClockAndReset: ClockAndReset = ClockAndReset.empty
+  var currentClock: Option[Clock] = None
+  var currentReset: Option[Reset] = None
   val errors = new ErrorLog
   val namingStack = new internal.naming.NamingStack
 }
 
+//scalastyle:off number.of.methods
 private[chisel3] object Builder {
   // All global mutable state must be referenced via dynamicContextVar!!
   private val dynamicContextVar = new DynamicVariable[Option[DynamicContext]](None)
@@ -248,23 +250,20 @@ private[chisel3] object Builder {
   def whenDepth_=(target: Int): Unit = {
     dynamicContext.whenDepth = target
   }
-  def currentClockAndReset: ClockAndReset = dynamicContext.currentClockAndReset
-  def currentClockAndReset_=(target: ClockAndReset): Unit = {
-    dynamicContext.currentClockAndReset = target
+  def currentClock: Option[Clock] = dynamicContext.currentClock
+  def currentClock_=(newClock: Option[Clock]): Unit = {
+    dynamicContext.currentClock = newClock
   }
-  def forcedClockAndReset: ClockAndReset = currentClockAndReset match {
-    case clockAndReset @ ClockAndReset(Some(clock), Some(reset)) => clockAndReset
-    case ClockAndReset(Some(clock), None) =>
-      throwException("Error: No implicit reset.")
-    case ClockAndReset(None, _) =>
-      throwException("Error: No implicit clock.")
-    case _ =>
-      throwException("Error: No implicit clock and reset.")
+
+  def currentReset: Option[Reset] = dynamicContext.currentReset
+  def currentReset_=(newReset: Option[Reset]): Unit = {
+    dynamicContext.currentReset = newReset
   }
-  def forcedClock: Clock = currentClockAndReset.clockOpt.getOrElse(
+
+  def forcedClock: Clock = currentClock.getOrElse(
     throwException("Error: No implicit clock.")
   )
-  def forcedReset: Reset = currentClockAndReset.resetOpt.getOrElse(
+  def forcedReset: Reset = currentReset.getOrElse(
     throwException("Error: No implicit reset.")
   )
 

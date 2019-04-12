@@ -2,31 +2,9 @@
 
 package chisel3.core
 
-import scala.language.experimental.macros
-
 import chisel3.internal._
-import chisel3.internal.Builder.pushCommand
-import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.{SourceInfo}
 
-private[chisel3] final class ClockAndReset(val clockOpt: Option[Clock], val resetOpt: Option[Reset]) {
-  def clock: Clock = clockOpt.get
-  def reset: Reset = resetOpt.get
-
-  def setClock(newClock: Clock): ClockAndReset = new ClockAndReset(Some(newClock), resetOpt)
-  def setReset(newReset: Reset): ClockAndReset = new ClockAndReset(clockOpt, Some(newReset))
-}
-
-private[chisel3] final object ClockAndReset {
-  def apply(clock: Clock, reset: Reset): ClockAndReset = {
-    new ClockAndReset(Some(clock), Some(reset))
-  }
-  def empty: ClockAndReset = new ClockAndReset(None, None)
-
-  def unapply(arg: ClockAndReset): Option[(Option[Clock], Option[Reset])] = {
-    Some((arg.clockOpt, arg.resetOpt))
-  }
-}
+import scala.language.experimental.macros
 
 object withClockAndReset {  // scalastyle:ignore object.name
   /** Creates a new Clock and Reset scope
@@ -38,11 +16,17 @@ object withClockAndReset {  // scalastyle:ignore object.name
     */
   def apply[T](clock: Clock, reset: Reset)(block: => T): T = {
     // Save parentScope
-    val parentScope = Builder.currentClockAndReset
-    Builder.currentClockAndReset = ClockAndReset(clock, reset)
+    val parentClock = Builder.currentClock
+    val parentReset = Builder.currentReset
+
+    Builder.currentClock = Some(clock)
+    Builder.currentReset = Some(reset)
+
     val res = block // execute block
+
     // Return to old scope
-    Builder.currentClockAndReset = parentScope
+    Builder.currentClock = parentClock
+    Builder.currentReset = parentReset
     res
   }
 }
@@ -56,11 +40,11 @@ object withClock {  // scalastyle:ignore object.name
     */
   def apply[T](clock: Clock)(block: => T): T =  {
     // Save parentScope
-    val parentScope = Builder.currentClockAndReset
-    Builder.currentClockAndReset = Builder.currentClockAndReset.setClock(clock)
+    val parentClock = Builder.currentClock
+    Builder.currentClock = Some(clock)
     val res = block // execute block
     // Return to old scope
-    Builder.currentClockAndReset = parentScope
+    Builder.currentClock = parentClock
     res
   }
 }
@@ -74,11 +58,11 @@ object withReset {  // scalastyle:ignore object.name
     */
   def apply[T](reset: Reset)(block: => T): T = {
     // Save parentScope
-    val parentScope = Builder.currentClockAndReset
-    Builder.currentClockAndReset = Builder.currentClockAndReset.setReset(reset)
+    val parentReset = Builder.currentReset
+    Builder.currentReset = Builder.currentReset
     val res = block // execute block
     // Return to old scope
-    Builder.currentClockAndReset = parentScope
+    Builder.currentReset = parentReset
     res
   }
 
