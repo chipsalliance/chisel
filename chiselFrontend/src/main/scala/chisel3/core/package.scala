@@ -245,4 +245,47 @@ package object core {
   type ActualDirection = chisel3.ActualDirection
   @deprecated("Use the version in chisel3._", "3.2")
   val ActualDirection = chisel3.ActualDirection
+
+  @deprecated("Use the version in chisel3.internal._", "3.2")
+  val requireIsHardware = chisel3.internal.requireIsHardware
+  @deprecated("Use the version in chisel3.internal._", "3.2")
+  val requireIsChiselType = chisel3.internal.requireIsChiselType
+  @deprecated("Use the version in chisel3.internal._", "3.2")
+  val BiConnect = chisel3.internal.BiConnect
+  @deprecated("Use the version in chisel3.internal._", "3.2")
+  val MonoConnect = chisel3.internal.MonoConnect
+  @deprecated("Use the version in chisel3.internal._", "3.2")
+  val Binding = chisel3.Binding
+  @deprecated("Use the version in chisel3.internal._", "3.2")
+  val BindingDirection = chisel3.internal.BindingDirection
+  @deprecated("Use the version in chisel3.internal._", "3.2")
+  type Binding = chisel3.internal.Binding
+  @deprecated("Use the version in chisel3.internal._", "3.2")
+  type TopBinding = chisel3.internal.TopBinding
+  @deprecated("Use the version in chisel3.internal._", "3.2")
+  type UnconstrainedBinding = chisel3.internal.UnconstrainedBinding
+  @deprecated("Use the version in chisel3.internal._", "3.2")
+  type ConstrainedBinding = chisel3.internal.ConstrainedBinding
+  @deprecated("Use the version in chisel3.internal._", "3.2")
+  type ReadOnlyBinding = chisel3.internal.ReadOnlyBinding
+  @deprecated("Use the version in chisel3.internal._", "3.2")
+  type OpBinding = chisel3.internal.OpBinding
+  @deprecated("Use the version in chisel3.internal._", "3.2")
+  type MemoryPortBinding = chisel3.internal.MemoryPortBinding
+  @deprecated("Use the version in chisel3.internal._", "3.2")
+  type PortBinding = chisel3.internal.PortBinding
+  @deprecated("Use the version in chisel3.internal._", "3.2")
+  type RegBinding = chisel3.internal.RegBinding
+  @deprecated("Use the version in chisel3.internal._", "3.2")
+  type WireBinding = chisel3.internal.WireBinding
+  @deprecated("Use the version in chisel3.internal._", "3.2")
+  type ChildBinding = chisel3.internal.ChildBinding
+  @deprecated("Use the version in chisel3.internal._", "3.2")
+  type DontCareBinding = chisel3.internal.DontCareBinding
+  @deprecated("Use the version in chisel3.internal._", "3.2")
+  type LitBinding = chisel3.internal.LitBinding
+  @deprecated("Use the version in chisel3.internal._", "3.2")
+  type ElementLitBinding = chisel3.internal.ElementLitBinding
+  @deprecated("Use the version in chisel3.internal._", "3.2")
+  type BundleLitBinding = chisel3.internal.BundleLitBinding
 }

@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.core.Binding
+import chisel3.internal.Binding
 import chisel3.testers.BasicTester
 import chisel3.util._
 import org.scalacheck.Shrink

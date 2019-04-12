@@ -5,7 +5,6 @@ package chisel3.internal
 import scala.util.DynamicVariable
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 import chisel3._
-import core._
 import firrtl._
 import _root_.firrtl.annotations.{CircuitName, ComponentName, ModuleName, Named}
 import chisel3.experimental._

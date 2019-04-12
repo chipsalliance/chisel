@@ -2,11 +2,11 @@
 
 package chisel3
 
-import chisel3.core._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo._
+import chisel3.experimental.BaseModule
 
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{HashSet, LinkedHashMap}

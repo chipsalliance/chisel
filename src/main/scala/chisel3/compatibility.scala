@@ -9,8 +9,6 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
   import chisel3.internal.firrtl.Width
 
   import scala.language.experimental.macros
-  import scala.annotation.StaticAnnotation
-  import scala.annotation.compileTimeOnly
   import scala.language.implicitConversions
 
   implicit val defaultCompileOptions = chisel3.ExplicitCompileOptions.NotStrict
@@ -34,7 +32,7 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
   }
 
   implicit class AddDirMethodToData[T<:Data](target: T) {
-    import chisel3.core.requireIsHardware
+    import chisel3.internal.requireIsHardware
     import chisel3. ActualDirection
     import chisel3.experimental.DataMirror
 

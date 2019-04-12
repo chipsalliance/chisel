@@ -2,14 +2,13 @@
 
 package chisel3.experimental
 
-import chisel3.core.requireIsHardware
 import chisel3.{CompileOptions, Data}
-
-import scala.language.existentials
 import chisel3.internal.{Builder, InstanceId}
 import firrtl.Transform
 import firrtl.annotations.Annotation
 import firrtl.transforms.DontTouchAnnotation
+
+import scala.language.existentials
 
 /** Interface for Annotations in Chisel
   *

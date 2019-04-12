@@ -2,8 +2,7 @@
 
 package chisel3
 
-import core._
-import core.MonoConnect.DontCareCantBeSink
+import internal.MonoConnect.DontCareCantBeSink
 import internal.Builder.pushCommand
 import internal._
 import internal.firrtl._

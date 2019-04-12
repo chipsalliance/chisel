@@ -1,12 +1,11 @@
 // See LICENSE for license details.
 
-package chisel3.core
+package chisel3.internal
 
 import chisel3._
-import internal.ChiselException
 import internal.Builder.pushCommand
 import internal.firrtl.{Connect, DefInvalid}
-import chisel3.experimental.{EnumType, RawModule, UnsafeEnum}
+import chisel3.experimental.{BaseModule, EnumType, FixedPoint, RawModule, UnsafeEnum}
 
 import scala.language.experimental.macros
 import internal.sourceinfo.SourceInfo
@@ -35,7 +34,7 @@ import internal.sourceinfo.SourceInfo
 * - Is a port of the current module or submodule of the current module
 */
 
-object MonoConnect {
+private[chisel3] object MonoConnect {
   // scalastyle:off method.name public.methods.have.type
   // These are all the possible exceptions that can be thrown.
   case class MonoConnectException(message: String) extends ChiselException(message)

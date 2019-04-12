@@ -4,10 +4,9 @@ package chisel3.internal.firrtl
 
 import chisel3._
 import chisel3.experimental.ChiselAnnotation
-import core._
 import internal._
-import internal.sourceinfo.{NoSourceInfo, SourceInfo}
-import chisel3.experimental.RawModule
+import internal.sourceinfo.SourceInfo
+import chisel3.experimental.{BaseModule, RawModule}
 
 // scalastyle:off number.of.types
 

@@ -54,8 +54,8 @@ package object experimental {  // scalastyle:ignore object.name
     }
   }
 
-  val requireIsHardware = core.requireIsHardware
-  val requireIsChiselType = core.requireIsChiselType
+  val requireIsHardware = internal.requireIsHardware
+  val requireIsChiselType = internal.requireIsChiselType
   type Direction = ActualDirection
   val Direction = ActualDirection
 

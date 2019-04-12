@@ -1,6 +1,7 @@
 // See LICENSE for license details.
 
-import chisel3.{Bundle, Clock, IgnoreSeqInBundle, Mem, MemBase, Mux, Record, Reg, SyncReadMem, VecInit, VecLike, printf}
+//import chisel3.internal.ChiselException
+//import chisel3.{Bundle, Clock, IgnoreSeqInBundle, Mem, MemBase, Mux, Record, Reg, SyncReadMem, VecInit, VecLike, printf}
 
 package object chisel3 {    // scalastyle:ignore package.object.name
   import internal.firrtl.{Port, Width}
@@ -363,4 +364,20 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     a.allElements
   }
   def getModulePorts(m: Module): Seq[Port] = m.getPorts
+
+  object Binding {
+    class BindingException(message: String) extends ChiselException(message)
+    /** A function expected a Chisel type but got a hardware object
+      */
+    case class ExpectedChiselTypeException(message: String) extends BindingException(message)
+    /**A function expected a hardware object but got a Chisel type
+      */
+    case class ExpectedHardwareException(message: String) extends BindingException(message)
+    /** An aggregate had a mix of specified and unspecified directionality children
+      */
+    case class MixedDirectionAggregateException(message: String) extends BindingException(message)
+    /** Attempted to re-bind an already bound (directionality or hardware) object
+      */
+    case class RebindingException(message: String) extends BindingException(message)
+  }
 }

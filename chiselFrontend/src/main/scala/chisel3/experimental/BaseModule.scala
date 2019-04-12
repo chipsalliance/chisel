@@ -2,7 +2,7 @@
 
 package chisel3.experimental
 
-import chisel3.core.{PortBinding, WireBinding}
+import chisel3.internal.{PortBinding, WireBinding}
 import chisel3.internal.Builder.{readyForModuleConstr, pushCommand}
 import chisel3.internal.firrtl.{Component, DefInstance, DefInvalid, ModuleIO}
 import chisel3.internal.{Builder, HasId, Namespace, throwException}

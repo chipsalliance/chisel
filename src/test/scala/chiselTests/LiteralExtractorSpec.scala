@@ -60,7 +60,7 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
       val x = SInt(8.W)
       val y = FixedPoint(8.W, 4.BP)
 
-      import chisel3.core.BundleLitBinding
+      import chisel3.internal.BundleLitBinding
       def Lit(aVal: SInt, bVal: FixedPoint): InsideBundle = { // scalastyle:ignore method.name
         val clone = cloneType
         clone.selfBind(BundleLitBinding(Map(
@@ -80,7 +80,7 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
       // chisel3.assert(outsideLiteral === insideLiteral)
 
       // the following lines of code error
-      // with "chisel3.core.BundleLitBinding cannot be cast to chisel3.core.ElementLitBinding"
+      // with "chisel3.internal.BundleLitBinding cannot be cast to chisel3.internal.ElementLitBinding"
 
       chisel3.assert(outsideLiteral.x === insideLiteral.x)
       chisel3.assert(outsideLiteral.y === insideLiteral.y)
@@ -103,9 +103,8 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
 
       // Bundle literal constructor code, which will be auto-generated using macro annotations in
       // the future.
-      import chisel3.core.BundleLitBinding
-      import chisel3.internal.firrtl.{ULit, Width}
-      def Lit(aVal: UInt, bVal: Bool): MyBundle = { // scalastyle:ignore method.name
+      import chisel3.internal.BundleLitBinding
+       def Lit(aVal: UInt, bVal: Bool): MyBundle = { // scalastyle:ignore method.name
         val clone = cloneType
         clone.selfBind(BundleLitBinding(Map(
           clone.a -> litArgOfBits(aVal),
