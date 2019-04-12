@@ -103,7 +103,7 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
     this.factory == that.asInstanceOf[EnumType].factory
   }
 
-  private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
+  private[chisel3] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
       compileOptions: CompileOptions): Unit = {
     this := factory.apply(that.asUInt)
   }
