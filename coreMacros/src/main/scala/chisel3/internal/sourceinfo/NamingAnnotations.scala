@@ -51,9 +51,8 @@ class DebugTransforms(val c: Context) {
 object NamingTransforms
 class NamingTransforms(val c: Context) {
   import c.universe._
-  import Flag._
 
-  val globalNamingStack = q"_root_.chisel3.internal.DynamicNamingStack()"
+  val globalNamingStack = q"_root_.chisel3.internal.DynamicNamingStack"
 
   /** Base transformer that provides the val name transform.
     * Should not be instantiated, since by default this will recurse everywhere and break the
@@ -107,7 +106,7 @@ class NamingTransforms(val c: Context) {
   class MethodTransformer(val contextVar: TermName) extends ValNameTransformer {
     override def transform(tree: Tree): Tree = tree match {
       // TODO: better error messages when returning nothing
-      case q"return $expr" => q"return $globalNamingStack.pop_return_context($expr, $contextVar)"
+      case q"return $expr" => q"return $globalNamingStack.popReturnContext($expr, $contextVar)"
       // Do not recurse into methods
       case q"$mods def $tname[..$tparams](...$paramss): $tpt = $expr" => tree
       case other => super.transform(other)
@@ -122,10 +121,10 @@ class NamingTransforms(val c: Context) {
     val transformedBody = (new ModuleTransformer(contextVar)).transformTrees(stats)
 
     q"""
-    val $contextVar = $globalNamingStack.push_context()
+    val $contextVar = $globalNamingStack.pushContext()
     ..$transformedBody
-    $contextVar.name_prefix("")
-    $globalNamingStack.pop_context($contextVar)
+    $contextVar.namePrefix("")
+    $globalNamingStack.popReturnContext((), $contextVar)
     """
   }
 
@@ -137,8 +136,8 @@ class NamingTransforms(val c: Context) {
     val transformedBody = (new MethodTransformer(contextVar)).transform(expr)
 
     q"""{
-      val $contextVar = $globalNamingStack.push_context()
-      $globalNamingStack.pop_return_context($transformedBody, $contextVar)
+      val $contextVar = $globalNamingStack.pushContext()
+      $globalNamingStack.popReturnContext($transformedBody, $contextVar)
     }
     """
   }
