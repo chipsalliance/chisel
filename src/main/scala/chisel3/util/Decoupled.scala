@@ -6,7 +6,7 @@
 package chisel3.util
 
 import chisel3._
-import chisel3.experimental.{DataMirror, Direction, requireIsChiselType}
+import chisel3.experimental.{DataMirror, Direction, MultiIOModule, requireIsChiselType}
 import chisel3.internal.naming._  // can't use chisel3_ version because of compile order
 
 /** An I/O Bundle containing 'valid' and 'ready' signals that handshake
@@ -51,7 +51,7 @@ object ReadyValidIO {
       */
     def noenq(): Unit = {
       target.valid := false.B
-      target.bits := internal.DontCare
+      target.bits := DontCare
     }
 
     /** Assert ready on this port and return the associated data bits.

@@ -68,8 +68,8 @@ object EnumAnnotations {
     override def toFirrtl: Annotation = EnumDefAnnotation(typeName, definition)
   }
 }
-import EnumAnnotations._
 
+import EnumAnnotations._
 
 abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolean = true) extends Element {
   override def toString: String = {

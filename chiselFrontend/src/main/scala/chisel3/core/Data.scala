@@ -4,12 +4,12 @@ package chisel3.core
 
 import scala.language.experimental.macros
 
+import chisel3.experimental.{Analog, DataMirror, FixedPoint}
+import chisel3.internal.Builder.pushCommand
 import chisel3.internal._
-import chisel3.internal.Builder.{pushCommand, pushOp}
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform, UnlocatableSourceInfo, DeprecatedSourceInfo}
 import chisel3.SourceInfoDoc
-import chisel3.core.BiConnect.DontCareCantBeSink
 
 /** User-specified directions.
   */
@@ -166,7 +166,7 @@ private[core] object cloneSupertype {
                                                           compileOptions: CompileOptions): T = {
     require(!elts.isEmpty, s"can't create $createdType with no inputs")
 
-    val filteredElts = elts.filter(_ != internal.DontCare)
+    val filteredElts = elts.filter(_ != DontCare)
     require(!filteredElts.isEmpty, s"can't create $createdType with only DontCare inputs")
 
     if (filteredElts.head.isInstanceOf[Bits]) {
@@ -679,13 +679,13 @@ object WireDefault {
   }
 
   /** @usecase def apply[T <: Data](t: T, init: DontCare.type): T
-    *          Construct a [[Wire]] with a type template and a [[internal.DontCare]] default
+    *          Construct a [[Wire]] with a type template and a [[DontCare]] default
     *   @param t The type template used to construct this [[Wire]]
-    *   @param init The default connection to this [[Wire]], can only be [[internal.DontCare]]
-    *   @note This is really just a specialized form of `apply[T <: Data](t: T, init: T): T` with [[internal.DontCare]]
+    *   @param init The default connection to this [[Wire]], can only be [[DontCare]]
+    *   @note This is really just a specialized form of `apply[T <: Data](t: T, init: T): T` with [[DontCare]]
     *   as `init`
     */
-  def apply[T <: Data](t: T, init: internal.DontCare.type)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = { // scalastyle:ignore line.size.limit
+  def apply[T <: Data](t: T, init: DontCare.type)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = { // scalastyle:ignore line.size.limit
     applyImpl(t, init)
   }
 

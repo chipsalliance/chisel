@@ -129,7 +129,7 @@ object Vec extends VecFactory
   *  - Vecs, unlike classes in Scala's collection library, are propagated intact to FIRRTL as a vector type, which may make debugging easier
   */
 // scalastyle:on line.size.limit
-sealed class Vec[T <: Data] private[core] (gen: => T, val length: Int)
+sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
     extends Aggregate with VecLike[T] {
   override def toString: String = {
     s"$sample_element[$length]$bindingToString"

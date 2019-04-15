@@ -950,9 +950,6 @@ trait UIntFactory {
   }
 }
 
-object UInt extends UIntFactory
-object Bits extends UIntFactory
-
 /** A data type for signed integers, represented as a binary bitvector. Defines arithmetic operations between other
   * integer types.
   *
@@ -1645,6 +1642,8 @@ private case object PrivateObject extends PrivateType
   * IMPORTANT: The API provided here is experimental and may change in the future.
   */
 object FixedPoint {
+
+  import FixedPoint.Implicits._
   /** Create an FixedPoint type with inferred width. */
   def apply(): FixedPoint = apply(Width(), BinaryPoint())
 
@@ -1803,4 +1802,5 @@ final class Analog private (private[chisel3] val width: Width) extends Element {
   */
 object Analog {
   def apply(width: Width): Analog = new Analog(width)
+}
 }

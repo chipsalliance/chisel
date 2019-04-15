@@ -260,7 +260,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
     elaborate { new DirectionLessConnectionModule() }
   }
 
-  "Vec ports" should "give default directions to children so they can be used in chisel3.util" in {
+  "Vec ports" should "give default directions to children so they can be used in xutil" in {
     import Chisel._
     elaborate(new Module {
       val io = new Bundle {
