@@ -950,9 +950,6 @@ trait UIntFactoryBase {
   }
 }
 
-//object UInt extends UIntFactoryBase
-//object Bits extends UIntFactoryBase
-
 /** A data type for signed integers, represented as a binary bitvector. Defines arithmetic operations between other
   * integer types.
   *
@@ -1673,7 +1670,6 @@ private case object PrivateObject extends PrivateType
 object FixedPoint {
 
   import FixedPoint.Implicits._
-//  import FixedPoint._
   /** Create an FixedPoint type with inferred width. */
   def apply(): FixedPoint = apply(Width(), BinaryPoint())
 
@@ -1790,7 +1786,6 @@ object FixedPoint {
 
 }
 
-}
 /** Data type for representing bidirectional bitvectors of a given width
   *
   * Analog support is limited to allowing wiring up of Verilog BlackBoxes with bidirectional (inout)
@@ -1862,4 +1857,5 @@ final class Analog private (private[chisel3] val width: Width) extends Element {
   */
 object Analog {
   def apply(width: Width): Analog = new Analog(width)
+}
 }
