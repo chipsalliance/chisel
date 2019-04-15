@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.{BaseModule, attach}
+import chisel3.experimental.{Analog, BaseModule, attach}
 import chisel3.testers.BasicTester
 import chisel3.util._
 

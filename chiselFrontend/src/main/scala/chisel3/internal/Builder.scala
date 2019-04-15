@@ -201,8 +201,17 @@ private[chisel3] object Builder {
 
   // Initialize any singleton objects before user code inadvertently inherits them.
   private def initializeSingletons(): Unit = {
-    val dummy = chisel3.DontCare
+    // This used to contain:
+    //    val dummy = core.DontCare
+    //  but this would occasionally produce hangs due to static initialization deadlock
+    //  when Builder initialization collided with chisel3.package initialization of the DontCare value.
+    // See:
+    //  http://ternarysearch.blogspot.com/2013/07/static-initialization-deadlock.html
+    //  https://bugs.openjdk.java.net/browse/JDK-8037567
+    //  https://stackoverflow.com/questions/28631656/runnable-thread-state-but-in-object-wait
   }
+
+  def namingStackOption: Option[internal.naming.NamingStack] = dynamicContextVar.value.map(_.namingStack)
 
   def idGen: IdGen = chiselContext.value.idGen
 
@@ -344,10 +353,29 @@ private[chisel3] object Builder {
   initializeSingletons()
 }
 
-/** Allows public access to the naming stack in Builder / DynamicContext.
+/** Allows public access to the naming stack in Builder / DynamicContext, and handles invocations
+  * outside a Builder context.
   * Necessary because naming macros expand in user code and don't have access into private[chisel3]
   * objects.
   */
 object DynamicNamingStack {
-  def apply(): internal.naming.NamingStack = Builder.namingStack
+  def pushContext(): internal.naming.NamingContextInterface = {
+    Builder.namingStackOption match {
+      case Some(namingStack) => namingStack.pushContext()
+      case None => internal.naming.DummyNamer
+    }
+  }
+
+  def popReturnContext[T <: Any](prefixRef: T, until: internal.naming.NamingContextInterface): T = {
+    until match {
+      case internal.naming.DummyNamer =>
+        require(Builder.namingStackOption.isEmpty,
+          "Builder context must remain stable throughout a chiselName-annotated function invocation")
+      case context: internal.naming.NamingContext =>
+        require(Builder.namingStackOption.isDefined,
+          "Builder context must remain stable throughout a chiselName-annotated function invocation")
+        Builder.namingStackOption.get.popContext(prefixRef, context)
+    }
+    prefixRef
+  }
 }

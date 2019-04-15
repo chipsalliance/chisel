@@ -361,6 +361,9 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     a.allElements
   }
   def getModulePorts(m: Module): Seq[Port] = m.getPorts
+  // Invalidate API - a DontCare element for explicit assignment to outputs,
+  //  indicating the signal is intentionally not driven.
+  val DontCare = chisel3.internal.InternalDontCare
 
   object Binding {
     class BindingException(message: String) extends ChiselException(message)

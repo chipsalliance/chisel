@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.{DataMirror, FixedPoint}
+import chisel3.experimental.{DataMirror, FixedPoint, ChiselEnum}
 import chisel3.testers.BasicTester
 
 class AsTypeOfBundleTester extends BasicTester {
@@ -52,6 +52,47 @@ class ResetAsTypeOfBoolTester extends BasicTester {
   stop()
 }
 
+class AsChiselEnumTester extends BasicTester {
+  object MyEnum extends ChiselEnum {
+    val foo, bar = Value
+    val fizz = Value(2.U)
+  }
+  class MyBundle extends Bundle {
+    val a = Bool()
+    val b = Bool()
+  }
+
+  // To
+  assert(2.U.asTypeOf(MyEnum()) === MyEnum.fizz)
+  assert(VecInit(2.U.asBools).asTypeOf(MyEnum()) === MyEnum.fizz)
+  assert(2.U.asTypeOf(new MyBundle).asTypeOf(MyEnum()) === MyEnum.fizz)
+
+  // From
+  assert(MyEnum.foo.asUInt === 0.U)
+  val vec = MyEnum.bar.asTypeOf(Vec(2, Bool()))
+  assert(vec(0) === 1.U)
+  assert(vec(1) === 0.U)
+  val bun = MyEnum.fizz.asTypeOf(new MyBundle)
+  assert(bun.b === 0.U)
+  assert(bun.a === 1.U)
+
+  // In aggregate
+  class OtherBundle extends Bundle {
+    val enum = MyEnum()
+    val foo = Bool()
+  }
+  val wire = Wire(new OtherBundle)
+  wire.enum := MyEnum.fizz
+  wire.foo := true.B
+
+  assert(wire.asUInt === 5.U)
+  val other = 5.U.asTypeOf(new OtherBundle)
+  assert(other.enum === MyEnum.fizz)
+  assert(other.foo === true.B)
+
+  stop()
+}
+
 class AsTypeOfSpec extends ChiselFlatSpec {
   behavior of "asTypeOf"
 
@@ -69,5 +110,9 @@ class AsTypeOfSpec extends ChiselFlatSpec {
 
   it should "work for casting implicit Reset to Bool" in {
     assertTesterPasses{ new ResetAsTypeOfBoolTester  }
+  }
+
+  it should "work for casting to and from ChiselEnums" in {
+    assertTesterPasses(new AsChiselEnumTester)
   }
 }

@@ -184,10 +184,11 @@ package object core {
   @deprecated("Use the version in chisel3._", "3.2")
   val RawParam = chisel3.RawParam
 
-  @deprecated("Use the version in chisel3._", "3.2")
-  type Analog = chisel3.Analog
-  @deprecated("Use the version in chisel3._", "3.2")
-  val Analog = chisel3.Analog
+  @deprecated("Use the version in chisel3.experimental._", "3.2")
+  type Analog = chisel3.experimental.Analog
+  @deprecated("Use the version in chisel3.experimental._", "3.2")
+  val Analog = chisel3.experimental.Analog
+
   @deprecated("Use the version in chisel3._", "3.2")
   implicit class fromIntToWidth(int: Int) extends chisel3.fromIntToWidth(int)
 

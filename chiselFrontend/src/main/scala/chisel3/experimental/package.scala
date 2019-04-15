@@ -27,9 +27,6 @@ package object experimental {  // scalastyle:ignore object.name
   implicit def fromDoubleToDoubleParam(x: Double): DoubleParam = DoubleParam(x)
   implicit def fromStringToStringParam(x: String): StringParam = StringParam(x)
 
-  type Analog = chisel3.Analog
-  val Analog = chisel3.Analog
-
   type ChiselEnum = EnumFactory
 
   // Rocket Chip-style clonemodule

@@ -104,7 +104,7 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
       // Bundle literal constructor code, which will be auto-generated using macro annotations in
       // the future.
       import chisel3.internal.BundleLitBinding
-       def Lit(aVal: UInt, bVal: Bool): MyBundle = { // scalastyle:ignore method.name
+      def Lit(aVal: UInt, bVal: Bool): MyBundle = { // scalastyle:ignore method.name
         val clone = cloneType
         clone.selfBind(BundleLitBinding(Map(
           clone.a -> litArgOfBits(aVal),

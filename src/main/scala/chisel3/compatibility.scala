@@ -3,7 +3,7 @@
 /** The Chisel compatibility package allows legacy users to continue using the `Chisel` (capital C) package name
   *  while moving to the more standard package naming convention `chisel3` (lowercase c).
   */
-import chisel3._
+import chisel3._    // required for implicit conversions.
 
 package object Chisel {     // scalastyle:ignore package.object.name number.of.types number.of.methods
   import chisel3.internal.firrtl.Width
