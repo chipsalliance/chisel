@@ -3,7 +3,6 @@
 package chisel3
 package experimental
 
-import chisel3._
 import chisel3.internal.Builder.pushOp
 import chisel3.internal.firrtl.PrimOp._
 import chisel3.internal.firrtl._
@@ -69,8 +68,8 @@ object EnumAnnotations {
     override def toFirrtl: Annotation = EnumDefAnnotation(typeName, definition)
   }
 }
-import chisel3.experimental.EnumAnnotations._
 
+import EnumAnnotations._
 
 abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolean = true) extends Element {
   override def toString: String = {

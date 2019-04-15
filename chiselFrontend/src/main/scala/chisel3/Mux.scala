@@ -1,6 +1,7 @@
 package chisel3
 
 import chisel3.internal.Builder.pushOp
+import chisel3.internal.DontCare
 import chisel3.internal.firrtl.DefPrim
 import chisel3.internal.firrtl.PrimOp.MultiplexOp
 import chisel3.internal.requireIsHardware
@@ -30,16 +31,16 @@ object Mux extends SourceInfoDoc {
     requireIsHardware(alt, "mux false value")
     val d = cloneSupertype(Seq(con, alt), "Mux")
     val conRef = con match {  // this matches chisel semantics (DontCare as object) to firrtl semantics (invalidate)
-      case internal.DontCare =>
+      case DontCare =>
         val dcWire = Wire(d)
-        dcWire := internal.DontCare
+        dcWire := DontCare
         dcWire.ref
       case _ => con.ref
     }
     val altRef = alt match {
-      case internal.DontCare =>
+      case DontCare =>
         val dcWire = Wire(d)
-        dcWire := internal.DontCare
+        dcWire := DontCare
         dcWire.ref
       case _ => alt.ref
     }

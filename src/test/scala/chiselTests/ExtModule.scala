@@ -71,7 +71,7 @@ class ExtModuleSpec extends ChiselFlatSpec {
     elaborate(new Module {
       val io = IO(new Bundle { })
       val m = Module(new ExtModule.BlackBoxPassthrough)
-      assert(DataMirror.modulePorts(m) == Seq(
+      assert(chisel3.experimental.DataMirror.modulePorts(m) == Seq(
           "in" -> m.in, "out" -> m.out))
     })
   }
