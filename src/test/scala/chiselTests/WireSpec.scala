@@ -2,6 +2,8 @@
 
 package chiselTests
 
+import chisel3._
+
 class WireSpec extends ChiselFlatSpec {
   "WireDefault.apply" should "work" in {
     assertCompiles("WireDefault(UInt(4.W), 2.U)")
