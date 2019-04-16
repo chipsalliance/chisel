@@ -85,7 +85,7 @@ trait VecFactory extends SourceInfoDoc {
     if (compileOptions.declaredTypeMustBeUnbound) {
       requireIsChiselType(gen, "vec type")
     }
-    new chisel3.Vec(gen.cloneTypeFull, n)
+    new Vec(gen.cloneTypeFull, n)
   }
 
   /** Truncate an index to implement modulo-power-of-2 addressing. */
@@ -129,7 +129,7 @@ trait VecFactory extends SourceInfoDoc {
   */
 // scalastyle:on line.size.limit
 sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
-    extends chisel3.Aggregate with VecLike[T] {
+    extends Aggregate with VecLike[T] {
   override def toString: String = {
     s"$sample_element[$length]$bindingToString"
   }
@@ -240,7 +240,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
   def apply(idx: Int): T = self(idx)
 
   override def cloneType: this.type = {
-    new chisel3.Vec(gen.cloneTypeFull, length).asInstanceOf[this.type]
+    new Vec(gen.cloneTypeFull, length).asInstanceOf[this.type]
   }
 
   override def getElements: Seq[Data] =

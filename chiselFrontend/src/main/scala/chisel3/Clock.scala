@@ -8,7 +8,7 @@ import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo._
 
 object Clock {
-  def apply(): Clock = new chisel3.Clock
+  def apply(): Clock = new Clock
 }
 
 // TODO: Document this.

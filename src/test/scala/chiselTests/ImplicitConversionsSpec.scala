@@ -2,6 +2,8 @@
 
 package chiselTests
 
+import chisel3._
+
 class ImplicitConversionsSpec extends ChiselFlatSpec {
   ".data on arbitrary Data objects" should "not work" in {
     assertTypeError("UInt(8.W).data")
