@@ -65,7 +65,8 @@ object MonoConnect {
       connectCompileOptions: CompileOptions,
       sink: Data,
       source: Data,
-      context_mod: RawModule): Unit =
+      context_mod: RawModule
+      ): Unit =
     (sink, source) match {
 
       // Handle legal element cases, note (Bool, Bool) is caught by the first two, as Bool is a UInt

@@ -38,6 +38,10 @@ object Module extends SourceInfoDoc {
     Builder.readyForModuleConstr = true
 
     val parent = Builder.currentModule
+    //val parentAspect = Builder.aspectModule
+    //if(parentAspect.isDefined) Builder.currentModule = parentAspect
+    //Builder.aspectModule = None
+
     val whenDepth: Int = Builder.whenDepth
 
     // Save then clear clock and reset to prevent leaking scope, must be set again in the Module
@@ -60,6 +64,7 @@ object Module extends SourceInfoDoc {
                      sourceInfo.makeMessage(" See " + _))
     }
     Builder.currentModule = parent // Back to parent!
+    //Builder.aspectModule = parentAspect
     Builder.whenDepth = whenDepth
     Builder.currentClockAndReset = clockAndReset // Back to clock and reset scope
 
@@ -168,8 +173,15 @@ abstract class BaseModule extends HasId { //
   private[core] val _namespace = Namespace.empty
   private val _ids = ArrayBuffer[HasId]()
   private[chisel3] def addId(d: HasId) {
-    require(!_closed, "Can't write to module after module close")
-    _ids += d
+    if(Builder.aspectModule(this).isDefined) {
+      aspectModule(this).get.addId(d)
+    } else {
+      if(_closed == true) {
+        println("HERE")
+      }
+      require(!_closed, "Can't write to module after module close")
+      _ids += d
+    }
   }
   protected def getIds = {
     require(_closed, "Can't get ids before module close")

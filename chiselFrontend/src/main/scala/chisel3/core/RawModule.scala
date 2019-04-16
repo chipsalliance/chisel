@@ -55,7 +55,6 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
     }
   }
 
-
   private[core] override def generateComponent(): Component = { // scalastyle:ignore cyclomatic.complexity
     require(!_closed, "Can't generate module more than once")
     _closed = true

@@ -7,7 +7,9 @@ import scala.collection.mutable.{ArrayBuffer, HashMap}
 import chisel3._
 import core._
 import firrtl._
-import _root_.firrtl.annotations.{CircuitName, ComponentName, ModuleName, IsMember, ReferenceTarget, Named}
+import _root_.firrtl.annotations.{CircuitName, ComponentName, IsMember, ModuleName, Named, ReferenceTarget}
+
+import scala.collection.mutable
 
 private[chisel3] class Namespace(keywords: Set[String]) {
   private val names = collection.mutable.HashMap[String, Long]()
@@ -181,6 +183,7 @@ private[chisel3] class DynamicContext() {
   val components = ArrayBuffer[Component]()
   val annotations = ArrayBuffer[ChiselAnnotation]()
   var currentModule: Option[BaseModule] = None
+  val aspectModule: mutable.HashMap[BaseModule, BaseModule] = mutable.HashMap.empty[BaseModule, BaseModule]
   // Set by object Module.apply before calling class Module constructor
   // Used to distinguish between no Module() wrapping, multiple wrappings, and rewrapping
   var readyForModuleConstr: Boolean = false
@@ -228,19 +231,49 @@ private[chisel3] object Builder {
   def currentModule_=(target: Option[BaseModule]): Unit = {
     dynamicContext.currentModule = target
   }
+  def aspectModule(module: BaseModule): Option[BaseModule] = dynamicContextVar.value match {
+    case Some(dynamicContext) => dynamicContext.aspectModule.get(module)
+    case _ => None
+  }
+  def addAspect(module: BaseModule, aspect: BaseModule): Unit = {
+    dynamicContext.aspectModule += ((module, aspect))
+  }
+
+
   def forcedModule: BaseModule = currentModule match {
     case Some(module) => module
-    case None => throwException(
-      "Error: Not in a Module. Likely cause: Missed Module() wrap or bare chisel API call."
-      // A bare api call is, e.g. calling Wire() from the scala console).
-    )
+    //case None => aspectModule(this) match {
+     // case Some(module) => module
+      case None =>
+        throwException(
+          "Error: Not in a Module. Likely cause: Missed Module() wrap or bare chisel API call."
+          // A bare api call is, e.g. calling Wire() from the scala console).
+        )
+    //}
   }
+
+  def referenceUserModule: RawModule = {
+    currentModule match {
+      case Some(module: RawModule) =>
+        aspectModule(module) match {
+          case Some(aspect: RawModule) => aspect
+          case None => module
+        }
+      case _ =>
+        throwException(
+          "Error: Not in a UserModule. Likely cause: Missed Module() wrap, bare chisel API call, or attempting to construct hardware inside a BlackBox." // scalastyle:ignore line.size.limit
+          // A bare api call is, e.g. calling Wire() from the scala console).
+        )
+    }
+  }
+
   def forcedUserModule: RawModule = currentModule match {
     case Some(module: RawModule) => module
-    case _ => throwException(
-      "Error: Not in a UserModule. Likely cause: Missed Module() wrap, bare chisel API call, or attempting to construct hardware inside a BlackBox." // scalastyle:ignore line.size.limit
-      // A bare api call is, e.g. calling Wire() from the scala console).
-    )
+    case _ =>
+      throwException(
+        "Error: Not in a UserModule. Likely cause: Missed Module() wrap, bare chisel API call, or attempting to construct hardware inside a BlackBox." // scalastyle:ignore line.size.limit
+        // A bare api call is, e.g. calling Wire() from the scala console).
+      )
   }
   def readyForModuleConstr: Boolean = dynamicContext.readyForModuleConstr
   def readyForModuleConstr_=(target: Boolean): Unit = {
