@@ -3,7 +3,7 @@
 package chisel3.internal.firrtl
 import chisel3.experimental.{EnumType, FixedPoint, _}
 import chisel3.internal.sourceinfo.{NoSourceInfo, SourceInfo, SourceLine}
-import chisel3.internal.throwException
+import chisel3.internal.{castToInt, throwException}
 import chisel3.{Clock, Data, FirrtlFormat, FullName, Name, PString, Percent, Printable, Printables, Record, SInt, SpecifiedDirection, UInt, Vec}
 import firrtl.{ir => fir}
 
@@ -49,7 +49,7 @@ private[chisel3] object Converter {
     case Slot(imm, name) =>
       fir.SubField(convert(imm, ctx), name, fir.UnknownType)
     case Index(imm, ILit(idx)) =>
-      fir.SubIndex(convert(imm, ctx), idx.toInt, fir.UnknownType)
+      fir.SubIndex(convert(imm, ctx), castToInt(idx, "Index"), fir.UnknownType)
     case Index(imm, value) =>
       fir.SubAccess(convert(imm, ctx), convert(value, ctx), fir.UnknownType)
     case ModuleIO(mod, name) =>
