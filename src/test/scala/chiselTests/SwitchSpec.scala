@@ -12,7 +12,7 @@ class SwitchSpec extends ChiselFlatSpec {
       elaborate(new Module {
         val io = IO(new Bundle {})
         val state = RegInit(0.U)
-        val wire = WireInit(0.U)
+        val wire = WireDefault(0.U)
         switch (state) {
           is (wire) { state := 1.U }
         }

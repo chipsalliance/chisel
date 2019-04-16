@@ -12,7 +12,7 @@ import chisel3.internal.sourceinfo.{SourceInfo, DeprecatedSourceInfo, SourceInfo
   UIntTransform}
 import chisel3.internal.firrtl.PrimOp._
 
-//scalastyle:off method.name
+// scalastyle:off method.name line.size.limit file.size.limit
 
 /** Element is a leaf data type: it cannot contain other [[Data]] objects. Example uses are for representing primitive
   * data types, like integers and bits.
@@ -27,11 +27,7 @@ abstract class Element extends Data {
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection) {
     binding = target
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
-    direction = resolvedDirection match {
-      case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip => ActualDirection.Unspecified
-      case SpecifiedDirection.Output => ActualDirection.Output
-      case SpecifiedDirection.Input => ActualDirection.Input
-    }
+    direction = ActualDirection.fromSpecified(resolvedDirection)
   }
 
   private[core] override def topBindingOpt: Option[TopBinding] = super.topBindingOpt match {
@@ -166,7 +162,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     // This preserves old behavior while a more more consistent API is under debate
     // See https://github.com/freechipsproject/chisel3/issues/867
     litOption.map { value =>
-      (((value >> x.toInt) & 1) == 1).asBool
+      (((value >> castToInt(x, "Index")) & 1) == 1).asBool
     }.getOrElse {
       requireIsHardware(this, "bits to be indexed")
       pushOp(DefPrim(sourceInfo, Bool(), BitsExtractOp, this.ref, ILit(x), ILit(x)))
@@ -242,7 +238,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
 
   /** @group SourceInfoTransformMacro */
   final def do_apply(x: BigInt, y: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
-    apply(x.toInt, y.toInt)
+    apply(castToInt(x, "High index"), castToInt(y, "Low index"))
 
   private[core] def unop[T <: Data](sourceInfo: SourceInfo, dest: T, op: PrimOp): T = {
     requireIsHardware(this, "bits operated on")
@@ -870,13 +866,13 @@ sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt
   override def do_<< (that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     binop(sourceInfo, UInt(this.width + that), ShiftLeftOp, validateShiftAmount(that))
   override def do_<< (that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
-    this << that.toInt
+    this << castToInt(that, "Shift amount")
   override def do_<< (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     binop(sourceInfo, UInt(this.width.dynamicShiftLeft(that.width)), DynamicShiftLeftOp, that)
   override def do_>> (that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     binop(sourceInfo, UInt(this.width.shiftRight(that)), ShiftRightOp, validateShiftAmount(that))
   override def do_>> (that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
-    this >> that.toInt
+    this >> castToInt(that, "Shift amount")
   override def do_>> (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     binop(sourceInfo, UInt(this.width), DynamicShiftRightOp, that)
 
@@ -1159,13 +1155,13 @@ sealed class SInt private[core] (width: Width) extends Bits(width) with Num[SInt
   override def do_<< (that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
     binop(sourceInfo, SInt(this.width + that), ShiftLeftOp, validateShiftAmount(that))
   override def do_<< (that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
-    this << that.toInt
+    this << castToInt(that, "Shift amount")
   override def do_<< (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
     binop(sourceInfo, SInt(this.width.dynamicShiftLeft(that.width)), DynamicShiftLeftOp, that)
   override def do_>> (that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
     binop(sourceInfo, SInt(this.width.shiftRight(that)), ShiftRightOp, validateShiftAmount(that))
   override def do_>> (that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
-    this >> that.toInt
+    this >> castToInt(that, "Shift amount")
   override def do_>> (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
     binop(sourceInfo, SInt(this.width), DynamicShiftRightOp, that)
 
@@ -1606,13 +1602,13 @@ sealed class FixedPoint private (width: Width, val binaryPoint: BinaryPoint)
   override def do_<< (that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
     binop(sourceInfo, FixedPoint(this.width + that, this.binaryPoint), ShiftLeftOp, validateShiftAmount(that))
   override def do_<< (that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
-    (this << that.toInt).asFixedPoint(this.binaryPoint)
+    (this << castToInt(that, "Shift amount")).asFixedPoint(this.binaryPoint)
   override def do_<< (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
     binop(sourceInfo, FixedPoint(this.width.dynamicShiftLeft(that.width), this.binaryPoint), DynamicShiftLeftOp, that)
   override def do_>> (that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
     binop(sourceInfo, FixedPoint(this.width.shiftRight(that), this.binaryPoint), ShiftRightOp, validateShiftAmount(that))
   override def do_>> (that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
-    (this >> that.toInt).asFixedPoint(this.binaryPoint)
+    (this >> castToInt(that, "Shift amount")).asFixedPoint(this.binaryPoint)
   override def do_>> (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
     binop(sourceInfo, FixedPoint(this.width, this.binaryPoint), DynamicShiftRightOp, that)
 
@@ -1761,7 +1757,7 @@ final class Analog private (private[chisel3] val width: Width) extends Element {
   private[core] override def typeEquivalent(that: Data): Boolean =
     that.isInstanceOf[Analog] && this.width == that.width
 
-  override def litOption = None
+  override def litOption: Option[BigInt] = None
 
   def cloneType: this.type = new Analog(width).asInstanceOf[this.type]
 

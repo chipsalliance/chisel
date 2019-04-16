@@ -178,7 +178,7 @@ object Driver extends BackendCompilationUtilities {
     * @param dut                    The device under test
     * @return                       An execution result with useful stuff, or failure with message
     */
-  def execute(
+  def execute( // scalastyle:ignore method.length
       optionsManager: ExecutionOptionsManager with HasChiselExecutionOptions with HasFirrtlOptions,
       dut: () => RawModule): ChiselExecutionResult = {
     val circuitOpt = try {
@@ -192,7 +192,7 @@ object Driver extends BackendCompilationUtilities {
           ce.printStackTrace(new PrintWriter(sw))
           sw.toString
         }
-        Predef.augmentString(stackTrace).lines.foreach(line => println(s"${ErrorLog.errTag} $line"))
+        Predef.augmentString(stackTrace).lines.foreach(line => println(s"${ErrorLog.errTag} $line")) // scalastyle:ignore regex line.size.limit
         None
     }
 

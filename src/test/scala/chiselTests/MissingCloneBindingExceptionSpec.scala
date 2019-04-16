@@ -13,7 +13,7 @@ class MissingCloneBindingExceptionSpec extends ChiselFlatSpec with Matchers {
       class TestIO(w: Int) extends Bundle {
         val a = Input(Vec(4, UInt(w.W)))
       }
-          
+
       val io = IO(new TestIO(32))
     }
 
@@ -36,7 +36,7 @@ class MissingCloneBindingExceptionSpec extends ChiselFlatSpec with Matchers {
       class TestIO(w: Int) extends Bundle {
         val a = Vec(4, UInt(width = w)).asInput
       }
-      
+
       val io = IO(new TestIO(32))
     }
 

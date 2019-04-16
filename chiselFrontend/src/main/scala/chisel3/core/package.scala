@@ -26,7 +26,7 @@ package chisel3 {
     implicit class fromBigIntToLiteral(bigint: BigInt) {
       /** Int to Bool conversion, allowing compact syntax like 1.B and 0.B
        */
-      def B: Bool = bigint match {
+      def B: Bool = bigint match { // scalastyle:ignore method.name
         case bigint if bigint == 0 => Bool.Lit(false)
         case bigint if bigint == 1 => Bool.Lit(true)
         case bigint => Builder.error(s"Cannot convert $bigint to Bool, must be 0 or 1"); Bool.Lit(false)

@@ -35,21 +35,21 @@ object CompileOptions {
 
 object ExplicitCompileOptions {
   case class CompileOptionsClass (
-                             // Should Record connections require a strict match of fields.
-                             // If true and the same fields aren't present in both source and sink, a MissingFieldException,
-                             // MissingLeftFieldException, or MissingRightFieldException will be thrown.
-                             val connectFieldsMustMatch: Boolean,
-                             // When creating an object that takes a type argument, the argument must be unbound (a pure type).
-                             val declaredTypeMustBeUnbound: Boolean,
-                             // If a connection operator fails, don't try the connection with the operands (source and sink) reversed.
-                             val dontTryConnectionsSwapped: Boolean,
-                             // If connection directionality is not explicit, do not use heuristics to attempt to determine it.
-                             val dontAssumeDirectionality: Boolean,
-                             // Check that referenced Data have actually been declared.
-                             val checkSynthesizable: Boolean,
-                             // Require an explicit DontCare assignment to generate a firrtl DefInvalid
-                             val explicitInvalidate: Boolean
-                           ) extends CompileOptions
+    // Should Record connections require a strict match of fields.
+    // If true and the same fields aren't present in both source and sink, a MissingFieldException,
+    // MissingLeftFieldException, or MissingRightFieldException will be thrown.
+    val connectFieldsMustMatch: Boolean,
+    // When creating an object that takes a type argument, the argument must be unbound (a pure type).
+    val declaredTypeMustBeUnbound: Boolean,
+    // If a connection operator fails, don't try the connection with the operands (source and sink) reversed.
+    val dontTryConnectionsSwapped: Boolean,
+    // If connection directionality is not explicit, do not use heuristics to attempt to determine it.
+    val dontAssumeDirectionality: Boolean,
+    // Check that referenced Data have actually been declared.
+    val checkSynthesizable: Boolean,
+    // Require an explicit DontCare assignment to generate a firrtl DefInvalid
+    val explicitInvalidate: Boolean
+  ) extends CompileOptions
 
   // Collection of "not strict" connection compile options.
   // These provide compatibility with existing code.

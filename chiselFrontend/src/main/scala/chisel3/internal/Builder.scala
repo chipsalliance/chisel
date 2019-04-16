@@ -4,7 +4,6 @@ package chisel3.internal
 
 import scala.util.DynamicVariable
 import scala.collection.mutable.{ArrayBuffer, HashMap}
-
 import chisel3._
 import core._
 import firrtl._
@@ -146,8 +145,11 @@ private[chisel3] trait HasId extends InstanceId {
   private[chisel3] def getPublicFields(rootClass: Class[_]): Seq[java.lang.reflect.Method] = {
     // Suggest names to nodes using runtime reflection
     def getValNames(c: Class[_]): Set[String] = {
-      if (c == rootClass) Set()
-      else getValNames(c.getSuperclass) ++ c.getDeclaredFields.map(_.getName)
+      if (c == rootClass) {
+        Set()
+      } else {
+        getValNames(c.getSuperclass) ++ c.getDeclaredFields.map(_.getName)
+      }
     }
     val valNames = getValNames(this.getClass)
     def isPublicVal(m: java.lang.reflect.Method) =
@@ -198,8 +200,17 @@ private[chisel3] object Builder {
 
   // Initialize any singleton objects before user code inadvertently inherits them.
   private def initializeSingletons(): Unit = {
-    val dummy = core.DontCare
+    // This used to contain:
+    //    val dummy = core.DontCare
+    //  but this would occasionally produce hangs dues to static initialization deadlock
+    //  when Builder initialization collided with chisel3.package initialization of the DontCare value.
+    // See:
+    //  http://ternarysearch.blogspot.com/2013/07/static-initialization-deadlock.html
+    //  https://bugs.openjdk.java.net/browse/JDK-8037567
+    //  https://stackoverflow.com/questions/28631656/runnable-thread-state-but-in-object-wait
   }
+
+  def namingStackOption: Option[internal.naming.NamingStack] = dynamicContextVar.value.map(_.namingStack)
 
   def idGen: IdGen = chiselContext.value.idGen
 
@@ -225,7 +236,7 @@ private[chisel3] object Builder {
   def forcedUserModule: RawModule = currentModule match {
     case Some(module: RawModule) => module
     case _ => throwException(
-      "Error: Not in a UserModule. Likely cause: Missed Module() wrap, bare chisel API call, or attempting to construct hardware inside a BlackBox."
+      "Error: Not in a UserModule. Likely cause: Missed Module() wrap, bare chisel API call, or attempting to construct hardware inside a BlackBox." // scalastyle:ignore line.size.limit
       // A bare api call is, e.g. calling Wire() from the scala console).
     )
   }
@@ -341,10 +352,38 @@ private[chisel3] object Builder {
   initializeSingletons()
 }
 
-/** Allows public access to the naming stack in Builder / DynamicContext.
+/** Allows public access to the naming stack in Builder / DynamicContext, and handles invocations
+  * outside a Builder context.
   * Necessary because naming macros expand in user code and don't have access into private[chisel3]
   * objects.
   */
 object DynamicNamingStack {
-  def apply() = Builder.namingStack
+  def pushContext(): internal.naming.NamingContextInterface = {
+    Builder.namingStackOption match {
+      case Some(namingStack) => namingStack.pushContext()
+      case None => internal.naming.DummyNamer
+    }
+  }
+
+  def popReturnContext[T <: Any](prefixRef: T, until: internal.naming.NamingContextInterface): T = {
+    until match {
+      case internal.naming.DummyNamer =>
+        require(Builder.namingStackOption.isEmpty,
+          "Builder context must remain stable throughout a chiselName-annotated function invocation")
+      case context: internal.naming.NamingContext =>
+        require(Builder.namingStackOption.isDefined,
+          "Builder context must remain stable throughout a chiselName-annotated function invocation")
+        Builder.namingStackOption.get.popContext(prefixRef, context)
+    }
+    prefixRef
+  }
+}
+
+/** Casts BigInt to Int, issuing an error when the input isn't representable. */
+private[chisel3] object castToInt {
+  def apply(x: BigInt, msg: String): Int = {
+    val res = x.toInt
+    require(x == res, s"$msg $x is too large to be represented as Int")
+    res
+  }
 }

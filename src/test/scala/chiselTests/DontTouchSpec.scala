@@ -27,7 +27,7 @@ class HasDeadCode(withDontTouch: Boolean) extends Module {
   val inst = Module(new HasDeadCodeChild(withDontTouch))
   inst.io.a := io.a
   io.b := inst.io.b
-  val dead = WireInit(io.a + 1.U)
+  val dead = WireDefault(io.a + 1.U)
   if (withDontTouch) {
     dontTouch(dead)
   }

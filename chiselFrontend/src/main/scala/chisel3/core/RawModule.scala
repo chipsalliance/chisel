@@ -56,7 +56,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
   }
 
 
-  private[core] override def generateComponent(): Component = {
+  private[core] override def generateComponent(): Component = { // scalastyle:ignore cyclomatic.complexity
     require(!_closed, "Can't generate module more than once")
     _closed = true
 
@@ -164,22 +164,22 @@ abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions)
 
   @chiselRuntimeDeprecated
   @deprecated("Module constructor with override _clock deprecated, use withClock", "chisel3")
-  def this(_clock: Clock)(implicit moduleCompileOptions: CompileOptions) = this(Option(_clock), None)(moduleCompileOptions)
+  def this(_clock: Clock)(implicit moduleCompileOptions: CompileOptions) = this(Option(_clock), None)(moduleCompileOptions) // scalastyle:ignore line.size.limit
 
   @chiselRuntimeDeprecated
   @deprecated("Module constructor with override _reset deprecated, use withReset", "chisel3")
-  def this(_reset: Bool)(implicit moduleCompileOptions: CompileOptions)  = this(None, Option(_reset))(moduleCompileOptions)
+  def this(_reset: Bool)(implicit moduleCompileOptions: CompileOptions)  = this(None, Option(_reset))(moduleCompileOptions) // scalastyle:ignore line.size.limit
 
   @chiselRuntimeDeprecated
   @deprecated("Module constructor with override _clock, _reset deprecated, use withClockAndReset", "chisel3")
-  def this(_clock: Clock, _reset: Bool)(implicit moduleCompileOptions: CompileOptions) = this(Option(_clock), Option(_reset))(moduleCompileOptions)
+  def this(_clock: Clock, _reset: Bool)(implicit moduleCompileOptions: CompileOptions) = this(Option(_clock), Option(_reset))(moduleCompileOptions) // scalastyle:ignore line.size.limit
 
   // IO for this Module. At the Scala level (pre-FIRRTL transformations),
   // connections in and out of a Module may only go through `io` elements.
   def io: Record
 
   // Allow access to bindings from the compatibility package
-  protected def _compatIoPortBound() = portsContains(io)
+  protected def _compatIoPortBound() = portsContains(io)// scalastyle:ignore method.name
 
   protected override def nameIds(rootClass: Class[_]): HashMap[HasId, String] = {
     val names = super.nameIds(rootClass)
@@ -207,7 +207,7 @@ abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions)
     // Restrict IO to just io, clock, and reset
     require(io != null, "Module must have io")
     require(portsContains(io), "Module must have io wrapped in IO(...)")
-    require((portsContains(clock)) && (portsContains(reset)), "Internal error, module did not have clock or reset as IO")
+    require((portsContains(clock)) && (portsContains(reset)), "Internal error, module did not have clock or reset as IO") // scalastyle:ignore line.size.limit
     require(portsSize == 3, "Module must only have io, clock, and reset as IO")
 
     super.generateComponent()
