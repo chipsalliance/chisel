@@ -3,7 +3,6 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.DataMirror
 import org.scalatest._
 
 class DirectionedBundle extends Bundle {
