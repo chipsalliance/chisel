@@ -36,6 +36,7 @@ class ImplicitConversionsSpec extends ChiselFlatSpec {
   }
 
   ".target on DecoupledIO" should "not work" in {
+    import chisel3.util._
     assertTypeError("Decoupled(UInt(8.W)).target")
   }
 }

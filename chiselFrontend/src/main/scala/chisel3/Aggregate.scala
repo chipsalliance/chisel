@@ -14,13 +14,11 @@ import scala.language.experimental.macros
 
 class AliasedAggregateFieldException(message: String) extends ChiselException(message)
 
-class AliasedAggregateFieldException(message: String) extends ChiselException(message)
-
 /** An abstract class for data types that solely consist of (are an aggregate
   * of) other Data objects.
   */
 sealed abstract class Aggregate extends Data {
-  private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection) {
+  private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection) { // scalastyle:ignore cyclomatic.complexity line.size.limit
     binding = target
 
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
