@@ -247,4 +247,3 @@ object BaseModule {
     clonePorts
   }
 }
-

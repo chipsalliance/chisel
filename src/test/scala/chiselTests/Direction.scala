@@ -42,8 +42,6 @@ class TopDirectionOutput extends Module {
 
 class DirectionSpec extends ChiselPropSpec with Matchers {
 
-  import chisel3.SpecifiedDirection
-
   //TODO: In Chisel3 these are actually FIRRTL errors. Remove from tests?
 
   property("Outputs should be assignable") {

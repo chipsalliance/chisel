@@ -41,7 +41,7 @@ class MissingCloneBindingExceptionSpec extends ChiselFlatSpec with Matchers {
     }
 
     class TestTop extends Module {
-      val io = IO(new chisel3.Bundle {})
+      val io = IO(new Bundle {})
 
       val subs = Vec.fill(2) {
         Module(new Test).io
