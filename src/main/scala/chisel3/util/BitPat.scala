@@ -32,7 +32,7 @@ object BitPat {
         bits = (bits << 1) + (if (d == '1') 1 else 0)
       }
     }
-    (bits, mask, x.length - 1)
+    (bits, mask, x.filter(_!='_').length - 1)
   }
 
   /** Creates a [[BitPat]] literal from a string.
