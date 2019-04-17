@@ -1776,6 +1776,13 @@ final class Analog private (private[chisel3] val width: Width) extends Element {
     val targetTopBinding = target match {
       case target: TopBinding => target
       case ChildBinding(parent) => parent.topBinding
+      case x: SampleElementBinding[x] => x.parent.topBinding
+      // TODO: CKDUR: I don't know what I'm doing here, but seems to be relatable to Data.scala:320.
+      // Citing here for convenience:
+      // TODO: technically, it's bound, but it's more of a ghost binding and None is probably the most appropriate
+      // Note: sample elements should not be user-accessible, so there's not really a good reason to access its
+      // top binding. However, we can't make this assert out right not because a larger refactoring is needed.
+      // See https://github.com/freechipsproject/chisel3/pull/946
     }
 
     // Analog counts as different directions based on binding context
