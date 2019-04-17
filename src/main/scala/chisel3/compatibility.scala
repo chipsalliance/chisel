@@ -254,7 +254,7 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
 
   implicit def resetToBool(reset: Reset): Bool = reset.asBool
 
-  import chisel3.Param
+  import chisel3.experimental.Param
   abstract class BlackBox(params: Map[String, Param] = Map.empty[String, Param]) extends chisel3.BlackBox(params) {
     // This class auto-wraps the BlackBox with IO(...), allowing legacy code (where IO(...) wasn't
     // required) to build.

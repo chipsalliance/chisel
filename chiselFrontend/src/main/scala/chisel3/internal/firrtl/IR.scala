@@ -3,8 +3,8 @@
 package chisel3.internal.firrtl
 
 import chisel3._
-import chisel3.experimental.{BaseModule, ChiselAnnotation, RawModule}
-import chisel3.internal._
+import chisel3.experimental.{BaseModule, ChiselAnnotation, Param, RawModule}
+import chisel3.internal.{BaseBlackBox, _}
 import chisel3.internal.sourceinfo.SourceInfo
 
 // scalastyle:off number.of.types

@@ -1344,7 +1344,6 @@ package experimental {
     */
   sealed class FixedPoint private(width: Width, val binaryPoint: BinaryPoint)
     extends Bits(width) with Num[FixedPoint] {
-  //      import FixedPoint._
     import FixedPoint.Implicits._
 
     override def toString: String = {

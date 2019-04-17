@@ -165,24 +165,24 @@ package object core {
   @deprecated("Use the version in chisel3._", "3.3")
   val Percent = chisel3.Percent
 
-  @deprecated("Use the version in chisel3._", "3.3")
-  type Param = chisel3.Param
-  @deprecated("Use the version in chisel3._", "3.3")
-  type IntParam = chisel3.IntParam
-  @deprecated("Use the version in chisel3._", "3.3")
-  val IntParam = chisel3.IntParam
-  @deprecated("Use the version in chisel3._", "3.3")
-  type DoubleParam = chisel3.DoubleParam
-  @deprecated("Use the version in chisel3._", "3.3")
-  val DoubleParam = chisel3.DoubleParam
-  @deprecated("Use the version in chisel3._", "3.3")
-  type StringParam = chisel3.StringParam
-  @deprecated("Use the version in chisel3._", "3.3")
-  val StringParam = chisel3.StringParam
-  @deprecated("Use the version in chisel3._", "3.3")
-  type RawParam = chisel3.RawParam
-  @deprecated("Use the version in chisel3._", "3.3")
-  val RawParam = chisel3.RawParam
+  @deprecated("Use the version in chisel3.experimental._", "3.3")
+  type Param = chisel3.experimental.Param
+  @deprecated("Use the version in chisel3.experimental._", "3.3")
+  type IntParam = chisel3.experimental.IntParam
+  @deprecated("Use the version in chisel3.experimental._", "3.3")
+  val IntParam = chisel3.experimental.IntParam
+  @deprecated("Use the version in chisel3.experimental._", "3.3")
+  type DoubleParam = chisel3.experimental.DoubleParam
+  @deprecated("Use the version in chisel3.experimental._", "3.3")
+  val DoubleParam = chisel3.experimental.DoubleParam
+  @deprecated("Use the version in chisel3.experimental._", "3.3")
+  type StringParam = chisel3.experimental.StringParam
+  @deprecated("Use the version in chisel3.experimental._", "3.3")
+  val StringParam = chisel3.experimental.StringParam
+  @deprecated("Use the version in chisel3.experimental._", "3.3")
+  type RawParam = chisel3.experimental.RawParam
+  @deprecated("Use the version in chisel3.experimental._", "3.3")
+  val RawParam = chisel3.experimental.RawParam
 
   @deprecated("Use the version in chisel3.experimental._", "3.3")
   type Analog = chisel3.experimental.Analog
