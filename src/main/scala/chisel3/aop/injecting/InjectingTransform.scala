@@ -1,11 +1,11 @@
 package chisel3.aop.injecting
 
 import chisel3.aop.ConcernTransform
-import firrtl.{ChirrtlForm, CircuitForm, CircuitState, ir}
+import firrtl.{ChirrtlForm, CircuitForm, CircuitState, Transform, ir}
 
 import scala.collection.mutable
 
-class InjectingTransform extends ConcernTransform {
+class InjectingTransform extends Transform {
   override def inputForm: CircuitForm = ChirrtlForm
   override def outputForm: CircuitForm = ChirrtlForm
 

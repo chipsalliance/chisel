@@ -14,7 +14,7 @@ import scala.reflect.runtime.universe.TypeTag
   * @tparam DUT Type of top-level chisel module
   * @tparam A Type of this concern's aspect
   */
-abstract class Concern[DUT <: RawModule, A <: Aspect[DUT, _]](implicit tag: TypeTag[DUT]) extends Annotation with RunFirrtlTransform {
+abstract class Concern[DUT <: RawModule, A <: Aspect[DUT, _]](implicit tag: TypeTag[DUT]) extends Annotation with AdditionalTransforms {
 
   /** All aspects associated with this concern
     *
@@ -23,12 +23,17 @@ abstract class Concern[DUT <: RawModule, A <: Aspect[DUT, _]](implicit tag: Type
     */
   def aspects: Seq[A]
 
-  /** Associated FIRRTL transformation, which may be required to modify the design
+  /** Associated FIRRTL transformation that turns all aspects into their annotations
+    * @return
+    */
+  final def transformClass: Class[_ <: ConcernTransform] = classOf[ConcernTransform]
+
+  /** Associated FIRRTL transformations, which may be required to modify the design
     *
     * Implemented by Concern library writer
     * @return
     */
-  def transformClass: Class[_ <: Transform]
+  def additionalTransformClasses: Seq[Class[_ <: Transform]]
 
   /** Convert this concern's aspects into annotations to pass to FIRRTL compilation
     *

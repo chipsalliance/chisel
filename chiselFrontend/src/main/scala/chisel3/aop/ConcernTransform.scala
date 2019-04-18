@@ -9,11 +9,11 @@ import scala.collection.mutable
   *
   * Consumes the [[DesignAnnotation]] and converts every [[Concern]] into their annotations prior to execute
   */
-trait ConcernTransform extends Transform {
+class ConcernTransform extends Transform {
   override def inputForm: CircuitForm = ChirrtlForm
   override def outputForm: CircuitForm = ChirrtlForm
 
-  override def prepare(state: CircuitState): CircuitState = {
+  override def execute(state: CircuitState): CircuitState = {
 
     var dut: Option[RawModule] = None
     val concerns = mutable.ArrayBuffer[Concern[_, _]]()

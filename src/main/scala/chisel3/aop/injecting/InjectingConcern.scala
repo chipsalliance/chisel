@@ -2,6 +2,8 @@ package chisel3.aop.injecting
 
 import chisel3.aop.{Aspect, Concern, ConcernTransform}
 import chisel3.core.RawModule
+import firrtl.Transform
+
 import scala.reflect.runtime.universe.TypeTag
 
 /** Contains all injecting aspects for a given design-under-test
@@ -13,6 +15,6 @@ import scala.reflect.runtime.universe.TypeTag
 abstract class InjectingConcern[DUT <: RawModule, A <: InjectingAspect[DUT, _]]
     (implicit tag: TypeTag[DUT]) extends Concern[DUT, A] {
   def aspects: Seq[A]
-  override def transformClass: Class[_ <: ConcernTransform] = classOf[InjectingTransform]
+  override def additionalTransformClasses: Seq[Class[_ <: Transform]] = Seq(classOf[InjectingTransform])
 }
 
