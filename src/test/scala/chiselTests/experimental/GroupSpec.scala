@@ -46,7 +46,6 @@ class GroupSpec extends FreeSpec with ChiselRunners with Matchers {
             chiselCircuit.annotations.map(_.toFirrtl).collect{ case a: GroupAnnotation => a }.size should be (1)
           }
           "low FIRRTL should contain only instance z" in {
-            println(firrtlResult.circuitState.circuit.serialize)
             firrtlResult.circuitState.circuit.modules.collect {
               case m: fir.Module if m.name == "MyModule" =>
                 Nil should be (collectRegisters(m))
