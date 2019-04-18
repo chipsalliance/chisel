@@ -5,6 +5,10 @@ import firrtl._
 
 import scala.collection.mutable
 
+/** Transform associated with a Concern
+  *
+  * Consumes the [[DesignAnnotation]] and converts every [[Concern]] into their annotations prior to execute
+  */
 trait ConcernTransform extends Transform {
   override def inputForm: CircuitForm = ChirrtlForm
   override def outputForm: CircuitForm = ChirrtlForm

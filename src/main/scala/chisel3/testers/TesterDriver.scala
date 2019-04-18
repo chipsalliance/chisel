@@ -5,7 +5,7 @@ package chisel3.testers
 import chisel3._
 import java.io._
 
-import chisel3.aop.{Aspect, Concern}
+import chisel3.aop.{AdditionalTransforms, Aspect, Concern}
 import chisel3.experimental.RunFirrtlTransform
 import firrtl.{Driver => _, _}
 import firrtl.transforms.BlackBoxSourceHelper.writeResourceToDirectory
@@ -46,9 +46,13 @@ object TesterDriver extends BackendCompilationUtilities {
     })
 
     // Compile firrtl
-    val transforms = aspectedCircuit.annotations.collect { case anno: RunFirrtlTransform => anno.transformClass }.distinct
-      .filterNot(_ == classOf[Transform])
-      .map { transformClass: Class[_ <: Transform] => transformClass.newInstance() }
+    val transforms = aspectedCircuit.annotations.flatMap {
+      case anno: AdditionalTransforms => anno.getTransformClasses
+      case anno: RunFirrtlTransform => Seq(anno.transformClass)
+      case _ => Nil
+    }.distinct
+     .filterNot(_ == classOf[Transform])
+     .map { transformClass: Class[_ <: Transform] => transformClass.newInstance() }
     val newAnnotations = aspectedCircuit.annotations.map(_.toFirrtl).toList
     val optionsManager = new ExecutionOptionsManager("chisel3") with HasChiselExecutionOptions with HasFirrtlOptions {
       commonOptions = CommonOptions(topName = target, targetDirName = path.getAbsolutePath)
