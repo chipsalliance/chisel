@@ -11,7 +11,7 @@ import firrtl.annotations._
 import firrtl.ir.Circuit
 import firrtl.Utils.throwInternalError
 import firrtl.annotations.transforms.{EliminateTargetPaths, ResolvePaths}
-import firrtl.options.StageUtils
+import firrtl.options.{StageUtils, TransformLike}
 
 /** Container of all annotations for a Firrtl compiler */
 class AnnotationSeq private (private[firrtl] val underlying: List[Annotation]) {
@@ -169,7 +169,7 @@ final case object UnknownForm extends CircuitForm(-1) {
 // scalastyle:on magic.number
 
 /** The basic unit of operating on a Firrtl AST */
-abstract class Transform extends LazyLogging {
+abstract class Transform extends TransformLike[CircuitState] {
   /** A convenience function useful for debugging and error messages */
   def name: String = this.getClass.getSimpleName
   /** The [[firrtl.CircuitForm]] that this transform requires to operate on */
@@ -184,6 +184,8 @@ abstract class Transform extends LazyLogging {
     * @return A transformed Firrtl AST
     */
   protected def execute(state: CircuitState): CircuitState
+
+  def transform(state: CircuitState): CircuitState = execute(state)
 
   /** Convenience method to get annotations relevant to this Transform
     *
