@@ -2,7 +2,6 @@
 
 package chiselTests
 
-import chisel3.Binding.BindingException
 import chisel3._
 import org.scalatest._
 

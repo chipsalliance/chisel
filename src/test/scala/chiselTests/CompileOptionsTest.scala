@@ -2,7 +2,6 @@
 
 package chiselTests
 
-import chisel3.Binding.BindingException
 import chisel3.CompileOptions._
 import chisel3._
 

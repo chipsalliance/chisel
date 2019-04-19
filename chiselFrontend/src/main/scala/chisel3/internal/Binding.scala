@@ -2,9 +2,9 @@
 
 package chisel3.internal
 
+import chisel3._
 import chisel3.experimental.{BaseModule, RawModule}
 import chisel3.internal.firrtl.LitArg
-import chisel3.{ActualDirection, Binding, Data, Vec}
 
 /** Requires that a node is hardware ("bound")
   */
@@ -16,7 +16,7 @@ object requireIsHardware {
     }
     if (!node.topBindingOpt.isDefined) {
       val prefix = if (msg.nonEmpty) s"$msg " else ""
-      throw Binding.ExpectedHardwareException(s"$prefix'$node' must be hardware, " +
+      throw ExpectedHardwareException(s"$prefix'$node' must be hardware, " +
         "not a bare Chisel type. Perhaps you forgot to wrap it in Wire(_) or IO(_)?")
     }
   }
@@ -27,7 +27,7 @@ object requireIsHardware {
 object requireIsChiselType {
   def apply(node: Data, msg: String = ""): Unit = if (node.topBindingOpt.isDefined) {
     val prefix = if (msg.nonEmpty) s"$msg " else ""
-    throw Binding.ExpectedChiselTypeException(s"$prefix'$node' must be a Chisel type, not hardware")
+    throw ExpectedChiselTypeException(s"$prefix'$node' must be a Chisel type, not hardware")
   }
 }
 

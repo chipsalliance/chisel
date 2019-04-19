@@ -171,10 +171,9 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
   }
 
   it should "not try to assign directions to Analog" in {
-    import chisel3.internal.firrtl.KnownWidth
     elaborate(new Module {
       val io = new Bundle {
-        val port = chisel3.experimental.Analog(KnownWidth(32))
+        val port = chisel3.experimental.Analog(32.W)
       }
     })
   }
@@ -261,7 +260,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
     elaborate { new DirectionLessConnectionModule() }
   }
 
-  "Vec ports" should "give default directions to children so they can be used in xutil" in {
+  "Vec ports" should "give default directions to children so they can be used in chisel3.util" in {
     import Chisel._
     elaborate(new Module {
       val io = new Bundle {
@@ -298,7 +297,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
   // Note: This is a regression (see https://github.com/freechipsproject/chisel3/issues/668)
   it should "fail for Chisel types" in {
     import Chisel._
-    an [chisel3.Binding.ExpectedHardwareException] should be thrownBy {
+    an [chisel3.ExpectedHardwareException] should be thrownBy {
       elaborate(new Module {
         val io = new Bundle { }
         UInt(INPUT).dir

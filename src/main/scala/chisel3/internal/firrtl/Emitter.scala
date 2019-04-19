@@ -1,8 +1,8 @@
 // See LICENSE for license details.
 
 package chisel3.internal.firrtl
+import chisel3._
 import chisel3.experimental._
-import chisel3.{Clock, Data, Record, SInt, SpecifiedDirection, UInt, Vec, printf}
 import chisel3.internal.BaseBlackBox
 
 private[chisel3] object Emitter {
@@ -27,7 +27,7 @@ private class Emitter(circuit: Circuit) {
 
   private def emitType(d: Data, clearDir: Boolean = false): String = d match { // scalastyle:ignore cyclomatic.complexity line.size.limit
     case d: Clock => "Clock"
-    case d: chisel3.experimental.EnumType => s"UInt${d.width}"
+    case d: EnumType => s"UInt${d.width}"
     case d: UInt => s"UInt${d.width}"
     case d: SInt => s"SInt${d.width}"
     case d: FixedPoint => s"Fixed${d.width}${d.binaryPoint}"
@@ -178,7 +178,7 @@ private class Emitter(circuit: Circuit) {
   private def withIndent(f: => Unit) { indent(); f; unindent() }
 
   private val res = new StringBuilder()
-  res ++= s";${chisel3.Driver.chiselVersionString}\n"
+  res ++= s";${Driver.chiselVersionString}\n"
   res ++= s"circuit ${circuit.name} : "
   withIndent { circuit.components.foreach(c => res ++= emit(c)) }
   res ++= newline

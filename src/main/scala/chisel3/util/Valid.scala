@@ -5,7 +5,7 @@
 
 package chisel3.util
 
-import chisel3.{CompileOptions, _}
+import chisel3._
 
 /** A [[Bundle]] that adds a `valid` bit to some data. This indicates that the user expects a "valid" interface between
   * a producer and a consumer. Here, the producer asserts the `valid` bit when data on the `bits` line contains valid

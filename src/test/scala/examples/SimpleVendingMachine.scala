@@ -2,10 +2,10 @@
 
 package examples
 
-import chisel3._
-import chisel3.testers.BasicTester
-import chisel3.util._
 import chiselTests.ChiselFlatSpec
+import chisel3.testers.BasicTester
+import chisel3._
+import chisel3.util._
 
 class SimpleVendingMachineIO extends Bundle {
   val nickel = Input(Bool())

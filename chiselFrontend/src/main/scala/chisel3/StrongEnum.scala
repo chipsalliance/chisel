@@ -2,6 +2,9 @@
 
 package chisel3.experimental
 
+import scala.language.experimental.macros
+import scala.reflect.macros.blackbox.Context
+import scala.collection.mutable
 import chisel3._
 import chisel3.internal.Builder.pushOp
 import chisel3.internal.firrtl.PrimOp._
@@ -10,9 +13,6 @@ import chisel3.internal.sourceinfo._
 import chisel3.internal.{Binding, Builder, ChildBinding, ConstrainedBinding, InstanceId, throwException}
 import firrtl.annotations._
 
-import scala.collection.mutable
-import scala.language.experimental.macros
-import scala.reflect.macros.blackbox.Context
 
 object EnumAnnotations {
   /** An annotation for strong enum instances that are ''not'' inside of Vecs
@@ -68,8 +68,8 @@ object EnumAnnotations {
     override def toFirrtl: Annotation = EnumDefAnnotation(typeName, definition)
   }
 }
-
 import EnumAnnotations._
+
 
 abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolean = true) extends Element {
   override def toString: String = {

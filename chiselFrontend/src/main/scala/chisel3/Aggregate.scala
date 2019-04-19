@@ -2,15 +2,15 @@
 
 package chisel3
 
-import chisel3.experimental.BaseModule
-import chisel3.internal.Builder.pushCommand
-import chisel3.internal._
-import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo._
-
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{HashSet, LinkedHashMap}
 import scala.language.experimental.macros
+
+import chisel3.experimental.BaseModule
+import chisel3.internal._
+import chisel3.internal.Builder.pushCommand
+import chisel3.internal.firrtl._
+import chisel3.internal.sourceinfo._
 
 class AliasedAggregateFieldException(message: String) extends ChiselException(message)
 
@@ -36,7 +36,7 @@ sealed abstract class Aggregate extends Data {
       case Some(dir) => dir
       case None =>
         val childWithDirections = getElements zip getElements.map(_.direction)
-        throw Binding.MixedDirectionAggregateException(
+        throw MixedDirectionAggregateException(
             s"Aggregate '$this' can't have elements that are both directioned and undirectioned: $childWithDirections")
     }
   }
@@ -435,7 +435,7 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     try {
       super.bind(target, parentDirection)
     } catch {  // nasty compatibility mode shim, where anything flies
-      case e: Binding.MixedDirectionAggregateException if !compileOptions.dontAssumeDirectionality =>
+      case e: MixedDirectionAggregateException if !compileOptions.dontAssumeDirectionality =>
         val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
         direction = resolvedDirection match {
           case SpecifiedDirection.Unspecified => ActualDirection.Bidirectional(ActualDirection.Default)

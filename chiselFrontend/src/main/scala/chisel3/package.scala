@@ -112,31 +112,6 @@ package object chisel3 {    // scalastyle:ignore package.object.name
         def W: Width = Width(int)  // scalastyle:ignore method.name
       }
 
-      // These provide temporary compatibility for those who foolishly imported from chisel3.core
-      @deprecated("Avoid importing from chisel3.core, these are not public APIs and may change at any time. " +
-        " Use chisel3.experimental.RawModule instead.", "since the beginning of time")
-      type UserModule = chisel3.experimental.RawModule
-      @deprecated("Avoid importing from chisel3.core, these are not public APIs and may change at any time. " +
-        "Use chisel3.experimental.MultiIOModule instead.", "since the beginning of time")
-      type ImplicitModule = chisel3.experimental.MultiIOModule
-
-  object Wire extends WireFactory {
-
-    @chiselRuntimeDeprecated
-    @deprecated("Wire(init=init) is deprecated, use WireDefault(init) instead", "chisel3")
-    def apply[T <: Data](dummy: Int = 0, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
-      WireDefault(init)
-
-    @chiselRuntimeDeprecated
-    @deprecated("Wire(t, init) is deprecated, use WireDefault(t, init) instead", "chisel3")
-    def apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
-      WireDefault(t, init)
-
-    @chiselRuntimeDeprecated
-    @deprecated("Wire(t, init) is deprecated, use WireDefault(t, init) instead", "chisel3")
-    def apply[T <: Data](t: T, init: DontCare.type)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
-      WireDefault(t, init)
-  }
   val WireInit = WireDefault
 
   implicit class AddDirectionToData[T<:Data](target: T) {
@@ -365,19 +340,20 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   //  indicating the signal is intentionally not driven.
   val DontCare = chisel3.internal.InternalDontCare
 
-  object Binding {
-    class BindingException(message: String) extends ChiselException(message)
-    /** A function expected a Chisel type but got a hardware object
-      */
-    case class ExpectedChiselTypeException(message: String) extends BindingException(message)
-    /**A function expected a hardware object but got a Chisel type
-      */
-    case class ExpectedHardwareException(message: String) extends BindingException(message)
-    /** An aggregate had a mix of specified and unspecified directionality children
-      */
-    case class MixedDirectionAggregateException(message: String) extends BindingException(message)
-    /** Attempted to re-bind an already bound (directionality or hardware) object
-      */
-    case class RebindingException(message: String) extends BindingException(message)
-  }
+  class BindingException(message: String) extends ChiselException(message)
+  /** A function expected a Chisel type but got a hardware object
+    */
+  case class ExpectedChiselTypeException(message: String) extends BindingException(message)
+  /**A function expected a hardware object but got a Chisel type
+    */
+  case class ExpectedHardwareException(message: String) extends BindingException(message)
+  /** An aggregate had a mix of specified and unspecified directionality children
+    */
+  case class MixedDirectionAggregateException(message: String) extends BindingException(message)
+  /** Attempted to re-bind an already bound (directionality or hardware) object
+    */
+  case class RebindingException(message: String) extends BindingException(message)
+  // Connection exceptions.
+  case class BiConnectException(message: String) extends ChiselException(message)
+  case class MonoConnectException(message: String) extends ChiselException(message)
 }

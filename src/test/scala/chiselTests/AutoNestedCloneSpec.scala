@@ -2,8 +2,8 @@
 
 package chiselTests
 import Chisel.ChiselException
-import chisel3._
 import org.scalatest._
+import chisel3._
 
 class BundleWithAnonymousInner(val w: Int) extends Bundle {
   val inner = new Bundle {

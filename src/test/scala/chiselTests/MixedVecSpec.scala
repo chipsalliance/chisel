@@ -208,21 +208,21 @@ class MixedVecSpec extends ChiselPropSpec {
   }
 
   property("MixedVecs should not be able to take hardware types") {
-    a [Binding.ExpectedChiselTypeException] should be thrownBy {
+    a [ExpectedChiselTypeException] should be thrownBy {
       elaborate(new Module {
         val io = IO(new Bundle {})
         val hw = Wire(MixedVec(Seq(UInt(8.W), Bool())))
         val illegal = MixedVec(hw)
       })
     }
-    a [Binding.ExpectedChiselTypeException] should be thrownBy {
+    a [ExpectedChiselTypeException] should be thrownBy {
       elaborate(new Module {
         val io = IO(new Bundle {})
         val hw = Reg(MixedVec(Seq(UInt(8.W), Bool())))
         val illegal = MixedVec(hw)
       })
     }
-    a [Binding.ExpectedChiselTypeException] should be thrownBy {
+    a [ExpectedChiselTypeException] should be thrownBy {
       elaborate(new Module {
         val io = IO(new Bundle {
           val v = Input(MixedVec(Seq(UInt(8.W), Bool())))

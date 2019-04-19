@@ -2,11 +2,14 @@
 
 package chisel3
 
-import java.util.{MissingFormatArgumentException, UnknownFormatConversionException}
-
 import chisel3.internal.firrtl.Component
 
 import scala.collection.mutable
+
+import java.util.{
+  MissingFormatArgumentException,
+  UnknownFormatConversionException
+}
 
 /** Superclass of things that can be printed in the resulting circuit
   *

@@ -67,6 +67,12 @@ package object core {
   @deprecated("Avoid importing from chisel3.core, these are not public APIs and may change at any time. " +
     "Use chisel3.experimental.MultiIOModule instead.", "since the beginning of time")
   type MultiIOModule = chisel3.experimental.MultiIOModule
+  @deprecated("Avoid importing from chisel3.core, these are not public APIs and may change at any time. " +
+    " Use chisel3.experimental.RawModule instead.", "since the beginning of time")
+  type UserModule = chisel3.experimental.RawModule
+  @deprecated("Avoid importing from chisel3.core, these are not public APIs and may change at any time. " +
+    "Use chisel3.experimental.MultiIOModule instead.", "since the beginning of time")
+  type ImplicitModule = chisel3.experimental.MultiIOModule
 
   @deprecated("Use the version in chisel3._", "3.3")
   val Bits = chisel3.Bits
@@ -105,8 +111,6 @@ package object core {
   val Module = chisel3.Module
   @deprecated("Use the version in chisel3._", "3.3")
   type Module = chisel3.Module
-  @deprecated("Use chisel3.experimental.RawModule", "3.3")
-  type UserModule = chisel3.experimental.RawModule
 
   @deprecated("Use the version in chisel3._", "3.3")
   val printf = chisel3.printf
@@ -202,12 +206,12 @@ package object core {
   @deprecated("Use the version in chisel3.experimental._", "3.3")
   val EnumAnnotations = chisel3.experimental.EnumAnnotations
 
-  @deprecated("Use the version in chisel3.experimental._", "3.3")
-  val withClockAndReset = chisel3.experimental.withClockAndReset
-  @deprecated("Use the version in chisel3.experimental._", "3.3")
-  val withClock = chisel3.experimental.withClock
-  @deprecated("Use the version in chisel3.experimental._", "3.3")
-  val withReset = chisel3.experimental.withReset
+  @deprecated("Use the version in chisel3._", "3.3")
+  val withClockAndReset = chisel3.withClockAndReset
+  @deprecated("Use the version in chisel3._", "3.3")
+  val withClock = chisel3.withClock
+  @deprecated("Use the version in chisel3._", "3.3")
+  val withReset = chisel3.withReset
 
   @deprecated("Use the version in chisel3.experimental._", "3.3")
   val dontTouch = chisel3.experimental.dontTouch
@@ -254,8 +258,6 @@ package object core {
   val BiConnect = chisel3.internal.BiConnect
   @deprecated("Use the version in chisel3.internal._", "3.3")
   val MonoConnect = chisel3.internal.MonoConnect
-  @deprecated("Use the version in chisel3.internal._", "3.3")
-  val Binding = chisel3.Binding
   @deprecated("Use the version in chisel3.internal._", "3.3")
   val BindingDirection = chisel3.internal.BindingDirection
   @deprecated("Use the version in chisel3.internal._", "3.3")

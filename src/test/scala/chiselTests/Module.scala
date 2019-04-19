@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.{DataMirror, withClock, withReset}
+import chisel3.experimental.DataMirror
 
 class SimpleIO extends Bundle {
   val in  = Input(UInt(32.W))

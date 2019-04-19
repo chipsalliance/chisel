@@ -4,8 +4,9 @@ package chiselTests
 
 import chisel3._
 import chisel3.experimental.ChiselRange
-import chisel3.internal.firrtl.{Closed, Open}
-import org.scalatest.{FreeSpec, Matchers}
+
+import chisel3.internal.firrtl.{Open, Closed}
+import org.scalatest.{Matchers, FreeSpec}
 
 class RangeSpec extends FreeSpec with Matchers {
   "Ranges can be specified for UInt, SInt, and FixedPoint" - {

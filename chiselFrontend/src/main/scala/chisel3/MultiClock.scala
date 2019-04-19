@@ -1,9 +1,8 @@
 // See LICENSE for license details.
 
-package chisel3.experimental
+package chisel3
 
 import chisel3.internal._
-import chisel3.{Clock, Module, Reset}
 
 import scala.language.experimental.macros
 

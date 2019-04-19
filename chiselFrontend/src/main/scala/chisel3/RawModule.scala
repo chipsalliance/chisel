@@ -2,14 +2,15 @@
 
 package chisel3.experimental
 
+import scala.collection.mutable.{ArrayBuffer, HashMap}
+import scala.collection.JavaConversions._
+import scala.language.experimental.macros
+
 import chisel3._
+import chisel3.internal._
 import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.UnlocatableSourceInfo
-import chisel3.internal.{MemoryPortBinding, OpBinding, PortBinding, RegBinding, WireBinding, _}
-
-import scala.collection.mutable.{ArrayBuffer, HashMap}
-import scala.language.experimental.macros
 
 /** Abstract base class for Modules that contain Chisel RTL.
   * This abstract base class is a user-defined module which does not include implicit clock and reset and supports

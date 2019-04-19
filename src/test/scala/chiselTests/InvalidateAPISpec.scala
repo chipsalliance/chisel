@@ -3,7 +3,6 @@
 package chiselTests
 
 import chisel3._
-import chisel3.internal.ChiselException
 import chisel3.util.Counter
 import firrtl.passes.CheckInitialization.RefNotInitializedException
 import firrtl.util.BackendCompilationUtilities
@@ -110,7 +109,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompila
       val io = IO(new TrivialInterface)
       DontCare <> io.in
     }
-    val exception = intercept[ChiselException] {
+    val exception = intercept[BiConnectException] {
       elaborate(new ModuleWithDontCareSink)
     }
     exception.getMessage should include("DontCare cannot be a connection sink (LHS)")

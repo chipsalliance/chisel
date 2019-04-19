@@ -1,11 +1,13 @@
 // See LICENSE for license details.
 package chiselTests
 
+import org.scalatest.{FlatSpec, Matchers}
+
 import chisel3._
 import chisel3.experimental.RawModule
 import chisel3.util.TransitName
+
 import firrtl.FirrtlExecutionSuccess
-import org.scalatest.{FlatSpec, Matchers}
 
 class TransitNameSpec extends FlatSpec with Matchers {
 

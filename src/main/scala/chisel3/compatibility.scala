@@ -9,6 +9,8 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
   import chisel3.internal.firrtl.Width
 
   import scala.language.experimental.macros
+  import scala.annotation.StaticAnnotation
+  import scala.annotation.compileTimeOnly
   import scala.language.implicitConversions
 
   implicit val defaultCompileOptions = chisel3.ExplicitCompileOptions.NotStrict
@@ -542,6 +544,7 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
     * non-experimental, you must explicitly import this package to use its contents.
     */
   object experimental {  // scalastyle:ignore object.name
+    import scala.annotation.compileTimeOnly
 
     class dump extends chisel3.internal.naming.dump  // scalastyle:ignore class.name
     class treedump extends chisel3.internal.naming.treedump  // scalastyle:ignore class.name
