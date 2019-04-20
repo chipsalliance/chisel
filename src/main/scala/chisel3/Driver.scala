@@ -8,9 +8,12 @@ import chisel3.experimental.{RawModule, RunFirrtlTransform}
 import java.io._
 import internal.firrtl._
 import firrtl._
-import firrtl.annotations.JsonProtocol
+import firrtl.annotations.{Annotation, JsonProtocol}
 import firrtl.util.{BackendCompilationUtilities => FirrtlBackendCompilationUtilities}
 import chisel3.core.AdditionalTransforms
+import net.jcazevedo.moultingyaml._
+import _root_.firrtl.annotations.AnnotationYamlProtocol._
+
 
 /**
   * The Driver provides methods to invoke the chisel3 compiler and the firrtl compiler.
@@ -214,7 +217,8 @@ object Driver extends BackendCompilationUtilities {
       val annotationFile = new File(optionsManager.getBuildFileName("anno.json"))
       val af = new FileWriter(annotationFile)
       val firrtlAnnos = circuit.annotations.map(_.toFirrtl)
-      af.write(JsonProtocol.serialize(firrtlAnnos))
+      // For now, don't serialize DesignAnnotation, until phase/stage is merged
+      af.write(JsonProtocol.serialize(firrtlAnnos.filterNot(_.isInstanceOf[core.DesignAnnotation[_]])))
       af.close()
 
       /** Find the set of transform classes associated with annotations then
