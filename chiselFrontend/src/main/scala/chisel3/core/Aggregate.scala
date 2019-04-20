@@ -89,9 +89,9 @@ trait VecFactory extends SourceInfoDoc {
   }
 
   /** Truncate an index to implement modulo-power-of-2 addressing. */
-  private[core] def truncateIndex(idx: UInt, n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = { // scalastyle:ignore line.size.limit
+  private[core] def truncateIndex(idx: UInt, n: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = { // scalastyle:ignore line.size.limit
     // scalastyle:off if.brace
-    val w = BigInt(n-1).bitLength
+    val w = (n-1).bitLength
     if (n <= 1) 0.U
     else if (idx.width.known && idx.width.get <= w) idx
     else if (idx.width.known) idx(w-1,0)
