@@ -20,14 +20,23 @@ import firrtl.util.BackendCompilationUtilities
 
 /** Common utility functions for Chisel unit tests. */
 trait ChiselRunners extends Assertions with BackendCompilationUtilities {
-  def runTester(t: => BasicTester, additionalVResources: Seq[String] = Seq()): Boolean = {
-    TesterDriver.execute(() => t, additionalVResources)
+  def runTester(t: => BasicTester,
+                additionalVResources: Seq[String] = Seq(),
+                concerns: Seq[chisel3.aop.Concern[_, _]] = Seq()
+               ): Boolean = {
+    TesterDriver.execute(() => t, additionalVResources, concerns)
   }
-  def assertTesterPasses(t: => BasicTester, additionalVResources: Seq[String] = Seq()): Unit = {
-    assert(runTester(t, additionalVResources))
+  def assertTesterPasses(t: => BasicTester,
+                         additionalVResources: Seq[String] = Seq(),
+                         concerns: Seq[chisel3.aop.Concern[_, _]] = Seq()
+                        ): Unit = {
+    assert(runTester(t, additionalVResources, concerns))
   }
-  def assertTesterFails(t: => BasicTester, additionalVResources: Seq[String] = Seq()): Unit = {
-    assert(!runTester(t, additionalVResources))
+  def assertTesterFails(t: => BasicTester,
+                        additionalVResources: Seq[String] = Seq(),
+                        concerns: Seq[chisel3.aop.Concern[_, _]] = Seq()
+                       ): Unit = {
+    assert(!runTester(t, additionalVResources, concerns))
   }
   def elaborate(t: => RawModule): Unit = Driver.elaborate(() => t)
 

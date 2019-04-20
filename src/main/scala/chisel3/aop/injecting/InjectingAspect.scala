@@ -1,7 +1,7 @@
 package chisel3.aop.injecting
 
 import chisel3.aop._
-import chisel3.core.{RawModule, RunFirrtlTransform}
+import chisel3.core.{DesignAnnotation, RawModule, RunFirrtlTransform}
 import chisel3.core
 import chisel3.internal.Builder
 import chisel3.internal.firrtl.DefModule

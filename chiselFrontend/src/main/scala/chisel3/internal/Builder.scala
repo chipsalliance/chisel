@@ -176,8 +176,9 @@ private[chisel3] trait NamedComponent extends HasId {
     */
   final def toTarget: ReferenceTarget = {
     val name = this.instanceName
-    _root_.firrtl.annotations.Target.toTargetTokens(name).toList match {
-      case Ref(r) :: components => ReferenceTarget(this.circuitName, this.parentModName, Nil, r, components)
+    import _root_.firrtl.annotations.{Target, TargetToken}
+    Target.toTargetTokens(name).toList match {
+      case TargetToken.Ref(r) :: components => ReferenceTarget(this.circuitName, this.parentModName, Nil, r, components)
       case other =>
         throw _root_.firrtl.annotations.Target.NamedException(s"Cannot convert $name into [[ReferenceTarget]]: $other")
     }
@@ -266,7 +267,7 @@ private[chisel3] object Builder {
       case Some(module: RawModule) =>
         aspectModule(module) match {
           case Some(aspect: RawModule) => aspect
-          case None => module
+          case other => module
         }
       case _ => throwException(
         "Error: Not in a UserModule. Likely cause: Missed Module() wrap, bare chisel API call, or attempting to construct hardware inside a BlackBox." // scalastyle:ignore line.size.limit
@@ -386,7 +387,7 @@ private[chisel3] object Builder {
         errors.checkpoint()
         errors.info("Done elaborating.")
 
-        Circuit(components.last.name, components, aop.DesignAnnotation(mod) +: annotations)
+        Circuit(components.last.name, components, DesignAnnotation(mod) +: annotations)
       }
    }
   }

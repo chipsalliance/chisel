@@ -5,8 +5,8 @@ package chisel3.testers
 import chisel3._
 import java.io._
 
-import chisel3.aop.{AdditionalTransforms, Aspect, Concern}
-import chisel3.experimental.RunFirrtlTransform
+import chisel3.aop.Concern
+import chisel3.experimental.{RunFirrtlTransform, AdditionalTransforms}
 import firrtl.{Driver => _, _}
 import firrtl.transforms.BlackBoxSourceHelper.writeResourceToDirectory
 
