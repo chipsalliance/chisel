@@ -90,6 +90,9 @@ sealed trait UnconstrainedBinding extends TopBinding {
 sealed trait ConstrainedBinding extends TopBinding {
   def enclosure: BaseModule
   def location: Option[BaseModule] = {
+    // If an aspect is present, return the aspect module. Otherwise, return the enclosure module
+    // This allows aspect modules to pretend to be enclosed modules for connectivity checking,
+    // inside vs outside instance checking, etc.
     Builder.aspectModule(enclosure) match {
       case None => Some(enclosure)
       case Some(aspect) => Some(aspect)

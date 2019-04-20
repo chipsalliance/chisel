@@ -3,11 +3,10 @@
 package chisel3.core
 
 import scala.language.existentials
-
 import chisel3.internal.{Builder, InstanceId}
 import chisel3.core.ImplicitModule
 import firrtl.Transform
-import firrtl.annotations.{Annotation, CircuitName, ComponentName, ModuleName}
+import firrtl.annotations._
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
 
 /** Interface for Annotations in Chisel
@@ -39,6 +38,29 @@ object ChiselAnnotation {
 trait RunFirrtlTransform extends ChiselAnnotation {
   def transformClass: Class[_ <: Transform]
 }
+
+/** Mixin for [[RunFirrtlTransform]] that instantiates additional associated FIRRTL Transform when this
+  * Annotation is present during a run of [[chisel3.Driver.execute]]. Automatic Transform
+  * instantiation is *not* supported when the Circuit and Annotations are serialized before invoking
+  * FIRRTL.
+  */
+trait AdditionalTransforms extends RunFirrtlTransform {
+  def additionalTransformClasses: Seq[Class[_ <: Transform]]
+  final def getTransformClasses = transformClass +: additionalTransformClasses
+}
+
+
+/** Contains the top-level elaborated Chisel design.
+  *
+  * By default is created during Chisel elaboration and passed to the FIRRTL compiler.
+  * @param design top-level Chisel design
+  * @tparam DUT Type of the top-level Chisel design
+  */
+case class DesignAnnotation[DUT <: RawModule](design: DUT) extends RunFirrtlTransform with NoTargetAnnotation {
+  override def transformClass: Class[_ <: Transform] = classOf[Transform]
+  override def toFirrtl: DesignAnnotation[DUT] = this
+}
+
 
 // This exists for implementation reasons, we don't want people using this type directly
 final case class ChiselLegacyAnnotation private[chisel3] (

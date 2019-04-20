@@ -482,6 +482,8 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     type ChiselAnnotation = chisel3.core.ChiselAnnotation
     val ChiselAnnotation = chisel3.core.ChiselAnnotation
     type RunFirrtlTransform = chisel3.core.RunFirrtlTransform
+    type AdditionalTransforms = chisel3.core.AdditionalTransforms
+    val DesignAnnotation = chisel3.core.DesignAnnotation
 
     val annotate = chisel3.core.annotate
 

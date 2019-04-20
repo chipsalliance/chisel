@@ -200,6 +200,7 @@ abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions)
     }
   }
 
+
   private[core] override def generateComponent(): Component = {
     _compatAutoWrapPorts()  // pre-IO(...) compatibility hack
 

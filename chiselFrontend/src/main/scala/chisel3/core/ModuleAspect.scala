@@ -2,6 +2,14 @@ package chisel3.core
 
 import chisel3.internal.Builder
 
+/** Used by Chisel Aspects to inject Chisel code into modules, after they have been elaborated.
+  * This is an internal API - don't use!
+  *
+  * It adds itself as an aspect to the module, which allows proper checking of connection and binding legality.
+  *
+  * @param module Module for which this object is an aspect of
+  * @param moduleCompileOptions
+  */
 abstract class ModuleAspect(module: RawModule)(implicit moduleCompileOptions: CompileOptions) extends RawModule {
 
   Builder.addAspect(module, this)

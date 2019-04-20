@@ -386,7 +386,6 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
         case _ =>  // fine
       }
       try {
-        //MonoConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.forcedUserModule)
         MonoConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.referenceUserModule)
       } catch {
         case MonoConnect.MonoConnectException(message) =>
@@ -409,7 +408,6 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
         case _ =>  // fine
       }
       try {
-        //BiConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.forcedUserModule)
         BiConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.referenceUserModule)
       } catch {
         case BiConnect.BiConnectException(message) =>

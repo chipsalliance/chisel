@@ -1,8 +1,9 @@
 package chisel3.aop
 
-import chisel3.core.{RawModule, RunFirrtlTransform}
+import chisel3.core.{AdditionalTransforms, RawModule}
 import firrtl.annotations.Annotation
 import firrtl.{AnnotationSeq, RenameMap, Transform}
+
 import scala.reflect.runtime.universe.TypeTag
 
 /** Top-level container for multiple Aspects of a given type A that apply to a given design of type DUT
@@ -58,7 +59,3 @@ abstract class Concern[DUT <: RawModule, A <: Aspect[DUT, _]](implicit tag: Type
 }
 
 
-trait AdditionalTransforms extends RunFirrtlTransform {
-  def additionalTransformClasses: Seq[Class[_ <: Transform]]
-  final def getTransformClasses = transformClass +: additionalTransformClasses
-}

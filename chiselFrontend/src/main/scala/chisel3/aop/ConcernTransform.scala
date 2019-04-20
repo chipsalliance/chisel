@@ -1,6 +1,6 @@
 package chisel3.aop
 
-import chisel3.core.RawModule
+import chisel3.core.{DesignAnnotation, RawModule}
 import firrtl._
 
 import scala.collection.mutable

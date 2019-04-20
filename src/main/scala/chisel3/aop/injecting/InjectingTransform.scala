@@ -1,10 +1,13 @@
 package chisel3.aop.injecting
 
-import chisel3.aop.ConcernTransform
 import firrtl.{ChirrtlForm, CircuitForm, CircuitState, Transform, ir}
 
 import scala.collection.mutable
 
+/** Appends statements contained in [[InjectStatement]] annotations to the end of their corresponding modules
+  *
+  * Implemented with Chisel Aspects and the [[chisel3.aop.injecting]] library
+  */
 class InjectingTransform extends Transform {
   override def inputForm: CircuitForm = ChirrtlForm
   override def outputForm: CircuitForm = ChirrtlForm
@@ -13,6 +16,8 @@ class InjectingTransform extends Transform {
 
     val addStmtMap = mutable.HashMap[String, Seq[ir.Statement]]()
     val addModules = mutable.ArrayBuffer[ir.DefModule]()
+
+    // Populate addStmtMap and addModules, return annotations in InjectStatements, and omit InjectStatement annotation
     val newAnnotations = state.annotations.flatMap {
       case InjectStatement(mt, s, addedModules, annotations) =>
         addModules ++= addedModules
@@ -20,29 +25,20 @@ class InjectingTransform extends Transform {
         annotations
       case other => Seq(other)
     }
-    //addStmtMap.foreach(println)
 
+    // Append all statements to end of corresponding modules
     val newModules = state.circuit.modules.map { m: ir.DefModule =>
       m match {
         case m: ir.Module if addStmtMap.contains(m.name) =>
-          val newM = m.copy(body = ir.Block(m.body +: addStmtMap(m.name)))
-          //println(newM.serialize)
-          newM
+          m.copy(body = ir.Block(m.body +: addStmtMap(m.name)))
         case m: _root_.firrtl.ir.ExtModule if addStmtMap.contains(m.name) =>
           ir.Module(m.info, m.name, m.ports, ir.Block(addStmtMap(m.name)))
         case other: ir.DefModule => other
       }
     }
 
+    // Return updated circuit and annotations
     val newCircuit = state.circuit.copy(modules = newModules ++ addModules)
-
-    println("Injecting Transform")
-    println("Starting Annotations:")
-    state.annotations.foreach(println)
-    println("Ending Annotations:")
-    newAnnotations.foreach(println)
-
-
     state.copy(annotations = newAnnotations, circuit = newCircuit)
   }
 }

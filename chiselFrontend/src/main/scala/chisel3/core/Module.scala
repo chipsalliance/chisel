@@ -38,9 +38,6 @@ object Module extends SourceInfoDoc {
     Builder.readyForModuleConstr = true
 
     val parent = Builder.currentModule
-    //val parentAspect = Builder.aspectModule
-    //if(parentAspect.isDefined) Builder.currentModule = parentAspect
-    //Builder.aspectModule = None
 
     val whenDepth: Int = Builder.whenDepth
 
@@ -64,7 +61,6 @@ object Module extends SourceInfoDoc {
                      sourceInfo.makeMessage(" See " + _))
     }
     Builder.currentModule = parent // Back to parent!
-    //Builder.aspectModule = parentAspect
     Builder.whenDepth = whenDepth
     Builder.currentClockAndReset = clockAndReset // Back to clock and reset scope
 
@@ -150,7 +146,8 @@ object BaseModule {
 /** Abstract base class for Modules, an instantiable organizational unit for RTL.
   */
 // TODO: seal this?
-abstract class BaseModule extends HasId { //
+abstract class BaseModule extends HasId {
+  //
   // Builder Internals - this tracks which Module RTL construction belongs to.
   //
   if (!Builder.readyForModuleConstr) {
@@ -176,9 +173,6 @@ abstract class BaseModule extends HasId { //
     if(Builder.aspectModule(this).isDefined) {
       aspectModule(this).get.addId(d)
     } else {
-      if(_closed == true) {
-        println("HERE")
-      }
       require(!_closed, "Can't write to module after module close")
       _ids += d
     }
@@ -229,7 +223,12 @@ abstract class BaseModule extends HasId { //
   /** Returns a FIRRTL ModuleName that references this object
     * @note Should not be called until circuit elaboration is complete
     */
+  @deprecated("toNamed API is deprecated -- use toTarget instead", "3.2")
   final def toNamed: ModuleName = toTarget.toNamed
+
+  /** Returns a FIRRTL ModuleTarget that references this object
+    * @note Should not be called until circuit elaboration is complete
+    */
   final def toTarget: ModuleTarget = ModuleTarget(this.circuitName, this.name)
 
   /**

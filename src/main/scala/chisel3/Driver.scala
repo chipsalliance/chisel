@@ -6,14 +6,11 @@ import chisel3.internal.ErrorLog
 import chisel3.internal.firrtl.Converter
 import chisel3.experimental.{RawModule, RunFirrtlTransform}
 import java.io._
-
-import net.jcazevedo.moultingyaml._
 import internal.firrtl._
 import firrtl._
-import firrtl.annotations.{Annotation, JsonProtocol}
+import firrtl.annotations.JsonProtocol
 import firrtl.util.{BackendCompilationUtilities => FirrtlBackendCompilationUtilities}
-import _root_.firrtl.annotations.AnnotationYamlProtocol._
-import chisel3.aop.AdditionalTransforms
+import chisel3.core.AdditionalTransforms
 
 /**
   * The Driver provides methods to invoke the chisel3 compiler and the firrtl compiler.
@@ -226,13 +223,15 @@ object Driver extends BackendCompilationUtilities {
         *   transform being instantiated
         */
       val transforms = circuit.annotations
-        .flatMap {
-          case anno: AdditionalTransforms => anno.getTransformClasses
-          case anno: RunFirrtlTransform => Seq(anno.transformClass)
-          case _ => Nil
-        }.distinct
-        .filterNot(_ == classOf[firrtl.Transform])
-        .map { transformClass: Class[_ <: Transform] => transformClass.newInstance() }
+                         .flatMap {
+                           case anno: AdditionalTransforms => anno.getTransformClasses
+                           case anno: RunFirrtlTransform => Seq(anno.transformClass)
+                           case _ => Nil
+                         }.distinct
+                         .filterNot(_ == classOf[firrtl.Transform])
+                         .map { transformClass: Class[_ <: Transform] =>
+                           transformClass.newInstance()
+                         }
       /* This passes the firrtl source and annotations directly to firrtl */
       optionsManager.firrtlOptions = optionsManager.firrtlOptions.copy(
         firrtlCircuit = Some(firrtlCircuit),
