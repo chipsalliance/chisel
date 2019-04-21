@@ -460,7 +460,7 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     * )
     * }}}
     */
-  def Lit(elems: (this.type => (Data, Data))*): this.type = {  // scalastyle:ignore method.name
+  def Lit(elems: (this.type => (Data, Data))*): this.type = {  // scalastyle:ignore line.size.limit method.length method.name cyclomatic.complexity
     def getRecursiveFields(data: Data, path: String): Seq[(Data, String)] = data match {
       case data: Record => data.elements.map { case (fieldName, fieldData) =>
         getRecursiveFields(fieldData, s"$path.$fieldName")
