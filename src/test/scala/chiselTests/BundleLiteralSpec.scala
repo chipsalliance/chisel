@@ -90,6 +90,29 @@ class BundleLiteralSpec extends ChiselFlatSpec {
     } }
   }
 
+  "Bundle literals" should "assign" in {
+    assertTesterPasses{ new BasicTester{
+      val bundleWire = Wire(Output(new MyBundle))
+      val bundleLit = (new MyBundle).Lit(_.a -> 42.U, _.b -> true.B)
+      bundleWire := bundleLit
+
+      chisel3.assert(bundleWire.a === 42.U)
+      chisel3.assert(bundleWire.b === true.B)
+      stop()
+    } }
+  }
+
+  "partially initialized Bundle literals" should "assign" in {
+    assertTesterPasses{ new BasicTester{
+      val bundleWire = Wire(Output(new MyBundle))
+      val bundleLit = (new MyBundle).Lit(_.a -> 42.U)
+      bundleWire := bundleLit
+
+      chisel3.assert(bundleWire.a === 42.U)
+      stop()
+    } }
+  }
+
   "bundle literals with bad field specifiers" should "fail" in {
     val exc = intercept[BundleLiteralException] { elaborate { new RawModule {
       val bundle = new MyBundle

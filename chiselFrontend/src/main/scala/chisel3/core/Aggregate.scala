@@ -446,6 +446,8 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     *
     * @param elems literal values, specified as a pair of the Bundle field to the literal value.
     * The Bundle field is specified as a function from an object of this type to the field.
+    * Fields that aren't initialized to DontCare, and assignment to a wire will overwrite any
+    * existing value with DontCare.
     * @return a Bundle literal of this type with subelement values specified
     *
     * @example {{{
