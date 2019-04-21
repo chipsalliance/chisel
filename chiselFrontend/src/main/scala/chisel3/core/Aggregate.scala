@@ -461,12 +461,15 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     * }}}
     */
   def Lit(elems: (this.type => (Data, Data))*): this.type = {  // scalastyle:ignore line.size.limit method.length method.name cyclomatic.complexity
+    // Returns pairs of all fields, element-level and containers, in a Record and their path names
     def getRecursiveFields(data: Data, path: String): Seq[(Data, String)] = data match {
       case data: Record => data.elements.map { case (fieldName, fieldData) =>
         getRecursiveFields(fieldData, s"$path.$fieldName")
       }.fold(Seq(data -> path)) { _ ++ _ }
       case data => Seq(data -> path)  // we don't support or recurse into other Aggregate types here
     }
+
+    // Returns pairs of corresponding fields between two Records of the same type
     def getMatchedFields(x: Data, y: Data): Seq[(Data, Data)] = (x, y) match {
       case (x: Element, y: Element) =>
         require(x typeEquivalent y)
@@ -482,6 +485,7 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     val clone = cloneType
     val cloneFields = getRecursiveFields(clone, "(bundle root)").toMap
 
+    // Create the Bundle literal binding from litargs of arguments
     val bundleLitMap = elems.map { fn => fn(clone) }.flatMap { case (field, value) =>
       val fieldName = cloneFields.getOrElse(field,
         throw new BundleLiteralException(s"field $field (with value $value) is not a field," +
@@ -493,7 +497,7 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
         case _ => throw new BundleLiteralException(s"field $fieldName specified with non-literal value $value")
       }
 
-      field match {
+      field match {  // Get the litArg(s) for this field
         case field: Bits =>
           if (field.getClass != value.getClass) {  // TODO typeEquivalent is too strict because it checks width
             throw new BundleLiteralException(s"Field $fieldName $field specified with non-type-equivalent value $value")
@@ -508,6 +512,7 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
           if (!(field typeEquivalent value)) {
             throw new BundleLiteralException(s"field $fieldName $field specified with non-type-equivalent value $value")
           }
+          // Copy the source BundleLitBinding with fields (keys) remapped to the clone
           val remap = getMatchedFields(value, field).toMap
           value.topBinding.asInstanceOf[BundleLitBinding].litMap.map { case (valueField, valueValue) =>
             remap(valueField) -> valueValue
