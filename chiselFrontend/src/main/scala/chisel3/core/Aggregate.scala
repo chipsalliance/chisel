@@ -506,7 +506,7 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
           Seq(field -> litArg)
         case field: Record =>
           if (!(field typeEquivalent value)) {
-            throw new BundleLiteralException(s"Field $fieldName $field specified with non-type-equivalent value $value")
+            throw new BundleLiteralException(s"field $fieldName $field specified with non-type-equivalent value $value")
           }
           val remap = getMatchedFields(value, field).toMap
           value.topBinding.asInstanceOf[BundleLitBinding].litMap.map { case (valueField, valueValue) =>
@@ -517,8 +517,8 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     }  // don't convert to a Map yet to preserve duplicate keys
     val duplicates = bundleLitMap.map(_._1).groupBy(identity).collect { case (x, elts) if elts.size > 1 => x }
     if (!duplicates.isEmpty) {
-      val duplicateNames = duplicates.map(cloneFields(_))
-      throw new BundleLiteralException(s"Duplicate fields $duplicateNames in Bundle literal constructor")
+      val duplicateNames = duplicates.map(cloneFields(_)).mkString(", ")
+      throw new BundleLiteralException(s"duplicate fields $duplicateNames in Bundle literal constructor")
     }
     clone.selfBind(BundleLitBinding(bundleLitMap.toMap))
     clone

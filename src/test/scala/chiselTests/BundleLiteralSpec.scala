@@ -3,10 +3,9 @@
 package chiselTests
 
 import chisel3._
-import chisel3.core.FixedPoint
-import chisel3.experimental.RawModule
 import chisel3.testers.BasicTester
-import org.scalatest._
+import chisel3.experimental.RawModule
+import chisel3.core.BundleLiteralException
 
 class BundleLiteralSpec extends ChiselFlatSpec {
   class MyBundle extends Bundle {
@@ -89,5 +88,45 @@ class BundleLiteralSpec extends ChiselFlatSpec {
 
       stop()
     } }
+  }
+
+  "bundle literals with bad field specifiers" should "fail" in {
+    val exc = intercept[BundleLiteralException] { elaborate { new RawModule {
+      val bundle = new MyBundle
+      bundle.Lit(x => bundle.a -> 0.U)  // DONT DO THIS, this gets past a syntax error to exercise the failure
+    }}}
+    exc.getMessage should include ("not a field")
+  }
+
+  "bundle literals with duplicate fields" should "fail" in {
+    val exc = intercept[BundleLiteralException] { elaborate { new RawModule {
+      (new MyBundle).Lit(_.a -> 0.U, _.a -> 0.U)
+    }}}
+    exc.getMessage should include ("duplicate")
+    exc.getMessage should include (".a")
+  }
+
+  "bundle literals with non-literal values" should "fail" in {
+    val exc = intercept[BundleLiteralException] { elaborate { new RawModule {
+      (new MyBundle).Lit(_.a -> UInt())
+    }}}
+    exc.getMessage should include ("non-literal value")
+    exc.getMessage should include (".a")
+  }
+
+  "bundle literals with non-type-equivalent element fields" should "fail" in {
+    val exc = intercept[BundleLiteralException] { elaborate { new RawModule {
+      (new MyBundle).Lit(_.a -> true.B)
+    }}}
+    exc.getMessage should include ("non-type-equivalent value")
+    exc.getMessage should include (".a")
+  }
+
+  "bundle literals with non-type-equivalent sub-bundles" should "fail" in {
+    val exc = intercept[BundleLiteralException] { elaborate { new RawModule {
+      (new MyOuterBundle).Lit(_.b -> (new MyBundle).Lit(_.a -> 0.U))
+    }}}
+    exc.getMessage should include ("non-type-equivalent value")
+    exc.getMessage should include (".b")
   }
 }
