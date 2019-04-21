@@ -1,10 +1,9 @@
 // See LICENSE for license details.
 
 package chisel3.internal.firrtl
-import chisel3.core.{EnumType, SpecifiedDirection}
-import chisel3.internal.sourceinfo.{NoSourceInfo, SourceInfo, SourceLine}
-import chisel3.internal.throwException
+import chisel3.internal.sourceinfo.{NoSourceInfo, SourceLine, SourceInfo}
 import firrtl.{ir => fir}
+import chisel3.internal.{castToInt, throwException}
 
 import scala.annotation.tailrec
 import scala.collection.immutable.Queue
@@ -49,7 +48,7 @@ private[chisel3] object Converter {
     case Slot(imm, name) =>
       fir.SubField(convert(imm, ctx), name, fir.UnknownType)
     case Index(imm, ILit(idx)) =>
-      fir.SubIndex(convert(imm, ctx), idx.toInt, fir.UnknownType)
+      fir.SubIndex(convert(imm, ctx), castToInt(idx, "Index"), fir.UnknownType)
     case Index(imm, value) =>
       fir.SubAccess(convert(imm, ctx), convert(value, ctx), fir.UnknownType)
     case ModuleIO(mod, name) =>
