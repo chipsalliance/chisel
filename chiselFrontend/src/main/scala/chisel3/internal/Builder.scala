@@ -378,3 +378,12 @@ object DynamicNamingStack {
     prefixRef
   }
 }
+
+/** Casts BigInt to Int, issuing an error when the input isn't representable. */
+private[chisel3] object castToInt {
+  def apply(x: BigInt, msg: String): Int = {
+    val res = x.toInt
+    require(x == res, s"$msg $x is too large to be represented as Int")
+    res
+  }
+}
