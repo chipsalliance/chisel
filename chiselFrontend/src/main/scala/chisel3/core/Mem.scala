@@ -16,12 +16,24 @@ object Mem {
   @deprecated("Mem argument order should be size, t; this will be removed by the official release", "chisel3")
   def apply[T <: Data](t: T, size: BigInt)(implicit compileOptions: CompileOptions): Mem[T] = do_apply(size, t)(UnlocatableSourceInfo, compileOptions)
 
+  // scalastyle:off line.size.limit
+  @chiselRuntimeDeprecated
+  @deprecated("Mem argument order should be size, t; this will be removed by the official release", "chisel3")
+  def apply[T <: Data](t: T, size: Int)(implicit compileOptions: CompileOptions): Mem[T] = do_apply(size, t)(UnlocatableSourceInfo, compileOptions)
+
   /** Creates a combinational/asynchronous-read, sequential/synchronous-write [[Mem]].
     *
     * @param size number of elements in the memory
     * @param t data type of memory element
     */
   def apply[T <: Data](size: BigInt, t: T): Mem[T] = macro MemTransform.apply[T]
+
+  /** Creates a combinational/asynchronous-read, sequential/synchronous-write [[Mem]].
+    *
+    * @param size number of elements in the memory
+    * @param t data type of memory element
+    */
+  def apply[T <: Data](size: Int, t: T): Mem[T] = macro MemTransform.apply[T]
 
   /** @group SourceInfoTransformMacro */
   def do_apply[T <: Data](size: BigInt, t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Mem[T] = {
@@ -42,6 +54,11 @@ sealed abstract class MemBase[T <: Data](t: T, val length: BigInt) extends HasId
     * class documentation of the memory for more detailed information.
     */
   def apply(x: BigInt): T = macro SourceInfoTransform.xArg
+
+  /** Creates a read accessor into the memory with static addressing. See the
+    * class documentation of the memory for more detailed information.
+    */
+  def apply(x: Int): T = macro SourceInfoTransform.xArg
 
   /** @group SourceInfoTransformMacro */
   def do_apply(idx: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
@@ -130,12 +147,23 @@ object SyncReadMem {
   @deprecated("SeqMem/SyncReadMem argument order should be size, t; this will be removed by the official release", "chisel3")
   def apply[T <: Data](t: T, size: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SyncReadMem[T] = do_apply(size, t)
 
+  @chiselRuntimeDeprecated
+  @deprecated("SeqMem/SyncReadMem argument order should be size, t; this will be removed by the official release", "chisel3")
+  def apply[T <: Data](t: T, size: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SyncReadMem[T] = do_apply(size, t)
+
   /** Creates a sequential/synchronous-read, sequential/synchronous-write [[SyncReadMem]].
     *
     * @param size number of elements in the memory
     * @param t data type of memory element
     */
   def apply[T <: Data](size: BigInt, t: T): SyncReadMem[T] = macro MemTransform.apply[T]
+
+  /** Creates a sequential/synchronous-read, sequential/synchronous-write [[SyncReadMem]].
+    *
+    * @param size number of elements in the memory
+    * @param t data type of memory element
+    */
+  def apply[T <: Data](size: Int, t: T): SyncReadMem[T] = macro MemTransform.apply[T]
 
   /** @group SourceInfoTransformMacro */
   def do_apply[T <: Data](size: BigInt, t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SyncReadMem[T] = {
