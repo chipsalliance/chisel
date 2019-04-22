@@ -13,25 +13,25 @@ class AnalogPortRawModule(val vec_ports: Int = 4) extends RawModule {
   val s_in         = IO(Input(UInt(32.W)))
   val s_out        = IO(Output(UInt(32.W)))
   val v_analog     = IO(Vec(vec_ports, Analog(32.W)))
-  val v_in         = IO(Vec(vec_ports, Input(UInt(32.W))))
-  val v_out        = IO(Vec(vec_ports, Output(UInt(32.W))))
+  val v_in         = IO(Input(Vec(vec_ports, UInt(32.W))))
+  val v_out        = IO(Output(Vec(vec_ports, UInt(32.W))))
   
-  val sig_wr_mod = new AnalogWriterBlackBox
+  val sig_wr_mod = Module(new AnalogWriterBlackBox)
   attach(sig_wr_mod.io.bus, s_analog)
   sig_wr_mod.io.in := s_in
   
-  val sig_rd_mod = new AnalogReaderBlackBox
+  val sig_rd_mod = Module(new AnalogReaderBlackBox)
   attach(sig_rd_mod.io.bus, s_analog)
   s_out := sig_rd_mod.io.out
   
   (v_analog zip v_in).foreach{ case( ana, in ) => 
-    val vec_wr_mod = new AnalogWriterBlackBox
+    val vec_wr_mod = Module(new AnalogWriterBlackBox)
     attach(vec_wr_mod.io.bus, ana)
     vec_wr_mod.io.in := in
   }
   
   (v_analog zip v_out).foreach{ case( ana, out ) => 
-    val vec_rd_mod = new AnalogReaderBlackBox
+    val vec_rd_mod = Module(new AnalogReaderBlackBox)
     attach(vec_rd_mod.io.bus, ana)
     out := vec_rd_mod.io.out
   }
