@@ -139,6 +139,19 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
     }
   }
 
+  // Special case "type" of CHIRRTL mems because their size can be BigInt
+  private def visitCMemType(ctx: TypeContext): (Type, BigInt) = {
+    def loc: String = s"${ctx.getStart.getLine}:${ctx.getStart.getCharPositionInLine}"
+    ctx.getChild(0) match {
+      case typeContext: TypeContext =>
+        val tpe = visitType(ctx.`type`)
+        val size = string2BigInt(ctx.intLit(0).getText)
+        (tpe, size)
+      case _ =>
+        throw new ParserException(s"[$loc] Must provide cmem or smem with vector type, got ${ctx.getText}")
+    }
+  }
+
   private def visitField[FirrtlNode](ctx: FieldContext): Field = {
     val flip = if (ctx.getChild(0).getText == "flip") Flip else Default
     Field(ctx.fieldId.getText, flip, visitType(ctx.`type`))
@@ -156,7 +169,7 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
     val readers = mutable.ArrayBuffer.empty[String]
     val writers = mutable.ArrayBuffer.empty[String]
     val readwriters = mutable.ArrayBuffer.empty[String]
-    case class ParamValue(typ: Option[Type] = None, lit: Option[Int] = None, ruw: Option[String] = None, unique: Boolean = true)
+    case class ParamValue(typ: Option[Type] = None, lit: Option[BigInt] = None, ruw: Option[String] = None, unique: Boolean = true)
     val fieldMap = mutable.HashMap[String, ParamValue]()
 
     def parseMemFields(memFields: Seq[MemFieldContext]): Unit =
@@ -171,7 +184,7 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
             val paramDef = fieldName match {
               case "data-type" => ParamValue(typ = Some(visitType(field.`type`())))
               case "read-under-write" => ParamValue(ruw = Some(field.ruw().getText)) // TODO
-              case _ => ParamValue(lit = Some(field.intLit().getText.toInt))
+              case _ => ParamValue(lit = Some(BigInt(field.intLit().getText)))
             }
             if (fieldMap.contains(fieldName))
               throw new ParameterRedefinedException(s"Redefinition of $fieldName in FIRRTL line:${field.start.getLine}")
@@ -201,7 +214,8 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
     DefMemory(info,
       name = ctx.id(0).getText, dataType = fieldMap("data-type").typ.get,
       depth = lit("depth"),
-      writeLatency = lit("write-latency"), readLatency = lit("read-latency"),
+      writeLatency = lit("write-latency").toInt,
+      readLatency = lit("read-latency").toInt,
       readers = readers, writers = writers, readwriters = readwriters,
       readUnderWrite = ruw
     )
@@ -250,21 +264,11 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
           DefRegister(info, name, tpe, visitExp(ctx_exp(0)), reset, init)
         case "mem" => visitMem(ctx)
         case "cmem" =>
-          val t = visitType(ctx.`type`())
-          t match {
-            case (t: VectorType) => CDefMemory(info, ctx.id(0).getText, t.tpe, t.size, seq = false)
-            case _ => throw new ParserException(s"${
-              info
-            }: Must provide cmem with vector type")
-          }
+          val (tpe, size) = visitCMemType(ctx.`type`())
+          CDefMemory(info, ctx.id(0).getText, tpe, size, seq = false)
         case "smem" =>
-          val t = visitType(ctx.`type`())
-          t match {
-            case (t: VectorType) => CDefMemory(info, ctx.id(0).getText, t.tpe, t.size, seq = true)
-            case _ => throw new ParserException(s"${
-              info
-            }: Must provide cmem with vector type")
-          }
+          val (tpe, size) = visitCMemType(ctx.`type`())
+          CDefMemory(info, ctx.id(0).getText, tpe, size, seq = true)
         case "inst" => DefInstance(info, ctx.id(0).getText, ctx.id(1).getText)
         case "node" => DefNode(info, ctx.id(0).getText, visitExp(ctx_exp(0)))
 

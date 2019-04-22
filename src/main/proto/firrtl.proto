@@ -110,7 +110,10 @@ message Firrtl {
       // Required.
       Type type = 2;
       // Required.
-      uint32 depth = 3;
+      oneof depth {
+        uint32 uint_depth = 3;
+        BigInt bigint_depth = 9;
+      }
       // Required.
       uint32 write_latency = 4;
       // Required.
@@ -121,10 +124,18 @@ message Firrtl {
     }
 
     message CMemory {
+      // As alternative to using VectorType as type
+      message TypeAndDepth {
+        Type data_type = 1;
+        BigInt depth = 2;
+      }
       // Required.
       string id = 1;
       // Required.
-      Type.VectorType type = 2;
+      oneof type {
+        Type.VectorType vector_type = 2;
+        TypeAndDepth type_and_depth = 4;
+      }
       // Required.
       bool sync_read = 3;
     }

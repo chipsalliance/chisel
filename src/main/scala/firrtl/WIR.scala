@@ -313,7 +313,7 @@ case class CDefMemory(
     info: Info,
     name: String,
     tpe: Type,
-    size: Int,
+    size: BigInt,
     seq: Boolean) extends Statement with HasInfo {
   def serialize: String = (if (seq) "smem" else "cmem") +
     s" $name : ${tpe.serialize} [$size]" + info.serialize

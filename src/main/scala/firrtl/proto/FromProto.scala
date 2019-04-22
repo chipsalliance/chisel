@@ -133,9 +133,19 @@ object FromProto {
     ir.Conditionally(convert(info), convert(when.getPredicate), conseq, alt)
   }
 
+  def convert(dt: Firrtl.Statement.CMemory.TypeAndDepth): (ir.Type, BigInt) =
+    (convert(dt.getDataType), convert(dt.getDepth))
+
   def convert(cmem: Firrtl.Statement.CMemory, info: Firrtl.SourceInfo): ir.Statement = {
-    val vtpe = convert(cmem.getType)
-    CDefMemory(convert(info), cmem.getId, vtpe.tpe, vtpe.size, cmem.getSyncRead)
+    import Firrtl.Statement.CMemory._
+    val (tpe, depth) = cmem.getTypeCase.getNumber match {
+      case VECTOR_TYPE_FIELD_NUMBER =>
+        val vtpe = convert(cmem.getVectorType)
+        (vtpe.tpe, BigInt(vtpe.size))
+      case TYPE_AND_DEPTH_FIELD_NUMBER =>
+        convert(cmem.getTypeAndDepth)
+    }
+    CDefMemory(convert(info), cmem.getId, tpe, depth, cmem.getSyncRead)
   }
 
   import Firrtl.Statement.MemoryPort.Direction._
@@ -165,7 +175,12 @@ object FromProto {
     val rs = mem.getReaderIdList.asScala
     val ws = mem.getWriterIdList.asScala
     val rws = mem.getReadwriterIdList.asScala
-    ir.DefMemory(convert(info), mem.getId, dtype, mem.getDepth, mem.getWriteLatency, mem.getReadLatency,
+    import Firrtl.Statement.Memory._
+    val depth = mem.getDepthCase.getNumber match {
+      case UINT_DEPTH_FIELD_NUMBER => BigInt(mem.getUintDepth)
+      case BIGINT_DEPTH_FIELD_NUMBER => convert(mem.getBigintDepth)
+    }
+    ir.DefMemory(convert(info), mem.getId, dtype, depth, mem.getWriteLatency, mem.getReadLatency,
                  rs, ws, rws, None)
   }
 

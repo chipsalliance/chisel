@@ -190,6 +190,11 @@ object ToProto {
     }
   }
 
+  def convert(tpe: ir.Type, depth: BigInt): Firrtl.Statement.CMemory.TypeAndDepth.Builder =
+    Firrtl.Statement.CMemory.TypeAndDepth.newBuilder()
+      .setDataType(convert(tpe))
+      .setDepth(convertToBigInt(depth))
+
   def convert(stmt: ir.Statement): Seq[Firrtl.Statement.Builder] = {
     stmt match {
       case ir.Block(stmts) => stmts.flatMap(convert(_))
@@ -259,7 +264,7 @@ object ToProto {
             val mem = Firrtl.Statement.Memory.newBuilder()
               .setId(name)
               .setType(convert(dtype))
-              .setDepth(depth)
+              .setBigintDepth(convertToBigInt(depth))
               .setWriteLatency(wlat)
               .setReadLatency(rlat)
             mem.addAllReaderId(rs.asJava)
@@ -267,10 +272,9 @@ object ToProto {
             mem.addAllReadwriterId(rws.asJava)
             sb.setMemory(mem)
           case CDefMemory(_, name, tpe, size, seq) =>
-            val tpeb = convert(ir.VectorType(tpe, size))
             val mb = Firrtl.Statement.CMemory.newBuilder()
               .setId(name)
-              .setType(tpeb)
+              .setTypeAndDepth(convert(tpe, size))
               .setSyncRead(seq)
             sb.setCmemory(mb)
           case CDefMPort(_, name, _, mem, exprs, dir) =>

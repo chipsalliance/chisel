@@ -107,12 +107,12 @@ class ProtoBufSpec extends FirrtlFlatSpec {
     FromProto.convert(ToProto.convert(ext).build) should equal (ext)
   }
 
-  it should "supported FixedType" in {
+  it should "support FixedType" in {
     val ftpe = ir.FixedType(IntWidth(8), IntWidth(4))
     FromProto.convert(ToProto.convert(ftpe).build) should equal (ftpe)
   }
 
-  it should "supported FixedLiteral" in {
+  it should "support FixedLiteral" in {
     val flit = ir.FixedLiteral(3, IntWidth(8), IntWidth(4))
     FromProto.convert(ToProto.convert(flit).build) should equal (flit)
   }
@@ -136,6 +136,47 @@ class ProtoBufSpec extends FirrtlFlatSpec {
   it should "support SIntLiteral with a width" in {
     val slit = ir.SIntLiteral(-123)
     FromProto.convert(ToProto.convert(slit).build) should equal (slit)
+  }
+
+  // Backwards compatibility
+  it should "support mems using old uint32 and new BigInt" in {
+    val size = 128
+    val mem = DefMemory(NoInfo, "m", UIntType(IntWidth(8)), size, 1, 1, List("r"), List("w"), List("rw"))
+    val builder = ToProto.convert(mem).head
+    val defaultProto = builder.build()
+    val oldProto = Firrtl.Statement.newBuilder().setMemory(
+      builder.getMemoryBuilder.clearDepth().setUintDepth(size)
+    ).build()
+    // These Proto messages are not the same
+    defaultProto shouldNot equal (oldProto)
+
+    val defaultMem = FromProto.convert(defaultProto)
+    val oldMem = FromProto.convert(oldProto)
+
+    // But they both deserialize to the original!
+    defaultMem should equal (mem)
+    oldMem should equal (mem)
+  }
+
+  // Backwards compatibility
+  it should "support cmems using old VectorType and new TypeAndDepth" in {
+    val size = 128
+    val cmem = CDefMemory(NoInfo, "m", UIntType(IntWidth(8)), size, true)
+    val vtpe = ToProto.convert(VectorType(UIntType(IntWidth(8)), size))
+    val builder = ToProto.convert(cmem).head
+    val defaultProto = builder.build()
+    val oldProto = Firrtl.Statement.newBuilder().setCmemory(
+      builder.getCmemoryBuilder.clearTypeAndDepth().setVectorType(vtpe)
+    ).build()
+    // These Proto messages are not the same
+    defaultProto shouldNot equal (oldProto)
+
+    val defaultCMem = FromProto.convert(defaultProto)
+    val oldCMem = FromProto.convert(oldProto)
+
+    // But they both deserialize to the original!
+    defaultCMem should equal (cmem)
+    oldCMem should equal (cmem)
   }
 
   it should "support AsyncResetTypes" in {
