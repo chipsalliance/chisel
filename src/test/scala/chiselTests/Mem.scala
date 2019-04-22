@@ -86,10 +86,11 @@ class MemorySpec extends ChiselPropSpec {
   }
 
   property("Massive memories should be emitted in Verilog") {
-    val size = BigInt(1) << 65
+    val addrWidth = 65
+    val size = BigInt(1) << addrWidth
     val smem = compile(new HugeSMemTester(size))
-    smem should include (s"reg /* sparse */ [7:0] mem [0:${size-1}];")
+    smem should include (s"reg /* sparse */ [7:0] mem [0:$addrWidth'd${size-1}];")
     val cmem = compile(new HugeCMemTester(size))
-    cmem should include (s"reg /* sparse */ [7:0] mem [0:${size-1}];")
+    cmem should include (s"reg /* sparse */ [7:0] mem [0:$addrWidth'd${size-1}];")
   }
 }
