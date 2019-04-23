@@ -4,7 +4,7 @@ import firrtl.annotations.{Annotation, ModuleTarget, NoTargetAnnotation, SingleT
 
 /** Contains all information needed to inject statements into a module
   *
-  * Generated when a [[InjectingAspect]] is consumed by a [[chisel3.aop.ConcernTransform]]
+  * Generated when a [[InjectingAspect]] is consumed by a [[chisel3.aop.AspectTransform]]
   * Consumed by [[InjectingTransform]]
   *
   * @param module Module to inject code into at the end of the module

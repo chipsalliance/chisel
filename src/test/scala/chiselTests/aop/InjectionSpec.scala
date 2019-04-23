@@ -3,7 +3,7 @@ package chiselTests.aop
 import chisel3.testers.BasicTester
 import chiselTests.ChiselFlatSpec
 import chisel3._
-import chisel3.aop.injecting.{InjectingAspect, InjectingConcern}
+import chisel3.aop.injecting.InjectingAspect
 
 class AspectTester(results: Seq[Int]) extends BasicTester {
   val values = VecInit(results.map(_.U))
@@ -28,7 +28,7 @@ class InjectionSpec extends ChiselFlatSpec {
   }
   "Test" should "pass if pass wrong values, but correct with aspect" in {
     val correctValues = InjectingAspect(
-      {dut: AspectTester => dut},
+      {dut: AspectTester => Seq(dut)},
       {dut: AspectTester =>
         for(i <- 0 until dut.values.length) {
           dut.values(i) := i.U
@@ -36,10 +36,10 @@ class InjectionSpec extends ChiselFlatSpec {
       }
     )
 
-    case object MyConcern extends InjectingConcern[AspectTester, InjectingAspect[AspectTester, _]] {
-      override def aspects = Seq(correctValues)
+    case object MyConcern {
+      def aspects = Seq(correctValues)
     }
 
-    assertTesterPasses({ new AspectTester(Seq(9, 9, 9))} , Nil, Seq(MyConcern))
+    assertTesterPasses({ new AspectTester(Seq(9, 9, 9))} , Nil, MyConcern.aspects)
   }
 }
