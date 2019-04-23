@@ -6,7 +6,8 @@ import chisel3.internal.ErrorLog
 import chisel3.experimental.RawModule
 import internal.firrtl._
 import firrtl._
-import firrtl.options.Phase
+import firrtl.options.{Phase, PhaseManager}
+import firrtl.options.phases.DeletedWrapper
 import firrtl.options.Viewer.view
 import firrtl.annotations.JsonProtocol
 import firrtl.util.{BackendCompilationUtilities => FirrtlBackendCompilationUtilities}
@@ -200,22 +201,27 @@ object Driver extends BackendCompilationUtilities {
       optionsManager: ExecutionOptionsManager with HasChiselExecutionOptions with HasFirrtlOptions,
       dut: () => RawModule): ChiselExecutionResult = {
 
-    val annos = ChiselGeneratorAnnotation(dut) +:
-      (optionsManager.chiselOptions.toAnnotations ++
-         optionsManager.firrtlOptions.toAnnotations ++
-         optionsManager.commonOptions.toAnnotations)
+    val annos: AnnotationSeq =
+      Seq(DriverCompatibility.OptionsManagerAnnotation(optionsManager), ChiselGeneratorAnnotation(dut)) ++
+        optionsManager.chiselOptions.toAnnotations ++
+        optionsManager.firrtlOptions.toAnnotations ++
+        optionsManager.commonOptions.toAnnotations
 
-    val phases: Seq[Phase] =
-      Seq( new DriverCompatibility.AddImplicitOutputFile,
-           new DriverCompatibility.AddImplicitOutputAnnotationFile,
-           new DriverCompatibility.DisableFirrtlStage,
-           new ChiselStage,
-           new DriverCompatibility.MutateOptionsManager(optionsManager),
-           new DriverCompatibility.ReEnableFirrtlStage,
-           new firrtl.stage.phases.DriverCompatibility.AddImplicitOutputFile,
-           new firrtl.stage.phases.DriverCompatibility.AddImplicitEmitter,
-           new chisel3.stage.phases.MaybeFirrtlStage )
-        .map(firrtl.options.phases.DeletedWrapper(_))
+    val targets =
+      Seq( classOf[DriverCompatibility.AddImplicitOutputFile],
+           classOf[DriverCompatibility.AddImplicitOutputAnnotationFile],
+           classOf[DriverCompatibility.DisableFirrtlStage],
+           classOf[ChiselStage],
+           classOf[DriverCompatibility.MutateOptionsManager],
+           classOf[DriverCompatibility.ReEnableFirrtlStage],
+           classOf[DriverCompatibility.FirrtlPreprocessing],
+           classOf[chisel3.stage.phases.MaybeFirrtlStage] )
+    val currentState =
+      Seq( classOf[firrtl.stage.phases.DriverCompatibility.AddImplicitFirrtlFile] )
+
+    val phases: Seq[Phase] = new PhaseManager(targets, currentState) {
+      override val wrappers = Seq( DeletedWrapper(_: Phase) )
+    }.transformOrder
 
     val annosx = try {
       phases.foldLeft(annos)( (a, p) => p.transform(a) )
