@@ -44,6 +44,34 @@ class SyncReadMemWithZeroWidthTester extends BasicTester {
   }
 }
 
+// TODO this can't actually simulate with FIRRTL behavioral mems
+class HugeSMemTester(size: BigInt) extends BasicTester {
+  val (cnt, _) = Counter(true.B, 5)
+  val mem = SyncReadMem(size, UInt(8.W))
+  val rdata = mem.read(cnt - 1.U, cnt =/= 0.U)
+
+  switch (cnt) {
+    is (0.U) { mem.write(cnt, 3.U) }
+    is (1.U) { mem.write(cnt, 2.U) }
+    is (2.U) { assert(rdata === 3.U) }
+    is (3.U) { assert(rdata === 2.U) }
+    is (4.U) { stop() }
+  }
+}
+class HugeCMemTester(size: BigInt) extends BasicTester {
+  val (cnt, _) = Counter(true.B, 5)
+  val mem = Mem(size, UInt(8.W))
+  val rdata = mem.read(cnt)
+
+  switch (cnt) {
+    is (0.U) { mem.write(cnt, 3.U) }
+    is (1.U) { mem.write(cnt, 2.U) }
+    is (2.U) { assert(rdata === 3.U) }
+    is (3.U) { assert(rdata === 2.U) }
+    is (4.U) { stop() }
+  }
+}
+
 class MemorySpec extends ChiselPropSpec {
   property("Mem of Vec should work") {
     assertTesterPasses { new MemVecTester }
@@ -55,5 +83,14 @@ class MemorySpec extends ChiselPropSpec {
 
   property("SyncReadMem should work with zero width entry") {
     assertTesterPasses { new SyncReadMemWithZeroWidthTester }
+  }
+
+  property("Massive memories should be emitted in Verilog") {
+    val addrWidth = 65
+    val size = BigInt(1) << addrWidth
+    val smem = compile(new HugeSMemTester(size))
+    smem should include (s"reg /* sparse */ [7:0] mem [0:$addrWidth'd${size-1}];")
+    val cmem = compile(new HugeCMemTester(size))
+    cmem should include (s"reg /* sparse */ [7:0] mem [0:$addrWidth'd${size-1}];")
   }
 }
