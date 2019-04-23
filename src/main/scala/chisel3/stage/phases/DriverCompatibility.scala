@@ -4,10 +4,10 @@ package chisel3.stage.phases
 
 import firrtl.AnnotationSeq
 import firrtl.annotations.NoTargetAnnotation
-import firrtl.options.{OutputAnnotationFileAnnotation, Phase}
+import firrtl.options.{OutputAnnotationFileAnnotation, Phase, PreservesAll}
 import firrtl.stage.phases.DriverCompatibility.TopNameAnnotation
 
-import chisel3.stage.ChiselOutputFileAnnotation
+import chisel3.stage.{ChiselOutputFileAnnotation, ChiselStage}
 
 /** This provides components of a compatibility wrapper around Chisel's deprecated [[chisel.Driver Driver]].
   *
@@ -24,7 +24,10 @@ object DriverCompatibility {
     * the correct behavior before a circuit has been elaborated.
     * @note the output suffix is unspecified and will be set by [[chisel3.stage.phases.EmitCircuit EmitCircuit]]
     */
-  private [chisel3] class AddImplicitOutputFile extends Phase {
+  private [chisel3] class AddImplicitOutputFile extends Phase with PreservesAll[Phase] {
+
+    override val dependents: Set[Class[Phase]] =
+      Set( classOf[firrtl.stage.phases.DriverCompatibility.AddImplicitOutputFile] )
 
     def transform(annotations: AnnotationSeq): AnnotationSeq = {
       val hasOutputFile = annotations
@@ -48,7 +51,7 @@ object DriverCompatibility {
     * @note the output suffix is unspecified and will be set by [[firrtl.options.phases.WriteOutputAnnotations
     * WriteOutputAnnotations]]
     */
-  private [chisel3] class AddImplicitOutputAnnotationFile extends Phase {
+  private [chisel3] class AddImplicitOutputAnnotationFile extends Phase with PreservesAll[Phase] {
 
     def transform(annotations: AnnotationSeq): AnnotationSeq = annotations
       .collectFirst{ case a: OutputAnnotationFileAnnotation => annotations }

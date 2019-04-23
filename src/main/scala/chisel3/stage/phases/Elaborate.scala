@@ -9,10 +9,12 @@ import chisel3.internal.ErrorLog
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselCircuitAnnotation, ChiselOptions}
 
 import firrtl.AnnotationSeq
-import firrtl.options.{OptionsException, Phase}
+import firrtl.options.{OptionsException, Phase, PreservesAll}
 import firrtl.options.Viewer.view
 
-class Elaborate extends Phase {
+class Elaborate extends Phase with PreservesAll[Phase] {
+
+  override val prerequisites: Set[Class[Phase]] = Set(classOf[Checks])
 
   def transform(annotations: AnnotationSeq): AnnotationSeq = annotations.flatMap {
     case a: ChiselGeneratorAnnotation =>
