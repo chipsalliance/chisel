@@ -3,20 +3,19 @@
 package chisel3.stage
 
 import firrtl.AnnotationSeq
-import firrtl.options.{Phase, Shell, Stage}
+import firrtl.options.{Phase, PhaseManager, PreservesAll, Shell, Stage}
 import firrtl.options.Viewer.view
 import firrtl.stage.{FirrtlCli, FirrtlStage}
 
-class ChiselStage extends Stage {
+class ChiselStage extends Stage with PreservesAll[Phase] {
   val shell: Shell = new Shell("chisel") with ChiselCli with FirrtlCli
 
   private val phases: Seq[Phase] =
-    Seq( new chisel3.stage.phases.Checks,
-         new chisel3.stage.phases.Elaborate,
-         new chisel3.stage.phases.AddImplicitOutputFile,
-         new chisel3.stage.phases.AddImplicitOutputAnnotationFile,
-         new chisel3.stage.phases.Emitter,
-         new chisel3.stage.phases.Convert )
+    new PhaseManager( Set( classOf[chisel3.stage.phases.Elaborate],
+                           classOf[chisel3.stage.phases.AddImplicitOutputAnnotationFile],
+                           classOf[chisel3.stage.phases.Emitter],
+                           classOf[chisel3.stage.phases.Convert] ) )
+      .transformOrder
       .map(firrtl.options.phases.DeletedWrapper(_))
 
   def run(annotations: AnnotationSeq): AnnotationSeq = {
