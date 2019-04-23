@@ -4,7 +4,7 @@ package chisel3.stage.phases
 
 import firrtl.AnnotationSeq
 import firrtl.annotations.NoTargetAnnotation
-import firrtl.options.{OutputAnnotationFileAnnotation, Phase, PreservesAll}
+import firrtl.options.{OutputAnnotationFileAnnotation, Phase, PhaseManager, PreservesAll}
 import firrtl.stage.phases.DriverCompatibility.TopNameAnnotation
 
 import chisel3.stage.{ChiselOutputFileAnnotation, ChiselStage}
@@ -64,6 +64,26 @@ object DriverCompatibility {
           annotations
         }
       }
+  }
+
+  /** A placeholder [[Phase]] that enables the scheduling of prerequisites we cannot modify. To prevent an implicit FIRRTL
+    * file from being added, this defines the current state as having run that.
+    * @todo a better solution than the current state hack below may be needed
+    */
+  private [chisel3] class Preprocessing
+      extends PhaseManager( targets = Set(
+                             classOf[AddImplicitOutputFile],
+                             classOf[AddImplicitOutputAnnotationFile],
+                             classOf[firrtl.stage.phases.DriverCompatibility.AddImplicitOutputFile],
+                             classOf[firrtl.stage.phases.DriverCompatibility.AddImplicitEmitter] )
+                             .map(_.asInstanceOf[Class[Phase]]),
+                            currentState = Set(
+                              classOf[firrtl.stage.phases.DriverCompatibility.AddImplicitFirrtlFile])
+                              .map(_.asInstanceOf[Class[Phase]]) )
+      with PreservesAll[Phase] {
+
+    override val dependents: Set[Class[Phase]] = Set( classOf[ChiselStage] )
+
   }
 
 }

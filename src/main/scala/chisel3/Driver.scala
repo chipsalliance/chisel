@@ -14,7 +14,7 @@ import net.jcazevedo.moultingyaml._
 import internal.firrtl._
 import firrtl._
 import firrtl.annotations.{Annotation, JsonProtocol}
-import firrtl.options.Phase
+import firrtl.options.{Phase, PhaseManager}
 import firrtl.options.Viewer.view
 import firrtl.util.{ BackendCompilationUtilities => FirrtlBackendCompilationUtilities }
 
@@ -191,13 +191,11 @@ object Driver extends BackendCompilationUtilities {
          optionsManager.firrtlOptions.toAnnotations ++
          optionsManager.commonOptions.toAnnotations)
 
-    val phases: Seq[Phase] =
-      Seq( new DriverCompatibility.AddImplicitOutputFile,
-           new DriverCompatibility.AddImplicitOutputAnnotationFile,
-           new firrtl.stage.phases.DriverCompatibility.AddImplicitOutputFile,
-           new firrtl.stage.phases.DriverCompatibility.AddImplicitEmitter,
-           new ChiselStage )
-        .map(firrtl.options.phases.DeletedWrapper(_))
+    val phases: Seq[Phase] = new PhaseManager(
+      Set( classOf[DriverCompatibility.Preprocessing],
+           classOf[ChiselStage] ).map(_.asInstanceOf[Class[Phase]]) )
+      .transformOrder
+      .map(firrtl.options.phases.DeletedWrapper(_))
 
     val annosx = try {
       phases.foldLeft(annos)( (a, p) => p.transform(a) )
