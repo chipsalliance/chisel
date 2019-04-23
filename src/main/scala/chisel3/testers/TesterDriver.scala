@@ -2,12 +2,12 @@
 
 package chisel3.testers
 
+import chisel3._
 import java.io._
 
-import chisel3._
 import chisel3.experimental.RunFirrtlTransform
-import firrtl.transforms.BlackBoxSourceHelper.writeResourceToDirectory
 import firrtl.{Driver => _, _}
+import firrtl.transforms.BlackBoxSourceHelper.writeResourceToDirectory
 
 object TesterDriver extends BackendCompilationUtilities {
 

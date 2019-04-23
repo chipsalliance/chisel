@@ -2,9 +2,9 @@
 
 package chiselTests
 
-import chisel3._
-import chisel3.experimental.{IO, RawModule}
 import org.scalatest._
+import chisel3._
+import chisel3.experimental.RawModule
 
 class DirectionedBundle extends Bundle {
   val in = Input(UInt(32.W))
@@ -127,7 +127,7 @@ class DirectionSpec extends ChiselPropSpec with Matchers {
     }
   }
 
-  import chisel3.experimental.{DataMirror, Direction, MultiIOModule}
+  import chisel3.experimental.{MultiIOModule, DataMirror, Direction, RawModule}
 
   property("Directions should be preserved through cloning and binding of Bundles") {
     elaborate(new MultiIOModule {

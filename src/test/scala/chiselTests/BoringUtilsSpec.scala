@@ -3,14 +3,15 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.{BaseModule, ChiselAnnotation, MultiIOModule, RawModule, RunFirrtlTransform}
-import chisel3.testers.BasicTester
 import chisel3.util.Counter
+import chisel3.testers.BasicTester
+import chisel3.experimental.{BaseModule, ChiselAnnotation, MultiIOModule, RawModule, RunFirrtlTransform}
 import chisel3.util.experimental.BoringUtils
+
+import firrtl.{CircuitForm, CircuitState, ChirrtlForm, Transform}
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
-import firrtl.passes.wiring.WiringException
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
-import firrtl.{ChirrtlForm, CircuitForm, CircuitState, Transform}
+import firrtl.passes.wiring.WiringException
 
 abstract class ShouldntAssertTester(cyclesToWait: BigInt = 4) extends BasicTester {
   val dut: BaseModule

@@ -2,12 +2,12 @@
 
 package chisel3
 
-import chisel3.internal.Builder.pushCommand
+import scala.language.experimental.macros
+
 import chisel3.internal._
+import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.SourceInfo
-
-import scala.language.experimental.macros
 
 /** Utility for constructing hardware registers
   *

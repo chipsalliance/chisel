@@ -2,14 +2,20 @@
 
 package chiselTests
 
+import org.scalatest._
+import org.scalatest.prop._
+import org.scalacheck._
 import chisel3._
 import chisel3.experimental.RawModule
 import chisel3.testers._
+import firrtl.{
+  CommonOptions,
+  ExecutionOptionsManager,
+  HasFirrtlOptions,
+  FirrtlExecutionSuccess,
+  FirrtlExecutionFailure
+}
 import firrtl.util.BackendCompilationUtilities
-import firrtl.{CommonOptions, ExecutionOptionsManager, FirrtlExecutionFailure, FirrtlExecutionSuccess, HasFirrtlOptions}
-import org.scalacheck._
-import org.scalatest._
-import org.scalatest.prop._
 
 /** Common utility functions for Chisel unit tests. */
 trait ChiselRunners extends Assertions with BackendCompilationUtilities {

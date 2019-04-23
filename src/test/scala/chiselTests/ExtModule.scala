@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.DataMirror
+import chisel3.experimental._
 import chisel3.testers.BasicTester
 
 // Avoid collisions with regular BlackBox tests by putting ExtModule blackboxes

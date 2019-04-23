@@ -3,11 +3,12 @@
 package chiselTests
 
 import chisel3._
-import chisel3.util.experimental.{FlattenInstance, InlineInstance}
-import firrtl.analyses.InstanceGraph
+import chisel3.util.experimental.{InlineInstance, FlattenInstance}
+import firrtl.FirrtlExecutionSuccess
 import firrtl.passes.InlineAnnotation
 import firrtl.transforms.FlattenAnnotation
-import firrtl.{FirrtlExecutionSuccess, ir => fir}
+import firrtl.analyses.InstanceGraph
+import firrtl.{ir => fir}
 import org.scalatest.{FreeSpec, Matchers}
 
 class InlineSpec extends FreeSpec with ChiselRunners with Matchers {

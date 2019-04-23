@@ -2,13 +2,12 @@
 
 package chisel3.internal
 
-import _root_.firrtl.annotations.{CircuitName, ComponentName, ModuleName, Named}
+import scala.util.DynamicVariable
+import scala.collection.mutable.ArrayBuffer
 import chisel3._
 import chisel3.experimental._
 import chisel3.internal.firrtl._
-
-import scala.collection.mutable.ArrayBuffer
-import scala.util.DynamicVariable
+import _root_.firrtl.annotations.{CircuitName, ComponentName, ModuleName, Named}
 
 private[chisel3] class Namespace(keywords: Set[String]) {
   private val names = collection.mutable.HashMap[String, Long]()

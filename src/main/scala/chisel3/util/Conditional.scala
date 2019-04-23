@@ -5,11 +5,11 @@
 
 package chisel3.util
 
-import chisel3._
-
-import scala.language.experimental.macros
 import scala.language.reflectiveCalls
+import scala.language.experimental.macros
 import scala.reflect.macros.blackbox._
+
+import chisel3._
 
 object unless {  // scalastyle:ignore object.name
   /** Does the same thing as [[when$ when]], but with the condition inverted.

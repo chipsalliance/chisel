@@ -4,10 +4,12 @@
 
 package chisel3.internal.naming
 
-import java.util.IdentityHashMap
+import scala.collection.mutable.Stack
+import scala.collection.mutable.ListBuffer
 
 import scala.collection.JavaConversions._
-import scala.collection.mutable.{ListBuffer, Stack}
+
+import java.util.IdentityHashMap
 
 /** Recursive Function Namer overview
   *

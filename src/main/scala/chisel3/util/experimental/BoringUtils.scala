@@ -5,9 +5,9 @@ package chisel3.util.experimental
 import chisel3._
 import chisel3.experimental.{ChiselAnnotation, RunFirrtlTransform, annotate}
 import chisel3.internal.{InstanceId, NamedComponent, Namespace}
-import firrtl.annotations.{ComponentName, ModuleName}
-import firrtl.passes.wiring.{SinkAnnotation, SourceAnnotation, WiringTransform}
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
+import firrtl.passes.wiring.{WiringTransform, SourceAnnotation, SinkAnnotation}
+import firrtl.annotations.{ModuleName, ComponentName}
 
 import scala.concurrent.SyncVar
 

@@ -2,11 +2,12 @@
 
 package chisel3
 
-import java.io._
-
-import chisel3.experimental.{RawModule, RunFirrtlTransform}
 import chisel3.internal.ErrorLog
 import chisel3.internal.firrtl.{Converter, _}
+import chisel3.experimental.{RawModule, RunFirrtlTransform}
+
+import java.io._
+
 import firrtl._
 import firrtl.annotations.JsonProtocol
 import firrtl.util.{BackendCompilationUtilities => FirrtlBackendCompilationUtilities}

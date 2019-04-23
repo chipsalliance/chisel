@@ -6,9 +6,8 @@ import chisel3._
 import chisel3.experimental.{BaseModule, EnumType, FixedPoint, RawModule, UnsafeEnum}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.{Connect, DefInvalid}
-import chisel3.internal.sourceinfo.SourceInfo
-
 import scala.language.experimental.macros
+import chisel3.internal.sourceinfo.SourceInfo
 
 /**
 * MonoConnect.connect executes a mono-directional connection element-wise.

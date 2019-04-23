@@ -3,9 +3,9 @@
 package chiselTests
 
 import chisel3._
+import chisel3.util._
 import chisel3.experimental.DataMirror
 import chisel3.testers.BasicTester
-import chisel3.util._
 
 class RegSpec extends ChiselFlatSpec {
   "Reg" should "be of the same type and width as t" in {

@@ -12,9 +12,9 @@
 
 package chisel3.internal.naming
 
+import scala.reflect.macros.whitebox.Context
 import scala.annotation.{StaticAnnotation, compileTimeOnly}
 import scala.language.experimental.macros
-import scala.reflect.macros.whitebox.Context
 
 // Workaround for https://github.com/sbt/sbt/issues/3966
 object DebugTransforms
