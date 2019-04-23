@@ -7,8 +7,8 @@ import firrtl.stage._
 import firrtl.{AnnotationSeq, EmitAllModulesAnnotation, EmitCircuitAnnotation, FirrtlExecutionResult, Parser}
 import firrtl.annotations.NoTargetAnnotation
 import firrtl.proto.FromProto
-import firrtl.options.{HasScoptOptions, InputAnnotationFileAnnotation, OptionsException, Phase, StageOptions,
-  StageUtils}
+import firrtl.options.{HasShellOptions, InputAnnotationFileAnnotation, OptionsException, Phase, ShellOption,
+  StageOptions, StageUtils}
 import firrtl.options.Viewer
 
 import scopt.OptionParser
@@ -49,7 +49,8 @@ object DriverCompatibility {
   @deprecated(""""top-name" is deprecated as part of the Stage/Phase refactor. Use explicit input/output files.""", "1.2")
   case class TopNameAnnotation(topName: String) extends NoTargetAnnotation
 
-  object TopNameAnnotation extends HasScoptOptions {
+  object TopNameAnnotation {
+
     def addOptions(p: OptionParser[AnnotationSeq]): Unit = p
       .opt[Unit]("top-name")
       .abbr("tn")

@@ -17,7 +17,7 @@ import firrtl.annotations._
 import firrtl.Utils.throwInternalError
 import firrtl.graph.{MutableDiGraph,DiGraph}
 import firrtl.analyses.InstanceGraph
-import firrtl.options.RegisteredTransform
+import firrtl.options.{RegisteredTransform, ShellOption}
 import scopt.OptionParser
 
 object CheckCombLoops {
@@ -69,11 +69,11 @@ class CheckCombLoops extends Transform with RegisteredTransform {
 
   import CheckCombLoops._
 
-  def addOptions(parser: OptionParser[AnnotationSeq]): Unit = parser
-    .opt[Unit]("no-check-comb-loops")
-    .action( (x, c) => c :+ DontCheckCombLoopsAnnotation )
-    .maxOccurs(1)
-    .text("Do NOT check for combinational loops (not recommended)")
+  val options = Seq(
+    new ShellOption[Unit](
+      longOption = "no-check-comb-loops",
+      toAnnotationSeq = (_: Unit) => Seq(DontCheckCombLoopsAnnotation),
+      helpText = "Disable combinational loop checking" ) )
 
   /*
    * A case class that represents a net in the circuit. This is

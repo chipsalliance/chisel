@@ -21,7 +21,6 @@ case object E extends NoTargetAnnotation
 
 class GetIncludesSpec extends FlatSpec with Matchers with BackendCompilationUtilities with firrtlTests.Utils {
 
-
   val dir = new File("test_run_dir/GetIncludesSpec")
   dir.mkdirs()
 

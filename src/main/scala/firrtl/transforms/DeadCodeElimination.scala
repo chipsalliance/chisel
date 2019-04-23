@@ -11,7 +11,7 @@ import firrtl.Mappers._
 import firrtl.WrappedExpression._
 import firrtl.Utils.{throwInternalError, toWrappedExpression, kind}
 import firrtl.MemoizedHash._
-import firrtl.options.RegisteredTransform
+import firrtl.options.{RegisteredTransform, ShellOption}
 import scopt.OptionParser
 
 import collection.mutable
@@ -36,11 +36,11 @@ class DeadCodeElimination extends Transform with ResolvedAnnotationPaths with Re
   def inputForm = LowForm
   def outputForm = LowForm
 
-  def addOptions(parser: OptionParser[AnnotationSeq]): Unit = parser
-    .opt[Unit]("no-dce")
-    .action( (x, c) => c :+ NoDCEAnnotation )
-    .maxOccurs(1)
-    .text("Do NOT run dead code elimination")
+  val options = Seq(
+    new ShellOption[Unit](
+      longOption = "no-dce",
+      toAnnotationSeq = (_: Unit) => Seq(NoDCEAnnotation),
+      helpText = "Disable dead code elimination" ) )
 
   /** Based on LogicNode ins CheckCombLoops, currently kind of faking it */
   private type LogicNode = MemoizedHash[WrappedExpression]

@@ -19,7 +19,7 @@ import firrtl.PrimOps._
 import firrtl.WrappedExpression._
 import Utils._
 import MemPortUtils.{memPortField, memType}
-import firrtl.options.{HasScoptOptions, StageUtils, PhaseException}
+import firrtl.options.{HasShellOptions, ShellOption, StageUtils, PhaseException}
 import firrtl.stage.RunFirrtlTransformAnnotation
 import scopt.OptionParser
 // Datastructures
@@ -34,14 +34,12 @@ sealed trait EmitAnnotation extends NoTargetAnnotation {
 case class EmitCircuitAnnotation(emitter: Class[_ <: Emitter]) extends EmitAnnotation
 case class EmitAllModulesAnnotation(emitter: Class[_ <: Emitter]) extends EmitAnnotation
 
-object EmitCircuitAnnotation extends HasScoptOptions {
-  def addOptions(p: OptionParser[AnnotationSeq]): Unit = p
-    .opt[String]("emit-circuit")
-    .abbr("E")
-    .valueName("<chirrtl|high|middle|low|verilog|mverilog|sverilog>")
-    .unbounded()
-    .action{ (x, c) =>
-      val xx = x match {
+object EmitCircuitAnnotation extends HasShellOptions {
+
+  val options = Seq(
+    new ShellOption[String](
+      longOption = "emit-circuit",
+      toAnnotationSeq = (a: String) => a match {
         case "chirrtl"              => Seq(RunFirrtlTransformAnnotation(new ChirrtlEmitter),
                                            EmitCircuitAnnotation(classOf[ChirrtlEmitter]))
         case "high"                 => Seq(RunFirrtlTransformAnnotation(new HighFirrtlEmitter),
@@ -54,20 +52,19 @@ object EmitCircuitAnnotation extends HasScoptOptions {
                                            EmitCircuitAnnotation(classOf[VerilogEmitter]))
         case "sverilog"             => Seq(RunFirrtlTransformAnnotation(new SystemVerilogEmitter),
                                            EmitCircuitAnnotation(classOf[SystemVerilogEmitter]))
-        case _                      => throw new PhaseException(s"Unknown emitter '$x'! (Did you misspell it?)")
-      }
-      xx ++ c }
-    .text("Run the specified circuit emitter (all modules in one file)")
+        case _                      => throw new PhaseException(s"Unknown emitter '$a'! (Did you misspell it?)") },
+      helpText = "Run the specified circuit emitter (all modules in one file)",
+      shortOption = Some("E"),
+      helpValueName = Some("<chirrtl|high|middle|low|verilog|mverilog|sverilog>") ) )
+
 }
 
-object EmitAllModulesAnnotation extends HasScoptOptions {
-  def addOptions(p: OptionParser[AnnotationSeq]): Unit = p
-    .opt[String]("emit-modules")
-    .abbr("e")
-    .valueName("<none|high|middle|low|verilog|mverilog|sverilog>")
-    .unbounded()
-    .action{ (x, c) =>
-      val xx = x match {
+object EmitAllModulesAnnotation extends HasShellOptions {
+
+  val options = Seq(
+    new ShellOption[String](
+      longOption = "emit-modules",
+      toAnnotationSeq = (a: String) => a match {
         case "chirrtl"              => Seq(RunFirrtlTransformAnnotation(new ChirrtlEmitter),
                                            EmitAllModulesAnnotation(classOf[ChirrtlEmitter]))
         case "high"                 => Seq(RunFirrtlTransformAnnotation(new HighFirrtlEmitter),
@@ -80,10 +77,11 @@ object EmitAllModulesAnnotation extends HasScoptOptions {
                                            EmitAllModulesAnnotation(classOf[VerilogEmitter]))
         case "sverilog"             => Seq(RunFirrtlTransformAnnotation(new SystemVerilogEmitter),
                                            EmitAllModulesAnnotation(classOf[SystemVerilogEmitter]))
-        case _                      => throw new PhaseException(s"Unknown emitter '$x'! (Did you misspell it?)")
-      }
-      xx ++ c }
-    .text("Run the specified module emitter (one file per module)")
+        case _                      => throw new PhaseException(s"Unknown emitter '$a'! (Did you misspell it?)") },
+      helpText = "Run the specified module emitter (one file per module)",
+      shortOption = Some("e"),
+      helpValueName = Some("<chirrtl|high|middle|low|verilog|mverilog|sverilog>") ) )
+
 }
 
 // ***** Annotations for results of emission *****

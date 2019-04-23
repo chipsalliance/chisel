@@ -31,16 +31,19 @@ abstract class Stage extends Phase {
     * @throws OptionsException if command line or annotation validation fails
     */
   final def transform(annotations: AnnotationSeq): AnnotationSeq = {
-    val annotationsx = Seq( new phases.GetIncludes,
-                            new phases.ConvertLegacyAnnotations )
-      .foldLeft(annotations)((a, p) => p.runTransform(a))
+    val annotationsx =
+      Seq( new phases.GetIncludes,
+           new phases.ConvertLegacyAnnotations )
+        .map(phases.DeletedWrapper(_))
+        .foldLeft(annotations)((a, p) => p.transform(a))
 
     Logger.makeScope(annotationsx) {
       Seq( new phases.AddDefaults,
            new phases.Checks,
            new Phase { def transform(a: AnnotationSeq) = run(a) },
            new phases.WriteOutputAnnotations )
-      .foldLeft(annotationsx)((a, p) => p.runTransform(a))
+        .map(phases.DeletedWrapper(_))
+        .foldLeft(annotationsx)((a, p) => p.transform(a))
     }
   }
 

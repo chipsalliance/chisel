@@ -5,7 +5,7 @@ package firrtl.stage
 import firrtl._
 import firrtl.ir.Circuit
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
-import firrtl.options.{HasScoptOptions, OptionsException}
+import firrtl.options.{HasShellOptions, OptionsException, ShellOption}
 
 import scopt.OptionParser
 
@@ -49,13 +49,16 @@ case class FirrtlFileAnnotation(file: String) extends NoTargetAnnotation with Ci
 
 }
 
-object FirrtlFileAnnotation extends HasScoptOptions {
-  def addOptions(p: OptionParser[AnnotationSeq]): Unit = p.opt[String]("input-file")
-    .abbr("i")
-    .valueName ("<firrtl-source>")
-    .action( (x, c) => FirrtlFileAnnotation(x) +: c )
-    .unbounded()
-    .text("use this to override the default input file name, default is empty")
+object FirrtlFileAnnotation extends HasShellOptions {
+
+  val options = Seq(
+    new ShellOption[String](
+      longOption      = "input-file",
+      toAnnotationSeq = a => Seq(FirrtlFileAnnotation(a)),
+      helpText        = "An input FIRRTL file",
+      shortOption     = Some("i"),
+      helpValueName   = Some("<file>") ) )
+
 }
 
 /** An explicit output file the emitter will write to
@@ -64,13 +67,16 @@ object FirrtlFileAnnotation extends HasScoptOptions {
   */
 case class OutputFileAnnotation(file: String) extends NoTargetAnnotation with FirrtlOption
 
-object OutputFileAnnotation extends HasScoptOptions {
-  def addOptions(p: OptionParser[AnnotationSeq]): Unit = p.opt[String]("output-file")
-    .abbr("o")
-    .valueName("<output>")
-    .action( (x, c) => OutputFileAnnotation(x) +: c )
-    .unbounded()
-    .text("use this to override the default output file name, default is empty")
+object OutputFileAnnotation extends HasShellOptions {
+
+  val options = Seq(
+    new ShellOption[String](
+      longOption      = "output-file",
+      toAnnotationSeq = a => Seq(OutputFileAnnotation(a)),
+      helpText        = "The output FIRRTL file",
+      shortOption     = Some("o"),
+      helpValueName   = Some("<file>") ) )
+
 }
 
 /** Sets the info mode style
@@ -97,12 +103,15 @@ case class InfoModeAnnotation(modeName: String = "use") extends NoTargetAnnotati
   }
 }
 
-object InfoModeAnnotation extends HasScoptOptions {
-  def addOptions(p: OptionParser[AnnotationSeq]): Unit = p.opt[String]("info-mode")
-    .valueName ("<ignore|use|gen|append>")
-    .action( (x, c) => InfoModeAnnotation(x) +: c )
-    .unbounded()
-    .text(s"specifies the source info handling, default is ${apply().modeName}")
+object InfoModeAnnotation extends HasShellOptions {
+
+  val options = Seq(
+    new ShellOption[String](
+      longOption      = "info-mode",
+      toAnnotationSeq = a => Seq(InfoModeAnnotation(a)),
+      helpText        = s"Source file info handling mode (default: ${apply().modeName})",
+      shortOption     = Some("<ignore|use|gen|append>") ) )
+
 }
 
 /** Holds a [[scala.Predef.String String]] containing FIRRTL source to read as input
@@ -116,22 +125,25 @@ case class FirrtlSourceAnnotation(source: String) extends NoTargetAnnotation wit
 
 }
 
-object FirrtlSourceAnnotation extends HasScoptOptions {
-  def addOptions(p: OptionParser[AnnotationSeq]): Unit = p.opt[String]("firrtl-source")
-    .valueName ("A FIRRTL string")
-    .action( (x, c) => FirrtlSourceAnnotation(x) +: c )
-    .unbounded()
-    .text(s"A FIRRTL circuit as a string")
+object FirrtlSourceAnnotation extends HasShellOptions {
+
+  val options = Seq(
+    new ShellOption[String](
+      longOption      = "firrtl-source",
+      toAnnotationSeq = a => Seq(FirrtlSourceAnnotation(a)),
+      helpText        = "An input FIRRTL circuit string",
+      shortOption     = Some("<string>") ) )
+
 }
 
-/** Holds a [[Compiler]] that should be run
+/** helpValueName a [[Compiler]] that should be run
   *  - set stringly with `-X/--compiler`
   *  - If unset, a [[CompilerAnnotation]] with the default [[VerilogCompiler]]
   * @param compiler compiler name
   */
 case class CompilerAnnotation(compiler: Compiler = new VerilogCompiler()) extends NoTargetAnnotation with FirrtlOption
 
-object CompilerAnnotation extends HasScoptOptions {
+object CompilerAnnotation extends HasShellOptions {
 
   private [firrtl] def apply(compilerName: String): CompilerAnnotation = {
     val c = compilerName match {
@@ -147,12 +159,14 @@ object CompilerAnnotation extends HasScoptOptions {
     CompilerAnnotation(c)
   }
 
-  def addOptions(p: OptionParser[AnnotationSeq]): Unit = p.opt[String]("compiler")
-    .abbr("X")
-    .valueName ("<none|high|middle|low|verilog|mverilog|sverilog>")
-    .action{ (x, c) => CompilerAnnotation(x) +: c }
-    .unbounded()
-    .text(s"compiler to use, default is 'verilog'")
+  val options = Seq(
+    new ShellOption[String](
+      longOption      = "compiler",
+      toAnnotationSeq = a => Seq(CompilerAnnotation(a)),
+      helpText        = "The FIRRTL compiler to use (default: verilog)",
+      shortOption     = Some("X"),
+      helpValueName   = Some("<none|high|middle|low|verilog|mverilog|sverilog>") ) )
+
 }
 
 /** Holds the unambiguous class name of a [[Transform]] to run
@@ -162,27 +176,26 @@ object CompilerAnnotation extends HasScoptOptions {
   */
 case class RunFirrtlTransformAnnotation(transform: Transform) extends NoTargetAnnotation
 
-object RunFirrtlTransformAnnotation extends HasScoptOptions {
-  def addOptions(p: OptionParser[AnnotationSeq]): Unit = p.opt[Seq[String]]("custom-transforms")
-    .abbr("fct")
-    .valueName ("<package>.<class>")
-    .validate( x => {
-                x.map(txName =>
-                  try { Class.forName(txName).asInstanceOf[Class[_ <: Transform]].newInstance() }
-                  catch {
-                    case e: ClassNotFoundException => throw new OptionsException(
-                      s"Unable to locate custom transform $txName (did you misspell it?)", e)
-                    case e: InstantiationException => throw new OptionsException(
-                      s"Unable to create instance of Transform $txName (is this an anonymous class?)", e)
-                    case e: Throwable => throw new OptionsException(
-                      s"Unknown error when instantiating class $txName", e) } )
-                p.success } )
-    .action( (x, c) =>
-      x.map(txName =>
-        RunFirrtlTransformAnnotation(Class.forName(txName).asInstanceOf[Class[_ <: Transform]].newInstance()))
-        .reverse ++ c )
-    .unbounded()
-    .text("runs these custom transforms during compilation.")
+object RunFirrtlTransformAnnotation extends HasShellOptions {
+
+  val options = Seq(
+    new ShellOption[Seq[String]](
+      longOption = "custom-transforms",
+      toAnnotationSeq = _.map(txName =>
+        try {
+          val tx = Class.forName(txName).asInstanceOf[Class[_ <: Transform]].newInstance()
+          RunFirrtlTransformAnnotation(tx)
+        } catch {
+          case e: ClassNotFoundException => throw new OptionsException(
+            s"Unable to locate custom transform $txName (did you misspell it?)", e)
+          case e: InstantiationException => throw new OptionsException(
+            s"Unable to create instance of Transform $txName (is this an anonymous class?)", e)
+          case e: Throwable => throw new OptionsException(
+            s"Unknown error when instantiating class $txName", e) }),
+      helpText = "Run these transforms during compilation",
+      shortOption = Some("fct"),
+      helpValueName = Some("<package>.<class>") ) )
+
 }
 
 /** Holds a FIRRTL [[firrtl.ir.Circuit Circuit]]

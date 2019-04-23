@@ -16,10 +16,10 @@ import java.util.ServiceLoader
 class Shell(val applicationName: String) {
 
   /** Command line argument parser (OptionParser) with modifications */
-  final val parser = new OptionParser[AnnotationSeq](applicationName) with DuplicateHandling with ExceptOnError
+  protected val parser = new OptionParser[AnnotationSeq](applicationName) with DuplicateHandling with ExceptOnError
 
   /** Contains all discovered [[RegisteredLibrary]] */
-  lazy val registeredLibraries: Seq[RegisteredLibrary] = {
+  final lazy val registeredLibraries: Seq[RegisteredLibrary] = {
     val libraries = scala.collection.mutable.ArrayBuffer[RegisteredLibrary]()
     val iter = ServiceLoader.load(classOf[RegisteredLibrary]).iterator()
     while (iter.hasNext) {
@@ -33,7 +33,7 @@ class Shell(val applicationName: String) {
   }
 
   /** Contains all discovered [[RegisteredTransform]] */
-  lazy val registeredTransforms: Seq[RegisteredTransform] = {
+  final lazy val registeredTransforms: Seq[RegisteredTransform] = {
     val transforms = scala.collection.mutable.ArrayBuffer[RegisteredTransform]()
     val iter = ServiceLoader.load(classOf[RegisteredTransform]).iterator()
     if (iter.hasNext) { parser.note("FIRRTL Transform Options") }
@@ -61,11 +61,11 @@ class Shell(val applicationName: String) {
   }
 
   parser.note("Shell Options")
+  ProgramArgsAnnotation.addOptions(parser)
   Seq( TargetDirAnnotation,
-       ProgramArgsAnnotation,
        InputAnnotationFileAnnotation,
        OutputAnnotationFileAnnotation )
-    .map(_.addOptions(parser))
+    .foreach(_.addOptions(parser))
 
   parser.opt[Unit]("show-registrations")
     .action{ (_, c) =>
@@ -85,5 +85,5 @@ class Shell(val applicationName: String) {
        ClassLogLevelAnnotation,
        LogFileAnnotation,
        LogClassNamesAnnotation )
-    .map(_.addOptions(parser))
+    .foreach(_.addOptions(parser))
 }

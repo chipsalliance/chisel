@@ -363,9 +363,9 @@ object Logger {
     * @param inputAnnotations annotation sequence containing logger options
     */
   def setOptions(inputAnnotations: AnnotationSeq): Unit = {
-    val annotations = Seq( AddDefaults,
-                           Checks )
-      .foldLeft(inputAnnotations)((a, p) => p.runTransform(a))
+    val annotations =
+      Seq( AddDefaults, Checks )
+      .foldLeft(inputAnnotations)((a, p) => p.transform(a))
 
     val lopts = view[LoggerOptions](annotations)
     state.globalLevel = (state.globalLevel, lopts.globalLogLevel) match {

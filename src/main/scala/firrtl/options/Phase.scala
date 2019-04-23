@@ -39,22 +39,6 @@ abstract class Phase extends TransformLike[AnnotationSeq] {
     */
   lazy val name: String = this.getClass.getName
 
-  /** Perform the transform of [[transform]] on an [[firrtl.AnnotationSeq AnnotationSeq]] and add
-    * [[firrtl.annotations.DeletedAnnotation DeletedAnnotation]]s for any deleted [[firrtl.annotations.Annotation
-    * Annotation]]s.
-    * @param a
-    */
-  final def runTransform(annotations: AnnotationSeq): AnnotationSeq = {
-    val ax = transform(annotations)
-
-    val (in, out) = (mutable.LinkedHashSet() ++ annotations, mutable.LinkedHashSet() ++ ax)
-
-    (in -- out).map {
-      case DeletedAnnotation(n, a) => DeletedAnnotation(s"$n+$name", a)
-      case a                       => DeletedAnnotation(name, a)
-    }.toSeq ++ ax
-  }
-
 }
 
 /** A [[TransformLike]] that internally ''translates'' the input type to some other type, transforms the internal type,
