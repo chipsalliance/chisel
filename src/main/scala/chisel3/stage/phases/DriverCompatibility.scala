@@ -4,7 +4,7 @@ package chisel3.stage.phases
 
 import firrtl.{AnnotationSeq, ExecutionOptionsManager, HasFirrtlOptions}
 import firrtl.annotations.NoTargetAnnotation
-import firrtl.options.{OutputAnnotationFileAnnotation, Phase}
+import firrtl.options.{OutputAnnotationFileAnnotation, Phase, PreservesAll}
 import firrtl.stage.{FirrtlCircuitAnnotation, RunFirrtlTransformAnnotation}
 import firrtl.stage.phases.DriverCompatibility.TopNameAnnotation
 
@@ -25,7 +25,9 @@ object DriverCompatibility {
     * the correct behavior before a circuit has been elaborated.
     * @note the output suffix is unspecified and will be set by the underlying [[firrtl.EmittedComponent]]
     */
-  private[chisel3] class AddImplicitOutputFile extends Phase {
+private [chisel3] class AddImplicitOutputFile extends Phase with PreservesAll[Phase] {
+
+    override val dependents = Seq( classOf[firrtl.stage.phases.DriverCompatibility.AddImplicitOutputFile] )
 
     def transform(annotations: AnnotationSeq): AnnotationSeq = {
       val hasOutputFile = annotations
@@ -47,7 +49,7 @@ object DriverCompatibility {
     * correct behavior before a circuit has been elaborated.
     * @note the output suffix is unspecified and will be set by [[firrtl.options.phases.WriteOutputAnnotations]]
     */
-  private[chisel3] class AddImplicitOutputAnnotationFile extends Phase {
+  private[chisel3] class AddImplicitOutputAnnotationFile extends Phase with PreservesAll[Phase] {
 
     def transform(annotations: AnnotationSeq): AnnotationSeq =
       annotations
