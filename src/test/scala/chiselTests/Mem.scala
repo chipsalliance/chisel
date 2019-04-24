@@ -93,4 +93,16 @@ class MemorySpec extends ChiselPropSpec {
     val cmem = compile(new HugeCMemTester(size))
     cmem should include (s"reg /* sparse */ [7:0] mem [0:$addrWidth'd${size-1}];")
   }
+
+  property("Implicit conversions with Mem indices should work") {
+    """
+    |import chisel3._
+    |import chisel3.util.ImplicitConversions._
+    |class MyModule extends Module {
+    |  val io = IO(new Bundle {})
+    |  val mem = Mem(32, UInt(8.W))
+    |  mem(0) := 0.U
+    |}
+    |""".stripMargin should compile
+  }
 }
