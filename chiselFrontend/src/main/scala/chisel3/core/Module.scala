@@ -361,4 +361,55 @@ abstract class BaseModule extends HasId {
       case Some(c) => getRef fullName c
     }
 
+  import scala.reflect.runtime.universe.TypeTag
+  def getDeep[T](collector: BaseModule => Seq[T])(implicit tag: TypeTag[T]): Seq[T] = {
+    assert(_closed && _component.isDefined)
+    val myItems = collector(this)
+    val deepChildrenItems = instances().flatMap {
+      i => i.getDeep(collector)
+    }
+    myItems ++ deepChildrenItems
+  }
+
+  def instances(): Seq[BaseModule] = {
+    assert(_closed && _component.isDefined)
+    _component.get.asInstanceOf[DefModule].commands.collect {
+      case i: DefInstance => i.id
+    }
+  }
+
+  def registers(): Seq[Data] = {
+    assert(_closed && _component.isDefined)
+    _component.get.asInstanceOf[DefModule].commands.collect {
+      case r: DefReg => r.id
+      case r: DefRegInit => r.id
+    }
+  }
+
+  def ports(): Seq[Data] = {
+    assert(_closed && _component.isDefined)
+    _component.get.asInstanceOf[DefModule].ports.map(_.id)
+  }
+
+  def seqMems(): Seq[SyncReadMem[_]] = {
+    assert(_closed && _component.isDefined)
+    _component.get.asInstanceOf[DefModule].commands.collect {
+      case r: DefSeqMemory => r.id.asInstanceOf[SyncReadMem[_]]
+    }
+  }
+
+  def mems(): Seq[Mem[_]] = {
+    assert(_closed && _component.isDefined)
+    _component.get.asInstanceOf[DefModule].commands.collect {
+      case r: DefMemory => r.id.asInstanceOf[Mem[_]]
+    }
+  }
+
+  def ops(): Seq[(String, Data)] = {
+    assert(_closed && _component.isDefined)
+    _component.get.asInstanceOf[DefModule].commands.collect {
+      case d: DefPrim[_] => (d.op.name, d.id)
+    }
+  }
+
 }

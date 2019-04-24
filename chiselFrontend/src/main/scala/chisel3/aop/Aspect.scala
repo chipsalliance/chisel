@@ -15,7 +15,8 @@ import scala.reflect.runtime.universe.TypeTag
   * @tparam DUT Type of top-level module
   * @tparam M Type of root module (join point)
   */
-abstract class Aspect[DUT <: RawModule, M <: RawModule](selectRoots: DUT => Seq[M])(implicit dutTag: TypeTag[DUT], mTag: TypeTag[M]) extends Annotation with AdditionalTransforms {
+abstract class Aspect[DUT <: RawModule, M <: RawModule](selectRoots: DUT => Seq[M])
+                                                       (implicit dutTag: TypeTag[DUT], mTag: TypeTag[M]) extends Annotation with AdditionalTransforms {
   /** Convert this Aspect to a seq of FIRRTL annotation
     * @param dut
     * @return
