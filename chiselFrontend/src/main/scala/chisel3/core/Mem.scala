@@ -45,6 +45,10 @@ object Mem {
     pushCommand(DefMemory(sourceInfo, mem, mt, size))
     mem
   }
+
+  /** @group SourceInfoTransformMacro */
+  def do_apply[T <: Data](size: Int, t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Mem[T] =
+    do_apply(BigInt(size), t)(sourceInfo, compileOptions)
 }
 
 sealed abstract class MemBase[T <: Data](t: T, val length: BigInt) extends HasId with NamedComponent with SourceInfoDoc {
@@ -65,6 +69,10 @@ sealed abstract class MemBase[T <: Data](t: T, val length: BigInt) extends HasId
     require(idx >= 0 && idx < length)
     apply(idx.asUInt)
   }
+
+  /** @group SourceInfoTransformMacro */
+  def do_apply(idx: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
+    do_apply(BigInt(idx))(sourceInfo, compileOptions)
 
   /** Creates a read/write accessor into the memory with dynamic addressing.
     * See the class documentation of the memory for more detailed information.
@@ -175,6 +183,10 @@ object SyncReadMem {
     pushCommand(DefSeqMemory(sourceInfo, mem, mt, size))
     mem
   }
+
+  /** @group SourceInfoTransformMacro */
+  def do_apply[T <: Data](size: Int, t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SyncReadMem[T] =
+    do_apply(BigInt(size), t)(sourceInfo, compileOptions)
 }
 
 /** A sequential/synchronous-read, sequential/synchronous-write memory.
