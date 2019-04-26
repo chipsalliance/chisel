@@ -9,6 +9,7 @@ package chisel3
   */
 package object experimental {  // scalastyle:ignore object.name
   import scala.language.implicitConversions
+  import chisel3.internal.BaseModule
 
   // Implicit conversions for BlackBox Parameters
   implicit def fromIntToIntParam(x: Int): IntParam = IntParam(BigInt(x))
