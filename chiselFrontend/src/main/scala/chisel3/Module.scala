@@ -117,6 +117,10 @@ package experimental {
       iodefClone
     }
   }
+}
+
+package internal {
+  import chisel3.experimental.{BaseModule, MultiIOModule}
 
   object BaseModule {
     private[chisel3] class ClonePorts (elts: Data*)(implicit compileOptions: CompileOptions) extends Record {
@@ -143,6 +147,9 @@ package experimental {
       clonePorts
     }
   }
+}
+
+package experimental {
 
   /** Abstract base class for Modules, an instantiable organizational unit for RTL.
     */
@@ -181,7 +188,7 @@ package experimental {
 
     private val _ports = new ArrayBuffer[Data]()
     // getPorts unfortunately already used for tester compatibility
-    protected def getModulePorts = {
+    protected[chisel3] def getModulePorts = {
       require(_closed, "Can't get ports before module close")
       _ports.toSeq
     }
