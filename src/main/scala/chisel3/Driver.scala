@@ -3,7 +3,7 @@
 package chisel3
 
 import chisel3.internal.ErrorLog
-import chisel3.internal.firrtl.{Converter, _}
+import chisel3.internal.firrtl._
 import chisel3.experimental.{RawModule, RunFirrtlTransform}
 
 import java.io._
