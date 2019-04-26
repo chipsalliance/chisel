@@ -4,7 +4,12 @@ package logger
 
 import java.io.{ByteArrayOutputStream, File, FileOutputStream, PrintStream}
 
-import firrtl.ExecutionOptionsManager
+import firrtl.{ExecutionOptionsManager, HasFirrtlOptions, AnnotationSeq}
+import firrtl.stage.FirrtlOptions
+import firrtl.options.StageOptions
+import firrtl.options.Viewer.view
+import firrtl.stage.FirrtlOptionsView
+import logger.phases.{AddDefaults, Checks}
 
 import scala.util.DynamicVariable
 
@@ -120,7 +125,36 @@ object Logger {
     * @tparam A       The return type of codeBlock
     * @return         Whatever block returns
     */
-  def makeScope[A](manager: ExecutionOptionsManager)(codeBlock: => A): A = {
+  @deprecated("Use makeScope(opts: FirrtlOptions)", "1.2")
+  def makeScope[A](manager: ExecutionOptionsManager)(codeBlock: => A): A =
+    makeScope(manager.commonOptions.toAnnotations)(codeBlock)
+
+  /**
+    * See makeScope using manager.  This creates a manager from a command line arguments style
+    * list of strings
+    * @param args List of strings
+    * @param codeBlock  the block to call
+    * @tparam A   return type of codeBlock
+    * @return
+    */
+  @deprecated("Use makescope(opts: FirrtlOptions)", "1.2")
+  def makeScope[A](args: Array[String] = Array.empty)(codeBlock: => A): A = {
+    val executionOptionsManager = new ExecutionOptionsManager("logger")
+    if(executionOptionsManager.parse(args)) {
+      makeScope(executionOptionsManager)(codeBlock)
+    }
+    else {
+      throw new Exception(s"logger invoke failed to parse args ${args.mkString(", ")}")
+    }
+  }
+
+  /** Set a scope for this logger based on available annotations
+    * @param options a sequence annotations
+    * @param codeBlock some Scala code over which to define this scope
+    * @tparam A return type of the code block
+    * @return the original return of the code block
+    */
+  def makeScope[A](options: AnnotationSeq)(codeBlock: => A): A = {
     val runState: LoggerState = {
       val newRunState = updatableLoggerState.value.getOrElse(new LoggerState)
       if(newRunState.fromInvoke) {
@@ -132,31 +166,11 @@ object Logger {
         forcedNewRunState
       }
     }
-
     updatableLoggerState.withValue(Some(runState)) {
-      setOptions(manager)
+      setOptions(options)
       codeBlock
     }
   }
-
-  /**
-    * See makeScope using manager.  This creates a manager from a command line arguments style
-    * list of strings
-    * @param args List of strings
-    * @param codeBlock  the block to call
-    * @tparam A   return type of codeBlock
-    * @return
-    */
-  def makeScope[A](args: Array[String] = Array.empty)(codeBlock: => A): A = {
-    val executionOptionsManager = new ExecutionOptionsManager("logger")
-    if(executionOptionsManager.parse(args)) {
-      makeScope(executionOptionsManager)(codeBlock)
-    }
-    else {
-      throw new Exception(s"logger invoke failed to parse args ${args.mkString(", ")}")
-    }
-  }
-
 
   /**
     * Used to test whether a given log statement should generate some logging output.
@@ -341,20 +355,33 @@ object Logger {
     * from the command line via an options manager
     * @param optionsManager manager
     */
-  def setOptions(optionsManager: ExecutionOptionsManager): Unit = {
-    val commonOptions = optionsManager.commonOptions
-    state.globalLevel = (state.globalLevel, commonOptions.globalLogLevel) match {
+  @deprecated("Use setOptions(annotations: AnnotationSeq)", "1.2")
+  def setOptions(optionsManager: ExecutionOptionsManager): Unit =
+    setOptions(optionsManager.commonOptions.toAnnotations)
+
+  /** Set logger options based on the content of an [[firrtl.AnnotationSeq AnnotationSeq]]
+    * @param inputAnnotations annotation sequence containing logger options
+    */
+  def setOptions(inputAnnotations: AnnotationSeq): Unit = {
+    val annotations =
+      Seq( AddDefaults, Checks )
+      .foldLeft(inputAnnotations)((a, p) => p.transform(a))
+
+    val lopts = view[LoggerOptions](annotations)
+    state.globalLevel = (state.globalLevel, lopts.globalLogLevel) match {
       case (LogLevel.None, LogLevel.None) => LogLevel.None
       case (x, LogLevel.None) => x
       case (LogLevel.None, x) => x
       case (_, x) => x
       case _ => LogLevel.Error
     }
-    setClassLogLevels(commonOptions.classLogLevels)
-    if(commonOptions.logToFile) {
-      setOutput(commonOptions.getLogFileName(optionsManager))
+    setClassLogLevels(lopts.classLogLevels)
+
+    if (lopts.logFileName.nonEmpty) {
+      setOutput(lopts.logFileName.get)
     }
-    state.logClassNames = commonOptions.logClassNames
+
+    state.logClassNames = lopts.logClassNames
   }
 }
 
@@ -399,3 +426,9 @@ class Logger(containerClass: String) {
     Logger.showMessage(LogLevel.Trace, containerClass, message)
   }
 }
+
+/** An exception originating from the Logger
+  * @param str an exception message
+  * @param cause a reason for the exception
+  */
+class LoggerException(val str: String, cause: Throwable = null) extends RuntimeException(str, cause)

@@ -9,7 +9,13 @@ import firrtl.passes.memlib.{InferReadWriteAnnotation, ReplSeqMemAnnotation}
 import firrtl.passes.clocklist.ClockListAnnotation
 import firrtl.transforms.NoCircuitDedupAnnotation
 import logger.LogLevel
+import logger.{ClassLogLevelAnnotation, LogClassNamesAnnotation, LogFileAnnotation, LogLevelAnnotation}
 import scopt.OptionParser
+import firrtl.stage.{CompilerAnnotation, FirrtlCircuitAnnotation, FirrtlFileAnnotation, FirrtlSourceAnnotation,
+  InfoModeAnnotation, OutputFileAnnotation, RunFirrtlTransformAnnotation}
+import firrtl.stage.phases.DriverCompatibility.{TopNameAnnotation, EmitOneFilePerModuleAnnotation}
+import firrtl.options.{InputAnnotationFileAnnotation, OutputAnnotationFileAnnotation, ProgramArgsAnnotation, StageUtils}
+import firrtl.transforms.{DontCheckCombLoopsAnnotation, NoDCEAnnotation}
 
 import scala.collection.Seq
 
@@ -19,8 +25,10 @@ import scala.collection.Seq
   * '''NOTE''' In all derived trait/classes, if you intend on maintaining backwards compatibility,
   *  be sure to add new options at the end of the current ones and don't remove any existing ones.
   */
+@deprecated("Use firrtl.options.HasScoptOptions and/or library/transform registration", "1.2")
 trait ComposableOptions
 
+@deprecated("Use firrtl.options.{ExecutionOptionsManager, TerminateOnExit, DuplicateHandling}", "1.2")
 abstract class HasParser(applicationName: String) {
   final val parser = new OptionParser[Unit](applicationName) {
     var terminateOnExit = true
@@ -49,6 +57,7 @@ abstract class HasParser(applicationName: String) {
   * For example, in chisel, by deferring this it is possible for the execute there to first elaborate the
   * circuit and then set the topName from that if it has not already been set.
   */
+@deprecated("Use a FirrtlOptionsView, LoggerOptionsView, or construct your own view of an AnnotationSeq", "1.2")
 case class CommonOptions(
     topName:           String         = "",
     targetDirName:     String         = ".",
@@ -67,8 +76,17 @@ case class CommonOptions(
       optionsManager.getBuildFileName("log")
     }
   }
+
+  def toAnnotations: AnnotationSeq = (if (topName.nonEmpty) Seq(TopNameAnnotation(topName)) else Seq()) ++
+    (if (targetDirName != ".") Some(TargetDirAnnotation(targetDirName)) else None) ++
+    Some(LogLevelAnnotation(globalLogLevel)) ++
+    (if (logToFile) { Some(LogFileAnnotation(None)) } else { None }) ++
+    (if (logClassNames) { Some(LogClassNamesAnnotation) } else { None }) ++
+    classLogLevels.map{ case (c, v) => ClassLogLevelAnnotation(c, v) } ++
+    programArgs.map( a => ProgramArgsAnnotation(a) )
 }
 
+@deprecated("Specify command line arguments in an Annotation mixing in HasScoptOptions", "1.2")
 trait HasCommonOptions {
   self: ExecutionOptionsManager =>
   var commonOptions = CommonOptions()
@@ -169,6 +187,7 @@ final case class OneFilePerModule(targetDir: String) extends OutputConfig
   * @param compilerName           which compiler to use
   * @param annotations            annotations to pass to compiler
   */
+@deprecated("Use a FirrtlOptionsView or construct your own view of an AnnotationSeq", "1.2")
 case class FirrtlExecutionOptions(
     inputFileNameOverride:  String = "",
     outputFileNameOverride: String = "",
@@ -287,8 +306,31 @@ extends ComposableOptions {
   def getAnnotationFileName(optionsManager: ExecutionOptionsManager): String = {
     optionsManager.getBuildFileName("anno", annotationFileNameOverride)
   }
+
+  def toAnnotations: AnnotationSeq = {
+    if (inferRW.nonEmpty) {
+      StageUtils.dramaticWarning("User set FirrtlExecutionOptions.inferRW, but inferRW has no effect!")
+    }
+
+    (if (inputFileNameOverride.nonEmpty) Seq(FirrtlFileAnnotation(inputFileNameOverride)) else Seq()) ++
+      (if (outputFileNameOverride.nonEmpty) { Some(OutputFileAnnotation(outputFileNameOverride)) } else { None }) ++
+      Some(CompilerAnnotation(compilerName)) ++
+      Some(InfoModeAnnotation(infoModeName)) ++
+      firrtlSource.map(FirrtlSourceAnnotation(_)) ++
+      customTransforms.map(t => RunFirrtlTransformAnnotation(t)) ++
+      annotations ++
+      (if (annotationFileNameOverride.nonEmpty) { Some(InputAnnotationFileAnnotation(annotationFileNameOverride)) } else { None }) ++
+      (if (outputAnnotationFileName.nonEmpty) { Some(OutputAnnotationFileAnnotation(outputAnnotationFileName)) } else { None }) ++
+      (if (emitOneFilePerModule) { Some(EmitOneFilePerModuleAnnotation) } else { None }) ++
+      (if (dontCheckCombLoops) { Some(DontCheckCombLoopsAnnotation) } else { None }) ++
+      (if (noDCE) { Some(NoDCEAnnotation) } else { None }) ++
+      annotationFileNames.map(InputAnnotationFileAnnotation(_)) ++
+      firrtlCircuit.map(FirrtlCircuitAnnotation(_))
+  }
 }
 
+
+@deprecated("Specify command line arguments in an Annotation mixing in HasScoptOptions", "1.2")
 trait HasFirrtlOptions {
   self: ExecutionOptionsManager =>
   var firrtlOptions = FirrtlExecutionOptions()
@@ -333,7 +375,7 @@ trait HasFirrtlOptions {
     .foreach { _ =>
       val msg = "force-append-anno-file is deprecated and will soon be removed\n" +
                 (" "*9) + "(It does not do anything anymore)"
-      Driver.dramaticWarning(msg)
+      StageUtils.dramaticWarning(msg)
     }
 
   parser.opt[String]("output-annotation-file")
@@ -489,8 +531,10 @@ trait HasFirrtlOptions {
   parser.note("")
 }
 
+@deprecated("Use FirrtlStage and examine the output AnnotationSeq directly", "1.2")
 sealed trait FirrtlExecutionResult
 
+@deprecated("Use FirrtlStage and examine the output AnnotationSeq directly", "1.2")
 object FirrtlExecutionSuccess {
   def apply(
     emitType    : String,
@@ -511,6 +555,7 @@ object FirrtlExecutionSuccess {
   * "sverilog"
   * @param emitted   The emitted result of compilation
   */
+@deprecated("Use FirrtlStage and examine the output AnnotationSeq directly", "1.2")
 class FirrtlExecutionSuccess(
   val emitType: String,
   val emitted : String,
@@ -522,12 +567,14 @@ class FirrtlExecutionSuccess(
   *
   * @param message  Some kind of hint as to what went wrong.
   */
+@deprecated("Use FirrtlStage and examine the output AnnotationSeq directly", "1.2")
 case class FirrtlExecutionFailure(message: String) extends FirrtlExecutionResult
 
 /**
   *
   * @param applicationName  The name shown in the usage
   */
+@deprecated("Use new FirrtlStage infrastructure", "1.2")
 class ExecutionOptionsManager(val applicationName: String) extends HasParser(applicationName) with HasCommonOptions {
 
   def parse(args: Array[String]): Boolean = {

@@ -13,7 +13,7 @@ import ClockListUtils._
 import Utils._
 import memlib.AnalysisUtils._
 import memlib._
-import firrtl.options.RegisteredTransform
+import firrtl.options.{RegisteredTransform, ShellOption}
 import scopt.OptionParser
 import firrtl.stage.RunFirrtlTransformAnnotation
 
@@ -60,14 +60,14 @@ class ClockListTransform extends Transform with RegisteredTransform {
   def inputForm = LowForm
   def outputForm = LowForm
 
-  def addOptions(parser: OptionParser[AnnotationSeq]): Unit = parser
-    .opt[String]("list-clocks")
-    .abbr("clks")
-    .valueName ("-c:<circuit>:-m:<module>:-o:<filename>")
-    .action( (x, c) => c ++ Seq(passes.clocklist.ClockListAnnotation.parse(x),
-                                RunFirrtlTransformAnnotation(new ClockListTransform)) )
-    .maxOccurs(1)
-    .text("List which signal drives each clock of every descendent of specified module")
+  val options = Seq(
+    new ShellOption[String](
+      longOption = "list-clocks",
+      toAnnotationSeq = (a: String) => Seq( passes.clocklist.ClockListAnnotation.parse(a),
+                                            RunFirrtlTransformAnnotation(new ClockListTransform) ),
+      helpText = "List which signal drives each clock of every descendent of specified modules",
+      shortOption = Some("clks"),
+      helpValueName = Some("-c:<circuit>:-m:<module>:-o:<filename>") ) )
 
   def passSeq(top: String, writer: Writer): Seq[Pass] =
     Seq(new ClockList(top, writer))

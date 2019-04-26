@@ -6,7 +6,7 @@ import org.scalatest.{FlatSpec, Matchers}
 import scopt.OptionParser
 import java.util.ServiceLoader
 
-import firrtl.options.{RegisteredTransform, RegisteredLibrary}
+import firrtl.options.{RegisteredTransform, RegisteredLibrary, ShellOption}
 import firrtl.passes.Pass
 import firrtl.ir.Circuit
 import firrtl.annotations.NoTargetAnnotation
@@ -16,16 +16,23 @@ case object HelloAnnotation extends NoTargetAnnotation
 
 class FooTransform extends Pass with RegisteredTransform {
   def run(c: Circuit): Circuit = c
-  def addOptions(p: OptionParser[AnnotationSeq]): Unit =
-    p.opt[Unit]("hello")
-      .action( (_, c) => HelloAnnotation +: c )
+
+  val options = Seq(
+    new ShellOption[Unit](
+      longOption = "hello",
+      toAnnotationSeq = _ => Seq(HelloAnnotation),
+      helpText = "Hello option") )
+
 }
 
 class BarLibrary extends RegisteredLibrary {
   def name: String = "Bar"
-  def addOptions(p: OptionParser[AnnotationSeq]): Unit =
-    p.opt[Unit]("world")
-      .action( (_, c) => HelloAnnotation +: c )
+
+  val options = Seq(
+    new ShellOption[Unit](
+      longOption = "world",
+      toAnnotationSeq = _ => Seq(HelloAnnotation),
+      helpText = "World option") )
 }
 
 class RegistrationSpec extends FlatSpec with Matchers {

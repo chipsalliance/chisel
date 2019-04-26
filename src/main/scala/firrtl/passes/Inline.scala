@@ -8,7 +8,7 @@ import firrtl.Mappers._
 import firrtl.annotations._
 import firrtl.analyses.InstanceGraph
 import firrtl.stage.RunFirrtlTransformAnnotation
-import firrtl.options.RegisteredTransform
+import firrtl.options.{RegisteredTransform, ShellOption}
 import scopt.OptionParser
 
 // Datastructures
@@ -28,24 +28,22 @@ class InlineInstances extends Transform with RegisteredTransform {
    def outputForm = LowForm
    private [firrtl] val inlineDelim: String = "_"
 
-  def addOptions(parser: OptionParser[AnnotationSeq]): Unit = parser
-    .opt[Seq[String]]("inline")
-    .abbr("fil")
-    .valueName ("<circuit>[.<module>[.<instance>]][,..],")
-    .action( (x, c) => {
-              val newAnnotations = x.map { value =>
-                value.split('.') match {
-                  case Array(circuit) =>
-                    InlineAnnotation(CircuitName(circuit))
-                  case Array(circuit, module) =>
-                    InlineAnnotation(ModuleName(module, CircuitName(circuit)))
-                  case Array(circuit, module, inst) =>
-                    InlineAnnotation(ComponentName(inst, ModuleName(module, CircuitName(circuit))))
-                }
-              }
-              c ++ newAnnotations :+ RunFirrtlTransformAnnotation(new InlineInstances) } )
-    .text(
-      """Inline one or more module (comma separated, no spaces) module looks like "MyModule" or "MyModule.myinstance""")
+  val options = Seq(
+    new ShellOption[Seq[String]](
+      longOption = "inline",
+      toAnnotationSeq = (a: Seq[String]) => a.map { value =>
+        value.split('.') match {
+          case Array(circuit) =>
+            InlineAnnotation(CircuitName(circuit))
+          case Array(circuit, module) =>
+            InlineAnnotation(ModuleName(module, CircuitName(circuit)))
+          case Array(circuit, module, inst) =>
+            InlineAnnotation(ComponentName(inst, ModuleName(module, CircuitName(circuit))))
+        }
+      } :+ RunFirrtlTransformAnnotation(new InlineInstances),
+      helpText = "Inline selected modules",
+      shortOption = Some("fil"),
+      helpValueName = Some("<circuit>[.<module>[.<instance>]][,...]") ) )
 
    private def collectAnns(circuit: Circuit, anns: Iterable[Annotation]): (Set[ModuleName], Set[ComponentName]) =
      anns.foldLeft(Set.empty[ModuleName], Set.empty[ComponentName]) {

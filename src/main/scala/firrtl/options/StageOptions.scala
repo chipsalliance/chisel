@@ -7,10 +7,31 @@ import java.io.File
 /** Options that every stage shares
   * @param targetDirName a target (build) directory
   * @param an input annotation file
+  * @param programArgs explicit program arguments
+  * @param outputAnnotationFileName an output annotation filename
   */
-final case class StageOptions(
-  targetDir:       String      = TargetDirAnnotation().dir,
-  annotationFiles: Seq[String] = Seq.empty ) {
+class StageOptions private [firrtl] (
+  val targetDir:         String         = TargetDirAnnotation().directory,
+  val annotationFilesIn: Seq[String]    = Seq.empty,
+  val annotationFileOut: Option[String] = None,
+  val programArgs:       Seq[String]    = Seq.empty,
+  val writeDeleted:      Boolean        = false ) {
+
+  private [options] def copy(
+    targetDir:         String         = targetDir,
+    annotationFilesIn: Seq[String]    = annotationFilesIn,
+    annotationFileOut: Option[String] = annotationFileOut,
+    programArgs:       Seq[String]    = programArgs,
+    writeDeleted:      Boolean        = writeDeleted ): StageOptions = {
+
+    new StageOptions(
+      targetDir = targetDir,
+      annotationFilesIn = annotationFilesIn,
+      annotationFileOut = annotationFileOut,
+      programArgs = programArgs,
+      writeDeleted = writeDeleted )
+
+  }
 
   /** Generate a filename (with an optional suffix) and create any parent directories. Suffix is only added if it is not
     * already there.
@@ -18,7 +39,6 @@ final case class StageOptions(
     * @param suffix an optional suffix that the file must end in
     * @return the name of the file
     * @note the filename may include a path
-    * @throws IllegalArgumentException if the filename is empty or if the suffix doesn't start with a '.'
     */
   def getBuildFileName(filename: String, suffix: Option[String] = None): String = {
     require(filename.nonEmpty, "requested filename must not be empty")
