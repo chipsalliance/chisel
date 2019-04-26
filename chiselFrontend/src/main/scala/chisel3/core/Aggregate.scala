@@ -462,7 +462,7 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     * )
     * }}}
     */
-  def Lit(elems: (this.type => (Data, Data))*): this.type = {  // scalastyle:ignore line.size.limit method.length method.name cyclomatic.complexity
+  private[chisel3] def _makeLit(elems: (this.type => (Data, Data))*): this.type = {  // scalastyle:ignore line.size.limit method.length method.name cyclomatic.complexity
     // Returns pairs of all fields, element-level and containers, in a Record and their path names
     def getRecursiveFields(data: Data, path: String): Seq[(Data, String)] = data match {
       case data: Record => data.elements.map { case (fieldName, fieldData) =>
@@ -527,7 +527,7 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
       val duplicateNames = duplicates.map(cloneFields(_)).mkString(", ")
       throw new BundleLiteralException(s"duplicate fields $duplicateNames in Bundle literal constructor")
     }
-    clone.selfBind(BundleLitBinding(bundleLitMap.toMap))
+    clone.bind(BundleLitBinding(bundleLitMap.toMap))
     clone
   }
 
