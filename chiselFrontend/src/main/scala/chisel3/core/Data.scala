@@ -332,8 +332,6 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
     * binding and direction are valid after this call completes.
     */
   private[chisel3] def bind(target: Binding, parentDirection: SpecifiedDirection = SpecifiedDirection.Unspecified)
-  // Variant of bind that can be called from subclasses, used for bundle literals
-  protected def selfBind(target: Binding) = bind(target)
 
   // Both _direction and _resolvedUserDirection are saved versions of computed variables (for
   // efficiency, avoid expensive recomputation of frequent operations).

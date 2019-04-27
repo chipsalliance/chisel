@@ -43,10 +43,6 @@ sealed abstract class Aggregate extends Data {
 
   override def litOption: Option[BigInt] = ???  // TODO implement me
 
-  // Returns the LitArg of a Bits object.
-  // Internal API for Bundle literals, to copy the LitArg of argument literals into the top map.
-  protected def litArgOfBits(elt: Bits): LitArg = elt.litArgOption.get
-
   /** Returns a Seq of the immediate contents of this Aggregate, in order.
     */
   def getElements: Seq[Data]
@@ -446,6 +442,95 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     }
   }
 
+  /** Creates a Bundle literal of this type with specified values. this must be a chisel type.
+    *
+    * @param elems literal values, specified as a pair of the Bundle field to the literal value.
+    * The Bundle field is specified as a function from an object of this type to the field.
+    * Fields that aren't initialized to DontCare, and assignment to a wire will overwrite any
+    * existing value with DontCare.
+    * @return a Bundle literal of this type with subelement values specified
+    *
+    * @example {{{
+    * class MyBundle extends Bundle {
+    *   val a = UInt(8.W)
+    *   val b = Bool()
+    * }
+    *
+    * (mew MyBundle).Lit(
+    *   _.a -> 42.U,
+    *   _.b -> true.B
+    * )
+    * }}}
+    */
+  private[chisel3] def _makeLit(elems: (this.type => (Data, Data))*): this.type = {  // scalastyle:ignore line.size.limit method.length method.name cyclomatic.complexity
+    // Returns pairs of all fields, element-level and containers, in a Record and their path names
+    def getRecursiveFields(data: Data, path: String): Seq[(Data, String)] = data match {
+      case data: Record => data.elements.map { case (fieldName, fieldData) =>
+        getRecursiveFields(fieldData, s"$path.$fieldName")
+      }.fold(Seq(data -> path)) { _ ++ _ }
+      case data => Seq(data -> path)  // we don't support or recurse into other Aggregate types here
+    }
+
+    // Returns pairs of corresponding fields between two Records of the same type
+    def getMatchedFields(x: Data, y: Data): Seq[(Data, Data)] = (x, y) match {
+      case (x: Element, y: Element) =>
+        require(x typeEquivalent y)
+        Seq(x -> y)
+      case (x: Record, y: Record) =>
+        (x.elements zip y.elements).map { case ((xName, xElt), (yName, yElt)) =>
+          require(xName == yName)  // assume fields returned in same, deterministic order
+          getMatchedFields(xElt, yElt)
+        }.fold(Seq(x -> y)) { _ ++ _ }
+    }
+
+    requireIsChiselType(this, "bundle literal constructor model")
+    val clone = cloneType
+    val cloneFields = getRecursiveFields(clone, "(bundle root)").toMap
+
+    // Create the Bundle literal binding from litargs of arguments
+    val bundleLitMap = elems.map { fn => fn(clone) }.flatMap { case (field, value) =>
+      val fieldName = cloneFields.getOrElse(field,
+        throw new BundleLiteralException(s"field $field (with value $value) is not a field," +
+          s" ensure the field is specified as a function returning a field on an object of class ${this.getClass}," +
+          s" eg '_.a' to select hypothetical bundle field 'a'")
+      )
+      val valueBinding = value.topBindingOpt match {
+        case Some(litBinding: LitBinding) => litBinding
+        case _ => throw new BundleLiteralException(s"field $fieldName specified with non-literal value $value")
+      }
+
+      field match {  // Get the litArg(s) for this field
+        case field: Bits =>
+          if (field.getClass != value.getClass) {  // TODO typeEquivalent is too strict because it checks width
+            throw new BundleLiteralException(s"Field $fieldName $field specified with non-type-equivalent value $value")
+          }
+          val litArg = valueBinding match {
+            case ElementLitBinding(litArg) => litArg
+            case BundleLitBinding(litMap) => litMap.getOrElse(value,
+                throw new BundleLiteralException(s"Field $fieldName specified with unspecified value"))
+          }
+          Seq(field -> litArg)
+        case field: Record =>
+          if (!(field typeEquivalent value)) {
+            throw new BundleLiteralException(s"field $fieldName $field specified with non-type-equivalent value $value")
+          }
+          // Copy the source BundleLitBinding with fields (keys) remapped to the clone
+          val remap = getMatchedFields(value, field).toMap
+          value.topBinding.asInstanceOf[BundleLitBinding].litMap.map { case (valueField, valueValue) =>
+            remap(valueField) -> valueValue
+          }
+        case _ => throw new BundleLiteralException(s"unsupported field $fieldName of type $field")
+      }
+    }  // don't convert to a Map yet to preserve duplicate keys
+    val duplicates = bundleLitMap.map(_._1).groupBy(identity).collect { case (x, elts) if elts.size > 1 => x }
+    if (!duplicates.isEmpty) {
+      val duplicateNames = duplicates.map(cloneFields(_)).mkString(", ")
+      throw new BundleLiteralException(s"duplicate fields $duplicateNames in Bundle literal constructor")
+    }
+    clone.bind(BundleLitBinding(bundleLitMap.toMap))
+    clone
+  }
+
   /** The collection of [[Data]]
     *
     * This underlying datastructure is a ListMap because the elements must
@@ -535,6 +620,7 @@ trait IgnoreSeqInBundle {
 }
 
 class AutoClonetypeException(message: String) extends ChiselException(message)
+class BundleLiteralException(message: String) extends ChiselException(message)
 
 /** Base class for data types defined as a bundle of other data types.
   *
