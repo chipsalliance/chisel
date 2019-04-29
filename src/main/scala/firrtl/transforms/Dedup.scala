@@ -6,10 +6,10 @@ package transforms
 import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.analyses.InstanceGraph
-import firrtl.annotations.TargetToken.{Instance, OfModule, Ref}
 import firrtl.annotations._
 import firrtl.passes.{InferTypes, MemPortUtils}
 import firrtl.Utils.throwInternalError
+import firrtl.options.{HasShellOptions, ShellOption}
 
 // Datastructures
 import scala.collection.mutable
@@ -20,7 +20,19 @@ case class NoDedupAnnotation(target: ModuleName) extends SingleTargetAnnotation[
   def duplicate(n: ModuleName): NoDedupAnnotation = NoDedupAnnotation(n)
 }
 
-case object NoCircuitDedupAnnotation extends NoTargetAnnotation
+/** If this [[firrtl.annotations.Annotation Annotation]] exists in an [[firrtl.AnnotationSeq AnnotationSeq]],
+  * then the [[firrtl.transforms.DedupModules]] transform will *NOT* be run on the circuit.
+  *  - set with '--no-dedup'
+  */
+case object NoCircuitDedupAnnotation extends NoTargetAnnotation with HasShellOptions {
+
+  val options = Seq(
+    new ShellOption[Unit](
+      longOption = "no-dedup",
+      toAnnotationSeq = _ => Seq(NoCircuitDedupAnnotation),
+      helpText = "Do NOT dedup modules" ) )
+
+}
 
 /** Only use on legal Firrtl.
   *
