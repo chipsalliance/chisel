@@ -27,6 +27,24 @@ class AsTypeOfBundleTester extends BasicTester {
   stop()
 }
 
+class AsTypeOfBundleZeroWidthTester extends BasicTester {
+  class ZeroWidthBundle extends Bundle {
+    val a = UInt(0.W)
+    val b = UInt(1.W)
+    val c = UInt(0.W)
+  }
+
+  val bun = new ZeroWidthBundle
+
+  val bunAsTypeOf = 1.U.asTypeOf(bun)
+
+  assert(bunAsTypeOf.a === 0.U)
+  assert(bunAsTypeOf.b === 1.U)
+  assert(bunAsTypeOf.c === 0.U)
+
+  stop()
+}
+
 class AsTypeOfVecTester extends BasicTester {
   val vec = ((15 << 12) + (0 << 8) + (1 << 4) + (2 << 0)).U.asTypeOf(Vec(4, SInt(4.W)))
 
@@ -101,6 +119,10 @@ class AsTypeOfSpec extends ChiselFlatSpec {
 
   it should "work with Bundles containing Bits Types" in {
     assertTesterPasses{ new AsTypeOfBundleTester }
+  }
+
+  it should "work with Bundles that have fields of zero width" in {
+    assertTesterPasses{ new AsTypeOfBundleZeroWidthTester }
   }
 
   it should "work with Vecs containing Bits Types" in {

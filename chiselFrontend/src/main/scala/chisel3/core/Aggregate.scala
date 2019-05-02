@@ -66,8 +66,16 @@ sealed abstract class Aggregate extends Data {
     var i = 0
     val bits = WireDefault(UInt(this.width), that)  // handles width padding
     for (x <- flatten) {
-      x.connectFromBits(bits(i + x.getWidth - 1, i))
-      i += x.getWidth
+      val fieldWidth = x.getWidth
+      if (fieldWidth > 0) {
+        x.connectFromBits(bits(i + fieldWidth - 1, i))
+        i += fieldWidth
+      } else {
+        // There's a zero-width field in this bundle.
+        // Zero-width fields can't really be assigned to, but the frontend complains if there are uninitialized fields,
+        // so we assign it to DontCare. We can't use connectFromBits() on DontCare, so use := instead.
+        x := DontCare
+      }
     }
   }
 }
