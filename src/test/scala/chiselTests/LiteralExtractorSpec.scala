@@ -4,6 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.experimental.{FixedPoint, RawModule}
+import chisel3.experimental.BundleLiterals._
 import chisel3.testers.BasicTester
 
 class LiteralExtractorSpec extends ChiselFlatSpec {
@@ -59,20 +60,10 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
     class InsideBundle extends Bundle {
       val x = SInt(8.W)
       val y = FixedPoint(8.W, 4.BP)
-
-      import chisel3.internal.BundleLitBinding
-      def Lit(aVal: SInt, bVal: FixedPoint): InsideBundle = { // scalastyle:ignore method.name
-        val clone = cloneType
-        clone.selfBind(BundleLitBinding(Map(
-          clone.x -> litArgOfBits(aVal),
-          clone.y -> litArgOfBits(bVal)
-        )))
-        clone
-      }
     }
 
     class LitInsideOutsideTester(outsideLiteral: InsideBundle) extends BasicTester {
-      val insideLiteral = (new InsideBundle).Lit(7.S, 6.125.F(4.BP))
+      val insideLiteral = (new InsideBundle).Lit(_.x -> 7.S, _.y -> 6.125.F(4.BP))
 
       // the following errors with "assertion failed"
 
@@ -90,7 +81,7 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
       stop()
     }
 
-    val outsideLiteral = (new InsideBundle).Lit(7.S, 6.125.F(4.BP))
+    val outsideLiteral = (new InsideBundle).Lit(_.x -> 7.S, _.y -> 6.125.F(4.BP))
     assertTesterPasses{ new LitInsideOutsideTester(outsideLiteral) }
 
   }
@@ -100,20 +91,8 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
     class MyBundle extends Bundle {
       val a = UInt(8.W)
       val b = Bool()
-
-      // Bundle literal constructor code, which will be auto-generated using macro annotations in
-      // the future.
-      import chisel3.internal.BundleLitBinding
-      def Lit(aVal: UInt, bVal: Bool): MyBundle = { // scalastyle:ignore method.name
-        val clone = cloneType
-        clone.selfBind(BundleLitBinding(Map(
-          clone.a -> litArgOfBits(aVal),
-          clone.b -> litArgOfBits(bVal)
-        )))
-        clone
-      }
     }
-    val myBundleLiteral = (new MyBundle).Lit(42.U, true.B)
+    val myBundleLiteral = (new MyBundle).Lit(_.a -> 42.U, _.b -> true.B)
     assert(myBundleLiteral.a.litValue == 42)
     assert(myBundleLiteral.b.litValue == 1)
     assert(myBundleLiteral.b.litToBoolean == true)
