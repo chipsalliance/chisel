@@ -49,7 +49,7 @@ class Errors {
 // These should be distributed into separate files
 object ToWorkingIR extends Pass {
   def toExp(e: Expression): Expression = e map toExp match {
-    case ex: Reference => WRef(ex.name, ex.tpe, NodeKind, UNKNOWNGENDER)
+    case ex: Reference => WRef(ex.name, ex.tpe, UnknownKind, UNKNOWNGENDER)
     case ex: SubField => WSubField(ex.expr, ex.name, ex.tpe, UNKNOWNGENDER)
     case ex: SubIndex => WSubIndex(ex.expr, ex.value, ex.tpe, UNKNOWNGENDER)
     case ex: SubAccess => WSubAccess(ex.expr, ex.index, ex.tpe, UNKNOWNGENDER)

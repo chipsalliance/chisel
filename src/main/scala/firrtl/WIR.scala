@@ -17,6 +17,7 @@ case object PortKind extends Kind
 case object NodeKind extends Kind
 case object MemKind extends Kind
 case object ExpKind extends Kind
+case object UnknownKind extends Kind
 
 trait Gender
 case object MALE extends Gender
