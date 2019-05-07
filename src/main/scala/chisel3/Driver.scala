@@ -86,23 +86,41 @@ case class ChiselExecutionFailure(message: String) extends ChiselExecutionResult
 
 object Driver extends BackendCompilationUtilities {
 
-  /** Elaborates the Module specified in the gen function into a Circuit
+  /**
+    * Elaborate the Module specified in the gen function into a Chisel IR Circuit.
     *
-    *  @param gen a function that creates a Module hierarchy
-    *  @return the resulting Chisel IR in the form of a Circuit (TODO: Should be FIRRTL IR)
+    * @param gen A function that creates a Module hierarchy.
+    * @return The resulting Chisel IR in the form of a Circuit. (TODO: Should be FIRRTL IR)
     */
   def elaborate[T <: RawModule](gen: () => T): Circuit = internal.Builder.build(Module(gen()))
 
+  /**
+    * Convert the given Chisel IR Circuit to a FIRRTL Circuit.
+    *
+    * @param ir Chisel IR Circuit, generated e.g. by elaborate().
+    */
   def toFirrtl(ir: Circuit): firrtl.ir.Circuit = Converter.convert(ir)
 
+  /**
+    * Emit the Module specified in the gen function directly as a FIRRTL string without
+    * invoking FIRRTL.
+    *
+    * @param gen A function that creates a Module hierarchy.
+    */
   def emit[T <: RawModule](gen: () => T): String = Driver.emit(elaborate(gen))
 
+  /**
+    * Emit the given Chisel IR Circuit as a FIRRTL string, without invoking FIRRTL.
+    *
+    * @param ir Chisel IR Circuit, generated e.g. by elaborate().
+    */
   def emit[T <: RawModule](ir: Circuit): String = Emitter.emit(ir)
 
-  /** Elaborates the Module specified in the gen function into Verilog
+  /**
+    * Elaborate the Module specified in the gen function into Verilog.
     *
-    *  @param gen a function that creates a Module hierarchy
-    *  @return the resulting String containing the design in Verilog
+    * @param gen A function that creates a Module hierarchy.
+    * @return A String containing the design in Verilog.
     */
   def emitVerilog[T <: RawModule](gen: => T): String = {
     execute(Array[String](), { () => gen }) match {
@@ -111,14 +129,15 @@ object Driver extends BackendCompilationUtilities {
     }
   }
 
-  /** Dumps the elaborated Circuit to FIRRTL
+  /**
+    * Dump the elaborated Chisel IR Circuit as a FIRRTL String, without invoking FIRRTL.
     *
     * If no File is given as input, it will dump to a default filename based on the name of the
-    * Top Module
+    * top Module.
     *
-    * @param c Elaborated Chisel Circuit
-    * @param optName Optional File to dump to
-    * @return The File the circuit was dumped to
+    * @param c Elaborated Chisel Circuit.
+    * @param optName File to dump to. If unspecified, defaults to "<topmodule>.fir".
+    * @return The File the circuit was dumped to.
     */
   def dumpFirrtl(ir: Circuit, optName: Option[File]): File = {
     val f = optName.getOrElse(new File(ir.name + ".fir"))
@@ -142,14 +161,15 @@ object Driver extends BackendCompilationUtilities {
     f
   }
 
-  /** Dumps the elaborated Circuit to ProtoBuf
+  /**
+    * Dump the elaborated Circuit to ProtoBuf.
     *
     * If no File is given as input, it will dump to a default filename based on the name of the
-    * Top Module
+    * top Module.
     *
-    * @param c Elaborated Chisel Circuit
-    * @param optFile Optional File to dump to
-    * @return The File the circuit was dumped to
+    * @param c Elaborated Chisel Circuit.
+    * @param optFile Optional File to dump to. If unspecified, defaults to "<topmodule>.pb".
+    * @return The File the circuit was dumped to.
     */
   def dumpProto(c: Circuit, optFile: Option[File]): File = {
     val f = optFile.getOrElse(new File(c.name + ".pb"))

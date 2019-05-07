@@ -154,6 +154,11 @@ object NonNamedHelper {
     val myVal = NamedFunction()
     myVal
   }
+
+  @chiselName
+  def NonBuilderFunction(): Int = { // scalastyle:ignore method.name
+    1 + 1
+  }
 }
 
 @chiselName
@@ -214,5 +219,9 @@ class NamingAnnotationSpec extends ChiselPropSpec {
 
   property("NonNamedFunction should elaborate") {
     elaborate { new NonNamedFunction }
+  }
+
+  property("NonBuilderFunction should run outside a Builder context") {
+    NonNamedHelper.NonBuilderFunction() should be (2)
   }
 }

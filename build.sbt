@@ -28,7 +28,7 @@ def javacOptionsVersion(scalaVersion: String): Seq[String] = {
   }
 }
 
-val defaultVersions = Map("firrtl" -> "1.2-032519-SNAPSHOT")
+val defaultVersions = Map("firrtl" -> "1.2-050719-SNAPSHOT")
 
 lazy val commonSettings = Seq (
   resolvers ++= Seq(
@@ -36,7 +36,7 @@ lazy val commonSettings = Seq (
     Resolver.sonatypeRepo("releases")
   ),
   organization := "edu.berkeley.cs",
-  version := "3.2-032519-SNAPSHOT",
+  version := "3.2-050719-SNAPSHOT",
   autoAPIMappings := true,
   scalaVersion := "2.12.6",
   crossScalaVersions := Seq("2.12.6", "2.11.12"),
@@ -109,14 +109,17 @@ lazy val chiselSettings = Seq (
     "org.scalacheck" %% "scalacheck" % "1.14.0" % "test",
     "com.github.scopt" %% "scopt" % "3.7.0"
   ),
-
+  javacOptions ++= javacOptionsVersion(scalaVersion.value)
+) ++ (
   // Tests from other projects may still run concurrently
   //  if we're not running with -DminimalResources.
   // Another option would be to experiment with:
   //  concurrentRestrictions in Global += Tags.limit(Tags.Test, 1),
-  Test / parallelExecution := !sys.props.contains("minimalResources"),
-
-  javacOptions ++= javacOptionsVersion(scalaVersion.value)
+  sys.props.contains("minimalResources") match {
+    case true  => Seq( Test / parallelExecution := false )
+    case false => Seq( fork := true,
+                       Test / testForkedParallel := true )
+  }
 )
 
 lazy val coreMacros = (project in file("coreMacros")).

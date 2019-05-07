@@ -87,7 +87,7 @@ sealed trait UnconstrainedBinding extends TopBinding {
   def location: Option[BaseModule] = None
 }
 // A constrained binding can only be read/written by specific modules
-// Location will track where this Module is
+// Location will track where this Module is, and the bound object can be referenced in FIRRTL
 sealed trait ConstrainedBinding extends TopBinding {
   def enclosure: BaseModule
   def location: Option[BaseModule] = Some(enclosure)
@@ -106,6 +106,10 @@ case class WireBinding(enclosure: RawModule) extends ConstrainedBinding
 
 case class ChildBinding(parent: Data) extends Binding {
   def location: Option[BaseModule] = parent.topBinding.location
+}
+/** Special binding for Vec.sample_element */
+case class SampleElementBinding[T <: Data](parent: Vec[T]) extends Binding {
+  def location = parent.topBinding.location
 }
 // A DontCare element has a specific Binding, somewhat like a literal.
 // It is a source (RHS). It may only be connected/applied to sinks.

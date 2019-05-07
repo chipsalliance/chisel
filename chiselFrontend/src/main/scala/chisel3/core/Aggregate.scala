@@ -12,62 +12,36 @@ import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo._
 import chisel3.SourceInfoDoc
 
+class AliasedAggregateFieldException(message: String) extends ChiselException(message)
+
 /** An abstract class for data types that solely consist of (are an aggregate
   * of) other Data objects.
   */
 sealed abstract class Aggregate extends Data {
-  private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection) { // scalastyle:ignore cyclomatic.complexity line.size.limit
+  private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection) {
     binding = target
 
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
+    val duplicates = getElements.groupBy(identity).collect { case (x, elts) if elts.size > 1 => x }
+    if (!duplicates.isEmpty) {
+      throw new AliasedAggregateFieldException(s"Aggregate $this contains aliased fields $duplicates")
+    }
     for (child <- getElements) {
       child.bind(ChildBinding(this), resolvedDirection)
     }
 
     // Check that children obey the directionality rules.
-    val childDirections = getElements.map(_.direction).toSet
-    direction = if (childDirections == Set()) {  // Sadly, Scala can't do set matching
-      // If empty, use my assigned direction
-      resolvedDirection match {
-        case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip => ActualDirection.Unspecified
-        case SpecifiedDirection.Output => ActualDirection.Output
-        case SpecifiedDirection.Input => ActualDirection.Input
-      }
-    } else if (childDirections == Set(ActualDirection.Unspecified)) {
-      ActualDirection.Unspecified
-    } else if (childDirections == Set(ActualDirection.Input)) {
-      ActualDirection.Input
-    } else if (childDirections == Set(ActualDirection.Output)) {
-      ActualDirection.Output
-    } else if (childDirections subsetOf
-        Set(ActualDirection.Output, ActualDirection.Input,
-            ActualDirection.Bidirectional(ActualDirection.Default),
-            ActualDirection.Bidirectional(ActualDirection.Flipped))) {
-      resolvedDirection match {
-        case SpecifiedDirection.Unspecified => ActualDirection.Bidirectional(ActualDirection.Default)
-        case SpecifiedDirection.Flip => ActualDirection.Bidirectional(ActualDirection.Flipped)
-        case _ => throw new RuntimeException("Unexpected forced Input / Output")
-      }
-    } else {
-      this match {
-        // Anything flies in compatibility mode
-        case t: Record if !t.compileOptions.dontAssumeDirectionality => resolvedDirection match {
-          case SpecifiedDirection.Unspecified => ActualDirection.Bidirectional(ActualDirection.Default)
-          case SpecifiedDirection.Flip => ActualDirection.Bidirectional(ActualDirection.Flipped)
-          case _ => ActualDirection.Bidirectional(ActualDirection.Default)
-        }
-        case _ =>
-          val childWithDirections = getElements zip getElements.map(_.direction)
-          throw Binding.MixedDirectionAggregateException(s"Aggregate '$this' can't have elements that are both directioned and undirectioned: $childWithDirections") // scalastyle:ignore line.size.limit
-      }
+    val childDirections = getElements.map(_.direction).toSet - ActualDirection.Empty
+    direction = ActualDirection.fromChildren(childDirections, resolvedDirection) match {
+      case Some(dir) => dir
+      case None =>
+        val childWithDirections = getElements zip getElements.map(_.direction)
+        throw Binding.MixedDirectionAggregateException(
+            s"Aggregate '$this' can't have elements that are both directioned and undirectioned: $childWithDirections")
     }
   }
 
   override def litOption: Option[BigInt] = ???  // TODO implement me
-
-  // Returns the LitArg of a Bits object.
-  // Internal API for Bundle literals, to copy the LitArg of argument literals into the top map.
-  protected def litArgOfBits(elt: Bits): LitArg = elt.litArgOption.get
 
   /** Returns a Seq of the immediate contents of this Aggregate, in order.
     */
@@ -92,8 +66,16 @@ sealed abstract class Aggregate extends Data {
     var i = 0
     val bits = WireDefault(UInt(this.width), that)  // handles width padding
     for (x <- flatten) {
-      x.connectFromBits(bits(i + x.getWidth - 1, i))
-      i += x.getWidth
+      val fieldWidth = x.getWidth
+      if (fieldWidth > 0) {
+        x.connectFromBits(bits(i + fieldWidth - 1, i))
+        i += fieldWidth
+      } else {
+        // There's a zero-width field in this bundle.
+        // Zero-width fields can't really be assigned to, but the frontend complains if there are uninitialized fields,
+        // so we assign it to DontCare. We can't use connectFromBits() on DontCare, so use := instead.
+        x := DontCare
+      }
     }
   }
 }
@@ -111,9 +93,9 @@ trait VecFactory extends SourceInfoDoc {
   }
 
   /** Truncate an index to implement modulo-power-of-2 addressing. */
-  private[core] def truncateIndex(idx: UInt, n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = { // scalastyle:ignore line.size.limit
+  private[core] def truncateIndex(idx: UInt, n: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = { // scalastyle:ignore line.size.limit
     // scalastyle:off if.brace
-    val w = BigInt(n-1).bitLength
+    val w = (n-1).bitLength
     if (n <= 1) 0.U
     else if (idx.width.known && idx.width.get <= w) idx
     else if (idx.width.known) idx(w-1,0)
@@ -164,10 +146,26 @@ sealed class Vec[T <: Data] private[core] (gen: => T, val length: Int)
     case _ => false
   }
 
+  private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection) {
+    binding = target
+
+    val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
+    sample_element.bind(SampleElementBinding(this), resolvedDirection)
+    for (child <- getElements) {  // assume that all children are the same
+      child.bind(ChildBinding(this), resolvedDirection)
+    }
+
+    // Note: this differs from the Aggregate.bind behavior on an empty Vec, since this looks at the
+    // sample element instead of actual elements.
+    direction = sample_element.direction
+  }
+
   // Note: the constructor takes a gen() function instead of a Seq to enforce
   // that all elements must be the same and because it makes FIRRTL generation
   // simpler.
   private val self: Seq[T] = Vector.fill(length)(gen)
+  for ((elt, i) <- self.zipWithIndex)
+    elt.setRef(this, i)
 
   /**
   * sample_element 'tracks' all changes to the elements.
@@ -252,9 +250,6 @@ sealed class Vec[T <: Data] private[core] (gen: => T, val length: Int)
 
   override def getElements: Seq[Data] =
     (0 until length).map(apply(_))
-
-  for ((elt, i) <- self.zipWithIndex)
-    elt.setRef(this, i)
 
   /** Default "pretty-print" implementation
     * Analogous to printing a Seq
@@ -441,6 +436,108 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId with Source
   * RTL writers should use [[Bundle]].  See [[Record#elements]] for an example.
   */
 abstract class Record(private[chisel3] implicit val compileOptions: CompileOptions) extends Aggregate {
+  private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
+    try {
+      super.bind(target, parentDirection)
+    } catch {  // nasty compatibility mode shim, where anything flies
+      case e: Binding.MixedDirectionAggregateException if !compileOptions.dontAssumeDirectionality =>
+        val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
+        direction = resolvedDirection match {
+          case SpecifiedDirection.Unspecified => ActualDirection.Bidirectional(ActualDirection.Default)
+          case SpecifiedDirection.Flip => ActualDirection.Bidirectional(ActualDirection.Flipped)
+          case _ => ActualDirection.Bidirectional(ActualDirection.Default)
+        }
+    }
+  }
+
+  /** Creates a Bundle literal of this type with specified values. this must be a chisel type.
+    *
+    * @param elems literal values, specified as a pair of the Bundle field to the literal value.
+    * The Bundle field is specified as a function from an object of this type to the field.
+    * Fields that aren't initialized to DontCare, and assignment to a wire will overwrite any
+    * existing value with DontCare.
+    * @return a Bundle literal of this type with subelement values specified
+    *
+    * @example {{{
+    * class MyBundle extends Bundle {
+    *   val a = UInt(8.W)
+    *   val b = Bool()
+    * }
+    *
+    * (mew MyBundle).Lit(
+    *   _.a -> 42.U,
+    *   _.b -> true.B
+    * )
+    * }}}
+    */
+  private[chisel3] def _makeLit(elems: (this.type => (Data, Data))*): this.type = {  // scalastyle:ignore line.size.limit method.length method.name cyclomatic.complexity
+    // Returns pairs of all fields, element-level and containers, in a Record and their path names
+    def getRecursiveFields(data: Data, path: String): Seq[(Data, String)] = data match {
+      case data: Record => data.elements.map { case (fieldName, fieldData) =>
+        getRecursiveFields(fieldData, s"$path.$fieldName")
+      }.fold(Seq(data -> path)) { _ ++ _ }
+      case data => Seq(data -> path)  // we don't support or recurse into other Aggregate types here
+    }
+
+    // Returns pairs of corresponding fields between two Records of the same type
+    def getMatchedFields(x: Data, y: Data): Seq[(Data, Data)] = (x, y) match {
+      case (x: Element, y: Element) =>
+        require(x typeEquivalent y)
+        Seq(x -> y)
+      case (x: Record, y: Record) =>
+        (x.elements zip y.elements).map { case ((xName, xElt), (yName, yElt)) =>
+          require(xName == yName)  // assume fields returned in same, deterministic order
+          getMatchedFields(xElt, yElt)
+        }.fold(Seq(x -> y)) { _ ++ _ }
+    }
+
+    requireIsChiselType(this, "bundle literal constructor model")
+    val clone = cloneType
+    val cloneFields = getRecursiveFields(clone, "(bundle root)").toMap
+
+    // Create the Bundle literal binding from litargs of arguments
+    val bundleLitMap = elems.map { fn => fn(clone) }.flatMap { case (field, value) =>
+      val fieldName = cloneFields.getOrElse(field,
+        throw new BundleLiteralException(s"field $field (with value $value) is not a field," +
+          s" ensure the field is specified as a function returning a field on an object of class ${this.getClass}," +
+          s" eg '_.a' to select hypothetical bundle field 'a'")
+      )
+      val valueBinding = value.topBindingOpt match {
+        case Some(litBinding: LitBinding) => litBinding
+        case _ => throw new BundleLiteralException(s"field $fieldName specified with non-literal value $value")
+      }
+
+      field match {  // Get the litArg(s) for this field
+        case field: Bits =>
+          if (field.getClass != value.getClass) {  // TODO typeEquivalent is too strict because it checks width
+            throw new BundleLiteralException(s"Field $fieldName $field specified with non-type-equivalent value $value")
+          }
+          val litArg = valueBinding match {
+            case ElementLitBinding(litArg) => litArg
+            case BundleLitBinding(litMap) => litMap.getOrElse(value,
+                throw new BundleLiteralException(s"Field $fieldName specified with unspecified value"))
+          }
+          Seq(field -> litArg)
+        case field: Record =>
+          if (!(field typeEquivalent value)) {
+            throw new BundleLiteralException(s"field $fieldName $field specified with non-type-equivalent value $value")
+          }
+          // Copy the source BundleLitBinding with fields (keys) remapped to the clone
+          val remap = getMatchedFields(value, field).toMap
+          value.topBinding.asInstanceOf[BundleLitBinding].litMap.map { case (valueField, valueValue) =>
+            remap(valueField) -> valueValue
+          }
+        case _ => throw new BundleLiteralException(s"unsupported field $fieldName of type $field")
+      }
+    }  // don't convert to a Map yet to preserve duplicate keys
+    val duplicates = bundleLitMap.map(_._1).groupBy(identity).collect { case (x, elts) if elts.size > 1 => x }
+    if (!duplicates.isEmpty) {
+      val duplicateNames = duplicates.map(cloneFields(_)).mkString(", ")
+      throw new BundleLiteralException(s"duplicate fields $duplicateNames in Bundle literal constructor")
+    }
+    clone.bind(BundleLitBinding(bundleLitMap.toMap))
+    clone
+  }
 
   /** The collection of [[Data]]
     *
@@ -531,6 +628,7 @@ trait IgnoreSeqInBundle {
 }
 
 class AutoClonetypeException(message: String) extends ChiselException(message)
+class BundleLiteralException(message: String) extends ChiselException(message)
 
 /** Base class for data types defined as a bundle of other data types.
   *
@@ -591,15 +689,13 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     */
   final lazy val elements: ListMap[String, Data] = {
     val nameMap = LinkedHashMap[String, Data]()
-    val seen = HashSet[Data]()
     for (m <- getPublicFields(classOf[Bundle])) {
       getBundleField(m) match {
         case Some(d: Data) =>
           if (nameMap contains m.getName) {
             require(nameMap(m.getName) eq d)
-          } else if (!seen(d)) {
+          } else {
             nameMap(m.getName) = d
-            seen += d
           }
         case None =>
           if (!ignoreSeq) {
@@ -656,6 +752,22 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
 
     def autoClonetypeError(desc: String): Nothing = {
       throw new AutoClonetypeException(s"Unable to automatically infer cloneType on $clazz: $desc")
+    }
+
+    def validateClone(clone: Bundle, equivDiagnostic: String): Unit = {
+      if (!clone.typeEquivalent(this)) {
+        autoClonetypeError(s"Automatically cloned $clone not type-equivalent to base $this. " + equivDiagnostic)
+      }
+
+      for ((name, field) <- elements) {
+        if (clone.elements(name) eq field) {
+          autoClonetypeError(s"Automatically cloned $clone has field $name aliased with base $this." +
+            " In the future, this can be solved by wrapping the field in Field(...)," +
+            " see https://github.com/freechipsproject/chisel3/pull/909." +
+            " For now, ensure Chisel types used in the Bundle definition are passed through constructor arguments," +
+            " or wrapped in Input(...), Output(...), or Flipped(...) if appropriate.")
+        }
+      }
     }
 
     val mirror = runtimeMirror(clazz.getClassLoader)
@@ -741,10 +853,7 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
       clone match {
         case Some(clone) =>
           clone._outerInst = this._outerInst
-          if (!clone.typeEquivalent(this)) {
-            autoClonetypeError(s"automatically cloned $clone not type-equivalent to base." +
-            " Constructor argument values were not inferred, ensure constructor is deterministic.")
-          }
+          validateClone(clone, "Constructor argument values were not inferred, ensure constructor is deterministic.")
           return clone.asInstanceOf[this.type]
         case None =>
       }
@@ -781,6 +890,8 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
       try {
         val clone = ctors.head.newInstance(outerClassInstance.get._2).asInstanceOf[this.type]
         clone._outerInst = this._outerInst
+
+        validateClone(clone, "Outer class instance was inferred, ensure constructor is deterministic.")
         return clone
       } catch {
         case e @ (_: java.lang.reflect.InvocationTargetException | _: IllegalArgumentException) =>
@@ -844,14 +955,11 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     val clone = classMirror.reflectConstructor(ctor).apply(ctorParamsVals:_*).asInstanceOf[this.type]
     clone._outerInst = this._outerInst
 
-    if (!clone.typeEquivalent(this)) {
-      // scalastyle:off line.size.limit
-      autoClonetypeError(s"Automatically cloned $clone not type-equivalent to base $this." +
-          " Constructor argument values were inferred: ensure that variable names are consistent and have the same value throughout the constructor chain," +
-          " and that the constructor is deterministic.")
-      // scalastyle:on line.size.limit
-    }
-
+    validateClone(clone,
+      "Constructor argument values were inferred:" +
+        " ensure that variable names are consistent and have the same value throughout the constructor chain," +
+        " and that the constructor is deterministic."
+    )
     clone
   }
 
