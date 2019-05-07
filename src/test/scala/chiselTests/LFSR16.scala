@@ -5,6 +5,7 @@ package chiselTests
 import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
+import chisel3.util.random.{PRNG, LFSR}
 
 /**
   * This test creates two 4 sided dice.
@@ -56,12 +57,40 @@ class LFSRMaxPeriod(gen: => UInt) extends BasicTester {
   }
 }
 
+/** Check that the output of the new LFSR is the same asthe old LFSR */
+class MeetTheNewLFSR16SameAsTheOldLFSR16 extends BasicTester {
+
+  /** This is the exact implementation of the old LFSR16 algorithm */
+  val oldLfsr = {
+    val width = 16
+    val lfsr = RegInit(1.U(width.W))
+    lfsr := Cat(lfsr(0)^lfsr(2)^lfsr(3)^lfsr(5), lfsr(width-1,1))
+    lfsr
+  }
+
+  /** The new LFSR16 uses equivalent taps and a reverse so that it can use LFSR(16) under the hood. */
+  val newLfsr = LFSR16()
+
+  val (_, done) = Counter(true.B, 16)
+
+  assert(oldLfsr === newLfsr)
+
+  when (done) {
+    stop()
+  }
+
+}
+
 class LFSRSpec extends ChiselPropSpec {
   property("LFSR16 can be used to produce pseudo-random numbers, this tests the distribution") {
     assertTesterPasses{ new LFSRDistribution(LFSR16()) }
   }
 
   property("LFSR16 period tester, Period should 2^16 - 1") {
-    assertTesterPasses { new LFSRMaxPeriod(LFSR16()) }
+    assertTesterPasses{ new LFSRMaxPeriod(LFSR16()) }
+  }
+
+  property("New LFSR16 is the same as the old LFSR16") {
+    assertTesterPasses{ new MeetTheNewLFSR16SameAsTheOldLFSR16 }
   }
 }
