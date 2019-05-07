@@ -12,14 +12,16 @@ import chisel3.util._
   * The asserts check that the bins show the correct distribution.
   */
 //scalastyle:off magic.number
-class LFSRTester extends BasicTester {
+class LFSRDistribution(gen: => UInt, cycles: Int = 10000) extends BasicTester {
+
+  val rv = gen
   val bins = Reg(Vec(8, UInt(32.W)))
 
   // Use tap points on each LFSR so values are more independent
-  val die0 = Cat(Seq.tabulate(2) { i => LFSR16()(i) })
-  val die1 = Cat(Seq.tabulate(2) { i => LFSR16()(i + 2) })
+  val die0 = Cat(Seq.tabulate(2) { i => rv(i) })
+  val die1 = Cat(Seq.tabulate(2) { i => rv(i + 2) })
 
-  val (trial, done) = Counter(true.B, 10000)
+  val (trial, done) = Counter(true.B, cycles)
 
   val rollValue = die0 +& die1  // Note +& is critical because sum will need an extra bit.
 
@@ -41,13 +43,14 @@ class LFSRTester extends BasicTester {
   }
 }
 
-class LFSR16MaxPeriod extends BasicTester {
+class LFSRMaxPeriod(gen: => UInt) extends BasicTester {
 
-  val lfsr16 = LFSR16()
+  val rv = gen
   val started = RegNext(true.B, false.B)
+  val seed = withReset(!started) { RegInit(rv) }
 
-  val (_, wrap) = Counter(started, math.pow(2.0, 16).toInt - 1)
-  when (lfsr16 === 1.U && started) {
+  val (_, wrap) = Counter(started, math.pow(2.0, rv.getWidth).toInt - 1)
+  when (rv === seed && started) {
     chisel3.assert(wrap)
     stop()
   }
@@ -55,10 +58,10 @@ class LFSR16MaxPeriod extends BasicTester {
 
 class LFSRSpec extends ChiselPropSpec {
   property("LFSR16 can be used to produce pseudo-random numbers, this tests the distribution") {
-    assertTesterPasses{ new LFSRTester }
+    assertTesterPasses{ new LFSRDistribution(LFSR16()) }
   }
 
   property("LFSR16 period tester, Period should 2^16 - 1") {
-    assertTesterPasses { new LFSR16MaxPeriod }
+    assertTesterPasses { new LFSRMaxPeriod(LFSR16()) }
   }
 }
