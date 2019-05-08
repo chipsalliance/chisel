@@ -136,7 +136,8 @@ object Vec extends VecFactory
 sealed class Vec[T <: Data] private[core] (gen: => T, val length: Int)
     extends Aggregate with VecLike[T] {
   override def toString: String = {
-    s"$sample_element[$length]$bindingToString"
+    val elementType = sample_element.cloneType
+    s"$elementType[$length]$bindingToString"
   }
 
   private[core] override def typeEquivalent(that: Data): Boolean = that match {
