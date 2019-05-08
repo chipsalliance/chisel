@@ -155,8 +155,6 @@ sealed class Vec[T <: Data] private[core] (gen: => T, val length: Int)
       child.bind(ChildBinding(this), resolvedDirection)
     }
 
-    // Note: this differs from the Aggregate.bind behavior on an empty Vec, since this looks at the
-    // sample element instead of actual elements.
     direction = sample_element.direction
   }
 

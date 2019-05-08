@@ -161,7 +161,7 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
     super.bind(target, parentDirection)
 
     // Make sure we only annotate hardware and not literals
-    if (selfAnnotating && topBindingOpt.isDefined && topBindingOpt.get.isInstanceOf[ConstrainedBinding]) {
+    if (selfAnnotating && isSynthesizable && topBindingOpt.get.isInstanceOf[ConstrainedBinding]) {
       annotateEnum()
     }
   }
