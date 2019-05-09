@@ -1776,6 +1776,8 @@ final class Analog private (private[chisel3] val width: Width) extends Element {
     val targetTopBinding = target match {
       case target: TopBinding => target
       case ChildBinding(parent) => parent.topBinding
+      // See https://github.com/freechipsproject/chisel3/pull/946
+      case SampleElementBinding(parent) => parent.topBinding
     }
 
     // Analog counts as different directions based on binding context

@@ -30,7 +30,7 @@ object requireIsHardware {
       case Some(x: BaseModule) => x._compatAutoWrapPorts
       case _ =>
     }
-    if (!node.topBindingOpt.isDefined) {
+    if (!node.isSynthesizable) {
       val prefix = if (msg.nonEmpty) s"$msg " else ""
       throw Binding.ExpectedHardwareException(s"$prefix'$node' must be hardware, " +
         "not a bare Chisel type. Perhaps you forgot to wrap it in Wire(_) or IO(_)?")
@@ -41,7 +41,7 @@ object requireIsHardware {
 /** Requires that a node is a chisel type (not hardware, "unbound")
   */
 object requireIsChiselType {
-  def apply(node: Data, msg: String = ""): Unit = if (node.topBindingOpt.isDefined) {
+  def apply(node: Data, msg: String = ""): Unit = if (node.isSynthesizable) {
     val prefix = if (msg.nonEmpty) s"$msg " else ""
     throw Binding.ExpectedChiselTypeException(s"$prefix'$node' must be a Chisel type, not hardware")
   }
