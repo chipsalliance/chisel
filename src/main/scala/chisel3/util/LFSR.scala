@@ -7,6 +7,7 @@ package chisel3.util
 
 import chisel3._
 import chisel3.internal.naming.chiselName  // can't use chisel3_ version because of compile order
+import chisel3.util.random.FibonacciLFSR
 
 /** LFSR16 generates a 16-bit linear feedback shift register, returning the register contents.
   * This is useful for generating a pseudo-random sequence.
@@ -27,17 +28,19 @@ import chisel3.internal.naming.chiselName  // can't use chisel3_ version because
   * }}}
   */
 // scalastyle:off magic.number
+@deprecated("LFSR16 is deprecated in favor of the parameterized chisel3.util.random.LFSR", "3.3")
 object LFSR16 {
   /** Generates a 16-bit linear feedback shift register, returning the register contents.
     * @param increment optional control to gate when the LFSR updates.
     */
+  @deprecated("Use chisel3.util.random.LFSR(16) for a 16-bit LFSR", "3.3")
   @chiselName
-  def apply(increment: Bool = true.B): UInt = {
-    val width = 16
-    val lfsr = RegInit(1.U(width.W))
-    when (increment) { lfsr := Cat(lfsr(0)^lfsr(2)^lfsr(3)^lfsr(5), lfsr(width-1,1)) }
-    lfsr
-  }
+  def apply(increment: Bool = true.B): UInt =
+    Vec( FibonacciLFSR
+          .maxPeriod(16, seed = Some(BigInt(1) << 15))
+          .asBools
+          .reverse )
+      .asUInt
+
 }
 // scalastyle:on magic.number
-
