@@ -331,6 +331,43 @@ class GroupComponentsSpec extends MiddleTransformSpec {
       """.stripMargin
     execute(input, check, groups)
   }
+
+  "Instances with uninitialized ports" should "work properly" in {
+    val input =
+      s"""circuit $top :
+         |  module $top :
+         |    input in: UInt<16>
+         |    output out: UInt<16>
+         |    inst other of Other
+         |    other is invalid
+         |    out <= add(in, other.out)
+         |  module Other:
+         |    input in: UInt<16>
+         |    output out: UInt<16>
+         |    out <= add(asUInt(in), UInt(1))
+      """.stripMargin
+    val groups = Seq(
+      GroupAnnotation(Seq(topComp("other")), "Wrapper", "wrapper")
+    )
+    val check =
+      s"""circuit $top :
+         |  module $top :
+         |    input in: UInt<16>
+         |    output out: UInt<16>
+         |    inst wrapper of Wrapper
+         |    out <= add(in, wrapper.other_out)
+         |  module Wrapper :
+         |    output other_out: UInt<16>
+         |    inst other of Other
+         |    other_out <= other.out
+         |    other.in is invalid
+         |  module Other:
+         |    input in: UInt<16>
+         |    output out: UInt<16>
+         |    out <= add(asUInt(in), UInt(1))
+      """.stripMargin
+    execute(input, check, groups)
+  }
 }
 
 class GroupComponentsIntegrationSpec extends FirrtlFlatSpec {
