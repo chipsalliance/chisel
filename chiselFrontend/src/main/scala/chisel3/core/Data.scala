@@ -146,7 +146,7 @@ object DataMirror {
 
   // Internal reflection-style APIs, subject to change and removal whenever.
   object internal { // scalastyle:ignore object.name
-    def isSynthesizable(target: Data): Boolean = target.topBindingOpt.isDefined
+    def isSynthesizable(target: Data): Boolean = target.isSynthesizable
     // For those odd cases where you need to care about object reference and uniqueness
     def chiselTypeClone[T<:Data](target: Data): T = {
       target.cloneTypeFull.asInstanceOf[T]
@@ -314,14 +314,18 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
     _binding = Some(target)
   }
 
+  // Similar to topBindingOpt except it explicitly excludes SampleElements which are bound but not
+  // hardware
+  private[core] final def isSynthesizable: Boolean = _binding.map {
+    case ChildBinding(parent) => parent.isSynthesizable
+    case _: TopBinding => true
+    case _: SampleElementBinding[_] => false
+  }.getOrElse(false)
+
   private[core] def topBindingOpt: Option[TopBinding] = _binding.flatMap {
     case ChildBinding(parent) => parent.topBindingOpt
     case bindingVal: TopBinding => Some(bindingVal)
-    case _: SampleElementBinding[_] => None
-      // TODO: technically, it's bound, but it's more of a ghost binding and None is probably the most appropriate
-      // Note: sample elements should not be user-accessible, so there's not really a good reason to access its
-      // top binding. However, we can't make this assert out right not because a larger refactoring is needed.
-      // See https://github.com/freechipsproject/chisel3/pull/946
+    case SampleElementBinding(parent) => parent.topBindingOpt
   }
 
   private[core] def topBinding: TopBinding = topBindingOpt.get
@@ -351,6 +355,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
   // User-friendly representation of the binding as a helper function for toString.
   // Provides a unhelpful fallback for literals, which should have custom rendering per
   // Data-subtype.
+  // TODO Is this okay for sample_element? It *shouldn't* be visible to users
   protected def bindingToString: String = topBindingOpt match {
     case None => ""
     case Some(OpBinding(enclosure)) => s"(OpResult in ${enclosure.desiredName})"

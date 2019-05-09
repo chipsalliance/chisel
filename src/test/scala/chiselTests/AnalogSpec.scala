@@ -5,7 +5,7 @@ package chiselTests
 import chisel3._
 import chisel3.util._
 import chisel3.testers.BasicTester
-import chisel3.experimental.{Analog, attach, BaseModule}
+import chisel3.experimental.{Analog, attach, BaseModule, RawModule}
 
 // IO for Modules that just connect bus to out
 class AnalogReaderIO extends Bundle {
@@ -19,13 +19,20 @@ class AnalogWriterIO extends Bundle {
 }
 
 trait AnalogReader {
-  self: BaseModule =>
-  final val io = self.IO(new AnalogReaderIO)
+  def out: UInt
+  def bus: Analog
 }
 
-class AnalogReaderBlackBox extends BlackBox with AnalogReader
+class AnalogReaderBlackBox extends BlackBox with AnalogReader {
+  val io = IO(new AnalogReaderIO)
+  def out = io.out
+  def bus = io.bus
+}
 
 class AnalogReaderWrapper extends Module with AnalogReader {
+  val io = IO(new AnalogReaderIO)
+  def out = io.out
+  def bus = io.bus
   val mod = Module(new AnalogReaderBlackBox)
   io <> mod.io
 }
@@ -41,6 +48,26 @@ class AnalogConnector extends Module {
   io.bus1 <> io.bus2
 }
 
+class VecAnalogReaderWrapper extends RawModule with AnalogReader {
+  val vecbus = IO(Vec(1, Analog(32.W)))
+  val out = IO(Output(UInt(32.W)))
+  val mod = Module(new AnalogReaderBlackBox)
+  def bus = vecbus(0)
+  mod.io.bus <> bus
+  out := mod.io.out
+}
+
+class VecBundleAnalogReaderWrapper extends RawModule with AnalogReader {
+  val vecBunBus = IO(Vec(1, new Bundle {
+    val analog = Analog(32.W)
+  }))
+  def bus = vecBunBus(0).analog
+  val out = IO(Output(UInt(32.W)))
+  val mod = Module(new AnalogReaderBlackBox)
+  mod.io.bus <> bus
+  out := mod.io.out
+}
+
 // Parent class for tests connecing up AnalogReaders and AnalogWriters
 abstract class AnalogTester extends BasicTester {
   final val BusValue = "hdeadbeef".U
@@ -52,7 +79,7 @@ abstract class AnalogTester extends BasicTester {
   writer.io.in := BusValue
 
   final def check(reader: BaseModule with AnalogReader): Unit =
-    assert(reader.io.out === BusValue)
+    assert(reader.out === BusValue)
 }
 
 class AnalogSpec extends ChiselFlatSpec {
@@ -180,7 +207,7 @@ class AnalogSpec extends ChiselFlatSpec {
     assertTesterPasses(new AnalogTester {
       val mods = Seq(Module(new AnalogReaderBlackBox), Module(new AnalogReaderWrapper))
       val busWire = Wire(writer.io.bus.cloneType)
-      attach(writer.io.bus, mods(0).io.bus, mods(1).io.bus)
+      attach(writer.io.bus, mods(0).bus, mods(1).bus)
       mods.foreach(check(_))
     }, Seq("/chisel3/AnalogBlackBox.v"))
   }
@@ -206,6 +233,22 @@ class AnalogSpec extends ChiselFlatSpec {
         check(mod)
       }, Seq("/chisel3/AnalogBlackBox.v"))
     }
+  }
+
+  it should "work with Vecs of Analog" in {
+    assertTesterPasses(new AnalogTester {
+      val mod = Module(new VecAnalogReaderWrapper)
+      mod.bus <> writer.io.bus
+      check(mod)
+    }, Seq("/chisel3/AnalogBlackBox.v"))
+  }
+
+  it should "work with Vecs of Bundles of Analog" in {
+    assertTesterPasses(new AnalogTester {
+      val mod = Module(new VecBundleAnalogReaderWrapper)
+      mod.bus <> writer.io.bus
+      check(mod)
+    }, Seq("/chisel3/AnalogBlackBox.v"))
   }
 }
 

@@ -75,12 +75,14 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
       id match {
         case id: BaseModule => id.forceName(default=id.desiredName, _namespace)
         case id: MemBase[_] => id.forceName(default="_T", _namespace)
-        case id: Data if id.topBindingOpt.isDefined => id.topBinding match {
-          case OpBinding(_) | MemoryPortBinding(_) | PortBinding(_) | RegBinding(_) | WireBinding(_) =>
-            id.forceName(default="_T", _namespace)
-          case _ =>  // don't name literals
-        }
-        case id: Data if id.topBindingOpt.isEmpty =>  // don't name unbound types
+        case id: Data  =>
+          if (id.isSynthesizable) {
+            id.topBinding match {
+              case OpBinding(_) | MemoryPortBinding(_) | PortBinding(_) | RegBinding(_) | WireBinding(_) =>
+                id.forceName(default="_T", _namespace)
+              case _ =>  // don't name literals
+            }
+          } // else, don't name unbound types
       }
       id._onModuleClose
     }
