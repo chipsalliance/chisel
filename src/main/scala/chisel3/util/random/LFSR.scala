@@ -55,8 +55,8 @@ trait LFSR extends PRNG {
       }
     case None =>
       reduction match {
-        case XOR  => when (reset.toBool) { state := state(width-1, 1) ## 1.U }
-        case XNOR => when (reset.toBool) { state := state(width-1, 1) ## 0.U }
+        case XOR  => when (reset.toBool) { state(0) := 1.U }
+        case XNOR => when (reset.toBool) { state(0) := 0.U }
       }
   }
 

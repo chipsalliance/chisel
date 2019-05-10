@@ -51,10 +51,15 @@ class LFSRMaxPeriod(gen: => UInt) extends BasicTester {
   val seed = withReset(!started) { RegInit(rv) }
 
   val (_, wrap) = Counter(started, math.pow(2.0, rv.getWidth).toInt - 1)
+
   when (rv === seed && started) {
     chisel3.assert(wrap)
     stop()
   }
+
+  val last = RegNext(rv)
+  chisel3.assert(rv =/= last, "LFSR last value (0b%b) was equal to current value (0b%b)", rv, last)
+
 }
 
 /** Check that the output of the new LFSR is the same asthe old LFSR */

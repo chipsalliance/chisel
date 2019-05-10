@@ -12,7 +12,7 @@ import chiselTests.ChiselFlatSpec
 class CyclePRNG(width: Int, seed: Option[BigInt], step: Int, updateSeed: Boolean)
     extends PRNG(width, seed, step, updateSeed) {
 
-  def delta(s: UInt): UInt = s ## s(width - 1)
+  def delta(s: Seq[Bool]): Seq[Bool] = s.last +: s.dropRight(1)
 
 }
 
@@ -49,10 +49,10 @@ class PRNGUpdateSeedTest(updateSeed: Boolean, seed: BigInt, expected: BigInt) ex
 
   a.io.increment := true.B
   a.io.seed.valid := count === 2.U
-  a.io.seed.bits := seed.U
+  a.io.seed.bits := seed.U(a.width.W).asBools
 
   when (count === 3.U) {
-    assert(a.io.out === expected.U, "Output didn't match!")
+    assert(a.io.out.asUInt === expected.U, "Output didn't match!")
   }
 
   when (done) {

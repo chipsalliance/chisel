@@ -45,18 +45,14 @@ class GaloisLFSR(
   step: Int = 1,
   updateSeed: Boolean = false) extends PRNG(width, seed, step, updateSeed) with LFSR {
 
-  def delta(s: UInt): UInt = {
-    val in = s.asBools
-    val first = in.head
-    val out = Wire(Vec(s.getWidth, Bool()))
-    out
-      .zip(in.tail :+ first)
+  def delta(s: Seq[Bool]): Seq[Bool] = {
+    val first = s.head
+    (s.tail :+ first)
       .zipWithIndex
-      .foreach {
-        case ((l, r), i) if taps(i + 1) && (i + 1 != out.size) => l := reduction(r, first)
-        case ((l, r), _)                                       => l := r
+      .map {
+        case (a, i) if taps(i + 1) && (i + 1 != s.size) => reduction(a, first)
+        case (a, _)                                     => a
       }
-    out.asUInt
   }
 
 }

@@ -12,7 +12,7 @@ import chiselTests.{ChiselFlatSpec, LFSRDistribution, LFSRMaxPeriod}
 import math.pow
 
 class FooLFSR(val reduction: LFSRReduce, seed: Option[BigInt]) extends PRNG(4, seed) with LFSR {
-  def delta(s: UInt): UInt = s
+  def delta(s: Seq[Bool]): Seq[Bool] = s
 }
 
 /** This tests that after reset an LFSR is not locked up. This manually sets the seed of the LFSR at run-time to the
@@ -30,20 +30,18 @@ class LFSRResetTester(gen: => LFSR, lockUpValue: BigInt) extends BasicTester {
 
   val (count, done) = Counter(true.B, 5)
 
-  printf("%d: 0b%b\n", count, lfsr.io.out)
-
   lfsr.io.seed.valid := count === 1.U
-  lfsr.io.seed.bits := lockUpValue.U
+  lfsr.io.seed.bits := lockUpValue.U(lfsr.width.W).asBools
   lfsr.io.increment := true.B
 
   when (count === 2.U) {
-    assert(lfsr.io.out === lockUpValue.U, "LFSR is NOT locked up, but should be!")
+    assert(lfsr.io.out.asUInt === lockUpValue.U, "LFSR is NOT locked up, but should be!")
   }
 
   lfsr.reset := count === 3.U
 
   when (count === 4.U) {
-    assert(lfsr.io.out =/= lockUpValue.U, "LFSR is locked up, but should not be after reset!")
+    assert(lfsr.io.out.asUInt =/= lockUpValue.U, "LFSR is locked up, but should not be after reset!")
   }
 
   when (done) {
