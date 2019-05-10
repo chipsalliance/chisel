@@ -62,19 +62,22 @@ class LFSRMaxPeriod(gen: => UInt) extends BasicTester {
 
 }
 
-/** Check that the output of the new LFSR is the same asthe old LFSR */
+/** Check that the output of the new LFSR is the same as the old LFSR */
 class MeetTheNewLFSR16SameAsTheOldLFSR16 extends BasicTester {
+  val en = Counter(2).value.asBool
 
   /** This is the exact implementation of the old LFSR16 algorithm */
   val oldLfsr = {
     val width = 16
     val lfsr = RegInit(1.U(width.W))
-    lfsr := Cat(lfsr(0)^lfsr(2)^lfsr(3)^lfsr(5), lfsr(width-1,1))
+    when (en) {
+      lfsr := Cat(lfsr(0)^lfsr(2)^lfsr(3)^lfsr(5), lfsr(width-1,1))
+    }
     lfsr
   }
 
   /** The new LFSR16 uses equivalent taps and a reverse so that it can use LFSR(16) under the hood. */
-  val newLfsr = LFSR16()
+  val newLfsr = LFSR16(en)
 
   val (_, done) = Counter(true.B, 16)
 
