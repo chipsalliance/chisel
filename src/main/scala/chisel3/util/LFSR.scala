@@ -28,12 +28,12 @@ import chisel3.util.random.FibonacciLFSR
   * }}}
   */
 // scalastyle:off magic.number
-@deprecated("LFSR16 is deprecated in favor of the parameterized chisel3.util.random.LFSR", "3.3")
+@deprecated("LFSR16 is deprecated in favor of the parameterized chisel3.util.random.LFSR", "3.2")
 object LFSR16 {
   /** Generates a 16-bit linear feedback shift register, returning the register contents.
     * @param increment optional control to gate when the LFSR updates.
     */
-  @deprecated("Use chisel3.util.random.LFSR(16) for a 16-bit LFSR", "3.3")
+  @deprecated("Use chisel3.util.random.LFSR(16) for a 16-bit LFSR", "3.2")
   @chiselName
   def apply(increment: Bool = true.B): UInt =
     Vec( FibonacciLFSR
