@@ -37,7 +37,7 @@ object LFSR16 {
   @chiselName
   def apply(increment: Bool = true.B): UInt =
     Vec( FibonacciLFSR
-          .maxPeriod(16, seed = Some(BigInt(1) << 15))
+          .maxPeriod(16, increment, seed = Some(BigInt(1) << 15))
           .asBools
           .reverse )
       .asUInt
