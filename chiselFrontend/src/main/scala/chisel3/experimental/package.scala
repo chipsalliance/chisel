@@ -44,18 +44,18 @@ package object experimental {  // scalastyle:ignore object.name
       * q2_io.enq <> q1.io.deq
       * }}}
       */
-    def apply(proto: BaseModule)(implicit sourceInfo: internal.sourceinfo.SourceInfo, compileOptions: CompileOptions): ClonePorts = { // scalastyle:ignore line.size.limit
+    def apply(proto: BaseModule)(implicit sourceInfo: chisel3.internal.sourceinfo.SourceInfo, compileOptions: CompileOptions): ClonePorts = { // scalastyle:ignore line.size.limit
       BaseModule.cloneIORecord(proto)
     }
   }
 
-  val requireIsHardware = internal.requireIsHardware
-  val requireIsChiselType = internal.requireIsChiselType
+  val requireIsHardware = chisel3.internal.requireIsHardware
+  val requireIsChiselType =  chisel3.internal.requireIsChiselType
   type Direction = ActualDirection
   val Direction = ActualDirection
 
   implicit class ChiselRange(val sc: StringContext) extends AnyVal {
-    import internal.firrtl.NumericBound
+    import chisel3.internal.firrtl.NumericBound
 
     import scala.language.experimental.macros
 
@@ -67,12 +67,12 @@ package object experimental {  // scalastyle:ignore object.name
       * UInt(range"[0, \${myInt + 2})")
       * }}}
       */
-    def range(args: Any*): (NumericBound[Int], NumericBound[Int]) = macro internal.RangeTransform.apply
+    def range(args: Any*): (NumericBound[Int], NumericBound[Int]) = macro chisel3.internal.RangeTransform.apply
   }
 
-  class dump extends internal.naming.dump  // scalastyle:ignore class.name
-  class treedump extends internal.naming.treedump  // scalastyle:ignore class.name
-  class chiselName extends internal.naming.chiselName  // scalastyle:ignore class.name
+  class dump extends chisel3.internal.naming.dump  // scalastyle:ignore class.name
+  class treedump extends chisel3.internal.naming.treedump  // scalastyle:ignore class.name
+  class chiselName extends chisel3.internal.naming.chiselName  // scalastyle:ignore class.name
 
   object BundleLiterals {
     implicit class AddBundleLiteralConstructor[T <: Bundle](x: T) {

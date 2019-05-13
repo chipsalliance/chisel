@@ -1283,7 +1283,7 @@ sealed class Bool() extends UInt(1.W) with Reset {
     *
     * @param that a hardware $coll
     * @return the lgocial or of this $coll and `that`
-    * @note this is equivalent to [[Bool.|]]
+    * @note this is equivalent to [[Bool!.|(that:chisel3\.Bool)* Bool.|)]]
     * @group Logical
     */
   def || (that: Bool): Bool = macro SourceInfoTransform.thatArg
@@ -1295,7 +1295,7 @@ sealed class Bool() extends UInt(1.W) with Reset {
     *
     * @param that a hardware $coll
     * @return the lgocial and of this $coll and `that`
-    * @note this is equivalent to [[Bool.&]]
+    * @note this is equivalent to [[Bool!.&(that:chisel3\.Bool)* Bool.&]]
     * @group Logical
     */
   def && (that: Bool): Bool = macro SourceInfoTransform.thatArg
@@ -1801,6 +1801,8 @@ package experimental {
       val targetTopBinding = target match {
         case target: TopBinding => target
         case ChildBinding(parent) => parent.topBinding
+        // See https://github.com/freechipsproject/chisel3/pull/946
+        case SampleElementBinding(parent) => parent.topBinding
       }
 
       // Analog counts as different directions based on binding context

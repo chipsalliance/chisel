@@ -147,7 +147,7 @@ package experimental {
 
     // Internal reflection-style APIs, subject to change and removal whenever.
     object internal { // scalastyle:ignore object.name
-      def isSynthesizable(target: Data): Boolean = target.topBindingOpt.isDefined
+      def isSynthesizable(target: Data): Boolean = target.isSynthesizable
       // For those odd cases where you need to care about object reference and uniqueness
       def chiselTypeClone[T<:Data](target: Data): T = {
         target.cloneTypeFull.asInstanceOf[T]
@@ -316,14 +316,18 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
     _binding = Some(target)
   }
 
+  // Similar to topBindingOpt except it explicitly excludes SampleElements which are bound but not
+  // hardware
+  private[chisel3] final def isSynthesizable: Boolean = _binding.map {
+    case ChildBinding(parent) => parent.isSynthesizable
+    case _: TopBinding => true
+    case _: SampleElementBinding[_] => false
+  }.getOrElse(false)
+
   private[chisel3] def topBindingOpt: Option[TopBinding] = _binding.flatMap {
     case ChildBinding(parent) => parent.topBindingOpt
     case bindingVal: TopBinding => Some(bindingVal)
-    case _: SampleElementBinding[_] => None
-      // TODO: technically, it's bound, but it's more of a ghost binding and None is probably the most appropriate
-      // Note: sample elements should not be user-accessible, so there's not really a good reason to access its
-      // top binding. However, we can't make this assert out right not because a larger refactoring is needed.
-      // See https://github.com/freechipsproject/chisel3/pull/946
+    case SampleElementBinding(parent) => parent.topBindingOpt
   }
 
   private[chisel3] def topBinding: TopBinding = topBindingOpt.get
@@ -353,6 +357,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
   // User-friendly representation of the binding as a helper function for toString.
   // Provides a unhelpful fallback for literals, which should have custom rendering per
   // Data-subtype.
+  // TODO Is this okay for sample_element? It *shouldn't* be visible to users
   protected def bindingToString: String = topBindingOpt match {
     case None => ""
     case Some(OpBinding(enclosure)) => s"(OpResult in ${enclosure.desiredName})"
@@ -495,7 +500,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
     case Some(BundleLitBinding(litMap)) => None  // this API does not support Bundle literals
     case _ => None
   }
- 
+
   def isLit(): Boolean = litArg.isDefined
 
   /**
@@ -564,9 +569,8 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
 }
 
 trait WireFactory {
-  /** @usecase def apply[T <: Data](t: T): T
-    *   Construct a [[Wire]] from a type template
-    *   @param t The template from which to construct this wire
+  /** Construct a [[Wire]] from a type template
+    * @param t The template from which to construct this wire
     */
   def apply[T <: Data](t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     if (compileOptions.declaredTypeMustBeUnbound) {
@@ -693,29 +697,25 @@ object WireDefault {
     x
   }
 
-  /** @usecase def apply[T <: Data](t: T, init: DontCare.type): T
-    *   Construct a [[Wire]] with a type template and a [[DontCare]] default
-    *   @param t The type template used to construct this [[Wire]]
-    *   @param init The default connection to this [[Wire]], can only be [[DontCare]]
-    *   @note This is really just a specialized form of `apply[T <: Data](t: T, init: T): T` with [[DontCare]]
-    *   as `init`
+  /** Construct a [[Wire]] with a type template and a [[chisel3.DontCare]] default
+    * @param t The type template used to construct this [[Wire]]
+    * @param init The default connection to this [[Wire]], can only be [[DontCare]]
+    * @note This is really just a specialized form of `apply[T <: Data](t: T, init: T): T` with [[DontCare]] as `init`
     */
   def apply[T <: Data](t: T, init: DontCare.type)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = { // scalastyle:ignore line.size.limit
     applyImpl(t, init)
   }
 
-  /** @usecase def apply[T <: Data](t: T, init: T): T
-    *   Construct a [[Wire]] with a type template and a default connection
-    *   @param t The type template used to construct this [[Wire]]
-    *   @param init The hardware value that will serve as the default value
+  /** Construct a [[Wire]] with a type template and a default connection
+    * @param t The type template used to construct this [[Wire]]
+    * @param init The hardware value that will serve as the default value
     */
   def apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     applyImpl(t, init)
   }
 
-  /** @usecase def apply[T <: Data](init: T): T
-    *   Construct a [[Wire]] with a default connection
-    *   @param init The hardware value that will serve as a type template and default value
+  /** Construct a [[Wire]] with a default connection
+    * @param init The hardware value that will serve as a type template and default value
     */
   def apply[T <: Data](init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     val model = (init match {

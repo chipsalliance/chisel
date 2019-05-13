@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.util.Queue
 
 class InstanceNameModule extends Module {
   val io = IO(new Bundle {
@@ -15,7 +16,7 @@ class InstanceNameModule extends Module {
     val foo = UInt(8.W)
   }
 
-  val q = Module(new util.Queue(UInt(32.W), 4))
+  val q = Module(new Queue(UInt(32.W), 4))
 
   io.bar := io.foo + x
 }
