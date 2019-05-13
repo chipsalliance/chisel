@@ -61,7 +61,7 @@ class Valid[+T <: Data](gen: T) extends Bundle {
   * }}}
   *
   * In addition to adding the `valid` bit, a [[Valid.fire]] method is also added that returns the `valid` bit. This
-  * provides a similarly named interface to [[DecoupledIO.fire]].
+  * provides a similarly named interface to [[DecoupledIO]]'s fire.
   *
   * @see [[Decoupled$ DecoupledIO Factory]]
   * @see [[Irrevocable$ IrrevocableIO Factory]]
