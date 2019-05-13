@@ -1,5 +1,6 @@
 import ammonite.ops._
 import ammonite.ops.ImplicitWd._
+import coursier.MavenRepository
 import mill._
 import mill.scalalib._
 import mill.scalalib.publish._
@@ -132,6 +133,11 @@ trait AbstractChiselModule extends PublishChiselModule with CommonBuild.BuildInf
   }
 
   override def moduleDeps = Seq(coreMacros, chiselFrontend)
+
+  // Include sonatype snapshots by default for parity with sbt
+  def repositories = super.repositories ++ Seq(
+    MavenRepository("https://oss.sonatype.org/content/repositories/snapshots")
+  )
 
   // This submodule is unrooted - its source directory is in the top level directory.
   override def millSourcePath = super.millSourcePath / ammonite.ops.up
