@@ -8,5 +8,5 @@ trait ChiselCli { this: Shell =>
   parser.note("Chisel Front End Options")
   Seq( NoRunFirrtlCompilerAnnotation,
        PrintFullStackTraceAnnotation )
-    .map(_.addOptions(parser))
+    .foreach(_.addOptions(parser))
 }

@@ -5,7 +5,7 @@ package chisel3.stage.phases
 import firrtl.{AnnotationSeq, ExecutionOptionsManager, HasFirrtlOptions}
 import firrtl.annotations.NoTargetAnnotation
 import firrtl.options.{OutputAnnotationFileAnnotation, Phase}
-import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlStage, RunFirrtlTransformAnnotation}
+import firrtl.stage.{FirrtlCircuitAnnotation, RunFirrtlTransformAnnotation}
 import firrtl.stage.phases.DriverCompatibility.TopNameAnnotation
 
 import chisel3.HasChiselExecutionOptions
@@ -19,7 +19,7 @@ import chisel3.stage.{NoRunFirrtlCompilerAnnotation, ChiselOutputFileAnnotation}
 object DriverCompatibility {
 
   /** Adds a [[ChiselOutputFileAnnotation]] derived from a [[TopNameAnnotation]] if no [[ChiselOutputFileAnnotation]]
-    * already exists. If no [[TopNameAnnotation]] exists, then no [[OutputFileAnnotation]] is added. ''This is not a
+    * already exists. If no [[TopNameAnnotation]] exists, then no [[firrtl.stage.OutputFileAnnotation]] is added. ''This is not a
     * replacement for [[chisel3.stage.phases.AddImplicitOutputFile AddImplicitOutputFile]] as this only adds an output
     * file based on a discovered top name and not on a discovered elaborated circuit.'' Consequently, this will provide
     * the correct behavior before a circuit has been elaborated.

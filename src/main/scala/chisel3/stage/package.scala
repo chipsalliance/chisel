@@ -5,10 +5,8 @@ package chisel3
 import firrtl._
 import firrtl.annotations.DeletedAnnotation
 import firrtl.options.OptionsView
-import firrtl.stage.FirrtlCircuitAnnotation
 
 import chisel3.internal.firrtl.{Circuit => ChiselCircuit}
-import chisel3.stage.ChiselOptions
 import chisel3.stage.phases.{Convert, Emitter}
 
 package object stage {

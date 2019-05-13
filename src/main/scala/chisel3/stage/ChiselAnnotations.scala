@@ -2,7 +2,6 @@
 
 package chisel3.stage
 
-import firrtl.AnnotationSeq
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.options.{HasShellOptions, OptionsException, ShellOption, Unserializable}
 
@@ -10,8 +9,6 @@ import chisel3.{ChiselException, Module}
 import chisel3.experimental.RawModule
 import chisel3.internal.Builder
 import chisel3.internal.firrtl.Circuit
-
-import scopt.OptionParser
 
 /** Mixin that indicates that this is an [[firrtl.annotations.Annotation]] used to generate a [[ChiselOptions]] view.
   */

@@ -4,8 +4,7 @@ package chisel3.stage
 
 import firrtl.AnnotationSeq
 import firrtl.options.{Phase, Shell, Stage}
-import firrtl.options.Viewer.view
-import firrtl.stage.{FirrtlCli, FirrtlStage}
+import firrtl.stage.FirrtlCli
 
 class ChiselStage extends Stage {
   val shell: Shell = new Shell("chisel") with ChiselCli with FirrtlCli
