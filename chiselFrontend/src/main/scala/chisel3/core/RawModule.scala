@@ -146,7 +146,8 @@ abstract class MultiIOModule(implicit moduleCompileOptions: CompileOptions)
   val reset: Reset = IO(Input(Bool()))
 
   // Setup ClockAndReset
-  Builder.currentClockAndReset = Some(ClockAndReset(clock, reset))
+  Builder.currentClock = Some(clock)
+  Builder.currentReset = Some(reset)
 
   private[core] override def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
     implicit val sourceInfo = UnlocatableSourceInfo

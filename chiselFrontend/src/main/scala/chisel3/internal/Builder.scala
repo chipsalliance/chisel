@@ -183,11 +183,13 @@ private[chisel3] class DynamicContext() {
   // Used to distinguish between no Module() wrapping, multiple wrappings, and rewrapping
   var readyForModuleConstr: Boolean = false
   var whenDepth: Int = 0 // Depth of when nesting
-  var currentClockAndReset: Option[ClockAndReset] = None
+  var currentClock: Option[Clock] = None
+  var currentReset: Option[Reset] = None
   val errors = new ErrorLog
   val namingStack = new internal.naming.NamingStack
 }
 
+//scalastyle:off number.of.methods
 private[chisel3] object Builder {
   // All global mutable state must be referenced via dynamicContextVar!!
   private val dynamicContextVar = new DynamicVariable[Option[DynamicContext]](None)
@@ -248,16 +250,22 @@ private[chisel3] object Builder {
   def whenDepth_=(target: Int): Unit = {
     dynamicContext.whenDepth = target
   }
-  def currentClockAndReset: Option[ClockAndReset] = dynamicContext.currentClockAndReset
-  def currentClockAndReset_=(target: Option[ClockAndReset]): Unit = {
-    dynamicContext.currentClockAndReset = target
+  def currentClock: Option[Clock] = dynamicContext.currentClock
+  def currentClock_=(newClock: Option[Clock]): Unit = {
+    dynamicContext.currentClock = newClock
   }
-  def forcedClockAndReset: ClockAndReset = currentClockAndReset match {
-    case Some(clockAndReset) => clockAndReset
-    case None => throwException("Error: No implicit clock and reset.")
+
+  def currentReset: Option[Reset] = dynamicContext.currentReset
+  def currentReset_=(newReset: Option[Reset]): Unit = {
+    dynamicContext.currentReset = newReset
   }
-  def forcedClock: Clock = forcedClockAndReset.clock
-  def forcedReset: Reset = forcedClockAndReset.reset
+
+  def forcedClock: Clock = currentClock.getOrElse(
+    throwException("Error: No implicit clock.")
+  )
+  def forcedReset: Reset = currentReset.getOrElse(
+    throwException("Error: No implicit reset.")
+  )
 
   // TODO(twigg): Ideally, binding checks and new bindings would all occur here
   // However, rest of frontend can't support this yet.
