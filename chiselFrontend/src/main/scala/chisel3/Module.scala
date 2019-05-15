@@ -41,8 +41,9 @@ object Module extends SourceInfoDoc {
     val whenDepth: Int = Builder.whenDepth
 
     // Save then clear clock and reset to prevent leaking scope, must be set again in the Module
-    val clockAndReset: Option[ClockAndReset] = Builder.currentClockAndReset
-    Builder.currentClockAndReset = None
+    val (saveClock, saveReset)  = (Builder.currentClock, Builder.currentReset)
+    Builder.currentClock = None
+    Builder.currentReset = None
 
     // Execute the module, this has the following side effects:
     //   - set currentModule
@@ -61,7 +62,8 @@ object Module extends SourceInfoDoc {
     }
     Builder.currentModule = parent // Back to parent!
     Builder.whenDepth = whenDepth
-    Builder.currentClockAndReset = clockAndReset // Back to clock and reset scope
+    Builder.currentClock = saveClock   // Back to clock and reset scope
+    Builder.currentReset = saveReset
 
     val component = module.generateComponent()
     Builder.components += component
