@@ -1,26 +1,10 @@
 // See LICENSE for license details.
 
-package chisel3.core
+package chisel3.internal
 
-import chisel3.internal.ChiselException
-import chisel3.internal.Builder.{forcedModule}
+import chisel3._
+import chisel3.experimental.{BaseModule, RawModule}
 import chisel3.internal.firrtl.LitArg
-
-object Binding {
-  class BindingException(message: String) extends ChiselException(message)
-  /** A function expected a Chisel type but got a hardware object
-    */
-  case class ExpectedChiselTypeException(message: String) extends BindingException(message)
-  /**A function expected a hardware object but got a Chisel type
-    */
-  case class ExpectedHardwareException(message: String) extends BindingException(message)
-  /** An aggregate had a mix of specified and unspecified directionality children
-    */
-  case class MixedDirectionAggregateException(message: String) extends BindingException(message)
-  /** Attempted to re-bind an already bound (directionality or hardware) object
-    */
-  case class RebindingException(message: String) extends BindingException(message)
-}
 
 /** Requires that a node is hardware ("bound")
   */
@@ -32,7 +16,7 @@ object requireIsHardware {
     }
     if (!node.isSynthesizable) {
       val prefix = if (msg.nonEmpty) s"$msg " else ""
-      throw Binding.ExpectedHardwareException(s"$prefix'$node' must be hardware, " +
+      throw ExpectedHardwareException(s"$prefix'$node' must be hardware, " +
         "not a bare Chisel type. Perhaps you forgot to wrap it in Wire(_) or IO(_)?")
     }
   }
@@ -43,13 +27,13 @@ object requireIsHardware {
 object requireIsChiselType {
   def apply(node: Data, msg: String = ""): Unit = if (node.isSynthesizable) {
     val prefix = if (msg.nonEmpty) s"$msg " else ""
-    throw Binding.ExpectedChiselTypeException(s"$prefix'$node' must be a Chisel type, not hardware")
+    throw ExpectedChiselTypeException(s"$prefix'$node' must be a Chisel type, not hardware")
   }
 }
 
 // Element only direction used for the Binding system only.
-sealed abstract class BindingDirection
-object BindingDirection {
+private[chisel3] sealed abstract class BindingDirection
+private[chisel3] object BindingDirection {
   /** Internal type or wire
     */
   case object Internal extends BindingDirection

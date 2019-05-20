@@ -6,7 +6,7 @@ import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.experimental.RawModule
 import chisel3.experimental.BundleLiterals._
-import chisel3.core.BundleLiteralException
+import chisel3.experimental.BundleLiteralException
 
 class BundleLiteralSpec extends ChiselFlatSpec {
   class MyBundle extends Bundle {

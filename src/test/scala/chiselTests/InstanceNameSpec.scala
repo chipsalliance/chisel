@@ -4,8 +4,6 @@ package chiselTests
 
 import chisel3._
 import chisel3.util.Queue
-import chisel3.experimental.{DataMirror, FixedPoint}
-import chisel3.testers.BasicTester
 
 class InstanceNameModule extends Module {
   val io = IO(new Bundle {

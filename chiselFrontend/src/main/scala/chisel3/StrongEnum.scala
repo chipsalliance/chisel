@@ -1,15 +1,16 @@
 // See LICENSE for license details.
 
-package chisel3.core
+package chisel3.experimental
 
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox.Context
 import scala.collection.mutable
+import chisel3._
 import chisel3.internal.Builder.pushOp
 import chisel3.internal.firrtl.PrimOp._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo._
-import chisel3.internal.{Builder, InstanceId, throwException}
+import chisel3.internal.{Binding, Builder, ChildBinding, ConstrainedBinding, InstanceId, throwException}
 import firrtl.annotations._
 
 
@@ -86,7 +87,7 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
 
   override def cloneType: this.type = factory().asInstanceOf[this.type]
 
-  private[core] def compop(sourceInfo: SourceInfo, op: PrimOp, other: EnumType): Bool = {
+  private[chisel3] def compop(sourceInfo: SourceInfo, op: PrimOp, other: EnumType): Bool = {
     requireIsHardware(this, "bits operated on")
     requireIsHardware(other, "bits operated on")
 
@@ -97,12 +98,12 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
     pushOp(DefPrim(sourceInfo, Bool(), op, this.ref, other.ref))
   }
 
-  private[core] override def typeEquivalent(that: Data): Boolean = {
+  private[chisel3] override def typeEquivalent(that: Data): Boolean = {
     this.getClass == that.getClass &&
     this.factory == that.asInstanceOf[EnumType].factory
   }
 
-  private[core] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
+  private[chisel3] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
       compileOptions: CompileOptions): Unit = {
     this := factory.apply(that.asUInt)
   }
@@ -152,7 +153,7 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
     }
   }
 
-  private[core] def bindToLiteral(num: BigInt, w: Width): Unit = {
+  private[chisel3] def bindToLiteral(num: BigInt, w: Width): Unit = {
     val lit = ULit(num, w)
     lit.bindLitArg(this)
   }
@@ -223,7 +224,7 @@ abstract class EnumFactory {
   }
 
   private var id: BigInt = 0
-  private[core] var width: Width = 0.W
+  private[chisel3] var width: Width = 0.W
 
   private case class EnumRecord(inst: Type, name: String)
   private val enum_records = mutable.ArrayBuffer.empty[EnumRecord]
@@ -232,9 +233,9 @@ abstract class EnumFactory {
   private def enumValues = enum_records.map(_.inst.litValue()).toSeq
   private def enumInstances = enum_records.map(_.inst).toSeq
 
-  private[core] val enumTypeName = getClass.getName.init
+  private[chisel3] val enumTypeName = getClass.getName.init
 
-  private[core] def globalAnnotation: EnumDefChiselAnnotation =
+  private[chisel3] def globalAnnotation: EnumDefChiselAnnotation =
     EnumDefChiselAnnotation(enumTypeName, (enumNames, enumValues).zipped.toMap)
 
   def getWidth: Int = width.get
@@ -304,7 +305,7 @@ abstract class EnumFactory {
 }
 
 
-private[core] object EnumMacros {
+private[chisel3] object EnumMacros {
   def ValImpl(c: Context) : c.Tree = { // scalastyle:off method.name
     import c.universe._
     val names = getNames(c)

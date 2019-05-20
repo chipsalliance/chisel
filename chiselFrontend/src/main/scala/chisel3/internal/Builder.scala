@@ -3,10 +3,11 @@
 package chisel3.internal
 
 import scala.util.DynamicVariable
-import scala.collection.mutable.{ArrayBuffer, HashMap}
+import scala.collection.mutable.ArrayBuffer
 import chisel3._
-import core._
-import firrtl._
+import chisel3.experimental._
+import chisel3.internal.firrtl._
+import chisel3.internal.naming._
 import _root_.firrtl.annotations.{CircuitName, ComponentName, ModuleName, Named}
 
 private[chisel3] class Namespace(keywords: Set[String]) {
@@ -186,7 +187,7 @@ private[chisel3] class DynamicContext() {
   var currentClock: Option[Clock] = None
   var currentReset: Option[Reset] = None
   val errors = new ErrorLog
-  val namingStack = new internal.naming.NamingStack
+  val namingStack = new NamingStack
 }
 
 //scalastyle:off number.of.methods
@@ -204,7 +205,7 @@ private[chisel3] object Builder {
   private def initializeSingletons(): Unit = {
     // This used to contain:
     //    val dummy = core.DontCare
-    //  but this would occasionally produce hangs dues to static initialization deadlock
+    //  but this would occasionally produce hangs due to static initialization deadlock
     //  when Builder initialization collided with chisel3.package initialization of the DontCare value.
     // See:
     //  http://ternarysearch.blogspot.com/2013/07/static-initialization-deadlock.html
@@ -212,14 +213,14 @@ private[chisel3] object Builder {
     //  https://stackoverflow.com/questions/28631656/runnable-thread-state-but-in-object-wait
   }
 
-  def namingStackOption: Option[internal.naming.NamingStack] = dynamicContextVar.value.map(_.namingStack)
+  def namingStackOption: Option[NamingStack] = dynamicContextVar.value.map(_.namingStack)
 
   def idGen: IdGen = chiselContext.value.idGen
 
   def globalNamespace: Namespace = dynamicContext.globalNamespace
   def components: ArrayBuffer[Component] = dynamicContext.components
   def annotations: ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
-  def namingStack: internal.naming.NamingStack = dynamicContext.namingStack
+  def namingStack: NamingStack = dynamicContext.namingStack
 
   def currentModule: Option[BaseModule] = dynamicContextVar.value match {
     case Some(dyanmicContext) => dynamicContext.currentModule
@@ -366,19 +367,19 @@ private[chisel3] object Builder {
   * objects.
   */
 object DynamicNamingStack {
-  def pushContext(): internal.naming.NamingContextInterface = {
+  def pushContext(): NamingContextInterface = {
     Builder.namingStackOption match {
       case Some(namingStack) => namingStack.pushContext()
-      case None => internal.naming.DummyNamer
+      case None => DummyNamer
     }
   }
 
-  def popReturnContext[T <: Any](prefixRef: T, until: internal.naming.NamingContextInterface): T = {
+  def popReturnContext[T <: Any](prefixRef: T, until: NamingContextInterface): T = {
     until match {
-      case internal.naming.DummyNamer =>
+      case DummyNamer =>
         require(Builder.namingStackOption.isEmpty,
           "Builder context must remain stable throughout a chiselName-annotated function invocation")
-      case context: internal.naming.NamingContext =>
+      case context: NamingContext =>
         require(Builder.namingStackOption.isDefined,
           "Builder context must remain stable throughout a chiselName-annotated function invocation")
         Builder.namingStackOption.get.popContext(prefixRef, context)

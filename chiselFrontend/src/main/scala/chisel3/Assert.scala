@@ -1,6 +1,6 @@
 // See LICENSE for license details.
 
-package chisel3.core
+package chisel3
 
 import scala.reflect.macros.blackbox.Context
 import scala.language.experimental.macros

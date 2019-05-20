@@ -245,7 +245,6 @@ class WidthTester extends BasicTester {
 }
 
 class StrongEnumFSMTester extends BasicTester {
-  import StrongEnumFSM.State
   import StrongEnumFSM.State._
 
   val dut = Module(new StrongEnumFSM)

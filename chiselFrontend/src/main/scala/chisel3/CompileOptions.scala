@@ -1,6 +1,6 @@
 // See LICENSE for license details.
 
-package chisel3.core
+package chisel3
 
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox.Context
@@ -29,7 +29,7 @@ object CompileOptions {
 
   def materialize_impl(c: Context): c.Tree = {
     import c.universe._
-    q"_root_.chisel3.core.ExplicitCompileOptions.Strict"
+    q"_root_.chisel3.ExplicitCompileOptions.Strict"
   }
 }
 
@@ -53,7 +53,6 @@ object ExplicitCompileOptions {
 
   // Collection of "not strict" connection compile options.
   // These provide compatibility with existing code.
-  // import chisel3.core.ExplicitCompileOptions.NotStrict
   implicit val NotStrict = new CompileOptionsClass (
     connectFieldsMustMatch = false,
     declaredTypeMustBeUnbound = false,
@@ -64,7 +63,6 @@ object ExplicitCompileOptions {
   )
 
   // Collection of "strict" connection compile options, preferred for new code.
-  // import chisel3.core.ExplicitCompileOptions.Strict
   implicit val Strict = new CompileOptionsClass (
     connectFieldsMustMatch = true,
     declaredTypeMustBeUnbound = true,
