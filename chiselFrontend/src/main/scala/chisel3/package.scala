@@ -1,5 +1,7 @@
 // See LICENSE for license details.
 
+/** This package contains the main chisel3 API.
+ */
 package object chisel3 {    // scalastyle:ignore package.object.name
   import internal.firrtl.{Port, Width}
   import internal.sourceinfo.{SourceInfo, VecTransform}
