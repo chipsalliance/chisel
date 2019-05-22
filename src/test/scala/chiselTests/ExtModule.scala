@@ -10,6 +10,9 @@ import chisel3.testers.BasicTester
 // Avoid collisions with regular BlackBox tests by putting ExtModule blackboxes
 // in their own scope.
 package ExtModule {
+
+  import chisel3.experimental.ExtModule
+
   class BlackBoxInverter extends ExtModule {
     val in = IO(Input(Bool()))
     val out = IO(Output(Bool()))
@@ -65,5 +68,13 @@ class ExtModuleSpec extends ChiselFlatSpec {
   "Multiple ExtModules" should "work" in {
     assertTesterPasses({ new MultiExtModuleTester },
         Seq("/chisel3/BlackBoxTest.v"))
+  }
+  "DataMirror.modulePorts" should "work with ExtModule" in {
+    elaborate(new Module {
+      val io = IO(new Bundle { })
+      val m = Module(new ExtModule.BlackBoxPassthrough)
+      assert(DataMirror.modulePorts(m) == Seq(
+          "in" -> m.in, "out" -> m.out))
+    })
   }
 }

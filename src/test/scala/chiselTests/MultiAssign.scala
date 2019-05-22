@@ -39,7 +39,7 @@ class IllegalAssignSpec extends ChiselFlatSpec {
       }}
     }
   }
-  
+
   "Reassignments to ops" should "be disallowed" in {
     intercept[chisel3.internal.ChiselException] {
       elaborate{ new BasicTester {
@@ -47,7 +47,7 @@ class IllegalAssignSpec extends ChiselFlatSpec {
       }}
     }
   }
-  
+
   "Reassignments to bit slices" should "be disallowed" in {
     intercept[chisel3.internal.ChiselException] {
       elaborate{ new BasicTester {
@@ -55,7 +55,7 @@ class IllegalAssignSpec extends ChiselFlatSpec {
       }}
     }
   }
-  
+
   "Bulk-connecting two read-only nodes" should "be disallowed" in {
     intercept[chisel3.internal.ChiselException] {
       elaborate{ new BasicTester {

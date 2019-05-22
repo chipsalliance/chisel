@@ -21,7 +21,7 @@ class FinishTester extends BasicTester {
     stop()
   }
 
-  val test_wire = WireInit(1.U(test_wire_width.W))
+  val test_wire = WireDefault(1.U(test_wire_width.W))
 
   // though we just set test_wire to 1, the assert below will pass because
   // the finish will change its value

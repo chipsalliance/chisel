@@ -5,7 +5,7 @@ package chiselTests
 import java.io.File
 
 import chisel3._
-import chisel3.util.{HasBlackBoxInline, HasBlackBoxResource}
+import chisel3.util.{HasBlackBoxInline, HasBlackBoxResource, HasBlackBoxPath}
 import firrtl.FirrtlExecutionSuccess
 import org.scalacheck.Test.Failed
 import org.scalatest.{FreeSpec, Matchers, Succeeded}
@@ -47,7 +47,16 @@ class BlackBoxMinus extends HasBlackBoxResource {
     val in2 = Input(UInt(16.W))
     val out = Output(UInt(16.W))
   })
-  setResource("/chisel3/BlackBoxTest.v")
+  addResource("/chisel3/BlackBoxTest.v")
+}
+
+class BlackBoxMinusPath extends HasBlackBoxPath {
+  val io = IO(new Bundle {
+    val in1 = Input(UInt(16.W))
+    val in2 = Input(UInt(16.W))
+    val out = Output(UInt(16.W))
+  })
+  addPath(new File("src/test/resources/chisel3/BlackBoxTest.v").getCanonicalPath)
 }
 
 class UsesBlackBoxMinusViaResource extends Module {
@@ -58,6 +67,20 @@ class UsesBlackBoxMinusViaResource extends Module {
   })
 
   val mod0 = Module(new BlackBoxMinus)
+
+  mod0.io.in1 := io.in1
+  mod0.io.in2 := io.in2
+  io.out := mod0.io.out
+}
+
+class UsesBlackBoxMinusViaPath extends Module {
+  val io = IO(new Bundle {
+    val in1 = Input(UInt(16.W))
+    val in2 = Input(UInt(16.W))
+    val out = Output(UInt(16.W))
+  })
+
+  val mod0 = Module(new BlackBoxMinusPath)
 
   mod0.io.in1 := io.in1
   mod0.io.in2 := io.in2
@@ -80,6 +103,17 @@ class BlackBoxImplSpec extends FreeSpec with Matchers {
     }
     "Implementations can be contained in resource files" in {
       Driver.execute(Array("-X", "low", "--target-dir", targetDir), () => new UsesBlackBoxMinusViaResource) match {
+        case ChiselExecutionSuccess(_, _, Some(_: FirrtlExecutionSuccess)) =>
+          val verilogOutput = new File(targetDir, "BlackBoxTest.v")
+          verilogOutput.exists() should be (true)
+          verilogOutput.delete()
+          Succeeded
+        case _ =>
+          Failed
+      }
+    }
+    "Implementations can be contained in arbitrary files" in {
+      Driver.execute(Array("-X", "low", "--target-dir", targetDir), () => new UsesBlackBoxMinusViaPath) match {
         case ChiselExecutionSuccess(_, _, Some(_: FirrtlExecutionSuccess)) =>
           val verilogOutput = new File(targetDir, "BlackBoxTest.v")
           verilogOutput.exists() should be (true)

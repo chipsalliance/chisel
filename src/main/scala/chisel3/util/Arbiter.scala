@@ -72,7 +72,7 @@ class LockingRRArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[
     (0 until n).map(i => ctrl(i) && grantMask(i) || ctrl(i + n))
   }
 
-  override protected lazy val choice = WireInit((n-1).asUInt)
+  override protected lazy val choice = WireDefault((n-1).asUInt)
   for (i <- n-2 to 0 by -1)
     when (io.in(i).valid) { choice := i.asUInt }
   for (i <- n-1 to 1 by -1)
@@ -83,7 +83,7 @@ class LockingArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T 
     extends LockingArbiterLike[T](gen, n, count, needsLock) {
   protected def grant: Seq[Bool] = ArbiterCtrl(io.in.map(_.valid))
 
-  override protected lazy val choice = WireInit((n-1).asUInt)
+  override protected lazy val choice = WireDefault((n-1).asUInt)
   for (i <- n-2 to 0 by -1)
     when (io.in(i).valid) { choice := i.asUInt }
 }
@@ -91,8 +91,10 @@ class LockingArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T 
 /** Hardware module that is used to sequence n producers into 1 consumer.
   * Producers are chosen in round robin order.
   *
+  * @param gen data type
+  * @param n number of inputs
   * @example {{{
-  * val arb = new RRArbiter(2, UInt())
+  * val arb = Module(new RRArbiter(UInt(), 2))
   * arb.io.in(0) <> producer0.io.out
   * arb.io.in(1) <> producer1.io.out
   * consumer.io.in <> arb.io.out
@@ -104,8 +106,11 @@ class RRArbiter[T <: Data](gen:T, n: Int) extends LockingRRArbiter[T](gen, n, 1)
 /** Hardware module that is used to sequence n producers into 1 consumer.
   * Priority is given to lower producer.
   *
+  * @param gen data type
+  * @param n number of inputs
+  *
   * @example {{{
-  * val arb = Module(new Arbiter(2, UInt()))
+  * val arb = Module(new Arbiter(UInt(), 2))
   * arb.io.in(0) <> producer0.io.out
   * arb.io.in(1) <> producer1.io.out
   * consumer.io.in <> arb.io.out

@@ -2,8 +2,6 @@
 
 enablePlugins(SiteScaladocPlugin)
 
-enablePlugins(GhpagesPlugin)
-
 def scalacOptionsVersion(scalaVersion: String): Seq[String] = {
   Seq() ++ {
     // If we're building with Scala > 2.11, enable the compile option
@@ -33,15 +31,19 @@ def javacOptionsVersion(scalaVersion: String): Seq[String] = {
 val defaultVersions = Map("firrtl" -> "1.2-SNAPSHOT")
 
 lazy val commonSettings = Seq (
+  resolvers ++= Seq(
+    Resolver.sonatypeRepo("snapshots"),
+    Resolver.sonatypeRepo("releases")
+  ),
   organization := "edu.berkeley.cs",
   version := "3.2-SNAPSHOT",
-  git.remoteRepo := "git@github.com:freechipsproject/chisel3.git",
   autoAPIMappings := true,
-  scalaVersion := "2.11.12",
-  crossScalaVersions := Seq("2.11.12", "2.12.4"),
+  scalaVersion := "2.12.6",
+  crossScalaVersions := Seq("2.12.6", "2.11.12"),
   scalacOptions := Seq("-deprecation", "-feature") ++ scalacOptionsVersion(scalaVersion.value),
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
+  (scalastyleConfig in Test) := (baseDirectory in root).value / "scalastyle-test-config.xml",
   // Use the root project's unmanaged base for all sub-projects.
   unmanagedBase := (unmanagedBase in root).value,
   // Since we want to examine the classpath to determine if a dependency on firrtl is required,
@@ -57,12 +59,12 @@ lazy val commonSettings = Seq (
   }
 )
 
-lazy val chiselSettings = Seq (
-  name := "chisel3",
-
+lazy val publishSettings = Seq (
   publishMavenStyle := true,
   publishArtifact in Test := false,
   pomIncludeRepository := { x => false },
+  // Don't add 'scm' elements if we have a git.remoteRepo definition,
+  //  but since we don't (with the removal of ghpages), add them in below.
   pomExtra := <url>http://chisel.eecs.berkeley.edu/</url>
     <licenses>
       <license>
@@ -92,32 +94,55 @@ lazy val chiselSettings = Seq (
     else {
       Some("releases" at nexus + "service/local/staging/deploy/maven2")
     }
-  },
+  }
+)
 
-  resolvers ++= Seq(
-    Resolver.sonatypeRepo("snapshots"),
-    Resolver.sonatypeRepo("releases")
-  ),
+lazy val chiselSettings = Seq (
+  name := "chisel3",
 
+// sbt 1.2.6 fails with `Symbol 'term org.junit' is missing from the classpath`
+// when compiling tests under 2.11.12
+// An explicit dependency on junit seems to alleviate this.
   libraryDependencies ++= Seq(
-    "org.scalatest" %% "scalatest" % "3.0.1" % "test",
-    "org.scalacheck" %% "scalacheck" % "1.13.4" % "test",
-    "com.github.scopt" %% "scopt" % "3.6.0"
+    "junit" % "junit" % "4.12" % "test",
+    "org.scalatest" %% "scalatest" % "3.0.5" % "test",
+    "org.scalacheck" %% "scalacheck" % "1.14.0" % "test",
+    "com.github.scopt" %% "scopt" % "3.7.0"
   ),
-
-  // Tests from other projects may still run concurrently.
-  parallelExecution in Test := true,
-
   javacOptions ++= javacOptionsVersion(scalaVersion.value)
+) ++ (
+  // Tests from other projects may still run concurrently
+  //  if we're not running with -DminimalResources.
+  // Another option would be to experiment with:
+  //  concurrentRestrictions in Global += Tags.limit(Tags.Test, 1),
+  sys.props.contains("minimalResources") match {
+    case true  => Seq( Test / parallelExecution := false )
+    case false => Seq( fork := true,
+                       Test / testForkedParallel := true )
+  }
 )
 
 lazy val coreMacros = (project in file("coreMacros")).
   settings(commonSettings: _*).
-  settings(publishArtifact := false)
+  // Prevent separate JARs from being generated for coreMacros.
+  settings(skip in publish := true)
 
 lazy val chiselFrontend = (project in file("chiselFrontend")).
   settings(commonSettings: _*).
-  settings(publishArtifact := false).
+  // Prevent separate JARs from being generated for chiselFrontend.
+  settings(skip in publish := true).
+  settings(
+    scalacOptions := scalacOptions.value ++ Seq(
+      "-deprecation",
+      "-explaintypes",
+      "-feature",
+      "-language:reflectiveCalls",
+      "-unchecked",
+      "-Xcheckinit",
+      "-Xlint:infer-any"
+//      "-Xlint:missing-interpolator"
+    )
+  ).
   dependsOn(coreMacros)
 
 // This will always be the root project, even if we are a sub-project.
@@ -133,26 +158,39 @@ lazy val chisel = (project in file(".")).
   ).
   settings(commonSettings: _*).
   settings(chiselSettings: _*).
-  // Prevent separate JARs from being generated for coreMacros and chiselFrontend.
+  settings(publishSettings: _*).
   dependsOn(coreMacros % "compile-internal;test-internal").
   dependsOn(chiselFrontend % "compile-internal;test-internal").
+  // We used to have to disable aggregation in general in order to suppress
+  //  creation of subproject JARs (coreMacros and chiselFrontend) during publishing.
+  // This had the unfortunate side-effect of suppressing coverage tests and scaladoc generation in subprojects.
+  // The "skip in publish := true" setting in subproject settings seems to be
+  //   sufficient to suppress subproject JAR creation, so we can restore
+  //   general aggregation, and thus get coverage tests and scaladoc for subprojects.
+  aggregate(coreMacros, chiselFrontend).
   settings(
     scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
     scalacOptions in Compile in doc ++= Seq(
       "-diagrams",
+      "-groups",
+      "-skip-packages", "chisel3.internal",
       "-diagrams-max-classes", "25",
       "-doc-version", version.value,
       "-doc-title", name.value,
-      "-doc-root-content", baseDirectory.value+"/root-doc.txt"
+      "-doc-root-content", baseDirectory.value+"/root-doc.txt",
+      "-sourcepath", (baseDirectory in ThisBuild).value.toString,
+      "-doc-source-url",
+      {
+        val branch =
+          if (version.value.endsWith("-SNAPSHOT")) {
+            "master"
+          } else {
+            s"v${version.value}"
+          }
+        s"https://github.com/freechipsproject/chisel3/tree/$branch/€{FILE_PATH}.scala"
+      }
     ),
-    // Disable aggregation in general, but enable it for specific tasks.
-    // Otherwise we get separate Jar files for each subproject and we
-    //  go to great pains to package all chisel3 core code in a single Jar.
-    // If you get errors indicating coverageReport is undefined, be sure
-    //  you have sbt-scoverage in project/plugins.sbt
-    aggregate := false,
-    aggregate in coverageReport := true,
-    // Include macro classes, resources, and sources main JAR.
+    // Include macro classes, resources, and sources main JAR since we don't create subproject JARs.
     mappings in (Compile, packageBin) ++= (mappings in (coreMacros, Compile, packageBin)).value,
     mappings in (Compile, packageSrc) ++= (mappings in (coreMacros, Compile, packageSrc)).value,
     mappings in (Compile, packageBin) ++= (mappings in (chiselFrontend, Compile, packageBin)).value,

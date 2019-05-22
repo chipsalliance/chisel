@@ -5,7 +5,7 @@ package chiselTests
 import tags.RequiresBackend
 import chisel3._
 import chisel3.util._
-import chisel3.core.DataMirror
+import chisel3.experimental.DataMirror
 import chisel3.testers.BasicTester
 
 class RegSpec extends ChiselFlatSpec {
