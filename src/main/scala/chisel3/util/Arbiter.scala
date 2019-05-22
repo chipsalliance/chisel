@@ -72,7 +72,7 @@ class LockingRRArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[
     (0 until n).map(i => ctrl(i) && grantMask(i) || ctrl(i + n))
   }
 
-  override protected lazy val choice = WireInit((n-1).asUInt)
+  override protected lazy val choice = WireDefault((n-1).asUInt)
   for (i <- n-2 to 0 by -1)
     when (io.in(i).valid) { choice := i.asUInt }
   for (i <- n-1 to 1 by -1)
@@ -83,7 +83,7 @@ class LockingArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T 
     extends LockingArbiterLike[T](gen, n, count, needsLock) {
   protected def grant: Seq[Bool] = ArbiterCtrl(io.in.map(_.valid))
 
-  override protected lazy val choice = WireInit((n-1).asUInt)
+  override protected lazy val choice = WireDefault((n-1).asUInt)
   for (i <- n-2 to 0 by -1)
     when (io.in(i).valid) { choice := i.asUInt }
 }

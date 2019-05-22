@@ -3,7 +3,6 @@
 package chiselTests
 
 import chisel3._
-import chisel3.core.Binding
 import chisel3.testers.BasicTester
 import chisel3.util._
 import org.scalacheck.Shrink
@@ -69,7 +68,7 @@ class MixedVecZeroEntryTester extends BasicTester {
     val io = IO(Output(bundleWithZeroEntryVec))
     io.foo := false.B
   })
-  WireInit(m.io.bar)
+  WireDefault(m.io.bar)
 
   stop()
 }
@@ -209,21 +208,21 @@ class MixedVecSpec extends ChiselPropSpec {
   }
 
   property("MixedVecs should not be able to take hardware types") {
-    a [Binding.ExpectedChiselTypeException] should be thrownBy {
+    a [ExpectedChiselTypeException] should be thrownBy {
       elaborate(new Module {
         val io = IO(new Bundle {})
         val hw = Wire(MixedVec(Seq(UInt(8.W), Bool())))
         val illegal = MixedVec(hw)
       })
     }
-    a [Binding.ExpectedChiselTypeException] should be thrownBy {
+    a [ExpectedChiselTypeException] should be thrownBy {
       elaborate(new Module {
         val io = IO(new Bundle {})
         val hw = Reg(MixedVec(Seq(UInt(8.W), Bool())))
         val illegal = MixedVec(hw)
       })
     }
-    a [Binding.ExpectedChiselTypeException] should be thrownBy {
+    a [ExpectedChiselTypeException] should be thrownBy {
       elaborate(new Module {
         val io = IO(new Bundle {
           val v = Input(MixedVec(Seq(UInt(8.W), Bool())))

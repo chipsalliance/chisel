@@ -3,11 +3,11 @@
 package chisel3.internal
 
 import scala.util.DynamicVariable
-import scala.collection.mutable.{ArrayBuffer, HashMap}
-
+import scala.collection.mutable.ArrayBuffer
 import chisel3._
-import core._
-import firrtl._
+import chisel3.experimental._
+import chisel3.internal.firrtl._
+import chisel3.internal.naming._
 import _root_.firrtl.annotations.{CircuitName, ComponentName, ModuleName, Named}
 
 private[chisel3] class Namespace(keywords: Set[String]) {
@@ -146,8 +146,11 @@ private[chisel3] trait HasId extends InstanceId {
   private[chisel3] def getPublicFields(rootClass: Class[_]): Seq[java.lang.reflect.Method] = {
     // Suggest names to nodes using runtime reflection
     def getValNames(c: Class[_]): Set[String] = {
-      if (c == rootClass) Set()
-      else getValNames(c.getSuperclass) ++ c.getDeclaredFields.map(_.getName)
+      if (c == rootClass) {
+        Set()
+      } else {
+        getValNames(c.getSuperclass) ++ c.getDeclaredFields.map(_.getName)
+      }
     }
     val valNames = getValNames(this.getClass)
     def isPublicVal(m: java.lang.reflect.Method) =
@@ -181,11 +184,13 @@ private[chisel3] class DynamicContext() {
   // Used to distinguish between no Module() wrapping, multiple wrappings, and rewrapping
   var readyForModuleConstr: Boolean = false
   var whenDepth: Int = 0 // Depth of when nesting
-  var currentClockAndReset: Option[ClockAndReset] = None
+  var currentClock: Option[Clock] = None
+  var currentReset: Option[Reset] = None
   val errors = new ErrorLog
-  val namingStack = new internal.naming.NamingStack
+  val namingStack = new NamingStack
 }
 
+//scalastyle:off number.of.methods
 private[chisel3] object Builder {
   // All global mutable state must be referenced via dynamicContextVar!!
   private val dynamicContextVar = new DynamicVariable[Option[DynamicContext]](None)
@@ -198,15 +203,24 @@ private[chisel3] object Builder {
 
   // Initialize any singleton objects before user code inadvertently inherits them.
   private def initializeSingletons(): Unit = {
-    val dummy = core.DontCare
+    // This used to contain:
+    //    val dummy = core.DontCare
+    //  but this would occasionally produce hangs due to static initialization deadlock
+    //  when Builder initialization collided with chisel3.package initialization of the DontCare value.
+    // See:
+    //  http://ternarysearch.blogspot.com/2013/07/static-initialization-deadlock.html
+    //  https://bugs.openjdk.java.net/browse/JDK-8037567
+    //  https://stackoverflow.com/questions/28631656/runnable-thread-state-but-in-object-wait
   }
+
+  def namingStackOption: Option[NamingStack] = dynamicContextVar.value.map(_.namingStack)
 
   def idGen: IdGen = chiselContext.value.idGen
 
   def globalNamespace: Namespace = dynamicContext.globalNamespace
   def components: ArrayBuffer[Component] = dynamicContext.components
   def annotations: ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
-  def namingStack: internal.naming.NamingStack = dynamicContext.namingStack
+  def namingStack: NamingStack = dynamicContext.namingStack
 
   def currentModule: Option[BaseModule] = dynamicContextVar.value match {
     case Some(dyanmicContext) => dynamicContext.currentModule
@@ -222,10 +236,10 @@ private[chisel3] object Builder {
       // A bare api call is, e.g. calling Wire() from the scala console).
     )
   }
-  def forcedUserModule: UserModule = currentModule match {
-    case Some(module: UserModule) => module
+  def forcedUserModule: RawModule = currentModule match {
+    case Some(module: RawModule) => module
     case _ => Builder.exception(
-      "Error: Not in a UserModule. Likely cause: Missed Module() wrap, bare chisel API call, or attempting to construct hardware inside a BlackBox."
+      "Error: Not in a UserModule. Likely cause: Missed Module() wrap, bare chisel API call, or attempting to construct hardware inside a BlackBox." // scalastyle:ignore line.size.limit
       // A bare api call is, e.g. calling Wire() from the scala console).
     )
   }
@@ -237,16 +251,22 @@ private[chisel3] object Builder {
   def whenDepth_=(target: Int): Unit = {
     dynamicContext.whenDepth = target
   }
-  def currentClockAndReset: Option[ClockAndReset] = dynamicContext.currentClockAndReset
-  def currentClockAndReset_=(target: Option[ClockAndReset]): Unit = {
-    dynamicContext.currentClockAndReset = target
+  def currentClock: Option[Clock] = dynamicContext.currentClock
+  def currentClock_=(newClock: Option[Clock]): Unit = {
+    dynamicContext.currentClock = newClock
   }
-  def forcedClockAndReset: ClockAndReset = currentClockAndReset match {
-    case Some(clockAndReset) => clockAndReset
-    case None => Builder.exception("Error: No implicit clock and reset.")
+
+  def currentReset: Option[Reset] = dynamicContext.currentReset
+  def currentReset_=(newReset: Option[Reset]): Unit = {
+    dynamicContext.currentReset = newReset
   }
-  def forcedClock: Clock = forcedClockAndReset.clock
-  def forcedReset: Reset = forcedClockAndReset.reset
+
+  def forcedClock: Clock = currentClock.getOrElse(
+    Builder.exception("Error: No implicit clock.")
+  )
+  def forcedReset: Reset = currentReset.getOrElse(
+    Builder.exception("Error: No implicit reset.")
+  )
 
   // TODO(twigg): Ideally, binding checks and new bindings would all occur here
   // However, rest of frontend can't support this yet.
@@ -294,12 +314,27 @@ private[chisel3] object Builder {
     lastStack
   }
 
+  /** Recursively suggests names to supported "container" classes
+    * Arbitrary nestings of supported classes are allowed so long as the
+    * innermost element is of type HasId
+    * (Note: Map is Iterable[Tuple2[_,_]] and thus excluded)
+    */
+  def nameRecursively(prefix: String, nameMe: Any, namer: (HasId, String) => Unit): Unit = nameMe match {
+    case (id: HasId) => namer(id, prefix)
+    case Some(elt) => nameRecursively(prefix, elt, namer)
+    case (iter: Iterable[_]) if iter.hasDefiniteSize =>
+      for ((elt, i) <- iter.zipWithIndex) {
+        nameRecursively(s"${prefix}_${i}", elt, namer)
+      }
+    case _ => // Do nothing
+  }
+
   def errors: ErrorLog = dynamicContext.errors
   def error(m: => String): Unit = if (dynamicContextVar.value.isDefined) errors.error(m)
   def warning(m: => String): Unit = if (dynamicContextVar.value.isDefined) errors.warning(m)
   def deprecated(m: => String, location: Option[String] = None): Unit =
     if (dynamicContextVar.value.isDefined) errors.deprecated(m, location)
-  /** Given a string, record it as an error, generate an exception, and throw it.
+  /** Given a string, record it as an error, return specified result to caller.
     *
     * @param m exception message
     * @param result result to be returned by this method
@@ -330,6 +365,16 @@ private[chisel3] object Builder {
     error(e.getMessage)
     result
   }
+  /** Record an error, and return the result specified by the caller.
+    *
+    * @param e exception
+    * @param result result to be returned by this method.
+    * @return result passed in by caller.
+    */
+  def exception[T](e: java.lang.Error, result: T): T = {
+    error(e.getMessage)
+    result
+  }
   /** Record an exception as an error, and throw it.
     *
     * @param e exception
@@ -340,10 +385,20 @@ private[chisel3] object Builder {
     error(e.getMessage)
     throwException(e)
   }
+  /** Record an error, and throw it as an exception.
+    *
+    * @param e exception
+    * @return This method does not return.
+    */
+  @throws(classOf[Exception])
+  def exception(e: java.lang.Error): Nothing = {
+    error(e.getMessage)
+    throwException(e)
+  }
 
   var lastRunErrorMsgs = Seq[String]()  // error messages generated by the last run.
 
-  def build[T <: UserModule](f: => T): Circuit = {
+  def build[T <: RawModule](f: => T): Circuit = {
     chiselContext.withValue(new ChiselContext) {
       dynamicContextVar.withValue(Some(new DynamicContext())) {
         lastRunErrorMsgs = Seq()  // no error messages so far
@@ -361,10 +416,38 @@ private[chisel3] object Builder {
   initializeSingletons()
 }
 
-/** Allows public access to the naming stack in Builder / DynamicContext.
+/** Allows public access to the naming stack in Builder / DynamicContext, and handles invocations
+  * outside a Builder context.
   * Necessary because naming macros expand in user code and don't have access into private[chisel3]
   * objects.
   */
 object DynamicNamingStack {
-  def apply() = Builder.namingStack
+  def pushContext(): NamingContextInterface = {
+    Builder.namingStackOption match {
+      case Some(namingStack) => namingStack.pushContext()
+      case None => DummyNamer
+    }
+  }
+
+  def popReturnContext[T <: Any](prefixRef: T, until: NamingContextInterface): T = {
+    until match {
+      case DummyNamer =>
+        require(Builder.namingStackOption.isEmpty,
+          "Builder context must remain stable throughout a chiselName-annotated function invocation")
+      case context: NamingContext =>
+        require(Builder.namingStackOption.isDefined,
+          "Builder context must remain stable throughout a chiselName-annotated function invocation")
+        Builder.namingStackOption.get.popContext(prefixRef, context)
+    }
+    prefixRef
+  }
+}
+
+/** Casts BigInt to Int, issuing an error when the input isn't representable. */
+private[chisel3] object castToInt {
+  def apply(x: BigInt, msg: String): Int = {
+    val res = x.toInt
+    require(x == res, s"$msg $x is too large to be represented as Int")
+    res
+  }
 }

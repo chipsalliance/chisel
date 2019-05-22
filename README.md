@@ -4,13 +4,13 @@
 
 [![Join the chat at https://gitter.im/freechipsproject/chisel3](https://badges.gitter.im/freechipsproject/chisel3.svg)](https://gitter.im/freechipsproject/chisel3?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![CircleCI](https://circleci.com/gh/freechipsproject/chisel3/tree/master.svg?style=shield)](https://circleci.com/gh/freechipsproject/chisel3/tree/master)
+[![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/freechipsproject/chisel3.svg?label=release)](https://github.com/freechipsproject/chisel3/releases/latest)
 
 Chisel is a new hardware construction language to support advanced hardware design and circuit generation.
 The latest iteration of [Chisel](https://chisel.eecs.berkeley.edu/) is Chisel3,
 which uses Firrtl as an intermediate hardware representation language.
 
 Chisel3 releases are available as jars on Sonatype/Nexus/Maven and as tagged branches on the [releases tab](https://github.com/freechipsproject/chisel3/releases) of this repository.
-The latest release is [3.1.3](https://github.com/freechipsproject/chisel3/releases/tag/v3.1.3).
 
 Please visit the [Wiki](https://github.com/ucb-bar/chisel3/wiki) for documentation!
 
@@ -46,7 +46,7 @@ This will walk you through installing Chisel and its dependencies:
     sudo apt-get install sbt
     ```
 1. Install Verilator.
-    We currently recommend Verilator version 3.922.
+    We currently recommend Verilator version 4.006.
     Follow these instructions to compile it from source.
 
     1. Install prerequisites (if not installed already):
@@ -62,7 +62,7 @@ This will walk you through installing Chisel and its dependencies:
     3. In the Verilator repository directory, check out a known good version:
         ```
         git pull
-        git checkout verilator_3_922
+        git checkout verilator_4_006
         ```
 
     4. In the Verilator repository directory, build and install:
@@ -105,14 +105,15 @@ brew install sbt verilator
 If you are migrating to Chisel3 from Chisel2, please visit
 [Chisel3 vs Chisel2](https://github.com/ucb-bar/chisel3/wiki/Chisel3-vs-Chisel2)
 
+### Resources for Learning Chisel
+* [Chisel Bootcamp](https://github.com/freechipsproject/chisel-bootcamp), a collection of interactive Jupyter notebooks that teach Chisel
+* [Chisel Tutorial](https://github.com/ucb-bar/chisel-tutorial), a collection of exercises utlizing `sbt`
 
 ### Data Types Overview
 These are the base data types for defining circuit wires (abstract types which
 may not be instantiated are greyed out):
 
 ![Image](doc/images/type_hierarchy.png?raw=true)
-
-### [Chisel Tutorial](https://github.com/ucb-bar/chisel-tutorial)
 
 ## For Hardware Engineers
 This section describes how to get started using Chisel to create a new RTL

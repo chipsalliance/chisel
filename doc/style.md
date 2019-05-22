@@ -1,7 +1,7 @@
 # Chisel Style Guide
 
 The Chisel style guide reflects the [Google Java style
-guide](http://https://google.github.io/styleguide/javaguide.html) and the [General Public Scala style
+guide](http://google.github.io/styleguide/javaguide.html) and the [General Public Scala style
 guide](http://docs.scala-lang.org/style/). Specific rules below are to clarify
 the style used for the chisel3 repo and repos related to Chisel (Firrtl).
 

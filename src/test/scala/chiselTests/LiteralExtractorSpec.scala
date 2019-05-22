@@ -3,10 +3,9 @@
 package chiselTests
 
 import chisel3._
-import chisel3.core.FixedPoint
-import chisel3.experimental.RawModule
+import chisel3.experimental.{FixedPoint, RawModule}
+import chisel3.experimental.BundleLiterals._
 import chisel3.testers.BasicTester
-import org.scalatest._
 
 class LiteralExtractorSpec extends ChiselFlatSpec {
   "litValue" should "return the literal value" in {
@@ -61,38 +60,28 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
     class InsideBundle extends Bundle {
       val x = SInt(8.W)
       val y = FixedPoint(8.W, 4.BP)
-
-      import chisel3.core.BundleLitBinding
-      def Lit(aVal: SInt, bVal: FixedPoint): InsideBundle = {
-        val clone = cloneType
-        clone.selfBind(BundleLitBinding(Map(
-          clone.x -> litArgOfBits(aVal),
-          clone.y -> litArgOfBits(bVal)
-        )))
-        clone
-      }
     }
 
     class LitInsideOutsideTester(outsideLiteral: InsideBundle) extends BasicTester {
-      val insideLiteral = (new InsideBundle).Lit(7.S, 6.125.F(4.BP))
+      val insideLiteral = (new InsideBundle).Lit(_.x -> 7.S, _.y -> 6.125.F(4.BP))
 
       // the following errors with "assertion failed"
 
-      println(outsideLiteral === insideLiteral)
-      // chisel3.core.assert(outsideLiteral === insideLiteral)
+      println(outsideLiteral === insideLiteral) // scalastyle:ignore regex
+      // chisel3.assert(outsideLiteral === insideLiteral)
 
       // the following lines of code error
-      // with "chisel3.core.BundleLitBinding cannot be cast to chisel3.core.ElementLitBinding"
+      // with "chisel3.internal.BundleLitBinding cannot be cast to chisel3.internal.ElementLitBinding"
 
-      chisel3.core.assert(outsideLiteral.x === insideLiteral.x)
-      chisel3.core.assert(outsideLiteral.y === insideLiteral.y)
-      chisel3.core.assert(outsideLiteral.x === 7.S)
-      chisel3.core.assert(outsideLiteral.y === 6.125.F(4.BP))
+      chisel3.assert(outsideLiteral.x === insideLiteral.x)
+      chisel3.assert(outsideLiteral.y === insideLiteral.y)
+      chisel3.assert(outsideLiteral.x === 7.S)
+      chisel3.assert(outsideLiteral.y === 6.125.F(4.BP))
 
       stop()
     }
 
-    val outsideLiteral = (new InsideBundle).Lit(7.S, 6.125.F(4.BP))
+    val outsideLiteral = (new InsideBundle).Lit(_.x -> 7.S, _.y -> 6.125.F(4.BP))
     assertTesterPasses{ new LitInsideOutsideTester(outsideLiteral) }
 
   }
@@ -102,21 +91,8 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
     class MyBundle extends Bundle {
       val a = UInt(8.W)
       val b = Bool()
-
-      // Bundle literal constructor code, which will be auto-generated using macro annotations in
-      // the future.
-      import chisel3.core.BundleLitBinding
-      import chisel3.internal.firrtl.{ULit, Width}
-      def Lit(aVal: UInt, bVal: Bool): MyBundle = {
-        val clone = cloneType
-        clone.selfBind(BundleLitBinding(Map(
-          clone.a -> litArgOfBits(aVal),
-          clone.b -> litArgOfBits(bVal)
-        )))
-        clone
-      }
     }
-    val myBundleLiteral = (new MyBundle).Lit(42.U, true.B)
+    val myBundleLiteral = (new MyBundle).Lit(_.a -> 42.U, _.b -> true.B)
     assert(myBundleLiteral.a.litValue == 42)
     assert(myBundleLiteral.b.litValue == 1)
     assert(myBundleLiteral.b.litToBoolean == true)

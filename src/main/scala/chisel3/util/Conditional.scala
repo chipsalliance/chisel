@@ -7,7 +7,6 @@ package chisel3.util
 
 import scala.language.reflectiveCalls
 import scala.language.experimental.macros
-import scala.reflect.runtime.universe._
 import scala.reflect.macros.blackbox._
 
 import chisel3._
@@ -96,8 +95,7 @@ object switch {  // scalastyle:ignore object.name
   def impl(c: Context)(cond: c.Tree)(x: c.Tree): c.Tree = { import c.universe._
     val q"..$body" = x
     val res = body.foldLeft(q"""new SwitchContext($cond, None, Set.empty)""") {
-      case (acc, tree) =>
-        tree match {
+      case (acc, tree) => tree match {
         // TODO: remove when Chisel compatibility package is removed
         case q"Chisel.`package`.is.apply( ..$params )( ..$body )" => q"$acc.is( ..$params )( ..$body )"
         case q"chisel3.util.is.apply( ..$params )( ..$body )" => q"$acc.is( ..$params )( ..$body )"

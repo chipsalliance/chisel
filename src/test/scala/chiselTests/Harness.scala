@@ -2,10 +2,8 @@
 
 package chiselTests
 
-import chisel3.testers.BasicTester
-import org.scalatest._
-import org.scalatest.prop._
 import java.io.File
+
 import firrtl.util.BackendCompilationUtilities
 
 class HarnessSpec extends ChiselPropSpec
