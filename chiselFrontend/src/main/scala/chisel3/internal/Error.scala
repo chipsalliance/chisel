@@ -56,11 +56,11 @@ private[chisel3] object ErrorLog {
 private[chisel3] class ErrorLog {
   /** Log an error message */
   def error(m: => String): Unit =
-    errors += new Error(m, getUserLineNumber)
+    errors += new Error(m, getUserLineNumber())
 
   /** Log a warning message */
   def warning(m: => String): Unit =
-    errors += new Warning(m, getUserLineNumber)
+    errors += new Warning(m, getUserLineNumber())
 
   /** Emit an informational message */
   def info(m: String): Unit =
@@ -70,7 +70,7 @@ private[chisel3] class ErrorLog {
   def deprecated(m: => String, location: Option[String]): Unit = {
     val sourceLoc = location match {
       case Some(loc) => loc
-      case None => getUserLineNumber match {
+      case None => getUserLineNumber() match {
         case Some(elt: StackTraceElement) => s"${elt.getFileName}:${elt.getLineNumber}"
         case None => "(unknown)"
       }
@@ -120,7 +120,7 @@ private[chisel3] class ErrorLog {
 
   /** Returns the best guess at the first stack frame that belongs to user code.
     */
-  private def getUserLineNumber = {
+  private def getUserLineNumber(stackTrace: Array[StackTraceElement] = Thread.currentThread().getStackTrace) = {
     def isChiselClassname(className: String): Boolean = {
       // List of classpath prefixes that are Chisel internals and should be ignored when looking for user code
       // utils are not part of internals and errors there can be reported
@@ -134,12 +134,26 @@ private[chisel3] class ErrorLog {
       !chiselPrefixes.filter(className.startsWith(_)).isEmpty
     }
 
-    Thread.currentThread().getStackTrace.toList.dropWhile(
+    stackTrace.toList.dropWhile(
           // Get rid of everything in Chisel core
           ste => isChiselClassname(ste.getClassName)
         ).headOption
   }
 
+  /** Clear an exception that may have been recorded as an error.
+    *
+    * @param e the error/exception to be cleared.
+    */
+  def clear(e: Exception): Unit = {
+    val line = getUserLineNumber(e.getStackTrace)
+    val message = e.getMessage
+    // We assume it's near the end
+    for (i <- (errors.size - 1) to 0 by -1) {
+      if (errors(i).message == message && errors(i).line == line) {
+        errors.remove(i)
+      }
+    }
+  }
   private val errors = ArrayBuffer[LogEntry]()
   private val deprecations = LinkedHashMap[(String, String), Int]()
 
@@ -149,7 +163,7 @@ private[chisel3] class ErrorLog {
   def getErrorMsgs: Seq[String] = errors.map(_.message)
 }
 
-private abstract class LogEntry(msg: => String, line: Option[StackTraceElement]) {
+private abstract class LogEntry(msg: => String, val line: Option[StackTraceElement]) {
   def isFatal: Boolean = false
   def format: String
   def message: String = msg

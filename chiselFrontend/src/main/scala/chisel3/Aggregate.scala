@@ -440,6 +440,8 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
       super.bind(target, parentDirection)
     } catch {  // nasty compatibility mode shim, where anything flies
       case e: MixedDirectionAggregateException if !compileOptions.dontAssumeDirectionality =>
+        // Indicate this is not an error/exception.
+        Builder.clearException(e)
         val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
         direction = resolvedDirection match {
           case SpecifiedDirection.Unspecified => ActualDirection.Bidirectional(ActualDirection.Default)
