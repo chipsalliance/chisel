@@ -2,12 +2,12 @@
 
 package chisel3
 
+/**
+ * These definitions exist to deal with those clients that relied on chisel3.core.
+ * They are deprecated and will be removed in the future.
+ */
 package object core {
 
-  /**
-  * These definitions exist to deal with those clients that relied on chisel3.core
-  * They will be deprecated in the future.
-  */
   @deprecated("Use the version in chisel3._", "3.3")
   val CompileOptions = chisel3.CompileOptions
 

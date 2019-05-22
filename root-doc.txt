@@ -3,7 +3,7 @@ This is the documentation for Chisel.
 == Package structure ==
 
 The [[chisel3]] package presents the public API of Chisel.
-It contains the concrete core types [[chisel3.UInt `UInt`]], [[chisel3.SInt `SInt`]], [[chisel3.Bool `Bool`]], [[chisel3.FixedPoint `FixedPoint`]], [[chisel3.Clock `Clock`]], and [[chisel3.Reg `Reg`]],
+It contains the concrete core types [[chisel3.UInt `UInt`]], [[chisel3.SInt `SInt`]], [[chisel3.Bool `Bool`]], [[chisel3.experimental.FixedPoint `FixedPoint`]], [[chisel3.Clock `Clock`]], and [[chisel3.Reg `Reg`]],
 the abstract types [[chisel3.Bits `Bits`]], [[chisel3.Aggregate `Aggregate`]], and [[chisel3.Data `Data`]],
 and the aggregate types [[chisel3.Bundle `Bundle`]] and [[chisel3.Vec `Vec`]].
 
