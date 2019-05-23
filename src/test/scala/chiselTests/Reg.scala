@@ -2,12 +2,9 @@
 
 package chiselTests
 
-import firrtl.ir.Input
-import org.scalatest._
-import org.scalatest.prop._
 import chisel3._
 import chisel3.util._
-import chisel3.core.DataMirror
+import chisel3.experimental.DataMirror
 import chisel3.testers.BasicTester
 
 class RegSpec extends ChiselFlatSpec {

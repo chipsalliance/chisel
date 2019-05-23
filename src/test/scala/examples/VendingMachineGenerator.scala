@@ -54,7 +54,7 @@ class VendingMachineGenerator(
 
   val width = log2Ceil(maxValue + 1).W
   val value = RegInit(0.asUInt(width))
-  val incValue = WireInit(0.asUInt(width))
+  val incValue = WireDefault(0.asUInt(width))
   val doDispense = value >= (sodaCost / minCoin).U
 
   when (doDispense) {
@@ -93,7 +93,7 @@ class ParameterizedVendingMachineTester(
   val (idx, done) = Counter(true.B, testLength + 1)
   when (done) { stop(); stop() } // Two stops for Verilator
 
-  dut.io.inputs := inputVec(idx).toBools
+  dut.io.inputs := inputVec(idx).asBools
   assert(dut.io.dispense === expectedVec(idx))
 }
 

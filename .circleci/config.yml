@@ -1,0 +1,161 @@
+# Scala CircleCI 2.1 configuration file
+#
+# Check https://circleci.com/docs/2.0/sample-config/ for more details
+#
+
+version: 2.1
+
+executors:
+  chisel-executor:
+    # Use the chisel3-tools image to build and run FIRRTL and chisel tests.
+    docker:
+      - image: ucbbar/chisel3-tools
+        user: "chisel"
+
+    working_directory: ~/repo
+
+    environment:
+      # Customize the JVM maximum heap limit
+      JVM_OPTS: -Xmx3200m
+      TERM: dumb
+      CHISEL_REV: origin/master
+      FIRRTL_REPO: git@github.com:freechipsproject/firrtl.git
+      FIRRTL_BRANCH: master
+      FIRRTL_REV: master
+      CHECKSTYLE_LIMIT: 40
+      SBT_ARGS: ""
+
+commands:
+  test-chisel:
+    description: "Run chisel tests with a specific Scala version"
+    parameters:
+      scalaVersion:
+        type: string
+        default: ""
+    steps:
+      - attach_workspace:
+          at: /home/chisel
+
+      # Set environment
+      - run: echo 'export PATH="/opt/verilator/verilator_4_006/bin:/opt/yosys/bin:$PATH"' >> $BASH_ENV
+
+      # The -DminimalResources flag causes sbt to run tests sequentially,
+      #  so we could actually use "sbt +test" to run all the crossVersioned tests.
+      # We currently run them separately so we can run them in parallel.
+      - run:
+          command: |
+            (cd chisel3 && cat /dev/null | sbt $SBT_ARGS -DminimalResources << parameters.scalaVersion >> test)
+
+jobs:
+  build-prep:
+    executor: chisel-executor
+
+    steps:
+
+    # Perform a "default" checkout to get ssh set up.
+      - checkout:
+          path: chisel3
+
+      - run:
+          command: |
+            date > date.prep
+            printenv
+            ls -l
+            git clone --depth 10 --branch $FIRRTL_BRANCH "$FIRRTL_REPO" firrtl && (cd firrtl && git checkout $FIRRTL_REV)
+            echo $FIRRTL_REV && (cd firrtl && git log -1 > ../firrtl.log)
+
+
+      - persist_to_workspace:
+          root: /home/chisel
+          paths:
+            - repo
+            - .ivy2
+            - .m2
+            - .sbt
+
+  build-firrtl:
+    executor: chisel-executor
+
+    steps:
+      - attach_workspace:
+          at: /home/chisel
+
+      # publish FIRRTL
+      - run:
+          command: |
+            date > date.firrtl
+            (cd firrtl && cat /dev/null | sbt $SBT_ARGS +publishLocal)
+
+      - persist_to_workspace:
+          root: /home/chisel
+          paths:
+            - repo
+            - .ivy2
+            - .m2
+            - .sbt
+
+  # Define a pure build chisel - currently unused since we can compile and test chisel in one step
+  #  and we don't have downstream jobs that need the published version of chisel.
+  build-chisel:
+    executor: chisel-executor
+
+    steps:
+      - attach_workspace:
+          at: /home/chisel
+
+      # publish chisel
+      - run: date > date.chisel3 && (cd chisel3 && cat /dev/null | sbt $SBT_ARGS +publishLocal)
+
+      - persist_to_workspace:
+          root: /home/chisel
+          paths:
+            - repo
+            - .ivy2
+            - .m2
+            - .sbt
+
+  test-chisel-2_11:
+    executor: chisel-executor
+    steps:
+      - test-chisel:
+          scalaVersion: "++2.11.12"
+
+  test-chisel-2_12:
+    executor: chisel-executor
+    steps:
+      - test-chisel:
+          scalaVersion: "++2.12.7"
+
+  checkstyle-chisel:
+    executor: chisel-executor
+    steps:
+      - attach_workspace:
+          at: /home/chisel
+
+      - run:
+          command: |
+            # We expect the "[info]" field from sbt so the warning count will be in column 4
+            (cd chisel3 && cat /dev/null | sbt $SBT_ARGS scalastyle | gawk -v WARN_FAIL=2 -e '/scalastyle Found [0-9]+ warnings/ { print $0; if ($4 > ENVIRON["CHECKSTYLE_LIMIT"]) WARN_FAIL=1; else if (WARN_FAIL == 2) WARN_FAIL=0 }' -e 'END { exit WARN_FAIL}')
+
+workflows:
+
+  build_and_test:
+    jobs:
+      - build-prep
+      - build-firrtl:
+          requires:
+            - build-prep
+      - test-chisel-2_11:
+          requires:
+            - build-firrtl
+      - test-chisel-2_12:
+          requires:
+            - build-firrtl
+      - checkstyle-chisel:
+          # Strictly speaking, this is only dependent on build-firrtl,
+          #  but it is faster than the test jobs so if it fails,
+          #  it fails the entire build before we get a chance to complete the tests.
+          # If we make it dependent on at least one of the tests,
+          #  there's a better chance to see if the tests fail before we flag a style failure
+          requires:
+            - test-chisel-2_12

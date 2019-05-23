@@ -47,7 +47,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
     val value: Int = Gen.choose(2, 2048).sample.get
     log2Up(value) shouldBe (1 max BigInt(value - 1).bitLength)
     log2Ceil(value) shouldBe (BigInt(value - 1).bitLength)
-    log2Down(value) shouldBe ((1 max BigInt(value - 1).bitLength) - (if (value > 0 && ((value & (value - 1)) == 0)) 0 else 1))
+    log2Down(value) shouldBe ((1 max BigInt(value - 1).bitLength) - (if (value > 0 && ((value & (value - 1)) == 0)) 0 else 1)) // scalastyle:ignore line.size.limit
     log2Floor(value) shouldBe (BigInt(value - 1).bitLength - (if (value > 0 && ((value & (value - 1)) == 0)) 0 else 1))
     isPow2(BigInt(1) << value) shouldBe true
     isPow2((BigInt(1) << value) - 1) shouldBe false
@@ -189,6 +189,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
     override def cloneType: this.type = (new BigBundle).asInstanceOf[this.type]
   }
 
+  // scalastyle:off line.size.limit
   "A Module with missing bundle fields when compiled with the Chisel compatibility package" should "not throw an exception" in {
 
     class ConnectFieldMismatchModule extends Module {
@@ -296,7 +297,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
   // Note: This is a regression (see https://github.com/freechipsproject/chisel3/issues/668)
   it should "fail for Chisel types" in {
     import Chisel._
-    an [chisel3.core.Binding.ExpectedHardwareException] should be thrownBy {
+    an [chisel3.ExpectedHardwareException] should be thrownBy {
       elaborate(new Module {
         val io = new Bundle { }
         UInt(INPUT).dir
@@ -304,4 +305,36 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
     }
   }
 
+  "Mux return value" should "be able to be used on the RHS" in {
+    import Chisel._
+    elaborate(new Module {
+      val gen = new Bundle { val foo = UInt(width = 8) }
+      val io = new Bundle {
+        val a = Vec(2, UInt(width = 8)).asInput
+        val b = Vec(2, UInt(width = 8)).asInput
+        val c = gen.asInput
+        val d = gen.asInput
+        val en = Bool(INPUT)
+        val y = Vec(2, UInt(width = 8)).asOutput
+        val z = gen.asOutput
+      }
+      io.y := Mux(io.en, io.a, io.b)
+      io.z := Mux(io.en, io.c, io.d)
+    })
+  }
+
+  "Chisel3 IO constructs" should "be useable in Chisel2" in {
+    import Chisel._
+    elaborate(new Module {
+      val io = IO(new Bundle {
+        val in = Input(Bool())
+        val foo = Output(Bool())
+        val bar = Flipped(Bool())
+      })
+      Chisel.assert(io.in.dir == INPUT)
+      Chisel.assert(io.foo.dir == OUTPUT)
+      Chisel.assert(io.bar.dir == INPUT)
+    })
+  }
+  // scalastyle:on line.size.limit
 }

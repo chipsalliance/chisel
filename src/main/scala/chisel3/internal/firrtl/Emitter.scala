@@ -2,9 +2,8 @@
 
 package chisel3.internal.firrtl
 import chisel3._
-import chisel3.core.SpecifiedDirection
 import chisel3.experimental._
-import chisel3.internal.sourceinfo.{NoSourceInfo, SourceLine}
+import chisel3.internal.BaseBlackBox
 
 private[chisel3] object Emitter {
   def emit(circuit: Circuit): String = new Emitter(circuit).toString
@@ -26,8 +25,9 @@ private class Emitter(circuit: Circuit) {
     s"$dirString ${e.id.getRef.name} : ${emitType(e.id, clearDir)}"
   }
 
-  private def emitType(d: Data, clearDir: Boolean = false): String = d match {
+  private def emitType(d: Data, clearDir: Boolean = false): String = d match { // scalastyle:ignore cyclomatic.complexity line.size.limit
     case d: Clock => "Clock"
+    case d: EnumType => s"UInt${d.width}"
     case d: UInt => s"UInt${d.width}"
     case d: SInt => s"SInt${d.width}"
     case d: FixedPoint => s"Fixed${d.width}${d.binaryPoint}"
@@ -54,15 +54,15 @@ private class Emitter(circuit: Circuit) {
     case d => d.specifiedDirection
   }
 
-  private def emit(e: Command, ctx: Component): String = {
+  private def emit(e: Command, ctx: Component): String = { // scalastyle:ignore cyclomatic.complexity
     val firrtlLine = e match {
       case e: DefPrim[_] => s"node ${e.name} = ${e.op.name}(${e.args.map(_.fullName(ctx)).mkString(", ")})"
       case e: DefWire => s"wire ${e.name} : ${emitType(e.id)}"
       case e: DefReg => s"reg ${e.name} : ${emitType(e.id)}, ${e.clock.fullName(ctx)}"
-      case e: DefRegInit => s"reg ${e.name} : ${emitType(e.id)}, ${e.clock.fullName(ctx)} with : (reset => (${e.reset.fullName(ctx)}, ${e.init.fullName(ctx)}))"
+      case e: DefRegInit => s"reg ${e.name} : ${emitType(e.id)}, ${e.clock.fullName(ctx)} with : (reset => (${e.reset.fullName(ctx)}, ${e.init.fullName(ctx)}))" // scalastyle:ignore line.size.limit
       case e: DefMemory => s"cmem ${e.name} : ${emitType(e.t)}[${e.size}]"
       case e: DefSeqMemory => s"smem ${e.name} : ${emitType(e.t)}[${e.size}]"
-      case e: DefMemPort[_] => s"${e.dir} mport ${e.name} = ${e.source.fullName(ctx)}[${e.index.fullName(ctx)}], ${e.clock.fullName(ctx)}"
+      case e: DefMemPort[_] => s"${e.dir} mport ${e.name} = ${e.source.fullName(ctx)}[${e.index.fullName(ctx)}], ${e.clock.fullName(ctx)}" // scalastyle:ignore line.size.limit
       case e: Connect => s"${e.loc.fullName(ctx)} <= ${e.exp.fullName(ctx)}"
       case e: BulkConnect => s"${e.loc1.fullName(ctx)} <- ${e.loc2.fullName(ctx)}"
       case e: Attach => e.locs.map(_.fullName(ctx)).mkString("attach (", ", ", ")")
@@ -93,6 +93,7 @@ private class Emitter(circuit: Circuit) {
         s"skip"
     }
     firrtlLine + e.sourceInfo.makeMessage(" " + _)
+    // scalastyle:on line.size.limit
   }
 
   private def emitParam(name: String, p: Param): String = {
@@ -108,8 +109,8 @@ private class Emitter(circuit: Circuit) {
   /** Generates the FIRRTL module declaration.
     */
   private def moduleDecl(m: Component): String = m.id match {
-    case _: chisel3.core.BaseBlackBox => newline + s"extmodule ${m.name} : "
-    case _: chisel3.core.UserModule => newline + s"module ${m.name} : "
+    case _: BaseBlackBox => newline + s"extmodule ${m.name} : "
+    case _: RawModule => newline + s"module ${m.name} : "
   }
 
   /** Generates the FIRRTL module definition.

@@ -2,14 +2,10 @@
 
 package chiselTests
 
-import java.io.File
-
-import org.scalatest._
 import chisel3._
 import chisel3.experimental._
 import chisel3.testers.BasicTester
 import chisel3.util._
-//import chisel3.core.ExplicitCompileOptions.Strict
 
 class BlackBoxInverter extends BlackBox {
   val io = IO(new Bundle() {
@@ -171,5 +167,13 @@ class BlackBoxSpec extends ChiselFlatSpec {
   "BlackBoxes with parameters" should "work" in {
     assertTesterPasses({ new BlackBoxWithParamsTester },
         Seq("/chisel3/BlackBoxTest.v"))
+  }
+  "DataMirror.modulePorts" should "work with BlackBox" in {
+    elaborate(new Module {
+      val io = IO(new Bundle { })
+      val m = Module(new BlackBoxPassthrough)
+      assert(DataMirror.modulePorts(m) == Seq(
+          "in" -> m.io.in, "out" -> m.io.out))
+    })
   }
 }

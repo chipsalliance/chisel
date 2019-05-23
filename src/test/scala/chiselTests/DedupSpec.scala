@@ -41,6 +41,31 @@ class NestedDedup extends Module {
   io.out <> inst1.io.out
 }
 
+object DedupConsts {
+  val foo = 3.U
+}
+
+class SharedConstantValDedup extends Module {
+  val io = IO(new Bundle {
+    val in = Input(UInt(8.W))
+    val out = Output(UInt(8.W))
+  })
+  io.out := io.in + DedupConsts.foo
+}
+
+class SharedConstantValDedupTop extends Module {
+  val io = IO(new Bundle {
+    val in = Input(UInt(8.W))
+    val out = Output(UInt(8.W))
+  })
+  val inst0 = Module(new SharedConstantValDedup)
+  val inst1 = Module(new SharedConstantValDedup)
+  inst0.io.in := io.in
+  inst1.io.in := io.in
+  io.out := inst0.io.out + inst1.io.out
+}
+
+
 class DedupSpec extends ChiselFlatSpec {
   private val ModuleRegex = """\s*module\s+(\w+)\b.*""".r
   def countModules(verilog: String): Int =
@@ -52,6 +77,10 @@ class DedupSpec extends ChiselFlatSpec {
 
   it should "properly dedup modules with deduped submodules" in {
     assert(countModules(compile { new NestedDedup }) === 3)
+  }
+
+  it should "dedup modules that share a literal" in {
+    assert(countModules(compile { new SharedConstantValDedupTop  }) === 2)
   }
 }
 

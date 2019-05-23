@@ -4,39 +4,44 @@ package cookbook
 
 import chisel3._
 import chisel3.util._
+import chisel3.experimental.ChiselEnum
 
 /* ### How do I create a finite state machine?
  *
- * Use Chisel Enum to construct the states and switch & is to construct the FSM
+ * Use Chisel StrongEnum to construct the states and switch & is to construct the FSM
  * control logic
  */
+
 class DetectTwoOnes extends Module {
   val io = IO(new Bundle {
     val in = Input(Bool())
     val out = Output(Bool())
   })
 
-  val sNone :: sOne1 :: sTwo1s :: Nil = Enum(3)
-  val state = RegInit(sNone)
+  object State extends ChiselEnum {
+    val sNone, sOne1, sTwo1s = Value
+  }
 
-  io.out := (state === sTwo1s)
+  val state = RegInit(State.sNone)
+
+  io.out := (state === State.sTwo1s)
 
   switch (state) {
-    is (sNone) {
+    is (State.sNone) {
       when (io.in) {
-        state := sOne1
+        state := State.sOne1
       }
     }
-    is (sOne1) {
+    is (State.sOne1) {
       when (io.in) {
-        state := sTwo1s
+        state := State.sTwo1s
       } .otherwise {
-        state := sNone
+        state := State.sNone
       }
     }
-    is (sTwo1s) {
+    is (State.sTwo1s) {
       when (!io.in) {
-        state := sNone
+        state := State.sNone
       }
     }
   }
@@ -48,7 +53,7 @@ class DetectTwoOnesTester extends CookbookTester(10) {
 
   // Inputs and expected results
   val inputs: Vec[Bool] = VecInit(false.B, true.B, false.B, true.B, true.B, true.B, false.B, true.B, true.B, false.B)
-  val expected: Vec[Bool] = VecInit(false.B, false.B, false.B, false.B, false.B, true.B, true.B, false.B, false.B, true.B)
+  val expected: Vec[Bool] = VecInit(false.B, false.B, false.B, false.B, false.B, true.B, true.B, false.B, false.B, true.B) // scalastyle:ignore line.size.limit
 
   dut.io.in := inputs(cycle)
   assert(dut.io.out === expected(cycle))

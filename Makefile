@@ -1,31 +1,35 @@
-# Retain all intermediate files.
-.SECONDARY:
-
 SBT		?= sbt
 SBT_FLAGS	?= -Dsbt.log.noformat=true
+MKDIR ?= mkdir -p
+CURL ?= curl -L
+MILL_BIN ?= $(HOME)/bin/mill
+MILL ?= $(MILL_BIN) --color false
+MILL_REMOTE_RELEASE ?= https://github.com/lihaoyi/mill/releases/download/0.3.5/0.3.5
+
+# Fetch mill (if we don't have it).
+$(MILL_BIN):
+	$(MKDIR) $(dir $@)
+	@echo $(CURL) --silent --output $@.curl --write-out "%{http_code}" $(MILL_REMOTE_RELEASE)
+	STATUSCODE=$(shell $(CURL) --silent --output $@.curl --write-out "%{http_code}" $(MILL_REMOTE_RELEASE)) && \
+	if test $$STATUSCODE -eq 200; then \
+	  mv $@.curl $@ && chmod +x $@ ;\
+	else \
+	  echo "Can't fetch $(MILL_REMOTE_RELEASE)" && cat $@.curl && echo ;\
+	  false ;\
+	fi
+
+mill-tools:	$(MILL_BIN)
 
 CHISEL_VERSION = $(shell "$(SBT)" $(SBT_FLAGS) "show version" | tail -n 1 | cut -d ' ' -f 2)
 
-SRC_DIR	?= .
-CHISEL_BIN ?= $(abspath $(SRC_DIR)/bin)
-export CHISEL_BIN
-
 #$(info Build Chisel $(CHISEL_VERSION))
 
-# The targetDir will be rm -rf'ed when "make clean"
-targetDir ?= ./generated
 # The TEST_OUTPUT_DIR will be rm -rf'ed when "make clean"
-TEST_OUTPUT_DIR ?= ./test-outputs
-RM_DIRS 	:= $(TEST_OUTPUT_DIR) test-reports $(targetDir)
-#CLEAN_DIRS	:= doc
+TEST_OUTPUT_DIR ?= ./test_run_dur
+RM_DIRS 	:= $(TEST_OUTPUT_DIR)
 
-test_src_dir := src/test/scala/ChiselTests
-test_results := $(filter-out main DirChange Pads SIntOps,$(notdir $(basename $(wildcard $(test_src_dir)/*.scala))))
-c_resources_dir := src/main/resources
-
-test_outs    := $(addprefix $(targetDir)/, $(addsuffix .out, $(test_results)))
-
-.PHONY:	smoke publish-local pubishLocal check clean jenkins-build coverage scaladoc test checkstyle compile
+.PHONY:	smoke publish-local pubishLocal check clean jenkins-build coverage scaladoc test checkstyle compile \
+	mill.build mill.test mill.publishLocal mill.build.all mill.test.all mill.publishLocal.all mill-tools
 
 default:	publishLocal
 
@@ -37,8 +41,6 @@ publish-local publishLocal:
 
 test:
 	$(SBT) $(SBT_FLAGS) test
-
-check:	test $(test_outs)
 
 checkstyle:
 	$(SBT) $(SBT_FLAGS) scalastyle test:scalastyle
@@ -73,20 +75,34 @@ jenkins-build: clean
 	$(SBT) $(SBT_FLAGS) scalastyle coverage test
 	$(SBT) $(SBT_FLAGS) coverageReport
 
-$(targetDir)/%.fir: $(test_src_dir)/%.scala
-	$(SBT) $(SBT_FLAGS) "test:runMain ChiselTests.MiniChisel $(notdir $(basename $<)) $(CHISEL_FLAGS)"
+# Compile and package jar
+mill.build: mill-tools
+	$(MILL) chisel3.jar
 
-$(targetDir)/%.flo: $(targetDir)/%.fir
-	$(CHISEL_BIN)/fir2flo.sh $(targetDir)/$*
+# Compile and test
+mill.test: mill-tools
+	$(MILL) chisel3.test
 
-$(targetDir)/%: $(targetDir)/%.flo $(targetDir)/emulator.h $(targetDir)/emulator_mod.h $(targetDir)/emulator_api.h
-	(cd $(targetDir); $(CHISEL_BIN)/flo2app.sh $*)
+# Build and publish jar
+mill.publishLocal: mill-tools
+	$(MILL) chisel3.publishLocal
 
-$(targetDir)/%.h:	$(c_resources_dir)/%.h
-	cp $< $@
+# Compile and package all jar
+mill.build.all: mill-tools
+	$(MILL) chisel3[_].jar
 
-$(targetDir)/%.out:	$(targetDir)/%
-	$(SBT) $(SBT_FLAGS) "test:runMain ChiselTests.MiniChisel $(notdir $(basename $<)) $(CHISEL_FLAGS) --test --targetDir $(targetDir)"
+# Compile and test
+mill.test.all: mill-tools
+	$(MILL) chisel3[_].test
+
+# Build and publish jar
+mill.publishLocal.all: mill-tools
+	$(MILL) chisel3[_].publishLocal
+
+# Remove all generated code.
+# Until "mill clean" makes it into a release.
+mill.clean:
+	$(RM) -rf out
 
 # The "last-resort" rule.
 # We assume the target is something like "+clean".

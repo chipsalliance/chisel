@@ -3,7 +3,6 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.{withClockAndReset, withClock, withReset}
 import chisel3.util.Counter
 import chisel3.testers.BasicTester
 
@@ -54,8 +53,8 @@ class MultiClockSubModuleTest extends BasicTester {
 
 /** Test withReset changing the reset of a Reg */
 class WithResetTest extends BasicTester {
-  val reset2 = WireInit(false.B)
-  val reg = withReset(reset2 || reset.toBool) { RegInit(0.U(8.W)) }
+  val reset2 = WireDefault(false.B)
+  val reg = withReset(reset2 || reset.asBool) { RegInit(0.U(8.W)) }
   reg := reg + 1.U
 
   val (cycle, done) = Counter(true.B, 10)
@@ -140,6 +139,18 @@ class MultiClockSpec extends ChiselFlatSpec {
   it should "return like a normal Scala block" in {
     elaborate(new BasicTester {
       assert(withReset(this.reset) { 5 } == 5)
+    })
+  }
+  it should "support literal Bools" in {
+    assertTesterPasses(new BasicTester {
+      val reg = withReset(true.B) {
+        RegInit(6.U)
+      }
+      reg := reg - 1.U
+      // The reg is always in reset so will never decrement
+      chisel3.assert(reg === 6.U)
+      val (_, done) = Counter(true.B, 4)
+      when (done) { stop() }
     })
   }
 

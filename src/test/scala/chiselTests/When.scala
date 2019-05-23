@@ -2,8 +2,6 @@
 
 package chiselTests
 
-import org.scalatest._
-
 import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
@@ -105,5 +103,27 @@ class WhenSpec extends ChiselFlatSpec {
   }
   "Conditional connections to submodule ports" should "be handled properly" in {
     assertTesterPasses(new SubmoduleWhenTester)
+  }
+
+  "Returning in a when scope" should "give a reasonable error message" in {
+    val e = the [ChiselException] thrownBy {
+      elaborate(new Module {
+        val io = IO(new Bundle {
+          val foo = Input(UInt(8.W))
+          val bar = Input(UInt(8.W))
+          val cond = Input(Bool())
+          val out = Output(UInt(8.W))
+        })
+        def func(): UInt = {
+          when(io.cond) {
+            // This is bad, do not do this!!!
+            return io.foo
+          }
+          return io.bar
+        }
+        io.out := func()
+      })
+    }
+    e.getMessage should include ("Cannot exit from a when() block with a \"return\"")
   }
 }
