@@ -1,8 +1,9 @@
 // See LICENSE for license details.
 
-package chisel3.core
+package chisel3.internal
 
-import chisel3.internal.ChiselException
+import chisel3._
+import chisel3.experimental.{Analog, BaseModule, RawModule, attach}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.{Connect, DefInvalid}
 import scala.language.experimental.macros
@@ -22,10 +23,9 @@ import chisel3.internal.sourceinfo._
 *
 */
 
-object BiConnect {
+private[chisel3] object BiConnect {
   // scalastyle:off method.name public.methods.have.type
   // These are all the possible exceptions that can be thrown.
-  case class BiConnectException(message: String) extends ChiselException(message)
   // These are from element-level connection
   def BothDriversException =
     BiConnectException(": Both Left and Right are drivers")

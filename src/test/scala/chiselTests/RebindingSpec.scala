@@ -6,7 +6,7 @@ import chisel3._
 
 class RebindingSpec extends ChiselFlatSpec {
   "Rebinding a literal" should "fail" in {
-    a [chisel3.core.Binding.BindingException] should be thrownBy {
+    a [BindingException] should be thrownBy {
       elaborate { new Module {
         val io = IO(new Bundle {
           val a = 4.U
@@ -16,7 +16,7 @@ class RebindingSpec extends ChiselFlatSpec {
   }
 
   "Rebinding a hardware type" should "fail" in {
-    a [chisel3.core.Binding.BindingException] should be thrownBy {
+    a [BindingException] should be thrownBy {
       elaborate { new Module {
         val io = IO(new Bundle {
           val a = Reg(UInt(32.W))

@@ -1,5 +1,6 @@
 import ammonite.ops._
 import ammonite.ops.ImplicitWd._
+import coursier.MavenRepository
 import mill._
 import mill.scalalib._
 import mill.scalalib.publish._
@@ -58,6 +59,11 @@ trait CommonChiselModule extends SbtModule {
     case ModuleDep(_) => Agg()
   }
   override def ivyDeps = T { chiselDeps }
+
+  // Include sonatype snapshots by default for parity with sbt
+  def repositories = super.repositories ++ Seq(
+    MavenRepository("https://oss.sonatype.org/content/repositories/snapshots")
+  )
 }
 
 trait PublishChiselModule extends CommonChiselModule with PublishModule {

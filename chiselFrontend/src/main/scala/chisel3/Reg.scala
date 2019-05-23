@@ -1,13 +1,13 @@
 // See LICENSE for license details.
 
-package chisel3.core
+package chisel3
 
 import scala.language.experimental.macros
 
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.{SourceInfo}
+import chisel3.internal.sourceinfo.SourceInfo
 
 /** Utility for constructing hardware registers
   *
@@ -44,6 +44,33 @@ object Reg {
     reg.bind(RegBinding(Builder.forcedUserModule))
     pushCommand(DefReg(sourceInfo, reg, clock))
     reg
+  }
+
+  @chiselRuntimeDeprecated
+  @deprecated("Use Reg(t), RegNext(next, [init]) or RegInit([t], init) instead", "chisel3")
+  def apply[T <: Data](t: T = null, next: T = null, init: T = null)
+                      (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    if (t ne null) {
+      val reg = if (init ne null) {
+        RegInit(t, init)
+      } else {
+        Reg(t)
+      }
+      if (next ne null) {
+        reg := next
+      }
+      reg
+    } else if (next ne null) {
+      if (init ne null) {
+        RegNext(next, init)
+      } else {
+        RegNext(next)
+      }
+    } else if (init ne null) {
+      RegInit(init)
+    } else {
+      throwException("cannot infer type")
+    }
   }
 }
 

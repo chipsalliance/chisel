@@ -3,10 +3,8 @@
 package chisel3.util.experimental
 
 import chisel3._
-import chisel3.experimental.annotate
-// import chisel3.InstanceId
-import chisel3.experimental.{ChiselAnnotation, RunFirrtlTransform}
-import firrtl.annotations.{MemoryLoadFileType, _}
+import chisel3.experimental.{RunFirrtlTransform, annotate, ChiselAnnotation}
+import firrtl.annotations._
 import firrtl.ir.{Module => _, _}
 import firrtl.transforms.BlackBoxInlineAnno
 import firrtl.Mappers._

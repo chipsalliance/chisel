@@ -3,9 +3,8 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.{annotate, ChiselAnnotation, doNotDedup}
+import chisel3.experimental.doNotDedup
 import firrtl.FirrtlExecutionSuccess
-import firrtl.transforms.NoDedupAnnotation
 import org.scalatest.{FreeSpec, Matchers}
 
 

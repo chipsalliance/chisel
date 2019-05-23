@@ -4,8 +4,6 @@ package chiselTests
 
 import chisel3._
 
-import chisel3.testers.BasicTester
-
 class BundleWithIntArg(val i: Int) extends Bundle {
   val out = UInt(i.W)
 }

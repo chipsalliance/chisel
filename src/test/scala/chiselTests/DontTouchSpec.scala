@@ -4,7 +4,6 @@ package chiselTests
 
 import chisel3._
 import chisel3.experimental.dontTouch
-import firrtl.{FirrtlExecutionSuccess, Transform}
 
 class HasDeadCodeChild(withDontTouch: Boolean) extends Module {
   val io = IO(new Bundle {
@@ -52,7 +51,7 @@ class DontTouchSpec extends ChiselFlatSpec {
     }
   }
   "Dont touch" should "only work on bound hardware" in {
-    a [chisel3.core.Binding.BindingException] should be thrownBy {
+    a [chisel3.BindingException] should be thrownBy {
       elaborate(new Module {
         val io = IO(new Bundle { })
         dontTouch(new Bundle { val a = UInt(32.W) } )

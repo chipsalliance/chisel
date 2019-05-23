@@ -3,18 +3,14 @@
 package chisel3
 
 import chisel3.internal.ErrorLog
-import chisel3.internal.firrtl.Converter
+import chisel3.internal.firrtl._
 import chisel3.experimental.{RawModule, RunFirrtlTransform}
 
 import java.io._
-import net.jcazevedo.moultingyaml._
 
-import internal.firrtl._
 import firrtl._
-import firrtl.annotations.{Annotation, JsonProtocol}
-import firrtl.util.{ BackendCompilationUtilities => FirrtlBackendCompilationUtilities }
-
-import _root_.firrtl.annotations.AnnotationYamlProtocol._
+import firrtl.annotations.JsonProtocol
+import firrtl.util.{BackendCompilationUtilities => FirrtlBackendCompilationUtilities}
 
 /**
   * The Driver provides methods to invoke the chisel3 compiler and the firrtl compiler.
@@ -38,7 +34,6 @@ import _root_.firrtl.annotations.AnnotationYamlProtocol._
   *          chisel3.execute(args, () => new DUT)
   *          }}}
   */
-import BuildInfo._
 
 trait BackendCompilationUtilities extends FirrtlBackendCompilationUtilities {
   /** Compile Chirrtl to Verilog by invoking Firrtl inside the same JVM

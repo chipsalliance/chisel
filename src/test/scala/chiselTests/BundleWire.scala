@@ -2,10 +2,7 @@
 
 package chiselTests
 import chisel3._
-import org.scalatest._
-import org.scalatest.prop._
 import chisel3.testers.BasicTester
-//import chisel3.core.ExplicitCompileOptions.Strict
 
 class Coord extends Bundle {
   val x = UInt(32.W)

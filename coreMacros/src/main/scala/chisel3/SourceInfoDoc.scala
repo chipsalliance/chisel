@@ -23,7 +23,7 @@ package chisel3
   *   <br>
   *   <br>
   *
-  *   These `do_X` methods are used to enable both implicit passing of SourceInfo and [[chisel3.core.CompileOptions]]
+  *   These `do_X` methods are used to enable both implicit passing of SourceInfo and [[chisel3.CompileOptions]]
   *   while also supporting chained apply methods. In effect all "normal" methods that you, as a user, will use in your
   *   designs, are converted to their "hidden", `do_*`, via macro transformations. Without using macros here, only one
   *   of the above wanted behaviors is allowed (implicit passing and chained applies)---the compiler interprets a
