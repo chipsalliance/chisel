@@ -2,13 +2,12 @@
 
 package chiselTests
 
-import org.scalatest._
-import org.scalatest.prop._
 import org.scalacheck._
 
 import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
+import chisel3.util.random.LFSR
 
 class ThingsPassThroughTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int) extends BasicTester {
   val q = Module(new Queue(UInt(bitWidth.W), queueDepth))
@@ -19,7 +18,7 @@ class ThingsPassThroughTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int
   val outCnt = Counter(elements.length + 1)
 
   q.io.enq.valid := (inCnt.value < elements.length.U)
-  q.io.deq.ready := LFSR16()(tap)
+  q.io.deq.ready := LFSR(16)(tap)
 
   q.io.enq.bits := elems(inCnt.value)
   when(q.io.enq.fire()) {
@@ -47,7 +46,7 @@ class QueueReasonableReadyValid(elements: Seq[Int], queueDepth: Int, bitWidth: I
   //Queue should be full or ready
   assert(q.io.enq.ready || q.io.count === queueDepth.U)
 
-  q.io.deq.ready := LFSR16()(tap)
+  q.io.deq.ready := LFSR(16)(tap)
   //Queue should be empty or valid
   assert(q.io.deq.valid || q.io.count === 0.U)
 
@@ -72,7 +71,7 @@ class CountIsCorrectTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, t
   val outCnt = Counter(elements.length + 1)
 
   q.io.enq.valid := (inCnt.value < elements.length.U)
-  q.io.deq.ready := LFSR16()(tap)
+  q.io.deq.ready := LFSR(16)(tap)
 
   q.io.enq.bits := elems(inCnt.value)
   when(q.io.enq.fire()) {
@@ -99,7 +98,7 @@ class QueueSinglePipeTester(elements: Seq[Int], bitWidth: Int, tap: Int) extends
   val outCnt = Counter(elements.length + 1)
 
   q.io.enq.valid := (inCnt.value < elements.length.U)
-  q.io.deq.ready := LFSR16()(tap)
+  q.io.deq.ready := LFSR(16)(tap)
 
   assert(q.io.enq.ready || (q.io.count === 1.U && !q.io.deq.ready))
 
@@ -125,7 +124,7 @@ class QueuePipeTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: I
   val outCnt = Counter(elements.length + 1)
 
   q.io.enq.valid := (inCnt.value < elements.length.U)
-  q.io.deq.ready := LFSR16()(tap)
+  q.io.deq.ready := LFSR(16)(tap)
 
   assert(q.io.enq.ready || (q.io.count === queueDepth.U && !q.io.deq.ready))
 
@@ -154,7 +153,7 @@ class QueueFlowTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: I
   //Queue should be full or ready
   assert(q.io.enq.ready || q.io.count === queueDepth.U)
 
-  q.io.deq.ready := LFSR16()(tap)
+  q.io.deq.ready := LFSR(16)(tap)
   //Queue should be empty or valid
   assert(q.io.deq.valid || (q.io.count === 0.U && !q.io.enq.fire()))
 

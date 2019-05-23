@@ -1,9 +1,8 @@
 // See LICENSE for license details.
 
-package chisel3.core
+package chisel3
 
 import chisel3.internal.firrtl.Component
-import chisel3.internal.HasId
 
 import scala.collection.mutable
 
@@ -54,14 +53,14 @@ sealed abstract class Printable {
     */
   def unpack(ctx: Component): (String, Iterable[String])
   /** Allow for appending Printables like Strings */
-  final def +(that: Printable) = Printables(List(this, that))
+  final def +(that: Printable): Printables = Printables(List(this, that))
   /** Allow for appending Strings to Printables */
-  final def +(that: String) = Printables(List(this, PString(that)))
+  final def +(that: String): Printables = Printables(List(this, PString(that)))
 }
 object Printable {
   /** Pack standard printf fmt, args* style into Printable
     */
-  def pack(fmt: String, data: Data*): Printable = {
+  def pack(fmt: String, data: Data*): Printable = { // scalastyle:ignore method.length
     val args = data.toIterator
 
     // Error handling

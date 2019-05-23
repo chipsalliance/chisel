@@ -1,36 +1,22 @@
-package chisel3.core
+// See LICENSE for license details.
 
-import chisel3.internal.ChiselException
-import chisel3.internal.Builder.{forcedModule}
+package chisel3.internal
+
+import chisel3._
+import chisel3.experimental.{BaseModule, RawModule}
 import chisel3.internal.firrtl.LitArg
-
-object Binding {
-  class BindingException(message: String) extends ChiselException(message)
-  /** A function expected a Chisel type but got a hardware object
-    */
-  case class ExpectedChiselTypeException(message: String) extends BindingException(message)
-  /**A function expected a hardware object but got a Chisel type
-    */
-  case class ExpectedHardwareException(message: String) extends BindingException(message)
-  /** An aggregate had a mix of specified and unspecified directionality children
-    */
-  case class MixedDirectionAggregateException(message: String) extends BindingException(message)
-  /** Attempted to re-bind an already bound (directionality or hardware) object
-    */
-  case class RebindingException(message: String) extends BindingException(message)
-}
 
 /** Requires that a node is hardware ("bound")
   */
 object requireIsHardware {
-  def apply(node: Data, msg: String = "") = {
+  def apply(node: Data, msg: String = ""): Unit = {
     node._parent match {  // Compatibility layer hack
       case Some(x: BaseModule) => x._compatAutoWrapPorts
       case _ =>
     }
-    if (!node.topBindingOpt.isDefined) {
+    if (!node.isSynthesizable) {
       val prefix = if (msg.nonEmpty) s"$msg " else ""
-      throw Binding.ExpectedHardwareException(s"$prefix'$node' must be hardware, " +
+      throw ExpectedHardwareException(s"$prefix'$node' must be hardware, " +
         "not a bare Chisel type. Perhaps you forgot to wrap it in Wire(_) or IO(_)?")
     }
   }
@@ -39,15 +25,15 @@ object requireIsHardware {
 /** Requires that a node is a chisel type (not hardware, "unbound")
   */
 object requireIsChiselType {
-  def apply(node: Data, msg: String = "") = if (node.topBindingOpt.isDefined) {
+  def apply(node: Data, msg: String = ""): Unit = if (node.isSynthesizable) {
     val prefix = if (msg.nonEmpty) s"$msg " else ""
-    throw Binding.ExpectedChiselTypeException(s"$prefix'$node' must be a Chisel type, not hardware")
+    throw ExpectedChiselTypeException(s"$prefix'$node' must be a Chisel type, not hardware")
   }
 }
 
 // Element only direction used for the Binding system only.
-sealed abstract class BindingDirection
-object BindingDirection {
+private[chisel3] sealed abstract class BindingDirection
+private[chisel3] object BindingDirection {
   /** Internal type or wire
     */
   case object Internal extends BindingDirection
@@ -60,7 +46,7 @@ object BindingDirection {
 
   /** Determine the BindingDirection of an Element given its top binding and resolved direction.
     */
-  def from(binding: TopBinding, direction: ActualDirection) = {
+  def from(binding: TopBinding, direction: ActualDirection): BindingDirection = {
     binding match {
       case PortBinding(_) => direction match {
         case ActualDirection.Output => Output
@@ -82,13 +68,13 @@ sealed trait TopBinding extends Binding
 // Constrained-ness refers to whether 'bound by Module boundaries'
 // An unconstrained binding, like a literal, can be read by everyone
 sealed trait UnconstrainedBinding extends TopBinding {
-  def location = None
+  def location: Option[BaseModule] = None
 }
 // A constrained binding can only be read/written by specific modules
-// Location will track where this Module is
+// Location will track where this Module is, and the bound object can be referenced in FIRRTL
 sealed trait ConstrainedBinding extends TopBinding {
   def enclosure: BaseModule
-  def location = Some(enclosure)
+  def location: Option[BaseModule] = Some(enclosure)
 }
 
 // A binding representing a data that cannot be (re)assigned to.
@@ -103,6 +89,10 @@ case class RegBinding(enclosure: RawModule) extends ConstrainedBinding
 case class WireBinding(enclosure: RawModule) extends ConstrainedBinding
 
 case class ChildBinding(parent: Data) extends Binding {
+  def location: Option[BaseModule] = parent.topBinding.location
+}
+/** Special binding for Vec.sample_element */
+case class SampleElementBinding[T <: Data](parent: Vec[T]) extends Binding {
   def location = parent.topBinding.location
 }
 // A DontCare element has a specific Binding, somewhat like a literal.

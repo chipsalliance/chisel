@@ -34,7 +34,7 @@ trait MultiIOTrait extends MultiIOModule {
 
 // Composition of the two above traits, example of IO composition directly using multiple top-level
 // IOs rather than indirectly by constraining the type of the single .io field.
-class ComposedMultiIOModule extends MultiIOModule 
+class ComposedMultiIOModule extends MultiIOModule
     with LiteralOutputTrait with MultiIOTrait {
   val topModuleIO = IO(Input(UInt(32.W)))
   myTraitIO := topModuleIO

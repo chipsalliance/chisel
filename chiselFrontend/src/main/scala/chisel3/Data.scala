@@ -1,15 +1,14 @@
 // See LICENSE for license details.
 
-package chisel3.core
+package chisel3
 
 import scala.language.experimental.macros
 
+import chisel3.experimental.{Analog, DataMirror, FixedPoint}
+import chisel3.internal.Builder.pushCommand
 import chisel3.internal._
-import chisel3.internal.Builder.{pushCommand, pushOp}
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform, UnlocatableSourceInfo, DeprecatedSourceInfo}
-import chisel3.SourceInfoDoc
-import chisel3.core.BiConnect.DontCareCantBeSink
 
 /** User-specified directions.
   */
@@ -28,7 +27,7 @@ object SpecifiedDirection {
     */
   case object Flip extends SpecifiedDirection
 
-  def flip(dir: SpecifiedDirection) = dir match {
+  def flip(dir: SpecifiedDirection): SpecifiedDirection = dir match {
     case Unspecified => Flip
     case Flip => Unspecified
     case Output => Input
@@ -38,7 +37,7 @@ object SpecifiedDirection {
   /** Returns the effective SpecifiedDirection of this node given the parent's effective SpecifiedDirection
     * and the user-specified SpecifiedDirection of this node.
     */
-  def fromParent(parentDirection: SpecifiedDirection, thisDirection: SpecifiedDirection) =
+  def fromParent(parentDirection: SpecifiedDirection, thisDirection: SpecifiedDirection): SpecifiedDirection =
     (parentDirection, thisDirection) match {
       case (SpecifiedDirection.Output, _) => SpecifiedDirection.Output
       case (SpecifiedDirection.Input, _) => SpecifiedDirection.Input
@@ -54,6 +53,10 @@ object SpecifiedDirection {
 sealed abstract class ActualDirection
 
 object ActualDirection {
+  /** The object does not exist / is empty and hence has no direction
+    */
+  case object Empty extends ActualDirection
+
   /** Undirectioned, struct-like
     */
   case object Unspecified extends ActualDirection
@@ -69,6 +72,42 @@ object ActualDirection {
   case object Flipped extends BidirectionalDirection
 
   case class Bidirectional(dir: BidirectionalDirection) extends ActualDirection
+
+  def fromSpecified(direction: SpecifiedDirection): ActualDirection = direction match {
+    case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip => ActualDirection.Unspecified
+    case SpecifiedDirection.Output => ActualDirection.Output
+    case SpecifiedDirection.Input => ActualDirection.Input
+  }
+
+  /** Determine the actual binding of a container given directions of its children.
+    * Returns None in the case of mixed specified / unspecified directionality.
+    */
+  def fromChildren(childDirections: Set[ActualDirection], containerDirection: SpecifiedDirection):
+      Option[ActualDirection] = {
+    if (childDirections == Set()) {  // Sadly, Scala can't do set matching
+      ActualDirection.fromSpecified(containerDirection) match {
+        case ActualDirection.Unspecified => Some(ActualDirection.Empty)  // empty direction if relative / no direction
+        case dir => Some(dir)  // use assigned direction if specified
+      }
+    } else if (childDirections == Set(ActualDirection.Unspecified)) {
+      Some(ActualDirection.Unspecified)
+    } else if (childDirections == Set(ActualDirection.Input)) {
+      Some(ActualDirection.Input)
+    } else if (childDirections == Set(ActualDirection.Output)) {
+      Some(ActualDirection.Output)
+    } else if (childDirections subsetOf
+      Set(ActualDirection.Output, ActualDirection.Input,
+        ActualDirection.Bidirectional(ActualDirection.Default),
+        ActualDirection.Bidirectional(ActualDirection.Flipped))) {
+      containerDirection match {
+        case SpecifiedDirection.Unspecified => Some(ActualDirection.Bidirectional(ActualDirection.Default))
+        case SpecifiedDirection.Flip => Some(ActualDirection.Bidirectional(ActualDirection.Flipped))
+        case _ => throw new RuntimeException("Unexpected forced Input / Output")
+      }
+    } else {
+      None
+    }
+  }
 }
 
 object debug {  // scalastyle:ignore object.name
@@ -77,39 +116,42 @@ object debug {  // scalastyle:ignore object.name
   def apply (arg: Data): Data = arg
 }
 
-/** Experimental hardware construction reflection API
-  */
-object DataMirror {
-  def widthOf(target: Data): Width = target.width
-  def specifiedDirectionOf(target: Data): SpecifiedDirection = target.specifiedDirection
-  def directionOf(target: Data): ActualDirection = {
-    requireIsHardware(target, "node requested directionality on")
-    target.direction
-  }
+package experimental {
 
-  // Returns the top-level module ports
-  // TODO: maybe move to something like Driver or DriverUtils, since this is mainly for interacting
-  // with compiled artifacts (vs. elaboration-time reflection)?
-  def modulePorts(target: BaseModule): Seq[(String, Data)] = target.getChiselPorts
-
-  // Returns all module ports with underscore-qualified names
-  def fullModulePorts(target: BaseModule): Seq[(String, Data)] = {
-    def getPortNames(name: String, data: Data): Seq[(String, Data)] = Seq(name -> data) ++ (data match {
-      case _: Element => Seq()
-      case r: Record => r.elements.toSeq flatMap { case (eltName, elt) => getPortNames(s"${name}_${eltName}", elt) }
-      case v: Vec[_] => v.zipWithIndex flatMap { case (elt, index) => getPortNames(s"${name}_${index}", elt) }
-    })
-    modulePorts(target).flatMap { case (name, data) =>
-      getPortNames(name, data).toList
+  /** Experimental hardware construction reflection API
+    */
+  object DataMirror {
+    def widthOf(target: Data): Width = target.width
+    def specifiedDirectionOf(target: Data): SpecifiedDirection = target.specifiedDirection
+    def directionOf(target: Data): ActualDirection = {
+      requireIsHardware(target, "node requested directionality on")
+      target.direction
     }
-  }
 
-  // Internal reflection-style APIs, subject to change and removal whenever.
-  object internal {
-    def isSynthesizable(target: Data) = target.topBindingOpt.isDefined
-    // For those odd cases where you need to care about object reference and uniqueness
-    def chiselTypeClone[T<:Data](target: Data): T = {
-      target.cloneTypeFull.asInstanceOf[T]
+    // Returns the top-level module ports
+    // TODO: maybe move to something like Driver or DriverUtils, since this is mainly for interacting
+    // with compiled artifacts (vs. elaboration-time reflection)?
+    def modulePorts(target: BaseModule): Seq[(String, Data)] = target.getChiselPorts
+
+    // Returns all module ports with underscore-qualified names
+    def fullModulePorts(target: BaseModule): Seq[(String, Data)] = {
+      def getPortNames(name: String, data: Data): Seq[(String, Data)] = Seq(name -> data) ++ (data match {
+        case _: Element => Seq()
+        case r: Record => r.elements.toSeq flatMap { case (eltName, elt) => getPortNames(s"${name}_${eltName}", elt) }
+        case v: Vec[_] => v.zipWithIndex flatMap { case (elt, index) => getPortNames(s"${name}_${index}", elt) }
+      })
+      modulePorts(target).flatMap { case (name, data) =>
+        getPortNames(name, data).toList
+      }
+    }
+
+    // Internal reflection-style APIs, subject to change and removal whenever.
+    object internal { // scalastyle:ignore object.name
+      def isSynthesizable(target: Data): Boolean = target.isSynthesizable
+      // For those odd cases where you need to care about object reference and uniqueness
+      def chiselTypeClone[T<:Data](target: Data): T = {
+        target.cloneTypeFull.asInstanceOf[T]
+      }
     }
   }
 }
@@ -121,7 +163,7 @@ object DataMirror {
   * - Otherwise: fail
   */
 //scalastyle:off cyclomatic.complexity
-private[core] object cloneSupertype {
+private[chisel3] object cloneSupertype {
   def apply[T <: Data](elts: Seq[T], createdType: String)(implicit sourceInfo: SourceInfo,
                                                           compileOptions: CompileOptions): T = {
     require(!elts.isEmpty, s"can't create $createdType with no inputs")
@@ -222,7 +264,7 @@ object Flipped {
   * @groupdesc Connect Utilities for connecting hardware components
   * @define coll data
   */
-abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
+abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // scalastyle:ignore number.of.methods
   // This is a bad API that punches through object boundaries.
   @deprecated("pending removal once all instances replaced", "chisel3")
   private[chisel3] def flatten: IndexedSeq[Element] = {
@@ -237,12 +279,12 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   // Note that the actual direction of this node can differ from child and parent specifiedDirection.
   private var _specifiedDirection: SpecifiedDirection = SpecifiedDirection.Unspecified
   private[chisel3] def specifiedDirection: SpecifiedDirection = _specifiedDirection
-  private[core] def specifiedDirection_=(direction: SpecifiedDirection) = {
+  private[chisel3] def specifiedDirection_=(direction: SpecifiedDirection) = {
     if (_specifiedDirection != SpecifiedDirection.Unspecified) {
       this match {
         // Anything flies in compatibility mode
         case t: Record if !t.compileOptions.dontAssumeDirectionality =>
-        case _ => throw Binding.RebindingException(s"Attempted reassignment of user-specified direction to $this")
+        case _ => throw RebindingException(s"Attempted reassignment of user-specified direction to $this")
       }
     }
     _specifiedDirection = direction
@@ -252,7 +294,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     * the compatibility layer where, at the elements, Flip is Input and unspecified is Output.
     * DO NOT USE OUTSIDE THIS PURPOSE. THIS OPERATION IS DANGEROUS!
     */
-  private[core] def _assignCompatibilityExplicitDirection: Unit = {
+  private[chisel3] def _assignCompatibilityExplicitDirection: Unit = { // scalastyle:off method.name
     (this, _specifiedDirection) match {
       case (_: Analog, _) => // nothing to do
       case (_, SpecifiedDirection.Unspecified) => _specifiedDirection = SpecifiedDirection.Output
@@ -266,20 +308,29 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   // perform checks in Chisel, where more informative error messages are possible.
   private var _binding: Option[Binding] = None
   // Only valid after node is bound (synthesizable), crashes otherwise
-  protected def binding: Option[Binding] = _binding
+  protected[chisel3] def binding: Option[Binding] = _binding
   protected def binding_=(target: Binding) {
     if (_binding.isDefined) {
-      throw Binding.RebindingException(s"Attempted reassignment of binding to $this")
+      throw RebindingException(s"Attempted reassignment of binding to $this")
     }
     _binding = Some(target)
   }
 
-  private[core] def topBindingOpt: Option[TopBinding] = _binding.map {
-    case ChildBinding(parent) => parent.topBinding
-    case bindingVal: TopBinding => bindingVal
+  // Similar to topBindingOpt except it explicitly excludes SampleElements which are bound but not
+  // hardware
+  private[chisel3] final def isSynthesizable: Boolean = _binding.map {
+    case ChildBinding(parent) => parent.isSynthesizable
+    case _: TopBinding => true
+    case _: SampleElementBinding[_] => false
+  }.getOrElse(false)
+
+  private[chisel3] def topBindingOpt: Option[TopBinding] = _binding.flatMap {
+    case ChildBinding(parent) => parent.topBindingOpt
+    case bindingVal: TopBinding => Some(bindingVal)
+    case SampleElementBinding(parent) => parent.topBindingOpt
   }
 
-  private[core] def topBinding: TopBinding = topBindingOpt.get
+  private[chisel3] def topBinding: TopBinding = topBindingOpt.get
 
   /** Binds this node to the hardware graph.
     * parentDirection is the direction of the parent node, or Unspecified (default) if the target
@@ -287,8 +338,6 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     * binding and direction are valid after this call completes.
     */
   private[chisel3] def bind(target: Binding, parentDirection: SpecifiedDirection = SpecifiedDirection.Unspecified)
-  // Variant of bind that can be called from subclasses, used for bundle literals
-  protected def selfBind(target: Binding) = bind(target)
 
   // Both _direction and _resolvedUserDirection are saved versions of computed variables (for
   // efficiency, avoid expensive recomputation of frequent operations).
@@ -298,9 +347,9 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   private var _direction: Option[ActualDirection] = None
 
   private[chisel3] def direction: ActualDirection = _direction.get
-  private[core] def direction_=(actualDirection: ActualDirection) {
+  private[chisel3] def direction_=(actualDirection: ActualDirection) {
     if (_direction.isDefined) {
-      throw Binding.RebindingException(s"Attempted reassignment of resolved direction to $this")
+      throw RebindingException(s"Attempted reassignment of resolved direction to $this")
     }
     _direction = Some(actualDirection)
   }
@@ -308,13 +357,14 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   // User-friendly representation of the binding as a helper function for toString.
   // Provides a unhelpful fallback for literals, which should have custom rendering per
   // Data-subtype.
+  // TODO Is this okay for sample_element? It *shouldn't* be visible to users
   protected def bindingToString: String = topBindingOpt match {
     case None => ""
     case Some(OpBinding(enclosure)) => s"(OpResult in ${enclosure.desiredName})"
     case Some(MemoryPortBinding(enclosure)) => s"(MemPort in ${enclosure.desiredName})"
     case Some(PortBinding(enclosure)) if !enclosure.isClosed => s"(IO in unelaborated ${enclosure.desiredName})"
     case Some(PortBinding(enclosure)) if enclosure.isClosed =>
-      DataMirror.fullModulePorts(enclosure).find(_._2 == this) match {
+      DataMirror.fullModulePorts(enclosure).find(_._2 eq this) match {
         case Some((name, _)) => s"(IO $name in ${enclosure.desiredName})"
         case None => s"(IO (unknown) in ${enclosure.desiredName})"
       }
@@ -330,9 +380,9 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   // TODO: refactor away this, this is outside the scope of Data
   private[chisel3] def allElements: Seq[Element]
 
-  private[core] def badConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
+  private[chisel3] def badConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit =
     throwException(s"cannot connect ${this} and ${that}")
-  private[chisel3] def connect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = {
+  private[chisel3] def connect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = { // scalastyle:ignore line.size.limit
     if (connectCompileOptions.checkSynthesizable) {
       requireIsHardware(this, "data to be connected")
       requireIsHardware(that, "data to be connected")
@@ -343,7 +393,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       try {
         MonoConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.forcedUserModule)
       } catch {
-        case MonoConnect.MonoConnectException(message) =>
+        case MonoConnectException(message) =>
           throwException(
             s"Connection between sink ($this) and source ($that) failed @$message"
           )
@@ -352,20 +402,20 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       this legacyConnect that
     }
   }
-  private[chisel3] def bulkConnect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = {
+  private[chisel3] def bulkConnect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = { // scalastyle:ignore line.size.limit
     if (connectCompileOptions.checkSynthesizable) {
       requireIsHardware(this, s"data to be bulk-connected")
       requireIsHardware(that, s"data to be bulk-connected")
       (this.topBinding, that.topBinding) match {
         case (_: ReadOnlyBinding, _: ReadOnlyBinding) => throwException(s"Both $this and $that are read-only")
         // DontCare cannot be a sink (LHS)
-        case (_: DontCareBinding, _) => throw DontCareCantBeSink
+        case (_: DontCareBinding, _) => throw BiConnect.DontCareCantBeSink
         case _ =>  // fine
       }
       try {
         BiConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.forcedUserModule)
       } catch {
-        case BiConnect.BiConnectException(message) =>
+        case BiConnectException(message) =>
           throwException(
             s"Connection between left ($this) and source ($that) failed @$message"
           )
@@ -378,13 +428,13 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   /** Whether this Data has the same model ("data type") as that Data.
     * Data subtypes should overload this with checks against their own type.
     */
-  private[core] def typeEquivalent(that: Data): Boolean
+  private[chisel3] def typeEquivalent(that: Data): Boolean
 
   // Internal API: returns a ref that can be assigned to, if consistent with the binding
   private[chisel3] def lref: Node = {
     requireIsHardware(this)
     topBindingOpt match {
-      case Some(binding: ReadOnlyBinding) => throwException(s"internal error: attempted to generate LHS ref to ReadOnlyBinding $binding")
+      case Some(binding: ReadOnlyBinding) => throwException(s"internal error: attempted to generate LHS ref to ReadOnlyBinding $binding") // scalastyle:ignore line.size.limit
       case Some(binding: TopBinding) => Node(this)
       case opt => throwException(s"internal error: unknown binding $opt in generating LHS ref")
     }
@@ -402,7 +452,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   }
 
   private[chisel3] def width: Width
-  private[core] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit
+  private[chisel3] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit
 
   /** Internal API; Chisel users should look at chisel3.chiselTypeOf(...).
     *
@@ -432,7 +482,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     * @param that the $coll to connect to
     * @group Connect
     */
-  final def := (that: Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = this.connect(that)(sourceInfo, connectionCompileOptions)
+  final def := (that: Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = this.connect(that)(sourceInfo, connectionCompileOptions) // scalastyle:ignore line.size.limit
 
   /** Connect this $coll to that $coll bi-directionally and element-wise.
     *
@@ -441,7 +491,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     * @param that the $coll to connect to
     * @group Connect
     */
-  final def <> (that: Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = this.bulkConnect(that)(sourceInfo, connectionCompileOptions)
+  final def <> (that: Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = this.bulkConnect(that)(sourceInfo, connectionCompileOptions) // scalastyle:ignore line.size.limit
 
   @chiselRuntimeDeprecated
   @deprecated("litArg is deprecated, use litOption or litTo*Option", "chisel3.2")
@@ -450,8 +500,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     case Some(BundleLitBinding(litMap)) => None  // this API does not support Bundle literals
     case _ => None
   }
-  @chiselRuntimeDeprecated
-  @deprecated("isLit is deprecated, use litOption.isDefined", "chisel3.2")
+
   def isLit(): Boolean = litArg.isDefined
 
   /**
@@ -500,7 +549,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 
   /** Assigns this node from Bits type. Internal implementation for asTypeOf.
     */
-  private[core] def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
+  private[chisel3] def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
       compileOptions: CompileOptions): Unit
 
   /** Reinterpret cast to UInt.
@@ -520,9 +569,8 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
 }
 
 trait WireFactory {
-  /** @usecase def apply[T <: Data](t: T): T
-    *   Construct a [[Wire]] from a type template
-    *   @param t The template from which to construct this wire
+  /** Construct a [[Wire]] from a type template
+    * @param t The template from which to construct this wire
     */
   def apply[T <: Data](t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     if (compileOptions.declaredTypeMustBeUnbound) {
@@ -562,8 +610,23 @@ trait WireFactory {
   * }}}
   *
   */
-object Wire extends WireFactory
+object Wire extends WireFactory {
 
+  @chiselRuntimeDeprecated
+  @deprecated("Wire(init=init) is deprecated, use WireDefault(init) instead", "chisel3")
+  def apply[T <: Data](dummy: Int = 0, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
+    WireDefault(init)
+
+  @chiselRuntimeDeprecated
+  @deprecated("Wire(t, init) is deprecated, use WireDefault(t, init) instead", "chisel3")
+  def apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
+    WireDefault(t, init)
+
+  @chiselRuntimeDeprecated
+  @deprecated("Wire(t, init) is deprecated, use WireDefault(t, init) instead", "chisel3")
+  def apply[T <: Data](t: T, init: DontCare.type)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
+    WireDefault(t, init)
+}
 
 /** Utility for constructing hardware wires with a default connection
   *
@@ -626,7 +689,7 @@ object Wire extends WireFactory
   */
 object WireDefault {
 
-  private def applyImpl[T <: Data](t: T, init: Data)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+  private def applyImpl[T <: Data](t: T, init: Data)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = { // scalastyle:ignore line.size.limit
     implicit val noSourceInfo = UnlocatableSourceInfo
     val x = Wire(t)
     requireIsHardware(init, "wire initializer")
@@ -634,29 +697,25 @@ object WireDefault {
     x
   }
 
-  /** @usecase def apply[T <: Data](t: T, init: DontCare.type): T
-    *   Construct a [[Wire]] with a type template and a [[DontCare]] default
-    *   @param t The type template used to construct this [[Wire]]
-    *   @param init The default connection to this [[Wire]], can only be [[DontCare]]
-    *   @note This is really just a specialized form of `apply[T <: Data](t: T, init: T): T` with [[DontCare]]
-    *   as `init`
+  /** Construct a [[Wire]] with a type template and a [[chisel3.DontCare]] default
+    * @param t The type template used to construct this [[Wire]]
+    * @param init The default connection to this [[Wire]], can only be [[DontCare]]
+    * @note This is really just a specialized form of `apply[T <: Data](t: T, init: T): T` with [[DontCare]] as `init`
     */
-  def apply[T <: Data](t: T, init: DontCare.type)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+  def apply[T <: Data](t: T, init: DontCare.type)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = { // scalastyle:ignore line.size.limit
     applyImpl(t, init)
   }
 
-  /** @usecase def apply[T <: Data](t: T, init: T): T
-    *   Construct a [[Wire]] with a type template and a default connection
-    *   @param t The type template used to construct this [[Wire]]
-    *   @param init The hardware value that will serve as the default value
+  /** Construct a [[Wire]] with a type template and a default connection
+    * @param t The type template used to construct this [[Wire]]
+    * @param init The hardware value that will serve as the default value
     */
   def apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     applyImpl(t, init)
   }
 
-  /** @usecase def apply[T <: Data](init: T): T
-    *   Construct a [[Wire]] with a default connection
-    *   @param init The hardware value that will serve as a type template and default value
+  /** Construct a [[Wire]] with a default connection
+    * @param init The hardware value that will serve as a type template and default value
     */
   def apply[T <: Data](init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     val model = (init match {
@@ -668,33 +727,35 @@ object WireDefault {
   }
 }
 
-/** RHS (source) for Invalidate API.
-  * Causes connection logic to emit a DefInvalid when connected to an output port (or wire).
-  */
-object DontCare extends Element {
-  // This object should be initialized before we execute any user code that refers to it,
-  //  otherwise this "Chisel" object will end up on the UserModule's id list.
+package internal {
+  /** RHS (source) for Invalidate API.
+    * Causes connection logic to emit a DefInvalid when connected to an output port (or wire).
+    */
+  private[chisel3] object InternalDontCare extends Element {
+    // This object should be initialized before we execute any user code that refers to it,
+    //  otherwise this "Chisel" object will end up on the UserModule's id list.
+    // We make it private to chisel3 so it has to be accessed through the package object.
 
-  private[chisel3] override val width: Width = UnknownWidth()
+    private[chisel3] override val width: Width = UnknownWidth()
 
-  bind(DontCareBinding(), SpecifiedDirection.Output)
-  override def cloneType = DontCare
+    bind(DontCareBinding(), SpecifiedDirection.Output)
+    override def cloneType: this.type = DontCare
 
-  override def toString: String = "DontCare()"
+    override def toString: String = "DontCare()"
 
-  override def litOption = None
+    override def litOption: Option[BigInt] = None
 
-  def toPrintable: Printable = PString("DONTCARE")
+    def toPrintable: Printable = PString("DONTCARE")
 
-  private[core] def connectFromBits(that: chisel3.core.Bits)(implicit sourceInfo:  SourceInfo, compileOptions: CompileOptions): Unit = {
-    Builder.error("connectFromBits: DontCare cannot be a connection sink (LHS)")
+    private[chisel3] def connectFromBits(that: Bits)(implicit sourceInfo:  SourceInfo, compileOptions: CompileOptions): Unit = { // scalastyle:ignore line.size.limit
+      Builder.error("connectFromBits: DontCare cannot be a connection sink (LHS)")
+    }
+
+    def do_asUInt(implicit sourceInfo: chisel3.internal.sourceinfo.SourceInfo, compileOptions: CompileOptions): UInt = { // scalastyle:ignore line.size.limit
+      Builder.error("DontCare does not have a UInt representation")
+      0.U
+    }
+    // DontCare's only match themselves.
+    private[chisel3] def typeEquivalent(that: Data): Boolean = that == DontCare
   }
-
-  def do_asUInt(implicit sourceInfo: chisel3.internal.sourceinfo.SourceInfo, compileOptions: CompileOptions): chisel3.core.UInt = {
-    Builder.error("DontCare does not have a UInt representation")
-    0.U
-  }
-  // DontCare's only match themselves.
-  private[core] def typeEquivalent(that: chisel3.core.Data): Boolean = that == DontCare
 }
-
