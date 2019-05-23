@@ -5,6 +5,9 @@ package chisel3.util
 import chisel3._
 import chisel3.internal.naming.chiselName  // can't use chisel3_ version because of compile order
 
+@deprecated("Counter class shouldn't be used, as it is not a Chisel Module. Use Counter.apply instead.", "3.2")
+type Counter = Counter.Counter
+
 /** Used to generate an inline hardware counter
   *
   * Typically instantiated with apply methods in [[Counter$ object Counter]]

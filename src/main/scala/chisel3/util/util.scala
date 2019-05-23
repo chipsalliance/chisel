@@ -11,7 +11,4 @@ package object util {
   type ValidIO[+T <: Data] = chisel3.util.Valid[T]
   val ValidIO = chisel3.util.Valid
   val DecoupledIO = chisel3.util.Decoupled
-
-  @deprecated("Counter class shouldn't be used, as it is not a Chisel Module. Use Counter.apply instead.", "3.2")
-  type Counter = Counter.Counter
 }
