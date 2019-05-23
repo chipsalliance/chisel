@@ -1,13 +1,13 @@
 // See LICENSE for license details.
 
-package chisel3.core
+package chisel3.experimental
 
 import scala.language.existentials
 
 import chisel3.internal.{Builder, InstanceId}
-import chisel3.core.ImplicitModule
+import chisel3.{CompileOptions, Data}
 import firrtl.Transform
-import firrtl.annotations.{Annotation, CircuitName, ComponentName, ModuleName}
+import firrtl.annotations.Annotation
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
 
 /** Interface for Annotations in Chisel
@@ -30,9 +30,10 @@ object ChiselAnnotation {
     }
 }
 
-/** Mixin for [[ChiselAnnotation]] that instantiates an associated FIRRTL Transform when this
-  * Annotation is present during a run of [[chisel3.Driver.execute]]. Automatic Transform
-  * instantiation is *not* supported when the Circuit and Annotations are serialized before invoking
+/** Mixin for [[ChiselAnnotation]] that instantiates an associated FIRRTL Transform when this Annotation is present
+  * during a run of
+  * [[Driver$.execute(args:Array[String],dut:()=>chisel3\.experimental\.RawModule)* Driver.execute]].
+  * Automatic Transform instantiation is *not* supported when the Circuit and Annotations are serialized before invoking
   * FIRRTL.
   */
 // TODO There should be a FIRRTL API for this instead
@@ -99,7 +100,7 @@ object dontTouch { // scalastyle:ignore object.name
   *        val b = Input(UInt(32.W))
   *        val out = Output(UInt(32.W))
   *      })
-  *      override def desiredName = s"adder_$myNname"
+  *      override def desiredName = "adder_" + myNname
   *      io.out := io.a + io.b
   *    })
   *    doNotDedup(m)

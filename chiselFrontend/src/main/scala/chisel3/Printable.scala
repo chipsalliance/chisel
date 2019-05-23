@@ -1,9 +1,8 @@
 // See LICENSE for license details.
 
-package chisel3.core
+package chisel3
 
 import chisel3.internal.firrtl.Component
-import chisel3.internal.HasId
 
 import scala.collection.mutable
 

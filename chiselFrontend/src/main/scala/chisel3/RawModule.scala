@@ -1,15 +1,15 @@
 // See LICENSE for license details.
 
-package chisel3.core
+package chisel3.experimental
 
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.collection.JavaConversions._
 import scala.language.experimental.macros
 
+import chisel3._
 import chisel3.internal._
 import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
-import chisel3.internal.firrtl.{Command => _, _}
 import chisel3.internal.sourceinfo.UnlocatableSourceInfo
 
 /** Abstract base class for Modules that contain Chisel RTL.
@@ -56,7 +56,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
   }
 
 
-  private[core] override def generateComponent(): Component = { // scalastyle:ignore cyclomatic.complexity
+  private[chisel3] override def generateComponent(): Component = { // scalastyle:ignore cyclomatic.complexity
     require(!_closed, "Can't generate module more than once")
     _closed = true
 
@@ -75,17 +75,36 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
       id match {
         case id: BaseModule => id.forceName(default=id.desiredName, _namespace)
         case id: MemBase[_] => id.forceName(default="_T", _namespace)
-        case id: Data if id.topBindingOpt.isDefined => id.topBinding match {
-          case OpBinding(_) | MemoryPortBinding(_) | PortBinding(_) | RegBinding(_) | WireBinding(_) =>
-            id.forceName(default="_T", _namespace)
-          case _ =>  // don't name literals
-        }
-        case id: Data if id.topBindingOpt.isEmpty =>  // don't name unbound types
+        case id: Data  =>
+          if (id.isSynthesizable) {
+            id.topBinding match {
+              case OpBinding(_) | MemoryPortBinding(_) | PortBinding(_) | RegBinding(_) | WireBinding(_) =>
+                id.forceName(default="_T", _namespace)
+              case _ =>  // don't name literals
+            }
+          } // else, don't name unbound types
       }
       id._onModuleClose
     }
 
-    val firrtlPorts = getModulePorts map {port => Port(port, port.specifiedDirection)}
+    val firrtlPorts = getModulePorts map { port: Data =>
+      // Special case Vec to make FIRRTL emit the direction of its
+      // element.
+      // Just taking the Vec's specifiedDirection is a bug in cases like
+      // Vec(Flipped()), since the Vec's specifiedDirection is
+      // Unspecified.
+      val direction = port match {
+        case v: Vec[_] => v.specifiedDirection match {
+          case SpecifiedDirection.Input => SpecifiedDirection.Input
+          case SpecifiedDirection.Output => SpecifiedDirection.Output
+          case SpecifiedDirection.Flip => SpecifiedDirection.flip(v.sample_element.specifiedDirection)
+          case SpecifiedDirection.Unspecified => v.sample_element.specifiedDirection
+        }
+        case _ => port.specifiedDirection
+      }
+
+      Port(port, direction)
+    }
     _firrtlPorts = Some(firrtlPorts)
 
     // Generate IO invalidation commands to initialize outputs as unused,
@@ -102,7 +121,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
     component
   }
 
-  private[core] def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
+  private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
     implicit val sourceInfo = UnlocatableSourceInfo
 
     if (!parentCompileOptions.explicitInvalidate) {
@@ -127,9 +146,10 @@ abstract class MultiIOModule(implicit moduleCompileOptions: CompileOptions)
   val reset: Reset = IO(Input(Bool()))
 
   // Setup ClockAndReset
-  Builder.currentClockAndReset = Some(ClockAndReset(clock, reset))
+  Builder.currentClock = Some(clock)
+  Builder.currentReset = Some(reset)
 
-  private[core] override def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
+  private[chisel3] override def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
     implicit val sourceInfo = UnlocatableSourceInfo
 
     super.initializeInParent(parentCompileOptions)
@@ -201,7 +221,7 @@ abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions)
     }
   }
 
-  private[core] override def generateComponent(): Component = {
+  private[chisel3] override def generateComponent(): Component = {
     _compatAutoWrapPorts()  // pre-IO(...) compatibility hack
 
     // Restrict IO to just io, clock, and reset
@@ -213,7 +233,7 @@ abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions)
     super.generateComponent()
   }
 
-  private[core] override def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
+  private[chisel3] override def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
     // Don't generate source info referencing parents inside a module, since this interferes with
     // module de-duplication in FIRRTL emission.
     implicit val sourceInfo = UnlocatableSourceInfo

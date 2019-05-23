@@ -109,14 +109,17 @@ lazy val chiselSettings = Seq (
     "org.scalacheck" %% "scalacheck" % "1.14.0" % "test",
     "com.github.scopt" %% "scopt" % "3.7.0"
   ),
-
+  javacOptions ++= javacOptionsVersion(scalaVersion.value)
+) ++ (
   // Tests from other projects may still run concurrently
   //  if we're not running with -DminimalResources.
   // Another option would be to experiment with:
   //  concurrentRestrictions in Global += Tags.limit(Tags.Test, 1),
-  Test / parallelExecution := !sys.props.contains("minimalResources"),
-
-  javacOptions ++= javacOptionsVersion(scalaVersion.value)
+  sys.props.contains("minimalResources") match {
+    case true  => Seq( Test / parallelExecution := false )
+    case false => Seq( fork := true,
+                       Test / testForkedParallel := true )
+  }
 )
 
 lazy val coreMacros = (project in file("coreMacros")).
@@ -174,7 +177,18 @@ lazy val chisel = (project in file(".")).
       "-diagrams-max-classes", "25",
       "-doc-version", version.value,
       "-doc-title", name.value,
-      "-doc-root-content", baseDirectory.value+"/root-doc.txt"
+      "-doc-root-content", baseDirectory.value+"/root-doc.txt",
+      "-sourcepath", (baseDirectory in ThisBuild).value.toString,
+      "-doc-source-url",
+      {
+        val branch =
+          if (version.value.endsWith("-SNAPSHOT")) {
+            "master"
+          } else {
+            s"v${version.value}"
+          }
+        s"https://github.com/freechipsproject/chisel3/tree/$branch/€{FILE_PATH}.scala"
+      }
     ),
     // Include macro classes, resources, and sources main JAR since we don't create subproject JARs.
     mappings in (Compile, packageBin) ++= (mappings in (coreMacros, Compile, packageBin)).value,

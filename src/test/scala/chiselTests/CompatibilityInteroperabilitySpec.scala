@@ -2,7 +2,7 @@
 
 package chiselTests
 
-import collection.immutable.ListMap
+import scala.collection.immutable.ListMap
 
 // Keep Chisel._ separate from chisel3._ below
 object CompatibilityComponents {

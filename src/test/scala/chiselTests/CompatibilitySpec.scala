@@ -297,7 +297,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
   // Note: This is a regression (see https://github.com/freechipsproject/chisel3/issues/668)
   it should "fail for Chisel types" in {
     import Chisel._
-    an [chisel3.core.Binding.ExpectedHardwareException] should be thrownBy {
+    an [chisel3.ExpectedHardwareException] should be thrownBy {
       elaborate(new Module {
         val io = new Bundle { }
         UInt(INPUT).dir

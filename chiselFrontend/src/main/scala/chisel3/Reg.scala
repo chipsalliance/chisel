@@ -1,13 +1,13 @@
 // See LICENSE for license details.
 
-package chisel3.core
+package chisel3
 
 import scala.language.experimental.macros
 
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.{SourceInfo}
+import chisel3.internal.sourceinfo.SourceInfo
 
 /** Utility for constructing hardware registers
   *
@@ -30,10 +30,9 @@ import chisel3.internal.sourceinfo.{SourceInfo}
   *
   */
 object Reg {
-  /** @usecase def apply[T <: Data](t: T): T
-    *   Construct a [[Reg]] from a type template with no initialization value (reset is ignored).
-    *   Value will not change unless the [[Reg]] is given a connection.
-    *   @param t The template from which to construct this wire
+  /** Construct a [[Reg]] from a type template with no initialization value (reset is ignored).
+    * Value will not change unless the [[Reg]] is given a connection.
+    * @param t The template from which to construct this wire
     */
   def apply[T <: Data](t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     if (compileOptions.declaredTypeMustBeUnbound) {
@@ -45,6 +44,33 @@ object Reg {
     reg.bind(RegBinding(Builder.forcedUserModule))
     pushCommand(DefReg(sourceInfo, reg, clock))
     reg
+  }
+
+  @chiselRuntimeDeprecated
+  @deprecated("Use Reg(t), RegNext(next, [init]) or RegInit([t], init) instead", "chisel3")
+  def apply[T <: Data](t: T = null, next: T = null, init: T = null)
+                      (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    if (t ne null) {
+      val reg = if (init ne null) {
+        RegInit(t, init)
+      } else {
+        Reg(t)
+      }
+      if (next ne null) {
+        reg := next
+      }
+      reg
+    } else if (next ne null) {
+      if (init ne null) {
+        RegNext(next, init)
+      } else {
+        RegNext(next)
+      }
+    } else if (init ne null) {
+      RegInit(init)
+    } else {
+      throwException("cannot infer type")
+    }
   }
 }
 
@@ -143,10 +169,9 @@ object RegNext {
   * }}}
   */
 object RegInit {
-  /** @usecase def apply[T <: Data](t: T, init: T): T
-    *   Construct a [[Reg]] from a type template initialized to the specified value on reset
-    *   @param t The type template used to construct this [[Reg]]
-    *   @param init The value the [[Reg]] is initialized to on reset
+  /** Construct a [[Reg]] from a type template initialized to the specified value on reset
+    * @param t The type template used to construct this [[Reg]]
+    * @param init The value the [[Reg]] is initialized to on reset
     */
   def apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     if (compileOptions.declaredTypeMustBeUnbound) {
@@ -162,9 +187,8 @@ object RegInit {
     reg
   }
 
-  /** @usecase def apply[T <: Data](init: T): T
-    *   Construct a [[Reg]] initialized on reset to the specified value.
-    *   @param init Initial value that serves as a type template and reset value
+  /** Construct a [[Reg]] initialized on reset to the specified value.
+    * @param init Initial value that serves as a type template and reset value
     */
   def apply[T <: Data](init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     val model = (init match {
