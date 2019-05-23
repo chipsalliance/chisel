@@ -66,7 +66,7 @@ private[chisel3] object BiConnect {
         } catch {  // convert attach exceptions to BiConnectExceptions
           case attach.AttachException(message) => throw BiConnectException(message)
         }
-        attach.impl(Seq(left_a, right_a), context_mod)
+        attach.impl(Seq(left_a, right_a), context_mod)(sourceInfo)
       case (left_a: Analog, DontCare) =>
         try {
           markAnalogConnected(sourceInfo, left_a, context_mod)
