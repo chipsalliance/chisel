@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import tags.TagRequiresSimulator
 
 class SimpleBundle extends Bundle {
   val x = UInt(4.W)
@@ -35,7 +36,7 @@ abstract class WireRegWidthSpecImpl extends ChiselFlatSpec {
 
   behavior of name
 
-  it should "set the width if the template type has a set width" in {
+  it should "set the width if the template type has a set width" taggedAs (TagRequiresSimulator) in {
     assertKnownWidth(4) {
       builder(UInt(4.W))
     }
@@ -50,7 +51,7 @@ abstract class WireRegWidthSpecImpl extends ChiselFlatSpec {
     }
   }
 
-  it should "infer the width if the template type has no width" in {
+  it should "infer the width if the template type has no width" taggedAs (TagRequiresSimulator) in {
     assertInferredWidth(4) {
       val w = builder(UInt())
       w := 0.U(4.W)
@@ -85,13 +86,13 @@ abstract class WireDefaultRegInitSpecImpl extends ChiselFlatSpec {
 
   behavior of s"$name (Single Argument)"
 
-  it should "set width if passed a literal with forced width" in {
+  it should "set width if passed a literal with forced width" taggedAs (TagRequiresSimulator) in {
     assertKnownWidth(4) {
       builder1(3.U(4.W))
     }
   }
 
-  it should "NOT set width if passed a literal without a forced width" in {
+  it should "NOT set width if passed a literal without a forced width" taggedAs (TagRequiresSimulator) in {
     assertInferredWidth(4) {
       val w = builder1(3.U)
       w := 3.U(4.W)
@@ -99,14 +100,14 @@ abstract class WireDefaultRegInitSpecImpl extends ChiselFlatSpec {
     }
   }
 
-  it should "NOT set width if passed a non-literal" in {
+  it should "NOT set width if passed a non-literal" taggedAs (TagRequiresSimulator) in {
     assertInferredWidth(4) {
       val w = WireDefault(3.U(4.W))
       builder1(w)
     }
   }
 
-  it should "copy the widths of aggregates" in {
+  it should "copy the widths of aggregates" taggedAs (TagRequiresSimulator) in {
     assertInferredWidth(4) {
       val w = builder1(SimpleBundle.intoWire())
       w.y
@@ -131,7 +132,7 @@ abstract class WireDefaultRegInitSpecImpl extends ChiselFlatSpec {
 
   behavior of s"$name (Double Argument)"
 
-  it should "set the width if the template type has a set width" in {
+  it should "set the width if the template type has a set width" taggedAs (TagRequiresSimulator) in {
     assertKnownWidth(4) {
       WireDefault(UInt(4.W), 0.U)
     }
@@ -150,7 +151,7 @@ abstract class WireDefaultRegInitSpecImpl extends ChiselFlatSpec {
     }
   }
 
-  it should "infer the width if the template type has no width" in {
+  it should "infer the width if the template type has no width" taggedAs (TagRequiresSimulator) in {
     val templates = Seq(
       () => 0.U, () => 0.U(2.W), () => WireDefault(0.U), () => WireDefault(0.U(2.W))
     )

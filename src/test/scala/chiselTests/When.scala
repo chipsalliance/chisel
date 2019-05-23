@@ -2,7 +2,7 @@
 
 package chiselTests
 
-import tags.RequiresBackend
+import tags.TagRequiresSimulator
 import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
@@ -92,18 +92,17 @@ class SubmoduleWhenTester extends BasicTester {
   }
 }
 
-@RequiresBackend
 class WhenSpec extends ChiselFlatSpec {
-  "When, elsewhen, and otherwise with orthogonal conditions" should "work" in {
+  "When, elsewhen, and otherwise with orthogonal conditions" should "work" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses{ new WhenTester }
   }
-  "When, elsewhen, and otherwise with overlapped conditions" should "work" in {
+  "When, elsewhen, and otherwise with overlapped conditions" should "work" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses{ new OverlappedWhenTester }
   }
-  "When and elsewhen without otherwise with overlapped conditions" should "work" in {
+  "When and elsewhen without otherwise with overlapped conditions" should "work" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses{ new NoOtherwiseOverlappedWhenTester }
   }
-  "Conditional connections to submodule ports" should "be handled properly" in {
+  "Conditional connections to submodule ports" should "be handled properly" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses(new SubmoduleWhenTester)
   }
 

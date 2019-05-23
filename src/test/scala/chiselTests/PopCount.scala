@@ -5,6 +5,7 @@ package chiselTests
 import chisel3._
 import chisel3.util.PopCount
 import chisel3.testers.BasicTester
+import tags.TagRequiresSimulator
 
 class PopCountTester(n: Int) extends BasicTester {
   val x = RegInit(0.U(n.W))
@@ -19,7 +20,7 @@ class PopCountTester(n: Int) extends BasicTester {
 }
 
 class PopCountSpec extends ChiselPropSpec {
-  property("Mul lookup table should return the correct result") {
+  property("Mul lookup table should return the correct result", TagRequiresSimulator) {
     forAll(smallPosInts) { (n: Int) =>  assertTesterPasses { new PopCountTester(n) } }
   }
 }

@@ -7,11 +7,11 @@ import chisel3.util.Counter
 import chisel3.testers.BasicTester
 import chisel3.experimental.{BaseModule, ChiselAnnotation, MultiIOModule, RawModule, RunFirrtlTransform}
 import chisel3.util.experimental.BoringUtils
-
-import firrtl.{CircuitForm, CircuitState, ChirrtlForm, Transform}
+import firrtl.{ChirrtlForm, CircuitForm, CircuitState, Transform}
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
 import firrtl.passes.wiring.WiringException
+import tags.TagRequiresSimulator
 
 abstract class ShouldntAssertTester(cyclesToWait: BigInt = 4) extends BasicTester {
   val dut: BaseModule
@@ -43,7 +43,7 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
 
   behavior of "BoringUtils.{addSink, addSource}"
 
-  it should "connect two wires within a module" in {
+  it should "connect two wires within a module" taggedAs (TagRequiresSimulator) in {
     runTester(new ShouldntAssertTester { val dut = Module(new BoringInverter) } ) should be (true)
   }
 
@@ -97,11 +97,11 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
 
   behavior of "BoringUtils.bore"
 
-  it should "connect across modules using BoringUtils.bore" in {
+  it should "connect across modules using BoringUtils.bore" taggedAs (TagRequiresSimulator) in {
     runTester(new TopTester) should be (true)
   }
 
-  it should "throw an exception if NoDedupAnnotations are removed" in {
+  it should "throw an exception if NoDedupAnnotations are removed" taggedAs (TagRequiresSimulator) in {
     intercept[WiringException] { runTester(new TopTester with FailViaDedup) }
       .getMessage should startWith ("Unable to determine source mapping for sink")
   }

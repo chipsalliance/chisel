@@ -5,7 +5,8 @@ package chiselTests
 import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
-import chisel3.util.random.{PRNG, LFSR}
+import chisel3.util.random.{LFSR, PRNG}
+import tags.TagRequiresSimulator
 
 /**
   * This test creates two 4 sided dice.
@@ -90,15 +91,15 @@ class MeetTheNewLFSR16SameAsTheOldLFSR16 extends BasicTester {
 }
 
 class LFSRSpec extends ChiselPropSpec {
-  property("LFSR16 can be used to produce pseudo-random numbers, this tests the distribution") {
+  property("LFSR16 can be used to produce pseudo-random numbers, this tests the distribution", TagRequiresSimulator) {
     assertTesterPasses{ new LFSRDistribution(LFSR16()) }
   }
 
-  property("LFSR16 period tester, Period should 2^16 - 1") {
+  property("LFSR16 period tester, Period should 2^16 - 1", TagRequiresSimulator) {
     assertTesterPasses{ new LFSRMaxPeriod(LFSR16()) }
   }
 
-  property("New LFSR16 is the same as the old LFSR16") {
+  property("New LFSR16 is the same as the old LFSR16", TagRequiresSimulator) {
     assertTesterPasses{ new MeetTheNewLFSR16SameAsTheOldLFSR16 }
   }
 }

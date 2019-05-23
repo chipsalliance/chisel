@@ -2,7 +2,7 @@
 
 package chiselTests
 
-import tags.TagRequiresBackend
+import tags.TagRequiresSimulator
 import chisel3._
 import chisel3.util.Counter
 import chisel3.testers.BasicTester
@@ -115,11 +115,11 @@ class MultiClockMemTest extends BasicTester {
 
 class MultiClockSpec extends ChiselFlatSpec {
 
-  "withClock" should "scope the clock of registers" taggedAs(TagRequiresBackend) in {
+  "withClock" should "scope the clock of registers" taggedAs(TagRequiresSimulator) in {
     assertTesterPasses(new ClockDividerTest)
   }
 
-  it should "scope ports of memories" taggedAs(TagRequiresBackend) in {
+  it should "scope ports of memories" taggedAs(TagRequiresSimulator) in {
     assertTesterPasses(new MultiClockMemTest)
   }
 
@@ -129,11 +129,11 @@ class MultiClockSpec extends ChiselFlatSpec {
     })
   }
 
-  "withReset" should "scope the reset of registers" taggedAs(TagRequiresBackend) in {
+  "withReset" should "scope the reset of registers" taggedAs(TagRequiresSimulator) in {
     assertTesterPasses(new WithResetTest)
   }
 
-  it should "scope the clock and reset of Modules" taggedAs(TagRequiresBackend) in {
+  it should "scope the clock and reset of Modules" taggedAs(TagRequiresSimulator) in {
     assertTesterPasses(new MultiClockSubModuleTest)
   }
 
@@ -142,7 +142,7 @@ class MultiClockSpec extends ChiselFlatSpec {
       assert(withReset(this.reset) { 5 } == 5)
     })
   }
-  it should "support literal Bools" in {
+  it should "support literal Bools" taggedAs(TagRequiresSimulator) in {
     assertTesterPasses(new BasicTester {
       val reg = withReset(true.B) {
         RegInit(6.U)
@@ -161,7 +161,7 @@ class MultiClockSpec extends ChiselFlatSpec {
     })
   }
 
-  it should "scope the clocks and resets of asserts" taggedAs(TagRequiresBackend) in {
+  it should "scope the clocks and resets of asserts" taggedAs(TagRequiresSimulator) in {
     // Check that assert can fire
     assertTesterFails(new BasicTester {
       withClockAndReset(clock, reset) {

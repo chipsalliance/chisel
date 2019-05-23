@@ -3,11 +3,11 @@
 package chiselTests
 
 import org.scalacheck._
-
 import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
 import chisel3.util.random.LFSR
+import tags.TagRequiresSimulator
 
 class ThingsPassThroughTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int) extends BasicTester {
   val q = Module(new Queue(UInt(bitWidth.W), queueDepth))
@@ -174,7 +174,7 @@ class QueueSpec extends ChiselPropSpec {
   implicit val noShrinkListVal = Shrink[List[Int]](_ => Stream.empty)
   implicit val noShrinkInt = Shrink[Int](_ => Stream.empty)
 
-  property("Queue should have things pass through") {
+  property("Queue should have things pass through", TagRequiresSimulator) {
     forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15)) { (depth, se, tap) =>
       whenever(se._1 >= 1 && depth >= 1 && se._2.nonEmpty) {
         assertTesterPasses {
@@ -184,7 +184,7 @@ class QueueSpec extends ChiselPropSpec {
     }
   }
 
-  property("Queue should have reasonable ready/valid") {
+  property("Queue should have reasonable ready/valid", TagRequiresSimulator) {
     forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15)) { (depth, se, tap) =>
       whenever(se._1 >= 1 && depth >= 1 && se._2.nonEmpty) {
         assertTesterPasses {
@@ -194,7 +194,7 @@ class QueueSpec extends ChiselPropSpec {
     }
   }
 
-  property("Queue should have correct count") {
+  property("Queue should have correct count", TagRequiresSimulator) {
     forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15)) { (depth, se, tap) =>
       whenever(se._1 >= 1 && depth >= 1 && se._2.nonEmpty) {
         assertTesterPasses {
@@ -204,7 +204,7 @@ class QueueSpec extends ChiselPropSpec {
     }
   }
 
-  property("Queue pipe should work for 1-element queues") {
+  property("Queue pipe should work for 1-element queues", TagRequiresSimulator) {
     forAll(safeUIntN(20), Gen.choose(0, 15)) { (se, tap) =>
       whenever(se._1 >= 1 && se._2.nonEmpty) {
         assertTesterPasses {
@@ -214,7 +214,7 @@ class QueueSpec extends ChiselPropSpec {
     }
   }
 
-  property("Queue pipe should work for more general queues") {
+  property("Queue pipe should work for more general queues", TagRequiresSimulator) {
     forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15)) { (depth, se, tap) =>
       whenever(se._1 >= 1 && depth >= 1 && se._2.nonEmpty) {
         assertTesterPasses {
@@ -224,7 +224,7 @@ class QueueSpec extends ChiselPropSpec {
     }
   }
 
-  property("Queue flow should work") {
+  property("Queue flow should work", TagRequiresSimulator) {
     forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15)) { (depth, se, tap) =>
       whenever(se._1 >= 1 && depth >= 1 && se._2.nonEmpty) {
         assertTesterPasses {

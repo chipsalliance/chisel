@@ -2,7 +2,7 @@
 
 package chiselTests
 
-import tags.RequiresBackend
+import tags.TagRequiresSimulator
 import chisel3._
 import chisel3.util._
 import chisel3.testers.BasicTester
@@ -124,14 +124,13 @@ class AnalogIntegrationTester(mod: => AnalogDUTModule) extends BasicTester {
   when (done) { stop() }
 }
 
-@RequiresBackend
 class AnalogIntegrationSpec extends ChiselFlatSpec {
   behavior of "Verilator"
-  it should "support simple bidirectional wires" in {
+  it should "support simple bidirectional wires" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses(new AnalogIntegrationTester(new AnalogSmallDUT), Seq("/chisel3/AnalogBlackBox.v"))
   }
   // Use this test once Verilator supports alias
-  ignore should "support arbitrary bidirectional wires" in {
+  ignore should "support arbitrary bidirectional wires" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses(new AnalogIntegrationTester(new AnalogDUT), Seq("/chisel3/AnalogBlackBox.v"))
   }
 }

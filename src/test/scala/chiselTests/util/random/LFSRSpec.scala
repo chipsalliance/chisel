@@ -6,8 +6,8 @@ import chisel3._
 import chisel3.util.{Counter, Enum}
 import chisel3.util.random._
 import chisel3.testers.BasicTester
-
 import chiselTests.{ChiselFlatSpec, LFSRDistribution, LFSRMaxPeriod}
+import tags.TagRequiresSimulator
 
 import math.pow
 
@@ -53,7 +53,7 @@ class LFSRResetTester(gen: => LFSR, lockUpValue: BigInt) extends BasicTester {
 class LFSRSpec extends ChiselFlatSpec {
 
   def periodCheck(gen: (Int, Set[Int], LFSRReduce) => PRNG, reduction: LFSRReduce, range: Range): Unit = {
-    it should s"have a maximal period over a range of widths (${range.head} to ${range.last}) using ${reduction.getClass}" in {
+    it should s"have a maximal period over a range of widths (${range.head} to ${range.last}) using ${reduction.getClass}" taggedAs (TagRequiresSimulator) in {
       range
         .foreach{ width =>
           LFSR.tapsMaxPeriod(width).foreach{ taps =>
@@ -76,11 +76,11 @@ class LFSRSpec extends ChiselFlatSpec {
       .getMessage should include ("Seed cannot be all ones")
   }
 
-  it should "reset correctly without a seed for XOR configuration" in {
+  it should "reset correctly without a seed for XOR configuration" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses(new LFSRResetTester(new FooLFSR(XOR, None), 0))
   }
 
-  it should "reset correctly without a seed for XNOR configuration" in {
+  it should "reset correctly without a seed for XNOR configuration" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses(new LFSRResetTester(new FooLFSR(XNOR, None), 15))
   }
 
@@ -94,7 +94,7 @@ class LFSRSpec extends ChiselFlatSpec {
   periodCheck((w: Int, t: Set[Int], r: LFSRReduce) => new GaloisLFSR(w, t, reduction=r), XOR, 2 to 16)
   periodCheck((w: Int, t: Set[Int], r: LFSRReduce) => new GaloisLFSR(w, t, reduction=r), XNOR, 2 to 16)
 
-  ignore should "have a sane distribution for larger widths" in {
+  ignore should "have a sane distribution for larger widths" taggedAs (TagRequiresSimulator) in {
     ((17 to 32) ++ Seq(64, 128, 256, 512, 1024, 2048, 4096))
       .foreach{ width =>
         info(s"width $width okay!")

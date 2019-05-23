@@ -2,7 +2,7 @@
 
 package chiselTests
 
-import tags.TagRequiresBackend
+import tags.TagRequiresSimulator
 import chisel3._
 import chisel3.testers.BasicTester
 
@@ -61,7 +61,7 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils {
     elaborate { new MyModule(new BundleFooBar, new BundleBarFoo) }
   }
 
-  "Bundles" should "follow UInt serialization/deserialization API" taggedAs(TagRequiresBackend) in {
+  "Bundles" should "follow UInt serialization/deserialization API" taggedAs(TagRequiresSimulator) in {
     assertTesterPasses { new BundleSerializationTest }
   }
 
@@ -87,7 +87,7 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils {
     }).getMessage should include("Public Seq members cannot be used to define Bundle elements")
   }
 
-  "Bundles" should "be allowed to have Seq if need be" in {
+  "Bundles" should "be allowed to have Seq if need be" taggedAs(TagRequiresSimulator) in {
     assertTesterPasses {
       new BasicTester {
         val m = Module(new Module {
@@ -100,7 +100,7 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils {
     }
   }
 
-  "Bundles" should "be allowed to have non-Chisel Seqs" in {
+  "Bundles" should "be allowed to have non-Chisel Seqs" taggedAs(TagRequiresSimulator) in {
     assertTesterPasses {
       new BasicTester {
         val m = Module(new Module {

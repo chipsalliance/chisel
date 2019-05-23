@@ -2,7 +2,7 @@
 
 package chiselTests
 
-import tags.RequiresBackend
+import tags.TagRequiresSimulator
 import chisel3._
 import chisel3.testers.BasicTester
 
@@ -55,19 +55,17 @@ class BundleWireTester(n: Int, x: Int, y: Int) extends BasicTester {
   stop()
 }
 
-@RequiresBackend
 class BundleWireSpec extends ChiselPropSpec {
 
-  property("All vec elems should match the inputs") {
+  property("All vec elems should match the inputs", TagRequiresSimulator) {
     forAll(vecSizes, safeUInts, safeUInts) { (n: Int, x: Int, y: Int) =>
       assertTesterPasses{ new BundleWireTester(n, x, y) }
     }
   }
 }
 
-@RequiresBackend
 class BundleToUIntSpec extends ChiselPropSpec {
-  property("Bundles with same data but different, underlying elements should compare as UInt") {
+  property("Bundles with same data but different, underlying elements should compare as UInt", TagRequiresSimulator) {
     assertTesterPasses( new BundleToUnitTester )
   }
 }

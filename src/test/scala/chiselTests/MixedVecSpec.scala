@@ -6,6 +6,7 @@ import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
 import org.scalacheck.Shrink
+import tags.TagRequiresSimulator
 
 class MixedVecAssignTester(w: Int, values: List[Int]) extends BasicTester {
   val v = MixedVecInit(values.map(v => v.U(w.W)))
@@ -158,7 +159,7 @@ class MixedVecSpec extends ChiselPropSpec {
   implicit val noShrinkListVal = Shrink[List[Int]](_ => Stream.empty)
   implicit val noShrinkInt = Shrink[Int](_ => Stream.empty)
 
-  property("MixedVec varargs API should work") {
+  property("MixedVec varargs API should work", TagRequiresSimulator) {
     assertTesterPasses {
       new BasicTester {
         val wire = Wire(MixedVec(UInt(1.W), UInt(8.W)))
@@ -177,7 +178,7 @@ class MixedVecSpec extends ChiselPropSpec {
     }
   }
 
-  property("MixedVecs should be assignable") {
+  property("MixedVecs should be assignable", TagRequiresSimulator) {
     forAll(safeUIntN(8)) { case (w: Int, v: List[Int]) =>
       assertTesterPasses {
         new MixedVecAssignTester(w, v)
@@ -185,7 +186,7 @@ class MixedVecSpec extends ChiselPropSpec {
     }
   }
 
-  property("MixedVecs should be usable as the type for Reg()") {
+  property("MixedVecs should be usable as the type for Reg()", TagRequiresSimulator) {
     forAll(safeUIntN(8)) { case (w: Int, v: List[Int]) =>
       assertTesterPasses {
         new MixedVecRegTester(w, v)
@@ -193,7 +194,7 @@ class MixedVecSpec extends ChiselPropSpec {
     }
   }
 
-  property("MixedVecs should be passed through IO") {
+  property("MixedVecs should be passed through IO", TagRequiresSimulator) {
     forAll(safeUIntN(8)) { case (w: Int, v: List[Int]) =>
       assertTesterPasses {
         new MixedVecIOTester(v.map(i => i.U(w.W)))
@@ -201,7 +202,7 @@ class MixedVecSpec extends ChiselPropSpec {
     }
   }
 
-  property("MixedVecs should work with mixed types") {
+  property("MixedVecs should work with mixed types", TagRequiresSimulator) {
     assertTesterPasses {
       new MixedVecIOTester(Seq(true.B, 168.U(8.W), 888.U(10.W), -3.S))
     }
@@ -232,27 +233,27 @@ class MixedVecSpec extends ChiselPropSpec {
     }
   }
 
-  property("MixedVecs with zero entries should compile and have zero width") {
+  property("MixedVecs with zero entries should compile and have zero width", TagRequiresSimulator) {
     assertTesterPasses { new MixedVecZeroEntryTester }
   }
 
-  property("MixedVecs of UInts should be dynamically indexable (via VecInit)") {
+  property("MixedVecs of UInts should be dynamically indexable (via VecInit)", TagRequiresSimulator) {
     assertTesterPasses{ new MixedVecUIntDynamicIndexTester }
   }
 
-  property("MixedVecs should be creatable from Vecs") {
+  property("MixedVecs should be creatable from Vecs", TagRequiresSimulator) {
     assertTesterPasses{ new MixedVecFromVecTester }
   }
 
-  property("It should be possible to bulk connect a MixedVec and a Vec") {
+  property("It should be possible to bulk connect a MixedVec and a Vec", TagRequiresSimulator) {
     assertTesterPasses{ new MixedVecConnectWithVecTester }
   }
 
-  property("It should be possible to bulk connect a MixedVec and a Seq") {
+  property("It should be possible to bulk connect a MixedVec and a Seq", TagRequiresSimulator) {
     assertTesterPasses{ new MixedVecConnectWithSeqTester }
   }
 
-  property("MixedVecs of a single 1 bit element should compile and work") {
+  property("MixedVecs of a single 1 bit element should compile and work", TagRequiresSimulator) {
     assertTesterPasses { new MixedVecOneBitTester }
   }
 

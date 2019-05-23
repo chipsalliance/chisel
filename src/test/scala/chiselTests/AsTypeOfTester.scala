@@ -2,10 +2,10 @@
 
 package chiselTests
 
-import tags.RequiresBackend
 import chisel3._
-import chisel3.experimental.{DataMirror, FixedPoint, ChiselEnum}
+import chisel3.experimental.{ChiselEnum, DataMirror, FixedPoint}
 import chisel3.testers.BasicTester
+import tags.TagRequiresSimulator
 
 class AsTypeOfBundleTester extends BasicTester {
   class MultiTypeBundle extends Bundle {
@@ -112,31 +112,30 @@ class AsChiselEnumTester extends BasicTester {
   stop()
 }
 
-@RequiresBackend
 class AsTypeOfSpec extends ChiselFlatSpec {
   behavior of "asTypeOf"
 
-  it should "work with Bundles containing Bits Types" in {
+  it should "work with Bundles containing Bits Types" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses{ new AsTypeOfBundleTester }
   }
 
-  it should "work with Bundles that have fields of zero width" in {
+  it should "work with Bundles that have fields of zero width" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses{ new AsTypeOfBundleZeroWidthTester }
   }
 
-  it should "work with Vecs containing Bits Types" in {
+  it should "work with Vecs containing Bits Types" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses{ new AsTypeOfVecTester }
   }
 
-  it should "expand and truncate UInts of different width" in {
+  it should "expand and truncate UInts of different width" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses{ new AsTypeOfTruncationTester }
   }
 
-  it should "work for casting implicit Reset to Bool" in {
+  it should "work for casting implicit Reset to Bool" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses{ new ResetAsTypeOfBoolTester  }
   }
 
-  it should "work for casting to and from ChiselEnums" in {
+  it should "work for casting to and from ChiselEnums" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses(new AsChiselEnumTester)
   }
 }

@@ -2,7 +2,7 @@
 
 package chiselTests
 
-import tags.RequiresBackend
+import tags.TagRequiresSimulator
 import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
@@ -44,9 +44,8 @@ class ComplexAssignTester(enList: List[Boolean], re: Int, im: Int) extends Basic
   }
 }
 
-@RequiresBackend
 class ComplexAssignSpec extends ChiselPropSpec {
-  property("All complex assignments should return the correct result") {
+  property("All complex assignments should return the correct result", TagRequiresSimulator) {
     // Disable shrinking on error.
     implicit val noShrinkListVal = Shrink[List[Boolean]](_ => Stream.empty)
     implicit val noShrinkInt = Shrink[Int](_ => Stream.empty)

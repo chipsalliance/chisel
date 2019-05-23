@@ -2,7 +2,7 @@
 
 package cookbook
 
-import tags.TagRequiresBackend
+import tags.TagRequiresSimulator
 import chisel3._
 
 /* ### How do I create a UInt from an instance of a Bundle?
@@ -26,7 +26,7 @@ class Bundle2UInt extends CookbookTester(1) {
 }
 
 class Bundle2UIntSpec  extends CookbookSpec {
-  "Bundle2UInt" should "work" taggedAs(TagRequiresBackend) in {
+  "Bundle2UInt" should "work" taggedAs(TagRequiresSimulator) in {
     assertTesterPasses { new Bundle2UInt }
   }
 }

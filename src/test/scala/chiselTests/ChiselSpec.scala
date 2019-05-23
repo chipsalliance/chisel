@@ -8,14 +8,9 @@ import org.scalacheck._
 import chisel3._
 import chisel3.experimental.RawModule
 import chisel3.testers._
-import firrtl.{
-  CommonOptions,
-  ExecutionOptionsManager,
-  HasFirrtlOptions,
-  FirrtlExecutionSuccess,
-  FirrtlExecutionFailure
-}
+import firrtl.{CommonOptions, ExecutionOptionsManager, FirrtlExecutionFailure, FirrtlExecutionSuccess, HasFirrtlOptions}
 import firrtl.util.BackendCompilationUtilities
+import _root_.tags.TagRequiresSimulator
 
 /** Common utility functions for Chisel unit tests. */
 trait ChiselRunners extends Assertions with BackendCompilationUtilities {
@@ -110,7 +105,7 @@ class ChiselTestUtilitiesSpec extends ChiselFlatSpec {
     }
   }
 
-  it should "work if the width is correct" in {
+  it should "work if the width is correct" taggedAs(TagRequiresSimulator) in {
     assertKnownWidth(8) {
       Wire(UInt(8.W))
     }
@@ -124,7 +119,7 @@ class ChiselTestUtilitiesSpec extends ChiselFlatSpec {
     }
   }
 
-  it should "error if the expected width is wrong" in {
+  it should "error if the expected width is wrong" taggedAs(TagRequiresSimulator) in {
     a [TestFailedException] shouldBe thrownBy {
       assertInferredWidth(8) {
         val w = Wire(UInt())
@@ -134,7 +129,7 @@ class ChiselTestUtilitiesSpec extends ChiselFlatSpec {
     }
   }
 
-  it should "pass if the width is correct" in {
+  it should "pass if the width is correct" taggedAs(TagRequiresSimulator) in {
     assertInferredWidth(4) {
       val w = Wire(UInt())
       w := 2.U(4.W)

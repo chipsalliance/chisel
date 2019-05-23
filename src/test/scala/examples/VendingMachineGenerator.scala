@@ -2,12 +2,11 @@
 
 package examples
 
-import tags.RequiresBackend
+import tags.TagRequiresSimulator
 import chiselTests.ChiselFlatSpec
 import chisel3.testers.BasicTester
 import chisel3._
 import chisel3.util._
-
 import VendingMachineUtils._
 
 class VendingMachineIO(val legalCoins: Seq[Coin]) extends Bundle {
@@ -98,29 +97,28 @@ class ParameterizedVendingMachineTester(
   assert(dut.io.dispense === expectedVec(idx))
 }
 
-@RequiresBackend
 class VendingMachineGeneratorSpec extends ChiselFlatSpec {
   behavior of "The vending machine generator"
 
-  it should "generate a vending machine that accepts only nickels and dimes and costs $0.20" in {
+  it should "generate a vending machine that accepts only nickels and dimes and costs $0.20" taggedAs (TagRequiresSimulator) in {
     val coins = Seq(Nickel, Dime)
     assertTesterPasses {
       new ParameterizedVendingMachineTester(new VendingMachineGenerator(coins, 20), 100)
     }
   }
-  it should "generate a vending machine that only accepts one kind of coin" in {
+  it should "generate a vending machine that only accepts one kind of coin" taggedAs (TagRequiresSimulator) in {
     val coins = Seq(Nickel)
     assertTesterPasses {
       new ParameterizedVendingMachineTester(new VendingMachineGenerator(coins, 30), 100)
     }
   }
-  it should "generate a more realistic vending machine that costs $1.50" in {
+  it should "generate a more realistic vending machine that costs $1.50" taggedAs (TagRequiresSimulator) in {
     val coins = Seq(Penny, Nickel, Dime, Quarter)
     assertTesterPasses {
       new ParameterizedVendingMachineTester(new VendingMachineGenerator(coins, 150), 100)
     }
   }
-  it should "generate a Harry Potter themed vending machine" in {
+  it should "generate a Harry Potter themed vending machine" taggedAs (TagRequiresSimulator) in {
     val coins = Seq(Knut, Sickle) // Galleons are worth too much
     assertTesterPasses {
       new ParameterizedVendingMachineTester(new VendingMachineGenerator(coins, Galleon.value), 100)

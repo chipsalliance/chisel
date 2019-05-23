@@ -7,6 +7,7 @@ import chisel3.testers.BasicTester
 import chisel3.experimental.RawModule
 import chisel3.experimental.BundleLiterals._
 import chisel3.experimental.BundleLiteralException
+import tags.TagRequiresSimulator
 
 class BundleLiteralSpec extends ChiselFlatSpec {
   class MyBundle extends Bundle {
@@ -14,7 +15,7 @@ class BundleLiteralSpec extends ChiselFlatSpec {
     val b = Bool()
   }
 
-  "bundle literals" should "work in RTL" in {
+  "bundle literals" should "work in RTL" taggedAs (TagRequiresSimulator) in {
     val outsideBundleLit = (new MyBundle).Lit(_.a -> 42.U, _.b -> true.B)
     assertTesterPasses{ new BasicTester{
       // TODO: add direct bundle compare operations, when that feature is added
@@ -38,7 +39,7 @@ class BundleLiteralSpec extends ChiselFlatSpec {
     } }
   }
 
-  "partial bundle literals" should "work in RTL" in {
+  "partial bundle literals" should "work in RTL" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses{ new BasicTester{
       val bundleLit = (new MyBundle).Lit(_.a -> 42.U)
       chisel3.assert(bundleLit.a === 42.U)
@@ -60,7 +61,7 @@ class BundleLiteralSpec extends ChiselFlatSpec {
     }
   }
 
-  "contained bundles" should "work" in {
+  "contained bundles" should "work" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses{ new BasicTester{
       // Specify the inner Bundle value as a Bundle literal
       val explicitBundleLit = (new MyOuterBundle).Lit(
@@ -91,7 +92,7 @@ class BundleLiteralSpec extends ChiselFlatSpec {
     } }
   }
 
-  "Bundle literals" should "assign" in {
+  "Bundle literals" should "assign" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses{ new BasicTester{
       val bundleWire = Wire(Output(new MyBundle))
       val bundleLit = (new MyBundle).Lit(_.a -> 42.U, _.b -> true.B)
@@ -103,7 +104,7 @@ class BundleLiteralSpec extends ChiselFlatSpec {
     } }
   }
 
-  "partially initialized Bundle literals" should "assign" in {
+  "partially initialized Bundle literals" should "assign" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses{ new BasicTester{
       val bundleWire = Wire(Output(new MyBundle))
       val bundleLit = (new MyBundle).Lit(_.a -> 42.U)

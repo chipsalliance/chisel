@@ -2,7 +2,7 @@
 
 package chiselTests
 
-import tags.RequiresBackend
+import tags.TagRequiresSimulator
 import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
@@ -36,17 +36,16 @@ class WrapTester(max: Int) extends BasicTester {
   }
 }
 
-@RequiresBackend
 class CounterSpec extends ChiselPropSpec {
-  property("Counter should count up") {
+  property("Counter should count up", TagRequiresSimulator) {
     forAll(smallPosInts) { (max: Int) => assertTesterPasses{ new CountTester(max) } }
   }
 
-  property("Counter can be en/disabled") {
+  property("Counter can be en/disabled", TagRequiresSimulator) {
     forAll(safeUInts) { (seed: Int) => whenever(seed >= 0) { assertTesterPasses{ new EnableTester(seed) } } }
   }
 
-  property("Counter should wrap") {
+  property("Counter should wrap", TagRequiresSimulator) {
     forAll(smallPosInts) { (max: Int) => assertTesterPasses{ new WrapTester(max) } }
   }
 }

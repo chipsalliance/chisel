@@ -2,7 +2,7 @@
 
 package chiselTests
 
-import tags.RequiresBackend
+import tags.TagRequiresSimulator
 import chisel3._
 import chisel3.testers.BasicTester
 
@@ -34,9 +34,8 @@ class ParameterizedModuleTester() extends BasicTester {
   stop()
 }
 
-@RequiresBackend
 class ParameterizedModuleSpec extends ChiselFlatSpec {
-  "Different parameterized modules" should "have different behavior" in {
+  "Different parameterized modules" should "have different behavior" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses(new ParameterizedModuleTester())
   }
 }

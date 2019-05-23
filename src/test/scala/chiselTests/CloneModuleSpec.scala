@@ -3,9 +3,10 @@
 package chiselTests
 
 import chisel3._
-import chisel3.util.{Queue, EnqIO, DeqIO, QueueIO, log2Ceil}
+import chisel3.util.{DeqIO, EnqIO, Queue, QueueIO, log2Ceil}
 import chisel3.experimental.{CloneModuleAsRecord, IO, MultiIOModule}
 import chisel3.testers.BasicTester
+import tags.TagRequiresSimulator
 
 class MultiIOQueue[T <: Data](gen: T, val entries: Int) extends MultiIOModule {
   val clk = IO(Input(Clock()))
@@ -64,7 +65,7 @@ class CloneModuleSpec extends ChiselPropSpec {
     (63),
     (99))
 
-  property("QueueCloneTester should return the correct result") {
+  property("QueueCloneTester should return the correct result", TagRequiresSimulator) {
     forAll (xVals) { (x: Int) =>
       assertTesterPasses{ new QueueCloneTester(x) }
     }
@@ -75,7 +76,7 @@ class CloneModuleSpec extends ChiselPropSpec {
     assert(c.modules.length == 2)
   }
 
-  property("Clone of MultiIOModule should simulate correctly") {
+  property("Clone of MultiIOModule should simulate correctly", TagRequiresSimulator) {
     forAll (xVals) { (x: Int) =>
       assertTesterPasses{ new QueueCloneTester(x, multiIO=true) }
     }

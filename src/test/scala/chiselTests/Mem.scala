@@ -2,7 +2,7 @@
 
 package chiselTests
 
-import tags.TagRequiresBackend
+import tags.TagRequiresSimulator
 import chisel3._
 import chisel3.util._
 import chisel3.testers.BasicTester
@@ -74,15 +74,15 @@ class HugeCMemTester(size: BigInt) extends BasicTester {
 }
 
 class MemorySpec extends ChiselPropSpec {
-  property("Mem of Vec should work", TagRequiresBackend) {
+  property("Mem of Vec should work", TagRequiresSimulator) {
     assertTesterPasses { new MemVecTester }
   }
 
-  property("SyncReadMem should work") {
+  property("SyncReadMem should work", TagRequiresSimulator) {
     assertTesterPasses { new SyncReadMemTester }
   }
 
-  property("SyncReadMem should work with zero width entry") {
+  property("SyncReadMem should work with zero width entry", TagRequiresSimulator) {
     assertTesterPasses { new SyncReadMemWithZeroWidthTester }
   }
 

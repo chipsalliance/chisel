@@ -6,8 +6,8 @@ import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util.Counter
 import chisel3.util.random.PRNG
-
 import chiselTests.ChiselFlatSpec
+import tags.TagRequiresSimulator
 
 class CyclePRNG(width: Int, seed: Option[BigInt], step: Int, updateSeed: Boolean)
     extends PRNG(width, seed, step, updateSeed) {
@@ -75,11 +75,11 @@ class PRNGSpec extends ChiselFlatSpec {
       .getMessage should include ("Step size must be greater than one!")
   }
 
-  it should "handle non-unary steps" in {
+  it should "handle non-unary steps" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses(new PRNGStepTest)
   }
 
-  it should "handle state update without and with updateSeed enabled" in {
+  it should "handle state update without and with updateSeed enabled" taggedAs (TagRequiresSimulator) in {
     info("without updateSeed okay!")
     assertTesterPasses(new PRNGUpdateSeedTest(false, 3, 3))
 

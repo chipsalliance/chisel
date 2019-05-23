@@ -2,7 +2,7 @@
 
 package chiselTests
 
-import tags.RequiresBackend
+import tags.TagRequiresSimulator
 import chisel3._
 import chisel3.util._
 import chisel3.experimental.DataMirror
@@ -60,13 +60,12 @@ class ShiftResetTester(n: Int) extends BasicTester {
   }
 }
 
-@RequiresBackend
 class ShiftRegisterSpec extends ChiselPropSpec {
-  property("ShiftRegister should shift") {
+  property("ShiftRegister should shift", TagRequiresSimulator) {
     forAll(smallPosInts) { (shift: Int) => assertTesterPasses{ new ShiftTester(shift) } }
   }
 
-  property("ShiftRegister should reset all values inside") {
+  property("ShiftRegister should reset all values inside", TagRequiresSimulator) {
     forAll(smallPosInts) { (shift: Int) => assertTesterPasses{ new ShiftResetTester(shift) } }
   }
 }

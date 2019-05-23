@@ -2,7 +2,7 @@
 
 package chiselTests
 
-import tags.TagRequiresBackend
+import tags.TagRequiresSimulator
 import chisel3._
 import org.scalatest._
 import chisel3.testers.BasicTester
@@ -129,7 +129,7 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers {
     elaborate { new UIntOps }
   }
 
-  property("UIntOpsTester should return the correct result", TagRequiresBackend) {
+  property("UIntOpsTester should return the correct result", TagRequiresSimulator) {
     assertTesterPasses { new UIntOpsTester(123, 7) }
   }
 
@@ -137,7 +137,7 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers {
     a [ChiselException] should be thrownBy { elaborate(new NegativeShift(UInt())) }
   }
 
-  property("Bit extraction on literals should work for all non-negative indices") {
+  property("Bit extraction on literals should work for all non-negative indices", TagRequiresSimulator) {
     assertTesterPasses(new UIntLitExtractTester)
   }
 

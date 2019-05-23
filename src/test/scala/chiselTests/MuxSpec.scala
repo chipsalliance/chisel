@@ -4,6 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.testers.BasicTester
+import tags.TagRequiresSimulator
 
 class MuxTester extends BasicTester {
   assert(Mux(0.B, 1.U, 2.U) === 2.U)
@@ -21,7 +22,7 @@ class MuxTester extends BasicTester {
 }
 
 class MuxSpec extends ChiselFlatSpec {
-  "Mux" should "pass basic checks" in {
+  "Mux" should "pass basic checks" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses { new MuxTester }
   }
 }

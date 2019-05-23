@@ -2,7 +2,7 @@
 
 package chiselTests
 
-import tags.RequiresBackend
+import tags.TagRequiresSimulator
 import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
@@ -35,10 +35,9 @@ class FinishTester extends BasicTester {
   }
 }
 
-@RequiresBackend
 class TesterDriverSpec extends ChiselFlatSpec {
   "TesterDriver calls BasicTester's finish method which" should
-    "allow modifications of test circuit after the tester's constructor is done" in {
+    "allow modifications of test circuit after the tester's constructor is done" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses {
       new FinishTester
     }

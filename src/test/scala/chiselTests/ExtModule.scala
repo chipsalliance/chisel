@@ -2,7 +2,7 @@
 
 package chiselTests
 
-import tags.RequiresBackend
+import tags.TagRequiresSimulator
 import chisel3._
 import chisel3.experimental._
 import chisel3.testers.BasicTester
@@ -59,17 +59,16 @@ class MultiExtModuleTester extends BasicTester {
   stop()
 }
 
-@RequiresBackend
 class ExtModuleSpec extends ChiselFlatSpec {
-  "A ExtModule inverter" should "work" in {
+  "A ExtModule inverter" should "work" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses({ new ExtModuleTester },
         Seq("/chisel3/BlackBoxTest.v"))
   }
-  "Multiple ExtModules" should "work" in {
+  "Multiple ExtModules" should "work" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses({ new MultiExtModuleTester },
         Seq("/chisel3/BlackBoxTest.v"))
   }
-  "DataMirror.modulePorts" should "work with ExtModule" in {
+  "DataMirror.modulePorts" should "work with ExtModule" taggedAs (TagRequiresSimulator) in {
     elaborate(new Module {
       val io = IO(new Bundle { })
       val m = Module(new ExtModule.BlackBoxPassthrough)

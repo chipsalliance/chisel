@@ -2,7 +2,7 @@
 
 package chiselTests
 
-import tags.TagRequiresBackend
+import tags.TagRequiresSimulator
 import chisel3._
 import chisel3.util._
 import chisel3.testers.BasicTester
@@ -153,7 +153,7 @@ class AnalogSpec extends ChiselFlatSpec {
     }
   }
 
-  it should "work with 2 blackboxes bulk connected" taggedAs (TagRequiresBackend) in {
+  it should "work with 2 blackboxes bulk connected" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses(new AnalogTester {
       val mod = Module(new AnalogReaderBlackBox)
       mod.io.bus <> writer.io.bus
@@ -172,7 +172,7 @@ class AnalogSpec extends ChiselFlatSpec {
     }
   }
 
-  it should "work with 3 blackboxes attached" taggedAs(TagRequiresBackend) in {
+  it should "work with 3 blackboxes attached" taggedAs(TagRequiresSimulator) in {
     assertTesterPasses(new AnalogTester {
       val mods = Seq.fill(2)(Module(new AnalogReaderBlackBox))
       attach(writer.io.bus, mods(0).io.bus, mods(1).io.bus)
@@ -180,7 +180,7 @@ class AnalogSpec extends ChiselFlatSpec {
     }, Seq("/chisel3/AnalogBlackBox.v"))
   }
 
-  it should "work with 3 blackboxes separately attached via a wire" taggedAs(TagRequiresBackend) in {
+  it should "work with 3 blackboxes separately attached via a wire" taggedAs(TagRequiresSimulator) in {
     assertTesterPasses(new AnalogTester {
       val mods = Seq.fill(2)(Module(new AnalogReaderBlackBox))
       val busWire = Wire(Analog(32.W))
@@ -193,7 +193,7 @@ class AnalogSpec extends ChiselFlatSpec {
 
   // This does not currently work in Verilator unless Firrtl does constant prop and dead code
   // elimination on these wires
-  ignore should "work with intermediate wires attached to each other" taggedAs(TagRequiresBackend) in {
+  ignore should "work with intermediate wires attached to each other" taggedAs(TagRequiresSimulator) in {
     assertTesterPasses(new AnalogTester {
       val mod = Module(new AnalogReaderBlackBox)
       val busWire = Seq.fill(2)(Wire(Analog(32.W)))
@@ -204,7 +204,7 @@ class AnalogSpec extends ChiselFlatSpec {
     }, Seq("/chisel3/AnalogBlackBox.v"))
   }
 
-  it should "work with blackboxes at different levels of the module hierarchy" taggedAs(TagRequiresBackend) in {
+  it should "work with blackboxes at different levels of the module hierarchy" taggedAs(TagRequiresSimulator) in {
     assertTesterPasses(new AnalogTester {
       val mods = Seq(Module(new AnalogReaderBlackBox), Module(new AnalogReaderWrapper))
       val busWire = Wire(writer.io.bus.cloneType)
@@ -214,7 +214,7 @@ class AnalogSpec extends ChiselFlatSpec {
   }
 
   // This does not currently work in Verilator, but does work in VCS
-  ignore should "support two analog ports in the same module" taggedAs(TagRequiresBackend) in {
+  ignore should "support two analog ports in the same module" taggedAs(TagRequiresSimulator) in {
     assertTesterPasses(new AnalogTester {
       val reader = Module(new AnalogReaderBlackBox)
       val connector = Module(new AnalogConnector)
@@ -236,7 +236,7 @@ class AnalogSpec extends ChiselFlatSpec {
     }
   }
 
-  it should "work with Vecs of Analog" in {
+  it should "work with Vecs of Analog" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses(new AnalogTester {
       val mod = Module(new VecAnalogReaderWrapper)
       mod.bus <> writer.io.bus
@@ -244,7 +244,7 @@ class AnalogSpec extends ChiselFlatSpec {
     }, Seq("/chisel3/AnalogBlackBox.v"))
   }
 
-  it should "work with Vecs of Bundles of Analog" in {
+  it should "work with Vecs of Bundles of Analog" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses(new AnalogTester {
       val mod = Module(new VecBundleAnalogReaderWrapper)
       mod.bus <> writer.io.bus

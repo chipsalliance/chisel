@@ -4,6 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.testers.BasicTester
+import tags.TagRequiresSimulator
 
 class SIntOps extends Module {
   val io = IO(new Bundle {
@@ -109,7 +110,7 @@ class SIntOpsSpec extends ChiselPropSpec {
 
   ignore("SIntOpsTester should return the correct result") { }
 
-  property("Bit extraction on literals should work for all non-negative indices") {
+  property("Bit extraction on literals should work for all non-negative indices", TagRequiresSimulator) {
     assertTesterPasses(new SIntLitExtractTester)
   }
 

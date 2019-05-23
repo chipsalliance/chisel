@@ -2,7 +2,7 @@
 
 package cookbook
 
-import tags.RequiresBackend
+import tags.TagRequiresSimulator
 import chisel3._
 
 /* ### How do I create a Reg of type Vec?
@@ -27,9 +27,8 @@ class RegOfVec extends CookbookTester(2) {
   for (elt <- initRegOfVec) { assert(elt === 0.U) }
 }
 
-@RequiresBackend
 class RegOfVecSpec  extends CookbookSpec {
-  "RegOfVec" should "work" in {
+  "RegOfVec" should "work" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses { new RegOfVec }
   }
 }

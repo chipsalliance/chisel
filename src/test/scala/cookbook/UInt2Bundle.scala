@@ -2,7 +2,7 @@
 
 package cookbook
 
-import tags.RequiresBackend
+import tags.TagRequiresSimulator
 import chisel3._
 
 /* ### How do I create a Bundle from a UInt?
@@ -24,9 +24,8 @@ class UInt2Bundle extends CookbookTester(1) {
   assert(bundle.bar === 0x4.U)
 }
 
-@RequiresBackend
 class UInt2BundleSpec extends CookbookSpec {
-  "UInt2Bundle" should "work" in {
+  "UInt2Bundle" should "work" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses { new UInt2Bundle }
   }
 }

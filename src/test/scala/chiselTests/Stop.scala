@@ -2,7 +2,7 @@
 
 package chiselTests
 
-import tags.RequiresBackend
+import tags.TagRequiresSimulator
 import chisel3._
 import chisel3.testers.BasicTester
 
@@ -19,13 +19,12 @@ class StopImmediatelyTester extends BasicTester {
   assert(cycle =/= 5.U, "Simulation did not exit upon executing stop()")
 }
 
-@RequiresBackend
 class StopSpec extends ChiselFlatSpec {
-  "stop()" should "stop and succeed the testbench" in {
+  "stop()" should "stop and succeed the testbench" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses { new StopTester }
   }
 
-  it should "end the simulation immediately" in {
+  it should "end the simulation immediately" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses { new StopImmediatelyTester }
   }
 }

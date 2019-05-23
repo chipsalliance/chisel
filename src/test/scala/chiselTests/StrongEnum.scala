@@ -8,6 +8,7 @@ import chisel3.internal.firrtl.UnknownWidth
 import chisel3.util._
 import chisel3.testers.BasicTester
 import org.scalatest.{Assertion, FreeSpec, Matchers}
+import tags.TagRequiresSimulator
 
 object EnumExample extends ChiselEnum {
   val e0, e1, e2 = Value
@@ -304,15 +305,15 @@ class StrongEnumSpec extends ChiselFlatSpec {
     }
   }
 
-  it should "cast enums to UInts correctly" in {
+  it should "cast enums to UInts correctly" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses(new CastToUIntTester)
   }
 
-  it should "cast literal UInts to enums correctly" in {
+  it should "cast literal UInts to enums correctly" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses(new CastFromLitTester)
   }
 
-  it should "cast non-literal UInts to enums correctly and detect illegal casts" in {
+  it should "cast non-literal UInts to enums correctly and detect illegal casts" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses(new CastFromNonLitTester)
   }
 
@@ -337,7 +338,7 @@ class StrongEnumSpec extends ChiselFlatSpec {
     }
   }
 
-  it should "execute enum comparison operations correctly" in {
+  it should "execute enum comparison operations correctly" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses(new EnumOpsTester)
   }
 
@@ -347,15 +348,15 @@ class StrongEnumSpec extends ChiselFlatSpec {
     }
   }
 
-  it should "correctly check whether or not enums are literal" in {
+  it should "correctly check whether or not enums are literal" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses(new IsLitTester)
   }
 
-  it should "return the correct next values for enums" in {
+  it should "return the correct next values for enums" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses(new NextTester)
   }
 
-  it should "return the correct widths for enums" in {
+  it should "return the correct widths for enums" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses(new WidthTester)
   }
 
@@ -370,7 +371,7 @@ class StrongEnumSpec extends ChiselFlatSpec {
     "object UnnamedEnum extends ChiselEnum { Value }" shouldNot compile
   }
 
-  "StrongEnum FSM" should "work" in {
+  "StrongEnum FSM" should "work" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses(new StrongEnumFSMTester)
   }
 }

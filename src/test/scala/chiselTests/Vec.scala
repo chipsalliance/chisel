@@ -2,7 +2,7 @@
 
 package chiselTests
 
-import tags.TagRequiresBackend
+import tags.TagRequiresSimulator
 import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
@@ -186,13 +186,13 @@ class VecSpec extends ChiselPropSpec {
   implicit val noShrinkListVal = Shrink[List[Int]](_ => Stream.empty)
   implicit val noShrinkInt = Shrink[Int](_ => Stream.empty)
 
-  property("Vecs should be assignable", TagRequiresBackend) {
+  property("Vecs should be assignable", TagRequiresSimulator) {
     forAll(safeUIntN(8)) { case(w: Int, v: List[Int]) =>
       assertTesterPasses{ new ValueTester(w, v) }
     }
   }
 
-  property("Vecs should be passed through vec IO", TagRequiresBackend) {
+  property("Vecs should be passed through vec IO", TagRequiresSimulator) {
     forAll(safeUIntN(8)) { case(w: Int, v: List[Int]) =>
       assertTesterPasses{ new IOTester(w, v) }
     }
@@ -207,39 +207,39 @@ class VecSpec extends ChiselPropSpec {
     }
   }
 
-  property("A Reg of a Vec should operate correctly", TagRequiresBackend) {
+  property("A Reg of a Vec should operate correctly", TagRequiresSimulator) {
     forAll(safeUIntN(8)) { case(w: Int, v: List[Int]) =>
       assertTesterPasses{ new RegTester(w, v) }
     }
   }
 
-  property("A Vec of lit should operate correctly", TagRequiresBackend) {
+  property("A Vec of lit should operate correctly", TagRequiresSimulator) {
     forAll(safeUIntN(8)) { case(w: Int, v: List[Int]) =>
       assertTesterPasses{ new LitTester(w, v) }
     }
   }
 
-  property("Vecs should tabulate correctly", TagRequiresBackend) {
+  property("Vecs should tabulate correctly", TagRequiresSimulator) {
     forAll(smallPosInts) { (n: Int) => assertTesterPasses{ new TabulateTester(n) } }
   }
 
-  property("Regs of vecs should be usable as shift registers", TagRequiresBackend) {
+  property("Regs of vecs should be usable as shift registers", TagRequiresSimulator) {
     forAll(smallPosInts) { (n: Int) => assertTesterPasses{ new ShiftRegisterTester(n) } }
   }
 
-  property("Infering widths on huge Vecs should not cause a stack overflow", TagRequiresBackend) {
+  property("Infering widths on huge Vecs should not cause a stack overflow", TagRequiresSimulator) {
     assertTesterPasses { new HugeVecTester(10000) }
   }
 
-  property("A Reg of a Vec of a single 1 bit element should compile and work", TagRequiresBackend) {
+  property("A Reg of a Vec of a single 1 bit element should compile and work", TagRequiresSimulator) {
     assertTesterPasses{ new OneBitUnitRegVecTester }
   }
 
-  property("A Vec with zero entries should compile and have zero width", TagRequiresBackend) {
+  property("A Vec with zero entries should compile and have zero width", TagRequiresSimulator) {
     assertTesterPasses{ new ZeroEntryVecTester }
   }
 
-  property("Dynamic indexing of a Vec of Module IOs should work", TagRequiresBackend) {
+  property("Dynamic indexing of a Vec of Module IOs should work", TagRequiresSimulator) {
     assertTesterPasses{ new ModuleIODynamicIndexTester(4) }
   }
 

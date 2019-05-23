@@ -6,6 +6,7 @@ import chisel3._
 import chisel3.experimental.{FixedPoint, RawModule}
 import chisel3.experimental.BundleLiterals._
 import chisel3.testers.BasicTester
+import tags.TagRequiresSimulator
 
 class LiteralExtractorSpec extends ChiselFlatSpec {
   "litValue" should "return the literal value" in {
@@ -56,7 +57,7 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
   }
 
 
-  "literals declared outside a builder context" should "compare with those inside builder context" in {
+  "literals declared outside a builder context" should "compare with those inside builder context" taggedAs (TagRequiresSimulator) in {
     class InsideBundle extends Bundle {
       val x = SInt(8.W)
       val y = FixedPoint(8.W, 4.BP)

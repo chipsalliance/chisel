@@ -2,7 +2,7 @@
 
 package chiselTests
 
-import tags.TagRequiresBackend
+import tags.TagRequiresSimulator
 import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
@@ -26,7 +26,7 @@ class LastAssignTester() extends BasicTester {
 }
 
 class MultiAssignSpec extends ChiselFlatSpec {
-  "The last assignment" should "be used when multiple assignments happen" taggedAs(TagRequiresBackend) in {
+  "The last assignment" should "be used when multiple assignments happen" taggedAs(TagRequiresSimulator) in {
     assertTesterPasses{ new LastAssignTester }
   }
 }

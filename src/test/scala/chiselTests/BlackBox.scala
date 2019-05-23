@@ -2,7 +2,7 @@
 
 package chiselTests
 
-import tags.RequiresBackend
+import tags.TagRequiresSimulator
 import chisel3._
 import chisel3.experimental._
 import chisel3.testers.BasicTester
@@ -148,29 +148,28 @@ class BlackBoxWithParamsTester extends BasicTester {
   when(end) { stop() }
 }
 
-@RequiresBackend
 class BlackBoxSpec extends ChiselFlatSpec {
-  "A BlackBoxed inverter" should "work" in {
+  "A BlackBoxed inverter" should "work" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses({ new BlackBoxTester },
         Seq("/chisel3/BlackBoxTest.v"))
   }
-  "A BlackBoxed with flipped IO" should "work" in {
+  "A BlackBoxed with flipped IO" should "work" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses({ new BlackBoxFlipTester },
         Seq("/chisel3/BlackBoxTest.v"))
   }
-  "Multiple BlackBoxes" should "work" in {
+  "Multiple BlackBoxes" should "work" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses({ new MultiBlackBoxTester },
         Seq("/chisel3/BlackBoxTest.v"))
   }
-  "A BlackBoxed register" should "work" in {
+  "A BlackBoxed register" should "work" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses({ new BlackBoxWithClockTester },
         Seq("/chisel3/BlackBoxTest.v"))
   }
-  "BlackBoxes with parameters" should "work" in {
+  "BlackBoxes with parameters" should "work" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses({ new BlackBoxWithParamsTester },
         Seq("/chisel3/BlackBoxTest.v"))
   }
-  "DataMirror.modulePorts" should "work with BlackBox" in {
+  "DataMirror.modulePorts" should "work with BlackBox" taggedAs (TagRequiresSimulator) in {
     elaborate(new Module {
       val io = IO(new Bundle { })
       val m = Module(new BlackBoxPassthrough)

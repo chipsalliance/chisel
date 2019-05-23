@@ -2,7 +2,7 @@
 
 package examples
 
-import tags.RequiresBackend
+import tags.TagRequiresSimulator
 import chiselTests.ChiselFlatSpec
 import chisel3.testers.BasicTester
 import chisel3._
@@ -85,12 +85,11 @@ class SimpleVendingMachineTester(mod: => SimpleVendingMachine) extends BasicTest
   assert(dut.io.dispense === expected(cycle))
 }
 
-@RequiresBackend
 class SimpleVendingMachineSpec extends ChiselFlatSpec {
-  "An FSM implementation of a vending machine" should "work" in {
+  "An FSM implementation of a vending machine" should "work" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses { new SimpleVendingMachineTester(new FSMVendingMachine) }
   }
-  "An Verilog implementation of a vending machine" should "work" in {
+  "An Verilog implementation of a vending machine" should "work" taggedAs (TagRequiresSimulator) in {
     assertTesterPasses(new SimpleVendingMachineTester(new VerilogVendingMachineWrapper),
                        List("/chisel3/VerilogVendingMachine.v"))
   }

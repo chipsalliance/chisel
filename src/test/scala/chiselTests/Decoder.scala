@@ -2,9 +2,8 @@
 
 package chiselTests
 
-import tags.RequiresBackend
+import tags.TagRequiresSimulator
 import org.scalacheck._
-
 import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
@@ -31,7 +30,6 @@ class DecoderTester(pairs: List[(String, String)]) extends BasicTester {
   }
 }
 
-@RequiresBackend
 class DecoderSpec extends ChiselPropSpec {
 
   // Use a single Int to make both a specific instruction and a BitPat that will match it
@@ -43,7 +41,7 @@ class DecoderSpec extends ChiselPropSpec {
   }
   private def nPairs(n: Int) = Gen.containerOfN[List, (String,String)](n,bitpatPair)
 
-  property("BitPat wildcards should be usable in decoding") {
+  property("BitPat wildcards should be usable in decoding", TagRequiresSimulator) {
     forAll(nPairs(4)){ (pairs: List[(String, String)]) =>
       assertTesterPasses{ new DecoderTester(pairs) }
     }

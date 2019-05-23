@@ -2,7 +2,7 @@
 
 package chiselTests
 
-import tags.TagRequiresBackend
+import tags.TagRequiresSimulator
 import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util.{Counter, Queue}
@@ -114,19 +114,19 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils {
     elaborate { new MyModule(new MyBundle, fooBarType) }
   }
 
-  they should "follow UInt serialization/deserialization API" taggedAs(TagRequiresBackend) in {
+  they should "follow UInt serialization/deserialization API" taggedAs(TagRequiresSimulator) in {
     assertTesterPasses { new RecordSerializationTest }
   }
 
-  they should "work as the type of a Queue" taggedAs(TagRequiresBackend) in {
+  they should "work as the type of a Queue" taggedAs(TagRequiresSimulator) in {
     assertTesterPasses { new RecordQueueTester }
   }
 
-  they should "work as the type of a Module's io" taggedAs(TagRequiresBackend) in {
+  they should "work as the type of a Module's io" taggedAs(TagRequiresSimulator) in {
     assertTesterPasses { new RecordIOTester }
   }
 
-  they should "support digits as names of fields" taggedAs(TagRequiresBackend) in {
+  they should "support digits as names of fields" taggedAs(TagRequiresSimulator) in {
     assertTesterPasses { new RecordDigitTester }
   }
 
