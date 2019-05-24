@@ -204,7 +204,15 @@ class VerilogEmitter extends SeqTransform with Emitter {
   }
   /** Turn Params into Verilog Strings */
   def stringify(param: Param): String = param match {
-    case IntParam(name, value) => s".$name($value)"
+    case IntParam(name, value) =>
+      val lit =
+        if (value.isValidInt) {
+          s"$value"
+        } else {
+          val blen = value.bitLength
+          if (value > 0) s"$blen'd$value" else s"-${blen+1}'sd${value.abs}"
+        }
+      s".$name($lit)"
     case DoubleParam(name, value) => s".$name($value)"
     case StringParam(name, value) => s".${name}(${value.verilogEscape})"
     case RawStringParam(name, value) => s".$name($value)"

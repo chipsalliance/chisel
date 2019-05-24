@@ -11,3 +11,4 @@ class RenamedExtModuleExecutionTest extends ExecutionTest("RenamedExtModuleTeste
 class ParameterizedExtModuleExecutionTest extends ExecutionTest(
     "ParameterizedExtModuleTester", "/blackboxes", Seq("ParameterizedExtModule"))
 
+class LargeParamExecutionTest extends ExecutionTest("LargeParamTester", "/blackboxes", Seq("LargeParam"))
