@@ -256,7 +256,7 @@ object ExpandWhens extends Pass {
     case class AttachAcc(exprs: Seq[WrappedExpression], idx: Int)
     // Map from every attached expression to its corresponding AttachAcc
     //   (many keys will point to same value)
-    val attachMap = mutable.HashMap.empty[WrappedExpression, AttachAcc]
+    val attachMap = mutable.LinkedHashMap.empty[WrappedExpression, AttachAcc]
     for (Attach(_, es) <- attaches) {
       val exprs = es.map(we(_))
       val acc = exprs.map(attachMap.get(_)).flatten match {
