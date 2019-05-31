@@ -100,6 +100,10 @@ object chisel3 extends Cross[ChiselTopModule](crossVersions: _*) {
     chisel3(crossVersions.head).test.test()
   }
 
+  def testOne(args: String*) = T.command {
+    chisel3(crossVersions.head).test.testOne(args: _*)
+  }
+
   def publishLocal = T{
     chisel3(crossVersions.head).publishLocal()
   }
@@ -225,6 +229,11 @@ trait AbstractChiselModule extends PublishChiselModule with CommonBuild.BuildInf
       ivy"org.scalacheck::scalacheck:1.13.4"
     )
     def testFrameworks = Seq("org.scalatest.tools.Framework")
+
+    def testOne(args: String*) = T.command {
+      super.runMain("org.scalatest.run", args: _*)
+    }
+
   }
 
   // This is required for building a library, but not for a `run` target.
