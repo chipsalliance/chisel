@@ -249,14 +249,13 @@ abstract class EnumFactory {
   protected def Value: Type = macro EnumMacros.ValImpl // scalastyle:off method.name
   protected def Value(id: UInt): Type = macro EnumMacros.ValCustomImpl // scalastyle:off method.name
 
-  protected def do_Value(names: Seq[String]): Type = {
+  protected def do_Value(name: String): Type = {
     val result = new Type
 
     // We have to use UnknownWidth here, because we don't actually know what the final width will be
     result.bindToLiteral(id, UnknownWidth())
 
-    val result_name = names.find(!enumNames.contains(_)).get
-    enum_records.append(EnumRecord(result, result_name))
+    enum_records.append(EnumRecord(result, name))
 
     width = (1 max id.bitLength).W
     id += 1
@@ -264,7 +263,7 @@ abstract class EnumFactory {
     result
   }
 
-  protected def do_Value(names: Seq[String], id: UInt): Type = {
+  protected def do_Value(name: String, id: UInt): Type = {
     // TODO: These throw ExceptionInInitializerError which can be confusing to the user. Get rid of the error, and just
     // throw an exception
     if (id.litOption.isEmpty) {
@@ -275,7 +274,7 @@ abstract class EnumFactory {
     }
 
     this.id = id.litValue()
-    do_Value(names)
+    do_Value(name)
   }
 
   def apply(): Type = new Type
@@ -308,31 +307,30 @@ abstract class EnumFactory {
 private[chisel3] object EnumMacros {
   def ValImpl(c: Context) : c.Tree = { // scalastyle:off method.name
     import c.universe._
-    val names = getNames(c)
-    q"""this.do_Value(Seq(..$names))"""
+
+    // Much thanks to michael_s for this solution:
+    // stackoverflow.com/questions/18450203/retrieve-the-name-of-the-value-a-scala-macro-invocation-will-be-assigned-to
+    val term = c.internal.enclosingOwner
+    val name = term.name.decodedName.toString.trim
+
+    if (name.contains(" ")) {
+      c.abort(c.enclosingPosition, "Value cannot be called without assigning to an enum")
+    }
+
+    q"""this.do_Value($name)"""
   }
 
   def ValCustomImpl(c: Context)(id: c.Expr[UInt]): c.universe.Tree = { // scalastyle:off method.name
     import c.universe._
-    val names = getNames(c)
-    q"""this.do_Value(Seq(..$names), $id)"""
-  }
 
-  // Much thanks to Travis Brown for this solution:
-  // stackoverflow.com/questions/18450203/retrieve-the-name-of-the-value-a-scala-macro-invocation-will-be-assigned-to
-  def getNames(c: Context): Seq[String] = {
-    import c.universe._
+    val term = c.internal.enclosingOwner
+    val name = term.name.decodedName.toString.trim
 
-    val names = c.enclosingClass.collect {
-      case ValDef(_, name, _, rhs)
-        if rhs.pos == c.macroApplication.pos => name.decodedName.toString
-    }
-
-    if (names.isEmpty) {
+    if (name.contains(" ")) {
       c.abort(c.enclosingPosition, "Value cannot be called without assigning to an enum")
     }
 
-    names
+    q"""this.do_Value($name, $id)"""
   }
 }
 
