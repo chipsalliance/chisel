@@ -1178,8 +1178,6 @@ Notationally, the width of an argument \vv{e} is represented as \vv{w}\ts{e}.
 \begin{tabular}{ |c|c|c|c|c|c| }   
   \opheader 
 add & (e1,e2) & () & (UInt,UInt) & UInt & max(w\ts{e1},w\ts{e2})+1\\
-                 &&& (UInt,SInt) & SInt & max(w\ts{e1},w\ts{e2}-1)+2\\
-                 &&& (SInt,UInt) & SInt & max(w\ts{e1}-1,w\ts{e2})+2\\
                  &&& (SInt,SInt) & SInt & max(w\ts{e1},w\ts{e2})+1\\
  \hline
 \end{tabular}
@@ -1195,8 +1193,6 @@ The add operation result is the sum of \vv{e1} and \vv{e2} without loss of preci
 \begin{tabular}{ |c|c|c|c|c|c| }   
   \opheader 
 sub & (e1,e2) & () & (UInt,UInt) & SInt & max(w\ts{e1},w\ts{e2})+1\\
-                 &&& (UInt,SInt) & SInt & max(w\ts{e1}+2,w\ts{e2}+1)\\
-                 &&& (SInt,UInt) & SInt & max(w\ts{e1}+1,w\ts{e2}+2)\\
                  &&& (SInt,SInt) & SInt & max(w\ts{e1},w\ts{e2})+1\\
  \hline
 \end{tabular}
@@ -1212,8 +1208,6 @@ The subtract operation result is \vv{e2} subtracted from \vv{e1}, without loss o
 \begin{tabular}{ |c|c|c|c|c|c| }   
   \opheader 
 mul & (e1,e2) & () & (UInt,UInt) & UInt & w\ts{e1}+w\ts{e2}\\
-                 &&& (UInt,SInt) & SInt & w\ts{e1}+w\ts{e2}\\
-                 &&& (SInt,UInt) & SInt & w\ts{e1}+w\ts{e2}\\
                  &&& (SInt,SInt) & SInt & w\ts{e1}+w\ts{e2}\\
  \hline
 \end{tabular}
@@ -1229,8 +1223,6 @@ The multiply operation result is the product of \vv{e1} and \vv{e2}, without los
 \begin{tabular}{ |c|c|c|c|c|c| }   
   \opheader 
 div & (num,den) & () & (UInt,UInt) & UInt & w\ts{num}\\
-                   &&& (UInt,SInt) & SInt & w\ts{num}+1\\
-                   &&& (SInt,UInt) & SInt & w\ts{num}\\
                    &&& (SInt,SInt) & SInt & w\ts{num}+1\\
  \hline
 \end{tabular}
@@ -1246,8 +1238,6 @@ The divide operation divides \vv{num} by \vv{den}, truncating the fractional por
 \begin{tabular}{ |c|c|c|c|c|c| }   
   \opheader 
 rem & (num,den) & () & (UInt,UInt) & UInt & min(w\ts{num},w\ts{den})\\
-                   &&& (UInt,SInt) & UInt & min(w\ts{num},w\ts{den})\\
-                   &&& (SInt,UInt) & SInt & min(w\ts{num},w\ts{den}+1)\\
                    &&& (SInt,SInt) & SInt & min(w\ts{num},w\ts{den})\\
  \hline
 \end{tabular}
@@ -1266,9 +1256,7 @@ num = add(mul(den,div(num,den)),rem(num,den))}
 \begin{tabular}{ |c|c|c|c|c|c| }   
   \opheader 
 lt,leq,gt, & (e1,e2) & () & (UInt,UInt) & UInt & 1\\
-geq,eq,neq              &&& (UInt,SInt) & UInt & 1\\
-                        &&& (SInt,UInt) & UInt & 1\\
-                        &&& (SInt,SInt) & UInt & 1\\
+geq,eq,neq              &&& (SInt,SInt) & UInt & 1\\
  \hline
 \end{tabular}
 }}
@@ -1464,9 +1452,7 @@ The bitwise complement operation performs a logical not on each bit in \vv{e}.
 \begin{tabular}{ |c|c|c|c|c|c| }   
   \opheader 
 and,or,xor & (e1, e2)  & () & (UInt,UInt) & UInt & max(w\ts{e1},w\ts{e2})\\
-                            &&& (UInt,SInt) & UInt & max(w\ts{e1},w\ts{e2})\\
-                            &&& (SInt,UInt) & UInt & max(w\ts{e1},w\ts{e2})\\
-                            &&& (SInt,SInt) & UInt & max(w\ts{e1},w\ts{e2})\\                                      
+                            &&& (SInt,SInt) & UInt & max(w\ts{e1},w\ts{e2})\\
  \hline
 \end{tabular}
 }}
@@ -1498,8 +1484,6 @@ The bitwise reduction operations correspond to a bitwise and, or, and exclusive 
 \begin{tabular}{ |c|c|c|c|c|c| }   
   \opheader 
 cat & (e1,e2) & () & (UInt, UInt) & UInt & w\ts{e1}+w\ts{e2}\\
-                 &&& (UInt, SInt) & UInt & w\ts{e1}+w\ts{e2}\\
-                 &&& (SInt, UInt) & UInt & w\ts{e1}+w\ts{e2}\\
                  &&& (SInt, SInt) & UInt & w\ts{e1}+w\ts{e2}\\
  \hline
 \end{tabular}
