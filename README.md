@@ -14,7 +14,7 @@ the ability to build libraries. Better re-use makes hardware engineers more effe
 # What does Chisel code look like?
 
 Chisel is a [Scala](https://www.scala-lang.org/) embedded DSL, it takes advantage of object oriented and functional techniques to create complex
-circuit generators with a minimum of code. Parameterized generators with strong type and error checking builds re-usable stuff fast.
+circuit generators with a minimum of code. Parameterized generators with strong type and error checking build re-usable stuff fast.
 ```scala
 // This FIR filter has parameterized window length, IO bitwidth, and windowing function
 class MyFir(length: Int, bitwidth: Int, window: (Int, Int) => Seq[Int]) extends Module {
@@ -61,6 +61,7 @@ libraries. Set up is easy. The chisel-template repo provides a setup and build e
 ## [Take me to the Chisel-Template](https://github.com/freechipsproject/chisel-template)
 
 For more a more complex template that includes rocket-chip and more, visit the [rebar repository](https://github.com/ucb-bar/project-template).
+
 To learn more about installing Chisel3 visit [The wiki installation page](Installation)
 
 ---
