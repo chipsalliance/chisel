@@ -6,108 +6,82 @@
 [![CircleCI](https://circleci.com/gh/freechipsproject/chisel3/tree/master.svg?style=shield)](https://circleci.com/gh/freechipsproject/chisel3/tree/master)
 [![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/freechipsproject/chisel3.svg?label=release)](https://github.com/freechipsproject/chisel3/releases/latest)
 
-Chisel is a new hardware construction language to support advanced hardware design and circuit generation.
+Chisel is a powerful hardware construction language to support advanced hardware design and circuit generation.
 The latest iteration of [Chisel](https://chisel.eecs.berkeley.edu/) is Chisel3,
-which uses Firrtl as an intermediate hardware representation language.
+which uses Firrtl as an intermediate hardware representation language. Chisel promotes re-use through parameterization and 
+the ability to build libraries. Better re-use makes hardware engineers more effective.
+
+#What does Chisel code look like?
+Chisel is a [Scala](https://www.scala-lang.org/) embedded DSL, it takes advantage of object oriented and functional techniques to create complex
+circuit generators with a minimum of code. Parameterized generators with strong type and error checking builds re-usable stuff fast.
+```scala
+// This FIR filter has parameterized window length, IO bitwidth, and windowing function
+class MyFir(length: Int, bitwidth: Int, window: (Int, Int) => Seq[Int]) extends Module {
+  val io = IO(new Bundle {
+    val in = Input(UInt(bitwidth.W))
+    val out = Output(UInt((bitwidth*2+length-1).W)) // expect bit growth, conservative but lazy
+  })
+
+  // calculate the coefficients using the provided window function, mapping to UInts
+  val coeffs = window(length, bitwidth).map(_.U)
+  
+  // create an array holding the output of the delays
+  val delays = Seq.fill(length)(Wire(UInt(bitwidth.W))).scan(io.in)( (prev: UInt, next: UInt) => {
+    next := RegNext(prev)
+    next
+  })
+  
+  // multiply, putting result in "mults"
+  val mults = delays.zip(coeffs).map{ case(delay: UInt, coeff: UInt) => delay * coeff }
+  
+  val result = mults.reduce(_+&_)  // add up multiplier outputs with bit growth
+
+  io.out := result  // connect output
+}
+```
+> The example here is taken from the bootcamp. It may look a bit complicated now, but it is just not that hard to learn
+---
+
+#Get Started -- Do the Bootcamp
+The Chisel bootcamp is the fastest way to learn Chisel.
+The Bootcamp uses Jupyter to get you up to speed right away.
+You can even use it online with nothing to install.
+
+##[Click here to go straight to the Bootcamp Now!](https://github.com/freechipsproject/chisel-bootcamp)
+
+---
+
+#Build circuits with Chisel
+When you are ready to build and test your own circuits. Chisel3 uses the Sonatype/Nexus/Maven package management systems to seamlessly deliver the environment and extension
+libraries. Set up is easy. The chisel-template repo provides a setup and build environment.
+
+##[Take me to the Chisel-Template](https://github.com/freechipsproject/chisel-template)
+
+For more a more complex template that includes rocket-chip and more, visit the [rebar repository](https://github.com/ucb-bar/project-template).
+To learn more about installing Chisel3 visit [The wiki installation page](Installation)
+
+---
+
+#Documentation and other Resources
+##[Chisel3 Wiki](/freechipsproject/chisel3/wiki)
+##[Chisel3 API Documentation](https://chisel.eecs.berkeley.edu/api/latest/chisel3/index.html)
+##[Chisel3 Cheat Sheet](https://chisel.eecs.berkeley.edu/doc/chisel-cheatsheet3.pdf)
+##[Chisel3 Website](https://www.chisel-lang.org)
+
 
 Chisel3 releases are available as jars on Sonatype/Nexus/Maven and as tagged branches on the [releases tab](https://github.com/freechipsproject/chisel3/releases) of this repository.
 
-Please visit the [Wiki](https://github.com/ucb-bar/chisel3/wiki) for documentation!
 
-The ScalaDoc for Chisel3 is available at the [API tab on the Chisel web site.](https://chisel.eecs.berkeley.edu/api/latest/index.html)
-
-## Overview
+## More about Chisel
 The standard Chisel3 compilation pipeline looks like:
 - Chisel3 (Scala) to Firrtl (this is your "Chisel RTL").
 - [Firrtl](https://github.com/ucb-bar/firrtl) to Verilog (which can then be passed into FPGA or ASIC tools).
 - Verilog to C++ for simulation and testing using [Verilator](http://www.veripool.org/wiki/verilator).
 
-## Installation
-This will walk you through installing Chisel and its dependencies:
-- [sbt](http://www.scala-sbt.org/), which is the preferred Scala build system and what Chisel uses.
-- [Firrtl](https://github.com/ucb-bar/firrtl), which compiles Chisel's IR down to Verilog.
-  If you're building from a release branch of Chisel3, separate installation of Firrtl is no longer required: the required jar will be automatically downloaded by sbt.
-  If you're building chisel3 from the master branch, you'll need to follow the directions on the [Firrtl repository](https://github.com/ucb-bar/firrtl) to publish a local copy of the required jar.
-- [Verilator](http://www.veripool.org/wiki/verilator), which compiles Verilog down to C++ for simulation.
-  The included unit testing infrastructure uses this.
 
-### (Ubuntu-like) Linux
-
-1. Install Java
-   ```
-   sudo apt-get install default-jdk
-   ```
-1. [Install sbt](http://www.scala-sbt.org/release/docs/Installing-sbt-on-Linux.html),
-    which isn't available by default in the system package manager:
-    ```
-    echo "deb https://dl.bintray.com/sbt/debian /" | sudo tee -a /etc/apt/sources.list.d/sbt.list
-    sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 642AC823
-    sudo apt-get update
-    sudo apt-get install sbt
-    ```
-1. Install Verilator.
-    We currently recommend Verilator version 4.006.
-    Follow these instructions to compile it from source.
-
-    1. Install prerequisites (if not installed already):
-        ```
-        sudo apt-get install git make autoconf g++ flex bison
-        ```
-
-    2. Clone the Verilator repository:
-        ```
-        git clone http://git.veripool.org/git/verilator
-        ```
-
-    3. In the Verilator repository directory, check out a known good version:
-        ```
-        git pull
-        git checkout verilator_4_006
-        ```
-
-    4. In the Verilator repository directory, build and install:
-        ```
-        unset VERILATOR_ROOT # For bash, unsetenv for csh
-        autoconf # Create ./configure script
-        ./configure
-        make
-        sudo make install
-        ```
-
-### Arch Linux
-
-```
-yaourt -S firrtl-git verilator sbt
-```
-
-### Windows
-
-[Download and install sbt for Windows](https://www.scala-sbt.org/download.html).
-
-#### Simulation on Windows
-
-The chisel3 regression tests use Verilator as the simulator, but Verilator does not work well on Windows natively.
-However, Verilator works in [WSL](https://docs.microsoft.com/en-us/windows/wsl/install-win10) or in other Linux-compatible environments like Cygwin.
-
-Alternatively, if you're using [PeekPokeTester](https://github.com/freechipsproject/chisel-testers) or the [Testers2 alpha](https://github.com/ucb-bar/chisel-testers2), you can use [treadle](https://github.com/freechipsproject/treadle) as the simulation engine.
-Treadle is a FIRRTL simulator written in Scala, and works on any platform that can run Scala code.
-It can simulate any pure Chisel design, but cannot simulate Verilog code and hence will not work on BlackBoxes / ExtModules which do not have corresponding greybox definitions.
-
-There are no issues with generating Verilog from Chisel, which can be pushed to FPGA or ASIC tools.
-
-### Mac OS X
-
-```
-brew install sbt verilator
-```
-
-## Getting Started
+## Migration
 If you are migrating to Chisel3 from Chisel2, please visit
 [Chisel3 vs Chisel2](https://github.com/ucb-bar/chisel3/wiki/Chisel3-vs-Chisel2)
-
-### Resources for Learning Chisel
-* [Chisel Bootcamp](https://github.com/freechipsproject/chisel-bootcamp), a collection of interactive Jupyter notebooks that teach Chisel
-* [Chisel Tutorial](https://github.com/ucb-bar/chisel-tutorial), a collection of exercises utlizing `sbt`
 
 ### Data Types Overview
 These are the base data types for defining circuit wires (abstract types which
@@ -120,10 +94,6 @@ This section describes how to get started using Chisel to create a new RTL
 design from scratch.
 
 ### [Project Setup](https://github.com/ucb-bar/chisel-template)
-
-
-### RTL
-*TODO: toy example*
 
 ### Verification
 *The simulation unit testing infrastructure is still a work in progress.*
