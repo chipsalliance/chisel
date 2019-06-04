@@ -11,7 +11,8 @@ The latest iteration of [Chisel](https://chisel.eecs.berkeley.edu/) is Chisel3,
 which uses Firrtl as an intermediate hardware representation language. Chisel promotes re-use through parameterization and 
 the ability to build libraries. Better re-use makes hardware engineers more effective.
 
-#What does Chisel code look like?
+# What does Chisel code look like?
+
 Chisel is a [Scala](https://www.scala-lang.org/) embedded DSL, it takes advantage of object oriented and functional techniques to create complex
 circuit generators with a minimum of code. Parameterized generators with strong type and error checking builds re-usable stuff fast.
 ```scala
@@ -42,34 +43,37 @@ class MyFir(length: Int, bitwidth: Int, window: (Int, Int) => Seq[Int]) extends 
 > The example here is taken from the bootcamp. It may look a bit complicated now, but it is just not that hard to learn
 ---
 
-#Get Started -- Do the Bootcamp
+# Get Started -- Do the Bootcamp
+
 The Chisel bootcamp is the fastest way to learn Chisel.
 The Bootcamp uses Jupyter to get you up to speed right away.
 You can even use it online with nothing to install.
 
-##[Click here to go straight to the Bootcamp Now!](https://github.com/freechipsproject/chisel-bootcamp)
+## [Click here to go straight to the Bootcamp Now!](https://github.com/freechipsproject/chisel-bootcamp)
 
 ---
 
-#Build circuits with Chisel
+# Build circuits with Chisel
+
 When you are ready to build and test your own circuits. Chisel3 uses the Sonatype/Nexus/Maven package management systems to seamlessly deliver the environment and extension
 libraries. Set up is easy. The chisel-template repo provides a setup and build environment.
 
-##[Take me to the Chisel-Template](https://github.com/freechipsproject/chisel-template)
+## [Take me to the Chisel-Template](https://github.com/freechipsproject/chisel-template)
 
 For more a more complex template that includes rocket-chip and more, visit the [rebar repository](https://github.com/ucb-bar/project-template).
 To learn more about installing Chisel3 visit [The wiki installation page](Installation)
 
 ---
 
-#Documentation and other Resources
-##[Chisel3 Wiki](/freechipsproject/chisel3/wiki)
-##[Chisel3 API Documentation](https://chisel.eecs.berkeley.edu/api/latest/chisel3/index.html)
-##[Chisel3 Cheat Sheet](https://chisel.eecs.berkeley.edu/doc/chisel-cheatsheet3.pdf)
-##[Chisel3 Website](https://www.chisel-lang.org)
+# Documentation and other Resources
 
+## [Chisel3 Wiki](/freechipsproject/chisel3/wiki)
 
-Chisel3 releases are available as jars on Sonatype/Nexus/Maven and as tagged branches on the [releases tab](https://github.com/freechipsproject/chisel3/releases) of this repository.
+## [Chisel3 API Documentation](https://chisel.eecs.berkeley.edu/api/latest/chisel3/index.html)
+
+## [Chisel3 Cheat Sheet](https://chisel.eecs.berkeley.edu/doc/chisel-cheatsheet3.pdf)
+
+## [Chisel3 Website](https://www.chisel-lang.org)
 
 
 ## More about Chisel
