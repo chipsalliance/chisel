@@ -212,7 +212,7 @@ object Driver {
     *         for downstream tools as desired
     */
   def execute(optionsManager: ExecutionOptionsManager with HasFirrtlOptions): FirrtlExecutionResult = {
-    StageUtils.dramaticWarning("firrtl.Driver is deprecated since 1.2!\nPlease switch to firrtl.stage.FirrtlStage")
+    StageUtils.dramaticWarning("firrtl.Driver is deprecated since 1.2!\nPlease switch to firrtl.stage.FirrtlMain")
 
     val annos = optionsManager.firrtlOptions.toAnnotations ++ optionsManager.commonOptions.toAnnotations
 
