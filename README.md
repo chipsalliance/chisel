@@ -20,34 +20,26 @@ The following example is a parameterized FIR filter.
 
 ![FIR FILTER DIAGRAM 3](https://raw.githubusercontent.com/freechipsproject/chisel3/master/doc/images/fir_filter.svg?sanitize=true)
 
-Users of this module can control the length, bitwidth and the windowing method.
+Users of this module can control the coefficients and bitwidth.
 This module 
-- describes the IO structure
-- calculates the coefficients based on the windowing method
-- creates a series of registers (delays) and connects them together
-- multiplies each register by it's respective coefficient
-- sums up the results and wires it to the output
+- defines the IO structure
+- conenct the output to the following
+- zips up the coefficents, with a sequential series of registers that begin with input, into a series of tuples
+- multiplies each of these tuples together to create a sequence of products
+- sums up the products
 
 ```scala
-class MyFir(length: Int, bitwidth: Int, window: (Int, Int) => Seq[Int]) extends Module {
-  val io = IO(new Bundle {
-    val in = Input(UInt(bitwidth.W))
-    val out = Output(UInt((bitwidth * 2 + length - 1).W)) // expect bit growth, conservative but lazy
-  })
+class FIR(bitWidth: Int, coeffs: Seq[UInt]) extends MultiIOModule {
+  val (in, out) = (IO(Input(UInt(bitWidth.W))), IO(Output(UInt(bitWidth.W))))
 
-  val coeffs = window(length, bitwidth).map(_.U)
-  
-  val delays = Seq.fill(length)(Wire(UInt(bitwidth.W))).scan(io.in)( (prev: UInt, next: UInt) => {
-    next := RegNext(prev)
-    next
-  })
-  
-  val mults = delays.zip(coeffs).map{ case(delay: UInt, coeff: UInt) => delay * coeff }
-  val result = mults.reduce(_ +& _)
-  io.out := result
+  out := coeffs
+          .zip(in +: coeffs.tail.scan(in) { case a => RegNext(a._1) }) // a sequence of connected regs starting at in
+          .map { case (c, r) => c * r }                                // multiply each reg by its coefficient
+          .reduce(_ +% _)                                              // add up the products
 }
 ```
-> The example here is taken from the bootcamp. It may look a bit complicated now, but it is just not that hard to learn
+> The example here is an extension of an example from the bootcamp.
+It may look a bit complicated now, but with the bootcamp it will make sense very quickly.
 ---
 
 # Get Started -- Do the Bootcamp
