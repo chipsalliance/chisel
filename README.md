@@ -6,38 +6,45 @@
 [![CircleCI](https://circleci.com/gh/freechipsproject/chisel3/tree/master.svg?style=shield)](https://circleci.com/gh/freechipsproject/chisel3/tree/master)
 [![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/freechipsproject/chisel3.svg?label=release)](https://github.com/freechipsproject/chisel3/releases/latest)
 
-Chisel is a powerful hardware construction language to support advanced hardware design and circuit generation.
-The latest iteration of [Chisel](https://chisel.eecs.berkeley.edu/) is Chisel3,
+[Chisel](https://chisel.eecs.berkeley.edu/) is a powerful hardware construction language to support advanced hardware design and circuit generation.
 which uses Firrtl as an intermediate hardware representation language. Chisel promotes re-use through parameterization and 
-the ability to build libraries. Better re-use makes hardware engineers more effective.
+the ability to build libraries.
+Better re-use makes hardware engineers more effective.
+Chisel is implemented as an embedded Domain Specific Language or DSL, which adds HDL constructs to [Scala](https://www.scala-lang.org/) optimizing it for building circuits.
+Chisel takes advantage of object oriented and functional techniques to create complex circuit generators with a minimum of code.
+Parameterized generators with strong type and error checking build re-usable stuff fast.
 
 # What does Chisel code look like?
 
-Chisel is a [Scala](https://www.scala-lang.org/) embedded DSL, it takes advantage of object oriented and functional techniques to create complex
-circuit generators with a minimum of code. Parameterized generators with strong type and error checking build re-usable stuff fast.
+The following example is a parameterized FIR filter.
+
+![FIR FILTER DIAGRAM 3](https://raw.githubusercontent.com/freechipsproject/chisel3/master/doc/images/fir_filter.svg?sanitize=true)
+
+Users of this module can control the length, bitwidth and the windowing method.
+This module 
+- describes the IO structure
+- calculates the coefficients based on the windowing method
+- creates a series of registers (delays) and connects them together
+- multiplies each register by it's respective coefficient
+- sums up the results and wires it to the output
+
 ```scala
-// This FIR filter has parameterized window length, IO bitwidth, and windowing function
 class MyFir(length: Int, bitwidth: Int, window: (Int, Int) => Seq[Int]) extends Module {
   val io = IO(new Bundle {
     val in = Input(UInt(bitwidth.W))
-    val out = Output(UInt((bitwidth*2+length-1).W)) // expect bit growth, conservative but lazy
+    val out = Output(UInt((bitwidth * 2 + length - 1).W)) // expect bit growth, conservative but lazy
   })
 
-  // calculate the coefficients using the provided window function, mapping to UInts
   val coeffs = window(length, bitwidth).map(_.U)
   
-  // create an array holding the output of the delays
   val delays = Seq.fill(length)(Wire(UInt(bitwidth.W))).scan(io.in)( (prev: UInt, next: UInt) => {
     next := RegNext(prev)
     next
   })
   
-  // multiply, putting result in "mults"
   val mults = delays.zip(coeffs).map{ case(delay: UInt, coeff: UInt) => delay * coeff }
-  
-  val result = mults.reduce(_+&_)  // add up multiplier outputs with bit growth
-
-  io.out := result  // connect output
+  val result = mults.reduce(_ +& _)
+  io.out := result
 }
 ```
 > The example here is taken from the bootcamp. It may look a bit complicated now, but it is just not that hard to learn
@@ -62,13 +69,13 @@ libraries. Set up is easy. The chisel-template repo provides a setup and build e
 
 For more a more complex template that includes rocket-chip and more, visit the [rebar repository](https://github.com/ucb-bar/project-template).
 
-To learn more about installing Chisel3 visit [The wiki installation page](Installation)
+To learn more about installing Chisel3 visit [The wiki installation page](https://github.com/freechipsproject/chisel3/wiki/installation)
 
 ---
 
 # Documentation and other Resources
 
-## [Chisel3 Wiki](/freechipsproject/chisel3/wiki)
+## [Chisel3 Wiki](https://github.com/freechipsproject/chisel3/wiki)
 
 ## [Chisel3 API Documentation](https://chisel.eecs.berkeley.edu/api/latest/chisel3/index.html)
 
