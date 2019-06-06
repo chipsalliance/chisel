@@ -20,7 +20,7 @@ sealed trait FirrtlOption { this: Annotation => }
 /** Indicates that this [[firrtl.annotations.Annotation Annotation]] contains information that is directly convertable
   * to a FIRRTL [[firrtl.ir.Circuit Circuit]].
   */
-sealed trait CircuitOption extends { this: Annotation =>
+sealed trait CircuitOption { this: Annotation =>
 
   /** Convert this [[firrtl.annotations.Annotation Annotation]] to a [[FirrtlCircuitAnnotation]]
     */
