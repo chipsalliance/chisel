@@ -6,7 +6,8 @@
 [![CircleCI](https://circleci.com/gh/freechipsproject/chisel3/tree/master.svg?style=shield)](https://circleci.com/gh/freechipsproject/chisel3/tree/master)
 [![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/freechipsproject/chisel3.svg?label=release)](https://github.com/freechipsproject/chisel3/releases/latest)
 
-[**Chisel**](https://chisel-lang.org) is a hardware construction language that facilitates **advanced circuit generation, design reuse, and FPGA/ASIC/technology specialization**.
+
+[**Chisel**](https://chisel.eecs.berkeley.edu) is a hardware design language that facilitates **advanced circuit generation, design reuse, and FPGA/ASIC/technology specialization**.
 Chisel is implemented as a [Domain Specific Language (DSL)](https://en.wikipedia.org/wiki/Domain-specific_language) that adds type-safe hardware constructs to the [Scala](https://www.scala-lang.org) programming language.
 Using the hardware datatypes of Chisel, the [Chisel Standard Library](https://chisel.eecs.berkeley.edu/api/latest/chisel3/util/index.html), and the multi-paradigm power of the Scala language you can write **complex, highly parameterized circuit generators** that produce synthesizable Verilog.
 
@@ -77,7 +78,7 @@ We provide a number of informational resources for Chisel:
 - [**Chisel3 API Docuementation**](https://chisel.eecs.berkeley.edu/api/latest/chisel3/index.html)
 - [**Chisel3 Cheat Sheet**](https://chisel.eecs.berkeley.edu/doc/chisel-cheatsheet3.pdf)
 - [**Chisel3 Wiki**](https://github.com/freechipsproject/chisel3/wiki)
-- [**Chisel3 Website**](https://www.chisel-lang.org)
+- [**Chisel3 Website**](https://chisel.eecs.berkeley.edu)
 - [**Chisel3 Gitter**](https://gitter.im/freechipsproject/chisel3)
 
 # More About Chisel
