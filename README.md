@@ -17,7 +17,7 @@ For more information on the benefits of Chisel see: ["What benefits does Chisel 
 
 The following example is a parameterized FIR filter generator that implements the block diagram below:
 
-![FIR FILTER DIAGRAM 3](https://raw.githubusercontent.com/freechipsproject/chisel3/master/doc/images/fir_filter.svg?sanitize=true)
+![FIR FILTER DIAGRAM 3](doc/images/fir_filter.svg?sanitize=true)
 
 This module leverages the [functional programming](https://en.wikipedia.org/wiki/Functional_programming) capabilities of Scala to succinctly:
 
