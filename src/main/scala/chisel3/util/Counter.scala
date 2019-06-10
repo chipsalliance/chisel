@@ -5,7 +5,8 @@ package chisel3.util
 import chisel3._
 import chisel3.internal.naming.chiselName  // can't use chisel3_ version because of compile order
 
-/** Used to generate an inline hardware counter
+/** Used to generate an inline (logic directly in the containing Module, no internal Module is created)
+  * hardware counter.
   *
   * Typically instantiated with apply methods in [[Counter$ object Counter]]
   *
