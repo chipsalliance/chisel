@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.{withClock, withReset}
+import chisel3.experimental.DataMirror
 
 class SimpleIO extends Bundle {
   val in  = Input(UInt(32.W))
@@ -71,7 +71,7 @@ class ModuleWrapper(gen: => Module) extends Module {
 class NullModuleWrapper extends Module {
   val io = IO(new Bundle{})
   override lazy val desiredName = s"${child.desiredName}Wrapper"
-  println(s"My name is ${name}")
+  println(s"My name is ${name}") // scalastyle:ignore regex
   val child = Module(new ModuleWire)
 }
 
@@ -146,7 +146,7 @@ class ModuleSpec extends ChiselPropSpec {
         val a = IO(UInt(8.W))
         val b = IO(Bool())
       })
-      assert(chisel3.experimental.DataMirror.modulePorts(m) == Seq(
+      assert(DataMirror.modulePorts(m) == Seq(
           "clock" -> m.clock, "reset" -> m.reset,
           "a" -> m.a, "b" -> m.b))
     })

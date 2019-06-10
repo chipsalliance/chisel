@@ -18,7 +18,7 @@ final class CustomBundle(elts: (String, Data)*) extends Record {
     field -> elt
   }: _*)
   def apply(elt: String): Data = elements(elt)
-  override def cloneType = {
+  override def cloneType: this.type = {
     val cloned = elts.map { case (n, d) => n -> DataMirror.internal.chiselTypeClone(d) }
     (new CustomBundle(cloned: _*)).asInstanceOf[this.type]
   }
@@ -28,11 +28,11 @@ trait RecordSpecUtils {
   class MyBundle extends Bundle {
     val foo = UInt(32.W)
     val bar = UInt(32.W)
-    override def cloneType = (new MyBundle).asInstanceOf[this.type]
+    override def cloneType: this.type = (new MyBundle).asInstanceOf[this.type]
   }
   // Useful for constructing types from CustomBundle
   // This is a def because each call to this needs to return a new instance
-  def fooBarType = new CustomBundle("foo" -> UInt(32.W), "bar" -> UInt(32.W))
+  def fooBarType: CustomBundle = new CustomBundle("foo" -> UInt(32.W), "bar" -> UInt(32.W))
 
   class MyModule(output: => Record, input: => Record) extends Module {
     val io = IO(new Bundle {

@@ -3,7 +3,6 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.{withClockAndReset, withClock, withReset}
 import chisel3.util.Counter
 import chisel3.testers.BasicTester
 

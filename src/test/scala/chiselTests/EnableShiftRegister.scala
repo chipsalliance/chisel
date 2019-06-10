@@ -2,7 +2,6 @@
 
 package chiselTests
 import chisel3._
-import chisel3.testers.BasicTester
 
 class EnableShiftRegister extends Module {
   val io = IO(new Bundle {
@@ -23,6 +22,7 @@ class EnableShiftRegister extends Module {
   io.out := r3
 }
 
+// scalastyle:off regex
 /*
 class EnableShiftRegisterTester(c: EnableShiftRegister) extends Tester(c) {
   val reg = Array.fill(4){ 0 }
@@ -42,6 +42,7 @@ class EnableShiftRegisterTester(c: EnableShiftRegister) extends Tester(c) {
   }
 }
 */
+// scalastyle:on regex
 
 class EnableShiftRegisterSpec extends ChiselPropSpec {
 

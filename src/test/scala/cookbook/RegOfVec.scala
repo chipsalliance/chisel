@@ -7,7 +7,7 @@ import chisel3._
 /* ### How do I create a Reg of type Vec?
  *
  * For information, please see the API documentation for Vec
- * (https://chisel.eecs.berkeley.edu/api/index.html#chisel3.core.Vec)
+ * (https://chisel.eecs.berkeley.edu/api/index.html#chisel3.Vec)
  */
 class RegOfVec extends CookbookTester(2) {
   // Reg of Vec of 32-bit UInts without initialization

@@ -21,7 +21,7 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers {
           class InnerIOType extends Bundle {
             val in = Input(UInt(w.W))
           }
-          def getIO = new InnerIOType
+          def getIO: InnerIOType = new InnerIOType
         }
         val io = IO(new Bundle {})
         val myWire = Wire((new Middle(w)).getIO)
@@ -107,7 +107,7 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers {
     intercept[ChiselException] { elaborate {
       class Outer(val w: Int) extends Module {
         class Middle(val w: Int) {
-          def getIO = new Bundle {
+          def getIO: Bundle = new Bundle {
             val in = Input(UInt(w.W))
           }
         }
