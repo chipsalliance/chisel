@@ -25,7 +25,7 @@ class Checks extends Phase {
     * @throws firrtl.options.OptionsException if any checks fail
     */
   def transform(annos: AnnotationSeq): AnnotationSeq = {
-    val inF, inS, eam, ec, outF, td, i, foaf, comp, im, inC = collection.mutable.ListBuffer[Annotation]()
+    val inF, inS, eam, ec, outF, comp, im, inC = collection.mutable.ListBuffer[Annotation]()
     annos.foreach(
       _ match {
         case a: FirrtlFileAnnotation     => a +=: inF
