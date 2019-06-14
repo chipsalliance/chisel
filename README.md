@@ -6,126 +6,121 @@
 [![CircleCI](https://circleci.com/gh/freechipsproject/chisel3/tree/master.svg?style=shield)](https://circleci.com/gh/freechipsproject/chisel3/tree/master)
 [![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/freechipsproject/chisel3.svg?label=release)](https://github.com/freechipsproject/chisel3/releases/latest)
 
-
-[**Chisel**](https://chisel.eecs.berkeley.edu) is a hardware design language that facilitates **advanced circuit generation, design reuse, and FPGA/ASIC/technology specialization**.
-Chisel is implemented as a [Domain Specific Language (DSL)](https://en.wikipedia.org/wiki/Domain-specific_language) that adds type-safe hardware constructs to the [Scala](https://www.scala-lang.org) programming language.
-Using the hardware datatypes of Chisel, the [Chisel Standard Library](https://chisel.eecs.berkeley.edu/api/latest/chisel3/util/index.html), and the multi-paradigm power of the Scala language you can write **complex, highly parameterized circuit generators** that produce synthesizable Verilog.
+[**Chisel**](https://chisel.eecs.berkeley.edu) is a hardware design language that facilitates **advanced circuit generation and design reuse for both ASIC and FPGA digital logic designs**.
+Chisel adds hardware construction primitives to the [Scala](https://www.scala-lang.org) programming language, providing designers with the power of a modern programming language to write complex, parameterizable circuit generators that produce synthesizable Verilog.
+This generator methodology enables the creation of re-usable components and libraries, such as the FIFO queue and arbiters in the [Chisel Standard Library](https://chisel.eecs.berkeley.edu/api/latest/chisel3/util/index.html), raising the level of abstraction in design while retaining fine-grained control. 
 
 For more information on the benefits of Chisel see: ["What benefits does Chisel offer over classic Hardware Description Languages?"](https://stackoverflow.com/questions/53007782/what-benefits-does-chisel-offer-over-classic-hardware-description-languages)
 
-# What does Chisel code look like?
+Chisel is powered by [FIRRTL (Flexible Intermediate Representation for RTL)](https://github.com/freechipsproject/firrtl), a hardware compiler framework that performs optimizations of Chisel-generated circuits and supports custom user-defined circuit transformations. 
 
-The following example is a parameterized FIR filter generator that implements the block diagram below:
+## What does Chisel code look like?
 
-![FIR FILTER DIAGRAM 3](doc/images/fir_filter.svg?sanitize=true)
+Consider an FIR filter that implements a convolution operation, as depicted in this block diagram:
 
-This module leverages the [functional programming](https://en.wikipedia.org/wiki/Functional_programming) capabilities of Scala to succinctly:
+<img src="doc/images/fir_filter.svg?sanitize=true" width="200" />
 
-- define the IO structure
-- create a shift register of time-delayed inputs
-- perform a dot product of time-delayed inputs with coefficients
-- connect the result of the dot product to the output
+<!-- ![FIR FILTER DIAGRAM 3](doc/images/fir_filter.svg?sanitize=true | width=100) -->
 
-```scala
-class FIR(bitWidth: Int, coeffs: Seq[UInt]) extends MultiIOModule {
-  val (in, out) = (IO(Input(UInt(bitWidth.W))), IO(Output(UInt(bitWidth.W))))
-
-  out := coeffs
-    .zip(in +: coeffs.tail.scan(in) { case a => RegNext(a._1) }) // time-delayed inputs
-    .map { case (c, r) => c * r }.reduce(_ +% _)                 // dot product with coeffs
-}
-```
-
-The above example heavily stresses Scala language features.
-Alternatively, Chisel may be used to write Verilog/VHDL-like designs as shown in the following 3-coefficient FIR filter:
+While Chisel provides similar base primitives as synthesizable Verilog, and *could* be used as such:
 
 ```scala
-class FIR3(bitWidth: Int) extends Module {
+// 3-point moving average implemented in the style of a FIR filter
+class MovingAverage3(bitWidth: Int) extends Module {
   val io = IO(new Bundle {
-      val in = Input(UInt(bitWidth.W))
-      val out = Output(UInt(bitWidth.W))
-    })
+    val in = Input(UInt(bitWidth.W))
+    val out = Output(UInt(bitWidth.W))
+  })
 
-  val b0 = 1.U
-  val b1 = 1.U
-  val b2 = 1.U
+  val z1 = RegNext(io.in)
+  val z2 = RegNext(z0)
 
-  val z0 = RegNext(io.in)
-  val z1 = RegNext(z0)
-
-  io.out := (io.in * b0) + (z0 * b1) + (z1 * b2)
+  io.out := (io.in * 1.U) + (z1 * 1.U) + (z2 * 1.U)
 }
 ```
 
-# Getting Started
+the power of Chisel comes from the ability to create generators, such as n FIR filter that is defined by the list of coefficients:
+```scala
+// Generalized FIR filter parameterized by the convolution coefficients
+class FirFilter(bitWidth: Int, coeffs: Seq[UInt]) extends Module {
+  val io = IO(new Bundle {
+    val in = Input(UInt(bitWidth.W))
+    val out = Output(UInt(bitWidth.W))
+  })
+  // Create the serial-in, parallel-out shift register
+  val zs = Wire(Vec(coeffs.length, UInt(bitWidth.W)))
+  zs(0) := io.in
+  for (i <- 1 until coeffs.length) {
+    zs(i) := zs(i-1)
+  }
+  
+  // Do the multiplies
+  val products = VecInit.tabulate(coeffs.length)(i => zs(i) * coeffs(i))
+  
+  // Sum up the products
+  io.out := products.reduce(_ + _)
+}
+```
+ 
+and use and re-use them across designs:
+```scala
+val movingAverage3Filter = FirFilter(8.W, Seq(1.U, 1.U, 1.U))  // same 3-point moving average filter as before
+val delayFilter = FirFilter(8.W, Seq(0.U, 1.U))  // 1-cycle delay as a FIR filter
+val triangleFilter = FirFilter(8.W, Seq(1.U, 2.U, 3.U, 2.U, 1.U))  // 5-point FIR filter with a triangle impulse response
+```
 
-## Chisel Bootcamp
 
-The [Chisel Bootcamp](https://github.com/freechipsproject/chisel-bootcamp) is the fastest way to learn Chisel.
-Here, you can learn about Scala and Chisel and test your knowledge with built-in exercises.
+## Getting Started
 
-[**Click here to be taken to a hosted instanced of the Chisel Bootcamp and start learning!**](https://mybinder.org/v2/gh/freechipsproject/chisel-bootcamp/master)
+### Bootcamp Interactive Tutorial
+The [**online Chisel Bootcamp**](https://mybinder.org/v2/gh/freechipsproject/chisel-bootcamp/master) is the recommended way to get started with and learn Chisel.
+**No setup is required** (it runs in the browser), nor does it assume any prior knowledge of Scala.   
 
-## Build Your Own Chisel Projects
+### Build Your Own Chisel Projects
 
-After going through the Chisel Bootcamp, you're now ready to build your own hardware.
-The [Chisel Template](https://github.com/freechipsproject/chisel-template) repository provides a base setup and build environment for starting a new Chisel project.
+See [the setup instructions](SETUP.md) for how to set up your environment to run Chisel locally.
 
-## Documentation and Other Resources
+When you're ready to build your own circuits in Chisel, **we recommend starting from the [Chisel Template](https://github.com/freechipsproject/chisel-template) repository**, which provides a pre-configured project, example design, and testbench. Follow the [chisel-template readme](https://github.com/freechipsproject/chisel-template) to get started.
 
-We provide a number of informational resources for Chisel:
+If you insist on setting up your own project, the magic SBT lines are:
+```scala
+resolvers ++= Seq(
+  Resolver.sonatypeRepo("snapshots"),
+  Resolver.sonatypeRepo("releases")
+)
+libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.2-SNAPSHOT"
+libraryDependencies += "edu.berkeley.cs" %% "chisel-testers2" % "0.1-SNAPSHOT"
+``` 
 
-- [**Chisel3 API Docuementation**](https://chisel.eecs.berkeley.edu/api/latest/chisel3/index.html)
-- [**Chisel3 Cheat Sheet**](https://chisel.eecs.berkeley.edu/doc/chisel-cheatsheet3.pdf)
-- [**Chisel3 Wiki**](https://github.com/freechipsproject/chisel3/wiki)
-- [**Chisel3 Website**](https://chisel.eecs.berkeley.edu)
-- [**Chisel3 Gitter**](https://gitter.im/freechipsproject/chisel3)
+### Design Verification
 
-# More About Chisel
+These simulation-based verification tools are available for Chisel:
+- [**iotesters**](https://github.com/freechipsproject/chisel-testers), specifically [PeekPokeTester](https://github.com/freechipsproject/chisel-testers/wiki/Using%20the%20PeekPokeTester), provides constructs (`peek`, `poke`, `expect`) similar to a non-synthesizable Verilog testbench.
+- [**testers2**](https://github.com/ucb-bar/chisel-testers2) is an in-development replacement for PeekPokeTester, providing the same base constructs but with a streamlined interface and concurrency support with `fork` and `join`.
 
-Chisel forms the first stage of a 3-stage **hardware compiler framework** to generate Verilog.
-This is a hardware analog to the [LLVM Compiler Infrastructure Project](https://llvm.org/).
-A Chisel design is converted to a circuit intermediate representation (IR) called [FIRRTL (Flexible Intermediate Representation for RTL)](https://github.com/freechipsproject/firrtl).
-The second stage, the FIRRTL compiler, optimizes, transforms, and specializes the circuit.
-The third stage, a Verilog emitter, converts the FIRRTL to synthesizable Verilog.
-This Verilog is then compiled and simulated/tested using [Verilator](http://www.veripool.org/wiki/verilator).
-The FIRRTL-produced Verilog can then be passed to an FPGA or ASIC tool chain for deployment or tape-out.
 
-## Migration
-If you are migrating to Chisel3 from Chisel2, please visit
-[Chisel3 vs Chisel2](https://github.com/ucb-bar/chisel3/wiki/Chisel3-vs-Chisel2).
+## Documentation
 
-## Data Types Overview
-These are the base data types for defining circuit wires (abstract types which
-may not be instantiated are greyed out):
+### Useful Resources
+ 
+- [**Cheat Sheet**](https://chisel.eecs.berkeley.edu/doc/chisel-cheatsheet3.pdf), a 2-page reference of the base Chisel syntax and libraries
+- [**Wiki**](https://github.com/freechipsproject/chisel3/wiki), which contains various feature-specific tutorials and frequently-asked questions.
+- [**ScalaDoc**](https://chisel.eecs.berkeley.edu/api/latest/chisel3/index.html), a listing, description, and examples of the functionality exposed by Chisel   
+- [**Gitter**](https://gitter.im/freechipsproject/chisel3), where you can ask questions or discuss anything Chisel
+- [**Website**](https://chisel.eecs.berkeley.edu)
+
+
+- If you are migrating from Chisel2, see [the migration guide on the wiki](https://github.com/ucb-bar/chisel3/wiki/Chisel3-vs-Chisel2).
+
+### Data Types Overview
+These are the base data types for defining circuit wires (abstract types which may not be instantiated are greyed out):
 
 ![Image](doc/images/type_hierarchy.png?raw=true)
 
-# Verification
-
-*Testing and verification of Chisel hardware designs happens on the generated Verilog.*
-
-Both the [Chisel Bootcamp](https://github.com/freechipsproject/chisel-bootcamp) and [Chisel Template](https://github.com/freechipsproject/chisel-template) provide examples of using Chisel's built in testing libraries.
-What follows is an overview of different testing suites for Chisel.
-
-## Basic Tester (chisel3.testers)
-
-This library, packaged with Chisel3, provides basic "hardware testing hardware" style testing using the `BasicTester` class.
-
-## Chisel Testers (chisel3.iotesters)
-
-This library provides "peek, poke, expect" style testing using `PeekPokeTester`.
-For more information on Chisel Testers see [freechipsproject/chisel-testers](https://github.com/freechipsproject/chisel-testers).
-
-## Chisel Testers2 (chisel3.tester)
-
-This library, intended to be a replacement for Chisel Testers, provides "peek, poke, expect" style testing in a streamlined interface as well as advanced, necessary testing constructs like "fork" and "join".
-For more information on Testers2 see [ucb-bar/chisel-testers2](https://github.com/ucb-bar/chisel-testers2).
-
-# Chisel Development
+## Developer Documentation
 This section describes how to get started developing Chisel itself, including how to test your version locally against other projects that pull in Chisel using [sbt's managed dependencies](https://www.scala-sbt.org/1.x/docs/Library-Dependencies.html).
 
-## Compiling and Testing Chisel
+### Compiling and Testing Chisel
 
 In the chisel3 repository directory compile the Chisel library:
 
@@ -139,7 +134,7 @@ If the compilation succeeded, you can then run the included unit tests by invoki
 sbt test
 ```
 
-## Running Projects Against Local Chisel
+### Running Projects Against Local Chisel
 
 To use the development version of Chisel (`master` branch), you will need to build from source and `publishLocal`.
 The repository version can be found in the build.sbt file.
@@ -163,8 +158,6 @@ In order to have your projects use this version of Chisel, you should update the
 ```
 libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.2-SNAPSHOT"
 ```
-
-## Technical Documentation
 
 ### Chisel3 Architecture Overview
 
