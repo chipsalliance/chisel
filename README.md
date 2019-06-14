@@ -18,9 +18,7 @@ Chisel is powered by [FIRRTL (Flexible Intermediate Representation for RTL)](htt
 
 Consider an FIR filter that implements a convolution operation, as depicted in this block diagram:
 
-<img src="doc/images/fir_filter.svg?sanitize=true" width="200" />
-
-<!-- ![FIR FILTER DIAGRAM 3](doc/images/fir_filter.svg?sanitize=true | width=100) -->
+<img src="doc/images/fir_filter.svg?sanitize=true" width="512" />
 
 While Chisel provides similar base primitives as synthesizable Verilog, and *could* be used as such:
 
@@ -109,8 +107,7 @@ These simulation-based verification tools are available for Chisel:
 - [**Gitter**](https://gitter.im/freechipsproject/chisel3), where you can ask questions or discuss anything Chisel
 - [**Website**](https://chisel.eecs.berkeley.edu)
 
-
-- If you are migrating from Chisel2, see [the migration guide on the wiki](https://github.com/ucb-bar/chisel3/wiki/Chisel3-vs-Chisel2).
+If you are migrating from Chisel2, see [the migration guide on the wiki](https://github.com/ucb-bar/chisel3/wiki/Chisel3-vs-Chisel2).
 
 ### Data Types Overview
 These are the base data types for defining circuit wires (abstract types which may not be instantiated are greyed out):
