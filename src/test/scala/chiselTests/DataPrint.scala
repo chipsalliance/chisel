@@ -6,30 +6,16 @@ import org.scalatest._
 
 import chisel3._
 import chisel3.experimental.{ChiselEnum, FixedPoint, RawModule, MultiIOModule}
+import chisel3.experimental.BundleLiterals._
 
 class DataPrintSpec extends ChiselFlatSpec with Matchers {
   object EnumTest extends ChiselEnum {
     val sNone, sOne, sTwo = Value
   }
 
-  // TODO: dedup w/ BundleLiteralSpec
   class BundleTest extends Bundle {
     val a = UInt(8.W)
     val b = Bool()
-
-    // Bundle literal constructor code, which will be auto-generated using macro annotations in
-    // the future.
-    import chisel3.core.BundleLitBinding
-    import chisel3.internal.firrtl.{ULit, Width}
-    // Full bundle literal constructor
-    def Lit(aVal: UInt, bVal: Bool): BundleTest = { // scalastyle:ignore method.name
-      val clone = cloneType
-      clone.selfBind(BundleLitBinding(Map(
-        clone.a -> litArgOfBits(aVal),
-        clone.b -> litArgOfBits(bVal)
-      )))
-      clone
-    }
   }
 
   "Data types" should "have a meaningful string representation" in {
@@ -82,7 +68,7 @@ class DataPrintSpec extends ChiselFlatSpec with Matchers {
       EnumTest.sNone.toString should be ("EnumTest(0=sNone)")
       EnumTest.sTwo.toString should be ("EnumTest(2=sTwo)")
       EnumTest(1.U).toString should be ("EnumTest(1=sOne)")
-      (new BundleTest).Lit(2.U, false.B).toString should be ("BundleTest(a=UInt<8>(2), b=Bool(false))")
+      (new BundleTest).Lit(_.a -> 2.U, _.b -> false.B).toString should be ("BundleTest(a=UInt<8>(2), b=Bool(false))")
       new Bundle {
         val a = UInt(8.W)
       }.toString should be ("AnonymousBundle")

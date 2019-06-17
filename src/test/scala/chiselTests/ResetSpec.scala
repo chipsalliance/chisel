@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental._
+import chisel3.experimental.{IO, RawModule}
 import chisel3.util.{Counter, Queue}
 import chisel3.testers.BasicTester
 
@@ -30,7 +30,7 @@ class ResetSpec extends ChiselFlatSpec {
       val inst = Module(new ResetAgnosticModule)
       inst.clk := clock
       inst.rst := reset
-      assert(inst.rst.isInstanceOf[chisel3.core.ResetType])
+      assert(inst.rst.isInstanceOf[chisel3.ResetType])
       io.out := inst.out
     })
     sync should include ("always @(posedge clk)")
@@ -42,7 +42,7 @@ class ResetSpec extends ChiselFlatSpec {
       val inst = Module(new ResetAgnosticModule)
       inst.clk := clock
       inst.rst := reset.asTypeOf(AsyncReset())
-      assert(inst.rst.isInstanceOf[chisel3.core.ResetType])
+      assert(inst.rst.isInstanceOf[chisel3.ResetType])
       io.out := inst.out
     })
     async should include ("always @(posedge clk or posedge rst)")

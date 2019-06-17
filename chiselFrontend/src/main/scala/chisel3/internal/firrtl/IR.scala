@@ -3,9 +3,9 @@
 package chisel3.internal.firrtl
 
 import chisel3._
-import core._
 import chisel3.internal._
-import chisel3.internal.sourceinfo.{SourceInfo, NoSourceInfo}
+import chisel3.internal.sourceinfo.SourceInfo
+import chisel3.experimental.{BaseModule, ChiselAnnotation, Param, RawModule}
 
 // scalastyle:off number.of.types
 
@@ -270,8 +270,8 @@ case class DefInvalid(sourceInfo: SourceInfo, arg: Arg) extends Command
 case class DefWire(sourceInfo: SourceInfo, id: Data) extends Definition
 case class DefReg(sourceInfo: SourceInfo, id: Data, clock: Arg) extends Definition
 case class DefRegInit(sourceInfo: SourceInfo, id: Data, clock: Arg, reset: Arg, init: Arg) extends Definition
-case class DefMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: Int) extends Definition
-case class DefSeqMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: Int) extends Definition
+case class DefMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: BigInt) extends Definition
+case class DefSeqMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: BigInt) extends Definition
 case class DefMemPort[T <: Data](sourceInfo: SourceInfo, id: T, source: Node, dir: MemPortDirection, index: Arg, clock: Arg) extends Definition
 case class DefInstance(sourceInfo: SourceInfo, id: BaseModule, ports: Seq[Port]) extends Definition
 case class WhenBegin(sourceInfo: SourceInfo, pred: Arg) extends Command

@@ -2,7 +2,6 @@
 
 package chiselTests
 
-import java.io.File
 import org.scalatest._
 import org.scalatest.prop._
 import org.scalacheck._

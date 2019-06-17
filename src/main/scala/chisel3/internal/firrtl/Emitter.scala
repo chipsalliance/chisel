@@ -2,9 +2,8 @@
 
 package chisel3.internal.firrtl
 import chisel3._
-import chisel3.core.{SpecifiedDirection, EnumType, ResetType}
 import chisel3.experimental._
-import chisel3.internal.sourceinfo.{NoSourceInfo, SourceLine}
+import chisel3.internal.BaseBlackBox
 
 private[chisel3] object Emitter {
   def emit(circuit: Circuit): String = new Emitter(circuit).toString
@@ -112,8 +111,8 @@ private class Emitter(circuit: Circuit) {
   /** Generates the FIRRTL module declaration.
     */
   private def moduleDecl(m: Component): String = m.id match {
-    case _: chisel3.core.BaseBlackBox => newline + s"extmodule ${m.name} : "
-    case _: chisel3.core.RawModule => newline + s"module ${m.name} : "
+    case _: BaseBlackBox => newline + s"extmodule ${m.name} : "
+    case _: RawModule => newline + s"module ${m.name} : "
   }
 
   /** Generates the FIRRTL module definition.

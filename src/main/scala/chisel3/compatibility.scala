@@ -3,6 +3,7 @@
 /** The Chisel compatibility package allows legacy users to continue using the `Chisel` (capital C) package name
   *  while moving to the more standard package naming convention `chisel3` (lowercase c).
   */
+import chisel3._    // required for implicit conversions.
 
 package object Chisel {     // scalastyle:ignore package.object.name number.of.types number.of.methods
   import chisel3.internal.firrtl.Width
@@ -12,28 +13,31 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
   import scala.annotation.compileTimeOnly
   import scala.language.implicitConversions
 
-  implicit val defaultCompileOptions = chisel3.core.ExplicitCompileOptions.NotStrict
+  implicit val defaultCompileOptions = chisel3.ExplicitCompileOptions.NotStrict
 
   abstract class Direction
   case object INPUT extends Direction
   case object OUTPUT extends Direction
   case object NODIR extends Direction
 
-  val Input   = chisel3.core.Input
-  val Output  = chisel3.core.Output
+  val Input   = chisel3.Input
+  val Output  = chisel3.Output
 
   object Flipped {
-    def apply[T<:Data](target: T): T = chisel3.core.Flipped[T](target)
+    def apply[T<:Data](target: T): T = chisel3.Flipped[T](target)
   }
 
   implicit class AddDirectionToData[T<:Data](target: T) {
-    def asInput: T = chisel3.core.Input(target)
-    def asOutput: T = chisel3.core.Output(target)
-    def flip(): T = chisel3.core.Flipped(target)
+    def asInput: T = Input(target)
+    def asOutput: T = Output(target)
+    def flip(): T = Flipped(target)
   }
 
   implicit class AddDirMethodToData[T<:Data](target: T) {
-    import chisel3.core.{DataMirror, ActualDirection, requireIsHardware}
+    import chisel3.ActualDirection
+    import chisel3.experimental.DataMirror
+    import chisel3.internal.requireIsHardware
+
     def dir: Direction = {
       requireIsHardware(target) // This has the side effect of calling _autoWrapPorts
       target match {
@@ -47,7 +51,7 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
     }
   }
   implicit class cloneTypeable[T <: Data](target: T) {
-    import chisel3.core.DataMirror
+    import chisel3.experimental.DataMirror
     def chiselCloneType: T = {
       DataMirror.internal.chiselTypeClone(target).asInstanceOf[T]
     }
@@ -55,15 +59,15 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
 
   type ChiselException = chisel3.internal.ChiselException
 
-  type Data = chisel3.core.Data
-  object Wire extends chisel3.core.WireFactory {
-    import chisel3.core.CompileOptions
+  type Data = chisel3.Data
+  object Wire extends WireFactory {
+    import chisel3.CompileOptions
 
     def apply[T <: Data](dummy: Int = 0, init: T)(implicit compileOptions: CompileOptions): T =
-      chisel3.core.WireDefault(init)
+      chisel3.WireDefault(init)
 
     def apply[T <: Data](t: T, init: T)(implicit compileOptions: CompileOptions): T =
-      chisel3.core.WireDefault(t, init)
+      chisel3.WireDefault(t, init)
   }
   object Clock {
     def apply(): Clock = new Clock
@@ -71,17 +75,17 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
     def apply(dir: Direction): Clock = {
       val result = apply()
       dir match {
-        case INPUT => chisel3.core.Input(result)
-        case OUTPUT => chisel3.core.Output(result)
+        case INPUT => Input(result)
+        case OUTPUT => Output(result)
         case _ => result
       }
     }
   }
-  type Clock = chisel3.core.Clock
+  type Clock = chisel3.Clock
 
   // Implicit conversion to allow fromBits because it's being deprecated in chisel3
   implicit class fromBitsable[T <: Data](data: T) {
-    import chisel3.core.CompileOptions
+    import chisel3.CompileOptions
     import chisel3.internal.sourceinfo.SourceInfo
 
     /** Creates an new instance of this type, unpacking the input Bits into
@@ -99,9 +103,9 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
     }
   }
 
-  type Aggregate = chisel3.core.Aggregate
-  object Vec extends chisel3.core.VecFactory {
-    import chisel3.core.CompileOptions
+  type Aggregate = chisel3.Aggregate
+  object Vec extends chisel3.VecFactory {
+    import chisel3.CompileOptions
     import chisel3.internal.sourceinfo._
 
     @deprecated("Vec argument order should be size, t; this will be removed by the official release", "chisel3")
@@ -111,10 +115,10 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
     /** Creates a new [[Vec]] of length `n` composed of the result of the given
       * function repeatedly applied.
       *
-      * @param n number of elements (and the number of times the function is
-      * called)
+      * @param n   number of elements (and the number of times the function is
+      *            called)
       * @param gen function that generates the [[Data]] that becomes the output
-      * element
+      *            element
       */
     def fill[T <: Data](n: Int)(gen: => T)(implicit compileOptions: CompileOptions): Vec[T] =
       apply(Seq.fill(n)(gen))
@@ -122,31 +126,31 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
     def apply[T <: Data](elts: Seq[T]): Vec[T] = macro VecTransform.apply_elts
     /** @group SourceInfoTransformMacro */
     def do_apply[T <: Data](elts: Seq[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
-      chisel3.core.VecInit(elts)
+      chisel3.VecInit(elts)
 
     def apply[T <: Data](elt0: T, elts: T*): Vec[T] = macro VecTransform.apply_elt0
     /** @group SourceInfoTransformMacro */
     def do_apply[T <: Data](elt0: T, elts: T*)
         (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
-      chisel3.core.VecInit(elt0 +: elts.toSeq)
+      chisel3.VecInit(elt0 +: elts.toSeq)
 
     def tabulate[T <: Data](n: Int)(gen: (Int) => T): Vec[T] = macro VecTransform.tabulate
     /** @group SourceInfoTransformMacro */
     def do_tabulate[T <: Data](n: Int)(gen: (Int) => T)
         (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
-      chisel3.core.VecInit.tabulate(n)(gen)
+      chisel3.VecInit.tabulate(n)(gen)
   }
-  type Vec[T <: Data] = chisel3.core.Vec[T]
-  type VecLike[T <: Data] = chisel3.core.VecLike[T]
-  type Record = chisel3.core.Record
-  type Bundle = chisel3.core.Bundle
+  type Vec[T <: Data] = chisel3.Vec[T]
+  type VecLike[T <: Data] = chisel3.VecLike[T]
+  type Record = chisel3.Record
+  type Bundle = chisel3.Bundle
 
-  val assert = chisel3.core.assert
-  val stop = chisel3.core.stop
+  val assert = chisel3.assert
+  val stop = chisel3.stop
 
   /** This contains literal constructor factory methods that are deprecated as of Chisel3.
     */
-  trait UIntFactory extends chisel3.core.UIntFactory {
+  trait UIntFactory extends chisel3.UIntFactoryBase {
     /** Create a UInt literal with inferred width. */
     def apply(n: String): UInt = n.asUInt
     /** Create a UInt literal with fixed width. */
@@ -171,8 +175,8 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
     def apply(dir: Direction, width: Width): UInt = {
       val result = apply(width)
       dir match {
-        case INPUT => chisel3.core.Input(result)
-        case OUTPUT => chisel3.core.Output(result)
+        case INPUT => Input(result)
+        case OUTPUT => Output(result)
         case NODIR => result
       }
     }
@@ -186,7 +190,7 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
 
   /** This contains literal constructor factory methods that are deprecated as of Chisel3.
     */
-  trait SIntFactory extends chisel3.core.SIntFactory {
+  trait SIntFactory extends chisel3.SIntFactoryBase {
     /** Create a SInt type or port with fixed width. */
     def width(width: Int): SInt = apply(width.W)
     /** Create an SInt type with specified width. */
@@ -212,8 +216,8 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
     def apply(dir: Direction, width: Width): SInt = {
       val result = apply(width)
       dir match {
-        case INPUT => chisel3.core.Input(result)
-        case OUTPUT => chisel3.core.Output(result)
+        case INPUT => Input(result)
+        case OUTPUT => Output(result)
         case NODIR => result
       }
     }
@@ -221,7 +225,7 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
 
   /** This contains literal constructor factory methods that are deprecated as of Chisel3.
     */
-  trait BoolFactory extends chisel3.core.BoolFactory {
+  trait BoolFactory extends chisel3.BoolFactoryBase {
     /** Creates Bool literal.
       */
     def apply(x: Boolean): Bool = x.B
@@ -230,30 +234,30 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
     def apply(dir: Direction): Bool = {
       val result = apply()
       dir match {
-        case INPUT => chisel3.core.Input(result)
-        case OUTPUT => chisel3.core.Output(result)
+        case INPUT => Input(result)
+        case OUTPUT => Output(result)
         case NODIR => result
       }
     }
   }
 
-  type Element = chisel3.core.Element
-  type Bits = chisel3.core.Bits
+  type Element = chisel3.Element
+  type Bits = chisel3.Bits
   object Bits extends UIntFactory
-  type Num[T <: Data] = chisel3.core.Num[T]
-  type UInt = chisel3.core.UInt
+  type Num[T <: Data] = chisel3.Num[T]
+  type UInt = chisel3.UInt
   object UInt extends UIntFactory
-  type SInt = chisel3.core.SInt
+  type SInt = chisel3.SInt
   object SInt extends SIntFactory
-  type Bool = chisel3.core.Bool
+  type Bool = chisel3.Bool
   object Bool extends BoolFactory
-  val Mux = chisel3.core.Mux
-  type Reset = chisel3.core.Reset
+  val Mux = chisel3.Mux
+  type Reset = chisel3.Reset
 
   implicit def resetToBool(reset: Reset): Bool = reset.asBool
 
-  import chisel3.core.Param
-  abstract class BlackBox(params: Map[String, Param] = Map.empty[String, Param]) extends chisel3.core.BlackBox(params) {
+  import chisel3.experimental.Param
+  abstract class BlackBox(params: Map[String, Param] = Map.empty[String, Param]) extends chisel3.BlackBox(params) {
     // This class auto-wraps the BlackBox with IO(...), allowing legacy code (where IO(...) wasn't
     // required) to build.
     override def _compatAutoWrapPorts(): Unit = { // scalastyle:ignore method.name
@@ -262,15 +266,15 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
       }
     }
   }
-  val Mem = chisel3.core.Mem
-  type MemBase[T <: Data] = chisel3.core.MemBase[T]
-  type Mem[T <: Data] = chisel3.core.Mem[T]
-  val SeqMem = chisel3.core.SyncReadMem
-  type SeqMem[T <: Data] = chisel3.core.SyncReadMem[T]
+  val Mem = chisel3.Mem
+  type MemBase[T <: Data] = chisel3.MemBase[T]
+  type Mem[T <: Data] = chisel3.Mem[T]
+  val SeqMem = chisel3.SyncReadMem
+  type SeqMem[T <: Data] = chisel3.SyncReadMem[T]
 
-  import chisel3.core.CompileOptions
+  import chisel3.CompileOptions
   abstract class CompatibilityModule(implicit moduleCompileOptions: CompileOptions)
-      extends chisel3.core.LegacyModule {
+      extends chisel3.experimental.LegacyModule {
     // This class auto-wraps the Module IO with IO(...), allowing legacy code (where IO(...) wasn't
     // required) to build.
     // Also provides the clock / reset constructors, which were used before withClock happened.
@@ -296,22 +300,22 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
     }
   }
 
-  val Module = chisel3.core.Module
+  val Module = chisel3.Module
   type Module = CompatibilityModule
 
-  val printf = chisel3.core.printf
+  val printf = chisel3.printf
 
-  val RegNext = chisel3.core.RegNext
-  val RegInit = chisel3.core.RegInit
+  val RegNext = chisel3.RegNext
+  val RegInit = chisel3.RegInit
   object Reg {
-    import chisel3.core.{Binding, CompileOptions}
+    import chisel3.CompileOptions
     import chisel3.internal.sourceinfo.SourceInfo
 
-    // Passthrough for chisel3.core.Reg
+    // Passthrough for chisel3.Reg
     // Single-element constructor to avoid issues caused by null default args in a type
     // parameterized scope.
     def apply[T <: Data](t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
-      chisel3.core.Reg(t)
+      chisel3.Reg(t)
 
     /** Creates a register with optional next and initialization values.
       *
@@ -332,7 +336,7 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
         val reg = if (init ne null) {
           RegInit(t, init)
         } else {
-          chisel3.core.Reg(t)
+          chisel3.Reg(t)
         }
         if (next ne null) {
           reg := next
@@ -352,15 +356,15 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
     }
   }
 
-  val when = chisel3.core.when
-  type WhenContext = chisel3.core.WhenContext
+  val when = chisel3.when
+  type WhenContext = chisel3.WhenContext
 
-  implicit class fromBigIntToLiteral(x: BigInt) extends chisel3.core.fromBigIntToLiteral(x)
-  implicit class fromtIntToLiteral(x: Int) extends chisel3.core.fromIntToLiteral(x)
-  implicit class fromtLongToLiteral(x: Long) extends chisel3.core.fromLongToLiteral(x)
-  implicit class fromStringToLiteral(x: String) extends chisel3.core.fromStringToLiteral(x)
-  implicit class fromBooleanToLiteral(x: Boolean) extends chisel3.core.fromBooleanToLiteral(x)
-  implicit class fromIntToWidth(x: Int) extends chisel3.core.fromIntToWidth(x)
+  implicit class fromBigIntToLiteral(x: BigInt) extends chisel3.fromBigIntToLiteral(x)
+  implicit class fromtIntToLiteral(x: Int) extends chisel3.fromIntToLiteral(x)
+  implicit class fromtLongToLiteral(x: Long) extends chisel3.fromLongToLiteral(x)
+  implicit class fromStringToLiteral(x: String) extends chisel3.fromStringToLiteral(x)
+  implicit class fromBooleanToLiteral(x: Boolean) extends chisel3.fromBooleanToLiteral(x)
+  implicit class fromIntToWidth(x: Int) extends chisel3.fromIntToWidth(x)
 
   type BackendCompilationUtilities = firrtl.util.BackendCompilationUtilities
   val Driver = chisel3.Driver

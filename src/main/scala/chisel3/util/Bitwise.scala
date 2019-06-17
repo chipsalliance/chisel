@@ -6,7 +6,6 @@
 package chisel3.util
 
 import chisel3._
-import chisel3.core.SeqUtils
 
 /** Creates repetitions of each bit of the input in order.
   *
