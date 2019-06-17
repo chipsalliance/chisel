@@ -89,10 +89,9 @@ class AsyncResetSpec extends ChiselFlatSpec {
   it should "NOT be allowed to connect directly to a Bool" in {
     a [ChiselException] shouldBe thrownBy {
       elaborate(new BasicTester {
-        val queue = Module(new Queue(UInt(8.W), 4))
-        queue.io <> DontCare
+        val bool = Wire(Bool())
         val areset = reset.asAsyncReset
-        queue.reset := areset
+        bool := areset
       })
     }
   }
