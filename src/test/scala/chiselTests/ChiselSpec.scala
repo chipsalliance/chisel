@@ -74,7 +74,6 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
     val manager = new ExecutionOptionsManager("compile") with HasFirrtlOptions
                                                          with HasChiselExecutionOptions {
       commonOptions = CommonOptions(targetDirName = testDir.toString)
-      chiselOptions = ChiselExecutionOptions(printFullStackTrace = true)
     }
 
     Driver.execute(manager, () => t) match {
