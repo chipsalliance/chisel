@@ -243,5 +243,25 @@ class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec {
       }
     }
   }
+
+  "Compatibility Modules" should "have Bool as their reset type" in {
+    compile {
+      import Chisel._
+      class Intf extends Bundle {
+        val in = Bool(INPUT)
+        val en = Bool(INPUT)
+        val out = Bool(OUTPUT)
+      }
+      class Child extends Module {
+        val io = new Intf
+        io.out := Mux(io.en, io.in, reset)
+      }
+      new Module {
+        val io = new Intf
+        val child = Module(new Child)
+        io <> child.io
+      }
+    }
+  }
 }
 

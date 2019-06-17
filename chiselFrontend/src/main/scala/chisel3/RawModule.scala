@@ -143,8 +143,11 @@ abstract class MultiIOModule(implicit moduleCompileOptions: CompileOptions)
     extends RawModule {
   // Implicit clock and reset pins
   val clock: Clock = IO(Input(Clock()))
-  // If we're top, default to Bool
-  val reset: Reset = IO(Input(if (_parent.isDefined) Reset() else Bool()))
+  val reset: Reset = {
+    // Top module and compatibility mode use Bool for reset
+    val inferReset = _parent.isDefined && moduleCompileOptions.inferModuleReset
+    IO(Input(if (inferReset) Reset() else Bool()))
+  }
 
   // Setup ClockAndReset
   Builder.currentClock = Some(clock)
