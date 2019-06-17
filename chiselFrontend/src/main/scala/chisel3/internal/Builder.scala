@@ -184,8 +184,6 @@ private[chisel3] class DynamicContext() {
   // Used to distinguish between no Module() wrapping, multiple wrappings, and rewrapping
   var readyForModuleConstr: Boolean = false
   var whenDepth: Int = 0 // Depth of when nesting
-  // Used by MultiIOModule for determining the type of the implicit reset
-  var outerReset: Option[Reset] = None
   var currentClock: Option[Clock] = None
   var currentReset: Option[Reset] = None
   val errors = new ErrorLog
@@ -252,10 +250,6 @@ private[chisel3] object Builder {
   def whenDepth: Int = dynamicContext.whenDepth
   def whenDepth_=(target: Int): Unit = {
     dynamicContext.whenDepth = target
-  }
-  def outerReset: Option[Reset] = dynamicContext.outerReset
-  def outerReset_=(target: Option[Reset]): Unit = {
-    dynamicContext.outerReset = target
   }
   def currentClock: Option[Clock] = dynamicContext.currentClock
   def currentClock_=(newClock: Option[Clock]): Unit = {
