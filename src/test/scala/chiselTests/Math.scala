@@ -2,35 +2,35 @@
 
 package chiselTests
 
+import org.scalacheck.Shrink
+
 class Math extends ChiselPropSpec {
   import chisel3.util._
+  // Disable shrinking on error.
+  implicit val noShrinkListVal = Shrink[List[Int]](_ => Stream.empty)
+  implicit val noShrinkInt = Shrink[Int](_ => Stream.empty)
 
-  property ("BitsRequired is computed correctly") {
+  property ("unsignedBitLength is computed correctly") {
     forAll(safeUIntWidth) { case (width: Int) =>
       for ( offset <- List(-1, 0, 1)) {
         val n = (1 << width) + offset
         if (n > 0) {
-          val addIfPow2 = if (isPow2(n)) 1 else 0
-          val l2c = log2Ceil(n) + addIfPow2
-          val d = UnsignedBitsRequired(n)
-          if (n == 1) {
-            d shouldEqual 1
-          } else {
-            d shouldEqual l2c
-          }
+          val d = unsignedBitLength(n)
+          val t = if (n == 1) 1 else BigInt(n).bitLength
+          d shouldEqual (t)
         }
       }
     }
   }
 
-  property ("WidthRequired is computed correctly") {
+  property ("signedBitLength is computed correctly") {
     forAll(safeUIntWidth) { case (width: Int) =>
       for ( offset <- List(-1, 0, 1)) {
-        val n = (1 << width) + offset
-        if (n > 0) {
-          val w = UnsignedWidthRequired(n)
-          val d = UnsignedBitsRequired(n)
-          w.get shouldEqual d
+        for ( mult <- List(-1, +1)) {
+          val n = ((1 << (width - 1)) + offset) * mult
+          val d = signedBitLength(n)
+          val t = BigInt(n).bitLength + 1
+          d shouldEqual (t)
         }
       }
     }

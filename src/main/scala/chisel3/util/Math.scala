@@ -6,7 +6,6 @@
 package chisel3.util
 
 import chisel3.internal
-import chisel3.internal.chiselRuntimeDeprecated
 
 /** Compute the log2 of a Scala integer, rounded up, with min value of 1.
   * Useful for getting the number of bits needed to represent some number of states (in - 1),
@@ -101,13 +100,13 @@ object isPow2 {
 }
 
 
-/** Return the number of bits required to encode a specific value, assuming no sign bit is required.
-  *
-  * Basically, `n.bitLength` unless n is 0 (since Java believes 0.bitLength == 0), in which case the result is `1`.
-  * @param in - the number to be encoded.
-  * @return - the number of bits to encode.
-  */
-object UnsignedBitsRequired {
+object unsignedBitLength {
+  /** Return the number of bits required to encode a specific value, assuming no sign bit is required.
+    *
+    * Basically, `n.bitLength` unless n is 0 (since Java believes 0.bitLength == 0), in which case the result is `1`.
+    * @param in - the number to be encoded.
+    * @return - an Int representing the number of bits to encode.
+    */
   def apply(in: BigInt): Int = {
     require(in >= 0)
     if (in == 0) {
@@ -117,23 +116,16 @@ object UnsignedBitsRequired {
       in.bitLength
     }
   }
-  def apply(in: chisel3.Data): Int = {
-    in.width.get
-  }
 }
 
-/** Return the width required to encode a specific value.
-  *
-  * Basically, `n.bitLength` unless n is 0 (since Java believes 0.bitLength == 0), in which case the result is `1`.
-  * @param in - the number to be encoded.
-  * @return - a Width representing the number of bits to encode.
-  */
-object UnsignedWidthRequired {
-  import internal.firrtl.Width
-  def apply(in: BigInt): Width = {
-    Width(UnsignedBitsRequired(in))
-  }
-  def apply(in: chisel3.Data): Width = {
-    in.width
+object signedBitLength {
+  /** Return the number of bits required to encode a specific value, assuming a sign bit is required.
+    *
+    * Basically, `n.bitLength` + 1.
+    * @param in - the number to be encoded.
+    * @return - an Int representing the number of bits to encode.
+    */
+  def apply(in: BigInt): Int = {
+    in.bitLength + 1
   }
 }
