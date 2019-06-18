@@ -2,6 +2,8 @@
 
 enablePlugins(SiteScaladocPlugin)
 
+import microsites.{MicrositeFavicon, ExtraMdFileConfig}
+
 def scalacOptionsVersion(scalaVersion: String): Seq[String] = {
   Seq() ++ {
     // If we're building with Scala > 2.11, enable the compile option
@@ -199,3 +201,76 @@ lazy val chisel = (project in file(".")).
     // published artifact) also see the stuff in coreMacros and chiselFrontend.
     exportJars := true
   )
+
+lazy val docsMappingsAPIDir = settingKey[String]("Name of subdirectory in site target directory for api docs")
+
+/* Most of this is derived from how cats does it. */
+lazy val docSettings = Seq(
+  micrositeName := "Chisel HDL",
+  micrositeDescription := "Making Hardware Design Less 💩",
+  micrositeUrl := "https://chisel.eecs.berkeley.edu",
+  micrositeTwitter := "@chisel_lang",
+  micrositeGithubOwner := "freechipsproject",
+  micrositeGithubRepo := "chisel3",
+  micrositeDocumentationUrl := "/api",
+  micrositeDocumentationLabelDescription := "API Documentation",
+  micrositeExtraMdFiles := Map(
+    file("README.md") -> ExtraMdFileConfig(
+      "index.md",
+      "home",
+      Map("title" -> "Home", "section" -> "home", "position" -> "0")
+    )
+  ),
+  micrositeFavicons := Seq(
+    MicrositeFavicon("favicon-tool/favicon-16x16.png", "16x16"),
+    MicrositeFavicon("favicon-tool/favicon-32x32.png", "32x32")),
+  /* Known colors:
+   *   - Chisel logo: #212560
+   *   - FIRRTL logo: #136527
+   */
+  micrositePalette := Map(
+    "brand-primary"     -> "#0097BC",
+    "brand-secondary"   -> "#004B8B",
+    "brand-tertiary"    -> "#212560",
+    "gray-dark"         -> "#453E46",
+    "gray"              -> "#837F84",
+    "gray-light"        -> "#E3E2E3",
+    "gray-lighter"      -> "#F4F3F4",
+    "white-color"       -> "#FFFFFF"),
+  autoAPIMappings := true,
+  unidocProjectFilter in (ScalaUnidoc, unidoc) := inProjects(chisel),
+  docsMappingsAPIDir := "api",
+  addMappingsToSiteDir(mappings in (ScalaUnidoc, packageDoc), docsMappingsAPIDir),
+  ghpagesNoJekyll := false,
+  fork in tut := true,
+  fork in (ScalaUnidoc, unidoc) := true,
+  scalacOptions in (ScalaUnidoc, unidoc) ++= Seq(
+    /* Hopefully we can enable this... one day... */
+    // "-Xfatal-warnings",
+    "-groups",
+    "-doc-source-url",
+    {
+      val branch =
+        if (version.value.endsWith("-SNAPSHOT")) {
+          "master"
+        } else {
+          s"v${version.value}"
+        }
+      s"https://github.com/freechipsproject/chisel3/tree/$branch/€{FILE_PATH}.scala"
+    },
+    "-sourcepath",
+    baseDirectory.in(LocalRootProject).value.getAbsolutePath,
+    "-diagrams"
+  ),
+  scalacOptions in Tut ~= (_.filterNot(Set("-Ywarn-unused-import", "-Ywarn-unused:imports", "-Ywarn-dead-code"))),
+  git.remoteRepo := "git@github.com:freechipsproject/chisel3.git",
+  includeFilter in makeSite := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.gif" | "*.js" | "*.swf" | "*.yml" | "*.md" | "*.svg",
+  includeFilter in Jekyll := (includeFilter in makeSite).value
+)
+
+lazy val docs = project
+  .enablePlugins(MicrositesPlugin)
+  .enablePlugins(ScalaUnidocPlugin)
+  .settings(moduleName := "chisel3-docs")
+  .settings(docSettings)
+  .dependsOn(chisel)

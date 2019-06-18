@@ -1,0 +1,114 @@
+options:
+  - title: User Guide
+    url: user-guide.html
+    menu_type: user-guide
+    menu_section: user-guide
+    nested_options:
+      - title: FAQs
+        url: user-guide/faqs.html
+      - title: Cookbook
+        url: user-guide/cookbook.html
+      - title: Troubleshooting
+        url: user-guide/troubleshooting
+  - title: Introduction
+    url: user-guide/introduction.html
+    menu_type: user-guide
+    menu_section: introduction
+  - title: Supported Hardware
+    url: user-guide/supported-hardware.html
+    menu_type: user-guide
+    menu_section: supported-hardware
+  - title: Data Types
+    url: user-guide/data-types.html
+    menu_type: user-guide
+    menu_section: data-types
+  - title: Combinational Circuits
+    url: user-guide/combinational-circuits.html
+    menu_type: user-guide
+    menu_section: combinational-circuits
+  - title: Operators
+    url: user-guide/operators.html
+    menu_type: user-guide
+    menu_section: operators
+  - title: Width Inference
+    url: user-guide/width-inference.html
+    menu_type: user-guide
+    menu_section: width-inference
+  - title: Functional Abstraction
+    url: user-guide/functional-abstraction.html
+    menu_type: user-guide
+    menu_section: functional-abstraction
+  - title: Bundles and Vecs
+    url: user-guide/bundles-and-vecs.html
+    menu_type: user-guide
+    menu_section: bundles-and-vecs
+  - title: Ports
+    url: user-guide/ports.html
+    menu_type: user-guide
+    menu_section: ports
+  - title: Modules
+    url: user-guide/modules.html
+    menu_type: user-guide
+    menu_section: modules
+  - title: Blackboxes
+    url: user-guide/blackboxes.html
+    menu_type: user-guide
+    menu_section: blackboxes
+  - title: Sequential Circuits
+    url: user-guide/sequential-circuits.html
+    menu_type: user-guide
+    menu_section: sequential-circuits
+  - title: Memories
+    url: user-guide/memories.html
+    menu_type: user-guide
+    menu_section: memories
+  - title: Interfaces and Connections
+    url: user-guide/interfaces-and-connections.html
+    menu_type: user-guide
+    menu_section: interfaces-and-connections
+  - title: Functional Module Creation
+    url: user-guide/functional-module-creation.html
+    menu_type: user-guide
+    menu_section: functional-module-creation
+  - title: Muxes and Input Selection
+    url: user-guide/muxes-and-input-selection.html
+    menu_type: user-guide
+    menu_section: muxes-and-input-selection
+  - title: Polymorphism and Parameterization
+    url: user-guide/polymorphism-and-parameterization.html
+    menu_type: user-guide
+    menu_section: polymorphism-and-parameterization
+  - title: Multiple Clock Domains
+    url: user-guide/multi-clock.html
+    menu_type: user-guide
+    menu_section: multi-clock
+  - title: Printing in Chisel
+    url: user-guide/printing.html
+    menu_type: user-guide
+    menu_section: printing
+  - title: Annotations
+    url: user-guide/annotations.html
+    menu_type: user-guide
+    menu_section: annotations
+  - title: Unconnected Wires
+    url: user-guide/unconnected-wires.html
+    menu_type: user-guide
+    menu_section: unconnected-wires
+  - title: Appendix
+    url: user-guide/chisel3-vs-chisel2.html
+    menu_type: user-guide
+    menu_section: appendix
+    nested_options:
+      - title: Chisel3 vs. Chisel3
+        url: user-guide/chisel3-vs-chisel2.html
+      - title: Experimental Features
+        url: user-guide/experimental-features.html
+  - title: Developers
+    url: user-guide/developers.html
+    menu_type: user-guide
+    menu_section: developers
+    nested_options:
+      - title: sbt Subproject
+        url: user-guide/sbt-subproject.html
+      - title: Test Coverage
+        url: user-guide/test-coverage.html
