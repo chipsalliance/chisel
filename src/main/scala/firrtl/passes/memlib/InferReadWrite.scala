@@ -13,7 +13,6 @@ import MemPortUtils.memPortField
 import firrtl.passes.memlib.AnalysisUtils.{Connects, getConnects, getOrigin}
 import WrappedExpression.weq
 import annotations._
-import scopt.OptionParser
 import firrtl.stage.RunFirrtlTransformAnnotation
 
 

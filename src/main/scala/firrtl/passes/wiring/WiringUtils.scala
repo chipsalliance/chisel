@@ -12,8 +12,6 @@ import scala.collection.mutable
 import firrtl.annotations._
 import firrtl.annotations.AnnotationUtils._
 import firrtl.analyses.InstanceGraph
-import firrtl.graph.DiGraph
-import WiringUtils._
 
 /** Declaration kind in lineage (e.g. input port, output port, wire)
   */

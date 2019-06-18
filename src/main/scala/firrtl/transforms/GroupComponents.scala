@@ -4,9 +4,8 @@ import firrtl._
 import firrtl.Mappers._
 import firrtl.ir._
 import firrtl.annotations.{Annotation, ComponentName}
-import firrtl.passes.{InferTypes, LowerTypes, MemPortUtils, ResolveKinds}
-import firrtl.Utils.kind
-import firrtl.graph.{DiGraph, MutableDiGraph}
+import firrtl.passes.{InferTypes, LowerTypes, ResolveKinds}
+import firrtl.graph.MutableDiGraph
 
 import scala.collection.mutable
 

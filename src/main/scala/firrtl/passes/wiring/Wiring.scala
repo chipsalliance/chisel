@@ -5,8 +5,6 @@ package wiring
 
 import firrtl._
 import firrtl.ir._
-import firrtl.Utils._
-import firrtl.Mappers._
 import scala.collection.mutable
 import firrtl.annotations._
 import firrtl.annotations.AnnotationUtils._

@@ -4,7 +4,7 @@ package firrtl.stage.phases
 
 import firrtl.{AnnotationSeq, ChirrtlForm, CircuitState, Compiler => FirrtlCompiler, Transform, seqToAnnoSeq}
 import firrtl.options.{Phase, PhasePrerequisiteException, Translator}
-import firrtl.stage.{CircuitOption, CompilerAnnotation, FirrtlOptions, FirrtlCircuitAnnotation,
+import firrtl.stage.{CompilerAnnotation, FirrtlCircuitAnnotation,
   RunFirrtlTransformAnnotation}
 
 import scala.collection.mutable

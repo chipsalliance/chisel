@@ -5,7 +5,6 @@ package memlib
 
 import firrtl._
 import firrtl.ir._
-import Utils.indent
 
 object DefAnnotatedMemory {
   def apply(m: DefMemory): DefAnnotatedMemory = {

@@ -28,8 +28,12 @@ def scalacOptionsVersion(scalaVersion: String): Seq[String] = {
   }
 }
 
+addCompilerPlugin(scalafixSemanticdb) // enable SemanticDB
+
 scalacOptions := scalacOptionsVersion(scalaVersion.value) ++ Seq(
-  "-deprecation"
+  "-deprecation",
+  "-Yrangepos",          // required by SemanticDB compiler plugin
+  "-Ywarn-unused-import" // required by `RemoveUnused` rule
 )
 
 def javacOptionsVersion(scalaVersion: String): Seq[String] = {

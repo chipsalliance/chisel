@@ -2,7 +2,6 @@
 
 package firrtl.passes
 
-import firrtl._
 import firrtl.ir._
 import firrtl.Utils._
 import firrtl.traversals.Foreachers._
@@ -107,7 +106,7 @@ object CheckChirrtl extends Pass {
       p.tpe.foreach(checkChirrtlW(p.info, mname))
     }
 
-    def checkChirrtlM(m: DefModule) {
+    def checkChirrtlM(m: DefModule): Unit = {
       val names = new NameSet
       m.foreach(checkChirrtlP(m.name, names))
       m.foreach(checkChirrtlS(m.info, m.name, names))

@@ -2,7 +2,6 @@
 
 package firrtl.passes
 
-import com.typesafe.scalalogging.LazyLogging
 
 import scala.annotation.tailrec
 import firrtl._
@@ -11,7 +10,6 @@ import firrtl.Utils._
 import firrtl.Mappers._
 import MemPortUtils.memType
 
-import scala.collection.mutable
 
 /** Resolve name collisions that would occur in [[LowerTypes]]
   *

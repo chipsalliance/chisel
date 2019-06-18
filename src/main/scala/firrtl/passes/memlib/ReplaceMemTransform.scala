@@ -4,14 +4,11 @@ package firrtl.passes
 package memlib
 
 import firrtl._
-import firrtl.ir._
 import firrtl.annotations._
 import firrtl.options.{HasShellOptions, ShellOption}
-import AnalysisUtils._
 import Utils.error
 import java.io.{File, CharArrayWriter, PrintWriter}
 import wiring._
-import scopt.OptionParser
 import firrtl.stage.RunFirrtlTransformAnnotation
 
 sealed trait PassOption

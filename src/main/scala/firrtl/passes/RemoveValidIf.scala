@@ -5,7 +5,6 @@ package passes
 import firrtl.Mappers._
 import firrtl.ir._
 import Utils.throwInternalError
-import WrappedExpression.weq
 
 /** Remove [[firrtl.ir.ValidIf ValidIf]] and replace [[firrtl.ir.IsInvalid IsInvalid]] with a connection to zero */
 object RemoveValidIf extends Pass {

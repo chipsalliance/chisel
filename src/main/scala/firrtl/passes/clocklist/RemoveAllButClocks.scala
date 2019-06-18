@@ -5,13 +5,7 @@ package clocklist
 
 import firrtl._
 import firrtl.ir._
-import annotations._
-import Utils.error
-import java.io.{File, CharArrayWriter, PrintWriter, Writer}
-import ClockListUtils._
 import Utils._
-import memlib.AnalysisUtils._
-import memlib._
 import Mappers._
 
 /** Remove all statements and ports (except instances/whens/blocks) whose

@@ -7,7 +7,7 @@ import firrtl.stage._
 import firrtl.{AnnotationSeq, EmitAllModulesAnnotation, EmitCircuitAnnotation, FirrtlExecutionResult, Parser}
 import firrtl.annotations.NoTargetAnnotation
 import firrtl.proto.FromProto
-import firrtl.options.{HasShellOptions, InputAnnotationFileAnnotation, OptionsException, Phase, ShellOption,
+import firrtl.options.{InputAnnotationFileAnnotation, OptionsException, Phase,
   StageOptions, StageUtils}
 import firrtl.options.Viewer
 

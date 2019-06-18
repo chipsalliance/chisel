@@ -5,16 +5,11 @@ package annotations
 
 import java.io.File
 
-import org.json4s._
-import org.json4s.native.JsonMethods._
-import org.json4s.native.Serialization
-import org.json4s.native.Serialization.{read, write, writePretty}
 
 import net.jcazevedo.moultingyaml._
 import firrtl.annotations.AnnotationYamlProtocol._
 
 import firrtl.ir._
-import firrtl.Utils.error
 
 case class InvalidAnnotationFileException(file: File, cause: Throwable = null)
   extends FIRRTLException(s"$file, see cause below", cause)

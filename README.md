@@ -77,6 +77,16 @@ sbt
 > test
 ```
 
+##### Use scalafix to remove unused import and deprecated procedure syntax
+ 1. Remove unused import:
+```
+sbt "firrtl/scalafix RemoveUnused"
+```
+ 2. Remove deprecated procedure syntax
+```
+sbt "firrtl/scalafix ProcedureSyntax"
+```
+
 ##### Using Firrtl as a commandline tool
 ```
 utils/bin/firrtl -i regress/rocket.fir -o regress/rocket.v -X verilog // Compiles rocket-chip to Verilog

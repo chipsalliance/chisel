@@ -11,7 +11,6 @@ import firrtl.WrappedExpression._
 
 import annotation.tailrec
 import collection.mutable
-import collection.immutable.ListSet
 
 /** Expand Whens
   *

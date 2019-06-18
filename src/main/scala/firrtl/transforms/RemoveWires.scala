@@ -8,7 +8,7 @@ import firrtl.Utils._
 import firrtl.Mappers._
 import firrtl.traversals.Foreachers._
 import firrtl.WrappedExpression._
-import firrtl.graph.{DiGraph, MutableDiGraph, CyclicException}
+import firrtl.graph.{MutableDiGraph, CyclicException}
 
 import scala.collection.mutable
 import scala.util.{Try, Success, Failure}

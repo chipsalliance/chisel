@@ -11,10 +11,7 @@ import firrtl.passes.{Pass,
       }
 import firrtl.annotations._
 import firrtl.Mappers._
-import firrtl.graph._
 
-import java.io._
-import scala.io.Source
 import collection.mutable
 
 /** Annotation for optional output files, and what directory to put those files in (absolute path) **/

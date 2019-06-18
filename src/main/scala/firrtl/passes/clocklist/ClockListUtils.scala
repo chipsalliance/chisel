@@ -5,14 +5,9 @@ package clocklist
 
 import firrtl._
 import firrtl.ir._
-import annotations._
-import Utils.error
-import java.io.{File, CharArrayWriter, PrintWriter, Writer}
 import wiring.Lineage
-import ClockListUtils._
 import Utils._
 import memlib.AnalysisUtils._
-import memlib._
 
 object ClockListUtils {
   /** Returns a list of clock outputs from instances of external modules

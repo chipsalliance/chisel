@@ -5,9 +5,7 @@ package memlib
 
 import firrtl._
 import firrtl.ir._
-import firrtl.Utils._
 import firrtl.Mappers._
-import AnalysisUtils._
 import MemPortUtils.{MemPortMap}
 
 object MemTransformUtils {

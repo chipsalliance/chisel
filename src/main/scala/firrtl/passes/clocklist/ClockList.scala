@@ -6,14 +6,11 @@ package clocklist
 import firrtl._
 import firrtl.ir._
 import annotations._
-import Utils.error
-import java.io.{File, CharArrayWriter, PrintWriter, Writer}
+import java.io.{CharArrayWriter, Writer}
 import wiring.WiringUtils.{getChildrenMap, getLineage}
-import wiring.Lineage
 import ClockListUtils._
 import Utils._
 import memlib.AnalysisUtils._
-import memlib._
 
 /** Starting with a top module, determine the clock origins of each child instance.
  *  Write the result to writer.

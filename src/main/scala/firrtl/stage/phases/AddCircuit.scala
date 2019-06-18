@@ -4,8 +4,8 @@ package firrtl.stage.phases
 
 import firrtl.stage._
 
-import firrtl.{AnnotationSeq, Parser, proto}
-import firrtl.options.{OptionsException, Phase, PhasePrerequisiteException}
+import firrtl.{AnnotationSeq, Parser}
+import firrtl.options.{Phase, PhasePrerequisiteException}
 
 /** [[firrtl.options.Phase Phase]] that expands [[FirrtlFileAnnotation]]/[[FirrtlSourceAnnotation]] into
   * [[FirrtlCircuitAnnotation]]s and deletes the originals. This is part of the preprocessing done on an input

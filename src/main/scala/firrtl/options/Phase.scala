@@ -3,11 +3,9 @@
 package firrtl.options
 
 import firrtl.AnnotationSeq
-import firrtl.annotations.DeletedAnnotation
 
 import logger.LazyLogging
 
-import scala.collection.mutable
 
 /** A polymorphic mathematical transform
   * @tparam A the transformed type

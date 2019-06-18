@@ -3,12 +3,8 @@
 package firrtl.passes
 
 import firrtl.ir._
-import firrtl.{WRef, WSubAccess, WSubIndex, WSubField}
+import firrtl.{WSubAccess, WSubIndex}
 import firrtl.Mappers._
-import firrtl.Utils._
-import firrtl.WrappedExpression._
-import firrtl.Namespace
-import scala.collection.mutable
 
 
 /** Replaces constant [[firrtl.WSubAccess]] with [[firrtl.WSubIndex]]

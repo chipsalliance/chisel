@@ -3,7 +3,7 @@
 package firrtl
 package proto
 
-import java.io.{BufferedOutputStream, OutputStream}
+import java.io.OutputStream
 
 import FirrtlProtos._
 import Firrtl.Expression.PrimOp.Op

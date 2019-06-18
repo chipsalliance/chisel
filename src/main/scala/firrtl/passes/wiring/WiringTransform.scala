@@ -4,12 +4,9 @@ package firrtl.passes
 package wiring
 
 import firrtl._
-import firrtl.ir._
 import firrtl.Utils._
-import firrtl.Mappers._
 import scala.collection.mutable
 import firrtl.annotations._
-import WiringUtils._
 
 /** A class for all exceptions originating from firrtl.passes.wiring */
 case class WiringException(msg: String) extends PassException(msg)

@@ -3,11 +3,7 @@
 package firrtl.transforms
 
 import scala.collection.mutable
-import scala.collection.immutable.HashSet
-import scala.collection.immutable.HashMap
-import annotation.tailrec
 
-import Function.tupled
 
 import firrtl._
 import firrtl.ir._
@@ -18,7 +14,6 @@ import firrtl.Utils.throwInternalError
 import firrtl.graph.{MutableDiGraph,DiGraph}
 import firrtl.analyses.InstanceGraph
 import firrtl.options.{RegisteredTransform, ShellOption}
-import scopt.OptionParser
 
 object CheckCombLoops {
   class CombLoopException(info: Info, mname: String, cycle: Seq[String]) extends PassException(

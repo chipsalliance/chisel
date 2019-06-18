@@ -3,7 +3,6 @@
 package firrtl.passes
 package memlib
 
-import scala.util.matching._
 
 sealed abstract class MemPort(val name: String) { override def toString = name }
 

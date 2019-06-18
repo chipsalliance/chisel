@@ -2,7 +2,6 @@
 
 package firrtl.annotations.analysis
 
-import firrtl.Namespace
 import firrtl.annotations._
 import firrtl.annotations.TargetToken.{Instance, OfModule, Ref}
 import firrtl.Utils.throwInternalError

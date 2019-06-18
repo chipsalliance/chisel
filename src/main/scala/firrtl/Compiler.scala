@@ -5,14 +5,11 @@ package firrtl
 import logger._
 import java.io.Writer
 
-import firrtl.RenameMap.{CircularRenameException, IllegalRenameException}
 
 import scala.collection.mutable
 import firrtl.annotations._
-import firrtl.ir.{Circuit, Expression}
-import firrtl.Utils.{error, throwInternalError}
-import firrtl.annotations.TargetToken
-import firrtl.annotations.TargetToken.{Field, Index}
+import firrtl.ir.Circuit
+import firrtl.Utils.throwInternalError
 import firrtl.annotations.transforms.{EliminateTargetPaths, ResolvePaths}
 import firrtl.options.StageUtils
 

@@ -2,7 +2,6 @@
 
 package firrtl.options
 
-import java.io.File
 
 /** Utilities related to working with a [[Stage]] */
 object StageUtils {

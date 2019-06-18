@@ -6,7 +6,7 @@ import firrtl.stage._
 
 import firrtl.{AnnotationSeq, EmitAllModulesAnnotation, EmitCircuitAnnotation}
 import firrtl.annotations.Annotation
-import firrtl.options.{OptionsException, Phase, StageUtils}
+import firrtl.options.{OptionsException, Phase}
 
 /** [[firrtl.options.Phase Phase]] that strictly validates an [[AnnotationSeq]]. The checks applied are intended to be
   * extremeley strict. Nothing is inferred or assumed to take a default value (for default value resolution see

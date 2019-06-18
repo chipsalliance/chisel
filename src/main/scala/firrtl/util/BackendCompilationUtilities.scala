@@ -7,7 +7,6 @@ import java.nio.file.Files
 import java.text.SimpleDateFormat
 import java.util.Calendar
 
-import firrtl.FirrtlExecutionOptions
 
 import scala.sys.process.{ProcessBuilder, ProcessLogger, _}
 
@@ -26,7 +25,7 @@ trait BackendCompilationUtilities {
     * @param name the name of the resource
     * @param file the file to write it into
     */
-  def copyResourceToFile(name: String, file: File) {
+  def copyResourceToFile(name: String, file: File): Unit = {
     val in = getClass.getResourceAsStream(name)
     if (in == null) {
       throw new FileNotFoundException(s"Resource '$name'")

@@ -7,7 +7,7 @@ import firrtl.PrimOps._
 import firrtl.ir._
 import firrtl._
 import firrtl.Mappers._
-import firrtl.Utils.{sub_type, module_type, field_type, max, error, throwInternalError}
+import firrtl.Utils.{sub_type, module_type, field_type, max, throwInternalError}
 
 /** Replaces FixedType with SIntType, and correctly aligns all binary points
   */

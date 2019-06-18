@@ -9,7 +9,6 @@ import firrtl.annotations._
 import firrtl.analyses.InstanceGraph
 import firrtl.stage.RunFirrtlTransformAnnotation
 import firrtl.options.{RegisteredTransform, ShellOption}
-import scopt.OptionParser
 
 // Datastructures
 import scala.collection.mutable

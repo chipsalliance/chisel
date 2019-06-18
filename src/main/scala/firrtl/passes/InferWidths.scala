@@ -7,7 +7,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.collection.immutable.ListMap
 
 import firrtl._
-import firrtl.annotations.{Annotation, ReferenceTarget, TargetToken}
+import firrtl.annotations.{Annotation, ReferenceTarget}
 import firrtl.ir._
 import firrtl.Utils._
 import firrtl.Mappers._

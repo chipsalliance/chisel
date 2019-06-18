@@ -4,7 +4,7 @@ package firrtl.stage.phases
 
 import firrtl.{AnnotationSeq, EmitAllModulesAnnotation}
 import firrtl.options.{Phase, Viewer}
-import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlOptions, OutputFileAnnotation}
+import firrtl.stage.{FirrtlOptions, OutputFileAnnotation}
 
 /** [[firrtl.options.Phase Phase]] that adds an [[OutputFileAnnotation]] if one does not already exist.
   *

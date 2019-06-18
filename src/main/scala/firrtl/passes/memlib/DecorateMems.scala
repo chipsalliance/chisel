@@ -3,7 +3,6 @@
 package firrtl
 package passes
 package memlib
-import ir._
 import annotations._
 import wiring._
 

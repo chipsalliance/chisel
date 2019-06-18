@@ -2,7 +2,7 @@
 
 package firrtl.stage
 
-import firrtl.{Compiler, Transform}
+import firrtl.Compiler
 import firrtl.ir.Circuit
 
 /** Internal options used to control the FIRRTL compiler stage.

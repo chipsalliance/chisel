@@ -4,11 +4,8 @@ package logger
 
 import java.io.{ByteArrayOutputStream, File, FileOutputStream, PrintStream}
 
-import firrtl.{ExecutionOptionsManager, HasFirrtlOptions, AnnotationSeq}
-import firrtl.stage.FirrtlOptions
-import firrtl.options.StageOptions
+import firrtl.{ExecutionOptionsManager, AnnotationSeq}
 import firrtl.options.Viewer.view
-import firrtl.stage.FirrtlOptionsView
 import logger.phases.{AddDefaults, Checks}
 
 import scala.util.DynamicVariable

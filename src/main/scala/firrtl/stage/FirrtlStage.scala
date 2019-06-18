@@ -9,7 +9,6 @@ import firrtl.passes.{PassException, PassExceptions}
 
 import scala.util.control.ControlThrowable
 
-import java.io.PrintWriter
 
 class FirrtlStage extends Stage {
   val shell: Shell = new Shell("firrtl") with FirrtlCli

@@ -1,6 +1,5 @@
 // See LICENSE for license details.
 
-import firrtl.AnnotationSeq
 import firrtl.annotations.Annotation
 
 package object firrtl {

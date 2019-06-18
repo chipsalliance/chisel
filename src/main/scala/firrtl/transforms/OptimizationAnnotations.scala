@@ -4,7 +4,6 @@ package transforms
 
 import firrtl.annotations._
 import firrtl.passes.PassException
-import firrtl.transforms
 
 /** Indicate that DCE should not be run */
 case object NoDCEAnnotation extends NoTargetAnnotation

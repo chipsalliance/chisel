@@ -3,7 +3,7 @@
 package firrtl
 
 import firrtl.annotations.DeletedAnnotation
-import firrtl.options.{OptionsView, PhasePrerequisiteException, Viewer}
+import firrtl.options.{OptionsView, Viewer}
 import firrtl.stage.phases.WriteEmitted
 
 /** The [[stage]] package provides an implementation of the FIRRTL compiler using the [[firrtl.options]] package. This

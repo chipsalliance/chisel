@@ -6,7 +6,7 @@ package lesson1
 // Compiler Infrastructure
 import firrtl.{Transform, LowForm, CircuitState, Utils}
 // Firrtl IR classes
-import firrtl.ir.{Circuit, DefModule, Statement, Expression, Mux}
+import firrtl.ir.{DefModule, Statement, Expression, Mux}
 // Map functions
 import firrtl.Mappers._
 // Scala's mutable collections

@@ -10,7 +10,6 @@ import firrtl.Utils._
 import firrtl.Mappers._
 import firrtl.PrimOps._
 import firrtl.graph.DiGraph
-import firrtl.WrappedExpression.weq
 import firrtl.analyses.InstanceGraph
 import firrtl.annotations.TargetToken.Ref
 

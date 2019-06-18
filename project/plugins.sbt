@@ -20,4 +20,6 @@ addSbtPlugin("com.simplytyped" % "sbt-antlr4" % "0.8.1")
 
 addSbtPlugin("com.github.gseitz" % "sbt-protobuf" % "0.6.3")
 
+addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.9.4")
+
 libraryDependencies += "com.github.os72" % "protoc-jar" % "3.5.1.1"
