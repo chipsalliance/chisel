@@ -34,6 +34,9 @@ abstract class ReadyValidIO[+T <: Data](gen: T) extends Bundle
 object ReadyValidIO {
 
   implicit class AddMethodsToReadyValid[T<:Data](target: ReadyValidIO[T]) {
+
+    /** Indicates if IO is both ready and valid
+     */
     def fire(): Bool = target.ready && target.valid
 
     /** Push dat onto the output bits of this interface to let the consumer know it has happened.
