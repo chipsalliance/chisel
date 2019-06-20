@@ -291,54 +291,59 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
 
   private def visitExp[FirrtlNode](ctx: ExpContext): Expression = {
     val ctx_exp = ctx.exp.asScala
-    if (ctx.getChildCount == 1)
-      Reference(ctx.getText, UnknownType)
-    else
-      ctx.getChild(0).getText match {
-        case "UInt" =>
-          if (ctx.getChildCount > 4) {
-            val width = IntWidth(string2BigInt(ctx.intLit(0).getText))
-            val value = string2BigInt(ctx.intLit(1).getText)
-            UIntLiteral(value, width)
-          } else {
-            val value = string2BigInt(ctx.intLit(0).getText)
-            UIntLiteral(value)
-          }
-        case "SInt" =>
-          if (ctx.getChildCount > 4) {
-            val width = string2BigInt(ctx.intLit(0).getText)
-            val value = string2BigInt(ctx.intLit(1).getText)
-            SIntLiteral(value, IntWidth(width))
-          } else {
-            val str = ctx.intLit(0).getText
-            val value = string2BigInt(str)
-            SIntLiteral(value)
-          }
-        case "validif(" => ValidIf(visitExp(ctx_exp(0)), visitExp(ctx_exp(1)), UnknownType)
-        case "mux(" => Mux(visitExp(ctx_exp(0)), visitExp(ctx_exp(1)), visitExp(ctx_exp(2)), UnknownType)
-        case _ =>
-          ctx.getChild(1).getText match {
-            case "." =>
-              val expr1 = visitExp(ctx_exp(0))
-              // TODO Workaround for #470
-              if (ctx.fieldId == null) {
-                ctx.DoubleLit.getText.split('.') match {
-                  case Array(a, b) if legalId(a) && legalId(b) =>
-                    val inner = new SubField(expr1, a, UnknownType)
-                    new SubField(inner, b, UnknownType)
-                  case Array() => throw new ParserException(s"Illegal Expression at ${ctx.getText}")
-                }
-              } else {
-                new SubField(expr1, ctx.fieldId.getText, UnknownType)
+    ctx.getChild(0) match {
+      case _: IdContext => Reference(ctx.getText, UnknownType)
+      case _: ExpContext =>
+        ctx.getChild(1).getText match {
+          case "." =>
+            val expr1 = visitExp(ctx_exp(0))
+            // TODO Workaround for #470
+            if (ctx.fieldId == null) {
+              ctx.DoubleLit.getText.split('.') match {
+                case Array(a, b) if legalId(a) && legalId(b) =>
+                  val inner = new SubField(expr1, a, UnknownType)
+                  new SubField(inner, b, UnknownType)
+                case Array() => throw new ParserException(s"Illegal Expression at ${ctx.getText}")
               }
-            case "[" => if (ctx.exp(1) == null)
+            } else {
+              new SubField(expr1, ctx.fieldId.getText, UnknownType)
+            }
+          case "[" =>
+            if (ctx.exp(1) == null)
               new SubIndex(visitExp(ctx_exp(0)), string2Int(ctx.intLit(0).getText), UnknownType)
-            else new SubAccess(visitExp(ctx_exp(0)), visitExp(ctx_exp(1)), UnknownType)
-            // Assume primop
-            case _ => DoPrim(visitPrimop(ctx.primop), ctx_exp.map(visitExp),
-              ctx.intLit.asScala.map(x => string2BigInt(x.getText)), UnknownType)
-          }
-      }
+            else
+              new SubAccess(visitExp(ctx_exp(0)), visitExp(ctx_exp(1)), UnknownType)
+        }
+      case _: PrimopContext =>
+        DoPrim(visitPrimop(ctx.primop),
+               ctx_exp.map(visitExp),
+               ctx.intLit.asScala.map(x => string2BigInt(x.getText)),
+               UnknownType)
+      case _ =>
+        ctx.getChild(0).getText match {
+          case "UInt" =>
+            if (ctx.getChildCount > 4) {
+              val width = IntWidth(string2BigInt(ctx.intLit(0).getText))
+              val value = string2BigInt(ctx.intLit(1).getText)
+              UIntLiteral(value, width)
+            } else {
+              val value = string2BigInt(ctx.intLit(0).getText)
+              UIntLiteral(value)
+            }
+          case "SInt" =>
+            if (ctx.getChildCount > 4) {
+              val width = string2BigInt(ctx.intLit(0).getText)
+              val value = string2BigInt(ctx.intLit(1).getText)
+              SIntLiteral(value, IntWidth(width))
+            } else {
+              val str = ctx.intLit(0).getText
+              val value = string2BigInt(str)
+              SIntLiteral(value)
+            }
+          case "validif(" => ValidIf(visitExp(ctx_exp(0)), visitExp(ctx_exp(1)), UnknownType)
+          case "mux(" => Mux(visitExp(ctx_exp(0)), visitExp(ctx_exp(1)), visitExp(ctx_exp(2)), UnknownType)
+        }
+    }
   }
 
   // stripSuffix("(") is included because in ANTLR concrete syntax we have to include open parentheses,
