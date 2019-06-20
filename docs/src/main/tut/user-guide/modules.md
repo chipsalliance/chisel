@@ -16,14 +16,17 @@ defined as a *class* which:
 
 As an example, consider defining your own two-input multiplexer as a
 module:
-```scala
+```tut:silent
+import chisel3._
+class Mux2IO extends Bundle {
+  val sel = Input(UInt(1.W))
+  val in0 = Input(UInt(1.W))
+  val in1 = Input(UInt(1.W))
+  val out = Output(UInt(1.W))
+}
+
 class Mux2 extends Module {
-  val io = IO(new Bundle{
-    val sel = Input(UInt(1.W))
-    val in0 = Input(UInt(1.W))
-    val in1 = Input(UInt(1.W))
-    val out = Output(UInt(1.W))
-  })
+  val io = IO(new Mux2IO)
   io.out := (io.sel & io.in1) | (~io.sel & io.in0)
 }
 ```
@@ -44,16 +47,18 @@ of smaller sub-modules.  For example, we can build a 4-input
 multiplexer module in terms of the ```Mux2``` module by wiring
 together three 2-input multiplexers:
 
-```scala
+```tut:silent
+class Mux4IO extends Bundle {
+  val in0 = Input(UInt(1.W))
+  val in1 = Input(UInt(1.W))
+  val in2 = Input(UInt(1.W))
+  val in3 = Input(UInt(1.W))
+  val sel = Input(UInt(2.W))
+  val out = Output(UInt(1.W))
+}
 class Mux4 extends Module {
-  val io = IO(new Bundle {
-    val in0 = Input(UInt(1.W))
-    val in1 = Input(UInt(1.W))
-    val in2 = Input(UInt(1.W))
-    val in3 = Input(UInt(1.W))
-    val sel = Input(UInt(2.W))
-    val out = Output(UInt(1.W))
-  })
+  val io = IO(new Mux4IO)
+
   val m0 = Module(new Mux2)
   m0.io.sel := io.sel(0)
   m0.io.in0 := io.in0
