@@ -16,13 +16,13 @@ class AspectTransform extends Transform {
   override def execute(state: CircuitState): CircuitState = {
 
     var dut: Option[RawModule] = None
-    val aspects = mutable.ArrayBuffer[Aspect[_, _]]()
+    val aspects = mutable.ArrayBuffer[Aspect[_]]()
 
     val remainingAnnotations = state.annotations.flatMap {
       case DesignAnnotation(d) =>
         dut = Some(d)
         Nil
-      case a: Aspect[_, _] =>
+      case a: Aspect[_] =>
         aspects += a
         Nil
       case other => Seq(other)

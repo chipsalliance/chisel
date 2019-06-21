@@ -513,5 +513,6 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     class dump extends chisel3.internal.naming.dump  // scalastyle:ignore class.name
     class treedump extends chisel3.internal.naming.treedump  // scalastyle:ignore class.name
     class chiselName extends chisel3.internal.naming.chiselName  // scalastyle:ignore class.name
+
   }
 }

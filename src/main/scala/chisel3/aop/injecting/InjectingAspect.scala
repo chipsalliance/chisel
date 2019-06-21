@@ -16,18 +16,20 @@ import scala.reflect.runtime.universe.TypeTag
   * @param selectRoots Given top-level module, pick the instances of a module to apply the aspect (root module)
   * @param injection Function to generate Chisel hardware that will be injected to the end of module m
   *                  Signals in m can be referenced and assigned to as if inside m (yes, it is a bit magical)
-  * @param dutTag Needed to prevent type-erasure of the top-level module type
+  * @param tTag Needed to prevent type-erasure of the top-level module type
   * @param mTag Needed to prevent type-erasure of the selected modules' type
-  * @tparam DUT Type of top-level module
+  * @tparam T Type of top-level module
   * @tparam M Type of root module (join point)
   */
-case class InjectingAspect[DUT <: RawModule, M <: RawModule](selectRoots: DUT => Seq[M], injection: M => Unit)
-                                                            (implicit dutTag: TypeTag[DUT], mTag: TypeTag[M]) extends Aspect[DUT, M](selectRoots) {
-  final def toAnnotation(dut: DUT): AnnotationSeq = {
-    toAnnotation(selectRoots(dut), injection, dut.name)
+case class InjectingAspect[T <: RawModule,
+                           M <: RawModule](selectRoots: T => Iterable[M],
+                                           injection: M => Unit
+                                          )(implicit tTag: TypeTag[T]) extends Aspect[T] {
+  final def toAnnotation(top: T): AnnotationSeq = {
+    toAnnotation(selectRoots(top), injection, top.name)
   }
 
-  final def toAnnotation(modules: Seq[M], inject: M => Unit, circuit: String): AnnotationSeq = {
+  final def toAnnotation(modules: Iterable[M], inject: M => Unit, circuit: String): AnnotationSeq = {
     modules.map { module =>
       val chiselIR = Builder.build(core.Module(new core.ModuleAspect(module) {
         module match {
@@ -57,7 +59,7 @@ case class InjectingAspect[DUT <: RawModule, M <: RawModule](selectRoots: DUT =>
       }
 
       InjectStatement(ModuleTarget(circuit, module.name), ir.Block(stmts), modules, annotations)
-    }
+    }.toList
   }
 
   override def additionalTransformClasses: Seq[Class[_ <: Transform]] = Seq(classOf[InjectingTransform])

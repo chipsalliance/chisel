@@ -22,19 +22,19 @@ import firrtl.util.BackendCompilationUtilities
 trait ChiselRunners extends Assertions with BackendCompilationUtilities {
   def runTester(t: => BasicTester,
                 additionalVResources: Seq[String] = Seq(),
-                aspects: Seq[chisel3.aop.Aspect[_, _]] = Seq()
+                aspects: Seq[chisel3.aop.Aspect[_]] = Seq()
                ): Boolean = {
     TesterDriver.execute(() => t, additionalVResources, aspects)
   }
   def assertTesterPasses(t: => BasicTester,
                          additionalVResources: Seq[String] = Seq(),
-                         aspects: Seq[chisel3.aop.Aspect[_, _]] = Seq()
+                         aspects: Seq[chisel3.aop.Aspect[_]] = Seq()
                         ): Unit = {
     assert(runTester(t, additionalVResources, aspects))
   }
   def assertTesterFails(t: => BasicTester,
                         additionalVResources: Seq[String] = Seq(),
-                        aspects: Seq[chisel3.aop.Aspect[_, _]] = Seq()
+                        aspects: Seq[chisel3.aop.Aspect[_]] = Seq()
                        ): Unit = {
     assert(!runTester(t, additionalVResources, aspects))
   }

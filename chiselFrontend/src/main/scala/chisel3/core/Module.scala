@@ -6,7 +6,6 @@ import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.collection.JavaConversions._
 import scala.language.experimental.macros
-
 import java.util.IdentityHashMap
 
 import chisel3.internal._
@@ -14,8 +13,7 @@ import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{InstTransform, SourceInfo}
 import chisel3.SourceInfoDoc
-
-import _root_.firrtl.annotations.{ModuleTarget, ModuleName}
+import _root_.firrtl.annotations.{ModuleName, ModuleTarget, IsModule}
 
 object Module extends SourceInfoDoc {
   /** A wrapper method that all Module instantiations must be wrapped in
@@ -231,6 +229,16 @@ abstract class BaseModule extends HasId {
     */
   final def toTarget: ModuleTarget = ModuleTarget(this.circuitName, this.name)
 
+  /** Returns a FIRRTL ModuleTarget that references this object
+    * @note Should not be called until circuit elaboration is complete
+    */
+  final def toAbsoluteTarget: IsModule = {
+    _parent match {
+      case Some(parent) => parent.toAbsoluteTarget.instOf(this.instanceName, toTarget.module)
+      case None => toTarget
+    }
+  }
+
   /**
    * Internal API. Returns a list of this module's generated top-level ports as a map of a String
    * (FIRRTL name) to the IO object. Only valid after the module is closed.
@@ -371,6 +379,15 @@ abstract class BaseModule extends HasId {
     myItems ++ deepChildrenItems
   }
 
+  def collectDeep[T](collector: PartialFunction[BaseModule, T])(implicit tag: TypeTag[T]): Iterable[T] = {
+    assert(_closed && _component.isDefined)
+    val myItems = collector.lift(this)
+    val deepChildrenItems = instances().flatMap {
+      i => i.collectDeep(collector)
+    }
+    myItems ++ deepChildrenItems
+  }
+
   def instances(): Seq[BaseModule] = {
     assert(_closed && _component.isDefined)
     _component.get.asInstanceOf[DefModule].commands.collect {
@@ -412,4 +429,10 @@ abstract class BaseModule extends HasId {
     }
   }
 
+  def ops(name: String): Seq[Data] = {
+    assert(_closed && _component.isDefined)
+    _component.get.asInstanceOf[DefModule].commands.collect {
+      case d: DefPrim[_] if d.name == name => d.id
+    }
+  }
 }

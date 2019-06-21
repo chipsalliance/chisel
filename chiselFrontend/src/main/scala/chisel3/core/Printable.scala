@@ -57,6 +57,7 @@ sealed abstract class Printable {
   final def +(that: Printable): Printables = Printables(List(this, that))
   /** Allow for appending Strings to Printables */
   final def +(that: String): Printables = Printables(List(this, PString(that)))
+  def length: Int
 }
 object Printable {
   /** Pack standard printf fmt, args* style into Printable
@@ -121,11 +122,14 @@ case class Printables(pables: Iterable[Printable]) extends Printable {
     val (fmts, args) = pables.map(_ unpack ctx).unzip
     (fmts.mkString, args.flatten)
   }
+
+  override def length: Int = pables.map(_.length).sum
 }
 /** Wrapper for printing Scala Strings */
 case class PString(str: String) extends Printable {
   final def unpack(ctx: Component): (String, Iterable[String]) =
     (str replaceAll ("%", "%%"), List.empty)
+  def length = str.length
 }
 /** Superclass for Firrtl format specifiers for Bits */
 sealed abstract class FirrtlFormat(private[chisel3] val specifier: Char) extends Printable {
@@ -158,22 +162,40 @@ object FirrtlFormat {
   }
 }
 /** Format bits as Decimal */
-case class Decimal(bits: Bits) extends FirrtlFormat('d')
+case class Decimal(bits: Bits) extends FirrtlFormat('d') {
+  override def length: Int = bits.widthOption match {
+    case Some(w) => Math.ceil(Math.log10(Math.pow(2, w) + 1)).toInt
+    case None => 0
+  }
+}
 /** Format bits as Hexidecimal */
-case class Hexadecimal(bits: Bits) extends FirrtlFormat('x')
+case class Hexadecimal(bits: Bits) extends FirrtlFormat('x') {
+  override def length: Int = bits.widthOption match {
+    case Some(w) => Math.ceil(Math.log(Math.pow(2, w)/Math.log(16) + 1)).toInt
+    case None => 0
+  }
+}
 /** Format bits as Binary */
-case class Binary(bits: Bits) extends FirrtlFormat('b')
+case class Binary(bits: Bits) extends FirrtlFormat('b') {
+  def length = 1
+}
 /** Format bits as Character */
-case class Character(bits: Bits) extends FirrtlFormat('c')
+case class Character(bits: Bits) extends FirrtlFormat('c') {
+  def length = 1
+}
 /** Put innermost name (eg. field of bundle) */
 case class Name(data: Data) extends Printable {
   final def unpack(ctx: Component): (String, Iterable[String]) = (data.ref.name, List.empty)
+  def length = data.ref.name.length
 }
 /** Put full name within parent namespace (eg. bundleName.field) */
 case class FullName(data: Data) extends Printable {
   final def unpack(ctx: Component): (String, Iterable[String]) = (data.ref.fullName(ctx), List.empty)
+  def length = sys.error("Cannot calculate langth of FullName")
 }
 /** Represents escaped percents */
 case object Percent extends Printable {
   final def unpack(ctx: Component): (String, Iterable[String]) = ("%%", List.empty)
+
+  override def length: Int = 1
 }

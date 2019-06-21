@@ -7,27 +7,16 @@ import firrtl.{AnnotationSeq, RenameMap, Transform}
 import scala.reflect.runtime.universe.TypeTag
 
 /** Represents an aspect of a Chisel module, by specifying
-  *  (1) how to select a Chisel instance from the design
-  *  (2) what behavior should be done to selected instance, via the FIRRTL Annotation Mechanism
-  * @param selectRoots Given top-level module, pick the instances of a module to apply the aspect (root module)
+  *  what behavior should be done to instance, via the FIRRTL Annotation Mechanism
   * @param dutTag Needed to prevent type-erasure of the top-level module type
-  * @param mTag Needed to prevent type-erasure of the selected modules' type
-  * @tparam DUT Type of top-level module
-  * @tparam M Type of root module (join point)
+  * @tparam T Type of top-level module
   */
-abstract class Aspect[DUT <: RawModule, M <: RawModule](selectRoots: DUT => Seq[M])
-                                                       (implicit dutTag: TypeTag[DUT], mTag: TypeTag[M]) extends Annotation with AdditionalTransforms {
+abstract class Aspect[T <: RawModule](implicit dutTag: TypeTag[T]) extends Annotation with AdditionalTransforms {
   /** Convert this Aspect to a seq of FIRRTL annotation
-    * @param dut
+    * @param top
     * @return
     */
-  def toAnnotation(dut: DUT): AnnotationSeq
-
-  /** Associated FIRRTL transformation that turns all aspects into their annotations
-    * @return
-    */
-  final def transformClass: Class[_ <: AspectTransform] = classOf[AspectTransform]
-
+  def toAnnotation(top: T): AnnotationSeq
   /** Associated FIRRTL transformations, which may be required to modify the design
     *
     * Implemented by Concern library writer
@@ -35,12 +24,17 @@ abstract class Aspect[DUT <: RawModule, M <: RawModule](selectRoots: DUT => Seq[
     */
   def additionalTransformClasses: Seq[Class[_ <: Transform]]
 
-  /** Called by the FIRRTL transformation that consumes this concern
-    * @param dut
+  /** Associated FIRRTL transformation that turns all aspects into their annotations
     * @return
     */
-  def resolveAspect(dut: RawModule): AnnotationSeq = {
-    toAnnotation(dut.asInstanceOf[DUT])
+  final def transformClass: Class[_ <: AspectTransform] = classOf[AspectTransform]
+
+  /** Called by the FIRRTL transformation that consumes this concern
+    * @param top
+    * @return
+    */
+  def resolveAspect(top: RawModule): AnnotationSeq = {
+    toAnnotation(top.asInstanceOf[T])
   }
 
   override def update(renames: RenameMap): Seq[Annotation] = Seq(this)

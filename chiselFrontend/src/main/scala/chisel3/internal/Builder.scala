@@ -73,7 +73,8 @@ trait InstanceId {
   def toNamed: Named
   /** Returns a FIRRTL IsMember that refers to this object in the elaborated hardware graph */
   def toTarget: IsMember
-
+  /** Returns a FIRRTL IsMember that refers to the absolute path to this object in the elaborated hardware graph */
+  def toAbsoluteTarget: IsMember
 }
 
 private[chisel3] trait HasId extends InstanceId {
@@ -181,6 +182,14 @@ private[chisel3] trait NamedComponent extends HasId {
       case TargetToken.Ref(r) :: components => ReferenceTarget(this.circuitName, this.parentModName, Nil, r, components)
       case other =>
         throw _root_.firrtl.annotations.Target.NamedException(s"Cannot convert $name into [[ReferenceTarget]]: $other")
+    }
+  }
+
+  final def toAbsoluteTarget: ReferenceTarget = {
+    val localTarget = toTarget
+    _parent match {
+      case Some(parent) => parent.toAbsoluteTarget.ref(localTarget.ref).copy(component = localTarget.component)
+      case None => localTarget
     }
   }
 }

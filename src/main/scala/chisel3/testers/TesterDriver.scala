@@ -16,7 +16,7 @@ object TesterDriver extends BackendCompilationUtilities {
     * frontend, and which can be turned into executables with assertions. */
   def execute(t: () => BasicTester,
               additionalVResources: Seq[String] = Seq(),
-              aspects: Seq[Aspect[_, _]] = Seq()
+              aspects: Seq[Aspect[_]] = Seq()
              ): Boolean = {
     // Invoke the chisel compiler to get the circuit's IR
     val circuit = Driver.elaborate(finishWrapper(t))
