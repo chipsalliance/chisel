@@ -263,5 +263,31 @@ class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec {
       }
     }
   }
+
+  "Compatibility Modules" should "be instantiable inside chisel3 Modules" in {
+    compile {
+      object Compat {
+        import Chisel._
+        class Intf extends Bundle {
+          val in = Input(UInt(8.W))
+          val out = Output(UInt(8.W))
+        }
+        class OldMod extends Module {
+          val io = IO(new Intf)
+          io.out := Reg(next = io.in)
+        }
+      }
+      import chisel3._
+      import Compat._
+      new Module {
+        val io = IO(new Intf)
+        io <> Module(new Module {
+          val io = IO(new Intf)
+          val inst = Module(new OldMod)
+          io <> inst.io
+        }).io
+      }
+    }
+  }
 }
 
