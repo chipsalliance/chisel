@@ -11,6 +11,7 @@ import scala.reflect.macros.blackbox._
 
 import chisel3._
 
+@deprecated("The unless conditional is deprecated, use when(!condition){...} instead", "3.2")
 object unless {  // scalastyle:ignore object.name
   /** Does the same thing as [[when$ when]], but with the condition inverted.
     */
