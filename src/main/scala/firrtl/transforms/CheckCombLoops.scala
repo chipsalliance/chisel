@@ -40,11 +40,11 @@ case class ExtModulePathAnnotation(source: ReferenceTarget, sink: ReferenceTarge
   }
 }
 
-case class CombinationalPath(sink: ComponentName, sources: Seq[ComponentName]) extends Annotation {
+case class CombinationalPath(sink: ReferenceTarget, sources: Seq[ReferenceTarget]) extends Annotation {
   override def update(renames: RenameMap): Seq[Annotation] = {
-    val newSources: Seq[IsComponent] = sources.flatMap { s => renames.get(s).getOrElse(Seq(s.toTarget)) }.collect {case x: IsComponent if x.isLocal => x}
-    val newSinks = renames.get(sink).getOrElse(Seq(sink.toTarget)).collect { case x: IsComponent if x.isLocal => x}
-    newSinks.map(snk => CombinationalPath(snk.toNamed, newSources.map(_.toNamed)))
+    val newSources = sources.flatMap { s => renames(s) }.collect {case x: ReferenceTarget if x.isLocal => x}
+    val newSinks = renames(sink).collect { case x: ReferenceTarget if x.isLocal => x}
+    newSinks.map(snk => CombinationalPath(snk, newSources))
   }
 }
 
@@ -249,10 +249,10 @@ class CheckCombLoops extends Transform with RegisteredTransform {
         }
       case m => throwInternalError(s"Module ${m.name} has unrecognized type")
     }
-    val mn = ModuleName(c.main, CircuitName(c.main))
+    val mt = ModuleTarget(c.main, c.main)
     val annos = simplifiedModuleGraphs(c.main).getEdgeMap.collect { case (from, tos) if tos.nonEmpty =>
-      val sink = ComponentName(from.name, mn)
-      val sources = tos.map(x => ComponentName(x.name, mn))
+      val sink = mt.ref(from.name)
+      val sources = tos.map(to => mt.ref(to.name))
       CombinationalPath(sink, sources.toSeq)
     }
     (state.copy(annotations = state.annotations ++ annos), errors, simplifiedModuleGraphs)

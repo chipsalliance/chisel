@@ -298,10 +298,9 @@ class CheckCombLoopsSpec extends SimpleTransformSpec {
 
     val writer = new java.io.StringWriter
     val cs = compile(CircuitState(parse(input), ChirrtlForm), writer)
-    val mn = ModuleName("hasnoloops", CircuitName("hasnoloops"))
-    cs.annotations.collect {
-      case c @ CombinationalPath(ComponentName("b", `mn`), Seq(ComponentName("a", `mn`))) => c
-    }.nonEmpty should be (true)
+    val mt = ModuleTarget("hasnoloops", "hasnoloops")
+    val anno = CombinationalPath(mt.ref("b"), Seq(mt.ref("a")))
+    cs.annotations.contains(anno) should be (true)
   }
 }
 
