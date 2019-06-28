@@ -255,7 +255,7 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
           val (reset, init) = {
             val rb = ctx.reset_block()
             if (rb != null) {
-              val sr = rb.simple_reset(0).simple_reset0()
+              val sr = rb.simple_reset.simple_reset0()
               (visitExp(sr.exp(0)), visitExp(sr.exp(1)))
             }
             else

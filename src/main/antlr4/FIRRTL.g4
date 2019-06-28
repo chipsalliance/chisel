@@ -27,11 +27,6 @@ import firrtl.LexerHelper;
  * PARSER RULES
  *------------------------------------------------------------------*/
 
-/* TODO 
- *  - Add [info] support (all over the place)
- *  - Add support for extmodule
-*/
-
 // Does there have to be at least one module?
 circuit
   : 'circuit' id ':' info? INDENT module* DEDENT
@@ -90,7 +85,7 @@ simple_reset
 
 reset_block
 	: INDENT simple_reset info? NEWLINE DEDENT
-	| '(' +  simple_reset + ')'
+	| '(' simple_reset ')'
   ;
 
 stmt
