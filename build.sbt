@@ -34,7 +34,7 @@ val defaultVersions = Map("firrtl" -> "1.1.7")
 
 lazy val commonSettings = Seq (
   organization := "edu.berkeley.cs",
-  version := "3.1.7",
+  version := "3.1.8",
   git.remoteRepo := "git@github.com:freechipsproject/chisel3.git",
   autoAPIMappings := true,
   scalaVersion := "2.11.12",

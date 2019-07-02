@@ -55,6 +55,14 @@ private[chisel3] sealed trait ToBoolable extends Element {
   final def toBool(): Bool = macro SourceInfoWhiteboxTransform.noArg
 
   def do_toBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
+
+  /** Casts this object to a [[Bool]]
+    *
+    * @note Width must be known and equal to 1
+    */
+  final def asBool(): Bool = macro SourceInfoWhiteboxTransform.noArg
+
+  def do_asBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
 }
 
 /** A data type for values represented by a single bitvector. Provides basic
@@ -301,6 +309,13 @@ sealed abstract class Bits(width: Width, override val litArg: Option[LitArg])
   }
 
   final def do_toBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
+    width match {
+      case KnownWidth(1) => this(0)
+      case _ => throwException(s"can't covert UInt<$width> to Bool")
+    }
+  }
+
+  final def do_asBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
     width match {
       case KnownWidth(1) => this(0)
       case _ => throwException(s"can't covert UInt<$width> to Bool")
