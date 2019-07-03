@@ -33,8 +33,8 @@ To write a Firrtl transform, please start with the tutorial here: [src/main/scal
 To run these examples:
 ```
 sbt assembly
-./utils/bin/firrtl -td regress -tn rocket --custom-transforms tutorial.lesson1.AnalyzeCircuit
-./utils/bin/firrtl -td regress -tn rocket --custom-transforms tutorial.lesson2.AnalyzeCircuit
+./utils/bin/firrtl -td regress -i regress/RocketCore.fir --custom-transforms tutorial.lesson1.AnalyzeCircuit
+./utils/bin/firrtl -td regress -i regress/RocketCore.fir --custom-transforms tutorial.lesson2.AnalyzeCircuit
 ```
 
 #### Other Tools
