@@ -3,7 +3,7 @@
 package firrtl
 
 import org.antlr.v4.runtime.ParserRuleContext
-import org.antlr.v4.runtime.tree.TerminalNode
+import org.antlr.v4.runtime.tree.{AbstractParseTreeVisitor, ParseTreeVisitor, TerminalNode}
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import firrtl.antlr._
@@ -14,7 +14,7 @@ import firrtl.ir._
 import Utils.throwInternalError
 
 
-class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
+class Visitor(infoMode: InfoMode) extends AbstractParseTreeVisitor[FirrtlNode] with ParseTreeVisitor[FirrtlNode] {
   // Strip file path
   private def stripPath(filename: String) = filename.drop(filename.lastIndexOf("/") + 1)
 
@@ -24,7 +24,7 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
     id forall legalChars
   }
 
-  def visit[FirrtlNode](ctx: CircuitContext): Circuit = visitCircuit(ctx)
+  def visit(ctx: CircuitContext): Circuit = visitCircuit(ctx)
 
   //  These regex have to change if grammar changes
   private val HexPattern = """\"*h([+\-]?[a-zA-Z0-9]+)\"*""".r
@@ -64,10 +64,10 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
     }
   }
 
-  private def visitCircuit[FirrtlNode](ctx: CircuitContext): Circuit =
+  private def visitCircuit(ctx: CircuitContext): Circuit =
     Circuit(visitInfo(Option(ctx.info), ctx), ctx.module.asScala.map(visitModule), ctx.id.getText)
 
-  private def visitModule[FirrtlNode](ctx: ModuleContext): DefModule = {
+  private def visitModule(ctx: ModuleContext): DefModule = {
     val info = visitInfo(Option(ctx.info), ctx)
     ctx.getChild(0).getText match {
       case "module" => Module(info, ctx.id.getText, ctx.port.asScala.map(visitPort),
@@ -82,11 +82,11 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
     }
   }
 
-  private def visitPort[FirrtlNode](ctx: PortContext): Port = {
+  private def visitPort(ctx: PortContext): Port = {
     Port(visitInfo(Option(ctx.info), ctx), ctx.id.getText, visitDir(ctx.dir), visitType(ctx.`type`))
   }
 
-  private def visitParameter[FirrtlNode](ctx: ParameterContext): Param = {
+  private def visitParameter(ctx: ParameterContext): Param = {
     val name = ctx.id.getText
     (ctx.intLit, ctx.StringLit, ctx.DoubleLit, ctx.RawString) match {
       case (int, null, null, null) => IntParam(name, string2BigInt(int.getText))
@@ -97,13 +97,13 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
     }
   }
 
-  private def visitDir[FirrtlNode](ctx: DirContext): Direction =
+  private def visitDir(ctx: DirContext): Direction =
     ctx.getText match {
       case "input" => Input
       case "output" => Output
     }
 
-  private def visitMdir[FirrtlNode](ctx: MdirContext): MPortDir =
+  private def visitMdir(ctx: MdirContext): MPortDir =
     ctx.getText match {
       case "infer" => MInfer
       case "read" => MRead
@@ -112,7 +112,7 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
     }
 
   // Match on a type instead of on strings?
-  private def visitType[FirrtlNode](ctx: TypeContext): Type = {
+  private def visitType(ctx: TypeContext): Type = {
     def getWidth(n: IntLitContext): Width = IntWidth(string2BigInt(n.getText))
     ctx.getChild(0) match {
       case term: TerminalNode =>
@@ -152,20 +152,20 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
     }
   }
 
-  private def visitField[FirrtlNode](ctx: FieldContext): Field = {
+  private def visitField(ctx: FieldContext): Field = {
     val flip = if (ctx.getChild(0).getText == "flip") Flip else Default
     Field(ctx.fieldId.getText, flip, visitType(ctx.`type`))
   }
 
-  private def visitBlock[FirrtlNode](ctx: ModuleBlockContext): Statement =
+  private def visitBlock(ctx: ModuleBlockContext): Statement =
     Block(ctx.simple_stmt().asScala.flatMap(x => Option(x.stmt).map(visitStmt)))
 
-  private def visitSuite[FirrtlNode](ctx: SuiteContext): Statement =
+  private def visitSuite(ctx: SuiteContext): Statement =
     Block(ctx.simple_stmt().asScala.flatMap(x => Option(x.stmt).map(visitStmt)))
 
 
   // Memories are fairly complicated to translate thus have a dedicated method
-  private def visitMem[FirrtlNode](ctx: StmtContext): Statement = {
+  private def visitMem(ctx: StmtContext): Statement = {
     val readers = mutable.ArrayBuffer.empty[String]
     val writers = mutable.ArrayBuffer.empty[String]
     val readwriters = mutable.ArrayBuffer.empty[String]
@@ -222,12 +222,12 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
   }
 
   // visitStringLit
-  private def visitStringLit[FirrtlNode](node: TerminalNode): StringLit = {
+  private def visitStringLit(node: TerminalNode): StringLit = {
     val raw = node.getText.tail.init // Remove surrounding double quotes
     ir.StringLit.unescape(raw)
   }
 
-  private def visitWhen[FirrtlNode](ctx: WhenContext): Conditionally = {
+  private def visitWhen(ctx: WhenContext): Conditionally = {
     val info = visitInfo(Option(ctx.info(0)), ctx)
 
     val alt: Statement =
@@ -242,7 +242,7 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
   }
 
   // visitStmt
-  private def visitStmt[FirrtlNode](ctx: StmtContext): Statement = {
+  private def visitStmt(ctx: StmtContext): Statement = {
     val ctx_exp = ctx.exp.asScala
     val info = visitInfo(Option(ctx.info), ctx)
     ctx.getChild(0) match {
@@ -289,7 +289,7 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
     }
   }
 
-  private def visitExp[FirrtlNode](ctx: ExpContext): Expression = {
+  private def visitExp(ctx: ExpContext): Expression = {
     val ctx_exp = ctx.exp.asScala
     ctx.getChild(0) match {
       case _: IdContext => Reference(ctx.getText, UnknownType)
@@ -348,7 +348,7 @@ class Visitor(infoMode: InfoMode) extends FIRRTLBaseVisitor[FirrtlNode] {
 
   // stripSuffix("(") is included because in ANTLR concrete syntax we have to include open parentheses,
   //  see grammar file for more details
-  private def visitPrimop[FirrtlNode](ctx: PrimopContext): PrimOp = fromString(ctx.getText.stripSuffix("("))
+  private def visitPrimop(ctx: PrimopContext): PrimOp = fromString(ctx.getText.stripSuffix("("))
 
   // visit Id and Keyword?
 }
