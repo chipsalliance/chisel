@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 package chisel3.aop
 
 import chisel3.core.{DesignAnnotation, RawModule}

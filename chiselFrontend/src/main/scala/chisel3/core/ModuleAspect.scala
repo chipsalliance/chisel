@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 package chisel3.core
 
 import chisel3.internal.Builder
