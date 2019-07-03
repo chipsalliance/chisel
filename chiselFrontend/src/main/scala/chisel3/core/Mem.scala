@@ -35,7 +35,7 @@ object Mem {
   }
 }
 
-sealed abstract class MemBase[T <: Data](t: T, val length: Int) extends HasId with NamedComponent with SourceInfoDoc {
+sealed abstract class MemBase[T <: Data](val t: T, val length: Int) extends HasId with NamedComponent with SourceInfoDoc {
   // REVIEW TODO: make accessors (static/dynamic, read/write) combinations consistent.
 
   /** Creates a read accessor into the memory with static addressing. See the
