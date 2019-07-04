@@ -8,7 +8,7 @@ import chisel3._
 import chisel3.experimental._
 import chisel3.internal.firrtl._
 import chisel3.internal.naming._
-import _root_.firrtl.annotations.{CircuitName, ComponentName, ModuleName, Named}
+import _root_.firrtl.annotations._
 
 private[chisel3] class Namespace(keywords: Set[String]) {
   private val names = collection.mutable.HashMap[String, Long]()
@@ -163,8 +163,18 @@ private[chisel3] trait NamedComponent extends HasId {
   /** Returns a FIRRTL ComponentName that references this object
     * @note Should not be called until circuit elaboration is complete
     */
+  @deprecated("Use toTarget instead, will be removed in 1.3", "1.2")
   final def toNamed: ComponentName =
     ComponentName(this.instanceName, ModuleName(this.parentModName, CircuitName(this.circuitName)))
+
+  /** Returns a FIRRTL [[ReferenceTarget]] that references this object
+    * @note Should not be called until circuit elaboration is complete
+    */
+  def toTarget: ReferenceTarget = {
+    Target.toTargetTokens(this.instanceName).toList match {
+      case TargetToken.Ref(r) :: components => ReferenceTarget(this.circuitName, this.parentModName, Nil, r, components)
+    }
+  }
 }
 
 // Mutable global state for chisel that can appear outside a Builder context
