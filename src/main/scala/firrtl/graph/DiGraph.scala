@@ -64,13 +64,14 @@ class DiGraph[T] private[graph] (private[graph] val edges: LinkedHashMap[T, Link
     */
   def findSinks: Set[T] = reverse.findSources
 
-  /** Linearizes (topologically sorts) a DAG
-    *
+  /** Linearizes (topologically sorts) a DAG using a DFS. This can be seeded with an order to use for the DFS if the user
+    * wants to tease out a special ordering of the DAG.
+    * @param seed an optional sequence of vertices to use. This will default to the vertices ordering provided by getVertices.
     * @throws CyclicException if the graph is cyclic
     * @return a Map[T,T] from each visited node to its predecessor in the
     * traversal
     */
-  def linearize: Seq[T] = {
+  def seededLinearize(seed: Option[Seq[T]] = None): Seq[T] = {
     // permanently marked nodes are implicitly held in order
     val order = new mutable.ArrayBuffer[T]
     // invariant: no intersection between unmarked and tempMarked
@@ -80,7 +81,7 @@ class DiGraph[T] private[graph] (private[graph] val edges: LinkedHashMap[T, Link
     case class LinearizeFrame[T](v: T, expanded: Boolean)
     val callStack = mutable.Stack[LinearizeFrame[T]]()
 
-    unmarked ++= getVertices
+    unmarked ++= seed.getOrElse(getVertices)
     while (unmarked.nonEmpty) {
       callStack.push(LinearizeFrame(unmarked.head, false))
       while (callStack.nonEmpty) {
@@ -132,6 +133,14 @@ class DiGraph[T] private[graph] (private[graph] val edges: LinkedHashMap[T, Link
     }
     foundPath
   }
+
+  /** Linearizes (topologically sorts) a DAG
+    *
+    * @throws CyclicException if the graph is cyclic
+    * @return a Map[T,T] from each visited node to its predecessor in the
+    * traversal
+    */
+  def linearize: Seq[T] = seededLinearize(None)
 
   /** Performs breadth-first search on the directed graph
     *
@@ -187,7 +196,7 @@ class DiGraph[T] private[graph] (private[graph] val edges: LinkedHashMap[T, Link
     * @return a Seq[T] of nodes defining an arbitrary valid path
     */
   def path(start: T, end: T): Seq[T] = path(start, end, Set.empty[T])
-  
+
   /** Finds a path (if one exists) from one node to another, with a blacklist
     *
     * @param start the start node
