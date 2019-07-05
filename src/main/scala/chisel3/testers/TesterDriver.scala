@@ -6,7 +6,7 @@ import chisel3._
 import java.io._
 
 import chisel3.aop.Aspect
-import chisel3.experimental.{AdditionalTransforms, RunFirrtlTransform}
+import chisel3.experimental.{RunFirrtlTransforms, RunFirrtlTransform}
 import firrtl.{Driver => _, _}
 import firrtl.transforms.BlackBoxSourceHelper.writeResourceToDirectory
 
@@ -47,7 +47,7 @@ object TesterDriver extends BackendCompilationUtilities {
 
     // Compile firrtl
     val transforms = aspectedCircuit.annotations.flatMap {
-      case anno: AdditionalTransforms => anno.getTransformClasses
+      case anno: RunFirrtlTransforms => anno.transformClasses
       case anno: RunFirrtlTransform => Seq(anno.transformClass)
       case _ => Nil
     }.distinct

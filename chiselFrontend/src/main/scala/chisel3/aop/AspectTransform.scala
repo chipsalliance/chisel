@@ -2,15 +2,11 @@
 
 package chisel3.aop
 
-import chisel3.core.{DesignAnnotation, RawModule}
+import chisel3.experimental.{DesignAnnotation, RawModule}
 import firrtl._
 
 import scala.collection.mutable
 
-/** Transform associated with a Concern
-  *
-  * Consumes the [[DesignAnnotation]] and converts every [[Aspect]] into their annotations prior to execute
-  */
 class AspectTransform extends Transform {
   override def inputForm: CircuitForm = ChirrtlForm
   override def outputForm: CircuitForm = ChirrtlForm

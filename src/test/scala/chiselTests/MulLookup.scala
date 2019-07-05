@@ -3,8 +3,6 @@
 package chiselTests
 
 import chisel3._
-import org.scalatest._
-import org.scalatest.prop._
 import chisel3.testers.BasicTester
 
 class MulLookup(val w: Int) extends Module {

@@ -177,7 +177,18 @@ lazy val chisel = (project in file(".")).
       "-diagrams-max-classes", "25",
       "-doc-version", version.value,
       "-doc-title", name.value,
-      "-doc-root-content", baseDirectory.value+"/root-doc.txt"
+      "-doc-root-content", baseDirectory.value+"/root-doc.txt",
+      "-sourcepath", (baseDirectory in ThisBuild).value.toString,
+      "-doc-source-url",
+      {
+        val branch =
+          if (version.value.endsWith("-SNAPSHOT")) {
+            "master"
+          } else {
+            s"v${version.value}"
+          }
+        s"https://github.com/freechipsproject/chisel3/tree/$branch/€{FILE_PATH}.scala"
+      }
     ),
     // Include macro classes, resources, and sources main JAR since we don't create subproject JARs.
     mappings in (Compile, packageBin) ++= (mappings in (coreMacros, Compile, packageBin)).value,

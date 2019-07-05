@@ -1,13 +1,14 @@
 // See LICENSE for license details.
 
 package chisel3.internal.firrtl
+import chisel3._
+import chisel3.experimental._
 import chisel3.internal.sourceinfo.{NoSourceInfo, SourceLine, SourceInfo}
 import firrtl.{ir => fir}
 import chisel3.internal.{castToInt, throwException}
 
 import scala.annotation.tailrec
 import scala.collection.immutable.Queue
-import chisel3.core._
 
 private[chisel3] object Converter {
   // TODO modeled on unpack method on Printable, refactor?

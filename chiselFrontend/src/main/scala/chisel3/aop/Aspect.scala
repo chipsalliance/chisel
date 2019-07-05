@@ -2,7 +2,7 @@
 
 package chisel3.aop
 
-import chisel3.core.{AdditionalTransforms, RawModule}
+import chisel3.experimental.{ChiselAnnotation, RawModule}
 import firrtl.annotations.Annotation
 import firrtl.{AnnotationSeq, RenameMap, Transform}
 
@@ -13,29 +13,18 @@ import scala.reflect.runtime.universe.TypeTag
   * @param dutTag Needed to prevent type-erasure of the top-level module type
   * @tparam T Type of top-level module
   */
-abstract class Aspect[T <: RawModule](implicit dutTag: TypeTag[T]) extends Annotation with AdditionalTransforms {
+abstract class Aspect[T <: RawModule](implicit dutTag: TypeTag[T]) extends Annotation with ChiselAnnotation {
   /** Convert this Aspect to a seq of FIRRTL annotation
     * @param top
     * @return
     */
   def toAnnotation(top: T): AnnotationSeq
-  /** Associated FIRRTL transformations, which may be required to modify the design
-    *
-    * Implemented by Concern library writer
-    * @return
-    */
-  def additionalTransformClasses: Seq[Class[_ <: Transform]]
-
-  /** Associated FIRRTL transformation that turns all aspects into their annotations
-    * @return
-    */
-  final def transformClass: Class[_ <: AspectTransform] = classOf[AspectTransform]
 
   /** Called by the FIRRTL transformation that consumes this concern
     * @param top
     * @return
     */
-  def resolveAspect(top: RawModule): AnnotationSeq = {
+  private[chisel3] def resolveAspect(top: RawModule): AnnotationSeq = {
     toAnnotation(top.asInstanceOf[T])
   }
 

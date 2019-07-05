@@ -24,7 +24,7 @@ trait SourceInfoTransformMacro {
   import c.universe._
   def thisObj: Tree = c.prefix.tree
   def implicitSourceInfo = q"implicitly[_root_.chisel3.internal.sourceinfo.SourceInfo]"
-  def implicitCompileOptions = q"implicitly[_root_.chisel3.core.CompileOptions]"
+  def implicitCompileOptions = q"implicitly[_root_.chisel3.CompileOptions]"
 }
 
 // Workaround for https://github.com/sbt/sbt/issues/3966

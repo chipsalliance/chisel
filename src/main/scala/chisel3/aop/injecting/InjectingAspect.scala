@@ -1,8 +1,8 @@
 package chisel3.aop.injecting
 
+import chisel3.{Module, ModuleAspect, core}
 import chisel3.aop._
-import chisel3.core.{DesignAnnotation, RawModule, RunFirrtlTransform}
-import chisel3.core
+import chisel3.experimental.{DesignAnnotation, RawModule, RunFirrtlTransform}
 import chisel3.internal.Builder
 import chisel3.internal.firrtl.DefModule
 import firrtl.annotations.ModuleTarget
@@ -24,14 +24,14 @@ import scala.reflect.runtime.universe.TypeTag
 case class InjectingAspect[T <: RawModule,
                            M <: RawModule](selectRoots: T => Iterable[M],
                                            injection: M => Unit
-                                          )(implicit tTag: TypeTag[T]) extends Aspect[T] {
+                                          )(implicit tTag: TypeTag[T]) extends Aspect[T] with RunFirrtlTransform {
   final def toAnnotation(top: T): AnnotationSeq = {
     toAnnotation(selectRoots(top), injection, top.name)
   }
 
   final def toAnnotation(modules: Iterable[M], inject: M => Unit, circuit: String): AnnotationSeq = {
     modules.map { module =>
-      val chiselIR = Builder.build(core.Module(new core.ModuleAspect(module) {
+      val chiselIR = Builder.build(Module(new ModuleAspect(module) {
         module match {
           case x: core.MultiIOModule => core.withClockAndReset(x.clock, x.reset) { inject(module) }
           case x: core.RawModule => inject(module)
@@ -62,6 +62,6 @@ case class InjectingAspect[T <: RawModule,
     }.toList
   }
 
-  override def additionalTransformClasses: Seq[Class[_ <: Transform]] = Seq(classOf[InjectingTransform])
+  override def transformClass: Class[_ <: Transform] = classOf[InjectingTransform]
 }
 
