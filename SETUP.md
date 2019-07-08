@@ -23,7 +23,7 @@ Note that both [PeekPokeTester](https://github.com/freechipsproject/chisel-teste
     ```
     
 1.  Install Verilator.	
-    We currently recommend Verilator version 4.006.	
+    We currently recommend Verilator version 4.016.	
     Follow these instructions to compile it from source.	
 
     1.  Install prerequisites (if not installed already):	
@@ -39,7 +39,7 @@ Note that both [PeekPokeTester](https://github.com/freechipsproject/chisel-teste
     3.  In the Verilator repository directory, check out a known good version:	
         ```	
         git pull	
-        git checkout verilator_4_006	
+        git checkout verilator_4_016	
         ```
 
     4.  In the Verilator repository directory, build and install:	
