@@ -103,18 +103,13 @@ object isPow2 {
 object unsignedBitLength {
   /** Return the number of bits required to encode a specific value, assuming no sign bit is required.
     *
-    * Basically, `n.bitLength` unless n is 0 (since Java believes 0.bitLength == 0), in which case the result is `1`.
+    * Basically, `n.bitLength`. NOTE: This will return 0 for a value of 0.
     * @param in - the number to be encoded.
     * @return - an Int representing the number of bits to encode.
     */
   def apply(in: BigInt): Int = {
     require(in >= 0)
-    if (in == 0) {
-      // 0.bitLength returns 0 - thank you Java.
-      1
-    } else {
-      in.bitLength
-    }
+    in.bitLength
   }
 }
 

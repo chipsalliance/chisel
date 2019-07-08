@@ -14,9 +14,9 @@ class Math extends ChiselPropSpec {
     forAll(safeUIntWidth) { case (width: Int) =>
       for ( offset <- List(-1, 0, 1)) {
         val n = (1 << width) + offset
-        if (n > 0) {
+        if (n >= 0) {
           val d = unsignedBitLength(n)
-          val t = if (offset < 0) width else width + 1
+          val t = if (n == 0) 0 else if (offset < 0) width else width + 1
           d shouldEqual (t)
         }
       }
