@@ -78,7 +78,7 @@ class DiGraph[T] private[graph] (private[graph] val edges: LinkedHashMap[T, Link
     val unmarked = new mutable.LinkedHashSet[T]
     val tempMarked = new mutable.LinkedHashSet[T]
 
-    case class LinearizeFrame[T](v: T, expanded: Boolean)
+    case class LinearizeFrame[A](v: A, expanded: Boolean)
     val callStack = mutable.Stack[LinearizeFrame[T]]()
 
     unmarked ++= seed.getOrElse(getVertices)
@@ -239,7 +239,7 @@ class DiGraph[T] private[graph] (private[graph] val edges: LinkedHashMap[T, Link
      * created on the last iteration where the current frame was
      * active is sufficient to track the position.
      */
-    class StrongConnectFrame[T](val v: T, val edgeIter: Iterator[T], var childCall: Option[T] = None)
+    class StrongConnectFrame[A](val v: A, val edgeIter: Iterator[A], var childCall: Option[A] = None)
     val callStack = new mutable.Stack[StrongConnectFrame[T]]
 
     for (node <- getVertices) {
@@ -331,7 +331,7 @@ class DiGraph[T] private[graph] (private[graph] val edges: LinkedHashMap[T, Link
   private def filterEdges(vprime: Set[T]): LinkedHashMap[T, LinkedHashSet[T]] = {
     def filterNodeSet(s: LinkedHashSet[T]): LinkedHashSet[T] = s.filter({ case (k) => vprime.contains(k) })
     def filterAdjacencyLists(m: LinkedHashMap[T, LinkedHashSet[T]]): LinkedHashMap[T, LinkedHashSet[T]] = m.map({ case (k, v) => (k, filterNodeSet(v)) })
-    var eprime: LinkedHashMap[T, LinkedHashSet[T]] = edges.filter({ case (k, v) => vprime.contains(k) })
+    val eprime: LinkedHashMap[T, LinkedHashSet[T]] = edges.filter({ case (k, v) => vprime.contains(k) })
     filterAdjacencyLists(eprime)
   }
 

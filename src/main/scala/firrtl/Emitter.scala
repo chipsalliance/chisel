@@ -673,7 +673,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
       // Turn types into strings, all ports must be GroundTypes
       val tpes = m.ports map {
         case Port(_, _, _, tpe: GroundType) => stringify(tpe)
-        case port: Port => error("Trying to emit non-GroundType Port $port")
+        case port: Port => error(s"Trying to emit non-GroundType Port $port")
       }
 
       // dirs are already padded
@@ -767,9 +767,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
           for (r <- sx.readers) {
             val data = memPortField(sx, r, "data")
             val addr = memPortField(sx, r, "addr")
-            val en = memPortField(sx, r, "en")
             // Ports should share an always@posedge, so can't have intermediary wire
-            val clk = netlist(memPortField(sx, r, "clk"))
 
             declare("wire", LowerTypes.loweredName(data), data.tpe, sx.info)
             declare("wire", LowerTypes.loweredName(addr), addr.tpe, sx.info)

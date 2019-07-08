@@ -397,7 +397,7 @@ object CheckTypes extends Pass {
         case (_: AnalogType, _: AnalogType) => true
         case (t1: BundleType, t2: BundleType) =>
           val t1_fields = (t1.fields foldLeft Map[String, (Type, Orientation)]())(
-            (map, f1) => map + (f1.name -> (f1.tpe, f1.flip)))
+            (map, f1) => map + (f1.name ->( (f1.tpe, f1.flip) )))
           t2.fields forall (f2 =>
             t1_fields get f2.name match {
               case None => true

@@ -45,7 +45,7 @@ class InlineInstances extends Transform with RegisteredTransform {
       helpValueName = Some("<circuit>[.<module>[.<instance>]][,...]") ) )
 
    private def collectAnns(circuit: Circuit, anns: Iterable[Annotation]): (Set[ModuleName], Set[ComponentName]) =
-     anns.foldLeft(Set.empty[ModuleName], Set.empty[ComponentName]) {
+     anns.foldLeft( (Set.empty[ModuleName], Set.empty[ComponentName]) ) {
        case ((modNames, instNames), ann) => ann match {
          case InlineAnnotation(CircuitName(c)) =>
            (circuit.modules.collect {

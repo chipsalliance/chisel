@@ -288,7 +288,6 @@ class InferWidths extends Transform with ResolvedAnnotationPaths {
     def get_constraints_s(s: Statement): Unit = {
       s map get_constraints_declared_type match {
         case (s: Connect) =>
-          val n = get_size(s.loc.tpe)
           val locs = create_exps(s.loc)
           val exps = create_exps(s.expr)
           v ++= locs.zip(exps).flatMap { case (locx, expx) =>

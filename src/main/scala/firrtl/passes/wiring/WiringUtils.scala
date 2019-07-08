@@ -85,9 +85,9 @@ object WiringUtils {
     val childrenMap = new ChildrenMap()
     def getChildren(mname: String)(s: Statement): Unit = s match {
       case s: WDefInstance =>
-        childrenMap(mname) = childrenMap(mname) :+ (s.name, s.module)
+        childrenMap(mname) = childrenMap(mname) :+( (s.name, s.module) )
       case s: DefInstance =>
-        childrenMap(mname) = childrenMap(mname) :+ (s.name, s.module)
+        childrenMap(mname) = childrenMap(mname) :+( (s.name, s.module) )
       case s => s.foreach(getChildren(mname))
     }
     c.modules.foreach{ m =>

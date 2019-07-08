@@ -112,7 +112,7 @@ class EulerTour[T](r: Map[T, Int], e: Seq[T], h: Seq[Int]) {
     * entry in the range is different from the last by only +-1
     */
   private def constructTableLookups(n: Int): Array[Array[Array[Int]]] = {
-    def sortSeqSeq[T <: Int](x: Seq[T], y: Seq[T]): Boolean = {
+    def sortSeqSeq[A <: Int](x: Seq[A], y: Seq[A]): Boolean = {
       if (x(0) != y(0)) x(0) < y(0) else sortSeqSeq(x.tail, y.tail)
     }
 
@@ -122,7 +122,7 @@ class EulerTour[T](r: Map[T, Int], e: Seq[T], h: Seq[Int]) {
       .sortWith(sortSeqSeq)
       .map(_.foldLeft(Seq(0))((h, pm) => (h.head + pm) +: h).reverse)
       .map{ a =>
-        var tmp = Array.ofDim[Int](m, m)
+        val tmp = Array.ofDim[Int](m, m)
         for (i <- 0 to size; j <- i to size) yield {
           val window = a.slice(i, j + 1)
           tmp(i)(j) = window.indexOf(window.min) + i }

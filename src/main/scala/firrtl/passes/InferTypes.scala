@@ -78,7 +78,6 @@ object CInferTypes extends Pass {
   type TypeMap = collection.mutable.LinkedHashMap[String, Type]
 
   def run(c: Circuit): Circuit = {
-    val namespace = Namespace()
     val mtypes = (c.modules map (m => m.name -> module_type(m))).toMap
 
     def infer_types_e(types: TypeMap)(e: Expression) : Expression =

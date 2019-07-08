@@ -122,7 +122,6 @@ object PrimOps extends LazyLogging {
     //println-all(["Inferencing primop type: " e])
     def t1 = e.args.head.tpe
     def t2 = e.args(1).tpe
-    def t3 = e.args(2).tpe
     def w1 = getWidth(e.args.head.tpe)
     def w2 = getWidth(e.args(1).tpe)
     def p1 = t1 match { case FixedType(w, p) => p } //Intentional

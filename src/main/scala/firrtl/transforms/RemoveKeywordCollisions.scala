@@ -21,7 +21,6 @@ import scala.collection.mutable
 class RemoveKeywordCollisions(keywords: Set[String]) extends Transform {
   val inputForm: CircuitForm = LowForm
   val outputForm: CircuitForm = LowForm
-  private type Renames = mutable.HashMap[String, String]
   private type ModuleType = mutable.HashMap[String, ir.Type]
   private val inlineDelim = "_"
 

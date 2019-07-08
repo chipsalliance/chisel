@@ -235,7 +235,6 @@ object DedupModules {
     val instances = mutable.Set[WDefInstance]()
     InstanceGraph.collectInstances(instances)(module.asInstanceOf[Module].body)
     val instanceModuleMap = instances.map(i => i.name -> i.module).toMap
-    val moduleNames = instances.map(_.module)
 
     def getNewModule(old: String): DefModule = {
       moduleMap(name2name(old))

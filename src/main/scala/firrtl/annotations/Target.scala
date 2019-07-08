@@ -380,7 +380,6 @@ trait IsMember extends CompleteTarget {
 
   /** @return List of local Instance Targets refering to each instance/ofModule in this member's path */
   def pathAsTargets: Seq[InstanceTarget] = {
-    val targets = mutable.ArrayBuffer[InstanceTarget]()
     path.foldLeft((module, Vector.empty[InstanceTarget])) {
       case ((m, vec), (Instance(i), OfModule(o))) =>
         (o, vec :+ InstanceTarget(circuit, m, Nil, i, o))
@@ -651,7 +650,7 @@ case class InstanceTarget(circuit: String,
     }
   }
 
-  override def asPath: Seq[(Instance, OfModule)] = path :+ (Instance(instance), OfModule(ofModule))
+  override def asPath: Seq[(Instance, OfModule)] = path :+( (Instance(instance), OfModule(ofModule)) )
 
   override def pathlessTarget: InstanceTarget = InstanceTarget(circuit, encapsulatingModule, Nil, instance, ofModule)
 

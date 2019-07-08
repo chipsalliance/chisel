@@ -26,7 +26,7 @@ class Flatten extends Transform {
    val inlineTransform = new InlineInstances
    
    private def collectAnns(circuit: Circuit, anns: Iterable[Annotation]): (Set[ModuleName], Set[ComponentName]) =
-     anns.foldLeft(Set.empty[ModuleName], Set.empty[ComponentName]) {
+     anns.foldLeft( (Set.empty[ModuleName], Set.empty[ComponentName]) ) {
        case ((modNames, instNames), ann) => ann match {
          case FlattenAnnotation(CircuitName(c)) =>
            (circuit.modules.collect {
@@ -106,7 +106,6 @@ class Flatten extends Transform {
      annos match {
        case Nil => state
        case myAnnotations =>
-         val c = state.circuit
          val (modNames, instNames) = collectAnns(state.circuit, myAnnotations)
          // take incoming annotation and produce annotations for InlineInstances, i.e. traverse circuit down to find all instances to inline
          val (newc, modsToInline) = duplicateSubCircuitsFromAnno(state.circuit, modNames, instNames)

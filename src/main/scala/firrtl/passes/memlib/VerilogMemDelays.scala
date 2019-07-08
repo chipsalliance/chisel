@@ -41,7 +41,7 @@ object VerilogMemDelays extends Pass {
         if !ports(newName)
       } yield newName).head
       val rwMap = (sx.readwriters map (rw =>
-        rw -> (newPortName(rw, "r"), newPortName(rw, "w")))).toMap
+        rw ->( (newPortName(rw, "r"), newPortName(rw, "w")) ))).toMap
       // 1. readwrite ports are split into read & write ports
       // 2. memories are transformed into combinational
       //    because latency pipes are added for longer latencies
@@ -59,7 +59,7 @@ object VerilogMemDelays extends Pass {
         // 2) pipe registers and connects
         val node = DefNode(NoInfo, namespace.newTemp, netlist(e))
         val wref = WRef(node.name, e.tpe, NodeKind, MALE)
-        ((0 until n) foldLeft (wref, Seq[Statement](node))){case ((ex, stmts), i) =>
+        ((0 until n) foldLeft( (wref, Seq[Statement](node)) )){case ((ex, stmts), i) =>
           val name = namespace newName s"${LowerTypes.loweredName(e)}_pipe_$i"
           val exx = WRef(name, e.tpe, RegKind, ug)
           (exx, stmts ++ Seq(DefRegister(NoInfo, name, e.tpe, clk, zero, exx)) ++

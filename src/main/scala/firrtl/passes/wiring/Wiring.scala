@@ -97,7 +97,7 @@ class Wiring(wiSeq: Seq[WiringInfo]) extends Pass {
           val from = s"${portNames(pm)}"
           meta(pm) = meta(pm).copy(
             addPortOrWire = Some((portNames(pm), DecWire)),
-            cons = (meta(pm).cons :+ (to, from)).distinct
+            cons = (meta(pm).cons :+( (to, from) )).distinct
           )
           meta(cm) = meta(cm).copy(
             addPortOrWire = Some((portNames(cm), DecInput))
@@ -115,7 +115,7 @@ class Wiring(wiSeq: Seq[WiringInfo]) extends Pass {
             val from = s"$ci.${portNames(cm)}"
             meta(pm) = meta(pm).copy(
               addPortOrWire = Some((portNames(pm), DecWire)),
-              cons = (meta(pm).cons :+ (to, from)).distinct
+              cons = (meta(pm).cons :+( (to, from) )).distinct
             )
           }
       }
@@ -126,7 +126,7 @@ class Wiring(wiSeq: Seq[WiringInfo]) extends Pass {
           val from = s"${portNames(m)}"
           sinkComponents(m).foreach( to =>
             meta(m) = meta(m).copy(
-              cons = (meta(m).cons :+ (to, from)).distinct
+              cons = (meta(m).cons :+( (to, from) )).distinct
             )
           )
         }
@@ -137,7 +137,7 @@ class Wiring(wiSeq: Seq[WiringInfo]) extends Pass {
         val to = s"${portNames(m)}"
         val from = compName
         meta(m) = meta(m).copy(
-          cons = (meta(m).cons :+ (to, from)).distinct
+          cons = (meta(m).cons :+( (to, from) )).distinct
         )
       }
 
@@ -147,7 +147,7 @@ class Wiring(wiSeq: Seq[WiringInfo]) extends Pass {
           val to = s"${portNames(pm)}"
           val from = s"$ci.${portNames(cm)}"
           meta(pm) = meta(pm).copy(
-            cons = (meta(pm).cons :+ (to, from)).distinct
+            cons = (meta(pm).cons :+( (to, from) )).distinct
           )
           meta(cm) = meta(cm).copy(
             addPortOrWire = Some((portNames(cm), DecOutput))
@@ -163,7 +163,7 @@ class Wiring(wiSeq: Seq[WiringInfo]) extends Pass {
             val to = s"$ci.${portNames(cm)}"
             val from = s"${portNames(pm)}"
             meta(pm) = meta(pm).copy(
-              cons = (meta(pm).cons :+ (to, from)).distinct
+              cons = (meta(pm).cons :+( (to, from) )).distinct
             )
           }
         }
