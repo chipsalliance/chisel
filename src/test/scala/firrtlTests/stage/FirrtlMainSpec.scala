@@ -236,6 +236,9 @@ class FirrtlMainSpec extends FeatureSpec with GivenWhenThen with Matchers with f
       Then("outputs should be written to current directory")
       out should (exist)
       out.delete()
+
+      And("the exit code should be 0")
+      result shouldBe a [Right[_,_]]
     }
 
     scenario("User provides Protocol Buffer input") {
