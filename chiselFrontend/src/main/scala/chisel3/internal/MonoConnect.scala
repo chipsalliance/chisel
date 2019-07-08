@@ -3,7 +3,7 @@
 package chisel3.internal
 
 import chisel3._
-import chisel3.experimental.{BaseModule, EnumType, FixedPoint, RawModule, UnsafeEnum}
+import chisel3.experimental.{Analog, BaseModule, EnumType, FixedPoint, RawModule, UnsafeEnum}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.{Connect, DefInvalid}
 import scala.language.experimental.macros
@@ -52,6 +52,12 @@ private[chisel3] object MonoConnect {
     MonoConnectException(s": Sink ($sink) and Source ($source) have different types.")
   def DontCareCantBeSink =
     MonoConnectException(": DontCare cannot be a connection sink (LHS)")
+  def AnalogCantBeMonoSink =
+    MonoConnectException(": Analog cannot participate in a mono connection (sink - LHS)")
+  def AnalogCantBeMonoSource =
+    MonoConnectException(": Analog cannot participate in a mono connection (source - RHS)")
+  def AnalogMonoConnectionException =
+    MonoConnectException(": Analog cannot participate in a mono connection (source and sink)")
   // scalastyle:on method.name public.methods.have.type
 
   /** This function is what recursively tries to connect a sink and source together
@@ -142,6 +148,12 @@ private[chisel3] object MonoConnect {
       case (sink, DontCare) => pushCommand(DefInvalid(sourceInfo, sink.lref))
       // DontCare as a sink is illegal.
       case (DontCare, _) => throw DontCareCantBeSink
+      // Analog is illegal in mono connections.
+      case (_: Analog, _:Analog) => throw AnalogMonoConnectionException
+      // Analog is illegal in mono connections.
+      case (_: Analog, _) => throw AnalogCantBeMonoSink
+      // Analog is illegal in mono connections.
+      case (_, _: Analog) => throw AnalogCantBeMonoSource
       // Sink and source are different subtypes of data so fail
       case (sink, source) => throw MismatchedException(sink.toString, source.toString)
     }
