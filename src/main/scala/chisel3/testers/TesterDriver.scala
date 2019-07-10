@@ -6,7 +6,8 @@ import chisel3._
 import java.io._
 
 import chisel3.aop.Aspect
-import chisel3.experimental.{RunFirrtlTransforms, RunFirrtlTransform}
+import chisel3.experimental.{RunFirrtlTransform, RunFirrtlTransforms}
+import chisel3.stage.AspectStage
 import firrtl.{Driver => _, _}
 import firrtl.transforms.BlackBoxSourceHelper.writeResourceToDirectory
 
@@ -54,9 +55,10 @@ object TesterDriver extends BackendCompilationUtilities {
      .filterNot(_ == classOf[Transform])
      .map { transformClass: Class[_ <: Transform] => transformClass.newInstance() }
     val newAnnotations = aspectedCircuit.annotations.map(_.toFirrtl).toList
+    val resolvedAnnotations = new AspectStage().run(newAnnotations).toList
     val optionsManager = new ExecutionOptionsManager("chisel3") with HasChiselExecutionOptions with HasFirrtlOptions {
       commonOptions = CommonOptions(topName = target, targetDirName = path.getAbsolutePath)
-      firrtlOptions = FirrtlExecutionOptions(compilerName = "verilog", annotations = newAnnotations,
+      firrtlOptions = FirrtlExecutionOptions(compilerName = "verilog", annotations = resolvedAnnotations,
                                              customTransforms = transforms,
                                              firrtlCircuit = Some(firrtlCircuit))
     }

@@ -14,9 +14,9 @@ class ChiselStage extends Stage {
          new chisel3.stage.phases.Elaborate,
          new chisel3.stage.phases.AddImplicitOutputFile,
          new chisel3.stage.phases.AddImplicitOutputAnnotationFile,
+         new chisel3.stage.phases.MaybeAspectStage,
          new chisel3.stage.phases.Emitter,
          new chisel3.stage.phases.Convert,
-         new chisel3.stage.phases.MaybeAspectStage,
          new chisel3.stage.phases.MaybeFirrtlStage )
       .map(firrtl.options.phases.DeletedWrapper(_))
 
