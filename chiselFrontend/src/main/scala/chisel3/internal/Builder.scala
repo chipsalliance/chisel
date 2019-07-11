@@ -69,6 +69,7 @@ trait InstanceId {
   def parentModName: String
   /** Returns a FIRRTL Named that refers to this object in the elaborated hardware graph */
   def toNamed: Named
+  def toTarget: Target
 
 }
 
@@ -164,9 +165,7 @@ private[chisel3] trait NamedComponent extends HasId {
     * @note Should not be called until circuit elaboration is complete
     */
   @deprecated("Use toTarget instead, will be removed in 1.3", "1.2")
-  final def toNamed: ComponentName =
-    ComponentName(this.instanceName, ModuleName(this.parentModName, CircuitName(this.circuitName)))
-
+  final def toNamed: ComponentName = toTarget.toNamed
   /** Returns a FIRRTL [[ReferenceTarget]] that references this object
     * @note Should not be called until circuit elaboration is complete
     */
