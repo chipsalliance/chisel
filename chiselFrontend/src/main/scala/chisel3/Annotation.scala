@@ -37,8 +37,10 @@ object ChiselAnnotation {
   * FIRRTL.
   */
 // TODO There should be a FIRRTL API for this instead
-trait RunFirrtlTransform extends ChiselAnnotation {
+trait RunFirrtlTransform extends RunFirrtlTransforms {
   def transformClass: Class[_ <: Transform]
+
+  override def transformClasses: Seq[Class[_ <: Transform]] = Seq(transformClass)
 }
 
 /** Mixin for [[ChiselAnnotation]] that instantiates multiple associated FIRRTL Transforms when this

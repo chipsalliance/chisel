@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 package chisel3.aop.injecting
 
 import firrtl.{ChirrtlForm, CircuitForm, CircuitState, Transform, ir}

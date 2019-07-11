@@ -1,6 +1,8 @@
+// See LICENSE for license details.
+
 package chisel3.aop.injecting
 
-import chisel3.{Module, ModuleAspect, core}
+import chisel3.{Module, ModuleAspect, experimental, withClockAndReset}
 import chisel3.aop._
 import chisel3.experimental.{DesignAnnotation, RawModule, RunFirrtlTransform}
 import chisel3.internal.Builder
@@ -17,7 +19,6 @@ import scala.reflect.runtime.universe.TypeTag
   * @param injection Function to generate Chisel hardware that will be injected to the end of module m
   *                  Signals in m can be referenced and assigned to as if inside m (yes, it is a bit magical)
   * @param tTag Needed to prevent type-erasure of the top-level module type
-  * @param mTag Needed to prevent type-erasure of the selected modules' type
   * @tparam T Type of top-level module
   * @tparam M Type of root module (join point)
   */
@@ -33,8 +34,8 @@ case class InjectingAspect[T <: RawModule,
     modules.map { module =>
       val chiselIR = Builder.build(Module(new ModuleAspect(module) {
         module match {
-          case x: core.MultiIOModule => core.withClockAndReset(x.clock, x.reset) { inject(module) }
-          case x: core.RawModule => inject(module)
+          case x: experimental.MultiIOModule => withClockAndReset(x.clock, x.reset) { inject(module) }
+          case x: RawModule => inject(module)
         }
       }))
       val comps = chiselIR.components.map {
@@ -43,11 +44,6 @@ case class InjectingAspect[T <: RawModule,
       }
 
       val annotations = chiselIR.annotations.map(_.toFirrtl).filterNot{ a => a.isInstanceOf[DesignAnnotation[_]] }
-      val runFirrtls = annotations.collect {
-        case r: RunFirrtlTransform =>
-          s"Cannot annotate an aspect with a RunFirrtlTransform annotation: $r"
-      }
-      assert(runFirrtls.isEmpty, runFirrtls.mkString("\n"))
 
       val stmts = mutable.ArrayBuffer[ir.Statement]()
       val modules = Aspect.getFirrtl(chiselIR.copy(components = comps)).flatMap {

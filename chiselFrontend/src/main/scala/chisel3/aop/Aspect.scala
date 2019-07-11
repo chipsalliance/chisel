@@ -20,7 +20,7 @@ abstract class Aspect[T <: RawModule](implicit dutTag: TypeTag[T]) extends Annot
     */
   def toAnnotation(top: T): AnnotationSeq
 
-  /** Called by the FIRRTL transformation that consumes this concern
+  /** Called by [[chisel3.stage.AspectStage]] to resolve this Aspect into annotations
     * @param top
     * @return
     */

@@ -49,7 +49,6 @@ object TesterDriver extends BackendCompilationUtilities {
     // Compile firrtl
     val transforms = aspectedCircuit.annotations.flatMap {
       case anno: RunFirrtlTransforms => anno.transformClasses
-      case anno: RunFirrtlTransform => Seq(anno.transformClass)
       case _ => Nil
     }.distinct
      .filterNot(_ == classOf[Transform])

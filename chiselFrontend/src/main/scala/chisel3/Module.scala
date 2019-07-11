@@ -258,14 +258,14 @@ package experimental {
     }
 
     /**
-     * Internal API. Returns a list of this module's generated top-level ports as a map of a String
-     * (FIRRTL name) to the IO object. Only valid after the module is closed.
-     *
-     * Note: for BlackBoxes (but not ExtModules), this returns the contents of the top-level io
-     * object, consistent with what is emitted in FIRRTL.
-     *
-     * TODO: Use SeqMap/VectorMap when those data structures become available.
-     */
+      * Internal API. Returns a list of this module's generated top-level ports as a map of a String
+      * (FIRRTL name) to the IO object. Only valid after the module is closed.
+      *
+      * Note: for BlackBoxes (but not ExtModules), this returns the contents of the top-level io
+      * object, consistent with what is emitted in FIRRTL.
+      *
+      * TODO: Use SeqMap/VectorMap when those data structures become available.
+      */
     private[chisel3] def getChiselPorts: Seq[(String, Data)] = {
       require(_closed, "Can't get ports before module close")
       _component.get.ports.map { port =>
@@ -347,31 +347,33 @@ package experimental {
           }
         }
       }
+
       assignCompatDir(iodef, false)
 
       iodef.bind(PortBinding(this))
       _ports += iodef
     }
+
     /** Private accessor for _bindIoInPlace */
     private[chisel3] def bindIoInPlace(iodef: Data): Unit = _bindIoInPlace(iodef)
 
     /**
-     * This must wrap the datatype used to set the io field of any Module.
-     * i.e. All concrete modules must have defined io in this form:
-     * [lazy] val io[: io type] = IO(...[: io type])
-     *
-     * Items in [] are optional.
-     *
-     * The granted iodef must be a chisel type and not be bound to hardware.
-     *
-     * Also registers a Data as a port, also performing bindings. Cannot be called once ports are
-     * requested (so that all calls to ports will return the same information).
-     * Internal API.
-     *
-     * TODO(twigg): Specifically walk the Data definition to call out which nodes
-     * are problematic.
-     */
-    protected def IO[T<:Data](iodef: T): T = chisel3.experimental.IO.apply(iodef) // scalastyle:ignore method.name
+      * This must wrap the datatype used to set the io field of any Module.
+      * i.e. All concrete modules must have defined io in this form:
+      * [lazy] val io[: io type] = IO(...[: io type])
+      *
+      * Items in [] are optional.
+      *
+      * The granted iodef must be a chisel type and not be bound to hardware.
+      *
+      * Also registers a Data as a port, also performing bindings. Cannot be called once ports are
+      * requested (so that all calls to ports will return the same information).
+      * Internal API.
+      *
+      * TODO(twigg): Specifically walk the Data definition to call out which nodes
+      * are problematic.
+      */
+    protected def IO[T <: Data](iodef: T): T = chisel3.experimental.IO.apply(iodef) // scalastyle:ignore method.name
 
     //
     // Internal Functions
