@@ -41,7 +41,7 @@ class InjectionSpec extends ChiselFlatSpec {
   )
 
   "Test" should "pass if inserted the correct values" in {
-    assertTesterPasses{ new AspectTester(Seq(1, 2, 3)) }
+    assertTesterPasses{ new AspectTester(Seq(0, 1, 2)) }
   }
   "Test" should "fail if inserted the wrong values" in {
     assertTesterFails{ new AspectTester(Seq(9, 9, 9)) }
