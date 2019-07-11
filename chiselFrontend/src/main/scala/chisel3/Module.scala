@@ -178,20 +178,23 @@ package experimental {
     // Fresh Namespace because in Firrtl, Modules namespaces are disjoint with the global namespace
     private[chisel3] val _namespace = Namespace.empty
     private val _ids = ArrayBuffer[HasId]()
+
     private[chisel3] def addId(d: HasId) {
-      if(Builder.aspectModule(this).isDefined) {
+      if (Builder.aspectModule(this).isDefined) {
         aspectModule(this).get.addId(d)
       } else {
         require(!_closed, "Can't write to module after module close")
         _ids += d
       }
     }
+
     protected def getIds = {
       require(_closed, "Can't get ids before module close")
       _ids.toSeq
     }
 
     private val _ports = new ArrayBuffer[Data]()
+
     // getPorts unfortunately already used for tester compatibility
     protected[chisel3] def getModulePorts = {
       require(_closed, "Can't get ports before module close")
@@ -201,6 +204,7 @@ package experimental {
     // These methods allow checking some properties of ports before the module is closed,
     // mainly for compatibility purposes.
     protected def portsContains(elem: Data): Boolean = _ports contains elem
+
     protected def portsSize: Int = _ports.size
 
     /** Generates the FIRRTL Component (Module or Blackbox) of this Module.
@@ -230,17 +234,20 @@ package experimental {
     }
 
     /** Returns a FIRRTL ModuleName that references this object
+      *
       * @note Should not be called until circuit elaboration is complete
       */
     @deprecated("toNamed API is deprecated -- use toTarget instead", "3.2")
     final def toNamed: ModuleName = toTarget.toNamed
 
     /** Returns a FIRRTL ModuleTarget that references this object
+      *
       * @note Should not be called until circuit elaboration is complete
       */
     final def toTarget: ModuleTarget = ModuleTarget(this.circuitName, this.name)
 
     /** Returns a FIRRTL ModuleTarget that references this object
+      *
       * @note Should not be called until circuit elaboration is complete
       */
     final def toAbsoluteTarget: IsModule = {
@@ -379,78 +386,6 @@ package experimental {
         case None => getRef.name
         case Some(c) => getRef fullName c
       }
-
-
-    //
-    // After Module Closed Functions
-    // 
-
-    import scala.reflect.runtime.universe.TypeTag
-    def getDeep[T](collector: BaseModule => Seq[T])(implicit tag: TypeTag[T]): Seq[T] = {
-      assert(_closed && _component.isDefined)
-      val myItems = collector(this)
-      val deepChildrenItems = instances().flatMap {
-        i => i.getDeep(collector)
-      }
-      myItems ++ deepChildrenItems
-    }
-
-    def collectDeep[T](collector: PartialFunction[BaseModule, T])(implicit tag: TypeTag[T]): Iterable[T] = {
-      assert(_closed && _component.isDefined)
-      val myItems = collector.lift(this)
-      val deepChildrenItems = instances().flatMap {
-        i => i.collectDeep(collector)
-      }
-      myItems ++ deepChildrenItems
-    }
-
-    def instances(): Seq[BaseModule] = {
-      assert(_closed && _component.isDefined)
-      _component.get.asInstanceOf[DefModule].commands.collect {
-        case i: DefInstance => i.id
-      }
-    }
-
-    def registers(): Seq[Data] = {
-      assert(_closed && _component.isDefined)
-      _component.get.asInstanceOf[DefModule].commands.collect {
-        case r: DefReg => r.id
-        case r: DefRegInit => r.id
-      }
-    }
-
-    def ports(): Seq[Data] = {
-      assert(_closed && _component.isDefined)
-      _component.get.asInstanceOf[DefModule].ports.map(_.id)
-    }
-
-    def seqMems(): Seq[SyncReadMem[_]] = {
-      assert(_closed && _component.isDefined)
-      _component.get.asInstanceOf[DefModule].commands.collect {
-        case r: DefSeqMemory => r.id.asInstanceOf[SyncReadMem[_]]
-      }
-    }
-
-    def mems(): Seq[Mem[_]] = {
-      assert(_closed && _component.isDefined)
-      _component.get.asInstanceOf[DefModule].commands.collect {
-        case r: DefMemory => r.id.asInstanceOf[Mem[_]]
-      }
-    }
-
-    def ops(): Seq[(String, Data)] = {
-      assert(_closed && _component.isDefined)
-      _component.get.asInstanceOf[DefModule].commands.collect {
-        case d: DefPrim[_] => (d.op.name, d.id)
-      }
-    }
-
-    def ops(name: String): Seq[Data] = {
-      assert(_closed && _component.isDefined)
-      _component.get.asInstanceOf[DefModule].commands.collect {
-        case d: DefPrim[_] if d.name == name => d.id
-      }
-    }
 
   }
 }
