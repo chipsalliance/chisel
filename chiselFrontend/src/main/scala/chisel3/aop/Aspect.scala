@@ -4,6 +4,7 @@ package chisel3.aop
 
 import chisel3.experimental.{ChiselAnnotation, RawModule}
 import firrtl.annotations.Annotation
+import firrtl.options.Unserializable
 import firrtl.{AnnotationSeq, RenameMap, Transform}
 
 import scala.reflect.runtime.universe.TypeTag
@@ -13,7 +14,7 @@ import scala.reflect.runtime.universe.TypeTag
   * @param dutTag Needed to prevent type-erasure of the top-level module type
   * @tparam T Type of top-level module
   */
-abstract class Aspect[T <: RawModule](implicit dutTag: TypeTag[T]) extends Annotation with ChiselAnnotation {
+abstract class Aspect[T <: RawModule](implicit dutTag: TypeTag[T]) extends Annotation with ChiselAnnotation with Unserializable {
   /** Convert this Aspect to a seq of FIRRTL annotation
     * @param top
     * @return

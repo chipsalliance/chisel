@@ -21,7 +21,7 @@ class Elaborate extends Phase {
   def transform(annotations: AnnotationSeq): AnnotationSeq = annotations.flatMap {
     case a: ChiselGeneratorAnnotation =>
       try {
-        Some(a.elaborate)
+        a.elaborate
       } catch {
         case e: OptionsException => throw e
         case e: ChiselException =>

@@ -396,7 +396,7 @@ private[chisel3] object Builder {
     throwException(m)
   }
 
-  def build[T <: RawModule](f: => T): Circuit = {
+  def build[T <: RawModule](f: => T): (Circuit, T) = {
     chiselContext.withValue(new ChiselContext) {
       dynamicContextVar.withValue(Some(new DynamicContext())) {
         errors.info("Elaborating design...")
@@ -405,7 +405,7 @@ private[chisel3] object Builder {
         errors.checkpoint()
         errors.info("Done elaborating.")
 
-        Circuit(components.last.name, components, DesignAnnotation(mod) +: annotations)
+        (Circuit(components.last.name, components, annotations), mod)
       }
    }
   }
