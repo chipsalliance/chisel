@@ -45,8 +45,8 @@ trait DependencyAPI[A <: DependencyAPI[A]] { this: TransformLike[_] =>
   /** All transform that must run before this transform
     * $seqNote
     */
-  def prerequisites: Seq[Class[A]] = Seq.empty
-  private[options] lazy val _prerequisites: LinkedHashSet[Class[A]] = new LinkedHashSet() ++ prerequisites.toSet
+  def prerequisites: Seq[Class[_ <: A]] = Seq.empty
+  private[options] lazy val _prerequisites: LinkedHashSet[Class[_ <: A]] = new LinkedHashSet() ++ prerequisites.toSet
 
   /** All transforms that must run ''after'' this transform
     *
@@ -67,22 +67,14 @@ trait DependencyAPI[A <: DependencyAPI[A]] { this: TransformLike[_] =>
     * @see [[firrtl.passes.CheckTypes]] for an example of an optional checking [[firrtl.Transform]]
     * $seqNote
     */
-  def dependents: Seq[Class[A]] = Seq.empty
-  private[options] lazy val _dependents: LinkedHashSet[Class[A]] = new LinkedHashSet() ++ dependents.toSet
+  def dependents: Seq[Class[_ <: A]] = Seq.empty
+  private[options] lazy val _dependents: LinkedHashSet[Class[_ <: A]] = new LinkedHashSet() ++ dependents.toSet
 
   /** A function that, given a transform will return true if this transform invalidates/undos the effects of the input
     * transform
     * @note Can a [[firrtl.options.Phase Phase]] ever invalidate itself?
     */
   def invalidates(a: A): Boolean = true
-
-  /** Helper method to return the underlying class */
-  final def asClass: Class[A] = this.getClass.asInstanceOf[Class[A]]
-
-  /** Implicit conversion that allows for terser specification of [[DependencyAPI.prerequisites prerequisites]] and
-    * [[DependencyAPI.dependents dependents]].
-    */
-  implicit def classHelper(a: Class[_ <: A]): Class[A] = a.asInstanceOf[Class[A]]
 
 }
 
