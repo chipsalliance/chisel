@@ -30,8 +30,9 @@ class Math extends ChiselPropSpec {
           val n = ((1 << (width - 1)) + offset) * mult
           val d = signedBitLength(n)
           val t = n match {
+            case -2 => 2
             case -1 => 1
-            case 0 => 1
+            case 0 => 0
             case 1 => 2
             case 2 => 3
             case _ =>

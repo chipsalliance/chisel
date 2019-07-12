@@ -116,11 +116,16 @@ object unsignedBitLength {
 object signedBitLength {
   /** Return the number of bits required to encode a specific value, assuming a sign bit is required.
     *
-    * Basically, `n.bitLength` + 1.
+    * Basically, 0 for 0, 1 for -1, and `n.bitLength` + 1 for everything else.
     * @param in - the number to be encoded.
     * @return - an Int representing the number of bits to encode.
     */
   def apply(in: BigInt): Int = {
-    in.bitLength + 1
+    in.toInt match {
+      case 0 => 0
+      case -1 => 1
+      case _ => in.bitLength + 1
+    }
+
   }
 }
