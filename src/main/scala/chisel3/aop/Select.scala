@@ -10,60 +10,34 @@ import firrtl.annotations.ReferenceTarget
 
 import scala.collection.mutable
 
+import scala.reflect.runtime.universe.TypeTag
+
 
 /** Use to select Chisel components in a module, after that module has been constructed
   * Useful for adding additional Chisel annotations or for use within an [[Aspect]]
   */
 object Select {
 
-  import scala.reflect.runtime.universe.TypeTag
-
-  private def check(module: BaseModule): Unit = {
-    require(module.isClosed, "Can't use Selector on modules that have not finished construction!")
-    require(module._component.isDefined, "Can't use Selector on modules that don't have components!")
-  }
-
-  // Return just leaf components of expanded node
-  private def getLeafs(d: HasId): Seq[HasId] = d match {
+  /** Return just leaf components of expanded node
+    *
+    * @param d Component to find leafs if aggregate typed. Intermediate fields/indicies are not included
+    * @return
+    */
+  def getLeafs(d: HasId): Seq[HasId] = d match {
     case b: Bundle => b.getElements.flatMap(getLeafs)
     case v: Vec[_] => v.getElements.flatMap(getLeafs)
     case other => Seq(other)
   }
 
-  // Return all expanded components, including intermediate aggregate nodes
-  private def getIntermediateAndLeafs(d: HasId): Seq[HasId] = d match {
+  /** Return all expanded components, including intermediate aggregate nodes
+    *
+    * @param d Component to find leafs if aggregate typed. Intermediate fields/indicies ARE included
+    * @return
+    */
+  def getIntermediateAndLeafs(d: HasId): Seq[HasId] = d match {
     case b: Bundle => b +: b.getElements.flatMap(getIntermediateAndLeafs)
     case v: Vec[_] => v +: v.getElements.flatMap(getIntermediateAndLeafs)
     case other => Seq(other)
-  }
-
-  // Given a loc, return all subcomponents of id that could be assigned to in connect
-  private def getEffected(a: Arg): Seq[HasId] = a match {
-    case Node(id) => getIntermediateAndLeafs(id)
-    case Slot(imm, name) => Seq(imm.id.asInstanceOf[Record].elements(name))
-    case Index(imm, value) => getEffected(imm)
-  }
-
-  // Given an arg, return the corresponding id. Don't use on a loc of a connect.
-  private def getId(a: Arg): HasId = a match {
-    case Node(id) => id
-    case l: ULit => l.num.U(l.w)
-    case l: SLit => l.num.S(l.w)
-    case l: FPLit => FixedPoint(l.num, l.w, l.binaryPoint)
-    case other =>
-      sys.error(s"Something went horribly wrong! I was expecting ${other} to be a lit or a node!")
-  }
-
-  private def getName(i: HasId): String = try {
-    i.toTarget match {
-      case r: ReferenceTarget =>
-        val str = r.serialize
-        str.splitAt(str.indexOf('>'))._2.drop(1)
-    }
-  } catch {
-    case e: ChiselException => i.getOptionRef.get match {
-      case l: LitArg => l.num.intValue().toString
-    }
   }
 
 
@@ -177,10 +151,14 @@ object Select {
   def ops(opKind: String)(module: BaseModule): Seq[Data] = {
     check(module)
     module._component.get.asInstanceOf[DefModule].commands.collect {
-      case d: DefPrim[_] if d.name == opKind => d.id
+      case d: DefPrim[_] if d.op.name == opKind => d.id
     }
   }
 
+  /** Selects all wires in a module
+    * @param module
+    * @return
+    */
   def wires(module: BaseModule): Seq[Data] = {
     check(module)
     module._component.get.asInstanceOf[DefModule].commands.collect {
@@ -188,6 +166,10 @@ object Select {
     }
   }
 
+  /** Selects all memory ports, including their direction and memory
+    * @param module
+    * @return
+    */
   def memPorts(module: BaseModule): Seq[(Data, MemPortDirection, MemBase[_])] = {
     check(module)
     module._component.get.asInstanceOf[DefModule].commands.collect {
@@ -195,6 +177,11 @@ object Select {
     }
   }
 
+  /** Selects all memory ports of a given direction, including their memory
+    * @param dir The direction of memory ports to select
+    * @param module
+    * @return
+    */
   def memPorts(dir: MemPortDirection)(module: BaseModule): Seq[(Data, MemBase[_])] = {
     check(module)
     module._component.get.asInstanceOf[DefModule].commands.collect {
@@ -202,101 +189,229 @@ object Select {
     }
   }
 
+  /** Selects all components who have been set to be invalid, even if they are later connected to
+    * @param module
+    * @return
+    */
   def invalids(module: BaseModule): Seq[HasId] = {
+    check(module)
     module._component.get.asInstanceOf[DefModule].commands.collect {
       case DefInvalid(_, arg) => getId(arg)
     }
   }
 
+  /** Selects all components who are attached to a given signal, within a module
+    * @param module
+    * @return
+    */
   def attachedTo(module: BaseModule)(signal: HasId): Set[HasId] = {
+    check(module)
     module._component.get.asInstanceOf[DefModule].commands.collect {
       case Attach(_, seq) if seq.contains(signal) => seq
     }.flatMap { seq => seq.map(_.id) }.toSet
   }
 
+  /** Selects all connections to a signal or its parent signal(s) (if the signal is an element of an aggregate signal)
+    * The when predicates surrounding each connection are included in the returned values
+    *
+    * E.g. if signal = io.foo.bar, connectionsTo will return all connections to io, io.foo, and io.bar
+    * @param module
+    * @param signal
+    * @return
+    */
   def connectionsTo(module: BaseModule)(signal: HasId): Seq[PredicatedConnect] = {
     check(module)
     val sensitivitySignals = getIntermediateAndLeafs(signal).toSet
     val predicatedConnects = mutable.ArrayBuffer[PredicatedConnect]()
-
     val isPort = module._component.get.asInstanceOf[DefModule].ports.flatMap{ p => getIntermediateAndLeafs(p.id) }.contains(signal)
-    module._component.get.asInstanceOf[DefModule].commands.foldLeft((Seq.empty[Predicate], Option.empty[Predicate], isPort)) {
-      (blah, cmd) =>
-        //println(s"On cmd: $cmd with $blah")
-      (blah, cmd) match {
-        case ((preds, o, false), cmd: Definition) =>
+    var prePredicates: Seq[Predicate] = Nil
+    var seenDef = isPort
+    searchWhens(module, (cmd: Command, preds) => {
+      cmd match {
+        case cmd: Definition =>
           val x = getIntermediateAndLeafs(cmd.id)
           //println(s"Does ${cmd.name} with $x contain $signal? ${x.contains(signal)}")
-          if(x.contains(signal)) (preds, None, true)
-          else (preds, None, false)
-        case ((preds, o, false), _) =>
-          (preds, None, false)
-        case ((preds, o, seenDef@true), cmd) => cmd match {
-          case WhenBegin(_, Node(pred: Bool)) => (When(pred) +: preds, None, seenDef)
-          case WhenBegin(_, l: LitArg) if l.num == BigInt(1) => (When(true.B) +: preds, None, seenDef)
-          case WhenBegin(_, l: LitArg) if l.num == BigInt(0) => (When(false.B) +: preds, None, seenDef)
-          case other: WhenBegin =>
-            sys.error(s"Something went horribly wrong! I was expecting ${other.pred} to be a lit or a bool!")
-          case _: WhenEnd => (preds.tail, Some(preds.head), seenDef)
-          case AltBegin(_) if o.isDefined => (o.get.not +: preds, o, seenDef)
-          case _: AltBegin =>
-            sys.error(s"Something went horribly wrong! I was expecting ${o} to be nonEmpty!")
-          case OtherwiseEnd(_, _) => (preds.tail, None, seenDef)
-          case Connect(_, loc, exp) =>
-            val effected = getEffected(loc).toSet
-            if(sensitivitySignals.intersect(effected).nonEmpty) {
-              val expId = getId(exp)
-              predicatedConnects += PredicatedConnect(preds, loc.id, expId, false)
-            }
-            (preds, o, seenDef)
-          case BulkConnect(_, loc, exp) =>
-            val effected = getEffected(loc).toSet
-            if(sensitivitySignals.intersect(effected).nonEmpty) {
-              val expId = getId(exp)
-              predicatedConnects += PredicatedConnect(preds, loc.id, expId, true)
-            }
-            (preds, o, seenDef)
-          case other => (preds, o, seenDef)
-        }
+          if(x.contains(signal)) prePredicates = preds
+        case Connect(_, loc, exp) =>
+          val effected = getEffected(loc).toSet
+          if(sensitivitySignals.intersect(effected).nonEmpty) {
+            val expId = getId(exp)
+            prePredicates.reverse.zip(preds.reverse).foreach(x => assert(x._1 == x._2, s"Prepredicates $x must match for signal $signal"))
+            predicatedConnects += PredicatedConnect(preds.dropRight(prePredicates.size), loc.id, expId, isBulk = false)
+          }
+        case BulkConnect(_, loc, exp) =>
+          val effected = getEffected(loc).toSet
+          if(sensitivitySignals.intersect(effected).nonEmpty) {
+            val expId = getId(exp)
+            prePredicates.reverse.zip(preds.reverse).foreach(x => assert(x._1 == x._2, s"Prepredicates $x must match for signal $signal"))
+            predicatedConnects += PredicatedConnect(preds.dropRight(prePredicates.size), loc.id, expId, isBulk = true)
+          }
+        case other =>
       }
-    }
+    })
     predicatedConnects
   }
 
-  trait Predicate {
-    val bool: Bool
-    def not: Predicate
+  /** Selects all stop statements, and includes the predicates surrounding the stop statement
+    *
+    * @param module
+    * @return
+    */
+  def stops(module: BaseModule): Seq[Stop]  = {
+    val stops = mutable.ArrayBuffer[Stop]()
+    searchWhens(module, (cmd: Command, preds: Seq[Predicate]) => {
+      cmd match {
+        case chisel3.internal.firrtl.Stop(_, clock, ret) => stops += Stop(preds, ret, getId(clock).asInstanceOf[Clock])
+        case other =>
+      }
+    })
+    stops
+  }
+
+  /** Selects all printf statements, and includes the predicates surrounding the printf statement
+    *
+    * @param module
+    * @return
+    */
+  def printfs(module: BaseModule): Seq[Printf] = {
+    val printfs = mutable.ArrayBuffer[Printf]()
+    searchWhens(module, (cmd: Command, preds: Seq[Predicate]) => {
+      cmd match {
+        case chisel3.internal.firrtl.Printf(_, clock, pable) => printfs += Printf(preds, pable, getId(clock).asInstanceOf[Clock])
+        case other =>
+      }
+    })
+    printfs
+  }
+
+  // Checks that a module has finished its construction
+  private def check(module: BaseModule): Unit = {
+    require(module.isClosed, "Can't use Selector on modules that have not finished construction!")
+    require(module._component.isDefined, "Can't use Selector on modules that don't have components!")
+  }
+
+  // Given a loc, return all subcomponents of id that could be assigned to in connect
+  private def getEffected(a: Arg): Seq[HasId] = a match {
+    case Node(id) => getIntermediateAndLeafs(id)
+    case Slot(imm, name) => Seq(imm.id.asInstanceOf[Record].elements(name))
+    case Index(imm, value) => getEffected(imm)
+  }
+
+  // Given an arg, return the corresponding id. Don't use on a loc of a connect.
+  private def getId(a: Arg): HasId = a match {
+    case Node(id) => id
+    case l: ULit => l.num.U(l.w)
+    case l: SLit => l.num.S(l.w)
+    case l: FPLit => FixedPoint(l.num, l.w, l.binaryPoint)
+    case other =>
+      sys.error(s"Something went horribly wrong! I was expecting ${other} to be a lit or a node!")
+  }
+
+  // Given an id, either get its name or its value, if its a lit
+  private def getName(i: HasId): String = try {
+    i.toTarget match {
+      case r: ReferenceTarget =>
+        val str = r.serialize
+        str.splitAt(str.indexOf('>'))._2.drop(1)
+    }
+  } catch {
+    case e: ChiselException => i.getOptionRef.get match {
+      case l: LitArg => l.num.intValue().toString
+    }
+  }
+
+  // Collects when predicates as it searches through a module, then applying processCommand to non-when related commands
+  private def searchWhens(module: BaseModule, processCommand: (Command, Seq[Predicate]) => Unit) = {
+    check(module)
+    module._component.get.asInstanceOf[DefModule].commands.foldLeft((Seq.empty[Predicate], Option.empty[Predicate])) {
+      (blah, cmd) =>
+        //println(s"On cmd: $cmd with $blah")
+        (blah, cmd) match {
+          case ((preds, o), cmd) => cmd match {
+            case WhenBegin(_, Node(pred: Bool)) => (When(pred) +: preds, None)
+            case WhenBegin(_, l: LitArg) if l.num == BigInt(1) => (When(true.B) +: preds, None)
+            case WhenBegin(_, l: LitArg) if l.num == BigInt(0) => (When(false.B) +: preds, None)
+            case other: WhenBegin =>
+              sys.error(s"Something went horribly wrong! I was expecting ${other.pred} to be a lit or a bool!")
+            case _: WhenEnd => (preds.tail, Some(preds.head))
+            case AltBegin(_) if o.isDefined => (o.get.not +: preds, o)
+            case _: AltBegin =>
+              sys.error(s"Something went horribly wrong! I was expecting ${o} to be nonEmpty!")
+            case OtherwiseEnd(_, _) => (preds.tail, None)
+            case other =>
+              processCommand(cmd, preds)
+              (preds, o)
+          }
+        }
+    }
+  }
+
+  trait Serializeable {
     def serialize: String
   }
 
+  /** Used to indicates a when's predicate (or its otherwise predicate)
+    */
+  trait Predicate extends Serializeable {
+    val bool: Bool
+    def not: Predicate
+  }
+
+  /** Used to represent [[chisel3.when]] predicate
+    *
+    * @param bool the when predicate
+    */
   case class When(bool: Bool) extends Predicate {
     def not: WhenNot = WhenNot(bool)
     def serialize: String = s"${getName(bool)}"
   }
 
+  /** Used to represent the `otherwise` predicate of a [[chisel3.when]]
+    *
+    * @param bool the when predicate corresponding to this otherwise predicate
+    */
   case class WhenNot(bool: Bool) extends Predicate {
     def not: When = When(bool)
     def serialize: String = s"!${getName(bool)}"
   }
 
-  case class PredicatedConnect(preds: Seq[Predicate], loc: HasId, exp: HasId, isBulk: Boolean) {
+  /** Used to represent a connection or bulk connection
+    *
+    * Additionally contains the sequence of when predicates seen when the connection is declared
+    *
+    * @param preds
+    * @param loc
+    * @param exp
+    * @param isBulk
+    */
+  case class PredicatedConnect(preds: Seq[Predicate], loc: HasId, exp: HasId, isBulk: Boolean) extends Serializeable {
     def serialize: String = {
       val moduleTarget = loc.toTarget.moduleTarget.serialize
       s"$moduleTarget: when(${preds.map(_.serialize).mkString(" & ")}): ${getName(loc)} ${if(isBulk) "<>" else ":="} ${getName(exp)}"
     }
   }
 
-  case class Stop(ret: Int, clock: Clock)
-  def stops(module: BaseModule): Seq[Stop]  = {
-    module._component.get.asInstanceOf[DefModule].commands.collect {
-      case chisel3.internal.firrtl.Stop(_, clock, ret) => Stop(ret, getId(clock).asInstanceOf[Clock])
+  /** Used to represent a [[chisel3.stop]]
+    *
+    * @param preds
+    * @param ret
+    * @param clock
+    */
+  case class Stop(preds: Seq[Predicate], ret: Int, clock: Clock) extends Serializeable {
+    def serialize: String = {
+      s"stop when(${preds.map(_.serialize).mkString(" & ")}) on ${getName(clock)}: $ret"
     }
   }
 
-  case class Printf(pable: Printable, clock: Clock)
-  def printfs(module: BaseModule): Seq[Printf] = {
-    module._component.get.asInstanceOf[DefModule].commands.collect {
-      case chisel3.internal.firrtl.Printf(_, clock, pable) => Printf(pable, getId(clock).asInstanceOf[Clock])
+  /** Used to represent a [[chisel3.printf]]
+    *
+    * @param preds
+    * @param pable
+    * @param clock
+    */
+  case class Printf(preds: Seq[Predicate], pable: Printable, clock: Clock) extends Serializeable {
+    def serialize: String = {
+      s"printf when(${preds.map(_.serialize).mkString(" & ")}) on ${getName(clock)}: $pable"
     }
   }
 

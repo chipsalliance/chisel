@@ -5,21 +5,29 @@ package chiselTests.aop
 import chisel3.testers.BasicTester
 import chiselTests.ChiselFlatSpec
 import chisel3._
+import chisel3.aop.Select.{PredicatedConnect, When, WhenNot}
 import chisel3.aop.{Aspect, Select}
 import chisel3.experimental.RawModule
-import firrtl.AnnotationSeq
+import firrtl.{AnnotationSeq}
+
 import scala.reflect.runtime.universe.TypeTag
 
 class SelectTester(results: Seq[Int]) extends BasicTester {
   val values = VecInit(results.map(_.U))
   val counter = RegInit(0.U(results.length.W))
-  counter := counter + 1.U
-  when(counter >= values.length.U) {
+  val added = counter + 1.U
+  counter := added
+  val overflow = counter >= values.length.U
+  val nreset = reset.asBool() === false.B
+  val selected = values(counter)
+  val zero = 0.U + 0.U
+  when(overflow) {
+    counter := zero
     stop()
   }.otherwise {
-    when(reset.asBool() === false.B) {
-      printf("values(%d) = %d\n", counter, values(counter))
+    when(nreset) {
       assert(counter === values(counter))
+      printf("values(%d) = %d\n", counter, selected)
     }
   }
 }
@@ -33,19 +41,22 @@ case class SelectAspect[T <: RawModule, X](selector: T => Seq[X], desired: T => 
       case (res, des) if res != des => Seq((res, des))
       case other => Nil
     }
-    assert(mismatches.isEmpty,s"Failure! The following selected items do not match their desired item:\n"
-        + mismatches.map{ case (res, des) => s"  $res does not match $des" }.mkString("\n"))
+    assert(mismatches.isEmpty,s"Failure! The following selected items do not match their desired item:\n" + mismatches.map{
+      case (res: Select.Serializeable, des: Select.Serializeable) => s"  ${res.serialize} does not match:\n  ${des.serialize}"
+      case (res, des) => s"  $res does not match:\n  $des"
+    }.mkString("\n"))
     Nil
   }
 }
 
 class SelectSpec extends ChiselFlatSpec {
 
-  def execute[T <: RawModule, X](dut: () => T, selector: T => Seq[X], desired: T => Seq[X])(implicit tTag: TypeTag[T]) = {
-    new chisel3.stage.ChiselStage().run(
+  def execute[T <: RawModule, X](dut: () => T, selector: T => Seq[X], desired: T => Seq[X])(implicit tTag: TypeTag[T]): Unit = {
+    val ret = new chisel3.stage.ChiselStage().run(
       Seq(
         new chisel3.stage.ChiselGeneratorAnnotation(dut),
-        SelectAspect(selector, desired)
+        SelectAspect(selector, desired),
+        new chisel3.stage.ChiselOutputFileAnnotation("test_run_dir/Select.fir")
       )
     )
   }
@@ -66,6 +77,34 @@ class SelectSpec extends ChiselFlatSpec {
     )
   }
 
+  "Test" should "pass if selecting correct printfs" in {
+    execute(
+      () => new SelectTester(Seq(0, 1, 2)),
+      { dut: SelectTester => Seq(Select.printfs(dut).last) },
+      { dut: SelectTester =>
+        Seq(Select.Printf(
+          Seq(
+            When(Select.ops("eq")(dut).last.asInstanceOf[Bool]),
+            When(dut.nreset),
+            WhenNot(dut.overflow)
+          ),
+          Printable.pack("values(%d) = %d\n", dut.counter, dut.selected),
+          dut.clock
+        ))
+      }
+    )
+  }
+
+  "Test" should "pass if selecting correct connections" in {
+    execute(
+      () => new SelectTester(Seq(0, 1, 2)),
+      { dut: SelectTester => Select.connectionsTo(dut)(dut.counter) },
+      { dut: SelectTester =>
+        Seq(PredicatedConnect(Nil, dut.counter, dut.added, false),
+          PredicatedConnect(Seq(When(dut.overflow)), dut.counter, dut.zero, false))
+      }
+    )
+  }
 
 }
 
