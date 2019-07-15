@@ -153,20 +153,12 @@ abstract class MultiIOModule(implicit moduleCompileOptions: CompileOptions)
   Builder.currentClock = Some(clock)
   Builder.currentReset = Some(reset)
 
-  private[chisel3] def connectReset(parentCompileOptions: CompileOptions, parentReset: Reset): Unit = {
-    if (!moduleCompileOptions.inferModuleReset && parentCompileOptions.inferModuleReset) {
-      reset := parentReset.asBool
-    } else {
-      reset := parentReset
-    }
-  }
-
   private[chisel3] override def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
     implicit val sourceInfo = UnlocatableSourceInfo
 
     super.initializeInParent(parentCompileOptions)
     clock := Builder.forcedClock
-    connectReset(parentCompileOptions, Builder.forcedReset)
+    reset := Builder.forcedReset
   }
 }
 
@@ -255,6 +247,6 @@ abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions)
     }
 
     clock := override_clock.getOrElse(Builder.forcedClock)
-    connectReset(parentCompileOptions, override_reset.getOrElse(Builder.forcedReset))
+    reset := override_reset.getOrElse(Builder.forcedReset)
   }
 }
