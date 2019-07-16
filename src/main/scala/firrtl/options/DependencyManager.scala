@@ -22,15 +22,15 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
   /** Requested [[firrtl.options.TransformLike TransformLike]]s that should be run. Internally, this will be converted to
     * a set based on the ordering defined here.
     */
-  def targets: Seq[Class[_ <: B]]
-  private lazy val _targets: LinkedHashSet[Class[_ <: B]] = targets
-    .foldLeft(new LinkedHashSet[Class[_ <: B]]()){ case (a, b) => a += b }
+  def targets: Seq[Dependency]
+  private lazy val _targets: LinkedHashSet[Dependency] = targets
+    .foldLeft(new LinkedHashSet[Dependency]()){ case (a, b) => a += b }
 
   /** A sequence of [[firrtl.Transform]]s that have been run. Internally, this will be converted to an ordered set.
     */
-  def currentState: Seq[Class[_ <: B]]
-  private lazy val _currentState: LinkedHashSet[Class[_ <: B]] = currentState
-    .foldLeft(new LinkedHashSet[Class[_ <: B]]()){ case (a, b) => a += b }
+  def currentState: Seq[Dependency]
+  private lazy val _currentState: LinkedHashSet[Dependency] = currentState
+    .foldLeft(new LinkedHashSet[Dependency]()){ case (a, b) => a += b }
 
   /** Existing transform objects that have already been constructed */
   def knownObjects: Set[B]
@@ -42,8 +42,8 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
 
   /** Store of conversions between classes and objects. Objects that do not exist in the map will be lazily constructed.
     */
-  protected lazy val classToObject: LinkedHashMap[Class[_ <: B], B] = {
-    val init = LinkedHashMap[Class[_ <: B], B](knownObjects.map(x => x.getClass -> x).toSeq: _*)
+  protected lazy val classToObject: LinkedHashMap[Dependency, B] = {
+    val init = LinkedHashMap[Dependency, B](knownObjects.map(x => x.getClass -> x).toSeq: _*)
     (_targets ++ _currentState)
       .filter(!init.contains(_))
       .map(x => init(x) = safeConstruct(x))
@@ -54,32 +54,32 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
     * requirements. This is used to solve sub-problems arising from invalidations.
     */
   protected def copy(
-    targets: Seq[Class[_ <: B]],
-    currentState: Seq[Class[_ <: B]],
+    targets: Seq[Dependency],
+    currentState: Seq[Dependency],
     knownObjects: ISet[B] = classToObject.values.toSet): B
 
   /** Implicit conversion from Class[B] to B */
-  private implicit def cToO(c: Class[_ <: B]): B = classToObject.getOrElseUpdate(c, safeConstruct(c))
+  private implicit def cToO(c: Dependency): B = classToObject.getOrElseUpdate(c, safeConstruct(c))
 
   /** Implicit conversion from B to Class[B] */
-  private implicit def oToC(b: B): Class[_ <: B] = b.getClass
+  private implicit def oToC(b: B): Dependency = b.getClass
 
   /** Modified breadth-first search that supports multiple starting nodes and a custom extractor that can be used to
     * generate/filter the edges to explore. Additionally, this will include edges to previously discovered nodes.
     */
-  private def bfs( start: LinkedHashSet[Class[_ <: B]],
-                   blacklist: LinkedHashSet[Class[_ <: B]],
-                   extractor: B => Set[Class[_ <: B]] ): LinkedHashMap[B, LinkedHashSet[B]] = {
+  private def bfs( start: LinkedHashSet[Dependency],
+                   blacklist: LinkedHashSet[Dependency],
+                   extractor: B => Set[Dependency] ): LinkedHashMap[B, LinkedHashSet[B]] = {
 
     val (queue, edges) = {
-      val a: Queue[Class[_ <: B]]                    = Queue(start.toSeq:_*)
+      val a: Queue[Dependency]                    = Queue(start.toSeq:_*)
       val b: LinkedHashMap[B, LinkedHashSet[B]] = LinkedHashMap[B, LinkedHashSet[B]](
         start.map((cToO(_) -> LinkedHashSet[B]())).toSeq:_*)
       (a, b)
     }
 
     while (queue.nonEmpty) {
-      val u: Class[_ <: B] = queue.dequeue
+      val u: Dependency = queue.dequeue
       for (v <- extractor(classToObject(u))) {
         if (!blacklist.contains(v) && !edges.contains(v)) {
           queue.enqueue(v)
@@ -107,7 +107,7 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
     val edges = bfs(
       start = _targets -- _currentState,
       blacklist = _currentState,
-      extractor = (p: B) => new LinkedHashSet[Class[_ <: B]]() ++ p.prerequisites -- _currentState)
+      extractor = (p: B) => new LinkedHashSet[Dependency]() ++ p.prerequisites -- _currentState)
     DiGraph(edges)
   }
 
@@ -230,7 +230,7 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
   final override def transform(annotations: A): A = {
 
     /* A local store of each wrapper to it's underlying class. */
-    val wrapperToClass = new HashMap[B, Class[_ <: B]]
+    val wrapperToClass = new HashMap[B, Dependency]
 
     /* The determined, flat order of transforms is wrapped with surrounding transforms while populating wrapperToClass so
      * that each wrapped transform object can be dereferenced to its underlying class. Each wrapped transform is then
@@ -354,10 +354,17 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
   * @param targets the [[Phase]]s you want to run
   */
 class PhaseManager(
-  val targets: Seq[Class[_ <: Phase]],
-  val currentState: Seq[Class[_ <: Phase]] = Seq.empty,
+  val targets: Seq[PhaseManager.PhaseDependency],
+  val currentState: Seq[PhaseManager.PhaseDependency] = Seq.empty,
   val knownObjects: Set[Phase] = Set.empty) extends Phase with DependencyManager[AnnotationSeq, Phase] {
 
-  protected def copy(a: Seq[Class[_ <: Phase]], b: Seq[Class[_ <: Phase]], c: ISet[Phase]) = new PhaseManager(a, b, c)
+  protected def copy(a: Seq[Dependency], b: Seq[Dependency], c: ISet[Phase]) = new PhaseManager(a, b, c)
+
+}
+
+object PhaseManager {
+
+  /** The type used to represent dependencies between [[Phase]]s */
+  type PhaseDependency = Class[_ <: Phase]
 
 }

@@ -23,7 +23,7 @@ class A extends IdentityPhase {
 
 /** [[Phase]] that requires [[A]] and invalidates nothing */
 class B extends IdentityPhase {
-  override def prerequisites = Seq(classOf[A])
+  override def prerequisites: Seq[Dependency] = Seq(classOf[A])
   override def invalidates(phase: Phase): Boolean = false
 }
 
