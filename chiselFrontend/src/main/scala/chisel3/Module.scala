@@ -229,7 +229,7 @@ package experimental {
     /** Returns a FIRRTL ModuleName that references this object
       * @note Should not be called until circuit elaboration is complete
       */
-    @deprecated("Use Target instead, will be removed in 1.3", "1.2")
+    @deprecated("Use toTarget instead", "3.1")
     final def toNamed: ModuleName = toTarget.toNamed
 
     /** Returns a FIRRTL ModuleTarget that references this object

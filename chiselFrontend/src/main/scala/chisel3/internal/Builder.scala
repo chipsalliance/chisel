@@ -164,7 +164,7 @@ private[chisel3] trait NamedComponent extends HasId {
   /** Returns a FIRRTL ComponentName that references this object
     * @note Should not be called until circuit elaboration is complete
     */
-  @deprecated("Use toTarget instead, will be removed in 1.3", "1.2")
+  @deprecated("Use toTarget instead", "3.1")
   final def toNamed: ComponentName = toTarget.toNamed
   /** Returns a FIRRTL [[ReferenceTarget]] that references this object
     * @note Should not be called until circuit elaboration is complete
