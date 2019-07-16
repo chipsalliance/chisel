@@ -104,6 +104,7 @@ object unsignedBitLength {
   /** Return the number of bits required to encode a specific value, assuming no sign bit is required.
     *
     * Basically, `n.bitLength`. NOTE: This will return 0 for a value of 0.
+    * This reflects the Chisel assumption that a zero width wire has a value of 0.
     * @param in - the number to be encoded.
     * @return - an Int representing the number of bits to encode.
     */
@@ -117,6 +118,7 @@ object signedBitLength {
   /** Return the number of bits required to encode a specific value, assuming a sign bit is required.
     *
     * Basically, 0 for 0, 1 for -1, and `n.bitLength` + 1 for everything else.
+    * This reflects the Chisel assumption that a zero width wire has a value of 0.
     * @param in - the number to be encoded.
     * @return - an Int representing the number of bits to encode.
     */
