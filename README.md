@@ -31,7 +31,7 @@ class MovingAverage3(bitWidth: Int) extends Module {
   })
 
   val z1 = RegNext(io.in)
-  val z2 = RegNext(z0)
+  val z2 = RegNext(z1)
 
   io.out := (io.in * 1.U) + (z1 * 1.U) + (z2 * 1.U)
 }
