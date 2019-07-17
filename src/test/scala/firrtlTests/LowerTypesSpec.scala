@@ -18,8 +18,8 @@ class LowerTypesSpec extends FirrtlFlatSpec {
     ResolveKinds,
     InferTypes,
     CheckTypes,
-    ResolveGenders,
-    CheckGenders,
+    ResolveFlows,
+    CheckFlows,
     new InferWidths,
     CheckWidths,
     PullMuxes,
@@ -31,7 +31,7 @@ class LowerTypesSpec extends FirrtlFlatSpec {
     new ConstantPropagation,
     ResolveKinds,
     InferTypes,
-    ResolveGenders,
+    ResolveFlows,
     new InferWidths,
     LowerTypes)
 

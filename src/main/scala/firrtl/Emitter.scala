@@ -189,11 +189,11 @@ class VerilogEmitter extends SeqTransform with Emitter {
     else if (e2 == we(one)) e1.e1
     else DoPrim(And, Seq(e1.e1, e2.e1), Nil, UIntType(IntWidth(1)))
   }
-  def wref(n: String, t: Type) = WRef(n, t, ExpKind, UNKNOWNGENDER)
+  def wref(n: String, t: Type) = WRef(n, t, ExpKind, UnknownFlow)
   def remove_root(ex: Expression): Expression = ex match {
     case ex: WSubField => ex.expr match {
       case (e: WSubField) => remove_root(e)
-      case (_: WRef) => WRef(ex.name, ex.tpe, InstanceKind, UNKNOWNGENDER)
+      case (_: WRef) => WRef(ex.name, ex.tpe, InstanceKind, UnknownFlow)
     }
     case _ => throwInternalError(s"shouldn't be here: remove_root($ex)")
   }
@@ -466,7 +466,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
         case sx: Connect => netlist(sx.loc) = sx.expr
         case sx: IsInvalid => error("Should have removed these!")
         case sx: DefNode =>
-          val e = WRef(sx.name, sx.value.tpe, NodeKind, MALE)
+          val e = WRef(sx.name, sx.value.tpe, NodeKind, SourceFlow)
           netlist(e) = sx.value
         case _ =>
       }
@@ -614,7 +614,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
       val rstring = rand_string(s.dataType)
       initials += Seq("`ifdef RANDOMIZE_MEM_INIT")
       initials += Seq("for (initvar = 0; initvar < ", bigIntToVLit(s.depth), "; initvar = initvar+1)")
-      initials += Seq(tab, WSubAccess(wref(s.name, s.dataType), index, s.dataType, FEMALE),
+      initials += Seq(tab, WSubAccess(wref(s.name, s.dataType), index, s.dataType, SinkFlow),
                       " = ", rstring, ";")
       initials += Seq("`endif // RANDOMIZE_MEM_INIT")
     }
@@ -725,7 +725,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
           initialize(e, sx.reset, sx.init)
         case sx: DefNode =>
           declare("wire", sx.name, sx.value.tpe, sx.info)
-          assign(WRef(sx.name, sx.value.tpe, NodeKind, MALE), sx.value, sx.info)
+          assign(WRef(sx.name, sx.value.tpe, NodeKind, SourceFlow), sx.value, sx.info)
         case sx: Stop =>
           simulate(sx.clk, sx.en, stop(sx.ret), Some("STOP_COND"), sx.info)
         case sx: Print =>
@@ -781,8 +781,8 @@ class VerilogEmitter extends SeqTransform with Emitter {
             //; Read port
             assign(addr, netlist(addr), NoInfo) // Info should come from addr connection
                                                 // assign(en, netlist(en))     //;Connects value to m.r.en
-            val mem = WRef(sx.name, memType(sx), MemKind, UNKNOWNGENDER)
-            val memPort = WSubAccess(mem, addr, sx.dataType, UNKNOWNGENDER)
+            val mem = WRef(sx.name, memType(sx), MemKind, UnknownFlow)
+            val memPort = WSubAccess(mem, addr, sx.dataType, UnknownFlow)
             val depthValue = UIntLiteral(sx.depth, IntWidth(sx.depth.bitLength))
             val garbageGuard = DoPrim(Geq, Seq(addr, depthValue), Seq(), UnknownType)
 
@@ -812,8 +812,8 @@ class VerilogEmitter extends SeqTransform with Emitter {
             assign(mask, netlist(mask), NoInfo)
             assign(en, netlist(en), NoInfo)
 
-            val mem = WRef(sx.name, memType(sx), MemKind, UNKNOWNGENDER)
-            val memPort = WSubAccess(mem, addr, sx.dataType, UNKNOWNGENDER)
+            val mem = WRef(sx.name, memType(sx), MemKind, UnknownFlow)
+            val memPort = WSubAccess(mem, addr, sx.dataType, UnknownFlow)
             update(memPort, data, clk, AND(en, mask), sx.info)
           }
 

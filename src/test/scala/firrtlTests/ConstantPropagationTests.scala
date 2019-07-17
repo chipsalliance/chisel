@@ -13,7 +13,7 @@ class ConstantPropagationSpec extends FirrtlFlatSpec {
       ToWorkingIR,
       ResolveKinds,
       InferTypes,
-      ResolveGenders,
+      ResolveFlows,
       new InferWidths,
       new ConstantPropagation)
   protected def exec(input: String) = {

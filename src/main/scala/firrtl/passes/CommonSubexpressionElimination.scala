@@ -13,10 +13,10 @@ object CommonSubexpressionElimination extends Pass {
     val nodes = collection.mutable.HashMap[String, Expression]()
 
     def eliminateNodeRef(e: Expression): Expression = e match {
-      case WRef(name, tpe, kind, gender) => nodes get name match {
+      case WRef(name, tpe, kind, flow) => nodes get name match {
         case Some(expression) => expressions get expression match {
           case Some(cseName) if cseName != name =>
-            WRef(cseName, tpe, kind, gender)
+            WRef(cseName, tpe, kind, flow)
           case _ => e
         }
         case _ => e

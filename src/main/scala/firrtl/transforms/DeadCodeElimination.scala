@@ -108,11 +108,11 @@ class DeadCodeElimination extends Transform with ResolvedAnnotationPaths with Re
         depGraph.addVertex(LogicNode(mod.name, name))
       case mem: DefMemory =>
         // Treat DefMems as a node with outputs depending on the node and node depending on inputs
-        // From perpsective of the module or instance, MALE expressions are inputs, FEMALE are outputs
-        val memRef = WRef(mem.name, MemPortUtils.memType(mem), ExpKind, FEMALE)
-        val exprs = Utils.create_exps(memRef).groupBy(Utils.gender(_))
-        val sources = exprs.getOrElse(MALE, List.empty).flatMap(getDeps(_))
-        val sinks = exprs.getOrElse(FEMALE, List.empty).flatMap(getDeps(_))
+        // From perpsective of the module or instance, SourceFlow expressions are inputs, SinkFlow are outputs
+        val memRef = WRef(mem.name, MemPortUtils.memType(mem), ExpKind, SinkFlow)
+        val exprs = Utils.create_exps(memRef).groupBy(Utils.flow(_))
+        val sources = exprs.getOrElse(SourceFlow, List.empty).flatMap(getDeps(_))
+        val sinks = exprs.getOrElse(SinkFlow, List.empty).flatMap(getDeps(_))
         val memNode = getDeps(memRef) match { case Seq(node) => node }
         depGraph.addVertex(memNode)
         sinks.foreach(sink => depGraph.addPairWithEdge(sink, memNode))

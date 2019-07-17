@@ -35,7 +35,7 @@ class InferWidthsWithAnnosSpec extends FirrtlFlatSpec {
       ResolveKinds,
       InferTypes,
       CheckTypes,
-      ResolveGenders,
+      ResolveFlows,
       new InferWidths,
       CheckWidths)
 
@@ -64,7 +64,7 @@ class InferWidthsWithAnnosSpec extends FirrtlFlatSpec {
       ResolveKinds,
       InferTypes,
       CheckTypes,
-      ResolveGenders,
+      ResolveFlows,
       new InferWidths,
       CheckWidths)
 
@@ -107,7 +107,7 @@ class InferWidthsWithAnnosSpec extends FirrtlFlatSpec {
       ResolveKinds,
       InferTypes,
       CheckTypes,
-      ResolveGenders,
+      ResolveFlows,
       new InferWidths,
       CheckWidths)
 
@@ -156,7 +156,7 @@ class InferWidthsWithAnnosSpec extends FirrtlFlatSpec {
       ToWorkingIR,
       ResolveKinds,
       InferTypes,
-      ResolveGenders,
+      ResolveFlows,
       new InferWidths,
       CheckWidths,
       new WiringTransform,

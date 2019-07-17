@@ -15,7 +15,7 @@ import collection.mutable
 
 /** This pass generates delay reigsters for memories for verilog */
 object VerilogMemDelays extends Pass {
-  val ug = UNKNOWNGENDER
+  val ug = UnknownFlow
   type Netlist = collection.mutable.HashMap[String, Expression]
   implicit def expToString(e: Expression): String = e.serialize
   private def NOT(e: Expression) = DoPrim(Not, Seq(e), Nil, BoolType)
@@ -58,14 +58,14 @@ object VerilogMemDelays extends Pass {
         // 1) reference to the last pipe register
         // 2) pipe registers and connects
         val node = DefNode(NoInfo, namespace.newTemp, netlist(e))
-        val wref = WRef(node.name, e.tpe, NodeKind, MALE)
+        val wref = WRef(node.name, e.tpe, NodeKind, SourceFlow)
         ((0 until n) foldLeft( (wref, Seq[Statement](node)) )){case ((ex, stmts), i) =>
           val name = namespace newName s"${LowerTypes.loweredName(e)}_pipe_$i"
           val exx = WRef(name, e.tpe, RegKind, ug)
           (exx, stmts ++ Seq(DefRegister(NoInfo, name, e.tpe, clk, zero, exx)) ++
             (if (i < n - 1 && WrappedExpression.weq(cond, one)) Seq(Connect(NoInfo, exx, ex)) else {
               val condn = namespace newName s"${LowerTypes.loweredName(e)}_en"
-              val condx = WRef(condn, BoolType, NodeKind, FEMALE)
+              val condx = WRef(condn, BoolType, NodeKind, SinkFlow)
               Seq(DefNode(NoInfo, condn, cond),
                   Connect(NoInfo, exx, Mux(condx, ex, exx, e.tpe)))
             })
@@ -94,7 +94,7 @@ object VerilogMemDelays extends Pass {
         Connect(NoInfo, memPortField(mem, writer, "addr"), addr),
         Connect(NoInfo, memPortField(mem, writer, "data"), data)
       )
- 
+
       stmts ++= ((sx.readers flatMap {reader =>
         // generate latency pipes for read ports (enable & addr)
         val clk = netlist(memPortField(sx, reader, "clk"))

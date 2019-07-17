@@ -28,8 +28,8 @@ class RemoveFixedTypeSpec extends FirrtlFlatSpec {
       ResolveKinds,
       InferTypes,
       CheckTypes,
-      ResolveGenders,
-      CheckGenders,
+      ResolveFlows,
+      CheckFlows,
       new InferWidths,
       CheckWidths,
       ConvertFixedToSInt)
@@ -58,8 +58,8 @@ class RemoveFixedTypeSpec extends FirrtlFlatSpec {
       ResolveKinds,
       InferTypes,
       CheckTypes,
-      ResolveGenders,
-      CheckGenders,
+      ResolveFlows,
+      CheckFlows,
       new InferWidths,
       CheckWidths,
       ConvertFixedToSInt)
@@ -89,8 +89,8 @@ class RemoveFixedTypeSpec extends FirrtlFlatSpec {
       ResolveKinds,
       InferTypes,
       CheckTypes,
-      ResolveGenders,
-      CheckGenders,
+      ResolveFlows,
+      CheckFlows,
       new InferWidths,
       CheckWidths,
       ConvertFixedToSInt)
@@ -116,8 +116,8 @@ class RemoveFixedTypeSpec extends FirrtlFlatSpec {
       ResolveKinds,
       InferTypes,
       CheckTypes,
-      ResolveGenders,
-      CheckGenders,
+      ResolveFlows,
+      CheckFlows,
       new InferWidths,
       CheckWidths,
       ConvertFixedToSInt)
@@ -143,8 +143,8 @@ class RemoveFixedTypeSpec extends FirrtlFlatSpec {
       ResolveKinds,
       InferTypes,
       CheckTypes,
-      ResolveGenders,
-      CheckGenders,
+      ResolveFlows,
+      CheckFlows,
       new InferWidths,
       CheckWidths,
       ConvertFixedToSInt)
@@ -195,8 +195,8 @@ class RemoveFixedTypeSpec extends FirrtlFlatSpec {
       ResolveKinds,
       InferTypes,
       CheckTypes,
-      ResolveGenders,
-      CheckGenders,
+      ResolveFlows,
+      CheckFlows,
       new InferWidths,
       CheckWidths,
       ConvertFixedToSInt)
@@ -215,4 +215,3 @@ class RemoveFixedTypeSpec extends FirrtlFlatSpec {
     executeTest(input, check.split("\n") map normalized, passes)
   }
 }
-

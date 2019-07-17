@@ -126,7 +126,7 @@ class ReplSeqMem extends Transform with HasShellOptions {
         new SimpleMidTransform(InferTypes),
         Uniquify,
         new SimpleMidTransform(ResolveKinds),
-        new SimpleMidTransform(ResolveGenders))
+        new SimpleMidTransform(ResolveFlows))
 
   def execute(state: CircuitState): CircuitState = {
     val annos = state.annotations.collect { case a: ReplSeqMemAnnotation => a }

@@ -5,7 +5,7 @@ package passes
 
 import firrtl.ir._
 import firrtl.Mappers._
-import firrtl.Utils.{kind, gender, get_info}
+import firrtl.Utils.{kind, flow, get_info}
 
 // Datastructures
 import scala.collection.mutable
@@ -23,15 +23,15 @@ object SplitExpressions extends Pass {
           case e: DoPrim =>
             val name = namespace.newTemp
             v += DefNode(get_info(s), name, e)
-            WRef(name, e.tpe, kind(e), gender(e))
+            WRef(name, e.tpe, kind(e), flow(e))
           case e: Mux =>
             val name = namespace.newTemp
             v += DefNode(get_info(s), name, e)
-            WRef(name, e.tpe, kind(e), gender(e))
+            WRef(name, e.tpe, kind(e), flow(e))
           case e: ValidIf =>
             val name = namespace.newTemp
             v += DefNode(get_info(s), name, e)
-            WRef(name, e.tpe, kind(e), gender(e))
+            WRef(name, e.tpe, kind(e), flow(e))
           case _ => e
         }
 

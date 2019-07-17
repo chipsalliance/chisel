@@ -82,7 +82,7 @@ class Ledger {
   * creating new WIR nodes, use the following "unknown" values in the WIR node, and then call [[firrtl.ResolveAndCheck]]
   * at the end of your transform:
   *   - Kind -> ExpKind
-  *   - Gender -> UNKNOWNGENDER
+  *   - Flow -> UnknownFlow
   *   - Type -> UnknownType
   *
   * The following [[firrtl.CircuitForm]]s require WIR instead of IR nodes:

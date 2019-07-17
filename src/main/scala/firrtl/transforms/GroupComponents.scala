@@ -213,7 +213,7 @@ class GroupComponents extends firrtl.Transform {
             added += Connect(NoInfo, WSubField(WRef(label2instance(group)), toPort), otherExp)
 
             // Return WRef with new kind (its inside the group Module now)
-            WRef(toPort, otherExp.tpe, PortKind, MALE)
+            WRef(toPort, otherExp.tpe, PortKind, SourceFlow)
 
           // case 3: source in different group
           case otherGroup =>
@@ -227,7 +227,7 @@ class GroupComponents extends firrtl.Transform {
             added += Connect(NoInfo, WSubField(WRef(groupInst), toPort), WSubField(WRef(otherInst), fromPort))
 
             // Return WRef with new kind (its inside the group Module now)
-            WRef(toPort, otherExp.tpe, PortKind, MALE)
+            WRef(toPort, otherExp.tpe, PortKind, SourceFlow)
         }
     }
 
