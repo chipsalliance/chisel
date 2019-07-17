@@ -414,5 +414,4 @@ object Select {
       s"printf when(${preds.map(_.serialize).mkString(" & ")}) on ${getName(clock)}: $pable"
     }
   }
-
 }

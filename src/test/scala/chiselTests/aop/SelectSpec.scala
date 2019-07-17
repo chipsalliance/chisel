@@ -106,5 +106,39 @@ class SelectSpec extends ChiselFlatSpec {
     )
   }
 
+  "Test" should "pass if selecting ops by kind" in {
+    execute(
+      () => new SelectTester(Seq(0, 1, 2)),
+      { dut: SelectTester => Select.ops("tail")(dut) },
+      { dut: SelectTester => Seq(dut.added, dut.zero) }
+    )
+  }
+
+  "Test" should "pass if selecting ops" in {
+    execute(
+      () => new SelectTester(Seq(0, 1, 2)),
+      { dut: SelectTester => Select.ops(dut).collect { case ("tail", d) => d} },
+      { dut: SelectTester => Seq(dut.added, dut.zero) }
+    )
+  }
+
+  "Test" should "pass if selecting correct stops" in {
+    execute(
+      () => new SelectTester(Seq(0, 1, 2)),
+      { dut: SelectTester => Seq(Select.stops(dut).last) },
+      { dut: SelectTester =>
+        Seq(Select.Stop(
+          Seq(
+            When(Select.ops("eq")(dut).last.asInstanceOf[Bool]),
+            When(dut.nreset),
+            WhenNot(dut.overflow)
+          ),
+          1,
+          dut.clock
+        ))
+      }
+    )
+  }
+
 }
 
