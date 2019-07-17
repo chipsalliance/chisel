@@ -77,6 +77,17 @@ object ResolveFlows extends Pass {
     c copy (modules = c.modules map resolve_flow)
 }
 
+@deprecated("Use 'ResolveFlows'. This will be removed in 1.3", "1.2")
+object ResolveGenders {
+
+  def run(c: Circuit): Circuit = ResolveFlows.run(c)
+
+  def resolve_e(g: Gender)(e: Expression): Expression = ResolveFlows.resolve_e(g)(e)
+
+  def resolve_s(s: Statement): Statement = ResolveFlows.resolve_s(s)
+
+}
+
 object CInferMDir extends Pass {
   type MPortDirMap = collection.mutable.LinkedHashMap[String, MPortDir]
 
