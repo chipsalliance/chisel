@@ -33,8 +33,8 @@ To write a Firrtl transform, please start with the tutorial here: [src/main/scal
 To run these examples:
 ```
 sbt assembly
-./utils/bin/firrtl -td regress -tn rocket --custom-transforms tutorial.lesson1.AnalyzeCircuit
-./utils/bin/firrtl -td regress -tn rocket --custom-transforms tutorial.lesson2.AnalyzeCircuit
+./utils/bin/firrtl -td regress -i regress/RocketCore.fir --custom-transforms tutorial.lesson1.AnalyzeCircuit
+./utils/bin/firrtl -td regress -i regress/RocketCore.fir --custom-transforms tutorial.lesson2.AnalyzeCircuit
 ```
 
 #### Other Tools
@@ -51,7 +51,8 @@ sbt assembly
 
 ##### Prerequisites
  1. If not already installed, install [verilator](http://www.veripool.org/projects/verilator/wiki/Installing) (Requires at least v3.886)
- 2. If not already installed, install [sbt](http://www.scala-sbt.org/) (Requires at least v0.13.6)
+ 1. If not already installed, install [yosys](http://www.clifford.at/yosys/) (Requires at least v0.8)
+ 1. If not already installed, install [sbt](http://www.scala-sbt.org/) (Requires at least v0.13.6)
 
 ##### Installation
  1. Clone the repository:
