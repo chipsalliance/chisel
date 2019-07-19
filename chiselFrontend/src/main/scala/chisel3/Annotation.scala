@@ -3,12 +3,12 @@
 package chisel3.experimental
 
 import scala.language.existentials
-
 import chisel3.internal.{Builder, InstanceId}
 import chisel3.{CompileOptions, Data}
 import firrtl.Transform
 import firrtl.annotations.Annotation
-import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
+import firrtl.ir.Edge
+import firrtl.transforms._
 
 /** Interface for Annotations in Chisel
   *
@@ -135,5 +135,14 @@ object doNotDedup { // scalastyle:ignore object.name
     */
    def apply[T <: LegacyModule](module: T)(implicit compileOptions: CompileOptions): Unit = {
     annotate(new ChiselAnnotation { def toFirrtl = NoDedupAnnotation(module.toNamed) })
+  }
+}
+
+object annoEdge {
+  def apply(reg: Data, edge: Edge)(implicit compileOptions: CompileOptions): Unit = {
+    // TODO: wait freechipsproject/chisel3#1120 to be merged
+    annotate(new ChiselAnnotation {
+      def toFirrtl = ClockEdgeAnnotation(reg.toNamed.toTarget, edge)
+    })
   }
 }

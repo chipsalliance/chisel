@@ -3,9 +3,10 @@
 package chisel3.internal.firrtl
 import chisel3._
 import chisel3.experimental._
-import chisel3.internal.sourceinfo.{NoSourceInfo, SourceLine, SourceInfo}
+import chisel3.internal.sourceinfo.{NoSourceInfo, SourceInfo, SourceLine}
 import firrtl.{ir => fir}
 import chisel3.internal.{castToInt, throwException}
+import firrtl.ir.Posedge
 
 import scala.annotation.tailrec
 import scala.collection.immutable.Queue
@@ -94,10 +95,10 @@ private[chisel3] object Converter {
     case e @ DefWire(info, id) =>
       Some(fir.DefWire(convert(info), e.name, extractType(id)))
     case e @ DefReg(info, id, clock) =>
-      Some(fir.DefRegister(convert(info), e.name, extractType(id), convert(clock, ctx),
+      Some(fir.DefRegister(convert(info), e.name, extractType(id), Posedge, convert(clock, ctx),
                            firrtl.Utils.zero, convert(id.getRef, ctx)))
     case e @ DefRegInit(info, id, clock, reset, init) =>
-      Some(fir.DefRegister(convert(info), e.name, extractType(id), convert(clock, ctx),
+      Some(fir.DefRegister(convert(info), e.name, extractType(id), Posedge, convert(clock, ctx),
                            convert(reset, ctx), convert(init, ctx)))
     case e @ DefMemory(info, id, t, size) =>
       Some(firrtl.CDefMemory(convert(info), e.name, extractType(t), size, false))
