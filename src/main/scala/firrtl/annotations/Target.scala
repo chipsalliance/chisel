@@ -402,6 +402,8 @@ trait IsModule extends IsMember {
 
   /** @return Creates a new Target, appending an instance and ofmodule */
   def instOf(instance: String, of: String): InstanceTarget
+
+  def addHierarchy(root: String, inst: String): InstanceTarget
 }
 
 /** A component of a FIRRTL Module (e.g. cannot point to a CircuitTarget or ModuleTarget)
