@@ -70,8 +70,12 @@ class InstanceGraph(c: Circuit) {
     * @return a Seq[ Seq[WDefInstance] ] of absolute instance paths
     */
   def findInstancesInHierarchy(module: String): Seq[Seq[WDefInstance]] = {
-    val instances = graph.getVertices.filter(_.module == module).toSeq
-    instances flatMap { i => fullHierarchy(i) }
+    if (instantiated(module)) {
+      val instances = graph.getVertices.filter(_.module == module).toSeq
+      instances flatMap { i => fullHierarchy(i) }
+    } else {
+      Nil
+    }
   }
 
   /** An [[firrtl.graph.EulerTour EulerTour]] representation of the [[firrtl.graph.DiGraph DiGraph]] */

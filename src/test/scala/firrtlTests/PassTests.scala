@@ -29,6 +29,20 @@ abstract class SimpleTransformSpec extends FlatSpec with FirrtlMatchers with Com
       (actual) should be (expected)
       finalState
    }
+
+   def executeWithAnnos(input: String, check: String, annotations: Seq[Annotation],
+     checkAnnotations: Seq[Annotation]): CircuitState = {
+      val finalState = compileAndEmit(CircuitState(parse(input), ChirrtlForm, annotations))
+      val actual = RemoveEmpty.run(parse(finalState.getEmittedCircuit.value)).serialize
+      val expected = parse(check).serialize
+      logger.debug(actual)
+      logger.debug(expected)
+      (actual) should be (expected)
+      checkAnnotations.foreach { check =>
+        (finalState.annotations.toSeq) should contain (check)
+      }
+      finalState
+   }
    // Executes the test, should throw an error
    // No default to be consistent with execute
    def failingexecute(input: String, annotations: Seq[Annotation]): Exception = {
