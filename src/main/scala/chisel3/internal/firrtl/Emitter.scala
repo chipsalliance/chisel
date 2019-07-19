@@ -12,76 +12,103 @@ private[chisel3] object Emitter {
 private class Emitter(circuit: Circuit) {
   override def toString: String = res.toString
 
-  private def emitPort(e: Port, topDir: SpecifiedDirection=SpecifiedDirection.Unspecified): String = {
+  private def emitPort(
+      e: Port,
+      topDir: SpecifiedDirection = SpecifiedDirection.Unspecified
+  ): String = {
     val resolvedDir = SpecifiedDirection.fromParent(topDir, e.dir)
     val dirString = resolvedDir match {
-      case SpecifiedDirection.Unspecified | SpecifiedDirection.Output => "output"
+      case SpecifiedDirection.Unspecified | SpecifiedDirection.Output =>
+        "output"
       case SpecifiedDirection.Flip | SpecifiedDirection.Input => "input"
     }
     val clearDir = resolvedDir match {
-      case SpecifiedDirection.Input | SpecifiedDirection.Output => true
+      case SpecifiedDirection.Input | SpecifiedDirection.Output     => true
       case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip => false
     }
     s"$dirString ${e.id.getRef.name} : ${emitType(e.id, clearDir)}"
   }
 
-  private def emitType(d: Data, clearDir: Boolean = false): String = d match { // scalastyle:ignore cyclomatic.complexity line.size.limit
-    case d: Clock => "Clock"
-    case d: EnumType => s"UInt${d.width}"
-    case d: UInt => s"UInt${d.width}"
-    case d: SInt => s"SInt${d.width}"
-    case d: FixedPoint => s"Fixed${d.width}${d.binaryPoint}"
-    case d: Analog => s"Analog${d.width}"
-    case d: Vec[_] => s"${emitType(d.sample_element, clearDir)}[${d.length}]"
-    case d: Record => {
-      val childClearDir = clearDir ||
+  //scalastyle:off cyclomatic.complexity
+  private def emitType(d: Data, clearDir: Boolean = false): String =
+    d match {
+      case d: Clock      => "Clock"
+      case d: EnumType   => s"UInt${d.width}"
+      case d: UInt       => s"UInt${d.width}"
+      case d: SInt       => s"SInt${d.width}"
+      case d: FixedPoint => s"Fixed${d.width}${d.binaryPoint}"
+      case d: Analog     => s"Analog${d.width}"
+      case d: Vec[_]     => s"${emitType(d.sample_element, clearDir)}[${d.length}]"
+      case d: Record => {
+        val childClearDir = clearDir ||
           d.specifiedDirection == SpecifiedDirection.Input || d.specifiedDirection == SpecifiedDirection.Output
-      def eltPort(elt: Data): String = (childClearDir, firrtlUserDirOf(elt)) match {
-        case (true, _) =>
-          s"${elt.getRef.name} : ${emitType(elt, true)}"
-        case (false, SpecifiedDirection.Unspecified | SpecifiedDirection.Output) =>
-          s"${elt.getRef.name} : ${emitType(elt, false)}"
-        case (false, SpecifiedDirection.Flip | SpecifiedDirection.Input) =>
-          s"flip ${elt.getRef.name} : ${emitType(elt, false)}"
+        def eltPort(elt: Data): String =
+          (childClearDir, firrtlUserDirOf(elt)) match {
+            case (true, _) =>
+              s"${elt.getRef.name} : ${emitType(elt, true)}"
+            case (
+                false,
+                SpecifiedDirection.Unspecified | SpecifiedDirection.Output
+                ) =>
+              s"${elt.getRef.name} : ${emitType(elt, false)}"
+            case (false, SpecifiedDirection.Flip | SpecifiedDirection.Input) =>
+              s"flip ${elt.getRef.name} : ${emitType(elt, false)}"
+          }
+        d.elements.toIndexedSeq.reverse
+          .map(e => eltPort(e._2))
+          .mkString("{", ", ", "}")
       }
-      d.elements.toIndexedSeq.reverse.map(e => eltPort(e._2)).mkString("{", ", ", "}")
     }
-  }
 
   private def firrtlUserDirOf(d: Data): SpecifiedDirection = d match {
     case d: Vec[_] =>
-      SpecifiedDirection.fromParent(d.specifiedDirection, firrtlUserDirOf(d.sample_element))
+      SpecifiedDirection
+        .fromParent(d.specifiedDirection, firrtlUserDirOf(d.sample_element))
     case d => d.specifiedDirection
   }
 
+  //scalastyle:off method.length
   private def emit(e: Command, ctx: Component): String = { // scalastyle:ignore cyclomatic.complexity
     val firrtlLine = e match {
-      case e: DefPrim[_] => s"node ${e.name} = ${e.op.name}(${e.args.map(_.fullName(ctx)).mkString(", ")})"
+      case e: DefPrim[_] =>
+        s"node ${e.name} = ${e.op.name}(${e.args.map(_.fullName(ctx)).mkString(", ")})"
       case e: DefWire => s"wire ${e.name} : ${emitType(e.id)}"
-      case e: DefReg => s"reg ${e.name} : ${emitType(e.id)}, ${e.clock.fullName(ctx)}"
-      case e: DefRegInit => s"reg ${e.name} : ${emitType(e.id)}, ${e.clock.fullName(ctx)} with : (reset => (${e.reset.fullName(ctx)}, ${e.init.fullName(ctx)}))" // scalastyle:ignore line.size.limit
-      case e: DefMemory => s"cmem ${e.name} : ${emitType(e.t)}[${e.size}]"
+      case e: DefReg =>
+        s"reg ${e.name} : ${emitType(e.id)}, ${e.clock.fullName(ctx)}"
+      case e: DefRegInit =>
+        s"reg ${e.name} : ${emitType(e.id)}, ${e.clock.fullName(ctx)} with : (reset => (${e.reset
+          .fullName(ctx)}, ${e.init.fullName(ctx)}))" // scalastyle:ignore line.size.limit
+      case e: DefMemory    => s"cmem ${e.name} : ${emitType(e.t)}[${e.size}]"
       case e: DefSeqMemory => s"smem ${e.name} : ${emitType(e.t)}[${e.size}]"
-      case e: DefMemPort[_] => s"${e.dir} mport ${e.name} = ${e.source.fullName(ctx)}[${e.index.fullName(ctx)}], ${e.clock.fullName(ctx)}" // scalastyle:ignore line.size.limit
+      case e: DefMemPort[_] =>
+        s"${e.dir} mport ${e.name} = ${e.source.fullName(ctx)}[${e.index
+          .fullName(ctx)}], ${e.clock.fullName(ctx)}" // scalastyle:ignore line.size.limit
       case e: Connect => s"${e.loc.fullName(ctx)} <= ${e.exp.fullName(ctx)}"
-      case e: BulkConnect => s"${e.loc1.fullName(ctx)} <- ${e.loc2.fullName(ctx)}"
-      case e: Attach => e.locs.map(_.fullName(ctx)).mkString("attach (", ", ", ")")
+      case e: BulkConnect =>
+        s"${e.loc1.fullName(ctx)} <- ${e.loc2.fullName(ctx)}"
+      case e: Attach =>
+        e.locs.map(_.fullName(ctx)).mkString("attach (", ", ", ")")
       case e: Stop => s"stop(${e.clock.fullName(ctx)}, UInt<1>(1), ${e.ret})"
       case e: Printf =>
         val (fmt, args) = e.pable.unpack(ctx)
-        val printfArgs = Seq(e.clock.fullName(ctx), "UInt<1>(1)",
-          "\"" + printf.format(fmt) + "\"") ++ args
+        val printfArgs = Seq(
+          e.clock.fullName(ctx),
+          "UInt<1>(1)",
+          "\"" + printf.format(fmt) + "\""
+        ) ++ args
         printfArgs mkString ("printf(", ", ", ")")
-      case e: DefInvalid => s"${e.arg.fullName(ctx)} is invalid"
+      case e: DefInvalid  => s"${e.arg.fullName(ctx)} is invalid"
       case e: DefInstance => s"inst ${e.name} of ${e.id.name}"
-      case w: WhenBegin =>
+      case w: WhenBegin   =>
         // When consequences are always indented
         indent()
         s"when ${w.pred.fullName(ctx)} :"
       case w: WhenEnd =>
         // If a when has no else, the indent level must be reset to the enclosing block
         unindent()
-        if (!w.hasAlt) { for (i <- 0 until w.firrtlDepth) { unindent() } }
+        if (!w.hasAlt) {
+          for (i <- 0 until w.firrtlDepth) { unindent() }
+        }
         s"skip"
       case a: AltBegin =>
         // Else blocks are always indented
@@ -93,15 +120,14 @@ private class Emitter(circuit: Circuit) {
         s"skip"
     }
     firrtlLine + e.sourceInfo.makeMessage(" " + _)
-    // scalastyle:on line.size.limit
   }
 
   private def emitParam(name: String, p: Param): String = {
     val str = p match {
-      case IntParam(value) => value.toString
+      case IntParam(value)    => value.toString
       case DoubleParam(value) => value.toString
-      case StringParam(str) => "\"" + str + "\""
-      case RawParam(str) => "'" + str + "'"
+      case StringParam(str)   => "\"" + str + "\""
+      case RawParam(str)      => "'" + str + "'"
     }
     s"parameter $name = $str"
   }
@@ -110,7 +136,7 @@ private class Emitter(circuit: Circuit) {
     */
   private def moduleDecl(m: Component): String = m.id match {
     case _: BaseBlackBox => newline + s"extmodule ${m.name} : "
-    case _: RawModule => newline + s"module ${m.name} : "
+    case _: RawModule    => newline + s"module ${m.name} : "
   }
 
   /** Generates the FIRRTL module definition.
@@ -121,7 +147,7 @@ private class Emitter(circuit: Circuit) {
       for (p <- m.ports) {
         val portDef = m match {
           case bb: DefBlackBox => emitPort(p, bb.topDir)
-          case mod: DefModule => emitPort(p)
+          case mod: DefModule  => emitPort(p)
         }
         body ++= newline + portDef
       }
@@ -135,7 +161,9 @@ private class Emitter(circuit: Circuit) {
         case mod: DefModule => {
           // Preprocess whens & elsewhens, marking those that have no alternative
           val procMod = mod.copy(commands = processWhens(mod.commands))
-          for (cmd <- procMod.commands) { body ++= newline + emit(cmd, procMod)}
+          for (cmd <- procMod.commands) {
+            body ++= newline + emit(cmd, procMod)
+          }
         }
       }
       body ++= newline
@@ -164,9 +192,9 @@ private class Emitter(circuit: Circuit) {
     if (cmds.isEmpty) {
       Seq.empty
     } else {
-      cmds.zip(cmds.tail).map{
+      cmds.zip(cmds.tail).map {
         case (a: WhenEnd, b: AltBegin) => a.copy(hasAlt = true)
-        case (a, b) => a
+        case (a, b)                    => a
       } ++ cmds.lastOption
     }
   }
