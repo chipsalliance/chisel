@@ -683,4 +683,77 @@ class RenameMapSpec extends FirrtlFlatSpec {
       Some(Seq(absPath1.copy(ofModule = "A").instOf("b", "B").ref("ref")))
     }
   }
+
+  it should "should able to chain many rename maps" in {
+    val top = CircuitTarget("Top")
+    val inlineRename1 = {
+      val inlineMod = top.module("A")
+      val inlineInst = top.module("A").instOf("b", "B")
+      val oldRef = inlineMod.ref("bar")
+      val prefixRef = inlineMod.ref("foo")
+
+      val renames1 = RenameMap()
+      renames1.record(inlineInst, inlineMod)
+
+      val renames2 = RenameMap()
+      renames2.record(oldRef, prefixRef)
+
+      renames1.andThen(renames2)
+    }
+
+    val inlineRename2 = {
+      val inlineMod = top.module("A1")
+      val inlineInst = top.module("A1").instOf("b", "B1")
+      val oldRef = inlineMod.ref("bar")
+      val prefixRef = inlineMod.ref("foo")
+
+      val renames1 = RenameMap()
+      renames1.record(inlineInst, inlineMod)
+
+      val renames2 = RenameMap()
+      renames2.record(oldRef, prefixRef)
+
+      inlineRename1.andThen(renames1).andThen(renames2)
+    }
+
+    val renames = inlineRename2
+    renames.get(top.module("A").instOf("b", "B").ref("bar")) should be {
+      Some(Seq(top.module("A").ref("foo")))
+    }
+
+    renames.get(top.module("A1").instOf("b", "B1").ref("bar")) should be {
+      Some(Seq(top.module("A1").ref("foo")))
+    }
+  }
+
+  it should "should able to chain chained rename maps" in {
+    val top = CircuitTarget("Top").module("Top")
+    val foo1 = top.instOf("foo1", "Mod")
+    val foo2 = top.instOf("foo2", "Mod")
+    val foo3 = top.instOf("foo3", "Mod")
+
+    val bar1 = top.instOf("bar1", "Mod")
+    val bar2 = top.instOf("bar2", "Mod")
+
+    val foo1Rename = RenameMap()
+    val foo2Rename = RenameMap()
+
+    val bar1Rename = RenameMap()
+    val bar2Rename = RenameMap()
+
+    foo1Rename.record(foo1, foo2)
+    foo2Rename.record(foo2, foo3)
+
+    bar1Rename.record(foo3, bar1)
+    bar2Rename.record(bar1, bar2)
+
+    val chained1 = foo1Rename.andThen(foo2Rename)
+    val chained2 = bar1Rename.andThen(bar2Rename)
+
+    val renames = chained1.andThen(chained2)
+
+    renames.get(foo1) should be {
+      Some(Seq(bar2))
+    }
+  }
 }

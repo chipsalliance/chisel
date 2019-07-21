@@ -40,7 +40,13 @@ final class RenameMap private (val underlying: mutable.HashMap[CompleteTarget, S
   /** Chain a [[RenameMap]] with this [[RenameMap]]
     * @param next the map to chain with this map
     */
-  def andThen(next: RenameMap) = new RenameMap(next.underlying, chained = Some(this))
+  def andThen(next: RenameMap): RenameMap = {
+    if (next.chained.isEmpty) {
+      new RenameMap(next.underlying, chained = Some(this))
+    } else {
+      new RenameMap(next.underlying, chained = next.chained.map(this.andThen(_)))
+    }
+  }
 
   /** Record that the from [[firrtl.annotations.CircuitTarget CircuitTarget]] is renamed to another
     * [[firrtl.annotations.CircuitTarget CircuitTarget]]
@@ -204,8 +210,10 @@ final class RenameMap private (val underlying: mutable.HashMap[CompleteTarget, S
       if (chainedRet.isEmpty) {
         Some(chainedRet)
       } else {
-        val hereRet = chainedRet.flatMap(hereCompleteGet)
-        if (hereRet.isEmpty) { None } else { Some(hereRet.flatten) }
+        val hereRet = (chainedRet.flatMap { target =>
+          hereCompleteGet(target).getOrElse(Seq(target))
+        }).distinct
+        if (hereRet.size == 1 && hereRet.head == key) { None } else { Some(hereRet) }
       }
     } else {
       hereCompleteGet(key)
