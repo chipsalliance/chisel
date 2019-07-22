@@ -8,7 +8,7 @@ import chisel3._
 import chisel3.experimental._
 import chisel3.internal.firrtl._
 import chisel3.internal.naming._
-import _root_.firrtl.annotations.{CircuitName, ComponentName, ModuleName, Named}
+import _root_.firrtl.annotations._
 
 private[chisel3] class Namespace(keywords: Set[String]) {
   private val names = collection.mutable.HashMap[String, Long]()
@@ -69,6 +69,8 @@ trait InstanceId {
   def parentModName: String
   /** Returns a FIRRTL Named that refers to this object in the elaborated hardware graph */
   def toNamed: Named
+  def toTarget: Target
+  def toAbsoluteTarget: Target
 
 }
 
@@ -165,6 +167,25 @@ private[chisel3] trait NamedComponent extends HasId {
     */
   final def toNamed: ComponentName =
     ComponentName(this.instanceName, ModuleName(this.parentModName, CircuitName(this.circuitName)))
+
+  /** Returns a FIRRTL [[ReferenceTarget]] with no path that references this object
+    * @note Should not be called until circuit elaboration is complete
+    */
+  final def toTarget: ReferenceTarget = {
+    val TargetToken.Ref(ref) +: tokens = Target.toTargetTokens(this.instanceName)
+    ReferenceTarget(this.circuitName, this.parentModName, Nil, ref, tokens)
+  }
+
+  /** Returns a FIRRTL [[ReferenceTarget]] with an absolute path that references this object
+    * @note Should not be called until circuit elaboration is complete
+    */
+  final def toAbsoluteTarget: ReferenceTarget = _parent match {
+    case Some(parent) =>
+      val TargetToken.Ref(ref) +: tokens = Target.toTargetTokens(this.instanceName)
+      val parentTarget = parent.toAbsoluteTarget
+      toTarget.setPathTarget(parentTarget)
+    case None => toTarget
+  }
 }
 
 // Mutable global state for chisel that can appear outside a Builder context
