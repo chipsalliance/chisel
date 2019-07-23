@@ -310,9 +310,12 @@ class ConstantPropagation extends Transform with ResolvedAnnotationPaths {
 
   private def constPropMux(m: Mux): Expression = (m.tval, m.fval) match {
     case _ if m.tval == m.fval => m.tval
-    case (t: UIntLiteral, f: UIntLiteral) =>
-      if (t.value == BigInt(1) && f.value == BigInt(0) && bitWidth(m.tpe) == BigInt(1)) m.cond
-      else constPropMuxCond(m)
+    case (t: UIntLiteral, f: UIntLiteral)
+      if t.value == BigInt(1) && f.value == BigInt(0) && bitWidth(m.tpe) == BigInt(1) => m.cond
+    case (t: UIntLiteral, _) if t.value == BigInt(1) && bitWidth(m.tpe) == BigInt(1) =>
+      DoPrim(Or, Seq(m.cond, m.fval), Nil, m.tpe)
+    case (_, f: UIntLiteral) if f.value == BigInt(0) && bitWidth(m.tpe) == BigInt(1) =>
+      DoPrim(And, Seq(m.cond, m.tval), Nil, m.tpe)
     case _ => constPropMuxCond(m)
   }
 
