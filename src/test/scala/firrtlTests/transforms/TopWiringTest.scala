@@ -648,13 +648,15 @@ class AggregateTopWiringTests extends MiddleTransformSpec with TopWiringTestsCom
            |  module Top :
            |    output topwiring_a1_myAgg: { a: UInt<1>, b: SInt<8> }
            |    inst a1 of A
-           |    topwiring_a1_myAgg <= a1.topwiring_myAgg
+           |    topwiring_a1_myAgg.a <= a1.topwiring_myAgg.a
+           |    topwiring_a1_myAgg.b <= a1.topwiring_myAgg.b
            |  module A :
            |    output topwiring_myAgg: { a: UInt<1>, b: SInt<8> }
            |    wire myAgg: { a: UInt<1>, b: SInt<8> }
            |    myAgg.a <= UInt(0)
            |    myAgg.b <= SInt(-1)
-           |    topwiring_myAgg <= myAgg
+           |    topwiring_myAgg.a <= myAgg.a
+           |    topwiring_myAgg.b <= myAgg.b
            """.stripMargin
       execute(input, check, topwiringannos)
    }
@@ -685,22 +687,28 @@ class AggregateTopWiringTests extends MiddleTransformSpec with TopWiringTestsCom
            |    output topwiring_b_a2_myAgg: { a: UInt<1>, b: SInt<8> }
            |    inst a1 of A
            |    inst b of B
-           |    topwiring_a1_myAgg <= a1.topwiring_myAgg
-           |    topwiring_b_a1_myAgg <= b.topwiring_a1_myAgg
-           |    topwiring_b_a2_myAgg <= b.topwiring_a2_myAgg
+           |    topwiring_a1_myAgg.a <= a1.topwiring_myAgg.a
+           |    topwiring_a1_myAgg.b <= a1.topwiring_myAgg.b
+           |    topwiring_b_a1_myAgg.a <= b.topwiring_a1_myAgg.a
+           |    topwiring_b_a1_myAgg.b <= b.topwiring_a1_myAgg.b
+           |    topwiring_b_a2_myAgg.a <= b.topwiring_a2_myAgg.a
+           |    topwiring_b_a2_myAgg.b <= b.topwiring_a2_myAgg.b
            |  module B:
            |    output topwiring_a1_myAgg: { a: UInt<1>, b: SInt<8> }
            |    output topwiring_a2_myAgg: { a: UInt<1>, b: SInt<8> }
            |    inst a1 of A
            |    inst a2 of A
-           |    topwiring_a1_myAgg <= a1.topwiring_myAgg
-           |    topwiring_a2_myAgg <= a2.topwiring_myAgg
+           |    topwiring_a1_myAgg.a <= a1.topwiring_myAgg.a
+           |    topwiring_a1_myAgg.b <= a1.topwiring_myAgg.b
+           |    topwiring_a2_myAgg.a <= a2.topwiring_myAgg.a
+           |    topwiring_a2_myAgg.b <= a2.topwiring_myAgg.b
            |  module A :
            |    output topwiring_myAgg: { a: UInt<1>, b: SInt<8> }
            |    wire myAgg: { a: UInt<1>, b: SInt<8> }
            |    myAgg.a <= UInt(0)
            |    myAgg.b <= SInt(-1)
-           |    topwiring_myAgg <= myAgg
+           |    topwiring_myAgg.a <= myAgg.a
+           |    topwiring_myAgg.b <= myAgg.b
            """.stripMargin
       execute(input, check, topwiringannos)
    }

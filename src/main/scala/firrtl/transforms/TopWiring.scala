@@ -7,7 +7,8 @@ import firrtl.ir._
 import firrtl.passes.{Pass,
       InferTypes,
       ResolveKinds,
-      ResolveGenders
+      ResolveGenders,
+      ExpandConnects
       }
 import firrtl.annotations._
 import firrtl.Mappers._
@@ -224,6 +225,10 @@ class TopWiringTransform extends Transform {
   /** Run passes to fix up the circuit of making the new connections  */
   private def fixupCircuit(circuit: Circuit): Circuit = {
     val passes = Seq(
+      InferTypes,
+      ResolveKinds,
+      ResolveGenders,
+      ExpandConnects,
       InferTypes,
       ResolveKinds,
       ResolveGenders
