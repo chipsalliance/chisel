@@ -81,7 +81,8 @@ trait BackendCompilationUtilities {
     * all the files which are not included elsewhere. If multiple ones exist,
     * the compilation will fail.
     *
-    * If the file BlackBoxSourceHelper.fileListName exists in the output directory,
+    * If the file BlackBoxSourceHelper.fileListName (or an overridden .f resource filename that is
+    * specified with the optional resourceFileName parameter) exists in the output directory,
     * it contains a list of source files to be included. Filter out any files in the vSources
     * sequence that are in this file so we don't include the same file multiple times.
     * This complication is an attempt to work-around the fact that clients used to have to
@@ -91,18 +92,21 @@ trait BackendCompilationUtilities {
     * @param dir output directory
     * @param vSources list of additional Verilog sources to compile
     * @param cppHarness C++ testharness to compile/link against
+    * @param suppressVcd specifies if VCD tracing should be suppressed
+    * @param resourceFileName specifies what filename to look for to find a .f file
     */
   def verilogToCpp(
     dutFile: String,
     dir: File,
     vSources: Seq[File],
     cppHarness: File,
-    suppressVcd: Boolean = false
+    suppressVcd: Boolean = false,
+    resourceFileName: String = firrtl.transforms.BlackBoxSourceHelper.defaultFileListName
   ): ProcessBuilder = {
 
     val topModule = dutFile
 
-    val list_file = new File(dir, firrtl.transforms.BlackBoxSourceHelper.fileListName)
+    val list_file = new File(dir, resourceFileName)
     val blackBoxVerilogList = {
       if(list_file.exists()) {
         Seq("-f", list_file.getAbsolutePath)
@@ -113,7 +117,7 @@ trait BackendCompilationUtilities {
     }
 
     // Don't include the same file multiple times.
-    // If it's in BlackBoxSourceHelper.fileListName, don't explicitly include it on the command line.
+    // If it's in the main .f resource file, don't explicitly include it on the command line.
     // Build a set of canonical file paths to use as a filter to exclude already included additional Verilog sources.
     val blackBoxHelperFiles: Set[String] = {
       if(list_file.exists()) {
