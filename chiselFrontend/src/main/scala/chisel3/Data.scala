@@ -501,7 +501,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
     case _ => None
   }
 
-  def isLit(): Boolean = litArg.isDefined
+  def isLit(): Boolean = litOption.isDefined
 
   /**
    * If this is a literal that is representable as bits, returns the value as a BigInt.
@@ -728,6 +728,9 @@ object WireDefault {
 }
 
 package internal {
+
+  import chisel3.BitsLike
+
   /** RHS (source) for Invalidate API.
     * Causes connection logic to emit a DefInvalid when connected to an output port (or wire).
     */

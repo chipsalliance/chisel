@@ -93,7 +93,7 @@ class BadBoolConversion extends Module {
 
 class NegativeShift(t: => Bits) extends Module {
   val io = IO(new Bundle {})
-  Reg(t) >> -1
+  Reg(t).asUInt >> -1
 }
 
 class UIntLitExtractTester extends BasicTester {
