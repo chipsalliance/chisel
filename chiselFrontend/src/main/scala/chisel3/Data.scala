@@ -729,8 +729,6 @@ object WireDefault {
 
 package internal {
 
-  import chisel3.BitsLike
-
   /** RHS (source) for Invalidate API.
     * Causes connection logic to emit a DefInvalid when connected to an output port (or wire).
     */
