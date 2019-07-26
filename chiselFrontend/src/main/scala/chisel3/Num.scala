@@ -1,8 +1,14 @@
 // See LICENSE for license details.
 package chisel3
 
+import chisel3.experimental.FixedPoint
+import chisel3.internal.Builder.pushOp
+import chisel3.internal.firrtl.{BinaryPoint, DefPrim, ILit, KnownBinaryPoint}
+import chisel3.internal.firrtl.PrimOp.AsFixedPointOp
+
 import scala.language.experimental.macros
-import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform, SourceInfoWhiteboxTransform}
+import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform}
+import chisel3.internal.throwException
 // scalastyle:off method.name number.of.methods
 
 // REVIEW TODO: Further discussion needed on what Num actually is.
@@ -25,8 +31,7 @@ import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform, SourceInfoW
   * @define unchangedWidth  @note The width of the returned $numType is unchanged, i.e., the `width of this`.
   */
 trait Num[T <: Data] {
-
-
+  this: T =>
   /** Unary negation (expanding width)
    *
    * @return a $coll equal to zero minus this $coll
@@ -114,9 +119,6 @@ trait Num[T <: Data] {
     */
   final def < (that: T): Bool = macro SourceInfoTransform.thatArg
 
-  /** @group SourceInfoTransformMacro */
-  def do_< (that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
-
   /** Less than or equal to operator
     *
     * @param that a $numType
@@ -124,9 +126,6 @@ trait Num[T <: Data] {
     * @group Comparison
     */
   final def <= (that: T): Bool = macro SourceInfoTransform.thatArg
-
-  /** @group SourceInfoTransformMacro */
-  def do_<= (that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
 
   /** Greater than operator
     *
@@ -136,8 +135,10 @@ trait Num[T <: Data] {
     */
   final def > (that: T): Bool = macro SourceInfoTransform.thatArg
 
-  /** @group SourceInfoTransformMacro */
+  def do_< (that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
   def do_> (that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
+  def do_<= (that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
+  def do_>= (that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
 
   /** Greater than or equal to operator
     *
@@ -147,8 +148,6 @@ trait Num[T <: Data] {
     */
   final def >= (that: T): Bool = macro SourceInfoTransform.thatArg
 
-  /** @group SourceInfoTransformMacro */
-  def do_>= (that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
 
   /** Absolute value operator
     *
@@ -187,107 +186,6 @@ trait Num[T <: Data] {
   def do_max(that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
     Mux(this < that, that, this.asInstanceOf[T])
 
-//  def do_< (that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
-//  def do_> (that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
-//  def do_<= (that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
-//  def do_>= (that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
-
-
-  /** Dynamic not equals operator
-   *
-   * @param that a hardware $coll
-   * @return a hardware [[Bool]] asserted if this $coll is not equal to `that`
-   * @group Comparison
-   */
-  def =/= (that: T): Bool = macro SourceInfoTransform.thatArg
-
-  /** Dynamic equals operator
-   *
-   * @param that a hardware $coll
-   * @return a hardware [[Bool]] asserted if this $coll is equal to `that`
-   * @group Comparison
-   */
-  def === (that: T): Bool = macro SourceInfoTransform.thatArg
-
-  /** @group SourceInfoTransformMacro */
-  def do_=/= (that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
-  /** @group SourceInfoTransformMacro */
-  def do_=== (that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
-
-  /** @group SourceInfoTransformMacro */
-  def do_& (that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T
-  /** @group SourceInfoTransformMacro */
-  def do_| (that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T
-  /** @group SourceInfoTransformMacro */
-  def do_^ (that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T
-
-
-  /** Bitwise inversion operator
-   *
-   * @return this $coll with each bit inverted
-   * @group Bitwise
-   */
-  def unary_~ (): T = macro SourceInfoWhiteboxTransform.noArg
-
-
-  /** Static left shift operator
-   *
-   * @param that an amount to shift by
-   * @return this $coll with `that` many zeros concatenated to its least significant end
-   * $sumWidthInt
-   * @group Bitwise
-   */
-  // REVIEW TODO: redundant
-  // REVIEW TODO: should these return this.type or T?
-  def << (that: BigInt): T = macro SourceInfoWhiteboxTransform.thatArg
-
-  /** Static left shift operator
-   *
-   * @param that an amount to shift by
-   * @return this $coll with `that` many zeros concatenated to its least significant end
-   * $sumWidthInt
-   * @group Bitwise
-   */
-  def << (that: Int): T = macro SourceInfoWhiteboxTransform.thatArg
-
-  /** Dynamic left shift operator
-   *
-   * @param that a hardware component
-   * @return this $coll dynamically shifted left by `that` many places, shifting in zeros from the right
-   * @note The width of the returned $coll is `width of this + pow(2, width of that) - 1`.
-   * @group Bitwise
-   */
-  def << (that: UInt): T = macro SourceInfoWhiteboxTransform.thatArg
-
-  /** Static right shift operator
-   *
-   * @param that an amount to shift by
-   * @return this $coll with `that` many least significant bits truncated
-   * $unchangedWidth
-   * @group Bitwise
-   */
-  // REVIEW TODO: redundant
-  def >> (that: BigInt): T = macro SourceInfoWhiteboxTransform.thatArg
-
-  /** Static right shift operator
-   *
-   * @param that an amount to shift by
-   * @return this $coll with `that` many least significant bits truncated
-   * $unchangedWidth
-   * @group Bitwise
-   */
-  def >> (that: Int): T = macro SourceInfoWhiteboxTransform.thatArg
-
-  /** Dynamic right shift operator
-   *
-   * @param that a hardware component
-   * @return this $coll dynamically shifted right by the value of `that` component, inserting zeros into the most
-   * significant bits.
-   * $unchangedWidth
-   * @group Bitwise
-   */
-  def >> (that: UInt): T = macro SourceInfoWhiteboxTransform.thatArg
-
   /** Addition operator (expanding width)
    *
    * @param that a hardware $coll
@@ -324,52 +222,31 @@ trait Num[T <: Data] {
    */
   final def -% (that: T): T = macro SourceInfoTransform.thatArg
 
-  /** Bitwise and operator
+  // The equality operators being here and not defined for [[Bits]] makes it possible to catch comparison of different
+  // types tobe caught as an error at compile time (+IDE error highlighting/hints)
+  /** Dynamic not equals operator
    *
    * @param that a hardware $coll
-   * @return the bitwise and of  this $coll and `that`
-   * $maxWidth
-   * @group Bitwise
+   * @return a hardware [[Bool]] asserted if this $coll is not equal to `that`
+   * @group Comparison
    */
-  def & (that: T): T = macro SourceInfoTransform.thatArg
+  def =/= (that: T): Bool = macro SourceInfoTransform.thatArg
 
-  /** Bitwise or operator
+  /** Dynamic equals operator
    *
    * @param that a hardware $coll
-   * @return the bitwise or of this $coll and `that`
-   * $maxWidth
-   * @group Bitwise
+   * @return a hardware [[Bool]] asserted if this $coll is equal to `that`
+   * @group Comparison
    */
-  def | (that: T): T = macro SourceInfoTransform.thatArg
+  def === (that: T): Bool = macro SourceInfoTransform.thatArg
 
-  /** Bitwise exclusive or (xor) operator
+
+  /** Reinterpret this $coll as a [[FixedPoint]].
    *
-   * @param that a hardware $coll
-   * @return the bitwise xor of this $coll and `that`
-   * $maxWidth
-   * @group Bitwise
+   * @note The value is not guaranteed to be preserved. For example, a [[UInt]] of width 3 and value 7 (0b111) would
+   * become a [[FixedPoint]] with value -1. The interpretation of the number is also affected by the specified binary
+   * point. '''Caution is advised!'''
    */
-  def ^ (that: T): T = macro SourceInfoTransform.thatArg
-
-  /** @group SourceInfoTransformMacro */
-  def do_unary_~ (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T
-
-  /** @group SourceInfoTransformMacro */
-  def do_<< (that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T
-
-  /** @group SourceInfoTransformMacro */
-  def do_<< (that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T
-
-  /** @group SourceInfoTransformMacro */
-  def do_<< (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T
-
-  /** @group SourceInfoTransformMacro */
-  def do_>> (that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T
-
-  /** @group SourceInfoTransformMacro */
-  def do_>> (that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T
-
-  /** @group SourceInfoTransformMacro */
-  def do_>> (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T
+  final def asFixedPoint(that: BinaryPoint): FixedPoint = macro SourceInfoTransform.thatArg
 
 }
