@@ -1347,7 +1347,10 @@ package experimental {
 
     private[chisel3] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) {
       // TODO: redefine as just asFixedPoint on that, where FixedPoint.asFixedPoint just works.
-      that.asSInt.asFixedPoint(this.binaryPoint)
+      this := (that match {
+        case fp: FixedPoint => fp.asSInt.asFixedPoint(this.binaryPoint)
+        case _ => that.asUInt.asFixedPoint(this.binaryPoint)
+      })
     }
     //TODO(chick): Consider "convert" as an arithmetic conversion to UInt/SInt
   }

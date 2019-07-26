@@ -1,14 +1,9 @@
 // See LICENSE for license details.
 package chisel3
 
-import chisel3.experimental.FixedPoint
-import chisel3.internal.Builder.pushOp
-import chisel3.internal.firrtl.{BinaryPoint, DefPrim, ILit, KnownBinaryPoint}
-import chisel3.internal.firrtl.PrimOp.AsFixedPointOp
-
 import scala.language.experimental.macros
 import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform}
-import chisel3.internal.throwException
+
 // scalastyle:off method.name number.of.methods
 
 // REVIEW TODO: Further discussion needed on what Num actually is.
@@ -239,14 +234,5 @@ trait Num[T <: Data] {
    * @group Comparison
    */
   def === (that: T): Bool = macro SourceInfoTransform.thatArg
-
-
-  /** Reinterpret this $coll as a [[FixedPoint]].
-   *
-   * @note The value is not guaranteed to be preserved. For example, a [[UInt]] of width 3 and value 7 (0b111) would
-   * become a [[FixedPoint]] with value -1. The interpretation of the number is also affected by the specified binary
-   * point. '''Caution is advised!'''
-   */
-  final def asFixedPoint(that: BinaryPoint): FixedPoint = macro SourceInfoTransform.thatArg
 
 }
