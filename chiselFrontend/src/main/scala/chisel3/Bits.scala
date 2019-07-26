@@ -649,17 +649,7 @@ sealed class UInt private[chisel3] (override val width: Width) extends Bits(widt
   @deprecated("Use '=/=', which avoids potential precedence problems", "chisel3")
   final def != (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = this =/= that
 
-  /** Unary not
-    *
-    * @return a hardware [[Bool]] asserted if this $coll equals zero
-    * @group Bitwise
-    */
-  final def unary_! () : Bool = macro SourceInfoTransform.noArg
-
   override def unary_~ (): UInt = macro SourceInfoWhiteboxTransform.noArg
-
-  /** @group SourceInfoTransformMacro */
-  def do_unary_! (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) : Bool = this === 0.U(1.W)
 
   override def do_<< (that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     binop(sourceInfo, UInt(this.width + that), ShiftLeftOp, validateShiftAmount(that))
@@ -973,7 +963,7 @@ sealed trait Reset extends Element with ToBoolable
   * @define coll [[Bool]]
   * @define numType $coll
   */
-sealed class Bool() extends UInt(1.W) with Reset {
+sealed class Bool extends UInt(1.W) with Reset {
   override def toString: String = {
     val bindingString = litToBooleanOption match {
       case Some(value) => s"($value)"
@@ -1039,6 +1029,15 @@ sealed class Bool() extends UInt(1.W) with Reset {
   /** @group SourceInfoTransformMacro */
   override def do_unary_~ (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
     unop(sourceInfo, Bool(), BitNotOp)
+
+  /** Unary not
+   *
+   * @return a hardware [[Bool]] asserted if this $coll equals zero
+   * @group Bitwise
+   */
+  final def unary_! () : Bool = macro SourceInfoTransform.noArg
+  /** @group SourceInfoTransformMacro */
+  def do_unary_! (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) : Bool = this === 0.B
 
   /** Logical or operator
     *
@@ -1157,7 +1156,6 @@ package experimental {
       throwException(s"division is illegal on FixedPoint types")
     override def do_% (that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
       throwException(s"mod is illegal on FixedPoint types")
-
 
     /** Multiplication operator
       *
@@ -1323,10 +1321,7 @@ package experimental {
 
     private[chisel3] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) {
       // TODO: redefine as just asFixedPoint on that, where FixedPoint.asFixedPoint just works.
-      this := (that match {
-        case fp: FixedPoint => fp.asSInt.asFixedPoint(this.binaryPoint)
-        case _ => that.asSInt.asFixedPoint(this.binaryPoint) // ??? FIXME is this ok or should it throw an error?
-      })
+      that.asSInt.asFixedPoint(this.binaryPoint)
     }
     //TODO(chick): Consider "convert" as an arithmetic conversion to UInt/SInt
   }
