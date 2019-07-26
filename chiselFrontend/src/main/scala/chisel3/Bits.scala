@@ -580,9 +580,21 @@ sealed class UInt private[chisel3] (override val width: Width) extends Bits(widt
   def do_^ (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     binop(sourceInfo, UInt(this.width max that.width), BitXorOp, that)
 
+  /** Bitwise inversion operator
+   *
+   * @return this $coll with each bit inverted
+   * @group Bitwise
+   */
+  override def unary_~ (): UInt = macro SourceInfoWhiteboxTransform.noArg
+
   /** @group SourceInfoTransformMacro */
   override def do_unary_~ (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     unop(sourceInfo, UInt(width = width), BitNotOp)
+
+  @deprecated("unary_! should only be used with type Bool. Use explicit equality with 0 (x === 0) for UInt values", "chisel3")
+  def unary_! () : Bool = macro SourceInfoTransform.noArg
+  /** @group SourceInfoTransformMacro */
+  def do_unary_! (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) : Bool = this === 0.U
 
   // REVIEW TODO: Can these be defined on Bits?
   /** Or reduction operator
@@ -648,8 +660,6 @@ sealed class UInt private[chisel3] (override val width: Width) extends Bits(widt
   @chiselRuntimeDeprecated
   @deprecated("Use '=/=', which avoids potential precedence problems", "chisel3")
   final def != (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = this =/= that
-
-  override def unary_~ (): UInt = macro SourceInfoWhiteboxTransform.noArg
 
   override def do_<< (that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     binop(sourceInfo, UInt(this.width + that), ShiftLeftOp, validateShiftAmount(that))
@@ -811,6 +821,12 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
   def do_^ (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
     binop(sourceInfo, UInt(this.width max that.width), BitXorOp, that).asSInt
 
+  /** Bitwise inversion operator
+   *
+   * @return this $coll with each bit inverted
+   * @group Bitwise
+   */
+  override def unary_~ (): SInt = macro SourceInfoWhiteboxTransform.noArg
   /** @group SourceInfoTransformMacro */
   override def do_unary_~ (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
     unop(sourceInfo, UInt(width = width), BitNotOp).asSInt
@@ -1026,6 +1042,12 @@ sealed class Bool extends UInt(1.W) with Reset {
   def do_^ (that: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
     binop(sourceInfo, Bool(), BitXorOp, that)
 
+  /** Bitwise inversion operator
+   *
+   * @return this $coll with each bit inverted
+   * @group Bitwise
+   */
+  override def unary_~ (): Bool = macro SourceInfoWhiteboxTransform.noArg
   /** @group SourceInfoTransformMacro */
   override def do_unary_~ (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
     unop(sourceInfo, Bool(), BitNotOp)
@@ -1035,9 +1057,9 @@ sealed class Bool extends UInt(1.W) with Reset {
    * @return a hardware [[Bool]] asserted if this $coll equals zero
    * @group Bitwise
    */
-  final def unary_! () : Bool = macro SourceInfoTransform.noArg
+  final override def unary_! () : Bool = macro SourceInfoTransform.noArg
   /** @group SourceInfoTransformMacro */
-  def do_unary_! (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) : Bool = this === 0.B
+  override def do_unary_! (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) : Bool = this === 0.U
 
   /** Logical or operator
     *
@@ -1230,6 +1252,10 @@ package experimental {
       case _ =>
         binop(sourceInfo, FixedPoint(UnknownWidth(), KnownBinaryPoint(that)), SetBinaryPoint, that)
     }
+
+
+
+    override def unary_~ (): FixedPoint = macro SourceInfoWhiteboxTransform.noArg
 
     /** @group SourceInfoTransformMacro */
     override def do_unary_~ (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
