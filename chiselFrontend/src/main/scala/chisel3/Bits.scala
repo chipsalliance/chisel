@@ -492,7 +492,7 @@ abstract trait Num[T <: Data] {
     *
     * @param that a $numType
     * @return the sum of this $coll and `that`
-    * $maxWidthPlusOne
+    * $maxWidth
     * @group Arithmetic
     */
   final def + (that: T): T = macro SourceInfoTransform.thatArg
