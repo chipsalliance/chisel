@@ -46,22 +46,31 @@ private[chisel3] sealed trait ToBoolable extends Element {
   * @define unchangedWidth @note The width of the returned $coll is unchanged, i.e., the `width of this`.
   */
 //scalastyle:off number.of.methods
-sealed abstract class Bits(private[chisel3] val width: Width) extends ToBoolable {
+sealed class Bits(private[chisel3] val width: Width) extends ToBoolable {
   // TODO: perhaps make this concrete?
   // Arguments for: self-checking code (can't do arithmetic on bits)
   // Arguments against: generates down to a FIRRTL UInt anyways
 
 
   // Only used for in a few cases, hopefully to be removed
-  private[chisel3] def cloneTypeWidth(width: Width): this.type
+  private[chisel3] def cloneTypeWidth(width: Width): this.type =
+    new UInt(width).asInstanceOf[this.type]
 
   def cloneType: this.type = cloneTypeWidth(width)
+
+  private[chisel3] override def typeEquivalent(that: Data): Boolean =
+    this.getClass == that.getClass && this.width == that.width  // TODO: should this be true for unspecified widths?
 
   protected final def validateShiftAmount(x: Int): Int = {
     if (x < 0) {
       Builder.error(s"Negative shift amounts are illegal (got $x)")
     }
     x
+  }
+
+  private[chisel3] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
+                                                            compileOptions: CompileOptions): Unit = {
+    this := that
   }
 
   // REVIEW TODO: double check ops conventions against FIRRTL
@@ -258,11 +267,14 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends ToBoolable
     * @note The arithmetic value is not preserved if the most-significant bit is set. For example, a [[UInt]] of
     * width 3 and value 7 (0b111) would become an [[SInt]] of width 3 and value -1.
     */
-  final def asSInt(): SInt = macro SourceInfoTransform.noArg
+  def asSInt(): SInt = macro SourceInfoTransform.noArg
 
   /** @group SourceInfoTransformMacro */
-  def do_asSInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt
+  def do_asSInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
+    pushOp(DefPrim(sourceInfo, SInt(width), AsSIntOp, ref))
 
+  override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
+    pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref))
 
   /** Reinterpret cast to Bits. */
   @chiselRuntimeDeprecated
@@ -639,8 +651,6 @@ sealed class UInt private[chisel3] (override val width: Width) extends Bits(widt
   def do_zext(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
     pushOp(DefPrim(sourceInfo, SInt(width + 1), ConvertOp, ref))
 
-  override def do_asSInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
-    pushOp(DefPrim(sourceInfo, SInt(width), AsSIntOp, ref))
   override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = this
 
   private[chisel3] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
@@ -693,9 +703,6 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
     }
     s"SInt$width$bindingString"
   }
-
-  private[chisel3] override def typeEquivalent(that: Data): Boolean =
-    this.getClass == that.getClass && this.width == that.width  // TODO: should this be true for unspecified widths?
 
   private[chisel3] override def cloneTypeWidth(w: Width): this.type =
     new SInt(w).asInstanceOf[this.type]
@@ -785,8 +792,6 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
   override def do_>> (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
     binop(sourceInfo, SInt(this.width), DynamicShiftRightOp, that)
 
-  override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
-    pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref))
   override def do_asSInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt = this
 
   private[chisel3] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) {
@@ -1151,11 +1156,6 @@ package experimental {
       (this >> castToInt(that, "Shift amount")).asFixedPoint(this.binaryPoint)
     override def do_>> (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
       binop(sourceInfo, FixedPoint(this.width, this.binaryPoint), DynamicShiftRightOp, that)
-
-    override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
-      pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref))
-    override def do_asSInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
-      pushOp(DefPrim(sourceInfo, SInt(this.width), AsSIntOp, ref))
 
     private[chisel3] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) {
       // TODO: redefine as just asFixedPoint on that, where FixedPoint.asFixedPoint just works.
