@@ -501,7 +501,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
     case _ => None
   }
 
-  def isLit(): Boolean = litOption.isDefined
+  def isLit(): Boolean = litArg.isDefined
 
   /**
    * If this is a literal that is representable as bits, returns the value as a BigInt.
@@ -728,7 +728,6 @@ object WireDefault {
 }
 
 package internal {
-
   /** RHS (source) for Invalidate API.
     * Causes connection logic to emit a DefInvalid when connected to an output port (or wire).
     */
