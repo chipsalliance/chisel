@@ -2,7 +2,6 @@
 package chisel3
 
 import scala.language.experimental.macros
-import collection.mutable
 import chisel3.internal._
 import chisel3.internal.Builder.pushOp
 import chisel3.internal.firrtl._
@@ -50,7 +49,6 @@ sealed class Bits(private[chisel3] val width: Width) extends ToBoolable {
   // TODO: perhaps make this concrete?
   // Arguments for: self-checking code (can't do arithmetic on bits)
   // Arguments against: generates down to a FIRRTL UInt anyways
-
 
   // Only used for in a few cases, hopefully to be removed
   private[chisel3] def cloneTypeWidth(width: Width): this.type =
@@ -448,10 +446,10 @@ sealed class Bits(private[chisel3] val width: Width) extends ToBoolable {
     binop(sourceInfo, Bits(), BitAndOp, that)
   /** @group SourceInfoTransformMacro */
   def do_| (that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits =
-    binop(sourceInfo, Bool(), BitOrOp, that)
+    binop(sourceInfo, Bits(), BitOrOp, that)
   /** @group SourceInfoTransformMacro */
   def do_^ (that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits =
-    binop(sourceInfo, Bool(), BitXorOp, that)
+    binop(sourceInfo, Bits(), BitXorOp, that)
   
 }
 
@@ -662,28 +660,18 @@ sealed class UInt private[chisel3] (override val width: Width) extends Bits(widt
     binop(sourceInfo, SInt((this.width max that.width) + 1), SubOp, that)
 }
 
-// This is currently a factory because both Bits and UInt inherit it.
-trait UIntFactoryBase {
+trait BitsFactory {
   /** Create a UInt type with inferred width. */
-  def apply(): UInt = apply(Width())
+  def apply(): Bits = apply(Width())
   /** Create a UInt port with specified width. */
-  def apply(width: Width): UInt = new UInt(width)
+  def apply(width: Width): Bits = new Bits(width)
 
-   /** Create a UInt literal with specified width. */
-  protected[chisel3] def Lit(value: BigInt, width: Width): UInt = {
+  /** Create a UInt literal with specified width. */
+  protected[chisel3] def Lit(value: BigInt, width: Width): Bits = {
     val lit = ULit(value, width)
-    val result = new UInt(lit.width)
+    val result = new Bits(lit.width)
     // Bind result to being an Literal
     lit.bindLitArg(result)
-  }
-
-  /** Create a UInt with the specified range */
-  def apply(range: Range): UInt = {
-    apply(range.getWidth)
-  }
-  /** Create a UInt with the specified range */
-  def apply(range: (NumericBound[Int], NumericBound[Int])): UInt = {
-    apply(KnownUIntRange(range._1, range._2))
   }
 }
 
@@ -826,31 +814,6 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
   def ^ (that: SInt): SInt = macro SourceInfoTransform.thatArg
 }
 
-trait SIntFactoryBase {
-  /** Create an SInt type with inferred width. */
-  def apply(): SInt = apply(Width())
-  /** Create a SInt type or port with fixed width. */
-  def apply(width: Width): SInt = new SInt(width)
-
-  /** Create a SInt with the specified range */
-  def apply(range: Range): SInt = {
-    apply(range.getWidth)
-  }
-  /** Create a SInt with the specified range */
-  def apply(range: (NumericBound[Int], NumericBound[Int])): SInt = {
-    apply(KnownSIntRange(range._1, range._2))
-  }
-
-   /** Create an SInt literal with specified width. */
-  protected[chisel3] def Lit(value: BigInt, width: Width): SInt = {
-    val lit = SLit(value, width)
-    val result = new SInt(lit.width)
-    lit.bindLitArg(result)
-  }
-}
-
-object SInt extends SIntFactoryBase
-
 sealed trait Reset extends Element with ToBoolable
 
 // REVIEW TODO: Why does this extend UInt and not Bits? Does defining airth
@@ -972,23 +935,6 @@ sealed class Bool extends UInt(1.W) with Reset {
   /** @group SourceInfoTransformMacro */
   def do_asClock(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Clock = pushOp(DefPrim(sourceInfo, Clock(), AsClockOp, ref))
 }
-
-trait BoolFactoryBase {
-  /** Creates an empty Bool.
-   */
-  def apply(): Bool = new Bool()
-
-  /** Creates Bool literal.
-   */
-  protected[chisel3] def Lit(x: Boolean): Bool = {
-    val result = new Bool()
-    val lit = ULit(if (x) 1 else 0, Width(1))
-    // Ensure we have something capable of generating a name.
-    lit.bindLitArg(result)
-  }
-}
-
-object Bool extends BoolFactoryBase
 
 package experimental {
   //scalastyle:off number.of.methods
@@ -1134,9 +1080,7 @@ package experimental {
     override def do_unary_~ (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
       throwException(s"Not is illegal on $this")
 
-
     // TODO(chick): Consider comparison with UInt and SInt
-
 
     override def do_abs(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint = {
       // TODO: remove this once we have CompileOptions threaded through the macro system.
@@ -1286,79 +1230,5 @@ package experimental {
         def BP: BinaryPoint = BinaryPoint(int) // scalastyle:ignore method.name
       }
     }
-  }
-  /** Data type for representing bidirectional bitvectors of a given width
-    *
-    * Analog support is limited to allowing wiring up of Verilog BlackBoxes with bidirectional (inout)
-    * pins. There is currently no support for reading or writing of Analog types within Chisel code.
-    *
-    * Given that Analog is bidirectional, it is illegal to assign a direction to any Analog type. It
-    * is legal to "flip" the direction (since Analog can be a member of aggregate types) which has no
-    * effect.
-    *
-    * Analog types are generally connected using the bidirectional [[attach]] mechanism, but also
-    * support limited bulkconnect `<>`. Analog types are only allowed to be bulk connected *once* in a
-    * given module. This is to prevent any surprising consequences of last connect semantics.
-    *
-    * @note This API is experimental and subject to change
-    */
-  final class Analog private (private[chisel3] val width: Width) extends Element {
-    require(width.known, "Since Analog is only for use in BlackBoxes, width must be known")
-
-    override def toString: String = {
-      s"Analog$width$bindingToString"
-    }
-
-    private[chisel3] override def typeEquivalent(that: Data): Boolean =
-      that.isInstanceOf[Analog] && this.width == that.width
-
-    override def litOption: Option[BigInt] = None
-
-    def cloneType: this.type = new Analog(width).asInstanceOf[this.type]
-
-    // Used to enforce single bulk connect of Analog types, multi-attach is still okay
-    // Note that this really means 1 bulk connect per Module because a port can
-    //   be connected in the parent module as well
-    private[chisel3] val biConnectLocs = mutable.Map.empty[RawModule, SourceInfo]
-
-    // Define setter/getter pairing
-    // Analog can only be bound to Ports and Wires (and Unbound)
-    private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection) {
-      SpecifiedDirection.fromParent(parentDirection, specifiedDirection) match {
-        case SpecifiedDirection.Unspecified | SpecifiedDirection.Flip =>
-        case x => throwException(s"Analog may not have explicit direction, got '$x'")
-      }
-      val targetTopBinding = target match {
-        case target: TopBinding => target
-        case ChildBinding(parent) => parent.topBinding
-        // See https://github.com/freechipsproject/chisel3/pull/946
-        case SampleElementBinding(parent) => parent.topBinding
-      }
-
-      // Analog counts as different directions based on binding context
-      targetTopBinding match {
-        case WireBinding(_) => direction = ActualDirection.Unspecified  // internal wire
-        case PortBinding(_) => direction = ActualDirection.Bidirectional(ActualDirection.Default)
-        case x => throwException(s"Analog can only be Ports and Wires, not '$x'")
-      }
-      binding = target
-    }
-
-    override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
-      throwException("Analog does not support asUInt")
-
-    private[chisel3] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
-        compileOptions: CompileOptions): Unit = {
-      throwException("Analog does not support connectFromBits")
-    }
-
-    def toPrintable: Printable = PString("Analog")
-  }
-  /** Object that provides factory methods for [[Analog]] objects
-    *
-    * @note This API is experimental and subject to change
-    */
-  object Analog {
-    def apply(width: Width): Analog = new Analog(width)
   }
 }
