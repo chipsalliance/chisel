@@ -385,24 +385,24 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends ToBoolable
    */
   def >> (that: UInt): Bits = macro SourceInfoWhiteboxTransform.thatArg
 
-
   /** @group SourceInfoTransformMacro */
-  def do_<< (that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
-
+  def do_<< (that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits =
+    binop(sourceInfo, UInt(this.width + that), ShiftLeftOp, validateShiftAmount(that))
   /** @group SourceInfoTransformMacro */
-  def do_<< (that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
-
+  def do_<< (that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits =
+    this << castToInt(that, "Shift amount")
   /** @group SourceInfoTransformMacro */
-  def do_<< (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
-
+  def do_<< (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits =
+    binop(sourceInfo, UInt(this.width.dynamicShiftLeft(that.width)), DynamicShiftLeftOp, that)
   /** @group SourceInfoTransformMacro */
-  def do_>> (that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
-
+  def do_>> (that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits =
+    binop(sourceInfo, UInt(this.width.shiftRight(that)), ShiftRightOp, validateShiftAmount(that))
   /** @group SourceInfoTransformMacro */
-  def do_>> (that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
-
+  def do_>> (that: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits =
+    this >> castToInt(that, "Shift amount")
   /** @group SourceInfoTransformMacro */
-  def do_>> (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
+  def do_>> (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits =
+    binop(sourceInfo, UInt(this.width), DynamicShiftRightOp, that)
 
   /** Bitwise and operator
    *
@@ -460,80 +460,17 @@ sealed class UInt private[chisel3] (override val width: Width) extends Bits(widt
     s"UInt$width$bindingString"
   }
 
-//  final def unary_- (): UInt = macro SourceInfoTransform.noArg
-//  final def unary_-% (): UInt = macro SourceInfoTransform.noArg
-
   private[chisel3] override def typeEquivalent(that: Data): Boolean =
     that.isInstanceOf[UInt] && this.width == that.width
 
   private[chisel3] override def cloneTypeWidth(w: Width): this.type =
     new UInt(w).asInstanceOf[this.type]
 
-
-  /** Static left shift operator
-   *
-   * @param that an amount to shift by
-   * @return this $coll with `that` many zeros concatenated to its least significant end
-   * $sumWidthInt
-   * @group Bitwise
-   */
-  override def << (that: BigInt): UInt = macro SourceInfoWhiteboxTransform.thatArg
-
-  /** Static left shift operator
-   *
-   * @param that an amount to shift by
-   * @return this $coll with `that` many zeros concatenated to its least significant end
-   * $sumWidthInt
-   * @group Bitwise
-   */
-  override def << (that: Int): UInt = macro SourceInfoWhiteboxTransform.thatArg
-
-  /** Dynamic left shift operator
-   *
-   * @param that a hardware component
-   * @return this $coll dynamically shifted left by `that` many places, shifting in zeros from the right
-   * @note The width of the returned $coll is `width of this + pow(2, width of that) - 1`.
-   * @group Bitwise
-   */
-  override def << (that: UInt): UInt = macro SourceInfoWhiteboxTransform.thatArg
-
-  /** Static right shift operator
-   *
-   * @param that an amount to shift by
-   * @return this $coll with `that` many least significant bits truncated
-   * $unchangedWidth
-   * @group Bitwise
-   */
-  // REVIEW TODO: redundant
-  override def >> (that: BigInt): UInt = macro SourceInfoWhiteboxTransform.thatArg
-
-  /** Static right shift operator
-   *
-   * @param that an amount to shift by
-   * @return this $coll with `that` many least significant bits truncated
-   * $unchangedWidth
-   * @group Bitwise
-   */
-  override def >> (that: Int): UInt = macro SourceInfoWhiteboxTransform.thatArg
-
-  /** Dynamic right shift operator
-   *
-   * @param that a hardware component
-   * @return this $coll dynamically shifted right by the value of `that` component, inserting zeros into the most
-   * significant bits.
-   * $unchangedWidth
-   * @group Bitwise
-   */
-  override def >> (that: UInt): UInt = macro SourceInfoWhiteboxTransform.thatArg
-
-
   /** @group SourceInfoTransformMacro */
   def do_unary_- (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) : UInt = 0.U - this
   /** @group SourceInfoTransformMacro */
   def do_unary_-% (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = 0.U -% this
 
-  override def do_+ (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = this +% that
-  override def do_- (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = this -% that
   override def do_/ (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     binop(sourceInfo, UInt(this.width), DivideOp, that)
   override def do_% (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
@@ -765,16 +702,10 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
 
 
   /** @group SourceInfoTransformMacro */
-  def unary_- (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt = 0.S - this
+  override def do_unary_- (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt = 0.S - this
   /** @group SourceInfoTransformMacro */
-  def unary_-% (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt = 0.S -% this
+  override def do_unary_-% (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt = 0.S -% this
 
-  /** add (default - no growth) operator */
-  override def do_+ (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
-    this +% that
-  /** subtract (default - no growth) operator */
-  override def do_- (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
-    this -% that
   override def do_* (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
     binop(sourceInfo, SInt(this.width + that.width), TimesOp, that)
   override def do_/ (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
@@ -782,6 +713,7 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
   override def do_% (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
     binop(sourceInfo, SInt(this.width), RemOp, that)
 
+  // TODO(kamy) What's so special about *? How about mixed signed/unsigned/FP /,%,+,-,<,>,>=,<=?
   /** Multiplication operator
     *
     * @param that a hardware $coll
@@ -839,62 +771,6 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
   override def do_abs(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt = {
     Mux(this < 0.S, (-this), this)
   }
-
-  /** Static left shift operator
-   *
-   * @param that an amount to shift by
-   * @return this $coll with `that` many zeros concatenated to its least significant end
-   * $sumWidthInt
-   * @group Bitwise
-   */
-  override def << (that: BigInt): SInt = macro SourceInfoWhiteboxTransform.thatArg
-
-  /** Static left shift operator
-   *
-   * @param that an amount to shift by
-   * @return this $coll with `that` many zeros concatenated to its least significant end
-   * $sumWidthInt
-   * @group Bitwise
-   */
-  override def << (that: Int): SInt = macro SourceInfoWhiteboxTransform.thatArg
-
-  /** Dynamic left shift operator
-   *
-   * @param that a hardware component
-   * @return this $coll dynamically shifted left by `that` many places, shifting in zeros from the right
-   * @note The width of the returned $coll is `width of this + pow(2, width of that) - 1`.
-   * @group Bitwise
-   */
-  override def << (that: UInt): SInt = macro SourceInfoWhiteboxTransform.thatArg
-
-  /** Static right shift operator
-   *
-   * @param that an amount to shift by
-   * @return this $coll with `that` many least significant bits truncated
-   * $unchangedWidth
-   * @group Bitwise
-   */
-  // REVIEW TODO: redundant
-  override def >> (that: BigInt): SInt = macro SourceInfoWhiteboxTransform.thatArg
-
-  /** Static right shift operator
-   *
-   * @param that an amount to shift by
-   * @return this $coll with `that` many least significant bits truncated
-   * $unchangedWidth
-   * @group Bitwise
-   */
-  override def >> (that: Int): SInt = macro SourceInfoWhiteboxTransform.thatArg
-
-  /** Dynamic right shift operator
-   *
-   * @param that a hardware component
-   * @return this $coll dynamically shifted right by the value of `that` component, inserting zeros into the most
-   * significant bits.
-   * $unchangedWidth
-   * @group Bitwise
-   */
-  override def >> (that: UInt): SInt = macro SourceInfoWhiteboxTransform.thatArg
 
   override def do_<< (that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
     binop(sourceInfo, SInt(this.width + that), ShiftLeftOp, validateShiftAmount(that))
@@ -1160,18 +1036,12 @@ package experimental {
     def litToDouble: Double = litToDoubleOption.get
 
     /** @group SourceInfoTransformMacro */
-    final def unary_- (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
+    final def do_unary_- (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
       FixedPoint.fromBigInt(0) - this
     /** @group SourceInfoTransformMacro */
-    final def unary_-% (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
+    final def do_unary_-% (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
       FixedPoint.fromBigInt(0) -% this
 
-    /** add (default - no growth) operator */
-    override def do_+ (that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
-      this +% that
-    /** subtract (default - no growth) operator */
-    override def do_- (that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
-      this -% that
     override def do_* (that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
       binop(sourceInfo, FixedPoint(this.width + that.width, this.binaryPoint + that.binaryPoint), TimesOp, that)
     override def do_/ (that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
@@ -1253,8 +1123,6 @@ package experimental {
         binop(sourceInfo, FixedPoint(UnknownWidth(), KnownBinaryPoint(that)), SetBinaryPoint, that)
     }
 
-
-
     override def unary_~ (): FixedPoint = macro SourceInfoWhiteboxTransform.noArg
 
     /** @group SourceInfoTransformMacro */
@@ -1270,62 +1138,6 @@ package experimental {
       import chisel3.ExplicitCompileOptions.NotStrict
       Mux(this < 0.F(0.BP), 0.F(0.BP) - this, this)
     }
-
-    /** Static left shift operator
-     *
-     * @param that an amount to shift by
-     * @return this $coll with `that` many zeros concatenated to its least significant end
-     * $sumWidthInt
-     * @group Bitwise
-     */
-    override def << (that: BigInt): FixedPoint = macro SourceInfoWhiteboxTransform.thatArg
-
-    /** Static left shift operator
-     *
-     * @param that an amount to shift by
-     * @return this $coll with `that` many zeros concatenated to its least significant end
-     * $sumWidthInt
-     * @group Bitwise
-     */
-    override def << (that: Int): FixedPoint = macro SourceInfoWhiteboxTransform.thatArg
-
-    /** Dynamic left shift operator
-     *
-     * @param that a hardware component
-     * @return this $coll dynamically shifted left by `that` many places, shifting in zeros from the right
-     * @note The width of the returned $coll is `width of this + pow(2, width of that) - 1`.
-     * @group Bitwise
-     */
-    override def << (that: UInt): FixedPoint = macro SourceInfoWhiteboxTransform.thatArg
-
-    /** Static right shift operator
-     *
-     * @param that an amount to shift by
-     * @return this $coll with `that` many least significant bits truncated
-     * $unchangedWidth
-     * @group Bitwise
-     */
-    // REVIEW TODO: redundant
-    override def >> (that: BigInt): FixedPoint = macro SourceInfoWhiteboxTransform.thatArg
-
-    /** Static right shift operator
-     *
-     * @param that an amount to shift by
-     * @return this $coll with `that` many least significant bits truncated
-     * $unchangedWidth
-     * @group Bitwise
-     */
-    override def >> (that: Int): FixedPoint = macro SourceInfoWhiteboxTransform.thatArg
-
-    /** Dynamic right shift operator
-     *
-     * @param that a hardware component
-     * @return this $coll dynamically shifted right by the value of `that` component, inserting zeros into the most
-     * significant bits.
-     * $unchangedWidth
-     * @group Bitwise
-     */
-    override def >> (that: UInt): FixedPoint = macro SourceInfoWhiteboxTransform.thatArg
 
     override def do_<< (that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
       binop(sourceInfo, FixedPoint(this.width + that, this.binaryPoint), ShiftLeftOp, validateShiftAmount(that))
@@ -1474,7 +1286,6 @@ package experimental {
         def BP: BinaryPoint = BinaryPoint(int) // scalastyle:ignore method.name
       }
     }
-
   }
   /** Data type for representing bidirectional bitvectors of a given width
     *
