@@ -45,7 +45,7 @@ private[chisel3] sealed trait ToBoolable extends Element {
   * @define unchangedWidth @note The width of the returned $coll is unchanged, i.e., the `width of this`.
   */
 //scalastyle:off number.of.methods
-sealed class Bits(private[chisel3] val width: Width) extends ToBoolable {
+sealed abstract class Bits(private[chisel3] val width: Width) extends ToBoolable {
   // TODO: perhaps make this concrete?
   // Arguments for: self-checking code (can't do arithmetic on bits)
   // Arguments against: generates down to a FIRRTL UInt anyways
@@ -658,21 +658,6 @@ sealed class UInt private[chisel3] (override val width: Width) extends Bits(widt
 
   private def subtractAsSInt(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
     binop(sourceInfo, SInt((this.width max that.width) + 1), SubOp, that)
-}
-
-trait BitsFactory {
-  /** Create a UInt type with inferred width. */
-  def apply(): Bits = apply(Width())
-  /** Create a UInt port with specified width. */
-  def apply(width: Width): Bits = new Bits(width)
-
-  /** Create a UInt literal with specified width. */
-  protected[chisel3] def Lit(value: BigInt, width: Width): Bits = {
-    val lit = ULit(value, width)
-    val result = new Bits(lit.width)
-    // Bind result to being an Literal
-    lit.bindLitArg(result)
-  }
 }
 
 /** A data type for signed integers, represented as a binary bitvector. Defines arithmetic operations between other

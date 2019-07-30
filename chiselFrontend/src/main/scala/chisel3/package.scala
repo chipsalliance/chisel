@@ -290,8 +290,6 @@ package object chisel3 {
     def apply(x: Boolean): Bool = x.B
   }
 
-  //  object Bits extends BitsFactory
-  // TODO(kamy) Maybe deprecate Bits object and define a Mere/Just/Pure/...Bits?
   object Bits extends UIntFactory
   object UInt extends UIntFactory
   object SInt extends SIntFactory
