@@ -62,16 +62,16 @@ package object core {
 
   // These provide temporary compatibility for those who foolishly imported from chisel3.core
   @deprecated("Avoid importing from chisel3.core, these are not public APIs and may change at any time. " +
-    " Use chisel3.experimental.RawModule instead.", "since the beginning of time")
+    " Use chisel3.experimental.RawModule instead. This alias will be removed in 3.3.", "since the beginning of time")
   type RawModule = chisel3.experimental.RawModule
   @deprecated("Avoid importing from chisel3.core, these are not public APIs and may change at any time. " +
-    "Use chisel3.experimental.MultiIOModule instead.", "since the beginning of time")
+    "Use chisel3.experimental.MultiIOModule instead. This alias will be removed in 3.3.", "since the beginning of time")
   type MultiIOModule = chisel3.experimental.MultiIOModule
   @deprecated("Avoid importing from chisel3.core, these are not public APIs and may change at any time. " +
-    " Use chisel3.experimental.RawModule instead.", "since the beginning of time")
+    " Use chisel3.experimental.RawModule instead. This alias will be removed in 3.3.", "since the beginning of time")
   type UserModule = chisel3.experimental.RawModule
   @deprecated("Avoid importing from chisel3.core, these are not public APIs and may change at any time. " +
-    "Use chisel3.experimental.MultiIOModule instead.", "since the beginning of time")
+    "Use chisel3.experimental.MultiIOModule instead. This alias will be removed in 3.3.", "since the beginning of time")
   type ImplicitModule = chisel3.experimental.MultiIOModule
 
   @deprecated("Use the version in chisel3._", "3.2")
