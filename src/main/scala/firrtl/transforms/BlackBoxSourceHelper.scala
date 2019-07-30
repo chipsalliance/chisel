@@ -168,7 +168,7 @@ object BlackBoxSourceHelper {
 
   val defaultFileListName = "firrtl_black_box_resource_files.f"
 
-  @deprecated("Renamed to defaultFileListName, as the file list name may now be changed with an annotation", "1.3")
+  @deprecated("Renamed to defaultFileListName, as the file list name may now be changed with an annotation", "1.2")
   def fileListName = defaultFileListName
 
   def writeTextToFile(text: String, file: File): Unit = {
