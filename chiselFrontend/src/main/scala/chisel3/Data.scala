@@ -494,7 +494,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
   final def <> (that: Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = this.bulkConnect(that)(sourceInfo, connectionCompileOptions) // scalastyle:ignore line.size.limit
 
   @chiselRuntimeDeprecated
-  @deprecated("litArg is deprecated, use litOption or litTo*Option", "chisel3.2")
+  @deprecated("litArg is deprecated, use litOption or litTo*Option", "3.2")
   def litArg(): Option[LitArg] = topBindingOpt match {
     case Some(ElementLitBinding(litArg)) => Some(litArg)
     case Some(BundleLitBinding(litMap)) => None  // this API does not support Bundle literals
