@@ -829,6 +829,8 @@ If the read-under-write flag is set to \verb|new|, then a read port always retur
 
 If the read-under-write flag is set to \verb|undefined|, then the value held by the read port after the appropriate read latency is undefined.
 
+\subsubsection{Write Under Write Behaviour}
+
 In all cases, if a memory location is written to by more than one port on the same cycle, the stored value is undefined.
 
 \subsection{Instances}\label{instances}
