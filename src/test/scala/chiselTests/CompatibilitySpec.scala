@@ -414,4 +414,40 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
     elaborate(new Foo)
   }
 
+  behavior of "Mem"
+
+  it should "support deprecated apply methods" in {
+    class Foo extends Module {
+      val io = IO(new Bundle{})
+
+      info("apply[T <: Data](t: T, size: BigInt): Mem[T] works")
+      val memBigInt = Mem(UInt(), 8: BigInt)
+      memBigInt shouldBe a [Mem[UInt]]
+
+      info("apply[T <: Data](t: T, size: Int): Mem[T] works")
+      val memInt = Mem(SInt(), 16: Int)
+      memInt shouldBe a [Mem[SInt]]
+    }
+
+    elaborate(new Foo)
+  }
+
+  behavior of "SeqMem"
+
+  it should "support deprecated apply methods" in {
+    class Foo extends Module {
+      val io = IO(new Bundle{})
+
+      info("apply[T <: Data](t: T, size: BigInt): SeqMem[T] works")
+      val seqMemBigInt = SeqMem(UInt(), 8: BigInt)
+      seqMemBigInt shouldBe a [SeqMem[UInt]]
+
+      info("apply[T <: Data](t: T, size: Int): SeqMem[T] works")
+      val seqMemInt = SeqMem(UInt(), 16: Int)
+      seqMemInt shouldBe a [SeqMem[UInt]]
+    }
+
+    elaborate(new Foo)
+  }
+
 }
