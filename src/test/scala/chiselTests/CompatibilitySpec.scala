@@ -382,4 +382,20 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
     elaborate(new Foo)
   }
 
+  behavior of "Queue"
+
+  it should "support deprecated constructors" in {
+    class Foo extends Module {
+      val io = IO(new Bundle{})
+
+      info("reset: Option[Bool] constructor works")
+      val option = Module(new Queue(UInt(), 4, false, false, Some(Bool(true))))
+
+      info("reset: Bool constructor works")
+      val explicit = Module(new Queue(UInt(), 4, false, false, Bool(true)))
+    }
+
+    elaborate(new Foo)
+  }
+
 }
