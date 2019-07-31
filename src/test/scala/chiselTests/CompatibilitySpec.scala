@@ -358,4 +358,28 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
 
     elaborate(new Foo)
   }
+
+  behavior of "Enum"
+
+  it should "support apply[T <: Bits](nodeType: T, n: Int): List[T]" in {
+    class Foo extends Module {
+      val io = IO(new Bundle{})
+
+      info("works for a UInt")
+      Enum(UInt(), 4) shouldBe a [List[UInt]]
+
+      info("throw an exception for non-UInt types")
+      intercept [IllegalArgumentException] {
+        Enum(SInt(), 4)
+      }.getMessage should include ("Only UInt supported for enums")
+
+      info("throw an exception if the bit width is specified")
+      intercept [IllegalArgumentException] {
+        Enum(UInt(width = 8), 4)
+      }.getMessage should include ("Bit width may no longer be specified for enums")
+    }
+
+    elaborate(new Foo)
+  }
+
 }
