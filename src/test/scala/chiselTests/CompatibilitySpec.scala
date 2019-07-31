@@ -526,4 +526,32 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
     assertTesterPasses(new Foo)
   }
 
+  behavior of "Bits methods"
+
+  it should "support legacy methods" in {
+    class Foo extends Module {
+      val io = new Bundle{}
+
+      val u = UInt(8)
+      val s = SInt(-4)
+
+      info("toBools works")
+      u.toBools shouldBe a [Seq[Bool]]
+
+      info("asBits works")
+      s.asBits shouldBe a [Bits]
+
+      info("toSInt works")
+      u.toSInt shouldBe a [SInt]
+
+      info("toUInt works")
+      s.toUInt shouldBe a [UInt]
+
+      info("toBool works")
+      UInt(1).toBool shouldBe a [Bool]
+    }
+
+    elaborate(new Foo)
+  }
+
 }
