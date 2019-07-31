@@ -2,6 +2,8 @@
 
 package chiselTests
 
+import chisel3.testers.BasicTester
+
 import org.scalacheck.Gen
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 
@@ -501,6 +503,27 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
     }
 
     elaborate(new Foo)
+  }
+
+  behavior of "Vec"
+
+  it should "support legacy methods" in {
+    class Foo extends BasicTester {
+      val seq = Seq(Wire(UInt(0, width=4)), Wire(UInt(1, width=4)), Wire(UInt(2, width=4)))
+      val vec = Vec(seq)
+
+      info("read works")
+      chisel3.assert(vec.read(UInt(0)) === UInt(0))
+
+      info("write works")
+      vec.write(UInt(1), UInt(3))
+      chisel3.assert(vec.read(UInt(1)) === UInt(3))
+
+      val (_, done) = Counter(Bool(true), 4)
+      when (done) { stop }
+    }
+
+    assertTesterPasses(new Foo)
   }
 
 }
