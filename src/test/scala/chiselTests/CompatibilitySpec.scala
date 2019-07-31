@@ -567,4 +567,17 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
     elaborate(new Foo)
   }
 
+  behavior of "SInt"
+
+  it should "support legacy methods" in {
+    class Foo extends Module {
+      val io = new Bundle{}
+
+      info("!= works")
+      (SInt(-1) != SInt(-1)) shouldBe a [Bool]
+    }
+
+    elaborate(new Foo)
+  }
+
 }
