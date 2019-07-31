@@ -285,14 +285,6 @@ package experimental {
       */
     def _compatAutoWrapPorts() {} // scalastyle:ignore method.name
 
-    //
-    // BaseModule User API functions
-    //
-    @deprecated("Use chisel3.experimental.annotate instead", "3.1")
-    protected def annotate(annotation: ChiselAnnotation): Unit = {
-      Builder.annotations += annotation
-    }
-
     /** Chisel2 code didn't require the IO(...) wrapper and would assign a Chisel type directly to
       * io, then do operations on it. This binds a Chisel type in-place (mutably) as an IO.
       */

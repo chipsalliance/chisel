@@ -266,11 +266,37 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
       }
     }
   }
-  val Mem = chisel3.Mem
+
   type MemBase[T <: Data] = chisel3.MemBase[T]
+
+  val Mem = chisel3.Mem
   type Mem[T <: Data] = chisel3.Mem[T]
+
+  implicit class MemCompatibility(a: Mem.type) {
+    import chisel3.internal.sourceinfo.UnlocatableSourceInfo
+
+    def apply[T <: Data](t: T, size: BigInt)(implicit compileOptions: CompileOptions): Mem[T] =
+      a.do_apply(size, t)(UnlocatableSourceInfo, compileOptions)
+
+    def apply[T <: Data](t: T, size: Int)(implicit compileOptions: CompileOptions): Mem[T] =
+      a.do_apply(size, t)(UnlocatableSourceInfo, compileOptions)
+
+  }
+
   val SeqMem = chisel3.SyncReadMem
   type SeqMem[T <: Data] = chisel3.SyncReadMem[T]
+
+  implicit class SeqMemCompatibility(a: SeqMem.type) {
+    import chisel3.internal.sourceinfo.SourceInfo
+
+    def apply[T <: Data](t: T, size: BigInt)
+        (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SyncReadMem[T] =
+      a.do_apply(size, t)
+
+    def apply[T <: Data](t: T, size: Int)
+        (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SyncReadMem[T] =
+      a.do_apply(size, t)
+  }
 
   import chisel3.CompileOptions
   abstract class CompatibilityModule(implicit moduleCompileOptions: CompileOptions)
@@ -426,6 +452,10 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
   val BitPat = chisel3.util.BitPat
   type BitPat = chisel3.util.BitPat
 
+  implicit class BitsObjectCompatibility(a: BitPat.type) {
+    def DC(width: Int): BitPat = a.dontCare(width)
+  }
+
   type ArbiterIO[T <: Data] = chisel3.util.ArbiterIO[T]
   type LockingArbiterLike[T <: Data] = chisel3.util.LockingArbiterLike[T]
   type LockingRRArbiter[T <: Data] = chisel3.util.LockingRRArbiter[T]
@@ -454,8 +484,25 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
   val DecoupledIO = chisel3.util.Decoupled
   val Decoupled = chisel3.util.Decoupled
   type QueueIO[T <: Data] = chisel3.util.QueueIO[T]
-  type Queue[T <: Data] = chisel3.util.Queue[T]
+
   val Queue = chisel3.util.Queue
+  type Queue[T <: Data] = QueueCompatibility[T]
+
+  sealed class QueueCompatibility[T <: Data](gen: T, entries: Int, pipe: Boolean = false, flow: Boolean = false)
+                                 (implicit compileOptions: chisel3.CompileOptions)
+      extends chisel3.util.Queue[T](gen, entries, pipe, flow)(compileOptions) {
+
+    def this(gen: T, entries: Int, pipe: Boolean, flow: Boolean, override_reset: Option[Bool]) = {
+      this(gen, entries, pipe, flow)
+      this.override_reset = override_reset
+    }
+
+    def this(gen: T, entries: Int, pipe: Boolean, flow: Boolean, _reset: Bool) = {
+      this(gen, entries, pipe, flow)
+      this.override_reset = Some(_reset)
+    }
+
+  }
 
   object Enum extends chisel3.util.Enum {
     /** Returns n unique values of the specified type. Can be used with unpacking to define enums.
@@ -550,4 +597,33 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
     class treedump extends chisel3.internal.naming.treedump  // scalastyle:ignore class.name
     class chiselName extends chisel3.internal.naming.chiselName  // scalastyle:ignore class.name
   }
+
+  implicit class DataCompatibility(a: Data) {
+    import chisel3.internal.sourceinfo.DeprecatedSourceInfo
+
+    def toBits(implicit compileOptions: CompileOptions): UInt = a.do_asUInt(DeprecatedSourceInfo, compileOptions)
+
+  }
+
+  implicit class VecLikeCompatibility[T <: Data](a: VecLike[T]) {
+    import chisel3.internal.sourceinfo.DeprecatedSourceInfo
+
+    def read(idx: UInt)(implicit compileOptions: CompileOptions): T = a.do_apply(idx)(compileOptions)
+
+    def write(idx: UInt, data: T)(implicit compileOptions: CompileOptions): Unit =
+      a.do_apply(idx)(compileOptions).:=(data)(DeprecatedSourceInfo, compileOptions)
+
+  }
+
+  implicit class BitsCompatibility(a: Bits) {
+    import chisel3.internal.sourceinfo.DeprecatedSourceInfo
+
+    final def asBits(implicit compileOptions: CompileOptions): Bits = a.do_asUInt(DeprecatedSourceInfo, compileOptions)
+
+    final def toSInt(implicit compileOptions: CompileOptions): SInt = a.do_asSInt(DeprecatedSourceInfo, compileOptions)
+
+    final def toUInt(implicit compileOptions: CompileOptions): UInt = a.do_asUInt(DeprecatedSourceInfo, compileOptions)
+
+  }
+
 }

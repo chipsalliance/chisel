@@ -10,15 +10,6 @@ import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform, UnlocatableSourceInfo, MemTransform}
 
 object Mem {
-  // scalastyle:off line.size.limit
-  @chiselRuntimeDeprecated
-  @deprecated("Mem argument order should be size, t; this will be removed by the official release", "chisel3")
-  def apply[T <: Data](t: T, size: BigInt)(implicit compileOptions: CompileOptions): Mem[T] = do_apply(size, t)(UnlocatableSourceInfo, compileOptions)
-
-  // scalastyle:off line.size.limit
-  @chiselRuntimeDeprecated
-  @deprecated("Mem argument order should be size, t; this will be removed by the official release", "chisel3")
-  def apply[T <: Data](t: T, size: Int)(implicit compileOptions: CompileOptions): Mem[T] = do_apply(size, t)(UnlocatableSourceInfo, compileOptions)
 
   /** Creates a combinational/asynchronous-read, sequential/synchronous-write [[Mem]].
     *
@@ -150,13 +141,6 @@ sealed abstract class MemBase[T <: Data](t: T, val length: BigInt) extends HasId
 sealed class Mem[T <: Data] private (t: T, length: BigInt) extends MemBase(t, length)
 
 object SyncReadMem {
-  @chiselRuntimeDeprecated
-  @deprecated("SeqMem/SyncReadMem argument order should be size, t; this will be removed by the official release", "chisel3")
-  def apply[T <: Data](t: T, size: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SyncReadMem[T] = do_apply(size, t)
-
-  @chiselRuntimeDeprecated
-  @deprecated("SeqMem/SyncReadMem argument order should be size, t; this will be removed by the official release", "chisel3")
-  def apply[T <: Data](t: T, size: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SyncReadMem[T] = do_apply(size, t)
 
   /** Creates a sequential/synchronous-read, sequential/synchronous-write [[SyncReadMem]].
     *

@@ -234,10 +234,6 @@ package object core {
   implicit class fromIntToBinaryPoint(int: Int) extends experimental.FixedPoint.Implicits.fromIntToBinaryPoint(int)
 
   @deprecated("Use the version in chisel3.experimental._", "3.2")
-  type ChiselAnnotation = chisel3.experimental.ChiselAnnotation
-  @deprecated("Use the version in chisel3.experimental._", "3.2")
-  val ChiselAnnotation = chisel3.experimental.ChiselAnnotation
-  @deprecated("Use the version in chisel3.experimental._", "3.2")
   type RunFirrtlTransform = chisel3.experimental.RunFirrtlTransform
 
   @deprecated("Use the version in chisel3.experimental._", "3.2")
