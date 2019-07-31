@@ -463,4 +463,22 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
     elaborate(new Foo)
   }
 
+  behavior of "Data methods"
+
+  it should "support legacy methods" in {
+    class Foo extends Module {
+      val io = IO(new Bundle{})
+
+      info("litArg works")
+      UInt(width=3).litArg() should be (None)
+      UInt(0, width=3).litArg() should be (Some(chisel3.internal.firrtl.ULit(0, 3.W)))
+
+      info("toBits works")
+      val wire = Wire(UInt(width=4))
+      Vec.fill(4)(wire).toBits.getWidth should be (wire.getWidth * 4)
+    }
+
+    elaborate(new Foo)
+  }
+
 }
