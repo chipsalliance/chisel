@@ -150,7 +150,7 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
 
   /** This contains literal constructor factory methods that are deprecated as of Chisel3.
     */
-  trait UIntFactory extends chisel3.UIntFactoryBase {
+  trait UIntFactory extends chisel3.UIntFactory {
     /** Create a UInt literal with inferred width. */
     def apply(n: String): UInt = n.asUInt
     /** Create a UInt literal with fixed width. */
@@ -190,7 +190,7 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
 
   /** This contains literal constructor factory methods that are deprecated as of Chisel3.
     */
-  trait SIntFactory extends chisel3.SIntFactoryBase {
+  trait SIntFactory extends chisel3.SIntFactory {
     /** Create a SInt type or port with fixed width. */
     def width(width: Int): SInt = apply(width.W)
     /** Create an SInt type with specified width. */
@@ -225,7 +225,7 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
 
   /** This contains literal constructor factory methods that are deprecated as of Chisel3.
     */
-  trait BoolFactory extends chisel3.BoolFactoryBase {
+  trait BoolFactory extends chisel3.BoolFactory {
     /** Creates Bool literal.
       */
     def apply(x: Boolean): Bool = x.B

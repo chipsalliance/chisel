@@ -135,21 +135,6 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   // (UInt|SInt)\(([_a-zA-Z][_0-9a-zA-Z]*),\s*(?:width\s*=)?\s*(\d+|[_a-zA-Z][_0-9a-zA-Z]*)\)
   //  => $2.as$1($3.W)
 
-  /** This contains literal constructor factory methods that are deprecated as of Chisel3.
-    * These will be removed very soon. It's recommended you port your code ASAP.
-    */
-  trait UIntFactory extends UIntFactoryBase
-
-  /** This contains literal constructor factory methods that are deprecated as of Chisel3.
-    * These will be removed very soon. It's recommended you move your code soon.
-    */
-  trait SIntFactory extends SIntFactoryBase
-
-  /** This contains literal constructor factory methods that are deprecated as of Chisel3.
-    * These will be removed very soon. It's recommended you move your code soon.
-    */
-  trait BoolFactory extends BoolFactoryBase
-
   object Bits extends UIntFactory
   object UInt extends UIntFactory
   object SInt extends SIntFactory

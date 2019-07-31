@@ -905,7 +905,7 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
 }
 
 // This is currently a factory because both Bits and UInt inherit it.
-trait UIntFactoryBase {
+trait UIntFactory {
   /** Create a UInt type with inferred width. */
   def apply(): UInt = apply(Width())
   /** Create a UInt port with specified width. */
@@ -1158,7 +1158,7 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
   }
 }
 
-trait SIntFactoryBase {
+trait SIntFactory {
   /** Create an SInt type with inferred width. */
   def apply(): SInt = apply(Width())
   /** Create a SInt type or port with fixed width. */
@@ -1181,7 +1181,7 @@ trait SIntFactoryBase {
   }
 }
 
-object SInt extends SIntFactoryBase
+object SInt extends SIntFactory
 
 sealed trait Reset extends Element with ToBoolable
 
@@ -1288,7 +1288,7 @@ sealed class Bool() extends UInt(1.W) with Reset {
   def do_asClock(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Clock = pushOp(DefPrim(sourceInfo, Clock(), AsClockOp, ref))
 }
 
-trait BoolFactoryBase {
+trait BoolFactory {
   /** Creates an empty Bool.
    */
   def apply(): Bool = new Bool()
@@ -1303,7 +1303,7 @@ trait BoolFactoryBase {
   }
 }
 
-object Bool extends BoolFactoryBase
+object Bool extends BoolFactory
 
 package experimental {
   //scalastyle:off number.of.methods
