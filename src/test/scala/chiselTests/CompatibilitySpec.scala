@@ -554,4 +554,17 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
     elaborate(new Foo)
   }
 
+  behavior of "UInt"
+
+  it should "support legacy methods" in {
+    class Foo extends Module {
+      val io = new Bundle{}
+
+      info("!= works")
+      (UInt(1) != UInt(1)) shouldBe a [Bool]
+    }
+
+    elaborate(new Foo)
+  }
+
 }
