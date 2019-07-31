@@ -2,7 +2,10 @@
 
 /** This package contains the main chisel3 API.
  */
-package object chisel3 {    // scalastyle:ignore package.object.name
+
+// scalastyle:off method.name number.of.methods line.size.limit file.size.limit package.object.name
+
+package object chisel3 {
   import internal.firrtl.{Port, Width}
   import internal.sourceinfo.{SourceInfo, VecTransform}
   import internal.{Builder, chiselRuntimeDeprecated}
@@ -141,7 +144,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
 
   implicit class cloneTypeable[T <: Data](target: T) {
     @chiselRuntimeDeprecated
-    @deprecated("chiselCloneType is deprecated, use chiselTypeOf(...) to get the Chisel Type of a hardware object", "chisel3") // scalastyle:ignore line.size.limit
+    @deprecated("chiselCloneType is deprecated, use chiselTypeOf(...) to get the Chisel Type of a hardware object", "chisel3")
     def chiselCloneType: T = {
       target.cloneTypeFull.asInstanceOf[T]
     }

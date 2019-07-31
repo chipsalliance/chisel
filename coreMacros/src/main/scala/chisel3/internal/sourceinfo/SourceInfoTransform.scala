@@ -28,7 +28,7 @@ trait SourceInfoTransformMacro {
 }
 
 // Workaround for https://github.com/sbt/sbt/issues/3966
-object UIntTransform
+//object UIntTransform
 class UIntTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._
   def bitset(off: c.Tree, dat: c.Tree): c.Tree = {
@@ -37,7 +37,7 @@ class UIntTransform(val c: Context) extends SourceInfoTransformMacro {
 }
 
 // Workaround for https://github.com/sbt/sbt/issues/3966
-object InstTransform
+//object InstTransform
 // Module instantiation transform
 class InstTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._
@@ -47,7 +47,7 @@ class InstTransform(val c: Context) extends SourceInfoTransformMacro {
 }
 
 // Workaround for https://github.com/sbt/sbt/issues/3966
-object MemTransform
+//object MemTransform
 class MemTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._
   def apply[T: c.WeakTypeTag](size: c.Tree, t: c.Tree): c.Tree = {
@@ -56,7 +56,7 @@ class MemTransform(val c: Context) extends SourceInfoTransformMacro {
 }
 
 // Workaround for https://github.com/sbt/sbt/issues/3966
-object MuxTransform
+//object MuxTransform
 class MuxTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._
   def apply[T: c.WeakTypeTag](cond: c.Tree, con: c.Tree, alt: c.Tree): c.Tree = {
@@ -66,7 +66,7 @@ class MuxTransform(val c: Context) extends SourceInfoTransformMacro {
 }
 
 // Workaround for https://github.com/sbt/sbt/issues/3966
-object VecTransform
+//object VecTransform
 class VecTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._
   def apply_elts(elts: c.Tree): c.Tree = {
@@ -104,7 +104,7 @@ abstract class AutoSourceTransform extends SourceInfoTransformMacro {
 }
 
 // Workaround for https://github.com/sbt/sbt/issues/3966
-object SourceInfoTransform
+//object SourceInfoTransform
 class SourceInfoTransform(val c: Context) extends AutoSourceTransform {
   import c.universe._
 
@@ -142,7 +142,7 @@ class SourceInfoTransform(val c: Context) extends AutoSourceTransform {
 }
 
 // Workaround for https://github.com/sbt/sbt/issues/3966
-object CompileOptionsTransform
+//object CompileOptionsTransform
 class CompileOptionsTransform(val c: Context) extends AutoSourceTransform {
   import c.universe._
 
@@ -160,7 +160,7 @@ class CompileOptionsTransform(val c: Context) extends AutoSourceTransform {
 }
 
 // Workaround for https://github.com/sbt/sbt/issues/3966
-object SourceInfoWhiteboxTransform
+//object SourceInfoWhiteboxTransform
 /** Special whitebox version of the blackbox SourceInfoTransform, used when fun things need to
   * happen to satisfy the type system while preventing the use of macro overrides.
   */

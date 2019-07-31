@@ -134,7 +134,7 @@ object Driver extends BackendCompilationUtilities {
     * If no File is given as input, it will dump to a default filename based on the name of the
     * top Module.
     *
-    * @param c Elaborated Chisel Circuit.
+    * @param ir Elaborated Chisel Circuit.
     * @param optName File to dump to. If unspecified, defaults to "<topmodule>.fir".
     * @return The File the circuit was dumped to.
     */
