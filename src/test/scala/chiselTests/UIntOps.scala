@@ -20,6 +20,8 @@ class UIntOps extends Module {
     val modout = Output(UInt(32.W))
     val lshiftout = Output(UInt(32.W))
     val rshiftout = Output(UInt(32.W))
+    val lrotateout = Output(UInt(32.W))
+    val rrotateout = Output(UInt(32.W))
     val lessout = Output(Bool())
     val greatout = Output(Bool())
     val eqout = Output(Bool())
@@ -40,6 +42,8 @@ class UIntOps extends Module {
   io.modout := a % b
   io.lshiftout := (a << b(3, 0))(31, 0)
   io.rshiftout := a >> b
+  io.lrotateout := a.rotateLeft(5)
+  io.rrotateout := a.rotateRight(5)
   io.lessout := a < b
   io.greatout := a > b
   io.eqout := a === b
@@ -65,6 +69,8 @@ class UIntOpsTester(a: Long, b: Long) extends BasicTester {
   assert(dut.io.modout === (a % (b max 1)).U(32.W))
   assert(dut.io.lshiftout === (a << (b % 16)).U(32.W))
   assert(dut.io.rshiftout === (a >> b).U(32.W))
+  assert(dut.io.lrotateout === s"h${Integer.rotateLeft(a.toInt, 5).toHexString}".U(32.W) )
+  assert(dut.io.rrotateout === s"h${Integer.rotateRight(a.toInt, 5).toHexString}".U(32.W) )
   assert(dut.io.lessout === (a < b).B)
   assert(dut.io.greatout === (a > b).B)
   assert(dut.io.eqout === (a == b).B)
@@ -94,6 +100,16 @@ class BadBoolConversion extends Module {
 class NegativeShift(t: => Bits) extends Module {
   val io = IO(new Bundle {})
   Reg(t) >> -1
+}
+
+class IllegalRotateLeft(t: => UInt) extends Module {
+  val io = IO(new Bundle {})
+  Reg(t).rotateLeft(24)
+}
+
+class IllegalRotateRight(t: => UInt) extends Module {
+  val io = IO(new Bundle {})
+  Reg(t).rotateRight(24)
 }
 
 class UIntLitExtractTester extends BasicTester {
@@ -134,6 +150,14 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers {
 
   property("Negative shift amounts are invalid") {
     a [ChiselException] should be thrownBy { elaborate(new NegativeShift(UInt())) }
+  }
+
+  property("rotateLeft argument should be less than width") {
+    a [ChiselException] should be thrownBy { elaborate(new IllegalRotateLeft(UInt(23.W))) }
+  }
+
+  property("rotateRight  argument should be less than width") {
+    a [ChiselException] should be thrownBy { elaborate(new IllegalRotateRight(UInt(23.W))) }
   }
 
   property("Bit extraction on literals should work for all non-negative indices") {

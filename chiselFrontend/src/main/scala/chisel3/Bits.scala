@@ -877,6 +877,35 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
   override def do_>> (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     binop(sourceInfo, UInt(this.width), DynamicShiftRightOp, that)
 
+  /**
+   * Circular shift to the left
+   * @param that number of bits to rotate
+   * @return UInt of same width rotated left n bits
+   */
+  final def rotateLeft(that: Int): UInt =  macro SourceInfoWhiteboxTransform.thatArg
+
+  def do_rotateLeft(n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = width match {
+      case KnownWidth(w) if n > w =>
+        throwException("rotateLeft parameter is greater than width")
+      case _ if (n == 0) => this
+      case _ if (n < 0) => do_rotateRight(-n)
+      case _ => tail(n) ## head(n)
+    }
+
+  /**
+   * Circular shift to the right
+   * @param that number of bits to rotate
+   * @return UInt of same width rotated right n bits
+   */
+  final def rotateRight(that: Int): UInt =  macro SourceInfoWhiteboxTransform.thatArg
+
+  def do_rotateRight(n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =width match {
+    case KnownWidth(w) if n > w =>
+      throwException("rotateRight parameter is greater than width")
+    case _ if (n <= 0) => do_rotateLeft(-n)
+    case _ => this(n - 1, 0) ## (this >> n)
+  }
+
   /** Conditionally set or clear a bit
     *
     * @param off a dynamic offset
