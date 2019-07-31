@@ -96,9 +96,6 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
       dcd shouldBe a [DecoupledIO[UInt]]
       Queue(dcd) shouldBe a [DecoupledIO[UInt]]
       Enum(UInt(), 2) shouldBe a [List[UInt]]
-      val lfsr16 = LFSR16()
-      lfsr16 shouldBe a [UInt]
-      lfsr16.getWidth shouldBe (16)
       ListLookup(wire, List(wire), Array((BitPat("b1"), List(wire)))) shouldBe a [List[UInt]]
       Lookup(wire, wire, Seq((BitPat("b1"), wire))) shouldBe a [UInt]
       Mux1H(wire, Seq(wire)) shouldBe a [UInt]
@@ -393,6 +390,25 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
 
       info("reset: Bool constructor works")
       val explicit = Module(new Queue(UInt(), 4, false, false, Bool(true)))
+    }
+
+    elaborate(new Foo)
+  }
+
+  behavior of "LFSR16"
+
+  it should "still exist" in {
+    class Foo extends Module {
+      val io = IO(new Bundle{})
+
+      info("Still exists")
+      val lfsr = LFSR16()
+
+      info("apply method returns a UInt")
+      lfsr shouldBe a [UInt]
+
+      info("returned UInt has a width of 16")
+      lfsr.getWidth should be (16)
     }
 
     elaborate(new Foo)
