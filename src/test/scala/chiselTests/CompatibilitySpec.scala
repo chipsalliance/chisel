@@ -71,51 +71,52 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
       // The following just checks that we can create objects with nothing more than the Chisel compatibility package.
       val io = new Bundle {}
       val data = UInt(width = 3)
-      new ArbiterIO(data, 2) shouldBe a [ArbiterIO[_]]
-      new LockingRRArbiter(data, 2, 2, None) shouldBe a [LockingRRArbiter[_]]
-      new RRArbiter(data, 2) shouldBe a [RRArbiter[_]]
-      new Arbiter(data, 2) shouldBe a [Arbiter[_]]
+      val wire = Wire(data)
+      new ArbiterIO(data, 2) shouldBe a [ArbiterIO[UInt]]
+      Module(new LockingRRArbiter(data, 2, 2, None)) shouldBe a [LockingRRArbiter[UInt]]
+      Module(new RRArbiter(data, 2)) shouldBe a [RRArbiter[UInt]]
+      Module(new Arbiter(data, 2)) shouldBe a [Arbiter[UInt]]
       new Counter(2) shouldBe a [Counter]
-      new ValidIO(data) shouldBe a [ValidIO[_]]
-      new DecoupledIO(data) shouldBe a [DecoupledIO[_]]
-      new QueueIO(data, 2) shouldBe a [QueueIO[_]]
-      new Pipe(data, 2) shouldBe a [Pipe[_]]
+      new ValidIO(data) shouldBe a [ValidIO[UInt]]
+      new DecoupledIO(data) shouldBe a [DecoupledIO[UInt]]
+      new QueueIO(data, 2) shouldBe a [QueueIO[UInt]]
+      Module(new Pipe(data, 2)) shouldBe a [Pipe[UInt]]
 
-      FillInterleaved(2, data) shouldBe a [UInt]
-      PopCount(data) shouldBe a [UInt]
-      Fill(2, data) shouldBe a [UInt]
-      Reverse(data) shouldBe a [UInt]
-      Cat(data, data) shouldBe a [UInt]
-      Log2(data) shouldBe a [UInt]
+      FillInterleaved(2, wire) shouldBe a [UInt]
+      PopCount(wire) shouldBe a [UInt]
+      Fill(2, wire) shouldBe a [UInt]
+      Reverse(wire) shouldBe a [UInt]
+      Cat(wire, wire) shouldBe a [UInt]
+      Log2(wire) shouldBe a [UInt]
       unless(Bool(false)) {}
       // 'switch' and 'is' are tested below in Risc
       Counter(2) shouldBe a [Counter]
-      DecoupledIO(data) shouldBe a [DecoupledIO[_]]
-      val dcd = Decoupled(data)
-      dcd shouldBe a [DecoupledIO[_]]
-      Queue(dcd) shouldBe a [Queue[_]]
-      Enum(data, 2) shouldBe a [List[_]]
+      DecoupledIO(wire) shouldBe a [DecoupledIO[UInt]]
+      val dcd = Wire(Decoupled(data))
+      dcd shouldBe a [DecoupledIO[UInt]]
+      Queue(dcd) shouldBe a [DecoupledIO[UInt]]
+      Enum(UInt(), 2) shouldBe a [List[UInt]]
       val lfsr16 = LFSR16()
       lfsr16 shouldBe a [UInt]
       lfsr16.getWidth shouldBe (16)
-      ListLookup(data, List(data), Array((BitPat("b1"), List(data)))) shouldBe a [List[_]]
-      Lookup(data, data, Seq((BitPat("b1"), data))) shouldBe a [List[_]]
-      Mux1H(data, Seq(data)) shouldBe a [UInt]
+      ListLookup(wire, List(wire), Array((BitPat("b1"), List(wire)))) shouldBe a [List[UInt]]
+      Lookup(wire, wire, Seq((BitPat("b1"), wire))) shouldBe a [UInt]
+      Mux1H(wire, Seq(wire)) shouldBe a [UInt]
       PriorityMux(Seq(Bool(false)), Seq(data)) shouldBe a [UInt]
-      MuxLookup(data, data, Seq((data, data))) shouldBe a [UInt]
-      MuxCase(data, Seq((Bool(), data))) shouldBe a [UInt]
-      OHToUInt(data) shouldBe a [UInt]
-      PriorityEncoder(data) shouldBe a [UInt]
-      UIntToOH(data) shouldBe a [UInt]
-      PriorityEncoderOH(data) shouldBe a [UInt]
-      RegNext(data) shouldBe a [UInt]
-      RegInit(data) shouldBe a [UInt]
-      RegEnable(data, Bool()) shouldBe a [UInt]
-      ShiftRegister(data, 2) shouldBe a [UInt]
-      Valid(data) shouldBe a [ValidIO[_]]
-      Pipe(Valid(data), 2) shouldBe a [ValidIO[_]]
+      MuxLookup(wire, wire, Seq((wire, wire))) shouldBe a [UInt]
+      MuxCase(wire, Seq((Bool(true), wire))) shouldBe a [UInt]
+      OHToUInt(wire) shouldBe a [UInt]
+      PriorityEncoder(wire) shouldBe a [UInt]
+      UIntToOH(wire) shouldBe a [UInt]
+      PriorityEncoderOH(wire) shouldBe a [UInt]
+      RegNext(wire) shouldBe a [UInt]
+      RegInit(wire) shouldBe a [UInt]
+      RegEnable(wire, Bool(true)) shouldBe a [UInt]
+      ShiftRegister(wire, 2) shouldBe a [UInt]
+      Valid(data) shouldBe a [ValidIO[UInt]]
+      Pipe(Wire(Valid(data)), 2) shouldBe a [ValidIO[UInt]]
     }
-
+    elaborate { new Dummy }
   }
   // Verify we can elaborate a design expressed in Chisel2
   class Chisel2CompatibleRisc extends Module {
