@@ -481,4 +481,26 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
     elaborate(new Foo)
   }
 
+  behavior of "Wire"
+
+  it should "support legacy methods" in {
+    class Foo extends Module {
+      val io = IO(new Bundle{})
+
+      info("apply[T <: Data](dummy: Int = 0, init: T): T works")
+      val first = Wire(init=UInt("hdeadbeef"))
+      first shouldBe a [UInt]
+
+      info("apply[T <: Data](t: T, init: T): T works")
+      val second = Wire(SInt(), SInt(-100))
+      second shouldBe a [SInt]
+
+      info("apply[T <: Data](t: T, init: DontCare.type): T works")
+      val third = Wire(UInt(), chisel3.DontCare)
+      third shouldBe a [UInt]
+    }
+
+    elaborate(new Foo)
+  }
+
 }
