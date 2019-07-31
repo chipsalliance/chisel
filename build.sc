@@ -1,5 +1,6 @@
 import ammonite.ops._
 import ammonite.ops.ImplicitWd._
+import coursier.MavenRepository
 import mill._
 import mill.scalalib._
 import mill.scalalib.publish._
@@ -35,7 +36,7 @@ object chiselCompileOptions {
 val crossVersions = Seq("2.12.6", "2.11.12")
 
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
-val defaultVersions = Map("firrtl" -> "1.2-050719-SNAPSHOT")
+val defaultVersions = Map("firrtl" -> "1.2-073119-SNAPSHOT")
 
 def getVersion(dep: String, org: String = "edu.berkeley.cs") = {
   val version = sys.env.getOrElse(dep + "Version", defaultVersions(dep))
@@ -58,11 +59,16 @@ trait CommonChiselModule extends SbtModule {
     case ModuleDep(_) => Agg()
   }
   override def ivyDeps = T { chiselDeps }
+
+  // Include sonatype snapshots by default for parity with sbt
+  def repositories = super.repositories ++ Seq(
+    MavenRepository("https://oss.sonatype.org/content/repositories/snapshots")
+  )
 }
 
 trait PublishChiselModule extends CommonChiselModule with PublishModule {
   override def artifactName = "chisel3"
-  def publishVersion = "3.2-050719-SNAPSHOT"
+  def publishVersion = "3.2-073119-SNAPSHOT"
 
   def pomSettings = PomSettings(
     description = artifactName(),

@@ -28,7 +28,7 @@ def javacOptionsVersion(scalaVersion: String): Seq[String] = {
   }
 }
 
-val defaultVersions = Map("firrtl" -> "1.2-050719-SNAPSHOT")
+val defaultVersions = Map("firrtl" -> "1.2-073119-SNAPSHOT")
 
 lazy val commonSettings = Seq (
   resolvers ++= Seq(
@@ -36,7 +36,7 @@ lazy val commonSettings = Seq (
     Resolver.sonatypeRepo("releases")
   ),
   organization := "edu.berkeley.cs",
-  version := "3.2-050719-SNAPSHOT",
+  version := "3.2-073119-SNAPSHOT",
   autoAPIMappings := true,
   scalaVersion := "2.12.6",
   crossScalaVersions := Seq("2.12.6", "2.11.12"),
@@ -177,7 +177,18 @@ lazy val chisel = (project in file(".")).
       "-diagrams-max-classes", "25",
       "-doc-version", version.value,
       "-doc-title", name.value,
-      "-doc-root-content", baseDirectory.value+"/root-doc.txt"
+      "-doc-root-content", baseDirectory.value+"/root-doc.txt",
+      "-sourcepath", (baseDirectory in ThisBuild).value.toString,
+      "-doc-source-url",
+      {
+        val branch =
+          if (version.value.endsWith("-SNAPSHOT")) {
+            "master"
+          } else {
+            s"v${version.value}"
+          }
+        s"https://github.com/freechipsproject/chisel3/tree/$branch/€{FILE_PATH}.scala"
+      }
     ),
     // Include macro classes, resources, and sources main JAR since we don't create subproject JARs.
     mappings in (Compile, packageBin) ++= (mappings in (coreMacros, Compile, packageBin)).value,
