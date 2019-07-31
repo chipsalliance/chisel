@@ -450,4 +450,17 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
     elaborate(new Foo)
   }
 
+  behavior of "debug"
+
+  it should "still exist" in {
+    class Foo extends Module {
+      val io = IO(new Bundle{})
+
+      val data = UInt(width = 2)
+      debug(data)
+    }
+
+    elaborate(new Foo)
+  }
+
 }
