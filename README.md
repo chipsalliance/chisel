@@ -46,7 +46,7 @@ class FirFilter(bitWidth: Int, coeffs: Seq[UInt]) extends Module {
     val out = Output(UInt(bitWidth.W))
   })
   // Create the serial-in, parallel-out shift register
-  val zs = Wire(Vec(coeffs.length, UInt(bitWidth.W)))
+  val zs = Reg(Vec(coeffs.length, UInt(bitWidth.W)))
   zs(0) := io.in
   for (i <- 1 until coeffs.length) {
     zs(i) := zs(i-1)
