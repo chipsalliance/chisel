@@ -338,4 +338,24 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
     })
   }
   // scalastyle:on line.size.limit
+
+  behavior of "BitPat"
+
+  it should "support old operators" in {
+    class Foo extends Module {
+      val io = IO(new Bundle{})
+
+      info("Deprecated method DC hasn't been removed")
+      val bp = BitPat.DC(4)
+
+      info("BitPat != UInt is a Bool")
+      (bp != UInt(4)) shouldBe a [Bool]
+
+      /* This test does not work, but I'm not sure it's supposed to? It does *not* work on chisel3. */
+      // info("UInt != BitPat is a Bool")
+      // (UInt(4) != bp) shouldBe a [Bool]
+    }
+
+    elaborate(new Foo)
+  }
 }
