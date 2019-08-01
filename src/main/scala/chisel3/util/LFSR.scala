@@ -36,10 +36,10 @@ object LFSR16 {
   @deprecated("Use chisel3.util.random.LFSR(16) for a 16-bit LFSR", "3.2")
   @chiselName
   def apply(increment: Bool = true.B): UInt =
-    Vec( FibonacciLFSR
-          .maxPeriod(16, increment, seed = Some(BigInt(1) << 15))
-          .asBools
-          .reverse )
+    VecInit( FibonacciLFSR
+              .maxPeriod(16, increment, seed = Some(BigInt(1) << 15))
+              .asBools
+              .reverse )
       .asUInt
 
 }

@@ -116,70 +116,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
 
   val WireInit = WireDefault
 
-  implicit class AddDirectionToData[T<:Data](target: T) {
-    @chiselRuntimeDeprecated
-    @deprecated("Input(Data) should be used over Data.asInput", "chisel3")
-    def asInput(implicit compileOptions: CompileOptions): T = Input(target)
-
-    @chiselRuntimeDeprecated
-    @deprecated("Output(Data) should be used over Data.asOutput", "chisel3")
-    def asOutput(implicit compileOptions: CompileOptions): T = Output(target)
-
-    @chiselRuntimeDeprecated
-    @deprecated("Flipped(Data) should be used over Data.flip", "chisel3")
-    def flip()(implicit compileOptions: CompileOptions): T = Flipped(target)
-  }
-
-  implicit class fromBitsable[T <: Data](data: T) {
-
-    @chiselRuntimeDeprecated
-    @deprecated("fromBits is deprecated, use asTypeOf instead", "chisel3")
-    def fromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
-      that.asTypeOf(data)
-    }
-  }
-
-  implicit class cloneTypeable[T <: Data](target: T) {
-    @chiselRuntimeDeprecated
-    @deprecated("chiselCloneType is deprecated, use chiselTypeOf(...) to get the Chisel Type of a hardware object", "chisel3") // scalastyle:ignore line.size.limit
-    def chiselCloneType: T = {
-      target.cloneTypeFull.asInstanceOf[T]
-    }
-  }
-
-  object Vec extends VecFactory {
-    import scala.language.experimental.macros
-
-    @chiselRuntimeDeprecated
-    @deprecated("Vec argument order should be size, t; this will be removed by the official release", "chisel3")
-    def apply[T <: Data](gen: T, n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): chisel3.Vec[T] =
-      apply(n, gen)
-
-    @chiselRuntimeDeprecated
-    @deprecated("Vec.fill(n)(gen) is deprecated, use VecInit(Seq.fill(n)(gen)) instead", "chisel3")
-    def fill[T <: Data](n: Int)(gen: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): chisel3.Vec[T] =
-      apply(Seq.fill(n)(gen))
-
-    def apply[T <: Data](elts: Seq[T]): chisel3.Vec[T] = macro VecTransform.apply_elts
-    @chiselRuntimeDeprecated
-    @deprecated("Vec(elts) is deprecated, use VecInit(elts) instead", "chisel3")
-    def do_apply[T <: Data](elts: Seq[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): chisel3.Vec[T] =
-      chisel3.VecInit(elts)
-
-    def apply[T <: Data](elt0: T, elts: T*): chisel3.Vec[T] = macro VecTransform.apply_elt0
-    @chiselRuntimeDeprecated
-    @deprecated("Vec(elt0, ...) is deprecated, use VecInit(elt0, ...) instead", "chisel3")
-    def do_apply[T <: Data](elt0: T, elts: T*)
-        (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): chisel3.Vec[T] =
-      VecInit(elt0 +: elts.toSeq)
-
-    def tabulate[T <: Data](n: Int)(gen: (Int) => T): chisel3.Vec[T] = macro VecTransform.tabulate
-    @chiselRuntimeDeprecated
-    @deprecated("Vec.tabulate(n)(gen) is deprecated, use VecInit.tabulate(n)(gen) instead", "chisel3")
-    def do_tabulate[T <: Data](n: Int)(gen: (Int) => T)
-        (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): chisel3.Vec[T] =
-      chisel3.VecInit.tabulate(n)(gen)
-  }
+  object Vec extends VecFactory
 
   // Some possible regex replacements for the literal specifier deprecation:
   // (note: these are not guaranteed to handle all edge cases! check all replacements!)
@@ -198,106 +135,12 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   // (UInt|SInt)\(([_a-zA-Z][_0-9a-zA-Z]*),\s*(?:width\s*=)?\s*(\d+|[_a-zA-Z][_0-9a-zA-Z]*)\)
   //  => $2.as$1($3.W)
 
-  /** This contains literal constructor factory methods that are deprecated as of Chisel3.
-    * These will be removed very soon. It's recommended you port your code ASAP.
-    */
-  trait UIntFactory extends UIntFactoryBase {
-    /** Create a UInt literal with inferred width. */
-    @chiselRuntimeDeprecated
-    @deprecated("use n.U", "chisel3, will be removed by end of 2017")
-    def apply(n: String): UInt = n.asUInt
-
-    /** Create a UInt literal with fixed width. */
-    @chiselRuntimeDeprecated
-    @deprecated("use n.U(width.W)", "chisel3, will be removed by end of 2017")
-    def apply(n: String, width: Int): UInt = n.asUInt(width.W)
-
-    /** Create a UInt literal with specified width. */
-    @chiselRuntimeDeprecated
-    @deprecated("use value.U(width)", "chisel3, will be removed by end of 2017")
-    def apply(value: BigInt, width: Width): UInt = value.asUInt(width)
-
-    /** Create a UInt literal with fixed width. */
-    @chiselRuntimeDeprecated
-    @deprecated("use value.U(width.W)", "chisel3, will be removed by end of 2017")
-    def apply(value: BigInt, width: Int): UInt = value.asUInt(width.W)
-
-    /** Create a UInt literal with inferred width.- compatibility with Chisel2. */
-    @chiselRuntimeDeprecated
-    @deprecated("use value.U", "chisel3, will be removed by end of 2017")
-    def apply(value: BigInt): UInt = value.asUInt
-
-    /** Create a UInt with a specified width */
-    @chiselRuntimeDeprecated
-    @deprecated("use UInt(width.W)", "chisel3, will be removed by end of 2017")
-    def width(width: Int): UInt = apply(width.W)
-
-    /** Create a UInt port with specified width. */
-    @chiselRuntimeDeprecated
-    @deprecated("use UInt(width)", "chisel3, will be removed by end of 2017")
-    def width(width: Width): UInt = apply(width)
-  }
-
-  /** This contains literal constructor factory methods that are deprecated as of Chisel3.
-    * These will be removed very soon. It's recommended you move your code soon.
-    */
-  trait SIntFactory extends SIntFactoryBase {
-    /** Create a SInt type or port with fixed width. */
-    @chiselRuntimeDeprecated
-    @deprecated("use SInt(width.W)", "chisel3, will be removed by end of 2017")
-    def width(width: Int): SInt = apply(width.W)
-
-    /** Create an SInt type with specified width. */
-    @chiselRuntimeDeprecated
-    @deprecated("use SInt(width)", "chisel3, will be removed by end of 2017")
-    def width(width: Width): SInt = apply(width)
-
-    /** Create an SInt literal with inferred width. */
-    @chiselRuntimeDeprecated
-    @deprecated("use value.S", "chisel3, will be removed by end of 2017")
-    def apply(value: BigInt): SInt = value.asSInt
-
-    /** Create an SInt literal with fixed width. */
-    @chiselRuntimeDeprecated
-    @deprecated("use value.S(width.W)", "chisel3, will be removed by end of 2017")
-    def apply(value: BigInt, width: Int): SInt = value.asSInt(width.W)
-
-    /** Create an SInt literal with specified width. */
-    @chiselRuntimeDeprecated
-    @deprecated("use value.S(width)", "chisel3, will be removed by end of 2017")
-    def apply(value: BigInt, width: Width): SInt = value.asSInt(width)
-
-    @chiselRuntimeDeprecated
-    @deprecated("use value.S", "chisel3, will be removed by end of 2017")
-    def Lit(value: BigInt): SInt = value.asSInt // scalastyle:ignore method.name
-
-    @chiselRuntimeDeprecated
-    @deprecated("use value.S(width)", "chisel3, will be removed by end of 2017")
-    def Lit(value: BigInt, width: Int): SInt = value.asSInt(width.W) // scalastyle:ignore method.name
-  }
-
-  /** This contains literal constructor factory methods that are deprecated as of Chisel3.
-    * These will be removed very soon. It's recommended you move your code soon.
-    */
-  trait BoolFactory extends BoolFactoryBase {
-    /** Creates Bool literal.
-     */
-    @chiselRuntimeDeprecated
-    @deprecated("use x.B", "chisel3, will be removed by end of 2017")
-    def apply(x: Boolean): Bool = x.B
-  }
-
   object Bits extends UIntFactory
   object UInt extends UIntFactory
   object SInt extends SIntFactory
   object Bool extends BoolFactory
 
   type InstanceId = internal.InstanceId
-
-  @deprecated("Use 'SyncReadMem'", "chisel3")
-  val SeqMem = chisel3.SyncReadMem
-  @deprecated("Use 'SyncReadMem'", "chisel3")
-  type SeqMem[T <: Data] = SyncReadMem[T]
 
   type Module = chisel3.experimental.LegacyModule
 
