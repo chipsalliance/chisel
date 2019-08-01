@@ -149,6 +149,7 @@ object FileUtils {
   def getLinesResource(resourceName: String): Seq[String] = {
     val inputStream = getClass.getResourceAsStream(resourceName)
     val text = io.Source.fromInputStream(inputStream).getLines().toSeq
+    text.length  // This forces lazy buffer to reify, please suggest a better solution
     inputStream.close()
     text
   }

@@ -7,6 +7,7 @@ import firrtl.ir._
 import firrtl.passes._
 import firrtl.transforms._
 import firrtl.passes.memlib._
+import firrtl.FileUtils
 import annotations._
 import FirrtlCheckers._
 
@@ -29,8 +30,7 @@ class ReplSeqMemSpec extends SimpleTransformSpec {
 
   def checkMemConf(filename: String, mems: Set[MemConf]) {
     // Read the mem conf
-    val file = scala.io.Source.fromFile(filename)
-    val text = try file.mkString finally file.close()
+    val text = FileUtils.getText(filename)
     // Verify that this does not throw an exception
     val fromConf = MemConf.fromString(text)
     // Verify the mems in the conf are the same as the expected ones

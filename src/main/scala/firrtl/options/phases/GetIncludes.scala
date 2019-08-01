@@ -8,6 +8,7 @@ import firrtl.AnnotationSeq
 import firrtl.annotations.{AnnotationFileNotFoundException, JsonProtocol, LegacyAnnotation}
 import firrtl.annotations.AnnotationYamlProtocol._
 import firrtl.options.{InputAnnotationFileAnnotation, Phase, StageUtils}
+import firrtl.FileUtils
 
 import java.io.File
 
@@ -27,7 +28,7 @@ class GetIncludes extends Phase {
     JsonProtocol.deserializeTry(file).recoverWith { case jsonException =>
       // Try old protocol if new one fails
       Try {
-        val yaml = io.Source.fromFile(file).getLines().mkString("\n").parseYaml
+        val yaml = FileUtils.getText(file).parseYaml
         val result = yaml.convertTo[List[LegacyAnnotation]]
         val msg = s"$file is a YAML file!\n" + (" "*9) + "YAML Annotation files are deprecated! Use JSON"
         StageUtils.dramaticWarning(msg)

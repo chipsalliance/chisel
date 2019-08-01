@@ -4,8 +4,6 @@ package firrtl.stage.phases.tests
 
 import org.scalatest.{FlatSpec, Matchers, PrivateMethodTester}
 
-import scala.io.Source
-
 import java.io.File
 
 import firrtl._

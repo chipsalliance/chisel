@@ -2,10 +2,11 @@
 
 package firrtlTests
 
-import firrtl.{ChirrtlForm, CircuitState, Compiler, annotations}
+import firrtl.FileUtils
+import firrtl.{ChirrtlForm, CircuitState}
 
-import scala.concurrent.{Future, Await, ExecutionContext}
 import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 class MultiThreadingSpec extends FirrtlPropSpec {
 
@@ -27,8 +28,8 @@ class MultiThreadingSpec extends FirrtlPropSpec {
     val numThreads = 64 // arbitrary
 
     // Begin the actual test
-    val inputStream = getClass().getResourceAsStream(inputFilePath)
-    val inputStrings = io.Source.fromInputStream(inputStream).getLines().toList
+
+    val inputStrings = FileUtils.getLinesResource(inputFilePath)
 
     import ExecutionContext.Implicits.global
     try { // Use try-catch because error can manifest in many ways

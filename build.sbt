@@ -32,6 +32,7 @@ addCompilerPlugin(scalafixSemanticdb) // enable SemanticDB
 
 scalacOptions := scalacOptionsVersion(scalaVersion.value) ++ Seq(
   "-deprecation",
+  "-unchecked",
   "-Yrangepos",          // required by SemanticDB compiler plugin
   "-Ywarn-unused-import" // required by `RemoveUnused` rule
 )

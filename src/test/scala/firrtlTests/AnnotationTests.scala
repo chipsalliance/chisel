@@ -7,6 +7,7 @@ import java.io.{File, FileWriter, Writer}
 import firrtl.annotations.AnnotationYamlProtocol._
 import firrtl.annotations._
 import firrtl._
+import firrtl.FileUtils
 import firrtl.transforms.OptimizableExtModuleAnnotation
 import firrtl.passes.InlineAnnotation
 import firrtl.passes.memlib.PinAnnotation
@@ -472,8 +473,7 @@ class LegacyAnnotationTests extends AnnotationTests {
     Annotation(ModuleName(mod, CircuitName("Top")), classOf[Transform], "some value")
 
   "LegacyAnnotations" should "be readable from file" in {
-    val annotationStream = getClass.getResourceAsStream("/annotations/SampleAnnotations.anno")
-    val annotationsYaml = scala.io.Source.fromInputStream(annotationStream).getLines().mkString("\n").parseYaml
+    val annotationsYaml = FileUtils.getTextResource("/annotations/SampleAnnotations.anno").parseYaml
     val annotationArray = annotationsYaml.convertTo[Array[LegacyAnnotation]]
     annotationArray.length should be (9)
     annotationArray(0).targetString should be ("ModC")
@@ -538,7 +538,7 @@ class JsonAnnotationTests extends AnnotationTests with BackendCompilationUtiliti
     writer.write(JsonProtocol.serialize(annos))
     writer.close()
 
-    val text = io.Source.fromFile(annoFile).getLines().mkString("\n")
+    val text = FileUtils.getText(annoFile)
     annoFile.delete()
 
     val readAnnos = JsonProtocol.deserializeTry(text).get

@@ -11,7 +11,6 @@ import scala.sys.process._
 import org.scalatest._
 import org.scalatest.prop._
 
-import scala.io.Source
 import firrtl._
 import firrtl.ir._
 import firrtl.Parser.{IgnoreInfo, UseInfo}

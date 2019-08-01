@@ -14,7 +14,7 @@ import firrtl.stage.{FirrtlExecutionResultView, FirrtlStage}
 import firrtl.stage.phases.DriverCompatibility
 import firrtl.options.{StageUtils, Phase, Viewer}
 import firrtl.options.phases.DeletedWrapper
-import firrtl.FileUtils.getText
+import firrtl.FileUtils
 
 
 /**
@@ -112,7 +112,7 @@ object Driver {
       JsonProtocol.deserializeTry(file).recoverWith { case jsonException =>
         // Try old protocol if new one fails
         Try {
-          val yaml = getText(file).parseYaml
+          val yaml = FileUtils.getText(file).parseYaml
           val result = yaml.convertTo[List[LegacyAnnotation]]
           val msg = s"$file is a YAML file!\n" +
                     (" "*9) + "YAML Annotation files are deprecated! Use JSON"

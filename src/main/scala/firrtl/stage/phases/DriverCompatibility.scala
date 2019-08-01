@@ -6,6 +6,7 @@ import firrtl.stage._
 
 import firrtl.{AnnotationSeq, EmitAllModulesAnnotation, EmitCircuitAnnotation, FirrtlExecutionResult, Parser}
 import firrtl.annotations.NoTargetAnnotation
+import firrtl.FileUtils
 import firrtl.proto.FromProto
 import firrtl.options.{InputAnnotationFileAnnotation, OptionsException, Phase,
   StageOptions, StageUtils}
@@ -89,7 +90,7 @@ object DriverCompatibility {
           annotations.collectFirst{ case FirrtlFileAnnotation(f) =>
             FirrtlStageUtils.getFileExtension(f) match {
               case ProtoBufFile => FromProto.fromFile(f).main
-              case FirrtlFile   => Parser.parse(io.Source.fromFile(f).getLines().mkString("\n")).main } } )))
+              case FirrtlFile   => Parser.parse(FileUtils.getText(f)).main } } )))
 
   /** Determine the target directory with the following precedence (highest to lowest):
     *  - Explicitly from the user-specified [[firrtl.options.TargetDirAnnotation TargetDirAnnotation]]
