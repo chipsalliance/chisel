@@ -4,3 +4,6 @@
 target
 project/target
 build
+
+travis-deploy-key
+travis-deploy-key.pub
