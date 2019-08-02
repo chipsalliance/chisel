@@ -1,0 +1,49 @@
+language: scala
+dist: xenial
+
+cache:
+  directories:
+    $HOME/.ivy2
+    $HOME/.sbt
+    $HOME/.rvm/gems
+    $HOME/apis/api
+
+env:
+  - buildDir=$HOME/apis
+
+jdk:
+  - openjdk8
+
+branches:
+  only:
+    - master
+
+before_install:
+  - if [ "$TRAVIS_BRANCH" = "master" -a "$TRAVIS_PULL_REQUEST" = "false" ]; then bash
+    scripts/decrypt-keys.sh; fi
+  - export PATH=${PATH}:./vendor/bundle
+install:
+  - rvm use 2.6.0 --install --fuzzy
+  - gem update --system
+  - gem install sass
+  - gem install jekyll -v 3.8.5
+
+jobs:
+  include:
+    - stage: "Legacy APIs"
+      name: "chisel3"
+      script: make apis-chisel
+    - script: make apis-firrtl
+      name: "firrtl"
+    - script: make apis-chisel-testers
+      name: "chisel-testers (iotesters)"
+    - script: make apis-treadle
+      name: "treadle"
+    - script: make apis-diagrammer
+      name: "diagrammer"
+    - stage: "Website"
+      name: "Latest API and sbt-microsite"
+      script:
+        - make
+        - if [ "$TRAVIS_BRANCH" = "master" -a "$TRAVIS_PULL_REQUEST" = "false" ]; then bash scripts/publishMicrosite.sh; fi
+        - if [ "$TRAVIS_PULL_REQUEST" = "true" ]; then echo "Not in master branch, skipping deploy and release"; fi
