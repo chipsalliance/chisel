@@ -9,10 +9,10 @@ import firrtl.passes.{InlineAnnotation, InlineInstances}
 import firrtl.passes.memlib.{InferReadWrite, InferReadWriteAnnotation, ReplSeqMem, ReplSeqMemAnnotation}
 import firrtl.transforms.BlackBoxTargetDirAnno
 import firrtl._
+import firrtl.FileUtils
 import firrtl.annotations._
 import firrtl.util.BackendCompilationUtilities
 
-import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
 class ExceptingTransform extends Transform {
@@ -307,7 +307,7 @@ class DriverSpec extends FreeSpec with Matchers with BackendCompilationUtilities
     copyResourceToFile(s"/annotations/$annoFilename", annotationsTestFile)
 
     import net.jcazevedo.moultingyaml._
-    val text = io.Source.fromFile(annotationsTestFile).mkString
+    val text = FileUtils.getText(annotationsTestFile)
     val yamlAnnos = text.parseYaml match {
       case YamlArray(xs) => xs
     }
@@ -467,8 +467,8 @@ class DriverSpec extends FreeSpec with Matchers with BackendCompilationUtilities
       Driver.execute(args)
     }
     "Both paths do the same thing" in {
-      val s1 = Source.fromFile(verilogFromFir).mkString
-      val s2 = Source.fromFile(verilogFromPb).mkString
+      val s1 = FileUtils.getText(verilogFromFir)
+      val s2 = FileUtils.getText(verilogFromPb)
       s1 should equal (s2)
     }
   }

@@ -7,6 +7,7 @@ import java.nio.file.Files
 import java.text.SimpleDateFormat
 import java.util.Calendar
 
+import firrtl.FileUtils
 
 import scala.sys.process.{ProcessBuilder, ProcessLogger, _}
 
@@ -121,7 +122,7 @@ trait BackendCompilationUtilities {
     // Build a set of canonical file paths to use as a filter to exclude already included additional Verilog sources.
     val blackBoxHelperFiles: Set[String] = {
       if(list_file.exists()) {
-        io.Source.fromFile(list_file).getLines.toSet
+        FileUtils.getLines(list_file).toSet
       }
       else {
         Set.empty

@@ -4,6 +4,7 @@ package firrtl.passes
 package memlib
 import net.jcazevedo.moultingyaml._
 import java.io.{CharArrayWriter, File, PrintWriter}
+import firrtl.FileUtils
 
 
 object CustomYAMLProtocol extends DefaultYamlProtocol {
@@ -23,7 +24,7 @@ case class Config(pin: Pin, source: Source, top: Top)
 class YamlFileReader(file: String) {
   def parse[A](implicit reader: YamlReader[A]) : Seq[A] = {
     if (new File(file).exists) {
-      val yamlString = scala.io.Source.fromFile(file).getLines.mkString("\n")
+      val yamlString = FileUtils.getText(file)
       yamlString.parseYamls flatMap (x =>
         try Some(reader read x)
         catch { case e: Exception => None }
