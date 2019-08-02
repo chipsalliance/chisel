@@ -12,6 +12,9 @@ cache:
     - $HOME/build/api/treadle
     - $HOME/build/api/diagrammer
 
+git:
+  depth: false
+
 scala:
   - 2.12.6
 env:
