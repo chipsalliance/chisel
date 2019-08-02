@@ -12,8 +12,10 @@ cache:
     - $HOME/build/api/treadle
     - $HOME/build/api/diagrammer
 
+scala:
+  - 2.12.6
 env:
-  - buildDir=$HOME/build
+  - buildDir=$HOME/build scalaVersion=2.12 scalaMinorVersion=6
 
 jdk:
   - openjdk8

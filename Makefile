@@ -2,8 +2,8 @@ buildDir ?= build
 subprojects = $(buildDir)/subprojects
 apis = $(buildDir)/api
 
-scalaVersion = 2.12
-scalaMinorVersion = 6
+scalaVersion ?= 2.12
+scalaMinorVersion ?= 6
 
 www-src = \
 	$(shell find docs/src/main/tut/ -name *.md) \
