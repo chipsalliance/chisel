@@ -13,7 +13,7 @@ chisel-src = $(shell find chisel3/ chisel-testers/ -name *.scala)
 # Get all semantic version tags for a git project in a given directory
 # Usage: $(call getTags,foo)
 define getTags
-	$(shell cd $(1) && git tag | grep "^v\([0-9]\+\.\)\{2\}[0-9]\+$$")
+	$(shell cd $(1) && git tag | grep "^v\([0-9]\+\.\)\{2\}[0-9]\+$$" | head -n1)
 endef
 
 firrtlTags = $(call getTags,firrtl)
@@ -75,7 +75,7 @@ docs/target/site/index.html: build.sbt $(www-src) $(chisel-src) $(api-copy)
 	sbt ++$(scalaVersion).$(scalaMinorVersion) docs/makeMicrosite
 
 # Build API of subprojects
-chisel3/target/scala-$(scalaVersion)/unidoc/index.html: $(shell find chisel3/src chisel-testers/src -name *.scala) | chisel3/.git chisel-testers/.git
+chisel3/target/scala-$(scalaVersion)/unidoc/index.html: $(shell find chisel3/src chisel-testers/src -name *.scala) | chisel3/.git
 	(cd chisel3/ && sbt ++$(scalaVersion).$(scalaMinorVersion) unidoc)
 firrtl/target/scala-$(scalaVersion)/unidoc/index.html: $(shell find firrtl/src -name *.scala) | firrtl/.git
 	(cd firrtl/ && sbt ++$(scalaVersion).$(scalaMinorVersion) unidoc)
@@ -99,15 +99,15 @@ docs/target/site/api/diagrammer/latest/index.html: diagrammer/target/scala-$(sca
 	cp -r $(dir $<)* $(dir $@)
 
 # Build *old* API of subprojects
-$(subprojects)/chisel3/%/target/scala-$(scalaVersion)/unidoc/index.html: $(subprojects)/chisel3/%/.git
+$(subprojects)/chisel3/%/target/scala-$(scalaVersion)/unidoc/index.html: | $(subprojects)/chisel3/%/.git
 	(cd $(subprojects)/chisel3/$* && sbt ++$(scalaVersion).$(scalaMinorVersion) unidoc)
-$(subprojects)/firrtl/%/target/scala-$(scalaVersion)/unidoc/index.html: $(subprojects)/firrtl/%/.git
+$(subprojects)/firrtl/%/target/scala-$(scalaVersion)/unidoc/index.html: | $(subprojects)/firrtl/%/.git
 	(cd $(subprojects)/firrtl/$* && sbt ++$(scalaVersion).$(scalaMinorVersion) unidoc)
-$(subprojects)/chisel-testers/%/target/scala-$(scalaVersion)/api/index.html: $(subprojects)/chisel-testers/%/.git
+$(subprojects)/chisel-testers/%/target/scala-$(scalaVersion)/api/index.html: | $(subprojects)/chisel-testers/%/.git
 	(cd $(subprojects)/chisel-testers/$* && sbt ++$(scalaVersion).$(scalaMinorVersion) doc)
-$(subprojects)/treadle/%/target/scala-$(scalaVersion)/api/index.html: $(subprojects)/treadle/%/.git
+$(subprojects)/treadle/%/target/scala-$(scalaVersion)/api/index.html: | $(subprojects)/treadle/%/.git
 	(cd $(subprojects)/treadle/$* && sbt ++$(scalaVersion).$(scalaMinorVersion) doc)
-$(subprojects)/diagrammer/%/target/scala-$(scalaVersion)/api/index.html: $(subprojects)/diagrammer/%/.git
+$(subprojects)/diagrammer/%/target/scala-$(scalaVersion)/api/index.html: | $(subprojects)/diagrammer/%/.git
 	(cd $(subprojects)/diagrammer/$* && sbt ++$(scalaVersion).$(scalaMinorVersion) doc)
 
 # Copy *old* API of subprojects into API diretory
@@ -136,7 +136,7 @@ docs/target/site/api/diagrammer/%/index.html: $(apis)/diagrammer/%/index.html | 
 
 # Utilities to either fetch submodules or create directories
 %/.git:
-	git submodule update --init $*
+	git submodule update --init --depth 1 $*
 $(subprojects)/chisel3/%/.git:
 	git clone "https://github.com/freechipsproject/chisel3.git" --depth 1 --branch $* $(dir $@)
 $(subprojects)/firrtl/%/.git:

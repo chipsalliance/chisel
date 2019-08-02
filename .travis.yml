@@ -3,47 +3,49 @@ dist: xenial
 
 cache:
   directories:
-    $HOME/.ivy2
-    $HOME/.sbt
-    $HOME/.rvm/gems
-    $HOME/apis/api
+    - $HOME/.ivy2
+    - $HOME/.sbt
+    - $HOME/.rvm/gems
+    - $HOME/build/api/chisel3
+    - $HOME/build/api/firrtl
+    - $HOME/build/api/chisel-testers
+    - $HOME/build/api/treadle
+    - $HOME/build/api/diagrammer
 
 env:
-  - buildDir=$HOME/apis
+  - buildDir=$HOME/build
 
 jdk:
   - openjdk8
+
+git:
+  submodules: false
 
 branches:
   only:
     - master
 
-before_install:
-  - if [ "$TRAVIS_BRANCH" = "master" -a "$TRAVIS_PULL_REQUEST" = "false" ]; then bash
-    scripts/decrypt-keys.sh; fi
-  - export PATH=${PATH}:./vendor/bundle
-install:
-  - rvm use 2.6.0 --install --fuzzy
-  - gem update --system
-  - gem install sass
-  - gem install jekyll -v 3.8.5
-
 jobs:
   include:
-    - stage: "Legacy APIs"
-      name: "chisel3"
+    - stage: "legacy chisel apis"
       script: make apis-chisel
-    - script: make apis-firrtl
-      name: "firrtl"
-    - script: make apis-chisel-testers
-      name: "chisel-testers (iotesters)"
-    - script: make apis-treadle
-      name: "treadle"
-    - script: make apis-diagrammer
-      name: "diagrammer"
-    - stage: "Website"
-      name: "Latest API and sbt-microsite"
+    - stage: "legacy firrtl apis"
+      script: make apis-firrtl
+    - stage: "legacy chisel-testers (iotesters) apis"
+      script: make apis-chisel-testers
+    - stage: "legacy treadle apis"
+      script: make apis-treadle
+    - stage: "legacy diagrammer apis"
+      script: make apis-diagrammer
+    - stage: "website"
       script:
+        - if [ "$TRAVIS_BRANCH" = "master" -a "$TRAVIS_PULL_REQUEST" = "false" ]; then bash scripts/decrypt-keys.sh; fi
+        - export PATH=${PATH}:./vendor/bundle
+        - rvm use 2.6.0 --install --fuzzy
+        - gem update --system
+        - gem install sass
+        - gem install jekyll -v 3.8.5
+        - git submodule update --init --recursive
         - make
         - if [ "$TRAVIS_BRANCH" = "master" -a "$TRAVIS_PULL_REQUEST" = "false" ]; then bash scripts/publishMicrosite.sh; fi
         - if [ "$TRAVIS_PULL_REQUEST" = "true" ]; then echo "Not in master branch, skipping deploy and release"; fi
