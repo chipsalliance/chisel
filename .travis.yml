@@ -18,9 +18,6 @@ env:
 jdk:
   - openjdk8
 
-git:
-  submodules: false
-
 branches:
   only:
     - master
@@ -45,7 +42,6 @@ jobs:
         - gem update --system
         - gem install sass
         - gem install jekyll -v 3.8.5
-        - git submodule update --init --recursive
         - make
         - if [ "$TRAVIS_BRANCH" = "master" -a "$TRAVIS_PULL_REQUEST" = "false" ]; then bash scripts/publishMicrosite.sh; fi
         - if [ "$TRAVIS_PULL_REQUEST" = "true" ]; then echo "Not in master branch, skipping deploy and release"; fi
