@@ -11,6 +11,7 @@ git config --global push.default simple
   cd site
   rm -rf *
   cp -r $TRAVIS_BUILD_DIR/docs/target/site/* .
+  git add .
   git commit -m "Published from $TRAVIS_COMMIT"
   git push origin gh-pages
 )
