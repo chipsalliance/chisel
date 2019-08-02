@@ -98,7 +98,7 @@ object FileUtils {
     * @param fileName The file to read
     */
   def getLines(fileName: String): Seq[String] = {
-    val source = io.Source.fromFile(fileName)
+    val source = scala.io.Source.fromFile(fileName)
     val lines = source.getLines()
     source.close()
     lines.toSeq
@@ -110,7 +110,7 @@ object FileUtils {
     * @param file a java File to be read
     */
   def getLines(file: File): Seq[String] = {
-    val source = io.Source.fromFile(file)
+    val source = scala.io.Source.fromFile(file)
     val lines = source.getLines()
     source.close()
     lines.toSeq
@@ -122,7 +122,7 @@ object FileUtils {
     * @param fileName The file to read
     */
   def getText(fileName: String): String = {
-    val source = io.Source.fromFile(fileName)
+    val source = scala.io.Source.fromFile(fileName)
     val text = source.mkString
     source.close()
     text
@@ -134,7 +134,7 @@ object FileUtils {
     * @param file a java File to be read
     */
   def getText(file: File): String = {
-    val source = io.Source.fromFile(file)
+    val source = scala.io.Source.fromFile(file)
     val text = source.mkString
     source.close()
     text
@@ -148,8 +148,9 @@ object FileUtils {
     */
   def getLinesResource(resourceName: String): Seq[String] = {
     val inputStream = getClass.getResourceAsStream(resourceName)
-    val text = io.Source.fromInputStream(inputStream).getLines().toSeq
-    text.length  // This forces lazy buffer to reify, please suggest a better solution
+    // the .toList at the end is critical to force stream to be read.
+    // Without it the lazy evaluation can cause failure in MultiThreadingSpec
+    val text = scala.io.Source.fromInputStream(inputStream).getLines().toList
     inputStream.close()
     text
   }
@@ -162,7 +163,7 @@ object FileUtils {
     */
   def getTextResource(resourceName: String): String = {
     val inputStream = getClass.getResourceAsStream(resourceName)
-    val text = io.Source.fromInputStream(inputStream).mkString
+    val text = scala.io.Source.fromInputStream(inputStream).mkString
     inputStream.close()
     text
   }
