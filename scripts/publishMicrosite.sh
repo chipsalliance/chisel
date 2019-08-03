@@ -10,7 +10,7 @@ git config --global push.default simple
   git clone --branch gh-pages git@github.com:freechipsproject/www.chisel-lang.org site
   cd site
   rm -rf *
-  cp -r $TRAVIS_BUILD_DIR/docs/target/jekyll/ .
+  cp -r $TRAVIS_BUILD_DIR/docs/target/jekyll/* .
   git add .
   git commit -m "Published from $TRAVIS_COMMIT"
   git push origin gh-pages
