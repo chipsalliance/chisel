@@ -140,6 +140,8 @@ options:
         url: api/chisel3/v3.0.2/index.html
       - title: v3.0.1
         url: api/chisel3/v3.0.1/index.html
+      - title: v3.0.0
+        url: api/chisel3/v3.0.0/index.html
 
   # Testers Site
   - title: Testers

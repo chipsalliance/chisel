@@ -34,7 +34,7 @@ api-copy = \
 	$(treadleTags:%=docs/target/site/api/treadle/%/index.html) \
 	$(diagrammerTags:%=docs/target/site/api/diagrammer/%/index.html)
 
-.PHONY: all clean mrproper serve \
+.PHONY: all clean mrproper publish serve \
 	apis-chisel apis-firrtl apis-chisel-testers apis-treadle apis-diagrammer
 .PRECIOUS: \
 	$(subprojects)/chisel3/%/.git $(subprojects)/chisel3/%/target/scala-$(scalaVersion)/unidoc/index.html \
@@ -65,6 +65,10 @@ clean:
 # Remove everything
 mrproper:
 	rm -rf $(buildDir) target project/target firrtl/target treadle/target diagrammer/target
+
+# Publish Microsite
+publish: all
+	sbt ++$(scalaVersion).$(scalaMinorVersion) docs/ghpagesPushSite
 
 # Start a Jekyll server for the site
 serve: all

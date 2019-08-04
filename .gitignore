@@ -7,3 +7,8 @@ build
 
 travis-deploy-key
 travis-deploy-key.pub
+
+test_run_dir
+*.anno.json
+*.v
+*.fir

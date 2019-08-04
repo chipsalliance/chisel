@@ -23,20 +23,19 @@ val technologies: String =
      | - third: ["FIRRTL", "The FIRRTL circuit compiler starts after Chisel and enables backend (FPGA, ASIC, technology) specialization, automated circuit transformation, and Verilog generation."]
      |""".stripMargin
 
-lazy val docsMappingsAPIDir = settingKey[String]("Name of subdirectory in site target directory for api docs")
-
 lazy val micrositeSettings = Seq(
   scalaVersion := "2.12.6",
   micrositeName := "Chisel/FIRRTL",
   micrositeDescription := "Chisel/FIRRTL\nHardware Compiler Framework",
-  micrositeUrl := "https://chisel.eecs.berkeley.edu",
+  micrositeUrl := "https://freechipsproject.github.io/www.chisel-lang.org",
+  micrositeBaseUrl := "www.chisel-lang.org",
   micrositeAuthor := "the Chisel/FIRRTL Developers",
   micrositeTwitter := "@chisel_lang",
   micrositeGithubOwner := "freechipsproject",
   micrositeGithubRepo := "chisel3",
   micrositeGithubLinks := false,
   micrositeShareOnSocial := false,
-  micrositeDocumentationUrl := "api/chisel3/latest",
+  micrositeDocumentationUrl := "api/chisel3/latest/",
   micrositeDocumentationLabelDescription := "API Documentation",
   /* mdoc doesn't work with extraMDFiles so this is disabled for now */
   // micrositeCompilingDocsTool := WithMdoc,
@@ -87,7 +86,6 @@ lazy val micrositeSettings = Seq(
     "gray-lighter"      -> "#F4F3F4",
     "white-color"       -> "#FFFFFF"),
   autoAPIMappings := true,
-  docsMappingsAPIDir := "api/chisel3",
   ghpagesNoJekyll := false,
   scalacOptions in (ScalaUnidoc, unidoc) ++= Seq(
     "-groups",
@@ -95,8 +93,11 @@ lazy val micrositeSettings = Seq(
     baseDirectory.in(LocalRootProject).value.getAbsolutePath,
     "-diagrams"
   ),
-  git.remoteRepo := "git@github.com:freechipsproject/chisel3.git",
-  includeFilter in makeSite := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.gif" | "*.js" | "*.swf" | "*.yml" | "*.md" | "*.svg",
+  ghpagesRepository := file("build/gh-pages"),
+  ghpagesBranch := "gh-pages",
+  git.remoteRepo := "git@github.com:freechipsproject/www.chisel-lang.org.git",
+  includeFilter in makeSite := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.gif" | "*.js" | "*.swf" | "*.yml" | "*.md" |
+    "*.svg" | "*.woff" | "*.ttf",
   includeFilter in Jekyll := (includeFilter in makeSite).value
 )
 

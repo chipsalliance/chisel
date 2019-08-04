@@ -27,6 +27,11 @@ branches:
   only:
     - master
 
+before_script:
+  - git config --global user.email "chisel.language@gmail.com"
+  - git config --global user.name "ucb-bar-jenkins"
+  - git config --global push.default simple
+
 jobs:
   include:
     - stage: "legacy chisel apis"
@@ -48,5 +53,5 @@ jobs:
         - gem install sass
         - gem install jekyll -v 3.8.5
         - make
-        - if [ "$TRAVIS_BRANCH" = "master" -a "$TRAVIS_PULL_REQUEST" = "false" ]; then bash scripts/publishMicrosite.sh; fi
+        - if [ "$TRAVIS_BRANCH" = "master" -a "$TRAVIS_PULL_REQUEST" = "false" ]; then make publish; fi
         - if [ "$TRAVIS_PULL_REQUEST" = "true" ]; then echo "Not in master branch, skipping deploy and release"; fi
