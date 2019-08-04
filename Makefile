@@ -13,7 +13,7 @@ chisel-src = $(shell find chisel3/ chisel-testers/ -name *.scala)
 # Get all semantic version tags for a git project in a given directory
 # Usage: $(call getTags,foo)
 define getTags
-	$(shell cd $(1) && git tag | grep "^v\([0-9]\+\.\)\{2\}[0-9]\+$$" | head -n1)
+	$(shell cd $(1) && git tag | grep "^v\([0-9]\+\.\)\{2\}[0-9]\+$$")
 endef
 
 firrtlTags = $(call getTags,firrtl)
