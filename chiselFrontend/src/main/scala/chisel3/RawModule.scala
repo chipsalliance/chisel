@@ -171,29 +171,6 @@ abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions)
   protected var override_clock: Option[Clock] = None
   protected var override_reset: Option[Bool] = None
 
-  // _clock and _reset can be clock and reset in these 2ary constructors
-  // once chisel2 compatibility issues are resolved
-  @chiselRuntimeDeprecated
-  @deprecated("Module constructor with override_clock and override_reset deprecated, use withClockAndReset", "chisel3")
-  def this(override_clock: Option[Clock]=None, override_reset: Option[Bool]=None)
-      (implicit moduleCompileOptions: CompileOptions) = {
-    this()
-    this.override_clock = override_clock
-    this.override_reset = override_reset
-  }
-
-  @chiselRuntimeDeprecated
-  @deprecated("Module constructor with override _clock deprecated, use withClock", "chisel3")
-  def this(_clock: Clock)(implicit moduleCompileOptions: CompileOptions) = this(Option(_clock), None)(moduleCompileOptions) // scalastyle:ignore line.size.limit
-
-  @chiselRuntimeDeprecated
-  @deprecated("Module constructor with override _reset deprecated, use withReset", "chisel3")
-  def this(_reset: Bool)(implicit moduleCompileOptions: CompileOptions)  = this(None, Option(_reset))(moduleCompileOptions) // scalastyle:ignore line.size.limit
-
-  @chiselRuntimeDeprecated
-  @deprecated("Module constructor with override _clock, _reset deprecated, use withClockAndReset", "chisel3")
-  def this(_clock: Clock, _reset: Bool)(implicit moduleCompileOptions: CompileOptions) = this(Option(_clock), Option(_reset))(moduleCompileOptions) // scalastyle:ignore line.size.limit
-
   // IO for this Module. At the Scala level (pre-FIRRTL transformations),
   // connections in and out of a Module may only go through `io` elements.
   def io: Record
