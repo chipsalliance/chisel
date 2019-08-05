@@ -98,7 +98,11 @@ lazy val micrositeSettings = Seq(
   git.remoteRepo := "git@github.com:freechipsproject/www.chisel-lang.org.git",
   includeFilter in makeSite := "*.html" | "*.css" | "*.png" | "*.jpg" | "*.gif" | "*.js" | "*.swf" | "*.yml" | "*.md" |
     "*.svg" | "*.woff" | "*.ttf",
-  includeFilter in Jekyll := (includeFilter in makeSite).value
+  includeFilter in Jekyll := (includeFilter in makeSite).value,
+  excludeFilter in ghpagesCleanSite :=
+    new FileFilter{
+      def accept(f: File) = (ghpagesRepository.value / "CNAME").getCanonicalPath == f.getCanonicalPath
+    } || "versions.html"
 )
 
 resolvers ++= Seq(
