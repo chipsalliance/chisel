@@ -97,12 +97,7 @@ object FileUtils {
     *
     * @param fileName The file to read
     */
-  def getLines(fileName: String): Seq[String] = {
-    val source = scala.io.Source.fromFile(fileName)
-    val lines = source.getLines()
-    source.close()
-    lines.toSeq
-  }
+  def getLines(fileName: String): Seq[String] = getLines(new File(fileName))
 
   /** Read a text file and return it as  a Seq of strings
     * Closes the file after read to avoid dangling file handles
@@ -111,9 +106,9 @@ object FileUtils {
     */
   def getLines(file: File): Seq[String] = {
     val source = scala.io.Source.fromFile(file)
-    val lines = source.getLines()
+    val lines = source.getLines().toList
     source.close()
-    lines.toSeq
+    lines
   }
 
   /** Read a text file and return it as  a single string
@@ -121,12 +116,7 @@ object FileUtils {
     *
     * @param fileName The file to read
     */
-  def getText(fileName: String): String = {
-    val source = scala.io.Source.fromFile(fileName)
-    val text = source.mkString
-    source.close()
-    text
-  }
+  def getText(fileName: String): String = getText(new File(fileName))
 
   /** Read a text file and return it as  a single string
     * Closes the file after read to avoid dangling file handles
