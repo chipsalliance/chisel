@@ -3,7 +3,7 @@
 	url = https://github.com/freechipsproject/chisel3.git
 [submodule "chisel-testers"]
 	path = chisel-testers
-	url = https://github.com/seldridge/chisel-testers.git
+	url = https://github.com/freechipsproject/chisel-testers.git
 [submodule "firrtl"]
 	path = firrtl
 	url = https://github.com/freechipsproject/firrtl
