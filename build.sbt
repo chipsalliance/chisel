@@ -85,6 +85,7 @@ lazy val micrositeSettings = Seq(
     "gray-light"        -> "#E3E2E3",
     "gray-lighter"      -> "#F4F3F4",
     "white-color"       -> "#FFFFFF"),
+  micrositeAnalyticsToken := "UA-145179088-1",
   autoAPIMappings := true,
   ghpagesNoJekyll := false,
   scalacOptions in (ScalaUnidoc, unidoc) ++= Seq(
