@@ -1,0 +1,265 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>src/main/scala/chisel3/stage/phases &#8212; chisel-test  documentation</title>
+    <link rel="stylesheet" href="../../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../../../../" src="../../../../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" />
+    <link rel="next" title="src/main/resources" href="../../../../resources/resources.html" />
+    <link rel="prev" title="src/main/scala/chisel3/stage" href="../stage.html" />
+   
+  <link rel="stylesheet" href="../../../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="src-main-scala-chisel3-stage-phases">
+<h1>src/main/scala/chisel3/stage/phases<a class="headerlink" href="#src-main-scala-chisel3-stage-phases" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+</div>
+<div class="section" id="checks-scala">
+<h2>Checks.scala<a class="headerlink" href="#checks-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class Checks extends Phase">
+<code class="descname">class Checks extends Phase</code><a class="headerlink" href="#attr-class Checks extends Phase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sanity checks an <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">firrtl.AnnotationSeq</span></code>  before running the main <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">firrtl.options.Phase</span></code> s of        <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">chisel3.stage.ChiselStage</span></code> .</p>
+</dd></dl>
+
+</div>
+<div class="section" id="emitter-scala">
+<h2>Emitter.scala<a class="headerlink" href="#emitter-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class Emitter extends Phase">
+<code class="descname">class Emitter extends Phase</code><a class="headerlink" href="#attr-class Emitter extends Phase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Emit a <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">chisel3.stage.ChiselCircuitAnnotation</span></code>  to a file if a <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">chisel3.stage.ChiselOutputFileAnnotation</span></code>  is       present. A deleted <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">firrtl.EmittedFirrtlCircuitAnnotation</span></code>  is added.</p>
+<p>&#64;todo This should be switched to support correct emission of multiple circuits to multiple files. The API should
+likely mirror how the <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">firrtl.stage.phases.Compiler</span></code>  parses annotations into “global” annotations and
+left-associative per-circuit annotations.
+&#64;todo The use of the deleted <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">firrtl.EmittedFirrtlCircuitAnnotation</span></code>  is a kludge to provide some breadcrumbs such
+that the emitted CHIRRTL can be provided back to the old Driver. This should be removed or a better solution
+developed.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="addimplicitoutputannotationfile-scala">
+<h2>AddImplicitOutputAnnotationFile.scala<a class="headerlink" href="#addimplicitoutputannotationfile-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class AddImplicitOutputAnnotationFile extends Phase">
+<code class="descname">class AddImplicitOutputAnnotationFile extends Phase</code><a class="headerlink" href="#attr-class AddImplicitOutputAnnotationFile extends Phase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds an <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">firrtl.options.OutputAnnotationFileAnnotation</span></code>  if one does not exist. This replicates old behavior where        an output annotation file was always written.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="addimplicitoutputfile-scala">
+<h2>AddImplicitOutputFile.scala<a class="headerlink" href="#addimplicitoutputfile-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class AddImplicitOutputFile extends Phase">
+<code class="descname">class AddImplicitOutputFile extends Phase</code><a class="headerlink" href="#attr-class AddImplicitOutputFile extends Phase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a output file for a Chisel circuit, derived from the top module in the circuit, if no       <a class="reference internal" href="../stage.html#attr-case class ChiselCircuitAnnotation(circuit: Circuit) extends NoTargetAnnotation with ChiselOption  case class ChiselOutputFileAnnotation(file: String) extends NoTargetAnnotation with ChiselOption" title="attr-case class ChiselCircuitAnnotation(circuit: Circuit) extends NoTargetAnnotation with ChiselOption  case class ChiselOutputFileAnnotation(file: String) extends NoTargetAnnotation with ChiselOption"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">ChiselOutputFileAnnotation</span></code></a>  already exists.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="drivercompatibility-scala">
+<h2>DriverCompatibility.scala<a class="headerlink" href="#drivercompatibility-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-object DriverCompatibility">
+<code class="descname">object DriverCompatibility</code><a class="headerlink" href="#attr-object DriverCompatibility" title="Permalink to this definition">¶</a></dt>
+<dd><p>This provides components of a compatibility wrapper around Chisel’s deprecated <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">chisel3.Driver</span></code> .
+Primarily, this object includes <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">firrtl.options.Phase</span> <span class="pre">Phase</span></code> s that generate <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">firrtl.annotations.Annotation</span></code> s
+derived from the deprecated <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">firrtl.stage.phases.DriverCompatibility.TopNameAnnotation</span></code> .</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-private[chisel3] class AddImplicitOutputFile extends Phase">
+<code class="descname">private[chisel3] class AddImplicitOutputFile extends Phase</code><a class="headerlink" href="#attr-private[chisel3] class AddImplicitOutputFile extends Phase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds a <a class="reference internal" href="../stage.html#attr-case class ChiselCircuitAnnotation(circuit: Circuit) extends NoTargetAnnotation with ChiselOption  case class ChiselOutputFileAnnotation(file: String) extends NoTargetAnnotation with ChiselOption" title="attr-case class ChiselCircuitAnnotation(circuit: Circuit) extends NoTargetAnnotation with ChiselOption  case class ChiselOutputFileAnnotation(file: String) extends NoTargetAnnotation with ChiselOption"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">ChiselOutputFileAnnotation</span></code></a>  derived from a <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">TopNameAnnotation</span></code>  if no <a class="reference internal" href="../stage.html#attr-case class ChiselCircuitAnnotation(circuit: Circuit) extends NoTargetAnnotation with ChiselOption  case class ChiselOutputFileAnnotation(file: String) extends NoTargetAnnotation with ChiselOption" title="attr-case class ChiselCircuitAnnotation(circuit: Circuit) extends NoTargetAnnotation with ChiselOption  case class ChiselOutputFileAnnotation(file: String) extends NoTargetAnnotation with ChiselOption"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">ChiselOutputFileAnnotation</span></code></a>   already exists. If no <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">TopNameAnnotation</span></code>  exists, then no <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">firrtl.stage.OutputFileAnnotation</span></code>  is added. ‘’This is not a
+replacement for <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">chisel3.stage.phases.AddImplicitOutputFile</span> <span class="pre">AddImplicitOutputFile</span></code>  as this only adds an output
+file based on a discovered top name and not on a discovered elaborated circuit.’’ Consequently, this will provide
+the correct behavior before a circuit has been elaborated.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Note:</th><td class="field-body">the output suffix is unspecified and will be set by the underlying <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">firrtl.EmittedComponent</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-private[chisel3] class AddImplicitOutputAnnotationFile extends Phase">
+<code class="descname">private[chisel3] class AddImplicitOutputAnnotationFile extends Phase</code><a class="headerlink" href="#attr-private[chisel3] class AddImplicitOutputAnnotationFile extends Phase" title="Permalink to this definition">¶</a></dt>
+<dd><p>If a <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">firrtl.options.OutputAnnotationFileAnnotation</span></code>  does not exist, this adds one derived from a        <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">TopNameAnnotation</span></code> . ‘’This is not a replacement for <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">chisel3.stage.phases.AddImplicitOutputAnnotationFile</span></code>  as
+this only adds an output annotation file based on a discovered top name.’’ Consequently, this will provide the
+correct behavior before a circuit has been elaborated.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Note:</th><td class="field-body">the output suffix is unspecified and will be set by <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">firrtl.options.phases.WriteOutputAnnotations</span></code></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-private[chisel3] class DisableFirrtlStage extends Phase">
+<code class="descname">private[chisel3] class DisableFirrtlStage extends Phase</code><a class="headerlink" href="#attr-private[chisel3] class DisableFirrtlStage extends Phase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Disables the execution of <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">firrtl.stage.FirrtlStage</span></code> . This can be used to call <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">chisel3.stage.ChiselStage</span></code>  and    guarantee that the FIRRTL compiler will not run. This is necessary for certain <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">chisel3.Driver</span></code>  compatibility
+situations where you need to do something between Chisel compilation and FIRRTL compilations, e.g., update a
+mutable data structure.</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-private[chisel3] class MutateOptionsManager(optionsManager: ExecutionOptionsManager with HasChiselExecutionOptions with HasFirrtlOptions) extends Phase">
+<code class="descname">private[chisel3] class MutateOptionsManager(optionsManager: ExecutionOptionsManager with HasChiselExecutionOptions with HasFirrtlOptions) extends Phase</code><a class="headerlink" href="#attr-private[chisel3] class MutateOptionsManager(optionsManager: ExecutionOptionsManager with HasChiselExecutionOptions with HasFirrtlOptions) extends Phase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mutate an input <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">firrtl.ExecutionOptionsManager</span></code>  based on information encoded in an <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">firrtl.AnnotationSeq</span></code> .       This is intended to be run between <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">chisel3.stage.ChiselStage</span> <span class="pre">ChiselStage</span></code>  and <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">firrtl.stage.FirrtlStage</span></code>  if
+you want to have backwards compatibility with an <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">firrtl.ExecutionOptionsManager</span></code> .</p>
+</dd></dl>
+
+</div>
+<div class="section" id="maybefirrtlstage-scala">
+<h2>MaybeFirrtlStage.scala<a class="headerlink" href="#maybefirrtlstage-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class MaybeFirrtlStage extends Phase">
+<code class="descname">class MaybeFirrtlStage extends Phase</code><a class="headerlink" href="#attr-class MaybeFirrtlStage extends Phase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">firrtl.stage.FirrtlStage</span></code>  if a <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">chisel3.stage.NoRunFirrtlCompilerAnnotation</span></code>  is not present.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="elaborate-scala">
+<h2>Elaborate.scala<a class="headerlink" href="#elaborate-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class Elaborate extends Phase">
+<code class="descname">class Elaborate extends Phase</code><a class="headerlink" href="#attr-class Elaborate extends Phase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Elaborate all <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">chisel3.stage.ChiselGeneratorAnnotation</span></code> s into <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">chisel3.stage.ChiselCircuitAnnotation</span></code> s.</p>
+<dl class="attr">
+<dt id="attr-def transform(annotations: AnnotationSeq): AnnotationSeq">
+<code class="descname">def transform(annotations: AnnotationSeq): AnnotationSeq</code><a class="headerlink" href="#attr-def transform(annotations: AnnotationSeq): AnnotationSeq" title="Permalink to this definition">¶</a></dt>
+<dd><p>&#64;todo Change this to print to STDERR (<cite>Console.err.println</cite>)</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="convert-scala">
+<h2>Convert.scala<a class="headerlink" href="#convert-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class Convert extends Phase">
+<code class="descname">class Convert extends Phase</code><a class="headerlink" href="#attr-class Convert extends Phase" title="Permalink to this definition">¶</a></dt>
+<dd><p>This prepares a <a class="reference internal" href="../stage.html#attr-case class ChiselCircuitAnnotation(circuit: Circuit) extends NoTargetAnnotation with ChiselOption" title="attr-case class ChiselCircuitAnnotation(circuit: Circuit) extends NoTargetAnnotation with ChiselOption"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">ChiselCircuitAnnotation</span></code></a>  for compilation with FIRRTL. This does three things:   - Uses <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">chisel3.internal.firrtl.Converter</span></code>  to generate a <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">FirrtlCircuitAnnotation</span></code>
+- Extracts all <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">firrtl.annotations.Annotation</span></code> s from the <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">chisel3.internal.firrtl.Circuit</span></code>
+- Generates any needed <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">RunFirrtlTransformAnnotation</span></code> s from extracted <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">firrtl.annotations.Annotation</span></code> s</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../../../contents.html">chisel-test</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../../../../../src.html">src</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../../../../test/test.html">src/test</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../../../main.html">src/main</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../chiselFrontend/chiselFrontend.html">chiselFrontend</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../../../contents.html">Documentation overview</a><ul>
+  <li><a href="../../../../../src.html">src</a><ul>
+  <li><a href="../../../../main.html">src/main</a><ul>
+  <li><a href="../../../scala.html">src/main/scala</a><ul>
+  <li><a href="../../chisel3.html">src/main/scala/chisel3</a><ul>
+  <li><a href="../stage.html">src/main/scala/chisel3/stage</a><ul>
+      <li>Previous: <a href="../stage.html" title="previous chapter">src/main/scala/chisel3/stage</a></li>
+      <li>Next: <a href="../../../../resources/resources.html" title="next chapter">src/main/resources</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, John Andrews.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../../../../../../_sources/src/main/scala/chisel3/stage/phases/phases.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

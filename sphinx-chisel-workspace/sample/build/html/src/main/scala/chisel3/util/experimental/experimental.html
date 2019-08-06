@@ -1,0 +1,473 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>src/main/scala/chisel3/util/experimental &#8212; chisel-test  documentation</title>
+    <link rel="stylesheet" href="../../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../../../../" src="../../../../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" />
+    <link rel="next" title="src/main/scala/chisel3/util/random" href="../random/random.html" />
+    <link rel="prev" title="src/main/scala/chisel3/util" href="../util.html" />
+   
+  <link rel="stylesheet" href="../../../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="src-main-scala-chisel3-util-experimental">
+<h1>src/main/scala/chisel3/util/experimental<a class="headerlink" href="#src-main-scala-chisel3-util-experimental" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+</div>
+<div class="section" id="loadmemorytransform-scala">
+<h2>LoadMemoryTransform.scala<a class="headerlink" href="#loadmemorytransform-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-case class ChiselLoadMemoryAnnotation[T &lt;: Data](target:      MemBase[T], fileName:    String, hexOrBinary: MemoryLoadFileType.FileType = MemoryLoadFileType.Hex ) extends ChiselAnnotation with RunFirrtlTransform">
+<code class="descname">case class ChiselLoadMemoryAnnotation[T &lt;: Data](target:      MemBase[T], fileName:    String, hexOrBinary: MemoryLoadFileType.FileType = MemoryLoadFileType.Hex ) extends ChiselAnnotation with RunFirrtlTransform</code><a class="headerlink" href="#attr-case class ChiselLoadMemoryAnnotation[T <: Data](target:      MemBase[T], fileName:    String, hexOrBinary: MemoryLoadFileType.FileType = MemoryLoadFileType.Hex ) extends ChiselAnnotation with RunFirrtlTransform" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is the annotation created when using <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">loadMemoryFromFile</span></code> , it records the memory, the load file     and the format of the file.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Param target:</th><td class="field-body">memory to load</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Param fileName:</th><td class="field-body">name of input file</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">Param hexOrBinary:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">use $readmemh or $readmemb, i.e. hex or binary text input, default is hex</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class ChiselLoadMemoryAnnotation[T &lt;: Data](target:      MemBase[T], fileName:    String, hexOrBinary: MemoryLoadFileType.FileType">
+<code class="descname">case class ChiselLoadMemoryAnnotation[T &lt;: Data](target:      MemBase[T], fileName:    String, hexOrBinary: MemoryLoadFileType.FileType</code><a class="headerlink" href="#attr-case class ChiselLoadMemoryAnnotation[T <: Data](target:      MemBase[T], fileName:    String, hexOrBinary: MemoryLoadFileType.FileType" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-object loadMemoryFromFile">
+<code class="descname">object loadMemoryFromFile</code><a class="headerlink" href="#attr-object loadMemoryFromFile" title="Permalink to this definition">¶</a></dt>
+<dd><p><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">loadMemoryFromFile</span></code>  is an annotation generator that helps with loading a memory from a text file. This relies on        Verilator and Verilog’s <cite>$readmemh</cite> or <cite>$readmemb</cite>. The <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">https://github.com/freechipsproject/treadle</span> <span class="pre">Treadle</span>
+<span class="pre">backend</span></code>  can also recognize this annotation and load memory at run-time.</p>
+<p>This annotation, when the FIRRTL compiler runs, triggers the <a class="reference internal" href="#attr-class LoadMemoryTransform extends Transform" title="attr-class LoadMemoryTransform extends Transform"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">LoadMemoryTransform</span></code></a> . That will add Verilog
+directives to enable the specified memories to be initialized from files.</p>
+<p>==Example module==</p>
+<p>Consider a simple Module containing a memory:</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">import</span> <span class="nn">chisel3._</span>
+<span class="k">class</span> <span class="nc">UsesMem</span><span class="o">(</span><span class="n">memoryDepth</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">memoryType</span><span class="k">:</span> <span class="kt">Data</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="n">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span> <span class="o">{</span>
+    <span class="k">val</span> <span class="n">address</span> <span class="k">=</span> <span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="n">memoryType</span><span class="o">.</span><span class="n">getWidth</span><span class="o">.</span><span class="n">W</span><span class="o">))</span>
+    <span class="k">val</span> <span class="n">value</span>   <span class="k">=</span> <span class="nc">Output</span><span class="o">(</span><span class="n">memoryType</span><span class="o">)</span>
+  <span class="o">})</span>
+  <span class="k">val</span> <span class="n">memory</span> <span class="k">=</span> <span class="nc">Mem</span><span class="o">(</span><span class="n">memoryDepth</span><span class="o">,</span> <span class="n">memoryType</span><span class="o">)</span>
+  <span class="n">io</span><span class="o">.</span><span class="n">value</span> <span class="o">:=</span> <span class="n">memory</span><span class="o">(</span><span class="n">io</span><span class="o">.</span><span class="n">address</span><span class="o">)</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+<p>==Above module with annotation==</p>
+<p>To load this memory from the file <cite>/workspace/workdir/mem1.hex.txt</cite> just add an import and annotate the memory:</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">import</span> <span class="nn">chisel3._</span>
+<span class="k">import</span> <span class="nn">chisel3.util.experimental.loadMemoryFromFile</span>   <span class="c1">// &lt;&lt;-- new import here</span>
+<span class="k">class</span> <span class="nc">UsesMem</span><span class="o">(</span><span class="n">memoryDepth</span><span class="k">:</span> <span class="kt">Int</span><span class="o">,</span> <span class="n">memoryType</span><span class="k">:</span> <span class="kt">Data</span><span class="o">)</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="n">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span> <span class="o">{</span>
+    <span class="k">val</span> <span class="n">address</span> <span class="k">=</span> <span class="nc">Input</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="n">memoryType</span><span class="o">.</span><span class="n">getWidth</span><span class="o">.</span><span class="n">W</span><span class="o">))</span>
+    <span class="k">val</span> <span class="n">value</span>   <span class="k">=</span> <span class="nc">Output</span><span class="o">(</span><span class="n">memoryType</span><span class="o">)</span>
+  <span class="o">})</span>
+  <span class="k">val</span> <span class="n">memory</span> <span class="k">=</span> <span class="nc">Mem</span><span class="o">(</span><span class="n">memoryDepth</span><span class="o">,</span> <span class="n">memoryType</span><span class="o">)</span>
+  <span class="n">io</span><span class="o">.</span><span class="n">value</span> <span class="o">:=</span> <span class="n">memory</span><span class="o">(</span><span class="n">io</span><span class="o">.</span><span class="n">address</span><span class="o">)</span>
+  <span class="n">loadMemoryFromFile</span><span class="o">(</span><span class="n">memory</span><span class="o">,</span> <span class="s">&quot;/workspace/workdir/mem1.hex.txt&quot;</span><span class="o">)</span>  <span class="c1">// &lt;&lt;-- Note the annotation here</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+<p>==Example file format==</p>
+<p>A memory file should consist of ASCII text in either hex or binary format. The following example shows such a
+file formatted to use hex:</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span> <span class="mi">0</span>
+ <span class="mi">7</span>
+ <span class="n">d</span>
+<span class="mi">15</span>
+</pre></div>
+</div>
+<p>A binary file can be similarly constructed.</p>
+<p>&#64;see
+<code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">https://github.com/freechipsproject/chisel3/tree/master/src/test/scala/chiselTests/LoadMemoryFromFileSpec.scala</span>
+<span class="pre">LoadMemoryFromFileSpec.scala</span></code>  in the test suite for additional examples.
+&#64;see Chisel3 Wiki entry on
+<code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">https://github.com/freechipsproject/chisel3/wiki/Chisel-Memories#loading-memories-in-simulation</span> <span class="pre">&quot;Loading</span> <span class="pre">Memories</span>
+<span class="pre">in</span> <span class="pre">Simulation&quot;</span></code></p>
+<dl class="attr">
+<dt id="attr-def apply[T &lt;: Data](memory: MemBase[T], fileName: String, hexOrBinary: MemoryLoadFileType.FileType = MemoryLoadFileType.Hex ): Unit =">
+<code class="descname">def apply[T &lt;: Data](memory: MemBase[T], fileName: String, hexOrBinary: MemoryLoadFileType.FileType = MemoryLoadFileType.Hex ): Unit =</code><a class="headerlink" href="#attr-def apply[T <: Data](memory: MemBase[T], fileName: String, hexOrBinary: MemoryLoadFileType.FileType = MemoryLoadFileType.Hex ): Unit =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Annotate a memory such that it can be initialized using a file
+:param memory: the memory</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Param filename:</th><td class="field-body">the file used for initialization</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">Param hexOrBinary:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">whether the file uses a hex or binary number representation</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-class LoadMemoryTransform extends Transform">
+<code class="descname">class LoadMemoryTransform extends Transform</code><a class="headerlink" href="#attr-class LoadMemoryTransform extends Transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>This transform only is activated if Verilog is being generated (determined by presence of the proper emit       annotation) when activated it creates additional Verilog files that contain modules bound to the modules that
+contain an initializable memory</p>
+<p>Currently the only non-Verilog based simulation that can support loading memory from a file is treadle but it does
+not need this transform to do that.</p>
+<dl class="attr">
+<dt id="attr-def run(circuit: Circuit, annotations: AnnotationSeq): Circuit =">
+<code class="descname">def run(circuit: Circuit, annotations: AnnotationSeq): Circuit =</code><a class="headerlink" href="#attr-def run(circuit: Circuit, annotations: AnnotationSeq): Circuit =" title="Permalink to this definition">¶</a></dt>
+<dd><p>run the pass
+:param circuit: the circuit</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">Param annotations:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">all the annotations
+&#64;return</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="boringutils-scala">
+<h2>BoringUtils.scala<a class="headerlink" href="#boringutils-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class BoringUtilsException(message: String) extends Exception(message)">
+<code class="descname">class BoringUtilsException(message: String) extends Exception(message)</code><a class="headerlink" href="#attr-class BoringUtilsException(message: String) extends Exception(message)" title="Permalink to this definition">¶</a></dt>
+<dd><p>An exception related to BoringUtils
+:param message: the exception message</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-object BoringUtils">
+<code class="descname">object BoringUtils</code><a class="headerlink" href="#attr-object BoringUtils" title="Permalink to this definition">¶</a></dt>
+<dd><p>Utilities for generating synthesizable cross module references that “bore” through the hierarchy. The underlying        cross module connects are handled by FIRRTL’s Wiring Transform.</p>
+<p>Consider the following exmple where you want to connect a component in one module to a component in another. Module
+<cite>Constant</cite> has a wire tied to <cite>42</cite> and <cite>Expect</cite> will assert unless connected to <cite>42</cite>:</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Constant</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="n">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span><span class="o">{})</span>
+  <span class="k">val</span> <span class="n">x</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">6.</span><span class="n">W</span><span class="o">))</span>
+  <span class="n">x</span> <span class="o">:=</span> <span class="mf">42.</span><span class="n">U</span>
+<span class="o">}</span>
+<span class="k">class</span> <span class="nc">Expect</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="n">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span><span class="o">{})</span>
+  <span class="k">val</span> <span class="n">y</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">6.</span><span class="n">W</span><span class="o">))</span>
+  <span class="n">y</span> <span class="o">:=</span> <span class="mf">0.</span><span class="n">U</span>
+  <span class="c1">// This assertion will fail unless we bore!</span>
+  <span class="n">chisel3</span><span class="o">.</span><span class="n">assert</span><span class="o">(</span><span class="n">y</span> <span class="o">===</span> <span class="mf">42.</span><span class="n">U</span><span class="o">,</span> <span class="s">&quot;y should be 42 in module Expect&quot;</span><span class="o">)</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+<p>We can then connect <cite>x</cite> to <cite>y</cite> using <a class="reference internal" href="#attr-class BoringUtilsException(message: String) extends Exception(message)" title="attr-class BoringUtilsException(message: String) extends Exception(message)"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">BoringUtils</span></code></a>  without modifiying the Chisel IO of <cite>Constant</cite>, <cite>Expect</cite>, or
+modules that may instantiate them. There are two approaches to do this:</p>
+<ol class="arabic simple">
+<li>Hierarchical boring using <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">BoringUtils.bore</span></code></li>
+<li>Non-hierarchical boring using <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">BoringUtils.addSink</span></code> /<code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">BoringUtils.addSource</span></code></li>
+</ol>
+<p>===Hierarchical Boring===</p>
+<p>Hierarchcical boring involves connecting one sink instance to another source instance in a parent module. Below,
+module <cite>Top</cite> contains an instance of <cite>Cosntant</cite> and <cite>Expect</cite>. Using <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">BoringUtils.bore</span></code> , we can connect
+<cite>constant.x</cite> to <cite>expect.y</cite>.</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Top</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="n">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span><span class="o">{})</span>
+  <span class="k">val</span> <span class="n">constant</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">Constant</span><span class="o">)</span>
+  <span class="k">val</span> <span class="n">expect</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">Expect</span><span class="o">)</span>
+  <span class="nc">BoringUtils</span><span class="o">.</span><span class="n">bore</span><span class="o">(</span><span class="n">constant</span><span class="o">.</span><span class="n">x</span><span class="o">,</span> <span class="nc">Seq</span><span class="o">(</span><span class="n">expect</span><span class="o">.</span><span class="n">y</span><span class="o">))</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+<p>===Non-hierarchical Boring===</p>
+<p>Non-hierarchical boring involves connections from sources to sinks that cannot see each other. Here, <cite>x</cite> is
+described as a source and given a name, <cite>uniqueId</cite>, and <cite>y</cite> is described as a sink with the same name. This is
+equivalent to the hierarchical boring example above, but requires no modifications to <cite>Top</cite>.</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">Constant</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="n">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span><span class="o">{})</span>
+  <span class="k">val</span> <span class="n">x</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">6.</span><span class="n">W</span><span class="o">))</span>
+  <span class="n">x</span> <span class="o">:=</span> <span class="mf">42.</span><span class="n">U</span>
+  <span class="nc">BoringUtils</span><span class="o">.</span><span class="n">addSource</span><span class="o">(</span><span class="n">x</span><span class="o">,</span> <span class="s">&quot;uniqueId&quot;</span><span class="o">)</span>
+<span class="o">}</span>
+<span class="k">class</span> <span class="nc">Expect</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="n">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span><span class="o">{})</span>
+  <span class="k">val</span> <span class="n">y</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">6.</span><span class="n">W</span><span class="o">))</span>
+  <span class="n">y</span> <span class="o">:=</span> <span class="mf">0.</span><span class="n">U</span>
+  <span class="c1">// This assertion will fail unless we bore!</span>
+  <span class="n">chisel3</span><span class="o">.</span><span class="n">assert</span><span class="o">(</span><span class="n">y</span> <span class="o">===</span> <span class="mf">42.</span><span class="n">U</span><span class="o">,</span> <span class="s">&quot;y should be 42 in module Expect&quot;</span><span class="o">)</span>
+  <span class="nc">BoringUtils</span><span class="o">.</span><span class="n">addSink</span><span class="o">(</span><span class="n">y</span><span class="o">,</span> <span class="s">&quot;uniqueId&quot;</span><span class="o">)</span>
+<span class="o">}</span>
+<span class="k">class</span> <span class="nc">Top</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="n">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span><span class="o">{})</span>
+  <span class="k">val</span> <span class="n">constant</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">Constant</span><span class="o">)</span>
+  <span class="k">val</span> <span class="n">expect</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">Expect</span><span class="o">)</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+<p>==Comments==</p>
+<p>Both hierarchical and non-hierarchical boring emit FIRRTL annotations that describe sources and sinks. These are
+matched by a <cite>name</cite> key that indicates they should be wired together. Hierarhical boring safely generates this name
+automatically. Non-hierarchical boring unsafely relies on user input to generate this name. Use of non-hierarchical
+naming may result in naming conflicts that the user must handle.</p>
+<p>The automatic generation of hierarchical names relies on a global, mutable namespace. This is currently persistent
+across circuit elaborations.</p>
+<dl class="attr">
+<dt id="attr-def addSource(component: NamedComponent, name: String, disableDedup: Boolean = false, uniqueName: Boolean = false): String =">
+<code class="descname">def addSource(component: NamedComponent, name: String, disableDedup: Boolean = false, uniqueName: Boolean = false): String =</code><a class="headerlink" href="#attr-def addSource(component: NamedComponent, name: String, disableDedup: Boolean = false, uniqueName: Boolean = false): String =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a named source cross module reference
+:param component: source circuit component</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Param name:</th><td class="field-body">unique identifier for this source</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">Param disableDedup:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">disable dedupblication of this source component (this should be true if you are trying to wire
+from specific identical sources differently)</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">Param uniqueName:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">if true, this will use a non-conflicting name from the global namespace</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return:</th><td class="field-body">the name used</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Note:</th><td class="field-body">if a uniqueName is not specified, the returned name may differ from the user-provided name</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-def addSink(component: InstanceId, name: String, disableDedup: Boolean = false, forceExists: Boolean = false): Unit =">
+<code class="descname">def addSink(component: InstanceId, name: String, disableDedup: Boolean = false, forceExists: Boolean = false): Unit =</code><a class="headerlink" href="#attr-def addSink(component: InstanceId, name: String, disableDedup: Boolean = false, forceExists: Boolean = false): Unit =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a named sink cross module reference. Multiple sinks may map to the same source.
+:param component: sink circuit component</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Param name:</th><td class="field-body">unique identifier for this sink that must resolve to</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">Param disableDedup:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">disable deduplication of this sink component (this should be true if you are trying to wire
+specific, identical sinks differently)</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">Param forceExists:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">if true, require that the provided <cite>name</cite> paramater already exists in the global namespace
+&#64;throws BoringUtilsException if name is expected to exist and itdoesn’t</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-def bore(source: Data, sinks: Seq[Data]): String =">
+<code class="descname">def bore(source: Data, sinks: Seq[Data]): String =</code><a class="headerlink" href="#attr-def bore(source: Data, sinks: Seq[Data]): String =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Connect a source to one or more sinks
+:param source: a source component</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Param sinks:</th><td class="field-body">one or more sink components</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return:</th><td class="field-body">the name of the signal used to connect the source to the
+sinks</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Note:</th><td class="field-body">the returned name will be based on the name of the source
+component</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="inline-scala">
+<h2>Inline.scala<a class="headerlink" href="#inline-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-* class Foo extends Module with Internals with InlineInstance with HasSub *">
+<code class="descname">* class Foo extends Module with Internals with InlineInstance with HasSub *</code><a class="headerlink" href="#attr-* class Foo extends Module with Internals with InlineInstance with HasSub *" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Inlines an instance of a module</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">trait</span> <span class="nc">Internals</span> <span class="o">{</span> <span class="k">this:</span> <span class="kt">Module</span> <span class="o">=&gt;</span>
+  <span class="k">val</span> <span class="n">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span><span class="o">{</span> <span class="k">val</span> <span class="n">a</span> <span class="k">=</span> <span class="nc">Input</span><span class="o">(</span><span class="nc">Bool</span><span class="o">())</span> <span class="o">})</span>
+<span class="o">}</span>
+<span class="k">class</span> <span class="nc">Sub</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="k">with</span> <span class="nc">Internals</span>
+<span class="k">trait</span> <span class="nc">HasSub</span> <span class="o">{</span> <span class="k">this:</span> <span class="kt">Module</span> <span class="kt">with</span> <span class="kt">Internals</span> <span class="o">=&gt;</span>
+  <span class="k">val</span> <span class="n">sub</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">Sub</span><span class="o">)</span>
+  <span class="n">sub</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">a</span> <span class="o">:=</span> <span class="n">io</span><span class="o">.</span><span class="n">a</span>
+<span class="o">}</span>
+<span class="cm">/* InlineInstance is mixed directly into Foo&#39;s definition. Every instance</span>
+</pre></div>
+</div>
+</div></blockquote>
+<ul class="simple">
+<li><ul class="first">
+<li>of this will be inlined.</li>
+</ul>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-trait InlineInstance">
+<code class="descname">trait InlineInstance</code><a class="headerlink" href="#attr-trait InlineInstance" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-* class Top extends Module with Internals">
+<code class="descname">* class Top extends Module with Internals</code><a class="headerlink" href="#attr-* class Top extends Module with Internals" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div><p>Flattens an instance of a module</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">trait</span> <span class="nc">Internals</span> <span class="o">{</span> <span class="k">this:</span> <span class="kt">Module</span> <span class="o">=&gt;</span>
+  <span class="k">val</span> <span class="n">io</span> <span class="k">=</span> <span class="nc">IO</span><span class="o">(</span><span class="k">new</span> <span class="nc">Bundle</span><span class="o">{</span> <span class="k">val</span> <span class="n">a</span> <span class="k">=</span> <span class="nc">Input</span><span class="o">(</span><span class="nc">Bool</span><span class="o">())</span> <span class="o">})</span>
+<span class="o">}</span>
+<span class="k">class</span> <span class="nc">Foo</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="k">with</span> <span class="nc">Internals</span> <span class="k">with</span> <span class="nc">FlattenInstance</span>
+<span class="k">class</span> <span class="nc">Bar</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="k">with</span> <span class="nc">Internals</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="n">baz</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">Baz</span><span class="o">)</span>
+  <span class="n">baz</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">a</span> <span class="o">:=</span> <span class="n">io</span><span class="o">.</span><span class="n">a</span>
+<span class="o">}</span>
+<span class="k">class</span> <span class="nc">Baz</span> <span class="k">extends</span> <span class="nc">Module</span> <span class="k">with</span> <span class="nc">Internals</span>
+<span class="cm">/* The resulting instances will be:</span>
+<span class="cm">     - Top</span>
+<span class="cm">     - Top.x</span>
+<span class="cm">     - Top.y</span>
+<span class="cm">     - Top.z</span>
+</pre></div>
+</div>
+</div></blockquote>
+<ul class="simple">
+<li><ul class="first">
+<li>Top.z.baz</li>
+</ul>
+</li>
+</ul>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-trait FlattenInstance">
+<code class="descname">trait FlattenInstance</code><a class="headerlink" href="#attr-trait FlattenInstance" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../../../contents.html">chisel-test</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../../../../../src.html">src</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../../../../test/test.html">src/test</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../../../main.html">src/main</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../chiselFrontend/chiselFrontend.html">chiselFrontend</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../../../contents.html">Documentation overview</a><ul>
+  <li><a href="../../../../../src.html">src</a><ul>
+  <li><a href="../../../../main.html">src/main</a><ul>
+  <li><a href="../../../scala.html">src/main/scala</a><ul>
+  <li><a href="../../chisel3.html">src/main/scala/chisel3</a><ul>
+  <li><a href="../util.html">src/main/scala/chisel3/util</a><ul>
+      <li>Previous: <a href="../util.html" title="previous chapter">src/main/scala/chisel3/util</a></li>
+      <li>Next: <a href="../random/random.html" title="next chapter">src/main/scala/chisel3/util/random</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, John Andrews.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../../../../../../_sources/src/main/scala/chisel3/util/experimental/experimental.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

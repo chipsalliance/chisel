@@ -1,0 +1,504 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>src/main/scala/chisel3/util/random &#8212; chisel-test  documentation</title>
+    <link rel="stylesheet" href="../../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../../../../" src="../../../../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" />
+    <link rel="next" title="src/main/scala/chisel3/stage" href="../../stage/stage.html" />
+    <link rel="prev" title="src/main/scala/chisel3/util/experimental" href="../experimental/experimental.html" />
+   
+  <link rel="stylesheet" href="../../../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="src-main-scala-chisel3-util-random">
+<h1>src/main/scala/chisel3/util/random<a class="headerlink" href="#src-main-scala-chisel3-util-random" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+</div>
+<div class="section" id="lfsr-scala">
+<h2>LFSR.scala<a class="headerlink" href="#lfsr-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-sealed trait LFSRReduce extends ((Bool, Bool) =&gt; Bool)">
+<code class="descname">sealed trait LFSRReduce extends ((Bool, Bool) =&gt; Bool)</code><a class="headerlink" href="#attr-sealed trait LFSRReduce extends ((Bool, Bool) => Bool)" title="Permalink to this definition">¶</a></dt>
+<dd><p>A reduction operation for an LFSR.      &#64;see <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">XOR</span></code>
+&#64;see <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">XNOR</span></code></p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-object XOR extends LFSRReduce">
+<code class="descname">object XOR extends LFSRReduce</code><a class="headerlink" href="#attr-object XOR extends LFSRReduce" title="Permalink to this definition">¶</a></dt>
+<dd><p>XOR (exclusive or) reduction operation</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-object XNOR extends LFSRReduce">
+<code class="descname">object XNOR extends LFSRReduce</code><a class="headerlink" href="#attr-object XNOR extends LFSRReduce" title="Permalink to this definition">¶</a></dt>
+<dd><p>Not XOR (exclusive or) reduction operation</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-trait LFSR extends PRNG">
+<code class="descname">trait LFSR extends PRNG</code><a class="headerlink" href="#attr-trait LFSR extends PRNG" title="Permalink to this definition">¶</a></dt>
+<dd><p>Trait that defines a Linear Feedback Shift Register (LFSR).
+$seedExplanation
+&#64;see <a class="reference internal" href="#attr-class FibonacciLFSR(width: Int, taps: Set[Int], seed: Option[BigInt] = Some(1), val reduction: LFSRReduce = XOR, step: Int = 1, updateSeed: Boolean = false) extends PRNG(width, seed, step, updateSeed) with LFSR" title="attr-class FibonacciLFSR(width: Int, taps: Set[Int], seed: Option[BigInt] = Some(1), val reduction: LFSRReduce = XOR, step: Int = 1, updateSeed: Boolean = false) extends PRNG(width, seed, step, updateSeed) with LFSR"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">FibonacciLFSR</span></code></a>
+&#64;see <a class="reference internal" href="#attr-class GaloisLFSR(width: Int, taps: Set[Int], seed: Option[BigInt] = Some(1), val reduction: LFSRReduce = XOR, step: Int = 1, updateSeed: Boolean = false) extends PRNG(width, seed, step, updateSeed) with LFSR" title="attr-class GaloisLFSR(width: Int, taps: Set[Int], seed: Option[BigInt] = Some(1), val reduction: LFSRReduce = XOR, step: Int = 1, updateSeed: Boolean = false) extends PRNG(width, seed, step, updateSeed) with LFSR"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">GaloisLFSR</span></code></a>
+&#64;see <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">https://en.wikipedia.org/wiki/Linear-feedback_shift_register</span></code></p>
+</dd></dl>
+
+<p>&#64;define paramWidth      :param width: the width of the LFSR</p>
+<p>&#64;define paramTaps       :param taps: a set of tap points to use when constructing the LFSR</p>
+<dl class="docutils">
+<dt>&#64;define paramSeed       :param seed: an initial value for internal LFSR state. If <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">scala.None</span> <span class="pre">None</span></code> , then the LFSR</dt>
+<dd>state LSB will be set to a known safe value on reset (to prevent lock up).</dd>
+<dt>&#64;define paramReduction  :param reduction: the reduction operation (either <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">chisel3.util.random.XOR</span> <span class="pre">XOR</span></code>  or</dt>
+<dd><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">chisel3.util.random.XNOR</span> <span class="pre">XNOR</span></code> )</dd>
+</dl>
+<p>&#64;define paramStep       :param step: the number of state updates per cycle</p>
+<dl class="docutils">
+<dt>&#64;define paramUpdateSeed         :param updateSeed: if true, when loading the seed the state will be updated as if the seed</dt>
+<dd><blockquote class="first">
+<div>were the current state, if false, the state will be set to the seed
+&#64;define seedExplanation If the user specifies a seed, then a compile-time check is added that they are not
+initializing the LFSR to a state which will cause it to lock up. If the user does not set a seed, then the least
+significant bit of the state will be set or reset based on the choice of reduction operator.</div></blockquote>
+<dl class="last attr">
+<dt id="attr-def reduction: LFSRReduce">
+<code class="descname">def reduction: LFSRReduce</code><a class="headerlink" href="#attr-def reduction: LFSRReduce" title="Permalink to this definition">¶</a></dt>
+<dd><p>The binary reduction operation used by this LFSR, either <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">chisel3.util.random.XOR</span> <span class="pre">XOR</span></code>  or        <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">chisel3.util.random.XNOR</span> <span class="pre">XNOR</span></code> . This has the effect of mandating what seed is invalid.</p>
+</dd></dl>
+
+</dd>
+</dl>
+<dl class="attr">
+<dt id="attr-object LFSR">
+<code class="descname">object LFSR</code><a class="headerlink" href="#attr-object LFSR" title="Permalink to this definition">¶</a></dt>
+<dd><p>Utilities related to psuedorandom number generation using Linear Feedback Shift Registers (LFSRs).
+For example, to generate a pseudorandom 16-bit <a class="reference internal" href="../../../../../../chiselFrontend/src/main/scala/chisel3/core/core.html#attr-sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt]" title="attr-sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt]"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">UInt</span></code></a>  that changes every cycle, you can use:</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">val</span> <span class="n">pseudoRandomNumber</span> <span class="k">=</span> <span class="nc">LFSR</span><span class="o">(</span><span class="mi">16</span><span class="o">)</span>
+</pre></div>
+</div>
+<dl class="attr">
+<dt id="attr-def apply(width: Int, increment: Bool = true.B, seed: Option[BigInt] = Some(1)): UInt = FibonacciLFSR.maxPeriod(width, increment, seed, XOR)">
+<code class="descname">def apply(width: Int, increment: Bool = true.B, seed: Option[BigInt] = Some(1)): UInt = FibonacciLFSR.maxPeriod(width, increment, seed, XOR)</code><a class="headerlink" href="#attr-def apply(width: Int, increment: Bool = true.B, seed: Option[BigInt] = Some(1)): UInt = FibonacciLFSR.maxPeriod(width, increment, seed, XOR)" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a pseudorandom <a class="reference internal" href="../../../../../../chiselFrontend/src/main/scala/chisel3/core/core.html#attr-sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt]" title="attr-sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt]"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">UInt</span></code></a>  generated using a <a class="reference internal" href="#attr-class FibonacciLFSR(width: Int, taps: Set[Int], seed: Option[BigInt] = Some(1), val reduction: LFSRReduce = XOR, step: Int = 1, updateSeed: Boolean = false) extends PRNG(width, seed, step, updateSeed) with LFSR" title="attr-class FibonacciLFSR(width: Int, taps: Set[Int], seed: Option[BigInt] = Some(1), val reduction: LFSRReduce = XOR, step: Int = 1, updateSeed: Boolean = false) extends PRNG(width, seed, step, updateSeed) with LFSR"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">FibonacciLFSR</span></code></a> . If you require a Galois LFSR, use <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">GaloisLFSR$.maxPeriod</span> <span class="pre">GaloisLFSR.maxPeriod</span></code> .</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Param width:</th><td class="field-body">the width of the LFSR</td>
+</tr>
+<tr class="field-even field"><th class="field-name" colspan="2">Param increment:</th></tr>
+<tr class="field-even field"><td>&#160;</td><td class="field-body">when asserted, the LFSR will increment</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Param seed:</th><td class="field-body">an initial seed (this cannot be zero)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return:</th><td class="field-body">a <a class="reference internal" href="../../../../../../chiselFrontend/src/main/scala/chisel3/core/core.html#attr-sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt]" title="attr-sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt]"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">UInt</span></code></a>  that is the output of a maximal period LFSR of the requested width</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-private [random] def badWidth(width: Int): Nothing">
+<code class="descname">private [random] def badWidth(width: Int): Nothing</code><a class="headerlink" href="#attr-private [random] def badWidth(width: Int): Nothing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Utility used to report an unknown tap width</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-private def tapsFirst">
+<code class="descname">private def tapsFirst</code><a class="headerlink" href="#attr-private def tapsFirst" title="Permalink to this definition">¶</a></dt>
+<dd><p>First portion of known taps (a combined map hits the 64KB JVM method limit)</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-private def tapsSecond">
+<code class="descname">private def tapsSecond</code><a class="headerlink" href="#attr-private def tapsSecond" title="Permalink to this definition">¶</a></dt>
+<dd><p>Second portion of known taps (a combined map hits the 64KB JVM method limit)</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="prng-scala">
+<h2>PRNG.scala<a class="headerlink" href="#prng-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class PRNGIO(val n: Int) extends Bundle">
+<code class="descname">class PRNGIO(val n: Int) extends Bundle</code><a class="headerlink" href="#attr-class PRNGIO(val n: Int) extends Bundle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pseudo Random Number Generators (PRNG) interface
+:param n: the width of the LFSR</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-abstract class PRNG(val width: Int, val seed: Option[BigInt], step: Int = 1, updateSeed: Boolean = false) extends Module">
+<code class="descname">abstract class PRNG(val width: Int, val seed: Option[BigInt], step: Int = 1, updateSeed: Boolean = false) extends Module</code><a class="headerlink" href="#attr-abstract class PRNG(val width: Int, val seed: Option[BigInt], step: Int = 1, updateSeed: Boolean = false) extends Module" title="Permalink to this definition">¶</a></dt>
+<dd><p>An abstract class representing a Pseudo Random Number Generator (PRNG)
+:param width: the width of the PRNG</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Param seed:</th><td class="field-body">the initial state of the PRNG</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Param step:</th><td class="field-body">the number of state updates per cycle</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">Param updateSeed:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">if true, when loading the seed the state will be updated as if the seed were the current state, if
+false, the state will be set to the seed</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-abstract class PRNG(val width: Int, val seed: Option[BigInt], step: Int">
+<code class="descname">abstract class PRNG(val width: Int, val seed: Option[BigInt], step: Int</code><a class="headerlink" href="#attr-abstract class PRNG(val width: Int, val seed: Option[BigInt], step: Int" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attr">
+<dt id="attr-def delta(s: Seq[Bool]): Seq[Bool]">
+<code class="descname">def delta(s: Seq[Bool]): Seq[Bool]</code><a class="headerlink" href="#attr-def delta(s: Seq[Bool]): Seq[Bool]" title="Permalink to this definition">¶</a></dt>
+<dd><p>State update function
+:param s: input state
+:return: the next state</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-final def nextState(s: Seq[Bool]): Seq[Bool]">
+<code class="descname">final def nextState(s: Seq[Bool]): Seq[Bool]</code><a class="headerlink" href="#attr-final def nextState(s: Seq[Bool]): Seq[Bool]" title="Permalink to this definition">¶</a></dt>
+<dd><p>The method that will be used to update the state of this PRNG
+:param s: input state
+:return: the next state after <cite>step</cite> applications of <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">PRNG.delta</span></code></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-object PRNG">
+<code class="descname">object PRNG</code><a class="headerlink" href="#attr-object PRNG" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper utilities related to the construction of Pseudo Random Number Generators (PRNGs)</p>
+<dl class="attr">
+<dt id="attr-def apply(gen: =&gt; PRNG, increment: Bool = true.B): UInt =">
+<code class="descname">def apply(gen: =&gt; PRNG, increment: Bool = true.B): UInt =</code><a class="headerlink" href="#attr-def apply(gen: => PRNG, increment: Bool = true.B): UInt =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrap a <a class="reference internal" href="#attr-class PRNGIO(val n: Int) extends Bundle" title="attr-class PRNGIO(val n: Int) extends Bundle"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">PRNG</span></code></a>  to only return a pseudo-random <a class="reference internal" href="../../../../../../chiselFrontend/src/main/scala/chisel3/core/core.html#attr-sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt]" title="attr-sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt]"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">UInt</span></code></a>
+:param gen: a pseudo random number generator</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">Param increment:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">when asserted the <a class="reference internal" href="#attr-class PRNGIO(val n: Int) extends Bundle" title="attr-class PRNGIO(val n: Int) extends Bundle"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">PRNG</span></code></a>  will increment</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return:</th><td class="field-body">the output (internal state) of the <a class="reference internal" href="#attr-class PRNGIO(val n: Int) extends Bundle" title="attr-class PRNGIO(val n: Int) extends Bundle"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">PRNG</span></code></a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="galoislfsr-scala">
+<h2>GaloisLFSR.scala<a class="headerlink" href="#galoislfsr-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class GaloisLFSR(width: Int, taps: Set[Int], seed: Option[BigInt] = Some(1), val reduction: LFSRReduce = XOR, step: Int = 1, updateSeed: Boolean = false) extends PRNG(width, seed, step, updateSeed) with LFSR">
+<code class="descname">class GaloisLFSR(width: Int, taps: Set[Int], seed: Option[BigInt] = Some(1), val reduction: LFSRReduce = XOR, step: Int = 1, updateSeed: Boolean = false) extends PRNG(width, seed, step, updateSeed) with LFSR</code><a class="headerlink" href="#attr-class GaloisLFSR(width: Int, taps: Set[Int], seed: Option[BigInt] = Some(1), val reduction: LFSRReduce = XOR, step: Int = 1, updateSeed: Boolean = false) extends PRNG(width, seed, step, updateSeed) with LFSR" title="Permalink to this definition">¶</a></dt>
+<dd><p>Galois Linear Feedback Shift Register (LFSR) generator.
+A Galois LFSR can be generated by defining a width and a set of tap points. Optionally, an initial seed and a
+reduction operation (<code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">XOR</span></code> , the default, or <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">XNOR</span></code> ) can be used to augment the generated hardware. The resulting
+hardware has support for a run-time programmable seed (via <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">PRNGIO.seed</span></code> ) and conditional increment (via
+<code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">PRNGIO.increment</span></code> ).</p>
+<p>$seedExplanation</p>
+<p>In the example below, a 4-bit LFSR Fibonacci LFSR is constructed. The tap points are defined as four and three
+(using LFSR convention of indexing from one). This results in the hardware configuration shown in the diagram.</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">val</span> <span class="n">lfsr4</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">GaloisLFSR</span><span class="o">(</span><span class="mi">4</span><span class="o">,</span> <span class="nc">Set</span><span class="o">(</span><span class="mi">4</span><span class="o">,</span> <span class="mi">3</span><span class="o">))</span>
+<span class="c1">// +-----------------+---------------------------------------------------------+</span>
+<span class="c1">// |                 |                                                         |</span>
+<span class="c1">// |   +-------+     v     +-------+           +-------+           +-------+   |</span>
+<span class="c1">// |   |       |   +---+   |       |           |       |           |       |   |</span>
+<span class="c1">// +--&gt;|  x^4  |--&gt;|XOR|--&gt;|  x^3  |----------&gt;|  x^2  |----------&gt;|  x^1  |---+</span>
+<span class="c1">//     |       |   +---+   |       |           |       |           |       |</span>
+<span class="c1">//     +-------+           +-------+           +-------+           +-------+</span>
+</pre></div>
+</div>
+<p>If you require a maximal period Galois LFSR of a specific width, you can use <a class="reference internal" href="#attr-class MaxPeriodGaloisLFSR(width: Int, seed: Option[BigInt] = Some(1), reduction: LFSRReduce = XOR) extends GaloisLFSR(width, LFSR.tapsMaxPeriod.getOrElse(width, LFSR.badWidth(width)).head, seed, reduction)" title="attr-class MaxPeriodGaloisLFSR(width: Int, seed: Option[BigInt] = Some(1), reduction: LFSRReduce = XOR) extends GaloisLFSR(width, LFSR.tapsMaxPeriod.getOrElse(width, LFSR.badWidth(width)).head, seed, reduction)"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">MaxPeriodGaloisLFSR</span></code></a> . If you only
+require a pseudorandom <a class="reference internal" href="../../../../../../chiselFrontend/src/main/scala/chisel3/core/core.html#attr-sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt]" title="attr-sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt]"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">UInt</span></code></a>  you can use the <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">GaloisLFSR$</span> <span class="pre">GaloisLFSR</span> <span class="pre">companion</span> <span class="pre">object</span></code> .
+&#64;see <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">https://en.wikipedia.org/wiki/Linear-feedback_shift_register#Galois_LFSRs</span></code>
+$paramWidth
+$paramTaps
+$paramSeed
+$paramReduction
+$paramStep
+$paramUpdateSeed</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-class GaloisLFSR(width: Int, taps: Set[Int], seed: Option[BigInt]">
+<code class="descname">class GaloisLFSR(width: Int, taps: Set[Int], seed: Option[BigInt]</code><a class="headerlink" href="#attr-class GaloisLFSR(width: Int, taps: Set[Int], seed: Option[BigInt]" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class MaxPeriodGaloisLFSR(width: Int, seed: Option[BigInt] = Some(1), reduction: LFSRReduce = XOR) extends GaloisLFSR(width, LFSR.tapsMaxPeriod.getOrElse(width, LFSR.badWidth(width)).head, seed, reduction)">
+<code class="descname">class MaxPeriodGaloisLFSR(width: Int, seed: Option[BigInt] = Some(1), reduction: LFSRReduce = XOR) extends GaloisLFSR(width, LFSR.tapsMaxPeriod.getOrElse(width, LFSR.badWidth(width)).head, seed, reduction)</code><a class="headerlink" href="#attr-class MaxPeriodGaloisLFSR(width: Int, seed: Option[BigInt] = Some(1), reduction: LFSRReduce = XOR) extends GaloisLFSR(width, LFSR.tapsMaxPeriod.getOrElse(width, LFSR.badWidth(width)).head, seed, reduction)" title="Permalink to this definition">¶</a></dt>
+<dd><p>A maximal period Galois Linear Feedback Shift Register (LFSR) generator. The maximal period taps are sourced from       <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">LFSR.tapsMaxPeriod</span> <span class="pre">LFSR.tapsMaxPeriod</span></code> .</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">val</span> <span class="n">lfsr8</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">MaxPeriodGaloisLFSR</span><span class="o">(</span><span class="mi">8</span><span class="o">))</span>
+</pre></div>
+</div>
+<p>$paramWidth
+$paramSeed
+$paramReduction</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-class MaxPeriodGaloisLFSR(width: Int, seed: Option[BigInt]">
+<code class="descname">class MaxPeriodGaloisLFSR(width: Int, seed: Option[BigInt]</code><a class="headerlink" href="#attr-class MaxPeriodGaloisLFSR(width: Int, seed: Option[BigInt]" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-object GaloisLFSR">
+<code class="descname">object GaloisLFSR</code><a class="headerlink" href="#attr-object GaloisLFSR" title="Permalink to this definition">¶</a></dt>
+<dd><p>Utility for generating a pseudorandom <a class="reference internal" href="../../../../../../chiselFrontend/src/main/scala/chisel3/core/core.html#attr-sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt]" title="attr-sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt]"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">UInt</span></code></a>  from a <a class="reference internal" href="#attr-class GaloisLFSR(width: Int, taps: Set[Int], seed: Option[BigInt] = Some(1), val reduction: LFSRReduce = XOR, step: Int = 1, updateSeed: Boolean = false) extends PRNG(width, seed, step, updateSeed) with LFSR" title="attr-class GaloisLFSR(width: Int, taps: Set[Int], seed: Option[BigInt] = Some(1), val reduction: LFSRReduce = XOR, step: Int = 1, updateSeed: Boolean = false) extends PRNG(width, seed, step, updateSeed) with LFSR"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">GaloisLFSR</span></code></a> .
+For example, to generate a pseudorandom 8-bit <a class="reference internal" href="../../../../../../chiselFrontend/src/main/scala/chisel3/core/core.html#attr-sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt]" title="attr-sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt]"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">UInt</span></code></a>  that changes every cycle, you can use:</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">val</span> <span class="n">pseudoRandomNumber</span> <span class="k">=</span> <span class="nc">GaloisLFSR</span><span class="o">.</span><span class="n">maxPeriod</span><span class="o">(</span><span class="mi">8</span><span class="o">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<p>&#64;define paramWidth      :param width: of pseudorandom output</p>
+<p>&#64;define paramTaps       :param taps: a set of tap points to use when constructing the LFSR</p>
+<p>&#64;define paramIncrement  :param increment: when asserted, a new random value will be generated</p>
+<p>&#64;define paramSeed       :param seed: an initial value for internal LFSR state</p>
+<dl class="docutils">
+<dt>&#64;define paramReduction  :param reduction: the reduction operation (either <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">XOR</span></code>  or</dt>
+<dd><blockquote class="first">
+<div><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">XNOR</span></code> )</div></blockquote>
+<dl class="attr">
+<dt id="attr-def apply(width: Int, taps: Set[Int], increment: Bool = true.B, seed: Option[BigInt] = Some(1), reduction: LFSRReduce = XOR): UInt = PRNG(new GaloisLFSR(width, taps, seed, reduction), increment)">
+<code class="descname">def apply(width: Int, taps: Set[Int], increment: Bool = true.B, seed: Option[BigInt] = Some(1), reduction: LFSRReduce = XOR): UInt = PRNG(new GaloisLFSR(width, taps, seed, reduction), increment)</code><a class="headerlink" href="#attr-def apply(width: Int, taps: Set[Int], increment: Bool = true.B, seed: Option[BigInt] = Some(1), reduction: LFSRReduce = XOR): UInt = PRNG(new GaloisLFSR(width, taps, seed, reduction), increment)" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a pseudorandom <a class="reference internal" href="../../../../../../chiselFrontend/src/main/scala/chisel3/core/core.html#attr-sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt]" title="attr-sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt]"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">UInt</span></code></a>  generated from a <a class="reference internal" href="#attr-class FibonacciLFSR(width: Int, taps: Set[Int], seed: Option[BigInt] = Some(1), val reduction: LFSRReduce = XOR, step: Int = 1, updateSeed: Boolean = false) extends PRNG(width, seed, step, updateSeed) with LFSR" title="attr-class FibonacciLFSR(width: Int, taps: Set[Int], seed: Option[BigInt] = Some(1), val reduction: LFSRReduce = XOR, step: Int = 1, updateSeed: Boolean = false) extends PRNG(width, seed, step, updateSeed) with LFSR"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">FibonacciLFSR</span></code></a> .    $paramWidth
+$paramTaps
+$paramIncrement
+$paramSeed
+$paramReduction</p>
+</dd></dl>
+
+<dl class="last attr">
+<dt id="attr-def maxPeriod(width: Int, increment: Bool = true.B, seed: Option[BigInt] = Some(1), reduction: LFSRReduce = XOR): UInt = PRNG(new MaxPeriodGaloisLFSR(width, seed, reduction), increment)">
+<code class="descname">def maxPeriod(width: Int, increment: Bool = true.B, seed: Option[BigInt] = Some(1), reduction: LFSRReduce = XOR): UInt = PRNG(new MaxPeriodGaloisLFSR(width, seed, reduction), increment)</code><a class="headerlink" href="#attr-def maxPeriod(width: Int, increment: Bool = true.B, seed: Option[BigInt] = Some(1), reduction: LFSRReduce = XOR): UInt = PRNG(new MaxPeriodGaloisLFSR(width, seed, reduction), increment)" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a pseudorandom <a class="reference internal" href="../../../../../../chiselFrontend/src/main/scala/chisel3/core/core.html#attr-sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt]" title="attr-sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt]"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">UInt</span></code></a>  generated using a maximal period <a class="reference internal" href="#attr-class GaloisLFSR(width: Int, taps: Set[Int], seed: Option[BigInt] = Some(1), val reduction: LFSRReduce = XOR, step: Int = 1, updateSeed: Boolean = false) extends PRNG(width, seed, step, updateSeed) with LFSR" title="attr-class GaloisLFSR(width: Int, taps: Set[Int], seed: Option[BigInt] = Some(1), val reduction: LFSRReduce = XOR, step: Int = 1, updateSeed: Boolean = false) extends PRNG(width, seed, step, updateSeed) with LFSR"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">GaloisLFSR</span></code></a>         $paramWidth
+$paramIncrement
+$paramSeed
+$paramReduction</p>
+</dd></dl>
+
+</dd>
+</dl>
+</div>
+<div class="section" id="fibonaccilfsr-scala">
+<h2>FibonacciLFSR.scala<a class="headerlink" href="#fibonaccilfsr-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class FibonacciLFSR(width: Int, taps: Set[Int], seed: Option[BigInt] = Some(1), val reduction: LFSRReduce = XOR, step: Int = 1, updateSeed: Boolean = false) extends PRNG(width, seed, step, updateSeed) with LFSR">
+<code class="descname">class FibonacciLFSR(width: Int, taps: Set[Int], seed: Option[BigInt] = Some(1), val reduction: LFSRReduce = XOR, step: Int = 1, updateSeed: Boolean = false) extends PRNG(width, seed, step, updateSeed) with LFSR</code><a class="headerlink" href="#attr-class FibonacciLFSR(width: Int, taps: Set[Int], seed: Option[BigInt] = Some(1), val reduction: LFSRReduce = XOR, step: Int = 1, updateSeed: Boolean = false) extends PRNG(width, seed, step, updateSeed) with LFSR" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fibonacci Linear Feedback Shift Register (LFSR) generator.
+A Fibonacci LFSR can be generated by defining a width and a set of tap points (corresponding to a polynomial). An
+optional initial seed and a reduction operation (<code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">XOR</span></code> , the default, or <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">XNOR</span></code> ) can be used to augment the
+generated hardware. The resulting hardware has support for a run-time programmable seed (via <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">PRNGIO.seed</span></code> ) and
+conditional increment (via <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">PRNGIO.increment</span></code> ).</p>
+<p>$seedExplanation</p>
+<p>In the example below, a 4-bit Fibonacci LFSR is constructed. Tap points are defined as four and three (using LFSR
+convention of indexing from one). This results in the hardware configuration shown in the diagram.</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">val</span> <span class="n">lfsr4</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">FibonacciLFSR</span><span class="o">(</span><span class="mi">4</span><span class="o">,</span> <span class="nc">Set</span><span class="o">(</span><span class="mi">4</span><span class="o">,</span> <span class="mi">3</span><span class="o">))</span>
+<span class="c1">//                 +---+</span>
+<span class="c1">// +--------------&gt;|XOR|-------------------------------------------------------+</span>
+<span class="c1">// |               +---+                                                       |</span>
+<span class="c1">// |   +-------+     ^     +-------+           +-------+           +-------+   |</span>
+<span class="c1">// |   |       |     |     |       |           |       |           |       |   |</span>
+<span class="c1">// +---+  x^4  |&lt;----+-----|  x^3  |&lt;----------|  x^2  |&lt;----------|  x^1  |&lt;--+</span>
+<span class="c1">//     |       |           |       |           |       |           |       |</span>
+<span class="c1">//     +-------+           +-------+           +-------+           +-------+</span>
+</pre></div>
+</div>
+<p>If you require a maximal period Fibonacci LFSR of a specific width, you can use <a class="reference internal" href="#attr-class MaxPeriodFibonacciLFSR(width: Int, seed: Option[BigInt] = Some(1), reduction: LFSRReduce = XOR) extends FibonacciLFSR(width, LFSR.tapsMaxPeriod.getOrElse(width, LFSR.badWidth(width)).head, seed, reduction)" title="attr-class MaxPeriodFibonacciLFSR(width: Int, seed: Option[BigInt] = Some(1), reduction: LFSRReduce = XOR) extends FibonacciLFSR(width, LFSR.tapsMaxPeriod.getOrElse(width, LFSR.badWidth(width)).head, seed, reduction)"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">MaxPeriodFibonacciLFSR</span></code></a> . If you
+only require a pseudorandom <a class="reference internal" href="../../../../../../chiselFrontend/src/main/scala/chisel3/core/core.html#attr-sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt]" title="attr-sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt]"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">UInt</span></code></a>  you can use the <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">FibonacciLFSR$</span> <span class="pre">FibonacciLFSR</span> <span class="pre">companion</span>
+<span class="pre">object</span></code> .
+&#64;see <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">https://en.wikipedia.org/wiki/Linear-feedback_shift_register#Fibonacci_LFSRs</span></code>
+$paramWidth
+$paramTaps
+$paramSeed
+$paramReduction
+$paramStep
+$paramUpdateSeed</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-class FibonacciLFSR(width: Int, taps: Set[Int], seed: Option[BigInt]">
+<code class="descname">class FibonacciLFSR(width: Int, taps: Set[Int], seed: Option[BigInt]</code><a class="headerlink" href="#attr-class FibonacciLFSR(width: Int, taps: Set[Int], seed: Option[BigInt]" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class MaxPeriodFibonacciLFSR(width: Int, seed: Option[BigInt] = Some(1), reduction: LFSRReduce = XOR) extends FibonacciLFSR(width, LFSR.tapsMaxPeriod.getOrElse(width, LFSR.badWidth(width)).head, seed, reduction)">
+<code class="descname">class MaxPeriodFibonacciLFSR(width: Int, seed: Option[BigInt] = Some(1), reduction: LFSRReduce = XOR) extends FibonacciLFSR(width, LFSR.tapsMaxPeriod.getOrElse(width, LFSR.badWidth(width)).head, seed, reduction)</code><a class="headerlink" href="#attr-class MaxPeriodFibonacciLFSR(width: Int, seed: Option[BigInt] = Some(1), reduction: LFSRReduce = XOR) extends FibonacciLFSR(width, LFSR.tapsMaxPeriod.getOrElse(width, LFSR.badWidth(width)).head, seed, reduction)" title="Permalink to this definition">¶</a></dt>
+<dd><p>A maximal period Fibonacci Linear Feedback Shift Register (LFSR) generator. The maximal period taps are sourced from    <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">LFSR.tapsMaxPeriod</span> <span class="pre">LFSR.tapsMaxPeriod</span></code> .</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">val</span> <span class="n">lfsr8</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">MaxPeriodFibonacciLFSR</span><span class="o">(</span><span class="mi">8</span><span class="o">))</span>
+</pre></div>
+</div>
+<p>$paramWidth
+$paramSeed
+$paramReduction</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-class MaxPeriodFibonacciLFSR(width: Int, seed: Option[BigInt]">
+<code class="descname">class MaxPeriodFibonacciLFSR(width: Int, seed: Option[BigInt]</code><a class="headerlink" href="#attr-class MaxPeriodFibonacciLFSR(width: Int, seed: Option[BigInt]" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-object FibonacciLFSR">
+<code class="descname">object FibonacciLFSR</code><a class="headerlink" href="#attr-object FibonacciLFSR" title="Permalink to this definition">¶</a></dt>
+<dd><p>Utility for generating a pseudorandom <a class="reference internal" href="../../../../../../chiselFrontend/src/main/scala/chisel3/core/core.html#attr-sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt]" title="attr-sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt]"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">UInt</span></code></a>  from a <a class="reference internal" href="#attr-class FibonacciLFSR(width: Int, taps: Set[Int], seed: Option[BigInt] = Some(1), val reduction: LFSRReduce = XOR, step: Int = 1, updateSeed: Boolean = false) extends PRNG(width, seed, step, updateSeed) with LFSR" title="attr-class FibonacciLFSR(width: Int, taps: Set[Int], seed: Option[BigInt] = Some(1), val reduction: LFSRReduce = XOR, step: Int = 1, updateSeed: Boolean = false) extends PRNG(width, seed, step, updateSeed) with LFSR"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">FibonacciLFSR</span></code></a> .
+For example, to generate a pseudorandom 8-bit <a class="reference internal" href="../../../../../../chiselFrontend/src/main/scala/chisel3/core/core.html#attr-sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt]" title="attr-sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt]"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">UInt</span></code></a>  that changes every cycle, you can use:</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">val</span> <span class="n">pseudoRandomNumber</span> <span class="k">=</span> <span class="nc">FibonacciLFSR</span><span class="o">.</span><span class="n">maxPeriod</span><span class="o">(</span><span class="mi">8</span><span class="o">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<p>&#64;define paramWidth      :param width: of pseudorandom output</p>
+<p>&#64;define paramTaps       :param taps: a set of tap points to use when constructing the LFSR</p>
+<p>&#64;define paramIncrement  :param increment: when asserted, a new random value will be generated</p>
+<p>&#64;define paramSeed       :param seed: an initial value for internal LFSR state</p>
+<dl class="docutils">
+<dt>&#64;define paramReduction  :param reduction: the reduction operation (either <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">XOR</span></code>  or</dt>
+<dd><blockquote class="first">
+<div><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">XNOR</span></code> )</div></blockquote>
+<dl class="attr">
+<dt id="attr-def apply(width: Int, taps: Set[Int], increment: Bool = true.B, seed: Option[BigInt] = Some(1), reduction: LFSRReduce = XOR): UInt = PRNG(new FibonacciLFSR(width, taps, seed, reduction), increment)">
+<code class="descname">def apply(width: Int, taps: Set[Int], increment: Bool = true.B, seed: Option[BigInt] = Some(1), reduction: LFSRReduce = XOR): UInt = PRNG(new FibonacciLFSR(width, taps, seed, reduction), increment)</code><a class="headerlink" href="#attr-def apply(width: Int, taps: Set[Int], increment: Bool = true.B, seed: Option[BigInt] = Some(1), reduction: LFSRReduce = XOR): UInt = PRNG(new FibonacciLFSR(width, taps, seed, reduction), increment)" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a pseudorandom <a class="reference internal" href="../../../../../../chiselFrontend/src/main/scala/chisel3/core/core.html#attr-sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt]" title="attr-sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt]"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">UInt</span></code></a>  generated from a <a class="reference internal" href="#attr-class FibonacciLFSR(width: Int, taps: Set[Int], seed: Option[BigInt] = Some(1), val reduction: LFSRReduce = XOR, step: Int = 1, updateSeed: Boolean = false) extends PRNG(width, seed, step, updateSeed) with LFSR" title="attr-class FibonacciLFSR(width: Int, taps: Set[Int], seed: Option[BigInt] = Some(1), val reduction: LFSRReduce = XOR, step: Int = 1, updateSeed: Boolean = false) extends PRNG(width, seed, step, updateSeed) with LFSR"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">FibonacciLFSR</span></code></a> .    $paramWidth
+$paramTaps
+$paramIncrement
+$paramSeed
+$paramReduction</p>
+</dd></dl>
+
+<dl class="last attr">
+<dt id="attr-def maxPeriod(width: Int, increment: Bool = true.B, seed: Option[BigInt] = Some(1), reduction: LFSRReduce = XOR): UInt = PRNG(new MaxPeriodFibonacciLFSR(width, seed, reduction), increment)">
+<code class="descname">def maxPeriod(width: Int, increment: Bool = true.B, seed: Option[BigInt] = Some(1), reduction: LFSRReduce = XOR): UInt = PRNG(new MaxPeriodFibonacciLFSR(width, seed, reduction), increment)</code><a class="headerlink" href="#attr-def maxPeriod(width: Int, increment: Bool = true.B, seed: Option[BigInt] = Some(1), reduction: LFSRReduce = XOR): UInt = PRNG(new MaxPeriodFibonacciLFSR(width, seed, reduction), increment)" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a pseudorandom <a class="reference internal" href="../../../../../../chiselFrontend/src/main/scala/chisel3/core/core.html#attr-sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt]" title="attr-sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt]"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">UInt</span></code></a>  generated using a maximal period <a class="reference internal" href="#attr-class FibonacciLFSR(width: Int, taps: Set[Int], seed: Option[BigInt] = Some(1), val reduction: LFSRReduce = XOR, step: Int = 1, updateSeed: Boolean = false) extends PRNG(width, seed, step, updateSeed) with LFSR" title="attr-class FibonacciLFSR(width: Int, taps: Set[Int], seed: Option[BigInt] = Some(1), val reduction: LFSRReduce = XOR, step: Int = 1, updateSeed: Boolean = false) extends PRNG(width, seed, step, updateSeed) with LFSR"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">FibonacciLFSR</span></code></a>      $paramWidth
+$paramIncrement
+$paramSeed
+$paramReduction</p>
+</dd></dl>
+
+</dd>
+</dl>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../../../contents.html">chisel-test</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../../../../../src.html">src</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../../../../test/test.html">src/test</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../../../main.html">src/main</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../chiselFrontend/chiselFrontend.html">chiselFrontend</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../../../contents.html">Documentation overview</a><ul>
+  <li><a href="../../../../../src.html">src</a><ul>
+  <li><a href="../../../../main.html">src/main</a><ul>
+  <li><a href="../../../scala.html">src/main/scala</a><ul>
+  <li><a href="../../chisel3.html">src/main/scala/chisel3</a><ul>
+  <li><a href="../util.html">src/main/scala/chisel3/util</a><ul>
+      <li>Previous: <a href="../experimental/experimental.html" title="previous chapter">src/main/scala/chisel3/util/experimental</a></li>
+      <li>Next: <a href="../../stage/stage.html" title="next chapter">src/main/scala/chisel3/stage</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, John Andrews.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../../../../../../_sources/src/main/scala/chisel3/util/random/random.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

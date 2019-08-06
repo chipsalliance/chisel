@@ -1,0 +1,1744 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>src/main/scala/chisel3/util &#8212; chisel-test  documentation</title>
+    <link rel="stylesheet" href="../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../../../" src="../../../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+    <link rel="next" title="src/main/scala/chisel3/util/experimental" href="experimental/experimental.html" />
+    <link rel="prev" title="src/main/scala/chisel3/internal/firrtl" href="../internal/firrtl/firrtl.html" />
+   
+  <link rel="stylesheet" href="../../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="src-main-scala-chisel3-util">
+<h1>src/main/scala/chisel3/util<a class="headerlink" href="#src-main-scala-chisel3-util" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="experimental/experimental.html">src/main/scala/chisel3/util/experimental</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="experimental/experimental.html#loadmemorytransform-scala">LoadMemoryTransform.scala</a></li>
+<li class="toctree-l2"><a class="reference internal" href="experimental/experimental.html#boringutils-scala">BoringUtils.scala</a></li>
+<li class="toctree-l2"><a class="reference internal" href="experimental/experimental.html#inline-scala">Inline.scala</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="random/random.html">src/main/scala/chisel3/util/random</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="random/random.html#lfsr-scala">LFSR.scala</a></li>
+<li class="toctree-l2"><a class="reference internal" href="random/random.html#prng-scala">PRNG.scala</a></li>
+<li class="toctree-l2"><a class="reference internal" href="random/random.html#galoislfsr-scala">GaloisLFSR.scala</a></li>
+<li class="toctree-l2"><a class="reference internal" href="random/random.html#fibonaccilfsr-scala">FibonacciLFSR.scala</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="mux-scala">
+<h2>Mux.scala<a class="headerlink" href="#mux-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-object Mux1H">
+<code class="descname">object Mux1H</code><a class="headerlink" href="#attr-object Mux1H" title="Permalink to this definition">¶</a></dt>
+<dd><p>Builds a Mux tree out of the input signal vector using a one hot encoded        select signal. Returns the output of the Mux tree.</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">val</span> <span class="n">hotValue</span> <span class="k">=</span> <span class="n">chisel3</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="nc">Mux1H</span><span class="o">(</span><span class="nc">Seq</span><span class="o">(</span>
+ <span class="n">io</span><span class="o">.</span><span class="n">selector</span><span class="o">(</span><span class="mi">0</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="mf">2.</span><span class="n">U</span><span class="o">,</span>
+ <span class="n">io</span><span class="o">.</span><span class="n">selector</span><span class="o">(</span><span class="mi">1</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="mf">4.</span><span class="n">U</span><span class="o">,</span>
+ <span class="n">io</span><span class="o">.</span><span class="n">selector</span><span class="o">(</span><span class="mi">2</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="mf">8.</span><span class="n">U</span><span class="o">,</span>
+ <span class="n">io</span><span class="o">.</span><span class="n">selector</span><span class="o">(</span><span class="mi">4</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="mf">11.</span><span class="n">U</span><span class="o">,</span>
+<span class="o">))</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Note:</th><td class="field-body">results undefined if multiple select signals are simultaneously high</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-object PriorityMux">
+<code class="descname">object PriorityMux</code><a class="headerlink" href="#attr-object PriorityMux" title="Permalink to this definition">¶</a></dt>
+<dd><p>Builds a Mux tree under the assumption that multiple select signals     can be enabled. Priority is given to the first select signal.</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">val</span> <span class="n">hotValue</span> <span class="k">=</span> <span class="n">chisel3</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="nc">PriorityMux</span><span class="o">(</span><span class="nc">Seq</span><span class="o">(</span>
+ <span class="n">io</span><span class="o">.</span><span class="n">selector</span><span class="o">(</span><span class="mi">0</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="mf">2.</span><span class="n">U</span><span class="o">,</span>
+ <span class="n">io</span><span class="o">.</span><span class="n">selector</span><span class="o">(</span><span class="mi">1</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="mf">4.</span><span class="n">U</span><span class="o">,</span>
+ <span class="n">io</span><span class="o">.</span><span class="n">selector</span><span class="o">(</span><span class="mi">2</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="mf">8.</span><span class="n">U</span><span class="o">,</span>
+ <span class="n">io</span><span class="o">.</span><span class="n">selector</span><span class="o">(</span><span class="mi">4</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="mf">11.</span><span class="n">U</span><span class="o">,</span>
+<span class="o">))</span>
+</pre></div>
+</div>
+<p>Returns the output of the Mux tree.</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-object MuxLookup">
+<code class="descname">object MuxLookup</code><a class="headerlink" href="#attr-object MuxLookup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a cascade of n Muxs to search for a key value.</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="nc">MuxLookup</span><span class="o">(</span><span class="n">idx</span><span class="o">,</span> <span class="n">default</span><span class="o">,</span>
+    <span class="nc">Array</span><span class="o">(</span><span class="mf">0.</span><span class="n">U</span> <span class="o">-&gt;</span> <span class="n">a</span><span class="o">,</span> <span class="mf">1.</span><span class="n">U</span> <span class="o">-&gt;</span> <span class="n">b</span><span class="o">))</span>
+</pre></div>
+</div>
+<dl class="attr">
+<dt id="attr-def apply[S &lt;: UInt, T &lt;: Data] (key: S, default: T, mapping: Seq[(S, T)]): T =">
+<code class="descname">def apply[S &lt;: UInt, T &lt;: Data] (key: S, default: T, mapping: Seq[(S, T)]): T =</code><a class="headerlink" href="#attr-def apply[S <: UInt, T <: Data] (key: S, default: T, mapping: Seq[(S, T)]): T =" title="Permalink to this definition">¶</a></dt>
+<dd><p>&#64;param key a key to search for
+:param default: a default value if nothing is found</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Param mapping:</th><td class="field-body">a sequence to search of keys and values</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return:</th><td class="field-body">the value found or the default if not</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-object MuxCase">
+<code class="descname">object MuxCase</code><a class="headerlink" href="#attr-object MuxCase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given an association of values to enable signals, returns the first value with an associated    high enable signal.</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="nc">MuxCase</span><span class="o">(</span><span class="n">default</span><span class="o">,</span> <span class="nc">Array</span><span class="o">(</span><span class="n">c1</span> <span class="o">-&gt;</span> <span class="n">a</span><span class="o">,</span> <span class="n">c2</span> <span class="o">-&gt;</span> <span class="n">b</span><span class="o">))</span>
+</pre></div>
+</div>
+<dl class="attr">
+<dt id="attr-def apply[T &lt;: Data] (default: T, mapping: Seq[(Bool, T)]): T =">
+<code class="descname">def apply[T &lt;: Data] (default: T, mapping: Seq[(Bool, T)]): T =</code><a class="headerlink" href="#attr-def apply[T <: Data] (default: T, mapping: Seq[(Bool, T)]): T =" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>&#64;param default the default value if none are enabled
+:param mapping: a set of data values with associated enables</div></blockquote>
+<ul class="simple">
+<li>&#64;return the first value in mapping that is enabled</li>
+</ul>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="arbiter-scala">
+<h2>Arbiter.scala<a class="headerlink" href="#arbiter-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class ArbiterIO[T &lt;: Data](private val gen: T, val n: Int) extends Bundle">
+<code class="descname">class ArbiterIO[T &lt;: Data](private val gen: T, val n: Int) extends Bundle</code><a class="headerlink" href="#attr-class ArbiterIO[T <: Data](private val gen: T, val n: Int) extends Bundle" title="Permalink to this definition">¶</a></dt>
+<dd><p>IO bundle definition for an Arbiter, which takes some number of ready-valid inputs and outputs  (selects) at most one.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Param gen:</th><td class="field-body">data type</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Param n:</th><td class="field-body">number of inputs</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-private object ArbiterCtrl">
+<code class="descname">private object ArbiterCtrl</code><a class="headerlink" href="#attr-private object ArbiterCtrl" title="Permalink to this definition">¶</a></dt>
+<dd><p>Arbiter Control determining which producer has access</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-abstract class LockingArbiterLike[T &lt;: Data](gen: T, n: Int, count: Int, needsLock: Option[T =&gt; Bool]) extends Module">
+<code class="descname">abstract class LockingArbiterLike[T &lt;: Data](gen: T, n: Int, count: Int, needsLock: Option[T =&gt; Bool]) extends Module</code><a class="headerlink" href="#attr-abstract class LockingArbiterLike[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T => Bool]) extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class LockingRRArbiter[T &lt;: Data](gen: T, n: Int, count: Int, needsLock: Option[T =&gt; Bool]">
+<code class="descname">class LockingRRArbiter[T &lt;: Data](gen: T, n: Int, count: Int, needsLock: Option[T =&gt; Bool]</code><a class="headerlink" href="#attr-class LockingRRArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T => Bool]" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class LockingArbiter[T &lt;: Data](gen: T, n: Int, count: Int, needsLock: Option[T =&gt; Bool]">
+<code class="descname">class LockingArbiter[T &lt;: Data](gen: T, n: Int, count: Int, needsLock: Option[T =&gt; Bool]</code><a class="headerlink" href="#attr-class LockingArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T => Bool]" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class RRArbiter[T &lt;: Data](gen:T, n: Int) extends LockingRRArbiter[T](gen, n, 1)">
+<code class="descname">class RRArbiter[T &lt;: Data](gen:T, n: Int) extends LockingRRArbiter[T](gen, n, 1)</code><a class="headerlink" href="#attr-class RRArbiter[T <: Data](gen:T, n: Int) extends LockingRRArbiter[T](gen, n, 1)" title="Permalink to this definition">¶</a></dt>
+<dd><p>Hardware module that is used to sequence n producers into 1 consumer.   Producers are chosen in round robin order.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Param gen:</th><td class="field-body">data type</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Param n:</th><td class="field-body">number of inputs</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">val</span> <span class="n">arb</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">RRArbiter</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(),</span> <span class="mi">2</span><span class="o">))</span>
+<span class="n">arb</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">in</span><span class="o">(</span><span class="mi">0</span><span class="o">)</span> <span class="o">&lt;&gt;</span> <span class="n">producer0</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">out</span>
+<span class="n">arb</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">in</span><span class="o">(</span><span class="mi">1</span><span class="o">)</span> <span class="o">&lt;&gt;</span> <span class="n">producer1</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">out</span>
+<span class="n">consumer</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">in</span> <span class="o">&lt;&gt;</span> <span class="n">arb</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">out</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-class Arbiter[T &lt;: Data](gen: T, n: Int) extends Module">
+<code class="descname">class Arbiter[T &lt;: Data](gen: T, n: Int) extends Module</code><a class="headerlink" href="#attr-class Arbiter[T <: Data](gen: T, n: Int) extends Module" title="Permalink to this definition">¶</a></dt>
+<dd><p>Hardware module that is used to sequence n producers into 1 consumer.   Priority is given to lower producer.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Param gen:</th><td class="field-body">data type</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Param n:</th><td class="field-body">number of inputs</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">val</span> <span class="n">arb</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">Arbiter</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(),</span> <span class="mi">2</span><span class="o">))</span>
+<span class="n">arb</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">in</span><span class="o">(</span><span class="mi">0</span><span class="o">)</span> <span class="o">&lt;&gt;</span> <span class="n">producer0</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">out</span>
+<span class="n">arb</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">in</span><span class="o">(</span><span class="mi">1</span><span class="o">)</span> <span class="o">&lt;&gt;</span> <span class="n">producer1</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">out</span>
+<span class="n">consumer</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">in</span> <span class="o">&lt;&gt;</span> <span class="n">arb</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">out</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="reg-scala">
+<h2>Reg.scala<a class="headerlink" href="#reg-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-object RegEnable">
+<code class="descname">object RegEnable</code><a class="headerlink" href="#attr-object RegEnable" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attr">
+<dt id="attr-def apply[T &lt;: Data](next: T, enable: Bool): T =">
+<code class="descname">def apply[T &lt;: Data](next: T, enable: Bool): T =</code><a class="headerlink" href="#attr-def apply[T <: Data](next: T, enable: Bool): T =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a register with the specified next, update enable gate, and no reset initialization.</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">val</span> <span class="n">regWithEnable</span> <span class="k">=</span> <span class="nc">RegEnable</span><span class="o">(</span><span class="n">nextVal</span><span class="o">,</span> <span class="n">ena</span><span class="o">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-def apply[T &lt;: Data](next: T, init: T, enable: Bool): T =">
+<code class="descname">def apply[T &lt;: Data](next: T, init: T, enable: Bool): T =</code><a class="headerlink" href="#attr-def apply[T <: Data](next: T, init: T, enable: Bool): T =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a register with the specified next, update enable gate, and reset initialization.</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">val</span> <span class="n">regWithEnableAndReset</span> <span class="k">=</span> <span class="nc">RegEnable</span><span class="o">(</span><span class="n">nextVal</span><span class="o">,</span> <span class="mf">0.</span><span class="n">U</span><span class="o">,</span> <span class="n">ena</span><span class="o">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-object ShiftRegister">
+<code class="descname">object ShiftRegister</code><a class="headerlink" href="#attr-object ShiftRegister" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attr">
+<dt id="attr-def apply[T &lt;: Data](in: T, n: Int, en: Bool = true.B): T =">
+<code class="descname">def apply[T &lt;: Data](in: T, n: Int, en: Bool = true.B): T =</code><a class="headerlink" href="#attr-def apply[T <: Data](in: T, n: Int, en: Bool = true.B): T =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the n-cycle delayed version of the input signal.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Param in:</th><td class="field-body">input to delay</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Param n:</th><td class="field-body">number of cycles to delay</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Param en:</th><td class="field-body">enable the shift</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">val</span> <span class="n">regDelayTwo</span> <span class="k">=</span> <span class="nc">ShiftRegister</span><span class="o">(</span><span class="n">nextVal</span><span class="o">,</span> <span class="mi">2</span><span class="o">,</span> <span class="n">ena</span><span class="o">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-def apply[T &lt;: Data](in: T, n: Int, resetData: T, en: Bool): T =">
+<code class="descname">def apply[T &lt;: Data](in: T, n: Int, resetData: T, en: Bool): T =</code><a class="headerlink" href="#attr-def apply[T <: Data](in: T, n: Int, resetData: T, en: Bool): T =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the n-cycle delayed version of the input signal with reset initialization.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Param in:</th><td class="field-body">input to delay</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Param n:</th><td class="field-body">number of cycles to delay</td>
+</tr>
+<tr class="field-odd field"><th class="field-name" colspan="2">Param resetData:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">reset value for each register in the shift</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Param en:</th><td class="field-body">enable the shift</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">val</span> <span class="n">regDelayTwoReset</span> <span class="k">=</span> <span class="nc">ShiftRegister</span><span class="o">(</span><span class="n">nextVal</span><span class="o">,</span> <span class="mi">2</span><span class="o">,</span> <span class="mf">0.</span><span class="n">U</span><span class="o">,</span> <span class="n">ena</span><span class="o">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="bitpat-scala">
+<h2>BitPat.scala<a class="headerlink" href="#bitpat-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-object BitPat">
+<code class="descname">object BitPat</code><a class="headerlink" href="#attr-object BitPat" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attr">
+<dt id="attr-private def parse(x: String): (BigInt, BigInt, Int) =">
+<code class="descname">private def parse(x: String): (BigInt, BigInt, Int) =</code><a class="headerlink" href="#attr-private def parse(x: String): (BigInt, BigInt, Int) =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parses a bit pattern string into (bits, mask, width).
+:return: bits the literal value, with don’t cares being 0
+:return: mask the mask bits, with don’t cares being 0 and cares being 1
+:return: width the number of bits in the literal, including values and</p>
+<blockquote>
+<div>don’t cares.</div></blockquote>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-def apply(n: String): BitPat =">
+<code class="descname">def apply(n: String): BitPat =</code><a class="headerlink" href="#attr-def apply(n: String): BitPat =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a <a class="reference internal" href="#attr-sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) extends SourceInfoDoc" title="attr-sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) extends SourceInfoDoc"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">BitPat</span></code></a>  literal from a string.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Param n:</th><td class="field-body">the literal value as a string, in binary, prefixed with ‘b’</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Note:</th><td class="field-body">legal characters are ‘0’, ‘1’, and ‘?’, as well as ‘_’ and white
+space (which are ignored)</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-def dontCare(width: Int): BitPat">
+<code class="descname">def dontCare(width: Int): BitPat</code><a class="headerlink" href="#attr-def dontCare(width: Int): BitPat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a <a class="reference internal" href="#attr-sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) extends SourceInfoDoc" title="attr-sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) extends SourceInfoDoc"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">BitPat</span></code></a>  of all don’t cares of the specified bitwidth.</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">val</span> <span class="n">myDontCare</span> <span class="k">=</span> <span class="nc">BitPat</span><span class="o">.</span><span class="n">dontCare</span><span class="o">(</span><span class="mi">4</span><span class="o">)</span>  <span class="c1">// equivalent to BitPat(&quot;b????&quot;)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-def bitPatToUInt(x: BitPat): UInt =">
+<code class="descname">def bitPatToUInt(x: BitPat): UInt =</code><a class="headerlink" href="#attr-def bitPatToUInt(x: BitPat): UInt =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Allows BitPats to be used where a UInt is expected.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Note:</th><td class="field-body">the BitPat must not have don’t care bits (will error out otherwise)</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-def apply(x: UInt): BitPat =">
+<code class="descname">def apply(x: UInt): BitPat =</code><a class="headerlink" href="#attr-def apply(x: UInt): BitPat =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Allows UInts to be used where a BitPat is expected, useful for when an  interface is defined with BitPats but not all cases need the partial
+matching capability.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Note:</th><td class="field-body">the UInt must be a literal</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-def do_=== (that: BitPat) (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool">
+<code class="descname">def do_=== (that: BitPat) (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool</code><a class="headerlink" href="#attr-def do_=== (that: BitPat) (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool" title="Permalink to this definition">¶</a></dt>
+<dd><p>&#64;group SourceInfoTransformMacro</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-def do_=/= (that: BitPat) (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool">
+<code class="descname">def do_=/= (that: BitPat) (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool</code><a class="headerlink" href="#attr-def do_=/= (that: BitPat) (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool" title="Permalink to this definition">¶</a></dt>
+<dd><p>&#64;group SourceInfoTransformMacro</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) extends SourceInfoDoc">
+<code class="descname">sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) extends SourceInfoDoc</code><a class="headerlink" href="#attr-sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) extends SourceInfoDoc" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bit patterns are literals with masks, used to represent values with don’t       care bits. Equality comparisons will ignore don’t care bits.</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="s">&quot;b10101&quot;</span><span class="o">.</span><span class="n">U</span> <span class="o">===</span> <span class="nc">BitPat</span><span class="o">(</span><span class="s">&quot;b101??&quot;</span><span class="o">)</span> <span class="c1">// evaluates to true.B</span>
+<span class="s">&quot;b10111&quot;</span><span class="o">.</span><span class="n">U</span> <span class="o">===</span> <span class="nc">BitPat</span><span class="o">(</span><span class="s">&quot;b101??&quot;</span><span class="o">)</span> <span class="c1">// evaluates to true.B</span>
+<span class="s">&quot;b10001&quot;</span><span class="o">.</span><span class="n">U</span> <span class="o">===</span> <span class="nc">BitPat</span><span class="o">(</span><span class="s">&quot;b101??&quot;</span><span class="o">)</span> <span class="c1">// evaluates to false.B</span>
+</pre></div>
+</div>
+<dl class="attr">
+<dt id="attr-def do_=== (that: UInt) (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =">
+<code class="descname">def do_=== (that: UInt) (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =</code><a class="headerlink" href="#attr-def do_=== (that: UInt) (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =" title="Permalink to this definition">¶</a></dt>
+<dd><p>&#64;group SourceInfoTransformMacro</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-def do_=/= (that: UInt) (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =">
+<code class="descname">def do_=/= (that: UInt) (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =</code><a class="headerlink" href="#attr-def do_=/= (that: UInt) (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =" title="Permalink to this definition">¶</a></dt>
+<dd><p>&#64;group SourceInfoTransformMacro</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="lfsr-scala">
+<h2>LFSR.scala<a class="headerlink" href="#lfsr-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-object LFSR16">
+<code class="descname">object LFSR16</code><a class="headerlink" href="#attr-object LFSR16" title="Permalink to this definition">¶</a></dt>
+<dd><p>LFSR16 generates a 16-bit linear feedback shift register, returning the register contents.      This is useful for generating a pseudo-random sequence.</p>
+<p>The example below, taken from the unit tests, creates two 4-sided dice using <cite>LFSR16</cite> primitives:</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">val</span> <span class="n">bins</span> <span class="k">=</span> <span class="nc">Reg</span><span class="o">(</span><span class="nc">Vec</span><span class="o">(</span><span class="mi">8</span><span class="o">,</span> <span class="nc">UInt</span><span class="o">(</span><span class="mf">32.</span><span class="n">W</span><span class="o">)))</span>
+
+<span class="c1">// Create two 4 sided dice and roll them each cycle.</span>
+<span class="c1">// Use tap points on each LFSR so values are more independent</span>
+<span class="k">val</span> <span class="n">die0</span> <span class="k">=</span> <span class="nc">Cat</span><span class="o">(</span><span class="nc">Seq</span><span class="o">.</span><span class="n">tabulate</span><span class="o">(</span><span class="mi">2</span><span class="o">)</span> <span class="o">{</span> <span class="n">i</span> <span class="k">=&gt;</span> <span class="nc">LFSR16</span><span class="o">()(</span><span class="n">i</span><span class="o">)</span> <span class="o">})</span>
+<span class="k">val</span> <span class="n">die1</span> <span class="k">=</span> <span class="nc">Cat</span><span class="o">(</span><span class="nc">Seq</span><span class="o">.</span><span class="n">tabulate</span><span class="o">(</span><span class="mi">2</span><span class="o">)</span> <span class="o">{</span> <span class="n">i</span> <span class="k">=&gt;</span> <span class="nc">LFSR16</span><span class="o">()(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">2</span><span class="o">)</span> <span class="o">})</span>
+
+<span class="k">val</span> <span class="n">rollValue</span> <span class="k">=</span> <span class="n">die0</span> <span class="o">+&amp;</span> <span class="n">die1</span>  <span class="c1">// Note +&amp; is critical because sum will need an extra bit.</span>
+
+<span class="n">bins</span><span class="o">(</span><span class="n">rollValue</span><span class="o">)</span> <span class="o">:=</span> <span class="n">bins</span><span class="o">(</span><span class="n">rollValue</span><span class="o">)</span> <span class="o">+</span> <span class="mf">1.</span><span class="n">U</span>
+</pre></div>
+</div>
+<dl class="attr">
+<dt id="attr-def apply(increment: Bool = true.B): UInt = VecInit( FibonacciLFSR .maxPeriod(16, increment, seed = Some(BigInt(1) &lt;&lt; 15)) .asBools .reverse ) .asUInt">
+<code class="descname">def apply(increment: Bool = true.B): UInt = VecInit( FibonacciLFSR .maxPeriod(16, increment, seed = Some(BigInt(1) &lt;&lt; 15)) .asBools .reverse ) .asUInt</code><a class="headerlink" href="#attr-def apply(increment: Bool = true.B): UInt = VecInit( FibonacciLFSR .maxPeriod(16, increment, seed = Some(BigInt(1) << 15)) .asBools .reverse ) .asUInt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates a 16-bit linear feedback shift register, returning the register contents.
+:param increment: optional control to gate when the LFSR updates.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="cat-scala">
+<h2>Cat.scala<a class="headerlink" href="#cat-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-object Cat">
+<code class="descname">object Cat</code><a class="headerlink" href="#attr-object Cat" title="Permalink to this definition">¶</a></dt>
+<dd><p>Concatenates elements of the input, in order, together.</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="nc">Cat</span><span class="o">(</span><span class="s">&quot;b101&quot;</span><span class="o">.</span><span class="n">U</span><span class="o">,</span> <span class="s">&quot;b11&quot;</span><span class="o">.</span><span class="n">U</span><span class="o">)</span>  <span class="c1">// equivalent to &quot;b101 11&quot;.U</span>
+<span class="nc">Cat</span><span class="o">(</span><span class="n">myUIntWire0</span><span class="o">,</span> <span class="n">myUIntWire1</span><span class="o">)</span>
+
+<span class="nc">Cat</span><span class="o">(</span><span class="nc">Seq</span><span class="o">(</span><span class="s">&quot;b101&quot;</span><span class="o">.</span><span class="n">U</span><span class="o">,</span> <span class="s">&quot;b11&quot;</span><span class="o">.</span><span class="n">U</span><span class="o">))</span>  <span class="c1">// equivalent to &quot;b101 11&quot;.U</span>
+<span class="nc">Cat</span><span class="o">(</span><span class="n">mySeqOfBits</span><span class="o">)</span>
+</pre></div>
+</div>
+<dl class="attr">
+<dt id="attr-def apply[T &lt;: Bits](a: T, r: T*): UInt">
+<code class="descname">def apply[T &lt;: Bits](a: T, r: T*): UInt</code><a class="headerlink" href="#attr-def apply[T <: Bits](a: T, r: T*): UInt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Concatenates the argument data elements, in argument order, together. The first argument        forms the most significant bits, while the last argument forms the least significant bits.</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-def apply[T &lt;: Bits](r: Seq[T]): UInt">
+<code class="descname">def apply[T &lt;: Bits](r: Seq[T]): UInt</code><a class="headerlink" href="#attr-def apply[T <: Bits](r: Seq[T]): UInt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Concatenates the data elements of the input sequence, in reverse sequence order, together.      The first element of the sequence forms the most significant bits, while the last element
+in the sequence forms the least significant bits.</p>
+<p>Equivalent to r(0) ## r(1) ## … ## r(n-1).</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="blackboxutils-scala">
+<h2>BlackBoxUtils.scala<a class="headerlink" href="#blackboxutils-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-trait HasBlackBoxResource extends BlackBox">
+<code class="descname">trait HasBlackBoxResource extends BlackBox</code><a class="headerlink" href="#attr-trait HasBlackBoxResource extends BlackBox" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attr">
+<dt id="attr-def addResource(blackBoxResource: String): Unit =">
+<code class="descname">def addResource(blackBoxResource: String): Unit =</code><a class="headerlink" href="#attr-def addResource(blackBoxResource: String): Unit =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copies a resource file to the target directory
+Resource files are located in project_root/src/main/resources/.
+Example of adding the resource file project_root/src/main/resources/blackbox.v:</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">addResource</span><span class="o">(</span><span class="s">&quot;/blackbox.v&quot;</span><span class="o">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-trait HasBlackBoxInline extends BlackBox">
+<code class="descname">trait HasBlackBoxInline extends BlackBox</code><a class="headerlink" href="#attr-trait HasBlackBoxInline extends BlackBox" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-trait HasBlackBoxPath extends BlackBox">
+<code class="descname">trait HasBlackBoxPath extends BlackBox</code><a class="headerlink" href="#attr-trait HasBlackBoxPath extends BlackBox" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attr">
+<dt id="attr-def addPath(blackBoxPath: String): Unit =">
+<code class="descname">def addPath(blackBoxPath: String): Unit =</code><a class="headerlink" href="#attr-def addPath(blackBoxPath: String): Unit =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Copies a file to the target directory
+This works with absolute and relative paths. Relative paths are relative
+to the current working directory, which is generally not the same as the
+target directory.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="transitname-scala">
+<h2>TransitName.scala<a class="headerlink" href="#transitname-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-object TransitName">
+<code class="descname">object TransitName</code><a class="headerlink" href="#attr-object TransitName" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attr">
+<dt id="attr-def apply[T&lt;:HasId](from: T, to: HasId): T =">
+<code class="descname">def apply[T&lt;:HasId](from: T, to: HasId): T =</code><a class="headerlink" href="#attr-def apply[T<:HasId](from: T, to: HasId): T =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transit a name from one type to another
+:param from: the thing with a “good” name</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Param to:</th><td class="field-body">the thing that will receive the “good” name</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return:</th><td class="field-body">the <cite>from</cite> parameter</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-def withSuffix[T&lt;:HasId](suffix: String)(from: T, to: HasId): T =">
+<code class="descname">def withSuffix[T&lt;:HasId](suffix: String)(from: T, to: HasId): T =</code><a class="headerlink" href="#attr-def withSuffix[T<:HasId](suffix: String)(from: T, to: HasId): T =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transit a name from one type to another ‘’and add a suffix’’
+:param suffix: the suffix to append</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Param from:</th><td class="field-body">the thing with a “good” name</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Param to:</th><td class="field-body">the thing that will receive the “good” name</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return:</th><td class="field-body">the <cite>from</cite> parameter</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="enum-scala">
+<h2>Enum.scala<a class="headerlink" href="#enum-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-trait Enum">
+<code class="descname">trait Enum</code><a class="headerlink" href="#attr-trait Enum" title="Permalink to this definition">¶</a></dt>
+<dd><p>Defines a set of unique UInt constants
+Unpack with a list to specify an enumeration. Usually used with <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">switch</span></code>  to describe a finite
+state machine.</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">val</span> <span class="n">state_on</span> <span class="o">::</span> <span class="n">state_off</span> <span class="o">::</span> <span class="nc">Nil</span> <span class="k">=</span> <span class="nc">Enum</span><span class="o">(</span><span class="mi">2</span><span class="o">)</span>
+<span class="k">val</span> <span class="n">current_state</span> <span class="k">=</span> <span class="nc">WireDefault</span><span class="o">(</span><span class="n">state_off</span><span class="o">)</span>
+<span class="n">switch</span> <span class="o">(</span><span class="n">current_state</span><span class="o">)</span> <span class="o">{</span>
+  <span class="n">is</span> <span class="o">(</span><span class="n">state_on</span><span class="o">)</span> <span class="o">{</span>
+    <span class="o">...</span>
+  <span class="o">}</span>
+  <span class="n">is</span> <span class="o">(</span><span class="n">state_off</span><span class="o">)</span> <span class="o">{</span>
+    <span class="o">...</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+<dl class="attr">
+<dt id="attr-protected def createValues(n: Int): Seq[UInt]">
+<code class="descname">protected def createValues(n: Int): Seq[UInt]</code><a class="headerlink" href="#attr-protected def createValues(n: Int): Seq[UInt]" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a sequence of Bits subtypes with values from 0 until n. Helper method.</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-def apply(n: Int): List[UInt]">
+<code class="descname">def apply(n: Int): List[UInt]</code><a class="headerlink" href="#attr-def apply(n: Int): List[UInt]" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns n unique UInt values</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Param n:</th><td class="field-body">Number of unique UInt constants to enumerate</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return:</th><td class="field-body">Enumerated constants</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-object Enum extends Enum">
+<code class="descname">object Enum extends Enum</code><a class="headerlink" href="#attr-object Enum extends Enum" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="onehot-scala">
+<h2>OneHot.scala<a class="headerlink" href="#onehot-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-object OHToUInt">
+<code class="descname">object OHToUInt</code><a class="headerlink" href="#attr-object OHToUInt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the bit position of the sole high bit of the input bitvector.
+Inverse operation of <a class="reference internal" href="../../../../test/scala/chiselTests/chiselTests.html#attr-class UIntToOHTester extends BasicTester" title="attr-class UIntToOHTester extends BasicTester"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">UIntToOH</span></code></a> .</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="nc">OHToUInt</span><span class="o">(</span><span class="s">&quot;b0100&quot;</span><span class="o">.</span><span class="n">U</span><span class="o">)</span> <span class="c1">// results in 2.U</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Note:</th><td class="field-body">assumes exactly one high bit, results undefined otherwise</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-object PriorityEncoder">
+<code class="descname">object PriorityEncoder</code><a class="headerlink" href="#attr-object PriorityEncoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the bit position of the least-significant high bit of the input bitvector.</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="nc">PriorityEncoder</span><span class="o">(</span><span class="s">&quot;b0110&quot;</span><span class="o">.</span><span class="n">U</span><span class="o">)</span> <span class="c1">// results in 1.U</span>
+</pre></div>
+</div>
+<p>Multiple bits may be high in the input.</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-object UIntToOH">
+<code class="descname">object UIntToOH</code><a class="headerlink" href="#attr-object UIntToOH" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the one hot encoding of the input UInt.</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="nc">UIntToOH</span><span class="o">(</span><span class="mf">2.</span><span class="n">U</span><span class="o">)</span> <span class="c1">// results in &quot;b0100&quot;.U</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-object PriorityEncoderOH">
+<code class="descname">object PriorityEncoderOH</code><a class="headerlink" href="#attr-object PriorityEncoderOH" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a bit vector in which only the least-significant 1 bit in the input vector, if any,     is set.</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="nc">PriorityEncoderOH</span><span class="o">((</span><span class="kc">false</span><span class="o">.</span><span class="n">B</span><span class="o">,</span> <span class="kc">true</span><span class="o">.</span><span class="n">B</span><span class="o">,</span> <span class="kc">true</span><span class="o">.</span><span class="n">B</span><span class="o">,</span> <span class="kc">false</span><span class="o">.</span><span class="n">B</span><span class="o">))</span> <span class="c1">// results in (false.B, false.B, true.B, false.B)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="util-scala">
+<h2>util.scala<a class="headerlink" href="#util-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-package object util">
+<code class="descname">package object util</code><a class="headerlink" href="#attr-package object util" title="Permalink to this definition">¶</a></dt>
+<dd><p>The util package provides extensions to core chisel for common hardware components and utility  functions</p>
+</dd></dl>
+
+</div>
+<div class="section" id="valid-scala">
+<h2>Valid.scala<a class="headerlink" href="#valid-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class Valid[+T &lt;: Data](gen: T) extends Bundle">
+<code class="descname">class Valid[+T &lt;: Data](gen: T) extends Bundle</code><a class="headerlink" href="#attr-class Valid[+T <: Data](gen: T) extends Bundle" title="Permalink to this definition">¶</a></dt>
+<dd><p>A <a class="reference internal" href="../../../../../chiselFrontend/src/main/scala/chisel3/core/core.html#attr-case class BundleLitBinding(litMap: Map[Data, LitArg]) extends LitBinding" title="attr-case class BundleLitBinding(litMap: Map[Data, LitArg]) extends LitBinding"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">Bundle</span></code></a>  that adds a <cite>valid</cite> bit to some data. This indicates that the user expects a “valid” interface between        a producer and a consumer. Here, the producer asserts the <cite>valid</cite> bit when data on the <cite>bits</cite> line contains valid
+data. This differs from <a class="reference internal" href="#attr-class DecoupledIO[+T &lt;: Data](gen: T) extends ReadyValidIO[T](gen)" title="attr-class DecoupledIO[+T &lt;: Data](gen: T) extends ReadyValidIO[T](gen)"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">DecoupledIO</span></code></a>  or <a class="reference internal" href="#attr-class IrrevocableIO[+T &lt;: Data](gen: T) extends ReadyValidIO[T](gen)" title="attr-class IrrevocableIO[+T &lt;: Data](gen: T) extends ReadyValidIO[T](gen)"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">IrrevocableIO</span></code></a>  as there is no <cite>ready</cite> line that the consumer can use
+to put back pressure on the producer.</p>
+<p>In most scenarios, the <cite>Valid</cite> class will ‘’not’’ be used directly. Instead, users will create <cite>Valid</cite> interfaces
+using the <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">Valid$</span> <span class="pre">Valid</span> <span class="pre">factory</span></code> .</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Type-param T:</th><td class="field-body">the type of the data</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Param gen:</th><td class="field-body">some data
+&#64;see <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">Valid$</span> <span class="pre">Valid</span> <span class="pre">factory</span></code>  for concrete examples</td>
+</tr>
+</tbody>
+</table>
+<dl class="attr">
+<dt id="attr-def fire(dummy: Int = 0): Bool = valid">
+<code class="descname">def fire(dummy: Int = 0): Bool = valid</code><a class="headerlink" href="#attr-def fire(dummy: Int = 0): Bool = valid" title="Permalink to this definition">¶</a></dt>
+<dd><p>True when <cite>valid</cite> is asserted   :return: a Chisel <a class="reference internal" href="../../../../../chiselFrontend/src/main/scala/chisel3/core/core.html#attr-sealed class Bool() extends UInt(1.W) with Reset" title="attr-sealed class Bool() extends UInt(1.W) with Reset"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">Bool</span></code></a>  true if <cite>valid</cite> is asserted</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-object Valid">
+<code class="descname">object Valid</code><a class="headerlink" href="#attr-object Valid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Factory for generating “valid” interfaces. A “valid” interface is a data-communicating interface between a producer     and a consumer where the producer does not wait for the consumer. Concretely, this means that one additional bit is
+added to the data indicating its validity.</p>
+<p>As an example, consider the following <a class="reference internal" href="../../../../../chiselFrontend/src/main/scala/chisel3/core/core.html#attr-case class BundleLitBinding(litMap: Map[Data, LitArg]) extends LitBinding" title="attr-case class BundleLitBinding(litMap: Map[Data, LitArg]) extends LitBinding"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">Bundle</span></code></a> , <cite>MyBundle</cite>:</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyBundle</span> <span class="k">extends</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="n">foo</span> <span class="k">=</span> <span class="nc">Output</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">))</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+<p>To convert this to a “valid” interface, you wrap it with a call to the <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">Valid$.apply</span> <span class="pre">`Valid</span></code> companion object’s
+apply method` :</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">val</span> <span class="n">bar</span> <span class="k">=</span> <span class="nc">Valid</span><span class="o">(</span><span class="k">new</span> <span class="nc">MyBundle</span><span class="o">)</span>
+</pre></div>
+</div>
+<p>The resulting interface is ‘’structurally’’ equivalent to the following:</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">MyValidBundle</span> <span class="k">extends</span> <span class="nc">Bundle</span> <span class="o">{</span>
+  <span class="k">val</span> <span class="n">valid</span> <span class="k">=</span> <span class="nc">Output</span><span class="o">(</span><span class="nc">Bool</span><span class="o">())</span>
+  <span class="k">val</span> <span class="n">bits</span> <span class="k">=</span> <span class="nc">Output</span><span class="o">(</span><span class="k">new</span> <span class="nc">MyBundle</span><span class="o">)</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+<p>In addition to adding the <cite>valid</cite> bit, a <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">Valid.fire</span></code>  method is also added that returns the <cite>valid</cite> bit. This
+provides a similarly named interface to <a class="reference internal" href="#attr-class DecoupledIO[+T &lt;: Data](gen: T) extends ReadyValidIO[T](gen)" title="attr-class DecoupledIO[+T &lt;: Data](gen: T) extends ReadyValidIO[T](gen)"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">DecoupledIO</span></code></a> ‘s fire.</p>
+<p>&#64;see <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">Decoupled$</span> <span class="pre">DecoupledIO</span> <span class="pre">Factory</span></code>
+&#64;see <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">Irrevocable$</span> <span class="pre">IrrevocableIO</span> <span class="pre">Factory</span></code></p>
+<dl class="attr">
+<dt id="attr-def apply[T &lt;: Data](gen: T): Valid[T]">
+<code class="descname">def apply[T &lt;: Data](gen: T): Valid[T]</code><a class="headerlink" href="#attr-def apply[T <: Data](gen: T): Valid[T]" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wrap some <a class="reference internal" href="../../../../../chiselFrontend/src/main/scala/chisel3/core/core.html#attr-abstract class Data extends HasId with NamedComponent with SourceInfoDoc" title="attr-abstract class Data extends HasId with NamedComponent with SourceInfoDoc"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">Data</span></code></a>  in a valid interface
+:type-param T: the type of the data to wrap</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Param gen:</th><td class="field-body">the data to wrap</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return:</th><td class="field-body">the wrapped input data</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-object Pipe">
+<code class="descname">object Pipe</code><a class="headerlink" href="#attr-object Pipe" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attr">
+<dt id="attr-def apply[T &lt;: Data](enqValid: Bool, enqBits: T, latency: Int)(implicit compileOptions: CompileOptions): Valid[T] =">
+<code class="descname">def apply[T &lt;: Data](enqValid: Bool, enqBits: T, latency: Int)(implicit compileOptions: CompileOptions): Valid[T] =</code><a class="headerlink" href="#attr-def apply[T <: Data](enqValid: Bool, enqBits: T, latency: Int)(implicit compileOptions: CompileOptions): Valid[T] =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a pipe from an explicit valid bit and some data
+:param enqValid: the valid bit (must be a hardware type)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Param enqBits:</th><td class="field-body">the data (must be a hardware type)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Param latency:</th><td class="field-body">the number of pipeline stages</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return:</th><td class="field-body">$returnType</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-def apply[T &lt;: Data](enqValid: Bool, enqBits: T)(implicit compileOptions: CompileOptions): Valid[T] =">
+<code class="descname">def apply[T &lt;: Data](enqValid: Bool, enqBits: T)(implicit compileOptions: CompileOptions): Valid[T] =</code><a class="headerlink" href="#attr-def apply[T <: Data](enqValid: Bool, enqBits: T)(implicit compileOptions: CompileOptions): Valid[T] =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a one-stage pipe from an explicit valid bit and some data
+:param enqValid: the valid bit (must be a hardware type)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Param enqBits:</th><td class="field-body">the data (must be a hardware type)</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return:</th><td class="field-body">$returnType</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-def apply[T &lt;: Data](enq: Valid[T], latency: Int = 1)(implicit compileOptions: CompileOptions): Valid[T] =">
+<code class="descname">def apply[T &lt;: Data](enq: Valid[T], latency: Int = 1)(implicit compileOptions: CompileOptions): Valid[T] =</code><a class="headerlink" href="#attr-def apply[T <: Data](enq: Valid[T], latency: Int = 1)(implicit compileOptions: CompileOptions): Valid[T] =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a pipe for a <a class="reference internal" href="#attr-class Valid[+T &lt;: Data](gen: T) extends Bundle" title="attr-class Valid[+T &lt;: Data](gen: T) extends Bundle"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">Valid</span></code></a>  interface
+:param enq: a <a class="reference internal" href="#attr-class Valid[+T &lt;: Data](gen: T) extends Bundle" title="attr-class Valid[+T &lt;: Data](gen: T) extends Bundle"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">Valid</span></code></a>  interface (must be a hardware type)</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Param latency:</th><td class="field-body">the number of pipeline stages</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return:</th><td class="field-body">$returnType</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-class Pipe[T &lt;: Data](gen: T, latency: Int = 1)(implicit compileOptions: CompileOptions) extends Module">
+<code class="descname">class Pipe[T &lt;: Data](gen: T, latency: Int = 1)(implicit compileOptions: CompileOptions) extends Module</code><a class="headerlink" href="#attr-class Pipe[T <: Data](gen: T, latency: Int = 1)(implicit compileOptions: CompileOptions) extends Module" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pipeline module generator parameterized by data type and latency.
+This defines a module with one input, <cite>enq</cite>, and one output, <cite>deq</cite>. The input and output are <a class="reference internal" href="#attr-class Valid[+T &lt;: Data](gen: T) extends Bundle" title="attr-class Valid[+T &lt;: Data](gen: T) extends Bundle"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">Valid</span></code></a>  interfaces
+that wrap some Chisel type, e.g., a <a class="reference internal" href="../../../../../chiselFrontend/src/main/scala/chisel3/core/core.html#attr-sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt]" title="attr-sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt]"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">UInt</span></code></a>  or a <a class="reference internal" href="../../../../../chiselFrontend/src/main/scala/chisel3/core/core.html#attr-case class BundleLitBinding(litMap: Map[Data, LitArg]) extends LitBinding" title="attr-case class BundleLitBinding(litMap: Map[Data, LitArg]) extends LitBinding"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">Bundle</span></code></a> . This generator will then chain together a number of
+pipeline stages that all advance when the input <a class="reference internal" href="#attr-class Valid[+T &lt;: Data](gen: T) extends Bundle" title="attr-class Valid[+T &lt;: Data](gen: T) extends Bundle"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">Valid</span></code></a>  <cite>enq</cite> fires. The output <cite>deq</cite> <a class="reference internal" href="#attr-class Valid[+T &lt;: Data](gen: T) extends Bundle" title="attr-class Valid[+T &lt;: Data](gen: T) extends Bundle"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">Valid</span></code></a>  will fire only
+when valid data has made it all the way through the pipeline.</p>
+<p>As an example, to construct a 4-stage pipe of 8-bit <a class="reference internal" href="../../../../../chiselFrontend/src/main/scala/chisel3/core/core.html#attr-sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt]" title="attr-sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt]"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">UInt</span></code></a> s and connect it to a producer and consumer, you can use
+the following:</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">val</span> <span class="n">foo</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">Pipe</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">)),</span> <span class="mi">4</span><span class="o">)</span>
+<span class="n">pipe</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">enq</span> <span class="o">:=</span> <span class="n">producer</span><span class="o">.</span><span class="n">io</span>
+<span class="n">consumer</span><span class="o">.</span><span class="n">io</span> <span class="o">:=</span> <span class="n">pipe</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">deq</span>
+</pre></div>
+</div>
+<p>If you already have the <a class="reference internal" href="#attr-class Valid[+T &lt;: Data](gen: T) extends Bundle" title="attr-class Valid[+T &lt;: Data](gen: T) extends Bundle"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">Valid</span></code></a>  input or the components of a <a class="reference internal" href="#attr-class Valid[+T &lt;: Data](gen: T) extends Bundle" title="attr-class Valid[+T &lt;: Data](gen: T) extends Bundle"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">Valid</span></code></a>  interface, it may be simpler to use the
+<code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">Pipe$</span> <span class="pre">Pipe</span> <span class="pre">factory</span></code>  companion object. This, which <a class="reference internal" href="#attr-class Pipe[T &lt;: Data](gen: T, latency: Int = 1)(implicit compileOptions: CompileOptions) extends Module" title="attr-class Pipe[T &lt;: Data](gen: T, latency: Int = 1)(implicit compileOptions: CompileOptions) extends Module"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">Pipe</span></code></a>  internally utilizes, will automatically connect the
+input for you.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Param gen:</th><td class="field-body">a Chisel type</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Param latency:</th><td class="field-body">the number of pipeline stages
+&#64;see <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">Pipe$</span> <span class="pre">Pipe</span> <span class="pre">factory</span></code>  for an alternative API
+&#64;see <a class="reference internal" href="#attr-class Valid[+T &lt;: Data](gen: T) extends Bundle" title="attr-class Valid[+T &lt;: Data](gen: T) extends Bundle"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">Valid</span></code></a>  interface
+&#64;see <a class="reference internal" href="#attr-class QueueIO[T &lt;: Data](private val gen: T, val entries: Int) extends Bundle" title="attr-class QueueIO[T &lt;: Data](private val gen: T, val entries: Int) extends Bundle"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">Queue</span></code></a>  and the <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">Queue$</span> <span class="pre">Queue</span> <span class="pre">factory</span></code>  for actual queues
+&#64;see The <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">ShiftRegister$</span> <span class="pre">ShiftRegister</span> <span class="pre">factory</span></code>  to generate a pipe without a <a class="reference internal" href="#attr-class Valid[+T &lt;: Data](gen: T) extends Bundle" title="attr-class Valid[+T &lt;: Data](gen: T) extends Bundle"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">Valid</span></code></a>  interface</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-class Pipe[T &lt;: Data](gen: T, latency: Int">
+<code class="descname">class Pipe[T &lt;: Data](gen: T, latency: Int</code><a class="headerlink" href="#attr-class Pipe[T <: Data](gen: T, latency: Int" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class PipeIO extends Bundle">
+<code class="descname">class PipeIO extends Bundle</code><a class="headerlink" href="#attr-class PipeIO extends Bundle" title="Permalink to this definition">¶</a></dt>
+<dd><p>Interface for <a class="reference internal" href="#attr-class Pipe[T &lt;: Data](gen: T, latency: Int = 1)(implicit compileOptions: CompileOptions) extends Module" title="attr-class Pipe[T &lt;: Data](gen: T, latency: Int = 1)(implicit compileOptions: CompileOptions) extends Module"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">Pipe</span></code></a> s composed of a <a class="reference internal" href="#attr-class Valid[+T &lt;: Data](gen: T) extends Bundle" title="attr-class Valid[+T &lt;: Data](gen: T) extends Bundle"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">Valid</span></code></a>  input and <a class="reference internal" href="#attr-class Valid[+T &lt;: Data](gen: T) extends Bundle" title="attr-class Valid[+T &lt;: Data](gen: T) extends Bundle"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">Valid</span></code></a>  output       &#64;define notAQueue</p>
+</dd></dl>
+
+</div>
+<div class="section" id="bitwise-scala">
+<h2>Bitwise.scala<a class="headerlink" href="#bitwise-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-object FillInterleaved">
+<code class="descname">object FillInterleaved</code><a class="headerlink" href="#attr-object FillInterleaved" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates repetitions of each bit of the input in order.</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="nc">FillInterleaved</span><span class="o">(</span><span class="mi">2</span><span class="o">,</span> <span class="s">&quot;b1 0 0 0&quot;</span><span class="o">.</span><span class="n">U</span><span class="o">)</span>  <span class="c1">// equivalent to &quot;b11 00 00 00&quot;.U</span>
+<span class="nc">FillInterleaved</span><span class="o">(</span><span class="mi">2</span><span class="o">,</span> <span class="s">&quot;b1 0 0 1&quot;</span><span class="o">.</span><span class="n">U</span><span class="o">)</span>  <span class="c1">// equivalent to &quot;b11 00 00 11&quot;.U</span>
+<span class="nc">FillInterleaved</span><span class="o">(</span><span class="mi">2</span><span class="o">,</span> <span class="n">myUIntWire</span><span class="o">)</span>  <span class="c1">// dynamic interleaved fill</span>
+
+<span class="nc">FillInterleaved</span><span class="o">(</span><span class="mi">2</span><span class="o">,</span> <span class="nc">Seq</span><span class="o">(</span><span class="kc">true</span><span class="o">.</span><span class="n">B</span><span class="o">,</span> <span class="kc">false</span><span class="o">.</span><span class="n">B</span><span class="o">,</span> <span class="kc">false</span><span class="o">.</span><span class="n">B</span><span class="o">,</span> <span class="kc">false</span><span class="o">.</span><span class="n">B</span><span class="o">))</span>  <span class="c1">// equivalent to &quot;b11 00 00 00&quot;.U</span>
+<span class="nc">FillInterleaved</span><span class="o">(</span><span class="mi">2</span><span class="o">,</span> <span class="nc">Seq</span><span class="o">(</span><span class="kc">true</span><span class="o">.</span><span class="n">B</span><span class="o">,</span> <span class="kc">false</span><span class="o">.</span><span class="n">B</span><span class="o">,</span> <span class="kc">false</span><span class="o">.</span><span class="n">B</span><span class="o">,</span> <span class="kc">true</span><span class="o">.</span><span class="n">B</span><span class="o">))</span>  <span class="c1">// equivalent to &quot;b11 00 00 11&quot;.U</span>
+</pre></div>
+</div>
+<dl class="attr">
+<dt id="attr-def apply(n: Int, in: UInt): UInt">
+<code class="descname">def apply(n: Int, in: UInt): UInt</code><a class="headerlink" href="#attr-def apply(n: Int, in: UInt): UInt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates n repetitions of each bit of x in order.
+Output data-equivalent to in(size(in)-1) (n times) ## … ## in(1) (n times) ## in(0) (n times)</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-def apply(n: Int, in: Seq[Bool]): UInt">
+<code class="descname">def apply(n: Int, in: Seq[Bool]): UInt</code><a class="headerlink" href="#attr-def apply(n: Int, in: Seq[Bool]): UInt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates n repetitions of each bit of x in order.
+Output data-equivalent to in(size(in)-1) (n times) ## … ## in(1) (n times) ## in(0) (n times)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-object PopCount">
+<code class="descname">object PopCount</code><a class="headerlink" href="#attr-object PopCount" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the number of bits set (value is 1 or true) in the input signal.</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="nc">PopCount</span><span class="o">(</span><span class="nc">Seq</span><span class="o">(</span><span class="kc">true</span><span class="o">.</span><span class="n">B</span><span class="o">,</span> <span class="kc">false</span><span class="o">.</span><span class="n">B</span><span class="o">,</span> <span class="kc">true</span><span class="o">.</span><span class="n">B</span><span class="o">,</span> <span class="kc">true</span><span class="o">.</span><span class="n">B</span><span class="o">))</span>  <span class="c1">// evaluates to 3.U</span>
+<span class="nc">PopCount</span><span class="o">(</span><span class="nc">Seq</span><span class="o">(</span><span class="kc">false</span><span class="o">.</span><span class="n">B</span><span class="o">,</span> <span class="kc">false</span><span class="o">.</span><span class="n">B</span><span class="o">,</span> <span class="kc">true</span><span class="o">.</span><span class="n">B</span><span class="o">,</span> <span class="kc">false</span><span class="o">.</span><span class="n">B</span><span class="o">))</span>  <span class="c1">// evaluates to 1.U</span>
+
+<span class="nc">PopCount</span><span class="o">(</span><span class="s">&quot;b1011&quot;</span><span class="o">.</span><span class="n">U</span><span class="o">)</span>  <span class="c1">// evaluates to 3.U</span>
+<span class="nc">PopCount</span><span class="o">(</span><span class="s">&quot;b0010&quot;</span><span class="o">.</span><span class="n">U</span><span class="o">)</span>  <span class="c1">// evaluates to 1.U</span>
+<span class="nc">PopCount</span><span class="o">(</span><span class="n">myUIntWire</span><span class="o">)</span>  <span class="c1">// dynamic count</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-object Fill">
+<code class="descname">object Fill</code><a class="headerlink" href="#attr-object Fill" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create repetitions of the input using a tree fanout topology.</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="nc">Fill</span><span class="o">(</span><span class="mi">2</span><span class="o">,</span> <span class="s">&quot;b1000&quot;</span><span class="o">.</span><span class="n">U</span><span class="o">)</span>  <span class="c1">// equivalent to &quot;b1000 1000&quot;.U</span>
+<span class="nc">Fill</span><span class="o">(</span><span class="mi">2</span><span class="o">,</span> <span class="s">&quot;b1001&quot;</span><span class="o">.</span><span class="n">U</span><span class="o">)</span>  <span class="c1">// equivalent to &quot;b1001 1001&quot;.U</span>
+<span class="nc">Fill</span><span class="o">(</span><span class="mi">2</span><span class="o">,</span> <span class="n">myUIntWire</span><span class="o">)</span>  <span class="c1">// dynamic fill</span>
+</pre></div>
+</div>
+<dl class="attr">
+<dt id="attr-def apply(n: Int, x: UInt): UInt =">
+<code class="descname">def apply(n: Int, x: UInt): UInt =</code><a class="headerlink" href="#attr-def apply(n: Int, x: UInt): UInt =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create n repetitions of x using a tree fanout topology.
+Output data-equivalent to x ## x ## … ## x (n repetitions).</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-object Reverse">
+<code class="descname">object Reverse</code><a class="headerlink" href="#attr-object Reverse" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the input in bit-reversed order. Useful for little/big-endian conversion.</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="nc">Reverse</span><span class="o">(</span><span class="s">&quot;b1101&quot;</span><span class="o">.</span><span class="n">U</span><span class="o">)</span>  <span class="c1">// equivalent to &quot;b1011&quot;.U</span>
+<span class="nc">Reverse</span><span class="o">(</span><span class="s">&quot;b1101&quot;</span><span class="o">.</span><span class="n">U</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">))</span>  <span class="c1">// equivalent to &quot;b10110000&quot;.U</span>
+<span class="nc">Reverse</span><span class="o">(</span><span class="n">myUIntWire</span><span class="o">)</span>  <span class="c1">// dynamic reverse</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="conditional-scala">
+<h2>Conditional.scala<a class="headerlink" href="#conditional-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-object unless">
+<code class="descname">object unless</code><a class="headerlink" href="#attr-object unless" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attr">
+<dt id="attr-def apply(c: Bool)(block: =&gt; Unit)">
+<code class="descname">def apply(c: Bool)(block: =&gt; Unit)</code><a class="headerlink" href="#attr-def apply(c: Bool)(block: => Unit)" title="Permalink to this definition">¶</a></dt>
+<dd><p>Does the same thing as <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">when$</span> <span class="pre">when</span></code> , but with the condition inverted.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-class SwitchContext[T &lt;: Element](cond: T, whenContext: Option[WhenContext], lits: Set[BigInt])">
+<code class="descname">class SwitchContext[T &lt;: Element](cond: T, whenContext: Option[WhenContext], lits: Set[BigInt])</code><a class="headerlink" href="#attr-class SwitchContext[T <: Element](cond: T, whenContext: Option[WhenContext], lits: Set[BigInt])" title="Permalink to this definition">¶</a></dt>
+<dd><p>Implementation details for <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">switch</span></code> . See <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">switch</span></code>  and <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">chisel3.util.is</span> <span class="pre">is</span></code>  for the user-facing API.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Note:</th><td class="field-body">DO NOT USE. This API is subject to change without warning.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-object is">
+<code class="descname">object is</code><a class="headerlink" href="#attr-object is" title="Permalink to this definition">¶</a></dt>
+<dd><p>Use to specify cases in a <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">switch</span></code>  block, equivalent to a <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">when$</span> <span class="pre">when</span></code>  block comparing to the condition variable.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Note:</th><td class="field-body">illegal outside a <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">switch</span></code>  block</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Note:</th><td class="field-body">must be a literal</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Note:</th><td class="field-body">each is must be mutually exclusive</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Note:</th><td class="field-body">dummy implementation, a macro inside <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">switch</span></code>  transforms this into the actual
+implementation</td>
+</tr>
+</tbody>
+</table>
+<dl class="attr">
+<dt id="attr-def apply(v: Iterable[Element])(block: =&gt; Unit)">
+<code class="descname">def apply(v: Iterable[Element])(block: =&gt; Unit)</code><a class="headerlink" href="#attr-def apply(v: Iterable[Element])(block: => Unit)" title="Permalink to this definition">¶</a></dt>
+<dd><p>Executes <cite>block</cite> if the switch condition is equal to any of the values in <cite>v</cite>.</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-def apply(v: Element)(block: =&gt; Unit)">
+<code class="descname">def apply(v: Element)(block: =&gt; Unit)</code><a class="headerlink" href="#attr-def apply(v: Element)(block: => Unit)" title="Permalink to this definition">¶</a></dt>
+<dd><p>Executes <cite>block</cite> if the switch condition is equal to <cite>v</cite>.</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-def apply(v: Element, vr: Element*)(block: =&gt; Unit)">
+<code class="descname">def apply(v: Element, vr: Element*)(block: =&gt; Unit)</code><a class="headerlink" href="#attr-def apply(v: Element, vr: Element*)(block: => Unit)" title="Permalink to this definition">¶</a></dt>
+<dd><p>Executes <cite>block</cite> if the switch condition is equal to any of the values in the argument list.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-object switch">
+<code class="descname">object switch</code><a class="headerlink" href="#attr-object switch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Conditional logic to form a switch block. See <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">is$</span> <span class="pre">is</span></code>  for the case API.</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">switch</span> <span class="o">(</span><span class="n">myState</span><span class="o">)</span> <span class="o">{</span>
+  <span class="n">is</span> <span class="o">(</span><span class="n">state1</span><span class="o">)</span> <span class="o">{</span>
+    <span class="c1">// some logic here that runs when myState === state1</span>
+  <span class="o">}</span>
+  <span class="n">is</span> <span class="o">(</span><span class="n">state2</span><span class="o">)</span> <span class="o">{</span>
+    <span class="c1">// some logic here that runs when myState === state2</span>
+  <span class="o">}</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="lookup-scala">
+<h2>Lookup.scala<a class="headerlink" href="#lookup-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-object ListLookup">
+<code class="descname">object ListLookup</code><a class="headerlink" href="#attr-object ListLookup" title="Permalink to this definition">¶</a></dt>
+<dd><p>For each element in a list, muxes (looks up) between cases (one per list element) based on a    common address.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Note:</th><td class="field-body">This appears to be an odd, specialized operator that we haven’t seen used much, and seems
+to be a holdover from chisel2. This may be deprecated and removed, usage is not
+recommended.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Param addr:</th><td class="field-body">common select for cases, shared (same) across all list elements</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Param default:</th><td class="field-body">default value for each list element, should the address not match any case</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Param mapping:</th><td class="field-body">list of cases, where each entry consists of a <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">chisel3.util.BitPat</span> <span class="pre">BitPath</span></code>  (compared against addr) and
+a list of elements (same length as default) that is the output value for that
+element (will have the same index in the output).</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="nc">ListLookup</span><span class="o">(</span><span class="mf">2.</span><span class="n">U</span><span class="o">,</span>  <span class="c1">// address for comparison</span>
+                         <span class="nc">List</span><span class="o">(</span><span class="mf">10.</span><span class="n">U</span><span class="o">,</span> <span class="mf">11.</span><span class="n">U</span><span class="o">,</span> <span class="mf">12.</span><span class="n">U</span><span class="o">),</span>   <span class="c1">// default &quot;row&quot; if none of the following cases match</span>
+    <span class="nc">Array</span><span class="o">(</span><span class="nc">BitPat</span><span class="o">(</span><span class="mf">2.</span><span class="n">U</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="nc">List</span><span class="o">(</span><span class="mf">20.</span><span class="n">U</span><span class="o">,</span> <span class="mf">21.</span><span class="n">U</span><span class="o">,</span> <span class="mf">22.</span><span class="n">U</span><span class="o">),</span>  <span class="c1">// this &quot;row&quot; hardware-selected based off address 2.U</span>
+          <span class="nc">BitPat</span><span class="o">(</span><span class="mf">3.</span><span class="n">U</span><span class="o">)</span> <span class="o">-&gt;</span> <span class="nc">List</span><span class="o">(</span><span class="mf">30.</span><span class="n">U</span><span class="o">,</span> <span class="mf">31.</span><span class="n">U</span><span class="o">,</span> <span class="mf">32.</span><span class="n">U</span><span class="o">))</span>
+<span class="o">)</span> <span class="c1">// hardware-evaluates to List(20.U, 21.U, 22.U)</span>
+<span class="c1">// Note: if given address 0.U, the above would hardware evaluate to List(10.U, 11.U, 12.U)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-object Lookup">
+<code class="descname">object Lookup</code><a class="headerlink" href="#attr-object Lookup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Muxes between cases based on whether an address matches any pattern for a case. Similar to <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">chisel3.util.MuxLookup</span> <span class="pre">MuxLookup</span></code> , but uses <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">chisel3.util.BitPat</span> <span class="pre">BitPat</span></code>  for address comparison.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Note:</th><td class="field-body">This appears to be an odd, specialized operator that we haven’t seen used much, and seems
+to be a holdover from chisel2. This may be deprecated and removed, usage is not
+recommended.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Param addr:</th><td class="field-body">address to select between cases</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Param default:</th><td class="field-body">default value should the address not match any case</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Param mapping:</th><td class="field-body">list of cases, where each entry consists of a <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">chisel3.util.BitPat</span> <span class="pre">BitPat</span></code>  (compared against addr) and the
+output value if the BitPat matches</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+<div class="section" id="math-scala">
+<h2>Math.scala<a class="headerlink" href="#math-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-object log2Up">
+<code class="descname">object log2Up</code><a class="headerlink" href="#attr-object log2Up" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the log2 of a Scala integer, rounded up, with min value of 1.   Useful for getting the number of bits needed to represent some number of states (in - 1),
+To get the number of bits needed to represent some number n, use log2Up(n + 1).
+with the minimum value preventing the creation of currently-unsupported zero-width wires.</p>
+<p>Note: prefer to use log2Ceil when in is known to be &gt; 1 (where log2Ceil(in) &gt; 0).
+This will be deprecated when zero-width wires is supported.</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">log2Up</span><span class="o">(</span><span class="mi">1</span><span class="o">)</span>  <span class="c1">// returns 1</span>
+<span class="n">log2Up</span><span class="o">(</span><span class="mi">2</span><span class="o">)</span>  <span class="c1">// returns 1</span>
+<span class="n">log2Up</span><span class="o">(</span><span class="mi">3</span><span class="o">)</span>  <span class="c1">// returns 2</span>
+<span class="n">log2Up</span><span class="o">(</span><span class="mi">4</span><span class="o">)</span>  <span class="c1">// returns 2</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-object log2Ceil">
+<code class="descname">object log2Ceil</code><a class="headerlink" href="#attr-object log2Ceil" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the log2 of a Scala integer, rounded up.        Useful for getting the number of bits needed to represent some number of states (in - 1).
+To get the number of bits needed to represent some number n, use log2Ceil(n + 1).</p>
+<p>Note: can return zero, and should not be used in cases where it may generate unsupported
+zero-width wires.</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">log2Ceil</span><span class="o">(</span><span class="mi">1</span><span class="o">)</span>  <span class="c1">// returns 0</span>
+<span class="n">log2Ceil</span><span class="o">(</span><span class="mi">2</span><span class="o">)</span>  <span class="c1">// returns 1</span>
+<span class="n">log2Ceil</span><span class="o">(</span><span class="mi">3</span><span class="o">)</span>  <span class="c1">// returns 2</span>
+<span class="n">log2Ceil</span><span class="o">(</span><span class="mi">4</span><span class="o">)</span>  <span class="c1">// returns 2</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-object log2Down">
+<code class="descname">object log2Down</code><a class="headerlink" href="#attr-object log2Down" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the log2 of a Scala integer, rounded down, with min value of 1.</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">log2Down</span><span class="o">(</span><span class="mi">1</span><span class="o">)</span>  <span class="c1">// returns 1</span>
+<span class="n">log2Down</span><span class="o">(</span><span class="mi">2</span><span class="o">)</span>  <span class="c1">// returns 1</span>
+<span class="n">log2Down</span><span class="o">(</span><span class="mi">3</span><span class="o">)</span>  <span class="c1">// returns 1</span>
+<span class="n">log2Down</span><span class="o">(</span><span class="mi">4</span><span class="o">)</span>  <span class="c1">// returns 2</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-object log2Floor">
+<code class="descname">object log2Floor</code><a class="headerlink" href="#attr-object log2Floor" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the log2 of a Scala integer, rounded down.
+Can be useful in computing the next-smallest power of two.</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">log2Floor</span><span class="o">(</span><span class="mi">1</span><span class="o">)</span>  <span class="c1">// returns 0</span>
+<span class="n">log2Floor</span><span class="o">(</span><span class="mi">2</span><span class="o">)</span>  <span class="c1">// returns 1</span>
+<span class="n">log2Floor</span><span class="o">(</span><span class="mi">3</span><span class="o">)</span>  <span class="c1">// returns 1</span>
+<span class="n">log2Floor</span><span class="o">(</span><span class="mi">4</span><span class="o">)</span>  <span class="c1">// returns 2</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-object isPow2">
+<code class="descname">object isPow2</code><a class="headerlink" href="#attr-object isPow2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns whether a Scala integer is a power of two.</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">isPow2</span><span class="o">(</span><span class="mi">1</span><span class="o">)</span>  <span class="c1">// returns true</span>
+<span class="n">isPow2</span><span class="o">(</span><span class="mi">2</span><span class="o">)</span>  <span class="c1">// returns true</span>
+<span class="n">isPow2</span><span class="o">(</span><span class="mi">3</span><span class="o">)</span>  <span class="c1">// returns false</span>
+<span class="n">isPow2</span><span class="o">(</span><span class="mi">4</span><span class="o">)</span>  <span class="c1">// returns true</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-object unsignedBitLength">
+<code class="descname">object unsignedBitLength</code><a class="headerlink" href="#attr-object unsignedBitLength" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attr">
+<dt id="attr-def apply(in: BigInt): Int =">
+<code class="descname">def apply(in: BigInt): Int =</code><a class="headerlink" href="#attr-def apply(in: BigInt): Int =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the number of bits required to encode a specific value, assuming no sign bit is required.
+Basically, <cite>n.bitLength</cite>. NOTE: This will return 0 for a value of 0.
+This reflects the Chisel assumption that a zero width wire has a value of 0.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Param in:</th><td class="field-body"><ul class="first simple">
+<li>the number to be encoded.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return:</th><td class="field-body"><ul class="first last simple">
+<li>an Int representing the number of bits to encode.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-object signedBitLength">
+<code class="descname">object signedBitLength</code><a class="headerlink" href="#attr-object signedBitLength" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attr">
+<dt id="attr-def apply(in: BigInt): Int =">
+<code class="descname">def apply(in: BigInt): Int =</code><a class="headerlink" href="#attr-def apply(in: BigInt): Int =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the number of bits required to encode a specific value, assuming a sign bit is required.
+Basically, 0 for 0, 1 for -1, and <cite>n.bitLength</cite> + 1 for everything else.
+This reflects the Chisel assumption that a zero width wire has a value of 0.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Param in:</th><td class="field-body"><ul class="first simple">
+<li>the number to be encoded.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return:</th><td class="field-body"><ul class="first last simple">
+<li>an Int representing the number of bits to encode.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="decoupled-scala">
+<h2>Decoupled.scala<a class="headerlink" href="#decoupled-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-abstract class ReadyValidIO[+T &lt;: Data](gen: T) extends Bundle">
+<code class="descname">abstract class ReadyValidIO[+T &lt;: Data](gen: T) extends Bundle</code><a class="headerlink" href="#attr-abstract class ReadyValidIO[+T <: Data](gen: T) extends Bundle" title="Permalink to this definition">¶</a></dt>
+<dd><p>An I/O Bundle containing ‘valid’ and ‘ready’ signals that handshake     the transfer of data stored in the ‘bits’ subfield.
+The base protocol implied by the directionality is that
+the producer uses the interface as-is (outputs bits)
+while the consumer uses the flipped interface (inputs bits).
+The actual semantics of ready/valid are enforced via the use of concrete subclasses.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Param gen:</th><td class="field-body">the type of data to be wrapped in Ready/Valid</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-object ReadyValidIO">
+<code class="descname">object ReadyValidIO</code><a class="headerlink" href="#attr-object ReadyValidIO" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attr">
+<dt id="attr-def fire(): Bool">
+<code class="descname">def fire(): Bool</code><a class="headerlink" href="#attr-def fire(): Bool" title="Permalink to this definition">¶</a></dt>
+<dd><p>Indicates if IO is both ready and valid</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-def enq(dat: T): T =">
+<code class="descname">def enq(dat: T): T =</code><a class="headerlink" href="#attr-def enq(dat: T): T =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Push dat onto the output bits of this interface to let the consumer know it has happened.
+:param dat: the values to assign to bits.
+:return:    dat.</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-def noenq(): Unit =">
+<code class="descname">def noenq(): Unit =</code><a class="headerlink" href="#attr-def noenq(): Unit =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Indicate no enqueue occurs. Valid is set to false, and bits are connected to an uninitialized wire.</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-def deq(): T =">
+<code class="descname">def deq(): T =</code><a class="headerlink" href="#attr-def deq(): T =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Assert ready on this port and return the associated data bits.  This is typically used when valid has been asserted by the producer side.
+:return: The data bits.</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-def nodeq(): Unit =">
+<code class="descname">def nodeq(): Unit =</code><a class="headerlink" href="#attr-def nodeq(): Unit =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Indicate no dequeue occurs. Ready is set to false.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-class DecoupledIO[+T &lt;: Data](gen: T) extends ReadyValidIO[T](gen)">
+<code class="descname">class DecoupledIO[+T &lt;: Data](gen: T) extends ReadyValidIO[T](gen)</code><a class="headerlink" href="#attr-class DecoupledIO[+T <: Data](gen: T) extends ReadyValidIO[T](gen)" title="Permalink to this definition">¶</a></dt>
+<dd><p>A concrete subclass of ReadyValidIO signaling that the user expects a   “decoupled” interface: ‘valid’ indicates that the producer has
+put valid data in ‘bits’, and ‘ready’ indicates that the consumer is ready
+to accept the data this cycle. No requirements are placed on the signaling
+of ready or valid.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Param gen:</th><td class="field-body">the type of data to be wrapped in DecoupledIO</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-object Decoupled">
+<code class="descname">object Decoupled</code><a class="headerlink" href="#attr-object Decoupled" title="Permalink to this definition">¶</a></dt>
+<dd><p>This factory adds a decoupled handshaking protocol to a data bundle.</p>
+<dl class="attr">
+<dt id="attr-def apply[T &lt;: Data](gen: T): DecoupledIO[T]">
+<code class="descname">def apply[T &lt;: Data](gen: T): DecoupledIO[T]</code><a class="headerlink" href="#attr-def apply[T <: Data](gen: T): DecoupledIO[T]" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wraps some Data with a DecoupledIO interface.</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-def apply[T &lt;: Data](irr: IrrevocableIO[T]): DecoupledIO[T] =">
+<code class="descname">def apply[T &lt;: Data](irr: IrrevocableIO[T]): DecoupledIO[T] =</code><a class="headerlink" href="#attr-def apply[T <: Data](irr: IrrevocableIO[T]): DecoupledIO[T] =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Downconverts an IrrevocableIO output to a DecoupledIO, dropping guarantees of irrevocability.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Note:</th><td class="field-body">unsafe (and will error) on the producer (input) side of an IrrevocableIO</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-class IrrevocableIO[+T &lt;: Data](gen: T) extends ReadyValidIO[T](gen)">
+<code class="descname">class IrrevocableIO[+T &lt;: Data](gen: T) extends ReadyValidIO[T](gen)</code><a class="headerlink" href="#attr-class IrrevocableIO[+T <: Data](gen: T) extends ReadyValidIO[T](gen)" title="Permalink to this definition">¶</a></dt>
+<dd><p>A concrete subclass of ReadyValidIO that promises to not change the value of ‘bits’ after a cycle where ‘valid’ is high and ‘ready’ is low.
+Additionally, once ‘valid’ is raised it will never be lowered until after
+‘ready’ has also been raised.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Param gen:</th><td class="field-body">the type of data to be wrapped in IrrevocableIO</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-object Irrevocable">
+<code class="descname">object Irrevocable</code><a class="headerlink" href="#attr-object Irrevocable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Factory adds an irrevocable handshaking protocol to a data bundle.</p>
+<dl class="attr">
+<dt id="attr-def apply[T &lt;: Data](dec: DecoupledIO[T]): IrrevocableIO[T] =">
+<code class="descname">def apply[T &lt;: Data](dec: DecoupledIO[T]): IrrevocableIO[T] =</code><a class="headerlink" href="#attr-def apply[T <: Data](dec: DecoupledIO[T]): IrrevocableIO[T] =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Upconverts a DecoupledIO input to an IrrevocableIO, allowing an IrrevocableIO to be used        where a DecoupledIO is expected.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Note:</th><td class="field-body">unsafe (and will error) on the consumer (output) side of an DecoupledIO</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-object EnqIO">
+<code class="descname">object EnqIO</code><a class="headerlink" href="#attr-object EnqIO" title="Permalink to this definition">¶</a></dt>
+<dd><p>Producer - drives (outputs) valid and bits, inputs ready.
+:param gen: The type of data to enqueue</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-object DeqIO">
+<code class="descname">object DeqIO</code><a class="headerlink" href="#attr-object DeqIO" title="Permalink to this definition">¶</a></dt>
+<dd><p>Consumer - drives (outputs) ready, inputs valid and bits.
+:param gen: The type of data to dequeue</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-class QueueIO[T &lt;: Data](private val gen: T, val entries: Int) extends Bundle">
+<code class="descname">class QueueIO[T &lt;: Data](private val gen: T, val entries: Int) extends Bundle</code><a class="headerlink" href="#attr-class QueueIO[T <: Data](private val gen: T, val entries: Int) extends Bundle" title="Permalink to this definition">¶</a></dt>
+<dd><p>An I/O Bundle for Queues
+:param gen: The type of data to queue</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Param entries:</th><td class="field-body">The max number of entries in the queue.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-class Queue[T &lt;: Data](gen: T, val entries: Int, pipe: Boolean = false, flow: Boolean = false) (implicit compileOptions: chisel3.CompileOptions) extends Module()">
+<code class="descname">class Queue[T &lt;: Data](gen: T, val entries: Int, pipe: Boolean = false, flow: Boolean = false) (implicit compileOptions: chisel3.CompileOptions) extends Module()</code><a class="headerlink" href="#attr-class Queue[T <: Data](gen: T, val entries: Int, pipe: Boolean = false, flow: Boolean = false) (implicit compileOptions: chisel3.CompileOptions) extends Module()" title="Permalink to this definition">¶</a></dt>
+<dd><p>A hardware module implementing a Queue
+:param gen: The type of data to queue</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Param entries:</th><td class="field-body">The max number of entries in the queue</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Param pipe:</th><td class="field-body">True if a single entry queue can run at full throughput (like a pipeline). The ‘’ready’’ signals are
+combinationally coupled.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Param flow:</th><td class="field-body">True if the inputs can be consumed on the same cycle (the inputs “flow” through the queue immediately).
+The ‘’valid’’ signals are coupled.</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">val</span> <span class="n">q</span> <span class="k">=</span> <span class="nc">Module</span><span class="o">(</span><span class="k">new</span> <span class="nc">Queue</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(),</span> <span class="mi">16</span><span class="o">))</span>
+<span class="n">q</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">enq</span> <span class="o">&lt;&gt;</span> <span class="n">producer</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">out</span>
+<span class="n">consumer</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">in</span> <span class="o">&lt;&gt;</span> <span class="n">q</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">deq</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-class Queue[T &lt;: Data](gen: T, val entries: Int, pipe: Boolean">
+<code class="descname">class Queue[T &lt;: Data](gen: T, val entries: Int, pipe: Boolean</code><a class="headerlink" href="#attr-class Queue[T <: Data](gen: T, val entries: Int, pipe: Boolean" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-object Queue">
+<code class="descname">object Queue</code><a class="headerlink" href="#attr-object Queue" title="Permalink to this definition">¶</a></dt>
+<dd><p>Factory for a generic hardware queue.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Param enq:</th><td class="field-body">input (enqueue) interface to the queue, also determines width of queue elements</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Param entries:</th><td class="field-body">depth (number of elements) of the queue</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return:</th><td class="field-body">output (dequeue) interface from the queue</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="n">consumer</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">in</span> <span class="o">&lt;&gt;</span> <span class="nc">Queue</span><span class="o">(</span><span class="n">producer</span><span class="o">.</span><span class="n">io</span><span class="o">.</span><span class="n">out</span><span class="o">,</span> <span class="mi">16</span><span class="o">)</span>
+</pre></div>
+</div>
+<dl class="attr">
+<dt id="attr-def apply[T &lt;: Data](enq: ReadyValidIO[T], entries: Int = 2, pipe: Boolean = false, flow: Boolean = false): DecoupledIO[T] =">
+<code class="descname">def apply[T &lt;: Data](enq: ReadyValidIO[T], entries: Int = 2, pipe: Boolean = false, flow: Boolean = false): DecoupledIO[T] =</code><a class="headerlink" href="#attr-def apply[T <: Data](enq: ReadyValidIO[T], entries: Int = 2, pipe: Boolean = false, flow: Boolean = false): DecoupledIO[T] =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a queue and supply a DecoupledIO containing the product.</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-def irrevocable[T &lt;: Data](enq: ReadyValidIO[T], entries: Int = 2, pipe: Boolean = false, flow: Boolean = false): IrrevocableIO[T] =">
+<code class="descname">def irrevocable[T &lt;: Data](enq: ReadyValidIO[T], entries: Int = 2, pipe: Boolean = false, flow: Boolean = false): IrrevocableIO[T] =</code><a class="headerlink" href="#attr-def irrevocable[T <: Data](enq: ReadyValidIO[T], entries: Int = 2, pipe: Boolean = false, flow: Boolean = false): IrrevocableIO[T] =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a queue and supply a IrrevocableIO containing the product.       Casting from Decoupled is safe here because we know the Queue has
+Irrevocable semantics; we didn’t want to change the return type of
+apply() for backwards compatibility reasons.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="circuitmath-scala">
+<h2>CircuitMath.scala<a class="headerlink" href="#circuitmath-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-object Log2">
+<code class="descname">object Log2</code><a class="headerlink" href="#attr-object Log2" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the base-2 integer logarithm of an UInt.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Note:</th><td class="field-body">The result is truncated, so e.g. Log2(13.U) === 3.U</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="nc">Log2</span><span class="o">(</span><span class="mf">8.</span><span class="n">U</span><span class="o">)</span>  <span class="c1">// evaluates to 3.U</span>
+<span class="nc">Log2</span><span class="o">(</span><span class="mf">13.</span><span class="n">U</span><span class="o">)</span>  <span class="c1">// evaluates to 3.U (truncation)</span>
+<span class="nc">Log2</span><span class="o">(</span><span class="n">myUIntWire</span><span class="o">)</span>
+</pre></div>
+</div>
+<dl class="attr">
+<dt id="attr-def apply(x: Bits, width: Int): UInt =">
+<code class="descname">def apply(x: Bits, width: Int): UInt =</code><a class="headerlink" href="#attr-def apply(x: Bits, width: Int): UInt =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the base-2 integer logarithm of the least-significant <cite>width</cite> bits of an UInt.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="mixedvec-scala">
+<h2>MixedVec.scala<a class="headerlink" href="#mixedvec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-object MixedVecInit">
+<code class="descname">object MixedVecInit</code><a class="headerlink" href="#attr-object MixedVecInit" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>Create a MixedVec wire with default values as specified, and type of each element inferred from</div></blockquote>
+<p>those default values.</p>
+<p>This is analogous to <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">VecInit</span></code> .
+:return: MixedVec with given values assigned</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="nc">MixedVecInit</span><span class="o">(</span><span class="nc">Seq</span><span class="o">(</span><span class="mf">100.</span><span class="n">U</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">),</span> <span class="mf">10000.</span><span class="n">U</span><span class="o">(</span><span class="mf">16.</span><span class="n">W</span><span class="o">),</span> <span class="mf">101.</span><span class="n">U</span><span class="o">(</span><span class="mf">32.</span><span class="n">W</span><span class="o">)))</span>
+</pre></div>
+</div>
+<dl class="attr">
+<dt id="attr-def apply[T &lt;: Data](vals: Seq[T]): MixedVec[T] =">
+<code class="descname">def apply[T &lt;: Data](vals: Seq[T]): MixedVec[T] =</code><a class="headerlink" href="#attr-def apply[T <: Data](vals: Seq[T]): MixedVec[T] =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a MixedVec wire from a Seq of values.</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-def apply[T &lt;: Data](val0: T, vals: T*): MixedVec[T]">
+<code class="descname">def apply[T &lt;: Data](val0: T, vals: T*): MixedVec[T]</code><a class="headerlink" href="#attr-def apply[T <: Data](val0: T, vals: T*): MixedVec[T]" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a MixedVec wire from a varargs list of values.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-object MixedVec">
+<code class="descname">object MixedVec</code><a class="headerlink" href="#attr-object MixedVec" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>Create a MixedVec type, given element types. Inputs must be Chisel types which have no value</div></blockquote>
+<p>(not hardware types).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return:</th><td class="field-body">MixedVec with the given types.</td>
+</tr>
+</tbody>
+</table>
+<dl class="attr">
+<dt id="attr-def apply[T &lt;: Data](eltsIn: Seq[T]): MixedVec[T]">
+<code class="descname">def apply[T &lt;: Data](eltsIn: Seq[T]): MixedVec[T]</code><a class="headerlink" href="#attr-def apply[T <: Data](eltsIn: Seq[T]): MixedVec[T]" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a MixedVec type from a Seq of Chisel types.</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-def apply[T &lt;: Data](val0: T, vals: T*): MixedVec[T]">
+<code class="descname">def apply[T &lt;: Data](val0: T, vals: T*): MixedVec[T]</code><a class="headerlink" href="#attr-def apply[T <: Data](val0: T, vals: T*): MixedVec[T]" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a MixedVec type from a varargs list of Chisel types.</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-def apply[T &lt;: Data](mixedVec: MixedVec[T]): MixedVec[T]">
+<code class="descname">def apply[T &lt;: Data](mixedVec: MixedVec[T]): MixedVec[T]</code><a class="headerlink" href="#attr-def apply[T <: Data](mixedVec: MixedVec[T]): MixedVec[T]" title="Permalink to this definition">¶</a></dt>
+<dd><p>Create a new MixedVec type from an unbound MixedVec type.</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-def apply[T &lt;: Data](vec: Vec[T]): MixedVec[T] =">
+<code class="descname">def apply[T &lt;: Data](vec: Vec[T]): MixedVec[T] =</code><a class="headerlink" href="#attr-def apply[T <: Data](vec: Vec[T]): MixedVec[T] =" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>Create a MixedVec type from the type of the given Vec.</div></blockquote>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="nc">MixedVec</span><span class="o">(</span><span class="nc">Vec</span><span class="o">(</span><span class="mi">2</span><span class="o">,</span> <span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">)))</span> <span class="k">=</span> <span class="nc">MixedVec</span><span class="o">(</span><span class="nc">Seq</span><span class="o">.</span><span class="n">fill</span><span class="o">(</span><span class="mi">2</span><span class="o">){</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">)})</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-final class MixedVec[T &lt;: Data](private val eltsIn: Seq[T]) extends Record with collection.IndexedSeq[T]">
+<code class="descname">final class MixedVec[T &lt;: Data](private val eltsIn: Seq[T]) extends Record with collection.IndexedSeq[T]</code><a class="headerlink" href="#attr-final class MixedVec[T <: Data](private val eltsIn: Seq[T]) extends Record with collection.IndexedSeq[T]" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>A hardware array of elements that can hold values of different types/widths,</div></blockquote>
+<p>unlike Vec which can only hold elements of the same type/width.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Param eltsIn:</th><td class="field-body">Element types. Must be Chisel types.</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">val</span> <span class="n">v</span> <span class="k">=</span> <span class="nc">Wire</span><span class="o">(</span><span class="nc">MixedVec</span><span class="o">(</span><span class="nc">Seq</span><span class="o">(</span><span class="nc">UInt</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">),</span> <span class="nc">UInt</span><span class="o">(</span><span class="mf">16.</span><span class="n">W</span><span class="o">),</span> <span class="nc">UInt</span><span class="o">(</span><span class="mf">32.</span><span class="n">W</span><span class="o">))))</span>
+<span class="n">v</span><span class="o">(</span><span class="mi">0</span><span class="o">)</span> <span class="o">:=</span> <span class="mf">100.</span><span class="n">U</span><span class="o">(</span><span class="mf">8.</span><span class="n">W</span><span class="o">)</span>
+<span class="n">v</span><span class="o">(</span><span class="mi">1</span><span class="o">)</span> <span class="o">:=</span> <span class="mf">10000.</span><span class="n">U</span><span class="o">(</span><span class="mf">16.</span><span class="n">W</span><span class="o">)</span>
+<span class="n">v</span><span class="o">(</span><span class="mi">2</span><span class="o">)</span> <span class="o">:=</span> <span class="mf">101.</span><span class="n">U</span><span class="o">(</span><span class="mf">32.</span><span class="n">W</span><span class="o">)</span>
+</pre></div>
+</div>
+<dl class="attr">
+<dt id="attr-def apply(index: Int): T">
+<code class="descname">def apply(index: Int): T</code><a class="headerlink" href="#attr-def apply(index: Int): T" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>Statically (elaboration-time) retrieve the element at the given index.</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Param index:</th><td class="field-body">Index with which to retrieve.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return:</th><td class="field-body">Retrieved index.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-def :=(that: Seq[T]): Unit =">
+<code class="descname">def :=(that: Seq[T]): Unit =</code><a class="headerlink" href="#attr-def :=(that: Seq[T]): Unit =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Strong bulk connect, assigning elements in this MixedVec from elements in a Seq.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Note:</th><td class="field-body">the lengths of this and that must match</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-def length: Int">
+<code class="descname">def length: Int</code><a class="headerlink" href="#attr-def length: Int" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>Get the length of this MixedVec.</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Return:</th><td class="field-body">Number of elements in this MixedVec.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="counter-scala">
+<h2>Counter.scala<a class="headerlink" href="#counter-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class Counter(val n: Int)">
+<code class="descname">class Counter(val n: Int)</code><a class="headerlink" href="#attr-class Counter(val n: Int)" title="Permalink to this definition">¶</a></dt>
+<dd><p>Used to generate an inline (logic directly in the containing Module, no internal Module is created)     hardware counter.</p>
+<p>Typically instantiated with apply methods in <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">Counter$</span> <span class="pre">object</span> <span class="pre">Counter</span></code></p>
+<p>Does not create a new Chisel Module</p>
+<div class="highlight-scala notranslate"><div class="highlight"><pre><span></span><span class="k">val</span> <span class="n">countOn</span> <span class="k">=</span> <span class="kc">true</span><span class="o">.</span><span class="n">B</span> <span class="c1">// increment counter every clock cycle</span>
+<span class="k">val</span> <span class="o">(</span><span class="n">counterValue</span><span class="o">,</span> <span class="n">counterWrap</span><span class="o">)</span> <span class="k">=</span> <span class="nc">Counter</span><span class="o">(</span><span class="n">countOn</span><span class="o">,</span> <span class="mi">4</span><span class="o">)</span>
+<span class="n">when</span> <span class="o">(</span><span class="n">counterValue</span> <span class="o">===</span> <span class="mf">3.</span><span class="n">U</span><span class="o">)</span> <span class="o">{</span>
+  <span class="o">...</span>
+<span class="o">}</span>
+</pre></div>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Param n:</th><td class="field-body">number of counts before the counter resets (or one more than the
+maximum output value of the counter), need not be a power of two</td>
+</tr>
+</tbody>
+</table>
+<dl class="attr">
+<dt id="attr-def inc(): Bool =">
+<code class="descname">def inc(): Bool =</code><a class="headerlink" href="#attr-def inc(): Bool =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Increment the counter, returning whether the counter currently is at the        maximum and will wrap. The incremented value is registered and will be
+visible on the next cycle.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-object Counter">
+<code class="descname">object Counter</code><a class="headerlink" href="#attr-object Counter" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attr">
+<dt id="attr-def apply(n: Int): Counter">
+<code class="descname">def apply(n: Int): Counter</code><a class="headerlink" href="#attr-def apply(n: Int): Counter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instantiate a <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">Counter!</span> <span class="pre">counter</span></code>  with the specified number of counts.</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-def apply(cond: Bool, n: Int): (UInt, Bool) =">
+<code class="descname">def apply(cond: Bool, n: Int): (UInt, Bool) =</code><a class="headerlink" href="#attr-def apply(cond: Bool, n: Int): (UInt, Bool) =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instantiate a <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">Counter!</span> <span class="pre">counter</span></code>  with the specified number of counts and a gate.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Param cond:</th><td class="field-body">condition that controls whether the counter increments this cycle</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Param n:</th><td class="field-body">number of counts before the counter resets</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return:</th><td class="field-body">tuple of the counter value and whether the counter will wrap (the value is at
+maximum and the condition is true).</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="implicitconversions-scala">
+<h2>ImplicitConversions.scala<a class="headerlink" href="#implicitconversions-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-object ImplicitConversions">
+<code class="descname">object ImplicitConversions</code><a class="headerlink" href="#attr-object ImplicitConversions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Implicit conversions to automatically convert <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">scala.Boolean</span></code>  and <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">scala.Int</span></code>  to <a class="reference internal" href="../../../../../chiselFrontend/src/main/scala/chisel3/core/core.html#attr-sealed class Bool() extends UInt(1.W) with Reset" title="attr-sealed class Bool() extends UInt(1.W) with Reset"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">Bool</span></code></a>     and <a class="reference internal" href="../../../../../chiselFrontend/src/main/scala/chisel3/core/core.html#attr-sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt]" title="attr-sealed class UInt private[core] (width: Width) extends Bits(width) with Num[UInt]"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">UInt</span></code></a>  respectively</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../../contents.html">chisel-test</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../../../../src.html">src</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../../../test/test.html">src/test</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../../main.html">src/main</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../../chiselFrontend/chiselFrontend.html">chiselFrontend</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../../contents.html">Documentation overview</a><ul>
+  <li><a href="../../../../src.html">src</a><ul>
+  <li><a href="../../../main.html">src/main</a><ul>
+  <li><a href="../../scala.html">src/main/scala</a><ul>
+  <li><a href="../chisel3.html">src/main/scala/chisel3</a><ul>
+      <li>Previous: <a href="../internal/firrtl/firrtl.html" title="previous chapter">src/main/scala/chisel3/internal/firrtl</a></li>
+      <li>Next: <a href="experimental/experimental.html" title="next chapter">src/main/scala/chisel3/util/experimental</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, John Andrews.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../../../../../_sources/src/main/scala/chisel3/util/util.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

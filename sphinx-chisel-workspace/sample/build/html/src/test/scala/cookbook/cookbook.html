@@ -1,0 +1,223 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>src/test/scala/cookbook &#8212; chisel-test  documentation</title>
+    <link rel="stylesheet" href="../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <link rel="next" title="src/test/resources" href="../../resources/resources.html" />
+    <link rel="prev" title="src/test/scala/examples" href="../examples/examples.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="src-test-scala-cookbook">
+<h1>src/test/scala/cookbook<a class="headerlink" href="#src-test-scala-cookbook" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+</div>
+<div class="section" id="fsm-scala">
+<h2>FSM.scala<a class="headerlink" href="#fsm-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class DetectTwoOnes extends Module">
+<code class="descname">class DetectTwoOnes extends Module</code><a class="headerlink" href="#attr-class DetectTwoOnes extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class DetectTwoOnesTester extends CookbookTester(10)">
+<code class="descname">class DetectTwoOnesTester extends CookbookTester(10)</code><a class="headerlink" href="#attr-class DetectTwoOnesTester extends CookbookTester(10)" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class FSMSpec extends CookbookSpec">
+<code class="descname">class FSMSpec extends CookbookSpec</code><a class="headerlink" href="#attr-class FSMSpec extends CookbookSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="uint2bundle-scala">
+<h2>UInt2Bundle.scala<a class="headerlink" href="#uint2bundle-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class UInt2Bundle extends CookbookTester(1)">
+<code class="descname">class UInt2Bundle extends CookbookTester(1)</code><a class="headerlink" href="#attr-class UInt2Bundle extends CookbookTester(1)" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class UInt2BundleSpec extends CookbookSpec">
+<code class="descname">class UInt2BundleSpec extends CookbookSpec</code><a class="headerlink" href="#attr-class UInt2BundleSpec extends CookbookSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="vecofbool2uint-scala">
+<h2>VecOfBool2UInt.scala<a class="headerlink" href="#vecofbool2uint-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class VecOfBool2UInt extends CookbookTester(1)">
+<code class="descname">class VecOfBool2UInt extends CookbookTester(1)</code><a class="headerlink" href="#attr-class VecOfBool2UInt extends CookbookTester(1)" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class VecOfBool2UIntSpec  extends CookbookSpec">
+<code class="descname">class VecOfBool2UIntSpec  extends CookbookSpec</code><a class="headerlink" href="#attr-class VecOfBool2UIntSpec  extends CookbookSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="cookbookspec-scala">
+<h2>CookbookSpec.scala<a class="headerlink" href="#cookbookspec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-abstract class CookbookTester(length: Int) extends BasicTester">
+<code class="descname">abstract class CookbookTester(length: Int) extends BasicTester</code><a class="headerlink" href="#attr-abstract class CookbookTester(length: Int) extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tester for concise cookbook tests
+Provides a length of test after which the test will pass</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-abstract class CookbookSpec extends ChiselFlatSpec">
+<code class="descname">abstract class CookbookSpec extends ChiselFlatSpec</code><a class="headerlink" href="#attr-abstract class CookbookSpec extends ChiselFlatSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="bundle2uint-scala">
+<h2>Bundle2UInt.scala<a class="headerlink" href="#bundle2uint-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class Bundle2UInt extends CookbookTester(1)">
+<code class="descname">class Bundle2UInt extends CookbookTester(1)</code><a class="headerlink" href="#attr-class Bundle2UInt extends CookbookTester(1)" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class Bundle2UIntSpec  extends CookbookSpec">
+<code class="descname">class Bundle2UIntSpec  extends CookbookSpec</code><a class="headerlink" href="#attr-class Bundle2UIntSpec  extends CookbookSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="regofvec-scala">
+<h2>RegOfVec.scala<a class="headerlink" href="#regofvec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class RegOfVec extends CookbookTester(2)">
+<code class="descname">class RegOfVec extends CookbookTester(2)</code><a class="headerlink" href="#attr-class RegOfVec extends CookbookTester(2)" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class RegOfVecSpec  extends CookbookSpec">
+<code class="descname">class RegOfVecSpec  extends CookbookSpec</code><a class="headerlink" href="#attr-class RegOfVecSpec  extends CookbookSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="uint2vecofbool-scala">
+<h2>UInt2VecOfBool.scala<a class="headerlink" href="#uint2vecofbool-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class UInt2VecOfBool extends CookbookTester(1)">
+<code class="descname">class UInt2VecOfBool extends CookbookTester(1)</code><a class="headerlink" href="#attr-class UInt2VecOfBool extends CookbookTester(1)" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class UInt2VecOfBoolSpec extends CookbookSpec">
+<code class="descname">class UInt2VecOfBoolSpec extends CookbookSpec</code><a class="headerlink" href="#attr-class UInt2VecOfBoolSpec extends CookbookSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../contents.html">chisel-test</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../../../src.html">src</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../../test.html">src/test</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../main/main.html">src/main</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../chiselFrontend/chiselFrontend.html">chiselFrontend</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../contents.html">Documentation overview</a><ul>
+  <li><a href="../../../src.html">src</a><ul>
+  <li><a href="../../test.html">src/test</a><ul>
+  <li><a href="../scala.html">src/test/scala</a><ul>
+      <li>Previous: <a href="../examples/examples.html" title="previous chapter">src/test/scala/examples</a></li>
+      <li>Next: <a href="../../resources/resources.html" title="next chapter">src/test/resources</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, John Andrews.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../../../../_sources/src/test/scala/cookbook/cookbook.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

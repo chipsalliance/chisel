@@ -1,0 +1,419 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>chiselFrontend/src/main/scala/chisel3/internal/firrtl &#8212; chisel-test  documentation</title>
+    <link rel="stylesheet" href="../../../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../../../../../" src="../../../../../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../../../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../../search.html" />
+    <link rel="next" title="chiselFrontend/src/main/scala/chisel3/core" href="../../core/core.html" />
+    <link rel="prev" title="chiselFrontend/src/main/scala/chisel3/internal" href="../internal.html" />
+   
+  <link rel="stylesheet" href="../../../../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="chiselfrontend-src-main-scala-chisel3-internal-firrtl">
+<h1>chiselFrontend/src/main/scala/chisel3/internal/firrtl<a class="headerlink" href="#chiselfrontend-src-main-scala-chisel3-internal-firrtl" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+</div>
+<div class="section" id="ir-scala">
+<h2>IR.scala<a class="headerlink" href="#ir-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-case class PrimOp(val name: String)">
+<code class="descname">case class PrimOp(val name: String)</code><a class="headerlink" href="#attr-case class PrimOp(val name: String)" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-object PrimOp">
+<code class="descname">object PrimOp</code><a class="headerlink" href="#attr-object PrimOp" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-abstract class Arg">
+<code class="descname">abstract class Arg</code><a class="headerlink" href="#attr-abstract class Arg" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class Node(id: HasId) extends Arg">
+<code class="descname">case class Node(id: HasId) extends Arg</code><a class="headerlink" href="#attr-case class Node(id: HasId) extends Arg" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-abstract class LitArg(val num: BigInt, widthArg: Width) extends Arg">
+<code class="descname">abstract class LitArg(val num: BigInt, widthArg: Width) extends Arg</code><a class="headerlink" href="#attr-abstract class LitArg(val num: BigInt, widthArg: Width) extends Arg" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class ILit(n: BigInt) extends Arg">
+<code class="descname">case class ILit(n: BigInt) extends Arg</code><a class="headerlink" href="#attr-case class ILit(n: BigInt) extends Arg" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class ULit(n: BigInt, w: Width) extends LitArg(n, w)">
+<code class="descname">case class ULit(n: BigInt, w: Width) extends LitArg(n, w)</code><a class="headerlink" href="#attr-case class ULit(n: BigInt, w: Width) extends LitArg(n, w)" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class SLit(n: BigInt, w: Width) extends LitArg(n, w)">
+<code class="descname">case class SLit(n: BigInt, w: Width) extends LitArg(n, w)</code><a class="headerlink" href="#attr-case class SLit(n: BigInt, w: Width) extends LitArg(n, w)" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class FPLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends LitArg(n, w)">
+<code class="descname">case class FPLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends LitArg(n, w)</code><a class="headerlink" href="#attr-case class FPLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends LitArg(n, w)" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class Ref(name: String) extends Arg case class ModuleIO(mod: BaseModule, name: String) extends Arg">
+<code class="descname">case class Ref(name: String) extends Arg case class ModuleIO(mod: BaseModule, name: String) extends Arg</code><a class="headerlink" href="#attr-case class Ref(name: String) extends Arg case class ModuleIO(mod: BaseModule, name: String) extends Arg" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class ModuleIO(mod: BaseModule, name: String) extends Arg">
+<code class="descname">case class ModuleIO(mod: BaseModule, name: String) extends Arg</code><a class="headerlink" href="#attr-case class ModuleIO(mod: BaseModule, name: String) extends Arg" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class Slot(imm: Node, name: String) extends Arg">
+<code class="descname">case class Slot(imm: Node, name: String) extends Arg</code><a class="headerlink" href="#attr-case class Slot(imm: Node, name: String) extends Arg" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class Index(imm: Arg, value: Arg) extends Arg">
+<code class="descname">case class Index(imm: Arg, value: Arg) extends Arg</code><a class="headerlink" href="#attr-case class Index(imm: Arg, value: Arg) extends Arg" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-sealed trait Bound sealed trait NumericBound[T] extends Bound">
+<code class="descname">sealed trait Bound sealed trait NumericBound[T] extends Bound</code><a class="headerlink" href="#attr-sealed trait Bound sealed trait NumericBound[T] extends Bound" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-sealed trait NumericBound[T] extends Bound">
+<code class="descname">sealed trait NumericBound[T] extends Bound</code><a class="headerlink" href="#attr-sealed trait NumericBound[T] extends Bound" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-sealed case class Open[T](value: T) extends NumericBound[T] sealed case class Closed[T](value: T) extends NumericBound[T]  sealed trait Range">
+<code class="descname">sealed case class Open[T](value: T) extends NumericBound[T] sealed case class Closed[T](value: T) extends NumericBound[T]  sealed trait Range</code><a class="headerlink" href="#attr-sealed case class Open[T](value: T) extends NumericBound[T] sealed case class Closed[T](value: T) extends NumericBound[T]  sealed trait Range" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-sealed case class Closed[T](value: T) extends NumericBound[T]  sealed trait Range">
+<code class="descname">sealed case class Closed[T](value: T) extends NumericBound[T]  sealed trait Range</code><a class="headerlink" href="#attr-sealed case class Closed[T](value: T) extends NumericBound[T]  sealed trait Range" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-sealed trait Range">
+<code class="descname">sealed trait Range</code><a class="headerlink" href="#attr-sealed trait Range" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-sealed trait KnownIntRange extends Range">
+<code class="descname">sealed trait KnownIntRange extends Range</code><a class="headerlink" href="#attr-sealed trait KnownIntRange extends Range" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-sealed case class KnownUIntRange(min: NumericBound[Int], max: NumericBound[Int]) extends KnownIntRange">
+<code class="descname">sealed case class KnownUIntRange(min: NumericBound[Int], max: NumericBound[Int]) extends KnownIntRange</code><a class="headerlink" href="#attr-sealed case class KnownUIntRange(min: NumericBound[Int], max: NumericBound[Int]) extends KnownIntRange" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-sealed case class KnownSIntRange(min: NumericBound[Int], max: NumericBound[Int]) extends KnownIntRange">
+<code class="descname">sealed case class KnownSIntRange(min: NumericBound[Int], max: NumericBound[Int]) extends KnownIntRange</code><a class="headerlink" href="#attr-sealed case class KnownSIntRange(min: NumericBound[Int], max: NumericBound[Int]) extends KnownIntRange" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-object Width">
+<code class="descname">object Width</code><a class="headerlink" href="#attr-object Width" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-sealed abstract class Width">
+<code class="descname">sealed abstract class Width</code><a class="headerlink" href="#attr-sealed abstract class Width" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-sealed case class UnknownWidth() extends Width">
+<code class="descname">sealed case class UnknownWidth() extends Width</code><a class="headerlink" href="#attr-sealed case class UnknownWidth() extends Width" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-sealed case class KnownWidth(value: Int) extends Width">
+<code class="descname">sealed case class KnownWidth(value: Int) extends Width</code><a class="headerlink" href="#attr-sealed case class KnownWidth(value: Int) extends Width" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-object BinaryPoint">
+<code class="descname">object BinaryPoint</code><a class="headerlink" href="#attr-object BinaryPoint" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-sealed abstract class BinaryPoint">
+<code class="descname">sealed abstract class BinaryPoint</code><a class="headerlink" href="#attr-sealed abstract class BinaryPoint" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case object UnknownBinaryPoint extends BinaryPoint">
+<code class="descname">case object UnknownBinaryPoint extends BinaryPoint</code><a class="headerlink" href="#attr-case object UnknownBinaryPoint extends BinaryPoint" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-sealed case class KnownBinaryPoint(value: Int) extends BinaryPoint">
+<code class="descname">sealed case class KnownBinaryPoint(value: Int) extends BinaryPoint</code><a class="headerlink" href="#attr-sealed case class KnownBinaryPoint(value: Int) extends BinaryPoint" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-sealed abstract class MemPortDirection(name: String)">
+<code class="descname">sealed abstract class MemPortDirection(name: String)</code><a class="headerlink" href="#attr-sealed abstract class MemPortDirection(name: String)" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-object MemPortDirection">
+<code class="descname">object MemPortDirection</code><a class="headerlink" href="#attr-object MemPortDirection" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-abstract class Command">
+<code class="descname">abstract class Command</code><a class="headerlink" href="#attr-abstract class Command" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-abstract class Definition extends Command">
+<code class="descname">abstract class Definition extends Command</code><a class="headerlink" href="#attr-abstract class Definition extends Command" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class DefPrim[T &lt;: Data](sourceInfo: SourceInfo, id: T, op: PrimOp, args: Arg*) extends Definition case class DefInvalid(sourceInfo: SourceInfo, arg: Arg) extends Command case class DefWire(sourceInfo: SourceInfo, id: Data) extends Definition">
+<code class="descname">case class DefPrim[T &lt;: Data](sourceInfo: SourceInfo, id: T, op: PrimOp, args: Arg*) extends Definition case class DefInvalid(sourceInfo: SourceInfo, arg: Arg) extends Command case class DefWire(sourceInfo: SourceInfo, id: Data) extends Definition</code><a class="headerlink" href="#attr-case class DefPrim[T <: Data](sourceInfo: SourceInfo, id: T, op: PrimOp, args: Arg*) extends Definition case class DefInvalid(sourceInfo: SourceInfo, arg: Arg) extends Command case class DefWire(sourceInfo: SourceInfo, id: Data) extends Definition" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class DefInvalid(sourceInfo: SourceInfo, arg: Arg) extends Command case class DefWire(sourceInfo: SourceInfo, id: Data) extends Definition case class DefReg(sourceInfo: SourceInfo, id: Data, clock: Arg) extends Definition">
+<code class="descname">case class DefInvalid(sourceInfo: SourceInfo, arg: Arg) extends Command case class DefWire(sourceInfo: SourceInfo, id: Data) extends Definition case class DefReg(sourceInfo: SourceInfo, id: Data, clock: Arg) extends Definition</code><a class="headerlink" href="#attr-case class DefInvalid(sourceInfo: SourceInfo, arg: Arg) extends Command case class DefWire(sourceInfo: SourceInfo, id: Data) extends Definition case class DefReg(sourceInfo: SourceInfo, id: Data, clock: Arg) extends Definition" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class DefWire(sourceInfo: SourceInfo, id: Data) extends Definition case class DefReg(sourceInfo: SourceInfo, id: Data, clock: Arg) extends Definition case class DefRegInit(sourceInfo: SourceInfo, id: Data, clock: Arg, reset: Arg, init: Arg) extends Definition">
+<code class="descname">case class DefWire(sourceInfo: SourceInfo, id: Data) extends Definition case class DefReg(sourceInfo: SourceInfo, id: Data, clock: Arg) extends Definition case class DefRegInit(sourceInfo: SourceInfo, id: Data, clock: Arg, reset: Arg, init: Arg) extends Definition</code><a class="headerlink" href="#attr-case class DefWire(sourceInfo: SourceInfo, id: Data) extends Definition case class DefReg(sourceInfo: SourceInfo, id: Data, clock: Arg) extends Definition case class DefRegInit(sourceInfo: SourceInfo, id: Data, clock: Arg, reset: Arg, init: Arg) extends Definition" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class DefReg(sourceInfo: SourceInfo, id: Data, clock: Arg) extends Definition case class DefRegInit(sourceInfo: SourceInfo, id: Data, clock: Arg, reset: Arg, init: Arg) extends Definition case class DefMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: BigInt) extends Definition">
+<code class="descname">case class DefReg(sourceInfo: SourceInfo, id: Data, clock: Arg) extends Definition case class DefRegInit(sourceInfo: SourceInfo, id: Data, clock: Arg, reset: Arg, init: Arg) extends Definition case class DefMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: BigInt) extends Definition</code><a class="headerlink" href="#attr-case class DefReg(sourceInfo: SourceInfo, id: Data, clock: Arg) extends Definition case class DefRegInit(sourceInfo: SourceInfo, id: Data, clock: Arg, reset: Arg, init: Arg) extends Definition case class DefMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: BigInt) extends Definition" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class DefRegInit(sourceInfo: SourceInfo, id: Data, clock: Arg, reset: Arg, init: Arg) extends Definition case class DefMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: BigInt) extends Definition case class DefSeqMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: BigInt) extends Definition">
+<code class="descname">case class DefRegInit(sourceInfo: SourceInfo, id: Data, clock: Arg, reset: Arg, init: Arg) extends Definition case class DefMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: BigInt) extends Definition case class DefSeqMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: BigInt) extends Definition</code><a class="headerlink" href="#attr-case class DefRegInit(sourceInfo: SourceInfo, id: Data, clock: Arg, reset: Arg, init: Arg) extends Definition case class DefMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: BigInt) extends Definition case class DefSeqMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: BigInt) extends Definition" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class DefMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: BigInt) extends Definition case class DefSeqMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: BigInt) extends Definition case class DefMemPort[T &lt;: Data](sourceInfo: SourceInfo, id: T, source: Node, dir: MemPortDirection, index: Arg, clock: Arg) extends Definition">
+<code class="descname">case class DefMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: BigInt) extends Definition case class DefSeqMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: BigInt) extends Definition case class DefMemPort[T &lt;: Data](sourceInfo: SourceInfo, id: T, source: Node, dir: MemPortDirection, index: Arg, clock: Arg) extends Definition</code><a class="headerlink" href="#attr-case class DefMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: BigInt) extends Definition case class DefSeqMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: BigInt) extends Definition case class DefMemPort[T <: Data](sourceInfo: SourceInfo, id: T, source: Node, dir: MemPortDirection, index: Arg, clock: Arg) extends Definition" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class DefSeqMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: BigInt) extends Definition case class DefMemPort[T &lt;: Data](sourceInfo: SourceInfo, id: T, source: Node, dir: MemPortDirection, index: Arg, clock: Arg) extends Definition case class DefInstance(sourceInfo: SourceInfo, id: BaseModule, ports: Seq[Port]) extends Definition">
+<code class="descname">case class DefSeqMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: BigInt) extends Definition case class DefMemPort[T &lt;: Data](sourceInfo: SourceInfo, id: T, source: Node, dir: MemPortDirection, index: Arg, clock: Arg) extends Definition case class DefInstance(sourceInfo: SourceInfo, id: BaseModule, ports: Seq[Port]) extends Definition</code><a class="headerlink" href="#attr-case class DefSeqMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: BigInt) extends Definition case class DefMemPort[T <: Data](sourceInfo: SourceInfo, id: T, source: Node, dir: MemPortDirection, index: Arg, clock: Arg) extends Definition case class DefInstance(sourceInfo: SourceInfo, id: BaseModule, ports: Seq[Port]) extends Definition" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class DefMemPort[T &lt;: Data](sourceInfo: SourceInfo, id: T, source: Node, dir: MemPortDirection, index: Arg, clock: Arg) extends Definition case class DefInstance(sourceInfo: SourceInfo, id: BaseModule, ports: Seq[Port]) extends Definition case class WhenBegin(sourceInfo: SourceInfo, pred: Arg) extends Command">
+<code class="descname">case class DefMemPort[T &lt;: Data](sourceInfo: SourceInfo, id: T, source: Node, dir: MemPortDirection, index: Arg, clock: Arg) extends Definition case class DefInstance(sourceInfo: SourceInfo, id: BaseModule, ports: Seq[Port]) extends Definition case class WhenBegin(sourceInfo: SourceInfo, pred: Arg) extends Command</code><a class="headerlink" href="#attr-case class DefMemPort[T <: Data](sourceInfo: SourceInfo, id: T, source: Node, dir: MemPortDirection, index: Arg, clock: Arg) extends Definition case class DefInstance(sourceInfo: SourceInfo, id: BaseModule, ports: Seq[Port]) extends Definition case class WhenBegin(sourceInfo: SourceInfo, pred: Arg) extends Command" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class DefInstance(sourceInfo: SourceInfo, id: BaseModule, ports: Seq[Port]) extends Definition case class WhenBegin(sourceInfo: SourceInfo, pred: Arg) extends Command case class WhenEnd(sourceInfo: SourceInfo, firrtlDepth: Int, hasAlt: Boolean">
+<code class="descname">case class DefInstance(sourceInfo: SourceInfo, id: BaseModule, ports: Seq[Port]) extends Definition case class WhenBegin(sourceInfo: SourceInfo, pred: Arg) extends Command case class WhenEnd(sourceInfo: SourceInfo, firrtlDepth: Int, hasAlt: Boolean</code><a class="headerlink" href="#attr-case class DefInstance(sourceInfo: SourceInfo, id: BaseModule, ports: Seq[Port]) extends Definition case class WhenBegin(sourceInfo: SourceInfo, pred: Arg) extends Command case class WhenEnd(sourceInfo: SourceInfo, firrtlDepth: Int, hasAlt: Boolean" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class WhenBegin(sourceInfo: SourceInfo, pred: Arg) extends Command case class WhenEnd(sourceInfo: SourceInfo, firrtlDepth: Int, hasAlt: Boolean">
+<code class="descname">case class WhenBegin(sourceInfo: SourceInfo, pred: Arg) extends Command case class WhenEnd(sourceInfo: SourceInfo, firrtlDepth: Int, hasAlt: Boolean</code><a class="headerlink" href="#attr-case class WhenBegin(sourceInfo: SourceInfo, pred: Arg) extends Command case class WhenEnd(sourceInfo: SourceInfo, firrtlDepth: Int, hasAlt: Boolean" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class WhenEnd(sourceInfo: SourceInfo, firrtlDepth: Int, hasAlt: Boolean">
+<code class="descname">case class WhenEnd(sourceInfo: SourceInfo, firrtlDepth: Int, hasAlt: Boolean</code><a class="headerlink" href="#attr-case class WhenEnd(sourceInfo: SourceInfo, firrtlDepth: Int, hasAlt: Boolean" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class AltBegin(sourceInfo: SourceInfo) extends Command case class OtherwiseEnd(sourceInfo: SourceInfo, firrtlDepth: Int) extends Command case class Connect(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command">
+<code class="descname">case class AltBegin(sourceInfo: SourceInfo) extends Command case class OtherwiseEnd(sourceInfo: SourceInfo, firrtlDepth: Int) extends Command case class Connect(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command</code><a class="headerlink" href="#attr-case class AltBegin(sourceInfo: SourceInfo) extends Command case class OtherwiseEnd(sourceInfo: SourceInfo, firrtlDepth: Int) extends Command case class Connect(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class OtherwiseEnd(sourceInfo: SourceInfo, firrtlDepth: Int) extends Command case class Connect(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command case class BulkConnect(sourceInfo: SourceInfo, loc1: Node, loc2: Node) extends Command">
+<code class="descname">case class OtherwiseEnd(sourceInfo: SourceInfo, firrtlDepth: Int) extends Command case class Connect(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command case class BulkConnect(sourceInfo: SourceInfo, loc1: Node, loc2: Node) extends Command</code><a class="headerlink" href="#attr-case class OtherwiseEnd(sourceInfo: SourceInfo, firrtlDepth: Int) extends Command case class Connect(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command case class BulkConnect(sourceInfo: SourceInfo, loc1: Node, loc2: Node) extends Command" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class Connect(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command case class BulkConnect(sourceInfo: SourceInfo, loc1: Node, loc2: Node) extends Command case class Attach(sourceInfo: SourceInfo, locs: Seq[Node]) extends Command">
+<code class="descname">case class Connect(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command case class BulkConnect(sourceInfo: SourceInfo, loc1: Node, loc2: Node) extends Command case class Attach(sourceInfo: SourceInfo, locs: Seq[Node]) extends Command</code><a class="headerlink" href="#attr-case class Connect(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command case class BulkConnect(sourceInfo: SourceInfo, loc1: Node, loc2: Node) extends Command case class Attach(sourceInfo: SourceInfo, locs: Seq[Node]) extends Command" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class BulkConnect(sourceInfo: SourceInfo, loc1: Node, loc2: Node) extends Command case class Attach(sourceInfo: SourceInfo, locs: Seq[Node]) extends Command case class ConnectInit(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command">
+<code class="descname">case class BulkConnect(sourceInfo: SourceInfo, loc1: Node, loc2: Node) extends Command case class Attach(sourceInfo: SourceInfo, locs: Seq[Node]) extends Command case class ConnectInit(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command</code><a class="headerlink" href="#attr-case class BulkConnect(sourceInfo: SourceInfo, loc1: Node, loc2: Node) extends Command case class Attach(sourceInfo: SourceInfo, locs: Seq[Node]) extends Command case class ConnectInit(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class Attach(sourceInfo: SourceInfo, locs: Seq[Node]) extends Command case class ConnectInit(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command case class Stop(sourceInfo: SourceInfo, clock: Arg, ret: Int) extends Command">
+<code class="descname">case class Attach(sourceInfo: SourceInfo, locs: Seq[Node]) extends Command case class ConnectInit(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command case class Stop(sourceInfo: SourceInfo, clock: Arg, ret: Int) extends Command</code><a class="headerlink" href="#attr-case class Attach(sourceInfo: SourceInfo, locs: Seq[Node]) extends Command case class ConnectInit(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command case class Stop(sourceInfo: SourceInfo, clock: Arg, ret: Int) extends Command" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class ConnectInit(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command case class Stop(sourceInfo: SourceInfo, clock: Arg, ret: Int) extends Command case class Port(id: Data, dir: SpecifiedDirection)">
+<code class="descname">case class ConnectInit(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command case class Stop(sourceInfo: SourceInfo, clock: Arg, ret: Int) extends Command case class Port(id: Data, dir: SpecifiedDirection)</code><a class="headerlink" href="#attr-case class ConnectInit(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command case class Stop(sourceInfo: SourceInfo, clock: Arg, ret: Int) extends Command case class Port(id: Data, dir: SpecifiedDirection)" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class Stop(sourceInfo: SourceInfo, clock: Arg, ret: Int) extends Command case class Port(id: Data, dir: SpecifiedDirection) case class Printf(sourceInfo: SourceInfo, clock: Arg, pable: Printable) extends Command">
+<code class="descname">case class Stop(sourceInfo: SourceInfo, clock: Arg, ret: Int) extends Command case class Port(id: Data, dir: SpecifiedDirection) case class Printf(sourceInfo: SourceInfo, clock: Arg, pable: Printable) extends Command</code><a class="headerlink" href="#attr-case class Stop(sourceInfo: SourceInfo, clock: Arg, ret: Int) extends Command case class Port(id: Data, dir: SpecifiedDirection) case class Printf(sourceInfo: SourceInfo, clock: Arg, pable: Printable) extends Command" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class Port(id: Data, dir: SpecifiedDirection) case class Printf(sourceInfo: SourceInfo, clock: Arg, pable: Printable) extends Command abstract class Component extends Arg">
+<code class="descname">case class Port(id: Data, dir: SpecifiedDirection) case class Printf(sourceInfo: SourceInfo, clock: Arg, pable: Printable) extends Command abstract class Component extends Arg</code><a class="headerlink" href="#attr-case class Port(id: Data, dir: SpecifiedDirection) case class Printf(sourceInfo: SourceInfo, clock: Arg, pable: Printable) extends Command abstract class Component extends Arg" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class Printf(sourceInfo: SourceInfo, clock: Arg, pable: Printable) extends Command abstract class Component extends Arg">
+<code class="descname">case class Printf(sourceInfo: SourceInfo, clock: Arg, pable: Printable) extends Command abstract class Component extends Arg</code><a class="headerlink" href="#attr-case class Printf(sourceInfo: SourceInfo, clock: Arg, pable: Printable) extends Command abstract class Component extends Arg" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-abstract class Component extends Arg">
+<code class="descname">abstract class Component extends Arg</code><a class="headerlink" href="#attr-abstract class Component extends Arg" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class DefModule(id: RawModule, name: String, ports: Seq[Port], commands: Seq[Command]) extends Component case class DefBlackBox(id: BaseBlackBox, name: String, ports: Seq[Port], topDir: SpecifiedDirection, params: Map[String, Param]) extends Component  case class Circuit(name: String, components: Seq[Component], annotations: Seq[ChiselAnnotation]">
+<code class="descname">case class DefModule(id: RawModule, name: String, ports: Seq[Port], commands: Seq[Command]) extends Component case class DefBlackBox(id: BaseBlackBox, name: String, ports: Seq[Port], topDir: SpecifiedDirection, params: Map[String, Param]) extends Component  case class Circuit(name: String, components: Seq[Component], annotations: Seq[ChiselAnnotation]</code><a class="headerlink" href="#attr-case class DefModule(id: RawModule, name: String, ports: Seq[Port], commands: Seq[Command]) extends Component case class DefBlackBox(id: BaseBlackBox, name: String, ports: Seq[Port], topDir: SpecifiedDirection, params: Map[String, Param]) extends Component  case class Circuit(name: String, components: Seq[Component], annotations: Seq[ChiselAnnotation]" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class DefBlackBox(id: BaseBlackBox, name: String, ports: Seq[Port], topDir: SpecifiedDirection, params: Map[String, Param]) extends Component  case class Circuit(name: String, components: Seq[Component], annotations: Seq[ChiselAnnotation]">
+<code class="descname">case class DefBlackBox(id: BaseBlackBox, name: String, ports: Seq[Port], topDir: SpecifiedDirection, params: Map[String, Param]) extends Component  case class Circuit(name: String, components: Seq[Component], annotations: Seq[ChiselAnnotation]</code><a class="headerlink" href="#attr-case class DefBlackBox(id: BaseBlackBox, name: String, ports: Seq[Port], topDir: SpecifiedDirection, params: Map[String, Param]) extends Component  case class Circuit(name: String, components: Seq[Component], annotations: Seq[ChiselAnnotation]" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class Circuit(name: String, components: Seq[Component], annotations: Seq[ChiselAnnotation]">
+<code class="descname">case class Circuit(name: String, components: Seq[Component], annotations: Seq[ChiselAnnotation]</code><a class="headerlink" href="#attr-case class Circuit(name: String, components: Seq[Component], annotations: Seq[ChiselAnnotation]" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../../../../contents.html">chisel-test</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../../src/src.html">src</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../../../../chiselFrontend.html">chiselFrontend</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../../../../../target/target.html">chiselFrontend/target</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../../../../src.html">chiselFrontend/src</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../../../../contents.html">Documentation overview</a><ul>
+  <li><a href="../../../../../../chiselFrontend.html">chiselFrontend</a><ul>
+  <li><a href="../../../../../src.html">chiselFrontend/src</a><ul>
+  <li><a href="../../../../main.html">chiselFrontend/src/main</a><ul>
+  <li><a href="../../../scala.html">chiselFrontend/src/main/scala</a><ul>
+  <li><a href="../../chisel3.html">chiselFrontend/src/main/scala/chisel3</a><ul>
+  <li><a href="../internal.html">chiselFrontend/src/main/scala/chisel3/internal</a><ul>
+      <li>Previous: <a href="../internal.html" title="previous chapter">chiselFrontend/src/main/scala/chisel3/internal</a></li>
+      <li>Next: <a href="../../core/core.html" title="next chapter">chiselFrontend/src/main/scala/chisel3/core</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, John Andrews.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../../../../../../../_sources/chiselFrontend/src/main/scala/chisel3/internal/firrtl/firrtl.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

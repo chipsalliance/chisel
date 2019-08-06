@@ -1,0 +1,630 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>chiselFrontend/src/main/scala/chisel3/internal &#8212; chisel-test  documentation</title>
+    <link rel="stylesheet" href="../../../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../../../../" src="../../../../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" />
+    <link rel="next" title="chiselFrontend/src/main/scala/chisel3/internal/firrtl" href="firrtl/firrtl.html" />
+    <link rel="prev" title="chiselFrontend/src/main/scala/chisel3/experimental" href="../experimental/experimental.html" />
+   
+  <link rel="stylesheet" href="../../../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="chiselfrontend-src-main-scala-chisel3-internal">
+<h1>chiselFrontend/src/main/scala/chisel3/internal<a class="headerlink" href="#chiselfrontend-src-main-scala-chisel3-internal" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="firrtl/firrtl.html">chiselFrontend/src/main/scala/chisel3/internal/firrtl</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="firrtl/firrtl.html#ir-scala">IR.scala</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="monoconnect-scala">
+<h2>MonoConnect.scala<a class="headerlink" href="#monoconnect-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-private[chisel3] object MonoConnect">
+<code class="descname">private[chisel3] object MonoConnect</code><a class="headerlink" href="#attr-private[chisel3] object MonoConnect" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>MonoConnect.connect executes a mono-directional connection element-wise.</div></blockquote>
+<p>Note that this isn’t commutative. There is an explicit source and sink
+already determined before this function is called.</p>
+<p>The connect operation will recurse down the left Data (with the right Data).
+An exception will be thrown if a movement through the left cannot be matched
+in the right. The right side is allowed to have extra Record fields.
+Vecs must still be exactly the same size.</p>
+<p>See elemConnect for details on how the root connections are issued.</p>
+<p>Note that a valid sink must be writable so, one of these must hold:
+- Is an internal writable node (Reg or Wire)
+- Is an output of the current module
+- Is an input of a submodule of the current module</p>
+<p>Note that a valid source must be readable so, one of these must hold:
+- Is an internal readable node (Reg, Wire, Op)
+- Is a literal
+- Is a port of the current module or submodule of the current module</p>
+<dl class="attr">
+<dt id="attr-def connect(sourceInfo: SourceInfo, connectCompileOptions: CompileOptions, sink: Data, source: Data, context_mod: RawModule): Unit">
+<code class="descname">def connect(sourceInfo: SourceInfo, connectCompileOptions: CompileOptions, sink: Data, source: Data, context_mod: RawModule): Unit</code><a class="headerlink" href="#attr-def connect(sourceInfo: SourceInfo, connectCompileOptions: CompileOptions, sink: Data, source: Data, context_mod: RawModule): Unit" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function is what recursively tries to connect a sink and source together
+There is some cleverness in the use of internal try-catch to catch exceptions
+during the recursive decent and then rethrow them with extra information added.
+This gives the user a ‘path’ to where in the connections things went wrong.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="builder-scala">
+<h2>Builder.scala<a class="headerlink" href="#builder-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-private[chisel3] class Namespace(keywords: Set[String])">
+<code class="descname">private[chisel3] class Namespace(keywords: Set[String])</code><a class="headerlink" href="#attr-private[chisel3] class Namespace(keywords: Set[String])" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-private[chisel3] object Namespace">
+<code class="descname">private[chisel3] object Namespace</code><a class="headerlink" href="#attr-private[chisel3] object Namespace" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attr">
+<dt id="attr-def empty: Namespace">
+<code class="descname">def empty: Namespace</code><a class="headerlink" href="#attr-def empty: Namespace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Constructs an empty Namespace</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-private[chisel3] class IdGen">
+<code class="descname">private[chisel3] class IdGen</code><a class="headerlink" href="#attr-private[chisel3] class IdGen" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-trait InstanceId">
+<code class="descname">trait InstanceId</code><a class="headerlink" href="#attr-trait InstanceId" title="Permalink to this definition">¶</a></dt>
+<dd><p>Public API to access Node/Signal names. currently, the node’s name, the full path name, and references to its parent Module and component.
+These are only valid once the design has been elaborated, and should not be used during its construction.</p>
+<dl class="attr">
+<dt id="attr-def toNamed: Named">
+<code class="descname">def toNamed: Named</code><a class="headerlink" href="#attr-def toNamed: Named" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a FIRRTL Named that refers to this object in the elaborated hardware graph</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-private[chisel3] trait HasId extends InstanceId">
+<code class="descname">private[chisel3] trait HasId extends InstanceId</code><a class="headerlink" href="#attr-private[chisel3] trait HasId extends InstanceId" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-private[chisel3] trait NamedComponent extends HasId">
+<code class="descname">private[chisel3] trait NamedComponent extends HasId</code><a class="headerlink" href="#attr-private[chisel3] trait NamedComponent extends HasId" title="Permalink to this definition">¶</a></dt>
+<dd><p>Holds the implementation of toNamed for Data and MemBase</p>
+<dl class="attr">
+<dt id="attr-final def toNamed: ComponentName">
+<code class="descname">final def toNamed: ComponentName</code><a class="headerlink" href="#attr-final def toNamed: ComponentName" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a FIRRTL ComponentName that references this object
+:note: Should not be called until circuit elaboration is complete</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-private[chisel3] class ChiselContext()">
+<code class="descname">private[chisel3] class ChiselContext()</code><a class="headerlink" href="#attr-private[chisel3] class ChiselContext()" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-private[chisel3] class DynamicContext()">
+<code class="descname">private[chisel3] class DynamicContext()</code><a class="headerlink" href="#attr-private[chisel3] class DynamicContext()" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-private[chisel3] object Builder">
+<code class="descname">private[chisel3] object Builder</code><a class="headerlink" href="#attr-private[chisel3] object Builder" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attr">
+<dt id="attr-def nameRecursively(prefix: String, nameMe: Any, namer: (HasId, String) =&gt; Unit): Unit">
+<code class="descname">def nameRecursively(prefix: String, nameMe: Any, namer: (HasId, String) =&gt; Unit): Unit</code><a class="headerlink" href="#attr-def nameRecursively(prefix: String, nameMe: Any, namer: (HasId, String) => Unit): Unit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Recursively suggests names to supported “container” classes     Arbitrary nestings of supported classes are allowed so long as the
+innermost element is of type HasId
+(Note: Map is Iterable[Tuple2[_,_`  and thus excluded)</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-def exception(m: =&gt; String): Unit =">
+<code class="descname">def exception(m: =&gt; String): Unit =</code><a class="headerlink" href="#attr-def exception(m: => String): Unit =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Record an exception as an error, and throw it.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Param m:</th><td class="field-body">exception message</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-object DynamicNamingStack">
+<code class="descname">object DynamicNamingStack</code><a class="headerlink" href="#attr-object DynamicNamingStack" title="Permalink to this definition">¶</a></dt>
+<dd><p>Allows public access to the naming stack in Builder / DynamicContext, and handles invocations   outside a Builder context.
+Necessary because naming macros expand in user code and don’t have access into private[chisel3]
+objects.</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-private[chisel3] object castToInt">
+<code class="descname">private[chisel3] object castToInt</code><a class="headerlink" href="#attr-private[chisel3] object castToInt" title="Permalink to this definition">¶</a></dt>
+<dd><p>Casts BigInt to Int, issuing an error when the input isn’t representable.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="binding-scala">
+<h2>Binding.scala<a class="headerlink" href="#binding-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-object requireIsHardware">
+<code class="descname">object requireIsHardware</code><a class="headerlink" href="#attr-object requireIsHardware" title="Permalink to this definition">¶</a></dt>
+<dd><p>Requires that a node is hardware (“bound”)</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-object requireIsChiselType">
+<code class="descname">object requireIsChiselType</code><a class="headerlink" href="#attr-object requireIsChiselType" title="Permalink to this definition">¶</a></dt>
+<dd><p>Requires that a node is a chisel type (not hardware, “unbound”)</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-private[chisel3] sealed abstract class BindingDirection private[chisel3] object BindingDirection">
+<code class="descname">private[chisel3] sealed abstract class BindingDirection private[chisel3] object BindingDirection</code><a class="headerlink" href="#attr-private[chisel3] sealed abstract class BindingDirection private[chisel3] object BindingDirection" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-private[chisel3] object BindingDirection">
+<code class="descname">private[chisel3] object BindingDirection</code><a class="headerlink" href="#attr-private[chisel3] object BindingDirection" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case object Internal extends BindingDirection">
+<code class="descname">case object Internal extends BindingDirection</code><a class="headerlink" href="#attr-case object Internal extends BindingDirection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Internal type or wire</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-case object Output extends BindingDirection">
+<code class="descname">case object Output extends BindingDirection</code><a class="headerlink" href="#attr-case object Output extends BindingDirection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Module port with output direction</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-case object Input extends BindingDirection">
+<code class="descname">case object Input extends BindingDirection</code><a class="headerlink" href="#attr-case object Input extends BindingDirection" title="Permalink to this definition">¶</a></dt>
+<dd><p>Module port with input direction</p>
+<dl class="attr">
+<dt id="attr-def from(binding: TopBinding, direction: ActualDirection): BindingDirection =">
+<code class="descname">def from(binding: TopBinding, direction: ActualDirection): BindingDirection =</code><a class="headerlink" href="#attr-def from(binding: TopBinding, direction: ActualDirection): BindingDirection =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determine the BindingDirection of an Element given its top binding and resolved direction.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-sealed trait Binding">
+<code class="descname">sealed trait Binding</code><a class="headerlink" href="#attr-sealed trait Binding" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-sealed trait TopBinding extends Binding">
+<code class="descname">sealed trait TopBinding extends Binding</code><a class="headerlink" href="#attr-sealed trait TopBinding extends Binding" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-sealed trait UnconstrainedBinding extends TopBinding">
+<code class="descname">sealed trait UnconstrainedBinding extends TopBinding</code><a class="headerlink" href="#attr-sealed trait UnconstrainedBinding extends TopBinding" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-sealed trait ConstrainedBinding extends TopBinding">
+<code class="descname">sealed trait ConstrainedBinding extends TopBinding</code><a class="headerlink" href="#attr-sealed trait ConstrainedBinding extends TopBinding" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-sealed trait ReadOnlyBinding extends TopBinding">
+<code class="descname">sealed trait ReadOnlyBinding extends TopBinding</code><a class="headerlink" href="#attr-sealed trait ReadOnlyBinding extends TopBinding" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class OpBinding(enclosure: RawModule) extends ConstrainedBinding with ReadOnlyBinding case class MemoryPortBinding(enclosure: RawModule) extends ConstrainedBinding case class PortBinding(enclosure: BaseModule) extends ConstrainedBinding">
+<code class="descname">case class OpBinding(enclosure: RawModule) extends ConstrainedBinding with ReadOnlyBinding case class MemoryPortBinding(enclosure: RawModule) extends ConstrainedBinding case class PortBinding(enclosure: BaseModule) extends ConstrainedBinding</code><a class="headerlink" href="#attr-case class OpBinding(enclosure: RawModule) extends ConstrainedBinding with ReadOnlyBinding case class MemoryPortBinding(enclosure: RawModule) extends ConstrainedBinding case class PortBinding(enclosure: BaseModule) extends ConstrainedBinding" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class MemoryPortBinding(enclosure: RawModule) extends ConstrainedBinding case class PortBinding(enclosure: BaseModule) extends ConstrainedBinding case class RegBinding(enclosure: RawModule) extends ConstrainedBinding">
+<code class="descname">case class MemoryPortBinding(enclosure: RawModule) extends ConstrainedBinding case class PortBinding(enclosure: BaseModule) extends ConstrainedBinding case class RegBinding(enclosure: RawModule) extends ConstrainedBinding</code><a class="headerlink" href="#attr-case class MemoryPortBinding(enclosure: RawModule) extends ConstrainedBinding case class PortBinding(enclosure: BaseModule) extends ConstrainedBinding case class RegBinding(enclosure: RawModule) extends ConstrainedBinding" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class PortBinding(enclosure: BaseModule) extends ConstrainedBinding case class RegBinding(enclosure: RawModule) extends ConstrainedBinding case class WireBinding(enclosure: RawModule) extends ConstrainedBinding">
+<code class="descname">case class PortBinding(enclosure: BaseModule) extends ConstrainedBinding case class RegBinding(enclosure: RawModule) extends ConstrainedBinding case class WireBinding(enclosure: RawModule) extends ConstrainedBinding</code><a class="headerlink" href="#attr-case class PortBinding(enclosure: BaseModule) extends ConstrainedBinding case class RegBinding(enclosure: RawModule) extends ConstrainedBinding case class WireBinding(enclosure: RawModule) extends ConstrainedBinding" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class RegBinding(enclosure: RawModule) extends ConstrainedBinding case class WireBinding(enclosure: RawModule) extends ConstrainedBinding  case class ChildBinding(parent: Data) extends Binding">
+<code class="descname">case class RegBinding(enclosure: RawModule) extends ConstrainedBinding case class WireBinding(enclosure: RawModule) extends ConstrainedBinding  case class ChildBinding(parent: Data) extends Binding</code><a class="headerlink" href="#attr-case class RegBinding(enclosure: RawModule) extends ConstrainedBinding case class WireBinding(enclosure: RawModule) extends ConstrainedBinding  case class ChildBinding(parent: Data) extends Binding" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class WireBinding(enclosure: RawModule) extends ConstrainedBinding  case class ChildBinding(parent: Data) extends Binding">
+<code class="descname">case class WireBinding(enclosure: RawModule) extends ConstrainedBinding  case class ChildBinding(parent: Data) extends Binding</code><a class="headerlink" href="#attr-case class WireBinding(enclosure: RawModule) extends ConstrainedBinding  case class ChildBinding(parent: Data) extends Binding" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class ChildBinding(parent: Data) extends Binding">
+<code class="descname">case class ChildBinding(parent: Data) extends Binding</code><a class="headerlink" href="#attr-case class ChildBinding(parent: Data) extends Binding" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class SampleElementBinding[T &lt;: Data](parent: Vec[T]) extends Binding">
+<code class="descname">case class SampleElementBinding[T &lt;: Data](parent: Vec[T]) extends Binding</code><a class="headerlink" href="#attr-case class SampleElementBinding[T <: Data](parent: Vec[T]) extends Binding" title="Permalink to this definition">¶</a></dt>
+<dd><p>Special binding for Vec.sample_element</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class DontCareBinding() extends UnconstrainedBinding  sealed trait LitBinding extends UnconstrainedBinding with ReadOnlyBinding">
+<code class="descname">case class DontCareBinding() extends UnconstrainedBinding  sealed trait LitBinding extends UnconstrainedBinding with ReadOnlyBinding</code><a class="headerlink" href="#attr-case class DontCareBinding() extends UnconstrainedBinding  sealed trait LitBinding extends UnconstrainedBinding with ReadOnlyBinding" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-sealed trait LitBinding extends UnconstrainedBinding with ReadOnlyBinding">
+<code class="descname">sealed trait LitBinding extends UnconstrainedBinding with ReadOnlyBinding</code><a class="headerlink" href="#attr-sealed trait LitBinding extends UnconstrainedBinding with ReadOnlyBinding" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class ElementLitBinding(litArg: LitArg) extends LitBinding">
+<code class="descname">case class ElementLitBinding(litArg: LitArg) extends LitBinding</code><a class="headerlink" href="#attr-case class ElementLitBinding(litArg: LitArg) extends LitBinding" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class BundleLitBinding(litMap: Map[Data, LitArg]) extends LitBinding">
+<code class="descname">case class BundleLitBinding(litMap: Map[Data, LitArg]) extends LitBinding</code><a class="headerlink" href="#attr-case class BundleLitBinding(litMap: Map[Data, LitArg]) extends LitBinding" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="namer-scala">
+<h2>Namer.scala<a class="headerlink" href="#namer-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-sealed trait NamingContextInterface">
+<code class="descname">sealed trait NamingContextInterface</code><a class="headerlink" href="#attr-sealed trait NamingContextInterface" title="Permalink to this definition">¶</a></dt>
+<dd><p>Base class for naming contexts, providing the basic API consisting of naming calls and  ability to take descendant naming contexts.</p>
+<dl class="attr">
+<dt id="attr-def name[T](obj: T, name: String): T">
+<code class="descname">def name[T](obj: T, name: String): T</code><a class="headerlink" href="#attr-def name[T](obj: T, name: String): T" title="Permalink to this definition">¶</a></dt>
+<dd><p>Suggest a name (that will be propagated to FIRRTL) for an object, then returns the object       itself (so this can be inserted transparently anywhere).
+Is a no-op (so safe) when applied on objects that aren’t named, including non-Chisel data
+types.</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-def namePrefix(prefix: String)">
+<code class="descname">def namePrefix(prefix: String)</code><a class="headerlink" href="#attr-def namePrefix(prefix: String)" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gives this context a naming prefix (which may be empty, “”, for a top-level Module context)     so that actual naming calls (HasId.suggestName) can happen.
+Recursively names descendants, for those whose return value have an associated name.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-object DummyNamer extends NamingContextInterface">
+<code class="descname">object DummyNamer extends NamingContextInterface</code><a class="headerlink" href="#attr-object DummyNamer extends NamingContextInterface" title="Permalink to this definition">¶</a></dt>
+<dd><p>Dummy implementation to allow for naming annotations in a non-Builder context.</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-class NamingContext extends NamingContextInterface">
+<code class="descname">class NamingContext extends NamingContextInterface</code><a class="headerlink" href="#attr-class NamingContext extends NamingContextInterface" title="Permalink to this definition">¶</a></dt>
+<dd><p>Actual namer functionality.</p>
+<dl class="attr">
+<dt id="attr-def addDescendant(ref: Any, descendant: NamingContext)">
+<code class="descname">def addDescendant(ref: Any, descendant: NamingContext)</code><a class="headerlink" href="#attr-def addDescendant(ref: Any, descendant: NamingContext)" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds a NamingContext object as a descendant - where its contained objects will have names       prefixed with the name given to the reference object, if the reference object is named in the
+scope of this context.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-class NamingStack">
+<code class="descname">class NamingStack</code><a class="headerlink" href="#attr-class NamingStack" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class for the (global) naming stack object, which provides a way to push and pop naming contexts as functions are called / finished.</p>
+<dl class="attr">
+<dt id="attr-def pushContext(): NamingContext =">
+<code class="descname">def pushContext(): NamingContext =</code><a class="headerlink" href="#attr-def pushContext(): NamingContext =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a new naming context, where all items in the context will have their names prefixed     with some yet-to-be-determined prefix from object names in an enclosing scope.</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-def popContext[T &lt;: Any](prefixRef: T, until: NamingContext): Unit =">
+<code class="descname">def popContext[T &lt;: Any](prefixRef: T, until: NamingContext): Unit =</code><a class="headerlink" href="#attr-def popContext[T <: Any](prefixRef: T, until: NamingContext): Unit =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Called at the end of a function, popping the current naming context, adding it to the   enclosing context’s descendants, and passing through the prefix naming reference.
+Every instance of push_context() must have a matching pop_context().</p>
+<p>Will assert out if the context being popped isn’t the topmost on the stack.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="sourceinfo-scala">
+<h2>SourceInfo.scala<a class="headerlink" href="#sourceinfo-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-sealed trait SourceInfo">
+<code class="descname">sealed trait SourceInfo</code><a class="headerlink" href="#attr-sealed trait SourceInfo" title="Permalink to this definition">¶</a></dt>
+<dd><p>Abstract base class for generalized source information.</p>
+<dl class="attr">
+<dt id="attr-def makeMessage(f: String =&gt; String): String">
+<code class="descname">def makeMessage(f: String =&gt; String): String</code><a class="headerlink" href="#attr-def makeMessage(f: String => String): String" title="Permalink to this definition">¶</a></dt>
+<dd><p>A prettier toString
+Make a useful message if SourceInfo is available, nothing otherwise</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-sealed trait NoSourceInfo extends SourceInfo">
+<code class="descname">sealed trait NoSourceInfo extends SourceInfo</code><a class="headerlink" href="#attr-sealed trait NoSourceInfo extends SourceInfo" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-case object UnlocatableSourceInfo extends NoSourceInfo">
+<code class="descname">case object UnlocatableSourceInfo extends NoSourceInfo</code><a class="headerlink" href="#attr-case object UnlocatableSourceInfo extends NoSourceInfo" title="Permalink to this definition">¶</a></dt>
+<dd><p>For when source info can’t be generated because of a technical limitation, like for Reg because Scala macros don’t support named or default arguments.</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-case object DeprecatedSourceInfo extends NoSourceInfo">
+<code class="descname">case object DeprecatedSourceInfo extends NoSourceInfo</code><a class="headerlink" href="#attr-case object DeprecatedSourceInfo extends NoSourceInfo" title="Permalink to this definition">¶</a></dt>
+<dd><p>For when source info isn’t generated because the function is deprecated and we’re lazy.</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class SourceLine(filename: String, line: Int, col: Int) extends SourceInfo">
+<code class="descname">case class SourceLine(filename: String, line: Int, col: Int) extends SourceInfo</code><a class="headerlink" href="#attr-case class SourceLine(filename: String, line: Int, col: Int) extends SourceInfo" title="Permalink to this definition">¶</a></dt>
+<dd><p>For FIRRTL lines from a Scala source line.</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-object SourceInfoMacro">
+<code class="descname">object SourceInfoMacro</code><a class="headerlink" href="#attr-object SourceInfoMacro" title="Permalink to this definition">¶</a></dt>
+<dd><p>Provides a macro that returns the source information at the invocation point.</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-object SourceInfo">
+<code class="descname">object SourceInfo</code><a class="headerlink" href="#attr-object SourceInfo" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="error-scala">
+<h2>Error.scala<a class="headerlink" href="#error-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class ChiselException(message: String, cause: Throwable">
+<code class="descname">class ChiselException(message: String, cause: Throwable</code><a class="headerlink" href="#attr-class ChiselException(message: String, cause: Throwable" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attr">
+<dt id="attr-def trimmedStackTrace: Array[StackTraceElement] =">
+<code class="descname">def trimmedStackTrace: Array[StackTraceElement] =</code><a class="headerlink" href="#attr-def trimmedStackTrace: Array[StackTraceElement] =" title="Permalink to this definition">¶</a></dt>
+<dd><p>trims the top of the stack of elements belonging to <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">blacklistPackages</span></code>   then trims the bottom elements until it reaches <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">builderName</span></code>
+then continues trimming elements belonging to <code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">blacklistPackages</span></code></p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-private[chisel3] object throwException">
+<code class="descname">private[chisel3] object throwException</code><a class="headerlink" href="#attr-private[chisel3] object throwException" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-private[chisel3] object ErrorLog">
+<code class="descname">private[chisel3] object ErrorLog</code><a class="headerlink" href="#attr-private[chisel3] object ErrorLog" title="Permalink to this definition">¶</a></dt>
+<dd><p>Records and reports runtime errors and warnings.</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-private[chisel3] class ErrorLog">
+<code class="descname">private[chisel3] class ErrorLog</code><a class="headerlink" href="#attr-private[chisel3] class ErrorLog" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attr">
+<dt id="attr-def error(m: =&gt; String): Unit">
+<code class="descname">def error(m: =&gt; String): Unit</code><a class="headerlink" href="#attr-def error(m: => String): Unit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Log an error message</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-def warning(m: =&gt; String): Unit">
+<code class="descname">def warning(m: =&gt; String): Unit</code><a class="headerlink" href="#attr-def warning(m: => String): Unit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Log a warning message</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-def info(m: String): Unit">
+<code class="descname">def info(m: String): Unit</code><a class="headerlink" href="#attr-def info(m: String): Unit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Emit an informational message</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-def deprecated(m: =&gt; String, location: Option[String]): Unit =">
+<code class="descname">def deprecated(m: =&gt; String, location: Option[String]): Unit =</code><a class="headerlink" href="#attr-def deprecated(m: => String, location: Option[String]): Unit =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Log a deprecation warning message</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-def checkpoint(): Unit =">
+<code class="descname">def checkpoint(): Unit =</code><a class="headerlink" href="#attr-def checkpoint(): Unit =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Throw an exception if any errors have yet occurred.</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-private def getUserLineNumber =">
+<code class="descname">private def getUserLineNumber =</code><a class="headerlink" href="#attr-private def getUserLineNumber =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the best guess at the first stack frame that belongs to user code.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-private abstract class LogEntry(msg: =&gt; String, line: Option[StackTraceElement])">
+<code class="descname">private abstract class LogEntry(msg: =&gt; String, line: Option[StackTraceElement])</code><a class="headerlink" href="#attr-private abstract class LogEntry(msg: => String, line: Option[StackTraceElement])" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-private class Error(msg: =&gt; String, line: Option[StackTraceElement]) extends LogEntry(msg, line)">
+<code class="descname">private class Error(msg: =&gt; String, line: Option[StackTraceElement]) extends LogEntry(msg, line)</code><a class="headerlink" href="#attr-private class Error(msg: => String, line: Option[StackTraceElement]) extends LogEntry(msg, line)" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-private class Warning(msg: =&gt; String, line: Option[StackTraceElement]) extends LogEntry(msg, line)">
+<code class="descname">private class Warning(msg: =&gt; String, line: Option[StackTraceElement]) extends LogEntry(msg, line)</code><a class="headerlink" href="#attr-private class Warning(msg: => String, line: Option[StackTraceElement]) extends LogEntry(msg, line)" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-private class Info(msg: =&gt; String, line: Option[StackTraceElement]) extends LogEntry(msg, line)">
+<code class="descname">private class Info(msg: =&gt; String, line: Option[StackTraceElement]) extends LogEntry(msg, line)</code><a class="headerlink" href="#attr-private class Info(msg: => String, line: Option[StackTraceElement]) extends LogEntry(msg, line)" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="biconnect-scala">
+<h2>BiConnect.scala<a class="headerlink" href="#biconnect-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-private[chisel3] object BiConnect">
+<code class="descname">private[chisel3] object BiConnect</code><a class="headerlink" href="#attr-private[chisel3] object BiConnect" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>BiConnect.connect executes a bidirectional connection element-wise.</div></blockquote>
+<p>Note that the arguments are left and right (not source and sink) so the
+intent is for the operation to be commutative.</p>
+<p>The connect operation will recurse down the left Data (with the right Data).
+An exception will be thrown if a movement through the left cannot be matched
+in the right (or if the right side has extra fields).</p>
+<p>See elemConnect for details on how the root connections are issued.</p>
+<dl class="attr">
+<dt id="attr-def connect(sourceInfo: SourceInfo, connectCompileOptions: CompileOptions, left: Data, right: Data, context_mod: RawModule): Unit =">
+<code class="descname">def connect(sourceInfo: SourceInfo, connectCompileOptions: CompileOptions, left: Data, right: Data, context_mod: RawModule): Unit =</code><a class="headerlink" href="#attr-def connect(sourceInfo: SourceInfo, connectCompileOptions: CompileOptions, left: Data, right: Data, context_mod: RawModule): Unit =" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function is what recursively tries to connect a left and right together
+There is some cleverness in the use of internal try-catch to catch exceptions
+during the recursive decent and then rethrow them with extra information added.
+This gives the user a ‘path’ to where in the connections things went wrong.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../../../contents.html">chisel-test</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../../../../../src/src.html">src</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../../../../../chiselFrontend.html">chiselFrontend</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../../../../../target/target.html">chiselFrontend/target</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="../../../../src.html">chiselFrontend/src</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../../../contents.html">Documentation overview</a><ul>
+  <li><a href="../../../../../chiselFrontend.html">chiselFrontend</a><ul>
+  <li><a href="../../../../src.html">chiselFrontend/src</a><ul>
+  <li><a href="../../../main.html">chiselFrontend/src/main</a><ul>
+  <li><a href="../../scala.html">chiselFrontend/src/main/scala</a><ul>
+  <li><a href="../chisel3.html">chiselFrontend/src/main/scala/chisel3</a><ul>
+      <li>Previous: <a href="../experimental/experimental.html" title="previous chapter">chiselFrontend/src/main/scala/chisel3/experimental</a></li>
+      <li>Next: <a href="firrtl/firrtl.html" title="next chapter">chiselFrontend/src/main/scala/chisel3/internal/firrtl</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, John Andrews.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../../../../../../_sources/chiselFrontend/src/main/scala/chisel3/internal/internal.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,2686 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>src/test/scala/chiselTests &#8212; chisel-test  documentation</title>
+    <link rel="stylesheet" href="../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <link rel="next" title="src/test/scala/chiselTests/experimental" href="experimental/experimental.html" />
+    <link rel="prev" title="src/test/scala/chisel3/stage/phases" href="../chisel3/stage/phases/phases.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="src-test-scala-chiseltests">
+<h1>src/test/scala/chiselTests<a class="headerlink" href="#src-test-scala-chiseltests" title="Permalink to this headline">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="experimental/experimental.html">src/test/scala/chiselTests/experimental</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="experimental/experimental.html#programmaticportsspec-scala">ProgrammaticPortsSpec.scala</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="util/util.html">src/test/scala/chiselTests/util</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="util/random/random.html">src/test/scala/chiselTests/util/random</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="util/random/random.html#prngspec-scala">PRNGSpec.scala</a></li>
+<li class="toctree-l3"><a class="reference internal" href="util/random/random.html#lfsrspec-scala">LFSRSpec.scala</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="stage/stage.html">src/test/scala/chiselTests/stage</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="stage/phases/phases.html">src/test/scala/chiselTests/stage/phases</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="stage/phases/phases.html#emitterspec-scala">EmitterSpec.scala</a></li>
+<li class="toctree-l3"><a class="reference internal" href="stage/phases/phases.html#addimplicitoutputfilespec-scala">AddImplicitOutputFileSpec.scala</a></li>
+<li class="toctree-l3"><a class="reference internal" href="stage/phases/phases.html#elaboratespec-scala">ElaborateSpec.scala</a></li>
+<li class="toctree-l3"><a class="reference internal" href="stage/phases/phases.html#checksspec-scala">ChecksSpec.scala</a></li>
+<li class="toctree-l3"><a class="reference internal" href="stage/phases/phases.html#addimplicitoutputannotationfilespec-scala">AddImplicitOutputAnnotationFileSpec.scala</a></li>
+<li class="toctree-l3"><a class="reference internal" href="stage/phases/phases.html#convertspec-scala">ConvertSpec.scala</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="stage/stage.html#chiselannotationsspec-scala">ChiselAnnotationsSpec.scala</a></li>
+<li class="toctree-l2"><a class="reference internal" href="stage/stage.html#chiseloptionsviewspec-scala">ChiselOptionsViewSpec.scala</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="decoder-scala">
+<h2>Decoder.scala<a class="headerlink" href="#decoder-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class Decoder(bitpats: List[String]) extends Module">
+<code class="descname">class Decoder(bitpats: List[String]) extends Module</code><a class="headerlink" href="#attr-class Decoder(bitpats: List[String]) extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class DecoderTester(pairs: List[(String, String)]) extends BasicTester">
+<code class="descname">class DecoderTester(pairs: List[(String, String)]) extends BasicTester</code><a class="headerlink" href="#attr-class DecoderTester(pairs: List[(String, String)]) extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class DecoderSpec extends ChiselPropSpec">
+<code class="descname">class DecoderSpec extends ChiselPropSpec</code><a class="headerlink" href="#attr-class DecoderSpec extends ChiselPropSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="complexassign-scala">
+<h2>ComplexAssign.scala<a class="headerlink" href="#complexassign-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class Complex[T &lt;: Data](val re: T, val im: T) extends Bundle">
+<code class="descname">class Complex[T &lt;: Data](val re: T, val im: T) extends Bundle</code><a class="headerlink" href="#attr-class Complex[T <: Data](val re: T, val im: T) extends Bundle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class ComplexAssign(w: Int) extends Module">
+<code class="descname">class ComplexAssign(w: Int) extends Module</code><a class="headerlink" href="#attr-class ComplexAssign(w: Int) extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class ComplexAssignTester(enList: List[Boolean], re: Int, im: Int) extends BasicTester">
+<code class="descname">class ComplexAssignTester(enList: List[Boolean], re: Int, im: Int) extends BasicTester</code><a class="headerlink" href="#attr-class ComplexAssignTester(enList: List[Boolean], re: Int, im: Int) extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class ComplexAssignSpec extends ChiselPropSpec">
+<code class="descname">class ComplexAssignSpec extends ChiselPropSpec</code><a class="headerlink" href="#attr-class ComplexAssignSpec extends ChiselPropSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="bitwiseops-scala">
+<h2>BitwiseOps.scala<a class="headerlink" href="#bitwiseops-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class BitwiseOpsTester(w: Int, _a: Int, _b: Int) extends BasicTester">
+<code class="descname">class BitwiseOpsTester(w: Int, _a: Int, _b: Int) extends BasicTester</code><a class="headerlink" href="#attr-class BitwiseOpsTester(w: Int, _a: Int, _b: Int) extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class BitwiseOpsSpec extends ChiselPropSpec">
+<code class="descname">class BitwiseOpsSpec extends ChiselPropSpec</code><a class="headerlink" href="#attr-class BitwiseOpsSpec extends ChiselPropSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="when-scala">
+<h2>When.scala<a class="headerlink" href="#when-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class WhenTester() extends BasicTester">
+<code class="descname">class WhenTester() extends BasicTester</code><a class="headerlink" href="#attr-class WhenTester() extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class OverlappedWhenTester() extends BasicTester">
+<code class="descname">class OverlappedWhenTester() extends BasicTester</code><a class="headerlink" href="#attr-class OverlappedWhenTester() extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class NoOtherwiseOverlappedWhenTester() extends BasicTester">
+<code class="descname">class NoOtherwiseOverlappedWhenTester() extends BasicTester</code><a class="headerlink" href="#attr-class NoOtherwiseOverlappedWhenTester() extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class SubmoduleWhenTester extends BasicTester">
+<code class="descname">class SubmoduleWhenTester extends BasicTester</code><a class="headerlink" href="#attr-class SubmoduleWhenTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class WhenSpec extends ChiselFlatSpec">
+<code class="descname">class WhenSpec extends ChiselFlatSpec</code><a class="headerlink" href="#attr-class WhenSpec extends ChiselFlatSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="moduleexplicitresetspec-scala">
+<h2>ModuleExplicitResetSpec.scala<a class="headerlink" href="#moduleexplicitresetspec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class ModuleExplicitResetSpec extends ChiselFlatSpec">
+<code class="descname">class ModuleExplicitResetSpec extends ChiselFlatSpec</code><a class="headerlink" href="#attr-class ModuleExplicitResetSpec extends ChiselFlatSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="mullookup-scala">
+<h2>MulLookup.scala<a class="headerlink" href="#mullookup-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class MulLookup(val w: Int) extends Module">
+<code class="descname">class MulLookup(val w: Int) extends Module</code><a class="headerlink" href="#attr-class MulLookup(val w: Int) extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class MulLookupTester(w: Int, x: Int, y: Int) extends BasicTester">
+<code class="descname">class MulLookupTester(w: Int, x: Int, y: Int) extends BasicTester</code><a class="headerlink" href="#attr-class MulLookupTester(w: Int, x: Int, y: Int) extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class MulLookupSpec extends ChiselPropSpec">
+<code class="descname">class MulLookupSpec extends ChiselPropSpec</code><a class="headerlink" href="#attr-class MulLookupSpec extends ChiselPropSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="assert-scala">
+<h2>Assert.scala<a class="headerlink" href="#assert-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class FailingAssertTester() extends BasicTester">
+<code class="descname">class FailingAssertTester() extends BasicTester</code><a class="headerlink" href="#attr-class FailingAssertTester() extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class SucceedingAssertTester() extends BasicTester">
+<code class="descname">class SucceedingAssertTester() extends BasicTester</code><a class="headerlink" href="#attr-class SucceedingAssertTester() extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class PipelinedResetModule extends Module">
+<code class="descname">class PipelinedResetModule extends Module</code><a class="headerlink" href="#attr-class PipelinedResetModule extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class PipelinedResetTester extends BasicTester">
+<code class="descname">class PipelinedResetTester extends BasicTester</code><a class="headerlink" href="#attr-class PipelinedResetTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class ModuloAssertTester extends BasicTester">
+<code class="descname">class ModuloAssertTester extends BasicTester</code><a class="headerlink" href="#attr-class ModuloAssertTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class FormattedAssertTester extends BasicTester">
+<code class="descname">class FormattedAssertTester extends BasicTester</code><a class="headerlink" href="#attr-class FormattedAssertTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class BadUnescapedPercentAssertTester extends BasicTester">
+<code class="descname">class BadUnescapedPercentAssertTester extends BasicTester</code><a class="headerlink" href="#attr-class BadUnescapedPercentAssertTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class AssertSpec extends ChiselFlatSpec">
+<code class="descname">class AssertSpec extends ChiselFlatSpec</code><a class="headerlink" href="#attr-class AssertSpec extends ChiselFlatSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="blackboximpl-scala">
+<h2>BlackBoxImpl.scala<a class="headerlink" href="#blackboximpl-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class BlackBoxAdd(n : Int) extends HasBlackBoxInline">
+<code class="descname">class BlackBoxAdd(n : Int) extends HasBlackBoxInline</code><a class="headerlink" href="#attr-class BlackBoxAdd(n : Int) extends HasBlackBoxInline" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class UsesBlackBoxAddViaInline extends Module">
+<code class="descname">class UsesBlackBoxAddViaInline extends Module</code><a class="headerlink" href="#attr-class UsesBlackBoxAddViaInline extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class BlackBoxMinus extends HasBlackBoxResource">
+<code class="descname">class BlackBoxMinus extends HasBlackBoxResource</code><a class="headerlink" href="#attr-class BlackBoxMinus extends HasBlackBoxResource" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class BlackBoxMinusPath extends HasBlackBoxPath">
+<code class="descname">class BlackBoxMinusPath extends HasBlackBoxPath</code><a class="headerlink" href="#attr-class BlackBoxMinusPath extends HasBlackBoxPath" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class UsesBlackBoxMinusViaResource extends Module">
+<code class="descname">class UsesBlackBoxMinusViaResource extends Module</code><a class="headerlink" href="#attr-class UsesBlackBoxMinusViaResource extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class UsesBlackBoxMinusViaPath extends Module">
+<code class="descname">class UsesBlackBoxMinusViaPath extends Module</code><a class="headerlink" href="#attr-class UsesBlackBoxMinusViaPath extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class BlackBoxImplSpec extends FreeSpec with Matchers">
+<code class="descname">class BlackBoxImplSpec extends FreeSpec with Matchers</code><a class="headerlink" href="#attr-class BlackBoxImplSpec extends FreeSpec with Matchers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="annotatingdiamondspec-scala">
+<h2>AnnotatingDiamondSpec.scala<a class="headerlink" href="#annotatingdiamondspec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-case class IdentityAnnotation(target: Named, value: String) extends SingleTargetAnnotation[Named]">
+<code class="descname">case class IdentityAnnotation(target: Named, value: String) extends SingleTargetAnnotation[Named]</code><a class="headerlink" href="#attr-case class IdentityAnnotation(target: Named, value: String) extends SingleTargetAnnotation[Named]" title="Permalink to this definition">¶</a></dt>
+<dd><p>These annotations and the IdentityTransform class serve as an example of how to write a Chisel/Firrtl library</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-case class IdentityChiselAnnotation(target: InstanceId, value: String) extends ChiselAnnotation with RunFirrtlTransform">
+<code class="descname">case class IdentityChiselAnnotation(target: InstanceId, value: String) extends ChiselAnnotation with RunFirrtlTransform</code><a class="headerlink" href="#attr-case class IdentityChiselAnnotation(target: InstanceId, value: String) extends ChiselAnnotation with RunFirrtlTransform" title="Permalink to this definition">¶</a></dt>
+<dd><p>ChiselAnnotation that corresponds to the above FIRRTL annotation</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-object identify">
+<code class="descname">object identify</code><a class="headerlink" href="#attr-object identify" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class IdentityTransform extends Transform">
+<code class="descname">class IdentityTransform extends Transform</code><a class="headerlink" href="#attr-class IdentityTransform extends Transform" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class ModC(widthC: Int) extends Module">
+<code class="descname">class ModC(widthC: Int) extends Module</code><a class="headerlink" href="#attr-class ModC(widthC: Int) extends Module" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>This class has parameterizable widths, it will generate different hardware</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Param widthC:</th><td class="field-body">io width</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-class ModA(annoParam: Int) extends Module">
+<code class="descname">class ModA(annoParam: Int) extends Module</code><a class="headerlink" href="#attr-class ModA(annoParam: Int) extends Module" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>instantiates a C of a particular size, ModA does not generate different hardware</div></blockquote>
+<p>based on it’s parameter</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name" colspan="2">Param annoParam:</th></tr>
+<tr class="field-odd field"><td>&#160;</td><td class="field-body">parameter is only used in annotation not in circuit</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-class ModB(widthB: Int) extends Module">
+<code class="descname">class ModB(widthB: Int) extends Module</code><a class="headerlink" href="#attr-class ModB(widthB: Int) extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class TopOfDiamond extends Module">
+<code class="descname">class TopOfDiamond extends Module</code><a class="headerlink" href="#attr-class TopOfDiamond extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class DiamondTester extends BasicTester">
+<code class="descname">class DiamondTester extends BasicTester</code><a class="headerlink" href="#attr-class DiamondTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class AnnotatingDiamondSpec extends FreeSpec with Matchers">
+<code class="descname">class AnnotatingDiamondSpec extends FreeSpec with Matchers</code><a class="headerlink" href="#attr-class AnnotatingDiamondSpec extends FreeSpec with Matchers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="reg-scala">
+<h2>Reg.scala<a class="headerlink" href="#reg-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class RegSpec extends ChiselFlatSpec">
+<code class="descname">class RegSpec extends ChiselFlatSpec</code><a class="headerlink" href="#attr-class RegSpec extends ChiselFlatSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class ShiftTester(n: Int) extends BasicTester">
+<code class="descname">class ShiftTester(n: Int) extends BasicTester</code><a class="headerlink" href="#attr-class ShiftTester(n: Int) extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class ShiftResetTester(n: Int) extends BasicTester">
+<code class="descname">class ShiftResetTester(n: Int) extends BasicTester</code><a class="headerlink" href="#attr-class ShiftResetTester(n: Int) extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class ShiftRegisterSpec extends ChiselPropSpec">
+<code class="descname">class ShiftRegisterSpec extends ChiselPropSpec</code><a class="headerlink" href="#attr-class ShiftRegisterSpec extends ChiselPropSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="uintops-scala">
+<h2>UIntOps.scala<a class="headerlink" href="#uintops-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class UIntOps extends Module">
+<code class="descname">class UIntOps extends Module</code><a class="headerlink" href="#attr-class UIntOps extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class UIntOpsTester(a: Long, b: Long) extends BasicTester">
+<code class="descname">class UIntOpsTester(a: Long, b: Long) extends BasicTester</code><a class="headerlink" href="#attr-class UIntOpsTester(a: Long, b: Long) extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class GoodBoolConversion extends Module">
+<code class="descname">class GoodBoolConversion extends Module</code><a class="headerlink" href="#attr-class GoodBoolConversion extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class BadBoolConversion extends Module">
+<code class="descname">class BadBoolConversion extends Module</code><a class="headerlink" href="#attr-class BadBoolConversion extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class NegativeShift(t: =&gt; Bits) extends Module">
+<code class="descname">class NegativeShift(t: =&gt; Bits) extends Module</code><a class="headerlink" href="#attr-class NegativeShift(t: => Bits) extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class UIntLitExtractTester extends BasicTester">
+<code class="descname">class UIntLitExtractTester extends BasicTester</code><a class="headerlink" href="#attr-class UIntLitExtractTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class UIntOpsSpec extends ChiselPropSpec with Matchers">
+<code class="descname">class UIntOpsSpec extends ChiselPropSpec with Matchers</code><a class="headerlink" href="#attr-class UIntOpsSpec extends ChiselPropSpec with Matchers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="implicitconversionsspec-scala">
+<h2>ImplicitConversionsSpec.scala<a class="headerlink" href="#implicitconversionsspec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class ImplicitConversionsSpec extends ChiselFlatSpec">
+<code class="descname">class ImplicitConversionsSpec extends ChiselFlatSpec</code><a class="headerlink" href="#attr-class ImplicitConversionsSpec extends ChiselFlatSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="bundlewire-scala">
+<h2>BundleWire.scala<a class="headerlink" href="#bundlewire-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class Coord extends Bundle">
+<code class="descname">class Coord extends Bundle</code><a class="headerlink" href="#attr-class Coord extends Bundle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class BundleWire(n: Int) extends Module">
+<code class="descname">class BundleWire(n: Int) extends Module</code><a class="headerlink" href="#attr-class BundleWire(n: Int) extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class BundleToUnitTester extends BasicTester">
+<code class="descname">class BundleToUnitTester extends BasicTester</code><a class="headerlink" href="#attr-class BundleToUnitTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class BundleWireTester(n: Int, x: Int, y: Int) extends BasicTester">
+<code class="descname">class BundleWireTester(n: Int, x: Int, y: Int) extends BasicTester</code><a class="headerlink" href="#attr-class BundleWireTester(n: Int, x: Int, y: Int) extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class BundleWireSpec extends ChiselPropSpec">
+<code class="descname">class BundleWireSpec extends ChiselPropSpec</code><a class="headerlink" href="#attr-class BundleWireSpec extends ChiselPropSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class BundleToUIntSpec extends ChiselPropSpec">
+<code class="descname">class BundleToUIntSpec extends ChiselPropSpec</code><a class="headerlink" href="#attr-class BundleToUIntSpec extends ChiselPropSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="wirespec-scala">
+<h2>WireSpec.scala<a class="headerlink" href="#wirespec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class WireSpec extends ChiselFlatSpec">
+<code class="descname">class WireSpec extends ChiselFlatSpec</code><a class="headerlink" href="#attr-class WireSpec extends ChiselFlatSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="connectspec-scala">
+<h2>ConnectSpec.scala<a class="headerlink" href="#connectspec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-abstract class CrossCheck extends Bundle">
+<code class="descname">abstract class CrossCheck extends Bundle</code><a class="headerlink" href="#attr-abstract class CrossCheck extends Bundle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class CrossConnects(inType: Data, outType: Data) extends Module">
+<code class="descname">class CrossConnects(inType: Data, outType: Data) extends Module</code><a class="headerlink" href="#attr-class CrossConnects(inType: Data, outType: Data) extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class PipeInternalWires extends Module">
+<code class="descname">class PipeInternalWires extends Module</code><a class="headerlink" href="#attr-class PipeInternalWires extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class CrossConnectTester(inType: Data, outType: Data) extends BasicTester">
+<code class="descname">class CrossConnectTester(inType: Data, outType: Data) extends BasicTester</code><a class="headerlink" href="#attr-class CrossConnectTester(inType: Data, outType: Data) extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class ConnectSpec extends ChiselPropSpec">
+<code class="descname">class ConnectSpec extends ChiselPropSpec</code><a class="headerlink" href="#attr-class ConnectSpec extends ChiselPropSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="astypeoftester-scala">
+<h2>AsTypeOfTester.scala<a class="headerlink" href="#astypeoftester-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class AsTypeOfBundleTester extends BasicTester">
+<code class="descname">class AsTypeOfBundleTester extends BasicTester</code><a class="headerlink" href="#attr-class AsTypeOfBundleTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class AsTypeOfBundleZeroWidthTester extends BasicTester">
+<code class="descname">class AsTypeOfBundleZeroWidthTester extends BasicTester</code><a class="headerlink" href="#attr-class AsTypeOfBundleZeroWidthTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class AsTypeOfVecTester extends BasicTester">
+<code class="descname">class AsTypeOfVecTester extends BasicTester</code><a class="headerlink" href="#attr-class AsTypeOfVecTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class AsTypeOfTruncationTester extends BasicTester">
+<code class="descname">class AsTypeOfTruncationTester extends BasicTester</code><a class="headerlink" href="#attr-class AsTypeOfTruncationTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class ResetAsTypeOfBoolTester extends BasicTester">
+<code class="descname">class ResetAsTypeOfBoolTester extends BasicTester</code><a class="headerlink" href="#attr-class ResetAsTypeOfBoolTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class AsChiselEnumTester extends BasicTester">
+<code class="descname">class AsChiselEnumTester extends BasicTester</code><a class="headerlink" href="#attr-class AsChiselEnumTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class AsTypeOfSpec extends ChiselFlatSpec">
+<code class="descname">class AsTypeOfSpec extends ChiselFlatSpec</code><a class="headerlink" href="#attr-class AsTypeOfSpec extends ChiselFlatSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="missingclonebindingexceptionspec-scala">
+<h2>MissingCloneBindingExceptionSpec.scala<a class="headerlink" href="#missingclonebindingexceptionspec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class MissingCloneBindingExceptionSpec extends ChiselFlatSpec with Matchers">
+<code class="descname">class MissingCloneBindingExceptionSpec extends ChiselFlatSpec with Matchers</code><a class="headerlink" href="#attr-class MissingCloneBindingExceptionSpec extends ChiselFlatSpec with Matchers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="invalidateapispec-scala">
+<h2>InvalidateAPISpec.scala<a class="headerlink" href="#invalidateapispec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompilationUtilities">
+<code class="descname">class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompilationUtilities</code><a class="headerlink" href="#attr-class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompilationUtilities" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="driverspec-scala">
+<h2>DriverSpec.scala<a class="headerlink" href="#driverspec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class DummyModule extends Module">
+<code class="descname">class DummyModule extends Module</code><a class="headerlink" href="#attr-class DummyModule extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class DriverSpec extends FreeSpec with Matchers">
+<code class="descname">class DriverSpec extends FreeSpec with Matchers</code><a class="headerlink" href="#attr-class DriverSpec extends FreeSpec with Matchers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="betternamingtests-scala">
+<h2>BetterNamingTests.scala<a class="headerlink" href="#betternamingtests-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class Other(w: Int) extends Module">
+<code class="descname">class Other(w: Int) extends Module</code><a class="headerlink" href="#attr-class Other(w: Int) extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class PerNameIndexing(count: Int) extends NamedModuleTester">
+<code class="descname">class PerNameIndexing(count: Int) extends NamedModuleTester</code><a class="headerlink" href="#attr-class PerNameIndexing(count: Int) extends NamedModuleTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class IterableNaming extends NamedModuleTester">
+<code class="descname">class IterableNaming extends NamedModuleTester</code><a class="headerlink" href="#attr-class IterableNaming extends NamedModuleTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class DigitFieldNamesInRecord extends NamedModuleTester">
+<code class="descname">class DigitFieldNamesInRecord extends NamedModuleTester</code><a class="headerlink" href="#attr-class DigitFieldNamesInRecord extends NamedModuleTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class BetterNamingTests extends ChiselFlatSpec">
+<code class="descname">class BetterNamingTests extends ChiselFlatSpec</code><a class="headerlink" href="#attr-class BetterNamingTests extends ChiselFlatSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="switchspec-scala">
+<h2>SwitchSpec.scala<a class="headerlink" href="#switchspec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class SwitchSpec extends ChiselFlatSpec">
+<code class="descname">class SwitchSpec extends ChiselFlatSpec</code><a class="headerlink" href="#attr-class SwitchSpec extends ChiselFlatSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="printablespec-scala">
+<h2>PrintableSpec.scala<a class="headerlink" href="#printablespec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class PrintableSpec extends FlatSpec with Matchers">
+<code class="descname">class PrintableSpec extends FlatSpec with Matchers</code><a class="headerlink" href="#attr-class PrintableSpec extends FlatSpec with Matchers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="vec-scala">
+<h2>Vec.scala<a class="headerlink" href="#vec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class LitTesterMod(vecSize: Int) extends Module">
+<code class="descname">class LitTesterMod(vecSize: Int) extends Module</code><a class="headerlink" href="#attr-class LitTesterMod(vecSize: Int) extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class RegTesterMod(vecSize: Int) extends Module">
+<code class="descname">class RegTesterMod(vecSize: Int) extends Module</code><a class="headerlink" href="#attr-class RegTesterMod(vecSize: Int) extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class IOTesterMod(vecSize: Int) extends Module">
+<code class="descname">class IOTesterMod(vecSize: Int) extends Module</code><a class="headerlink" href="#attr-class IOTesterMod(vecSize: Int) extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class OneBitUnitRegVec extends Module">
+<code class="descname">class OneBitUnitRegVec extends Module</code><a class="headerlink" href="#attr-class OneBitUnitRegVec extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class LitTester(w: Int, values: List[Int]) extends BasicTester">
+<code class="descname">class LitTester(w: Int, values: List[Int]) extends BasicTester</code><a class="headerlink" href="#attr-class LitTester(w: Int, values: List[Int]) extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class RegTester(w: Int, values: List[Int]) extends BasicTester">
+<code class="descname">class RegTester(w: Int, values: List[Int]) extends BasicTester</code><a class="headerlink" href="#attr-class RegTester(w: Int, values: List[Int]) extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class IOTester(w: Int, values: List[Int]) extends BasicTester">
+<code class="descname">class IOTester(w: Int, values: List[Int]) extends BasicTester</code><a class="headerlink" href="#attr-class IOTester(w: Int, values: List[Int]) extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class IOTesterModFill(vecSize: Int) extends Module">
+<code class="descname">class IOTesterModFill(vecSize: Int) extends Module</code><a class="headerlink" href="#attr-class IOTesterModFill(vecSize: Int) extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class ValueTester(w: Int, values: List[Int]) extends BasicTester">
+<code class="descname">class ValueTester(w: Int, values: List[Int]) extends BasicTester</code><a class="headerlink" href="#attr-class ValueTester(w: Int, values: List[Int]) extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class TabulateTester(n: Int) extends BasicTester">
+<code class="descname">class TabulateTester(n: Int) extends BasicTester</code><a class="headerlink" href="#attr-class TabulateTester(n: Int) extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class ShiftRegisterTester(n: Int) extends BasicTester">
+<code class="descname">class ShiftRegisterTester(n: Int) extends BasicTester</code><a class="headerlink" href="#attr-class ShiftRegisterTester(n: Int) extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class HugeVecTester(n: Int) extends BasicTester">
+<code class="descname">class HugeVecTester(n: Int) extends BasicTester</code><a class="headerlink" href="#attr-class HugeVecTester(n: Int) extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class OneBitUnitRegVecTester extends BasicTester">
+<code class="descname">class OneBitUnitRegVecTester extends BasicTester</code><a class="headerlink" href="#attr-class OneBitUnitRegVecTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class ZeroEntryVecTester extends BasicTester">
+<code class="descname">class ZeroEntryVecTester extends BasicTester</code><a class="headerlink" href="#attr-class ZeroEntryVecTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class PassthroughModuleTester extends Module">
+<code class="descname">class PassthroughModuleTester extends Module</code><a class="headerlink" href="#attr-class PassthroughModuleTester extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class ModuleIODynamicIndexTester(n: Int) extends BasicTester">
+<code class="descname">class ModuleIODynamicIndexTester(n: Int) extends BasicTester</code><a class="headerlink" href="#attr-class ModuleIODynamicIndexTester(n: Int) extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class VecSpec extends ChiselPropSpec">
+<code class="descname">class VecSpec extends ChiselPropSpec</code><a class="headerlink" href="#attr-class VecSpec extends ChiselPropSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="dataprint-scala">
+<h2>DataPrint.scala<a class="headerlink" href="#dataprint-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class DataPrintSpec extends ChiselFlatSpec with Matchers">
+<code class="descname">class DataPrintSpec extends ChiselFlatSpec with Matchers</code><a class="headerlink" href="#attr-class DataPrintSpec extends ChiselFlatSpec with Matchers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="vectorpacketio-scala">
+<h2>VectorPacketIO.scala<a class="headerlink" href="#vectorpacketio-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class Packet extends Bundle">
+<code class="descname">class Packet extends Bundle</code><a class="headerlink" href="#attr-class Packet extends Bundle" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>This test used to fail when assignment statements were</div></blockquote>
+<p>contained in DeqIO and EnqIO constructors.
+The symptom is creation of a firrtl file
+with missing declarations, the problem is exposed by
+the creation of the val outs in VectorPacketIO</p>
+<p>NOTE: The problem does not exist now because the initialization
+code has been removed from DeqIO and EnqIO</p>
+<p>IMPORTANT:  The canonical way to initialize a decoupled inteface is still being debated.</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-class VectorPacketIO(val n: Int) extends Bundle">
+<code class="descname">class VectorPacketIO(val n: Int) extends Bundle</code><a class="headerlink" href="#attr-class VectorPacketIO(val n: Int) extends Bundle" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>The problem occurs with just the ins or the outs</div></blockquote>
+<p>lines also.
+The problem does not occur if the Vec is taken out</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-class BrokenVectorPacketModule extends Module">
+<code class="descname">class BrokenVectorPacketModule extends Module</code><a class="headerlink" href="#attr-class BrokenVectorPacketModule extends Module" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>a module uses the vector based IO bundle</div></blockquote>
+<p>the value of n does not affect the error</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-class VectorPacketIOUnitTester extends BasicTester">
+<code class="descname">class VectorPacketIOUnitTester extends BasicTester</code><a class="headerlink" href="#attr-class VectorPacketIOUnitTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class VectorPacketIOUnitTesterSpec extends ChiselFlatSpec">
+<code class="descname">class VectorPacketIOUnitTesterSpec extends ChiselFlatSpec</code><a class="headerlink" href="#attr-class VectorPacketIOUnitTesterSpec extends ChiselFlatSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="bundlespec-scala">
+<h2>BundleSpec.scala<a class="headerlink" href="#bundlespec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-trait BundleSpecUtils">
+<code class="descname">trait BundleSpecUtils</code><a class="headerlink" href="#attr-trait BundleSpecUtils" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class BundleSpec extends ChiselFlatSpec with BundleSpecUtils">
+<code class="descname">class BundleSpec extends ChiselFlatSpec with BundleSpecUtils</code><a class="headerlink" href="#attr-class BundleSpec extends ChiselFlatSpec with BundleSpecUtils" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="transitnamespec-scala">
+<h2>TransitNameSpec.scala<a class="headerlink" href="#transitnamespec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class TransitNameSpec extends FlatSpec with Matchers">
+<code class="descname">class TransitNameSpec extends FlatSpec with Matchers</code><a class="headerlink" href="#attr-class TransitNameSpec extends FlatSpec with Matchers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class Top extends RawModule">
+<code class="descname">class Top extends RawModule</code><a class="headerlink" href="#attr-class Top extends RawModule" title="Permalink to this definition">¶</a></dt>
+<dd><p>A top-level module that instantiates three copies of MyModule</p>
+</dd></dl>
+
+</div>
+<div class="section" id="widthspec-scala">
+<h2>WidthSpec.scala<a class="headerlink" href="#widthspec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class SimpleBundle extends Bundle">
+<code class="descname">class SimpleBundle extends Bundle</code><a class="headerlink" href="#attr-class SimpleBundle extends Bundle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-object SimpleBundle">
+<code class="descname">object SimpleBundle</code><a class="headerlink" href="#attr-object SimpleBundle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class WidthSpec extends ChiselFlatSpec">
+<code class="descname">class WidthSpec extends ChiselFlatSpec</code><a class="headerlink" href="#attr-class WidthSpec extends ChiselFlatSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-abstract class WireRegWidthSpecImpl extends ChiselFlatSpec">
+<code class="descname">abstract class WireRegWidthSpecImpl extends ChiselFlatSpec</code><a class="headerlink" href="#attr-abstract class WireRegWidthSpecImpl extends ChiselFlatSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class WireWidthSpec extends WireRegWidthSpecImpl">
+<code class="descname">class WireWidthSpec extends WireRegWidthSpecImpl</code><a class="headerlink" href="#attr-class WireWidthSpec extends WireRegWidthSpecImpl" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class RegWidthSpec extends WireRegWidthSpecImpl">
+<code class="descname">class RegWidthSpec extends WireRegWidthSpecImpl</code><a class="headerlink" href="#attr-class RegWidthSpec extends WireRegWidthSpecImpl" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-abstract class WireDefaultRegInitSpecImpl extends ChiselFlatSpec">
+<code class="descname">abstract class WireDefaultRegInitSpecImpl extends ChiselFlatSpec</code><a class="headerlink" href="#attr-abstract class WireDefaultRegInitSpecImpl extends ChiselFlatSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class WireDefaultWidthSpec extends WireDefaultRegInitSpecImpl">
+<code class="descname">class WireDefaultWidthSpec extends WireDefaultRegInitSpecImpl</code><a class="headerlink" href="#attr-class WireDefaultWidthSpec extends WireDefaultRegInitSpecImpl" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class RegInitWidthSpec extends WireDefaultRegInitSpecImpl">
+<code class="descname">class RegInitWidthSpec extends WireDefaultRegInitSpecImpl</code><a class="headerlink" href="#attr-class RegInitWidthSpec extends WireDefaultRegInitSpecImpl" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="bundleliteralspec-scala">
+<h2>BundleLiteralSpec.scala<a class="headerlink" href="#bundleliteralspec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class BundleLiteralSpec extends ChiselFlatSpec">
+<code class="descname">class BundleLiteralSpec extends ChiselFlatSpec</code><a class="headerlink" href="#attr-class BundleLiteralSpec extends ChiselFlatSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="compatibilityspec-scala">
+<h2>CompatibilitySpec.scala<a class="headerlink" href="#compatibilityspec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks">
+<code class="descname">class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks</code><a class="headerlink" href="#attr-class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="parameterizedmodule-scala">
+<h2>ParameterizedModule.scala<a class="headerlink" href="#parameterizedmodule-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class ParameterizedModule(invert: Boolean) extends Module">
+<code class="descname">class ParameterizedModule(invert: Boolean) extends Module</code><a class="headerlink" href="#attr-class ParameterizedModule(invert: Boolean) extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class ParameterizedModuleTester() extends BasicTester">
+<code class="descname">class ParameterizedModuleTester() extends BasicTester</code><a class="headerlink" href="#attr-class ParameterizedModuleTester() extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd><p>A simple test to check Module deduplication doesn’t affect correctness (two     modules with the same name but different contents aren’t aliased). Doesn’t
+check that deduplication actually happens, though.</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-class ParameterizedModuleSpec extends ChiselFlatSpec">
+<code class="descname">class ParameterizedModuleSpec extends ChiselFlatSpec</code><a class="headerlink" href="#attr-class ParameterizedModuleSpec extends ChiselFlatSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="fixedpointspec-scala">
+<h2>FixedPointSpec.scala<a class="headerlink" href="#fixedpointspec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class FixedPointLiteralSpec extends FlatSpec with Matchers">
+<code class="descname">class FixedPointLiteralSpec extends FlatSpec with Matchers</code><a class="headerlink" href="#attr-class FixedPointLiteralSpec extends FlatSpec with Matchers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class FixedPointFromBitsTester extends BasicTester">
+<code class="descname">class FixedPointFromBitsTester extends BasicTester</code><a class="headerlink" href="#attr-class FixedPointFromBitsTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class FixedPointMuxTester extends BasicTester">
+<code class="descname">class FixedPointMuxTester extends BasicTester</code><a class="headerlink" href="#attr-class FixedPointMuxTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class SBP extends Module">
+<code class="descname">class SBP extends Module</code><a class="headerlink" href="#attr-class SBP extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class SBPTester extends BasicTester">
+<code class="descname">class SBPTester extends BasicTester</code><a class="headerlink" href="#attr-class SBPTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class FixedPointLitExtractTester extends BasicTester">
+<code class="descname">class FixedPointLitExtractTester extends BasicTester</code><a class="headerlink" href="#attr-class FixedPointLitExtractTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class FixedPointSpec extends ChiselPropSpec">
+<code class="descname">class FixedPointSpec extends ChiselPropSpec</code><a class="headerlink" href="#attr-class FixedPointSpec extends ChiselPropSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="risc-scala">
+<h2>Risc.scala<a class="headerlink" href="#risc-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class Risc extends Module">
+<code class="descname">class Risc extends Module</code><a class="headerlink" href="#attr-class Risc extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class RiscTester(c: Risc) extends Tester(c)">
+<code class="descname">class RiscTester(c: Risc) extends Tester(c)</code><a class="headerlink" href="#attr-class RiscTester(c: Risc) extends Tester(c)" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class RiscSpec extends ChiselPropSpec">
+<code class="descname">class RiscSpec extends ChiselPropSpec</code><a class="headerlink" href="#attr-class RiscSpec extends ChiselPropSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="analogintegrationspec-scala">
+<h2>AnalogIntegrationSpec.scala<a class="headerlink" href="#analogintegrationspec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class AnalogBlackBoxPort extends Bundle">
+<code class="descname">class AnalogBlackBoxPort extends Bundle</code><a class="headerlink" href="#attr-class AnalogBlackBoxPort extends Bundle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class AnalogBlackBoxIO(val n: Int) extends Bundle">
+<code class="descname">class AnalogBlackBoxIO(val n: Int) extends Bundle</code><a class="headerlink" href="#attr-class AnalogBlackBoxIO(val n: Int) extends Bundle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class AnalogBlackBox(index: Int) extends BlackBox(Map(&quot;index&quot; -&gt; index))">
+<code class="descname">class AnalogBlackBox(index: Int) extends BlackBox(Map(&quot;index&quot; -&gt; index))</code><a class="headerlink" href="#attr-class AnalogBlackBox(index: Int) extends BlackBox(Map("index" -> index))" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class AnalogBlackBoxModule(index: Int) extends Module">
+<code class="descname">class AnalogBlackBoxModule(index: Int) extends Module</code><a class="headerlink" href="#attr-class AnalogBlackBoxModule(index: Int) extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class AnalogBlackBoxWrapper(n: Int, idxs: Seq[Int]) extends Module">
+<code class="descname">class AnalogBlackBoxWrapper(n: Int, idxs: Seq[Int]) extends Module</code><a class="headerlink" href="#attr-class AnalogBlackBoxWrapper(n: Int, idxs: Seq[Int]) extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-abstract class AnalogDUTModule(numBlackBoxes: Int) extends Module">
+<code class="descname">abstract class AnalogDUTModule(numBlackBoxes: Int) extends Module</code><a class="headerlink" href="#attr-abstract class AnalogDUTModule(numBlackBoxes: Int) extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class AnalogDUT extends AnalogDUTModule(5)">
+<code class="descname">class AnalogDUT extends AnalogDUTModule(5)</code><a class="headerlink" href="#attr-class AnalogDUT extends AnalogDUTModule(5)" title="Permalink to this definition">¶</a></dt>
+<dd><p>Single test case for lots of things
+$ - Wire at top connecting child inouts (Done in AnalogDUT)
+$ - Port inout connected to 1 or more children inouts (AnalogBackBoxWrapper)
+$ - Multiple port inouts connected (AnalogConnector)</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-class AnalogSmallDUT extends AnalogDUTModule(4)">
+<code class="descname">class AnalogSmallDUT extends AnalogDUTModule(4)</code><a class="headerlink" href="#attr-class AnalogSmallDUT extends AnalogDUTModule(4)" title="Permalink to this definition">¶</a></dt>
+<dd><p>Same as <a class="reference internal" href="#attr-abstract class AnalogDUTModule(numBlackBoxes: Int) extends Module" title="attr-abstract class AnalogDUTModule(numBlackBoxes: Int) extends Module"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">AnalogDUT</span></code></a>  except it omits <a class="reference internal" href="#attr-class AnalogConnector extends Module" title="attr-class AnalogConnector extends Module"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">AnalogConnector</span></code></a>  because that is currently not       supported by Verilator
+&#64;todo Delete once Verilator can handle <a class="reference internal" href="#attr-abstract class AnalogDUTModule(numBlackBoxes: Int) extends Module" title="attr-abstract class AnalogDUTModule(numBlackBoxes: Int) extends Module"><code class="xref chisel chisel-reref docutils literal notranslate"><span class="pre">AnalogDUT</span></code></a></p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-class AnalogIntegrationTester(mod: =&gt; AnalogDUTModule) extends BasicTester">
+<code class="descname">class AnalogIntegrationTester(mod: =&gt; AnalogDUTModule) extends BasicTester</code><a class="headerlink" href="#attr-class AnalogIntegrationTester(mod: => AnalogDUTModule) extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class AnalogIntegrationSpec extends ChiselFlatSpec">
+<code class="descname">class AnalogIntegrationSpec extends ChiselFlatSpec</code><a class="headerlink" href="#attr-class AnalogIntegrationSpec extends ChiselFlatSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="compileoptionstest-scala">
+<h2>CompileOptionsTest.scala<a class="headerlink" href="#compileoptionstest-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class CompileOptionsSpec extends ChiselFlatSpec">
+<code class="descname">class CompileOptionsSpec extends ChiselFlatSpec</code><a class="headerlink" href="#attr-class CompileOptionsSpec extends ChiselFlatSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="inlinespec-scala">
+<h2>InlineSpec.scala<a class="headerlink" href="#inlinespec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class InlineSpec extends FreeSpec with ChiselRunners with Matchers">
+<code class="descname">class InlineSpec extends FreeSpec with ChiselRunners with Matchers</code><a class="headerlink" href="#attr-class InlineSpec extends FreeSpec with ChiselRunners with Matchers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="mixedvecspec-scala">
+<h2>MixedVecSpec.scala<a class="headerlink" href="#mixedvecspec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class MixedVecAssignTester(w: Int, values: List[Int]) extends BasicTester">
+<code class="descname">class MixedVecAssignTester(w: Int, values: List[Int]) extends BasicTester</code><a class="headerlink" href="#attr-class MixedVecAssignTester(w: Int, values: List[Int]) extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class MixedVecRegTester(w: Int, values: List[Int]) extends BasicTester">
+<code class="descname">class MixedVecRegTester(w: Int, values: List[Int]) extends BasicTester</code><a class="headerlink" href="#attr-class MixedVecRegTester(w: Int, values: List[Int]) extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class MixedVecIOPassthroughModule[T &lt;: Data](hvec: MixedVec[T]) extends Module">
+<code class="descname">class MixedVecIOPassthroughModule[T &lt;: Data](hvec: MixedVec[T]) extends Module</code><a class="headerlink" href="#attr-class MixedVecIOPassthroughModule[T <: Data](hvec: MixedVec[T]) extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class MixedVecIOTester(boundVals: Seq[Data]) extends BasicTester">
+<code class="descname">class MixedVecIOTester(boundVals: Seq[Data]) extends BasicTester</code><a class="headerlink" href="#attr-class MixedVecIOTester(boundVals: Seq[Data]) extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class MixedVecZeroEntryTester extends BasicTester">
+<code class="descname">class MixedVecZeroEntryTester extends BasicTester</code><a class="headerlink" href="#attr-class MixedVecZeroEntryTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class MixedVecUIntDynamicIndexTester extends BasicTester">
+<code class="descname">class MixedVecUIntDynamicIndexTester extends BasicTester</code><a class="headerlink" href="#attr-class MixedVecUIntDynamicIndexTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class MixedVecTestBundle extends Bundle">
+<code class="descname">class MixedVecTestBundle extends Bundle</code><a class="headerlink" href="#attr-class MixedVecTestBundle extends Bundle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class MixedVecSmallTestBundle extends Bundle">
+<code class="descname">class MixedVecSmallTestBundle extends Bundle</code><a class="headerlink" href="#attr-class MixedVecSmallTestBundle extends Bundle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class MixedVecFromVecTester extends BasicTester">
+<code class="descname">class MixedVecFromVecTester extends BasicTester</code><a class="headerlink" href="#attr-class MixedVecFromVecTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class MixedVecConnectWithVecTester extends BasicTester">
+<code class="descname">class MixedVecConnectWithVecTester extends BasicTester</code><a class="headerlink" href="#attr-class MixedVecConnectWithVecTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class MixedVecConnectWithSeqTester extends BasicTester">
+<code class="descname">class MixedVecConnectWithSeqTester extends BasicTester</code><a class="headerlink" href="#attr-class MixedVecConnectWithSeqTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class MixedVecOneBitTester extends BasicTester">
+<code class="descname">class MixedVecOneBitTester extends BasicTester</code><a class="headerlink" href="#attr-class MixedVecOneBitTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class MixedVecSpec extends ChiselPropSpec">
+<code class="descname">class MixedVecSpec extends ChiselPropSpec</code><a class="headerlink" href="#attr-class MixedVecSpec extends ChiselPropSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="recordspec-scala">
+<h2>RecordSpec.scala<a class="headerlink" href="#recordspec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-final class CustomBundle(elts: (String, Data)*) extends Record">
+<code class="descname">final class CustomBundle(elts: (String, Data)*) extends Record</code><a class="headerlink" href="#attr-final class CustomBundle(elts: (String, Data)*) extends Record" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-trait RecordSpecUtils">
+<code class="descname">trait RecordSpecUtils</code><a class="headerlink" href="#attr-trait RecordSpecUtils" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class RecordSpec extends ChiselFlatSpec with RecordSpecUtils">
+<code class="descname">class RecordSpec extends ChiselFlatSpec with RecordSpecUtils</code><a class="headerlink" href="#attr-class RecordSpec extends ChiselFlatSpec with RecordSpecUtils" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="chiselspec-scala">
+<h2>ChiselSpec.scala<a class="headerlink" href="#chiselspec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-trait ChiselRunners extends Assertions with BackendCompilationUtilities">
+<code class="descname">trait ChiselRunners extends Assertions with BackendCompilationUtilities</code><a class="headerlink" href="#attr-trait ChiselRunners extends Assertions with BackendCompilationUtilities" title="Permalink to this definition">¶</a></dt>
+<dd><p>Common utility functions for Chisel unit tests.</p>
+<dl class="attr">
+<dt id="attr-def generateFirrtl(t: =&gt; RawModule): String">
+<code class="descname">def generateFirrtl(t: =&gt; RawModule): String</code><a class="headerlink" href="#attr-def generateFirrtl(t: => RawModule): String" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a generator, return the Firrtl that it generates.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Param t:</th><td class="field-body">Module generator</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return:</th><td class="field-body">Firrtl representation as a String</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-def compile(t: =&gt; RawModule): String =">
+<code class="descname">def compile(t: =&gt; RawModule): String =</code><a class="headerlink" href="#attr-def compile(t: => RawModule): String =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compiles a Chisel Module to Verilog     NOTE: This uses the “test_run_dir” as the default directory for generated code.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Param t:</th><td class="field-body">the generator for the module</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return:</th><td class="field-body">the Verilog code as a string.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-abstract class ChiselFlatSpec extends FlatSpec with ChiselRunners with Matchers">
+<code class="descname">abstract class ChiselFlatSpec extends FlatSpec with ChiselRunners with Matchers</code><a class="headerlink" href="#attr-abstract class ChiselFlatSpec extends FlatSpec with ChiselRunners with Matchers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Spec base class for BDD-style testers.</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-abstract class ChiselFlatSpec extends FlatSpec with ChiselRunners with Matchers  class ChiselTestUtilitiesSpec extends ChiselFlatSpec">
+<code class="descname">abstract class ChiselFlatSpec extends FlatSpec with ChiselRunners with Matchers  class ChiselTestUtilitiesSpec extends ChiselFlatSpec</code><a class="headerlink" href="#attr-abstract class ChiselFlatSpec extends FlatSpec with ChiselRunners with Matchers  class ChiselTestUtilitiesSpec extends ChiselFlatSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class ChiselTestUtilitiesSpec extends ChiselFlatSpec">
+<code class="descname">class ChiselTestUtilitiesSpec extends ChiselFlatSpec</code><a class="headerlink" href="#attr-class ChiselTestUtilitiesSpec extends ChiselFlatSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class ChiselPropSpec extends PropSpec with ChiselRunners with PropertyChecks with Matchers">
+<code class="descname">class ChiselPropSpec extends PropSpec with ChiselRunners with PropertyChecks with Matchers</code><a class="headerlink" href="#attr-class ChiselPropSpec extends PropSpec with ChiselRunners with PropertyChecks with Matchers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Spec base class for property-based testers.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="clonemodulespec-scala">
+<h2>CloneModuleSpec.scala<a class="headerlink" href="#clonemodulespec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class MultiIOQueue[T &lt;: Data](gen: T, val entries: Int) extends MultiIOModule">
+<code class="descname">class MultiIOQueue[T &lt;: Data](gen: T, val entries: Int) extends MultiIOModule</code><a class="headerlink" href="#attr-class MultiIOQueue[T <: Data](gen: T, val entries: Int) extends MultiIOModule" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class QueueClone(multiIO: Boolean">
+<code class="descname">class QueueClone(multiIO: Boolean</code><a class="headerlink" href="#attr-class QueueClone(multiIO: Boolean" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class QueueCloneTester(x: Int, multiIO: Boolean">
+<code class="descname">class QueueCloneTester(x: Int, multiIO: Boolean</code><a class="headerlink" href="#attr-class QueueCloneTester(x: Int, multiIO: Boolean" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class CloneModuleSpec extends ChiselPropSpec">
+<code class="descname">class CloneModuleSpec extends ChiselPropSpec</code><a class="headerlink" href="#attr-class CloneModuleSpec extends ChiselPropSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="multiclockspec-scala">
+<h2>MultiClockSpec.scala<a class="headerlink" href="#multiclockspec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class ClockDividerTest extends BasicTester">
+<code class="descname">class ClockDividerTest extends BasicTester</code><a class="headerlink" href="#attr-class ClockDividerTest extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd><p>Multi-clock test of a Reg using a different clock via withClock</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-class MultiClockSubModuleTest extends BasicTester">
+<code class="descname">class MultiClockSubModuleTest extends BasicTester</code><a class="headerlink" href="#attr-class MultiClockSubModuleTest extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class WithResetTest extends BasicTester">
+<code class="descname">class WithResetTest extends BasicTester</code><a class="headerlink" href="#attr-class WithResetTest extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd><p>Test withReset changing the reset of a Reg</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-class MultiClockMemTest extends BasicTester">
+<code class="descname">class MultiClockMemTest extends BasicTester</code><a class="headerlink" href="#attr-class MultiClockMemTest extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd><p>Test Mem ports with different clocks</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-class MultiClockSpec extends ChiselFlatSpec">
+<code class="descname">class MultiClockSpec extends ChiselFlatSpec</code><a class="headerlink" href="#attr-class MultiClockSpec extends ChiselFlatSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="compatibilityinteroperabilityspec-scala">
+<h2>CompatibilityInteroperabilitySpec.scala<a class="headerlink" href="#compatibilityinteroperabilityspec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-object CompatibilityComponents">
+<code class="descname">object CompatibilityComponents</code><a class="headerlink" href="#attr-object CompatibilityComponents" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-object Chisel3Components">
+<code class="descname">object Chisel3Components</code><a class="headerlink" href="#attr-object Chisel3Components" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec">
+<code class="descname">class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec</code><a class="headerlink" href="#attr-class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="dedupspec-scala">
+<h2>DedupSpec.scala<a class="headerlink" href="#dedupspec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class DedupIO extends Bundle">
+<code class="descname">class DedupIO extends Bundle</code><a class="headerlink" href="#attr-class DedupIO extends Bundle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class DedupQueues(n: Int) extends Module">
+<code class="descname">class DedupQueues(n: Int) extends Module</code><a class="headerlink" href="#attr-class DedupQueues(n: Int) extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class DedupSubModule extends Module">
+<code class="descname">class DedupSubModule extends Module</code><a class="headerlink" href="#attr-class DedupSubModule extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class NestedDedup extends Module">
+<code class="descname">class NestedDedup extends Module</code><a class="headerlink" href="#attr-class NestedDedup extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-object DedupConsts">
+<code class="descname">object DedupConsts</code><a class="headerlink" href="#attr-object DedupConsts" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class SharedConstantValDedup extends Module">
+<code class="descname">class SharedConstantValDedup extends Module</code><a class="headerlink" href="#attr-class SharedConstantValDedup extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class SharedConstantValDedupTop extends Module">
+<code class="descname">class SharedConstantValDedupTop extends Module</code><a class="headerlink" href="#attr-class SharedConstantValDedupTop extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class DedupSpec extends ChiselFlatSpec">
+<code class="descname">class DedupSpec extends ChiselFlatSpec</code><a class="headerlink" href="#attr-class DedupSpec extends ChiselFlatSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="multiassign-scala">
+<h2>MultiAssign.scala<a class="headerlink" href="#multiassign-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class LastAssignTester() extends BasicTester">
+<code class="descname">class LastAssignTester() extends BasicTester</code><a class="headerlink" href="#attr-class LastAssignTester() extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class MultiAssignSpec extends ChiselFlatSpec">
+<code class="descname">class MultiAssignSpec extends ChiselFlatSpec</code><a class="headerlink" href="#attr-class MultiAssignSpec extends ChiselFlatSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class IllegalAssignSpec extends ChiselFlatSpec">
+<code class="descname">class IllegalAssignSpec extends ChiselFlatSpec</code><a class="headerlink" href="#attr-class IllegalAssignSpec extends ChiselFlatSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="direction-scala">
+<h2>Direction.scala<a class="headerlink" href="#direction-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class DirectionedBundle extends Bundle">
+<code class="descname">class DirectionedBundle extends Bundle</code><a class="headerlink" href="#attr-class DirectionedBundle extends Bundle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class DirectionHaver extends Module">
+<code class="descname">class DirectionHaver extends Module</code><a class="headerlink" href="#attr-class DirectionHaver extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class GoodDirection extends DirectionHaver">
+<code class="descname">class GoodDirection extends DirectionHaver</code><a class="headerlink" href="#attr-class GoodDirection extends DirectionHaver" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class BadDirection extends DirectionHaver">
+<code class="descname">class BadDirection extends DirectionHaver</code><a class="headerlink" href="#attr-class BadDirection extends DirectionHaver" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class BadSubDirection extends DirectionHaver">
+<code class="descname">class BadSubDirection extends DirectionHaver</code><a class="headerlink" href="#attr-class BadSubDirection extends DirectionHaver" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class TopDirectionOutput extends Module">
+<code class="descname">class TopDirectionOutput extends Module</code><a class="headerlink" href="#attr-class TopDirectionOutput extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class DirectionSpec extends ChiselPropSpec with Matchers">
+<code class="descname">class DirectionSpec extends ChiselPropSpec with Matchers</code><a class="headerlink" href="#attr-class DirectionSpec extends ChiselPropSpec with Matchers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="multiiomodule-scala">
+<h2>MultiIOModule.scala<a class="headerlink" href="#multiiomodule-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class MultiIOPlusOne extends MultiIOModule">
+<code class="descname">class MultiIOPlusOne extends MultiIOModule</code><a class="headerlink" href="#attr-class MultiIOPlusOne extends MultiIOModule" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class MultiIOTester extends BasicTester">
+<code class="descname">class MultiIOTester extends BasicTester</code><a class="headerlink" href="#attr-class MultiIOTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-trait LiteralOutputTrait extends MultiIOModule">
+<code class="descname">trait LiteralOutputTrait extends MultiIOModule</code><a class="headerlink" href="#attr-trait LiteralOutputTrait extends MultiIOModule" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-trait MultiIOTrait extends MultiIOModule">
+<code class="descname">trait MultiIOTrait extends MultiIOModule</code><a class="headerlink" href="#attr-trait MultiIOTrait extends MultiIOModule" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class ComposedMultiIOModule extends MultiIOModule with LiteralOutputTrait with MultiIOTrait">
+<code class="descname">class ComposedMultiIOModule extends MultiIOModule with LiteralOutputTrait with MultiIOTrait</code><a class="headerlink" href="#attr-class ComposedMultiIOModule extends MultiIOModule with LiteralOutputTrait with MultiIOTrait" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class ComposedMultiIOTester extends BasicTester">
+<code class="descname">class ComposedMultiIOTester extends BasicTester</code><a class="headerlink" href="#attr-class ComposedMultiIOTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class MultiIOSpec extends ChiselFlatSpec">
+<code class="descname">class MultiIOSpec extends ChiselFlatSpec</code><a class="headerlink" href="#attr-class MultiIOSpec extends ChiselFlatSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="boringutilsspec-scala">
+<h2>BoringUtilsSpec.scala<a class="headerlink" href="#boringutilsspec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-abstract class ShouldntAssertTester(cyclesToWait: BigInt">
+<code class="descname">abstract class ShouldntAssertTester(cyclesToWait: BigInt</code><a class="headerlink" href="#attr-abstract class ShouldntAssertTester(cyclesToWait: BigInt" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class StripNoDedupAnnotation extends Transform">
+<code class="descname">class StripNoDedupAnnotation extends Transform</code><a class="headerlink" href="#attr-class StripNoDedupAnnotation extends Transform" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners">
+<code class="descname">class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners</code><a class="headerlink" href="#attr-class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class TopTester extends ShouldntAssertTester">
+<code class="descname">class TopTester extends ShouldntAssertTester</code><a class="headerlink" href="#attr-class TopTester extends ShouldntAssertTester" title="Permalink to this definition">¶</a></dt>
+<dd><p>This is testing a complicated wiring pattern and exercising     the necessity of disabling deduplication for sources and sinks.
+Without disabling deduplication, this test will fail.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="literalextractorspec-scala">
+<h2>LiteralExtractorSpec.scala<a class="headerlink" href="#literalextractorspec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class LiteralExtractorSpec extends ChiselFlatSpec">
+<code class="descname">class LiteralExtractorSpec extends ChiselFlatSpec</code><a class="headerlink" href="#attr-class LiteralExtractorSpec extends ChiselFlatSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="stack-scala">
+<h2>Stack.scala<a class="headerlink" href="#stack-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class ChiselStack(val depth: Int) extends Module">
+<code class="descname">class ChiselStack(val depth: Int) extends Module</code><a class="headerlink" href="#attr-class ChiselStack(val depth: Int) extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class StackTester(c: Stack) extends Tester(c)">
+<code class="descname">class StackTester(c: Stack) extends Tester(c)</code><a class="headerlink" href="#attr-class StackTester(c: Stack) extends Tester(c)" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class StackSpec extends ChiselPropSpec">
+<code class="descname">class StackSpec extends ChiselPropSpec</code><a class="headerlink" href="#attr-class StackSpec extends ChiselPropSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="stop-scala">
+<h2>Stop.scala<a class="headerlink" href="#stop-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class StopTester() extends BasicTester">
+<code class="descname">class StopTester() extends BasicTester</code><a class="headerlink" href="#attr-class StopTester() extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class StopImmediatelyTester extends BasicTester">
+<code class="descname">class StopImmediatelyTester extends BasicTester</code><a class="headerlink" href="#attr-class StopImmediatelyTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class StopSpec extends ChiselFlatSpec">
+<code class="descname">class StopSpec extends ChiselFlatSpec</code><a class="headerlink" href="#attr-class StopSpec extends ChiselFlatSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="enableshiftregister-scala">
+<h2>EnableShiftRegister.scala<a class="headerlink" href="#enableshiftregister-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class EnableShiftRegister extends Module">
+<code class="descname">class EnableShiftRegister extends Module</code><a class="headerlink" href="#attr-class EnableShiftRegister extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class EnableShiftRegisterTester(c: EnableShiftRegister) extends Tester(c)">
+<code class="descname">class EnableShiftRegisterTester(c: EnableShiftRegister) extends Tester(c)</code><a class="headerlink" href="#attr-class EnableShiftRegisterTester(c: EnableShiftRegister) extends Tester(c)" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class EnableShiftRegisterSpec extends ChiselPropSpec">
+<code class="descname">class EnableShiftRegisterSpec extends ChiselPropSpec</code><a class="headerlink" href="#attr-class EnableShiftRegisterSpec extends ChiselPropSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="iocompatibility-scala">
+<h2>IOCompatibility.scala<a class="headerlink" href="#iocompatibility-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class IOCSimpleIO extends Bundle">
+<code class="descname">class IOCSimpleIO extends Bundle</code><a class="headerlink" href="#attr-class IOCSimpleIO extends Bundle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class IOCPlusOne extends Module">
+<code class="descname">class IOCPlusOne extends Module</code><a class="headerlink" href="#attr-class IOCPlusOne extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class IOCModuleVec(val n: Int) extends Module">
+<code class="descname">class IOCModuleVec(val n: Int) extends Module</code><a class="headerlink" href="#attr-class IOCModuleVec(val n: Int) extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class IOCModuleWire extends Module">
+<code class="descname">class IOCModuleWire extends Module</code><a class="headerlink" href="#attr-class IOCModuleWire extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class IOCompatibilitySpec extends ChiselPropSpec with Matchers">
+<code class="descname">class IOCompatibilitySpec extends ChiselPropSpec with Matchers</code><a class="headerlink" href="#attr-class IOCompatibilitySpec extends ChiselPropSpec with Matchers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="testerdriverspec-scala">
+<h2>TesterDriverSpec.scala<a class="headerlink" href="#testerdriverspec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class FinishTester extends BasicTester">
+<code class="descname">class FinishTester extends BasicTester</code><a class="headerlink" href="#attr-class FinishTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extend BasicTester with a simple circuit and finish method.  TesterDriver will call the finish method after the FinishTester’s constructor has completed, which will alter the
+circuit after the constructor has finished.</p>
+<dl class="attr">
+<dt id="attr-override def finish(): Unit =">
+<code class="descname">override def finish(): Unit =</code><a class="headerlink" href="#attr-override def finish(): Unit =" title="Permalink to this definition">¶</a></dt>
+<dd><p>In finish we use last connect semantics to alter the test_wire in the circuit   with a new value</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-class TesterDriverSpec extends ChiselFlatSpec">
+<code class="descname">class TesterDriverSpec extends ChiselFlatSpec</code><a class="headerlink" href="#attr-class TesterDriverSpec extends ChiselFlatSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="strongenum-scala">
+<h2>StrongEnum.scala<a class="headerlink" href="#strongenum-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-object EnumExample extends ChiselEnum">
+<code class="descname">object EnumExample extends ChiselEnum</code><a class="headerlink" href="#attr-object EnumExample extends ChiselEnum" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-object OtherEnum extends ChiselEnum">
+<code class="descname">object OtherEnum extends ChiselEnum</code><a class="headerlink" href="#attr-object OtherEnum extends ChiselEnum" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-object NonLiteralEnumType extends ChiselEnum">
+<code class="descname">object NonLiteralEnumType extends ChiselEnum</code><a class="headerlink" href="#attr-object NonLiteralEnumType extends ChiselEnum" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-object NonIncreasingEnum extends ChiselEnum">
+<code class="descname">object NonIncreasingEnum extends ChiselEnum</code><a class="headerlink" href="#attr-object NonIncreasingEnum extends ChiselEnum" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class SimpleConnector(inType: Data, outType: Data) extends Module">
+<code class="descname">class SimpleConnector(inType: Data, outType: Data) extends Module</code><a class="headerlink" href="#attr-class SimpleConnector(inType: Data, outType: Data) extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class CastToUInt extends Module">
+<code class="descname">class CastToUInt extends Module</code><a class="headerlink" href="#attr-class CastToUInt extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class CastFromLit(in: UInt) extends Module">
+<code class="descname">class CastFromLit(in: UInt) extends Module</code><a class="headerlink" href="#attr-class CastFromLit(in: UInt) extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class CastFromNonLit extends Module">
+<code class="descname">class CastFromNonLit extends Module</code><a class="headerlink" href="#attr-class CastFromNonLit extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class CastFromNonLitWidth(w: Option[Int]">
+<code class="descname">class CastFromNonLitWidth(w: Option[Int]</code><a class="headerlink" href="#attr-class CastFromNonLitWidth(w: Option[Int]" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class EnumOps(val xType: ChiselEnum, val yType: ChiselEnum) extends Module">
+<code class="descname">class EnumOps(val xType: ChiselEnum, val yType: ChiselEnum) extends Module</code><a class="headerlink" href="#attr-class EnumOps(val xType: ChiselEnum, val yType: ChiselEnum) extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-object StrongEnumFSM">
+<code class="descname">object StrongEnumFSM</code><a class="headerlink" href="#attr-object StrongEnumFSM" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class StrongEnumFSM extends Module">
+<code class="descname">class StrongEnumFSM extends Module</code><a class="headerlink" href="#attr-class StrongEnumFSM extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class CastToUIntTester extends BasicTester">
+<code class="descname">class CastToUIntTester extends BasicTester</code><a class="headerlink" href="#attr-class CastToUIntTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class CastFromLitTester extends BasicTester">
+<code class="descname">class CastFromLitTester extends BasicTester</code><a class="headerlink" href="#attr-class CastFromLitTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class CastFromNonLitTester extends BasicTester">
+<code class="descname">class CastFromNonLitTester extends BasicTester</code><a class="headerlink" href="#attr-class CastFromNonLitTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class CastToInvalidEnumTester extends BasicTester">
+<code class="descname">class CastToInvalidEnumTester extends BasicTester</code><a class="headerlink" href="#attr-class CastToInvalidEnumTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class EnumOpsTester extends BasicTester">
+<code class="descname">class EnumOpsTester extends BasicTester</code><a class="headerlink" href="#attr-class EnumOpsTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class InvalidEnumOpsTester extends BasicTester">
+<code class="descname">class InvalidEnumOpsTester extends BasicTester</code><a class="headerlink" href="#attr-class InvalidEnumOpsTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class IsLitTester extends BasicTester">
+<code class="descname">class IsLitTester extends BasicTester</code><a class="headerlink" href="#attr-class IsLitTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class NextTester extends BasicTester">
+<code class="descname">class NextTester extends BasicTester</code><a class="headerlink" href="#attr-class NextTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class WidthTester extends BasicTester">
+<code class="descname">class WidthTester extends BasicTester</code><a class="headerlink" href="#attr-class WidthTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class StrongEnumFSMTester extends BasicTester">
+<code class="descname">class StrongEnumFSMTester extends BasicTester</code><a class="headerlink" href="#attr-class StrongEnumFSMTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class StrongEnumSpec extends ChiselFlatSpec">
+<code class="descname">class StrongEnumSpec extends ChiselFlatSpec</code><a class="headerlink" href="#attr-class StrongEnumSpec extends ChiselFlatSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class StrongEnumAnnotator extends Module">
+<code class="descname">class StrongEnumAnnotator extends Module</code><a class="headerlink" href="#attr-class StrongEnumAnnotator extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class StrongEnumAnnotatorWithChiselName extends Module">
+<code class="descname">class StrongEnumAnnotatorWithChiselName extends Module</code><a class="headerlink" href="#attr-class StrongEnumAnnotatorWithChiselName extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class StrongEnumAnnotationSpec extends FreeSpec with Matchers">
+<code class="descname">class StrongEnumAnnotationSpec extends FreeSpec with Matchers</code><a class="headerlink" href="#attr-class StrongEnumAnnotationSpec extends FreeSpec with Matchers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="lfsr16-scala">
+<h2>LFSR16.scala<a class="headerlink" href="#lfsr16-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class LFSRDistribution(gen: =&gt; UInt, cycles: Int = 10000) extends BasicTester">
+<code class="descname">class LFSRDistribution(gen: =&gt; UInt, cycles: Int = 10000) extends BasicTester</code><a class="headerlink" href="#attr-class LFSRDistribution(gen: => UInt, cycles: Int = 10000) extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>This test creates two 4 sided dice.</div></blockquote>
+<p>Each cycle it adds them together and adds a count to the bin corresponding to that value
+The asserts check that the bins show the correct distribution.</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-class LFSRDistribution(gen: =&gt; UInt, cycles: Int">
+<code class="descname">class LFSRDistribution(gen: =&gt; UInt, cycles: Int</code><a class="headerlink" href="#attr-class LFSRDistribution(gen: => UInt, cycles: Int" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class LFSRMaxPeriod(gen: =&gt; UInt) extends BasicTester">
+<code class="descname">class LFSRMaxPeriod(gen: =&gt; UInt) extends BasicTester</code><a class="headerlink" href="#attr-class LFSRMaxPeriod(gen: => UInt) extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class MeetTheNewLFSR16SameAsTheOldLFSR16 extends BasicTester">
+<code class="descname">class MeetTheNewLFSR16SameAsTheOldLFSR16 extends BasicTester</code><a class="headerlink" href="#attr-class MeetTheNewLFSR16SameAsTheOldLFSR16 extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check that the output of the new LFSR is the same as the old LFSR</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-class LFSRSpec extends ChiselPropSpec">
+<code class="descname">class LFSRSpec extends ChiselPropSpec</code><a class="headerlink" href="#attr-class LFSRSpec extends ChiselPropSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="integermathspec-scala">
+<h2>IntegerMathSpec.scala<a class="headerlink" href="#integermathspec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class IntegerMathTester extends BasicTester">
+<code class="descname">class IntegerMathTester extends BasicTester</code><a class="headerlink" href="#attr-class IntegerMathTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class IntegerMathSpec extends ChiselPropSpec">
+<code class="descname">class IntegerMathSpec extends ChiselPropSpec</code><a class="headerlink" href="#attr-class IntegerMathSpec extends ChiselPropSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="extmodule-scala">
+<h2>ExtModule.scala<a class="headerlink" href="#extmodule-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class ExtModuleTester extends BasicTester">
+<code class="descname">class ExtModuleTester extends BasicTester</code><a class="headerlink" href="#attr-class ExtModuleTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class MultiExtModuleTester extends BasicTester">
+<code class="descname">class MultiExtModuleTester extends BasicTester</code><a class="headerlink" href="#attr-class MultiExtModuleTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instantiate multiple BlackBoxes with similar interfaces but different   functionality. Used to detect failures in BlackBox naming and module
+deduplication.</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-class ExtModuleSpec extends ChiselFlatSpec">
+<code class="descname">class ExtModuleSpec extends ChiselFlatSpec</code><a class="headerlink" href="#attr-class ExtModuleSpec extends ChiselFlatSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="donttouchspec-scala">
+<h2>DontTouchSpec.scala<a class="headerlink" href="#donttouchspec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class HasDeadCodeChild(withDontTouch: Boolean) extends Module">
+<code class="descname">class HasDeadCodeChild(withDontTouch: Boolean) extends Module</code><a class="headerlink" href="#attr-class HasDeadCodeChild(withDontTouch: Boolean) extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class HasDeadCode(withDontTouch: Boolean) extends Module">
+<code class="descname">class HasDeadCode(withDontTouch: Boolean) extends Module</code><a class="headerlink" href="#attr-class HasDeadCode(withDontTouch: Boolean) extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class DontTouchSpec extends ChiselFlatSpec">
+<code class="descname">class DontTouchSpec extends ChiselFlatSpec</code><a class="headerlink" href="#attr-class DontTouchSpec extends ChiselFlatSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="printf-scala">
+<h2>Printf.scala<a class="headerlink" href="#printf-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class SinglePrintfTester() extends BasicTester">
+<code class="descname">class SinglePrintfTester() extends BasicTester</code><a class="headerlink" href="#attr-class SinglePrintfTester() extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class ASCIIPrintfTester() extends BasicTester">
+<code class="descname">class ASCIIPrintfTester() extends BasicTester</code><a class="headerlink" href="#attr-class ASCIIPrintfTester() extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class MultiPrintfTester() extends BasicTester">
+<code class="descname">class MultiPrintfTester() extends BasicTester</code><a class="headerlink" href="#attr-class MultiPrintfTester() extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class ASCIIPrintableTester extends BasicTester">
+<code class="descname">class ASCIIPrintableTester extends BasicTester</code><a class="headerlink" href="#attr-class ASCIIPrintableTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class PrintfSpec extends ChiselFlatSpec">
+<code class="descname">class PrintfSpec extends ChiselFlatSpec</code><a class="headerlink" href="#attr-class PrintfSpec extends ChiselFlatSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="mem-scala">
+<h2>Mem.scala<a class="headerlink" href="#mem-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class MemVecTester extends BasicTester">
+<code class="descname">class MemVecTester extends BasicTester</code><a class="headerlink" href="#attr-class MemVecTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class SyncReadMemTester extends BasicTester">
+<code class="descname">class SyncReadMemTester extends BasicTester</code><a class="headerlink" href="#attr-class SyncReadMemTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class SyncReadMemWithZeroWidthTester extends BasicTester">
+<code class="descname">class SyncReadMemWithZeroWidthTester extends BasicTester</code><a class="headerlink" href="#attr-class SyncReadMemWithZeroWidthTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class HugeSMemTester(size: BigInt) extends BasicTester">
+<code class="descname">class HugeSMemTester(size: BigInt) extends BasicTester</code><a class="headerlink" href="#attr-class HugeSMemTester(size: BigInt) extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class HugeCMemTester(size: BigInt) extends BasicTester">
+<code class="descname">class HugeCMemTester(size: BigInt) extends BasicTester</code><a class="headerlink" href="#attr-class HugeCMemTester(size: BigInt) extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class MemorySpec extends ChiselPropSpec">
+<code class="descname">class MemorySpec extends ChiselPropSpec</code><a class="headerlink" href="#attr-class MemorySpec extends ChiselPropSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="loadmemoryfromfilespec-scala">
+<h2>LoadMemoryFromFileSpec.scala<a class="headerlink" href="#loadmemoryfromfilespec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class UsesThreeMems(memoryDepth: Int, memoryType: Data) extends Module">
+<code class="descname">class UsesThreeMems(memoryDepth: Int, memoryType: Data) extends Module</code><a class="headerlink" href="#attr-class UsesThreeMems(memoryDepth: Int, memoryType: Data) extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class UsesMem(memoryDepth: Int, memoryType: Data) extends Module">
+<code class="descname">class UsesMem(memoryDepth: Int, memoryType: Data) extends Module</code><a class="headerlink" href="#attr-class UsesMem(memoryDepth: Int, memoryType: Data) extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class UsesMemLow(memoryDepth: Int, memoryType: Data) extends Module">
+<code class="descname">class UsesMemLow(memoryDepth: Int, memoryType: Data) extends Module</code><a class="headerlink" href="#attr-class UsesMemLow(memoryDepth: Int, memoryType: Data) extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class FileHasSuffix(memoryDepth: Int, memoryType: Data) extends Module">
+<code class="descname">class FileHasSuffix(memoryDepth: Int, memoryType: Data) extends Module</code><a class="headerlink" href="#attr-class FileHasSuffix(memoryDepth: Int, memoryType: Data) extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class MemoryShape extends Bundle">
+<code class="descname">class MemoryShape extends Bundle</code><a class="headerlink" href="#attr-class MemoryShape extends Bundle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class HasComplexMemory(memoryDepth: Int) extends Module">
+<code class="descname">class HasComplexMemory(memoryDepth: Int) extends Module</code><a class="headerlink" href="#attr-class HasComplexMemory(memoryDepth: Int) extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class LoadMemoryFromFileSpec extends FreeSpec with Matchers">
+<code class="descname">class LoadMemoryFromFileSpec extends FreeSpec with Matchers</code><a class="headerlink" href="#attr-class LoadMemoryFromFileSpec extends FreeSpec with Matchers" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>The following tests are a bit incomplete and check that the output verilog is properly constructed</div></blockquote>
+<p>For more complete working examples
+&#64;see &lt;a href=”<a class="reference external" href="https://github.com/freechipsproject/chisel-testers">https://github.com/freechipsproject/chisel-testers</a>”&gt;Chisel Testers&lt;/a&gt; LoadMemoryFromFileSpec.scala</p>
+</dd></dl>
+
+</div>
+<div class="section" id="instancenamespec-scala">
+<h2>InstanceNameSpec.scala<a class="headerlink" href="#instancenamespec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class InstanceNameModule extends Module">
+<code class="descname">class InstanceNameModule extends Module</code><a class="headerlink" href="#attr-class InstanceNameModule extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class InstanceNameSpec extends ChiselFlatSpec">
+<code class="descname">class InstanceNameSpec extends ChiselFlatSpec</code><a class="headerlink" href="#attr-class InstanceNameSpec extends ChiselFlatSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="rangespec-scala">
+<h2>RangeSpec.scala<a class="headerlink" href="#rangespec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class RangeSpec extends FreeSpec with Matchers">
+<code class="descname">class RangeSpec extends FreeSpec with Matchers</code><a class="headerlink" href="#attr-class RangeSpec extends FreeSpec with Matchers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="math-scala">
+<h2>Math.scala<a class="headerlink" href="#math-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class Math extends ChiselPropSpec">
+<code class="descname">class Math extends ChiselPropSpec</code><a class="headerlink" href="#attr-class Math extends ChiselPropSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="rebindingspec-scala">
+<h2>RebindingSpec.scala<a class="headerlink" href="#rebindingspec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class RebindingSpec extends ChiselFlatSpec">
+<code class="descname">class RebindingSpec extends ChiselFlatSpec</code><a class="headerlink" href="#attr-class RebindingSpec extends ChiselFlatSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="sintops-scala">
+<h2>SIntOps.scala<a class="headerlink" href="#sintops-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class SIntOps extends Module">
+<code class="descname">class SIntOps extends Module</code><a class="headerlink" href="#attr-class SIntOps extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class SIntOpsTester(c: SIntOps) extends Tester(c)">
+<code class="descname">class SIntOpsTester(c: SIntOps) extends Tester(c)</code><a class="headerlink" href="#attr-class SIntOpsTester(c: SIntOps) extends Tester(c)" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class SIntLitExtractTester extends BasicTester">
+<code class="descname">class SIntLitExtractTester extends BasicTester</code><a class="headerlink" href="#attr-class SIntLitExtractTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class SIntOpsSpec extends ChiselPropSpec">
+<code class="descname">class SIntOpsSpec extends ChiselPropSpec</code><a class="headerlink" href="#attr-class SIntOpsSpec extends ChiselPropSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="onehotmuxspec-scala">
+<h2>OneHotMuxSpec.scala<a class="headerlink" href="#onehotmuxspec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class OneHotMuxSpec extends FreeSpec with Matchers with ChiselRunners">
+<code class="descname">class OneHotMuxSpec extends FreeSpec with Matchers with ChiselRunners</code><a class="headerlink" href="#attr-class OneHotMuxSpec extends FreeSpec with Matchers with ChiselRunners" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class SimpleOneHotTester extends BasicTester">
+<code class="descname">class SimpleOneHotTester extends BasicTester</code><a class="headerlink" href="#attr-class SimpleOneHotTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class SIntOneHotTester extends BasicTester">
+<code class="descname">class SIntOneHotTester extends BasicTester</code><a class="headerlink" href="#attr-class SIntOneHotTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class FixedPointOneHotTester extends BasicTester">
+<code class="descname">class FixedPointOneHotTester extends BasicTester</code><a class="headerlink" href="#attr-class FixedPointOneHotTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class AllSameFixedPointOneHotTester extends BasicTester">
+<code class="descname">class AllSameFixedPointOneHotTester extends BasicTester</code><a class="headerlink" href="#attr-class AllSameFixedPointOneHotTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class ParameterizedOneHotTester[T &lt;: Data](values: Seq[T], outGen: T, expected: T) extends BasicTester">
+<code class="descname">class ParameterizedOneHotTester[T &lt;: Data](values: Seq[T], outGen: T, expected: T) extends BasicTester</code><a class="headerlink" href="#attr-class ParameterizedOneHotTester[T <: Data](values: Seq[T], outGen: T, expected: T) extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class Agg1 extends Bundle">
+<code class="descname">class Agg1 extends Bundle</code><a class="headerlink" href="#attr-class Agg1 extends Bundle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-object Agg1 extends HasMakeLit[Agg1]">
+<code class="descname">object Agg1 extends HasMakeLit[Agg1]</code><a class="headerlink" href="#attr-object Agg1 extends HasMakeLit[Agg1]" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class Agg2 extends Bundle">
+<code class="descname">class Agg2 extends Bundle</code><a class="headerlink" href="#attr-class Agg2 extends Bundle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-object Agg2 extends HasMakeLit[Agg2]">
+<code class="descname">object Agg2 extends HasMakeLit[Agg2]</code><a class="headerlink" href="#attr-object Agg2 extends HasMakeLit[Agg2]" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class ParameterizedAggregateOneHotTester extends BasicTester">
+<code class="descname">class ParameterizedAggregateOneHotTester extends BasicTester</code><a class="headerlink" href="#attr-class ParameterizedAggregateOneHotTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-trait HasMakeLit[T]">
+<code class="descname">trait HasMakeLit[T]</code><a class="headerlink" href="#attr-trait HasMakeLit[T]" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class ParameterizedOneHot[T &lt;: Data](values: Seq[T], outGen: T) extends Module">
+<code class="descname">class ParameterizedOneHot[T &lt;: Data](values: Seq[T], outGen: T) extends Module</code><a class="headerlink" href="#attr-class ParameterizedOneHot[T <: Data](values: Seq[T], outGen: T) extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class ParameterizedAggregateOneHot[T &lt;: Data](valGen: HasMakeLit[T], outGen: T) extends Module">
+<code class="descname">class ParameterizedAggregateOneHot[T &lt;: Data](valGen: HasMakeLit[T], outGen: T) extends Module</code><a class="headerlink" href="#attr-class ParameterizedAggregateOneHot[T <: Data](valGen: HasMakeLit[T], outGen: T) extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class Bundle1 extends Bundle">
+<code class="descname">class Bundle1 extends Bundle</code><a class="headerlink" href="#attr-class Bundle1 extends Bundle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class InferredWidthAggregateOneHotTester extends BasicTester">
+<code class="descname">class InferredWidthAggregateOneHotTester extends BasicTester</code><a class="headerlink" href="#attr-class InferredWidthAggregateOneHotTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class Bundle2 extends Bundle">
+<code class="descname">class Bundle2 extends Bundle</code><a class="headerlink" href="#attr-class Bundle2 extends Bundle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class Bundle3 extends Bundle">
+<code class="descname">class Bundle3 extends Bundle</code><a class="headerlink" href="#attr-class Bundle3 extends Bundle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class DifferentBundleOneHotTester extends BasicTester">
+<code class="descname">class DifferentBundleOneHotTester extends BasicTester</code><a class="headerlink" href="#attr-class DifferentBundleOneHotTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class UIntToOHTester extends BasicTester">
+<code class="descname">class UIntToOHTester extends BasicTester</code><a class="headerlink" href="#attr-class UIntToOHTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="util-scala">
+<h2>Util.scala<a class="headerlink" href="#util-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class PassthroughModuleIO extends Bundle">
+<code class="descname">class PassthroughModuleIO extends Bundle</code><a class="headerlink" href="#attr-class PassthroughModuleIO extends Bundle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-trait AbstractPassthroughModule extends RawModule">
+<code class="descname">trait AbstractPassthroughModule extends RawModule</code><a class="headerlink" href="#attr-trait AbstractPassthroughModule extends RawModule" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class PassthroughModule extends Module with AbstractPassthroughModule class PassthroughMultiIOModule extends MultiIOModule with AbstractPassthroughModule class PassthroughRawModule extends RawModule with AbstractPassthroughModule">
+<code class="descname">class PassthroughModule extends Module with AbstractPassthroughModule class PassthroughMultiIOModule extends MultiIOModule with AbstractPassthroughModule class PassthroughRawModule extends RawModule with AbstractPassthroughModule</code><a class="headerlink" href="#attr-class PassthroughModule extends Module with AbstractPassthroughModule class PassthroughMultiIOModule extends MultiIOModule with AbstractPassthroughModule class PassthroughRawModule extends RawModule with AbstractPassthroughModule" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class PassthroughMultiIOModule extends MultiIOModule with AbstractPassthroughModule class PassthroughRawModule extends RawModule with AbstractPassthroughModule">
+<code class="descname">class PassthroughMultiIOModule extends MultiIOModule with AbstractPassthroughModule class PassthroughRawModule extends RawModule with AbstractPassthroughModule</code><a class="headerlink" href="#attr-class PassthroughMultiIOModule extends MultiIOModule with AbstractPassthroughModule class PassthroughRawModule extends RawModule with AbstractPassthroughModule" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class PassthroughRawModule extends RawModule with AbstractPassthroughModule">
+<code class="descname">class PassthroughRawModule extends RawModule with AbstractPassthroughModule</code><a class="headerlink" href="#attr-class PassthroughRawModule extends RawModule with AbstractPassthroughModule" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="clock-scala">
+<h2>Clock.scala<a class="headerlink" href="#clock-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class ClockAsUIntTester extends BasicTester">
+<code class="descname">class ClockAsUIntTester extends BasicTester</code><a class="headerlink" href="#attr-class ClockAsUIntTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class WithClockAndNoReset extends RawModule">
+<code class="descname">class WithClockAndNoReset extends RawModule</code><a class="headerlink" href="#attr-class WithClockAndNoReset extends RawModule" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class ClockSpec extends ChiselPropSpec">
+<code class="descname">class ClockSpec extends ChiselPropSpec</code><a class="headerlink" href="#attr-class ClockSpec extends ChiselPropSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="popcount-scala">
+<h2>PopCount.scala<a class="headerlink" href="#popcount-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class PopCountTester(n: Int) extends BasicTester">
+<code class="descname">class PopCountTester(n: Int) extends BasicTester</code><a class="headerlink" href="#attr-class PopCountTester(n: Int) extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class PopCountSpec extends ChiselPropSpec">
+<code class="descname">class PopCountSpec extends ChiselPropSpec</code><a class="headerlink" href="#attr-class PopCountSpec extends ChiselPropSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="optionbundle-scala">
+<h2>OptionBundle.scala<a class="headerlink" href="#optionbundle-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class OptionBundle(val hasIn: Boolean) extends Bundle">
+<code class="descname">class OptionBundle(val hasIn: Boolean) extends Bundle</code><a class="headerlink" href="#attr-class OptionBundle(val hasIn: Boolean) extends Bundle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class OptionBundleModule(val hasIn: Boolean) extends Module">
+<code class="descname">class OptionBundleModule(val hasIn: Boolean) extends Module</code><a class="headerlink" href="#attr-class OptionBundleModule(val hasIn: Boolean) extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class SomeOptionBundleTester(expected: Boolean) extends BasicTester">
+<code class="descname">class SomeOptionBundleTester(expected: Boolean) extends BasicTester</code><a class="headerlink" href="#attr-class SomeOptionBundleTester(expected: Boolean) extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class NoneOptionBundleTester() extends BasicTester">
+<code class="descname">class NoneOptionBundleTester() extends BasicTester</code><a class="headerlink" href="#attr-class NoneOptionBundleTester() extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class InvalidOptionBundleTester() extends BasicTester">
+<code class="descname">class InvalidOptionBundleTester() extends BasicTester</code><a class="headerlink" href="#attr-class InvalidOptionBundleTester() extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class OptionBundleSpec extends ChiselFlatSpec">
+<code class="descname">class OptionBundleSpec extends ChiselFlatSpec</code><a class="headerlink" href="#attr-class OptionBundleSpec extends ChiselFlatSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="rawmodulespec-scala">
+<h2>RawModuleSpec.scala<a class="headerlink" href="#rawmodulespec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class UnclockedPlusOne extends RawModule">
+<code class="descname">class UnclockedPlusOne extends RawModule</code><a class="headerlink" href="#attr-class UnclockedPlusOne extends RawModule" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class RawModuleTester extends BasicTester">
+<code class="descname">class RawModuleTester extends BasicTester</code><a class="headerlink" href="#attr-class RawModuleTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class PlusOneModule extends Module">
+<code class="descname">class PlusOneModule extends Module</code><a class="headerlink" href="#attr-class PlusOneModule extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class RawModuleWithImplicitModule extends RawModule">
+<code class="descname">class RawModuleWithImplicitModule extends RawModule</code><a class="headerlink" href="#attr-class RawModuleWithImplicitModule extends RawModule" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class ImplicitModuleInRawModuleTester extends BasicTester">
+<code class="descname">class ImplicitModuleInRawModuleTester extends BasicTester</code><a class="headerlink" href="#attr-class ImplicitModuleInRawModuleTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class RawModuleWithDirectImplicitModule extends RawModule">
+<code class="descname">class RawModuleWithDirectImplicitModule extends RawModule</code><a class="headerlink" href="#attr-class RawModuleWithDirectImplicitModule extends RawModule" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class ImplicitModuleDirectlyInRawModuleTester extends BasicTester">
+<code class="descname">class ImplicitModuleDirectlyInRawModuleTester extends BasicTester</code><a class="headerlink" href="#attr-class ImplicitModuleDirectlyInRawModuleTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class RawModuleSpec extends ChiselFlatSpec">
+<code class="descname">class RawModuleSpec extends ChiselFlatSpec</code><a class="headerlink" href="#attr-class RawModuleSpec extends ChiselFlatSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="annotationnodedup-scala">
+<h2>AnnotationNoDedup.scala<a class="headerlink" href="#annotationnodedup-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class MuchUsedModule extends Module">
+<code class="descname">class MuchUsedModule extends Module</code><a class="headerlink" href="#attr-class MuchUsedModule extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class UsesMuchUsedModule(addAnnos: Boolean) extends Module">
+<code class="descname">class UsesMuchUsedModule(addAnnos: Boolean) extends Module</code><a class="headerlink" href="#attr-class UsesMuchUsedModule(addAnnos: Boolean) extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class AnnotationNoDedup extends FreeSpec with Matchers">
+<code class="descname">class AnnotationNoDedup extends FreeSpec with Matchers</code><a class="headerlink" href="#attr-class AnnotationNoDedup extends FreeSpec with Matchers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="harness-scala">
+<h2>Harness.scala<a class="headerlink" href="#harness-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class HarnessSpec extends ChiselPropSpec with BackendCompilationUtilities">
+<code class="descname">class HarnessSpec extends ChiselPropSpec with BackendCompilationUtilities</code><a class="headerlink" href="#attr-class HarnessSpec extends ChiselPropSpec with BackendCompilationUtilities" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attr">
+<dt id="attr-def simpleHarnessBackend(make: File =&gt; File): (File, String) =">
+<code class="descname">def simpleHarnessBackend(make: File =&gt; File): (File, String) =</code><a class="headerlink" href="#attr-def simpleHarnessBackend(make: File => File): (File, String) =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compiles a C++ emulator from Verilog and returns the path to the        executable and the executable filename as a tuple.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="section" id="queuespec-scala">
+<h2>QueueSpec.scala<a class="headerlink" href="#queuespec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class ThingsPassThroughTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int) extends BasicTester">
+<code class="descname">class ThingsPassThroughTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int) extends BasicTester</code><a class="headerlink" href="#attr-class ThingsPassThroughTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int) extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class QueueReasonableReadyValid(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int) extends BasicTester">
+<code class="descname">class QueueReasonableReadyValid(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int) extends BasicTester</code><a class="headerlink" href="#attr-class QueueReasonableReadyValid(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int) extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class CountIsCorrectTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int) extends BasicTester">
+<code class="descname">class CountIsCorrectTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int) extends BasicTester</code><a class="headerlink" href="#attr-class CountIsCorrectTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int) extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class QueueSinglePipeTester(elements: Seq[Int], bitWidth: Int, tap: Int) extends BasicTester">
+<code class="descname">class QueueSinglePipeTester(elements: Seq[Int], bitWidth: Int, tap: Int) extends BasicTester</code><a class="headerlink" href="#attr-class QueueSinglePipeTester(elements: Seq[Int], bitWidth: Int, tap: Int) extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class QueuePipeTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int) extends BasicTester">
+<code class="descname">class QueuePipeTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int) extends BasicTester</code><a class="headerlink" href="#attr-class QueuePipeTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int) extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class QueueFlowTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int) extends BasicTester">
+<code class="descname">class QueueFlowTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int) extends BasicTester</code><a class="headerlink" href="#attr-class QueueFlowTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int) extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class QueueSpec extends ChiselPropSpec">
+<code class="descname">class QueueSpec extends ChiselPropSpec</code><a class="headerlink" href="#attr-class QueueSpec extends ChiselPropSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="blackbox-scala">
+<h2>BlackBox.scala<a class="headerlink" href="#blackbox-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class BlackBoxInverter extends BlackBox">
+<code class="descname">class BlackBoxInverter extends BlackBox</code><a class="headerlink" href="#attr-class BlackBoxInverter extends BlackBox" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class BlackBoxPassthrough extends BlackBox">
+<code class="descname">class BlackBoxPassthrough extends BlackBox</code><a class="headerlink" href="#attr-class BlackBoxPassthrough extends BlackBox" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class BlackBoxPassthrough2 extends BlackBox">
+<code class="descname">class BlackBoxPassthrough2 extends BlackBox</code><a class="headerlink" href="#attr-class BlackBoxPassthrough2 extends BlackBox" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class BlackBoxRegister extends BlackBox">
+<code class="descname">class BlackBoxRegister extends BlackBox</code><a class="headerlink" href="#attr-class BlackBoxRegister extends BlackBox" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class BlackBoxTester extends BasicTester">
+<code class="descname">class BlackBoxTester extends BasicTester</code><a class="headerlink" href="#attr-class BlackBoxTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class BlackBoxFlipTester extends BasicTester">
+<code class="descname">class BlackBoxFlipTester extends BasicTester</code><a class="headerlink" href="#attr-class BlackBoxFlipTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class MultiBlackBoxTester extends BasicTester">
+<code class="descname">class MultiBlackBoxTester extends BasicTester</code><a class="headerlink" href="#attr-class MultiBlackBoxTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instantiate multiple BlackBoxes with similar interfaces but different   functionality. Used to detect failures in BlackBox naming and module
+deduplication.</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-class BlackBoxWithClockTester extends BasicTester">
+<code class="descname">class BlackBoxWithClockTester extends BasicTester</code><a class="headerlink" href="#attr-class BlackBoxWithClockTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class BlackBoxConstant(value: Int) extends BlackBox(Map(&quot;VALUE&quot; -&gt; value, &quot;WIDTH&quot; -&gt; log2Ceil(value + 1)))">
+<code class="descname">class BlackBoxConstant(value: Int) extends BlackBox(Map(&quot;VALUE&quot; -&gt; value, &quot;WIDTH&quot; -&gt; log2Ceil(value + 1)))</code><a class="headerlink" href="#attr-class BlackBoxConstant(value: Int) extends BlackBox(Map("VALUE" -> value, "WIDTH" -> log2Ceil(value + 1)))" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class BlackBoxStringParam(str: String) extends BlackBox(Map(&quot;STRING&quot; -&gt; str))">
+<code class="descname">class BlackBoxStringParam(str: String) extends BlackBox(Map(&quot;STRING&quot; -&gt; str))</code><a class="headerlink" href="#attr-class BlackBoxStringParam(str: String) extends BlackBox(Map("STRING" -> str))" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class BlackBoxRealParam(dbl: Double) extends BlackBox(Map(&quot;REAL&quot; -&gt; dbl))">
+<code class="descname">class BlackBoxRealParam(dbl: Double) extends BlackBox(Map(&quot;REAL&quot; -&gt; dbl))</code><a class="headerlink" href="#attr-class BlackBoxRealParam(dbl: Double) extends BlackBox(Map("REAL" -> dbl))" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class BlackBoxTypeParam(w: Int, raw: String) extends BlackBox(Map(&quot;T&quot; -&gt; RawParam(raw)))">
+<code class="descname">class BlackBoxTypeParam(w: Int, raw: String) extends BlackBox(Map(&quot;T&quot; -&gt; RawParam(raw)))</code><a class="headerlink" href="#attr-class BlackBoxTypeParam(w: Int, raw: String) extends BlackBox(Map("T" -> RawParam(raw)))" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class BlackBoxWithParamsTester extends BasicTester">
+<code class="descname">class BlackBoxWithParamsTester extends BasicTester</code><a class="headerlink" href="#attr-class BlackBoxWithParamsTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class BlackBoxSpec extends ChiselFlatSpec">
+<code class="descname">class BlackBoxSpec extends ChiselFlatSpec</code><a class="headerlink" href="#attr-class BlackBoxSpec extends ChiselFlatSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="enumspec-scala">
+<h2>EnumSpec.scala<a class="headerlink" href="#enumspec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class EnumSpec extends ChiselFlatSpec">
+<code class="descname">class EnumSpec extends ChiselFlatSpec</code><a class="headerlink" href="#attr-class EnumSpec extends ChiselFlatSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="autoclonetypespec-scala">
+<h2>AutoClonetypeSpec.scala<a class="headerlink" href="#autoclonetypespec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class BundleWithIntArg(val i: Int) extends Bundle">
+<code class="descname">class BundleWithIntArg(val i: Int) extends Bundle</code><a class="headerlink" href="#attr-class BundleWithIntArg(val i: Int) extends Bundle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class BundleWithImplicit()(implicit val ii: Int) extends Bundle">
+<code class="descname">class BundleWithImplicit()(implicit val ii: Int) extends Bundle</code><a class="headerlink" href="#attr-class BundleWithImplicit()(implicit val ii: Int) extends Bundle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class BundleWithArgAndImplicit(val i: Int)(implicit val ii: Int) extends Bundle">
+<code class="descname">class BundleWithArgAndImplicit(val i: Int)(implicit val ii: Int) extends Bundle</code><a class="headerlink" href="#attr-class BundleWithArgAndImplicit(val i: Int)(implicit val ii: Int) extends Bundle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class BaseBundleVal(val i: Int) extends Bundle">
+<code class="descname">class BaseBundleVal(val i: Int) extends Bundle</code><a class="headerlink" href="#attr-class BaseBundleVal(val i: Int) extends Bundle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class SubBundle(i: Int, val i2: Int) extends BaseBundleVal(i)">
+<code class="descname">class SubBundle(i: Int, val i2: Int) extends BaseBundleVal(i)</code><a class="headerlink" href="#attr-class SubBundle(i: Int, val i2: Int) extends BaseBundleVal(i)" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class SubBundleInvalid(i: Int, val i2: Int) extends BaseBundleVal(i + 1)">
+<code class="descname">class SubBundleInvalid(i: Int, val i2: Int) extends BaseBundleVal(i + 1)</code><a class="headerlink" href="#attr-class SubBundleInvalid(i: Int, val i2: Int) extends BaseBundleVal(i + 1)" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class BaseBundleNonVal(i: Int) extends Bundle">
+<code class="descname">class BaseBundleNonVal(i: Int) extends Bundle</code><a class="headerlink" href="#attr-class BaseBundleNonVal(i: Int) extends Bundle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class SubBundleVal(val i: Int, val i2: Int) extends BaseBundleNonVal(i)">
+<code class="descname">class SubBundleVal(val i: Int, val i2: Int) extends BaseBundleNonVal(i)</code><a class="headerlink" href="#attr-class SubBundleVal(val i: Int, val i2: Int) extends BaseBundleNonVal(i)" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class ModuleWithInner extends Module">
+<code class="descname">class ModuleWithInner extends Module</code><a class="headerlink" href="#attr-class ModuleWithInner extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-object CompanionObjectWithBundle">
+<code class="descname">object CompanionObjectWithBundle</code><a class="headerlink" href="#attr-object CompanionObjectWithBundle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class NestedAnonymousBundle extends Bundle">
+<code class="descname">class NestedAnonymousBundle extends Bundle</code><a class="headerlink" href="#attr-class NestedAnonymousBundle extends Bundle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class BundleWithArgumentField(val x: Data, val y: Data) extends Bundle  class AutoClonetypeSpec extends ChiselFlatSpec">
+<code class="descname">class BundleWithArgumentField(val x: Data, val y: Data) extends Bundle  class AutoClonetypeSpec extends ChiselFlatSpec</code><a class="headerlink" href="#attr-class BundleWithArgumentField(val x: Data, val y: Data) extends Bundle  class AutoClonetypeSpec extends ChiselFlatSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class AutoClonetypeSpec extends ChiselFlatSpec">
+<code class="descname">class AutoClonetypeSpec extends ChiselFlatSpec</code><a class="headerlink" href="#attr-class AutoClonetypeSpec extends ChiselFlatSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="tbl-scala">
+<h2>Tbl.scala<a class="headerlink" href="#tbl-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class Tbl(w: Int, n: Int) extends Module">
+<code class="descname">class Tbl(w: Int, n: Int) extends Module</code><a class="headerlink" href="#attr-class Tbl(w: Int, n: Int) extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class TblTester(w: Int, n: Int, idxs: List[Int], values: List[Int]) extends BasicTester">
+<code class="descname">class TblTester(w: Int, n: Int, idxs: List[Int], values: List[Int]) extends BasicTester</code><a class="headerlink" href="#attr-class TblTester(w: Int, n: Int, idxs: List[Int], values: List[Int]) extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class TblSpec extends ChiselPropSpec">
+<code class="descname">class TblSpec extends ChiselPropSpec</code><a class="headerlink" href="#attr-class TblSpec extends ChiselPropSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="namingannotationtest-scala">
+<h2>NamingAnnotationTest.scala<a class="headerlink" href="#namingannotationtest-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-trait NamedModuleTester extends MultiIOModule">
+<code class="descname">trait NamedModuleTester extends MultiIOModule</code><a class="headerlink" href="#attr-trait NamedModuleTester extends MultiIOModule" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="attr">
+<dt id="attr-def expectName[T &lt;: InstanceId](node: T, fullName: String): T =">
+<code class="descname">def expectName[T &lt;: InstanceId](node: T, fullName: String): T =</code><a class="headerlink" href="#attr-def expectName[T <: InstanceId](node: T, fullName: String): T =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Expects some name for a node that is propagated to FIRRTL.      The node is returned allowing this to be called inline.</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-def expectModuleName[T &lt;: Module](node: T, fullName: String): T =">
+<code class="descname">def expectModuleName[T &lt;: Module](node: T, fullName: String): T =</code><a class="headerlink" href="#attr-def expectModuleName[T <: Module](node: T, fullName: String): T =" title="Permalink to this definition">¶</a></dt>
+<dd><p>Expects some name for a module declaration that is propagated to FIRRTL.        The node is returned allowing this to be called inline.</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-def getNameFailures(): List[(InstanceId, String, String)] =">
+<code class="descname">def getNameFailures(): List[(InstanceId, String, String)] =</code><a class="headerlink" href="#attr-def getNameFailures(): List[(InstanceId, String, String)] =" title="Permalink to this definition">¶</a></dt>
+<dd><p>After this module has been elaborated, returns a list of (node, expected name, actual name)     that did not match expectations.
+Returns an empty list if everything was fine.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-class NamedModule extends NamedModuleTester">
+<code class="descname">class NamedModule extends NamedModuleTester</code><a class="headerlink" href="#attr-class NamedModule extends NamedModuleTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class NameCollisionModule extends NamedModuleTester">
+<code class="descname">class NameCollisionModule extends NamedModuleTester</code><a class="headerlink" href="#attr-class NameCollisionModule extends NamedModuleTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class NonNamedModule extends NamedModuleTester">
+<code class="descname">class NonNamedModule extends NamedModuleTester</code><a class="headerlink" href="#attr-class NonNamedModule extends NamedModuleTester" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ensure no crash happens if a named function is enclosed in a non-named module</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-object NonNamedHelper">
+<code class="descname">object NonNamedHelper</code><a class="headerlink" href="#attr-object NonNamedHelper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ensure no crash happens if a named function is enclosed in a non-named function in a named      module.</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-class NonNamedFunction extends NamedModuleTester">
+<code class="descname">class NonNamedFunction extends NamedModuleTester</code><a class="headerlink" href="#attr-class NonNamedFunction extends NamedModuleTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class PartialNamedModule extends NamedModuleTester">
+<code class="descname">class PartialNamedModule extends NamedModuleTester</code><a class="headerlink" href="#attr-class PartialNamedModule extends NamedModuleTester" title="Permalink to this definition">¶</a></dt>
+<dd><p>Ensure broken links in the chain are simply dropped</p>
+</dd></dl>
+
+<dl class="attr">
+<dt id="attr-class NamingAnnotationSpec extends ChiselPropSpec">
+<code class="descname">class NamingAnnotationSpec extends ChiselPropSpec</code><a class="headerlink" href="#attr-class NamingAnnotationSpec extends ChiselPropSpec" title="Permalink to this definition">¶</a></dt>
+<dd><p>A simple test that checks the recursive function val naming annotation both compiles and        generates the expected names.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="counter-scala">
+<h2>Counter.scala<a class="headerlink" href="#counter-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class CountTester(max: Int) extends BasicTester">
+<code class="descname">class CountTester(max: Int) extends BasicTester</code><a class="headerlink" href="#attr-class CountTester(max: Int) extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class EnableTester(seed: Int) extends BasicTester">
+<code class="descname">class EnableTester(seed: Int) extends BasicTester</code><a class="headerlink" href="#attr-class EnableTester(seed: Int) extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class WrapTester(max: Int) extends BasicTester">
+<code class="descname">class WrapTester(max: Int) extends BasicTester</code><a class="headerlink" href="#attr-class WrapTester(max: Int) extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class CounterSpec extends ChiselPropSpec">
+<code class="descname">class CounterSpec extends ChiselPropSpec</code><a class="headerlink" href="#attr-class CounterSpec extends ChiselPropSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="memorysearch-scala">
+<h2>MemorySearch.scala<a class="headerlink" href="#memorysearch-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class MemorySearch extends Module">
+<code class="descname">class MemorySearch extends Module</code><a class="headerlink" href="#attr-class MemorySearch extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class MemorySearchTester(c: MemorySearch) extends Tester(c)">
+<code class="descname">class MemorySearchTester(c: MemorySearch) extends Tester(c)</code><a class="headerlink" href="#attr-class MemorySearchTester(c: MemorySearch) extends Tester(c)" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class MemorySearchSpec extends ChiselPropSpec">
+<code class="descname">class MemorySearchSpec extends ChiselPropSpec</code><a class="headerlink" href="#attr-class MemorySearchSpec extends ChiselPropSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="module-scala">
+<h2>Module.scala<a class="headerlink" href="#module-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class SimpleIO extends Bundle">
+<code class="descname">class SimpleIO extends Bundle</code><a class="headerlink" href="#attr-class SimpleIO extends Bundle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class PlusOne extends Module">
+<code class="descname">class PlusOne extends Module</code><a class="headerlink" href="#attr-class PlusOne extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class ModuleVec(val n: Int) extends Module">
+<code class="descname">class ModuleVec(val n: Int) extends Module</code><a class="headerlink" href="#attr-class ModuleVec(val n: Int) extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class ModuleWire extends Module">
+<code class="descname">class ModuleWire extends Module</code><a class="headerlink" href="#attr-class ModuleWire extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class ModuleWhen extends Module">
+<code class="descname">class ModuleWhen extends Module</code><a class="headerlink" href="#attr-class ModuleWhen extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class ModuleForgetWrapper extends Module">
+<code class="descname">class ModuleForgetWrapper extends Module</code><a class="headerlink" href="#attr-class ModuleForgetWrapper extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class ModuleDoubleWrap extends Module">
+<code class="descname">class ModuleDoubleWrap extends Module</code><a class="headerlink" href="#attr-class ModuleDoubleWrap extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class ModuleRewrap extends Module">
+<code class="descname">class ModuleRewrap extends Module</code><a class="headerlink" href="#attr-class ModuleRewrap extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class ModuleWrapper(gen: =&gt; Module) extends Module">
+<code class="descname">class ModuleWrapper(gen: =&gt; Module) extends Module</code><a class="headerlink" href="#attr-class ModuleWrapper(gen: => Module) extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class NullModuleWrapper extends Module">
+<code class="descname">class NullModuleWrapper extends Module</code><a class="headerlink" href="#attr-class NullModuleWrapper extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class ModuleSpec extends ChiselPropSpec">
+<code class="descname">class ModuleSpec extends ChiselPropSpec</code><a class="headerlink" href="#attr-class ModuleSpec extends ChiselPropSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="autonestedclonespec-scala">
+<h2>AutoNestedCloneSpec.scala<a class="headerlink" href="#autonestedclonespec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class BundleWithAnonymousInner(val w: Int) extends Bundle">
+<code class="descname">class BundleWithAnonymousInner(val w: Int) extends Bundle</code><a class="headerlink" href="#attr-class BundleWithAnonymousInner(val w: Int) extends Bundle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers">
+<code class="descname">class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers</code><a class="headerlink" href="#attr-class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="muxspec-scala">
+<h2>MuxSpec.scala<a class="headerlink" href="#muxspec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class MuxTester extends BasicTester">
+<code class="descname">class MuxTester extends BasicTester</code><a class="headerlink" href="#attr-class MuxTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class MuxSpec extends ChiselFlatSpec">
+<code class="descname">class MuxSpec extends ChiselFlatSpec</code><a class="headerlink" href="#attr-class MuxSpec extends ChiselFlatSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="gcd-scala">
+<h2>GCD.scala<a class="headerlink" href="#gcd-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class GCD extends Module">
+<code class="descname">class GCD extends Module</code><a class="headerlink" href="#attr-class GCD extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class GCDTester(a: Int, b: Int, z: Int) extends BasicTester">
+<code class="descname">class GCDTester(a: Int, b: Int, z: Int) extends BasicTester</code><a class="headerlink" href="#attr-class GCDTester(a: Int, b: Int, z: Int) extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class GCDSpec extends ChiselPropSpec">
+<code class="descname">class GCDSpec extends ChiselPropSpec</code><a class="headerlink" href="#attr-class GCDSpec extends ChiselPropSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="padding-scala">
+<h2>Padding.scala<a class="headerlink" href="#padding-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class Padder extends Module">
+<code class="descname">class Padder extends Module</code><a class="headerlink" href="#attr-class Padder extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class PadsTester(c: Pads) extends Tester(c)">
+<code class="descname">class PadsTester(c: Pads) extends Tester(c)</code><a class="headerlink" href="#attr-class PadsTester(c: Pads) extends Tester(c)" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class PadderSpec extends ChiselPropSpec">
+<code class="descname">class PadderSpec extends ChiselPropSpec</code><a class="headerlink" href="#attr-class PadderSpec extends ChiselPropSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+<div class="section" id="analogspec-scala">
+<h2>AnalogSpec.scala<a class="headerlink" href="#analogspec-scala" title="Permalink to this headline">¶</a></h2>
+<dl class="attr">
+<dt id="attr-class AnalogReaderIO extends Bundle">
+<code class="descname">class AnalogReaderIO extends Bundle</code><a class="headerlink" href="#attr-class AnalogReaderIO extends Bundle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class AnalogWriterIO extends Bundle">
+<code class="descname">class AnalogWriterIO extends Bundle</code><a class="headerlink" href="#attr-class AnalogWriterIO extends Bundle" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-trait AnalogReader">
+<code class="descname">trait AnalogReader</code><a class="headerlink" href="#attr-trait AnalogReader" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class AnalogReaderBlackBox extends BlackBox with AnalogReader">
+<code class="descname">class AnalogReaderBlackBox extends BlackBox with AnalogReader</code><a class="headerlink" href="#attr-class AnalogReaderBlackBox extends BlackBox with AnalogReader" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class AnalogReaderWrapper extends Module with AnalogReader">
+<code class="descname">class AnalogReaderWrapper extends Module with AnalogReader</code><a class="headerlink" href="#attr-class AnalogReaderWrapper extends Module with AnalogReader" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class AnalogWriterBlackBox extends BlackBox">
+<code class="descname">class AnalogWriterBlackBox extends BlackBox</code><a class="headerlink" href="#attr-class AnalogWriterBlackBox extends BlackBox" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class AnalogConnector extends Module">
+<code class="descname">class AnalogConnector extends Module</code><a class="headerlink" href="#attr-class AnalogConnector extends Module" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class VecAnalogReaderWrapper extends RawModule with AnalogReader">
+<code class="descname">class VecAnalogReaderWrapper extends RawModule with AnalogReader</code><a class="headerlink" href="#attr-class VecAnalogReaderWrapper extends RawModule with AnalogReader" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class VecBundleAnalogReaderWrapper extends RawModule with AnalogReader">
+<code class="descname">class VecBundleAnalogReaderWrapper extends RawModule with AnalogReader</code><a class="headerlink" href="#attr-class VecBundleAnalogReaderWrapper extends RawModule with AnalogReader" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-abstract class AnalogTester extends BasicTester">
+<code class="descname">abstract class AnalogTester extends BasicTester</code><a class="headerlink" href="#attr-abstract class AnalogTester extends BasicTester" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attr">
+<dt id="attr-class AnalogSpec extends ChiselFlatSpec">
+<code class="descname">class AnalogSpec extends ChiselFlatSpec</code><a class="headerlink" href="#attr-class AnalogSpec extends ChiselFlatSpec" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../contents.html">chisel-test</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../../../src.html">src</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="../../test.html">src/test</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../../../main/main.html">src/main</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../chiselFrontend/chiselFrontend.html">chiselFrontend</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../contents.html">Documentation overview</a><ul>
+  <li><a href="../../../src.html">src</a><ul>
+  <li><a href="../../test.html">src/test</a><ul>
+  <li><a href="../scala.html">src/test/scala</a><ul>
+      <li>Previous: <a href="../chisel3/stage/phases/phases.html" title="previous chapter">src/test/scala/chisel3/stage/phases</a></li>
+      <li>Next: <a href="experimental/experimental.html" title="next chapter">src/test/scala/chiselTests/experimental</a></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2019, John Andrews.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../../../../_sources/src/test/scala/chiselTests/chiselTests.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
