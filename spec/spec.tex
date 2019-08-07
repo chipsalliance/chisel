@@ -756,7 +756,7 @@ A memory is an abstract representation of a hardware memory. It is characterized
 \item A positive integer representing the number of elements in the memory.
 \item A variable number of named ports, each being a read port, a write port, or readwrite port.
 \item A non-negative integer indicating the read latency, which is the number of cycles after setting the port's read address before the corresponding element's value can be read from the port's data field.
-\item A non-negative integer indicating the write latency, which is the number of cycles after setting the port's write address and data before the corresponding element within the memory holds the new value.
+\item A positive integer indicating the write latency, which is the number of cycles after setting the port's write address and data before the corresponding element within the memory holds the new value.
 \item A read-under-write flag indicating the behaviour when a memory location is written to while a read to that location is in progress.
 \end{enumerate}
 

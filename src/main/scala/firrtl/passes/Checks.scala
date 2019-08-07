@@ -27,6 +27,8 @@ trait CheckHighFormLike {
     s"$info: [module $mname] Memory $name has not been properly lowered from Chirrtl IR.")
   class MemWithFlipException(info: Info, mname: String, name: String) extends PassException(
     s"$info: [module $mname] Memory $name cannot be a bundle type with flips.")
+  class IllegalMemLatencyException(info: Info, mname: String, name: String) extends PassException(
+    s"$info: [module $mname] Memory $name must have non-negative read latency and positive write latency.")
   class RegWithFlipException(info: Info, mname: String, name: String) extends PassException(
     s"$info: [module $mname] Register $name cannot be a bundle type with flips.")
   class InvalidAccessException(info: Info, mname: String) extends PassException(
@@ -191,6 +193,8 @@ trait CheckHighFormLike {
           if (reset.tpe == AsyncResetType && !init.isInstanceOf[Literal])
             errors.append(new NonLiteralAsyncResetValueException(info, mname, name, init.serialize))
         case sx: DefMemory =>
+          if (sx.readLatency < 0 || sx.writeLatency <= 0)
+            errors.append(new IllegalMemLatencyException(info, mname, sx.name))
           if (hasFlip(sx.dataType))
             errors.append(new MemWithFlipException(info, mname, sx.name))
           if (sx.depth <= 0)
