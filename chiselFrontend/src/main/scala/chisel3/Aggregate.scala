@@ -216,6 +216,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
 
   /** @group SourceInfoTransformMacro */
   def do_apply(p: UInt)(implicit compileOptions: CompileOptions): T = {
+    requireIsHardware(this, "vec")
     requireIsHardware(p, "vec index")
     val port = gen
 
