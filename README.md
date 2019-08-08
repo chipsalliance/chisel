@@ -6,9 +6,9 @@
 [![CircleCI](https://circleci.com/gh/freechipsproject/chisel3/tree/master.svg?style=shield)](https://circleci.com/gh/freechipsproject/chisel3/tree/master)
 [![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/freechipsproject/chisel3.svg?label=release)](https://github.com/freechipsproject/chisel3/releases/latest)
 
-[**Chisel**](https://chisel.eecs.berkeley.edu) is a hardware design language that facilitates **advanced circuit generation and design reuse for both ASIC and FPGA digital logic designs**.
+[**Chisel**](https://www.chisel-lang.org) is a hardware design language that facilitates **advanced circuit generation and design reuse for both ASIC and FPGA digital logic designs**.
 Chisel adds hardware construction primitives to the [Scala](https://www.scala-lang.org) programming language, providing designers with the power of a modern programming language to write complex, parameterizable circuit generators that produce synthesizable Verilog.
-This generator methodology enables the creation of re-usable components and libraries, such as the FIFO queue and arbiters in the [Chisel Standard Library](https://chisel.eecs.berkeley.edu/api/latest/chisel3/util/index.html), raising the level of abstraction in design while retaining fine-grained control. 
+This generator methodology enables the creation of re-usable components and libraries, such as the FIFO queue and arbiters in the [Chisel Standard Library](https://www.chisel-lang.org/api/chisel3/latest/chisel3/util/index.html), raising the level of abstraction in design while retaining fine-grained control. 
 
 For more information on the benefits of Chisel see: ["What benefits does Chisel offer over classic Hardware Description Languages?"](https://stackoverflow.com/questions/53007782/what-benefits-does-chisel-offer-over-classic-hardware-description-languages)
 
@@ -103,9 +103,9 @@ These simulation-based verification tools are available for Chisel:
  
 - [**Cheat Sheet**](https://chisel.eecs.berkeley.edu/doc/chisel-cheatsheet3.pdf), a 2-page reference of the base Chisel syntax and libraries
 - [**Wiki**](https://github.com/freechipsproject/chisel3/wiki), which contains various feature-specific tutorials and frequently-asked questions.
-- [**ScalaDoc**](https://chisel.eecs.berkeley.edu/api/latest/chisel3/index.html), a listing, description, and examples of the functionality exposed by Chisel   
+- [**ScalaDoc**](https://www.chisel-lang.org/api/chisel3/latest/chisel3/index.html), a listing, description, and examples of the functionality exposed by Chisel   
 - [**Gitter**](https://gitter.im/freechipsproject/chisel3), where you can ask questions or discuss anything Chisel
-- [**Website**](https://chisel.eecs.berkeley.edu)
+- [**Website**](https://www.chisel-lang.org)
 
 If you are migrating from Chisel2, see [the migration guide on the wiki](https://github.com/ucb-bar/chisel3/wiki/Chisel3-vs-Chisel2).
 
