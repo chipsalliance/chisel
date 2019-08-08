@@ -18,17 +18,6 @@ trait ChiselAnnotation {
   /** Conversion to FIRRTL Annotation */
   def toFirrtl: Annotation
 }
-object ChiselAnnotation {
-  @deprecated("Write a custom ChiselAnnotation subclass instead", "3.1")
-  def apply(component: InstanceId, transformClass: Class[_ <: Transform], value: String): ChiselLegacyAnnotation =
-    ChiselLegacyAnnotation(component, transformClass, value)
-  @deprecated("Write a custom ChiselAnnotation subclass instead", "3.1")
-  def unapply(anno: ChiselAnnotation): Option[(InstanceId, Class[_ <: Transform], String)] =
-    anno match {
-      case ChiselLegacyAnnotation(c, t, v) => Some(c, t, v)
-      case _ => None
-    }
-}
 
 /** Mixin for [[ChiselAnnotation]] that instantiates an associated FIRRTL Transform when this Annotation is present
   * during a run of

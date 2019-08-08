@@ -20,11 +20,11 @@ package object experimental {  // scalastyle:ignore object.name
 
   type ChiselEnum = EnumFactory
 
-  @deprecated("Use the version in chisel3._", "chisel3.2")
+  @deprecated("Use the version in chisel3._", "3.2")
   val withClockAndReset = chisel3.withClockAndReset
-  @deprecated("Use the version in chisel3._", "chisel3.2")
+  @deprecated("Use the version in chisel3._", "3.2")
   val withClock = chisel3.withClock
-  @deprecated("Use the version in chisel3._", "chisel3.2")
+  @deprecated("Use the version in chisel3._", "3.2")
   val withReset = chisel3.withReset
 
   // Rocket Chip-style clonemodule

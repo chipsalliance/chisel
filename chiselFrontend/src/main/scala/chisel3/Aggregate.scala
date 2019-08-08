@@ -348,16 +348,6 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId with Source
   override def hashCode: Int = super[HasId].hashCode
   override def equals(that: Any): Boolean = super[HasId].equals(that)
 
-  @chiselRuntimeDeprecated
-  @deprecated("Use Vec.apply instead", "chisel3")
-  def read(idx: UInt)(implicit compileOptions: CompileOptions): T = do_apply(idx)(compileOptions)
-
-  @chiselRuntimeDeprecated
-  @deprecated("Use Vec.apply instead", "chisel3")
-  def write(idx: UInt, data: T)(implicit compileOptions: CompileOptions): Unit = {
-    do_apply(idx)(compileOptions).:=(data)(DeprecatedSourceInfo, compileOptions)
-  }
-
   /** Outputs true if p outputs true for every element.
     */
   def forall(p: T => Bool): Bool = macro SourceInfoTransform.pArg

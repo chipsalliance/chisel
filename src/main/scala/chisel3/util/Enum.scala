@@ -39,12 +39,4 @@ trait Enum {
   def apply(n: Int): List[UInt] = createValues(n).toList
 }
 
-object Enum extends Enum {
-  @chiselRuntimeDeprecated
-  @deprecated("use Enum(n)", "chisel3, will be removed soon")
-  def apply[T <: Bits](nodeType: T, n: Int): List[T] = {
-    require(nodeType.isInstanceOf[UInt], "Only UInt supported for enums")
-    require(!nodeType.widthKnown, "Bit width may no longer be specified for enums")
-    apply(n).asInstanceOf[List[T]]
-  }
-}
+object Enum extends Enum

@@ -191,16 +191,6 @@ class Queue[T <: Data](gen: T,
                        flow: Boolean = false)
                       (implicit compileOptions: chisel3.CompileOptions)
     extends Module() {
-  @deprecated("Module constructor with override _reset deprecated, use withReset", "chisel3")
-  def this(gen: T, entries: Int, pipe: Boolean, flow: Boolean, override_reset: Option[Bool]) = {
-    this(gen, entries, pipe, flow)
-    this.override_reset = override_reset
-  }
-  @deprecated("Module constructor with override _reset deprecated, use withReset", "chisel3")
-  def this(gen: T, entries: Int, pipe: Boolean, flow: Boolean, _reset: Bool) = {
-    this(gen, entries, pipe, flow)
-    this.override_reset = Some(_reset)
-  }
 
   val genType = if (compileOptions.declaredTypeMustBeUnbound) {
     requireIsChiselType(gen)
