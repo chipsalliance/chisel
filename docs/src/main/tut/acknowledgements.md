@@ -4,36 +4,73 @@ title:  "Acknowledgements"
 section: "Acknowledgements"
 position: 16
 ---
-Many people have helped out in the design of Chisel, and we thank them
-for their patience, bravery, and belief in a better way.  Many
-Berkeley EECS students in the Isis group gave weekly feedback as the
-design evolved including but not limited to Yunsup Lee, Andrew
-Waterman, Scott Beamer, Chris Celio, etc.  Yunsup Lee gave us feedback
-in response to the first RISC-V implementation, called TrainWreck,
-translated from Verilog to Chisel.  Andrew Waterman and Yunsup Lee
-helped us get our Verilog backend up and running and Chisel TrainWreck
-running on an FPGA.  Brian Richards was the first actual Chisel user,
-first translating (with Huy Vo) John Hauser's FPU Verilog code to
-Chisel, and later implementing generic memory blocks.  Brian gave many
-invaluable comments on the design and brought a vast experience in
-hardware design and design tools.  Chris Batten shared his fast
-multiword C++ template library that inspired our fast emulation
-library.  Huy Vo became our undergraduate research assistant and was
-the first to actually assist in the Chisel implementation.  We
-appreciate all the EECS students who participated in the Chisel
-bootcamp and proposed and worked on hardware design projects all of
-which pushed the Chisel envelope.  We appreciate the work that James
-Martin and Alex Williams did in writing and translating network and
-memory controllers and non-blocking caches.  Finally, Chisel's
-functional programming and bit-width inference ideas were inspired by
-earlier work on a hardware description language called *Gel* designed in
-collaboration with Dany Qumsiyeh and Mark Tobenkin.
 
-<!--- Who else? --->
+## Contributors
 
-Bachrach, J., Vo, H., Richards, B., Lee, Y., Waterman, A., Avizienis, Wawrzynek, J., Asanovic, K.
- **Chisel: Constructing Hardware in a Scala Embedded Language**.
-in DAC '12.
-Bachrach, J., Qumsiyeh, D., Tobenkin, M.
- **Hardware Scripting in Gel**.
-in Field-Programmable Custom Computing Machines, 2008. FCCM '08. 16th.
+Chisel, FIRRTL, and all related projects would not be possible without the contributions of our fantastic developer community.
+The following people have contributed to the current release of the projects:
+
+{% include_relative contributors.md %}
+
+## Papers
+
+While Chisel has come a long way since 2012, the original Chisel paper provides some background on motivations and an overview of the (now deprecated) Chisel 2 language:
+
+- [Bachrach, Jonathan, et al. "Chisel: constructing hardware in a scala embedded language." DAC Design Automation Conference 2012. IEEE, 2012.](https://people.eecs.berkeley.edu/~jrb/papers/chisel-dac-2012-corrected.pdf)
+
+The FIRRTL IR and FIRRTL compiler, introduced as part of Chisel 3, are discussed in both the following paper and specification[^1]:
+
+- [Izraelevitz, Adam, et al. "Reusability is FIRRTL ground: Hardware construction languages, compiler frameworks, and transformations." Proceedings of the 36th International Conference on Computer-Aided Design. IEEE Press, 2017.](https://aspire.eecs.berkeley.edu/wp/wp-content/uploads/2017/11/Reusability-is-FIRRTL-Ground-Izraelevitz.pdf)
+- [Li, Patrick S., Adam M. Izraelevitz, and Jonathan Bachrach. "Specification for the FIRRTL Language." EECS Department, University of California, Berkeley, Tech. Rep. UCB/EECS-2016-9 (2016).](https://www2.eecs.berkeley.edu/Pubs/TechRpts/2016/EECS-2016-9.pdf)
+
+Finally, Chisel's functional programming and bit-width inference ideas were inspired by earlier work on a hardware description language called *Gel*:
+
+- [Bachrach, Jonathan, Dany Qumsiyeh, and Mark Tobenkin. "Hardware scripting in gel." 2008 16th International Symposium on Field-Programmable Custom Computing Machines. IEEE, 2008.](http://people.eecs.berkeley.edu/~jrb/papers/gel-fccm-2008.pdf)
+
+## Attribution
+
+If you use Chisel in your research, consider citing:
+
+```bib
+@inproceedings{bachrach:2012:chisel,
+  author={J. {Bachrach} and H. {Vo} and B. {Richards} and Y. {Lee} and A. {Waterman} and R {Avižienis} and J. {Wawrzynek} and K. {Asanović}},
+  booktitle={DAC Design Automation Conference 2012},
+  title={Chisel: Constructing hardware in a Scala embedded language},
+  year={2012},
+  volume={},
+  number={},
+  pages={1212-1221},
+  keywords={application specific integrated circuits;C++ language;field programmable gate arrays;hardware description languages;Chisel;Scala embedded language;hardware construction language;hardware design abstraction;functional programming;type inference;high-speed C++-based cycle-accurate software simulator;low-level Verilog;FPGA;standard ASIC flow;Hardware;Hardware design languages;Generators;Registers;Wires;Vectors;Finite impulse response filter;CAD},
+  doi={10.1145/2228360.2228584},
+  ISSN={0738-100X},
+  month={June},}
+```
+
+If you use FIRRTL in your research consider citing:
+
+```bib
+@INPROCEEDINGS{8203780,
+  author={A. Izraelevitz and J. Koenig and P. Li and R. Lin and A. Wang and A. Magyar and D. Kim and C. Schmidt and C. Markley and J. Lawson and J. Bachrach},
+  booktitle={2017 IEEE/ACM International Conference on Computer-Aided Design (ICCAD)},
+  title={Reusability is FIRRTL ground: Hardware construction languages, compiler frameworks,
+  and transformations},
+  year={2017},
+  volume={},
+  number={},
+  pages={209-216},
+  keywords={field programmable gate arrays;hardware description languages;program compilers;software reusability;hardware development practices;hardware libraries;open-source hardware intermediate representation;hardware compiler transformations;Hardware construction languages;retargetable compilers;software development;virtual Cambrian explosion;hardware compiler frameworks;parameterized libraries;FIRRTL;FPGA mappings;Chisel;Flexible Intermediate Representation for RTL;Reusability;Hardware;Libraries;Hardware design languages;Field programmable gate arrays;Tools;Open source software;RTL;Design;FPGA;ASIC;Hardware;Modeling;Reusability;Hardware Design Language;Hardware Construction Language;Intermediate Representation;Compiler;Transformations;Chisel;FIRRTL},
+  doi={10.1109/ICCAD.2017.8203780},
+  ISSN={1558-2434},
+  month={Nov},}
+@techreport{Li:EECS-2016-9,
+    Author = {Li, Patrick S. and Izraelevitz, Adam M. and Bachrach, Jonathan},
+    Title = {Specification for the FIRRTL Language},
+    Institution = {EECS Department, University of California, Berkeley},
+    Year = {2016},
+    Month = {Feb},
+    URL = {http://www2.eecs.berkeley.edu/Pubs/TechRpts/2016/EECS-2016-9.html},
+    Number = {UCB/EECS-2016-9}
+}
+```
+
+[^1]: This specification is provided for historical perspective. For the latest version of the FIRRTL specification you can use [this link](https://github.com/freechipsproject/firrtl/raw/master/spec/spec.pdf).
