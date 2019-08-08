@@ -60,7 +60,7 @@ apis-diagrammer: $(diagrammerTags:%=$(apis)/diagrammer/%/index.html)
 
 # Remove the output of all build targets
 clean:
-	rm -rf $(buildDir)/api docs/target
+	rm -rf $(buildDir)/api docs/target docs/src/main/tut/contributors.md
 
 # Remove everything
 mrproper:
@@ -75,8 +75,12 @@ serve: all
 	(cd docs/target/site && jekyll serve)
 
 # Build the sbt-microsite
-docs/target/site/index.html: build.sbt $(www-src) $(chisel-src) $(api-copy)
+docs/target/site/index.html: build.sbt docs/src/main/tut/contributors.md $(www-src) $(chisel-src) $(api-copy)
 	sbt ++$(scalaVersion).$(scalaMinorVersion) docs/makeMicrosite
+
+# Determine contributors
+docs/src/main/tut/contributors.md: build.sbt
+	sbt ++$(scalaVersion).$(scalaMinorVersion) contributors/determineContributors
 
 # Build API of subprojects
 chisel3/target/scala-$(scalaVersion)/unidoc/index.html: $(shell find chisel3/src chisel-testers/src -name *.scala) | chisel3/.git
