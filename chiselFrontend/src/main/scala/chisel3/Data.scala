@@ -381,14 +381,15 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
       requireIsHardware(this, "data to be connected")
       requireIsHardware(that, "data to be connected")
       this.topBinding match {
-        case _: ReadOnlyBinding => throwException(s"Cannot reassign to read-only $this")
+        case _: ReadOnlyBinding =>
+          throwException(s"${sourceInfo.makeMessage(identity)} Cannot reassign to read-only $this")
         case _ =>  // fine
       }
       try {
         MonoConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.forcedUserModule)
       } catch {
         case MonoConnectException(message) =>
-          throwException(
+          throwException(s"${sourceInfo.makeMessage(identity)} " +
             s"Connection between sink ($this) and source ($that) failed @$message"
           )
       }
@@ -398,10 +399,11 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
   }
   private[chisel3] def bulkConnect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = { // scalastyle:ignore line.size.limit
     if (connectCompileOptions.checkSynthesizable) {
-      requireIsHardware(this, s"data to be bulk-connected")
-      requireIsHardware(that, s"data to be bulk-connected")
+      requireIsHardware(this, s"${sourceInfo.makeMessage(identity)} data to be bulk-connected")
+      requireIsHardware(that, s"${sourceInfo.makeMessage(identity)} data to be bulk-connected")
       (this.topBinding, that.topBinding) match {
-        case (_: ReadOnlyBinding, _: ReadOnlyBinding) => throwException(s"Both $this and $that are read-only")
+        case (_: ReadOnlyBinding, _: ReadOnlyBinding) =>
+          throwException(s"${sourceInfo.makeMessage(identity)} Both $this and $that are read-only")
         // DontCare cannot be a sink (LHS)
         case (_: DontCareBinding, _) => throw BiConnect.DontCareCantBeSink
         case _ =>  // fine
@@ -410,9 +412,8 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
         BiConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.forcedUserModule)
       } catch {
         case BiConnectException(message) =>
-          throwException(
-            s"Connection between left ($this) and source ($that) failed @$message"
-          )
+          throwException(s"${sourceInfo.makeMessage(identity)} " +
+            s"Connection between left ($this) and source ($that) failed @$message")
       }
     } else {
       this legacyConnect that
