@@ -23,8 +23,6 @@ trait CheckHighFormLike {
     s"$info: [module $mname] Reference $name is not declared.")
   class PoisonWithFlipException(info: Info, mname: String, name: String) extends PassException(
     s"$info: [module $mname] Poison $name cannot be a bundle type with flips.")
-  class IllegalChirrtlMemException(info: Info, mname: String, name: String) extends PassException(
-    s"$info: [module $mname] Memory $name has not been properly lowered from Chirrtl IR.")
   class MemWithFlipException(info: Info, mname: String, name: String) extends PassException(
     s"$info: [module $mname] Memory $name cannot be a bundle type with flips.")
   class IllegalMemLatencyException(info: Info, mname: String, name: String) extends PassException(
