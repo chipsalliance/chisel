@@ -34,7 +34,7 @@ object Select {
     * @param d Component to find leafs if aggregate typed. Intermediate fields/indicies ARE included
     * @return
     */
-  def getIntermediateAndLeafs(d: HasId): Seq[HasId] = d match {
+  def getIntermediateAndLeafs(d: Data): Seq[Data] = d match {
     case b: Bundle => b +: b.getElements.flatMap(getIntermediateAndLeafs)
     case v: Vec[_] => v +: v.getElements.flatMap(getIntermediateAndLeafs)
     case other => Seq(other)
@@ -193,10 +193,10 @@ object Select {
     * @param module
     * @return
     */
-  def invalids(module: BaseModule): Seq[HasId] = {
+  def invalids(module: BaseModule): Seq[Data] = {
     check(module)
     module._component.get.asInstanceOf[DefModule].commands.collect {
-      case DefInvalid(_, arg) => getId(arg)
+      case DefInvalid(_, arg) => getData(arg)
     }
   }
 
@@ -204,11 +204,11 @@ object Select {
     * @param module
     * @return
     */
-  def attachedTo(module: BaseModule)(signal: HasId): Set[HasId] = {
+  def attachedTo(module: BaseModule)(signal: Data): Set[Data] = {
     check(module)
     module._component.get.asInstanceOf[DefModule].commands.collect {
       case Attach(_, seq) if seq.contains(signal) => seq
-    }.flatMap { seq => seq.map(_.id) }.toSet
+    }.flatMap { seq => seq.map(_.id.asInstanceOf[Data]) }.toSet
   }
 
   /** Selects all connections to a signal or its parent signal(s) (if the signal is an element of an aggregate signal)
@@ -219,7 +219,7 @@ object Select {
     * @param signal
     * @return
     */
-  def connectionsTo(module: BaseModule)(signal: HasId): Seq[PredicatedConnect] = {
+  def connectionsTo(module: BaseModule)(signal: Data): Seq[PredicatedConnect] = {
     check(module)
     val sensitivitySignals = getIntermediateAndLeafs(signal).toSet
     val predicatedConnects = mutable.ArrayBuffer[PredicatedConnect]()
@@ -228,23 +228,23 @@ object Select {
     var seenDef = isPort
     searchWhens(module, (cmd: Command, preds) => {
       cmd match {
-        case cmd: Definition =>
-          val x = getIntermediateAndLeafs(cmd.id)
+        case cmd: Definition if cmd.id.isInstanceOf[Data] =>
+          val x = getIntermediateAndLeafs(cmd.id.asInstanceOf[Data])
           //println(s"Does ${cmd.name} with $x contain $signal? ${x.contains(signal)}")
           if(x.contains(signal)) prePredicates = preds
-        case Connect(_, loc, exp) =>
+        case Connect(_, loc@Node(d: Data), exp) =>
           val effected = getEffected(loc).toSet
           if(sensitivitySignals.intersect(effected).nonEmpty) {
-            val expId = getId(exp)
+            val expData = getData(exp)
             prePredicates.reverse.zip(preds.reverse).foreach(x => assert(x._1 == x._2, s"Prepredicates $x must match for signal $signal"))
-            predicatedConnects += PredicatedConnect(preds.dropRight(prePredicates.size), loc.id, expId, isBulk = false)
+            predicatedConnects += PredicatedConnect(preds.dropRight(prePredicates.size), d, expData, isBulk = false)
           }
-        case BulkConnect(_, loc, exp) =>
+        case BulkConnect(_, loc@Node(d: Data), exp) =>
           val effected = getEffected(loc).toSet
           if(sensitivitySignals.intersect(effected).nonEmpty) {
-            val expId = getId(exp)
+            val expData = getData(exp)
             prePredicates.reverse.zip(preds.reverse).foreach(x => assert(x._1 == x._2, s"Prepredicates $x must match for signal $signal"))
-            predicatedConnects += PredicatedConnect(preds.dropRight(prePredicates.size), loc.id, expId, isBulk = true)
+            predicatedConnects += PredicatedConnect(preds.dropRight(prePredicates.size), d, expData, isBulk = true)
           }
         case other =>
       }
@@ -291,8 +291,8 @@ object Select {
   }
 
   // Given a loc, return all subcomponents of id that could be assigned to in connect
-  private def getEffected(a: Arg): Seq[HasId] = a match {
-    case Node(id) => getIntermediateAndLeafs(id)
+  private def getEffected(a: Arg): Seq[Data] = a match {
+    case Node(id: Data) => getIntermediateAndLeafs(id)
     case Slot(imm, name) => Seq(imm.id.asInstanceOf[Record].elements(name))
     case Index(imm, value) => getEffected(imm)
   }
@@ -305,6 +305,12 @@ object Select {
     case l: FPLit => FixedPoint(l.num, l.w, l.binaryPoint)
     case other =>
       sys.error(s"Something went horribly wrong! I was expecting ${other} to be a lit or a node!")
+  }
+
+  private def getData(a: Arg): Data = a match {
+    case Node(data: Data) => data
+    case other =>
+      sys.error(s"Something went horribly wrong! I was expecting ${other} to be Data!")
   }
 
   // Given an id, either get its name or its value, if its a lit
@@ -384,7 +390,7 @@ object Select {
     * @param exp
     * @param isBulk
     */
-  case class PredicatedConnect(preds: Seq[Predicate], loc: HasId, exp: HasId, isBulk: Boolean) extends Serializeable {
+  case class PredicatedConnect(preds: Seq[Predicate], loc: Data, exp: Data, isBulk: Boolean) extends Serializeable {
     def serialize: String = {
       val moduleTarget = loc.toTarget.moduleTarget.serialize
       s"$moduleTarget: when(${preds.map(_.serialize).mkString(" & ")}): ${getName(loc)} ${if(isBulk) "<>" else ":="} ${getName(exp)}"
