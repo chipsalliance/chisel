@@ -22,18 +22,16 @@ object TesterDriver extends BackendCompilationUtilities {
     // Invoke the chisel compiler to get the circuit's IR
     val circuit = Driver.elaborate(finishWrapper(t))
 
-    val aspectedCircuit = circuit.copy(annotations = aspects ++ circuit.annotations)
-
     // Set up a bunch of file handlers based on a random temp filename,
     // plus the quirks of Verilator's naming conventions
-    val target = aspectedCircuit.name
+    val target = circuit.name
 
     val path = createTestDirectory(target)
     val fname = new File(path, target)
 
     // For now, dump the IR out to a file
-    Driver.dumpFirrtl(aspectedCircuit, Some(new File(fname.toString + ".fir")))
-    val firrtlCircuit = Driver.toFirrtl(aspectedCircuit)
+    Driver.dumpFirrtl(circuit, Some(new File(fname.toString + ".fir")))
+    val firrtlCircuit = Driver.toFirrtl(circuit)
 
     // Copy CPP harness and other Verilog sources from resources into files
     val cppHarness =  new File(path, "top.cpp")
@@ -47,13 +45,13 @@ object TesterDriver extends BackendCompilationUtilities {
     })
 
     // Compile firrtl
-    val transforms = aspectedCircuit.annotations.flatMap {
+    val transforms = circuit.annotations.flatMap {
       case anno: RunFirrtlTransforms => anno.transformClasses
       case _ => Nil
     }.distinct
      .filterNot(_ == classOf[Transform])
      .map { transformClass: Class[_ <: Transform] => transformClass.newInstance() }
-    val newAnnotations = aspectedCircuit.annotations.map(_.toFirrtl).toList
+    val newAnnotations = circuit.annotations.map(_.toFirrtl).toList ++ aspects
     val resolvedAnnotations = new AspectStage().run(newAnnotations).toList
     val optionsManager = new ExecutionOptionsManager("chisel3") with HasChiselExecutionOptions with HasFirrtlOptions {
       commonOptions = CommonOptions(topName = target, targetDirName = path.getAbsolutePath)

@@ -8,6 +8,7 @@ import chisel3.experimental.{DesignAnnotation, RawModule, RunFirrtlTransform}
 import chisel3.internal.Builder
 import chisel3.internal.firrtl.DefModule
 import firrtl.annotations.ModuleTarget
+import firrtl.stage.RunFirrtlTransformAnnotation
 import firrtl.{ir, _}
 
 import scala.collection.mutable
@@ -25,13 +26,13 @@ import scala.reflect.runtime.universe.TypeTag
 case class InjectingAspect[T <: RawModule,
                            M <: RawModule](selectRoots: T => Iterable[M],
                                            injection: M => Unit
-                                          )(implicit tTag: TypeTag[T]) extends Aspect[T] with RunFirrtlTransform {
+                                          )(implicit tTag: TypeTag[T]) extends Aspect[T] {
   final def toAnnotation(top: T): AnnotationSeq = {
     toAnnotation(selectRoots(top), injection, top.name)
   }
 
   final def toAnnotation(modules: Iterable[M], inject: M => Unit, circuit: String): AnnotationSeq = {
-    modules.map { module =>
+    RunFirrtlTransformAnnotation(new InjectingTransform) +: modules.map { module =>
       val (chiselIR, _) = Builder.build(Module(new ModuleAspect(module) {
         module match {
           case x: experimental.MultiIOModule => withClockAndReset(x.clock, x.reset) { inject(module) }
@@ -57,7 +58,5 @@ case class InjectingAspect[T <: RawModule,
       InjectStatement(ModuleTarget(circuit, module.name), ir.Block(stmts), modules, annotations)
     }.toList
   }
-
-  override def transformClass: Class[_ <: Transform] = classOf[InjectingTransform]
 }
 

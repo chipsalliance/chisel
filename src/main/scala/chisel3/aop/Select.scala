@@ -23,7 +23,7 @@ object Select {
     * @param d Component to find leafs if aggregate typed. Intermediate fields/indicies are not included
     * @return
     */
-  def getLeafs(d: HasId): Seq[HasId] = d match {
+  def getLeafs(d: Data): Seq[Data] = d match {
     case b: Bundle => b.getElements.flatMap(getLeafs)
     case v: Vec[_] => v.getElements.flatMap(getLeafs)
     case other => Seq(other)
