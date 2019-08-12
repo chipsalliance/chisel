@@ -8,7 +8,7 @@ import firrtl.options.Unserializable
 import firrtl.AnnotationSeq
 
 /** Represents an aspect of a Chisel module, by specifying
-  *  what behavior should be done to instance, via the FIRRTL Annotation Mechanism
+  * what behavior should be done to instance, via the FIRRTL Annotation Mechanism
   * @tparam T Type of top-level module
   */
 abstract class Aspect[T <: RawModule] extends Annotation with Unserializable with NoTargetAnnotation {
