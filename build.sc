@@ -22,7 +22,6 @@ object chiselCompileOptions {
     "-feature",
     "-language:reflectiveCalls",
     "-unchecked",
-    "-Xcheckinit",
     "-Xlint:infer-any"
 /*    "-Xlint:missing-interpolator" // this causes a:
 //[error] .../chisel3/chiselFrontend/src/main/scala/chisel3/core/Aggregate.scala:605:48: recursive value outer needs type
