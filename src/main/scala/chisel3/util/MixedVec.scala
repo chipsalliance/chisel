@@ -3,7 +3,7 @@
 package chisel3.util
 
 import chisel3._
-import chisel3.core.{Data, requireIsChiselType, requireIsHardware}
+import chisel3.internal.requireIsChiselType
 
 import scala.collection.immutable.ListMap
 
@@ -11,7 +11,7 @@ import scala.collection.immutable.ListMap
   * Create a MixedVec wire with default values as specified, and type of each element inferred from
   * those default values.
   *
-  * This is analogous to [[chisel3.core.VecInit]].
+  * This is analogous to [[VecInit]].
   * @return MixedVec with given values assigned
   *
   * @example {{{

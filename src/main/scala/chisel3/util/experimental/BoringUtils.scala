@@ -4,13 +4,12 @@ package chisel3.util.experimental
 
 import chisel3._
 import chisel3.experimental.{ChiselAnnotation, RunFirrtlTransform, annotate}
-import chisel3.internal.{InstanceId, NamedComponent}
+import chisel3.internal.{InstanceId, NamedComponent, Namespace}
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
 import firrtl.passes.wiring.{WiringTransform, SourceAnnotation, SinkAnnotation}
 import firrtl.annotations.{ModuleName, ComponentName}
 
 import scala.concurrent.SyncVar
-import chisel3.internal.Namespace
 
 /** An exception related to BoringUtils
   * @param message the exception message
@@ -18,7 +17,7 @@ import chisel3.internal.Namespace
 class BoringUtilsException(message: String) extends Exception(message)
 
 /** Utilities for generating synthesizable cross module references that "bore" through the hierarchy. The underlying
-  * cross module connects are handled by FIRRTL's Wiring Transform ([[firrtl.passes.wiring.WiringTransform]]).
+  * cross module connects are handled by FIRRTL's Wiring Transform.
   *
   * Consider the following exmple where you want to connect a component in one module to a component in another. Module
   * `Constant` has a wire tied to `42` and `Expect` will assert unless connected to `42`:

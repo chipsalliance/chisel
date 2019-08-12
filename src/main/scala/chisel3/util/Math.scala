@@ -5,8 +5,7 @@
 
 package chisel3.util
 
-import chisel3._
-import chisel3.internal.chiselRuntimeDeprecated
+import chisel3.internal
 
 /** Compute the log2 of a Scala integer, rounded up, with min value of 1.
   * Useful for getting the number of bits needed to represent some number of states (in - 1),
@@ -98,4 +97,37 @@ object log2Floor {
 object isPow2 {
   def apply(in: BigInt): Boolean = in > 0 && ((in & (in-1)) == 0)
   def apply(in: Int): Boolean = apply(BigInt(in))
+}
+
+
+object unsignedBitLength {
+  /** Return the number of bits required to encode a specific value, assuming no sign bit is required.
+    *
+    * Basically, `n.bitLength`. NOTE: This will return 0 for a value of 0.
+    * This reflects the Chisel assumption that a zero width wire has a value of 0.
+    * @param in - the number to be encoded.
+    * @return - an Int representing the number of bits to encode.
+    */
+  def apply(in: BigInt): Int = {
+    require(in >= 0)
+    in.bitLength
+  }
+}
+
+object signedBitLength {
+  /** Return the number of bits required to encode a specific value, assuming a sign bit is required.
+    *
+    * Basically, 0 for 0, 1 for -1, and `n.bitLength` + 1 for everything else.
+    * This reflects the Chisel assumption that a zero width wire has a value of 0.
+    * @param in - the number to be encoded.
+    * @return - an Int representing the number of bits to encode.
+    */
+  def apply(in: BigInt): Int = {
+    in.toInt match {
+      case 0 => 0
+      case -1 => 1
+      case _ => in.bitLength + 1
+    }
+
+  }
 }

@@ -3,8 +3,6 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.RawModule
-import chisel3.core.Binding.BindingException
 import chisel3.testers.BasicTester
 import chisel3.util._
 import org.scalacheck.Shrink
@@ -273,5 +271,16 @@ class VecSpec extends ChiselPropSpec {
       })
       io.out := VecInit(Seq(4.U, 5.U, DontCare, 2.U))
     })
+  }
+
+  property("Indexing a Chisel type Vec by a hardware type should give a sane error message") {
+    assertThrows[ExpectedHardwareException] {
+      elaborate{
+        new Module {
+          val io = IO(new Bundle{})
+          val foo = Vec(2, Bool())
+          foo(0.U) := false.B
+        }}
+    }
   }
 }

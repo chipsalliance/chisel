@@ -2,7 +2,6 @@
 
 package chiselTests
 
-import java.io.File
 import org.scalatest._
 import org.scalatest.prop._
 import org.scalacheck._
@@ -148,7 +147,7 @@ class ChiselTestUtilitiesSpec extends ChiselFlatSpec {
 class ChiselPropSpec extends PropSpec with ChiselRunners with PropertyChecks with Matchers {
 
   // Constrain the default number of instances generated for every use of forAll.
-  implicit override val generatorDrivenConfig =
+  implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
     PropertyCheckConfiguration(minSuccessful = 8, minSize = 1, sizeRange = 3)
 
   // Generator for small positive integers.
