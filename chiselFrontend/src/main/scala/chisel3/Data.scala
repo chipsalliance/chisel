@@ -219,34 +219,32 @@ object chiselTypeOf {
 *
 * Thus, an error will be thrown if these are used on bound Data
 */
-object Input {
-  def apply[T<:Data](source: T)(implicit compileOptions: CompileOptions): T = {
+
+abstract class BareDirection {
+  def specifiedDirection[T<:Data](source: T)(dir: SpecifiedDirection)(implicit compileOptions: CompileOptions): T = {
     if (compileOptions.checkSynthesizable) {
       requireIsChiselType(source)
     }
     val out = source.cloneType.asInstanceOf[T]
-    out.specifiedDirection = SpecifiedDirection.Input
+    out.specifiedDirection = dir
     out
   }
 }
-object Output {
+
+object Input extends BareDirection {
   def apply[T<:Data](source: T)(implicit compileOptions: CompileOptions): T = {
-    if (compileOptions.checkSynthesizable) {
-      requireIsChiselType(source)
-    }
-    val out = source.cloneType.asInstanceOf[T]
-    out.specifiedDirection = SpecifiedDirection.Output
-    out
+    specifiedDirection(source)(SpecifiedDirection.Input)
   }
 }
-object Flipped {
+object Output extends BareDirection {
   def apply[T<:Data](source: T)(implicit compileOptions: CompileOptions): T = {
-    if (compileOptions.checkSynthesizable) {
-      requireIsChiselType(source)
-    }
-    val out = source.cloneType.asInstanceOf[T]
-    out.specifiedDirection = SpecifiedDirection.flip(source.specifiedDirection)
-    out
+    specifiedDirection(source)(SpecifiedDirection.Output)
+  }
+}
+
+object Flipped extends BareDirection {
+  def apply[T<:Data](source: T)(implicit compileOptions: CompileOptions): T = {
+    specifiedDirection(source)(SpecifiedDirection.flip(source.specifiedDirection))
   }
 }
 
