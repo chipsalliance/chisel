@@ -10,7 +10,7 @@ import firrtl.{AnnotationSeq, RenameMap, Transform}
 import scala.reflect.runtime.universe.TypeTag
 
 /** Represents an aspect of a Chisel module, by specifying
-  *  what behavior should be done to instance, via the FIRRTL Annotation Mechanism
+  * what behavior should be done to instance, via the FIRRTL Annotation Mechanism
   * @param dutTag Needed to prevent type-erasure of the top-level module type
   * @tparam T Type of top-level module
   */
