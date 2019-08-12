@@ -3,16 +3,15 @@
 package chisel3
 
 import chisel3.internal.ErrorLog
-import chisel3.experimental.{RawModule, RunFirrtlTransform}
+import chisel3.experimental.{DesignAnnotation, RawModule, RunFirrtlTransform}
 import internal.firrtl._
 import firrtl._
 import firrtl.options.Phase
 import firrtl.options.Viewer.view
 import firrtl.annotations.JsonProtocol
 import firrtl.util.{BackendCompilationUtilities => FirrtlBackendCompilationUtilities}
-import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage, ChiselExecutionResultView}
+import chisel3.stage.{ChiselExecutionResultView, ChiselGeneratorAnnotation, ChiselStage}
 import chisel3.stage.phases.DriverCompatibility
-
 import java.io._
 
 
