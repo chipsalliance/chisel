@@ -180,9 +180,6 @@ object RegInit {
     val reg = t.cloneTypeFull
     val clock = Builder.forcedClock
     val reset = Builder.forcedReset
-    if (reset.isInstanceOf[AsyncReset] && init.litOption.isEmpty) {
-      Builder.error(s"Register $this with async reset has non-literal reset value")
-    }
 
     reg.bind(RegBinding(Builder.forcedUserModule))
     requireIsHardware(init, "reg initializer")

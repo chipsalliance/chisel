@@ -1217,12 +1217,11 @@ object Reset {
   def apply(): Reset = new ResetType
 }
 
-/** "Abstract" Reset Type that can be inferred to be either [[AsyncReset]] or [[Bool]]
+/** "Abstract" Reset Type inferred in FIRRTL to either [[AsyncReset]] or [[Bool]]
   *
-  * @note This shares a common interface with [[AsyncReset]] and [[Bool]] but is not an actual super
-  * type of them
+  * @note This shares a common interface with [[AsyncReset]] and [[Bool]] but is not their actual
+  * super type due to Bool inheriting from abstract class UInt
   */
-// Due to Bool inheriting from abstract class UInt, Reset cannot be class itself
 final class ResetType(private[chisel3] val width: Width = Width(1)) extends Element with Reset {
   override def toString: String = s"Reset$bindingToString"
 
@@ -1264,7 +1263,12 @@ object AsyncReset {
   def apply(): AsyncReset = new AsyncReset
 }
 
-// TODO: Document this.
+/** Data type representing asynchronous reset signals
+  *
+  * These signals are similar to [[Clock]]s in that they must be glitch-free for proper circuit
+  * operation. [[Reg]]s defined with the implicit reset being an [[AsyncReset]] will be
+  * asychronously reset registers.
+  */
 sealed class AsyncReset(private[chisel3] val width: Width = Width(1)) extends Element with Reset {
   override def toString: String = s"AsyncReset$bindingToString"
 
