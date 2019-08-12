@@ -282,7 +282,7 @@ private[chisel3] object Builder {
           case other => module
         }
       case _ => throwException(
-        "Error: Not in a UserModule. Likely cause: Missed Module() wrap, bare chisel API call, or attempting to construct hardware inside a BlackBox." // scalastyle:ignore line.size.limit
+        "Error: Not in a RawModule. Likely cause: Missed Module() wrap, bare chisel API call, or attempting to construct hardware inside a BlackBox." // scalastyle:ignore line.size.limit
         // A bare api call is, e.g. calling Wire() from the scala console).
       )
     }
