@@ -14,7 +14,7 @@ import scala.reflect.runtime.universe.TypeTag
   * @param dutTag Needed to prevent type-erasure of the top-level module type
   * @tparam T Type of top-level module
   */
-abstract class Aspect[T <: RawModule](implicit dutTag: TypeTag[T]) extends Annotation with Unserializable {
+abstract class Aspect[T <: RawModule]/*(implicit dutTag: TypeTag[T])*/ extends Annotation with Unserializable {
   /** Convert this Aspect to a seq of FIRRTL annotation
     * @param top
     * @return

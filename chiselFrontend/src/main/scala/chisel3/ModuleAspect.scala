@@ -13,7 +13,8 @@ import chisel3.experimental.RawModule
   * @param module Module for which this object is an aspect of
   * @param moduleCompileOptions
   */
-abstract class ModuleAspect(module: RawModule)(implicit moduleCompileOptions: CompileOptions) extends RawModule {
+abstract class ModuleAspect private[chisel3] (module: RawModule)
+                                             (implicit moduleCompileOptions: CompileOptions) extends RawModule {
 
   Builder.addAspect(module, this)
 

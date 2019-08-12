@@ -178,7 +178,6 @@ package experimental {
     // Fresh Namespace because in Firrtl, Modules namespaces are disjoint with the global namespace
     private[chisel3] val _namespace = Namespace.empty
     private val _ids = ArrayBuffer[HasId]()
-
     private[chisel3] def addId(d: HasId) {
       if (Builder.aspectModule(this).isDefined) {
         aspectModule(this).get.addId(d)

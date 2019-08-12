@@ -10,9 +10,6 @@ import firrtl.annotations.ReferenceTarget
 
 import scala.collection.mutable
 
-import scala.reflect.runtime.universe.TypeTag
-
-
 /** Use to select Chisel components in a module, after that module has been constructed
   * Useful for adding additional Chisel annotations or for use within an [[Aspect]]
   */
@@ -50,7 +47,7 @@ object Select {
     * @tparam T Type of the component that will be collected
     * @return
     */
-  def getDeep[T](module: BaseModule)(collector: BaseModule => Seq[T])(implicit tag: TypeTag[T]): Seq[T] = {
+  def getDeep[T](module: BaseModule)(collector: BaseModule => Seq[T]): Seq[T] = {
     check(module)
     val myItems = collector(module)
     val deepChildrenItems = instances(module).flatMap {
@@ -68,7 +65,7 @@ object Select {
     * @tparam T Type of the component that will be collected
     * @return
     */
-  def collectDeep[T](module: BaseModule)(collector: PartialFunction[BaseModule, T])(implicit tag: TypeTag[T]): Iterable[T] = {
+  def collectDeep[T](module: BaseModule)(collector: PartialFunction[BaseModule, T]): Iterable[T] = {
     check(module)
     val myItems = collector.lift(module)
     val deepChildrenItems = instances(module).flatMap {
@@ -230,7 +227,6 @@ object Select {
       cmd match {
         case cmd: Definition if cmd.id.isInstanceOf[Data] =>
           val x = getIntermediateAndLeafs(cmd.id.asInstanceOf[Data])
-          //println(s"Does ${cmd.name} with $x contain $signal? ${x.contains(signal)}")
           if(x.contains(signal)) prePredicates = preds
         case Connect(_, loc@Node(d: Data), exp) =>
           val effected = getEffected(loc).toSet
@@ -331,7 +327,6 @@ object Select {
     check(module)
     module._component.get.asInstanceOf[DefModule].commands.foldLeft((Seq.empty[Predicate], Option.empty[Predicate])) {
       (blah, cmd) =>
-        //println(s"On cmd: $cmd with $blah")
         (blah, cmd) match {
           case ((preds, o), cmd) => cmd match {
             case WhenBegin(_, Node(pred: Bool)) => (When(pred) +: preds, None)

@@ -25,7 +25,6 @@ trait ChiselAnnotation {
   * Automatic Transform instantiation is *not* supported when the Circuit and Annotations are serialized before invoking
   * FIRRTL.
   */
-// TODO There should be a FIRRTL API for this instead
 trait RunFirrtlTransform extends RunFirrtlTransforms {
   def transformClass: Class[_ <: Transform]
 
@@ -33,7 +32,7 @@ trait RunFirrtlTransform extends RunFirrtlTransforms {
 }
 
 /** Mixin for [[ChiselAnnotation]] that instantiates multiple associated FIRRTL Transforms when this
-  * Annotation is present during a run of [[chisel3.Driver.execute]]. Automatic Transform
+  * Annotation is present during a run of Chisel. Automatic Transform
   * instantiation is *not* supported when the Circuit and Annotations are serialized before invoking
   * FIRRTL.
   */

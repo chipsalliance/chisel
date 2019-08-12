@@ -1,22 +1,21 @@
 // See LICENSE for license details.
 
-package chisel3.stage
+package chisel3.stage.phases
 
 import chisel3.aop.Aspect
 import chisel3.experimental.RawModule
+import chisel3.stage.DesignAnnotation
 import firrtl.AnnotationSeq
-import firrtl.options.{Shell, Stage}
+import firrtl.options.Phase
 
 import scala.collection.mutable
 
-/** Stage associated with all Aspects
+/** Phase that consumes all Aspects and calls their toAnnotationSeq methods.
   *
   * Consumes the [[chisel3.stage.DesignAnnotation]] and converts every [[Aspect]] into their annotations prior to executing FIRRTL
   */
-class AspectStage extends Stage {
-  val shell: Shell = new Shell("aspect") //TODO: This?
-
-  def run(annotations: AnnotationSeq): AnnotationSeq = {
+class AspectPhase extends Phase {
+  def transform(annotations: AnnotationSeq): AnnotationSeq = {
     var dut: Option[RawModule] = None
     val aspects = mutable.ArrayBuffer[Aspect[_]]()
 

@@ -2,11 +2,12 @@
 
 package chisel3.aop.injecting
 
+import chisel3.stage.phases.AspectPhase
 import firrtl.annotations.{Annotation, ModuleTarget, NoTargetAnnotation, SingleTargetAnnotation}
 
 /** Contains all information needed to inject statements into a module
   *
-  * Generated when a [[InjectingAspect]] is consumed by a [[chisel3.stage.AspectStage]]
+  * Generated when a [[InjectingAspect]] is consumed by a [[AspectPhase]]
   * Consumed by [[InjectingTransform]]
   *
   * @param module Module to inject code into at the end of the module

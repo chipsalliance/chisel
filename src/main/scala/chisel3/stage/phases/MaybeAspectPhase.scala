@@ -6,13 +6,13 @@ import chisel3.aop.Aspect
 import firrtl.AnnotationSeq
 import firrtl.options.Phase
 
-/** Run [[firrtl.stage.FirrtlStage]] if a [[chisel3.stage.NoRunFirrtlCompilerAnnotation]] is not present.
+/** Run [[AspectPhase]] if a [[chisel3.aop.Aspect]] is present.
   */
-class MaybeAspectStage extends Phase {
+class MaybeAspectPhase extends Phase {
 
   def transform(annotations: AnnotationSeq): AnnotationSeq = {
     if(annotations.collectFirst { case a: Aspect[_] => annotations }.isDefined) {
-      new chisel3.stage.AspectStage().transform(annotations)
+      new AspectPhase().transform(annotations)
     } else annotations
   }
 }
