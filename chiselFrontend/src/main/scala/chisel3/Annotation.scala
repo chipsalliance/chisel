@@ -25,19 +25,8 @@ trait ChiselAnnotation {
   * Automatic Transform instantiation is *not* supported when the Circuit and Annotations are serialized before invoking
   * FIRRTL.
   */
-trait RunFirrtlTransform extends RunFirrtlTransforms {
+trait RunFirrtlTransform extends ChiselAnnotation {
   def transformClass: Class[_ <: Transform]
-
-  override def transformClasses: Seq[Class[_ <: Transform]] = Seq(transformClass)
-}
-
-/** Mixin for [[ChiselAnnotation]] that instantiates multiple associated FIRRTL Transforms when this
-  * Annotation is present during a run of Chisel. Automatic Transform
-  * instantiation is *not* supported when the Circuit and Annotations are serialized before invoking
-  * FIRRTL.
-  */
-trait RunFirrtlTransforms extends ChiselAnnotation {
-  def transformClasses: Seq[Class[_ <: Transform]]
 }
 
 

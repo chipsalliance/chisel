@@ -2,7 +2,7 @@
 
 package chisel3.stage.phases
 
-import chisel3.experimental.{RunFirrtlTransforms, RunFirrtlTransform}
+import chisel3.experimental.RunFirrtlTransform
 import chisel3.internal.firrtl.Converter
 import chisel3.stage.ChiselCircuitAnnotation
 import firrtl.{AnnotationSeq, Transform}
@@ -28,9 +28,8 @@ class Convert extends Phase {
       a
         .circuit
         .annotations
-        .flatMap {
-          case anno: RunFirrtlTransforms => anno.transformClasses
-          case _ => Nil
+        .collect {
+          case anno: RunFirrtlTransform => anno.transformClass
         }
         .distinct
         .filterNot(_ == classOf[firrtl.Transform])

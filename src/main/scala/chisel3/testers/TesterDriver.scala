@@ -6,7 +6,7 @@ import chisel3._
 import java.io._
 
 import chisel3.aop.Aspect
-import chisel3.experimental.RunFirrtlTransforms
+import chisel3.experimental.RunFirrtlTransform
 import chisel3.stage.phases.AspectPhase
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselStage, DesignAnnotation}
 import firrtl.{Driver => _, _}
@@ -48,9 +48,8 @@ object TesterDriver extends BackendCompilationUtilities {
     })
 
     // Compile firrtl
-    val transforms = circuit.annotations.flatMap {
-      case anno: RunFirrtlTransforms => anno.transformClasses
-      case _ => Nil
+    val transforms = circuit.annotations.collect {
+      case anno: RunFirrtlTransform => anno.transformClass
     }.distinct
      .filterNot(_ == classOf[Transform])
      .map { transformClass: Class[_ <: Transform] => transformClass.newInstance() }
