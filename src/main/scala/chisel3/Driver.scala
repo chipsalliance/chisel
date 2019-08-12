@@ -3,7 +3,7 @@
 package chisel3
 
 import chisel3.internal.ErrorLog
-import chisel3.experimental.{DesignAnnotation, RawModule, RunFirrtlTransform}
+import chisel3.experimental.RawModule
 import internal.firrtl._
 import firrtl._
 import firrtl.options.Phase

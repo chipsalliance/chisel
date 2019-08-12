@@ -3,7 +3,7 @@
 package chisel3.stage
 
 import chisel3.aop.Aspect
-import chisel3.experimental.{DesignAnnotation, RawModule}
+import chisel3.experimental.RawModule
 import firrtl.AnnotationSeq
 import firrtl.options.{Shell, Stage}
 
@@ -11,7 +11,7 @@ import scala.collection.mutable
 
 /** Stage associated with all Aspects
   *
-  * Consumes the [[chisel3.experimental.DesignAnnotation]] and converts every [[Aspect]] into their annotations prior to executing FIRRTL
+  * Consumes the [[chisel3.stage.DesignAnnotation]] and converts every [[Aspect]] into their annotations prior to executing FIRRTL
   */
 class AspectStage extends Stage {
   val shell: Shell = new Shell("aspect") //TODO: This?

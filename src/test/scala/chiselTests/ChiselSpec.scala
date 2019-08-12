@@ -8,34 +8,28 @@ import org.scalacheck._
 import chisel3._
 import chisel3.experimental.RawModule
 import chisel3.testers._
-import firrtl.{
-  CommonOptions,
-  ExecutionOptionsManager,
-  HasFirrtlOptions,
-  FirrtlExecutionSuccess,
-  FirrtlExecutionFailure
-}
+import firrtl.{AnnotationSeq, CommonOptions, ExecutionOptionsManager, FirrtlExecutionFailure, FirrtlExecutionSuccess, HasFirrtlOptions}
 import firrtl.util.BackendCompilationUtilities
 
 /** Common utility functions for Chisel unit tests. */
 trait ChiselRunners extends Assertions with BackendCompilationUtilities {
   def runTester(t: => BasicTester,
                 additionalVResources: Seq[String] = Seq(),
-                aspects: Seq[chisel3.aop.Aspect[_]] = Seq()
+                annotations: AnnotationSeq = Seq()
                ): Boolean = {
-    TesterDriver.execute(() => t, additionalVResources, aspects)
+    TesterDriver.execute(() => t, additionalVResources, annotations)
   }
   def assertTesterPasses(t: => BasicTester,
                          additionalVResources: Seq[String] = Seq(),
-                         aspects: Seq[chisel3.aop.Aspect[_]] = Seq()
+                         annotations: AnnotationSeq = Seq()
                         ): Unit = {
-    assert(runTester(t, additionalVResources, aspects))
+    assert(runTester(t, additionalVResources, annotations))
   }
   def assertTesterFails(t: => BasicTester,
                         additionalVResources: Seq[String] = Seq(),
-                        aspects: Seq[chisel3.aop.Aspect[_]] = Seq()
+                        annotations: Seq[chisel3.aop.Aspect[_]] = Seq()
                        ): Unit = {
-    assert(!runTester(t, additionalVResources, aspects))
+    assert(!runTester(t, additionalVResources, annotations))
   }
   def elaborate(t: => RawModule): Unit = Driver.elaborate(() => t)
 

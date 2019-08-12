@@ -5,7 +5,7 @@ package chisel3.stage
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.options.{HasShellOptions, OptionsException, ShellOption, Unserializable}
 import chisel3.{ChiselException, Module}
-import chisel3.experimental.{DesignAnnotation, RawModule}
+import chisel3.experimental.RawModule
 import chisel3.internal.Builder
 import chisel3.internal.firrtl.Circuit
 import firrtl.AnnotationSeq
@@ -104,3 +104,11 @@ object ChiselOutputFileAnnotation extends HasShellOptions {
       helpValueName = Some("<file>") ) )
 
 }
+
+/** Contains the top-level elaborated Chisel design.
+  *
+  * By default is created during Chisel elaboration and passed to the FIRRTL compiler.
+  * @param design top-level Chisel design
+  * @tparam DUT Type of the top-level Chisel design
+  */
+case class DesignAnnotation[DUT <: RawModule](design: DUT) extends NoTargetAnnotation with Unserializable

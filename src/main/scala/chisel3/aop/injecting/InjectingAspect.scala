@@ -4,9 +4,10 @@ package chisel3.aop.injecting
 
 import chisel3.{Module, ModuleAspect, experimental, withClockAndReset}
 import chisel3.aop._
-import chisel3.experimental.{DesignAnnotation, RawModule, RunFirrtlTransform}
+import chisel3.experimental.RawModule
 import chisel3.internal.Builder
 import chisel3.internal.firrtl.DefModule
+import chisel3.stage.DesignAnnotation
 import firrtl.annotations.ModuleTarget
 import firrtl.stage.RunFirrtlTransformAnnotation
 import firrtl.{ir, _}
@@ -47,7 +48,7 @@ case class InjectingAspect[T <: RawModule,
       val annotations = chiselIR.annotations.map(_.toFirrtl).filterNot{ a => a.isInstanceOf[DesignAnnotation[_]] }
 
       val stmts = mutable.ArrayBuffer[ir.Statement]()
-      val modules = Aspect.getFirrtl(chiselIR.copy(components = comps)).flatMap {
+      val modules = Aspect.getFirrtl(chiselIR.copy(components = comps)).modules.flatMap {
         case m: firrtl.ir.Module if m.name == module.name =>
           stmts += m.body
           Nil

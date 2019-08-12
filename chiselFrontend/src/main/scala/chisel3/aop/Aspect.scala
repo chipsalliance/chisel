@@ -39,7 +39,7 @@ object Aspect {
     * @param chiselIR
     * @return
     */
-  def getFirrtl(chiselIR: chisel3.internal.firrtl.Circuit): Seq[firrtl.ir.DefModule] = {
-    chisel3.internal.firrtl.Converter.convert(chiselIR).modules
+  def getFirrtl(chiselIR: chisel3.internal.firrtl.Circuit): firrtl.ir.Circuit = {
+    chisel3.internal.firrtl.Converter.convert(chiselIR)
   }
 }

@@ -6,8 +6,8 @@ import chisel3._
 import java.io._
 
 import chisel3.aop.Aspect
-import chisel3.experimental.{DesignAnnotation, RunFirrtlTransform, RunFirrtlTransforms}
-import chisel3.stage.{AspectStage, ChiselCircuitAnnotation, ChiselStage}
+import chisel3.experimental.RunFirrtlTransforms
+import chisel3.stage.{AspectStage, ChiselCircuitAnnotation, ChiselStage, DesignAnnotation}
 import firrtl.{Driver => _, _}
 import firrtl.transforms.BlackBoxSourceHelper.writeResourceToDirectory
 
@@ -17,10 +17,9 @@ object TesterDriver extends BackendCompilationUtilities {
     * frontend, and which can be turned into executables with assertions. */
   def execute(t: () => BasicTester,
               additionalVResources: Seq[String] = Seq(),
-              aspects: Seq[Aspect[_]] = Seq()
+              annotations: AnnotationSeq = Seq()
              ): Boolean = {
     // Invoke the chisel compiler to get the circuit's IR
-    //val circuit = Driver.elaborate(finishWrapper(t))
     val (circuit, dut) = new chisel3.stage.ChiselGeneratorAnnotation(finishWrapper(t)).elaborate.toSeq match {
       case Seq(ChiselCircuitAnnotation(cir), d:DesignAnnotation[_]) => (cir, d)
     }
@@ -54,7 +53,7 @@ object TesterDriver extends BackendCompilationUtilities {
     }.distinct
      .filterNot(_ == classOf[Transform])
      .map { transformClass: Class[_ <: Transform] => transformClass.newInstance() }
-    val newAnnotations = circuit.annotations.map(_.toFirrtl).toList ++ aspects ++ Seq(dut)
+    val newAnnotations = circuit.annotations.map(_.toFirrtl).toList ++ annotations ++ Seq(dut)
     val resolvedAnnotations = new AspectStage().run(newAnnotations).toList
     val optionsManager = new ExecutionOptionsManager("chisel3") with HasChiselExecutionOptions with HasFirrtlOptions {
       commonOptions = CommonOptions(topName = target, targetDirName = path.getAbsolutePath)

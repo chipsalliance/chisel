@@ -42,17 +42,6 @@ trait RunFirrtlTransforms extends ChiselAnnotation {
 }
 
 
-/** Contains the top-level elaborated Chisel design.
-  *
-  * By default is created during Chisel elaboration and passed to the FIRRTL compiler.
-  * @param design top-level Chisel design
-  * @tparam DUT Type of the top-level Chisel design
-  */
-case class DesignAnnotation[DUT <: RawModule](design: DUT) extends ChiselAnnotation with NoTargetAnnotation with Unserializable {
-  override def toFirrtl: DesignAnnotation[DUT] = this
-}
-
-
 // This exists for implementation reasons, we don't want people using this type directly
 final case class ChiselLegacyAnnotation private[chisel3] (
     component: InstanceId,
