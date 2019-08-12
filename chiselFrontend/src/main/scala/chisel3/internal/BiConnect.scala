@@ -61,11 +61,20 @@ private[chisel3] object BiConnect {
       // Handle element case (root case)
       case (left_a: Analog, right_a: Analog) =>
         try {
-          analogAttach(sourceInfo, left_a, right_a, context_mod)
-        } catch {
-          // If attach fails, convert to BiConnectException
+          markAnalogConnected(sourceInfo, left_a, context_mod)
+          markAnalogConnected(sourceInfo, right_a, context_mod)
+        } catch {  // convert attach exceptions to BiConnectExceptions
           case attach.AttachException(message) => throw BiConnectException(message)
         }
+        attach.impl(Seq(left_a, right_a), context_mod)(sourceInfo)
+      case (left_a: Analog, DontCare) =>
+        try {
+          markAnalogConnected(sourceInfo, left_a, context_mod)
+        } catch {  // convert attach exceptions to BiConnectExceptions
+          case attach.AttachException(message) => throw BiConnectException(message)
+        }
+        pushCommand(DefInvalid(sourceInfo, left_a.lref))
+      case (DontCare, right_a: Analog) => connect(sourceInfo, connectCompileOptions, right, left, context_mod)
       case (left_e: Element, right_e: Element) => {
         elemConnect(sourceInfo, connectCompileOptions, left_e, right_e, context_mod)
         // TODO(twigg): Verify the element-level classes are connectable
@@ -312,21 +321,13 @@ private[chisel3] object BiConnect {
     else throw UnknownRelationException
   }
 
-  // This function checks if analog element-level attaching is allowed
-  // Then it either issues it or throws the appropriate exception.
-  def analogAttach(implicit sourceInfo: SourceInfo, left: Analog, right: Analog, contextModule: RawModule): Unit = {
-    // Error if left or right is BICONNECTED in the current module already
-    for (elt <- left :: right :: Nil) {
-      elt.biConnectLocs.get(contextModule) match {
-        case Some(sl) => throw AttachAlreadyBulkConnectedException(sl)
-        case None => // Do nothing
-      }
+  // This function checks if analog element-level attaching is allowed, then marks the Analog as connected
+  def markAnalogConnected(implicit sourceInfo: SourceInfo, analog: Analog, contextModule: RawModule): Unit = {
+    analog.biConnectLocs.get(contextModule) match {
+      case Some(sl) => throw AttachAlreadyBulkConnectedException(sl)
+      case None => // Do nothing
     }
-
-    // Do the attachment
-    attach.impl(Seq(left, right), contextModule)
     // Mark bulk connected
-    left.biConnectLocs(contextModule) = sourceInfo
-    right.biConnectLocs(contextModule) = sourceInfo
+    analog.biConnectLocs(contextModule) = sourceInfo
   }
 }

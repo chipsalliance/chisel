@@ -46,32 +46,6 @@ object Reg {
     reg
   }
 
-  @chiselRuntimeDeprecated
-  @deprecated("Use Reg(t), RegNext(next, [init]) or RegInit([t], init) instead", "chisel3")
-  def apply[T <: Data](t: T = null, next: T = null, init: T = null)
-                      (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
-    if (t ne null) {
-      val reg = if (init ne null) {
-        RegInit(t, init)
-      } else {
-        Reg(t)
-      }
-      if (next ne null) {
-        reg := next
-      }
-      reg
-    } else if (next ne null) {
-      if (init ne null) {
-        RegNext(next, init)
-      } else {
-        RegNext(next)
-      }
-    } else if (init ne null) {
-      RegInit(init)
-    } else {
-      throwException("cannot infer type")
-    }
-  }
 }
 
 object RegNext {
