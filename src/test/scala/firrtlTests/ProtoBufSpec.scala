@@ -180,4 +180,9 @@ class ProtoBufSpec extends FirrtlFlatSpec {
     val port = ir.Port(ir.NoInfo, "reset", ir.Input, ir.AsyncResetType)
     FromProto.convert(ToProto.convert(port).build) should equal (port)
   }
+
+  it should "support ResetTypes" in {
+    val port = ir.Port(ir.NoInfo, "reset", ir.Input, ir.ResetType)
+    FromProto.convert(ToProto.convert(port).build) should equal (port)
+  }
 }

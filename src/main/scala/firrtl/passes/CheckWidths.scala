@@ -108,6 +108,7 @@ object CheckWidths extends Pass {
           sx.reset.tpe match {
             case UIntType(IntWidth(w)) if w == 1 =>
             case AsyncResetType =>
+            case ResetType =>
             case _ => errors.append(new CheckTypes.IllegalResetType(info, target.serialize, sx.name))
           }
         case _ =>

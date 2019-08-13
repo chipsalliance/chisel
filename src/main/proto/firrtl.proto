@@ -277,6 +277,10 @@ message Firrtl {
       // Empty.
     }
 
+    message ResetType {
+      // Empty.
+    }
+
     message BundleType {
       message Field {
         // Required.
@@ -315,6 +319,7 @@ message Firrtl {
       FixedType fixed_type = 7;
       AnalogType analog_type = 8;
       AsyncResetType async_reset_type = 9;
+      ResetType reset_type = 10;
     }
   }
 

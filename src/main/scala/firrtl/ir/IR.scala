@@ -591,6 +591,13 @@ case object ClockType extends GroundType {
   def mapWidth(f: Width => Width): Type = this
   def foreachWidth(f: Width => Unit): Unit = Unit
 }
+/* Abstract reset, will be inferred to UInt<1> or AsyncReset */
+case object ResetType extends GroundType {
+  val width = IntWidth(1)
+  def serialize: String = "Reset"
+  def mapWidth(f: Width => Width): Type = this
+  def foreachWidth(f: Width => Unit): Unit = Unit
+}
 case object AsyncResetType extends GroundType {
   val width = IntWidth(1)
   def serialize: String = "AsyncReset"

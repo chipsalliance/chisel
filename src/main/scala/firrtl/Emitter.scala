@@ -231,7 +231,12 @@ class VerilogEmitter extends SeqTransform with Emitter {
     x match {
       case (e: DoPrim) => emit(op_stream(e), top + 1)
       case (e: Mux) => {
-        if(e.tpe == ClockType) throw EmitterException("Cannot emit clock muxes directly")
+        if (e.tpe == ClockType) {
+          throw EmitterException("Cannot emit clock muxes directly")
+        }
+        if (e.tpe == AsyncResetType) {
+          throw EmitterException("Cannot emit async reset muxes directly")
+        }
         emit(Seq(e.cond," ? ",cast(e.tval)," : ",cast(e.fval)),top + 1)
       }
       case (e: ValidIf) => emit(Seq(cast(e.value)),top + 1)

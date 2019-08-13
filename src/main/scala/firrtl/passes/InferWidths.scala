@@ -262,6 +262,8 @@ class InferWidths extends Transform with ResolvedAnnotationPaths {
         })
       }
     case (t1: VectorType, t2: VectorType) => get_constraints_t(t1.tpe, t2.tpe)
+    case (ResetType, _) => Nil
+    case (_, ResetType) => Nil
   }
 
   def run(c: Circuit, extra: Seq[WGeq]): Circuit = {

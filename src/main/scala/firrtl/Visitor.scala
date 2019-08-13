@@ -131,6 +131,7 @@ class Visitor(infoMode: InfoMode) extends AbstractParseTreeVisitor[FirrtlNode] w
           }
           case "Clock" => ClockType
           case "AsyncReset" => AsyncResetType
+          case "Reset" => ResetType
           case "Analog" => if (ctx.getChildCount > 1) AnalogType(getWidth(ctx.intLit(0)))
           else AnalogType(UnknownWidth)
           case "{" => BundleType(ctx.field.asScala.map(visitField))

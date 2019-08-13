@@ -203,43 +203,38 @@ object PrimOps extends LazyLogging {
         case _: UIntType => UIntType(w1)
         case _: SIntType => UIntType(w1)
         case _: FixedType => UIntType(w1)
-        case ClockType => UIntType(IntWidth(1))
+        case ClockType | AsyncResetType | ResetType => UIntType(IntWidth(1))
         case AnalogType(w) => UIntType(w1)
-        case AsyncResetType => UIntType(IntWidth(1))
         case _ => UnknownType
       }
       case AsSInt => t1 match {
         case _: UIntType => SIntType(w1)
         case _: SIntType => SIntType(w1)
         case _: FixedType => SIntType(w1)
-        case ClockType => SIntType(IntWidth(1))
+        case ClockType | AsyncResetType | ResetType => SIntType(IntWidth(1))
         case _: AnalogType => SIntType(w1)
-        case AsyncResetType => SIntType(IntWidth(1))
         case _ => UnknownType
       }
       case AsFixedPoint => t1 match {
         case _: UIntType => FixedType(w1, c1)
         case _: SIntType => FixedType(w1, c1)
         case _: FixedType => FixedType(w1, c1)
-        case ClockType => FixedType(IntWidth(1), c1)
+        case ClockType | AsyncResetType | ResetType => FixedType(IntWidth(1), c1)
         case _: AnalogType => FixedType(w1, c1)
-        case AsyncResetType => FixedType(IntWidth(1), c1)
         case _ => UnknownType
       }
       case AsClock => t1 match {
         case _: UIntType => ClockType
         case _: SIntType => ClockType
-        case ClockType => ClockType
+        case ClockType | AsyncResetType | ResetType => ClockType
         case _: AnalogType => ClockType
-        case AsyncResetType => ClockType
         case _ => UnknownType
       }
       case AsAsyncReset => t1 match {
         case _: UIntType => AsyncResetType
         case _: SIntType => AsyncResetType
-        case ClockType => AsyncResetType
+        case ClockType | AsyncResetType | ResetType => AsyncResetType
         case _: AnalogType => AsyncResetType
-        case AsyncResetType => AsyncResetType
         case _ => UnknownType
       }
       case Shl => t1 match {

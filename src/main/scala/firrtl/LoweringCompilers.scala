@@ -46,7 +46,8 @@ class ResolveAndCheck extends CoreTransform {
     passes.ResolveGenders,
     passes.CheckGenders,
     new passes.InferWidths,
-    passes.CheckWidths)
+    passes.CheckWidths,
+    new firrtl.transforms.InferResets)
 }
 
 /** Expands aggregate connects, removes dynamic accesses, and when
@@ -68,6 +69,7 @@ class HighFirrtlToMiddleFirrtl extends CoreTransform {
     passes.ResolveKinds,
     passes.InferTypes,
     passes.CheckTypes,
+    new checks.CheckResets,
     passes.ResolveGenders,
     new passes.InferWidths,
     passes.CheckWidths,

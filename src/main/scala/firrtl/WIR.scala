@@ -7,6 +7,7 @@ import Utils._
 import firrtl.ir._
 import WrappedExpression._
 import WrappedWidth._
+import firrtl.passes.CheckTypes.legalResetType
 
 trait Kind
 case object WireKind extends Kind
@@ -216,32 +217,46 @@ case class ExpWidth(arg1: Width) extends Width with HasMapWidth {
 object WrappedType {
   def apply(t: Type) = new WrappedType(t)
   def wt(t: Type) = apply(t)
-}
-class WrappedType(val t: Type) {
-  def wt(tx: Type) = new WrappedType(tx)
-  override def equals(o: Any): Boolean = o match {
-    case (t2: WrappedType) => (t, t2.t) match {
+  // Check if it is legal for the source type to drive the sink type
+  // Which is which matters because ResetType can be driven by itself, Bool, or AsyncResetType, but
+  //   it cannot drive Bool nor AsyncResetType
+  private def compare(sink: Type, source: Type): Boolean =
+    (sink, source) match {
       case (_: UIntType, _: UIntType) => true
       case (_: SIntType, _: SIntType) => true
       case (ClockType, ClockType) => true
       case (AsyncResetType, AsyncResetType) => true
+      case (ResetType, tpe) => legalResetType(tpe)
+      case (tpe, ResetType) => legalResetType(tpe)
       case (_: FixedType, _: FixedType) => true
       // Analog totally skips out of the Firrtl type system.
       // The only way Analog can play with another Analog component is through Attach.
       // Ohterwise, we'd need to special case it during ExpandWhens, Lowering,
       // ExpandConnects, etc.
       case (_: AnalogType, _: AnalogType) => false
-      case (t1: VectorType, t2: VectorType) =>
-        t1.size == t2.size && wt(t1.tpe) == wt(t2.tpe)
-      case (t1: BundleType, t2: BundleType) =>
-        t1.fields.size == t2.fields.size && (
-        (t1.fields zip t2.fields) forall { case (f1, f2) =>
-          f1.flip == f2.flip && f1.name == f2.name
-        }) && ((t1.fields zip t2.fields) forall { case (f1, f2) =>
-          wt(f1.tpe) == wt(f2.tpe)
-        })
+      case (sink: VectorType, source: VectorType) =>
+        sink.size == source.size && compare(sink.tpe, source.tpe)
+      case (sink: BundleType, source: BundleType) =>
+        (sink.fields.size == source.fields.size) &&
+        sink.fields.zip(source.fields).forall { case (f1, f2) =>
+          (f1.flip == f2.flip) && (f1.name == f2.name) && (f1.flip match {
+            case Default => compare(f1.tpe, f2.tpe)
+            // We allow UInt<1> and AsyncReset to drive Reset but not the other way around
+            case Flip    => compare(f2.tpe, f1.tpe)
+          })
+        }
       case _ => false
     }
+}
+class WrappedType(val t: Type) {
+  def wt(tx: Type) = new WrappedType(tx)
+  // TODO Better name?
+  /** Strict comparison except Reset accepts AsyncReset, Reset, and `UInt<1>`
+    */
+  def superTypeOf(that: WrappedType): Boolean = WrappedType.compare(this.t, that.t)
+
+  override def equals(o: Any): Boolean = o match {
+    case (t2: WrappedType) => WrappedType.compare(this.t, t2.t)
     case _ => false
   }
 }

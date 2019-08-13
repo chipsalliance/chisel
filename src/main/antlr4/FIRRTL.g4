@@ -52,6 +52,7 @@ type
   | 'Fixed' ('<' intLit '>')? ('<' '<' intLit '>' '>')?
   | 'Clock'
   | 'AsyncReset'
+  | 'Reset'
   | 'Analog' ('<' intLit '>')?
   | '{' field* '}'        // Bundle
   | type '[' intLit ']'   // Vector

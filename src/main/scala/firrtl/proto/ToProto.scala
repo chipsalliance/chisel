@@ -343,6 +343,9 @@ object ToProto {
       case ir.AsyncResetType =>
         val at = Firrtl.Type.AsyncResetType.newBuilder()
         tb.setAsyncResetType(at)
+      case ir.ResetType =>
+        val rt = Firrtl.Type.ResetType.newBuilder()
+        tb.setResetType(rt)
       case ir.AnalogType(width) =>
         val at = Firrtl.Type.AnalogType.newBuilder()
           convert(width).foreach(at.setWidth)
