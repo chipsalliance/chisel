@@ -44,6 +44,16 @@ object SpecifiedDirection {
       case (SpecifiedDirection.Unspecified, thisDirection) => thisDirection
       case (SpecifiedDirection.Flip, thisDirection) => SpecifiedDirection.flip(thisDirection)
     }
+
+  private[chisel3] def specifiedDirection[T<:Data](source: T)(dir: SpecifiedDirection)(implicit compileOptions: CompileOptions): T = {
+    if (compileOptions.checkSynthesizable) {
+      requireIsChiselType(source)
+    }
+    val out = source.cloneType.asInstanceOf[T]
+    out.specifiedDirection = dir
+    out
+  }
+
 }
 
 /** Resolved directions for both leaf and container nodes, only visible after
@@ -219,32 +229,20 @@ object chiselTypeOf {
 *
 * Thus, an error will be thrown if these are used on bound Data
 */
-
-sealed abstract class BareDirection {
-  protected def specifiedDirection[T<:Data](source: T)(dir: SpecifiedDirection)(implicit compileOptions: CompileOptions): T = {
-    if (compileOptions.checkSynthesizable) {
-      requireIsChiselType(source)
-    }
-    val out = source.cloneType.asInstanceOf[T]
-    out.specifiedDirection = dir
-    out
+object Input {
+  def apply[T<:Data](source: T)(implicit compileOptions: CompileOptions): T = {
+    SpecifiedDirection.specifiedDirection(source)(SpecifiedDirection.Input)
+  }
+}
+object Output {
+  def apply[T<:Data](source: T)(implicit compileOptions: CompileOptions): T = {
+    SpecifiedDirection.specifiedDirection(source)(SpecifiedDirection.Output)
   }
 }
 
-object Input extends BareDirection {
+object Flipped {
   def apply[T<:Data](source: T)(implicit compileOptions: CompileOptions): T = {
-    specifiedDirection(source)(SpecifiedDirection.Input)
-  }
-}
-object Output extends BareDirection {
-  def apply[T<:Data](source: T)(implicit compileOptions: CompileOptions): T = {
-    specifiedDirection(source)(SpecifiedDirection.Output)
-  }
-}
-
-object Flipped extends BareDirection {
-  def apply[T<:Data](source: T)(implicit compileOptions: CompileOptions): T = {
-    specifiedDirection(source)(SpecifiedDirection.flip(source.specifiedDirection))
+    SpecifiedDirection.specifiedDirection(source)(SpecifiedDirection.flip(source.specifiedDirection))
   }
 }
 
