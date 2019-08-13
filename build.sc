@@ -32,7 +32,7 @@ object chiselCompileOptions {
   )
 }
 
-val crossVersions = Seq("2.12.6", "2.11.12")
+val crossVersions = Seq("2.12.9", "2.11.12")
 
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
 val defaultVersions = Map("firrtl" -> "1.2-SNAPSHOT")
