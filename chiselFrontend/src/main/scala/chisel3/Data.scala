@@ -220,8 +220,8 @@ object chiselTypeOf {
 * Thus, an error will be thrown if these are used on bound Data
 */
 
-abstract class BareDirection {
-  def specifiedDirection[T<:Data](source: T)(dir: SpecifiedDirection)(implicit compileOptions: CompileOptions): T = {
+sealed abstract class BareDirection {
+  protected def specifiedDirection[T<:Data](source: T)(dir: SpecifiedDirection)(implicit compileOptions: CompileOptions): T = {
     if (compileOptions.checkSynthesizable) {
       requireIsChiselType(source)
     }
