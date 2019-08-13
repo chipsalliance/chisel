@@ -143,7 +143,11 @@ abstract class MultiIOModule(implicit moduleCompileOptions: CompileOptions)
     extends RawModule {
   // Implicit clock and reset pins
   val clock: Clock = IO(Input(Clock()))
-  val reset: Reset = IO(Input(Bool()))
+  val reset: Reset = {
+    // Top module and compatibility mode use Bool for reset
+    val inferReset = _parent.isDefined && moduleCompileOptions.inferModuleReset
+    IO(Input(if (inferReset) Reset() else Bool()))
+  }
 
   // Setup ClockAndReset
   Builder.currentClock = Some(clock)
@@ -170,29 +174,6 @@ abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions)
   // These are to be phased out
   protected var override_clock: Option[Clock] = None
   protected var override_reset: Option[Bool] = None
-
-  // _clock and _reset can be clock and reset in these 2ary constructors
-  // once chisel2 compatibility issues are resolved
-  @chiselRuntimeDeprecated
-  @deprecated("Module constructor with override_clock and override_reset deprecated, use withClockAndReset", "chisel3")
-  def this(override_clock: Option[Clock]=None, override_reset: Option[Bool]=None)
-      (implicit moduleCompileOptions: CompileOptions) = {
-    this()
-    this.override_clock = override_clock
-    this.override_reset = override_reset
-  }
-
-  @chiselRuntimeDeprecated
-  @deprecated("Module constructor with override _clock deprecated, use withClock", "chisel3")
-  def this(_clock: Clock)(implicit moduleCompileOptions: CompileOptions) = this(Option(_clock), None)(moduleCompileOptions) // scalastyle:ignore line.size.limit
-
-  @chiselRuntimeDeprecated
-  @deprecated("Module constructor with override _reset deprecated, use withReset", "chisel3")
-  def this(_reset: Bool)(implicit moduleCompileOptions: CompileOptions)  = this(None, Option(_reset))(moduleCompileOptions) // scalastyle:ignore line.size.limit
-
-  @chiselRuntimeDeprecated
-  @deprecated("Module constructor with override _clock, _reset deprecated, use withClockAndReset", "chisel3")
-  def this(_clock: Clock, _reset: Bool)(implicit moduleCompileOptions: CompileOptions) = this(Option(_clock), Option(_reset))(moduleCompileOptions) // scalastyle:ignore line.size.limit
 
   // IO for this Module. At the Scala level (pre-FIRRTL transformations),
   // connections in and out of a Module may only go through `io` elements.
@@ -242,14 +223,7 @@ abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions)
       pushCommand(DefInvalid(sourceInfo, io.ref))
     }
 
-    override_clock match {
-      case Some(override_clock) => clock := override_clock
-      case _ => clock := Builder.forcedClock
-    }
-
-    override_reset match {
-      case Some(override_reset) => reset := override_reset
-      case _ => reset := Builder.forcedReset
-    }
+    clock := override_clock.getOrElse(Builder.forcedClock)
+    reset := override_reset.getOrElse(Builder.forcedReset)
   }
 }

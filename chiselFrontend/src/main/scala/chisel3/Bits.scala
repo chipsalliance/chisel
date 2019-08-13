@@ -404,28 +404,6 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     throwException(s"Cannot call .asFixedPoint on $this")
   }
 
-  /** Reinterpret cast to Bits. */
-  @chiselRuntimeDeprecated
-  @deprecated("Use asUInt, which does the same thing but returns a more concrete type", "chisel3")
-  final def asBits(implicit compileOptions: CompileOptions): Bits = {
-    implicit val sourceInfo = DeprecatedSourceInfo
-    do_asUInt
-  }
-
-  @chiselRuntimeDeprecated
-  @deprecated("Use asSInt, which makes the reinterpret cast more explicit", "chisel3")
-  final def toSInt(implicit compileOptions: CompileOptions): SInt = {
-    implicit val sourceInfo = DeprecatedSourceInfo
-    do_asSInt
-  }
-
-  @chiselRuntimeDeprecated
-  @deprecated("Use asUInt, which makes the reinterpret cast more explicit", "chisel3")
-  final def toUInt(implicit compileOptions: CompileOptions): UInt = {
-    implicit val sourceInfo = DeprecatedSourceInfo
-    do_asUInt
-  }
-
   final def do_asBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
     width match {
       case KnownWidth(1) => this(0)
@@ -830,7 +808,7 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
   override def do_>= (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, GreaterEqOp, that)
 
   @chiselRuntimeDeprecated
-  @deprecated("Use '=/=', which avoids potential precedence problems", "chisel3")
+  @deprecated("Use '=/=', which avoids potential precedence problems", "3.0")
   final def != (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = this =/= that
 
   /** Dynamic not equals operator
@@ -927,7 +905,7 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
 }
 
 // This is currently a factory because both Bits and UInt inherit it.
-trait UIntFactoryBase {
+trait UIntFactory {
   /** Create a UInt type with inferred width. */
   def apply(): UInt = apply(Width())
   /** Create a UInt port with specified width. */
@@ -1120,7 +1098,7 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
   override def do_>= (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, GreaterEqOp, that)
 
   @chiselRuntimeDeprecated
-  @deprecated("Use '=/=', which avoids potential precedence problems", "chisel3")
+  @deprecated("Use '=/=', which avoids potential precedence problems", "3.0")
   final def != (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = this =/= that
 
   /** Dynamic not equals operator
@@ -1180,7 +1158,7 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
   }
 }
 
-trait SIntFactoryBase {
+trait SIntFactory {
   /** Create an SInt type with inferred width. */
   def apply(): SInt = apply(Width())
   /** Create a SInt type or port with fixed width. */
@@ -1203,9 +1181,108 @@ trait SIntFactoryBase {
   }
 }
 
-object SInt extends SIntFactoryBase
+object SInt extends SIntFactory
 
-sealed trait Reset extends Element with ToBoolable
+sealed trait Reset extends Element with ToBoolable {
+  /** Casts this $coll to an [[AsyncReset]] */
+  final def asAsyncReset(): AsyncReset = macro SourceInfoWhiteboxTransform.noArg
+
+  /** @group SourceInfoTransformMacro */
+  def do_asAsyncReset(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): AsyncReset
+}
+
+object Reset {
+  def apply(): Reset = new ResetType
+}
+
+/** "Abstract" Reset Type inferred in FIRRTL to either [[AsyncReset]] or [[Bool]]
+  *
+  * @note This shares a common interface with [[AsyncReset]] and [[Bool]] but is not their actual
+  * super type due to Bool inheriting from abstract class UInt
+  */
+final class ResetType(private[chisel3] val width: Width = Width(1)) extends Element with Reset {
+  override def toString: String = s"Reset$bindingToString"
+
+  def cloneType: this.type = Reset().asInstanceOf[this.type]
+
+  private[chisel3] def typeEquivalent(that: Data): Boolean =
+    this.getClass == that.getClass
+
+  override def connect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = that match {
+    case _: Reset => super.connect(that)(sourceInfo, connectCompileOptions)
+    case _ => super.badConnect(that)(sourceInfo)
+  }
+
+  override def litOption = None
+
+  /** Not really supported */
+  def toPrintable: Printable = PString("Reset")
+
+  override def do_asUInt(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): UInt = pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref))
+
+  private[chisel3] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
+      compileOptions: CompileOptions): Unit = {
+    this := that
+  }
+
+  /** @group SourceInfoTransformMacro */
+  def do_asAsyncReset(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): AsyncReset =
+    pushOp(DefPrim(sourceInfo, AsyncReset(), AsAsyncResetOp, ref))
+
+  /** @group SourceInfoTransformMacro */
+  def do_asBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+    pushOp(DefPrim(sourceInfo, Bool(), AsUIntOp, ref))
+
+  /** @group SourceInfoTransformMacro */
+  def do_toBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = do_asBool
+}
+
+object AsyncReset {
+  def apply(): AsyncReset = new AsyncReset
+}
+
+/** Data type representing asynchronous reset signals
+  *
+  * These signals are similar to [[Clock]]s in that they must be glitch-free for proper circuit
+  * operation. [[Reg]]s defined with the implicit reset being an [[AsyncReset]] will be
+  * asychronously reset registers.
+  */
+sealed class AsyncReset(private[chisel3] val width: Width = Width(1)) extends Element with Reset {
+  override def toString: String = s"AsyncReset$bindingToString"
+
+  def cloneType: this.type = AsyncReset().asInstanceOf[this.type]
+
+  private[chisel3] def typeEquivalent(that: Data): Boolean =
+    this.getClass == that.getClass
+
+  override def connect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = that match {
+    case _: AsyncReset => super.connect(that)(sourceInfo, connectCompileOptions)
+    case _ => super.badConnect(that)(sourceInfo)
+  }
+
+  override def litOption = None
+
+  /** Not really supported */
+  def toPrintable: Printable = PString("AsyncReset")
+
+  override def do_asUInt(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): UInt = pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref))
+
+  // TODO Is this right?
+  private[chisel3] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
+      compileOptions: CompileOptions): Unit = {
+    this := that.asBool.asAsyncReset
+  }
+
+  /** @group SourceInfoTransformMacro */
+  def do_asAsyncReset(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): AsyncReset = this
+
+  /** @group SourceInfoTransformMacro */
+  def do_asBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+    pushOp(DefPrim(sourceInfo, Bool(), AsUIntOp, ref))
+
+  /** @group SourceInfoTransformMacro */
+  def do_toBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = do_asBool
+}
 
 // REVIEW TODO: Why does this extend UInt and not Bits? Does defining airth
 // operations on a Bool make sense?
@@ -1308,9 +1385,13 @@ sealed class Bool() extends UInt(1.W) with Reset {
 
   /** @group SourceInfoTransformMacro */
   def do_asClock(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Clock = pushOp(DefPrim(sourceInfo, Clock(), AsClockOp, ref))
+
+  /** @group SourceInfoTransformMacro */
+  def do_asAsyncReset(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): AsyncReset =
+    pushOp(DefPrim(sourceInfo, AsyncReset(), AsAsyncResetOp, ref))
 }
 
-trait BoolFactoryBase {
+trait BoolFactory {
   /** Creates an empty Bool.
    */
   def apply(): Bool = new Bool()
@@ -1325,7 +1406,7 @@ trait BoolFactoryBase {
   }
 }
 
-object Bool extends BoolFactoryBase
+object Bool extends BoolFactory
 
 package experimental {
   //scalastyle:off number.of.methods
@@ -1652,11 +1733,6 @@ package experimental {
     def apply(): FixedPoint = apply(Width(), BinaryPoint())
 
     /** Create an FixedPoint type or port with fixed width. */
-    @chiselRuntimeDeprecated
-    @deprecated("Use FixedPoint(width: Width, binaryPoint: BinaryPoint) example FixedPoint(16.W, 8.BP)", "chisel3")
-    def apply(width: Int, binaryPoint: Int): FixedPoint = apply(Width(width), BinaryPoint(binaryPoint))
-
-    /** Create an FixedPoint type or port with fixed width. */
     def apply(width: Width, binaryPoint: BinaryPoint): FixedPoint = new FixedPoint(width, binaryPoint)
 
     /** Create an FixedPoint literal with inferred width from BigInt.
@@ -1681,17 +1757,6 @@ package experimental {
       else {
         apply(value, Width(width), BinaryPoint(binaryPoint))
       }
-    /** Create an FixedPoint literal with inferred width from Double.
-      * Use PrivateObject to force users to specify width and binaryPoint by name
-      */
-    @chiselRuntimeDeprecated
-    @deprecated("use fromDouble(value: Double, width: Width, binaryPoint: BinaryPoint)", "chisel3")
-    def fromDouble(value: Double, dummy: PrivateType = PrivateObject,
-                   width: Int = -1, binaryPoint: Int = 0): FixedPoint = {
-      fromBigInt(
-        toBigInt(value, binaryPoint), width = width, binaryPoint = binaryPoint
-      )
-    }
     /** Create an FixedPoint literal with inferred width from Double.
       * Use PrivateObject to force users to specify width and binaryPoint by name
       */
@@ -1737,9 +1802,6 @@ package experimental {
 
   //      implicit class fromDoubleToLiteral(val double: Double) extends AnyVal {
       implicit class fromDoubleToLiteral(double: Double) {
-        @deprecated("Use notation <double>.F(<binary_point>.BP) instead", "chisel3")
-        def F(binaryPoint: Int): FixedPoint = FixedPoint.fromDouble(double, binaryPoint = binaryPoint)
-
         def F(binaryPoint: BinaryPoint): FixedPoint = {
           FixedPoint.fromDouble(double, Width(), binaryPoint)
         }

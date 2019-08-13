@@ -216,6 +216,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
 
   /** @group SourceInfoTransformMacro */
   def do_apply(p: UInt)(implicit compileOptions: CompileOptions): T = {
+    requireIsHardware(this, "vec")
     requireIsHardware(p, "vec index")
     val port = gen
 
@@ -347,16 +348,6 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId with Source
   // IndexedSeq has its own hashCode/equals that we must not use
   override def hashCode: Int = super[HasId].hashCode
   override def equals(that: Any): Boolean = super[HasId].equals(that)
-
-  @chiselRuntimeDeprecated
-  @deprecated("Use Vec.apply instead", "chisel3")
-  def read(idx: UInt)(implicit compileOptions: CompileOptions): T = do_apply(idx)(compileOptions)
-
-  @chiselRuntimeDeprecated
-  @deprecated("Use Vec.apply instead", "chisel3")
-  def write(idx: UInt, data: T)(implicit compileOptions: CompileOptions): Unit = {
-    do_apply(idx)(compileOptions).:=(data)(DeprecatedSourceInfo, compileOptions)
-  }
 
   /** Outputs true if p outputs true for every element.
     */

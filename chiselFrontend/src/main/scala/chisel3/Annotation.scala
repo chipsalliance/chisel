@@ -3,11 +3,11 @@
 package chisel3.experimental
 
 import scala.language.existentials
-
 import chisel3.internal.{Builder, InstanceId}
 import chisel3.{CompileOptions, Data}
 import firrtl.Transform
-import firrtl.annotations.Annotation
+import firrtl.annotations._
+import firrtl.options.Unserializable
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
 
 /** Interface for Annotations in Chisel
@@ -18,17 +18,6 @@ trait ChiselAnnotation {
   /** Conversion to FIRRTL Annotation */
   def toFirrtl: Annotation
 }
-object ChiselAnnotation {
-  @deprecated("Write a custom ChiselAnnotation subclass instead", "3.1")
-  def apply(component: InstanceId, transformClass: Class[_ <: Transform], value: String): ChiselLegacyAnnotation =
-    ChiselLegacyAnnotation(component, transformClass, value)
-  @deprecated("Write a custom ChiselAnnotation subclass instead", "3.1")
-  def unapply(anno: ChiselAnnotation): Option[(InstanceId, Class[_ <: Transform], String)] =
-    anno match {
-      case ChiselLegacyAnnotation(c, t, v) => Some(c, t, v)
-      case _ => None
-    }
-}
 
 /** Mixin for [[ChiselAnnotation]] that instantiates an associated FIRRTL Transform when this Annotation is present
   * during a run of
@@ -36,10 +25,10 @@ object ChiselAnnotation {
   * Automatic Transform instantiation is *not* supported when the Circuit and Annotations are serialized before invoking
   * FIRRTL.
   */
-// TODO There should be a FIRRTL API for this instead
 trait RunFirrtlTransform extends ChiselAnnotation {
   def transformClass: Class[_ <: Transform]
 }
+
 
 // This exists for implementation reasons, we don't want people using this type directly
 final case class ChiselLegacyAnnotation private[chisel3] (

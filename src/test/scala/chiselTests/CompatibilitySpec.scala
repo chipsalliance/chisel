@@ -2,6 +2,8 @@
 
 package chiselTests
 
+import chisel3.testers.BasicTester
+
 import org.scalacheck.Gen
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 
@@ -96,9 +98,6 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
       dcd shouldBe a [DecoupledIO[UInt]]
       Queue(dcd) shouldBe a [DecoupledIO[UInt]]
       Enum(UInt(), 2) shouldBe a [List[UInt]]
-      val lfsr16 = LFSR16()
-      lfsr16 shouldBe a [UInt]
-      lfsr16.getWidth shouldBe (16)
       ListLookup(wire, List(wire), Array((BitPat("b1"), List(wire)))) shouldBe a [List[UInt]]
       Lookup(wire, wire, Seq((BitPat("b1"), wire))) shouldBe a [UInt]
       Mux1H(wire, Seq(wire)) shouldBe a [UInt]
@@ -338,4 +337,247 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
     })
   }
   // scalastyle:on line.size.limit
+
+  behavior of "BitPat"
+
+  it should "support old operators" in {
+    class Foo extends Module {
+      val io = IO(new Bundle{})
+
+      info("Deprecated method DC hasn't been removed")
+      val bp = BitPat.DC(4)
+
+      info("BitPat != UInt is a Bool")
+      (bp != UInt(4)) shouldBe a [Bool]
+
+      /* This test does not work, but I'm not sure it's supposed to? It does *not* work on chisel3. */
+      // info("UInt != BitPat is a Bool")
+      // (UInt(4) != bp) shouldBe a [Bool]
+    }
+
+    elaborate(new Foo)
+  }
+
+  behavior of "Enum"
+
+  it should "support apply[T <: Bits](nodeType: T, n: Int): List[T]" in {
+    class Foo extends Module {
+      val io = IO(new Bundle{})
+
+      info("works for a UInt")
+      Enum(UInt(), 4) shouldBe a [List[UInt]]
+
+      info("throw an exception for non-UInt types")
+      intercept [IllegalArgumentException] {
+        Enum(SInt(), 4)
+      }.getMessage should include ("Only UInt supported for enums")
+
+      info("throw an exception if the bit width is specified")
+      intercept [IllegalArgumentException] {
+        Enum(UInt(width = 8), 4)
+      }.getMessage should include ("Bit width may no longer be specified for enums")
+    }
+
+    elaborate(new Foo)
+  }
+
+  behavior of "Queue"
+
+  it should "support deprecated constructors" in {
+    class Foo extends Module {
+      val io = IO(new Bundle{})
+
+      info("reset: Option[Bool] constructor works")
+      val option = Module(new Queue(UInt(), 4, false, false, Some(Bool(true))))
+
+      info("reset: Bool constructor works")
+      val explicit = Module(new Queue(UInt(), 4, false, false, Bool(true)))
+    }
+
+    elaborate(new Foo)
+  }
+
+  behavior of "LFSR16"
+
+  it should "still exist" in {
+    class Foo extends Module {
+      val io = IO(new Bundle{})
+
+      info("Still exists")
+      val lfsr = LFSR16()
+
+      info("apply method returns a UInt")
+      lfsr shouldBe a [UInt]
+
+      info("returned UInt has a width of 16")
+      lfsr.getWidth should be (16)
+    }
+
+    elaborate(new Foo)
+  }
+
+  behavior of "Mem"
+
+  it should "support deprecated apply methods" in {
+    class Foo extends Module {
+      val io = IO(new Bundle{})
+
+      info("apply[T <: Data](t: T, size: BigInt): Mem[T] works")
+      val memBigInt = Mem(UInt(), 8: BigInt)
+      memBigInt shouldBe a [Mem[UInt]]
+
+      info("apply[T <: Data](t: T, size: Int): Mem[T] works")
+      val memInt = Mem(SInt(), 16: Int)
+      memInt shouldBe a [Mem[SInt]]
+    }
+
+    elaborate(new Foo)
+  }
+
+  behavior of "SeqMem"
+
+  it should "support deprecated apply methods" in {
+    class Foo extends Module {
+      val io = IO(new Bundle{})
+
+      info("apply[T <: Data](t: T, size: BigInt): SeqMem[T] works")
+      val seqMemBigInt = SeqMem(UInt(), 8: BigInt)
+      seqMemBigInt shouldBe a [SeqMem[UInt]]
+
+      info("apply[T <: Data](t: T, size: Int): SeqMem[T] works")
+      val seqMemInt = SeqMem(UInt(), 16: Int)
+      seqMemInt shouldBe a [SeqMem[UInt]]
+    }
+
+    elaborate(new Foo)
+  }
+
+  behavior of "debug"
+
+  it should "still exist" in {
+    class Foo extends Module {
+      val io = IO(new Bundle{})
+
+      val data = UInt(width = 2)
+      debug(data)
+    }
+
+    elaborate(new Foo)
+  }
+
+  behavior of "Data methods"
+
+  it should "support legacy methods" in {
+    class Foo extends Module {
+      val io = IO(new Bundle{})
+
+      info("litArg works")
+      UInt(width=3).litArg() should be (None)
+      UInt(0, width=3).litArg() should be (Some(chisel3.internal.firrtl.ULit(0, 3.W)))
+
+      info("toBits works")
+      val wire = Wire(UInt(width=4))
+      Vec.fill(4)(wire).toBits.getWidth should be (wire.getWidth * 4)
+    }
+
+    elaborate(new Foo)
+  }
+
+  behavior of "Wire"
+
+  it should "support legacy methods" in {
+    class Foo extends Module {
+      val io = IO(new Bundle{})
+
+      info("apply[T <: Data](dummy: Int = 0, init: T): T works")
+      val first = Wire(init=UInt("hdeadbeef"))
+      first shouldBe a [UInt]
+
+      info("apply[T <: Data](t: T, init: T): T works")
+      val second = Wire(SInt(), SInt(-100))
+      second shouldBe a [SInt]
+
+      info("apply[T <: Data](t: T, init: DontCare.type): T works")
+      val third = Wire(UInt(), chisel3.DontCare)
+      third shouldBe a [UInt]
+    }
+
+    elaborate(new Foo)
+  }
+
+  behavior of "Vec"
+
+  it should "support legacy methods" in {
+    class Foo extends BasicTester {
+      val seq = Seq(Wire(UInt(0, width=4)), Wire(UInt(1, width=4)), Wire(UInt(2, width=4)))
+      val vec = Vec(seq)
+
+      info("read works")
+      chisel3.assert(vec.read(UInt(0)) === UInt(0))
+
+      info("write works")
+      vec.write(UInt(1), UInt(3))
+      chisel3.assert(vec.read(UInt(1)) === UInt(3))
+
+      val (_, done) = Counter(Bool(true), 4)
+      when (done) { stop }
+    }
+
+    assertTesterPasses(new Foo)
+  }
+
+  behavior of "Bits methods"
+
+  it should "support legacy methods" in {
+    class Foo extends Module {
+      val io = new Bundle{}
+
+      val u = UInt(8)
+      val s = SInt(-4)
+
+      info("toBools works")
+      u.toBools shouldBe a [Seq[Bool]]
+
+      info("asBits works")
+      s.asBits shouldBe a [Bits]
+
+      info("toSInt works")
+      u.toSInt shouldBe a [SInt]
+
+      info("toUInt works")
+      s.toUInt shouldBe a [UInt]
+
+      info("toBool works")
+      UInt(1).toBool shouldBe a [Bool]
+    }
+
+    elaborate(new Foo)
+  }
+
+  behavior of "UInt"
+
+  it should "support legacy methods" in {
+    class Foo extends Module {
+      val io = new Bundle{}
+
+      info("!= works")
+      (UInt(1) != UInt(1)) shouldBe a [Bool]
+    }
+
+    elaborate(new Foo)
+  }
+
+  behavior of "SInt"
+
+  it should "support legacy methods" in {
+    class Foo extends Module {
+      val io = new Bundle{}
+
+      info("!= works")
+      (SInt(-1) != SInt(-1)) shouldBe a [Bool]
+    }
+
+    elaborate(new Foo)
+  }
+
 }

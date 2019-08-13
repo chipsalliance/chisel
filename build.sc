@@ -22,7 +22,6 @@ object chiselCompileOptions {
     "-feature",
     "-language:reflectiveCalls",
     "-unchecked",
-    "-Xcheckinit",
     "-Xlint:infer-any"
 /*    "-Xlint:missing-interpolator" // this causes a:
 //[error] .../chisel3/chiselFrontend/src/main/scala/chisel3/core/Aggregate.scala:605:48: recursive value outer needs type
@@ -36,7 +35,7 @@ object chiselCompileOptions {
 val crossVersions = Seq("2.12.6", "2.11.12")
 
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
-val defaultVersions = Map("firrtl" -> "1.2-073119-SNAPSHOT")
+val defaultVersions = Map("firrtl" -> "1.2-081319-SNAPSHOT")
 
 def getVersion(dep: String, org: String = "edu.berkeley.cs") = {
   val version = sys.env.getOrElse(dep + "Version", defaultVersions(dep))
@@ -68,7 +67,7 @@ trait CommonChiselModule extends SbtModule {
 
 trait PublishChiselModule extends CommonChiselModule with PublishModule {
   override def artifactName = "chisel3"
-  def publishVersion = "3.2-073119-SNAPSHOT"
+  def publishVersion = "3.2-081319-SNAPSHOT"
 
   def pomSettings = PomSettings(
     description = artifactName(),

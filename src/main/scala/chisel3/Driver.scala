@@ -3,18 +3,17 @@
 package chisel3
 
 import chisel3.internal.ErrorLog
-import chisel3.internal.firrtl._
-import chisel3.experimental.{RawModule, RunFirrtlTransform}
-import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation, ChiselStage, ChiselExecutionResultView}
-import chisel3.stage.phases.DriverCompatibility
-
-import java.io._
-
+import chisel3.experimental.RawModule
+import internal.firrtl._
 import firrtl._
-import firrtl.annotations.JsonProtocol
 import firrtl.options.Phase
 import firrtl.options.Viewer.view
+import firrtl.annotations.JsonProtocol
 import firrtl.util.{BackendCompilationUtilities => FirrtlBackendCompilationUtilities}
+import chisel3.stage.{ChiselExecutionResultView, ChiselGeneratorAnnotation, ChiselStage}
+import chisel3.stage.phases.DriverCompatibility
+import java.io._
+
 
 /**
   * The Driver provides methods to invoke the chisel3 compiler and the firrtl compiler.
@@ -91,7 +90,7 @@ object Driver extends BackendCompilationUtilities {
     * @param gen A function that creates a Module hierarchy.
     * @return The resulting Chisel IR in the form of a Circuit. (TODO: Should be FIRRTL IR)
     */
-  def elaborate[T <: RawModule](gen: () => T): Circuit = internal.Builder.build(Module(gen()))
+  def elaborate[T <: RawModule](gen: () => T): Circuit = internal.Builder.build(Module(gen()))._1
 
   /**
     * Convert the given Chisel IR Circuit to a FIRRTL Circuit.
