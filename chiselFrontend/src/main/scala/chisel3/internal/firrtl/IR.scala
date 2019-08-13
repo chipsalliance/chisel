@@ -47,6 +47,7 @@ object PrimOp {
   val AsFixedPointOp = PrimOp("asFixedPoint")
   val SetBinaryPoint = PrimOp("bpset")
   val AsClockOp = PrimOp("asClock")
+  val AsAsyncResetOp = PrimOp("asAsyncReset")
 }
 
 abstract class Arg {

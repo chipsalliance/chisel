@@ -3,11 +3,11 @@
 package chisel3.experimental
 
 import scala.language.existentials
-
 import chisel3.internal.{Builder, InstanceId}
 import chisel3.{CompileOptions, Data}
 import firrtl.Transform
-import firrtl.annotations.Annotation
+import firrtl.annotations._
+import firrtl.options.Unserializable
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
 
 /** Interface for Annotations in Chisel
@@ -25,10 +25,10 @@ trait ChiselAnnotation {
   * Automatic Transform instantiation is *not* supported when the Circuit and Annotations are serialized before invoking
   * FIRRTL.
   */
-// TODO There should be a FIRRTL API for this instead
 trait RunFirrtlTransform extends ChiselAnnotation {
   def transformClass: Class[_ <: Transform]
 }
+
 
 // This exists for implementation reasons, we don't want people using this type directly
 final case class ChiselLegacyAnnotation private[chisel3] (

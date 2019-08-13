@@ -9,7 +9,7 @@ import chisel3.testers.BasicTester
 
 class MultiIOQueue[T <: Data](gen: T, val entries: Int) extends MultiIOModule {
   val clk = IO(Input(Clock()))
-  val rst = IO(Input(Bool()))
+  val rst = IO(Input(Reset()))
   val enq = IO(Flipped(EnqIO(gen)))
   val deq = IO(Flipped(DeqIO(gen)))
   val count = IO(Output(UInt(log2Ceil(entries + 1).W)))
@@ -28,7 +28,7 @@ class QueueClone(multiIO: Boolean = false) extends Module {
     q1.rst := reset
     q1.enq <> io.enq
     q2_io("clk").asInstanceOf[Clock] := clock
-    q2_io("rst").asInstanceOf[Bool] := reset
+    q2_io("rst").asInstanceOf[Reset] := reset
     q2_io("enq").asInstanceOf[q1.enq.type] <> q1.deq
     io.deq <> q2_io("deq").asInstanceOf[q1.deq.type]
     io.count := q1.count + q2_io("count").asInstanceOf[q1.count.type]
