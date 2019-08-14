@@ -18,3 +18,6 @@ class OptionsException(val message: String, cause: Throwable = null) extends Ill
   * out of order or if the compiler did not run things in the correct order.
   */
 class PhasePrerequisiteException(message: String, cause: Throwable = null) extends PhaseException(message, cause)
+
+/** Indicates that a [[Stage]] or [[Phase]] has run into a situation where it cannot continue. */
+final class StageError(val code: ExitFailure = GeneralError, cause: Throwable = null) extends Error("", cause)
