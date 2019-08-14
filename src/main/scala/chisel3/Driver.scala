@@ -6,7 +6,7 @@ import chisel3.internal.ErrorLog
 import chisel3.experimental.RawModule
 import internal.firrtl._
 import firrtl._
-import firrtl.options.{Phase, PhaseManager}
+import firrtl.options.{Phase, PhaseManager, StageError}
 import firrtl.options.phases.DeletedWrapper
 import firrtl.options.Viewer.view
 import firrtl.annotations.JsonProtocol
@@ -226,16 +226,10 @@ object Driver extends BackendCompilationUtilities {
     val annosx = try {
       phases.foldLeft(annos)( (a, p) => p.transform(a) )
     } catch {
-      case ce: ChiselException =>
-        val stackTrace = if (!optionsManager.chiselOptions.printFullStackTrace) {
-          ce.chiselStackTrace
-        } else {
-          val sw = new StringWriter
-          ce.printStackTrace(new PrintWriter(sw))
-          sw.toString
-        }
-        Predef.augmentString(stackTrace).lines.foreach(line => println(s"${ErrorLog.errTag} $line")) // scalastyle:ignore regex line.size.limit
-        annos
+      /* ChiselStage and FirrtlStage can throw StageError. Since Driver is not a StageMain, it cannot catch these. While
+       * Driver is deprecated and removed in 3.2.1+, the Driver catches all errors.
+       */
+      case e: StageError => annos
     }
 
     view[ChiselExecutionResult](annosx)
