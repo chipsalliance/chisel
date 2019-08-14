@@ -88,6 +88,8 @@ private[chisel3] sealed trait ToBoolable extends Element {
     *
     * @note The width must be known and equal to 1
     */
+  @chiselRuntimeDeprecated
+  @deprecated("Use asBool instead", "3.2")
   final def toBool(): Bool = macro SourceInfoWhiteboxTransform.noArg
 
   /** @group SourceInfoTransformMacro */
@@ -367,11 +369,11 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
   def do_>> (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
 
   /** Returns the contents of this wire as a [[scala.collection.Seq]] of [[Bool]]. */
+  @chiselRuntimeDeprecated
+  @deprecated("Use asBools instead", "3.2")
   final def toBools(): Seq[Bool] = macro SourceInfoTransform.noArg
 
   /** @group SourceInfoTransformMacro */
-  @chiselRuntimeDeprecated
-  @deprecated("Use asBools instead", "3.2")
   def do_toBools(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Seq[Bool] = do_asBools
 
   /** Returns the contents of this wire as a [[scala.collection.Seq]] of [[Bool]]. */
@@ -411,8 +413,6 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     }
   }
 
-  @chiselRuntimeDeprecated
-  @deprecated("Use asBool instead", "3.2")
   final def do_toBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = do_asBool
 
   /** Concatenation operator
