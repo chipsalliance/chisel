@@ -3,25 +3,28 @@
 package chisel3.stage
 
 import firrtl.AnnotationSeq
-import firrtl.options.{Phase, Shell, Stage}
+import firrtl.options.{Phase, PhaseManager, PreservesAll, Shell, Stage}
+import firrtl.options.phases.DeletedWrapper
 import firrtl.stage.FirrtlCli
 
-class ChiselStage extends Stage {
+class ChiselStage extends Stage with PreservesAll[Phase] {
   val shell: Shell = new Shell("chisel") with ChiselCli with FirrtlCli
 
-  private val phases: Seq[Phase] =
-    Seq( new chisel3.stage.phases.Checks,
-         new chisel3.stage.phases.Elaborate,
-         new chisel3.stage.phases.AddImplicitOutputFile,
-         new chisel3.stage.phases.AddImplicitOutputAnnotationFile,
-         new chisel3.stage.phases.MaybeAspectPhase,
-         new chisel3.stage.phases.Emitter,
-         new chisel3.stage.phases.Convert,
-         new chisel3.stage.phases.MaybeFirrtlStage )
-      .map(firrtl.options.phases.DeletedWrapper(_))
+  private val targets =
+    Seq( classOf[chisel3.stage.phases.Checks],
+         classOf[chisel3.stage.phases.Elaborate],
+         classOf[chisel3.stage.phases.AddImplicitOutputFile],
+         classOf[chisel3.stage.phases.AddImplicitOutputAnnotationFile],
+         classOf[chisel3.stage.phases.MaybeAspectPhase],
+         classOf[chisel3.stage.phases.Emitter],
+         classOf[chisel3.stage.phases.Convert],
+         classOf[chisel3.stage.phases.MaybeFirrtlStage] )
 
   def run(annotations: AnnotationSeq): AnnotationSeq =
     /* @todo: Should this be wrapped in a try/catch? */
-    phases.foldLeft(annotations)( (a, f) => f.transform(a) )
+    new PhaseManager(targets) { override val wrappers = Seq( (a: Phase) => DeletedWrapper(a) ) }
+      .transformOrder
+      .map(firrtl.options.phases.DeletedWrapper(_))
+      .foldLeft(annotations)( (a, f) => f.transform(a) )
 
 }

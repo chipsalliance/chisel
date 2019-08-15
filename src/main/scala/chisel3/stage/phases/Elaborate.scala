@@ -9,11 +9,11 @@ import chisel3.internal.ErrorLog
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselOptions}
 import firrtl.AnnotationSeq
 import firrtl.options.Viewer.view
-import firrtl.options.{OptionsException, Phase}
+import firrtl.options.{OptionsException, Phase, PreservesAll}
 
 /** Elaborate all [[chisel3.stage.ChiselGeneratorAnnotation]]s into [[chisel3.stage.ChiselCircuitAnnotation]]s.
   */
-class Elaborate extends Phase {
+class Elaborate extends Phase with PreservesAll[Phase] {
 
   /**
     * @todo Change this to print to STDERR (`Console.err.println`)
