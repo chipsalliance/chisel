@@ -27,7 +27,9 @@ private class Emitter(circuit: Circuit) {
 
   private def emitType(d: Data, clearDir: Boolean = false): String = d match { // scalastyle:ignore cyclomatic.complexity line.size.limit
     case d: Clock => "Clock"
-    case d: EnumType => s"UInt${d.width}"
+    case _: AsyncReset => "AsyncReset"
+    case _: ResetType => "Reset"
+    case d: chisel3.core.EnumType => s"UInt${d.width}"
     case d: UInt => s"UInt${d.width}"
     case d: SInt => s"SInt${d.width}"
     case d: FixedPoint => s"Fixed${d.width}${d.binaryPoint}"

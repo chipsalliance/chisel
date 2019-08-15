@@ -8,7 +8,9 @@ import chisel3._
 import chisel3.experimental._
 import chisel3.internal.firrtl._
 import chisel3.internal.naming._
-import _root_.firrtl.annotations.{CircuitName, ComponentName, ModuleName, Named}
+import _root_.firrtl.annotations.{CircuitName, ComponentName, IsMember, ModuleName, Named, ReferenceTarget}
+
+import scala.collection.mutable
 
 private[chisel3] class Namespace(keywords: Set[String]) {
   private val names = collection.mutable.HashMap[String, Long]()
@@ -68,8 +70,12 @@ trait InstanceId {
   def parentPathName: String
   def parentModName: String
   /** Returns a FIRRTL Named that refers to this object in the elaborated hardware graph */
+  @deprecated("toNamed API is deprecated -- use toTarget instead", "3.2")
   def toNamed: Named
-
+  /** Returns a FIRRTL IsMember that refers to this object in the elaborated hardware graph */
+  def toTarget: IsMember
+  /** Returns a FIRRTL IsMember that refers to the absolute path to this object in the elaborated hardware graph */
+  def toAbsoluteTarget: IsMember
 }
 
 private[chisel3] trait HasId extends InstanceId {
@@ -163,8 +169,30 @@ private[chisel3] trait NamedComponent extends HasId {
   /** Returns a FIRRTL ComponentName that references this object
     * @note Should not be called until circuit elaboration is complete
     */
+  @deprecated("toNamed API is deprecated -- use toTarget instead", "3.2")
   final def toNamed: ComponentName =
     ComponentName(this.instanceName, ModuleName(this.parentModName, CircuitName(this.circuitName)))
+
+  /** Returns a FIRRTL ReferenceTarget that references this object
+    * @note Should not be called until circuit elaboration is complete
+    */
+  final def toTarget: ReferenceTarget = {
+    val name = this.instanceName
+    import _root_.firrtl.annotations.{Target, TargetToken}
+    Target.toTargetTokens(name).toList match {
+      case TargetToken.Ref(r) :: components => ReferenceTarget(this.circuitName, this.parentModName, Nil, r, components)
+      case other =>
+        throw _root_.firrtl.annotations.Target.NamedException(s"Cannot convert $name into [[ReferenceTarget]]: $other")
+    }
+  }
+
+  final def toAbsoluteTarget: ReferenceTarget = {
+    val localTarget = toTarget
+    _parent match {
+      case Some(parent) => parent.toAbsoluteTarget.ref(localTarget.ref).copy(component = localTarget.component)
+      case None => localTarget
+    }
+  }
 }
 
 // Mutable global state for chisel that can appear outside a Builder context
@@ -180,6 +208,12 @@ private[chisel3] class DynamicContext() {
   val components = ArrayBuffer[Component]()
   val annotations = ArrayBuffer[ChiselAnnotation]()
   var currentModule: Option[BaseModule] = None
+
+  /** Contains a mapping from a elaborated module to their aspect
+    * Set by [[ModuleAspect]]
+    */
+  val aspectModule: mutable.HashMap[BaseModule, BaseModule] = mutable.HashMap.empty[BaseModule, BaseModule]
+
   // Set by object Module.apply before calling class Module constructor
   // Used to distinguish between no Module() wrapping, multiple wrappings, and rewrapping
   var readyForModuleConstr: Boolean = false
@@ -229,12 +263,32 @@ private[chisel3] object Builder {
   def currentModule_=(target: Option[BaseModule]): Unit = {
     dynamicContext.currentModule = target
   }
+  def aspectModule(module: BaseModule): Option[BaseModule] = dynamicContextVar.value match {
+    case Some(dynamicContext) => dynamicContext.aspectModule.get(module)
+    case _ => None
+  }
+  def addAspect(module: BaseModule, aspect: BaseModule): Unit = {
+    dynamicContext.aspectModule += ((module, aspect))
+  }
   def forcedModule: BaseModule = currentModule match {
     case Some(module) => module
     case None => throwException(
       "Error: Not in a Module. Likely cause: Missed Module() wrap or bare chisel API call."
       // A bare api call is, e.g. calling Wire() from the scala console).
     )
+  }
+  def referenceUserModule: RawModule = {
+    currentModule match {
+      case Some(module: RawModule) =>
+        aspectModule(module) match {
+          case Some(aspect: RawModule) => aspect
+          case other => module
+        }
+      case _ => throwException(
+        "Error: Not in a RawModule. Likely cause: Missed Module() wrap, bare chisel API call, or attempting to construct hardware inside a BlackBox." // scalastyle:ignore line.size.limit
+        // A bare api call is, e.g. calling Wire() from the scala console).
+      )
+    }
   }
   def forcedUserModule: RawModule = currentModule match {
     case Some(module: RawModule) => module
@@ -345,7 +399,7 @@ private[chisel3] object Builder {
     throwException(m)
   }
 
-  def build[T <: RawModule](f: => T): Circuit = {
+  def build[T <: RawModule](f: => T): (Circuit, T) = {
     chiselContext.withValue(new ChiselContext) {
       dynamicContextVar.withValue(Some(new DynamicContext())) {
         errors.info("Elaborating design...")
@@ -354,7 +408,7 @@ private[chisel3] object Builder {
         errors.checkpoint()
         errors.info("Done elaborating.")
 
-        Circuit(components.last.name, components, annotations)
+        (Circuit(components.last.name, components, annotations), mod)
       }
    }
   }

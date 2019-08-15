@@ -8,25 +8,29 @@ import org.scalacheck._
 import chisel3._
 import chisel3.experimental.RawModule
 import chisel3.testers._
-import firrtl.{
-  CommonOptions,
-  ExecutionOptionsManager,
-  HasFirrtlOptions,
-  FirrtlExecutionSuccess,
-  FirrtlExecutionFailure
-}
+import firrtl.options.OptionsException
+import firrtl.{AnnotationSeq, CommonOptions, ExecutionOptionsManager, FirrtlExecutionFailure, FirrtlExecutionSuccess, HasFirrtlOptions}
 import firrtl.util.BackendCompilationUtilities
 
 /** Common utility functions for Chisel unit tests. */
 trait ChiselRunners extends Assertions with BackendCompilationUtilities {
-  def runTester(t: => BasicTester, additionalVResources: Seq[String] = Seq()): Boolean = {
-    TesterDriver.execute(() => t, additionalVResources)
+  def runTester(t: => BasicTester,
+                additionalVResources: Seq[String] = Seq(),
+                annotations: AnnotationSeq = Seq()
+               ): Boolean = {
+    TesterDriver.execute(() => t, additionalVResources, annotations)
   }
-  def assertTesterPasses(t: => BasicTester, additionalVResources: Seq[String] = Seq()): Unit = {
-    assert(runTester(t, additionalVResources))
+  def assertTesterPasses(t: => BasicTester,
+                         additionalVResources: Seq[String] = Seq(),
+                         annotations: AnnotationSeq = Seq()
+                        ): Unit = {
+    assert(runTester(t, additionalVResources, annotations))
   }
-  def assertTesterFails(t: => BasicTester, additionalVResources: Seq[String] = Seq()): Unit = {
-    assert(!runTester(t, additionalVResources))
+  def assertTesterFails(t: => BasicTester,
+                        additionalVResources: Seq[String] = Seq(),
+                        annotations: Seq[chisel3.aop.Aspect[_]] = Seq()
+                       ): Unit = {
+    assert(!runTester(t, additionalVResources, annotations))
   }
   def elaborate(t: => RawModule): Unit = Driver.elaborate(() => t)
 
@@ -95,11 +99,12 @@ class ChiselTestUtilitiesSpec extends ChiselFlatSpec {
   import org.scalatest.exceptions.TestFailedException
   // Who tests the testers?
   "assertKnownWidth" should "error when the expected width is wrong" in {
-    a [TestFailedException] shouldBe thrownBy {
+    val caught = intercept[OptionsException] {
       assertKnownWidth(7) {
         Wire(UInt(8.W))
       }
     }
+    assert(caught.getCause.isInstanceOf[TestFailedException])
   }
 
   it should "error when the width is unknown" in {
@@ -117,11 +122,12 @@ class ChiselTestUtilitiesSpec extends ChiselFlatSpec {
   }
 
   "assertInferredWidth" should "error if the width is known" in {
-    a [TestFailedException] shouldBe thrownBy {
+    val caught = intercept[OptionsException] {
       assertInferredWidth(8) {
         Wire(UInt(8.W))
       }
     }
+    assert(caught.getCause.isInstanceOf[TestFailedException])
   }
 
   it should "error if the expected width is wrong" in {

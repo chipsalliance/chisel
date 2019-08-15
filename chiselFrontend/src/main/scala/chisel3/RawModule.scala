@@ -143,7 +143,11 @@ abstract class MultiIOModule(implicit moduleCompileOptions: CompileOptions)
     extends RawModule {
   // Implicit clock and reset pins
   val clock: Clock = IO(Input(Clock()))
-  val reset: Reset = IO(Input(Bool()))
+  val reset: Reset = {
+    // Top module and compatibility mode use Bool for reset
+    val inferReset = _parent.isDefined && moduleCompileOptions.inferModuleReset
+    IO(Input(if (inferReset) Reset() else Bool()))
+  }
 
   // Setup ClockAndReset
   Builder.currentClock = Some(clock)
@@ -219,14 +223,7 @@ abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions)
       pushCommand(DefInvalid(sourceInfo, io.ref))
     }
 
-    override_clock match {
-      case Some(override_clock) => clock := override_clock
-      case _ => clock := Builder.forcedClock
-    }
-
-    override_reset match {
-      case Some(override_reset) => reset := override_reset
-      case _ => reset := Builder.forcedReset
-    }
+    clock := override_clock.getOrElse(Builder.forcedClock)
+    reset := override_reset.getOrElse(Builder.forcedReset)
   }
 }

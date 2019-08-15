@@ -74,7 +74,15 @@ sealed trait UnconstrainedBinding extends TopBinding {
 // Location will track where this Module is, and the bound object can be referenced in FIRRTL
 sealed trait ConstrainedBinding extends TopBinding {
   def enclosure: BaseModule
-  def location: Option[BaseModule] = Some(enclosure)
+  def location: Option[BaseModule] = {
+    // If an aspect is present, return the aspect module. Otherwise, return the enclosure module
+    // This allows aspect modules to pretend to be enclosed modules for connectivity checking,
+    // inside vs outside instance checking, etc.
+    Builder.aspectModule(enclosure) match {
+      case None => Some(enclosure)
+      case Some(aspect) => Some(aspect)
+    }
+  }
 }
 
 // A binding representing a data that cannot be (re)assigned to.
