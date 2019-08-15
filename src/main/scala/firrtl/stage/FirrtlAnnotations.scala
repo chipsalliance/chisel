@@ -109,7 +109,7 @@ object InfoModeAnnotation extends HasShellOptions {
       longOption      = "info-mode",
       toAnnotationSeq = a => Seq(InfoModeAnnotation(a)),
       helpText        = s"Source file info handling mode (default: ${apply().modeName})",
-      shortOption     = Some("<ignore|use|gen|append>") ) )
+      helpValueName   = Some("<ignore|use|gen|append>") ) )
 
 }
 
