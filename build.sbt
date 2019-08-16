@@ -124,7 +124,8 @@ lazy val contributors =
                GitHubRepository("freechipsproject", "firrtl"),
                GitHubRepository("freechipsproject", "chisel-testers"),
                GitHubRepository("freechipsproject", "treadle"),
-               GitHubRepository("freechipsproject", "diagrammer") )
+               GitHubRepository("freechipsproject", "diagrammer"),
+               GitHubRepository("freechipsproject", "www.chisel-lang.org") )
             .map(Contributors.contributors)
             .reduce(_ ++ _)
             .distinct
