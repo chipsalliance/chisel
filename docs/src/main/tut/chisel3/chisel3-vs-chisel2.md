@@ -78,8 +78,9 @@ for instructions on preparing your Chisel2 designs for Chisel3.
 *  the con and alt inputs to a Mux must be type-compatible - both signed or both unsigned,
 *  bulk-connection to a node that has been procedurally assigned-to is illegal,
 *  `!=` is deprecated, use `=/=` instead,
-*  use `SeqMem(...)` instead of `Mem(..., seqRead)`,
-*  use `SeqMem(n:Int, out: => T)` instead of `SeqMem(out: => T, n:Int)`,
+*  use `SyncReadMem(...)` instead of `Mem(..., seqRead)`,
+*  use `SyncReadMem(n:Int, out: => T)` instead of `SyncReadMem(out: => T, n:Int)`,
+*  use `SyncReadMem(...)` instead of `SeqMem(...)`,
 *  use `Mem(n:Int, t:T)` instead of `Mem(out:T, n:Int)`,
 *  use `Vec(n:Int, gen: => T)` instead of `Vec(gen: => T, n:Int)`,
 *  module io's must be wrapped in `IO()`.
