@@ -5,7 +5,7 @@ package chiselTests
 import chisel3._
 import chisel3.util.Counter
 import chisel3.testers.BasicTester
-import chisel3.experimental.{BaseModule, ChiselAnnotation, MultiIOModule, RawModule, RunFirrtlTransform}
+import chisel3.experimental.{BaseModule, ChiselAnnotation, RunFirrtlTransform}
 import chisel3.util.experimental.BoringUtils
 
 import firrtl.{CircuitForm, CircuitState, ChirrtlForm, Transform}

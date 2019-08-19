@@ -3,7 +3,6 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.RawModule
 import chisel3.testers.BasicTester
 
 class ClockAsUIntTester extends BasicTester {

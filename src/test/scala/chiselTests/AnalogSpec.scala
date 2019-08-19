@@ -5,7 +5,7 @@ package chiselTests
 import chisel3._
 import chisel3.util._
 import chisel3.testers.BasicTester
-import chisel3.experimental.{Analog, attach, BaseModule, RawModule}
+import chisel3.experimental.{Analog, attach, BaseModule}
 
 // IO for Modules that just connect bus to out
 class AnalogReaderIO extends Bundle {

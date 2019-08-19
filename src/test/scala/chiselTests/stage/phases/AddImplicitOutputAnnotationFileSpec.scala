@@ -4,7 +4,7 @@ package chiselTests.stage.phases
 
 import org.scalatest.{FlatSpec, Matchers}
 
-import chisel3.experimental.RawModule
+import chisel3.RawModule
 import chisel3.stage.ChiselGeneratorAnnotation
 import chisel3.stage.phases.{AddImplicitOutputAnnotationFile, Elaborate}
 

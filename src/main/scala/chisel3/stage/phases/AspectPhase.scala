@@ -3,7 +3,7 @@
 package chisel3.stage.phases
 
 import chisel3.aop.Aspect
-import chisel3.experimental.RawModule
+import chisel3.RawModule
 import chisel3.stage.DesignAnnotation
 import firrtl.AnnotationSeq
 import firrtl.options.Phase

@@ -3,7 +3,7 @@
 package chisel3.internal
 
 import chisel3._
-import chisel3.experimental.{BaseModule, RawModule}
+import chisel3.experimental.BaseModule
 import chisel3.internal.firrtl.LitArg
 
 /** Requires that a node is hardware ("bound")

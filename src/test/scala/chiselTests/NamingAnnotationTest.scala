@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.{MultiIOModule, chiselName}
+import chisel3.experimental.chiselName
 import chisel3.internal.InstanceId
 
 import scala.collection.mutable.ListBuffer
