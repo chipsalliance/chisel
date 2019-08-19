@@ -1183,7 +1183,106 @@ trait SIntFactory {
 
 object SInt extends SIntFactory
 
-sealed trait Reset extends Element with ToBoolable
+sealed trait Reset extends Element with ToBoolable {
+  /** Casts this $coll to an [[AsyncReset]] */
+  final def asAsyncReset(): AsyncReset = macro SourceInfoWhiteboxTransform.noArg
+
+  /** @group SourceInfoTransformMacro */
+  def do_asAsyncReset(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): AsyncReset
+}
+
+object Reset {
+  def apply(): Reset = new ResetType
+}
+
+/** "Abstract" Reset Type inferred in FIRRTL to either [[AsyncReset]] or [[Bool]]
+  *
+  * @note This shares a common interface with [[AsyncReset]] and [[Bool]] but is not their actual
+  * super type due to Bool inheriting from abstract class UInt
+  */
+final class ResetType(private[chisel3] val width: Width = Width(1)) extends Element with Reset {
+  override def toString: String = s"Reset$bindingToString"
+
+  def cloneType: this.type = Reset().asInstanceOf[this.type]
+
+  private[chisel3] def typeEquivalent(that: Data): Boolean =
+    this.getClass == that.getClass
+
+  override def connect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = that match {
+    case _: Reset => super.connect(that)(sourceInfo, connectCompileOptions)
+    case _ => super.badConnect(that)(sourceInfo)
+  }
+
+  override def litOption = None
+
+  /** Not really supported */
+  def toPrintable: Printable = PString("Reset")
+
+  override def do_asUInt(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): UInt = pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref))
+
+  private[chisel3] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
+      compileOptions: CompileOptions): Unit = {
+    this := that
+  }
+
+  /** @group SourceInfoTransformMacro */
+  def do_asAsyncReset(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): AsyncReset =
+    pushOp(DefPrim(sourceInfo, AsyncReset(), AsAsyncResetOp, ref))
+
+  /** @group SourceInfoTransformMacro */
+  def do_asBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+    pushOp(DefPrim(sourceInfo, Bool(), AsUIntOp, ref))
+
+  /** @group SourceInfoTransformMacro */
+  def do_toBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = do_asBool
+}
+
+object AsyncReset {
+  def apply(): AsyncReset = new AsyncReset
+}
+
+/** Data type representing asynchronous reset signals
+  *
+  * These signals are similar to [[Clock]]s in that they must be glitch-free for proper circuit
+  * operation. [[Reg]]s defined with the implicit reset being an [[AsyncReset]] will be
+  * asychronously reset registers.
+  */
+sealed class AsyncReset(private[chisel3] val width: Width = Width(1)) extends Element with Reset {
+  override def toString: String = s"AsyncReset$bindingToString"
+
+  def cloneType: this.type = AsyncReset().asInstanceOf[this.type]
+
+  private[chisel3] def typeEquivalent(that: Data): Boolean =
+    this.getClass == that.getClass
+
+  override def connect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = that match {
+    case _: AsyncReset => super.connect(that)(sourceInfo, connectCompileOptions)
+    case _ => super.badConnect(that)(sourceInfo)
+  }
+
+  override def litOption = None
+
+  /** Not really supported */
+  def toPrintable: Printable = PString("AsyncReset")
+
+  override def do_asUInt(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): UInt = pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref))
+
+  // TODO Is this right?
+  private[chisel3] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
+      compileOptions: CompileOptions): Unit = {
+    this := that.asBool.asAsyncReset
+  }
+
+  /** @group SourceInfoTransformMacro */
+  def do_asAsyncReset(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): AsyncReset = this
+
+  /** @group SourceInfoTransformMacro */
+  def do_asBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+    pushOp(DefPrim(sourceInfo, Bool(), AsUIntOp, ref))
+
+  /** @group SourceInfoTransformMacro */
+  def do_toBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = do_asBool
+}
 
 // REVIEW TODO: Why does this extend UInt and not Bits? Does defining airth
 // operations on a Bool make sense?
@@ -1286,6 +1385,10 @@ sealed class Bool() extends UInt(1.W) with Reset {
 
   /** @group SourceInfoTransformMacro */
   def do_asClock(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Clock = pushOp(DefPrim(sourceInfo, Clock(), AsClockOp, ref))
+
+  /** @group SourceInfoTransformMacro */
+  def do_asAsyncReset(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): AsyncReset =
+    pushOp(DefPrim(sourceInfo, AsyncReset(), AsAsyncResetOp, ref))
 }
 
 trait BoolFactory {

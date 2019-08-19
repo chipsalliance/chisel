@@ -3,11 +3,9 @@
 package chiselTests.stage
 
 import org.scalatest.{FlatSpec, Matchers}
-
 import chisel3._
-import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation}
+import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation, DesignAnnotation}
 import chisel3.experimental.RawModule
-
 import firrtl.options.OptionsException
 
 class ChiselAnnotationsSpecFoo extends RawModule {
@@ -33,7 +31,9 @@ class ChiselAnnotationsSpec extends FlatSpec with Matchers {
 
   it should "elaborate to a ChiselCircuitAnnotation" in {
     val annotation = ChiselGeneratorAnnotation(() => new ChiselAnnotationsSpecFoo)
-    annotation.elaborate shouldBe a [ChiselCircuitAnnotation]
+    val res = annotation.elaborate
+    res(0) shouldBe a [ChiselCircuitAnnotation]
+    res(1) shouldBe a [DesignAnnotation[ChiselAnnotationsSpecFoo]]
   }
 
   it should "throw an exception if elaboration fails" in {
@@ -45,7 +45,9 @@ class ChiselAnnotationsSpec extends FlatSpec with Matchers {
 
   it should "elaborate from a String" in {
     val annotation = ChiselGeneratorAnnotation("chiselTests.stage.ChiselAnnotationsSpecFoo")
-    annotation.elaborate shouldBe a [ChiselCircuitAnnotation]
+    val res = annotation.elaborate
+    res(0) shouldBe a [ChiselCircuitAnnotation]
+    res(1) shouldBe a [DesignAnnotation[ChiselAnnotationsSpecFoo]]
   }
 
   it should "throw an exception if elaboration from a String refers to nonexistant class" in {

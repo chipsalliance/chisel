@@ -41,7 +41,7 @@ object Mem {
     do_apply(BigInt(size), t)(sourceInfo, compileOptions)
 }
 
-sealed abstract class MemBase[T <: Data](t: T, val length: BigInt) extends HasId with NamedComponent with SourceInfoDoc {
+sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt) extends HasId with NamedComponent with SourceInfoDoc {
   // REVIEW TODO: make accessors (static/dynamic, read/write) combinations consistent.
 
   /** Creates a read accessor into the memory with static addressing. See the
