@@ -90,7 +90,7 @@ private[chisel3] sealed trait ToBoolable extends Element {
     */
   @chiselRuntimeDeprecated
   @deprecated("Use asBool instead", "3.2")
-  final def toBool(): Bool = macro SourceInfoWhiteboxTransform.noArg
+  final def toBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = do_toBool(sourceInfo, compileOptions)
 
   /** @group SourceInfoTransformMacro */
   def do_toBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
@@ -371,7 +371,7 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
   /** Returns the contents of this wire as a [[scala.collection.Seq]] of [[Bool]]. */
   @chiselRuntimeDeprecated
   @deprecated("Use asBools instead", "3.2")
-  final def toBools(): Seq[Bool] = macro SourceInfoTransform.noArg
+  final def toBools(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Seq[Bool] = do_toBools(sourceInfo, compileOptions)
 
   /** @group SourceInfoTransformMacro */
   def do_toBools(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Seq[Bool] = do_asBools
