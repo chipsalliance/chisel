@@ -2,7 +2,7 @@
 
 package chisel3.aop
 
-import chisel3.experimental.RawModule
+import chisel3.RawModule
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.options.Unserializable
 import firrtl.AnnotationSeq

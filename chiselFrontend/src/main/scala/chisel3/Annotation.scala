@@ -21,7 +21,7 @@ trait ChiselAnnotation {
 
 /** Mixin for [[ChiselAnnotation]] that instantiates an associated FIRRTL Transform when this Annotation is present
   * during a run of
-  * [[Driver$.execute(args:Array[String],dut:()=>chisel3\.experimental\.RawModule)* Driver.execute]].
+  * [[Driver$.execute(args:Array[String],dut:()=>chisel3\.RawModule)* Driver.execute]].
   * Automatic Transform instantiation is *not* supported when the Circuit and Annotations are serialized before invoking
   * FIRRTL.
   */

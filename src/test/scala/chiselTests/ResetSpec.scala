@@ -3,7 +3,6 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.{IO, RawModule}
 import chisel3.util.{Counter, Queue}
 import chisel3.testers.BasicTester
 

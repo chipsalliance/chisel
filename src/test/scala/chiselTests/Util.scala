@@ -5,7 +5,6 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental._
 
 class PassthroughModuleIO extends Bundle {
   val in = Input(UInt(32.W))

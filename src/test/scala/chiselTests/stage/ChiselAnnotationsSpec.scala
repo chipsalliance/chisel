@@ -5,7 +5,6 @@ package chiselTests.stage
 import org.scalatest.{FlatSpec, Matchers}
 import chisel3._
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation, DesignAnnotation}
-import chisel3.experimental.RawModule
 import firrtl.options.OptionsException
 
 class ChiselAnnotationsSpecFoo extends RawModule {

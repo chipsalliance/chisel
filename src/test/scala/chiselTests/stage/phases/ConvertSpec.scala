@@ -5,7 +5,7 @@ package chiselTests.stage.phases
 import org.scalatest.{FlatSpec, Matchers}
 
 import chisel3._
-import chisel3.experimental.{ChiselAnnotation, RawModule, RunFirrtlTransform}
+import chisel3.experimental.{ChiselAnnotation, RunFirrtlTransform}
 import chisel3.stage.ChiselGeneratorAnnotation
 import chisel3.stage.phases.{Convert, Elaborate}
 

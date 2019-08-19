@@ -2,6 +2,7 @@
 
 package chisel3.experimental
 
+import chisel3.RawModule
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
