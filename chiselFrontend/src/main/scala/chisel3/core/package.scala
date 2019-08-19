@@ -213,8 +213,8 @@ package object core {
   @deprecated("Use the version in chisel3._", "3.2")
   val withReset = chisel3.withReset
 
-  @deprecated("Use the version in chisel3.experimental._", "3.2")
-  val dontTouch = chisel3.experimental.dontTouch
+  @deprecated("Use the version in chisel3._", "3.2")
+  val dontTouch = chisel3.dontTouch
 
   @deprecated("Use the version in chisel3.experimental._", "3.2")
   type BaseModule = chisel3.experimental.BaseModule
