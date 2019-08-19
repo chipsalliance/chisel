@@ -100,7 +100,7 @@ class ExtModuleImplSpec extends FreeSpec with Matchers {
 
       val annotations = Seq(
         TargetDirAnnotation(targetDir),
-        ChiselGeneratorAnnotation(() => new UsesExtModuleAddViaInline),
+        ChiselGeneratorAnnotation(() => new UsesExtModuleAddViaInline)
       )
       val newAnnotations = (new ChiselStage).run(annotations)
 
@@ -114,7 +114,7 @@ class ExtModuleImplSpec extends FreeSpec with Matchers {
       val targetDir = "test_run_dir/extmodule-resource"
       val annotations = Seq(
         TargetDirAnnotation(targetDir),
-        ChiselGeneratorAnnotation(() => new UsesExtModuleMinusViaResource),
+        ChiselGeneratorAnnotation(() => new UsesExtModuleMinusViaResource)
       )
       val newAnnotations = (new ChiselStage).run(annotations)
 
@@ -128,7 +128,7 @@ class ExtModuleImplSpec extends FreeSpec with Matchers {
       val targetDir = "test_run_dir/extmodule-path"
       val annotations = Seq(
         TargetDirAnnotation(targetDir),
-        ChiselGeneratorAnnotation(() => new UsesExtModuleMinusViaPath),
+        ChiselGeneratorAnnotation(() => new UsesExtModuleMinusViaPath)
       )
       val newAnnotations = (new ChiselStage).run(annotations)
 
