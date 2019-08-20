@@ -4,7 +4,7 @@ package firrtl.annotations
 
 import java.io.File
 
-import firrtl.FIRRTLException
+import firrtl.FirrtlUserException
 
 /** Representation of the two types of `readmem` statements available in Verilog.
   */
@@ -21,7 +21,7 @@ object MemoryLoadFileType {
   def deserialize(s: String): MemoryLoadFileType = s match {
     case "h" => MemoryLoadFileType.Hex
     case "b" => MemoryLoadFileType.Binary
-    case _ => throw new FIRRTLException(s"Unrecognized MemoryLoadFileType: $s")
+    case _ => throw new FirrtlUserException(s"Unrecognized MemoryLoadFileType: $s")
   }
 }
 

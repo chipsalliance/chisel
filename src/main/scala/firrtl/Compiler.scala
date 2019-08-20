@@ -43,7 +43,7 @@ case class CircuitState(
   def getEmittedCircuit: EmittedCircuit = emittedCircuitOption match {
     case Some(emittedCircuit) => emittedCircuit
     case None =>
-      throw new FIRRTLException(s"No EmittedCircuit found! Did you delete any annotations?\n$deletedAnnotations")
+      throw new FirrtlInternalException(s"No EmittedCircuit found! Did you delete any annotations?\n$deletedAnnotations")
   }
 
   /** Helper function for extracting emitted components from annotations */
@@ -314,9 +314,6 @@ trait Emitter extends Transform {
   /** An output suffix to use if the output of this [[Emitter]] was written to a file */
   def outputSuffix: String
 }
-
-/** Wraps exceptions from CustomTransforms so they can be reported appropriately */
-case class CustomTransformException(cause: Throwable) extends Exception("", cause)
 
 object CompilerUtils extends LazyLogging {
   /** Generates a sequence of [[Transform]]s to lower a Firrtl circuit

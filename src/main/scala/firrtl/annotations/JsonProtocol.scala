@@ -37,7 +37,7 @@ object JsonProtocol {
       try {
         Class.forName(s).asInstanceOf[Class[_ <: Transform]].newInstance()
       } catch {
-        case e: java.lang.InstantiationException => throw new FIRRTLException(
+        case e: java.lang.InstantiationException => throw new FirrtlInternalException(
           "NoSuchMethodException during construction of serialized Transform. Is your Transform an inner class?", e)
         case t: Throwable => throw t
       }},
@@ -113,10 +113,11 @@ object JsonProtocol {
     // Translate some generic errors to specific ones
     case e: java.lang.ClassNotFoundException =>
       Failure(new AnnotationClassNotFoundException(e.getMessage))
-    case e: org.json4s.ParserUtil.ParseException =>
+    // Eat the stack traces of json4s exceptions
+    case e @ (_: org.json4s.ParserUtil.ParseException | _: org.json4s.MappingException) =>
       Failure(new InvalidAnnotationJSONException(e.getMessage))
   }.recoverWith { // If the input is a file, wrap in InvalidAnnotationFileException
-    case e => in match {
+    case e: FirrtlUserException => in match {
       case FileInput(file) =>
         Failure(new InvalidAnnotationFileException(file, e))
       case _ => Failure(e)

@@ -3,11 +3,8 @@
 package firrtlTests
 
 import firrtl.RenameMap
-import firrtl.FIRRTLException
 import firrtl.RenameMap.IllegalRenameException
 import firrtl.annotations._
-import firrtl.annotations.Target
-import firrtl.annotations.TargetToken.{Instance, OfModule}
 
 class RenameMapSpec extends FirrtlFlatSpec {
   val cir   = CircuitTarget("Top")

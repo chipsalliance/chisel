@@ -34,7 +34,7 @@ import MemPortUtils.memType
 object Uniquify extends Transform {
   def inputForm = UnknownForm
   def outputForm = UnknownForm
-  private case class UniquifyException(msg: String) extends FIRRTLException(msg)
+  private case class UniquifyException(msg: String) extends FirrtlInternalException(msg)
   private def error(msg: String)(implicit sinfo: Info, mname: String) =
     throw new UniquifyException(s"$sinfo: [moduleOpt $mname] $msg")
 

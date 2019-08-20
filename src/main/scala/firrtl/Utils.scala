@@ -13,20 +13,6 @@ import scala.util.matching.Regex
 import firrtl.annotations.{ReferenceTarget, TargetToken}
 import _root_.logger.LazyLogging
 
-object FIRRTLException {
-  def defaultMessage(message: String, cause: Throwable) = {
-    if (message != null) {
-      message
-    } else if (cause != null) {
-      cause.toString
-    } else {
-      null
-    }
-  }
-}
-class FIRRTLException(val str: String, cause: Throwable = null)
-  extends RuntimeException(FIRRTLException.defaultMessage(str, cause), cause)
-
 object seqCat {
   def apply(args: Seq[Expression]): Expression = args.length match {
     case 0 => Utils.error("Empty Seq passed to seqcat")
@@ -434,7 +420,7 @@ object Utils extends LazyLogging {
   }
    
 // =================================
-  def error(str: String, cause: Throwable = null) = throw new FIRRTLException(str, cause)
+  def error(str: String, cause: Throwable = null) = throw new FirrtlInternalException(str, cause)
 
 //// =============== EXPANSION FUNCTIONS ================
   def get_size(t: Type): Int = t match {
@@ -632,7 +618,7 @@ object Utils extends LazyLogging {
     case EmptyExpression => root
   }
 
-  case class DeclarationNotFoundException(msg: String) extends FIRRTLException(msg)
+  case class DeclarationNotFoundException(msg: String) extends FirrtlUserException(msg)
 
   /** Gets the root declaration of an expression
     *

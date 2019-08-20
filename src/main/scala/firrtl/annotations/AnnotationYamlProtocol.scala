@@ -31,9 +31,6 @@ object AnnotationYamlProtocol extends DefaultYamlProtocol {
         case annotationException: AnnotationException =>
           Utils.error(
             s"Error: ${annotationException.getMessage} while parsing annotation from yaml\n${yamlValue.prettyPrint}")
-        case annotationException: FIRRTLException =>
-          Utils.error(
-            s"Error: ${annotationException.getMessage} while parsing annotation from yaml\n${yamlValue.prettyPrint}")
       }
     }
     def toTarget(string: String): Named = string.split("""\.""", -1).toSeq match {

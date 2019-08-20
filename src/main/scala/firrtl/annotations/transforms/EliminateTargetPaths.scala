@@ -8,7 +8,7 @@ import firrtl.annotations.TargetToken.{Instance, OfModule}
 import firrtl.annotations.analysis.DuplicationHelper
 import firrtl.annotations._
 import firrtl.ir._
-import firrtl.{CircuitForm, CircuitState, FIRRTLException, HighForm, RenameMap, Transform, WDefInstance}
+import firrtl.{CircuitForm, CircuitState, FirrtlInternalException, HighForm, RenameMap, Transform, WDefInstance}
 
 import scala.collection.mutable
 
@@ -23,7 +23,7 @@ case class ResolvePaths(targets: Seq[CompleteTarget]) extends Annotation {
   }
 }
 
-case class NoSuchTargetException(message: String) extends FIRRTLException(message)
+case class NoSuchTargetException(message: String) extends FirrtlInternalException(message)
 
 /** For a set of non-local targets, modify the instance/module hierarchy of the circuit such that
   * the paths in each non-local target can be removed

@@ -9,7 +9,7 @@ import firrtl.ir._
 import firrtl.Utils.time
 import firrtl.antlr.{FIRRTLParser, _}
 
-class ParserException(message: String) extends FIRRTLException(message)
+class ParserException(message: String) extends FirrtlUserException(message)
 
 case class ParameterNotSpecifiedException(message: String) extends ParserException(message)
 case class ParameterRedefinedException(message: String) extends ParserException(message)

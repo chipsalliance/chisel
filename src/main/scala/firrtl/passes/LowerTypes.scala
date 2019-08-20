@@ -81,7 +81,7 @@ object LowerTypes extends Transform {
       names ++ subNames
     }
   }
-  private case class LowerTypesException(msg: String) extends FIRRTLException(msg)
+  private case class LowerTypesException(msg: String) extends FirrtlInternalException(msg)
   private def error(msg: String)(info: Info, mname: String) =
     throw LowerTypesException(s"$info: [module $mname] $msg")
 

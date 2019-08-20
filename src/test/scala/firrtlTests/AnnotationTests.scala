@@ -2,7 +2,7 @@
 
 package firrtlTests
 
-import java.io.{File, FileWriter, Writer}
+import java.io.{File, FileWriter}
 
 import firrtl.annotations.AnnotationYamlProtocol._
 import firrtl.annotations._
@@ -12,10 +12,8 @@ import firrtl.transforms.OptimizableExtModuleAnnotation
 import firrtl.passes.InlineAnnotation
 import firrtl.passes.memlib.PinAnnotation
 import firrtl.util.BackendCompilationUtilities
-import firrtl.transforms.DontTouchAnnotation
 import net.jcazevedo.moultingyaml._
 import org.scalatest.Matchers
-import logger._
 
 /**
  * An example methodology for testing Firrtl annotations.
@@ -72,11 +70,11 @@ abstract class AnnotationTests extends AnnotationSpec with Matchers {
     result.annotations.head should matchPattern {
       case DeletedAnnotation(`tname`, `inlineAnn`) =>
     }
-    val exception = (intercept[FIRRTLException] {
+    val exception = (intercept[Exception] {
       result.getEmittedCircuit
     })
     val deleted = result.deletedAnnotations
-    exception.str should be (s"No EmittedCircuit found! Did you delete any annotations?\n$deleted")
+    exception.getMessage should be (s"No EmittedCircuit found! Did you delete any annotations?\n$deleted")
   }
 
   "Renaming" should "propagate in Lowering of memories" in {

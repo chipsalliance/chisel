@@ -7,7 +7,7 @@ import org.scalatest.{FlatSpec, Matchers}
 import java.io.{File, PrintWriter}
 
 import firrtl.AnnotationSeq
-import firrtl.annotations.{Annotation, AnnotationFileNotFoundException, JsonProtocol,
+import firrtl.annotations.{AnnotationFileNotFoundException, JsonProtocol,
   NoTargetAnnotation}
 import firrtl.options.phases.GetIncludes
 import firrtl.options.{InputAnnotationFileAnnotation, Phase}

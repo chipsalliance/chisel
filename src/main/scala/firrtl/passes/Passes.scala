@@ -31,8 +31,8 @@ trait Pass extends Transform {
 }
 
 // Error handling
-class PassException(message: String) extends Exception(message)
-class PassExceptions(val exceptions: Seq[PassException]) extends Exception("\n" + exceptions.mkString("\n"))
+class PassException(message: String) extends FirrtlUserException(message)
+class PassExceptions(val exceptions: Seq[PassException]) extends FirrtlUserException("\n" + exceptions.mkString("\n"))
 class Errors {
   val errors = collection.mutable.ArrayBuffer[PassException]()
   def append(pe: PassException) = errors.append(pe)

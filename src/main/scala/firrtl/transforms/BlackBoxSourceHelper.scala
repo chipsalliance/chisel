@@ -43,8 +43,8 @@ case class BlackBoxResourceFileNameAnno(resourceFileName: String) extends BlackB
   * @param fileName the name of the BlackBox file (only used for error message generation)
   * @param e an underlying exception that generated this
   */
-class BlackBoxNotFoundException(fileName: String, e: Throwable = null) extends FIRRTLException(
-  s"BlackBox '$fileName' not found. Did you misspell it? Is it in src/{main,test}/resources?", e)
+class BlackBoxNotFoundException(fileName: String, message: String) extends FirrtlUserException(
+  s"BlackBox '$fileName' not found. Did you misspell it? Is it in src/{main,test}/resources?\n$message")
 
 /** Handle source for Verilog ExtModules (BlackBoxes)
   *
@@ -136,8 +136,8 @@ object BlackBoxSourceHelper {
     * @param code some code to run
     */
   private def safeFile[A](fileName: String)(code: => A) = try { code } catch {
-    case e@ (_: FileNotFoundException | _: NullPointerException) => throw new BlackBoxNotFoundException(fileName, e)
-    case t: Throwable                                            => throw t
+    case e @ (_: FileNotFoundException | _: NullPointerException) =>
+      throw new BlackBoxNotFoundException(fileName, e.getMessage)
   }
 
   /**

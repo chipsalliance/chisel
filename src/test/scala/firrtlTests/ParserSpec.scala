@@ -2,10 +2,8 @@
 
 package firrtlTests
 
-import org.scalatest._
 import firrtl._
 import org.scalacheck.Gen
-import org.scalacheck.Prop.forAll
 
 class ParserSpec extends FirrtlFlatSpec {
 
