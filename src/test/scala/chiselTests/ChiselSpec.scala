@@ -6,7 +6,6 @@ import org.scalatest._
 import org.scalatest.prop._
 import org.scalacheck._
 import chisel3._
-import chisel3.experimental.RawModule
 import chisel3.testers._
 import firrtl.options.OptionsException
 import firrtl.{AnnotationSeq, CommonOptions, ExecutionOptionsManager, FirrtlExecutionFailure, FirrtlExecutionSuccess, HasFirrtlOptions}

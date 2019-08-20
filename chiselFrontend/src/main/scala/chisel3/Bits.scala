@@ -5,7 +5,7 @@ package chisel3
 import scala.language.experimental.macros
 import collection.mutable
 
-import chisel3.experimental.{FixedPoint, RawModule}
+import chisel3.experimental.FixedPoint
 import chisel3.internal._
 import chisel3.internal.Builder.{pushCommand, pushOp}
 import chisel3.internal.firrtl._
