@@ -19,11 +19,10 @@ import logger.LogLevel.Debug
  */
 class InlineInstancesTests extends LowTransformSpec {
   def transform = new InlineInstances
-	def inline(mod: String): Annotation = {
-	  val parts = mod.split('.')
-		val modName = ModuleName(parts.head, CircuitName("Top")) // If this fails, bad input
-		val name = if (parts.size == 1) modName
-							 else ComponentName(parts.tail.mkString("."), modName)
+  def inline(mod: String): Annotation = {
+    val parts = mod.split('.')
+    val modName = ModuleName(parts.head, CircuitName("Top")) // If this fails, bad input
+    val name = if (parts.size == 1) modName else ComponentName(parts.tail.mkString("."), modName)
     InlineAnnotation(name)
   }
    // Set this to debug, this will apply to all tests
