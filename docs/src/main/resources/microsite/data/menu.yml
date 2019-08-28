@@ -2,7 +2,7 @@ options:
 
   # Chisel Site
   - title: Chisel3
-    url: chisel3/index.html
+    url: chisel3/
     menu_type: chisel3
     menu_section: chisel3
     nested_options:
@@ -115,144 +115,144 @@ options:
       - title: Test Coverage
         url: chisel3/test-coverage.html
   - title: API Documentation
-    url: api/chisel3/latest/index.html
+    url: api/chisel3/latest/
     menu_type: chisel3
     nested_options:
       - title: SNAPSHOT
-        url: api/chisel3/SNAPSHOT/index.html
+        url: api/chisel3/SNAPSHOT/
       - title: v3.1.8
-        url: api/chisel3/v3.1.8/index.html
+        url: api/chisel3/v3.1.8/
       - title: v3.1.7
-        url: api/chisel3/v3.1.7/index.html
+        url: api/chisel3/v3.1.7/
       - title: v3.1.6
-        url: api/chisel3/v3.1.6/index.html
+        url: api/chisel3/v3.1.6/
       - title: v3.1.5
-        url: api/chisel3/v3.1.5/index.html
+        url: api/chisel3/v3.1.5/
       - title: v3.1.4
-        url: api/chisel3/v3.1.4/index.html
+        url: api/chisel3/v3.1.4/
       - title: v3.1.3
-        url: api/chisel3/v3.1.3/index.html
+        url: api/chisel3/v3.1.3/
       - title: v3.1.2
-        url: api/chisel3/v3.1.2/index.html
+        url: api/chisel3/v3.1.2/
       - title: v3.1.1
-        url: api/chisel3/v3.1.1/index.html
+        url: api/chisel3/v3.1.1/
       - title: v3.1.0
-        url: api/chisel3/v3.1.0/index.html
+        url: api/chisel3/v3.1.0/
       - title: v3.0.2
-        url: api/chisel3/v3.0.2/index.html
+        url: api/chisel3/v3.0.2/
       - title: v3.0.1
-        url: api/chisel3/v3.0.1/index.html
+        url: api/chisel3/v3.0.1/
       - title: v3.0.0
-        url: api/chisel3/v3.0.0/index.html
+        url: api/chisel3/v3.0.0/
 
   # Testers Site
   - title: Testers
-    url: chisel-testers/index.html
+    url: chisel-testers/
     menu_type: chisel-testers
   - title: API Documentation
-    url: api/chisel-testers/latest/index.html
+    url: api/chisel-testers/latest/
     menu_type: chisel-testers
     nested_options:
       - title: SNAPSHOT
-        url: api/chisel-testers/SNAPSHOT/index.html
+        url: api/chisel-testers/SNAPSHOT/
       - title: v1.2.10
-        url: api/chisel-testers/v1.2.10/index.html
+        url: api/chisel-testers/v1.2.10/
       - title: v1.2.9
-        url: api/chisel-testers/v1.2.9/index.html
+        url: api/chisel-testers/v1.2.9/
       - title: v1.2.8
-        url: api/chisel-testers/v1.2.8/index.html
+        url: api/chisel-testers/v1.2.8/
       - title: v1.2.7
-        url: api/chisel-testers/v1.2.7/index.html
+        url: api/chisel-testers/v1.2.7/
       - title: v1.2.6
-        url: api/chisel-testers/v1.2.6/index.html
+        url: api/chisel-testers/v1.2.6/
       - title: v1.2.5
-        url: api/chisel-testers/v1.2.5/index.html
+        url: api/chisel-testers/v1.2.5/
       - title: v1.2.4
-        url: api/chisel-testers/v1.2.4/index.html
+        url: api/chisel-testers/v1.2.4/
       - title: v1.2.3
-        url: api/chisel-testers/v1.2.3/index.html
+        url: api/chisel-testers/v1.2.3/
       - title: v1.2.2
-        url: api/chisel-testers/v1.2.2/index.html
+        url: api/chisel-testers/v1.2.2/
       - title: v1.2.1
-        url: api/chisel-testers/v1.2.1/index.html
+        url: api/chisel-testers/v1.2.1/
       - title: v1.2.0
-        url: api/chisel-testers/v1.2.0/index.html
+        url: api/chisel-testers/v1.2.0/
       - title: v1.1.2
-        url: api/chisel-testers/v1.1.2/index.html
+        url: api/chisel-testers/v1.1.2/
       - title: v1.1.1
-        url: api/chisel-testers/v1.1.1/index.html
+        url: api/chisel-testers/v1.1.1/
       - title: v1.1.0
-        url: api/chisel-testers/v1.1.0/index.html
+        url: api/chisel-testers/v1.1.0/
 
   # FIRRTL Site
   - title: FIRRTL
-    url: firrtl/index.html
+    url: firrtl/
     menu_type: firrtl
   - title: API Documentation
-    url: api/firrtl/latest/index.html
+    url: api/firrtl/latest/
     menu_type: firrtl
     nested_options:
       - title: SNAPSHOT
-        url: api/firrtl/SNAPSHOT/index.html
+        url: api/firrtl/SNAPSHOT/
       - title: v1.1.7
-        url: api/firrtl/v1.1.7/index.html
+        url: api/firrtl/v1.1.7/
       - title: v1.1.6
-        url: api/firrtl/v1.1.6/index.html
+        url: api/firrtl/v1.1.6/
       - title: v1.1.5
-        url: api/firrtl/v1.1.5/index.html
+        url: api/firrtl/v1.1.5/
       - title: v1.1.4
-        url: api/firrtl/v1.1.4/index.html
+        url: api/firrtl/v1.1.4/
       - title: v1.1.3
-        url: api/firrtl/v1.1.3/index.html
+        url: api/firrtl/v1.1.3/
       - title: v1.1.2
-        url: api/firrtl/v1.1.2/index.html
+        url: api/firrtl/v1.1.2/
       - title: v1.1.1
-        url: api/firrtl/v1.1.1/index.html
+        url: api/firrtl/v1.1.1/
       - title: v1.1.0
-        url: api/firrtl/v1.1.0/index.html
+        url: api/firrtl/v1.1.0/
       - title: v1.0.2
-        url: api/firrtl/v1.0.2/index.html
+        url: api/firrtl/v1.0.2/
       - title: v1.0.1
-        url: api/firrtl/v1.0.1/index.html
+        url: api/firrtl/v1.0.1/
       - title: v1.0.0
-        url: api/firrtl/v1.0.0/index.html
+        url: api/firrtl/v1.0.0/
 
   # Treadle Site
   - title: Treadle
-    url: treadle/index.html
+    url: treadle/
     menu_type: treadle
   - title: API Documentation
-    url: api/treadle/latest/index.html
+    url: api/treadle/latest/
     menu_type: treadle
     nested_options:
       - title: SNAPSHOT
-        url: api/treadle/SNAPSHOT/index.html
+        url: api/treadle/SNAPSHOT/
       - title: v1.0.5
-        url: api/treadle/v1.0.5/index.html
+        url: api/treadle/v1.0.5/
       - title: v1.0.4
-        url: api/treadle/v1.0.4/index.html
+        url: api/treadle/v1.0.4/
       - title: v1.0.3
-        url: api/treadle/v1.0.3/index.html
+        url: api/treadle/v1.0.3/
       - title: v1.0.2
-        url: api/treadle/v1.0.2/index.html
+        url: api/treadle/v1.0.2/
       - title: v1.0.1
-        url: api/treadle/v1.0.1/index.html
+        url: api/treadle/v1.0.1/
       - title: v1.0.0
-        url: api/treadle/v1.0.0/index.html
+        url: api/treadle/v1.0.0/
 
   # Diagrammer Site
   - title: Diagrammer
-    url: diagrammer/index.html
+    url: diagrammer
     menu_type: diagrammer
   - title: API Documentation
-    url: api/diagrammer/latest/index.html
+    url: api/diagrammer/latest/
     menu_type: diagrammer
     nested_options:
       - title: SNAPSHOT
-        url: api/diagrammer/SNAPSHOT/index.html
+        url: api/diagrammer/SNAPSHOT/
       - title: v1.0.2
-        url: api/diagrammer/v1.0.2/index.html
+        url: api/diagrammer/v1.0.2/
       - title: v1.0.1
-        url: api/diagrammer/v1.0.1/index.html
+        url: api/diagrammer/v1.0.1/
       - title: v1.0.0
-        url: api/diagrammer/v1.0.0/index.html
+        url: api/diagrammer/v1.0.0/
