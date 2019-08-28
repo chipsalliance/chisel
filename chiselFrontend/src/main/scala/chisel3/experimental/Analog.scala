@@ -84,3 +84,4 @@ final class Analog private (private[chisel3] val width: Width) extends Element {
 object Analog {
   def apply(width: Width): Analog = new Analog(width)
 }
+
