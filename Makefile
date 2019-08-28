@@ -13,14 +13,17 @@ chisel-src = $(shell find chisel3/ chisel-testers/ -name *.scala)
 # Get all semantic version tags for a git project in a given directory
 # Usage: $(call getTags,foo)
 define getTags
-	$(shell cd $(1) && git tag | grep "^v\([0-9]\+\.\)\{2\}[0-9]\+$$")
+	$(shell cd $(1) && git tag | grep "^v[0-9]\+\(\.[0-9]\+\)*$$")
+endef
+define getSnapshot
+	$(shell cd $(1) && git tag | grep "^v.\+-SNAPSHOT$$" | sort -nr | head -n1)
 endef
 
-firrtlTags = $(call getTags,firrtl)
-chiselTags = $(call getTags,chisel3)
-testersTags = $(call getTags,chisel-testers)
-treadleTags = $(call getTags,treadle)
-diagrammerTags = $(call getTags,diagrammer)
+firrtlTags = $(call getTags,firrtl) $(call getSnapshot,firrtl)
+chiselTags = $(call getTags,chisel3) $(call getSnapshot,chisel3)
+testersTags = $(call getTags,chisel-testers) $(call getSnapshot,chisel-testers)
+treadleTags = $(call getTags,treadle) $(call getSnapshot,treadle)
+diagrammerTags = $(call getTags,diagrammer) $(call getSnapshot,diagrammer)
 
 api-copy = \
 	docs/target/site/api/chisel3/latest/index.html \
@@ -133,14 +136,19 @@ $(apis)/diagrammer/%/index.html: $(subprojects)/diagrammer/%/target/scala-$(scal
 # Copy *old* API of subprojects from API directory into website
 docs/target/site/api/chisel3/%/index.html: $(apis)/chisel3/%/index.html | docs/target/site/api/chisel3/%/
 	cp -r $(dir $<)* $(dir $@)
+	if [[ $* == *-SNAPSHOT ]]; then (cd $(dir $@).. && ln -sf $* SNAPSHOT); fi
 docs/target/site/api/firrtl/%/index.html: $(apis)/firrtl/%/index.html | docs/target/site/api/firrtl/%/
 	cp -r $(dir $<)* $(dir $@)
+	if [[ $* == *-SNAPSHOT ]]; then (cd $(dir $@).. && ln -sf $* SNAPSHOT); fi
 docs/target/site/api/chisel-testers/%/index.html: $(apis)/chisel-testers/%/index.html | docs/target/site/api/chisel-testers/%/
 	cp -r $(dir $<)* $(dir $@)
+	if [[ $* == *-SNAPSHOT ]]; then (cd $(dir $@).. && ln -sf $* SNAPSHOT); fi
 docs/target/site/api/treadle/%/index.html: $(apis)/treadle/%/index.html | docs/target/site/api/treadle/%/
 	cp -r $(dir $<)* $(dir $@)
+	if [[ $* == *-SNAPSHOT ]]; then (cd $(dir $@).. && ln -sf $* SNAPSHOT); fi
 docs/target/site/api/diagrammer/%/index.html: $(apis)/diagrammer/%/index.html | docs/target/site/api/diagrammer/%/
 	cp -r $(dir $<)* $(dir $@)
+	if [[ $* == *-SNAPSHOT ]]; then (cd $(dir $@).. && ln -sf $* SNAPSHOT); fi
 
 # Utilities to either fetch submodules or create directories
 %/.git:

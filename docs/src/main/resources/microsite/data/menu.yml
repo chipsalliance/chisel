@@ -118,6 +118,8 @@ options:
     url: api/chisel3/latest/index.html
     menu_type: chisel3
     nested_options:
+      - title: SNAPSHOT
+        url: api/chisel3/SNAPSHOT/index.html
       - title: v3.1.8
         url: api/chisel3/v3.1.8/index.html
       - title: v3.1.7
@@ -151,6 +153,8 @@ options:
     url: api/chisel-testers/latest/index.html
     menu_type: chisel-testers
     nested_options:
+      - title: SNAPSHOT
+        url: api/chisel-testers/SNAPSHOT/index.html
       - title: v1.2.10
         url: api/chisel-testers/v1.2.10/index.html
       - title: v1.2.9
@@ -188,6 +192,8 @@ options:
     url: api/firrtl/latest/index.html
     menu_type: firrtl
     nested_options:
+      - title: SNAPSHOT
+        url: api/firrtl/SNAPSHOT/index.html
       - title: v1.1.7
         url: api/firrtl/v1.1.7/index.html
       - title: v1.1.6
@@ -219,18 +225,20 @@ options:
     url: api/treadle/latest/index.html
     menu_type: treadle
     nested_options:
-    - title: v1.0.5
-      url: api/treadle/v1.0.5/index.html
-    - title: v1.0.4
-      url: api/treadle/v1.0.4/index.html
-    - title: v1.0.3
-      url: api/treadle/v1.0.3/index.html
-    - title: v1.0.2
-      url: api/treadle/v1.0.2/index.html
-    - title: v1.0.1
-      url: api/treadle/v1.0.1/index.html
-    - title: v1.0.0
-      url: api/treadle/v1.0.0/index.html
+      - title: SNAPSHOT
+        url: api/treadle/SNAPSHOT/index.html
+      - title: v1.0.5
+        url: api/treadle/v1.0.5/index.html
+      - title: v1.0.4
+        url: api/treadle/v1.0.4/index.html
+      - title: v1.0.3
+        url: api/treadle/v1.0.3/index.html
+      - title: v1.0.2
+        url: api/treadle/v1.0.2/index.html
+      - title: v1.0.1
+        url: api/treadle/v1.0.1/index.html
+      - title: v1.0.0
+        url: api/treadle/v1.0.0/index.html
 
   # Diagrammer Site
   - title: Diagrammer
@@ -240,9 +248,11 @@ options:
     url: api/diagrammer/latest/index.html
     menu_type: diagrammer
     nested_options:
-    - title: v1.0.2
-      url: api/diagrammer/v1.0.2/index.html
-    - title: v1.0.1
-      url: api/diagrammer/v1.0.1/index.html
-    - title: v1.0.0
-      url: api/diagrammer/v1.0.0/index.html
+      - title: SNAPSHOT
+        url: api/diagrammer/SNAPSHOT/index.html
+      - title: v1.0.2
+        url: api/diagrammer/v1.0.2/index.html
+      - title: v1.0.1
+        url: api/diagrammer/v1.0.1/index.html
+      - title: v1.0.0
+        url: api/diagrammer/v1.0.0/index.html
