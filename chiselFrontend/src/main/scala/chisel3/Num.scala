@@ -5,7 +5,7 @@ package chisel3
 import scala.language.experimental.macros
 import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform}
 
-// scalastyle:off method.name line.size.limit file.size.limit
+// scalastyle:off method.name
 
 // REVIEW TODO: Further discussion needed on what Num actually is.
 

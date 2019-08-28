@@ -679,31 +679,6 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
     binop(sourceInfo, SInt((this.width max that.width) + 1), SubOp, that)
 }
 
-// This is currently a factory because both Bits and UInt inherit it.
-trait UIntFactory {
-  /** Create a UInt type with inferred width. */
-  def apply(): UInt = apply(Width())
-  /** Create a UInt port with specified width. */
-  def apply(width: Width): UInt = new UInt(width)
-
-   /** Create a UInt literal with specified width. */
-  protected[chisel3] def Lit(value: BigInt, width: Width): UInt = {
-    val lit = ULit(value, width)
-    val result = new UInt(lit.width)
-    // Bind result to being an Literal
-    lit.bindLitArg(result)
-  }
-
-  /** Create a UInt with the specified range */
-  def apply(range: Range): UInt = {
-    apply(range.getWidth)
-  }
-  /** Create a UInt with the specified range */
-  def apply(range: (NumericBound[Int], NumericBound[Int])): UInt = {
-    apply(KnownUIntRange(range._1, range._2))
-  }
-}
-
 /** A data type for signed integers, represented as a binary bitvector. Defines arithmetic operations between other
   * integer types.
   *
@@ -933,29 +908,6 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
   }
 }
 
-trait SIntFactory {
-  /** Create an SInt type with inferred width. */
-  def apply(): SInt = apply(Width())
-  /** Create a SInt type or port with fixed width. */
-  def apply(width: Width): SInt = new SInt(width)
-
-  /** Create a SInt with the specified range */
-  def apply(range: Range): SInt = {
-    apply(range.getWidth)
-  }
-  /** Create a SInt with the specified range */
-  def apply(range: (NumericBound[Int], NumericBound[Int])): SInt = {
-    apply(KnownSIntRange(range._1, range._2))
-  }
-
-   /** Create an SInt literal with specified width. */
-  protected[chisel3] def Lit(value: BigInt, width: Width): SInt = {
-    val lit = SLit(value, width)
-    val result = new SInt(lit.width)
-    lit.bindLitArg(result)
-  }
-}
-
 object SInt extends SIntFactory
 
 sealed trait Reset extends Element with ToBoolable {
@@ -1164,21 +1116,6 @@ sealed class Bool() extends UInt(1.W) with Reset {
   /** @group SourceInfoTransformMacro */
   def do_asAsyncReset(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): AsyncReset =
     pushOp(DefPrim(sourceInfo, AsyncReset(), AsAsyncResetOp, ref))
-}
-
-trait BoolFactory {
-  /** Creates an empty Bool.
-   */
-  def apply(): Bool = new Bool()
-
-  /** Creates Bool literal.
-   */
-  protected[chisel3] def Lit(x: Boolean): Bool = {
-    val result = new Bool()
-    val lit = ULit(if (x) 1 else 0, Width(1))
-    // Ensure we have something capable of generating a name.
-    lit.bindLitArg(result)
-  }
 }
 
 object Bool extends BoolFactory
