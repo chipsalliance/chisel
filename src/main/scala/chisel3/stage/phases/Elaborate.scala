@@ -15,28 +15,9 @@ import firrtl.options.{OptionsException, Phase, PreservesAll}
   */
 class Elaborate extends Phase with PreservesAll[Phase] {
 
-  /**
-    * @todo Change this to print to STDERR (`Console.err.println`)
-    */
   def transform(annotations: AnnotationSeq): AnnotationSeq = annotations.flatMap {
-    case a: ChiselGeneratorAnnotation =>
-      try {
-        a.elaborate
-      } catch {
-        case e: OptionsException => throw e
-        case e: ChiselException =>
-          val copts = view[ChiselOptions](annotations)
-          val stackTrace = if (!copts.printFullStackTrace) {
-            e.chiselStackTrace
-          } else {
-            val s = new StringWriter
-            e.printStackTrace(new PrintWriter(s))
-            s.toString
-          }
-          Predef.augmentString(stackTrace).lines.foreach(line => println(s"${ErrorLog.errTag} $line"))
-          Some(a)
-      }
-    case a => Some(a)
+    case a: ChiselGeneratorAnnotation => a.elaborate
+    case a                            => Some(a)
   }
 
 }
