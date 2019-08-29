@@ -1,9 +1,34 @@
 ---
 layout: page
-title:  "Acknowledgements"
-section: "Acknowledgements"
+title:  "Community"
+section: "Community"
 position: 16
 ---
+
+## Chisel Users Community
+
+If you're a Chisel user and want to stay connected to the wider user community, any of the following are great avenues:
+
+- Interact with other Chisel users in one of our Gitter chat rooms:
+  - [Chisel](https://gitter.im/freechipsproject/chisel3)
+  - [FIRRTL](https://gitter.im/freechipsproject/firrtl)
+- Ask/Answer [Questions on Stack Overflow using the `[chisel]` tag](https://stackoverflow.com/questions/tagged/chisel)
+- Ask questions and discuss ideas on the Chisel/FIRRTL Mailing Lists:
+  - [Chisel Users](https://groups.google.com/forum/#!forum/chisel-users)
+  - [Chisel Developers](https://groups.google.com/forum/#!forum/chisel-dev)
+- Follow us on our [`@chisel_lang` Twitter Account](https://twitter.com/chisel_lang)
+- Subscribe to our [`chisel-lang` YouTube Channel](https://www.youtube.com/c/chisel-lang)
+
+## Chisel Developers Community
+
+If you want to get *more involved* with the Chisel/FIRRTL ecosystem of projects, feel free to reach out to us on any of the mediums above. If you prefer to dive right in (or have bugs to report), a complete list of the associated Chisel/FIRRTL ecosystem of projects is below:
+
+- [Chisel](https://github.com/freechipsproject/chisel3)
+- [FIRRTL](https://github.com/freechipsproject/firrtl)
+- [Chisel Testers/`chisel3.iotesters`](https://github.com/freechipsproject/chisel-testers)
+- [Chisel Testers2/`chisel3.testers`](https://github.com/ucb-bar/chisel-testers)
+- [Treadle](https://github.com/freechipsproject/treadle)
+- [Diagrammer](https://github.com/freechipsproject/diagrammer)
 
 ## Contributors
 
@@ -62,6 +87,8 @@ If you use FIRRTL in your research consider citing:
   doi={10.1109/ICCAD.2017.8203780},
   ISSN={1558-2434},
   month={Nov},}
+```
+```bib
 @techreport{Li:EECS-2016-9,
     Author = {Li, Patrick S. and Izraelevitz, Adam M. and Bachrach, Jonathan},
     Title = {Specification for the FIRRTL Language},
