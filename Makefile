@@ -13,17 +13,23 @@ chisel-src = $(shell find chisel3/ chisel-testers/ -name *.scala)
 # Get all semantic version tags for a git project in a given directory
 # Usage: $(call getTags,foo)
 define getTags
-	$(shell cd $(1) && git tag | grep "^v[0-9]\+\(\.[0-9]\+\)*$$")
+$(shell cd $(1) && git tag | grep "^v[0-9]\+\(\.[0-9]\+\)*$$")
 endef
 define getSnapshot
-	$(shell cd $(1) && git tag | grep "^v.\+-SNAPSHOT$$" | sort -nr | head -n1)
+$(shell cd $(1) && git tag | grep "^v.\+-SNAPSHOT$$" | sort -nr | head -n1)
 endef
 
-firrtlTags = $(call getTags,firrtl) $(call getSnapshot,firrtl)
-chiselTags = $(call getTags,chisel3) $(call getSnapshot,chisel3)
-testersTags = $(call getTags,chisel-testers) $(call getSnapshot,chisel-testers)
-treadleTags = $(call getTags,treadle) $(call getSnapshot,treadle)
-diagrammerTags = $(call getTags,diagrammer) $(call getSnapshot,diagrammer)
+firrtlTags = $(call getTags,firrtl)
+chiselTags = $(call getTags,chisel3)
+testersTags = $(call getTags,chisel-testers)
+treadleTags = $(call getTags,treadle)
+diagrammerTags = $(call getTags,diagrammer)
+
+firrtlSnapshot = $(call getSnapshot,firrtl)
+chiselSnapshot = $(call getSnapshot,chisel3)
+testersSnapshot = $(call getSnapshot,chisel-testers)
+treadleSnapshot = $(call getSnapshot,treadle)
+diagrammerSnapshot = $(call getSnapshot,diagrammer)
 
 api-copy = \
 	docs/target/site/api/chisel3/latest/index.html \
@@ -31,11 +37,11 @@ api-copy = \
 	docs/target/site/api/chisel-testers/latest/index.html \
 	docs/target/site/api/treadle/latest/index.html \
 	docs/target/site/api/diagrammer/latest/index.html \
-	$(chiselTags:%=docs/target/site/api/chisel3/%/index.html) \
-	$(firrtlTags:%=docs/target/site/api/firrtl/%/index.html) \
-	$(testersTags:%=docs/target/site/api/chisel-testers/%/index.html) \
-	$(treadleTags:%=docs/target/site/api/treadle/%/index.html) \
-	$(diagrammerTags:%=docs/target/site/api/diagrammer/%/index.html)
+	$(chiselTags:%=docs/target/site/api/chisel3/%/index.html) docs/target/site/api/chisel3/SNAPSHOT/index.html \
+	$(firrtlTags:%=docs/target/site/api/firrtl/%/index.html) docs/target/site/api/firrtl/SNAPSHOT/index.html \
+	$(testersTags:%=docs/target/site/api/chisel-testers/%/index.html) docs/target/site/api/chisel-testers/SNAPSHOT/index.html \
+	$(treadleTags:%=docs/target/site/api/treadle/%/index.html) docs/target/site/api/treadle/SNAPSHOT/index.html \
+	$(diagrammerTags:%=docs/target/site/api/diagrammer/%/index.html) docs/target/site/api/diagrammer/SNAPSHOT/index.html
 
 .PHONY: all clean mrproper publish serve \
 	apis-chisel apis-firrtl apis-chisel-testers apis-treadle apis-diagrammer
@@ -55,11 +61,11 @@ api-copy = \
 all: docs/target/site/index.html
 
 # Targets to build the legacy APIS of only a specific subproject
-apis-chisel: $(chiselTags:%=$(apis)/chisel3/%/index.html)
-apis-firrtl: $(firrtlTags:%=$(apis)/firrtl/%/index.html)
-apis-chisel-testers: $(testersTags:%=$(apis)/chisel-testers/%/index.html)
-apis-treadle: $(treadleTags:%=$(apis)/treadle/%/index.html)
-apis-diagrammer: $(diagrammerTags:%=$(apis)/diagrammer/%/index.html)
+apis-chisel: $(chiselTags:%=$(apis)/chisel3/%/index.html) $(apis)/chisel3/$(chiselSnapshot)/index.html
+apis-firrtl: $(firrtlTags:%=$(apis)/firrtl/%/index.html) $(apis)/firrtl/$(firrtlSnapshot)/index.html
+apis-chisel-testers: $(testersTags:%=$(apis)/chisel-testers/%/index.html) $(apis)/chisel-testers/$(testersSnapshot)/index.html
+apis-treadle: $(treadleTags:%=$(apis)/treadle/%/index.html) $(apis)/treadle/$(treadleSnapshot)/index.html
+apis-diagrammer: $(diagrammerTags:%=$(apis)/diagrammer/%/index.html) $(apis)/diagrammer/$(diagrammerSnapshot)/index.html
 
 # Remove the output of all build targets
 clean:
@@ -121,6 +127,18 @@ $(subprojects)/treadle/%/target/scala-$(scalaVersion)/api/index.html: | $(subpro
 $(subprojects)/diagrammer/%/target/scala-$(scalaVersion)/api/index.html: | $(subprojects)/diagrammer/%/.git
 	(cd $(subprojects)/diagrammer/$* && sbt ++$(scalaVersion).$(scalaMinorVersion) doc)
 
+# Copy *SNAPSHOT* API of subprojects into API directory
+docs/target/site/api/chisel3/SNAPSHOT/index.html: $(apis)/chisel3/$(chiselSnapshot)/index.html | docs/target/site/api/chisel3/SNAPSHOT/
+	cp -r $(dir $<)* $(dir $@)
+docs/target/site/api/firrtl/SNAPSHOT/index.html: $(apis)/firrtl/$(firrtlSnapshot)/index.html | docs/target/site/api/firrtl/SNAPSHOT/
+	cp -r $(dir $<)* $(dir $@)
+docs/target/site/api/chisel-testers/SNAPSHOT/index.html: $(apis)/chisel-testers/$(testersSnapshot)/index.html | docs/target/site/api/chisel-testers/SNAPSHOT/
+	cp -r $(dir $<)* $(dir $@)
+docs/target/site/api/treadle/SNAPSHOT/index.html: $(apis)/treadle/$(treadleSnapshot)/index.html | docs/target/site/api/treadle/SNAPSHOT/
+	cp -r $(dir $<)* $(dir $@)
+docs/target/site/api/diagrammer/SNAPSHOT/index.html: $(apis)/diagrammer/$(diagrammerSnapshot)/index.html | docs/target/site/api/diagrammer/SNAPSHOT/
+	cp -r $(dir $<)* $(dir $@)
+
 # Copy *old* API of subprojects into API diretory
 $(apis)/chisel3/%/index.html: $(subprojects)/chisel3/%/target/scala-$(scalaVersion)/unidoc/index.html | $(apis)/chisel3/%/
 	cp -r $(dir $<)* $(dir $@)
@@ -136,19 +154,14 @@ $(apis)/diagrammer/%/index.html: $(subprojects)/diagrammer/%/target/scala-$(scal
 # Copy *old* API of subprojects from API directory into website
 docs/target/site/api/chisel3/%/index.html: $(apis)/chisel3/%/index.html | docs/target/site/api/chisel3/%/
 	cp -r $(dir $<)* $(dir $@)
-	if [[ $* == *-SNAPSHOT ]]; then (cd $(dir $@).. && ln -sf $* SNAPSHOT); fi
 docs/target/site/api/firrtl/%/index.html: $(apis)/firrtl/%/index.html | docs/target/site/api/firrtl/%/
 	cp -r $(dir $<)* $(dir $@)
-	if [[ $* == *-SNAPSHOT ]]; then (cd $(dir $@).. && ln -sf $* SNAPSHOT); fi
 docs/target/site/api/chisel-testers/%/index.html: $(apis)/chisel-testers/%/index.html | docs/target/site/api/chisel-testers/%/
 	cp -r $(dir $<)* $(dir $@)
-	if [[ $* == *-SNAPSHOT ]]; then (cd $(dir $@).. && ln -sf $* SNAPSHOT); fi
 docs/target/site/api/treadle/%/index.html: $(apis)/treadle/%/index.html | docs/target/site/api/treadle/%/
 	cp -r $(dir $<)* $(dir $@)
-	if [[ $* == *-SNAPSHOT ]]; then (cd $(dir $@).. && ln -sf $* SNAPSHOT); fi
 docs/target/site/api/diagrammer/%/index.html: $(apis)/diagrammer/%/index.html | docs/target/site/api/diagrammer/%/
 	cp -r $(dir $<)* $(dir $@)
-	if [[ $* == *-SNAPSHOT ]]; then (cd $(dir $@).. && ln -sf $* SNAPSHOT); fi
 
 # Utilities to either fetch submodules or create directories
 %/.git:
