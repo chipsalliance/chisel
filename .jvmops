@@ -1,0 +1,10 @@
+-Xss4M 
+-Xms1G 
+-Xmx6G 
+-XX:MaxMetaspaceSize=6G
+-XX:ReservedCodeCacheSize=1G
+
+-Dfile.encoding=UTF8 
+-XX:+TieredCompilation
+-XX:+CMSClassUnloadingEnabled
+-XX:+UseParallelGC
