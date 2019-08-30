@@ -5,7 +5,6 @@
 
 package chisel3.util
 
-import scala.language.reflectiveCalls
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox._
 

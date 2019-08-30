@@ -4,8 +4,7 @@
  */
 package object chisel3 {    // scalastyle:ignore package.object.name
   import internal.firrtl.{Port, Width}
-  import internal.sourceinfo.{SourceInfo, VecTransform}
-  import internal.{Builder, chiselRuntimeDeprecated}
+  import internal.Builder
 
   import scala.language.implicitConversions
 

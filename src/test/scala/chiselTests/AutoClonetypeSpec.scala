@@ -120,7 +120,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec {
     a [ChiselException] should be thrownBy {
       elaborate { new Module {
         val io = IO(new Bundle{})
-        val myWire = Wire(new SubBundleInvalid(8, 4))
+        Wire(new SubBundleInvalid(8, 4))
       } }
     }
   }
@@ -154,7 +154,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec {
   "Nested directioned anonymous Bundles" should "not need clonetype" in {
     elaborate { new Module {
       val io = IO(new NestedAnonymousBundle)
-      val a = WireDefault(io)
+      WireDefault(io)
       io.a.a := 1.U
     } }
   }
@@ -163,11 +163,11 @@ class AutoClonetypeSpec extends ChiselFlatSpec {
     elaborate { new Module {
       class InnerClassThing {
         def createBundle: Bundle = new Bundle {
-          val a = Output(UInt(8.W))
+          Output(UInt(8.W))
         }
       }
       val io = IO((new InnerClassThing).createBundle)
-      val a = WireDefault(io)
+      WireDefault(io)
     } }
   }
 

@@ -2,14 +2,10 @@
 
 package chisel3.stage.phases
 
-import java.io.{PrintWriter, StringWriter}
 
-import chisel3.ChiselException
-import chisel3.internal.ErrorLog
-import chisel3.stage.{ChiselGeneratorAnnotation, ChiselOptions}
+import chisel3.stage.ChiselGeneratorAnnotation
 import firrtl.AnnotationSeq
-import firrtl.options.Viewer.view
-import firrtl.options.{OptionsException, Phase, PreservesAll}
+import firrtl.options.{Phase, PreservesAll}
 
 /** Elaborate all [[chisel3.stage.ChiselGeneratorAnnotation]]s into [[chisel3.stage.ChiselCircuitAnnotation]]s.
   */

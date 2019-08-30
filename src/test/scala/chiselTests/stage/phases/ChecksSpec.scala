@@ -8,7 +8,6 @@ import chisel3.stage.{ChiselOutputFileAnnotation, NoRunFirrtlCompilerAnnotation,
 import chisel3.stage.phases.Checks
 
 import firrtl.AnnotationSeq
-import firrtl.annotations.NoTargetAnnotation
 import firrtl.options.{OptionsException, Phase}
 
 class ChecksSpec extends FlatSpec with Matchers {

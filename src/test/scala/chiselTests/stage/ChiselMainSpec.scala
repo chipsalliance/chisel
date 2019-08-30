@@ -3,10 +3,9 @@
 package chiselTests.stage
 
 import chisel3._
-import chisel3.stage.{ChiselGeneratorAnnotation, ChiselMain}
+import chisel3.stage.ChiselMain
 import chisel3.experimental.RawModule
 
-import firrtl.AnnotationSeq
 
 import java.io.File
 

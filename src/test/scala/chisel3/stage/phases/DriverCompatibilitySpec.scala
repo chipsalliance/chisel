@@ -6,8 +6,7 @@ import org.scalatest.{FlatSpec, Matchers}
 
 import chisel3.stage.{NoRunFirrtlCompilerAnnotation, ChiselOutputFileAnnotation}
 
-import firrtl.options.{OutputAnnotationFileAnnotation, StageOptions}
-import firrtl.options.Viewer.view
+import firrtl.options.OutputAnnotationFileAnnotation
 import firrtl.stage.phases.DriverCompatibility.TopNameAnnotation
 
 class DriverCompatibilitySpec extends FlatSpec with Matchers {

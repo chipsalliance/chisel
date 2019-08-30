@@ -161,7 +161,7 @@ class AsyncResetSpec extends ChiselFlatSpec {
       val r: Reset = reset
       val a: AsyncReset = WireInit(r.asAsyncReset)
       val b: Bool = a.asBool
-      val c: AsyncReset = b.asAsyncReset
+      b.asAsyncReset
     })
   }
 

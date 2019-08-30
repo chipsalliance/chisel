@@ -7,7 +7,6 @@ import chisel3.internal.{Builder, InstanceId}
 import chisel3.{CompileOptions, Data}
 import firrtl.Transform
 import firrtl.annotations._
-import firrtl.options.Unserializable
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
 
 /** Interface for Annotations in Chisel

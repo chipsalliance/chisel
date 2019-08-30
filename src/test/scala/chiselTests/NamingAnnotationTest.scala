@@ -114,8 +114,8 @@ class NameCollisionModule extends NamedModuleTester {
   def innerNamedFunction() {
     // ... but not this inner function
     def innerUnnamedFunction() {
-      val a = repeatedCalls(1)
-      val b = repeatedCalls(2)
+      repeatedCalls(1)
+      repeatedCalls(2)
     }
 
     innerUnnamedFunction()

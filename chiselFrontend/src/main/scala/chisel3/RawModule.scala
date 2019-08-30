@@ -3,8 +3,6 @@
 package chisel3.experimental
 
 import scala.collection.mutable.{ArrayBuffer, HashMap}
-import scala.collection.JavaConversions._
-import scala.language.experimental.macros
 
 import chisel3._
 import chisel3.internal._

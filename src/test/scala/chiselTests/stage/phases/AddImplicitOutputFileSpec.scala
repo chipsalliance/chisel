@@ -9,8 +9,7 @@ import chisel3.stage.{ChiselGeneratorAnnotation, ChiselOutputFileAnnotation}
 import chisel3.stage.phases.{AddImplicitOutputFile, Elaborate}
 
 import firrtl.AnnotationSeq
-import firrtl.options.{Phase, StageOptions, TargetDirAnnotation}
-import firrtl.options.Viewer.view
+import firrtl.options.{Phase, TargetDirAnnotation}
 
 class AddImplicitOutputFileSpec extends FlatSpec with Matchers {
 

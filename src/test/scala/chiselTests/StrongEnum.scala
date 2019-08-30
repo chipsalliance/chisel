@@ -8,7 +8,7 @@ import chisel3.internal.firrtl.UnknownWidth
 import chisel3.internal.naming.chiselName
 import chisel3.util._
 import chisel3.testers.BasicTester
-import org.scalatest.{Assertion, FreeSpec, Matchers}
+import org.scalatest.{FreeSpec, Matchers}
 
 object EnumExample extends ChiselEnum {
   val e0, e1, e2 = Value
@@ -361,7 +361,7 @@ class StrongEnumSpec extends ChiselFlatSpec {
   }
 
   it should "maintain Scala-level type-safety" in {
-    def foo(e: EnumExample.Type): Unit = {}
+    
 
     "foo(EnumExample.e1); foo(EnumExample.e1.next)" should compile
     "foo(OtherEnum.otherEnum)" shouldNot compile

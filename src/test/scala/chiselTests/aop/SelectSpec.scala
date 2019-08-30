@@ -52,7 +52,7 @@ case class SelectAspect[T <: RawModule, X](selector: T => Seq[X], desired: T => 
 class SelectSpec extends ChiselFlatSpec {
 
   def execute[T <: RawModule, X](dut: () => T, selector: T => Seq[X], desired: T => Seq[X])(implicit tTag: TypeTag[T]): Unit = {
-    val ret = new chisel3.stage.ChiselStage().run(
+    new chisel3.stage.ChiselStage().run(
       Seq(
         new chisel3.stage.ChiselGeneratorAnnotation(dut),
         SelectAspect(selector, desired),
