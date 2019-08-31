@@ -5,7 +5,7 @@ package chisel3
 import scala.language.experimental.macros
 import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform}
 
-// scalastyle:off method.name
+// scalastyle:off method.name number.of.methods
 
 // REVIEW TODO: Further discussion needed on what Num actually is.
 
@@ -28,9 +28,34 @@ import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform}
   */
 trait Num[T <: Data] {
   self: Num[T] =>
-  // def << (b: T): T
-  // def >> (b: T): T
   //def unary_-(): T
+
+  /** Addition operator (expanding width)
+   *
+   * @param that a hardware $coll
+   * @return the sum of this $coll and `that`
+   *         $maxWidthPlusOne
+   * @group Arithmetic
+   */
+  final def +& (that: T): T = macro SourceInfoTransform.thatArg
+
+  /** Addition operator (constant width)
+   *
+   * @param that a hardware $coll
+   * @return the sum of this $coll and `that` shifted right by one
+   *         $maxWidth
+   * @group Arithmetic
+   */
+  final def +% (that: T): T = macro SourceInfoTransform.thatArg
+
+  /** @group SourceInfoTransformMacro */
+  def do_+& (that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T
+  /** @group SourceInfoTransformMacro */
+  def do_+% (that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T
+  /** @group SourceInfoTransformMacro */
+  def do_-& (that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T
+  /** @group SourceInfoTransformMacro */
+  def do_-% (that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T
 
   // REVIEW TODO: double check ops conventions against FIRRTL
 
@@ -44,7 +69,8 @@ trait Num[T <: Data] {
   final def + (that: T): T = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_+ (that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T
+  /** add (default - no growth) operator */
+  def do_+ (that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = this +% that
 
   /** Multiplication operator
     *
@@ -93,8 +119,28 @@ trait Num[T <: Data] {
     */
   final def - (that: T): T = macro SourceInfoTransform.thatArg
 
+
+  /** Subtraction operator (increasing width)
+   *
+   * @param that a hardware $coll
+   * @return the difference of this $coll less `that`
+   *         $maxWidthPlusOne
+   * @group Arithmetic
+   */
+  final def -& (that: T): T = macro SourceInfoTransform.thatArg
+
+  /** Subtraction operator (constant width)
+   *
+   * @param that a hardware $coll
+   * @return the difference of this $coll less `that` shifted right by one
+   *         $maxWidth
+   * @group Arithmetic
+   */
+  final def -% (that: T): T = macro SourceInfoTransform.thatArg
+
   /** @group SourceInfoTransformMacro */
-  def do_- (that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T
+  /** subtract (default - no growth) operator */
+  def do_- (that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = this -% that
 
   /** Less than operator
     *
