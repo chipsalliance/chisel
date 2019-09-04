@@ -44,6 +44,16 @@ object SpecifiedDirection {
       case (SpecifiedDirection.Unspecified, thisDirection) => thisDirection
       case (SpecifiedDirection.Flip, thisDirection) => SpecifiedDirection.flip(thisDirection)
     }
+
+  private[chisel3] def specifiedDirection[T<:Data](source: T)(dir: SpecifiedDirection)(implicit compileOptions: CompileOptions): T = {
+    if (compileOptions.checkSynthesizable) {
+      requireIsChiselType(source)
+    }
+    val out = source.cloneType.asInstanceOf[T]
+    out.specifiedDirection = dir
+    out
+  }
+
 }
 
 /** Resolved directions for both leaf and container nodes, only visible after
@@ -221,32 +231,18 @@ object chiselTypeOf {
 */
 object Input {
   def apply[T<:Data](source: T)(implicit compileOptions: CompileOptions): T = {
-    if (compileOptions.checkSynthesizable) {
-      requireIsChiselType(source)
-    }
-    val out = source.cloneType.asInstanceOf[T]
-    out.specifiedDirection = SpecifiedDirection.Input
-    out
+    SpecifiedDirection.specifiedDirection(source)(SpecifiedDirection.Input)
   }
 }
 object Output {
   def apply[T<:Data](source: T)(implicit compileOptions: CompileOptions): T = {
-    if (compileOptions.checkSynthesizable) {
-      requireIsChiselType(source)
-    }
-    val out = source.cloneType.asInstanceOf[T]
-    out.specifiedDirection = SpecifiedDirection.Output
-    out
+    SpecifiedDirection.specifiedDirection(source)(SpecifiedDirection.Output)
   }
 }
+
 object Flipped {
   def apply[T<:Data](source: T)(implicit compileOptions: CompileOptions): T = {
-    if (compileOptions.checkSynthesizable) {
-      requireIsChiselType(source)
-    }
-    val out = source.cloneType.asInstanceOf[T]
-    out.specifiedDirection = SpecifiedDirection.flip(source.specifiedDirection)
-    out
+    SpecifiedDirection.specifiedDirection(source)(SpecifiedDirection.flip(source.specifiedDirection))
   }
 }
 
