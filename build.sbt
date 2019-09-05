@@ -64,17 +64,17 @@ libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3"
 // An explicit dependency on junit seems to alleviate this.
 libraryDependencies += "junit" % "junit" % "4.12" % "test"
 
-libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.5" % "test"
+libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.8" % "test"
 
 libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.14.0" % "test"
 
-libraryDependencies += "com.github.scopt" %% "scopt" % "3.7.0"
+libraryDependencies += "com.github.scopt" %% "scopt" % "3.7.1"
 
-libraryDependencies += "net.jcazevedo" %% "moultingyaml" % "0.4.0"
+libraryDependencies += "net.jcazevedo" %% "moultingyaml" % "0.4.1"
 
-libraryDependencies += "org.json4s" %% "json4s-native" % "3.6.1"
+libraryDependencies += "org.json4s" %% "json4s-native" % "3.6.7"
 
-libraryDependencies += "org.apache.commons" % "commons-text" % "1.6"
+libraryDependencies += "org.apache.commons" % "commons-text" % "1.7"
 
 // Java PB
 
