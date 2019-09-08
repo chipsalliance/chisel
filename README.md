@@ -100,8 +100,8 @@ These simulation-based verification tools are available for Chisel:
 ## Documentation
 
 ### Useful Resources
- 
-- [**Cheat Sheet**](https://chisel.eecs.berkeley.edu/doc/chisel-cheatsheet3.pdf), a 2-page reference of the base Chisel syntax and libraries
+
+- [**Cheat Sheet**](https://github.com/freechipsproject/chisel-cheatsheet/releases/latest/download/chisel_cheatsheet.pdf), a 2-page reference of the base Chisel syntax and libraries
 - [**Wiki**](https://github.com/freechipsproject/chisel3/wiki), which contains various feature-specific tutorials and frequently-asked questions.
 - [**ScalaDoc**](https://www.chisel-lang.org/api/chisel3/latest/chisel3/index.html), a listing, description, and examples of the functionality exposed by Chisel   
 - [**Gitter**](https://gitter.im/freechipsproject/chisel3), where you can ask questions or discuss anything Chisel
