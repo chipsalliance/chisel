@@ -11,3 +11,4 @@ When you're ready to build your own circuits in Chisel, **we recommend starting 
 The following additional resources and references may be useful:
 
 - [Chisel Cheatsheet](https://github.com/freechipsproject/chisel-cheatsheet/releases/latest/download/chisel_cheatsheet.pdf)
+- [Digital Design With Chisel](https://github.com/schoeberl/chisel-book)
