@@ -12,6 +12,8 @@ options:
         url: chisel3/cookbook.html
       - title: Troubleshooting
         url: chisel3/troubleshooting
+      - title: Resources
+        url: chisel3/resources
   - title: Introduction
     url: chisel3/introduction.html
     menu_type: chisel3
