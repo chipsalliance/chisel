@@ -3,7 +3,7 @@
 package chisel3.experimental
 
 import scala.language.existentials
-import chisel3.internal.{Builder, InstanceId}
+import chisel3.internal.{Builder, InstanceId, LegacyModule}
 import chisel3.{CompileOptions, Data}
 import firrtl.Transform
 import firrtl.annotations._
@@ -85,7 +85,7 @@ object annotate { // scalastyle:ignore object.name
 object doNotDedup { // scalastyle:ignore object.name
   /** Marks a module to be ignored in Dedup Transform in Firrtl
     *
-    * @param data The module to be marked
+    * @param module The module to be marked
     * @return Unmodified signal `module`
     */
    def apply[T <: LegacyModule](module: T)(implicit compileOptions: CompileOptions): Unit = {
