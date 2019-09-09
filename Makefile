@@ -32,16 +32,16 @@ treadleSnapshot = $(call getSnapshot,treadle)
 diagrammerSnapshot = $(call getSnapshot,diagrammer)
 
 api-copy = \
-	docs/target/site/api/chisel3/latest/index.html \
+	docs/target/site/api/latest/index.html \
 	docs/target/site/api/firrtl/latest/index.html \
 	docs/target/site/api/chisel-testers/latest/index.html \
 	docs/target/site/api/treadle/latest/index.html \
 	docs/target/site/api/diagrammer/latest/index.html \
-	$(chiselTags:%=docs/target/site/api/chisel3/%/index.html) docs/target/site/api/chisel3/SNAPSHOT/index.html \
-	$(firrtlTags:%=docs/target/site/api/firrtl/%/index.html) docs/target/site/api/firrtl/SNAPSHOT/index.html \
-	$(testersTags:%=docs/target/site/api/chisel-testers/%/index.html) docs/target/site/api/chisel-testers/SNAPSHOT/index.html \
-	$(treadleTags:%=docs/target/site/api/treadle/%/index.html) docs/target/site/api/treadle/SNAPSHOT/index.html \
-	$(diagrammerTags:%=docs/target/site/api/diagrammer/%/index.html) docs/target/site/api/diagrammer/SNAPSHOT/index.html
+	$(chiselTags:v%=docs/target/site/api/%/index.html) docs/target/site/api/SNAPSHOT/index.html \
+	$(firrtlTags:v%=docs/target/site/api/firrtl/%/index.html) docs/target/site/api/firrtl/SNAPSHOT/index.html \
+	$(testersTags:v%=docs/target/site/api/chisel-testers/%/index.html) docs/target/site/api/chisel-testers/SNAPSHOT/index.html \
+	$(treadleTags:v%=docs/target/site/api/treadle/%/index.html) docs/target/site/api/treadle/SNAPSHOT/index.html \
+	$(diagrammerTags:v%=docs/target/site/api/diagrammer/%/index.html) docs/target/site/api/diagrammer/SNAPSHOT/index.html
 
 .PHONY: all clean mrproper publish serve \
 	apis-chisel apis-firrtl apis-chisel-testers apis-treadle apis-diagrammer
@@ -51,11 +51,11 @@ api-copy = \
 	$(subprojects)/chisel-testers/%/.git $(subprojects)/chisel-testers/%/target/scala-$(scalaVersion)/api/index.html \
 	$(subprojects)/treadle/%/.git $(subprojects)/treadle/%/target/scala-$(scalaVersion)/api/index.html \
 	$(subprojects)/diagrammer/%/.git $(subprojects)/diagrammer/%/target/scala-$(scalaVersion)/api/index.html \
-	$(apis)/chisel3/%/index.html $(apis)/firrtl/%/index.html $(apis)/chisel-testers/%/index.html \
+	$(apis)/chisel3/v%/index.html $(apis)/firrtl/%/index.html $(apis)/chisel-testers/%/index.html \
 	$(apis)/treadle/%/index.html $(apis)/diagrammer/%/index.html \
-	docs/target/site/api/chisel3/%/ docs/target/site/api/firrtl/%/ docs/target/site/api/chisel-testers/%/ \
+	docs/target/site/api/%/ docs/target/site/api/firrtl/%/ docs/target/site/api/chisel-testers/%/ \
 	docs/target/site/api/treadle/%/ docs/target/site/api/diagrammer/%/ \
-	$(apis)/chisel3/%/ $(apis)/firrtl/%/ $(apis)/chisel-testers/%/ $(apis)/treadle/%/ $(apis)/diagrammer/%/
+	$(apis)/%/
 
 # Build the site into the default directory (docs/target/site)
 all: docs/target/site/index.html
@@ -104,7 +104,7 @@ diagrammer/target/scala-$(scalaVersion)/api/index.html: $(shell find diagrammer/
 	(cd diagrammer/ && sbt ++$(scalaVersion).$(scalaMinorVersion) doc)
 
 # Copy built API into site
-docs/target/site/api/chisel3/latest/index.html: chisel3/target/scala-$(scalaVersion)/unidoc/index.html | docs/target/site/api/chisel3/latest/
+docs/target/site/api/latest/index.html: chisel3/target/scala-$(scalaVersion)/unidoc/index.html | docs/target/site/api/latest/
 	cp -r $(dir $<)* $(dir $@)
 docs/target/site/api/firrtl/latest/index.html: firrtl/target/scala-$(scalaVersion)/unidoc/index.html | docs/target/site/api/firrtl/latest/
 	cp -r $(dir $<)* $(dir $@)
@@ -128,7 +128,7 @@ $(subprojects)/diagrammer/%/target/scala-$(scalaVersion)/api/index.html: | $(sub
 	(cd $(subprojects)/diagrammer/$* && sbt ++$(scalaVersion).$(scalaMinorVersion) doc)
 
 # Copy *SNAPSHOT* API of subprojects into API directory
-docs/target/site/api/chisel3/SNAPSHOT/index.html: $(apis)/chisel3/$(chiselSnapshot)/index.html | docs/target/site/api/chisel3/SNAPSHOT/
+docs/target/site/api/SNAPSHOT/index.html: $(apis)/chisel3/$(chiselSnapshot)/index.html | docs/target/site/api/SNAPSHOT/
 	cp -r $(dir $<)* $(dir $@)
 docs/target/site/api/firrtl/SNAPSHOT/index.html: $(apis)/firrtl/$(firrtlSnapshot)/index.html | docs/target/site/api/firrtl/SNAPSHOT/
 	cp -r $(dir $<)* $(dir $@)
@@ -152,15 +152,15 @@ $(apis)/diagrammer/%/index.html: $(subprojects)/diagrammer/%/target/scala-$(scal
 	cp -r $(dir $<)* $(dir $@)
 
 # Copy *old* API of subprojects from API directory into website
-docs/target/site/api/chisel3/%/index.html: $(apis)/chisel3/%/index.html | docs/target/site/api/chisel3/%/
+docs/target/site/api/%/index.html: $(apis)/chisel3/v%/index.html | docs/target/site/api/%/
 	cp -r $(dir $<)* $(dir $@)
-docs/target/site/api/firrtl/%/index.html: $(apis)/firrtl/%/index.html | docs/target/site/api/firrtl/%/
+docs/target/site/api/firrtl/%/index.html: $(apis)/firrtl/v%/index.html | docs/target/site/api/firrtl/%/
 	cp -r $(dir $<)* $(dir $@)
-docs/target/site/api/chisel-testers/%/index.html: $(apis)/chisel-testers/%/index.html | docs/target/site/api/chisel-testers/%/
+docs/target/site/api/chisel-testers/%/index.html: $(apis)/chisel-testers/v%/index.html | docs/target/site/api/chisel-testers/%/
 	cp -r $(dir $<)* $(dir $@)
-docs/target/site/api/treadle/%/index.html: $(apis)/treadle/%/index.html | docs/target/site/api/treadle/%/
+docs/target/site/api/treadle/%/index.html: $(apis)/treadle/v%/index.html | docs/target/site/api/treadle/%/
 	cp -r $(dir $<)* $(dir $@)
-docs/target/site/api/diagrammer/%/index.html: $(apis)/diagrammer/%/index.html | docs/target/site/api/diagrammer/%/
+docs/target/site/api/diagrammer/%/index.html: $(apis)/diagrammer/v%/index.html | docs/target/site/api/diagrammer/%/
 	cp -r $(dir $<)* $(dir $@)
 
 # Utilities to either fetch submodules or create directories
@@ -176,23 +176,7 @@ $(subprojects)/treadle/%/.git:
 	git clone "https://github.com/freechipsproject/treadle.git" --depth 1 --branch $* $(dir $@)
 $(subprojects)/diagrammer/%/.git:
 	git clone "https://github.com/freechipsproject/diagrammer.git" --depth 1 --branch $* $(dir $@)
-$(apis)/chisel3/%/:
+$(apis)/%/:
 	mkdir -p $@
-$(apis)/firrtl/%/:
-	mkdir -p $@
-$(apis)/chisel-testers/%/:
-	mkdir -p $@
-$(apis)/treadle/%/:
-	mkdir -p $@
-$(apis)/diagrammer/%/:
-	mkdir -p $@
-docs/target/site/api/chisel3/%/:
-	mkdir -p $@
-docs/target/site/api/firrtl/%/:
-	mkdir -p $@
-docs/target/site/api/chisel-testers/%/:
-	mkdir -p $@
-docs/target/site/api/treadle/%/:
-	mkdir -p $@
-docs/target/site/api/diagrammer/%/:
+docs/target/site/api/%/:
 	mkdir -p $@
