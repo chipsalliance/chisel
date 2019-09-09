@@ -117,35 +117,35 @@ options:
       - title: Test Coverage
         url: chisel3/test-coverage.html
   - title: API Documentation
-    url: api/chisel3/latest/
+    url: api/latest/
     menu_type: chisel3
     nested_options:
       - title: SNAPSHOT
-        url: api/chisel3/SNAPSHOT/
-      - title: v3.1.8
-        url: api/chisel3/v3.1.8/
-      - title: v3.1.7
-        url: api/chisel3/v3.1.7/
-      - title: v3.1.6
-        url: api/chisel3/v3.1.6/
-      - title: v3.1.5
-        url: api/chisel3/v3.1.5/
-      - title: v3.1.4
-        url: api/chisel3/v3.1.4/
-      - title: v3.1.3
-        url: api/chisel3/v3.1.3/
-      - title: v3.1.2
-        url: api/chisel3/v3.1.2/
-      - title: v3.1.1
-        url: api/chisel3/v3.1.1/
-      - title: v3.1.0
-        url: api/chisel3/v3.1.0/
-      - title: v3.0.2
-        url: api/chisel3/v3.0.2/
-      - title: v3.0.1
-        url: api/chisel3/v3.0.1/
-      - title: v3.0.0
-        url: api/chisel3/v3.0.0/
+        url: api/SNAPSHOT/
+      - title: 3.1.8
+        url: api/3.1.8/
+      - title: 3.1.7
+        url: api/3.1.7/
+      - title: 3.1.6
+        url: api/3.1.6/
+      - title: 3.1.5
+        url: api/3.1.5/
+      - title: 3.1.4
+        url: api/3.1.4/
+      - title: 3.1.3
+        url: api/3.1.3/
+      - title: 3.1.2
+        url: api/3.1.2/
+      - title: 3.1.1
+        url: api/3.1.1/
+      - title: 3.1.0
+        url: api/3.1.0/
+      - title: 3.0.2
+        url: api/3.0.2/
+      - title: 3.0.1
+        url: api/3.0.1/
+      - title: 3.0.0
+        url: api/3.0.0/
 
   # Testers Site
   - title: Testers
@@ -157,34 +157,34 @@ options:
     nested_options:
       - title: SNAPSHOT
         url: api/chisel-testers/SNAPSHOT/
-      - title: v1.2.10
-        url: api/chisel-testers/v1.2.10/
-      - title: v1.2.9
-        url: api/chisel-testers/v1.2.9/
-      - title: v1.2.8
-        url: api/chisel-testers/v1.2.8/
-      - title: v1.2.7
-        url: api/chisel-testers/v1.2.7/
-      - title: v1.2.6
-        url: api/chisel-testers/v1.2.6/
-      - title: v1.2.5
-        url: api/chisel-testers/v1.2.5/
-      - title: v1.2.4
-        url: api/chisel-testers/v1.2.4/
-      - title: v1.2.3
-        url: api/chisel-testers/v1.2.3/
-      - title: v1.2.2
-        url: api/chisel-testers/v1.2.2/
-      - title: v1.2.1
-        url: api/chisel-testers/v1.2.1/
-      - title: v1.2.0
-        url: api/chisel-testers/v1.2.0/
-      - title: v1.1.2
-        url: api/chisel-testers/v1.1.2/
-      - title: v1.1.1
-        url: api/chisel-testers/v1.1.1/
-      - title: v1.1.0
-        url: api/chisel-testers/v1.1.0/
+      - title: 1.2.10
+        url: api/chisel-testers/1.2.10/
+      - title: 1.2.9
+        url: api/chisel-testers/1.2.9/
+      - title: 1.2.8
+        url: api/chisel-testers/1.2.8/
+      - title: 1.2.7
+        url: api/chisel-testers/1.2.7/
+      - title: 1.2.6
+        url: api/chisel-testers/1.2.6/
+      - title: 1.2.5
+        url: api/chisel-testers/1.2.5/
+      - title: 1.2.4
+        url: api/chisel-testers/1.2.4/
+      - title: 1.2.3
+        url: api/chisel-testers/1.2.3/
+      - title: 1.2.2
+        url: api/chisel-testers/1.2.2/
+      - title: 1.2.1
+        url: api/chisel-testers/1.2.1/
+      - title: 1.2.0
+        url: api/chisel-testers/1.2.0/
+      - title: 1.1.2
+        url: api/chisel-testers/1.1.2/
+      - title: 1.1.1
+        url: api/chisel-testers/1.1.1/
+      - title: 1.1.0
+        url: api/chisel-testers/1.1.0/
 
   # FIRRTL Site
   - title: FIRRTL
@@ -196,28 +196,28 @@ options:
     nested_options:
       - title: SNAPSHOT
         url: api/firrtl/SNAPSHOT/
-      - title: v1.1.7
-        url: api/firrtl/v1.1.7/
-      - title: v1.1.6
-        url: api/firrtl/v1.1.6/
-      - title: v1.1.5
-        url: api/firrtl/v1.1.5/
-      - title: v1.1.4
-        url: api/firrtl/v1.1.4/
-      - title: v1.1.3
-        url: api/firrtl/v1.1.3/
-      - title: v1.1.2
-        url: api/firrtl/v1.1.2/
-      - title: v1.1.1
-        url: api/firrtl/v1.1.1/
-      - title: v1.1.0
-        url: api/firrtl/v1.1.0/
-      - title: v1.0.2
-        url: api/firrtl/v1.0.2/
-      - title: v1.0.1
-        url: api/firrtl/v1.0.1/
-      - title: v1.0.0
-        url: api/firrtl/v1.0.0/
+      - title: 1.1.7
+        url: api/firrtl/1.1.7/
+      - title: 1.1.6
+        url: api/firrtl/1.1.6/
+      - title: 1.1.5
+        url: api/firrtl/1.1.5/
+      - title: 1.1.4
+        url: api/firrtl/1.1.4/
+      - title: 1.1.3
+        url: api/firrtl/1.1.3/
+      - title: 1.1.2
+        url: api/firrtl/1.1.2/
+      - title: 1.1.1
+        url: api/firrtl/1.1.1/
+      - title: 1.1.0
+        url: api/firrtl/1.1.0/
+      - title: 1.0.2
+        url: api/firrtl/1.0.2/
+      - title: 1.0.1
+        url: api/firrtl/1.0.1/
+      - title: 1.0.0
+        url: api/firrtl/1.0.0/
 
   # Treadle Site
   - title: Treadle
@@ -229,18 +229,18 @@ options:
     nested_options:
       - title: SNAPSHOT
         url: api/treadle/SNAPSHOT/
-      - title: v1.0.5
-        url: api/treadle/v1.0.5/
-      - title: v1.0.4
-        url: api/treadle/v1.0.4/
-      - title: v1.0.3
-        url: api/treadle/v1.0.3/
-      - title: v1.0.2
-        url: api/treadle/v1.0.2/
-      - title: v1.0.1
-        url: api/treadle/v1.0.1/
-      - title: v1.0.0
-        url: api/treadle/v1.0.0/
+      - title: 1.0.5
+        url: api/treadle/1.0.5/
+      - title: 1.0.4
+        url: api/treadle/1.0.4/
+      - title: 1.0.3
+        url: api/treadle/1.0.3/
+      - title: 1.0.2
+        url: api/treadle/1.0.2/
+      - title: 1.0.1
+        url: api/treadle/1.0.1/
+      - title: 1.0.0
+        url: api/treadle/1.0.0/
 
   # Diagrammer Site
   - title: Diagrammer
@@ -252,9 +252,9 @@ options:
     nested_options:
       - title: SNAPSHOT
         url: api/diagrammer/SNAPSHOT/
-      - title: v1.0.2
-        url: api/diagrammer/v1.0.2/
-      - title: v1.0.1
-        url: api/diagrammer/v1.0.1/
-      - title: v1.0.0
-        url: api/diagrammer/v1.0.0/
+      - title: 1.0.2
+        url: api/diagrammer/1.0.2/
+      - title: 1.0.1
+        url: api/diagrammer/1.0.1/
+      - title: 1.0.0
+        url: api/diagrammer/1.0.0/

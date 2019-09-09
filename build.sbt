@@ -37,7 +37,7 @@ lazy val micrositeSettings = Seq(
   micrositeGithubRepo := "chisel3",
   micrositeGithubLinks := false,
   micrositeShareOnSocial := false,
-  micrositeDocumentationUrl := "api/chisel3/latest/",
+  micrositeDocumentationUrl := "api/latest/",
   micrositeDocumentationLabelDescription := "API Documentation",
   /* mdoc doesn't work with extraMDFiles so this is disabled for now */
   // micrositeCompilingDocsTool := WithMdoc,
