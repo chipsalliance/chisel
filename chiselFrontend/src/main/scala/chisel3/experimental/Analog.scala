@@ -5,7 +5,7 @@ package chisel3.experimental
 import chisel3.internal.firrtl.Width
 import chisel3.internal.sourceinfo.SourceInfo
 import chisel3.internal._
-import chisel3.{ActualDirection, Bits, CompileOptions, Data, Element, PString, Printable, SpecifiedDirection, UInt}
+import chisel3.{ActualDirection, Bits, CompileOptions, Data, Element, PString, Printable, RawModule, SpecifiedDirection, UInt}
 
 import scala.collection.mutable
 
