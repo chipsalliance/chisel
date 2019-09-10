@@ -162,7 +162,7 @@ abstract class MultiIOModule(implicit moduleCompileOptions: CompileOptions)
   }
 }
 
-package experimental {
+package internal {
 
   /** Legacy Module class that restricts IOs to just io, clock, and reset, and provides a constructor
     * for threading through explicit clock and reset.
