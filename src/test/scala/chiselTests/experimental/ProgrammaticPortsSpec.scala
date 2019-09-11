@@ -4,7 +4,6 @@ package chiselTests
 package experimental
 
 import chisel3._
-import chisel3.experimental.MultiIOModule
 
 // NOTE This is currently an experimental API and subject to change
 // Example using a private port

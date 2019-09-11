@@ -7,7 +7,6 @@ import chiselTests.ChiselFlatSpec
 import chisel3._
 import chisel3.aop.Select.{PredicatedConnect, When, WhenNot}
 import chisel3.aop.{Aspect, Select}
-import chisel3.experimental.RawModule
 import firrtl.{AnnotationSeq}
 
 import scala.reflect.runtime.universe.TypeTag

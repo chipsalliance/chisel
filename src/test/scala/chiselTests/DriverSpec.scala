@@ -17,7 +17,7 @@ class DummyModule extends Module {
   io.out := io.in
 }
 
-class TypeErrorModule extends chisel3.experimental.MultiIOModule {
+class TypeErrorModule extends chisel3.MultiIOModule {
   val in = IO(Input(UInt(1.W)))
   val out = IO(Output(SInt(1.W)))
   out := in
