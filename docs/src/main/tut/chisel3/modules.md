@@ -84,3 +84,58 @@ children modules, using the ```Module``` constructor function and
 the Scala ```new``` keyword to create a
 new object.  We then wire them up to one another and to the ports of
 the ```Mux4``` interface.
+
+Note: Chisel `Module`s have an implicit clock (called `clock`) and
+an implicit reset (called `reset`). For different behavior, Chisel
+provides both `MultiIOModule` and `RawModule`.
+
+### `MultiIOModule`
+
+A `MultiIOModule` allows you to define as many different `IO` as needed
+and does not require you to implement an abstract member `io`.
+This can be useful when programmatically adding `IO` or adding `IO` via inheritance.
+An artifact of this is that Verilog generated from a `MultiIOModule` will
+*not* have the `io_` prefix. `MultiIOModule`s still have an implicit
+clock and reset like `Module`.
+
+<!-- TODO: Some example -->
+
+### `RawModule`
+
+A `RawModule` is a module that allows you to define as much `IO` as needed
+(like `MultiIOModule`) but **does not provide an implicit clock and reset.**
+This can be useful when interfacing a Chisel module with a design that expects
+a specific naming convention for clock or reset.
+
+Then we can use it in place of *Module* usage :
+```tut:silent
+import chisel3.experimental.{RawModule, withClockAndReset}
+
+class Foo extends Module {
+  val io = IO(new Bundle{
+    val a = Input(Bool())
+    val b = Output(Bool())
+  })
+  io.b := !io.a
+}
+
+class FooWrapper extends RawModule {
+  val a_i  = IO(Input(Bool()))
+  val b_o  = IO(Output(Bool()))
+  val clk  = Input(Clock())
+  val rstn = Input(Bool())
+
+  val foo = withClockAndReset(clk, !rstn){ Module(new Foo) }
+
+  foo.io.a := a_i
+  b_o := foo.io.b
+}
+```
+
+In the example above, the `RawModule` is used to change the reset polarity
+of module `SlaveSpi`. Indeed, the reset is active high by default in Chisel
+modules, then using `withClockAndReset(clock, !rstn)` we can use an active low
+reset in entire design.
+
+The clock is just wired as it, but if needed, `RawModule` can be used in
+conjunction with `BlackBox` to connect a differential clock input for example.
