@@ -164,15 +164,23 @@ class Visitor(infoMode: InfoMode) extends AbstractParseTreeVisitor[FirrtlNode] w
   private def visitSuite(ctx: SuiteContext): Statement =
     Block(ctx.simple_stmt().asScala.flatMap(x => Option(x.stmt).map(visitStmt)))
 
+  private def visitRuw(ctx: Option[RuwContext]): ReadUnderWrite.Value = ctx match {
+    case None => ReadUnderWrite.Undefined
+    case Some(ctx) => ctx.getText match {
+      case "undefined" => ReadUnderWrite.Undefined
+      case "old" => ReadUnderWrite.Old
+      case "new" => ReadUnderWrite.New
+    }
+  }
 
   // Memories are fairly complicated to translate thus have a dedicated method
   private def visitMem(ctx: StmtContext): Statement = {
     val readers = mutable.ArrayBuffer.empty[String]
     val writers = mutable.ArrayBuffer.empty[String]
     val readwriters = mutable.ArrayBuffer.empty[String]
-    case class ParamValue(typ: Option[Type] = None, lit: Option[BigInt] = None, ruw: Option[String] = None, unique: Boolean = true)
+    case class ParamValue(typ: Option[Type] = None, lit: Option[BigInt] = None, ruw: ReadUnderWrite.Value = ReadUnderWrite.Undefined, unique: Boolean = true)
     val fieldMap = mutable.HashMap[String, ParamValue]()
-
+    val memName = ctx.id(0).getText
     def parseMemFields(memFields: Seq[MemFieldContext]): Unit =
       memFields.foreach { field =>
         val fieldName = field.children.asScala(0).getText
@@ -184,7 +192,7 @@ class Visitor(infoMode: InfoMode) extends AbstractParseTreeVisitor[FirrtlNode] w
           case _ =>
             val paramDef = fieldName match {
               case "data-type" => ParamValue(typ = Some(visitType(field.`type`())))
-              case "read-under-write" => ParamValue(ruw = Some(field.ruw().getText)) // TODO
+              case "read-under-write" => ParamValue(ruw = visitRuw(Option(field.ruw)))
               case _ => ParamValue(lit = Some(BigInt(field.intLit().getText)))
             }
             if (fieldMap.contains(fieldName))
@@ -210,10 +218,11 @@ class Visitor(infoMode: InfoMode) extends AbstractParseTreeVisitor[FirrtlNode] w
     }
 
     def lit(param: String) = fieldMap(param).lit.get
-    val ruw = fieldMap.get("read-under-write").map(_.ruw).getOrElse(None)
+    val ruw = fieldMap.get("read-under-write").map(_.ruw).getOrElse(ir.ReadUnderWrite.Undefined)
 
     DefMemory(info,
-      name = ctx.id(0).getText, dataType = fieldMap("data-type").typ.get,
+      name = memName,
+      dataType = fieldMap("data-type").typ.get,
       depth = lit("depth"),
       writeLatency = lit("write-latency").toInt,
       readLatency = lit("read-latency").toInt,
@@ -269,7 +278,7 @@ class Visitor(infoMode: InfoMode) extends AbstractParseTreeVisitor[FirrtlNode] w
           CDefMemory(info, ctx.id(0).getText, tpe, size, seq = false)
         case "smem" =>
           val (tpe, size) = visitCMemType(ctx.`type`())
-          CDefMemory(info, ctx.id(0).getText, tpe, size, seq = true)
+          CDefMemory(info, ctx.id(0).getText, tpe, size, seq = true, readUnderWrite = visitRuw(Option(ctx.ruw)))
         case "inst" => DefInstance(info, ctx.id(0).getText, ctx.id(1).getText)
         case "node" => DefNode(info, ctx.id(0).getText, visitExp(ctx_exp(0)))
 
