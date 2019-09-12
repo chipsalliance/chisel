@@ -277,7 +277,7 @@ object Queue
       pipe: Boolean = false,
       flow: Boolean = false): DecoupledIO[T] = {
     if (entries == 0) {
-      val deq = Wire(new DecoupledIO(enq.bits))
+      val deq = Wire(new DecoupledIO(chiselTypeOf(enq.bits)))
       deq.valid := enq.valid
       deq.bits := enq.bits
       enq.ready := deq.ready
