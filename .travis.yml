@@ -36,36 +36,43 @@ jobs:
     # Because these write to the same install directory, they must run in the
     # same script
     - stage: prepare
+      name: "Install: [Verilator, Yosys]"
       script:
         - bash .install_verilator.sh
         - verilator --version
         - bash .install_yosys.sh
         - yosys -V
     - stage: test
+      name: "Tests: FIRRTL (2.12.4)"
       script:
         - verilator --version
         - sbt ++2.12.4 $SBT_ARGS test
     - stage: test
+      name: "Tests: FIRRTL (2.11.12)"
       script:
         - verilator --version
         - sbt ++2.11.12 $SBT_ARGS test
     # For Chisel tests we use the 2.11.12 version
     - stage: test
+      name: "Tests: chisel3 (2.11.12)"
       script:
         - verilator --version
         - sbt ++2.11.12 $SBT_ARGS clean assembly publishLocal
         - bash .run_chisel_tests.sh
     - stage: test
+      name: "Formal equivalence: RocketCore"
       script:
         - yosys -V
         - "travis_wait 30 sleep 1800 &"
         - ./.run_formal_checks.sh RocketCore
     - stage: test
+      name: "Formal equivalence: FPU"
       script:
         - yosys -V
         - "travis_wait 30 sleep 1800 &"
         - ./.run_formal_checks.sh FPU
     - stage: test
+      name: "Formal equivalence: ICache"
       script:
         - yosys -V
         - "travis_wait 30 sleep 1800 &"
