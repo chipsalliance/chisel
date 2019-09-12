@@ -191,7 +191,8 @@ class Queue[T <: Data](gen: T,
                        flow: Boolean = false)
                       (implicit compileOptions: chisel3.CompileOptions)
     extends Module() {
-
+  require(entries > -1, "Queue must have non-negative number of entries")
+  require(entries != 0, "Use companion object Queue.apply for zero entries")
   val genType = if (compileOptions.declaredTypeMustBeUnbound) {
     requireIsChiselType(gen)
     gen
