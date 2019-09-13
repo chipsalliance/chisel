@@ -191,7 +191,8 @@ class Queue[T <: Data](gen: T,
                        flow: Boolean = false)
                       (implicit compileOptions: chisel3.CompileOptions)
     extends Module() {
-
+  require(entries > -1, "Queue must have non-negative number of entries")
+  require(entries != 0, "Use companion object Queue.apply for zero entries")
   val genType = if (compileOptions.declaredTypeMustBeUnbound) {
     requireIsChiselType(gen)
     gen
@@ -283,7 +284,6 @@ object Queue
       enq.ready := deq.ready
       deq
     } else {
-      require(entries > 0)
       val q = Module(new Queue(chiselTypeOf(enq.bits), entries, pipe, flow))
       q.io.enq.valid := enq.valid // not using <> so that override is allowed
       q.io.enq.bits := enq.bits
@@ -302,9 +302,9 @@ object Queue
       enq: ReadyValidIO[T],
       entries: Int = 2,
       pipe: Boolean = false,
-      flow: Boolean = false): IrrevocableIO[T] = {
-    require(entries > 0) // Zero-entry queues don't guarantee Irrevocability
+      flow: Boolean = false): IrrevocableIO[T] = {    
     val deq = apply(enq, entries, pipe, flow)
+    require(entries > 0, "Zero-entry queues don't guarantee Irrevocability")
     val irr = Wire(new IrrevocableIO(deq.bits))
     irr.bits := deq.bits
     irr.valid := deq.valid
