@@ -43,18 +43,17 @@ jobs:
         - bash .install_yosys.sh
         - yosys -V
     - stage: test
-      name: "Tests: FIRRTL (2.12.4)"
+      name: "Tests: FIRRTL (2.12)"
       script:
         - verilator --version
         - sbt $SBT_ARGS test
     - stage: test
-      name: "Tests: FIRRTL (2.11.12)"
+      name: "Tests: FIRRTL (2.11)"
       script:
         - verilator --version
         - sbt ++2.11.12 $SBT_ARGS test
-    # For Chisel tests we use the 2.11.12 version
     - stage: test
-      name: "Tests: chisel3 (2.11.12)"
+      name: "Tests: chisel3 (2.12)"
       script:
         - verilator --version
         - sbt $SBT_ARGS clean assembly publishLocal
