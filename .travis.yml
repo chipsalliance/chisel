@@ -46,7 +46,7 @@ jobs:
       name: "Tests: FIRRTL (2.12.4)"
       script:
         - verilator --version
-        - sbt ++2.12.4 $SBT_ARGS test
+        - sbt $SBT_ARGS test
     - stage: test
       name: "Tests: FIRRTL (2.11.12)"
       script:
@@ -57,7 +57,7 @@ jobs:
       name: "Tests: chisel3 (2.11.12)"
       script:
         - verilator --version
-        - sbt ++2.11.12 $SBT_ARGS clean assembly publishLocal
+        - sbt $SBT_ARGS clean assembly publishLocal
         - bash .run_chisel_tests.sh
     - stage: test
       name: "Formal equivalence: RocketCore"
