@@ -79,7 +79,7 @@ object MemPortUtils {
       (mem.readwriters map (Field(_, Flip, rwType))))
   }
 
-  def memPortField(s: DefMemory, p: String, f: String): Expression = {
+  def memPortField(s: DefMemory, p: String, f: String): WSubField = {
     val mem = WRef(s.name, memType(s), MemKind, UnknownFlow)
     val t1 = field_type(mem.tpe, p)
     val t2 = field_type(t1, f)
