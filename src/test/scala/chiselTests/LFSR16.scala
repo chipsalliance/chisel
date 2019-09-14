@@ -5,7 +5,6 @@ package chiselTests
 import chisel3._
 import chisel3.testers.BasicTester
 import chisel3.util._
-import chisel3.util.random.{PRNG, LFSR}
 
 /**
   * This test creates two 4 sided dice.

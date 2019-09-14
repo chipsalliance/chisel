@@ -212,14 +212,14 @@ class MixedVecSpec extends ChiselPropSpec {
       elaborate(new Module {
         val io = IO(new Bundle {})
         val hw = Wire(MixedVec(Seq(UInt(8.W), Bool())))
-        val illegal = MixedVec(hw)
+        MixedVec(hw)
       })
     }
     a [ExpectedChiselTypeException] should be thrownBy {
       elaborate(new Module {
         val io = IO(new Bundle {})
         val hw = Reg(MixedVec(Seq(UInt(8.W), Bool())))
-        val illegal = MixedVec(hw)
+        MixedVec(hw)
       })
     }
     a [ExpectedChiselTypeException] should be thrownBy {
@@ -227,7 +227,7 @@ class MixedVecSpec extends ChiselPropSpec {
         val io = IO(new Bundle {
           val v = Input(MixedVec(Seq(UInt(8.W), Bool())))
         })
-        val illegal = MixedVec(io.v)
+        MixedVec(io.v)
       })
     }
   }

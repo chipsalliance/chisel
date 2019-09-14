@@ -4,11 +4,10 @@ package chisel3.experimental
 
 import scala.language.existentials
 import chisel3.internal.{Builder, InstanceId, LegacyModule}
-import chisel3.{CompileOptions, Data}
+import chisel3.CompileOptions
 import firrtl.Transform
 import firrtl.annotations._
-import firrtl.options.Unserializable
-import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
+import firrtl.transforms.NoDedupAnnotation
 
 /** Interface for Annotations in Chisel
   *

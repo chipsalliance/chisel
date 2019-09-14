@@ -3,7 +3,7 @@
 package chisel3
 
 import scala.collection.immutable.ListMap
-import scala.collection.mutable.{HashSet, LinkedHashMap}
+import scala.collection.mutable.LinkedHashMap
 import scala.language.experimental.macros
 
 import chisel3.experimental.BaseModule

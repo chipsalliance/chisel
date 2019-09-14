@@ -5,7 +5,6 @@
 
 package chisel3.internal
 
-import scala.language.experimental.macros
 import scala.reflect.macros.blackbox.Context
 
 // Workaround for https://github.com/sbt/sbt/issues/3966

@@ -5,10 +5,9 @@ package chisel3.testers
 import chisel3._
 import java.io._
 
-import chisel3.aop.Aspect
 import chisel3.experimental.RunFirrtlTransform
 import chisel3.stage.phases.AspectPhase
-import chisel3.stage.{ChiselCircuitAnnotation, ChiselStage, DesignAnnotation}
+import chisel3.stage.{ChiselCircuitAnnotation, DesignAnnotation}
 import firrtl.{Driver => _, _}
 import firrtl.transforms.BlackBoxSourceHelper.writeResourceToDirectory
 
