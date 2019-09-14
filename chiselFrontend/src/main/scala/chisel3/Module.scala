@@ -43,6 +43,7 @@ object Module extends SourceInfoDoc {
     val (saveClock, saveReset)  = (Builder.currentClock, Builder.currentReset)
     Builder.currentClock = None
     Builder.currentReset = None
+    Builder.clearBundleStack()
 
     // Execute the module, this has the following side effects:
     //   - set currentModule

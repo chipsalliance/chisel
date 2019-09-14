@@ -735,9 +735,9 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
   // _outerInst should always take precedence, since it should be propagated from the original
   // object which has the most accurate context.
   private val _containingModule: Option[BaseModule] = Builder.currentModule
-  private val _containingBundles: Seq[Bundle] = Builder.updateBundleStack(this)
+  private val _containingBundles: List[Bundle] = Builder.updateBundleStack(this)
 
-  override def cloneType : this.type = { // scalastyle:ignore cyclomatic.complexity method.length
+  def cloneType: this.type = { // scalastyle:ignore cyclomatic.complexity method.length
     // This attempts to infer constructor and arguments to clone this Bundle subtype without
     // requiring the user explicitly overriding cloneType.
     import scala.language.existentials
@@ -797,21 +797,16 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
           } catch {
             case (_: NoSuchFieldException | _: IllegalAccessException) =>
               // Fallback using guesses based on common patterns
-              val allOuterCandidates = Seq(
-                  _containingModule.toSeq,
+              val allOuterCandidates =
+                  _containingModule.toList ++
                   _containingBundles
-                ).flatten.distinct
-              allOuterCandidates.filter(canAssignOuterClass(_)) match {
-                case outer :: Nil =>
+              allOuterCandidates.find(canAssignOuterClass(_)) match {
+                case Some(outer) =>
                   _outerInst = Some(outer)  // record the guess for future use
                   outer
-                case Nil =>  // TODO: replace with fatal autoClonetypeError once compatibility period is dropped
+                case None =>  // TODO: replace with fatal autoClonetypeError once compatibility period is dropped
                   outerClassError = Some(s"Unable to determine instance of outer class $outerClass," +
                       s" no candidates assignable to outer class types; examined $allOuterCandidates")
-                  null
-                case candidates => // TODO: replace with fatal autoClonetypeError once compatibility period is dropped
-                  outerClassError = Some(s"Unable to determine instance of outer class $outerClass," +
-                      s" multiple possible candidates $candidates assignable to outer class type")
                   null
               }
           }
