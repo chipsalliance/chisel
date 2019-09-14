@@ -24,7 +24,7 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers {
           def getIO: InnerIOType = new InnerIOType
         }
         val io = IO(new Bundle {})
-        val myWire = Wire((new Middle(w)).getIO)
+        Wire((new Middle(w)).getIO)
       }
       new Outer(2)
     }
@@ -34,7 +34,7 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers {
     elaborate {
       class TestTop(val w: Int) extends Module {
         val io = IO(new Bundle {})
-        val myWire = Wire(new Bundle{ val a = UInt(w.W) })
+        Wire(new Bundle{ val a = UInt(w.W) })
       }
       new TestTop(2)
     }
@@ -66,8 +66,8 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers {
     elaborate {
       class TestModule(w: Int) extends Module {
         val io = IO(new BundleWithAnonymousInner(w) )
-        val w0 = WireDefault(io)
-        val w1 = WireDefault(io.inner)
+        WireDefault(io)
+        WireDefault(io.inner)
       }
       new TestModule(8)
     }
@@ -82,8 +82,8 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers {
         val io = IO(new Bundle {
           val inner = Input(bun)
         })
-        val w0 = WireDefault(io)
-        val w1 = WireDefault(io.inner)
+        WireDefault(io)
+        WireDefault(io.inner)
       }
       new TestModule(8)
     }
@@ -108,11 +108,11 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers {
       class Outer(val w: Int) extends Module {
         class Middle(val w: Int) {
           def getIO: Bundle = new Bundle {
-            val in = Input(UInt(w.W))
+            Input(UInt(w.W))
           }
         }
         val io = IO(new Bundle {})
-        val myWire = Wire((new Middle(w)).getIO)
+        Wire((new Middle(w)).getIO)
       }
       new Outer(2)
     }}.getMessage should include("Unable to determine instance")

@@ -2,7 +2,7 @@
 
 package chisel3.aop.injecting
 
-import chisel3.{Module, ModuleAspect, experimental, withClockAndReset, RawModule, MultiIOModule}
+import chisel3.{Module, ModuleAspect, withClockAndReset, RawModule, MultiIOModule}
 import chisel3.aop._
 import chisel3.internal.Builder
 import chisel3.internal.firrtl.DefModule

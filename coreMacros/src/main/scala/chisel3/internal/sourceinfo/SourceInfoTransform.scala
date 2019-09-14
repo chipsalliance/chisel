@@ -5,7 +5,6 @@
 
 package chisel3.internal.sourceinfo
 
-import scala.language.experimental.macros
 import scala.reflect.macros.blackbox.Context
 import scala.reflect.macros.whitebox
 

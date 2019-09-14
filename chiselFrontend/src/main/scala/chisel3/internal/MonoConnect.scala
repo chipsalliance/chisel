@@ -6,7 +6,6 @@ import chisel3._
 import chisel3.experimental.{Analog, BaseModule, EnumType, FixedPoint, UnsafeEnum}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.{Connect, DefInvalid}
-import scala.language.experimental.macros
 import chisel3.internal.sourceinfo.SourceInfo
 
 /**

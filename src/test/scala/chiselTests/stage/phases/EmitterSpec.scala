@@ -6,9 +6,9 @@ import org.scalatest.{FlatSpec, Matchers}
 
 import chisel3.RawModule
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation, ChiselOutputFileAnnotation}
-import chisel3.stage.phases.{Convert, Elaborate, Emitter}
+import chisel3.stage.phases.{Elaborate, Emitter}
 
-import firrtl.{AnnotationSeq, EmittedFirrtlCircuitAnnotation}
+import firrtl.EmittedFirrtlCircuitAnnotation
 import firrtl.annotations.DeletedAnnotation
 import firrtl.options.{Phase, TargetDirAnnotation}
 

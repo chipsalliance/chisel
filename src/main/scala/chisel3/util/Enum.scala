@@ -6,7 +6,6 @@
 package chisel3.util
 
 import chisel3._
-import chisel3.internal.chiselRuntimeDeprecated
 
 /** Defines a set of unique UInt constants
   *

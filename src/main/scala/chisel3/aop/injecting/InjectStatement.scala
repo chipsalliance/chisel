@@ -2,8 +2,7 @@
 
 package chisel3.aop.injecting
 
-import chisel3.stage.phases.AspectPhase
-import firrtl.annotations.{Annotation, ModuleTarget, NoTargetAnnotation, SingleTargetAnnotation}
+import firrtl.annotations.{Annotation, ModuleTarget, SingleTargetAnnotation}
 
 /** Contains all information needed to inject statements into a module
   *

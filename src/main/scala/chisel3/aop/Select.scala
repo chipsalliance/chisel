@@ -222,7 +222,7 @@ object Select {
     val predicatedConnects = mutable.ArrayBuffer[PredicatedConnect]()
     val isPort = module._component.get.asInstanceOf[DefModule].ports.flatMap{ p => getIntermediateAndLeafs(p.id) }.contains(signal)
     var prePredicates: Seq[Predicate] = Nil
-    var seenDef = isPort
+    isPort
     searchWhens(module, (cmd: Command, preds) => {
       cmd match {
         case cmd: Definition if cmd.id.isInstanceOf[Data] =>

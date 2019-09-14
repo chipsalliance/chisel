@@ -40,7 +40,7 @@ lazy val commonSettings = Seq (
   autoAPIMappings := true,
   scalaVersion := "2.12.9",
   crossScalaVersions := Seq("2.12.9", "2.11.12"),
-  scalacOptions := Seq("-deprecation", "-feature") ++ scalacOptionsVersion(scalaVersion.value),
+  scalacOptions := Seq("-deprecation", "-feature", "-Ywarn-unused") ++ scalacOptionsVersion(scalaVersion.value),
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
   (scalastyleConfig in Test) := (baseDirectory in root).value / "scalastyle-test-config.xml",
@@ -139,7 +139,7 @@ lazy val chiselFrontend = (project in file("chiselFrontend")).
       "-language:reflectiveCalls",
       "-unchecked",
       "-Xcheckinit",
-      "-Xlint:infer-any"
+      "-Xlint:infer-any",
 //      "-Xlint:missing-interpolator"
     )
   ).
@@ -199,3 +199,7 @@ lazy val chisel = (project in file(".")).
     // published artifact) also see the stuff in coreMacros and chiselFrontend.
     exportJars := true
   )
+
+addCommandAlias("com", "all compile")
+addCommandAlias("lint", "; compile:scalafix --check ; test:scalafix --check")
+addCommandAlias("fix", "all compile:scalafix test:scalafix")
