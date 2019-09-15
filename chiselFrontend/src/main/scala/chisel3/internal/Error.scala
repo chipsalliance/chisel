@@ -59,8 +59,8 @@ private[chisel3] class ErrorLog {
     errors += new Warning(m, getUserLineNumber)
 
   /** Emit an informational message */
-  def info(m: String): Unit =
-    println(new Info("[%2.3f] %s".format(elapsedTime/1e3, m), None))  // scalastyle:ignore regex
+  def info(m: String): Unit = Unit
+    //println(new Info("[%2.3f] %s".format(elapsedTime/1e3, m), None))  // scalastyle:ignore regex
 
   /** Log a deprecation warning message */
   def deprecated(m: => String, location: Option[String]): Unit = {

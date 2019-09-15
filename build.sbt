@@ -199,3 +199,9 @@ lazy val chisel = (project in file(".")).
     // published artifact) also see the stuff in coreMacros and chiselFrontend.
     exportJars := true
   )
+
+lazy val benchmark = (project in file("benchmark")).
+  settings(commonSettings: _*).
+  settings(scalacOptions += "-language:reflectiveCalls").
+  enablePlugins(JmhPlugin).
+  dependsOn(chisel)
