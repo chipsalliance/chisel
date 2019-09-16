@@ -284,11 +284,11 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
   def reduceTree(redOp: (T, T) => T, layerOp: (T) => T): T = macro VecTransform.reduceTree
 
   def do_reduceTree(redOp: (T, T) => T, layerOp: (T) => T = (x: T) => x)
-                   (implicit sourceInfo: SourceInfo) : T = {
+                   (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) : T = {
     require(!isEmpty, "Cannot apply reduction on a vec of size 0")
     var curLayer = this
     while (curLayer.length > 1) {
-      curLayer = Vec(curLayer.grouped(2).map( x =>
+      curLayer = VecInit(curLayer.grouped(2).map( x =>
         if (x.length == 1) layerOp(x(0)) else redOp(x(0), x(1))
       ).toSeq)
     }

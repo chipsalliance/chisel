@@ -14,7 +14,7 @@ class AdderTree[T <: Bits with Num[T]](genType: T, vecSize: Int) extends Module 
 class AdderTreeTester(bitWidth: Int, numsToAdd: List[Int]) extends BasicTester {
   val genType = UInt(bitWidth.W)
   val dut = Module(new AdderTree(genType, numsToAdd.size))
-  dut.io.numIn := Vec(numsToAdd.map(x => x.asUInt(bitWidth.W)))
+  dut.io.numIn := VecInit(numsToAdd.map(x => x.asUInt(bitWidth.W)))
   val sumCorrect = dut.io.numOut === (numsToAdd.reduce(_+_) % (1 << bitWidth)).asUInt(bitWidth.W)
   assert(sumCorrect)
   stop()
