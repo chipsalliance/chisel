@@ -20,13 +20,24 @@ case object MemKind extends Kind
 case object ExpKind extends Kind
 case object UnknownKind extends Kind
 
-trait Gender
-case object MALE extends Gender
-case object FEMALE extends Gender
-case object BIGENDER extends Gender
-case object UNKNOWNGENDER extends Gender
+trait Flow
+case object SourceFlow extends Flow
+case object SinkFlow extends Flow
+case object DuplexFlow extends Flow
+case object UnknownFlow extends Flow
 
-case class WRef(name: String, tpe: Type, kind: Kind, gender: Gender) extends Expression {
+private[firrtl] trait GenderFromFlow { this: Expression =>
+  val flow: Flow
+  @deprecated("Migrate from 'Gender' to 'Flow'. This method will be removed in 1.3.", "1.2")
+  def gender: Gender = flow match {
+    case SourceFlow  => MALE
+    case SinkFlow    => FEMALE
+    case DuplexFlow  => BIGENDER
+    case UnknownFlow => UNKNOWNGENDER
+  }
+}
+
+case class WRef(name: String, tpe: Type, kind: Kind, flow: Flow) extends Expression with GenderFromFlow {
   def serialize: String = name
   def mapExpr(f: Expression => Expression): Expression = this
   def mapType(f: Type => Type): Expression = this.copy(tpe = f(tpe))
@@ -37,21 +48,21 @@ case class WRef(name: String, tpe: Type, kind: Kind, gender: Gender) extends Exp
 }
 object WRef {
   /** Creates a WRef from a Wire */
-  def apply(wire: DefWire): WRef = new WRef(wire.name, wire.tpe, WireKind, UNKNOWNGENDER)
+  def apply(wire: DefWire): WRef = new WRef(wire.name, wire.tpe, WireKind, UnknownFlow)
   /** Creates a WRef from a Register */
-  def apply(reg: DefRegister): WRef = new WRef(reg.name, reg.tpe, RegKind, UNKNOWNGENDER)
+  def apply(reg: DefRegister): WRef = new WRef(reg.name, reg.tpe, RegKind, UnknownFlow)
   /** Creates a WRef from a Node */
-  def apply(node: DefNode): WRef = new WRef(node.name, node.value.tpe, NodeKind, MALE)
+  def apply(node: DefNode): WRef = new WRef(node.name, node.value.tpe, NodeKind, SourceFlow)
   /** Creates a WRef from a Port */
-  def apply(port: Port): WRef = new WRef(port.name, port.tpe, PortKind, UNKNOWNGENDER)
+  def apply(port: Port): WRef = new WRef(port.name, port.tpe, PortKind, UnknownFlow)
   /** Creates a WRef from a WDefInstance */
-  def apply(wi: WDefInstance): WRef = new WRef(wi.name, wi.tpe, InstanceKind, UNKNOWNGENDER)
+  def apply(wi: WDefInstance): WRef = new WRef(wi.name, wi.tpe, InstanceKind, UnknownFlow)
   /** Creates a WRef from a DefMemory */
-  def apply(mem: DefMemory): WRef = new WRef(mem.name, passes.MemPortUtils.memType(mem), MemKind, UNKNOWNGENDER)
+  def apply(mem: DefMemory): WRef = new WRef(mem.name, passes.MemPortUtils.memType(mem), MemKind, UnknownFlow)
   /** Creates a WRef from an arbitrary string name */
-  def apply(n: String, t: Type = UnknownType, k: Kind = ExpKind): WRef = new WRef(n, t, k, UNKNOWNGENDER)
+  def apply(n: String, t: Type = UnknownType, k: Kind = ExpKind): WRef = new WRef(n, t, k, UnknownFlow)
 }
-case class WSubField(expr: Expression, name: String, tpe: Type, gender: Gender) extends Expression {
+case class WSubField(expr: Expression, name: String, tpe: Type, flow: Flow) extends Expression with GenderFromFlow {
   def serialize: String = s"${expr.serialize}.$name"
   def mapExpr(f: Expression => Expression): Expression = this.copy(expr = f(expr))
   def mapType(f: Type => Type): Expression = this.copy(tpe = f(tpe))
@@ -61,10 +72,10 @@ case class WSubField(expr: Expression, name: String, tpe: Type, gender: Gender) 
   def foreachWidth(f: Width => Unit): Unit = Unit
 }
 object WSubField {
-  def apply(expr: Expression, n: String): WSubField = new WSubField(expr, n, field_type(expr.tpe, n), UNKNOWNGENDER)
-  def apply(expr: Expression, name: String, tpe: Type): WSubField = new WSubField(expr, name, tpe, UNKNOWNGENDER)
+  def apply(expr: Expression, n: String): WSubField = new WSubField(expr, n, field_type(expr.tpe, n), UnknownFlow)
+  def apply(expr: Expression, name: String, tpe: Type): WSubField = new WSubField(expr, name, tpe, UnknownFlow)
 }
-case class WSubIndex(expr: Expression, value: Int, tpe: Type, gender: Gender) extends Expression {
+case class WSubIndex(expr: Expression, value: Int, tpe: Type, flow: Flow) extends Expression with GenderFromFlow {
   def serialize: String = s"${expr.serialize}[$value]"
   def mapExpr(f: Expression => Expression): Expression = this.copy(expr = f(expr))
   def mapType(f: Type => Type): Expression = this.copy(tpe = f(tpe))
@@ -73,7 +84,7 @@ case class WSubIndex(expr: Expression, value: Int, tpe: Type, gender: Gender) ex
   def foreachType(f: Type => Unit): Unit = f(tpe)
   def foreachWidth(f: Width => Unit): Unit = Unit
 }
-case class WSubAccess(expr: Expression, index: Expression, tpe: Type, gender: Gender) extends Expression {
+case class WSubAccess(expr: Expression, index: Expression, tpe: Type, flow: Flow) extends Expression with GenderFromFlow {
   def serialize: String = s"${expr.serialize}[${index.serialize}]"
   def mapExpr(f: Expression => Expression): Expression = this.copy(expr = f(expr), index = f(index))
   def mapType(f: Type => Type): Expression = this.copy(tpe = f(tpe))
@@ -264,7 +275,7 @@ class WrappedType(val t: Type) {
 object WrappedWidth {
   def eqw(w1: Width, w2: Width): Boolean = new WrappedWidth(w1) == new WrappedWidth(w2)
 }
-   
+
 class WrappedWidth (val w: Width) {
   def ww(w: Width): WrappedWidth = new WrappedWidth(w)
   override def toString = w match {
@@ -285,10 +296,10 @@ class WrappedWidth (val w: Width) {
       case (w1: MinWidth, w2: MinWidth) => w1.args.size == w2.args.size &&
         (w1.args forall (a1 => w2.args exists (a2 => eqw(a1, a2))))
       case (w1: IntWidth, w2: IntWidth) => w1.width == w2.width
-      case (w1: PlusWidth, w2: PlusWidth) => 
+      case (w1: PlusWidth, w2: PlusWidth) =>
         (ww(w1.arg1) == ww(w2.arg1) && ww(w1.arg2) == ww(w2.arg2)) ||
         (ww(w1.arg1) == ww(w2.arg2) && ww(w1.arg2) == ww(w2.arg1))
-      case (w1: MinusWidth,w2: MinusWidth) => 
+      case (w1: MinusWidth,w2: MinusWidth) =>
         (ww(w1.arg1) == ww(w2.arg1) && ww(w1.arg2) == ww(w2.arg2)) ||
         (ww(w1.arg1) == ww(w2.arg2) && ww(w1.arg2) == ww(w2.arg1))
       case (w1: ExpWidth, w2: ExpWidth) => ww(w1.arg1) == ww(w2.arg1)
@@ -365,4 +376,3 @@ case class CDefMPort(info: Info,
   def foreachString(f: String => Unit): Unit = f(name)
   def foreachInfo(f: Info => Unit): Unit = f(info)
 }
-

@@ -18,14 +18,14 @@ object CheckInitialization extends Pass {
   private case class VoidExpr(stmt: Statement, voidDeps: Seq[Expression])
 
   class RefNotInitializedException(info: Info, mname: String, name: String, trace: Seq[Statement]) extends PassException(
-      s"$info : [module $mname]  Reference $name is not fully initialized.\n" + 
+      s"$info : [module $mname]  Reference $name is not fully initialized.\n" +
       trace.map(s => s"  ${get_info(s)} : ${s.serialize}").mkString("\n")
     )
 
   private def getTrace(expr: WrappedExpression, voidExprs: Map[WrappedExpression, VoidExpr]): Seq[Statement] = {
     @tailrec
     def rec(e: WrappedExpression, map: Map[WrappedExpression, VoidExpr], trace: Seq[Statement]): Seq[Statement] = {
-      val voidExpr = map(e) 
+      val voidExpr = map(e)
       val newTrace = voidExpr.stmt +: trace
       if (voidExpr.voidDeps.nonEmpty) rec(voidExpr.voidDeps.head, map, newTrace) else newTrace
     }
@@ -62,7 +62,7 @@ object CheckInitialization extends Pass {
           case node: DefNode =>
             val (hasVoid, voidDeps) = hasVoidExpr(node.value)
             if (hasVoid) {
-              val nodeRef = WRef(node.name, node.value.tpe, NodeKind, MALE)
+              val nodeRef = WRef(node.name, node.value.tpe, NodeKind, SourceFlow)
               voidExprs(nodeRef) = VoidExpr(node, voidDeps)
             }
           case sx => sx.foreach(checkInitS)

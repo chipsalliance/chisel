@@ -221,12 +221,12 @@ trait CheckHighFormLike {
 
     // Search for ResetType Ports of direction
     def findBadResetTypePorts(m: DefModule, dir: Direction): Seq[(Port, Expression)] = {
-      val bad = to_gender(dir)
+      val bad = to_flow(dir)
       for {
         port <- m.ports
-        ref = WRef(port).copy(gender = to_gender(port.direction))
+        ref = WRef(port).copy(flow = to_flow(port.direction))
         expr <- create_exps(ref)
-        if ((expr.tpe == ResetType) && (gender(expr) == bad))
+        if ((expr.tpe == ResetType) && (flow(expr) == bad))
       } yield (port, expr)
     }
 
@@ -544,31 +544,31 @@ object CheckTypes extends Pass {
   }
 }
 
-object CheckGenders extends Pass {
-  type GenderMap = collection.mutable.HashMap[String, Gender]
+object CheckFlows extends Pass {
+  type FlowMap = collection.mutable.HashMap[String, Flow]
 
-  implicit def toStr(g: Gender): String = g match {
-    case MALE => "source"
-    case FEMALE => "sink"
-    case UNKNOWNGENDER => "unknown"
-    case BIGENDER => "sourceOrSink"
+  implicit def toStr(g: Flow): String = g match {
+    case SourceFlow => "source"
+    case SinkFlow => "sink"
+    case UnknownFlow => "unknown"
+    case DuplexFlow => "duplex"
   }
 
-  class WrongGender(info:Info, mname: String, expr: String, wrong: Gender, right: Gender) extends PassException(
+  class WrongFlow(info:Info, mname: String, expr: String, wrong: Flow, right: Flow) extends PassException(
     s"$info: [module $mname]  Expression $expr is used as a $wrong but can only be used as a $right.")
 
   def run (c:Circuit): Circuit = {
     val errors = new Errors()
 
-    def get_gender(e: Expression, genders: GenderMap): Gender = e match {
-      case (e: WRef) => genders(e.name)
-      case (e: WSubIndex) => get_gender(e.expr, genders)
-      case (e: WSubAccess) => get_gender(e.expr, genders)
+    def get_flow(e: Expression, flows: FlowMap): Flow = e match {
+      case (e: WRef) => flows(e.name)
+      case (e: WSubIndex) => get_flow(e.expr, flows)
+      case (e: WSubAccess) => get_flow(e.expr, flows)
       case (e: WSubField) => e.expr.tpe match {case t: BundleType =>
         val f = (t.fields find (_.name == e.name)).get
-        times(get_gender(e.expr, genders), f.flip)
+        times(get_flow(e.expr, flows), f.flip)
       }
-      case _ => MALE
+      case _ => SourceFlow
     }
 
     def flip_q(t: Type): Boolean = {
@@ -582,66 +582,83 @@ object CheckGenders extends Pass {
       flip_rec(t, Default)
     }
 
-    def check_gender(info:Info, mname: String, genders: GenderMap, desired: Gender)(e:Expression): Unit = {
-      val gender = get_gender(e,genders)
-      (gender, desired) match {
-        case (MALE, FEMALE) =>
-          errors.append(new WrongGender(info, mname, e.serialize, desired, gender))
-        case (FEMALE, MALE) => kind(e) match {
+    def check_flow(info:Info, mname: String, flows: FlowMap, desired: Flow)(e:Expression): Unit = {
+      val flow = get_flow(e,flows)
+      (flow, desired) match {
+        case (SourceFlow, SinkFlow) =>
+          errors.append(new WrongFlow(info, mname, e.serialize, desired, flow))
+        case (SinkFlow, SourceFlow) => kind(e) match {
           case PortKind | InstanceKind if !flip_q(e.tpe) => // OK!
           case _ =>
-            errors.append(new WrongGender(info, mname, e.serialize, desired, gender))
+            errors.append(new WrongFlow(info, mname, e.serialize, desired, flow))
         }
         case _ =>
       }
    }
 
-    def check_genders_e (info:Info, mname: String, genders: GenderMap)(e:Expression): Unit = {
+    def check_flows_e (info:Info, mname: String, flows: FlowMap)(e:Expression): Unit = {
       e match {
-        case e: Mux => e foreach check_gender(info, mname, genders, MALE)
-        case e: DoPrim => e.args foreach check_gender(info, mname, genders, MALE)
+        case e: Mux => e foreach check_flow(info, mname, flows, SourceFlow)
+        case e: DoPrim => e.args foreach check_flow(info, mname, flows, SourceFlow)
         case _ =>
       }
-      e foreach check_genders_e(info, mname, genders)
+      e foreach check_flows_e(info, mname, flows)
     }
 
-    def check_genders_s(minfo: Info, mname: String, genders: GenderMap)(s: Statement): Unit = {
+    def check_flows_s(minfo: Info, mname: String, flows: FlowMap)(s: Statement): Unit = {
       val info = get_info(s) match { case NoInfo => minfo case x => x }
       s match {
-        case (s: DefWire) => genders(s.name) = BIGENDER
-        case (s: DefRegister) => genders(s.name) = BIGENDER
-        case (s: DefMemory) => genders(s.name) = MALE
-        case (s: WDefInstance) => genders(s.name) = MALE
+        case (s: DefWire) => flows(s.name) = DuplexFlow
+        case (s: DefRegister) => flows(s.name) = DuplexFlow
+        case (s: DefMemory) => flows(s.name) = SourceFlow
+        case (s: WDefInstance) => flows(s.name) = SourceFlow
         case (s: DefNode) =>
-          check_gender(info, mname, genders, MALE)(s.value)
-          genders(s.name) = MALE
+          check_flow(info, mname, flows, SourceFlow)(s.value)
+          flows(s.name) = SourceFlow
         case (s: Connect) =>
-          check_gender(info, mname, genders, FEMALE)(s.loc)
-          check_gender(info, mname, genders, MALE)(s.expr)
+          check_flow(info, mname, flows, SinkFlow)(s.loc)
+          check_flow(info, mname, flows, SourceFlow)(s.expr)
         case (s: Print) =>
-          s.args foreach check_gender(info, mname, genders, MALE)
-          check_gender(info, mname, genders, MALE)(s.en)
-          check_gender(info, mname, genders, MALE)(s.clk)
+          s.args foreach check_flow(info, mname, flows, SourceFlow)
+          check_flow(info, mname, flows, SourceFlow)(s.en)
+          check_flow(info, mname, flows, SourceFlow)(s.clk)
         case (s: PartialConnect) =>
-          check_gender(info, mname, genders, FEMALE)(s.loc)
-          check_gender(info, mname, genders, MALE)(s.expr)
+          check_flow(info, mname, flows, SinkFlow)(s.loc)
+          check_flow(info, mname, flows, SourceFlow)(s.expr)
         case (s: Conditionally) =>
-          check_gender(info, mname, genders, MALE)(s.pred)
+          check_flow(info, mname, flows, SourceFlow)(s.pred)
         case (s: Stop) =>
-          check_gender(info, mname, genders, MALE)(s.en)
-          check_gender(info, mname, genders, MALE)(s.clk)
+          check_flow(info, mname, flows, SourceFlow)(s.en)
+          check_flow(info, mname, flows, SourceFlow)(s.clk)
         case _ =>
       }
-      s foreach check_genders_e(info, mname, genders)
-      s foreach check_genders_s(minfo, mname, genders)
+      s foreach check_flows_e(info, mname, flows)
+      s foreach check_flows_s(minfo, mname, flows)
     }
 
     for (m <- c.modules) {
-      val genders = new GenderMap
-      genders ++= (m.ports map (p => p.name -> to_gender(p.direction)))
-      m foreach check_genders_s(m.info, m.name, genders)
+      val flows = new FlowMap
+      flows ++= (m.ports map (p => p.name -> to_flow(p.direction)))
+      m foreach check_flows_s(m.info, m.name, flows)
     }
     errors.trigger()
     c
   }
+}
+
+@deprecated("Use 'CheckFlows'. This object will be removed in 1.3", "1.2")
+object CheckGenders {
+
+  implicit def toStr(g: Gender): String = g match {
+    case MALE => "source"
+    case FEMALE => "sink"
+    case UNKNOWNGENDER => "unknown"
+    case BIGENDER => "sourceOrSink"
+  }
+
+  def run(c: Circuit): Circuit = CheckFlows.run(c)
+
+  @deprecated("Use 'CheckFlows.WrongFlow'. This class will be removed in 1.3", "1.2")
+  class WrongGender(info:Info, mname: String, expr: String, wrong: Flow, right: Flow) extends PassException(
+    s"$info: [module $mname]  Expression $expr is used as a $wrong but can only be used as a $right.")
 }

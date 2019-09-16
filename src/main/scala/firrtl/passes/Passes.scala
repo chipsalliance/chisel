@@ -48,10 +48,10 @@ class Errors {
 // These should be distributed into separate files
 object ToWorkingIR extends Pass {
   def toExp(e: Expression): Expression = e map toExp match {
-    case ex: Reference => WRef(ex.name, ex.tpe, UnknownKind, UNKNOWNGENDER)
-    case ex: SubField => WSubField(ex.expr, ex.name, ex.tpe, UNKNOWNGENDER)
-    case ex: SubIndex => WSubIndex(ex.expr, ex.value, ex.tpe, UNKNOWNGENDER)
-    case ex: SubAccess => WSubAccess(ex.expr, ex.index, ex.tpe, UNKNOWNGENDER)
+    case ex: Reference => WRef(ex.name, ex.tpe, UnknownKind, UnknownFlow)
+    case ex: SubField => WSubField(ex.expr, ex.name, ex.tpe, UnknownFlow)
+    case ex: SubIndex => WSubIndex(ex.expr, ex.value, ex.tpe, UnknownFlow)
+    case ex: SubAccess => WSubAccess(ex.expr, ex.index, ex.tpe, UnknownFlow)
     case ex => ex // This might look like a case to use case _ => e, DO NOT!
   }
 
@@ -69,26 +69,26 @@ object PullMuxes extends Pass {
      def pull_muxes_e(e: Expression): Expression = e map pull_muxes_e match {
        case ex: WSubField => ex.expr match {
          case exx: Mux => Mux(exx.cond,
-           WSubField(exx.tval, ex.name, ex.tpe, ex.gender),
-           WSubField(exx.fval, ex.name, ex.tpe, ex.gender), ex.tpe)
+           WSubField(exx.tval, ex.name, ex.tpe, ex.flow),
+           WSubField(exx.fval, ex.name, ex.tpe, ex.flow), ex.tpe)
          case exx: ValidIf => ValidIf(exx.cond,
-           WSubField(exx.value, ex.name, ex.tpe, ex.gender), ex.tpe)
+           WSubField(exx.value, ex.name, ex.tpe, ex.flow), ex.tpe)
          case _ => ex  // case exx => exx causes failed tests
        }
        case ex: WSubIndex => ex.expr match {
          case exx: Mux => Mux(exx.cond,
-           WSubIndex(exx.tval, ex.value, ex.tpe, ex.gender),
-           WSubIndex(exx.fval, ex.value, ex.tpe, ex.gender), ex.tpe)
+           WSubIndex(exx.tval, ex.value, ex.tpe, ex.flow),
+           WSubIndex(exx.fval, ex.value, ex.tpe, ex.flow), ex.tpe)
          case exx: ValidIf => ValidIf(exx.cond,
-           WSubIndex(exx.value, ex.value, ex.tpe, ex.gender), ex.tpe)
+           WSubIndex(exx.value, ex.value, ex.tpe, ex.flow), ex.tpe)
          case _ => ex  // case exx => exx causes failed tests
        }
        case ex: WSubAccess => ex.expr match {
          case exx: Mux => Mux(exx.cond,
-           WSubAccess(exx.tval, ex.index, ex.tpe, ex.gender),
-           WSubAccess(exx.fval, ex.index, ex.tpe, ex.gender), ex.tpe)
+           WSubAccess(exx.tval, ex.index, ex.tpe, ex.flow),
+           WSubAccess(exx.fval, ex.index, ex.tpe, ex.flow), ex.tpe)
          case exx: ValidIf => ValidIf(exx.cond,
-           WSubAccess(exx.value, ex.index, ex.tpe, ex.gender), ex.tpe)
+           WSubAccess(exx.value, ex.index, ex.tpe, ex.flow), ex.tpe)
          case _ => ex  // case exx => exx causes failed tests
        }
        case ex => ex
@@ -105,29 +105,29 @@ object PullMuxes extends Pass {
 object ExpandConnects extends Pass {
   def run(c: Circuit): Circuit = {
     def expand_connects(m: Module): Module = {
-      val genders = collection.mutable.LinkedHashMap[String,Gender]()
+      val flows = collection.mutable.LinkedHashMap[String,Flow]()
       def expand_s(s: Statement): Statement = {
-        def set_gender(e: Expression): Expression = e map set_gender match {
-          case ex: WRef => WRef(ex.name, ex.tpe, ex.kind, genders(ex.name))
+        def set_flow(e: Expression): Expression = e map set_flow match {
+          case ex: WRef => WRef(ex.name, ex.tpe, ex.kind, flows(ex.name))
           case ex: WSubField =>
             val f = get_field(ex.expr.tpe, ex.name)
-            val genderx = times(gender(ex.expr), f.flip)
-            WSubField(ex.expr, ex.name, ex.tpe, genderx)
-          case ex: WSubIndex => WSubIndex(ex.expr, ex.value, ex.tpe, gender(ex.expr))
-          case ex: WSubAccess => WSubAccess(ex.expr, ex.index, ex.tpe, gender(ex.expr))
+            val flowx = times(flow(ex.expr), f.flip)
+            WSubField(ex.expr, ex.name, ex.tpe, flowx)
+          case ex: WSubIndex => WSubIndex(ex.expr, ex.value, ex.tpe, flow(ex.expr))
+          case ex: WSubAccess => WSubAccess(ex.expr, ex.index, ex.tpe, flow(ex.expr))
           case ex => ex
         }
         s match {
-          case sx: DefWire => genders(sx.name) = BIGENDER; sx
-          case sx: DefRegister => genders(sx.name) = BIGENDER; sx
-          case sx: WDefInstance => genders(sx.name) = MALE; sx
-          case sx: DefMemory => genders(sx.name) = MALE; sx
-          case sx: DefNode => genders(sx.name) = MALE; sx
+          case sx: DefWire => flows(sx.name) = DuplexFlow; sx
+          case sx: DefRegister => flows(sx.name) = DuplexFlow; sx
+          case sx: WDefInstance => flows(sx.name) = SourceFlow; sx
+          case sx: DefMemory => flows(sx.name) = SourceFlow; sx
+          case sx: DefNode => flows(sx.name) = SourceFlow; sx
           case sx: IsInvalid =>
             val invalids = create_exps(sx.expr).flatMap { case expx =>
-               gender(set_gender(expx)) match {
-                  case BIGENDER => Some(IsInvalid(sx.info, expx))
-                  case FEMALE => Some(IsInvalid(sx.info, expx))
+               flow(set_flow(expx)) match {
+                  case DuplexFlow => Some(IsInvalid(sx.info, expx))
+                  case SinkFlow => Some(IsInvalid(sx.info, expx))
                   case _ => None
                }
             }
@@ -140,7 +140,7 @@ object ExpandConnects extends Pass {
             val locs = create_exps(sx.loc)
             val exps = create_exps(sx.expr)
             Block(locs.zip(exps).map { case (locx, expx) =>
-               to_flip(gender(locx)) match {
+               to_flip(flow(locx)) match {
                   case Default => Connect(sx.info, locx, expx)
                   case Flip => Connect(sx.info, expx, locx)
                }
@@ -153,7 +153,7 @@ object ExpandConnects extends Pass {
               locs(x).tpe match {
                 case AnalogType(_) => Attach(sx.info, Seq(locs(x), exps(y)))
                 case _ =>
-                  to_flip(gender(locs(x))) match {
+                  to_flip(flow(locs(x))) match {
                     case Default => Connect(sx.info, locs(x), exps(y))
                     case Flip => Connect(sx.info, exps(y), locs(x))
                   }
@@ -164,7 +164,7 @@ object ExpandConnects extends Pass {
         }
       }
 
-      m.ports.foreach { p => genders(p.name) = to_gender(p.direction) }
+      m.ports.foreach { p => flows(p.name) = to_flow(p.direction) }
       Module(m.info, m.name, m.ports, expand_s(m.body))
     }
 
@@ -302,13 +302,13 @@ object VerilogPrep extends Pass {
   def run(c: Circuit): Circuit = {
     def lowerE(e: Expression): Expression = e match {
       case (_: WRef | _: WSubField) if kind(e) == InstanceKind =>
-        WRef(LowerTypes.loweredName(e), e.tpe, kind(e), gender(e))
+        WRef(LowerTypes.loweredName(e), e.tpe, kind(e), flow(e))
       case _ => e map lowerE
     }
 
     def lowerS(attachMap: AttachSourceMap)(s: Statement): Statement = s match {
       case WDefInstance(info, name, module, tpe) =>
-        val portRefs = create_exps(WRef(name, tpe, ExpKind, MALE))
+        val portRefs = create_exps(WRef(name, tpe, ExpKind, SourceFlow))
         val (portCons, wires) = portRefs.map { p =>
           attachMap.get(p) match {
             // If it has a source in attachMap use that

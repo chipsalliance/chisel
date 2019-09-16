@@ -28,8 +28,8 @@ class FixedTypeInferenceSpec extends FirrtlFlatSpec {
       ResolveKinds,
       InferTypes,
       CheckTypes,
-      ResolveGenders,
-      CheckGenders,
+      ResolveFlows,
+      CheckFlows,
       new InferWidths,
       CheckWidths)
     val input =
@@ -58,8 +58,8 @@ class FixedTypeInferenceSpec extends FirrtlFlatSpec {
       ResolveKinds,
       InferTypes,
       CheckTypes,
-      ResolveGenders,
-      CheckGenders,
+      ResolveFlows,
+      CheckFlows,
       new InferWidths,
       CheckWidths)
     val input =
@@ -84,8 +84,8 @@ class FixedTypeInferenceSpec extends FirrtlFlatSpec {
       ResolveKinds,
       InferTypes,
       CheckTypes,
-      ResolveGenders,
-      CheckGenders,
+      ResolveFlows,
+      CheckFlows,
       new InferWidths,
       CheckWidths)
     val input =
@@ -110,8 +110,8 @@ class FixedTypeInferenceSpec extends FirrtlFlatSpec {
       ResolveKinds,
       InferTypes,
       CheckTypes,
-      ResolveGenders,
-      CheckGenders,
+      ResolveFlows,
+      CheckFlows,
       new InferWidths,
       CheckWidths)
     val input =
@@ -136,8 +136,8 @@ class FixedTypeInferenceSpec extends FirrtlFlatSpec {
       ResolveKinds,
       InferTypes,
       CheckTypes,
-      ResolveGenders,
-      CheckGenders,
+      ResolveFlows,
+      CheckFlows,
       new InferWidths,
       CheckWidths)
     val input =
@@ -162,8 +162,8 @@ class FixedTypeInferenceSpec extends FirrtlFlatSpec {
       ResolveKinds,
       InferTypes,
       CheckTypes,
-      ResolveGenders,
-      CheckGenders,
+      ResolveFlows,
+      CheckFlows,
       new InferWidths,
       CheckWidths)
     val input =
@@ -188,8 +188,8 @@ class FixedTypeInferenceSpec extends FirrtlFlatSpec {
       ResolveKinds,
       InferTypes,
       CheckTypes,
-      ResolveGenders,
-      CheckGenders,
+      ResolveFlows,
+      CheckFlows,
       new InferWidths,
       CheckWidths)
     val input =
@@ -228,8 +228,8 @@ class FixedTypeInferenceSpec extends FirrtlFlatSpec {
       ResolveKinds,
       InferTypes,
       CheckTypes,
-      ResolveGenders,
-      CheckGenders,
+      ResolveFlows,
+      CheckFlows,
       new InferWidths,
       CheckWidths)
     val input =
@@ -254,8 +254,8 @@ class FixedTypeInferenceSpec extends FirrtlFlatSpec {
       ResolveKinds,
       InferTypes,
       CheckTypes,
-      ResolveGenders,
-      CheckGenders,
+      ResolveFlows,
+      CheckFlows,
       new InferWidths,
       CheckWidths,
       ConvertFixedToSInt)
@@ -334,4 +334,3 @@ class FixedTypeInferenceSpec extends FirrtlFlatSpec {
     executeTest(input("cmem"), check(0, 1, 1).split("\n") map normalized, new LowFirrtlCompiler)
   }
 }
-

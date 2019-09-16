@@ -335,9 +335,9 @@ class ConstantPropagation extends Transform with ResolvedAnnotationPaths {
     val propagated = old match {
       case p: DoPrim => constPropPrim(p)
       case m: Mux => constPropMux(m)
-      case ref @ WRef(rname, _,_, MALE) if nodeMap.contains(rname) =>
+      case ref @ WRef(rname, _,_, SourceFlow) if nodeMap.contains(rname) =>
         constPropNodeRef(ref, nodeMap(rname))
-      case ref @ WSubField(WRef(inst, _, InstanceKind, _), pname, _, MALE) =>
+      case ref @ WSubField(WRef(inst, _, InstanceKind, _), pname, _, SourceFlow) =>
         val module = instMap(inst)
         // Check constSubOutputs to see if the submodule is driving a constant
         constSubOutputs.get(module).flatMap(_.get(pname)).getOrElse(ref)
@@ -407,7 +407,7 @@ class ConstantPropagation extends Transform with ResolvedAnnotationPaths {
         case ref @ WRef(rname, _,_,_) if swapMap.contains(rname) =>
           ref.copy(name = swapMap(rname))
         // Only const prop on the rhs
-        case ref @ WRef(rname, _,_, MALE) if nodeMap.contains(rname) =>
+        case ref @ WRef(rname, _,_, SourceFlow) if nodeMap.contains(rname) =>
           constPropNodeRef(ref, nodeMap(rname))
         case x => x
       }

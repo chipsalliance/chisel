@@ -182,18 +182,18 @@ class InferWidths extends Transform with ResolvedAnnotationPaths {
       rec(w)
       has
     }
- 
+
     //; Forward solve
     //; Returns a solved list where each constraint undergoes:
     //;  1) Continuous Solving (using triangular solving)
     //;  2) Remove Cycles
     //;  3) Move to solved if not self-recursive
     val u = make_unique(l)
-    
+
     //println("======== UNIQUE CONSTRAINTS ========")
     //for (x <- u) { println(x) }
     //println("====================================")
- 
+
     val f = new ConstraintMap
     val o = ArrayBuffer[String]()
     for ((n, e) <- u) {
@@ -219,10 +219,10 @@ class InferWidths extends Transform with ResolvedAnnotationPaths {
         o += n
       }
     }
- 
+
     //println("Forward Solved Constraints")
     //for (x <- f) println(x)
- 
+
     //; Backwards Solve
     val b = new ConstraintMap
     for (i <- (o.size - 1) to 0 by -1) {
@@ -281,7 +281,7 @@ class InferWidths extends Transform with ResolvedAnnotationPaths {
     }
 
     def get_constraints_declared_type (t: Type): Type = t match {
-      case FixedType(_, p) => 
+      case FixedType(_, p) =>
         v += WGeq(p,IntWidth(0))
         t
       case _ => t map get_constraints_declared_type
@@ -293,7 +293,7 @@ class InferWidths extends Transform with ResolvedAnnotationPaths {
           val locs = create_exps(s.loc)
           val exps = create_exps(s.expr)
           v ++= locs.zip(exps).flatMap { case (locx, expx) =>
-            to_flip(gender(locx)) match {
+            to_flip(flow(locx)) match {
               case Default => get_constraints_t(locx.tpe, expx.tpe)//WGeq(getWidth(locx), getWidth(expx))
               case Flip => get_constraints_t(expx.tpe, locx.tpe)//WGeq(getWidth(expx), getWidth(locx))
             }
@@ -305,7 +305,7 @@ class InferWidths extends Transform with ResolvedAnnotationPaths {
           v ++= (ls flatMap {case (x, y) =>
             val locx = locs(x)
             val expx = exps(y)
-            to_flip(gender(locx)) match {
+            to_flip(flow(locx)) match {
               case Default => get_constraints_t(locx.tpe, expx.tpe)//WGeq(getWidth(locx), getWidth(expx))
               case Flip => get_constraints_t(expx.tpe, locx.tpe)//WGeq(getWidth(expx), getWidth(locx))
             }
@@ -317,7 +317,7 @@ class InferWidths extends Transform with ResolvedAnnotationPaths {
                get_constraints_t(UIntType(IntWidth(1)), s.reset.tpe))
            }
           v ++= get_constraints_t(s.tpe, s.init.tpe)
-        case (s:Conditionally) => v ++= 
+        case (s:Conditionally) => v ++=
            get_constraints_t(s.pred.tpe, UIntType(IntWidth(1))) ++
            get_constraints_t(UIntType(IntWidth(1)), s.pred.tpe)
         case Attach(_, exprs) =>

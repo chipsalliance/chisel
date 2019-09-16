@@ -20,8 +20,8 @@ object ClockListUtils {
     }
     val sourceList = moduleMap(lin.name) match {
       case ExtModule(i, n, ports, dn, p) =>
-        val portExps = ports.flatMap{p => create_exps(WRef(p.name, p.tpe, PortKind, to_gender(p.direction)))}
-        portExps.filter(e => (e.tpe == ClockType) && (gender(e) == FEMALE)).map(_.serialize)
+        val portExps = ports.flatMap{p => create_exps(WRef(p.name, p.tpe, PortKind, to_flow(p.direction)))}
+        portExps.filter(e => (e.tpe == ClockType) && (flow(e) == SinkFlow)).map(_.serialize)
       case _ => Nil
     }
     val sx = sourceList ++ s

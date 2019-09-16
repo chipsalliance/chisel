@@ -178,41 +178,41 @@ object RemoveCHIRRTL extends Transform {
     var has_write_mport = false
     var has_readwrite_mport: Option[Expression] = None
     var has_read_mport: Option[Expression] = None
-    def remove_chirrtl_e(g: Gender)(e: Expression): Expression = e match {
+    def remove_chirrtl_e(g: Flow)(e: Expression): Expression = e match {
       case Reference(name, tpe) => refs get name match {
         case Some(p) => g match {
-          case FEMALE =>
+          case SinkFlow =>
             has_write_mport = true
             if (p.rdwrite) has_readwrite_mport = Some(SubField(p.exp, "wmode", BoolType))
             SubField(p.exp, p.female, tpe)
-          case MALE =>
+          case SourceFlow =>
             SubField(p.exp, p.male, tpe)
         }
         case None => g match {
-          case FEMALE => raddrs get name match {
+          case SinkFlow => raddrs get name match {
             case Some(en) => has_read_mport = Some(en) ; e
             case None => e
           }
-          case MALE => e
+          case SourceFlow => e
         }
       }
       case SubAccess(expr, index, tpe)  => SubAccess(
-        remove_chirrtl_e(g)(expr), remove_chirrtl_e(MALE)(index), tpe)
+        remove_chirrtl_e(g)(expr), remove_chirrtl_e(SourceFlow)(index), tpe)
       case ex => ex map remove_chirrtl_e(g)
    }
    s match {
       case DefNode(info, name, value) =>
-        val valuex = remove_chirrtl_e(MALE)(value)
+        val valuex = remove_chirrtl_e(SourceFlow)(value)
         val sx = DefNode(info, name, valuex)
         // Check node is used for read port address
-        remove_chirrtl_e(FEMALE)(Reference(name, value.tpe))
+        remove_chirrtl_e(SinkFlow)(Reference(name, value.tpe))
         has_read_mport match {
           case None => sx
           case Some(en) => Block(Seq(sx, Connect(info, en, one)))
         }
       case Connect(info, loc, expr) =>
-        val rocx = remove_chirrtl_e(MALE)(expr)
-        val locx = remove_chirrtl_e(FEMALE)(loc)
+        val rocx = remove_chirrtl_e(SourceFlow)(expr)
+        val locx = remove_chirrtl_e(SinkFlow)(loc)
         val sx = Connect(info, locx, rocx)
         val stmts = ArrayBuffer[Statement]()
         has_read_mport match {
@@ -229,8 +229,8 @@ object RemoveCHIRRTL extends Transform {
         }
         if (stmts.isEmpty) sx else Block(sx +: stmts)
       case PartialConnect(info, loc, expr) =>
-        val locx = remove_chirrtl_e(FEMALE)(loc)
-        val rocx = remove_chirrtl_e(MALE)(expr)
+        val locx = remove_chirrtl_e(SinkFlow)(loc)
+        val rocx = remove_chirrtl_e(SourceFlow)(expr)
         val sx = PartialConnect(info, locx, rocx)
         val stmts = ArrayBuffer[Statement]()
         has_read_mport match {
@@ -247,7 +247,7 @@ object RemoveCHIRRTL extends Transform {
           }
         }
         if (stmts.isEmpty) sx else Block(sx +: stmts)
-      case sx => sx map remove_chirrtl_s(refs, raddrs) map remove_chirrtl_e(MALE)
+      case sx => sx map remove_chirrtl_s(refs, raddrs) map remove_chirrtl_e(SourceFlow)
     }
   }
 

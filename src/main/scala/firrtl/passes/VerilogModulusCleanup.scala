@@ -47,11 +47,11 @@ object VerilogModulusCleanup extends Pass {
 
       def removeRem(e: Expression): Expression = e match {
         case e: DoPrim => e.op match {
-          case Rem => 
+          case Rem =>
             val name = namespace.newTemp
             val newType = e mapType verilogRemWidth(e)
             v += DefNode(get_info(s), name, e mapType verilogRemWidth(e))
-            val remRef = WRef(name, newType.tpe, kind(e), gender(e))
+            val remRef = WRef(name, newType.tpe, kind(e), flow(e))
             val remWidth = bitWidth(e.tpe)
             DoPrim(Bits, Seq(remRef), Seq(remWidth - 1, BigInt(0)), e.tpe)
           case _ => e

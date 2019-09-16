@@ -85,7 +85,7 @@ class RemoveAccesses extends Pass {
       def onStmt(s: Statement): Statement = {
         def create_temp(e: Expression): (Statement, Expression) = {
           val n = namespace.newName(niceName(e))
-          (DefWire(get_info(s), n, e.tpe), WRef(n, e.tpe, kind(e), gender(e)))
+          (DefWire(get_info(s), n, e.tpe), WRef(n, e.tpe, kind(e), flow(e)))
         }
 
         /** Replaces a subaccess in a given male expression
@@ -134,7 +134,7 @@ class RemoveAccesses extends Pass {
           * Otherwise, map to children.
           */
         def fixMale(e: Expression): Expression = e match {
-          case w: WSubAccess => removeMale(WSubAccess(w.expr, fixMale(w.index), w.tpe, w.gender))
+          case w: WSubAccess => removeMale(WSubAccess(w.expr, fixMale(w.index), w.tpe, w.flow))
           //case w: WSubIndex => removeMale(w)
           //case w: WSubField => removeMale(w)
           case x => x map fixMale
@@ -145,7 +145,7 @@ class RemoveAccesses extends Pass {
           * Otherwise, map to children.
           */
         def fixFemale(e: Expression): Expression = e match {
-          case w: WSubAccess => WSubAccess(fixFemale(w.expr), fixMale(w.index), w.tpe, w.gender)
+          case w: WSubAccess => WSubAccess(fixFemale(w.expr), fixMale(w.index), w.tpe, w.flow)
           case x => x map fixFemale
         }
 
@@ -159,7 +159,7 @@ class RemoveAccesses extends Pass {
       }
       Module(m.info, m.name, m.ports, squashEmpty(onStmt(m.body)))
     }
-  
+
     c copy (modules = c.modules map {
       case m: ExtModule => m
       case m: Module => remove_m(m)

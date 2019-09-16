@@ -160,7 +160,7 @@ class InferReadWrite extends Transform with SeqTransformBased with HasShellOptio
     CheckInitialization,
     InferTypes,
     ResolveKinds,
-    ResolveGenders
+    ResolveFlows
   )
   def execute(state: CircuitState): CircuitState = {
     val runTransform = state.annotations.contains(InferReadWriteAnnotation)

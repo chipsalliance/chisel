@@ -24,7 +24,7 @@ class ClockListTests extends FirrtlFlatSpec {
     ToWorkingIR,
     ResolveKinds,
     InferTypes,
-    ResolveGenders,
+    ResolveFlows,
     new InferWidths
   )
 

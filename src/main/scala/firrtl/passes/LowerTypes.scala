@@ -39,21 +39,21 @@ object LowerTypes extends Transform {
   }
   def loweredName(s: Seq[String]): String = s mkString delim
   def renameExps(renames: RenameMap, n: String, t: Type, root: String): Seq[String] =
-    renameExps(renames, WRef(n, t, ExpKind, UNKNOWNGENDER), root)
+    renameExps(renames, WRef(n, t, ExpKind, UnknownFlow), root)
   def renameExps(renames: RenameMap, n: String, t: Type): Seq[String] =
-    renameExps(renames, WRef(n, t, ExpKind, UNKNOWNGENDER), "")
+    renameExps(renames, WRef(n, t, ExpKind, UnknownFlow), "")
   def renameExps(renames: RenameMap, e: Expression, root: String): Seq[String] = e.tpe match {
     case (_: GroundType) =>
       val name = root + loweredName(e)
       renames.rename(root + e.serialize, name)
       Seq(name)
     case (t: BundleType) => t.fields.flatMap { f =>
-      val subNames = renameExps(renames, WSubField(e, f.name, f.tpe, times(gender(e), f.flip)), root)
+      val subNames = renameExps(renames, WSubField(e, f.name, f.tpe, times(flow(e), f.flip)), root)
       renames.rename(root + e.serialize, subNames)
       subNames
     }
     case (t: VectorType) => (0 until t.size).flatMap { i =>
-      val subNames = renameExps(renames, WSubIndex(e, i, t.tpe,gender(e)), root)
+      val subNames = renameExps(renames, WSubIndex(e, i, t.tpe,flow(e)), root)
       renames.rename(root + e.serialize, subNames)
       subNames
     }
@@ -67,14 +67,14 @@ object LowerTypes extends Transform {
       renames.rename(hiRef.serialize, loRef.serialize)
       Seq(loRef.serialize)
     case (t: BundleType) => t.fields.foldLeft(Seq[String]()){(names, f) =>
-      val subNames = renameMemExps(renames, WSubField(e, f.name, f.tpe, times(gender(e), f.flip)), portAndField)
+      val subNames = renameMemExps(renames, WSubField(e, f.name, f.tpe, times(flow(e), f.flip)), portAndField)
       val (mem, tail) = splitRef(e)
       val hiRef = mergeRef(mem, mergeRef(portAndField, tail))
       renames.rename(hiRef.serialize, subNames)
       names ++ subNames
     }
     case (t: VectorType) => (0 until t.size).foldLeft(Seq[String]()){(names, i) =>
-      val subNames = renameMemExps(renames, WSubIndex(e, i, t.tpe,gender(e)), portAndField)
+      val subNames = renameMemExps(renames, WSubIndex(e, i, t.tpe,flow(e)), portAndField)
       val (mem, tail) = splitRef(e)
       val hiRef = mergeRef(mem, mergeRef(portAndField, tail))
       renames.rename(hiRef.serialize, subNames)
@@ -116,7 +116,7 @@ object LowerTypes extends Transform {
           case _: GroundType => Seq(e)
           case memType => create_exps(mem.name, memType) map { e =>
             val loMemName = loweredName(e)
-            val loMem = WRef(loMemName, UnknownType, kind(mem), UNKNOWNGENDER)
+            val loMem = WRef(loMemName, UnknownType, kind(mem), UnknownFlow)
             mergeRef(loMem, mergeRef(port, field))
           }
         }
@@ -128,7 +128,7 @@ object LowerTypes extends Transform {
           case Some(ex) =>
             val loMemExp = mergeRef(mem, ex)
             val loMemName = loweredName(loMemExp)
-            WRef(loMemName, UnknownType, kind(mem), UNKNOWNGENDER)
+            WRef(loMemName, UnknownType, kind(mem), UnknownFlow)
           case None => mem
         }
         Seq(mergeRef(loMem, mergeRef(port, field)))
@@ -143,15 +143,15 @@ object LowerTypes extends Transform {
       case InstanceKind =>
         val (root, tail) = splitRef(e)
         val name = loweredName(tail)
-        WSubField(root, name, e.tpe, gender(e))
+        WSubField(root, name, e.tpe, flow(e))
       case MemKind =>
         val exps = lowerTypesMemExp(memDataTypeMap, info, mname)(e)
         exps.size match {
           case 1 => exps.head
-          case _ => error("Error! lowerTypesExp called on MemKind " + 
+          case _ => error("Error! lowerTypesExp called on MemKind " +
                           "SubField that needs to be expanded!")(info, mname)
         }
-      case _ => WRef(loweredName(e), e.tpe, kind(e), gender(e))
+      case _ => WRef(loweredName(e), e.tpe, kind(e), flow(e))
     }
     case e: Mux => e map lowerTypesExp(memDataTypeMap, info, mname)
     case e: ValidIf => e map lowerTypesExp(memDataTypeMap, info, mname)
@@ -164,11 +164,11 @@ object LowerTypes extends Transform {
     s map lowerTypesStmt(memDataTypeMap, info, mname, renames) match {
       case s: DefWire => s.tpe match {
         case _: GroundType => s
-        case _ => 
+        case _ =>
           val exps = create_exps(s.name, s.tpe)
           val names = exps map loweredName
           renameExps(renames, s.name, s.tpe)
-          Block((exps zip names) map { case (e, n) => 
+          Block((exps zip names) map { case (e, n) =>
             DefWire(s.info, n, e.tpe)
           })
       }
@@ -190,9 +190,9 @@ object LowerTypes extends Transform {
         case t: BundleType =>
           val fieldsx = t.fields flatMap { f =>
             renameExps(renames, f.name, f.tpe, s"${sx.name}.")
-            create_exps(WRef(f.name, f.tpe, ExpKind, times(f.flip, MALE))) map { e => 
-              // Flip because inst genders are reversed from Module type
-              Field(loweredName(e), swap(to_flip(gender(e))), e.tpe)
+            create_exps(WRef(f.name, f.tpe, ExpKind, times(f.flip, SourceFlow))) map { e =>
+              // Flip because inst flows are reversed from Module type
+              Field(loweredName(e), swap(to_flip(flow(e))), e.tpe)
             }
           }
           WDefInstance(sx.info, sx.name, sx.module, BundleType(fieldsx))
@@ -262,11 +262,11 @@ object LowerTypes extends Transform {
     renames.setModule(m.name)
     // Lower Ports
     val portsx = m.ports flatMap { p =>
-      val exps = create_exps(WRef(p.name, p.tpe, PortKind, to_gender(p.direction)))
+      val exps = create_exps(WRef(p.name, p.tpe, PortKind, to_flow(p.direction)))
       val names = exps map loweredName
       renameExps(renames, p.name, p.tpe)
       (exps zip names) map { case (e, n) =>
-        Port(p.info, n, to_dir(gender(e)), e.tpe)
+        Port(p.info, n, to_dir(flow(e)), e.tpe)
       }
     }
     m match {
@@ -285,4 +285,3 @@ object LowerTypes extends Transform {
     CircuitState(result, outputForm, state.annotations, Some(renames))
   }
 }
-
