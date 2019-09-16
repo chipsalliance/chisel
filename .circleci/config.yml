@@ -124,7 +124,7 @@ jobs:
     executor: chisel-executor
     steps:
       - test-chisel:
-          scalaVersion: "++2.12.7"
+          scalaVersion: "++2.12.10"
 
   checkstyle-chisel:
     executor: chisel-executor
