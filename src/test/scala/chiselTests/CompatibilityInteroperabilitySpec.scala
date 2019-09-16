@@ -2,7 +2,7 @@
 
 package chiselTests
 
-import collection.immutable.ListMap
+import scala.collection.immutable.ListMap
 
 // Keep Chisel._ separate from chisel3._ below
 object CompatibilityComponents {
@@ -13,11 +13,11 @@ object CompatibilityComponents {
     val a = UInt(width = 32)
     val b = UInt(width = 32).flip
 
-    override def cloneType = (new ChiselBundle).asInstanceOf[this.type]
+    override def cloneType: this.type = (new ChiselBundle).asInstanceOf[this.type]
   }
   class ChiselRecord extends Record {
     val elements = ListMap("a" -> UInt(width = 32), "b" -> UInt(width = 32).flip)
-    override def cloneType = (new ChiselRecord).asInstanceOf[this.type]
+    override def cloneType: this.type = (new ChiselRecord).asInstanceOf[this.type]
   }
 
   abstract class ChiselDriverModule(_io: => Record) extends Module {
@@ -49,12 +49,12 @@ object Chisel3Components {
     val a = Output(UInt(32.W))
     val b = Input(UInt(32.W))
 
-    override def cloneType = (new Chisel3Bundle).asInstanceOf[this.type]
+    override def cloneType: this.type = (new Chisel3Bundle).asInstanceOf[this.type]
   }
 
   class Chisel3Record extends Record {
     val elements = ListMap("a" -> Output(UInt(32.W)), "b" -> Input(UInt(32.W)))
-    override def cloneType = (new Chisel3Record).asInstanceOf[this.type]
+    override def cloneType: this.type = (new Chisel3Record).asInstanceOf[this.type]
   }
 
   abstract class Chisel3DriverModule(_io: => Record) extends Module {
@@ -240,6 +240,52 @@ class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec {
             child.io.in := io.in
           }
         }
+      }
+    }
+  }
+
+  "Compatibility Modules" should "have Bool as their reset type" in {
+    compile {
+      import Chisel._
+      class Intf extends Bundle {
+        val in = Bool(INPUT)
+        val en = Bool(INPUT)
+        val out = Bool(OUTPUT)
+      }
+      class Child extends Module {
+        val io = new Intf
+        io.out := Mux(io.en, io.in, reset)
+      }
+      new Module {
+        val io = new Intf
+        val child = Module(new Child)
+        io <> child.io
+      }
+    }
+  }
+
+  "Compatibility Modules" should "be instantiable inside chisel3 Modules" in {
+    compile {
+      object Compat {
+        import Chisel._
+        class Intf extends Bundle {
+          val in = Input(UInt(8.W))
+          val out = Output(UInt(8.W))
+        }
+        class OldMod extends Module {
+          val io = IO(new Intf)
+          io.out := Reg(next = io.in)
+        }
+      }
+      import chisel3._
+      import Compat._
+      new Module {
+        val io = IO(new Intf)
+        io <> Module(new Module {
+          val io = IO(new Intf)
+          val inst = Module(new OldMod)
+          io <> inst.io
+        }).io
       }
     }
   }

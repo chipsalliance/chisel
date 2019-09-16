@@ -6,7 +6,6 @@
 package chisel3.util
 
 import chisel3._
-import chisel3.core.SeqUtils
 
 /** Creates repetitions of each bit of the input in order.
   *
@@ -90,7 +89,7 @@ object Fill {
   * }}}
   */
 object Reverse {
-  private def doit(in: UInt, length: Int): UInt = length match {
+  private def doit(in: UInt, length: Int): UInt = length match { // scalastyle:ignore cyclomatic.complexity
     case _ if length < 0 => throw new IllegalArgumentException(s"length (=$length) must be nonnegative integer.")
     case _ if length <= 1 => in
     case _ if isPow2(length) && length >= 8 && length <= 64 =>

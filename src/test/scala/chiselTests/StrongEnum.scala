@@ -5,9 +5,10 @@ package chiselTests
 import chisel3._
 import chisel3.experimental.ChiselEnum
 import chisel3.internal.firrtl.UnknownWidth
+import chisel3.internal.naming.chiselName
 import chisel3.util._
 import chisel3.testers.BasicTester
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.{Assertion, FreeSpec, Matchers}
 
 object EnumExample extends ChiselEnum {
   val e0, e1, e2 = Value
@@ -245,14 +246,13 @@ class WidthTester extends BasicTester {
 }
 
 class StrongEnumFSMTester extends BasicTester {
-  import StrongEnumFSM.State
   import StrongEnumFSM.State._
 
   val dut = Module(new StrongEnumFSM)
 
   // Inputs and expected results
   val inputs: Vec[Bool] = VecInit(false.B, true.B, false.B, true.B, true.B, true.B, false.B, true.B, true.B, false.B)
-  val expected: Vec[Bool] = VecInit(false.B, false.B, false.B, false.B, false.B, true.B, true.B, false.B, false.B, true.B)
+  val expected: Vec[Bool] = VecInit(false.B, false.B, false.B, false.B, false.B, true.B, true.B, false.B, false.B, true.B) // scalastyle:ignore line.size.limit
   val expected_state = VecInit(sNone, sNone, sOne1, sNone, sOne1, sTwo1s, sTwo1s, sNone, sOne1, sTwo1s)
 
   val cntr = Counter(inputs.length)
@@ -331,7 +331,7 @@ class StrongEnumSpec extends ChiselFlatSpec {
       elaborate(new CastFromNonLitWidth)
     }
 
-    for (w <- (EnumExample.getWidth+1) to (EnumExample.getWidth+100)) {
+    for (w <- (EnumExample.getWidth + 1) to (EnumExample.getWidth + 100)) {
       a [ChiselException] should be thrownBy {
         elaborate(new CastFromNonLitWidth(Some(w)))
       }
@@ -361,10 +361,14 @@ class StrongEnumSpec extends ChiselFlatSpec {
   }
 
   it should "maintain Scala-level type-safety" in {
-    def foo(e: EnumExample.Type) = {}
+    def foo(e: EnumExample.Type): Unit = {}
 
     "foo(EnumExample.e1); foo(EnumExample.e1.next)" should compile
     "foo(OtherEnum.otherEnum)" shouldNot compile
+  }
+
+  it should "prevent enums from being declared without names" in {
+    "object UnnamedEnum extends ChiselEnum { Value }" shouldNot compile
   }
 
   "StrongEnum FSM" should "work" in {
@@ -372,59 +376,246 @@ class StrongEnumSpec extends ChiselFlatSpec {
   }
 }
 
-class StrongEnumAnnotationSpec extends ChiselFlatSpec {
-  import chisel3.experimental.EnumAnnotations._
-  import firrtl.annotations.ComponentName
+class StrongEnumAnnotator extends Module {
+  import EnumExample._
 
-  ignore should "Test that strong enums annotate themselves appropriately" in {
+  object LocalEnum extends ChiselEnum {
+    val le0, le1 = Value
+    val le2 = Value
+    val le100 = Value(100.U)
+  }
 
-    def test() = {
-      Driver.execute(Array("--target-dir", "test_run_dir"), () => new StrongEnumFSM) match {
-        case ChiselExecutionSuccess(Some(circuit), emitted, _) =>
-          val annos = circuit.annotations.map(_.toFirrtl)
+  val io = IO(new Bundle{
+    val in = Input(EnumExample())
+    val out = Output(EnumExample())
+    val other = Output(OtherEnum())
+    val local = Output(LocalEnum())
+  })
 
-          val enumDefAnnos = annos.collect { case a: EnumDefAnnotation => a }
-          val enumCompAnnos = annos.collect { case a: EnumComponentAnnotation => a }
-
-          // Print the annotations out onto the screen
-          println("Enum definitions:")
-          enumDefAnnos.foreach {
-            case EnumDefAnnotation(enumTypeName, definition) => println(s"\t$enumTypeName: $definition")
-          }
-          println("Enum components:")
-          enumCompAnnos.foreach{
-            case EnumComponentAnnotation(target, enumTypeName) => println(s"\t$target => $enumTypeName")
-          }
-
-          // Check that the global annotation is correct
-          enumDefAnnos.exists {
-            case EnumDefAnnotation(name, map) =>
-              name.endsWith("State") &&
-                map.size == StrongEnumFSM.State.correct_annotation_map.size &&
-                map.forall {
-                  case (k, v) =>
-                    val correctValue = StrongEnumFSM.State.correct_annotation_map(k)
-                    correctValue == v
-                }
-            case _ => false
-          } should be(true)
-
-          // Check that the component annotations are correct
-          enumCompAnnos.count {
-            case EnumComponentAnnotation(target, enumName) =>
-              val ComponentName(targetName, _) = target
-              (targetName == "state" && enumName.endsWith("State")) ||
-                (targetName == "io.state" && enumName.endsWith("State"))
-            case _ => false
-          } should be(2)
-
-        case _ =>
-          assert(false)
-      }
+  class Bund extends Bundle {
+    val field = EnumExample()
+    val other = OtherEnum()
+    val local = LocalEnum()
+    val vec = Vec(5, EnumExample())
+    val inner_bundle1 = new Bundle {
+      val x = UInt(4.W)
+      val y = Vec(3, UInt(4.W))
+      val e = EnumExample()
+      val v = Vec(3, EnumExample())
     }
+    val inner_bundle2 = new Bundle {}
+    val inner_bundle3 = new Bundle {
+      val x = Bool()
+    }
+    val inner_bundle4 = new Bundle {
+      val inner_inner_bundle = new Bundle {}
+    }
+  }
 
-    // We run this test twice, to test for an older bug where only the first circuit would be annotated
-    test()
-    test()
+  val simple = Wire(EnumExample())
+  val vec = VecInit(e0, e1, e2)
+  val vec_of_vecs = VecInit(VecInit(e0, e1), VecInit(e100, e101))
+
+  val bund = Wire(new Bund())
+  val vec_of_bundles = Wire(Vec(5, new Bund()))
+
+  io.out := e101
+  io.other := OtherEnum.otherEnum
+  io.local := LocalEnum.le0
+  simple := e100
+  bund := DontCare
+  vec_of_bundles := DontCare
+
+  // Make sure that dynamically indexing into a Vec of enums will not cause an elaboration error.
+  // The components created here will not be annotated.
+  val cycle = RegInit(0.U)
+  cycle := cycle + 1.U
+
+  val indexed1 = vec_of_vecs(cycle)(cycle)
+  val indexed2 = vec_of_bundles(cycle)
+}
+
+@chiselName
+class StrongEnumAnnotatorWithChiselName extends Module {
+  import EnumExample._
+
+  object LocalEnum extends ChiselEnum {
+    val le0, le1 = Value
+    val le2 = Value
+    val le100 = Value(100.U)
+  }
+
+  val io = IO(new Bundle{
+    val in = Input(EnumExample())
+    val out = Output(EnumExample())
+    val other = Output(OtherEnum())
+    val local = Output(LocalEnum())
+  })
+
+  class Bund extends Bundle {
+    val field = EnumExample()
+    val other = OtherEnum()
+    val local = LocalEnum()
+    val vec = Vec(5, EnumExample())
+    val inner_bundle1 = new Bundle {
+      val x = UInt(4.W)
+      val y = Vec(3, UInt(4.W))
+      val e = EnumExample()
+      val v = Vec(3, EnumExample())
+    }
+    val inner_bundle2 = new Bundle {}
+    val inner_bundle3 = new Bundle {
+      val x = Bool()
+    }
+    val inner_bundle4 = new Bundle {
+      val inner_inner_bundle = new Bundle {}
+    }
+  }
+
+  val simple = Wire(EnumExample())
+  val vec = VecInit(e0, e1, e2)
+  val vec_of_vecs = VecInit(VecInit(e0, e1), VecInit(e100, e101))
+
+  val bund = Wire(new Bund())
+  val vec_of_bundles = Wire(Vec(5, new Bund()))
+
+  io.out := e101
+  io.other := OtherEnum.otherEnum
+  io.local := LocalEnum.le0
+  simple := e100
+  bund := DontCare
+  vec_of_bundles := DontCare
+
+  // Make sure that dynamically indexing into a Vec of enums will not cause an elaboration error.
+  // The components created here will not be annotated.
+  val cycle = RegInit(0.U)
+  cycle := cycle + 1.U
+
+  val indexed1 = vec_of_vecs(cycle)(cycle)
+  val indexed2 = vec_of_bundles(cycle)
+}
+
+class StrongEnumAnnotationSpec extends FreeSpec with Matchers {
+  import chisel3.experimental.EnumAnnotations._
+  import firrtl.annotations.{ComponentName, Annotation}
+
+  val enumExampleName = "EnumExample"
+  val otherEnumName = "OtherEnum"
+  val localEnumName = "LocalEnum"
+
+  case class CorrectDefAnno(typeName: String, definition: Map[String, BigInt])
+  case class CorrectCompAnno(targetName: String, typeName: String)
+  case class CorrectVecAnno(targetName: String, typeName: String, fields: Set[Seq[String]])
+
+  val correctDefAnnos = Seq(
+    CorrectDefAnno(otherEnumName, Map("otherEnum" -> 0)),
+    CorrectDefAnno(enumExampleName, Map("e0" -> 0, "e1" -> 1, "e2" -> 2, "e100" -> 100, "e101" -> 101)),
+    CorrectDefAnno(localEnumName, Map("le0" -> 0, "le1" -> 1, "le2" -> 2, "le100" -> 100))
+  )
+
+  val correctCompAnnos = Seq(
+    CorrectCompAnno("io.other", otherEnumName),
+    CorrectCompAnno("io.local", localEnumName),
+    CorrectCompAnno("io.out", enumExampleName),
+    CorrectCompAnno("io.in", enumExampleName),
+    CorrectCompAnno("simple", enumExampleName),
+    CorrectCompAnno("bund.field", enumExampleName),
+    CorrectCompAnno("bund.other", otherEnumName),
+    CorrectCompAnno("bund.local", localEnumName),
+    CorrectCompAnno("bund.inner_bundle1.e", enumExampleName)
+  )
+
+  val correctVecAnnos = Seq(
+    CorrectVecAnno("vec", enumExampleName, Set()),
+    CorrectVecAnno("vec_of_vecs", enumExampleName, Set()),
+    CorrectVecAnno("vec_of_bundles", enumExampleName, Set(Seq("field"), Seq("vec"), Seq("inner_bundle1", "e"), Seq("inner_bundle1", "v"))),
+    CorrectVecAnno("vec_of_bundles", otherEnumName, Set(Seq("other"))),
+    CorrectVecAnno("vec_of_bundles", localEnumName, Set(Seq("local"))),
+    CorrectVecAnno("bund.vec", enumExampleName, Set()),
+    CorrectVecAnno("bund.inner_bundle1.v", enumExampleName, Set())
+  )
+
+  // scalastyle:off regex
+  def printAnnos(annos: Seq[Annotation]) {
+    println("Enum definitions:")
+    annos.foreach {
+      case EnumDefAnnotation(enumTypeName, definition) => println(s"\t$enumTypeName: $definition")
+      case _ =>
+    }
+    println("Enum components:")
+    annos.foreach{
+      case EnumComponentAnnotation(target, enumTypeName) => println(s"\t$target => $enumTypeName")
+      case _ =>
+    }
+    println("Enum vecs:")
+    annos.foreach{
+      case EnumVecAnnotation(target, enumTypeName, fields) => println(s"\t$target[$fields] => $enumTypeName")
+      case _ =>
+    }
+  }
+  // scalastyle:on regex
+
+  def isCorrect(anno: EnumDefAnnotation, correct: CorrectDefAnno): Boolean = {
+    (anno.typeName == correct.typeName ||
+      anno.typeName.endsWith("." + correct.typeName) ||
+      anno.typeName.endsWith("$" + correct.typeName)) &&
+      anno.definition == correct.definition
+  }
+
+  def isCorrect(anno: EnumComponentAnnotation, correct: CorrectCompAnno): Boolean = {
+    (anno.target match {
+      case ComponentName(name, _) => name == correct.targetName
+      case _ => throw new Exception("Unknown target type in EnumComponentAnnotation")
+    }) &&
+      (anno.enumTypeName == correct.typeName || anno.enumTypeName.endsWith("." + correct.typeName) ||
+        anno.enumTypeName.endsWith("$" + correct.typeName))
+  }
+
+  def isCorrect(anno: EnumVecAnnotation, correct: CorrectVecAnno): Boolean = {
+    (anno.target match {
+      case ComponentName(name, _) => name == correct.targetName
+      case _ => throw new Exception("Unknown target type in EnumVecAnnotation")
+    }) &&
+      (anno.typeName == correct.typeName || anno.typeName.endsWith("." + correct.typeName) ||
+        anno.typeName.endsWith("$" + correct.typeName)) &&
+      anno.fields.map(_.toSeq).toSet == correct.fields
+  }
+
+  def allCorrectDefs(annos: Seq[EnumDefAnnotation], corrects: Seq[CorrectDefAnno]): Boolean = {
+    corrects.forall(c => annos.exists(isCorrect(_, c))) &&
+      correctDefAnnos.length == annos.length
+  }
+
+  // Because temporary variables might be formed and annotated, we do not check that every component or vector
+  // annotation is accounted for in the correct results listed above
+  def allCorrectComps(annos: Seq[EnumComponentAnnotation], corrects: Seq[CorrectCompAnno]): Boolean =
+    corrects.forall(c => annos.exists(isCorrect(_, c)))
+
+  def allCorrectVecs(annos: Seq[EnumVecAnnotation], corrects: Seq[CorrectVecAnno]): Boolean =
+    corrects.forall(c => annos.exists(isCorrect(_, c)))
+
+  def test(strongEnumAnnotatorGen: () => Module) {
+    Driver.execute(Array("--target-dir", "test_run_dir"), strongEnumAnnotatorGen) match {
+      case ChiselExecutionSuccess(Some(circuit), emitted, _) =>
+        val annos = circuit.annotations.map(_.toFirrtl)
+
+        printAnnos(annos)
+
+        val enumDefAnnos = annos.collect { case a: EnumDefAnnotation => a }
+        val enumCompAnnos = annos.collect { case a: EnumComponentAnnotation => a }
+        val enumVecAnnos = annos.collect { case a: EnumVecAnnotation => a }
+
+        allCorrectDefs(enumDefAnnos, correctDefAnnos) should be(true)
+        allCorrectComps(enumCompAnnos, correctCompAnnos) should be(true)
+        allCorrectVecs(enumVecAnnos, correctVecAnnos) should be(true)
+
+      case _ =>
+        assert(false)
+    }
+  }
+
+  "Test that strong enums annotate themselves appropriately" in {
+    test(() => new StrongEnumAnnotator)
+    test(() => new StrongEnumAnnotatorWithChiselName)
   }
 }

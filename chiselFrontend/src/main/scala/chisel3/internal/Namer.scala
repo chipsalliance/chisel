@@ -41,7 +41,33 @@ import java.util.IdentityHashMap
 /** Base class for naming contexts, providing the basic API consisting of naming calls and
   * ability to take descendant naming contexts.
   */
-class NamingContext {
+sealed trait NamingContextInterface {
+  /** Suggest a name (that will be propagated to FIRRTL) for an object, then returns the object
+    * itself (so this can be inserted transparently anywhere).
+    * Is a no-op (so safe) when applied on objects that aren't named, including non-Chisel data
+    * types.
+    */
+  def name[T](obj: T, name: String): T
+
+  /** Gives this context a naming prefix (which may be empty, "", for a top-level Module context)
+    * so that actual naming calls (HasId.suggestName) can happen.
+    * Recursively names descendants, for those whose return value have an associated name.
+    */
+  def namePrefix(prefix: String)
+}
+
+/** Dummy implementation to allow for naming annotations in a non-Builder context.
+  */
+object DummyNamer extends NamingContextInterface {
+  def name[T](obj: T, name: String): T = obj
+
+  def namePrefix(prefix: String): Unit = {
+  }
+}
+
+/** Actual namer functionality.
+  */
+class NamingContext extends NamingContextInterface {
   val descendants = new IdentityHashMap[AnyRef, ListBuffer[NamingContext]]()
   val anonymousDescendants = ListBuffer[NamingContext]()
   val items = ListBuffer[(AnyRef, String)]()
@@ -51,22 +77,14 @@ class NamingContext {
     * prefixed with the name given to the reference object, if the reference object is named in the
     * scope of this context.
     */
-  def add_descendant(ref: AnyRef, descendant: NamingContext) {
-    if (!descendants.containsKey(ref)) {
-      descendants.put(ref, ListBuffer[NamingContext]())
+  def addDescendant(ref: Any, descendant: NamingContext) {
+    ref match {
+      case ref: AnyRef =>
+        descendants.getOrElseUpdate(ref, ListBuffer[NamingContext]()) += descendant
+      case _ => anonymousDescendants += descendant
     }
-    descendants.get(ref) += descendant
   }
 
-  def add_anonymous_descendant(descendant: NamingContext) {
-    anonymousDescendants += descendant
-  }
-
-  /** Suggest a name (that will be propagated to FIRRTL) for an object, then returns the object
-    * itself (so this can be inserted transparently anywhere).
-    * Is a no-op (so safe) when applied on objects that aren't named, including non-Chisel data
-    * types.
-    */
   def name[T](obj: T, name: String): T = {
     assert(!closed, "Can't name elements after name_prefix called")
     obj match {
@@ -76,11 +94,7 @@ class NamingContext {
     obj
   }
 
-  /** Gives this context a naming prefix (which may be empty, "", for a top-level Module context)
-    * so that actual naming calls (HasId.suggestName) can happen.
-    * Recursively names descendants, for those whose return value have an associated name.
-    */
-  def name_prefix(prefix: String) {
+  def namePrefix(prefix: String): Unit = {
     closed = true
     for ((ref, suffix) <- items) {
       // First name the top-level object
@@ -89,7 +103,7 @@ class NamingContext {
       // Then recurse into descendant contexts
       if (descendants.containsKey(ref)) {
         for (descendant <- descendants.get(ref)) {
-          descendant.name_prefix(prefix + suffix + "_")
+          descendant.namePrefix(prefix + suffix + "_")
         }
         descendants.remove(ref)
       }
@@ -97,10 +111,10 @@ class NamingContext {
 
     for (descendant <- descendants.values().flatten) {
       // Where we have a broken naming link, just ignore the missing parts
-      descendant.name_prefix(prefix)
+      descendant.namePrefix(prefix)
     }
     for (descendant <- anonymousDescendants) {
-      descendant.name_prefix(prefix)
+      descendant.namePrefix(prefix)
     }
   }
 }
@@ -109,14 +123,14 @@ class NamingContext {
   * contexts as functions are called / finished.
   */
 class NamingStack {
-  val naming_stack = Stack[NamingContext]()
+  val namingStack = Stack[NamingContext]()
 
   /** Creates a new naming context, where all items in the context will have their names prefixed
     * with some yet-to-be-determined prefix from object names in an enclosing scope.
     */
-  def push_context(): NamingContext = {
+  def pushContext(): NamingContext = {
     val context = new NamingContext
-    naming_stack.push(context)
+    namingStack.push(context)
     context
   }
 
@@ -126,23 +140,11 @@ class NamingStack {
     *
     * Will assert out if the context being popped isn't the topmost on the stack.
     */
-  def pop_return_context[T <: Any](prefix_ref: T, until: NamingContext): T = {
-    assert(naming_stack.top == until)
-    naming_stack.pop()
-    if (!naming_stack.isEmpty) {
-      prefix_ref match {
-        case prefix_ref: AnyRef => naming_stack.top.add_descendant(prefix_ref, until)
-        case _ => naming_stack.top.add_anonymous_descendant(until)
-      }
-
+  def popContext[T <: Any](prefixRef: T, until: NamingContext): Unit = {
+    assert(namingStack.top == until)
+    namingStack.pop()
+    if (!namingStack.isEmpty) {
+      namingStack.top.addDescendant(prefixRef, until)
     }
-    prefix_ref
-  }
-
-  /** Same as pop_return_context, but for cases where there is no return value (like Module scope).
-   */
-  def pop_context(until: NamingContext) {
-    assert(naming_stack.top == until)
-    naming_stack.pop()
   }
 }

@@ -2,6 +2,8 @@
 
 package chiselTests
 
+import chisel3.testers.BasicTester
+
 import org.scalacheck.Gen
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 
@@ -47,7 +49,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
     val value: Int = Gen.choose(2, 2048).sample.get
     log2Up(value) shouldBe (1 max BigInt(value - 1).bitLength)
     log2Ceil(value) shouldBe (BigInt(value - 1).bitLength)
-    log2Down(value) shouldBe ((1 max BigInt(value - 1).bitLength) - (if (value > 0 && ((value & (value - 1)) == 0)) 0 else 1))
+    log2Down(value) shouldBe ((1 max BigInt(value - 1).bitLength) - (if (value > 0 && ((value & (value - 1)) == 0)) 0 else 1)) // scalastyle:ignore line.size.limit
     log2Floor(value) shouldBe (BigInt(value - 1).bitLength - (if (value > 0 && ((value & (value - 1)) == 0)) 0 else 1))
     isPow2(BigInt(1) << value) shouldBe true
     isPow2((BigInt(1) << value) - 1) shouldBe false
@@ -71,51 +73,50 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
       // The following just checks that we can create objects with nothing more than the Chisel compatibility package.
       val io = new Bundle {}
       val data = UInt(width = 3)
-      new ArbiterIO(data, 2) shouldBe a [ArbiterIO[_]]
-      new LockingRRArbiter(data, 2, 2, None) shouldBe a [LockingRRArbiter[_]]
-      new RRArbiter(data, 2) shouldBe a [RRArbiter[_]]
-      new Arbiter(data, 2) shouldBe a [Arbiter[_]]
+      val wire = Wire(data)
+      new ArbiterIO(data, 2) shouldBe a [ArbiterIO[UInt]]
+      Module(new LockingRRArbiter(data, 2, 2, None)) shouldBe a [LockingRRArbiter[UInt]]
+      Module(new RRArbiter(data, 2)) shouldBe a [RRArbiter[UInt]]
+      Module(new Arbiter(data, 2)) shouldBe a [Arbiter[UInt]]
       new Counter(2) shouldBe a [Counter]
-      new ValidIO(data) shouldBe a [ValidIO[_]]
-      new DecoupledIO(data) shouldBe a [DecoupledIO[_]]
-      new QueueIO(data, 2) shouldBe a [QueueIO[_]]
-      new Pipe(data, 2) shouldBe a [Pipe[_]]
+      new ValidIO(data) shouldBe a [ValidIO[UInt]]
+      new DecoupledIO(data) shouldBe a [DecoupledIO[UInt]]
+      new QueueIO(data, 2) shouldBe a [QueueIO[UInt]]
+      Module(new Pipe(data, 2)) shouldBe a [Pipe[UInt]]
 
-      FillInterleaved(2, data) shouldBe a [UInt]
-      PopCount(data) shouldBe a [UInt]
-      Fill(2, data) shouldBe a [UInt]
-      Reverse(data) shouldBe a [UInt]
-      Cat(data, data) shouldBe a [UInt]
-      Log2(data) shouldBe a [UInt]
+      FillInterleaved(2, wire) shouldBe a [UInt]
+      PopCount(wire) shouldBe a [UInt]
+      Fill(2, wire) shouldBe a [UInt]
+      Reverse(wire) shouldBe a [UInt]
+      Cat(wire, wire) shouldBe a [UInt]
+      Log2(wire) shouldBe a [UInt]
       unless(Bool(false)) {}
       // 'switch' and 'is' are tested below in Risc
       Counter(2) shouldBe a [Counter]
-      DecoupledIO(data) shouldBe a [DecoupledIO[_]]
-      val dcd = Decoupled(data)
-      dcd shouldBe a [DecoupledIO[_]]
-      Queue(dcd) shouldBe a [Queue[_]]
-      Enum(data, 2) shouldBe a [List[_]]
-      val lfsr16 = LFSR16()
-      lfsr16 shouldBe a [UInt]
-      lfsr16.getWidth shouldBe (16)
-      ListLookup(data, List(data), Array((BitPat("b1"), List(data)))) shouldBe a [List[_]]
-      Lookup(data, data, Seq((BitPat("b1"), data))) shouldBe a [List[_]]
-      Mux1H(data, Seq(data)) shouldBe a [UInt]
+      DecoupledIO(wire) shouldBe a [DecoupledIO[UInt]]
+      val dcd = Wire(Decoupled(data))
+      dcd shouldBe a [DecoupledIO[UInt]]
+      Queue(dcd) shouldBe a [DecoupledIO[UInt]]
+      Queue(dcd, 0) shouldBe a [DecoupledIO[UInt]]
+      Enum(UInt(), 2) shouldBe a [List[UInt]]
+      ListLookup(wire, List(wire), Array((BitPat("b1"), List(wire)))) shouldBe a [List[UInt]]
+      Lookup(wire, wire, Seq((BitPat("b1"), wire))) shouldBe a [UInt]
+      Mux1H(wire, Seq(wire)) shouldBe a [UInt]
       PriorityMux(Seq(Bool(false)), Seq(data)) shouldBe a [UInt]
-      MuxLookup(data, data, Seq((data, data))) shouldBe a [UInt]
-      MuxCase(data, Seq((Bool(), data))) shouldBe a [UInt]
-      OHToUInt(data) shouldBe a [UInt]
-      PriorityEncoder(data) shouldBe a [UInt]
-      UIntToOH(data) shouldBe a [UInt]
-      PriorityEncoderOH(data) shouldBe a [UInt]
-      RegNext(data) shouldBe a [UInt]
-      RegInit(data) shouldBe a [UInt]
-      RegEnable(data, Bool()) shouldBe a [UInt]
-      ShiftRegister(data, 2) shouldBe a [UInt]
-      Valid(data) shouldBe a [ValidIO[_]]
-      Pipe(Valid(data), 2) shouldBe a [ValidIO[_]]
+      MuxLookup(wire, wire, Seq((wire, wire))) shouldBe a [UInt]
+      MuxCase(wire, Seq((Bool(true), wire))) shouldBe a [UInt]
+      OHToUInt(wire) shouldBe a [UInt]
+      PriorityEncoder(wire) shouldBe a [UInt]
+      UIntToOH(wire) shouldBe a [UInt]
+      PriorityEncoderOH(wire) shouldBe a [UInt]
+      RegNext(wire) shouldBe a [UInt]
+      RegInit(wire) shouldBe a [UInt]
+      RegEnable(wire, Bool(true)) shouldBe a [UInt]
+      ShiftRegister(wire, 2) shouldBe a [UInt]
+      Valid(data) shouldBe a [ValidIO[UInt]]
+      Pipe(Wire(Valid(data)), 2) shouldBe a [ValidIO[UInt]]
     }
-
+    elaborate { new Dummy }
   }
   // Verify we can elaborate a design expressed in Chisel2
   class Chisel2CompatibleRisc extends Module {
@@ -189,6 +190,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
     override def cloneType: this.type = (new BigBundle).asInstanceOf[this.type]
   }
 
+  // scalastyle:off line.size.limit
   "A Module with missing bundle fields when compiled with the Chisel compatibility package" should "not throw an exception" in {
 
     class ConnectFieldMismatchModule extends Module {
@@ -296,7 +298,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
   // Note: This is a regression (see https://github.com/freechipsproject/chisel3/issues/668)
   it should "fail for Chisel types" in {
     import Chisel._
-    an [chisel3.core.Binding.ExpectedHardwareException] should be thrownBy {
+    an [chisel3.ExpectedHardwareException] should be thrownBy {
       elaborate(new Module {
         val io = new Bundle { }
         UInt(INPUT).dir
@@ -334,6 +336,249 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
       Chisel.assert(io.foo.dir == OUTPUT)
       Chisel.assert(io.bar.dir == INPUT)
     })
+  }
+  // scalastyle:on line.size.limit
+
+  behavior of "BitPat"
+
+  it should "support old operators" in {
+    class Foo extends Module {
+      val io = IO(new Bundle{})
+
+      info("Deprecated method DC hasn't been removed")
+      val bp = BitPat.DC(4)
+
+      info("BitPat != UInt is a Bool")
+      (bp != UInt(4)) shouldBe a [Bool]
+
+      /* This test does not work, but I'm not sure it's supposed to? It does *not* work on chisel3. */
+      // info("UInt != BitPat is a Bool")
+      // (UInt(4) != bp) shouldBe a [Bool]
+    }
+
+    elaborate(new Foo)
+  }
+
+  behavior of "Enum"
+
+  it should "support apply[T <: Bits](nodeType: T, n: Int): List[T]" in {
+    class Foo extends Module {
+      val io = IO(new Bundle{})
+
+      info("works for a UInt")
+      Enum(UInt(), 4) shouldBe a [List[UInt]]
+
+      info("throw an exception for non-UInt types")
+      intercept [IllegalArgumentException] {
+        Enum(SInt(), 4)
+      }.getMessage should include ("Only UInt supported for enums")
+
+      info("throw an exception if the bit width is specified")
+      intercept [IllegalArgumentException] {
+        Enum(UInt(width = 8), 4)
+      }.getMessage should include ("Bit width may no longer be specified for enums")
+    }
+
+    elaborate(new Foo)
+  }
+
+  behavior of "Queue"
+
+  it should "support deprecated constructors" in {
+    class Foo extends Module {
+      val io = IO(new Bundle{})
+
+      info("reset: Option[Bool] constructor works")
+      val option = Module(new Queue(UInt(), 4, false, false, Some(Bool(true))))
+
+      info("reset: Bool constructor works")
+      val explicit = Module(new Queue(UInt(), 4, false, false, Bool(true)))
+    }
+
+    elaborate(new Foo)
+  }
+
+  behavior of "LFSR16"
+
+  it should "still exist" in {
+    class Foo extends Module {
+      val io = IO(new Bundle{})
+
+      info("Still exists")
+      val lfsr = LFSR16()
+
+      info("apply method returns a UInt")
+      lfsr shouldBe a [UInt]
+
+      info("returned UInt has a width of 16")
+      lfsr.getWidth should be (16)
+    }
+
+    elaborate(new Foo)
+  }
+
+  behavior of "Mem"
+
+  it should "support deprecated apply methods" in {
+    class Foo extends Module {
+      val io = IO(new Bundle{})
+
+      info("apply[T <: Data](t: T, size: BigInt): Mem[T] works")
+      val memBigInt = Mem(UInt(), 8: BigInt)
+      memBigInt shouldBe a [Mem[UInt]]
+
+      info("apply[T <: Data](t: T, size: Int): Mem[T] works")
+      val memInt = Mem(SInt(), 16: Int)
+      memInt shouldBe a [Mem[SInt]]
+    }
+
+    elaborate(new Foo)
+  }
+
+  behavior of "SeqMem"
+
+  it should "support deprecated apply methods" in {
+    class Foo extends Module {
+      val io = IO(new Bundle{})
+
+      info("apply[T <: Data](t: T, size: BigInt): SeqMem[T] works")
+      val seqMemBigInt = SeqMem(UInt(), 8: BigInt)
+      seqMemBigInt shouldBe a [SeqMem[UInt]]
+
+      info("apply[T <: Data](t: T, size: Int): SeqMem[T] works")
+      val seqMemInt = SeqMem(UInt(), 16: Int)
+      seqMemInt shouldBe a [SeqMem[UInt]]
+    }
+
+    elaborate(new Foo)
+  }
+
+  behavior of "debug"
+
+  it should "still exist" in {
+    class Foo extends Module {
+      val io = IO(new Bundle{})
+
+      val data = UInt(width = 2)
+      debug(data)
+    }
+
+    elaborate(new Foo)
+  }
+
+  behavior of "Data methods"
+
+  it should "support legacy methods" in {
+    class Foo extends Module {
+      val io = IO(new Bundle{})
+
+      info("litArg works")
+      UInt(width=3).litArg() should be (None)
+      UInt(0, width=3).litArg() should be (Some(chisel3.internal.firrtl.ULit(0, 3.W)))
+
+      info("toBits works")
+      val wire = Wire(UInt(width=4))
+      Vec.fill(4)(wire).toBits.getWidth should be (wire.getWidth * 4)
+    }
+
+    elaborate(new Foo)
+  }
+
+  behavior of "Wire"
+
+  it should "support legacy methods" in {
+    class Foo extends Module {
+      val io = IO(new Bundle{})
+
+      info("apply[T <: Data](dummy: Int = 0, init: T): T works")
+      val first = Wire(init=UInt("hdeadbeef"))
+      first shouldBe a [UInt]
+
+      info("apply[T <: Data](t: T, init: T): T works")
+      val second = Wire(SInt(), SInt(-100))
+      second shouldBe a [SInt]
+
+      info("apply[T <: Data](t: T, init: DontCare.type): T works")
+      val third = Wire(UInt(), chisel3.DontCare)
+      third shouldBe a [UInt]
+    }
+
+    elaborate(new Foo)
+  }
+
+  behavior of "Vec"
+
+  it should "support legacy methods" in {
+    class Foo extends BasicTester {
+      val seq = Seq(Wire(UInt(0, width=4)), Wire(UInt(1, width=4)), Wire(UInt(2, width=4)))
+      val vec = Vec(seq)
+
+      info("read works")
+      chisel3.assert(vec.read(UInt(0)) === UInt(0))
+
+      info("write works")
+      vec.write(UInt(1), UInt(3))
+      chisel3.assert(vec.read(UInt(1)) === UInt(3))
+
+      val (_, done) = Counter(Bool(true), 4)
+      when (done) { stop }
+    }
+
+    assertTesterPasses(new Foo)
+  }
+
+  behavior of "Bits methods"
+
+  it should "support legacy methods" in {
+    class Foo extends Module {
+      val io = new Bundle{}
+
+      val u = UInt(8)
+      val s = SInt(-4)
+
+      info("toBools works")
+      u.toBools shouldBe a [Seq[Bool]]
+
+      info("asBits works")
+      s.asBits shouldBe a [Bits]
+
+      info("toSInt works")
+      u.toSInt shouldBe a [SInt]
+
+      info("toUInt works")
+      s.toUInt shouldBe a [UInt]
+
+      info("toBool works")
+      UInt(1).toBool shouldBe a [Bool]
+    }
+
+    elaborate(new Foo)
+  }
+
+  behavior of "UInt"
+
+  it should "support legacy methods" in {
+    class Foo extends Module {
+      val io = new Bundle{}
+
+      info("!= works")
+      (UInt(1) != UInt(1)) shouldBe a [Bool]
+    }
+
+    elaborate(new Foo)
+  }
+
+  behavior of "SInt"
+
+  it should "support legacy methods" in {
+    class Foo extends Module {
+      val io = new Bundle{}
+
+      info("!= works")
+      (SInt(-1) != SInt(-1)) shouldBe a [Bool]
+    }
+
+    elaborate(new Foo)
   }
 
 }
