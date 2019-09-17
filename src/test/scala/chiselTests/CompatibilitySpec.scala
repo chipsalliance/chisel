@@ -97,6 +97,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
       val dcd = Wire(Decoupled(data))
       dcd shouldBe a [DecoupledIO[UInt]]
       Queue(dcd) shouldBe a [DecoupledIO[UInt]]
+      Queue(dcd, 0) shouldBe a [DecoupledIO[UInt]]
       Enum(UInt(), 2) shouldBe a [List[UInt]]
       ListLookup(wire, List(wire), Array((BitPat("b1"), List(wire)))) shouldBe a [List[UInt]]
       Lookup(wire, wire, Seq((BitPat("b1"), wire))) shouldBe a [UInt]
