@@ -131,21 +131,11 @@ class InlineInstances extends Transform with RegisteredTransform {
     val flatInstances = instsToInline.map(i => i.module.name + "." + i.name) ++ getInstancesOf(c, flatModules)
     val iGraph = new InstanceGraph(c)
     val namespaceMap = collection.mutable.Map[String, Namespace]()
-
-    def getInstMap(mod: DefModule): Map[String, String] = mod match {
-      case m: Module => getInstMapBody(m.body)
-      case _ => Map.empty[String, String]
-    }
-    def getInstMapBody(stmt: Statement): Map[String, String] = {
-      val instMap = mutable.Map.empty[String, String]
-      def onStmt(s: Statement): Statement = s.map(onStmt) match {
-        case wDef@ WDefInstance(_, instName, modName, _) =>
-          instMap += (instName -> modName)
-          wDef
-        case other => other
-      }
-      onStmt(stmt)
-      instMap.toMap
+    // Map of Module name to Map of instance name to Module name
+    val instMaps: Map[String, Map[String, String]] = {
+      iGraph.graph.getEdgeMap.view.map { case (mod, children) =>
+        mod.module -> children.view.map(i => i.name -> i.module).toMap
+      }.toMap
     }
 
     /** Add a prefix to all declarations updating a [[Namespace]] and appending to a [[RenameMap]] */
@@ -219,7 +209,7 @@ class InlineInstances extends Transform with RegisteredTransform {
     def onStmt(currentModule: ModuleTarget)(s: Statement): Statement = {
       val currentModuleName = currentModule.module
       val ns = namespaceMap.getOrElseUpdate(currentModuleName, Namespace(iGraph.moduleMap(currentModuleName)))
-      val instMap = getInstMap(iGraph.moduleMap(currentModuleName))
+      val instMap = instMaps(currentModuleName)
       s match {
         case wDef@ WDefInstance(_, instName, modName, _) if flatInstances.contains(s"${currentModuleName}.$instName") =>
           val toInline = iGraph.moduleMap(modName) match {
