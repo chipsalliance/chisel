@@ -142,7 +142,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
 
   type InstanceId = internal.InstanceId
 
-  type Module = chisel3.experimental.LegacyModule
+  type Module = chisel3.internal.LegacyModule
 
   /** Implicit for custom Printable string interpolator */
   implicit class PrintableHelper(val sc: StringContext) extends AnyVal {

@@ -121,7 +121,7 @@ package experimental {
 }
 
 package internal {
-  import chisel3.experimental.{BaseModule, MultiIOModule}
+  import chisel3.experimental.BaseModule
 
   object BaseModule {
     private[chisel3] class ClonePorts (elts: Data*)(implicit compileOptions: CompileOptions) extends Record {

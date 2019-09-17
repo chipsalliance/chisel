@@ -3,7 +3,6 @@
 package chisel3
 
 import chisel3.internal.Builder
-import chisel3.experimental.RawModule
 
 /** Used by Chisel Aspects to inject Chisel code into modules, after they have been elaborated.
   * This is an internal API - don't use!

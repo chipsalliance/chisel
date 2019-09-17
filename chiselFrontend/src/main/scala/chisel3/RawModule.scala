@@ -1,12 +1,12 @@
 // See LICENSE for license details.
 
-package chisel3.experimental
+package chisel3
 
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.collection.JavaConversions._
 import scala.language.experimental.macros
 
-import chisel3._
+import chisel3.experimental.BaseModule
 import chisel3.internal._
 import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
@@ -162,68 +162,71 @@ abstract class MultiIOModule(implicit moduleCompileOptions: CompileOptions)
   }
 }
 
-/** Legacy Module class that restricts IOs to just io, clock, and reset, and provides a constructor
-  * for threading through explicit clock and reset.
-  *
-  * While this class isn't planned to be removed anytime soon (there are benefits to restricting
-  * IO), the clock and reset constructors will be phased out. Recommendation is to wrap the module
-  * in a withClock/withReset/withClockAndReset block, or directly hook up clock or reset IO pins.
-  */
-abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions)
+package internal {
+
+  /** Legacy Module class that restricts IOs to just io, clock, and reset, and provides a constructor
+    * for threading through explicit clock and reset.
+    *
+    * While this class isn't planned to be removed anytime soon (there are benefits to restricting
+    * IO), the clock and reset constructors will be phased out. Recommendation is to wrap the module
+    * in a withClock/withReset/withClockAndReset block, or directly hook up clock or reset IO pins.
+    */
+  abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions)
     extends MultiIOModule {
-  // These are to be phased out
-  protected var override_clock: Option[Clock] = None
-  protected var override_reset: Option[Bool] = None
+    // These are to be phased out
+    protected var override_clock: Option[Clock] = None
+    protected var override_reset: Option[Bool] = None
 
-  // IO for this Module. At the Scala level (pre-FIRRTL transformations),
-  // connections in and out of a Module may only go through `io` elements.
-  def io: Record
+    // IO for this Module. At the Scala level (pre-FIRRTL transformations),
+    // connections in and out of a Module may only go through `io` elements.
+    def io: Record
 
-  // Allow access to bindings from the compatibility package
-  protected def _compatIoPortBound() = portsContains(io)// scalastyle:ignore method.name
+    // Allow access to bindings from the compatibility package
+    protected def _compatIoPortBound() = portsContains(io)// scalastyle:ignore method.name
 
-  protected override def nameIds(rootClass: Class[_]): HashMap[HasId, String] = {
-    val names = super.nameIds(rootClass)
+    protected override def nameIds(rootClass: Class[_]): HashMap[HasId, String] = {
+      val names = super.nameIds(rootClass)
 
-    // Allow IO naming without reflection
-    names.put(io, "io")
-    names.put(clock, "clock")
-    names.put(reset, "reset")
+      // Allow IO naming without reflection
+      names.put(io, "io")
+      names.put(clock, "clock")
+      names.put(reset, "reset")
 
-    names
-  }
-
-  private[chisel3] override def namePorts(names: HashMap[HasId, String]): Unit = {
-    for (port <- getModulePorts) {
-      // This should already have been caught
-      if (!names.contains(port)) throwException(s"Unable to name port $port in $this")
-      val name = names(port)
-      port.setRef(ModuleIO(this, _namespace.name(name)))
-    }
-  }
-
-  private[chisel3] override def generateComponent(): Component = {
-    _compatAutoWrapPorts()  // pre-IO(...) compatibility hack
-
-    // Restrict IO to just io, clock, and reset
-    require(io != null, "Module must have io")
-    require(portsContains(io), "Module must have io wrapped in IO(...)")
-    require((portsContains(clock)) && (portsContains(reset)), "Internal error, module did not have clock or reset as IO") // scalastyle:ignore line.size.limit
-    require(portsSize == 3, "Module must only have io, clock, and reset as IO")
-
-    super.generateComponent()
-  }
-
-  private[chisel3] override def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
-    // Don't generate source info referencing parents inside a module, since this interferes with
-    // module de-duplication in FIRRTL emission.
-    implicit val sourceInfo = UnlocatableSourceInfo
-
-    if (!parentCompileOptions.explicitInvalidate) {
-      pushCommand(DefInvalid(sourceInfo, io.ref))
+      names
     }
 
-    clock := override_clock.getOrElse(Builder.forcedClock)
-    reset := override_reset.getOrElse(Builder.forcedReset)
+    private[chisel3] override def namePorts(names: HashMap[HasId, String]): Unit = {
+      for (port <- getModulePorts) {
+        // This should already have been caught
+        if (!names.contains(port)) throwException(s"Unable to name port $port in $this")
+        val name = names(port)
+        port.setRef(ModuleIO(this, _namespace.name(name)))
+      }
+    }
+
+    private[chisel3] override def generateComponent(): Component = {
+      _compatAutoWrapPorts()  // pre-IO(...) compatibility hack
+
+      // Restrict IO to just io, clock, and reset
+      require(io != null, "Module must have io")
+      require(portsContains(io), "Module must have io wrapped in IO(...)")
+      require((portsContains(clock)) && (portsContains(reset)), "Internal error, module did not have clock or reset as IO") // scalastyle:ignore line.size.limit
+      require(portsSize == 3, "Module must only have io, clock, and reset as IO")
+
+      super.generateComponent()
+    }
+
+    private[chisel3] override def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
+      // Don't generate source info referencing parents inside a module, since this interferes with
+      // module de-duplication in FIRRTL emission.
+      implicit val sourceInfo = UnlocatableSourceInfo
+
+      if (!parentCompileOptions.explicitInvalidate) {
+        pushCommand(DefInvalid(sourceInfo, io.ref))
+      }
+
+      clock := override_clock.getOrElse(Builder.forcedClock)
+      reset := override_reset.getOrElse(Builder.forcedReset)
+    }
   }
 }
