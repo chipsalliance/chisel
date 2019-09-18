@@ -222,4 +222,5 @@ trait Num[T <: Data] {
   /** @group SourceInfoTransformMacro */
   def do_max(that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
     Mux(this < that, that, this.asInstanceOf[T])
+
 }

@@ -5,11 +5,11 @@ package chisel3
 import scala.language.experimental.macros
 import chisel3.internal.firrtl.PrimOp.{GreaterEqOp, GreaterOp, LessEqOp, LessOp, PadOp}
 import chisel3.internal.firrtl.{KnownWidth, Width}
-import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform, SourceInfoWhiteboxTransform}
+import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform}
 
 // scalastyle:off method.name
 
-trait NumBits[T <: Bits] extends Num[T] {
+trait Bitwise[T <: Bits] extends Num[T] {
   this: T =>
 
   /** Pad operator
@@ -33,7 +33,7 @@ trait NumBits[T <: Bits] extends Num[T] {
    * @return this $coll with each bit inverted
    * @group Bitwise
    */
-  def unary_~ (): T = macro SourceInfoWhiteboxTransform.noArg
+  def unary_~ (): T = macro SourceInfoTransform.noArg
 
   /** @group SourceInfoTransformMacro */
   def do_unary_~ (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T
