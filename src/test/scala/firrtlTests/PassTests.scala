@@ -38,6 +38,14 @@ abstract class SimpleTransformSpec extends FlatSpec with FirrtlMatchers with Com
       logger.debug(actual)
       logger.debug(expected)
       (actual) should be (expected)
+
+      annotations.foreach { anno =>
+        logger.debug(anno.serialize)
+      }
+
+      finalState.annotations.toSeq.foreach { anno =>
+        logger.debug(anno.serialize)
+      }
       checkAnnotations.foreach { check =>
         (finalState.annotations.toSeq) should contain (check)
       }

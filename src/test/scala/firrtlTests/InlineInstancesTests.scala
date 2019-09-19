@@ -459,6 +459,91 @@ class InlineInstancesTests extends LowTransformSpec {
        )
      )
   }
+
+  "inlining both grandparent and grandchild" should "should work" in {
+     val input =
+        """circuit Top :
+          |  module Top :
+          |    input a : UInt<32>
+          |    output b : UInt<32>
+          |    inst i of Inline
+          |    i.a <= a
+          |    b <= i.b
+          |  module Inline :
+          |    input a : UInt<32>
+          |    output b : UInt<32>
+          |    inst foo of NestedInline
+          |    inst bar of NestedNoInline
+          |    foo.a <= a
+          |    bar.a <= foo.b
+          |    b <= bar.b
+          |  module NestedInline :
+          |    input a : UInt<32>
+          |    output b : UInt<32>
+          |    b <= a
+          |  module NestedNoInline :
+          |    input a : UInt<32>
+          |    output b : UInt<32>
+          |    inst foo of NestedInline
+          |    foo.a <= a
+          |    b <= foo.b
+          |""".stripMargin
+     val check =
+        """circuit Top :
+          |  module Top :
+          |    input a : UInt<32>
+          |    output b : UInt<32>
+          |    wire i_a : UInt<32>
+          |    wire i_b : UInt<32>
+          |    wire i_foo_a : UInt<32>
+          |    wire i_foo_b : UInt<32>
+          |    i_foo_b <= i_foo_a
+          |    inst i_bar of NestedNoInline
+          |    i_b <= i_bar.b
+          |    i_foo_a <= i_a
+          |    i_bar.a <= i_foo_b
+          |    b <= i_b
+          |    i_a <= a
+          |  module NestedNoInline :
+          |    input a : UInt<32>
+          |    output b : UInt<32>
+          |    wire foo_a : UInt<32>
+          |    wire foo_b : UInt<32>
+          |    foo_b <= foo_a
+          |    b <= foo_b
+          |    foo_a <= a
+          |""".stripMargin
+    val top = CircuitTarget("Top").module("Top")
+    val inlined = top.instOf("i", "Inline")
+    val nestedInlined = inlined.instOf("foo", "NestedInline")
+    val nestedNotInlined = inlined.instOf("bar", "NestedNoInline")
+    val innerNestedInlined = nestedNotInlined.instOf("foo", "NestedInline")
+
+     executeWithAnnos(input, check,
+       Seq(
+         inline("Inline"),
+         inline("NestedInline"),
+         DummyAnno(inlined.ref("a")),
+         DummyAnno(inlined.ref("b")),
+         DummyAnno(nestedInlined.ref("a")),
+         DummyAnno(nestedInlined.ref("b")),
+         DummyAnno(nestedNotInlined.ref("a")),
+         DummyAnno(nestedNotInlined.ref("b")),
+         DummyAnno(innerNestedInlined.ref("a")),
+         DummyAnno(innerNestedInlined.ref("b"))
+       ),
+       Seq(
+         DummyAnno(top.ref("i_a")),
+         DummyAnno(top.ref("i_b")),
+         DummyAnno(top.ref("i_foo_a")),
+         DummyAnno(top.ref("i_foo_b")),
+         DummyAnno(top.instOf("i_bar", "NestedNoInline").ref("a")),
+         DummyAnno(top.instOf("i_bar", "NestedNoInline").ref("b")),
+         DummyAnno(top.instOf("i_bar", "NestedNoInline").ref("foo_a")),
+         DummyAnno(top.instOf("i_bar", "NestedNoInline").ref("foo_b"))
+       )
+     )
+  }
 }
 
 // Execution driven tests for inlining modules
