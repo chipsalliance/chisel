@@ -216,6 +216,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
 
   /** @group SourceInfoTransformMacro */
   def do_apply(p: UInt)(implicit compileOptions: CompileOptions): T = {
+    requireIsHardware(this, "vec")
     requireIsHardware(p, "vec index")
     val port = gen
 
@@ -261,6 +262,37 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
       else self flatMap (e => List(e.toPrintable, PString(", "))) dropRight 1
     // scalastyle:on if.brace
     PString("Vec(") + Printables(elts) + PString(")")
+  }
+
+  /** A reduce operation in a tree like structure instead of sequentially
+    * @example An adder tree
+    * {{{
+    * val sumOut = inputNums.reduceTree((a: T, b: T) => (a + b))
+    * }}}
+    */
+  def reduceTree(redOp: (T, T) => T): T = macro VecTransform.reduceTreeDefault
+
+  /** A reduce operation in a tree like structure instead of sequentially
+    * @example A pipelined adder tree
+    * {{{
+    * val sumOut = inputNums.reduceTree(
+    *   (a: T, b: T) => RegNext(a + b),
+    *   (a: T) => RegNext(a)
+    * )
+    * }}}
+    */
+  def reduceTree(redOp: (T, T) => T, layerOp: (T) => T): T = macro VecTransform.reduceTree
+
+  def do_reduceTree(redOp: (T, T) => T, layerOp: (T) => T = (x: T) => x)
+                   (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) : T = {
+    require(!isEmpty, "Cannot apply reduction on a vec of size 0")
+    var curLayer = this
+    while (curLayer.length > 1) {
+      curLayer = VecInit(curLayer.grouped(2).map( x =>
+        if (x.length == 1) layerOp(x(0)) else redOp(x(0), x(1))
+      ).toSeq)
+    }
+    curLayer(0)
   }
 }
 
@@ -347,16 +379,6 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId with Source
   // IndexedSeq has its own hashCode/equals that we must not use
   override def hashCode: Int = super[HasId].hashCode
   override def equals(that: Any): Boolean = super[HasId].equals(that)
-
-  @chiselRuntimeDeprecated
-  @deprecated("Use Vec.apply instead", "chisel3")
-  def read(idx: UInt)(implicit compileOptions: CompileOptions): T = do_apply(idx)(compileOptions)
-
-  @chiselRuntimeDeprecated
-  @deprecated("Use Vec.apply instead", "chisel3")
-  def write(idx: UInt, data: T)(implicit compileOptions: CompileOptions): Unit = {
-    do_apply(idx)(compileOptions).:=(data)(DeprecatedSourceInfo, compileOptions)
-  }
 
   /** Outputs true if p outputs true for every element.
     */

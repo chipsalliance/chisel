@@ -3,18 +3,17 @@
 package chisel3
 
 import chisel3.internal.ErrorLog
-import chisel3.internal.firrtl._
-import chisel3.experimental.{RawModule, RunFirrtlTransform}
-import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation, ChiselStage, ChiselExecutionResultView}
+import internal.firrtl._
+import firrtl._
+import firrtl.options.{Phase, PhaseManager, StageError}
+import firrtl.options.phases.DeletedWrapper
+import firrtl.options.Viewer.view
+import firrtl.annotations.JsonProtocol
+import firrtl.util.{BackendCompilationUtilities => FirrtlBackendCompilationUtilities}
+import chisel3.stage.{ChiselExecutionResultView, ChiselGeneratorAnnotation, ChiselStage}
 import chisel3.stage.phases.DriverCompatibility
-
 import java.io._
 
-import firrtl._
-import firrtl.annotations.JsonProtocol
-import firrtl.options.Phase
-import firrtl.options.Viewer.view
-import firrtl.util.{BackendCompilationUtilities => FirrtlBackendCompilationUtilities}
 
 /**
   * The Driver provides methods to invoke the chisel3 compiler and the firrtl compiler.
@@ -91,7 +90,7 @@ object Driver extends BackendCompilationUtilities {
     * @param gen A function that creates a Module hierarchy.
     * @return The resulting Chisel IR in the form of a Circuit. (TODO: Should be FIRRTL IR)
     */
-  def elaborate[T <: RawModule](gen: () => T): Circuit = internal.Builder.build(Module(gen()))
+  def elaborate[T <: RawModule](gen: () => T): Circuit = internal.Builder.build(Module(gen()))._1
 
   /**
     * Convert the given Chisel IR Circuit to a FIRRTL Circuit.
@@ -201,36 +200,35 @@ object Driver extends BackendCompilationUtilities {
       optionsManager: ExecutionOptionsManager with HasChiselExecutionOptions with HasFirrtlOptions,
       dut: () => RawModule): ChiselExecutionResult = {
 
-    val annos = ChiselGeneratorAnnotation(dut) +:
-      (optionsManager.chiselOptions.toAnnotations ++
-         optionsManager.firrtlOptions.toAnnotations ++
-         optionsManager.commonOptions.toAnnotations)
+    val annos: AnnotationSeq =
+      Seq(DriverCompatibility.OptionsManagerAnnotation(optionsManager), ChiselGeneratorAnnotation(dut)) ++
+        optionsManager.chiselOptions.toAnnotations ++
+        optionsManager.firrtlOptions.toAnnotations ++
+        optionsManager.commonOptions.toAnnotations
 
-    val phases: Seq[Phase] =
-      Seq( new DriverCompatibility.AddImplicitOutputFile,
-           new DriverCompatibility.AddImplicitOutputAnnotationFile,
-           new DriverCompatibility.DisableFirrtlStage,
-           new ChiselStage,
-           new DriverCompatibility.MutateOptionsManager(optionsManager),
-           new DriverCompatibility.ReEnableFirrtlStage,
-           new firrtl.stage.phases.DriverCompatibility.AddImplicitOutputFile,
-           new firrtl.stage.phases.DriverCompatibility.AddImplicitEmitter,
-           new chisel3.stage.phases.MaybeFirrtlStage )
-        .map(firrtl.options.phases.DeletedWrapper(_))
+    val targets =
+      Seq( classOf[DriverCompatibility.AddImplicitOutputFile],
+           classOf[DriverCompatibility.AddImplicitOutputAnnotationFile],
+           classOf[DriverCompatibility.DisableFirrtlStage],
+           classOf[ChiselStage],
+           classOf[DriverCompatibility.MutateOptionsManager],
+           classOf[DriverCompatibility.ReEnableFirrtlStage],
+           classOf[DriverCompatibility.FirrtlPreprocessing],
+           classOf[chisel3.stage.phases.MaybeFirrtlStage] )
+    val currentState =
+      Seq( classOf[firrtl.stage.phases.DriverCompatibility.AddImplicitFirrtlFile] )
+
+    val phases: Seq[Phase] = new PhaseManager(targets, currentState) {
+      override val wrappers = Seq( DeletedWrapper(_: Phase) )
+    }.transformOrder
 
     val annosx = try {
       phases.foldLeft(annos)( (a, p) => p.transform(a) )
     } catch {
-      case ce: ChiselException =>
-        val stackTrace = if (!optionsManager.chiselOptions.printFullStackTrace) {
-          ce.chiselStackTrace
-        } else {
-          val sw = new StringWriter
-          ce.printStackTrace(new PrintWriter(sw))
-          sw.toString
-        }
-        Predef.augmentString(stackTrace).lines.foreach(line => println(s"${ErrorLog.errTag} $line")) // scalastyle:ignore regex line.size.limit
-        annos
+      /* ChiselStage and FirrtlStage can throw StageError. Since Driver is not a StageMain, it cannot catch these. While
+       * Driver is deprecated and removed in 3.2.1+, the Driver catches all errors.
+       */
+      case e: StageError => annos
     }
 
     view[ChiselExecutionResult](annosx)

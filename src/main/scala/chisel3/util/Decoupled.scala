@@ -6,7 +6,7 @@
 package chisel3.util
 
 import chisel3._
-import chisel3.experimental.{DataMirror, Direction, MultiIOModule, requireIsChiselType}
+import chisel3.experimental.{DataMirror, Direction, requireIsChiselType}
 import chisel3.internal.naming._  // can't use chisel3_ version because of compile order
 
 /** An I/O Bundle containing 'valid' and 'ready' signals that handshake
@@ -191,17 +191,8 @@ class Queue[T <: Data](gen: T,
                        flow: Boolean = false)
                       (implicit compileOptions: chisel3.CompileOptions)
     extends Module() {
-  @deprecated("Module constructor with override _reset deprecated, use withReset", "chisel3")
-  def this(gen: T, entries: Int, pipe: Boolean, flow: Boolean, override_reset: Option[Bool]) = {
-    this(gen, entries, pipe, flow)
-    this.override_reset = override_reset
-  }
-  @deprecated("Module constructor with override _reset deprecated, use withReset", "chisel3")
-  def this(gen: T, entries: Int, pipe: Boolean, flow: Boolean, _reset: Bool) = {
-    this(gen, entries, pipe, flow)
-    this.override_reset = Some(_reset)
-  }
-
+  require(entries > -1, "Queue must have non-negative number of entries")
+  require(entries != 0, "Use companion object Queue.apply for zero entries")
   val genType = if (compileOptions.declaredTypeMustBeUnbound) {
     requireIsChiselType(gen)
     gen
@@ -287,13 +278,12 @@ object Queue
       pipe: Boolean = false,
       flow: Boolean = false): DecoupledIO[T] = {
     if (entries == 0) {
-      val deq = Wire(new DecoupledIO(enq.bits))
+      val deq = Wire(new DecoupledIO(chiselTypeOf(enq.bits)))
       deq.valid := enq.valid
       deq.bits := enq.bits
       enq.ready := deq.ready
       deq
     } else {
-      require(entries > 0)
       val q = Module(new Queue(chiselTypeOf(enq.bits), entries, pipe, flow))
       q.io.enq.valid := enq.valid // not using <> so that override is allowed
       q.io.enq.bits := enq.bits
@@ -312,9 +302,9 @@ object Queue
       enq: ReadyValidIO[T],
       entries: Int = 2,
       pipe: Boolean = false,
-      flow: Boolean = false): IrrevocableIO[T] = {
-    require(entries > 0) // Zero-entry queues don't guarantee Irrevocability
+      flow: Boolean = false): IrrevocableIO[T] = {    
     val deq = apply(enq, entries, pipe, flow)
+    require(entries > 0, "Zero-entry queues don't guarantee Irrevocability")
     val irr = Wire(new IrrevocableIO(deq.bits))
     irr.bits := deq.bits
     irr.valid := deq.valid

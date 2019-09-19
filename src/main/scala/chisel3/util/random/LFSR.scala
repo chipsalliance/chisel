@@ -47,19 +47,24 @@ trait LFSR extends PRNG {
     */
   def reduction: LFSRReduce
 
-  seed match {
-    case Some(s) =>
-      reduction match {
+  override protected def resetValue: Vec[Bool] = seed match {
+    case Some(s) => reduction match {
         case XOR  => require(s != 0, "Seed cannot be zero")
         case XNOR => require(s != BigInt(2).pow(width) - 1, "Seed cannot be all ones (max value)")
       }
-    case None =>
-      reduction match {
-        case XOR  => when (reset.toBool) { state(0) := 1.U }
-        case XNOR => when (reset.toBool) { state(0) := 0.U }
-      }
-  }
+      super.resetValue
 
+    case None => {
+      val res = WireDefault(Vec(width, Bool()), DontCare)
+
+      reduction match {
+        case XOR  => res(0) := true.B
+        case XNOR => res(0) := false.B
+      }
+
+      res
+    }
+  }
 }
 
 /** Utilities related to psuedorandom number generation using Linear Feedback Shift Registers (LFSRs).

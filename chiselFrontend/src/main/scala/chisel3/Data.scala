@@ -44,6 +44,16 @@ object SpecifiedDirection {
       case (SpecifiedDirection.Unspecified, thisDirection) => thisDirection
       case (SpecifiedDirection.Flip, thisDirection) => SpecifiedDirection.flip(thisDirection)
     }
+
+  private[chisel3] def specifiedDirection[T<:Data](source: T)(dir: SpecifiedDirection)(implicit compileOptions: CompileOptions): T = {
+    if (compileOptions.checkSynthesizable) {
+      requireIsChiselType(source)
+    }
+    val out = source.cloneType.asInstanceOf[T]
+    out.specifiedDirection = dir
+    out
+  }
+
 }
 
 /** Resolved directions for both leaf and container nodes, only visible after
@@ -108,12 +118,6 @@ object ActualDirection {
       None
     }
   }
-}
-
-object debug {  // scalastyle:ignore object.name
-  @chiselRuntimeDeprecated
-  @deprecated("debug doesn't do anything in Chisel3 as no pruning happens in the frontend", "chisel3")
-  def apply (arg: Data): Data = arg
 }
 
 package experimental {
@@ -227,32 +231,18 @@ object chiselTypeOf {
 */
 object Input {
   def apply[T<:Data](source: T)(implicit compileOptions: CompileOptions): T = {
-    if (compileOptions.checkSynthesizable) {
-      requireIsChiselType(source)
-    }
-    val out = source.cloneType.asInstanceOf[T]
-    out.specifiedDirection = SpecifiedDirection.Input
-    out
+    SpecifiedDirection.specifiedDirection(source)(SpecifiedDirection.Input)
   }
 }
 object Output {
   def apply[T<:Data](source: T)(implicit compileOptions: CompileOptions): T = {
-    if (compileOptions.checkSynthesizable) {
-      requireIsChiselType(source)
-    }
-    val out = source.cloneType.asInstanceOf[T]
-    out.specifiedDirection = SpecifiedDirection.Output
-    out
+    SpecifiedDirection.specifiedDirection(source)(SpecifiedDirection.Output)
   }
 }
+
 object Flipped {
   def apply[T<:Data](source: T)(implicit compileOptions: CompileOptions): T = {
-    if (compileOptions.checkSynthesizable) {
-      requireIsChiselType(source)
-    }
-    val out = source.cloneType.asInstanceOf[T]
-    out.specifiedDirection = SpecifiedDirection.flip(source.specifiedDirection)
-    out
+    SpecifiedDirection.specifiedDirection(source)(SpecifiedDirection.flip(source.specifiedDirection))
   }
 }
 
@@ -391,7 +381,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
         case _ =>  // fine
       }
       try {
-        MonoConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.forcedUserModule)
+        MonoConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.referenceUserModule)
       } catch {
         case MonoConnectException(message) =>
           throwException(
@@ -413,7 +403,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
         case _ =>  // fine
       }
       try {
-        BiConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.forcedUserModule)
+        BiConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.referenceUserModule)
       } catch {
         case BiConnectException(message) =>
           throwException(
@@ -494,7 +484,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
   final def <> (that: Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = this.bulkConnect(that)(sourceInfo, connectionCompileOptions) // scalastyle:ignore line.size.limit
 
   @chiselRuntimeDeprecated
-  @deprecated("litArg is deprecated, use litOption or litTo*Option", "chisel3.2")
+  @deprecated("litArg is deprecated, use litOption or litTo*Option", "3.2")
   def litArg(): Option[LitArg] = topBindingOpt match {
     case Some(ElementLitBinding(litArg)) => Some(litArg)
     case Some(BundleLitBinding(litMap)) => None  // this API does not support Bundle literals
@@ -521,14 +511,6 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
   final def isWidthKnown: Boolean = width.known
   /** Returns Some(width) if the width is known, else None. */
   final def widthOption: Option[Int] = if (isWidthKnown) Some(getWidth) else None
-
-  /** Packs the value of this object as plain Bits.
-    *
-    * This performs the inverse operation of fromBits(Bits).
-    */
-  @chiselRuntimeDeprecated
-  @deprecated("Best alternative, .asUInt()", "chisel3")
-  def toBits(implicit compileOptions: CompileOptions): UInt = do_asUInt(DeprecatedSourceInfo, compileOptions)
 
   /** Does a reinterpret cast of the bits in this node into the format that provides.
     * Returns a new Wire of that type. Does not modify existing nodes.
@@ -610,23 +592,7 @@ trait WireFactory {
   * }}}
   *
   */
-object Wire extends WireFactory {
-
-  @chiselRuntimeDeprecated
-  @deprecated("Wire(init=init) is deprecated, use WireDefault(init) instead", "chisel3")
-  def apply[T <: Data](dummy: Int = 0, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
-    WireDefault(init)
-
-  @chiselRuntimeDeprecated
-  @deprecated("Wire(t, init) is deprecated, use WireDefault(t, init) instead", "chisel3")
-  def apply[T <: Data](t: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
-    WireDefault(t, init)
-
-  @chiselRuntimeDeprecated
-  @deprecated("Wire(t, init) is deprecated, use WireDefault(t, init) instead", "chisel3")
-  def apply[T <: Data](t: T, init: DontCare.type)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
-    WireDefault(t, init)
-}
+object Wire extends WireFactory
 
 /** Utility for constructing hardware wires with a default connection
   *

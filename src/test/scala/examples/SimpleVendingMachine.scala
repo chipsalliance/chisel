@@ -52,7 +52,7 @@ class VerilogVendingMachine extends BlackBox {
   // Because this is a blackbox, we must explicity add clock and reset
   val io = IO(new SimpleVendingMachineIO {
     val clock = Input(Clock())
-    val reset = Input(Bool())
+    val reset = Input(Reset())
   })
 }
 
