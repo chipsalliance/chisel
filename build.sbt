@@ -6,14 +6,6 @@ import Version._
 
 val commonSettings = Seq.empty
 
-lazy val chisel = (project in file("chisel3"))
-  .settings(commonSettings)
-  .settings(scalacOptions ++= docSourceUrl("chisel3"))
-
-lazy val testers = (project in file("chisel-testers"))
-  .settings(commonSettings)
-  .settings(scalacOptions ++= docSourceUrl("chisel-testers"))
-
 fork := true
 
 val technologies: String =
@@ -140,5 +132,6 @@ lazy val docs = project
   .enablePlugins(MicrositesPlugin)
   .settings(commonSettings)
   .settings(micrositeSettings)
+  .settings(libraryDependencies += "edu.berkeley.cs" %% "chisel-iotesters" % "1.2.10")
   .settings(scalacOptions ++= (Seq("-Xsource:2.11")))
-  .dependsOn(chisel, contributors)
+  .dependsOn(contributors)
