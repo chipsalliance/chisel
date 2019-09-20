@@ -28,7 +28,7 @@ def javacOptionsVersion(scalaVersion: String): Seq[String] = {
   }
 }
 
-val defaultVersions = Map("firrtl" -> "1.2-091719-SNAPSHOT")
+val defaultVersions = Map("firrtl" -> "1.2.0-RC2")
 
 lazy val commonSettings = Seq (
   resolvers ++= Seq(
@@ -36,10 +36,10 @@ lazy val commonSettings = Seq (
     Resolver.sonatypeRepo("releases")
   ),
   organization := "edu.berkeley.cs",
-  version := "3.2-091719-SNAPSHOT",
+  version := "3.2.0-RC2",
   autoAPIMappings := true,
-  scalaVersion := "2.12.9",
-  crossScalaVersions := Seq("2.12.9", "2.11.12"),
+  scalaVersion := "2.12.10",
+  crossScalaVersions := Seq("2.12.10", "2.11.12"),
   scalacOptions := Seq("-deprecation", "-feature") ++ scalacOptionsVersion(scalaVersion.value),
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
