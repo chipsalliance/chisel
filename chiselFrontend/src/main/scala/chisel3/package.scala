@@ -36,13 +36,20 @@ package object chisel3 {    // scalastyle:ignore package.object.name
         }
         /** Int to UInt conversion, recommended style for constants.
           */
-        def U: UInt = UInt.Lit(bigint, Width())  // scalastyle:ignore method.name
+        def U(): UInt = UInt.Lit(bigint, Width())  // scalastyle:ignore method.name
         /** Int to SInt conversion, recommended style for constants.
           */
         def S: SInt = SInt.Lit(bigint, Width())  // scalastyle:ignore method.name
         /** Int to UInt conversion with specified width, recommended style for constants.
           */
         def U(width: Width): UInt = UInt.Lit(bigint, width)  // scalastyle:ignore method.name
+        /**
+         * dummy method to prevent arg confusion
+         * @param width
+         * @return
+         */
+        @deprecated("don't use", "3.2")
+        def U(width: Int): UInt = throw new Exception // scalastyle:ignore method.name
         /** Int to SInt conversion with specified width, recommended style for constants.
           */
         def S(width: Width): SInt = SInt.Lit(bigint, width)  // scalastyle:ignore method.name
