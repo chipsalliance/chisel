@@ -1040,6 +1040,14 @@ sealed class Bool() extends UInt(1.W) with Reset {
   def do_^ (that: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
     binop(sourceInfo, Bool(), BitXorOp, that)
 
+  /** Bitwise inversion operator
+   * // TODO: this should be equivalent to unary not (!), but has a different implementation (BitNotOp vs EqualOp)
+   *
+   * @return this $coll with each bit inverted
+   * @group Bitwise
+   */
+  override def unary_~ (): Bool = macro SourceInfoTransform.noArg
+
   /** @group SourceInfoTransformMacro */
   override def do_unary_~ (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
     unop(sourceInfo, Bool(), BitNotOp)
