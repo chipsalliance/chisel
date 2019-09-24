@@ -2,41 +2,91 @@ buildDir ?= build
 subprojects = $(buildDir)/subprojects
 apis = $(buildDir)/api
 
-scalaVersion ?= 2.12
-scalaMinorVersion ?= 6
-
 www-src = \
 	$(shell find docs/src/main/tut/ -name *.md) \
 	$(shell find docs/src/main/resources)
-chisel-src = $(shell find chisel3/ chisel-testers/ -name *.scala)
 
-# Get all semantic version tags for a git project in a given directory
-# Usage: $(call getTags,foo)
-define getTags
-$(shell cd $(1) && git tag | grep "^v[0-9]\+\(\.[0-9]\+\)*$$")
+firrtlTags = \
+	v1.0.0 \
+	v1.0.1 \
+	v1.0.2 \
+	v1.1.0 \
+	v1.1.1 \
+	v1.1.2 \
+	v1.1.3 \
+	v1.1.4 \
+	v1.1.5 \
+	v1.1.6 \
+	v1.1.7
+chiselTags = \
+	v3.0.0 \
+	v3.0.1 \
+	v3.0.2 \
+	v3.1.0 \
+	v3.1.1 \
+	v3.1.2 \
+	v3.1.3 \
+	v3.1.4 \
+	v3.1.5 \
+	v3.1.6 \
+	v3.1.7 \
+	v3.1.8
+testersTags = \
+	v1.1.0 \
+	v1.1.1 \
+	v1.1.2 \
+	v1.2.0 \
+	v1.2.1 \
+	v1.2.2 \
+	v1.2.3 \
+	v1.2.4 \
+	v1.2.5 \
+	v1.2.6 \
+	v1.2.7 \
+	v1.2.8 \
+	v1.2.9 \
+	v1.2.10
+treadleTags = \
+	v1.0.0 \
+	v1.0.1 \
+	v1.0.2 \
+	v1.0.3 \
+	v1.0.4 \
+	v1.0.5
+diagrammerTags = \
+	v1.0.0 \
+	v1.0.1 \
+	v1.0.2
+
+# Snapshot versions that will have their API published.
+firrtlSnapshot = v1.2.0-RC2
+chiselSnapshot = v3.2.0-RC2
+testersSnapshot = v1.3.0-RC2
+treadleSnapshot = v1.1.0-RC2
+diagrammerSnapshot = v1.1.0-RC2
+
+# Get the latest version of some sequence of version strings
+# Usage: $(call getTags,$(foo))
+define latest
+$(shell echo $(1) | tr " " "\n" | sort -Vr | head -n1 | sed 's/^v//')
 endef
-define getSnapshot
-$(shell cd $(1) && git tag | grep "^v.\+-SNAPSHOT$$" | sort -nr | head -n1)
-endef
 
-firrtlTags = $(call getTags,firrtl)
-chiselTags = $(call getTags,chisel3)
-testersTags = $(call getTags,chisel-testers)
-treadleTags = $(call getTags,treadle)
-diagrammerTags = $(call getTags,diagrammer)
+# The "latest" version that will be pointed to by, e.g., 'api/latest'
+# or 'api/firrtl/latest'.
+firrtlLatest = $(call latest,$(firrtlTags))
+chiselLatest = $(call latest,$(chiselTags))
+testersLatest = $(call latest,$(testersTags))
+treadleLatest = $(call latest,$(treadleTags))
+diagrammerLatest = $(call latest,$(diagrammerTags))
 
-firrtlSnapshot = $(call getSnapshot,firrtl)
-chiselSnapshot = $(call getSnapshot,chisel3)
-testersSnapshot = $(call getSnapshot,chisel-testers)
-treadleSnapshot = $(call getSnapshot,treadle)
-diagrammerSnapshot = $(call getSnapshot,diagrammer)
+api-latest = \
+	docs/target/site/api/latest \
+	docs/target/site/api/firrtl/latest \
+	docs/target/site/api/chisel-testers/latest \
+	docs/target/site/api/treadle/latest \
+	docs/target/site/api/diagrammer/latest
 
 api-copy = \
-	docs/target/site/api/latest/index.html \
-	docs/target/site/api/firrtl/latest/index.html \
-	docs/target/site/api/chisel-testers/latest/index.html \
-	docs/target/site/api/treadle/latest/index.html \
-	docs/target/site/api/diagrammer/latest/index.html \
 	$(chiselTags:v%=docs/target/site/api/%/index.html) docs/target/site/api/SNAPSHOT/index.html \
 	$(firrtlTags:v%=docs/target/site/api/firrtl/%/index.html) docs/target/site/api/firrtl/SNAPSHOT/index.html \
 	$(testersTags:v%=docs/target/site/api/chisel-testers/%/index.html) docs/target/site/api/chisel-testers/SNAPSHOT/index.html \
@@ -77,91 +127,82 @@ mrproper:
 
 # Publish Microsite
 publish: all
-	sbt ++$(scalaVersion).$(scalaMinorVersion) docs/ghpagesPushSite
+	sbt docs/ghpagesPushSite
 
 # Start a Jekyll server for the site
 serve: all
 	(cd docs/target/site && jekyll serve)
 
 # Build the sbt-microsite
-docs/target/site/index.html: build.sbt docs/src/main/tut/contributors.md $(www-src) $(chisel-src) $(api-copy)
-	sbt ++$(scalaVersion).$(scalaMinorVersion) docs/makeMicrosite
+docs/target/site/index.html: build.sbt docs/src/main/tut/contributors.md $(www-src) $(api-copy) | $(api-latest)
+	sbt docs/makeMicrosite
 
 # Determine contributors
 docs/src/main/tut/contributors.md: build.sbt
-	sbt ++$(scalaVersion).$(scalaMinorVersion) contributors/determineContributors
-
-# Build API of subprojects
-chisel3/target/scala-$(scalaVersion)/unidoc/index.html: $(shell find chisel3/src chisel-testers/src -name *.scala) | chisel3/.git
-	(cd chisel3/ && sbt ++$(scalaVersion).$(scalaMinorVersion) unidoc)
-firrtl/target/scala-$(scalaVersion)/unidoc/index.html: $(shell find firrtl/src -name *.scala) | firrtl/.git
-	(cd firrtl/ && sbt ++$(scalaVersion).$(scalaMinorVersion) unidoc)
-chisel-testers/target/scala-$(scalaVersion)/api/index.html: $(shell find chisel-testers/src -name *.scala) | chisel-testers/.git
-	(cd chisel-testers/ && sbt ++$(scalaVersion).$(scalaMinorVersion) doc)
-treadle/target/scala-$(scalaVersion)/api/index.html: $(shell find treadle/src -name *.scala) | treadle/.git
-	(cd treadle/ && sbt ++$(scalaVersion).$(scalaMinorVersion) doc)
-diagrammer/target/scala-$(scalaVersion)/api/index.html: $(shell find diagrammer/src -name *.scala) | diagrammer/.git
-	(cd diagrammer/ && sbt ++$(scalaVersion).$(scalaMinorVersion) doc)
+	sbt contributors/determineContributors
 
 # Copy built API into site
-docs/target/site/api/latest/index.html: chisel3/target/scala-$(scalaVersion)/unidoc/index.html | docs/target/site/api/latest/
-	cp -r $(dir $<)* $(dir $@)
-docs/target/site/api/firrtl/latest/index.html: firrtl/target/scala-$(scalaVersion)/unidoc/index.html | docs/target/site/api/firrtl/latest/
-	cp -r $(dir $<)* $(dir $@)
-docs/target/site/api/treadle/latest/index.html: treadle/target/scala-$(scalaVersion)/api/index.html | docs/target/site/api/treadle/latest/
-	cp -r $(dir $<)* $(dir $@)
-docs/target/site/api/chisel-testers/latest/index.html: chisel-testers/target/scala-$(scalaVersion)/api/index.html | docs/target/site/api/chisel-testers/latest/
-	cp -r $(dir $<)* $(dir $@)
-docs/target/site/api/diagrammer/latest/index.html: diagrammer/target/scala-$(scalaVersion)/api/index.html | docs/target/site/api/diagrammer/latest/
-	cp -r $(dir $<)* $(dir $@)
+docs/target/site/api/latest: docs/target/site/api/$(chiselLatest)/index.html
+	rm -f $@
+	ln -s $(chiselLatest) $@
+docs/target/site/api/firrtl/latest: docs/target/site/api/firrtl/$(firrtlLatest)/index.html
+	rm -f $@
+	ln -s $(firrtlLatest) $@
+docs/target/site/api/treadle/latest: docs/target/site/api/treadle/$(treadleLatest)/index.html
+	rm -f $@
+	ln -s $(treadleLatest) $@
+docs/target/site/api/chisel-testers/latest: docs/target/site/api/chisel-testers/$(testersLatest)/index.html
+	rm -f $@
+	ln -s $(testersLatest) $@
+docs/target/site/api/diagrammer/latest: docs/target/site/api/diagrammer/$(diagrammerLatest)/index.html
+	rm -f $@
+	ln -s $(diagrammerLatest) $@
 
-# Build *old* API of subprojects
-$(subprojects)/chisel3/%/target/scala-$(scalaVersion)/unidoc/index.html: | $(subprojects)/chisel3/%/.git
-	(cd $(subprojects)/chisel3/$* && sbt ++$(scalaVersion).$(scalaMinorVersion) unidoc)
-$(subprojects)/firrtl/%/target/scala-$(scalaVersion)/unidoc/index.html: | $(subprojects)/firrtl/%/.git
-	(cd $(subprojects)/firrtl/$* && sbt ++$(scalaVersion).$(scalaMinorVersion) unidoc)
-$(subprojects)/chisel-testers/%/target/scala-$(scalaVersion)/api/index.html: | $(subprojects)/chisel-testers/%/.git
-	(cd $(subprojects)/chisel-testers/$* && sbt ++$(scalaVersion).$(scalaMinorVersion) doc)
-$(subprojects)/treadle/%/target/scala-$(scalaVersion)/api/index.html: | $(subprojects)/treadle/%/.git
-	(cd $(subprojects)/treadle/$* && sbt ++$(scalaVersion).$(scalaMinorVersion) doc)
-$(subprojects)/diagrammer/%/target/scala-$(scalaVersion)/api/index.html: | $(subprojects)/diagrammer/%/.git
-	(cd $(subprojects)/diagrammer/$* && sbt ++$(scalaVersion).$(scalaMinorVersion) doc)
+# Build API for a subproject with a specific tag. Each build rule is
+# specialized by the type of documentation to build (either
+# scaladoc/"sbt doc" or unidoc/"sbt unidoc"). The version of Scala in
+# use by the subproject/tag (e.g., 2.11 or 2.12) is a function of the
+# tag. Consequently, the rule searches for the expected output
+# directory and copies that.
+$(apis)/chisel3/%/index.html: $(subprojects)/chisel3/%/.git | $(apis)/chisel3/%/
+	(cd $(subprojects)/chisel3/$* && sbt unidoc)
+	find $(<D) -type d -name unidoc -exec cp -r '{}'/. $(@D) ';'
+$(apis)/firrtl/%/index.html: $(subprojects)/firrtl/%/.git | $(apis)/firrtl/%/
+	(cd $(subprojects)/firrtl/$* && sbt unidoc)
+	find $(<D) -type d -name unidoc -exec cp -r '{}'/. $(@D) ';'
+$(apis)/chisel-testers/%/index.html: $(subprojects)/chisel-testers/%/.git | $(apis)/chisel-testers/%/
+	(cd $(subprojects)/chisel-testers/$* && sbt doc)
+	find $(<D) -type d -name api -exec cp -r '{}'/. $(@D) ';'
+$(apis)/treadle/%/index.html: $(subprojects)/treadle/%/.git | $(apis)/treadle/%/
+	(cd $(subprojects)/treadle/$* && sbt doc)
+	find $(<D) -type d -name api -exec cp -r '{}'/. $(@D) ';'
+$(apis)/diagrammer/%/index.html: $(subprojects)/diagrammer/%/.git | $(apis)/diagrammer/%/
+	(cd $(subprojects)/diagrammer/$* && sbt doc)
+	find $(<D) -type d -name api -exec cp -r '{}'/. $(@D) ';'
 
 # Copy *SNAPSHOT* API of subprojects into API directory
 docs/target/site/api/SNAPSHOT/index.html: $(apis)/chisel3/$(chiselSnapshot)/index.html | docs/target/site/api/SNAPSHOT/
-	cp -r $(dir $<)* $(dir $@)
+	cp -r $(<D)/. $(@D)
 docs/target/site/api/firrtl/SNAPSHOT/index.html: $(apis)/firrtl/$(firrtlSnapshot)/index.html | docs/target/site/api/firrtl/SNAPSHOT/
-	cp -r $(dir $<)* $(dir $@)
+	cp -r $(<D)/. $(@D)
 docs/target/site/api/chisel-testers/SNAPSHOT/index.html: $(apis)/chisel-testers/$(testersSnapshot)/index.html | docs/target/site/api/chisel-testers/SNAPSHOT/
-	cp -r $(dir $<)* $(dir $@)
+	cp -r $(<D)/. $(@D)
 docs/target/site/api/treadle/SNAPSHOT/index.html: $(apis)/treadle/$(treadleSnapshot)/index.html | docs/target/site/api/treadle/SNAPSHOT/
-	cp -r $(dir $<)* $(dir $@)
+	cp -r $(<D)/. $(@D)
 docs/target/site/api/diagrammer/SNAPSHOT/index.html: $(apis)/diagrammer/$(diagrammerSnapshot)/index.html | docs/target/site/api/diagrammer/SNAPSHOT/
-	cp -r $(dir $<)* $(dir $@)
-
-# Copy *old* API of subprojects into API diretory
-$(apis)/chisel3/%/index.html: $(subprojects)/chisel3/%/target/scala-$(scalaVersion)/unidoc/index.html | $(apis)/chisel3/%/
-	cp -r $(dir $<)* $(dir $@)
-$(apis)/firrtl/%/index.html: $(subprojects)/firrtl/%/target/scala-$(scalaVersion)/unidoc/index.html | $(apis)/firrtl/%/
-	cp -r $(dir $<)* $(dir $@)
-$(apis)/chisel-testers/%/index.html: $(subprojects)/chisel-testers/%/target/scala-$(scalaVersion)/api/index.html | $(apis)/chisel-testers/%/
-	cp -r $(dir $<)* $(dir $@)
-$(apis)/treadle/%/index.html: $(subprojects)/treadle/%/target/scala-$(scalaVersion)/api/index.html | $(apis)/treadle/%/
-	cp -r $(dir $<)* $(dir $@)
-$(apis)/diagrammer/%/index.html: $(subprojects)/diagrammer/%/target/scala-$(scalaVersion)/api/index.html | $(apis)/diagrammer/%/
-	cp -r $(dir $<)* $(dir $@)
+	cp -r $(<D)/. $(@D)
 
 # Copy *old* API of subprojects from API directory into website
 docs/target/site/api/%/index.html: $(apis)/chisel3/v%/index.html | docs/target/site/api/%/
-	cp -r $(dir $<)* $(dir $@)
+	cp -r $(<D)/. $(@D)
 docs/target/site/api/firrtl/%/index.html: $(apis)/firrtl/v%/index.html | docs/target/site/api/firrtl/%/
-	cp -r $(dir $<)* $(dir $@)
+	cp -r $(<D)/. $(@D)
 docs/target/site/api/chisel-testers/%/index.html: $(apis)/chisel-testers/v%/index.html | docs/target/site/api/chisel-testers/%/
-	cp -r $(dir $<)* $(dir $@)
+	cp -r $(<D)/. $(@D)
 docs/target/site/api/treadle/%/index.html: $(apis)/treadle/v%/index.html | docs/target/site/api/treadle/%/
-	cp -r $(dir $<)* $(dir $@)
+	cp -r $(<D)/. $(@D)
 docs/target/site/api/diagrammer/%/index.html: $(apis)/diagrammer/v%/index.html | docs/target/site/api/diagrammer/%/
-	cp -r $(dir $<)* $(dir $@)
+	cp -r $(<D)/. $(@D)
 
 # Utilities to either fetch submodules or create directories
 %/.git:
