@@ -4,7 +4,12 @@ apis = $(buildDir)/api
 
 www-src = \
 	$(shell find docs/src/main/tut/ -name *.md) \
-	$(shell find docs/src/main/resources)
+	$(shell find docs/src/main/resources) \
+	chisel3/README.md \
+	firrtl/README.md \
+	chisel-testers/README.md \
+	treadle/README.md \
+	diagrammer/README.md
 
 firrtlTags = \
 	v1.0.0 \
