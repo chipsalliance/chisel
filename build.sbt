@@ -82,12 +82,6 @@ lazy val micrositeSettings = Seq(
   micrositeAnalyticsToken := "UA-145179088-1",
   autoAPIMappings := true,
   ghpagesNoJekyll := false,
-  scalacOptions in (ScalaUnidoc, unidoc) ++= Seq(
-    "-groups",
-    "-sourcepath",
-    baseDirectory.in(LocalRootProject).value.getAbsolutePath,
-    "-diagrams"
-  ),
   ghpagesRepository := file("build/gh-pages"),
   ghpagesBranch := "gh-pages",
   git.remoteRepo := "git@github.com:freechipsproject/www.chisel-lang.org.git",
