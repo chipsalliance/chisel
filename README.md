@@ -110,7 +110,7 @@ These simulation-based verification tools are available for Chisel:
 If you are migrating from Chisel2, see [the migration guide on the wiki](https://github.com/ucb-bar/chisel3/wiki/Chisel3-vs-Chisel2).
 
 ### Data Types Overview
-These are the base data types for defining circuit wires (abstract types which may not be instantiated are greyed out):
+These are the base data types for defining circuit components:
 
 ![Image](https://raw.githubusercontent.com/freechipsproject/chisel3/master/doc/images/type_hierarchy.svg?sanitize=true)
 
