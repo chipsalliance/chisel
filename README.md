@@ -1,6 +1,6 @@
 ![Chisel 3](https://raw.githubusercontent.com/freechipsproject/chisel3/master/doc/images/chisel_logo.svg?sanitize=true)
 
-#
+---
 
 [![Join the chat at https://gitter.im/freechipsproject/chisel3](https://badges.gitter.im/freechipsproject/chisel3.svg)](https://gitter.im/freechipsproject/chisel3?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![CircleCI](https://circleci.com/gh/freechipsproject/chisel3/tree/master.svg?style=shield)](https://circleci.com/gh/freechipsproject/chisel3/tree/master)
@@ -12,7 +12,7 @@ This generator methodology enables the creation of re-usable components and libr
 
 For more information on the benefits of Chisel see: ["What benefits does Chisel offer over classic Hardware Description Languages?"](https://stackoverflow.com/questions/53007782/what-benefits-does-chisel-offer-over-classic-hardware-description-languages)
 
-Chisel is powered by [FIRRTL (Flexible Intermediate Representation for RTL)](https://github.com/freechipsproject/firrtl), a hardware compiler framework that performs optimizations of Chisel-generated circuits and supports custom user-defined circuit transformations. 
+Chisel is powered by [FIRRTL (Flexible Intermediate Representation for RTL)](https://github.com/freechipsproject/firrtl), a hardware compiler framework that performs optimizations of Chisel-generated circuits and supports custom user-defined circuit transformations.
 
 ## What does Chisel code look like?
 
@@ -51,15 +51,15 @@ class FirFilter(bitWidth: Int, coeffs: Seq[UInt]) extends Module {
   for (i <- 1 until coeffs.length) {
     zs(i) := zs(i-1)
   }
-  
+
   // Do the multiplies
   val products = VecInit.tabulate(coeffs.length)(i => zs(i) * coeffs(i))
-  
+
   // Sum up the products
   io.out := products.reduce(_ + _)
 }
 ```
- 
+
 and use and re-use them across designs:
 ```scala
 val movingAverage3Filter = FirFilter(8.W, Seq(1.U, 1.U, 1.U))  // same 3-point moving average filter as before
@@ -72,7 +72,7 @@ val triangleFilter = FirFilter(8.W, Seq(1.U, 2.U, 3.U, 2.U, 1.U))  // 5-point FI
 
 ### Bootcamp Interactive Tutorial
 The [**online Chisel Bootcamp**](https://mybinder.org/v2/gh/freechipsproject/chisel-bootcamp/master) is the recommended way to get started with and learn Chisel.
-**No setup is required** (it runs in the browser), nor does it assume any prior knowledge of Scala.   
+**No setup is required** (it runs in the browser), nor does it assume any prior knowledge of Scala.
 
 ### Build Your Own Chisel Projects
 
@@ -88,7 +88,7 @@ resolvers ++= Seq(
 )
 libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.2-SNAPSHOT"
 libraryDependencies += "edu.berkeley.cs" %% "chisel-testers2" % "0.1-SNAPSHOT"
-``` 
+```
 
 ### Design Verification
 
