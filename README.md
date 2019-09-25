@@ -18,7 +18,7 @@ Chisel is powered by [FIRRTL (Flexible Intermediate Representation for RTL)](htt
 
 Consider an FIR filter that implements a convolution operation, as depicted in this block diagram:
 
-<img src="doc/images/fir_filter.svg?sanitize=true" width="512" />
+<img src="https://github.com/freechipsproject/chisel3/blob/readme-fix/doc/images/fir_filter.svg?sanitize=true" width="512" />
 
 While Chisel provides similar base primitives as synthesizable Verilog, and *could* be used as such:
 
@@ -112,7 +112,7 @@ If you are migrating from Chisel2, see [the migration guide on the wiki](https:/
 ### Data Types Overview
 These are the base data types for defining circuit wires (abstract types which may not be instantiated are greyed out):
 
-![Image](doc/images/type_hierarchy.png?raw=true)
+![Image](https://raw.githubusercontent.com/freechipsproject/chisel3/master/doc/images/type_hierarchy.svg?sanitize=true)
 
 ## Developer Documentation
 This section describes how to get started developing Chisel itself, including how to test your version locally against other projects that pull in Chisel using [sbt's managed dependencies](https://www.scala-sbt.org/1.x/docs/Library-Dependencies.html).
