@@ -18,7 +18,7 @@ Chisel is powered by [FIRRTL (Flexible Intermediate Representation for RTL)](htt
 
 Consider an FIR filter that implements a convolution operation, as depicted in this block diagram:
 
-<img src="https://github.com/freechipsproject/chisel3/blob/readme-fix/doc/images/fir_filter.svg?sanitize=true" width="512" />
+<img src="https://raw.githubusercontent.com/freechipsproject/chisel3/master/doc/images/fir_filter.svg?sanitize=true" width="512" />
 
 While Chisel provides similar base primitives as synthesizable Verilog, and *could* be used as such:
 
