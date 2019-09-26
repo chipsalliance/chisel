@@ -3,7 +3,7 @@ subprojects = $(buildDir)/subprojects
 apis = $(buildDir)/api
 
 www-src = \
-	$(shell find docs/src/main/tut/ -name *.md) \
+	$(shell find docs/src/main/tut/ -name "*.md") \
 	$(shell find docs/src/main/resources) \
 	chisel3/README.md \
 	firrtl/README.md \
