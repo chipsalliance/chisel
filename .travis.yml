@@ -52,6 +52,7 @@ jobs:
         - gem update --system
         - gem install sass
         - gem install jekyll -v 3.8.5
+        - gem install jekyll-redirect-from
         - make
         - if [ "$TRAVIS_BRANCH" = "master" -a "$TRAVIS_PULL_REQUEST" = "false" ]; then make publish; fi
         - if [ "$TRAVIS_PULL_REQUEST" = "true" ]; then echo "Not in master branch, skipping deploy and release"; fi
