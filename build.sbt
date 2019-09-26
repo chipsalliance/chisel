@@ -35,9 +35,8 @@ lazy val micrositeSettings = Seq(
   micrositeDocumentationUrl := "api/latest/",
   micrositeDocumentationLabelDescription := "API Documentation",
   micrositeGitterChannelUrl := "freechipsproject/chisel3",
-  /* mdoc doesn't work with extraMDFiles so this is disabled for now */
-  // micrositeCompilingDocsTool := WithMdoc,
-  // mdocIn := file("docs/src/main/mdoc"),
+  micrositeCompilingDocsTool := WithMdoc,
+  mdocIn := file("docs/src/main/tut"),
   /* Copy markdown files from each of the submodules to build out the website:
    * - Chisel3 README becomes the landing page
    * - Other READMEs become the landing pages of each sub-project's documentation
