@@ -11,6 +11,9 @@ www-src = \
 	treadle/README.md \
 	diagrammer/README.md
 
+redirects = \
+	docs/target/site/doc/chisel-cheatsheet3.pdf/index.html
+
 firrtlTags = \
 	v1.0.0 \
 	v1.0.1 \
@@ -139,7 +142,7 @@ serve: all
 	(cd docs/target/site && jekyll serve)
 
 # Build the sbt-microsite
-docs/target/site/index.html: build.sbt docs/src/main/tut/contributors.md $(www-src) $(api-copy) | $(api-latest)
+docs/target/site/index.html: build.sbt docs/src/main/tut/contributors.md $(www-src) $(api-copy) $(redirects) | $(api-latest)
 	sbt docs/makeMicrosite
 
 # Determine contributors
@@ -209,6 +212,10 @@ docs/target/site/api/treadle/%/index.html: $(apis)/treadle/v%/index.html | docs/
 docs/target/site/api/diagrammer/%/index.html: $(apis)/diagrammer/v%/index.html | docs/target/site/api/diagrammer/%/
 	cp -r $(<D)/. $(@D)
 
+# Copy special meta refresh redirects that are files into the website
+docs/target/site/doc/chisel-cheatsheet3.pdf/index.html: docs/src/main/resources/redirects/chisel-cheatsheet3.html | docs/target/site/doc/chisel-cheatsheet3.pdf/
+	cp $< $@
+
 # Utilities to either fetch submodules or create directories
 %/.git:
 	git submodule update --init --depth 1 $*
@@ -222,7 +229,5 @@ $(subprojects)/treadle/%/.git:
 	git clone "https://github.com/freechipsproject/treadle.git" --depth 1 --branch $* $(dir $@)
 $(subprojects)/diagrammer/%/.git:
 	git clone "https://github.com/freechipsproject/diagrammer.git" --depth 1 --branch $* $(dir $@)
-$(apis)/%/:
-	mkdir -p $@
-docs/target/site/api/%/:
+%/:
 	mkdir -p $@
