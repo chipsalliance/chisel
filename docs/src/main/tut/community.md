@@ -3,6 +3,7 @@ layout: page
 title:  "Community"
 section: "Community"
 position: 16
+redirect_from: /documentation
 ---
 
 ## Chisel Users Community
