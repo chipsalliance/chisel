@@ -127,7 +127,7 @@ apis-diagrammer: $(diagrammerTags:%=$(apis)/diagrammer/%/index.html) $(apis)/dia
 
 # Remove the output of all build targets
 clean:
-	rm -rf $(buildDir)/api docs/target docs/src/main/tut/contributors.md
+	rm -rf docs/target docs/src/main/tut/contributors.md
 
 # Remove everything
 mrproper:
