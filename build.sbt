@@ -31,6 +31,7 @@ lazy val micrositeSettings = Seq(
   micrositeShareOnSocial := false,
   micrositeDocumentationUrl := "api/latest/",
   micrositeDocumentationLabelDescription := "API Documentation",
+  micrositeGitterChannelUrl := "freechipsproject/chisel3",
   /* mdoc doesn't work with extraMDFiles so this is disabled for now */
   // micrositeCompilingDocsTool := WithMdoc,
   // mdocIn := file("docs/src/main/mdoc"),
