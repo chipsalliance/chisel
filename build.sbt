@@ -1,6 +1,6 @@
 // See LICENSE for license details.
 
-import microsites.{MicrositeFavicon, ExtraMdFileConfig}
+import microsites.{MicrositeEditButton, MicrositeFavicon, ExtraMdFileConfig}
 
 import Version._
 
@@ -26,7 +26,7 @@ lazy val micrositeSettings = Seq(
   micrositeAuthor := "the Chisel/FIRRTL Developers",
   micrositeTwitter := "@chisel_lang",
   micrositeGithubOwner := "freechipsproject",
-  micrositeGithubRepo := "chisel3",
+  micrositeGithubRepo := "www.chisel-lang.org",
   micrositeGithubLinks := false,
   micrositeShareOnSocial := false,
   micrositeDocumentationUrl := "api/latest/",
@@ -80,6 +80,7 @@ lazy val micrositeSettings = Seq(
     "gray-lighter"      -> "#F4F3F4",
     "white-color"       -> "#FFFFFF"),
   micrositeAnalyticsToken := "UA-145179088-1",
+  micrositeEditButton := Some(MicrositeEditButton("Improve this Page", "/edit/master/docs/src/main/tut/{{ page.path }}")),
   autoAPIMappings := true,
   ghpagesNoJekyll := false,
   ghpagesRepository := file("build/gh-pages"),
