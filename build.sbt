@@ -1,6 +1,6 @@
 // See LICENSE for license details.
 
-import microsites.{MicrositeEditButton, MicrositeFavicon, ExtraMdFileConfig}
+import microsites.{ConfigYml, MicrositeEditButton, MicrositeFavicon, ExtraMdFileConfig}
 
 import Version._
 
@@ -22,6 +22,9 @@ lazy val micrositeSettings = Seq(
   micrositeName := "Chisel/FIRRTL",
   micrositeDescription := "Chisel/FIRRTL\nHardware Compiler Framework",
   micrositeUrl := "https://www.chisel-lang.org",
+  micrositeConfigYaml := ConfigYml(
+    yamlCustomProperties = Map("plugins" -> Seq("jekyll-redirect-from"))
+  ),
   micrositeBaseUrl := "",
   micrositeAuthor := "the Chisel/FIRRTL Developers",
   micrositeTwitter := "@chisel_lang",
