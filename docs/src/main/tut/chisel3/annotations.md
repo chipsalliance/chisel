@@ -7,7 +7,7 @@ Annotations are used to mark modules and their elements in a way that can be acc
 
 ### Imports
 We need a few basic imports to reference the components we need.  The chisel3 is a standard
-```tut
+```scala mdoc:silent
 import chisel3._
 import chisel3.experimental.ChiselAnnotation
 import chisel3.internal.InstanceId
@@ -16,7 +16,7 @@ import firrtl.annotations.{Annotation, ModuleName, Named}
 ```
 ### Write a transform
 This is an identity transform that returns whatever it is passed without alteration.  See [Writing Firrtl Transforms](/ucb-bar/firrtl/wiki) for the gory details on writing transforms that actually do something.
-```tut:silent
+```scala mdoc:silent
 class IdentityTransform extends Transform {
   override def inputForm: CircuitForm = LowForm
   override def outputForm: CircuitForm = LowForm
@@ -35,7 +35,7 @@ class IdentityTransform extends Transform {
 This creates a transform that operates on low Firrtl (LowForm) and returns low Firrtl.  ```getMyAnnotations``` returns a list of annotations for your pass.  This example does nothing with those annotations.
 ### Create an Annotation Factory
 The following creates an annotation that is connected to your transform, note the ```classOf[IdentityTransform]```.  The unapply is a convenience method for extracting information from your annotation by using the Scala ```match``` operator.
-```tut:silent
+```scala mdoc:silent
 object IdentityAnnotation {
   def apply(target: Named, value: String): Annotation = Annotation(target, classOf[IdentityTransform], value)
 
@@ -53,7 +53,7 @@ An Annotator is a trait that only be applied to a Module.  It provides an abstra
 > The ```value``` passed to the Annotator does not have to be a string, but it must serializable into a string
 > for the ```value``` parameter of the ```ChiselAnnotation``` being created.
 
-```tut:silent
+```scala mdoc:silent
 trait IdentityAnnotator {
   self: Module =>
   def identify(component: InstanceId, value: String): Unit = {
@@ -64,7 +64,7 @@ trait IdentityAnnotator {
 
 ### Using the Annotator
 Here is a module that uses our ```IdentityAnnotator```
-```tut:silent
+```scala mdoc:silent
 class ModC(widthC: Int) extends Module with IdentityAnnotator {
   val io = IO(new Bundle {
     val in = Input(UInt(widthC.W))
