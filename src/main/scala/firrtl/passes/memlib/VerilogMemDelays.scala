@@ -33,6 +33,8 @@ object VerilogMemDelays extends Pass {
       repl: Netlist,
       stmts: mutable.ArrayBuffer[Statement])
       (s: Statement): Statement = s.map(memDelayStmt(netlist, namespace, repl, stmts)) match {
+    case sx: DefMemory if (sx.readUnderWrite == ir.ReadUnderWrite.Old) =>
+      throwInternalError("VerilogMemDelays does not support read-first (readunderwrite == 'old') memories")
     case sx: DefMemory =>
       val ports = (sx.readers ++ sx.writers).toSet
       def newPortName(rw: String, p: String) = (for {

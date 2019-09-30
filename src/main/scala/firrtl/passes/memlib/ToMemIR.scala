@@ -11,14 +11,15 @@ import firrtl.ir._
   *   - read latency and write latency of one
   *   - only one readwrite port or write port
   *   - zero or one read port
+  *   - undefined read-under-write behavior
   */
 object ToMemIR extends Pass {
   /** Only annotate memories that are candidates for memory macro replacements
-    * i.e. rw, w + r (read, write 1 cycle delay)
+    * i.e. rw, w + r (read, write 1 cycle delay) and read-under-write "undefined."
     */
+  import ReadUnderWrite._
   def updateStmts(s: Statement): Statement = s match {
-    case m: DefMemory if m.readLatency == 1 && m.writeLatency == 1 &&
-        (m.writers.length + m.readwriters.length) == 1 && m.readers.length <= 1 =>
+    case m @ DefMemory(_,_,_,_,1,1,r,w,rw,Undefined) if (w.length + rw.length) == 1 && r.length <= 1 =>
       DefAnnotatedMemory(m)
     case sx => sx map updateStmts
   }
