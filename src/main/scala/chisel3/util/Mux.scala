@@ -63,10 +63,20 @@ object MuxLookup {
     * @return the value found or the default if not
     */
   def apply[S <: UInt, T <: Data] (key: S, default: T, mapping: Seq[(S, T)]): T = {
-    var res = default
-    for ((k, v) <- mapping.reverse)
-      res = Mux(k === key, v, res)
-    res
+    /* If the mapping is defined for all possible values of the key, then don't use the default value */
+    val (defaultx, mappingx) = try {
+      val k = mapping.map(_._1)
+      if ((math.pow(2, key.getWidth) == k.size) && (k.distinct.size == k.size)) {
+        (mapping.head._2, mapping.tail)
+      } else {
+        (default, mapping)
+      }
+    } catch {
+      // This catches the case where the width of the key is unknown, i.e., key.getWidth fails
+      case _: Exception => (default, mapping)
+    }
+
+    mappingx.foldLeft(defaultx){ case (d, (k, v)) => Mux(k === key, v, d) }
   }
 }
 
