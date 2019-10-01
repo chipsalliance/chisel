@@ -13,6 +13,22 @@ import MemPortUtils._
 
 import collection.mutable
 
+object DelayPipe {
+  private case class PipeState(ref: Expression, decl: Statement = EmptyStmt, connect: Statement = EmptyStmt, idx: Int = 0)
+
+  def apply(ns: Namespace)(e: Expression, delay: Int, clock: Expression): (Expression, Seq[Statement]) = {
+    def addStage(prev: PipeState): PipeState = {
+      val idx = prev.idx + 1
+      val name = ns.newName(s"${e.serialize}_r${idx}".replace('.', '_'))
+      val regRef = WRef(name, e.tpe, RegKind)
+      val regDecl = DefRegister(NoInfo, name, e.tpe, clock, zero, regRef)
+      PipeState(regRef, regDecl, Connect(NoInfo, regRef, prev.ref), idx)
+    }
+    val pipeline = Seq.iterate(PipeState(e), delay+1)(addStage)
+    (pipeline.last.ref, pipeline.map(_.decl) ++ pipeline.map(_.connect))
+  }
+}
+
 /** This pass generates delay reigsters for memories for verilog */
 object VerilogMemDelays extends Pass {
   val ug = UnknownFlow
@@ -49,7 +65,7 @@ object VerilogMemDelays extends Pass {
         readers = sx.readers ++ (sx.readwriters map (rw => rwMap(rw)._1)),
         writers = sx.writers ++ (sx.readwriters map (rw => rwMap(rw)._2)),
         readwriters = Nil, readLatency = 0, writeLatency = 1)
-      def pipe(e: Expression, // Expression to be piped
+      def prependPipe(e: Expression, // Expression to be piped
                n: Int, // pipe depth
                clk: Expression, // clock expression
                cond: Expression // condition for pipes
@@ -96,40 +112,69 @@ object VerilogMemDelays extends Pass {
       )
 
       stmts ++= ((sx.readers flatMap {reader =>
-        // generate latency pipes for read ports (enable & addr)
         val clk = netlist(memPortField(sx, reader, "clk"))
-        val (en, ss1) = pipe(memPortField(sx, reader, "en"), sx.readLatency - 1, clk, one)
-        val (addr, ss2) = pipe(memPortField(sx, reader, "addr"), sx.readLatency, clk, en)
-        ss1 ++ ss2 ++ readPortConnects(reader, clk, en, addr)
+        if (sx.readUnderWrite == ReadUnderWrite.Old) {
+          // For a read-first ("old") mem, read data gets delayed, so don't delay read address/en
+          val rdata = memPortField(sx, reader, "data")
+          val enDriver = netlist(memPortField(sx, reader, "en"))
+          val addrDriver = netlist(memPortField(sx, reader, "addr"))
+          readPortConnects(reader, clk, enDriver, addrDriver)
+        } else {
+          // For a write-first ("new") or undefined mem, delay read control inputs
+          val (en, ss1) = prependPipe(memPortField(sx, reader, "en"), sx.readLatency - 1, clk, one)
+          val (addr, ss2) = prependPipe(memPortField(sx, reader, "addr"), sx.readLatency, clk, en)
+          ss1 ++ ss2 ++ readPortConnects(reader, clk, en, addr)
+        }
       }) ++ (sx.writers flatMap {writer =>
         // generate latency pipes for write ports (enable, mask, addr, data)
         val clk = netlist(memPortField(sx, writer, "clk"))
-        val (en, ss1) = pipe(memPortField(sx, writer, "en"), sx.writeLatency - 1, clk, one)
-        val (mask, ss2) = pipe(memPortField(sx, writer, "mask"), sx.writeLatency - 1, clk, one)
-        val (addr, ss3) = pipe(memPortField(sx, writer, "addr"), sx.writeLatency - 1, clk, one)
-        val (data, ss4) = pipe(memPortField(sx, writer, "data"), sx.writeLatency - 1, clk, one)
+        val (en, ss1) = prependPipe(memPortField(sx, writer, "en"), sx.writeLatency - 1, clk, one)
+        val (mask, ss2) = prependPipe(memPortField(sx, writer, "mask"), sx.writeLatency - 1, clk, one)
+        val (addr, ss3) = prependPipe(memPortField(sx, writer, "addr"), sx.writeLatency - 1, clk, one)
+        val (data, ss4) = prependPipe(memPortField(sx, writer, "data"), sx.writeLatency - 1, clk, one)
         ss1 ++ ss2 ++ ss3 ++ ss4 ++ writePortConnects(writer, clk, en, mask, addr, data)
       }) ++ (sx.readwriters flatMap {readwriter =>
         val (reader, writer) = rwMap(readwriter)
         val clk = netlist(memPortField(sx, readwriter, "clk"))
         // generate latency pipes for readwrite ports (enable, addr, wmode, wmask, wdata)
-        val (en, ss1) = pipe(memPortField(sx, readwriter, "en"), sx.readLatency - 1, clk, one)
-        val (wmode, ss2) = pipe(memPortField(sx, readwriter, "wmode"), sx.writeLatency - 1, clk, one)
-        val (wmask, ss3) = pipe(memPortField(sx, readwriter, "wmask"), sx.writeLatency - 1, clk, one)
-        val (wdata, ss4) = pipe(memPortField(sx, readwriter, "wdata"), sx.writeLatency - 1, clk, one)
-        val (raddr, ss5) = pipe(memPortField(sx, readwriter, "addr"), sx.readLatency, clk, AND(en, NOT(wmode)))
-        val (waddr, ss6) = pipe(memPortField(sx, readwriter, "addr"), sx.writeLatency - 1, clk, one)
-        repl(memPortField(sx, readwriter, "rdata")) = memPortField(mem, reader, "data")
-        ss1 ++ ss2 ++ ss3 ++ ss4 ++ ss5 ++ ss6 ++
-        readPortConnects(reader, clk, en, raddr) ++
-        writePortConnects(writer, clk, AND(en, wmode), wmask, waddr, wdata)
+        val (en, ss1) = prependPipe(memPortField(sx, readwriter, "en"), sx.readLatency - 1, clk, one)
+        val (wmode, ss2) = prependPipe(memPortField(sx, readwriter, "wmode"), sx.writeLatency - 1, clk, one)
+        val (wmask, ss3) = prependPipe(memPortField(sx, readwriter, "wmask"), sx.writeLatency - 1, clk, one)
+        val (wdata, ss4) = prependPipe(memPortField(sx, readwriter, "wdata"), sx.writeLatency - 1, clk, one)
+        val (waddr, ss5) = prependPipe(memPortField(sx, readwriter, "addr"), sx.writeLatency - 1, clk, one)
+        val stmts = ss1 ++ ss2 ++ ss3 ++ ss4 ++ ss5 ++ writePortConnects(writer, clk, AND(en, wmode), wmask, waddr, wdata)
+        if (sx.readUnderWrite == ReadUnderWrite.Old) {
+          // For a read-first ("old") mem, read data gets delayed, so don't delay read address/en
+          val enDriver = netlist(memPortField(sx, readwriter, "en"))
+          val addrDriver = netlist(memPortField(sx, readwriter, "addr"))
+          val wmodeDriver = netlist(memPortField(sx, readwriter, "wmode"))
+          stmts ++ readPortConnects(reader, clk, AND(enDriver, NOT(wmodeDriver)), addrDriver)
+        } else {
+          // For a write-first ("new") or undefined mem, delay read control inputs
+          val (raddr, raddrPipeStmts) = prependPipe(memPortField(sx, readwriter, "addr"), sx.readLatency, clk, AND(en, NOT(wmode)))
+          repl(memPortField(sx, readwriter, "rdata")) = memPortField(mem, reader, "data")
+          stmts ++ raddrPipeStmts ++ readPortConnects(reader, clk, en, raddr)
+        }
       }))
-      mem // The mem stays put
-    case sx: Connect => kind(sx.loc) match {
-      case MemKind => EmptyStmt
-      case _ => sx
-    }
-    case sx => sx
+
+      def pipeReadData(p: String): Seq[Statement] = {
+        val newName = rwMap.get(p).map(_._1).getOrElse(p) // Name of final read port, whether renamed (rw port) or not
+        val rdataNew = memPortField(mem, newName, "data")
+        val rdataOld = rwMap.get(p).map(rw => memPortField(sx, p, "rdata")).getOrElse(rdataNew)
+        val clk = netlist(rdataOld.copy(name = "clk"))
+        val (rdataPipe, rdataPipeStmts) = DelayPipe(namespace)(rdataNew, sx.readLatency, clk) // TODO: use enable
+        repl(rdataOld) = rdataPipe
+        rdataPipeStmts
+      }
+
+      // We actually pipe the read data here; this groups it with the mem declaration to keep declarations early
+      if (sx.readUnderWrite == ReadUnderWrite.Old) {
+        Block(mem +: (sx.readers ++ sx.readwriters).flatMap(pipeReadData(_)))
+      } else {
+        mem
+      }
+    case sx: Connect if kind(sx.loc) == MemKind => EmptyStmt
+    case sx => sx map replaceExp(repl)
   }
 
   def replaceExp(repl: Netlist)(e: Expression): Expression = e match {
@@ -140,9 +185,6 @@ object VerilogMemDelays extends Pass {
     case ex => ex map replaceExp(repl)
   }
 
-  def replaceStmt(repl: Netlist)(s: Statement): Statement =
-    s map replaceStmt(repl) map replaceExp(repl)
-
   def appendStmts(sx: Seq[Statement])(s: Statement): Statement = Block(s +: sx)
 
   def memDelayMod(m: DefModule): DefModule = {
@@ -152,7 +194,6 @@ object VerilogMemDelays extends Pass {
     val extraStmts = mutable.ArrayBuffer.empty[Statement]
     m.foreach(buildNetlist(netlist))
     m.map(memDelayStmt(netlist, namespace, repl, extraStmts))
-     .map(replaceStmt(repl))
      .map(appendStmts(extraStmts))
   }
 

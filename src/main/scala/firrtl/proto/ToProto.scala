@@ -6,6 +6,7 @@ package proto
 import java.io.OutputStream
 
 import FirrtlProtos._
+import Firrtl.Statement.ReadUnderWrite
 import Firrtl.Expression.PrimOp.Op
 import com.google.protobuf.{CodedOutputStream, WireFormat}
 import firrtl.PrimOps._
@@ -102,6 +103,12 @@ object ToProto {
     BPShr -> Op.OP_SHIFT_BINARY_POINT_RIGHT,
     BPSet -> Op.OP_SET_BINARY_POINT
   )
+
+  def convert(ruw: ir.ReadUnderWrite.Value): ReadUnderWrite = ruw match {
+    case ir.ReadUnderWrite.Undefined => ReadUnderWrite.UNDEFINED
+    case ir.ReadUnderWrite.Old => ReadUnderWrite.OLD
+    case ir.ReadUnderWrite.New => ReadUnderWrite.NEW
+  }
 
   def convertToIntegerLiteral(value: BigInt): Firrtl.Expression.IntegerLiteral.Builder = {
     Firrtl.Expression.IntegerLiteral.newBuilder()
@@ -260,22 +267,24 @@ object ToProto {
             val ib = Firrtl.Statement.IsInvalid.newBuilder()
               .setExpression(convert(expr))
             sb.setIsInvalid(ib)
-          case ir.DefMemory(_, name, dtype, depth, wlat, rlat, rs, ws, rws, _) =>
+          case ir.DefMemory(_, name, dtype, depth, wlat, rlat, rs, ws, rws, ruw) =>
             val mem = Firrtl.Statement.Memory.newBuilder()
               .setId(name)
               .setType(convert(dtype))
               .setBigintDepth(convertToBigInt(depth))
               .setWriteLatency(wlat)
               .setReadLatency(rlat)
+              .setReadUnderWrite(convert(ruw))
             mem.addAllReaderId(rs.asJava)
             mem.addAllWriterId(ws.asJava)
             mem.addAllReadwriterId(rws.asJava)
             sb.setMemory(mem)
-          case CDefMemory(_, name, tpe, size, seq) =>
+          case CDefMemory(_, name, tpe, size, seq, ruw) =>
             val mb = Firrtl.Statement.CMemory.newBuilder()
               .setId(name)
               .setTypeAndDepth(convert(tpe, size))
               .setSyncRead(seq)
+              .setReadUnderWrite(convert(ruw))
             sb.setCmemory(mb)
           case CDefMPort(_, name, _, mem, exprs, dir) =>
             val pb = Firrtl.Statement.MemoryPort.newBuilder()

@@ -8,6 +8,7 @@ import java.io.{File, FileInputStream, InputStream}
 import collection.JavaConverters._
 import FirrtlProtos._
 import com.google.protobuf.CodedInputStream
+import Firrtl.Statement.ReadUnderWrite
 
 object FromProto {
 
@@ -133,6 +134,12 @@ object FromProto {
     ir.Conditionally(convert(info), convert(when.getPredicate), conseq, alt)
   }
 
+  def convert(ruw: ReadUnderWrite): ir.ReadUnderWrite.Value = ruw match {
+    case ReadUnderWrite.UNDEFINED => ir.ReadUnderWrite.Undefined
+    case ReadUnderWrite.OLD => ir.ReadUnderWrite.Old
+    case ReadUnderWrite.NEW => ir.ReadUnderWrite.New
+  }
+
   def convert(dt: Firrtl.Statement.CMemory.TypeAndDepth): (ir.Type, BigInt) =
     (convert(dt.getDataType), convert(dt.getDepth))
 
@@ -145,7 +152,7 @@ object FromProto {
       case TYPE_AND_DEPTH_FIELD_NUMBER =>
         convert(cmem.getTypeAndDepth)
     }
-    CDefMemory(convert(info), cmem.getId, tpe, depth, cmem.getSyncRead)
+    CDefMemory(convert(info), cmem.getId, tpe, depth, cmem.getSyncRead, convert(cmem.getReadUnderWrite))
   }
 
   import Firrtl.Statement.MemoryPort.Direction._
@@ -181,7 +188,7 @@ object FromProto {
       case BIGINT_DEPTH_FIELD_NUMBER => convert(mem.getBigintDepth)
     }
     ir.DefMemory(convert(info), mem.getId, dtype, depth, mem.getWriteLatency, mem.getReadLatency,
-                 rs, ws, rws, None)
+                 rs, ws, rws, convert(mem.getReadUnderWrite))
   }
 
   def convert(attach: Firrtl.Statement.Attach, info: Firrtl.SourceInfo): ir.Attach = {

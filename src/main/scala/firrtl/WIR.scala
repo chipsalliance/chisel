@@ -341,7 +341,8 @@ case class CDefMemory(
     name: String,
     tpe: Type,
     size: BigInt,
-    seq: Boolean) extends Statement with HasInfo {
+    seq: Boolean,
+    readUnderWrite: ReadUnderWrite.Value = ReadUnderWrite.Undefined) extends Statement with HasInfo {
   def serialize: String = (if (seq) "smem" else "cmem") +
     s" $name : ${tpe.serialize} [$size]" + info.serialize
   def mapExpr(f: Expression => Expression): Statement = this

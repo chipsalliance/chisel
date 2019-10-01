@@ -285,6 +285,13 @@ case class DefInstance(info: Info, name: String, module: String) extends Stateme
   def foreachString(f: String => Unit): Unit = f(name)
   def foreachInfo(f: Info => Unit): Unit = f(info)
 }
+
+object ReadUnderWrite extends Enumeration {
+  val Undefined = Value("undefined")
+  val Old = Value("old")
+  val New = Value("new")
+}
+
 case class DefMemory(
     info: Info,
     name: String,
@@ -296,7 +303,7 @@ case class DefMemory(
     writers: Seq[String],
     readwriters: Seq[String],
     // TODO: handle read-under-write
-    readUnderWrite: Option[String] = None) extends Statement with IsDeclaration {
+    readUnderWrite: ReadUnderWrite.Value = ReadUnderWrite.Undefined) extends Statement with IsDeclaration {
   def serialize: String =
     s"mem $name :" + info.serialize +
     indent(
@@ -307,7 +314,7 @@ case class DefMemory(
           (readers map ("reader => " + _)) ++
           (writers map ("writer => " + _)) ++
           (readwriters map ("readwriter => " + _)) ++
-       Seq("read-under-write => undefined")) mkString "\n")
+       Seq(s"read-under-write => ${readUnderWrite}")) mkString "\n")
   def mapStmt(f: Statement => Statement): Statement = this
   def mapExpr(f: Expression => Expression): Statement = this
   def mapType(f: Type => Type): Statement = this.copy(dataType = f(dataType))

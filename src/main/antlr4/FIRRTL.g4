@@ -94,7 +94,7 @@ stmt
   | 'reg' id ':' type exp ('with' ':' reset_block)? info?
   | 'mem' id ':' info? INDENT memField* DEDENT
   | 'cmem' id ':' type info?
-  | 'smem' id ':' type info?
+  | 'smem' id ':' type ruw? info?
   | mdir 'mport' id '=' id '[' exp ']' exp info?
   | 'inst' id 'of' id info?
   | 'node' id '=' exp info?

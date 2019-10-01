@@ -34,7 +34,7 @@ case class DefAnnotatedMemory(
     readers: Seq[String],
     writers: Seq[String],
     readwriters: Seq[String],
-    readUnderWrite: Option[String],
+    readUnderWrite: ReadUnderWrite.Value,
     maskGran: Option[BigInt],
     memRef: Option[(String, String)] /* (Module, Mem) */
     //pins: Seq[Pin],

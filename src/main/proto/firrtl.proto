@@ -104,6 +104,12 @@ message Firrtl {
       Expression init = 5;
     }
 
+    enum ReadUnderWrite {
+      UNDEFINED = 0;
+      OLD = 1;
+      NEW = 2;
+    }
+
     message Memory {
       // Required.
       string id = 1;
@@ -121,6 +127,7 @@ message Firrtl {
       repeated string reader_id = 6;
       repeated string writer_id = 7;
       repeated string readwriter_id = 8;
+      ReadUnderWrite read_under_write = 10;
     }
 
     message CMemory {
@@ -138,6 +145,7 @@ message Firrtl {
       }
       // Required.
       bool sync_read = 3;
+      ReadUnderWrite read_under_write = 5;
     }
 
     message Instance {
