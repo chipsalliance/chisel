@@ -89,7 +89,7 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils {
   "Bundles" should "be allowed to have Seq if need be" in {
     assertTesterPasses {
       new BasicTester {
-        Module(new Module {
+        val m = Module(new Module {
           val io = IO(new Bundle {
             val b = new BadSeqBundle with IgnoreSeqInBundle
           })
@@ -102,7 +102,7 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils {
   "Bundles" should "be allowed to have non-Chisel Seqs" in {
     assertTesterPasses {
       new BasicTester {
-        Module(new Module {
+        val m = Module(new Module {
           val io = IO(new Bundle {
             val f = Output(UInt(8.W))
             val unrelated = (0 to 10).toSeq

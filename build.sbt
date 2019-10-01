@@ -139,8 +139,8 @@ lazy val chiselFrontend = (project in file("chiselFrontend")).
       "-language:reflectiveCalls",
       "-unchecked",
       "-Xcheckinit",
-      "-Xlint:infer-any",
-//      "-Xlint:missing-interpolator"
+      "-Xlint:infer-any"
+//      , "-Xlint:missing-interpolator"
     )
   ).
   dependsOn(coreMacros)
@@ -199,7 +199,3 @@ lazy val chisel = (project in file(".")).
     // published artifact) also see the stuff in coreMacros and chiselFrontend.
     exportJars := true
   )
-
-addCommandAlias("com", "all compile")
-addCommandAlias("lint", "; compile:scalafix --check ; test:scalafix --check")
-addCommandAlias("fix", "all compile:scalafix test:scalafix")

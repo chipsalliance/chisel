@@ -89,7 +89,7 @@ class AnalogSpec extends ChiselFlatSpec {
     a [ChiselException] should be thrownBy {
       elaborate { new Module {
         val io = IO(new Bundle {})
-        Reg(Analog(32.W))
+        val reg = Reg(Analog(32.W))
       }}
     }
   }
@@ -125,7 +125,7 @@ class AnalogSpec extends ChiselFlatSpec {
     a [ChiselException] should be thrownBy {
       elaborate { new Module {
         val io = IO(new Bundle {})
-        Mem(16, Analog(32.W))
+        val mem = Mem(16, Analog(32.W))
       }}
     }
   }
@@ -135,7 +135,7 @@ class AnalogSpec extends ChiselFlatSpec {
       elaborate { new Module {
         val io = IO(new Bundle {})
         val mem = Mem(16, Analog(32.W))
-        mem(5.U)
+        val port = mem(5.U)
       }}
     }
   }
@@ -229,7 +229,7 @@ class AnalogSpec extends ChiselFlatSpec {
   it should "work with blackboxes at different levels of the module hierarchy" in {
     assertTesterPasses(new AnalogTester {
       val mods = Seq(Module(new AnalogReaderBlackBox), Module(new AnalogReaderWrapper))
-      Wire(writer.io.bus.cloneType)
+      val busWire = Wire(writer.io.bus.cloneType)
       attach(writer.io.bus, mods(0).bus, mods(1).bus)
       mods.foreach(check(_))
     }, Seq("/chisel3/AnalogBlackBox.v"))

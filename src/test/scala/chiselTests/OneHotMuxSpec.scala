@@ -46,7 +46,7 @@ class OneHotMuxSpec extends FreeSpec with Matchers with ChiselRunners {
   "UIntToOH should not accept width of zero (until zero-width wires are fixed" in {
     intercept[java.lang.IllegalArgumentException] {
       assertTesterPasses(new BasicTester {
-        UIntToOH(0.U, 0)
+        val out = UIntToOH(0.U, 0)
       })
     }
   }
