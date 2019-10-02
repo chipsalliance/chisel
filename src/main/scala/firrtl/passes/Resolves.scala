@@ -78,7 +78,7 @@ object ResolveFlows extends Pass {
 }
 
 @deprecated("Use 'ResolveFlows'. This will be removed in 1.3", "1.2")
-object ResolveGenders {
+object ResolveGenders extends Pass {
 
   def run(c: Circuit): Circuit = ResolveFlows.run(c)
 
