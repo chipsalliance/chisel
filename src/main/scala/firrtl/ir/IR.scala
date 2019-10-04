@@ -360,6 +360,11 @@ case class Conditionally(
   def foreachString(f: String => Unit): Unit = Unit
   def foreachInfo(f: Info => Unit): Unit = f(info)
 }
+
+object Block {
+  def apply(head: Statement, tail: Statement*): Block = Block(head +: tail)
+}
+
 case class Block(stmts: Seq[Statement]) extends Statement {
   def serialize: String = stmts map (_.serialize) mkString "\n"
   def mapStmt(f: Statement => Statement): Statement = Block(stmts map f)

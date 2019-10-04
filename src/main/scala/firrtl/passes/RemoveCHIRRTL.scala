@@ -208,7 +208,7 @@ object RemoveCHIRRTL extends Transform {
         remove_chirrtl_e(SinkFlow)(Reference(name, value.tpe))
         has_read_mport match {
           case None => sx
-          case Some(en) => Block(Seq(sx, Connect(info, en, one)))
+          case Some(en) => Block(sx, Connect(info, en, one))
         }
       case Connect(info, loc, expr) =>
         val rocx = remove_chirrtl_e(SourceFlow)(expr)
