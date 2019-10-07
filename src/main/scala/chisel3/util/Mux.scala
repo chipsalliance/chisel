@@ -65,8 +65,10 @@ object MuxLookup {
   def apply[S <: UInt, T <: Data] (key: S, default: T, mapping: Seq[(S, T)]): T = {
     /* If the mapping is defined for all possible values of the key, then don't use the default value */
     val (defaultx, mappingx) = try {
-      val k = mapping.map(_._1)
-      if ((math.pow(2, key.getWidth) == k.size) && (k.distinct.size == k.size)) {
+      val keySetSize = BigInt(1) << key.getWidth
+      val keyMask = keySetSize - 1
+      val distinctLitKeys = mapping.flatMap(_._1.litOption).map(_ & keyMask).distinct
+      if (distinctLitKeys.size == keySetSize) {
         (mapping.head._2, mapping.tail)
       } else {
         (default, mapping)
