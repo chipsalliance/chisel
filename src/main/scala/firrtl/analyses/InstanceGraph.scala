@@ -8,7 +8,7 @@ import firrtl.ir._
 import firrtl.graph._
 import firrtl.Utils._
 import firrtl.traversals.Foreachers._
-import firrtl.annotations.TargetToken.{Instance, OfModule}
+import firrtl.annotations.TargetToken._
 
 
 /** A class representing the instance hierarchy of a working IR Circuit
@@ -62,6 +62,19 @@ class InstanceGraph(c: Circuit) {
     */
   lazy val fullHierarchy: mutable.LinkedHashMap[WDefInstance,Seq[Seq[WDefInstance]]] = graph.pathsInDAG(trueTopInstance)
 
+  /** A count of the *static* number of instances of each module. For
+    * any module other than the top module, this is equivalent to the
+    * number of inst statements in the circuit instantiating each
+    * module, irrespective of the number of times (if any) the
+    * enclosing module appears in the hierarchy. Note that top module
+    * of the circuit has an associated count of 1, even though it is
+    * never directly instantiated.
+    */
+  lazy val staticInstanceCount: Map[OfModule, Int] = {
+    val instModules = childInstances.flatMap(_._2.view.map(_.OfModule).toSeq)
+    instModules.foldLeft(Map(c.main.OfModule -> 1)) { case (counts, mod) => counts.updated(mod, counts.getOrElse(mod, 0) + 1) }
+  }
+
   /** Finds the absolute paths (each represented by a Seq of instances
     * representing the chain of hierarchy) of all instances of a
     * particular module.
@@ -107,8 +120,22 @@ class InstanceGraph(c: Circuit) {
     * instance/module [[firrtl.annotations.TargetToken]]s
     */
   def getChildrenInstanceOfModule: mutable.LinkedHashMap[String, mutable.LinkedHashSet[(Instance, OfModule)]] =
-    childInstances.map(kv => kv._1 -> kv._2.map(i => (Instance(i.name), OfModule(i.module))))
+    childInstances.map(kv => kv._1 -> kv._2.map(_.toTokens))
 
+  // Transforms a TraversableOnce input into an order-preserving map
+  // Iterates only once, no intermediate collections
+  // Can possibly be replaced using LinkedHashMap.from(..) or better immutable map in Scala 2.13
+  private def asOrderedMap[K1, K2, V](it: TraversableOnce[K1], f: (K1) => (K2, V)): collection.Map[K2, V] = {
+    val lhmap = new mutable.LinkedHashMap[K2, V]
+    it.foreach { lhmap += f(_) }
+    lhmap
+  }
+
+  /** Given a circuit, returns a map from module name to a map
+    * in turn mapping instances names to corresponding module names
+    */
+  def getChildrenInstanceMap: collection.Map[OfModule, collection.Map[Instance, OfModule]] =
+    childInstances.map(kv => kv._1.OfModule -> asOrderedMap(kv._2, (i: WDefInstance) => i.toTokens))
 
 }
 

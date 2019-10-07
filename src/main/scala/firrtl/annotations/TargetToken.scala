@@ -2,6 +2,9 @@
 
 package firrtl.annotations
 
+import firrtl._
+import ir.{DefModule, DefInstance}
+
 /** Building block to represent a [[Target]] of a FIRRTL component */
 sealed trait TargetToken {
   def keyword: String
@@ -31,6 +34,33 @@ case object TargetToken {
   case object Clock                   extends TargetToken { override def keyword: String = "clock"; val value = "" }
   case object Init                    extends TargetToken { override def keyword: String = "init";  val value = "" }
   case object Reset                   extends TargetToken { override def keyword: String = "reset"; val value = "" }
+
+  implicit class fromStringToTargetToken(s: String) {
+    def Instance: Instance = new TargetToken.Instance(s)
+    def OfModule: OfModule = new TargetToken.OfModule(s)
+    def Ref: Ref = new TargetToken.Ref(s)
+    def Field: Field = new TargetToken.Field(s)
+  }
+
+  implicit class fromIntToTargetToken(i: Int) {
+    def Index: Index = new TargetToken.Index(i)
+  }
+
+  implicit class fromDefModuleToTargetToken(m: DefModule) {
+    def OfModule: OfModule = new TargetToken.OfModule(m.name)
+  }
+
+  implicit class fromDefInstanceToTargetToken(i: DefInstance) {
+    def Instance: Instance = new TargetToken.Instance(i.name)
+    def OfModule: OfModule = new TargetToken.OfModule(i.module)
+    def toTokens: (Instance, OfModule) = (new TargetToken.Instance(i.name), new TargetToken.OfModule(i.module))
+  }
+
+  implicit class fromWDefInstanceToTargetToken(wi: WDefInstance) {
+    def Instance: Instance = new TargetToken.Instance(wi.name)
+    def OfModule: OfModule = new TargetToken.OfModule(wi.module)
+    def toTokens: (Instance, OfModule) = (new TargetToken.Instance(wi.name), new TargetToken.OfModule(wi.module))
+  }
 
   val keyword2targettoken = Map(
     "inst" -> ((value: String) => Instance(value)),
