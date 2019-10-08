@@ -156,7 +156,9 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
       child.bind(ChildBinding(this), resolvedDirection)
     }
 
-    direction = sample_element.direction
+    // Since all children are the same, we can just use the sample_element rather than all children
+    // .get is safe because None means mixed directions, we only pass 1 so that's not possible
+    direction = ActualDirection.fromChildren(Set(sample_element.direction), resolvedDirection).get
   }
 
   // Note: the constructor takes a gen() function instead of a Seq to enforce
