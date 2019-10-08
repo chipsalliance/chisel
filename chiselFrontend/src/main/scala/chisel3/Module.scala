@@ -221,7 +221,7 @@ package experimental {
     /** Desired name of this module. Override this to give this module a custom, perhaps parametric,
       * name.
       */
-    def desiredName: String = this.getClass.getName.split('.').last
+    def desiredName: String = this.getClass.getName.split("\\.|\\$").last
 
     /** Legalized name of this module. */
     final lazy val name = try {
