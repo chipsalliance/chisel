@@ -4,9 +4,9 @@ package chiselTests
 
 import chisel3._
 import chisel3.experimental.ChiselRange
-
-import chisel3.internal.firrtl.{Open, Closed}
-import org.scalatest.{Matchers, FreeSpec}
+import chisel3.internal.firrtl._
+import firrtl.ir.{Closed, Open}
+import org.scalatest.{FreeSpec, Matchers}
 
 class RangeSpec extends FreeSpec with Matchers {
   "Ranges can be specified for UInt, SInt, and FixedPoint" - {
@@ -24,29 +24,30 @@ class RangeSpec extends FreeSpec with Matchers {
     }
 
     "range macros should allow open and closed bounds" in {
-      range"[-1, 1)" should be( (Closed(-1), Open(1)) )
-      range"[-1, 1]" should be( (Closed(-1), Closed(1)) )
-      range"(-1, 1]" should be( (Open(-1), Closed(1)) )
-      range"(-1, 1)" should be( (Open(-1), Open(1)) )
+      range"[-1, 1)" should be( range"[-1,1).0" )
+      range"[-1, 1)" should be( IntervalRange(Closed(-1), Open(1), 0.BP) )
+      range"[-1, 1]" should be( IntervalRange(Closed(-1), Closed(1), 0.BP) )
+      range"(-1, 1]" should be( IntervalRange(Open(-1), Closed(1), 0.BP) )
+      range"(-1, 1)" should be( IntervalRange(Open(-1), Open(1), 0.BP) )
     }
 
     "range specifiers should be whitespace tolerant" in {
-      range"[-1,1)" should be( (Closed(-1), Open(1)) )
-      range" [-1,1) " should be( (Closed(-1), Open(1)) )
-      range" [ -1 , 1 ) " should be( (Closed(-1), Open(1)) )
-      range"   [   -1   ,   1   )   " should be( (Closed(-1), Open(1)) )
+      range"[-1,1)" should be( IntervalRange(Closed(-1), Open(1), 0.BP) )
+      range" [-1,1) " should be( IntervalRange(Closed(-1), Open(1), 0.BP) )
+      range" [ -1 , 1 ) " should be( IntervalRange(Closed(-1), Open(1), 0.BP) )
+      range"   [   -1   ,   1   )   " should be( IntervalRange(Closed(-1), Open(1), 0.BP) )
     }
 
     "range macros should work with interpolated variables" in {
       val a = 10
       val b = -3
 
-      range"[$b, $a)" should be( (Closed(b), Open(a)) )
-      range"[${a + b}, $a)" should be( (Closed(a + b), Open(a)) )
-      range"[${-3 - 7}, ${-3 + a})" should be( (Closed(-10), Open(-3 + a)) )
+      range"[$b, $a)" should be( IntervalRange(Closed(b), Open(a), 0.BP) )
+      range"[${a + b}, $a)" should be( IntervalRange(Closed(a + b), Open(a), 0.BP) )
+      range"[${-3 - 7}, ${-3 + a})" should be( IntervalRange(Closed(-10), Open(-3 + a), 0.BP) )
 
       def number(n: Int): Int = n
-      range"[${number(1)}, ${number(3)})" should be( (Closed(1), Open(3)) )
+      range"[${number(1)}, ${number(3)})" should be( IntervalRange(Closed(1), Open(3), 0.BP) )
     }
 
     "UInt should get the correct width from a range" in {
