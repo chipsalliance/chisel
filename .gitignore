@@ -3,6 +3,9 @@ generated/
 .classpath
 .idea
 .project
+.bloop 
+.metals
+project/bloop
 target/
 *.iml
 *.swp

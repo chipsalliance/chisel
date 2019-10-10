@@ -199,3 +199,8 @@ lazy val chisel = (project in file(".")).
     // published artifact) also see the stuff in coreMacros and chiselFrontend.
     exportJars := true
   )
+  
+// Aliases
+addCommandAlias("com", "all compile test:compile")
+addCommandAlias("lint", "; compile:scalafix --check ; test:scalafix --check")
+addCommandAlias("fix", "all compile:scalafix test:scalafix")
