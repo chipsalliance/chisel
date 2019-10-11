@@ -106,7 +106,7 @@ endmodule
 
 (Chisel 3.2+)
 
-All elements of a `Vec` must be of the same time. If we want to create a Vec where the elements have different types, we can use a MixedVec:
+All elements of a `Vec` must be of the same type. If we want to create a Vec where the elements have different types, we can use a MixedVec:
 
 ```scala
 class MyModule extends Module {
