@@ -118,12 +118,14 @@ class NamingTransforms(val c: Context) {
   def transformModuleBody(stats: List[c.Tree]): Tree = {
     val contextVar = TermName(c.freshName("namingContext"))
     val transformedBody = (new ModuleTransformer(contextVar)).transformTrees(stats)
-
+    // Note: passing "this" to popReturnContext is mandatory for propagation through non-module classes
     q"""
     val $contextVar = $globalNamingStack.pushContext()
     ..$transformedBody
-    $contextVar.namePrefix("")
-    $globalNamingStack.popReturnContext((), $contextVar)
+    if($globalNamingStack.length == 1){
+      $contextVar.namePrefix("")
+    }
+    $globalNamingStack.popReturnContext(this, $contextVar) 
     """
   }
 

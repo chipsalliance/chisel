@@ -49,6 +49,11 @@ trait NamedModuleTester extends MultiIOModule {
 }
 
 @chiselName
+class NonModule {
+  val value = Wire(Bool())
+}
+
+@chiselName
 class NamedModule extends NamedModuleTester {
   @chiselName
   def FunctionMockupInner(): UInt = { // scalastyle:ignore method.name
@@ -84,10 +89,12 @@ class NamedModule extends NamedModuleTester {
     val noreturn = expectName(1.U + 2.U, "noreturn")
   }
 
-
   val test = expectName(FunctionMockup(), "test")
   val test2 = expectName(test +& 2.U, "test2")
   val test3 = expectName(ImplicitlyNamed(), "test3")
+  
+  val test4 = new NonModule
+  expectName(test4.value, "test4_value")
 
   // Test that contents of for loops are named
   for (i <- 0 until 1) {
