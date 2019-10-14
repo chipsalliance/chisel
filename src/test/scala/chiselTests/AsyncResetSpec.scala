@@ -128,12 +128,38 @@ class AsyncResetSpec extends ChiselFlatSpec {
       withReset(reset.asAsyncReset)(RegInit(123.U))
     })
   }
+  
+  it should "be allowed with non-trivial literal reset values" in {
+    compile(new BasicTester {
+      val x = WireInit(123.U + 456.U)
+      withReset(reset.asAsyncReset)(RegInit(x))
+    })
+  }
+  it should "be allowed with really non-trivial literal reset values" in {
+    compile(new BasicTester {
+      val x = WireInit(123.U) 
+      val y = WireInit(456.U)
+      val z = Wire(UInt(10.W))
+      z := x + y
+      withReset(reset.asAsyncReset)(RegInit(z))
+    })
+  }
+  it should "be allowed with bundle literal reset values" in {
+    compile(new BasicTester {
+      val x = new Bundle {
+        val field0 = Bool()
+        val field1 = Bool()
+      }
+      withReset(reset.asAsyncReset)(RegInit(0.U.asTypeOf(x)))
+    })
+  }
 
-  it should "NOT be allowed with non-literal reset values" in {
+  it should "NOT be allowed with register output reset values" in {
     a [NonLiteralAsyncResetValueException] shouldBe thrownBy {
       compile(new BasicTester {
-        val x = WireInit(123.U + 456.U)
-        withReset(reset.asAsyncReset)(RegInit(x))
+        val z = RegInit(0.U(10.W))
+        z := 1.U + z
+        withReset(reset.asAsyncReset)(RegInit(z))
       })
     }
   }
