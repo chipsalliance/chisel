@@ -35,7 +35,7 @@ object chiselCompileOptions {
 val crossVersions = Seq("2.12.10", "2.11.12")
 
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
-val defaultVersions = Map("firrtl" -> "1.2-100219-SNAPSHOT")
+val defaultVersions = Map("firrtl" -> "1.2.0")
 
 def getVersion(dep: String, org: String = "edu.berkeley.cs") = {
   val version = sys.env.getOrElse(dep + "Version", defaultVersions(dep))
@@ -67,7 +67,7 @@ trait CommonChiselModule extends SbtModule {
 
 trait PublishChiselModule extends CommonChiselModule with PublishModule {
   override def artifactName = "chisel3"
-  def publishVersion = "3.2-100219-SNAPSHOT"
+  def publishVersion = "3.2.0"
 
   def pomSettings = PomSettings(
     description = artifactName(),
