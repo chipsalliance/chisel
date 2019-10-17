@@ -255,6 +255,32 @@ object IntervalRange {
     IntervalRange(lower, upper, BinaryPoint(binaryPoint))
   }
 
+  /** Returns an IntervalRange appropriate for a signed value of the given width
+    * @param binaryPoint  number of bits of mantissa
+    * @return
+    */
+  def apply(binaryPoint: BinaryPoint): IntervalRange = {
+    IntervalRange(firrtlir.UnknownBound, firrtlir.UnknownBound, binaryPoint)
+  }
+
+  /** Returns an IntervalRange appropriate for a signed value of the given width
+    * @param width        number of bits to have in the interval
+    * @param binaryPoint  number of bits of mantissa
+    * @return
+    */
+  def apply(width: Width, binaryPoint: BinaryPoint = 0.BP): IntervalRange = {
+    val range = width match {
+      case KnownWidth(w) =>
+        val nearestPowerOf2 = BigInt("1" + ("0" * (w - 1)), 2)
+        IntervalRange(
+          firrtlir.Closed(BigDecimal(-nearestPowerOf2)), firrtlir.Closed(BigDecimal(nearestPowerOf2 - 1)), binaryPoint
+        )
+      case _ =>
+        IntervalRange(firrtlir.UnknownBound, firrtlir.UnknownBound, binaryPoint)
+    }
+    range
+  }
+
   def unapply(arg: IntervalRange): Option[(firrtlir.Bound, firrtlir.Bound, BinaryPoint)] = {
     return Some((arg.lower, arg.upper, arg.binaryPoint))
   }

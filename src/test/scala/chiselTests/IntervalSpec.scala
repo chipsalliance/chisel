@@ -3,7 +3,7 @@
 package chiselTests
 
 import scala.language.reflectiveCalls
-import _root_.firrtl.ir.Closed
+import _root_.firrtl.ir.{Closed, Open}
 import chisel3._
 import chisel3.internal.firrtl.{IntervalRange, KnownBinaryPoint}
 import chisel3.internal.sourceinfo.{SourceInfo, UnlocatableSourceInfo}
@@ -14,16 +14,7 @@ import firrtl.passes.CheckTypes.InvalidConnect
 import firrtl.passes.CheckWidths.{DisjointSqueeze, InvalidRange}
 import firrtl.passes.{PassExceptions, WrapWithRemainder}
 import firrtl.stage.{CompilerAnnotation, FirrtlCircuitAnnotation}
-import firrtl.{
-  FIRRTLException,
-  HighFirrtlCompiler,
-  LowFirrtlCompiler,
-  MiddleFirrtlCompiler,
-  MinimumVerilogCompiler,
-  NoneCompiler,
-  SystemVerilogCompiler,
-  VerilogCompiler
-}
+import firrtl.{FIRRTLException, HighFirrtlCompiler, LowFirrtlCompiler, MiddleFirrtlCompiler, MinimumVerilogCompiler, NoneCompiler, SystemVerilogCompiler, VerilogCompiler}
 import org.scalatest.{FreeSpec, Matchers}
 
 //scalastyle:off magic.number
@@ -72,9 +63,9 @@ import chisel3.experimental.Interval
 
 class IntervalTest1 extends Module {
   val io = IO(new Bundle {
-    val in1 = Input(Interval(6.W, range"[0,4]"))
-    val in2 = Input(Interval(6.W, range"[0,4].3"))
-    val out = Output(Interval(8.W, range"[0,8].3"))
+    val in1 = Input(Interval(range"[0,4]"))
+    val in2 = Input(Interval(range"[0,4].3"))
+    val out = Output(Interval(range"[0,8].3"))
   })
 
   io.out := io.in1 + io.in2
@@ -309,8 +300,8 @@ class IntervalWrapTester extends BasicTester {
     s"in3 lower ${in3.range.lower} expected ${Closed(1)}"
   )
   assert(
-    in3.range.upper == Closed(5.9375),
-    s"in3 upper ${in3.range.upper} expected ${Closed(5.9375)}"
+    in3.range.upper == Open(6),
+    s"in3 upper ${in3.range.upper} expected ${Open(6)}"
   )
   assert(
     in3.binaryPoint == KnownBinaryPoint(6),
@@ -430,6 +421,7 @@ class IntervalChainedSubTester extends BasicTester {
   stop()
 }
 
+//TODO: need tests for dynamic shifts on intervals
 class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
 
   type TempFirrtlException = Exception
@@ -756,6 +748,32 @@ class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
         )
       }
     }
+  }
+
+  "Intervals can be shifted left" in {
+    assertTesterPasses(new BasicTester {
+      val i1 = 3.0.I(range"[0,4]")
+      val shifted1 = i1 << 2
+      val shiftUInt = 1.U
+      val shifted2 = i1 << shiftUInt
+
+      chisel3.assert(shifted1 === 12.I)
+      chisel3.assert(shifted2 === 6.I)
+      stop()
+    })
+  }
+
+  "Intervals can be shifted right" in {
+    assertTesterPasses(new BasicTester {
+      val i1 = 12.0.I(range"[0,15]")
+      val shifted1 = i1 >> 2
+      val shiftUInt = 1.U
+      val shifted2 = i1 >> shiftUInt
+
+      chisel3.assert(shifted1 === 3.I)
+      chisel3.assert(shifted2 === 6.I)
+      stop()
+    })
   }
 
   "Intervals can be used to construct registers" in {
