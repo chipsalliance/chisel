@@ -684,7 +684,7 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
     }
   }
 
-  override def do_asInterval(range: IntervalRange = IntervalRange.unknownRange)
+  override def do_asInterval(range: IntervalRange = IntervalRange.Unknown)
                             (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
     (range.lower, range.upper, range.binaryPoint) match {
       case (lx: firrtlconstraint.IsKnown, ux: firrtlconstraint.IsKnown, KnownBinaryPoint(bp)) =>
@@ -940,7 +940,7 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
     }
   }
 
-  override def do_asInterval(range: IntervalRange = IntervalRange.unknownRange)
+  override def do_asInterval(range: IntervalRange = IntervalRange.Unknown)
                             (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
     (range.lower, range.upper, range.binaryPoint) match {
       case (lx: firrtlconstraint.IsKnown, ux: firrtlconstraint.IsKnown, KnownBinaryPoint(bp)) =>
@@ -1483,7 +1483,7 @@ package experimental {
     throwException(s"cannot call $this.asInterval(binaryPoint=$binaryPoint), you must specify a range")
   }
 
-  override def do_asInterval(range: IntervalRange = IntervalRange.unknownRange)
+  override def do_asInterval(range: IntervalRange = IntervalRange.Unknown)
                             (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
     (range.lower, range.upper, range.binaryPoint) match {
       case (lx: firrtlconstraint.IsKnown, ux: firrtlconstraint.IsKnown, KnownBinaryPoint(bp)) =>
@@ -2037,7 +2037,7 @@ package experimental {
     // TODO: intervals chick INVALID -- not enough args
     def do_asInterval(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
       pushOp(DefPrim(sourceInfo, Interval(this.range), AsIntervalOp, ref))
-      throwException("$this.asInterval must specify argumentsINVALID")
+      throwException("$this.asInterval must specify arguments INVALID")
     }
 
     // TODO: intervals chick looks like this is wrong and only for FP?
@@ -2067,10 +2067,16 @@ package experimental {
     */
   object Interval {
     /** Create a Interval type with inferred width and binary point. */
-    def apply(): Interval = apply(Width(), UnknownBinaryPoint)
+    def apply(): Interval = Interval(range"[?,?]")
 
     /** Create a Interval type with specified width. */
-    def apply(binaryPoint: BinaryPoint): Interval = Interval(IntervalRange(binaryPoint))
+    def apply(binaryPoint: BinaryPoint): Interval = {
+      val binaryPointString = binaryPoint match {
+        case KnownBinaryPoint(value) => s"$value"
+        case _ => s""
+      }
+      Interval(range"[?,?].$binaryPointString")
+    }
 
     /** Create a Interval type with specified width. */
     def apply(width: Width): Interval = Interval(width, 0.BP)
@@ -2083,7 +2089,7 @@ package experimental {
     /** Create a Interval type with specified width.
       * @param range  defines the properties
       */
-    def apply(range: chisel3.internal.firrtl.IntervalRange): Interval = {
+    def apply(range: IntervalRange): Interval = {
       new Interval(range)
     }
 

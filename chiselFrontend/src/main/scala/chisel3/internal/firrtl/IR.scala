@@ -5,7 +5,7 @@ package chisel3.internal.firrtl
 import chisel3._
 import chisel3.internal._
 import chisel3.internal.sourceinfo.SourceInfo
-import chisel3.experimental.{BaseModule, ChiselAnnotation, Param}
+import chisel3.experimental._
 import _root_.firrtl.{ir => firrtlir}
 import _root_.firrtl.PrimOps
 
@@ -243,6 +243,12 @@ sealed trait RangeType {
 }
 
 object IntervalRange {
+  /** Creates an IntervalRange, this is used primarily by the range interpolator macro
+    * @param lower               lower bound
+    * @param upper               upper bound
+    * @param firrtlBinaryPoint   binary point firrtl style
+    * @return
+    */
   def apply(lower: firrtlir.Bound, upper: firrtlir.Bound, firrtlBinaryPoint: firrtlir.Width): IntervalRange = {
     new IntervalRange(lower, upper, firrtlBinaryPoint)
   }
@@ -346,7 +352,8 @@ object IntervalRange {
     }
   }
 
-  def unknownRange: IntervalRange = new IntervalRange(firrtlir.UnknownBound, firrtlir.UnknownBound, firrtlir.UnknownWidth)
+  //scalastyle:off method.name
+  def Unknown: IntervalRange = range"[?,?].?"
 }
 
 
@@ -359,20 +366,20 @@ sealed class IntervalRange(
 
   (lowerBound, upperBound) match {
     case (firrtlir.Open(begin), firrtlir.Open(end)) =>
-      if(begin >= end) throw new IllegalArgumentException(s"Invalid range with ${serialize}")
+      if(begin >= end) throw new ChiselException(s"Invalid range with ${serialize}")
       binaryPoint match {
         case KnownBinaryPoint(bp) =>
           if(begin >= end - (BigDecimal(1) / BigDecimal(BigInt(1) << bp))) {
-            throw new IllegalArgumentException(s"Invalid range with ${serialize}")
+            throw new ChiselException(s"Invalid range with ${serialize}")
           }
         case _ =>
       }
     case (firrtlir.Open(begin), firrtlir.Closed(end)) =>
-      if(begin >= end) throw new IllegalArgumentException(s"Invalid range with ${serialize}")
+      if(begin >= end) throw new ChiselException(s"Invalid range with ${serialize}")
     case (firrtlir.Closed(begin), firrtlir.Open(end)) =>
-      if(begin >= end) throw new IllegalArgumentException(s"Invalid range with ${serialize}")
+      if(begin >= end) throw new ChiselException(s"Invalid range with ${serialize}")
     case (firrtlir.Closed(begin), firrtlir.Closed(end)) =>
-      if(begin > end) throw new IllegalArgumentException(s"Invalid range with ${serialize}")
+      if(begin > end) throw new ChiselException(s"Invalid range with ${serialize}")
     case _ =>
   }
 
@@ -417,38 +424,16 @@ sealed class IntervalRange(
     }
   }
 
-  // TODO: (chick) How to implement properly? (Angie)
+  // TODO:(chick) How to implement properly? (Angie)
   override def *(that: IntervalRange): IntervalRange = {
-    IntervalRange(firrtlir.UnknownBound, firrtlir.UnknownBound, firrtlir.UnknownWidth)
-  }
-
-  private def doFirrtlOp(op: firrtlir.PrimOp, that: IntervalRange): IntervalRange = {
-    PrimOps.set_primop_type(
-      firrtlir.DoPrim(op,
-        Seq(firrtlir.Reference("a", this), firrtlir.Reference("b", that)), Nil,firrtlir.UnknownType)
-    ).tpe match {
-      case i: firrtlir.IntervalType => IntervalRange(i.lower, i.upper, i.point)
-      case other => sys.error("BAD!")
-    }
-  }
-
-  private def doFirrtlOp(op: firrtlir.PrimOp, that: Int): IntervalRange = {
-    PrimOps.set_primop_type(
-      firrtlir.DoPrim(op,
-        Seq(firrtlir.Reference("a", this)), Seq(BigInt(that)), firrtlir.UnknownType)
-    ).tpe match {
-      case i: firrtlir.IntervalType => IntervalRange(i.lower, i.upper, i.point)
-      case other => sys.error("BAD!")
-    }
+    range"(?,?)"
   }
 
   override def +&(that: IntervalRange): IntervalRange = {
-    //    doFirrtlOp(PrimOps.Add, that)
-    IntervalRange(firrtlir.UnknownBound, firrtlir.UnknownBound, firrtlir.UnknownWidth)
+    IntervalRange.Unknown
   }
   override def -&(that: IntervalRange): IntervalRange = {
-    //    doFirrtlOp(PrimOps.Sub, that)
-    IntervalRange(firrtlir.UnknownBound, firrtlir.UnknownBound, firrtlir.UnknownWidth)
+    IntervalRange.Unknown
   }
 
   private def shiftLeft(bound: firrtlir.Bound, n: Int): firrtlir.Bound = {

@@ -29,9 +29,9 @@ trait UIntFactory {
     // Check is only done against lower bound because range will already insist that range high >= low
     range.lowerBound match {
       case Closed(bound) if bound < 0 =>
-        throw new IllegalArgumentException(s"Attempt to create UInt with closed lower bound of $bound, must be > 0")
+        throw new ChiselException(s"Attempt to create UInt with closed lower bound of $bound, must be > 0")
       case Open(bound) if bound < -1 =>
-        throw new IllegalArgumentException(s"Attempt to create UInt with open lower bound of $bound, must be > -1")
+        throw new ChiselException(s"Attempt to create UInt with open lower bound of $bound, must be > -1")
       case _ =>
     }
 

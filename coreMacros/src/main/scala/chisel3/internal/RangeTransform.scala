@@ -96,6 +96,11 @@ class RangeTransform(val c: blackbox.Context) {
     val startInclusive = currString.headOption match {
       case Some('[') => true
       case Some('(') => false
+      case Some('?') =>
+        c.abort(
+          c.enclosingPosition,
+          s"start of range as unknown s must be '[?' or '(?' not '?'"
+        )
       case Some(other) =>
         c.abort(
           c.enclosingPosition,
@@ -129,6 +134,11 @@ class RangeTransform(val c: blackbox.Context) {
     val endInclusive = currString.headOption match {
       case Some(']') => true
       case Some(')') => false
+      case Some('?') =>
+        c.abort(
+          c.enclosingPosition,
+          s"start of range as unknown s must be '[?' or '(?' not '?'"
+        )
       case Some(other) =>
         c.abort(
           c.enclosingPosition,
