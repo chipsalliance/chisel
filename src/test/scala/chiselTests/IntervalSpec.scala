@@ -754,7 +754,7 @@ class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
     assertTesterPasses(new BasicTester {
       val i1 = 3.0.I(range"[0,4]")
       val shifted1 = i1 << 2
-      val shiftUInt = 1.U
+      val shiftUInt = WireInit(1.U(8.W))
       val shifted2 = i1 << shiftUInt
 
       chisel3.assert(shifted1 === 12.I, "shifted 1 should be 12, it wasn't")
@@ -891,6 +891,7 @@ class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
         val u1 = Wire(UInt(5.W))
         u1 := 7.U
         val i1 = u1.asInterval(range"[0,15]")
+        val i2 = u1.asInterval(range"[0,15].2")
         printf("i1 %d\n", i1.asUInt)
         chisel3.assert(i1 === 7.I, "i1")
         stop()
@@ -900,6 +901,8 @@ class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
       assertTesterPasses(new BasicTester {
         val s1 = Wire(SInt(5.W))
         s1 := 7.S
+        val s2 = Wire(SInt(5.W))
+        s2 := 7.S
         val i1 = s1.asInterval(range"[-16,15]")
         val i2 = s1.asInterval(range"[-16,15].1")
         printf("i1 %d\n", i1.asSInt)
