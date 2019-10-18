@@ -1413,7 +1413,6 @@ package experimental {
     def do_unary_~ (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
       throwException(s"Not is illegal on $this")
 
-    // TODO(chick): Consider comparison with UInt and SInt
     override def do_< (that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, LessOp, that)
     override def do_> (that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, GreaterOp, that)
     override def do_<= (that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, LessEqOp, that)
@@ -1831,12 +1830,11 @@ package experimental {
     }
 
     /**
-      * Squeeze the value of this [[Interval]] into the intersection of the ranges.
+      * Squeeze returns the intersection of the ranges this interval and that Interval
       * @param that
       * @return
       */
     final def squeeze(that: Interval): Interval = macro SourceInfoTransform.thatArg
-
     def do_squeeze(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
       val dest = Interval(IntervalRange(that.range.lowerBound, that.range.upperBound, this.range.binaryPoint))
       val other = that
@@ -1846,45 +1844,41 @@ package experimental {
     }
 
     /**
-      * Squeeze this interval into the range determined by that UInt
+      * Squeeze returns the intersection of the ranges this interval and that UInt
       * Currently, that must have a defined width
       * @param that an UInt whose properties determine the squeezing
       * @return
       */
     final def squeeze(that: UInt): Interval = macro SourceInfoTransform.thatArg
     def do_squeeze(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
-      //binop(sourceInfo, TypePropagate(_root_.firrtl.PrimOps.Wrap, Seq(this, that), Nil), SqueezeOp, that)
       that.widthOption match {
         case Some(w) =>
-          val u = BigDecimal(BigInt(1) << w) - 1
-          do_squeeze(0.U.asInterval(IntervalRange(firrtlir.Closed(0), firrtlir.Closed(u), BinaryPoint(0))))
+          do_squeeze(Wire(Interval(IntervalRange(that.width, BinaryPoint(0)))))
         case _ =>
-          throwException("squeeze requires an UInt argument with a known width")
+          throwException(s"$this.squeeze($that) requires an UInt argument with a known width")
       }
     }
 
     /**
-      * Squeeze this interval into the range determined by an SInt
+      * Squeeze returns the intersection of the ranges this interval and that SInt
       * Currently, that must have a defined width
       * @param that an SInt whose properties determine the squeezing
       * @return
       */
     final def squeeze(that: SInt): Interval = macro SourceInfoTransform.thatArg
     def do_squeeze(that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
-      //binop(sourceInfo, TypePropagate(_root_.firrtl.PrimOps.Wrap, Seq(this, that), Nil), SqueezeOp, that)
       that.widthOption match {
         case Some(w) =>
-          val l = -BigDecimal(BigInt(1) << (that.getWidth - 1))
-          val u = BigDecimal(BigInt(1) << (that.getWidth - 1)) - 1
-          do_squeeze(Wire(Interval(IntervalRange(firrtlir.Closed(l), firrtlir.Closed(u), BinaryPoint(0)))))
+          do_squeeze(Wire(Interval(IntervalRange(that.width, BinaryPoint(0)))))
         case _ =>
-          throwException("squeeze requires an SInt argument with a known width")
+          throwException(s"$this.squeeze($that) requires an SInt argument with a known width")
       }
     }
 
     /**
-      * Squeeze this interval into the range determined by an IntervalRange
+      * Squeeze returns the intersection of the ranges this interval and that IntervalRange
       * Currently, that must have a defined width
+      *
       * @param that an Interval whose properties determine the squeezing
       * @return
       */
@@ -1987,9 +1981,9 @@ package experimental {
     }
 
     /**
-      * Clip this interval into the range determined by an that
-      * clip adds hardware to change values outside of clipped range to be at the boundary
-      * @param that an SInt whose properties determine the clipping
+      * Clip this interval into the range determined by that
+      * clip adds hardware to move values outside of clipped range to the boundary
+      * @param that   an SInt whose properties determine the clipping
       * @return
       */
     final def clip(that: SInt): Interval = macro SourceInfoTransform.thatArg
@@ -2056,10 +2050,10 @@ package experimental {
     * IMPORTANT: The API provided here is experimental and may change in the future.
     */
   object Interval {
-    /** Create a Interval type with inferred width and binary point. */
+    /** Create an Interval type with inferred width and binary point. */
     def apply(): Interval = Interval(range"[?,?]")
 
-    /** Create a Interval type with specified width. */
+    /** Create an Interval type with specified width. */
     def apply(binaryPoint: BinaryPoint): Interval = {
       val binaryPointString = binaryPoint match {
         case KnownBinaryPoint(value) => s"$value"
@@ -2068,15 +2062,15 @@ package experimental {
       Interval(range"[?,?].$binaryPointString")
     }
 
-    /** Create a Interval type with specified width. */
+    /** Create an Interval type with specified width. */
     def apply(width: Width): Interval = Interval(width, 0.BP)
 
-    /** Create a Interval type with specified width. */
+    /** Create an Interval type with specified width and binary point */
     def apply(width: Width, binaryPoint: BinaryPoint): Interval = {
       Interval(IntervalRange(width, binaryPoint))
     }
 
-    /** Create a Interval type with specified width.
+    /** Create an Interval type with specified range.
       * @param range  defines the properties
       */
     def apply(range: IntervalRange): Interval = {

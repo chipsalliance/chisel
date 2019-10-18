@@ -205,10 +205,15 @@ class IntervalRangeSpec extends FreeSpec with Matchers {
         checkRange(range"(-8,7).2" >> 3, O(-1), O(0.75), 2.BP)
       }
 
-      "set precision allows changing range" in {
+      "set precision can change the bounds due to precision loss, direction of change is always to lower value" in {
+        intercept[ChiselException] {
+          checkRange(range"[-7.875,7.875].3".setPrecision(UnknownBinaryPoint), C(-7.875), C(7.875), 5.BP)
+        }
+
         checkRange(range"[-7.875,7.875].3", C(-7.875), C(7.875), 3.BP)
+        checkRange(range"[1.25,2].2".setPrecision(1.BP), C(1.0), C(2), 1.BP)
         checkRange(range"[-7.875,7.875].3".setPrecision(5.BP), C(-7.875), C(7.875), 5.BP)
-        checkRange(range"[-7.875,7.875].3".setPrecision(1.BP), C(-7.5), C(7.5), 1.BP)
+        checkRange(range"[-7.875,7.875].3".setPrecision(1.BP), C(-8.0), C(7.5), 1.BP)
       }
     }
   }

@@ -757,8 +757,8 @@ class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
       val shiftUInt = 1.U
       val shifted2 = i1 << shiftUInt
 
-      chisel3.assert(shifted1 === 12.I)
-      chisel3.assert(shifted2 === 6.I)
+      chisel3.assert(shifted1 === 12.I, "shifted 1 should be 12, it wasn't")
+      chisel3.assert(shifted2 === 6.I, "shifted 2 should be 6 it wasn't")
       stop()
     })
   }
@@ -880,6 +880,38 @@ class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
           chisel3.assert(goldSqueezedValue === squeezedValue)
         }
 
+        stop()
+      })
+    }
+  }
+
+  "test asInterval" - {
+    "use with UInt" in {
+      assertTesterPasses(new BasicTester {
+        val u1 = Wire(UInt(5.W))
+        u1 := 7.U
+        val i1 = u1.asInterval(range"[0,15]")
+        printf("i1 %d\n", i1.asUInt)
+        chisel3.assert(i1 === 7.I, "i1")
+        stop()
+      })
+    }
+    "use with SInt" in {
+      assertTesterPasses(new BasicTester {
+        val s1 = Wire(SInt(5.W))
+        s1 := 7.S
+        val i1 = s1.asInterval(range"[-16,15]")
+        val i2 = s1.asInterval(range"[-16,15].1")
+        printf("i1 %d\n", i1.asSInt)
+        printf("i2 %d\n", i2.asSInt)
+        chisel3.assert(i1 === 7.I, "i1 is wrong")
+        chisel3.assert(i2 === (3.5).I(binaryPoint = 1.BP), "i2 is wrong")
+        stop()
+      })
+    }
+    "more SInt tests" in {
+      assertTesterPasses(new BasicTester {
+        chisel3.assert(7.S.asInterval(range"[-16,15].1") === 3.5.I(binaryPoint = 1.BP), "adding binary point")
         stop()
       })
     }

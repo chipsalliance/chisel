@@ -464,13 +464,33 @@ sealed class IntervalRange(
     }
   }
 
+  private def doFirrtlOp(op: firrtlir.PrimOp, that: IntervalRange): IntervalRange = {
+    PrimOps.set_primop_type(
+      firrtlir.DoPrim(op,
+        Seq(firrtlir.Reference("a", this), firrtlir.Reference("b", that)), Nil,firrtlir.UnknownType)
+    ).tpe match {
+      case i: firrtlir.IntervalType => IntervalRange(i.lower, i.upper, i.point)
+      case other => sys.error("BAD!")
+    }
+  }
+
+  private def doFirrtlOp(op: firrtlir.PrimOp, that: Int): IntervalRange = {
+    PrimOps.set_primop_type(
+      firrtlir.DoPrim(op,
+        Seq(firrtlir.Reference("a", this)), Seq(BigInt(that)), firrtlir.UnknownType)
+    ).tpe match {
+      case i: firrtlir.IntervalType => IntervalRange(i.lower, i.upper, i.point)
+      case other => sys.error("BAD!")
+    }
+  }
+
   /** Multiply this by that, here we return a fully unknown range,
     * firrtl's range inference can figure this out
     * @param that
     * @return
     */
   override def *(that: IntervalRange): IntervalRange = {
-    IntervalRange.Unknown
+    doFirrtlOp(PrimOps.Mul, that)
   }
 
   /** Add that to this, here we return a fully unknown range,
@@ -479,7 +499,7 @@ sealed class IntervalRange(
     * @return
     */
   override def +&(that: IntervalRange): IntervalRange = {
-    IntervalRange.Unknown
+    doFirrtlOp(PrimOps.Add, that)
   }
 
   /** Subtract that from this, here we return a fully unknown range,
@@ -488,7 +508,7 @@ sealed class IntervalRange(
     * @return
     */
   override def -&(that: IntervalRange): IntervalRange = {
-    IntervalRange.Unknown
+    doFirrtlOp(PrimOps.Sub, that)
   }
 
   private def adjustBoundValue(value: BigDecimal, binaryPointValue: Int): BigDecimal = {
@@ -496,7 +516,7 @@ sealed class IntervalRange(
       val maskFactor = BigDecimal(1 << binaryPointValue)
       val a = (value * maskFactor)
       val b = a.setScale(0, RoundingMode.DOWN)
-      val c = b /  maskFactor
+      val c = b / maskFactor
       c
     } else {
       value
@@ -515,44 +535,6 @@ sealed class IntervalRange(
     }
   }
 
-  private def shiftLeft(bound: firrtlir.Bound, n: Int): firrtlir.Bound = {
-    if(n < 1 ) {
-      bound
-    }
-    else {
-      val multiplier = BigDecimal(BigInt(1) << n)
-      bound match {
-        case firrtlir.Open(x)   => firrtlir.Open(x * multiplier)
-        case firrtlir.Closed(x) => firrtlir.Closed(x * multiplier)
-        case _ => firrtlir.UnknownBound
-      }
-    }
-  }
-
-  private def shiftRight(bound: firrtlir.Bound, shiftAmount: Int, binaryPoint: BinaryPoint): firrtlir.Bound = {
-    if(shiftAmount < 1 ) {
-      bound
-    }
-    else {
-      //This is a little complicated as bounds can lose precision when shifting bits down
-      binaryPoint match {
-        case UnknownBinaryPoint => firrtlir.UnknownBound
-        case KnownBinaryPoint(value) =>
-
-          def roundBasedOnBinaryPoint(boundValue: BigDecimal): BigDecimal = {
-            val divisor = 1 << shiftAmount
-            adjustBoundValue(boundValue / divisor, value)
-          }
-
-          bound match {
-            case firrtlir.Open(x)   => firrtlir.Open(roundBasedOnBinaryPoint(x))
-            case firrtlir.Closed(x) => firrtlir.Closed(roundBasedOnBinaryPoint(x))
-            case _ => bound
-          }
-      }
-    }
-  }
-
   /** Creates a new range with the given binary point, adjusting precision
     * on bounds as necessary
     *
@@ -560,11 +542,12 @@ sealed class IntervalRange(
     * @return
     */
   def setPrecision(newBinaryPoint: BinaryPoint): IntervalRange = {
-    IntervalRange(
-      adjustBound(lowerBound, newBinaryPoint),
-      adjustBound(upperBound, newBinaryPoint),
-      newBinaryPoint
-    )
+    newBinaryPoint match {
+      case KnownBinaryPoint(that) =>
+        doFirrtlOp(PrimOps.SetP, that)
+      case _ =>
+        throwException(s"$this.setPrecision(newBinaryPoint = $newBinaryPoint) error, newBinaryPoint must be know")
+    }
   }
 
   /** Shift this range left, i.e. shifts the min and max by the specified amount
@@ -572,11 +555,7 @@ sealed class IntervalRange(
     * @return
     */
   override def <<(that: Int): IntervalRange = {
-    IntervalRange(
-      shiftLeft(lowerBound, that),
-      shiftLeft(upperBound, that),
-      binaryPoint
-    )
+    doFirrtlOp(PrimOps.Shl, that)
   }
 
   /** Shift this range left, i.e. shifts the min and max by the known width
@@ -587,16 +566,20 @@ sealed class IntervalRange(
     <<(that.value)
   }
 
+  /** Shift this range left, i.e. shifts the min and max by the known width
+    * @param that
+    * @return
+    */
+  def <<(that: IntervalRange): IntervalRange = {
+    doFirrtlOp(PrimOps.Dshl, that)
+  }
+
   /** Shift this range right, i.e. shifts the min and max by the specified amount
     * @param that
     * @return
     */
   override def >>(that: Int): IntervalRange = {
-    IntervalRange(
-      shiftRight(lowerBound, that, binaryPoint),
-      shiftRight(upperBound, that, binaryPoint),
-      binaryPoint
-    )
+    doFirrtlOp(PrimOps.Shr, that)
   }
 
   /** Shift this range right, i.e. shifts the min and max by the known width
@@ -607,8 +590,9 @@ sealed class IntervalRange(
     >>(that.value)
   }
 
-  /** merges the two ranges, basically takes lowest low, highest high and biggest bp
+  /** merges the ranges of this and that, basically takes lowest low, highest high and biggest bp
     * set unknown if any of this or that's value of above is unknown
+    * Like an union but will slurp up points in between the two ranges that were part of neither
     * @param that
     * @return
     */
