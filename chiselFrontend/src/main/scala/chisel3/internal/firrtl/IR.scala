@@ -395,16 +395,16 @@ sealed class IntervalRange(
     s"""range"$lowerBoundString,$upperBoundString.$binaryPoint""""
   }
 
-  def getPossibleValues: Seq[Double] = {
+  def getPossibleValues: Seq[BigDecimal] = {
     (lower, upperBound, firrtlBinaryPoint) match {
       case (firrtlir.Open(begin), firrtlir.Open(end), firrtlir.IntWidth(bp)) =>
-        (begin.doubleValue until end.doubleValue by math.pow(2, -bp.doubleValue)).toSeq.tail
+        (begin until end by BigDecimal(math.pow(2, -bp.doubleValue))).tail
       case (firrtlir.Open(begin), firrtlir.Closed(end), firrtlir.IntWidth(bp)) =>
-        (begin.doubleValue to end.doubleValue by math.pow(2, -bp.doubleValue)).toSeq.tail
+        (begin to end by BigDecimal(math.pow(2, -bp.doubleValue))).tail
       case (firrtlir.Closed(begin), firrtlir.Open(end), firrtlir.IntWidth(bp)) =>
-        (begin.doubleValue until end.doubleValue by math.pow(2, -bp.doubleValue)).toSeq
+        (begin until end by BigDecimal(math.pow(2, -bp.doubleValue)))
       case (firrtlir.Closed(begin), firrtlir.Closed(end), firrtlir.IntWidth(bp)) =>
-        (begin.doubleValue to end.doubleValue by math.pow(2, -bp.doubleValue)).toSeq
+        (begin to end by BigDecimal(math.pow(2, -bp.doubleValue)))
       case _ =>
         throw new Exception("Bounds unknown. Cannot get possible values from IntervalRange.")
     }
@@ -446,7 +446,6 @@ sealed class IntervalRange(
     //    doFirrtlOp(PrimOps.Add, that)
     IntervalRange(firrtlir.UnknownBound, firrtlir.UnknownBound, firrtlir.UnknownWidth)
   }
-  private def getRange(op: firrtlir.PrimOp, tpe1: IntervalRange, tpe2: IntervalRange): IntervalRange = ???
   override def -&(that: IntervalRange): IntervalRange = {
     //    doFirrtlOp(PrimOps.Sub, that)
     IntervalRange(firrtlir.UnknownBound, firrtlir.UnknownBound, firrtlir.UnknownWidth)

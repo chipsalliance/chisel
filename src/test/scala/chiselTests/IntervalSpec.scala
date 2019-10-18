@@ -127,7 +127,7 @@ class IntervalAddTester extends BasicTester {
 class IntervalSetBinaryPointTester extends BasicTester {
   implicit val sourceinfo: SourceInfo = UnlocatableSourceInfo
   val in1 = Wire(Interval(range"[0,4].4"))
-  val in2 = in1.setBinaryPoint(2)
+  val in2 = in1.setPrecision(2)
 
   assert(in2.binaryPoint == KnownBinaryPoint(2))
 
@@ -154,7 +154,7 @@ class MoreIntervalShiftTester extends BasicTester {
   implicit val sourceinfo: SourceInfo = UnlocatableSourceInfo
 
   val in1 = Wire(Interval(range"[0,4].4"))
-  val in2 = in1.setBinaryPoint(2)
+  val in2 = in1.setPrecision(2)
 
   assert(in2.binaryPoint == KnownBinaryPoint(2))
 
