@@ -491,6 +491,30 @@ sealed class IntervalRange(
     IntervalRange.Unknown
   }
 
+  private def adjustBoundValue(value: BigDecimal, binaryPointValue: Int): BigDecimal = {
+    if(binaryPointValue >= 0) {
+      val maskFactor = BigDecimal(1 << binaryPointValue)
+      val a = (value * maskFactor)
+      val b = a.setScale(0, RoundingMode.DOWN)
+      val c = b /  maskFactor
+      c
+    } else {
+      value
+    }
+  }
+
+  private def adjustBound(bound: firrtlir.Bound, binaryPoint: BinaryPoint): firrtlir.Bound = {
+    binaryPoint match {
+      case KnownBinaryPoint(binaryPointValue) =>
+        bound match {
+          case firrtlir.Open(value) => firrtlir.Open(adjustBoundValue(value, binaryPointValue))
+          case firrtlir.Closed(value) => firrtlir.Closed(adjustBoundValue(value, binaryPointValue))
+          case _ => bound
+        }
+      case _ => firrtlir.UnknownBound
+    }
+  }
+
   private def shiftLeft(bound: firrtlir.Bound, n: Int): firrtlir.Bound = {
     if(n < 1 ) {
       bound
@@ -517,8 +541,7 @@ sealed class IntervalRange(
 
           def roundBasedOnBinaryPoint(boundValue: BigDecimal): BigDecimal = {
             val divisor = 1 << shiftAmount
-            val maskFactor = BigDecimal(1 << value)
-            ((boundValue / divisor) * maskFactor).setScale(0, RoundingMode.FLOOR) /  maskFactor
+            adjustBoundValue(boundValue / divisor, value)
           }
 
           bound match {
@@ -528,6 +551,20 @@ sealed class IntervalRange(
           }
       }
     }
+  }
+
+  /** Creates a new range with the given binary point, adjusting precision
+    * on bounds as necessary
+    *
+    * @param newBinaryPoint
+    * @return
+    */
+  def setPrecision(newBinaryPoint: BinaryPoint): IntervalRange = {
+    IntervalRange(
+      adjustBound(lowerBound, newBinaryPoint),
+      adjustBound(upperBound, newBinaryPoint),
+      newBinaryPoint
+    )
   }
 
   /** Shift this range left, i.e. shifts the min and max by the specified amount

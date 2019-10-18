@@ -204,6 +204,12 @@ class IntervalRangeSpec extends FreeSpec with Matchers {
         checkRange(range"(-8,7).2", O(-8), O(7), 2.BP)
         checkRange(range"(-8,7).2" >> 3, O(-1), O(0.75), 2.BP)
       }
+
+      "set precision allows changing range" in {
+        checkRange(range"[-7.875,7.875].3", C(-7.875), C(7.875), 3.BP)
+        checkRange(range"[-7.875,7.875].3".setPrecision(5.BP), C(-7.875), C(7.875), 5.BP)
+        checkRange(range"[-7.875,7.875].3".setPrecision(1.BP), C(-7.5), C(7.5), 1.BP)
+      }
     }
   }
 

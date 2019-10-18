@@ -810,7 +810,7 @@ class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
     assertTesterPasses { new IntervalChainedSubTester }
   }
   "Test clip, wrap and a variety of ranges" - {
-    """range"[0.0,10.0].2" => range"[2,6].2""" in {
+    """range"[0.0,10.0].2" => range"[2,6].2"""" in {
       assertTesterPasses(new BasicTester {
 
         val sourceRange = range"[0.0,10.0].2"

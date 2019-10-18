@@ -1752,7 +1752,7 @@ package experimental {
     // aaa.bbb -> aaa.bb for sbp(2)
     def do_setPrecision(that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
       val newBinaryPoint = BinaryPoint(that)
-      val newIntervalRange = IntervalRange(this.range.lower, this.range.upper, newBinaryPoint)
+      val newIntervalRange = this.range.setPrecision(newBinaryPoint)
       binop(sourceInfo, Interval(newIntervalRange), SetBinaryPoint, that)
     }
 
@@ -1763,10 +1763,9 @@ package experimental {
       */
     final def increasePrecision(that: Int): Interval = macro SourceInfoTransform.thatArg
 
-    //TODO:(chick) adjust bounds when known
     def do_increasePrecision(that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
       val newBinaryPoint = this.range.binaryPoint + BinaryPoint(that)
-      val newIntervalRange = IntervalRange(this.range.lower, this.range.upper, newBinaryPoint)
+      val newIntervalRange = this.range.setPrecision(newBinaryPoint)
       binop(sourceInfo, Interval(newIntervalRange), IncreasePrecision, that)
     }
 
@@ -1778,10 +1777,9 @@ package experimental {
       */
     final def decreasePrecision(that: Int): Interval = macro SourceInfoTransform.thatArg
 
-    //TODO:(chick) adjust bounds when known
     def do_decreasePrecision(that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
       val newBinaryPoint = this.range.binaryPoint + BinaryPoint(-that)
-      val newIntervalRange = IntervalRange(this.range.lower, this.range.upper, newBinaryPoint)
+      val newIntervalRange = this.range.setPrecision(newBinaryPoint)
       binop(sourceInfo, Interval(newIntervalRange), DecreasePrecision, that)
     }
 
@@ -2019,7 +2017,6 @@ package experimental {
     override def do_asFixedPoint(binaryPoint: BinaryPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint = {
       binaryPoint match {
         case KnownBinaryPoint(value) =>
-          // TODO: (chick) Why is there both ILit and IntervalLit (?) -- seems like there's some butchering of notation?
           val iLit = ILit(value)
           pushOp(DefPrim(sourceInfo, FixedPoint(width, binaryPoint), AsFixedPointOp, ref, iLit))
         case _ =>
@@ -2034,7 +2031,7 @@ package experimental {
       throwException(s"($this).asInterval must specify arguments INVALID")
     }
 
-    // TODO: intervals chick looks like this is wrong and only for FP?
+    // TODO:(chick) intervals chick looks like this is wrong and only for FP?
     def do_fromBits(that: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type = {
       /*val res = Wire(this, null).asInstanceOf[this.type]
       res := (that match {
