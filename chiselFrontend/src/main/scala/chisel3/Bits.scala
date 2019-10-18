@@ -697,8 +697,6 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
           case firrtlir.Open(x) => x - BigDecimal(1) / BigDecimal(BigInt(1) << bp)
           case firrtlir.Closed(x) => x
         }
-        //TODO: (chick) Need to determine, what asInterval needs, and why it might need min and max as args -- CAN IT BE UNKNOWN?
-        // Angie's operation: Decimal -> Int -> Decimal loses information. Need to be conservative here?
         val minBI = (l * BigDecimal(BigInt(1) << bp)).setScale(0, BigDecimal.RoundingMode.FLOOR).toBigIntExact.get
         val maxBI = (u * BigDecimal(BigInt(1) << bp)).setScale(0, BigDecimal.RoundingMode.CEILING).toBigIntExact.get
         pushOp(DefPrim(sourceInfo, Interval(range), AsIntervalOp, ref, ILit(minBI), ILit(maxBI), ILit(bp)))
@@ -945,7 +943,6 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
     (range.lower, range.upper, range.binaryPoint) match {
       case (lx: firrtlconstraint.IsKnown, ux: firrtlconstraint.IsKnown, KnownBinaryPoint(bp)) =>
         // No mechanism to pass open/close to firrtl so need to handle directly
-        // TODO: (chick) can we pass open/close to firrtl?
         val l = lx match {
           case firrtlir.Open(x) => x + BigDecimal(1) / BigDecimal(BigInt(1) << bp)
           case firrtlir.Closed(x) => x
@@ -1488,7 +1485,6 @@ package experimental {
     (range.lower, range.upper, range.binaryPoint) match {
       case (lx: firrtlconstraint.IsKnown, ux: firrtlconstraint.IsKnown, KnownBinaryPoint(bp)) =>
         // No mechanism to pass open/close to firrtl so need to handle directly
-        // TODO: (chick) can we pass open/close to firrtl?
         val l = lx match {
           case firrtlir.Open(x) => x + BigDecimal(1) / BigDecimal(BigInt(1) << bp)
           case firrtlir.Closed(x) => x
@@ -1513,7 +1509,6 @@ package experimental {
         case _ => that.asFixedPoint(this.binaryPoint)
       })
     }
-    //TODO(chick): Consider "convert" as an arithmetic conversion to UInt/SInt
   }
 
   /** Use PrivateObject to force users to specify width and binaryPoint by name
@@ -1794,7 +1789,6 @@ package experimental {
     def do_unary_~ (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval =
       throwException(s"Not is illegal on $this")
 
-    // TODO(chick): Consider comparison with UInt and SInt
     override def do_< (that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, LessOp, that)
     override def do_> (that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, GreaterOp, that)
     override def do_<= (that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, LessEqOp, that)
@@ -2037,7 +2031,7 @@ package experimental {
     // TODO: intervals chick INVALID -- not enough args
     def do_asInterval(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
       pushOp(DefPrim(sourceInfo, Interval(this.range), AsIntervalOp, ref))
-      throwException("$this.asInterval must specify arguments INVALID")
+      throwException(s"($this).asInterval must specify arguments INVALID")
     }
 
     // TODO: intervals chick looks like this is wrong and only for FP?
@@ -2052,10 +2046,9 @@ package experimental {
     }
 
     private[chisel3] override def connectFromBits(that: Bits)
-                                                 (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) {
+        (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) {
       this := that.asInterval(this.range)
     }
-    //TODO intervals chick Consider "convert" as an arithmetic conversion to UInt/SInt
   }
 
   /** Use PrivateObject to force users to specify width and binaryPoint by name

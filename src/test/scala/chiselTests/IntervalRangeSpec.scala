@@ -158,6 +158,53 @@ class IntervalRangeSpec extends FreeSpec with Matchers {
         }
       }
     }
+
+    "shift operations should work on ranges" - {
+      "<<, shiftLeft affects the bounds but not the binary point" in {
+        checkRange(range"[0,7].1", C(0), C(7), 1.BP)
+        checkRange(range"[0,7].1" << 1, C(0), C(14), 1.BP)
+
+        checkRange(range"[2,7].2", C(2), C(7), 2.BP)
+        checkRange(range"[2,7].2" << 1, C(4), C(14), 2.BP)
+      }
+
+      ">>, shiftRight affects the bounds but not the binary point" in {
+        checkRange(range"[0,7].0", C(0), C(7), 0.BP)
+        checkRange(range"[0,7].0" >> 1, C(0), C(3), 0.BP)
+
+        checkRange(range"[0,7].1", C(0), C(7), 1.BP)
+        checkRange(range"[0,7].1" >> 1, C(0), C(3.5), 1.BP)
+
+        checkRange(range"[2,7].2", C(2), C(7), 2.BP)
+        checkRange(range"[2,7].2" >> 1, C(1), C(3.5), 2.BP)
+
+        checkRange(range"[2,7].2", C(2), C(7), 2.BP)
+        checkRange(range"[2,7].2" >> 2, C(0.5), C(1.75), 2.BP)
+
+        // the 7(b111) >> 3 => 0.875(b0.111) but since
+        // binary point is two, lopping must occur so 0.875 becomes 0.75
+        checkRange(range"[-8,7].2", C(-8), C(7), 2.BP)
+        checkRange(range"[-8,7].2" >> 3, C(-1), C(0.75), 2.BP)
+
+
+        checkRange(range"(0,7).0", O(0), O(7), 0.BP)
+        checkRange(range"(0,7).0" >> 1, O(0), O(3), 0.BP)
+
+        checkRange(range"(0,7).1", O(0), O(7), 1.BP)
+        checkRange(range"(0,7).1" >> 1, O(0), O(3.5), 1.BP)
+
+        checkRange(range"(2,7).2", O(2), O(7), 2.BP)
+        checkRange(range"(2,7).2" >> 1, O(1), O(3.5), 2.BP)
+
+        checkRange(range"(2,7).2", O(2), O(7), 2.BP)
+        checkRange(range"(2,7).2" >> 2, O(0.5), O(1.75), 2.BP)
+
+        // the 7(b111) >> 3 => 0.875(b0.111) but since
+        // binary point is two, lopping must occur so 0.875 becomes 0.75
+        checkRange(range"(-8,7).2", O(-8), O(7), 2.BP)
+        checkRange(range"(-8,7).2" >> 3, O(-1), O(0.75), 2.BP)
+      }
+    }
   }
 
 }
