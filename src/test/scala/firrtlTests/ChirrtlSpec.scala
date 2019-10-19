@@ -70,8 +70,8 @@ class ChirrtlSpec extends FirrtlFlatSpec {
   behavior of "Uniqueness"
   for ((description, input) <- CheckSpec.nonUniqueExamples) {
     it should s"be asserted for $description" in {
-      assertThrows[CheckChirrtl.NotUniqueException] {
-        Seq(ToWorkingIR, CheckChirrtl).foldLeft(Parser.parse(input)){ case (c, tx) => tx.run(c) }
+      assertThrows[CheckHighForm.NotUniqueException] {
+        Seq(ToWorkingIR, CheckHighForm).foldLeft(Parser.parse(input)){ case (c, tx) => tx.run(c) }
       }
     }
   }

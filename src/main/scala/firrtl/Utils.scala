@@ -10,6 +10,8 @@ import firrtl.WrappedExpression._
 import scala.collection.mutable
 import scala.util.matching.Regex
 
+import Implicits.{constraint2bound, constraint2width, width2constraint}
+import firrtl.constraint.{IsMax, IsMin}
 import firrtl.annotations.{ReferenceTarget, TargetToken}
 import _root_.logger.LazyLogging
 
@@ -219,7 +221,10 @@ object Utils extends LazyLogging {
   def indent(str: String) = str replaceAllLiterally ("\n", "\n  ")
 
   implicit def toWrappedExpression (x:Expression): WrappedExpression = new WrappedExpression(x)
-  def ceilLog2(x: BigInt): Int = (x-1).bitLength
+  def getSIntWidth(s: BigInt): Int = s.bitLength + 1
+  def getUIntWidth(u: BigInt): Int = u.bitLength
+  def dec2string(v: BigDecimal): String = v.underlying().stripTrailingZeros().toPlainString
+  def trim(v: BigDecimal): BigDecimal = BigDecimal(dec2string(v))
   def max(a: BigInt, b: BigInt): BigInt = if (a >= b) a else b
   def min(a: BigInt, b: BigInt): BigInt = if (a >= b) b else a
   def pow_minus_one(a: BigInt, b: BigInt): BigInt = a.pow(b.toInt) - 1
@@ -375,6 +380,7 @@ object Utils extends LazyLogging {
     case (t1: UIntType, t2: UIntType) => UIntType(UnknownWidth)
     case (t1: SIntType, t2: SIntType) => SIntType(UnknownWidth)
     case (t1: FixedType, t2: FixedType) => FixedType(UnknownWidth, UnknownWidth)
+    case (t1: IntervalType, t2: IntervalType) => IntervalType(UnknownBound, UnknownBound, UnknownWidth)
     case (t1: VectorType, t2: VectorType) => VectorType(mux_type(t1.tpe, t2.tpe), t1.size)
     case (t1: BundleType, t2: BundleType) => BundleType(t1.fields zip t2.fields map {
       case (f1, f2) => Field(f1.name, f1.flip, mux_type(f1.tpe, f2.tpe))
@@ -386,15 +392,17 @@ object Utils extends LazyLogging {
   def mux_type_and_widths(t1: Type, t2: Type): Type = {
     def wmax(w1: Width, w2: Width): Width = (w1, w2) match {
       case (w1x: IntWidth, w2x: IntWidth) => IntWidth(w1x.width max w2x.width)
-      case (w1x, w2x) => MaxWidth(Seq(w1x, w2x))
+      case (w1x, w2x) => IsMax(w1x, w2x)
     }
     (t1, t2) match {
       case (ClockType, ClockType) => ClockType
       case (AsyncResetType, AsyncResetType) => AsyncResetType
-      case (t1x: UIntType, t2x: UIntType) => UIntType(wmax(t1x.width, t2x.width))
-      case (t1x: SIntType, t2x: SIntType) => SIntType(wmax(t1x.width, t2x.width))
+      case (t1x: UIntType, t2x: UIntType) => UIntType(IsMax(t1x.width, t2x.width))
+      case (t1x: SIntType, t2x: SIntType) => SIntType(IsMax(t1x.width, t2x.width))
       case (FixedType(w1, p1), FixedType(w2, p2)) =>
         FixedType(PLUS(MAX(p1, p2),MAX(MINUS(w1, p1), MINUS(w2, p2))), MAX(p1, p2))
+      case (IntervalType(l1, u1, p1), IntervalType(l2, u2, p2)) =>
+        IntervalType(IsMin(l1, l2), constraint.IsMax(u1, u2), MAX(p1, p2))
       case (t1x: VectorType, t2x: VectorType) => VectorType(
         mux_type_and_widths(t1x.tpe, t2x.tpe), t1x.size)
       case (t1x: BundleType, t2x: BundleType) => BundleType(t1x.fields zip t2x.fields map {

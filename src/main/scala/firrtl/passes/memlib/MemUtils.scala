@@ -56,7 +56,7 @@ object MemPortUtils {
   type Modules = collection.mutable.ArrayBuffer[DefModule]
 
   def defaultPortSeq(mem: DefMemory): Seq[Field] = Seq(
-    Field("addr", Default, UIntType(IntWidth(ceilLog2(mem.depth) max 1))),
+    Field("addr", Default, UIntType(IntWidth(getUIntWidth(mem.depth - 1) max 1))),
     Field("en", Default, BoolType),
     Field("clk", Default, ClockType)
   )

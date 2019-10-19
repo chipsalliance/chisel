@@ -14,13 +14,23 @@ object InferTypes extends Pass {
     val namespace = Namespace()
     val mtypes = (c.modules map (m => m.name -> module_type(m))).toMap
 
+    def remove_unknowns_b(b: Bound): Bound = b match {
+      case UnknownBound => VarBound(namespace.newName("b"))
+      case k => k
+    }
+
     def remove_unknowns_w(w: Width): Width = w match {
       case UnknownWidth => VarWidth(namespace.newName("w"))
       case wx => wx
     }
 
-    def remove_unknowns(t: Type): Type =
-      t map remove_unknowns map remove_unknowns_w
+    def remove_unknowns(t: Type): Type = {
+      t map remove_unknowns map remove_unknowns_w match {
+        case IntervalType(l, u, p) =>
+          IntervalType(remove_unknowns_b(l), remove_unknowns_b(u), p)
+        case x => x
+      }
+    }
 
     def infer_types_e(types: TypeMap)(e: Expression): Expression =
       e map infer_types_e(types) match {

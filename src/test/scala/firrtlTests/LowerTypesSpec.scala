@@ -12,7 +12,7 @@ import firrtl.transforms._
 import firrtl._
 
 class LowerTypesSpec extends FirrtlFlatSpec {
-  private val transforms = Seq(
+  private def transforms = Seq(
     ToWorkingIR,
     CheckHighForm,
     ResolveKinds,

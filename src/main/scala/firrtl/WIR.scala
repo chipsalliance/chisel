@@ -162,11 +162,49 @@ case class WDefInstanceConnector(
 }
 
 // Resultant width is the same as the maximum input width
-case object Addw extends PrimOp { override def toString = "addw" }
+case object Addw extends PrimOp {
+  override def toString = "addw"
+  import constraint._
+  import PrimOps._
+  import Implicits.{constraint2width, width2constraint}
+
+  override def propagateType(e: DoPrim): Type = {
+    (e.args(0).tpe, e.args(1).tpe) match {
+      case (_: UIntType, _: UIntType) => UIntType(IsMax(w1(e), w2(e)))
+      case (_: SIntType, _: SIntType) => SIntType(IsMax(w1(e), w2(e)))
+      case _ => UnknownType
+    }
+  }
+}
 // Resultant width is the same as the maximum input width
-case object Subw extends PrimOp { override def toString = "subw" }
+case object Subw extends PrimOp {
+  override def toString = "subw"
+  import constraint._
+  import PrimOps._
+  import Implicits.{constraint2width, width2constraint}
+
+  override def propagateType(e: DoPrim): Type = {
+    (e.args(0).tpe, e.args(1).tpe) match {
+      case (_: UIntType, _: UIntType) => UIntType(IsMax(w1(e), w2(e)))
+      case (_: SIntType, _: SIntType) => SIntType(IsMax(w1(e), w2(e)))
+      case _ => UnknownType
+    }
+  }
+}
 // Resultant width is the same as input argument width
-case object Dshlw extends PrimOp { override def toString = "dshlw" }
+case object Dshlw extends PrimOp {
+  override def toString = "dshlw"
+
+  import PrimOps._
+
+  override def propagateType(e: DoPrim): Type = {
+    e.args(0).tpe match {
+      case _: UIntType => UIntType(w1(e))
+      case _: SIntType => SIntType(w1(e))
+      case _ => UnknownType
+    }
+  }
+}
 
 object WrappedExpression {
   def apply(e: Expression) = new WrappedExpression(e)
@@ -200,30 +238,6 @@ class WrappedExpression(val e1: Expression) {
 private[firrtl] sealed trait HasMapWidth {
   def mapWidth(f: Width => Width): Width
 }
-case class VarWidth(name: String) extends Width with HasMapWidth {
-  def serialize: String = name
-  def mapWidth(f: Width => Width): Width = this
-}
-case class PlusWidth(arg1: Width, arg2: Width) extends Width with HasMapWidth {
-  def serialize: String = "(" + arg1.serialize + " + " + arg2.serialize + ")"
-  def mapWidth(f: Width => Width): Width = PlusWidth(f(arg1), f(arg2))
-}
-case class MinusWidth(arg1: Width, arg2: Width) extends Width with HasMapWidth {
-  def serialize: String = "(" + arg1.serialize + " - " + arg2.serialize + ")"
-  def mapWidth(f: Width => Width): Width = MinusWidth(f(arg1), f(arg2))
-}
-case class MaxWidth(args: Seq[Width]) extends Width with HasMapWidth {
-  def serialize: String = args map (_.serialize) mkString ("max(", ", ", ")")
-  def mapWidth(f: Width => Width): Width = MaxWidth(args map f)
-}
-case class MinWidth(args: Seq[Width]) extends Width with HasMapWidth {
-  def serialize: String = args map (_.serialize) mkString ("min(", ", ", ")")
-  def mapWidth(f: Width => Width): Width = MinWidth(args map f)
-}
-case class ExpWidth(arg1: Width) extends Width with HasMapWidth {
-  def serialize: String = "exp(" + arg1.serialize + " )"
-  def mapWidth(f: Width => Width): Width = ExpWidth(f(arg1))
-}
 
 object WrappedType {
   def apply(t: Type) = new WrappedType(t)
@@ -240,6 +254,7 @@ object WrappedType {
       case (ResetType, tpe) => legalResetType(tpe)
       case (tpe, ResetType) => legalResetType(tpe)
       case (_: FixedType, _: FixedType) => true
+      case (_: IntervalType, _: IntervalType) => true
       // Analog totally skips out of the Firrtl type system.
       // The only way Analog can play with another Analog component is through Attach.
       // Ohterwise, we'd need to special case it during ExpandWhens, Lowering,
@@ -280,46 +295,18 @@ class WrappedWidth (val w: Width) {
   def ww(w: Width): WrappedWidth = new WrappedWidth(w)
   override def toString = w match {
     case (w: VarWidth) => w.name
-    case (w: MaxWidth) => s"max(${w.args.mkString})"
-    case (w: MinWidth) => s"min(${w.args.mkString})"
-    case (w: PlusWidth) => s"(${w.arg1} + ${w.arg2})"
-    case (w: MinusWidth) => s"(${w.arg1} -${w.arg2})"
-    case (w: ExpWidth) => s"exp(${w.arg1})"
     case (w: IntWidth) => w.width.toString
     case UnknownWidth => "?"
   }
   override def equals(o: Any): Boolean = o match {
     case (w2: WrappedWidth) => (w, w2.w) match {
       case (w1: VarWidth, w2: VarWidth) => w1.name.equals(w2.name)
-      case (w1: MaxWidth, w2: MaxWidth) => w1.args.size == w2.args.size &&
-        (w1.args forall (a1 => w2.args exists (a2 => eqw(a1, a2))))
-      case (w1: MinWidth, w2: MinWidth) => w1.args.size == w2.args.size &&
-        (w1.args forall (a1 => w2.args exists (a2 => eqw(a1, a2))))
       case (w1: IntWidth, w2: IntWidth) => w1.width == w2.width
-      case (w1: PlusWidth, w2: PlusWidth) =>
-        (ww(w1.arg1) == ww(w2.arg1) && ww(w1.arg2) == ww(w2.arg2)) ||
-        (ww(w1.arg1) == ww(w2.arg2) && ww(w1.arg2) == ww(w2.arg1))
-      case (w1: MinusWidth,w2: MinusWidth) =>
-        (ww(w1.arg1) == ww(w2.arg1) && ww(w1.arg2) == ww(w2.arg2)) ||
-        (ww(w1.arg1) == ww(w2.arg2) && ww(w1.arg2) == ww(w2.arg1))
-      case (w1: ExpWidth, w2: ExpWidth) => ww(w1.arg1) == ww(w2.arg1)
       case (UnknownWidth, UnknownWidth) => true
       case _ => false
     }
     case _ => false
   }
-}
-
-trait Constraint
-class WGeq(val loc: Width, val exp: Width) extends Constraint {
-  override def toString = {
-    val wloc = new WrappedWidth(loc)
-    val wexp = new WrappedWidth(exp)
-    wloc.toString + " >= " + wexp.toString
-  }
-}
-object WGeq {
-  def apply(loc: Width, exp: Width) = new WGeq(loc, exp)
 }
 
 abstract class MPortDir extends FirrtlNode

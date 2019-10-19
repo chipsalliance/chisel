@@ -30,6 +30,7 @@ class Visitor(infoMode: InfoMode) extends AbstractParseTreeVisitor[FirrtlNode] w
   private val HexPattern = """\"*h([+\-]?[a-zA-Z0-9]+)\"*""".r
   private val DecPattern = """([+\-]?[1-9]\d*)""".r
   private val ZeroPattern = "0".r
+  private val DecimalPattern = """([+\-]?[0-9]\d*\.[0-9]\d*)""".r
 
   private def string2BigInt(s: String): BigInt = {
     // private define legal patterns
@@ -38,6 +39,16 @@ class Visitor(infoMode: InfoMode) extends AbstractParseTreeVisitor[FirrtlNode] w
       case HexPattern(hexdigits) => BigInt(hexdigits, 16)
       case DecPattern(num) => BigInt(num, 10)
       case _ => throw new Exception("Invalid String for conversion to BigInt " + s)
+    }
+  }
+
+  private def string2BigDecimal(s: String): BigDecimal = {
+    // private define legal patterns
+    s match {
+      case ZeroPattern(_*) => BigDecimal(0)
+      case DecPattern(num) => BigDecimal(num)
+      case DecimalPattern(num) => BigDecimal(num)
+      case _ => throw new Exception("Invalid String for conversion to BigDecimal " + s)
     }
   }
 
@@ -128,6 +139,30 @@ class Visitor(infoMode: InfoMode) extends AbstractParseTreeVisitor[FirrtlNode] w
               case _ => FixedType(getWidth(ctx.intLit(0)), UnknownWidth)
             }
             case 2 => FixedType(getWidth(ctx.intLit(0)), getWidth(ctx.intLit(1)))
+          }
+          case "Interval" => ctx.boundValue.size match {
+            case 0 =>
+              val point = ctx.intLit.size match {
+                case 0 => UnknownWidth
+                case 1 => IntWidth(string2BigInt(ctx.intLit(0).getText))
+              }
+              IntervalType(UnknownBound, UnknownBound, point)
+            case 2 =>
+              val lower = (ctx.lowerBound.getText, ctx.boundValue(0).getText) match {
+                case (_, "?") => UnknownBound
+                case ("(", v) => Open(string2BigDecimal(v))
+                case ("[", v) => Closed(string2BigDecimal(v))
+              }
+              val upper = (ctx.upperBound.getText, ctx.boundValue(1).getText) match {
+                case (_, "?") => UnknownBound
+                case (")", v) => Open(string2BigDecimal(v))
+                case ("]", v) => Closed(string2BigDecimal(v))
+              }
+              val point = ctx.intLit.size match {
+                case 0 => UnknownWidth
+                case 1 => IntWidth(string2BigInt(ctx.intLit(0).getText))
+              }
+              IntervalType(lower, upper, point)
           }
           case "Clock" => ClockType
           case "AsyncReset" => AsyncResetType

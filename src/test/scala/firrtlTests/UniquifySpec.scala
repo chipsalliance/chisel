@@ -16,7 +16,7 @@ import firrtl.util.TestOptions
 
 class UniquifySpec extends FirrtlFlatSpec {
 
-  private val transforms = Seq(
+  private def transforms = Seq(
     ToWorkingIR,
     CheckHighForm,
     ResolveKinds,

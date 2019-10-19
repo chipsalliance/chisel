@@ -451,10 +451,14 @@ message Firrtl {
         OP_AS_FIXED_POINT = 32;
         OP_AND_REDUCE = 33;
         OP_OR_REDUCE = 34;
-        OP_SHIFT_BINARY_POINT_LEFT = 35;
-        OP_SHIFT_BINARY_POINT_RIGHT = 36;
-        OP_SET_BINARY_POINT = 37;
+        OP_INCREASE_PRECISION = 35;
+        OP_DECREASE_PRECISION = 36;
+        OP_SET_PRECISION = 37;
         OP_AS_ASYNC_RESET = 38;
+        OP_WRAP = 39;
+        OP_CLIP = 40;
+        OP_SQUEEZE = 41;
+        OP_AS_INTERVAL = 42;
       }
 
       // Required.

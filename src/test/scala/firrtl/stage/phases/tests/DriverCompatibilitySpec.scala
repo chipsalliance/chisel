@@ -3,14 +3,12 @@
 package firrtl.stage.phases.tests
 
 import org.scalatest.{FlatSpec, Matchers, PrivateMethodTester}
-
 import java.io.File
 
 import firrtl._
-import firrtl.stage._
 import firrtl.stage.phases.DriverCompatibility._
-
 import firrtl.options.{InputAnnotationFileAnnotation, Phase, TargetDirAnnotation}
+import firrtl.stage.{CompilerAnnotation, FirrtlCircuitAnnotation, FirrtlFileAnnotation, FirrtlSourceAnnotation, OutputFileAnnotation, RunFirrtlTransformAnnotation}
 import firrtl.stage.phases.DriverCompatibility
 
 class DriverCompatibilitySpec extends FlatSpec with Matchers with PrivateMethodTester {

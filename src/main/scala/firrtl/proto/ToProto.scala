@@ -99,9 +99,13 @@ object ToProto {
     Bits -> Op.OP_EXTRACT_BITS,
     Head -> Op.OP_HEAD,
     Tail -> Op.OP_TAIL,
-    BPShl -> Op.OP_SHIFT_BINARY_POINT_LEFT,
-    BPShr -> Op.OP_SHIFT_BINARY_POINT_RIGHT,
-    BPSet -> Op.OP_SET_BINARY_POINT
+    IncP -> Op.OP_INCREASE_PRECISION,
+    DecP -> Op.OP_DECREASE_PRECISION,
+    SetP -> Op.OP_SET_PRECISION,
+    AsInterval -> Op.OP_AS_INTERVAL,
+    Squeeze -> Op.OP_SQUEEZE,
+    Wrap -> Op.OP_WRAP,
+    Clip -> Op.OP_CLIP
   )
 
   def convert(ruw: ir.ReadUnderWrite.Value): ReadUnderWrite = ruw match {

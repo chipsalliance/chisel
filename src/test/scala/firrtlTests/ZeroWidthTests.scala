@@ -11,7 +11,7 @@ import firrtl.Parser
 import firrtl.passes._
 
 class ZeroWidthTests extends FirrtlFlatSpec {
-  val transforms = Seq(
+  def transforms = Seq(
       ToWorkingIR,
       ResolveKinds,
       InferTypes,

@@ -72,7 +72,7 @@ object RemoveCHIRRTL extends Transform {
       refs: DataRefMap, raddrs: AddrMap, renames: RenameMap)(s: Statement): Statement = s match {
     case sx: CDefMemory =>
       types(sx.name) = sx.tpe
-      val taddr = UIntType(IntWidth(1 max ceilLog2(sx.size)))
+      val taddr = UIntType(IntWidth(1 max getUIntWidth(sx.size - 1)))
       val tdata = sx.tpe
       def set_poison(vec: Seq[MPort]) = vec flatMap (r => Seq(
         IsInvalid(sx.info, SubField(SubField(Reference(sx.name, ut), r.name, ut), "addr", taddr)),

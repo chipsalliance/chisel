@@ -6,6 +6,19 @@ import firrtl.ir._
 
 // TODO: Implement remaining mappers and recursive mappers
 object Mappers {
+  // ********** Port Mappers **********
+  private trait PortMagnet {
+    def map(p: Port): Port
+  }
+  private object PortMagnet {
+    implicit def forType(f: Type => Type): PortMagnet = new PortMagnet {
+      override def map(port: Port): Port = port mapType f
+    }
+  }
+  implicit class PortMap(val _port: Port) extends AnyVal {
+    def map[T](f: T => T)(implicit magnet: (T => T) => PortMagnet): Port = magnet(f).map(_port)
+  }
+
 
   // ********** Stmt Mappers **********
   private trait StmtMagnet {

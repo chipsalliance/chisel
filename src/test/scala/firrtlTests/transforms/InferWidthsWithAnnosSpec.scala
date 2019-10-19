@@ -152,7 +152,7 @@ class InferWidthsWithAnnosSpec extends FirrtlFlatSpec {
   }
 
   "InferWidthsWithAnnos" should "work with WiringTransform" in {
-    def transforms = Seq(
+    def transforms() = Seq(
       ToWorkingIR,
       ResolveKinds,
       InferTypes,
