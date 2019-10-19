@@ -10,6 +10,7 @@ import chisel3.internal.sourceinfo.{SourceInfo, UnlocatableSourceInfo}
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import chisel3.testers.BasicTester
 import cookbook.CookbookTester
+import firrtl.options.TargetDirAnnotation
 import firrtl.passes.CheckTypes.InvalidConnect
 import firrtl.passes.CheckWidths.{DisjointSqueeze, InvalidRange}
 import firrtl.passes.{PassExceptions, WrapWithRemainder}
@@ -45,7 +46,7 @@ object IntervalTestHelper {
         )
     }
     val compiler = CompilerAnnotation(c)
-    val annotations = Seq(new ChiselGeneratorAnnotation(gen), compiler)
+    val annotations = Seq(new ChiselGeneratorAnnotation(gen), TargetDirAnnotation("test_run_dir/IntervalSpec"), compiler)
     val processed = (new ChiselStage).run(annotations)
     processed.collectFirst { case FirrtlCircuitAnnotation(source) => source } match {
       case Some(circuit) => circuit.serialize
@@ -593,8 +594,7 @@ class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
           makeFirrtl("low")(makeCircuit(operation, rangeA, rangeB))
           false
         } catch {
-          case _: InvalidConnect | _: PassExceptions | _: InvalidRange |
-              _: WrapWithRemainder =>
+          case _: InvalidConnect | _: PassExceptions | _: InvalidRange | _: WrapWithRemainder | _: DisjointSqueeze =>
             true
           case _: Throwable =>
             false
@@ -602,9 +602,9 @@ class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
       }
 
       "Range A disjoint left, operation clip should generate useful error" in {
-        mustGetException(disjointLeft = true, "clip") should be(true)
+        mustGetException(disjointLeft = true, "clip") should be(false)
       }
-      "Range A disjoint left, operation wrap should generate useful error" in {
+      "Range A largely out of bounds left, operation wrap should generate useful error" in {
         mustGetException(disjointLeft = true, "wrap") should be(true)
       }
       "Range A disjoint left, operation squeeze should generate useful error" in {
@@ -656,7 +656,7 @@ class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
         }
       }
       "squeeze disjoint from Module gives exception" in {
-        intercept[PassExceptions] {
+        intercept[DisjointSqueeze] {
           makeFirrtl("lo")(
             () =>
               new Module {
@@ -673,23 +673,21 @@ class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
           )
         }
       }
-      "clip disjoint from Module gives internal error" in {
-        intercept[InvalidRange] {
-          makeFirrtl("lo")(
-            () =>
-              new Module {
-                val io = IO(new Bundle {
-                  val out = Output(Interval())
-                })
-                val base = Wire(Interval(range"[-4, 6]"))
-                base := 6.I
+      "clip disjoint from Module gives no error" in {
+        makeFirrtl("lo")(
+          () =>
+            new Module {
+              val io = IO(new Bundle {
+                val out = Output(Interval())
+              })
+              val base = Wire(Interval(range"[-4, 6]"))
+              base := 6.I
 
-                val disjointLeft = WireInit(Interval(range"[7,10]"), 8.I)
-                val w5 = base.clip(disjointLeft)
-                io.out := w5
-            }
-          )
-        }
+              val disjointLeft = WireInit(Interval(range"[7,10]"), 8.I)
+              val w5 = base.clip(disjointLeft)
+              io.out := w5
+          }
+        )
       }
       "wrap disjoint from Module wrap with remainder" in {
         intercept[WrapWithRemainder] {

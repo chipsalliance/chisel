@@ -474,6 +474,21 @@ sealed class IntervalRange(
     }
   }
 
+  private def doFirrtlDynamicShift(that: UInt, isLeft: Boolean): IntervalRange = {
+    val uinttpe = that.widthOption match {
+      case None => firrtlir.UIntType(firrtlir.UnknownWidth)
+      case Some(w) => firrtlir.UIntType(firrtlir.IntWidth(w))
+    }
+    val op = if(isLeft) PrimOps.Dshl else PrimOps.Dshr
+    PrimOps.set_primop_type(
+      firrtlir.DoPrim(op,
+        Seq(firrtlir.Reference("a", this), firrtlir.Reference("b", uinttpe)), Nil,firrtlir.UnknownType)
+    ).tpe match {
+      case i: firrtlir.IntervalType => IntervalRange(i.lower, i.upper, i.point)
+      case other => sys.error("BAD!")
+    }
+  }
+
   private def doFirrtlOp(op: firrtlir.PrimOp, that: Int): IntervalRange = {
     PrimOps.set_primop_type(
       firrtlir.DoPrim(op,
@@ -535,6 +550,34 @@ sealed class IntervalRange(
     }
   }
 
+  /** Creates a new range with the increased precision
+    *
+    * @param newBinaryPoint
+    * @return
+    */
+  def incPrecision(newBinaryPoint: BinaryPoint): IntervalRange = {
+    newBinaryPoint match {
+      case KnownBinaryPoint(that) =>
+        doFirrtlOp(PrimOps.IncP, that)
+      case _ =>
+        throwException(s"$this.incPrecision(newBinaryPoint = $newBinaryPoint) error, newBinaryPoint must be know")
+    }
+  }
+
+  /** Creates a new range with the decreased precision
+    *
+    * @param newBinaryPoint
+    * @return
+    */
+  def decPrecision(newBinaryPoint: BinaryPoint): IntervalRange = {
+    newBinaryPoint match {
+      case KnownBinaryPoint(that) =>
+        doFirrtlOp(PrimOps.DecP, that)
+      case _ =>
+        throwException(s"$this.decPrecision(newBinaryPoint = $newBinaryPoint) error, newBinaryPoint must be know")
+    }
+  }
+
   /** Creates a new range with the given binary point, adjusting precision
     * on bounds as necessary
     *
@@ -566,12 +609,12 @@ sealed class IntervalRange(
     <<(that.value)
   }
 
-  /** Shift this range left, i.e. shifts the min and max by the known width
+  /** Shift this range left, i.e. shifts the min and max by value
     * @param that
     * @return
     */
-  def <<(that: IntervalRange): IntervalRange = {
-    doFirrtlOp(PrimOps.Dshl, that)
+  def <<(that: UInt): IntervalRange = {
+    doFirrtlDynamicShift(that, isLeft = true)
   }
 
   /** Shift this range right, i.e. shifts the min and max by the specified amount
@@ -588,6 +631,41 @@ sealed class IntervalRange(
     */
   override def >>(that: KnownWidth): IntervalRange = {
     >>(that.value)
+  }
+
+  /** Shift this range right, i.e. shifts the min and max by value
+    * @param that
+    * @return
+    */
+  def >>(that: UInt): IntervalRange = {
+    doFirrtlDynamicShift(that, isLeft = false)
+  }
+
+  /**
+    * Squeeze returns the intersection of the ranges this interval and that Interval
+    * @param that
+    * @return
+    */
+  def squeeze(that: IntervalRange): IntervalRange = {
+    doFirrtlOp(PrimOps.Squeeze, that)
+  }
+
+  /**
+    * Wrap the value of this [[Interval]] into the range of a different Interval with a presumably smaller range.
+    * @param that
+    * @return
+    */
+  def wrap(that: IntervalRange): IntervalRange = {
+    doFirrtlOp(PrimOps.Wrap, that)
+  }
+
+  /**
+    * Clip the value of this [[Interval]] into the range of a different Interval with a presumably smaller range.
+    * @param that
+    * @return
+    */
+  def clip(that: IntervalRange): IntervalRange = {
+    doFirrtlOp(PrimOps.Clip, that)
   }
 
   /** merges the ranges of this and that, basically takes lowest low, highest high and biggest bp

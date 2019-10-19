@@ -1763,8 +1763,9 @@ package experimental {
     final def increasePrecision(that: Int): Interval = macro SourceInfoTransform.thatArg
 
     def do_increasePrecision(that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
-      val newBinaryPoint = this.range.binaryPoint + BinaryPoint(that)
-      val newIntervalRange = this.range.setPrecision(newBinaryPoint)
+      assert(that > 0, s"Must increase precision by an integer greater than zero.")
+      val newBinaryPoint = BinaryPoint(that)
+      val newIntervalRange = this.range.incPrecision(newBinaryPoint)
       binop(sourceInfo, Interval(newIntervalRange), IncreasePrecision, that)
     }
 
@@ -1777,8 +1778,9 @@ package experimental {
     final def decreasePrecision(that: Int): Interval = macro SourceInfoTransform.thatArg
 
     def do_decreasePrecision(that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
-      val newBinaryPoint = this.range.binaryPoint + BinaryPoint(-that)
-      val newIntervalRange = this.range.setPrecision(newBinaryPoint)
+      assert(that > 0, s"Must decrease precision by an integer greater than zero.")
+      val newBinaryPoint = BinaryPoint(that)
+      val newIntervalRange = this.range.decPrecision(newBinaryPoint)
       binop(sourceInfo, Interval(newIntervalRange), DecreasePrecision, that)
     }
 
@@ -1812,8 +1814,7 @@ package experimental {
       do_<<(that.toInt)
 
     override def do_<< (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
-      val newRange = IntervalRange(firrtlir.UnknownBound, firrtlir.UnknownBound, this.range.binaryPoint)
-      binop(sourceInfo, Interval(newRange), DynamicShiftLeftOp, that)
+      binop(sourceInfo, Interval(this.range << that), DynamicShiftLeftOp, that)
     }
 
     override def do_>> (that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
@@ -1824,28 +1825,30 @@ package experimental {
       do_>>(that.toInt)
 
     override def do_>> (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
-      // Worst case range is when you shift by nothing
-      val newRange = IntervalRange(firrtlir.UnknownBound, firrtlir.UnknownBound, this.range.binaryPoint)
-      binop(sourceInfo, Interval(newRange), DynamicShiftRightOp, that)
+      binop(sourceInfo, Interval(this.range >> that), DynamicShiftRightOp, that)
     }
 
     /**
       * Squeeze returns the intersection of the ranges this interval and that Interval
+      * Ignores binary point of argument
+      * Treat as an unsafe cast; gives undefined behavior if this signal's value is outside of the resulting range
+      * Adds no additional hardware; this strictly an unsafe type conversion to use at your own risk
       * @param that
       * @return
       */
     final def squeeze(that: Interval): Interval = macro SourceInfoTransform.thatArg
     def do_squeeze(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
-      val dest = Interval(IntervalRange(that.range.lowerBound, that.range.upperBound, this.range.binaryPoint))
       val other = that
       requireIsHardware(this, s"'this' ($this)")
       requireIsHardware(other, s"'other' ($other)")
-      pushOp(DefPrim(sourceInfo, dest, SqueezeOp, this.ref, other.ref))
+      pushOp(DefPrim(sourceInfo, Interval(this.range.squeeze(that.range)), SqueezeOp, this.ref, other.ref))
     }
 
     /**
       * Squeeze returns the intersection of the ranges this interval and that UInt
       * Currently, that must have a defined width
+      * Treat as an unsafe cast; gives undefined behavior if this signal's value is outside of the resulting range
+      * Adds no additional hardware; this strictly an unsafe type conversion to use at your own risk
       * @param that an UInt whose properties determine the squeezing
       * @return
       */
@@ -1862,6 +1865,8 @@ package experimental {
     /**
       * Squeeze returns the intersection of the ranges this interval and that SInt
       * Currently, that must have a defined width
+      * Treat as an unsafe cast; gives undefined behavior if this signal's value is outside of the resulting range
+      * Adds no additional hardware; this strictly an unsafe type conversion to use at your own risk
       * @param that an SInt whose properties determine the squeezing
       * @return
       */
@@ -1877,8 +1882,9 @@ package experimental {
 
     /**
       * Squeeze returns the intersection of the ranges this interval and that IntervalRange
-      * Currently, that must have a defined width
-      *
+      * Ignores binary point of argument
+      * Treat as an unsafe cast; gives undefined behavior if this signal's value is outside of the resulting range
+      * Adds no additional hardware; this strictly an unsafe type conversion to use at your own risk
       * @param that an Interval whose properties determine the squeezing
       * @return
       */
@@ -1886,7 +1892,7 @@ package experimental {
     def do_squeeze(that: IntervalRange)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
       val intervalLitOpt = Interval.getSmallestLegalLit(that)
       val intervalLit    = intervalLitOpt.getOrElse(
-        throwException("squeeze requires an Interval argument with known lower and upper bounds")
+        throwException(s"$this.squeeze($that) requires an Interval range with known lower and upper bounds")
       )
       do_squeeze(intervalLit)
     }
@@ -1894,21 +1900,23 @@ package experimental {
 
     /**
       * Wrap the value of this [[Interval]] into the range of a different Interval with a presumably smaller range.
+      * Ignores binary point of argument
+      * Errors if requires wrapping more than once
       * @param that
       * @return
       */
     final def wrap(that: Interval): Interval = macro SourceInfoTransform.thatArg
 
     def do_wrap(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
-      val dest = Interval(IntervalRange(that.range.lowerBound, that.range.upperBound, this.range.binaryPoint))
       val other = that
       requireIsHardware(this, s"'this' ($this)")
       requireIsHardware(other, s"'other' ($other)")
-      pushOp(DefPrim(sourceInfo, dest, WrapOp, this.ref, other.ref))
+      pushOp(DefPrim(sourceInfo, Interval(this.range.wrap(that.range)), WrapOp, this.ref, other.ref))
     }
 
     /**
       * Wrap this interval into the range determined by that UInt
+      * Errors if requires wrapping more than once
       * @param that an UInt whose properties determine the wrap
       * @return
       */
@@ -1919,13 +1927,14 @@ package experimental {
           val u = BigDecimal(BigInt(1) << w) - 1
           do_wrap(0.U.asInterval(IntervalRange(firrtlir.Closed(0), firrtlir.Closed(u), BinaryPoint(0))))
         case _ =>
-          do_wrap(0.U.asInterval(IntervalRange(firrtlir.UnknownBound, firrtlir.UnknownBound, BinaryPoint(0))))
+          throwException(s"$this.wrap($that) requires UInt with known width")
       }
     }
 
     /**
       * Wrap this interval into the range determined by an SInt
-      * @param that an SInt whose properties determine the squeezing
+      * Errors if requires wrapping more than once
+      * @param that an SInt whose properties determine the bounds of the wrap
       * @return
       */
     final def wrap(that: SInt): Interval = macro SourceInfoTransform.thatArg
@@ -1936,41 +1945,44 @@ package experimental {
           val u = BigDecimal(BigInt(1) << (that.getWidth - 1)) - 1
           do_wrap(Wire(Interval(IntervalRange(firrtlir.Closed(l), firrtlir.Closed(u), BinaryPoint(0)))))
         case _ =>
-          do_wrap(Wire(Interval(IntervalRange(firrtlir.UnknownBound, firrtlir.UnknownBound, BinaryPoint(0)))))
+          throwException(s"$this.wrap($that) requires SInt with known width")
       }
     }
 
     /**
       * Wrap this interval into the range determined by an IntervalRange
-      * Currently, that must have a defined width
-      * @param that an Interval whose properties determine the squeezing
+      * Adds hardware to change values outside of wrapped range to be at the boundary
+      * Errors if requires wrapping more than once
+      * Ignores binary point of argument
+      * @param that an Interval whose properties determine the bounds of the wrap
       * @return
       */
     final def wrap(that: IntervalRange): Interval = macro SourceInfoTransform.thatArg
     def do_wrap(that: IntervalRange)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
       (that.lowerBound, that.upperBound) match {
         case (lower: firrtlconstraint.IsKnown, upperBound: firrtlconstraint.IsKnown) =>
-          do_wrap(0.U.asInterval(IntervalRange(that.lowerBound, that.upperBound, that.binaryPoint)))
+          do_wrap(0.U.asInterval(IntervalRange(that.lowerBound, that.upperBound, BinaryPoint(0))))
         case _ =>
-          throwException("wrap requires an Interval argument with known lower and upper bounds")
+          throwException(s"$this.wrap($that) requires Interval argument with known lower and upper bounds")
       }
     }
 
     /**
-      * Clip this interval into the range determined by an that
-      * clip adds hardware to change values outside of clipped range to be at the boundary
+      * Clip this interval into the range determined by argument's range
+      * Adds hardware to change values outside of clipped range to be at the boundary
+      * Ignores binary point of argument
       * @param that an Interval whose properties determine the clipping
       * @return
       */
     final def clip(that: Interval): Interval = macro SourceInfoTransform.thatArg
     def do_clip(that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
-      binop(sourceInfo, Interval(IntervalRange(firrtlir.UnknownBound, firrtlir.UnknownBound, this.range.binaryPoint)), ClipOp, that)
+      binop(sourceInfo, Interval(this.range.clip(that.range)), ClipOp, that)
     }
 
     /**
-      * Clip this interval into the range determined by an that
-      * clip adds hardware to change values outside of clipped range to be at the boundary
-      * @param that an UInt whose properties determine the clipping
+      * Clip this interval into the range determined by argument's range
+      * Adds hardware to change values outside of clipped range to be at the boundary
+      * @param that an UInt whose width determines the clipping
       * @return
       */
     final def clip(that: UInt): Interval = macro SourceInfoTransform.thatArg
@@ -1981,9 +1993,9 @@ package experimental {
     }
 
     /**
-      * Clip this interval into the range determined by that
-      * clip adds hardware to move values outside of clipped range to the boundary
-      * @param that   an SInt whose properties determine the clipping
+      * Clip this interval into the range determined by argument's range
+      * Adds hardware to move values outside of clipped range to the boundary
+      * @param that   an SInt whose width determines the clipping
       * @return
       */
     final def clip(that: SInt): Interval = macro SourceInfoTransform.thatArg
@@ -1994,11 +2006,21 @@ package experimental {
       do_clip(Wire(Interval(IntervalRange(firrtlir.Closed(l), firrtlir.Closed(u), BinaryPoint(0)))))
     }
 
+    /**
+      * Clip this interval into the range determined by argument's range
+      * Adds hardware to move values outside of clipped range to the boundary
+      * Ignores binary point of argument
+      * @param that   an SInt whose width determines the clipping
+      * @return
+      */
     final def clip(that: IntervalRange): Interval = macro SourceInfoTransform.thatArg
     def do_clip(that: IntervalRange)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
-      val wireFromRange = Wire(Interval(that))
-      wireFromRange := DontCare
-      do_clip(wireFromRange)
+      (that.lowerBound, that.upperBound) match {
+        case (lower: firrtlconstraint.IsKnown, upperBound: firrtlconstraint.IsKnown) =>
+          do_clip(0.U.asInterval(IntervalRange(that.lowerBound, that.upperBound, BinaryPoint(0))))
+        case _ =>
+          throwException(s"$this.clip($that) requires Interval argument with known lower and upper bounds")
+      }
     }
 
     override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
@@ -2144,8 +2166,8 @@ package experimental {
       val inRange = (range.lowerBound, range.upperBound) match {
         case (firrtlir.Closed(l), firrtlir.Closed(u)) => l <= bigDecimal && bigDecimal <= u
         case (firrtlir.Closed(l), firrtlir.Open(u))   => l <= bigDecimal && bigDecimal <= u
-        case (firrtlir.Closed(l), firrtlir.Closed(u)) => l <= bigDecimal && bigDecimal <= u
-        case (firrtlir.Closed(l), firrtlir.Closed(u)) => l <= bigDecimal && bigDecimal <= u
+        case (firrtlir.Open(l), firrtlir.Closed(u))   => l <= bigDecimal && bigDecimal <= u
+        case (firrtlir.Open(l), firrtlir.Open(u))     => l <= bigDecimal && bigDecimal <= u
       }
       if(! inRange) {
         throw new ChiselException(

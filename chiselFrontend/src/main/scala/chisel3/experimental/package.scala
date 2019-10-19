@@ -55,7 +55,6 @@ package object experimental {  // scalastyle:ignore object.name
   val Direction = ActualDirection
 
   implicit class ChiselRange(val sc: StringContext) extends AnyVal {
-//    import chisel3.internal.firrtl.NumericBound
 
     import scala.language.experimental.macros
 
