@@ -610,7 +610,6 @@ class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
       "Range A disjoint left, operation squeeze should generate useful error" in {
         mustGetException(disjointLeft = true, "squeeze") should be(true)
       }
-
       "Range A disjoint right, operation clip should generate useful error" in {
         mustGetException(disjointLeft = false, "clip") should be(true)
       }
