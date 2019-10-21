@@ -106,4 +106,21 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
       .getMessage should startWith ("Unable to determine source mapping for sink")
   }
 
+  class InternalBore extends RawModule {
+    val in = IO(Input(Bool()))
+    val out = IO(Output(Bool()))
+    out := false.B
+    BoringUtils.bore(in, Seq(out))
+  }
+
+  class InternalBoreTester extends ShouldntAssertTester {
+    val dut = Module(new InternalBore)
+    dut.in := true.B
+    chisel3.assert(dut.out === true.B)
+  }
+
+  it should "work for an internal (same module) BoringUtils.bore" in {
+    runTester(new InternalBoreTester) should be (true)
+  }
+
 }
