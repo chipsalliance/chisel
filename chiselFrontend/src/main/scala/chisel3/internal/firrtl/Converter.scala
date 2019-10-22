@@ -71,6 +71,11 @@ private[chisel3] object Converter {
       val uint = convert(ULit(unsigned, fplit.width), ctx)
       val lit = bp.asInstanceOf[KnownBinaryPoint].value
       fir.DoPrim(firrtl.PrimOps.AsFixedPoint, Seq(uint), Seq(lit), fir.UnknownType)
+    case intervalLit @ IntervalLit(n, w, bp) =>
+      val unsigned = if (n < 0) (BigInt(1) << intervalLit.width.get) + n else n
+      val uint = convert(ULit(unsigned, intervalLit.width), ctx)
+      val lit = bp.asInstanceOf[KnownBinaryPoint].value
+      fir.DoPrim(firrtl.PrimOps.AsInterval, Seq(uint), Seq(n, n, lit), fir.UnknownType)
     case lit: ILit =>
       throwException(s"Internal Error! Unexpected ILit: $lit")
   }
@@ -220,6 +225,7 @@ private[chisel3] object Converter {
     case d: UInt => fir.UIntType(convert(d.width))
     case d: SInt => fir.SIntType(convert(d.width))
     case d: FixedPoint => fir.FixedType(convert(d.width), convert(d.binaryPoint))
+    case d: Interval => fir.IntervalType(d.range.lowerBound, d.range.upperBound, d.range.firrtlBinaryPoint)
     case d: Analog => fir.AnalogType(convert(d.width))
     case d: Vec[_] => fir.VectorType(extractType(d.sample_element, clearDir), d.length)
     case d: Record =>

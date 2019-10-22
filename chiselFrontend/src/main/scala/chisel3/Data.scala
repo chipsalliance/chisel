@@ -3,12 +3,11 @@
 package chisel3
 
 import scala.language.experimental.macros
-
-import chisel3.experimental.{Analog, DataMirror, FixedPoint}
+import chisel3.experimental.{Analog, DataMirror, FixedPoint, Interval}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal._
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform, UnlocatableSourceInfo, DeprecatedSourceInfo}
+import chisel3.internal.sourceinfo.{DeprecatedSourceInfo, SourceInfo, SourceInfoTransform, UnlocatableSourceInfo}
 
 /** User-specified directions.
   */
@@ -195,6 +194,9 @@ private[chisel3] object cloneSupertype {
             case _ => FixedPoint()
           }
         }
+        case (elt1: Interval, elt2: Interval) =>
+          val range = if(elt1.range.width == elt1.range.width.max(elt2.range.width)) elt1.range else elt2.range
+          Interval(range)
         case (elt1, elt2) =>
           throw new AssertionError(
             s"can't create $createdType with heterogeneous types ${elt1.getClass} and ${elt2.getClass}")
