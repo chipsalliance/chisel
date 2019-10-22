@@ -196,9 +196,9 @@ We encourage chisel users (rather than chisel developers), to use release versio
 If you're developing a chisel library (or `chisel` itself), you'll probably want to work closer to the tip of the development trunk.
  By default, the master branches of the chisel repositories are configured to build and publish their version of the code as `Z.Y-SNAPSHOT`.
  We try to publish an updated SNAPSHOT every two weeks.
- There is no guarantee of API compatibility between SNAPSHOT versions, but we publish date-stamped `Z.Y-mmddyy-SNAPSHOT` versions which will not change.
- The code in `Z.Y-SNAPSHOT` should match the code in the most recent `Z.Y-mmddyy-SNAPSHOT` version, the differences being the chisel library dependencies:
- `Z.Y-SNAPSHOT`s depend on `V.U-SNAPSHOT`s and `Z.Y-mmddyy-SNAPSHOT`s will depend on `V.U-mmddyy-SNAPSHOT`s.
+ There is no guarantee of API compatibility between SNAPSHOT versions, but we publish date-stamped `Z.Y-yyyymmdd-SNAPSHOT` versions which will not change.
+ The code in `Z.Y-SNAPSHOT` should match the code in the most recent `Z.Y-yyyymmdd-SNAPSHOT` version, the differences being the chisel library dependencies:
+ `Z.Y-SNAPSHOT`s depend on `V.U-SNAPSHOT`s and `Z.Y-yyyymmdd-SNAPSHOT`s will depend on `V.U-yyyymmdd-SNAPSHOT`s.
 
 If you're developing a library (or another chisel tool), you should probably work with date-stamped SNAPSHOTs until your library or tool is ready to be published (to ensure a consistent API).
  Prior to publishing, you should verify your code against generic (no date-stamp) SNAPSHOTs, or locally published clones of the current master branches of chisel dependencies.
