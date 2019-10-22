@@ -156,7 +156,9 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
       child.bind(ChildBinding(this), resolvedDirection)
     }
 
-    direction = sample_element.direction
+    // Since all children are the same, we can just use the sample_element rather than all children
+    // .get is safe because None means mixed directions, we only pass 1 so that's not possible
+    direction = ActualDirection.fromChildren(Set(sample_element.direction), resolvedDirection).get
   }
 
   // Note: the constructor takes a gen() function instead of a Seq to enforce
@@ -262,6 +264,37 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
       else self flatMap (e => List(e.toPrintable, PString(", "))) dropRight 1
     // scalastyle:on if.brace
     PString("Vec(") + Printables(elts) + PString(")")
+  }
+
+  /** A reduce operation in a tree like structure instead of sequentially
+    * @example An adder tree
+    * {{{
+    * val sumOut = inputNums.reduceTree((a: T, b: T) => (a + b))
+    * }}}
+    */
+  def reduceTree(redOp: (T, T) => T): T = macro VecTransform.reduceTreeDefault
+
+  /** A reduce operation in a tree like structure instead of sequentially
+    * @example A pipelined adder tree
+    * {{{
+    * val sumOut = inputNums.reduceTree(
+    *   (a: T, b: T) => RegNext(a + b),
+    *   (a: T) => RegNext(a)
+    * )
+    * }}}
+    */
+  def reduceTree(redOp: (T, T) => T, layerOp: (T) => T): T = macro VecTransform.reduceTree
+
+  def do_reduceTree(redOp: (T, T) => T, layerOp: (T) => T = (x: T) => x)
+                   (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) : T = {
+    require(!isEmpty, "Cannot apply reduction on a vec of size 0")
+    var curLayer = this
+    while (curLayer.length > 1) {
+      curLayer = VecInit(curLayer.grouped(2).map( x =>
+        if (x.length == 1) layerOp(x(0)) else redOp(x(0), x(1))
+      ).toSeq)
+    }
+    curLayer(0)
   }
 }
 
