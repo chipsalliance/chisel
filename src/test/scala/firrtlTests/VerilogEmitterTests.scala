@@ -304,6 +304,148 @@ class VerilogEmitterSpec extends FirrtlFlatSpec {
     output.circuit.serialize should be (parse(check_firrtl).serialize)
   }
 
+
+  behavior of "Register Updates"
+
+  they should "emit using 'else if' constructs" in {
+    val input =
+      s"""|circuit Foo:
+          |  module Foo:
+          |    input clock: Clock
+          |    input sel: UInt<2>
+          |    input in_0: UInt<1>
+          |    input in_1: UInt<1>
+          |    input in_2: UInt<1>
+          |    input in_3: UInt<1>
+          |    output out: UInt<1>
+          |    reg tmp: UInt<1>, clock
+          |    node _GEN_0 = mux(eq(sel, UInt<2>(2)), in_2, in_3)
+          |    node _GEN_1 = mux(eq(sel, UInt<2>(1)), in_1, _GEN_0)
+          |    tmp <= mux(eq(sel, UInt<2>(0)), in_0, _GEN_1)
+          |    out <= tmp
+          |""".stripMargin
+    val circuit = Seq(ToWorkingIR, ResolveKinds, InferTypes).foldLeft(parse(input)) { case (c, p) => p.run(c) }
+    val state = CircuitState(circuit, LowForm, Seq(EmitCircuitAnnotation(classOf[VerilogEmitter])))
+    val result = (new VerilogEmitter).execute(state)
+    result should containLine ("if (sel == 2'h0) begin")
+    result should containLine ("end else if (sel == 2'h1) begin" )
+    result should containLine ("end else if (sel == 2'h2) begin")
+    result should containLine ("end else begin")
+  }
+
+  they should "ignore self assignments in false conditions" in {
+    val input =
+      s"""|circuit Foo:
+          |  module Foo:
+          |    input clock: Clock
+          |    input sel: UInt<1>
+          |    input in: UInt<1>
+          |    output out: UInt<1>
+          |    reg tmp: UInt<1>, clock
+          |    tmp <= mux(eq(sel, UInt<1>(0)), in, tmp)
+          |    out <= tmp
+          |""".stripMargin
+    val circuit = Seq(ToWorkingIR, ResolveKinds, InferTypes).foldLeft(parse(input)) { case (c, p) => p.run(c) }
+    val state = CircuitState(circuit, LowForm, Seq(EmitCircuitAnnotation(classOf[VerilogEmitter])))
+    val result = (new VerilogEmitter).execute(state)
+    result should not (containLine ("tmp <= tmp"))
+  }
+
+  they should "ignore self assignments in true conditions and invert condition" in {
+    val input =
+      s"""|circuit Foo:
+          |  module Foo:
+          |    input clock: Clock
+          |    input sel: UInt<1>
+          |    input in: UInt<1>
+          |    output out: UInt<1>
+          |    reg tmp: UInt<1>, clock
+          |    tmp <= mux(eq(sel, UInt<1>(0)), tmp, in)
+          |    out <= tmp
+          |""".stripMargin
+    val circuit = Seq(ToWorkingIR, ResolveKinds, InferTypes).foldLeft(parse(input)) { case (c, p) => p.run(c) }
+    val state = CircuitState(circuit, LowForm, Seq(EmitCircuitAnnotation(classOf[VerilogEmitter])))
+    val result = (new VerilogEmitter).execute(state)
+    result should containLine ("if (!(sel == 1'h0)) begin")
+    result should not (containLine ("tmp <= tmp"))
+  }
+
+  they should "ignore self assignments in both true and false conditions" in {
+    val input =
+      s"""|circuit Foo:
+          |  module Foo:
+          |    input clock: Clock
+          |    input sel: UInt<1>
+          |    input in: UInt<1>
+          |    output out: UInt<1>
+          |    reg tmp: UInt<1>, clock
+          |    tmp <= mux(eq(sel, UInt<1>(0)), tmp, tmp)
+          |    out <= tmp
+          |""".stripMargin
+    val circuit = Seq(ToWorkingIR, ResolveKinds, InferTypes).foldLeft(parse(input)) { case (c, p) => p.run(c) }
+    val state = CircuitState(circuit, LowForm, Seq(EmitCircuitAnnotation(classOf[VerilogEmitter])))
+    val result = (new VerilogEmitter).execute(state)
+    result should not (containLine ("tmp <= tmp"))
+    result should not (containLine ("always @(posedge clock) begin"))
+  }
+
+  they should "properly indent muxes in either the true or false condition" in {
+    val input =
+      s"""|circuit Foo:
+          |  module Foo:
+          |    input clock: Clock
+          |    input reset: UInt<1>
+          |    input sel: UInt<3>
+          |    input in_0: UInt<1>
+          |    input in_1: UInt<1>
+          |    input in_2: UInt<1>
+          |    input in_3: UInt<1>
+          |    input in_4: UInt<1>
+          |    input in_5: UInt<1>
+          |    input in_6: UInt<1>
+          |    input in_7: UInt<1>
+          |    input in_8: UInt<1>
+          |    input in_9: UInt<1>
+          |    input in_10: UInt<1>
+          |    input in_11: UInt<1>
+          |    output out: UInt<1>
+          |    reg tmp: UInt<0>, clock
+          |    node m7 = mux(eq(sel, UInt<3>(7)), in_8, in_9)
+          |    node m6 = mux(eq(sel, UInt<3>(6)), in_6, in_7)
+          |    node m5 = mux(eq(sel, UInt<3>(5)), in_4, in_5)
+          |    node m4 = mux(eq(sel, UInt<3>(4)), in_2, in_3)
+          |    node m3 = mux(eq(sel, UInt<3>(3)), in_0, in_1)
+          |    node m2 = mux(eq(sel, UInt<3>(2)), m6, m7)
+          |    node m1 = mux(eq(sel, UInt<3>(1)), m4, m5)
+          |    node m0 = mux(eq(sel, UInt<3>(0)), m2, m3)
+          |    tmp <= mux(reset, m0, m1)
+          |    out <= tmp
+          |""".stripMargin
+    val circuit = Seq(ToWorkingIR, ResolveKinds, InferTypes).foldLeft(parse(input)) { case (c, p) => p.run(c) }
+    val state = CircuitState(circuit, LowForm, Seq(EmitCircuitAnnotation(classOf[VerilogEmitter])))
+    val result = (new VerilogEmitter).execute(state)
+    /* The Verilog string is used to check for no whitespace between "else" and "if". */
+    val verilogString = result.getEmittedCircuit.value
+    result        should containLine ("if (sel == 3'h0) begin")
+    verilogString should include     ("end else if (sel == 3'h1) begin")
+    result        should containLine ("if (sel == 3'h2) begin")
+    verilogString should include     ("end else if (sel == 3'h3) begin")
+    result        should containLine ("if (sel == 3'h4) begin")
+    verilogString should include     ("end else if (sel == 3'h5) begin")
+    result        should containLine ("if (sel == 3'h6) begin")
+    verilogString should include     ("end else if (sel == 3'h7) begin")
+    result        should containLine ("tmp <= in_0;")
+    result        should containLine ("tmp <= in_1;")
+    result        should containLine ("tmp <= in_2;")
+    result        should containLine ("tmp <= in_3;")
+    result        should containLine ("tmp <= in_4;")
+    result        should containLine ("tmp <= in_5;")
+    result        should containLine ("tmp <= in_6;")
+    result        should containLine ("tmp <= in_7;")
+    result        should containLine ("tmp <= in_8;")
+    result        should containLine ("tmp <= in_9;")
+  }
+
 }
 
 class VerilogDescriptionEmitterSpec extends FirrtlFlatSpec {
