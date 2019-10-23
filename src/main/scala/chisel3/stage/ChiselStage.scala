@@ -16,7 +16,7 @@ import java.io.{StringWriter, PrintWriter}
 class ChiselStage extends Stage with PreservesAll[Phase] {
   val shell: Shell = new Shell("chisel") with ChiselCli with FirrtlCli
 
-  private val targets =
+  val targets =
     Seq( classOf[chisel3.stage.phases.Checks],
          classOf[chisel3.stage.phases.Elaborate],
          classOf[chisel3.stage.phases.AddImplicitOutputFile],
