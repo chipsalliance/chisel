@@ -13,8 +13,28 @@ import firrtl.util.BackendCompilationUtilities
 import java.io.ByteArrayOutputStream
 import java.security.Permission
 
+import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation, ChiselMain, DesignAnnotation}
+
 /** Common utility functions for Chisel unit tests. */
 trait ChiselRunners extends Assertions with BackendCompilationUtilities {
+  def runChiselStage(t: => Module, annotations: AnnotationSeq = AnnotationSeq(Nil)): AnnotationSeq = {
+
+    // Unfortunately, need to run elaboration twice to get name of file
+    val (circuit, dut) = new chisel3.stage.ChiselGeneratorAnnotation(() => t).elaborate.toSeq match {
+      case Seq(ChiselCircuitAnnotation(cir), d:DesignAnnotation[_]) => (cir, d)
+    }
+
+    // Set up a bunch of file handlers based on a random temp filename,
+    // plus the quirks of Verilator's naming conventions
+    val target = circuit.name
+
+    val path = createTestDirectory(target)
+
+    val annos = Seq(ChiselGeneratorAnnotation(() => t), firrtl.options.TargetDirAnnotation(path.toString)) ++ annotations
+
+    ChiselMain.stage.run(annos)
+  }
+
   def runTester(t: => BasicTester,
                 additionalVResources: Seq[String] = Seq(),
                 annotations: AnnotationSeq = Seq()
