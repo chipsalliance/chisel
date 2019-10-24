@@ -9,6 +9,20 @@ import org.json4s.native.JsonMethods._
 import org.json4s.native.Serialization
 import org.json4s.native.Serialization.{read, writePretty}
 
+trait HasSerializationHints {
+  // For serialization of complicated constuctor arguments, let the annotation
+  // writer specify additional type hints for relevant classes that might be
+  // contained within
+  def typeHints(): Seq[Class[_]]
+}
+
+/**
+  * An annotation carrying fully qualified class names for which we'd like the
+  * deserialization protocol to generate type hints for.
+  *
+  * @param typeTags the the additional class names
+  */
+case class DeserializationTypeHintsAnnotation(typeTags: Seq[String]) extends NoTargetAnnotation
 
 object JsonProtocol {
   class TransformClassSerializer extends CustomSerializer[Class[_ <: Transform]](format => (
@@ -74,7 +88,7 @@ object JsonProtocol {
   ))
 
   /** Construct Json formatter for annotations */
-  def jsonFormat(tags: Seq[Class[_ <: Annotation]]) = {
+  def jsonFormat(tags: Seq[Class[_]]) = {
     Serialization.formats(FullTypeHints(tags.toList)).withTypeHintFieldName("class") +
       new TransformClassSerializer + new NamedSerializer + new CircuitNameSerializer +
       new ModuleNameSerializer + new ComponentNameSerializer + new TargetSerializer +
@@ -87,9 +101,13 @@ object JsonProtocol {
   def serialize(annos: Seq[Annotation]): String = serializeTry(annos).get
 
   def serializeTry(annos: Seq[Annotation]): Try[String] = {
-    val tags = annos.map(_.getClass).distinct
-    implicit val formats = jsonFormat(tags)
-    Try(writePretty(annos))
+    val tags = annos.flatMap({
+      case anno: HasSerializationHints => anno.getClass +: anno.typeHints
+      case other => Seq(other.getClass)
+    }).distinct
+
+    implicit val formats = jsonFormat(classOf[DeserializationTypeHintsAnnotation] +: tags)
+    Try(writePretty(DeserializationTypeHintsAnnotation(tags.map(_.getName)) +: annos))
   }
 
   def deserialize(in: JsonInput): Seq[Annotation] = deserializeTry(in).get
@@ -102,8 +120,11 @@ object JsonProtocol {
         s"Annotations must be serialized as a JArray, got ${x.getClass.getSimpleName} instead!")
     }
     // Gather classes so we can deserialize arbitrary Annotations
-    val classes = annos.map({
-      case JObject(("class", JString(c)) :: tail) => c
+    val typeHintAnnoName = classOf[DeserializationTypeHintsAnnotation].getName
+    val classes = annos.flatMap({
+      case JObject(("class", JString(name)) :: ("typeTags", JArray(classes)) :: Nil) if name == typeHintAnnoName =>
+          typeHintAnnoName +: classes.collect({ case JString(className) => className })
+      case JObject(("class", JString(c)) :: tail) => Seq(c)
       case obj => throw new InvalidAnnotationJSONException(s"Expected field 'class' not found! $obj")
     }).distinct
     val loaded = classes.map(Class.forName(_).asInstanceOf[Class[_ <: Annotation]])
