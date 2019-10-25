@@ -101,13 +101,18 @@ object JsonProtocol {
   def serialize(annos: Seq[Annotation]): String = serializeTry(annos).get
 
   def serializeTry(annos: Seq[Annotation]): Try[String] = {
-    val tags = annos.flatMap({
-      case anno: HasSerializationHints => anno.getClass +: anno.typeHints
-      case other => Seq(other.getClass)
-    }).distinct
+    val annotationTags = annos.map(_.getClass).distinct
+    val additionalTags = annos.collect({
+      case anno: HasSerializationHints => anno.typeHints
+    }).flatten.distinct
 
-    implicit val formats = jsonFormat(classOf[DeserializationTypeHintsAnnotation] +: tags)
-    Try(writePretty(DeserializationTypeHintsAnnotation(tags.map(_.getName)) +: annos))
+    val typeHintAnno = additionalTags match {
+      case Nil => None
+      case tags => Some(DeserializationTypeHintsAnnotation(tags.map(_.getName)))
+    }
+
+    implicit val formats = jsonFormat(classOf[DeserializationTypeHintsAnnotation] +: (annotationTags ++ additionalTags))
+    Try(writePretty(typeHintAnno ++ annos))
   }
 
   def deserialize(in: JsonInput): Seq[Annotation] = deserializeTry(in).get
