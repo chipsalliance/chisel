@@ -62,13 +62,12 @@ class InstanceGraph(c: Circuit) {
     */
   lazy val fullHierarchy: mutable.LinkedHashMap[WDefInstance,Seq[Seq[WDefInstance]]] = graph.pathsInDAG(trueTopInstance)
 
-  /** A count of the *static* number of instances of each module. For
-    * any module other than the top module, this is equivalent to the
-    * number of inst statements in the circuit instantiating each
-    * module, irrespective of the number of times (if any) the
-    * enclosing module appears in the hierarchy. Note that top module
-    * of the circuit has an associated count of 1, even though it is
-    * never directly instantiated.
+  /** A count of the *static* number of instances of each module. For any module
+    * other than the top (main) module, this is equivalent to the number of inst
+    * statements in the circuit instantiating each module, irrespective of the
+    * number of times (if any) the enclosing module appears in the hierarchy.
+    * Note that top module of the circuit has an associated count of 1, even
+    * though it is never directly instantiated.
     */
   lazy val staticInstanceCount: Map[OfModule, Int] = {
     val instModules = childInstances.flatMap(_._2.view.map(_.OfModule).toSeq)
@@ -76,19 +75,17 @@ class InstanceGraph(c: Circuit) {
   }
 
   /** Finds the absolute paths (each represented by a Seq of instances
-    * representing the chain of hierarchy) of all instances of a
-    * particular module.
+    * representing the chain of hierarchy) of all instances of a particular
+    * module. Note that this includes one implicit instance of the top (main)
+    * module of the circuit. If the module is not instantiated within the
+    * hierarchy of the top module of the circuit, it will return Nil.
     *
     * @param module the name of the selected module
     * @return a Seq[ Seq[WDefInstance] ] of absolute instance paths
     */
   def findInstancesInHierarchy(module: String): Seq[Seq[WDefInstance]] = {
-    if (instantiated(module)) {
-      val instances = graph.getVertices.filter(_.module == module).toSeq
-      instances flatMap { i => fullHierarchy(i) }
-    } else {
-      Nil
-    }
+    val instances = graph.getVertices.filter(_.module == module).toSeq
+    instances flatMap { i => fullHierarchy.getOrElse(i, Nil) }
   }
 
   /** An [[firrtl.graph.EulerTour EulerTour]] representation of the [[firrtl.graph.DiGraph DiGraph]] */

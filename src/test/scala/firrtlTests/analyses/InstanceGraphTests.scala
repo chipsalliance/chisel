@@ -1,12 +1,8 @@
 package firrtlTests.analyses
 
-import java.io._
-import org.scalatest._
-import org.scalatest.prop._
-import org.scalatest.Matchers._
 import firrtl.analyses.InstanceGraph
 import firrtl.graph.DiGraph
-import firrtl.Parser.parse
+import firrtl.WDefInstance
 import firrtl.passes._
 import firrtlTests._
 
@@ -37,6 +33,41 @@ circuit Top :
     val circuit = ToWorkingIR.run(parse(input))
     val graph = new InstanceGraph(circuit).graph.transformNodes(_.module)
     getEdgeSet(graph) shouldBe Map("Top" -> Set("Child1", "Child2"), "Child1" -> Set("Child1a", "Child1b"), "Child2" -> Set(), "Child1a" -> Set(), "Child1b" -> Set())
+  }
+
+  it should "find hierarchical instances correctly in disconnected hierarchies" in {
+    val input = """
+circuit Top :
+  module Top :
+    inst c of Child1
+  module Child1 :
+    skip
+
+  module Top2 :
+    inst a of Child2
+    inst b of Child3
+    skip
+  module Child2 :
+    inst a of Child2a
+    inst b of Child2b
+    skip
+  module Child2a :
+    skip
+  module Child2b :
+    skip
+  module Child3 :
+    skip
+"""
+
+    val circuit = ToWorkingIR.run(parse(input))
+    val iGraph = new InstanceGraph(circuit)
+    iGraph.findInstancesInHierarchy("Top") shouldBe Seq(Seq(WDefInstance("Top", "Top")))
+    iGraph.findInstancesInHierarchy("Child1") shouldBe Seq(Seq(WDefInstance("Top", "Top"), WDefInstance("c", "Child1")))
+    iGraph.findInstancesInHierarchy("Top2") shouldBe Nil
+    iGraph.findInstancesInHierarchy("Child2") shouldBe Nil
+    iGraph.findInstancesInHierarchy("Child2a") shouldBe Nil
+    iGraph.findInstancesInHierarchy("Child2b") shouldBe Nil
+    iGraph.findInstancesInHierarchy("Child3") shouldBe Nil
   }
 
   it should "recognize disconnected hierarchies" in {
