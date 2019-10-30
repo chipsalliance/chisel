@@ -124,7 +124,7 @@ object JsonProtocol {
     }).distinct
 
     val classes = findTypeHints(annos, true)
-    val loaded = classes.map(Class.forName(_).asInstanceOf[Class[_]])
+    val loaded = classes.map(Class.forName(_))
     implicit val formats = jsonFormat(loaded)
     read[List[Annotation]](in)
   }).recoverWith {
