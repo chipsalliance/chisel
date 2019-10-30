@@ -10,7 +10,7 @@ import org.json4s.native.Serialization
 import org.json4s.native.Serialization.{read, writePretty}
 
 trait HasSerializationHints {
-  // For serialization of complicated constuctor arguments, let the annotation
+  // For serialization of complicated constructor arguments, let the annotation
   // writer specify additional type hints for relevant classes that might be
   // contained within
   def typeHints: Seq[Class[_]]
@@ -93,10 +93,10 @@ object JsonProtocol {
   def serialize(annos: Seq[Annotation]): String = serializeTry(annos).get
 
   def serializeTry(annos: Seq[Annotation]): Try[String] = {
-    val tags = annos.collect({
+    val tags = annos.flatMap({
       case anno: HasSerializationHints => anno.getClass +: anno.typeHints
       case anno => Seq(anno.getClass)
-    }).flatten.distinct
+    }).distinct
 
     implicit val formats = jsonFormat(tags)
     Try(writePretty(annos))
