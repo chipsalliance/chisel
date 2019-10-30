@@ -13,7 +13,7 @@ trait HasSerializationHints {
   // For serialization of complicated constuctor arguments, let the annotation
   // writer specify additional type hints for relevant classes that might be
   // contained within
-  def typeHints(): Seq[Class[_]]
+  def typeHints: Seq[Class[_]]
 }
 
 object JsonProtocol {
