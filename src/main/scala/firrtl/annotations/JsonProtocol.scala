@@ -113,14 +113,17 @@ object JsonProtocol {
     }
     // Recursively gather typeHints by pulling the "class" field from JObjects
     // Json4s should emit this as the first field in all serialized classes
-    def findTypeHints(classInst: Seq[JValue]): Seq[String] = classInst.flatMap({
+    // Setting requireClassField mandates that all JObjects must provide a typeHint,
+    // this used on the first invocation to check all annotations do so
+    def findTypeHints(classInst: Seq[JValue], requireClassField: Boolean = false): Seq[String] = classInst.flatMap({
       case JObject(("class", JString(name)) :: fields) => name +: findTypeHints(fields.map(_._2))
-      case obj: JObject => throw new InvalidAnnotationJSONException(s"Expected field 'class' not found! $obj")
+      case obj: JObject if requireClassField => throw new InvalidAnnotationJSONException(s"Expected field 'class' not found! $obj")
+      case JObject(fields) => findTypeHints(fields.map(_._2))
       case JArray(arr) => findTypeHints(arr)
       case oJValue => Seq()
     }).distinct
 
-    val classes = findTypeHints(annos)
+    val classes = findTypeHints(annos, true)
     val loaded = classes.map(Class.forName(_).asInstanceOf[Class[_]])
     implicit val formats = jsonFormat(loaded)
     read[List[Annotation]](in)
