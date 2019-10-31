@@ -878,6 +878,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
           emit(Seq(s"  reg [$width:0] initvar;"))
         }
         emit(Seq("`endif"))
+        emit(Seq("`ifndef SYNTHESIS"))
         emit(Seq("initial begin"))
         emit(Seq("  `ifdef RANDOMIZE"))
         emit(Seq("    `ifdef INIT_RANDOM"))
@@ -897,7 +898,8 @@ class VerilogEmitter extends SeqTransform with Emitter {
         for (x <- initials) emit(Seq(tab, x))
         emit(Seq("  `endif // RANDOMIZE"))
         for (x <- asyncInitials) emit(Seq(tab, x))
-        emit(Seq("end"))
+        emit(Seq("end // initial"))
+        emit(Seq("`endif // SYNTHESIS"))
       }
 
       for ((clk, content) <- noResetAlwaysBlocks if content.nonEmpty) {
