@@ -169,6 +169,29 @@ class ParserSpec extends FirrtlFlatSpec {
       Driver.execute(manager)
     }
   }
+
+  "Trailing syntax errors" should "be caught in the parser" in {
+    val input = s"""
+      |circuit Foo:
+      |  module Bar:
+      |    input a: UInt<1>
+      |output b: UInt<1>
+      |    b <- a
+      |
+      |  module Foo:
+      |    input a: UInt<1>
+      |    output b: UInt<1>
+      |    inst bar of Bar
+      |    bar.a <- a
+      |    b <- bar.b
+      """.stripMargin
+    val manager = new ExecutionOptionsManager("test") with HasFirrtlOptions {
+      firrtlOptions = FirrtlExecutionOptions(firrtlSource = Some(input))
+    }
+    a [SyntaxErrorsException] shouldBe thrownBy {
+      Driver.execute(manager)
+    }
+  }
 }
 
 class ParserPropSpec extends FirrtlPropSpec {

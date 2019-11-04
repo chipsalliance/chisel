@@ -29,7 +29,7 @@ import firrtl.LexerHelper;
 
 // Does there have to be at least one module?
 circuit
-  : 'circuit' id ':' info? INDENT module* DEDENT
+  : 'circuit' id ':' info? INDENT module* DEDENT EOF
   ;
 
 module
