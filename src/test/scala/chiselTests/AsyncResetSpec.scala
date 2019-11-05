@@ -169,7 +169,7 @@ class AsyncResetSpec extends ChiselFlatSpec {
     assertTesterPasses(new AsyncResetQueueTester)
   }
 
-  it should "allow literals cast to Aggregates as reset values" in {
+  it should "allow literals cast to Bundles as reset values" in {
     class MyBundle extends Bundle {
       val x = UInt(16.W)
       val y = UInt(16.W)
@@ -186,6 +186,8 @@ class AsyncResetSpec extends ChiselFlatSpec {
       }
       when (done) { stop() }
     })
+  }
+  it should "allow literals cast to Vecs as reset values" in {
     assertTesterPasses(new BasicTester {
       val reg = withReset(reset.asAsyncReset) {
         RegNext(0xbad0cad0L.U.asTypeOf(Vec(4, UInt(8.W))), 0xdeadbeefL.U.asTypeOf(Vec(4, UInt(8.W))))
