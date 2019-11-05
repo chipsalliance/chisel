@@ -25,7 +25,7 @@ class FlattenTests extends LowTransformSpec {
     val name = if (parts.size == 1) modName else ComponentName(parts.tail.mkString("."), modName)
     FlattenAnnotation(name)
   }
-  
+
   "The modules inside Top " should "be inlined" in {
      val input =
         """circuit Top :
@@ -55,7 +55,7 @@ class FlattenTests extends LowTransformSpec {
           |    b <= a""".stripMargin
      execute(input, check, Seq(flatten("Top")))
   }
-  
+
   "Two instances of the same module inside Top " should "be inlined" in {
      val input =
         """circuit Top :
@@ -112,14 +112,14 @@ class FlattenTests extends LowTransformSpec {
           |    input a : UInt<32>
           |    output b : UInt<32>
           |    inst i of Inline2
-          |    i.a <= a 
-          |    b <= i.a 
+          |    i.a <= a
+          |    b <= i.a
           |  module Inline1 :
           |    input a : UInt<32>
           |    output b : UInt<32>
           |    inst i of Inline2
-          |    i.a <= a 
-          |    b <= i.a 
+          |    i.a <= a
+          |    b <= i.a
           |  module Inline2 :
           |    input a : UInt<32>
           |    output b : UInt<32>
@@ -147,13 +147,13 @@ class FlattenTests extends LowTransformSpec {
           |    input a : UInt<32>
           |    output b : UInt<32>
           |    inst i of Inline2
-          |    b <= i.a 
-          |    i.a <= a 
+          |    b <= i.a
+          |    i.a <= a
           |  module Inline1 :
           |    input a : UInt<32>
           |    output b : UInt<32>
-          |    inst i of Inline2 
-          |    b <= i.a 
+          |    inst i of Inline2
+          |    b <= i.a
           |    i.a <= a
           |  module Inline2 :
           |    input a : UInt<32>
@@ -179,14 +179,14 @@ class FlattenTests extends LowTransformSpec {
           |    input a : UInt<32>
           |    output b : UInt<32>
           |    inst i of Inline2
-          |    i.a <= a 
-          |    b <= i.a 
+          |    i.a <= a
+          |    b <= i.a
           |  module Inline1 :
           |    input a : UInt<32>
           |    output b : UInt<32>
           |    inst i of Inline2
-          |    i.a <= a 
-          |    b <= i.a 
+          |    i.a <= a
+          |    b <= i.a
           |  module Inline2 :
           |    input a : UInt<32>
           |    output b : UInt<32>
@@ -208,8 +208,8 @@ class FlattenTests extends LowTransformSpec {
           |    input a : UInt<32>
           |    output b : UInt<32>
           |    inst i of Inline2
-          |    b <= i.a 
-          |    i.a <= a 
+          |    b <= i.a
+          |    i.a <= a
           |  module Inline1 :
           |    input a : UInt<32>
           |    output b : UInt<32>
@@ -233,5 +233,51 @@ class FlattenTests extends LowTransformSpec {
          |    b <= a
          |""".stripMargin
     execute(input, input, Seq.empty)
+  }
+
+  "The Flatten transform" should "ignore extmodules" in {
+    val input = """
+      |circuit Top :
+      |  module Top :
+      |    input a : UInt<32>
+      |    output b : UInt<32>
+      |    inst i of Inline
+      |    i.a <= a
+      |    b <= i.b
+      |  module Inline :
+      |    input a : UInt<32>
+      |    output b : UInt<32>
+      |    inst i of ExternalMod
+      |    i.a <= a
+      |    b <= i.b
+      |  extmodule ExternalMod :
+      |    input a : UInt<32>
+      |    output b : UInt<32>
+      |    defname = ExternalMod
+      """.stripMargin
+    val check = """
+      |circuit Top :
+      |  module Top :
+      |    input a : UInt<32>
+      |    output b : UInt<32>
+      |    wire i_a : UInt<32>
+      |    wire i_b : UInt<32>
+      |    inst i_i of ExternalMod
+      |    i_b <= i_i.b
+      |    i_i.a <= i_a
+      |    b <= i_b
+      |    i_a <= a
+      |  module Inline :
+      |    input a : UInt<32>
+      |    output b : UInt<32>
+      |    inst i of ExternalMod
+      |    b <= i.b
+      |    i.a <= a
+      |  extmodule ExternalMod :
+      |    input a : UInt<32>
+      |    output b : UInt<32>
+      |    defname = ExternalMod
+      """.stripMargin
+    execute(input, check, Seq(flatten("Top")))
   }
 }

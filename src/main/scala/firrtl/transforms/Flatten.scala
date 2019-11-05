@@ -15,16 +15,19 @@ case class FlattenAnnotation(target: Named) extends SingleTargetAnnotation[Named
 }
 
 /**
- * Takes flatten annotations for module instances and modules and inline the entire hierarchy of modules down from the annotations.
- * This transformation instantiates and is based on the InlineInstances transformation.  
- * Note: Inlining a module means inlining all its children module instances      
- */
+  * Takes flatten annotations for module instances and modules and inline the entire hierarchy of
+  * modules down from the annotations. This transformation instantiates and is based on the
+  * InlineInstances transformation.
+  *
+  * @note Flattening a module means inlining all its fully-defined child instances
+  * @note Instances of extmodules are not (and cannot be) inlined
+  */
 class Flatten extends Transform {
    def inputForm = LowForm
    def outputForm = LowForm
 
    val inlineTransform = new InlineInstances
-   
+
    private def collectAnns(circuit: Circuit, anns: Iterable[Annotation]): (Set[ModuleName], Set[ComponentName]) =
      anns.foldLeft( (Set.empty[ModuleName], Set.empty[ComponentName]) ) {
        case ((modNames, instNames), ann) => ann match {
@@ -40,7 +43,7 @@ class Flatten extends Transform {
 
    /**
     *  Modifies the circuit by replicating the hierarchy under the annotated objects (mods and insts) and
-    *  by rewriting the original circuit to refer to the new modules that will be inlined later. 
+    *  by rewriting the original circuit to refer to the new modules that will be inlined later.
     *  @return modified circuit and ModuleNames to inline
     */
    def duplicateSubCircuitsFromAnno(c: Circuit, mods: Set[ModuleName], insts: Set[ComponentName]): (Circuit, Set[ModuleName]) = {
@@ -49,10 +52,10 @@ class Flatten extends Transform {
      val newModDefs = mutable.Set.empty[DefModule]
      val nsp = Namespace(c)
 
-     /** 
-      *  We start with rewriting DefInstances in the modules with annotations to refer to replicated modules to be created later.  
-      *  It populates seedMods where we capture the mapping between the original module name of the instances came from annotation 
-      *  to a new module name that we will create as a replica of the original one. 
+     /**
+      *  We start with rewriting DefInstances in the modules with annotations to refer to replicated modules to be created later.
+      *  It populates seedMods where we capture the mapping between the original module name of the instances came from annotation
+      *  to a new module name that we will create as a replica of the original one.
       *  Note: We replace old modules with it replicas so that other instances of the same module can be left unchanged.
       */
      def rewriteMod(parent: DefModule)(x: Statement): Statement = x match {
@@ -66,12 +69,12 @@ class Flatten extends Transform {
          } else x
        case _ => x
      }
-     
+
      val modifMods = c.modules map { m => m map rewriteMod(m) }
-     
-     /** 
-      *  Recursively rewrites modules in the hierarchy starting with modules in seedMods (originally annotations). 
-      *  Populates newModDefs, which are replicated modules used in the subcircuit that we create 
+
+     /**
+      *  Recursively rewrites modules in the hierarchy starting with modules in seedMods (originally annotations).
+      *  Populates newModDefs, which are replicated modules used in the subcircuit that we create
       *  by recursively traversing modules captured inside seedMods and replicating them
       */
      def recDupMods(mods: Map[String, String]): Unit = {
@@ -79,20 +82,23 @@ class Flatten extends Transform {
 
        def dupMod(x: Statement): Statement = x match {
          case _: Block => x map dupMod
-         case WDefInstance(info, instName, moduleName, instTpe) =>
-           val newModName = if (replMods.contains(moduleName)) replMods(moduleName) else nsp.newName(moduleName+"_TO_FLATTEN")
-           replMods += moduleName -> newModName
-           WDefInstance(info, instName, newModName, instTpe)
-         case _ => x 
+         case WDefInstance(info, instName, moduleName, instTpe) => modMap(moduleName) match {
+           case m: Module =>
+             val newModName = if (replMods.contains(moduleName)) replMods(moduleName) else nsp.newName(moduleName+"_TO_FLATTEN")
+             replMods += moduleName -> newModName
+             WDefInstance(info, instName, newModName, instTpe)
+           case _ => x // Ignore extmodules
+         }
+         case _ => x
        }
-       
+
        def dupName(name: String): String = mods(name)
        val newMods = mods map { case (origName, newName) => modMap(origName) map dupMod map dupName }
-       
+
        newModDefs ++= newMods
-       
+
        if(replMods.size > 0) recDupMods(replMods.toMap)
-       
+
      }
      recDupMods(seedMods.toMap)
 
@@ -100,7 +106,7 @@ class Flatten extends Transform {
      val modsToInline = newModDefs map { m => ModuleName(m.name, CircuitName(c.main)) }
      (c.copy(modules = modifMods ++ newModDefs), modsToInline.toSet)
    }
-   
+
    override def execute(state: CircuitState): CircuitState = {
      val annos = state.annotations.collect { case a @ FlattenAnnotation(_) => a }
      annos match {

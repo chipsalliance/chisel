@@ -267,6 +267,24 @@ class VerilogEmitterSpec extends FirrtlFlatSpec {
     }
   }
 
+  "Initial Blocks" should "be guarded by ifndef SYNTHESIS" in {
+    val input =
+      """circuit Test :
+        |  module Test :
+        |    input clock : Clock
+        |    input reset : AsyncReset
+        |    input in : UInt<8>
+        |    output out : UInt<8>
+        |    reg r : UInt<8>, clock with : (reset => (reset, UInt(0)))
+        |    r <= in
+        |    out <= r
+        """.stripMargin
+    val state = CircuitState(parse(input), ChirrtlForm)
+    val result = (new VerilogCompiler).compileAndEmit(state, List())
+    result should containLines ("`ifndef SYNTHESIS", "initial begin")
+    result should containLines ("end // initial", "`endif // SYNTHESIS")
+  }
+
   "Verilog name conflicts" should "be resolved" in {
     val input =
       """|circuit parameter:

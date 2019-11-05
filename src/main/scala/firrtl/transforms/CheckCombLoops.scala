@@ -11,14 +11,51 @@ import firrtl.passes.{Errors, PassException}
 import firrtl.traversals.Foreachers._
 import firrtl.annotations._
 import firrtl.Utils.throwInternalError
-import firrtl.graph.{MutableDiGraph,DiGraph}
+import firrtl.graph._
 import firrtl.analyses.InstanceGraph
 import firrtl.options.{RegisteredTransform, ShellOption}
 
+/*
+ * A case class that represents a net in the circuit. This is
+ * necessary since combinational loop checking is an analysis on the
+ * netlist of the circuit; the fields are specialized for low
+ * FIRRTL. Since all wires are ground types, a given ground type net
+ * may only be a subfield of an instance or a memory
+ * port. Therefore, it is uniquely specified within its module
+ * context by its name, its optional parent instance (a WDefInstance
+ * or WDefMemory), and its optional memory port name.
+ */
+case class LogicNode(name: String, inst: Option[String] = None, memport: Option[String] = None)
+
+object LogicNode {
+  def apply(e: Expression): LogicNode = e match {
+    case idx: WSubIndex =>
+      LogicNode(idx.expr)
+    case r: WRef =>
+      LogicNode(r.name)
+    case s: WSubField =>
+      s.expr match {
+        case modref: WRef =>
+          LogicNode(s.name,Some(modref.name))
+        case memport: WSubField =>
+          memport.expr match {
+            case memref: WRef =>
+              LogicNode(s.name,Some(memref.name),Some(memport.name))
+            case _ => throwInternalError(s"LogicNode: unrecognized subsubfield expression - $memport")
+          }
+        case _ => throwInternalError(s"LogicNode: unrecognized subfield expression - $s")
+      }
+  }
+}
+
 object CheckCombLoops {
+  type AbstractConnMap = DiGraph[LogicNode]
+  type ConnMap = DiGraph[LogicNode] with EdgeData[LogicNode, Info]
+  type MutableConnMap = MutableDiGraph[LogicNode] with MutableEdgeData[LogicNode, Info]
+
+
   class CombLoopException(info: Info, mname: String, cycle: Seq[String]) extends PassException(
     s"$info: [module $mname] Combinational loop detected:\n" + cycle.mkString("\n"))
-
 }
 
 case object DontCheckCombLoopsAnnotation extends NoTargetAnnotation
@@ -70,63 +107,33 @@ class CheckCombLoops extends Transform with RegisteredTransform {
       toAnnotationSeq = (_: Unit) => Seq(DontCheckCombLoopsAnnotation),
       helpText = "Disable combinational loop checking" ) )
 
-  /*
-   * A case class that represents a net in the circuit. This is
-   * necessary since combinational loop checking is an analysis on the
-   * netlist of the circuit; the fields are specialized for low
-   * FIRRTL. Since all wires are ground types, a given ground type net
-   * may only be a subfield of an instance or a memory
-   * port. Therefore, it is uniquely specified within its module
-   * context by its name, its optional parent instance (a WDefInstance
-   * or WDefMemory), and its optional memory port name.
-   */
-  private case class LogicNode(name: String, inst: Option[String] = None, memport: Option[String] = None)
-
-  private def toLogicNode(e: Expression): LogicNode = e match {
-    case idx: WSubIndex =>
-      toLogicNode(idx.expr)
-    case r: WRef =>
-      LogicNode(r.name)
-    case s: WSubField =>
-      s.expr match {
-        case modref: WRef =>
-          LogicNode(s.name,Some(modref.name))
-        case memport: WSubField =>
-          memport.expr match {
-            case memref: WRef =>
-              LogicNode(s.name,Some(memref.name),Some(memport.name))
-            case _ => throwInternalError(s"toLogicNode: unrecognized subsubfield expression - $memport")
-          }
-        case _ => throwInternalError(s"toLogicNode: unrecognized subfield expression - $s")
-      }
-  }
-
-
-  private def getExprDeps(deps: MutableDiGraph[LogicNode], v: LogicNode)(e: Expression): Unit = e match {
-    case r: WRef => deps.addEdgeIfValid(v, toLogicNode(r))
-    case s: WSubField => deps.addEdgeIfValid(v, toLogicNode(s))
-    case _ => e.foreach(getExprDeps(deps, v))
+  private def getExprDeps(deps: MutableConnMap, v: LogicNode, info: Info)(e: Expression): Unit = e match {
+    case r: WRef => deps.addEdgeIfValid(v, LogicNode(r), info)
+    case s: WSubField => deps.addEdgeIfValid(v, LogicNode(s), info)
+    case _ => e.foreach(getExprDeps(deps, v, info))
   }
 
   private def getStmtDeps(
-    simplifiedModules: mutable.Map[String,DiGraph[LogicNode]],
-    deps: MutableDiGraph[LogicNode])(s: Statement): Unit = s match {
-    case Connect(_,loc,expr) =>
-      val lhs = toLogicNode(loc)
+    simplifiedModules: mutable.Map[String, AbstractConnMap],
+    deps: MutableConnMap)(s: Statement): Unit = s match {
+    case Connect(info, loc, expr) =>
+      val lhs = LogicNode(loc)
       if (deps.contains(lhs)) {
-        getExprDeps(deps, lhs)(expr)
+        getExprDeps(deps, lhs, info)(expr)
       }
     case w: DefWire =>
       deps.addVertex(LogicNode(w.name))
-    case n: DefNode =>
-      val lhs = LogicNode(n.name)
+    case DefNode(info, name, value) =>
+      val lhs = LogicNode(name)
       deps.addVertex(lhs)
-      getExprDeps(deps, lhs)(n.value)
+      getExprDeps(deps, lhs, info)(value)
     case m: DefMemory if (m.readLatency == 0) =>
       for (rp <- m.readers) {
-        val dataNode = deps.addVertex(LogicNode("data",Some(m.name),Some(rp)))
-        deps.addEdge(dataNode, deps.addVertex(LogicNode("addr",Some(m.name),Some(rp))))
-        deps.addEdge(dataNode, deps.addVertex(LogicNode("en",Some(m.name),Some(rp))))
+        val dataNode = deps.addVertex(LogicNode("data", Some(m.name), Some(rp)))
+        val addr = LogicNode("addr", Some(m.name), Some(rp))
+        val en = LogicNode("en", Some(m.name), Some(rp))
+        deps.addEdge(dataNode, deps.addVertex(addr), m.info)
+        deps.addEdge(dataNode, deps.addVertex(en), m.info)
       }
     case i: WDefInstance =>
       val iGraph = simplifiedModules(i.module).transformNodes(n => n.copy(inst = Some(i.name)))
@@ -134,6 +141,11 @@ class CheckCombLoops extends Transform with RegisteredTransform {
       iGraph.getVertices.foreach({ v => iGraph.getEdges(v).foreach { deps.addEdge(v,_) } })
     case _ =>
       s.foreach(getStmtDeps(simplifiedModules,deps))
+  }
+
+  // Pretty-print a LogicNode with a prepended hierarchical path
+  private def prettyPrintAbsoluteRef(hierPrefix: Seq[String], node: LogicNode): String = {
+    (hierPrefix ++ node.inst ++ node.memport :+ node.name).mkString(".")
   }
 
   /*
@@ -144,23 +156,25 @@ class CheckCombLoops extends Transform with RegisteredTransform {
    */
   private def expandInstancePaths(
     m: String,
-    moduleGraphs: mutable.Map[String,DiGraph[LogicNode]],
-    moduleDeps: Map[String, Map[String,String]],
-    prefix: Seq[String],
+    moduleGraphs: mutable.Map[String, ConnMap],
+    moduleDeps: Map[String, Map[String, String]],
+    hierPrefix: Seq[String],
     path: Seq[LogicNode]): Seq[String] = {
-    def absNodeName(prefix: Seq[String], n: LogicNode) =
-      (prefix ++ n.inst ++ n.memport :+ n.name).mkString(".")
-    val pathNodes = (path zip path.tail) map { case (a, b) =>
-      if (a.inst.isDefined && !a.memport.isDefined && a.inst == b.inst) {
-        val child = moduleDeps(m)(a.inst.get)
-        val newprefix = prefix :+ a.inst.get
-        val subpath = moduleGraphs(child).path(b.copy(inst=None),a.copy(inst=None)).tail.reverse
-        expandInstancePaths(child,moduleGraphs,moduleDeps,newprefix,subpath)
+    // Recover info from edge data, add to error string
+    def info(u: LogicNode, v: LogicNode): String =
+      moduleGraphs(m).getEdgeData(u, v).map(_.toString).mkString("\t", "", "")
+    // lhs comes after rhs
+    val pathNodes = (path zip path.tail) map { case (rhs, lhs) =>
+      if (lhs.inst.isDefined && !lhs.memport.isDefined && lhs.inst == rhs.inst) {
+        val child = moduleDeps(m)(lhs.inst.get)
+        val newHierPrefix = hierPrefix :+ lhs.inst.get
+        val subpath = moduleGraphs(child).path(lhs.copy(inst=None),rhs.copy(inst=None)).reverse
+        expandInstancePaths(child, moduleGraphs, moduleDeps, newHierPrefix, subpath)
       } else {
-        Seq(absNodeName(prefix,a))
+        Seq(prettyPrintAbsoluteRef(hierPrefix, lhs) ++ info(lhs, rhs))
       }
     }
-    pathNodes.flatten :+ absNodeName(prefix, path.last)
+    pathNodes.flatten
   }
 
   /*
@@ -216,36 +230,38 @@ class CheckCombLoops extends Transform with RegisteredTransform {
     val iGraph = new InstanceGraph(c).graph
     val moduleDeps = iGraph.getEdgeMap.map({ case (k,v) => (k.module, (v map { i => (i.name, i.module) }).toMap) }).toMap
     val topoSortedModules = iGraph.transformNodes(_.module).linearize.reverse map { moduleMap(_) }
-    val moduleGraphs = new mutable.HashMap[String,DiGraph[LogicNode]]
-    val simplifiedModuleGraphs = new mutable.HashMap[String,DiGraph[LogicNode]]
+    val moduleGraphs = new mutable.HashMap[String, ConnMap]
+    val simplifiedModuleGraphs = new mutable.HashMap[String, AbstractConnMap]
     topoSortedModules.foreach {
       case em: ExtModule =>
         val portSet = em.ports.map(p => LogicNode(p.name)).toSet
-        val extModuleDeps = new MutableDiGraph[LogicNode]
+        val extModuleDeps = new MutableDiGraph[LogicNode] with MutableEdgeData[LogicNode, Info]
         portSet.foreach(extModuleDeps.addVertex(_))
         extModulePaths.getOrElse(ModuleTarget(c.main, em.name), Nil).collect {
           case a: ExtModulePathAnnotation => extModuleDeps.addPairWithEdge(LogicNode(a.sink.ref), LogicNode(a.source.ref))
         }
-        moduleGraphs(em.name) = DiGraph(extModuleDeps).simplify(portSet)
-        simplifiedModuleGraphs(em.name) = moduleGraphs(em.name)
+        moduleGraphs(em.name) = extModuleDeps
+        simplifiedModuleGraphs(em.name) = extModuleDeps.simplify(portSet)
       case m: Module =>
         val portSet = m.ports.map(p => LogicNode(p.name)).toSet
-        val internalDeps = new MutableDiGraph[LogicNode]
+        val internalDeps = new MutableDiGraph[LogicNode] with MutableEdgeData[LogicNode, Info]
         portSet.foreach(internalDeps.addVertex(_))
         m.foreach(getStmtDeps(simplifiedModuleGraphs, internalDeps))
-        val moduleGraph = DiGraph(internalDeps)
-        moduleGraphs(m.name) = moduleGraph
+        moduleGraphs(m.name) = internalDeps
         simplifiedModuleGraphs(m.name) = moduleGraphs(m.name).simplify(portSet)
         // Find combinational nodes with self-edges; this is *NOT* the same as length-1 SCCs!
-        for (unitLoopNode <- moduleGraph.getVertices.filter(v => moduleGraph.getEdges(v).contains(v))) {
+        for (unitLoopNode <- internalDeps.getVertices.filter(v => internalDeps.getEdges(v).contains(v))) {
           errors.append(new CombLoopException(m.info, m.name, Seq(unitLoopNode.name)))
         }
-        for (scc <- moduleGraph.findSCCs.filter(_.length > 1)) {
-          val sccSubgraph = moduleGraph.subgraph(scc.toSet)
+        for (scc <- internalDeps.findSCCs.filter(_.length > 1)) {
+          val sccSubgraph = internalDeps.subgraph(scc.toSet)
           val cycle = findCycleInSCC(sccSubgraph)
-            (cycle zip cycle.tail).foreach({ case (a,b) => require(moduleGraph.getEdges(a).contains(b)) })
-          val expandedCycle = expandInstancePaths(m.name, moduleGraphs, moduleDeps, Seq(m.name), cycle.reverse)
-          errors.append(new CombLoopException(m.info, m.name, expandedCycle))
+            (cycle zip cycle.tail).foreach({ case (a,b) => require(internalDeps.getEdges(a).contains(b)) })
+          // Reverse to make sure LHS comes after RHS, print repeated vertex at start for legibility
+          val intuitiveCycle = cycle.reverse
+          val repeatedInitial = prettyPrintAbsoluteRef(Seq(m.name), intuitiveCycle.head)
+          val expandedCycle = expandInstancePaths(m.name, moduleGraphs, moduleDeps, Seq(m.name), intuitiveCycle)
+          errors.append(new CombLoopException(m.info, m.name, repeatedInitial +: expandedCycle))
         }
       case m => throwInternalError(s"Module ${m.name} has unrecognized type")
     }
