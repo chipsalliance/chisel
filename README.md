@@ -105,6 +105,7 @@ These simulation-based verification tools are available for Chisel:
 - [**Wiki**](https://github.com/freechipsproject/chisel3/wiki), which contains various feature-specific tutorials and frequently-asked questions.
 - [**ScalaDoc**](https://www.chisel-lang.org/api/latest/chisel3/index.html), a listing, description, and examples of the functionality exposed by Chisel
 - [**Gitter**](https://gitter.im/freechipsproject/chisel3), where you can ask questions or discuss anything Chisel
+- [**Style Guide**](https://github.com/ccelio/chisel-style-guide), A basic guide to chisel style conventions
 - [**Website**](https://www.chisel-lang.org)
 
 If you are migrating from Chisel2, see [the migration guide](https://www.chisel-lang.org/chisel3/chisel3-vs-chisel2.html).
