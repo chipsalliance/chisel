@@ -47,10 +47,20 @@ trait NamedModuleTester extends MultiIOModule {
     failures.toList
   }
 }
+@chiselName
+class OuterNamedNonModule {
+  val value = Wire(Bool())
+}
 
 @chiselName
 class NonModule {
   val value = Wire(Bool())
+  @chiselName
+  class InnerNamedNonModule {
+    val value = Wire(Bool())
+  }
+  val inner = new InnerNamedNonModule
+  val outer = new OuterNamedNonModule
 }
 
 @chiselName
@@ -95,6 +105,8 @@ class NamedModule extends NamedModuleTester {
   
   val test4 = new NonModule
   expectName(test4.value, "test4_value")
+  expectName(test4.inner.value, "test4_inner_value")
+  expectName(test4.outer.value, "test4_outer_value")
 
   // Test that contents of for loops are named
   for (i <- 0 until 1) {
