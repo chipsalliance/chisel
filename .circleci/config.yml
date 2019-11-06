@@ -137,6 +137,15 @@ jobs:
             # We expect the "[info]" field from sbt so the warning count will be in column 4
             (cd chisel3 && cat /dev/null | sbt $SBT_ARGS scalastyle | gawk -v WARN_FAIL=2 -e '/scalastyle Found [0-9]+ warnings/ { print $0; if ($4 > ENVIRON["CHECKSTYLE_LIMIT"]) WARN_FAIL=1; else if (WARN_FAIL == 2) WARN_FAIL=0 }' -e 'END { exit WARN_FAIL}')
 
+  check-binary-compatibility:
+    executor: chisel-executor
+    steps:
+      - attach_workspace:
+          at: /home/chisel
+      - run:
+          command: |
+            cd chisel3 && sbt $SBT_ARGS +mimaReportBinaryIssues
+
 workflows:
 
   build_and_test:
@@ -159,3 +168,6 @@ workflows:
           #  there's a better chance to see if the tests fail before we flag a style failure
           requires:
             - test-chisel-2_12
+      - check-binary-compatibility:
+          requires:
+            - build-firrtl
