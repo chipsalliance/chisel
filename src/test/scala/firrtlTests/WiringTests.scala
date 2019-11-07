@@ -809,4 +809,24 @@ class WiringTests extends FirrtlFlatSpec {
     val wiringPass = new Wiring(wiSeq)
     executeTest(input, check, passes :+ wiringPass)
   }
+
+  it should "error when there are multiple sources for the same pin" in {
+    val sink = ComponentName("s", ModuleName("Top", CircuitName("Top")))
+    val source1 = ComponentName("r", ModuleName("Top", CircuitName("Top")))
+    val source2 = ComponentName("r2", ModuleName("Top", CircuitName("Top")))
+    val annos = Seq(SourceAnnotation(source1, "pin"),
+                    SourceAnnotation(source2, "pin"),
+                    SinkAnnotation(sink, "pin"))
+    val input =
+      """|circuit Top :
+         |  module Top :
+         |    input clock: Clock
+         |    wire s: UInt<5>
+         |    reg r: UInt<5>, clock
+         |    reg r2: UInt<5>, clock
+         |""".stripMargin
+    a [WiringException] shouldBe thrownBy {
+      executeTest(input, "", passes :+ new WiringTransform, annos)
+    }
+  }
 }

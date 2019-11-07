@@ -54,11 +54,17 @@ class WiringTransform extends Transform {
       case p =>
         val sinks = mutable.HashMap[String, Seq[Named]]()
         val sources = mutable.HashMap[String, ComponentName]()
-        p.foreach {
+        val errors = p.flatMap {
           case SinkAnnotation(m, pin) =>
             sinks(pin) = sinks.getOrElse(pin, Seq.empty) :+ m
+            None
           case SourceAnnotation(c, pin) =>
+            val res = if (sources.contains(pin)) Some(pin) else None
             sources(pin) = c
+            res
+        }
+        if (errors.nonEmpty) {
+          throw WiringException(s"Multiple sources specified for wiring pin(s): " + errors.distinct.mkString(", "))
         }
         (sources.size, sinks.size) match {
           case (0, p) => state
