@@ -109,7 +109,7 @@ a specific naming convention for clock or reset.
 
 Then we can use it in place of *Module* usage :
 ```scala mdoc:silent
-import chisel3.experimental.{RawModule, withClockAndReset}
+import chisel3.{RawModule, withClockAndReset}
 
 class Foo extends Module {
   val io = IO(new Bundle{
