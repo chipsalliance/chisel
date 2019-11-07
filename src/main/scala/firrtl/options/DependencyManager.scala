@@ -291,7 +291,7 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
     val nodes =
       (prerequisiteGraph + dependentsGraph + invalidateGraph + otherDependents)
         .getVertices
-        .map(v => s"""${transformName(v)} [label="${v.getClass.getSimpleName}"]""")
+        .map(v => s"""${transformName(v)} [label="${v.getClass.getName}"]""")
 
     s"""|digraph DependencyManager {
         |  graph [rankdir=BT]
@@ -315,8 +315,8 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
     def rec(pm: DependencyManager[A, B], cm: Seq[String], tab: String = "", id: Int = 0): (String, Int) = {
       var offset = id
 
-      val targets = pm._targets.toSeq.map(_.getSimpleName).mkString(", ")
-      val state = pm._currentState.toSeq.map(_.getSimpleName).mkString(", ")
+      val targets = pm._targets.toSeq.map(_.getName).mkString(", ")
+      val state = pm._currentState.toSeq.map(_.getName).mkString(", ")
 
       val header = s"""|${tab}subgraph cluster_$id {
                        |$tab  label="targets: $targets\\nstate: $state"
@@ -331,7 +331,7 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
         case a =>
           val name = s"""${transformName(a, "_" + id)}"""
           sorted += name
-          s"""$tab  $name [label="${a.getClass.getSimpleName}"]"""
+          s"""$tab  $name [label="${a.getClass.getName}"]"""
       }.mkString("\n")
 
       (Seq(header, body, s"$tab}").mkString("\n"), offset)

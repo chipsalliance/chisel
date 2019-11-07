@@ -109,7 +109,7 @@ object JsonProtocol {
     val annos = parsed match {
       case JArray(objs) => objs
       case x => throw new InvalidAnnotationJSONException(
-        s"Annotations must be serialized as a JArray, got ${x.getClass.getSimpleName} instead!")
+        s"Annotations must be serialized as a JArray, got ${x.getClass.getName} instead!")
     }
     // Recursively gather typeHints by pulling the "class" field from JObjects
     // Json4s should emit this as the first field in all serialized classes
