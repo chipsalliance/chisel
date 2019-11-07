@@ -371,11 +371,14 @@ private[chisel3] object Builder {
   /** Recursively suggests names to supported "container" classes
     * Arbitrary nestings of supported classes are allowed so long as the
     * innermost element is of type HasId
-    * (Note: Map is Iterable[Tuple2[_,_]] and thus excluded)
     */
   def nameRecursively(prefix: String, nameMe: Any, namer: (HasId, String) => Unit): Unit = nameMe match {
     case (id: HasId) => namer(id, prefix)
     case Some(elt) => nameRecursively(prefix, elt, namer)
+    case m: Map[_, _] =>
+      m foreach { case (k, v) =>
+        nameRecursively(s"${k}", v, namer)
+      }
     case (iter: Iterable[_]) if iter.hasDefiniteSize =>
       for ((elt, i) <- iter.zipWithIndex) {
         nameRecursively(s"${prefix}_${i}", elt, namer)
