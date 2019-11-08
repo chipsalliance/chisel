@@ -40,6 +40,7 @@ lazy val commonSettings = Seq (
   autoAPIMappings := true,
   scalaVersion := "2.12.10",
   crossScalaVersions := Seq("2.12.10", "2.11.12"),
+  mimaPreviousArtifacts := Set(), // Default for subprojects
   scalacOptions := Seq("-deprecation", "-feature") ++ scalacOptionsVersion(scalaVersion.value),
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
@@ -168,6 +169,8 @@ lazy val chisel = (project in file(".")).
   //   sufficient to suppress subproject JAR creation, so we can restore
   //   general aggregation, and thus get coverage tests and scaladoc for subprojects.
   aggregate(coreMacros, chiselFrontend).
+  settings(mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3" % "3.2.0")).
+  settings(mimaCurrentClassfiles := (packageBin in Compile).value).
   settings(
     scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
     scalacOptions in Compile in doc ++= Seq(
