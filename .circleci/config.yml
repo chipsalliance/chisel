@@ -168,6 +168,7 @@ workflows:
           #  there's a better chance to see if the tests fail before we flag a style failure
           requires:
             - test-chisel-2_12
-      - check-binary-compatibility:
-          requires:
-            - build-firrtl
+      # Binary compatibility is disabled until we release the initial 3.3.0 release.
+      #- check-binary-compatibility:
+      #    requires:
+      #      - build-firrtl
