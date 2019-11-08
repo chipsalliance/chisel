@@ -71,7 +71,9 @@ package experimental {
       // Name ports based on reflection
       for (port <- getModulePorts) {
         require(names.contains(port), s"Unable to name port $port in $this")
-        port.setRef(ModuleIO(this, _namespace.name(names(port))))
+        //  SuggestedName should take Highest Priority
+        val name = port.suggestedName.getOrElse(names(port))
+        port.setRef(ModuleIO(this, _namespace.name(name)))
       }
 
       // All suggestions are in, force names to every node.
