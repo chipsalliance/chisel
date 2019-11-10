@@ -18,7 +18,7 @@ private[chisel3] class Namespace(keywords: Set[String]) {
     names(keyword) = 1
 
   private def rename(n: String): String = {
-    val index = names.getOrElse(n, 1L)
+    val index = names(n)
     val tryName = s"${n}_${index}"
     names(n) = index + 1
     if (this contains tryName) rename(n) else tryName
