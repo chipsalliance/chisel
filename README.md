@@ -189,7 +189,7 @@ The chisel eco-system (`chisel3`, `firttl`, `dsptools`, `firrtl-interpreter`, `t
  We may introduce new definitions or add additional parameters to existing definitions in a minor release, but we do our best to maintain compatibility with previous minor releases of a major release - code that worked in `3.2.0` should continue to work un-modified in `3.2.10`.
 
 We encourage chisel users (rather than chisel developers), to use release versions of chisel.
- The chisel web site should indicate the current release version.
+ The chisel web site (and GitHub repository) should indicate the current release version.
  If you encounter an issue with a released version of chisel, please file an issue on GitHub mentioning the chisel version and provide a simple test case (if possible).
  Try to reproduce the issue with the associated latest minor release (to verify that the issue hasn't been addressed).
 
@@ -199,6 +199,7 @@ If you're developing a chisel library (or `chisel` itself), you'll probably want
  There is no guarantee of API compatibility between SNAPSHOT versions, but we publish date-stamped `Z.Y-yyyymmdd-SNAPSHOT` versions which will not change.
  The code in `Z.Y-SNAPSHOT` should match the code in the most recent `Z.Y-yyyymmdd-SNAPSHOT` version, the differences being the chisel library dependencies:
  `Z.Y-SNAPSHOT`s depend on `V.U-SNAPSHOT`s and `Z.Y-yyyymmdd-SNAPSHOT`s will depend on `V.U-yyyymmdd-SNAPSHOT`s.
+ **NOTE**: Prior to the `v3.2-20191030-SNAPSHOT` version, we used `Z.Y-mmddyy-SNAPSHOT` to tag and name published SNAPSHOTs.
 
 If you're developing a library (or another chisel tool), you should probably work with date-stamped SNAPSHOTs until your library or tool is ready to be published (to ensure a consistent API).
  Prior to publishing, you should verify your code against generic (no date-stamp) SNAPSHOTs, or locally published clones of the current master branches of chisel dependencies.
