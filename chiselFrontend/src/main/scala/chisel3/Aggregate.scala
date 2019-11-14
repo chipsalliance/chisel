@@ -65,7 +65,7 @@ sealed abstract class Aggregate extends Data {
   private[chisel3] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
       compileOptions: CompileOptions): Unit = {
     var i = 0
-    val bits = WireDefault(UInt(this.width), that)  // handles width padding
+    val bits = if (that.isLit) that else WireDefault(UInt(this.width), that) // handles width padding
     for (x <- flatten) {
       val fieldWidth = x.getWidth
       if (fieldWidth > 0) {
