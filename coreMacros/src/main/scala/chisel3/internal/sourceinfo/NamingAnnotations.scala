@@ -76,7 +76,7 @@ class NamingTransforms(val c: Context) {
   /** Module-specific val name transform, containing logic to prevent from recursing into inner
     * classes and applies the naming transform on inner functions.
     */
-  class ModuleTransformer(val contextVar: TermName) extends ValNameTransformer {
+  class ClassBodyTransformer(val contextVar: TermName) extends ValNameTransformer {
     override def transform(tree: Tree): Tree = tree match {
       case q"$mods class $tpname[..$tparams] $ctorMods(...$paramss) extends { ..$earlydefns } with ..$parents { $self => ..$stats }" => // scalastyle:ignore line.size.limit
         tree  // don't recurse into inner classes
@@ -112,18 +112,23 @@ class NamingTransforms(val c: Context) {
     }
   }
 
-  /** Applies the val name transform to a module body. Pretty straightforward, since Module is
-    * the naming top level.
+  /** Applies the val name transform to a class body. 
+    * Closes context on top level or return local context to englobing context.
+    * Closing context only makes sense when top level a Module.
+    * A Module is always the naming top level.
+    * Transformed classes can be either Module or standard class.
     */
-  def transformModuleBody(stats: List[c.Tree]): Tree = {
+  def transformClassBody(stats: List[c.Tree]): Tree = {
     val contextVar = TermName(c.freshName("namingContext"))
-    val transformedBody = (new ModuleTransformer(contextVar)).transformTrees(stats)
-
+    val transformedBody = (new ClassBodyTransformer(contextVar)).transformTrees(stats)
+    // Note: passing "this" to popReturnContext is mandatory for propagation through non-module classes
     q"""
     val $contextVar = $globalNamingStack.pushContext()
     ..$transformedBody
-    $contextVar.namePrefix("")
-    $globalNamingStack.popReturnContext((), $contextVar)
+    if($globalNamingStack.length == 1){
+      $contextVar.namePrefix("")
+    }
+    $globalNamingStack.popReturnContext(this, $contextVar) 
     """
   }
 
@@ -161,7 +166,7 @@ class NamingTransforms(val c: Context) {
     val transformed = annottees.map(annottee => annottee match {
       // scalastyle:off line.size.limit
       case q"$mods class $tpname[..$tparams] $ctorMods(...$paramss) extends { ..$earlydefns } with ..$parents { $self => ..$stats }" => {
-        val transformedStats = transformModuleBody(stats)
+        val transformedStats = transformClassBody(stats)
         namedElts += 1
         q"$mods class $tpname[..$tparams] $ctorMods(...$paramss) extends { ..$earlydefns } with ..$parents { $self => ..$transformedStats }"
       }
