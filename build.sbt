@@ -130,6 +130,6 @@ lazy val docs = project
   .enablePlugins(MicrositesPlugin)
   .settings(commonSettings)
   .settings(micrositeSettings)
-  .settings(libraryDependencies += "edu.berkeley.cs" %% "chisel-iotesters" % "1.2.10")
+  .settings(libraryDependencies += "edu.berkeley.cs" %% "chisel-iotesters" % "1.3.0")
   .settings(scalacOptions ++= (Seq("-Xsource:2.11")))
   .dependsOn(contributors)
