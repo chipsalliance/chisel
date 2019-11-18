@@ -49,7 +49,7 @@ package object stage {
       options.collectFirst{ case a: FirrtlCircuitAnnotation => a.circuit } match {
         case None => FirrtlExecutionFailure("No circuit found in AnnotationSeq!")
         case Some(a) => FirrtlExecutionSuccess(
-          emitType = fopts.compiler.getClass.getSimpleName,
+          emitType = fopts.compiler.getClass.getName,
           emitted = emittedRes,
           circuitState = CircuitState(
             circuit = a,

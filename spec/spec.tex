@@ -162,7 +162,7 @@ Types are used to specify the structure of the data held by each circuit compone
 
 \subsection{Ground Types}
 
-There are three ground types in FIRRTL: an unsigned integer type, a signed integer type, and a clock type.
+There are four ground types in FIRRTL: an unsigned integer type, a signed integer type, a clock type, and an analog type.
 
 \subsubsection{Integer Types}
 
@@ -187,6 +187,34 @@ The clock type is used to describe wires and ports meant for carrying clock sign
 The clock type is specified as follows:
 \begin{lstlisting}
 Clock
+\end{lstlisting}
+
+\subsubsection{Analog Type}
+
+The analog type specifies that a wire or port can be attached to multiple drivers. \verb|Analog|
+cannot be used as the type of a node or register, nor can it be used as the datatype of a memory. In
+this respect, it is similar to how \verb|inout| ports are used in Verilog, and FIRRTL analog signals
+are often used to interface with external Verilog or VHDL IP.
+
+In contrast with all other ground types, analog signals cannot appear on either side of a connection
+statement. Instead, analog signals are attached to each other with the commutative \verb|attach|
+statement. An analog signal may appear in any number of attach statements, and a legal circuit may
+also contain analog signals that are never attached. The only primitive operations that may be
+applied to analog signals are casts to other signal types.
+
+When an analog signal appears as a field of an aggregate type, the aggregate cannot appear in a
+standard connection statement; however, the partial connection statement will \verb|attach|
+corresponding analog fields of its operands according to the partial connection algorithm described
+in Section \ref{partial_connection_algorithm}.
+
+As with integer types, an analog type can represent a multi-bit signal. When analog signals are not
+given a concrete width, their widths are inferred according to a highly restrictive width inference
+rule, which requires that the widths of all arguments to a given attach operation be identical.
+
+\begin{lstlisting}
+Analog<1>  ; 1-bit analog type
+Analog<32> ; 32-bit analog type
+Analog     ; analog type with inferred width
 \end{lstlisting}
 
 \subsection{Vector Types}
@@ -356,7 +384,7 @@ For details on the syntax and semantics of the subfield expression, subindex exp
 
 \subsubsection{The Partial Connection Algorithm} \label{partial_connection_algorithm}
 
-A partial connect statement between two ground type components connects the right-hand side expression to the left-hand side expression. Conversely, a {\em reverse} partial connect statement between two ground type components connects the left-hand side expression to the right-hand side expression.
+A partial connect statement between two non-analog ground type components connects the right-hand side expression to the left-hand side expression. Conversely, a {\em reverse} partial connect statement between two non-analog ground type components connects the left-hand side expression to the right-hand side expression. A partial connect statement between two analog-typed components performs an attach between the two signals.
 
 A partial (or reverse partial) connect statement between two vector typed components applies a partial (or reverse partial) connect from the first n subelements in the right-hand side expression to the first n corresponding subelements in the left-hand side expression, where n is the length of the shorter vector.
 
@@ -512,6 +540,24 @@ Invalidating a component with a ground type indicates that the component's value
 Invalidating a component with a vector type recursively invalidates each subelement in the vector.
 
 Invalidating a component with a bundle type recursively invalidates each subelement in the bundle.
+
+\subsection{Attaches}
+
+The \verb|attach| statement is used to attach two or more analog signals, defining that their
+values be the same in a commutative fashion that lacks the directionality of a regular connection.
+It can only be applied to signals with analog type, and each analog signal may be attached zero or
+more times.
+
+\begin{lstlisting}
+wire x: Analog<2>
+wire y: Analog<2>
+wire z: Analog<2>
+attach(x, y)      ; binary attach
+attach(z, y, x)   ; attach all three signals
+\end{lstlisting}
+
+When signals of aggregate types that contain analog-typed fields are used as operators of a partial
+connection, corresponding fields of analog type are attached, rather than connected.
 
 \subsection{Nodes}
 A node is simply a named intermediate value in a circuit. The node must be initialized to a value with a passive type and cannot be connected to. Nodes are often used to split a complicated compound expression into named subexpressions.
