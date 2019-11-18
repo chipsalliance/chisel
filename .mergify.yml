@@ -19,3 +19,23 @@ pull_request_rules:
         method: squash
         strict: smart
         strict_method: merge
+
+  - name: backport to 1.2.x
+    conditions:
+      - merged
+      - base=master
+      - milestone=1.2.X
+    actions:
+      backport:
+        branches:
+          - 1.2.x
+      label:
+        add: [Backported]
+
+  - name: label Mergify backport PR
+    conditions:
+      - base=1.2.x
+      - body~=This is an automated backport of pull request \#\d+ done by Mergify.io
+    actions:
+      label:
+        add: [Backport]
