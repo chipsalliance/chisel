@@ -96,13 +96,16 @@ class MemDelayAndReadwriteTransformer(m: DefModule) {
       val portNS = Namespace(mem.readers ++ mem.writers)
       val rMap = mem.readwriters.map(rw => (rw -> portNS.newName(s"${rw}_r"))).toMap
       val wMap = mem.readwriters.map(rw => (rw -> portNS.newName(s"${rw}_w"))).toMap
+      val newReaders = mem.readers ++ mem.readwriters.map(rMap(_))
+      val newWriters = mem.writers ++ mem.readwriters.map(wMap(_))
+      val newMem = DefMemory(mem.info, mem.name, mem.dataType, mem.depth, 1, 0, newReaders, newWriters, Nil)
       val rCmdDelay = if (mem.readUnderWrite == ReadUnderWrite.Old) 0 else mem.readLatency
       val rRespDelay = if (mem.readUnderWrite == ReadUnderWrite.Old) mem.readLatency else 0
       val wCmdDelay = mem.writeLatency - 1
 
       val readStmts = (mem.readers ++ mem.readwriters).map { case r =>
         def oldDriver(f: String) = netlist(we(memPortField(mem, r, f)))
-        def newField(f: String) = memPortField(mem, rMap.getOrElse(r, r), f)
+        def newField(f: String) = memPortField(newMem, rMap.getOrElse(r, r), f)
         val clk = oldDriver("clk")
 
         // Pack sources of read command inputs into WithValid object -> different for readwriter
@@ -127,7 +130,7 @@ class MemDelayAndReadwriteTransformer(m: DefModule) {
 
       val writeStmts = (mem.writers ++ mem.readwriters).map { case w =>
         def oldDriver(f: String) = netlist(we(memPortField(mem, w, f)))
-        def newField(f: String) = memPortField(mem, wMap.getOrElse(w, w), f)
+        def newField(f: String) = memPortField(newMem, wMap.getOrElse(w, w), f)
         val clk = oldDriver("clk")
 
         // Pack sources of write command inputs into WithValid object -> different for readwriter
@@ -148,9 +151,6 @@ class MemDelayAndReadwriteTransformer(m: DefModule) {
       }
 
       newConns ++= (readStmts ++ writeStmts).flatMap(_.conns)
-      val newReaders = mem.readers ++ mem.readwriters.map(rMap(_))
-      val newWriters = mem.writers ++ mem.readwriters.map(wMap(_))
-      val newMem = DefMemory(mem.info, mem.name, mem.dataType, mem.depth, 1, 0, newReaders, newWriters, Nil)
       Block(newMem +: (readStmts ++ writeStmts).flatMap(_.decls))
     case sx: Connect if kind(sx.loc) == MemKind => EmptyStmt // Filter old mem connections
     case sx => sx.map(swapMemRefs)
