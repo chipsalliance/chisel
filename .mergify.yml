@@ -39,3 +39,16 @@ pull_request_rules:
     actions:
       label:
         add: [Backport]
+
+  - name: automatic squash-and-merge of backport PRs
+    conditions:
+      - status-success=continuous-integration/travis-ci/pr
+      - "#changes-requested-reviews-by=0"
+      - base=1.2.x
+      - label="Backport"
+      - label!="DO NOT MERGE"
+    actions:
+      merge:
+        method: squash
+        strict: smart
+        strict_method: merge
