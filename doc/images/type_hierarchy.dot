@@ -1,0 +1,52 @@
+digraph TypeHierarchy {
+  graph [rankdir=BT bgcolor="transparent"]
+  { node [style=filled,shape=box]
+    { node [fillcolor="#f7fbff"]
+      Data
+      Element
+      Bits Num
+      Aggregate
+      VecLike
+      "Chisel Internal"
+    }
+    { node [fillcolor="#e5f5e0"]
+      Bool UInt SInt FixedPoint
+      Reset
+      AsyncReset
+      Record
+      Bundle
+      Vec
+      "Chisel Types"
+    }
+    { node [fillcolor="#fcbba1"]
+      "User Types"
+      Ellipsis [label="..."]
+    }
+
+    subgraph cluster_data_hierarchy {
+      color=transparent
+      Element
+      Bits Num
+      Reset
+      Bool UInt SInt FixedPoint
+      color=transparent
+      Aggregate
+      VecLike
+      Record
+      Bundle
+      Vec
+
+      {Aggregate Element} -> Data
+      {Bits Reset} -> Element
+      {FixedPoint SInt UInt} -> {Bits Num}
+      Bool -> {UInt Reset}
+      Ellipsis -> Bundle -> Record -> Aggregate
+      Vec -> {Aggregate VecLike}
+      AsyncReset -> {Element Reset}
+    }
+    subgraph cluster_legend {
+      label=Legend
+      "User Types" -> "Chisel Types" -> "Chisel Internal"
+    }
+  }
+}

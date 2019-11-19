@@ -33,14 +33,14 @@ class DataPrintSpec extends ChiselFlatSpec with Matchers {
   }
 
   class BoundDataModule extends MultiIOModule {  // not in the test to avoid anon naming suffixes
-    Wire(UInt()).toString should be("UInt(Wire in DataPrintSpec$BoundDataModule)")
-    Reg(SInt()).toString should be("SInt(Reg in DataPrintSpec$BoundDataModule)")
+    Wire(UInt()).toString should be("UInt(Wire in BoundDataModule)")
+    Reg(SInt()).toString should be("SInt(Reg in BoundDataModule)")
     val io = IO(Output(Bool()))  // needs a name so elaboration doesn't fail
-    io.toString should be("Bool(IO in unelaborated DataPrintSpec$BoundDataModule)")
+    io.toString should be("Bool(IO in unelaborated BoundDataModule)")
     val m = Mem(4, UInt(2.W))
-    m(2).toString should be("UInt<2>(MemPort in DataPrintSpec$BoundDataModule)")
-    (2.U + 2.U).toString should be("UInt<2>(OpResult in DataPrintSpec$BoundDataModule)")
-    Wire(Vec(3, UInt(2.W))).toString should be ("UInt<2>[3](Wire in DataPrintSpec$BoundDataModule)")
+    m(2).toString should be("UInt<2>(MemPort in BoundDataModule)")
+    (2.U + 2.U).toString should be("UInt<2>(OpResult in BoundDataModule)")
+    Wire(Vec(3, UInt(2.W))).toString should be ("UInt<2>[3](Wire in BoundDataModule)")
 
     class InnerModule extends MultiIOModule {
       val io = IO(Output(new Bundle {
@@ -48,8 +48,8 @@ class DataPrintSpec extends ChiselFlatSpec with Matchers {
       }))
     }
     val inner = Module(new InnerModule)
-    inner.clock.toString should be ("Clock(IO clock in DataPrintSpec$BoundDataModule$InnerModule)")
-    inner.io.a.toString should be ("UInt<4>(IO io_a in DataPrintSpec$BoundDataModule$InnerModule)")
+    inner.clock.toString should be ("Clock(IO clock in InnerModule)")
+    inner.io.a.toString should be ("UInt<4>(IO io_a in InnerModule)")
   }
 
   "Bound data types" should "have a meaningful string representation" in {
