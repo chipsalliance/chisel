@@ -16,6 +16,10 @@ import wiring._
 /** Annotates the name of the pins to add for WiringTransform */
 case class PinAnnotation(pins: Seq[String]) extends NoTargetAnnotation
 
+object ReplaceMemMacros {
+  class UnsupportedBlackboxMemoryException(msg: String) extends PassException(msg)
+}
+
 /** Replace DefAnnotatedMemory with memory blackbox + wrapper + conf file.
   * This will not generate wmask ports if not needed.
   * Creates the minimum # of black boxes needed by the design.
@@ -36,17 +40,50 @@ class ReplaceMemMacros(writer: ConfWriter) extends Transform {
   private def rPortToFlattenBundle(mem: DefAnnotatedMemory) = BundleType(
     defaultPortSeq(mem) :+ Field("data", Flip, flattenType(mem.dataType)))
 
+  /** Catch incorrect memory instantiations when there are masked memories with unsupported aggregate types.
+    *
+    * Example:
+    *
+    * val memory = SyncReadMem(N, Vec(M, new Bundle {
+    *   val a = Bool()
+    *   val b = UInt(3.W)
+    * }))
+    *
+    * This memory wrapper will have created M*NUM_BUNDLE_ENTRIES bits or M*2 since createMask matches the
+    * structure of the memory datatype. However, the MemConf output will have
+    * a maskGran of 4b and thus M mask bits (since M*4b is the total mem. width and (M*4b)/4b = M).
+    * Thus, when connecting the blackbox module created from the MemConf file and the FIRRTL wrapper,
+    * there will be a mismatch in port size (M != M*2).
+    */
+  private def checkMaskDatatype(mem: DefAnnotatedMemory) = {
+    mem.dataType match {
+      case VectorType(at: AggregateType, _) =>
+        val msg = s"${mem.info} : Cannot blackbox masked-write memory ${mem.name} with nested aggregate data type."
+        throw new ReplaceMemMacros.UnsupportedBlackboxMemoryException(msg)
+      case BundleType(_) =>
+        val msg = s"${mem.info} : Cannot blackbox masked-write memory ${mem.name} with bundle data type."
+        throw new ReplaceMemMacros.UnsupportedBlackboxMemoryException(msg)
+      case _ =>
+    }
+  }
+
   private def wPortToBundle(mem: DefAnnotatedMemory) = BundleType(
     (defaultPortSeq(mem) :+ Field("data", Default, mem.dataType)) ++ (mem.maskGran match {
       case None => Nil
-      case Some(_) => Seq(Field("mask", Default, createMask(mem.dataType)))
+      case Some(_) => {
+        checkMaskDatatype(mem)
+        Seq(Field("mask", Default, createMask(mem.dataType)))
+      }
     })
   )
   private def wPortToFlattenBundle(mem: DefAnnotatedMemory) = BundleType(
     (defaultPortSeq(mem) :+ Field("data", Default, flattenType(mem.dataType))) ++ (mem.maskGran match {
       case None => Nil
       case Some(_) if getFillWMask(mem) => Seq(Field("mask", Default, flattenType(mem.dataType)))
-      case Some(_) => Seq(Field("mask", Default, flattenType(createMask(mem.dataType))))
+      case Some(_) => {
+        checkMaskDatatype(mem)
+        Seq(Field("mask", Default, flattenType(createMask(mem.dataType))))
+      }
     })
   )
   // TODO(shunshou): Don't use createMask???
@@ -58,7 +95,10 @@ class ReplaceMemMacros(writer: ConfWriter) extends Transform {
       Field("rdata", Flip, mem.dataType)
     ) ++ (mem.maskGran match {
       case None => Nil
-      case Some(_) => Seq(Field("wmask", Default, createMask(mem.dataType)))
+      case Some(_) => {
+        checkMaskDatatype(mem)
+        Seq(Field("wmask", Default, createMask(mem.dataType)))
+      }
     })
   )
   private def rwPortToFlattenBundle(mem: DefAnnotatedMemory) = BundleType(
@@ -69,7 +109,10 @@ class ReplaceMemMacros(writer: ConfWriter) extends Transform {
     ) ++ (mem.maskGran match {
       case None => Nil
       case Some(_) if (getFillWMask(mem)) => Seq(Field("wmask", Default, flattenType(mem.dataType)))
-      case Some(_) => Seq(Field("wmask", Default, flattenType(createMask(mem.dataType))))
+      case Some(_) => {
+        checkMaskDatatype(mem)
+        Seq(Field("wmask", Default, flattenType(createMask(mem.dataType))))
+      }
     })
   )
 
@@ -115,7 +158,7 @@ class ReplaceMemMacros(writer: ConfWriter) extends Transform {
   def defaultConnects(wrapperPort: WRef, bbPort: WSubField): Seq[Connect] =
     Seq("clk", "en", "addr") map (f => connectFields(bbPort, f, wrapperPort, f))
 
-  // Generates mask bits (concatenates an aggregate to ground type) 
+  // Generates mask bits (concatenates an aggregate to ground type)
   // depending on mask granularity (# bits = data width / mask granularity)
   def maskBits(mask: WSubField, dataType: Type, fillMask: Boolean): Expression =
     if (fillMask) toBitMask(mask, dataType) else toBits(mask)
@@ -142,7 +185,7 @@ class ReplaceMemMacros(writer: ConfWriter) extends Transform {
     val wrapperWData = WSubField(wrapperPort, "wdata")
     val defaultSeq = defaultConnects(wrapperPort, bbPort) ++ Seq(
       fromBits(WSubField(wrapperPort, "rdata"), WSubField(bbPort, "rdata")),
-      connectFields(bbPort, "wmode", wrapperPort, "wmode"), 
+      connectFields(bbPort, "wmode", wrapperPort, "wmode"),
       Connect(NoInfo, WSubField(bbPort, "wdata"), toBits(wrapperWData)))
     hasMask match {
       case false => defaultSeq
@@ -174,7 +217,7 @@ class ReplaceMemMacros(writer: ConfWriter) extends Transform {
                      memPortMap: MemPortMap,
                      memMods: Modules)
                      (s: Statement): Statement = s match {
-    case m: DefAnnotatedMemory => 
+    case m: DefAnnotatedMemory =>
       if (m.maskGran.isEmpty) {
         m.writers foreach { w => memPortMap(s"${m.name}.$w.mask") = EmptyExpression }
         m.readwriters foreach { w => memPortMap(s"${m.name}.$w.wmask") = EmptyExpression }
