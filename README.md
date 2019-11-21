@@ -2,6 +2,8 @@
 
 ---
 
+## Upcoming Events
+
 [The 3rd Chisel Community Conference (hosted by CHIPS Alliance) is happening on January 29--30, 2020!](https://events.linuxfoundation.org/chisel-community-conference/)
 
 We're [accepting talk proposals](https://events.linuxfoundation.org/chisel-community-conference/program/cfp/) for submissions through November 26th.
