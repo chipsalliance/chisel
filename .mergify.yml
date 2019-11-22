@@ -51,16 +51,12 @@ pull_request_rules:
 
   - name: automatic squash-and-merge of backport PRs
     conditions:
-      - status-success=1 - compile
-      - status-success=2 - checkstyle
-      - status-success=2 - test
       - "status-success=ci/circleci: build-firrtl"
       - "status-success=ci/circleci: build-prep"
       - "status-success=ci/circleci: checkstyle-chisel"
       - "status-success=ci/circleci: test-chisel-2_11"
       - "status-success=ci/circleci: test-chisel-2_12"
       - status-success=license/cla
-      - status-success=pull request checks
       - "#changes-requested-reviews-by=0"
       - base=3.2.x
       - label="Backport"
