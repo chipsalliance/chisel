@@ -1,0 +1,72 @@
+pull_request_rules:
+  - name: remove outdated reviews
+    conditions:
+      - base=master
+    actions:
+      dismiss_reviews:
+
+pull_request_rules:
+  - name: automatic squash-and-merge on CI success and review
+    conditions:
+      - status-success=1 - compile
+      - status-success=2 - checkstyle
+      - status-success=2 - test
+      - "status-success=ci/circleci: build-firrtl"
+      - "status-success=ci/circleci: build-prep"
+      - "status-success=ci/circleci: checkstyle-chisel"
+      - "status-success=ci/circleci: test-chisel-2_11"
+      - "status-success=ci/circleci: test-chisel-2_12"
+      - status-success=license/cla
+      - status-success=pull request checks
+      - "#approved-reviews-by>=1"
+      - "#changes-requested-reviews-by=0"
+      - base=master
+      - label="Please Merge"
+      - label!="DO NOT MERGE"
+    actions:
+      merge:
+        method: squash
+        strict: smart
+        strict_method: merge
+
+  - name: backport to 3.2.x
+    conditions:
+      - merged
+      - base=master
+      - milestone=3.2.X
+    actions:
+      backport:
+        branches:
+          - 3.2.x
+      label:
+        add: [Backported]
+
+  - name: label Mergify backport PR
+    conditions:
+      - base=3.2.x
+      - body~=This is an automated backport of pull request \#\d+ done by Mergify.io
+    actions:
+      label:
+        add: [Backport]
+
+  - name: automatic squash-and-merge of backport PRs
+    conditions:
+      - status-success=1 - compile
+      - status-success=2 - checkstyle
+      - status-success=2 - test
+      - "status-success=ci/circleci: build-firrtl"
+      - "status-success=ci/circleci: build-prep"
+      - "status-success=ci/circleci: checkstyle-chisel"
+      - "status-success=ci/circleci: test-chisel-2_11"
+      - "status-success=ci/circleci: test-chisel-2_12"
+      - status-success=license/cla
+      - status-success=pull request checks
+      - "#changes-requested-reviews-by=0"
+      - base=3.2.x
+      - label="Backport"
+      - label!="DO NOT MERGE"
+    actions:
+      merge:
+        method: squash
+        strict: smart
+        strict_method: merge
