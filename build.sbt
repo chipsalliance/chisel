@@ -95,7 +95,8 @@ lazy val micrositeSettings = Seq(
   excludeFilter in ghpagesCleanSite :=
     new FileFilter{
       def accept(f: File) = (ghpagesRepository.value / "CNAME").getCanonicalPath == f.getCanonicalPath
-    } || "versions.html"
+    } || "versions.html",
+  addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
 )
 
 resolvers ++= Seq(
