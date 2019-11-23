@@ -2,6 +2,16 @@
 
 ---
 
+## Upcoming Events
+
+[The 3rd Chisel Community Conference (hosted by CHIPS Alliance) is happening on January 29--30, 2020!](https://events.linuxfoundation.org/chisel-community-conference/)
+
+We're [accepting talk proposals](https://events.linuxfoundation.org/chisel-community-conference/program/cfp/) for submissions through November 26th.
+
+Make sure to [register](https://events.linuxfoundation.org/chisel-community-conference/register/) and attend to meet some other Chisel-ers and FIRRTL-ers!
+
+---
+
 [![Join the chat at https://gitter.im/freechipsproject/chisel3](https://badges.gitter.im/freechipsproject/chisel3.svg)](https://gitter.im/freechipsproject/chisel3?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![CircleCI](https://circleci.com/gh/freechipsproject/chisel3/tree/master.svg?style=shield)](https://circleci.com/gh/freechipsproject/chisel3/tree/master)
 [![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/freechipsproject/chisel3.svg?label=release)](https://github.com/freechipsproject/chisel3/releases/latest)
