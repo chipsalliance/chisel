@@ -218,10 +218,32 @@ package experimental {
     //
     // Chisel Internals
     //
-    /** Desired name of this module. Override this to give this module a custom, perhaps parametric,
-      * name.
+
+    /** The desired name of this module (which will be used in generated FIRRTL IR or Verilog).
+      *
+      * The name of a module approximates the behavior of the Java Reflection [[`getSimpleName` method
+      * https://docs.oracle.com/javase/8/docs/api/java/lang/Class.html#getSimpleName--]] with some modifications:
+      *
+      * - Anonymous modules will get an `"_Anon"` tag
+      * - Modules defined in functions will use their class name and not a numeric name
+      *
+      * @note If you want a custom or parametric name, override this method.
       */
-    def desiredName: String = this.getClass.getName.split("\\.|\\$").last
+    def desiredName: String = {
+      /* The default module name is derived from the Java reflection derived class name. */
+      val baseName = this.getClass.getName
+
+      /* A sequence of string filters applied to the name */
+      val filters: Seq[String => String] = Seq(
+        ((a: String) => raw"\$$+anon".r.replaceAllIn(a, "_Anon")) // Merge the "$$anon" name with previous name
+      )
+
+      filters
+        .foldLeft(baseName){ case (str, filter) => filter(str) } // 1. Apply filters to baseName
+        .split("\\.|\\$")                                        // 2. Split string at '.' or '$'
+        .filterNot(_.forall(_.isDigit))                          // 3. Drop purely numeric names
+        .last                                                    // 4. Use the last name
+    }
 
     /** Legalized name of this module. */
     final lazy val name = try {
