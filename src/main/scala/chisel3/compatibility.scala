@@ -18,6 +18,7 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
     *
     * No longer implicit, materialization macro below provides a low-priority default
     */
+  @deprecated("Use chisel3.ExplicitCompileOptions.NotStrict", "3.3")
   val defaultCompileOptions = chisel3.ExplicitCompileOptions.NotStrict
 
   abstract class Direction
