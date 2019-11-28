@@ -57,10 +57,8 @@ final class Analog private (private[chisel3] val width: Width) extends Element {
       case SampleElementBinding(parent) => parent.topBinding
     }
 
-    // Analog counts as different directions based on binding context
     targetTopBinding match {
-      case WireBinding(_) => direction = ActualDirection.Unspecified  // internal wire
-      case PortBinding(_) => direction = ActualDirection.Bidirectional(ActualDirection.Default)
+      case _: WireBinding | _: PortBinding => direction = ActualDirection.Bidirectional(ActualDirection.Default)
       case x => throwException(s"Analog can only be Ports and Wires, not '$x'")
     }
     binding = target
