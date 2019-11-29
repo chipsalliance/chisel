@@ -498,8 +498,8 @@ class VcdSuppressionSpec extends FirrtlFlatSpec {
       val harness = new File(testDir, s"top.cpp")
       copyResourceToFile(cppHarnessResourceName, harness)
 
-      verilogToCpp(prefix, testDir, Seq.empty, harness, suppress).!
-      cppToExe(prefix, testDir).!
+      verilogToCpp(prefix, testDir, Seq.empty, harness, suppress) #&&
+      cppToExe(prefix, testDir) ! loggingProcessLogger
 
       assert(executeExpectingSuccess(prefix, testDir))
 

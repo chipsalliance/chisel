@@ -25,8 +25,8 @@ trait VerilogExecution extends TestExecution {
     copyResourceToFile(cppHarnessResourceName, harness)
 
     // Make and run Verilog simulation
-    verilogToCpp(c.main, testDir, Nil, harness).!
-    cppToExe(c.main, testDir).!
+    verilogToCpp(c.main, testDir, Nil, harness) #&&
+    cppToExe(c.main, testDir) ! loggingProcessLogger
     assert(executeExpectingSuccess(c.main, testDir))
   }
 }

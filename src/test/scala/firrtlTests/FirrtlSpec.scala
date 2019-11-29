@@ -7,18 +7,16 @@ import java.security.Permission
 
 import logger.LazyLogging
 
-import scala.sys.process._
 import org.scalatest._
 import org.scalatest.prop._
 
 import firrtl._
 import firrtl.ir._
-import firrtl.Parser.{IgnoreInfo, UseInfo}
-import firrtl.analyses.{GetNamespace, InstanceGraph, ModuleNamespaceAnnotation}
+import firrtl.Parser.UseInfo
+import firrtl.analyses.{GetNamespace, ModuleNamespaceAnnotation}
 import firrtl.annotations._
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation, RenameModules}
 import firrtl.util.BackendCompilationUtilities
-import scala.collection.mutable
 
 class CheckLowForm extends SeqTransform {
   def inputForm = LowForm
@@ -146,8 +144,9 @@ trait FirrtlRunners extends BackendCompilationUtilities {
       file
     }
 
-    verilogToCpp(prefix, testDir, verilogFiles, harness).!
-    cppToExe(prefix, testDir).!
+    verilogToCpp(prefix, testDir, verilogFiles, harness) #&&
+    cppToExe(prefix, testDir) !
+    loggingProcessLogger
     assert(executeExpectingSuccess(prefix, testDir))
   }
 }
