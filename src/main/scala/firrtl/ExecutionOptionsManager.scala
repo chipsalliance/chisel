@@ -2,14 +2,14 @@
 
 package firrtl
 
+import logger.LogLevel
+import logger.{ClassLogLevelAnnotation, LogClassNamesAnnotation, LogFileAnnotation, LogLevelAnnotation}
 import firrtl.annotations._
-import firrtl.Parser._
+import firrtl.Parser.{InfoMode, UseInfo, IgnoreInfo, GenInfo, AppendInfo}
 import firrtl.ir.Circuit
 import firrtl.passes.memlib.{InferReadWriteAnnotation, ReplSeqMemAnnotation}
 import firrtl.passes.clocklist.ClockListAnnotation
 import firrtl.transforms.NoCircuitDedupAnnotation
-import logger.LogLevel
-import logger.{ClassLogLevelAnnotation, LogClassNamesAnnotation, LogFileAnnotation, LogLevelAnnotation}
 import scopt.OptionParser
 import firrtl.stage.{CompilerAnnotation, FirrtlCircuitAnnotation, FirrtlFileAnnotation, FirrtlSourceAnnotation,
   InfoModeAnnotation, OutputFileAnnotation, RunFirrtlTransformAnnotation}
