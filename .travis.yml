@@ -40,6 +40,8 @@ jobs:
       script: make apis-firrtl
     - stage: "legacy chisel-testers (iotesters) apis"
       script: make apis-chisel-testers
+    - stage: "chiseltest (chisel-testers2) apis"
+      script: make apis-chiseltest
     - stage: "legacy treadle apis"
       script: make apis-treadle
     - stage: "legacy diagrammer apis"

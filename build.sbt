@@ -52,21 +52,26 @@ lazy val micrositeSettings = Seq(
       Map("title" -> "Testers",
           "section" -> "chisel-testers",
           "position" -> "2")),
+    file("chiseltest/README.md") -> ExtraMdFileConfig(
+      "chiseltest/index.md", "docs",
+      Map("title" -> "ChiselTest",
+          "section" -> "chiseltest",
+          "position" -> "3")),
     file("firrtl/README.md") -> ExtraMdFileConfig(
       "firrtl/index.md", "docs",
       Map("title" -> "FIRRTL",
           "section" -> "firrtl",
-          "position" -> "3")),
+          "position" -> "4")),
     file("treadle/README.md") -> ExtraMdFileConfig(
       "treadle/index.md", "docs",
       Map("title" -> "Treadle",
           "section" -> "treadle",
-          "position" -> "4")),
+          "position" -> "5")),
     file("diagrammer/README.md") -> ExtraMdFileConfig(
       "diagrammer/index.md", "docs",
       Map("title" -> "Diagrammer",
           "section" -> "diagrammer",
-          "position" -> "5"))
+          "position" -> "6"))
   ),
   micrositeStaticDirectory := file("docs/target/site/api"),
   /* Known colors:
@@ -131,6 +136,6 @@ lazy val docs = project
   .enablePlugins(MicrositesPlugin)
   .settings(commonSettings)
   .settings(micrositeSettings)
-  .settings(libraryDependencies += "edu.berkeley.cs" %% "chisel-iotesters" % "1.3.0")
+  .settings(libraryDependencies += "edu.berkeley.cs" %% "chisel-iotesters" % "1.3.1")
   .settings(scalacOptions ++= (Seq("-Xsource:2.11")))
   .dependsOn(contributors)

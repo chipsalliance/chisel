@@ -8,6 +8,7 @@ www-src = \
 	chisel3/README.md \
 	firrtl/README.md \
 	chisel-testers/README.md \
+	chiseltest/README.md \
 	treadle/README.md \
 	diagrammer/README.md
 
@@ -23,7 +24,8 @@ firrtlTags = \
 	v1.1.5 \
 	v1.1.6 \
 	v1.1.7 \
-	v1.2.0
+	v1.2.0 \
+	v1.2.1
 chiselTags = \
 	v3.0.0 \
 	v3.0.1 \
@@ -37,7 +39,8 @@ chiselTags = \
 	v3.1.6 \
 	v3.1.7 \
 	v3.1.8 \
-	v3.2.0
+	v3.2.0 \
+	v3.2.1
 testersTags = \
 	v1.1.0 \
 	v1.1.1 \
@@ -53,7 +56,8 @@ testersTags = \
 	v1.2.8 \
 	v1.2.9 \
 	v1.2.10 \
-	v1.3.0
+	v1.3.0 \
+	v1.3.1
 treadleTags = \
 	v1.0.0 \
 	v1.0.1 \
@@ -61,19 +65,25 @@ treadleTags = \
 	v1.0.3 \
 	v1.0.4 \
 	v1.0.5 \
-	v1.1.0
+	v1.1.0 \
+	v1.1.1
 diagrammerTags = \
 	v1.0.0 \
 	v1.0.1 \
 	v1.0.2 \
-	v1.1.0
+	v1.1.0 \
+	v1.1.1
+chiseltestTags = \
+	v0.1.0 \
+	v0.1.1
 
 # Snapshot versions that will have their API published.
-firrtlSnapshot = v1.2.0
-chiselSnapshot = v3.2.0
-testersSnapshot = v1.3.0
-treadleSnapshot = v1.1.0
-diagrammerSnapshot = v1.1.0
+firrtlSnapshot = v1.2.1
+chiselSnapshot = v3.2.1
+testersSnapshot = v1.3.1
+treadleSnapshot = v1.1.1
+diagrammerSnapshot = v1.1.1
+chiseltestSnapshot = v0.1.1
 
 # Get the latest version of some sequence of version strings
 # Usage: $(call getTags,$(foo))
@@ -88,33 +98,37 @@ chiselLatest = $(call latest,$(chiselTags))
 testersLatest = $(call latest,$(testersTags))
 treadleLatest = $(call latest,$(treadleTags))
 diagrammerLatest = $(call latest,$(diagrammerTags))
+chiseltestLatest = $(call latest,$(chiseltestTags))
 
 api-latest = \
 	docs/target/site/api/latest \
 	docs/target/site/api/firrtl/latest \
 	docs/target/site/api/chisel-testers/latest \
 	docs/target/site/api/treadle/latest \
-	docs/target/site/api/diagrammer/latest
+	docs/target/site/api/diagrammer/latest \
+	docs/target/site/api/chiseltest/latest
 
 api-copy = \
 	$(chiselTags:v%=docs/target/site/api/%/index.html) docs/target/site/api/SNAPSHOT/index.html \
 	$(firrtlTags:v%=docs/target/site/api/firrtl/%/index.html) docs/target/site/api/firrtl/SNAPSHOT/index.html \
 	$(testersTags:v%=docs/target/site/api/chisel-testers/%/index.html) docs/target/site/api/chisel-testers/SNAPSHOT/index.html \
+	$(chiseltestTags:v%=docs/target/site/api/chiseltest/%/index.html) docs/target/site/api/chiseltest/SNAPSHOT/index.html \
 	$(treadleTags:v%=docs/target/site/api/treadle/%/index.html) docs/target/site/api/treadle/SNAPSHOT/index.html \
-	$(diagrammerTags:v%=docs/target/site/api/diagrammer/%/index.html) docs/target/site/api/diagrammer/SNAPSHOT/index.html
+	$(diagrammerTags:v%=docs/target/site/api/diagrammer/%/index.html) docs/target/site/api/diagrammer/SNAPSHOT/index.html \
 
 .PHONY: all clean mrproper publish serve \
-	apis-chisel apis-firrtl apis-chisel-testers apis-treadle apis-diagrammer
+	apis-chisel apis-firrtl apis-chisel-testers apis-treadle apis-diagrammer apis-chiseltest
 .PRECIOUS: \
 	$(subprojects)/chisel3/%/.git $(subprojects)/chisel3/%/target/scala-$(scalaVersion)/unidoc/index.html \
 	$(subprojects)/firrtl/%/.git $(subprojects)/firrtl/%/target/scala-$(scalaVersion)/unidoc/index.html \
 	$(subprojects)/chisel-testers/%/.git $(subprojects)/chisel-testers/%/target/scala-$(scalaVersion)/api/index.html \
+	$(subprojects)/chiseltest/%/.git $(subprojects)/chiseltest/%/target/scala-$(scalaVersion)/api/index.html \
 	$(subprojects)/treadle/%/.git $(subprojects)/treadle/%/target/scala-$(scalaVersion)/api/index.html \
 	$(subprojects)/diagrammer/%/.git $(subprojects)/diagrammer/%/target/scala-$(scalaVersion)/api/index.html \
 	$(apis)/chisel3/v%/index.html $(apis)/firrtl/%/index.html $(apis)/chisel-testers/%/index.html \
-	$(apis)/treadle/%/index.html $(apis)/diagrammer/%/index.html \
-	docs/target/site/api/%/ docs/target/site/api/firrtl/%/ docs/target/site/api/chisel-testers/%/ \
-	docs/target/site/api/treadle/%/ docs/target/site/api/diagrammer/%/ \
+	$(apis)/chiseltest/%/index.html $(apis)/treadle/%/index.html $(apis)/diagrammer/%/index.html \
+	docs/target/site/api/%/ docs/target/site/api/firrtl/%/ docs/target/site/api/chisel-testers/%/
+	docs/target/site/api/chiseltest/%/ docs/target/site/api/treadle/%/ docs/target/site/api/diagrammer/%/ \
 	$(apis)/%/
 
 # Build the site into the default directory (docs/target/site)
@@ -124,6 +138,7 @@ all: docs/target/site/index.html
 apis-chisel: $(chiselTags:%=$(apis)/chisel3/%/index.html) $(apis)/chisel3/$(chiselSnapshot)/index.html
 apis-firrtl: $(firrtlTags:%=$(apis)/firrtl/%/index.html) $(apis)/firrtl/$(firrtlSnapshot)/index.html
 apis-chisel-testers: $(testersTags:%=$(apis)/chisel-testers/%/index.html) $(apis)/chisel-testers/$(testersSnapshot)/index.html
+apis-chiseltest: $(chiseltestTags:%=$(apis)/chiseltest/%/index.html)
 apis-treadle: $(treadleTags:%=$(apis)/treadle/%/index.html) $(apis)/treadle/$(treadleSnapshot)/index.html
 apis-diagrammer: $(diagrammerTags:%=$(apis)/diagrammer/%/index.html) $(apis)/diagrammer/$(diagrammerSnapshot)/index.html
 
@@ -167,6 +182,9 @@ docs/target/site/api/chisel-testers/latest: docs/target/site/api/chisel-testers/
 docs/target/site/api/diagrammer/latest: docs/target/site/api/diagrammer/$(diagrammerLatest)/index.html
 	rm -f $@
 	ln -s $(diagrammerLatest) $@
+docs/target/site/api/chiseltest/latest: docs/target/site/api/chiseltest/$(chiseltestLatest)/index.html
+	rm -f $@
+	ln -s $(chiseltestLatest) $@
 
 # Build API for a subproject with a specific tag. Each build rule is
 # specialized by the type of documentation to build (either
@@ -189,6 +207,9 @@ $(apis)/treadle/%/index.html: $(subprojects)/treadle/%/.git | $(apis)/treadle/%/
 $(apis)/diagrammer/%/index.html: $(subprojects)/diagrammer/%/.git | $(apis)/diagrammer/%/
 	(cd $(subprojects)/diagrammer/$* && sbt doc)
 	find $(<D) -type d -name api -exec cp -r '{}'/. $(@D) ';'
+$(apis)/chiseltest/%/index.html: $(subprojects)/chiseltest/%/.git | $(apis)/chiseltest/%/
+	(cd $(subprojects)/chiseltest/$* && sbt doc)
+	find $(<D) -type d -name api -exec cp -r '{}'/. $(@D) ';'
 
 # Copy *SNAPSHOT* API of subprojects into API directory
 docs/target/site/api/SNAPSHOT/index.html: $(apis)/chisel3/$(chiselSnapshot)/index.html | docs/target/site/api/SNAPSHOT/
@@ -201,6 +222,8 @@ docs/target/site/api/treadle/SNAPSHOT/index.html: $(apis)/treadle/$(treadleSnaps
 	cp -r $(<D)/. $(@D)
 docs/target/site/api/diagrammer/SNAPSHOT/index.html: $(apis)/diagrammer/$(diagrammerSnapshot)/index.html | docs/target/site/api/diagrammer/SNAPSHOT/
 	cp -r $(<D)/. $(@D)
+docs/target/site/api/chiseltest/SNAPSHOT/index.html: $(apis)/chiseltest/$(chiseltestSnapshot)/index.html | docs/target/site/api/chiseltest/SNAPSHOT/
+	cp -r $(<D)/. $(@D)
 
 # Copy *old* API of subprojects from API directory into website
 docs/target/site/api/%/index.html: $(apis)/chisel3/v%/index.html | docs/target/site/api/%/
@@ -212,6 +235,8 @@ docs/target/site/api/chisel-testers/%/index.html: $(apis)/chisel-testers/v%/inde
 docs/target/site/api/treadle/%/index.html: $(apis)/treadle/v%/index.html | docs/target/site/api/treadle/%/
 	cp -r $(<D)/. $(@D)
 docs/target/site/api/diagrammer/%/index.html: $(apis)/diagrammer/v%/index.html | docs/target/site/api/diagrammer/%/
+	cp -r $(<D)/. $(@D)
+docs/target/site/api/chiseltest/%/index.html: $(apis)/chiseltest/v%/index.html | docs/target/site/api/chiseltest/%/
 	cp -r $(<D)/. $(@D)
 
 # Utilities to either fetch submodules or create directories
@@ -227,5 +252,7 @@ $(subprojects)/treadle/%/.git:
 	git clone "https://github.com/freechipsproject/treadle.git" --depth 1 --branch $* $(dir $@)
 $(subprojects)/diagrammer/%/.git:
 	git clone "https://github.com/freechipsproject/diagrammer.git" --depth 1 --branch $* $(dir $@)
+$(subprojects)/chiseltest/%/.git:
+	git clone "https://github.com/ucb-bar/chisel-testers2.git" --depth 1 --branch $* $(dir $@)
 %/:
 	mkdir -p $@

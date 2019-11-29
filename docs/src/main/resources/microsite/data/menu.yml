@@ -122,6 +122,8 @@ options:
     nested_options:
       - title: SNAPSHOT
         url: api/SNAPSHOT/
+      - title: 3.2.1
+        url: api/3.2.1/
       - title: 3.2.0
         url: api/3.2.0/
       - title: 3.1.8
@@ -159,6 +161,8 @@ options:
     nested_options:
       - title: SNAPSHOT
         url: api/chisel-testers/SNAPSHOT/
+      - title: 1.3.1
+        url: api/chisel-testers/1.3.1/
       - title: 1.3.0
         url: api/chisel-testers/1.3.0/
       - title: 1.2.10
@@ -190,6 +194,21 @@ options:
       - title: 1.1.0
         url: api/chisel-testers/1.1.0/
 
+  # Chisel Test (chisel-testers2)
+  - title: ChiselTest
+    url: chiseltest/
+    menu_type: chiseltest
+  - title: API Documentation
+    url: api/chiseltest/latest
+    menu_type: chiseltest
+    nested_options:
+      - title: SNAPSHOT
+        url: api/chiseltest/SNAPSHOT/
+      - title: 0.1.1
+        url: api/chiseltest/0.1.1/
+      - title: 0.1.0
+        url: api/chiseltest/0.1.0/
+
   # FIRRTL Site
   - title: FIRRTL
     url: firrtl/
@@ -200,6 +219,8 @@ options:
     nested_options:
       - title: SNAPSHOT
         url: api/firrtl/SNAPSHOT/
+      - title: 1.2.1
+        url: api/firrtl/1.2.1/
       - title: 1.2.0
         url: api/firrtl/1.2.0/
       - title: 1.1.7
@@ -235,6 +256,8 @@ options:
     nested_options:
       - title: SNAPSHOT
         url: api/treadle/SNAPSHOT/
+      - title: 1.1.1
+        url: api/treadle/1.1.1/
       - title: 1.1.0
         url: api/treadle/1.1.0/
       - title: 1.0.5
@@ -260,6 +283,8 @@ options:
     nested_options:
       - title: SNAPSHOT
         url: api/diagrammer/SNAPSHOT/
+      - title: 1.1.1
+        url: api/diagrammer/1.1.1/
       - title: 1.1.0
         url: api/diagrammer/1.1.0/
       - title: 1.0.2
