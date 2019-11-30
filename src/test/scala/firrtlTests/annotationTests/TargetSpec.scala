@@ -9,7 +9,6 @@ import firrtlTests.FirrtlPropSpec
 class TargetSpec extends FirrtlPropSpec {
   def check(comp: Target): Unit = {
     val named = Target.convertTarget2Named(comp)
-    println(named)
     val comp2 = Target.convertNamed2Target(named)
     assert(comp.toGenericTarget.complete == comp2)
   }
@@ -43,7 +42,6 @@ class TargetSpec extends FirrtlPropSpec {
     val x_reg0_data = top.instOf("x", "X").ref("reg0").field("data")
     top.instOf("x", "x")
     top.ref("y")
-    println(x_reg0_data)
   }
   property("Should serialize and deserialize") {
     val circuit = CircuitTarget("Circuit")
