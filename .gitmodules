@@ -13,3 +13,6 @@
 [submodule "diagrammer"]
 	path = diagrammer
 	url = https://github.com/freechipsproject/diagrammer
+[submodule "chiseltest"]
+	path = chiseltest
+	url = https://github.com/ucb-bar/chisel-testers2
