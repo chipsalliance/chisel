@@ -118,6 +118,19 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
     }
     elaborate { new Dummy }
   }
+
+  it should "be able to provide custom CompileOptions" in {
+    implicit val CustomCompileOptions = chisel3.ExplicitCompileOptions.NotStrict.copy(inferModuleReset = true)
+    // Top-level Module always uses Bool so needs to be an inner Module
+    elaborate(new Module {
+      val io = IO(new Bundle {})
+      val inst = Module(new Module {
+        val io = IO(new Bundle {})
+        assert(reset.isInstanceOf[chisel3.ResetType])
+      })
+    })
+  }
+
   // Verify we can elaborate a design expressed in Chisel2
   class Chisel2CompatibleRisc extends Module {
     val io = new Bundle {
