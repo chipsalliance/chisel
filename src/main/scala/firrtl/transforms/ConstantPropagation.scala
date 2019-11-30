@@ -286,16 +286,33 @@ class ConstantPropagation extends Transform with ResolvedAnnotationPaths {
       case UIntLiteral(v, IntWidth(w)) => UIntLiteral(v ^ ((BigInt(1) << w.toInt) - 1), IntWidth(w))
       case _ => e
     }
-    case AsUInt => e.args.head match {
-      case SIntLiteral(v, IntWidth(w)) => UIntLiteral(v + (if (v < 0) BigInt(1) << w.toInt else 0), IntWidth(w))
-      case u: UIntLiteral => u
-      case _ => e
-    }
+    case AsUInt =>
+      e.args.head match {
+        case SIntLiteral(v, IntWidth(w)) => UIntLiteral(v + (if (v < 0) BigInt(1) << w.toInt else 0), IntWidth(w))
+        case arg => arg.tpe match {
+          case _: UIntType => arg
+          case _           => e
+        }
+      }
     case AsSInt => e.args.head match {
       case UIntLiteral(v, IntWidth(w)) => SIntLiteral(v - ((v >> (w.toInt-1)) << w.toInt), IntWidth(w))
-      case s: SIntLiteral => s
-      case _ => e
+      case arg => arg.tpe match {
+        case _: SIntType => arg
+        case _           => e
+      }
     }
+    case AsClock =>
+      val arg = e.args.head
+      arg.tpe match {
+        case ClockType => arg
+        case _         => e
+      }
+    case AsAsyncReset =>
+      val arg = e.args.head
+      arg.tpe match {
+        case AsyncResetType => arg
+        case _              => e
+      }
     case Pad => e.args.head match {
       case UIntLiteral(v, IntWidth(w)) => UIntLiteral(v, IntWidth(e.consts.head max w))
       case SIntLiteral(v, IntWidth(w)) => SIntLiteral(v, IntWidth(e.consts.head max w))
