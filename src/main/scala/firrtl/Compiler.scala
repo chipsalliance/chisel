@@ -485,7 +485,7 @@ trait Compiler extends LazyLogging {
       }
     }
 
-    logger.error(f"Total FIRRTL Compile Time: $timeMillis%.1f ms")
+    logger.warn(f"Total FIRRTL Compile Time: $timeMillis%.1f ms")
 
     finalState
   }
