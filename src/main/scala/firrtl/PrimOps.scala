@@ -2,8 +2,8 @@
 
 package firrtl
 
+import logger.LazyLogging
 import firrtl.ir._
-import com.typesafe.scalalogging.LazyLogging
 import Implicits.{constraint2bound, constraint2width, width2constraint}
 import firrtl.constraint._
 

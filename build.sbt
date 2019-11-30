@@ -55,10 +55,6 @@ javacOptions ++= javacOptionsVersion(scalaVersion.value)
 
 libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
 
-libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.0"
-
-libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3"
-
 // sbt 1.2.6 fails with `Symbol 'term org.junit' is missing from the classpath`
 // when compiling tests under 2.11.12
 // An explicit dependency on junit seems to alleviate this.

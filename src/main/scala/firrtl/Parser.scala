@@ -4,7 +4,7 @@ package firrtl
 
 import org.antlr.v4.runtime._
 import org.antlr.v4.runtime.atn._
-import com.typesafe.scalalogging.LazyLogging
+import logger.LazyLogging
 import firrtl.ir._
 import firrtl.Utils.time
 import firrtl.antlr.{FIRRTLParser, _}
