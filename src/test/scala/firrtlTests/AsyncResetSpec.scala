@@ -65,10 +65,10 @@ class AsyncResetSpec extends FirrtlFlatSpec {
       |z <= asAsyncReset(a)
       |""".stripMargin
     )
-    result should containLine ("assign v = $unsigned(a);")
-    result should containLine ("assign w = $signed(a);")
+    result should containLine ("assign v = a;")
+    result should containLine ("assign w = a;")
     result should containLine ("assign x = a;")
-    result should containLine ("assign y = $signed(a);")
+    result should containLine ("assign y = a;")
     result should containLine ("assign z = a;")
   }
 

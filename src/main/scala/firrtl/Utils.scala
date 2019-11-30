@@ -188,6 +188,17 @@ object Utils extends LazyLogging {
     case sx => sx
   }
 
+  /** Returns true if PrimOp is a cast, false otherwise */
+  def isCast(op: PrimOp): Boolean = op match {
+    case AsUInt | AsSInt | AsClock | AsAsyncReset | AsFixedPoint => true
+    case _ => false
+  }
+  /** Returns true if Expression is a casting PrimOp, false otherwise */
+  def isCast(expr: Expression): Boolean = expr match {
+    case DoPrim(op, _,_,_) if isCast(op) => true
+    case _ => false
+  }
+
   /** Provide a nice name to create a temporary **/
   def niceName(e: Expression): String = niceName(1)(e)
   def niceName(depth: Int)(e: Expression): String = {
