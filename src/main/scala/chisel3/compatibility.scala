@@ -9,11 +9,17 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
   import chisel3.internal.firrtl.Width
 
   import scala.language.experimental.macros
-  import scala.annotation.StaticAnnotation
-  import scala.annotation.compileTimeOnly
+  import scala.reflect.macros.blackbox.Context
+  import scala.annotation.{StaticAnnotation, compileTimeOnly}
   import scala.language.implicitConversions
 
-  implicit val defaultCompileOptions = chisel3.ExplicitCompileOptions.NotStrict
+
+  /** Default NotStrict CompileOptions for compatibility code
+    *
+    * No longer implicit, materialization macro below provides a low-priority default
+    */
+  @deprecated("Use chisel3.ExplicitCompileOptions.NotStrict", "3.3")
+  val defaultCompileOptions = chisel3.ExplicitCompileOptions.NotStrict
 
   abstract class Direction
   case object INPUT extends Direction
@@ -584,6 +590,16 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
   val Pipe = chisel3.util.Pipe
   type Pipe[T <: Data] = chisel3.util.Pipe[T]
 
+  /** Provides a low priority NotStrict default. Can be overridden by providing a custom implicit
+    *   val in lexical scope (ie. imported)
+    * Implemented as a macro to provide a low-priority default
+    */
+  implicit def materializeCompileOptions: CompileOptions = macro materializeCompileOptions_impl
+
+  def materializeCompileOptions_impl(c: Context): c.Tree = {
+    import c.universe._
+    q"_root_.chisel3.ExplicitCompileOptions.NotStrict"
+  }
 
   /** Package for experimental features, which may have their API changed, be removed, etc.
     *

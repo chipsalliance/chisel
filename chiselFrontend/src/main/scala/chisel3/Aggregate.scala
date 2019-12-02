@@ -66,7 +66,7 @@ sealed abstract class Aggregate extends Data {
   private[chisel3] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
       compileOptions: CompileOptions): Unit = {
     var i = 0
-    val bits = WireDefault(UInt(this.width), that)  // handles width padding
+    val bits = if (that.isLit) that else WireDefault(UInt(this.width), that) // handles width padding
     for (x <- flatten) {
       val fieldWidth = x.getWidth
       if (fieldWidth > 0) {
@@ -205,7 +205,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
     * @note the length of this Vec must match the length of the input Seq
     */
   def := (that: Seq[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit = {
-    require(this.length == that.length)
+    require(this.length == that.length, s"Cannot assign to a Vec of length ${this.length} from a Seq of different length ${that.length}")
     for ((a, b) <- this zip that)
       a := b
   }
