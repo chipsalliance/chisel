@@ -12,19 +12,19 @@ import scala.util.DynamicVariable
 
 /**
   * This provides a facility for a log4scala* type logging system.  Why did we write our own?  Because
-  * the canned ones are just to darned hard to turn on, particularly when embedded in a distribution.
+  * the canned ones are just too darned hard to turn on, particularly when embedded in a distribution.
   * This one can be turned on programmatically or with the options exposed in the [[firrtl.CommonOptions]]
-  * and [[ExecutionOptionsManager]] API's in firrtl.
-  * There are 4 main options.
-  *  * a simple global option to turn on all in scope (and across threads, might want to fix this)
-  *  * turn on specific levels for specific fully qualified class names
-  *  * set a file to write things to, default is just to use stdout
-  *  * include the class names and level in the output.  This is useful to figure out what
-  *  the class names that extend LazyLogger are
+  * and [[ExecutionOptionsManager]] APIs in firrtl.
+  * There are 4 main options:
+  *  * A simple global option to turn on all in scope (and across threads, might want to fix this)
+  *  * Turn on specific levels for specific fully qualified class names
+  *  * Set a file to write things to, default is just to use stdout
+  *  * Include the class names and level in the output. This is useful for figuring out what
+  *    the class names that extend LazyLogger are.
   *
   *  This is not overly optimized but does pass the string as () => String to avoid string interpolation
   *  occurring if the the logging level is not sufficiently high. This could be further optimized by playing
-  *  with methods
+  *  with methods.
   */
 /**
   * The supported log levels, what do they mean? Whatever you want them to.
