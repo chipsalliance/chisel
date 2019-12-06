@@ -3,7 +3,6 @@
 package firrtl.options
 
 import firrtl.AnnotationSeq
-import firrtl.transforms.NoCircuitDedupAnnotation
 
 import logger.{LogLevelAnnotation, ClassLogLevelAnnotation, LogFileAnnotation, LogClassNamesAnnotation}
 
@@ -65,8 +64,7 @@ class Shell(val applicationName: String) {
   ProgramArgsAnnotation.addOptions(parser)
   Seq( TargetDirAnnotation,
        InputAnnotationFileAnnotation,
-       OutputAnnotationFileAnnotation,
-       NoCircuitDedupAnnotation)
+       OutputAnnotationFileAnnotation )
     .foreach(_.addOptions(parser))
 
   parser.opt[Unit]("show-registrations")

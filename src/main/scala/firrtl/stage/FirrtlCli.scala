@@ -3,6 +3,7 @@
 package firrtl.stage
 
 import firrtl.options.Shell
+import firrtl.transforms.NoCircuitDedupAnnotation
 
 /** [[firrtl.options.Shell Shell]] mixin that provides command line options for FIRRTL. This does not include any
   * [[firrtl.options.RegisteredLibrary RegisteredLibrary]] or [[firrtl.options.RegisteredTransform RegisteredTransform]]
@@ -17,7 +18,8 @@ trait FirrtlCli { this: Shell =>
        CompilerAnnotation,
        RunFirrtlTransformAnnotation,
        firrtl.EmitCircuitAnnotation,
-       firrtl.EmitAllModulesAnnotation )
+       firrtl.EmitAllModulesAnnotation,
+       NoCircuitDedupAnnotation )
     .map(_.addOptions(parser))
 
   phases.DriverCompatibility.TopNameAnnotation.addOptions(parser)
