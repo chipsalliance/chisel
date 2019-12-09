@@ -194,6 +194,27 @@ class AnalogSpec extends ChiselFlatSpec {
     })
   }
 
+  it should "work in bidirectional Aggregate wires" in {
+    class MyBundle extends Bundle {
+      val x = Input(UInt(8.W))
+      val y = Analog(8.W)
+    }
+    elaborate(new Module {
+      val io = IO(new Bundle {
+        val a = new MyBundle
+      })
+      val w = Wire(new MyBundle)
+      w <> io.a
+    })
+    elaborate(new Module {
+      val io = IO(new Bundle {
+        val a = Vec(1, new MyBundle)
+      })
+      val w = Wire(Vec(1, new MyBundle))
+      w <> io.a
+    })
+  }
+
   it should "work with 3 blackboxes attached" in {
     assertTesterPasses(new AnalogTester {
       val mods = Seq.fill(2)(Module(new AnalogReaderBlackBox))

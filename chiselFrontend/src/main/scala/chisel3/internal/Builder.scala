@@ -440,6 +440,8 @@ object DynamicNamingStack {
     }
     prefixRef
   }
+  
+  def length() : Int = Builder.namingStackOption.get.length
 }
 
 /** Casts BigInt to Int, issuing an error when the input isn't representable. */
