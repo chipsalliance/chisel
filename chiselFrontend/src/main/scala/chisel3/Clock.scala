@@ -33,6 +33,6 @@ sealed class Clock(private[chisel3] val width: Width = Width(1)) extends Element
   override def do_asUInt(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): UInt = pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref)) // scalastyle:ignore line.size.limit
   private[chisel3] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
       compileOptions: CompileOptions): Unit = {
-    this := that
+    this := that.asBool.asClock
   }
 }
