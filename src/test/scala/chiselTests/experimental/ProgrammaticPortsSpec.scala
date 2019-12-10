@@ -2,6 +2,7 @@
 
 package chiselTests
 package experimental
+import chisel3.experimental.ExtModule
 
 import chisel3._
 import chisel3.stage.ChiselStage
@@ -38,6 +39,23 @@ class ProgrammaticPortsSpec extends ChiselFlatSpec with Utils {
     var module: NamedModuleTester = null
     ChiselStage.elaborate { module = testMod; module }
     assert(module.getNameFailures() == Nil)
+  }
+
+  "ExtModule" should "support suggestName on ports" in {
+    lazy val module = new MultiIOModule {
+      val ext_module = Module(new ExtModule with NamedModuleTesterBase {
+        val clock = IO(Input(Clock()))
+        val reset = IO(Input(AsyncReset()))
+        val wdata  = IO(Input(UInt(8.W)))
+        val rdata  = IO(Output(UInt(8.W)))
+        expectName(clock.suggestName("clk"), "clk")
+        expectName(reset.suggestName("rst"), "rst")
+        expectName(wdata.suggestName("foo"), "foo")
+        expectName(rdata.suggestName("bar"), "bar")
+      })
+    }
+    elaborate { module }
+    assert(module.ext_module.getNameFailures() == Nil)
   }
 
   "Programmatic port creation" should "be supported" in {
