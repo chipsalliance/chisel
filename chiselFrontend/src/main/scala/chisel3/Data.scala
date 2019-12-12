@@ -493,7 +493,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
     case _ => None
   }
 
-  def isLit(): Boolean = litArg.isDefined
+  def isLit(): Boolean = litOption.isDefined
 
   /**
    * If this is a literal that is representable as bits, returns the value as a BigInt.

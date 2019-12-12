@@ -8,6 +8,7 @@ import scala.language.experimental.macros
 
 import chisel3.experimental.BaseModule
 import chisel3.experimental.BundleLiteralException
+import chisel3.experimental.EnumType
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
@@ -550,6 +551,15 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
           value.topBinding.asInstanceOf[BundleLitBinding].litMap.map { case (valueField, valueValue) =>
             remap(valueField) -> valueValue
           }
+        case field: EnumType => {
+          if (!(field typeEquivalent value)) {
+            throw new BundleLiteralException(s"field $fieldName $field specified with non-type-equivalent enum value $value")
+          }
+          val litArg = valueBinding match {
+            case ElementLitBinding(litArg) => litArg
+          }
+          Seq(field -> litArg)
+        }
         case _ => throw new BundleLiteralException(s"unsupported field $fieldName of type $field")
       }
     }  // don't convert to a Map yet to preserve duplicate keys
