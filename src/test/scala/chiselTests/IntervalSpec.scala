@@ -456,8 +456,65 @@ class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
           () =>
             new BasicTester {
               val x = 5.I(range"[0,4]")
-          }
+            }
         ).elaborate
+      }
+    }
+  }
+
+  "Interval literals support to double and to BigDecimal" in {
+    val d = -7.125
+    val lit1 = d.I(3.BP)
+    lit1.litToDouble should be (d)
+
+    val d2 = BigDecimal("1232123213131123.125")
+    val lit2 = d2.I(3.BP)
+    lit2.litToBigDecimal should be (d2)
+
+    // Numbers that are too big will throw exception
+    intercept[ChiselException] {
+      lit2.litToDouble
+    }
+  }
+
+  "Interval literals creation handles edge cases" - {
+    "value at closed boundaries works" in {
+      val inputRange = range"[-6, 6].2"
+      val in1 = (-6.0).I(inputRange)
+      val in2 = 6.0.I(inputRange)
+      BigDecimal(in1.litValue()) / (1 << inputRange.binaryPoint.get) should be (-6)
+      BigDecimal(in2.litValue()) / (1 << inputRange.binaryPoint.get) should be (6)
+      intercept[ChiselException] {
+        (-6.25).I(inputRange)
+      }
+      intercept[ChiselException] {
+        (6.25).I(inputRange)
+      }
+    }
+    "value at open boundaries works" in {
+      val inputRange = range"(-6, 6).2"
+      val in1 = (-5.75).I(inputRange)
+      val in2 = 5.75.I(inputRange)
+      BigDecimal(in1.litValue()) / (1 << inputRange.binaryPoint.get) should be (-5.75)
+      BigDecimal(in2.litValue()) / (1 << inputRange.binaryPoint.get) should be (5.75)
+      intercept[ChiselException] {
+        (-6.0).I(inputRange)
+      }
+      intercept[ChiselException] {
+        (6.0).I(inputRange)
+      }
+    }
+    "values not precisely at open boundaries works but are converted to nearest match" in {
+      val inputRange = range"(-6, 6).2"
+      val in1 = (-5.95).I(inputRange)
+      val in2 = 5.95.I(inputRange)
+      BigDecimal(in1.litValue()) / (1 << inputRange.binaryPoint.get) should be (-5.75)
+      BigDecimal(in2.litValue()) / (1 << inputRange.binaryPoint.get) should be (5.75)
+      intercept[ChiselException] {
+        (-6.1).I(inputRange)
+      }
+      intercept[ChiselException] {
+        (6.1).I(inputRange)
       }
     }
   }

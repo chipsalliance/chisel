@@ -1179,6 +1179,43 @@ package experimental {
 
   import chisel3.internal.firrtl.BinaryPoint
 
+  /** Chisel types that have binary points support retrieving
+    * literal values as `Double` or `BigDecimal`
+    */
+  trait HasBinaryPoint { self: Bits =>
+    def binaryPoint: BinaryPoint
+
+    /** Return the [[Double]] value of this instance if it is a Literal
+      * @note this method may return throw an exception if the literal value won't fit in a Double
+      */
+    def litToDoubleOption: Option[Double] = {
+      litOption match {
+        case Some(bigInt: BigInt) =>
+          Some(Num.toDouble(bigInt, binaryPoint))
+        case _ => None
+      }
+    }
+
+    /** Return the double value of this instance assuming it is a literal (convenience method)
+      */
+    def litToDouble: Double = litToDoubleOption.get
+
+    /** Return the [[BigDecimal]] value of this instance if it is a Literal
+      * @note this method may return throw an exception if the literal value won't fit in a BigDecimal
+      */
+    def litToBigDecimalOption: Option[BigDecimal] = {
+      litOption match {
+        case Some(bigInt: BigInt) =>
+          Some(Num.toBigDecimal(bigInt, binaryPoint))
+        case _ => None
+      }
+    }
+
+    /** Return the [[BigDecimal]] value of this instance assuming it is a literal (convenience method)
+      * @return
+      */
+    def litToBigDecimal: BigDecimal = litToBigDecimalOption.get
+  }
   //scalastyle:off number.of.methods
   /** A sealed class representing a fixed point number that has a bit width and a binary point The width and binary point
     * may be inferred.
@@ -1195,7 +1232,7 @@ package experimental {
     * @define constantWidth  @note The width of the returned $coll is unchanged, i.e., `width of this`.
     */
   sealed class FixedPoint private(width: Width, val binaryPoint: BinaryPoint)
-    extends Bits(width) with Num[FixedPoint] {
+    extends Bits(width) with Num[FixedPoint] with HasBinaryPoint {
 
     override def toString: String = {
       val bindingString = litToDoubleOption match {
@@ -1217,16 +1254,6 @@ package experimental {
       case _: FixedPoint|DontCare => super.connect(that)
       case _ => this badConnect that
     }
-
-    /** Convert to a [[scala.Option]] of [[scala.Boolean]] */
-    def litToDoubleOption: Option[Double] = litOption.map { intVal =>
-      val multiplier = math.pow(2, binaryPoint.get)
-      intVal.toDouble / multiplier
-    }
-
-    /** Convert to a [[scala.Option]] */
-    def litToDouble: Double = litToDoubleOption.get
-
 
     /** Unary negation (expanding width)
       *
@@ -1519,7 +1546,7 @@ package experimental {
     * Factory and convenience methods for the FixedPoint class
     * IMPORTANT: The API provided here is experimental and may change in the future.
     */
-  object FixedPoint {
+  object FixedPoint extends NumObject {
 
     import FixedPoint.Implicits._
 
@@ -1559,6 +1586,14 @@ package experimental {
         toBigInt(value, binaryPoint.get), width = width, binaryPoint = binaryPoint
       )
     }
+    /** Create an FixedPoint literal with inferred width from BigDecimal.
+      * Use PrivateObject to force users to specify width and binaryPoint by name
+      */
+    def fromBigDecimal(value: BigDecimal, width: Width, binaryPoint: BinaryPoint): FixedPoint = {
+      fromBigInt(
+        toBigInt(value, binaryPoint.get), width = width, binaryPoint = binaryPoint
+      )
+    }
 
     /** Create an FixedPoint port with specified width and binary position. */
     def apply(value: BigInt, width: Width, binaryPoint: BinaryPoint): FixedPoint = {
@@ -1568,34 +1603,10 @@ package experimental {
       lit.bindLitArg(newLiteral)
     }
 
-    /**
-      * How to create a bigint from a double with a specific binaryPoint
-      * @param x           a double value
-      * @param binaryPoint a binaryPoint that you would like to use
-      * @return
-      */
-    def toBigInt(x: Double, binaryPoint: Int): BigInt = {
-      val multiplier = math.pow(2, binaryPoint)
-      val result = BigInt(math.round(x * multiplier))
-      result
-    }
-
-    /**
-      * converts a bigInt with the given binaryPoint into the double representation
-      * @param i           a bigint
-      * @param binaryPoint the implied binaryPoint of @i
-      * @return
-      */
-    def toDouble(i: BigInt, binaryPoint: Int): Double = {
-      val multiplier = math.pow(2, binaryPoint)
-      val result = i.toDouble / multiplier
-      result
-    }
 
 
     object Implicits {
 
-  //      implicit class fromDoubleToLiteral(val double: Double) extends AnyVal {
       implicit class fromDoubleToLiteral(double: Double) {
         def F(binaryPoint: BinaryPoint): FixedPoint = {
           FixedPoint.fromDouble(double, Width(), binaryPoint)
@@ -1603,6 +1614,16 @@ package experimental {
 
         def F(width: Width, binaryPoint: BinaryPoint): FixedPoint = {
           FixedPoint.fromDouble(double, width, binaryPoint)
+        }
+      }
+
+      implicit class fromBigDecimalToLiteral(bigDecimal: BigDecimal) {
+        def F(binaryPoint: BinaryPoint): FixedPoint = {
+          FixedPoint.fromBigDecimal(bigDecimal, Width(), binaryPoint)
+        }
+
+        def F(width: Width, binaryPoint: BinaryPoint): FixedPoint = {
+          FixedPoint.fromBigDecimal(bigDecimal, width, binaryPoint)
         }
       }
     }
@@ -1627,7 +1648,7 @@ package experimental {
     * @param range       a range specifies min, max and binary point
     */
   sealed class Interval private[chisel3] (val range: chisel3.internal.firrtl.IntervalRange)
-    extends Bits(range.getWidth) with Num[Interval] {
+    extends Bits(range.getWidth) with Num[Interval] with HasBinaryPoint {
 
     override def toString: String = {
       val bindingString = litOption match {
@@ -2071,7 +2092,7 @@ package experimental {
     * Factory and convenience methods for the Interval class
     * IMPORTANT: The API provided here is experimental and may change in the future.
     */
-  object Interval {
+  object Interval extends NumObject {
     /** Create an Interval type with inferred width and binary point. */
     def apply(): Interval = Interval(range"[?,?]")
 
@@ -2155,78 +2176,31 @@ package experimental {
         case _ =>
       }
       val lit = IntervalLit(value, width, binaryPoint)
-      val bound = firrtlir.Closed(Interval.toDouble(value, binaryPoint.asInstanceOf[KnownBinaryPoint].value))
+      val bound = firrtlir.Closed(Interval.toBigDecimal(value, binaryPoint.asInstanceOf[KnownBinaryPoint].value))
       val result = new Interval(IntervalRange(bound, bound, binaryPoint))
       lit.bindLitArg(result)
     }
 
     protected[chisel3] def Lit(value: BigInt, range: IntervalRange): Interval = {
       val lit = IntervalLit(value, range.getWidth, range.binaryPoint)
-      val bigDecimal = BigDecimal(value)
+      val bigDecimal = BigDecimal(value) / (1 << lit.binaryPoint.get)
       val inRange = (range.lowerBound, range.upperBound) match {
         case (firrtlir.Closed(l), firrtlir.Closed(u)) => l <= bigDecimal && bigDecimal <= u
-        case (firrtlir.Closed(l), firrtlir.Open(u))   => l <= bigDecimal && bigDecimal <= u
-        case (firrtlir.Open(l), firrtlir.Closed(u))   => l <= bigDecimal && bigDecimal <= u
-        case (firrtlir.Open(l), firrtlir.Open(u))     => l <= bigDecimal && bigDecimal <= u
+        case (firrtlir.Closed(l), firrtlir.Open(u))   => l <= bigDecimal && bigDecimal < u
+        case (firrtlir.Open(l), firrtlir.Closed(u))   => l < bigDecimal && bigDecimal <= u
+        case (firrtlir.Open(l), firrtlir.Open(u))     => l < bigDecimal && bigDecimal < u
       }
       if(! inRange) {
         throw new ChiselException(
-          s"Error literal interval value $value is not contained in specified range $range"
+          s"Error literal interval value $bigDecimal is not contained in specified range $range"
         )
       }
       val result = Interval(range)
       lit.bindLitArg(result)
     }
 
-    /** How to create a BigInt from a double with a specific binaryPoint
-      *
-      * @param x           a double value
-      * @param binaryPoint a binaryPoint that you would like to use
-      * @return
-      */
-    def toBigInt(x: Double, binaryPoint: BinaryPoint): BigInt = {
-      val intBinaryPoint = binaryPoint match {
-        case KnownBinaryPoint(n) => n
-        case b =>
-          throw new ChiselException(s"Error converting Double $x to BigInt, binary point must be known, not $b")
-      }
-      val multiplier = BigInt(1) << intBinaryPoint
-      val result = BigInt(math.round(x * multiplier.doubleValue))
-      result
-
-    }
-
     /**
-      * How to create a BigInt from a BigDecimal with a specific binaryPoint
-      *
-      * @param b           a BigDecimal value
-      * @param binaryPoint a binaryPoint that you would like to use
-      * @return
-      */
-    def toBigInt(b: BigDecimal, binaryPoint: BinaryPoint): BigInt = {
-      val bp = binaryPoint match {
-        case KnownBinaryPoint(n) => n
-        case x =>
-          throw new ChiselException(s"Error converting BigDecimal $b to BigInt, binary point must be known, not $x")
-      }
-      (b * math.pow(2.0, bp.toDouble)).toBigInt
-    }
-
-    /**
-      * converts a bigInt with the given binaryPoint into the double representation
-      *
-      * @param i           a BigInt
-      * @param binaryPoint the implied binaryPoint of @i
-      * @return
-      */
-    def toDouble(i: BigInt, binaryPoint: Int): Double = {
-      val multiplier = BigInt(1) << binaryPoint
-      val result = i.toDouble / multiplier.doubleValue
-      result
-    }
-
-    /**
-      * This returns the smallest number that can legally fit in range, if possible
+      * This returns the smallest Interval literal that can legally fit in range, if possible
       * If the lower bound or binary point is not known then return None
       *
       * @param range use to figure low number
@@ -2245,7 +2219,7 @@ package experimental {
     }
 
     /**
-      * This returns the largest number that can legally fit in range, if possible
+      * This returns the largest Interval literal that can legally fit in range, if possible
       * If the upper bound or binary point is not known then return None
       *
       * @param range use to figure low number
