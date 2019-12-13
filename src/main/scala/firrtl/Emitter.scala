@@ -977,6 +977,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
     new ReplaceTruncatingArithmetic,
     new InlineNotsTransform,
     new InlineCastsTransform,
+    new LegalizeClocksTransform,
     new FlattenRegUpdate,
     new DeadCodeElimination,
     passes.VerilogModulusCleanup,
