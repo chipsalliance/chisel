@@ -28,7 +28,6 @@ package object stage {
 
   private[chisel3] implicit object ChiselExecutionResultView extends OptionsView[ChiselExecutionResult] {
 
-    lazy val dummyWriteEmitted = new firrtl.stage.phases.WriteEmitted
     lazy val dummyConvert = new Convert
     lazy val dummyEmitter = new Emitter
 
