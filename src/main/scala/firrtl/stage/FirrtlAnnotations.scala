@@ -5,7 +5,7 @@ package firrtl.stage
 import firrtl._
 import firrtl.ir.Circuit
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
-import firrtl.options.{HasShellOptions, OptionsException, ShellOption}
+import firrtl.options.{HasShellOptions, OptionsException, ShellOption, Unserializable}
 
 
 import java.io.FileNotFoundException
@@ -14,12 +14,12 @@ import java.nio.file.NoSuchFileException
 /** Indicates that this is an [[firrtl.annotations.Annotation Annotation]] directly used in the construction of a
   * [[FirrtlOptions]] view.
   */
-sealed trait FirrtlOption { this: Annotation => }
+sealed trait FirrtlOption extends Unserializable { this: Annotation => }
 
 /** Indicates that this [[firrtl.annotations.Annotation Annotation]] contains information that is directly convertable
   * to a FIRRTL [[firrtl.ir.Circuit Circuit]].
   */
-sealed trait CircuitOption { this: Annotation =>
+sealed trait CircuitOption extends Unserializable { this: Annotation =>
 
   /** Convert this [[firrtl.annotations.Annotation Annotation]] to a [[FirrtlCircuitAnnotation]]
     */
