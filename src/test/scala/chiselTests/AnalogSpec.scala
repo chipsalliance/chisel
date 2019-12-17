@@ -5,8 +5,8 @@ package chiselTests
 import chisel3._
 import chisel3.stage.ChiselStage
 import chisel3.util._
-import chisel3.testers.BasicTester
-import chisel3.experimental.{Analog, attach, BaseModule}
+import chisel3.testers.{BasicTester, TesterDriver}
+import chisel3.experimental.{Analog, BaseModule, attach}
 
 // IO for Modules that just connect bus to out
 class AnalogReaderIO extends Bundle {
@@ -158,7 +158,7 @@ class AnalogSpec extends ChiselFlatSpec with Utils {
       val mod = Module(new AnalogReaderBlackBox)
       mod.io.bus <> writer.io.bus
       check(mod)
-    }, Seq("/chisel3/AnalogBlackBox.v"))
+    }, Seq("/chisel3/AnalogBlackBox.v"), TesterDriver.verilatorOnly)
   }
 
   it should "error if any bulk connected more than once" in {
@@ -221,7 +221,7 @@ class AnalogSpec extends ChiselFlatSpec with Utils {
       val mods = Seq.fill(2)(Module(new AnalogReaderBlackBox))
       attach(writer.io.bus, mods(0).io.bus, mods(1).io.bus)
       mods.foreach(check(_))
-    }, Seq("/chisel3/AnalogBlackBox.v"))
+    }, Seq("/chisel3/AnalogBlackBox.v"), TesterDriver.verilatorOnly)
   }
 
   it should "work with 3 blackboxes separately attached via a wire" in {
@@ -232,7 +232,7 @@ class AnalogSpec extends ChiselFlatSpec with Utils {
       attach(busWire, mods(0).io.bus)
       attach(mods(1).io.bus, busWire)
       mods.foreach(check(_))
-    }, Seq("/chisel3/AnalogBlackBox.v"))
+    }, Seq("/chisel3/AnalogBlackBox.v"), TesterDriver.verilatorOnly)
   }
 
   // This does not currently work in Verilator unless Firrtl does constant prop and dead code
@@ -245,7 +245,7 @@ class AnalogSpec extends ChiselFlatSpec with Utils {
       attach(busWire(1), mod.io.bus)
       attach(busWire(0), busWire(1))
       check(mod)
-    }, Seq("/chisel3/AnalogBlackBox.v"))
+    }, Seq("/chisel3/AnalogBlackBox.v"), TesterDriver.verilatorOnly)
   }
 
   it should "work with blackboxes at different levels of the module hierarchy" in {
@@ -254,7 +254,7 @@ class AnalogSpec extends ChiselFlatSpec with Utils {
       val busWire = Wire(writer.io.bus.cloneType)
       attach(writer.io.bus, mods(0).bus, mods(1).bus)
       mods.foreach(check(_))
-    }, Seq("/chisel3/AnalogBlackBox.v"))
+    }, Seq("/chisel3/AnalogBlackBox.v"), TesterDriver.verilatorOnly)
   }
 
   // This does not currently work in Verilator, but does work in VCS
@@ -265,7 +265,7 @@ class AnalogSpec extends ChiselFlatSpec with Utils {
       connector.io.bus1 <> writer.io.bus
       reader.io.bus <> connector.io.bus2
       check(reader)
-    }, Seq("/chisel3/AnalogBlackBox.v"))
+    }, Seq("/chisel3/AnalogBlackBox.v"), TesterDriver.verilatorOnly)
   }
 
   it should "NOT support conditional connection of analog types" in {
@@ -285,7 +285,7 @@ class AnalogSpec extends ChiselFlatSpec with Utils {
       val mod = Module(new VecAnalogReaderWrapper)
       mod.bus <> writer.io.bus
       check(mod)
-    }, Seq("/chisel3/AnalogBlackBox.v"))
+    }, Seq("/chisel3/AnalogBlackBox.v"), TesterDriver.verilatorOnly)
   }
 
   it should "work with Vecs of Bundles of Analog" in {
@@ -293,6 +293,6 @@ class AnalogSpec extends ChiselFlatSpec with Utils {
       val mod = Module(new VecBundleAnalogReaderWrapper)
       mod.bus <> writer.io.bus
       check(mod)
-    }, Seq("/chisel3/AnalogBlackBox.v"))
+    }, Seq("/chisel3/AnalogBlackBox.v"), TesterDriver.verilatorOnly)
   }
 }
