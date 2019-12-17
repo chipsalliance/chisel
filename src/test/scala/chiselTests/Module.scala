@@ -142,7 +142,7 @@ class ModuleSpec extends ChiselPropSpec {
   property("DataMirror.modulePorts should work") {
     elaborate(new Module {
       val io = IO(new Bundle { })
-      val m = Module(new chisel3.experimental.MultiIOModule {
+      val m = Module(new chisel3.MultiIOModule {
         val a = IO(UInt(8.W))
         val b = IO(Bool())
       })
@@ -157,5 +157,20 @@ class ModuleSpec extends ChiselPropSpec {
   property("A name generating a null pointer exception should provide a good error message") {
     (the [Exception] thrownBy (Driver.elaborate(() => new NullModuleWrapper)))
       .getMessage should include ("desiredName of chiselTests.NullModuleWrapper is null")
+  }
+  property("The name of a module in a function should be sane") {
+    def foo = {
+      class Foo1 extends RawModule {
+        assert(name == "Foo1")
+      }
+      new Foo1
+    }
+    Driver.elaborate(() => foo)
+  }
+  property("The name of an anonymous module should include '_Anon'") {
+    trait Foo { this: RawModule =>
+      assert(name.contains("_Anon"))
+    }
+    Driver.elaborate(() => new RawModule with Foo)
   }
 }

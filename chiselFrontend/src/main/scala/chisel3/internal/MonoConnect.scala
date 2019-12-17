@@ -3,7 +3,7 @@
 package chisel3.internal
 
 import chisel3._
-import chisel3.experimental.{Analog, BaseModule, EnumType, FixedPoint, RawModule, UnsafeEnum}
+import chisel3.experimental.{Analog, BaseModule, EnumType, FixedPoint, Interval, UnsafeEnum}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.{Connect, DefInvalid}
 import scala.language.experimental.macros
@@ -85,7 +85,13 @@ private[chisel3] object MonoConnect {
         elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
       case (sink_e: FixedPoint, source_e: FixedPoint) =>
         elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
+      case (sink_e: Interval, source_e: Interval) =>
+        elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
       case (sink_e: Clock, source_e: Clock) =>
+        elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
+      case (sink_e: AsyncReset, source_e: AsyncReset) =>
+        elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
+      case (sink_e: ResetType, source_e: Reset) =>
         elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)
       case (sink_e: EnumType, source_e: UnsafeEnum) =>
         elemConnect(sourceInfo, connectCompileOptions, sink_e, source_e, context_mod)

@@ -55,7 +55,6 @@ package object experimental {  // scalastyle:ignore object.name
   val Direction = ActualDirection
 
   implicit class ChiselRange(val sc: StringContext) extends AnyVal {
-    import chisel3.internal.firrtl.NumericBound
 
     import scala.language.experimental.macros
 
@@ -67,7 +66,7 @@ package object experimental {  // scalastyle:ignore object.name
       * UInt(range"[0, \${myInt + 2})")
       * }}}
       */
-    def range(args: Any*): (NumericBound[Int], NumericBound[Int]) = macro chisel3.internal.RangeTransform.apply
+    def range(args: Any*): chisel3.internal.firrtl.IntervalRange = macro chisel3.internal.RangeTransform.apply
   }
 
   class dump extends chisel3.internal.naming.dump  // scalastyle:ignore class.name
@@ -76,6 +75,7 @@ package object experimental {  // scalastyle:ignore object.name
 
   object BundleLiterals {
     implicit class AddBundleLiteralConstructor[T <: Bundle](x: T) {
+      //scalastyle:off method.name
       def Lit(elems: (T => (Data, Data))*): T = {
         x._makeLit(elems: _*)
       }

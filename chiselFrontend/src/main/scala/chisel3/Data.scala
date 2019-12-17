@@ -3,12 +3,11 @@
 package chisel3
 
 import scala.language.experimental.macros
-
-import chisel3.experimental.{Analog, DataMirror, FixedPoint}
+import chisel3.experimental.{Analog, DataMirror, FixedPoint, Interval}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal._
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform, UnlocatableSourceInfo, DeprecatedSourceInfo}
+import chisel3.internal.sourceinfo.{DeprecatedSourceInfo, SourceInfo, SourceInfoTransform, UnlocatableSourceInfo}
 
 /** User-specified directions.
   */
@@ -44,6 +43,16 @@ object SpecifiedDirection {
       case (SpecifiedDirection.Unspecified, thisDirection) => thisDirection
       case (SpecifiedDirection.Flip, thisDirection) => SpecifiedDirection.flip(thisDirection)
     }
+
+  private[chisel3] def specifiedDirection[T<:Data](source: T)(dir: SpecifiedDirection)(implicit compileOptions: CompileOptions): T = {
+    if (compileOptions.checkSynthesizable) {
+      requireIsChiselType(source)
+    }
+    val out = source.cloneType.asInstanceOf[T]
+    out.specifiedDirection = dir
+    out
+  }
+
 }
 
 /** Resolved directions for both leaf and container nodes, only visible after
@@ -185,6 +194,9 @@ private[chisel3] object cloneSupertype {
             case _ => FixedPoint()
           }
         }
+        case (elt1: Interval, elt2: Interval) =>
+          val range = if(elt1.range.width == elt1.range.width.max(elt2.range.width)) elt1.range else elt2.range
+          Interval(range)
         case (elt1, elt2) =>
           throw new AssertionError(
             s"can't create $createdType with heterogeneous types ${elt1.getClass} and ${elt2.getClass}")
@@ -221,32 +233,18 @@ object chiselTypeOf {
 */
 object Input {
   def apply[T<:Data](source: T)(implicit compileOptions: CompileOptions): T = {
-    if (compileOptions.checkSynthesizable) {
-      requireIsChiselType(source)
-    }
-    val out = source.cloneType.asInstanceOf[T]
-    out.specifiedDirection = SpecifiedDirection.Input
-    out
+    SpecifiedDirection.specifiedDirection(source)(SpecifiedDirection.Input)
   }
 }
 object Output {
   def apply[T<:Data](source: T)(implicit compileOptions: CompileOptions): T = {
-    if (compileOptions.checkSynthesizable) {
-      requireIsChiselType(source)
-    }
-    val out = source.cloneType.asInstanceOf[T]
-    out.specifiedDirection = SpecifiedDirection.Output
-    out
+    SpecifiedDirection.specifiedDirection(source)(SpecifiedDirection.Output)
   }
 }
+
 object Flipped {
   def apply[T<:Data](source: T)(implicit compileOptions: CompileOptions): T = {
-    if (compileOptions.checkSynthesizable) {
-      requireIsChiselType(source)
-    }
-    val out = source.cloneType.asInstanceOf[T]
-    out.specifiedDirection = SpecifiedDirection.flip(source.specifiedDirection)
-    out
+    SpecifiedDirection.specifiedDirection(source)(SpecifiedDirection.flip(source.specifiedDirection))
   }
 }
 
@@ -385,7 +383,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
         case _ =>  // fine
       }
       try {
-        MonoConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.forcedUserModule)
+        MonoConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.referenceUserModule)
       } catch {
         case MonoConnectException(message) =>
           throwException(
@@ -407,7 +405,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
         case _ =>  // fine
       }
       try {
-        BiConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.forcedUserModule)
+        BiConnect.connect(sourceInfo, connectCompileOptions, this, that, Builder.referenceUserModule)
       } catch {
         case BiConnectException(message) =>
           throwException(
@@ -495,7 +493,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
     case _ => None
   }
 
-  def isLit(): Boolean = litArg.isDefined
+  def isLit(): Boolean = litOption.isDefined
 
   /**
    * If this is a literal that is representable as bits, returns the value as a BigInt.

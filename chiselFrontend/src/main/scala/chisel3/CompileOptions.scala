@@ -20,6 +20,8 @@ trait CompileOptions {
   val checkSynthesizable: Boolean
   // Require explicit assignment of DontCare to generate "x is invalid"
   val explicitInvalidate: Boolean
+  // Should the reset type of Module be a Bool or a Reset
+  val inferModuleReset: Boolean
 }
 
 object CompileOptions {
@@ -48,7 +50,9 @@ object ExplicitCompileOptions {
     // Check that referenced Data have actually been declared.
     val checkSynthesizable: Boolean,
     // Require an explicit DontCare assignment to generate a firrtl DefInvalid
-    val explicitInvalidate: Boolean
+    val explicitInvalidate: Boolean,
+    // Should the reset type of Module be a Bool or a Reset
+    val inferModuleReset: Boolean
   ) extends CompileOptions
 
   // Collection of "not strict" connection compile options.
@@ -59,7 +63,8 @@ object ExplicitCompileOptions {
     dontTryConnectionsSwapped = false,
     dontAssumeDirectionality = false,
     checkSynthesizable = false,
-    explicitInvalidate = false
+    explicitInvalidate = false,
+    inferModuleReset = false
   )
 
   // Collection of "strict" connection compile options, preferred for new code.
@@ -69,6 +74,7 @@ object ExplicitCompileOptions {
     dontTryConnectionsSwapped = true,
     dontAssumeDirectionality = true,
     checkSynthesizable = true,
-    explicitInvalidate = true
+    explicitInvalidate = true,
+    inferModuleReset  = true
   )
 }

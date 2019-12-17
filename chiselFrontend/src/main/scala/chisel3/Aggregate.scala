@@ -8,6 +8,7 @@ import scala.language.experimental.macros
 
 import chisel3.experimental.BaseModule
 import chisel3.experimental.BundleLiteralException
+import chisel3.experimental.EnumType
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
@@ -42,7 +43,7 @@ sealed abstract class Aggregate extends Data {
     }
   }
 
-  override def litOption: Option[BigInt] = ???  // TODO implement me
+  override def litOption: Option[BigInt] = None  // TODO implement me
 
   /** Returns a Seq of the immediate contents of this Aggregate, in order.
     */
@@ -65,7 +66,7 @@ sealed abstract class Aggregate extends Data {
   private[chisel3] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
       compileOptions: CompileOptions): Unit = {
     var i = 0
-    val bits = WireDefault(UInt(this.width), that)  // handles width padding
+    val bits = if (that.isLit) that else WireDefault(UInt(this.width), that) // handles width padding
     for (x <- flatten) {
       val fieldWidth = x.getWidth
       if (fieldWidth > 0) {
@@ -156,7 +157,9 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
       child.bind(ChildBinding(this), resolvedDirection)
     }
 
-    direction = sample_element.direction
+    // Since all children are the same, we can just use the sample_element rather than all children
+    // .get is safe because None means mixed directions, we only pass 1 so that's not possible
+    direction = ActualDirection.fromChildren(Set(sample_element.direction), resolvedDirection).get
   }
 
   // Note: the constructor takes a gen() function instead of a Seq to enforce
@@ -202,7 +205,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
     * @note the length of this Vec must match the length of the input Seq
     */
   def := (that: Seq[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit = {
-    require(this.length == that.length)
+    require(this.length == that.length, s"Cannot assign to a Vec of length ${this.length} from a Seq of different length ${that.length}")
     for ((a, b) <- this zip that)
       a := b
   }
@@ -262,6 +265,37 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
       else self flatMap (e => List(e.toPrintable, PString(", "))) dropRight 1
     // scalastyle:on if.brace
     PString("Vec(") + Printables(elts) + PString(")")
+  }
+
+  /** A reduce operation in a tree like structure instead of sequentially
+    * @example An adder tree
+    * {{{
+    * val sumOut = inputNums.reduceTree((a: T, b: T) => (a + b))
+    * }}}
+    */
+  def reduceTree(redOp: (T, T) => T): T = macro VecTransform.reduceTreeDefault
+
+  /** A reduce operation in a tree like structure instead of sequentially
+    * @example A pipelined adder tree
+    * {{{
+    * val sumOut = inputNums.reduceTree(
+    *   (a: T, b: T) => RegNext(a + b),
+    *   (a: T) => RegNext(a)
+    * )
+    * }}}
+    */
+  def reduceTree(redOp: (T, T) => T, layerOp: (T) => T): T = macro VecTransform.reduceTree
+
+  def do_reduceTree(redOp: (T, T) => T, layerOp: (T) => T = (x: T) => x)
+                   (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) : T = {
+    require(!isEmpty, "Cannot apply reduction on a vec of size 0")
+    var curLayer = this
+    while (curLayer.length > 1) {
+      curLayer = VecInit(curLayer.grouped(2).map( x =>
+        if (x.length == 1) layerOp(x(0)) else redOp(x(0), x(1))
+      ).toSeq)
+    }
+    curLayer(0)
   }
 }
 
@@ -517,6 +551,15 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
           value.topBinding.asInstanceOf[BundleLitBinding].litMap.map { case (valueField, valueValue) =>
             remap(valueField) -> valueValue
           }
+        case field: EnumType => {
+          if (!(field typeEquivalent value)) {
+            throw new BundleLiteralException(s"field $fieldName $field specified with non-type-equivalent enum value $value")
+          }
+          val litArg = valueBinding match {
+            case ElementLitBinding(litArg) => litArg
+          }
+          Seq(field -> litArg)
+        }
         case _ => throw new BundleLiteralException(s"unsupported field $fieldName of type $field")
       }
     }  // don't convert to a Map yet to preserve duplicate keys

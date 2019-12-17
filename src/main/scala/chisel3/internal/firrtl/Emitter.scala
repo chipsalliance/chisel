@@ -2,7 +2,7 @@
 
 package chisel3.internal.firrtl
 import chisel3._
-import chisel3.experimental._
+import chisel3.experimental.{Interval, _}
 import chisel3.internal.BaseBlackBox
 
 private[chisel3] object Emitter {
@@ -27,10 +27,18 @@ private class Emitter(circuit: Circuit) {
 
   private def emitType(d: Data, clearDir: Boolean = false): String = d match { // scalastyle:ignore cyclomatic.complexity line.size.limit
     case d: Clock => "Clock"
-    case d: EnumType => s"UInt${d.width}"
+    case _: AsyncReset => "AsyncReset"
+    case _: ResetType => "Reset"
+    case d: chisel3.core.EnumType => s"UInt${d.width}"
     case d: UInt => s"UInt${d.width}"
     case d: SInt => s"SInt${d.width}"
     case d: FixedPoint => s"Fixed${d.width}${d.binaryPoint}"
+    case d: Interval =>
+      val binaryPointString = d.binaryPoint match {
+        case UnknownBinaryPoint => ""
+        case KnownBinaryPoint(value) => s".$value"
+      }
+      d.toType
     case d: Analog => s"Analog${d.width}"
     case d: Vec[_] => s"${emitType(d.sample_element, clearDir)}[${d.length}]"
     case d: Record => {

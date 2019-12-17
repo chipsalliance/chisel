@@ -32,10 +32,10 @@ object chiselCompileOptions {
   )
 }
 
-val crossVersions = Seq("2.12.6", "2.11.12")
+val crossVersions = Seq("2.12.10", "2.11.12")
 
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
-val defaultVersions = Map("firrtl" -> "1.2-SNAPSHOT")
+val defaultVersions = Map("firrtl" -> "1.3-SNAPSHOT")
 
 def getVersion(dep: String, org: String = "edu.berkeley.cs") = {
   val version = sys.env.getOrElse(dep + "Version", defaultVersions(dep))
@@ -67,7 +67,7 @@ trait CommonChiselModule extends SbtModule {
 
 trait PublishChiselModule extends CommonChiselModule with PublishModule {
   override def artifactName = "chisel3"
-  def publishVersion = "3.2-SNAPSHOT"
+  def publishVersion = "3.3-SNAPSHOT"
 
   def pomSettings = PomSettings(
     description = artifactName(),
@@ -97,6 +97,10 @@ object chisel3 extends Cross[ChiselTopModule](crossVersions: _*) {
 
   def test = T{
     chisel3(crossVersions.head).test.test()
+  }
+
+  def testOne(args: String*) = T.command {
+    chisel3(crossVersions.head).test.testOne(args: _*)
   }
 
   def publishLocal = T{
@@ -215,15 +219,20 @@ trait AbstractChiselModule extends PublishChiselModule with CommonBuild.BuildInf
   }
 
   override def ivyDeps = Agg(
-    ivy"com.github.scopt::scopt:3.6.0"
+    ivy"com.github.scopt::scopt:3.7.1"
   ) ++ chiselDeps
 
   object test extends Tests {
     override def ivyDeps = Agg(
-      ivy"org.scalatest::scalatest:3.0.1",
-      ivy"org.scalacheck::scalacheck:1.13.4"
+      ivy"org.scalatest::scalatest:3.0.8",
+      ivy"org.scalacheck::scalacheck:1.14.0"
     )
     def testFrameworks = Seq("org.scalatest.tools.Framework")
+
+    def testOne(args: String*) = T.command {
+      super.runMain("org.scalatest.run", args: _*)
+    }
+
   }
 
   // This is required for building a library, but not for a `run` target.

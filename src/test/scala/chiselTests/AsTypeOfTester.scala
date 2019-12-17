@@ -70,6 +70,17 @@ class ResetAsTypeOfBoolTester extends BasicTester {
   stop()
 }
 
+class AsTypeOfClockTester extends BasicTester {
+  class MyBundle extends Bundle {
+    val x = UInt(4.W)
+    val y = Clock()
+  }
+  assert(true.B.asTypeOf(Clock()).asUInt.asBool === true.B)
+
+  assert(0x1f.U.asTypeOf(new MyBundle).asUInt === 0x1f.U)
+  stop()
+}
+
 class AsChiselEnumTester extends BasicTester {
   object MyEnum extends ChiselEnum {
     val foo, bar = Value
@@ -136,5 +147,9 @@ class AsTypeOfSpec extends ChiselFlatSpec {
 
   it should "work for casting to and from ChiselEnums" in {
     assertTesterPasses(new AsChiselEnumTester)
+  }
+
+  it should "work for casting to and from Clock" in {
+    assertTesterPasses(new AsTypeOfClockTester)
   }
 }
