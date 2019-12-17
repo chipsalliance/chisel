@@ -4,7 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.util.Counter
-import chisel3.testers.BasicTester
+import chisel3.testers.{BasicTester, TesterDriver}
 
 /** Multi-clock test of a Reg using a different clock via withClock */
 class ClockDividerTest extends BasicTester {
@@ -119,7 +119,7 @@ class MultiClockSpec extends ChiselFlatSpec {
   }
 
   it should "scope ports of memories" in {
-    assertTesterPasses(new MultiClockMemTest)
+    assertTesterPasses(new MultiClockMemTest, annotations = TesterDriver.verilatorOnly)
   }
 
   it should "return like a normal Scala block" in {

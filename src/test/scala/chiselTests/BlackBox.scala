@@ -4,7 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.experimental._
-import chisel3.testers.BasicTester
+import chisel3.testers.{BasicTester, TesterDriver}
 import chisel3.util._
 
 class BlackBoxInverter extends BlackBox {
@@ -150,23 +150,28 @@ class BlackBoxWithParamsTester extends BasicTester {
 class BlackBoxSpec extends ChiselFlatSpec {
   "A BlackBoxed inverter" should "work" in {
     assertTesterPasses({ new BlackBoxTester },
-        Seq("/chisel3/BlackBoxTest.v"))
+        Seq("/chisel3/BlackBoxTest.v"),
+      annotations = TesterDriver.verilatorOnly)
   }
   "A BlackBoxed with flipped IO" should "work" in {
     assertTesterPasses({ new BlackBoxFlipTester },
-        Seq("/chisel3/BlackBoxTest.v"))
+        Seq("/chisel3/BlackBoxTest.v"),
+      annotations = TesterDriver.verilatorOnly)
   }
   "Multiple BlackBoxes" should "work" in {
     assertTesterPasses({ new MultiBlackBoxTester },
-        Seq("/chisel3/BlackBoxTest.v"))
+        Seq("/chisel3/BlackBoxTest.v"),
+      annotations = TesterDriver.verilatorOnly)
   }
   "A BlackBoxed register" should "work" in {
     assertTesterPasses({ new BlackBoxWithClockTester },
-        Seq("/chisel3/BlackBoxTest.v"))
+        Seq("/chisel3/BlackBoxTest.v"),
+      annotations = TesterDriver.verilatorOnly)
   }
   "BlackBoxes with parameters" should "work" in {
     assertTesterPasses({ new BlackBoxWithParamsTester },
-        Seq("/chisel3/BlackBoxTest.v"))
+        Seq("/chisel3/BlackBoxTest.v"),
+      annotations = TesterDriver.verilatorOnly)
   }
   "DataMirror.modulePorts" should "work with BlackBox" in {
     elaborate(new Module {

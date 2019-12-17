@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.testers.BasicTester
+import chisel3.testers.{BasicTester, TesterDriver}
 
 class BitwiseOpsTester(w: Int, _a: Int, _b: Int) extends BasicTester {
   val mask = (1 << w) - 1
@@ -21,7 +21,9 @@ class BitwiseOpsTester(w: Int, _a: Int, _b: Int) extends BasicTester {
 class BitwiseOpsSpec extends ChiselPropSpec {
   property("All bit-wise ops should return the correct result") {
     forAll(safeUIntPair) { case(w: Int, a: Int, b: Int) =>
-      assertTesterPasses{ new BitwiseOpsTester(w, a, b) }
+      assertTesterPasses(
+        new BitwiseOpsTester(w, a, b),
+        annotations = Seq(TesterDriver.TreadleBackend, TesterDriver.VerilatorBackend))
     }
   }
 }
