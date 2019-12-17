@@ -5,7 +5,7 @@ package chiselTests
 import chisel3._
 import chisel3.util.Counter
 import chisel3.testers.BasicTester
-import chisel3.experimental.{BaseModule, ChiselAnnotation, MultiIOModule, RawModule, RunFirrtlTransform}
+import chisel3.experimental.{BaseModule, ChiselAnnotation, RunFirrtlTransform}
 import chisel3.util.experimental.BoringUtils
 
 import firrtl.{CircuitForm, CircuitState, ChirrtlForm, Transform}
@@ -104,6 +104,23 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
   it should "throw an exception if NoDedupAnnotations are removed" in {
     intercept[WiringException] { runTester(new TopTester with FailViaDedup) }
       .getMessage should startWith ("Unable to determine source mapping for sink")
+  }
+
+  class InternalBore extends RawModule {
+    val in = IO(Input(Bool()))
+    val out = IO(Output(Bool()))
+    out := false.B
+    BoringUtils.bore(in, Seq(out))
+  }
+
+  class InternalBoreTester extends ShouldntAssertTester {
+    val dut = Module(new InternalBore)
+    dut.in := true.B
+    chisel3.assert(dut.out === true.B)
+  }
+
+  it should "work for an internal (same module) BoringUtils.bore" in {
+    runTester(new InternalBoreTester) should be (true)
   }
 
 }

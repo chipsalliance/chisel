@@ -25,7 +25,7 @@ class ThingsPassThroughTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int
     inCnt.inc()
   }
   when(q.io.deq.fire()) {
-    //ensure that what comes otu is what comes in
+    //ensure that what comes out is what comes in
     assert(elems(outCnt.value) === q.io.deq.bits)
     outCnt.inc()
   }
@@ -169,6 +169,33 @@ class QueueFlowTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: I
   }
 }
 
+class QueueFactoryTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int) extends BasicTester {
+  val enq = Wire(Decoupled(UInt(bitWidth.W)))
+  val deq = Queue(enq, queueDepth)
+
+  val elems = VecInit(elements.map {
+    _.asUInt()
+  })
+  val inCnt = Counter(elements.length + 1)
+  val outCnt = Counter(elements.length + 1)
+
+  enq.valid := (inCnt.value < elements.length.U)
+  deq.ready := LFSR(16)(tap)
+
+  enq.bits := elems(inCnt.value)
+  when(enq.fire()) {
+    inCnt.inc()
+  }
+  when(deq.fire()) {
+    //ensure that what comes out is what comes in
+    assert(elems(outCnt.value) === deq.bits)
+    outCnt.inc()
+  }
+  when(outCnt.value === elements.length.U) {
+    stop()
+  }
+}
+
 class QueueSpec extends ChiselPropSpec {
   // Disable shrinking on error.
   implicit val noShrinkListVal = Shrink[List[Int]](_ => Stream.empty)
@@ -232,5 +259,16 @@ class QueueSpec extends ChiselPropSpec {
         }
       }
     }
+  }
+
+  property("Queue companion object factory method should work") {
+    forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15)) { (depth, se, tap) =>
+      whenever(se._1 >= 1 && se._2.nonEmpty) {
+        assertTesterPasses {
+          new QueueFactoryTester(se._2, depth, se._1, tap)
+        }
+      }
+    }
+
   }
 }

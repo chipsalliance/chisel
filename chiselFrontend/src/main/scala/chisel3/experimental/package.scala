@@ -20,11 +20,11 @@ package object experimental {  // scalastyle:ignore object.name
 
   type ChiselEnum = EnumFactory
 
-  @deprecated("Use the version in chisel3._", "chisel3.2")
+  @deprecated("Use the version in chisel3._", "3.2")
   val withClockAndReset = chisel3.withClockAndReset
-  @deprecated("Use the version in chisel3._", "chisel3.2")
+  @deprecated("Use the version in chisel3._", "3.2")
   val withClock = chisel3.withClock
-  @deprecated("Use the version in chisel3._", "chisel3.2")
+  @deprecated("Use the version in chisel3._", "3.2")
   val withReset = chisel3.withReset
 
   // Rocket Chip-style clonemodule
@@ -55,7 +55,6 @@ package object experimental {  // scalastyle:ignore object.name
   val Direction = ActualDirection
 
   implicit class ChiselRange(val sc: StringContext) extends AnyVal {
-    import chisel3.internal.firrtl.NumericBound
 
     import scala.language.experimental.macros
 
@@ -67,7 +66,7 @@ package object experimental {  // scalastyle:ignore object.name
       * UInt(range"[0, \${myInt + 2})")
       * }}}
       */
-    def range(args: Any*): (NumericBound[Int], NumericBound[Int]) = macro chisel3.internal.RangeTransform.apply
+    def range(args: Any*): chisel3.internal.firrtl.IntervalRange = macro chisel3.internal.RangeTransform.apply
   }
 
   class dump extends chisel3.internal.naming.dump  // scalastyle:ignore class.name
@@ -76,6 +75,7 @@ package object experimental {  // scalastyle:ignore object.name
 
   object BundleLiterals {
     implicit class AddBundleLiteralConstructor[T <: Bundle](x: T) {
+      //scalastyle:off method.name
       def Lit(elems: (T => (Data, Data))*): T = {
         x._makeLit(elems: _*)
       }

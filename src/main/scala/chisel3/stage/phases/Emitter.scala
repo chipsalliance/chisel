@@ -24,6 +24,17 @@ import java.io.{File, FileWriter}
   */
 class Emitter extends Phase {
 
+  override val prerequisites =
+    Seq( classOf[Elaborate],
+         classOf[AddImplicitOutputFile],
+         classOf[AddImplicitOutputAnnotationFile],
+         classOf[MaybeAspectPhase] )
+
+  override def invalidates(phase: Phase): Boolean = phase match {
+    case _: Elaborate => true
+    case _ => false
+  }
+
   def transform(annotations: AnnotationSeq): AnnotationSeq = {
     val copts = view[ChiselOptions](annotations)
     val sopts = view[StageOptions](annotations)

@@ -5,7 +5,7 @@ package chiselTests
 import chisel3._
 import chisel3.util._
 import chisel3.testers.BasicTester
-import chisel3.experimental.{Analog, attach, BaseModule, RawModule}
+import chisel3.experimental.{Analog, attach, BaseModule}
 
 // IO for Modules that just connect bus to out
 class AnalogReaderIO extends Bundle {
@@ -169,6 +169,50 @@ class AnalogSpec extends ChiselFlatSpec {
         wires(0) <> wires(2)
       })
     }
+    a [ChiselException] should be thrownBy {
+      elaborate(new Module {
+        val io = IO(new Bundle {})
+        val wires = List.fill(2)(Wire(Analog(32.W)))
+        wires(0) <> DontCare
+        wires(0) <> wires(1)
+      })
+    }
+  }
+
+  it should "allow DontCare connection" in {
+    elaborate(new Module {
+      val io = IO(new Bundle {
+        val a = Analog(1.W)
+      })
+      io.a := DontCare
+    })
+    elaborate(new Module {
+      val io = IO(new Bundle {
+        val a = Analog(1.W)
+      })
+      io.a <> DontCare
+    })
+  }
+
+  it should "work in bidirectional Aggregate wires" in {
+    class MyBundle extends Bundle {
+      val x = Input(UInt(8.W))
+      val y = Analog(8.W)
+    }
+    elaborate(new Module {
+      val io = IO(new Bundle {
+        val a = new MyBundle
+      })
+      val w = Wire(new MyBundle)
+      w <> io.a
+    })
+    elaborate(new Module {
+      val io = IO(new Bundle {
+        val a = Vec(1, new MyBundle)
+      })
+      val w = Wire(Vec(1, new MyBundle))
+      w <> io.a
+    })
   }
 
   it should "work with 3 blackboxes attached" in {

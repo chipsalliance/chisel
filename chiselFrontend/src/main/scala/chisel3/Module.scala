@@ -14,8 +14,7 @@ import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{InstTransform, SourceInfo}
 import chisel3.experimental.BaseModule
-
-import _root_.firrtl.annotations.{CircuitName, ModuleName}
+import _root_.firrtl.annotations.{ModuleName, ModuleTarget, IsModule}
 
 object Module extends SourceInfoDoc {
   /** A wrapper method that all Module instantiations must be wrapped in
@@ -122,7 +121,7 @@ package experimental {
 }
 
 package internal {
-  import chisel3.experimental.{BaseModule, MultiIOModule}
+  import chisel3.experimental.BaseModule
 
   object BaseModule {
     private[chisel3] class ClonePorts (elts: Data*)(implicit compileOptions: CompileOptions) extends Record {
@@ -180,15 +179,21 @@ package experimental {
     private[chisel3] val _namespace = Namespace.empty
     private val _ids = ArrayBuffer[HasId]()
     private[chisel3] def addId(d: HasId) {
-      require(!_closed, "Can't write to module after module close")
-      _ids += d
+      if (Builder.aspectModule(this).isDefined) {
+        aspectModule(this).get.addId(d)
+      } else {
+        require(!_closed, "Can't write to module after module close")
+        _ids += d
+      }
     }
+
     protected def getIds = {
       require(_closed, "Can't get ids before module close")
       _ids.toSeq
     }
 
     private val _ports = new ArrayBuffer[Data]()
+
     // getPorts unfortunately already used for tester compatibility
     protected[chisel3] def getModulePorts = {
       require(_closed, "Can't get ports before module close")
@@ -198,6 +203,7 @@ package experimental {
     // These methods allow checking some properties of ports before the module is closed,
     // mainly for compatibility purposes.
     protected def portsContains(elem: Data): Boolean = _ports contains elem
+
     protected def portsSize: Int = _ports.size
 
     /** Generates the FIRRTL Component (Module or Blackbox) of this Module.
@@ -212,10 +218,32 @@ package experimental {
     //
     // Chisel Internals
     //
-    /** Desired name of this module. Override this to give this module a custom, perhaps parametric,
-      * name.
+
+    /** The desired name of this module (which will be used in generated FIRRTL IR or Verilog).
+      *
+      * The name of a module approximates the behavior of the Java Reflection [[`getSimpleName` method
+      * https://docs.oracle.com/javase/8/docs/api/java/lang/Class.html#getSimpleName--]] with some modifications:
+      *
+      * - Anonymous modules will get an `"_Anon"` tag
+      * - Modules defined in functions will use their class name and not a numeric name
+      *
+      * @note If you want a custom or parametric name, override this method.
       */
-    def desiredName: String = this.getClass.getName.split('.').last
+    def desiredName: String = {
+      /* The default module name is derived from the Java reflection derived class name. */
+      val baseName = this.getClass.getName
+
+      /* A sequence of string filters applied to the name */
+      val filters: Seq[String => String] = Seq(
+        ((a: String) => raw"\$$+anon".r.replaceAllIn(a, "_Anon")) // Merge the "$$anon" name with previous name
+      )
+
+      filters
+        .foldLeft(baseName){ case (str, filter) => filter(str) } // 1. Apply filters to baseName
+        .split("\\.|\\$")                                        // 2. Split string at '.' or '$'
+        .filterNot(_.forall(_.isDigit))                          // 3. Drop purely numeric names
+        .last                                                    // 4. Use the last name
+    }
 
     /** Legalized name of this module. */
     final lazy val name = try {
@@ -227,19 +255,38 @@ package experimental {
     }
 
     /** Returns a FIRRTL ModuleName that references this object
+      *
       * @note Should not be called until circuit elaboration is complete
       */
-    final def toNamed: ModuleName = ModuleName(this.name, CircuitName(this.circuitName))
+    @deprecated("toNamed API is deprecated -- use toTarget instead", "3.2")
+    final def toNamed: ModuleName = toTarget.toNamed
+
+    /** Returns a FIRRTL ModuleTarget that references this object
+      *
+      * @note Should not be called until circuit elaboration is complete
+      */
+    final def toTarget: ModuleTarget = ModuleTarget(this.circuitName, this.name)
+
+    /** Returns a FIRRTL ModuleTarget that references this object
+      *
+      * @note Should not be called until circuit elaboration is complete
+      */
+    final def toAbsoluteTarget: IsModule = {
+      _parent match {
+        case Some(parent) => parent.toAbsoluteTarget.instOf(this.instanceName, toTarget.module)
+        case None => toTarget
+      }
+    }
 
     /**
-     * Internal API. Returns a list of this module's generated top-level ports as a map of a String
-     * (FIRRTL name) to the IO object. Only valid after the module is closed.
-     *
-     * Note: for BlackBoxes (but not ExtModules), this returns the contents of the top-level io
-     * object, consistent with what is emitted in FIRRTL.
-     *
-     * TODO: Use SeqMap/VectorMap when those data structures become available.
-     */
+      * Internal API. Returns a list of this module's generated top-level ports as a map of a String
+      * (FIRRTL name) to the IO object. Only valid after the module is closed.
+      *
+      * Note: for BlackBoxes (but not ExtModules), this returns the contents of the top-level io
+      * object, consistent with what is emitted in FIRRTL.
+      *
+      * TODO: Use SeqMap/VectorMap when those data structures become available.
+      */
     private[chisel3] def getChiselPorts: Seq[(String, Data)] = {
       require(_closed, "Can't get ports before module close")
       _component.get.ports.map { port =>
@@ -285,14 +332,6 @@ package experimental {
       */
     def _compatAutoWrapPorts() {} // scalastyle:ignore method.name
 
-    //
-    // BaseModule User API functions
-    //
-    @deprecated("Use chisel3.experimental.annotate instead", "3.1")
-    protected def annotate(annotation: ChiselAnnotation): Unit = {
-      Builder.annotations += annotation
-    }
-
     /** Chisel2 code didn't require the IO(...) wrapper and would assign a Chisel type directly to
       * io, then do operations on it. This binds a Chisel type in-place (mutably) as an IO.
       */
@@ -321,31 +360,33 @@ package experimental {
           }
         }
       }
+
       assignCompatDir(iodef, false)
 
       iodef.bind(PortBinding(this))
       _ports += iodef
     }
+
     /** Private accessor for _bindIoInPlace */
     private[chisel3] def bindIoInPlace(iodef: Data): Unit = _bindIoInPlace(iodef)
 
     /**
-     * This must wrap the datatype used to set the io field of any Module.
-     * i.e. All concrete modules must have defined io in this form:
-     * [lazy] val io[: io type] = IO(...[: io type])
-     *
-     * Items in [] are optional.
-     *
-     * The granted iodef must be a chisel type and not be bound to hardware.
-     *
-     * Also registers a Data as a port, also performing bindings. Cannot be called once ports are
-     * requested (so that all calls to ports will return the same information).
-     * Internal API.
-     *
-     * TODO(twigg): Specifically walk the Data definition to call out which nodes
-     * are problematic.
-     */
-    protected def IO[T<:Data](iodef: T): T = chisel3.experimental.IO.apply(iodef) // scalastyle:ignore method.name
+      * This must wrap the datatype used to set the io field of any Module.
+      * i.e. All concrete modules must have defined io in this form:
+      * [lazy] val io[: io type] = IO(...[: io type])
+      *
+      * Items in [] are optional.
+      *
+      * The granted iodef must be a chisel type and not be bound to hardware.
+      *
+      * Also registers a Data as a port, also performing bindings. Cannot be called once ports are
+      * requested (so that all calls to ports will return the same information).
+      * Internal API.
+      *
+      * TODO(twigg): Specifically walk the Data definition to call out which nodes
+      * are problematic.
+      */
+    protected def IO[T <: Data](iodef: T): T = chisel3.experimental.IO.apply(iodef) // scalastyle:ignore method.name
 
     //
     // Internal Functions
