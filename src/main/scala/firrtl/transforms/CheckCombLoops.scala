@@ -4,7 +4,6 @@ package firrtl.transforms
 
 import scala.collection.mutable
 
-
 import firrtl._
 import firrtl.ir._
 import firrtl.passes.{Errors, PassException}
@@ -13,7 +12,7 @@ import firrtl.annotations._
 import firrtl.Utils.throwInternalError
 import firrtl.graph._
 import firrtl.analyses.InstanceGraph
-import firrtl.options.{RegisteredTransform, ShellOption}
+import firrtl.options.{Dependency, PreservesAll, RegisteredTransform, ShellOption}
 
 /*
  * A case class that represents a net in the circuit. This is
@@ -95,9 +94,18 @@ case class CombinationalPath(sink: ReferenceTarget, sources: Seq[ReferenceTarget
   * @note The pass relies on ExtModulePathAnnotations to find loops through ExtModules
   * @note The pass will throw exceptions on "false paths"
   */
-class CheckCombLoops extends Transform with RegisteredTransform {
+class CheckCombLoops extends Transform with RegisteredTransform with PreservesAll[Transform] {
   def inputForm = LowForm
   def outputForm = LowForm
+
+  override val prerequisites = firrtl.stage.Forms.MidForm ++
+    Seq( Dependency(passes.LowerTypes),
+         Dependency(passes.Legalize),
+         Dependency(firrtl.transforms.RemoveReset) )
+
+  override val optionalPrerequisites = Seq.empty
+
+  override val dependents = Seq.empty
 
   import CheckCombLoops._
 

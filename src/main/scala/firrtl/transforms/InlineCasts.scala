@@ -3,6 +3,7 @@ package transforms
 
 import firrtl.ir._
 import firrtl.Mappers._
+import firrtl.options.{Dependency, PreservesAll}
 
 import firrtl.Utils.{isCast, NodeMap}
 
@@ -59,9 +60,19 @@ object InlineCastsTransform {
 }
 
 /** Inline nodes that are simple casts */
-class InlineCastsTransform extends Transform {
-  def inputForm = LowForm
-  def outputForm = LowForm
+class InlineCastsTransform extends Transform with PreservesAll[Transform] {
+  def inputForm = UnknownForm
+  def outputForm = UnknownForm
+
+  override val prerequisites = firrtl.stage.Forms.LowFormMinimumOptimized ++
+    Seq( Dependency[BlackBoxSourceHelper],
+         Dependency[FixAddingNegativeLiterals],
+         Dependency[ReplaceTruncatingArithmetic],
+         Dependency[InlineBitExtractionsTransform] )
+
+  override val optionalPrerequisites = firrtl.stage.Forms.LowFormOptimized
+
+  override val dependents = Seq.empty
 
   def execute(state: CircuitState): CircuitState = {
     val modulesx = state.circuit.modules.map(InlineCastsTransform.onMod(_))

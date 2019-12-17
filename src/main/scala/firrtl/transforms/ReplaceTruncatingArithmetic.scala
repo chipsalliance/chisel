@@ -7,6 +7,7 @@ import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.PrimOps._
 import firrtl.WrappedExpression._
+import firrtl.options.{Dependency, PreservesAll}
 
 import scala.collection.mutable
 
@@ -76,9 +77,17 @@ object ReplaceTruncatingArithmetic {
   * @note This replaces some FIRRTL primops with ops that are not actually legal FIRRTL. They are
   * useful for emission to languages that support non-expanding arithmetic (like Verilog)
   */
-class ReplaceTruncatingArithmetic extends Transform {
-  def inputForm = LowForm
-  def outputForm = LowForm
+class ReplaceTruncatingArithmetic extends Transform with PreservesAll[Transform] {
+  def inputForm = UnknownForm
+  def outputForm = UnknownForm
+
+  override val prerequisites = firrtl.stage.Forms.LowFormMinimumOptimized ++
+    Seq( Dependency[BlackBoxSourceHelper],
+         Dependency[FixAddingNegativeLiterals] )
+
+  override val optionalPrerequisites = firrtl.stage.Forms.LowFormOptimized
+
+  override val dependents = Seq.empty
 
   def execute(state: CircuitState): CircuitState = {
     val modulesx = state.circuit.modules.map(ReplaceTruncatingArithmetic.onMod(_))

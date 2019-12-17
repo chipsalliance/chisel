@@ -3,6 +3,7 @@
 package firrtl.checks
 
 import firrtl._
+import firrtl.options.{Dependency, PreservesAll}
 import firrtl.passes.{Errors, PassException}
 import firrtl.ir._
 import firrtl.traversals.Foreachers._
@@ -25,9 +26,18 @@ object CheckResets {
 // Must run after ExpandWhens
 // Requires
 //   - static single connections of ground types
-class CheckResets extends Transform {
+class CheckResets extends Transform with PreservesAll[Transform] {
   def inputForm: CircuitForm = MidForm
   def outputForm: CircuitForm = MidForm
+
+  override val prerequisites =
+    Seq( Dependency(passes.LowerTypes),
+         Dependency(passes.Legalize),
+         Dependency(firrtl.transforms.RemoveReset) ) ++ firrtl.stage.Forms.MidForm
+
+  override val optionalPrerequisites = Seq(Dependency[firrtl.transforms.CheckCombLoops])
+
+  override val dependents = Seq.empty
 
   import CheckResets._
 
@@ -72,4 +82,3 @@ class CheckResets extends Transform {
     state
   }
 }
-

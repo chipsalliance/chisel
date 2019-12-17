@@ -6,6 +6,7 @@ package transforms
 import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.Utils._
+import firrtl.options.Dependency
 
 import scala.collection.mutable
 
@@ -105,8 +106,25 @@ object FlattenRegUpdate {
   */
 // TODO Preserve source locators
 class FlattenRegUpdate extends Transform {
-  def inputForm = MidForm
-  def outputForm = MidForm
+  def inputForm = UnknownForm
+  def outputForm = UnknownForm
+
+  override val prerequisites = firrtl.stage.Forms.LowFormMinimumOptimized ++
+    Seq( Dependency[BlackBoxSourceHelper],
+         Dependency[FixAddingNegativeLiterals],
+         Dependency[ReplaceTruncatingArithmetic],
+         Dependency[InlineBitExtractionsTransform],
+         Dependency[InlineCastsTransform],
+         Dependency[LegalizeClocksTransform] )
+
+  override val optionalPrerequisites = firrtl.stage.Forms.LowFormOptimized
+
+  override val dependents = Seq.empty
+
+  override def invalidates(a: Transform): Boolean = a match {
+    case _: DeadCodeElimination => true
+    case _ => false
+  }
 
   def execute(state: CircuitState): CircuitState = {
     val modulesx = state.circuit.modules.map {

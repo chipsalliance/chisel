@@ -11,6 +11,8 @@ import firrtl.Mappers._
 import firrtl.Implicits.width2constraint
 import firrtl.annotations.{CircuitTarget, ModuleTarget, ReferenceTarget, Target}
 import firrtl.constraint.{ConstraintSolver, IsMax}
+import firrtl.options.{Dependency, PreservesAll}
+import firrtl.traversals.Foreachers._
 
 object InferWidths {
   def apply(): InferWidths = new InferWidths()
@@ -60,7 +62,16 @@ case class WidthGeqConstraintAnnotation(loc: ReferenceTarget, exp: ReferenceTarg
   *
   * Uses firrtl.constraint package to infer widths
   */
-class InferWidths extends Transform with ResolvedAnnotationPaths {
+class InferWidths extends Transform with ResolvedAnnotationPaths with PreservesAll[Transform] {
+
+  override val prerequisites =
+    Seq( Dependency(passes.ResolveKinds),
+         Dependency(passes.InferTypes),
+         Dependency(passes.Uniquify),
+         Dependency(passes.ResolveFlows),
+         Dependency[passes.InferBinaryPoints],
+         Dependency[passes.TrimIntervals] ) ++ firrtl.stage.Forms.WorkingIR
+
   def inputForm: CircuitForm = UnknownForm
   def outputForm: CircuitForm = UnknownForm
 
@@ -108,12 +119,12 @@ class InferWidths extends Transform with ResolvedAnnotationPaths {
       val n = get_size(c.loc.tpe)
       val locs = create_exps(c.loc)
       val exps = create_exps(c.expr)
-      (locs zip exps).foreach { case (loc, exp) =>
-        to_flip(flow(loc)) match {
-          case Default => addTypeConstraints(Target.asTarget(mt)(loc), Target.asTarget(mt)(exp))(loc.tpe, exp.tpe)
-          case Flip => addTypeConstraints(Target.asTarget(mt)(exp), Target.asTarget(mt)(loc))(exp.tpe, loc.tpe)
-        }
-      }
+                            (locs zip exps).foreach { case (loc, exp) =>
+                              to_flip(flow(loc)) match {
+                                case Default => addTypeConstraints(Target.asTarget(mt)(loc), Target.asTarget(mt)(exp))(loc.tpe, exp.tpe)
+                                case Flip => addTypeConstraints(Target.asTarget(mt)(exp), Target.asTarget(mt)(loc))(exp.tpe, loc.tpe)
+                              }
+                            }
       c
     case pc: PartialConnect =>
       val ls = get_valid_points(pc.loc.tpe, pc.expr.tpe, Default, Default)
@@ -142,8 +153,8 @@ class InferWidths extends Transform with ResolvedAnnotationPaths {
       }
       a
     case c: Conditionally =>
-       addTypeConstraints(Target.asTarget(mt)(c.pred), mt.ref("1.W"))(c.pred.tpe, UIntType(IntWidth(1)))
-       c map addStmtConstraints(mt)
+      addTypeConstraints(Target.asTarget(mt)(c.pred), mt.ref("1.W"))(c.pred.tpe, UIntType(IntWidth(1)))
+      c map addStmtConstraints(mt)
     case x => x map addStmtConstraints(mt)
   }
   private def fixWidth(w: Width): Width = constraintSolver.get(w) match {
@@ -152,7 +163,7 @@ class InferWidths extends Transform with ResolvedAnnotationPaths {
     case _ => sys.error("Shouldn't be here")
   }
   private def fixType(t: Type): Type = t map fixType map fixWidth match {
-    case IntervalType(l, u, p) => 
+    case IntervalType(l, u, p) =>
       val (lx, ux) = (constraintSolver.get(l), constraintSolver.get(u)) match {
         case (Some(x: Bound), Some(y: Bound)) => (x, y)
         case (None, None) => (l, u)
@@ -174,8 +185,8 @@ class InferWidths extends Transform with ResolvedAnnotationPaths {
     c.modules foreach ( m => m map addStmtConstraints(ct.module(m.name)))
     constraintSolver.solve()
     val ret = InferTypes.run(c.copy(modules = c.modules map (_
-      map fixPort
-      map fixStmt)))
+                                                               map fixPort
+                                                               map fixStmt)))
     constraintSolver.clear()
     ret
   }
@@ -212,11 +223,11 @@ class InferWidths extends Transform with ResolvedAnnotationPaths {
       case anno: WidthGeqConstraintAnnotation if anno.loc.isLocal && anno.exp.isLocal  =>
         val locType :: expType :: Nil = Seq(anno.loc, anno.exp) map { target =>
           val baseType = typeMap.getOrElse(target.copy(component = Seq.empty),
-            throw new Exception(s"Target below from WidthGeqConstraintAnnotation was not found\n" + target.prettyPrint()))
+                                           throw new Exception(s"Target below from WidthGeqConstraintAnnotation was not found\n" + target.prettyPrint()))
           val leafType = target.componentType(baseType)
           if (leafType.isInstanceOf[AggregateType]) {
             throw new Exception(s"Target below is an AggregateType, which " +
-              "is not supported by WidthGeqConstraintAnnotation\n" + target.prettyPrint())
+                                  "is not supported by WidthGeqConstraintAnnotation\n" + target.prettyPrint())
           }
 
           leafType

@@ -6,8 +6,24 @@ import firrtl.PrimOps._
 import firrtl.ir._
 import firrtl._
 import firrtl.Mappers._
+import firrtl.options.Dependency
 
 object ZeroWidth extends Transform {
+
+  override val prerequisites =
+    Seq( Dependency(PullMuxes),
+         Dependency(ReplaceAccesses),
+         Dependency(ExpandConnects),
+         Dependency(RemoveAccesses),
+         Dependency(Uniquify),
+         Dependency[ExpandWhensAndCheck],
+         Dependency(ConvertFixedToSInt) ) ++ firrtl.stage.Forms.Deduped
+
+  override def invalidates(a: Transform): Boolean = a match {
+    case InferTypes => true
+    case _          => false
+  }
+
   def inputForm: CircuitForm = UnknownForm
   def outputForm: CircuitForm = UnknownForm
 

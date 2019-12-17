@@ -5,9 +5,14 @@ package firrtl.passes
 import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
+import firrtl.options.{Dependency, PreservesAll}
 import Utils.throwInternalError
 
-object ResolveKinds extends Pass {
+
+object ResolveKinds extends Pass with PreservesAll[Transform] {
+
+  override val prerequisites = firrtl.stage.Forms.WorkingIR
+
   type KindMap = collection.mutable.LinkedHashMap[String, Kind]
 
   def find_port(kinds: KindMap)(p: Port): Port = {
@@ -45,7 +50,13 @@ object ResolveKinds extends Pass {
     c copy (modules = c.modules map resolve_kinds)
 }
 
-object ResolveFlows extends Pass {
+object ResolveFlows extends Pass with PreservesAll[Transform] {
+
+  override val prerequisites =
+    Seq( Dependency(passes.ResolveKinds),
+         Dependency(passes.InferTypes),
+         Dependency(passes.Uniquify) ) ++ firrtl.stage.Forms.WorkingIR
+
   def resolve_e(g: Flow)(e: Expression): Expression = e match {
     case ex: WRef => ex copy (flow = g)
     case WSubField(exp, name, tpe, _) => WSubField(
@@ -88,7 +99,10 @@ object ResolveGenders extends Pass {
 
 }
 
-object CInferMDir extends Pass {
+object CInferMDir extends Pass with PreservesAll[Transform] {
+
+  override val prerequisites = firrtl.stage.Forms.ChirrtlForm :+ Dependency(CInferTypes)
+
   type MPortDirMap = collection.mutable.LinkedHashMap[String, MPortDir]
 
   def infer_mdir_e(mports: MPortDirMap, dir: MPortDir)(e: Expression): Expression = e match {

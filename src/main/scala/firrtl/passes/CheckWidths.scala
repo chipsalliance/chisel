@@ -9,8 +9,14 @@ import firrtl.traversals.Foreachers._
 import firrtl.Utils._
 import firrtl.constraint.IsKnown
 import firrtl.annotations.{CircuitTarget, ModuleTarget, Target, TargetToken}
+import firrtl.options.{Dependency, PreservesAll}
 
-object CheckWidths extends Pass {
+object CheckWidths extends Pass with PreservesAll[Transform] {
+
+  override val prerequisites = Dependency[passes.InferWidths] +: firrtl.stage.Forms.WorkingIR
+
+  override val dependents = Seq(Dependency[transforms.InferResets])
+
   /** The maximum allowed width for any circuit element */
   val MaxWidth = 1000000
   val DshlMaxWidth = getUIntWidth(MaxWidth)

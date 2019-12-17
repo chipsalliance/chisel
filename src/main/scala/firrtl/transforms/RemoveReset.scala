@@ -7,6 +7,7 @@ import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.traversals.Foreachers._
 import firrtl.WrappedExpression.we
+import firrtl.options.Dependency
 
 import scala.collection.{immutable, mutable}
 
@@ -14,9 +15,22 @@ import scala.collection.{immutable, mutable}
   *
   * @note This pass must run after LowerTypes
   */
-class RemoveReset extends Transform {
-  def inputForm = MidForm
-  def outputForm = MidForm
+object RemoveReset extends Transform {
+  def inputForm = LowForm
+  def outputForm = LowForm
+
+  override val prerequisites = firrtl.stage.Forms.MidForm ++
+    Seq( Dependency(passes.LowerTypes),
+         Dependency(passes.Legalize) )
+
+  override val optionalPrerequisites = Seq.empty
+
+  override val dependents = Seq.empty
+
+  override def invalidates(a: Transform): Boolean = a match {
+    case firrtl.passes.ResolveFlows => true
+    case _                          => false
+  }
 
   private case class Reset(cond: Expression, value: Expression)
 

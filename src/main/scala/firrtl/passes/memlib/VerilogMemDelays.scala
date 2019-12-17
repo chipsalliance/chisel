@@ -8,6 +8,8 @@ import firrtl.ir._
 import firrtl.Utils._
 import firrtl.Mappers._
 import firrtl.traversals.Foreachers._
+import firrtl.transforms
+import firrtl.options.Dependency
 
 import MemPortUtils._
 import WrappedExpression._
@@ -69,7 +71,7 @@ object MemDelayAndReadwriteTransformer {
   * read and write ports while simultaneously compiling memory latencies to combinational-read
   * memories with delay pipelines. It is represented as a class that takes a module as a constructor
   * argument, as it encapsulates the mutable state required to analyze and transform one module.
-  * 
+  *
   * @note The final transformed module is found in the (sole public) field [[transformed]]
   */
 class MemDelayAndReadwriteTransformer(m: DefModule) {
@@ -165,6 +167,18 @@ class MemDelayAndReadwriteTransformer(m: DefModule) {
 }
 
 object VerilogMemDelays extends Pass {
+
+  override val prerequisites = firrtl.stage.Forms.LowForm :+ Dependency(firrtl.passes.RemoveValidIf)
+
+  override val dependents =
+    Seq( Dependency[VerilogEmitter],
+         Dependency[SystemVerilogEmitter] )
+
+  override def invalidates(a: Transform): Boolean = a match {
+    case _: transforms.ConstantPropagation => true
+    case _ => false
+  }
+
   def transform(m: DefModule): DefModule = (new MemDelayAndReadwriteTransformer(m)).transformed
   def run(c: Circuit): Circuit = c.copy(modules = c.modules.map(transform))
 }

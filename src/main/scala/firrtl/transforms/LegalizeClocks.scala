@@ -3,6 +3,7 @@ package transforms
 
 import firrtl.ir._
 import firrtl.Mappers._
+import firrtl.options.{Dependency, PreservesAll}
 import firrtl.Utils.isCast
 
 // Fixup otherwise legal Verilog that lint tools and other tools don't like
@@ -58,9 +59,20 @@ object LegalizeClocksTransform {
 }
 
 /** Ensure Clocks to be emitted are legal Verilog */
-class LegalizeClocksTransform extends Transform {
-  def inputForm = LowForm
-  def outputForm = LowForm
+class LegalizeClocksTransform extends Transform with PreservesAll[Transform] {
+  def inputForm = UnknownForm
+  def outputForm = UnknownForm
+
+  override val prerequisites = firrtl.stage.Forms.LowFormMinimumOptimized ++
+    Seq( Dependency[BlackBoxSourceHelper],
+         Dependency[FixAddingNegativeLiterals],
+         Dependency[ReplaceTruncatingArithmetic],
+         Dependency[InlineBitExtractionsTransform],
+         Dependency[InlineCastsTransform] )
+
+  override val optionalPrerequisites = firrtl.stage.Forms.LowFormOptimized
+
+  override val dependents = Seq.empty
 
   def execute(state: CircuitState): CircuitState = {
     val modulesx = state.circuit.modules.map(LegalizeClocksTransform.onMod(_))

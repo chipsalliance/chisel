@@ -8,10 +8,20 @@ import firrtl.ir._
 import firrtl._
 import firrtl.Mappers._
 import firrtl.Utils.{sub_type, module_type, field_type, max, throwInternalError}
+import firrtl.options.{Dependency, PreservesAll}
 
 /** Replaces FixedType with SIntType, and correctly aligns all binary points
   */
-object ConvertFixedToSInt extends Pass {
+object ConvertFixedToSInt extends Pass with PreservesAll[Transform] {
+
+  override val prerequisites =
+    Seq( Dependency(PullMuxes),
+         Dependency(ReplaceAccesses),
+         Dependency(ExpandConnects),
+         Dependency(RemoveAccesses),
+         Dependency[ExpandWhensAndCheck],
+         Dependency[RemoveIntervals] ) ++ firrtl.stage.Forms.Deduped
+
   def alignArg(e: Expression, point: BigInt): Expression = e.tpe match {
     case FixedType(IntWidth(w), IntWidth(p)) => // assert(point >= p)
       if((point - p) > 0) {
@@ -83,29 +93,29 @@ object ConvertFixedToSInt extends Pass {
           types(name) = newType
           newStmt
         case WDefInstance(info, name, module, tpe) =>
-          val newType = moduleTypes(module) 
+          val newType = moduleTypes(module)
           types(name) = newType
           WDefInstance(info, name, module, newType)
-        case Connect(info, loc, exp) => 
+        case Connect(info, loc, exp) =>
           val point = calcPoint(Seq(loc))
           val newExp = alignArg(exp, point)
           Connect(info, loc, newExp) map updateExpType
-        case PartialConnect(info, loc, exp) => 
+        case PartialConnect(info, loc, exp) =>
           val point = calcPoint(Seq(loc))
           val newExp = alignArg(exp, point)
           PartialConnect(info, loc, newExp) map updateExpType
         // check Connect case, need to shl
         case s => (s map updateStmtType) map updateExpType
       }
- 
+
       m.ports.foreach(p => types(p.name) = p.tpe)
       m match {
         case Module(info, name, ports, body) => Module(info,name,ports,updateStmtType(body))
         case m:ExtModule => m
       }
     }
- 
-    val newModules = for(m <- c.modules) yield { 
+
+    val newModules = for(m <- c.modules) yield {
       val newPorts = m.ports.map(p => Port(p.info,p.name,p.direction,toSIntType(p.tpe)))
       m match {
          case Module(info, name, ports, body) => Module(info,name,newPorts,body)
@@ -113,8 +123,13 @@ object ConvertFixedToSInt extends Pass {
       }
     }
     newModules.foreach(m => moduleTypes(m.name) = module_type(m))
-    firrtl.passes.InferTypes.run(Circuit(c.info, newModules.map(onModule(_)), c.main ))
+
+    /* @todo This should be moved outside */
+    (firrtl.passes.InferTypes).run(Circuit(c.info, newModules.map(onModule(_)), c.main ))
   }
 }
+
+
+
 
 // vim: set ts=4 sw=4 et:

@@ -2,10 +2,12 @@
 
 package firrtl.transforms
 
-import firrtl.{CircuitState, LowForm, Namespace, PrimOps, Transform, Utils, WRef}
+import firrtl.{CircuitState, Namespace, PrimOps, Transform, UnknownForm, Utils, WRef}
 import firrtl.ir._
 import firrtl.Mappers._
+import firrtl.options.{Dependency, PreservesAll}
 import firrtl.PrimOps.{Add, AsSInt, Sub, Tail}
+import firrtl.stage.Forms
 
 import scala.collection.mutable
 
@@ -105,9 +107,15 @@ object FixAddingNegativeLiterals {
   * the literal and thus not all expressions in the add are the same. This is fixed here when we directly
   * subtract the literal instead.
   */
-class FixAddingNegativeLiterals extends Transform {
-  def inputForm = LowForm
-  def outputForm = LowForm
+class FixAddingNegativeLiterals extends Transform with PreservesAll[Transform] {
+  def inputForm = UnknownForm
+  def outputForm = UnknownForm
+
+  override val prerequisites = Forms.LowFormMinimumOptimized :+ Dependency[BlackBoxSourceHelper]
+
+  override val optionalPrerequisites = firrtl.stage.Forms.LowFormOptimized
+
+  override val dependents = Seq.empty
 
   def execute(state: CircuitState): CircuitState = {
     val modulesx = state.circuit.modules.map(FixAddingNegativeLiterals.fixupModule)

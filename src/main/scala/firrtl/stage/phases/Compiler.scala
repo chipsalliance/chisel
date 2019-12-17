@@ -3,9 +3,9 @@
 package firrtl.stage.phases
 
 import firrtl.{AnnotationSeq, ChirrtlForm, CircuitState, Compiler => FirrtlCompiler, Transform, seqToAnnoSeq}
-import firrtl.options.{Phase, PhasePrerequisiteException, Translator}
-import firrtl.stage.{CompilerAnnotation, FirrtlCircuitAnnotation,
-  RunFirrtlTransformAnnotation}
+import firrtl.options.{Dependency, Phase, PhasePrerequisiteException, PreservesAll, Translator}
+import firrtl.stage.{CompilerAnnotation, FirrtlCircuitAnnotation, Forms, RunFirrtlTransformAnnotation}
+import firrtl.stage.TransformManager.TransformDependency
 
 import scala.collection.mutable
 
@@ -23,13 +23,13 @@ private [stage] case class Defaults(
   compiler: Option[FirrtlCompiler] = None)
 
 /** Runs the FIRRTL compilers on an [[AnnotationSeq]]. If the input [[AnnotationSeq]] contains more than one circuit
-  * (i.e., more than one [[FirrtlCircuitAnnotation]]), then annotations will be broken up and each run will be executed
-  * in parallel.
+  * (i.e., more than one [[firrtl.stage.FirrtlCircuitAnnotation FirrtlCircuitAnnotation]]), then annotations will be
+  * broken up and each run will be executed in parallel.
   *
   * The [[AnnotationSeq]] will be chunked up into compiler runs using the following algorithm. All annotations that
-  * occur before the first [[FirrtlCircuitAnnotation]] are treated as global annotations that apply to all circuits.
-  * Annotations after a circuit are only associated with their closest preceeding circuit. E.g., for the following
-  * annotations (where A, B, and C are some annotations):
+  * occur before the first [[firrtl.stage.FirrtlCircuitAnnotation FirrtlCircuitAnnotation]] are treated as global
+  * annotations that apply to all circuits. Annotations after a circuit are only associated with their closest
+  * preceeding circuit. E.g., for the following annotations (where A, B, and C are some annotations):
   *
   *    A(a), FirrtlCircuitAnnotation(x), B, FirrtlCircuitAnnotation(y), A(b), C, FirrtlCircuitAnnotation(z)
   *
@@ -42,7 +42,16 @@ private [stage] case class Defaults(
   * FirrtlCircuitAnnotation(y). Note: A(b) ''may'' overwrite A(a) if this is a CompilerAnnotation.
   * FirrtlCircuitAnnotation(z) has no annotations, so it only gets the default A(a).
   */
-class Compiler extends Phase with Translator[AnnotationSeq, Seq[CompilerRun]] {
+class Compiler extends Phase with Translator[AnnotationSeq, Seq[CompilerRun]] with PreservesAll[Phase] {
+
+  override val prerequisites =
+    Seq(Dependency[AddDefaults],
+        Dependency[AddImplicitEmitter],
+        Dependency[Checks],
+        Dependency[AddCircuit],
+        Dependency[AddImplicitOutputFile])
+
+  override val dependents = Seq(Dependency[WriteEmitted])
 
   /** Convert an [[AnnotationSeq]] into a sequence of compiler runs. */
   protected def aToB(a: AnnotationSeq): Seq[CompilerRun] = {
@@ -85,15 +94,32 @@ class Compiler extends Phase with Translator[AnnotationSeq, Seq[CompilerRun]] {
     */
   protected def internalTransform(b: Seq[CompilerRun]): Seq[CompilerRun] = {
     def f(c: CompilerRun): CompilerRun = {
-      val statex = c
-        .compiler
-        .getOrElse { throw new PhasePrerequisiteException("No compiler specified!") }
-        .compile(c.stateIn, c.transforms.reverse)
-      c.copy(stateOut = Some(statex))
+      val targets = c.compiler match {
+        case Some(d) => c.transforms.reverse.map(Dependency.fromTransform(_)) ++ compilerToTransforms(d)
+        case None    => throw new PhasePrerequisiteException("No compiler specified!") }
+      val tm = new firrtl.stage.transforms.Compiler(targets)
+      /* Transform order is lazily evaluated. Force it here to remove its resolution time from actual compilation. */
+      val (timeResolveDependencies, _) = firrtl.Utils.time { tm.flattenedTransformOrder }
+      logger.error(f"Computed transform order in: $timeResolveDependencies%.1f ms")
+      /* Show the determined transform order */
+      logger.info("Determined Transform order that will be executed:\n" + tm.prettyPrint("  "))
+      /* Run all determined transforms tracking how long everything takes to run */
+      val (timeExecute, annotationsOut) = firrtl.Utils.time { tm.transform(c.stateIn) }
+      logger.error(f"Total FIRRTL Compile Time: $timeExecute%.1f ms")
+      c.copy(stateOut = Some(annotationsOut))
     }
 
     if (b.size <= 1) { b.map(f)         }
     else             { b.par.map(f).seq }
+  }
+
+  private def compilerToTransforms(a: FirrtlCompiler): Seq[TransformDependency] = a match {
+    case _: firrtl.NoneCompiler                                      => Forms.ChirrtlForm
+    case _: firrtl.HighFirrtlCompiler                                => Forms.HighForm
+    case _: firrtl.MiddleFirrtlCompiler                              => Forms.MidForm
+    case _: firrtl.LowFirrtlCompiler                                 => Forms.LowForm
+    case _: firrtl.VerilogCompiler | _: firrtl.SystemVerilogCompiler => Forms.LowFormOptimized
+    case _: firrtl.MinimumVerilogCompiler                            => Forms.LowFormMinimumOptimized
   }
 
 }

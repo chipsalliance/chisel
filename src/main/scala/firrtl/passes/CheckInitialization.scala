@@ -6,6 +6,7 @@ import firrtl._
 import firrtl.ir._
 import firrtl.Utils._
 import firrtl.traversals.Foreachers._
+import firrtl.options.PreservesAll
 
 import annotation.tailrec
 
@@ -14,7 +15,10 @@ import annotation.tailrec
   * @note This pass looks for [[firrtl.WVoid]]s left behind by [[ExpandWhens]]
   * @note Assumes single connection (ie. no last connect semantics)
   */
-object CheckInitialization extends Pass {
+object CheckInitialization extends Pass with PreservesAll[Transform] {
+
+  override val prerequisites = firrtl.stage.Forms.Resolved
+
   private case class VoidExpr(stmt: Statement, voidDeps: Seq[Expression])
 
   class RefNotInitializedException(info: Info, mname: String, name: String, trace: Seq[Statement]) extends PassException(

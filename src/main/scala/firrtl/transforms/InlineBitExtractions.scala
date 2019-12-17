@@ -3,6 +3,7 @@ package transforms
 
 import firrtl.ir._
 import firrtl.Mappers._
+import firrtl.options.{Dependency, PreservesAll}
 import firrtl.PrimOps.{Bits, Head, Tail, Shr}
 import firrtl.Utils.{isBitExtract, isTemp}
 import firrtl.WrappedExpression._
@@ -91,9 +92,18 @@ object InlineBitExtractionsTransform {
 }
 
 /** Inline nodes that are simple bits */
-class InlineBitExtractionsTransform extends Transform {
+class InlineBitExtractionsTransform extends Transform with PreservesAll[Transform] {
   def inputForm = UnknownForm
   def outputForm = UnknownForm
+
+  override val prerequisites = firrtl.stage.Forms.LowFormMinimumOptimized ++
+    Seq( Dependency[BlackBoxSourceHelper],
+         Dependency[FixAddingNegativeLiterals],
+         Dependency[ReplaceTruncatingArithmetic] )
+
+  override val optionalPrerequisites = firrtl.stage.Forms.LowFormOptimized
+
+  override val dependents = Seq.empty
 
   def execute(state: CircuitState): CircuitState = {
     val modulesx = state.circuit.modules.map(InlineBitExtractionsTransform.onMod(_))
