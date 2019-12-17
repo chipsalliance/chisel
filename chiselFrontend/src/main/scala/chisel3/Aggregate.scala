@@ -43,7 +43,7 @@ sealed abstract class Aggregate extends Data {
     }
   }
 
-  override def litOption: Option[BigInt] = ???  // TODO implement me
+  override def litOption: Option[BigInt] = None  // TODO implement me
 
   /** Returns a Seq of the immediate contents of this Aggregate, in order.
     */
