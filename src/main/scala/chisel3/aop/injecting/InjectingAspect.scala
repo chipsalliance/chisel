@@ -54,6 +54,7 @@ case class InjectingAspect[T <: RawModule,
         case other =>
           Seq(other)
       }
+      println(_root_.firrtl.ir.Block(stmts).serialize)
 
       InjectStatement(ModuleTarget(circuit, module.name), ir.Block(stmts), modules, annotations)
     }.toSeq

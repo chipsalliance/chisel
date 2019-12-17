@@ -257,7 +257,7 @@ private[chisel3] object Builder {
   def namingStack: NamingStack = dynamicContext.namingStack
 
   def currentModule: Option[BaseModule] = dynamicContextVar.value match {
-    case Some(dyanmicContext) => dynamicContext.currentModule
+    case Some(dynamicContext) => dynamicContext.currentModule
     case _ => None
   }
   def currentModule_=(target: Option[BaseModule]): Unit = {
@@ -266,6 +266,20 @@ private[chisel3] object Builder {
   def aspectModule(module: BaseModule): Option[BaseModule] = dynamicContextVar.value match {
     case Some(dynamicContext) => dynamicContext.aspectModule.get(module)
     case _ => None
+  }
+
+  /** Returns aspected module if it exists, otherwise return module
+    *
+    * @param module
+    */
+  def getAspectedModule(module: BaseModule): BaseModule = {
+    dynamicContext.aspectModule.find({case (_, aspectMod) => aspectMod == module}) match {
+      case Some((aspectedMod, _)) => aspectedMod
+      case None => module
+    }
+  }
+  def isAspect(module: BaseModule): Boolean = {
+    dynamicContext.aspectModule.values.exists(_ == module)
   }
   def addAspect(module: BaseModule, aspect: BaseModule): Unit = {
     dynamicContext.aspectModule += ((module, aspect))

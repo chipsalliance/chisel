@@ -19,6 +19,12 @@ class AspectTester(results: Seq[Int]) extends BasicTester {
       assert(counter === values(counter))
     }
   }
+  val m = Module(new dummyModule)
+}
+
+class dummyModule() extends MultiIOModule {
+  val io = IO(Output(UInt(3.W)))
+  io := 3.U
 }
 
 class InjectionSpec extends ChiselFlatSpec {
@@ -40,6 +46,23 @@ class InjectionSpec extends ChiselFlatSpec {
     }
   )
 
+  // test to call IO()
+  val ioAspect = InjectingAspect(
+    {dut: AspectTester => Seq(dut.m)},
+    {dut: dummyModule =>
+    //for(i <- 0 until dut.values.length) {
+    //  dut.values(i) := (i + 1).U
+    //}
+      val x = Wire(UInt(1.W))
+      x := 1.U
+      val dummy_out = chisel3.experimental.IO(Output(UInt(1.W))).suggestName("hello")
+      dummy_out := dut.io
+    }
+  )
+
+  "Test" should "compile and pass with correct aspect with injected IO" in {
+    assertTesterPasses({ new AspectTester(Seq(9, 9, 9))} , Nil, Seq(ioAspect))
+  }
   "Test" should "pass if inserted the correct values" in {
     assertTesterPasses{ new AspectTester(Seq(0, 1, 2)) }
   }

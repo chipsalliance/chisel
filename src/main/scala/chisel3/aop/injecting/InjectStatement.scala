@@ -19,3 +19,8 @@ case class InjectStatement(module: ModuleTarget, s: firrtl.ir.Statement, modules
   val target: ModuleTarget = module
   override def duplicate(n: ModuleTarget): Annotation = this.copy(module = n)
 }
+/*  TODO
+ *   - add port arg to InjectStatement
+ *   - get ports from moduleAspect, convert to FIRRTL, and pass to InjectStatement
+ *   - modify InjectingTransform to stick in ports
+ */
