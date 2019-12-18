@@ -297,6 +297,62 @@ object UnrelatedFixture {
 
 }
 
+object CustomAfterOptimizationFixture {
+
+  class Root extends IdentityPhase with PreservesAll[Phase]
+
+  class OptMinimum extends IdentityPhase with PreservesAll[Phase] {
+    override val prerequisites = Seq(Dependency[Root])
+    override val dependents = Seq(Dependency[AfterOpt])
+  }
+
+  class OptFull extends IdentityPhase with PreservesAll[Phase] {
+    override val prerequisites = Seq(Dependency[Root], Dependency[OptMinimum])
+    override val dependents = Seq(Dependency[AfterOpt])
+  }
+
+  class AfterOpt extends IdentityPhase with PreservesAll[Phase]
+
+  class DoneMinimum extends IdentityPhase with PreservesAll[Phase] {
+    override val prerequisites = Seq(Dependency[OptMinimum])
+  }
+
+  class DoneFull extends IdentityPhase with PreservesAll[Phase] {
+    override val prerequisites = Seq(Dependency[OptFull])
+  }
+
+  class Custom extends IdentityPhase with PreservesAll[Phase] {
+    override val prerequisites = Seq(Dependency[Root], Dependency[AfterOpt])
+    override val dependents = Seq(Dependency[DoneMinimum], Dependency[DoneFull])
+  }
+
+}
+
+object OrderingFixture {
+
+  class A extends IdentityPhase with PreservesAll[Phase]
+
+  class B extends IdentityPhase {
+    override def invalidates(phase: Phase): Boolean = phase match {
+      case _: A => true
+      case _    => false
+    }
+  }
+
+  class C extends IdentityPhase {
+    override val prerequisites = Seq(Dependency[A], Dependency[B])
+    override def invalidates(phase: Phase): Boolean = phase match {
+      case _: B => true
+      case _    => false
+    }
+  }
+
+  class Cx extends C {
+    override val prerequisites = Seq(Dependency[B], Dependency[A])
+  }
+
+}
+
 class PhaseManagerSpec extends FlatSpec with Matchers {
 
   def writeGraphviz(pm: PhaseManager, dir: String): Unit = {
@@ -541,6 +597,43 @@ class PhaseManagerSpec extends FlatSpec with Matchers {
     writeGraphviz(pm, "test_run_dir/PhaseManagerSpec/DeterministicOrder")
 
     pm.flattenedTransformOrder.map(_.getClass) should be (expectedClasses)
+  }
+
+  it should "allow conditional placement of custom transforms" in {
+    val f = CustomAfterOptimizationFixture
+
+    val targetsMinimum = Seq(Dependency[f.Custom], Dependency[f.DoneMinimum])
+    val pmMinimum = new PhaseManager(targetsMinimum)
+
+    val targetsFull = Seq(Dependency[f.Custom], Dependency[f.DoneFull])
+    val pmFull = new PhaseManager(targetsFull)
+
+    val expectedMinimum = Seq(classOf[f.Root], classOf[f.OptMinimum], classOf[f.AfterOpt], classOf[f.Custom], classOf[f.DoneMinimum])
+    writeGraphviz(pmMinimum, "test_run_dir/PhaseManagerSpec/CustomAfterOptimization/minimum")
+    pmMinimum.flattenedTransformOrder.map(_.getClass) should be (expectedMinimum)
+
+    val expectedFull = Seq(classOf[f.Root], classOf[f.OptMinimum], classOf[f.OptFull], classOf[f.AfterOpt], classOf[f.Custom], classOf[f.DoneFull])
+    writeGraphviz(pmFull, "test_run_dir/PhaseManagerSpec/CustomAfterOptimization/full")
+    pmFull.flattenedTransformOrder.map(_.getClass) should be (expectedFull)
+  }
+
+  /** This tests a situation the ordering of edges matters. Namely, this test is dependent on the ordering in which
+    * DiGraph.linearize walks the edges of each node.
+    */
+  it should "choose the optimal solution irregardless of prerequisite ordering" in {
+    val f = OrderingFixture
+
+    {
+      val targets = Seq(Dependency[f.A], Dependency[f.B], Dependency[f.C])
+      val order = Seq(classOf[f.B], classOf[f.A], classOf[f.C], classOf[f.B], classOf[f.A])
+      (new PhaseManager(targets)).flattenedTransformOrder.map(_.getClass) should be (order)
+    }
+
+    {
+      val targets = Seq(Dependency[f.A], Dependency[f.B], Dependency[f.Cx])
+      val order = Seq(classOf[f.B], classOf[f.A], classOf[f.Cx], classOf[f.B], classOf[f.A])
+      (new PhaseManager(targets)).flattenedTransformOrder.map(_.getClass) should be (order)
+    }
   }
 
 }
