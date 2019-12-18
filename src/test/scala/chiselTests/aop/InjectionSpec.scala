@@ -68,9 +68,7 @@ class InjectionSpec extends ChiselFlatSpec {
     assertTesterPasses({ new CounterAspectTester(Seq(9, 9, 9))} , Nil, Seq(wrongValueAspect, correctValueAspect))
   }
   "Test" should "fail if pass wrong values, then correct aspect, then wrong aspect" in {
-    assertTesterFails({
-      new CounterAspectTester(Seq(9, 9, 9))
-    }, Nil, Seq(correctValueAspect, wrongValueAspect))
+    assertTesterFails({new CounterAspectTester(Seq(9, 9, 9))}, Nil, Seq(correctValueAspect, wrongValueAspect))
   }
   "Test" should "pass with IO aspect and correct value" in {
     assertTesterPasses({ new IOAspectTester(5.U)} , Nil, Seq(ioAspect))
