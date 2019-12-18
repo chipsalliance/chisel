@@ -28,7 +28,8 @@ class BundleLiteralSpec extends ChiselFlatSpec {
       chisel3.assert(outsideBundleLit.a === 42.U)
       chisel3.assert(outsideBundleLit.b === true.B)
       chisel3.assert(outsideBundleLit.c === MyEnum.sB)
-
+      chisel3.assert(outsideBundleLit.isLit())
+      chisel3.assert(outsideBundleLit.litValue().U === outsideBundleLit.asUInt())
       val bundleLit = (new MyBundle).Lit(_.a -> 42.U, _.b -> true.B, _.c -> MyEnum.sB)
       chisel3.assert(bundleLit.a === 42.U)
       chisel3.assert(bundleLit.b === true.B)
@@ -82,6 +83,8 @@ class BundleLiteralSpec extends ChiselFlatSpec {
       chisel3.assert(explicitBundleLit.a.a === 42.U)
       chisel3.assert(explicitBundleLit.a.b === true.B)
       chisel3.assert(explicitBundleLit.a.c === MyEnum.sB)
+      chisel3.assert(explicitBundleLit.a.isLit())
+      chisel3.assert(explicitBundleLit.a.litValue().U === explicitBundleLit.a.asUInt())
 
       // Specify the inner Bundle fields directly
       val expandedBundleLit = (new MyOuterBundle).Lit(
@@ -95,6 +98,10 @@ class BundleLiteralSpec extends ChiselFlatSpec {
       chisel3.assert(expandedBundleLit.b.c === false.B)
       chisel3.assert(expandedBundleLit.b.d === 255.U)
       chisel3.assert(expandedBundleLit.b.e === MyEnum.sB)
+      chisel3.assert(! expandedBundleLit.a.isLit())   // element e is missing
+      chisel3.assert(expandedBundleLit.b.isLit())
+      chisel3.assert(! expandedBundleLit.isLit())     // element a.e is missing
+      chisel3.assert(expandedBundleLit.b.litValue().U === expandedBundleLit.b.asUInt())
 
       // Anonymously contruct the inner Bundle literal
       // A bit of weird syntax that depends on implementation details of the Bundle literal constructor
@@ -104,6 +111,9 @@ class BundleLiteralSpec extends ChiselFlatSpec {
       chisel3.assert(childBundleLit.b.c === false.B)
       chisel3.assert(childBundleLit.b.d === 255.U)
       chisel3.assert(childBundleLit.b.e === MyEnum.sB)
+      chisel3.assert(childBundleLit.b.isLit())
+      chisel3.assert(! childBundleLit.isLit())     // elements a and f are missing
+      chisel3.assert(childBundleLit.b.litValue().U === childBundleLit.b.asUInt())
 
       stop()
     } }

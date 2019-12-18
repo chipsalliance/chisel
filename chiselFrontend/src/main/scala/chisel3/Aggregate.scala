@@ -43,7 +43,29 @@ sealed abstract class Aggregate extends Data {
     }
   }
 
-  override def litOption: Option[BigInt] = None  // TODO implement me
+  /** Return an Aggregate's literal value if it is a literal, None otherwise.
+    * If any element of the aggregate is not a literal with a defined width, the result isn't a literal.
+    *
+    * @return an Aggregate's literal value if it is a literal.
+    */
+  override def litOption: Option[BigInt] = {
+    // Shift the accumulated value by our width and add in our component, masked by our width.
+    def shiftAdd(accumulator: BigInt, shiftadd: (Int, BigInt)): BigInt = {
+      val width = shiftadd._1
+      val mask = (1 << width) - 1
+      val value = shiftadd._2 & mask
+      (accumulator << width) + value
+    }
+    try {
+      topBindingOpt match {
+        case Some(BundleLitBinding(_)) =>
+          Some(getElements.reverse.map{ case e => (e.width.get, e.litOption().get)}.foldLeft(BigInt(0))(shiftAdd(_, _)))
+        case _ =>  None
+      }
+    } catch {
+      case e: NoSuchElementException => None
+    }
+  }
 
   /** Returns a Seq of the immediate contents of this Aggregate, in order.
     */
