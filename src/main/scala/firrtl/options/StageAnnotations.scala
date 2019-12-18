@@ -86,7 +86,7 @@ object OutputAnnotationFileAnnotation extends HasShellOptions {
 }
 
 /** If this [[firrtl.annotations.Annotation Annotation]] exists in an [[firrtl.AnnotationSeq AnnotationSeq]], then a
-  * [[firrtl.options.phase.WriteOutputAnnotations WriteOutputAnnotations]] will include
+  * [[firrtl.options.phases.WriteOutputAnnotations WriteOutputAnnotations]] will include
   * [[firrtl.annotations.DeletedAnnotation DeletedAnnotation]]s when it writes to a file.
   *  - set with '--write-deleted'
   */
