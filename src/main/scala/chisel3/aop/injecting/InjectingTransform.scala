@@ -17,11 +17,13 @@ class InjectingTransform extends Transform {
   override def execute(state: CircuitState): CircuitState = {
 
     val addStmtMap = mutable.HashMap[String, Seq[ir.Statement]]()
+    val addPorts = mutable.ArrayBuffer[ir.Port]()
     val addModules = mutable.ArrayBuffer[ir.DefModule]()
 
     // Populate addStmtMap and addModules, return annotations in InjectStatements, and omit InjectStatement annotation
     val newAnnotations = state.annotations.flatMap {
-      case InjectStatement(mt, s, addedModules, annotations) =>
+      case InjectStatement(mt, s, addedPorts, addedModules, annotations) =>
+        addPorts ++= addedPorts
         addModules ++= addedModules
         addStmtMap(mt.module) = s +: addStmtMap.getOrElse(mt.module, Nil)
         annotations
@@ -32,9 +34,9 @@ class InjectingTransform extends Transform {
     val newModules = state.circuit.modules.map { m: ir.DefModule =>
       m match {
         case m: ir.Module if addStmtMap.contains(m.name) =>
-          m.copy(body = ir.Block(m.body +: addStmtMap(m.name)))
+          m.copy(ports = m.ports ++ addPorts, body = ir.Block(m.body +: addStmtMap(m.name)))
         case m: _root_.firrtl.ir.ExtModule if addStmtMap.contains(m.name) =>
-          ir.Module(m.info, m.name, m.ports, ir.Block(addStmtMap(m.name)))
+          ir.Module(m.info, m.name, m.ports ++ addPorts, ir.Block(addStmtMap(m.name)))
         case other: ir.DefModule => other
       }
     }
