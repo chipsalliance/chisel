@@ -138,7 +138,7 @@ trait DependencyAPI[A <: DependencyAPI[A]] { this: TransformLike[_] =>
   */
 trait PreservesAll[A <: DependencyAPI[A]] { this: DependencyAPI[A] =>
 
-  override def invalidates(a: A): Boolean = false
+  override final def invalidates(a: A): Boolean = false
 
 }
 
