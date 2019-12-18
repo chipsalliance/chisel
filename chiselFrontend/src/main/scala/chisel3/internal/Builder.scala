@@ -150,12 +150,14 @@ private[chisel3] trait HasId extends InstanceId {
   }
 
   private[chisel3] def getPublicFields(rootClass: Class[_]): Seq[java.lang.reflect.Method] = {
+    def is_final(modifier: Int) =
+      (modifier & java.lang.reflect.Modifier.FINAL) == java.lang.reflect.Modifier.FINAL
     // Suggest names to nodes using runtime reflection
     def getValNames(c: Class[_]): Set[String] = {
       if (c == rootClass) {
         Set()
       } else {
-        getValNames(c.getSuperclass) ++ c.getDeclaredFields.map(_.getName)
+        getValNames(c.getSuperclass) ++ c.getDeclaredFields.filter(x => is_final(x.getModifiers())).map(_.getName)
       }
     }
     val valNames = getValNames(this.getClass)
