@@ -18,6 +18,8 @@ case class DependencyManagerException(message: String, cause: Throwable = null) 
   * @tparam B the type of the [[firrtl.options.TransformLike TransformLike]]
   */
 trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends TransformLike[A] with DependencyAPI[B] {
+  import DependencyManagerUtils.CharSet
+
   override lazy val prerequisites = currentState
 
   override lazy val dependents = Seq.empty
@@ -279,15 +281,15 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
 
     val connections =
       Seq( (prerequisiteGraph, "edge []"),
-           (dependentsGraph,   """edge [color="#de2d26"]"""),
-           (invalidateGraph,   "edge [minlen=2,style=dashed,constraint=false]") )
+           (dependentsGraph,   """edge [style=bold color="#4292c6"]"""),
+           (invalidateGraph,   """edge [minlen=2 style=dashed constraint=false color="#fb6a4a"]""") )
         .flatMap{ case (a, b) => toGraphviz(a, b) }
         .mkString("\n")
 
     val nodes =
       (prerequisiteGraph + dependentsGraph + invalidateGraph + otherDependents)
         .getVertices
-        .map(v => s"""${transformName(v)} [label="${v.getClass.getName}"]""")
+        .map(v => s"""${transformName(v)} [label="${v.name}"]""")
 
     s"""|digraph DependencyManager {
         |  graph [rankdir=BT]
@@ -311,8 +313,8 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
     def rec(pm: DependencyManager[A, B], cm: Seq[String], tab: String = "", id: Int = 0): (String, Int) = {
       var offset = id
 
-      val targets = pm._targets.toSeq.map(_.getName).mkString(", ")
-      val state = pm._currentState.toSeq.map(_.getName).mkString(", ")
+      val targets = pm._targets.toSeq.map(_.name).mkString(", ")
+      val state = pm._currentState.toSeq.map(_.name).mkString(", ")
 
       val header = s"""|${tab}subgraph cluster_$id {
                        |$tab  label="targets: $targets\\nstate: $state"
@@ -327,7 +329,7 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
         case a =>
           val name = s"""${transformName(a, "_" + id)}"""
           sorted += name
-          s"""$tab  $name [label="${a.getClass.getName}"]"""
+          s"""$tab  $name [label="${a.name}"]"""
       }.mkString("\n")
 
       (Seq(header, body, s"$tab}").mkString("\n"), offset)
@@ -339,6 +341,57 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
         |${rec(this, colormap, "  ")._1}
         |  ${sorted.mkString(" -> ")}
         |}""".stripMargin
+  }
+
+  /** A method that can be overridden to define custom print handling. This is useful if you would like to make some
+    * transform print additional information.
+    * @param tab the current tab setting
+    * @param charSet the character set in use
+    * @param size the number of nodes at the current level of the tree
+    */
+  def customPrintHandling(
+    tab: String,
+    charSet: CharSet,
+    size: Int): Option[PartialFunction[(B, Int), Seq[String]]] = None
+
+  /** Helper utility when recursing during pretty printing
+    * @param tab an indentation string to use for every line of output
+    * @param charSet a collection of characters to use when printing
+    * @param preprocess a partial function that will be used before any other printing logic
+    */
+  def prettyPrintRec(tab: String, charSet: CharSet): Seq[String] = {
+
+    val (l, n, c) = (charSet.lastNode, charSet.notLastNode, charSet.continuation)
+    val last = transformOrder.size - 1
+
+    val defaultHandling: PartialFunction[(B, Int), Seq[String]] = {
+      case (a: DependencyManager[_, _], `last`) =>
+        Seq(s"$tab$l ${a.name}") ++ a.prettyPrintRec(s"""$tab${" " * c.size} """, charSet)
+      case (a: DependencyManager[_, _], _)      => Seq(s"$tab$n ${a.name}") ++ a.prettyPrintRec(s"$tab$c ", charSet)
+      case (a, `last`)                          => Seq(s"$tab$l ${a.name}")
+      case (a, _)                               => Seq(s"$tab$n ${a.name}")
+    }
+
+    val handling = customPrintHandling(tab, charSet, transformOrder.size) match {
+      case Some(a) => a.orElse(defaultHandling)
+      case None    => defaultHandling
+    }
+
+    transformOrder
+      .zipWithIndex
+      .flatMap(handling)
+  }
+
+  /** Textually show the determined transform order
+    * @param tab an indentation string to use for every line of output
+    * @param charSet a collection of characters to use when printing
+    */
+  def prettyPrint(
+    tab: String = "",
+    charSet: DependencyManagerUtils.CharSet = DependencyManagerUtils.PrettyCharSet): String = {
+
+    (Seq(s"$tab$name") ++ prettyPrintRec(tab, charSet)).mkString("\n")
+
   }
 
 }
@@ -362,5 +415,38 @@ object PhaseManager {
 
   /** The type used to represent dependencies between [[Phase]]s */
   type PhaseDependency = Dependency[Phase]
+
+}
+
+object DependencyManagerUtils {
+
+  /** A character set used for pretty printing
+    * @see [[PrettyCharSet]]
+    * @see [[ASCIICharSet]]
+    */
+  trait CharSet {
+    /** Used when printing the last node */
+    val lastNode: String
+
+    /** Used when printing a node that is NOT the last */
+    val notLastNode: String
+
+    /** Used while recursing into a node that is NOT the last */
+    val continuation: String
+  }
+
+  /** Uses prettier characters, but possibly not supported by all fonts */
+  object PrettyCharSet extends CharSet {
+    val lastNode     = "└──"
+    val notLastNode  = "├──"
+    val continuation = "│  "
+  }
+
+  /** Basic ASCII output */
+  object ASCIICharSet extends CharSet {
+    val lastNode     = "\\--"
+    val notLastNode  = "|--"
+    val continuation = "|  "
+  }
 
 }
