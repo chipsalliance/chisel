@@ -14,7 +14,7 @@ object BitPat {
     * @return bits the literal value, with don't cares being 0
     * @return mask the mask bits, with don't cares being 0 and cares being 1
     * @return width the number of bits in the literal, including values and
-    * don't cares.
+    * don't cares, but not including the white space and underscores
     */
   private def parse(x: String): (BigInt, BigInt, Int) = {
     // Notes:
@@ -25,14 +25,17 @@ object BitPat {
     require(x.head == 'b', "BitPats must be in binary and be prefixed with 'b'")
     var bits = BigInt(0)
     var mask = BigInt(0)
+    var count = 0
     for (d <- x.tail) {
-      if (d != '_') {
+      if (! (d == '_' || d.isWhitespace)) {
         require("01?".contains(d), "Literal: " + x + " contains illegal character: " + d)
         mask = (mask << 1) + (if (d == '?') 0 else 1)
         bits = (bits << 1) + (if (d == '1') 1 else 0)
+        count += 1
       }
     }
-    (bits, mask, x.length - 1)
+
+    (bits, mask, count)
   }
 
   /** Creates a [[BitPat]] literal from a string.
