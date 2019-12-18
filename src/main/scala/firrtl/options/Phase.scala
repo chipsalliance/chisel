@@ -8,6 +8,61 @@ import logger.LazyLogging
 
 import scala.collection.mutable.LinkedHashSet
 
+import scala.reflect
+import scala.reflect.ClassTag
+
+object Dependency {
+  def apply[A <: DependencyAPI[_] : ClassTag]: Dependency[A] = {
+    val clazz = reflect.classTag[A].runtimeClass
+    Dependency(Left(clazz.asInstanceOf[Class[A]]))
+  }
+
+  def apply[A <: DependencyAPI[_]](c: Class[_ <: A]): Dependency[A] = {
+    // It's forbidden to wrap the class of a singleton as a Dependency
+    require(c.getName.last != '$')
+    Dependency(Left(c))
+  }
+
+  def apply[A <: DependencyAPI[_]](o: A with Singleton): Dependency[A] = Dependency(Right(o))
+
+  def fromTransform[A <: DependencyAPI[_]](t: A): Dependency[A] = {
+    if (isSingleton(t)) {
+      Dependency[A](Right(t.asInstanceOf[A with Singleton]))
+    } else {
+      Dependency[A](Left(t.getClass))
+    }
+  }
+
+  private def isSingleton(obj: AnyRef): Boolean = {
+    reflect.runtime.currentMirror.reflect(obj).symbol.isModuleClass
+  }
+}
+
+case class Dependency[+A <: DependencyAPI[_]](id: Either[Class[_ <: A], A with Singleton]) {
+  def getObject(): A = id match {
+    case Left(c) => safeConstruct(c)
+    case Right(o) => o
+  }
+
+  def getSimpleName: String = id match {
+    case Left(c) => c.getSimpleName
+    case Right(o) => o.getClass.getSimpleName
+  }
+
+  def getName: String = id match {
+    case Left(c) => c.getName
+    case Right(o) => o.getClass.getName
+  }
+
+  /** Wrap an [[IllegalAccessException]] due to attempted object construction in a [[DependencyManagerException]] */
+  private def safeConstruct[A](a: Class[_ <: A]): A = try { a.newInstance } catch {
+    case e: IllegalAccessException => throw new DependencyManagerException(
+      s"Failed to construct '$a'! (Did you try to construct an object?)", e)
+    case e: InstantiationException => throw new DependencyManagerException(
+      s"Failed to construct '$a'! (Did you try to construct an inner class or a class with parameters?)", e)
+  }
+}
+
 /** A polymorphic mathematical transform
   * @tparam A the transformed type
   */
@@ -42,14 +97,11 @@ trait TransformLike[A] extends LazyLogging {
   */
 trait DependencyAPI[A <: DependencyAPI[A]] { this: TransformLike[_] =>
 
-  /** The type used to express dependencies: a class which itself has dependencies. */
-  type Dependency = Class[_ <: A]
-
   /** All transform that must run before this transform
     * $seqNote
     */
-  def prerequisites: Seq[Dependency] = Seq.empty
-  private[options] lazy val _prerequisites: LinkedHashSet[Dependency] = new LinkedHashSet() ++ prerequisites.toSet
+  def prerequisites: Seq[Dependency[A]] = Seq.empty
+  private[options] lazy val _prerequisites: LinkedHashSet[Dependency[A]] = new LinkedHashSet() ++ prerequisites.toSet
 
   /** All transforms that must run ''after'' this transform
     *
@@ -70,8 +122,8 @@ trait DependencyAPI[A <: DependencyAPI[A]] { this: TransformLike[_] =>
     * @see [[firrtl.passes.CheckTypes]] for an example of an optional checking [[firrtl.Transform]]
     * $seqNote
     */
-  def dependents: Seq[Dependency] = Seq.empty
-  private[options] lazy val _dependents: LinkedHashSet[Dependency] = new LinkedHashSet() ++ dependents.toSet
+  def dependents: Seq[Dependency[A]] = Seq.empty
+  private[options] lazy val _dependents: LinkedHashSet[Dependency[A]] = new LinkedHashSet() ++ dependents.toSet
 
   /** A function that, given *another* transform (parameter `a`) will return true if this transform invalidates/undos the
     * effects of the *other* transform (parameter `a`).

@@ -4,14 +4,23 @@ package firrtl.options.phases
 
 import firrtl.AnnotationSeq
 import firrtl.annotations.{DeletedAnnotation, JsonProtocol}
-import firrtl.options.{Phase, StageOptions, Unserializable, Viewer}
+import firrtl.options.{Phase, PreservesAll, StageOptions, Unserializable, Viewer}
+import firrtl.options.Dependency
 
 import java.io.PrintWriter
 
 /** [[firrtl.options.Phase Phase]] that writes an [[AnnotationSeq]] to a file. A file is written if and only if a
   * [[StageOptions]] view has a non-empty [[StageOptions.annotationFileOut annotationFileOut]].
   */
-class WriteOutputAnnotations extends Phase {
+class WriteOutputAnnotations extends Phase with PreservesAll[Phase] {
+
+  override val prerequisites =
+    Seq( Dependency[GetIncludes],
+         Dependency[ConvertLegacyAnnotations],
+         Dependency[AddDefaults],
+         Dependency[Checks] )
+
+  override val dependents = Seq.empty
 
   /** Write the input [[AnnotationSeq]] to a fie. */
   def transform(annotations: AnnotationSeq): AnnotationSeq = {

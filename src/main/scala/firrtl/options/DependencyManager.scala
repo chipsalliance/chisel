@@ -18,19 +18,24 @@ case class DependencyManagerException(message: String, cause: Throwable = null) 
   * @tparam B the type of the [[firrtl.options.TransformLike TransformLike]]
   */
 trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends TransformLike[A] with DependencyAPI[B] {
+  override lazy val prerequisites = currentState
+
+  override lazy val dependents = Seq.empty
+
+  override def invalidates(a: B): Boolean = (_currentState &~ _targets)(oToD(a))
 
   /** Requested [[firrtl.options.TransformLike TransformLike]]s that should be run. Internally, this will be converted to
     * a set based on the ordering defined here.
     */
-  def targets: Seq[Dependency]
-  private lazy val _targets: LinkedHashSet[Dependency] = targets
-    .foldLeft(new LinkedHashSet[Dependency]()){ case (a, b) => a += b }
+  def targets: Seq[Dependency[B]]
+  private lazy val _targets: LinkedHashSet[Dependency[B]] = targets
+    .foldLeft(new LinkedHashSet[Dependency[B]]()){ case (a, b) => a += b }
 
   /** A sequence of [[firrtl.Transform]]s that have been run. Internally, this will be converted to an ordered set.
     */
-  def currentState: Seq[Dependency]
-  private lazy val _currentState: LinkedHashSet[Dependency] = currentState
-    .foldLeft(new LinkedHashSet[Dependency]()){ case (a, b) => a += b }
+  def currentState: Seq[Dependency[B]]
+  private lazy val _currentState: LinkedHashSet[Dependency[B]] = currentState
+    .foldLeft(new LinkedHashSet[Dependency[B]]()){ case (a, b) => a += b }
 
   /** Existing transform objects that have already been constructed */
   def knownObjects: Set[B]
@@ -42,11 +47,11 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
 
   /** Store of conversions between classes and objects. Objects that do not exist in the map will be lazily constructed.
     */
-  protected lazy val classToObject: LinkedHashMap[Dependency, B] = {
-    val init = LinkedHashMap[Dependency, B](knownObjects.map(x => x.getClass -> x).toSeq: _*)
+  protected lazy val dependencyToObject: LinkedHashMap[Dependency[B], B] = {
+    val init = LinkedHashMap[Dependency[B], B](knownObjects.map(x => oToD(x) -> x).toSeq: _*)
     (_targets ++ _currentState)
       .filter(!init.contains(_))
-      .map(x => init(x) = safeConstruct(x))
+      .map(x => init(x) = x.getObject())
     init
   }
 
@@ -54,42 +59,42 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
     * requirements. This is used to solve sub-problems arising from invalidations.
     */
   protected def copy(
-    targets: Seq[Dependency],
-    currentState: Seq[Dependency],
-    knownObjects: ISet[B] = classToObject.values.toSet): B
+    targets: Seq[Dependency[B]],
+    currentState: Seq[Dependency[B]],
+    knownObjects: ISet[B] = dependencyToObject.values.toSet): B
 
-  /** Implicit conversion from Class[B] to B */
-  private implicit def cToO(c: Dependency): B = classToObject.getOrElseUpdate(c, safeConstruct(c))
+  /** Implicit conversion from Dependency to B */
+  private implicit def dToO(d: Dependency[B]): B = dependencyToObject.getOrElseUpdate(d, d.getObject())
 
-  /** Implicit conversion from B to Class[B] */
-  private implicit def oToC(b: B): Dependency = b.getClass
+  /** Implicit conversion from B to Dependency */
+  private implicit def oToD(b: B): Dependency[B] = Dependency.fromTransform(b)
 
   /** Modified breadth-first search that supports multiple starting nodes and a custom extractor that can be used to
     * generate/filter the edges to explore. Additionally, this will include edges to previously discovered nodes.
     */
-  private def bfs( start: LinkedHashSet[Dependency],
-                   blacklist: LinkedHashSet[Dependency],
-                   extractor: B => Set[Dependency] ): LinkedHashMap[B, LinkedHashSet[B]] = {
+  private def bfs( start: LinkedHashSet[Dependency[B]],
+                   blacklist: LinkedHashSet[Dependency[B]],
+                   extractor: B => Set[Dependency[B]] ): LinkedHashMap[B, LinkedHashSet[B]] = {
 
     val (queue, edges) = {
-      val a: Queue[Dependency]                    = Queue(start.toSeq:_*)
+      val a: Queue[Dependency[B]]                    = Queue(start.toSeq:_*)
       val b: LinkedHashMap[B, LinkedHashSet[B]] = LinkedHashMap[B, LinkedHashSet[B]](
-        start.map((cToO(_) -> LinkedHashSet[B]())).toSeq:_*)
+        start.map((dToO(_) -> LinkedHashSet[B]())).toSeq:_*)
       (a, b)
     }
 
     while (queue.nonEmpty) {
-      val u: Dependency = queue.dequeue
-      for (v <- extractor(classToObject(u))) {
+      val u: Dependency[B] = queue.dequeue
+      for (v <- extractor(dependencyToObject(u))) {
         if (!blacklist.contains(v) && !edges.contains(v)) {
           queue.enqueue(v)
         }
         if (!edges.contains(v)) {
-          val obj = cToO(v)
+          val obj = dToO(v)
           edges(obj) = LinkedHashSet.empty
-          classToObject += (v -> obj)
+          dependencyToObject += (v -> obj)
         }
-        edges(classToObject(u)) = edges(classToObject(u)) + classToObject(v)
+        edges(dependencyToObject(u)) = edges(dependencyToObject(u)) + dependencyToObject(v)
       }
     }
 
@@ -105,9 +110,9 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
   /** A directed graph consisting of prerequisite edges */
   private lazy val prerequisiteGraph: DiGraph[B] = {
     val edges = bfs(
-      start = _targets -- _currentState,
+      start = _targets &~ _currentState,
       blacklist = _currentState,
-      extractor = (p: B) => new LinkedHashSet[Dependency]() ++ p.prerequisites -- _currentState)
+      extractor = (p: B) => new LinkedHashSet[Dependency[B]]() ++ p.prerequisites &~ _currentState)
     DiGraph(edges)
   }
 
@@ -116,7 +121,7 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
     */
   private lazy val dependentsGraph: DiGraph[B] = {
     val v = new LinkedHashSet() ++ prerequisiteGraph.getVertices
-    DiGraph(new LinkedHashMap() ++ v.map(vv => vv -> ((new LinkedHashSet() ++ vv.dependents).map(cToO) & v))).reverse
+    DiGraph(new LinkedHashMap() ++ v.map(vv => vv -> (v & (vv.dependents.toSet).map(dToO)))).reverse
   }
 
   /** A directed graph consisting of prerequisites derived from ALL targets. This is necessary for defining targets for
@@ -125,7 +130,7 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
   private lazy val otherDependents: DiGraph[B] = {
     val edges = {
       val x = new LinkedHashMap ++ _targets
-        .map(classToObject)
+        .map(dependencyToObject)
         .map{ a => a -> prerequisiteGraph.getVertices.filter(a._dependents(_)) }
       x
         .values
@@ -140,12 +145,14 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
 
   /** A directed graph consisting of invalidation edges */
   lazy val invalidateGraph: DiGraph[B] = {
-    val v = dependencyGraph.getVertices
+    val v = new LinkedHashSet() ++ dependencyGraph.getVertices
     DiGraph(
       bfs(
-        start = _targets -- _currentState,
+        start = v.map(oToD(_)),
         blacklist = _currentState,
-        extractor = (p: B) => v.filter(p.invalidates).map(_.getClass).toSet))
+
+        /* Explore all invalidated transforms **EXCEPT** the current transform! */
+        extractor = (p: B) => v.filter(p.invalidates).map(oToD(_)).toSet - oToD(p)))
       .reverse
   }
 
@@ -155,14 +162,6 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
       throw new DependencyManagerException(
         s"""|No transform ordering possible due to cyclic dependency in $a with cycles:
             |${diGraph.findSCCs.filter(_.size > 1).mkString("    - ", "\n    - ", "")}""".stripMargin, e)
-  }
-
-  /** Wrap an [[IllegalAccessException]] due to attempted object construction in a [[DependencyManagerException]] */
-  private def safeConstruct[A](a: Class[_ <: A]): A = try { a.newInstance } catch {
-    case e: IllegalAccessException => throw new DependencyManagerException(
-      s"Failed to construct '$a'! (Did you try to construct an object?)", e)
-    case e: InstantiationException => throw new DependencyManagerException(
-      s"Failed to construct '$a'! (Did you try to construct an inner class or a class with parameters?)", e)
   }
 
   /** An ordering of [[firrtl.options.TransformLike TransformLike]]s that causes the requested [[DependencyManager.targets
@@ -175,48 +174,45 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
     */
   lazy val transformOrder: Seq[B] = {
 
-    /* Topologically sort the dependency graph using the invalidate graph topological sort as a seed. This has the effect of
-     * reducing (perhaps minimizing?) the number of work re-lowerings.
+    /* Topologically sort the dependency graph to determine a "good" initial ordering.
      */
     val sorted = {
-      val seed = cyclePossible("invalidates", invalidateGraph){ invalidateGraph.linearize }.reverse
+      val edges = {
+        val v = cyclePossible("invalidates", invalidateGraph){ invalidateGraph.linearize }.reverse
+        /* A comparison function that will sort vertices based on the topological sort of the invalidation graph */
+        val cmp =
+          (l: B, r: B) => v.foldLeft((Map.empty[B, Dependency[B] => Boolean], Set.empty[Dependency[B]])){
+            case ((m, s), r) => (m + (r -> ((a: Dependency[B]) => !s(a))), s + r) }._1(l)(r)
+        new LinkedHashMap() ++
+          v.map(vv => vv -> (new LinkedHashSet() ++ (dependencyGraph.getEdges(vv).toSeq.sortWith(cmp))))
+      }
 
       cyclePossible("prerequisites/dependents", dependencyGraph) {
-        dependencyGraph
-          .seededLinearize(Some(seed))
+        DiGraph(edges)
+          .linearize
           .reverse
           .dropWhile(b => _currentState.contains(b))
       }
     }
 
-    val (state, lowerers) = {
-      /* [todo] Seq is inefficient here, but Array has ClassTag problems. Use something else? */
-      val (s, l) = sorted.foldLeft((_currentState, Seq[B]())){ case ((state, out), in) =>
-        /* The prerequisites are both prerequisites AND dependents. */
-        val prereqs = new LinkedHashSet() ++ in.prerequisites ++
-          dependencyGraph.getEdges(in).toSeq.map(oToC) ++
-          otherDependents.getEdges(in).toSeq.map(oToC)
-        val missing = (prereqs -- state)
-        val preprocessing: Option[B] = {
-          if (missing.nonEmpty) { Some(this.copy(prereqs.toSeq, state.toSeq)) }
-          else                  { None                                     }
-        }
-        ((state ++ missing + in).map(cToO).filterNot(in.invalidates).map(oToC), out ++ preprocessing :+ in)
+    /* [todo] Seq is inefficient here, but Array has ClassTag problems. Use something else? */
+    val (s, l) = sorted.foldLeft((_currentState, Seq[B]())){ case ((state, out), in) =>
+      /* The prerequisites are both prerequisites AND dependents. */
+      val prereqs = new LinkedHashSet() ++ in.prerequisites ++
+        dependencyGraph.getEdges(in).toSeq.map(oToD) ++
+        otherDependents.getEdges(in).toSeq.map(oToD)
+      val preprocessing: Option[B] = {
+        if ((prereqs -- state).nonEmpty) { Some(this.copy(prereqs.toSeq, state.toSeq)) }
+        else                             { None                                        }
       }
-      val missing = (_targets -- s)
-      val postprocessing: Option[B] = {
-        if (missing.nonEmpty) { Some(this.copy(_targets.toSeq, s.toSeq)) }
-        else                  { None                        }
-      }
-
-      (s ++ missing, l ++ postprocessing)
+      /* "in" is added *after* invalidation because a transform my not invalidate itself! */
+      ((state ++ prereqs).map(dToO).filterNot(in.invalidates).map(oToD) + in, out ++ preprocessing :+ in)
     }
-
-    if (!_targets.subsetOf(state)) {
-      throw new DependencyManagerException(
-        s"The final state ($state) did not include the requested targets (${targets})!")
+    val postprocessing: Option[B] = {
+      if ((_targets -- s).nonEmpty) { Some(this.copy(_targets.toSeq, s.toSeq)) }
+      else                          { None                                     }
     }
-    lowerers
+    l ++ postprocessing
   }
 
   /** A version of the [[DependencyManager.transformOrder transformOrder]] that flattens the transforms of any internal
@@ -230,7 +226,7 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
   final override def transform(annotations: A): A = {
 
     /* A local store of each wrapper to it's underlying class. */
-    val wrapperToClass = new HashMap[B, Dependency]
+    val wrapperToClass = new HashMap[B, Dependency[B]]
 
     /* The determined, flat order of transforms is wrapped with surrounding transforms while populating wrapperToClass so
      * that each wrapped transform object can be dereferenced to its underlying class. Each wrapped transform is then
@@ -249,7 +245,7 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
                   |  state: ${state.mkString("\n    -", "\n    -", "")}
                   |  prerequisites: ${prerequisites.mkString("\n    -", "\n    -", "")}""".stripMargin)
           }
-          (t.transform(a), ((state + wrapperToClass(t)).map(cToO).filterNot(t.invalidates).map(oToC)))
+          (t.transform(a), ((state + wrapperToClass(t)).map(dToO).filterNot(t.invalidates).map(oToD)))
       }._1
   }
 
@@ -356,15 +352,15 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
 class PhaseManager(
   val targets: Seq[PhaseManager.PhaseDependency],
   val currentState: Seq[PhaseManager.PhaseDependency] = Seq.empty,
-  val knownObjects: Set[Phase] = Set.empty) extends Phase with DependencyManager[AnnotationSeq, Phase] {
+  val knownObjects: Set[Phase] = Set.empty) extends DependencyManager[AnnotationSeq, Phase] with Phase {
 
-  protected def copy(a: Seq[Dependency], b: Seq[Dependency], c: ISet[Phase]) = new PhaseManager(a, b, c)
-
+  import PhaseManager.PhaseDependency
+  protected def copy(a: Seq[PhaseDependency], b: Seq[PhaseDependency], c: ISet[Phase]) = new PhaseManager(a, b, c)
 }
 
 object PhaseManager {
 
   /** The type used to represent dependencies between [[Phase]]s */
-  type PhaseDependency = Class[_ <: Phase]
+  type PhaseDependency = Dependency[Phase]
 
 }
