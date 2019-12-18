@@ -126,6 +126,14 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
     DiGraph(new LinkedHashMap() ++ v.map(vv => vv -> (v & (vv.dependents.toSet).map(dToO)))).reverse
   }
 
+  /** A directed graph of *optional* prerequisites. Each optional prerequisite is promoted to a full prerequisite if the
+    * optional prerequisite is already a node in the prerequisite graph.
+    */
+  private lazy val optionalPrerequisitesGraph: DiGraph[B] = {
+    val v = new LinkedHashSet() ++ prerequisiteGraph.getVertices
+    DiGraph(new LinkedHashMap() ++ v.map(vv => vv -> (v & (vv.optionalPrerequisites.toSet).map(dToO))))
+  }
+
   /** A directed graph consisting of prerequisites derived from ALL targets. This is necessary for defining targets for
     * [[DependencyManager]] sub-problems.
     */
@@ -143,7 +151,7 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
   }
 
   /** A directed graph consisting of all prerequisites, including prerequisites derived from dependents */
-  lazy val dependencyGraph: DiGraph[B] = prerequisiteGraph + dependentsGraph
+  lazy val dependencyGraph: DiGraph[B] = prerequisiteGraph + dependentsGraph + optionalPrerequisitesGraph
 
   /** A directed graph consisting of invalidation edges */
   lazy val invalidateGraph: DiGraph[B] = {
@@ -282,7 +290,8 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
     val connections =
       Seq( (prerequisiteGraph, "edge []"),
            (dependentsGraph,   """edge [style=bold color="#4292c6"]"""),
-           (invalidateGraph,   """edge [minlen=2 style=dashed constraint=false color="#fb6a4a"]""") )
+           (invalidateGraph,   """edge [minlen=2 style=dashed constraint=false color="#fb6a4a"]"""),
+           (optionalPrerequisitesGraph, """edge [style=dotted color="#a1d99b"]""") )
         .flatMap{ case (a, b) => toGraphviz(a, b) }
         .mkString("\n")
 

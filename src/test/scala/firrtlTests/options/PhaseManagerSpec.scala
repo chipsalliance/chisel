@@ -328,6 +328,34 @@ object CustomAfterOptimizationFixture {
 
 }
 
+object OptionalPrerequisitesFixture {
+
+  class Root extends IdentityPhase
+
+  class OptMinimum extends IdentityPhase with PreservesAll[Phase] {
+    override val prerequisites = Seq(Dependency[Root])
+  }
+
+  class OptFull extends IdentityPhase with PreservesAll[Phase] {
+    override val prerequisites = Seq(Dependency[Root], Dependency[OptMinimum])
+  }
+
+  class DoneMinimum extends IdentityPhase with PreservesAll[Phase] {
+    override val prerequisites = Seq(Dependency[OptMinimum])
+  }
+
+  class DoneFull extends IdentityPhase with PreservesAll[Phase] {
+    override val prerequisites = Seq(Dependency[OptFull])
+  }
+
+  class Custom extends IdentityPhase with PreservesAll[Phase] {
+    override val prerequisites = Seq(Dependency[Root])
+    override val optionalPrerequisites = Seq(Dependency[OptMinimum], Dependency[OptFull])
+    override val dependents = Seq(Dependency[DoneMinimum], Dependency[DoneFull])
+  }
+
+}
+
 object OrderingFixture {
 
   class A extends IdentityPhase with PreservesAll[Phase]
@@ -614,6 +642,24 @@ class PhaseManagerSpec extends FlatSpec with Matchers {
     pmMinimum.flattenedTransformOrder.map(_.getClass) should be (expectedMinimum)
 
     val expectedFull = Seq(classOf[f.Root], classOf[f.OptMinimum], classOf[f.OptFull], classOf[f.AfterOpt], classOf[f.Custom], classOf[f.DoneFull])
+    writeGraphviz(pmFull, "test_run_dir/PhaseManagerSpec/CustomAfterOptimization/full")
+    pmFull.flattenedTransformOrder.map(_.getClass) should be (expectedFull)
+  }
+
+  it should "support optional prerequisites" in {
+    val f = OptionalPrerequisitesFixture
+
+    val targetsMinimum = Seq(Dependency[f.Custom], Dependency[f.DoneMinimum])
+    val pmMinimum = new PhaseManager(targetsMinimum)
+
+    val targetsFull = Seq(Dependency[f.Custom], Dependency[f.DoneFull])
+    val pmFull = new PhaseManager(targetsFull)
+
+    val expectedMinimum = Seq(classOf[f.Root], classOf[f.OptMinimum], classOf[f.Custom], classOf[f.DoneMinimum])
+    writeGraphviz(pmMinimum, "test_run_dir/PhaseManagerSpec/CustomAfterOptimization/minimum")
+    pmMinimum.flattenedTransformOrder.map(_.getClass) should be (expectedMinimum)
+
+    val expectedFull = Seq(classOf[f.Root], classOf[f.OptMinimum], classOf[f.OptFull], classOf[f.Custom], classOf[f.DoneFull])
     writeGraphviz(pmFull, "test_run_dir/PhaseManagerSpec/CustomAfterOptimization/full")
     pmFull.flattenedTransformOrder.map(_.getClass) should be (expectedFull)
   }
