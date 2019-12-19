@@ -31,7 +31,7 @@ object dontTouch { // scalastyle:ignore object.name
     if (compileOptions.checkSynthesizable) {
       requireIsHardware(data, "Data marked dontTouch")
     }
-    annotate(new ChiselAnnotation { def toFirrtl = DontTouchAnnotation(data.toNamed) })
+    annotate(new ChiselAnnotation { def toFirrtl = DontTouchAnnotation(data.toTarget) })
     data
   }
 }

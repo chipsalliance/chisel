@@ -52,6 +52,7 @@ class InjectionSpec extends ChiselFlatSpec {
       val dummy_out = chisel3.experimental.IO(Output(UInt(3.W))).suggestName("hello")
       dummy_out := 5.U
       dut.x := dummy_out
+      dontTouch(dummy_out) // test if dontTouch() works for IO
     }
   )
 

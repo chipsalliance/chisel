@@ -52,7 +52,7 @@ private[chisel3] object Converter {
       fir.SubIndex(convert(imm, ctx), castToInt(idx, "Index"), fir.UnknownType)
     case Index(imm, value) =>
       fir.SubAccess(convert(imm, ctx), convert(value, ctx), fir.UnknownType)
-    case ModuleIO(mod, name) =>
+    case ModuleIO(mod, _, name) =>
       // scalastyle:off if.brace
       if (mod eq ctx.id) fir.Reference(name, fir.UnknownType)
       else fir.SubField(fir.Reference(mod.getRef.name, fir.UnknownType), name, fir.UnknownType)

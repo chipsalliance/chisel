@@ -135,9 +135,9 @@ case class IntervalLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends Li
 }
 
 case class Ref(name: String) extends Arg
-case class ModuleIO(mod: BaseModule, name: String) extends Arg {
+case class ModuleIO(mod: BaseModule, emitMod: BaseModule, name: String) extends Arg {
   override def fullName(ctx: Component): String =
-    if (mod eq ctx.id) name else s"${mod.getRef.name}.$name"
+    if (emitMod eq ctx.id) name else s"${mod.getRef.name}.$name"
 }
 case class Slot(imm: Node, name: String) extends Arg {
   override def fullName(ctx: Component): String =
