@@ -7,6 +7,7 @@ import chisel3.testers.BasicTester
 
 class ClockAsUIntTester extends BasicTester {
   assert(true.B.asClock.asUInt === 1.U)
+  assert(true.B.asClock.asBool === true.B)
   stop()
 }
 
@@ -18,6 +19,8 @@ class WithClockAndNoReset extends RawModule {
   val a = withClock(clock2) {
     RegNext(in)
   }
+
+  in.asUInt()
   out := a
 }
 
