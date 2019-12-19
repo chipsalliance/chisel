@@ -8,16 +8,12 @@ pull_request_rules:
 pull_request_rules:
   - name: automatic squash-and-merge on CI success and review
     conditions:
-      - status-success=1 - compile
-      - status-success=2 - checkstyle
-      - status-success=2 - test
       - "status-success=ci/circleci: build-firrtl"
       - "status-success=ci/circleci: build-prep"
       - "status-success=ci/circleci: checkstyle-chisel"
       - "status-success=ci/circleci: test-chisel-2_11"
       - "status-success=ci/circleci: test-chisel-2_12"
       - status-success=license/cla
-      - status-success=pull request checks
       - "#approved-reviews-by>=1"
       - "#changes-requested-reviews-by=0"
       - base=master
