@@ -100,8 +100,9 @@ package experimental {
       * requested (so that all calls to ports will return the same information).
       * Internal API.
       */
-    def apply[T<:Data](iodef: T): T = {
+    def apply[T<:Data](ctx: BaseModule, iodef: T): T = {
       val module = Module.currentModule.get // Impossible to fail
+      require(ctx == module, s"${module.name} can't add other module ${ctx.name}'s port")
       require(!module.isClosed, "Can't add more ports after module close")
       requireIsChiselType(iodef, "io type")
 
@@ -386,7 +387,7 @@ package experimental {
       * TODO(twigg): Specifically walk the Data definition to call out which nodes
       * are problematic.
       */
-    protected def IO[T <: Data](iodef: T): T = chisel3.experimental.IO.apply(iodef) // scalastyle:ignore method.name
+    protected def IO[T <: Data](iodef: T): T = chisel3.experimental.IO.apply(this, iodef) // scalastyle:ignore method.name
 
     //
     // Internal Functions
