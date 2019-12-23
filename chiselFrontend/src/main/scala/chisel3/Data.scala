@@ -438,7 +438,9 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
     requireIsHardware(this)
     topBindingOpt match {
       case Some(binding: LitBinding) => throwException(s"internal error: can't handle literal binding $binding")
-      case Some(binding: TopBinding) => Node(this)
+      case Some(binding: TopBinding) =>
+        //Stash.printStatus()
+        Node(this)
       case opt => throwException(s"internal error: unknown binding $opt in generating LHS ref")
     }
   }

@@ -164,6 +164,7 @@ package experimental {
     }
     readyForModuleConstr = false
 
+    Stash.updateStash(_id, this)
     Builder.currentModule = Some(this)
     Builder.whenDepth = 0
 
@@ -272,10 +273,44 @@ package experimental {
       * @note Should not be called until circuit elaboration is complete
       */
     final def toAbsoluteTarget: IsModule = {
+      val stackElts = Thread.currentThread().getStackTrace()
+        .reverse  // so stack frame numbers are deterministic across calls
+        .dropRight(2)  // discard Thread.getStackTrace and updateBundleStack
+
+      // Determine where we are in the Bundle stack
+      val eltClassName = this.getClass.getName
+      val eltStackPos = stackElts.map(_.getClassName).lastIndexOf(eltClassName)
+      //stackElts.foreach(println)
+
+      /*
+      // Prune the existing Bundle stack of closed Bundles
+      // If we know where we are in the stack, discard frames above that
+      val stackEltsTop = if (eltStackPos >= 0) eltStackPos else stackElts.size
+      val pruneLength = chiselContext.value.bundleStack.reverse.prefixLength { case (_, cname, mname, pos) =>
+        pos >= stackEltsTop || stackElts(pos).getClassName != cname || stackElts(pos).getMethodName != mname
+      }
+      chiselContext.value.bundleStack.trimEnd(pruneLength)
+
+      // Return the stack state before adding the most recent bundle
+      val lastStack = chiselContext.value.bundleStack.map(_._1).toSeq
+
+      // Append the current Bundle to the stack, if it's on the stack trace
+      if (eltStackPos >= 0) {
+        val stackElt = stackElts(eltStackPos)
+        chiselContext.value.bundleStack.append((elt, eltClassName, stackElt.getMethodName, eltStackPos))
+      }
+      // Otherwise discard the stack frame, this shouldn't fail noisily
+
+      lastStack
+       */
+
+      /*
       _parent match {
         case Some(parent) => parent.toAbsoluteTarget.instOf(this.instanceName, toTarget.module)
         case None => toTarget
       }
+       */
+      toTarget
     }
 
     /**
@@ -289,9 +324,9 @@ package experimental {
       */
     private[chisel3] def getChiselPorts: Seq[(String, Data)] = {
       require(_closed, "Can't get ports before module close")
-      _component.get.ports.map { port =>
+      _component.map(_.ports.map { port =>
         (port.id.getRef.asInstanceOf[ModuleIO].name, port.id)
-      }
+      }).getOrElse(Nil)
     }
 
     /** Called at the Module.apply(...) level after this Module has finished elaborating.
@@ -397,7 +432,10 @@ package experimental {
 
     /** Signal name (for simulation). */
     override def instanceName: String =
-      if (_parent == None) name else _component match {
+      if (Stash.getParents(_id).isEmpty) {
+        println("HERE", _id, this)
+        name
+      } else _component match {
         case None => getRef.name
         case Some(c) => getRef fullName c
       }

@@ -259,6 +259,12 @@ private[chisel3] object MonoConnect {
 
     // Not quite sure where left and right are compared to current module
     // so just error out
-    else throw UnknownRelationException
+    else {
+      println("Sink ID:", sink_mod._id, sink_mod)
+      println("Sink parent ID:", sink_mod._parent.get._id, sink_mod)
+      println("Source ID:", source_mod._id, source_mod)
+      println("Context ID:", context_mod._id, context_mod)
+      throw UnknownRelationException
+    }
   }
 }
