@@ -46,6 +46,15 @@ class InstTransform(val c: Context) extends SourceInfoTransformMacro {
   }
 }
 
+object ImportTransform
+// Module instantiation transform
+class ImportTransform(val c: Context) extends SourceInfoTransformMacro {
+  import c.universe._
+  def apply[T: c.WeakTypeTag](name: c.Tree, id: c.Tree): c.Tree = {
+    q"$thisObj.do_apply($name, $id)($implicitSourceInfo, $implicitCompileOptions)"
+  }
+}
+
 // Workaround for https://github.com/sbt/sbt/issues/3966
 object MemTransform
 class MemTransform(val c: Context) extends SourceInfoTransformMacro {

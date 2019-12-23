@@ -71,7 +71,7 @@ package experimental {
       // Name ports based on reflection
       for (port <- getModulePorts) {
         require(names.contains(port), s"Unable to name port $port in $this")
-        port.setRef(ModuleIO(this, _namespace.name(names(port))))
+        port.setRef(ModuleIO(this._id, _namespace.name(names(port))))
       }
 
       // All suggestions are in, force names to every node.
@@ -156,7 +156,7 @@ abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param
     // Long term solution will be to define BlackBox IO differently as part of
     //   it not descending from the (current) Module
     for ((name, port) <- namedPorts) {
-      port.setRef(ModuleIO(this, _namespace.name(name)))
+      port.setRef(ModuleIO(this._id, _namespace.name(name)))
     }
 
     // We need to call forceName and onModuleClose on all of the sub-elements

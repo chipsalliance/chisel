@@ -48,7 +48,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
             Builder.error(s"""Unable to name port $port to "$name" in $this,""" +
               " name is already taken by another port!")
           }
-          port.setRef(ModuleIO(this, _namespace.name(name)))
+          port.setRef(ModuleIO(this._id, _namespace.name(name)))
         case None => Builder.error(s"Unable to name port $port in $this, " +
           "try making it a public field of the Module")
       }
@@ -200,7 +200,7 @@ package internal {
         // This should already have been caught
         if (!names.contains(port)) throwException(s"Unable to name port $port in $this")
         val name = names(port)
-        port.setRef(ModuleIO(this, _namespace.name(name)))
+        port.setRef(ModuleIO(this._id, _namespace.name(name)))
       }
     }
 

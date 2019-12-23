@@ -55,7 +55,9 @@ private[chisel3] object Namespace {
 private[chisel3] class IdGen {
   private var counter = -1L
   def next: Long = {
-    counter += 1
+    while(Stash.get(counter).nonEmpty) {
+      counter += 1
+    }
     counter
   }
 }
@@ -80,10 +82,17 @@ trait InstanceId {
 
 private[chisel3] trait HasId extends InstanceId {
   private[chisel3] def _onModuleClose: Unit = {} // scalastyle:ignore method.name
-  private[chisel3] val _parent: Option[BaseModule] = Builder.currentModule
-  _parent.foreach(_.addId(this))
+  private[chisel3] def _parent: Option[BaseModule] = {
+    Stash.getActiveParent(_id).map(Stash.module)
+  }
 
   private[chisel3] val _id: Long = Builder.idGen.next
+  if(Builder.currentModule.nonEmpty) {
+    val parent = Builder.currentModule.get
+    Stash.setParent(_id, parent._id)
+    Stash.setActiveParent(_id, parent._id)
+    parent.addId(this)
+  }
 
   // TODO: remove this, but its removal seems to cause a nasty Scala compiler crash.
   override def hashCode: Int = super.hashCode()
@@ -213,6 +222,9 @@ private[chisel3] class DynamicContext() {
     * Set by [[ModuleAspect]]
     */
   val aspectModule: mutable.HashMap[BaseModule, BaseModule] = mutable.HashMap.empty[BaseModule, BaseModule]
+  // Maps child to parent modules (note that because of importing, a child can have multiple parents
+  val parents: mutable.HashMap[Long, Seq[Long]] = mutable.HashMap.empty[Long, Seq[Long]]
+  val idMap: mutable.HashMap[Long, HasId] = mutable.HashMap.empty[Long, HasId]
 
   // Set by object Module.apply before calling class Module constructor
   // Used to distinguish between no Module() wrapping, multiple wrappings, and rewrapping
@@ -255,6 +267,7 @@ private[chisel3] object Builder {
   def components: ArrayBuffer[Component] = dynamicContext.components
   def annotations: ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
   def namingStack: NamingStack = dynamicContext.namingStack
+
 
   def currentModule: Option[BaseModule] = dynamicContextVar.value match {
     case Some(dyanmicContext) => dynamicContext.currentModule

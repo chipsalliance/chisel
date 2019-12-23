@@ -79,7 +79,11 @@ sealed trait ConstrainedBinding extends TopBinding {
     // This allows aspect modules to pretend to be enclosed modules for connectivity checking,
     // inside vs outside instance checking, etc.
     Builder.aspectModule(enclosure) match {
-      case None => Some(enclosure)
+      case None =>
+        Stash.getActiveLink(enclosure._id) match {
+          case None => Some(enclosure)
+          case Some(id) => Some(Stash.module(id))
+        }
       case Some(aspect) => Some(aspect)
     }
   }
