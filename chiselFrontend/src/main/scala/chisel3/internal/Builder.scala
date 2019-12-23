@@ -406,7 +406,7 @@ private[chisel3] object Builder {
         val mod = f
         mod.forceName(mod.name, globalNamespace)
         errors.checkpoint()
-        errors.info("Done elaborating.")
+        errors.info(s"Done elaborating ${mod.name}.")
 
         (Circuit(components.last.name, components, annotations), mod)
       }
