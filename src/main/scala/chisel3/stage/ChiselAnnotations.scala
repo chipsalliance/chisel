@@ -112,3 +112,5 @@ object ChiselOutputFileAnnotation extends HasShellOptions {
   * @tparam DUT Type of the top-level Chisel design
   */
 case class DesignAnnotation[DUT <: RawModule](design: DUT) extends NoTargetAnnotation with Unserializable
+
+case class StashAnnotation()
