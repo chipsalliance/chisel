@@ -2,10 +2,15 @@
 
 package examples
 
+import java.io.{FileInputStream, FileOutputStream, ObjectInputStream, ObjectOutputStream}
+
 import chiselTests.ChiselFlatSpec
 import chisel3.testers.BasicTester
 import chisel3._
+import chisel3.stage.phases.Elaborate
+import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage, DesignAnnotation}
 import chisel3.util._
+import firrtl.Namespace
 
 class SimpleVendingMachineIO extends Bundle {
   val nickel = Input(Bool())
@@ -20,7 +25,9 @@ abstract class SimpleVendingMachine extends Module {
 }
 
 // Vending machine implemented with a Finite State Machine
-class FSMVendingMachine extends SimpleVendingMachine {
+@SerialVersionUID(100L)
+class FSMVendingMachine extends SimpleVendingMachine with Serializable {
+  UInt.apply
   val sIdle :: s5 :: s10 :: s15 :: sOk :: Nil = Enum(5)
   val state = RegInit(sIdle)
 
@@ -92,4 +99,39 @@ class SimpleVendingMachineSpec extends ChiselFlatSpec {
     assertTesterPasses(new SimpleVendingMachineTester(new VerilogVendingMachineWrapper),
                        List("/chisel3/VerilogVendingMachine.v"))
   }
+}
+
+object DynamicCachingExamples extends App {
+  val stage = new ChiselStage()
+  val annos = ChiselGeneratorAnnotation(() => new FSMVendingMachine).elaborate
+  val vmachine = annos.collectFirst {
+    case DesignAnnotation(design: FSMVendingMachine) => design
+  }.get
+
+  // (2) write the instance out to a file
+
+  val oos = new ObjectOutputStream(new FileOutputStream("/tmp/vmachine"))
+  oos.writeObject(vmachine)
+  oos.close
+
+  // (3) read the object back in
+  val fsm = ChiselGeneratorAnnotation(() => {
+    val in = new ObjectInputStream(new FileInputStream("/tmp/vmachine")) {
+      override def resolveClass(desc: java.io.ObjectStreamClass): Class[_] = {
+        try { Class.forName(desc.getName, false, getClass.getClassLoader) }
+        catch { case ex: ClassNotFoundException => super.resolveClass(desc) }
+      }
+    }
+    val ois = new ObjectInputStream(new FileInputStream("/tmp/vmachine"))
+    val obj = ois.readObject.asInstanceOf[FSMVendingMachine]
+    ois.close
+    obj
+    //val obj = in.readObject().asInstanceOf[FSMVendingMachine]
+    //in.close
+    //obj
+  }).reload.asInstanceOf[FSMVendingMachine]
+
+  // (4) print the object that was read back in
+  println(fsm.state.toTarget)
+  println("Done")
 }

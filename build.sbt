@@ -108,8 +108,9 @@ lazy val chiselSettings = Seq (
     "junit" % "junit" % "4.12" % "test",
     "org.scalatest" %% "scalatest" % "3.0.8" % "test",
     "org.scalacheck" %% "scalacheck" % "1.14.0" % "test",
-    "com.github.scopt" %% "scopt" % "3.7.1"
-  ),
+    "com.github.scopt" %% "scopt" % "3.7.1",
+    "com.twitter" %% "chill" % "0.9.4"
+),
   javacOptions ++= javacOptionsVersion(scalaVersion.value)
 ) ++ (
   // Tests from other projects may still run concurrently

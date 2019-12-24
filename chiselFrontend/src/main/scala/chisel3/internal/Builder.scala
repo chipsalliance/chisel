@@ -212,6 +212,11 @@ private[chisel3] class ChiselContext() {
   val bundleStack: ArrayBuffer[(Bundle, String, String, Int)] = ArrayBuffer()
 }
 
+case class ChiselCacheTag private (tag: Long) {
+  def filename: String = tag.toHexString + ".cache"
+}
+private[chisel3] case class ChiselCache(cache: Map[ChiselCacheTag, RawModule])
+
 private[chisel3] class DynamicContext() {
   val globalNamespace = Namespace.empty
   val components = ArrayBuffer[Component]()
@@ -234,6 +239,7 @@ private[chisel3] class DynamicContext() {
   var currentReset: Option[Reset] = None
   val errors = new ErrorLog
   val namingStack = new NamingStack
+  val moduleCache = new mutable.HashMap[ChiselCacheTag, RawModule]
 }
 
 //scalastyle:off number.of.methods
@@ -257,6 +263,25 @@ private[chisel3] object Builder {
     //  http://ternarysearch.blogspot.com/2013/07/static-initialization-deadlock.html
     //  https://bugs.openjdk.java.net/browse/JDK-8037567
     //  https://stackoverflow.com/questions/28631656/runnable-thread-state-but-in-object-wait
+  }
+
+  def updateCache(tag: ChiselCacheTag, m: RawModule): Unit = {
+    dynamicContext.moduleCache(tag) = m
+  }
+
+  def getCached(tag: ChiselCacheTag): Option[BaseModule] = {
+    val x = dynamicContext.moduleCache.get(tag)
+    x match {
+      case None =>
+        println(s"Didn't find tag ${tag.filename} in cache of ${dynamicContext.moduleCache.keySet.toList.map(_.filename)}.")
+      case Some(_) =>
+        println(s"Found tag ${tag.filename} in cache of ${dynamicContext.moduleCache.keySet.toList.map(_.filename)}!")
+    }
+    x
+  }
+
+  def setCache(cache: ChiselCache): Unit = {
+    dynamicContext.moduleCache ++= cache.cache
   }
 
   def namingStackOption: Option[NamingStack] = dynamicContextVar.value.map(_.namingStack)
@@ -412,10 +437,24 @@ private[chisel3] object Builder {
     throwException(m)
   }
 
+  def reload[T <: RawModule](f: => T): T = {
+    chiselContext.withValue(new ChiselContext) {
+      dynamicContextVar.withValue(Some(new DynamicContext())) {
+        errors.info("Reloading design...")
+        val mod = f
+        mod.forceName(mod.name, globalNamespace)
+        errors.checkpoint()
+        errors.info("Done reloading.")
+        mod
+      }
+    }
+  }
+
   def build[T <: RawModule](f: => T): (Circuit, T) = {
     chiselContext.withValue(new ChiselContext) {
       dynamicContextVar.withValue(Some(new DynamicContext())) {
         errors.info("Elaborating design...")
+        println((f _).toString())
         val mod = f
         mod.forceName(mod.name, globalNamespace)
         errors.checkpoint()
@@ -423,7 +462,22 @@ private[chisel3] object Builder {
 
         (Circuit(components.last.name, components, annotations), mod)
       }
-   }
+    }
+  }
+
+  def buildWithCache[T <: RawModule](cache: ChiselCache, f: => T) = {
+    chiselContext.withValue(new ChiselContext) {
+      dynamicContextVar.withValue(Some(new DynamicContext())) {
+        setCache(cache)
+        errors.info("Elaborating design...")
+        val mod = f
+        mod.forceName(mod.name, globalNamespace)
+        errors.checkpoint()
+        errors.info("Done elaborating.")
+
+        (Circuit(components.last.name, components, annotations), mod, ChiselCache(Builder.dynamicContext.moduleCache.toMap))
+      }
+    }
   }
   initializeSingletons()
 }
