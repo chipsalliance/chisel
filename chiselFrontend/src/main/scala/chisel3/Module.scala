@@ -16,6 +16,19 @@ import chisel3.internal.sourceinfo.{InstTransform, SourceInfo}
 import chisel3.experimental.BaseModule
 import _root_.firrtl.annotations.{ModuleName, ModuleTarget, IsModule}
 
+
+object CacheCheck {
+  def apply[T <: RawModule](m: Cacheable[T]): T = {
+    Builder.getCached(m.tag) match {
+      case None =>
+        val x = m.buildImpl
+        Builder.updateCache(m.tag, x)
+        x
+      case Some(c) => c.asInstanceOf[T]
+    }
+  }
+}
+
 object Module extends SourceInfoDoc {
   /** A wrapper method that all Module instantiations must be wrapped in
     * (necessary to help Chisel track internal state).
@@ -25,6 +38,13 @@ object Module extends SourceInfoDoc {
     * @return the input module `m` with Chisel metadata properly set
     */
   def apply[T <: BaseModule](bc: => T): T = macro InstTransform.apply[T]
+
+  def apply[T <: RawModule](m: Cacheable[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    Builder.getCached(m.tag) match {
+      case None => do_apply(m.buildImpl)
+      case Some(c) => do_apply(c.asInstanceOf[T])
+    }
+  }
 
   /** @group SourceInfoTransformMacro */
   def do_apply[T <: BaseModule](bc: => T)
@@ -49,6 +69,7 @@ object Module extends SourceInfoDoc {
     //   - unset readyForModuleConstr
     //   - reset whenDepth to 0
     //   - set currentClockAndReset
+
     val module: T = bc  // bc is actually evaluated here
 
     if (Builder.whenDepth != 0) {
