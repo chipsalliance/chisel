@@ -217,14 +217,14 @@ private[chisel3] class DynamicContext() {
   val components = ArrayBuffer[Component]()
   val annotations = ArrayBuffer[ChiselAnnotation]()
   var currentModule: Option[BaseModule] = None
+  var startingAnnotations: Option[_root_.firrtl.AnnotationSeq] = None
 
-  /** Contains a mapping from a elaborated module to their aspect
+  /** Contains a mapping from an elaborated module to their aspect
     * Set by [[ModuleAspect]]
     */
   val aspectModule: mutable.HashMap[BaseModule, BaseModule] = mutable.HashMap.empty[BaseModule, BaseModule]
-  // Maps child to parent modules (note that because of importing, a child can have multiple parents
-  val parents: mutable.HashMap[Long, Seq[Long]] = mutable.HashMap.empty[Long, Seq[Long]]
-  val idMap: mutable.HashMap[Long, HasId] = mutable.HashMap.empty[Long, HasId]
+
+  var stash: Stash = Stash(Map.empty, false)
 
   // Set by object Module.apply before calling class Module constructor
   // Used to distinguish between no Module() wrapping, multiple wrappings, and rewrapping

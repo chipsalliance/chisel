@@ -5,8 +5,35 @@ package chisel3.internal
 import chisel3.experimental.BaseModule
 
 import scala.collection.mutable
+import _root_.firrtl.options.Unserializable
+import _root_.firrtl.annotations.Annotation
+import _root_.firrtl.{RenameMap, AnnotationSeq}
 
 case class Link(originalModule: Long, wrapperModule: Long, parentModule: Long)
+
+case class StashTag[T <: BaseModule](chiselClass: Class[T], parameters: Seq[AnyRef]) {
+  // For now, not doing dynamic building/reelaboration, requiring user to do it initially
+  //def buildGen(): () => T = {
+  //  () =>
+  //    val constructor = chiselClass.getConstructors()(0)
+  //    constructor.newInstance(parameters:_*).asInstanceOf[T]
+  //}
+}
+
+case class Stash(stash: Map[StashTag[_], Long],
+                 modules: Map[Long, BaseModule],
+                 dynamicLoading: Boolean,
+                 loaded: Boolean,
+                 backingStore: Option[String]) extends Annotation with Unserializable {
+  override def update(renames: RenameMap): Seq[Annotation] = Seq(this)
+  lazy val ids = stash.values.toSet
+  def module[T](tag: StashTag[T]): T = {
+    stash.get(tag) match {
+      case None => throwException(s"Error: $tag not found in stash! Turn on reelaborate if desired.")
+      case Some(m: T) => m
+    }
+  }
+}
 
 //private[chisel3] object Stash {
 object Stash {
