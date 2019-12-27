@@ -108,19 +108,18 @@ class InferResets extends Transform {
       def onStmt(map: DriverMap)(stmt: Statement): Unit = {
         // Mark driver of a ResetType leaf
         def markResetDriver(lhs: Expression, rhs: Expression): Unit = {
-          val lflip = Utils.to_flip(Utils.gender(lhs))
-          if ((lflip == Default && lhs.tpe == ResetType) ||
-              (lflip == Flip    && rhs.tpe == ResetType)) {
-            val (loc, exp) = lflip match {
-              case Default => (lhs, rhs)
-              case Flip    => (rhs, lhs)
-            }
-            val target = makeTarget(loc)
+          val con = Utils.flow(lhs) match {
+            case SinkFlow   if lhs.tpe == ResetType => Some((lhs, rhs))
+            case SourceFlow if rhs.tpe == ResetType => Some((rhs, lhs))
+            // If sink is not ResetType, do nothing
+            case _                                  => None
+          }
+          con.foreach { case (loc, exp) =>
             val driver = exp.tpe match {
               case ResetType => TargetDriver(makeTarget(exp))
               case tpe       => TypeDriver(tpe, () => makeTarget(exp))
             }
-            map(target) = driver :: Nil
+            map(makeTarget(loc)) = driver :: Nil
           }
         }
         stmt match {
@@ -181,8 +180,8 @@ class InferResets extends Transform {
     val res = mutable.Map[ReferenceTarget, Type]()
     val errors = new Errors
     def rec(target: ReferenceTarget): Type = {
-      val drivers = map.getOrElse(target, Nil)
       res.getOrElseUpdate(target, {
+        val drivers = map.getOrElse(target, Nil)
         val tpes = drivers.flatMap {
           case TargetDriver(t) => Some(TypeDriver(rec(t), () => t))
           case td: TypeDriver  => Some(td)
