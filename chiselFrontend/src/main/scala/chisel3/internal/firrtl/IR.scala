@@ -6,6 +6,7 @@ import chisel3._
 import chisel3.internal._
 import chisel3.internal.sourceinfo.SourceInfo
 import chisel3.experimental.{BaseModule, ChiselAnnotation, Param}
+import chisel3.incremental.Stash
 
 // scalastyle:off number.of.types
 

@@ -43,6 +43,7 @@ lazy val commonSettings = Seq (
   mimaPreviousArtifacts := Set(), // Default for subprojects
   scalacOptions := Seq("-deprecation", "-feature") ++ scalacOptionsVersion(scalaVersion.value),
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+  libraryDependencies += "com.twitter" %% "chill" % "0.9.4",
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
   (scalastyleConfig in Test) := (baseDirectory in root).value / "scalastyle-test-config.xml",
   // Use the root project's unmanaged base for all sub-projects.
@@ -108,8 +109,7 @@ lazy val chiselSettings = Seq (
     "junit" % "junit" % "4.12" % "test",
     "org.scalatest" %% "scalatest" % "3.0.8" % "test",
     "org.scalacheck" %% "scalacheck" % "1.14.0" % "test",
-    "com.github.scopt" %% "scopt" % "3.7.1",
-    "com.twitter" %% "chill" % "0.9.4"
+    "com.github.scopt" %% "scopt" % "3.7.1"
 ),
   javacOptions ++= javacOptionsVersion(scalaVersion.value)
 ) ++ (

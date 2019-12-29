@@ -10,6 +10,7 @@ import chisel3.internal._
 import chisel3.internal.firrtl.{Component, DefBlackBox, DefInstance, DefInvalid, ModuleIO, Port}
 import chisel3.internal.sourceinfo.{ImportTransform, InstTransform, SourceInfo}
 import _root_.firrtl.annotations.CompleteTarget
+import chisel3.incremental.Stash
 
 import scala.collection.immutable.ListMap
 import scala.language.experimental.macros

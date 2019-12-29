@@ -42,23 +42,6 @@ class Foo(fooOpt: Option[Foo]) extends MultiIOModule {
   }
 }
 
-class Bar(barOpt: Option[Bar]) extends MultiIOModule {
-  val in = IO(Input(UInt(3.W)))
-  val out = IO(Output(UInt(3.W)))
-  val handles = if(barOpt.nonEmpty) {
-    val bar = InstanceHandle("var", barOpt.get)
-    Seq(bar)
-  } else Nil
-  if(barOpt.nonEmpty) {
-    handles(0) { bar =>
-      bar.in := in
-      out := bar.out
-    }
-  } else {
-    out := in
-  }
-}
-
 
 class IncrementalSpec extends ChiselFlatSpec {
   def elaborate[T <: RawModule](gen: () => T): (T, Circuit) = {
@@ -72,6 +55,7 @@ class IncrementalSpec extends ChiselFlatSpec {
     Aspect.getFirrtl(cir)
   }
 
+  /*
   "Bar" should "elaborate" in {
     val (bar0: Bar, _) = elaborate(() => new Bar(None))
     val (bar1: Bar, _) = elaborate(() => new Bar(Some(bar0)))
@@ -79,6 +63,7 @@ class IncrementalSpec extends ChiselFlatSpec {
     println(x.serialize)
   }
 
+   */
   "Foo should elaborate" should "in" in {
     class Foo(fooOpt: Option[Foo]) extends MultiIOModule {
       val in = IO(Input(UInt(3.W)))

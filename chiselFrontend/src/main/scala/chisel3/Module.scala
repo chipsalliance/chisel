@@ -173,6 +173,8 @@ package internal {
 
 package experimental {
 
+  import chisel3.incremental.Stash
+
   /** Abstract base class for Modules, an instantiable organizational unit for RTL.
     */
   // TODO: seal this?
@@ -185,7 +187,7 @@ package experimental {
     }
     readyForModuleConstr = false
 
-    Stash.updateStash(_id, this)
+    //Stash.updateStash(_id, this)
     Builder.currentModule = Some(this)
     Builder.whenDepth = 0
 
@@ -452,14 +454,17 @@ package experimental {
     private[chisel3] var _component: Option[Component] = None
 
     /** Signal name (for simulation). */
-    override def instanceName: String =
-      if (Stash.getParents(_id).isEmpty) {
-        println("HERE", _id, this)
-        name
-      } else _component match {
+    override def instanceName: String = {
+      //if (Stash.getParents(_id).isEmpty) {
+      // println("HERE", _id, this)
+      //name
+      //     } else
+      _component match {
         case None => getRef.name
         case Some(c) => getRef fullName c
-      }
+        //    }
 
+      }
+    }
   }
 }

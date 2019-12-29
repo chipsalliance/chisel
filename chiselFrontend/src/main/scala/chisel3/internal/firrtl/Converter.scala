@@ -3,9 +3,11 @@
 package chisel3.internal.firrtl
 import chisel3._
 import chisel3.experimental._
+import chisel3.incremental.{Link, Stash}
 import chisel3.internal.sourceinfo.{NoSourceInfo, SourceInfo, SourceLine}
 import firrtl.{ir => fir}
-import chisel3.internal.{Link, Stash, castToInt, throwException}
+import chisel3.incremental.{Link, Stash}
+import chisel3.internal.{castToInt, throwException}
 
 import scala.annotation.tailrec
 import scala.collection.immutable.Queue
