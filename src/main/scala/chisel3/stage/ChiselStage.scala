@@ -17,14 +17,19 @@ class ChiselStage extends Stage with PreservesAll[Phase] {
   val shell: Shell = new Shell("chisel") with ChiselCli with FirrtlCli
 
   val targets: Seq[PhaseManager.PhaseDependency] =
-    Seq( classOf[chisel3.stage.phases.Checks],
-         classOf[chisel3.stage.phases.Elaborate],
-         classOf[chisel3.stage.phases.AddImplicitOutputFile],
-         classOf[chisel3.stage.phases.AddImplicitOutputAnnotationFile],
-         classOf[chisel3.stage.phases.MaybeAspectPhase],
-         classOf[chisel3.stage.phases.Emitter],
-         classOf[chisel3.stage.phases.Convert],
-         classOf[chisel3.stage.phases.MaybeFirrtlStage] )
+    Seq(
+      classOf[chisel3.stage.phases.Checks],
+      classOf[chisel3.stage.phases.FillStash],
+      classOf[chisel3.stage.phases.Elaborate],
+      classOf[chisel3.stage.phases.AddImplicitOutputFile],
+      classOf[chisel3.stage.phases.AddImplicitOutputAnnotationFile],
+      classOf[chisel3.stage.phases.MaybeAspectPhase],
+      classOf[chisel3.stage.phases.Emitter],
+      classOf[chisel3.stage.phases.Convert],
+      classOf[chisel3.stage.phases.ExportStashAsCache],
+      classOf[chisel3.stage.phases.StoreCaches],
+      classOf[chisel3.stage.phases.MaybeFirrtlStage]
+    )
 
   def run(annotations: AnnotationSeq): AnnotationSeq = try {
     new PhaseManager(targets) { override val wrappers = Seq( (a: Phase) => DeletedWrapper(a) ) }

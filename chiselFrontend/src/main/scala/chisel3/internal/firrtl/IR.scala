@@ -13,6 +13,7 @@ import _root_.firrtl.PrimOps
 
 import scala.collection.immutable.NumericRange
 import scala.math.BigDecimal.RoundingMode
+import chisel3.incremental.Stash
 
 // scalastyle:off number.of.types
 

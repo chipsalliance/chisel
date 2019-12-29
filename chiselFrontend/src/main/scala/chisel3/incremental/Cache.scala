@@ -1,0 +1,116 @@
+// See LICENSE for license details.
+
+package chisel3.incremental
+
+import chisel3.experimental.BaseModule
+import chisel3.RawModule
+import firrtl.annotations.NoTargetAnnotation
+import firrtl.options.{HasShellOptions, ShellOption, Unserializable}
+
+import scala.collection.mutable
+
+
+/** Contains previously elaborated modules and their tags from a single Chisel elaboration
+  * Is optionally backed from the filesystem
+  * Can be set to dynamically load tags/modules from backing directory
+  *
+  * Module id's are guaranteed to be unique within the cache
+  * Package name is set externally, when using a cache (e.g. creating the Cache object)
+  * Used to enable interoperability between caches (more than one cache can be used
+  *   in a future Chisel elaboration)
+  *
+  * @param packge
+  * @param tags
+  * @param modules
+  * @param dynamicLoading
+  * @param backingDirectory
+  */
+case class Cache(packge: String,
+                 tags: Map[ItemTag[BaseModule], Long],
+                 modules: Map[Long, BaseModule],
+                 dynamicLoading: Boolean,
+                 backingDirectory: Option[String]
+                ) extends NoTargetAnnotation with Unserializable {
+
+  // In the future, make these garbage collectable
+  def dynamicTags: mutable.HashMap[ItemTag[BaseModule], Long] = mutable.HashMap.empty
+  def dynamicModules: mutable.HashMap[Long, BaseModule] = mutable.HashMap.empty
+
+  def retrieve[T <: BaseModule](tag: ItemTag[T]): Option[T] = {
+    if(tags.contains(tag)) Some(modules(tags(tag)).asInstanceOf[T])
+    else if(dynamicTags.contains(tag)) Some(dynamicModules(dynamicTags(tag)).asInstanceOf[T])
+    else if(dynamicLoading) dynamicallyLoad(tag)
+    else None
+  }
+
+  def contains[T <: BaseModule](tag: ItemTag[T]): Boolean = {
+    tags.contains(tag) || dynamicTags.contains(tag)
+  }
+
+  def dynamicallyLoad[T <: BaseModule](tag: ItemTag[T]): Option[T] = {
+    if(dynamicLoading && backingDirectory.nonEmpty) {
+      tag.load(backingDirectory.get) match {
+        case Some(module) =>
+          dynamicTags(tag) = module._id
+          dynamicModules(module._id) = module
+          Some(module)
+        case None => None
+      }
+    } else None
+  }
+
+  def writeTo(directory: String): Unit = {
+    def storeTag(tag: ItemTag[BaseModule], id: Long): Unit = {
+      tag.store(directory, modules(id))
+    }
+    tags.foreach { case (tag: ItemTag[BaseModule], id) => storeTag(tag, id) }
+    dynamicTags.foreach { case (tag: ItemTag[BaseModule], id) => storeTag(tag, id) }
+  }
+}
+
+object Cache extends HasShellOptions {
+  val options = Seq(
+    new ShellOption[String](
+      longOption = "with-cache",
+      toAnnotationSeq = (a: String) => {
+        a.split("::") match {
+          case Array(packge, directory) => Seq(Cache.load(directory, packge))
+        }
+      },
+      helpText = "The relative or absolute path to the directory containing the cached Chisel elaborations to consume.",
+      helpValueName = Some("<packageName>::<path>") ) ,
+    new ShellOption[String](
+      longOption = "with-dynamic-cache",
+      toAnnotationSeq = (a: String) => {
+        a.split("::") match {
+          case Array(packge, directory) => Seq(Cache.load(directory, packge, dynamicLoading=true))
+        }
+      },
+      helpText = "The relative or absolute path to the directory containing the cached Chisel elaborations to consume.",
+      helpValueName = Some("<packageName>::<path>") )
+  )
+
+  def load(directory: String, packge: String, dynamicLoading: Boolean = false): Cache = {
+    if(dynamicLoading) {
+      Cache(packge, Map.empty, Map.empty, dynamicLoading=true, Some(directory))
+    } else {
+      val files = Stash.getListOfFiles(directory);
+      val tagFiles = files.collect { case file if file.getName.split('.').last == "tag" => file }
+      val tags = tagFiles.flatMap { tagFile => Stash.load[ItemTag[BaseModule]](tagFile) }
+
+      val modules = tags.map { tag =>
+        (tag, tag.load(directory))
+      }
+
+      val invalidTags = modules.collect { case (tag, None) => tag }
+      require(invalidTags.isEmpty, s"Cannot load cache $packge from $directory: invalid tags $invalidTags")
+
+      val (tagMap, moduleMap) = modules.foldLeft((Map.empty[ItemTag[BaseModule], Long], Map.empty[Long, BaseModule])) {
+        case ((tags, modules), (tag, Some(module: BaseModule))) =>
+          (tags + (tag -> module._id), (modules + (module._id -> module)))
+      }
+
+      Cache(packge, tagMap, moduleMap, dynamicLoading, Some(directory))
+    }
+  }
+}

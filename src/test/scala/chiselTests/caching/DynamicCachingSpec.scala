@@ -5,11 +5,12 @@ import java.io.{ByteArrayOutputStream, FileInputStream, FileOutputStream, Object
 import chiselTests.ChiselFlatSpec
 import chisel3._
 import chisel3.internal.ChiselCacheTag
-import chisel3.stage.{ChiselCacheAnnotation, ChiselGeneratorAnnotation}
+import chisel3.stage.{ChiselGeneratorAnnotation}
 import com.twitter.chill.MeatLocker
 
 
 
+/*
 case class CacheableRecursiveModule(depth: Int, maxDepth: Int, nchild: Int) extends Cacheable[CacheableRecursiveModuleImpl] {
   override def buildImpl: CacheableRecursiveModuleImpl = new CacheableRecursiveModuleImpl(depth, maxDepth, nchild)
 }
@@ -125,6 +126,7 @@ class DynamicCachingSpec extends ChiselFlatSpec {
      */
   }
 
+  /*
   "Explicit cache gets/sets" should "work" in {
     //val gen = () => new RecursiveModule(0, 13, 2)
     println("Starting")
@@ -133,5 +135,8 @@ class DynamicCachingSpec extends ChiselFlatSpec {
     }).elaborateWithCache(ChiselCacheAnnotation(Some("/tmp/"), Some("/tmp/")))
     elaboratedDut
   }
+   */
 
 }
+
+ */

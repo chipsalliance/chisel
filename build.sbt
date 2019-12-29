@@ -42,6 +42,7 @@ lazy val commonSettings = Seq (
   crossScalaVersions := Seq("2.12.10", "2.11.12"),
   scalacOptions := Seq("-deprecation", "-feature") ++ scalacOptionsVersion(scalaVersion.value),
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+  libraryDependencies += "com.twitter" %% "chill" % "0.9.4",
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
   (scalastyleConfig in Test) := (baseDirectory in root).value / "scalastyle-test-config.xml",
   // Use the root project's unmanaged base for all sub-projects.

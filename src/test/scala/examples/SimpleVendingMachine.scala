@@ -129,9 +129,9 @@ object DynamicCachingExamples extends App {
     //val obj = in.readObject().asInstanceOf[FSMVendingMachine]
     //in.close
     //obj
-  }).reload.asInstanceOf[FSMVendingMachine]
+  })//.reload.asInstanceOf[FSMVendingMachine]
 
   // (4) print the object that was read back in
-  println(fsm.state.toTarget)
+  //println(fsm.state.toTarget)
   println("Done")
 }

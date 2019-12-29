@@ -9,6 +9,7 @@ import chisel3.experimental._
 import chisel3.internal.firrtl._
 import chisel3.internal.naming._
 import _root_.firrtl.annotations.{CircuitName, ComponentName, IsMember, ModuleName, Named, ReferenceTarget}
+import chisel3.incremental.Stash
 
 import scala.collection.mutable
 
