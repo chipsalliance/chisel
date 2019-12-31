@@ -36,7 +36,11 @@ object InferResets {
   private case class TypeDriver(tpe: Type, target: () => ReferenceTarget) extends ResetDriver {
     override def toString: String = s"TypeDriver(${tpe.serialize}, $target)"
   }
-
+  // When a [[ResetType]] is invalidated, we record the InvalidDrive
+  // If there are no types but invalid drivers, we default to BoolType
+  private case object InvalidDriver extends ResetDriver {
+    def defaultType: Type = Utils.BoolType
+  }
 
   // Type hierarchy representing the path to a leaf type in an aggregate type structure
   // Used by this [[InferResets]] to pinpoint instances of [[ResetType]] and their inferred type
@@ -84,7 +88,7 @@ class InferResets extends Transform {
 
   // Collect all drivers for circuit elements of type ResetType
   private def analyze(c: Circuit): Map[ReferenceTarget, List[ResetDriver]] = {
-    type DriverMap = mutable.HashMap[ReferenceTarget, mutable.ListBuffer[ResetDriver]]
+    type DriverMap = mutable.HashMap[ReferenceTarget, List[ResetDriver]]
     def onMod(mod: DefModule): DriverMap = {
       val instMap = mutable.Map[String, String]()
       // We need to convert submodule port targets into targets on the Module port itself
@@ -104,19 +108,18 @@ class InferResets extends Transform {
       def onStmt(map: DriverMap)(stmt: Statement): Unit = {
         // Mark driver of a ResetType leaf
         def markResetDriver(lhs: Expression, rhs: Expression): Unit = {
-          val lflip = Utils.to_flip(Utils.gender(lhs))
-          if ((lflip == Default && lhs.tpe == ResetType) ||
-              (lflip == Flip    && rhs.tpe == ResetType)) {
-            val (loc, exp) = lflip match {
-              case Default => (lhs, rhs)
-              case Flip    => (rhs, lhs)
-            }
-            val target = makeTarget(loc)
+          val con = Utils.flow(lhs) match {
+            case SinkFlow   if lhs.tpe == ResetType => Some((lhs, rhs))
+            case SourceFlow if rhs.tpe == ResetType => Some((rhs, lhs))
+            // If sink is not ResetType, do nothing
+            case _                                  => None
+          }
+          con.foreach { case (loc, exp) =>
             val driver = exp.tpe match {
               case ResetType => TargetDriver(makeTarget(exp))
               case tpe       => TypeDriver(tpe, () => makeTarget(exp))
             }
-            map.getOrElseUpdate(target, mutable.ListBuffer()) += driver
+            map(makeTarget(loc)) = driver :: Nil
           }
         }
         stmt match {
@@ -136,6 +139,16 @@ class InferResets extends Transform {
             for ((i, j) <- points) {
               markResetDriver(locs(i), exps(j))
             }
+          case IsInvalid(_, lhs) =>
+            val exprs = Utils.create_exps(lhs)
+            for (expr <- exprs) {
+              // Ignore leaves that are not of type ResetType
+              // Unlike in markResetDriver, flow is irrelevant for invalidation
+              if (expr.tpe == ResetType) {
+                val target = makeTarget(expr)
+                map(target) = InvalidDriver :: Nil
+              }
+            }
           case WDefInstance(_, inst, module, _) =>
             instMap += (inst -> module)
           case Conditionally(_, _, con, alt) =>
@@ -143,12 +156,12 @@ class InferResets extends Transform {
             val altMap = new DriverMap
             onStmt(conMap)(con)
             onStmt(altMap)(alt)
-            // Default to outerscope if not found in alt
+            // Default to outerscope if not found on either side
+            val conLookup = conMap.orElse(map).lift
             val altLookup = altMap.orElse(map).lift
             for (key <- conMap.keys ++ altMap.keys) {
-              val ds = map.getOrElseUpdate(key, mutable.ListBuffer())
-              conMap.get(key).foreach(ds ++= _)
-              altLookup(key).foreach(ds ++= _)
+              val values = conLookup(key).getOrElse(Nil) ++ altLookup(key).getOrElse(Nil)
+              map(key) = values
             }
           case other => other.foreach(onStmt(map))
         }
@@ -167,17 +180,22 @@ class InferResets extends Transform {
     val res = mutable.Map[ReferenceTarget, Type]()
     val errors = new Errors
     def rec(target: ReferenceTarget): Type = {
-      val drivers = map(target)
       res.getOrElseUpdate(target, {
-        val tpes = drivers.map {
-          case TargetDriver(t) => TypeDriver(rec(t), () => t)
-          case td: TypeDriver => td
+        val drivers = map.getOrElse(target, Nil)
+        val tpes = drivers.flatMap {
+          case TargetDriver(t) => Some(TypeDriver(rec(t), () => t))
+          case td: TypeDriver  => Some(td)
+          case InvalidDriver   => None
         }.groupBy(_.tpe)
-        if (tpes.keys.size != 1) {
-          // Multiple types of driver!
-          errors.append(DifferingDriverTypesException(target, tpes.toSeq))
+        tpes.keys.size match {
+          // This can occur if something of type Reset has no driver
+          case 0 => InvalidDriver.defaultType
+          case 1 => tpes.keys.head
+          case _ =>
+            // Multiple types of driver!
+            errors.append(DifferingDriverTypesException(target, tpes.toSeq))
+            tpes.keys.head
         }
-        tpes.keys.head
       })
     }
     for ((target, _) <- map) {
