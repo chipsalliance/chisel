@@ -5,6 +5,7 @@ package chisel3.incremental
 import java.io._
 
 import _root_.firrtl.annotations.NoTargetAnnotation
+import _root_.firrtl.AnnotationSeq
 import _root_.firrtl.options.{HasShellOptions, ShellOption, Unserializable}
 import chisel3.experimental.BaseModule
 import com.twitter.chill.MeatLocker
@@ -35,23 +36,38 @@ case class Stash(caches: Map[String, Cache],
     builderModules(module._id) = module
   }
 
+  def store[T <: BaseModule](module: T): Unit = {
+    builderModules(module._id) = module
+  }
+
+  /** If cache package is specified, look in that cache first
+    * Otherwise, first look in builder modules, then in all caches sorted by name
+    * @param tag
+    * @param cachePackageOpt
+    * @tparam T
+    * @return
+    */
   def retrieve[T <: BaseModule](tag: ItemTag[T], cachePackageOpt: Option[String] = None): Option[T] = {
     val retrieved = if(cachePackageOpt.nonEmpty) {
       val cachePackage = cachePackageOpt.get
       require(caches.contains(cachePackage))
       caches(cachePackage).retrieve(tag)
     } else {
-      val matchingCaches = caches.collect {
-        case (_, cache) if cache.contains(tag) => cache
-      }
-
-      if(matchingCaches.isEmpty) {
-        None
-      } else if(useLatest) {
-        matchingCaches.toSeq.minBy { c: Cache => c.packge }.retrieve(tag)
+      if(builderTags.contains(tag)) {
+        builderModules.get(builderTags(tag)).asInstanceOf[Option[T]]
       } else {
-        require(matchingCaches.size == 1, "More than one cache matched item!")
-        matchingCaches.head.retrieve(tag)
+        val matchingCaches = caches.collect {
+          case (_, cache) if cache.contains(tag) => cache
+        }
+
+        if(matchingCaches.isEmpty) {
+          None
+        } else if(useLatest) {
+          matchingCaches.toSeq.minBy { c: Cache => c.packge }.retrieve(tag)
+        } else {
+          require(matchingCaches.size == 1, "More than one cache matched item!")
+          matchingCaches.head.retrieve(tag)
+        }
       }
     }
 
@@ -72,87 +88,22 @@ case class Stash(caches: Map[String, Cache],
     }
     Cache(packge, tagMap, moduleMap, dynamicLoading = false, Some(backingDirectory))
   }
-}
 
-case class StashOptions(useLatest: Boolean) extends NoTargetAnnotation
-case class ExportCache(packge: String, backingDirectory: String, isFat: Boolean) extends NoTargetAnnotation
+  /** Get modules from this elaboration, using id
+    *
+    * @param id
+    * @tparam T
+    * @return
+    */
+  def get[T <: BaseModule](id: Long): Option[T] = builderModules.get(id).asInstanceOf[Option[T]]
 
-object Stash extends HasShellOptions {
-  val options = Seq(
-    new ShellOption[String](
-      longOption = "export-cache",
-      toAnnotationSeq = (a: String) => {
-        a.split("::") match {
-          case Array(packge, directory) => Seq(ExportCache(packge, directory, isFat=false))
-        }
-      },
-      helpText = "Package name, then the relative or absolute path to the directory to export elaborated modules.",
-      helpValueName = Some("<packageName>::<path>") ) ,
-    new ShellOption[String](
-      longOption = "export-fat-cache",
-      toAnnotationSeq = (a: String) => {
-        a.split("::") match {
-          case Array(packge, directory) => Seq(ExportCache(packge, directory, isFat=false))
-        }
-      },
-      helpText = "Package name, then the relative or absolute path to the directory to export elaborated modules.",
-      helpValueName = Some("<packageName>::<path>") ) ,
-    new ShellOption[String](
-        longOption = "stash-behavior",
-        toAnnotationSeq = { (a: String) =>
-          a match {
-            case "alphabetical" => Seq(StashOptions(useLatest = true))
-            case "strict" => Seq(StashOptions(useLatest = false))
-          }
-        },
-        helpText = "Use alphabetically-first cache if tag matches in >1 cache",
-        helpValueName = Some("<packageName>::<path>") )
-  )
-
-  def getListOfFiles(dir: String): List[File] = {
-    val d = new File(dir)
-    if (d.exists && d.isDirectory) {
-      d.listFiles.filter(_.isFile).toList
-    } else {
-      List[File]()
-    }
+  def apply(id: Long): BaseModule = {
+    require(builderModules.contains(id), s"Module with id $id is not contained in stash!")
+    builderModules(id)
   }
 
-  def store[X](file: File, item: X): Unit = {
-    val oos = new ObjectOutputStream(new FileOutputStream(file))
-    oos.writeObject(MeatLocker(item))
-    oos.close
-  }
-
-  def load[X](file: File): Option[X] = {
-    try {
-      val ois = new ObjectInputStream(new FileInputStream(file.getAbsolutePath))
-      val obj = ois.readObject.asInstanceOf[MeatLocker[X]]
-      ois.close()
-      Some(obj.get)
-    } catch { case e: Exception => None }
-  }
-
-  // Stash of either elaborated to currently elaborating modules
-  // Additionally, has accessors/setters
-
-  private val moduleStash = mutable.HashMap[Long, BaseModule]()
-  def updateStash(id: Long, module: BaseModule): Unit = {
-    require(!moduleStash.contains(id), s"Cannot add module ${module.name} to stash because its id $id conflicts with ${moduleStash(id).name}.")
-    moduleStash(id) = module
-  }
-  def clearStash(): Unit = moduleStash.clear()
-  def initializeStash(stash: Map[Long, BaseModule]): Unit = {
-    require(moduleStash.isEmpty, s"Cannot initialize a non-empty stash!")
-    moduleStash ++= stash
-  }
-  def get(id: Long): Option[BaseModule] = moduleStash.get(id)
-  def module(id: Long): BaseModule = {
-    require(moduleStash.contains(id), s"Module with id $id is not contained in stash!")
-    moduleStash(id)
-  }
-
-  // Maps current child/parents relationships in design
+  /*
+  // Maps current child -> parents relationships in design
   private val parentMap = mutable.HashMap[Long, Seq[Long]]()
   def getParents(moduleId: Long): Seq[Long] = {
     parentMap.getOrElse(moduleId, Nil)
@@ -225,5 +176,77 @@ object Stash extends HasShellOptions {
     println("StackTrace:")
     stackElts.foreach(x => println(s"    $x"))
   }
+   */
+}
+
+case class StashOptions(useLatest: Boolean) extends NoTargetAnnotation
+case class ExportCache(packge: String, backingDirectory: String, isFat: Boolean) extends NoTargetAnnotation
+
+object Stash extends HasShellOptions {
+  val options = Seq(
+    new ShellOption[String](
+      longOption = "export-cache",
+      toAnnotationSeq = (a: String) => {
+        a.split("::") match {
+          case Array(packge, directory) => Seq(ExportCache(packge, directory, isFat=false))
+        }
+      },
+      helpText = "Package name, then the relative or absolute path to the directory to export elaborated modules.",
+      helpValueName = Some("<packageName>::<path>") ) ,
+    new ShellOption[String](
+      longOption = "export-fat-cache",
+      toAnnotationSeq = (a: String) => {
+        a.split("::") match {
+          case Array(packge, directory) => Seq(ExportCache(packge, directory, isFat=false))
+        }
+      },
+      helpText = "Package name, then the relative or absolute path to the directory to export elaborated modules.",
+      helpValueName = Some("<packageName>::<path>") ) ,
+    new ShellOption[String](
+        longOption = "stash-behavior",
+        toAnnotationSeq = { (a: String) =>
+          a match {
+            case "alphabetical" => Seq(StashOptions(useLatest = true))
+            case "strict" => Seq(StashOptions(useLatest = false))
+          }
+        },
+        helpText = "Use alphabetically-first cache if tag matches in >1 cache",
+        helpValueName = Some("<packageName>::<path>") )
+  )
+
+  def getListOfFiles(dir: String): List[File] = {
+    val d = new File(dir)
+    if (d.exists && d.isDirectory) {
+      d.listFiles.filter(_.isFile).toList
+    } else {
+      List[File]()
+    }
+  }
+
+  def store[X](file: File, item: X): Unit = {
+    val oos = new ObjectOutputStream(new FileOutputStream(file))
+    oos.writeObject(MeatLocker(item))
+    oos.close
+  }
+
+  def load[X](file: File): Option[X] = {
+    try {
+      val ois = new ObjectInputStream(new FileInputStream(file.getAbsolutePath))
+      val obj = ois.readObject.asInstanceOf[MeatLocker[X]]
+      ois.close()
+      Some(obj.get)
+    } catch { case e: Exception => None }
+  }
+
+  def initialize(annotations: AnnotationSeq): Stash = {
+    val stash = annotations.collectFirst {
+      case s: Stash => s
+    }
+    stash.getOrElse(Stash(Map.empty, false))
+  }
+
+  // Stash of either elaborated to currently elaborating modules
+  // Additionally, has accessors/setters
+
 }
 

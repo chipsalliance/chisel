@@ -28,17 +28,29 @@ class IncrementalTester(results: Seq[Int]) extends BasicTester {
 class Foo(fooOpt: Option[Foo]) extends MultiIOModule {
   val in = IO(Input(UInt(3.W)))
   val out = IO(Output(UInt(3.W)))
+
+  val c1Handle = InstanceHandle("c1", fooOpt.get)
+  c1Handle { c1 => c1.in }
+
   val handles = if(fooOpt.nonEmpty) {
     val c1 = InstanceHandle("c1", fooOpt.get)
+    c1 { c1 => c1.in }
     val c2 = InstanceHandle("c2", fooOpt.get)
     Seq(c1, c2)
   } else Nil
   if(fooOpt.nonEmpty) {
-    //handles(0) { _.in } := in
-    //handles(1) { _.in } := handles(0) { _.out }
-    //out := handles(1) { _.out }
+    handles(0) { _.in := in }
+    handles(0).ref{ _.in } := in
+    handles(1) { _.in } := handles(0) { _.out }
+    handles(0).zip(handles(1)) { (c1, c2) => c1.in := c2.in }
+    out := handles(1) { d => d.out }
+    out := handles(1) { wrapper => wrapper.get(handles(1)).out }
+    handles(1).mirror { d => d.parameters }
+    val x = handles(1).materialize()// ref{ d => d.childinstance.mywire }
+    handles(1).toAbsoluteTarget(i => i.in.toTarget)
+    val stuff = handles(1) { wrapper => wrapper.out }
   } else {
-    //out := in
+    out := in
   }
 }
 
