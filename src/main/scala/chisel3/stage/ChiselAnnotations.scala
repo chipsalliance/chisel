@@ -9,6 +9,7 @@ import firrtl.options.{HasShellOptions, OptionsException, ShellOption, Unseriali
 import chisel3.{ChiselException, Module}
 import chisel3.RawModule
 import chisel3.experimental.BaseModule
+import chisel3.incremental.Stash
 import chisel3.internal.{Builder, throwException}
 import chisel3.internal.firrtl.Circuit
 import com.twitter.chill.MeatLocker
@@ -48,14 +49,14 @@ case object PrintFullStackTraceAnnotation extends NoTargetAnnotation with Chisel
 /** An [[firrtl.annotations.Annotation]] storing a function that returns a Chisel module
   * @param gen a generator function
   */
-case class ChiselGeneratorAnnotation(gen: () => RawModule) extends NoTargetAnnotation with Unserializable {
+case class ChiselGeneratorAnnotation(gen: () => RawModule, stashOpt: Option[Stash] = None) extends NoTargetAnnotation with Unserializable {
 
   /** Run elaboration on the Chisel module generator function stored by this [[firrtl.annotations.Annotation]]
     */
   def elaborate: AnnotationSeq =  {
     //try {
-      val (circuit, dut) = Builder.build(Module(gen()))
-      Seq(ChiselCircuitAnnotation(circuit), DesignAnnotation(dut))
+      val (circuit, dut, stash) = Builder.build(Module(gen()), stashOpt)
+      Seq(ChiselCircuitAnnotation(circuit), DesignAnnotation(dut), stash)
     //} catch {
     //  case e @ (_: OptionsException | _: ChiselException) => throw e
     //  case e: Throwable =>
@@ -139,5 +140,3 @@ object ChiselOutputFileAnnotation extends HasShellOptions {
   * @tparam DUT Type of the top-level Chisel design
   */
 case class DesignAnnotation[DUT <: RawModule](design: DUT) extends NoTargetAnnotation with Unserializable
-
-case class StashAnnotation()

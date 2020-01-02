@@ -33,7 +33,7 @@ case class InjectingAspect[T <: RawModule,
 
   final def toAnnotation(modules: Iterable[M], circuit: String): AnnotationSeq = {
     RunFirrtlTransformAnnotation(new InjectingTransform) +: modules.map { module =>
-      val (chiselIR, _) = Builder.build(Module(new ModuleAspect(module) {
+      val (chiselIR, _, _) = Builder.build(Module(new ModuleAspect(module) {
         module match {
           case x: MultiIOModule => withClockAndReset(x.clock, x.reset) { injection(module) }
           case x: RawModule => injection(module)

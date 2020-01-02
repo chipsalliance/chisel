@@ -53,9 +53,9 @@ private[chisel3] object Converter {
       fir.SubIndex(convert(imm, ctx, links), castToInt(idx, "Index"), fir.UnknownType)
     case Index(imm, value) =>
       fir.SubAccess(convert(imm, ctx, links), convert(value, ctx, links), fir.UnknownType)
-    case m@ModuleIO(modId, name) =>
+    case m@ModuleIO(mod, name) =>
       // scalastyle:off if.brace
-      val mod = Stash.module(modId)//links.getOrElse(modId))
+      //val mod = Stash.module(modId)//links.getOrElse(modId))
       if (mod eq ctx.id) fir.Reference(name, fir.UnknownType)
       else {
         println("Mod:", mod._id, mod, name)

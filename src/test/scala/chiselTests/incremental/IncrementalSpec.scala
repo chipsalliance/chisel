@@ -25,6 +25,7 @@ class IncrementalTester(results: Seq[Int]) extends BasicTester {
   }
 }
 
+/*
 class Foo(fooOpt: Option[Foo]) extends MultiIOModule {
   val in = IO(Input(UInt(3.W)))
   val out = IO(Output(UInt(3.W)))
@@ -53,6 +54,7 @@ class Foo(fooOpt: Option[Foo]) extends MultiIOModule {
     out := in
   }
 }
+ */
 
 
 class IncrementalSpec extends ChiselFlatSpec {
@@ -76,6 +78,7 @@ class IncrementalSpec extends ChiselFlatSpec {
   }
 
    */
+  /*
   "Foo should elaborate" should "in" in {
     class Foo(fooOpt: Option[Foo]) extends MultiIOModule {
       val in = IO(Input(UInt(3.W)))
@@ -88,12 +91,14 @@ class IncrementalSpec extends ChiselFlatSpec {
     }
     val (foo0: Foo, cir0) = elaborate(() => new Foo(None))
     val (foo1: Foo, cir1) = elaborate(() => new Foo(Some(foo0)))
-    val x = foo1.handles(0).toAbsoluteTarget {
-      foo0 => foo0.in.toAbsoluteTarget
-    }
-    println(x.serialize)
+    //val x = foo1.handles(0).toAbsoluteTarget {
+    //  foo0 => foo0.in.toAbsoluteTarget
+    //}
+    //println(x.serialize)
     println(getFirrtl(cir1).serialize)
   }
+
+   */
 
   "Parent references to instances" should "elaborate without errors" in { }
   "Parent connections to/from instances" should "elaborate without errors" in { }

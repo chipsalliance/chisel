@@ -17,6 +17,7 @@ import chisel3.experimental.BaseModule
 import _root_.firrtl.annotations.{ModuleName, ModuleTarget, IsModule}
 
 
+/*
 object CacheCheck {
   def apply[T <: RawModule](m: Cacheable[T]): T = {
     Builder.getCached(m.tag) match {
@@ -28,6 +29,7 @@ object CacheCheck {
     }
   }
 }
+ */
 
 object Module extends SourceInfoDoc {
   /** A wrapper method that all Module instantiations must be wrapped in
@@ -39,12 +41,15 @@ object Module extends SourceInfoDoc {
     */
   def apply[T <: BaseModule](bc: => T): T = macro InstTransform.apply[T]
 
+  /*
   def apply[T <: RawModule](m: Cacheable[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     Builder.getCached(m.tag) match {
       case None => do_apply(m.buildImpl)
       case Some(c) => do_apply(c.asInstanceOf[T])
     }
   }
+
+   */
 
   /** @group SourceInfoTransformMacro */
   def do_apply[T <: BaseModule](bc: => T)

@@ -19,11 +19,14 @@ class StoreCaches extends Phase with PreservesAll[Phase] {
       case other => Some(other)
     }
 
-    caches.foreach {
-      case cache if cache.backingDirectory.nonEmpty => cache.writeTo(cache.backingDirectory.get)
+    val remaining = caches.flatMap {
+      case cache if cache.backingDirectory.nonEmpty =>
+        cache.writeTo(cache.backingDirectory.get)
+        None
+      case other => Some(other)
     }
 
-    retAnnotations
+    remaining ++ retAnnotations
   }
 
 }

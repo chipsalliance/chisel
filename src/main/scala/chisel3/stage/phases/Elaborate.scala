@@ -5,6 +5,7 @@ package chisel3.stage.phases
 import java.io.{PrintWriter, StringWriter}
 
 import chisel3.ChiselException
+import chisel3.incremental.Stash
 import chisel3.internal.ErrorLog
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselOptions}
 import firrtl.AnnotationSeq
