@@ -262,7 +262,9 @@ trait Utils {
       System.setSecurityManager(new ExceptOnExit())
       Right(thunk)
     } catch {
-      case ExitException(a) => Left(a)
+      case e@ExitException(a) =>
+        println(e)
+        Left(a)
     } finally {
       System.setSecurityManager(null)
     }

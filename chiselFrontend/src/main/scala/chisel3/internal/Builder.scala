@@ -6,10 +6,11 @@ import scala.util.DynamicVariable
 import scala.collection.mutable.ArrayBuffer
 import chisel3._
 import chisel3.experimental._
-import chisel3.internal.firrtl._
 import chisel3.internal.naming._
 import _root_.firrtl.annotations.{CircuitName, ComponentName, IsMember, ModuleName, Named, ReferenceTarget}
+import _root_.firrtl.AnnotationSeq
 import chisel3.incremental.Stash
+import chisel3.internal.firrtl.{Circuit, Component}
 
 import scala.collection.mutable
 
@@ -213,24 +214,18 @@ private[chisel3] class ChiselContext() {
   val bundleStack: ArrayBuffer[(Bundle, String, String, Int)] = ArrayBuffer()
 }
 
-case class ChiselCacheTag private (tag: Long) {
-  def filename: String = tag.toHexString + ".cache"
-}
-private[chisel3] case class ChiselCache(cache: Map[ChiselCacheTag, RawModule])
-
-private[chisel3] class DynamicContext() {
+private[chisel3] class DynamicContext(startingAnnotations: AnnotationSeq) {
   val globalNamespace = Namespace.empty
   val components = ArrayBuffer[Component]()
   val annotations = ArrayBuffer[ChiselAnnotation]()
   var currentModule: Option[BaseModule] = None
-  var startingAnnotations: Option[_root_.firrtl.AnnotationSeq] = None
 
   /** Contains a mapping from an elaborated module to their aspect
     * Set by [[ModuleAspect]]
     */
   val aspectModule: mutable.HashMap[BaseModule, BaseModule] = mutable.HashMap.empty[BaseModule, BaseModule]
 
-  var stash: Stash = Stash(Map.empty, false)
+  val stash: Stash = Stash.initialize(startingAnnotations)
 
   // Set by object Module.apply before calling class Module constructor
   // Used to distinguish between no Module() wrapping, multiple wrappings, and rewrapping
@@ -438,6 +433,7 @@ private[chisel3] object Builder {
     throwException(m)
   }
 
+  /*
   def reload[T <: RawModule](f: => T): T = {
     chiselContext.withValue(new ChiselContext) {
       dynamicContextVar.withValue(Some(new DynamicContext())) {
@@ -450,6 +446,7 @@ private[chisel3] object Builder {
       }
     }
   }
+   */
 
   def build[T <: RawModule](f: => T): (Circuit, T) = {
     chiselContext.withValue(new ChiselContext) {

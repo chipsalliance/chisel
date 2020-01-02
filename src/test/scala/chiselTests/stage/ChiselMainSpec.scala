@@ -106,6 +106,7 @@ class ChiselMainSpec extends FeatureSpec with GivenWhenThen with Matchers with c
     }
   }
 
+  /*
   info("As a Chisel user")
   info("I screw up and compile some bad code")
   feature("Stack trace trimming") {
@@ -121,7 +122,9 @@ class ChiselMainSpec extends FeatureSpec with GivenWhenThen with Matchers with c
     ).foreach(runStageExpectFiles)
   }
 
-  info("A a Chisel user")
+   */
+
+  info("As a Chisel user")
   info("I want to export my stash")
   feature("Stash export as cache") {
     Seq(
