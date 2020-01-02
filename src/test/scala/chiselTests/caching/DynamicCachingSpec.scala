@@ -4,7 +4,6 @@ import java.io.{ByteArrayOutputStream, FileInputStream, FileOutputStream, Object
 
 import chiselTests.ChiselFlatSpec
 import chisel3._
-import chisel3.internal.ChiselCacheTag
 import chisel3.stage.{ChiselGeneratorAnnotation}
 import com.twitter.chill.MeatLocker
 

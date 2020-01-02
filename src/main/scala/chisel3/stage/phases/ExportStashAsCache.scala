@@ -20,7 +20,6 @@ class ExportStashAsCache extends Phase with PreservesAll[Phase] {
       case s: ExportCache => exportOptions += s; None
       case other => Some(other)
     }
-    println("HERE!!!")
     require(stashOpt.nonEmpty, "Cannot export stash to cache without a stash!")
     val stash = stashOpt.get
 

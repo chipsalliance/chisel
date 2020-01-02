@@ -1,13 +1,10 @@
 package chisel3
 
 import chisel3.experimental.BaseModule
-import chisel3.internal.ChiselCacheTag
+import chisel3.incremental.ItemTag
 
-import scala.reflect.runtime.universe.TypeTag
-
-trait Cacheable[T <: RawModule] extends /*RawModule with*/ Product {
-  def tag: ChiselCacheTag = ChiselCacheTag((this.getClass() +: productIterator.toList).hashCode())
-  def buildImpl: T
+trait Cacheable extends BaseModule with Product {
+  def tag = ItemTag(this.getClass, productIterator.toList)
 }
 
 

@@ -7,6 +7,7 @@ import java.io._
 import _root_.firrtl.annotations.NoTargetAnnotation
 import _root_.firrtl.AnnotationSeq
 import _root_.firrtl.options.{HasShellOptions, ShellOption, Unserializable}
+import chisel3.Cacheable
 import chisel3.experimental.BaseModule
 import com.twitter.chill.MeatLocker
 
@@ -27,16 +28,22 @@ case class Stash(caches: Map[String, Cache],
                  useLatest: Boolean
                 ) extends NoTargetAnnotation with Unserializable {
 
-  val builderTags: mutable.HashMap[ItemTag[BaseModule], Long] = mutable.HashMap.empty
+  val builderTags: mutable.HashMap[UntypedTag, Long] = mutable.HashMap.empty
   val builderModules: mutable.HashMap[Long, BaseModule] = mutable.HashMap.empty
-  val usedTags: mutable.HashSet[ItemTag[BaseModule]] = mutable.HashSet.empty
+  val usedTags: mutable.HashSet[UntypedTag] = mutable.HashSet.empty
 
+  /*
   def store[T <: BaseModule](tag: ItemTag[T], module: T): Unit = {
-    builderTags(tag.asInstanceOf[ItemTag[BaseModule]]) = module._id
+    builderTags(tag) = module._id
     builderModules(module._id) = module
   }
+   */
 
   def store[T <: BaseModule](module: T): Unit = {
+    module match {
+      case c: Cacheable => builderTags(c.tag) = module._id
+      case _ =>
+    }
     builderModules(module._id) = module
   }
 
@@ -76,7 +83,7 @@ case class Stash(caches: Map[String, Cache],
     retrieved
   }
 
-  def exportAsCache(packge: String, backingDirectory: String, isFat: Boolean): Cache = {
+  def exportAsCache(packge: String, backingDirectory: Option[String], isFat: Boolean): Cache = {
     val (tagMap, moduleMap) = if(isFat) {
       usedTags.foldLeft((builderTags.toMap, builderModules.toMap)) {
         case ((tags, modules), tag) =>
@@ -86,7 +93,7 @@ case class Stash(caches: Map[String, Cache],
     } else {
       (builderTags.toMap, builderModules.toMap)
     }
-    Cache(packge, tagMap, moduleMap, dynamicLoading = false, Some(backingDirectory))
+    Cache(packge, tagMap, moduleMap, dynamicLoading = false, backingDirectory)
   }
 
   /** Get modules from this elaboration, using id
@@ -180,7 +187,7 @@ case class Stash(caches: Map[String, Cache],
 }
 
 case class StashOptions(useLatest: Boolean) extends NoTargetAnnotation
-case class ExportCache(packge: String, backingDirectory: String, isFat: Boolean) extends NoTargetAnnotation
+case class ExportCache(packge: String, backingDirectory: Option[String], isFat: Boolean) extends NoTargetAnnotation
 
 object Stash extends HasShellOptions {
   val options = Seq(
@@ -188,7 +195,7 @@ object Stash extends HasShellOptions {
       longOption = "export-cache",
       toAnnotationSeq = (a: String) => {
         a.split("::") match {
-          case Array(packge, directory) => Seq(ExportCache(packge, directory, isFat=false))
+          case Array(packge, directory) => Seq(ExportCache(packge, Some(directory), isFat=false))
         }
       },
       helpText = "Package name, then the relative or absolute path to the directory to export elaborated modules.",
@@ -197,7 +204,7 @@ object Stash extends HasShellOptions {
       longOption = "export-fat-cache",
       toAnnotationSeq = (a: String) => {
         a.split("::") match {
-          case Array(packge, directory) => Seq(ExportCache(packge, directory, isFat=false))
+          case Array(packge, directory) => Seq(ExportCache(packge, Some(directory), isFat=false))
         }
       },
       helpText = "Package name, then the relative or absolute path to the directory to export elaborated modules.",
@@ -236,13 +243,6 @@ object Stash extends HasShellOptions {
       ois.close()
       Some(obj.get)
     } catch { case e: Exception => None }
-  }
-
-  def initialize(annotations: AnnotationSeq): Stash = {
-    val stash = annotations.collectFirst {
-      case s: Stash => s
-    }
-    stash.getOrElse(Stash(Map.empty, false))
   }
 
   // Stash of either elaborated to currently elaborating modules

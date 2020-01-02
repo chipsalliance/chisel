@@ -26,14 +26,14 @@ import scala.collection.mutable
   * @param backingDirectory
   */
 case class Cache(packge: String,
-                 tags: Map[ItemTag[BaseModule], Long],
+                 tags: Map[UntypedTag, Long],
                  modules: Map[Long, BaseModule],
                  dynamicLoading: Boolean,
                  backingDirectory: Option[String]
                 ) extends NoTargetAnnotation with Unserializable {
 
   // In the future, make these garbage collectable
-  def dynamicTags: mutable.HashMap[ItemTag[BaseModule], Long] = mutable.HashMap.empty
+  def dynamicTags: mutable.HashMap[UntypedTag, Long] = mutable.HashMap.empty
   def dynamicModules: mutable.HashMap[Long, BaseModule] = mutable.HashMap.empty
 
   def retrieve[T <: BaseModule](tag: ItemTag[T]): Option[T] = {
@@ -60,11 +60,8 @@ case class Cache(packge: String,
   }
 
   def writeTo(directory: String): Unit = {
-    def storeTag(tag: ItemTag[BaseModule], id: Long): Unit = {
-      tag.store(directory, modules(id))
-    }
-    tags.foreach { case (tag: ItemTag[BaseModule], id) => storeTag(tag, id) }
-    dynamicTags.foreach { case (tag: ItemTag[BaseModule], id) => storeTag(tag, id) }
+    tags.foreach { case (tag: ItemTag[_], id) => tag.store(directory, modules(id)) }
+    dynamicTags.foreach { case (tag: ItemTag[_], id) => tag.store(directory, modules(id)) }
   }
 }
 
@@ -95,17 +92,16 @@ object Cache extends HasShellOptions {
       Cache(packge, Map.empty, Map.empty, dynamicLoading=true, Some(directory))
     } else {
       val files = Stash.getListOfFiles(directory);
-      val tagFiles = files.collect { case file if file.getName.split('.').last == "tag" => file }
-      val tags = tagFiles.flatMap { tagFile => Stash.load[ItemTag[BaseModule]](tagFile) }
-
-      val modules = tags.map { tag =>
-        (tag, tag.load(directory))
+      val modules = files.collect {
+        case file if file.getName.split('.').last == "tag" =>
+          val tag = Stash.load[UntypedTag](file).get
+          (tag, tag.untypedLoad(directory))
       }
 
       val invalidTags = modules.collect { case (tag, None) => tag }
       require(invalidTags.isEmpty, s"Cannot load cache $packge from $directory: invalid tags $invalidTags")
 
-      val (tagMap, moduleMap) = modules.foldLeft((Map.empty[ItemTag[BaseModule], Long], Map.empty[Long, BaseModule])) {
+      val (tagMap, moduleMap) = modules.foldLeft((Map.empty[UntypedTag, Long], Map.empty[Long, BaseModule])) {
         case ((tags, modules), (tag, Some(module: BaseModule))) =>
           (tags + (tag -> module._id), (modules + (module._id -> module)))
       }
