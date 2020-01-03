@@ -58,12 +58,7 @@ private[chisel3] object Converter {
       //val mod = Stash.module(modId)//links.getOrElse(modId))
       if (mod eq ctx.id) fir.Reference(name, fir.UnknownType)
       else {
-        println("Mod:", mod._id, mod, name)
-        println("Ctx:", ctx.id._id, ctx.id, name)
-        println("Parent")
-        println("mod.getRef", mod.getRef)
         fir.SubField(fir.Reference(mod.getRef.name, fir.UnknownType), name, fir.UnknownType)
-
       }
     // scalastyle:on if.brace
     case u @ ULit(n, UnknownWidth()) =>

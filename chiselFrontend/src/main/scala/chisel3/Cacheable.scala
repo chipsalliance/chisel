@@ -4,7 +4,7 @@ import chisel3.experimental.BaseModule
 import chisel3.incremental.ItemTag
 
 trait Cacheable extends BaseModule with Product {
-  def tag = ItemTag(this.getClass, productIterator.toList)
+  def tag = ItemTag[this.type](productIterator.toList)
 }
 
 

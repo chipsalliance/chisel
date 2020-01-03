@@ -50,8 +50,8 @@ object ImportTransform
 // Module instantiation transform
 class ImportTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._
-  def apply[T: c.WeakTypeTag](name: c.Tree, tag: c.Tree, packge: c.Tree): c.Tree = {
-    q"$thisObj.do_apply($name, $tag, $packge)($implicitSourceInfo, $implicitCompileOptions)"
+  def apply[T: c.WeakTypeTag](tag: c.Tree, packge: c.Tree): c.Tree = {
+    q"$thisObj.do_apply($tag, $packge)($implicitSourceInfo, $implicitCompileOptions)"
   }
 }
 
