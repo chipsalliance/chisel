@@ -5,8 +5,9 @@ package chiselTests.stage
 import chisel3._
 import chisel3.incremental.{Cache, ExportCache, ItemTag, Stash}
 import chisel3.stage.phases.Elaborate
-import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation, ChiselStage, PrintFullStackTraceAnnotation}
+import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation, ChiselStage, NoRunFirrtlCompilerAnnotation, PrintFullStackTraceAnnotation}
 import firrtl.options.{Phase, Stage}
+import firrtl.stage.FirrtlCircuitAnnotation
 import org.scalatest.{FlatSpec, Matchers}
 
 
@@ -20,11 +21,9 @@ class ChiselStageSpec extends FlatSpec with Matchers {
   class Bar() extends RawModule {
     val in = IO(Input(UInt(3.W)))
     val out = IO(Output(UInt(3.W)))
-    val simpleHandle = InstanceHandle("simple", ItemTag(classOf[Simple], Nil), None)
-    simpleHandle{ simple =>
-      simple.in := in
-      out := simple.out
-    }
+    val simple = InstanceHandle(ItemTag[Simple](Nil), None)
+    simple(_.in) := in
+    out := simple(_.out)
   }
 
   behavior of classOf[Stash].toString
@@ -32,21 +31,29 @@ class ChiselStageSpec extends FlatSpec with Matchers {
   class Fixture { val stage: Stage = new ChiselStage }
 
   it should "export a cache after elaboration" in new Fixture {
-    val caches = stage.run(
+    val simpleResult = stage.run(
       Seq(ChiselGeneratorAnnotation(() => new Simple), ExportCache("simple", None, false))
-    ).collect{
+    )
+    simpleResult.collect {
+      case f: FirrtlCircuitAnnotation => println(f.circuit.serialize)
+    }
+    val caches = simpleResult.collect{
       case c: Cache => c
     }
 
     //info("original annotations removed")
-    val x = stage.run(
-      Seq(ChiselGeneratorAnnotation(() => new Bar()), ExportCache("bar", None, false), PrintFullStackTraceAnnotation ) ++ caches
-    ).collect{
-      case c: ChiselCircuitAnnotation =>
-        c.circuit.name should be ("Bar")
-        c
+    val barResult = stage.run(
+      Seq(ChiselGeneratorAnnotation(() => new Bar()),
+        ExportCache("bar", None, false),
+        NoRunFirrtlCompilerAnnotation,
+        PrintFullStackTraceAnnotation
+      ) ++ caches
+    )
+    barResult.collect{
+      case c: FirrtlCircuitAnnotation =>
+        c.circuit.main should be ("Bar")
+        println(c.circuit.serialize)
     }
-    println(x)
   }
 
 }

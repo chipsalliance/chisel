@@ -9,49 +9,34 @@ import chisel3.internal.Builder.pushCommand
 import chisel3.internal._
 import chisel3.internal.firrtl.{Component, DefBlackBox, DefInstance, DefInvalid, ModuleIO, Port}
 import chisel3.internal.sourceinfo.{ImportTransform, InstTransform, SourceInfo}
-import _root_.firrtl.annotations.CompleteTarget
+import _root_.firrtl.annotations.{CompleteTarget, IsMember}
 import chisel3.incremental.{ItemTag, Stash}
 
 import scala.collection.immutable.ListMap
 import scala.language.experimental.macros
 
-private class OriginalModuleWrapper[T <: BaseModule] private[chisel3](instanceName: String,
-                                                                      accessImport: () => (String, ClonePorts)
+private class OriginalModuleWrapper[T <: BaseModule] private[chisel3](moduleName: String,
+                                                                      ports: Record
                                                                      )(implicit sourceInfo: SourceInfo,
-                                                                        compileOptions: CompileOptions) extends ExtModule {
-  private lazy val (moduleName, ports) = accessImport()
-  //override def desiredName = moduleName
-  forceName(instanceName, _namespace)
+                                                                        compileOptions: CompileOptions) extends BlackBox {
+  override def desiredName: String = moduleName
 
-  private[chisel3] override def generateComponent(): Component = {
-    require(!_closed, "Can't generate module more than once")
-    _closed = true
-
-    val firrtlPorts = ports.elements.toSeq map {
-      case (name, port) => Port(port, port.specifiedDirection)
-    }
-    val component = DefBlackBox(this, name, firrtlPorts, SpecifiedDirection.Unspecified, params)
-
-    _component = Some(component)
-    component
-  }
+  val io = IO(ports)
 
 }
 
 
 
-class InstanceHandle[T <: BaseModule] private[chisel3](instanceName: String,
-                                                       tag: ItemTag[T],
+class InstanceHandle[T <: BaseModule] private[chisel3](tag: ItemTag[T],
                                                        packge: Option[String]
                                                       )(implicit sourceInfo: SourceInfo,
-                                                        compileOptions: CompileOptions) {
-  val stash = Builder.stash.get
-  if(Builder.stash.get.retrieve(tag, packge).nonEmpty) {
-    val accessImport = () => {
-      val importedModule = Builder.stash.get.retrieve(tag, packge).get
-      (importedModule.name, new ClonePorts(importedModule.getModulePorts:_*))
-    }
-    Module.do_apply(new OriginalModuleWrapper[T](instanceName, accessImport))
+                                                        compileOptions: CompileOptions) /*extends HasId*/ {
+
+
+  private[chisel3] val wrapper = if(Builder.stash.get.retrieve(tag, packge).nonEmpty) {
+    val importedModule = Builder.stash.get.retrieve(tag, packge).get
+    val record = new ClonePorts(importedModule.getModulePorts:_*)
+    Module.do_apply(new OriginalModuleWrapper[T](importedModule.name, record))
   } else {
     throwException(s"Cannot find imported module with tag $tag in package $packge")
   }
@@ -62,12 +47,13 @@ class InstanceHandle[T <: BaseModule] private[chisel3](instanceName: String,
 
   def apply[X](f: T => X): X = {
     set()
-    val ret = f(Builder.stash.get.retrieve(tag, packge).get)
+    val importedModule = Builder.stash.get.retrieve(tag, packge).get
+    val portMap = importedModule.getModulePorts.zip(wrapper.io.elements.values).toMap
+    val ret = f(importedModule)
     unset()
     ret match {
-      case d: Data =>
-        println("Returning data")
-        ret
+      case d: Data if !portMap.contains(d) => d.cloneType.asInstanceOf[X]
+      case d: Data => portMap(d).asInstanceOf[X]
       case _ => ret
     }
   }
@@ -94,16 +80,21 @@ class InstanceHandle[T <: BaseModule] private[chisel3](instanceName: String,
     }
   }
    */
+  /*
+  override def toNamed= ???
+  override def toTarget: IsMember = ???
+  override def toAbsoluteTarget: IsMember = ???
+   */
 }
 
 object InstanceHandle extends SourceInfoDoc {
-  def apply[T <: BaseModule](name: String, tag: ItemTag[T], packge: Option[String]): InstanceHandle[T] = macro ImportTransform.apply[T]
+  def apply[T <: BaseModule](tag: ItemTag[T], packge: Option[String]): InstanceHandle[T] = macro ImportTransform.apply[T]
 
   /** @group SourceInfoTransformMacro */
-  def do_apply[T <: BaseModule](name: String, tag: ItemTag[T], packge: Option[String])
+  def do_apply[T <: BaseModule](tag: ItemTag[T], packge: Option[String])
                                (implicit sourceInfo: SourceInfo,
                                 compileOptions: CompileOptions): InstanceHandle[T] = {
-    new InstanceHandle(name, tag, packge)
+    new InstanceHandle(tag, packge)
   }
 
   /** Returns the implicit Clock */

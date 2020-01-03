@@ -378,6 +378,7 @@ private[chisel3] object Builder {
     * (Note: Map is Iterable[Tuple2[_,_]] and thus excluded)
     */
   def nameRecursively(prefix: String, nameMe: Any, namer: (HasId, String) => Unit): Unit = nameMe match {
+    case (id: InstanceHandle[_]) => namer(id.wrapper, prefix)
     case (id: HasId) => namer(id, prefix)
     case Some(elt) => nameRecursively(prefix, elt, namer)
     case (iter: Iterable[_]) if iter.hasDefiniteSize =>

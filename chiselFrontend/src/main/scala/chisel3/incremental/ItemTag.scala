@@ -4,6 +4,9 @@ import java.io.File
 
 import chisel3.experimental.BaseModule
 
+import scala.reflect.ClassTag
+import scala.reflect.runtime.universe.TypeTag
+
 trait UntypedTag {
   val chiselClassName: String
   val parameters: Seq[Any]
@@ -29,11 +32,11 @@ trait UntypedTag {
   *
   * Used to import previously elaborated modules into a new elaboration
   *
-  * @param chiselClass
   * @param parameters
   * @tparam T
   */
-case class ItemTag[T <: BaseModule](chiselClass: Class[T], parameters: Seq[Any]) extends UntypedTag {
+case class ItemTag[T <: BaseModule](parameters: Seq[Any])(implicit classTag: ClassTag[T]) extends UntypedTag {
+  val chiselClass = classTag.runtimeClass.asInstanceOf[Class[T]]
   val chiselClassName = chiselClass.getName
 
   private[chisel3] def load(directory: String): Option[T] = {
