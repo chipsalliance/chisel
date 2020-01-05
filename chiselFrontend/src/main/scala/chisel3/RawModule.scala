@@ -193,7 +193,6 @@ package internal {
       }
     }
 
-
     private[chisel3] override def generateComponent(): Component = {
       _compatAutoWrapPorts()  // pre-IO(...) compatibility hack
 
