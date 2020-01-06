@@ -15,7 +15,7 @@ import firrtl.PrimOps._
 import firrtl.WrappedExpression._
 import Utils._
 import MemPortUtils.{memPortField, memType}
-import firrtl.options.{HasShellOptions, ShellOption, StageUtils, PhaseException}
+import firrtl.options.{HasShellOptions, ShellOption, StageUtils, PhaseException, Unserializable}
 import firrtl.stage.RunFirrtlTransformAnnotation
 // Datastructures
 import scala.collection.mutable.ArrayBuffer
@@ -93,7 +93,7 @@ final case class EmittedFirrtlModule(name: String, value: String, outputSuffix: 
 final case class EmittedVerilogModule(name: String, value: String, outputSuffix: String) extends EmittedModule
 
 /** Traits for Annotations containing emitted components */
-sealed trait EmittedAnnotation[T <: EmittedComponent] extends NoTargetAnnotation {
+sealed trait EmittedAnnotation[T <: EmittedComponent] extends NoTargetAnnotation with Unserializable {
   val value: T
 }
 sealed trait EmittedCircuitAnnotation[T <: EmittedCircuit] extends EmittedAnnotation[T]
