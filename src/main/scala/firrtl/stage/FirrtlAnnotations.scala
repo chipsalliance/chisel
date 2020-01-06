@@ -131,7 +131,7 @@ object FirrtlSourceAnnotation extends HasShellOptions {
       longOption      = "firrtl-source",
       toAnnotationSeq = a => Seq(FirrtlSourceAnnotation(a)),
       helpText        = "An input FIRRTL circuit string",
-      shortOption     = Some("<string>") ) )
+      helpValueName   = Some("<string>") ) )
 
 }
 
