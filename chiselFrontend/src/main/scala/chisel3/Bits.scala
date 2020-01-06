@@ -2162,16 +2162,16 @@ package experimental {
 
     protected[chisel3] def Lit(value: BigInt, range: IntervalRange): Interval = {
       val lit = IntervalLit(value, range.getWidth, range.binaryPoint)
-      val bigDecimal = BigDecimal(value)
+      val bigDecimal = BigDecimal(value) / (1 << lit.binaryPoint.get)
       val inRange = (range.lowerBound, range.upperBound) match {
         case (firrtlir.Closed(l), firrtlir.Closed(u)) => l <= bigDecimal && bigDecimal <= u
-        case (firrtlir.Closed(l), firrtlir.Open(u))   => l <= bigDecimal && bigDecimal <= u
-        case (firrtlir.Open(l), firrtlir.Closed(u))   => l <= bigDecimal && bigDecimal <= u
-        case (firrtlir.Open(l), firrtlir.Open(u))     => l <= bigDecimal && bigDecimal <= u
+        case (firrtlir.Closed(l), firrtlir.Open(u))   => l <= bigDecimal && bigDecimal < u
+        case (firrtlir.Open(l), firrtlir.Closed(u))   => l < bigDecimal && bigDecimal <= u
+        case (firrtlir.Open(l), firrtlir.Open(u))     => l < bigDecimal && bigDecimal < u
       }
       if(! inRange) {
         throw new ChiselException(
-          s"Error literal interval value $value is not contained in specified range $range"
+          s"Error literal interval value $bigDecimal is not contained in specified range $range"
         )
       }
       val result = Interval(range)
