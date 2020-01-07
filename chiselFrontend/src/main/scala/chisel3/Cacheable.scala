@@ -1,10 +1,13 @@
 package chisel3
 
 import chisel3.experimental.BaseModule
-import chisel3.incremental.ItemTag
+import chisel3.incremental.{ItemTag, Tag}
 
-trait Cacheable extends BaseModule with Product {
-  def tag = ItemTag[this.type](productIterator.toList)
+import scala.reflect.ClassTag
+
+trait Cacheable[T <: BaseModule] extends BaseModule with Product {
+  val ttag: ClassTag[T]
+  def tag: ItemTag[T] = ItemTag[T](productIterator.toList)(ttag)
 }
 
 
