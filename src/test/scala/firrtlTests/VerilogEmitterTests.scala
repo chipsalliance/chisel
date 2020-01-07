@@ -70,6 +70,62 @@ class DoPrimVerilog extends FirrtlFlatSpec {
         |""".stripMargin.split("\n") map normalized
     executeTest(input, check, compiler)
   }
+  "Not" should "emit correctly" in {
+    val compiler = new VerilogCompiler
+    val input =
+      """circuit Not :
+        |  module Not :
+        |    input a: UInt<1>
+        |    output b: UInt<1>
+        |    b <= not(a)""".stripMargin
+    val check =
+      """module Not(
+        |  input   a,
+        |  output  b
+        |);
+        |  assign b = ~a;
+        |endmodule
+        |""".stripMargin.split("\n") map normalized
+    executeTest(input, check, compiler)
+  }
+  "inline Not" should "emit correctly" in {
+    val compiler = new VerilogCompiler
+    val input =
+      """circuit InlineNot :
+        |  module InlineNot :
+        |    input a: UInt<1>
+        |    input b: UInt<1>
+        |    input c: UInt<4>
+        |    output d: UInt<1>
+        |    output e: UInt<1>
+        |    output f: UInt<1>
+        |    output g: UInt<1>
+        |    d <= and(a, not(b))
+        |    e <= or(a, not(b))
+        |    f <= not(not(not(bits(c, 2, 2))))
+        |    g <= mux(not(bits(c, 2, 2)), a, b)""".stripMargin
+    val check =
+      """module InlineNot(
+        |  input   a,
+        |  input   b,
+        |  input  [3:0] c,
+        |  output  d,
+        |  output  e,
+        |  output  f,
+        |  output  g
+        |);
+        |  wire _GEN_2;
+        |  wire _GEN_4;
+        |  assign d = a & ~b;
+        |  assign e = a | ~b;
+        |  assign _GEN_2 = c[2];
+        |  assign _GEN_4 = _GEN_2;
+        |  assign f = ~_GEN_4;
+        |  assign g = _GEN_2 ? b : a;
+        |endmodule
+        |""".stripMargin.split("\n") map normalized
+    executeTest(input, check, compiler)
+  }
   "Rem" should "emit correctly" in {
     val compiler = new VerilogCompiler
     val input =

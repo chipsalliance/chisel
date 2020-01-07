@@ -237,7 +237,10 @@ class VerilogEmitter extends SeqTransform with Emitter {
         if (e.tpe == AsyncResetType) {
           throw EmitterException("Cannot emit async reset muxes directly")
         }
-        emit(Seq(e.cond," ? ",cast(e.tval)," : ",cast(e.fval)),top + 1)
+        e.cond match {
+          case DoPrim(Not, Seq(sel), _,_) => emit(Seq(sel," ? ",cast(e.fval)," : ",cast(e.tval)),top + 1)
+          case _ => emit(Seq(e.cond," ? ",cast(e.tval)," : ",cast(e.fval)),top + 1)
+        }
       }
       case (e: ValidIf) => emit(Seq(cast(e.value)),top + 1)
       case (e: WRef) => w write e.serialize
@@ -307,13 +310,15 @@ class VerilogEmitter extends SeqTransform with Emitter {
      def c0: Int = doprim.consts.head.toInt
      def c1: Int = doprim.consts(1).toInt
 
-     def checkArgumentLegality(e: Expression) = e match {
+     def checkArgumentLegality(e: Expression): Unit = e match {
        case _: UIntLiteral | _: SIntLiteral | _: WRef | _: WSubField =>
+       case DoPrim(Not, args, _,_) => args.foreach(checkArgumentLegality)
        case _ => throw EmitterException(s"Can't emit ${e.getClass.getName} as PrimOp argument")
      }
 
      def checkCatArgumentLegality(e: Expression): Unit = e match {
        case _: UIntLiteral | _: SIntLiteral | _: WRef | _: WSubField =>
+       case DoPrim(Not, args, _,_) => args.foreach(checkArgumentLegality)
        case DoPrim(Cat, args, _, _) => args foreach(checkCatArgumentLegality)
        case _ => throw EmitterException(s"Can't emit ${e.getClass.getName} as PrimOp argument")
      }
@@ -378,7 +383,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
          case (_: UIntType) => Seq("{1'b0,", cast(a0), "}")
          case (_: SIntType) => Seq(cast(a0))
        }
-       case Not => Seq("~ ", a0)
+       case Not => Seq("~", a0)
        case And => Seq(cast_as(a0), " & ", cast_as(a1))
        case Or => Seq(cast_as(a0), " | ", cast_as(a1))
        case Xor => Seq(cast_as(a0), " ^ ", cast_as(a1))
@@ -961,6 +966,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
   def transforms = Seq(
     new BlackBoxSourceHelper,
     new ReplaceTruncatingArithmetic,
+    new InlineNotsTransform,
     new FlattenRegUpdate,
     new DeadCodeElimination,
     passes.VerilogModulusCleanup,

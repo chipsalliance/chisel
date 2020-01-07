@@ -735,6 +735,78 @@ class ConstantPropagationSingleModule extends ConstantPropagationSpec {
     (parse(exec(input))) should be(parse(check))
   }
 
+   "ConstProp" should "propagate boolean equality with true" in {
+    val input =
+      """circuit Top :
+        |  module Top :
+        |    input x : UInt<1>
+        |    output z : UInt<1>
+        |    z <= eq(x, UInt<1>("h1"))
+      """.stripMargin
+    val check =
+      """circuit Top :
+        |  module Top :
+        |    input x : UInt<1>
+        |    output z : UInt<1>
+        |    z <= x
+      """.stripMargin
+    (parse(exec(input))) should be(parse(check))
+  }
+
+   "ConstProp" should "propagate boolean equality with false" in {
+    val input =
+      """circuit Top :
+        |  module Top :
+        |    input x : UInt<1>
+        |    output z : UInt<1>
+        |    z <= eq(x, UInt<1>("h0"))
+      """.stripMargin
+    val check =
+      """circuit Top :
+        |  module Top :
+        |    input x : UInt<1>
+        |    output z : UInt<1>
+        |    z <= not(x)
+      """.stripMargin
+    (parse(exec(input))) should be(parse(check))
+  }
+
+   "ConstProp" should "propagate boolean non-equality with true" in {
+    val input =
+      """circuit Top :
+        |  module Top :
+        |    input x : UInt<1>
+        |    output z : UInt<1>
+        |    z <= neq(x, UInt<1>("h1"))
+      """.stripMargin
+    val check =
+      """circuit Top :
+        |  module Top :
+        |    input x : UInt<1>
+        |    output z : UInt<1>
+        |    z <= not(x)
+      """.stripMargin
+    (parse(exec(input))) should be(parse(check))
+  }
+
+   "ConstProp" should "propagate boolean non-equality with false" in {
+    val input =
+      """circuit Top :
+        |  module Top :
+        |    input x : UInt<1>
+        |    output z : UInt<1>
+        |    z <= neq(x, UInt<1>("h0"))
+      """.stripMargin
+    val check =
+      """circuit Top :
+        |  module Top :
+        |    input x : UInt<1>
+        |    output z : UInt<1>
+        |    z <= x
+      """.stripMargin
+    (parse(exec(input))) should be(parse(check))
+  }
+
   // Optimizing this mux gives: z <= pad(UInt<2>(0), 4)
   // Thus this checks that we then optimize that pad
   "ConstProp" should "optimize nested Expressions" in {
