@@ -28,9 +28,9 @@ case class Stash(caches: Map[String, Cache],
                  useLatest: Boolean
                 ) extends NoTargetAnnotation with Unserializable {
 
-  val builderTags: mutable.HashMap[UntypedTag, Long] = mutable.HashMap.empty
+  val builderTags: mutable.HashMap[Tag, Long] = mutable.HashMap.empty
   val builderModules: mutable.HashMap[Long, BaseModule] = mutable.HashMap.empty
-  val usedTags: mutable.HashSet[UntypedTag] = mutable.HashSet.empty
+  val usedTags: mutable.HashSet[Tag] = mutable.HashSet.empty
 
   /*
   def store[T <: BaseModule](tag: ItemTag[T], module: T): Unit = {
@@ -41,7 +41,7 @@ case class Stash(caches: Map[String, Cache],
 
   def store[T <: BaseModule](module: T): Unit = {
     module match {
-      case c: Cacheable => builderTags(c.tag) = module._id
+      case c: Cacheable[_] => builderTags(c.tag) = module._id
       case _ =>
     }
     builderModules(module._id) = module
@@ -195,7 +195,7 @@ object Stash extends HasShellOptions {
       longOption = "export-cache",
       toAnnotationSeq = (a: String) => {
         a.split("::") match {
-          case Array(packge, directory) => Seq(ExportCache(packge, Some(directory), isFat=false))
+          case Array(packge, directory) => Seq(ExportCache(packge/*Package.deserialize(packge)*/, Some(directory), isFat=false))
         }
       },
       helpText = "Package name, then the relative or absolute path to the directory to export elaborated modules.",
@@ -204,7 +204,7 @@ object Stash extends HasShellOptions {
       longOption = "export-fat-cache",
       toAnnotationSeq = (a: String) => {
         a.split("::") match {
-          case Array(packge, directory) => Seq(ExportCache(packge, Some(directory), isFat=false))
+          case Array(packge, directory) => Seq(ExportCache(packge/*Package.deserialize(packge)*/, Some(directory), isFat=false))
         }
       },
       helpText = "Package name, then the relative or absolute path to the directory to export elaborated modules.",
@@ -236,13 +236,28 @@ object Stash extends HasShellOptions {
     oos.close
   }
 
+  def store[X](directory: String, filename: String, item: X): Unit = {
+    val dir = new File(directory)
+    dir.mkdirs()
+    val file = new File(dir.getAbsolutePath + "/" + filename)
+    println(dir.getAbsolutePath)
+    store(file, item)
+  }
+
   def load[X](file: File): Option[X] = {
+    require(file.exists())
     try {
       val ois = new ObjectInputStream(new FileInputStream(file.getAbsolutePath))
       val obj = ois.readObject.asInstanceOf[MeatLocker[X]]
       ois.close()
       Some(obj.get)
     } catch { case e: Exception => None }
+  }
+
+  def load[X](directory: String, filename: String): Option[X] = {
+    val dir = new File(directory)
+    val file = new File(dir.getAbsolutePath + "/" + filename)
+    load(file)
   }
 
   // Stash of either elaborated to currently elaborating modules

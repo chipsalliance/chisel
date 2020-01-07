@@ -29,6 +29,7 @@ private class OriginalModuleWrapper[T <: BaseModule] private[chisel3](moduleName
 
 class InstanceHandle[T <: BaseModule] private[chisel3](tag: ItemTag[T],
                                                        packge: Option[String]
+                                                       //version: Option[(String, Option[(Int, Option[(Int, Option[Int])])])],
                                                       )(implicit sourceInfo: SourceInfo,
                                                         compileOptions: CompileOptions) /*extends HasId*/ {
 

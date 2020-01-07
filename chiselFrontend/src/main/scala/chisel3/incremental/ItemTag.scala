@@ -7,7 +7,7 @@ import chisel3.experimental.BaseModule
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
 
-trait UntypedTag {
+trait Tag {
   val chiselClassName: String
   val parameters: Seq[Any]
 
@@ -18,15 +18,16 @@ trait UntypedTag {
   def itemFileName: String = chiselClassName + "." + tag + ".item"
 
   private[chisel3] def store(directory: String, module: BaseModule): Unit = {
-    Stash.store(new File(directory + itemFileName), module)
-    Stash.store(new File(directory + tagFileName), this)
+    Stash.store(directory, itemFileName, module)
+    Stash.store(directory, tagFileName, this)
   }
 
   private[chisel3] def untypedLoad(directory: String): Option[BaseModule] = {
-    Stash.load[BaseModule](new File(directory + itemFileName))
+    Stash.load[BaseModule](directory, itemFileName)
   }
-
 }
+
+case class UntypedTag(chiselClassName: String, parameters: Seq[Any]) extends Tag
 
 /** An elaboration-agnostic tag for an elaborated module
   *
@@ -35,11 +36,11 @@ trait UntypedTag {
   * @param parameters
   * @tparam T
   */
-case class ItemTag[T <: BaseModule](parameters: Seq[Any])(implicit classTag: ClassTag[T]) extends UntypedTag {
+case class ItemTag[T <: BaseModule](parameters: Seq[Any])(implicit classTag: ClassTag[T]) extends Tag {
   val chiselClass = classTag.runtimeClass.asInstanceOf[Class[T]]
   val chiselClassName = chiselClass.getName
 
   private[chisel3] def load(directory: String): Option[T] = {
-    Stash.load(new File(directory + itemFileName)).asInstanceOf[Option[T]]
+    Stash.load(directory, itemFileName).asInstanceOf[Option[T]]
   }
 }
