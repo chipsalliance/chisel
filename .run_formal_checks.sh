@@ -12,9 +12,6 @@ DUT=$1
 if [ $TRAVIS_PULL_REQUEST = "false" ]; then
     echo "Not a pull request, no formal check"
     exit 0
-elif git log --format=%B --no-merges $TRAVIS_BRANCH..HEAD | grep '\[skip formal checks\]'; then
-    echo "Commit message says to skip formal checks"
-    exit 0
 else
     # $TRAVIS_BRANCH is branch targeted by PR
     # Travis does a shallow clone, checkout PR target so that we have it
@@ -22,6 +19,12 @@ else
     git remote set-branches origin $TRAVIS_BRANCH && git fetch
     git checkout $TRAVIS_BRANCH
     git checkout -
-    cp regress/$DUT.fir $DUT.fir
-    ./scripts/formal_equiv.sh HEAD $TRAVIS_BRANCH $DUT
+    # Skip if '[skip formal checks]' shows up in any of the commit messages in the PR
+    if git log --format=%B --no-merges $TRAVIS_BRANCH..HEAD | grep '\[skip formal checks\]'; then
+        echo "Commit message says to skip formal checks"
+        exit 0
+    else
+        cp regress/$DUT.fir $DUT.fir
+        ./scripts/formal_equiv.sh HEAD $TRAVIS_BRANCH $DUT
+    fi
 fi
