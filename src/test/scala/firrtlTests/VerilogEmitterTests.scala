@@ -182,6 +182,16 @@ class DoPrimVerilog extends FirrtlFlatSpec {
 }
 
 class VerilogEmitterSpec extends FirrtlFlatSpec {
+  private def compile(input: String): CircuitState =
+    (new VerilogCompiler).compileAndEmit(CircuitState(parse(input), ChirrtlForm), List.empty)
+  private def compileBody(body: String): CircuitState = {
+    val str = """
+      |circuit Test :
+      |  module Test :
+      |""".stripMargin + body.split("\n").mkString("    ", "\n    ", "")
+    compile(str)
+  }
+
   "Ports" should "emit with widths aligned and names aligned" in {
     val compiler = new VerilogCompiler
     val input =
@@ -378,7 +388,6 @@ class VerilogEmitterSpec extends FirrtlFlatSpec {
     output.circuit.serialize should be (parse(check_firrtl).serialize)
   }
 
-
   behavior of "Register Updates"
 
   they should "emit using 'else if' constructs" in {
@@ -518,6 +527,94 @@ class VerilogEmitterSpec extends FirrtlFlatSpec {
     result        should containLine ("tmp <= in_7;")
     result        should containLine ("tmp <= in_8;")
     result        should containLine ("tmp <= in_9;")
+  }
+
+  "SInt addition" should "have casts" in {
+    val compiler = new VerilogCompiler
+    val result = compileBody(
+      """input x : SInt<4>
+        |input y : SInt<4>
+        |output z : SInt
+        |z <= add(x, y)
+        |""".stripMargin
+    )
+    result should containLine("assign z = $signed(x) + $signed(y);")
+  }
+
+  it should "NOT cast SInt literals" in {
+    val compiler = new VerilogCompiler
+    val result = compileBody(
+      """input x : SInt<4>
+        |output z : SInt
+        |z <= add(x, SInt(-1))
+        |""".stripMargin
+    )
+    result should containLine("assign z = $signed(x) + -4'sh1;")
+  }
+
+  it should "inline asSInt casts" in {
+    val compiler = new VerilogCompiler
+    val result = compileBody(
+      """input x : UInt<4>
+        |input y : UInt<4>
+        |output z : SInt
+        |node _T_1 = asSInt(x)
+        |z <= add(_T_1, asSInt(y))
+        |""".stripMargin
+    )
+    result should containLine("assign z = $signed(x) + $signed(y);")
+  }
+
+  "Verilog Emitter" should "drop asUInt casts on Clocks" in {
+    val compiler = new VerilogCompiler
+    val result = compileBody(
+      """input x : Clock
+        |input y : Clock
+        |output z : UInt<1>
+        |node _T_1 = asUInt(x)
+        |z <= eq(_T_1, asUInt(y))
+        |""".stripMargin
+    )
+    result should containLine("assign z = x == y;")
+  }
+
+  it should "drop asClock casts on UInts" in {
+    val compiler = new VerilogCompiler
+    val result = compileBody(
+      """input x : UInt<1>
+        |input y : UInt<1>
+        |output z : Clock
+        |node _T_1 = eq(x, y)
+        |z <= asClock(_T_1)
+        |""".stripMargin
+    )
+    result should containLine("assign z = x == y;")
+  }
+
+  it should "drop asUInt casts on AsyncResets" in {
+    val compiler = new VerilogCompiler
+    val result = compileBody(
+      """input x : AsyncReset
+        |input y : AsyncReset
+        |output z : UInt<1>
+        |node _T_1 = asUInt(x)
+        |z <= eq(_T_1, asUInt(y))
+        |""".stripMargin
+    )
+    result should containLine("assign z = x == y;")
+  }
+
+  it should "drop asAsyncReset casts on UInts" in {
+    val compiler = new VerilogCompiler
+    val result = compileBody(
+      """input x : UInt<1>
+        |input y : UInt<1>
+        |output z : AsyncReset
+        |node _T_1 = eq(x, y)
+        |z <= asAsyncReset(_T_1)
+        |""".stripMargin
+    )
+    result should containLine("assign z = x == y;")
   }
 
 }

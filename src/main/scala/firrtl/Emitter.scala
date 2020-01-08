@@ -281,29 +281,35 @@ class VerilogEmitter extends SeqTransform with Emitter {
      case _ => throwInternalError(s"attempt to print unrecognized expression: $e")
    }
 
+   // NOTE: We emit SInts as regular Verilog unsigned wires/regs so the real type of any SInt
+   // reference is actually unsigned in the emitted Verilog. Thus we must cast refs as necessary
+   // to ensure Verilog operations are signed.
    def op_stream(doprim: DoPrim): Seq[Any] = {
-     def cast_if(e: Expression): Any = {
-       doprim.args find (_.tpe match {
-         case (_: SIntType) => true
-         case (_) => false
-       }) match {
-         case None => e
-         case Some(_) => e.tpe match {
-           case (_: SIntType) => Seq("$signed(", e, ")")
-           case (_: UIntType) => Seq("$signed({1'b0,", e, "})")
-           case _ => throwInternalError(s"unrecognized type: $e")
+     // Cast to SInt, don't cast multiple times
+     def doCast(e: Expression): Any = e match {
+       case DoPrim(AsSInt, Seq(arg), _,_) => doCast(arg)
+       case slit: SIntLiteral             => slit
+       case other                         => Seq("$signed(", other, ")")
+     }
+     def castIf(e: Expression): Any = {
+       if (doprim.args.exists(_.tpe.isInstanceOf[SIntType])) {
+         e.tpe match {
+           case _: SIntType => doCast(e)
+           case _ => throwInternalError(s"Unexpected non-SInt type for $e in $doprim")
          }
+       } else {
+         e
        }
      }
      def cast(e: Expression): Any = doprim.tpe match {
-       case (t: UIntType) => e
-       case (t: SIntType) => Seq("$signed(",e,")")
-       case _ => throwInternalError(s"cast - unrecognized type: $e")
+       case _: UIntType => e
+       case _: SIntType => doCast(e)
+       case _ => throwInternalError(s"Unexpected type for $e in $doprim")
      }
-     def cast_as(e: Expression): Any = e.tpe match {
-       case (t: UIntType) => e
-       case (t: SIntType) => Seq("$signed(",e,")")
-       case _ => throwInternalError(s"cast_as - unrecognized type: $e")
+     def castAs(e: Expression): Any = e.tpe match {
+       case _: UIntType => e
+       case _: SIntType => doCast(e)
+       case _ => throwInternalError(s"Unexpected type for $e in $doprim")
      }
      def a0: Expression = doprim.args.head
      def a1: Expression = doprim.args(1)
@@ -313,12 +319,14 @@ class VerilogEmitter extends SeqTransform with Emitter {
      def checkArgumentLegality(e: Expression): Unit = e match {
        case _: UIntLiteral | _: SIntLiteral | _: WRef | _: WSubField =>
        case DoPrim(Not, args, _,_) => args.foreach(checkArgumentLegality)
+       case DoPrim(op, args, _,_) if isCast(op) => args.foreach(checkArgumentLegality)
        case _ => throw EmitterException(s"Can't emit ${e.getClass.getName} as PrimOp argument")
      }
 
      def checkCatArgumentLegality(e: Expression): Unit = e match {
        case _: UIntLiteral | _: SIntLiteral | _: WRef | _: WSubField =>
        case DoPrim(Not, args, _,_) => args.foreach(checkArgumentLegality)
+       case DoPrim(op, args, _,_) if isCast(op) => args.foreach(checkArgumentLegality)
        case DoPrim(Cat, args, _, _) => args foreach(checkCatArgumentLegality)
        case _ => throw EmitterException(s"Can't emit ${e.getClass.getName} as PrimOp argument")
      }
@@ -337,22 +345,23 @@ class VerilogEmitter extends SeqTransform with Emitter {
 
      doprim.op match {
        case Cat => doprim.args foreach(checkCatArgumentLegality)
+       case cast if isCast(cast) => // Casts are allowed to wrap any Expression
        case other => doprim.args foreach checkArgumentLegality
      }
      doprim.op match {
-       case Add => Seq(cast_if(a0), " + ", cast_if(a1))
-       case Addw => Seq(cast_if(a0), " + ", cast_if(a1))
-       case Sub => Seq(cast_if(a0), " - ", cast_if(a1))
-       case Subw => Seq(cast_if(a0), " - ", cast_if(a1))
-       case Mul => Seq(cast_if(a0), " * ", cast_if(a1))
-       case Div => Seq(cast_if(a0), " / ", cast_if(a1))
-       case Rem => Seq(cast_if(a0), " % ", cast_if(a1))
-       case Lt => Seq(cast_if(a0), " < ", cast_if(a1))
-       case Leq => Seq(cast_if(a0), " <= ", cast_if(a1))
-       case Gt => Seq(cast_if(a0), " > ", cast_if(a1))
-       case Geq => Seq(cast_if(a0), " >= ", cast_if(a1))
-       case Eq => Seq(cast_if(a0), " == ", cast_if(a1))
-       case Neq => Seq(cast_if(a0), " != ", cast_if(a1))
+       case Add => Seq(castIf(a0), " + ", castIf(a1))
+       case Addw => Seq(castIf(a0), " + ", castIf(a1))
+       case Sub => Seq(castIf(a0), " - ", castIf(a1))
+       case Subw => Seq(castIf(a0), " - ", castIf(a1))
+       case Mul => Seq(castIf(a0), " * ", castIf(a1))
+       case Div => Seq(castIf(a0), " / ", castIf(a1))
+       case Rem => Seq(castIf(a0), " % ", castIf(a1))
+       case Lt => Seq(castIf(a0), " < ", castIf(a1))
+       case Leq => Seq(castIf(a0), " <= ", castIf(a1))
+       case Gt => Seq(castIf(a0), " > ", castIf(a1))
+       case Geq => Seq(castIf(a0), " >= ", castIf(a1))
+       case Eq => Seq(castIf(a0), " == ", castIf(a1))
+       case Neq => Seq(castIf(a0), " != ", castIf(a1))
        case Pad =>
          val w = bitWidth(a0.tpe)
          val diff = c0 - w
@@ -364,10 +373,10 @@ class VerilogEmitter extends SeqTransform with Emitter {
            case (_: SIntType) => Seq("{{", diff, "{", a0, "[", w - 1, "]}},", a0, "}")
            case (_) => Seq("{{", diff, "'d0}, ", a0, "}")
          }
-       case AsUInt => Seq("$unsigned(", a0, ")")
-       case AsSInt => Seq("$signed(", a0, ")")
-       case AsClock => Seq(a0)
-       case AsAsyncReset => Seq(a0)
+       // Because we don't support complex Expressions, all casts are ignored
+       // This simplifies handling of assignment of a signed expression to an unsigned LHS value
+       //   which does not require a cast in Verilog
+       case AsUInt | AsSInt | AsClock | AsAsyncReset => Seq(a0)
        case Dshlw => Seq(cast(a0), " << ", a1)
        case Dshl => Seq(cast(a0), " << ", a1)
        case Dshr => doprim.tpe match {
@@ -384,9 +393,9 @@ class VerilogEmitter extends SeqTransform with Emitter {
          case (_: SIntType) => Seq(cast(a0))
        }
        case Not => Seq("~", a0)
-       case And => Seq(cast_as(a0), " & ", cast_as(a1))
-       case Or => Seq(cast_as(a0), " | ", cast_as(a1))
-       case Xor => Seq(cast_as(a0), " ^ ", cast_as(a1))
+       case And => Seq(castAs(a0), " & ", castAs(a1))
+       case Or => Seq(castAs(a0), " | ", castAs(a1))
+       case Xor => Seq(castAs(a0), " ^ ", castAs(a1))
        case Andr => Seq("&", cast(a0))
        case Orr => Seq("|", cast(a0))
        case Xorr => Seq("^", cast(a0))
@@ -967,6 +976,8 @@ class VerilogEmitter extends SeqTransform with Emitter {
     new BlackBoxSourceHelper,
     new ReplaceTruncatingArithmetic,
     new InlineNotsTransform,
+    new InlineCastsTransform,
+    new LegalizeClocksTransform,
     new FlattenRegUpdate,
     new DeadCodeElimination,
     passes.VerilogModulusCleanup,
