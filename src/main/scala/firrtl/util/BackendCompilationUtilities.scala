@@ -7,11 +7,13 @@ import java.nio.file.Files
 import java.text.SimpleDateFormat
 import java.util.Calendar
 
+import logger.LazyLogging
+
 import firrtl.FileUtils
 
 import scala.sys.process.{ProcessBuilder, ProcessLogger, _}
 
-trait BackendCompilationUtilities {
+trait BackendCompilationUtilities extends LazyLogging {
   /** Parent directory for tests */
   lazy val TestDirectory = new File("test_run_dir")
 
@@ -20,6 +22,9 @@ trait BackendCompilationUtilities {
     val now = Calendar.getInstance.getTime
     format.format(now)
   }
+
+  def loggingProcessLogger: ProcessLogger =
+    ProcessLogger(logger.info(_), logger.warn(_))
 
   /**
     * Copy the contents of a resource to a destination file.
@@ -151,7 +156,7 @@ trait BackendCompilationUtilities {
         s"""-Wno-undefined-bool-conversion -O1 -DTOP_TYPE=V$dutFile -DVL_USER_FINISH -include V$dutFile.h""",
         "-Mdir", dir.getAbsolutePath,
         "--exe", cppHarness.getAbsolutePath)
-    System.out.println(s"${command.mkString(" ")}") // scalastyle:ignore regex
+    logger.info(s"${command.mkString(" ")}") // scalastyle:ignore regex
     command
   }
 
@@ -167,8 +172,9 @@ trait BackendCompilationUtilities {
     val e = Process(s"./V$prefix", dir) !
       ProcessLogger(line => {
         triggered = triggered || (assertionMessageSupplied && line.contains(assertionMsg))
-        System.out.println(line) // scalastyle:ignore regex
-      })
+        logger.info(line) // scalastyle:ignore regex
+      },
+      logger.warn(_))
     // Fail if a line contained an assertion or if we get a non-zero exit code
     //  or, we get a SIGABRT (assertion failure) and we didn't provide a specific assertion message
     triggered || (e != 0 && (e != 134 || !assertionMessageSupplied))

@@ -161,7 +161,6 @@ class RenameMapSpec extends FirrtlFlatSpec {
         t.instOf("a", "A" + idx)
       }.ref("ref")
       val (millis, rename) = firrtl.Utils.time(renames.get(deepTarget))
-      println(s"${(deepTarget.tokens.size - 1) / 2} -> $millis")
       //rename should be(None)
     }
   }
@@ -281,7 +280,7 @@ class RenameMapSpec extends FirrtlFlatSpec {
     renames.record(top.module("E").instOf("f", "F"), top.module("E").ref("g"))
 
     a [IllegalRenameException] shouldBe thrownBy {
-      println(renames.get(top.module("E").instOf("f", "F").ref("g")))
+      renames.get(top.module("E").instOf("f", "F").ref("g"))
     }
   }
 

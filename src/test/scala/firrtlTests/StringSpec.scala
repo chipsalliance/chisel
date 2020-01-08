@@ -23,8 +23,8 @@ class PrintfSpec extends FirrtlPropSpec {
     val harness = new File(testDir, s"top.cpp")
     copyResourceToFile(cppHarnessResourceName, harness)
 
-    verilogToCpp(prefix, testDir, Seq(), harness).!
-    cppToExe(prefix, testDir).!
+    verilogToCpp(prefix, testDir, Seq(), harness) #&&
+    cppToExe(prefix, testDir) ! loggingProcessLogger
 
     // Check for correct Printf:
     // Count up from 0, match decimal, hex, and binary

@@ -76,21 +76,21 @@ class DriverSpec extends FreeSpec with Matchers with BackendCompilationUtilities
       val optionsManager = new ExecutionOptionsManager("test")
 
       optionsManager.parse(Array("--top-name", "dog", "fox", "tardigrade", "stomatopod")) should be(true)
-      println(s"programArgs ${optionsManager.commonOptions.programArgs}")
+      info(s"programArgs ${optionsManager.commonOptions.programArgs}")
       optionsManager.commonOptions.programArgs.length should be(3)
       optionsManager.commonOptions.programArgs should be("fox" :: "tardigrade" :: "stomatopod" :: Nil)
 
       optionsManager.commonOptions = CommonOptions()
       optionsManager.parse(
         Array("dog", "stomatopod")) should be(true)
-      println(s"programArgs ${optionsManager.commonOptions.programArgs}")
+      info(s"programArgs ${optionsManager.commonOptions.programArgs}")
       optionsManager.commonOptions.programArgs.length should be(2)
       optionsManager.commonOptions.programArgs should be("dog" :: "stomatopod" :: Nil)
 
       optionsManager.commonOptions = CommonOptions()
       optionsManager.parse(
         Array("fox", "--top-name", "dog", "tardigrade", "stomatopod")) should be(true)
-      println(s"programArgs ${optionsManager.commonOptions.programArgs}")
+      info(s"programArgs ${optionsManager.commonOptions.programArgs}")
       optionsManager.commonOptions.programArgs.length should be(3)
       optionsManager.commonOptions.programArgs should be("fox" :: "tardigrade" :: "stomatopod" :: Nil)
 
@@ -498,13 +498,12 @@ class VcdSuppressionSpec extends FirrtlFlatSpec {
       val harness = new File(testDir, s"top.cpp")
       copyResourceToFile(cppHarnessResourceName, harness)
 
-      verilogToCpp(prefix, testDir, Seq.empty, harness, suppress).!
-      cppToExe(prefix, testDir).!
+      verilogToCpp(prefix, testDir, Seq.empty, harness, suppress) #&&
+      cppToExe(prefix, testDir) ! loggingProcessLogger
 
       assert(executeExpectingSuccess(prefix, testDir))
 
       val vcdFile = new File(s"$testDir/dump.vcd")
-      println(s"file ${vcdFile.getAbsolutePath} ${vcdFile.exists()}")
       vcdFile.exists() should be(! suppress)
     }
 

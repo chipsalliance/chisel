@@ -7,18 +7,17 @@ import java.security.Permission
 
 import logger.LazyLogging
 
-import scala.sys.process._
 import org.scalatest._
 import org.scalatest.prop._
 
 import firrtl._
 import firrtl.ir._
-import firrtl.Parser.{IgnoreInfo, UseInfo}
-import firrtl.analyses.{GetNamespace, InstanceGraph, ModuleNamespaceAnnotation}
+import firrtl.Parser.UseInfo
+import firrtl.stage.{FirrtlFileAnnotation, InfoModeAnnotation, RunFirrtlTransformAnnotation}
+import firrtl.analyses.{GetNamespace, ModuleNamespaceAnnotation}
 import firrtl.annotations._
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation, RenameModules}
 import firrtl.util.BackendCompilationUtilities
-import scala.collection.mutable
 
 class CheckLowForm extends SeqTransform {
   def inputForm = LowForm
@@ -109,16 +108,17 @@ trait FirrtlRunners extends BackendCompilationUtilities {
       customTransforms: Seq[Transform] = Seq.empty,
       annotations: AnnotationSeq = Seq.empty): File = {
     val testDir = createTestDirectory(prefix)
-    copyResourceToFile(s"${srcDir}/${prefix}.fir", new File(testDir, s"${prefix}.fir"))
+    val inputFile = new File(testDir, s"${prefix}.fir")
+    copyResourceToFile(s"${srcDir}/${prefix}.fir", inputFile)
 
-    val optionsManager = new ExecutionOptionsManager(prefix) with HasFirrtlOptions {
-      commonOptions = CommonOptions(topName = prefix, targetDirName = testDir.getPath)
-      firrtlOptions = FirrtlExecutionOptions(
-                        infoModeName = "ignore",
-                        customTransforms = customTransforms ++ extraCheckTransforms,
-                        annotations = annotations.toList)
-    }
-    firrtl.Driver.execute(optionsManager)
+    val annos =
+      FirrtlFileAnnotation(inputFile.toString) +:
+      TargetDirAnnotation(testDir.toString) +:
+      InfoModeAnnotation("ignore") +:
+      annotations ++:
+      (customTransforms ++ extraCheckTransforms).map(RunFirrtlTransformAnnotation(_))
+
+    (new firrtl.stage.FirrtlStage).run(annos)
 
     testDir
   }
@@ -146,8 +146,9 @@ trait FirrtlRunners extends BackendCompilationUtilities {
       file
     }
 
-    verilogToCpp(prefix, testDir, verilogFiles, harness).!
-    cppToExe(prefix, testDir).!
+    verilogToCpp(prefix, testDir, verilogFiles, harness) #&&
+    cppToExe(prefix, testDir) !
+    loggingProcessLogger
     assert(executeExpectingSuccess(prefix, testDir))
   }
 }
