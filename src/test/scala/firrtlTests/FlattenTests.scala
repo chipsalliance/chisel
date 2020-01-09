@@ -9,7 +9,7 @@ import firrtl.ir.Circuit
 import firrtl.Parser
 import firrtl.passes.PassExceptions
 import firrtl.annotations.{Annotation, CircuitName, ComponentName, ModuleName, Named}
-import firrtl.transforms.{FlattenAnnotation, Flatten}
+import firrtl.transforms.{FlattenAnnotation, Flatten, NoCircuitDedupAnnotation}
 import logger.{LogLevel, Logger}
 import logger.LogLevel.Debug
 
@@ -159,7 +159,7 @@ class FlattenTests extends LowTransformSpec {
           |    input a : UInt<32>
           |    output b : UInt<32>
           |    b <= a""".stripMargin
-     execute(input, check, Seq(flatten("Top.i")))
+     execute(input, check, Seq(flatten("Top.i"), NoCircuitDedupAnnotation))
   }
   "The module Inline1" should "be inlined" in {
     val input =
@@ -222,7 +222,7 @@ class FlattenTests extends LowTransformSpec {
           |    input a : UInt<32>
           |    output b : UInt<32>
           |    b <= a""".stripMargin
-     execute(input, check, Seq(flatten("Inline1")))
+     execute(input, check, Seq(flatten("Inline1"), NoCircuitDedupAnnotation))
   }
   "The Flatten transform" should "do nothing if no flatten annotations are present" in{
     val input =

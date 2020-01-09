@@ -10,6 +10,7 @@ import firrtl.Parser
 import firrtl.passes.PassExceptions
 import firrtl.annotations._
 import firrtl.passes.{InlineAnnotation, InlineInstances}
+import firrtl.transforms.NoCircuitDedupAnnotation
 import logger.{LogLevel, Logger}
 import logger.LogLevel.Debug
 
@@ -442,6 +443,7 @@ class InlineInstancesTests extends LowTransformSpec {
        Seq(
          inline("Inline"),
          inline("NestedInline"),
+         NoCircuitDedupAnnotation,
          DummyAnno(inlined.ref("a")),
          DummyAnno(inlined.ref("b")),
          DummyAnno(nestedInlined.ref("a")),

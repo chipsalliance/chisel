@@ -8,6 +8,7 @@ import org.scalatest.junit.JUnitRunner
 import firrtl.ir.Circuit
 import firrtl.Parser.UseInfo
 import firrtl.passes.{Pass, PassExceptions, RemoveEmpty}
+import firrtl.transforms.DedupModules
 import firrtl._
 import firrtl.annotations._
 import logger._
@@ -73,6 +74,7 @@ trait LowTransformSpec extends SimpleTransformSpec {
       new ChirrtlToHighFirrtl(),
       new IRToWorkingIR(),
       new ResolveAndCheck(),
+      new DedupModules(),
       new HighFirrtlToMiddleFirrtl(),
       new MiddleFirrtlToLowFirrtl(),
       new CustomResolveAndCheck(LowForm),
@@ -87,6 +89,7 @@ trait MiddleTransformSpec extends SimpleTransformSpec {
       new ChirrtlToHighFirrtl(),
       new IRToWorkingIR(),
       new ResolveAndCheck(),
+      new DedupModules(),
       new HighFirrtlToMiddleFirrtl(),
       new CustomResolveAndCheck(MidForm),
       transform
@@ -100,6 +103,7 @@ trait HighTransformSpec extends SimpleTransformSpec {
       new ChirrtlToHighFirrtl(),
       new IRToWorkingIR(),
       new CustomResolveAndCheck(HighForm),
+      new DedupModules(),
       transform
    )
 }
