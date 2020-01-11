@@ -12,6 +12,7 @@ object LoggerSpec {
   val InfoMsg = "message info"
   val DebugMsg = "message debug"
   val TraceMsg = "message trace"
+  val globalLevel = LogLevel.Warn
 }
 
 class Logger1 extends LazyLogging {
@@ -37,10 +38,12 @@ class LogsInfo3 extends LazyLogging {
 class LoggerSpec extends FreeSpec with Matchers with OneInstancePerTest with LazyLogging {
   "Logger is a simple but powerful logging system" - {
     "Following tests show how global level can control logging" - {
-      "only error shows up by default" in {
+
+      "setting level to None will result in only error messages" in {
         Logger.makeScope() {
           val captor = new OutputCaptor
           Logger.setOutput(captor.printStream)
+          Logger.setLevel(LogLevel.None)
 
           val r1 = new Logger1
           r1.run()
@@ -51,6 +54,23 @@ class LoggerSpec extends FreeSpec with Matchers with OneInstancePerTest with Laz
           messagesLogged.contains(LoggerSpec.InfoMsg) should be(false)
           messagesLogged.contains(LoggerSpec.DebugMsg) should be(false)
           messagesLogged.contains(LoggerSpec.TraceMsg) should be(false)
+        }
+      }
+
+      "only warn and error shows up by default" in {
+        Logger.makeScope() {
+          val captor = new OutputCaptor
+          Logger.setOutput(captor.printStream)
+
+          val r1 = new Logger1
+          r1.run()
+          val messagesLogged = captor.getOutputAsString
+
+          messagesLogged.contains(LoggerSpec.ErrorMsg) should be(true)
+          messagesLogged.contains(LoggerSpec.WarnMsg) should be(LogLevel.Warn <= LoggerSpec.globalLevel)
+          messagesLogged.contains(LoggerSpec.InfoMsg) should be(LogLevel.Info <= LoggerSpec.globalLevel)
+          messagesLogged.contains(LoggerSpec.DebugMsg) should be(LogLevel.Debug <= LoggerSpec.globalLevel)
+          messagesLogged.contains(LoggerSpec.TraceMsg) should be(LogLevel.Trace <= LoggerSpec.globalLevel)
         }
       }
 
@@ -285,7 +305,7 @@ class LoggerSpec extends FreeSpec with Matchers with OneInstancePerTest with Laz
         }
       }
       "Show that nested makeScopes share same state" in {
-        Logger.getGlobalLevel should be (LogLevel.None)
+        Logger.getGlobalLevel should be (LoggerSpec.globalLevel)
 
         Logger.makeScope() {
           Logger.setLevel(LogLevel.Info)
@@ -304,17 +324,17 @@ class LoggerSpec extends FreeSpec with Matchers with OneInstancePerTest with Laz
           Logger.getGlobalLevel should be (LogLevel.Debug)
         }
 
-        Logger.getGlobalLevel should be (LogLevel.None)
+        Logger.getGlobalLevel should be (LoggerSpec.globalLevel)
       }
 
       "Show that first makeScope starts with fresh state" in {
-        Logger.getGlobalLevel should be (LogLevel.None)
+        Logger.getGlobalLevel should be (LoggerSpec.globalLevel)
 
         Logger.setLevel(LogLevel.Warn)
         Logger.getGlobalLevel should be (LogLevel.Warn)
 
         Logger.makeScope() {
-          Logger.getGlobalLevel should be (LogLevel.None)
+          Logger.getGlobalLevel should be (LoggerSpec.globalLevel)
 
           Logger.setLevel(LogLevel.Trace)
           Logger.getGlobalLevel should be (LogLevel.Trace)
