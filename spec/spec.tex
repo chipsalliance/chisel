@@ -1579,7 +1579,7 @@ head & (e) & (n) & (UInt) & UInt & n\\
 }}
 \end{figure}
 
-The result of the head operation are the \vv{n} most significant bits of \vv{e}. \vv{n} must be positive and less than or equal to the bit width of \vv{e}.
+The result of the head operation are the \vv{n} most significant bits of \vv{e}. \vv{n} must be non-negative and less than or equal to the bit width of \vv{e}.
 
 \subsection{Tail}
 
@@ -1595,7 +1595,7 @@ tail & (e) & (n) & (UInt) & UInt & w\ts{e}-n\\
 }}
 \end{figure}
 
-The tail operation truncates the \vv{n} most significant bits from \vv{e}. \vv{n} must be non-negative and strictly less than the bit width of \vv{e}.
+The tail operation truncates the \vv{n} most significant bits from \vv{e}. \vv{n} must be non-negative and less than or equal to the bit width of \vv{e}.
 
 \section{Flows}\label{flows}
 

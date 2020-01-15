@@ -20,6 +20,10 @@ class UnitTests extends FirrtlFlatSpec {
     }
   }
 
+  private def executeTest(input: String, expected: String, transforms: Seq[Transform]) = {
+    execute(input, transforms).circuit should be (parse(expected))
+  }
+
   def execute(input: String, transforms: Seq[Transform]): CircuitState = {
     val c = transforms.foldLeft(CircuitState(parse(input), UnknownForm)) {
       (c: CircuitState, t: Transform) => t.runTransform(c)
@@ -275,6 +279,26 @@ class UnitTests extends FirrtlFlatSpec {
     }
   }
 
+  "zero head select" should "return an empty module" in {
+    val passes = Seq(
+      ToWorkingIR,
+      ResolveKinds,
+      InferTypes,
+      ResolveFlows,
+      new InferWidths,
+      CheckWidths,
+      new DeadCodeElimination)
+    val input =
+      """circuit Unit :
+        |  module Unit :
+        |    node x = head(UInt(1), 0)""".stripMargin
+    val check =
+      """circuit Unit :
+        |  module Unit :
+        |    skip""".stripMargin
+    executeTest(input, check, passes)
+  }
+
   "Oversized tail select" should "throw an exception" in {
     val passes = Seq(
       ToWorkingIR,
@@ -292,6 +316,26 @@ class UnitTests extends FirrtlFlatSpec {
         (c: CircuitState, p: Transform) => p.runTransform(c)
       }
     }
+  }
+
+  "max tail select" should "return an empty module" in {
+    val passes = Seq(
+      ToWorkingIR,
+      ResolveKinds,
+      InferTypes,
+      ResolveFlows,
+      new InferWidths,
+      CheckWidths,
+      new DeadCodeElimination)
+    val input =
+      """circuit Unit :
+        |  module Unit :
+        |    node x = tail(UInt(1), 1)""".stripMargin
+    val check =
+      """circuit Unit :
+        |  module Unit :
+        |    skip""".stripMargin
+    executeTest(input, check, passes)
   }
 
   "Partial connecting incompatable types" should "throw an exception" in {

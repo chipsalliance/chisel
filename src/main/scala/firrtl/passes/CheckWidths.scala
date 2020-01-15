@@ -121,7 +121,7 @@ object CheckWidths extends Pass {
           errors append new BitsWidthException(info, target.serialize, hi, bitWidth(a.tpe), e.serialize)
         case DoPrim(Head, Seq(a), Seq(n), _) if (hasWidth(a.tpe) && bitWidth(a.tpe) < n) =>
           errors append new HeadWidthException(info, target.serialize, n, bitWidth(a.tpe))
-        case DoPrim(Tail, Seq(a), Seq(n), _) if (hasWidth(a.tpe) && bitWidth(a.tpe) <= n) =>
+        case DoPrim(Tail, Seq(a), Seq(n), _) if (hasWidth(a.tpe) && bitWidth(a.tpe) < n) =>
           errors append new TailWidthException(info, target.serialize, n, bitWidth(a.tpe))
         case DoPrim(Dshl, Seq(a, b), _, _) if (hasWidth(a.tpe) && bitWidth(b.tpe) >= DshlMaxWidth) =>
           errors append new DshlTooBig(info, target.serialize)
