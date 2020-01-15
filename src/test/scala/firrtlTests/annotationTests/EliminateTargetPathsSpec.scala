@@ -357,4 +357,19 @@ class EliminateTargetPathsSpec extends FirrtlPropSpec with FirrtlMatchers {
       outputLines should contain (line)
     }
   }
+
+  property("It should remove ResolvePaths annotations") {
+      val input =
+      """|circuit Foo:
+         |  module Bar:
+         |    skip
+         |  module Foo:
+         |    inst bar of Bar
+         |""".stripMargin
+
+    CircuitState(passes.ToWorkingIR.run(Parser.parse(input)), UnknownForm, Nil)
+      .resolvePaths(Seq(CircuitTarget("Foo").module("Foo").instOf("bar", "Bar")))
+      .annotations
+      .collect{ case a: firrtl.annotations.transforms.ResolvePaths => a } should be (empty)
+  }
 }

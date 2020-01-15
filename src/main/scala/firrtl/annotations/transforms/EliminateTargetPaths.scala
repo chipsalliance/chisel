@@ -133,10 +133,13 @@ class EliminateTargetPaths extends Transform {
 
   override protected def execute(state: CircuitState): CircuitState = {
 
-    val annotations = state.annotations.collect { case a: ResolvePaths => a }
+    val (annotations, annotationsx) = state.annotations.partition{
+      case a: ResolvePaths => true
+      case _               => false
+    }
 
     // Collect targets that are not local
-    val targets = annotations.flatMap(_.targets.collect { case x: IsMember => x })
+    val targets = annotations.map(_.asInstanceOf[ResolvePaths]).flatMap(_.targets.collect { case x: IsMember => x })
 
     // Check validity of paths in targets
     val instanceOfModules = new InstanceGraph(state.circuit).getChildrenInstanceOfModule
@@ -162,6 +165,6 @@ class EliminateTargetPaths extends Transform {
 
     val (newCircuit, renameMap) = run(state.circuit, targets)
 
-    state.copy(circuit = newCircuit, renames = Some(renameMap))
+    state.copy(circuit = newCircuit, renames = Some(renameMap), annotations = annotationsx)
   }
 }
