@@ -199,6 +199,17 @@ object Utils extends LazyLogging {
     case _ => false
   }
 
+  /** Returns true if PrimOp is a BitExtraction, false otherwise */
+  def isBitExtract(op: PrimOp): Boolean = op match {
+    case Bits | Head | Tail | Shr => true
+    case _ => false
+  }
+  /** Returns true if Expression is a Bits PrimOp, false otherwise */
+  def isBitExtract(expr: Expression): Boolean = expr match {
+    case DoPrim(op, _,_, UIntType(_)) if isBitExtract(op) => true
+    case _ => false
+  }
+
   /** Provide a nice name to create a temporary **/
   def niceName(e: Expression): String = niceName(1)(e)
   def niceName(depth: Int)(e: Expression): String = {

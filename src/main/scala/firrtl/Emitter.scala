@@ -320,6 +320,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
        case _: UIntLiteral | _: SIntLiteral | _: WRef | _: WSubField =>
        case DoPrim(Not, args, _,_) => args.foreach(checkArgumentLegality)
        case DoPrim(op, args, _,_) if isCast(op) => args.foreach(checkArgumentLegality)
+       case DoPrim(op, args, _,_) if isBitExtract(op) => args.foreach(checkArgumentLegality)
        case _ => throw EmitterException(s"Can't emit ${e.getClass.getName} as PrimOp argument")
      }
 
@@ -327,6 +328,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
        case _: UIntLiteral | _: SIntLiteral | _: WRef | _: WSubField =>
        case DoPrim(Not, args, _,_) => args.foreach(checkArgumentLegality)
        case DoPrim(op, args, _,_) if isCast(op) => args.foreach(checkArgumentLegality)
+       case DoPrim(op, args, _,_) if isBitExtract(op) => args.foreach(checkArgumentLegality)
        case DoPrim(Cat, args, _, _) => args foreach(checkCatArgumentLegality)
        case _ => throw EmitterException(s"Can't emit ${e.getClass.getName} as PrimOp argument")
      }
@@ -386,6 +388,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
        case Shl => if (c0 > 0) Seq("{", cast(a0), s", $c0'h0}") else Seq(cast(a0))
        case Shr if c0 >= bitWidth(a0.tpe) =>
          error("Verilog emitter does not support SHIFT_RIGHT >= arg width")
+       case Shr if c0 == (bitWidth(a0.tpe)-1) => Seq(a0,"[", bitWidth(a0.tpe) - 1, "]")
        case Shr => Seq(a0,"[", bitWidth(a0.tpe) - 1, ":", c0, "]")
        case Neg => Seq("-{", cast(a0), "}")
        case Cvt => a0.tpe match {
@@ -404,15 +407,15 @@ class VerilogEmitter extends SeqTransform with Emitter {
        case Bits if c0 == 0 && c1 == 0 && bitWidth(a0.tpe) == BigInt(1) => Seq(a0)
        case Bits if c0 == c1 => Seq(a0, "[", c0, "]")
        case Bits => Seq(a0, "[", c0, ":", c1, "]")
+       // If selecting zeroth bit and single-bit wire, just emit the wire
+       case Head if c0 == 1 && bitWidth(a0.tpe) == BigInt(1) => Seq(a0)
+       case Head if c0 == 1 => Seq(a0, "[", bitWidth(a0.tpe)-1, "]")
        case Head =>
-         val w = bitWidth(a0.tpe)
-         val high = w - 1
-         val low = w - c0
-         Seq(a0, "[", high, ":", low, "]")
-       case Tail =>
-         val w = bitWidth(a0.tpe)
-         val low = w - c0 - 1
-         Seq(a0, "[", low, ":", 0, "]")
+         val msb = bitWidth(a0.tpe) - 1
+         val lsb = bitWidth(a0.tpe) - c0
+         Seq(a0, "[", msb, ":", lsb, "]")
+       case Tail if c0 == (bitWidth(a0.tpe)-1) => Seq(a0, "[0]")
+       case Tail => Seq(a0, "[", bitWidth(a0.tpe) - c0 - 1, ":0]")
      }
    }
 
@@ -976,6 +979,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
     new BlackBoxSourceHelper,
     new ReplaceTruncatingArithmetic,
     new InlineNotsTransform,
+    new InlineBitExtractionsTransform,  // here after InlineNots to clean up not(not(...)) rename
     new InlineCastsTransform,
     new LegalizeClocksTransform,
     new FlattenRegUpdate,

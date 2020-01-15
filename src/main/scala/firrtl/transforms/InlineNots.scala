@@ -3,8 +3,8 @@ package transforms
 
 import firrtl.ir._
 import firrtl.Mappers._
-import firrtl.PrimOps.Not
-import firrtl.Utils.isTemp
+import firrtl.PrimOps.{Bits, Not}
+import firrtl.Utils.{isBitExtract, isTemp}
 import firrtl.WrappedExpression._
 
 import scala.collection.mutable
@@ -42,10 +42,18 @@ object InlineNotsTransform {
         netlist.get(we(e))
                .filter(isNot)
                .getOrElse(e)
+      // replace bits-of-not with not-of-bits to enable later bit extraction transform
+      case lhs @ DoPrim(op, Seq(lval), lcons, ltpe) if isBitExtract(op) && isSimpleExpr(lval) =>
+        netlist.getOrElse(we(lval), lval) match {
+          case DoPrim(Not, Seq(rhs), rcons, rtpe) =>
+            DoPrim(Not, Seq(DoPrim(op, Seq(rhs), lcons, ltpe)), rcons, ltpe)
+          case _ => lhs  // Not a candiate
+        }
       // replace back-to-back inversions with a straight rename
-      case lhs @ DoPrim(Not, Seq(inv), _,_) if isSimpleExpr(inv) =>
+      case lhs @ DoPrim(Not, Seq(inv), _, invtpe) if isSimpleExpr(lhs) && isSimpleExpr(inv) && (lhs.tpe == invtpe) && (bitWidth(lhs.tpe) == bitWidth(inv.tpe)) =>
         netlist.getOrElse(we(inv), inv) match {
-          case DoPrim(Not, Seq(rhs), _,_) if isSimpleExpr(inv) => rhs
+          case DoPrim(Not, Seq(rhs), _, rtpe) if (invtpe == rtpe) && (bitWidth(inv.tpe) == bitWidth(rhs.tpe)) =>
+            DoPrim(Bits, Seq(rhs), Seq(bitWidth(lhs.tpe)-1,0), rtpe)
           case _ => lhs  // Not a candiate
         }
       case other => other // Not a candidate
@@ -56,7 +64,7 @@ object InlineNotsTransform {
     *
     * @param netlist a '''mutable''' HashMap mapping references to [[firrtl.ir.DefNode DefNode]]s to their connected
     * [[firrtl.ir.Expression Expression]]s. This function '''will''' mutate it if stmt is a [[firrtl.ir.DefNode
-    * DefNode]] with a value that is a [[PrimOp]] Not
+    * DefNode]] with a Temporary name and a value that is a [[PrimOp]] Not
     * @param stmt the Statement being searched for nodes and transformed
     * @return Returns stmt with nots inlined
     */
@@ -74,8 +82,8 @@ object InlineNotsTransform {
 
 /** Inline nodes that are simple nots */
 class InlineNotsTransform extends Transform {
-  def inputForm = LowForm
-  def outputForm = LowForm
+  def inputForm = UnknownForm
+  def outputForm = UnknownForm
 
   def execute(state: CircuitState): CircuitState = {
     val modulesx = state.circuit.modules.map(InlineNotsTransform.onMod(_))

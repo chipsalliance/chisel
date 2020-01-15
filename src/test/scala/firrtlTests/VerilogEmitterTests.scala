@@ -88,6 +88,100 @@ class DoPrimVerilog extends FirrtlFlatSpec {
         |""".stripMargin.split("\n") map normalized
     executeTest(input, check, compiler)
   }
+  "inline Bits" should "emit correctly" in {
+    val compiler = new VerilogCompiler
+    val input =
+      """circuit InlineBits :
+        |  module InlineBits :
+        |    input a: UInt<4>
+        |    output b: UInt<1>
+        |    output c: UInt<3>
+        |    output d: UInt<2>
+        |    output e: UInt<2>
+        |    output f: UInt<2>
+        |    output g: UInt<2>
+        |    output h: UInt<2>
+        |    output i: UInt<2>
+        |    output j: UInt<2>
+        |    output k: UInt<1>
+        |    output l: UInt<1>
+        |    output m: UInt<1>
+        |    output n: UInt<1>
+        |    output o: UInt<2>
+        |    output p: UInt<2>
+        |    output q: UInt<2>
+        |    output r: UInt<1>
+        |    output s: UInt<2>
+        |    output t: UInt<2>
+        |    output u: UInt<1>
+        |    b <= bits(a, 2, 2)
+        |    c <= bits(a, 3, 1)
+        |    d <= head(a, 2)
+        |    e <= tail(a, 2)
+        |    f <= bits(bits(a, 3, 1), 2, 1)
+        |    g <= bits(head(a, 3), 1, 0)
+        |    h <= bits(tail(a, 1), 1, 0)
+        |    i <= bits(shr(a, 1), 1, 0)
+        |    j <= head(bits(a, 3, 1), 2)
+        |    k <= head(head(a, 3), 1)
+        |    l <= head(tail(a, 1), 1)
+        |    m <= head(shr(a, 1), 1)
+        |    n <= tail(bits(a, 3, 1), 2)
+        |    o <= tail(head(a, 3), 1)
+        |    p <= tail(tail(a, 1), 1)
+        |    q <= tail(shr(a, 1), 1)
+        |    r <= shr(bits(a, 1, 0), 1)
+        |    s <= shr(head(a, 3), 1)
+        |    t <= shr(tail(a, 1), 1)
+        |    u <= shr(shr(a, 1), 2)""".stripMargin
+    val check =
+      """module InlineBits(
+        |  input  [3:0] a,
+        |  output  b,
+        |  output [2:0] c,
+        |  output [1:0] d,
+        |  output [1:0] e,
+        |  output [1:0] f,
+        |  output [1:0] g,
+        |  output [1:0] h,
+        |  output [1:0] i,
+        |  output [1:0] j,
+        |  output  k,
+        |  output  l,
+        |  output  m,
+        |  output  n,
+        |  output [1:0] o,
+        |  output [1:0] p,
+        |  output [1:0] q,
+        |  output  r,
+        |  output [1:0] s,
+        |  output [1:0] t,
+        |  output  u
+        |);
+        |  assign b = a[2];
+        |  assign c = a[3:1];
+        |  assign d = a[3:2];
+        |  assign e = a[1:0];
+        |  assign f = a[3:2];
+        |  assign g = a[2:1];
+        |  assign h = a[1:0];
+        |  assign i = a[2:1];
+        |  assign j = a[3:2];
+        |  assign k = a[3];
+        |  assign l = a[2];
+        |  assign m = a[3];
+        |  assign n = a[1];
+        |  assign o = a[2:1];
+        |  assign p = a[1:0];
+        |  assign q = a[2:1];
+        |  assign r = a[1];
+        |  assign s = a[3:2];
+        |  assign t = a[2:1];
+        |  assign u = a[3];
+        |endmodule
+        |""".stripMargin.split("\n") map normalized
+    executeTest(input, check, compiler)
+  }
   "inline Not" should "emit correctly" in {
     val compiler = new VerilogCompiler
     val input =
@@ -100,10 +194,12 @@ class DoPrimVerilog extends FirrtlFlatSpec {
         |    output e: UInt<1>
         |    output f: UInt<1>
         |    output g: UInt<1>
+        |    output h: UInt<1>
         |    d <= and(a, not(b))
         |    e <= or(a, not(b))
         |    f <= not(not(not(bits(c, 2, 2))))
-        |    g <= mux(not(bits(c, 2, 2)), a, b)""".stripMargin
+        |    g <= mux(not(bits(c, 2, 2)), a, b)
+        |    h <= shr(not(bits(c, 2, 1)), 1)""".stripMargin
     val check =
       """module InlineNot(
         |  input   a,
@@ -112,16 +208,14 @@ class DoPrimVerilog extends FirrtlFlatSpec {
         |  output  d,
         |  output  e,
         |  output  f,
-        |  output  g
+        |  output  g,
+        |  output  h
         |);
-        |  wire _GEN_2;
-        |  wire _GEN_4;
         |  assign d = a & ~b;
         |  assign e = a | ~b;
-        |  assign _GEN_2 = c[2];
-        |  assign _GEN_4 = _GEN_2;
-        |  assign f = ~_GEN_4;
-        |  assign g = _GEN_2 ? b : a;
+        |  assign f = ~c[2];
+        |  assign g = c[2] ? b : a;
+        |  assign h = ~c[2];
         |endmodule
         |""".stripMargin.split("\n") map normalized
     executeTest(input, check, compiler)
