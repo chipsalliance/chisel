@@ -131,6 +131,23 @@ class FixedPointLitExtractTester extends BasicTester {
   stop()
 }
 
+class FixedPointInferenceTester extends BasicTester {
+  val start = WireInit(1.0.F(10.W, 5.BP))
+
+  val blankWire = Wire(FixedPoint())
+
+  blankWire := start // should be inferred in FIRRTL backend
+
+  val sumGrow = blankWire +& blankWire
+  val sumFixed = blankWire +% blankWire
+
+  assert(sumGrow === 2.F(4.W, 0.BP))
+  assert(start +% start === 2.F(4.W, 0.BP))
+  assert(sumFixed === 2.F(4.W, 0.BP))
+
+  stop()
+}
+
 class FixedPointSpec extends ChiselPropSpec {
   property("should allow set binary point") {
     assertTesterPasses { new SBPTester }
@@ -146,5 +163,8 @@ class FixedPointSpec extends ChiselPropSpec {
   }
   property("Bit extraction on literals should work for all non-negative indices") {
     assertTesterPasses(new FixedPointLitExtractTester)
+  }
+  property("Unspecified widths and BPs should work") {
+    assertTesterPasses(new FixedPointInferenceTester)
   }
 }
