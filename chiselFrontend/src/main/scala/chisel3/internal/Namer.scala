@@ -147,4 +147,6 @@ class NamingStack {
       namingStack.top.addDescendant(prefixRef, until)
     }
   }
+  
+  def length() : Int = namingStack.length
 }

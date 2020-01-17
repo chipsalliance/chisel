@@ -231,8 +231,7 @@ package object core {
   @deprecated("Use the version in chisel3.experimental._", "3.2")
   implicit class fromDoubleToLiteral(double: Double) extends experimental.FixedPoint.Implicits.fromDoubleToLiteral(double)
   @deprecated("Use the version in chisel3.experimental._", "3.2")
-  implicit class fromIntToBinaryPoint(int: Int) extends experimental.FixedPoint.Implicits.fromIntToBinaryPoint(int)
-
+  implicit class fromIntToBinaryPoint(int: Int) extends chisel3.fromIntToBinaryPoint(int)
   @deprecated("Use the version in chisel3.experimental._", "3.2")
   type RunFirrtlTransform = chisel3.experimental.RunFirrtlTransform
 

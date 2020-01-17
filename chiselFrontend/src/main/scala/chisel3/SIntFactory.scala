@@ -2,9 +2,7 @@
 
 package chisel3
 
-import chisel3.internal.firrtl.{KnownSIntRange, NumericBound, Range, SLit, Width}
-
-// scalastyle:off method.name
+import chisel3.internal.firrtl.{IntervalRange, SLit, Width}
 
 trait SIntFactory {
   /** Create an SInt type with inferred width. */
@@ -13,15 +11,12 @@ trait SIntFactory {
   def apply(width: Width): SInt = new SInt(width)
 
   /** Create a SInt with the specified range */
-  def apply(range: Range): SInt = {
+  def apply(range: IntervalRange): SInt = {
     apply(range.getWidth)
   }
-  /** Create a SInt with the specified range */
-  def apply(range: (NumericBound[Int], NumericBound[Int])): SInt = {
-    apply(KnownSIntRange(range._1, range._2))
-  }
 
-   /** Create an SInt literal with specified width. */
+  /** Create an SInt literal with specified width. */
+  // scalastyle:off method.name
   protected[chisel3] def Lit(value: BigInt, width: Width): SInt = {
     val lit = SLit(value, width)
     val result = new SInt(lit.width)
