@@ -20,6 +20,29 @@ If you're a Chisel user and want to stay connected to the wider user community, 
 - Follow us on our [`@chisel_lang` Twitter Account](https://twitter.com/chisel_lang)
 - Subscribe to our [`chisel-lang` YouTube Channel](https://www.youtube.com/c/chisel-lang)
 
+As you may be interested on where Chisel can be and has been used, following projects have been built using it:
+
+- [Rocket Chip Generator](https://github.com/chipsalliance/rocket-chip), a generator for both in-order and out-of-order RISC-V cores.
+
+- Third-party Chisel Integrated Circuits[^1]:
+
+|----|----|----|
+| [Sodor Processor Collection](https://github.com/ucb-bar/riscv-sodor) | Set of educational microarchitectures for RISC-V ISA | (Christopher Celio) |
+| [Patmos](https://github.com/t-crest/patmos) | Time-predictable VLIW processor | (T-CREST) |
+| [OpenSoC Fabric](http://www.opensocfabric.org/home.php) | A Parametrizable NoC | (LBL Computer Architecture Lab) |
+| [RoCC Neural Network Accelerator](https://github.com/bu-icsg/dana) | Neural network software/hardware for RISC-V microprocessors | Boston University |
+<br/>
+
+- Industrial projects:
+
+|----|----|----|
+| [Google Tensor Processing Unit](https://www.youtube.com/watch?list=PL02hojk7ZTSfSBibxsKdaABnZolPP7z1y&v=x85342Cny8c&feature=emb_title) | Google ASICs for edge computing | Google |
+<br/>
+
+- You may want to take a look at following initiatives:
+    - The [ip-contributions](https://github.com/freechipsproject/ip-contributions) repository, including modules which does not belongs in Chisel standard library, but may be useful for Chisel users.
+    - [Chisel examples](https://github.com/schoeberl/chisel-examples): a collection of code examples for Chisel, by Martin Schoeberl.
+
 ## Chisel Developers Community
 
 If you want to get *more involved* with the Chisel/FIRRTL ecosystem of projects, feel free to reach out to us on any of the mediums above. If you prefer to dive right in (or have bugs to report), a complete list of the associated Chisel/FIRRTL ecosystem of projects is below:
@@ -44,7 +67,7 @@ While Chisel has come a long way since 2012, the original Chisel paper provides 
 
 - [Bachrach, Jonathan, et al. "Chisel: constructing hardware in a scala embedded language." DAC Design Automation Conference 2012. IEEE, 2012.](https://people.eecs.berkeley.edu/~jrb/papers/chisel-dac-2012-corrected.pdf)
 
-The FIRRTL IR and FIRRTL compiler, introduced as part of Chisel 3, are discussed in both the following paper and specification[^1]:
+The FIRRTL IR and FIRRTL compiler, introduced as part of Chisel 3, are discussed in both the following paper and specification[^2]:
 
 - [Izraelevitz, Adam, et al. "Reusability is FIRRTL ground: Hardware construction languages, compiler frameworks, and transformations." Proceedings of the 36th International Conference on Computer-Aided Design. IEEE Press, 2017.](https://aspire.eecs.berkeley.edu/wp/wp-content/uploads/2017/11/Reusability-is-FIRRTL-Ground-Izraelevitz.pdf)
 - [Li, Patrick S., Adam M. Izraelevitz, and Jonathan Bachrach. "Specification for the FIRRTL Language." EECS Department, University of California, Berkeley, Tech. Rep. UCB/EECS-2016-9 (2016).](https://www2.eecs.berkeley.edu/Pubs/TechRpts/2016/EECS-2016-9.pdf)
@@ -101,4 +124,5 @@ If you use FIRRTL in your research consider citing:
 }
 ```
 
-[^1]: This specification is provided for historical perspective. For the latest version of the FIRRTL specification you can use [this link](https://github.com/freechipsproject/firrtl/raw/master/spec/spec.pdf).
+[^1]: If you want to add your project to the list, let us know on the [Chisel users mailing list](http://groups.google.com/group/chisel-users)!
+[^2]: This specification is provided for historical perspective. For the latest version of the FIRRTL specification you can use [this link](https://github.com/freechipsproject/firrtl/raw/master/spec/spec.pdf).
