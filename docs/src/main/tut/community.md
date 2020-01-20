@@ -20,28 +20,36 @@ If you're a Chisel user and want to stay connected to the wider user community, 
 - Follow us on our [`@chisel_lang` Twitter Account](https://twitter.com/chisel_lang)
 - Subscribe to our [`chisel-lang` YouTube Channel](https://www.youtube.com/c/chisel-lang)
 
-As you may be interested on where Chisel can be and has been used, following projects have been built using it:
+## Projects Using Chisel/FIRRTL
 
-- [Rocket Chip Generator](https://github.com/chipsalliance/rocket-chip), a generator for both in-order and out-of-order RISC-V cores.
+If you want to add your project to the list, let us know on the [Chisel users mailing list](http://groups.google.com/group/chisel-users)!
 
-- Third-party Chisel Integrated Circuits[^1]:
+### Chisel
 
-|----|----|----|
-| [Sodor Processor Collection](https://github.com/ucb-bar/riscv-sodor) | Set of educational microarchitectures for RISC-V ISA | (Christopher Celio) |
-| [Patmos](https://github.com/t-crest/patmos) | Time-predictable VLIW processor | (T-CREST) |
-| [OpenSoC Fabric](http://www.opensocfabric.org/home.php) | A Parametrizable NoC | (LBL Computer Architecture Lab) |
-| [RoCC Neural Network Accelerator](https://github.com/bu-icsg/dana) | Neural network software/hardware for RISC-V microprocessors | Boston University |
-<br/>
+| Project                                                                | Description                                                    | Author                                                                           | Links                                                                                                        |
+|------------------------------------------------------------------------|----------------------------------------------------------------|----------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------|
+| [Rocket Chip Generator](https://github.com/chipsalliance/rocket-chip)  | RISC-V System-on-Chip Generator, 5-stage RISC-V Microprocessor | [`@ucb-bar`](https://github.com/ucb-bar), [`@sifive`](https://github.com/sifive) | [Report](https://www2.eecs.berkeley.edu/Pubs/TechRpts/2016/EECS-2016-17.html)                                |
+| [Berkeley Out-of-order Machine](https://github.com/ucb-bar/riscv-boom) | RISC-V Out-of-order/Multi-issue Microprocessor                 | [`@ucb-bar`](https://github.com/ucb-bar)                                         | [Site](https://boom-core.org/), [Thesis](http://www2.eecs.berkeley.edu/Pubs/TechRpts/2018/EECS-2018-151.pdf) |
+| [RISC-V Mini](https://github.com/ucb-bar/riscv-mini)                   | 3-stage RISC-V Microprocessor                                  | [`@ucb-bar`](https://github.com/ucb-bar)                                         |                                                                                                              |
+| [Sodor Processor Collection](https://github.com/ucb-bar/riscv-sodor)   | Educational RISC-V Microprocessors (1, 2, 3, 5-stage)          | [`@ucb-bar`](https://github.com/ucb-bar)                                         |                                                                                                              |
+| [Patmos](https://github.com/t-crest/patmos)                            | Time-predictable VLIW processor                                | [`@t-crest`](https://github.com/t-crest)                                         | [Site](http://patmos.compute.dtu.dk/)                                                                        |
+| [OpenSoC Fabric](https://github.com/LBL-CoDEx/OpenSoCFabric)           | Parametrizable Network-on-Chip Generator                       | [`@LBL-CoDEx`](https://github.com/LBL-CoDEx)                                     | [Site](http://www.opensocfabric.org)                                                                         |
+| [Hwacha](https://github.com/ucb-bar/hwacha)                            | Decoupled Vector-fetch Accelerator                             | [`@ucb-bar`](https://github.com/ucb-bar)                                         | [Report](https://people.eecs.berkeley.edu/~krste/papers/EECS-2015-263.pdf)                                   |
+| [DANA](https://github.com/bu-icsg/dana)                                | Multilayer Perceptron Accelerator for Rocket                   | [`@bu-icsg`](https://github.com/bu-icsg)                                         | [Paper](http://people.bu.edu/schuye/files/pact2015-eldridge-paper.pdf)                                       |
+| [Gemmini](https://github.com/ucb-bar/gemmini)                          | Systolic-array Accelerator Generator                           | [`@ucb-bar`](https://github.com/ucb-bar)                                         | [Paper](https://arxiv.org/pdf/1911.09925)                                                                    |
+| [Edge TPU](https://cloud.google.com/edge-tpu)                          | AI Inference Accelerator                                       | [`@google`](https://github.com/google)                                           | [Video](https://www.youtube.com/watch?v=x85342Cny8c)                                                         |
+| [ChiselFlow](https://github.com/apl-cornell/ChiselFlow)                | Information Flow Types in Chisel3                              | [`@apl-cornell`](https://github.com/apl-cornell)                                 | [Paper](https://ecommons.cornell.edu/xmlui/bitstream/handle/1813/57673/paper.pdf)                            |
+| [PHMon](https://github.com/bu-icsg/PHMon/tree/code)                    | Programmable Hardware Monitor                                  | [`@bu-icsg`](https://github.com/bu-icsg)                                         | [Paper](http://people.bu.edu/joshi/files/sec20spring_delshadtehrani_prepub.pdf)                              |
 
-- Industrial projects:
+### FIRRTL
 
-|----|----|----|
-| [Google Tensor Processing Unit](https://www.youtube.com/watch?list=PL02hojk7ZTSfSBibxsKdaABnZolPP7z1y&v=x85342Cny8c&feature=emb_title) | Google ASICs for edge computing | Google |
-<br/>
-
-- You may want to take a look at following initiatives:
-    - The [ip-contributions](https://github.com/freechipsproject/ip-contributions) repository, including modules which does not belongs in Chisel standard library, but may be useful for Chisel users.
-    - [Chisel examples](https://github.com/schoeberl/chisel-examples): a collection of code examples for Chisel, by Martin Schoeberl.
+| Project                                                                                                      | Description                              | Author                                           | Links                                                                                                                                                                                                                                                                           |
+|--------------------------------------------------------------------------------------------------------------|------------------------------------------|--------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [MIDAS/DESSERT/Golden Gate](https://github.com/ucb-bar/midas)                                                | FPGA Accelerated Simulation              | [`@ucb-bar`](https://github.com/ucb-bar)         | Papers [1](https://people.eecs.berkeley.edu/~biancolin/papers/carrv17.pdf), [2](http://people.eecs.berkeley.edu/~biancolin/papers/dessert-fpl18.pdf), [3](https://davidbiancolin.github.io/papers/goldengate-iccad19.pdf), [Video](https://www.youtube.com/watch?v=Tvcd4u4_ELM) |
+| [Chiffre](https://github.com/IBM/chiffre)                                                                    | Run-time Fault Injection                 | [`@IBM`](https://github.com/IBM)                 | [Paper](https://carrv.github.io/2018/papers/CARRV_2018_paper_2.pdf)                                                                                                                                                                                                             |
+| [SIRRTL](https://github.com/apl-cornell/sirrtl)                                                              | Security-typed FIRRTL                    | [`@apl-cornell`](https://github.com/apl-cornell) | [Paper](https://ecommons.cornell.edu/xmlui/bitstream/handle/1813/57673/paper.pdf)                                                                                                                                                                                               |
+| [obfuscation](https://github.com/jpsety/obfuscation)                                                         | Transforms to Obfuscate FIRRTL Circuits  | [`@jpsety`](https://github.com/jpsety)           |                                                                                                                                                                                                                                                                                 |
+| [Area/Timing Estimates](https://github.com/intel/rapid-design-methods-for-developing-hardware-accelerators/) | Transforms for Area and Timing Estimates | [`@intel`](https://github.com/intel)             | [Video](https://www.youtube.com/watch?v=FktjrjRVBoY)                                                                                                                                                                                                                            |
 
 ## Chisel Developers Community
 
@@ -124,5 +132,4 @@ If you use FIRRTL in your research consider citing:
 }
 ```
 
-[^1]: If you want to add your project to the list, let us know on the [Chisel users mailing list](http://groups.google.com/group/chisel-users)!
 [^2]: This specification is provided for historical perspective. For the latest version of the FIRRTL specification you can use [this link](https://github.com/freechipsproject/firrtl/raw/master/spec/spec.pdf).
