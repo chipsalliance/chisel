@@ -9,6 +9,7 @@ cache:
     - $HOME/build/api/chisel3
     - $HOME/build/api/firrtl
     - $HOME/build/api/chisel-testers
+    - $HOME/build/api/chiseltest
     - $HOME/build/api/treadle
     - $HOME/build/api/diagrammer
 
