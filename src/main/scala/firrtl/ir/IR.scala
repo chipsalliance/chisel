@@ -7,7 +7,6 @@ import Utils.{dec2string, indent, trim}
 import firrtl.constraint.{Constraint, IsKnown, IsVar}
 
 import scala.math.BigDecimal.RoundingMode._
-import scala.collection.mutable
 
 /** Intermediate Representation */
 abstract class FirrtlNode {

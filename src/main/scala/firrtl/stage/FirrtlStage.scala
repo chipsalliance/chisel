@@ -4,9 +4,8 @@ package firrtl.stage
 
 import firrtl.{AnnotationSeq, CustomTransformException, FirrtlInternalException,
                FirrtlUserException, FIRRTLException, Utils}
-import firrtl.options.{Stage, Phase, PhaseException, Shell, OptionsException, StageMain, StageUtils}
+import firrtl.options.{Stage, Phase, PhaseException, Shell, OptionsException, StageMain}
 import firrtl.options.phases.DeletedWrapper
-import firrtl.passes.{PassException, PassExceptions}
 
 import scala.util.control.ControlThrowable
 

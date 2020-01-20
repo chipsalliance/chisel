@@ -14,7 +14,6 @@ import firrtl.stage.{FirrtlExecutionResultView, FirrtlStage}
 import firrtl.stage.phases.DriverCompatibility
 import firrtl.options.{StageUtils, Phase, Viewer}
 import firrtl.options.phases.DeletedWrapper
-import firrtl.FileUtils
 
 
 /**

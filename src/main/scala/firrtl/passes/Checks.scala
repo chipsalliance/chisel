@@ -142,7 +142,7 @@ trait CheckHighFormLike {
       t match {
         case tx: VectorType if tx.size < 0 =>
           errors.append(new NegVecSizeException(info, mname))
-        case i: IntervalType => i
+        case _: IntervalType =>
         case _ => t foreach checkHighFormW(info, mname)
       }
     }
@@ -151,7 +151,6 @@ trait CheckHighFormLike {
       e match {
         case _: Reference | _: SubField | _: SubIndex | _: SubAccess => // No error
         case _: WRef | _: WSubField | _: WSubIndex | _: WSubAccess | _: Mux | _: ValidIf => // No error
-        case _: Reference | _: SubField | _: SubIndex | _: SubAccess => // No error
         case _ => errors.append(new InvalidAccessException(info, mname))
       }
     }

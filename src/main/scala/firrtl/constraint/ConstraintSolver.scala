@@ -5,7 +5,6 @@ package firrtl.constraint
 import firrtl._
 import firrtl.ir._
 import firrtl.Utils.throwInternalError
-import firrtl.annotations.ReferenceTarget
 
 import scala.collection.mutable
 

@@ -10,7 +10,6 @@ import firrtl.passes._
 import firrtl.passes.memlib._
 import scala.collection.mutable
 
-import Utils._
 import AnalysisUtils._
 import MemPortUtils._
 import ResolveMaskGranularity._

@@ -3,7 +3,7 @@
 package firrtl
 
 import annotations._
-import firrtl.RenameMap.{CircularRenameException, IllegalRenameException}
+import firrtl.RenameMap.IllegalRenameException
 import firrtl.annotations.TargetToken.{Field, Index, Instance, OfModule}
 
 import scala.collection.mutable
