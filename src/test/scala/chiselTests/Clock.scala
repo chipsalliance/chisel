@@ -20,7 +20,6 @@ class WithClockAndNoReset extends RawModule {
     RegNext(in)
   }
 
-  in.asUInt()
   out := a
 }
 
