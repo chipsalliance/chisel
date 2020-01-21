@@ -75,7 +75,7 @@ when (write) { mem.write(addr, dataIn); dataOut := DontCare }
 .otherwise { dataOut := mem.read(addr, read) }
 ```
 
-(The `DontCare` is there to make Chisel's [unconnected wire detection](Unconnected-Wires) aware that reading while writing is undefined.)
+(The `DontCare` is there to make Chisel's [unconnected wire detection](unconnected-wires) aware that reading while writing is undefined.)
 
 If the same `Mem` address is both written and sequentially read on the same clock
 edge, or if a sequential read enable is cleared, then the read data is
