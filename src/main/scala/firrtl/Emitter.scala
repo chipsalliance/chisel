@@ -325,12 +325,8 @@ class VerilogEmitter extends SeqTransform with Emitter {
      }
 
      def checkCatArgumentLegality(e: Expression): Unit = e match {
-       case _: UIntLiteral | _: SIntLiteral | _: WRef | _: WSubField =>
-       case DoPrim(Not, args, _,_) => args.foreach(checkArgumentLegality)
-       case DoPrim(op, args, _,_) if isCast(op) => args.foreach(checkArgumentLegality)
-       case DoPrim(op, args, _,_) if isBitExtract(op) => args.foreach(checkArgumentLegality)
        case DoPrim(Cat, args, _, _) => args foreach(checkCatArgumentLegality)
-       case _ => throw EmitterException(s"Can't emit ${e.getClass.getName} as PrimOp argument")
+       case _ => checkArgumentLegality(e)
      }
 
      def castCatArgs(a0: Expression, a1: Expression): Seq[Any] = {
