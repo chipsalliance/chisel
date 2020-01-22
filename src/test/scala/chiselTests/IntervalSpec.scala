@@ -456,7 +456,7 @@ class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
           () =>
             new BasicTester {
               val x = 5.I(range"[0,4]")
-            }
+          }
         ).elaborate
       }
     }
