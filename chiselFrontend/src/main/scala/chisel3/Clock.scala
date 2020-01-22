@@ -31,7 +31,7 @@ sealed class Clock(private[chisel3] val width: Width = Width(1)) extends Element
   /** Not really supported */
   def toPrintable: Printable = PString("CLOCK")
 
-  /** Returns the contents of this wire as a [[scala.collection.Seq]] of [[Bool]]. */
+  /** Returns the contents of the clock wire as a [[Bool]]. */
   final def asBool(): Bool = macro SourceInfoTransform.noArg
   def do_asBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = this.asUInt().asBool()
 
