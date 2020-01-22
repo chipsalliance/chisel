@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.FixedPoint
+import chisel3.experimental._
 import chisel3.experimental.BundleLiterals._
 import chisel3.testers.BasicTester
 
@@ -55,6 +55,47 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
     }}
   }
 
+  "doubles and big decimals" should "round trip properly" in {
+    intercept[ChiselException] {
+      Num.toBigDecimal(BigInt("1" * 109, 2), 0.BP)  // this only works if number takes less than 109 bits
+    }
+
+    intercept[ChiselException] {
+      Num.toDouble(BigInt("1" * 54, 2), 0.BP)  // this only works if number takes less than 54 bits
+    }
+
+    val bigInt108 = BigInt("1" * 108, 2)
+    val bigDecimal = Num.toBigDecimal(bigInt108, 2)
+
+    val bigIntFromBigDecimal = Num.toBigInt(bigDecimal, 2)
+
+    bigIntFromBigDecimal should be (bigInt108)
+
+    val bigInt53 = BigInt("1" * 53, 2)
+
+    val double  = Num.toDouble(bigInt53, 2)
+
+    val bigIntFromDouble = Num.toBigInt(double, 2)
+
+    bigIntFromDouble should be (bigInt53)
+  }
+
+  "encoding and decoding of Intervals" should "round trip" in {
+    val rangeMin = BigDecimal(-31.5)
+    val rangeMax = BigDecimal(32.5)
+    val range = range"($rangeMin, $rangeMax).2"
+    for(value <- (rangeMin - 4) to (rangeMax + 4) by 2.25) {
+      if (value < rangeMin || value > rangeMax) {
+        intercept[ChiselException] {
+          val literal = value.I(range)
+        }
+      } else {
+        val literal = value.I(range)
+        literal.isLit() should be(true)
+        literal.litValue().toDouble / 4.0 should be(value)
+      }
+    }
+  }
 
   "literals declared outside a builder context" should "compare with those inside builder context" in {
     class InsideBundle extends Bundle {
