@@ -28,7 +28,7 @@ object when {  // scalastyle:ignore object.name
     * }}}
     */
 
-  def apply(cond: => Bool)(block: => Unit)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): WhenContext = { // scalastyle:ignore line.size.limit
+  def apply(cond: => Bool)(block: => Any)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): WhenContext = { // scalastyle:ignore line.size.limit
     new WhenContext(sourceInfo, Some(() => cond), block)
   }
 }
@@ -43,7 +43,7 @@ object when {  // scalastyle:ignore object.name
   *  succeeding elsewhen or otherwise; therefore, this information is
   *  added by preprocessing the command queue.
   */
-final class WhenContext(sourceInfo: SourceInfo, cond: Option[() => Bool], block: => Unit, firrtlDepth: Int = 0) {
+final class WhenContext(sourceInfo: SourceInfo, cond: Option[() => Bool], block: => Any, firrtlDepth: Int = 0) {
 
   /** This block of logic gets executed if above conditions have been
     * false and this condition is true. The lazy argument pattern
@@ -51,7 +51,7 @@ final class WhenContext(sourceInfo: SourceInfo, cond: Option[() => Bool], block:
     * declaration and assignment of the Bool node of the predicate in
     * the correct place.
     */
-  def elsewhen (elseCond: => Bool)(block: => Unit)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): WhenContext = { // scalastyle:ignore line.size.limit
+  def elsewhen (elseCond: => Bool)(block: => Any)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): WhenContext = { // scalastyle:ignore line.size.limit
     new WhenContext(sourceInfo, Some(() => elseCond), block, firrtlDepth + 1)
   }
 
@@ -62,7 +62,7 @@ final class WhenContext(sourceInfo: SourceInfo, cond: Option[() => Bool], block:
     * assignment of the Bool node of the predicate in the correct
     * place.
     */
-  def otherwise(block: => Unit)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit =
+  def otherwise(block: => Any)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit =
     new WhenContext(sourceInfo, None, block, firrtlDepth + 1)
 
   /*
