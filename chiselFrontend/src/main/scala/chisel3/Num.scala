@@ -282,7 +282,7 @@ trait NumObject {
     * @return
     */
   def toBigDecimal(value: BigInt, binaryPoint: Int): BigDecimal = {
-    if(value.bitLength > 108) {
+    if(value.bitLength > MaxBitsBigIntToBigDecimal) {
       throw new ChiselException(
         s"BigInt $value with bitlength ${value.bitLength} is too big, precision lost with > $MaxBitsBigIntToBigDecimal bits"
       )

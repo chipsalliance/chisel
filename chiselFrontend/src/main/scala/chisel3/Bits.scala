@@ -1186,7 +1186,7 @@ package experimental {
     def binaryPoint: BinaryPoint
 
     /** Return the [[Double]] value of this instance if it is a Literal
-      * @note this method may return throw an exception if the literal value won't fit in a Double
+      * @note this method may throw an exception if the literal value won't fit in a Double
       */
     def litToDoubleOption: Option[Double] = {
       litOption match {
@@ -1201,7 +1201,7 @@ package experimental {
     def litToDouble: Double = litToDoubleOption.get
 
     /** Return the [[BigDecimal]] value of this instance if it is a Literal
-      * @note this method may return throw an exception if the literal value won't fit in a BigDecimal
+      * @note this method may throw an exception if the literal value won't fit in a BigDecimal
       */
     def litToBigDecimalOption: Option[BigDecimal] = {
       litOption match {
