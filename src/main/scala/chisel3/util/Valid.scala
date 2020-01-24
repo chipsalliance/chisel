@@ -152,7 +152,7 @@ object Pipe {
   * As an example, to construct a 4-stage pipe of 8-bit [[UInt]]s and connect it to a producer and consumer, you can use
   * the following:
   * {{{
-  *   val foo = Module(new Pipe(UInt(8.W)), 4)
+  *   val foo = Module(new Pipe(UInt(8.W), 4))
   *   pipe.io.enq := producer.io
   *   consumer.io := pipe.io.deq
   * }}}
