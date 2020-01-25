@@ -19,6 +19,21 @@ class FixedPointLiteralSpec extends FlatSpec with Matchers {
 
     initialDouble should be(finalDouble)
   }
+
+  they should "have their literals support to double and to BigDecimal" in {
+    val d = -7.125
+    val lit1 = d.F(3.BP)
+    lit1.litToDouble should be (d)
+
+    val d2 = BigDecimal("1232123213131123.125")
+    val lit2 = d2.F(3.BP)
+    lit2.litToBigDecimal should be (d2)
+
+    // Numbers that are too big will throw exception
+    intercept[ChiselException] {
+      lit2.litToDouble
+    }
+  }
 }
 
 //noinspection TypeAnnotation,EmptyParenMethodAccessedAsParameterless
