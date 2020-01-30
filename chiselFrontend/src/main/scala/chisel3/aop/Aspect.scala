@@ -12,6 +12,7 @@ import firrtl.AnnotationSeq
   * @tparam T Type of top-level module
   */
 abstract class Aspect[T <: RawModule] extends Annotation with Unserializable with NoTargetAnnotation {
+
   /** Convert this Aspect to a seq of FIRRTL annotation
     * @param top
     * @return

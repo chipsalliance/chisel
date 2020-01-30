@@ -10,6 +10,7 @@ import chisel3.aop.{Aspect, Select}
 import chisel3.experimental.ExtModule
 import chisel3.stage.{ChiselGeneratorAnnotation, DesignAnnotation}
 import firrtl.AnnotationSeq
+import firrtl.annotations.NoTargetAnnotation
 
 import scala.reflect.runtime.universe.TypeTag
 
@@ -33,8 +34,9 @@ class SelectTester(results: Seq[Int]) extends BasicTester {
   }
 }
 
-case class SelectAspect[T <: RawModule, X](selector: T => Seq[X], desired: T => Seq[X])(implicit tTag: TypeTag[T]) extends Aspect[T] {
+class SelectAspect[T <: RawModule, X](selector: T => Seq[X], desired: T => Seq[X]) extends Aspect[T] with NoTargetAnnotation {
   override def toAnnotation(top: T): AnnotationSeq = {
+    Nil
     val results = selector(top)
     val desiredSeq = desired(top)
     assert(results.length == desiredSeq.length, s"Failure! Results $results have different length than desired $desiredSeq!")
@@ -56,7 +58,7 @@ class SelectSpec extends ChiselFlatSpec {
     val ret = new chisel3.stage.ChiselStage().run(
       Seq(
         new chisel3.stage.ChiselGeneratorAnnotation(dut),
-        SelectAspect(selector, desired),
+        new SelectAspect(selector, desired),
         new chisel3.stage.ChiselOutputFileAnnotation("test_run_dir/Select.fir")
       )
     )
