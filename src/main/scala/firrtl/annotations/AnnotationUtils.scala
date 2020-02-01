@@ -66,10 +66,10 @@ object AnnotationUtils {
   def toSubComponents(s: String): Seq[TargetToken] = {
     import TargetToken._
     def exp2subcomp(e: ir.Expression): Seq[TargetToken] = e match {
-      case ir.Reference(name, _)      => Seq(Ref(name))
-      case ir.SubField(expr, name, _) => exp2subcomp(expr) :+ Field(name)
-      case ir.SubIndex(expr, idx, _)  => exp2subcomp(expr) :+ Index(idx)
-      case ir.SubAccess(expr, idx, _) => Utils.throwInternalError(s"For string $s, cannot convert a subaccess $e into a Target")
+      case ir.Reference(name, _, _, _)      => Seq(Ref(name))
+      case ir.SubField(expr, name, _, _) => exp2subcomp(expr) :+ Field(name)
+      case ir.SubIndex(expr, idx, _, _)  => exp2subcomp(expr) :+ Index(idx)
+      case ir.SubAccess(expr, idx, _, _) => Utils.throwInternalError(s"For string $s, cannot convert a subaccess $e into a Target")
     }
     exp2subcomp(toExp(s))
   }

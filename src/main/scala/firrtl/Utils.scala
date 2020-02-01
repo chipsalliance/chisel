@@ -220,12 +220,12 @@ object Utils extends LazyLogging {
       case WSubAccess(expr, index, _, _) => niceName(depth)(expr) + niceName(depth - 1)(index)
       case WSubField(expr, field, _, _) => niceName(depth)(expr) + "_" + field
       case WSubIndex(expr, index, _, _) => niceName(depth)(expr) + "_" + index
-      case Reference(name, _) if name(0) == '_' => name
-      case Reference(name, _) => "_" + name
-      case SubAccess(expr, index,  _) if depth <= 0 => niceName(depth)(expr)
-      case SubAccess(expr, index,  _) => niceName(depth)(expr) + niceName(depth - 1)(index)
-      case SubField(expr, field, _) => niceName(depth)(expr) + "_" + field
-      case SubIndex(expr, index, _) => niceName(depth)(expr) + "_" + index
+      case Reference(name, _, _, _) if name(0) == '_' => name
+      case Reference(name, _, _, _) => "_" + name
+      case SubAccess(expr, index, _, _) if depth <= 0 => niceName(depth)(expr)
+      case SubAccess(expr, index, _, _) => niceName(depth)(expr) + niceName(depth - 1)(index)
+      case SubField(expr, field, _, _) => niceName(depth)(expr) + "_" + field
+      case SubIndex(expr, index, _, _) => niceName(depth)(expr) + "_" + index
       case DoPrim(op, args, consts, _) if depth <= 0 => "_" + op
       case DoPrim(op, args, consts, _) => "_" + op + (args.map(niceName(depth - 1)) ++ consts.map("_" + _)).mkString("")
       case Mux(cond, tval, fval, _) if depth <= 0 => "_mux"
@@ -388,7 +388,7 @@ object Utils extends LazyLogging {
     */
   def inline(nodeMap: NodeMap, stop: String => Boolean = {x: String => false})(e: Expression): Expression = {
     def onExp(e: Expression): Expression = e map onExp match {
-      case Reference(name, _) if nodeMap.contains(name) && !stop(name) => onExp(nodeMap(name))
+      case Reference(name, _, _, _) if nodeMap.contains(name) && !stop(name) => onExp(nodeMap(name))
       case WRef(name, _, _, _) if nodeMap.contains(name) && !stop(name) => onExp(nodeMap(name))
       case other => other
     }

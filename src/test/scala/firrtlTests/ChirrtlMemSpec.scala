@@ -258,7 +258,7 @@ circuit foo :
         |""".stripMargin
     val res = (new HighFirrtlCompiler).compile(CircuitState(parse(input), ChirrtlForm), Seq()).circuit
     assert(res search {
-      case Connect(_, SubField(SubField(Reference("mem", _), "bar", _), "clk", _), DoPrim(AsClock, Seq(Reference("clock", _)), _, _)) => true
+      case Connect(_, SubField(SubField(Reference("mem", _, _, _), "bar", _, _), "clk", _, _), DoPrim(AsClock, Seq(Reference("clock", _, _, _)), _, _)) => true
     })
   }
 }

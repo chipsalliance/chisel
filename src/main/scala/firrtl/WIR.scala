@@ -26,15 +26,6 @@ case object SinkFlow extends Flow
 case object DuplexFlow extends Flow
 case object UnknownFlow extends Flow
 
-case class WRef(name: String, tpe: Type, kind: Kind, flow: Flow) extends Expression {
-  def serialize: String = name
-  def mapExpr(f: Expression => Expression): Expression = this
-  def mapType(f: Type => Type): Expression = this.copy(tpe = f(tpe))
-  def mapWidth(f: Width => Width): Expression = this
-  def foreachExpr(f: Expression => Unit): Unit = Unit
-  def foreachType(f: Type => Unit): Unit = f(tpe)
-  def foreachWidth(f: Width => Unit): Unit = Unit
-}
 object WRef {
   /** Creates a WRef from a Wire */
   def apply(wire: DefWire): WRef = new WRef(wire.name, wire.tpe, WireKind, UnknownFlow)
@@ -49,39 +40,29 @@ object WRef {
   /** Creates a WRef from a DefMemory */
   def apply(mem: DefMemory): WRef = new WRef(mem.name, passes.MemPortUtils.memType(mem), MemKind, UnknownFlow)
   /** Creates a WRef from an arbitrary string name */
-  def apply(n: String, t: Type = UnknownType, k: Kind = ExpKind): WRef = new WRef(n, t, k, UnknownFlow)
+  def apply(n: String, t: Type = UnknownType, k: Kind = ExpKind): WRef = Reference(n, t, k, UnknownFlow)
+
+  def apply(name: String, tpe: Type , kind: Kind, flow: Flow): WRef = Reference(name, tpe, kind, flow)
+  def unapply(ref: Reference): Option[(String, Type, Kind, Flow)] = Some((ref.name, ref.tpe, ref.kind, ref.flow))
 }
-case class WSubField(expr: Expression, name: String, tpe: Type, flow: Flow) extends Expression {
-  def serialize: String = s"${expr.serialize}.$name"
-  def mapExpr(f: Expression => Expression): Expression = this.copy(expr = f(expr))
-  def mapType(f: Type => Type): Expression = this.copy(tpe = f(tpe))
-  def mapWidth(f: Width => Width): Expression = this
-  def foreachExpr(f: Expression => Unit): Unit = f(expr)
-  def foreachType(f: Type => Unit): Unit = f(tpe)
-  def foreachWidth(f: Width => Unit): Unit = Unit
-}
+
 object WSubField {
   def apply(expr: Expression, n: String): WSubField = new WSubField(expr, n, field_type(expr.tpe, n), UnknownFlow)
   def apply(expr: Expression, name: String, tpe: Type): WSubField = new WSubField(expr, name, tpe, UnknownFlow)
+  def apply(expr: Expression, name: String, tpe: Type, flow: Flow): WSubField = new WSubField(expr, name, tpe, flow)
+  def unapply(wsf: WSubField): Option[(Expression, String, Type, Flow)] = Some((wsf.expr, wsf.name, wsf.tpe, wsf.flow))
 }
-case class WSubIndex(expr: Expression, value: Int, tpe: Type, flow: Flow) extends Expression {
-  def serialize: String = s"${expr.serialize}[$value]"
-  def mapExpr(f: Expression => Expression): Expression = this.copy(expr = f(expr))
-  def mapType(f: Type => Type): Expression = this.copy(tpe = f(tpe))
-  def mapWidth(f: Width => Width): Expression = this
-  def foreachExpr(f: Expression => Unit): Unit = f(expr)
-  def foreachType(f: Type => Unit): Unit = f(tpe)
-  def foreachWidth(f: Width => Unit): Unit = Unit
+
+object WSubIndex {
+  def apply(expr: Expression, value: Int, tpe: Type, flow: Flow): WSubIndex = new WSubIndex(expr, value, tpe, flow)
+  def unapply(wsi: WSubIndex): Option[(Expression, Int, Type, Flow)] = Some((wsi.expr, wsi.value, wsi.tpe, wsi.flow))
 }
-case class WSubAccess(expr: Expression, index: Expression, tpe: Type, flow: Flow) extends Expression {
-  def serialize: String = s"${expr.serialize}[${index.serialize}]"
-  def mapExpr(f: Expression => Expression): Expression = this.copy(expr = f(expr), index = f(index))
-  def mapType(f: Type => Type): Expression = this.copy(tpe = f(tpe))
-  def mapWidth(f: Width => Width): Expression = this
-  def foreachExpr(f: Expression => Unit): Unit = { f(expr); f(index) }
-  def foreachType(f: Type => Unit): Unit = f(tpe)
-  def foreachWidth(f: Width => Unit): Unit = Unit
+
+object WSubAccess {
+  def apply(expr: Expression, index: Expression, tpe: Type, flow: Flow): WSubAccess = new WSubAccess(expr, index, tpe, flow)
+  def unapply(wsa: WSubAccess): Option[(Expression, Expression, Type, Flow)] = Some((wsa.expr, wsa.index, wsa.tpe, wsa.flow))
 }
+
 case object WVoid extends Expression {
   def tpe = UnknownType
   def serialize: String = "VOID"
@@ -113,22 +94,15 @@ case object EmptyExpression extends Expression {
   def foreachType(f: Type => Unit): Unit = Unit
   def foreachWidth(f: Width => Unit): Unit = Unit
 }
-case class WDefInstance(info: Info, name: String, module: String, tpe: Type) extends Statement with IsDeclaration {
-  def serialize: String = s"inst $name of $module" + info.serialize
-  def mapExpr(f: Expression => Expression): Statement = this
-  def mapStmt(f: Statement => Statement): Statement = this
-  def mapType(f: Type => Type): Statement = this.copy(tpe = f(tpe))
-  def mapString(f: String => String): Statement = this.copy(name = f(name))
-  def mapInfo(f: Info => Info): Statement = this.copy(f(info))
-  def foreachStmt(f: Statement => Unit): Unit = Unit
-  def foreachExpr(f: Expression => Unit): Unit = Unit
-  def foreachType(f: Type => Unit): Unit = f(tpe)
-  def foreachString(f: String => Unit): Unit = f(name)
-  def foreachInfo(f: Info => Unit): Unit = f(info)
-}
+
 object WDefInstance {
   def apply(name: String, module: String): WDefInstance = new WDefInstance(NoInfo, name, module, UnknownType)
+  def apply(info: Info, name: String, module: String, tpe: Type): WDefInstance = new WDefInstance(info, name, module, tpe)
+  def unapply(wi: WDefInstance): Option[(Info, String, String, Type)] = {
+    Some((wi.info, wi.name, wi.module, wi.tpe))
+  }
 }
+
 case class WDefInstanceConnector(
     info: Info,
     name: String,

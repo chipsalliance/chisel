@@ -15,4 +15,10 @@ package object firrtl {
 
   @deprecated("Use firrtl.stage.TargetDirAnnotation", "1.2")
   val TargetDirAnnotation = firrtl.options.TargetDirAnnotation
+
+  type WRef = ir.Reference
+  type WSubField = ir.SubField
+  type WSubIndex = ir.SubIndex
+  type WSubAccess = ir.SubAccess
+  type WDefInstance = ir.DefInstance
 }

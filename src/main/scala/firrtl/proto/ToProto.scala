@@ -141,21 +141,21 @@ object ToProto {
   def convert(expr: ir.Expression): Firrtl.Expression.Builder = {
     val eb = Firrtl.Expression.newBuilder()
     expr match {
-      case ir.Reference(name, _) =>
+      case ir.Reference(name, _, _, _) =>
         val rb = Firrtl.Expression.Reference.newBuilder()
           .setId(name)
         eb.setReference(rb)
-      case ir.SubField(e, name, _) =>
+      case ir.SubField(e, name, _, _) =>
         val sb = Firrtl.Expression.SubField.newBuilder()
           .setExpression(convert(e))
           .setField(name)
         eb.setSubField(sb)
-      case ir.SubIndex(e, value, _) =>
+      case ir.SubIndex(e, value, _, _) =>
         val sb = Firrtl.Expression.SubIndex.newBuilder()
           .setExpression(convert(e))
           .setIndex(convertToIntegerLiteral(value))
         eb.setSubIndex(sb)
-      case ir.SubAccess(e, index, _) =>
+      case ir.SubAccess(e, index, _, _) =>
         val sb = Firrtl.Expression.SubAccess.newBuilder()
           .setExpression(convert(e))
           .setIndex(convert(index))
@@ -231,7 +231,7 @@ object ToProto {
               .setReset(convert(reset))
               .setInit(convert(init))
             sb.setRegister(rb)
-          case ir.DefInstance(_, name, module) =>
+          case ir.DefInstance(_, name, module, _) =>
             val ib = Firrtl.Statement.Instance.newBuilder()
               .setId(name)
               .setModuleId(module)

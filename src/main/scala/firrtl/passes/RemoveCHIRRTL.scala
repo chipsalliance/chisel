@@ -183,7 +183,7 @@ object RemoveCHIRRTL extends Transform with DependencyAPIMigration with Preserve
     var has_readwrite_mport: Option[Expression] = None
     var has_read_mport: Option[Expression] = None
     def remove_chirrtl_e(g: Flow)(e: Expression): Expression = e match {
-      case Reference(name, tpe) => refs get name match {
+      case Reference(name, tpe, _, _) => refs get name match {
         case Some(p) => g match {
           case SinkFlow =>
             has_write_mport = true
@@ -200,7 +200,7 @@ object RemoveCHIRRTL extends Transform with DependencyAPIMigration with Preserve
           case SourceFlow => e
         }
       }
-      case SubAccess(expr, index, tpe)  => SubAccess(
+      case SubAccess(expr, index, tpe, _) => SubAccess(
         remove_chirrtl_e(g)(expr), remove_chirrtl_e(SourceFlow)(index), tpe)
       case ex => ex map remove_chirrtl_e(g)
    }

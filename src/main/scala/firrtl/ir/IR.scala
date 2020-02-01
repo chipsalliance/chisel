@@ -140,7 +140,9 @@ abstract class Expression extends FirrtlNode {
   def foreachType(f: Type => Unit): Unit
   def foreachWidth(f: Width => Unit): Unit
 }
-case class Reference(name: String, tpe: Type) extends Expression with HasName {
+
+case class Reference(name: String, tpe: Type, kind: Kind = UnknownKind, flow: Flow = UnknownFlow)
+    extends Expression with HasName {
   def serialize: String = name
   def mapExpr(f: Expression => Expression): Expression = this
   def mapType(f: Type => Type): Expression = this.copy(tpe = f(tpe))
@@ -149,7 +151,9 @@ case class Reference(name: String, tpe: Type) extends Expression with HasName {
   def foreachType(f: Type => Unit): Unit = f(tpe)
   def foreachWidth(f: Width => Unit): Unit = Unit
 }
-case class SubField(expr: Expression, name: String, tpe: Type) extends Expression with HasName {
+
+case class SubField(expr: Expression, name: String, tpe: Type, flow: Flow = UnknownFlow)
+    extends Expression with HasName {
   def serialize: String = s"${expr.serialize}.$name"
   def mapExpr(f: Expression => Expression): Expression = this.copy(expr = f(expr))
   def mapType(f: Type => Type): Expression = this.copy(tpe = f(tpe))
@@ -158,7 +162,9 @@ case class SubField(expr: Expression, name: String, tpe: Type) extends Expressio
   def foreachType(f: Type => Unit): Unit = f(tpe)
   def foreachWidth(f: Width => Unit): Unit = Unit
 }
-case class SubIndex(expr: Expression, value: Int, tpe: Type) extends Expression {
+
+case class SubIndex(expr: Expression, value: Int, tpe: Type, flow: Flow = UnknownFlow)
+    extends Expression {
   def serialize: String = s"${expr.serialize}[$value]"
   def mapExpr(f: Expression => Expression): Expression = this.copy(expr = f(expr))
   def mapType(f: Type => Type): Expression = this.copy(tpe = f(tpe))
@@ -167,16 +173,18 @@ case class SubIndex(expr: Expression, value: Int, tpe: Type) extends Expression 
   def foreachType(f: Type => Unit): Unit = f(tpe)
   def foreachWidth(f: Width => Unit): Unit = Unit
 }
-case class SubAccess(expr: Expression, index: Expression, tpe: Type) extends Expression {
+
+case class SubAccess(expr: Expression, index: Expression, tpe: Type, flow: Flow = UnknownFlow)
+    extends Expression {
   def serialize: String = s"${expr.serialize}[${index.serialize}]"
-  def mapExpr(f: Expression => Expression): Expression =
-    this.copy(expr = f(expr), index = f(index))
+  def mapExpr(f: Expression => Expression): Expression = this.copy(expr = f(expr), index = f(index))
   def mapType(f: Type => Type): Expression = this.copy(tpe = f(tpe))
   def mapWidth(f: Width => Width): Expression = this
   def foreachExpr(f: Expression => Unit): Unit = { f(expr); f(index) }
   def foreachType(f: Type => Unit): Unit = f(tpe)
   def foreachWidth(f: Width => Unit): Unit = Unit
 }
+
 case class Mux(cond: Expression, tval: Expression, fval: Expression, tpe: Type = UnknownType) extends Expression {
   def serialize: String = s"mux(${cond.serialize}, ${tval.serialize}, ${fval.serialize})"
   def mapExpr(f: Expression => Expression): Expression = Mux(f(cond), f(tval), f(fval), tpe)
@@ -298,16 +306,18 @@ case class DefRegister(
   def foreachString(f: String => Unit): Unit = f(name)
   def foreachInfo(f: Info => Unit): Unit = f(info)
 }
-case class DefInstance(info: Info, name: String, module: String) extends Statement with IsDeclaration {
+
+case class DefInstance(info: Info, name: String, module: String, tpe: Type = UnknownType)
+    extends Statement with IsDeclaration {
   def serialize: String = s"inst $name of $module" + info.serialize
-  def mapStmt(f: Statement => Statement): Statement = this
   def mapExpr(f: Expression => Expression): Statement = this
-  def mapType(f: Type => Type): Statement = this
-  def mapString(f: String => String): Statement = DefInstance(info, f(name), module)
-  def mapInfo(f: Info => Info): Statement = this.copy(info = f(info))
+  def mapStmt(f: Statement => Statement): Statement = this
+  def mapType(f: Type => Type): Statement = this.copy(tpe = f(tpe))
+  def mapString(f: String => String): Statement = this.copy(name = f(name))
+  def mapInfo(f: Info => Info): Statement = this.copy(f(info))
   def foreachStmt(f: Statement => Unit): Unit = Unit
   def foreachExpr(f: Expression => Unit): Unit = Unit
-  def foreachType(f: Type => Unit): Unit = Unit
+  def foreachType(f: Type => Unit): Unit = f(tpe)
   def foreachString(f: String => Unit): Unit = f(name)
   def foreachInfo(f: Info => Unit): Unit = f(info)
 }

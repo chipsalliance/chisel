@@ -306,12 +306,12 @@ class TestFirrtlFlatSpec extends FirrtlFlatSpec {
 
   it should "be supported on Circuit" in {
     assert(c search {
-      case Connect(_, Reference("out",_), Reference("in",_)) => true
+      case Connect(_, Reference("out",_, _, _), Reference("in", _, _, _)) => true
     })
   }
   it should "be supported on CircuitStates" in {
     assert(state search {
-      case Connect(_, Reference("out",_), Reference("in",_)) => true
+      case Connect(_, Reference("out", _, _, _), Reference("in",_, _, _)) => true
     })
   }
   it should "be supported on the results of compilers" in {

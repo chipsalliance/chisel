@@ -56,12 +56,6 @@ case object TargetToken {
     def toTokens: (Instance, OfModule) = (new TargetToken.Instance(i.name), new TargetToken.OfModule(i.module))
   }
 
-  implicit class fromWDefInstanceToTargetToken(wi: WDefInstance) {
-    def Instance: Instance = new TargetToken.Instance(wi.name)
-    def OfModule: OfModule = new TargetToken.OfModule(wi.module)
-    def toTokens: (Instance, OfModule) = (new TargetToken.Instance(wi.name), new TargetToken.OfModule(wi.module))
-  }
-
   val keyword2targettoken = Map(
     "inst" -> ((value: String) => Instance(value)),
     "of" -> ((value: String) => OfModule(value)),

@@ -59,7 +59,7 @@ class EliminateTargetPaths extends Transform with DependencyAPIMigration with Pr
   private def onStmt(dupMap: DuplicationHelper)
                     (originalModule: String, newModule: String)
                     (s: Statement): Statement = s match {
-    case d@DefInstance(_, name, module) =>
+    case d@DefInstance(_, name, module, _) =>
       val ofModule = dupMap.getNewOfModule(originalModule, newModule, Instance(name), OfModule(module)).value
       d.copy(module = ofModule)
     case d@WDefInstance(_, name, module, _) =>
