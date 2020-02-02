@@ -214,12 +214,6 @@ object Utils extends LazyLogging {
   def niceName(e: Expression): String = niceName(1)(e)
   def niceName(depth: Int)(e: Expression): String = {
     e match {
-      case WRef(name, _, _, _) if name(0) == '_' => name
-      case WRef(name, _, _, _) => "_" + name
-      case WSubAccess(expr, index, _, _) if depth <= 0 => niceName(depth)(expr)
-      case WSubAccess(expr, index, _, _) => niceName(depth)(expr) + niceName(depth - 1)(index)
-      case WSubField(expr, field, _, _) => niceName(depth)(expr) + "_" + field
-      case WSubIndex(expr, index, _, _) => niceName(depth)(expr) + "_" + index
       case Reference(name, _, _, _) if name(0) == '_' => name
       case Reference(name, _, _, _) => "_" + name
       case SubAccess(expr, index, _, _) if depth <= 0 => niceName(depth)(expr)
@@ -297,11 +291,8 @@ object Utils extends LazyLogging {
     var ref = "???"
     def onExp(expr: Expression): Expression = {
       expr map onExp match {
-        case e: WRef => ref = e.name
         case e: Reference => ref = e.name
-        case e: WSubField => tokens += TargetToken.Field(e.name)
         case e: SubField => tokens += TargetToken.Field(e.name)
-        case e: WSubIndex => tokens += TargetToken.Index(e.value)
         case e: SubIndex => tokens += TargetToken.Index(e.value)
         case other => throwInternalError("Cannot call Utils.toTarget on non-referencing expression")
       }
@@ -389,7 +380,6 @@ object Utils extends LazyLogging {
   def inline(nodeMap: NodeMap, stop: String => Boolean = {x: String => false})(e: Expression): Expression = {
     def onExp(e: Expression): Expression = e map onExp match {
       case Reference(name, _, _, _) if nodeMap.contains(name) && !stop(name) => onExp(nodeMap(name))
-      case WRef(name, _, _, _) if nodeMap.contains(name) && !stop(name) => onExp(nodeMap(name))
       case other => other
     }
     onExp(e)

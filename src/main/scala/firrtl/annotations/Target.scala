@@ -103,13 +103,9 @@ sealed trait Target extends Named {
 
 object Target {
   def asTarget(m: ModuleTarget)(e: Expression): ReferenceTarget = e match {
-    case w: WRef => m.ref(w.name)
     case r: ir.Reference => m.ref(r.name)
-    case w: WSubIndex => asTarget(m)(w.expr).index(w.value)
     case s: ir.SubIndex => asTarget(m)(s.expr).index(s.value)
-    case w: WSubField => asTarget(m)(w.expr).field(w.name)
     case s: ir.SubField => asTarget(m)(s.expr).field(s.name)
-    case w: WSubAccess => asTarget(m)(w.expr).field("@" + w.index.serialize)
     case s: ir.SubAccess => asTarget(m)(s.expr).field("@" + s.index.serialize)
     case d: DoPrim => m.ref("@" + d.serialize)
     case d: Mux => m.ref("@" + d.serialize)
