@@ -8,6 +8,7 @@ import scala.language.experimental.macros
 
 import chisel3.experimental.BaseModule
 import chisel3.experimental.BundleLiteralException
+import chisel3.experimental.EnumType
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
@@ -42,7 +43,7 @@ sealed abstract class Aggregate extends Data {
     }
   }
 
-  override def litOption: Option[BigInt] = ???  // TODO implement me
+  override def litOption: Option[BigInt] = None  // TODO implement me
 
   /** Returns a Seq of the immediate contents of this Aggregate, in order.
     */
@@ -120,7 +121,7 @@ trait VecFactory extends SourceInfoDoc {
   *  {{{
   *    val io = IO(new Bundle {
   *      val in = Input(Vec(20, UInt(16.W)))
-  *      val addr = UInt(5.W)
+  *      val addr = Input(UInt(5.W))
   *      val out = Output(UInt(16.W))
   *    })
   *    io.out := io.in(io.addr)
@@ -550,6 +551,15 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
           value.topBinding.asInstanceOf[BundleLitBinding].litMap.map { case (valueField, valueValue) =>
             remap(valueField) -> valueValue
           }
+        case field: EnumType => {
+          if (!(field typeEquivalent value)) {
+            throw new BundleLiteralException(s"field $fieldName $field specified with non-type-equivalent enum value $value")
+          }
+          val litArg = valueBinding match {
+            case ElementLitBinding(litArg) => litArg
+          }
+          Seq(field -> litArg)
+        }
         case _ => throw new BundleLiteralException(s"unsupported field $fieldName of type $field")
       }
     }  // don't convert to a Map yet to preserve duplicate keys
@@ -686,8 +696,8 @@ package experimental {
   *        val outPacket = Output(new Packet)
   *      })
   *      val reg = Reg(new Packet)
-  *      reg <> inPacket
-  *      outPacket <> reg
+  *      reg <> io.inPacket
+  *      io.outPacket <> reg
   *   }
   * }}}
   */

@@ -11,6 +11,7 @@ import chisel3.experimental._
 import _root_.firrtl.{ir => firrtlir}
 import _root_.firrtl.PrimOps
 
+import scala.collection.immutable.NumericRange
 import scala.math.BigDecimal.RoundingMode
 
 // scalastyle:off number.of.types
@@ -434,7 +435,7 @@ sealed class IntervalRange(
   val getHighestPossibleValue: Option[BigDecimal] = {
     increment match {
       case Some(inc) =>
-        lower match {
+        upper match {
           case firrtlir.Closed(n) => Some(n)
           case firrtlir.Open(n) => Some(n - inc)
           case _ => None
@@ -448,7 +449,7 @@ sealed class IntervalRange(
     * Mostly to be used for testing
     * @return
     */
-  def getPossibleValues: Seq[BigDecimal] = {
+  def getPossibleValues: NumericRange[BigDecimal] = {
     (getLowestPossibleValue, getHighestPossibleValue, increment) match {
       case (Some(low), Some(high), Some(inc)) => (low to high by inc)
       case (_, _, None) =>

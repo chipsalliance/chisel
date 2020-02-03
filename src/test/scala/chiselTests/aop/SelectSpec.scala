@@ -7,7 +7,9 @@ import chiselTests.ChiselFlatSpec
 import chisel3._
 import chisel3.aop.Select.{PredicatedConnect, When, WhenNot}
 import chisel3.aop.{Aspect, Select}
-import firrtl.{AnnotationSeq}
+import chisel3.experimental.ExtModule
+import chisel3.stage.{ChiselGeneratorAnnotation, DesignAnnotation}
+import firrtl.AnnotationSeq
 
 import scala.reflect.runtime.universe.TypeTag
 
@@ -137,6 +139,18 @@ class SelectSpec extends ChiselFlatSpec {
         ))
       }
     )
+  }
+
+  "Blackboxes" should "be supported in Select.instances" in {
+    class BB extends ExtModule { }
+    class Top extends RawModule {
+      val bb = Module(new BB)
+    }
+    val top = ChiselGeneratorAnnotation(() => {
+      new Top()
+    }).elaborate(1).asInstanceOf[DesignAnnotation[Top]].design
+    val bbs = Select.collectDeep(top) { case b: BB => b }
+    assert(bbs.size == 1)
   }
 
 }
