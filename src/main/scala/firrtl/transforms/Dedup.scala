@@ -296,8 +296,10 @@ object DedupModules {
     val module2Annotations = mutable.HashMap.empty[String, mutable.HashSet[Annotation]]
     annotations.foreach { a =>
       a.getTargets.foreach { t =>
-        val annos = module2Annotations.getOrElseUpdate(t.moduleOpt.get, mutable.HashSet.empty[Annotation])
-        annos += a
+        if (t.moduleOpt.isDefined) {
+          val annos = module2Annotations.getOrElseUpdate(t.moduleOpt.get, mutable.HashSet.empty[Annotation])
+          annos += a
+        }
       }
     }
     def fastSerializedHash(s: Statement): Int ={
