@@ -298,7 +298,7 @@ object Utils extends LazyLogging {
     def onExp(expr: Expression): Expression = {
       expr map onExp match {
         case e: WRef => ref = e.name
-        case e: Reference => tokens += TargetToken.Ref(e.name)
+        case e: Reference => ref = e.name
         case e: WSubField => tokens += TargetToken.Field(e.name)
         case e: SubField => tokens += TargetToken.Field(e.name)
         case e: WSubIndex => tokens += TargetToken.Index(e.value)
