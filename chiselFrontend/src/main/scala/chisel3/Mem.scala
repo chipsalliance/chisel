@@ -147,9 +147,9 @@ object SyncReadMem {
 
 
   type ReadUnderWrite = fir.ReadUnderWrite.Value
-  val Undefined = fir.ReadUnderWrite.UNDEFINED
-  val ReadFirst = fir.ReadUnderWrite.OLD
-  val WriteFirst = fir.ReadUnderWrite.NEW
+  val Undefined = fir.ReadUnderWrite.Undefined
+  val ReadFirst = fir.ReadUnderWrite.Old
+  val WriteFirst = fir.ReadUnderWrite.New
 
   /** Creates a sequential/synchronous-read, sequential/synchronous-write [[SyncReadMem]].
     *
