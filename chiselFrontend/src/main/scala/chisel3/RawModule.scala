@@ -184,17 +184,6 @@ package internal {
     // Allow access to bindings from the compatibility package
     protected def _compatIoPortBound() = portsContains(io)// scalastyle:ignore method.name
 
-    protected override def nameIds(rootClass: Class[_]): HashMap[HasId, String] = {
-      val names = super.nameIds(rootClass)
-
-      // Allow IO naming without reflection
-      names.put(io, "io")
-      names.put(clock, "clock")
-      names.put(reset, "reset")
-
-      names
-    }
-
     private[chisel3] override def namePorts(names: HashMap[HasId, String]): Unit = {
       for (port <- getModulePorts) {
         // This should already have been caught
