@@ -48,11 +48,33 @@ object Reg {
 
 }
 
+/** Utility for constructing one-cycle delayed versions of signals
+  *
+  * ''The width of a `RegNext` is not set based on the `next` or `init` connections'' for [[Element]] types. In the
+  * following example, the width of `bar` will not be set and will be inferred by the FIRRTL compiler.
+  * {{{
+  * val foo = Reg(UInt(4.W))         // width is 4
+  * val bar = RegNext(foo)           // width is unset
+  * }}}
+  *
+  * If you desire an explicit width, do not use `RegNext` and instead use a register with a specified width:
+  * {{{
+  * val foo = Reg(UInt(4.W))         // width is 4
+  * val bar = Reg(chiselTypeOf(foo)) // width is 4
+  * bar := foo
+  * }}}
+  *
+  * Also note that a `RegNext` of a [[Bundle]] ''will have it's width set'' for [[Aggregate]] types.
+  * {{{
+  * class MyBundle extends Bundle {
+  *   val x = UInt(4.W)
+  * }
+  * val foo = Wire(new MyBundle)     // the width of foo.x is 4
+  * val bar = RegNext(foo)           // the width of bar.x is 4
+  * }}}
+  */
 object RegNext {
-  /** Returns a register with the specified next and no reset initialization.
-    *
-    * Essentially a 1-cycle delayed version of the input signal.
-    */
+  /** Returns a register ''with an unset width'' connected to the signal `next` and with no reset value. */
   def apply[T <: Data](next: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     val model = (next match {
       case next: Bits => next.cloneTypeWidth(Width())
@@ -66,10 +88,7 @@ object RegNext {
     reg
   }
 
-  /** Returns a register with the specified next and reset initialization.
-    *
-    * Essentially a 1-cycle delayed version of the input signal.
-    */
+  /** Returns a register ''with an unset width'' connected to the signal `next` and with the reset value `init`. */
   def apply[T <: Data](next: T, init: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     val model = (next match {
       case next: Bits => next.cloneTypeWidth(Width())
