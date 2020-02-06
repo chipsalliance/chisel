@@ -19,7 +19,7 @@ import chisel3._
   * ))
   * }}}
   *
-  * @note results undefined if multiple select signals are simultaneously high
+  * @note results unspecified unless exactly one select signal is high
   */
 object Mux1H {
   def apply[T <: Data](sel: Seq[Bool], in: Seq[T]): T =
@@ -27,7 +27,14 @@ object Mux1H {
   def apply[T <: Data](in: Iterable[(Bool, T)]): T = SeqUtils.oneHotMux(in)
   def apply[T <: Data](sel: UInt, in: Seq[T]): T =
     apply((0 until in.size).map(sel(_)), in)
-  def apply(sel: UInt, in: UInt): Bool = (sel & in).orR
+  def apply(sel: UInt, in: UInt): Bool = {
+    if (in.isWidthKnown && (in.getWidth == 1)) {
+      // match the in.tail.isEmpty special case from do_oneHotMux in SeqUtils.scala
+      in(0)
+    } else {
+      (sel & in).orR
+    }
+  }
 }
 
 /** Builds a Mux tree under the assumption that multiple select signals
