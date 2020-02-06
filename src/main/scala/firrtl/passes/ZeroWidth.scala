@@ -114,6 +114,7 @@ object ZeroWidth extends Transform {
         case Seq(x) => x
         case seq => DoPrim(Cat, seq, consts, tpe) map onExp
       }
+    case DoPrim(Andr, Seq(x), _, _) if (bitWidth(x.tpe) == 0) => UIntLiteral(1) // nothing false
     case other => other.tpe match {
       case UIntType(IntWidth(ZERO)) => UIntLiteral(ZERO, IntWidth(BigInt(1)))
       case SIntType(IntWidth(ZERO)) => SIntLiteral(ZERO, IntWidth(BigInt(1)))

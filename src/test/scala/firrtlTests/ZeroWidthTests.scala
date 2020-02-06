@@ -212,6 +212,21 @@ class ZeroWidthTests extends FirrtlFlatSpec {
         |    printf(clk, UInt(1), "%d %d %d\n", x, UInt(0), z)""".stripMargin
       (parse(exec(input)).serialize) should be (parse(check).serialize)
   }
+
+  "Andr of zero-width expression" should "return true" in {
+    val input =
+      """circuit Top :
+        |  module Top :
+        |    input y : UInt<0>
+        |    output x : UInt<1>
+        |    x <= andr(y)""".stripMargin
+    val check =
+      """circuit Top :
+         |  module Top :
+         |    output x : UInt<1>
+         |    x <= UInt<1>(1)""".stripMargin
+      (parse(exec(input))) should be (parse(check))
+  }
 }
 
 class ZeroWidthVerilog extends FirrtlFlatSpec {
