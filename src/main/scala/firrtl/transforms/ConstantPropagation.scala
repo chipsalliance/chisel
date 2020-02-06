@@ -406,7 +406,7 @@ class ConstantPropagation extends Transform with ResolvedAnnotationPaths {
     // (can have more than 1 of the same submodule)
     val constSubInputs = mutable.HashMap.empty[OfModule, mutable.HashMap[String, Seq[Literal]]]
     // AsyncReset registers don't have reset turned into a mux so we must be careful
-    val asyncResetRegs = mutable.HashSet.empty[String]
+    val asyncResetRegs = mutable.HashMap.empty[String, DefRegister]
 
     // Register constant propagation is intrinsically more complicated, as it is not feed-forward.
     // Therefore, we must store some memoized information about how nodes can be canditates for
@@ -468,7 +468,7 @@ class ConstantPropagation extends Transform with ResolvedAnnotationPaths {
       stmtx match {
         case x: DefNode if !dontTouches.contains(x.name) => propagateRef(x.name, x.value)
         case reg: DefRegister if reg.reset.tpe == AsyncResetType =>
-          asyncResetRegs += reg.name
+          asyncResetRegs(reg.name) = reg
         case Connect(_, WRef(wname, wtpe, WireKind, _), expr: Literal) if !dontTouches.contains(wname) =>
           val exprx = constPropExpression(nodeMap, instMap, constSubOutputs)(pad(expr, wtpe))
           propagateRef(wname, exprx)
@@ -478,7 +478,7 @@ class ConstantPropagation extends Transform with ResolvedAnnotationPaths {
           constOutputs(pname) = paddedLit
         // Const prop registers that are driven by a mux tree containing only instances of one constant or self-assigns
         // This requires that reset has been made explicit
-        case Connect(_, lref @ WRef(lname, ltpe, RegKind, _), rhs) if !dontTouches(lname) && !asyncResetRegs(lname) =>
+        case Connect(_, lref @ WRef(lname, ltpe, RegKind, _), rhs) if !dontTouches(lname) =>
 
          /* Checks if an RHS expression e of a register assignment is convertible to a constant assignment.
           * Here, this means that e must be 1) a literal, 2) a self-connect, or 3) a mux tree of
@@ -500,9 +500,9 @@ class ConstantPropagation extends Transform with ResolvedAnnotationPaths {
             case Mux(_, tval, fval, _) => regConstant(tval).resolve(regConstant(fval))
             case _ => RegCPEntry(NonConstant, NonConstant)
           }
-          def zero = passes.RemoveValidIf.getGroundZero(ltpe)
-          def padCPExp(e: Expression) = constPropExpression(nodeMap, instMap, constSubOutputs)(pad(e, ltpe))
-          regConstant(rhs) match {
+
+          // Updates nodeMap after analyzing the returned value from regConstant
+          def updateNodeMapIfConstant(e: Expression): Unit = regConstant(e) match {
             case RegCPEntry(BoundConstant(`lname`), litBinding) => litBinding match {
               case UnboundConstant => nodeMap(lname) = padCPExp(zero) // only self-assigns -> replace with zero
               case BoundConstant(lit) => nodeMap(lname) = padCPExp(lit) // self + lit assigns -> replace with lit
@@ -511,6 +511,16 @@ class ConstantPropagation extends Transform with ResolvedAnnotationPaths {
             case RegCPEntry(UnboundConstant, BoundConstant(lit)) => nodeMap(lname) = padCPExp(lit) // only lit assigns
             case _ =>
           }
+          def zero = passes.RemoveValidIf.getGroundZero(ltpe)
+          def padCPExp(e: Expression) = constPropExpression(nodeMap, instMap, constSubOutputs)(pad(e, ltpe))
+
+          asyncResetRegs.get(lname) match {
+            // Normal Register
+            case None => updateNodeMapIfConstant(rhs)
+            // Async Register
+            case Some(reg: DefRegister) => updateNodeMapIfConstant(Mux(reg.reset, reg.init, rhs))
+          }
+
         // Mark instance inputs connected to a constant
         case Connect(_, lref @ WSubField(WRef(inst, _, InstanceKind, _), port, ptpe, _), lit: Literal) =>
           val paddedLit = constPropExpression(nodeMap, instMap, constSubOutputs)(pad(lit, ptpe)).asInstanceOf[Literal]
