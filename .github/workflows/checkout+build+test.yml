@@ -87,9 +87,17 @@ jobs:
         if: steps.cache-firrtl-2_11.outputs.cache-hit != 'true' || steps.cache-firrtl-2_12.outputs.cache-hit != 'true'
         run: |
           git clone --depth=1 -b $FIRRTL_REF https://github.com/freechipsproject/firrtl.git
-          cd firrtl && sbt +publishLocal
+          (cd firrtl && cat /dev/null | sbt +publishLocal)
       - name: Build and test chisel3
         id: build-test-chisel3
         run: |
-          cd chisel3 && sbt +test
+          (cd chisel3 && cat /dev/null | sbt +test)
           ls -laR $HOME/.ivy2
+      - name: Check style
+        id: check-style-chisel3
+        run: |
+          (cd chisel3 && cat /dev/null | sbt scalastyle | gawk -v WARN_FAIL=2 -e '/scalastyle Found [0-9]+ warnings/ { print $0; if ($4 > ENVIRON["CHECKSTYLE_LIMIT"]) WARN_FAIL=1; else if (WARN_FAIL == 2) WARN_FAIL=0 }' -e 'END { exit WARN_FAIL}')
+      - name: Check binary compatibility
+        id: binary-compatibility-chisel3
+        run: |
+          (cd chisel3 && cat /dev/null | sbt +mimaReportBinaryIssues)
