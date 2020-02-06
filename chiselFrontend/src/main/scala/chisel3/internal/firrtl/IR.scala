@@ -47,6 +47,8 @@ object PrimOp {
   val NotEqualOp = PrimOp("neq")
   val NegOp = PrimOp("neg")
   val MultiplexOp = PrimOp("mux")
+  val AndReduceOp = PrimOp("andr")
+  val OrReduceOp = PrimOp("orr")
   val XorReduceOp = PrimOp("xorr")
   val ConvertOp = PrimOp("cvt")
   val AsUIntOp = PrimOp("asUInt")

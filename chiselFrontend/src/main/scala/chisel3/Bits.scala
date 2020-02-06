@@ -581,13 +581,9 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
   final def xorR(): Bool = macro SourceInfoTransform.noArg
 
   /** @group SourceInfoTransformMacro */
-  def do_orR(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = this =/= 0.U
+  def do_orR(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = redop(sourceInfo, OrReduceOp)
   /** @group SourceInfoTransformMacro */
-  def do_andR(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = width match {
-    // Generate a simpler expression if the width is known
-    case KnownWidth(w) => this === ((BigInt(1) << w) - 1).U
-    case UnknownWidth() =>  ~this === 0.U
-  }
+  def do_andR(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = redop(sourceInfo, AndReduceOp)
   /** @group SourceInfoTransformMacro */
   def do_xorR(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = redop(sourceInfo, XorReduceOp)
 
