@@ -1533,6 +1533,8 @@ andr,orr,xorr & (e)  & () & (UInt) & UInt & 1\\
 
 The bitwise reduction operations correspond to a bitwise and, or, and exclusive or operation, reduced over every bit in \vv{e}.
 
+In all cases, the reduction incorporates as an inductive base case the ``identity value'' associated with each operator. This is defined as the value that preserves the value of the other argument: one for \vv{and} (as $x \wedge 1 = x$), zero for \vv{or} (as $x \vee 0 = x$), and zero for \vv{xor} (as $x \oplus 0 = x$). Note that the logical consequence is that the and-reduction of a zero-width expression returns a one, while the or- and xor-reductions of a zero-width expression both return zero.
+
 \subsection{Concatenate Operation}
 
 \begin{figure}[H]
