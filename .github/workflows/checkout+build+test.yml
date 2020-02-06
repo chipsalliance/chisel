@@ -1,0 +1,95 @@
+name: Checkout, Build, and Test
+
+on:
+  push:
+    branches:
+      - 3.2.x
+      - github-workflow
+  pull_request:
+    branches:
+      - 3.2.x
+      - github-workflow
+
+jobs:
+  build:
+    name: checkout, build, and test
+    runs-on: ubuntu-latest
+    container:
+      image: ucbbar/chisel3-tools
+      options: --user github --entrypoint /bin/bash
+    env:
+      CHISEL3_REF: 3.2.3-release
+      FIRRTL_REF: 1.2.3-release
+      CONTAINER_HOME: /home/github
+
+    steps:
+      - name: id
+        run: |
+          uid=$(id -u)
+          echo ::set-env name=CONTAINER_HOME::$(if [ "$uid" = "0" ]; then echo "/root"; else echo "/home/github"; fi)
+          printenv
+          whoami
+          git --version
+          pwd
+          echo "Link $CONTAINER_HOME caches to $HOME"
+          echo mkdir -p $HOME/.cache $HOME/.ivy2 $HOME/.sbt
+          mkdir -p $HOME/.cache $HOME/.ivy2 $HOME/.sbt
+          echo ln -s $HOME/.cache $HOME/.ivy2 $HOME/.sbt $CONTAINER_HOME
+          ln -s $HOME/.cache $HOME/.ivy2 $HOME/.sbt $CONTAINER_HOME
+          echo ls -la $HOME . $CONTAINER_HOME
+          ls -la $HOME . $CONTAINER_HOME
+      - name: checkout
+        uses: actions/checkout@v2
+        with:
+          path: chisel3
+      - name: Generate SBT SHA1s
+        id: gen-sbt-shas
+        run: |
+          ls -la . chisel3
+          (cd chisel3 && openssl sha1 build.sbt project/build.properties project/*.sbt) > sbt.hashes
+      - name: Cache SBT coursier cache
+        id: cache-sbt-coursier-cache
+        uses: actions/cache@v1
+        with:
+          path: ~/.cache/coursier
+          key: ${{ runner.os }}-v1-sbt-coursier-${{ hashFiles('sbt.hashes') }}
+      - name: Cache SBT ivy cache
+        id: cache-sbt-ivy-cache
+        uses: actions/cache@v1
+        with:
+          path: ~/.ivy2/cache
+          key: ${{ runner.os }}-v1-sbt-ivy-${{ hashFiles('sbt.hashes') }}
+      - name: Cache SBT
+        id: cache-sbt
+        uses: actions/cache@v1
+        with:
+          path: ~/.sbt
+          key: ${{ runner.os }}-v1-sbt-sbt-${{ hashFiles('sbt.hashes') }}
+      - name: Generate dependend SHA1s
+        id: gen-independent-shas
+        run: |
+          echo ::set-env name=FIRRTL_SHA::$(git ls-remote https://github.com/freechipsproject/firrtl.git $FIRRTL_REF | cut -f1)
+          echo ::set-env name=CHISEL3_SHA::$(git ls-remote https://github.com/freechipsproject/chisel3.git $CHISEL3_REF | cut -f1)
+      - name: Cache firrtl 2.11
+        id: cache-firrtl-2_11
+        uses: actions/cache@v1
+        with:
+          path: ~/.ivy2/local/edu.berkeley.cs/firrtl_2.11
+          key: ${{ runner.os }}-v1-sbt-firrtl_2.11-${{ env.FIRRTL_SHA }}
+      - name: Cache firrtl 2.12
+        id: cache-firrtl-2_12
+        uses: actions/cache@v1
+        with:
+          path: ~/.ivy2/local/edu.berkeley.cs/firrtl_2.12
+          key: ${{ runner.os }}-v1-sbt-firrtl_2.12-${{ env.FIRRTL_SHA }}
+      - name: Build FIRRTL
+        id: build-firrtl
+        if: steps.cache-firrtl-2_11.outputs.cache-hit != 'true' || steps.cache-firrtl-2_12.outputs.cache-hit != 'true'
+        run: |
+          git clone --depth=1 -b $FIRRTL_REF https://github.com/freechipsproject/firrtl.git
+          cd firrtl && sbt +publishLocal
+      - name: Build and test chisel3
+        id: build-test-chisel3
+        run: |
+          cd chisel3 && sbt +test
+          ls -laR $HOME/.ivy2
