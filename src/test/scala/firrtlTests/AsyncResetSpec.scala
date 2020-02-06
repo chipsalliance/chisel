@@ -319,6 +319,29 @@ class AsyncResetSpec extends FirrtlFlatSpec {
     )
   }
 
+  "AsyncReset registers" should "emit 'else' case for reset even for trivial valued registers" in {
+    val withDontTouch = s"""
+      |circuit m :
+      |  module m :
+      |    input clock : Clock
+      |    input reset : AsyncReset
+      |    input x : UInt<8>
+      |    reg r : UInt<8>, clock with : (reset => (reset, UInt(123)))
+      |""".stripMargin
+    val annos = Seq(dontTouch("m.r")) // dontTouch prevents ConstantPropagation from fixing this problem
+    val result = (new VerilogCompiler).compileAndEmit(CircuitState(parse(withDontTouch), ChirrtlForm, annos))
+    result should containLines (
+       "always @(posedge clock or posedge reset) begin",
+       "if (reset) begin",
+       "r <= 8'h7b;",
+       "end else begin",
+       "r <= 8'h7b;",
+       "end",
+       "end"
+     )
+
+  }
+
 }
 
 class AsyncResetExecutionTest extends ExecutionTest("AsyncResetTester", "/features")

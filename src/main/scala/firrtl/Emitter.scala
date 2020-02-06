@@ -563,17 +563,22 @@ class VerilogEmitter extends SeqTransform with Emitter {
             Seq(tabs, "end else ", _falsex.head.tail) +: _falsex.tail
           }
 
-          /* For a Mux assignment, there are five possibilities:
+          /* For a Mux assignment, there are five possibilities, with one subcase for asynchronous reset:
            *   1. Both the true and false condition are self-assignments; do nothing
            *   2. The true condition is a self-assignment; invert the false condition and use that only
-           *   3. The false condition is a self-assignment; skip the false condition
+           *   3. The false condition is a self-assignment
+           *      a) The reset is asynchronous; emit both 'if' and a trivial 'else' to avoid latches
+           *      b) The reset is synchronous; skip the false condition
            *   4. The false condition is a Mux; use the true condition and use 'else if' for the false condition
            *   5. Default; use both the true and false conditions
            */
           (m.tval, m.fval) match {
             case (t, f) if weq(t, r) && weq(f, r) => Nil
             case (t, _) if weq(t, r)              =>  _ifNot +: _false                           :+ _end
-            case (_, f) if weq(f, r)              =>  _if    +: _true                            :+ _end
+            case (_, f) if weq(f, r) => m.cond.tpe match {
+              case AsyncResetType =>                 (_if +: _true     :+ _else)       ++ _true  :+ _end
+              case _ =>                               _if +: _true :+                               _end
+            }
             case (_, _: Mux)                      => (_if    +: _true) ++ _elseIfFalse
             case _                                => (_if    +: _true  :+ _else)       ++ _false :+ _end
           }
