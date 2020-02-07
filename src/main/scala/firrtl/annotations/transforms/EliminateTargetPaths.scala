@@ -4,6 +4,7 @@ package firrtl.annotations.transforms
 
 import firrtl.Mappers._
 import firrtl.analyses.InstanceGraph
+import firrtl.annotations.ModuleTarget
 import firrtl.annotations.TargetToken.{Instance, OfModule}
 import firrtl.annotations.analysis.DuplicationHelper
 import firrtl.annotations._
@@ -114,16 +115,26 @@ class EliminateTargetPaths extends Transform {
     val finalModuleList = duplicatedModuleList.filter(m =>
       newUsedOfModules.contains(m.name) || (!newUsedOfModules.contains(m.name) && !oldUsedOfModules.contains(m.name))
     )
+    lazy val finalModuleSet = finalModuleList.map{ case a: DefModule => a.name }.toSet
 
     // Records how targets have been renamed
     val renameMap = RenameMap()
 
-    // Foreach target, calculate the pathless version and only rename targets that are instantiated
+    /* Foreach target, calculate the pathless version and only rename targets that are instantiated. Additionally, rename
+     * module targets
+     */
     targets.foreach { t =>
       val newTsx = dupMap.makePathless(t)
       val newTs = newTsx.filter(c => newUsedOfModules.contains(c.moduleOpt.get))
       if(newTs.nonEmpty) {
         renameMap.record(t, newTs)
+        val m = Target.referringModule(t)
+        val duplicatedModules = newTs.map(Target.referringModule)
+        val oldModule: Option[ModuleTarget] = m match {
+          case a: ModuleTarget if finalModuleSet(a.module) => Some(a)
+          case _                                           => None
+        }
+        renameMap.record(m, (duplicatedModules ++ oldModule).distinct)
       }
     }
 
