@@ -1,249 +1,135 @@
-import ammonite.ops._
-import ammonite.ops.ImplicitWd._
-import coursier.MavenRepository
+// Build script for mill 0.6.0
 import mill._
 import mill.scalalib._
 import mill.scalalib.publish._
-import mill.eval.{Evaluator, Result}
-import mill.define.Task
-import mill.modules.Jvm._
+import coursier.maven.MavenRepository
+import $ivy.`com.lihaoyi::mill-contrib-buildinfo:$MILL_VERSION`
+import mill.contrib.buildinfo.BuildInfo
 
-import $file.CommonBuild
+object chisel3 extends mill.Cross[chisel3CrossModule]("2.11.12", "2.12.10") 
 
-/** Utility types for changing a dependency between Ivy and Module (source) */
-sealed trait IvyOrModuleDep
-case class IvyDep(dep: Dep) extends IvyOrModuleDep
-case class ModuleDep(dep: PublishModule) extends IvyOrModuleDep
+// Since chisel contains submodule chiselFrontend and coreMacros, a CommonModule is needed
+trait CommonModule extends ScalaModule with SbtModule with PublishModule {
+  def firrtlModule: Option[PublishModule]
 
-object chiselCompileOptions {
-  def scalacOptions = Seq(
-    "-deprecation",
-    "-explaintypes",
-    "-feature",
-    "-language:reflectiveCalls",
-    "-unchecked",
-    "-Xlint:infer-any"
-/*    "-Xlint:missing-interpolator" // this causes a:
-//[error] .../chisel3/chiselFrontend/src/main/scala/chisel3/core/Aggregate.scala:605:48: recursive value outer needs type
-//[error]             val outer = clazz.getDeclaredField("$outer").get(this)
-//[error]                                                ^
-//[error] one error found
- */
-  )
-}
-
-val crossVersions = Seq("2.12.10", "2.11.12")
-
-// Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
-val defaultVersions = Map("firrtl" -> "1.3-SNAPSHOT")
-
-def getVersion(dep: String, org: String = "edu.berkeley.cs") = {
-  val version = sys.env.getOrElse(dep + "Version", defaultVersions(dep))
-  ivy"$org::$dep:$version"
-}
-
-// Define the common chisel module.
-trait CommonChiselModule extends SbtModule {
-  // Normally defined in CrossSbtModule, our submodules don't have it by default
-  def crossScalaVersion: String
-  // This build uses an ivy dependency but allows overriding with a module (source) dependency
-  def firrtlDep: IvyOrModuleDep
-  override def scalacOptions = chiselCompileOptions.scalacOptions ++ CommonBuild.scalacOptionsVersion(crossScalaVersion)
-  override def javacOptions = CommonBuild.javacOptionsVersion(crossScalaVersion)
-  val macroPlugins = Agg(ivy"org.scalamacros:::paradise:2.1.0")
-  def scalacPluginIvyDeps = macroPlugins
-  def compileIvyDeps = macroPlugins
-  def chiselDeps = firrtlDep match {
-    case IvyDep(dep) => Agg(dep)
-    case ModuleDep(_) => Agg()
-  }
-  override def ivyDeps = T { chiselDeps }
-
-  // Include sonatype snapshots by default for parity with sbt
-  def repositories = super.repositories ++ Seq(
-    MavenRepository("https://oss.sonatype.org/content/repositories/snapshots")
-  )
-}
-
-trait PublishChiselModule extends CommonChiselModule with PublishModule {
-  override def artifactName = "chisel3"
   def publishVersion = "3.3-SNAPSHOT"
+
+  // 2.12.10 -> Array("2", "12", "10") -> "12" -> 12
+  protected def majorVersion = crossVersion.split('.')(1).toInt
+
+  def crossVersion: String
+
+  def scalaVersion = crossVersion
+
+  def repositories() = super.repositories ++ Seq(
+    MavenRepository("https://oss.sonatype.org/content/repositories/snapshots"),
+    MavenRepository("https://oss.sonatype.org/content/repositories/releases")
+  )
+
+  private def scalacCrossOptions = majorVersion match {
+    case i if i < 12 => Seq()
+    case _ => Seq("-Xsource:2.11")
+  }
+  
+  def ivyDeps = if(firrtlModule.isEmpty) Agg(
+    ivy"edu.berkeley.cs::firrtl:1.3-SNAPSHOT",
+  ) else Agg.empty[Dep]
+
+  def moduleDeps = Seq() ++ firrtlModule
+
+  private def javacCrossOptions = majorVersion match {
+    case i if i < 12 => Seq("-source", "1.7", "-target", "1.7")
+    case _ => Seq("-source", "1.8", "-target", "1.8")
+  }
+
+  override def scalacOptions = super.scalacOptions() ++ Agg(
+    "-deprecation",
+    "-feature"
+  ) ++ scalacCrossOptions
+  
+  override def javacOptions = super.javacOptions() ++ javacCrossOptions
+
+  private val macroParadise = ivy"org.scalamacros:::paradise:2.1.0"
+
+  override def compileIvyDeps = Agg(macroParadise)
+
+  override def scalacPluginIvyDeps = Agg(macroParadise)
 
   def pomSettings = PomSettings(
     description = artifactName(),
     organization = "edu.berkeley.cs",
-    url = "https://chisel.eecs.berkeley.edu",
+    url = "https://www.chisel-lang.org",
     licenses = Seq(License.`BSD-3-Clause`),
     versionControl = VersionControl.github("freechipsproject", "chisel3"),
     developers = Seq(
-      Developer("jackbackrack",    "Jonathan Bachrach",      "https://eecs.berkeley.edu/~jrb/")
+      Developer("jackbackrack", "Jonathan Bachrach", "https://eecs.berkeley.edu/~jrb/")
     )
   )
 }
 
-// Make this available to external tools.
-object chisel3 extends Cross[ChiselTopModule](crossVersions: _*) {
-  def defaultVersion(ev: Evaluator) = T.command{
-    println(crossVersions.head)
-  }
+class chisel3CrossModule(crossVersionValue: String) extends CommonModule with PublishModule with BuildInfo { m =>
+  // different scala version shares same sources
+  // mill use foo/2.11.12 foo/2.12.10 as millSourcePath by default
+  override def millSourcePath = super.millSourcePath / os.up / os.up
 
-  def compile = T{
-    chisel3(crossVersions.head).compile()
-  }
+  def crossVersion = crossVersionValue
 
-  def jar = T{
-    chisel3(crossVersions.head).jar()
-  }
+  def mainClass = Some("chisel3.stage.ChiselMain")
 
-  def test = T{
-    chisel3(crossVersions.head).test.test()
-  }
+  def firrtlModule: Option[PublishModule] = None
 
-  def testOne(args: String*) = T.command {
-    chisel3(crossVersions.head).test.testOne(args: _*)
-  }
-
-  def publishLocal = T{
-    chisel3(crossVersions.head).publishLocal()
-  }
-
-  def docJar = T{
-    chisel3(crossVersions.head).docJar()
-  }
-}
-
-class ChiselTopModule(val crossScalaVersion: String) extends AbstractChiselModule {
-  // This build uses an ivy dependency but allows overriding with a module (source) dependency
-  def firrtlDep: IvyOrModuleDep = IvyDep(getVersion("firrtl"))
-}
-
-trait AbstractChiselModule extends PublishChiselModule with CommonBuild.BuildInfo with CrossSbtModule { top =>
-
-  // If would be nice if we didn't need to do this, but PublishModule may only be dependent on
-  //  other PublishModules.
-  trait UnpublishedChiselModule extends PublishChiselModule
-
-
-  object coreMacros extends UnpublishedChiselModule {
-    def crossScalaVersion = top.crossScalaVersion
-    def scalaVersion = crossScalaVersion
-    def firrtlDep: IvyOrModuleDep = top.firrtlDep
-  }
-
-  object chiselFrontend extends UnpublishedChiselModule {
-    def crossScalaVersion = top.crossScalaVersion
-    def scalaVersion = crossScalaVersion
-    def moduleDeps = Seq(coreMacros) ++ (firrtlDep match {
-      case ModuleDep(dep) => Seq(dep)
-      case IvyDep(_) => Seq()
-    })
-    def firrtlDep: IvyOrModuleDep = top.firrtlDep
-  }
-
-  override def moduleDeps = Seq(coreMacros, chiselFrontend)
-
-  // This submodule is unrooted - its source directory is in the top level directory.
-  override def millSourcePath = super.millSourcePath / ammonite.ops.up
-
-  // In order to preserve our "all-in-one" policy for published jars,
-  //  we define allModuleSources() to include transitive sources, and define
-  //  allModuleClasspath() to include transitive classes.
-  def transitiveSources = T {
-    Task.traverse(moduleDeps)(m =>
-      T.task{m.allSources()}
-    )().flatten
-  }
-
-  def allModuleSources = T {
-    allSources() ++ transitiveSources()
-  }
-
-  def transitiveResources = T {
-    Task.traverse(moduleDeps)(m =>
-      T.task{m.resources()}
-    )().flatten
-  }
-
-  def allModuleResources = T {
-    resources() ++ transitiveResources()
-  }
-
-  // We package all classes in a singe jar.
-  def allModuleClasspath = T {
-    localClasspath() ++ transitiveLocalClasspath()
-  }
-
-  // Override publishXmlDeps so we don't include dependencies on our sub-modules.
-  override def publishXmlDeps = T.task {
-    val ivyPomDeps = ivyDeps().map(resolvePublishDependency().apply(_))
-    ivyPomDeps
-  }
-
-  // We need to copy (and override) the `jar` and `docJar` targets so we can build
-  //  single jars implementing our "all-in-one" policy.
-  override def jar = T {
-    createJar(
-      allModuleClasspath().map(_.path).filter(exists),
-      mainClass()
-    )
-  }
-
-
-  override def docJar = T {
-    val outDir = T.ctx().dest
-
-    val javadocDir = outDir / 'javadoc
-    mkdir(javadocDir)
-
-    val files = for{
-      ref <- allModuleSources()
-      if exists(ref.path)
-      p <- (if (ref.path.isDir) ls.rec(ref.path) else Seq(ref.path))
-      if (p.isFile && ((p.ext == "scala") || (p.ext == "java")))
-    } yield p.toNIO.toString
-
-    val pluginOptions = scalacPluginClasspath().map(pluginPathRef => s"-Xplugin:${pluginPathRef.path}")
-    val options = Seq("-d", javadocDir.toNIO.toString, "-usejavacp") ++ pluginOptions ++ scalacOptions()
-
-    if (files.nonEmpty) runSubprocess(
-      "scala.tools.nsc.ScalaDoc",
-      scalaCompilerClasspath().map(_.path) ++ compileClasspath().filter(_.path.ext != "pom").map(_.path),
-      mainArgs = (files ++ options).toSeq
-    )
-
-    createJar(Agg(javadocDir), None)(outDir)
-  }
-
-  def sourceJar = T {
-    createJar((allModuleSources() ++ allModuleResources()).map(_.path).filter(exists), None)
-  }
-
-  override def ivyDeps = Agg(
-    ivy"com.github.scopt::scopt:3.7.1"
-  ) ++ chiselDeps
-
+  override def moduleDeps = super.moduleDeps ++ Seq(coreMacros, chiselFrontend) ++ firrtlModule
+  
   object test extends Tests {
-    override def ivyDeps = Agg(
-      ivy"org.scalatest::scalatest:3.0.8",
-      ivy"org.scalacheck::scalacheck:1.14.3"
-    )
-    def testFrameworks = Seq("org.scalatest.tools.Framework")
-
-    def testOne(args: String*) = T.command {
-      super.runMain("org.scalatest.run", args: _*)
+    private def ivyCrossDeps = majorVersion match {
+      case i if i < 12 => Agg(ivy"junit:junit:4.12")
+      case _ => Agg()
     }
 
+    def ivyDeps = Agg(
+      ivy"org.scalatest::scalatest:3.0.8",
+      ivy"org.scalacheck::scalacheck:1.14.3",
+      ivy"com.github.scopt::scopt:3.7.1"
+    ) ++ ivyCrossDeps
+
+    def testFrameworks = Seq("org.scalatest.tools.Framework")
   }
 
-  // This is required for building a library, but not for a `run` target.
-  // In the latter case, mill will determine this on its own.
-  def mainClass = Some("chisel3.Driver")
+  override def buildInfoPackageName = Some("chisel3")
 
-  override def buildInfoMembers = T {
-    Map[String, String](
+  override def buildInfoMembers: T[Map[String, String]] = T {
+    Map(
       "buildInfoPackage" -> artifactName(),
       "version" -> publishVersion(),
       "scalaVersion" -> scalaVersion()
+    )
+  }
+
+  override def generatedSources = T {
+    Seq(generatedBuildInfo()._2)
+  }
+
+  object coreMacros extends CommonModule {
+    def firrtlModule = m.firrtlModule
+
+    def crossVersion = crossVersionValue
+  }
+
+  object chiselFrontend extends CommonModule { 
+    def firrtlModule = m.firrtlModule
+
+    def crossVersion = crossVersionValue
+
+    def moduleDeps = super.moduleDeps ++ Seq(coreMacros) ++ firrtlModule
+
+    def scalacOptions = super.scalacOptions() ++ Seq(
+      "-deprecation",
+      "-explaintypes",
+      "-feature",
+      "-language:reflectiveCalls",
+      "-unchecked",
+      "-Xcheckinit",
+      "-Xlint:infer-any"
     )
   }
 }
