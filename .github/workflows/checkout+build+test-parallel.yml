@@ -1,14 +1,22 @@
-name: Checkout, Build, and Test
+name: Checkout, Build, and Test (parallel)
 
 on:
   push:
     branches:
       - 3.2.x
       - github-workflow
+      - github-workflow-parallel
   pull_request:
     branches:
       - 3.2.x
       - github-workflow
+      - github-workflow-parallel
+
+env:
+  CHISEL3_REF: 3.2.3-release
+  FIRRTL_REF: 1.2.3-release
+  CONTAINER_HOME: /home/github
+  CHECKSTYLE_LIMIT: 40
 
 jobs:
   build:
@@ -17,11 +25,6 @@ jobs:
     container:
       image: ucbbar/chisel3-tools
       options: --user github --entrypoint /bin/bash
-    env:
-      CHISEL3_REF: 3.2.3-release
-      FIRRTL_REF: 1.2.3-release
-      CONTAINER_HOME: /home/github
-      CHECKSTYLE_LIMIT: 40
 
     steps:
       - name: id
@@ -47,25 +50,25 @@ jobs:
         id: gen-sbt-shas
         run: |
           ls -la . chisel3
-          (cd chisel3 && openssl sha1 build.sbt project/build.properties project/*.sbt) > sbt.hashes
+          (cd chisel3 && openssl sha1 build.sbt project/build.properties project/*.sbt) > chisel3/sbt.hashes
       - name: Cache SBT coursier cache
         id: cache-sbt-coursier-cache
         uses: actions/cache@v1
         with:
           path: ~/.cache/coursier
-          key: ${{ runner.os }}-v1-sbt-coursier-${{ hashFiles('sbt.hashes') }}
+          key: ${{ runner.os }}-v1-sbt-coursier-${{ hashFiles('chisel3/sbt.hashes') }}
       - name: Cache SBT ivy cache
         id: cache-sbt-ivy-cache
         uses: actions/cache@v1
         with:
           path: ~/.ivy2/cache
-          key: ${{ runner.os }}-v1-sbt-ivy-${{ hashFiles('sbt.hashes') }}
+          key: ${{ runner.os }}-v1-sbt-ivy-${{ hashFiles('chisel3/sbt.hashes') }}
       - name: Cache SBT
         id: cache-sbt
         uses: actions/cache@v1
         with:
           path: ~/.sbt
-          key: ${{ runner.os }}-v1-sbt-sbt-${{ hashFiles('sbt.hashes') }}
+          key: ${{ runner.os }}-v1-sbt-sbt-${{ hashFiles('chisel3/sbt.hashes') }}
       - name: Generate dependend SHA1s
         id: gen-independent-shas
         run: |
@@ -106,10 +109,100 @@ jobs:
         run: |
           (cd chisel3 && cat /dev/null | sbt +test)
           ls -laR $HOME/.ivy2
+      - uses: actions/upload-artifact@v1
+        with:
+          name: chisel3
+          path: chisel3
+
+  checkstyle:
+    name: Check style
+    needs: build
+    runs-on: ubuntu-latest
+    container:
+      image: ucbbar/chisel3-tools
+      options: --user github --entrypoint /bin/bash
+
+    steps:
+      - uses: actions/download-artifact@v1
+        with:
+          name: chisel3
+      - name: Cache SBT coursier cache
+        id: cache-sbt-coursier-cache
+        uses: actions/cache@v1
+        with:
+          path: ~/.cache/coursier
+          key: ${{ runner.os }}-v1-sbt-coursier-${{ hashFiles('chisel3/sbt.hashes') }}
+      - name: Cache SBT ivy cache
+        id: cache-sbt-ivy-cache
+        uses: actions/cache@v1
+        with:
+          path: ~/.ivy2/cache
+          key: ${{ runner.os }}-v1-sbt-ivy-${{ hashFiles('chisel3/sbt.hashes') }}
+      - name: Cache SBT
+        id: cache-sbt
+        uses: actions/cache@v1
+        with:
+          path: ~/.sbt
+          key: ${{ runner.os }}-v1-sbt-sbt-${{ hashFiles('chisel3/sbt.hashes') }}
+      - name: Cache firrtl 2.11
+        id: cache-firrtl-2_11
+        uses: actions/cache@v1
+        with:
+          path: ~/.ivy2/local/edu.berkeley.cs/firrtl_2.11
+          key: ${{ runner.os }}-v1-sbt-firrtl_2.11-${{ env.FIRRTL_SHA }}
+      - name: Cache firrtl 2.12
+        id: cache-firrtl-2_12
+        uses: actions/cache@v1
+        with:
+          path: ~/.ivy2/local/edu.berkeley.cs/firrtl_2.12
+          key: ${{ runner.os }}-v1-sbt-firrtl_2.12-${{ env.FIRRTL_SHA }}
       - name: Check style
         id: check-style-chisel3
         run: |
           (cd chisel3 && cat /dev/null | sbt scalastyle | gawk -v WARN_FAIL=2 -e '/scalastyle Found [0-9]+ warnings/ { print $0; if ($4 > ENVIRON["CHECKSTYLE_LIMIT"]) WARN_FAIL=1; else if (WARN_FAIL == 2) WARN_FAIL=0 }' -e 'END { exit WARN_FAIL}')
+
+  binarycompatibility:
+    name: Check binary compatibility
+    needs: build
+    runs-on: ubuntu-latest
+    container:
+      image: ucbbar/chisel3-tools
+      options: --user github --entrypoint /bin/bash
+
+    steps:
+      - uses: actions/download-artifact@v1
+        with:
+          name: chisel3
+      - name: Cache SBT coursier cache
+        id: cache-sbt-coursier-cache
+        uses: actions/cache@v1
+        with:
+          path: ~/.cache/coursier
+          key: ${{ runner.os }}-v1-sbt-coursier-${{ hashFiles('chisel3/sbt.hashes') }}
+      - name: Cache SBT ivy cache
+        id: cache-sbt-ivy-cache
+        uses: actions/cache@v1
+        with:
+          path: ~/.ivy2/cache
+          key: ${{ runner.os }}-v1-sbt-ivy-${{ hashFiles('chisel3/sbt.hashes') }}
+      - name: Cache SBT
+        id: cache-sbt
+        uses: actions/cache@v1
+        with:
+          path: ~/.sbt
+          key: ${{ runner.os }}-v1-sbt-sbt-${{ hashFiles('chisel3/sbt.hashes') }}
+      - name: Cache firrtl 2.11
+        id: cache-firrtl-2_11
+        uses: actions/cache@v1
+        with:
+          path: ~/.ivy2/local/edu.berkeley.cs/firrtl_2.11
+          key: ${{ runner.os }}-v1-sbt-firrtl_2.11-${{ env.FIRRTL_SHA }}
+      - name: Cache firrtl 2.12
+        id: cache-firrtl-2_12
+        uses: actions/cache@v1
+        with:
+          path: ~/.ivy2/local/edu.berkeley.cs/firrtl_2.12
+          key: ${{ runner.os }}-v1-sbt-firrtl_2.12-${{ env.FIRRTL_SHA }}
       - name: Check binary compatibility
         id: binary-compatibility-chisel3
         run: |
