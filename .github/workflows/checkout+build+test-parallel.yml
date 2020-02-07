@@ -123,6 +123,21 @@ jobs:
       options: --user github --entrypoint /bin/bash
 
     steps:
+      - name: id
+        run: |
+          uid=$(id -u)
+          echo ::set-env name=CONTAINER_HOME::$(if [ "$uid" = "0" ]; then echo "/root"; else echo "/home/github"; fi)
+          printenv
+          whoami
+          git --version
+          pwd
+          echo "Link $CONTAINER_HOME caches to $HOME"
+          echo mkdir -p $HOME/.cache $HOME/.ivy2 $HOME/.sbt
+          mkdir -p $HOME/.cache $HOME/.ivy2 $HOME/.sbt
+          echo ln -s $HOME/.cache $HOME/.ivy2 $HOME/.sbt $CONTAINER_HOME
+          ln -s $HOME/.cache $HOME/.ivy2 $HOME/.sbt $CONTAINER_HOME
+          echo ls -la $HOME . $CONTAINER_HOME
+          ls -la $HOME . $CONTAINER_HOME
       - uses: actions/download-artifact@v1
         with:
           name: chisel3
@@ -170,6 +185,21 @@ jobs:
       options: --user github --entrypoint /bin/bash
 
     steps:
+      - name: id
+        run: |
+          uid=$(id -u)
+          echo ::set-env name=CONTAINER_HOME::$(if [ "$uid" = "0" ]; then echo "/root"; else echo "/home/github"; fi)
+          printenv
+          whoami
+          git --version
+          pwd
+          echo "Link $CONTAINER_HOME caches to $HOME"
+          echo mkdir -p $HOME/.cache $HOME/.ivy2 $HOME/.sbt
+          mkdir -p $HOME/.cache $HOME/.ivy2 $HOME/.sbt
+          echo ln -s $HOME/.cache $HOME/.ivy2 $HOME/.sbt $CONTAINER_HOME
+          ln -s $HOME/.cache $HOME/.ivy2 $HOME/.sbt $CONTAINER_HOME
+          echo ls -la $HOME . $CONTAINER_HOME
+          ls -la $HOME . $CONTAINER_HOME
       - uses: actions/download-artifact@v1
         with:
           name: chisel3
