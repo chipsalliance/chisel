@@ -1153,18 +1153,20 @@ class ConstantPropagationIntegrationSpec extends LowTransformSpec {
         """circuit Top :
           |  module Top :
           |    input clock : Clock
-          |    input reset : UInt<1>
           |    input en : UInt<1>
           |    output out : UInt<1>
-          |    reg r : UInt<1>, clock
+          |    reg r1 : UInt<1>, clock
+          |    reg r2 : UInt<1>, clock
           |    when en :
-          |      r <= UInt<1>(1)
-          |    out <= r""".stripMargin
+          |      r1 <= UInt<1>(1)
+          |    r2 <= UInt<1>(0)
+          |    when en :
+          |      r2 <= r2
+          |    out <= xor(r1, r2)""".stripMargin
       val check =
         """circuit Top :
           |  module Top :
           |    input clock : Clock
-          |    input reset : UInt<1>
           |    input en : UInt<1>
           |    output out : UInt<1>
           |    out <= UInt<1>("h1")""".stripMargin
