@@ -21,6 +21,7 @@ jobs:
       CHISEL3_REF: 3.2.3-release
       FIRRTL_REF: 1.2.3-release
       CONTAINER_HOME: /home/github
+      CHECKSTYLE_LIMIT: 40
 
     steps:
       - name: id
@@ -88,6 +89,18 @@ jobs:
         run: |
           git clone --depth=1 -b $FIRRTL_REF https://github.com/freechipsproject/firrtl.git
           (cd firrtl && cat /dev/null | sbt +publishLocal)
+      - name: Cache chisel3 2.11
+        id: cache-chisel3-2_11
+        uses: actions/cache@v1
+        with:
+          path: ~/.ivy2/local/edu.berkeley.cs/chisel3_2.11
+          key: ${{ runner.os }}-v1-sbt-chisel3_2.11-${{ env.CHISEL3_SHA }}
+      - name: Cache chisel3 2.12
+        id: cache-chisel3-2_12
+        uses: actions/cache@v1
+        with:
+          path: ~/.ivy2/local/edu.berkeley.cs/chisel3_2.12
+          key: ${{ runner.os }}-v1-sbt-chisel3_2.12-${{ env.CHISEL3_SHA }}
       - name: Build and test chisel3
         id: build-test-chisel3
         run: |
