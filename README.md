@@ -85,6 +85,8 @@ val triangleFilter = FirFilter(8.W, Seq(1.U, 2.U, 3.U, 2.U, 1.U))  // 5-point FI
 The [**online Chisel Bootcamp**](https://mybinder.org/v2/gh/freechipsproject/chisel-bootcamp/master) is the recommended way to get started with and learn Chisel.
 **No setup is required** (it runs in the browser), nor does it assume any prior knowledge of Scala.
 
+The [**classic Chisel tutorial**](https://github.com/ucb-bar/chisel-tutorial) contains small exercises and runs on your computer.
+
 ### Build Your Own Chisel Projects
 
 See [the setup instructions](https://github.com/freechipsproject/chisel3/blob/master/SETUP.md) for how to set up your environment to run Chisel locally.
