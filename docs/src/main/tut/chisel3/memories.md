@@ -120,3 +120,37 @@ val mem = SyncReadMem(1024, Vec(4, UInt(8.W)))
 mem.write(writeAddr, dataIn, mask)
 dataOut := mem.read(readAddr, enable)
 ```
+
+Here is an example of masks with readwrite ports:
+
+```scala mdoc:silent
+import chisel3._
+// Chisel Code: Declare a new module definition
+class ReadWriteSMEMWithMask extends Module {
+  val width:Int = 32
+  val io = IO(new Bundle {
+    val enable = Input(Bool())
+    val write = Input(Bool())
+    val mask = Input(Vec(2, Bool()))
+    val addr  = Input(UInt(10.W))
+    val dataIn = Input(Vec(2, UInt(width.W)))
+    val dataOut = Output(Vec(2, UInt(width.W)))
+  })
+
+
+  val mem = SyncReadMem(2048, Vec(2, UInt(32.W)))
+
+  io.dataOut := DontCare
+  when(io.enable) {
+    val rdwrPort = mem(io.addr)
+    when (io.write) {
+        when(io.mask(0)) {
+          rdwrPort(0) := io.dataIn(0)
+        }
+        when(io.mask(1)) {
+          rdwrPort(1) := io.dataIn(1)
+        }
+    }.otherwise { io.dataOut := rdwrPort }
+  }
+}
+```
