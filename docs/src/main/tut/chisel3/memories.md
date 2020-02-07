@@ -132,7 +132,7 @@ class ReadWriteSMEMWithMask extends Module {
     val enable = Input(Bool())
     val write = Input(Bool())
     val mask = Input(Vec(2, Bool()))
-    val addr  = Input(UInt(10.W))
+    val addr = Input(UInt(10.W))
     val dataIn = Input(Vec(2, UInt(width.W)))
     val dataOut = Output(Vec(2, UInt(width.W)))
   })
