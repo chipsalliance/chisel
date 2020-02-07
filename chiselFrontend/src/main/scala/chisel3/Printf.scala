@@ -26,7 +26,7 @@ object printf { // scalastyle:ignore object.name
         "\\n"
       } else if (x == '\t') {
         "\\t"
-      }else {
+      } else {
         require(x.toInt >= 32, s"char ${x} to Int ${x.toInt} must be >= 32") // TODO \xNN once FIRRTL issue #59 is resolved
         x
       }
