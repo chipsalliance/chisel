@@ -490,6 +490,12 @@ class ConstantPropagation extends Transform with ResolvedAnnotationPaths {
           * NonConstant values.  When encountering a node reference, it expands the node by to its
           * RHS assignment and recurses.
           *
+          * @note Some optimization of Mux trees turn 1-bit mux operators into boolean operators. This
+          * can stifle register constant propagations, which looks at drivers through value-preserving
+          * Muxes and Connects only. By speculatively expanding some 1-bit Or and And operations into
+          * muxes, we can obtain the best possible insight on the value of the mux with a simple peephole
+          * de-optimization that does not actually appear in the output code.
+          *
           * @return a RegCPEntry describing the constant prop-compatible sources driving this expression
           */
           def regConstant(e: Expression): RegCPEntry = e match {
@@ -498,6 +504,8 @@ class ConstantPropagation extends Transform with ResolvedAnnotationPaths {
             case WRef(nodeName, _, NodeKind, _) if nodeMap.contains(nodeName) =>
               nodeRegCPEntries.getOrElseUpdate(nodeName, { regConstant(nodeMap(nodeName)) })
             case Mux(_, tval, fval, _) => regConstant(tval).resolve(regConstant(fval))
+            case DoPrim(Or, Seq(a, b), Nil, BoolType) => regConstant(Mux(a, one, b, BoolType))
+            case DoPrim(And, Seq(a, b), Nil, BoolType) => regConstant(Mux(a, b, zero, BoolType))
             case _ => RegCPEntry(NonConstant, NonConstant)
           }
 
