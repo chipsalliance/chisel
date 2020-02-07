@@ -127,7 +127,7 @@ Here is an example of masks with readwrite ports:
 import chisel3._
 // Chisel Code: Declare a new module definition
 class ReadWriteSMEMWithMask extends Module {
-  val width:Int = 32
+  val width: Int = 32
   val io = IO(new Bundle {
     val enable = Input(Bool())
     val write = Input(Bool())
