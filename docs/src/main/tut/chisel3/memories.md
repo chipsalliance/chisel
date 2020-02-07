@@ -144,12 +144,12 @@ class ReadWriteSMEMWithMask extends Module {
   when(io.enable) {
     val rdwrPort = mem(io.addr)
     when (io.write) {
-        when(io.mask(0)) {
-          rdwrPort(0) := io.dataIn(0)
-        }
-        when(io.mask(1)) {
-          rdwrPort(1) := io.dataIn(1)
-        }
+      when(io.mask(0)) {
+        rdwrPort(0) := io.dataIn(0)
+      }
+      when(io.mask(1)) {
+        rdwrPort(1) := io.dataIn(1)
+      }
     }.otherwise { io.dataOut := rdwrPort }
   }
 }
