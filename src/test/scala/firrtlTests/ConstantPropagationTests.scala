@@ -1148,6 +1148,31 @@ class ConstantPropagationIntegrationSpec extends LowTransformSpec {
     execute(input, check, Seq.empty)
   }
 
+  "Const prop of registers" should "do limited speculative expansion of optimized muxes to absorb bigger cones" in {
+      val input =
+        """circuit Top :
+          |  module Top :
+          |    input clock : Clock
+          |    input en : UInt<1>
+          |    output out : UInt<1>
+          |    reg r1 : UInt<1>, clock
+          |    reg r2 : UInt<1>, clock
+          |    when en :
+          |      r1 <= UInt<1>(1)
+          |    r2 <= UInt<1>(0)
+          |    when en :
+          |      r2 <= r2
+          |    out <= xor(r1, r2)""".stripMargin
+      val check =
+        """circuit Top :
+          |  module Top :
+          |    input clock : Clock
+          |    input en : UInt<1>
+          |    output out : UInt<1>
+          |    out <= UInt<1>("h1")""".stripMargin
+    execute(input, check, Seq.empty)
+  }
+
   "A register with constant reset and all connection to either itself or the same constant" should "be replaced with that constant" in {
       val input =
         """circuit Top :
