@@ -184,7 +184,7 @@ trait AbstractChiselModule extends PublishChiselModule with CommonBuild.BuildInf
   override def jar = T {
     createJar(
       allModuleClasspath().map(_.path).filter(exists),
-      mainClass()
+      createManifest(mainClass())
     )
   }
 
@@ -211,11 +211,11 @@ trait AbstractChiselModule extends PublishChiselModule with CommonBuild.BuildInf
       mainArgs = (files ++ options).toSeq
     )
 
-    createJar(Agg(javadocDir), None)(outDir)
+    createJar(Agg(javadocDir))(outDir)
   }
 
   def sourceJar = T {
-    createJar((allModuleSources() ++ allModuleResources()).map(_.path).filter(exists), None)
+    createJar((allModuleSources() ++ allModuleResources()).map(_.path).filter(exists))
   }
 
   override def ivyDeps = Agg(
