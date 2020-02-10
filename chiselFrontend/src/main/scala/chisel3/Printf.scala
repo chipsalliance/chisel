@@ -19,13 +19,15 @@ object printf { // scalastyle:ignore object.name
     require(formatIn forall (c => c.toInt > 0 && c.toInt < 128),
       "format strings must comprise non-null ASCII values")
     def escaped(x: Char) = {
-      require(x.toInt >= 0)
+      require(x.toInt >= 0, s"char ${x} to Int ${x.toInt} must be >= 0")
       if (x == '"' || x == '\\') {
         s"\\${x}"
       } else if (x == '\n') {
         "\\n"
+      } else if (x == '\t') {
+        "\\t"
       } else {
-        require(x.toInt >= 32) // TODO \xNN once FIRRTL issue #59 is resolved
+        require(x.toInt >= 32, s"char ${x} to Int ${x.toInt} must be >= 32") // TODO \xNN once FIRRTL issue #59 is resolved
         x
       }
     }
