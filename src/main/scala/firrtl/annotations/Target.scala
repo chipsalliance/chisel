@@ -185,6 +185,19 @@ object Target {
       }
     }.tryToComplete
   }
+
+  /** Returns the module that a [[Target]] "refers" to.
+    *
+    * For a [[ModuleTarget]] or a [[ReferenceTarget]], this is simply the deepest module. For an [[InstanceTarget]] this
+    * is *the module of the instance*.
+    *
+    * @note This differs from [[InstanceTarget.pathlessTarget]] which refers to the module instantiating the instance.
+    */
+  def referringModule(a: IsMember): ModuleTarget = a match {
+    case b: ModuleTarget    => b
+    case b: InstanceTarget  => b.ofModuleTarget
+    case b: ReferenceTarget => b.pathlessTarget.moduleTarget
+  }
 }
 
 /** Represents incomplete or non-standard [[Target]]s
