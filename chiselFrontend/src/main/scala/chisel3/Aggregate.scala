@@ -165,9 +165,12 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
   // Note: the constructor takes a gen() function instead of a Seq to enforce
   // that all elements must be the same and because it makes FIRRTL generation
   // simpler.
-  private val self: Seq[T] = Vector.fill(length)(gen)
-  for ((elt, i) <- self.zipWithIndex)
-    elt.setRef(this, i)
+  private lazy val self: Seq[T] = {
+    val _self = Vector.fill(length)(gen)
+    for ((elt, i) <- _self.zipWithIndex)
+      elt.setRef(this, i)
+    _self
+  }
 
   /**
   * sample_element 'tracks' all changes to the elements.
