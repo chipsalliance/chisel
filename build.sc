@@ -225,7 +225,7 @@ trait AbstractChiselModule extends PublishChiselModule with CommonBuild.BuildInf
   object test extends Tests {
     override def ivyDeps = Agg(
       ivy"org.scalatest::scalatest:3.0.8",
-      ivy"org.scalacheck::scalacheck:1.14.0"
+      ivy"org.scalacheck::scalacheck:1.14.3"
     )
     def testFrameworks = Seq("org.scalatest.tools.Framework")
 
