@@ -752,4 +752,18 @@ class RenameMapSpec extends FirrtlFlatSpec {
       Some(Seq(bar2))
     }
   }
+
+  it should "record a self-rename" in {
+    val top = CircuitTarget("Top").module("Top")
+    val foo = top.instOf("foo", "Mod")
+    val bar = top.instOf("bar", "Mod")
+
+    val r = RenameMap()
+
+    r.record(foo, bar)
+    r.record(foo, foo)
+
+    r.get(foo) should not be (empty)
+    r.get(foo).get should contain allOf (foo, bar)
+  }
 }
