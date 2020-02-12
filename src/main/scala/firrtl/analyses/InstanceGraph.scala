@@ -62,16 +62,22 @@ class InstanceGraph(c: Circuit) {
     */
   lazy val fullHierarchy: mutable.LinkedHashMap[WDefInstance,Seq[Seq[WDefInstance]]] = graph.pathsInDAG(trueTopInstance)
 
-  /** A count of the *static* number of instances of each module. For any module
-    * other than the top (main) module, this is equivalent to the number of inst
-    * statements in the circuit instantiating each module, irrespective of the
-    * number of times (if any) the enclosing module appears in the hierarchy.
-    * Note that top module of the circuit has an associated count of 1, even
-    * though it is never directly instantiated.
+  /** A count of the *static* number of instances of each module. For any module other than the top (main) module, this is
+    * equivalent to the number of inst statements in the circuit instantiating each module, irrespective of the number
+    * of times (if any) the enclosing module appears in the hierarchy. Note that top module of the circuit has an
+    * associated count of one, even though it is never directly instantiated. Any modules *not* instantiated at all will
+    * have a count of zero.
     */
   lazy val staticInstanceCount: Map[OfModule, Int] = {
-    val instModules = childInstances.flatMap(_._2.view.map(_.OfModule).toSeq)
-    instModules.foldLeft(Map(c.main.OfModule -> 1)) { case (counts, mod) => counts.updated(mod, counts.getOrElse(mod, 0) + 1) }
+    val foo = mutable.LinkedHashMap.empty[OfModule, Int]
+    childInstances.keys.foreach {
+      case main if main == c.main => foo += main.OfModule  -> 1
+      case other                  => foo += other.OfModule -> 0
+    }
+    childInstances.values.flatten.map(_.OfModule).foreach {
+      case mod => foo += mod -> (foo(mod) + 1)
+    }
+    foo.toMap
   }
 
   /** Finds the absolute paths (each represented by a Seq of instances
