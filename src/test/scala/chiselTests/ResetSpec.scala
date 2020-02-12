@@ -16,10 +16,32 @@ class ResetAgnosticModule extends RawModule {
   out := reg
 }
 
+class AbstractResetDontCareModule extends RawModule {
+  import chisel3.util.Valid
+  val monoPort = IO(Output(Reset()))
+  monoPort := DontCare
+  val monoWire = Wire(Reset())
+  monoWire := DontCare
+  val monoAggPort = IO(Output(Valid(Reset())))
+  monoAggPort := DontCare
+  val monoAggWire = Wire(Valid(Reset()))
+  monoAggWire := DontCare
+
+  // Can't bulk connect to Wire so only ports here
+  val bulkPort = IO(Output(Reset()))
+  bulkPort <> DontCare
+  val bulkAggPort = IO(Output(Valid(Reset())))
+  bulkAggPort <> DontCare
+}
+
 
 class ResetSpec extends ChiselFlatSpec {
 
   behavior of "Reset"
+
+  it should "be able to be connected to DontCare" in {
+    elaborate(new AbstractResetDontCareModule)
+  }
 
   it should "allow writing modules that are reset agnostic" in {
     val sync = compile(new Module {
