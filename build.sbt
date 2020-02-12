@@ -70,7 +70,7 @@ libraryDependencies += "net.jcazevedo" %% "moultingyaml" % "0.4.1"
 
 libraryDependencies += "org.json4s" %% "json4s-native" % "3.6.7"
 
-libraryDependencies += "org.apache.commons" % "commons-text" % "1.7"
+libraryDependencies += "org.apache.commons" % "commons-text" % "1.8"
 
 // Java PB
 
