@@ -978,6 +978,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
   /** Preamble for every emitted Verilog file */
   def transforms = Seq(
     new BlackBoxSourceHelper,
+    new FixAddingNegativeLiterals,
     new ReplaceTruncatingArithmetic,
     new InlineNotsTransform,
     new InlineBitExtractionsTransform,  // here after InlineNots to clean up not(not(...)) rename
