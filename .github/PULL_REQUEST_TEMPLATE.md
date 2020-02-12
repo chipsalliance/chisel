@@ -1,5 +1,8 @@
-### Checklist
+### Contributor Checklist
 
+- [ ] Did you add Scaladoc to every public function/method?
+- [ ] Did you add at least one test demonstrating the PR?
+- [ ] Did you delete any extraneous printlns/debugging code?
 - [ ] Did you specify the type of improvement?
 - [ ] Did you state the API impact?
 - [ ] Did you specify the code generation impact?
@@ -31,3 +34,9 @@
 <!-- Options are: -->
 <!--   - Squash: The PR will be squashed and merged (choose this if you have no preference. -->
 <!--   - Rebase: You will rebase the PR onto master and it will be merged with a merge commit. -->
+
+### Reviewer Checklist (only modified by reviewer)
+- [ ] Did you add the appropriate labels?
+- [ ] Did you mark the proper milestone (1.2.x, 1.3.0, 1.4.0) ?
+- [ ] Did you review?
+- [ ] Did you mark as `Please Merge`?
