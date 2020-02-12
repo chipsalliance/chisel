@@ -3,12 +3,9 @@
 package firrtlTests.transforms
 
 import firrtlTests.FirrtlFlatSpec
-import org.scalatest._
-import org.scalatest.prop._
 import firrtl._
 import firrtl.passes._
 import firrtl.passes.wiring.{WiringTransform, SourceAnnotation, SinkAnnotation}
-import firrtl.ir.Circuit
 import firrtl.annotations._
 import firrtl.annotations.TargetToken.{Field, Index}
 

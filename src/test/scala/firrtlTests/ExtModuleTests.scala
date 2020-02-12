@@ -2,9 +2,6 @@
 
 package firrtlTests
 
-import org.scalatest.Matchers
-import firrtl._
-
 class ExtModuleTests extends FirrtlFlatSpec {
   "extmodule" should "serialize and re-parse equivalently" in {
     val input =

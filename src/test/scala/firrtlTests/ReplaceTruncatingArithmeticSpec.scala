@@ -3,7 +3,6 @@
 package firrtlTests
 
 import firrtl._
-import firrtl.ir._
 import FirrtlCheckers._
 
 class ReplaceTruncatingArithmeticSpec extends FirrtlFlatSpec {

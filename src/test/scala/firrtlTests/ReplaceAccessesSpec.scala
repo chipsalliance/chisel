@@ -3,10 +3,7 @@
 package firrtlTests
 
 import firrtl._
-import firrtl.ir.Circuit
-import firrtl.Parser.IgnoreInfo
 import firrtl.passes._
-import firrtl.transforms._
 
 class ReplaceAccessesSpec extends FirrtlFlatSpec {
   val transforms = Seq(

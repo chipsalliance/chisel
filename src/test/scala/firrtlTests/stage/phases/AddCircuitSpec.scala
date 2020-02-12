@@ -4,7 +4,7 @@ package firrtlTests.stage.phases
 
 import org.scalatest.{FlatSpec, Matchers}
 
-import firrtl.{AnnotationSeq, Parser}
+import firrtl.Parser
 import firrtl.annotations.NoTargetAnnotation
 import firrtl.options.{OptionsException, Phase, PhasePrerequisiteException}
 import firrtl.stage.{CircuitOption, FirrtlCircuitAnnotation, FirrtlSourceAnnotation, InfoModeAnnotation,

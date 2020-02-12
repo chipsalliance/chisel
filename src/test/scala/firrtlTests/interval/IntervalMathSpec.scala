@@ -3,11 +3,9 @@
 package firrtlTests.interval
 
 import firrtl.Implicits.constraint2bound
-import firrtl.{ChirrtlForm, CircuitState, LowFirrtlCompiler, Parser}
+import firrtl.{ChirrtlForm, CircuitState, LowFirrtlCompiler}
 import firrtl.ir._
 
-import scala.math.BigDecimal.RoundingMode._
-import firrtl.Parser.IgnoreInfo
 import firrtl.constraint._
 import firrtlTests.FirrtlFlatSpec
 

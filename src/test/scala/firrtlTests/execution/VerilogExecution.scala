@@ -4,7 +4,6 @@ import java.io.File
 
 import firrtl._
 import firrtl.ir._
-import firrtlTests._
 
 import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlStage}
 import firrtl.options.TargetDirAnnotation

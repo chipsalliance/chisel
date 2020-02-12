@@ -2,13 +2,11 @@
 
 package firrtlTests
 
-import firrtl.ir.Circuit
 import firrtl._
 import firrtl.passes._
 import firrtl.transforms._
 import firrtl.annotations._
 import firrtl.passes.memlib.SimpleTransform
-import FirrtlCheckers._
 
 import java.io.File
 import java.nio.file.Paths

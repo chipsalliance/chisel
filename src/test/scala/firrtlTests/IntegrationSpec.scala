@@ -3,8 +3,6 @@
 package firrtlTests
 
 import firrtl._
-import org.scalatest._
-import org.scalatest.prop._
 
 import java.io.File
 

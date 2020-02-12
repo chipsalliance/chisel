@@ -2,11 +2,7 @@
 
 package firrtlTests
 
-import java.io._
-import org.scalatest._
-import org.scalatest.prop._
 import firrtl.Parser
-import firrtl.ir.Circuit
 import firrtl.passes._
 import firrtl.transforms._
 import firrtl._

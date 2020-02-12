@@ -8,7 +8,7 @@ import firrtl.stage._
 
 import firrtl.{AnnotationSeq, ChirrtlEmitter, EmitAllModulesAnnotation, NoneCompiler}
 import firrtl.options.{OptionsException, OutputAnnotationFileAnnotation, Phase}
-import firrtl.stage.phases.{AddImplicitOutputFile, Checks}
+import firrtl.stage.phases.Checks
 
 class ChecksSpec extends FlatSpec with Matchers {
 

@@ -1,12 +1,9 @@
 package firrtlTests
 package interval
 
-import java.io._
-
 import firrtl._
 import firrtl.ir.Circuit
 import firrtl.passes._
-import firrtl.Parser.IgnoreInfo
 import firrtl.passes.CheckTypes.InvalidConnect
 import firrtl.passes.CheckWidths.DisjointSqueeze
 

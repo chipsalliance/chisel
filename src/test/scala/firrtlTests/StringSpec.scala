@@ -2,16 +2,12 @@
 
 package firrtlTests
 
-import firrtl._
 import firrtl.ir.StringLit
 
 import java.io._
 
 import scala.sys.process._
 import annotation.tailrec
-import org.scalatest._
-import org.scalatest.prop._
-import org.scalatest.Assertions._
 import org.scalacheck._
 import org.scalacheck.Arbitrary._
 

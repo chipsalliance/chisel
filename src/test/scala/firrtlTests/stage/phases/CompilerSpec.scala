@@ -5,7 +5,7 @@ package firrtlTests.stage.phases
 import org.scalatest.{FlatSpec, Matchers}
 
 import firrtl.{Compiler => _, _}
-import firrtl.options.{Phase, PhasePrerequisiteException}
+import firrtl.options.Phase
 import firrtl.stage.{CompilerAnnotation, FirrtlCircuitAnnotation, RunFirrtlTransformAnnotation}
 import firrtl.stage.phases.Compiler
 

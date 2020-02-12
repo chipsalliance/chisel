@@ -6,7 +6,6 @@ import firrtl.ir.Circuit
 import firrtl._
 import firrtl.passes.Pass
 import firrtl.ir._
-import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.stage.{FirrtlSourceAnnotation, FirrtlStage, RunFirrtlTransformAnnotation}
 
 class CustomTransformSpec extends FirrtlFlatSpec {

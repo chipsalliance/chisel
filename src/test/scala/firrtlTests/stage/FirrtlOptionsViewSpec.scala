@@ -4,7 +4,6 @@ package firrtlTests.stage
 
 import org.scalatest.{FlatSpec, Matchers}
 
-import firrtl.options._
 import firrtl.stage._
 
 import firrtl.{ir, NoneCompiler, Parser}

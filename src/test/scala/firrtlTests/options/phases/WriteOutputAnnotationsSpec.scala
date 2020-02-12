@@ -6,11 +6,10 @@ import org.scalatest.{FlatSpec, Matchers}
 
 import java.io.File
 
-import firrtl.{AnnotationSeq, EmittedFirrtlCircuitAnnotation, EmittedFirrtlCircuit}
+import firrtl.AnnotationSeq
 import firrtl.annotations.{DeletedAnnotation, NoTargetAnnotation}
 import firrtl.options.{InputAnnotationFileAnnotation, OutputAnnotationFileAnnotation, Phase, WriteDeletedAnnotation}
 import firrtl.options.phases.{GetIncludes, WriteOutputAnnotations}
-import firrtl.stage.FirrtlFileAnnotation
 
 class WriteOutputAnnotationsSpec extends FlatSpec with Matchers with firrtlTests.Utils {
 

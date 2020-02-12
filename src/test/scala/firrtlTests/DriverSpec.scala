@@ -2,18 +2,18 @@
 
 package firrtlTests
 
-import java.io.{File, FileInputStream, FileWriter}
+import java.io.{File, FileWriter}
 
 import org.scalatest.{FreeSpec, Matchers}
-import firrtl.passes.{InlineAnnotation, InlineInstances}
-import firrtl.passes.memlib.{InferReadWrite, InferReadWriteAnnotation, ReplSeqMem, ReplSeqMemAnnotation}
+import firrtl.passes.InlineAnnotation
+import firrtl.passes.memlib.{InferReadWriteAnnotation, ReplSeqMemAnnotation}
 import firrtl.transforms.BlackBoxTargetDirAnno
 import firrtl._
 import firrtl.FileUtils
 import firrtl.annotations._
 import firrtl.util.BackendCompilationUtilities
 
-import scala.util.{Failure, Success, Try}
+import scala.util.Success
 
 class ExceptingTransform extends Transform {
   def inputForm = HighForm

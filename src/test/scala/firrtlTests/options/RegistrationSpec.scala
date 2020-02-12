@@ -3,14 +3,12 @@
 package firrtlTests.options
 
 import org.scalatest.{FlatSpec, Matchers}
-import scopt.OptionParser
 import java.util.ServiceLoader
 
 import firrtl.options.{RegisteredTransform, RegisteredLibrary, ShellOption}
 import firrtl.passes.Pass
 import firrtl.ir.Circuit
 import firrtl.annotations.NoTargetAnnotation
-import firrtl.AnnotationSeq
 
 case object HelloAnnotation extends NoTargetAnnotation
 
