@@ -484,19 +484,15 @@ final class RenameMap private (val underlying: mutable.HashMap[CompleteTarget, S
     * @param tos
     */
   private def completeRename(from: CompleteTarget, tos: Seq[CompleteTarget]): Unit = {
-    (from, tos) match {
-      case (x, Seq(y)) if x == y =>
-      case _ =>
-        tos.foreach{recordSensitivity(from, _)}
-        val existing = underlying.getOrElse(from, Vector.empty)
-        val updated = existing ++ tos
-        underlying(from) = updated
-        getCache.clear()
-        traverseTokensCache.clear()
-        traverseHierarchyCache.clear()
-        traverseLeftCache.clear()
-        traverseRightCache.clear()
-    }
+    tos.foreach{recordSensitivity(from, _)}
+    val existing = underlying.getOrElse(from, Vector.empty)
+    val updated = (existing ++ tos).distinct
+    underlying(from) = updated
+    getCache.clear()
+    traverseTokensCache.clear()
+    traverseHierarchyCache.clear()
+    traverseLeftCache.clear()
+    traverseRightCache.clear()
   }
 
   /* DEPRECATED ACCESSOR/SETTOR METHODS WITH [[firrtl.ir.Named Named]] */
