@@ -766,4 +766,18 @@ class RenameMapSpec extends FirrtlFlatSpec {
     r.get(foo) should not be (empty)
     r.get(foo).get should contain allOf (foo, bar)
   }
+
+  it should "not record the same rename multiple times" in {
+    val top = CircuitTarget("Top").module("Top")
+    val foo = top.instOf("foo", "Mod")
+    val bar = top.instOf("bar", "Mod")
+
+    val r = RenameMap()
+
+    r.record(foo, bar)
+    r.record(foo, bar)
+
+    r.get(foo) should not be (empty)
+    r.get(foo).get should contain theSameElementsAs Seq(bar)
+  }
 }
