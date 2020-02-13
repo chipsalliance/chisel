@@ -5,9 +5,9 @@ package chiselTests
 import chisel3.testers.BasicTester
 
 import org.scalacheck.Gen
-import org.scalatest.prop.GeneratorDrivenPropertyChecks
+import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
-class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks {
+class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyChecks {
   import Chisel._
 
   behavior of "Chisel compatibility layer"

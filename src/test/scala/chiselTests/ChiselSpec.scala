@@ -12,6 +12,7 @@ import firrtl.{AnnotationSeq, CommonOptions, ExecutionOptionsManager, FirrtlExec
 import firrtl.util.BackendCompilationUtilities
 import java.io.ByteArrayOutputStream
 import java.security.Permission
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
 /** Common utility functions for Chisel unit tests. */
 trait ChiselRunners extends Assertions with BackendCompilationUtilities {
@@ -151,7 +152,7 @@ class ChiselTestUtilitiesSpec extends ChiselFlatSpec {
 }
 
 /** Spec base class for property-based testers. */
-class ChiselPropSpec extends PropSpec with ChiselRunners with PropertyChecks with Matchers {
+class ChiselPropSpec extends PropSpec with ChiselRunners with ScalaCheckPropertyChecks with Matchers {
 
   // Constrain the default number of instances generated for every use of forAll.
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =

@@ -2,15 +2,16 @@
 
 package chiselTests.stage.phases
 
-import org.scalatest.{FlatSpec, Matchers}
 
 import chisel3._
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation}
 import chisel3.stage.phases.Elaborate
 
 import firrtl.options.Phase
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class ElaborateSpec extends FlatSpec with Matchers {
+class ElaborateSpec extends AnyFlatSpec with Matchers {
 
   class Foo extends Module {
     override def desiredName: String = "Foo"

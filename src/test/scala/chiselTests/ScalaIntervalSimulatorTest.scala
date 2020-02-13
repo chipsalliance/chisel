@@ -4,9 +4,10 @@ package chiselTests
 
 import chisel3._
 import chisel3.experimental._
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
-class ScalaIntervalSimulatorSpec extends FreeSpec with Matchers {
+class ScalaIntervalSimulatorSpec extends AnyFreeSpec with Matchers {
   "clip tests" - {
     "Should work for closed ranges" in {
       val sim = ScalaIntervalSimulator(range"[2,4]")

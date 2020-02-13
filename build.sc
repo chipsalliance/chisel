@@ -87,7 +87,7 @@ class chisel3CrossModule(crossVersionValue: String) extends CommonModule with Pu
     }
 
     def ivyDeps = Agg(
-      ivy"org.scalatest::scalatest:3.0.8",
+      ivy"org.scalatest::scalatest:3.1.0",
       ivy"org.scalacheck::scalacheck:1.14.3",
       ivy"com.github.scopt::scopt:3.7.1"
     ) ++ ivyCrossDeps
