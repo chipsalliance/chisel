@@ -11,6 +11,7 @@ def scalacOptionsVersion(scalaVersion: String): Seq[String] = {
       case Some((2, scalaMajor: Long)) if scalaMajor < 12 => Seq()
       case _ => Seq("-Xsource:2.11")
     }
+
   }
 }
 
