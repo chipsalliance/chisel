@@ -8,7 +8,7 @@ import java.security.Permission
 import logger.LazyLogging
 
 import org.scalatest._
-import org.scalatest.prop._
+import org.scalatestplus.scalacheck._
 
 import firrtl._
 import firrtl.ir._
@@ -255,7 +255,7 @@ object FirrtlCheckers extends FirrtlMatchers {
   }
 }
 
-abstract class FirrtlPropSpec extends PropSpec with PropertyChecks with FirrtlRunners with LazyLogging
+abstract class FirrtlPropSpec extends PropSpec with ScalaCheckPropertyChecks with FirrtlRunners with LazyLogging
 
 abstract class FirrtlFlatSpec extends FlatSpec with FirrtlRunners with FirrtlMatchers with LazyLogging
 
