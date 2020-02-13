@@ -40,6 +40,7 @@ If you want to add your project to the list, let us know on the [Chisel users ma
 | [Edge TPU](https://cloud.google.com/edge-tpu)                          | AI Inference Accelerator                                       | [`@google`](https://github.com/google)                                           | [Video](https://www.youtube.com/watch?v=x85342Cny8c)                                                         |
 | [ChiselFlow](https://github.com/apl-cornell/ChiselFlow)                | Information Flow Types in Chisel3                              | [`@apl-cornell`](https://github.com/apl-cornell)                                 | [Paper](https://ecommons.cornell.edu/xmlui/bitstream/handle/1813/57673/paper.pdf)                            |
 | [PHMon](https://github.com/bu-icsg/PHMon/tree/code)                    | Programmable Hardware Monitor                                  | [`@bu-icsg`](https://github.com/bu-icsg)                                         | [Paper](http://people.bu.edu/joshi/files/sec20spring_delshadtehrani_prepub.pdf)                              |
+| [DINO CPU](https://github.com/jlpteaching/dinocpu)                     | Davis In-Order (DINO) CPU models                               | [`@jlpteaching`](https://github.com/jlpteaching)                                 | [Paper](https://dl.acm.org/doi/10.1145/3338698.3338892)                                                      |
 
 ### FIRRTL
 
