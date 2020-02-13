@@ -380,7 +380,8 @@ class EliminateTargetPathsSpec extends FirrtlPropSpec with FirrtlMatchers {
          |    node x = UInt<1>(0)
          |    skip
          |  module Foo:
-         |    inst bar of Bar""".stripMargin
+         |    inst bar of Bar
+         |    inst baz of Bar""".stripMargin
     val Bar_x = CircuitTarget("Foo").module("Bar").ref("x")
     val output = CircuitState(passes.ToWorkingIR.run(Parser.parse(input)), UnknownForm, Seq(DontTouchAnnotation(Bar_x)))
       .resolvePaths(Seq(CircuitTarget("Foo").module("Foo").instOf("bar", "Bar")))
@@ -394,6 +395,27 @@ class EliminateTargetPathsSpec extends FirrtlPropSpec with FirrtlMatchers {
       .filter{
         case _: DeletedAnnotation => false
         case _ => true
-      } should contain (DontTouchAnnotation(newBar_x))
+      } should contain allOf (DontTouchAnnotation(newBar_x), DontTouchAnnotation(Bar_x))
+  }
+
+  property("It should not rename lone instances") {
+    val input =
+      """|circuit Foo:
+         |  module Baz:
+         |    skip
+         |  module Bar:
+         |    inst baz of Baz
+         |    skip
+         |  module Foo:
+         |    inst bar of Bar
+         |""".stripMargin
+    val targets = Seq(
+      CircuitTarget("Foo").module("Foo").instOf("bar", "Bar").instOf("baz", "Baz")
+    )
+    val output = CircuitState(passes.ToWorkingIR.run(Parser.parse(input)), UnknownForm, Nil)
+      .resolvePaths(targets)
+
+    info(output.circuit.serialize)
+
   }
 }
