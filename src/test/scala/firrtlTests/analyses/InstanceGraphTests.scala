@@ -244,4 +244,22 @@ circuit Top :
                              OfModule("Bar") -> 0)
     iGraph.staticInstanceCount should be (expectedCounts)
   }
+
+  behavior of "Reachable/Unreachable helper methods"
+
+  they should "report correct reachable/unreachable counts" in {
+    val input =
+      """|circuit Top:
+         |  module Unreachable:
+         |    skip
+         |  module Reachable:
+         |    skip
+         |  module Top:
+         |    inst reachable of Reachable
+         |""".stripMargin
+    val iGraph = new InstanceGraph(ToWorkingIR.run(parse(input)))
+    iGraph.modules should contain theSameElementsAs Seq(OfModule("Top"), OfModule("Reachable"), OfModule("Unreachable"))
+    iGraph.reachableModules should contain theSameElementsAs Seq(OfModule("Top"), OfModule("Reachable"))
+    iGraph.unreachableModules should contain theSameElementsAs Seq(OfModule("Unreachable"))
+  }
 }
