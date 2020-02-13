@@ -140,6 +140,16 @@ class InstanceGraph(c: Circuit) {
   def getChildrenInstanceMap: collection.Map[OfModule, collection.Map[Instance, OfModule]] =
     childInstances.map(kv => kv._1.OfModule -> asOrderedMap(kv._2, (i: WDefInstance) => i.toTokens))
 
+  /** The set of all modules in the circuit */
+  lazy val modules: collection.Set[OfModule] = graph.getVertices.map(_.OfModule)
+
+  /** The set of all modules in the circuit reachable from the top module */
+  lazy val reachableModules: collection.Set[OfModule] =
+    mutable.LinkedHashSet(trueTopInstance.OfModule) ++ graph.reachableFrom(trueTopInstance).map(_.OfModule)
+
+  /** The set of all modules *not* reachable in the circuit */
+  lazy val unreachableModules: collection.Set[OfModule] = modules diff reachableModules
+
 }
 
 object InstanceGraph {
