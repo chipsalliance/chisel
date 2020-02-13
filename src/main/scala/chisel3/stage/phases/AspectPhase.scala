@@ -20,9 +20,6 @@ class AspectPhase extends Phase {
     val aspects = mutable.ArrayBuffer[Aspect[_]]()
 
     val remainingAnnotations = annotations.flatMap {
-      case DesignAnnotation(d) =>
-        dut = Some(d)
-        Nil
       case a: Aspect[_] =>
         aspects += a
         Nil
