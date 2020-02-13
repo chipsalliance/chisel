@@ -49,7 +49,7 @@ trait CommonModule extends ScalaModule with SbtModule with PublishModule {
   
   override def javacOptions = super.javacOptions() ++ javacCrossOptions
 
-  private val macroParadise = ivy"org.scalamacros:::paradise:2.1.0"
+  private val macroParadise = ivy"org.scalamacros:::paradise:2.1.1"
 
   override def compileIvyDeps = Agg(macroParadise)
 
