@@ -34,7 +34,7 @@ a basis for hardware _synthesis_.  Much of the semantics of these
 languages are not appropriate for hardware synthesis and, in fact,
 many constructs are simply not synthesizable.  Other constructs are
 non-intuitive in how they map to hardware implementations, or their
-use can accidently lead to highly inefficient hardware structures.
+use can accidentally lead to highly inefficient hardware structures.
 While it is possible to use a subset of these languages and still get
 acceptable results, they nonetheless present a cluttered and confusing
 specification model, particularly in an instructional setting.
