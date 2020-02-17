@@ -4,7 +4,9 @@
 
 ## Upcoming Events
 
+Chisel/FIRRTL development meetings happen every Monday from 1100--1300 PT.
 
+Call-in info and meeting notes are available [here](https://docs.google.com/document/d/1Mpnqigmx6F8jdC77YWP3akp9H2V1bS1b2XiYjVX0brE).
 
 ---
 
