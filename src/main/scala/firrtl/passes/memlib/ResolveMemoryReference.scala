@@ -68,8 +68,7 @@ class ResolveMemoryReference extends Transform {
     val noDedups = state.annotations.collect {
       case NoDedupMemAnnotation(ComponentName(cn, ModuleName(mn, _))) => mn -> cn
     }
-    val annos = state.annotations.filterNot(_.isInstanceOf[NoDedupMemAnnotation])
     val noDedupMap: Map[String, Set[String]] = noDedups.groupBy(_._1).mapValues(_.map(_._2).toSet)
-    state.copy(circuit = run(state.circuit, noDedupMap), annotations = annos)
+    state.copy(circuit = run(state.circuit, noDedupMap))
   }
 }

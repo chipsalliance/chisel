@@ -12,25 +12,12 @@ import MemTransformUtils._
 import firrtl.annotations._
 import wiring._
 
-import scala.collection.mutable
-
 
 /** Annotates the name of the pins to add for WiringTransform */
 case class PinAnnotation(pins: Seq[String]) extends NoTargetAnnotation
 
 object ReplaceMemMacros {
   class UnsupportedBlackboxMemoryException(msg: String) extends PassException(msg)
-
-  /** Mapping from (module, memory name) pairs to wrapper Module names */
-  private type NameMap = mutable.HashMap[(String, String), String]
-
-  /** Mutable datastructure representing mapping of smems to extracted blackboxes and their wrappers
-    *
-    * - nameMap: mapping from every (module, memory name) to mem blackbox wrapper Module name
-    * - bbMap: mapping from wrapper Module name to (blackbox instance, blackbox module)
-    * - For bbMap: instance and module name match in the code, but that could be changed
-    */
-  class MemMapping(val nameMap: NameMap, val bbMap: mutable.HashMap[String, (String, String)])
 }
 
 /** Replace DefAnnotatedMemory with memory blackbox + wrapper + conf file.
@@ -40,8 +27,6 @@ object ReplaceMemMacros {
 class ReplaceMemMacros(writer: ConfWriter) extends Transform {
   def inputForm = MidForm
   def outputForm = MidForm
-
-  import ReplaceMemMacros._
 
   /** Return true if mask granularity is per bit, false if per byte or unspecified
     */
@@ -212,6 +197,8 @@ class ReplaceMemMacros(writer: ConfWriter) extends Transform {
     }
   }
 
+  /** Mapping from (module, memory name) pairs to blackbox names */
+  private type NameMap = collection.mutable.HashMap[(String, String), String]
   /** Construct NameMap by assigning unique names for each memory blackbox */
   def constructNameMap(namespace: Namespace, nameMap: NameMap, mname: String)(s: Statement): Statement = {
     s match {
@@ -224,23 +211,12 @@ class ReplaceMemMacros(writer: ConfWriter) extends Transform {
     s map constructNameMap(namespace, nameMap, mname)
   }
 
-  // For 1.2.x backwards compatibility
   def updateMemStmts(namespace: Namespace,
                      nameMap: NameMap,
                      mname: String,
                      memPortMap: MemPortMap,
-                     memMods: Modules
-                    )(s: Statement): Statement =
-    updateMemStmts(namespace, nameMap, mname, memPortMap, memMods, None)(s)
-
-  // memMapping is only Option for backwards compatibility
-  def updateMemStmts(namespace: Namespace,
-                     nameMap: NameMap,
-                     mname: String,
-                     memPortMap: MemPortMap,
-                     memMods: Modules,
-                     memMapping: Option[MemMapping]
-                    )(s: Statement): Statement = s match {
+                     memMods: Modules)
+                     (s: Statement): Statement = s match {
     case m: DefAnnotatedMemory =>
       if (m.maskGran.isEmpty) {
         m.writers foreach { w => memPortMap(s"${m.name}.$w.mask") = EmptyExpression }
@@ -252,39 +228,18 @@ class ReplaceMemMacros(writer: ConfWriter) extends Transform {
           val newWrapperName = nameMap(mname -> m.name)
           val newMemBBName = namespace newName s"${newWrapperName}_ext"
           val newMem = m copy (name = newMemBBName)
-          // Record for annotation renaming
-          memMapping.foreach { mapping =>
-            mapping.nameMap += ((mname, m.name) -> newWrapperName)
-            mapping.bbMap += newWrapperName -> (newMemBBName, newMemBBName)
-          }
           memMods ++= createMemModule(newMem, newWrapperName)
           WDefInstance(m.info, m.name, newWrapperName, UnknownType)
         case Some((module, mem)) =>
-          val wrapperName = nameMap(module -> mem)
-          // Record for annotation renaming
-          memMapping.foreach(_.nameMap += ((mname, m.name) -> wrapperName))
-          WDefInstance(m.info, m.name, wrapperName, UnknownType)
+          WDefInstance(m.info, m.name, nameMap(module -> mem), UnknownType)
       }
-    case sx => sx map updateMemStmts(namespace, nameMap, mname, memPortMap, memMods, memMapping)
+    case sx => sx map updateMemStmts(namespace, nameMap, mname, memPortMap, memMods)
   }
 
-
-  // For 1.2.x backwards compatibility
-  def updateMemMods(namespace: Namespace,
-                    nameMap: NameMap,
-                    memMods: Modules
-                   )(m: DefModule): DefModule =
-    updateMemMods(namespace, nameMap, memMods, None)(m)
-
-  // memMapping is only Option for backwards compatibility
-  def updateMemMods(namespace: Namespace,
-                    nameMap: NameMap,
-                    memMods: Modules,
-                    memMapping: Option[MemMapping]
-                   )(m: DefModule): DefModule = {
+  def updateMemMods(namespace: Namespace, nameMap: NameMap, memMods: Modules)(m: DefModule) = {
     val memPortMap = new MemPortMap
 
-    (m map updateMemStmts(namespace, nameMap, m.name, memPortMap, memMods, memMapping)
+    (m map updateMemStmts(namespace, nameMap, m.name, memPortMap, memMods)
        map updateStmtRefs(memPortMap))
   }
 
@@ -294,18 +249,7 @@ class ReplaceMemMacros(writer: ConfWriter) extends Transform {
     val memMods = new Modules
     val nameMap = new NameMap
     c.modules map (m => m map constructNameMap(namespace, nameMap, m.name))
-    val memMapping = new MemMapping(new NameMap, new mutable.HashMap)
-    val modules = c.modules map updateMemMods(namespace, nameMap, memMods, Some(memMapping))
-
-    // Rename replaced memories with new blackbox
-    val renames = RenameMap.create {
-      val top = CircuitTarget(c.main)
-      memMapping.nameMap.map { case ((mod, mem), wrap) =>
-        val (bbInst, bbMod) = memMapping.bbMap(wrap)
-        top.module(mod).ref(mem) -> Seq(top.module(mod).instOf(mem, wrap).instOf(bbInst, bbMod))
-      }
-    }
-
+    val modules = c.modules map updateMemMods(namespace, nameMap, memMods)
     // print conf
     writer.serialize()
     val pannos = state.annotations.collect { case a: PinAnnotation => a }
@@ -319,6 +263,6 @@ class ReplaceMemMacros(writer: ConfWriter) extends Transform {
         case m: ExtModule => SinkAnnotation(ModuleName(m.name, CircuitName(c.main)), pin)
       }
     } ++ state.annotations
-    CircuitState(c.copy(modules = modules ++ memMods), inputForm, annos, renames = Some(renames))
+    CircuitState(c.copy(modules = modules ++ memMods), inputForm, annos)
   }
 }

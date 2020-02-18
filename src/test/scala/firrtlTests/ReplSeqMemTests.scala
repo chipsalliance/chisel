@@ -11,11 +11,6 @@ import firrtl.FileUtils
 import annotations._
 import FirrtlCheckers._
 
-// It's not clear if this should be IsComponent or IsMember
-case class MemAnnotation(target: IsComponent) extends SingleTargetAnnotation[IsComponent] {
-  def duplicate(n: IsComponent): MemAnnotation = this.copy(n)
-}
-
 class ReplSeqMemSpec extends SimpleTransformSpec {
   def emitter = new LowFirrtlEmitter
   def transforms = Seq(
@@ -274,15 +269,10 @@ circuit CustomMemory :
       MemConf("mem_0_ext", 7, 16, Map(WritePort -> 1, ReadPort -> 1), None),
       MemConf("mem_1_ext", 7, 16, Map(WritePort -> 1, ReadPort -> 1), None)
     )
-    val mod = CircuitTarget("CustomMemory").module("CustomMemory")
     val confLoc = "ReplSeqMemTests.confTEMP"
     val annos = Seq(
       ReplSeqMemAnnotation.parse("-c:CustomMemory:-o:"+confLoc),
-      NoDedupMemAnnotation(ComponentName("mem_1", ModuleName("CustomMemory",CircuitName("CustomMemory")))),
-      MemAnnotation(mod.ref("mem_0")),
-      MemAnnotation(mod.ref("mem_1")),
-      MemAnnotation(mod.ref("mem_2"))
-    )
+      NoDedupMemAnnotation(ComponentName("mem_1", ModuleName("CustomMemory",CircuitName("CustomMemory")))))
     val res = compileAndEmit(CircuitState(parse(input), ChirrtlForm, annos))
     // Check correctness of firrtl
     val circuit = parse(res.getEmittedCircuit.value)
@@ -293,14 +283,6 @@ circuit CustomMemory :
     numExtMods should be (2)
     // Check the emitted conf
     checkMemConf(confLoc, mems)
-    // Check annotation renaming
-    val expectedTargets = Seq(
-      mod.instOf("mem_0", "mem_0").instOf("mem_0_ext", "mem_0_ext"),
-      mod.instOf("mem_1", "mem_1").instOf("mem_1_ext", "mem_1_ext"),
-      mod.instOf("mem_2", "mem_0").instOf("mem_0_ext", "mem_0_ext")
-    )
-    res.annotations.collect { case MemAnnotation(t) => t } should equal (expectedTargets)
-
     (new java.io.File(confLoc)).delete()
   }
 
@@ -540,29 +522,5 @@ circuit Top :
     }
   }
 
-  "ReplSeqMem" should "rename annotations" in {
-    val input =
-      """|circuit CustomMemory :
-         |  module CustomMemory :
-         |    input clock : Clock
-         |    output io : { flip en : UInt<1>, out : UInt<8>[2], flip raddr : UInt<10>, flip waddr : UInt<10>, flip wdata : UInt<8>[2] }
-         |
-         |    smem mem : UInt<8>[2][1024]
-         |    read mport r = mem[io.raddr], clock
-         |    io.out <= r
-         |
-         |    when io.en :
-         |      write mport w = mem[io.waddr], clock
-         |      w <= io.wdata
-         |""".stripMargin
-
-    val mod = CircuitTarget("CustomMemory").module("CustomMemory")
-    val anno = MemAnnotation(mod.ref("mem"))
-    val confLoc = "ReplSeqMemTests.confTEMP"
-    val annos = Seq(ReplSeqMemAnnotation.parse("-c:CustomMemory:-o:"+confLoc), anno)
-    val res = compileAndEmit(CircuitState(parse(input), ChirrtlForm, annos))
-    val expectedTarget = mod.instOf("mem", "mem").instOf("mem_ext", "mem_ext")
-    res.annotations.collect { case MemAnnotation(t) => t } should equal (Seq(expectedTarget))
-    (new java.io.File(confLoc)).delete()
-  }
 }
+
