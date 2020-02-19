@@ -150,4 +150,13 @@ class DiGraphTests extends FirrtlFlatSpec {
     dotLines.exists(s => s.contains(""""d" -> "k";""")) should be (true)
     dotLines.exists(s => s.contains("""rankdir="TB";""")) should be (true)
   }
+
+  "reachableFrom" should "omit the queried node if no self-path exists" in {
+    degenerateGraph.reachableFrom("a") shouldBe empty
+    acyclicGraph.reachableFrom("b") should contain theSameElementsAs Vector("d", "e")
+  }
+
+  "reachableFrom" should "include the queried node if it is included in a cycle" in {
+    cyclicGraph.reachableFrom("b") should contain theSameElementsAs Vector("a", "b", "c", "d")
+  }
 }
