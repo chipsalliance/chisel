@@ -153,7 +153,7 @@ class DiGraph[T] private[graph] (private[graph] val edges: LinkedHashMap[T, Link
   /** Performs breadth-first search on the directed graph, with a blacklist of nodes
     *
     * @param root the start node
-    * @param blacklist list of nodes to stop searching, if encountered
+    * @param blacklist list of nodes to avoid visiting, if encountered
     * @return a Map[T,T] from each visited node to its predecessor in the
     * traversal
     */
@@ -173,18 +173,23 @@ class DiGraph[T] private[graph] (private[graph] val edges: LinkedHashMap[T, Link
     prev
   }
 
-  /** Finds the set of nodes reachable from a particular node
+  /** Finds the set of nodes reachable from a particular node. The `root` node is *not* included in the
+    * returned set unless it is possible to reach `root` along a non-trivial path beginning at
+    * `root`; i.e., if the graph has a cycle that contains `root`.
     *
     * @param root the start node
-    * @return a Set[T] of nodes reachable from the root
+    * @return a Set[T] of nodes reachable from `root`
     */
   def reachableFrom(root: T): LinkedHashSet[T] = reachableFrom(root, Set.empty[T])
 
-  /** Finds the set of nodes reachable from a particular node, with a blacklist
+  /** Finds the set of nodes reachable from a particular node, with a blacklist. The semantics of
+    * adding a node to the blacklist is that any of its inedges will be ignored in the traversal.
+    * The `root` node is *not* included in the returned set unless it is possible to reach `root` along
+    * a non-trivial path beginning at `root`; i.e., if the graph has a cycle that contains `root`.
     *
     * @param root the start node
     * @param blacklist list of nodes to stop searching, if encountered
-    * @return a Set[T] of nodes reachable from the root
+    * @return a Set[T] of nodes reachable from `root`
     */
   def reachableFrom(root: T, blacklist: Set[T]): LinkedHashSet[T] = new LinkedHashSet[T] ++ BFS(root, blacklist).map({ case (k, v) => k })
 
