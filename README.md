@@ -4,12 +4,9 @@
 
 ## Upcoming Events
 
-[The 3rd Chisel Community Conference (hosted by CHIPS Alliance) is happening on January 29--30, 2020!](https://events.linuxfoundation.org/chisel-community-conference/)
+Chisel/FIRRTL development meetings happen every Monday from 1100--1300 PT.
 
-We're [accepting talk proposals](https://events.linuxfoundation.org/chisel-community-conference/program/cfp/) for through December 12th.
-(*Acceptances are rolling, so if you have travel/visa requirements, get your submissions in!*)
-
-Make sure to [register](https://events.linuxfoundation.org/chisel-community-conference/register/) and attend to meet some other Chisel-ers and FIRRTL-ers!
+Call-in info and meeting notes are available [here](https://docs.google.com/document/d/1Mpnqigmx6F8jdC77YWP3akp9H2V1bS1b2XiYjVX0brE).
 
 ---
 
