@@ -3,14 +3,18 @@
 package firrtl.options.phases
 
 import firrtl.AnnotationSeq
-import firrtl.options.{Phase, TargetDirAnnotation}
+import firrtl.options.{Dependency, Phase, PreservesAll, TargetDirAnnotation}
 
 /** Add default annotations for a [[Stage]]
   *
   * This currently only adds a [[TargetDirAnnotation]]. This isn't necessary for a [[StageOptionsView]], but downstream
   * tools may expect a [[TargetDirAnnotation]] to exist.
   */
-class AddDefaults extends Phase {
+class AddDefaults extends Phase with PreservesAll[Phase] {
+
+  override val prerequisites = Seq(Dependency[GetIncludes], Dependency[ConvertLegacyAnnotations])
+
+  override val dependents = Seq.empty
 
   def transform(annotations: AnnotationSeq): AnnotationSeq = {
     val td = annotations.collectFirst{ case a: TargetDirAnnotation => a}.isEmpty

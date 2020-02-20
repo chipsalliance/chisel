@@ -5,7 +5,7 @@ package firrtlTests.options
 import org.scalatest.{FlatSpec, Matchers}
 
 import firrtl.AnnotationSeq
-import firrtl.options.{DependencyManagerException, Phase, PhaseManager, PreservesAll}
+import firrtl.options.{DependencyManagerException, Phase, PhaseManager, PreservesAll, Dependency}
 
 import java.io.{File, PrintWriter}
 
@@ -23,19 +23,19 @@ class A extends IdentityPhase {
 
 /** [[Phase]] that requires [[A]] and invalidates nothing */
 class B extends IdentityPhase {
-  override def prerequisites: Seq[Dependency] = Seq(classOf[A])
+  override def prerequisites = Seq(Dependency[A])
   override def invalidates(phase: Phase): Boolean = false
 }
 
 /** [[Phase]] that requires [[B]] and invalidates nothing */
 class C extends IdentityPhase {
-  override def prerequisites = Seq(classOf[A])
+  override def prerequisites = Seq(Dependency[A])
   override def invalidates(phase: Phase): Boolean = false
 }
 
 /** [[Phase]] that requires [[A]] and invalidates [[A]] */
 class D extends IdentityPhase {
-  override def prerequisites = Seq(classOf[A])
+  override def prerequisites = Seq(Dependency[A])
   override def invalidates(phase: Phase): Boolean = phase match {
     case _: A => true
     case _ => false
@@ -44,13 +44,13 @@ class D extends IdentityPhase {
 
 /** [[Phase]] that requires [[B]] and invalidates nothing */
 class E extends IdentityPhase {
-  override def prerequisites = Seq(classOf[B])
+  override def prerequisites = Seq(Dependency[B])
   override def invalidates(phase: Phase): Boolean = false
 }
 
 /** [[Phase]] that requires [[B]] and [[C]] and invalidates [[E]] */
 class F extends IdentityPhase {
-  override def prerequisites = Seq(classOf[B], classOf[C])
+  override def prerequisites = Seq(Dependency[B], Dependency[C])
   override def invalidates(phase: Phase): Boolean = phase match {
     case _: E => true
     case _ => false
@@ -60,7 +60,7 @@ class F extends IdentityPhase {
 
 /** [[Phase]] that requires [[C]] and invalidates [[F]] */
 class G extends IdentityPhase {
-  override def prerequisites = Seq(classOf[C])
+  override def prerequisites = Seq(Dependency[C])
   override def invalidates(phase: Phase): Boolean = phase match {
     case _: F => true
     case _ => false
@@ -68,11 +68,11 @@ class G extends IdentityPhase {
 }
 
 class CyclicA extends IdentityPhase with PreservesAll[Phase] {
-  override def prerequisites = Seq(classOf[CyclicB])
+  override def prerequisites = Seq(Dependency[CyclicB])
 }
 
 class CyclicB extends IdentityPhase with PreservesAll[Phase] {
-  override def prerequisites = Seq(classOf[CyclicA])
+  override def prerequisites = Seq(Dependency[CyclicA])
 }
 
 class CyclicC extends IdentityPhase {
@@ -95,25 +95,25 @@ object ComplicatedFixture {
     override def invalidates(phase: Phase): Boolean = false
   }
   class B extends IdentityPhase {
-    override def prerequisites = Seq(classOf[A])
+    override def prerequisites = Seq(Dependency[A])
     override def invalidates(phase: Phase): Boolean = false
   }
   class C extends IdentityPhase {
-    override def prerequisites = Seq(classOf[A])
+    override def prerequisites = Seq(Dependency[A])
     override def invalidates(phase: Phase): Boolean = phase match {
       case _: B => true
       case _ => false
     }
   }
   class D extends IdentityPhase {
-    override def prerequisites = Seq(classOf[B])
+    override def prerequisites = Seq(Dependency[B])
     override def invalidates(phase: Phase): Boolean = phase match {
       case _: C | _: E => true
       case _ => false
     }
   }
   class E extends IdentityPhase {
-    override def prerequisites = Seq(classOf[B])
+    override def prerequisites = Seq(Dependency[B])
     override def invalidates(phase: Phase): Boolean = false
   }
 
@@ -132,13 +132,13 @@ object RepeatedAnalysisFixture {
     override def invalidates(phase: Phase): Boolean = false
   }
   class A extends InvalidatesAnalysis {
-    override def prerequisites = Seq(classOf[Analysis])
+    override def prerequisites = Seq(Dependency[Analysis])
   }
   class B extends InvalidatesAnalysis {
-    override def prerequisites = Seq(classOf[A], classOf[Analysis])
+    override def prerequisites = Seq(Dependency[A], Dependency[Analysis])
   }
   class C extends InvalidatesAnalysis {
-    override def prerequisites = Seq(classOf[B], classOf[Analysis])
+    override def prerequisites = Seq(Dependency[B], Dependency[Analysis])
   }
 
 }
@@ -149,21 +149,21 @@ object InvertedAnalysisFixture {
     override def invalidates(phase: Phase): Boolean = false
   }
   class A extends IdentityPhase {
-    override def prerequisites = Seq(classOf[Analysis])
+    override def prerequisites = Seq(Dependency[Analysis])
     override def invalidates(phase: Phase): Boolean = phase match {
       case _: Analysis => true
       case _ => false
     }
   }
   class B extends IdentityPhase {
-    override def prerequisites = Seq(classOf[Analysis])
+    override def prerequisites = Seq(Dependency[Analysis])
     override def invalidates(phase: Phase): Boolean = phase match {
       case _: Analysis | _: A => true
       case _ => false
     }
   }
   class C extends IdentityPhase {
-    override def prerequisites = Seq(classOf[Analysis])
+    override def prerequisites = Seq(Dependency[Analysis])
     override def invalidates(phase: Phase): Boolean = phase match {
       case _: Analysis | _: B => true
       case _ => false
@@ -179,7 +179,7 @@ object DependentsFixture {
   }
 
   class Second extends IdentityPhase {
-    override val prerequisites = Seq(classOf[First])
+    override val prerequisites = Seq(Dependency[First])
     override def invalidates(phase: Phase): Boolean = false
   }
 
@@ -188,8 +188,8 @@ object DependentsFixture {
    * loop detection.
    */
   class Custom extends IdentityPhase {
-    override val prerequisites = Seq(classOf[First])
-    override val dependents = Seq(classOf[Second])
+    override val prerequisites = Seq(Dependency[First])
+    override val dependents = Seq(Dependency[Second])
     override def invalidates(phase: Phase): Boolean = false
   }
 
@@ -219,7 +219,7 @@ object ChainedInvalidationFixture {
     override def invalidates(phase: Phase): Boolean = false
   }
   class E extends IdentityPhase {
-    override val prerequisites = Seq(classOf[A], classOf[B], classOf[C], classOf[D])
+    override val prerequisites = Seq(Dependency[A], Dependency[B], Dependency[C], Dependency[D])
     override def invalidates(phase: Phase): Boolean = false
   }
 
@@ -253,8 +253,8 @@ object UnrelatedFixture {
   class B15 extends IdentityPhase with PreservesAll[Phase]
 
   class B6Sub extends B6 {
-    override val prerequisites = Seq(classOf[B6])
-    override val dependents = Seq(classOf[B7])
+    override val prerequisites = Seq(Dependency[B6])
+    override val dependents = Seq(Dependency[B7])
   }
 
   class B6_0 extends B6Sub
@@ -275,7 +275,7 @@ object UnrelatedFixture {
   class B6_15 extends B6Sub
 
   class B8Dep extends B8 {
-    override val dependents = Seq(classOf[B8])
+    override val dependents = Seq(Dependency[B8])
   }
 
   class B8_0 extends B8Dep
@@ -294,6 +294,90 @@ object UnrelatedFixture {
   class B8_13 extends B8Dep
   class B8_14 extends B8Dep
   class B8_15 extends B8Dep
+
+}
+
+object CustomAfterOptimizationFixture {
+
+  class Root extends IdentityPhase with PreservesAll[Phase]
+
+  class OptMinimum extends IdentityPhase with PreservesAll[Phase] {
+    override val prerequisites = Seq(Dependency[Root])
+    override val dependents = Seq(Dependency[AfterOpt])
+  }
+
+  class OptFull extends IdentityPhase with PreservesAll[Phase] {
+    override val prerequisites = Seq(Dependency[Root], Dependency[OptMinimum])
+    override val dependents = Seq(Dependency[AfterOpt])
+  }
+
+  class AfterOpt extends IdentityPhase with PreservesAll[Phase]
+
+  class DoneMinimum extends IdentityPhase with PreservesAll[Phase] {
+    override val prerequisites = Seq(Dependency[OptMinimum])
+  }
+
+  class DoneFull extends IdentityPhase with PreservesAll[Phase] {
+    override val prerequisites = Seq(Dependency[OptFull])
+  }
+
+  class Custom extends IdentityPhase with PreservesAll[Phase] {
+    override val prerequisites = Seq(Dependency[Root], Dependency[AfterOpt])
+    override val dependents = Seq(Dependency[DoneMinimum], Dependency[DoneFull])
+  }
+
+}
+
+object OptionalPrerequisitesFixture {
+
+  class Root extends IdentityPhase
+
+  class OptMinimum extends IdentityPhase with PreservesAll[Phase] {
+    override val prerequisites = Seq(Dependency[Root])
+  }
+
+  class OptFull extends IdentityPhase with PreservesAll[Phase] {
+    override val prerequisites = Seq(Dependency[Root], Dependency[OptMinimum])
+  }
+
+  class DoneMinimum extends IdentityPhase with PreservesAll[Phase] {
+    override val prerequisites = Seq(Dependency[OptMinimum])
+  }
+
+  class DoneFull extends IdentityPhase with PreservesAll[Phase] {
+    override val prerequisites = Seq(Dependency[OptFull])
+  }
+
+  class Custom extends IdentityPhase with PreservesAll[Phase] {
+    override val prerequisites = Seq(Dependency[Root])
+    override val optionalPrerequisites = Seq(Dependency[OptMinimum], Dependency[OptFull])
+    override val dependents = Seq(Dependency[DoneMinimum], Dependency[DoneFull])
+  }
+
+}
+
+object OrderingFixture {
+
+  class A extends IdentityPhase with PreservesAll[Phase]
+
+  class B extends IdentityPhase {
+    override def invalidates(phase: Phase): Boolean = phase match {
+      case _: A => true
+      case _    => false
+    }
+  }
+
+  class C extends IdentityPhase {
+    override val prerequisites = Seq(Dependency[A], Dependency[B])
+    override def invalidates(phase: Phase): Boolean = phase match {
+      case _: B => true
+      case _    => false
+    }
+  }
+
+  class Cx extends C {
+    override val prerequisites = Seq(Dependency[B], Dependency[A])
+  }
 
 }
 
@@ -323,6 +407,7 @@ class PhaseManagerSpec extends FlatSpec with Matchers {
       val f = new File(d + "/transformOrder.dot")
       val w = new PrintWriter(new File(d + "/transformOrder.dot"))
       try {
+        info("transform order:\n" + pm.prettyPrint("    "))
         w.write(pm.transformOrderToGraphviz())
         w.close
         maybeToPng(f)
@@ -336,7 +421,7 @@ class PhaseManagerSpec extends FlatSpec with Matchers {
   behavior of this.getClass.getName
 
   it should "do nothing if all targets are reached" in {
-    val targets = Seq(classOf[A], classOf[B], classOf[C], classOf[D])
+    val targets = Seq(Dependency[A], Dependency[B], Dependency[C], Dependency[D])
     val pm = new PhaseManager(targets, targets)
 
     writeGraphviz(pm, "test_run_dir/PhaseManagerSpec/DoNothing")
@@ -345,7 +430,7 @@ class PhaseManagerSpec extends FlatSpec with Matchers {
   }
 
   it should "handle a simple dependency" in {
-    val targets = Seq(classOf[B])
+    val targets = Seq(Dependency[B])
     val order = Seq(classOf[A], classOf[B])
     val pm = new PhaseManager(targets)
 
@@ -355,7 +440,7 @@ class PhaseManagerSpec extends FlatSpec with Matchers {
   }
 
   it should "handle a simple dependency with an invalidation" in {
-    val targets = Seq(classOf[A], classOf[B], classOf[C], classOf[D])
+    val targets = Seq(Dependency[A], Dependency[B], Dependency[C], Dependency[D])
     val order = Seq(classOf[A], classOf[D], classOf[A], classOf[B], classOf[C])
     val pm = new PhaseManager(targets)
 
@@ -365,7 +450,7 @@ class PhaseManagerSpec extends FlatSpec with Matchers {
   }
 
   it should "handle a dependency with two invalidates optimally" in {
-    val targets = Seq(classOf[A], classOf[B], classOf[C], classOf[E], classOf[F], classOf[G])
+    val targets = Seq(Dependency[A], Dependency[B], Dependency[C], Dependency[E], Dependency[F], Dependency[G])
     val pm = new PhaseManager(targets)
 
     writeGraphviz(pm, "test_run_dir/PhaseManagerSpec/TwoInvalidates")
@@ -374,7 +459,7 @@ class PhaseManagerSpec extends FlatSpec with Matchers {
   }
 
   it should "throw an exception for cyclic prerequisites" in {
-    val targets = Seq(classOf[CyclicA], classOf[CyclicB])
+    val targets = Seq(Dependency[CyclicA], Dependency[CyclicB])
     val pm = new PhaseManager(targets)
 
     writeGraphviz(pm, "test_run_dir/PhaseManagerSpec/CyclicPrerequisites")
@@ -384,7 +469,7 @@ class PhaseManagerSpec extends FlatSpec with Matchers {
   }
 
   it should "throw an exception for cyclic invalidates" in {
-    val targets = Seq(classOf[CyclicC], classOf[CyclicD])
+    val targets = Seq(Dependency[CyclicC], Dependency[CyclicD])
     val pm = new PhaseManager(targets)
 
     writeGraphviz(pm, "test_run_dir/PhaseManagerSpec/CyclicInvalidates")
@@ -395,7 +480,7 @@ class PhaseManagerSpec extends FlatSpec with Matchers {
 
   it should "handle a complicated graph" in {
     val f = ComplicatedFixture
-    val targets = Seq(classOf[f.A], classOf[f.B], classOf[f.C], classOf[f.D], classOf[f.E])
+    val targets = Seq(Dependency[f.A], Dependency[f.B], Dependency[f.C], Dependency[f.D], Dependency[f.E])
     val pm = new PhaseManager(targets)
 
     writeGraphviz(pm, "test_run_dir/PhaseManagerSpec/Complicated")
@@ -406,7 +491,7 @@ class PhaseManagerSpec extends FlatSpec with Matchers {
 
   it should "handle repeated recomputed analyses" in {
     val f = RepeatedAnalysisFixture
-    val targets = Seq(classOf[f.A], classOf[f.B], classOf[f.C])
+    val targets = Seq(Dependency[f.A], Dependency[f.B], Dependency[f.C])
     val order =
       Seq( classOf[f.Analysis],
            classOf[f.A],
@@ -423,7 +508,7 @@ class PhaseManagerSpec extends FlatSpec with Matchers {
 
   it should "handle inverted repeated recomputed analyses" in {
     val f = InvertedAnalysisFixture
-    val targets = Seq(classOf[f.A], classOf[f.B], classOf[f.C])
+    val targets = Seq(Dependency[f.A], Dependency[f.B], Dependency[f.C])
     val order =
       Seq( classOf[f.Analysis],
            classOf[f.C],
@@ -443,12 +528,12 @@ class PhaseManagerSpec extends FlatSpec with Matchers {
     val f = DependentsFixture
 
     info("without the custom transform it runs: First -> Second")
-    val pm = new PhaseManager(Seq(classOf[f.Second]))
+    val pm = new PhaseManager(Seq(Dependency[f.Second]))
     val orderNoCustom = Seq(classOf[f.First], classOf[f.Second])
     pm.flattenedTransformOrder.map(_.getClass) should be (orderNoCustom)
 
     info("with the custom transform it runs:    First -> Custom -> Second")
-    val pmCustom = new PhaseManager(Seq(classOf[f.Custom], classOf[f.Second]))
+    val pmCustom = new PhaseManager(Seq(Dependency[f.Custom], Dependency[f.Second]))
     val orderCustom = Seq(classOf[f.First], classOf[f.Custom], classOf[f.Second])
 
     writeGraphviz(pmCustom, "test_run_dir/PhaseManagerSpec/SingleDependent")
@@ -459,8 +544,8 @@ class PhaseManagerSpec extends FlatSpec with Matchers {
   it should "handle chained invalidation" in {
     val f = ChainedInvalidationFixture
 
-    val targets = Seq(classOf[f.A], classOf[f.E])
-    val current = Seq(classOf[f.B], classOf[f.C], classOf[f.D])
+    val targets = Seq(Dependency[f.A], Dependency[f.E])
+    val current = Seq(Dependency[f.B], Dependency[f.C], Dependency[f.D])
 
     val pm = new PhaseManager(targets, current)
     val order = Seq( classOf[f.A], classOf[f.B], classOf[f.C], classOf[f.D], classOf[f.E] )
@@ -475,71 +560,127 @@ class PhaseManagerSpec extends FlatSpec with Matchers {
 
     /** A bunch of unrelated Phases. This ensures that these run in the order in which they are specified. */
     val targets =
-      Seq( classOf[f.B0],
-           classOf[f.B1],
-           classOf[f.B2],
-           classOf[f.B3],
-           classOf[f.B4],
-           classOf[f.B5],
-           classOf[f.B6],
-           classOf[f.B7],
-           classOf[f.B8],
-           classOf[f.B9],
-           classOf[f.B10],
-           classOf[f.B11],
-           classOf[f.B12],
-           classOf[f.B13],
-           classOf[f.B14],
-           classOf[f.B15] )
+      Seq( Dependency[f.B0],
+           Dependency[f.B1],
+           Dependency[f.B2],
+           Dependency[f.B3],
+           Dependency[f.B4],
+           Dependency[f.B5],
+           Dependency[f.B6],
+           Dependency[f.B7],
+           Dependency[f.B8],
+           Dependency[f.B9],
+           Dependency[f.B10],
+           Dependency[f.B11],
+           Dependency[f.B12],
+           Dependency[f.B13],
+           Dependency[f.B14],
+           Dependency[f.B15] )
     /** A sequence of custom transforms that should all run after B6 and before B7. This exercises correct ordering of the
       * prerequisiteGraph and dependentsGraph.
       */
     val prerequisiteTargets =
-      Seq( classOf[f.B6_0],
-           classOf[f.B6_1],
-           classOf[f.B6_2],
-           classOf[f.B6_3],
-           classOf[f.B6_4],
-           classOf[f.B6_5],
-           classOf[f.B6_6],
-           classOf[f.B6_7],
-           classOf[f.B6_8],
-           classOf[f.B6_9],
-           classOf[f.B6_10],
-           classOf[f.B6_11],
-           classOf[f.B6_12],
-           classOf[f.B6_13],
-           classOf[f.B6_14],
-           classOf[f.B6_15] )
+      Seq( Dependency[f.B6_0],
+           Dependency[f.B6_1],
+           Dependency[f.B6_2],
+           Dependency[f.B6_3],
+           Dependency[f.B6_4],
+           Dependency[f.B6_5],
+           Dependency[f.B6_6],
+           Dependency[f.B6_7],
+           Dependency[f.B6_8],
+           Dependency[f.B6_9],
+           Dependency[f.B6_10],
+           Dependency[f.B6_11],
+           Dependency[f.B6_12],
+           Dependency[f.B6_13],
+           Dependency[f.B6_14],
+           Dependency[f.B6_15] )
     /** A sequence of transforms that are invalidated by B0 and only define dependents on B8. This exercises the ordering
       * defined by "otherDependents".
       */
     val current =
-      Seq( classOf[f.B8_0],
-           classOf[f.B8_1],
-           classOf[f.B8_2],
-           classOf[f.B8_3],
-           classOf[f.B8_4],
-           classOf[f.B8_5],
-           classOf[f.B8_6],
-           classOf[f.B8_7],
-           classOf[f.B8_8],
-           classOf[f.B8_9],
-           classOf[f.B8_10],
-           classOf[f.B8_11],
-           classOf[f.B8_12],
-           classOf[f.B8_13],
-           classOf[f.B8_14],
-           classOf[f.B8_15] )
+      Seq( Dependency[f.B8_0],
+           Dependency[f.B8_1],
+           Dependency[f.B8_2],
+           Dependency[f.B8_3],
+           Dependency[f.B8_4],
+           Dependency[f.B8_5],
+           Dependency[f.B8_6],
+           Dependency[f.B8_7],
+           Dependency[f.B8_8],
+           Dependency[f.B8_9],
+           Dependency[f.B8_10],
+           Dependency[f.B8_11],
+           Dependency[f.B8_12],
+           Dependency[f.B8_13],
+           Dependency[f.B8_14],
+           Dependency[f.B8_15] )
 
     /** The resulting order: B0--B6, B6_0--B6_B15, B7, B8_0--B8_15, B8--B15 */
-    val expected = targets.slice(0, 7) ++ prerequisiteTargets ++ Some(targets(7)) ++ current ++ targets.drop(8)
+    val expectedDeps = targets.slice(0, 7) ++ prerequisiteTargets ++ Some(targets(7)) ++ current ++ targets.drop(8)
+    val expectedClasses = expectedDeps.map { case Dependency(Left(c)) => c }
 
     val pm = new PhaseManager(targets ++ prerequisiteTargets ++ current, current.reverse)
 
     writeGraphviz(pm, "test_run_dir/PhaseManagerSpec/DeterministicOrder")
 
-    pm.flattenedTransformOrder.map(_.getClass) should be (expected)
+    pm.flattenedTransformOrder.map(_.getClass) should be (expectedClasses)
+  }
+
+  it should "allow conditional placement of custom transforms" in {
+    val f = CustomAfterOptimizationFixture
+
+    val targetsMinimum = Seq(Dependency[f.Custom], Dependency[f.DoneMinimum])
+    val pmMinimum = new PhaseManager(targetsMinimum)
+
+    val targetsFull = Seq(Dependency[f.Custom], Dependency[f.DoneFull])
+    val pmFull = new PhaseManager(targetsFull)
+
+    val expectedMinimum = Seq(classOf[f.Root], classOf[f.OptMinimum], classOf[f.AfterOpt], classOf[f.Custom], classOf[f.DoneMinimum])
+    writeGraphviz(pmMinimum, "test_run_dir/PhaseManagerSpec/CustomAfterOptimization/minimum")
+    pmMinimum.flattenedTransformOrder.map(_.getClass) should be (expectedMinimum)
+
+    val expectedFull = Seq(classOf[f.Root], classOf[f.OptMinimum], classOf[f.OptFull], classOf[f.AfterOpt], classOf[f.Custom], classOf[f.DoneFull])
+    writeGraphviz(pmFull, "test_run_dir/PhaseManagerSpec/CustomAfterOptimization/full")
+    pmFull.flattenedTransformOrder.map(_.getClass) should be (expectedFull)
+  }
+
+  it should "support optional prerequisites" in {
+    val f = OptionalPrerequisitesFixture
+
+    val targetsMinimum = Seq(Dependency[f.Custom], Dependency[f.DoneMinimum])
+    val pmMinimum = new PhaseManager(targetsMinimum)
+
+    val targetsFull = Seq(Dependency[f.Custom], Dependency[f.DoneFull])
+    val pmFull = new PhaseManager(targetsFull)
+
+    val expectedMinimum = Seq(classOf[f.Root], classOf[f.OptMinimum], classOf[f.Custom], classOf[f.DoneMinimum])
+    writeGraphviz(pmMinimum, "test_run_dir/PhaseManagerSpec/CustomAfterOptimization/minimum")
+    pmMinimum.flattenedTransformOrder.map(_.getClass) should be (expectedMinimum)
+
+    val expectedFull = Seq(classOf[f.Root], classOf[f.OptMinimum], classOf[f.OptFull], classOf[f.Custom], classOf[f.DoneFull])
+    writeGraphviz(pmFull, "test_run_dir/PhaseManagerSpec/CustomAfterOptimization/full")
+    pmFull.flattenedTransformOrder.map(_.getClass) should be (expectedFull)
+  }
+
+  /** This tests a situation the ordering of edges matters. Namely, this test is dependent on the ordering in which
+    * DiGraph.linearize walks the edges of each node.
+    */
+  it should "choose the optimal solution irregardless of prerequisite ordering" in {
+    val f = OrderingFixture
+
+    {
+      val targets = Seq(Dependency[f.A], Dependency[f.B], Dependency[f.C])
+      val order = Seq(classOf[f.B], classOf[f.A], classOf[f.C], classOf[f.B], classOf[f.A])
+      (new PhaseManager(targets)).flattenedTransformOrder.map(_.getClass) should be (order)
+    }
+
+    {
+      val targets = Seq(Dependency[f.A], Dependency[f.B], Dependency[f.Cx])
+      val order = Seq(classOf[f.B], classOf[f.A], classOf[f.Cx], classOf[f.B], classOf[f.A])
+      (new PhaseManager(targets)).flattenedTransformOrder.map(_.getClass) should be (order)
+    }
   }
 
 }

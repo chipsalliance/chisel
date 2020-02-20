@@ -4,7 +4,7 @@ package firrtl.options.phases
 
 import firrtl.AnnotationSeq
 import firrtl.annotations.DeletedAnnotation
-import firrtl.options.{Phase, Translator}
+import firrtl.options.{Phase, PreservesAll, Translator}
 
 import scala.collection.mutable
 
@@ -12,7 +12,12 @@ import scala.collection.mutable
   * wrapped [[firrtl.options.Phase Phase]] will be added as [[firrtl.annotations.DeletedAnnotation DeletedAnnotation]]s.
   * @param p a [[firrtl.options.Phase Phase]] to wrap
   */
-class DeletedWrapper(p: Phase) extends Phase with Translator[AnnotationSeq, (AnnotationSeq, AnnotationSeq)] {
+class DeletedWrapper(p: Phase) extends Phase with Translator[AnnotationSeq, (AnnotationSeq, AnnotationSeq)]
+    with PreservesAll[Phase] {
+
+  override val prerequisites = Seq.empty
+
+  override val dependents = Seq.empty
 
   override lazy val name: String = p.name
 

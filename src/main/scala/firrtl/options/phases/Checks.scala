@@ -4,12 +4,17 @@ package firrtl.options.phases
 
 import firrtl.AnnotationSeq
 import firrtl.annotations.Annotation
-import firrtl.options.{OptionsException, OutputAnnotationFileAnnotation, Phase, TargetDirAnnotation}
+import firrtl.options.{OptionsException, OutputAnnotationFileAnnotation, Phase, PreservesAll, TargetDirAnnotation}
+import firrtl.options.Dependency
 
 /** [[firrtl.options.Phase Phase]] that validates an [[AnnotationSeq]]. If successful, views of this [[AnnotationSeq]]
   * as [[StageOptions]] are guaranteed to succeed.
   */
-class Checks extends Phase {
+class Checks extends Phase with PreservesAll[Phase] {
+
+  override val prerequisites = Seq(Dependency[GetIncludes], Dependency[ConvertLegacyAnnotations], Dependency[AddDefaults])
+
+  override val dependents = Seq.empty
 
   /** Validate an [[AnnotationSeq]] for [[StageOptions]]
     * @throws OptionsException if annotations are invalid
