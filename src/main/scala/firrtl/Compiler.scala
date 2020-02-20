@@ -58,9 +58,11 @@ case class CircuitState(
     * @param targets
     * @return
     */
-  def resolvePaths(targets: Seq[CompleteTarget]): CircuitState = {
-    val newCS = new EliminateTargetPaths().runTransform(this.copy(annotations = ResolvePaths(targets) +: annotations ))
-    newCS.copy(form = form)
+  def resolvePaths(targets: Seq[CompleteTarget]): CircuitState = targets match {
+    case Nil => this
+    case _ =>
+      val newCS = new EliminateTargetPaths().runTransform(this.copy(annotations = ResolvePaths(targets) +: annotations ))
+      newCS.copy(form = form)
   }
 
   /** Returns a new CircuitState with the targets of every annotation of a type in annoClasses
