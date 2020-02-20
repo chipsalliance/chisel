@@ -6,14 +6,14 @@ import chisel3.stage.{ChiselOutputFileAnnotation, NoRunFirrtlCompilerAnnotation,
 
 import firrtl.AnnotationSeq
 import firrtl.annotations.Annotation
-import firrtl.options.{OptionsException, Phase, PreservesAll}
+import firrtl.options.{Dependency, OptionsException, Phase, PreservesAll}
 
 /** Sanity checks an [[firrtl.AnnotationSeq]] before running the main [[firrtl.options.Phase]]s of
   * [[chisel3.stage.ChiselStage]].
   */
 class Checks extends Phase with PreservesAll[Phase] {
 
-  override val dependents = Seq(classOf[Elaborate])
+  override val dependents = Seq(Dependency[Elaborate])
 
   def transform(annotations: AnnotationSeq): AnnotationSeq = {
     val noF, st, outF = collection.mutable.ListBuffer[Annotation]()

@@ -34,4 +34,3 @@ class AspectPhase extends Phase {
     } else annotations
   }
 }
-
