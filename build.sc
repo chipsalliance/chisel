@@ -132,4 +132,6 @@ class chisel3CrossModule(crossVersionValue: String) extends CommonModule with Pu
       "-Xlint:infer-any"
     )
   }
+  // make mill publish sbt compatible package
+  def artifactName = "chisel3"
 }
