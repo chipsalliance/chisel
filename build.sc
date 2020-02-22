@@ -93,6 +93,12 @@ class chisel3CrossModule(crossVersionValue: String) extends CommonModule with Pu
     ) ++ ivyCrossDeps
 
     def testFrameworks = Seq("org.scalatest.tools.Framework")
+
+    // a sbt-like testOnly command.
+    // for example, mill -i "chisel3[2.12.10].test.testOnly" "chiselTests.BitwiseOpsSpec" 
+    def testOnly(args: String*) = T.command {
+      super.runMain("org.scalatest.run", args: _*)
+    }
   }
 
   override def buildInfoPackageName = Some("chisel3")
