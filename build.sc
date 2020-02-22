@@ -64,6 +64,12 @@ class firrtlCrossModule(crossVersion: String) extends ScalaModule with SbtModule
     ) ++ ivyCrossDeps
 
     def testFrameworks = Seq("org.scalatest.tools.Framework")
+
+    // a sbt-like testOnly command.
+    // for example, mill -i "firrtl[2.12.10].test.testOnly" "firrtlTests.AsyncResetSpec"
+    def testOnly(args: String*) = T.command {
+      super.runMain("org.scalatest.run", args: _*)
+    }
   }
 
   override def generatedSources = T {
