@@ -122,4 +122,6 @@ class firrtlCrossModule(crossVersion: String) extends ScalaModule with SbtModule
       Developer("jackbackrack", "Jonathan Bachrach", "https://eecs.berkeley.edu/~jrb/")
     )
   )
+  // make mill publish sbt compatible package
+  def artifactName = "firrtl"
 }
