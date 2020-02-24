@@ -34,7 +34,7 @@ class SelectTester(results: Seq[Int]) extends BasicTester {
   }
 }
 
-class SelectAspect[T <: RawModule, X](selector: T => Seq[X], desired: T => Seq[X]) extends Aspect[T] with NoTargetAnnotation {
+case class SelectAspect[T <: RawModule, X](selector: T => Seq[X], desired: T => Seq[X]) extends Aspect[T] with NoTargetAnnotation {
   override def toAnnotation(top: T): AnnotationSeq = {
     Nil
     val results = selector(top)
@@ -58,7 +58,7 @@ class SelectSpec extends ChiselFlatSpec {
     val ret = new chisel3.stage.ChiselStage().run(
       Seq(
         new chisel3.stage.ChiselGeneratorAnnotation(dut),
-        new SelectAspect(selector, desired),
+        SelectAspect(selector, desired),
         new chisel3.stage.ChiselOutputFileAnnotation("test_run_dir/Select.fir")
       )
     )
