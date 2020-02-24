@@ -989,7 +989,7 @@ final class ResetType(private[chisel3] val width: Width = Width(1)) extends Elem
     this.getClass == that.getClass
 
   override def connect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = that match {
-    case _: Reset => super.connect(that)(sourceInfo, connectCompileOptions)
+    case _: Reset | DontCare => super.connect(that)(sourceInfo, connectCompileOptions)
     case _ => super.badConnect(that)(sourceInfo)
   }
 
@@ -1036,7 +1036,7 @@ sealed class AsyncReset(private[chisel3] val width: Width = Width(1)) extends El
     this.getClass == that.getClass
 
   override def connect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = that match {
-    case _: AsyncReset => super.connect(that)(sourceInfo, connectCompileOptions)
+    case _: AsyncReset | DontCare => super.connect(that)(sourceInfo, connectCompileOptions)
     case _ => super.badConnect(that)(sourceInfo)
   }
 
