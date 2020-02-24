@@ -22,7 +22,7 @@ trait CompileOptions {
   val explicitInvalidate: Boolean
   // Should the reset type of Module be a Bool or a Reset
   val inferModuleReset: Boolean
-  // Should the top module reset, if inferred, be an Async instead of a Bool?
+  // Should the top module reset be an Async instead of a Bool
   val topAsyncReset: Boolean
 }
 
@@ -55,7 +55,7 @@ object ExplicitCompileOptions {
     val explicitInvalidate: Boolean,
     // Should the reset type of Module be a Bool or a Reset
     val inferModuleReset: Boolean,
-    // Should the top module reset, if inferred, be a Async instead of Bool?
+    // Should the top module reset be a Async instead of Bool
     val topAsyncReset: Boolean
   ) extends CompileOptions
 
