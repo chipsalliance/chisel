@@ -151,7 +151,7 @@ abstract class MultiIOModule(implicit moduleCompileOptions: CompileOptions)
     val topAsyncReset = _parent.isEmpty && moduleCompileOptions.topAsyncReset
     IO(Input(if (inferReset) {
       Reset()
-    }else if (topAsyncReset) {
+    } else if (topAsyncReset) {
       AsyncReset()
     } else {
       Bool()
