@@ -148,7 +148,14 @@ abstract class MultiIOModule(implicit moduleCompileOptions: CompileOptions)
   val reset: Reset = {
     // Top module and compatibility mode use Bool for reset
     val inferReset = _parent.isDefined && moduleCompileOptions.inferModuleReset
-    IO(Input(if (inferReset) Reset() else Bool()))
+    val topAsyncReset = !_parent.isDefined && moduleCompileOptions.topAsyncReset
+    IO(Input(if (inferReset) {
+      Reset()
+    }else if (topAsyncReset) {
+      AsyncReset()
+    } else {
+      Bool()
+    }))
   }
 
   // Setup ClockAndReset

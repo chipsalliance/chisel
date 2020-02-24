@@ -22,6 +22,8 @@ trait CompileOptions {
   val explicitInvalidate: Boolean
   // Should the reset type of Module be a Bool or a Reset
   val inferModuleReset: Boolean
+  // Should the top module reset, if inferred, be an Async instead of a Bool?
+  val topAsyncReset: Boolean
 }
 
 object CompileOptions {
@@ -52,7 +54,9 @@ object ExplicitCompileOptions {
     // Require an explicit DontCare assignment to generate a firrtl DefInvalid
     val explicitInvalidate: Boolean,
     // Should the reset type of Module be a Bool or a Reset
-    val inferModuleReset: Boolean
+    val inferModuleReset: Boolean,
+    // Should the top module reset, if inferred, be a Async instead of Bool?
+    val topAsyncReset: Boolean
   ) extends CompileOptions
 
   // Collection of "not strict" connection compile options.
@@ -64,7 +68,8 @@ object ExplicitCompileOptions {
     dontAssumeDirectionality = false,
     checkSynthesizable = false,
     explicitInvalidate = false,
-    inferModuleReset = false
+    inferModuleReset = false,
+    topAsyncReset = false
   )
 
   // Collection of "strict" connection compile options, preferred for new code.
@@ -75,6 +80,7 @@ object ExplicitCompileOptions {
     dontAssumeDirectionality = true,
     checkSynthesizable = true,
     explicitInvalidate = true,
-    inferModuleReset  = true
+    inferModuleReset  = true,
+    topAsyncReset = false
   )
 }
