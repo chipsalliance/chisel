@@ -22,7 +22,7 @@ class AspectTester(results: Seq[Int]) extends BasicTester {
 }
 
 class InjectionSpec extends ChiselFlatSpec {
-  val correctValueAspect = new InjectingAspect(
+  val correctValueAspect = InjectingAspect(
     {dut: AspectTester => Seq(dut)},
     {dut: AspectTester =>
       for(i <- 0 until dut.values.length) {
@@ -31,7 +31,7 @@ class InjectionSpec extends ChiselFlatSpec {
     }
   )
 
-  val wrongValueAspect = new InjectingAspect(
+  val wrongValueAspect = InjectingAspect(
     {dut: AspectTester => Seq(dut)},
     {dut: AspectTester =>
       for(i <- 0 until dut.values.length) {

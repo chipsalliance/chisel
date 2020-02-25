@@ -6,15 +6,20 @@ import chisel3.RawModule
 import chisel3.aop.Aspect
 import firrtl.AnnotationSeq
 
-import scala.reflect.runtime.universe.TypeTag
-
 /** Use for inspecting an elaborated design and printing out results
   *
   * @param inspect Given top-level design, print things and return nothing
-  * @param tTag
   * @tparam T Type of top-level module
   */
-abstract class InspectingAspect[T <: RawModule](inspect: T => Unit)(implicit tTag: TypeTag[T]) extends Aspect[T] {
+case class InspectingAspect[T <: RawModule](inspect: T => Unit) extends InspectorAspect[T](inspect)
+
+
+/** Extend to make custom inspections of an elaborated design and printing out results
+  *
+  * @param inspect Given top-level design, print things and return nothing
+  * @tparam T Type of top-level module
+  */
+abstract class InspectorAspect[T <: RawModule](inspect: T => Unit) extends Aspect[T] {
   override def toAnnotation(top: T): AnnotationSeq = {
     inspect(top)
     Nil
