@@ -144,8 +144,8 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
 abstract class MultiIOModule(implicit moduleCompileOptions: CompileOptions)
     extends RawModule {
   // Implicit clock and reset pins
-  val clock: Clock = IO(Input(Clock()))
-  val reset: Reset = {
+  final val clock: Clock = IO(Input(Clock()))
+  final val reset: Reset = {
     // Top module and compatibility mode use Bool for reset
     val inferReset = _parent.isDefined && moduleCompileOptions.inferModuleReset
     IO(Input(if (inferReset) Reset() else Bool()))
