@@ -69,7 +69,7 @@ private class Emitter(circuit: Circuit) {
       case e: DefReg => s"reg ${e.name} : ${emitType(e.id)}, ${e.clock.fullName(ctx)}"
       case e: DefRegInit => s"reg ${e.name} : ${emitType(e.id)}, ${e.clock.fullName(ctx)} with : (reset => (${e.reset.fullName(ctx)}, ${e.init.fullName(ctx)}))" // scalastyle:ignore line.size.limit
       case e: DefMemory => s"cmem ${e.name} : ${emitType(e.t)}[${e.size}]"
-      case e: DefSeqMemory => s"smem ${e.name} : ${emitType(e.t)}[${e.size}]"
+      case e: DefSeqMemory => s"smem ${e.name} : ${emitType(e.t)}[${e.size}], ${e.readUnderWrite}"
       case e: DefMemPort[_] => s"${e.dir} mport ${e.name} = ${e.source.fullName(ctx)}[${e.index.fullName(ctx)}], ${e.clock.fullName(ctx)}" // scalastyle:ignore line.size.limit
       case e: Connect => s"${e.loc.fullName(ctx)} <= ${e.exp.fullName(ctx)}"
       case e: BulkConnect => s"${e.loc1.fullName(ctx)} <- ${e.loc2.fullName(ctx)}"

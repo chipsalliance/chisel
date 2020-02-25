@@ -106,7 +106,7 @@ lazy val chiselSettings = Seq (
   libraryDependencies ++= Seq(
     "junit" % "junit" % "4.12" % "test",
     "org.scalatest" %% "scalatest" % "3.0.8" % "test",
-    "org.scalacheck" %% "scalacheck" % "1.14.0" % "test",
+    "org.scalacheck" %% "scalacheck" % "1.14.3" % "test",
     "com.github.scopt" %% "scopt" % "3.7.1"
   ),
   javacOptions ++= javacOptionsVersion(scalaVersion.value)

@@ -3,7 +3,7 @@
 package chisel3.stage.phases
 
 import firrtl.AnnotationSeq
-import firrtl.options.{Phase, PreservesAll}
+import firrtl.options.{Dependency, Phase, PreservesAll}
 
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselOutputFileAnnotation}
 
@@ -12,7 +12,7 @@ import chisel3.stage.{ChiselCircuitAnnotation, ChiselOutputFileAnnotation}
   */
 class AddImplicitOutputFile extends Phase with PreservesAll[Phase] {
 
-  override val prerequisites = Seq(classOf[Elaborate])
+  override val prerequisites = Seq(Dependency[Elaborate])
 
   def transform(annotations: AnnotationSeq): AnnotationSeq =
     annotations.collectFirst{ case _: ChiselOutputFileAnnotation  => annotations }.getOrElse{

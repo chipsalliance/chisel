@@ -305,7 +305,7 @@ object Queue
       flow: Boolean = false): IrrevocableIO[T] = {    
     val deq = apply(enq, entries, pipe, flow)
     require(entries > 0, "Zero-entry queues don't guarantee Irrevocability")
-    val irr = Wire(new IrrevocableIO(deq.bits))
+    val irr = Wire(new IrrevocableIO(chiselTypeOf(deq.bits)))
     irr.bits := deq.bits
     irr.valid := deq.valid
     deq.ready := irr.ready
