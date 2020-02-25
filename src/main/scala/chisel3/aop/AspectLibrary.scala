@@ -21,9 +21,9 @@ case class AspectLibrary() extends RegisteredLibrary  {
     try {
       val x = Class.forName(aspectName).asInstanceOf[Class[_ <: Aspect[RawModule]]]
       if(isObject(x)) {
-        val runtimeMirror = scala.reflect.runtime.universe.runtimeMirror(getClass.getClassLoader)
-        val x = runtimeMirror.staticModule(aspectName)
-        runtimeMirror.reflectModule(x).instance.asInstanceOf[Aspect[RawModule]]
+        val rm = runtimeMirror(getClass.getClassLoader)
+        val x = rm.staticModule(aspectName)
+        rm.reflectModule(x).instance.asInstanceOf[Aspect[RawModule]]
       } else {
         x.newInstance()
       }
@@ -44,5 +44,4 @@ case class AspectLibrary() extends RegisteredLibrary  {
     helpText = "The name/class of an aspect to compile with (must be a class/object without arguments!)",
     helpValueName = Some("<package>.<aspect>")
   ))
-
 }
