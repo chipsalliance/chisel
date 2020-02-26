@@ -53,6 +53,9 @@ class MemTransform(val c: Context) extends SourceInfoTransformMacro {
   def apply[T: c.WeakTypeTag](size: c.Tree, t: c.Tree): c.Tree = {
     q"$thisObj.do_apply($size, $t)($implicitSourceInfo, $implicitCompileOptions)"
   }
+  def apply_ruw[T: c.WeakTypeTag](size: c.Tree, t: c.Tree, ruw: c.Tree): c.Tree = {
+    q"$thisObj.do_apply($size, $t, $ruw)($implicitSourceInfo, $implicitCompileOptions)"
+  }
 }
 
 // Workaround for https://github.com/sbt/sbt/issues/3966

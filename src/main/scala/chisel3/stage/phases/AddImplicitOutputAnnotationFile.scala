@@ -4,14 +4,14 @@ package chisel3.stage.phases
 
 import chisel3.stage.ChiselCircuitAnnotation
 import firrtl.AnnotationSeq
-import firrtl.options.{OutputAnnotationFileAnnotation, Phase, PreservesAll}
+import firrtl.options.{Dependency, OutputAnnotationFileAnnotation, Phase, PreservesAll}
 
 /** Adds an [[firrtl.options.OutputAnnotationFileAnnotation]] if one does not exist. This replicates old behavior where
   * an output annotation file was always written.
   */
 class AddImplicitOutputAnnotationFile extends Phase with PreservesAll[Phase] {
 
-  override val prerequisites = Seq(classOf[Elaborate])
+  override val prerequisites = Seq(Dependency[Elaborate])
 
   def transform(annotations: AnnotationSeq): AnnotationSeq = annotations
     .collectFirst{ case _: OutputAnnotationFileAnnotation => annotations }

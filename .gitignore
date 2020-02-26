@@ -1,7 +1,9 @@
+out/
 generated/
 /lib/firrtl.jar
 .classpath
 .idea
+.idea_modules/
 .project
 target/
 *.iml

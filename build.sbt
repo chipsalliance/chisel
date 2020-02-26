@@ -28,7 +28,7 @@ def javacOptionsVersion(scalaVersion: String): Seq[String] = {
   }
 }
 
-val defaultVersions = Map("firrtl" -> "1.3-20200205-SNAPSHOT")
+val defaultVersions = Map("firrtl" -> "1.3-SNAPSHOT")
 
 lazy val commonSettings = Seq (
   resolvers ++= Seq(
@@ -36,11 +36,10 @@ lazy val commonSettings = Seq (
     Resolver.sonatypeRepo("releases")
   ),
   organization := "edu.berkeley.cs",
-  version := "3.3-20200205-SNAPSHOT",
+  version := "3.3-SNAPSHOT",
   autoAPIMappings := true,
   scalaVersion := "2.12.10",
   crossScalaVersions := Seq("2.12.10", "2.11.12"),
-  mimaPreviousArtifacts := Set(), // Default for subprojects
   scalacOptions := Seq("-deprecation", "-feature") ++ scalacOptionsVersion(scalaVersion.value),
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
@@ -107,7 +106,7 @@ lazy val chiselSettings = Seq (
   libraryDependencies ++= Seq(
     "junit" % "junit" % "4.12" % "test",
     "org.scalatest" %% "scalatest" % "3.0.8" % "test",
-    "org.scalacheck" %% "scalacheck" % "1.14.0" % "test",
+    "org.scalacheck" %% "scalacheck" % "1.14.3" % "test",
     "com.github.scopt" %% "scopt" % "3.7.1"
   ),
   javacOptions ++= javacOptionsVersion(scalaVersion.value)
@@ -169,8 +168,6 @@ lazy val chisel = (project in file(".")).
   //   sufficient to suppress subproject JAR creation, so we can restore
   //   general aggregation, and thus get coverage tests and scaladoc for subprojects.
   aggregate(coreMacros, chiselFrontend).
-  settings(mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3" % "3.3.0")).
-  settings(mimaCurrentClassfiles := (packageBin in Compile).value).
   settings(
     scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
     scalacOptions in Compile in doc ++= Seq(

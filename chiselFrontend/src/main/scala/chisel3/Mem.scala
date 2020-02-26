@@ -4,10 +4,13 @@ package chisel3
 
 import scala.language.experimental.macros
 
+import firrtl.{ir => fir}
+
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform, UnlocatableSourceInfo, MemTransform}
+
 
 object Mem {
 
@@ -142,12 +145,19 @@ sealed class Mem[T <: Data] private (t: T, length: BigInt) extends MemBase(t, le
 
 object SyncReadMem {
 
+
+  type ReadUnderWrite = fir.ReadUnderWrite.Value
+  val Undefined = fir.ReadUnderWrite.Undefined
+  val ReadFirst = fir.ReadUnderWrite.Old
+  val WriteFirst = fir.ReadUnderWrite.New
+
   /** Creates a sequential/synchronous-read, sequential/synchronous-write [[SyncReadMem]].
     *
     * @param size number of elements in the memory
     * @param t data type of memory element
     */
   def apply[T <: Data](size: BigInt, t: T): SyncReadMem[T] = macro MemTransform.apply[T]
+  def apply[T <: Data](size: BigInt, t: T, ruw: ReadUnderWrite): SyncReadMem[T] = macro MemTransform.apply_ruw[T]
 
   /** Creates a sequential/synchronous-read, sequential/synchronous-write [[SyncReadMem]].
     *
@@ -155,21 +165,28 @@ object SyncReadMem {
     * @param t data type of memory element
     */
   def apply[T <: Data](size: Int, t: T): SyncReadMem[T] = macro MemTransform.apply[T]
+  def apply[T <: Data](size: Int, t: T, ruw: ReadUnderWrite): SyncReadMem[T] = macro MemTransform.apply_ruw[T]
 
   /** @group SourceInfoTransformMacro */
-  def do_apply[T <: Data](size: BigInt, t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SyncReadMem[T] = {
+  def do_apply[T <: Data](size: BigInt, t: T, ruw: ReadUnderWrite = Undefined)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SyncReadMem[T] = {
     if (compileOptions.declaredTypeMustBeUnbound) {
       requireIsChiselType(t, "memory type")
     }
     val mt  = t.cloneTypeFull
-    val mem = new SyncReadMem(mt, size)
-    pushCommand(DefSeqMemory(sourceInfo, mem, mt, size))
+    val mem = new SyncReadMem(mt, size, ruw)
+    pushCommand(DefSeqMemory(sourceInfo, mem, mt, size, ruw))
     mem
   }
 
   /** @group SourceInfoTransformMacro */
+  // Alternate signatures can't use default parameter values
   def do_apply[T <: Data](size: Int, t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SyncReadMem[T] =
     do_apply(BigInt(size), t)(sourceInfo, compileOptions)
+
+  /** @group SourceInfoTransformMacro */
+  // Alternate signatures can't use default parameter values
+  def do_apply[T <: Data](size: Int, t: T, ruw: ReadUnderWrite)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SyncReadMem[T] =
+    do_apply(BigInt(size), t, ruw)(sourceInfo, compileOptions)
 }
 
 /** A sequential/synchronous-read, sequential/synchronous-write memory.
@@ -182,7 +199,7 @@ object SyncReadMem {
   * @note when multiple conflicting writes are performed on a Mem element, the
   * result is undefined (unlike Vec, where the last assignment wins)
   */
-sealed class SyncReadMem[T <: Data] private (t: T, n: BigInt) extends MemBase[T](t, n) {
+sealed class SyncReadMem[T <: Data] private (t: T, n: BigInt, val readUnderWrite: SyncReadMem.ReadUnderWrite) extends MemBase[T](t, n) {
   def read(x: UInt, en: Bool): T = macro SourceInfoTransform.xEnArg
 
   /** @group SourceInfoTransformMacro */
