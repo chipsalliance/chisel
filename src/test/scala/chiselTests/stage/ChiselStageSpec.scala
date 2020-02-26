@@ -3,6 +3,7 @@
 package chiselTests.stage
 
 import chisel3._
+import chisel3.aop.Select
 import chisel3.aop.injecting.InjectingAspect
 import chisel3.incremental.{Cache, ExportCache, ItemTag, Stash}
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage, NoRunFirrtlCompilerAnnotation, PrintFullStackTraceAnnotation}
@@ -126,8 +127,10 @@ class ChiselStageSpec extends FlatSpec with Matchers {
     simpleResult.collect { case f: FirrtlCircuitAnnotation => println(f.circuit.serialize) }
 
     val barStitch = InjectingAspect(
-      { b: Bar => Seq(b) },
-      { b: Bar =>
+      { b: Bar => Select.collectDeep(b){
+        case i: Simple if i.io is of type BLAH=> i
+      } },
+      { b: Simple =>
         printf("Value! %d", b.out)
       }
     )
