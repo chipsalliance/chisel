@@ -315,7 +315,7 @@ class ModuleWithOptionalIOs(flag: Boolean) extends Module {
 }
 ```
 
-The following is an example for a `MultiIO` module where the entire `IO` is optional:
+The following is an example for a `MultiIOModule` where an entire `IO` is optional:
 
 ```scala mdoc:silent:reset
 import chisel3._
