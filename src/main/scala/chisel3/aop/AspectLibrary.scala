@@ -13,19 +13,21 @@ case class AspectLibrary() extends RegisteredLibrary  {
 
   import scala.reflect.runtime.universe._
 
-  private def isObject[T](x: T)(implicit tag: TypeTag[T]): Boolean = PartialFunction.cond(tag.tpe) {
-    case SingleType(_, _) => true
-  }
-
   def apply(aspectName: String): Aspect[RawModule] = {
     try {
-      val x = Class.forName(aspectName).asInstanceOf[Class[_ <: Aspect[RawModule]]]
-      if(isObject(x)) {
-        val rm = runtimeMirror(getClass.getClassLoader)
-        val x = rm.staticModule(aspectName)
-        rm.reflectModule(x).instance.asInstanceOf[Aspect[RawModule]]
-      } else {
-        x.newInstance()
+      // If a regular class, instantiate, otherwise try as a singleton object
+      try {
+        val x = Class.forName(aspectName).asInstanceOf[Class[_ <: Aspect[RawModule]]]
+        x.getDeclaredConstructor().newInstance()
+      } catch {
+        case e: InstantiationException =>
+          val rm = runtimeMirror(getClass.getClassLoader)
+          val x = rm.staticModule(aspectName)
+          try {
+            rm.reflectModule(x).instance.asInstanceOf[Aspect[RawModule]]
+          } catch {
+            case _: Exception => throw e
+          }
       }
     } catch {
       case e: ClassNotFoundException =>
