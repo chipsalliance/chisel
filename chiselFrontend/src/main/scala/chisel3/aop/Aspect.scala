@@ -3,6 +3,7 @@
 package chisel3.aop
 
 import chisel3.RawModule
+import chisel3.experimental.BaseModule
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.options.Unserializable
 import firrtl.AnnotationSeq
@@ -22,7 +23,7 @@ abstract class Aspect[T <: RawModule] extends Annotation with Unserializable wit
     * @param top
     * @return
     */
-  private[chisel3] def resolveAspect(top: RawModule): AnnotationSeq = {
+  private[chisel3] def resolveAspect(top: BaseModule): AnnotationSeq = {
     toAnnotation(top.asInstanceOf[T])
   }
 }

@@ -16,7 +16,7 @@ import firrtl.options.{OptionsException, Phase, PreservesAll}
 class Elaborate extends Phase with PreservesAll[Phase] {
 
   def transform(annotations: AnnotationSeq): AnnotationSeq = annotations.flatMap {
-    case a: ChiselGeneratorAnnotation => a.elaborate
+    case a: ChiselGeneratorAnnotation => a.elaborate(annotations)
     case a                            => Some(a)
   }
 

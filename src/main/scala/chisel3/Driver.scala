@@ -90,7 +90,7 @@ object Driver extends BackendCompilationUtilities {
     * @param gen A function that creates a Module hierarchy.
     * @return The resulting Chisel IR in the form of a Circuit. (TODO: Should be FIRRTL IR)
     */
-  def elaborate[T <: RawModule](gen: () => T): Circuit = internal.Builder.build(Module(gen()))._1
+  def elaborate[T <: RawModule](gen: () => T): Circuit = internal.Builder.build(Module(gen()), Nil)._1
 
   /**
     * Convert the given Chisel IR Circuit to a FIRRTL Circuit.

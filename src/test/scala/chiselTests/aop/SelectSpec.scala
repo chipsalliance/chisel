@@ -148,7 +148,7 @@ class SelectSpec extends ChiselFlatSpec {
     }
     val top = ChiselGeneratorAnnotation(() => {
       new Top()
-    }).elaborate(1).asInstanceOf[DesignAnnotation[Top]].design
+    }).elaborate()(1).asInstanceOf[DesignAnnotation[Top]].design
     val bbs = Select.collectDeep(top) { case b: BB => b }
     assert(bbs.size == 1)
   }

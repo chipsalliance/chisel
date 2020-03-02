@@ -447,7 +447,7 @@ class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
             new BasicTester {
               val x = 5.I(3.W, 0.BP)
           }
-        ).elaborate
+        ).elaborate(Nil)
       }
     }
     "case 2: doesn't fit in specified range" in {
@@ -457,7 +457,7 @@ class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
             new BasicTester {
               val x = 5.I(range"[0,4]")
           }
-        ).elaborate
+        ).elaborate(Nil)
       }
     }
   }

@@ -6,9 +6,11 @@ import scala.util.DynamicVariable
 import scala.collection.mutable.ArrayBuffer
 import chisel3._
 import chisel3.experimental._
-import chisel3.internal.firrtl._
 import chisel3.internal.naming._
 import _root_.firrtl.annotations.{CircuitName, ComponentName, IsMember, ModuleName, Named, ReferenceTarget}
+import _root_.firrtl.AnnotationSeq
+import chisel3.incremental.Stash
+import chisel3.internal.firrtl._
 
 import scala.collection.mutable
 
@@ -203,11 +205,17 @@ private[chisel3] class ChiselContext() {
   val bundleStack: ArrayBuffer[(Bundle, String, String, Int)] = ArrayBuffer()
 }
 
-private[chisel3] class DynamicContext() {
+private[chisel3] class DynamicContext(inputAnnotations: AnnotationSeq) {
   val globalNamespace = Namespace.empty
   val components = ArrayBuffer[Component]()
   val annotations = ArrayBuffer[ChiselAnnotation]()
   var currentModule: Option[BaseModule] = None
+  val stash = Stash(inputAnnotations.collect {
+    case s: GeneratorPackage[BaseModule] => s
+  }.foldLeft(Map.empty[GeneratorPackageCreator, GeneratorPackage[BaseModule]]) {
+    (map: Map[GeneratorPackageCreator, GeneratorPackage[BaseModule]], genPkg: GeneratorPackage[BaseModule]) =>
+      map + (genPkg.phase -> genPkg)
+  })
 
   /** Contains a mapping from a elaborated module to their aspect
     * Set by [[ModuleAspect]]
@@ -255,6 +263,8 @@ private[chisel3] object Builder {
   def components: ArrayBuffer[Component] = dynamicContext.components
   def annotations: ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
   def namingStack: NamingStack = dynamicContext.namingStack
+
+  def stash: Option[Stash] = dynamicContextVar.value.map(_.stash)
 
   def currentModule: Option[BaseModule] = dynamicContextVar.value match {
     case Some(dyanmicContext) => dynamicContext.currentModule
@@ -399,9 +409,9 @@ private[chisel3] object Builder {
     throwException(m)
   }
 
-  def build[T <: RawModule](f: => T): (Circuit, T) = {
+  def build[T <: BaseModule](f: => T, inputAnnos: AnnotationSeq): (Circuit, T) = {
     chiselContext.withValue(new ChiselContext) {
-      dynamicContextVar.withValue(Some(new DynamicContext())) {
+      dynamicContextVar.withValue(Some(new DynamicContext(inputAnnos))) {
         errors.info("Elaborating design...")
         val mod = f
         mod.forceName(mod.name, globalNamespace)

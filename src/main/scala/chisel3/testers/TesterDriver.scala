@@ -21,7 +21,7 @@ object TesterDriver extends BackendCompilationUtilities {
               annotations: AnnotationSeq = Seq()
              ): Boolean = {
     // Invoke the chisel compiler to get the circuit's IR
-    val (circuit, dut) = new chisel3.stage.ChiselGeneratorAnnotation(finishWrapper(t)).elaborate.toSeq match {
+    val (circuit, dut) = new chisel3.stage.ChiselGeneratorAnnotation(finishWrapper(t)).elaborate(Nil).toSeq match {
       case Seq(ChiselCircuitAnnotation(cir), d:DesignAnnotation[_]) => (cir, d)
     }
 

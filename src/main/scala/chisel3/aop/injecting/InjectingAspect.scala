@@ -38,7 +38,7 @@ case class InjectingAspect[T <: RawModule,
           case x: MultiIOModule => withClockAndReset(x.clock, x.reset) { injection(module) }
           case x: RawModule => injection(module)
         }
-      }))
+      }), Nil)
       val comps = chiselIR.components.map {
         case x: DefModule if x.name == module.name => x.copy(id = module)
         case other => other
