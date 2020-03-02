@@ -8,7 +8,7 @@ import firrtl.options.{OptionsException, RegisteredLibrary, ShellOption}
 /** Enables adding aspects to a design from the commandline, e.g.
   *  sbt> runMain chisel3.stage.ChiselMain --module <module> --with-aspect <aspect>
   */
-case class AspectLibrary() extends RegisteredLibrary  {
+final class AspectLibrary() extends RegisteredLibrary  {
   val name = "AspectLibrary"
 
   import scala.reflect.runtime.universe._
@@ -17,7 +17,7 @@ case class AspectLibrary() extends RegisteredLibrary  {
     case SingleType(_, _) => true
   }
 
-  def apply(aspectName: String): Aspect[RawModule] = {
+  private def apply(aspectName: String): Aspect[RawModule] = {
     try {
       val x = Class.forName(aspectName).asInstanceOf[Class[_ <: Aspect[RawModule]]]
       if(isObject(x)) {
