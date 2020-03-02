@@ -125,7 +125,7 @@ class ChiselMainSpec extends FeatureSpec with GivenWhenThen with Matchers with c
       ChiselMainTest(args = Array("-X", "high", "--full-stacktrace"),
                      generator = Some(classOf[DifferentTypesModule]),
                      stdout = Some("org.scalatest"),
-                     result = 1),
+                     result = 1)
     ).foreach(runStageExpectFiles)
   }
   feature("Aspect library") {
@@ -135,7 +135,7 @@ class ChiselMainSpec extends FeatureSpec with GivenWhenThen with Matchers with c
         stdout = Some("Ran inspectingAspect")),
       ChiselMainTest(args = Array( "-X", "high", "--with-aspect", "chiselTests.stage.TestObjectAspect" ),
         generator = Some(classOf[SameTypesModule]),
-        stdout = Some("Ran inspectingAspect")),
+        stdout = Some("Ran inspectingAspect"))
     ).foreach(runStageExpectFiles)
   }
 
