@@ -95,6 +95,16 @@ class PrintableSpec extends FlatSpec with Matchers {
       case e => fail()
     }
   }
+  it should "correctly emit tab" in {
+    class MyModule extends BasicTester {
+      printf(p"\t")
+    }
+    val firrtl = Driver.emit(() => new MyModule)
+    getPrintfs(firrtl) match {
+      case Seq(Printf("\\t", Seq())) =>
+      case e => fail()
+    }
+  }
   it should "support names of circuit elements including submodule IO" in {
     // Submodule IO is a subtle issue because the Chisel element has a different
     // parent module

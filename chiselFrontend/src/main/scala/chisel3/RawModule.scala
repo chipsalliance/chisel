@@ -49,8 +49,10 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
               " name is already taken by another port!")
           }
           port.setRef(ModuleIO(this, _namespace.name(name)))
-        case None => Builder.error(s"Unable to name port $port in $this, " +
-          "try making it a public field of the Module")
+        case None =>
+          Builder.error(s"Unable to name port $port in $this, " +
+            "try making it a public field of the Module")
+          port.setRef(ModuleIO(this, "<UNNAMED>"))
       }
     }
   }

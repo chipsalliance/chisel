@@ -106,8 +106,8 @@ private[chisel3] object Converter {
                            convert(reset, ctx), convert(init, ctx)))
     case e @ DefMemory(info, id, t, size) =>
       Some(firrtl.CDefMemory(convert(info), e.name, extractType(t), size, false))
-    case e @ DefSeqMemory(info, id, t, size) =>
-      Some(firrtl.CDefMemory(convert(info), e.name, extractType(t), size, true))
+    case e @ DefSeqMemory(info, id, t, size, ruw) =>
+      Some(firrtl.CDefMemory(convert(info), e.name, extractType(t), size, true, ruw))
     case e: DefMemPort[_] =>
       Some(firrtl.CDefMPort(convert(e.sourceInfo), e.name, fir.UnknownType,
              e.source.fullName(ctx), Seq(convert(e.index, ctx), convert(e.clock, ctx)), convert(e.dir)))

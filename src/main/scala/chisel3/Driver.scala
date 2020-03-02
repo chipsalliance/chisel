@@ -5,7 +5,7 @@ package chisel3
 import chisel3.internal.ErrorLog
 import internal.firrtl._
 import firrtl._
-import firrtl.options.{Phase, PhaseManager, StageError}
+import firrtl.options.{Dependency, Phase, PhaseManager, StageError}
 import firrtl.options.phases.DeletedWrapper
 import firrtl.options.Viewer.view
 import firrtl.annotations.JsonProtocol
@@ -207,16 +207,16 @@ object Driver extends BackendCompilationUtilities {
         optionsManager.commonOptions.toAnnotations
 
     val targets =
-      Seq( classOf[DriverCompatibility.AddImplicitOutputFile],
-           classOf[DriverCompatibility.AddImplicitOutputAnnotationFile],
-           classOf[DriverCompatibility.DisableFirrtlStage],
-           classOf[ChiselStage],
-           classOf[DriverCompatibility.MutateOptionsManager],
-           classOf[DriverCompatibility.ReEnableFirrtlStage],
-           classOf[DriverCompatibility.FirrtlPreprocessing],
-           classOf[chisel3.stage.phases.MaybeFirrtlStage] )
+      Seq( Dependency[DriverCompatibility.AddImplicitOutputFile],
+           Dependency[DriverCompatibility.AddImplicitOutputAnnotationFile],
+           Dependency[DriverCompatibility.DisableFirrtlStage],
+           Dependency[ChiselStage],
+           Dependency[DriverCompatibility.MutateOptionsManager],
+           Dependency[DriverCompatibility.ReEnableFirrtlStage],
+           Dependency[DriverCompatibility.FirrtlPreprocessing],
+           Dependency[chisel3.stage.phases.MaybeFirrtlStage] )
     val currentState =
-      Seq( classOf[firrtl.stage.phases.DriverCompatibility.AddImplicitFirrtlFile] )
+      Seq( Dependency[firrtl.stage.phases.DriverCompatibility.AddImplicitFirrtlFile] )
 
     val phases: Seq[Phase] = new PhaseManager(targets, currentState) {
       override val wrappers = Seq( DeletedWrapper(_: Phase) )

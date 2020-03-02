@@ -119,9 +119,31 @@ class AsyncResetQueueTester extends BasicTester {
   }
 }
 
+class AsyncResetDontCareModule extends RawModule {
+  import chisel3.util.Valid
+  val monoPort = IO(Output(AsyncReset()))
+  monoPort := DontCare
+  val monoWire = Wire(AsyncReset())
+  monoWire := DontCare
+  val monoAggPort = IO(Output(Valid(AsyncReset())))
+  monoAggPort := DontCare
+  val monoAggWire = Wire(Valid(AsyncReset()))
+  monoAggWire := DontCare
+
+  // Can't bulk connect to Wire so only ports here
+  val bulkPort = IO(Output(AsyncReset()))
+  bulkPort <> DontCare
+  val bulkAggPort = IO(Output(Valid(AsyncReset())))
+  bulkAggPort <> DontCare
+}
+
 class AsyncResetSpec extends ChiselFlatSpec {
 
   behavior of "AsyncReset"
+
+  it should "be able to be connected to DontCare" in {
+    elaborate(new AsyncResetDontCareModule)
+  }
 
   it should "be allowed with literal reset values" in {
     elaborate(new BasicTester {
