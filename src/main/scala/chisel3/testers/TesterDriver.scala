@@ -52,7 +52,7 @@ object TesterDriver extends BackendCompilationUtilities {
       case anno: RunFirrtlTransform => anno.transformClass
     }.distinct
      .filterNot(_ == classOf[Transform])
-     .map { transformClass: Class[_ <: Transform] => transformClass.getDeclaredConstructor().newInstance() }
+     .map { transformClass: Class[_ <: Transform] => transformClass.newInstance() }
     val newAnnotations = circuit.annotations.map(_.toFirrtl).toList ++ annotations ++ Seq(dut)
     val resolvedAnnotations = new AspectPhase().transform(newAnnotations).toList
     val optionsManager = new ExecutionOptionsManager("chisel3") with HasChiselExecutionOptions with HasFirrtlOptions {

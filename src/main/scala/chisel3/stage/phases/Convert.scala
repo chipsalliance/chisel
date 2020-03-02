@@ -34,7 +34,7 @@ class Convert extends Phase with PreservesAll[Phase] {
           case anno: RunFirrtlTransform => anno.transformClass
         }
         .distinct
-        .map { c: Class[_ <: Transform] => RunFirrtlTransformAnnotation(c.getDeclaredConstructor().newInstance()) }
+        .map { c: Class[_ <: Transform] => RunFirrtlTransformAnnotation(c.newInstance()) }
     case a => Some(a)
   }
 
