@@ -268,7 +268,7 @@ class OverprovisionWidths extends Transform with ResolvedAnnotationPaths {
       mname -> targetMap.map { case (ref: ReferenceTarget, i: Int) => ref.ref -> i}.toMap
     }.toMap
 
-    val trimmedModules = overProvisionedModules map { m => trimModule(m, modulePorts) }
+    val trimmedModules = overprovisionedModules map { m => trimModule(m, modulePorts) }
 
     val newCircuit = state.circuit.copy(modules = trimmedModules)
 
