@@ -39,7 +39,7 @@ trait CheckHighFormLike {
   class IncorrectNumConstsException(info: Info, mname: String, op: String, n: Int) extends PassException(
     s"$info: [module $mname] Primop $op requires $n integer arguments.")
   class NegWidthException(info: Info, mname: String) extends PassException(
-    s"$info: [module $mname] Width cannot be negative or zero.")
+    s"$info: [module $mname] Width cannot be negative.")
   class NegVecSizeException(info: Info, mname: String) extends PassException(
     s"$info: [module $mname] Vector type size cannot be negative.")
   class NegMemSizeException(info: Info, mname: String) extends PassException(
