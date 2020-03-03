@@ -255,7 +255,7 @@ class OverprovisionWidths extends Transform with ResolvedAnnotationPaths {
     val allErrors = mutable.ListBuffer[OverprovisionedWidthException]()
 
     // Overprovision all ports of all modules, collect errors
-    val overProvisionedModules = state.circuit.modules.map {
+    val overprovisionedModules = state.circuit.modules.map {
       m => moduleToTargetWidthMap.get(m.name).map { targetWidthMap =>
         val (newM, errors) = overprovisionModule(m, circuitTarget, targetWidthMap)
         allErrors ++= errors
