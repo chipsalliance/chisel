@@ -171,9 +171,6 @@ class EliminateTargetPaths extends Transform {
       newCircuit.copy(modules = modulesx)
     }
 
-    logger.info("Renames:")
-    logger.info(renameMap.serialize)
-
     state.copy(circuit = newCircuitGC, renames = Some(renameMap), annotations = annotationsx)
   }
 }
