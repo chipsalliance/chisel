@@ -237,10 +237,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
         if (e.tpe == AsyncResetType) {
           throw EmitterException("Cannot emit async reset muxes directly")
         }
-        e.cond match {
-          case DoPrim(Not, Seq(sel), _,_) => emit(Seq(sel," ? ",cast(e.fval)," : ",cast(e.tval)),top + 1)
-          case _ => emit(Seq(e.cond," ? ",cast(e.tval)," : ",cast(e.fval)),top + 1)
-        }
+        emit(Seq(e.cond," ? ",cast(e.tval)," : ",cast(e.fval)),top + 1)
       }
       case (e: ValidIf) => emit(Seq(cast(e.value)),top + 1)
       case (e: WRef) => w write e.serialize
@@ -980,8 +977,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
     new BlackBoxSourceHelper,
     new FixAddingNegativeLiterals,
     new ReplaceTruncatingArithmetic,
-    new InlineNotsTransform,
-    new InlineBitExtractionsTransform,  // here after InlineNots to clean up not(not(...)) rename
+    new InlineBitExtractionsTransform,
     new InlineCastsTransform,
     new LegalizeClocksTransform,
     new FlattenRegUpdate,
