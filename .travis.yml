@@ -77,11 +77,12 @@ jobs:
         - "travis_wait 30 sleep 1800 &"
         - ./.run_formal_checks.sh ICache
     - stage: test
-      name: "Formal equivalence: Ops"
+      name: "Formal equivalence: small expression-tree stress tests"
       script:
         - yosys -V
         - "travis_wait 30 sleep 1800 &"
         - ./.run_formal_checks.sh Ops
+        - ./.run_formal_checks.sh AddNot
     - stage: test
       script:
         - benchmark/scripts/benchmark_cold_compile.py -N 2 --designs regress/ICache.fir --versions HEAD
