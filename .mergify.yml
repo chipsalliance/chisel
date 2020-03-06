@@ -34,6 +34,7 @@ pull_request_rules:
       backport:
         branches:
           - 3.2.x
+        ignore_conflicts: True
       label:
         add: [Backported]
 
