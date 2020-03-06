@@ -267,7 +267,7 @@ class CheckSpec extends FlatSpec with Matchers {
     }
   }
 
-  for (op <- List("shl", "shr")) {
+  for (op <- List("shl", "shr", "pad", "head", "tail", "incp", "decp")) {
     s"$op by negative amount" should "result in an error" in {
       val amount = -1
       val input =
@@ -283,16 +283,19 @@ class CheckSpec extends FlatSpec with Matchers {
     }
   }
 
-  "LSB larger than MSB in bits" should "throw an exception" in {
-    val input =
-      """|circuit bar :
-         |  module bar :
-         |    input in : UInt<8>
-         |    output foo : UInt
-         |    foo <= bits(in, 3, 4)
-         |      """.stripMargin
-    val exception = intercept[PassException] {
-      checkHighInput(input)
+  // Check negative bits constant, too
+  for (args <- List((3, 4), (0, -1))) {
+    val opExp = s"bits(in, ${args._1}, ${args._2})"
+    s"Illegal bit extract ${opExp}" should "throw an exception" in {
+      val input =
+        s"""|circuit bar :
+            |  module bar :
+            |    input in : UInt<8>
+            |    output foo : UInt
+            |    foo <= ${opExp}""".stripMargin
+      val exception = intercept[PassException] {
+        checkHighInput(input)
+      }
     }
   }
 

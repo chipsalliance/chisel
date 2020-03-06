@@ -54,9 +54,9 @@ trait CheckHighFormLike {
     s"$info: [module $mname] Has instance loop $loop")
   class NoTopModuleException(info: Info, name: String) extends PassException(
     s"$info: A single module must be named $name.")
-  class NegArgException(info: Info, mname: String, op: String, value: Int) extends PassException(
+  class NegArgException(info: Info, mname: String, op: String, value: BigInt) extends PassException(
     s"$info: [module $mname] Primop $op argument $value < 0.")
-  class LsbLargerThanMsbException(info: Info, mname: String, op: String, lsb: Int, msb: Int) extends PassException(
+  class LsbLargerThanMsbException(info: Info, mname: String, op: String, lsb: BigInt, msb: BigInt) extends PassException(
     s"$info: [module $mname] Primop $op lsb $lsb > $msb.")
   class ResetInputException(info: Info, mname: String, expr: Expression) extends PassException(
     s"$info: [module $mname] Abstract Reset not allowed as top-level input: ${expr.serialize}")
@@ -83,24 +83,31 @@ trait CheckHighFormLike {
           errors.append(new IncorrectNumConstsException(info, mname, e.op.toString, nc))
       }
 
+      def nonNegativeConsts(): Unit = {
+        e.consts.filter(_ < 0).foreach {
+          negC => errors.append(new NegArgException(info, mname, e.op.toString, negC))
+        }
+      }
+
       e.op match {
         case Add | Sub | Mul | Div | Rem | Lt | Leq | Gt | Geq |
              Eq | Neq | Dshl | Dshr | And | Or | Xor | Cat | Dshlw | Clip | Wrap | Squeeze =>
           correctNum(Option(2), 0)
         case AsUInt | AsSInt | AsClock | AsAsyncReset | Cvt | Neq | Not =>
           correctNum(Option(1), 0)
-        case AsFixedPoint | Pad | Head | Tail | IncP | DecP | SetP =>
+        case AsFixedPoint | SetP =>
           correctNum(Option(1), 1)
-        case Shl | Shr =>
+        case Shl | Shr | Pad | Head | Tail | IncP | DecP =>
           correctNum(Option(1), 1)
-          val amount = e.consts.map(_.toInt).filter(_ < 0).foreach {
-            c => errors.append(new NegArgException(info, mname, e.op.toString, c))
-          }
+          nonNegativeConsts()
         case Bits =>
           correctNum(Option(1), 2)
-          val (msb, lsb) = (e.consts(0).toInt, e.consts(1).toInt)
-          if (lsb > msb) {
-            errors.append(new LsbLargerThanMsbException(info, mname, e.op.toString, lsb, msb))
+          nonNegativeConsts()
+          if (e.consts.length == 2) {
+            val (msb, lsb) = (e.consts(0), e.consts(1))
+            if (lsb > msb) {
+              errors.append(new LsbLargerThanMsbException(info, mname, e.op.toString, lsb, msb))
+            }
           }
         case AsInterval =>
           correctNum(Option(1), 3)
