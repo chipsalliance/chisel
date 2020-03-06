@@ -152,8 +152,8 @@ trait RequireSyncReset extends MultiIOModule {
 abstract class MultiIOModule(implicit moduleCompileOptions: CompileOptions)
     extends RawModule {
   // Implicit clock and reset pins
-  val clock: Clock = IO(Input(Clock()))
-  val reset: Reset = IO(Input(mkReset))
+  final val clock: Clock = IO(Input(Clock()))
+  final val reset: Reset = IO(Input(mkReset))
 
   private[chisel3] def mkReset: Reset = {
     // Top module and compatibility mode use Bool for reset
