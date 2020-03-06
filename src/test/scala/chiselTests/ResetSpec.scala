@@ -68,4 +68,28 @@ class ResetSpec extends ChiselFlatSpec {
     })
     async should include ("always @(posedge clk or posedge rst)")
   }
+
+  behavior of "Users"
+
+  they should "be able to force implicit reset to be synchronous" in {
+    val fir = generateFirrtl(new MultiIOModule with RequireSyncReset {
+      reset shouldBe a [Bool]
+    })
+    fir should include ("input reset : UInt<1>")
+  }
+
+  they should "be able to force implicit reset to be asynchronous" in {
+    val fir = generateFirrtl(new MultiIOModule with RequireAsyncReset {
+      reset shouldBe an [AsyncReset]
+    })
+    fir should include ("input reset : AsyncReset")
+  }
+
+  "Chisel" should "error if sync and async modules are nested" in {
+    a [ChiselException] shouldBe thrownBy {
+      elaborate(new MultiIOModule with RequireAsyncReset {
+        val mod = Module(new MultiIOModule with RequireSyncReset)
+      })
+    }
+  }
 }
