@@ -9,8 +9,9 @@ for hardware constructs that cannot be described in Chisel and for connecting to
 Modules defined as a `BlackBox` will be instantiated in the generated Verilog, but no code
 will be generated to define the behavior of module.
 
-Unlike Module, BlackBox has no implicit clock and reset. Ports declared
-in the IO Bundle will be generated with the requested name (ie. no preceding `io_`).
+Unlike Module, `BlackBox` has no implicit clock and reset. 
+`BlackBox`'s clock and reset ports must be explicitly declared and connected to input signals.
+Ports declared in the IO Bundle will be generated with the requested name (ie. no preceding `io_`).
 
 ### Parameterization
 
@@ -37,6 +38,8 @@ class IBUFDS extends BlackBox(Map("DIFF_TERM" -> "TRUE",
 class Top extends Module {
   val io = IO(new Bundle{})
   val ibufds = Module(new IBUFDS)
+  // connecting one of IBUFDS's input clock ports to Top's clock signal
+  ibufds.io.I := clock
 }
 ```
 
