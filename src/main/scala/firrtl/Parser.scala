@@ -63,7 +63,129 @@ object Parser extends LazyLogging {
 
   def parse(lines: Seq[String]): Circuit = parseString(lines.mkString("\n"), UseInfo)
 
+
+  /** Parse the concrete syntax of a FIRRTL [[firrtl.ir.Circuit]], e.g.
+    *   {{{
+    *     """circuit Top:
+    *       |  module Top:
+    *       |    input x: UInt
+    *       |    node y = x
+    *       |""".stripMargin
+    *   }}}
+    *   becomes:
+    *   {{{
+    *     Circuit(
+    *       NoInfo,
+    *       Seq(Module(
+    *         NoInfo,
+    *         "Top",
+    *         Seq(Port(NoInfo, "x", Input, UIntType(UnknownWidth))),
+    *         Block(DefNode(NoInfo, "y", Ref("x", UnknownType)))
+    *       )),
+    *       "Top"
+    *     )
+    *   }}}
+    * @param text concrete Circuit syntax
+    * @return
+    */
   def parse(text: String): Circuit = parseString(text, UseInfo)
+
+  /** Parse the concrete syntax of a FIRRTL [[firrtl.ir.Type]], e.g.
+    *   "UInt<3>" becomes:
+    *   {{{
+    *     UIntType(IntWidth(BigInt(3)))
+    *   }}}
+    * @param tpe concrete Type syntax
+    * @return
+    */
+  def parseType(tpe: String): Type = {
+    val input = Seq("circuit Top:\n", "  module Top:\n", s"    input x:$tpe\n")
+    val circuit = parse(input)
+    circuit.modules.head.ports.head.tpe
+  }
+
+  /** Parse the concrete syntax of a FIRRTL [[firrtl.ir.Expression]], e.g.
+    *   "add(x, y)" becomes:
+    *   {{{
+    *     DoPrim(Add, Seq(Ref("x", UnknownType), Ref("y", UnknownType), Nil, UnknownType)
+    *   }}}
+    * @param expr concrete Expression syntax
+    * @return
+    */
+  def parseExpression(expr: String): Expression = {
+    val input = Seq("circuit Top:\n", "  module Top:\n", s"    node x = $expr\n")
+    val circuit = parse(input)
+    circuit.modules match {
+      case Seq(Module(_, _, _, Block(Seq(DefNode(_, _, value))))) => value
+    }
+  }
+
+  /** Parse the concrete syntax of a FIRRTL [[firrtl.ir.Statement]], e.g.
+    *   "wire x: UInt" becomes:
+    *   {{{
+    *     DefWire(NoInfo, "x", UIntType(UnknownWidth))
+    *   }}}
+    * @param statement concrete Statement syntax
+    * @return
+    */
+  def parseStatement(statement: String): Statement = {
+    val input = Seq("circuit Top:\n", "  module Top:\n") ++ statement.split("\n").map("    " + _)
+    val circuit = parse(input)
+    circuit.modules.head.asInstanceOf[Module].body
+  }
+
+  /** Parse the concrete syntax of a FIRRTL [[firrtl.ir.Port]], e.g.
+    *   "input x: UInt" becomes:
+    *   {{{
+    *     Port(NoInfo, "x", Input, UIntType(UnknownWidth))
+    *   }}}
+    * @param port concrete Port syntax
+    * @return
+    */
+  def parsePort(port: String): Port = {
+    val input = Seq("circuit Top:\n", "  module Top:\n", s"    $port\n")
+    val circuit = parse(input)
+    circuit.modules.head.ports.head
+  }
+
+  /** Parse the concrete syntax of a FIRRTL [[firrtl.ir.DefModule]], e.g.
+    *   {{{
+    *     """module Top:
+    *       |  input x: UInt
+    *       |  node y = x
+    *       |""".stripMargin
+    *   }}}
+    *   becomes:
+    *   {{{
+    *     Module(
+    *       NoInfo,
+    *       "Top",
+    *       Seq(Port(NoInfo, "x", Input, UIntType(UnknownWidth))),
+    *       Block(DefNode(NoInfo, "y", Ref("x", UnknownType)))
+    *     )
+    *   }}}
+    * @param module concrete DefModule syntax
+    * @return
+    */
+  def parseDefModule(module: String): DefModule = {
+    val input = Seq("circuit Top:\n") ++ module.split("\n").map("  " + _)
+    val circuit = parse(input)
+    circuit.modules.head
+  }
+
+  /** Parse the concrete syntax of a FIRRTL [[firrtl.ir.Info]], e.g.
+    *   "@[FPU.scala 509:25]" becomes:
+    *   {{{
+    *     FileInfo("FPU.scala 509:25")
+    *   }}}
+    * @param info concrete Info syntax
+    * @return
+    */
+  def parseInfo(info: String): Info = {
+    val input = Seq(s"circuit Top: $info\n", "  module Top:\n", "    input x: UInt\n")
+    val circuit = parse(input)
+    circuit.info
+  }
 
   sealed abstract class InfoMode
 

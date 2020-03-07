@@ -1,6 +1,9 @@
+// See LICENSE for license details.
 
 package firrtl
 package annotations
+
+import firrtl.ir._
 
 import scala.util.{Try, Failure}
 
@@ -90,6 +93,35 @@ object JsonProtocol {
     { case JString(s) => Target.deserialize(s).asInstanceOf[CompleteTarget] },
     { case named: CompleteTarget => JString(named.serialize) }
   ))
+  // FIRRTL Serializers
+  class TypeSerializer extends CustomSerializer[Type](format => (
+    { case JString(s) => Parser.parseType(s) },
+    { case tpe: Type => JString(tpe.serialize) }
+  ))
+  class ExpressionSerializer extends CustomSerializer[Expression](format => (
+    { case JString(s) => Parser.parseExpression(s) },
+    { case expr: Expression => JString(expr.serialize) }
+  ))
+  class StatementSerializer extends CustomSerializer[Statement](format => (
+    { case JString(s) => Parser.parseStatement(s) },
+    { case statement: Statement => JString(statement.serialize) }
+  ))
+  class PortSerializer extends CustomSerializer[Port](format => (
+    { case JString(s) => Parser.parsePort(s) },
+    { case port: Port => JString(port.serialize) }
+  ))
+  class DefModuleSerializer extends CustomSerializer[DefModule](format => (
+    { case JString(s) => Parser.parseDefModule(s) },
+    { case mod: DefModule => JString(mod.serialize) }
+  ))
+  class CircuitSerializer extends CustomSerializer[Circuit](format => (
+    { case JString(s) => Parser.parse(s) },
+    { case cir: Circuit => JString(cir.serialize) }
+  ))
+  class InfoSerializer extends CustomSerializer[Info](format => (
+    { case JString(s) => Parser.parseInfo(s) },
+    { case info: Info => JString(info.serialize) }
+  ))
 
   /** Construct Json formatter for annotations */
   def jsonFormat(tags: Seq[Class[_]]) = {
@@ -99,7 +131,9 @@ object JsonProtocol {
       new GenericTargetSerializer + new CircuitTargetSerializer + new ModuleTargetSerializer +
       new InstanceTargetSerializer + new ReferenceTargetSerializer + new TransformSerializer  +
       new LoadMemoryFileTypeSerializer + new IsModuleSerializer + new IsMemberSerializer +
-      new CompleteTargetSerializer
+      new CompleteTargetSerializer + new TypeSerializer + new ExpressionSerializer +
+      new StatementSerializer + new PortSerializer + new DefModuleSerializer +
+      new CircuitSerializer + new InfoSerializer
   }
 
   /** Serialize annotations to a String for emission */
