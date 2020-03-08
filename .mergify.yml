@@ -14,6 +14,7 @@ pull_request_rules:
       - base=master
       - label="Please Merge"
       - label!="DO NOT MERGE"
+      - label!="bp-conflict"
     actions:
       merge:
         method: squash
@@ -29,6 +30,8 @@ pull_request_rules:
       backport:
         branches:
           - 1.2.x
+        ignore_conflicts: True
+        label_conflicts: "bp-conflict"
       label:
         add: [Backported]
 
@@ -47,6 +50,7 @@ pull_request_rules:
       - base=1.2.x
       - label="Backport"
       - label!="DO NOT MERGE"
+      - label!="bp-conflict"
     actions:
       merge:
         method: squash
