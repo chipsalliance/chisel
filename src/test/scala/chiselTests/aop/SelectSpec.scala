@@ -33,7 +33,7 @@ class SelectTester(results: Seq[Int]) extends BasicTester {
   }
 }
 
-case class SelectAspect[T <: RawModule, X](selector: T => Seq[X], desired: T => Seq[X])(implicit tTag: TypeTag[T]) extends Aspect[T] {
+case class SelectAspect[T <: RawModule, X](selector: T => Seq[X], desired: T => Seq[X]) extends Aspect[T] {
   override def toAnnotation(top: T): AnnotationSeq = {
     val results = selector(top)
     val desiredSeq = desired(top)
