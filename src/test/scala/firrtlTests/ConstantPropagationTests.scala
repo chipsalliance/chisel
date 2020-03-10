@@ -792,7 +792,20 @@ class ConstantPropagationIntegrationSpec extends LowTransformSpec {
     execute(input, check, Seq(dontTouch("Top.z")))
   }
 
-  "ConstProp" should "NOT optimize across dontTouch on registers" in {
+  it should "NOT optimize across nodes marked dontTouch by other annotations" in {
+      val input =
+        """circuit Top :
+          |  module Top :
+          |    input x : UInt<1>
+          |    output y : UInt<1>
+          |    node z = x
+          |    y <= z""".stripMargin
+      val check = input
+      val dontTouchRT = annotations.ModuleTarget("Top", "Top").ref("z")
+    execute(input, check, Seq(AnnotationWithDontTouches(dontTouchRT)))
+  }
+
+  it should "NOT optimize across dontTouch on registers" in {
       val input =
         """circuit Top :
           |  module Top :

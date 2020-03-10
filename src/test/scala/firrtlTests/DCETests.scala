@@ -11,6 +11,13 @@ import firrtl.passes.memlib.SimpleTransform
 import java.io.File
 import java.nio.file.Paths
 
+case class AnnotationWithDontTouches(target: ReferenceTarget)
+    extends SingleTargetAnnotation[ReferenceTarget] with HasDontTouches {
+  def targets = Seq(target)
+  def duplicate(n: ReferenceTarget) = this.copy(n)
+  def dontTouches: Seq[ReferenceTarget] = targets
+}
+
 class DCETests extends FirrtlFlatSpec {
   // Not using executeTest because it is for positive testing, we need to check that stuff got
   // deleted
@@ -62,6 +69,24 @@ class DCETests extends FirrtlFlatSpec {
         |    node a = x
         |    z <= x""".stripMargin
     exec(input, check, Seq(dontTouch("Top.a")))
+  }
+  "Unread wire marked dont touch by another annotation" should "NOT be deleted" in {
+    val input =
+      """circuit Top :
+        |  module Top :
+        |    input x : UInt<1>
+        |    output z : UInt<1>
+        |    wire a : UInt<1>
+        |    z <= x
+        |    a <= x""".stripMargin
+    val check =
+      """circuit Top :
+        |  module Top :
+        |    input x : UInt<1>
+        |    output z : UInt<1>
+        |    node a = x
+        |    z <= x""".stripMargin
+    exec(input, check, Seq(AnnotationWithDontTouches(ModuleTarget("Top", "Top").ref("a"))))
   }
   "Unread register" should "be deleted" in {
     val input =

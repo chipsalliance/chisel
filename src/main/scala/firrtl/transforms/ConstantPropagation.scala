@@ -690,8 +690,12 @@ class ConstantPropagation extends Transform with ResolvedAnnotationPaths {
   }
 
   def execute(state: CircuitState): CircuitState = {
-    val dontTouches: Seq[(OfModule, String)] = state.annotations.collect {
-      case DontTouchAnnotation(Target(_, Some(m), Seq(Ref(c)))) => m.OfModule -> c
+    val dontTouchRTs = state.annotations.flatMap {
+      case anno: HasDontTouches => anno.dontTouches
+      case o => Nil
+    }
+    val dontTouches: Seq[(OfModule, String)] = dontTouchRTs.map {
+      case Target(_, Some(m), Seq(Ref(c))) => m.OfModule -> c
     }
     // Map from module name to component names
     val dontTouchMap: Map[OfModule, Set[String]] =
