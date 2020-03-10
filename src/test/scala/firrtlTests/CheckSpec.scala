@@ -333,6 +333,23 @@ class CheckSpec extends FlatSpec with Matchers {
     }
   }
 
+  s"Defnames that conflict with pure-FIRRTL module names" should "throw an exception" in {
+    val input =
+      s"""|circuit bar :
+          |  module bar :
+          |    input i : UInt<8>
+          |    output o : UInt<8>
+          |    o <= i
+          |  extmodule dup :
+          |    input i : UInt<8>
+          |    output o : UInt<8>
+          |    defname = bar
+          |""".stripMargin
+    assertThrows[CheckHighForm.DefnameConflictException] {
+      checkHighInput(input)
+    }
+  }
+
 }
 
 object CheckSpec {
