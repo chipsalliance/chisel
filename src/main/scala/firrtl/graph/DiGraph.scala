@@ -91,7 +91,7 @@ class DiGraph[T] private[graph] (private[graph] val edges: LinkedHashMap[T, Link
   /** Linearizes (topologically sorts) a DAG
     *
     * @throws CyclicException if the graph is cyclic
-    * @return a Map[T,T] from each visited node to its predecessor in the
+    * @return a Seq[T] describing the topological order of the DAG
     * traversal
     */
   def linearize: Seq[T] = {
