@@ -8,6 +8,8 @@ import mill.contrib.buildinfo.BuildInfo
 
 object chisel3 extends mill.Cross[chisel3CrossModule]("2.11.12", "2.12.10") 
 
+// The following stanza is searched for and used when preparing releases.
+// Please retain it.
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
 val defaultVersions = Map("firrtl" -> "1.3-SNAPSHOT")
 
