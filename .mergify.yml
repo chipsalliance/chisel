@@ -38,7 +38,7 @@ pull_request_rules:
   - name: label Mergify backport PR
     conditions:
       - base=1.2.x
-      - body~=This is an automated backport of pull request \#\d+ done by Mergify.io
+      - body~=This is an automated backport of pull request \#\d+ done by Mergify
     actions:
       label:
         add: [Backport]
