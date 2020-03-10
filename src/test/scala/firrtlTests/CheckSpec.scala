@@ -307,6 +307,32 @@ class CheckSpec extends FlatSpec with Matchers {
       }
     }
   }
+
+  s"Duplicate module names" should "throw an exception" in {
+    val input =
+      s"""|circuit bar :
+          |  module bar :
+          |    input i : UInt<8>
+          |    output o : UInt<8>
+          |    o <= i
+          |  module dup :
+          |    input i : UInt<8>
+          |    output o : UInt<8>
+          |    o <= i
+          |  module dup :
+          |    input i : UInt<8>
+          |    output o : UInt<8>
+          |    o <= not(i)
+          |""".stripMargin
+    assertThrows[CheckHighForm.ModuleNameNotUniqueException] {
+      try {
+        checkHighInput(input)
+      } catch {
+        case e: firrtl.passes.PassExceptions => throw e.exceptions.head
+      }
+    }
+  }
+
 }
 
 object CheckSpec {
