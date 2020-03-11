@@ -61,6 +61,7 @@ class GroupComponents extends firrtl.Transform {
       case other => Seq(other)
     }
     val cs = state.copy(circuit = state.circuit.copy(modules = newModules))
+    /* @todo move ResolveKinds and InferTypes out */
     val csx = ResolveKinds.execute(InferTypes.execute(cs))
     csx
   }

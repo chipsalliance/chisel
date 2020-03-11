@@ -26,6 +26,15 @@ object LowerTypes extends Transform {
   def inputForm = UnknownForm
   def outputForm = UnknownForm
 
+  override val prerequisites = firrtl.stage.Forms.MidForm
+
+  override val dependents = Seq.empty
+
+  override def invalidates(a: Transform): Boolean = a match {
+    case ResolveKinds | InferTypes | ResolveFlows | _: InferWidths => true
+    case _ => false
+  }
+
   /** Delimiter used in lowering names */
   val delim = "_"
   /** Expands a chain of referential [[firrtl.ir.Expression]]s into the equivalent lowered name

@@ -627,7 +627,7 @@ class JsonAnnotationTests extends AnnotationTests with BackendCompilationUtiliti
     override def inputForm: CircuitForm = UnknownForm
     override def outputForm: CircuitForm = UnknownForm
 
-    protected def execute(state: CircuitState): CircuitState = state
+    def execute(state: CircuitState): CircuitState = state
   }
 
   "annotation order" should "should be preserved" in {

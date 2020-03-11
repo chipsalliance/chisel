@@ -6,9 +6,30 @@ package passes
 import firrtl.ir._
 import firrtl.PrimOps._
 import firrtl.Mappers._
+import firrtl.options.Dependency
+
+import scala.collection.mutable
 
 // Makes all implicit width extensions and truncations explicit
 object PadWidths extends Pass {
+
+  override val prerequisites =
+    ((new mutable.LinkedHashSet())
+       ++ firrtl.stage.Forms.LowForm
+       - Dependency(firrtl.passes.Legalize)
+       + Dependency(firrtl.passes.RemoveValidIf)
+       + Dependency[firrtl.transforms.ConstantPropagation]).toSeq
+
+  override val dependents =
+    Seq( Dependency(firrtl.passes.memlib.VerilogMemDelays),
+         Dependency[SystemVerilogEmitter],
+         Dependency[VerilogEmitter] )
+
+  override def invalidates(a: Transform): Boolean = a match {
+    case _: firrtl.transforms.ConstantPropagation | Legalize => true
+    case _ => false
+  }
+
   private def width(t: Type): Int = bitWidth(t).toInt
   private def width(e: Expression): Int = width(e.tpe)
   // Returns an expression with the correct integer width

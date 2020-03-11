@@ -10,7 +10,7 @@ import firrtl.analyses.InstanceGraph
 import firrtl.Mappers._
 import firrtl.Utils.{throwInternalError, kind}
 import firrtl.MemoizedHash._
-import firrtl.options.{RegisteredTransform, ShellOption}
+import firrtl.options.{Dependency, PreservesAll, RegisteredTransform, ShellOption}
 
 import collection.mutable
 
@@ -29,9 +29,29 @@ import collection.mutable
   * circumstances of their instantiation in their parent module, they will still not be removed. To
   * remove such modules, use the [[NoDedupAnnotation]] to prevent deduplication.
   */
-class DeadCodeElimination extends Transform with ResolvedAnnotationPaths with RegisteredTransform {
-  def inputForm = LowForm
-  def outputForm = LowForm
+class DeadCodeElimination extends Transform with ResolvedAnnotationPaths with RegisteredTransform
+    with PreservesAll[Transform] {
+  def inputForm = UnknownForm
+  def outputForm = UnknownForm
+
+  override val prerequisites = firrtl.stage.Forms.LowForm ++
+    Seq( Dependency(firrtl.passes.RemoveValidIf),
+         Dependency[firrtl.transforms.ConstantPropagation],
+         Dependency(firrtl.passes.memlib.VerilogMemDelays),
+         Dependency(firrtl.passes.SplitExpressions),
+         Dependency[firrtl.transforms.CombineCats],
+         Dependency(passes.CommonSubexpressionElimination) )
+
+  override val optionalPrerequisites = Seq.empty
+
+  override val dependents =
+    Seq( Dependency[firrtl.transforms.BlackBoxSourceHelper],
+         Dependency[firrtl.transforms.ReplaceTruncatingArithmetic],
+         Dependency[firrtl.transforms.FlattenRegUpdate],
+         Dependency(passes.VerilogModulusCleanup),
+         Dependency[firrtl.transforms.VerilogRename],
+         Dependency(passes.VerilogPrep),
+         Dependency[firrtl.AddDescriptionNodes] )
 
   val options = Seq(
     new ShellOption[Unit](

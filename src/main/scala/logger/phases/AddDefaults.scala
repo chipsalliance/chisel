@@ -3,12 +3,15 @@
 package logger.phases
 
 import firrtl.AnnotationSeq
-import firrtl.options.Phase
+import firrtl.options.{Phase, PreservesAll}
 
 import logger.{LoggerOption, LogLevelAnnotation}
 
 /** Add default logger [[Annotation]]s */
-private [logger] object AddDefaults extends Phase {
+private [logger] class AddDefaults extends Phase with PreservesAll[Phase] {
+
+  override val prerequisites = Seq.empty
+  override val dependents = Seq.empty
 
   /** Add missing default [[Logger]] [[Annotation]]s to an [[AnnotationSeq]]
     * @param annotations input annotations

@@ -7,6 +7,7 @@ import firrtl.ir._
 import firrtl.Utils._
 import firrtl.Mappers._
 import firrtl.PrimOps._
+import firrtl.options.{Dependency, PreservesAll}
 import firrtl.transforms.ConstantPropagation
 
 import scala.collection.mutable
@@ -46,7 +47,10 @@ class Errors {
 }
 
 // These should be distributed into separate files
-object ToWorkingIR extends Pass {
+object ToWorkingIR extends Pass with PreservesAll[Transform] {
+
+  override val prerequisites = firrtl.stage.Forms.MinimalHighForm
+
   def toExp(e: Expression): Expression = e map toExp match {
     case ex: Reference => WRef(ex.name, ex.tpe, UnknownKind, UnknownFlow)
     case ex: SubField => WSubField(ex.expr, ex.name, ex.tpe, UnknownFlow)
@@ -64,8 +68,11 @@ object ToWorkingIR extends Pass {
     c copy (modules = c.modules map (_ map toStmt))
 }
 
-object PullMuxes extends Pass {
-   def run(c: Circuit): Circuit = {
+object PullMuxes extends Pass with PreservesAll[Transform] {
+
+  override val prerequisites = firrtl.stage.Forms.Deduped
+
+  def run(c: Circuit): Circuit = {
      def pull_muxes_e(e: Expression): Expression = e map pull_muxes_e match {
        case ex: WSubField => ex.expr match {
          case exx: Mux => Mux(exx.cond,
@@ -102,7 +109,12 @@ object PullMuxes extends Pass {
    }
 }
 
-object ExpandConnects extends Pass {
+object ExpandConnects extends Pass with PreservesAll[Transform] {
+
+  override val prerequisites =
+    Seq( Dependency(PullMuxes),
+         Dependency(ReplaceAccesses) ) ++ firrtl.stage.Forms.Deduped
+
   def run(c: Circuit): Circuit = {
     def expand_connects(m: Module): Module = {
       val flows = collection.mutable.LinkedHashMap[String,Flow]()
@@ -179,7 +191,14 @@ object ExpandConnects extends Pass {
 
 // Replace shr by amount >= arg width with 0 for UInts and MSB for SInts
 // TODO replace UInt with zero-width wire instead
-object Legalize extends Pass {
+object Legalize extends Pass with PreservesAll[Transform] {
+
+  override val prerequisites = firrtl.stage.Forms.MidForm :+ Dependency(LowerTypes)
+
+  override val optionalPrerequisites = Seq.empty
+
+  override val dependents = Seq.empty
+
   private def legalizeShiftRight(e: DoPrim): Expression = {
     require(e.op == Shr)
     e.args.head match {
@@ -260,7 +279,22 @@ object Legalize extends Pass {
   *
   * @note The result of this pass is NOT legal Firrtl
   */
-object VerilogPrep extends Pass {
+object VerilogPrep extends Pass with PreservesAll[Transform] {
+
+  override val prerequisites = firrtl.stage.Forms.LowFormMinimumOptimized ++
+    Seq( Dependency[firrtl.transforms.BlackBoxSourceHelper],
+         Dependency[firrtl.transforms.FixAddingNegativeLiterals],
+         Dependency[firrtl.transforms.ReplaceTruncatingArithmetic],
+         Dependency[firrtl.transforms.InlineBitExtractionsTransform],
+         Dependency[firrtl.transforms.InlineCastsTransform],
+         Dependency[firrtl.transforms.LegalizeClocksTransform],
+         Dependency[firrtl.transforms.FlattenRegUpdate],
+         Dependency(passes.VerilogModulusCleanup),
+         Dependency[firrtl.transforms.VerilogRename] )
+
+  override val optionalPrerequisites = firrtl.stage.Forms.LowFormOptimized
+
+  override val dependents = Seq.empty
 
   type AttachSourceMap = Map[WrappedExpression, Expression]
 

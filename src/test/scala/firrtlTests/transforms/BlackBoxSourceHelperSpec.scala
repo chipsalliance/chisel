@@ -100,11 +100,6 @@ class BlacklBoxSourceHelperTransformSpec extends LowTransformSpec {
     new java.io.File(s"test_run_dir/${BlackBoxSourceHelper.defaultFileListName}").exists should be (true)
   }
 
-  "verilog compiler" should "have BlackBoxSourceHelper transform" in {
-    val verilogCompiler = new VerilogEmitter
-    verilogCompiler.transforms.map { x => x.getClass } should contain (classOf[BlackBoxSourceHelper])
-  }
-
   "verilog header files" should "be available but not mentioned in the file list" in {
     // Issue #917 - We don't want to list Verilog header files ("*.vh") in our file list.
     // We don't actually verify that the generated verilog code works,

@@ -9,8 +9,9 @@ import firrtl.Utils._
 import firrtl.traversals.Foreachers._
 import firrtl.WrappedType._
 import firrtl.constraint.{Constraint, IsKnown}
+import firrtl.options.{Dependency, PreservesAll}
 
-trait CheckHighFormLike {
+trait CheckHighFormLike { this: Pass =>
   type NameSet = collection.mutable.HashSet[String]
 
   // Custom Exceptions
@@ -267,7 +268,18 @@ trait CheckHighFormLike {
   }
 }
 
-object CheckHighForm extends Pass with CheckHighFormLike {
+object CheckHighForm extends Pass with CheckHighFormLike with PreservesAll[Transform] {
+
+  override val prerequisites = firrtl.stage.Forms.WorkingIR
+
+  override val dependents =
+    Seq( Dependency(passes.ResolveKinds),
+         Dependency(passes.InferTypes),
+         Dependency(passes.Uniquify),
+         Dependency(passes.ResolveFlows),
+         Dependency[passes.InferWidths],
+         Dependency[transforms.InferResets] )
+
   class IllegalChirrtlMemException(info: Info, mname: String, name: String) extends PassException(
     s"$info: [module $mname] Memory $name has not been properly lowered from Chirrtl IR.")
 
@@ -279,7 +291,17 @@ object CheckHighForm extends Pass with CheckHighFormLike {
     Some(new IllegalChirrtlMemException(info, mname, memName))
   }
 }
-object CheckTypes extends Pass {
+
+object CheckTypes extends Pass with PreservesAll[Transform] {
+
+  override val prerequisites = Dependency(InferTypes) +: firrtl.stage.Forms.WorkingIR
+
+  override val dependents =
+    Seq( Dependency(passes.Uniquify),
+         Dependency(passes.ResolveFlows),
+         Dependency(passes.CheckFlows),
+         Dependency[passes.InferWidths],
+         Dependency(passes.CheckWidths) )
 
   // Custom Exceptions
   class SubfieldNotInBundle(info: Info, mname: String, name: String) extends PassException(
@@ -583,7 +605,16 @@ object CheckTypes extends Pass {
   }
 }
 
-object CheckFlows extends Pass {
+object CheckFlows extends Pass with PreservesAll[Transform] {
+
+  override val prerequisites = Dependency(passes.ResolveFlows) +: firrtl.stage.Forms.WorkingIR
+
+  override val dependents =
+    Seq( Dependency[passes.InferBinaryPoints],
+         Dependency[passes.TrimIntervals],
+         Dependency[passes.InferWidths],
+         Dependency[transforms.InferResets] )
+
   type FlowMap = collection.mutable.HashMap[String, Flow]
 
   implicit def toStr(g: Flow): String = g match {

@@ -10,6 +10,8 @@ import firrtl.ir
 import firrtl.passes.{Uniquify, PassException}
 import firrtl.Utils.v_keywords
 import firrtl.Mappers._
+import firrtl.options.{Dependency, PreservesAll}
+
 import scala.collection.mutable
 
 /** Transform that removes collisions with reserved keywords
@@ -19,8 +21,8 @@ import scala.collection.mutable
   * @define implicitScope @param scope the enclosing scope of this name. If [[None]], then this is a [[Circuit]] name
   */
 class RemoveKeywordCollisions(keywords: Set[String]) extends Transform {
-  val inputForm: CircuitForm = LowForm
-  val outputForm: CircuitForm = LowForm
+  val inputForm: CircuitForm = UnknownForm
+  val outputForm: CircuitForm = UnknownForm
   private type ModuleType = mutable.HashMap[String, ir.Type]
   private val inlineDelim = "_"
 
@@ -231,4 +233,20 @@ class RemoveKeywordCollisions(keywords: Set[String]) extends Transform {
 }
 
 /** Transform that removes collisions with Verilog keywords */
-class VerilogRename extends RemoveKeywordCollisions(v_keywords)
+class VerilogRename extends RemoveKeywordCollisions(v_keywords) with PreservesAll[Transform] {
+
+  override val prerequisites = firrtl.stage.Forms.LowFormMinimumOptimized ++
+    Seq( Dependency[BlackBoxSourceHelper],
+         Dependency[FixAddingNegativeLiterals],
+         Dependency[ReplaceTruncatingArithmetic],
+         Dependency[InlineBitExtractionsTransform],
+         Dependency[InlineCastsTransform],
+         Dependency[LegalizeClocksTransform],
+         Dependency[FlattenRegUpdate],
+         Dependency(passes.VerilogModulusCleanup) )
+
+  override val optionalPrerequisites = firrtl.stage.Forms.LowFormOptimized
+
+  override val dependents = Seq.empty
+
+}

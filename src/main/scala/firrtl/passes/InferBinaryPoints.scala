@@ -7,8 +7,19 @@ import firrtl.Utils._
 import firrtl.Mappers._
 import firrtl.annotations.{CircuitTarget, ModuleTarget, ReferenceTarget, Target}
 import firrtl.constraint.ConstraintSolver
+import firrtl.Transform
+import firrtl.options.{Dependency, PreservesAll}
 
-class InferBinaryPoints extends Pass {
+class InferBinaryPoints extends Pass with PreservesAll[Transform] {
+
+  override val prerequisites =
+    Seq( Dependency(ResolveKinds),
+         Dependency(InferTypes),
+         Dependency(Uniquify),
+         Dependency(ResolveFlows) )
+
+  override val dependents = Seq.empty
+
   private val constraintSolver = new ConstraintSolver()
 
   private def addTypeConstraints(r1: ReferenceTarget, r2: ReferenceTarget)(t1: Type, t2: Type): Unit = (t1,t2) match {
@@ -71,14 +82,14 @@ class InferBinaryPoints extends Pass {
     case _ => sys.error("Shouldn't be here")
   }
   private def fixType(t: Type): Type = t map fixType map fixWidth match {
-    case IntervalType(l, u, p) => 
+    case IntervalType(l, u, p) =>
       val px = constraintSolver.get(p) match {
         case Some(Closed(x)) if trim(x).isWhole => IntWidth(x.toBigInt)
         case None => p
         case _ => sys.error("Shouldn't be here")
       }
       IntervalType(l, u, px)
-    case FixedType(w, p) => 
+    case FixedType(w, p) =>
       val px = constraintSolver.get(p) match {
         case Some(Closed(x)) if trim(x).isWhole => IntWidth(x.toBigInt)
         case None => p

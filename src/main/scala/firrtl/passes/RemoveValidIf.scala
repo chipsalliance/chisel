@@ -2,9 +2,11 @@
 
 package firrtl
 package passes
+
 import firrtl.Mappers._
 import firrtl.ir._
 import Utils.throwInternalError
+import firrtl.options.Dependency
 
 /** Remove [[firrtl.ir.ValidIf ValidIf]] and replace [[firrtl.ir.IsInvalid IsInvalid]] with a connection to zero */
 object RemoveValidIf extends Pass {
@@ -25,6 +27,17 @@ object RemoveValidIf extends Pass {
     case _: FixedType => FixedZero
     case AsyncResetType => AsyncZero
     case other => throwInternalError(s"Unexpected type $other")
+  }
+
+  override val prerequisites = firrtl.stage.Forms.LowForm
+
+  override val dependents =
+    Seq( Dependency[SystemVerilogEmitter],
+         Dependency[VerilogEmitter] )
+
+  override def invalidates(a: Transform): Boolean = a match {
+    case Legalize | _: firrtl.transforms.ConstantPropagation => true
+    case _ => false
   }
 
   // Recursive. Removes ValidIfs
