@@ -18,6 +18,11 @@ object ChiselMainSpec {
     out := in
   }
 
+  /** A module that fails a requirement */
+  class FailingRequirementModule extends RawModule {
+    require(false)
+  }
+
 }
 
 class ChiselMainSpec extends FeatureSpec with GivenWhenThen with Matchers with chiselTests.Utils {
@@ -110,6 +115,19 @@ class ChiselMainSpec extends FeatureSpec with GivenWhenThen with Matchers with c
       ChiselMainTest(args = Array("-X", "high", "--full-stacktrace"),
                      generator = Some(classOf[DifferentTypesModule]),
                      stdout = Some("org.scalatest"),
+                     result = 1)
+    ).foreach(runStageExpectFiles)
+  }
+
+  feature("Report properly trimmed stack traces") {
+    Seq(
+      ChiselMainTest(args = Array("-X", "low"),
+                     generator = Some(classOf[FailingRequirementModule]),
+                     stdout = Some("requirement failed"),
+                     result = 1),
+      ChiselMainTest(args = Array("-X", "low", "--full-stacktrace"),
+                     generator = Some(classOf[FailingRequirementModule]),
+                     stdout = Some("chisel3.internal.ChiselException"),
                      result = 1)
     ).foreach(runStageExpectFiles)
   }
