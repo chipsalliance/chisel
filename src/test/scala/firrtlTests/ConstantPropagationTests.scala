@@ -5,6 +5,7 @@ package firrtlTests
 import firrtl._
 import firrtl.passes._
 import firrtl.transforms._
+import firrtl.annotations.Annotation
 
 class ConstantPropagationSpec extends FirrtlFlatSpec {
   val transforms = Seq(
@@ -14,8 +15,8 @@ class ConstantPropagationSpec extends FirrtlFlatSpec {
       ResolveFlows,
       new InferWidths,
       new ConstantPropagation)
-  protected def exec(input: String) = {
-    transforms.foldLeft(CircuitState(parse(input), UnknownForm)) {
+  protected def exec(input: String, annos: Seq[Annotation] = Nil) = {
+    transforms.foldLeft(CircuitState(parse(input), UnknownForm, AnnotationSeq(annos))) {
       (c: CircuitState, t: Transform) => t.runTransform(c)
     }.circuit.serialize
   }
@@ -749,6 +750,30 @@ class ConstantPropagationSingleModule extends ConstantPropagationSpec {
         |    z <= UInt<4>("h0")
       """.stripMargin
     (parse(exec(input))) should be(parse(check))
+  }
+
+  "ConstProp" should "NOT touch self-inits" in {
+    val input =
+      """circuit Top :
+        |  module Top :
+        |    input clk : Clock
+        |    input rst : UInt<1>
+        |    output z : UInt<4>
+        |    reg selfinit : UInt<1>, clk with : (reset => (UInt<1>(0), selfinit))
+        |    selfinit <= UInt<1>(0)
+        |    z <= mux(UInt(1), UInt<2>(0), UInt<4>(0))
+     """.stripMargin
+    val check =
+      """circuit Top :
+        |  module Top :
+        |    input clk : Clock
+        |    input rst : UInt<1>
+        |    output z : UInt<4>
+        |    reg selfinit : UInt<1>, clk with : (reset => (UInt<1>(0), selfinit))
+        |    selfinit <= UInt<1>(0)
+        |    z <= UInt<4>(0)
+     """.stripMargin
+    (parse(exec(input, Seq(NoDCEAnnotation)))) should be(parse(check))
   }
 
   def castCheck(tpe: String, cast: String): Unit = {

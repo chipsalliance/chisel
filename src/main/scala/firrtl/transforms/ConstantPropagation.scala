@@ -501,17 +501,24 @@ class ConstantPropagation extends Transform with ResolvedAnnotationPaths {
       propagated
     }
 
-    def backPropStmt(stmt: Statement): Statement = stmt map backPropExpr match {
-      case decl: IsDeclaration if swapMap.contains(decl.name) =>
-        val newName = swapMap(decl.name)
-        nPropagated += 1
-        decl match {
-          case node: DefNode => node.copy(name = newName)
-          case wire: DefWire => wire.copy(name = newName)
-          case reg: DefRegister => reg.copy(name = newName)
-          case other => throwInternalError()
-        }
-      case other => other map backPropStmt
+    def backPropStmt(stmt: Statement): Statement = stmt match {
+      case reg: DefRegister if (WrappedExpression.weq(reg.init, WRef(reg))) =>
+        // Self-init reset is an idiom for "no reset," and must be handled separately
+        swapMap.get(reg.name)
+               .map(newName => reg.copy(name = newName, init = WRef(reg).copy(name = newName)))
+               .getOrElse(reg)
+      case s => s map backPropExpr match {
+        case decl: IsDeclaration if swapMap.contains(decl.name) =>
+          val newName = swapMap(decl.name)
+          nPropagated += 1
+          decl match {
+            case node: DefNode => node.copy(name = newName)
+            case wire: DefWire => wire.copy(name = newName)
+            case reg: DefRegister => reg.copy(name = newName)
+            case other => throwInternalError()
+          }
+        case other => other map backPropStmt
+      }
     }
 
     // When propagating a reference, check if we want to keep the name that would be deleted
