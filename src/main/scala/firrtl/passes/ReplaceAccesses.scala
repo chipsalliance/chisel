@@ -18,7 +18,10 @@ object ReplaceAccesses extends Pass with PreservesAll[Transform] {
   def run(c: Circuit): Circuit = {
     def onStmt(s: Statement): Statement = s map onStmt map onExp
     def onExp(e: Expression): Expression = e match {
-      case WSubAccess(ex, UIntLiteral(value, width), t, g) => WSubIndex(onExp(ex), value.toInt, t, g)
+      case WSubAccess(ex, UIntLiteral(value, _), t, g) => ex.tpe match {
+        case VectorType(_, len) if (value < len) => WSubIndex(onExp(ex), value.toInt, t, g)
+        case _ => e map onExp
+      }
       case _ => e map onExp
     }
 
