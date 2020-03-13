@@ -258,7 +258,7 @@ package experimental {
       *
       * @note Should not be called until circuit elaboration is complete
       */
-    //@deprecated(toNamed API is deprecated -- use toTarget instead", "3.3")
+    //@deprecated("toNamed API is deprecated -- use toTarget instead", "3.3")
     final def toNamed: ModuleName = toTarget.toNamed
 
     /** Returns a FIRRTL ModuleTarget that references this object
