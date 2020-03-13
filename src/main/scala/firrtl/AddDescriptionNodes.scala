@@ -77,6 +77,7 @@ class AddDescriptionNodes extends Transform with PreservesAll[Transform] {
          Dependency[firrtl.transforms.FixAddingNegativeLiterals],
          Dependency[firrtl.transforms.ReplaceTruncatingArithmetic],
          Dependency[firrtl.transforms.InlineBitExtractionsTransform],
+         Dependency[firrtl.transforms.PropagatePresetAnnotations],
          Dependency[firrtl.transforms.InlineCastsTransform],
          Dependency[firrtl.transforms.LegalizeClocksTransform],
          Dependency[firrtl.transforms.FlattenRegUpdate],

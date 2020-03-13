@@ -68,7 +68,8 @@ class InlineCastsTransform extends Transform with PreservesAll[Transform] {
     Seq( Dependency[BlackBoxSourceHelper],
          Dependency[FixAddingNegativeLiterals],
          Dependency[ReplaceTruncatingArithmetic],
-         Dependency[InlineBitExtractionsTransform] )
+         Dependency[InlineBitExtractionsTransform],
+         Dependency[PropagatePresetAnnotations] )
 
   override val optionalPrerequisites = firrtl.stage.Forms.LowFormOptimized
 
