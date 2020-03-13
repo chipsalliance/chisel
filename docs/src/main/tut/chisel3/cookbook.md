@@ -322,7 +322,7 @@ import chisel3._
 
 class ModuleWithOptionalIO(flag: Boolean) extends MultiIOModule {
   val in = if (flag) Some(IO(Input(Bool()))) else None
-  val out = IO(Output(Bool())
+  val out = IO(Output(Bool()))
 
   out := if (flag) in.get else false.B
 }
