@@ -17,7 +17,12 @@ object ResolveKinds extends Pass with PreservesAll[Transform] {
     kinds(p.name) = PortKind ; p
   }
 
-  def find_stmt(kinds: KindMap)(s: Statement):Statement = {
+  def resolve_expr(kinds: KindMap)(e: Expression): Expression = e match {
+    case ex: WRef => ex copy (kind = kinds(ex.name))
+    case _ => e map resolve_expr(kinds)
+  }
+
+  def resolve_stmt(kinds: KindMap)(s: Statement): Statement = {
     s match {
       case sx: DefWire => kinds(sx.name) = WireKind
       case sx: DefNode => kinds(sx.name) = NodeKind
@@ -26,24 +31,17 @@ object ResolveKinds extends Pass with PreservesAll[Transform] {
       case sx: DefMemory => kinds(sx.name) = MemKind
       case _ =>
     }
-    s map find_stmt(kinds)
+    s.map(resolve_stmt(kinds))
+     .map(resolve_expr(kinds))
   }
-
-  def resolve_expr(kinds: KindMap)(e: Expression): Expression = e match {
-    case ex: WRef => ex copy (kind = kinds(ex.name))
-    case _ => e map resolve_expr(kinds)
-  }
-
-  def resolve_stmt(kinds: KindMap)(s: Statement): Statement =
-    s map resolve_stmt(kinds) map resolve_expr(kinds)
 
   def resolve_kinds(m: DefModule): DefModule = {
     val kinds = new KindMap
-    (m map find_port(kinds)
-       map find_stmt(kinds)
-       map resolve_stmt(kinds))
+    m.map(find_port(kinds))
+    m.map(resolve_stmt(kinds))
   }
 
   def run(c: Circuit): Circuit =
     c copy (modules = c.modules map resolve_kinds)
 }
+
