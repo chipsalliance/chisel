@@ -98,6 +98,10 @@ options:
     url: chisel3/unconnected-wires.html
     menu_type: chisel3
     menu_section: unconnected-wires
+  - title: Resets
+    url: chisel3/reset.html
+    menu_type: chisel3
+    menu_section: reset
   - title: Appendix
     url: chisel3/chisel3-vs-chisel2.html
     menu_type: chisel3
