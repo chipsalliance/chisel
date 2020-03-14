@@ -11,7 +11,7 @@ object ResolveKinds extends Pass with PreservesAll[Transform] {
 
   override def prerequisites = firrtl.stage.Forms.WorkingIR
 
-  type KindMap = collection.mutable.LinkedHashMap[String, Kind]
+  type KindMap = collection.mutable.HashMap[String, Kind]
 
   def find_port(kinds: KindMap)(p: Port): Port = {
     kinds(p.name) = PortKind ; p
