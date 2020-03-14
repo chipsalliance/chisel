@@ -56,7 +56,7 @@ class TrackTransforms(val underlying: Transform) extends Transform with WrappedT
             |  prerequisites: ${trueUnderlying.prerequisites.mkString("\n    -", "\n    -", "")}""".stripMargin)
     }
 
-    val out = underlying.execute(c)
+    val out = underlying.transform(c)
     out.copy(annotations = updateState(out.annotations))
   }
 

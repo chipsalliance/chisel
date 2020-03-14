@@ -11,7 +11,7 @@ import scala.collection.mutable
 class UpdateAnnotations(val underlying: Transform) extends Transform with WrappedTransform
     with Translator[CircuitState, (CircuitState, CircuitState)] {
 
-  override def execute(c: CircuitState): CircuitState = underlying.execute(c)
+  override def execute(c: CircuitState): CircuitState = underlying.transform(c)
 
   def aToB(a: CircuitState): (CircuitState, CircuitState) = (a, a)
 

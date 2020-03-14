@@ -202,7 +202,7 @@ trait Transform extends TransformLike[CircuitState] with DependencyAPI[Transform
     * @param state Input Firrtl AST
     * @return A transformed Firrtl AST
     */
-  def execute(state: CircuitState): CircuitState
+  protected def execute(state: CircuitState): CircuitState
 
   def transform(state: CircuitState): CircuitState = execute(state)
 
