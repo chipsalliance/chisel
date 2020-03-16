@@ -33,6 +33,10 @@ trait CheckHighFormLike { this: Pass =>
     s"$info: [module $mname] Register $name cannot be a bundle type with flips.")
   class InvalidAccessException(info: Info, mname: String) extends PassException(
     s"$info: [module $mname] Invalid access to non-reference.")
+  class ModuleNameNotUniqueException(info: Info, mname: String) extends PassException(
+    s"$info: Repeat definition of module $mname")
+  class DefnameConflictException(info: Info, mname: String, defname: String) extends PassException(
+    s"$info: defname $defname of extmodule $mname conflicts with an existing module")
   class ModuleNotDefinedException(info: Info, mname: String, name: String) extends PassException(
     s"$info: Module $name is not defined.")
   class IncorrectNumArgsException(info: Info, mname: String, op: String, n: Int) extends PassException(
@@ -72,6 +76,17 @@ trait CheckHighFormLike { this: Pass =>
     val errors = new Errors()
     val moduleGraph = new ModuleGraph
     val moduleNames = (c.modules map (_.name)).toSet
+
+    val intModuleNames = c.modules.view.collect({ case m: Module => m.name }).toSet
+
+    c.modules.view.groupBy(_.name).filter(_._2.length > 1).flatMap(_._2).foreach {
+      m => errors.append(new ModuleNameNotUniqueException(m.info, m.name))
+    }
+
+    c.modules.collect {
+      case ExtModule(info, name, _, defname, _) if (intModuleNames.contains(defname)) =>
+        errors.append(new DefnameConflictException(info, name, defname))
+    }
 
     def checkHighFormPrimop(info: Info, mname: String, e: DoPrim): Unit = {
       def correctNum(ne: Option[Int], nc: Int): Unit = {
