@@ -15,6 +15,7 @@ import firrtl.annotations.{
    Target
 }
 import firrtl.transforms.TopWiring._
+import firrtl.testutils._
 
 
 trait TopWiringTestsCommon extends FirrtlRunners {

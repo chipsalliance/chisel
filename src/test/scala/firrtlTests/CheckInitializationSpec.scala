@@ -4,6 +4,7 @@ package firrtlTests
 
 import firrtl.{CircuitState, UnknownForm, Transform}
 import firrtl.passes._
+import firrtl.testutils._
 
 class CheckInitializationSpec extends FirrtlFlatSpec {
   private val passes = Seq(

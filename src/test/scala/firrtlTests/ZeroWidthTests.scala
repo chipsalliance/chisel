@@ -4,6 +4,7 @@ package firrtlTests
 
 import firrtl._
 import firrtl.passes._
+import firrtl.testutils._
 
 class ZeroWidthTests extends FirrtlFlatSpec {
   def transforms = Seq(

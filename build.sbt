@@ -91,6 +91,21 @@ test in assembly := {} // Should there be tests?
 
 assemblyOutputPath in assembly := file("./utils/bin/firrtl.jar")
 
+Project.inConfig(Test)(baseAssemblySettings)
+
+test in (Test, assembly) := {} // Ditto above
+
+assemblyMergeStrategy in (Test, assembly) := {
+  case PathList("firrtlTests", xs @ _*) => MergeStrategy.discard
+  case x =>
+    val oldStrategy = (assemblyMergeStrategy in (Test, assembly)).value
+    oldStrategy(x)
+}
+
+assemblyJarName in (Test, assembly) := s"firrtl-test.jar"
+
+assemblyOutputPath in (Test, assembly) := file("./utils/bin/" + (Test / assembly / assemblyJarName).value)
+
 // ANTLRv4
 
 enablePlugins(Antlr4Plugin)

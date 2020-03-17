@@ -4,6 +4,7 @@ package firrtlTests
 
 import firrtl.FileUtils
 import firrtl.{ChirrtlForm, CircuitState}
+import firrtl.testutils._
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}

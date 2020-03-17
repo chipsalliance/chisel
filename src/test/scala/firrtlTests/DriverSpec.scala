@@ -12,6 +12,7 @@ import firrtl._
 import firrtl.FileUtils
 import firrtl.annotations._
 import firrtl.util.BackendCompilationUtilities
+import firrtl.testutils.FirrtlFlatSpec
 
 import scala.util.Success
 

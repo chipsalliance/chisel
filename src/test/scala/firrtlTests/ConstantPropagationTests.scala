@@ -5,6 +5,7 @@ package firrtlTests
 import firrtl._
 import firrtl.passes._
 import firrtl.transforms._
+import firrtl.testutils._
 import firrtl.annotations.Annotation
 
 class ConstantPropagationSpec extends FirrtlFlatSpec {

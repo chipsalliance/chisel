@@ -3,8 +3,8 @@
 package firrtlTests.transforms
 
 import firrtl._
-import firrtlTests.FirrtlFlatSpec
-import firrtlTests.FirrtlCheckers._
+import firrtl.testutils._
+import firrtl.testutils.FirrtlCheckers.containLine
 
 class LegalizeClocksTransformSpec extends FirrtlFlatSpec {
   def compile(input: String): CircuitState =

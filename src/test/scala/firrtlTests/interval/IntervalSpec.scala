@@ -6,6 +6,7 @@ import firrtl.ir.Circuit
 import firrtl.passes._
 import firrtl.passes.CheckTypes.InvalidConnect
 import firrtl.passes.CheckWidths.DisjointSqueeze
+import firrtl.testutils.FirrtlFlatSpec
 
 class IntervalSpec extends FirrtlFlatSpec {
   private def executeTest(input: String, expected: Seq[String], passes: Seq[Transform]) = {

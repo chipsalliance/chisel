@@ -6,6 +6,7 @@ import firrtl._
 import firrtl.ir._
 import firrtl.passes._
 import firrtl.transforms._
+import firrtl.testutils._
 
 class CInferMDirSpec extends LowTransformSpec {
   object CInferMDirCheckPass extends Pass {

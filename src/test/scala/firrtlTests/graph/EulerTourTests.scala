@@ -1,7 +1,7 @@
 package firrtlTests.graph
 
 import firrtl.graph._
-import firrtlTests._
+import firrtl.testutils._
 
 class EulerTourTests extends FirrtlFlatSpec {
 

@@ -2,7 +2,7 @@
 
 package firrtlTests.transforms
 
-import firrtlTests.FirrtlFlatSpec
+import firrtl.testutils.FirrtlFlatSpec
 import firrtl._
 import firrtl.passes._
 import firrtl.passes.wiring.{WiringTransform, SourceAnnotation, SinkAnnotation}

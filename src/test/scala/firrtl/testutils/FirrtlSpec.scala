@@ -1,6 +1,6 @@
 // See LICENSE for license details.
 
-package firrtlTests
+package firrtl.testutils
 
 import java.io._
 import java.security.Permission

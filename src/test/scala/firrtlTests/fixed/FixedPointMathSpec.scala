@@ -3,7 +3,7 @@
 package firrtlTests.fixed
 
 import firrtl.{CircuitState, ChirrtlForm, LowFirrtlCompiler}
-import firrtlTests.FirrtlFlatSpec
+import firrtl.testutils.FirrtlFlatSpec
 
 class FixedPointMathSpec extends FirrtlFlatSpec {
 

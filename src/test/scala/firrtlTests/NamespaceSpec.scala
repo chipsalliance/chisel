@@ -3,6 +3,7 @@
 package firrtlTests
 
 import firrtl.Namespace
+import firrtl.testutils._
 
 class NamespaceSpec extends FirrtlFlatSpec {
 

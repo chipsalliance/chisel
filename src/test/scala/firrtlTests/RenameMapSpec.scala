@@ -5,6 +5,7 @@ package firrtlTests
 import firrtl.RenameMap
 import firrtl.RenameMap.IllegalRenameException
 import firrtl.annotations._
+import firrtl.testutils._
 
 class RenameMapSpec extends FirrtlFlatSpec {
   val cir   = CircuitTarget("Top")

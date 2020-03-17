@@ -3,8 +3,9 @@
 package firrtlTests
 
 import firrtl._
-import FirrtlCheckers._
 import firrtl.annotations._
+import firrtl.testutils._
+import firrtl.testutils.FirrtlCheckers._
 
 class PresetSpec extends FirrtlFlatSpec {
   type Mod = Seq[String]

@@ -3,12 +3,14 @@
 package firrtlTests
 package annotationTests
 
-import firrtlTests._
 import firrtl._
+import firrtl.testutils.FirrtlFlatSpec
+
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
 
 case object FoundTargetDirTransformRanAnnotation extends NoTargetAnnotation
 case object FoundTargetDirTransformFoundTargetDirAnnotation extends NoTargetAnnotation
+
 
 /** Looks for [[TargetDirAnnotation]] */
 class FindTargetDirTransform extends Transform {

@@ -6,6 +6,7 @@ package transforms
 import firrtl.RenameMap
 import firrtl.annotations._
 import firrtl.transforms.{DedupModules, NoCircuitDedupAnnotation}
+import firrtl.testutils._
 
 
 /**

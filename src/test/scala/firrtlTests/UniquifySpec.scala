@@ -9,6 +9,7 @@ import firrtl.annotations._
 import firrtl.annotations.TargetToken._
 import firrtl.transforms.DontTouchAnnotation
 import firrtl.util.TestOptions
+import firrtl.testutils._
 
 class UniquifySpec extends FirrtlFlatSpec {
 

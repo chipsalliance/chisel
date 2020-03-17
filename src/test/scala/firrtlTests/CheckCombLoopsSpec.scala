@@ -4,6 +4,7 @@ package firrtlTests
 
 import firrtl._
 import firrtl.transforms._
+import firrtl.testutils._
 import annotations._
 import java.io.File
 import java.nio.file.Paths

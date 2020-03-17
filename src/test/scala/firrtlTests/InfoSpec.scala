@@ -4,6 +4,7 @@ package firrtlTests
 
 import firrtl._
 import firrtl.ir._
+import firrtl.testutils._
 import FirrtlCheckers._
 
 class InfoSpec extends FirrtlFlatSpec {

@@ -6,9 +6,12 @@ import firrtl.ir.Circuit
 import firrtl._
 import firrtl.passes.Pass
 import firrtl.ir._
+
 import firrtl.stage.{FirrtlSourceAnnotation, FirrtlStage, Forms, RunFirrtlTransformAnnotation}
 import firrtl.options.Dependency
 import firrtl.transforms.IdentityTransform
+
+import firrtl.testutils._
 
 import scala.reflect.runtime
 

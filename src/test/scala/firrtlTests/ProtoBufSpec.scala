@@ -5,6 +5,7 @@ package firrtlTests
 import firrtl.FirrtlProtos.Firrtl
 import firrtl._
 import firrtl.ir._
+import firrtl.testutils._
 
 class ProtoBufSpec extends FirrtlFlatSpec {
 

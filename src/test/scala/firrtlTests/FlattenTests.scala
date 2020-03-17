@@ -4,6 +4,7 @@ package firrtlTests
 
 import firrtl.annotations.{Annotation, CircuitName, ComponentName, ModuleName}
 import firrtl.transforms.{FlattenAnnotation, Flatten, NoCircuitDedupAnnotation}
+import firrtl.testutils._
 
 /**
  * Tests deep inline transformation

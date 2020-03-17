@@ -5,6 +5,7 @@ import firrtl.annotations.{CircuitName, ComponentName, ModuleName}
 import firrtl.transforms.{GroupAnnotation, GroupComponents, NoCircuitDedupAnnotation}
 import firrtl._
 import firrtl.ir._
+import firrtl.testutils._
 
 import FirrtlCheckers._
 

@@ -8,6 +8,7 @@ import firrtl.passes._
 import firrtl.transforms._
 import firrtl.passes.memlib._
 import firrtl.FileUtils
+import firrtl.testutils._
 import annotations._
 import FirrtlCheckers._
 

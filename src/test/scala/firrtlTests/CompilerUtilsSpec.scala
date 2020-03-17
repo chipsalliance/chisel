@@ -4,6 +4,7 @@ package firrtlTests
 
 import firrtl._
 import firrtl.CompilerUtils.mergeTransforms
+import firrtl.testutils._
 
 class CompilerUtilsSpec extends FirrtlFlatSpec {
 

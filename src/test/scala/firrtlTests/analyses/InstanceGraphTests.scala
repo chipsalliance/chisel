@@ -5,7 +5,7 @@ import firrtl.analyses.InstanceGraph
 import firrtl.graph.DiGraph
 import firrtl.WDefInstance
 import firrtl.passes._
-import firrtlTests._
+import firrtl.testutils._
 
 class InstanceGraphTests extends FirrtlFlatSpec {
   private def getEdgeSet(graph: DiGraph[String]): collection.Map[String, collection.Set[String]] = {

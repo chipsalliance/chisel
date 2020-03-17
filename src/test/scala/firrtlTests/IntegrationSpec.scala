@@ -3,6 +3,7 @@
 package firrtlTests
 
 import firrtl._
+import firrtl.testutils._
 
 import java.io.File
 

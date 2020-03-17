@@ -6,10 +6,10 @@ import firrtl._
 import firrtl.annotations._
 import firrtl.passes.{InlineAnnotation, InlineInstances, ResolveKinds}
 import firrtl.transforms.NoCircuitDedupAnnotation
+import firrtl.testutils._
+import firrtl.testutils.FirrtlCheckers._
 import firrtl.stage.TransformManager
 import firrtl.options.Dependency
-
-import FirrtlCheckers._
 
 /**
  * Tests inline instances transformation

@@ -7,7 +7,7 @@ import firrtl.annotations._
 import firrtl.annotations.analysis.DuplicationHelper
 import firrtl.annotations.transforms.NoSuchTargetException
 import firrtl.transforms.DontTouchAnnotation
-import firrtlTests.{FirrtlMatchers, FirrtlPropSpec}
+import firrtl.testutils.{FirrtlMatchers, FirrtlPropSpec}
 
 class EliminateTargetPathsSpec extends FirrtlPropSpec with FirrtlMatchers {
   val input =

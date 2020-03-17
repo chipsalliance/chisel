@@ -5,6 +5,7 @@ package firrtlTests
 import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
+import firrtl.testutils._
 
 import collection.mutable
 

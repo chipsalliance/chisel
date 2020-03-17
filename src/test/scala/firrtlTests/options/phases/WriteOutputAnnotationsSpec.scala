@@ -11,7 +11,7 @@ import firrtl.annotations.{DeletedAnnotation, NoTargetAnnotation}
 import firrtl.options.{InputAnnotationFileAnnotation, OutputAnnotationFileAnnotation, Phase, WriteDeletedAnnotation}
 import firrtl.options.phases.{GetIncludes, WriteOutputAnnotations}
 
-class WriteOutputAnnotationsSpec extends FlatSpec with Matchers with firrtlTests.Utils {
+class WriteOutputAnnotationsSpec extends FlatSpec with Matchers with firrtl.testutils.Utils {
 
   val dir = "test_run_dir/WriteOutputAnnotationSpec"
 

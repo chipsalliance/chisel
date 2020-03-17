@@ -1,6 +1,6 @@
 // See LICENSE for license details.
 
-package firrtlTests
+package firrtl.testutils
 
 import org.scalatest.FlatSpec
 import firrtl.ir.Circuit

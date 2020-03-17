@@ -12,6 +12,7 @@ import firrtl.transforms.OptimizableExtModuleAnnotation
 import firrtl.passes.InlineAnnotation
 import firrtl.passes.memlib.PinAnnotation
 import firrtl.util.BackendCompilationUtilities
+import firrtl.testutils._
 import net.jcazevedo.moultingyaml._
 import org.scalatest.Matchers
 

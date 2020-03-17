@@ -4,8 +4,8 @@ package firrtlTests.transforms
 
 import org.scalatest.GivenWhenThen
 
-import firrtlTests.FirrtlFlatSpec
-import firrtlTests.FirrtlCheckers._
+import firrtl.testutils.FirrtlFlatSpec
+import firrtl.testutils.FirrtlCheckers._
 
 import firrtl.{CircuitState, WRef}
 import firrtl.ir.{Connect, Mux}

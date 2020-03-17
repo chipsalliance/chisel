@@ -4,6 +4,7 @@ package firrtlTests
 
 import firrtl._
 import firrtl.passes._
+import firrtl.testutils._
 
 class ExpandWhensSpec extends FirrtlFlatSpec {
   private val transforms = Seq(

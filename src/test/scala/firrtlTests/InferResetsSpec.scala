@@ -6,7 +6,8 @@ import firrtl._
 import firrtl.ir._
 import firrtl.passes.{CheckHighForm, CheckTypes, CheckInitialization}
 import firrtl.transforms.{CheckCombLoops, InferResets}
-import FirrtlCheckers._
+import firrtl.testutils._
+import firrtl.testutils.FirrtlCheckers._
 
 // TODO
 // - Test nodes in the connection

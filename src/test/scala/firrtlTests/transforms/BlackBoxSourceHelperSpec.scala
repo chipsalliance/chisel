@@ -5,8 +5,8 @@ package firrtlTests.transforms
 import firrtl.annotations.{CircuitName, ModuleName}
 import firrtl.transforms._
 import firrtl.{Transform, VerilogEmitter}
-import firrtlTests.LowTransformSpec
 import firrtl.FileUtils
+import firrtl.testutils.LowTransformSpec
 
 
 class BlacklBoxSourceHelperTransformSpec extends LowTransformSpec {

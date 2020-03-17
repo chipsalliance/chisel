@@ -4,6 +4,7 @@ package firrtlTests
 
 import firrtl._
 import firrtl.passes._
+import firrtl.testutils._
 
 class WidthSpec extends FirrtlFlatSpec {
   private def executeTest(input: String, expected: Seq[String], passes: Seq[Transform]) = {

@@ -5,6 +5,7 @@ package fixed
 
 import firrtl._
 import firrtl.passes._
+import firrtl.testutils._
 
 class FixedTypeInferenceSpec extends FirrtlFlatSpec {
   private def executeTest(input: String, expected: Seq[String], passes: Seq[Transform]) = {

@@ -6,6 +6,7 @@ import firrtl.Parser
 import firrtl.passes._
 import firrtl.transforms._
 import firrtl._
+import firrtl.testutils._
 
 class LowerTypesSpec extends FirrtlFlatSpec {
   private def transforms = Seq(

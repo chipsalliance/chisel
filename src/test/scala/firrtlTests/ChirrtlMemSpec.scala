@@ -7,8 +7,9 @@ import firrtl.ir._
 import firrtl.passes._
 import firrtl.transforms._
 import firrtl.Mappers._
-import FirrtlCheckers._
 import firrtl.PrimOps.AsClock
+import firrtl.testutils._
+import firrtl.testutils.FirrtlCheckers._
 
 class ChirrtlMemSpec extends LowTransformSpec {
   object MemEnableCheckPass extends Pass {

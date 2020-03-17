@@ -6,8 +6,8 @@ import firrtl.PrimOps._
 import firrtl._
 import firrtl.ir.DoPrim
 import firrtl.transforms.{CombineCats, MaxCatLenAnnotation}
-import firrtlTests.FirrtlFlatSpec
-import firrtlTests.FirrtlCheckers._
+import firrtl.testutils.FirrtlFlatSpec
+import firrtl.testutils.FirrtlCheckers._
 
 class CombineCatsSpec extends FirrtlFlatSpec {
   private val transforms = Seq(new IRToWorkingIR, new CombineCats)

@@ -10,7 +10,7 @@ import scopt.OptionParser
 
 import org.scalatest.{FlatSpec, Matchers}
 
-class OptionParserSpec extends FlatSpec with Matchers with firrtlTests.Utils {
+class OptionParserSpec extends FlatSpec with Matchers with firrtl.testutils.Utils {
 
   case class IntAnnotation(x: Int) extends NoTargetAnnotation {
     def extract: Int = x

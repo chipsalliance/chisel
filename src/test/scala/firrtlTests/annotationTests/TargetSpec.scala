@@ -4,7 +4,7 @@ package firrtlTests.annotationTests
 
 import firrtl.annotations.{CircuitTarget, GenericTarget, ModuleTarget, Target}
 import firrtl.annotations.TargetToken._
-import firrtlTests.FirrtlPropSpec
+import firrtl.testutils.FirrtlPropSpec
 
 class TargetSpec extends FirrtlPropSpec {
   def check(comp: Target): Unit = {

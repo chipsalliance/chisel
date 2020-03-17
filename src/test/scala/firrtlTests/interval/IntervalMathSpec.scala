@@ -7,7 +7,7 @@ import firrtl.{ChirrtlForm, CircuitState, LowFirrtlCompiler}
 import firrtl.ir._
 
 import firrtl.constraint._
-import firrtlTests.FirrtlFlatSpec
+import firrtl.testutils.FirrtlFlatSpec
 
 class IntervalMathSpec extends FirrtlFlatSpec {
   val SumPattern         = """.*output sum.*<(\d+)>.*""".r
