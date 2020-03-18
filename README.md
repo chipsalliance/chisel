@@ -10,7 +10,10 @@ After a Pull Request is merged, a second Travis CI build will run on the `master
 
 ## Requirements
 
-To build the website you need both `sbt` and `jekyll`.
+To build the website you need:
+* `sbt`
+* `jekyll`
+* `gmake` - tested with version 4.2.1
 
 ## Building the Website
 
