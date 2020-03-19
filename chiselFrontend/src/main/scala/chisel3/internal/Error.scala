@@ -7,8 +7,8 @@ import scala.collection.mutable.{ArrayBuffer, LinkedHashMap}
 
 class ChiselException(message: String, cause: Throwable = null) extends Exception(message, cause) {
 
-  val blacklistPackages = Set("chisel3", "scala", "java", "sun", "sbt")
-  val builderName = "chisel3.internal.Builder"
+  val blacklistPackages: Set[String] = Set("chisel3", "scala", "java", "sun", "sbt")
+  val builderName: String = chisel3.internal.Builder.getClass.getName
 
   /** Examine a [[Throwable]], recursively searching it's causes, for the first [[Throwable]] that contains a stack
     * trace including a specific class name.
