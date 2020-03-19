@@ -28,10 +28,7 @@ class ChiselException(message: String, cause: Throwable = null) extends Exceptio
       }
     }
 
-  private lazy val likelyCause: Throwable = findCause(this, builderName) match {
-    case Some(a) => a
-    case None    => this
-  }
+  private lazy val likelyCause: Throwable = findCause(this, builderName).getOrElse(this)
 
   /** For an exception, return a stack trace trimmed to user code only
     *
