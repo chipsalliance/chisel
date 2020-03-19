@@ -12,10 +12,12 @@ class OverprovisionWidthsSpec extends ChiselFlatSpec {
   class Top(param: String) extends Module {
     val io = IO(new Bundle{
       val in = Input(UInt(3.W))
+      val shamt = Input(UInt(2.W))
       val out = Output(UInt())
     })
     val mid = Module(new Middle(param))
     mid.io.middlein := io.in
+    mid.io.shamt := io.shamt
     io.out := mid.io.middleout
     // Overprovisioning from the parent works as well
     if(param == "Top") {
@@ -27,6 +29,7 @@ class OverprovisionWidthsSpec extends ChiselFlatSpec {
   class Middle(param: String) extends Module {
     val io = IO(new Bundle{
       val middlein = Input(UInt(3.W))
+      val shamt = Input(UInt(2.W))
       val middleout = Output(UInt())
     })
     val bot = Module(new Bottom)
@@ -35,7 +38,7 @@ class OverprovisionWidthsSpec extends ChiselFlatSpec {
     val intermediate = Wire(UInt(3.W))
 
     intermediate := bot.io.botout
-    io.middleout := intermediate
+    io.middleout := intermediate << io.shamt
 
     if(param == "Middle") {
       overprovision(io.middlein, 10.W)
