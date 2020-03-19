@@ -2,34 +2,77 @@
 
 package chisel3.internal
 
+import scala.annotation.tailrec
 import scala.collection.mutable.{ArrayBuffer, LinkedHashMap}
 
 class ChiselException(message: String, cause: Throwable = null) extends Exception(message, cause) {
 
-  val blacklistPackages = Set("chisel3", "scala", "java", "sun", "sbt")
-  val builderName = "chisel3.internal.Builder"
+  /** Package names whose stack trace elements should be trimmed when generating a trimmed stack trace */
+  val blacklistPackages: Set[String] = Set("chisel3", "scala", "java", "sun", "sbt")
 
-  /** trims the top of the stack of elements belonging to [[blacklistPackages]]
-    * then trims the bottom elements until it reaches [[builderName]]
-    * then continues trimming elements belonging to [[blacklistPackages]]
+  /** The object name of Chisel's internal `Builder`. Everything stack trace element after this will be trimmed. */
+  val builderName: String = chisel3.internal.Builder.getClass.getName
+
+  /** Examine a [[Throwable]], recursively searching it's causes, for the first [[Throwable]] that contains a stack
+    * trace including a specific class name.
+    * @param throwable the root exception
+    * @param className a class name string to search for
+    * @return [[Some]] exception if the class name was found, [[None]] otherwise
     */
-  def trimmedStackTrace: Array[StackTraceElement] = {
+  @tailrec
+  private def findCause(throwable: Throwable, className: String): Option[Throwable] =
+    throwable.getStackTrace().collectFirst {
+      case ste if ste.getClassName().startsWith(className) => throwable
+    } match {
+      case a: Some[_] => a
+      case None => throwable.getCause() match {
+        case null             => None
+        case cause: Throwable => findCause(cause, className)
+      }
+    }
+
+  /** Examine this [[ChiselException]] and it's causes for the first [[Throwable]] that contains a stack trace including
+    * a stack trace element whose declaring class is the [[builderName]]. If no such element exists, return this
+    * [[ChiselException]].
+    */
+  private lazy val likelyCause: Throwable = findCause(this, builderName).getOrElse(this)
+
+  /** For an exception, return a stack trace trimmed to user code only
+    *
+    * This does the following actions:
+    *
+    *   1. Trims the top of the stack trace while elements match [[blacklistPackages]]
+    *   2. Trims the bottom of the stack trace until an element matches [[builderName]]
+    *   3. Trims from the [[builderName]] all [[blacklistPackages]]
+    *
+    * @param throwable the exception whose stack trace should be trimmed
+    * @return an array of stack trace elements
+    */
+  private def trimmedStackTrace(throwable: Throwable): Array[StackTraceElement] = {
     def isBlacklisted(ste: StackTraceElement) = {
       val packageName = ste.getClassName().takeWhile(_ != '.')
       blacklistPackages.contains(packageName)
     }
 
-    val trimmedLeft = getStackTrace().view.dropWhile(isBlacklisted)
+    val trimmedLeft = throwable.getStackTrace().view.dropWhile(isBlacklisted)
     val trimmedReverse = trimmedLeft.reverse
       .dropWhile(ste => !ste.getClassName.startsWith(builderName))
       .dropWhile(isBlacklisted)
     trimmedReverse.reverse.toArray
   }
 
+  /** trims the top of the stack of elements belonging to [[blacklistPackages]]
+    * then trims the bottom elements until it reaches [[builderName]]
+    * then continues trimming elements belonging to [[blacklistPackages]]
+    */
+  @deprecated("This method will be removed in 3.4", "3.3")
+  def trimmedStackTrace: Array[StackTraceElement] = trimmedStackTrace(this)
+
   def chiselStackTrace: String = {
-    val trimmed = trimmedStackTrace
+    val trimmed = trimmedStackTrace(likelyCause)
+
     val sw = new java.io.StringWriter
-    sw.write(toString + "\n")
+    sw.write(likelyCause.toString + "\n")
     sw.write("\t...\n")
     trimmed.foreach(ste => sw.write(s"\tat $ste\n"))
     sw.write("\t... (Stack trace trimmed to user code only, rerun with --full-stacktrace if you wish to see the full stack trace)\n") // scalastyle:ignore line.size.limit
