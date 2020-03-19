@@ -7,7 +7,10 @@ import scala.collection.mutable.{ArrayBuffer, LinkedHashMap}
 
 class ChiselException(message: String, cause: Throwable = null) extends Exception(message, cause) {
 
+  /** Package names whose stack trace elements should be trimmed when generating a trimmed stack trace */
   val blacklistPackages: Set[String] = Set("chisel3", "scala", "java", "sun", "sbt")
+
+  /** The object name of Chisel's internal `Builder`. Everything stack trace element after this will be trimmed. */
   val builderName: String = chisel3.internal.Builder.getClass.getName
 
   /** Examine a [[Throwable]], recursively searching it's causes, for the first [[Throwable]] that contains a stack
@@ -28,6 +31,10 @@ class ChiselException(message: String, cause: Throwable = null) extends Exceptio
       }
     }
 
+  /** Examine this [[ChiselException]] and it's causes for the first [[Throwable]] that contains a stack trace including
+    * a stack trace element whose declaring class is the [[builderName]]. If no such element exists, return this
+    * [[ChiselException]].
+    */
   private lazy val likelyCause: Throwable = findCause(this, builderName).getOrElse(this)
 
   /** For an exception, return a stack trace trimmed to user code only
