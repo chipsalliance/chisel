@@ -1,20 +1,6 @@
 // See LICENSE for license details.
 
-// sbt-site - sbt-ghpages
-
 enablePlugins(SiteScaladocPlugin)
-
-// Firrtl code
-
-organization := "edu.berkeley.cs"
-
-name := "firrtl"
-
-version := "1.3-SNAPSHOT"
-
-scalaVersion := "2.12.10"
-
-crossScalaVersions := Seq("2.12.10", "2.11.12")
 
 def scalacOptionsVersion(scalaVersion: String): Seq[String] = {
   Seq() ++ {
@@ -27,15 +13,6 @@ def scalacOptionsVersion(scalaVersion: String): Seq[String] = {
     }
   }
 }
-
-addCompilerPlugin(scalafixSemanticdb) // enable SemanticDB
-
-scalacOptions := scalacOptionsVersion(scalaVersion.value) ++ Seq(
-  "-deprecation",
-  "-unchecked",
-  "-Yrangepos",          // required by SemanticDB compiler plugin
-  "-Ywarn-unused-import" // required by `RemoveUnused` rule
-)
 
 def javacOptionsVersion(scalaVersion: String): Seq[String] = {
   Seq() ++ {
@@ -51,143 +28,147 @@ def javacOptionsVersion(scalaVersion: String): Seq[String] = {
   }
 }
 
-javacOptions ++= javacOptionsVersion(scalaVersion.value)
 
-libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
-
-// sbt 1.2.6 fails with `Symbol 'term org.junit' is missing from the classpath`
-// when compiling tests under 2.11.12
-// An explicit dependency on junit seems to alleviate this.
-libraryDependencies += "junit" % "junit" % "4.13" % "test"
-
-libraryDependencies += "org.scalatest" %% "scalatest" % "3.0.8" % "test"
-
-libraryDependencies += "org.scalacheck" %% "scalacheck" % "1.14.3" % "test"
-
-libraryDependencies += "com.github.scopt" %% "scopt" % "3.7.1"
-
-libraryDependencies += "net.jcazevedo" %% "moultingyaml" % "0.4.1"
-
-libraryDependencies += "org.json4s" %% "json4s-native" % "3.6.7"
-
-libraryDependencies += "org.apache.commons" % "commons-text" % "1.8"
-
-// Java PB
-
-enablePlugins(ProtobufPlugin)
-
-sourceDirectory in ProtobufConfig := baseDirectory.value / "src" / "main" / "proto"
-
-protobufRunProtoc in ProtobufConfig := (args =>
-  com.github.os72.protocjar.Protoc.runProtoc("-v351" +: args.toArray))
-
-javaSource in ProtobufConfig := (sourceManaged in Compile).value
-
-// Assembly
-
-assemblyJarName in assembly := "firrtl.jar"
-
-test in assembly := {} // Should there be tests?
-
-assemblyOutputPath in assembly := file("./utils/bin/firrtl.jar")
-
-Project.inConfig(Test)(baseAssemblySettings)
-
-test in (Test, assembly) := {} // Ditto above
-
-assemblyMergeStrategy in (Test, assembly) := {
-  case PathList("firrtlTests", xs @ _*) => MergeStrategy.discard
-  case x =>
-    val oldStrategy = (assemblyMergeStrategy in (Test, assembly)).value
-    oldStrategy(x)
-}
-
-assemblyJarName in (Test, assembly) := s"firrtl-test.jar"
-
-assemblyOutputPath in (Test, assembly) := file("./utils/bin/" + (Test / assembly / assemblyJarName).value)
-
-// ANTLRv4
-
-enablePlugins(Antlr4Plugin)
-
-antlr4GenVisitor in Antlr4 := true // default = false
-
-antlr4GenListener in Antlr4 := false // default = true
-
-antlr4PackageName in Antlr4 := Option("firrtl.antlr")
-
-antlr4Version in Antlr4 := "4.7.1"
-
-javaSource in Antlr4 := (sourceManaged in Compile).value
-
-publishMavenStyle := true
-publishArtifact in Test := false
-pomIncludeRepository := { x => false }
-// Don't add 'scm' elements if we have a git.remoteRepo definition,
-//  but since we don't (with the removal of ghpages), add them in below.
-pomExtra := <url>http://chisel.eecs.berkeley.edu/</url>
-  <licenses>
-    <license>
-      <name>BSD-style</name>
-      <url>http://www.opensource.org/licenses/bsd-license.php</url>
-      <distribution>repo</distribution>
-    </license>
-  </licenses>
-  <scm>
-    <url>https://github.com/freechipsproject/firrtl.git</url>
-    <connection>scm:git:github.com/freechipsproject/firrtl.git</connection>
-  </scm>
-  <developers>
-    <developer>
-      <id>jackbackrack</id>
-      <name>Jonathan Bachrach</name>
-      <url>http://www.eecs.berkeley.edu/~jrb/</url>
-    </developer>
-  </developers>
-
-publishTo := {
-  val v = version.value
-  val nexus = "https://oss.sonatype.org/"
-  if (v.trim.endsWith("SNAPSHOT")) {
-    Some("snapshots" at nexus + "content/repositories/snapshots")
-  } else {
-    Some("releases" at nexus + "service/local/staging/deploy/maven2")
-  }
-}
-
-resolvers ++= Seq(
-  Resolver.sonatypeRepo("snapshots"),
-  Resolver.sonatypeRepo("releases")
+lazy val commonSettings = Seq(
+  organization := "edu.berkeley.cs",
+  name := "firrtl",
+  version := "1.3-SNAPSHOT",
+  scalaVersion := "2.12.10",
+  crossScalaVersions := Seq("2.12.10", "2.11.12"),
+  addCompilerPlugin(scalafixSemanticdb),
+  scalacOptions := scalacOptionsVersion(scalaVersion.value) ++ Seq(
+    "-deprecation",
+    "-unchecked",
+    "-Yrangepos",          // required by SemanticDB compiler plugin
+    "-Ywarn-unused-import" // required by `RemoveUnused` rule
+  ),
+  javacOptions ++= javacOptionsVersion(scalaVersion.value),
+  libraryDependencies ++= Seq(
+    "org.scala-lang" % "scala-reflect" % scalaVersion.value,
+    // sbt 1.2.6 fails with `Symbol 'term org.junit' is missing from the classpath`
+    // when compiling tests under 2.11.12
+    // An explicit dependency on junit seems to alleviate this.
+    "junit" % "junit" % "4.13" % "test",
+    "org.scalatest" %% "scalatest" % "3.0.8" % "test",
+    "org.scalacheck" %% "scalacheck" % "1.14.3" % "test",
+    "com.github.scopt" %% "scopt" % "3.7.1",
+    "net.jcazevedo" %% "moultingyaml" % "0.4.1",
+    "org.json4s" %% "json4s-native" % "3.6.7",
+    "org.apache.commons" % "commons-text" % "1.8"
+  ),
+  resolvers ++= Seq(
+    Resolver.sonatypeRepo("snapshots"),
+    Resolver.sonatypeRepo("releases")
+  )
 )
 
-// ScalaDoc
+lazy val protobufSettings = Seq(
+  sourceDirectory in ProtobufConfig := baseDirectory.value / "src" / "main" / "proto",
+  protobufRunProtoc in ProtobufConfig := (args =>
+    com.github.os72.protocjar.Protoc.runProtoc("-v351" +: args.toArray)
+  ),
+  javaSource in ProtobufConfig := (sourceManaged in Compile).value
+)
 
-enablePlugins(ScalaUnidocPlugin)
+lazy val assemblySettings = Seq(
+  assemblyJarName in assembly := "firrtl.jar",
+  test in assembly := {},
+  assemblyOutputPath in assembly := file("./utils/bin/firrtl.jar")
+)
 
-doc in Compile := (doc in ScalaUnidoc).value
 
-//target in unidoc in ScalaUnidoc := crossTarget.value / "api"
+lazy val testAssemblySettings = Seq(
+  test in (Test, assembly) := {}, // Ditto above
+  assemblyMergeStrategy in (Test, assembly) := {
+    case PathList("firrtlTests", xs @ _*) => MergeStrategy.discard
+    case x =>
+      val oldStrategy = (assemblyMergeStrategy in (Test, assembly)).value
+      oldStrategy(x)
+  },
+  assemblyJarName in (Test, assembly) := s"firrtl-test.jar",
+  assemblyOutputPath in (Test, assembly) := file("./utils/bin/" + (Test / assembly / assemblyJarName).value)
+)
 
-autoAPIMappings := true
+lazy val antlrSettings = Seq(
+  antlr4GenVisitor in Antlr4 := true,
+  antlr4GenListener in Antlr4 := false,
+  antlr4PackageName in Antlr4 := Option("firrtl.antlr"),
+  antlr4Version in Antlr4 := "4.7.1",
+  javaSource in Antlr4 := (sourceManaged in Compile).value
+)
 
-scalacOptions in Compile in doc ++= Seq(
-  "-diagrams",
-  "-diagrams-max-classes", "25",
-  "-doc-version", version.value,
-  "-doc-title", name.value,
-  "-doc-root-content", baseDirectory.value+"/root-doc.txt",
-  "-sourcepath", (baseDirectory in ThisBuild).value.toString,
-  "-doc-source-url",
-  {
-    val branch =
-      if (version.value.endsWith("-SNAPSHOT")) {
-        "master"
-      } else {
-        s"v${version.value}"
-      }
-    s"https://github.com/freechipsproject/firrtl/tree/$branch€{FILE_PATH}.scala"
+lazy val publishSettings = Seq(
+  publishMavenStyle := true,
+  publishArtifact in Test := false,
+  pomIncludeRepository := { x => false },
+  // Don't add 'scm' elements if we have a git.remoteRepo definition,
+  //  but since we don't (with the removal of ghpages), add them in below.
+  pomExtra := <url>http://chisel.eecs.berkeley.edu/</url>
+    <licenses>
+      <license>
+        <name>BSD-style</name>
+        <url>http://www.opensource.org/licenses/bsd-license.php</url>
+        <distribution>repo</distribution>
+      </license>
+    </licenses>
+    <scm>
+      <url>https://github.com/freechipsproject/firrtl.git</url>
+      <connection>scm:git:github.com/freechipsproject/firrtl.git</connection>
+    </scm>
+    <developers>
+      <developer>
+        <id>jackbackrack</id>
+        <name>Jonathan Bachrach</name>
+        <url>http://www.eecs.berkeley.edu/~jrb/</url>
+      </developer>
+    </developers>,
+  publishTo := {
+    val v = version.value
+    val nexus = "https://oss.sonatype.org/"
+    if (v.trim.endsWith("SNAPSHOT")) {
+      Some("snapshots" at nexus + "content/repositories/snapshots")
+    } else {
+      Some("releases" at nexus + "service/local/staging/deploy/maven2")
+    }
   }
-) ++ scalacOptionsVersion(scalaVersion.value)
+)
 
-fork := true
-Test / testForkedParallel := true
+lazy val docSettings = Seq(
+  doc in Compile := (doc in ScalaUnidoc).value,
+  autoAPIMappings := true,
+  scalacOptions in Compile in doc ++= Seq(
+    "-diagrams",
+    "-diagrams-max-classes", "25",
+    "-doc-version", version.value,
+    "-doc-title", name.value,
+    "-doc-root-content", baseDirectory.value+"/root-doc.txt",
+    "-sourcepath", (baseDirectory in ThisBuild).value.toString,
+    "-doc-source-url",
+    {
+      val branch =
+        if (version.value.endsWith("-SNAPSHOT")) {
+          "master"
+        } else {
+          s"v${version.value}"
+        }
+      s"https://github.com/freechipsproject/firrtl/tree/$branch€{FILE_PATH}.scala"
+    }
+  ) ++ scalacOptionsVersion(scalaVersion.value)
+)
+
+lazy val firrtl = (project in file("."))
+  .enablePlugins(ProtobufPlugin)
+  .enablePlugins(ScalaUnidocPlugin)
+  .enablePlugins(Antlr4Plugin)
+  .settings(
+    fork := true,
+    Test / testForkedParallel := true
+  )
+  .settings(commonSettings)
+  .settings(protobufSettings)
+  .settings(antlrSettings)
+  .settings(assemblySettings)
+  .settings(inConfig(Test)(baseAssemblySettings))
+  .settings(testAssemblySettings)
+  .settings(publishSettings)
+  .settings(docSettings)
