@@ -13,29 +13,29 @@ class ChiselException(message: String, cause: Throwable = null) extends Exceptio
   /** The object name of Chisel's internal `Builder`. Everything stack trace element after this will be trimmed. */
   val builderName: String = chisel3.internal.Builder.getClass.getName
 
-  /** Examine a [[Throwable]], recursively searching it's causes, for the first [[Throwable]] that contains a stack
-    * trace including a specific class name.
-    * @param throwable the root exception
-    * @param className a class name string to search for
-    * @return [[Some]] exception if the class name was found, [[None]] otherwise
+  /** Examine a [[Throwable]], to extract all its causes. Innermost cause is first.
+    * @param throwable an exception to examine
+    * @return a sequence of all the causes with innermost cause first
     */
   @tailrec
-  private def findCause(throwable: Throwable, className: String): Option[Throwable] =
-    throwable.getStackTrace().collectFirst {
-      case ste if ste.getClassName().startsWith(className) => throwable
-    } match {
-      case a: Some[_] => a
-      case None => throwable.getCause() match {
-        case null             => None
-        case cause: Throwable => findCause(cause, className)
-      }
+  private def getCauses(throwable: Throwable, acc: Seq[Throwable] = Seq.empty): Seq[Throwable] =
+    throwable.getCause() match {
+      case null => throwable +: acc
+      case a    => getCauses(a, throwable +: acc)
     }
+
+  /** Returns true if an exception contains  */
+  private def containsBuilder(throwable: Throwable): Boolean =
+    throwable.getStackTrace().collectFirst {
+      case ste if ste.getClassName().startsWith(builderName) => throwable
+    }.isDefined
 
   /** Examine this [[ChiselException]] and it's causes for the first [[Throwable]] that contains a stack trace including
     * a stack trace element whose declaring class is the [[builderName]]. If no such element exists, return this
     * [[ChiselException]].
     */
-  private lazy val likelyCause: Throwable = findCause(this, builderName).getOrElse(this)
+  private lazy val likelyCause: Throwable =
+    getCauses(this).collectFirst{ case a if containsBuilder(a) => a }.getOrElse(this)
 
   /** For an exception, return a stack trace trimmed to user code only
     *
