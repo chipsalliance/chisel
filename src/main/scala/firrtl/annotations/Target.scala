@@ -86,7 +86,6 @@ sealed trait Target extends Named {
   def toGenericTarget: GenericTarget = GenericTarget(circuitOpt, moduleOpt, tokens.toVector)
 
   /** @return Converts this [[Target]] into either a [[CircuitName]], [[ModuleName]], or [[ComponentName]] */
-  @deprecated("Use Target instead, will be removed in 1.3", "1.2")
   def toNamed: Named = toGenericTarget.toNamed
 
   /** @return If legal, convert this [[Target]] into a [[CompleteTarget]] */
@@ -692,27 +691,23 @@ case class InstanceTarget(circuit: String,
 
 
 /** Named classes associate an annotation with a component in a Firrtl circuit */
-@deprecated("Use Target instead, will be removed in 1.3", "1.2")
 sealed trait Named {
   def serialize: String
   def toTarget: CompleteTarget
 }
 
-@deprecated("Use Target instead, will be removed in 1.3", "1.2")
 final case class CircuitName(name: String) extends Named {
   if(!validModuleName(name)) throw AnnotationException(s"Illegal circuit name: $name")
   def serialize: String = name
   def toTarget: CircuitTarget = CircuitTarget(name)
 }
 
-@deprecated("Use Target instead, will be removed in 1.3", "1.2")
 final case class ModuleName(name: String, circuit: CircuitName) extends Named {
   if(!validModuleName(name)) throw AnnotationException(s"Illegal module name: $name")
   def serialize: String = circuit.serialize + "." + name
   def toTarget: ModuleTarget = ModuleTarget(circuit.name, name)
 }
 
-@deprecated("Use Target instead, will be removed in 1.3", "1.2")
 final case class ComponentName(name: String, module: ModuleName) extends Named {
   if(!validComponentName(name)) throw AnnotationException(s"Illegal component name: $name")
   def expr: Expression = toExp(name)
