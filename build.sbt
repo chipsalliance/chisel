@@ -136,6 +136,18 @@ lazy val publishSettings = Seq(
 lazy val docSettings = Seq(
   doc in Compile := (doc in ScalaUnidoc).value,
   autoAPIMappings := true,
+  apiMappings ++= {
+    Option(System.getProperty("sun.boot.class.path")).flatMap { classPath =>
+      classPath.split(java.io.File.pathSeparator).find(_.endsWith(java.io.File.separator + "rt.jar"))
+    }.map { jarPath =>
+      Map(
+        file(jarPath) -> url("https://docs.oracle.com/javase/8/docs/api")
+      )
+    }.getOrElse {
+      streams.value.log.warn("Failed to add bootstrap class path of Java to apiMappings")
+      Map.empty[File,URL]
+    }
+  },
   scalacOptions in Compile in doc ++= Seq(
     "-diagrams",
     "-diagrams-max-classes", "25",

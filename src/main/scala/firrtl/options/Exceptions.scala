@@ -11,6 +11,8 @@ class PhaseException(val message: String, cause: Throwable = null) extends Runti
 /** Indicate an error related to a bad [[firrtl.annotations.Annotation Annotation]] or it's command line option
   * equivalent. This exception is always caught and converted to an error message by a [[Stage]]. Do not use this for
   * communicating generic exception information.
+  * @param message exception message [[scala.Predef.String String]]
+  * @param cause the reason for this exception (a Java [[java.lang.Throwable Throwable]])
   */
 class OptionsException(val message: String, cause: Throwable = null) extends IllegalArgumentException(message, cause)
 
