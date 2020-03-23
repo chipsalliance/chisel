@@ -62,7 +62,6 @@ abstract class Stage extends Phase {
   * @param stage the stage to run
   */
 class StageMain(val stage: Stage) {
-
   /** The main function that serves as this stage's command line interface.
     * @param args command line arguments
     */
