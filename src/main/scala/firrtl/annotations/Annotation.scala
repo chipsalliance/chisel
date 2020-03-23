@@ -14,9 +14,9 @@ trait Annotation extends Product {
   /** Update the target based on how signals are renamed */
   def update(renames: RenameMap): Seq[Annotation]
 
-  /** Pretty Print
+  /** Optional pretty print
     *
-    * @note In [[logger.LogLevel.Debug]] this is called on every Annotation after every Transform
+    * @note rarely used
     */
   def serialize: String = this.toString
 

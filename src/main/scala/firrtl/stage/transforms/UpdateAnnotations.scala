@@ -3,7 +3,7 @@
 package firrtl.stage.transforms
 
 import firrtl.{AnnotationSeq, CircuitState, RenameMap, Transform, Utils}
-import firrtl.annotations.{Annotation, DeletedAnnotation}
+import firrtl.annotations.{Annotation, DeletedAnnotation, JsonProtocol}
 import firrtl.options.Translator
 
 import scala.collection.mutable
@@ -21,9 +21,8 @@ class UpdateAnnotations(val underlying: Transform) extends Transform with Wrappe
     val remappedAnnotations = propagateAnnotations(state.annotations, result.annotations, result.renames)
 
     logger.info(s"Form: ${result.form}")
-
-    logger.debug(s"Annotations:")
-    remappedAnnotations.foreach( a => logger.debug(a.serialize) )
+    logger.trace(s"Annotations:")
+    logger.trace(JsonProtocol.serialize(remappedAnnotations))
 
     logger.trace(s"Circuit:\n${result.circuit.serialize}")
     logger.info(s"======== Finished Transform $name ========\n")

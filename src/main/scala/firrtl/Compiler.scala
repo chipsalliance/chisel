@@ -295,10 +295,8 @@ trait Transform extends TransformLike[CircuitState] with DependencyAPI[Transform
     val remappedAnnotations = propagateAnnotations(state.annotations, result.annotations, result.renames)
 
     logger.info(s"Form: ${result.form}")
-    logger.debug(s"Annotations:")
-    remappedAnnotations.foreach { a =>
-      logger.debug(a.serialize)
-    }
+    logger.trace(s"Annotations:")
+    logger.trace(JsonProtocol.serialize(remappedAnnotations))
     logger.trace(s"Circuit:\n${result.circuit.serialize}")
     logger.info(s"======== Finished Transform $name ========\n")
     CircuitState(result.circuit, result.form, remappedAnnotations, None)
