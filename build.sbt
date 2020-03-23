@@ -122,12 +122,14 @@ lazy val chiselSettings = Seq (
   }
 )
 
-lazy val coreMacros = (project in file("coreMacros")).
+lazy val macros = (project in file("macros")).
+  settings(name := "chisel3-macros").
   settings(commonSettings: _*)
 
-lazy val chiselFrontend = (project in file("chiselFrontend")).
+lazy val core = (project in file("core")).
   settings(commonSettings: _*).
   settings(
+    name := "chisel3-core",
     scalacOptions := scalacOptions.value ++ Seq(
       "-deprecation",
       "-explaintypes",
@@ -139,7 +141,7 @@ lazy val chiselFrontend = (project in file("chiselFrontend")).
 //      "-Xlint:missing-interpolator"
     )
   ).
-  dependsOn(coreMacros)
+  dependsOn(macros)
 
 // This will always be the root project, even if we are a sub-project.
 lazy val root = RootProject(file("."))
@@ -155,9 +157,9 @@ lazy val chisel = (project in file(".")).
   settings(commonSettings: _*).
   settings(chiselSettings: _*).
   settings(publishSettings: _*).
-  dependsOn(coreMacros).
-  dependsOn(chiselFrontend).
-  aggregate(coreMacros, chiselFrontend).
+  dependsOn(macros).
+  dependsOn(core).
+  aggregate(macros, core).
   settings(
     scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
     scalacOptions in Compile in doc ++= Seq(
