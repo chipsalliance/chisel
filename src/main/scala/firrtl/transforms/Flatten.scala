@@ -47,7 +47,7 @@ class Flatten extends Transform {
     *  @return modified circuit and ModuleNames to inline
     */
    def duplicateSubCircuitsFromAnno(c: Circuit, mods: Set[ModuleName], insts: Set[ComponentName]): (Circuit, Set[ModuleName]) = {
-     val modMap = c.modules.map(m => m.name->m) toMap
+     val modMap = c.modules.map(m => m.name->m).toMap
      val seedMods = mutable.Map.empty[String, String]
      val newModDefs = mutable.Set.empty[DefModule]
      val nsp = Namespace(c)
