@@ -3,9 +3,10 @@
 package firrtlTests
 
 import firrtl._
-import org.scalatest.{Matchers, FreeSpec}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
-class ExecutionOptionsManagerSpec extends FreeSpec with Matchers {
+class ExecutionOptionsManagerSpec extends AnyFreeSpec with Matchers {
   "ExecutionOptionsManager is a container for one more more ComposableOptions Block" - {
     "It has a default CommonOptionsBlock" in {
       val manager = new ExecutionOptionsManager("test")

@@ -2,10 +2,10 @@
 
 package firrtlTests
 
-import org.scalatest.FlatSpec
 import org.json4s._
 
 import firrtl.annotations.{NoTargetAnnotation, JsonProtocol, InvalidAnnotationJSONException, HasSerializationHints, Annotation}
+import org.scalatest.flatspec.AnyFlatSpec
 
 object JsonProtocolTestClasses {
   trait Parent
@@ -25,7 +25,7 @@ object JsonProtocolTestClasses {
 
 import JsonProtocolTestClasses._
 
-class JsonProtocolSpec extends FlatSpec {
+class JsonProtocolSpec extends AnyFlatSpec {
   def serializeAndDeserialize(anno: Annotation): Annotation = {
     val serializedAnno = JsonProtocol.serialize(Seq(anno))
     JsonProtocol.deserialize(serializedAnno).head

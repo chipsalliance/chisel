@@ -2,7 +2,9 @@
 
 package firrtlTests.stage
 
-import org.scalatest.{FeatureSpec, GivenWhenThen, Matchers}
+import org.scalatest.GivenWhenThen
+import org.scalatest.featurespec.AnyFeatureSpec
+import org.scalatest.matchers.should.Matchers
 
 import java.io.{File, PrintWriter}
 
@@ -16,7 +18,7 @@ import firrtl.util.BackendCompilationUtilities
   * This test uses the [[org.scalatest.FeatureSpec FeatureSpec]] intentionally as this test exercises the top-level
   * interface and is more suitable to an Acceptance Testing style.
   */
-class FirrtlMainSpec extends FeatureSpec with GivenWhenThen with Matchers with firrtl.testutils.Utils
+class FirrtlMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers with firrtl.testutils.Utils
     with BackendCompilationUtilities {
 
   /** Parameterizes one test of [[FirrtlMain]]. Running the [[FirrtlMain]] `main` with certain args should produce
@@ -48,7 +50,7 @@ class FirrtlMainSpec extends FeatureSpec with GivenWhenThen with Matchers with f
     * @param p some test parameters
     */
   def runStageExpectFiles(p: FirrtlMainTest): Unit = {
-    scenario(s"""User runs FIRRTL Stage with '${p.argsString}'""") {
+    Scenario(s"""User runs FIRRTL Stage with '${p.argsString}'""") {
       val f = new FirrtlMainFixture
       val td = new TargetDirectoryFixture(p.testName)
 
@@ -148,8 +150,8 @@ class FirrtlMainSpec extends FeatureSpec with GivenWhenThen with Matchers with f
 
   info("As a FIRRTL command line user")
   info("I want to compile some FIRRTL")
-  feature("FirrtlMain command line interface") {
-    scenario("User tries to discover available options") {
+  Feature("FirrtlMain command line interface") {
+    Scenario("User tries to discover available options") {
       val f = new FirrtlMainFixture
 
       When("the user passes '--help'")
@@ -222,7 +224,7 @@ class FirrtlMainSpec extends FeatureSpec with GivenWhenThen with Matchers with f
     )
       .foreach(runStageExpectFiles)
 
-    scenario("User doesn't specify a target directory") {
+    Scenario("User doesn't specify a target directory") {
       val f = new FirrtlMainFixture
 
       When("the user doesn't specify a target directory")
@@ -241,7 +243,7 @@ class FirrtlMainSpec extends FeatureSpec with GivenWhenThen with Matchers with f
       result shouldBe a [Right[_,_]]
     }
 
-    scenario("User provides Protocol Buffer input") {
+    Scenario("User provides Protocol Buffer input") {
       val f = new FirrtlMainFixture
       val td = new TargetDirectoryFixture("protobuf-works")
 
@@ -261,8 +263,8 @@ class FirrtlMainSpec extends FeatureSpec with GivenWhenThen with Matchers with f
 
   info("As a FIRRTL command line user")
   info("I want to receive error messages when I do not specify mandatory inputs")
-  feature("FirrtlMain input validation of mandatory options") {
-    scenario("User gives no command line options (no input circuit specified)") {
+  Feature("FirrtlMain input validation of mandatory options") {
+    Scenario("User gives no command line options (no input circuit specified)") {
       val f = new FirrtlMainFixture
 
       When("the user passes no arguments")
@@ -284,12 +286,12 @@ class FirrtlMainSpec extends FeatureSpec with GivenWhenThen with Matchers with f
 
   info("As a FIRRTL command line user")
   info("I want to receive helpful error and warnings message")
-  feature("FirrtlMain input validation") {
+  Feature("FirrtlMain input validation") {
     /* Note: most input validation occurs inside firrtl.stage.phases.Checks. This seeks to validate command line
      * behavior.
      */
 
-    scenario("User tries to use an implicit annotation file") {
+    Scenario("User tries to use an implicit annotation file") {
       val f = new FirrtlMainFixture
       val td = new TargetDirectoryFixture("implict-annotation-file")
       val circuit = new SimpleFirrtlCircuitFixture
@@ -325,7 +327,7 @@ class FirrtlMainSpec extends FeatureSpec with GivenWhenThen with Matchers with f
       result shouldBe a [Right[_,_]]
     }
 
-    scenario("User provides unsupported legacy annotations") {
+    Scenario("User provides unsupported legacy annotations") {
       val f = new FirrtlMainFixture
       val td = new TargetDirectoryFixture("legacy-annotation-file")
       val circuit = new SimpleFirrtlCircuitFixture
@@ -377,8 +379,8 @@ class FirrtlMainSpec extends FeatureSpec with GivenWhenThen with Matchers with f
 
   info("As a FIRRTL transform developer")
   info("I want to register my custom transforms with FIRRTL")
-  feature("FirrtlMain transform registration") {
-    scenario("User doesn't know if their transforms were registered") {
+  Feature("FirrtlMain transform registration") {
+    Scenario("User doesn't know if their transforms were registered") {
       val f = new FirrtlMainFixture
 
       When("the user passes '--show-registrations'")
@@ -397,7 +399,7 @@ class FirrtlMainSpec extends FeatureSpec with GivenWhenThen with Matchers with f
 
   info("As a longtime FIRRTL user")
   info("I migrate from Driver to FirrtlMain")
-  feature("FirrtlMain migration helpers") {
+  Feature("FirrtlMain migration helpers") {
     def optionRemoved(a: String): Option[String] = Some(s"Option '$a' was removed as part of the FIRRTL Stage refactor")
     Seq(
       /* Removed --top-name/-tn handling */

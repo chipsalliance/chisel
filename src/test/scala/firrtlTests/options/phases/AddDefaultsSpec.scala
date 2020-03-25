@@ -2,12 +2,13 @@
 
 package firrtlTests.options.phases
 
-import org.scalatest.{FlatSpec, Matchers}
 
 import firrtl.options.{Phase, TargetDirAnnotation}
 import firrtl.options.phases.AddDefaults
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class AddDefaultsSpec extends FlatSpec with Matchers {
+class AddDefaultsSpec extends AnyFlatSpec with Matchers {
 
   class Fixture {
     val phase: Phase = new AddDefaults

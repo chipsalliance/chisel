@@ -2,7 +2,7 @@
 
 package firrtl.testutils
 
-import org.scalatest.FlatSpec
+import org.scalatest.flatspec.AnyFlatSpec
 import firrtl.ir.Circuit
 import firrtl.passes.{PassExceptions, RemoveEmpty}
 import firrtl.transforms.DedupModules
@@ -12,7 +12,7 @@ import logger._
 
 // An example methodology for testing Firrtl Passes
 // Spec class should extend this class
-abstract class SimpleTransformSpec extends FlatSpec with FirrtlMatchers with Compiler with LazyLogging {
+abstract class SimpleTransformSpec extends AnyFlatSpec with FirrtlMatchers with Compiler with LazyLogging {
    // Utility function
    def squash(c: Circuit): Circuit = RemoveEmpty.run(c)
 

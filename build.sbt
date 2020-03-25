@@ -45,12 +45,8 @@ lazy val commonSettings = Seq(
   javacOptions ++= javacOptionsVersion(scalaVersion.value),
   libraryDependencies ++= Seq(
     "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-    // sbt 1.2.6 fails with `Symbol 'term org.junit' is missing from the classpath`
-    // when compiling tests under 2.11.12
-    // An explicit dependency on junit seems to alleviate this.
-    "junit" % "junit" % "4.13" % "test",
-    "org.scalatest" %% "scalatest" % "3.0.8" % "test",
-    "org.scalacheck" %% "scalacheck" % "1.14.3" % "test",
+    "org.scalatest" %% "scalatest" % "3.1.0" % "test",
+    "org.scalatestplus" %% "scalacheck-1-14" % "3.1.0.1" % "test",
     "com.github.scopt" %% "scopt" % "3.7.1",
     "net.jcazevedo" %% "moultingyaml" % "0.4.1",
     "org.json4s" %% "json4s-native" % "3.6.7",

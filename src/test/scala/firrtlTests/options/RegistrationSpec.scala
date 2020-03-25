@@ -2,7 +2,8 @@
 
 package firrtlTests.options
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 import java.util.ServiceLoader
 
 import firrtl.options.{RegisteredTransform, RegisteredLibrary, ShellOption}
@@ -33,7 +34,7 @@ class BarLibrary extends RegisteredLibrary {
       helpText = "World option") )
 }
 
-class RegistrationSpec extends FlatSpec with Matchers {
+class RegistrationSpec extends AnyFlatSpec with Matchers {
 
   behavior of "RegisteredTransform"
 

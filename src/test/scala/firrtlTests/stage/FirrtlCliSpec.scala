@@ -2,13 +2,14 @@
 
 package firrtlTests.stage
 
-import org.scalatest.{FlatSpec, Matchers}
 
 import firrtl.stage.RunFirrtlTransformAnnotation
 import firrtl.options.Shell
 import firrtl.stage.FirrtlCli
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class FirrtlCliSpec extends FlatSpec with Matchers {
+class FirrtlCliSpec extends AnyFlatSpec with Matchers {
 
   behavior of "FirrtlCli for RunFirrtlTransformAnnotation / -fct / --custom-transforms"
 

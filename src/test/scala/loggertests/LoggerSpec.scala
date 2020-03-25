@@ -4,7 +4,9 @@ package loggertests
 
 import logger.Logger.OutputCaptor
 import logger.{LazyLogging, LogLevel, Logger}
-import org.scalatest.{FreeSpec, Matchers, OneInstancePerTest}
+import org.scalatest.OneInstancePerTest
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 object LoggerSpec {
   val ErrorMsg = "message error"
@@ -35,7 +37,7 @@ class LogsInfo3 extends LazyLogging {
     logger.info("logger3")
   }
 }
-class LoggerSpec extends FreeSpec with Matchers with OneInstancePerTest with LazyLogging {
+class LoggerSpec extends AnyFreeSpec with Matchers with OneInstancePerTest with LazyLogging {
   "Logger is a simple but powerful logging system" - {
     "Following tests show how global level can control logging" - {
 

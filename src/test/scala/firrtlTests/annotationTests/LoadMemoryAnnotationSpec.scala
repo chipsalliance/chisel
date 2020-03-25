@@ -3,9 +3,10 @@
 package firrtlTests.annotationTests
 
 import firrtl.annotations._
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
-class LoadMemoryAnnotationSpec extends FreeSpec with Matchers {
+class LoadMemoryAnnotationSpec extends AnyFreeSpec with Matchers {
   "LoadMemoryAnnotation getFileName" - {
     "add name of subcomponent to file name when a memory was split" in {
       val lma = new LoadMemoryAnnotation(

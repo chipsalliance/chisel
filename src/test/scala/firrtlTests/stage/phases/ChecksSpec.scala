@@ -2,15 +2,16 @@
 
 package firrtlTests.stage.phases
 
-import org.scalatest.{FlatSpec, Matchers}
 
 import firrtl.stage._
 
 import firrtl.{AnnotationSeq, ChirrtlEmitter, EmitAllModulesAnnotation, NoneCompiler}
 import firrtl.options.{OptionsException, OutputAnnotationFileAnnotation, Phase}
 import firrtl.stage.phases.Checks
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class ChecksSpec extends FlatSpec with Matchers {
+class ChecksSpec extends AnyFlatSpec with Matchers {
 
   class Fixture { val phase: Phase = new Checks }
 

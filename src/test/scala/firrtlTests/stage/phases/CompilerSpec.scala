@@ -2,7 +2,6 @@
 
 package firrtlTests.stage.phases
 
-import org.scalatest.{FlatSpec, Matchers}
 
 import scala.collection.mutable
 
@@ -10,8 +9,10 @@ import firrtl.{Compiler => _, _}
 import firrtl.options.{Phase, PreservesAll}
 import firrtl.stage.{CompilerAnnotation, FirrtlCircuitAnnotation, Forms, RunFirrtlTransformAnnotation}
 import firrtl.stage.phases.Compiler
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class CompilerSpec extends FlatSpec with Matchers {
+class CompilerSpec extends AnyFlatSpec with Matchers {
 
   class Fixture { val phase: Phase = new Compiler }
 

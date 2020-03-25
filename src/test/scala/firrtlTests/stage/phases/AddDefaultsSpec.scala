@@ -2,7 +2,6 @@
 
 package firrtlTests.stage.phases
 
-import org.scalatest.{FlatSpec, Matchers}
 
 import firrtl.NoneCompiler
 import firrtl.annotations.Annotation
@@ -10,8 +9,10 @@ import firrtl.stage.phases.AddDefaults
 import firrtl.transforms.BlackBoxTargetDirAnno
 import firrtl.stage.{CompilerAnnotation, InfoModeAnnotation}
 import firrtl.options.{Phase, TargetDirAnnotation}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class AddDefaultsSpec extends FlatSpec with Matchers {
+class AddDefaultsSpec extends AnyFlatSpec with Matchers {
 
   class Fixture { val phase: Phase = new AddDefaults }
 

@@ -6,8 +6,10 @@ import org.scalatest._
 import firrtl.{Parser, CircuitState, UnknownForm, Transform}
 import firrtl.ir.Circuit
 import firrtl.passes.{Pass,ToWorkingIR,CheckHighForm,ResolveKinds,InferTypes,CheckTypes,PassException,InferWidths,CheckWidths,ResolveFlows,CheckFlows}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class CheckSpec extends FlatSpec with Matchers {
+class CheckSpec extends AnyFlatSpec with Matchers {
   val defaultPasses = Seq(ToWorkingIR, CheckHighForm)
   def checkHighInput(input: String) = {
     defaultPasses.foldLeft(Parser.parse(input.split("\n").toIterator)) {

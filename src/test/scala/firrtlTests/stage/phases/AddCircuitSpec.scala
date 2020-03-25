@@ -2,7 +2,6 @@
 
 package firrtlTests.stage.phases
 
-import org.scalatest.{FlatSpec, Matchers}
 
 import firrtl.Parser
 import firrtl.annotations.NoTargetAnnotation
@@ -12,8 +11,10 @@ import firrtl.stage.{CircuitOption, FirrtlCircuitAnnotation, FirrtlSourceAnnotat
 import firrtl.stage.phases.AddCircuit
 
 import java.io.{File, FileWriter}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class AddCircuitSpec extends FlatSpec with Matchers {
+class AddCircuitSpec extends AnyFlatSpec with Matchers {
 
   case class FooAnnotation(x: Int) extends NoTargetAnnotation
   case class BarAnnotation(x: String) extends NoTargetAnnotation

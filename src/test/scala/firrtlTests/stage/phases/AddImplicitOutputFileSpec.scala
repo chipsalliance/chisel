@@ -2,14 +2,15 @@
 
 package firrtlTests.stage.phases
 
-import org.scalatest.{FlatSpec, Matchers}
 
 import firrtl.{ChirrtlEmitter, EmitAllModulesAnnotation, Parser}
 import firrtl.options.Phase
 import firrtl.stage.{FirrtlCircuitAnnotation, OutputFileAnnotation}
 import firrtl.stage.phases.AddImplicitOutputFile
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class AddImplicitOutputFileSpec extends FlatSpec with Matchers {
+class AddImplicitOutputFileSpec extends AnyFlatSpec with Matchers {
 
   class Fixture { val phase: Phase = new AddImplicitOutputFile }
 

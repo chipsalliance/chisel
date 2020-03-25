@@ -2,7 +2,6 @@
 
 package firrtlTests.options.phases
 
-import org.scalatest.{FlatSpec, Matchers}
 
 import java.io.File
 
@@ -10,8 +9,10 @@ import firrtl.AnnotationSeq
 import firrtl.annotations.{DeletedAnnotation, NoTargetAnnotation}
 import firrtl.options.{InputAnnotationFileAnnotation, OutputAnnotationFileAnnotation, Phase, WriteDeletedAnnotation}
 import firrtl.options.phases.{GetIncludes, WriteOutputAnnotations}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class WriteOutputAnnotationsSpec extends FlatSpec with Matchers with firrtl.testutils.Utils {
+class WriteOutputAnnotationsSpec extends AnyFlatSpec with Matchers with firrtl.testutils.Utils {
 
   val dir = "test_run_dir/WriteOutputAnnotationSpec"
 

@@ -1,11 +1,10 @@
 package firrtlTests
 
-import org.scalatest.FlatSpec
-import org.scalatest.Matchers._
-
 import firrtl.Utils
+import org.scalatest.matchers.should.Matchers._
+import org.scalatest.flatspec.AnyFlatSpec
 
-class UtilsSpec extends FlatSpec {
+class UtilsSpec extends AnyFlatSpec {
 
   behavior of "Utils.expandPrefix"
 

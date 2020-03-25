@@ -2,7 +2,7 @@
 
 package firrtl.stage.phases.tests
 
-import org.scalatest.{FlatSpec, Matchers, PrivateMethodTester}
+import org.scalatest.PrivateMethodTester
 import java.io.File
 
 import firrtl._
@@ -10,8 +10,10 @@ import firrtl.stage.phases.DriverCompatibility._
 import firrtl.options.{InputAnnotationFileAnnotation, Phase, TargetDirAnnotation}
 import firrtl.stage.{CompilerAnnotation, FirrtlCircuitAnnotation, FirrtlFileAnnotation, FirrtlSourceAnnotation, OutputFileAnnotation, RunFirrtlTransformAnnotation}
 import firrtl.stage.phases.DriverCompatibility
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class DriverCompatibilitySpec extends FlatSpec with Matchers with PrivateMethodTester {
+class DriverCompatibilitySpec extends AnyFlatSpec with Matchers with PrivateMethodTester {
 
   class PhaseFixture(val phase: Phase)
 

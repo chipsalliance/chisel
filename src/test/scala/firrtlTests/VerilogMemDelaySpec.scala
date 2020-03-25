@@ -5,9 +5,10 @@ package firrtlTests
 import firrtl._
 import firrtl.passes.memlib.VerilogMemDelays
 import firrtl.passes.CheckHighForm
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
-class VerilogMemDelaySpec extends FreeSpec with Matchers {
+class VerilogMemDelaySpec extends AnyFreeSpec with Matchers {
   "The following low FIRRTL should be parsed by VerilogMemDelays" in {
     val input =
       """

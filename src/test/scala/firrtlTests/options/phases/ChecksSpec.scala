@@ -2,13 +2,14 @@
 
 package firrtlTests.options.phases
 
-import org.scalatest.{FlatSpec, Matchers}
 
 import firrtl.AnnotationSeq
 import firrtl.options.{OptionsException, OutputAnnotationFileAnnotation, Phase, TargetDirAnnotation}
 import firrtl.options.phases.Checks
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class ChecksSpec extends FlatSpec with Matchers {
+class ChecksSpec extends AnyFlatSpec with Matchers {
 
   val targetDir = TargetDirAnnotation("foo")
   val annoOut = OutputAnnotationFileAnnotation("bar")

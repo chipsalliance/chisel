@@ -2,19 +2,20 @@
 
 package firrtlTests.stage
 
-import org.scalatest.{FlatSpec, Matchers}
 
 import firrtl.stage._
 
 import firrtl.{ir, NoneCompiler, Parser}
 import firrtl.options.Viewer.view
 import firrtl.stage.{FirrtlOptions, FirrtlOptionsView}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 class BazCompiler extends NoneCompiler
 
 class Baz_Compiler extends NoneCompiler
 
-class FirrtlOptionsViewSpec extends FlatSpec with Matchers {
+class FirrtlOptionsViewSpec extends AnyFlatSpec with Matchers {
 
   behavior of FirrtlOptionsView.getClass.getName
 

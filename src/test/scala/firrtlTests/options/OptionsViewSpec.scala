@@ -2,13 +2,14 @@
 
 package firrtlTests.options
 
-import org.scalatest.{FlatSpec, Matchers}
 
 import firrtl.options.OptionsView
 import firrtl.AnnotationSeq
 import firrtl.annotations.{Annotation,NoTargetAnnotation}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class OptionsViewSpec extends FlatSpec with Matchers {
+class OptionsViewSpec extends AnyFlatSpec with Matchers {
 
   /* Annotations */
   case class NameAnnotation(name: String) extends NoTargetAnnotation

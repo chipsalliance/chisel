@@ -2,7 +2,6 @@
 
 package firrtlTests.stage.phases
 
-import org.scalatest.{FlatSpec, Matchers}
 
 import java.io.File
 
@@ -11,8 +10,10 @@ import firrtl._
 import firrtl.options.{Phase, TargetDirAnnotation}
 import firrtl.stage.OutputFileAnnotation
 import firrtl.stage.phases.WriteEmitted
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class WriteEmittedSpec extends FlatSpec with Matchers {
+class WriteEmittedSpec extends AnyFlatSpec with Matchers {
 
   def removeEmitted(a: AnnotationSeq): AnnotationSeq = a.flatMap {
     case a: EmittedAnnotation[_] => None

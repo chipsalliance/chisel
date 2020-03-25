@@ -14,7 +14,7 @@ import firrtl.passes.memlib.PinAnnotation
 import firrtl.util.BackendCompilationUtilities
 import firrtl.testutils._
 import net.jcazevedo.moultingyaml._
-import org.scalatest.Matchers
+import org.scalatest.matchers.should.Matchers
 
 /**
  * An example methodology for testing Firrtl annotations.

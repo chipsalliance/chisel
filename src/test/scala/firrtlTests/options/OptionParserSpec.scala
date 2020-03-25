@@ -8,9 +8,10 @@ import firrtl.options.{DoNotTerminateOnExit, DuplicateHandling, ExceptOnError, O
 
 import scopt.OptionParser
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class OptionParserSpec extends FlatSpec with Matchers with firrtl.testutils.Utils {
+class OptionParserSpec extends AnyFlatSpec with Matchers with firrtl.testutils.Utils {
 
   case class IntAnnotation(x: Int) extends NoTargetAnnotation {
     def extract: Int = x

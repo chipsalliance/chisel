@@ -1,10 +1,11 @@
 package firrtlTests.constraint
 
 import firrtl.constraint._
-import org.scalatest.{FlatSpec, Matchers}
 import firrtl.ir.Closed
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class InequalitySpec extends FlatSpec with Matchers {
+class InequalitySpec extends AnyFlatSpec with Matchers {
 
   behavior of "Constraints"
 

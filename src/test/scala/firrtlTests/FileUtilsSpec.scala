@@ -2,11 +2,12 @@
 
 package firrtlTests
 
-import org.scalatest.{FlatSpec, Matchers}
 
 import firrtl.FileUtils
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class FileUtilsSpec extends FlatSpec with Matchers {
+class FileUtilsSpec extends AnyFlatSpec with Matchers {
 
   private val sampleAnnotations: String = "annotations/SampleAnnotations.anno"
   private val sampleAnnotationsFileName: String = s"src/test/resources/$sampleAnnotations"

@@ -2,15 +2,16 @@
 
 package firrtlTests.stage.phases
 
-import org.scalatest.{FlatSpec, Matchers}
 
 import firrtl.{EmitAllModulesAnnotation, EmitCircuitAnnotation, HighFirrtlEmitter, VerilogCompiler}
 import firrtl.annotations.NoTargetAnnotation
 import firrtl.options.Phase
 import firrtl.stage.{CompilerAnnotation, RunFirrtlTransformAnnotation}
 import firrtl.stage.phases.AddImplicitEmitter
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class AddImplicitEmitterSpec extends FlatSpec with Matchers {
+class AddImplicitEmitterSpec extends AnyFlatSpec with Matchers {
 
   case class FooAnnotation(x: Int) extends NoTargetAnnotation
   case class BarAnnotation(x: String) extends NoTargetAnnotation

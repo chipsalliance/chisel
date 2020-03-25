@@ -2,12 +2,13 @@
 
 package firrtlTests.options
 
-import org.scalatest.{FlatSpec, Matchers}
 
 import firrtl.annotations.NoTargetAnnotation
 import firrtl.options.Shell
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class ShellSpec extends FlatSpec with Matchers {
+class ShellSpec extends AnyFlatSpec with Matchers {
 
   case object A extends NoTargetAnnotation
   case object B extends NoTargetAnnotation
