@@ -5,9 +5,10 @@ package transforms
 
 import firrtl.ir._
 import firrtl.Mappers._
+import firrtl.PrimOps.Pad
 import firrtl.options.{Dependency, PreservesAll}
 
-import firrtl.Utils.{isCast, NodeMap}
+import firrtl.Utils.{isCast, isBitExtract, NodeMap}
 
 object InlineCastsTransform {
 
@@ -27,16 +28,18 @@ object InlineCastsTransform {
     * @param expr the Expression being transformed
     * @return Returns expr with [[WRef]]s replaced by values found in replace
     */
-  def onExpr(replace: NodeMap)(expr: Expression): Expression = {
-    expr.map(onExpr(replace)) match {
+  def onExpr(replace: NodeMap)(expr: Expression): Expression = expr match {
+    // Anything that may generate a part-select should not be inlined!
+    case DoPrim(op, _, _, _) if (isBitExtract(op) || op == Pad) => expr
+    case e => e.map(onExpr(replace)) match {
       case e @ WRef(name, _,_,_) =>
         replace.get(name)
-               .filter(isSimpleCast(castSeen=false))
-               .getOrElse(e)
+          .filter(isSimpleCast(castSeen=false))
+          .getOrElse(e)
       case e @ DoPrim(op, Seq(WRef(name, _,_,_)), _,_) if isCast(op) =>
         replace.get(name)
-               .map(value => e.copy(args = Seq(value)))
-               .getOrElse(e)
+          .map(value => e.copy(args = Seq(value)))
+          .getOrElse(e)
       case other => other // Not a candidate
     }
   }
