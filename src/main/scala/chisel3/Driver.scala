@@ -82,6 +82,7 @@ case class ChiselExecutionSuccess(
   */
 case class ChiselExecutionFailure(message: String) extends ChiselExecutionResult
 
+@deprecated("Please switch to chisel3.stage.ChiselStage. Driver will be removed in 3.4.", "3.2.4")
 object Driver extends BackendCompilationUtilities {
 
   /**
@@ -90,6 +91,7 @@ object Driver extends BackendCompilationUtilities {
     * @param gen A function that creates a Module hierarchy.
     * @return The resulting Chisel IR in the form of a Circuit. (TODO: Should be FIRRTL IR)
     */
+  @deprecated("Use ChiselStage.elaborate or use a ChiselStage class. This will be removed in 3.4.", "3.2.4")
   def elaborate[T <: RawModule](gen: () => T): Circuit = internal.Builder.build(Module(gen()))._1
 
   /**
@@ -97,6 +99,7 @@ object Driver extends BackendCompilationUtilities {
     *
     * @param ir Chisel IR Circuit, generated e.g. by elaborate().
     */
+  @deprecated("Use ChiselStage.convert or use a ChiselStage class. This will be removed in 3.4.", "3.2.4")
   def toFirrtl(ir: Circuit): firrtl.ir.Circuit = Converter.convert(ir)
 
   /**
@@ -105,6 +108,7 @@ object Driver extends BackendCompilationUtilities {
     *
     * @param gen A function that creates a Module hierarchy.
     */
+  @deprecated("Use (new chisel3.stage.ChiselStage).emitChirrtl. This will be removed in 3.4.", "3.2.2")
   def emit[T <: RawModule](gen: () => T): String = Driver.emit(elaborate(gen))
 
   /**
@@ -112,6 +116,7 @@ object Driver extends BackendCompilationUtilities {
     *
     * @param ir Chisel IR Circuit, generated e.g. by elaborate().
     */
+  @deprecated("Use (new chisel3.stage.ChiselStage).emitChirrtl", "3.2.2")
   def emit[T <: RawModule](ir: Circuit): String = Emitter.emit(ir)
 
   /**
@@ -120,6 +125,7 @@ object Driver extends BackendCompilationUtilities {
     * @param gen A function that creates a Module hierarchy.
     * @return A String containing the design in Verilog.
     */
+  @deprecated("Use (new chisel3.stage.ChiselStage).emitVerilog. This will be removed in 3.4.", "3.2.2")
   def emitVerilog[T <: RawModule](gen: => T): String = {
     execute(Array[String](), { () => gen }) match {
       case ChiselExecutionSuccess(_, _, Some(firrtl.FirrtlExecutionSuccess(_, verilog))) => verilog
@@ -137,6 +143,7 @@ object Driver extends BackendCompilationUtilities {
     * @param optName File to dump to. If unspecified, defaults to "<topmodule>.fir".
     * @return The File the circuit was dumped to.
     */
+  @deprecated("Migrate to chisel3.stage.ChiselStage. This will be removed in 3.4.", "3.2.4")
   def dumpFirrtl(ir: Circuit, optName: Option[File]): File = {
     val f = optName.getOrElse(new File(ir.name + ".fir"))
     val w = new FileWriter(f)
@@ -151,6 +158,7 @@ object Driver extends BackendCompilationUtilities {
     * @param ir The circuit containing annotations to be emitted
     * @param optName An optional filename (will use s"\${ir.name}.json" otherwise)
     */
+  @deprecated("Migrate to chisel3.stage.ChiselStage. This will be removed in 3.4.", "3.2.4")
   def dumpAnnotations(ir: Circuit, optName: Option[File]): File = {
     val f = optName.getOrElse(new File(ir.name + ".anno.json"))
     val w = new FileWriter(f)
@@ -169,6 +177,7 @@ object Driver extends BackendCompilationUtilities {
     * @param optFile Optional File to dump to. If unspecified, defaults to "<topmodule>.pb".
     * @return The File the circuit was dumped to.
     */
+  @deprecated("Migrate to chisel3.stage.ChiselStage. This will be removed in 3.4.", "3.2.4")
   def dumpProto(c: Circuit, optFile: Option[File]): File = {
     val f = optFile.getOrElse(new File(c.name + ".pb"))
     val ostream = new java.io.FileOutputStream(f)
@@ -179,6 +188,7 @@ object Driver extends BackendCompilationUtilities {
   }
 
   private var target_dir: Option[String] = None
+  @deprecated("Use chisel3.stage.ChiselStage with '--target-directory'. This will be removed in 3.4.", "3.2.2")
   def parseArgs(args: Array[String]): Unit = {
     for (i <- 0 until args.size) {
       if (args(i) == "--targetDir") {
@@ -187,6 +197,7 @@ object Driver extends BackendCompilationUtilities {
     }
   }
 
+  @deprecated("This has no effect on Chisel3 Driver! This will be removed in 3.4.", "3.2.2")
   def targetDir(): String = { target_dir getOrElse new File(".").getCanonicalPath }
 
   /**
@@ -196,6 +207,7 @@ object Driver extends BackendCompilationUtilities {
     * @param dut                    The device under test
     * @return                       An execution result with useful stuff, or failure with message
     */
+  @deprecated("Use chisel3.stage.ChiselStage.execute. This will be removed in 3.4.", "3.2.2")
   def execute( // scalastyle:ignore method.length
       optionsManager: ExecutionOptionsManager with HasChiselExecutionOptions with HasFirrtlOptions,
       dut: () => RawModule): ChiselExecutionResult = {
@@ -241,6 +253,7 @@ object Driver extends BackendCompilationUtilities {
     * @param dut    The device under test
     * @return       An execution result with useful stuff, or failure with message
     */
+  @deprecated("Use chisel3.stage.ChiselStage.execute. This will be removed in 3.4.", "3.2.2")
   def execute(args: Array[String], dut: () => RawModule): ChiselExecutionResult = {
     val optionsManager = new ExecutionOptionsManager("chisel3") with HasChiselExecutionOptions with HasFirrtlOptions
 
@@ -259,6 +272,7 @@ object Driver extends BackendCompilationUtilities {
     *
     * @param args unused args
     */
+  @deprecated("Use chisel3.stage.ChiselMain. This will be removed in 3.4.", "3.2.2")
   def main(args: Array[String]) {
     execute(Array("--help"), null)
   }

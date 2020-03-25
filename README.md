@@ -70,11 +70,25 @@ class FirFilter(bitWidth: Int, coeffs: Seq[UInt]) extends Module {
 
 and use and re-use them across designs:
 ```scala
-val movingAverage3Filter = FirFilter(8.W, Seq(1.U, 1.U, 1.U))  // same 3-point moving average filter as before
-val delayFilter = FirFilter(8.W, Seq(0.U, 1.U))  // 1-cycle delay as a FIR filter
-val triangleFilter = FirFilter(8.W, Seq(1.U, 2.U, 3.U, 2.U, 1.U))  // 5-point FIR filter with a triangle impulse response
+val movingAverage3Filter = Module(new FirFilter(8, Seq(1.U, 1.U, 1.U)))  // same 3-point moving average filter as before
+val delayFilter = Module(new FirFilter(8, Seq(0.U, 1.U)))  // 1-cycle delay as a FIR filter
+val triangleFilter = Module(new FirFilter(8, Seq(1.U, 2.U, 3.U, 2.U, 1.U)))  // 5-point FIR filter with a triangle impulse response
 ```
 
+The above can be converted to Verilog using `ChiselStage`:
+```scala
+import chisel3.stage.{ChiselStage, ChiselGeneratorAnnotation}
+
+(new chisel3.stage.ChiselStage).execute(
+  Array("-X", "verilog"),
+  Seq(ChiselGeneratorAnnotation(() => new FirFilter(8, Seq(1.U, 1.U, 1.U)))))
+```
+
+Alternatively, you may generate some Verilog directly for inspection:
+```scala
+val verilogString = (new chisel3.stage.ChiselStage).emitVerilog(new FirFilter(8, Seq(0.U, 1.U)))
+println(verilogString)
+```
 
 ## Getting Started
 
@@ -186,7 +200,7 @@ Also included is:
   contain commonly used interfaces and constructors (like `Decoupled`, which
   wraps a signal with a ready-valid pair) as well as fully parameterizable
   circuit generators (like arbiters and multiplexors).
-- **Driver utilities**, `chisel3.Driver`, which contains compilation and test
+- **Chisel Stage**, `chisel3.stage.*`, which contains compilation and test
   functions that are invoked in the standard Verilog generation and simulation
   testing infrastructure. These can also be used as part of custom flows.
 
