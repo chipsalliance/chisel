@@ -1014,7 +1014,7 @@ Similar to unsigned integers, a literal signed integer can alternatively be crea
 
 The bit representation contains a binary, octal or hex indicator, followed by an optional sign, followed by the value.
 
-If a bit width is not given, the number of bits in the bit representation is the minimal bitwidth to represent the value represented by the string. The following examples create a 8-bit integer representing the number -13.
+If a bit width is not given, the number of bits in the bit representation is the minimal bitwidth to represent the value represented by the string. The following examples create a 8-bit integer representing the number -13. For all bases, a negative sign acts as if it were a unary negation; in other words, a negative literal produces the additive inverse of the unsigned interpretation of the digit pattern.
 \begin{lstlisting}
 SInt("b-1101")
 SInt("h-d")
@@ -1728,9 +1728,9 @@ The following characters are allowed in identifiers: upper and lower case letter
 
 An integer literal in FIRRTL begins with one of the following, where `\#' represents a digit between 0 and 9.
 \begin{itemize}
-\item `0x' : For indicating a hexadecimal number. The rest of the literal must consist of either digits or a letter between `A' and `F', or the separator `\_'.
-\item `0o' : For indicating an octal number. The rest of the literal must consist of digits between 0 and 7, or the separator `\_'.
-\item `0b' : For indicating a binary number. The rest of the literal must consist of either 0 or 1, or the separator `\_'.
+\item `h' : For indicating a hexadecimal number, followed by an optional sign. The rest of the literal must consist of either digits or a letter between `A' and `F'.
+\item `o' : For indicating an octal number, followed by an optional sign. The rest of the literal must consist of digits between 0 and 7.
+\item `b' : For indicating a binary number, followed by an optional sign. The rest of the literal must consist of digits that are either 0 or 1.
 \item `-\#' : For indicating a negative decimal number. The rest of the literal must consist of digits between 0 and 9.
 \item `\#' : For indicating a positive decimal number. The rest of the literal must consist of digits between 0 and 9.
 \end{itemize}
