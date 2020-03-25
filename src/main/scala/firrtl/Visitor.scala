@@ -28,6 +28,8 @@ class Visitor(infoMode: InfoMode) extends AbstractParseTreeVisitor[FirrtlNode] w
 
   //  These regex have to change if grammar changes
   private val HexPattern = """\"*h([+\-]?[a-zA-Z0-9]+)\"*""".r
+  private val OctalPattern = """\"*o([+\-]?[0-7]+)\"*""".r
+  private val BinaryPattern = """\"*b([+\-]?[01]+)\"*""".r
   private val DecPattern = """([+\-]?[1-9]\d*)""".r
   private val ZeroPattern = "0".r
   private val DecimalPattern = """([+\-]?[0-9]\d*\.[0-9]\d*)""".r
@@ -37,6 +39,8 @@ class Visitor(infoMode: InfoMode) extends AbstractParseTreeVisitor[FirrtlNode] w
     s match {
       case ZeroPattern(_*) => BigInt(0)
       case HexPattern(hexdigits) => BigInt(hexdigits, 16)
+      case OctalPattern(octaldigits) => BigInt(octaldigits, 8)
+      case BinaryPattern(binarydigits) => BigInt(binarydigits, 2)
       case DecPattern(num) => BigInt(num, 10)
       case _ => throw new Exception("Invalid String for conversion to BigInt " + s)
     }
