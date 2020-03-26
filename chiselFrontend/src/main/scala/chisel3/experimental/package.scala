@@ -71,7 +71,63 @@ package object experimental {  // scalastyle:ignore object.name
 
   class dump extends chisel3.internal.naming.dump  // scalastyle:ignore class.name
   class treedump extends chisel3.internal.naming.treedump  // scalastyle:ignore class.name
+  /** Experimental macro for naming Chisel hardware values
+    *
+    * By default, Chisel uses reflection for naming which only works for public fields of `Bundle`
+    * and `Module` classes. Applying this macro annotation to a `class` or `object` enables Chisel
+    * to name any hardware values within the annotated `class` or `object.
+    *
+    * @example {{{
+    * import chisel3._
+    * import chisel3.experimental.chiselName
+    *
+    * @chiselName
+    * class MyModule extends Module {
+    *   val io = IO(new Bundle {
+    *     val in = Input(UInt(8.W))
+    *     val out = Output(UInt(8.W))
+    *   })
+    *   def createReg(): Unit = {
+    *     // @chiselName allows Chisel to name this Reg
+    *     val myReg = RegInit(io.in)
+    *     io.out := myReg
+    *   }
+    *   createReg()
+    * }
+    * }}}
+    */
   class chiselName extends chisel3.internal.naming.chiselName  // scalastyle:ignore class.name
+  /** Do not name instances of this type in [[chiselName]]
+    *
+    * By default, `chiselName` will include `val` names of instances of annotated classes as a
+    * prefix in final naming. Mixing in this trait to a `class`, `object`, or anonymous `class`
+    * instances will exclude the `val` name from `chiselName` naming.
+    *
+    * @example {{{
+    * import chisel3._
+    * import chisel3.experimental.{chiselName, NoChiselNamePrefix}
+    *
+    * // Note that this is not a Module
+    * @chiselName
+    * class Counter(w: Int) {
+    *   val myReg = RegInit(0.U(w.W))
+    *   myReg := myReg + 1.U
+    * }
+    *
+    * @chiselName
+    * class MyModule extends Module {
+    *   val io = IO(new Bundle {
+    *     val out = Output(UInt(8.W))
+    *   })
+    *   // Name of myReg will be "counter0_myReg"
+    *   val counter0 = new Counter(8)
+    *   // Name of myReg will be "myReg"
+    *   val counter1 = new Counter(8) with NoChiselNamePrefix
+    *   io.out := counter0.myReg + counter1.myReg
+    * }
+    * }}}
+    */
+  trait NoChiselNamePrefix
 
   object BundleLiterals {
     implicit class AddBundleLiteralConstructor[T <: Bundle](x: T) {
