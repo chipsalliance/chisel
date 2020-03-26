@@ -3,13 +3,9 @@
 package firrtl
 package transforms
 
-import firrtl.{Utils}
-
-
 import firrtl.PrimOps._
-import firrtl.ir._
-import firrtl.ir.{AsyncResetType}
 import firrtl.annotations._
+import firrtl.ir.{AsyncResetType, _}
 import firrtl.options.{Dependency, PreservesAll}
 
 import scala.collection.mutable
@@ -72,8 +68,8 @@ class PropagatePresetAnnotations extends Transform with PreservesAll[Transform] 
     *     - Annotate all leaf register with PresetRegAnnotation
     *     - Annotate all intermediate wire, node, connect with PresetConnectorAnnotation
     *
-    * @param circuit the circuit
-    * @param annotations all the annotations
+    * @param cs the circuit state
+    * @param presetAnnos all the annotations
     * @return updated annotations
     */
   private def propagate(cs: CircuitState, presetAnnos: Seq[PresetAnnotation]): AnnotationSeq = {
@@ -93,8 +89,7 @@ class PropagatePresetAnnotations extends Transform with PreservesAll[Transform] 
     * WALK I PHASE 1 FUNCTIONS
     */
 
-    /**
-      * Walk current module
+    /* Walk current module
       *  - process ports
       *     - store connections & entry points for PHASE 2
       *  - process statements
@@ -109,14 +104,13 @@ class PropagatePresetAnnotations extends Transform with PreservesAll[Transform] 
       val moduleTarget = circuitTarget.module(m.name)
       val localInstances = new TargetMap()
 
-      /**
-        * Recursively process a given type
+      /* Recursively process a given type
         * Recursive on Bundle and Vector Type only
         * Store Register and Connections for AsyncResetType
-        *
-        * @param tpe Type to be processed
-        * @param target ReferenceTarget associated to the tpe
-        * @param all Boolean indicating whether all subelements of the current tpe should also be stored as Annotated AsyncReset entry points
+        * @param tpe [[Type]] to be processed
+        * @param target [[ReferenceTarget]] associated to the tpe
+        * @param all Boolean indicating whether all subelements of the current
+        *            tpe should also be stored as Annotated AsyncReset entry points
         */
       def processType(tpe: Type, target: ReferenceTarget, all: Boolean): Unit = {
         if(tpe == AsyncResetType){
@@ -149,13 +143,11 @@ class PropagatePresetAnnotations extends Transform with PreservesAll[Transform] 
         processType(w.tpe, target, presets.contains(target))
       }
 
-      /**
-        * Recursively search for the ReferenceTarget of a given Expression
-        *
+      /*  Recursively search for the ReferenceTarget of a given Expression
         * @param e Targeted Expression
         * @param ta Local ReferenceTarget of the Targeted Expression
         * @return a ReferenceTarget in case of success, a GenericTarget otherwise
-        * @throw Internal Error on unexpected recursive path return results
+        * @throws [[InternalError]] on unexpected recursive path return results
         */
       def getRef(e: Expression, ta: ReferenceTarget, annoCo: Boolean = false) : Target = {
         e match {

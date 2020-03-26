@@ -3,16 +3,14 @@
 package firrtl.passes
 
 // Datastructures
-import firrtl._
-import firrtl.annotations.{Annotation, ReferenceTarget}
-import firrtl.ir._
-import firrtl.Utils._
-import firrtl.Mappers._
 import firrtl.Implicits.width2constraint
-import firrtl.annotations.{CircuitTarget, ModuleTarget, ReferenceTarget, Target}
+import firrtl.Mappers._
+import firrtl.Utils._
+import firrtl._
+import firrtl.annotations._
 import firrtl.constraint.{ConstraintSolver, IsMax}
+import firrtl.ir._
 import firrtl.options.{Dependency, PreservesAll}
-import firrtl.traversals.Foreachers._
 
 object InferWidths {
   def apply(): InferWidths = new InferWidths()

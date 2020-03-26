@@ -2,9 +2,9 @@
 
 package firrtl.stage.transforms
 
-import firrtl.{CircuitState, Transform, VerilogEmitter}
 import firrtl.options.DependencyManagerUtils.CharSet
 import firrtl.stage.TransformManager
+import firrtl.{Transform, VerilogEmitter}
 
 class Compiler(
   targets: Seq[TransformManager.TransformDependency],

@@ -465,8 +465,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
     } 
   }
   
-  /** 
-    * Provide API to retrieve EmissionOptions based on the provided AnnotationSeq 
+  /** Provide API to retrieve EmissionOptions based on the provided [[AnnotationSeq]]
     * 
     * @param annotations : AnnotationSeq to be searched for EmissionOptions
     *
@@ -494,7 +493,9 @@ class VerilogEmitter extends SeqTransform with Emitter {
     def getConnectEmissionOption(target: ReferenceTarget): ConnectEmissionOption =
       connectEmissionOption(target)
 
-    private val emissionAnnos = annotations.collect{ case m : SingleTargetAnnotation[ReferenceTarget] with EmissionOption => m }
+    private val emissionAnnos = annotations.collect{
+      case m : SingleTargetAnnotation[ReferenceTarget] @unchecked with EmissionOption => m
+    }
     // using multiple foreach instead of a single partial function as an Annotation can gather multiple EmissionOptions for simplicity
     emissionAnnos.foreach { case a :RegisterEmissionOption => registerEmissionOption += ((a.target,a)) case _ => }
     emissionAnnos.foreach { case a :WireEmissionOption     => wireEmissionOption += ((a.target,a))     case _ => }

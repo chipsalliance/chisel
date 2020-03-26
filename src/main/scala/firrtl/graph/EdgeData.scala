@@ -34,7 +34,7 @@ trait EdgeData[V, E] {
     * @param u the source of the edge
     * @param v the destination of the edge
     * @throws EdgeNotFoundException if the edge does not exist
-    * @throws NoSuchElementException if the edge has no data
+    * @throws scala.NoSuchElementException if the edge has no data
     */
   def edgeData(u: V, v: V): E = {
     assertEdgeExists(u, v)
@@ -76,25 +76,23 @@ trait MutableEdgeData[V, E] extends EdgeData[V, E] {
     edgeDataMap((u, v)) = data
   }
 
-  /**
-    * Add an edge (u,v) to the graph with associated edge data.
+  /** Add an edge (u,v) to the graph with associated edge data.
     *
-    * @see [[DiGraph.addEdge]]
+    * @see [[MutableDiGraph.addEdge]]
     * @param u the source of the edge
     * @param v the destination of the edge
     * @param data the edge data to associate with the edge
-    * @throws IllegalArgumentException if u or v is not part of the graph
+    * @throws scala.IllegalArgumentException if u or v is not part of the graph
     */
   def addEdge(u: V, v: V, data: E): Unit = {
     addEdge(u, v)
     setEdgeData(u, v, data)
   }
 
-  /**
-    * Safely add an edge (u,v) to the graph with associated edge data. If on or more of the two
+  /** Safely add an edge (u,v) to the graph with associated edge data. If on or more of the two
     * vertices is not present in the graph, add them before creating the edge.
     *
-    * @see [[DiGraph.addPairWithEdge]]
+    * @see [[MutableDiGraph.addPairWithEdge]]
     * @param u the source of the edge
     * @param v the destination of the edge
     * @param data the edge data to associate with the edge
@@ -109,7 +107,7 @@ trait MutableEdgeData[V, E] extends EdgeData[V, E] {
     * are present in the graph. This is useful for preventing spurious edge creating when examining
     * a subset of possible nodes.
     *
-    * @see [[DiGraph.addEdgeIfValid]]
+    * @see [[MutableDiGraph.addEdgeIfValid]]
     * @return a Boolean indicating whether the edge was added
     * @param u the source of the edge
     * @param v the destination of the edge

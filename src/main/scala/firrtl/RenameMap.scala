@@ -97,9 +97,9 @@ final class RenameMap private (val underlying: mutable.HashMap[CompleteTarget, S
     */
   def recordAll(map: collection.Map[CompleteTarget, Seq[CompleteTarget]]): Unit =
     map.foreach{
-      case (from: IsComponent, tos: Seq[IsMember]) => completeRename(from, tos)
-      case (from: IsModule, tos: Seq[IsMember]) => completeRename(from, tos)
-      case (from: CircuitTarget, tos: Seq[CircuitTarget]) => completeRename(from, tos)
+      case (from: IsComponent, tos: Seq[_]) => completeRename(from, tos)
+      case (from: IsModule, tos: Seq[_]) => completeRename(from, tos)
+      case (from: CircuitTarget, tos: Seq[_]) => completeRename(from, tos)
       case other => Utils.throwInternalError(s"Illegal rename: ${other._1} -> ${other._2}")
     }
 

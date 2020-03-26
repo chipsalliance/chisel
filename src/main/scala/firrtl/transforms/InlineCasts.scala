@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 package firrtl
 package transforms
 
@@ -18,7 +20,7 @@ object InlineCastsTransform {
     case _ => false
   }
 
-  /** Recursively replace [[WRef]]s with new [[Expression]]s
+  /** Recursively replace [[WRef]]s with new [[firrtl.ir.Expression Expression]]s
     *
     * @param replace a '''mutable''' HashMap mapping [[WRef]]s to values with which the [[WRef]]
     * will be replaced. It is '''not''' mutated in this function
@@ -42,8 +44,9 @@ object InlineCastsTransform {
   /** Inline casts in a Statement
     *
     * @param netlist a '''mutable''' HashMap mapping references to [[firrtl.ir.DefNode DefNode]]s to their connected
-    * [[firrtl.ir.Expression Expression]]s. This function '''will''' mutate it if stmt is a [[firrtl.ir.DefNode
-    * DefNode]] with a value that is a cast [[PrimOp]]
+    * [[firrtl.ir.Expression Expression]]s. This function '''will''' mutate
+    * it if stmt is a [[firrtl.ir.DefNode DefNode]]
+    * with a value that is a cast [[firrtl.ir.PrimOp PrimpOp]]
     * @param stmt the Statement being searched for nodes and transformed
     * @return Returns stmt with casts inlined
     */

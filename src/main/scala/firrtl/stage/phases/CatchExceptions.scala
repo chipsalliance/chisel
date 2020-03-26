@@ -2,10 +2,11 @@
 
 package firrtl.stage.phases
 
-import firrtl.{AnnotationSeq, CustomTransformException, FIRRTLException, FirrtlInternalException, FirrtlUserException,
-  Utils}
-import firrtl.options.{DependencyManagerException, Phase, PhaseException, OptionsException}
-import firrtl.passes.{PassException, PassExceptions}
+import firrtl.options.{DependencyManagerException, OptionsException, Phase, PhaseException}
+import firrtl.{
+  AnnotationSeq, CustomTransformException, FIRRTLException,
+  FirrtlInternalException, FirrtlUserException, Utils
+}
 
 import scala.util.control.ControlThrowable
 

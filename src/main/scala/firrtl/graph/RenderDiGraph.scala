@@ -19,10 +19,9 @@ class RenderDiGraph[T <: Any](diGraph: DiGraph[T], graphName: String = "", rankD
 
   /**
     * override this to change the default way a node is displayed. Default is toString surrounded by double quotes
+    * This example changes the double quotes to brackets
     * {{{
-    * val rend = new RenderDiGraph(graph, "alice") {
-    *   override def renderNode(node: Symbol): String = s"\"${symbol.name}\""
-    *   }
+    *   override def renderNode(node: String): String = { "[" + node + "]" }
     * }}}
     */
   def renderNode(node: T): String = {

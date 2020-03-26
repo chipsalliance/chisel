@@ -80,7 +80,7 @@ trait SingleTargetAnnotation[T <: Named] extends Annotation {
 /** [[MultiTargetAnnotation]] keeps the renamed targets grouped within a single annotation. */
 trait MultiTargetAnnotation extends Annotation {
   /** Contains a sequence of [[Target]].
-    * When creating in [[toFirrtl]], [[targets]] should be assigned by `Seq(Seq(TargetA), Seq(TargetB), Seq(TargetC))`
+    * When created, [[targets]] should be assigned by `Seq(Seq(TargetA), Seq(TargetB), Seq(TargetC))`
     * */
   val targets: Seq[Seq[Target]]
 

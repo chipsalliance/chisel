@@ -10,7 +10,7 @@ import scala.collection.mutable
 
 /** Forwards-Backwards Constraint Solver
   *
-  * Used for computing [[Width]] and [[Bound]] constraints
+  * Used for computing [[firrtl.ir.Width Width]] and [[firrtl.ir.Bound Bound]] constraints
   *
   * Note - this is an O(N) algorithm, but requires exponential memory. We rely on aggressive early optimization
   *   of constraint expressions to (usually) get around this.

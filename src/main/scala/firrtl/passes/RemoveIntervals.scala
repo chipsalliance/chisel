@@ -26,9 +26,9 @@ class WrapWithRemainder(info: Info, mname: String, wrap: DoPrim)
   * 1) Align binary points
   *    - adds shift operators to primop args and connections
   *    - does not affect declaration- or inferred-types
-  * 2) Replace Interval [[DefNode]] with [[DefWire]] + [[Connect]]
+  * 2) Replace Interval [[firrtl.ir.DefNode DefNode]] with [[firrtl.ir.DefWire DefWire]] + [[firrtl.ir.Connect Connect]]
   *    - You have to do this to capture the smaller bitwidths of nodes that intervals give you. Otherwise, any future
-  *    InferTypes would reinfer the larger widths on these nodes from SInt width inference rules
+  *    InferTypes would re-infer the larger widths on these nodes from SInt width inference rules
   * 3) Replace declaration IntervalType's with SIntType's
   *    - for each declaration:
   *      a. remove non-zero binary points
