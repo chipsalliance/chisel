@@ -124,10 +124,12 @@ lazy val chiselSettings = Seq (
 
 lazy val macros = (project in file("macros")).
   settings(name := "chisel3-macros").
-  settings(commonSettings: _*)
+  settings(commonSettings: _*).
+  settings(publishSettings: _*)
 
 lazy val core = (project in file("core")).
   settings(commonSettings: _*).
+  settings(publishSettings: _*).
   settings(
     name := "chisel3-core",
     scalacOptions := scalacOptions.value ++ Seq(
