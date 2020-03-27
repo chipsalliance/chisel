@@ -46,7 +46,7 @@ class ChiselStage extends Stage with PreservesAll[Phase] {
         .augmentString(stackTrace)
         .lines
         .foreach(line => println(s"${ErrorLog.errTag} $line")) // scalastyle:ignore regex
-      throw new StageError()
+      throw new StageError(cause=ce)
   }
 
   /** Convert a Chisel module to a CHIRRTL string
