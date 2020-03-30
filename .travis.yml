@@ -17,9 +17,9 @@ git:
   depth: false
 
 scala:
-  - 2.12.6
+  - 2.12.11
 env:
-  - buildDir=$HOME/build scalaVersion=2.12 scalaMinorVersion=6
+  - buildDir=$HOME/build scalaVersion=2.12 scalaMinorVersion=11
 
 jdk:
   - openjdk8
