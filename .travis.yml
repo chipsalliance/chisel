@@ -43,6 +43,10 @@ jobs:
         - bash .install_yosys.sh
         - yosys -V
     - stage: test
+      name: "Unidoc builds (no warnings)"
+      script:
+        - sbt $SBT_ARGS unidoc
+    - stage: test
       name: "Tests: FIRRTL (2.12)"
       script:
         - verilator --version
