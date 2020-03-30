@@ -324,7 +324,7 @@ class ModuleWithOptionalIO(flag: Boolean) extends MultiIOModule {
   val in = if (flag) Some(IO(Input(Bool()))) else None
   val out = IO(Output(Bool()))
 
-  out := if (flag) in.get else false.B
+  out := in.getOrElse(false.B)
 }
 ```
 
