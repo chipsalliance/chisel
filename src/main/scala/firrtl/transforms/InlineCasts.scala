@@ -6,7 +6,7 @@ package transforms
 import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.PrimOps.Pad
-import firrtl.options.{Dependency, PreservesAll}
+import firrtl.options.Dependency
 
 import firrtl.Utils.{isCast, isBitExtract, NodeMap}
 
@@ -66,7 +66,7 @@ object InlineCastsTransform {
 }
 
 /** Inline nodes that are simple casts */
-class InlineCastsTransform extends Transform with PreservesAll[Transform] {
+class InlineCastsTransform extends Transform {
   def inputForm = UnknownForm
   def outputForm = UnknownForm
 
@@ -80,6 +80,11 @@ class InlineCastsTransform extends Transform with PreservesAll[Transform] {
   override val optionalPrerequisites = firrtl.stage.Forms.LowFormOptimized
 
   override val dependents = Seq.empty
+
+  override def invalidates(a: Transform): Boolean = a match {
+    case _: LegalizeClocksTransform => true
+    case _ => false
+  }
 
   def execute(state: CircuitState): CircuitState = {
     val modulesx = state.circuit.modules.map(InlineCastsTransform.onMod(_))
