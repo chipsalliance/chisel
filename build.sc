@@ -92,13 +92,13 @@ class chisel3CrossModule(crossVersionValue: String) extends CommonModule with Pu
   
   object test extends Tests {
     private def ivyCrossDeps = majorVersion match {
-      case i if i < 12 => Agg(ivy"junit:junit:4.12")
+      case i if i < 12 => Agg(ivy"junit:junit:4.13")
       case _ => Agg()
     }
 
     def ivyDeps = Agg(
       ivy"org.scalatest::scalatest:3.1.0",
-      ivy"org.scalacheck::scalacheck:1.14.3",
+      ivy"org.scalatestplus::scalacheck-1-14:3.1.0.1",
       ivy"com.github.scopt::scopt:3.7.1"
     ) ++ ivyCrossDeps
 
