@@ -52,7 +52,7 @@ case class ChiselGeneratorAnnotation(gen: () => RawModule) extends NoTargetAnnot
   } catch {
     case e @ (_: OptionsException | _: ChiselException) => throw e
     case e: Throwable =>
-      throw new OptionsException(s"Exception thrown when elaborating ChiselGeneratorAnnotation", e)
+      throw new ChiselException(s"Exception thrown when elaborating ChiselGeneratorAnnotation", e)
   }
 
 }
