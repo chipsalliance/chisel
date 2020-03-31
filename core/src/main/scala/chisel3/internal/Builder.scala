@@ -70,7 +70,6 @@ trait InstanceId {
   def parentPathName: String
   def parentModName: String
   /** Returns a FIRRTL Named that refers to this object in the elaborated hardware graph */
-  @deprecated("toNamed API is deprecated -- use toTarget instead", "3.2")
   def toNamed: Named
   /** Returns a FIRRTL IsMember that refers to this object in the elaborated hardware graph */
   def toTarget: IsMember
@@ -169,7 +168,6 @@ private[chisel3] trait NamedComponent extends HasId {
   /** Returns a FIRRTL ComponentName that references this object
     * @note Should not be called until circuit elaboration is complete
     */
-  @deprecated("toNamed API is deprecated -- use toTarget instead", "3.2")
   final def toNamed: ComponentName =
     ComponentName(this.instanceName, ModuleName(this.parentModName, CircuitName(this.circuitName)))
 

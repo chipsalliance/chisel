@@ -4,9 +4,9 @@ package chiselTests.stage
 
 import chisel3._
 import chisel3.stage.ChiselMain
-
 import java.io.File
 
+import chisel3.aop.inspecting.{InspectingAspect, InspectorAspect}
 import org.scalatest.GivenWhenThen
 import org.scalatest.featurespec.AnyFeatureSpec
 import org.scalatest.matchers.should.Matchers
@@ -15,12 +15,32 @@ object ChiselMainSpec {
 
   /** A module that connects two different types together resulting in an elaboration error */
   class DifferentTypesModule extends RawModule {
-    val in = IO(UInt(1.W))
-    val out = IO(SInt(1.W))
+    val in = IO(Input(UInt(1.W)))
+    val out = IO(Output(SInt(1.W)))
     out := in
   }
 
+  /** A module that connects two of the same types together */
+  class SameTypesModule extends MultiIOModule {
+    val in = IO(Input(UInt(1.W)))
+    val out = IO(Output(UInt(1.W)))
+    out := in
+  }
+
+  /** A module that fails a requirement */
+  class FailingRequirementModule extends RawModule {
+    require(false)
+  }
+
 }
+
+case class TestClassAspect() extends InspectorAspect[RawModule] ({
+  _: RawModule => println("Ran inspectingAspect")
+})
+
+case object TestObjectAspect extends InspectorAspect[RawModule] ({
+  _: RawModule => println("Ran inspectingAspect")
+})
 
 class ChiselMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers with chiselTests.Utils {
 
@@ -113,6 +133,31 @@ class ChiselMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
                      generator = Some(classOf[DifferentTypesModule]),
                      stdout = Some("org.scalatest"),
                      result = 1)
+    ).foreach(runStageExpectFiles)
+  }
+  feature("Report properly trimmed stack traces") {
+    Seq(
+      ChiselMainTest(args = Array("-X", "low"),
+                     generator = Some(classOf[FailingRequirementModule]),
+                     stdout = Some("requirement failed"),
+                     result = 1),
+      ChiselMainTest(args = Array("-X", "low", "--full-stacktrace"),
+                     generator = Some(classOf[FailingRequirementModule]),
+                     stdout = Some("chisel3.internal.ChiselException"),
+                     result = 1)
+    ).foreach(runStageExpectFiles)
+  }
+
+  info("As an aspect writer")
+  info("I write an aspect")
+  feature("Running aspects via the command line") {
+    Seq(
+      ChiselMainTest(args = Array( "-X", "high", "--with-aspect", "chiselTests.stage.TestClassAspect" ),
+        generator = Some(classOf[SameTypesModule]),
+        stdout = Some("Ran inspectingAspect")),
+      ChiselMainTest(args = Array( "-X", "high", "--with-aspect", "chiselTests.stage.TestObjectAspect" ),
+        generator = Some(classOf[SameTypesModule]),
+        stdout = Some("Ran inspectingAspect"))
     ).foreach(runStageExpectFiles)
   }
 
