@@ -4,6 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.experimental.FixedPoint
+import chisel3.internal.ChiselException
 import chisel3.testers.BasicTester
 import chisel3.util.{Mux1H, UIntToOH}
 import org.scalatest._
@@ -31,23 +32,31 @@ class OneHotMuxSpec extends FreeSpec with Matchers with ChiselRunners {
     assertTesterPasses(new ParameterizedAggregateOneHotTester)
   }
   "simple one hot mux with all aggregates containing inferred width fixed values should NOT work" in {
-    intercept[ChiselException] {
+    intercept [ChiselException] {
       assertTesterPasses(new InferredWidthAggregateOneHotTester)
     }
   }
   "simple one hot mux with all fixed width bundles but with different bundles should Not work" in {
-    intercept[IllegalArgumentException] {
+    try {
       assertTesterPasses(new DifferentBundleOneHotTester)
+    } catch {
+      case a: ChiselException => a.getCause match {
+        case _: IllegalArgumentException =>
+      }
     }
   }
   "UIntToOH with output width greater than 2^(input width)" in {
     assertTesterPasses(new UIntToOHTester)
   }
   "UIntToOH should not accept width of zero (until zero-width wires are fixed" in {
-    intercept[java.lang.IllegalArgumentException] {
+    try {
       assertTesterPasses(new BasicTester {
         val out = UIntToOH(0.U, 0)
       })
+    } catch {
+      case a: ChiselException => a.getCause match {
+        case _: IllegalArgumentException =>
+      }
     }
   }
 
@@ -305,4 +314,3 @@ class UIntToOHTester extends BasicTester {
 
   stop()
 }
-

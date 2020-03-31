@@ -7,7 +7,6 @@ import org.scalatest.prop._
 import org.scalacheck._
 import chisel3._
 import chisel3.testers._
-import firrtl.options.OptionsException
 import firrtl.{AnnotationSeq, CommonOptions, ExecutionOptionsManager, FirrtlExecutionFailure, FirrtlExecutionSuccess, HasFirrtlOptions}
 import firrtl.util.BackendCompilationUtilities
 import java.io.ByteArrayOutputStream
@@ -100,7 +99,7 @@ class ChiselTestUtilitiesSpec extends ChiselFlatSpec {
   import org.scalatest.exceptions.TestFailedException
   // Who tests the testers?
   "assertKnownWidth" should "error when the expected width is wrong" in {
-    val caught = intercept[OptionsException] {
+    val caught = intercept[ChiselException] {
       assertKnownWidth(7) {
         Wire(UInt(8.W))
       }
@@ -123,7 +122,7 @@ class ChiselTestUtilitiesSpec extends ChiselFlatSpec {
   }
 
   "assertInferredWidth" should "error if the width is known" in {
-    val caught = intercept[OptionsException] {
+    val caught = intercept[ChiselException] {
       assertInferredWidth(8) {
         Wire(UInt(8.W))
       }

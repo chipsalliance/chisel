@@ -4,7 +4,7 @@ package chisel3.stage.phases
 
 import firrtl.{AnnotationSeq, EmittedFirrtlCircuit, EmittedFirrtlCircuitAnnotation}
 import firrtl.annotations.DeletedAnnotation
-import firrtl.options.{Phase, StageOptions}
+import firrtl.options.{Dependency, Phase, StageOptions}
 import firrtl.options.Viewer.view
 
 import chisel3.internal.firrtl.{Emitter => OldEmitter}
@@ -25,10 +25,10 @@ import java.io.{File, FileWriter}
 class Emitter extends Phase {
 
   override val prerequisites =
-    Seq( classOf[Elaborate],
-         classOf[AddImplicitOutputFile],
-         classOf[AddImplicitOutputAnnotationFile],
-         classOf[MaybeAspectPhase] )
+    Seq( Dependency[Elaborate],
+         Dependency[AddImplicitOutputFile],
+         Dependency[AddImplicitOutputAnnotationFile],
+         Dependency[MaybeAspectPhase] )
 
   override def invalidates(phase: Phase): Boolean = phase match {
     case _: Elaborate => true
