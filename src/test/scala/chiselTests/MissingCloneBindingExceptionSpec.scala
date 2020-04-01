@@ -3,6 +3,7 @@
 package chiselTests
 import Chisel.ChiselException
 import org.scalatest._
+import org.scalatest.matchers.should.Matchers
 
 class MissingCloneBindingExceptionSpec extends ChiselFlatSpec with Matchers {
   behavior of "missing cloneType in Chisel3"

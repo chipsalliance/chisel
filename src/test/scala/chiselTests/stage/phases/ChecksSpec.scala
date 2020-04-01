@@ -2,7 +2,6 @@
 
 package chiselTests.stage.phases
 
-import org.scalatest.{FlatSpec, Matchers}
 
 import chisel3.stage.{ChiselOutputFileAnnotation, NoRunFirrtlCompilerAnnotation, PrintFullStackTraceAnnotation}
 import chisel3.stage.phases.Checks
@@ -10,8 +9,10 @@ import chisel3.stage.phases.Checks
 import firrtl.AnnotationSeq
 import firrtl.annotations.NoTargetAnnotation
 import firrtl.options.{OptionsException, Phase}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class ChecksSpec extends FlatSpec with Matchers {
+class ChecksSpec extends AnyFlatSpec with Matchers {
 
   def checkExceptionMessage(phase: Phase, annotations: AnnotationSeq, messageStart: String): Unit =
     intercept[OptionsException]{ phase.transform(annotations) }.getMessage should startWith(messageStart)
