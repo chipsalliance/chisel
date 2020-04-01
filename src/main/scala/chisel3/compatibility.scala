@@ -300,7 +300,7 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
 
   import chisel3.CompileOptions
   abstract class CompatibilityModule(implicit moduleCompileOptions: CompileOptions)
-      extends chisel3.internal.LegacyModule {
+      extends chisel3.internal.LegacyModule()(moduleCompileOptions) {
     // This class auto-wraps the Module IO with IO(...), allowing legacy code (where IO(...) wasn't
     // required) to build.
     // Also provides the clock / reset constructors, which were used before withClock happened.

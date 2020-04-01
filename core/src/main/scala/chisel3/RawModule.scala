@@ -134,6 +134,14 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
   }
 }
 
+trait RequireAsyncReset extends MultiIOModule {
+  override private[chisel3] def mkReset: AsyncReset = AsyncReset()
+}
+
+trait RequireSyncReset extends MultiIOModule {
+  override private[chisel3] def mkReset: Bool = Bool()
+}
+
 /** Abstract base class for Modules, which behave much like Verilog modules.
   * These may contain both logic and state which are written in the Module
   * body (constructor).
@@ -144,11 +152,13 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
 abstract class MultiIOModule(implicit moduleCompileOptions: CompileOptions)
     extends RawModule {
   // Implicit clock and reset pins
-  val clock: Clock = IO(Input(Clock()))
-  val reset: Reset = {
+  final val clock: Clock = IO(Input(Clock()))
+  final val reset: Reset = IO(Input(mkReset))
+
+  private[chisel3] def mkReset: Reset = {
     // Top module and compatibility mode use Bool for reset
     val inferReset = _parent.isDefined && moduleCompileOptions.inferModuleReset
-    IO(Input(if (inferReset) Reset() else Bool()))
+    if (inferReset) Reset() else Bool()
   }
 
   // Setup ClockAndReset
