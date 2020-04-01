@@ -19,7 +19,7 @@ import chisel3._
   * ))
   * }}}
   *
-  * @note results undefined if multiple select signals are simultaneously high
+  * @note results unspecified unless exactly one select signal is high
   */
 object Mux1H {
   def apply[T <: Data](sel: Seq[Bool], in: Seq[T]): T =
