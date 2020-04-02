@@ -132,11 +132,23 @@ lazy val publishSettings = Seq(
   }
 )
 
+
+def scalacDocOptionsVersion(scalaVersion: String): Seq[String] = {
+  Seq() ++ {
+    // If we're building with Scala > 2.11, enable the compile option
+    //  to flag warnings as errors. This must be disabled for 2.11 since
+    //  references to the Java class library from Java 9 on generate warnings.
+    //  https://github.com/scala/bug/issues/10675
+    CrossVersion.partialVersion(scalaVersion) match {
+      case Some((2, scalaMajor: Long)) if scalaMajor < 12 => Seq()
+      case _ => Seq("-Xfatal-warnings")
+    }
+  }
+}
 lazy val docSettings = Seq(
   doc in Compile := (doc in ScalaUnidoc).value,
   autoAPIMappings := true,
   scalacOptions in Compile in doc ++= Seq(
-    "-Xfatal-warnings",
     "-feature",
     "-diagrams",
     "-diagrams-max-classes", "25",
@@ -154,7 +166,7 @@ lazy val docSettings = Seq(
         }
       s"https://github.com/freechipsproject/firrtl/tree/$branch€{FILE_PATH}.scala"
     }
-  ) ++ scalacOptionsVersion(scalaVersion.value)
+  ) ++ scalacOptionsVersion(scalaVersion.value) ++ scalacDocOptionsVersion(scalaVersion.value)
 )
 
 lazy val firrtl = (project in file("."))
