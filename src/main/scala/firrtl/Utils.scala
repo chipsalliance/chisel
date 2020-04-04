@@ -522,11 +522,6 @@ object Utils extends LazyLogging {
     case SourceFlow => Input
     case SinkFlow => Output
   }
-  @deprecated("Migrate from 'Gender' to 'Flow. This method will be removed in 1.3", "1.2")
-  def to_gender(d: Direction): Gender = d match {
-    case Input => MALE
-    case Output => FEMALE
-  }
   def to_flow(d: Direction): Flow = d match {
     case Input => SourceFlow
     case Output => SinkFlow
@@ -583,38 +578,6 @@ object Utils extends LazyLogging {
     case ex: WSubAccess => kind(ex.expr)
     case ex => ExpKind
   }
-  @deprecated("Migrate from 'Gender' to 'Flow'. This method will be removed in 1.3", "1.2")
-  def gender(e: Expression): Gender = e match {
-    case ex: WRef => ex.gender
-    case ex: WSubField => ex.gender
-    case ex: WSubIndex => ex.gender
-    case ex: WSubAccess => ex.gender
-    case ex: DoPrim => MALE
-    case ex: UIntLiteral => MALE
-    case ex: SIntLiteral => MALE
-    case ex: Mux => MALE
-    case ex: ValidIf => MALE
-    case WInvalid => MALE
-    case ex => throwInternalError(s"gender: shouldn't be here - $e")
-  }
-  @deprecated("Migrate from 'Gender' to 'Flow'. This method will be removed in 1.3", "1.2")
-  def get_gender(s: Statement): Gender = s match {
-    case sx: DefWire => BIGENDER
-    case sx: DefRegister => BIGENDER
-    case sx: WDefInstance => MALE
-    case sx: DefNode => MALE
-    case sx: DefInstance => MALE
-    case sx: DefMemory => MALE
-    case sx: Block => UNKNOWNGENDER
-    case sx: Connect => UNKNOWNGENDER
-    case sx: PartialConnect => UNKNOWNGENDER
-    case sx: Stop => UNKNOWNGENDER
-    case sx: Print => UNKNOWNGENDER
-    case sx: IsInvalid => UNKNOWNGENDER
-    case EmptyStmt => UNKNOWNGENDER
-  }
-  @deprecated("Migrate from 'Gender' to 'Flow'. This method will be removed in 1.3", "1.2")
-  def get_gender(p: Port): Gender = if (p.direction == Input) MALE else FEMALE
   def flow(e: Expression): Flow = e match {
     case ex: WRef => ex.flow
     case ex: WSubField => ex.flow
