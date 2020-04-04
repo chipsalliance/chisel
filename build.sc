@@ -18,7 +18,7 @@ def getVersion(dep: String, org: String = "edu.berkeley.cs") = {
   ivy"$org::$dep:$version"
 }
 
-// Since chisel contains submodule chiselFrontend and coreMacros, a CommonModule is needed
+// Since chisel contains submodule core and macros, a CommonModule is needed
 trait CommonModule extends ScalaModule with SbtModule with PublishModule {
   def firrtlModule: Option[PublishModule]
 
@@ -88,7 +88,7 @@ class chisel3CrossModule(crossVersionValue: String) extends CommonModule with Pu
 
   def firrtlModule: Option[PublishModule] = None
 
-  override def moduleDeps = super.moduleDeps ++ Seq(coreMacros, chiselFrontend) ++ firrtlModule
+  override def moduleDeps = super.moduleDeps ++ Seq(macros, core) ++ firrtlModule
   
   object test extends Tests {
     private def ivyCrossDeps = majorVersion match {
@@ -125,18 +125,18 @@ class chisel3CrossModule(crossVersionValue: String) extends CommonModule with Pu
     Seq(generatedBuildInfo()._2)
   }
 
-  object coreMacros extends CommonModule {
+  object macros extends CommonModule {
     def firrtlModule = m.firrtlModule
 
     def crossVersion = crossVersionValue
   }
 
-  object chiselFrontend extends CommonModule { 
+  object core extends CommonModule { 
     def firrtlModule = m.firrtlModule
 
     def crossVersion = crossVersionValue
 
-    def moduleDeps = super.moduleDeps ++ Seq(coreMacros) ++ firrtlModule
+    def moduleDeps = super.moduleDeps ++ Seq(macros) ++ firrtlModule
 
     def scalacOptions = super.scalacOptions() ++ Seq(
       "-deprecation",
