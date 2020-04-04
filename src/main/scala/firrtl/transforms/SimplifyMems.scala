@@ -28,8 +28,7 @@ class SimplifyMems extends Transform {
     val mTarget = ModuleTarget(c.main, m.name)
 
     def onExpr(e: Expression): Expression = e.map(onExpr) match {
-      case WRef(name, tpe, MemKind, gender) if memAdapters.contains(name) =>
-        WRef(name, tpe, WireKind, gender)
+      case wr @ WRef(name, _, MemKind, _) if memAdapters.contains(name) => wr.copy(kind = WireKind)
       case e => e
     }
 
