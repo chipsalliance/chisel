@@ -731,19 +731,3 @@ object CheckFlows extends Pass with PreservesAll[Transform] {
   }
 }
 
-@deprecated("Use 'CheckFlows'. This object will be removed in 1.3", "1.2")
-object CheckGenders {
-
-  implicit def toStr(g: Gender): String = g match {
-    case MALE => "source"
-    case FEMALE => "sink"
-    case UNKNOWNGENDER => "unknown"
-    case BIGENDER => "sourceOrSink"
-  }
-
-  def run(c: Circuit): Circuit = CheckFlows.run(c)
-
-  @deprecated("Use 'CheckFlows.WrongFlow'. This class will be removed in 1.3", "1.2")
-  class WrongGender(info:Info, mname: String, expr: String, wrong: Flow, right: Flow) extends PassException(
-    s"$info: [module $mname]  Expression $expr is used as a $wrong but can only be used as a $right.")
-}

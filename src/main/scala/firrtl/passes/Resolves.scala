@@ -88,17 +88,6 @@ object ResolveFlows extends Pass with PreservesAll[Transform] {
     c copy (modules = c.modules map resolve_flow)
 }
 
-@deprecated("Use 'ResolveFlows'. This will be removed in 1.3", "1.2")
-object ResolveGenders extends Pass {
-
-  def run(c: Circuit): Circuit = ResolveFlows.run(c)
-
-  def resolve_e(g: Gender)(e: Expression): Expression = ResolveFlows.resolve_e(g)(e)
-
-  def resolve_s(s: Statement): Statement = ResolveFlows.resolve_s(s)
-
-}
-
 object CInferMDir extends Pass with PreservesAll[Transform] {
 
   override val prerequisites = firrtl.stage.Forms.ChirrtlForm :+ Dependency(CInferTypes)
