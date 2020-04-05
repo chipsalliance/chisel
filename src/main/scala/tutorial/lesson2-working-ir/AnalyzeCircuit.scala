@@ -4,9 +4,9 @@ package tutorial
 package lesson2
 
 // Compiler Infrastructure
-import firrtl.{Transform, LowForm, CircuitState, Utils}
+import firrtl.{Transform, LowForm, CircuitState}
 // Firrtl IR classes
-import firrtl.ir.{DefModule, Statement, DefInstance, Expression, Mux}
+import firrtl.ir.{DefModule, Statement, Expression, Mux}
 // Firrtl compiler's working IR classes (WIR)
 import firrtl.WDefInstance
 // Map functions
