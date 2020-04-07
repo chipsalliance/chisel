@@ -82,7 +82,7 @@ class ChiselStage extends Stage with PreservesAll[Phase] {
 
     execute(Array("-X", "high") ++ args, ChiselGeneratorAnnotation(() => gen) +: annotations)
       .collectFirst {
-        case DeletedAnnotation(_, EmittedFirrtlCircuitAnnotation(a)) => a
+        case EmittedFirrtlCircuitAnnotation(a) => a
       }
       .get
       .value
@@ -102,7 +102,7 @@ class ChiselStage extends Stage with PreservesAll[Phase] {
 
     execute(Array("-X", "verilog") ++ args, ChiselGeneratorAnnotation(() => gen) +: annotations)
       .collectFirst {
-        case DeletedAnnotation(_, EmittedVerilogCircuitAnnotation(a)) => a
+        case EmittedVerilogCircuitAnnotation(a) => a
       }
       .get
       .value
