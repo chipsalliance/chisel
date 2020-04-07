@@ -18,6 +18,7 @@ object RemoveAccesses extends Pass {
 
   override val prerequisites =
     Seq( Dependency(PullMuxes),
+         Dependency(ZeroLengthVecs),
          Dependency(ReplaceAccesses),
          Dependency(ExpandConnects) ) ++ firrtl.stage.Forms.Deduped
 

@@ -51,6 +51,7 @@ object Forms {
          Dependency(passes.ReplaceAccesses),
          Dependency(passes.ExpandConnects),
          Dependency(passes.RemoveAccesses),
+         Dependency(passes.ZeroLengthVecs),
          Dependency[passes.ExpandWhensAndCheck],
          Dependency[passes.RemoveIntervals],
          Dependency(passes.ConvertFixedToSInt),

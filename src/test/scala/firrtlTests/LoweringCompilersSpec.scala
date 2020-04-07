@@ -61,6 +61,7 @@ class LoweringCompilersSpec extends FlatSpec with Matchers {
       passes.PullMuxes,
       passes.ReplaceAccesses,
       passes.ExpandConnects,
+      passes.ZeroLengthVecs,
       passes.RemoveAccesses,
       passes.Uniquify,
       passes.ExpandWhens,
@@ -156,17 +157,17 @@ class LoweringCompilersSpec extends FlatSpec with Matchers {
   it should "replicate the old order" in {
     val tm = new TransformManager(Forms.MidForm, Forms.Deduped)
     val patches = Seq(
-      Add(5, Seq(Dependency(firrtl.passes.ResolveKinds),
+      Add(6, Seq(Dependency(firrtl.passes.ResolveKinds),
                  Dependency(firrtl.passes.InferTypes))),
-      Del(6),
       Del(7),
-      Add(6, Seq(Dependency[firrtl.passes.ExpandWhensAndCheck])),
-      Del(10),
+      Del(8),
+      Add(7, Seq(Dependency[firrtl.passes.ExpandWhensAndCheck])),
       Del(11),
       Del(12),
-      Add(11, Seq(Dependency(firrtl.passes.ResolveFlows),
+      Del(13),
+      Add(12, Seq(Dependency(firrtl.passes.ResolveFlows),
                   Dependency[firrtl.passes.InferWidths])),
-      Del(13)
+      Del(14)
     )
     compare(legacyTransforms(new HighFirrtlToMiddleFirrtl), tm, patches)
   }
