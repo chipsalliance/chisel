@@ -130,6 +130,7 @@ package experimental {
       requireIsHardware(target, "node requested directionality on")
       target.direction
     }
+    def checkTypeEquivalence(x: Data, y: Data): Boolean = x.typeEquivalent(y)
 
     // Returns the top-level module ports
     // TODO: maybe move to something like Driver or DriverUtils, since this is mainly for interacting
