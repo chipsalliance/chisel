@@ -13,6 +13,7 @@ import firrtl.util.BackendCompilationUtilities
 import java.io.ByteArrayOutputStream
 import java.security.Permission
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
+import scala.reflect.ClassTag
 
 /** Common utility functions for Chisel unit tests. */
 trait ChiselRunners extends Assertions with BackendCompilationUtilities {
@@ -282,6 +283,35 @@ trait Utils {
     } finally {
       System.setSecurityManager(null)
     }
+  }
+
+  /** Run some code extracting an exception cause that matches a type parameter
+    * @param thunk some code to run
+    * @tparam A the type of the exception to expect
+    * @return nothing
+    * @throws the exception of type parameter A if it was found
+    */
+  def extractCause[A <: Throwable : ClassTag](thunk: => Any): Unit = {
+    def unrollCauses(a: Throwable): Seq[Throwable] = a match {
+      case null => Seq.empty
+      case _    => a +: unrollCauses(a.getCause)
+    }
+
+    val exceptions: Seq[_ <: Throwable] = try {
+      thunk
+      Seq.empty
+    } catch {
+      case a: Throwable => unrollCauses(a)
+    }
+
+    exceptions.collectFirst{ case a: A => a } match {
+      case Some(a) => throw a
+      case None => exceptions match {
+        case Nil    => Unit
+        case h :: t => throw h
+      }
+    }
+
   }
 
 }
