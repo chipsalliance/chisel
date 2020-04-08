@@ -11,6 +11,7 @@ import firrtl.{AnnotationSeq, CommonOptions, ExecutionOptionsManager, FirrtlExec
 import firrtl.util.BackendCompilationUtilities
 import java.io.ByteArrayOutputStream
 import java.security.Permission
+import scala.reflect.ClassTag
 
 /** Common utility functions for Chisel unit tests. */
 trait ChiselRunners extends Assertions with BackendCompilationUtilities {
@@ -279,6 +280,25 @@ trait Utils {
       case WriteException(a) => Left(a)
     } finally {
       System.setSecurityManager(null)
+    }
+  }
+
+  /** Run some code looking for a specific exception anywhere in the stack trace.
+    * @param thunk some code to run
+    * @tparam A the type of the exception to expect
+    * @return optionally, the exception if it was found, none otherwise
+    */
+  def containsCause[A <: Throwable : ClassTag](thunk: => Any): Option[Throwable] = {
+    def unrollCauses(a: Throwable): Seq[Throwable] = a match {
+      case null => Seq.empty
+      case _    => a +: unrollCauses(a.getCause)
+    }
+
+    try {
+      thunk
+      None
+    } catch {
+      case a: Throwable => unrollCauses(a).collectFirst{ case a: A => a }
     }
   }
 
