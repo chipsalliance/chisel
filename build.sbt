@@ -104,7 +104,7 @@ lazy val chiselSettings = Seq (
 // when compiling tests under 2.11.12
 // An explicit dependency on junit seems to alleviate this.
   libraryDependencies ++= Seq(
-    "junit" % "junit" % "4.12" % "test",
+    "junit" % "junit" % "4.13" % "test",
     "org.scalatest" %% "scalatest" % "3.0.8" % "test",
     "org.scalacheck" %% "scalacheck" % "1.14.3" % "test",
     "com.github.scopt" %% "scopt" % "3.7.1"
@@ -124,10 +124,12 @@ lazy val chiselSettings = Seq (
 
 lazy val macros = (project in file("macros")).
   settings(name := "chisel3-macros").
-  settings(commonSettings: _*)
+  settings(commonSettings: _*).
+  settings(publishSettings: _*)
 
 lazy val core = (project in file("core")).
   settings(commonSettings: _*).
+  settings(publishSettings: _*).
   settings(
     name := "chisel3-core",
     scalacOptions := scalacOptions.value ++ Seq(

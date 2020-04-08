@@ -130,7 +130,7 @@ package object experimental {  // scalastyle:ignore object.name
   trait NoChiselNamePrefix
 
   object BundleLiterals {
-    implicit class AddBundleLiteralConstructor[T <: Bundle](x: T) {
+    implicit class AddBundleLiteralConstructor[T <: Record](x: T) {
       //scalastyle:off method.name
       def Lit(elems: (T => (Data, Data))*): T = {
         x._makeLit(elems: _*)
