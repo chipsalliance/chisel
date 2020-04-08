@@ -49,13 +49,12 @@ class DontTouchSpec extends ChiselFlatSpec {
       verilog should include (signal)
     }
   }
-  "Dont touch" should "only work on bound hardware" in {
-    a [chisel3.BindingException] should be thrownBy {
+  "Dont touch" should "only work on bound hardware" in new Utils {
+    containsCause[BindingException] {
       elaborate(new Module {
-        val io = IO(new Bundle { })
-        dontTouch(new Bundle { val a = UInt(32.W) } )
-      })
-    }
+                  val io = IO(new Bundle { })
+                  dontTouch(new Bundle { val a = UInt(32.W) } )
+                })
+    } should not be (empty)
   }
 }
-

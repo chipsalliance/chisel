@@ -85,11 +85,11 @@ class ResetSpec extends ChiselFlatSpec {
     fir should include ("input reset : AsyncReset")
   }
 
-  "Chisel" should "error if sync and async modules are nested" in {
-    a [ChiselException] shouldBe thrownBy {
+  "Chisel" should "error if sync and async modules are nested" in new Utils {
+    containsCause[ChiselException] {
       elaborate(new MultiIOModule with RequireAsyncReset {
         val mod = Module(new MultiIOModule with RequireSyncReset)
       })
-    }
+    } should not be (empty)
   }
 }
