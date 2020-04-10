@@ -104,6 +104,10 @@ object Parser extends LazyLogging {
     circuit.modules.head.ports.head.tpe
   }
 
+  def parse(lines: Seq[String], infoMode: InfoMode): Circuit = parse(lines.iterator, infoMode)
+
+  def parse(text: String, infoMode: InfoMode): Circuit = parse(text split "\n", infoMode)
+
   /** Parse the concrete syntax of a FIRRTL [[firrtl.ir.Expression]], e.g.
     *   "add(x, y)" becomes:
     *   {{{
