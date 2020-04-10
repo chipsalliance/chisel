@@ -131,7 +131,16 @@ package experimental {
       target.direction
     }
 
-    /** check two data type is equal.
+    /** Check if two Chisel types are the same type.
+      * Internally, this is dispatched to each Chisel type's
+      * `typeEquivalent` function for each type to determine
+      * if the types are intended to be equal.
+      *
+      * For most types, different parameters should ensure
+      * that the types are different.
+      * For example, `UInt(8.W)` and `UInt(16.W)` are different.
+      * Likewise, Records check that both Records have the same
+      * elements with the same types.
       *
       * @param x first data type
       * @param y second data type
