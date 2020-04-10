@@ -130,6 +130,13 @@ package experimental {
       requireIsHardware(target, "node requested directionality on")
       target.direction
     }
+
+    /** check two data type is equal.
+      *
+      * @param x first data type
+      * @param y second data type
+      * @return true if two data type is equal.
+      **/
     def checkTypeEquivalence(x: Data, y: Data): Boolean = x.typeEquivalent(y)
 
     // Returns the top-level module ports
