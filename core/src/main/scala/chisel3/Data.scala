@@ -142,9 +142,9 @@ package experimental {
       * Likewise, Records check that both Records have the same
       * elements with the same types.
       *
-      * @param x first data type
-      * @param y second data type
-      * @return true if two data type is equal.
+      * @param x First Chisel type
+      * @param y Second Chisel type
+      * @return true if the two Chisel types are equal.
       **/
     def checkTypeEquivalence(x: Data, y: Data): Boolean = x.typeEquivalent(y)
 
