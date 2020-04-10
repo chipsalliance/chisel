@@ -14,7 +14,8 @@ case class AnAnnotation(
     port: Port,
     statement: Statement,
     expr: Expression,
-    tpe: Type
+    tpe: Type,
+    groundType: GroundType
 ) extends NoTargetAnnotation
 
 class JsonProtocolSpec extends FlatSpec with Matchers {
@@ -33,10 +34,10 @@ class JsonProtocolSpec extends FlatSpec with Matchers {
     val stmt = mod.asInstanceOf[Module].body
     val expr = stmt.asInstanceOf[Block].stmts.head.asInstanceOf[Connect].expr
     val tpe = port.tpe
-    val inputAnnos = Seq(AnAnnotation(cir.info, cir, mod, port, stmt, expr, tpe))
+    val groundType = port.tpe.asInstanceOf[GroundType]
+    val inputAnnos = Seq(AnAnnotation(cir.info, cir, mod, port, stmt, expr, tpe, groundType))
     val annosString = JsonProtocol.serialize(inputAnnos)
     val outputAnnos = JsonProtocol.deserialize(annosString)
     inputAnnos should be (outputAnnos)
   }
-
 }

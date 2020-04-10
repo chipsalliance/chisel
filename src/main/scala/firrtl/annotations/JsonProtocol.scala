@@ -122,6 +122,10 @@ object JsonProtocol {
     { case JString(s) => Parser.parseInfo(s) },
     { case info: Info => JString(info.serialize) }
   ))
+  class GroundTypeSerializer extends CustomSerializer[GroundType](format => (
+    { case JString(s) => Parser.parseType(s).asInstanceOf[GroundType] },
+    { case tpe: GroundType => JString(tpe.serialize) }
+  ))
 
   /** Construct Json formatter for annotations */
   def jsonFormat(tags: Seq[Class[_]]) = {
@@ -133,7 +137,7 @@ object JsonProtocol {
       new LoadMemoryFileTypeSerializer + new IsModuleSerializer + new IsMemberSerializer +
       new CompleteTargetSerializer + new TypeSerializer + new ExpressionSerializer +
       new StatementSerializer + new PortSerializer + new DefModuleSerializer +
-      new CircuitSerializer + new InfoSerializer
+      new CircuitSerializer + new InfoSerializer + new GroundTypeSerializer
   }
 
   /** Serialize annotations to a String for emission */
