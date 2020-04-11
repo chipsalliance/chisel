@@ -402,20 +402,76 @@ class EliminateTargetPathsSpec extends FirrtlPropSpec with FirrtlMatchers {
     val input =
       """|circuit Foo:
          |  module Baz:
-         |    skip
+         |    node foo = UInt<1>(0)
          |  module Bar:
+         |    node foo = UInt<1>(0)
          |    inst baz of Baz
          |    skip
          |  module Foo:
+         |    node foo = UInt<1>(0)
          |    inst bar of Bar
          |""".stripMargin
     val targets = Seq(
-      CircuitTarget("Foo").module("Foo").instOf("bar", "Bar").instOf("baz", "Baz")
+      CircuitTarget("Foo").module("Foo").instOf("bar", "Bar").instOf("baz", "Baz"),
+      CircuitTarget("Foo").module("Foo").instOf("bar", "Bar"),
+      CircuitTarget("Foo").module("Foo")
     )
-    val output = CircuitState(passes.ToWorkingIR.run(Parser.parse(input)), UnknownForm, Nil)
+    val dontTouches = targets.map(t => DontTouchAnnotation(t.ref("foo")))
+    val inputCircuit = Parser.parse(input)
+    val output = CircuitState(passes.ToWorkingIR.run(inputCircuit), UnknownForm, dontTouches)
       .resolvePaths(targets)
 
     info(output.circuit.serialize)
 
+    output.circuit.serialize should be (inputCircuit.serialize)
+    output.annotations.collect {
+      case a: DontTouchAnnotation => a
+    } should contain allOf (
+      DontTouchAnnotation(ModuleTarget("Foo", "Foo").ref("foo")),
+      DontTouchAnnotation(ModuleTarget("Foo", "Bar").ref("foo")),
+      DontTouchAnnotation(ModuleTarget("Foo", "Baz").ref("foo"))
+    )
+  }
+
+  property("It should not rename parent lone instances but still rename children") {
+    val input =
+      """|circuit FooBar:
+         |  module Bar:
+         |    node baz = UInt<1>(0)
+         |  module FooBar:
+         |    inst foo of Foo
+         |  module Foo:
+         |    inst bar of Bar
+         |    inst barBar of Bar
+         |""".stripMargin
+
+    // modules Foo and FooBar should not be renamed
+    val checks =
+      """circuit FooBar :
+        |  module Foo :
+        |  module FooBar :
+        |    inst foo of Foo""".stripMargin.split("\n")
+
+    val targets = Seq(
+      CircuitTarget("FooBar").module("FooBar").instOf("foo", "Foo").instOf("bar", "Bar"),
+      CircuitTarget("FooBar").module("FooBar").instOf("foo", "Foo").instOf("barBar", "Bar")
+    )
+    val dontTouches = targets.map(t => DontTouchAnnotation(t.ref("baz")))
+    val output = CircuitState(passes.ToWorkingIR.run(Parser.parse(input)), UnknownForm, dontTouches)
+      .resolvePaths(targets)
+
+    info(output.circuit.serialize)
+
+    val outputLines = output.circuit.serialize.split("\n")
+    checks.foreach { line =>
+      outputLines should contain (line)
+    }
+
+    output.annotations.collect {
+      case a: DontTouchAnnotation => a
+    } should contain allOf (
+      DontTouchAnnotation(ModuleTarget("FooBar", "Bar___Foo_bar").ref("baz")),
+      DontTouchAnnotation(ModuleTarget("FooBar", "Bar___Foo_barBar").ref("baz"))
+    )
   }
 }

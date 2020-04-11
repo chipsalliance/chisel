@@ -155,7 +155,51 @@ class EliminateTargetPaths extends Transform {
       throw NoSuchTargetException(s"""Some targets have illegal paths that cannot be resolved/eliminated: $string""")
     }
 
-    val (newCircuit, renameMap) = run(state.circuit, targets)
+    // get rid of path prefixes of modules with only one instance so we don't rename them
+    val isSingleInstMod: String => Boolean = {
+      val cache = mutable.Map.empty[String, Boolean]
+      mod => cache.getOrElseUpdate(mod, iGraph.findInstancesInHierarchy(mod).size == 1)
+    }
+    val firstRenameMap = RenameMap()
+    val nonSingletonTargets = targets.foldLeft(Seq.empty[IsMember]) {
+      case (acc, t: IsComponent) if t.asPath.nonEmpty =>
+        val origPath = t.asPath
+        val (singletonPrefix, rest) = origPath.partition {
+          case (_, OfModule(mod)) =>
+            isSingleInstMod(mod)
+        }
+
+        if (singletonPrefix.size > 0) {
+          val module = singletonPrefix.last._2.value
+          val circuit = t.circuit
+          val newIsModule =
+            if (rest.isEmpty) {
+              ModuleTarget(circuit, module)
+            } else {
+              val (Instance(inst), OfModule(ofMod)) = rest.last
+              val path = rest.dropRight(1)
+              InstanceTarget(circuit, module, path, inst, ofMod)
+            }
+          val newTarget = t match {
+            case r: ReferenceTarget => r.setPathTarget(newIsModule)
+            case i: InstanceTarget => newIsModule
+          }
+          firstRenameMap.record(t, Seq(newTarget))
+          newTarget +: acc
+        } else {
+          t +: acc
+        }
+      case (acc, t) => t +: acc
+    }
+
+    val (newCircuit, nextRenameMap) = run(state.circuit, nonSingletonTargets)
+
+    val renameMap =
+      if (firstRenameMap.hasChanges) {
+        firstRenameMap andThen nextRenameMap
+      } else {
+        nextRenameMap
+      }
 
     val iGraphx = new InstanceGraph(newCircuit)
     val newlyUnreachableModules = iGraphx.unreachableModules diff iGraph.unreachableModules
