@@ -143,10 +143,10 @@ sealed abstract class FirrtlEmitter(form: CircuitForm) extends Transform with Em
 
   override def execute(state: CircuitState): CircuitState = {
     val newAnnos = state.annotations.flatMap {
-      case EmitCircuitAnnotation(_) =>
+      case EmitCircuitAnnotation(a) if this.getClass == a =>
         Seq(EmittedFirrtlCircuitAnnotation(
               EmittedFirrtlCircuit(state.circuit.main, state.circuit.serialize, outputSuffix)))
-      case EmitAllModulesAnnotation(_) =>
+      case EmitAllModulesAnnotation(a) if this.getClass == a =>
         emitAllModules(state.circuit) map (EmittedFirrtlModuleAnnotation(_))
       case _ => Seq()
     }
@@ -1077,12 +1077,12 @@ class VerilogEmitter extends SeqTransform with Emitter {
 
   override def execute(state: CircuitState): CircuitState = {
     val newAnnos = state.annotations.flatMap {
-      case EmitCircuitAnnotation(_) =>
+      case EmitCircuitAnnotation(a) if this.getClass == a =>
         val writer = new java.io.StringWriter
         emit(state, writer)
         Seq(EmittedVerilogCircuitAnnotation(EmittedVerilogCircuit(state.circuit.main, writer.toString, outputSuffix)))
 
-      case EmitAllModulesAnnotation(_) =>
+      case EmitAllModulesAnnotation(a) if this.getClass == a =>
         val cs = runTransforms(state)
         val emissionOptions = new EmissionOptions(cs.annotations)
         val moduleMap = cs.circuit.modules.map(m => m.name -> m).toMap
