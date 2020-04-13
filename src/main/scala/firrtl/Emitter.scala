@@ -563,10 +563,13 @@ class VerilogEmitter extends SeqTransform with Emitter {
     //   if (reset) ...
     // There is a fundamental mismatch between this representation which treats async reset
     // registers as edge-triggered when in reality they are level-triggered.
-    // This can result in silicon-simulation mismatch in the case where async reset is held high
+    // When not randomized, there is no mismatch because the async reset transition at the start
+    // of simulation from X to 1 triggers the posedge block for async reset.
+    // When randomized, this can result in silicon-simulation mismatch when async reset is held high
     // upon power on with no clock, then async reset is dropped before the clock starts. In this
     // circumstance, the async reset register will be randomized in simulation instead of being
-    // reset. To fix this, we need extra initial block logic for async reset registers
+    // reset. To fix this, we need extra initial block logic to reset async reset registers again
+    // post-randomize.
     val asyncInitials = ArrayBuffer[Seq[Any]]()
     val simulates = ArrayBuffer[Seq[Any]]()
 
@@ -993,8 +996,8 @@ class VerilogEmitter extends SeqTransform with Emitter {
         emit(Seq("      `endif"))
         emit(Seq("    `endif"))
         for (x <- initials) emit(Seq(tab, x))
-        emit(Seq("  `endif // RANDOMIZE"))
         for (x <- asyncInitials) emit(Seq(tab, x))
+        emit(Seq("  `endif // RANDOMIZE"))
         emit(Seq("end // initial"))
         emit(Seq("`endif // SYNTHESIS"))
       }
