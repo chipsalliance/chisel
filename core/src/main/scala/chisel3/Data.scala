@@ -131,6 +131,23 @@ package experimental {
       target.direction
     }
 
+    /** Check if two Chisel types are the same type.
+      * Internally, this is dispatched to each Chisel type's
+      * `typeEquivalent` function for each type to determine
+      * if the types are intended to be equal.
+      *
+      * For most types, different parameters should ensure
+      * that the types are different.
+      * For example, `UInt(8.W)` and `UInt(16.W)` are different.
+      * Likewise, Records check that both Records have the same
+      * elements with the same types.
+      *
+      * @param x First Chisel type
+      * @param y Second Chisel type
+      * @return true if the two Chisel types are equal.
+      **/
+    def checkTypeEquivalence(x: Data, y: Data): Boolean = x.typeEquivalent(y)
+
     // Returns the top-level module ports
     // TODO: maybe move to something like Driver or DriverUtils, since this is mainly for interacting
     // with compiled artifacts (vs. elaboration-time reflection)?
