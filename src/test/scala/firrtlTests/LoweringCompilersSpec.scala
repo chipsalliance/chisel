@@ -102,6 +102,7 @@ class LoweringCompilersSpec extends FlatSpec with Matchers {
       new firrtl.transforms.DeadCodeElimination)
     case _: MinimumLowFirrtlOptimization => Seq(
       passes.RemoveValidIf,
+      passes.PadWidths,
       passes.Legalize,
       passes.memlib.VerilogMemDelays, // TODO move to Verilog emitter
       passes.SplitExpressions)

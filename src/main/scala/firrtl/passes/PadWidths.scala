@@ -17,8 +17,9 @@ object PadWidths extends Pass {
     ((new mutable.LinkedHashSet())
        ++ firrtl.stage.Forms.LowForm
        - Dependency(firrtl.passes.Legalize)
-       + Dependency(firrtl.passes.RemoveValidIf)
-       + Dependency[firrtl.transforms.ConstantPropagation]).toSeq
+       + Dependency(firrtl.passes.RemoveValidIf)).toSeq
+
+  override val optionalPrerequisites = Seq(Dependency[firrtl.transforms.ConstantPropagation])
 
   override val dependents =
     Seq( Dependency(firrtl.passes.memlib.VerilogMemDelays),
