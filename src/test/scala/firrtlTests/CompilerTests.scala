@@ -158,16 +158,21 @@ class MinimumVerilogCompilerSpec extends CompilerSpec with Matchers {
   val input = """|circuit Top:
                  |  module Top:
                  |    output b: UInt<1>[3]
+                 |    input i: SInt<3>
+                 |    output o: SInt<5>
                  |    node c = bits(UInt<3>("h7"), 2, 2)
                  |    node d = shr(UInt<3>("h7"), 2)
                  |    b[0] is invalid
                  |    b[1] <= c
                  |    b[2] <= d
+                 |    o <= i
                  |""".stripMargin
   val check = """|module Top(
-                 |  output  b_0,
-                 |  output  b_1,
-                 |  output  b_2
+                 |  output       b_0,
+                 |  output       b_1,
+                 |  output       b_2,
+                 |  input  [2:0] i,
+                 |  output [4:0] o
                  |);
                  |  wire  c;
                  |  wire  d;
@@ -176,11 +181,12 @@ class MinimumVerilogCompilerSpec extends CompilerSpec with Matchers {
                  |  assign b_0 = 1'h0;
                  |  assign b_1 = c;
                  |  assign b_2 = d;
+                 |  assign o = {{2{i[2]}},i};
                  |endmodule
                  |""".stripMargin
   def compiler = new MinimumVerilogCompiler()
 
-  "A circuit's minimum Verilog output" should "not have constants propagated or dead code eliminated" in {
+  "A circuit's minimum Verilog output" should "pad signed RHSes but not reflect any const-prop or DCE" in {
     getOutput should be (check)
   }
 }
