@@ -15,6 +15,8 @@
 \newcommand{\info}{[\pds{info}]\ }
 \newcommand{\version}{0.2.0}
 
+\renewcommand{\arraystretch}{1.15}
+
 \title{Specification for the FIRRTL Language}
 \author{Patrick S. Li \\ \href{mailto:psli@eecs.berkeley.edu}{psli@eecs.berkeley.edu}
    \and Adam M. Izraelevitz \\ \href{mailto:adamiz@eecs.berkeley.edu}{adamiz@eecs.berkeley.edu}
@@ -25,6 +27,7 @@
 \usepackage{proof}
 \usepackage{amsfonts}
 \usepackage{enumitem}
+\usepackage{multirow}
 \usepackage{hyperref}
 \hypersetup{
     colorlinks=true,
@@ -162,7 +165,7 @@ Types are used to specify the structure of the data held by each circuit compone
 
 \subsection{Ground Types}
 
-There are four ground types in FIRRTL: an unsigned integer type, a signed integer type, a clock type, and an analog type.
+There are five ground types in FIRRTL: an unsigned integer type, a signed integer type, a fixed-point number type, a clock type, and an analog type.
 
 \subsubsection{Integer Types}
 
@@ -178,6 +181,47 @@ Alternatively, if the bit width is omitted, it will be automatically inferred by
 \begin{lstlisting}
 UInt
 SInt
+\end{lstlisting}
+
+\subsubsection{Fixed-Point Number Type}
+
+In general, a fixed-point binary number type represents a range of values corresponding with the
+range of some integral type scaled by a fixed power of two. In the FIRRTL language, the number
+represented by a signal of fixed-point type may expressed in terms of a base integer \emph{value}
+term and a \emph{binary point}, which represents an inverse power of two.
+
+The range of the value term is governed by a \emph{width} an a manner analogous to integral types,
+with the additional restriction that all fixed-point number types are inherently signed in FIRRTL.
+Whenever an operation such as a \verb|cat| operates on the ``bits'' of a fixed-point number, it
+operates on the string of bits that is the signed representation of the integer value term. The
+\emph{width} of a fixed-point typed signal is the width of this string of bits.
+
+\begin{align*}
+  \text{fixed-point quantity} &= \left( \text{integer value} \right) \times 2^{-\left(\text{binary point}\right)}\\
+  \text{integer value} &\in \left[ -2^{(\text{width})-1}, 2^{(\text{width})-1} \right)\\
+  \text{binary point} &\in \mathbb{Z}
+\end{align*}
+
+In the above equation, the range of possible fixed-point quantities is governed by two parameters
+beyond a the particular ``value'' assigned to a signal: the width and the binary point. Note that
+when the binary point is positive, it is equivalent to the number of bits that would fall after the
+binary point. Just as width is a parameter of integer types in FIRRTL, width and binary point are
+both parameters of the fixed-point type.
+
+When declaring a component with fixed-point number type, it is possible to leave the width and/or
+the binary point unspecified. The unspecified parameters will be inferred to be sufficient to hold
+the results of all expressions that may drive the component. Similar to how width inference for
+integer types depends on width-propagation rules for each FIRRTL expression and each kind of
+primitive operator, fixed-point parameter inference depends on a set of rules outlined throughout
+this spec.
+
+Included below are examples of the syntaxes for all possible combinations of specified and inferred
+fixed-point type parameters.
+\begin{lstlisting}
+Fixed<3><<2>>    ; 3-bit width, 2 bits after binary point
+Fixed<10>        ; 1-bit width, inferred binary point
+Fixed<<-4>>      ; Inferred width, binary point of -4
+Fixed            ; Inferred width and binary point
 \end{lstlisting}
 
 \subsubsection{Clock Type}
@@ -280,6 +324,8 @@ Intuitively, a passive type is a type where all data flows in the same direction
 The type equivalence relation is used to determine whether a connection between two components is legal. See section \ref{connects} for further details about connect statements.
 
 An unsigned integer type is always equivalent to another unsigned integer type regardless of bit width, and is not equivalent to any other type. Similarly, a signed integer type is always equivalent to another signed integer type regardless of bit width, and is not equivalent to any other type.
+
+A fixed-point number type is always equivalent to another fixed-point number type, regardless of width or binary point. It is not equivalent to any other type.
 
 Clock types are equivalent to clock types, and are not equivalent to any other type.
 
@@ -1212,15 +1258,14 @@ Section \ref{primitives} will describe the format and semantics of each primitiv
 \newcommand{\vv}[1]{{\ttfamily #1}}
 \newcommand{\ts}[1]{\textsubscript{#1}}
 \newcommand{\nf}[1]{\normalfont{\textbf{#1}}}
+\newcommand{\nit}[1]{\normalfont{\textit{#1}}}
+\newcommand{\mrow}[2]{\multirow{#1}{*}{#2}}
+\newcommand{\mcol}[3]{\multicolumn{#1}{#2}{#3}}
 \newcommand{\opheader}{
- \hline
-    \multicolumn{1}{|c|}{\nf{Name}}
-  & \multicolumn{1}{c|}{\nf{Arguments}}
-  & \multicolumn{1}{c|}{\nf{Parameters}}
-  & \multicolumn{1}{c|}{\nf{Arg Types}}
-  & \multicolumn{1}{c|}{\nf{Result Type}}
-  & \multicolumn{1}{c|}{\nf{Result Width}}\\
-\hline
+  \hline
+  \mrow{2}{\nf{Name}} & \mrow{2}{\nf{Arguments}} & \mrow{2}{\nf{Parameters}} & \mrow{2}{\nf{Arg Types}} & \multicolumn{2}{c|}{\nf{Result}} \\
+                      &                          &                           &                          & \mcol{1}{c}{\nit{Type}} & \mcol{1}{c|}{\nit{Width}} \\
+  \hline
 }
 
 The arguments of all primitive operations must be expressions with ground types, while their parameters are static integer literals. Each specific operation can place additional restrictions on the number and types of their arguments and parameters.
@@ -1234,8 +1279,9 @@ Notationally, the width of an argument \vv{e} is represented as \vv{w}\ts{e}.
 {\ttfamily
 \begin{tabular}{ |c|c|c|c|c|c| }
   \opheader
-add & (e1,e2) & () & (UInt,UInt) & UInt & max(w\ts{e1},w\ts{e2})+1\\
-                 &&& (SInt,SInt) & SInt & max(w\ts{e1},w\ts{e2})+1\\
+  \mrow{3}{add} & \mrow{3}{(e1,e2)} & \mrow{3}{()} & (UInt,UInt)   & UInt  & max(w\ts{e1},w\ts{e2})+1\\
+                &                   &              & (SInt,SInt)   & SInt  & max(w\ts{e1},w\ts{e2})+1\\
+                &                   &              & (Fixed,Fixed) & Fixed & \nit{see section \ref{fixed_rules}}\\
  \hline
 \end{tabular}
 }}
@@ -1249,8 +1295,9 @@ The add operation result is the sum of \vv{e1} and \vv{e2} without loss of preci
 {\ttfamily
 \begin{tabular}{ |c|c|c|c|c|c| }
   \opheader
-sub & (e1,e2) & () & (UInt,UInt) & UInt & max(w\ts{e1},w\ts{e2})+1\\
-                 &&& (SInt,SInt) & SInt & max(w\ts{e1},w\ts{e2})+1\\
+  \mrow{3}{sub} & \mrow{3}{(e1,e2)} & \mrow{3}{()} & (UInt,UInt)   & UInt  & max(w\ts{e1},w\ts{e2})+1\\
+                &                   &              & (SInt,SInt)   & SInt  & max(w\ts{e1},w\ts{e2})+1\\
+                &                   &              & (Fixed,Fixed) & Fixed & \nit{see section \ref{fixed_rules}}\\
  \hline
 \end{tabular}
 }}
@@ -1264,8 +1311,9 @@ The subtract operation result is \vv{e2} subtracted from \vv{e1}, without loss o
 {\ttfamily
 \begin{tabular}{ |c|c|c|c|c|c| }
   \opheader
-mul & (e1,e2) & () & (UInt,UInt) & UInt & w\ts{e1}+w\ts{e2}\\
-                 &&& (SInt,SInt) & SInt & w\ts{e1}+w\ts{e2}\\
+  \mrow{3}{mul} & \mrow{3}{(e1,e2)} & \mrow{3}{()} & (UInt,UInt)   & UInt  & w\ts{e1}+w\ts{e2}\\
+                &                   &              & (SInt,SInt)   & SInt  & w\ts{e1}+w\ts{e2}\\
+                &                   &              & (Fixed,Fixed) & Fixed & \nit{see section \ref{fixed_rules}}\\
  \hline
 \end{tabular}
 }}
@@ -1279,8 +1327,8 @@ The multiply operation result is the product of \vv{e1} and \vv{e2}, without los
 {\ttfamily
 \begin{tabular}{ |c|c|c|c|c|c| }
   \opheader
-div & (num,den) & () & (UInt,UInt) & UInt & w\ts{num}\\
-                   &&& (SInt,SInt) & SInt & w\ts{num}+1\\
+  \mrow{2}{div} & \mrow{2}{(num,den)} & \mrow{2}{()} & (UInt,UInt) & UInt & w\ts{num}\\
+                &                     &              & (SInt,SInt) & SInt & w\ts{num}+1\\
  \hline
 \end{tabular}
 }}
@@ -1294,8 +1342,8 @@ The divide operation divides \vv{num} by \vv{den}, truncating the fractional por
 {\ttfamily
 \begin{tabular}{ |c|c|c|c|c|c| }
   \opheader
-rem & (num,den) & () & (UInt,UInt) & UInt & min(w\ts{num},w\ts{den})\\
-                   &&& (SInt,SInt) & SInt & min(w\ts{num},w\ts{den})\\
+  \mrow{2}{rem} & \mrow{2}{(num,den)} & \mrow{2}{()} & (UInt,UInt) & UInt & min(w\ts{num},w\ts{den})\\
+                &                     &              & (SInt,SInt) & SInt & min(w\ts{num},w\ts{den})\\
  \hline
 \end{tabular}
 }}
@@ -1312,8 +1360,9 @@ num = add(mul(den,div(num,den)),rem(num,den))}
 {\ttfamily
 \begin{tabular}{ |c|c|c|c|c|c| }
   \opheader
-lt,leq,gt, & (e1,e2) & () & (UInt,UInt) & UInt & 1\\
-geq,eq,neq              &&& (SInt,SInt) & UInt & 1\\
+  lt,leq &         &    & (UInt,UInt)   & UInt & 1\\
+  gt,geq & (e1,e2) & () & (SInt,SInt)   & UInt & 1\\
+  eq,neq &         &    & (Fixed,Fixed) & UInt & 1\\
  \hline
 \end{tabular}
 }}
@@ -1327,14 +1376,15 @@ The comparison operations return an unsigned 1 bit signal with value one if \vv{
 {\ttfamily
 \begin{tabular}{ |c|c|c|c|c|c| }
   \opheader
-pad & (e) & (n) & (UInt) & UInt & max(w\ts{e},n)\\
-              &&& (SInt) & SInt & max(w\ts{e},n)\\
+  \mrow{3}{pad} & \mrow{3}{(e)} & \mrow{3}{(n)} & (UInt)  & UInt  & max(w\ts{e},n)\\
+                &               &               & (SInt)  & SInt  & max(w\ts{e},n)\\
+                &               &               & (Fixed) & Fixed & \nit{see section \ref{fixed_rules}}\\
  \hline
 \end{tabular}
 }}
 \end{figure}
 
-If \vv{e}'s bit width is smaller than \vv{n}, then the pad operation zero-extends or sign-extends \vv{e} up to the given width \vv{n}. Otherwise, the result is simply \vv{e}. \vv{n} must be non-negative.
+If \vv{e}'s bit width is smaller than \vv{n}, then the pad operation zero-extends or sign-extends \vv{e} up to the given width \vv{n}. Otherwise, the result is simply \vv{e}. \vv{n} must be non-negative. The binary point of fixed-point values is not affected by padding.
 
 \subsection{Interpret As UInt}
 
@@ -1343,9 +1393,10 @@ If \vv{e}'s bit width is smaller than \vv{n}, then the pad operation zero-extend
 {\ttfamily
 \begin{tabular}{ |c|c|c|c|c|c| }
   \opheader
-asUInt & (e) & () & (UInt) & UInt & w\ts{e}\\
-                &&& (SInt) & UInt & w\ts{e}\\
-                &&& (Clock) & UInt & 1\\
+  \mrow{4}{asUInt} & \mrow{4}{(e)} & \mrow{4}{()} & (UInt)  & UInt & w\ts{e}\\
+                   &               &              & (SInt)  & UInt & w\ts{e}\\
+                   &               &              & (Fixed) & UInt & w\ts{e}\\
+                   &               &              & (Clock) & UInt & 1\\
  \hline
 \end{tabular}
 }}
@@ -1360,15 +1411,37 @@ The interpret as UInt operation reinterprets \vv{e}'s bits as an unsigned intege
 {\ttfamily
 \begin{tabular}{ |c|c|c|c|c|c| }
   \opheader
-asSInt & (e) & () & (UInt) & SInt & w\ts{e}\\
-                &&& (SInt) & SInt & w\ts{e}\\
-                &&& (Clock) & SInt & 1\\
+  \mrow{4}{asSInt} & \mrow{4}{(e)} & \mrow{4}{()} & (UInt)  & SInt & w\ts{e}\\
+                   &               &              & (SInt)  & SInt & w\ts{e}\\
+                   &               &              & (Fixed) & SInt & w\ts{e}\\
+                   &               &              & (Clock) & SInt & 1\\
  \hline
 \end{tabular}
 }}
 \end{figure}
 
 The interpret as SInt operation reinterprets \vv{e}'s bits as a signed integer according to two's complement representation.
+
+\subsection{Interpret As Fixed-Point Number}
+
+\begin{figure}[H]
+{ \fontsize{10pt}{1.10em}\selectfont
+{\ttfamily
+\begin{tabular}{ |c|c|c|c|c|c|c| }
+  \hline
+  \mrow{2}{\nf{Name}} & \mrow{2}{\nf{Arguments}} & \mrow{2}{\nf{Parameters}} & \mrow{2}{\nf{Arg Types}} & \multicolumn{3}{c|}{\nf{Result}} \\
+                      &                          &                           &                          & \mcol{1}{c}{\nit{Type}} & \mcol{1}{c}{\nit{Width}} & \mcol{1}{c|}{\nit{Binary Point}} \\
+  \hline
+  \mrow{4}{asFixed} & \mrow{4}{(e)} & \mrow{4}{(p)} & (UInt)  & Fixed & w\ts{e} & p\\
+                    &               &               & (SInt)  & Fixed & w\ts{e} & p\\
+                    &               &               & (Fixed) & Fixed & w\ts{e} & p\\
+                    &               &               & (Clock) & Fixed & 1       & p\\
+  \hline
+\end{tabular}
+}}
+\end{figure}
+
+The interpret as fixed-point operation reinterprets \vv{e}'s bits as a fixed-point number of identical width. Since all fixed-point number in FIRRTL are signed, the bits are taken to mean a signed value according to two's complement representation. They are scaled by the provided binary point \vv{p}, and the result type has binary point \vv{p}.
 
 \subsection{Interpret as Clock}
 
@@ -1377,9 +1450,10 @@ The interpret as SInt operation reinterprets \vv{e}'s bits as a signed integer a
 {\ttfamily
 \begin{tabular}{ |c|c|c|c|c|c| }
   \opheader
-asClock & (e) & () & (UInt) & Clock & n/a\\
-                 &&& (SInt) & Clock & n/a\\
-                 &&& (Clock) & Clock & n/a\\
+  \mrow{4}{asClock} & \mrow{4}{(e)} & \mrow{4}{()} & (UInt)  & Clock & n/a\\
+                    &               &              & (SInt)  & Clock & n/a\\
+                    &               &              & (Fixed) & Clock & n/a\\
+                    &               &              & (Clock) & Clock & n/a\\
  \hline
 \end{tabular}
 }}
@@ -1394,8 +1468,9 @@ The result of the interpret as clock operation is the Clock typed signal obtaine
 {\ttfamily
 \begin{tabular}{ |c|c|c|c|c|c| }
   \opheader
-shl & (e) & (n) & (UInt) & UInt & w\ts{e}+n\\
-              &&& (SInt) & SInt & w\ts{e}+n\\
+  \mrow{3}{shl} & \mrow{3}{(e)} & \mrow{3}{(n)} & (UInt)  & UInt  & w\ts{e}+n\\
+                &               &               & (SInt)  & SInt  & w\ts{e}+n\\
+                &               &               & (Fixed) & Fixed & \nit{see section \ref{fixed_rules}}\\
  \hline
 \end{tabular}
 }}
@@ -1410,9 +1485,10 @@ The shift left operation concatenates \vv{n} zero bits to the least significant 
 {\ttfamily
 \begin{tabular}{ |c|c|c|c|c|c| }
   \opheader
-shr & (e) & (n) & (UInt) & UInt & max(1, w\ts{e}-n)\\
-              &&& (SInt) & SInt & max(1, w\ts{e}-n)\\
- \hline
+  \mrow{3}{shr} & \mrow{3}{(e)} & \mrow{3}{(n)} & (UInt)  & UInt  & max(w\ts{e}-n, 1)\\
+                &               &               & (SInt)  & SInt  & max(w\ts{e}-n, 1)\\
+                &               &               & (Fixed) & Fixed & \nit{see section \ref{fixed_rules}}\\
+  \hline
 \end{tabular}
 }}
 \end{figure}
@@ -1428,14 +1504,15 @@ If \vv{n} is greater than or equal to the bit-width of \vv{e}, the resulting val
 {\ttfamily
 \begin{tabular}{ |c|c|c|c|c|c| }
   \opheader
-dshl & (e, n) & () & (UInt, UInt) & UInt & w\ts{e} + 2\verb|^|w\ts{n} - 1\\
-                 &&& (SInt, UInt) & SInt & w\ts{e} + 2\verb|^|w\ts{n} - 1\\
- \hline
+  \mrow{3}{dshl} & \mrow{3}{(e1, e2)} & \mrow{3}{()} & (UInt, UInt)  & UInt  & w\ts{e1} + 2\verb|^|w\ts{e2} - 1\\
+                 &                  &              & (SInt, UInt)  & SInt  & w\ts{e1} + 2\verb|^|w\ts{e2} - 1\\
+                 &                  &              & (Fixed, UInt) & Fixed & \nit{see section \ref{fixed_rules}}\\
+  \hline
 \end{tabular}
 }}
 \end{figure}
 
-The dynamic shift left operation shifts the bits in \vv{e} \vv{n} places towards the most significant bit. \vv{n} zeroes are shifted in to the least significant bits.
+The dynamic shift left operation shifts the bits in \vv{e1} \vv{e2} places towards the most significant bit. \vv{e2} zeroes are shifted in to the least significant bits.
 
 \subsection{Dynamic Shift Right Operation}
 
@@ -1444,14 +1521,15 @@ The dynamic shift left operation shifts the bits in \vv{e} \vv{n} places towards
 {\ttfamily
 \begin{tabular}{ |c|c|c|c|c|c| }
   \opheader
-dshr & (e, n) & () & (UInt, UInt) & UInt & w\ts{e}\\
-                 &&& (SInt, UInt) & SInt & w\ts{e}\\
+  \mrow{3}{dshr} & \mrow{3}{(e1, e2)} & \mrow{3}{()} & (UInt, UInt)  & UInt  & w\ts{e1}\\
+                 &                  &                & (SInt, UInt)  & SInt  & w\ts{e1}\\
+                 &                  &                & (Fixed, UInt) & Fixed & \nit{see section \ref{fixed_rules}}\\
  \hline
 \end{tabular}
 }}
 \end{figure}
 
-The dynamic shift right operation shifts the bits in \vv{e} \vv{n} places towards the least significant bit. \vv{n} signed or zeroed bits are shifted in to the most significant bits, and the \vv{n} least significant bits are truncated.
+The dynamic shift right operation shifts the bits in \vv{e1} \vv{e2} places towards the least significant bit. \vv{e2} signed or zeroed bits are shifted in to the most significant bits, and the \vv{e2} least significant bits are truncated.
 
 \subsection{Arithmetic Convert to Signed Operation}
 
@@ -1460,8 +1538,8 @@ The dynamic shift right operation shifts the bits in \vv{e} \vv{n} places toward
 {\ttfamily
 \begin{tabular}{ |c|c|c|c|c|c| }
   \opheader
-cvt & (e) & () & (UInt) & SInt & w\ts{e}+1\\
-             &&& (SInt) & SInt & w\ts{e}\\
+  \mrow{2}{cvt} & \mrow{2}{(e)} & \mrow{2}{()} & (UInt) & SInt & w\ts{e}+1\\
+                &               &              & (SInt) & SInt & w\ts{e}\\
  \hline
 \end{tabular}
 }}
@@ -1476,8 +1554,8 @@ The result of the arithmetic convert to signed operation is a signed integer rep
 {\ttfamily
 \begin{tabular}{ |c|c|c|c|c|c| }
   \opheader
-neg & (e) & () & (UInt) & SInt & w\ts{e}+1\\
-             &&& (SInt) & SInt & w\ts{e}+1\\
+  \mrow{2}{neg} & \mrow{2}{(e)} & \mrow{2}{()} & (UInt) & SInt & w\ts{e}+1\\
+                &               &              & (SInt) & SInt & w\ts{e}+1\\
  \hline
 \end{tabular}
 }}
@@ -1492,8 +1570,8 @@ The result of the negate operation is a signed integer representing the negated 
 {\ttfamily
 \begin{tabular}{ |c|c|c|c|c|c| }
   \opheader
-not & (e)       & () & (UInt) & UInt & w\ts{e}\\
-                   &&& (SInt) & UInt & w\ts{e}\\
+  \mrow{2}{not} & \mrow{2}{(e)} & \mrow{2}{()} & (UInt) & UInt & w\ts{e}\\
+                &               &              & (SInt) & UInt & w\ts{e}\\
  \hline
 \end{tabular}
 }}
@@ -1508,8 +1586,8 @@ The bitwise complement operation performs a logical not on each bit in \vv{e}.
 {\ttfamily
 \begin{tabular}{ |c|c|c|c|c|c| }
   \opheader
-and,or,xor & (e1, e2)  & () & (UInt,UInt) & UInt & max(w\ts{e1},w\ts{e2})\\
-                            &&& (SInt,SInt) & UInt & max(w\ts{e1},w\ts{e2})\\
+  \mrow{2}{and,or,xor} & \mrow{2}{(e1, e2)} & \mrow{2}{()} & (UInt,UInt) & UInt & max(w\ts{e1},w\ts{e2})\\
+                       &                    &              & (SInt,SInt) & UInt & max(w\ts{e1},w\ts{e2})\\
  \hline
 \end{tabular}
 }}
@@ -1524,8 +1602,8 @@ The above bitwise operations perform a bitwise and, or, or exclusive or on \vv{e
 {\ttfamily
 \begin{tabular}{ |c|c|c|c|c|c| }
   \opheader
-andr,orr,xorr & (e)  & () & (UInt) & UInt & 1\\
-                        &&& (SInt) & UInt & 1\\
+  \mrow{2}{andr,orr,xorr} & \mrow{2}{(e)} & \mrow{2}{()} & (UInt) & UInt & 1\\
+                          &               &              & (SInt) & UInt & 1\\
  \hline
 \end{tabular}
 }}
@@ -1542,8 +1620,9 @@ In all cases, the reduction incorporates as an inductive base case the ``identit
 {\ttfamily
 \begin{tabular}{ |c|c|c|c|c|c| }
   \opheader
-cat & (e1,e2) & () & (UInt, UInt) & UInt & w\ts{e1}+w\ts{e2}\\
-                 &&& (SInt, SInt) & UInt & w\ts{e1}+w\ts{e2}\\
+  \mrow{3}{cat} & \mrow{2}{(e1,e2)} & \mrow{3}{()} & (UInt, UInt)   & UInt & w\ts{e1}+w\ts{e2}\\
+                &                   &              & (SInt, SInt)   & UInt & w\ts{e1}+w\ts{e2}\\
+                &                   &              & (Fixed, Fixed) & UInt & w\ts{e1}+w\ts{e2}\\
  \hline
 \end{tabular}
 }}
@@ -1558,8 +1637,9 @@ The result of the concatenate operation is the bits of \vv{e1} concatenated to t
 {\ttfamily
 \begin{tabular}{ |c|c|c|c|c|c| }
   \opheader
-bits & (e) & (hi,lo) & (UInt) & UInt & hi-lo+1\\
-                   &&& (SInt) & UInt & hi-lo+1\\
+  \mrow{3}{bits} & \mrow{3}{(e)} & \mrow{3}{(hi,lo)} & (UInt)  & UInt & hi-lo+1\\
+                 &               &                   & (SInt)  & UInt & hi-lo+1\\
+                 &               &                   & (Fixed) & UInt & hi-lo+1\\
  \hline
 \end{tabular}
 }}
@@ -1574,8 +1654,9 @@ The result of the bit extraction operation are the bits of \vv{e} between \vv{lo
 {\ttfamily
 \begin{tabular}{ |c|c|c|c|c|c| }
   \opheader
-head & (e) & (n) & (UInt) & UInt & n\\
-               &&& (SInt) & UInt & n\\
+  \mrow{3}{head} & \mrow{3}{(e)} & \mrow{3}{(n)} & (UInt)  & UInt & n\\
+                 &               &               & (SInt)  & UInt & n\\
+                 &               &               & (Fixed) & UInt & n\\
  \hline
 \end{tabular}
 }}
@@ -1590,14 +1671,35 @@ The result of the head operation are the \vv{n} most significant bits of \vv{e}.
 {\ttfamily
 \begin{tabular}{ |c|c|c|c|c|c| }
   \opheader
-tail & (e) & (n) & (UInt) & UInt & w\ts{e}-n\\
-               &&& (SInt) & UInt & w\ts{e}-n\\
+  \mrow{3}{head} & \mrow{3}{(e)} & \mrow{3}{(n)} & (UInt)  & UInt & w\ts{e}-n\\
+                 &               &               & (SInt)  & UInt & w\ts{e}-n\\
+                 &               &               & (Fixed) & UInt & w\ts{e}-n\\
  \hline
 \end{tabular}
 }}
 \end{figure}
 
 The tail operation truncates the \vv{n} most significant bits from \vv{e}. \vv{n} must be non-negative and less than or equal to the bit width of \vv{e}.
+
+\subsection{Fixed-Point Precision Modification Operations}
+
+\begin{figure}[H]
+{ \fontsize{10pt}{1.10em}\selectfont
+{\ttfamily
+\begin{tabular}{ |c|c|c|c|c|c| }
+  \opheader
+  incp & \mrow{3}{(e)} & \mrow{3}{(n)} & \mrow{3}{(Fixed)} & \mrow{3}{Fixed} & \mrow{3}{\nit{see section \ref{fixed_rules}}}\\
+  decp &               &               &                   &                 &\\
+  setp &               &               &                   &                 &\\
+ \hline
+\end{tabular}
+}}
+\end{figure}
+
+The increase precision, decrease precision, and set precision operations are used to alter the
+number of bits that appear after the binary point in a fixed-point number. This will cause the
+binary point and consequently the total width of the fixed-point result type to differ from those of
+the fixed-point argument type. See section \ref{fixed_rules} for more detail.
 
 \section{Flows}\label{flows}
 
@@ -1624,6 +1726,89 @@ The width of a conditionally valid expression is the width of its input expressi
 The width of each primitive operation is detailed in section \ref{primitives}.
 
 The width of the integer literal expressions is detailed in their respective sections.
+
+\section{Fixed-Point Math}\label{fixed_rules}
+
+\begin{figure}[H]
+  \bgroup
+  \newcommand{\pt}[1]{p\ts{#1}}
+  \newcommand{\w}[1]{w\ts{#1}}
+  \newcommand{\prebits}[1]{\w{#1}-\pt{#1}}
+  \centering
+      { \fontsize{10pt}{1.10em}\selectfont
+        {\ttfamily
+          \begin{tabular}{|c|c|c|}
+            \hline
+            \multicolumn{1}{|c|}{\multirow{2}{*}{\nf{Operator}}} & \multicolumn{2}{c|}{\nf{Result}}\\
+            \multicolumn{1}{|c|}{} & \multicolumn{1}{c}{\nit{Width}} & \multicolumn{1}{c|}{\nit{Binary Point}}\\ \hline
+            add(e1, e2) & max(\prebits{e1}, \prebits{e2}) + max(\pt{e1}, \pt{e2}) + 1 & max(\pt{e1}, \pt{e2}) \\ \hline
+            sub(e1, e2) & max(\prebits{e1}, \prebits{e2}) + max(\pt{e1}, \pt{e2}) + 1 & max(\pt{e1}, \pt{e2}) \\ \hline
+            mul(e1, e2) & \w{1} + \w{2}                                               & \pt{1} + \pt{2} \\ \hline
+          \end{tabular}
+        }
+      }
+      \caption{Propagation rules for binary primitive operators that operate on two fixed-point
+        numbers. Here, \texttt{\w{e1}} and \texttt{\pt{e1}} are used to indicate the width and
+        binary point of the first operand, while \texttt{\w{e2}} and \texttt{\pt{e2}} are used to
+        indicate the width and binary point of the second operand.}
+      \label{fixed_binary_rules}
+  \egroup
+\end{figure}
+
+\begin{figure}[H]
+  \bgroup
+  \newcommand{\pt}[1]{p\ts{#1}}
+  \newcommand{\w}[1]{w\ts{#1}}
+  \centering
+      { \fontsize{10pt}{1.10em}\selectfont
+        {\ttfamily
+          \begin{tabular}{|c|c|c|}
+            \hline
+            \multicolumn{1}{|c|}{\multirow{2}{*}{\nf{Operator}}} & \multicolumn{2}{c|}{\nf{Result}}\\
+            \multicolumn{1}{|c|}{} & \multicolumn{1}{c}{\nit{Width}} & \multicolumn{1}{c|}{\nit{Binary Point}}\\ \hline
+            pad(e, n)  & max(\w{e}, n)                  & \pt{e} \\ \hline
+            shl(e, n)  & \w{e} + n                      & \pt{e} \\ \hline
+            shr(e, n)  & max(\w{e} - n, max(1, \pt{e})) & \pt{e} \\ \hline
+            incp(e, n) & \w{e} + n                      & \pt{e} + n \\ \hline
+            decp(e, n) & \w{e} - n                      & \pt{e} - n \\ \hline
+            setp(e, n) & \w{e} - \pt{e} + n             & n \\ \hline
+          \end{tabular}
+        }
+      }
+      \caption{Propagation rules for binary primitive operators that modify the width and/or
+        precision of a single fixed-point number using a constant integer literal parameter. Here,
+        \texttt{\w{e}} and \texttt{\pt{e}} are used to indicate the width and binary point of the
+        fixed-point operand, while \texttt{n} is used to represent the value of the constant
+        parameter.}
+      \label{fixed_and_const_rules}
+  \egroup
+\end{figure}
+
+\begin{figure}[H]
+  \bgroup
+  \newcommand{\pt}[1]{p\ts{#1}}
+  \newcommand{\w}[1]{w\ts{#1}}
+  \newcommand{\prebits}[1]{\wd{#1}-\pt{#1}}
+  \centering
+      { \fontsize{10pt}{1.10em}\selectfont
+        {\ttfamily
+          \begin{tabular}{|c|c|c|}
+            \hline
+            \multicolumn{1}{|c|}{\multirow{2}{*}{\nf{Operator}}} & \multicolumn{2}{c|}{\nf{Result}}\\
+            \multicolumn{1}{|c|}{} & \multicolumn{1}{c}{\nit{Width}} & \multicolumn{1}{c|}{\nit{Binary Point}}\\ \hline
+            dshl(e1, e1) & \w{e1} + 2\verb|^|\w{e2} - 1 & \pt{e} \\ \hline
+            dshr(e1, e2) & \w{e1}                         & \pt{e} \\ \hline
+          \end{tabular}
+        }
+      }
+      \caption{Propagation rules for dynamic shifts on fixed-point numbers. These take a fixed-point
+        argument and an UInt argument. Here, \texttt{\w{e1}} and \texttt{\pt{e1}} are used to
+        indicate the width and binary point of the fixed-point operand, while \texttt{\w{e2}} is
+        used to represent the width of the unsigned integer operand. Note that the actual shift
+        amount will be the dynamic value of the \texttt{e2} argument.}
+      \label{fixed_dynamic_shifts}
+  \egroup
+\end{figure}
 
 \section{Namespaces}
 
@@ -1787,7 +1972,7 @@ The concrete syntax of FIRRTL is defined in section \ref{syntax_tree}. Productio
 \pd{dir}        &=     &\vv{input} \pipe \vv{ output}                                                          &\text{Port Direction}\\
 \pd{type}       &=     &\vv{UInt}\opt{\vv{<}\pd{int}\vv{>}}                                                    &\text{Unsigned Integer}\\
                 &\pipe &\vv{SInt}\opt{\vv{<}\pd{int}\vv{>}}                                                    &\text{Signed Integer}\\
-                &\pipe &\vv{Fixed}\opt{\vv{<}\pd{int}\vv{>}}\opt{\vv{<<}\pd{int}\vv{>>}}                       &\text{Fixed Point}\\
+                &\pipe &\vv{Fixed}\opt{\vv{<}\pd{int}\vv{>}}\opt{\vv{<<}\pd{int}\vv{>>}}                       &\text{Fixed-Point Number}\\
                 &\pipe &\vv{Clock}                                                                             &\text{Clock}\\
                 &\pipe &\vv{Analog}\opt{\vv{<}\pd{int}\vv{>}}                                                  &\text{Analog}\\
                 &\pipe &\verb|{|\rpt{\pd{field}}\verb|}|                                                       &\text{Bundle}\\
