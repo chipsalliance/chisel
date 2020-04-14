@@ -22,6 +22,10 @@ trait CheckHighFormLike { this: Pass =>
       moduleNS += name
       scopes.head += name
     }
+    def expandMPortVisibility(port: CDefMPort): Unit = {
+      // Legacy CHIRRTL ports are visible in any scope where their parent memory is visible
+      scopes.find(_.contains(port.mem)).getOrElse(scopes.head) += port.name
+    }
     def legalDecl(name: String): Boolean = !moduleNS.contains(name)
     def legalRef(name: String): Boolean = scopes.exists(_.contains(name))
     def childScope(): ScopeView = new ScopeView(moduleNS, new NameSet +: scopes)
@@ -243,7 +247,10 @@ trait CheckHighFormLike { this: Pass =>
         case sx: Connect => checkValidLoc(info, mname, sx.loc)
         case sx: PartialConnect => checkValidLoc(info, mname, sx.loc)
         case sx: Print => checkFstring(info, mname, sx.string, sx.args.length)
-        case _: CDefMemory | _: CDefMPort => errorOnChirrtl(info, mname, s).foreach { e => errors.append(e) }
+        case _: CDefMemory => errorOnChirrtl(info, mname, s).foreach { e => errors.append(e) }
+        case mport: CDefMPort =>
+          errorOnChirrtl(info, mname, s).foreach { e => errors.append(e) }
+          names.expandMPortVisibility(mport)
         case sx => // Do Nothing
       }
       s foreach checkHighFormT(info, mname)
