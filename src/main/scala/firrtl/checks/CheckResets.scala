@@ -6,10 +6,12 @@ import firrtl._
 import firrtl.options.{Dependency, PreservesAll}
 import firrtl.passes.{Errors, PassException}
 import firrtl.ir._
+import firrtl.Utils.isCast
 import firrtl.traversals.Foreachers._
 import firrtl.WrappedExpression._
 
 import scala.collection.mutable
+import scala.annotation.tailrec
 
 object CheckResets {
   class NonLiteralAsyncResetValueException(info: Info, mname: String, reg: String, init: String) extends PassException(
@@ -52,12 +54,15 @@ class CheckResets extends Transform with PreservesAll[Transform] {
     stmt.foreach(onStmt(regCheck, drivers))
   }
 
-  private def findDriver(drivers: DirectDriverMap)(expr: Expression): Expression =
-    drivers.get(we(expr)) match {
-      case Some(lit: Literal) => lit
-      case Some(other) => findDriver(drivers)(other)
-      case None => expr
-    }
+  @tailrec
+  private def findDriver(drivers: DirectDriverMap)(expr: Expression): Expression = expr match {
+     case lit: Literal => lit
+     case DoPrim(op, args, _,_) if isCast(op) => findDriver(drivers)(args.head)
+     case other => drivers.get(we(other)) match {
+       case Some(e) => findDriver(drivers)(e)
+       case None => other
+     }
+  }
 
   private def onMod(errors: Errors)(mod: DefModule): Unit = {
     val regCheck = new RegCheckList()

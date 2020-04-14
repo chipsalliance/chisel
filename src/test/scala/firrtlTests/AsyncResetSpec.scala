@@ -232,6 +232,53 @@ class AsyncResetSpec extends FirrtlFlatSpec {
     result should containLine ("always @(posedge clock or posedge reset) begin")
   }
 
+  "Cast literals" should "be allowed as reset values for AsyncReset" in {
+    // This also checks that casts can be across wires and nodes
+    val sintResult = compileBody(s"""
+        |input clock : Clock
+        |input reset : AsyncReset
+        |input x : SInt<4>
+        |output y : SInt<4>
+        |output z : SInt<4>
+        |reg r : SInt<4>, clock with : (reset => (reset, asSInt(UInt(0))))
+        |r <= x
+        |wire w : SInt<4>
+        |reg r2 : SInt<4>, clock with : (reset => (reset, w))
+        |r2 <= x
+        |node n = UInt("hf")
+        |w <= asSInt(n)
+        |y <= r2
+        |z <= r""".stripMargin
+      )
+    sintResult should containLine ("always @(posedge clock or posedge reset) begin")
+    sintResult should containLine ("r <= 4'sh0;")
+    sintResult should containLine ("r2 <= -4'sh1;")
+
+    val fixedResult = compileBody(s"""
+        |input clock : Clock
+        |input reset : AsyncReset
+        |input x : Fixed<2><<0>>
+        |output z : Fixed<2><<0>>
+        |reg r : Fixed<2><<0>>, clock with : (reset => (reset, asFixedPoint(UInt(2), 0)))
+        |r <= x
+        |z <= r""".stripMargin
+      )
+    fixedResult should containLine ("always @(posedge clock or posedge reset) begin")
+    fixedResult should containLine ("r <= -2'sh2;")
+
+    val intervalResult = compileBody(s"""
+        |input clock : Clock
+        |input reset : AsyncReset
+        |input x : Interval[0, 4].0
+        |output z : Interval[0, 4].0
+        |reg r : Interval[0, 4].0, clock with : (reset => (reset, asInterval(UInt(0), 0, 0, 0)))
+        |r <= x
+        |z <= r""".stripMargin
+      )
+    intervalResult should containLine ("always @(posedge clock or posedge reset) begin")
+    intervalResult should containLine ("r <= 4'sh0;")
+  }
+
   "CheckResets" should "NOT raise StackOverflow Exception on Combinational Loops (should be caught by firrtl.transforms.CheckCombLoops)" in {
     an [firrtl.transforms.CheckCombLoops.CombLoopException] shouldBe thrownBy {
       compileBody(s"""
