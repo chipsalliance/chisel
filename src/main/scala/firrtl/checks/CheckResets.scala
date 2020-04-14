@@ -47,6 +47,7 @@ class CheckResets extends Transform with PreservesAll[Transform] {
     stmt match {
       case DefNode(_, name, expr) => drivers += we(WRef(name)) -> expr
       case Connect(_, lhs, rhs) => drivers += we(lhs) -> rhs
+      case reg @ DefRegister(_, name, _,_,_, init) if weq(WRef(name), init) => // Self-reset, allowed!
       case reg @ DefRegister(_,_,_,_, reset, init) if reset.tpe == AsyncResetType =>
         regCheck += init -> reg
       case _ => // Do nothing
@@ -54,14 +55,16 @@ class CheckResets extends Transform with PreservesAll[Transform] {
     stmt.foreach(onStmt(regCheck, drivers))
   }
 
+  private def wireOrNode(kind: Kind) = (kind == WireKind || kind == NodeKind)
+
   @tailrec
   private def findDriver(drivers: DirectDriverMap)(expr: Expression): Expression = expr match {
-     case lit: Literal => lit
-     case DoPrim(op, args, _,_) if isCast(op) => findDriver(drivers)(args.head)
-     case other => drivers.get(we(other)) match {
-       case Some(e) => findDriver(drivers)(e)
-       case None => other
-     }
+    case lit: Literal => lit
+    case DoPrim(op, args, _,_) if isCast(op) => findDriver(drivers)(args.head)
+    case other => drivers.get(we(other)) match {
+      case Some(e) if wireOrNode(Utils.kind(other)) => findDriver(drivers)(e)
+      case _ => other
+    }
   }
 
   private def onMod(errors: Errors)(mod: DefModule): Unit = {
