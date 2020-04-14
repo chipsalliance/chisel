@@ -30,6 +30,8 @@ class Emitter extends Phase {
          Dependency[AddImplicitOutputAnnotationFile],
          Dependency[MaybeAspectPhase] )
 
+  override val dependents = Seq(Dependency[Convert])
+
   override def invalidates(phase: Phase): Boolean = phase match {
     case _: Elaborate => true
     case _ => false
