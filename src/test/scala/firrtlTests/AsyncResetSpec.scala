@@ -117,6 +117,20 @@ class AsyncResetSpec extends FirrtlFlatSpec {
     }
   }
 
+  "Self-inits" should "NOT cause infinite loops in CheckResets" in {
+    val result = compileBody(s"""
+        |input clock : Clock
+        |input reset : AsyncReset
+        |input in : UInt<12>
+        |output out : UInt<10>
+        |
+        |reg a : UInt<10>, clock with :
+        |  reset => (reset, a)
+        |out <= UInt<5>("h15")""".stripMargin
+      )
+    result should containLine("assign out = 10'h15;")
+  }
+
   "Late non-literals connections" should "NOT be allowed as reset values for AsyncReset" in {
     an [checks.CheckResets.NonLiteralAsyncResetValueException] shouldBe thrownBy {
       compileBody(s"""
