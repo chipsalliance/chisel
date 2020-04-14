@@ -9,9 +9,10 @@ import firrtl.passes.InlineAnnotation
 import firrtl.transforms.FlattenAnnotation
 import firrtl.analyses.InstanceGraph
 import firrtl.{ir => fir}
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
-class InlineSpec extends FreeSpec with ChiselRunners with Matchers {
+class InlineSpec extends AnyFreeSpec with ChiselRunners with Matchers {
 
   trait Internals { this: Module =>
     val io = IO(new Bundle{ val a = Input(Bool()) })

@@ -7,7 +7,9 @@ import java.io.File
 import chisel3._
 import firrtl.FirrtlExecutionSuccess
 import org.scalacheck.Test.Failed
-import org.scalatest.{FreeSpec, Matchers, Succeeded}
+import org.scalatest.Succeeded
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 class DummyModule extends Module {
   val io = IO(new Bundle {
@@ -23,7 +25,7 @@ class TypeErrorModule extends chisel3.MultiIOModule {
   out := in
 }
 
-class DriverSpec extends FreeSpec with Matchers with chiselTests.Utils {
+class DriverSpec extends AnyFreeSpec with Matchers with chiselTests.Utils {
   "Driver's execute methods are used to run chisel and firrtl" - {
     "options can be picked up from comand line with no args" in {
       // NOTE: Since we don't provide any arguments (notably, "--target-dir"),

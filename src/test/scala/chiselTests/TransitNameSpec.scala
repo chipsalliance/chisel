@@ -1,14 +1,15 @@
 // See LICENSE for license details.
 package chiselTests
 
-import org.scalatest.{FlatSpec, Matchers}
 
 import chisel3._
 import chisel3.util.TransitName
 
 import firrtl.FirrtlExecutionSuccess
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class TransitNameSpec extends FlatSpec with Matchers {
+class TransitNameSpec extends AnyFlatSpec with Matchers {
 
   class MyModule extends RawModule {
     val io = IO(new Bundle{})

@@ -5,7 +5,7 @@ package chiselTests
 import chisel3.testers.BasicTester
 
 import org.scalacheck.Gen
-import org.scalatest.prop.GeneratorDrivenPropertyChecks
+import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
 // Need separate import to override compile options from Chisel._
 object CompatibilityCustomCompileOptions {
@@ -17,7 +17,7 @@ object CompatibilityCustomCompileOptions {
   }
 }
 
-class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks {
+class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyChecks {
   import Chisel._
 
   behavior of "Chisel compatibility layer"
