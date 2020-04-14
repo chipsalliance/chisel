@@ -31,6 +31,7 @@ utils/bin/stanza
 utils/bin/firrtl-scala
 utils/bin/firrtl-stanza
 utils/bin/firrtl.jar
+utils/bin/firrtl-test.jar
 utils/bin/FileCheck
 spec/spec.aux
 spec/spec.log
