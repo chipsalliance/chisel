@@ -352,6 +352,53 @@ class CheckSpec extends AnyFlatSpec with Matchers {
     }
   }
 
+  "Conditionally statements" should "create a new scope" in {
+    val input =
+      s"""|circuit scopes:
+          |  module scopes:
+          |    input i: UInt<1>
+          |    output o: UInt<1>
+          |    when i:
+          |      node x = not(i)
+          |    o <= and(x, i)
+          |""".stripMargin
+    assertThrows[CheckHighForm.UndeclaredReferenceException] {
+      checkHighInput(input)
+    }
+  }
+
+  "Attempting to shadow a component name" should "throw an error" in {
+    val input =
+      s"""|circuit scopes:
+          |  module scopes:
+          |    input i: UInt<1>
+          |    output o: UInt<1>
+          |    wire x: UInt<1>
+          |    when i:
+          |      node x = not(i)
+          |    o <= and(x, i)
+          |""".stripMargin
+    assertThrows[CheckHighForm.NotUniqueException] {
+      checkHighInput(input)
+    }
+  }
+
+  "Conditionally statements" should "create separate consequent and alternate scopes" in {
+    val input =
+      s"""|circuit scopes:
+          |  module scopes:
+          |    input i: UInt<1>
+          |    output o: UInt<1>
+          |    o <= i
+          |    when i:
+          |      node x = not(i)
+          |    else:
+          |      o <= and(x, i)
+          |""".stripMargin
+    assertThrows[CheckHighForm.UndeclaredReferenceException] {
+      checkHighInput(input)
+    }
+  }
 }
 
 object CheckSpec {
