@@ -35,6 +35,10 @@ object CheckWidths extends Pass with PreservesAll[Transform] {
     s"$info : [target $mname]  Width $b greater than max allowed width of $MaxWidth bits")
   class DshlTooBig(info: Info, mname: String) extends PassException(
     s"$info : [target $mname]  Width of dshl shift amount cannot be larger than $DshlMaxWidth bits.")
+  class MultiBitAsClock(info: Info, mname: String) extends PassException(
+    s"$info : [target $mname]  Cannot cast a multi-bit signal to a Clock.")
+  class MultiBitAsAsyncReset(info: Info, mname: String) extends PassException(
+    s"$info : [target $mname]  Cannot cast a multi-bit signal to an AsyncReset.")
   class NegWidthException(info:Info, mname: String) extends PassException(
     s"$info: [target $mname] Width cannot be negative or zero.")
   class BitsWidthException(info: Info, mname: String, hi: BigInt, width: BigInt, exp: String) extends PassException(
@@ -131,6 +135,10 @@ object CheckWidths extends Pass with PreservesAll[Transform] {
           errors append new TailWidthException(info, target.serialize, n, bitWidth(a.tpe))
         case DoPrim(Dshl, Seq(a, b), _, _) if (hasWidth(a.tpe) && bitWidth(b.tpe) >= DshlMaxWidth) =>
           errors append new DshlTooBig(info, target.serialize)
+        case DoPrim(AsClock, Seq(a), _, _) if (bitWidth(a.tpe) != 1) =>
+          errors.append(new MultiBitAsClock(info, target.serialize))
+        case DoPrim(AsAsyncReset, Seq(a), _, _) if (bitWidth(a.tpe) != 1) =>
+          errors.append(new MultiBitAsAsyncReset(info, target.serialize))
         case _ =>
       }
       e foreach check_width_e(info, target)
