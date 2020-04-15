@@ -66,10 +66,10 @@ object CheckWidths extends Pass with PreservesAll[Transform] {
         case (IntWidth(width), _) if width >= MaxWidth =>
           errors.append(new WidthTooBig(info, target.serialize, width))
         case (w: IntWidth, f: FixedType) if (w.width < 0 && w.width == f.width) =>
-          errors append new NegWidthException(info, target.serialize)
+          errors.append(new NegWidthException(info, target.serialize))
         case (_: IntWidth, _) =>
         case _ =>
-          errors append new UninferredWidth(info, target.prettyPrint("    "))
+          errors.append(new UninferredWidth(info, target.prettyPrint("    ")))
       }
     }
 
@@ -85,21 +85,21 @@ object CheckWidths extends Pass with PreservesAll[Transform] {
         //Supports when l = u (if closed)
         case i@IntervalType(Closed(l), Closed(u), IntWidth(_)) if l <= u => i
         case i:IntervalType if i.range == Some(Nil) =>
-          errors append new InvalidRange(info, target.prettyPrint("    "), i)
+          errors.append(new InvalidRange(info, target.prettyPrint("    "), i))
           i
         case i@IntervalType(KnownBound(l), KnownBound(u), IntWidth(p)) if l >= u =>
-          errors append new InvalidRange(info, target.prettyPrint("    "), i)
+          errors.append(new InvalidRange(info, target.prettyPrint("    "), i))
           i
         case i@IntervalType(KnownBound(_), KnownBound(_), IntWidth(_)) => i
         case i@IntervalType(_: IsKnown, _, _) =>
-          errors append new UninferredBound(info, target.prettyPrint("    "), "upper")
+          errors.append(new UninferredBound(info, target.prettyPrint("    "), "upper"))
           i
         case i@IntervalType(_, _: IsKnown, _) =>
-          errors append new UninferredBound(info, target.prettyPrint("    "), "lower")
+          errors.append(new UninferredBound(info, target.prettyPrint("    "), "lower"))
           i
         case i@IntervalType(_, _, _) =>
-          errors append new UninferredBound(info, target.prettyPrint("    "), "lower")
-          errors append new UninferredBound(info, target.prettyPrint("    "), "upper")
+          errors.append(new UninferredBound(info, target.prettyPrint("    "), "lower"))
+          errors.append(new UninferredBound(info, target.prettyPrint("    "), "upper"))
           i
         case tt => tt foreach check_width_t(info, target)
       }
@@ -113,28 +113,28 @@ object CheckWidths extends Pass with PreservesAll[Transform] {
       e match {
         case e: UIntLiteral => e.width match {
           case w: IntWidth if math.max(1, e.value.bitLength) > w.width =>
-            errors append new WidthTooSmall(info, target.serialize, e.value)
+            errors.append(new WidthTooSmall(info, target.serialize, e.value))
           case _ =>
         }
         case e: SIntLiteral => e.width match {
           case w: IntWidth if e.value.bitLength + 1 > w.width =>
-            errors append new WidthTooSmall(info, target.serialize, e.value)
+            errors.append(new WidthTooSmall(info, target.serialize, e.value))
           case _ =>
         }
         case sqz@DoPrim(Squeeze, Seq(a, b), _, IntervalType(Closed(min), Closed(max), _)) =>
           (a.tpe, b.tpe) match {
             case (IntervalType(Closed(la), Closed(ua), _), IntervalType(Closed(lb), Closed(ub), _)) if (ua < lb) || (ub < la) =>
-              errors append new DisjointSqueeze(info, target.serialize, sqz)
+              errors.append(new DisjointSqueeze(info, target.serialize, sqz))
             case other =>
           }
         case DoPrim(Bits, Seq(a), Seq(hi, lo), _) if (hasWidth(a.tpe) && bitWidth(a.tpe) <= hi) =>
-          errors append new BitsWidthException(info, target.serialize, hi, bitWidth(a.tpe), e.serialize)
+          errors.append(new BitsWidthException(info, target.serialize, hi, bitWidth(a.tpe), e.serialize))
         case DoPrim(Head, Seq(a), Seq(n), _) if (hasWidth(a.tpe) && bitWidth(a.tpe) < n) =>
-          errors append new HeadWidthException(info, target.serialize, n, bitWidth(a.tpe))
+          errors.append(new HeadWidthException(info, target.serialize, n, bitWidth(a.tpe)))
         case DoPrim(Tail, Seq(a), Seq(n), _) if (hasWidth(a.tpe) && bitWidth(a.tpe) < n) =>
-          errors append new TailWidthException(info, target.serialize, n, bitWidth(a.tpe))
+          errors.append(new TailWidthException(info, target.serialize, n, bitWidth(a.tpe)))
         case DoPrim(Dshl, Seq(a, b), _, _) if (hasWidth(a.tpe) && bitWidth(b.tpe) >= DshlMaxWidth) =>
-          errors append new DshlTooBig(info, target.serialize)
+          errors.append(new DshlTooBig(info, target.serialize))
         case DoPrim(AsClock, Seq(a), _, _) if (bitWidth(a.tpe) != 1) =>
           errors.append(new MultiBitAsClock(info, target.serialize))
         case DoPrim(AsAsyncReset, Seq(a), _, _) if (bitWidth(a.tpe) != 1) =>
