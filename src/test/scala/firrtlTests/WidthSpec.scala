@@ -68,6 +68,28 @@ class WidthSpec extends FirrtlFlatSpec {
     }
   }
 
+  "Casting a multi-bit signal to Clock" should "result in error" in {
+    val input =
+      s"""circuit Unit :
+         |  module Unit :
+         |    input i: UInt<2>
+         |    node x = asClock(i)""".stripMargin
+    intercept[CheckWidths.MultiBitAsClock] {
+        executeTest(input, Nil, inferAndCheckPasses)
+    }
+  }
+
+  "Casting a multi-bit signal to AsyncReset" should "result in error" in {
+    val input =
+      s"""circuit Unit :
+         |  module Unit :
+         |    input i: UInt<2>
+         |    node x = asAsyncReset(i)""".stripMargin
+    intercept[CheckWidths.MultiBitAsAsyncReset] {
+        executeTest(input, Nil, inferAndCheckPasses)
+    }
+  }
+
   "Width >= MaxWidth" should "result in an error" in {
     val input =
      s"""circuit Unit :
