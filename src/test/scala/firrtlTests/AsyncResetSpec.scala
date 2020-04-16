@@ -80,7 +80,7 @@ class AsyncResetSpec extends FirrtlFlatSpec {
       |input c : Clock
       |input d : Fixed<1><<0>>
       |input e : AsyncReset
-      |input f : Interval[0, 1].0
+      |input f : Interval[0, 0].0
       |output u : AsyncReset
       |output v : AsyncReset
       |output w : AsyncReset
