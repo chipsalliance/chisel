@@ -13,6 +13,7 @@ import firrtl.ir.Circuit
 import firrtl.Utils.throwInternalError
 import firrtl.annotations.transforms.{EliminateTargetPaths, ResolvePaths}
 import firrtl.options.{DependencyAPI, Dependency, PreservesAll, StageUtils, TransformLike}
+import firrtl.stage.Forms
 import firrtl.stage.transforms.CatchCustomTransformExceptions
 
 /** Container of all annotations for a Firrtl compiler */
@@ -100,7 +101,9 @@ object CircuitState {
   * strictly supersets of the "lower" forms. Thus, that any transform that
   * operates on [[HighForm]] can also operate on [[MidForm]] or [[LowForm]]
   */
-@deprecated("CircuitForm will be removed in 1.3. Switch to Seq[TransformDependency] to specify dependencies.", "1.2")
+@deprecated(
+  "Mix-in the DependencyAPIMigration trait into your Transform and specify its Dependency API dependencies. See: https://bit.ly/2Voppre",
+  "FIRRTL 1.3")
 sealed abstract class CircuitForm(private val value: Int) extends Ordered[CircuitForm] {
   // Note that value is used only to allow comparisons
   def compare(that: CircuitForm): Int = this.value - that.value
@@ -119,7 +122,9 @@ sealed abstract class CircuitForm(private val value: Int) extends Ordered[Circui
   *
   * See [[CDefMemory]] and [[CDefMPort]]
   */
-@deprecated("Form-based dependencies will be removed in 1.3. Please migrate to the new Dependency API.", "1.2")
+@deprecated(
+  "Mix-in the DependencyAPIMigration trait into your Transform and specify its Dependency API dependencies. See: https://bit.ly/2Voppre",
+  "FIRRTL 1.3")
 final case object ChirrtlForm extends CircuitForm(value = 3) {
   val outputSuffix: String = ".fir"
 }
@@ -131,7 +136,9 @@ final case object ChirrtlForm extends CircuitForm(value = 3) {
   *
   * Also see [[firrtl.ir]]
   */
-@deprecated("Form-based dependencies will be removed in 1.3. Please migrate to the new Dependency API.", "1.2")
+@deprecated(
+  "Mix-in the DependencyAPIMigration trait into your Transform and specify its Dependency API dependencies. See: https://bit.ly/2Voppre",
+  "FIRRTL 1.3")
 final case object HighForm extends CircuitForm(2) {
   val outputSuffix: String = ".hi.fir"
 }
@@ -143,7 +150,9 @@ final case object HighForm extends CircuitForm(2) {
   *  - All whens must be removed
   *  - There can only be a single connection to any element
   */
-@deprecated("Form-based dependencies will be removed in 1.3. Please migrate to the new Dependency API.", "1.2")
+@deprecated(
+  "Mix-in the DependencyAPIMigration trait into your Transform and specify its Dependency API dependencies. See: https://bit.ly/2Voppre",
+  "FIRRTL 1.3")
 final case object MidForm extends CircuitForm(1) {
   val outputSuffix: String = ".mid.fir"
 }
@@ -154,7 +163,9 @@ final case object MidForm extends CircuitForm(1) {
   *  - All aggregate types (vector/bundle) must have been removed
   *  - All implicit truncations must be made explicit
   */
-@deprecated("Form-based dependencies will be removed in 1.3. Please migrate to the new Dependency API.", "1.2")
+@deprecated(
+  "Mix-in the DependencyAPIMigration trait into your Transform and specify its Dependency API dependencies. See: https://bit.ly/2Voppre",
+  "FIRRTL 1.3")
 final case object LowForm extends CircuitForm(0) {
   val outputSuffix: String = ".lo.fir"
 }
@@ -170,7 +181,9 @@ final case object LowForm extends CircuitForm(0) {
   * TODO(azidar): Replace with PreviousForm, which more explicitly encodes
   * this requirement.
   */
-@deprecated("Form-based dependencies will be removed in 1.3. Please migrate to the new Dependency API.", "1.2")
+@deprecated(
+  "Mix-in the DependencyAPIMigration trait into your Transform and specify its Dependency API dependencies. See: https://bit.ly/2Voppre",
+  "FIRRTL 1.3")
 final case object UnknownForm extends CircuitForm(-1) {
   override def compare(that: CircuitForm): Int = { sys.error("Illegal to compare UnknownForm"); 0 }
 
@@ -183,16 +196,17 @@ trait Transform extends TransformLike[CircuitState] with DependencyAPI[Transform
 
   /** A convenience function useful for debugging and error messages */
   def name: String = this.getClass.getName
+
   /** The [[firrtl.CircuitForm]] that this transform requires to operate on */
   @deprecated(
-    "InputForm/OutputForm will be removed in 1.3. Use DependencyAPI methods (prerequisites, dependents, invalidates)",
-    "1.2")
+    "Use Dependency API methods for equivalent functionality. See: https://bit.ly/2Voppre",
+    "FIRRTL 1.3")
   def inputForm: CircuitForm
 
   /** The [[firrtl.CircuitForm]] that this transform outputs */
   @deprecated(
-    "InputForm/OutputForm will be removed in 1.3. Use DependencyAPI methods (prerequisites, dependents, invalidates)",
-    "1.2")
+    "Use Dependency API methods for equivalent functionality. See: https://bit.ly/2Voppre",
+    "FIRRTL 1.3")
   def outputForm: CircuitForm
 
   /** Perform the transform, encode renaming with RenameMap, and can
@@ -206,8 +220,11 @@ trait Transform extends TransformLike[CircuitState] with DependencyAPI[Transform
 
   def transform(state: CircuitState): CircuitState = execute(state)
 
-  import firrtl.{ChirrtlForm => C, HighForm => H, MidForm => M, LowForm => L, UnknownForm => U}
-  import firrtl.stage.Forms
+  private val C = ChirrtlForm
+  private val H = HighForm
+  private val M = MidForm
+  private val L = LowForm
+  private val U = UnknownForm
 
   override def prerequisites: Seq[Dependency[Transform]] = inputForm match {
     case C => Nil
