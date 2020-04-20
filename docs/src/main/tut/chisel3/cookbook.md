@@ -315,6 +315,19 @@ class ModuleWithOptionalIOs(flag: Boolean) extends Module {
 }
 ```
 
+The following is an example for a `MultiIOModule` where an entire `IO` is optional:
+
+```scala mdoc:silent:reset
+import chisel3._
+
+class ModuleWithOptionalIO(flag: Boolean) extends MultiIOModule {
+  val in = if (flag) Some(IO(Input(Bool()))) else None
+  val out = IO(Output(Bool()))
+
+  out := in.getOrElse(false.B)
+}
+```
+
 ### How do I get Chisel to name signals properly in blocks like when/withClockAndReset?
 
 To get Chisel to name signals (wires and registers) declared inside of blocks like `when`, `withClockAndReset`, etc, use the [`@chiselName`](https://www.chisel-lang.org/api/latest/chisel3/experimental/package$$chiselName.html) annotation as shown below:
