@@ -7,6 +7,7 @@ import chisel3.util.Counter
 import firrtl.passes.CheckInitialization.RefNotInitializedException
 import firrtl.util.BackendCompilationUtilities
 import org.scalatest._
+import org.scalatest.matchers.should.Matchers
 
 class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompilationUtilities {
 

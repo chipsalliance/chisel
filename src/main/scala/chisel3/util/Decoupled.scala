@@ -206,16 +206,16 @@ class Queue[T <: Data](gen: T,
 
   val io = IO(new QueueIO(genType, entries))
 
-  private val ram = Mem(entries, genType)
-  private val enq_ptr = Counter(entries)
-  private val deq_ptr = Counter(entries)
-  private val maybe_full = RegInit(false.B)
+  val ram = Mem(entries, genType)
+  val enq_ptr = Counter(entries)
+  val deq_ptr = Counter(entries)
+  val maybe_full = RegInit(false.B)
 
-  private val ptr_match = enq_ptr.value === deq_ptr.value
-  private val empty = ptr_match && !maybe_full
-  private val full = ptr_match && maybe_full
-  private val do_enq = WireDefault(io.enq.fire())
-  private val do_deq = WireDefault(io.deq.fire())
+  val ptr_match = enq_ptr.value === deq_ptr.value
+  val empty = ptr_match && !maybe_full
+  val full = ptr_match && maybe_full
+  val do_enq = WireDefault(io.enq.fire())
+  val do_deq = WireDefault(io.deq.fire())
 
   when (do_enq) {
     ram(enq_ptr.value) := io.enq.bits
@@ -245,7 +245,7 @@ class Queue[T <: Data](gen: T,
     when (io.deq.ready) { io.enq.ready := true.B }
   }
 
-  private val ptr_diff = enq_ptr.value - deq_ptr.value
+  val ptr_diff = enq_ptr.value - deq_ptr.value
   if (isPow2(entries)) {
     io.count := Mux(maybe_full && ptr_match, entries.U, 0.U) | ptr_diff
   } else {
