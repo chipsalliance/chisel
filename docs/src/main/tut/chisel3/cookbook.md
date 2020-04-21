@@ -397,3 +397,70 @@ However, if we use `@chiselName` then the register previously called `_T` is now
                             |$a
                             |```""".stripMargin))
 ```
+### How do I get Chisel to name the results of vector reads properly?
+Currently, name information is lost when using dynamic indexing. For example:
+```scala
+class Foo extends Module {
+  val io = IO(new Bundle {
+    val in = Input(Vec(4, Bool()))
+    val idx = Input(UInt(2.W))
+    val en = Input(Bool())
+    val out = Output(Bool())
+  })
+
+  val x = io.in(io.idx)
+  val y = x && io.en
+  io.out := y
+}
+```
+
+The above code loses the `x` name, instead using `_GEN_3` (the other `_GEN_*` signals are expected).
+```verilog
+module Foo(
+  input        clock,
+  input        reset,
+  input        io_in_0,
+  input        io_in_1,
+  input        io_in_2,
+  input        io_in_3,
+  input  [1:0] io_idx,
+  input        io_en,
+  output       io_out
+);
+  wire  _GEN_1; // @[main.scala 15:13]
+  wire  _GEN_2; // @[main.scala 15:13]
+  wire  _GEN_3; // @[main.scala 15:13]
+  assign _GEN_1 = 2'h1 == io_idx ? io_in_1 : io_in_0; // @[main.scala 15:13]
+  assign _GEN_2 = 2'h2 == io_idx ? io_in_2 : _GEN_1; // @[main.scala 15:13]
+  assign _GEN_3 = 2'h3 == io_idx ? io_in_3 : _GEN_2; // @[main.scala 15:13]
+  assign io_out = _GEN_3 & io_en; // @[main.scala 16:10]
+endmodule
+```
+
+This can be worked around by creating a wire and connecting the dynamic index to the wire:
+```scala
+val x = WireInit(io.in(io.idx))
+```
+
+Which produces:
+```verilog
+module Foo(
+  input        clock,
+  input        reset,
+  input        io_in_0,
+  input        io_in_1,
+  input        io_in_2,
+  input        io_in_3,
+  input  [1:0] io_idx,
+  input        io_en,
+  output       io_out
+);
+  wire  _GEN_1;
+  wire  _GEN_2;
+  wire  x;
+  assign _GEN_1 = 2'h1 == io_idx ? io_in_1 : io_in_0;
+  assign _GEN_2 = 2'h2 == io_idx ? io_in_2 : _GEN_1;
+  assign x = 2'h3 == io_idx ? io_in_3 : _GEN_2;
+  assign io_out = x & io_en; // @[main.scala 16:10]
+endmodule
+```
