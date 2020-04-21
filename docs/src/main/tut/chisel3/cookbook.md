@@ -22,6 +22,7 @@ Please note that these examples make use of [Chisel's scala-style printing](prin
 * [How can I dynamically set/parametrize the name of a module?](#how-can-i-dynamically-setparametrize-the-name-of-a-module)
 * [How do I create an optional I/O?](#how-do-i-create-an-optional-io)
 * [How do I get Chisel to name signals properly in blocks like when/withClockAndReset?](#how-do-i-get-chisel-to-name-signals-properly-in-blocks-like-whenwithclockandreset)
+* [How do I get Chisel to name the results of vector reads properly?](#how-do-i-get-chisel-to-name-the-results-of-vector-reads-properly)
 
 ## Converting Chisel Types to/from UInt
 
