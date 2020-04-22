@@ -7,6 +7,7 @@ import firrtl._
 import firrtl.Utils._
 import scala.collection.mutable
 import firrtl.annotations._
+import firrtl.options.Dependency
 import firrtl.stage.Forms
 
 /** A class for all exceptions originating from firrtl.passes.wiring */
@@ -43,10 +44,8 @@ class WiringTransform extends Transform with DependencyAPIMigration {
   override def optionalPrerequisites = Seq.empty
   override def dependents = Forms.MidEmitters
 
-  override def invalidates(a: Transform): Boolean = {
-    val everything = new mutable.LinkedHashSet[Dependency[Transform]] ++ Forms.VerilogOptimized
-    (everything -- Forms.MinimalHighForm)(Dependency.fromTransform(a))
-  }
+  private val invalidates = Forms.VerilogOptimized.toSet -- Forms.MinimalHighForm
+  override def invalidates(a: Transform): Boolean = invalidates(Dependency.fromTransform(a))
 
   /** Defines the sequence of Transform that should be applied */
   private def transforms(w: Seq[WiringInfo]): Seq[Transform] = Seq(
