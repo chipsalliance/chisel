@@ -4,14 +4,10 @@ package TopWiring
 
 import firrtl._
 import firrtl.ir._
-import firrtl.passes.{Pass,
-      InferTypes,
-      ResolveKinds,
-      ResolveFlows,
-      ExpandConnects
-      }
+import firrtl.passes.{InferTypes, ResolveKinds, ResolveFlows, ExpandConnects}
 import firrtl.annotations._
 import firrtl.Mappers._
+import firrtl.stage.Forms
 
 import collection.mutable
 
@@ -33,9 +29,16 @@ case class TopWiringAnnotation(target: ComponentName, prefix: String) extends
     custom output files as a result of the additional ports
   * @note This *does* work for deduped modules
   */
-class TopWiringTransform extends Transform {
-  def inputForm: CircuitForm = MidForm
-  def outputForm: CircuitForm = MidForm
+class TopWiringTransform extends Transform with DependencyAPIMigration {
+
+  override def prerequisites = Forms.MidForm
+  override def optionalPrerequisites = Seq.empty
+  override def dependents = Forms.MidEmitters
+
+  override def invalidates(a: Transform): Boolean = a match {
+    case InferTypes | ResolveKinds | ResolveFlows | ExpandConnects => true
+    case _ => false
+  }
 
   type InstPath = Seq[String]
 
@@ -222,21 +225,6 @@ class TopWiringTransform extends Transform {
     }
   }
 
-  /** Run passes to fix up the circuit of making the new connections  */
-  private def fixupCircuit(circuit: Circuit): Circuit = {
-    val passes = Seq(
-      InferTypes,
-      ResolveKinds,
-      ResolveFlows,
-      ExpandConnects,
-      InferTypes,
-      ResolveKinds,
-      ResolveFlows
-    )
-    passes.foldLeft(circuit) { case (c: Circuit, p: Pass) => p.run(c) }
-  }
-
-
   /** Dummy function that is currently unused. Can be used to fill an outputFunction requirment in the future  */
   def topWiringDummyOutputFilesFunction(dir: String,
                                         mapping: Seq[((ComponentName, Type, Boolean, InstPath, String), Int)],
@@ -259,7 +247,6 @@ class TopWiringTransform extends Transform {
       val namespacemap = state.circuit.modules.map{ case m => (m.name -> Namespace(m)) }.toMap
       val modulesx = state.circuit.modules map onModule(sources, portnamesmap, instgraph, namespacemap)
       val newCircuit = state.circuit.copy(modules = modulesx)
-      val fixedCircuit = fixupCircuit(newCircuit)
       val mappings = sources(state.circuit.main).zipWithIndex
 
       val annosx = state.annotations.filter {
@@ -267,7 +254,7 @@ class TopWiringTransform extends Transform {
         case _                      => true
       }
 
-      (state.copy(circuit = fixedCircuit, annotations = annosx), mappings)
+      (state.copy(circuit = newCircuit, annotations = annosx), mappings)
     }
     else { (state, List.empty) }
     //Generate output files based on the mapping.

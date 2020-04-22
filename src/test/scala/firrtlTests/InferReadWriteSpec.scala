@@ -4,7 +4,9 @@ package firrtlTests
 
 import firrtl._
 import firrtl.ir._
+import firrtl.options.PreservesAll
 import firrtl.passes._
+import firrtl.stage.Forms
 import firrtl.testutils._
 import firrtl.testutils.FirrtlCheckers._
 
@@ -12,9 +14,11 @@ class InferReadWriteSpec extends SimpleTransformSpec {
   class InferReadWriteCheckException extends PassException(
     "Readwrite ports are not found!")
 
-  object InferReadWriteCheck extends Pass {
-    override def inputForm = MidForm
-    override def outputForm = MidForm
+  object InferReadWriteCheck extends Pass with PreservesAll[Transform] {
+    override def prerequisites = Forms.MidForm
+    override def optionalPrerequisites = Seq.empty
+    override def dependents = Forms.MidEmitters
+
     def findReadWrite(s: Statement): Boolean = s match {
       case s: DefMemory if s.readLatency > 0 && s.readwriters.size == 1 =>
         s.name == "mem" && s.readwriters.head == "rw"

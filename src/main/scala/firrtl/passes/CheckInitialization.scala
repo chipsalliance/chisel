@@ -17,7 +17,7 @@ import annotation.tailrec
   */
 object CheckInitialization extends Pass with PreservesAll[Transform] {
 
-  override val prerequisites = firrtl.stage.Forms.Resolved
+  override def prerequisites = firrtl.stage.Forms.Resolved
 
   private case class VoidExpr(stmt: Statement, voidDeps: Seq[Expression])
 

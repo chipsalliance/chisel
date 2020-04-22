@@ -9,7 +9,7 @@ import firrtl.options.PreservesAll
 
 object ResolveKinds extends Pass with PreservesAll[Transform] {
 
-  override val prerequisites = firrtl.stage.Forms.WorkingIR
+  override def prerequisites = firrtl.stage.Forms.WorkingIR
 
   type KindMap = collection.mutable.LinkedHashMap[String, Kind]
 

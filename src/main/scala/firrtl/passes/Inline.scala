@@ -9,7 +9,7 @@ import firrtl.annotations._
 import firrtl.annotations.TargetToken.{Instance, OfModule}
 import firrtl.analyses.{InstanceGraph}
 import firrtl.graph.{DiGraph, MutableDiGraph}
-import firrtl.stage.RunFirrtlTransformAnnotation
+import firrtl.stage.{Forms, RunFirrtlTransformAnnotation}
 import firrtl.options.{RegisteredTransform, ShellOption}
 
 // Datastructures
@@ -24,12 +24,15 @@ case class InlineAnnotation(target: Named) extends SingleTargetAnnotation[Named]
   * @note Only use on legal Firrtl. Specifically, the restriction of instance loops must have been checked, or else this
   * pass can infinitely recurse.
   */
-class InlineInstances extends Transform with RegisteredTransform {
-  def inputForm = LowForm
-  def outputForm = LowForm
-  private [firrtl] val inlineDelim: String = "_"
+class InlineInstances extends Transform with DependencyAPIMigration with RegisteredTransform {
+
+  override def prerequisites = Forms.LowForm
+  override def optionalPrerequisites = Seq.empty
+  override def dependents = Forms.LowEmitters
 
   override def invalidates(a: Transform): Boolean = a == ResolveKinds
+
+  private [firrtl] val inlineDelim: String = "_"
 
   val options = Seq(
     new ShellOption[Seq[String]](

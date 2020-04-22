@@ -13,7 +13,7 @@ import firrtl.options.{Dependency, PreservesAll}
   */
 object ReplaceAccesses extends Pass with PreservesAll[Transform] {
 
-  override val prerequisites = firrtl.stage.Forms.Deduped :+ Dependency(PullMuxes)
+  override def prerequisites = firrtl.stage.Forms.Deduped :+ Dependency(PullMuxes)
 
   def run(c: Circuit): Circuit = {
     def onStmt(s: Statement): Statement = s map onStmt map onExp

@@ -22,13 +22,11 @@ import firrtl.Mappers._
   *   wire foo_b : UInt<16>
   * }}}
   */
-object LowerTypes extends Transform {
-  def inputForm = UnknownForm
-  def outputForm = UnknownForm
+object LowerTypes extends Transform with DependencyAPIMigration {
 
-  override val prerequisites = firrtl.stage.Forms.MidForm
+  override def prerequisites = firrtl.stage.Forms.MidForm
 
-  override val dependents = Seq.empty
+  override def dependents = Seq.empty
 
   override def invalidates(a: Transform): Boolean = a match {
     case ResolveKinds | InferTypes | ResolveFlows | _: InferWidths => true

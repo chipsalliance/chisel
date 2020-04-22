@@ -94,18 +94,19 @@ case class CombinationalPath(sink: ReferenceTarget, sources: Seq[ReferenceTarget
   * @note The pass relies on ExtModulePathAnnotations to find loops through ExtModules
   * @note The pass will throw exceptions on "false paths"
   */
-class CheckCombLoops extends Transform with RegisteredTransform with PreservesAll[Transform] {
-  def inputForm = LowForm
-  def outputForm = LowForm
+class CheckCombLoops extends Transform
+    with RegisteredTransform
+    with DependencyAPIMigration
+    with PreservesAll[Transform] {
 
-  override val prerequisites = firrtl.stage.Forms.MidForm ++
+  override def prerequisites = firrtl.stage.Forms.MidForm ++
     Seq( Dependency(passes.LowerTypes),
          Dependency(passes.Legalize),
          Dependency(firrtl.transforms.RemoveReset) )
 
-  override val optionalPrerequisites = Seq.empty
+  override def optionalPrerequisites = Seq.empty
 
-  override val dependents = Seq.empty
+  override def dependents = Seq.empty
 
   import CheckCombLoops._
 

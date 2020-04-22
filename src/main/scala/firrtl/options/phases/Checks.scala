@@ -12,9 +12,9 @@ import firrtl.options.Dependency
   */
 class Checks extends Phase with PreservesAll[Phase] {
 
-  override val prerequisites = Seq(Dependency[GetIncludes], Dependency[ConvertLegacyAnnotations], Dependency[AddDefaults])
+  override def prerequisites = Seq(Dependency[GetIncludes], Dependency[ConvertLegacyAnnotations], Dependency[AddDefaults])
 
-  override val dependents = Seq.empty
+  override def dependents = Seq.empty
 
   /** Validate an [[AnnotationSeq]] for [[StageOptions]]
     * @throws OptionsException if annotations are invalid

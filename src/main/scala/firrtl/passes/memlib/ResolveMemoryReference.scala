@@ -6,6 +6,8 @@ import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.annotations._
+import firrtl.options.PreservesAll
+import firrtl.stage.Forms
 
 /** A component, e.g. register etc. Must be declared only once under the TopAnnotation */
 case class NoDedupMemAnnotation(target: ComponentName) extends SingleTargetAnnotation[ComponentName] {
@@ -14,9 +16,11 @@ case class NoDedupMemAnnotation(target: ComponentName) extends SingleTargetAnnot
 
 /** Resolves annotation ref to memories that exactly match (except name) another memory
  */
-class ResolveMemoryReference extends Transform {
-  def inputForm = MidForm
-  def outputForm = MidForm
+class ResolveMemoryReference extends Transform with DependencyAPIMigration with PreservesAll[Transform] {
+
+  override def prerequisites = Forms.MidForm
+  override def optionalPrerequisites = Seq.empty
+  override def dependents = Forms.MidEmitters
 
   /** Helper class for determining when two memories are equivalent while igoring
     * irrelevant details like name and info

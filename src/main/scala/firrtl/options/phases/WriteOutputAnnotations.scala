@@ -14,13 +14,13 @@ import java.io.PrintWriter
   */
 class WriteOutputAnnotations extends Phase with PreservesAll[Phase] {
 
-  override val prerequisites =
+  override def prerequisites =
     Seq( Dependency[GetIncludes],
          Dependency[ConvertLegacyAnnotations],
          Dependency[AddDefaults],
          Dependency[Checks] )
 
-  override val dependents = Seq.empty
+  override def dependents = Seq.empty
 
   /** Write the input [[AnnotationSeq]] to a fie. */
   def transform(annotations: AnnotationSeq): AnnotationSeq = {

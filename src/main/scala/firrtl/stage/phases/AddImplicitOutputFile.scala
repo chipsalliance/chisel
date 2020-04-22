@@ -22,9 +22,9 @@ import firrtl.stage.{FirrtlOptions, OutputFileAnnotation}
   */
 class AddImplicitOutputFile extends Phase with PreservesAll[Phase] {
 
-  override val prerequisites = Seq(Dependency[AddCircuit])
+  override def prerequisites = Seq(Dependency[AddCircuit])
 
-  override val dependents = Seq.empty
+  override def dependents = Seq.empty
 
   /** Add an [[OutputFileAnnotation]] to an [[AnnotationSeq]] */
   def transform(annotations: AnnotationSeq): AnnotationSeq =

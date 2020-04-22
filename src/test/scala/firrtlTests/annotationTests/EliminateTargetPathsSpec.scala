@@ -9,7 +9,25 @@ import firrtl.annotations.transforms.NoSuchTargetException
 import firrtl.transforms.DontTouchAnnotation
 import firrtl.testutils.{FirrtlMatchers, FirrtlPropSpec}
 
+object EliminateTargetPathsSpec {
+
+  case class DummyAnnotation(target: Target) extends SingleTargetAnnotation[Target] {
+    override def duplicate(n: Target): Annotation = DummyAnnotation(n)
+  }
+  class DummyTransform() extends Transform with ResolvedAnnotationPaths {
+    override def inputForm: CircuitForm = LowForm
+    override def outputForm: CircuitForm = LowForm
+
+    override val annotationClasses: Traversable[Class[_]] = Seq(classOf[DummyAnnotation])
+
+    override def execute(state: CircuitState): CircuitState = state
+  }
+
+}
+
 class EliminateTargetPathsSpec extends FirrtlPropSpec with FirrtlMatchers {
+  import EliminateTargetPathsSpec._
+
   val input =
     """circuit Top:
       |  module Leaf:
@@ -48,17 +66,6 @@ class EliminateTargetPathsSpec extends FirrtlPropSpec with FirrtlMatchers {
   val Middle_l2_a = Middle.instOf("l2", "Leaf").ref("a")
   val Leaf_a = Leaf.ref("a")
 
-  case class DummyAnnotation(target: Target) extends SingleTargetAnnotation[Target] {
-    override def duplicate(n: Target): Annotation = DummyAnnotation(n)
-  }
-  class DummyTransform() extends Transform with ResolvedAnnotationPaths {
-    override def inputForm: CircuitForm = LowForm
-    override def outputForm: CircuitForm = LowForm
-
-    override val annotationClasses: Traversable[Class[_]] = Seq(classOf[DummyAnnotation])
-
-    override def execute(state: CircuitState): CircuitState = state
-  }
   val customTransforms = Seq(new DummyTransform())
 
   val inputState = CircuitState(parse(input), ChirrtlForm)

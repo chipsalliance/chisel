@@ -8,6 +8,8 @@ import firrtl.Mappers._
 import firrtl.annotations._
 import firrtl.passes._
 import firrtl.passes.memlib._
+import firrtl.stage.Forms
+import firrtl.options.PreservesAll
 import scala.collection.mutable
 
 import AnalysisUtils._
@@ -17,9 +19,11 @@ import ResolveMaskGranularity._
 /**
   * Lowers memories without splitting them, but without the complexity of ReplaceMemMacros
   */
-class SimplifyMems extends Transform {
-  def inputForm = MidForm
-  def outputForm = MidForm
+class SimplifyMems extends Transform with DependencyAPIMigration with PreservesAll[Transform] {
+
+  override def prerequisites = Forms.MidForm
+  override def optionalPrerequisites = Seq.empty
+  override def dependents = Forms.MidEmitters
 
   def onModule(c: Circuit, renames: RenameMap)(m: DefModule): DefModule = {
     val moduleNS = Namespace(m)
@@ -76,6 +80,6 @@ class SimplifyMems extends Transform {
   override def execute(state: CircuitState): CircuitState = {
     val c = state.circuit
     val renames = RenameMap()
-    CircuitState(c.map(onModule(c, renames)), outputForm, state.annotations, Some(renames))
+    state.copy(circuit = c.map(onModule(c, renames)), renames = Some(renames))
   }
 }

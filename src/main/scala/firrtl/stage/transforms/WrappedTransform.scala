@@ -23,10 +23,11 @@ trait WrappedTransform { this: Transform =>
     case _ => underlying
   }
 
-  override final val inputForm = underlying.inputForm
-  override final val outputForm = underlying.outputForm
-  override final val prerequisites = underlying.prerequisites
-  override final val dependents = underlying.dependents
+  override final def inputForm = underlying.inputForm
+  override final def outputForm = underlying.outputForm
+  override final def prerequisites = underlying.prerequisites
+  override final def optionalPrerequisites = underlying.optionalPrerequisites
+  override final def dependents = underlying.dependents
   override final def invalidates(b: Transform): Boolean = underlying.invalidates(b)
   override final lazy val name = underlying.name
 

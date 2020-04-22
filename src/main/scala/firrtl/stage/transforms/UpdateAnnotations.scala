@@ -33,8 +33,7 @@ class UpdateAnnotations(val underlying: Transform) extends Transform with Wrappe
   def internalTransform(b: (CircuitState, CircuitState)): (CircuitState, CircuitState) = {
     logger.info(s"======== Starting Transform $name ========")
 
-    /* @todo: prepare should likely be factored out of this */
-    val (timeMillis, result) = Utils.time { execute( trueUnderlying.prepare(b._2) ) }
+    val (timeMillis, result) = Utils.time { underlying.transform(b._2) }
 
     logger.info(s"""----------------------------${"-" * name.size}---------\n""")
     logger.info(f"Time: $timeMillis%.1f ms")

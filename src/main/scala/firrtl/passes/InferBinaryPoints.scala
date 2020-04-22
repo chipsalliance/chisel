@@ -12,13 +12,13 @@ import firrtl.options.{Dependency, PreservesAll}
 
 class InferBinaryPoints extends Pass with PreservesAll[Transform] {
 
-  override val prerequisites =
+  override def prerequisites =
     Seq( Dependency(ResolveKinds),
          Dependency(InferTypes),
          Dependency(Uniquify),
          Dependency(ResolveFlows) )
 
-  override val dependents = Seq.empty
+  override def dependents = Seq.empty
 
   private val constraintSolver = new ConstraintSolver()
 

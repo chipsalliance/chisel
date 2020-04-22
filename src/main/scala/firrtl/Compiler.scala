@@ -14,7 +14,6 @@ import firrtl.Utils.throwInternalError
 import firrtl.annotations.transforms.{EliminateTargetPaths, ResolvePaths}
 import firrtl.options.{DependencyAPI, Dependency, PreservesAll, StageUtils, TransformLike}
 import firrtl.stage.Forms
-import firrtl.stage.transforms.CatchCustomTransformExceptions
 
 /** Container of all annotations for a Firrtl compiler */
 class AnnotationSeq private (private[firrtl] val underlying: List[Annotation]) {
@@ -90,6 +89,8 @@ object CircuitState {
   def apply(circuit: Circuit, form: CircuitForm): CircuitState = apply(circuit, form, Seq())
   def apply(circuit: Circuit, form: CircuitForm, annotations: AnnotationSeq): CircuitState =
     new CircuitState(circuit, form, annotations, None)
+  def apply(circuit: Circuit, annotations: AnnotationSeq): CircuitState =
+    new CircuitState(circuit, UnknownForm, annotations, None)
 }
 
 /** Current form of the Firrtl Circuit
@@ -220,11 +221,7 @@ trait Transform extends TransformLike[CircuitState] with DependencyAPI[Transform
 
   def transform(state: CircuitState): CircuitState = execute(state)
 
-  private val C = ChirrtlForm
-  private val H = HighForm
-  private val M = MidForm
-  private val L = LowForm
-  private val U = UnknownForm
+  import firrtl.{ChirrtlForm => C, HighForm => H, MidForm => M, LowForm => L, UnknownForm => U}
 
   override def prerequisites: Seq[Dependency[Transform]] = inputForm match {
     case C => Nil
@@ -404,6 +401,7 @@ trait Emitter extends Transform with PreservesAll[Transform] {
   def outputSuffix: String
 }
 
+@deprecated("This will be removed in 1.4", "FIRRTL 1.3")
 object CompilerUtils extends LazyLogging {
   /** Generates a sequence of [[Transform]]s to lower a Firrtl circuit
     *
@@ -411,7 +409,9 @@ object CompilerUtils extends LazyLogging {
     * @param outputForm [[CircuitForm]] to lower to
     * @return Sequence of transforms that will lower if outputForm is lower than inputForm
     */
-  @deprecated("Use a TransformManager requesting which transforms you want to run. This will be removed in 1.3.", "1.2")
+  @deprecated(
+    "Use a TransformManager requesting which transforms you want to run. This will be removed in 1.4.",
+    "FIRRTL 1.3")
   def getLoweringTransforms(inputForm: CircuitForm, outputForm: CircuitForm): Seq[Transform] = {
     // If outputForm is equal-to or higher than inputForm, nothing to lower
     if (outputForm >= inputForm) {
@@ -461,7 +461,9 @@ object CompilerUtils extends LazyLogging {
     * inputForm of a latter transforms is equal to or lower than the outputForm
     * of the previous transform.
     */
-  @deprecated("Use a TransformManager with custom targets. This will be removed in 1.3.", "1.2")
+  @deprecated(
+    "Use a TransformManager requesting which transforms you want to run. This will be removed in 1.4.",
+    "FIRRTL 1.3")
   def mergeTransforms(lowering: Seq[Transform], custom: Seq[Transform]): Seq[Transform] = {
     custom
       .sortWith{
@@ -480,8 +482,10 @@ object CompilerUtils extends LazyLogging {
 
 }
 
-@deprecated("Use a TransformManager requesting which transforms you want to run. This will be removed in 1.3.", "1.2")
-trait Compiler extends LazyLogging {
+@deprecated(
+  "Migrate to firrtl.stage.transforms.Compiler. This will be removed in 1.4.",
+  "FIRRTL 1.3")
+trait Compiler extends Transform with DependencyAPIMigration {
   def emitter: Emitter
 
   /** The sequence of transforms this compiler will execute
@@ -490,25 +494,16 @@ trait Compiler extends LazyLogging {
     */
   def transforms: Seq[Transform]
 
+  final override def execute(state: CircuitState): CircuitState =
+    new stage.transforms.Compiler (
+      targets = (transforms :+ emitter).map(Dependency.fromTransform),
+      currentState = prerequisites,
+      knownObjects = (transforms :+ emitter).toSet
+    ).execute(state)
+
   require(transforms.size >= 1,
           s"Compiler transforms for '${this.getClass.getName}' must have at least ONE Transform! " +
             "Use IdentityTransform if you need an identity/no-op transform.")
-
-  // Similar to (input|output)Form on [[Transform]] but derived from this Compiler's transforms
-  def inputForm: CircuitForm = transforms.head.inputForm
-  def outputForm: CircuitForm = transforms.last.outputForm
-
-  private def transformsLegal(xforms: Seq[Transform]): Boolean =
-    if (xforms.size < 2) {
-      true
-    } else {
-      xforms.sliding(2, 1)
-            .map { case Seq(p, n) => n.inputForm >= p.outputForm }
-            .reduce(_ && _)
-    }
-
-  assert(transformsLegal(transforms),
-    "Illegal Compiler, each transform must be able to accept the output of the previous transform!")
 
   /** Perform compilation
     *
@@ -554,23 +549,12 @@ trait Compiler extends LazyLogging {
     * @return result of compilation
     */
   def compile(state: CircuitState, customTransforms: Seq[Transform]): CircuitState = {
-    val allTransforms = CompilerUtils.mergeTransforms(transforms, customTransforms)
-
-    val (timeMillis, finalState) = Utils.time {
-      allTransforms.foldLeft(state) { (in, xform) =>
-        try {
-          xform.runTransform(in)
-        } catch {
-          // Wrap exceptions from custom transforms so they are reported as such
-          case e: Exception if CatchCustomTransformExceptions.isCustomTransform(xform) =>
-            throw CustomTransformException(e)
-        }
-      }
-    }
-
-    logger.warn(f"Total FIRRTL Compile Time: $timeMillis%.1f ms")
-
-    finalState
+    val transformManager = new stage.transforms.Compiler (
+      targets = (emitter +: customTransforms ++: transforms).map(Dependency.fromTransform),
+      currentState = prerequisites,
+      knownObjects = (transforms :+ emitter).toSet
+    )
+    transformManager.transform(state)
   }
 
 }

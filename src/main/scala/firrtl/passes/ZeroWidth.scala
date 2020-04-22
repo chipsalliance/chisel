@@ -8,9 +8,9 @@ import firrtl._
 import firrtl.Mappers._
 import firrtl.options.Dependency
 
-object ZeroWidth extends Transform {
+object ZeroWidth extends Transform with DependencyAPIMigration {
 
-  override val prerequisites =
+  override def prerequisites =
     Seq( Dependency(PullMuxes),
          Dependency(ReplaceAccesses),
          Dependency(ExpandConnects),
@@ -23,9 +23,6 @@ object ZeroWidth extends Transform {
     case InferTypes => true
     case _          => false
   }
-
-  def inputForm: CircuitForm = UnknownForm
-  def outputForm: CircuitForm = UnknownForm
 
   private def makeEmptyMemBundle(name: String): Field =
     Field(name, Flip, BundleType(Seq(

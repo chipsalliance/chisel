@@ -15,9 +15,9 @@ import scala.collection.mutable
 class DeletedWrapper(p: Phase) extends Phase with Translator[AnnotationSeq, (AnnotationSeq, AnnotationSeq)]
     with PreservesAll[Phase] {
 
-  override val prerequisites = Seq.empty
+  override def prerequisites = Seq.empty
 
-  override val dependents = Seq.empty
+  override def dependents = Seq.empty
 
   override lazy val name: String = p.name
 

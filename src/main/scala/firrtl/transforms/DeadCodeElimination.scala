@@ -29,12 +29,13 @@ import collection.mutable
   * circumstances of their instantiation in their parent module, they will still not be removed. To
   * remove such modules, use the [[NoDedupAnnotation]] to prevent deduplication.
   */
-class DeadCodeElimination extends Transform with ResolvedAnnotationPaths with RegisteredTransform
+class DeadCodeElimination extends Transform
+    with ResolvedAnnotationPaths
+    with RegisteredTransform
+    with DependencyAPIMigration
     with PreservesAll[Transform] {
-  def inputForm = UnknownForm
-  def outputForm = UnknownForm
 
-  override val prerequisites = firrtl.stage.Forms.LowForm ++
+  override def prerequisites = firrtl.stage.Forms.LowForm ++
     Seq( Dependency(firrtl.passes.RemoveValidIf),
          Dependency[firrtl.transforms.ConstantPropagation],
          Dependency(firrtl.passes.memlib.VerilogMemDelays),
@@ -42,9 +43,9 @@ class DeadCodeElimination extends Transform with ResolvedAnnotationPaths with Re
          Dependency[firrtl.transforms.CombineCats],
          Dependency(passes.CommonSubexpressionElimination) )
 
-  override val optionalPrerequisites = Seq.empty
+  override def optionalPrerequisites = Seq.empty
 
-  override val dependents =
+  override def dependents =
     Seq( Dependency[firrtl.transforms.BlackBoxSourceHelper],
          Dependency[firrtl.transforms.ReplaceTruncatingArithmetic],
          Dependency[firrtl.transforms.FlattenRegUpdate],

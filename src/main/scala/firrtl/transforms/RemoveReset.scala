@@ -15,17 +15,15 @@ import scala.collection.{immutable, mutable}
   *
   * @note This pass must run after LowerTypes
   */
-object RemoveReset extends Transform {
-  def inputForm = LowForm
-  def outputForm = LowForm
+object RemoveReset extends Transform with DependencyAPIMigration {
 
-  override val prerequisites = firrtl.stage.Forms.MidForm ++
+  override def prerequisites = firrtl.stage.Forms.MidForm ++
     Seq( Dependency(passes.LowerTypes),
          Dependency(passes.Legalize) )
 
-  override val optionalPrerequisites = Seq.empty
+  override def optionalPrerequisites = Seq.empty
 
-  override val dependents = Seq.empty
+  override def dependents = Seq.empty
 
   override def invalidates(a: Transform): Boolean = a match {
     case firrtl.passes.ResolveFlows => true

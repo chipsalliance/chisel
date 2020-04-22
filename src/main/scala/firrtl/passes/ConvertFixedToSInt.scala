@@ -14,7 +14,7 @@ import firrtl.options.{Dependency, PreservesAll}
   */
 object ConvertFixedToSInt extends Pass with PreservesAll[Transform] {
 
-  override val prerequisites =
+  override def prerequisites =
     Seq( Dependency(PullMuxes),
          Dependency(ReplaceAccesses),
          Dependency(ExpandConnects),

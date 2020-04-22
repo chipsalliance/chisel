@@ -10,6 +10,8 @@ import firrtl.Mappers._
 import MemPortUtils.{MemPortMap, Modules}
 import MemTransformUtils._
 import firrtl.annotations._
+import firrtl.options.PreservesAll
+import firrtl.stage.Forms
 import wiring._
 
 
@@ -24,9 +26,11 @@ object ReplaceMemMacros {
   * This will not generate wmask ports if not needed.
   * Creates the minimum # of black boxes needed by the design.
   */
-class ReplaceMemMacros(writer: ConfWriter) extends Transform {
-  def inputForm = MidForm
-  def outputForm = MidForm
+class ReplaceMemMacros(writer: ConfWriter) extends Transform with DependencyAPIMigration with PreservesAll[Transform] {
+
+  override def prerequisites = Forms.MidForm
+  override def optionalPrerequisites = Seq.empty
+  override def dependents = Forms.MidEmitters
 
   /** Return true if mask granularity is per bit, false if per byte or unspecified
     */
@@ -263,6 +267,6 @@ class ReplaceMemMacros(writer: ConfWriter) extends Transform {
         case m: ExtModule => SinkAnnotation(ModuleName(m.name, CircuitName(c.main)), pin)
       }
     } ++ state.annotations
-    CircuitState(c.copy(modules = modules ++ memMods), inputForm, annos)
+    state.copy(circuit = c.copy(modules = modules ++ memMods), annotations = annos)
   }
 }

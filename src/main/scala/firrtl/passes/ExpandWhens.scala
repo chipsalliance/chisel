@@ -26,7 +26,7 @@ import collection.mutable
   */
 object ExpandWhens extends Pass {
 
-  override val prerequisites =
+  override def prerequisites =
     Seq( Dependency(PullMuxes),
          Dependency(ReplaceAccesses),
          Dependency(ExpandConnects),
@@ -302,9 +302,9 @@ object ExpandWhens extends Pass {
     DoPrim(Eq, Seq(e, zero), Nil, BoolType)
 }
 
-class ExpandWhensAndCheck extends SeqTransform {
+class ExpandWhensAndCheck extends Transform with DependencyAPIMigration {
 
-  override val prerequisites =
+  override def prerequisites =
     Seq( Dependency(PullMuxes),
          Dependency(ReplaceAccesses),
          Dependency(ExpandConnects),
@@ -316,9 +316,7 @@ class ExpandWhensAndCheck extends SeqTransform {
     case _ => false
   }
 
-  override def inputForm = UnknownForm
-  override def outputForm = UnknownForm
-
-  override val transforms = Seq(ExpandWhens, CheckInitialization)
+  override def execute(a: CircuitState): CircuitState =
+    Seq(ExpandWhens, CheckInitialization).foldLeft(a){ case (acc, tx) => tx.transform(acc) }
 
 }

@@ -59,20 +59,18 @@ object LegalizeClocksTransform {
 }
 
 /** Ensure Clocks to be emitted are legal Verilog */
-class LegalizeClocksTransform extends Transform with PreservesAll[Transform] {
-  def inputForm = UnknownForm
-  def outputForm = UnknownForm
+class LegalizeClocksTransform extends Transform with DependencyAPIMigration with PreservesAll[Transform] {
 
-  override val prerequisites = firrtl.stage.Forms.LowFormMinimumOptimized ++
+  override def prerequisites = firrtl.stage.Forms.LowFormMinimumOptimized ++
     Seq( Dependency[BlackBoxSourceHelper],
          Dependency[FixAddingNegativeLiterals],
          Dependency[ReplaceTruncatingArithmetic],
          Dependency[InlineBitExtractionsTransform],
          Dependency[InlineCastsTransform] )
 
-  override val optionalPrerequisites = firrtl.stage.Forms.LowFormOptimized
+  override def optionalPrerequisites = firrtl.stage.Forms.LowFormOptimized
 
-  override val dependents = Seq.empty
+  override def dependents = Seq.empty
 
   def execute(state: CircuitState): CircuitState = {
     val modulesx = state.circuit.modules.map(LegalizeClocksTransform.onMod(_))

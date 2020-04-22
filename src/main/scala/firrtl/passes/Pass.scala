@@ -1,26 +1,15 @@
 package firrtl.passes
 
-import firrtl.Utils.error
+import firrtl.DependencyAPIMigration
 import firrtl.ir.Circuit
-import firrtl.{CircuitForm, CircuitState, FirrtlUserException, Transform, UnknownForm}
+import firrtl.{CircuitState, FirrtlUserException, Transform}
 
 /** [[Pass]] is simple transform that is generally part of a larger [[Transform]]
   * Has an [[UnknownForm]], because larger [[Transform]] should specify form
   */
-trait Pass extends Transform {
-  def inputForm: CircuitForm = UnknownForm
-  def outputForm: CircuitForm = UnknownForm
+trait Pass extends Transform with DependencyAPIMigration {
   def run(c: Circuit): Circuit
-  def execute(state: CircuitState): CircuitState = {
-    val result = (state.form, inputForm) match {
-      case (_, UnknownForm) => run(state.circuit)
-      case (UnknownForm, _) => run(state.circuit)
-      case (x, y) if x > y =>
-        error(s"[$name]: Input form must be lower or equal to $inputForm. Got ${state.form}")
-      case _ => run(state.circuit)
-    }
-    CircuitState(result, outputForm, state.annotations, state.renames)
-  }
+  def execute(state: CircuitState): CircuitState = state.copy(circuit = run(state.circuit))
 }
 
 // Error handling

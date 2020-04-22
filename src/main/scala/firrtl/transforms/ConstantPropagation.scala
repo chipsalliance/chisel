@@ -98,20 +98,18 @@ object ConstantPropagation {
 
 }
 
-class ConstantPropagation extends Transform with ResolvedAnnotationPaths {
+class ConstantPropagation extends Transform with DependencyAPIMigration with ResolvedAnnotationPaths {
   import ConstantPropagation._
-  def inputForm = LowForm
-  def outputForm = LowForm
 
-  override val prerequisites =
+  override def prerequisites =
     ((new mutable.LinkedHashSet())
        ++ firrtl.stage.Forms.LowForm
        - Dependency(firrtl.passes.Legalize)
        + Dependency(firrtl.passes.RemoveValidIf)).toSeq
 
-  override val optionalPrerequisites = Seq.empty
+  override def optionalPrerequisites = Seq.empty
 
-  override val dependents =
+  override def dependents =
     Seq( Dependency(firrtl.passes.memlib.VerilogMemDelays),
          Dependency(firrtl.passes.SplitExpressions),
          Dependency[SystemVerilogEmitter],

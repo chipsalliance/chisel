@@ -39,13 +39,11 @@ case object NoCircuitDedupAnnotation extends NoTargetAnnotation with HasShellOpt
   * Specifically, the restriction of instance loops must have been checked, or else this pass can
   *  infinitely recurse
   */
-class DedupModules extends Transform with PreservesAll[Transform] {
-  def inputForm: CircuitForm = HighForm
-  def outputForm: CircuitForm = HighForm
+class DedupModules extends Transform with DependencyAPIMigration with PreservesAll[Transform] {
 
-  override val prerequisites = firrtl.stage.Forms.Resolved
+  override def prerequisites = firrtl.stage.Forms.Resolved
 
-  override val dependents = Seq.empty
+  override def dependents = Seq.empty
 
   /** Deduplicate a Circuit
     * @param state Input Firrtl AST

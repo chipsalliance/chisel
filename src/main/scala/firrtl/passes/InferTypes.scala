@@ -10,7 +10,7 @@ import firrtl.options.{Dependency, PreservesAll}
 
 object InferTypes extends Pass with PreservesAll[Transform] {
 
-  override val prerequisites = Dependency(ResolveKinds) +: firrtl.stage.Forms.WorkingIR
+  override def prerequisites = Dependency(ResolveKinds) +: firrtl.stage.Forms.WorkingIR
 
   type TypeMap = collection.mutable.LinkedHashMap[String, Type]
 
@@ -90,7 +90,7 @@ object InferTypes extends Pass with PreservesAll[Transform] {
 
 object CInferTypes extends Pass with PreservesAll[Transform] {
 
-  override val prerequisites = firrtl.stage.Forms.ChirrtlForm
+  override def prerequisites = firrtl.stage.Forms.ChirrtlForm
 
   type TypeMap = collection.mutable.LinkedHashMap[String, Type]
 

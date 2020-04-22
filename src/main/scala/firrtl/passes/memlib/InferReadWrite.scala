@@ -8,12 +8,12 @@ import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.PrimOps._
 import firrtl.Utils.{one, zero, BoolType}
-import firrtl.options.{HasShellOptions, ShellOption}
+import firrtl.options.{HasShellOptions, PreservesAll, ShellOption}
 import MemPortUtils.memPortField
 import firrtl.passes.memlib.AnalysisUtils.{Connects, getConnects, getOrigin}
 import WrappedExpression.weq
 import annotations._
-import firrtl.stage.RunFirrtlTransformAnnotation
+import firrtl.stage.{Forms, RunFirrtlTransformAnnotation}
 
 
 case object InferReadWriteAnnotation extends NoTargetAnnotation
@@ -144,9 +144,15 @@ object InferReadWritePass extends Pass {
 
 // Transform input: Middle Firrtl. Called after "HighFirrtlToMidleFirrtl"
 // To use this transform, circuit name should be annotated with its TransId.
-class InferReadWrite extends Transform with SeqTransformBased with HasShellOptions {
-  def inputForm = MidForm
-  def outputForm = MidForm
+class InferReadWrite extends Transform
+    with DependencyAPIMigration
+    with PreservesAll[Transform]
+    with SeqTransformBased
+    with HasShellOptions {
+
+  override def prerequisites = Forms.MidForm
+  override def optionalPrerequisites = Seq.empty
+  override def dependents = Forms.MidEmitters
 
   val options = Seq(
     new ShellOption[Unit](
@@ -166,7 +172,7 @@ class InferReadWrite extends Transform with SeqTransformBased with HasShellOptio
     val runTransform = state.annotations.contains(InferReadWriteAnnotation)
     if (runTransform) {
       val ret = runTransforms(state)
-      CircuitState(ret.circuit, outputForm, ret.annotations, ret.renames)
+      state.copy(circuit = ret.circuit, annotations = ret.annotations, renames = ret.renames)
     } else {
       state
     }

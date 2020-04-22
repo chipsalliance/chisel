@@ -19,9 +19,11 @@ class FirrtlStage extends Stage {
 
   lazy val phase = new FirrtlPhase
 
-  override lazy val prerequisites = phase.prerequisites
+  override def prerequisites = phase.prerequisites
 
-  override lazy val dependents = phase.dependents
+  override def dependents = phase.dependents
+
+  override def optionalPrerequisites = phase.optionalPrerequisites
 
   override def invalidates(a: Phase): Boolean = phase.invalidates(a)
 

@@ -180,9 +180,9 @@ class VerilogEmitter extends SeqTransform with Emitter {
   def inputForm = LowForm
   def outputForm = LowForm
 
-  override val prerequisites = firrtl.stage.Forms.LowFormOptimized
+  override def prerequisites = firrtl.stage.Forms.LowFormOptimized
 
-  override val dependents = Seq.empty
+  override def dependents = Seq.empty
 
   val outputSuffix = ".v"
   val tab = "  "
@@ -1108,7 +1108,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
 
 class MinimumVerilogEmitter extends VerilogEmitter with Emitter {
 
-  override val prerequisites = firrtl.stage.Forms.LowFormMinimumOptimized
+  override def prerequisites = firrtl.stage.Forms.LowFormMinimumOptimized
 
   override def transforms = new TransformManager(firrtl.stage.Forms.VerilogMinimumOptimized, prerequisites)
     .flattenedTransformOrder

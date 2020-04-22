@@ -18,9 +18,9 @@ import scala.util.{Try, Failure}
 /** Recursively expand all [[InputAnnotationFileAnnotation]]s in an [[AnnotationSeq]] */
 class GetIncludes extends Phase with PreservesAll[Phase] {
 
-  override val prerequisites = Seq.empty
+  override def prerequisites = Seq.empty
 
-  override val dependents = Seq.empty
+  override def dependents = Seq.empty
 
   /** Read all [[annotations.Annotation]] from a file in JSON or YAML format
     * @param filename a JSON or YAML file of [[annotations.Annotation]]

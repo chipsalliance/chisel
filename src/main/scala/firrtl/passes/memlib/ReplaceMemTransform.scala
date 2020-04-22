@@ -5,11 +5,11 @@ package memlib
 
 import firrtl._
 import firrtl.annotations._
-import firrtl.options.{HasShellOptions, ShellOption}
+import firrtl.options.{HasShellOptions, PreservesAll, ShellOption}
 import Utils.error
 import java.io.{File, CharArrayWriter, PrintWriter}
 import wiring._
-import firrtl.stage.RunFirrtlTransformAnnotation
+import firrtl.stage.{Forms, RunFirrtlTransformAnnotation}
 
 sealed trait PassOption
 case object InputConfigFileName extends PassOption
@@ -90,6 +90,10 @@ Optional Arguments:
   }
 }
 
+@deprecated(
+  "Migrate to a transform that does not take arguments. This will be removed in 1.4.",
+  "FIRRTL 1.3"
+)
 class SimpleTransform(p: Pass, form: CircuitForm) extends Transform {
   def inputForm = form
   def outputForm = form
@@ -99,9 +103,11 @@ class SimpleTransform(p: Pass, form: CircuitForm) extends Transform {
 class SimpleMidTransform(p: Pass) extends SimpleTransform(p, MidForm)
 
 // SimpleRun instead of PassBased because of the arguments to passSeq
-class ReplSeqMem extends Transform with HasShellOptions {
-  def inputForm = MidForm
-  def outputForm = MidForm
+class ReplSeqMem extends Transform with HasShellOptions with DependencyAPIMigration with PreservesAll[Transform] {
+
+  override def prerequisites = Forms.MidForm
+  override def optionalPrerequisites = Seq.empty
+  override def dependents = Forms.MidEmitters
 
   val options = Seq(
     new ShellOption[String](

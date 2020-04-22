@@ -53,19 +53,17 @@ object CombineCats {
   * Use [[MaxCatLenAnnotation]] to limit the number of elements that can be concatenated.
   * The default maximum number of elements is 10.
   */
-class CombineCats extends Transform with PreservesAll[Transform] {
-  def inputForm: LowForm.type = LowForm
-  def outputForm: LowForm.type = LowForm
+class CombineCats extends Transform with DependencyAPIMigration with PreservesAll[Transform] {
 
-  override val prerequisites = firrtl.stage.Forms.LowForm ++
+  override def prerequisites = firrtl.stage.Forms.LowForm ++
     Seq( Dependency(passes.RemoveValidIf),
          Dependency[firrtl.transforms.ConstantPropagation],
          Dependency(firrtl.passes.memlib.VerilogMemDelays),
          Dependency(firrtl.passes.SplitExpressions) )
 
-  override val optionalPrerequisites = Seq.empty
+  override def optionalPrerequisites = Seq.empty
 
-  override val dependents = Seq(
+  override def dependents = Seq(
     Dependency[SystemVerilogEmitter],
     Dependency[VerilogEmitter] )
 
