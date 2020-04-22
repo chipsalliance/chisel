@@ -114,7 +114,7 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
     val edges = bfs(
       start = _targets &~ _currentState,
       blacklist = _currentState,
-      extractor = (p: B) => new LinkedHashSet[Dependency[B]]() ++ p.prerequisites &~ _currentState)
+      extractor = (p: B) => p._prerequisites &~ _currentState)
     DiGraph(edges)
   }
 
@@ -123,7 +123,7 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
     */
   private lazy val dependentsGraph: DiGraph[B] = {
     val v = new LinkedHashSet() ++ prerequisiteGraph.getVertices
-    DiGraph(new LinkedHashMap() ++ v.map(vv => vv -> (v & (vv.dependents.toSet).map(dToO)))).reverse
+    DiGraph(new LinkedHashMap() ++ v.map(vv => vv -> (v & (vv._dependents).map(dToO)))).reverse
   }
 
   /** A directed graph of *optional* prerequisites. Each optional prerequisite is promoted to a full prerequisite if the
@@ -131,7 +131,7 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
     */
   private lazy val optionalPrerequisitesGraph: DiGraph[B] = {
     val v = new LinkedHashSet() ++ prerequisiteGraph.getVertices
-    DiGraph(new LinkedHashMap() ++ v.map(vv => vv -> (v & (vv.optionalPrerequisites.toSet).map(dToO))))
+    DiGraph(new LinkedHashMap() ++ v.map(vv => vv -> (v & (vv._optionalPrerequisites).map(dToO))))
   }
 
   /** A directed graph consisting of prerequisites derived from ALL targets. This is necessary for defining targets for
@@ -208,7 +208,7 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
     /* [todo] Seq is inefficient here, but Array has ClassTag problems. Use something else? */
     val (s, l) = sorted.foldLeft((_currentState, Seq[B]())){ case ((state, out), in) =>
       /* The prerequisites are both prerequisites AND dependents. */
-      val prereqs = new LinkedHashSet() ++ in.prerequisites ++
+      val prereqs = in._prerequisites ++
         dependencyGraph.getEdges(in).toSeq.map(oToD) ++
         otherDependents.getEdges(in).toSeq.map(oToD)
       val preprocessing: Option[B] = {
