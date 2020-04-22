@@ -106,11 +106,12 @@ trait IdentityLike[A] { this: TransformLike[A] =>
   * "transforms")
   *
   * This trait forms the basis of the Dependency API of the Chisel/FIRRTL Hardware Compiler Framework. Dependencies are
-  * defined in terms of prerequisistes, dependents, and invalidates. A prerequisite is a transform that must run before
-  * this transform. A dependent is a transform that must run ''after'' this transform. (This can be viewed as a means of
-  * injecting a prerequisite into some other transform.) Finally, invalidates define the set of transforms whose effects
-  * this transform undos/invalidates. (Invalidation then implies that a transform that is invalidated by this transform
-  * and needed by another transform will need to be re-run.)
+  * defined in terms of prerequisistes, optional prerequisites, optional prerequisites of, and invalidates. A
+  * prerequisite is a transform that must run before this transform. An optional prerequisites is transform that should
+  * run before this transform if the other transform is a target (or the prerequisite of a target). An optional
+  * prerequisite of is an optional prerequisite injected into another transform. Finally, invalidates define the set of
+  * transforms whose effects this transform undos/invalidates. (Invalidation then implies that a transform that is
+  * invalidated by this transform and needed by another transform will need to be re-run.)
   *
   * This Dependency API only defines dependencies. A concrete [[DependencyManager]] is expected to be used to statically
   * resolve a linear ordering of transforms that satisfies dependency requirements.
@@ -152,8 +153,25 @@ trait DependencyAPI[A <: DependencyAPI[A]] { this: TransformLike[_] =>
     * @see [[firrtl.passes.CheckTypes]] for an example of an optional checking [[firrtl.Transform]]
     * $seqNote
     */
+  @deprecated(
+    "Due to confusion, 'dependents' is being renamed to 'optionalPrerequisiteOf'. Override the latter instead.",
+    "FIRRTL 1.3"
+  )
   def dependents: Seq[Dependency[A]] = Seq.empty
-  private[options] lazy val _dependents: LinkedHashSet[Dependency[A]] = new LinkedHashSet() ++ dependents.toSet
+
+  /** A sequence of transforms to add this transform as an `optionalPrerequisite`. The use of `optionalPrerequisiteOf`
+    * enables the transform declaring them to always run before some other transforms. However, declaring
+    * `optionalPrerequisiteOf` will not result in the sequence of transforms executing.
+    *
+    * This is useful for providing an ordering constraint to guarantee that other transforms (e.g., emitters) will not
+    * be scheduled before you.
+    *
+    * @note This method **will not** result in the listed transforms running. If you want to add multiple transforms at
+    * once, you should use a `DependencyManager` with multiple targets.
+    */
+  def optionalPrerequisiteOf: Seq[Dependency[A]] = dependents
+  private[options] lazy val _optionalPrerequisiteOf: LinkedHashSet[Dependency[A]] =
+    new LinkedHashSet() ++ optionalPrerequisiteOf.toSet
 
   /** A function that, given *another* transform (parameter `a`) will return true if this transform invalidates/undos the
     * effects of the *other* transform (parameter `a`).
