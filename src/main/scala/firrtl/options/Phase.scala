@@ -107,7 +107,7 @@ trait DependencyAPI[A <: DependencyAPI[A]] { this: TransformLike[_] =>
     * $seqNote
     */
   def optionalPrerequisites: Seq[Dependency[A]] = Seq.empty
-  private[options] lazy val _optionalPrerquisites: LinkedHashSet[Dependency[A]] =
+  private[options] lazy val _optionalPrerequisites: LinkedHashSet[Dependency[A]] =
     new LinkedHashSet() ++ optionalPrerequisites.toSet
 
   /** All transforms that must run ''after'' this transform
