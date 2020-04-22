@@ -17,7 +17,7 @@ class InferReadWriteSpec extends SimpleTransformSpec {
   object InferReadWriteCheck extends Pass with PreservesAll[Transform] {
     override def prerequisites = Forms.MidForm
     override def optionalPrerequisites = Seq.empty
-    override def dependents = Forms.MidEmitters
+    override def optionalPrerequisiteOf = Forms.MidEmitters
 
     def findReadWrite(s: Statement): Boolean = s match {
       case s: DefMemory if s.readLatency > 0 && s.readwriters.size == 1 =>

@@ -77,7 +77,7 @@ class InlineCastsTransform extends Transform with DependencyAPIMigration {
 
   override def optionalPrerequisites = firrtl.stage.Forms.LowFormOptimized
 
-  override def dependents = Seq.empty
+  override def optionalPrerequisiteOf = Seq.empty
 
   override def invalidates(a: Transform): Boolean = a match {
     case _: LegalizeClocksTransform => true

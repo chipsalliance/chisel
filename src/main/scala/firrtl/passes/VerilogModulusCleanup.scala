@@ -37,7 +37,7 @@ object VerilogModulusCleanup extends Pass with PreservesAll[Transform] {
 
   override def optionalPrerequisites = firrtl.stage.Forms.LowFormOptimized
 
-  override def dependents = Seq.empty
+  override def optionalPrerequisiteOf = Seq.empty
 
   private def onModule(m: Module): Module = {
     val namespace = Namespace(m)

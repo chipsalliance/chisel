@@ -26,7 +26,7 @@ object LowerTypes extends Transform with DependencyAPIMigration {
 
   override def prerequisites = firrtl.stage.Forms.MidForm
 
-  override def dependents = Seq.empty
+  override def optionalPrerequisiteOf = Seq.empty
 
   override def invalidates(a: Transform): Boolean = a match {
     case ResolveKinds | InferTypes | ResolveFlows | _: InferWidths => true

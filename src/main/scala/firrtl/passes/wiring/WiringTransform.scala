@@ -42,7 +42,7 @@ class WiringTransform extends Transform with DependencyAPIMigration {
 
   override def prerequisites = Forms.MidForm
   override def optionalPrerequisites = Seq.empty
-  override def dependents = Forms.MidEmitters
+  override def optionalPrerequisiteOf = Forms.MidEmitters
 
   private val invalidates = Forms.VerilogOptimized.toSet -- Forms.MinimalHighForm
   override def invalidates(a: Transform): Boolean = invalidates(Dependency.fromTransform(a))

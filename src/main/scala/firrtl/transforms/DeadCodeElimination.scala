@@ -45,7 +45,7 @@ class DeadCodeElimination extends Transform
 
   override def optionalPrerequisites = Seq.empty
 
-  override def dependents =
+  override def optionalPrerequisiteOf =
     Seq( Dependency[firrtl.transforms.BlackBoxSourceHelper],
          Dependency[firrtl.transforms.ReplaceTruncatingArithmetic],
          Dependency[firrtl.transforms.FlattenRegUpdate],

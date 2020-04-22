@@ -73,7 +73,7 @@ class CustomResolveAndCheck(form: CircuitForm) extends SeqTransform {
 object ReRunResolveAndCheck extends Transform with DependencyAPIMigration with IdentityLike[CircuitState] {
 
   override val optionalPrerequisites = Forms.LowFormOptimized
-  override val dependents = Forms.ChirrtlEmitters
+  override val optionalPrerequisiteOf = Forms.ChirrtlEmitters
 
   override def invalidates(a: Transform) = {
     val resolveAndCheck = Forms.Resolved.toSet -- Forms.WorkingIR

@@ -63,7 +63,7 @@ class CombineCats extends Transform with DependencyAPIMigration with PreservesAl
 
   override def optionalPrerequisites = Seq.empty
 
-  override def dependents = Seq(
+  override def optionalPrerequisiteOf = Seq(
     Dependency[SystemVerilogEmitter],
     Dependency[VerilogEmitter] )
 

@@ -20,7 +20,7 @@ class ResolveMemoryReference extends Transform with DependencyAPIMigration with 
 
   override def prerequisites = Forms.MidForm
   override def optionalPrerequisites = Seq.empty
-  override def dependents = Forms.MidEmitters
+  override def optionalPrerequisiteOf = Forms.MidEmitters
 
   /** Helper class for determining when two memories are equivalent while igoring
     * irrelevant details like name and info

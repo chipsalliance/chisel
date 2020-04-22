@@ -85,7 +85,7 @@ class AddDescriptionNodes extends Transform with DependencyAPIMigration with Pre
 
   override def optionalPrerequisites = firrtl.stage.Forms.LowFormOptimized
 
-  override def dependents = Seq.empty
+  override def optionalPrerequisiteOf = Seq.empty
 
   def onStmt(compMap: Map[String, Seq[String]])(stmt: Statement): Statement = {
     stmt.map(onStmt(compMap)) match {

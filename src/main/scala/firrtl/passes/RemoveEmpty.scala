@@ -11,7 +11,7 @@ object RemoveEmpty extends Pass with DependencyAPIMigration with PreservesAll[Tr
 
   override def prerequisites = Seq.empty
   override def optionalPrerequisites = Forms.LowFormOptimized
-  override def dependents = Forms.ChirrtlEmitters
+  override def optionalPrerequisiteOf = Forms.ChirrtlEmitters
 
   private def onModule(m: DefModule): DefModule = {
     m match {

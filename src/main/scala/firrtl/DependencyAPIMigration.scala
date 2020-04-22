@@ -10,7 +10,7 @@ import firrtl.stage.TransformManager.TransformDependency
   *
   *    - `prerequisites` are empty
   *    - `optionalPrerequisites` are empty
-  *    - `dependents` are empty
+  *    - `optionalPrerequisiteOf` are empty
   *    - all transforms are invalidated
   *
   * For more information, see: https://bit.ly/2Voppre
@@ -31,7 +31,7 @@ trait DependencyAPIMigration { this: Transform =>
 
   override def optionalPrerequisites: Seq[TransformDependency] = Seq.empty
 
-  override def dependents: Seq[TransformDependency] = Seq.empty
+  override def optionalPrerequisiteOf: Seq[TransformDependency] = Seq.empty
 
   override def invalidates(a: Transform): Boolean = true
 

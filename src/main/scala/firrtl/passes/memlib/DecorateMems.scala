@@ -13,7 +13,7 @@ class CreateMemoryAnnotations(reader: Option[YamlFileReader]) extends Transform
 
   override def prerequisites = Forms.MidForm
   override def optionalPrerequisites = Seq.empty
-  override def dependents = Forms.MidEmitters
+  override def optionalPrerequisiteOf = Forms.MidEmitters
 
   def execute(state: CircuitState): CircuitState = reader match {
     case None => state

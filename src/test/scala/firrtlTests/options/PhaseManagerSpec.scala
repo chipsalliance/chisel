@@ -173,7 +173,7 @@ object InvertedAnalysisFixture {
 
 }
 
-object DependentsFixture {
+object OptionalPrerequisitesOfFixture {
 
   class First extends IdentityPhase {
     override def invalidates(phase: Phase): Boolean = false
@@ -190,7 +190,7 @@ object DependentsFixture {
    */
   class Custom extends IdentityPhase {
     override def prerequisites = Seq(Dependency[First])
-    override def dependents = Seq(Dependency[Second])
+    override def optionalPrerequisiteOf = Seq(Dependency[Second])
     override def invalidates(phase: Phase): Boolean = false
   }
 
@@ -255,7 +255,7 @@ object UnrelatedFixture {
 
   class B6Sub extends B6 {
     override def prerequisites = Seq(Dependency[B6])
-    override def dependents = Seq(Dependency[B7])
+    override def optionalPrerequisiteOf = Seq(Dependency[B7])
   }
 
   class B6_0 extends B6Sub
@@ -276,7 +276,7 @@ object UnrelatedFixture {
   class B6_15 extends B6Sub
 
   class B8Dep extends B8 {
-    override def dependents = Seq(Dependency[B8])
+    override def optionalPrerequisiteOf = Seq(Dependency[B8])
   }
 
   class B8_0 extends B8Dep
@@ -304,12 +304,12 @@ object CustomAfterOptimizationFixture {
 
   class OptMinimum extends IdentityPhase with PreservesAll[Phase] {
     override def prerequisites = Seq(Dependency[Root])
-    override def dependents = Seq(Dependency[AfterOpt])
+    override def optionalPrerequisiteOf = Seq(Dependency[AfterOpt])
   }
 
   class OptFull extends IdentityPhase with PreservesAll[Phase] {
     override def prerequisites = Seq(Dependency[Root], Dependency[OptMinimum])
-    override def dependents = Seq(Dependency[AfterOpt])
+    override def optionalPrerequisiteOf = Seq(Dependency[AfterOpt])
   }
 
   class AfterOpt extends IdentityPhase with PreservesAll[Phase]
@@ -324,7 +324,7 @@ object CustomAfterOptimizationFixture {
 
   class Custom extends IdentityPhase with PreservesAll[Phase] {
     override def prerequisites = Seq(Dependency[Root], Dependency[AfterOpt])
-    override def dependents = Seq(Dependency[DoneMinimum], Dependency[DoneFull])
+    override def optionalPrerequisiteOf = Seq(Dependency[DoneMinimum], Dependency[DoneFull])
   }
 
 }
@@ -352,7 +352,7 @@ object OptionalPrerequisitesFixture {
   class Custom extends IdentityPhase with PreservesAll[Phase] {
     override def prerequisites = Seq(Dependency[Root])
     override def optionalPrerequisites = Seq(Dependency[OptMinimum], Dependency[OptFull])
-    override def dependents = Seq(Dependency[DoneMinimum], Dependency[DoneFull])
+    override def optionalPrerequisiteOf = Seq(Dependency[DoneMinimum], Dependency[DoneFull])
   }
 
 }
@@ -524,9 +524,9 @@ class PhaseManagerSpec extends AnyFlatSpec with Matchers {
     pm.flattenedTransformOrder.map(_.getClass) should be (order)
   }
 
-  /** This test shows how the dependents member can be used to run one transform before another. */
-  it should "handle a custom Phase with a dependent" in {
-    val f = DependentsFixture
+  /** This test shows how the optionalPrerequisiteOf member can be used to run one transform before another. */
+  it should "handle a custom Phase with an optionalPrerequisiteOf" in {
+    val f = OptionalPrerequisitesOfFixture
 
     info("without the custom transform it runs: First -> Second")
     val pm = new PhaseManager(Seq(Dependency[f.Second]))
@@ -578,7 +578,7 @@ class PhaseManagerSpec extends AnyFlatSpec with Matchers {
            Dependency[f.B14],
            Dependency[f.B15] )
     /** A sequence of custom transforms that should all run after B6 and before B7. This exercises correct ordering of the
-      * prerequisiteGraph and dependentsGraph.
+      * prerequisiteGraph and optionalPrerequisiteOfGraph.
       */
     val prerequisiteTargets =
       Seq( Dependency[f.B6_0],
@@ -597,8 +597,8 @@ class PhaseManagerSpec extends AnyFlatSpec with Matchers {
            Dependency[f.B6_13],
            Dependency[f.B6_14],
            Dependency[f.B6_15] )
-    /** A sequence of transforms that are invalidated by B0 and only define dependents on B8. This exercises the ordering
-      * defined by "otherDependents".
+    /** A sequence of transforms that are invalidated by B0 and only define optionalPrerequisiteOf on B8. This exercises
+      * the ordering defined by "otherPrerequisites".
       */
     val current =
       Seq( Dependency[f.B8_0],

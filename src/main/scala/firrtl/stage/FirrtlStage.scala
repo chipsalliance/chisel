@@ -21,9 +21,9 @@ class FirrtlStage extends Stage {
 
   override def prerequisites = phase.prerequisites
 
-  override def dependents = phase.dependents
-
   override def optionalPrerequisites = phase.optionalPrerequisites
+
+  override def optionalPrerequisiteOf = phase.optionalPrerequisiteOf
 
   override def invalidates(a: Phase): Boolean = phase.invalidates(a)
 

@@ -245,6 +245,6 @@ class VerilogRename extends RemoveKeywordCollisions(v_keywords) with PreservesAl
 
   override def optionalPrerequisites = firrtl.stage.Forms.LowFormOptimized
 
-  override def dependents = Seq.empty
+  override def optionalPrerequisiteOf = Seq.empty
 
 }

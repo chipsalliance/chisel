@@ -14,7 +14,7 @@ class Checks extends Phase with PreservesAll[Phase] {
 
   override def prerequisites = Seq(Dependency[GetIncludes], Dependency[ConvertLegacyAnnotations], Dependency[AddDefaults])
 
-  override def dependents = Seq.empty
+  override def optionalPrerequisiteOf = Seq.empty
 
   /** Validate an [[AnnotationSeq]] for [[StageOptions]]
     * @throws OptionsException if annotations are invalid

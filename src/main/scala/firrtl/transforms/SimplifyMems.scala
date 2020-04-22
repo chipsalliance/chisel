@@ -23,7 +23,7 @@ class SimplifyMems extends Transform with DependencyAPIMigration with PreservesA
 
   override def prerequisites = Forms.MidForm
   override def optionalPrerequisites = Seq.empty
-  override def dependents = Forms.MidEmitters
+  override def optionalPrerequisiteOf = Forms.MidEmitters
 
   def onModule(c: Circuit, renames: RenameMap)(m: DefModule): DefModule = {
     val moduleNS = Namespace(m)

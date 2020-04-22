@@ -29,7 +29,7 @@ class AddCircuit extends Phase with PreservesAll[Phase] {
 
   override val prerequisites = Seq(Dependency[AddDefaults], Dependency[Checks])
 
-  override val dependents = Seq.empty
+  override val optionalPrerequisiteOf = Seq.empty
 
   /** Extract the info mode from an [[AnnotationSeq]] or use the default info mode if no annotation exists
     * @param annotations some annotations

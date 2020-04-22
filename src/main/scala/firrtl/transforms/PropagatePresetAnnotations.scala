@@ -45,7 +45,7 @@ class PropagatePresetAnnotations extends Transform with DependencyAPIMigration w
 
   override def optionalPrerequisites = firrtl.stage.Forms.LowFormOptimized
 
-  override def dependents = Seq.empty
+  override def optionalPrerequisiteOf = Seq.empty
 
 
   import PropagatePresetAnnotations._

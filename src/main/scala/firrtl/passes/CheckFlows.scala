@@ -12,7 +12,7 @@ object CheckFlows extends Pass with PreservesAll[Transform] {
 
   override def prerequisites = Dependency(passes.ResolveFlows) +: firrtl.stage.Forms.WorkingIR
 
-  override def dependents =
+  override def optionalPrerequisiteOf =
     Seq( Dependency[passes.InferBinaryPoints],
          Dependency[passes.TrimIntervals],
          Dependency[passes.InferWidths],

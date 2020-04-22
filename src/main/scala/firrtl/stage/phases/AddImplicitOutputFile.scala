@@ -24,7 +24,7 @@ class AddImplicitOutputFile extends Phase with PreservesAll[Phase] {
 
   override def prerequisites = Seq(Dependency[AddCircuit])
 
-  override def dependents = Seq.empty
+  override def optionalPrerequisiteOf = Seq.empty
 
   /** Add an [[OutputFileAnnotation]] to an [[AnnotationSeq]] */
   def transform(annotations: AnnotationSeq): AnnotationSeq =

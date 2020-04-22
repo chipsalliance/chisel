@@ -152,7 +152,7 @@ class InferReadWrite extends Transform
 
   override def prerequisites = Forms.MidForm
   override def optionalPrerequisites = Seq.empty
-  override def dependents = Forms.MidEmitters
+  override def optionalPrerequisiteOf = Forms.MidEmitters
 
   val options = Seq(
     new ShellOption[Unit](
