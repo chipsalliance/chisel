@@ -8,7 +8,9 @@ import chisel3.internal.firrtl.UnknownWidth
 import chisel3.internal.naming.chiselName
 import chisel3.util._
 import chisel3.testers.BasicTester
-import org.scalatest.{Assertion, FreeSpec, Matchers}
+import org.scalatest.Assertion
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 object EnumExample extends ChiselEnum {
   val e0, e1, e2 = Value
@@ -495,7 +497,7 @@ class StrongEnumAnnotatorWithChiselName extends Module {
   val indexed2 = vec_of_bundles(cycle)
 }
 
-class StrongEnumAnnotationSpec extends FreeSpec with Matchers {
+class StrongEnumAnnotationSpec extends AnyFreeSpec with Matchers {
   import chisel3.experimental.EnumAnnotations._
   import firrtl.annotations.{ComponentName, Annotation}
 

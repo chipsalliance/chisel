@@ -8,7 +8,9 @@ import chisel3._
 import chisel3.util.{HasBlackBoxInline, HasBlackBoxResource, HasBlackBoxPath}
 import firrtl.FirrtlExecutionSuccess
 import org.scalacheck.Test.Failed
-import org.scalatest.{FreeSpec, Matchers, Succeeded}
+import org.scalatest.Succeeded
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 //scalastyle:off magic.number
 
@@ -87,7 +89,7 @@ class UsesBlackBoxMinusViaPath extends Module {
   io.out := mod0.io.out
 }
 
-class BlackBoxImplSpec extends FreeSpec with Matchers {
+class BlackBoxImplSpec extends AnyFreeSpec with Matchers {
   val targetDir = "test_run_dir"
   "BlackBox can have verilator source implementation" - {
     "Implementations can be contained in-line" in {

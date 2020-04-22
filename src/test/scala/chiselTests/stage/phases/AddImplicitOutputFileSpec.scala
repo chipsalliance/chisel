@@ -2,7 +2,6 @@
 
 package chiselTests.stage.phases
 
-import org.scalatest.{FlatSpec, Matchers}
 
 import chisel3.RawModule
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselOutputFileAnnotation}
@@ -11,8 +10,10 @@ import chisel3.stage.phases.{AddImplicitOutputFile, Elaborate}
 import firrtl.AnnotationSeq
 import firrtl.options.{Phase, StageOptions, TargetDirAnnotation}
 import firrtl.options.Viewer.view
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class AddImplicitOutputFileSpec extends FlatSpec with Matchers {
+class AddImplicitOutputFileSpec extends AnyFlatSpec with Matchers {
 
   class Foo extends RawModule { override val desiredName = "Foo" }
 

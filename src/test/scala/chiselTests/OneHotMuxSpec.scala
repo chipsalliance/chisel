@@ -8,10 +8,12 @@ import chisel3.internal.ChiselException
 import chisel3.testers.BasicTester
 import chisel3.util.{Mux1H, UIntToOH}
 import org.scalatest._
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 //scalastyle:off magic.number
 
-class OneHotMuxSpec extends FreeSpec with Matchers with ChiselRunners {
+class OneHotMuxSpec extends AnyFreeSpec with Matchers with ChiselRunners {
   "simple one hot mux with uint should work" in {
     assertTesterPasses(new SimpleOneHotTester)
   }

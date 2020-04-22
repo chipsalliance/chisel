@@ -9,7 +9,8 @@ import chisel3.util.experimental.loadMemoryFromFile
 import chisel3.util.log2Ceil
 import firrtl.FirrtlExecutionSuccess
 import firrtl.annotations.MemoryLoadFileType
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 class UsesThreeMems(memoryDepth: Int, memoryType: Data) extends Module {
   val io = IO(new Bundle {
@@ -110,7 +111,7 @@ class HasComplexMemory(memoryDepth: Int) extends Module {
   * For more complete working examples
   * @see <a href="https://github.com/freechipsproject/chisel-testers">Chisel Testers</a> LoadMemoryFromFileSpec.scala
   */
-class LoadMemoryFromFileSpec extends FreeSpec with Matchers {
+class LoadMemoryFromFileSpec extends AnyFreeSpec with Matchers {
   def fileExistsWithMem(file: File, mem: Option[String] = None): Unit = {
     info(s"$file exists")
     file.exists() should be (true)

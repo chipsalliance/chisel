@@ -2,10 +2,11 @@
 
 package chiselTests.stage
 
-import org.scalatest.{FlatSpec, Matchers}
 import chisel3._
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation, DesignAnnotation}
 import firrtl.options.OptionsException
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 class ChiselAnnotationsSpecFoo extends RawModule {
   val in = IO(Input(Bool()))
@@ -24,7 +25,7 @@ class ChiselAnnotationsSpecQux extends ChiselAnnotationsSpecFoo {
 
 class ChiselAnnotation
 
-class ChiselAnnotationsSpec extends FlatSpec with Matchers {
+class ChiselAnnotationsSpec extends AnyFlatSpec with Matchers {
 
   behavior of "ChiselGeneratorAnnotation elaboration"
 

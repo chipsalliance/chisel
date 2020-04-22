@@ -4,6 +4,7 @@ package chiselTests
 import Chisel.ChiselException
 import org.scalatest._
 import chisel3._
+import org.scalatest.matchers.should.Matchers
 
 class BundleWithAnonymousInner(val w: Int) extends Bundle {
   val inner = new Bundle {

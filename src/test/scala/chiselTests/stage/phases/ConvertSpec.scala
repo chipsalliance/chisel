@@ -2,7 +2,6 @@
 
 package chiselTests.stage.phases
 
-import org.scalatest.{FlatSpec, Matchers}
 
 import chisel3._
 import chisel3.experimental.{ChiselAnnotation, RunFirrtlTransform}
@@ -13,6 +12,8 @@ import firrtl.{AnnotationSeq, CircuitForm, CircuitState, Transform, UnknownForm}
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.options.Phase
 import firrtl.stage.{FirrtlCircuitAnnotation, RunFirrtlTransformAnnotation}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 class ConvertSpecFirrtlTransform extends Transform {
   def inputForm: CircuitForm = UnknownForm
@@ -36,7 +37,7 @@ class ConvertSpecFoo extends RawModule {
   experimental.annotate(ConvertSpecChiselAnnotation("bar"))
 }
 
-class ConvertSpec extends FlatSpec with Matchers {
+class ConvertSpec extends AnyFlatSpec with Matchers {
 
   class Fixture { val phase: Phase = new Convert }
 
