@@ -4,9 +4,17 @@ package firrtl
 package passes
 package memlib
 
-class CreateMemoryAnnotations(reader: Option[YamlFileReader]) extends Transform {
-  def inputForm = MidForm
-  def outputForm = MidForm
+import firrtl.options.PreservesAll
+import firrtl.stage.Forms
+
+class CreateMemoryAnnotations(reader: Option[YamlFileReader]) extends Transform
+    with DependencyAPIMigration
+    with PreservesAll[Transform] {
+
+  override def prerequisites = Forms.MidForm
+  override def optionalPrerequisites = Seq.empty
+  override def dependents = Forms.MidEmitters
+
   def execute(state: CircuitState): CircuitState = reader match {
     case None => state
     case Some(r) =>

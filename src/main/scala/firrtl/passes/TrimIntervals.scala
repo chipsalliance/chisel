@@ -22,14 +22,14 @@ import firrtl.Transform
   */
 class TrimIntervals extends Pass with PreservesAll[Transform] {
 
-  override val prerequisites =
+  override def prerequisites =
     Seq( Dependency(ResolveKinds),
          Dependency(InferTypes),
          Dependency(Uniquify),
          Dependency(ResolveFlows),
          Dependency[InferBinaryPoints] )
 
-  override val dependents = Seq.empty
+  override def dependents = Seq.empty
 
   def run(c: Circuit): Circuit = {
     // Open -> closed

@@ -16,7 +16,7 @@ import firrtl.options.{Dependency, PreservesAll}
   * @note Replaces "source" references to elements of zero-length vectors with always-invalid validif
   */
 object ZeroLengthVecs extends Pass with PreservesAll[Transform] {
-  override val prerequisites =
+  override def prerequisites =
     Seq( Dependency(PullMuxes),
          Dependency(ResolveKinds),
          Dependency(InferTypes),

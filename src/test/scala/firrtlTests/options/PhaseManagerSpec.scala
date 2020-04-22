@@ -180,7 +180,7 @@ object DependentsFixture {
   }
 
   class Second extends IdentityPhase {
-    override val prerequisites = Seq(Dependency[First])
+    override def prerequisites = Seq(Dependency[First])
     override def invalidates(phase: Phase): Boolean = false
   }
 
@@ -189,8 +189,8 @@ object DependentsFixture {
    * loop detection.
    */
   class Custom extends IdentityPhase {
-    override val prerequisites = Seq(Dependency[First])
-    override val dependents = Seq(Dependency[Second])
+    override def prerequisites = Seq(Dependency[First])
+    override def dependents = Seq(Dependency[Second])
     override def invalidates(phase: Phase): Boolean = false
   }
 
@@ -220,7 +220,7 @@ object ChainedInvalidationFixture {
     override def invalidates(phase: Phase): Boolean = false
   }
   class E extends IdentityPhase {
-    override val prerequisites = Seq(Dependency[A], Dependency[B], Dependency[C], Dependency[D])
+    override def prerequisites = Seq(Dependency[A], Dependency[B], Dependency[C], Dependency[D])
     override def invalidates(phase: Phase): Boolean = false
   }
 
@@ -254,8 +254,8 @@ object UnrelatedFixture {
   class B15 extends IdentityPhase with PreservesAll[Phase]
 
   class B6Sub extends B6 {
-    override val prerequisites = Seq(Dependency[B6])
-    override val dependents = Seq(Dependency[B7])
+    override def prerequisites = Seq(Dependency[B6])
+    override def dependents = Seq(Dependency[B7])
   }
 
   class B6_0 extends B6Sub
@@ -276,7 +276,7 @@ object UnrelatedFixture {
   class B6_15 extends B6Sub
 
   class B8Dep extends B8 {
-    override val dependents = Seq(Dependency[B8])
+    override def dependents = Seq(Dependency[B8])
   }
 
   class B8_0 extends B8Dep
@@ -303,28 +303,28 @@ object CustomAfterOptimizationFixture {
   class Root extends IdentityPhase with PreservesAll[Phase]
 
   class OptMinimum extends IdentityPhase with PreservesAll[Phase] {
-    override val prerequisites = Seq(Dependency[Root])
-    override val dependents = Seq(Dependency[AfterOpt])
+    override def prerequisites = Seq(Dependency[Root])
+    override def dependents = Seq(Dependency[AfterOpt])
   }
 
   class OptFull extends IdentityPhase with PreservesAll[Phase] {
-    override val prerequisites = Seq(Dependency[Root], Dependency[OptMinimum])
-    override val dependents = Seq(Dependency[AfterOpt])
+    override def prerequisites = Seq(Dependency[Root], Dependency[OptMinimum])
+    override def dependents = Seq(Dependency[AfterOpt])
   }
 
   class AfterOpt extends IdentityPhase with PreservesAll[Phase]
 
   class DoneMinimum extends IdentityPhase with PreservesAll[Phase] {
-    override val prerequisites = Seq(Dependency[OptMinimum])
+    override def prerequisites = Seq(Dependency[OptMinimum])
   }
 
   class DoneFull extends IdentityPhase with PreservesAll[Phase] {
-    override val prerequisites = Seq(Dependency[OptFull])
+    override def prerequisites = Seq(Dependency[OptFull])
   }
 
   class Custom extends IdentityPhase with PreservesAll[Phase] {
-    override val prerequisites = Seq(Dependency[Root], Dependency[AfterOpt])
-    override val dependents = Seq(Dependency[DoneMinimum], Dependency[DoneFull])
+    override def prerequisites = Seq(Dependency[Root], Dependency[AfterOpt])
+    override def dependents = Seq(Dependency[DoneMinimum], Dependency[DoneFull])
   }
 
 }
@@ -334,25 +334,25 @@ object OptionalPrerequisitesFixture {
   class Root extends IdentityPhase
 
   class OptMinimum extends IdentityPhase with PreservesAll[Phase] {
-    override val prerequisites = Seq(Dependency[Root])
+    override def prerequisites = Seq(Dependency[Root])
   }
 
   class OptFull extends IdentityPhase with PreservesAll[Phase] {
-    override val prerequisites = Seq(Dependency[Root], Dependency[OptMinimum])
+    override def prerequisites = Seq(Dependency[Root], Dependency[OptMinimum])
   }
 
   class DoneMinimum extends IdentityPhase with PreservesAll[Phase] {
-    override val prerequisites = Seq(Dependency[OptMinimum])
+    override def prerequisites = Seq(Dependency[OptMinimum])
   }
 
   class DoneFull extends IdentityPhase with PreservesAll[Phase] {
-    override val prerequisites = Seq(Dependency[OptFull])
+    override def prerequisites = Seq(Dependency[OptFull])
   }
 
   class Custom extends IdentityPhase with PreservesAll[Phase] {
-    override val prerequisites = Seq(Dependency[Root])
-    override val optionalPrerequisites = Seq(Dependency[OptMinimum], Dependency[OptFull])
-    override val dependents = Seq(Dependency[DoneMinimum], Dependency[DoneFull])
+    override def prerequisites = Seq(Dependency[Root])
+    override def optionalPrerequisites = Seq(Dependency[OptMinimum], Dependency[OptFull])
+    override def dependents = Seq(Dependency[DoneMinimum], Dependency[DoneFull])
   }
 
 }
@@ -369,7 +369,7 @@ object OrderingFixture {
   }
 
   class C extends IdentityPhase {
-    override val prerequisites = Seq(Dependency[A], Dependency[B])
+    override def prerequisites = Seq(Dependency[A], Dependency[B])
     override def invalidates(phase: Phase): Boolean = phase match {
       case _: B => true
       case _    => false
@@ -377,7 +377,7 @@ object OrderingFixture {
   }
 
   class Cx extends C {
-    override val prerequisites = Seq(Dependency[B], Dependency[A])
+    override def prerequisites = Seq(Dependency[B], Dependency[A])
   }
 
 }

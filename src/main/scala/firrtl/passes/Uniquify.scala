@@ -32,9 +32,9 @@ import MemPortUtils.memType
   *      there WOULD be collisions in references a[0] and a_0 so we still have
   *      to rename a
   */
-object Uniquify extends Transform {
+object Uniquify extends Transform with DependencyAPIMigration {
 
-  override val prerequisites =
+  override def prerequisites =
     Seq( Dependency(ResolveKinds),
          Dependency(InferTypes) ) ++ firrtl.stage.Forms.WorkingIR
 
@@ -43,8 +43,6 @@ object Uniquify extends Transform {
     case _ => false
   }
 
-  def inputForm = UnknownForm
-  def outputForm = UnknownForm
   private case class UniquifyException(msg: String) extends FirrtlInternalException(msg)
   private def error(msg: String)(implicit sinfo: Info, mname: String) =
     throw new UniquifyException(s"$sinfo: [moduleOpt $mname] $msg")
@@ -392,6 +390,6 @@ object Uniquify extends Transform {
 
     sinfo = c.info
     val result = Circuit(c.info, c.modules map uniquifyPorts(renames) map uniquifyModule(renames), c.main)
-    CircuitState(result, outputForm, state.annotations, Some(renames))
+    state.copy(circuit = result, renames = Some(renames))
   }
 }

@@ -20,19 +20,17 @@ import scala.util.{Try, Success, Failure}
   *  wires have multiple connections that may be impossible to order in a
   *  flow-foward way
   */
-class RemoveWires extends Transform with PreservesAll[Transform] {
-  def inputForm = LowForm
-  def outputForm = LowForm
+class RemoveWires extends Transform with DependencyAPIMigration with PreservesAll[Transform] {
 
-  override val prerequisites = firrtl.stage.Forms.MidForm ++
+  override def prerequisites = firrtl.stage.Forms.MidForm ++
     Seq( Dependency(passes.LowerTypes),
          Dependency(passes.Legalize),
          Dependency(transforms.RemoveReset),
          Dependency[transforms.CheckCombLoops] )
 
-  override val optionalPrerequisites = Seq(Dependency[checks.CheckResets])
+  override def optionalPrerequisites = Seq(Dependency[checks.CheckResets])
 
-  override val dependents = Seq.empty
+  override def dependents = Seq.empty
 
   // Extract all expressions that are references to a Node, Wire, or Reg
   // Since we are operating on LowForm, they can only be WRefs

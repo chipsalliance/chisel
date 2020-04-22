@@ -14,14 +14,12 @@ case class MPort(name: String, clk: Expression)
 case class MPorts(readers: ArrayBuffer[MPort], writers: ArrayBuffer[MPort], readwriters: ArrayBuffer[MPort])
 case class DataRef(exp: Expression, male: String, female: String, mask: String, rdwrite: Boolean)
 
-object RemoveCHIRRTL extends Transform with PreservesAll[Transform] {
+object RemoveCHIRRTL extends Transform with DependencyAPIMigration with PreservesAll[Transform] {
 
-  override val prerequisites = firrtl.stage.Forms.ChirrtlForm ++
+  override def prerequisites = firrtl.stage.Forms.ChirrtlForm ++
     Seq( Dependency(passes.CInferTypes),
          Dependency(passes.CInferMDir) )
 
-  def inputForm: CircuitForm = UnknownForm
-  def outputForm: CircuitForm = UnknownForm
   val ut = UnknownType
   type MPortMap = collection.mutable.LinkedHashMap[String, MPorts]
   type SeqMemSet = collection.mutable.HashSet[String]
@@ -274,6 +272,6 @@ object RemoveCHIRRTL extends Transform with PreservesAll[Transform] {
     val renames = RenameMap()
     renames.setCircuit(c.main)
     val result = c copy (modules = c.modules map remove_chirrtl_m(renames))
-    CircuitState(result, outputForm, state.annotations, Some(renames))
+    state.copy(circuit = result, renames = Some(renames))
   }
 }

@@ -28,18 +28,16 @@ object CheckResets {
 // Must run after ExpandWhens
 // Requires
 //   - static single connections of ground types
-class CheckResets extends Transform with PreservesAll[Transform] {
-  def inputForm: CircuitForm = MidForm
-  def outputForm: CircuitForm = MidForm
+class CheckResets extends Transform with DependencyAPIMigration with PreservesAll[Transform] {
 
-  override val prerequisites =
+  override def prerequisites =
     Seq( Dependency(passes.LowerTypes),
          Dependency(passes.Legalize),
          Dependency(firrtl.transforms.RemoveReset) ) ++ firrtl.stage.Forms.MidForm
 
-  override val optionalPrerequisites = Seq(Dependency[firrtl.transforms.CheckCombLoops])
+  override def optionalPrerequisites = Seq(Dependency[firrtl.transforms.CheckCombLoops])
 
-  override val dependents = Seq.empty
+  override def dependents = Seq.empty
 
   import CheckResets._
 

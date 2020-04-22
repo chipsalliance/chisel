@@ -2,7 +2,7 @@
 
 package firrtl.transforms
 
-import firrtl.{CircuitState, Namespace, PrimOps, Transform, UnknownForm, Utils, WRef}
+import firrtl.{CircuitState, DependencyAPIMigration, Namespace, PrimOps, Transform, Utils, WRef}
 import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.options.{Dependency, PreservesAll}
@@ -107,15 +107,13 @@ object FixAddingNegativeLiterals {
   * the literal and thus not all expressions in the add are the same. This is fixed here when we directly
   * subtract the literal instead.
   */
-class FixAddingNegativeLiterals extends Transform with PreservesAll[Transform] {
-  def inputForm = UnknownForm
-  def outputForm = UnknownForm
+class FixAddingNegativeLiterals extends Transform with DependencyAPIMigration with PreservesAll[Transform] {
 
-  override val prerequisites = Forms.LowFormMinimumOptimized :+ Dependency[BlackBoxSourceHelper]
+  override def prerequisites = Forms.LowFormMinimumOptimized :+ Dependency[BlackBoxSourceHelper]
 
-  override val optionalPrerequisites = firrtl.stage.Forms.LowFormOptimized
+  override def optionalPrerequisites = firrtl.stage.Forms.LowFormOptimized
 
-  override val dependents = Seq.empty
+  override def dependents = Seq.empty
 
   def execute(state: CircuitState): CircuitState = {
     val modulesx = state.circuit.modules.map(FixAddingNegativeLiterals.fixupModule)

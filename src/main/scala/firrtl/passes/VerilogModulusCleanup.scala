@@ -26,7 +26,7 @@ import scala.collection.mutable
  */
 object VerilogModulusCleanup extends Pass with PreservesAll[Transform] {
 
-  override val prerequisites = firrtl.stage.Forms.LowFormMinimumOptimized ++
+  override def prerequisites = firrtl.stage.Forms.LowFormMinimumOptimized ++
     Seq( Dependency[firrtl.transforms.BlackBoxSourceHelper],
          Dependency[firrtl.transforms.FixAddingNegativeLiterals],
          Dependency[firrtl.transforms.ReplaceTruncatingArithmetic],
@@ -35,9 +35,9 @@ object VerilogModulusCleanup extends Pass with PreservesAll[Transform] {
          Dependency[firrtl.transforms.LegalizeClocksTransform],
          Dependency[firrtl.transforms.FlattenRegUpdate] )
 
-  override val optionalPrerequisites = firrtl.stage.Forms.LowFormOptimized
+  override def optionalPrerequisites = firrtl.stage.Forms.LowFormOptimized
 
-  override val dependents = Seq.empty
+  override def dependents = Seq.empty
 
   private def onModule(m: Module): Module = {
     val namespace = Namespace(m)

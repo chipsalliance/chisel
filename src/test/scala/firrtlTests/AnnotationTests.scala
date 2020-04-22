@@ -35,9 +35,21 @@ trait AnnotationSpec extends LowTransformSpec {
   }
 }
 
+object AnnotationTests {
+
+  class DeletingTransform extends Transform {
+    val inputForm = LowForm
+    val outputForm = LowForm
+    def execute(state: CircuitState) = state.copy(annotations = Seq())
+  }
+
+}
+
 // Abstract but with lots of tests defined so that we can use the same tests
 // for Legacy and newer Annotations
 abstract class AnnotationTests extends AnnotationSpec with Matchers {
+  import AnnotationTests._
+
   def anno(s: String, value: String ="this is a value", mod: String = "Top"): Annotation
   def manno(mod: String): Annotation
 
@@ -59,11 +71,6 @@ abstract class AnnotationTests extends AnnotationSpec with Matchers {
         |  module Top :
         |    input in: UInt<3>
         |""".stripMargin
-    class DeletingTransform extends Transform {
-      val inputForm = LowForm
-      val outputForm = LowForm
-      def execute(state: CircuitState) = state.copy(annotations = Seq())
-    }
     val transform = new DeletingTransform
     val tname = transform.name
     val inlineAnn = InlineAnnotation(CircuitName("Top"))

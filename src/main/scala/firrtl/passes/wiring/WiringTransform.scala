@@ -7,6 +7,8 @@ import firrtl._
 import firrtl.Utils._
 import scala.collection.mutable
 import firrtl.annotations._
+import firrtl.options.Dependency
+import firrtl.stage.Forms
 
 /** A class for all exceptions originating from firrtl.passes.wiring */
 case class WiringException(msg: String) extends PassException(msg)
@@ -36,9 +38,14 @@ case class SinkAnnotation(target: Named, pin: String) extends
   *
   * @throws WiringException if a sink is equidistant to two sources
   */
-class WiringTransform extends Transform {
-  def inputForm: CircuitForm = MidForm
-  def outputForm: CircuitForm = HighForm
+class WiringTransform extends Transform with DependencyAPIMigration {
+
+  override def prerequisites = Forms.MidForm
+  override def optionalPrerequisites = Seq.empty
+  override def dependents = Forms.MidEmitters
+
+  private val invalidates = Forms.VerilogOptimized.toSet -- Forms.MinimalHighForm
+  override def invalidates(a: Transform): Boolean = invalidates(Dependency.fromTransform(a))
 
   /** Defines the sequence of Transform that should be applied */
   private def transforms(w: Seq[WiringInfo]): Seq[Transform] = Seq(

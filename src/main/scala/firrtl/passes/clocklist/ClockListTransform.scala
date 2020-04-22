@@ -10,7 +10,7 @@ import java.io.{PrintWriter, Writer}
 import Utils._
 import memlib._
 import firrtl.options.{RegisteredTransform, ShellOption}
-import firrtl.stage.RunFirrtlTransformAnnotation
+import firrtl.stage.{Forms, RunFirrtlTransformAnnotation}
 
 case class ClockListAnnotation(target: ModuleName, outputConfig: String) extends
     SingleTargetAnnotation[ModuleName] {
@@ -51,9 +51,11 @@ Usage:
   }
 }
 
-class ClockListTransform extends Transform with RegisteredTransform {
-  def inputForm = LowForm
-  def outputForm = LowForm
+class ClockListTransform extends Transform with DependencyAPIMigration with RegisteredTransform {
+
+   override def prerequisites = Forms.LowForm
+   override def optionalPrerequisites = Seq.empty
+   override def dependents = Forms.LowEmitters
 
   val options = Seq(
     new ShellOption[String](

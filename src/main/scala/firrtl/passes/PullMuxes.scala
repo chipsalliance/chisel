@@ -7,7 +7,7 @@ import firrtl.{Transform, WSubAccess, WSubField, WSubIndex}
 
 object PullMuxes extends Pass with PreservesAll[Transform] {
 
-  override val prerequisites = firrtl.stage.Forms.Deduped
+  override def prerequisites = firrtl.stage.Forms.Deduped
 
   def run(c: Circuit): Circuit = {
      def pull_muxes_e(e: Expression): Expression = e map pull_muxes_e match {

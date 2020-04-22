@@ -26,9 +26,9 @@ import java.io.PrintWriter
   */
 class WriteEmitted extends Phase with PreservesAll[Phase] {
 
-  override val prerequisites = Seq.empty
+  override def prerequisites = Seq.empty
 
-  override val dependents = Seq.empty
+  override def dependents = Seq.empty
 
   /** Write any [[EmittedAnnotation]]s in an [[AnnotationSeq]] to files. Written [[EmittedAnnotation]]s are deleted. */
   def transform(annotations: AnnotationSeq): AnnotationSeq = {

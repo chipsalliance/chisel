@@ -4,8 +4,15 @@ package firrtl
 package passes
 
 import firrtl.ir._
+import firrtl.options.PreservesAll
+import firrtl.stage.Forms
 
-object RemoveEmpty extends Pass {
+object RemoveEmpty extends Pass with DependencyAPIMigration with PreservesAll[Transform] {
+
+  override def prerequisites = Seq.empty
+  override def optionalPrerequisites = Forms.LowFormOptimized
+  override def dependents = Forms.ChirrtlEmitters
+
   private def onModule(m: DefModule): DefModule = {
     m match {
       case m: Module => Module(m.info, m.name, m.ports, Utils.squashEmpty(m.body))

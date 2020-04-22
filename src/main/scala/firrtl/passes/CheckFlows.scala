@@ -10,9 +10,9 @@ import firrtl.options.{Dependency, PreservesAll}
 
 object CheckFlows extends Pass with PreservesAll[Transform] {
 
-  override val prerequisites = Dependency(passes.ResolveFlows) +: firrtl.stage.Forms.WorkingIR
+  override def prerequisites = Dependency(passes.ResolveFlows) +: firrtl.stage.Forms.WorkingIR
 
-  override val dependents =
+  override def dependents =
     Seq( Dependency[passes.InferBinaryPoints],
          Dependency[passes.TrimIntervals],
          Dependency[passes.InferWidths],
@@ -118,4 +118,3 @@ object CheckFlows extends Pass with PreservesAll[Transform] {
     c
   }
 }
-

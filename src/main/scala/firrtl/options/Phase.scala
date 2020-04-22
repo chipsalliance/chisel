@@ -79,6 +79,29 @@ trait TransformLike[A] extends LazyLogging {
 
 }
 
+/** Mix-in that makes a [[firrtl.options.TransformLike TransformLike]] guaranteed to be an identity function on some
+  * type.
+  * @tparam A the transformed type
+  */
+trait IdentityLike[A] { this: TransformLike[A] =>
+
+  /** The internal operation of this transform which, in order for this to be an identity function, must return nothing.
+    * @param a an input object
+    * @return nothing
+    */
+  protected def internalTransform(a: A): Unit = Unit
+
+  /** This method will execute `internalTransform` and then return the original input object
+    * @param a an input object
+    * @return the input object
+    */
+  final override def transform(a: A): A = {
+    internalTransform(a)
+    a
+  }
+
+}
+
 /** Mixin that defines dependencies between [[firrtl.options.TransformLike TransformLike]]s (hereafter referred to as
   * "transforms")
   *
@@ -107,7 +130,7 @@ trait DependencyAPI[A <: DependencyAPI[A]] { this: TransformLike[_] =>
     * $seqNote
     */
   def optionalPrerequisites: Seq[Dependency[A]] = Seq.empty
-  private[options] lazy val _optionalPrerquisites: LinkedHashSet[Dependency[A]] =
+  private[options] lazy val _optionalPrerequisites: LinkedHashSet[Dependency[A]] =
     new LinkedHashSet() ++ optionalPrerequisites.toSet
 
   /** All transforms that must run ''after'' this transform

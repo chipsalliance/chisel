@@ -66,20 +66,18 @@ object InlineCastsTransform {
 }
 
 /** Inline nodes that are simple casts */
-class InlineCastsTransform extends Transform {
-  def inputForm = UnknownForm
-  def outputForm = UnknownForm
+class InlineCastsTransform extends Transform with DependencyAPIMigration {
 
-  override val prerequisites = firrtl.stage.Forms.LowFormMinimumOptimized ++
+  override def prerequisites = firrtl.stage.Forms.LowFormMinimumOptimized ++
     Seq( Dependency[BlackBoxSourceHelper],
          Dependency[FixAddingNegativeLiterals],
          Dependency[ReplaceTruncatingArithmetic],
          Dependency[InlineBitExtractionsTransform],
          Dependency[PropagatePresetAnnotations] )
 
-  override val optionalPrerequisites = firrtl.stage.Forms.LowFormOptimized
+  override def optionalPrerequisites = firrtl.stage.Forms.LowFormOptimized
 
-  override val dependents = Seq.empty
+  override def dependents = Seq.empty
 
   override def invalidates(a: Transform): Boolean = a match {
     case _: LegalizeClocksTransform => true

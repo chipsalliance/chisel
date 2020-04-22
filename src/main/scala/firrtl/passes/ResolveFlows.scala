@@ -9,7 +9,7 @@ import firrtl.options.{Dependency, PreservesAll}
 
 object ResolveFlows extends Pass with PreservesAll[Transform] {
 
-  override val prerequisites =
+  override def prerequisites =
     Seq( Dependency(passes.ResolveKinds),
          Dependency(passes.InferTypes),
          Dependency(passes.Uniquify) ) ++ firrtl.stage.Forms.WorkingIR

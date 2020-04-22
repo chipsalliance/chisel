@@ -16,7 +16,7 @@ import scala.collection.mutable
   */
 object RemoveAccesses extends Pass {
 
-  override val prerequisites =
+  override def prerequisites =
     Seq( Dependency(PullMuxes),
          Dependency(ZeroLengthVecs),
          Dependency(ReplaceAccesses),

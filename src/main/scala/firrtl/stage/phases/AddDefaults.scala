@@ -12,9 +12,9 @@ import firrtl.stage.{CompilerAnnotation, InfoModeAnnotation, FirrtlOptions}
   */
 class AddDefaults extends Phase with PreservesAll[Phase] {
 
-  override val prerequisites = Seq.empty
+  override def prerequisites = Seq.empty
 
-  override val dependents = Seq.empty
+  override def dependents = Seq.empty
 
   /** Append any missing default annotations to an annotation sequence */
   def transform(annotations: AnnotationSeq): AnnotationSeq = {

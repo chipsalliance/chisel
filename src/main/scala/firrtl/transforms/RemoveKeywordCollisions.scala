@@ -20,9 +20,7 @@ import scala.collection.mutable
   * @define implicitNamespace @param ns an encolosing [[Namespace]] with which new names must not conflict
   * @define implicitScope @param scope the enclosing scope of this name. If [[None]], then this is a [[Circuit]] name
   */
-class RemoveKeywordCollisions(keywords: Set[String]) extends Transform {
-  val inputForm: CircuitForm = UnknownForm
-  val outputForm: CircuitForm = UnknownForm
+class RemoveKeywordCollisions(keywords: Set[String]) extends Transform with DependencyAPIMigration {
   private type ModuleType = mutable.HashMap[String, ir.Type]
   private val inlineDelim = "_"
 
@@ -235,7 +233,7 @@ class RemoveKeywordCollisions(keywords: Set[String]) extends Transform {
 /** Transform that removes collisions with Verilog keywords */
 class VerilogRename extends RemoveKeywordCollisions(v_keywords) with PreservesAll[Transform] {
 
-  override val prerequisites = firrtl.stage.Forms.LowFormMinimumOptimized ++
+  override def prerequisites = firrtl.stage.Forms.LowFormMinimumOptimized ++
     Seq( Dependency[BlackBoxSourceHelper],
          Dependency[FixAddingNegativeLiterals],
          Dependency[ReplaceTruncatingArithmetic],
@@ -245,8 +243,8 @@ class VerilogRename extends RemoveKeywordCollisions(v_keywords) with PreservesAl
          Dependency[FlattenRegUpdate],
          Dependency(passes.VerilogModulusCleanup) )
 
-  override val optionalPrerequisites = firrtl.stage.Forms.LowFormOptimized
+  override def optionalPrerequisites = firrtl.stage.Forms.LowFormOptimized
 
-  override val dependents = Seq.empty
+  override def dependents = Seq.empty
 
 }

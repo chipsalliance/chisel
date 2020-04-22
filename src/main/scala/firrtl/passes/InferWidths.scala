@@ -60,18 +60,18 @@ case class WidthGeqConstraintAnnotation(loc: ReferenceTarget, exp: ReferenceTarg
   *
   * Uses firrtl.constraint package to infer widths
   */
-class InferWidths extends Transform with ResolvedAnnotationPaths with PreservesAll[Transform] {
+class InferWidths extends Transform
+    with ResolvedAnnotationPaths
+    with DependencyAPIMigration
+    with PreservesAll[Transform] {
 
-  override val prerequisites =
+  override def prerequisites =
     Seq( Dependency(passes.ResolveKinds),
          Dependency(passes.InferTypes),
          Dependency(passes.Uniquify),
          Dependency(passes.ResolveFlows),
          Dependency[passes.InferBinaryPoints],
          Dependency[passes.TrimIntervals] ) ++ firrtl.stage.Forms.WorkingIR
-
-  def inputForm: CircuitForm = UnknownForm
-  def outputForm: CircuitForm = UnknownForm
 
   private val constraintSolver = new ConstraintSolver()
 

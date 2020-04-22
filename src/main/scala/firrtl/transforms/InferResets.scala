@@ -110,12 +110,9 @@ object InferResets {
   *   generator languages like Chisel can infer differently
   */
 // TODO should we error if a DefMemory is of type AsyncReset? In CheckTypes?
-class InferResets extends Transform {
+class InferResets extends Transform with DependencyAPIMigration {
 
-  def inputForm: CircuitForm = UnknownForm
-  def outputForm: CircuitForm = UnknownForm
-
-  override val prerequisites =
+  override def prerequisites =
     Seq( Dependency(passes.ResolveKinds),
          Dependency(passes.InferTypes),
          Dependency(passes.Uniquify),

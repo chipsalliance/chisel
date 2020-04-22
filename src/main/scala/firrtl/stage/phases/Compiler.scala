@@ -44,14 +44,14 @@ private [stage] case class Defaults(
   */
 class Compiler extends Phase with Translator[AnnotationSeq, Seq[CompilerRun]] with PreservesAll[Phase] {
 
-  override val prerequisites =
+  override def prerequisites =
     Seq(Dependency[AddDefaults],
         Dependency[AddImplicitEmitter],
         Dependency[Checks],
         Dependency[AddCircuit],
         Dependency[AddImplicitOutputFile])
 
-  override val dependents = Seq(Dependency[WriteEmitted])
+  override def dependents = Seq(Dependency[WriteEmitted])
 
   /** Convert an [[AnnotationSeq]] into a sequence of compiler runs. */
   protected def aToB(a: AnnotationSeq): Seq[CompilerRun] = {

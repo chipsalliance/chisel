@@ -20,7 +20,7 @@ import scala.collection.mutable
   */
 object VerilogPrep extends Pass with PreservesAll[Transform] {
 
-  override val prerequisites = firrtl.stage.Forms.LowFormMinimumOptimized ++
+  override def prerequisites = firrtl.stage.Forms.LowFormMinimumOptimized ++
     Seq( Dependency[firrtl.transforms.BlackBoxSourceHelper],
          Dependency[firrtl.transforms.FixAddingNegativeLiterals],
          Dependency[firrtl.transforms.ReplaceTruncatingArithmetic],
@@ -31,9 +31,9 @@ object VerilogPrep extends Pass with PreservesAll[Transform] {
          Dependency(passes.VerilogModulusCleanup),
          Dependency[firrtl.transforms.VerilogRename] )
 
-  override val optionalPrerequisites = firrtl.stage.Forms.LowFormOptimized
+  override def optionalPrerequisites = firrtl.stage.Forms.LowFormOptimized
 
-  override val dependents = Seq.empty
+  override def dependents = Seq.empty
 
   type AttachSourceMap = Map[WrappedExpression, Expression]
 

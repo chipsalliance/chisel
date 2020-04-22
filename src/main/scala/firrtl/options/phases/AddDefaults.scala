@@ -12,9 +12,9 @@ import firrtl.options.{Dependency, Phase, PreservesAll, TargetDirAnnotation}
   */
 class AddDefaults extends Phase with PreservesAll[Phase] {
 
-  override val prerequisites = Seq(Dependency[GetIncludes], Dependency[ConvertLegacyAnnotations])
+  override def prerequisites = Seq(Dependency[GetIncludes], Dependency[ConvertLegacyAnnotations])
 
-  override val dependents = Seq.empty
+  override def dependents = Seq.empty
 
   def transform(annotations: AnnotationSeq): AnnotationSeq = {
     val td = annotations.collectFirst{ case a: TargetDirAnnotation => a}.isEmpty

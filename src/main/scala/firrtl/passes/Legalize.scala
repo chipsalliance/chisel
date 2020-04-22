@@ -12,11 +12,11 @@ import firrtl.Mappers._
 // TODO replace UInt with zero-width wire instead
 object Legalize extends Pass with PreservesAll[Transform] {
 
-  override val prerequisites = firrtl.stage.Forms.MidForm :+ Dependency(LowerTypes)
+  override def prerequisites = firrtl.stage.Forms.MidForm :+ Dependency(LowerTypes)
 
-  override val optionalPrerequisites = Seq.empty
+  override def optionalPrerequisites = Seq.empty
 
-  override val dependents = Seq.empty
+  override def dependents = Seq.empty
 
   private def legalizeShiftRight(e: DoPrim): Expression = {
     require(e.op == Shr)

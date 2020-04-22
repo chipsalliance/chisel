@@ -6,6 +6,7 @@ import firrtl.ir._
 import firrtl.annotations.{Annotation, ComponentName}
 import firrtl.passes.{InferTypes, LowerTypes, ResolveKinds}
 import firrtl.graph.MutableDiGraph
+import firrtl.stage.Forms
 
 import scala.collection.mutable
 
@@ -44,11 +45,17 @@ case class GroupAnnotation(components: Seq[ComponentName], newModule: String, ne
 /**
   * Splits a module into multiple modules by grouping its components via [[GroupAnnotation]]'s
   */
-class GroupComponents extends firrtl.Transform {
+class GroupComponents extends Transform with DependencyAPIMigration {
   type MSet[T] = mutable.Set[T]
 
-  def inputForm: CircuitForm = MidForm
-  def outputForm: CircuitForm = MidForm
+  override def prerequisites = Forms.MidForm
+  override def optionalPrerequisites = Seq.empty
+  override def dependents = Forms.MidEmitters
+
+  override def invalidates(a: Transform): Boolean = a match {
+    case InferTypes | ResolveKinds => true
+    case _                         => false
+  }
 
   override def execute(state: CircuitState): CircuitState = {
     val groups = state.annotations.collect {case g: GroupAnnotation => g}
@@ -60,10 +67,7 @@ class GroupComponents extends firrtl.Transform {
         groupModule(m, module2group(m.name).filter(_.components.nonEmpty), mnamespace)
       case other => Seq(other)
     }
-    val cs = state.copy(circuit = state.circuit.copy(modules = newModules))
-    /* @todo move ResolveKinds and InferTypes out */
-    val csx = ResolveKinds.execute(InferTypes.execute(cs))
-    csx
+    state.copy(circuit = state.circuit.copy(modules = newModules))
   }
 
   def groupModule(m: Module, groups: Seq[GroupAnnotation], mnamespace: Namespace): Seq[Module] = {
@@ -350,13 +354,11 @@ class GroupComponents extends firrtl.Transform {
   * Splits a module into multiple modules by grouping its components via [[GroupAnnotation]]'s
   * Tries to deduplicate the resulting circuit
   */
-class GroupAndDedup extends Transform {
-  def inputForm: CircuitForm = MidForm
-  def outputForm: CircuitForm = MidForm
+class GroupAndDedup extends GroupComponents {
 
-  override def execute(state: CircuitState): CircuitState = {
-    val cs = new GroupComponents().execute(state)
-    val csx = new DedupModules().execute(cs)
-    csx
+  override def invalidates(a: Transform): Boolean = a match {
+    case _: DedupModules => true
+    case _               => super.invalidates(a)
   }
+
 }

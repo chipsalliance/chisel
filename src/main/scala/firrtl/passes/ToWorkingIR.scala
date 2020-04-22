@@ -8,7 +8,7 @@ import firrtl.{Transform, UnknownFlow, UnknownKind, WDefInstance, WRef, WSubAcce
 // These should be distributed into separate files
 object ToWorkingIR extends Pass with PreservesAll[Transform] {
 
-  override val prerequisites = firrtl.stage.Forms.MinimalHighForm
+  override def prerequisites = firrtl.stage.Forms.MinimalHighForm
 
   def toExp(e: Expression): Expression = e map toExp match {
     case ex: Reference => WRef(ex.name, ex.tpe, UnknownKind, UnknownFlow)

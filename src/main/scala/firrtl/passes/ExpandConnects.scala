@@ -8,7 +8,7 @@ import firrtl.Mappers._
 
 object ExpandConnects extends Pass with PreservesAll[Transform] {
 
-  override val prerequisites =
+  override def prerequisites =
     Seq( Dependency(PullMuxes),
          Dependency(ReplaceAccesses) ) ++ firrtl.stage.Forms.Deduped
 

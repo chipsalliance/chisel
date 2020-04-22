@@ -10,7 +10,7 @@ import Utils.throwInternalError
 
 object CInferMDir extends Pass with PreservesAll[Transform] {
 
-  override val prerequisites = firrtl.stage.Forms.ChirrtlForm :+ Dependency(CInferTypes)
+  override def prerequisites = firrtl.stage.Forms.ChirrtlForm :+ Dependency(CInferTypes)
 
   type MPortDirMap = collection.mutable.LinkedHashMap[String, MPortDir]
 

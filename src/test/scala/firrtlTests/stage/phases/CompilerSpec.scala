@@ -27,7 +27,6 @@ class CompilerSpec extends AnyFlatSpec with Matchers {
     s"""|circuit $main:
         |  module $main:
         |    output foo: {bar: UInt}
-        |
         |    foo.bar <= UInt<4>("h0")
         |""".stripMargin
 
@@ -41,9 +40,7 @@ class CompilerSpec extends AnyFlatSpec with Matchers {
       FirrtlCircuitAnnotation(circuitIn),
       CompilerAnnotation(compiler) )
 
-    val expected = Seq(FirrtlCircuitAnnotation(circuitOut))
-
-    phase.transform(input).collect{ case a: FirrtlCircuitAnnotation => a }.toSeq should be (expected)
+    phase.transform(input).toSeq should be (Seq(FirrtlCircuitAnnotation(circuitOut)))
   }
 
   it should "compile multiple FirrtlCircuitAnnotations" in new Fixture {

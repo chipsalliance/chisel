@@ -4,8 +4,9 @@ package firrtl.testutils
 
 import org.scalatest.flatspec.AnyFlatSpec
 import firrtl.ir.Circuit
+import firrtl.options.{Dependency, IdentityLike}
 import firrtl.passes.{PassExceptions, RemoveEmpty}
-import firrtl.transforms.DedupModules
+import firrtl.stage.Forms
 import firrtl._
 import firrtl.annotations._
 import logger._
@@ -58,49 +59,45 @@ abstract class SimpleTransformSpec extends AnyFlatSpec with FirrtlMatchers with 
    }
 }
 
+@deprecated(
+  "Use a TransformManager including 'ReRunResolveAndCheck' as a target. This will be removed in 1.4.",
+  "FIRRTL 1.3"
+)
 class CustomResolveAndCheck(form: CircuitForm) extends SeqTransform {
   def inputForm = form
   def outputForm = form
   def transforms: Seq[Transform] = Seq[Transform](new ResolveAndCheck)
 }
 
+/** Transform that re-runs resolve and check transforms as late as possible, but before any emitters. */
+object ReRunResolveAndCheck extends Transform with DependencyAPIMigration with IdentityLike[CircuitState] {
+
+  override val optionalPrerequisites = Forms.LowFormOptimized
+  override val dependents = Forms.ChirrtlEmitters
+
+  override def invalidates(a: Transform) = {
+    val resolveAndCheck = Forms.Resolved.toSet -- Forms.WorkingIR
+    resolveAndCheck.contains(Dependency.fromTransform(a))
+  }
+
+  override def execute(a: CircuitState) = transform(a)
+
+}
+
 trait LowTransformSpec extends SimpleTransformSpec {
    def emitter = new LowFirrtlEmitter
    def transform: Transform
-   def transforms: Seq[Transform] = Seq(
-      new ChirrtlToHighFirrtl(),
-      new IRToWorkingIR(),
-      new ResolveAndCheck(),
-      new DedupModules(),
-      new HighFirrtlToMiddleFirrtl(),
-      new MiddleFirrtlToLowFirrtl(),
-      new CustomResolveAndCheck(LowForm),
-      transform
-   )
+   def transforms: Seq[Transform] = transform +: ReRunResolveAndCheck +: Forms.LowForm.map(_.getObject)
 }
 
 trait MiddleTransformSpec extends SimpleTransformSpec {
    def emitter = new MiddleFirrtlEmitter
    def transform: Transform
-   def transforms: Seq[Transform] = Seq(
-      new ChirrtlToHighFirrtl(),
-      new IRToWorkingIR(),
-      new ResolveAndCheck(),
-      new DedupModules(),
-      new HighFirrtlToMiddleFirrtl(),
-      new CustomResolveAndCheck(MidForm),
-      transform
-   )
+   def transforms: Seq[Transform] = transform +: ReRunResolveAndCheck +: Forms.MidForm.map(_.getObject)
 }
 
 trait HighTransformSpec extends SimpleTransformSpec {
    def emitter = new HighFirrtlEmitter
    def transform: Transform
-   def transforms = Seq(
-      new ChirrtlToHighFirrtl(),
-      new IRToWorkingIR(),
-      new CustomResolveAndCheck(HighForm),
-      new DedupModules(),
-      transform
-   )
+   def transforms = transform +: ReRunResolveAndCheck +: Forms.HighForm.map(_.getObject)
 }
