@@ -15,7 +15,7 @@ import scala.collection.mutable
 object Checks extends Phase with PreservesAll[Phase] {
 
   override def prerequisites = Seq(Dependency[AddDefaults])
-  override def dependents = Seq.empty
+  override def optionalPrerequisiteOf = Seq.empty
 
   /** Ensure that an [[firrtl.AnnotationSeq AnnotationSeq]] has necessary [[Logger]] [[firrtl.annotations.Annotation
     * Annotation]]s

@@ -109,7 +109,7 @@ class ConstantPropagation extends Transform with DependencyAPIMigration with Res
 
   override def optionalPrerequisites = Seq.empty
 
-  override def dependents =
+  override def optionalPrerequisiteOf =
     Seq( Dependency(firrtl.passes.memlib.VerilogMemDelays),
          Dependency(firrtl.passes.SplitExpressions),
          Dependency[SystemVerilogEmitter],

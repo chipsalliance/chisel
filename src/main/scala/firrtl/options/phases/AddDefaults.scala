@@ -14,7 +14,7 @@ class AddDefaults extends Phase with PreservesAll[Phase] {
 
   override def prerequisites = Seq(Dependency[GetIncludes], Dependency[ConvertLegacyAnnotations])
 
-  override def dependents = Seq.empty
+  override def optionalPrerequisiteOf = Seq.empty
 
   def transform(annotations: AnnotationSeq): AnnotationSeq = {
     val td = annotations.collectFirst{ case a: TargetDirAnnotation => a}.isEmpty

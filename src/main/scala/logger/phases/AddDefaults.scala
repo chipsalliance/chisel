@@ -11,7 +11,7 @@ import logger.{LoggerOption, LogLevelAnnotation}
 private [logger] class AddDefaults extends Phase with PreservesAll[Phase] {
 
   override def prerequisites = Seq.empty
-  override def dependents = Seq.empty
+  override def optionalPrerequisiteOf = Seq.empty
 
   /** Add missing default [[Logger]] [[Annotation]]s to an [[AnnotationSeq]]
     * @param annotations input annotations

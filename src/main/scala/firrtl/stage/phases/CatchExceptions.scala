@@ -13,8 +13,12 @@ import scala.util.control.ControlThrowable
 class CatchExceptions(val underlying: Phase) extends Phase {
 
   override final def prerequisites = underlying.prerequisites
-  override final def optionalPrerequisites = underlying.optionalPrerequisites
+  @deprecated(
+    "Due to confusion, 'dependents' is being renamed to 'optionalPrerequisiteOf'. Override the latter instead.",
+    "FIRRTL 1.3"
+  )
   override final def dependents = underlying.dependents
+  override final def optionalPrerequisiteOf = underlying.optionalPrerequisiteOf
   override final def invalidates(a: Phase): Boolean = underlying.invalidates(a)
   override final lazy val name = underlying.name
 

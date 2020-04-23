@@ -18,7 +18,7 @@ class InferBinaryPoints extends Pass with PreservesAll[Transform] {
          Dependency(Uniquify),
          Dependency(ResolveFlows) )
 
-  override def dependents = Seq.empty
+  override def optionalPrerequisiteOf = Seq.empty
 
   private val constraintSolver = new ConstraintSolver()
 

@@ -63,7 +63,7 @@ class BlackBoxSourceHelper extends Transform with DependencyAPIMigration with Pr
 
   override def optionalPrerequisites = firrtl.stage.Forms.LowFormOptimized
 
-  override def dependents = Seq.empty
+  override def optionalPrerequisiteOf = Seq.empty
 
   /** Collect BlackBoxHelperAnnos and and find the target dir if specified
     * @param annos a list of generic annotations for this transform

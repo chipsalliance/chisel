@@ -30,7 +30,7 @@ class ReplaceMemMacros(writer: ConfWriter) extends Transform with DependencyAPIM
 
   override def prerequisites = Forms.MidForm
   override def optionalPrerequisites = Seq.empty
-  override def dependents = Forms.MidEmitters
+  override def optionalPrerequisiteOf = Forms.MidEmitters
 
   /** Return true if mask granularity is per bit, false if per byte or unspecified
     */

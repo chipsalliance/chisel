@@ -16,7 +16,7 @@ case class ModuleNamespaceAnnotation(namespace: Namespace) extends NoTargetAnnot
 class GetNamespace extends Transform with DependencyAPIMigration with PreservesAll[Transform] {
   override def prerequisites = Forms.LowForm
   override def optionalPrerequisites = Seq.empty
-  override def dependents = Forms.LowEmitters
+  override def optionalPrerequisiteOf = Forms.LowEmitters
 
   def execute(state: CircuitState): CircuitState = {
     val namespace = Namespace(state.circuit)

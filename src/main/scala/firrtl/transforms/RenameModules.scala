@@ -18,7 +18,7 @@ class RenameModules extends Transform with DependencyAPIMigration with Preserves
 
   override def prerequisites = Forms.LowForm
   override def optionalPrerequisites = Seq.empty
-  override def dependents = Forms.LowEmitters
+  override def optionalPrerequisiteOf = Forms.LowEmitters
 
   def collectNameMapping(namespace: Namespace, moduleNameMap: mutable.HashMap[String, String])(mod: DefModule): Unit = {
     val newName = namespace.newName(mod.name)

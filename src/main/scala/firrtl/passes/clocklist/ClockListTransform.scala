@@ -55,7 +55,7 @@ class ClockListTransform extends Transform with DependencyAPIMigration with Regi
 
    override def prerequisites = Forms.LowForm
    override def optionalPrerequisites = Seq.empty
-   override def dependents = Forms.LowEmitters
+   override def optionalPrerequisiteOf = Forms.LowEmitters
 
   val options = Seq(
     new ShellOption[String](

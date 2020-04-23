@@ -47,7 +47,7 @@ class EliminateTargetPaths extends Transform with DependencyAPIMigration with Pr
 
   override def prerequisites = Forms.MinimalHighForm
   override def optionalPrerequisites = Seq.empty
-  override def dependents = Seq.empty
+  override def optionalPrerequisiteOf = Seq.empty
 
   /** Replaces old ofModules with new ofModules by calling dupMap methods
     * Updates oldUsedOfModules, newUsedOfModules

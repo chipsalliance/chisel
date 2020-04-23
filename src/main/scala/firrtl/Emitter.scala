@@ -182,7 +182,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
 
   override def prerequisites = firrtl.stage.Forms.LowFormOptimized
 
-  override def dependents = Seq.empty
+  override def optionalPrerequisiteOf = Seq.empty
 
   val outputSuffix = ".v"
   val tab = "  "

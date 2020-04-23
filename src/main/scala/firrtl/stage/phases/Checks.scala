@@ -20,7 +20,7 @@ class Checks extends Phase with PreservesAll[Phase] {
 
   override val prerequisites = Seq(Dependency[AddDefaults], Dependency[AddImplicitEmitter])
 
-  override val dependents = Seq.empty
+  override val optionalPrerequisiteOf = Seq.empty
 
   /** Determine if annotations are sane
     *

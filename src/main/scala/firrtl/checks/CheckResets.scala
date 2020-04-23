@@ -37,7 +37,7 @@ class CheckResets extends Transform with DependencyAPIMigration with PreservesAl
 
   override def optionalPrerequisites = Seq(Dependency[firrtl.transforms.CheckCombLoops])
 
-  override def dependents = Seq.empty
+  override def optionalPrerequisiteOf = Seq.empty
 
   import CheckResets._
 

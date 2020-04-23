@@ -103,7 +103,7 @@ class InlineBitExtractionsTransform extends Transform with DependencyAPIMigratio
 
   override def optionalPrerequisites = firrtl.stage.Forms.LowFormOptimized
 
-  override def dependents = Seq.empty
+  override def optionalPrerequisiteOf = Seq.empty
 
   def execute(state: CircuitState): CircuitState = {
     val modulesx = state.circuit.modules.map(InlineBitExtractionsTransform.onMod(_))

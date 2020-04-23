@@ -20,7 +20,7 @@ object SplitExpressions extends Pass with PreservesAll[Transform] {
     Seq( Dependency(firrtl.passes.RemoveValidIf),
          Dependency(firrtl.passes.memlib.VerilogMemDelays) )
 
-  override def dependents =
+  override def optionalPrerequisiteOf =
     Seq( Dependency[SystemVerilogEmitter],
          Dependency[VerilogEmitter] )
 

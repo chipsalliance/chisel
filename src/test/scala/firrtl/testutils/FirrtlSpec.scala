@@ -39,7 +39,7 @@ object RenameTop extends Transform with PreservesAll[Transform] {
 
   override val optionalPrerequisites = Seq(Dependency[RenameModules])
 
-  override val dependents = Seq(Dependency[VerilogEmitter], Dependency[MinimumVerilogEmitter])
+  override val optionalPrerequisiteOf = Seq(Dependency[VerilogEmitter], Dependency[MinimumVerilogEmitter])
 
   def execute(state: CircuitState): CircuitState = {
     val c = state.circuit

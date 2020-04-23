@@ -16,7 +16,7 @@ object CommonSubexpressionElimination extends Pass with PreservesAll[Transform] 
          Dependency(firrtl.passes.SplitExpressions),
          Dependency[firrtl.transforms.CombineCats] )
 
-  override def dependents =
+  override def optionalPrerequisiteOf =
     Seq( Dependency[SystemVerilogEmitter],
          Dependency[VerilogEmitter] )
 

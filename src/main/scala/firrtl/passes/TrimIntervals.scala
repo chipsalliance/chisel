@@ -29,7 +29,7 @@ class TrimIntervals extends Pass with PreservesAll[Transform] {
          Dependency(ResolveFlows),
          Dependency[InferBinaryPoints] )
 
-  override def dependents = Seq.empty
+  override def optionalPrerequisiteOf = Seq.empty
 
   def run(c: Circuit): Circuit = {
     // Open -> closed

@@ -30,7 +30,7 @@ class RemoveWires extends Transform with DependencyAPIMigration with PreservesAl
 
   override def optionalPrerequisites = Seq(Dependency[checks.CheckResets])
 
-  override def dependents = Seq.empty
+  override def optionalPrerequisiteOf = Seq.empty
 
   // Extract all expressions that are references to a Node, Wire, or Reg
   // Since we are operating on LowForm, they can only be WRefs

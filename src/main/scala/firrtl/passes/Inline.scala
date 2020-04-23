@@ -28,7 +28,7 @@ class InlineInstances extends Transform with DependencyAPIMigration with Registe
 
   override def prerequisites = Forms.LowForm
   override def optionalPrerequisites = Seq.empty
-  override def dependents = Forms.LowEmitters
+  override def optionalPrerequisiteOf = Forms.LowEmitters
 
   override def invalidates(a: Transform): Boolean = a == ResolveKinds
 

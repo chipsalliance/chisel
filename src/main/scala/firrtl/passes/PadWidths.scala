@@ -21,7 +21,7 @@ object PadWidths extends Pass {
 
   override def optionalPrerequisites = Seq(Dependency[firrtl.transforms.ConstantPropagation])
 
-  override def dependents =
+  override def optionalPrerequisiteOf =
     Seq( Dependency(firrtl.passes.memlib.VerilogMemDelays),
          Dependency[SystemVerilogEmitter],
          Dependency[VerilogEmitter] )

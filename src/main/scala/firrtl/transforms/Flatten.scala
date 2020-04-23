@@ -28,7 +28,7 @@ class Flatten extends Transform with DependencyAPIMigration with PreservesAll[Tr
 
    override def prerequisites = Forms.LowForm
    override def optionalPrerequisites = Seq.empty
-   override def dependents = Forms.LowEmitters
+   override def optionalPrerequisiteOf = Forms.LowEmitters
 
    val inlineTransform = new InlineInstances
 

@@ -106,7 +106,7 @@ class CheckCombLoops extends Transform
 
   override def optionalPrerequisites = Seq.empty
 
-  override def dependents = Seq.empty
+  override def optionalPrerequisiteOf = Seq.empty
 
   import CheckCombLoops._
 

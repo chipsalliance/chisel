@@ -43,7 +43,7 @@ class DedupModules extends Transform with DependencyAPIMigration with PreservesA
 
   override def prerequisites = firrtl.stage.Forms.Resolved
 
-  override def dependents = Seq.empty
+  override def optionalPrerequisiteOf = Seq.empty
 
   /** Deduplicate a Circuit
     * @param state Input Firrtl AST
