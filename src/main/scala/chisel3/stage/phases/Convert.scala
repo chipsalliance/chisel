@@ -14,9 +14,14 @@ import firrtl.stage.{FirrtlCircuitAnnotation, RunFirrtlTransformAnnotation}
   *   - Extracts all [[firrtl.annotations.Annotation]]s from the [[chisel3.internal.firrtl.Circuit]]
   *   - Generates any needed [[RunFirrtlTransformAnnotation]]s from extracted [[firrtl.annotations.Annotation]]s
   */
-class Convert extends Phase with PreservesAll[Phase] {
+class Convert extends Phase {
 
   override val prerequisites = Seq(Dependency[Elaborate])
+
+  override def invalidates(phase: Phase): Boolean = phase match {
+    case _: Elaborate => true
+    case _ => false
+  }
 
   def transform(annotations: AnnotationSeq): AnnotationSeq = annotations.flatMap {
     case a: ChiselCircuitAnnotation =>
