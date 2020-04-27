@@ -6,7 +6,7 @@ import firrtl.transforms.IdentityTransform
 import firrtl.options.StageUtils
 import firrtl.stage.{Forms, TransformManager}
 
-@deprecated("Use a TransformManager or some other Stage/Phase class. Will be removed in 1.3.", "1.2")
+@deprecated("Use a TransformManager or some other Stage/Phase class. Will be removed in 1.4.", "FIRRTL 1.2")
 sealed abstract class CoreTransform extends SeqTransform
 
 /** This transforms "CHIRRTL", the chisel3 IR, to "Firrtl". Note the resulting
