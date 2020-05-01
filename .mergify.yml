@@ -21,15 +21,15 @@ pull_request_rules:
         strict: smart
         strict_method: merge
 
-  - name: backport to 1.2.x
+  - name: backport to 1.3.x
     conditions:
       - merged
       - base=master
-      - milestone=1.2.X
+      - milestone=1.3.x
     actions:
       backport:
         branches:
-          - 1.2.x
+          - 1.3.x
         ignore_conflicts: True
         label_conflicts: "bp-conflict"
       label:
@@ -37,7 +37,7 @@ pull_request_rules:
 
   - name: label Mergify backport PR
     conditions:
-      - base=1.2.x
+      - base=1.3.x
       - body~=This is an automated backport of pull request \#\d+ done by Mergify
     actions:
       label:
@@ -47,7 +47,7 @@ pull_request_rules:
     conditions:
       - status-success=continuous-integration/travis-ci/pr
       - "#changes-requested-reviews-by=0"
-      - base=1.2.x
+      - base=1.3.x
       - label="Backport"
       - label!="DO NOT MERGE"
       - label!="bp-conflict"
