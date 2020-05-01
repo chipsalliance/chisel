@@ -8,13 +8,14 @@ import scala.collection.mutable
 
 import firrtl.ir._
 import firrtl.passes._
+import firrtl.transforms.LegalizeAndReductionsTransform
 import firrtl.annotations._
 import firrtl.traversals.Foreachers._
 import firrtl.PrimOps._
 import firrtl.WrappedExpression._
 import Utils._
 import MemPortUtils.{memPortField, memType}
-import firrtl.options.{HasShellOptions, ShellOption, StageUtils, PhaseException, Unserializable}
+import firrtl.options.{Dependency, HasShellOptions, ShellOption, StageUtils, PhaseException, Unserializable}
 import firrtl.stage.{RunFirrtlTransformAnnotation, TransformManager}
 // Datastructures
 import scala.collection.mutable.ArrayBuffer
@@ -180,7 +181,9 @@ class VerilogEmitter extends SeqTransform with Emitter {
   def inputForm = LowForm
   def outputForm = LowForm
 
-  override def prerequisites = firrtl.stage.Forms.LowFormOptimized
+  override def prerequisites =
+    Dependency[LegalizeAndReductionsTransform] +:
+    firrtl.stage.Forms.LowFormOptimized
 
   override def optionalPrerequisiteOf = Seq.empty
 
@@ -1160,7 +1163,9 @@ class VerilogEmitter extends SeqTransform with Emitter {
 
 class MinimumVerilogEmitter extends VerilogEmitter with Emitter {
 
-  override def prerequisites = firrtl.stage.Forms.LowFormMinimumOptimized
+  override def prerequisites =
+    Dependency[LegalizeAndReductionsTransform] +:
+    firrtl.stage.Forms.LowFormMinimumOptimized
 
   override def transforms = new TransformManager(firrtl.stage.Forms.VerilogMinimumOptimized, prerequisites)
     .flattenedTransformOrder
