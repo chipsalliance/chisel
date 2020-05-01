@@ -19,10 +19,11 @@ Please note that these examples make use of [Chisel's scala-style printing](prin
 * [How do I create a finite state machine?](#how-do-i-create-a-finite-state-machine-fsm)
 * [How do I unpack a value ("reverse concatenation") like in Verilog?](#how-do-i-unpack-a-value-reverse-concatenation-like-in-verilog)
 * [How do I do subword assignment (assign to some bits in a UInt)?](#how-do-i-do-subword-assignment-assign-to-some-bits-in-a-uint)
-* [How can I dynamically set/parametrize the name of a module?](#how-can-i-dynamically-setparametrize-the-name-of-a-module)
 * [How do I create an optional I/O?](#how-do-i-create-an-optional-io)
-* [How do I get Chisel to name signals properly in blocks like when/withClockAndReset?](#how-do-i-get-chisel-to-name-signals-properly-in-blocks-like-whenwithclockandreset)
-* [How do I get Chisel to name the results of vector reads properly?](#how-do-i-get-chisel-to-name-the-results-of-vector-reads-properly)
+* Predictable Naming
+  * [How do I get Chisel to name signals properly in blocks like when/withClockAndReset?](#how-do-i-get-chisel-to-name-signals-properly-in-blocks-like-whenwithclockandreset)
+  * [How do I get Chisel to name the results of vector reads properly?](#how-do-i-get-chisel-to-name-the-results-of-vector-reads-properly)
+  * [How can I dynamically set/parametrize the name of a module?](#how-can-i-dynamically-setparametrize-the-name-of-a-module)
 
 ## Converting Chisel Types to/from UInt
 
@@ -259,41 +260,6 @@ class Foo extends Module {
 }
 ```
 
-### How can I dynamically set/parametrize the name of a module?
-
-You can override the `desiredName` function. This works with normal Chisel modules and `BlackBox`es. Example:
-
-```scala mdoc:silent:reset
-import chisel3._
-
-class Coffee extends BlackBox {
-    val io = IO(new Bundle {
-        val I = Input(UInt(32.W))
-        val O = Output(UInt(32.W))
-    })
-    override def desiredName = "Tea"
-}
-
-class Salt extends Module {
-    val io = IO(new Bundle {})
-    val drink = Module(new Coffee)
-    override def desiredName = "SodiumMonochloride"
-}
-```
-
-Elaborating the Chisel module `Salt` yields our "desire name" for `Salt` and `Coffee` in the output Verilog:
-```scala mdoc:passthrough
-import chisel3.stage.{ChiselStage, ChiselGeneratorAnnotation}
-import firrtl.annotations.DeletedAnnotation
-import firrtl.EmittedVerilogCircuitAnnotation
-
-(new ChiselStage)
-  .execute(Array("-X", "verilog"), Seq(ChiselGeneratorAnnotation(() => new Salt)))
-  .collectFirst{ case DeletedAnnotation(_, a: EmittedVerilogCircuitAnnotation) => a.value.value }
-  .foreach(a => println(s"""|```verilog
-                            |$a
-                            |```""".stripMargin))
-```
 
 ### How do I create an optional I/O?
 
@@ -328,6 +294,8 @@ class ModuleWithOptionalIO(flag: Boolean) extends MultiIOModule {
   out := in.getOrElse(false.B)
 }
 ```
+
+## Predictable Naming
 
 ### How do I get Chisel to name signals properly in blocks like when/withClockAndReset?
 
@@ -464,4 +432,39 @@ module Foo(
   assign x = 2'h3 == io_idx ? io_in_3 : _GEN_2;
   assign io_out = x & io_en; // @[main.scala 16:10]
 endmodule
+```
+### How can I dynamically set/parametrize the name of a module?
+
+You can override the `desiredName` function. This works with normal Chisel modules and `BlackBox`es. Example:
+
+```scala mdoc:silent:reset
+import chisel3._
+
+class Coffee extends BlackBox {
+    val io = IO(new Bundle {
+        val I = Input(UInt(32.W))
+        val O = Output(UInt(32.W))
+    })
+    override def desiredName = "Tea"
+}
+
+class Salt extends Module {
+    val io = IO(new Bundle {})
+    val drink = Module(new Coffee)
+    override def desiredName = "SodiumMonochloride"
+}
+```
+
+Elaborating the Chisel module `Salt` yields our "desire name" for `Salt` and `Coffee` in the output Verilog:
+```scala mdoc:passthrough
+import chisel3.stage.{ChiselStage, ChiselGeneratorAnnotation}
+import firrtl.annotations.DeletedAnnotation
+import firrtl.EmittedVerilogCircuitAnnotation
+
+(new ChiselStage)
+  .execute(Array("-X", "verilog"), Seq(ChiselGeneratorAnnotation(() => new Salt)))
+  .collectFirst{ case DeletedAnnotation(_, a: EmittedVerilogCircuitAnnotation) => a.value.value }
+  .foreach(a => println(s"""|```verilog
+                            |$a
+                            |```""".stripMargin))
 ```
