@@ -544,6 +544,12 @@ class VerilogEmitter extends SeqTransform with Emitter {
     }
 
     val portdefs = ArrayBuffer[Seq[Any]]()
+    // maps ifdef guard to declaration blocks
+    val ifdefDeclares: mutable.Map[String, ArrayBuffer[Seq[Any]]] = mutable.Map().withDefault { key =>
+      val value = ArrayBuffer[Seq[Any]]()
+      ifdefDeclares(key) = value
+      value
+    }
     val declares = ArrayBuffer[Seq[Any]]()
     val instdeclares = ArrayBuffer[Seq[Any]]()
     val assigns = ArrayBuffer[Seq[Any]]()
@@ -557,6 +563,12 @@ class VerilogEmitter extends SeqTransform with Emitter {
     val asyncResetAlwaysBlocks = mutable.ArrayBuffer[(Expression, Expression, Seq[Any])]()
     // Used to determine type of initvar for initializing memories
     var maxMemSize: BigInt = BigInt(0)
+    // maps ifdef guard to initial blocks
+    val ifdefInitials: mutable.Map[String, ArrayBuffer[Seq[Any]]] = mutable.Map().withDefault { key =>
+      val value = ArrayBuffer[Seq[Any]]()
+      ifdefInitials(key) = value
+      value
+    }
     val initials = ArrayBuffer[Seq[Any]]()
     // In Verilog, async reset registers are expressed using always blocks of the form:
     // always @(posedge clock or posedge reset) begin
@@ -576,15 +588,27 @@ class VerilogEmitter extends SeqTransform with Emitter {
     def bigIntToVLit(bi: BigInt): String =
       if (bi.isValidInt) bi.toString else s"${bi.bitLength}'d$bi"
 
-    def declareVectorType(b: String, n: String, tpe: Type, size: BigInt, info: Info) = {
-      declares += Seq(b, " ", tpe, " ", n, " [0:", bigIntToVLit(size - 1), "];", info)
+    // declare vector type with no preset and optionally with an ifdef guard
+    private def declareVectorType(b: String, n: String, tpe: Type, size: BigInt, info: Info, ifdefOpt: Option[String]): Unit = {
+      val decl = Seq(b, " ", tpe, " ", n, " [0:", bigIntToVLit(size - 1), "];", info)
+      if (ifdefOpt.isDefined) {
+        ifdefDeclares(ifdefOpt.get) += decl
+      } else {
+        declares += decl
+      }
     }
-    def declareVectorType(b: String, n: String, tpe: Type, size: BigInt, info: Info, preset: Expression) = {
+
+    // original vector type declare without initial value
+    def declareVectorType(b: String, n: String, tpe: Type, size: BigInt, info: Info): Unit =
+      declareVectorType(b, n, tpe, size, info, None)
+
+    // declare vector type with initial value
+    def declareVectorType(b: String, n: String, tpe: Type, size: BigInt, info: Info, preset: Expression): Unit = {
       declares += Seq(b, " ", tpe, " ", n, " [0:", bigIntToVLit(size - 1), "] = ", preset, ";", info)
     }
-    
+
     val moduleTarget = CircuitTarget(circuitName).module(m.name)
-      
+
     // declare with initial value
     def declare(b: String, n: String, t: Type, info: Info, preset: Expression) = t match {
       case tx: VectorType =>
@@ -592,14 +616,27 @@ class VerilogEmitter extends SeqTransform with Emitter {
       case tx =>
         declares += Seq(b, " ", tx, " ", n, " = ", preset, ";", info)
     }
-    
-    // original declare without initial value
-    def declare(b: String, n: String, t: Type, info: Info) = t match {
+
+    // original declare without initial value and optinally with an ifdef guard
+    private def declare(b: String, n: String, t: Type, info: Info, ifdefOpt: Option[String]): Unit = t match {
       case tx: VectorType =>
-        declareVectorType(b, n, tx.tpe, tx.size, info)
+        declareVectorType(b, n, tx.tpe, tx.size, info, ifdefOpt)
       case tx =>
-        declares += Seq(b, " ", tx, " ", n,";",info)
+        val decl = Seq(b, " ", tx, " ", n,";",info)
+        if (ifdefOpt.isDefined) {
+          ifdefDeclares(ifdefOpt.get) += decl
+        } else {
+          declares += decl
+        }
     }
+
+    // original declare without initial value and with an ifdef guard
+    private def declare(b: String, n: String, t: Type, info: Info, ifdef: String): Unit =
+      declare(b, n, t, info, Some(ifdef))
+
+    // original declare without initial value
+    def declare(b: String, n: String, t: Type, info: Info): Unit =
+      declare(b, n, t, info, None)
 
     def assign(e: Expression, value: Expression, info: Info): Unit = {
       assigns += Seq("assign ", e, " = ", value, ";", info)
@@ -610,14 +647,14 @@ class VerilogEmitter extends SeqTransform with Emitter {
       assigns += Seq("`ifndef RANDOMIZE_GARBAGE_ASSIGN")
       assigns += Seq("assign ", e, " = ", syn, ";", info)
       assigns += Seq("`else")
-      assigns += Seq("assign ", e, " = ", garbageCond, " ? ", rand_string(syn.tpe), " : ", syn,
+      assigns += Seq("assign ", e, " = ", garbageCond, " ? ", rand_string(syn.tpe, "RANDOMIZE_GARBAGE_ASSIGN"), " : ", syn,
                      ";", info)
       assigns += Seq("`endif // RANDOMIZE_GARBAGE_ASSIGN")
     }
 
     def invalidAssign(e: Expression) = {
       assigns += Seq("`ifdef RANDOMIZE_INVALID_ASSIGN")
-      assigns += Seq("assign ", e, " = ", rand_string(e.tpe), ";")
+      assigns += Seq("assign ", e, " = ", rand_string(e.tpe, "RANDOMIZE_INVALID_ASSIGN"), ";")
       assigns += Seq("`endif // RANDOMIZE_INVALID_ASSIGN")
     }
 
@@ -681,19 +718,27 @@ class VerilogEmitter extends SeqTransform with Emitter {
 
     // Declares an intermediate wire to hold a large enough random number.
     // Then, return the correct number of bits selected from the random value
-    def rand_string(t: Type): Seq[Any] = {
+    def rand_string(t: Type, ifdefOpt: Option[String]): Seq[Any] = {
       val nx = namespace.newName("_RAND")
       val rand = VRandom(bitWidth(t))
       val tx = SIntType(IntWidth(rand.realWidth))
-      declare("reg", nx, tx, NoInfo)
-      initials += Seq(wref(nx, tx), " = ", VRandom(bitWidth(t)), ";")
+      declare("reg", nx, tx, NoInfo, ifdefOpt)
+      val initial = Seq(wref(nx, tx), " = ", VRandom(bitWidth(t)), ";")
+      if (ifdefOpt.isDefined) {
+        ifdefInitials(ifdefOpt.get) += initial
+      } else {
+        initials += initial
+      }
       Seq(nx, "[", bitWidth(t) - 1, ":0]")
     }
 
+    def rand_string(t: Type, ifdef: String): Seq[Any] = rand_string(t, Some(ifdef))
+
+    def rand_string(t: Type): Seq[Any] = rand_string(t, None)
+
     def initialize(e: Expression, reset: Expression, init: Expression) = {
-      initials += Seq("`ifdef RANDOMIZE_REG_INIT")
-      initials += Seq(e, " = ", rand_string(e.tpe), ";")
-      initials += Seq("`endif // RANDOMIZE_REG_INIT")
+      val randString = rand_string(e.tpe, "RANDOMIZE_REG_INIT")
+      ifdefInitials("RANDOMIZE_REG_INIT") += Seq(e, " = ", randString, ";")
       reset.tpe match {
         case AsyncResetType =>
           asyncInitials += Seq("if (", reset, ") begin")
@@ -708,12 +753,10 @@ class VerilogEmitter extends SeqTransform with Emitter {
         maxMemSize = s.depth
       }
       val index = wref("initvar", s.dataType)
-      val rstring = rand_string(s.dataType)
-      initials += Seq("`ifdef RANDOMIZE_MEM_INIT")
-      initials += Seq("for (initvar = 0; initvar < ", bigIntToVLit(s.depth), "; initvar = initvar+1)")
-      initials += Seq(tab, WSubAccess(wref(s.name, s.dataType), index, s.dataType, SinkFlow),
+      val rstring = rand_string(s.dataType, "RANDOMIZE_MEM_INIT")
+      ifdefInitials("RANDOMIZE_MEM_INIT") += Seq("for (initvar = 0; initvar < ", bigIntToVLit(s.depth), "; initvar = initvar+1)")
+      ifdefInitials("RANDOMIZE_MEM_INIT") += Seq(tab, WSubAccess(wref(s.name, s.dataType), index, s.dataType, SinkFlow),
                       " = ", rstring, ";")
-      initials += Seq("`endif // RANDOMIZE_MEM_INIT")
     }
 
     def simulate(clk: Expression, en: Expression, s: Seq[Any], cond: Option[String], info: Info) = {
@@ -937,7 +980,11 @@ class VerilogEmitter extends SeqTransform with Emitter {
       for (x <- portdefs) emit(Seq(tab, x))
       emit(Seq(");"))
 
-      if (declares.isEmpty && assigns.isEmpty) emit(Seq(tab, "initial begin end"))
+      ifdefDeclares.toSeq.sortWith(_._1 < _._1).foreach { case (ifdef, declares) =>
+        emit(Seq("`ifdef " + ifdef))
+        for (x <- declares) emit(Seq(tab, x))
+        emit(Seq("`endif // " + ifdef))
+      }
       for (x <- declares) emit(Seq(tab, x))
       for (x <- instdeclares) emit(Seq(tab, x))
       for (x <- assigns) emit(Seq(tab, x))
@@ -950,7 +997,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
         for (x <- attachAliases) emit(Seq(tab, x))
         emit(Seq("`endif"))
       }
-      if (initials.nonEmpty) {
+      if (initials.nonEmpty || ifdefInitials.nonEmpty) {
         emit(Seq("`ifdef RANDOMIZE_GARBAGE_ASSIGN"))
         emit(Seq("`define RANDOMIZE"))
         emit(Seq("`endif"))
@@ -995,6 +1042,11 @@ class VerilogEmitter extends SeqTransform with Emitter {
         emit(Seq("        #0.002 begin end"))
         emit(Seq("      `endif"))
         emit(Seq("    `endif"))
+        ifdefInitials.toSeq.sortWith(_._1 < _._1).foreach { case (ifdef, initials) =>
+          emit(Seq("`ifdef " + ifdef))
+          for (x <- initials) emit(Seq(tab, x))
+          emit(Seq("`endif // " + ifdef))
+        }
         for (x <- initials) emit(Seq(tab, x))
         for (x <- asyncInitials) emit(Seq(tab, x))
         emit(Seq("  `endif // RANDOMIZE"))
