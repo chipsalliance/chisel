@@ -175,7 +175,7 @@ object VerilogMemDelays extends Pass {
          Dependency[SystemVerilogEmitter] )
 
   override def invalidates(a: Transform): Boolean = a match {
-    case _: transforms.ConstantPropagation => true
+    case _: transforms.ConstantPropagation | ResolveFlows => true
     case _ => false
   }
 

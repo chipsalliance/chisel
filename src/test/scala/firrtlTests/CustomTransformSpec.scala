@@ -167,10 +167,15 @@ class CustomTransformSpec extends FirrtlFlatSpec {
         .containsSlice(expectedSlice) should be (true)
     }
 
-    Seq( (Dependency[LowFirrtlEmitter],      Seq(Forms.LowForm.last)                 ),
-         (Dependency[MinimumVerilogEmitter], Seq(Forms.LowFormMinimumOptimized.last) ),
-         (Dependency[VerilogEmitter],        Seq(Forms.LowFormOptimized.last)        ),
-         (Dependency[SystemVerilogEmitter],  Seq(Forms.LowFormOptimized.last)        )
+    val Seq(low, lowMinOpt, lowOpt) =
+      Seq(Forms.LowForm, Forms.LowFormMinimumOptimized, Forms.LowFormOptimized)
+        .map(target => new firrtl.stage.transforms.Compiler(target))
+        .map(_.flattenedTransformOrder.map(Dependency.fromTransform(_)))
+
+    Seq( (Dependency[LowFirrtlEmitter],      Seq(low.last)      ),
+         (Dependency[MinimumVerilogEmitter], Seq(lowMinOpt.last)),
+         (Dependency[VerilogEmitter],        Seq(lowOpt.last)    ),
+         (Dependency[SystemVerilogEmitter],  Seq(lowOpt.last)   )
     ).foreach((testOrder _).tupled)
   }
 

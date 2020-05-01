@@ -3,9 +3,9 @@
 package firrtl
 package passes
 
-import firrtl.{SystemVerilogEmitter, VerilogEmitter}
+import firrtl.{SystemVerilogEmitter, Transform, VerilogEmitter}
 import firrtl.ir._
-import firrtl.options.{Dependency, PreservesAll}
+import firrtl.options.Dependency
 import firrtl.Mappers._
 import firrtl.Utils.{kind, flow, get_info}
 
@@ -14,7 +14,7 @@ import scala.collection.mutable
 
 // Splits compound expressions into simple expressions
 //  and named intermediate nodes
-object SplitExpressions extends Pass with PreservesAll[Transform] {
+object SplitExpressions extends Pass {
 
   override def prerequisites = firrtl.stage.Forms.LowForm ++
     Seq( Dependency(firrtl.passes.RemoveValidIf),
@@ -23,6 +23,11 @@ object SplitExpressions extends Pass with PreservesAll[Transform] {
   override def optionalPrerequisiteOf =
     Seq( Dependency[SystemVerilogEmitter],
          Dependency[VerilogEmitter] )
+
+  override def invalidates(a: Transform) = a match {
+    case ResolveKinds => true
+    case _            => false
+  }
 
    private def onModule(m: Module): Module = {
       val namespace = Namespace(m)

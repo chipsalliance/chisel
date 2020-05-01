@@ -158,8 +158,11 @@ class LoweringCompilersSpec extends FlatSpec with Matchers {
   it should "replicate the old order" in {
     val tm = new TransformManager(Forms.MidForm, Forms.Deduped)
     val patches = Seq(
+      Add(4, Seq(Dependency(firrtl.passes.ResolveFlows))),
+      Add(5, Seq(Dependency(firrtl.passes.ResolveKinds))),
       Add(6, Seq(Dependency(firrtl.passes.ResolveKinds),
-                 Dependency(firrtl.passes.InferTypes))),
+                 Dependency(firrtl.passes.InferTypes),
+                 Dependency(firrtl.passes.ResolveFlows))),
       Del(7),
       Del(8),
       Add(7, Seq(Dependency[firrtl.passes.ExpandWhensAndCheck])),
@@ -184,7 +187,11 @@ class LoweringCompilersSpec extends FlatSpec with Matchers {
 
   it should "replicate the old order" in {
     val tm = new TransformManager(Forms.LowFormMinimumOptimized, Forms.LowForm)
-    compare(legacyTransforms(new MinimumLowFirrtlOptimization), tm)
+    val patches = Seq(
+      Add(4, Seq(Dependency(firrtl.passes.ResolveFlows))),
+      Add(5, Seq(Dependency(firrtl.passes.ResolveKinds)))
+    )
+    compare(legacyTransforms(new MinimumLowFirrtlOptimization), tm, patches)
   }
 
   behavior of "LowFirrtlOptimization"
@@ -192,7 +199,9 @@ class LoweringCompilersSpec extends FlatSpec with Matchers {
   it should "replicate the old order" in {
     val tm = new TransformManager(Forms.LowFormOptimized, Forms.LowForm)
     val patches = Seq(
-      Add(7, Seq(Dependency(firrtl.passes.Legalize)))
+      Add(6, Seq(Dependency(firrtl.passes.ResolveFlows))),
+      Add(7, Seq(Dependency(firrtl.passes.Legalize))),
+      Add(8, Seq(Dependency(firrtl.passes.ResolveKinds)))
     )
     compare(legacyTransforms(new LowFirrtlOptimization), tm, patches)
   }

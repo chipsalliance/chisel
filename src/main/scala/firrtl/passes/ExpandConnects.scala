@@ -2,15 +2,20 @@ package firrtl.passes
 
 import firrtl.Utils.{create_exps, flow, get_field, get_valid_points, times, to_flip, to_flow}
 import firrtl.ir._
-import firrtl.options.{PreservesAll, Dependency}
+import firrtl.options.Dependency
 import firrtl.{DuplexFlow, Flow, SinkFlow, SourceFlow, Transform, WDefInstance, WRef, WSubAccess, WSubField, WSubIndex}
 import firrtl.Mappers._
 
-object ExpandConnects extends Pass with PreservesAll[Transform] {
+object ExpandConnects extends Pass {
 
   override def prerequisites =
     Seq( Dependency(PullMuxes),
          Dependency(ReplaceAccesses) ) ++ firrtl.stage.Forms.Deduped
+
+  override def invalidates(a: Transform) = a match {
+    case ResolveFlows => true
+    case _            => false
+  }
 
   def run(c: Circuit): Circuit = {
     def expand_connects(m: Module): Module = {

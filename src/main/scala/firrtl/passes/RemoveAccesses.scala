@@ -23,8 +23,8 @@ object RemoveAccesses extends Pass {
          Dependency(ExpandConnects) ) ++ firrtl.stage.Forms.Deduped
 
   override def invalidates(a: Transform): Boolean = a match {
-    case Uniquify => true
-    case _        => false
+    case Uniquify | ResolveKinds | ResolveFlows => true
+    case _                                      => false
   }
 
   private def AND(e1: Expression, e2: Expression) =
