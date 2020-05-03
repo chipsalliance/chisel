@@ -142,6 +142,45 @@ class ConstantPropagation extends Transform with DependencyAPIMigration with Res
     }
   }
 
+  /** Interface for describing a simplification of a reduction primitive op */
+  sealed trait SimplifyReductionOp {
+
+    /** The initial value used in the reduction */
+    def identityValue: Boolean
+
+    /** The reduction function of the primitive op expressed */
+    def reduce: (Boolean, Boolean) => Boolean
+
+    /** Utility to simplify a reduction op of a literal, parameterized by identityValue and reduce methods. This will
+      * return the identityValue in the event of reducing a zero-width literal.
+      */
+    private def simplifyLiteral(a: Literal): Literal = {
+
+      val w: BigInt = getWidth(a) match {
+        case IntWidth(b) => b
+      }
+
+      val v: Seq[Boolean] = s"%${w}s".format(a.value.toString(2)).map(_ == '1')
+
+      (BigInt(0) until w).zip(v).foldLeft(identityValue) {
+        case (acc, (_, x)) => reduce(acc, x)
+      } match {
+        case false => zero
+        case true  => one
+      }
+    }
+
+    /** Reduce a reduction primitive op to a simpler expression if possible
+      * @param prim the primitive op to reduce
+      * @return a simplified expression or the original primitive op
+      */
+    def apply(prim: DoPrim): Expression = prim.args.head match {
+      case a: Literal => simplifyLiteral(a)
+      case _          => prim
+    }
+
+  }
+
   object FoldADD extends FoldCommutativeOp {
     def fold(c1: Literal, c2: Literal) = ((c1, c2): @unchecked) match {
       case (_: UIntLiteral, _: UIntLiteral) => UIntLiteral(c1.value + c2.value, (c1.width max c2.width) + IntWidth(1))
@@ -328,6 +367,21 @@ class ConstantPropagation extends Transform with DependencyAPIMigration with Res
     foldIfZeroedArg(foldIfOutsideRange(foldIfMatchingArgs(e)))
   }
 
+  final object FoldANDR extends SimplifyReductionOp {
+    override def identityValue = true
+    override def reduce = (a: Boolean, b: Boolean) => a & b
+  }
+
+  final object FoldORR extends SimplifyReductionOp {
+    override def identityValue = false
+    override def reduce = (a: Boolean, b: Boolean) => a | b
+  }
+
+  final object FoldXORR extends SimplifyReductionOp {
+    override def identityValue = false
+    override def reduce = (a: Boolean, b: Boolean) => a ^ b
+  }
+
   private def constPropPrim(e: DoPrim): Expression = e.op match {
     case Shl => foldShiftLeft(e)
     case Dshl => foldDynamicShiftLeft(e)
@@ -343,6 +397,9 @@ class ConstantPropagation extends Transform with DependencyAPIMigration with Res
     case Xor => FoldXOR(e)
     case Eq => FoldEqual(e)
     case Neq => FoldNotEqual(e)
+    case Andr => FoldANDR(e)
+    case Orr => FoldORR(e)
+    case Xorr => FoldXORR(e)
     case (Lt | Leq | Gt | Geq) => foldComparison(e)
     case Not => e.args.head match {
       case UIntLiteral(v, IntWidth(w)) => UIntLiteral(v ^ ((BigInt(1) << w.toInt) - 1), IntWidth(w))
