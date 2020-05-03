@@ -1404,6 +1404,110 @@ class ConstantPropagationIntegrationSpec extends LowTransformSpec {
     matchingArgs("gt",  "UInt<8>", "UInt<1>", """ UInt<1>("h0")  """ )
   }
 
+  behavior of "Reduction operators"
+
+  it should "optimize andr of a literal" in {
+    val input =
+      s"""|circuit Foo:
+          |  module Foo:
+          |    output _4b0: UInt<1>
+          |    output _4b15: UInt<1>
+          |    output _4b7: UInt<1>
+          |    output _4b1: UInt<1>
+          |    output _0b0: UInt<1>
+          |    _4b0 <= andr(UInt<4>(0))
+          |    _4b15 <= andr(UInt<4>(15))
+          |    _4b7 <= andr(UInt<4>(7))
+          |    _4b1 <= andr(UInt<4>(1))
+          |    wire _0bI: UInt<0>
+          |    _0bI is invalid
+          |    _0b0 <= andr(_0bI)
+          |""".stripMargin
+    val check =
+      s"""|circuit Foo:
+          |  module Foo:
+          |    output _4b0: UInt<1>
+          |    output _4b15: UInt<1>
+          |    output _4b7: UInt<1>
+          |    output _4b1: UInt<1>
+          |    output _0b0: UInt<1>
+          |    _4b0 <= UInt<1>(0)
+          |    _4b15 <= UInt<1>(1)
+          |    _4b7 <= UInt<1>(0)
+          |    _4b1 <= UInt<1>(0)
+          |    _0b0 <= UInt<1>(1)
+          |""".stripMargin
+    execute(input, check, Seq.empty)
+  }
+
+  it should "optimize orr of a literal" in {
+    val input =
+      s"""|circuit Foo:
+          |  module Foo:
+          |    output _4b0: UInt<1>
+          |    output _4b15: UInt<1>
+          |    output _4b7: UInt<1>
+          |    output _4b1: UInt<1>
+          |    output _0b0: UInt<1>
+          |    _4b0 <= orr(UInt<4>(0))
+          |    _4b15 <= orr(UInt<4>(15))
+          |    _4b7 <= orr(UInt<4>(7))
+          |    _4b1 <= orr(UInt<4>(1))
+          |    wire _0bI: UInt<0>
+          |    _0bI is invalid
+          |    _0b0 <= orr(_0bI)
+          |""".stripMargin
+    val check =
+      s"""|circuit Foo:
+          |  module Foo:
+          |    output _4b0: UInt<1>
+          |    output _4b15: UInt<1>
+          |    output _4b7: UInt<1>
+          |    output _4b1: UInt<1>
+          |    output _0b0: UInt<1>
+          |    _4b0 <= UInt<1>(0)
+          |    _4b15 <= UInt<1>(1)
+          |    _4b7 <= UInt<1>(1)
+          |    _4b1 <= UInt<1>(1)
+          |    _0b0 <= UInt<1>(0)
+          |""".stripMargin
+    execute(input, check, Seq.empty)
+  }
+
+  it should "optimize xorr of a literal" in {
+    val input =
+      s"""|circuit Foo:
+          |  module Foo:
+          |    output _4b0: UInt<1>
+          |    output _4b15: UInt<1>
+          |    output _4b7: UInt<1>
+          |    output _4b1: UInt<1>
+          |    output _0b0: UInt<1>
+          |    _4b0 <= xorr(UInt<4>(0))
+          |    _4b15 <= xorr(UInt<4>(15))
+          |    _4b7 <= xorr(UInt<4>(7))
+          |    _4b1 <= xorr(UInt<4>(1))
+          |    wire _0bI: UInt<0>
+          |    _0bI is invalid
+          |    _0b0 <= xorr(_0bI)
+          |""".stripMargin
+    val check =
+      s"""|circuit Foo:
+          |  module Foo:
+          |    output _4b0: UInt<1>
+          |    output _4b15: UInt<1>
+          |    output _4b7: UInt<1>
+          |    output _4b1: UInt<1>
+          |    output _0b0: UInt<1>
+          |    _4b0 <= UInt<1>(0)
+          |    _4b15 <= UInt<1>(0)
+          |    _4b7 <= UInt<1>(1)
+          |    _4b1 <= UInt<1>(1)
+          |    _0b0 <= UInt<1>(0)
+          |""".stripMargin
+    execute(input, check, Seq.empty)
+  }
+
 }
 
 
