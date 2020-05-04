@@ -20,7 +20,6 @@ class ChiselStage extends Stage with PreservesAll[Phase] {
 
   val targets: Seq[Dependency[Phase]] =
     Seq( Dependency[chisel3.stage.phases.Checks],
-         Dependency[chisel3.stage.phases.Elaborate],
          Dependency[chisel3.stage.phases.AddImplicitOutputFile],
          Dependency[chisel3.stage.phases.AddImplicitOutputAnnotationFile],
          Dependency[chisel3.stage.phases.MaybeAspectPhase],
