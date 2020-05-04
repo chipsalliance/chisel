@@ -191,6 +191,54 @@ class AsyncResetSpec extends ChiselFlatSpec {
     assertTesterPasses(new AsyncResetQueueTester)
   }
 
+  it should "support SInt regs" in {
+    assertTesterPasses(new BasicTester {
+      // Also check that it traces through wires
+      val initValue = Wire(SInt())
+      val reg = withReset(reset.asAsyncReset)(RegNext(initValue, 27.S))
+      initValue := -43.S
+      val (count, done) = Counter(true.B, 4)
+      when (count === 0.U) {
+        chisel3.assert(reg === 27.S)
+      } .otherwise {
+        chisel3.assert(reg === -43.S)
+      }
+      when (done) { stop() }
+    })
+  }
+
+  it should "support Fixed regs" in {
+    import chisel3.experimental.{withReset => _, _}
+    assertTesterPasses(new BasicTester {
+      val reg = withReset(reset.asAsyncReset)(RegNext(-6.0.F(2.BP), 3.F(2.BP)))
+      val (count, done) = Counter(true.B, 4)
+      when (count === 0.U) {
+        chisel3.assert(reg === 3.F(2.BP))
+      } .otherwise {
+        chisel3.assert(reg === -6.0.F(2.BP))
+      }
+      when (done) { stop() }
+    })
+  }
+
+  it should "support Interval regs" in {
+    import chisel3.experimental.{withReset => _, _}
+    assertTesterPasses(new BasicTester {
+      val reg = withReset(reset.asAsyncReset) {
+        val x = RegInit(Interval(range"[0,13]"), 13.I)
+        x := 7.I
+        x
+      }
+      val (count, done) = Counter(true.B, 4)
+      when (count === 0.U) {
+        chisel3.assert(reg === 13.I)
+      } .otherwise {
+        chisel3.assert(reg === 7.I)
+      }
+      when (done) { stop() }
+    })
+  }
+
   it should "allow literals cast to Bundles as reset values" in {
     class MyBundle extends Bundle {
       val x = UInt(16.W)
