@@ -7,8 +7,8 @@ package chisel3.util
 
 import chisel3._
 import chisel3.experimental.{DataMirror, Direction, requireIsChiselType}
-import chisel3.internal.naming._
-import chisel3.internal.sourceinfo.SourceInfo  // can't use chisel3_ version because of compile order
+import chisel3.internal.naming._  // can't use chisel3_ version because of compile order
+import chisel3.internal.sourceinfo.SourceInfo
 
 /** An I/O Bundle containing 'valid' and 'ready' signals that handshake
   * the transfer of data stored in the 'bits' subfield.
@@ -147,23 +147,20 @@ object Irrevocable
   * @param gen The type of data to enqueue
   */
 object EnqIO {
-  def apply[T<:Data](gen: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): DecoupledIO[T] =
-    Decoupled(gen)
+  def apply[T<:Data](gen: T): DecoupledIO[T] = Decoupled(gen)
 }
 /** Consumer - drives (outputs) ready, inputs valid and bits.
   * @param gen The type of data to dequeue
   */
 object DeqIO {
-  def apply[T<:Data](gen: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): DecoupledIO[T] =
-    Flipped(Decoupled(gen))
+  def apply[T<:Data](gen: T): DecoupledIO[T] = Flipped(Decoupled(gen))
 }
 
 /** An I/O Bundle for Queues
   * @param gen The type of data to queue
   * @param entries The max number of entries in the queue.
   */
-class QueueIO[T <: Data](private val gen: T, val entries: Int)
-                        (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) extends Bundle
+class QueueIO[T <: Data](private val gen: T, val entries: Int) extends Bundle
 { // See github.com/freechipsproject/chisel3/issues/765 for why gen is a private val and proposed replacement APIs.
 
   /* These may look inverted, because the names (enq/deq) are from the perspective of the client,
