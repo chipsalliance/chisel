@@ -3,6 +3,7 @@
 package chisel3.util
 
 import chisel3._
+import chisel3.internal.sourceinfo.SourceInfo
 
 object RegEnable {
   /** Returns a register with the specified next, update enable gate, and no reset initialization.
@@ -11,7 +12,7 @@ object RegEnable {
     * val regWithEnable = RegEnable(nextVal, ena)
     * }}}
     */
-  def apply[T <: Data](next: T, enable: Bool): T = {
+  def apply[T <: Data](next: T, enable: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     val r = Reg(chiselTypeOf(next))
     when (enable) { r := next }
     r
@@ -23,7 +24,8 @@ object RegEnable {
     * val regWithEnableAndReset = RegEnable(nextVal, 0.U, ena)
     * }}}
     */
-  def apply[T <: Data](next: T, init: T, enable: Bool): T = {
+  def apply[T <: Data](next: T, init: T, enable: Bool)
+                      (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     val r = RegInit(init)
     when (enable) { r := next }
     r
@@ -42,7 +44,8 @@ object ShiftRegister
     * val regDelayTwo = ShiftRegister(nextVal, 2, ena)
     * }}}
     */
-  def apply[T <: Data](in: T, n: Int, en: Bool = true.B): T = {
+  def apply[T <: Data](in: T, n: Int, en: Bool = true.B)
+                      (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     // The order of tests reflects the expected use cases.
     if (n != 0) {
       RegEnable(apply(in, n-1, en), en)
@@ -62,7 +65,8 @@ object ShiftRegister
     * val regDelayTwoReset = ShiftRegister(nextVal, 2, 0.U, ena)
     * }}}
     */
-  def apply[T <: Data](in: T, n: Int, resetData: T, en: Bool): T = {
+  def apply[T <: Data](in: T, n: Int, resetData: T, en: Bool)
+                      (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     // The order of tests reflects the expected use cases.
     if (n != 0) {
       RegEnable(apply(in, n-1, resetData, en), resetData, en)

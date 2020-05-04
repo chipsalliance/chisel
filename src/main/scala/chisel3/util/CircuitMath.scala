@@ -6,7 +6,8 @@
 package chisel3.util
 
 import chisel3._
-import chisel3.internal.naming.chiselName  // can't use chisel3_ version because of compile order
+import chisel3.internal.naming.chiselName
+import chisel3.internal.sourceinfo.SourceInfo  // can't use chisel3_ version because of compile order
 
 /** Returns the base-2 integer logarithm of an UInt.
   *
@@ -23,7 +24,7 @@ object Log2 {
   /** Returns the base-2 integer logarithm of the least-significant `width` bits of an UInt.
     */
   @chiselName
-  def apply(x: Bits, width: Int): UInt = {
+  def apply(x: Bits, width: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
     if (width < 2) {
       0.U
     } else if (width == 2) {
@@ -39,7 +40,7 @@ object Log2 {
     }
   }
 
-  def apply(x: Bits): UInt = apply(x, x.getWidth)
+  def apply(x: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = apply(x, x.getWidth)
 
   private def divideAndConquerThreshold = 4
 }

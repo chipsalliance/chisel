@@ -7,6 +7,7 @@ package chisel3.util
 
 import chisel3._
 import chisel3.internal.chiselRuntimeDeprecated
+import chisel3.internal.sourceinfo.SourceInfo
 
 /** Defines a set of unique UInt constants
   *
@@ -28,7 +29,7 @@ import chisel3.internal.chiselRuntimeDeprecated
   */
 trait Enum {
   /** Returns a sequence of Bits subtypes with values from 0 until n. Helper method. */
-  protected def createValues(n: Int): Seq[UInt] =
+  protected def createValues(n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Seq[UInt] =
     (0 until n).map(_.U((1 max log2Ceil(n)).W))
 
   /** Returns n unique UInt values
@@ -36,7 +37,8 @@ trait Enum {
     * @param n Number of unique UInt constants to enumerate
     * @return Enumerated constants
     */
-  def apply(n: Int): List[UInt] = createValues(n).toList
+  def apply(n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): List[UInt] =
+    createValues(n).toList
 }
 
 object Enum extends Enum

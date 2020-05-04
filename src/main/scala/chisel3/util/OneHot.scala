@@ -6,6 +6,7 @@
 package chisel3.util
 
 import chisel3._
+import chisel3.internal.sourceinfo.SourceInfo
 
 /** Returns the bit position of the sole high bit of the input bitvector.
   *
@@ -18,11 +19,14 @@ import chisel3._
   * @note assumes exactly one high bit, results undefined otherwise
   */
 object OHToUInt {
-  def apply(in: Seq[Bool]): UInt = apply(Cat(in.reverse), in.size)
-  def apply(in: Vec[Bool]): UInt = apply(in.asUInt, in.size)
-  def apply(in: Bits): UInt = apply(in, in.getWidth)
+  def apply(in: Seq[Bool])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
+    apply(Cat(in.reverse), in.size)
+  def apply(in: Vec[Bool])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
+    apply(in.asUInt, in.size)
+  def apply(in: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
+    apply(in, in.getWidth)
 
-  def apply(in: Bits, width: Int): UInt = {
+  def apply(in: Bits, width: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
     if (width <= 2) {
       Log2(in, width)
     } else {
@@ -43,8 +47,10 @@ object OHToUInt {
   * Multiple bits may be high in the input.
   */
 object PriorityEncoder {
-  def apply(in: Seq[Bool]): UInt = PriorityMux(in, (0 until in.size).map(_.asUInt))
-  def apply(in: Bits): UInt = apply(in.asBools)
+  def apply(in: Seq[Bool])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
+    PriorityMux(in, (0 until in.size).map(_.asUInt))
+  def apply(in: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
+    apply(in.asBools)
 }
 
 /** Returns the one hot encoding of the input UInt.
@@ -55,8 +61,9 @@ object PriorityEncoder {
   *
   */
 object UIntToOH {
-  def apply(in: UInt): UInt = 1.U << in
-  def apply(in: UInt, width: Int): UInt = width match {
+  def apply(in: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
+    1.U << in
+  def apply(in: UInt, width: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = width match {
     case 0 => 0.U(0.W)
     case 1 => 1.U(1.W)
     case _ =>
@@ -74,13 +81,14 @@ object UIntToOH {
   * }}}
   */
 object PriorityEncoderOH {
-  private def encode(in: Seq[Bool]): UInt = {
+  private def encode(in: Seq[Bool])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
     val outs = Seq.tabulate(in.size)(i => (BigInt(1) << i).asUInt(in.size.W))
     PriorityMux(in :+ true.B, outs :+ 0.U(in.size.W))
   }
-  def apply(in: Seq[Bool]): Seq[Bool] = {
+  def apply(in: Seq[Bool])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Seq[Bool] = {
     val enc = encode(in)
     Seq.tabulate(in.size)(enc(_))
   }
-  def apply(in: Bits): UInt = encode((0 until in.getWidth).map(i => in(i)))
+  def apply(in: Bits)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
+    encode((0 until in.getWidth).map(i => in(i)))
 }
