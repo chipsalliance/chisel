@@ -16,6 +16,7 @@ section: "chisel3"
 * [I just want some FIRRTL; what do I do?](#get-me-firrtl)
 * [Why doesn't Chisel tell me which wires aren't connected?](#why-doesnt-chisel-tell-me-which-wires-arent-connected)
 * [What does `Reference ... is not fully initialized.` mean?](#what-does-reference--is-not-fully-initialized-mean)
+* [Can I specify behavior before and after generated initial blocks?](#can-i-specify-behavior-before-and-after-generated-initial-blocks?)
 
 ### Where should I start if I want to learn Chisel?
 
@@ -235,3 +236,11 @@ In Chisel2 compatibility mode (`NotStrict` compile options), chisel generates fi
 In pure chisel3 (`Strict` compile options), the generated firrtl code does not contain these disablers (`is invalid`).
 Output wires that are not driven (not connected) are reported by firrtl as `not fully initialized`.
 Please visit the wiki page [Unconnected Wires](unconnected-wires) for details on solving the problem.
+
+### Can I specify behavior before and after generated initial blocks?
+Users may define the following macros if they wish to specify behavior before or after emitted initial blocks.
+
+* `BEFORE_INITIAL`, which is called before the emitted (non-empty) initial block if it is defined
+* `AFTER_INITIAL`, which is called after the emitted (non-empty) initial block if it is defined
+
+These macros may be useful for turning coverage on and off.
