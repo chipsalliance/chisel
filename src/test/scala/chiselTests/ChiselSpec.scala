@@ -4,6 +4,7 @@ package chiselTests
 
 import org.scalatest._
 import org.scalatest.prop._
+import org.scalatest.flatspec.AnyFlatSpec
 import org.scalacheck._
 import chisel3._
 import chisel3.testers._
