@@ -26,15 +26,15 @@ pull_request_rules:
         strict: smart
         strict_method: merge
 
-  - name: backport to 3.2.x
+  - name: backport to 3.3.x
     conditions:
       - merged
       - base=master
-      - milestone=3.2.X
+      - milestone=3.3.x
     actions:
       backport:
         branches:
-          - 3.2.x
+          - 3.3.x
         ignore_conflicts: True
         label_conflicts: "bp-conflict"
       label:
@@ -42,7 +42,7 @@ pull_request_rules:
 
   - name: label Mergify backport PR
     conditions:
-      - base=3.2.x
+      - base=3.3.x
       - body~=This is an automated backport of pull request \#\d+ done by Mergify
     actions:
       label:
@@ -58,7 +58,7 @@ pull_request_rules:
       - "status-success=ci/circleci: check-binary-compatibility"
       - status-success=license/cla
       - "#changes-requested-reviews-by=0"
-      - base=3.2.x
+      - base=3.3.x
       - label="Backport"
       - label!="DO NOT MERGE"
       - label!="bp-conflict"
