@@ -41,6 +41,7 @@ sbt assembly
 * Firrtl syntax highlighting for Vim users: https://github.com/azidar/firrtl-syntax
 * Firrtl syntax highlighting for Sublime Text 3 users: https://github.com/codelec/highlight-firrtl
 * Firrtl syntax highlighting for Atom users: https://atom.io/packages/language-firrtl
+* Firrtl syntax highlighting, structure view, navigate to corresponding Chisel code for IntelliJ platform: [install](https://plugins.jetbrains.com/plugin/14183-easysoc-firrtl), [source](https://github.com/easysoc/easysoc-firrtl)
 * Firrtl mode for Emacs users: https://github.com/ibm/firrtl-mode
 * Chisel3, an embedded hardware DSL that generates Firrtl: https://github.com/freechipsproject/chisel3
 * Treadle, a Firrtl Interpreter: https://github.com/freechipsproject/treadle
