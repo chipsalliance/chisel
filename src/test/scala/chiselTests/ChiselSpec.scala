@@ -94,7 +94,7 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
 }
 
 /** Spec base class for BDD-style testers. */
-abstract class ChiselFlatSpec extends FlatSpec with ChiselRunners with Matchers
+abstract class ChiselFlatSpec extends AnyFlatSpec with ChiselRunners with Matchers
 
 class ChiselTestUtilitiesSpec extends ChiselFlatSpec {
   import org.scalatest.exceptions.TestFailedException
