@@ -1029,6 +1029,10 @@ class VerilogEmitter extends SeqTransform with Emitter {
         }
         emit(Seq("`endif"))
         emit(Seq("`ifndef SYNTHESIS"))
+        // User-defined macro of code to run before an initial block
+        emit(Seq("`ifdef FIRRTL_BEFORE_INITIAL"))
+        emit(Seq("`FIRRTL_BEFORE_INITIAL"))
+        emit(Seq("`endif"))
         emit(Seq("initial begin"))
         emit(Seq("  `ifdef RANDOMIZE"))
         emit(Seq("    `ifdef INIT_RANDOM"))
@@ -1054,6 +1058,10 @@ class VerilogEmitter extends SeqTransform with Emitter {
         for (x <- asyncInitials) emit(Seq(tab, x))
         emit(Seq("  `endif // RANDOMIZE"))
         emit(Seq("end // initial"))
+        // User-defined macro of code to run after an initial block
+        emit(Seq("`ifdef FIRRTL_AFTER_INITIAL"))
+        emit(Seq("`FIRRTL_AFTER_INITIAL"))
+        emit(Seq("`endif"))
         emit(Seq("`endif // SYNTHESIS"))
       }
 

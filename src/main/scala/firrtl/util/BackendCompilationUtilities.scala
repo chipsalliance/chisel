@@ -100,14 +100,16 @@ trait BackendCompilationUtilities extends LazyLogging {
     * @param cppHarness C++ testharness to compile/link against
     * @param suppressVcd specifies if VCD tracing should be suppressed
     * @param resourceFileName specifies what filename to look for to find a .f file
+    * @param extraCmdLineArgs list of additional command line arguments
     */
-  def verilogToCpp(
+  def verilogToCppWithExtraCmdLineArgs(
     dutFile: String,
     dir: File,
     vSources: Seq[File],
     cppHarness: File,
     suppressVcd: Boolean = false,
-    resourceFileName: String = firrtl.transforms.BlackBoxSourceHelper.defaultFileListName
+    resourceFileName: String = firrtl.transforms.BlackBoxSourceHelper.defaultFileListName,
+    extraCmdLineArgs: Seq[String] = Seq.empty
   ): ProcessBuilder = {
 
     val topModule = dutFile
@@ -138,6 +140,7 @@ trait BackendCompilationUtilities extends LazyLogging {
       "verilator",
       "--cc", s"${dir.getAbsolutePath}/$dutFile.v"
     ) ++
+      extraCmdLineArgs ++
       blackBoxVerilogList ++
       vSourcesFiltered.flatMap(file => Seq("-v", file.getCanonicalPath)) ++
       Seq("--assert",
@@ -158,6 +161,18 @@ trait BackendCompilationUtilities extends LazyLogging {
         "--exe", cppHarness.getAbsolutePath)
     logger.info(s"${command.mkString(" ")}") // scalastyle:ignore regex
     command
+  }
+
+  @deprecated("use verilogtoCppWithExtraCmdLineArgs","1.3")
+  def verilogToCpp(
+    dutFile: String,
+    dir: File,
+    vSources: Seq[File],
+    cppHarness: File,
+    suppressVcd: Boolean = false,
+    resourceFileName: String = firrtl.transforms.BlackBoxSourceHelper.defaultFileListName
+  ): ProcessBuilder = {
+    verilogToCppWithExtraCmdLineArgs(dutFile, dir, vSources, cppHarness, suppressVcd, resourceFileName)
   }
 
   def cppToExe(prefix: String, dir: File): ProcessBuilder =

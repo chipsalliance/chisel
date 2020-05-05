@@ -254,7 +254,9 @@ object FirrtlCheckers extends FirrtlMatchers {
   /** Checks that the emitted circuit has the expected line, both will be normalized */
   def containLine(expectedLine: String) = containLines(expectedLine)
 
-  /** Checks that the emitted circuit has the expected lines in order, all lines will be normalized */
+  /** Checks that the emitted circuit contains the expected lines contiguously and in order;
+    * all lines will be normalized
+    */
   def containLines(expectedLines: String*) = new CircuitStateStringsMatcher(expectedLines)
 
   class CircuitStateStringsMatcher(expectedLines: Seq[String]) extends Matcher[CircuitState] {

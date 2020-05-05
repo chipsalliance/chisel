@@ -2,6 +2,8 @@
 
 package firrtlTests
 
+import java.io.File
+
 import firrtl._
 import firrtl.annotations._
 import firrtl.passes._
@@ -9,6 +11,8 @@ import firrtl.transforms.VerilogRename
 import firrtl.transforms.CombineCats
 import firrtl.testutils._
 import firrtl.testutils.FirrtlCheckers._
+
+import scala.sys.process.{Process, ProcessLogger}
 
 class DoPrimVerilog extends FirrtlFlatSpec {
   "Xorr" should "emit correctly" in {
@@ -384,7 +388,7 @@ class VerilogEmitterSpec extends FirrtlFlatSpec {
     }
   }
 
-  "Initial Blocks" should "be guarded by ifndef SYNTHESIS" in {
+  "Initial Blocks" should "be guarded by ifndef SYNTHESIS and user-defined optional macros" in {
     val input =
       """circuit Test :
         |  module Test :
@@ -398,8 +402,16 @@ class VerilogEmitterSpec extends FirrtlFlatSpec {
         """.stripMargin
     val state = CircuitState(parse(input), ChirrtlForm)
     val result = (new VerilogCompiler).compileAndEmit(state, List())
-    result should containLines ("`ifndef SYNTHESIS", "initial begin")
-    result should containLines ("end // initial", "`endif // SYNTHESIS")
+    result should containLines ("`ifndef SYNTHESIS",
+                                "`ifdef FIRRTL_BEFORE_INITIAL",
+                                "`FIRRTL_BEFORE_INITIAL",
+                                "`endif",
+                                "initial begin")
+    result should containLines ("end // initial",
+                                "`ifdef FIRRTL_AFTER_INITIAL",
+                                "`FIRRTL_AFTER_INITIAL",
+                                "`endif",
+                                "`endif // SYNTHESIS")
   }
 
   "Verilog name conflicts" should "be resolved" in {
@@ -863,5 +875,38 @@ class VerilogDescriptionEmitterSpec extends FirrtlFlatSpec {
     for (c <- check) {
       assert(output.contains(c))
     }
+  }
+}
+
+class EmittedMacroSpec extends FirrtlPropSpec {
+  property("User-defined macros for before/after initial should be supported") {
+    val prefix = "Printf"
+    val testDir = compileFirrtlTest(prefix, "/features")
+    val harness = new File(testDir, s"top.cpp")
+    copyResourceToFile(cppHarnessResourceName, harness)
+
+    // define macros to print
+    val cmdLineArgs = Seq(
+      "+define+FIRRTL_BEFORE_INITIAL=initial begin $fwrite(32'h80000002, \"printing from FIRRTL_BEFORE_INITIAL macro\\n\"); end",
+      "+define+FIRRTL_AFTER_INITIAL=initial begin $fwrite(32'h80000002, \"printing from FIRRTL_AFTER_INITIAL macro\\n\"); end"
+    )
+
+    verilogToCppWithExtraCmdLineArgs(prefix, testDir, List.empty, harness, extraCmdLineArgs = cmdLineArgs) #&&
+      cppToExe(prefix, testDir) !
+      loggingProcessLogger
+
+    // check for expected print statements
+    var saw_before = false
+    var saw_after = false
+    Process(s"./V${prefix}", testDir) !
+      ProcessLogger(line => {
+        line match {
+          case "printing from FIRRTL_BEFORE_INITIAL macro" => saw_before = true
+          case "printing from FIRRTL_AFTER_INITIAL macro" => saw_after = true
+          case _ => // Do Nothing
+        }
+      })
+
+    assert(saw_before & saw_after)
   }
 }
