@@ -45,7 +45,7 @@ class firrtlCrossModule(crossVersion: String) extends ScalaModule with SbtModule
   override def ivyDeps = super.ivyDeps() ++ Agg(
     ivy"${scalaOrganization()}:scala-reflect:${scalaVersion()}",
     ivy"com.github.scopt::scopt:3.7.1",
-    ivy"net.jcazevedo::moultingyaml:0.4.1",
+    ivy"net.jcazevedo::moultingyaml:0.4.2",
     ivy"org.json4s::json4s-native:3.6.7",
     ivy"org.apache.commons:commons-text:1.7",
     ivy"org.antlr:antlr4-runtime:4.7.1",
