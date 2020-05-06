@@ -5,7 +5,8 @@ package chiselTests.stage
 import chisel3._
 import chisel3.stage.ChiselStage
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 object ChiselStageSpec {
 
@@ -18,7 +19,7 @@ object ChiselStageSpec {
 
 }
 
-class ChiselStageSpec extends FlatSpec with Matchers {
+class ChiselStageSpec extends AnyFlatSpec with Matchers {
 
   import ChiselStageSpec._
 

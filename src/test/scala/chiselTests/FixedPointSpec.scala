@@ -7,9 +7,11 @@ import chisel3.experimental.FixedPoint
 import chisel3.internal.firrtl.{BinaryPoint, Width}
 import chisel3.testers.BasicTester
 import org.scalatest._
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 //scalastyle:off magic.number
-class FixedPointLiteralSpec extends FlatSpec with Matchers {
+class FixedPointLiteralSpec extends AnyFlatSpec with Matchers {
   behavior of "fixed point utilities"
 
   they should "allow conversion between doubles and the bigints needed to represent them" in {

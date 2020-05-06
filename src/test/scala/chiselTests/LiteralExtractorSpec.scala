@@ -6,6 +6,7 @@ import chisel3._
 import chisel3.experimental._
 import chisel3.experimental.BundleLiterals._
 import chisel3.testers.BasicTester
+import scala.collection.immutable.ListMap
 
 class LiteralExtractorSpec extends ChiselFlatSpec {
   "litValue" should "return the literal value" in {
@@ -137,5 +138,19 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
     assert(myBundleLiteral.a.litValue == 42)
     assert(myBundleLiteral.b.litValue == 1)
     assert(myBundleLiteral.b.litToBoolean == true)
+  }
+
+  "record literals" should "do the right thing" in {
+    class MyRecord extends Record{
+      override val elements = ListMap(
+        "a" -> UInt(8.W),
+        "b" -> Bool()
+      )
+      override def cloneType = (new MyRecord).asInstanceOf[this.type]
+    }
+
+    val myRecordLiteral = new (MyRecord).Lit(_.elements("a") -> 42.U, _.elements("b") -> true.B)
+    assert(myRecordLiteral.elements("a").litValue == 42)
+    assert(myRecordLiteral.elements("b").litValue == 1)
   }
 }

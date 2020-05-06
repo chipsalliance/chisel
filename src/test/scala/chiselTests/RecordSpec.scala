@@ -99,6 +99,14 @@ trait RecordSpecUtils {
     assert(wire("0").asUInt === 123.U)
     stop()
   }
+
+  class RecordTypeTester extends BasicTester {
+    val wire0 = Wire(new CustomBundle("0"-> UInt(32.W)))
+    val wire1 = Reg(new CustomBundle("0"-> UInt(32.W)))
+    val wire2 = Wire(new CustomBundle("1"-> UInt(32.W)))
+    require(DataMirror.checkTypeEquivalence(wire0, wire1))
+    require(!DataMirror.checkTypeEquivalence(wire1, wire2))
+  }
 }
 
 class RecordSpec extends ChiselFlatSpec with RecordSpecUtils {
@@ -145,5 +153,9 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils {
       val wire = Wire(gen)
       io := wire
     })
+  }
+
+  "CustomBundle" should "check the types" in {
+    elaborate { new RecordTypeTester }
   }
 }
