@@ -59,7 +59,7 @@ class firrtlCrossModule(crossVersion: String) extends ScalaModule with SbtModule
     }
 
     def ivyDeps = Agg(
-      ivy"org.scalatest::scalatest:3.1.0",
+      ivy"org.scalatest::scalatest:3.1.1",
       ivy"org.scalatestplus::scalacheck-1-14:3.1.0.1"
     ) ++ ivyCrossDeps
 

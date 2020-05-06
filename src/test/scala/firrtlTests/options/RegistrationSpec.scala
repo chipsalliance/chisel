@@ -10,6 +10,8 @@ import firrtl.options.{RegisteredTransform, RegisteredLibrary, ShellOption}
 import firrtl.passes.Pass
 import firrtl.ir.Circuit
 import firrtl.annotations.NoTargetAnnotation
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 case object HelloAnnotation extends NoTargetAnnotation
 

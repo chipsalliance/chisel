@@ -16,6 +16,8 @@ import firrtl.util.BackendCompilationUtilities
 import firrtl.testutils.FirrtlFlatSpec
 
 import scala.util.Success
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 class ExceptingTransform extends Transform {
   def inputForm = HighForm

@@ -10,6 +10,7 @@ import firrtl.stage.Forms
 import firrtl._
 import firrtl.annotations._
 import logger._
+import org.scalatest.flatspec.AnyFlatSpec
 
 // An example methodology for testing Firrtl Passes
 // Spec class should extend this class

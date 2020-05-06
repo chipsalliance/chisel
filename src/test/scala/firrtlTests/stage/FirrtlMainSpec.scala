@@ -12,6 +12,8 @@ import firrtl.FileUtils
 
 import firrtl.stage.FirrtlMain
 import firrtl.util.BackendCompilationUtilities
+import org.scalatest.featurespec.AnyFeatureSpec
+import org.scalatest.matchers.should.Matchers
 
 /** Testing for the top-level [[FirrtlStage]] via [[FirrtlMain]].
   *

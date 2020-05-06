@@ -17,6 +17,8 @@ import firrtl.{
   Parser,
   VerilogCompiler
 }
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 /**
  * An example methodology for testing Firrtl compilers.

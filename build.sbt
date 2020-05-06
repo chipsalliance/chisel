@@ -48,7 +48,7 @@ lazy val commonSettings = Seq(
   javacOptions ++= javacOptionsVersion(scalaVersion.value),
   libraryDependencies ++= Seq(
     "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-    "org.scalatest" %% "scalatest" % "3.1.0" % "test",
+    "org.scalatest" %% "scalatest" % "3.1.1" % "test",
     "org.scalatestplus" %% "scalacheck-1-14" % "3.1.0.1" % "test",
     "com.github.scopt" %% "scopt" % "3.7.1",
     "net.jcazevedo" %% "moultingyaml" % "0.4.1",
