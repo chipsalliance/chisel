@@ -1922,18 +1922,45 @@ An integer literal in FIRRTL begins with one of the following, where `\#' repres
 
 Comments begin with a semicolon and extend until the end of the line. Commas are treated as whitespace, and may be used by the user for clarity if desired.
 
-Block structuring is indicated using indentation. Statements are combined into statement groups by surrounding them with parenthesis. A colon at the {\em end of a line} will automatically surround the next indented region with parenthesis and thus create a statement group.
+In FIRRTL, indentation is significant.
+Indentation must consist of spaces only---tabs are illegal characters.
+The number of spaces appearing before a FIRRTL IR statement is used to establish its \emph{indent level}.
+Statements with the same indent level have the same context.
+The indent level of the \verb|circuit| declaration must be zero.
 
-The following statement:
+Certain constructs (\verb|circuit|, \verb|module|, \verb|when|, and \verb|else|) create a new sub-context.
+The indent used on the first line of the sub-context establishes the indent level.
+The indent level of a sub-context is one higher than the parent.
+All statements in the sub-context must be indented by the same number of spaces.
+To end the sub-context, a line must return to the indent level of the parent.
+
+Since conditional statements (\verb|when| and \verb|else|) may be nested, it is possible to create a hierarchy of indent levels, each with its own number of preceding spaces that must be larger than its parent’s and consistent among all direct child statements (those that are not children of an even deeper conditional statement).
+
+As a concrete guide, a few consequences of these rules are summarized below:
+
+\begin{itemize}
+\item The \verb|circuit| keyword must not be indented.
+\item All \verb|module| keywords must be indented by the same number of spaces.
+\item In a module, all port declarations and all statements (that are not children of other statements) must be indented by the same number of spaces.
+\item The number of spaces comprising the indent level of a module is specific to each module.
+\item The statements comprising a conditional statement's branch must be indented by the same number of spaces.
+\item The statements of nested conditional statements establish their own, deeper indent level.
+\item Each \verb|when| and each \verb|else| context may have a different number of non-zero spaces in its indent level.
+\end{itemize}
+
+As an example illustrating some of these points, the following is a legal FIRRTL circuit:
+
 \begin{lstlisting}
-when c :
-   a <= b
-else :
-   e <= f
-\end{lstlisting}
-can be equivalently expressed on a single line as follows.
-\begin{lstlisting}
-when c : a <= b else : e <= f
+circuit Foo :
+    module Foo :
+      skip
+    module Bar :
+     input a: UInt<1>
+     output b: UInt<1>
+     when a:
+         b <= a
+     else:
+       b <= not(a)
 \end{lstlisting}
 
 All circuits, modules, ports and statements can optionally be followed with the info token \verb|@[fileinfo]| where fileinfo is a string containing the source file information from where it was generated.
