@@ -4,6 +4,7 @@ package chiselTests
 
 import org.scalatest._
 import org.scalatest.prop._
+import org.scalatest.flatspec.AnyFlatSpec
 import org.scalacheck._
 import chisel3._
 import chisel3.testers._
@@ -94,7 +95,7 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
 }
 
 /** Spec base class for BDD-style testers. */
-abstract class ChiselFlatSpec extends FlatSpec with ChiselRunners with Matchers
+abstract class ChiselFlatSpec extends AnyFlatSpec with ChiselRunners with Matchers
 
 class ChiselTestUtilitiesSpec extends ChiselFlatSpec {
   import org.scalatest.exceptions.TestFailedException
