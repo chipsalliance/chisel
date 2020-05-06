@@ -20,7 +20,6 @@ class ChiselStage extends Stage with PreservesAll[Phase] {
 
   val targets: Seq[Dependency[Phase]] =
     Seq( Dependency[chisel3.stage.phases.Checks],
-         Dependency[chisel3.stage.phases.Elaborate],
          Dependency[chisel3.stage.phases.AddImplicitOutputFile],
          Dependency[chisel3.stage.phases.AddImplicitOutputAnnotationFile],
          Dependency[chisel3.stage.phases.MaybeAspectPhase],
@@ -28,11 +27,12 @@ class ChiselStage extends Stage with PreservesAll[Phase] {
          Dependency[chisel3.stage.phases.Convert],
          Dependency[chisel3.stage.phases.MaybeFirrtlStage] )
 
+  final lazy val phaseManager = new PhaseManager(targets) {
+    override val wrappers = Seq( (a: Phase) => DeletedWrapper(a) )
+  }
+
   def run(annotations: AnnotationSeq): AnnotationSeq = try {
-    new PhaseManager(targets) { override val wrappers = Seq( (a: Phase) => DeletedWrapper(a) ) }
-      .transformOrder
-      .map(firrtl.options.phases.DeletedWrapper(_))
-      .foldLeft(annotations)( (a, f) => f.transform(a) )
+    phaseManager.transform(annotations)
   } catch {
     case ce: ChiselException =>
       val stackTrace = if (!view[ChiselOptions](annotations).printFullStackTrace) {
