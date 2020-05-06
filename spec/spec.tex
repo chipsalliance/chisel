@@ -712,6 +712,30 @@ module MyModule :
       x <= d
 \end{lstlisting}
 
+To additionally aid readability, a conditional statement where the contents of the \verb|when| branch consist of a single line may be combined into a single line.
+If an \verb|else| branch exists, then the \verb|else| keyword must be included on the same line.
+
+The following statement:
+\begin{lstlisting}
+when c :
+   a <= b
+else :
+   e <= f
+\end{lstlisting}
+
+can have the \verb|when| keyword, the \verb|when| branch, and the \verb|else| keyword expressed as a single line:
+
+\begin{lstlisting}
+when c : a <= b else :
+  e <= f
+\end{lstlisting}
+
+The \verb|else| branch may also be added to the single line:
+
+\begin{lstlisting}
+when c : a <= b else : e <= f
+\end{lstlisting}
+
 \subsubsection{Nested Declarations}
 If a component is declared within a conditional statement, connections to the component are unaffected by the condition. In the following example, register \verb|myreg1| is always connected to \verb|a|, and register \verb|myreg2| is always connected to \verb|b|.
 
