@@ -3,7 +3,7 @@ sudo: false
 
 cache:
   directories:
-    $HOME/.ivy2
+    $HOME/.cache/coursier
     $HOME/.sbt
     $INSTALL_DIR
 
