@@ -151,14 +151,14 @@ trait CheckHighFormLike { this: Pass =>
       case _ => // Do Nothing
     }
 
-    def checkHighFormW(info: Info, mname: String)(w: Width): Unit = {
+    def checkHighFormW(info: Info, mname: => String)(w: Width): Unit = {
       w match {
         case wx: IntWidth if wx.width < 0 => errors.append(new NegWidthException(info, mname))
         case wx => // Do nothing
       }
     }
 
-    def checkHighFormT(info: Info, mname: String)(t: Type): Unit = {
+    def checkHighFormT(info: Info, mname: => String)(t: Type): Unit = {
       t foreach checkHighFormT(info, mname)
       t match {
         case tx: VectorType if tx.size < 0 =>
@@ -191,7 +191,6 @@ trait CheckHighFormLike { this: Pass =>
         case ex => ex foreach validSubexp(info, mname)
       }
       e foreach checkHighFormW(info, mname + "/" + e.serialize)
-      e foreach checkHighFormT(info, mname + "/" + e.serialize)
       e foreach checkHighFormE(info, mname, names)
     }
 
