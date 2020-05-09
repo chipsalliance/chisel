@@ -191,7 +191,6 @@ trait CheckHighFormLike { this: Pass =>
         case ex => ex foreach validSubexp(info, mname)
       }
       e foreach checkHighFormW(info, mname + "/" + e.serialize)
-      e foreach checkHighFormT(info, mname + "/" + e.serialize)
       e foreach checkHighFormE(info, mname, names)
     }
 
