@@ -94,7 +94,8 @@ def parseargs():
 
 def get_version_hashes(versions):
     res = subprocess.run(['git', '-C', firrtl_repo, 'fetch'])
-    assert res.returncode == 0, '"{}" must be an existing repo!'.format(firrtl_repo)
+    if res.returncode != 0:
+        print("Warning, unable to git fetch in {}! May cause errors finding commits.".format(firrtl_repo))
     hashes = OrderedDict()
     for version in versions :
         res = subprocess.run(['git', '-C', firrtl_repo, 'rev-parse', '--short', version], stdout=subprocess.PIPE)
