@@ -6,8 +6,9 @@ import firrtl._
 import firrtl.ir._
 import firrtl.testutils._
 import FirrtlCheckers._
+import firrtl.Parser.AppendInfo
 
-class InfoSpec extends FirrtlFlatSpec {
+class InfoSpec extends FirrtlFlatSpec with FirrtlMatchers {
   def compile(input: String): CircuitState =
     (new VerilogCompiler).compileAndEmit(CircuitState(parse(input), ChirrtlForm), List.empty)
   def compileBody(body: String) = {
@@ -157,5 +158,19 @@ class InfoSpec extends FirrtlFlatSpec {
     val result = (new LowFirrtlCompiler).compileAndEmit(CircuitState(parse(input), ChirrtlForm), List.empty)
     result should containLine ("x <= _GEN_2 @[GCD.scala 17:22 GCD.scala 19:19]")
     result should containLine ("y <= _GEN_3 @[GCD.scala 18:22 GCD.scala 19:30]")
+  }
+
+  "source locators for append option" should "use multiinfo" in {
+    val input = """circuit Top :
+                  |  module Top :
+                  |    input clock : Clock
+                  |    input in: UInt<32>
+                  |    output out: UInt<32>
+                  |    out <= in @[Top.scala 15:14]
+                  |""".stripMargin
+    val circuit = firrtl.Parser.parse(input.split("\n").toIterator, AppendInfo("myfile.fir"))
+    val circuitState = CircuitState(circuit, UnknownForm)
+    val expectedInfos = Seq(FileInfo(StringLit("Top.scala 15:14")), FileInfo(StringLit("myfile.fir 6:4")))
+    circuitState should containTree { case MultiInfo(`expectedInfos`) => true }
   }
 }
