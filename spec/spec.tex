@@ -72,8 +72,8 @@ The computer architecture research group at U.C. Berkeley relies critically on C
 Internally, the investment in developing and learning Chisel was rewarded with huge gains in productivity. However, Chisel's external rate of adoption was slow for the following reasons.
 \begin{enumerate}[topsep=3pt,itemsep=-0.5ex,partopsep=1ex,parsep=1ex]
 \item Writing custom circuit transformers requires intimate knowledge about the internals of the Chisel compiler.
-\item Chisel semantics are underspecified and thus impossible to target from other languages.
-\item Error checking is unprincipled due to underspecified semantics resulting in incomprehensible error messages.
+\item Chisel semantics are under-specified and thus impossible to target from other languages.
+\item Error checking is unprincipled due to under-specified semantics resulting in incomprehensible error messages.
 \item Learning a functional programming language (Scala) is difficult for RTL designers with limited programming language experience.
 \item Confounding the previous point, conceptually separating the embedded Chisel HDL from the host language is difficult for new users.
 \item The output of Chisel (Verilog) is unreadable and slow to simulate.
@@ -88,12 +88,12 @@ For this reason, FIRRTL has first-class support for high-level constructs such a
 
 Because the host language is now used solely for its meta-programming facilities, the frontend can be very light-weight, and additional HDLs written in other languages can target FIRRTL and reuse the majority of the compiler toolchain.
 
-\section{Acknowledgements}
+\section{Acknowledgments}
 The FIRRTL language could not have been developed without the help of many of the faculty and students in the ASPIRE lab, and the University of California, Berkeley.
 
 This project originated from discussions with the authors' advisor, Jonathan Bachrach, who indicated the need for a structural redesign of the Chisel system around a well-defined intermediate representation. Patrick Li designed and implemented the first prototype of the FIRRTL language, wrote the initial specification for the language, and presented it to the Chisel group consisting of Adam Izraelevitz, Scott Beamer, David Biancolin, Christopher Celio, Henry Cook, Palmer Dabbelt, Donggyu Kim, Jack Koenig, Martin Maas, Albert Magyar, Colin Schmidt, Andrew Waterman, Yunsup Lee, Richard Lin, Eric Love, Albert Ou, Stephen Twigg, John Bachan, David Donofrio, Farzad Fatollahi-Fard, Jim Lawson, Brian Richards, Krste Asanovi\'c, and John Wawrzynek.
 
-Adam Izraelevitz then reworked the design and reimplemented FIRRTL, and after many discussions with Patrick Li and the Chisel group, refined the design to its present version.
+Adam Izraelevitz then reworked the design and re-implemented FIRRTL, and after many discussions with Patrick Li and the Chisel group, refined the design to its present version.
 
 The authors would like to thank the following individuals in particular for their contributions to the FIRRTL project:
 \begin{itemize}
@@ -215,7 +215,7 @@ integer types depends on width-propagation rules for each FIRRTL expression and 
 primitive operator, fixed-point parameter inference depends on a set of rules outlined throughout
 this spec.
 
-Included below are examples of the syntaxes for all possible combinations of specified and inferred
+Included below are examples of the syntax for all possible combinations of specified and inferred
 fixed-point type parameters.
 \begin{lstlisting}
 Fixed<3><<2>>    ; 3-bit width, 2 bits after binary point
@@ -299,7 +299,7 @@ As an example, consider a module output port declared with the following type:
 \begin{lstlisting}
 output a: {word:UInt<32>, valid:UInt<1>, flip ready:UInt<1>}
 \end{lstlisting}
-In a connection to the \verb|a| port, the data carried by the \verb|word| and \verb|valid| subfields will flow out of the module, while data carried by the \verb|ready| subfield will flow into the module. More details about how the bundle field orientation affects connections are explained in section \ref{connects}.
+In a connection to the \verb|a| port, the data carried by the \verb|word| and \verb|valid| sub-fields will flow out of the module, while data carried by the \verb|ready| sub-field will flow into the module. More details about how the bundle field orientation affects connections are explained in section \ref{connects}.
 
 As in the case of vector types, a bundle field may be declared with any type, including other aggregate types.
 \begin{lstlisting}
@@ -311,11 +311,11 @@ When calculating the final direction of data flow, the orientation of a field is
 \begin{lstlisting}
 output myport: {a: UInt, flip b: {c: UInt, flip d:UInt}}
 \end{lstlisting}
-In a connection to \verb|myport|, the \verb|a| subfield flows out of the module. The \verb|c| subfield contained in the \verb|b| subfield flows into the module, and the \verb|d| subfield contained in the \verb|b| subfield flows out of the module.
+In a connection to \verb|myport|, the \verb|a| sub-field flows out of the module. The \verb|c| sub-field contained in the \verb|b| sub-field flows into the module, and the \verb|d| sub-field contained in the \verb|b| sub-field flows out of the module.
 
 \subsection{Passive Types} \label{passive_types}
 
-It is inappropriate for some circuit components to be declared with a type that allows for data to flow in both directions. For example, all subelements in a memory should flow in the same direction. These components are restricted to only have a passive type.
+It is inappropriate for some circuit components to be declared with a type that allows for data to flow in both directions. For example, all sub-elements in a memory should flow in the same direction. These components are restricted to only have a passive type.
 
 Intuitively, a passive type is a type where all data flows in the same direction, and is defined to be a type that recursively contains no fields with flipped orientations. Thus all ground types are passive types. Vector types are passive if their element type is passive. And bundle types are passive if no fields are flipped and if all field types are passive.
 
@@ -391,7 +391,7 @@ Connect statements from a narrower ground type component to a wider ground type 
 \subsubsection{The Connection Algorithm} \label{connection_algorithm}
 Connect statements between ground types cannot be expanded further.
 
-Connect statements between two vector typed components recursively connects each subelement in the right-hand side expression to the corresponding subelement in the left-hand side expression.
+Connect statements between two vector typed components recursively connects each sub-element in the right-hand side expression to the corresponding sub-element in the left-hand side expression.
 
 Connect statements between two bundle typed components connects the i'th field of the right-hand side expression and the i'th field of the left-hand side expression. If the i'th field is not flipped, then the right-hand side field is connected to the left-hand side field. Conversely, if the i'th field is flipped, then the left-hand side field is connected to the right-hand side field.
 
@@ -407,7 +407,7 @@ In order for a partial connect to be legal the following conditions must hold:
 
 Partial connect statements from a narrower ground type component to a wider ground type component will have its value automatically sign-extended to the larger bit width. Partial connect statements from a wider ground type component to a narrower ground type component will have its value automatically truncated to fit the smaller bit width.
 
-Intuitively, bundle fields with matching names will be connected appropriately, while bundle fields not present in both types will be ignored. Similarly, vectors with mismatched lengths will be connected up to the shorter length, and the remaining subelements are ignored. The full algorithm is detailed in section \ref{partial_connection_algorithm}.
+Intuitively, bundle fields with matching names will be connected appropriately, while bundle fields not present in both types will be ignored. Similarly, vectors with mismatched lengths will be connected up to the shorter length, and the remaining sub-elements are ignored. The full algorithm is detailed in section \ref{partial_connection_algorithm}.
 
 The following example demonstrates partially connecting a module's input port to its output port, where port \verb|myinput| is connected to port \verb|myoutput|.
 \begin{lstlisting}
@@ -426,13 +426,13 @@ module MyModule :
    myoutput.b[0] <- myinput.b[0]
    myoutput.b[1] <- myinput.b[1]
 \end{lstlisting}
-For details on the syntax and semantics of the subfield expression, subindex expression, and statement groups, see sections \ref{subfields}, \ref{subindices}, and \ref{statement_groups}.
+For details on the syntax and semantics of the sub-field expression, sub-index expression, and statement groups, see sections \ref{subfields}, \ref{subindices}, and \ref{statement_groups}.
 
 \subsubsection{The Partial Connection Algorithm} \label{partial_connection_algorithm}
 
 A partial connect statement between two non-analog ground type components connects the right-hand side expression to the left-hand side expression. Conversely, a {\em reverse} partial connect statement between two non-analog ground type components connects the left-hand side expression to the right-hand side expression. A partial connect statement between two analog-typed components performs an attach between the two signals.
 
-A partial (or reverse partial) connect statement between two vector typed components applies a partial (or reverse partial) connect from the first n subelements in the right-hand side expression to the first n corresponding subelements in the left-hand side expression, where n is the length of the shorter vector.
+A partial (or reverse partial) connect statement between two vector typed components applies a partial (or reverse partial) connect from the first n sub-elements in the right-hand side expression to the first n corresponding sub-elements in the left-hand side expression, where n is the length of the shorter vector.
 
 A partial (or reverse partial) connect statement between two bundle typed components considers any pair of fields, one from the first bundle type and one from the second, with matching names. If the first field in the pair is not flipped, then we apply a partial (or reverse partial) connect from the right-hand side field to the left-hand side field. However, if the first field is flipped, then we apply a reverse partial (or partial) connect from the right-hand side field to the left-hand side field.
 
@@ -456,7 +456,7 @@ Ordering of statements is significant in a statement group. Intuitively, during 
 
 Note that connect and partial connect statements have equal priority, and later connect or partial connect statements always take priority over earlier connect or partial connect statements. Conditional statements are also affected by last connect semantics, and for details see section \ref{conditional_last_connect}.
 
-In the case where a connection to a circuit component with an aggregate type is followed by a connection to a subelement of that component, only the connection to the subelement is overwritten. Connections to the other subelements remain unaffected. In the following example, in the resultant circuit, the \verb|c| subelement of port \verb|portx| will be connected to the \verb|c| subelement of \verb|myport|, and port \verb|porty| will be connected to the \verb|b| subelement of \verb|myport|.
+In the case where a connection to a circuit component with an aggregate type is followed by a connection to a sub-element of that component, only the connection to the sub-element is overwritten. Connections to the other sub-elements remain unaffected. In the following example, in the resultant circuit, the \verb|c| sub-element of port \verb|portx| will be connected to the \verb|c| sub-element of \verb|myport|, and port \verb|porty| will be connected to the \verb|b| sub-element of \verb|myport|.
 \begin{lstlisting}
 module MyModule :
    input portx: {b:UInt, c:UInt}
@@ -475,7 +475,7 @@ module MyModule :
    myport.c <= portx.c
 \end{lstlisting}
 
-In the case where a connection to a subelement of an aggregate circuit component is followed by a connection to the entire circuit component, the later connection overwrites the earlier connections completely.
+In the case where a connection to a sub-element of an aggregate circuit component is followed by a connection to the entire circuit component, the later connection overwrites the earlier connections completely.
 
 \begin{lstlisting}
 module MyModule :
@@ -494,7 +494,7 @@ module MyModule :
    myport <= portx
 \end{lstlisting}
 
-See section \ref{subfields} for more details about subfield expressions.
+See section \ref{subfields} for more details about sub-field expressions.
 
 \subsection{Empty}
 The empty statement does nothing and is used simply as a placeholder where a statement is expected. It is specified using the \verb|skip| keyword.
@@ -581,11 +581,11 @@ module MyModule :
 For the purposes of simulation, invalidated components are initialized to random values, and operations involving indeterminate values produce undefined behaviour. This is useful for early detection of errors in simulation.
 
 \subsubsection{The Invalidate Algorithm}\label{invalidate_algorithm}
-Invalidating a component with a ground type indicates that the component's value is indetermined if the component has sink or duplex flow (see section \ref{flows}). Otherwise, the component is unaffected.
+Invalidating a component with a ground type indicates that the component's value is undetermined if the component has sink or duplex flow (see section \ref{flows}). Otherwise, the component is unaffected.
 
-Invalidating a component with a vector type recursively invalidates each subelement in the vector.
+Invalidating a component with a vector type recursively invalidates each sub-element in the vector.
 
-Invalidating a component with a bundle type recursively invalidates each subelement in the bundle.
+Invalidating a component with a bundle type recursively invalidates each sub-element in the bundle.
 
 \subsection{Attaches}
 
@@ -606,9 +606,9 @@ When signals of aggregate types that contain analog-typed fields are used as ope
 connection, corresponding fields of analog type are attached, rather than connected.
 
 \subsection{Nodes}
-A node is simply a named intermediate value in a circuit. The node must be initialized to a value with a passive type and cannot be connected to. Nodes are often used to split a complicated compound expression into named subexpressions.
+A node is simply a named intermediate value in a circuit. The node must be initialized to a value with a passive type and cannot be connected to. Nodes are often used to split a complicated compound expression into named sub-expressions.
 
-The following example demonstrates instantiating a node with the given name \verb|mynode| initialized with the output of a multiplexor (see section \ref{multiplexors}).
+The following example demonstrates instantiating a node with the given name \verb|mynode| initialized with the output of a multiplexer (see section \ref{multiplexers}).
 
 \begin{lstlisting}
 wire pred: UInt<1>
@@ -775,7 +775,7 @@ This is an illegal FIRRTL circuit and an error will be thrown during compilation
 The conditional statement creates a new {\em scope} within each of its \verb|when| and \verb|else| branches. It is an error to refer to any component declared within a branch after the branch has ended.
 
 \subsubsection{Conditional Last Connect Semantics}\label{conditional_last_connect}
-In the case where a connection to a circuit component is followed by a conditional statement containing a connection to the same component, the connection is overwritten only when the condition holds. Intuitively, a multiplexor is generated such that when the condition is low, the multiplexor returns the old value, and otherwise returns the new value. For details about the multiplexor, see section \ref{multiplexors}.
+In the case where a connection to a circuit component is followed by a conditional statement containing a connection to the same component, the connection is overwritten only when the condition holds. Intuitively, a multiplexer is generated such that when the condition is low, the multiplexer returns the old value, and otherwise returns the new value. For details about the multiplexer, see section \ref{multiplexers}.
 
 The following example:
 \begin{lstlisting}
@@ -788,7 +788,7 @@ when c :
    w <= b
 ...
 \end{lstlisting}
-can be rewritten equivalently using a multiplexor as follows:
+can be rewritten equivalently using a multiplexer as follows:
 \begin{lstlisting}
 wire a: UInt
 wire b: UInt
@@ -841,7 +841,7 @@ w.b <= mux(c, y.b, x.b)
 ...
 \end{lstlisting}
 
-Similar to the behavior of aggregate types under last connect semantics (see section \ref{last_connect}), the conditional connects to a subelement of an aggregate component only generates a multiplexor for the subelement that is overwritten.
+Similar to the behavior of aggregate types under last connect semantics (see section \ref{last_connect}), the conditional connects to a sub-element of an aggregate component only generates a multiplexer for the sub-element that is overwritten.
 
 For example, the following snippet:
 \begin{lstlisting}
@@ -921,7 +921,7 @@ If a memory is declared with element type \verb|T|, has a size less than or equa
 \begin{lstlisting}
 {data:T, mask:M, addr:UInt<N>, en:UInt<1>, clk:Clock}
 \end{lstlisting}
-where \verb|M| is the mask type calculated from the element type \verb|T|. Intuitively, the mask type mirrors the aggregate structure of the element type except with all ground types replaced with a single bit unsigned integer type. The {\em non-masked portion} of the data value is defined as the set of data value leaf subelements where the corresponding mask leaf subelement is high.
+where \verb|M| is the mask type calculated from the element type \verb|T|. Intuitively, the mask type mirrors the aggregate structure of the element type except with all ground types replaced with a single bit unsigned integer type. The {\em non-masked portion} of the data value is defined as the set of data value leaf sub-elements where the corresponding mask leaf sub-element is high.
 
 If the \verb|en| field is high, then the non-masked portion of the \verb|data| field value is written, after the appropriate write latency, to the location indicated by the \verb|addr| field. If the \verb|en| field is low, then no value is written after the appropriate write latency. The port is driven by the clock signal in the \verb|clk| field.
 
@@ -1026,7 +1026,7 @@ Format strings support the following escape characters:
 
 \section{Expressions}
 
-FIRRTL expressions are used for creating literal unsigned and signed integers, for referring to a declared circuit component, for statically and dynamically accessing a nested element within a component, for creating multiplexors and conditionally valid signals, and for performing primitive operations.
+FIRRTL expressions are used for creating literal unsigned and signed integers, for referring to a declared circuit component, for statically and dynamically accessing a nested element within a component, for creating multiplexers and conditionally valid signals, and for performing primitive operations.
 
 \subsection{Unsigned Integers}
 
@@ -1107,10 +1107,10 @@ module MyModule :
 
 In the rest of the document, for brevity, the names of components will be used to refer to a reference expression to that component. Thus, the above example will be rewritten as ``the port \verb|in| is connected to the port \verb|out|''.
 
-\subsection{Subfields}\label{subfields}
-The subfield expression refers to a subelement of an expression with a bundle type.
+\subsection{Sub-fields}\label{subfields}
+The sub-field expression refers to a sub-element of an expression with a bundle type.
 
-The following example connects the \verb|in| port to the \verb|a| subelement of the \verb|out| port.
+The following example connects the \verb|in| port to the \verb|a| sub-element of the \verb|out| port.
 \begin{lstlisting}
 module MyModule :
    input in: UInt
@@ -1118,10 +1118,10 @@ module MyModule :
    out.a <= in
 \end{lstlisting}
 
-\subsection{Subindices}\label{subindices}
-The subindex expression statically refers, by index, to a subelement of an expression with a vector type. The index must be a non-negative integer and cannot be equal to or exceed the length of the vector it indexes.
+\subsection{Sub-indices}\label{subindices}
+The sub-index expression statically refers, by index, to a sub-element of an expression with a vector type. The index must be a non-negative integer and cannot be equal to or exceed the length of the vector it indexes.
 
-The following example connects the \verb|in| port to the fifth subelement of the \verb|out| port.
+The following example connects the \verb|in| port to the fifth sub-element of the \verb|out| port.
 \begin{lstlisting}
 module MyModule :
    input in: UInt
@@ -1129,10 +1129,10 @@ module MyModule :
    out[4] <= in
 \end{lstlisting}
 
-\subsection{Subaccesses}
-The subaccess expression dynamically refers to a subelement of a vector-typed expression using a calculated index. The index must be an expression with an unsigned integer type.
+\subsection{Sub-accesses}
+The sub-access expression dynamically refers to a sub-element of a vector-typed expression using a calculated index. The index must be an expression with an unsigned integer type.
 
-The following example connects the n'th subelement of the \verb|in| port to the \verb|out| port.
+The following example connects the n'th sub-element of the \verb|in| port to the \verb|out| port.
 \begin{lstlisting}
 module MyModule :
    input in: UInt[3]
@@ -1141,7 +1141,7 @@ module MyModule :
    out <= in[n]
 \end{lstlisting}
 
-A connection from a subaccess expression can be modeled by conditionally connecting from every subelement in the vector, where the condition holds when the dynamic index is equal to the subelement's static index.
+A connection from a sub-access expression can be modeled by conditionally connecting from every sub-element in the vector, where the condition holds when the dynamic index is equal to the sub-element's static index.
 \begin{lstlisting}
 module MyModule :
    input in: UInt[3]
@@ -1157,7 +1157,7 @@ module MyModule :
       out is invalid
 \end{lstlisting}
 
-The following example connects the \verb|in| port to the n'th subelement of the \verb|out| port. All other subelements of the \verb|out| port are connected from the corresponding subelements of the \verb|default| port.
+The following example connects the \verb|in| port to the n'th sub-element of the \verb|out| port. All other sub-elements of the \verb|out| port are connected from the corresponding sub-elements of the \verb|default| port.
 \begin{lstlisting}
 module MyModule :
    input in: UInt
@@ -1168,7 +1168,7 @@ module MyModule :
    out[n] <= in
 \end{lstlisting}
 
-A connection to a subaccess expression can be modeled by conditionally connecting to every subelement in the vector, where the condition holds when the dynamic index is equal to the subelement's static index.
+A connection to a sub-access expression can be modeled by conditionally connecting to every sub-element in the vector, where the condition holds when the dynamic index is equal to the sub-element's static index.
 \begin{lstlisting}
 module MyModule :
    input in: UInt
@@ -1184,7 +1184,7 @@ module MyModule :
       out[2] <= in
 \end{lstlisting}
 
-The following example connects the \verb|in| port to the m'th \verb|UInt| subelement of the n'th vector-typed subelement of the \verb|out| port. All other subelements of the \verb|out| port are connected from the corresponding subelements of the \verb|default| port.
+The following example connects the \verb|in| port to the m'th \verb|UInt| sub-element of the n'th vector-typed sub-element of the \verb|out| port. All other sub-elements of the \verb|out| port are connected from the corresponding sub-elements of the \verb|default| port.
 \begin{lstlisting}
 module MyModule :
    input in: UInt
@@ -1196,7 +1196,7 @@ module MyModule :
    out[n][m] <= in
 \end{lstlisting}
 
-A connection to an expression containing multiple nested subaccess expressions can also be modeled by conditionally connecting to every subelement in the expression. However the condition holds only when all dynamic indices are equal to all of the subelement's static indices.
+A connection to an expression containing multiple nested sub-access expressions can also be modeled by conditionally connecting to every sub-element in the expression. However the condition holds only when all dynamic indices are equal to all of the sub-element's static indices.
 \begin{lstlisting}
 module MyModule :
    input in: UInt
@@ -1215,9 +1215,9 @@ module MyModule :
       out[1][1] <= in
 \end{lstlisting}
 
-\subsection{Multiplexors}\label{multiplexors}
+\subsection{Multiplexers}\label{multiplexers}
 
-A multiplexor outputs one of two input expressions depending on the value of an unsigned single bit selection signal.
+A multiplexer outputs one of two input expressions depending on the value of an unsigned single bit selection signal.
 
 The following example connects to the \verb|c| port the result of selecting between the \verb|a| and \verb|b| ports. The \verb|a| port is selected when the \verb|sel| signal is high, otherwise the \verb|b| port is selected.
 \begin{lstlisting}
@@ -1229,7 +1229,7 @@ module MyModule :
    c <= mux(sel, a, b)
 \end{lstlisting}
 
-A multiplexor expression is legal only if the following holds.
+A multiplexer expression is legal only if the following holds.
 \begin{enumerate}
 \item The type of the selection signal is a single bit unsigned integer.
 \item The types of the two input expressions are equivalent.
@@ -1255,7 +1255,7 @@ A conditionally valid expression is legal only if the following holds.
 \item The type of the input expression is passive (see section \ref{passive_types}).
 \end{enumerate}
 
-Conditional statements can be equivalently expressed as multiplexors and conditionally valid expressions. See section \ref{conditionals} for details.
+Conditional statements can be equivalently expressed as multiplexers and conditionally valid expressions. See section \ref{conditionals} for details.
 
 \subsection{Primitive Operations}
 
@@ -1731,9 +1731,9 @@ An expression's flow partially determines the legality of connecting to and from
 
 The flow of a reference to a declared circuit component depends on the kind of circuit component. A reference to an input port, an instance, a memory, and a node, is a source. A reference to an output port is a sink. A reference to a wire or register is duplex.
 
-The flow of a subindex or subaccess expression is the flow of the vector-typed expression it indexes or accesses.
+The flow of a sub-index or sub-access expression is the flow of the vector-typed expression it indexes or accesses.
 
-The flow of a subfield expression depends upon the orientation of the field. If the field is not flipped, its flow is the same flow as the bundle-typed expression it selects its field from. If the field is flipped, then its flow is the reverse of the flow of the bundle-typed expression it selects its field from. The reverse of source is sink, and vice-versa. The reverse of duplex remains duplex.
+The flow of a sub-field expression depends upon the orientation of the field. If the field is not flipped, its flow is the same flow as the bundle-typed expression it selects its field from. If the field is flipped, then its flow is the reverse of the flow of the bundle-typed expression it selects its field from. The reverse of source is sink, and vice-versa. The reverse of duplex remains duplex.
 
 The flow of all other expressions are source.
 
@@ -1743,7 +1743,7 @@ For all circuit components declared with unspecified widths, the FIRRTL compiler
 
 For module input ports with unspecified widths, the inferred width is the minimum possible width that maintains the legality of all incoming connections to all instantiations of the module.
 
-The width of a ground-typed multiplexor expression is the maximum of its two corresponding input widths. For multiplexing aggregate-typed expressions, the resulting widths of each leaf subelement is the maximum of its corresponding two input leaf subelement widths.
+The width of a ground-typed multiplexer expression is the maximum of its two corresponding input widths. For multiplexing aggregate-typed expressions, the resulting widths of each leaf sub-element is the maximum of its corresponding two input leaf sub-element widths.
 
 The width of a conditionally valid expression is the width of its input expression.
 
@@ -1852,9 +1852,9 @@ After the lowering transformation, the names of the lowered circuit components a
 
 Given a component with a ground type, the name of the component is returned.
 
-Given a component with a vector type, the suffix \verb|$|{\em i} is appended to the expanded names of each subelement, where {\em i} is the index of each subelement.
+Given a component with a vector type, the suffix \verb|$|{\em i} is appended to the expanded names of each sub-element, where {\em i} is the index of each sub-element.
 
-Given a component with a bundle type, the suffix \verb|$|{\em f} is appended to the expanded names of each subelement, where {\em f} is the field name of each subelement.
+Given a component with a bundle type, the suffix \verb|$|{\em f} is appended to the expanded names of each sub-element, where {\em f} is the field name of each sub-element.
 
 \subsection{Prefix Uniqueness} \label{prefix_unique}
 
@@ -1868,7 +1868,7 @@ As an example \verb|firetruck$y$z| shares a prefix with \verb|firetruck$y| and \
 
 \section{The Lowered FIRRTL Forms}
 
-The lowered FIRRTL forms, MidFIRRTL and LoFIRRTL, are increasingly restrictive subsets of the FIRRTL language that omit many of the higher level constructs. All conformant FIRRTL compilers must provide a {\em lowering transformation} that transforms arbitrary FIRRTL circuits into equivalent LoFIRRTL circuits. However, there are no additional requirements related to accepting or producing MidFIRRTL, as the LoFIRRTL output of the lowering transformation will already be a legal subset of MidFIRRTL.
+The lowered FIRRTL forms, MidFIRRTL and LoFIRRTL, are increasingly restrictive subsets of the FIRRTL language that omit many of the higher level constructs. All conforming FIRRTL compilers must provide a {\em lowering transformation} that transforms arbitrary FIRRTL circuits into equivalent LoFIRRTL circuits. However, there are no additional requirements related to accepting or producing MidFIRRTL, as the LoFIRRTL output of the lowering transformation will already be a legal subset of MidFIRRTL.
 
 \subsection{MidFIRRTL}
 
@@ -1876,7 +1876,7 @@ A FIRRTL circuit is defined to be a valid MidFIRRTL circuit if it obeys the foll
 \begin{itemize}
 \item All widths must be explicitly defined.
 \item The conditional statement is not used.
-\item The dynamic subaccess expression is not used.
+\item The dynamic sub-access expression is not used.
 \item All components are connected to exactly once.
 \end{itemize}
 
@@ -2061,10 +2061,10 @@ The concrete syntax of FIRRTL is defined in section \ref{syntax_tree}. Productio
                 &\pipe &\vv{SInt}\opt{\vv{<}\pd{int}\vv{>}}\vv{(}\pd{int}\vv{)}                                &\text{Literal Signed Integer}\\
                 &\pipe &\vv{SInt}\opt{\vv{<}\pd{int}\vv{>}}\vv{(}\pd{string}\vv{)}                             &\text{Literal Signed Integer From Bits}\\
                 &\pipe &\pd{id}                                                                                &\text{Reference}\\
-                &\pipe &\pd{exp}\vv{.}\pd{id}                                                                  &\text{Subfield}\\
-                &\pipe &\pd{exp}\vv{[}\pd{int}\vv{]}                                                           &\text{Subindex}\\
-                &\pipe &\pd{exp}\vv{[}\pd{exp}\vv{]}                                                           &\text{Subaccess}\\
-                &\pipe &\vv{mux}\vv{(}\pd{exp}, \pd{exp}, \pd{exp}\vv{)}                                       &\text{Multiplexor}\\
+                &\pipe &\pd{exp}\vv{.}\pd{id}                                                                  &\text{Sub-field}\\
+                &\pipe &\pd{exp}\vv{[}\pd{int}\vv{]}                                                           &\text{Sub-index}\\
+                &\pipe &\pd{exp}\vv{[}\pd{exp}\vv{]}                                                           &\text{Sub-access}\\
+                &\pipe &\vv{mux}\vv{(}\pd{exp}, \pd{exp}, \pd{exp}\vv{)}                                       &\text{Multiplexer}\\
                 &\pipe &\vv{validif}\vv{(}\pd{exp}, \pd{exp}\vv{)}                                             &\text{Conditionally Valid}\\
                 &\pipe &\pd{primop}\vv{(}\rpt{\pd{exp}}, \rpt{\pd{int}}\vv{)}                                  &\text{Primitive Operation}\\
 \end{tabular}
