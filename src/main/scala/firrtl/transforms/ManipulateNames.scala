@@ -6,9 +6,7 @@ import firrtl._
 import firrtl.analyses.InstanceGraph
 import firrtl.annotations.{Named, CircuitName, ModuleName, ComponentName}
 import firrtl.Mappers._
-import firrtl.options.Dependency
 import firrtl.passes.PassException
-import firrtl.stage.Forms
 
 import scala.collection.mutable
 
