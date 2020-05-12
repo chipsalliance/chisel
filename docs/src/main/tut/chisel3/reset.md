@@ -6,16 +6,8 @@ section: "chisel3"
 
 ```scala mdoc:invisible
 import chisel3._
-import chisel3.stage.ChiselGeneratorAnnotation
 
 class Submodule extends MultiIOModule
-
-trait NewIn3p3 {
-  throw new Exception("This is a new feature coming in 3.3!")
-}
-
-trait RequireSyncReset extends NewIn3p3
-trait RequireAsyncReset extends NewIn3p3
 ```
 
 As of Chisel 3.2.0, Chisel 3 supports both synchronous and asynchronous reset,
@@ -50,11 +42,15 @@ rule that abstract `Reset`s with neither `AsyncReset` nor `Bool` in their fan-in
 default to type `Bool`.
 This "default" case is uncommon and implies that reset signal is ultimately driven by a `DontCare`.
 
-### Module Implicit Reset
+### Implicit Reset
 
 A `Module`'s `reset` is of type abstract `Reset`.
-Prior to Chisel 3.2.0, a `Module`'s `reset` was of type `Bool`,
-so for backwards compatability, the top-level reset will default to type `Bool`.
+Prior to Chisel 3.2.0, the type of this field was `Bool`.
+For backwards compatability, if the top-level module has an implicit reset, its type will default to `Bool`.
+
+#### Setting Implicit Reset Type
+
+_New in Chisel 3.3.0_
 
 If you would like to set the reset type from within a Module (including the top-level `Module`),
 rather than relying on _Reset Inference_, you can mixin one of the following traits:
@@ -74,6 +70,10 @@ class MyAlwaysAsyncResetModule extends MultiIOModule with RequireAsyncReset {
   val myAsyncResetReg = RegInit(false.B) // reset is of type AsyncReset
 }
 ```
+
+**Note:** This sets the concrete type, but the Scala type will remain `Reset`, so casting may still be necessary.
+This comes up most often when using a reset of type `Bool` in logic.
+
 
 ### Reset-Agnostic Code
 
@@ -110,35 +110,51 @@ Their reset types will be inferred based on the context within which they are us
 
 ### Forcing Reset Type
 
-You can force the type of the reset at module instantiation by forcing the type
-of the implicit reset.
-The following will make both `resetAgnosticReg`s synchronously reset:
+You can set the type of a Module's implicit reset as described [above](#setting-implicit-reset-type).
+
+You can also cast to force the concrete type of reset.
+* `.asBool` will reinterpret a `Reset` as `Bool`
+* `.asAsyncReset` will reinterpret a `Reset` as `AsyncReset`.
+
+You can then use `withReset` to use a cast reset as the implicit reset.
+See ["Multiple Clock Domains"](multi-clock) for more information about `withReset`.
+
+
+The following will make `myReg` as well as both `resetAgnosticReg`s synchronously reset:
 
 ```scala mdoc:silent
 class ForcedSyncReset extends MultiIOModule {
-  withReset(reset.asBool){
+  // withReset's argument becomes the implicit reset in its scope
+  withReset (reset.asBool) {
+    val myReg = RegInit(0.U)
     val myModule = Module(new ResetAgnosticModule)
+
+    // RawModules do not have implicit resets so withReset has no effect
     val myRawModule = Module(new ResetAgnosticRawModule)
-    myRawModule.rst := reset
-    myRawModule.clk := clock
+    // We must drive the reset port manually
+    myRawModule.rst := Module.reset // Module.reset grabs the current implicit reset
   }
 }
 ```
 
-The following will make both `resetAgnosticReg`s asynchronously reset:
+The following will make `myReg` as well as both `resetAgnosticReg`s asynchronously reset:
 
 ```scala mdoc:silent
 class ForcedAysncReset extends MultiIOModule {
-  withReset(reset.asAsyncReset){
-    val myModule = Module(new ResetAgnosticModule)
+  // withReset's argument becomes the implicit reset in its scope
+  withReset (reset.asAsyncReset){
+    val myReg = RegInit(0.U)
+    val myModule = Module(new ResetAgnosticModule) // myModule.reset is connected implicitly
+
+    // RawModules do not have implicit resets so withReset has no effect
     val myRawModule = Module(new ResetAgnosticRawModule)
-    myRawModule.rst := reset
-    myRawModule.clk := clock
+    // We must drive the reset port manually
+    myRawModule.rst := Module.reset // Module.reset grabs the current implicit reset
   }
 }
 ```
 
-Note that such cases (`asBool` and `asAsyncReset`) are not checked by FIRRTL.
+**Note:** such casts (`asBool` and `asAsyncReset`) are not checked by FIRRTL.
 In doing such a cast, you as the designer are effectively telling the compiler
 that you know what you are doing and to force the type as cast.
 
@@ -156,6 +172,6 @@ class MyModule extends MultiIOModule {
     val mySubmodule = Module(new Submodule())
   }
   resetBool := true.B // this is fine
-  resetBool := false.B.asAsyncReset // this is not fine
+  resetBool := false.B.asAsyncReset // this will error in FIRRTL
 }
 ```

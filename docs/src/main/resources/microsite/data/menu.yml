@@ -98,7 +98,7 @@ options:
     url: chisel3/unconnected-wires.html
     menu_type: chisel3
     menu_section: unconnected-wires
-  - title: Resets
+  - title: Reset
     url: chisel3/reset.html
     menu_type: chisel3
     menu_section: reset
