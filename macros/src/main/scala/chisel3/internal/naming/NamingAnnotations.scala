@@ -171,7 +171,15 @@ class NamingTransforms(val c: Context) {
         q"$mods class $tpname[..$tparams] $ctorMods(...$paramss) extends { ..$earlydefns } with ..$parents { $self => ..$transformedStats }"
       }
       case q"$mods object $tname extends { ..$earlydefns } with ..$parents { $self => ..$body }" => {
-        annottee // Don't fail noisly when a companion object is passed in with the actual class def
+        val transformedBody = body.map {
+          case q"$mods def $tname[..$tparams](...$paramss): $tpt = $expr" => {
+            val transformedExpr = transformHierarchicalMethod(expr)
+            namedElts += 1
+            q"$mods def $tname[..$tparams](...$paramss): $tpt = $transformedExpr"
+          }
+          case other => other
+        }
+        q"$mods object $tname extends { ..$earlydefns } with ..$parents { $self => ..$transformedBody }"
       }
       // Currently disallow on traits, this won't work well with inheritance.
       case q"$mods def $tname[..$tparams](...$paramss): $tpt = $expr" => {
@@ -179,12 +187,14 @@ class NamingTransforms(val c: Context) {
         namedElts += 1
         q"$mods def $tname[..$tparams](...$paramss): $tpt = $transformedExpr"
       }
-      case other => c.abort(c.enclosingPosition, s"@chiselName annotion may only be used on classes and methods, got ${showCode(other)}")
+      case q"$vmods val $vname = { $mods class $tpname[..$tparams] $ctorMods(...$paramss) extends { ..$earlydefns} with ..$parents { $self => ..$stats }; new $blah() }" => {
+        val transformedStats = transformClassBody(stats)
+        namedElts += 1
+        q"$vmods val $vname = { $mods class $tpname[..$tparams] $ctorMods(...$paramss) extends { ..$earlydefns } with ..$parents { $self => ..$transformedStats }; new $blah() }"
+      }
+      case other => c.abort(c.enclosingPosition, s"@chiselName annotation may only be used on classes and methods, got ${showCode(other)}")
     })
 
-    if (namedElts != 1) {
-      c.abort(c.enclosingPosition, s"@chiselName annotation did not match exactly one valid tree, got:\r\n${annottees.map(tree => showCode(tree)).mkString("\r\n\r\n")}")
-    }
     // scalastyle:on line.size.limit
 
     q"..$transformed"

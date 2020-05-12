@@ -87,7 +87,7 @@ class NamingContext extends NamingContextInterface {
   }
 
   def name[T](obj: T, name: String): T = {
-    assert(!closed, "Can't name elements after name_prefix called")
+    assert(!closed, "Can't name elements after namePrefix called")
     obj match {
       case _: NoChiselNamePrefix => // Don't name things with NoChiselNamePrefix
       case ref: AnyRef => items += ((ref, name))
