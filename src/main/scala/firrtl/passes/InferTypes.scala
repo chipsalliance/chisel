@@ -64,7 +64,7 @@ object InferTypes extends Pass with PreservesAll[Transform] {
         val sxx = (sx map infer_types_e(types)).asInstanceOf[DefNode]
         val t = remove_unknowns(sxx.value.tpe)
         types(sx.name) = t
-        sxx map infer_types_e(types)
+        sxx
       case sx: DefRegister =>
         val t = remove_unknowns(sx.tpe)
         types(sx.name) = t
