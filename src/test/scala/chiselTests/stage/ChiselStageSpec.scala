@@ -8,6 +8,8 @@ import chisel3.stage.ChiselStage
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
+import firrtl.options.Dependency
+
 object ChiselStageSpec {
 
   class Foo extends MultiIOModule {
@@ -55,6 +57,17 @@ class ChiselStageSpec extends AnyFlatSpec with Matchers {
 
   it should "generate a CHIRRTL circuit from a Chisel module" in {
     ChiselStage.convert(new Foo)
+  }
+
+  behavior of "ChiselStage phase ordering"
+
+  it should "only run elaboration once" in new ChiselStageFixture {
+    info("Phase order is:\n" + stage.phaseManager.prettyPrint("    "))
+
+    val order = stage.phaseManager.flattenedTransformOrder.map(Dependency.fromTransform)
+
+    info("Elaborate only runs once")
+    exactly (1, order) should be (Dependency[chisel3.stage.phases.Elaborate])
   }
 
 }
