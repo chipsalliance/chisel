@@ -33,8 +33,8 @@ private object ArbiterCtrl {
 }
 
 abstract class LockingArbiterLike[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T => Bool]) extends Module {
-  protected def grant: Seq[Bool]
-  protected def choice: UInt
+  def grant: Seq[Bool]
+  def choice: UInt
   val io = IO(new ArbiterIO(gen, n))
 
   io.chosen := choice
@@ -63,16 +63,16 @@ abstract class LockingArbiterLike[T <: Data](gen: T, n: Int, count: Int, needsLo
 
 class LockingRRArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T => Bool] = None)
     extends LockingArbiterLike[T](gen, n, count, needsLock) {
-  private lazy val lastGrant = RegEnable(io.chosen, io.out.fire())
-  private lazy val grantMask = (0 until n).map(_.asUInt > lastGrant)
-  private lazy val validMask = io.in zip grantMask map { case (in, g) => in.valid && g }
+  lazy val lastGrant = RegEnable(io.chosen, io.out.fire())
+  lazy val grantMask = (0 until n).map(_.asUInt > lastGrant)
+  lazy val validMask = io.in zip grantMask map { case (in, g) => in.valid && g }
 
-  override protected def grant: Seq[Bool] = {
+  override def grant: Seq[Bool] = {
     val ctrl = ArbiterCtrl((0 until n).map(i => validMask(i)) ++ io.in.map(_.valid))
     (0 until n).map(i => ctrl(i) && grantMask(i) || ctrl(i + n))
   }
 
-  override protected lazy val choice = WireDefault((n-1).asUInt)
+  override lazy val choice = WireDefault((n-1).asUInt)
   for (i <- n-2 to 0 by -1)
     when (io.in(i).valid) { choice := i.asUInt }
   for (i <- n-1 to 1 by -1)
@@ -81,9 +81,9 @@ class LockingRRArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[
 
 class LockingArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T => Bool] = None)
     extends LockingArbiterLike[T](gen, n, count, needsLock) {
-  protected def grant: Seq[Bool] = ArbiterCtrl(io.in.map(_.valid))
+  def grant: Seq[Bool] = ArbiterCtrl(io.in.map(_.valid))
 
-  override protected lazy val choice = WireDefault((n-1).asUInt)
+  override lazy val choice = WireDefault((n-1).asUInt)
   for (i <- n-2 to 0 by -1)
     when (io.in(i).valid) { choice := i.asUInt }
 }
@@ -129,7 +129,7 @@ class Arbiter[T <: Data](gen: T, n: Int) extends Module {
     }
   }
 
-  private val grant = ArbiterCtrl(io.in.map(_.valid))
+  val grant = ArbiterCtrl(io.in.map(_.valid))
   for ((in, g) <- io.in zip grant)
     in.ready := g && io.out.ready
   io.out.valid := !grant.last || io.in.last.valid

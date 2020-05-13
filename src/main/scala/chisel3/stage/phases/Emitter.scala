@@ -30,10 +30,9 @@ class Emitter extends Phase {
          Dependency[AddImplicitOutputAnnotationFile],
          Dependency[MaybeAspectPhase] )
 
-  override def invalidates(phase: Phase): Boolean = phase match {
-    case _: Elaborate => true
-    case _ => false
-  }
+  override def optionalPrerequisiteOf = Seq(Dependency[Convert])
+
+  override def invalidates(phase: Phase): Boolean = false
 
   def transform(annotations: AnnotationSeq): AnnotationSeq = {
     val copts = view[ChiselOptions](annotations)
