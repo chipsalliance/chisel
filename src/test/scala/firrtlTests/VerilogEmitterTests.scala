@@ -196,9 +196,8 @@ class DoPrimVerilog extends FirrtlFlatSpec {
         |  input  [7:0] in,
         |  output  out
         |);
-        |  wire [7:0] _GEN_0;
+        |  wire [7:0] _GEN_0 = in % 8'h1;
         |  assign out = _GEN_0[0];
-        |  assign _GEN_0 = in % 8'h1;
         |endmodule
         |""".stripMargin.split("\n") map normalized
     executeTest(input, check, compiler)
@@ -223,9 +222,8 @@ class DoPrimVerilog extends FirrtlFlatSpec {
         |  input  [3:0] in4,
         |  output [9:0] out
         |);
-        |  wire [5:0] _GEN_1;
+        |  wire [5:0] _GEN_1 = {in3,in2,in1};
         |  assign out = {in4,_GEN_1};
-        |  assign _GEN_1 = {in3,in2,in1};
         |endmodule
         |""".stripMargin.split("\n") map normalized
 
@@ -714,7 +712,7 @@ class VerilogEmitterSpec extends FirrtlFlatSpec {
         |""".stripMargin
     )
     result shouldNot containLine("assign z = $signed(x) + -2'sh2;")
-    result should    containLine("assign _GEN_0 = $signed(x) - 3'sh2;")
+    result should    containLine("wire [2:0] _GEN_0 = $signed(x) - 3'sh2;")
     result should    containLine("assign z = _GEN_0[1:0];")
   }
 }
@@ -773,13 +771,13 @@ class VerilogDescriptionEmitterSpec extends FirrtlFlatSpec {
       """  /* multi
         |   * line
         |   */
-        |  wire  d;""".stripMargin,
+        |  wire  d = """.stripMargin,
       """  /* multi
         |   * line
         |   */
         |  reg  e;""".stripMargin,
       """  // single line
-        |  wire  f;""".stripMargin
+        |  wire  f = """.stripMargin
     )
     // We don't use executeTest because we care about the spacing in the result
     val modName = ModuleName("Test", CircuitName("Test"))
@@ -858,7 +856,7 @@ class VerilogDescriptionEmitterSpec extends FirrtlFlatSpec {
         |   *
         |   * line6
         |   */
-        |  wire  d;""".stripMargin
+        |  wire  d = """.stripMargin
     )
     // We don't use executeTest because we care about the spacing in the result
     val modName = ModuleName("Test", CircuitName("Test"))

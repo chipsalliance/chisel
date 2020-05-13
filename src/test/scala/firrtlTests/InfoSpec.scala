@@ -62,10 +62,9 @@ class InfoSpec extends FirrtlFlatSpec with FirrtlMatchers {
     result should containTree { case DefRegister(Info1, "r", _,_,_,_) => true }
     result should containLine (s"reg [7:0] r; //$Info1")
     result should containTree { case DefNode(Info2, "w", _) => true }
-    result should containLine (s"wire [7:0] w; //$Info2") // Node "w" declaration in Verilog
+    result should containLine (s"wire [7:0] w = x & r; //$Info2") // Node "w" declaration in Verilog
     result should containTree { case DefNode(Info3, "n", _) => true }
-    result should containLine (s"wire [7:0] n; //$Info3")
-    result should containLine (s"assign n = w | x; //$Info3")
+    result should containLine (s"wire [7:0] n = w | x; //$Info3")
   }
 
   it should "be propagated on memories" in {

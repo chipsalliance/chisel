@@ -874,8 +874,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
           if (!options.disableRandomization)
             initialize(e, sx.reset, sx.init)
         case sx: DefNode =>
-          declare("wire", sx.name, sx.value.tpe, sx.info)
-          assign(WRef(sx.name, sx.value.tpe, NodeKind, SourceFlow), sx.value, sx.info)
+          declare("wire", sx.name, sx.value.tpe, sx.info, sx.value)
         case sx: Stop =>
           simulate(sx.clk, sx.en, stop(sx.ret), Some("STOP_COND"), sx.info)
         case sx: Print =>

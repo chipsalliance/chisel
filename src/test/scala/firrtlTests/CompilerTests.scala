@@ -176,10 +176,8 @@ class MinimumVerilogCompilerSpec extends CompilerSpec with Matchers {
                  |  input  [2:0] i,
                  |  output [4:0] o
                  |);
-                 |  wire  c;
-                 |  wire  d;
-                 |  assign c = 1'h1;
-                 |  assign d = 1'h1;
+                 |  wire  c = 1'h1;
+                 |  wire  d = 1'h1;
                  |  assign b_0 = 1'h0;
                  |  assign b_1 = c;
                  |  assign b_2 = d;

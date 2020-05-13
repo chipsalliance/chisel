@@ -57,10 +57,10 @@ class LegalizeClocksTransformSpec extends FirrtlFlatSpec {
         |    stop(asClock(UInt(1)), UInt(1), 1)
         |""".stripMargin
     val result = compile(input)
-    result should containLine (s"wire _GEN_0;")
+    result should containLine (s"wire  _GEN_0 = 1'h1;")
     // Check that there's only 1 _GEN_0 instantiation
     val verilog = result.getEmittedCircuit.value
-    val matches = "wire\\s+_GEN_0;".r.findAllIn(verilog)
+    val matches = "wire\\s+_GEN_0\\s+=\\s+1'h1".r.findAllIn(verilog)
     matches.size should be (1)
 
   }

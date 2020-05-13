@@ -53,7 +53,7 @@ class ReplaceTruncatingArithmeticSpec extends FirrtlFlatSpec {
       |node n = sub(x, y)
       |z <= tail(n, 2)""".stripMargin
     )
-    result should containLine (s"assign n = x - y;")
+    result should containLine (s"wire [8:0] n = x - y;")
     result should containLine (s"assign z = n[6:0];")
   }
 
