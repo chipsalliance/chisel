@@ -104,6 +104,8 @@ See [the setup instructions](https://github.com/freechipsproject/chisel3/blob/ma
 
 When you're ready to build your own circuits in Chisel, **we recommend starting from the [Chisel Template](https://github.com/freechipsproject/chisel-template) repository**, which provides a pre-configured project, example design, and testbench. Follow the [chisel-template readme](https://github.com/freechipsproject/chisel-template) to get started.
 
+If you are using IntelliJ IDEA as the development environment, there is a [plugin](https://plugins.jetbrains.com/plugin/14269-easysoc-chisel) to help you simplify the work of creating a new Chisel project.
+
 If you insist on setting up your own project, the magic SBT lines are:
 ```scala
 resolvers ++= Seq(
