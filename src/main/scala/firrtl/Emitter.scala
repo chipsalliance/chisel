@@ -999,7 +999,21 @@ class VerilogEmitter extends SeqTransform with Emitter {
         for (x <- attachAliases) emit(Seq(tab, x))
         emit(Seq("`endif"))
       }
+
+      for ((clk, content) <- noResetAlwaysBlocks if content.nonEmpty) {
+        emit(Seq(tab, "always @(posedge ", clk, ") begin"))
+        for (line <- content) emit(Seq(tab, tab, line))
+        emit(Seq(tab, "end"))
+      }
+
+      for ((clk, reset, content) <- asyncResetAlwaysBlocks if content.nonEmpty) {
+        emit(Seq(tab, "always @(posedge ", clk, " or posedge ", reset, ") begin"))
+        for (line <- content) emit(Seq(tab, tab, line))
+        emit(Seq(tab, "end"))
+      }
+
       if (initials.nonEmpty || ifdefInitials.nonEmpty) {
+        emit(Seq("// Register and memory initialization"))
         emit(Seq("`ifdef RANDOMIZE_GARBAGE_ASSIGN"))
         emit(Seq("`define RANDOMIZE"))
         emit(Seq("`endif"))
@@ -1064,17 +1078,6 @@ class VerilogEmitter extends SeqTransform with Emitter {
         emit(Seq("`endif // SYNTHESIS"))
       }
 
-      for ((clk, content) <- noResetAlwaysBlocks if content.nonEmpty) {
-        emit(Seq(tab, "always @(posedge ", clk, ") begin"))
-        for (line <- content) emit(Seq(tab, tab, line))
-        emit(Seq(tab, "end"))
-      }
-
-      for ((clk, reset, content) <- asyncResetAlwaysBlocks if content.nonEmpty) {
-        emit(Seq(tab, "always @(posedge ", clk, " or posedge ", reset, ") begin"))
-        for (line <- content) emit(Seq(tab, tab, line))
-        emit(Seq(tab, "end"))
-      }
       emit(Seq("endmodule"))
     }
 
