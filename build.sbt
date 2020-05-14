@@ -169,7 +169,7 @@ lazy val chisel = (project in file(".")).
   //   sufficient to suppress subproject JAR creation, so we can restore
   //   general aggregation, and thus get coverage tests and scaladoc for subprojects.
   aggregate(coreMacros, chiselFrontend).
-  settings(mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3" % "3.2.4")).
+  settings(mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3" % "3.2.5")).
   settings(mimaCurrentClassfiles := (packageBin in Compile).value).
   settings(
     scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
