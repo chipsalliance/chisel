@@ -5,6 +5,7 @@ package firrtl.passes
 import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
+import firrtl.traversals.Foreachers._
 import firrtl.options.PreservesAll
 
 object ResolveKinds extends Pass with PreservesAll[Transform] {
@@ -13,8 +14,8 @@ object ResolveKinds extends Pass with PreservesAll[Transform] {
 
   type KindMap = collection.mutable.HashMap[String, Kind]
 
-  def find_port(kinds: KindMap)(p: Port): Port = {
-    kinds(p.name) = PortKind ; p
+  private def find_port(kinds: KindMap)(p: Port): Unit = {
+    kinds(p.name) = PortKind
   }
 
   def resolve_expr(kinds: KindMap)(e: Expression): Expression = e match {
@@ -37,7 +38,7 @@ object ResolveKinds extends Pass with PreservesAll[Transform] {
 
   def resolve_kinds(m: DefModule): DefModule = {
     val kinds = new KindMap
-    m.map(find_port(kinds))
+    m.foreach(find_port(kinds))
     m.map(resolve_stmt(kinds))
   }
 
