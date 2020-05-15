@@ -105,8 +105,8 @@ lazy val chiselSettings = Seq (
 // An explicit dependency on junit seems to alleviate this.
   libraryDependencies ++= Seq(
     "junit" % "junit" % "4.13" % "test",
-    "org.scalatest" %% "scalatest" % "3.1.0" % "test",
-    "org.scalatestplus" %% "scalacheck-1-14" % "3.1.0.1" % "test",
+    "org.scalatest" %% "scalatest" % "3.1.2" % "test",
+    "org.scalatestplus" %% "scalacheck-1-14" % "3.1.1.1" % "test",
     "com.github.scopt" %% "scopt" % "3.7.1"
   ),
   javacOptions ++= javacOptionsVersion(scalaVersion.value)
@@ -125,7 +125,8 @@ lazy val chiselSettings = Seq (
 lazy val macros = (project in file("macros")).
   settings(name := "chisel3-macros").
   settings(commonSettings: _*).
-  settings(publishSettings: _*)
+  settings(publishSettings: _*).
+  settings(mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-macros" % "3.3.0"))
 
 lazy val core = (project in file("core")).
   settings(commonSettings: _*).
@@ -141,7 +142,8 @@ lazy val core = (project in file("core")).
       "-Xcheckinit",
       "-Xlint:infer-any"
 //      "-Xlint:missing-interpolator"
-    )
+    ),
+    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-core" % "3.3.0")
   ).
   dependsOn(macros)
 
@@ -163,6 +165,7 @@ lazy val chisel = (project in file(".")).
   dependsOn(core).
   aggregate(macros, core).
   settings(
+    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3" % "3.3.0"),
     scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
     scalacOptions in Compile in doc ++= Seq(
       "-diagrams",
