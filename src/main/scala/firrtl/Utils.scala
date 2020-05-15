@@ -280,10 +280,10 @@ object Utils extends LazyLogging {
     case ex: ValidIf => expandRef(ex.value) map (e1 => ValidIf(ex.cond, e1, e1.tpe))
     case ex => ex.tpe match {
       case (_: GroundType) => Seq(ex)
-      case (t: BundleType) => (t.fields foldLeft Seq[Expression](ex))((exps, f) =>
-        exps ++ create_exps(WSubField(ex, f.name, f.tpe,times(flow(ex), f.flip))))
-      case (t: VectorType) => (0 until t.size foldLeft Seq[Expression](ex))((exps, i) =>
-        exps ++ create_exps(WSubIndex(ex, i, t.tpe,flow(ex))))
+      case (t: BundleType) =>
+        ex +: t.fields.flatMap(f => expandRef(WSubField(ex, f.name, f.tpe, times(flow(ex), f.flip))))
+      case (t: VectorType) =>
+        ex +: (0 until t.size).flatMap(i => expandRef(WSubIndex(ex, i, t.tpe, flow(ex))))
     }
   }
   def toTarget(main: String, module: String)(expression: Expression): ReferenceTarget = {
