@@ -8,7 +8,7 @@ import firrtl.testutils.FirrtlFlatSpec
 import firrtl.testutils.FirrtlCheckers._
 
 import firrtl.{CircuitState, WRef}
-import firrtl.ir.{Connect, Mux}
+import firrtl.ir.{Connect, Mux, DefRegister}
 import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlSourceAnnotation, FirrtlStage}
 
 class RemoveResetSpec extends FirrtlFlatSpec with GivenWhenThen {
@@ -112,4 +112,24 @@ class RemoveResetSpec extends FirrtlFlatSpec with GivenWhenThen {
     outputState shouldNot containTree { case Connect(_, WRef("foo_b",_,_,_), Mux(_,_,_,_)) => true }
   }
 
+  it should "canvert a reset wired to UInt<0> to a canonical non-reset" in {
+    Given("foo's reset is connected to zero")
+    val input =
+      """|circuit Example :
+         |  module Example :
+         |    input clock : Clock
+         |    input rst : UInt<1>
+         |    input in : UInt<2>
+         |    output out : UInt<2>
+         |    reg foo : UInt<2>, clock with : (reset => (UInt(0), UInt(3)))
+         |    foo <= in
+         |    out <= foo""".stripMargin
+
+    val outputState = toLowFirrtl(input)
+
+    Then("foo has a canonical non-reset declaration after RemoveReset")
+    outputState should containTree { case DefRegister(_, "foo", _,_, firrtl.Utils.zero, WRef("foo", _,_,_)) => true }
+    And("foo is NOT connected to a reset mux")
+    outputState shouldNot containTree { case Connect(_, WRef("foo",_,_,_), Mux(_,_,_,_)) => true }
+  }
 }

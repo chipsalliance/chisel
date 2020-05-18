@@ -56,8 +56,9 @@ object RemoveReset extends Transform with DependencyAPIMigration {
         /* A register is initialized to an invalid expression */
         case reg @ DefRegister(_, _, _, _, _, init) if invalids.contains(we(init)) =>
           reg.copy(reset = Utils.zero, init = WRef(reg))
-        case reg @ DefRegister(_, rname, _, _, reset, init)
-            if reset != Utils.zero && reset.tpe != AsyncResetType =>
+        case reg @ DefRegister(_, rname, _, _, Utils.zero, _) =>
+          reg.copy(init = WRef(reg)) // canonicalize
+        case reg @ DefRegister(_, rname, _, _, reset, init) if reset.tpe != AsyncResetType =>
           // Add register reset to map
           resets(rname) = Reset(reset, init)
           reg.copy(reset = Utils.zero, init = WRef(reg))
