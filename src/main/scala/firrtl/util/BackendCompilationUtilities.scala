@@ -198,14 +198,14 @@ object BackendCompilationUtilities extends LazyLogging {
     * @param referenceTop name of the DUT without custom transforms without the
     *                     .v extension
     * @param testDir      directory containing verilog files
-    * @param resets       signals to set for SAT, format is
-    *                     (timestep, signal, value)
+    * @param timesteps    the maximum number of timesteps for Yosys equivalence
+    *                     checking to consider
     */
   def yosysExpectSuccess(customTop: String,
                          referenceTop: String,
                          testDir: File,
-                         resets: Seq[(Int, String, Int)] = Seq.empty): Boolean = {
-    !yosysExpectFailure(customTop, referenceTop, testDir, resets)
+                         timesteps: Int = 1): Boolean = {
+    !yosysExpectFailure(customTop, referenceTop, testDir, timesteps)
   }
 
   /** Creates and runs a Yosys script that creates and runs SAT on a miter
@@ -219,27 +219,33 @@ object BackendCompilationUtilities extends LazyLogging {
     * @param referenceTop name of the DUT without custom transforms without the
     *                     .v extension
     * @param testDir      directory containing verilog files
-    * @param resets       signals to set for SAT, format is
-    *                     (timestep, signal, value)
+    * @param timesteps    the maximum number of timesteps for Yosys equivalence
+    *                     checking to consider
     */
   def yosysExpectFailure(customTop: String,
                          referenceTop: String,
                          testDir: File,
-                         resets: Seq[(Int, String, Int)] = Seq.empty): Boolean = {
+                         timesteps: Int = 1): Boolean = {
 
-    val setSignals = resets.map(_._2).toSet[String].map(s => s"-set in_$s 0").mkString(" ")
-    val setAtSignals = resets.map {
-      case (timestep, signal, value) => s"-set-at $timestep in_$signal $value"
-    }.mkString(" ")
     val scriptFileName = s"${testDir.getAbsolutePath}/yosys_script"
     val yosysScriptWriter = new PrintWriter(scriptFileName)
     yosysScriptWriter.write(
       s"""read_verilog ${testDir.getAbsolutePath}/$customTop.v
+         |prep -flatten -top $customTop; proc; opt; memory
+         |design -stash custom
          |read_verilog ${testDir.getAbsolutePath}/$referenceTop.v
-         |prep; proc; opt; memory
-         |miter -equiv -flatten $customTop $referenceTop miter
-         |hierarchy -top miter
-         |sat -verify -tempinduct -prove trigger 0 $setSignals $setAtSignals -seq 1 miter"""
+         |prep -flatten -top $referenceTop; proc; opt; memory
+         |design -stash reference
+         |design -copy-from custom -as custom $customTop
+         |design -copy-from reference -as reference $referenceTop
+         |equiv_make custom reference equiv
+         |hierarchy -top equiv
+         |prep -flatten -top equiv
+         |clean -purge
+         |equiv_simple -seq $timesteps
+         |equiv_induct -seq $timesteps
+         |equiv_status -assert
+         """
         .stripMargin)
     yosysScriptWriter.close()
 
@@ -276,16 +282,4 @@ trait BackendCompilationUtilities extends LazyLogging {
     BackendCompilationUtilities.executeExpectingFailure(prefix, dir, assertionMsg)
   }
   def executeExpectingSuccess(prefix: String, dir: File): Boolean = BackendCompilationUtilities.executeExpectingSuccess(prefix, dir)
-  def yosysExpectSuccess(customTop: String,
-                         referenceTop: String,
-                         testDir: File,
-                         resets: Seq[(Int, String, Int)] = Seq.empty): Boolean = {
-    BackendCompilationUtilities.yosysExpectSuccess(customTop, referenceTop, testDir, resets)
-  }
-  def yosysExpectFailure(customTop: String,
-                         referenceTop: String,
-                         testDir: File,
-                         resets: Seq[(Int, String, Int)] = Seq.empty): Boolean = {
-    BackendCompilationUtilities.yosysExpectFailure(customTop, referenceTop, testDir, resets)
-  }
 }

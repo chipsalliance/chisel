@@ -77,12 +77,12 @@ trait FirrtlRunners extends BackendCompilationUtilities {
     * @param input string containing Firrtl source
     * @param customTransforms Firrtl transforms to test for equivalence
     * @param customAnnotations Optional Firrtl annotations
-    * @param resets tell yosys which signals to set for SAT, format is (timestep, signal, value)
+    * @param timesteps the maximum number of timesteps to consider
     */
   def firrtlEquivalenceTest(input: String,
                             customTransforms: Seq[Transform] = Seq.empty,
                             customAnnotations: AnnotationSeq = Seq.empty,
-                            resets: Seq[(Int, String, Int)] = Seq.empty): Unit = {
+                            timesteps: Int = 1): Unit = {
     val circuit = Parser.parse(input.split("\n").toIterator)
     val prefix = circuit.main
     val testDir = createTestDirectory(prefix + "_equivalence_test")
@@ -112,7 +112,7 @@ trait FirrtlRunners extends BackendCompilationUtilities {
     val refResult = (new firrtl.stage.FirrtlStage).run(refAnnos)
     val refName = refResult.collectFirst({ case stage.FirrtlCircuitAnnotation(c) => c.main }).getOrElse(refSuggestedName)
 
-    assert(yosysExpectSuccess(customName, refName, testDir, resets))
+    assert(BackendCompilationUtilities.yosysExpectSuccess(customName, refName, testDir, timesteps))
   }
 
   /** Compiles input Firrtl to Verilog */
@@ -430,5 +430,20 @@ trait Utils {
       System.setSecurityManager(null)
     }
   }
+}
 
+/** Super class for equivalence driven Firrtl tests */
+abstract class EquivalenceTest(transforms: Seq[Transform], name: String, dir: String) extends FirrtlFlatSpec {
+  val fileName = s"$dir/$name.fir"
+  val in = getClass.getResourceAsStream(fileName)
+  if (in == null) {
+    throw new FileNotFoundException(s"Resource '$fileName'")
+  }
+  val source = scala.io.Source.fromInputStream(in)
+  val input = try source.mkString finally source.close()
+
+  s"$name with ${transforms.map(_.name).mkString(", ")}" should
+    s"be equivalent to $name without ${transforms.map(_.name).mkString(", ")}" in {
+    firrtlEquivalenceTest(input, transforms)
+  }
 }
