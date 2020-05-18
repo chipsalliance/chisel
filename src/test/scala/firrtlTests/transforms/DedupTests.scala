@@ -547,6 +547,10 @@ class DedupModuleTests extends HighTransformSpec {
       """.stripMargin
     val check =
       """circuit main:
+        |  module dupe:
+        |    input in: UInt<8>
+        |    output out: UInt<8>
+        |    out <= in
         |  module main:
         |    input in:  UInt<8>
         |    output out: UInt<8>

@@ -53,7 +53,8 @@ class DedupModules extends Transform with DependencyAPIMigration with PreservesA
     if (state.annotations.contains(NoCircuitDedupAnnotation)) {
       state
     } else {
-      val noDedups = state.annotations.collect { case NoDedupAnnotation(ModuleName(m, c)) => m }
+      // Don't try deduping the main module of the circuit
+      val noDedups = state.circuit.main +: state.annotations.collect { case NoDedupAnnotation(ModuleName(m, c)) => m }
       val (newC, renameMap) = run(state.circuit, noDedups, state.annotations)
       state.copy(circuit = newC, renames = Some(renameMap))
     }
