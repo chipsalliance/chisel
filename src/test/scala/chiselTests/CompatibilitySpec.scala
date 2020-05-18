@@ -5,9 +5,19 @@ package chiselTests
 import chisel3.testers.BasicTester
 
 import org.scalacheck.Gen
-import org.scalatest.prop.GeneratorDrivenPropertyChecks
+import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
-class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks {
+// Need separate import to override compile options from Chisel._
+object CompatibilityCustomCompileOptions {
+  import Chisel.{defaultCompileOptions => _, _}
+  implicit val customCompileOptions =
+    chisel3.ExplicitCompileOptions.NotStrict.copy(inferModuleReset = true)
+  class Foo extends Module {
+    val io = new Bundle {}
+  }
+}
+
+class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyChecks {
   import Chisel._
 
   behavior of "Chisel compatibility layer"
@@ -579,6 +589,13 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
     }
 
     elaborate(new Foo)
+  }
+
+  it should "properly propagate custom compileOptions in Chisel.Module" in {
+    import CompatibilityCustomCompileOptions._
+    var result: Foo = null
+    elaborate({result = new Foo; result})
+    result.compileOptions should be theSameInstanceAs (customCompileOptions)
   }
 
 }

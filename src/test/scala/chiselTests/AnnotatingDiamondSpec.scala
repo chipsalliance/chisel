@@ -13,6 +13,8 @@ import firrtl.annotations.{
   Named
 }
 import org.scalatest._
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 /** These annotations and the IdentityTransform class serve as an example of how to write a
   * Chisel/Firrtl library
@@ -129,7 +131,7 @@ class DiamondTester extends BasicTester {
   stop()
 }
 
-class AnnotatingDiamondSpec extends FreeSpec with Matchers {
+class AnnotatingDiamondSpec extends AnyFreeSpec with Matchers {
 
   """
     |Diamond is an example of a module that has two sub-modules A and B who both instantiate their

@@ -6,10 +6,11 @@ import chisel3._
 import chisel3.experimental._
 import _root_.firrtl.{ir => firrtlir}
 import chisel3.internal.firrtl.{BinaryPoint, IntervalRange, KnownBinaryPoint, UnknownBinaryPoint}
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 //scalastyle:off method.name magic.number
-class IntervalRangeSpec extends FreeSpec with Matchers {
+class IntervalRangeSpec extends AnyFreeSpec with Matchers {
 
   "IntervalRanges" - {
     def C(b: BigDecimal): firrtlir.Bound = firrtlir.Closed(b)

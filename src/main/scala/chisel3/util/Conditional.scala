@@ -15,7 +15,7 @@ import chisel3._
 object unless {  // scalastyle:ignore object.name
   /** Does the same thing as [[when$ when]], but with the condition inverted.
     */
-  def apply(c: Bool)(block: => Unit) {
+  def apply(c: Bool)(block: => Any) {
     when (!c) { block }
   }
 }
@@ -25,7 +25,7 @@ object unless {  // scalastyle:ignore object.name
   * @note DO NOT USE. This API is subject to change without warning.
   */
 class SwitchContext[T <: Element](cond: T, whenContext: Option[WhenContext], lits: Set[BigInt]) {
-  def is(v: Iterable[T])(block: => Unit): SwitchContext[T] = {
+  def is(v: Iterable[T])(block: => Any): SwitchContext[T] = {
     if (!v.isEmpty) {
       val newLits = v.map { w =>
         require(w.litOption.isDefined, "is condition must be literal")
@@ -43,8 +43,8 @@ class SwitchContext[T <: Element](cond: T, whenContext: Option[WhenContext], lit
       this
     }
   }
-  def is(v: T)(block: => Unit): SwitchContext[T] = is(Seq(v))(block)
-  def is(v: T, vr: T*)(block: => Unit): SwitchContext[T] = is(v :: vr.toList)(block)
+  def is(v: T)(block: => Any): SwitchContext[T] = is(Seq(v))(block)
+  def is(v: T, vr: T*)(block: => Any): SwitchContext[T] = is(v :: vr.toList)(block)
 }
 
 /** Use to specify cases in a [[switch]] block, equivalent to a [[when$ when]] block comparing to
@@ -60,19 +60,19 @@ object is {   // scalastyle:ignore object.name
   // TODO: Begin deprecation of non-type-parameterized is statements.
   /** Executes `block` if the switch condition is equal to any of the values in `v`.
     */
-  def apply(v: Iterable[Element])(block: => Unit) {
+  def apply(v: Iterable[Element])(block: => Any) {
     require(false, "The 'is' keyword may not be used outside of a switch.")
   }
 
   /** Executes `block` if the switch condition is equal to `v`.
     */
-  def apply(v: Element)(block: => Unit) {
+  def apply(v: Element)(block: => Any) {
     require(false, "The 'is' keyword may not be used outside of a switch.")
   }
 
   /** Executes `block` if the switch condition is equal to any of the values in the argument list.
     */
-  def apply(v: Element, vr: Element*)(block: => Unit) {
+  def apply(v: Element, vr: Element*)(block: => Any) {
     require(false, "The 'is' keyword may not be used outside of a switch.")
   }
 }
@@ -91,7 +91,7 @@ object is {   // scalastyle:ignore object.name
   * }}}
   */
 object switch {  // scalastyle:ignore object.name
-  def apply[T <: Element](cond: T)(x: => Unit): Unit = macro impl
+  def apply[T <: Element](cond: T)(x: => Any): Unit = macro impl
   def impl(c: Context)(cond: c.Tree)(x: c.Tree): c.Tree = { import c.universe._
     val q"..$body" = x
     val res = body.foldLeft(q"""new SwitchContext($cond, None, Set.empty)""") {

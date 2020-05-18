@@ -4,6 +4,7 @@ package chiselTests
 
 import org.scalatest._
 import chisel3._
+import org.scalatest.matchers.should.Matchers
 
 class DirectionedBundle extends Bundle {
   val in = Input(UInt(32.W))
