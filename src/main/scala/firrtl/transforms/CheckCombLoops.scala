@@ -14,22 +14,26 @@ import firrtl.graph._
 import firrtl.analyses.InstanceGraph
 import firrtl.options.{Dependency, PreservesAll, RegisteredTransform, ShellOption}
 
-/*
- * A case class that represents a net in the circuit. This is
- * necessary since combinational loop checking is an analysis on the
- * netlist of the circuit; the fields are specialized for low
- * FIRRTL. Since all wires are ground types, a given ground type net
- * may only be a subfield of an instance or a memory
- * port. Therefore, it is uniquely specified within its module
- * context by its name, its optional parent instance (a WDefInstance
- * or WDefMemory), and its optional memory port name.
- */
+/**
+  * A case class that represents a net in the circuit. This is necessary since combinational loop
+  * checking is an analysis on the netlist of the circuit; the fields are specialized for low FIRRTL.
+  * Since all wires are ground types, a given ground type net may only be a subfield of an instance
+  * or a memory port. Therefore, it is uniquely specified within its module context by its name, its
+  * optional parent instance (a WDefInstance or WDefMemory), and its optional memory port name.
+  */
 case class LogicNode(name: String, inst: Option[String] = None, memport: Option[String] = None)
 
 object LogicNode {
+  /**
+    * Construct a LogicNode from a *Low FIRRTL* reference or subfield that refers to a component.
+    * Since aggregate types appear in Low FIRRTL only as the full types of instances or memories,
+    * the only reference-like expressions that may appear are WRefs, or trees of up to two levels of
+    * WSubField field selection.
+    *
+    * @param e The reference-like expression to describe with a LogicNode
+    * @return a LogicNode referring to e
+    */
   def apply(e: Expression): LogicNode = e match {
-    case idx: WSubIndex =>
-      LogicNode(idx.expr)
     case r: WRef =>
       LogicNode(r.name)
     case s: WSubField =>
