@@ -31,7 +31,12 @@ class ChiselStage extends Stage with PreservesAll[Phase] {
     override val wrappers = Seq( (a: Phase) => DeletedWrapper(a) )
   }
 
-  def run(annotations: AnnotationSeq): AnnotationSeq = try {
+  def run(annotations: AnnotationSeq): AnnotationSeq = run(annotations, shell, targets, phaseManager)
+
+  def run(annotations: AnnotationSeq,
+          shell: Shell,
+          targets: Seq[Dependency[Phase]],
+          phaseManager: PhaseManager): AnnotationSeq = try {
     phaseManager.transform(annotations)
   } catch {
     case ce: ChiselException =>
