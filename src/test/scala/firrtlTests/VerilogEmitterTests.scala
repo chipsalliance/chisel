@@ -420,26 +420,38 @@ class VerilogEmitterSpec extends FirrtlFlatSpec {
          |    input always: UInt<1>
          |    output always$: UInt<1>
          |    inst assign of endmodule
+         |    inst edge of endmodule_
          |    node always_ = not(always)
          |    node always__ = and(always_, assign.fork)
-         |    always$ <= always__
+         |    node always___ = and(always__, edge.fork)
+         |    always$ <= always___
          |  module endmodule:
          |    output fork: UInt<1>
          |    node const = add(UInt<4>("h1"), UInt<3>("h2"))
+         |    fork <= const
+         |  module endmodule_:
+         |    output fork: UInt<1>
+         |    node const = add(UInt<4>("h1"), UInt<3>("h1"))
          |    fork <= const
          |""".stripMargin
     val check_firrtl =
       """|circuit parameter_:
          |  module parameter_:
-         |    input always___: UInt<1>
+         |    input always____: UInt<1>
          |    output always$: UInt<1>
-         |    inst assign_ of endmodule_
-         |    node always_ = not(always___)
+         |    inst assign_ of endmodule__
+         |    inst edge_ of endmodule_
+         |    node always_ = not(always____)
          |    node always__ = and(always_, assign_.fork_)
-         |    always$ <= always__
-         |  module endmodule_:
+         |    node always___ = and(always__, edge_.fork_)
+         |    always$ <= always___
+         |  module endmodule__:
          |    output fork_: UInt<1>
          |    node const_ = add(UInt<4>("h1"), UInt<3>("h2"))
+         |    fork_ <= const_
+         |  module endmodule_:
+         |    output fork_: UInt<1>
+         |    node const_ = add(UInt<4>("h1"), UInt<3>("h1"))
          |    fork_ <= const_
          |""".stripMargin
     val state = CircuitState(parse(input), UnknownForm, Seq.empty, None)
