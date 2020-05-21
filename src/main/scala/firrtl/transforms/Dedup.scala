@@ -68,11 +68,11 @@ class DedupModules extends Transform with DependencyAPIMigration with PreservesA
   def run(c: Circuit, noDedups: Seq[String], annos: Seq[Annotation]): (Circuit, RenameMap) = {
 
     // RenameMap
-    val renameMap = RenameMap()
-    renameMap.setCircuit(c.main)
+    val componentRenameMap = RenameMap()
+    componentRenameMap.setCircuit(c.main)
 
     // Maps module name to corresponding dedup module
-    val dedupMap = DedupModules.deduplicate(c, noDedups.toSet, annos, renameMap)
+    val dedupMap = DedupModules.deduplicate(c, noDedups.toSet, annos, componentRenameMap)
 
     // Use old module list to preserve ordering
     // Lookup what a module deduped to, if its a duplicate, remove it
@@ -86,13 +86,14 @@ class DedupModules extends Transform with DependencyAPIMigration with PreservesA
       logger.debug(s"[Dedup] $from -> ${to.name}")
       ModuleName(from, cname) -> List(ModuleName(to.name, cname))
     }
-    renameMap.recordAll(
+    val moduleRenameMap = RenameMap()
+    moduleRenameMap.recordAll(
       map.map {
         case (k: ModuleName, v: List[ModuleName]) => Target.convertNamed2Target(k) -> v.map(Target.convertNamed2Target)
       }
     )
 
-    (InferTypes.run(c.copy(modules = dedupedModules)), renameMap)
+    (InferTypes.run(c.copy(modules = dedupedModules)), componentRenameMap.andThen(moduleRenameMap))
   }
 }
 
@@ -172,7 +173,8 @@ object DedupModules {
     */
   def agnostify(top: CircuitTarget,
                 module: DefModule,
-                renameMap: RenameMap
+                renameMap: RenameMap,
+                agnosticModuleName: String
                ): DefModule = {
 
 
@@ -181,11 +183,12 @@ object DedupModules {
     val nameMap = mutable.HashMap[String, String]()
 
     val mod = top.module(module.name)
+    val agnosticMod = top.module(agnosticModuleName)
 
     def rename(name: String): String = {
       nameMap.getOrElseUpdate(name, {
         val newName = namespace.newTemp
-        renameMap.record(mod.ref(name), mod.ref(newName))
+        renameMap.record(mod.ref(name), agnosticMod.ref(newName))
         newName
       })
     }
@@ -351,7 +354,7 @@ object DedupModules {
       } else { // Try to dedup
 
         // Build name-agnostic module
-        val agnosticModule = DedupModules.agnostify(top, originalModule, agnosticRename)
+        val agnosticModule = DedupModules.agnostify(top, originalModule, agnosticRename, "thisModule")
         agnosticRename.record(top.module(originalModule.name), top.module("thisModule"))
         val agnosticAnnos = module2Annotations.getOrElse(
           originalModule.name, mutable.HashSet.empty[Annotation]

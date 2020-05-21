@@ -72,11 +72,11 @@ class RenameMapSpec extends FirrtlFlatSpec {
     renames.get(bar) should be (Some(Seq(barB)))
   }
 
-  it should "rename renamed targets if the module of the target is renamed" in {
+  it should "not rename already renamed targets if the module of the target is renamed" in {
     val renames = RenameMap()
     renames.record(modA, modB)
     renames.record(foo, bar)
-    renames.get(foo) should be (Some(Seq(barB)))
+    renames.get(foo) should be (Some(Seq(bar)))
   }
 
   it should "rename modules if their circuit is renamed" in {
@@ -108,11 +108,11 @@ class RenameMapSpec extends FirrtlFlatSpec {
     renames.get(Top_m) should be (Some(Seq(Top.instOf("m", "Middle2"))))
   }
 
-  it should "rename targets if instance and module in the path are renamed" in {
+  it should "rename only the instance if instance and module in the path are renamed" in {
     val renames = RenameMap()
     renames.record(Middle, Middle2)
     renames.record(Top.instOf("m", "Middle"), Top.instOf("m2", "Middle"))
-    renames.get(Top_m) should be (Some(Seq(Top.instOf("m2", "Middle2"))))
+    renames.get(Top_m) should be (Some(Seq(Top.instOf("m2", "Middle"))))
   }
 
   it should "rename targets if instance in the path are renamed" in {
@@ -166,12 +166,12 @@ class RenameMapSpec extends FirrtlFlatSpec {
     }
   }
 
-  it should "rename with multiple renames" in {
+  it should "rename only once with multiple renames" in {
     val renames = RenameMap()
     val Middle2 = cir.module("Middle2")
     renames.record(Middle, Middle2)
     renames.record(Middle.ref("l"), Middle.ref("lx"))
-    renames.get(Middle.ref("l")) should be (Some(Seq(Middle2.ref("lx"))))
+    renames.get(Middle.ref("l")) should be (Some(Seq(Middle.ref("lx"))))
   }
 
   it should "rename with fields" in {
@@ -222,6 +222,7 @@ class RenameMapSpec extends FirrtlFlatSpec {
           (from, to) match {
             case (f: CircuitTarget, t: CircuitTarget) => renames.record(f, t)
             case (f: IsMember, t: IsMember) => renames.record(f, t)
+            case _ => sys.error("Unexpected!")
           }
         }
         //a [FIRRTLException] shouldBe thrownBy {
@@ -486,7 +487,7 @@ class RenameMapSpec extends FirrtlFlatSpec {
       Some(Seq(cir.module("D").instOf("e", "E").instOf("f", "F")))
     }
     renames.get(cir.module("A").instOf("b", "B").instOf("c", "C")) should be {
-      None
+      Some(Seq(cir.module("A").instOf("b", "B").instOf("c", "D").instOf("e", "E").instOf("f", "F")))
     }
   }
 
@@ -780,5 +781,32 @@ class RenameMapSpec extends FirrtlFlatSpec {
 
     r.get(foo) should not be (empty)
     r.get(foo).get should contain theSameElementsAs Seq(bar)
+  }
+
+  it should "not circularly rename" in {
+    val top = CircuitTarget("Top").module("Top")
+    val foo = top.instOf("foo", "Mod")
+    val Mod = CircuitTarget("Top").module("Mod")
+    val Mod2 = CircuitTarget("Top").module("Mod2")
+
+    val r = RenameMap()
+
+    r.record(foo, Mod)
+    r.record(Mod, Mod2)
+
+    r.get(foo) should not be (empty)
+    r.get(foo).get should contain theSameElementsAs Seq(Mod)
+    r.get(Mod).get should contain theSameElementsAs Seq(Mod2)
+  }
+
+  it should "delete instances of deleted modules" in {
+    val top = CircuitTarget("Top").module("Top")
+    val foo = top.instOf("foo", "Mod")
+    val Mod = CircuitTarget("Top").module("Mod")
+
+    val r = RenameMap()
+
+    r.delete(Mod)
+    r.get(foo) should be (Some(Nil))
   }
 }
