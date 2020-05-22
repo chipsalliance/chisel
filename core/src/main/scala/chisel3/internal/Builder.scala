@@ -98,6 +98,11 @@ private[chisel3] trait HasId extends InstanceId {
     for(hook <- postname_hooks) { hook(name) }
     this
   }
+  def macroName(name: String): this.type = {
+    if(suggested_name.isEmpty) suggested_name = Some(name)
+    this
+  }
+  def getName = suggested_name
   private[chisel3] def suggestedName: Option[String] = suggested_name
   private[chisel3] def addPostnameHook(hook: String=>Unit): Unit = postname_hooks += hook
 
