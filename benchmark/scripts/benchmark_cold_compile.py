@@ -2,13 +2,13 @@
 # See LICENSE for license details.
 
 import subprocess
-import re
 from statistics import median, stdev
-import sys
 import argparse
 from collections import OrderedDict
 import os
 import numbers
+
+from monitor_job import monitor_job
 
 # Currently hardcoded
 def get_firrtl_repo():
@@ -19,65 +19,13 @@ def get_firrtl_repo():
 
 firrtl_repo = get_firrtl_repo()
 
-platform = ""
-if sys.platform == 'darwin':
-    print("Running on MacOS")
-    platform = 'macos'
-elif sys.platform.startswith("linux"):
-    print("Running on Linux")
-    platform = 'linux'
-else :
-    raise Exception('Unrecognized platform ' + sys.platform)
-
-def time():
-    if platform == 'macos':
-        return ['/usr/bin/time', '-l']
-    if platform == 'linux':
-        return ['/usr/bin/time', '-v']
-
-def extract_max_size(output):
-    regex = ''
-    if platform == 'macos':
-        regex = '(\d+)\s+maximum resident set size'
-    if platform == 'linux':
-        regex = 'Maximum resident set size[^:]*:\s+(\d+)'
-
-    m = re.search(regex, output, re.MULTILINE)
-    if m :
-        return int(m.group(1))
-    else :
-        raise Exception('Max set size not found!')
-
-def extract_run_time(output):
-    regex = ''
-    res = None
-    if platform == 'macos':
-        regex = '(\d+\.\d+)\s+real'
-    if platform == 'linux':
-        regex = 'Elapsed \(wall clock\) time \(h:mm:ss or m:ss\): ([0-9:.]+)'
-    m = re.search(regex, output, re.MULTILINE)
-    if m :
-        text = m.group(1)
-        if platform == 'macos':
-            return float(text)
-        if platform == 'linux':
-            parts = text.split(':')
-            if len(parts) == 3:
-                return float(parts[0]) * 3600 + float(parts[1]) * 60 + float(parts[0])
-            if len(parts) == 2:
-                return float(parts[0]) * 60 + float(parts[1])
-    raise Exception('Runtime not found!')
-
 def run_firrtl(java, jar, design):
     java_cmd = java.split()
-    cmd = time() + java_cmd + ['-cp', jar, 'firrtl.stage.FirrtlMain', '-i', design,'-o','out.v','-X','verilog']
-    result = subprocess.run(cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-    if result.returncode != 0 :
-        print(result.stdout)
-        print(result.stderr)
-        sys.exit(1)
-    size = extract_max_size(result.stderr.decode('utf-8'))
-    runtime = extract_run_time(result.stderr.decode('utf-8'))
+    cmd = java_cmd + ['-cp', jar, 'firrtl.stage.FirrtlMain', '-i', design,'-o','out.v','-X','verilog']
+    print(' '.join(cmd))
+    resource_use = monitor_job(cmd)
+    size = resource_use.maxrss // 1024 # KiB -> MiB
+    runtime = resource_use.wall_clock_time
     return (size, runtime)
 
 def parseargs():
@@ -138,15 +86,6 @@ def check_designs(designs):
     for design in designs:
         assert os.path.exists(design), '{} must be an existing file!'.format(design)
 
-# /usr/bin/time -v on Linux returns size in kbytes
-# /usr/bin/time -l on MacOS returns size in Bytes
-def norm_max_set_sizes(sizes):
-    div = None
-    if platform == 'linux':
-        d = 1000.0
-    if platform == 'macos':
-        d = 1000000.0
-    return [s / d for s in sizes]
 
 def main():
     args = parseargs()
@@ -156,7 +95,7 @@ def main():
     jars = build_firrtl_jars(hashes)
     jvms = args.jvms
     N = args.iterations
-    info = [['java', 'revision', 'design', 'max heap', 'SD', 'runtime', 'SD']]
+    info = [['java', 'revision', 'design', 'max heap (MiB)', 'SD', 'runtime (s)', 'SD']]
     for java in jvms:
         print("Running with '{}'".format(java))
         for hashcode, jar in jars.items():
@@ -166,8 +105,7 @@ def main():
             for design in designs:
                 print('Running {}...'.format(design))
                 (sizes, runtimes) = zip(*[run_firrtl(java, jar, design) for i in range(N)])
-                norm_sizes = norm_max_set_sizes(sizes)
-                info.append([java_title, revision, design, median(norm_sizes), stdev(norm_sizes), median(runtimes), stdev(runtimes)])
+                info.append([java_title, revision, design, median(sizes), stdev(sizes), median(runtimes), stdev(runtimes)])
                 java_title = ''
                 revision = ''
 
