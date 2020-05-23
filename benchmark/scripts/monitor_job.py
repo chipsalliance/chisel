@@ -21,13 +21,15 @@ class JobFailedError(Exception):
     pass
 
 
-def monitor_job(args: List[str]) -> JobResourceUse:
+def monitor_job(args: List[str], timeout=None) -> JobResourceUse:
     """Run a job with resource monitoring, returns resource usage"""
     platform = get_platform()
     cmd = time(platform) + args
-    result = subprocess.run(cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    result = subprocess.run(cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE,
+                            timeout=timeout)
     if result.returncode != 0 :
-        msg = "[stdout]\n{}\n[stderr]\n{}".format(result.stdout, result.stderr)
+        msg = "[stdout]\n{}\n[stderr]\n{}".format(result.stdout.decode('utf-8'),
+                                                  result.stderr.decode('utf-8'))
         raise JobFailedError(msg)
     stderr = result.stderr.decode('utf-8')
 
