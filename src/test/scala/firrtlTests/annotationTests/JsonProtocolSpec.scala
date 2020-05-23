@@ -2,10 +2,12 @@
 
 package firrtlTests.annotationTests
 
-import firrtl.Parser
-import firrtl.annotations.{Annotation, JsonProtocol, NoTargetAnnotation}
+import firrtl._
+import firrtl.annotations.{JsonProtocol, NoTargetAnnotation}
 import firrtl.ir._
-import org.scalatest.{FlatSpec, Matchers, PropSpec}
+import firrtl.options.Dependency
+import _root_.logger.{Logger, LogLevel, LogLevelAnnotation}
+import org.scalatest.{FlatSpec, Matchers}
 
 case class AnAnnotation(
     info: Info,
@@ -17,6 +19,16 @@ case class AnAnnotation(
     tpe: Type,
     groundType: GroundType
 ) extends NoTargetAnnotation
+
+class AnnoInjector extends Transform with DependencyAPIMigration {
+  override def optionalPrerequisiteOf = Dependency[ChirrtlEmitter] :: Nil
+  override def invalidates(a: Transform): Boolean = false
+  def execute(state: CircuitState): CircuitState = {
+    // Classes defined in method bodies can't be serialized by json4s
+    case class MyAnno(x: Int) extends NoTargetAnnotation
+    state.copy(annotations = MyAnno(3) +: state.annotations)
+  }
+}
 
 class JsonProtocolSpec extends FlatSpec with Matchers {
   "JsonProtocol" should "serialize and deserialize FIRRTL types" in {
@@ -39,5 +51,18 @@ class JsonProtocolSpec extends FlatSpec with Matchers {
     val annosString = JsonProtocol.serialize(inputAnnos)
     val outputAnnos = JsonProtocol.deserialize(annosString)
     inputAnnos should be (outputAnnos)
+  }
+
+  "Annotation serialization during logging" should "not throw an exception" in {
+    val compiler = new firrtl.stage.transforms.Compiler(Seq(Dependency[AnnoInjector]))
+    val circuit = Parser.parse("""
+      |circuit test :
+      |  module test :
+      |    output out : UInt<1>
+      |    out <= UInt(0)
+      """.stripMargin)
+    Logger.makeScope(LogLevelAnnotation(LogLevel.Trace) :: Nil) {
+      compiler.execute(CircuitState(circuit, Nil))
+    }
   }
 }

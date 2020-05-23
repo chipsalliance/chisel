@@ -2,11 +2,8 @@
 
 package firrtl.stage.transforms
 
-import firrtl.{AnnotationSeq, CircuitState, RenameMap, Transform, Utils}
-import firrtl.annotations.{Annotation, DeletedAnnotation, JsonProtocol}
+import firrtl.{CircuitState, Transform}
 import firrtl.options.Translator
-
-import scala.collection.mutable
 
 class UpdateAnnotations(val underlying: Transform) extends Transform with WrappedTransform
     with Translator[CircuitState, (CircuitState, CircuitState)] {
@@ -16,73 +13,12 @@ class UpdateAnnotations(val underlying: Transform) extends Transform with Wrappe
   def aToB(a: CircuitState): (CircuitState, CircuitState) = (a, a)
 
   def bToA(b: (CircuitState, CircuitState)): CircuitState = {
-    val (state, result) = (b._1, b._2)
-
-    val remappedAnnotations = propagateAnnotations(state.annotations, result.annotations, result.renames)
-
-    logger.info(s"Form: ${result.form}")
-    logger.trace(s"Annotations:")
-    logger.trace(JsonProtocol.serialize(remappedAnnotations))
-
-    logger.trace(s"Circuit:\n${result.circuit.serialize}")
-    logger.info(s"======== Finished Transform $name ========\n")
-
-    CircuitState(result.circuit, result.form, remappedAnnotations, None)
+    Transform.remapAnnotations(name, b._1, b._2, logger)
   }
 
   def internalTransform(b: (CircuitState, CircuitState)): (CircuitState, CircuitState) = {
-    logger.info(s"======== Starting Transform $name ========")
-
-    val (timeMillis, result) = Utils.time { underlying.transform(b._2) }
-
-    logger.info(s"""----------------------------${"-" * name.size}---------\n""")
-    logger.info(f"Time: $timeMillis%.1f ms")
-
+    val result = Transform.runTransform(name, underlying.transform(b._2), logger)
     (b._1, result)
-  }
-
-  /** Propagate annotations and update their names.
-    *
-    * @param inAnno input AnnotationSeq
-    * @param resAnno result AnnotationSeq
-    * @param renameOpt result RenameMap
-    * @return the updated annotations
-    */
-  private[firrtl] def propagateAnnotations(
-      inAnno: AnnotationSeq,
-      resAnno: AnnotationSeq,
-      renameOpt: Option[RenameMap]): AnnotationSeq = {
-    val newAnnotations = {
-      val inSet = mutable.LinkedHashSet() ++ inAnno
-      val resSet = mutable.LinkedHashSet() ++ resAnno
-      val deleted = (inSet -- resSet).map {
-        case DeletedAnnotation(xFormName, delAnno) => DeletedAnnotation(s"$xFormName+$name", delAnno)
-        case anno => DeletedAnnotation(name, anno)
-      }
-      val created = resSet -- inSet
-      val unchanged = resSet & inSet
-      (deleted ++ created ++ unchanged)
-    }
-
-    // For each annotation, rename all annotations.
-    val renames = renameOpt.getOrElse(RenameMap())
-    val remapped2original = mutable.LinkedHashMap[Annotation, mutable.LinkedHashSet[Annotation]]()
-    val keysOfNote = mutable.LinkedHashSet[Annotation]()
-    val finalAnnotations = newAnnotations.flatMap { anno =>
-      val remappedAnnos = anno.update(renames)
-      remappedAnnos.foreach { remapped =>
-        val set = remapped2original.getOrElseUpdate(remapped, mutable.LinkedHashSet.empty[Annotation])
-        set += anno
-        if(set.size > 1) keysOfNote += remapped
-      }
-      remappedAnnos
-    }.toSeq
-    keysOfNote.foreach { key =>
-      logger.debug(s"""The following original annotations are renamed to the same new annotation.""")
-      logger.debug(s"""Original Annotations:\n  ${remapped2original(key).mkString("\n  ")}""")
-      logger.debug(s"""New Annotation:\n  $key""")
-    }
-    finalAnnotations
   }
 }
 
