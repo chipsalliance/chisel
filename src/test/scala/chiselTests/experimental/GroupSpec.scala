@@ -1,16 +1,19 @@
+// See LICENSE for license details.
+
 package chiselTests.experimental
 
-import chiselTests.ChiselRunners
-import org.scalatest.{FreeSpec, Matchers}
+import chiselTests.ChiselFlatSpec
 import chisel3._
+import chisel3.stage.{ChiselGeneratorAnnotation, ChiselMain}
 import chisel3.util.experimental.group
 import firrtl.analyses.InstanceGraph
-import firrtl.transforms.GroupAnnotation
-import firrtl.{FirrtlExecutionSuccess, ir => fir}
+import firrtl.options.{Dependency, TargetDirAnnotation}
+import firrtl.stage.CompilerAnnotation
+import firrtl.{EmittedFirrtlCircuitAnnotation, FirrtlExecutionSuccess, LowFirrtlCompiler, LowFirrtlEmitter, ir => fir}
 
 import scala.collection.mutable
 
-class GroupSpec extends FreeSpec with ChiselRunners with Matchers {
+class GroupSpec extends ChiselFlatSpec {
 
   class MyModule extends Module {
     val io = IO(new Bundle{
@@ -38,24 +41,24 @@ class GroupSpec extends FreeSpec with ChiselRunners with Matchers {
     regs
   }
 
-  "Module Grouping" - {
-    "should compile to low FIRRTL" - {
-      Driver.execute(Array("-X", "low", "--target-dir", "test_run_dir"), () => new MyModule) match {
-        case ChiselExecutionSuccess(Some(chiselCircuit), _, Some(firrtlResult: FirrtlExecutionSuccess)) =>
-          "emitting one GroupAnnotation at the CHIRRTL level" in {
-            chiselCircuit.annotations.map(_.toFirrtl).collect{ case a: GroupAnnotation => a }.size should be (1)
-          }
-          "low FIRRTL should contain only instance z" in {
-            firrtlResult.circuitState.circuit.modules.collect {
-              case m: fir.Module if m.name == "MyModule" =>
-                Nil should be (collectRegisters(m))
-              case m: fir.Module if m.name == "DosRegisters" =>
-                Seq("reg1", "reg2") should be (collectRegisters(m))
-            }
-            val instances = collectInstances(firrtlResult.circuitState.circuit, Some("MyModule")).toSet
-            Set("MyModule", "MyModule.doubleReg") should be (instances)
-          }
-      }
+  "Module Grouping" should "compile to low FIRRTL" in {
+    val firrtlCircuit = (ChiselMain.stage.run(
+      Seq(
+        CompilerAnnotation(new LowFirrtlCompiler()),
+        TargetDirAnnotation("test_run_dir"),
+        ChiselGeneratorAnnotation( () => new MyModule)
+      )
+    ) collectFirst {
+      case firrtl.stage.FirrtlCircuitAnnotation(circuit) => circuit
+    }).get
+
+    firrtlCircuit.modules.collect {
+      case m: fir.Module if m.name == "MyModule" =>
+        Nil should be (collectRegisters(m))
+      case m: fir.Module if m.name == "DosRegisters" =>
+        Seq("reg1", "reg2") should be (collectRegisters(m))
     }
+    val instances = collectInstances(firrtlCircuit, Some("MyModule")).toSet
+    Set("MyModule", "MyModule.doubleReg") should be (instances)
   }
 }
