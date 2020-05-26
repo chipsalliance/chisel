@@ -4,6 +4,8 @@ package firrtl.stage.transforms
 
 import firrtl.Transform
 
+import logger.Logger
+
 /** A [[firrtl.Transform]] that "wraps" a second [[firrtl.Transform Transform]] to do some work before and after the
   * second [[firrtl.Transform Transform]].
   *
@@ -22,6 +24,8 @@ trait WrappedTransform { this: Transform =>
     case a: WrappedTransform => a.trueUnderlying
     case _ => underlying
   }
+
+  final override protected val logger = new Logger(trueUnderlying.getClass.getName)
 
   override def inputForm = underlying.inputForm
   override def outputForm = underlying.outputForm
