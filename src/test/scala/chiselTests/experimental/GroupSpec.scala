@@ -43,7 +43,6 @@ class GroupSpec extends ChiselFlatSpec {
   }
 
   "Module Grouping" should "compile to low FIRRTL" in {
-
     class MyModule extends Module {
       val io = IO(new Bundle{
         val a = Input(Bool())
@@ -107,7 +106,6 @@ class GroupSpec extends ChiselFlatSpec {
     }
 
     val firrtlCircuit = lower(() => new MyModule)
-    println(firrtlCircuit.serialize)
     firrtlCircuit.modules.collect {
       case m: fir.Module if m.name == "MyModule" =>
         Set("doubleReg") should be (collectDeclarations(m))
