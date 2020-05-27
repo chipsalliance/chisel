@@ -141,7 +141,22 @@ abstract class Expression extends FirrtlNode {
   def foreachWidth(f: Width => Unit): Unit
 }
 
-case class Reference(name: String, tpe: Type, kind: Kind = UnknownKind, flow: Flow = UnknownFlow)
+object Reference {
+  /** Creates a Reference from a Wire */
+  def apply(wire: DefWire): Reference = Reference(wire.name, wire.tpe, WireKind, UnknownFlow)
+  /** Creates a Reference from a Register */
+  def apply(reg: DefRegister): Reference = Reference(reg.name, reg.tpe, RegKind, UnknownFlow)
+  /** Creates a Reference from a Node */
+  def apply(node: DefNode): Reference = Reference(node.name, node.value.tpe, NodeKind, SourceFlow)
+  /** Creates a Reference from a Port */
+  def apply(port: Port): Reference = Reference(port.name, port.tpe, PortKind, UnknownFlow)
+  /** Creates a Reference from a DefInstance */
+  def apply(i: DefInstance): Reference = Reference(i.name, i.tpe, InstanceKind, UnknownFlow)
+  /** Creates a Reference from a DefMemory */
+  def apply(mem: DefMemory): Reference = Reference(mem.name, passes.MemPortUtils.memType(mem), MemKind, UnknownFlow)
+}
+
+case class Reference(name: String, tpe: Type = UnknownType, kind: Kind = UnknownKind, flow: Flow = UnknownFlow)
     extends Expression with HasName {
   def serialize: String = name
   def mapExpr(f: Expression => Expression): Expression = this
@@ -152,7 +167,7 @@ case class Reference(name: String, tpe: Type, kind: Kind = UnknownKind, flow: Fl
   def foreachWidth(f: Width => Unit): Unit = Unit
 }
 
-case class SubField(expr: Expression, name: String, tpe: Type, flow: Flow = UnknownFlow)
+case class SubField(expr: Expression, name: String, tpe: Type = UnknownType, flow: Flow = UnknownFlow)
     extends Expression with HasName {
   def serialize: String = s"${expr.serialize}.$name"
   def mapExpr(f: Expression => Expression): Expression = this.copy(expr = f(expr))
@@ -305,6 +320,10 @@ case class DefRegister(
   def foreachType(f: Type => Unit): Unit = f(tpe)
   def foreachString(f: String => Unit): Unit = f(name)
   def foreachInfo(f: Info => Unit): Unit = f(info)
+}
+
+object DefInstance {
+  def apply(name: String, module: String): DefInstance = DefInstance(NoInfo, name, module)
 }
 
 case class DefInstance(info: Info, name: String, module: String, tpe: Type = UnknownType)
