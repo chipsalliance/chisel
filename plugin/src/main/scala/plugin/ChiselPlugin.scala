@@ -9,12 +9,15 @@ import nsc.plugins.PluginComponent
 import scala.reflect.internal.Flags
 import scala.tools.nsc.transform.TypingTransformers
 
+// The plugin to be run by the Scala compiler during compilation of Chisel code
 class ChiselPlugin(val global: Global) extends Plugin {
   val name = "chiselplugin"
   val description = "chisel's plugin"
-  val components = List[PluginComponent](new ChiselComponent(global)/*, new Namer(global)*/)
+  val components = List[PluginComponent](new ChiselComponent(global))
 }
 
+// The component of the chisel plugin. Not sure exactly what the difference is between
+//   a Plugin and a PluginComponent.
 class ChiselComponent(val global: Global) extends PluginComponent with TypingTransformers {
   import global._
   val runsAfter = List[String]("uncurry")
