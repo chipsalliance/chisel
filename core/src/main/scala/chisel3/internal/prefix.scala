@@ -19,7 +19,7 @@ import chisel3.Data
   * }}}
   *
   */
-private object prefix {
+private [chisel3] object prefix {
 
   /** Use to add a prefix to any components generated in the provided scope
     * The prefix is the name of the provided which, which may not be known yet.
