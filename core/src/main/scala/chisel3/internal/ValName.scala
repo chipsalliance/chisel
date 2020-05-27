@@ -31,6 +31,8 @@ import chisel3.internal.prefixing.ValNameImpl
   *       Or explicitly use the apply method:
   *          {{{ val x1 = builder().apply(1) // OK! }}}
   *
+  * @todo Maybe use Clippy to provide a better ValName Type mismatch error?
+  *
   * @param name The name of the val which it got assigned to.
   */
 @scala.annotation.implicitNotFound("Cannot find val name! Did you assign this function's returned value to a val?")
