@@ -4,14 +4,22 @@ package chisel3.internal
 
 import chisel3.Data
 
-/** Use to add a prefix to any components generated in the provided scope
+/** Use to add a prefix to any components generated in the provided scope.
   *
   * @example {{{
+  *
+  * val x1 = prefix("first") {
+  *   // Anything generated here will be prefixed with "first"
+  * }
+  *
+  * val x2 = prefix(mysignal) {
+  *   // Anything generated here will be prefixed with the name of mysignal
+  * }
   *
   * }}}
   *
   */
-object prefix {
+private object prefix {
 
   /** Use to add a prefix to any components generated in the provided scope
     * The prefix is the name of the provided which, which may not be known yet.

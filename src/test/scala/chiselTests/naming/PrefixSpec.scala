@@ -104,11 +104,11 @@ class PrefixSpec extends ChiselPropSpec {
         wire
       }
       val x1 = Wire(UInt(3.W))
-      x1 := internal.prefix(x1) {
+      x1 := prefix(x1) {
         builder()
       }
       val x2 = Wire(UInt(3.W))
-      x2 := internal.prefix(x2) {
+      x2 := prefix(x2) {
         builder()
       }
     }
