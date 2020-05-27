@@ -6,9 +6,7 @@ package lesson2
 // Compiler Infrastructure
 import firrtl.{Transform, LowForm, CircuitState}
 // Firrtl IR classes
-import firrtl.ir.{DefModule, Statement, Expression, Mux}
-// Firrtl compiler's working IR classes (WIR)
-import firrtl.WDefInstance
+import firrtl.ir.{DefModule, Statement, Expression, Mux, DefInstance}
 // Map functions
 import firrtl.Mappers._
 // Scala's mutable collections
@@ -64,35 +62,21 @@ class Ledger {
   *
   * Walks [[firrtl.ir.Circuit]], and records the number of muxes and instances it finds, per module.
   *
-  * While the Firrtl parser emits a bare form of the IR (located in firrtl.ir._), it is often useful to have more
-  * information in these case classes. To do this, the Firrtl compiler has mirror "working" classes for the following IR
-  * nodes (which contain additional fields):
-  *   - DefInstance -> WDefInstance
-  *   - SubAccess -> WSubAccess
-  *   - SubIndex -> WSubIndex
-  *   - SubField -> WSubField
-  *   - Reference -> WRef
+  * While the Firrtl IR specification describes a written format, the AST nodes used internally by the
+  * implementation have additional "analysis" fields.
   *
-  * Take a look at [[firrtl.passes.ToWorkingIR ToWorkginIR]] in
-  * [[https://github.com/freechipsproject/firrtl/tree/master/src/main/scala/firrtl/passes
-  * src/main/scala/firrtl/passes/Passes.scala]] to see how Firrtl IR nodes are replaced with working IR nodes.
+  * Take a look at [[firrtl.ir.Reference Reference]] to see how a reference to a component name is
+  * augmented with relevant type, kind (memory, wire, etc), and flow information.
   *
-  * Future lessons will explain the WIR's additional fields. For now, it is enough to know that the transform
-  * [[firrtl.ResolveAndCheck]] populates these fields, and checks the legality of the circuit. If your transform is
-  * creating new WIR nodes, use the following "unknown" values in the WIR node, and then call [[firrtl.ResolveAndCheck]]
-  * at the end of your transform:
+  * Future lessons will explain the IR's additional fields. For now, it is enough to know that declaring
+  * [[firrtl.stage.Forms.Resolved]] as a prerequisite is a handy shorthand for ensuring that all of these
+  * fields will be populated with accurant information before your transform runs. If you create new IR
+  * nodes and do not wish to calculate the proper final values for all these fields, you can populate them
+  * with default 'unknown' values.
   *   - Kind -> ExpKind
   *   - Flow -> UnknownFlow
   *   - Type -> UnknownType
   *
-  * The following [[firrtl.CircuitForm]]s require WIR instead of IR nodes:
-  *   - HighForm
-  *   - MidForm
-  *   - LowForm
-  *
-  * See the following links for more detailed explanations:
-  * IR vs Working IR
-  *   - TODO(izraelevitz)
   */
 class AnalyzeCircuit extends Transform {
   def inputForm = LowForm
@@ -127,9 +111,7 @@ class AnalyzeCircuit extends Transform {
     // Map the functions walkStatement(ledger) and walkExpression(ledger)
     val visited = s map walkStatement(ledger) map walkExpression(ledger)
     visited match {
-      // Working IR Node [[WDefInstance]] is what the compiler uses
-      // See src/main/scala/firrtl/WIR.scala for all working IR nodes
-      case WDefInstance(info, name, module, tpe) =>
+      case DefInstance(info, name, module, tpe) =>
         ledger.foundInstance(module)
         visited
       case _ => visited
