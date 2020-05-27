@@ -126,13 +126,13 @@ autoCompilerPlugins := true
 
 lazy val plugin = (project in file("plugin"))
 
+// Adds plugin to compilation, and recompiles plugin automatically if it changes
 scalacOptions in Compile ++= {
   val jar = (Keys.`package` in (plugin, Compile)).value
   System.setProperty("sbt.paths.plugin.jar", jar.getAbsolutePath)
 
   val addPlugin = "-Xplugin:" + jar.getAbsolutePath
-  // Thanks Jason for this cool idea (taken from https://github.com/retronym/boxer)
-  // add plugin timestamp to compiler options to trigger recompile of
+  // Add plugin timestamp to compiler options to trigger recompile of
   // main after editing the plugin. (Otherwise a 'clean' is needed in the current project)
   val dummy = "-Jdummy=" + jar.lastModified
   Seq(addPlugin, dummy)

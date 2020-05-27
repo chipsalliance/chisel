@@ -137,4 +137,10 @@ package object experimental {  // scalastyle:ignore object.name
       }
     }
   }
+
+  // Enable using macro to get name of val with a returning function's scope
+  type ValName = chisel3.internal.ValName
+
+  // Use to add a prefix to any component generated in input scope
+  val prefix = chisel3.internal.prefix
 }

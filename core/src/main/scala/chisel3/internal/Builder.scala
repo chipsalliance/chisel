@@ -9,6 +9,7 @@ import chisel3.experimental._
 import chisel3.internal.firrtl._
 import chisel3.internal.naming._
 import _root_.firrtl.annotations.{CircuitName, ComponentName, IsMember, ModuleName, Named, ReferenceTarget}
+import chisel3.internal.Builder.Prefix
 
 import scala.collection.mutable
 
@@ -90,20 +91,41 @@ private[chisel3] trait HasId extends InstanceId {
 
   // Facilities for 'suggesting' a name to this.
   // Post-name hooks called to carry the suggestion to other candidates as needed
-  private var suggested_name: Option[String] = None
+  private var suggested_name: Option[(String, Prefix)] = None
+  private var plugin_name: Option[(String, Prefix)] = None
   private val postname_hooks = scala.collection.mutable.ListBuffer.empty[String=>Unit]
   // Only takes the first suggestion!
   def suggestName(name: =>String): this.type = {
-    if(suggested_name.isEmpty) suggested_name = Some(name)
+    if(suggested_name.isEmpty) suggested_name = Some((name, Builder.getPrefix()))
     for(hook <- postname_hooks) { hook(name) }
     this
   }
-  def macroName(name: String): this.type = {
-    if(suggested_name.isEmpty) suggested_name = Some(name)
+  def pluginName(name: String): this.type = {
+    if(plugin_name.isEmpty) plugin_name = Some((name, Builder.getPrefix()))
     this
   }
-  def getName = suggested_name
-  private[chisel3] def suggestedName: Option[String] = suggested_name
+  private def constructName(seed: String, prefix: Prefix): String = {
+    val builder = new StringBuilder()
+    prefix.foreach {
+      case Left(s: String) => builder ++= s + "_"
+      case Right(d: HasId) if d.seedOpt.nonEmpty => builder ++= d.seedOpt.get + "_"
+      case _ =>
+    }
+    builder ++= seed
+    builder.toString
+  }
+  private def candidateName(default: String): String = {
+    if(suggested_name.nonEmpty) constructName(suggested_name.get._1, suggested_name.get._2)
+    else if(plugin_name.nonEmpty) constructName(plugin_name.get._1, plugin_name.get._2)
+    else default
+  }
+  private[chisel3] def seedOpt: Option[String] = {
+    if(suggested_name.nonEmpty) suggested_name.map(_._1)
+    else if(plugin_name.nonEmpty) plugin_name.map(_._1)
+    else None
+  }
+  def getName = suggested_name.map(_._1)
+  private[chisel3] def suggestedName: Option[String] = suggested_name.map(x => constructName(x._1, x._2))
   private[chisel3] def addPostnameHook(hook: String=>Unit): Unit = postname_hooks += hook
 
   // Uses a namespace to convert suggestion into a true name
@@ -111,7 +133,7 @@ private[chisel3] trait HasId extends InstanceId {
   // (e.g. tried to suggest a name to part of a Record)
   private[chisel3] def forceName(default: =>String, namespace: Namespace): Unit =
     if(_ref.isEmpty) {
-      val candidate_name = suggested_name.getOrElse(default)
+      val candidate_name = candidateName(default)
       val available_name = namespace.name(candidate_name)
       setRef(Ref(available_name))
     }
@@ -129,7 +151,7 @@ private[chisel3] trait HasId extends InstanceId {
     case Some(p) => p._component match {
       case Some(c) => _ref match {
         case Some(arg) => arg fullName c
-        case None => suggested_name.getOrElse("??")
+        case None => candidateName("??")
       }
       case None => throwException("signalName/pathName should be called after circuit elaboration")
     }
@@ -204,6 +226,8 @@ private[chisel3] class ChiselContext() {
 
   // Record the Bundle instance, class name, method name, and reverse stack trace position of open Bundles
   val bundleStack: ArrayBuffer[(Bundle, String, String, Int)] = ArrayBuffer()
+
+  val prefixStack: ArrayBuffer[Either[String, HasId]] = ArrayBuffer()
 }
 
 private[chisel3] class DynamicContext() {
@@ -229,6 +253,9 @@ private[chisel3] class DynamicContext() {
 
 //scalastyle:off number.of.methods
 private[chisel3] object Builder {
+
+  type Prefix = List[Either[String, Data]]
+
   // All global mutable state must be referenced via dynamicContextVar!!
   private val dynamicContextVar = new DynamicVariable[Option[DynamicContext]](None)
   private def dynamicContext: DynamicContext = {
@@ -263,6 +290,19 @@ private[chisel3] object Builder {
   def components: ArrayBuffer[Component] = dynamicContext.components
   def annotations: ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
   def namingStack: NamingStack = dynamicContext.namingStack
+
+  def pushPrefix(d: String): Unit = {
+    chiselContext.get().prefixStack += Left(d)
+  }
+
+  def pushPrefix(d: Data): Unit = {
+    chiselContext.get().prefixStack += Right(d)
+  }
+  def popPrefix(): Unit = {
+    val ps = chiselContext.get().prefixStack
+    ps.remove(ps.size - 1)
+  }
+  def getPrefix(): Prefix = chiselContext.get().prefixStack.toList.asInstanceOf[Prefix]
 
   def currentModule: Option[BaseModule] = dynamicContextVar.value match {
     case Some(dyanmicContext) => dynamicContext.currentModule
