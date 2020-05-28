@@ -12,24 +12,25 @@ import scala.collection.mutable
   * Calculates needed modifications to a circuit's module/instance hierarchy
   */
 case class DuplicationHelper(existingModules: Set[String]) {
+
   // Maps instances to the module it instantiates (an ofModule)
-  type InstanceOfModuleMap = mutable.HashMap[Instance, OfModule]
+  type InstanceOfModuleMap = mutable.LinkedHashMap[Instance, OfModule]
 
   // Maps a module to the instance/ofModules it instantiates
-  type ModuleHasInstanceOfModuleMap = mutable.HashMap[String, InstanceOfModuleMap]
+  type ModuleHasInstanceOfModuleMap = mutable.LinkedHashMap[String, InstanceOfModuleMap]
 
   // Maps original module names to new duplicated modules and their encapsulated instance/ofModules
-  type DupMap = mutable.HashMap[String, ModuleHasInstanceOfModuleMap]
+  type DupMap = mutable.LinkedHashMap[String, ModuleHasInstanceOfModuleMap]
 
   // Internal state to keep track of how paths duplicate
   private val dupMap = new DupMap()
 
   // Internal record of which paths are renamed to which new names, in the case of a collision
-  private val cachedNames = mutable.HashMap[(String, Seq[(Instance, OfModule)]), String]() ++
+  private val cachedNames = mutable.LinkedHashMap[(String, Seq[(Instance, OfModule)]), String]() ++
     existingModules.map(m => (m, Nil) -> m)
 
   // Internal record of all paths to ensure unique name generation
-  private val allModules = mutable.HashSet[String]() ++ existingModules
+  private val allModules = mutable.LinkedHashSet[String]() ++ existingModules
 
   /** Updates internal state (dupMap) to calculate instance hierarchy modifications so t's tokens in an instance can be
     * expressed as a tokens in a module (e.g. uniquify/duplicate the instance path in t's tokens)

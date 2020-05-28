@@ -180,6 +180,9 @@ trait FirrtlRunners extends BackendCompilationUtilities {
 }
 
 trait FirrtlMatchers extends Matchers {
+  def dontTouch(ref: ReferenceTarget): DontTouchAnnotation = {
+    DontTouchAnnotation(ref)
+  }
   def dontTouch(path: String): Annotation = {
     val parts = path.split('.')
     require(parts.size >= 2, "Must specify both module and component!")
