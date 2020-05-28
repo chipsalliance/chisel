@@ -94,14 +94,33 @@ private[chisel3] trait HasId extends InstanceId {
   private var suggested_name: Option[(String, Prefix)] = None
   private var plugin_name: Option[(String, Prefix)] = None
   private val postname_hooks = scala.collection.mutable.ListBuffer.empty[String=>Unit]
-  // Only takes the first suggestion!
+
+  /** Takes the first name suggested. Multiple calls to this function will be ignored.
+    * If this name conflicts with another name, it may get uniquified by appending
+    * a digit at the end.
+    *
+    * Is a lower priority than [[suggestName]], in that regardless of whether [[pluginName]]
+    * was called, [[suggestName]] will always take precedence if it was called.
+    * @param name Name this component should be given
+    * @return this object
+    */
+  def pluginName(name: String): this.type = {
+    if(plugin_name.isEmpty) plugin_name = Some((name, Builder.getPrefix()))
+    this
+  }
+
+  /** Takes the first name suggested. Multiple calls to this function will be ignored.
+    * If this name conflicts with another name, it may get uniquified by appending
+    * a digit at the end.
+    *
+    * Is a higher priority than [[pluginName]], in that regardless of whether [[pluginName]]
+    * was called, [[suggestName]] will always take precedence.
+    * @param name Name this component should be given
+    * @return this object
+    */
   def suggestName(name: =>String): this.type = {
     if(suggested_name.isEmpty) suggested_name = Some((name, Builder.getPrefix()))
     for(hook <- postname_hooks) { hook(name) }
-    this
-  }
-  def pluginName(name: String): this.type = {
-    if(plugin_name.isEmpty) plugin_name = Some((name, Builder.getPrefix()))
     this
   }
   private def constructName(seed: String, prefix: Prefix): String = {
@@ -227,6 +246,7 @@ private[chisel3] class ChiselContext() {
   // Record the Bundle instance, class name, method name, and reverse stack trace position of open Bundles
   val bundleStack: ArrayBuffer[(Bundle, String, String, Int)] = ArrayBuffer()
 
+  // Records the different prefixes which have been scoped at this point in time
   val prefixStack: ArrayBuffer[Either[String, HasId]] = ArrayBuffer()
 }
 
@@ -254,6 +274,7 @@ private[chisel3] class DynamicContext() {
 //scalastyle:off number.of.methods
 private[chisel3] object Builder {
 
+  // Represents the current state of the prefixes given
   type Prefix = List[Either[String, Data]]
 
   // All global mutable state must be referenced via dynamicContextVar!!
@@ -291,17 +312,23 @@ private[chisel3] object Builder {
   def annotations: ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
   def namingStack: NamingStack = dynamicContext.namingStack
 
+  // Puts a prefix string onto the prefix stack
   def pushPrefix(d: String): Unit = {
     chiselContext.get().prefixStack += Left(d)
   }
 
+  // Puts a prefix data onto the prefix stack
   def pushPrefix(d: Data): Unit = {
     chiselContext.get().prefixStack += Right(d)
   }
+
+  // Remove a prefix from the stack
   def popPrefix(): Unit = {
     val ps = chiselContext.get().prefixStack
     ps.remove(ps.size - 1)
   }
+
+  // Returns the prefix stack at this moment
   def getPrefix(): Prefix = chiselContext.get().prefixStack.toList.asInstanceOf[Prefix]
 
   def currentModule: Option[BaseModule] = dynamicContextVar.value match {
