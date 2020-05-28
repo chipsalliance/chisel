@@ -19,8 +19,8 @@ class RuntimeDeprecatedTransform(val c: Context) {
         val Modifiers(_, _, annotations) = mods
         val annotationMessage = annotations.collect {  // get all messages from deprecated annotations
           case q"new deprecated($desc, $since)" => desc
-        } match {  // ensure there's only one and return it
-          case msg :: Nil => msg
+        } match {  // ensure there's only one and return it, eval in case it's not just a String literal
+          case msg :: Nil => c.eval(c.Expr[String](msg))
           case _ => c.abort(c.enclosingPosition, s"@chiselRuntimeDeprecated annotion must be used with exactly one @deprecated annotation, got annotations $annotations") // scalastyle:ignore line.size.limit
         }
         val message = s"$tname is deprecated: $annotationMessage"
