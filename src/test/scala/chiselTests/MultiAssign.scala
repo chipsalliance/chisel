@@ -50,6 +50,12 @@ class IllegalAssignSpec extends ChiselFlatSpec {
   "Reassignments to bit slices" should "be disallowed" in {
     intercept[chisel3.internal.ChiselException] {
       elaborate{ new BasicTester {
+        15.U()(1, 0) := 7.U
+      }}
+    }
+    // Deprecated form
+    intercept[chisel3.internal.ChiselException] {
+      elaborate{ new BasicTester {
         (15.U)(1, 0) := 7.U
       }}
     }

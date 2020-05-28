@@ -98,17 +98,27 @@ class NegativeShift(t: => Bits) extends Module {
 }
 
 class UIntLitExtractTester extends BasicTester {
-  assert("b101010".U(2) === false.B)
-  assert("b101010".U(3) === true.B)
-  assert("b101010".U(100) === false.B)
-  assert("b101010".U(3, 0) === "b1010".U)
-  assert("b101010".U(9, 0) === "b0000101010".U)
+  assert("b101010".U()(2) === false.B)
+  assert("b101010".U()(3) === true.B)
+  assert("b101010".U()(100) === false.B)
+  assert(123.U()(8) === false.B)
+  assert("b101010".U()(3, 0) === "b1010".U)
+  assert("b101010".U()(9, 0) === "b0000101010".U)
+  assert(123.U()(3, 1) === 5.U)
+  assert(123.U()(10, 5) === 3.U)
 
   assert("b101010".U(6.W)(2) === false.B)
   assert("b101010".U(6.W)(3) === true.B)
   assert("b101010".U(6.W)(100) === false.B)
   assert("b101010".U(6.W)(3, 0) === "b1010".U)
   assert("b101010".U(6.W)(9, 0) === "b0000101010".U)
+
+  // Deprecated forms but should continue to work until removed
+  assert("b101010".U(2) === false.B)
+  assert("b101010".U(3) === true.B)
+  assert("b101010".U(100) === false.B)
+  assert(123.U(8) === false.B)
+
   stop()
 }
 

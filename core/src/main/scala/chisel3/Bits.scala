@@ -9,7 +9,7 @@ import chisel3.internal._
 import chisel3.internal.Builder.pushOp
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform, SourceInfoWhiteboxTransform,
-  UIntTransform}
+  UIntTransform, DeprecatedSourceInfo}
 import chisel3.internal.firrtl.PrimOp._
 import _root_.firrtl.{ir => firrtlir}
 import _root_.firrtl.{constraint => firrtlconstraint}
@@ -2242,8 +2242,18 @@ package experimental {
       */
     object Implicits {
       implicit class fromBigIntToLiteralInterval(bigInt: BigInt) {
-        def I: Interval = {
+        def I(): Interval = {
           Interval.Lit(bigInt, width = Width(), 0.BP)
+        }
+
+        /** BigInt to Interval conversion followed by bit extract (bad style, deprecated) */
+        @chiselRuntimeDeprecated
+        @deprecated(
+          "Passing an Int to .I is usually a mistake: It does *not* set the binary point " +
+          "but does a bit extract. Did you mean .I(<arg>.BP)? " +
+          "If you do want bit extraction, add empty parentheses after .I (eg. .I()(<arg>))", "3.3.2")
+        def I(x: BigInt): Bool = {
+          this.I().do_apply(x)(DeprecatedSourceInfo, ExplicitCompileOptions.Strict)
         }
 
         def I(binaryPoint: BinaryPoint): Interval = {
@@ -2263,9 +2273,20 @@ package experimental {
       implicit class fromLongToLiteralInterval(long: Long) extends fromBigIntToLiteralInterval(long)
 
       implicit class fromBigDecimalToLiteralInterval(bigDecimal: BigDecimal) {
-        def I: Interval = {
+        def I(): Interval = {
           Interval.Lit(Interval.toBigInt(bigDecimal, 0.BP), width = Width(), 0.BP)
         }
+
+        /** BigDecimal to Interval conversion followed by bit extract (bad style, deprecated) */
+        @chiselRuntimeDeprecated
+        @deprecated(
+          "Passing an Int to .I is usually a mistake: It does *not* set the binary point " +
+          "but does a bit extract. Did you mean .I(<arg>.BP)? " +
+          "If you do want bit extraction, add empty parentheses after .I (eg. .I()(<arg>))", "3.3.2")
+        def I(x: BigInt): Bool = {
+          this.I().do_apply(x)(DeprecatedSourceInfo, ExplicitCompileOptions.Strict)
+        }
+
 
         def I(binaryPoint: BinaryPoint): Interval = {
           Interval.Lit(Interval.toBigInt(bigDecimal, binaryPoint), width = Width(), binaryPoint = binaryPoint)
