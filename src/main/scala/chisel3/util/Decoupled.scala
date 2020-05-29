@@ -257,6 +257,51 @@ class Queue[T <: Data](gen: T,
   }
 }
 
+/** A hardware module implementing a QueueWithFlipFlopOutput
+  * @param gen The type of data to queue
+  * @param entries The max number of entries in the queue
+  *
+  * @example {{{
+  * val q = Module(new QueueWithFlipFlopOutput(UInt(), 16))
+  * q.io.enq <> producer.io.out
+  * consumer.io.in <> q.io.deq
+  * }}}
+  */
+@chiselName
+class QueueWithFlipFlopOutput[T <: Data](gen: T,
+                      val entries: Int)
+                      (implicit compileOptions: chisel3.CompileOptions)
+    extends Module() {
+  require(entries >= 2, s"require( QueueWithFlipFlopOutput.entries(${entries}) >= 2 )")
+  val genType = if (compileOptions.declaredTypeMustBeUnbound) {
+    requireIsChiselType(gen)
+    gen
+  } else {
+    if (DataMirror.internal.isSynthesizable(gen)) {
+      chiselTypeOf(gen)
+    } else {
+      gen
+    }
+  }
+  val io = IO(new QueueIO(genType, entries))
+  private val legacyQ = Module(new Queue(gen, entries-1,false,false))
+  val do_enq   = WireDefault(io.enq.fire())
+  val do_deq   = WireDefault(io.deq.fire())
+  val ff_valid = RegInit(false.B)
+  val ff_bits  = Reg(genType)
+  when ( do_enq =/= do_deq ) { ff_valid := io.enq.valid || legacyQ.io.deq.valid }
+  when ( (!ff_valid || io.deq.ready) && (io.enq.valid || legacyQ.io.deq.valid) ) {
+      ff_bits := Mux( legacyQ.io.deq.valid , legacyQ.io.deq.bits , io.enq.bits )
+  }
+  legacyQ.io.enq.valid := io.enq.valid && (legacyQ.io.deq.valid || (ff_valid && !io.deq.ready))
+  legacyQ.io.enq.bits  := io.enq.bits
+  legacyQ.io.deq.ready := (!ff_valid) || io.deq.ready
+  io.enq.ready := legacyQ.io.enq.ready
+  io.deq.valid := ff_valid
+  io.deq.bits  := ff_bits
+  io.count := legacyQ.io.count +& ff_valid
+}
+
 /** Factory for a generic hardware queue.
   *
   * @param enq input (enqueue) interface to the queue, also determines width of queue elements
@@ -276,7 +321,8 @@ object Queue
       enq: ReadyValidIO[T],
       entries: Int = 2,
       pipe: Boolean = false,
-      flow: Boolean = false): DecoupledIO[T] = {
+      flow: Boolean = false,
+      muxOut: Boolean = true): DecoupledIO[T] = {
     if (entries == 0) {
       val deq = Wire(new DecoupledIO(chiselTypeOf(enq.bits)))
       deq.valid := enq.valid
@@ -284,7 +330,11 @@ object Queue
       enq.ready := deq.ready
       deq
     } else {
-      val q = Module(new Queue(chiselTypeOf(enq.bits), entries, pipe, flow))
+      val q = Module( if( entries < 2 || pipe || flow || muxOut ) {
+                new Queue(chiselTypeOf(enq.bits), entries, pipe, flow)
+              } else {
+                new QueueWithFlipFlopOutput(chiselTypeOf(enq.bits), entries)
+              })
       q.io.enq.valid := enq.valid // not using <> so that override is allowed
       q.io.enq.bits := enq.bits
       enq.ready := q.io.enq.ready
