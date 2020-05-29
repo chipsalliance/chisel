@@ -36,9 +36,9 @@ import chisel3.internal.prefixing.ValNameImpl
   * @param name The name of the val which it got assigned to.
   */
 @scala.annotation.implicitNotFound("Cannot find val name! Did you assign this function's returned value to a val?")
-private [chisel3] case class ValName(name: String)
+private[chisel3] case class ValName(name: String)
 
-private [chisel3] object ValName
+private[chisel3] object ValName
 {
   // Used to trigger the macro implementation
   implicit def materialize(implicit x: ValNameImpl): ValName = ValName(x.name)

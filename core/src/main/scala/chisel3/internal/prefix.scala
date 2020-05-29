@@ -19,7 +19,7 @@ import chisel3.Data
   * }}}
   *
   */
-private [chisel3] object prefix {
+private[chisel3] object prefix { // scalastyle:ignore
 
   /** Use to add a prefix to any components generated in the provided scope
     * The prefix is the name of the provided which, which may not be known yet.
