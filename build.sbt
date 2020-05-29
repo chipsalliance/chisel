@@ -105,7 +105,7 @@ lazy val chiselSettings = Seq (
 // An explicit dependency on junit seems to alleviate this.
   libraryDependencies ++= Seq(
     "junit" % "junit" % "4.13" % "test",
-    "org.scalatest" %% "scalatest" % "3.1.1" % "test",
+    "org.scalatest" %% "scalatest" % "3.1.2" % "test",
     "org.scalatestplus" %% "scalacheck-1-14" % "3.1.1.1" % "test",
     "com.github.scopt" %% "scopt" % "3.7.1"
   ),
