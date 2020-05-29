@@ -134,16 +134,24 @@ private[chisel3] trait HasId extends InstanceId {
     builder.toString
   }
   private def candidateName(default: String): String = {
-    if(suggested_name.nonEmpty) constructName(suggested_name.get._1, suggested_name.get._2)
-    else if(plugin_name.nonEmpty) constructName(plugin_name.get._1, plugin_name.get._2)
-    else default
+    if(suggested_name.nonEmpty) {
+      constructName(suggested_name.get._1, suggested_name.get._2)
+    } else if(plugin_name.nonEmpty) {
+      constructName(plugin_name.get._1, plugin_name.get._2)
+    } else {
+      default
+    }
   }
   private[chisel3] def seedOpt: Option[String] = {
-    if(suggested_name.nonEmpty) suggested_name.map(_._1)
-    else if(plugin_name.nonEmpty) plugin_name.map(_._1)
-    else None
+    if(suggested_name.nonEmpty) {
+      suggested_name.map(_._1)
+    } else if(plugin_name.nonEmpty) {
+      plugin_name.map(_._1)
+    } else {
+      None
+    }
   }
-  def getName = suggested_name.map(_._1)
+  def getName: Option[String] = suggested_name.map(_._1)
   private[chisel3] def suggestedName: Option[String] = suggested_name.map(x => constructName(x._1, x._2))
   private[chisel3] def addPostnameHook(hook: String=>Unit): Unit = postname_hooks += hook
 

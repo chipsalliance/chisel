@@ -10,7 +10,7 @@ import chiselTests.ChiselPropSpec
 class PrefixSpec extends ChiselPropSpec {
   property("Scala plugin should interact with prefixing so last plugin name wins?") {
     class Test extends MultiIOModule {
-      def builder() = {
+      def builder(): UInt = {
         val wire1 = Wire(UInt(3.W))
         val wire2 = Wire(UInt(3.W))
         wire2
@@ -29,7 +29,7 @@ class PrefixSpec extends ChiselPropSpec {
 
   property("Using String as prefix") {
     class Test extends MultiIOModule {
-      def builder() = {
+      def builder(): UInt = {
         val wire1 = Wire(UInt(3.W))
         val wire2 = Wire(UInt(3.W))
         wire2
@@ -45,7 +45,7 @@ class PrefixSpec extends ChiselPropSpec {
 
   property("ValName should enable using assigned val as prefix") {
     class Test extends MultiIOModule {
-      def builder()(implicit valName: ValName) = {
+      def builder()(implicit valName: ValName): UInt = {
         prefix(valName.name) {
           val wire1 = Wire(UInt(3.W))
           val wire2 = Wire(UInt(3.W))
@@ -68,7 +68,7 @@ class PrefixSpec extends ChiselPropSpec {
         val wire2 = Wire(UInt(3.W))
         wire2
       }
-      def builder()(implicit valName: ValName) = {
+      def builder()(implicit valName: ValName): UInt = {
         prefix(valName.name) {
           val wire1 = Wire(UInt(3.W))
           val wire2 = Wire(UInt(3.W))
@@ -99,7 +99,7 @@ class PrefixSpec extends ChiselPropSpec {
 
   property("Prefixing seeded with signal") {
     class Test extends MultiIOModule {
-      def builder() = {
+      def builder(): UInt = {
         val wire = Wire(UInt(3.W))
         wire
       }
