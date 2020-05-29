@@ -322,7 +322,7 @@ object Queue
       entries: Int = 2,
       pipe: Boolean = false,
       flow: Boolean = false,
-      muxOut: Boolean = true): DecoupledIO[T] = {
+      muxOut: Boolean = false): DecoupledIO[T] = {
     if (entries == 0) {
       val deq = Wire(new DecoupledIO(chiselTypeOf(enq.bits)))
       deq.valid := enq.valid
