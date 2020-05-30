@@ -206,54 +206,84 @@ class Queue[T <: Data](gen: T,
 
   val io = IO(new QueueIO(genType, entries))
 
-  val ram = Mem(entries, genType)
-  val enq_ptr = Counter(entries)
-  val deq_ptr = Counter(entries)
-  val maybe_full = RegInit(false.B)
+  private val withFlipFlopOutput = (entries >= 2) && (!pipe) && (!flow)
+  private val bodyEntries = if( withFlipFlopOutput ) (entries-1) else (entries)
 
-  val ptr_match = enq_ptr.value === deq_ptr.value
-  val empty = ptr_match && !maybe_full
-  val full = ptr_match && maybe_full
-  val do_enq = WireDefault(io.enq.fire())
-  val do_deq = WireDefault(io.deq.fire())
+  private val bodyIO = Wire(new QueueIO(genType, bodyEntries))
 
-  when (do_enq) {
-    ram(enq_ptr.value) := io.enq.bits
+  private val ram = Mem(bodyEntries, genType)
+  private val enq_ptr = Counter(bodyEntries)
+  private val deq_ptr = Counter(bodyEntries)
+  private val bodyMaybe_full = RegInit(false.B)
+
+  private val bodyPtr_match = enq_ptr.value === deq_ptr.value
+  private val bodyEmpty = bodyPtr_match && !bodyMaybe_full
+  private val bodyFull  = bodyPtr_match && bodyMaybe_full
+  private val bodyDo_enq = WireDefault(bodyIO.enq.fire())
+  private val bodyDo_deq = WireDefault(bodyIO.deq.fire())
+
+  when (bodyDo_enq) {
+    ram(enq_ptr.value) := bodyIO.enq.bits
     enq_ptr.inc()
   }
-  when (do_deq) {
+  when (bodyDo_deq) {
     deq_ptr.inc()
   }
-  when (do_enq =/= do_deq) {
-    maybe_full := do_enq
+  when (bodyDo_enq =/= bodyDo_deq) {
+    bodyMaybe_full := bodyDo_enq
   }
 
-  io.deq.valid := !empty
-  io.enq.ready := !full
-  io.deq.bits := ram(deq_ptr.value)
+  bodyIO.deq.valid := !bodyEmpty
+  bodyIO.enq.ready := !bodyFull
+  bodyIO.deq.bits := ram(deq_ptr.value)
 
   if (flow) {
-    when (io.enq.valid) { io.deq.valid := true.B }
-    when (empty) {
-      io.deq.bits := io.enq.bits
-      do_deq := false.B
-      when (io.deq.ready) { do_enq := false.B }
+    when (bodyIO.enq.valid) { bodyIO.deq.valid := true.B }
+    when (bodyEmpty) {
+      bodyIO.deq.bits := bodyIO.enq.bits
+      bodyDo_deq := false.B
+      when (bodyIO.deq.ready) { bodyDo_enq := false.B }
     }
   }
 
   if (pipe) {
-    when (io.deq.ready) { io.enq.ready := true.B }
+    when (bodyIO.deq.ready) { bodyIO.enq.ready := true.B }
   }
 
-  val ptr_diff = enq_ptr.value - deq_ptr.value
-  if (isPow2(entries)) {
-    io.count := Mux(maybe_full && ptr_match, entries.U, 0.U) | ptr_diff
+  private val ptr_diff = enq_ptr.value - deq_ptr.value
+  if (isPow2(bodyEntries)) {
+    bodyIO.count := Mux(bodyMaybe_full && bodyPtr_match, bodyEntries.U, 0.U) | ptr_diff
   } else {
-    io.count := Mux(ptr_match,
-                    Mux(maybe_full,
-                      entries.asUInt, 0.U),
+    bodyIO.count := Mux(bodyPtr_match,
+                    Mux(bodyMaybe_full,
+                      bodyEntries.asUInt, 0.U),
                     Mux(deq_ptr.value > enq_ptr.value,
-                      entries.asUInt + ptr_diff, ptr_diff))
+                      bodyEntries.asUInt + ptr_diff, ptr_diff))
+  }
+
+  val empty = !io.deq.valid
+  val full  = !io.enq.ready  
+  val do_enq = WireDefault(io.enq.fire())
+  val do_deq = WireDefault(io.deq.fire())
+
+  if( withFlipFlopOutput ){
+    val ff_valid = RegInit(false.B)
+    val ff_bits  = Reg(genType)
+    when ( do_enq =/= do_deq ) { ff_valid := io.enq.valid || bodyIO.deq.valid }
+    when ( (!ff_valid || io.deq.ready) && (io.enq.valid || bodyIO.deq.valid) ) {
+        ff_bits := Mux( bodyIO.deq.valid , bodyIO.deq.bits , io.enq.bits )
+    }
+    bodyIO.enq.valid := io.enq.valid && (bodyIO.deq.valid || (ff_valid && !io.deq.ready))
+    bodyIO.enq.bits  := io.enq.bits
+    bodyIO.deq.ready := (!ff_valid) || io.deq.ready
+    io.enq.ready := bodyIO.enq.ready
+    io.deq.valid := ff_valid
+    io.deq.bits  := ff_bits
+    io.count := bodyIO.count +& ff_valid
+  } else {
+    bodyIO.enq <> io.enq
+    io.deq <> bodyIO.deq
+    io.count := bodyIO.count
   }
 }
 
