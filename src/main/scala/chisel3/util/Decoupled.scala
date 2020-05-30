@@ -206,19 +206,24 @@ class Queue[T <: Data](gen: T,
 
   val io = IO(new QueueIO(genType, entries))
 
-  val ram = Mem(entries, genType)
-  val enq_ptr = Counter(entries)
-  val deq_ptr = Counter(entries)
-  val maybe_full = RegInit(false.B)
+  private val withFlipFlopOutput = (entries >= 2) && (!pipe) && (!flow)
+  private val bodyEntries = if( withFlipFlopOutput ) (entries-1) else (entries)
 
-  val ptr_match = enq_ptr.value === deq_ptr.value
-  val empty = ptr_match && !maybe_full
-  val full = ptr_match && maybe_full
-  val do_enq = WireDefault(io.enq.fire())
-  val do_deq = WireDefault(io.deq.fire())
+  private val bodyIO = Wire(new QueueIO(genType, bodyEntries))
+
+  private val ram = Mem(bodyEntries, genType)
+  private val enq_ptr = Counter(bodyEntries)
+  private val deq_ptr = Counter(bodyEntries)
+  private val maybe_full = RegInit(false.B)
+
+  private val ptr_match = enq_ptr.value === deq_ptr.value
+  private val empty = ptr_match && !maybe_full
+  private val full = ptr_match && maybe_full
+  private val do_enq = WireDefault(bodyIO.enq.fire())
+  private val do_deq = WireDefault(bodyIO.deq.fire())
 
   when (do_enq) {
-    ram(enq_ptr.value) := io.enq.bits
+    ram(enq_ptr.value) := bodyIO.enq.bits
     enq_ptr.inc()
   }
   when (do_deq) {
@@ -228,78 +233,55 @@ class Queue[T <: Data](gen: T,
     maybe_full := do_enq
   }
 
-  io.deq.valid := !empty
-  io.enq.ready := !full
-  io.deq.bits := ram(deq_ptr.value)
+  bodyIO.deq.valid := !empty
+  bodyIO.enq.ready := !full
+  bodyIO.deq.bits := ram(deq_ptr.value)
 
   if (flow) {
-    when (io.enq.valid) { io.deq.valid := true.B }
+    when (bodyIO.enq.valid) { bodyIO.deq.valid := true.B }
     when (empty) {
-      io.deq.bits := io.enq.bits
+      bodyIO.deq.bits := bodyIO.enq.bits
       do_deq := false.B
-      when (io.deq.ready) { do_enq := false.B }
+      when (bodyIO.deq.ready) { do_enq := false.B }
     }
   }
 
   if (pipe) {
-    when (io.deq.ready) { io.enq.ready := true.B }
+    when (bodyIO.deq.ready) { bodyIO.enq.ready := true.B }
   }
 
-  val ptr_diff = enq_ptr.value - deq_ptr.value
-  if (isPow2(entries)) {
-    io.count := Mux(maybe_full && ptr_match, entries.U, 0.U) | ptr_diff
+  private val ptr_diff = enq_ptr.value - deq_ptr.value
+  if (isPow2(bodyEntries)) {
+    bodyIO.count := Mux(maybe_full && ptr_match, bodyEntries.U, 0.U) | ptr_diff
   } else {
-    io.count := Mux(ptr_match,
+    bodyIO.count := Mux(ptr_match,
                     Mux(maybe_full,
-                      entries.asUInt, 0.U),
+                      bodyEntries.asUInt, 0.U),
                     Mux(deq_ptr.value > enq_ptr.value,
-                      entries.asUInt + ptr_diff, ptr_diff))
+                      bodyEntries.asUInt + ptr_diff, ptr_diff))
   }
-}
 
-/** A hardware module implementing a QueueWithFlipFlopOutput
-  * @param gen The type of data to queue
-  * @param entries The max number of entries in the queue
-  *
-  * @example {{{
-  * val q = Module(new QueueWithFlipFlopOutput(UInt(), 16))
-  * q.io.enq <> producer.io.out
-  * consumer.io.in <> q.io.deq
-  * }}}
-  */
-@chiselName
-class QueueWithFlipFlopOutput[T <: Data](gen: T,
-                      val entries: Int)
-                      (implicit compileOptions: chisel3.CompileOptions)
-    extends Module() {
-  require(entries >= 2, s"require( QueueWithFlipFlopOutput.entries(${entries}) >= 2 )")
-  val genType = if (compileOptions.declaredTypeMustBeUnbound) {
-    requireIsChiselType(gen)
-    gen
-  } else {
-    if (DataMirror.internal.isSynthesizable(gen)) {
-      chiselTypeOf(gen)
-    } else {
-      gen
+  if( withFlipFlopOutput ){
+    val do_enq   = WireDefault(io.enq.fire())
+    val do_deq   = WireDefault(io.deq.fire())
+    val ff_valid = RegInit(false.B)
+    val ff_bits  = Reg(genType)
+    when ( do_enq =/= do_deq ) { ff_valid := io.enq.valid || bodyIO.deq.valid }
+    when ( (!ff_valid || io.deq.ready) && (io.enq.valid || bodyIO.deq.valid) ) {
+        ff_bits := Mux( bodyIO.deq.valid , bodyIO.deq.bits , io.enq.bits )
     }
+    bodyIO.enq.valid := io.enq.valid && (bodyIO.deq.valid || (ff_valid && !io.deq.ready))
+    bodyIO.enq.bits  := io.enq.bits
+    bodyIO.deq.ready := (!ff_valid) || io.deq.ready
+    io.enq.ready := bodyIO.enq.ready
+    io.deq.valid := ff_valid
+    io.deq.bits  := ff_bits
+    io.count := bodyIO.count +& ff_valid
+  } else {
+    bodyIO.enq <> io.enq
+    io.deq <> bodyIO.deq
+    io.count := bodyIO.count
   }
-  val io = IO(new QueueIO(genType, entries))
-  private val legacyQ = Module(new Queue(gen, entries-1,false,false))
-  val do_enq   = WireDefault(io.enq.fire())
-  val do_deq   = WireDefault(io.deq.fire())
-  val ff_valid = RegInit(false.B)
-  val ff_bits  = Reg(genType)
-  when ( do_enq =/= do_deq ) { ff_valid := io.enq.valid || legacyQ.io.deq.valid }
-  when ( (!ff_valid || io.deq.ready) && (io.enq.valid || legacyQ.io.deq.valid) ) {
-      ff_bits := Mux( legacyQ.io.deq.valid , legacyQ.io.deq.bits , io.enq.bits )
-  }
-  legacyQ.io.enq.valid := io.enq.valid && (legacyQ.io.deq.valid || (ff_valid && !io.deq.ready))
-  legacyQ.io.enq.bits  := io.enq.bits
-  legacyQ.io.deq.ready := (!ff_valid) || io.deq.ready
-  io.enq.ready := legacyQ.io.enq.ready
-  io.deq.valid := ff_valid
-  io.deq.bits  := ff_bits
-  io.count := legacyQ.io.count +& ff_valid
 }
 
 /** Factory for a generic hardware queue.
@@ -321,8 +303,7 @@ object Queue
       enq: ReadyValidIO[T],
       entries: Int = 2,
       pipe: Boolean = false,
-      flow: Boolean = false,
-      muxOut: Boolean = false): DecoupledIO[T] = {
+      flow: Boolean = false): DecoupledIO[T] = {
     if (entries == 0) {
       val deq = Wire(new DecoupledIO(chiselTypeOf(enq.bits)))
       deq.valid := enq.valid
@@ -330,11 +311,7 @@ object Queue
       enq.ready := deq.ready
       deq
     } else {
-      val q = Module( if( entries < 2 || pipe || flow || muxOut ) {
-                new Queue(chiselTypeOf(enq.bits), entries, pipe, flow)
-              } else {
-                new QueueWithFlipFlopOutput(chiselTypeOf(enq.bits), entries)
-              })
+      val q = Module(new Queue(chiselTypeOf(enq.bits), entries, pipe, flow))
       q.io.enq.valid := enq.valid // not using <> so that override is allowed
       q.io.enq.bits := enq.bits
       enq.ready := q.io.enq.ready
