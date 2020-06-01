@@ -3,16 +3,16 @@ package fix
 import scalafix.v1._
 import scala.meta._
 
-case class AmbiguousLiteralExtract(lit: Lit.Int) extends Diagnostic {
-  override def position: Position = lit.pos
+case class AmbiguousLiteralExtract(conv: String, valLit: Lit.Int, bitLit: Lit.Int) extends Diagnostic {
+  override def position: Position = valLit.pos
   override def message: String =
-    s"Passing an Int to .U is usually a mistake: it does not set the width but does a bit extract."
+    s"Passing an integer to .${conv} does not set width but does a bit extract. If you really want this bit extract, use ${valLit}.${conv}()(${bitLit})"
 }
 
 case class ReferentialEqualityOnData(eq: Term.ApplyInfix) extends Diagnostic {
   override def position: Position = eq.pos
   override def message: String =
-    s"Using == on a hardware type (e.g. UInt) is usually a mistake: did you mean to use the === operator?"
+    s"Did you mean === (binary equality) instead of == (referential equality? If you really want referential equality, use the named equals method."
 }
 
 class ChiselLinter extends SemanticRule("ChiselLinter") {
@@ -27,10 +27,12 @@ class ChiselLinter extends SemanticRule("ChiselLinter") {
     case _ => false
   }
 
+  private val litConvs = Set("U", "S", "F")
+
   override def fix(implicit doc: SemanticDocument): Patch = {
     doc.tree.collect {
-      case Term.Apply(Term.Select(Lit.Int(_), Term.Name("U")), Seq(il: Lit.Int)) =>
-        Patch.lint(AmbiguousLiteralExtract(il))
+      case Term.Apply(Term.Select(vl: Lit.Int, Term.Name(conv)), Seq(bl: Lit.Int)) if litConvs.contains(conv) =>
+        Patch.lint(AmbiguousLiteralExtract(conv, vl, bl))
       case eq @ Term.ApplyInfix(lhs, Term.Name("=="), _, _) if (isChiselType(lhs.symbol)) =>
         Patch.lint(ReferentialEqualityOnData(eq))
     }.asPatch
