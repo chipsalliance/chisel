@@ -6,7 +6,7 @@ import scala.meta._
 case class AmbiguousLiteralExtract(conv: String, valLit: Lit.Int, bitLit: Lit.Int) extends Diagnostic {
   override def position: Position = valLit.pos
   override def message: String =
-    s"Passing an integer to .${conv} does not set width but does a bit extract. If you really want this bit extract, use ${valLit}.${conv}()(${bitLit})"
+    s"Passing an integer to .${conv} does not set width but does a bit extract. If you really want this bit extract, use ${valLit}.${conv}.apply(${bitLit}) instead."
 }
 
 case class ReferentialEqualityOnData(eq: Term.ApplyInfix) extends Diagnostic {
