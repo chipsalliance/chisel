@@ -32,7 +32,7 @@ def javacOptionsVersion(scalaVersion: String): Seq[String] = {
 lazy val commonSettings = Seq(
   organization := "edu.berkeley.cs",
   name := "firrtl",
-  version := "1.3-SNAPSHOT",
+  version := "1.4-SNAPSHOT",
   scalaVersion := "2.12.11",
   crossScalaVersions := Seq("2.12.11", "2.11.12"),
   addCompilerPlugin(scalafixSemanticdb),
