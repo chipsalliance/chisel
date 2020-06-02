@@ -165,7 +165,7 @@ class DedupModules extends Transform with DependencyAPIMigration with PreservesA
     }.toMap
 
     // get the ordered set of instances a module, includes new Deduped modules
-    val getChildrenInstances = (mod: String) => {
+    val getChildrenInstances = {
       val childrenMap = instanceGraph.getChildrenInstances
       val newModsMap: Map[String, mutable.LinkedHashSet[WDefInstance]] = dedupMap.map {
         case (name, m: Module) =>
@@ -175,7 +175,7 @@ class DedupModules extends Transform with DependencyAPIMigration with PreservesA
         case (name, m: DefModule) =>
           m.name -> mutable.LinkedHashSet.empty[WDefInstance]
       }.toMap
-      childrenMap.get(mod).getOrElse(newModsMap(mod))
+      (mod: String) => childrenMap.get(mod).getOrElse(newModsMap(mod))
     }
 
     val instanceNameMap: Map[OfModule, Map[Instance, Instance]] = {
