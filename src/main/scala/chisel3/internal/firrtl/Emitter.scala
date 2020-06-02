@@ -80,6 +80,9 @@ private class Emitter(circuit: Circuit) {
         val printfArgs = Seq(e.clock.fullName(ctx), "UInt<1>(1)",
           "\"" + printf.format(fmt) + "\"") ++ args
         printfArgs mkString ("printf(", ", ", ")")
+      // formal
+      case e: Check => s"check(${e.expr.fullName(ctx)}"
+      // end formal
       case e: DefInvalid => s"${e.arg.fullName(ctx)} is invalid"
       case e: DefInstance => s"inst ${e.name} of ${e.id.name}"
       case w: WhenBegin =>

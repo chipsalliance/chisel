@@ -739,6 +739,9 @@ case class ConnectInit(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Comm
 case class Stop(sourceInfo: SourceInfo, clock: Arg, ret: Int) extends Command
 case class Port(id: Data, dir: SpecifiedDirection)
 case class Printf(sourceInfo: SourceInfo, clock: Arg, pable: Printable) extends Command
+// formal
+case class Check(sourceInfo: SourceInfo, expr: Arg) extends Command
+// end formal
 abstract class Component extends Arg {
   def id: BaseModule
   def name: String
