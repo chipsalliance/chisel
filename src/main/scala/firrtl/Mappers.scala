@@ -14,6 +14,9 @@ object Mappers {
     implicit def forType(f: Type => Type): PortMagnet = new PortMagnet {
       override def map(port: Port): Port = port mapType f
     }
+    implicit def forString(f: String => String): PortMagnet = new PortMagnet {
+      override def map(port: Port): Port = port mapString f
+    }
   }
   implicit class PortMap(val _port: Port) extends AnyVal {
     def map[T](f: T => T)(implicit magnet: (T => T) => PortMagnet): Port = magnet(f).map(_port)

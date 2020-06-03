@@ -846,6 +846,7 @@ case class Port(
     tpe: Type) extends FirrtlNode with IsDeclaration {
   def serialize: String = s"${direction.serialize} $name : ${tpe.serialize}" + info.serialize
   def mapType(f: Type => Type): Port = Port(info, name, direction, f(tpe))
+  def mapString(f: String => String): Port = Port(info, f(name), direction, tpe)
 }
 
 /** Parameters for external modules */
