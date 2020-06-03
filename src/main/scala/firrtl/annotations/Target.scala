@@ -649,7 +649,7 @@ case class InstanceTarget(circuit: String,
   /** @return a [[ReferenceTarget]] referring to this declaration of this instance */
   def asReference: ReferenceTarget = ReferenceTarget(circuit, module, path, instance, Nil)
 
-  /** @return a [[ReferenceTarget]] referring to declaration of this ofModule */
+  /** @return a [[ModuleTarget]] referring to declaration of this ofModule */
   def ofModuleTarget: ModuleTarget = ModuleTarget(circuit, ofModule)
 
   override def circuitOpt: Option[String] = Some(circuit)
