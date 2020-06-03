@@ -193,18 +193,7 @@ object RunFirrtlTransformAnnotation extends HasShellOptions {
             s"Unknown error when instantiating class $txName", e) }),
       helpText = "Run these transforms during compilation",
       shortOption = Some("fct"),
-      helpValueName = Some("<package>.<class>") ),
-    new ShellOption[String](
-      longOption = "change-name-case",
-      toAnnotationSeq = _ match {
-        case "lower" => Seq(RunFirrtlTransformAnnotation(new firrtl.features.LowerCaseNames))
-        case "upper" => Seq(RunFirrtlTransformAnnotation(new firrtl.features.UpperCaseNames))
-        case a => throw new OptionsException(s"Unknown case '$a'. Did you misspell it?")
-      },
-      helpText = "Convert all FIRRTL names to a specific case",
-      helpValueName = Some("<lower|upper>")
-    )
-  )
+      helpValueName = Some("<package>.<class>") ) )
 
 }
 
