@@ -48,7 +48,7 @@ Chisel has a construct called `SyncReadMem` for sequential/synchronous-read, seq
 
 If the same memory address is both written and sequentially read on the same clock edge, or if a sequential read enable is cleared, then the read data is undefined.
 
-Values on the read data port are not guaranteed to be held until the next read cycle. If that is the desired behavior, external logic to hold the last read value must be written.
+Values on the read data port are not guaranteed to be held until the next read cycle. If that is the desired behavior, external logic to hold the last read value must be added.
 
 #### Read port/write port
 Ports into `SyncReadMem`s are created by applying a `UInt` index.  A 1024-entry register file with one write port and one read port might be expressed as follows:
