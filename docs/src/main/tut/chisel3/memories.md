@@ -66,13 +66,13 @@ class ReadWriteSmem extends Module {
   })
 
   val mem = SyncReadMem(1024, UInt(width.W))
-  // Create one write port and one read port.
+  // Create one write port and one read port
   mem.write(io.addr, io.dataIn)
   io.dataOut := mem.read(io.addr, io.enable)
 }
 ```
 
-Below is an example waveform of the one write port/one read port `SyncReadMem` with [masks](#masks). Note that the signal names will differ from the exact wire names generated for the `SyncReadMem`.
+Below is an example waveform of the one write port/one read port `SyncReadMem` with [masks](#masks). Note that the signal names will differ from the exact wire names generated for the `SyncReadMem`. With masking, it is also possible that multiple RTL arrays will be generated with the behavior below.
 ![read/write ports example waveform](https://svg.wavedrom.com/github/freechipsproject/www.chisel-lang.org/seqmem-update/docs/src/main/tut/chisel3/memories_waveforms/smem_read_write.json)    
 
 #### Single-ported
@@ -90,7 +90,7 @@ class RWSmem extends Module {
     val dataOut = Output(UInt(width.W))
   })
 
-  val mem = SyncReadMem(2048, UInt(32.W))
+  val mem = SyncReadMem(1024, UInt(width.W))
   io.dataOut := DontCare
   when(io.enable) {
     val rdwrPort = mem(io.addr)
@@ -102,7 +102,7 @@ class RWSmem extends Module {
 
 (The `DontCare` is there to make Chisel's [unconnected wire detection](unconnected-wires) aware that reading while writing is undefined.)
 
-Here is an example single read/write port waveform, with [masks](#masks) (again, generated signal names may differ):
+Here is an example single read/write port waveform, with [masks](#masks) (again, generated signal names and number of arrays may differ):
 ![read/write ports example waveform](https://svg.wavedrom.com/github/freechipsproject/www.chisel-lang.org/seqmem-update/docs/src/main/tut/chisel3/memories_waveforms/smem_rw.json)
 
 
@@ -114,26 +114,26 @@ Creating asynchronous-read versions of the examples above simply involves replac
 
 ### Masks
 
-Chisel memories also support write masks for subword writes. Chisel will infer masks if the data type of the memory is a vector. To infer a mask, specify the `mask` argument of the `write` function which creates write ports. A given masked length is written if the corresponding mask bit is set. For example, in the example below, if the 0th bit of mask is true, it will write the lower 8 bits of the corresponding address.
+Chisel memories also support write masks for subword writes. Chisel will infer masks if the data type of the memory is a vector. To infer a mask, specify the `mask` argument of the `write` function which creates write ports. A given masked length is written if the corresponding mask bit is set. For example, in the example below, if the 0th bit of mask is true, it will write the lower byte of the data at corresponding address.
 
 ```scala mdoc:silent
 import chisel3._
 class MaskedReadWriteSmem extends Module {
-  val width: Int = 32
+  val width: Int = 8
   val io = IO(new Bundle {
     val enable = Input(Bool())
     val write = Input(Bool())
     val addr = Input(UInt(10.W))
     val mask = Input(Vec(4, Bool()))
-    val dataIn = Input(UInt(width.W))
-    val dataOut = Output(UInt(width.W))
+    val dataIn = Input(Vec(4, UInt(width.W)))
+    val dataOut = Output(Vec(4, UInt(width.W)))
   })
 
-  val mem = SyncReadMem(1024, Vec(4, UInt(8.W)))
+  // Create a 32-bit wide memory that is byte-masked
+  val mem = SyncReadMem(1024, Vec(4, UInt(width.W)))
   // Write with mask
   mem.write(io.addr, io.dataIn, io.mask)
   io.dataOut := mem.read(io.addr, io.enable)
-
 }
 ```
 
@@ -152,7 +152,7 @@ class MaskedRWSmem extends Module {
     val dataOut = Output(Vec(2, UInt(width.W)))
   })
 
-  val mem = SyncReadMem(2048, Vec(2, UInt(32.W)))
+  val mem = SyncReadMem(1024, Vec(2, UInt(width.W)))
   io.dataOut := DontCare
   when(io.enable) {
     val rdwrPort = mem(io.addr)
