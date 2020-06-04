@@ -52,27 +52,8 @@ Chisel can also infer other features such as single ports and masks.
 Ports into `SyncReadMem`s are created by applying a `UInt` index.  A 1024-entry register file with one write port and one sequential/synchronous read port might be expressed as follows:
 
 ```scala
-val width:Int = 32
-val addr = Wire(UInt(width.W))
-val dataIn = Wire(UInt(width.W))
-val dataOut = Wire(UInt(width.W))
-val enable = Wire(Bool())
-
-// assign data...
-
-// Create a synchronous-read, synchronous-write memory (like in FPGAs).
-val mem = SyncReadMem(1024, UInt(width.W))
-// Create one write port and one read port.
-mem.write(addr, dataIn)
-dataOut := mem.read(addr, enable)
-```
-
-Single-ported SRAMs can be inferred when the read and write conditions are
-mutually exclusive in the same `when` chain:
-
-```scala mdoc:silent
 import chisel3._
-class ReadWriteSMEM extends Module {
+class ReadWriteSmem extends Module {
   val width: Int = 32
   val io = IO(new Bundle {
     val enable = Input(Bool())
@@ -82,16 +63,35 @@ class ReadWriteSMEM extends Module {
     val dataOut = Output(UInt(width.W))
   })
 
+  val mem = SyncReadMem(1024, UInt(width.W))
+  // Create one write port and one read port.
+  mem.write(io.addr, io.dataIn)
+  io.dataOut := mem.read(io.addr, io.enable)
+}
+```
+
+Single-ported SRAMs can be inferred when the read and write conditions are
+mutually exclusive in the same `when` chain:
+
+```scala mdoc:silent
+import chisel3._
+class RWSmem extends Module {
+  val width: Int = 32
+  val io = IO(new Bundle {
+    val enable = Input(Bool())
+    val write = Input(Bool())
+    val addr = Input(UInt(10.W))
+    val dataIn = Input(UInt(width.W))
+    val dataOut = Output(UInt(width.W))
+  })
 
   val mem = SyncReadMem(2048, UInt(32.W))
-
   io.dataOut := DontCare
   when(io.enable) {
     val rdwrPort = mem(io.addr)
     when (io.write) { rdwrPort := io.dataIn }
       .otherwise    { io.dataOut := rdwrPort }
   }
-
 }
 ```
 
@@ -110,20 +110,23 @@ Creating asynchronous-read versions of the examples above simply involves replac
 Chisel memories also support write masks for subword writes. Chisel will infer masks if the data type of the memory is a vector. To infer a mask, specify the `mask` argument of the `write` function which creates write ports. A given masked length is written if the corresponding mask bit is set. For example, in the example below, if the 0th bit of mask is true, it will write the lower 8 bits of the corresponding address.
 
 ```scala
-val dataOut = Wire(Vec(4, UInt(8.W)))
-val dataIn = Wire(Vec(4, UInt(8.W)))
-val mask = Wire(Vec(4, Bool()))
-val enable = Wire(Bool())
-val readAddr = Wire(UInt(10.W))
-val writeAddr = Wire(UInt(10.W))
+import chisel3._
+class MaskedReadWriteSmem extends Module {
+  val width: Int = 32
+  val io = IO(new Bundle {
+    val enable = Input(Bool())
+    val write = Input(Bool())
+    val addr = Input(UInt(10.W))
+    val dataIn = Input(UInt(width.W))
+    val dataOut = Output(UInt(width.W))
+  })
 
-// ... assign values ...
+  val mem = SyncReadMem(1024, Vec(4, UInt(8.W)))
+  // Create one write port and one read port.
+  mem.write(io.addr, io.dataIn)
+  io.dataOut := mem.read(io.addr, io.enable)
 
-// Create a 32-bit wide memory that is byte-masked.
-val mem = SyncReadMem(1024, Vec(4, UInt(8.W)))
-// Create one masked write port and one read port.
-mem.write(writeAddr, dataIn, mask)
-dataOut := mem.read(readAddr, enable)
+}
 ```
 
 Here is an example of masks with readwrite ports:
@@ -131,7 +134,7 @@ Here is an example of masks with readwrite ports:
 ```scala mdoc:silent
 import chisel3._
 // Chisel Code: Declare a new module definition
-class ReadWriteSMEMWithMask extends Module {
+class MaskedRWSmem extends Module {
   val width: Int = 32
   val io = IO(new Bundle {
     val enable = Input(Bool())
@@ -142,9 +145,7 @@ class ReadWriteSMEMWithMask extends Module {
     val dataOut = Output(Vec(2, UInt(width.W)))
   })
 
-
   val mem = SyncReadMem(2048, Vec(2, UInt(32.W)))
-
   io.dataOut := DontCare
   when(io.enable) {
     val rdwrPort = mem(io.addr)
