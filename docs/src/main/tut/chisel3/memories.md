@@ -37,41 +37,25 @@ We can create an *n* value sine lookup table using a ROM initialized as follows:
 
 where `amp` is used to scale the fixpoint values stored in the ROM.
 
-## Mem
+## Memories
 
 Memories are given special treatment in Chisel since hardware implementations of memory vary greatly. For example, FPGA memories are instantiated quite differently from ASIC memories. Chisel defines a memory abstraction that can map to either simple Verilog behavioural descriptions or to instances of memory modules that are available from external memory generators provided by foundry or IP vendors.
 
-Chisel supports random-access memories via the `Mem` construct. Writes to `Mem`s are **combinational/asynchronous-read, sequential/synchronous-write**. These `Mem`s will likely be synthesized to register banks, since most SRAMs in modern technologies (FPGA, ASIC) tend to no longer support combinational (asynchronous) reads.
 
-Chisel also has a construct called `SyncReadMem` for **sequential/synchronous-read, sequential/synchronous-write** memories. These `SyncReadMem`s will likely be synthesized to technology SRAMs (as opposed to register banks).
+### `SyncReadMem`: sequential/synchronous-read, sequential/synchronous-write
 
-Ports into Mems are created by applying a `UInt` index.  A 1024-entry register file with one write port and one sequential/synchronous read port might be expressed as follows:
+Chisel has a construct called `SyncReadMem` for sequential/synchronous-read, sequential/synchronous-write memories. These `SyncReadMem`s will likely be synthesized to technology SRAMs (as opposed to register banks).
 
-```scala
-val width:Int = 32
-val addr = Wire(UInt(width.W))
-val dataIn = Wire(UInt(width.W))
-val dataOut = Wire(UInt(width.W))
-val enable = Wire(Bool())
+If the same memory address is both written and sequentially read on the same clock edge, or if a sequential read enable is cleared, then the read data is undefined.
 
-// assign data...
+Values on the read data port are not guaranteed to be held until the next read cycle. If that is the desired behavior, external logic to hold the last read value must be added.
 
-// Create a synchronous-read, synchronous-write memory (like in FPGAs).
-val mem = SyncReadMem(1024, UInt(width.W))
-// Create one write port and one read port.
-mem.write(addr, dataIn)
-dataOut := mem.read(addr, enable)
-```
-Creating an asynchronous-read version of the above simply involves replacing `SyncReadMem` with just `Mem`.
-
-Chisel can also infer other features such as single ports and masks directly with Mem.
-
-Single-ported SRAMs can be inferred when the read and write conditions are
-mutually exclusive in the same `when` chain:
+#### Read port/write port
+Ports into `SyncReadMem`s are created by applying a `UInt` index.  A 1024-entry SRAM with one write port and one read port might be expressed as follows:
 
 ```scala mdoc:silent
 import chisel3._
-class ReadWriteSMEM extends Module {
+class ReadWriteSmem extends Module {
   val width: Int = 32
   val io = IO(new Bundle {
     val enable = Input(Bool())
@@ -81,52 +65,83 @@ class ReadWriteSMEM extends Module {
     val dataOut = Output(UInt(width.W))
   })
 
+  val mem = SyncReadMem(1024, UInt(width.W))
+  // Create one write port and one read port
+  mem.write(io.addr, io.dataIn)
+  io.dataOut := mem.read(io.addr, io.enable)
+}
+```
 
-  val mem = SyncReadMem(2048, UInt(32.W))
+Below is an example waveform of the one write port/one read port `SyncReadMem` with [masks](#masks). Note that the signal names will differ from the exact wire names generated for the `SyncReadMem`. With masking, it is also possible that multiple RTL arrays will be generated with the behavior below.
+![read/write ports example waveform](https://svg.wavedrom.com/github/freechipsproject/www.chisel-lang.org/seqmem-update/docs/src/main/tut/chisel3/memories_waveforms/smem_read_write.json)    
 
+#### Single-ported
+Single-ported SRAMs can be inferred when the read and write conditions are mutually exclusive in the same `when` chain:
+
+```scala mdoc:silent
+import chisel3._
+class RWSmem extends Module {
+  val width: Int = 32
+  val io = IO(new Bundle {
+    val enable = Input(Bool())
+    val write = Input(Bool())
+    val addr = Input(UInt(10.W))
+    val dataIn = Input(UInt(width.W))
+    val dataOut = Output(UInt(width.W))
+  })
+
+  val mem = SyncReadMem(1024, UInt(width.W))
   io.dataOut := DontCare
   when(io.enable) {
     val rdwrPort = mem(io.addr)
     when (io.write) { rdwrPort := io.dataIn }
       .otherwise    { io.dataOut := rdwrPort }
   }
-
 }
 ```
 
 (The `DontCare` is there to make Chisel's [unconnected wire detection](unconnected-wires) aware that reading while writing is undefined.)
 
-If the same `Mem` address is both written and sequentially read on the same clock
-edge, or if a sequential read enable is cleared, then the read data is
-undefined.
+Here is an example single read/write port waveform, with [masks](#masks) (again, generated signal names and number of arrays may differ):
+![read/write ports example waveform](https://svg.wavedrom.com/github/freechipsproject/www.chisel-lang.org/seqmem-update/docs/src/main/tut/chisel3/memories_waveforms/smem_rw.json)
+
+
+### `Mem`: combinational/asynchronous-read, sequential/synchronous-write
+
+Chisel supports random-access memories via the `Mem` construct. Writes to `Mem`s are combinational/asynchronous-read, sequential/synchronous-write. These `Mem`s will likely be synthesized to register banks, since most SRAMs in modern technologies (FPGA, ASIC) tend to no longer support combinational (asynchronous) reads.
+
+Creating asynchronous-read versions of the examples above simply involves replacing `SyncReadMem` with `Mem`.
 
 ### Masks
 
-Chisel memories also support write masks for subword writes. Chisel will infer masks if the data type of the memory is a vector. To infer a mask, specify the `mask` argument of the `write` function which creates write ports. A given masked length is written if the corresponding mask bit is set. For example, in the example below, if the 0th bit of mask is true, it will write the lower 8 bits of the corresponding address.
+Chisel memories also support write masks for subword writes. Chisel will infer masks if the data type of the memory is a vector. To infer a mask, specify the `mask` argument of the `write` function which creates write ports. A given masked length is written if the corresponding mask bit is set. For example, in the example below, if the 0th bit of mask is true, it will write the lower byte of the data at corresponding address.
 
-```scala
-val dataOut = Wire(Vec(4, UInt(8.W)))
-val dataIn = Wire(Vec(4, UInt(8.W)))
-val mask = Wire(Vec(4, Bool()))
-val enable = Wire(Bool())
-val readAddr = Wire(UInt(10.W))
-val writeAddr = Wire(UInt(10.W))
+```scala mdoc:silent
+import chisel3._
+class MaskedReadWriteSmem extends Module {
+  val width: Int = 8
+  val io = IO(new Bundle {
+    val enable = Input(Bool())
+    val write = Input(Bool())
+    val addr = Input(UInt(10.W))
+    val mask = Input(Vec(4, Bool()))
+    val dataIn = Input(Vec(4, UInt(width.W)))
+    val dataOut = Output(Vec(4, UInt(width.W)))
+  })
 
-// ... assign values ...
-
-// Create a 32-bit wide memory that is byte-masked.
-val mem = SyncReadMem(1024, Vec(4, UInt(8.W)))
-// Create one masked write port and one read port.
-mem.write(writeAddr, dataIn, mask)
-dataOut := mem.read(readAddr, enable)
+  // Create a 32-bit wide memory that is byte-masked
+  val mem = SyncReadMem(1024, Vec(4, UInt(width.W)))
+  // Write with mask
+  mem.write(io.addr, io.dataIn, io.mask)
+  io.dataOut := mem.read(io.addr, io.enable)
+}
 ```
 
 Here is an example of masks with readwrite ports:
 
 ```scala mdoc:silent
 import chisel3._
-// Chisel Code: Declare a new module definition
-class ReadWriteSMEMWithMask extends Module {
+class MaskedRWSmem extends Module {
   val width: Int = 32
   val io = IO(new Bundle {
     val enable = Input(Bool())
@@ -137,9 +152,7 @@ class ReadWriteSMEMWithMask extends Module {
     val dataOut = Output(Vec(2, UInt(width.W)))
   })
 
-
-  val mem = SyncReadMem(2048, Vec(2, UInt(32.W)))
-
+  val mem = SyncReadMem(1024, Vec(2, UInt(width.W)))
   io.dataOut := DontCare
   when(io.enable) {
     val rdwrPort = mem(io.addr)
