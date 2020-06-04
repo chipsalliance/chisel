@@ -73,7 +73,7 @@ class ReadWriteSmem extends Module {
 ```
 
 Below is an example waveform of the one write port/one read port `SyncReadMem` with [masks](#masks). Note that the signal names will differ from the exact wire names generated for the `SyncReadMem`. With masking, it is also possible that multiple RTL arrays will be generated with the behavior below.
-![read/write ports example waveform](https://svg.wavedrom.com/github/freechipsproject/www.chisel-lang.org/seqmem-update/docs/src/main/tut/chisel3/memories_waveforms/smem_read_write.json)    
+![read/write ports example waveform](https://svg.wavedrom.com/github/freechipsproject/www.chisel-lang.org/master/docs/src/main/tut/chisel3/memories_waveforms/smem_read_write.json)    
 
 #### Single-ported
 Single-ported SRAMs can be inferred when the read and write conditions are mutually exclusive in the same `when` chain:
@@ -103,8 +103,7 @@ class RWSmem extends Module {
 (The `DontCare` is there to make Chisel's [unconnected wire detection](unconnected-wires) aware that reading while writing is undefined.)
 
 Here is an example single read/write port waveform, with [masks](#masks) (again, generated signal names and number of arrays may differ):
-![read/write ports example waveform](https://svg.wavedrom.com/github/freechipsproject/www.chisel-lang.org/seqmem-update/docs/src/main/tut/chisel3/memories_waveforms/smem_rw.json)
-
+![read/write ports example waveform](https://svg.wavedrom.com/github/freechipsproject/www.chisel-lang.org/master/docs/src/main/tut/chisel3/memories_waveforms/smem_rw.json)
 
 ### `Mem`: combinational/asynchronous-read, sequential/synchronous-write
 
