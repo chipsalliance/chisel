@@ -79,6 +79,7 @@ Below is an example waveform of the one write port/one read port `SyncReadMem` w
 Single-ported SRAMs can be inferred when the read and write conditions are mutually exclusive in the same `when` chain:
 
 ```scala mdoc:silent
+import chisel3._
 class RWSmem extends Module {
   val width: Int = 32
   val io = IO(new Bundle {
@@ -115,7 +116,8 @@ Creating asynchronous-read versions of the examples above simply involves replac
 
 Chisel memories also support write masks for subword writes. Chisel will infer masks if the data type of the memory is a vector. To infer a mask, specify the `mask` argument of the `write` function which creates write ports. A given masked length is written if the corresponding mask bit is set. For example, in the example below, if the 0th bit of mask is true, it will write the lower 8 bits of the corresponding address.
 
-```scala
+```scala mdoc:silent
+import chisel3._
 class MaskedReadWriteSmem extends Module {
   val width: Int = 32
   val io = IO(new Bundle {
@@ -138,6 +140,7 @@ class MaskedReadWriteSmem extends Module {
 Here is an example of masks with readwrite ports:
 
 ```scala mdoc:silent
+import chisel3._
 class MaskedRWSmem extends Module {
   val width: Int = 32
   val io = IO(new Bundle {
