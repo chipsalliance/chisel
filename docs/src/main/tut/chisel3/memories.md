@@ -53,7 +53,8 @@ Values on the read data port are not guaranteed to be held until the next read c
 #### Read port/write port
 Ports into `SyncReadMem`s are created by applying a `UInt` index.  A 1024-entry register file with one write port and one read port might be expressed as follows:
 
-```scala
+```scala mdoc:silent
+import chisel3._
 class ReadWriteSmem extends Module {
   val width: Int = 32
   val io = IO(new Bundle {
