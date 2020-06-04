@@ -51,7 +51,7 @@ If the same memory address is both written and sequentially read on the same clo
 Values on the read data port are not guaranteed to be held until the next read cycle. If that is the desired behavior, external logic to hold the last read value must be added.
 
 #### Read port/write port
-Ports into `SyncReadMem`s are created by applying a `UInt` index.  A 1024-entry register file with one write port and one read port might be expressed as follows:
+Ports into `SyncReadMem`s are created by applying a `UInt` index.  A 1024-entry SRAM with one write port and one read port might be expressed as follows:
 
 ```scala mdoc:silent
 import chisel3._
