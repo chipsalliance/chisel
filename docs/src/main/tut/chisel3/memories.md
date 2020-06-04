@@ -37,15 +37,19 @@ We can create an *n* value sine lookup table using a ROM initialized as follows:
 
 where `amp` is used to scale the fixpoint values stored in the ROM.
 
-## Mem
+## Memories
 
 Memories are given special treatment in Chisel since hardware implementations of memory vary greatly. For example, FPGA memories are instantiated quite differently from ASIC memories. Chisel defines a memory abstraction that can map to either simple Verilog behavioural descriptions or to instances of memory modules that are available from external memory generators provided by foundry or IP vendors.
 
+Chisel has a construct called `SyncReadMem` for **sequential/synchronous-read, sequential/synchronous-write** memories. These `SyncReadMem`s will likely be synthesized to technology SRAMs (as opposed to register banks).
+
 Chisel supports random-access memories via the `Mem` construct. Writes to `Mem`s are **combinational/asynchronous-read, sequential/synchronous-write**. These `Mem`s will likely be synthesized to register banks, since most SRAMs in modern technologies (FPGA, ASIC) tend to no longer support combinational (asynchronous) reads.
 
-Chisel also has a construct called `SyncReadMem` for **sequential/synchronous-read, sequential/synchronous-write** memories. These `SyncReadMem`s will likely be synthesized to technology SRAMs (as opposed to register banks).
+Chisel can also infer other features such as single ports and masks.
 
-Ports into Mems are created by applying a `UInt` index.  A 1024-entry register file with one write port and one sequential/synchronous read port might be expressed as follows:
+### `SyncReadMem`: sequential/synchronous-read, sequential/synchronous-write
+
+Ports into `SyncReadMem`s are created by applying a `UInt` index.  A 1024-entry register file with one write port and one sequential/synchronous read port might be expressed as follows:
 
 ```scala
 val width:Int = 32
@@ -62,9 +66,6 @@ val mem = SyncReadMem(1024, UInt(width.W))
 mem.write(addr, dataIn)
 dataOut := mem.read(addr, enable)
 ```
-Creating an asynchronous-read version of the above simply involves replacing `SyncReadMem` with just `Mem`.
-
-Chisel can also infer other features such as single ports and masks directly with Mem.
 
 Single-ported SRAMs can be inferred when the read and write conditions are
 mutually exclusive in the same `when` chain:
@@ -96,9 +97,13 @@ class ReadWriteSMEM extends Module {
 
 (The `DontCare` is there to make Chisel's [unconnected wire detection](unconnected-wires) aware that reading while writing is undefined.)
 
-If the same `Mem` address is both written and sequentially read on the same clock
+If the same memory address is both written and sequentially read on the same clock
 edge, or if a sequential read enable is cleared, then the read data is
 undefined.
+
+### `Mem`: combinational/asynchronous-read, sequential/synchronous-write
+
+Creating asynchronous-read versions of the examples above simply involves replacing `SyncReadMem` with `Mem`.
 
 ### Masks
 
