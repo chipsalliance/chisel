@@ -185,6 +185,7 @@ lazy val chisel = (project in file(".")).
   settings(usePluginSettings: _*).
   dependsOn(macros).
   dependsOn(core).
+  dependsOn(plugin).
   aggregate(macros, core).
   settings(
     scalacOptions in Test ++= Seq("-language:reflectiveCalls"),

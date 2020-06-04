@@ -4,7 +4,8 @@ package chiselTests.naming
 
 import chisel3._
 import chisel3.aop.Select
-import chisel3.experimental.{ValName, prefix}
+import chisel3.experimental.{prefix, noPrefix}
+import chisel3.internal.naming.treedump
 import chiselTests.ChiselPropSpec
 
 class PrefixSpec extends ChiselPropSpec {
@@ -15,6 +16,7 @@ class PrefixSpec extends ChiselPropSpec {
         val wire2 = Wire(UInt(3.W))
         wire2
       }
+
       val x1 = prefix("first") {
         builder()
       }
@@ -23,41 +25,7 @@ class PrefixSpec extends ChiselPropSpec {
       }
     }
     aspectTest(() => new Test) {
-      top: Test => Select.wires(top).map(_.instanceName) should be (List("first_wire1", "x1", "second_wire1", "x2"))
-    }
-  }
-
-  property("Using String as prefix") {
-    class Test extends MultiIOModule {
-      def builder(): UInt = {
-        val wire1 = Wire(UInt(3.W))
-        val wire2 = Wire(UInt(3.W))
-        wire2
-      }
-      val x1 = prefix("x1") { builder() }
-      val x2 = prefix("x2") { builder() }
-    }
-    aspectTest(() => new Test) {
-      top: Test =>
-        Select.wires(top).map(_.instanceName) should be (List("x1_wire1", "x1", "x2_wire1", "x2"))
-    }
-  }
-
-  property("ValName should enable using assigned val as prefix") {
-    class Test extends MultiIOModule {
-      def builder()(implicit valName: ValName): UInt = {
-        prefix(valName.name) {
-          val wire1 = Wire(UInt(3.W))
-          val wire2 = Wire(UInt(3.W))
-          wire2
-        }
-      }
-      val x1 = builder()
-      val x2 = builder()
-    }
-    aspectTest(() => new Test) {
-      top: Test =>
-        Select.wires(top).map(_.instanceName) should be (List("x1_wire1", "x1", "x2_wire1", "x2"))
+      top: Test => Select.wires(top).map(_.instanceName) should be (List("x1_first_wire1", "x1", "x2_second_wire1", "x2"))
     }
   }
 
@@ -68,13 +36,11 @@ class PrefixSpec extends ChiselPropSpec {
         val wire2 = Wire(UInt(3.W))
         wire2
       }
-      def builder()(implicit valName: ValName): UInt = {
-        prefix(valName.name) {
-          val wire1 = Wire(UInt(3.W))
-          val wire2 = Wire(UInt(3.W))
-          prefix("foo") {
-            builder2()
-          }
+      def builder(): UInt = {
+        val wire1 = Wire(UInt(3.W))
+        val wire2 = Wire(UInt(3.W))
+        prefix("foo") {
+          builder2()
         }
       }
       val x1 = builder()
@@ -115,6 +81,43 @@ class PrefixSpec extends ChiselPropSpec {
     aspectTest(() => new Test) {
       top: Test =>
         Select.wires(top).map(_.instanceName) should be (List("x1", "x1_wire", "x2", "x2_wire"))
+    }
+  }
+
+  property("Automatic prefixing should work") {
+
+    class Test extends MultiIOModule {
+      def builder(): UInt = {
+        val a = Wire(UInt(3.W))
+        val b = Wire(UInt(3.W))
+        b
+      }
+
+      val ADAM = builder()
+      val JACOB = builder()
+    }
+    aspectTest(() => new Test) {
+      top: Test =>
+        Select.wires(top).map(_.instanceName) should be (List("ADAM_a", "ADAM", "JACOB_a", "JACOB"))
+    }
+  }
+
+  property("No prefixing annotation on defs should work") {
+
+    class Test extends MultiIOModule {
+      def builder(): UInt = {
+        noPrefix {
+          val a = Wire(UInt(3.W))
+          val b = Wire(UInt(3.W))
+          b
+        }
+      }
+
+      val noprefix = builder()
+    }
+    aspectTest(() => new Test) {
+      top: Test =>
+        Select.wires(top).map(_.instanceName) should be (List("a", "noprefix"))
     }
   }
 }

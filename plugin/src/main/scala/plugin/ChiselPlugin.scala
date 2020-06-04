@@ -20,8 +20,8 @@ class ChiselPlugin(val global: Global) extends Plugin {
 //   a Plugin and a PluginComponent.
 class ChiselComponent(val global: Global) extends PluginComponent with TypingTransformers {
   import global._
-  val runsAfter = List[String]("uncurry")
-  override val runsRightAfter: Option[String] = Some("uncurry")
+  val runsAfter = List[String]("typer")
+  override val runsRightAfter: Option[String] = Some("typer")
   val phaseName: String = "chiselcomponent"
   def newPhase(_prev: Phase): ChiselComponentPhase = new ChiselComponentPhase(_prev)
   class ChiselComponentPhase(prev: Phase) extends StdPhase(prev) {
@@ -78,27 +78,9 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
     override def transform(tree: Tree): Tree = tree match {
       case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd) && !localTyper.context.reporter.hasErrors =>
         val TermName(str: String) = name
-        val ret = try {
-          // Select the right function to call
-          val sel = localTyper.typed1(
-            Select(rhs, TermName("pluginName")),
-            nsc.EXPRmode,
-            MethodType(List(definitions.StringTpe.typeSymbol), tpt.tpe)
-          )
-          // Call the function
-          val appl = localTyper.doTypedApply(
-            rhs,
-            sel,
-            List(Literal(Constant(str))),
-            nsc.EXPRmode,
-            tpt.tpe
-          )
-          // Return modified tree
-          treeCopy.ValDef(dd, mods, name, tpt, appl)
-        } catch {
-          case e: TypeError => throw new TypeError(dd.pos, e.msg + "\n" + showRaw(dd) + "\n" + dd.pos.toString)
-        }
-        ret
+        val newRHS = super.transform(rhs)
+        val prefixed = q"chisel3.experimental.prefix.apply[$tpt](name=$str)(f=$newRHS).pluginName($str)"
+        treeCopy.ValDef(dd, mods, name, tpt, localTyper typed prefixed)
       case _ => super.transform(tree)
     }
   }

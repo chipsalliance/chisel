@@ -4,7 +4,7 @@ package chiselTests.naming
 
 import chisel3. _
 import chisel3.aop.Select
-import chisel3.experimental.{ValName, prefix}
+import chisel3.experimental.prefix
 import chiselTests.ChiselPropSpec
 
 class NamePluginSpec extends ChiselPropSpec {

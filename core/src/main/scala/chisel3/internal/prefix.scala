@@ -2,8 +2,6 @@
 
 package chisel3.internal
 
-import chisel3.Data
-
 /** Use to add a prefix to any components generated in the provided scope.
   *
   * @example {{{
@@ -24,12 +22,12 @@ private[chisel3] object prefix { // scalastyle:ignore
   /** Use to add a prefix to any components generated in the provided scope
     * The prefix is the name of the provided which, which may not be known yet.
     *
-    * @param name The signal whose name will be the prefix
+    * @param name The signal/instance whose name will be the prefix
     * @param f a function for which any generated components are given the prefix
     * @tparam T The return type of the provided function
     * @return The return value of the provided function
     */
-  def apply[T](name: Data)(f: => T): T = {
+  def apply[T](name: HasId)(f: => T): T = {
     Builder.pushPrefix(name)
     val ret = f
     Builder.popPrefix()
@@ -49,5 +47,41 @@ private[chisel3] object prefix { // scalastyle:ignore
     val ret = f
     Builder.popPrefix()
     ret
+  }
+}
+
+private[chisel3] object noPrefix {
+  def apply[T](f: => T): T = {
+    val prefix = Builder.getPrefix()
+    Builder.clearPrefix()
+    val ret = f
+    Builder.setPrefix(prefix)
+    ret
+  }
+}
+
+private[chisel3] object dropPrefix {
+  def apply[T](name: String)(f: => T): T = {
+    val head = Builder.popPrefix()
+    if(head == Left(name)) {
+      val ret = f
+      Builder.pushPrefix(head)
+      ret
+    } else {
+      Builder.pushPrefix(head)
+      f
+    }
+  }
+
+  def apply[T](id: HasId)(f: => T): T = {
+    val head = Builder.popPrefix()
+    if(head == Right(id)) {
+      val ret = f
+      Builder.pushPrefix(head)
+      ret
+    } else {
+      Builder.pushPrefix(head)
+      f
+    }
   }
 }

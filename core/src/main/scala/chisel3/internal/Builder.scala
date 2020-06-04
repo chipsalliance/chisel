@@ -320,20 +320,36 @@ private[chisel3] object Builder {
   def annotations: ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
   def namingStack: NamingStack = dynamicContext.namingStack
 
+  // Puts either a prefix string or hasId onto the prefix stack
+  def pushPrefix(d: Either[String, HasId]): Unit = {
+    chiselContext.get().prefixStack += d
+  }
+
   // Puts a prefix string onto the prefix stack
   def pushPrefix(d: String): Unit = {
     chiselContext.get().prefixStack += Left(d)
   }
 
   // Puts a prefix data onto the prefix stack
-  def pushPrefix(d: Data): Unit = {
+  def pushPrefix(d: HasId): Unit = {
     chiselContext.get().prefixStack += Right(d)
   }
 
   // Remove a prefix from the stack
-  def popPrefix(): Unit = {
+  def popPrefix(): Either[String, HasId] = {
     val ps = chiselContext.get().prefixStack
     ps.remove(ps.size - 1)
+  }
+
+  def clearPrefix(): Unit = {
+    val ps = chiselContext.get().prefixStack
+    ps.clear()
+  }
+
+  def setPrefix(prefix: Prefix): Unit = {
+    val ps = chiselContext.get().prefixStack
+    clearPrefix()
+    ps.insertAll(0, prefix)
   }
 
   // Returns the prefix stack at this moment
