@@ -89,6 +89,8 @@ private[chisel3] trait HasId extends InstanceId {
   override def hashCode: Int = super.hashCode()
   override def equals(that: Any): Boolean = super.equals(that)
 
+  private val construction_prefix: Prefix = Builder.getPrefix()
+
   // Facilities for 'suggesting' a name to this.
   // Post-name hooks called to carry the suggestion to other candidates as needed
   private var suggested_name: Option[(String, Prefix)] = None
@@ -139,7 +141,7 @@ private[chisel3] trait HasId extends InstanceId {
     } else if(plugin_name.nonEmpty) {
       constructName(plugin_name.get._1, plugin_name.get._2)
     } else {
-      default
+      constructName(default, Left("") +: construction_prefix)
     }
   }
   private[chisel3] def seedOpt: Option[String] = {

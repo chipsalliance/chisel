@@ -141,5 +141,12 @@ package object experimental {  // scalastyle:ignore object.name
   // Use to add a prefix to any component generated in input scope
   val prefix = chisel3.internal.prefix
   val noPrefix = chisel3.internal.noPrefix
-  val dropPrefix = chisel3.internal.dropPrefix
+  def pluginNameRecursively[T <: Any](name: String, nameMe: T): T = {
+    chisel3.internal.Builder.nameRecursively(
+      name,
+      nameMe,
+      (id: chisel3.internal.HasId, n: String) => id.pluginName(n)
+    )
+    nameMe
+  }
 }

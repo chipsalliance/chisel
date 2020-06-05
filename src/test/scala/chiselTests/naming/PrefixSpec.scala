@@ -5,7 +5,6 @@ package chiselTests.naming
 import chisel3._
 import chisel3.aop.Select
 import chisel3.experimental.{prefix, noPrefix}
-import chisel3.internal.naming.treedump
 import chiselTests.ChiselPropSpec
 
 class PrefixSpec extends ChiselPropSpec {
@@ -105,12 +104,10 @@ class PrefixSpec extends ChiselPropSpec {
   property("No prefixing annotation on defs should work") {
 
     class Test extends MultiIOModule {
-      def builder(): UInt = {
-        noPrefix {
-          val a = Wire(UInt(3.W))
-          val b = Wire(UInt(3.W))
-          b
-        }
+      def builder(): UInt = noPrefix {
+        val a = Wire(UInt(3.W))
+        val b = Wire(UInt(3.W))
+        b
       }
 
       val noprefix = builder()
@@ -118,6 +115,42 @@ class PrefixSpec extends ChiselPropSpec {
     aspectTest(() => new Test) {
       top: Test =>
         Select.wires(top).map(_.instanceName) should be (List("a", "noprefix"))
+    }
+  }
+
+  property("Prefixing on temps should work") {
+
+    class Test extends MultiIOModule {
+      def builder(): UInt = {
+        val a = Wire(UInt(3.W))
+        val b = Wire(UInt(3.W))
+        a +& (b * a)
+      }
+
+      val blah = builder()
+    }
+    aspectTest(() => new Test) {
+      top: Test =>
+        Select.ops(top).map(x => (x._1, x._2.instanceName)) should be (List(
+          ("mul", "_blah_T"),
+          ("add", "blah")
+        ))
+    }
+  }
+
+  property("Prefixing should not leak into child modules") {
+    class Child extends MultiIOModule {
+      val wire = Wire(UInt())
+    }
+
+    class Test extends MultiIOModule {
+      val child = prefix("InTest") {
+        Module(new Child)
+      }
+    }
+    aspectTest(() => new Test) {
+      top: Test =>
+        Select.wires(top.child).map(_.instanceName) should be (List("wire"))
     }
   }
 }

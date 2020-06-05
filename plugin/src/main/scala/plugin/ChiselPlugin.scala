@@ -79,8 +79,9 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
       case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd) && !localTyper.context.reporter.hasErrors =>
         val TermName(str: String) = name
         val newRHS = super.transform(rhs)
-        val prefixed = q"chisel3.experimental.prefix.apply[$tpt](name=$str)(f=$newRHS).pluginName($str)"
-        treeCopy.ValDef(dd, mods, name, tpt, localTyper typed prefixed)
+        val prefixed = q"chisel3.experimental.prefix.apply[$tpt](name=$str)(f=$newRHS)"
+        val named = q"chisel3.experimental.pluginNameRecursively($str, $prefixed)"
+        treeCopy.ValDef(dd, mods, name, tpt, localTyper typed named)
       case _ => super.transform(tree)
     }
   }

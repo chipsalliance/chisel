@@ -76,12 +76,12 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
     for (id <- getIds) {
       id match {
         case id: BaseModule => id.forceName(default=id.desiredName, _namespace)
-        case id: MemBase[_] => id.forceName(default="_T", _namespace)
+        case id: MemBase[_] => id.forceName(default="T", _namespace)
         case id: Data  =>
           if (id.isSynthesizable) {
             id.topBinding match {
               case OpBinding(_) | MemoryPortBinding(_) | PortBinding(_) | RegBinding(_) | WireBinding(_) =>
-                id.forceName(default="_T", _namespace)
+                id.forceName(default="T", _namespace)
               case _ =>  // don't name literals
             }
           } // else, don't name unbound types

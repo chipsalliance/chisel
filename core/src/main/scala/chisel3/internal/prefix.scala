@@ -59,29 +59,3 @@ private[chisel3] object noPrefix {
     ret
   }
 }
-
-private[chisel3] object dropPrefix {
-  def apply[T](name: String)(f: => T): T = {
-    val head = Builder.popPrefix()
-    if(head == Left(name)) {
-      val ret = f
-      Builder.pushPrefix(head)
-      ret
-    } else {
-      Builder.pushPrefix(head)
-      f
-    }
-  }
-
-  def apply[T](id: HasId)(f: => T): T = {
-    val head = Builder.popPrefix()
-    if(head == Right(id)) {
-      val ret = f
-      Builder.pushPrefix(head)
-      ret
-    } else {
-      Builder.pushPrefix(head)
-      f
-    }
-  }
-}

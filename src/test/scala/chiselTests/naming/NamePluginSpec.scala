@@ -60,7 +60,58 @@ class NamePluginSpec extends ChiselPropSpec {
       }
     }
     aspectTest(() => new Test) {
-      top: Test => Select.wires(top).map(_.instanceName) should be (List("first_wire1", "x1", "second_wire1", "x2"))
+      top: Test => Select.wires(top).map(_.instanceName) should be (List("x1_first_wire1", "x1", "x2_second_wire1", "x2"))
+    }
+  }
+
+  property("Naming on option should work") {
+
+    class Test extends MultiIOModule {
+      def builder(): Option[UInt] = {
+        val a = Wire(UInt(3.W))
+        Some(a)
+      }
+
+      val blah = builder()
+    }
+    aspectTest(() => new Test) {
+      top: Test =>
+        Select.wires(top).map(_.instanceName) should be (List("blah"))
+    }
+  }
+
+  property("Naming on iterables should work") {
+
+    class Test extends MultiIOModule {
+      def builder(): Seq[UInt] = {
+        val a = Wire(UInt(3.W))
+        val b = Wire(UInt(3.W))
+        Seq(a, b)
+      }
+
+      val blah = builder()
+    }
+    aspectTest(() => new Test) {
+      top: Test =>
+        Select.wires(top).map(_.instanceName) should be (List("blah_0", "blah_1"))
+    }
+  }
+
+  property("Naming on custom case classes should not work") {
+    case class Container(a: UInt, b: UInt)
+
+    class Test extends MultiIOModule {
+      def builder(): Container = {
+        val a = Wire(UInt(3.W))
+        val b = Wire(UInt(3.W))
+        Container(a, b)
+      }
+
+      val blah = builder()
+    }
+    aspectTest(() => new Test) {
+      top: Test =>
+        Select.wires(top).map(_.instanceName) should be (List("a", "b"))
     }
   }
 }
