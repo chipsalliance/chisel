@@ -4,7 +4,7 @@ package chiselTests.naming
 
 import chisel3._
 import chisel3.aop.Select
-import chisel3.experimental.{prefix, noPrefix}
+import chisel3.experimental.{dump, noPrefix, prefix, treedump}
 import chiselTests.ChiselPropSpec
 
 class PrefixSpec extends ChiselPropSpec {
@@ -64,16 +64,19 @@ class PrefixSpec extends ChiselPropSpec {
 
   property("Prefixing seeded with signal") {
     class Test extends MultiIOModule {
+      @treedump
+      @dump
       def builder(): UInt = {
         val wire = Wire(UInt(3.W))
+        wire := 3.U
         wire
       }
       val x1 = Wire(UInt(3.W))
-      x1 := prefix(x1) {
+      x1 := {
         builder()
       }
       val x2 = Wire(UInt(3.W))
-      x2 := prefix(x2) {
+      x2 := {
         builder()
       }
     }

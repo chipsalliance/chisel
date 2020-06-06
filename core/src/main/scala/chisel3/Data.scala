@@ -491,7 +491,15 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
     * @param that the $coll to connect to
     * @group Connect
     */
-  final def := (that: Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = this.connect(that)(sourceInfo, connectionCompileOptions) // scalastyle:ignore line.size.limit
+  final def := (that: => Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = {
+    if(getName.nonEmpty) {
+      prefix(this) {
+        this.connect(that)(sourceInfo, connectionCompileOptions)
+      }
+    } else {
+      this.connect(that)(sourceInfo, connectionCompileOptions)
+    }
+  } // scalastyle:ignore line.size.limit
 
   /** Connect this $coll to that $coll bi-directionally and element-wise.
     *

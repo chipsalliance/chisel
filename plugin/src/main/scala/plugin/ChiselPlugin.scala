@@ -50,6 +50,18 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
       write("modified", show(modified))
     }
 
+    def okConnect(dd: Apply): Boolean = {
+      dd match {
+        case Apply(Select(loc, TermName("$colon$eq")), rhs) =>
+          val isNull = rhs match {
+            case List(Literal(Constant(null))) => true
+            case _ => false
+          }
+          typeHasTrait(loc.tpe, "chisel3.internal.Data") && !isNull && rhs != EmptyTree
+        case _ => false
+      }
+    }
+
     // Indicates whether a ValDef is properly formed to get name
     def okVal(dd: ValDef): Boolean = {
 
@@ -82,6 +94,15 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
         val prefixed = q"chisel3.experimental.prefix.apply[$tpt](name=$str)(f=$newRHS)"
         val named = q"chisel3.experimental.pluginNameRecursively($str, $prefixed)"
         treeCopy.ValDef(dd, mods, name, tpt, localTyper typed named)
+      //case dd @ Apply(fun@Select(loc, TermName("$colon$eq")), List(rhs)) => //if okConnect(dd) =>
+      //  val newRHS = super.transform(rhs)
+      //  loc match {
+      //    case Ident(TermName(str: String)) =>
+      //      val prefixed = q"chisel3.experimental.prefix.apply[${rhs.tpe}](name=$str)(f=$newRHS)"
+      //      treeCopy.Apply(dd, fun, List(prefixed))
+      //    case _ =>
+      //      treeCopy.Apply(dd, fun, List(newRHS))
+      //  }
       case _ => super.transform(tree)
     }
   }

@@ -153,7 +153,7 @@ private[chisel3] trait HasId extends InstanceId {
       None
     }
   }
-  def getName: Option[String] = suggested_name.map(_._1)
+  def getName: Option[String] = seedOpt
   private[chisel3] def suggestedName: Option[String] = suggested_name.map(x => constructName(x._1, x._2))
   private[chisel3] def addPostnameHook(hook: String=>Unit): Unit = postname_hooks += hook
 
