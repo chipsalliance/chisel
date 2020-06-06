@@ -10,6 +10,8 @@ import org.scalatest.matchers.should.Matchers
 
 import firrtl.options.Dependency
 
+import firrtl.options.Dependency
+
 object ChiselStageSpec {
 
   class Foo extends MultiIOModule {
