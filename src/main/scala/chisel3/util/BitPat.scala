@@ -44,7 +44,7 @@ object BitPat {
     * @note legal characters are '0', '1', and '?', as well as '_' and white
     * space (which are ignored)
     */
-  def apply(n: String): BitPat = {
+  def apply(n: String)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): BitPat = {
     val (bits, mask, width) = parse(n)
     new BitPat(bits, mask, width)
   }
@@ -72,7 +72,7 @@ object BitPat {
     *
     * @note the UInt must be a literal
     */
-  def apply(x: UInt): BitPat = {
+  def apply(x: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): BitPat = {
     val len = if (x.isWidthKnown) x.getWidth else 0
     apply("b" + x.litValue.toString(2).reverse.padTo(len, "0").reverse.mkString)
   }

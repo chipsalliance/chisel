@@ -3,7 +3,8 @@
 package chisel3.util
 
 import chisel3._
-import chisel3.internal.naming.chiselName  // can't use chisel3_ version because of compile order
+import chisel3.internal.naming.chiselName
+import chisel3.internal.sourceinfo.SourceInfo  // can't use chisel3_ version because of compile order
 
 /** Used to generate an inline (logic directly in the containing Module, no internal Module is created)
   * hardware counter.
@@ -24,7 +25,7 @@ import chisel3.internal.naming.chiselName  // can't use chisel3_ version because
   * maximum output value of the counter), need not be a power of two
   */
 @chiselName
-class Counter(val n: Int) {
+class Counter(val n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) {
   require(n >= 0, s"Counter value must be nonnegative, got: $n")
   val value = if (n > 1) RegInit(0.U(log2Ceil(n).W)) else 0.U
 
@@ -51,7 +52,7 @@ object Counter
 {
   /** Instantiate a [[Counter! counter]] with the specified number of counts.
     */
-  def apply(n: Int): Counter = new Counter(n)
+  def apply(n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Counter = new Counter(n)
 
   /** Instantiate a [[Counter! counter]] with the specified number of counts and a gate.
    *
@@ -61,7 +62,7 @@ object Counter
     * maximum and the condition is true).
     */
   @chiselName
-  def apply(cond: Bool, n: Int): (UInt, Bool) = {
+  def apply(cond: Bool, n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): (UInt, Bool) = {
     val c = new Counter(n)
     val wrap = WireInit(false.B)
     when (cond) { wrap := c.inc() }

@@ -6,6 +6,7 @@
 package chisel3.util
 
 import chisel3._
+import chisel3.internal.sourceinfo.SourceInfo
 
 /** Builds a Mux tree out of the input signal vector using a one hot encoded
   * select signal. Returns the output of the Mux tree.
@@ -22,12 +23,16 @@ import chisel3._
   * @note results unspecified unless exactly one select signal is high
   */
 object Mux1H {
-  def apply[T <: Data](sel: Seq[Bool], in: Seq[T]): T =
+  def apply[T <: Data](sel: Seq[Bool], in: Seq[T])
+                      (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
     apply(sel zip in)
-  def apply[T <: Data](in: Iterable[(Bool, T)]): T = SeqUtils.oneHotMux(in)
-  def apply[T <: Data](sel: UInt, in: Seq[T]): T =
-    apply((0 until in.size).map(sel(_)), in)
-  def apply(sel: UInt, in: UInt): Bool = (sel & in).orR
+  def apply[T <: Data](in: Iterable[(Bool, T)])
+                      (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = SeqUtils.oneHotMux(in)
+  def apply[T <: Data](sel: UInt, in: Seq[T])
+                      (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
+    apply(in.indices.map(sel(_)), in)
+  def apply(sel: UInt, in: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
+    (sel & in).orR
 }
 
 /** Builds a Mux tree under the assumption that multiple select signals
@@ -44,9 +49,14 @@ object Mux1H {
   * Returns the output of the Mux tree.
   */
 object PriorityMux {
-  def apply[T <: Data](in: Seq[(Bool, T)]): T = SeqUtils.priorityMux(in)
-  def apply[T <: Data](sel: Seq[Bool], in: Seq[T]): T = apply(sel zip in)
-  def apply[T <: Data](sel: Bits, in: Seq[T]): T = apply((0 until in.size).map(sel(_)), in)
+  def apply[T <: Data](in: Seq[(Bool, T)])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
+    SeqUtils.priorityMux(in)
+
+  def apply[T <: Data](sel: Seq[Bool], in: Seq[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
+    apply(sel zip in)
+
+  def apply[T <: Data](sel: Bits, in: Seq[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T =
+    apply(in.indices.map(sel(_)), in)
 }
 
 /** Creates a cascade of n Muxs to search for a key value.
@@ -62,7 +72,8 @@ object MuxLookup {
     * @param mapping a sequence to search of keys and values
     * @return the value found or the default if not
     */
-  def apply[S <: UInt, T <: Data] (key: S, default: T, mapping: Seq[(S, T)]): T = {
+  def apply[S <: UInt, T <: Data] (key: S, default: T, mapping: Seq[(S, T)])
+                                  (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     /* If the mapping is defined for all possible values of the key, then don't use the default value */
     val (defaultx, mappingx) = key.widthOption match {
       case Some(width) =>
@@ -92,7 +103,8 @@ object MuxCase {
   /** @param default the default value if none are enabled
     * @param mapping a set of data values with associated enables
     * @return the first value in mapping that is enabled */
-  def apply[T <: Data] (default: T, mapping: Seq[(Bool, T)]): T = {
+  def apply[T <: Data] (default: T, mapping: Seq[(Bool, T)])
+                       (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     var res = default
     for ((t, v) <- mapping.reverse){
       res = Mux(t, v, res)

@@ -8,6 +8,7 @@ package chisel3.util
 import chisel3._
 import chisel3.experimental.{DataMirror, Direction, requireIsChiselType}
 import chisel3.internal.naming._  // can't use chisel3_ version because of compile order
+import chisel3.internal.sourceinfo.SourceInfo
 
 /** An I/O Bundle containing 'valid' and 'ready' signals that handshake
   * the transfer of data stored in the 'bits' subfield.
@@ -37,13 +38,13 @@ object ReadyValidIO {
 
     /** Indicates if IO is both ready and valid
      */
-    def fire(): Bool = target.ready && target.valid
+    def fire()(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = target.ready && target.valid
 
     /** Push dat onto the output bits of this interface to let the consumer know it has happened.
       * @param dat the values to assign to bits.
       * @return    dat.
       */
-    def enq(dat: T): T = {
+    def enq(dat: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
       target.valid := true.B
       target.bits := dat
       dat
@@ -52,7 +53,7 @@ object ReadyValidIO {
     /** Indicate no enqueue occurs. Valid is set to false, and bits are
       * connected to an uninitialized wire.
       */
-    def noenq(): Unit = {
+    def noenq()(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit = {
       target.valid := false.B
       target.bits := DontCare
     }
@@ -61,14 +62,14 @@ object ReadyValidIO {
       * This is typically used when valid has been asserted by the producer side.
       * @return The data bits.
       */
-    def deq(): T = {
+    def deq()(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
       target.ready := true.B
       target.bits
     }
 
     /** Indicate no dequeue occurs. Ready is set to false.
       */
-    def nodeq(): Unit = {
+    def nodeq()(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit = {
       target.ready := false.B
     }
   }
@@ -90,14 +91,16 @@ class DecoupledIO[+T <: Data](gen: T) extends ReadyValidIO[T](gen)
 object Decoupled
 {
   /** Wraps some Data with a DecoupledIO interface. */
-  def apply[T <: Data](gen: T): DecoupledIO[T] = new DecoupledIO(gen)
+  def apply[T <: Data](gen: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): DecoupledIO[T] =
+    new DecoupledIO(gen)
 
   /** Downconverts an IrrevocableIO output to a DecoupledIO, dropping guarantees of irrevocability.
     *
     * @note unsafe (and will error) on the producer (input) side of an IrrevocableIO
     */
   @chiselName
-  def apply[T <: Data](irr: IrrevocableIO[T]): DecoupledIO[T] = {
+  def apply[T <: Data](irr: IrrevocableIO[T])
+                      (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): DecoupledIO[T] = {
     require(DataMirror.directionOf(irr.bits) == Direction.Output, "Only safe to cast produced Irrevocable bits to Decoupled.") // scalastyle:ignore line.size.limit
     val d = Wire(new DecoupledIO(irr.bits))
     d.bits := irr.bits
@@ -121,14 +124,16 @@ class IrrevocableIO[+T <: Data](gen: T) extends ReadyValidIO[T](gen)
 /** Factory adds an irrevocable handshaking protocol to a data bundle. */
 object Irrevocable
 {
-  def apply[T <: Data](gen: T): IrrevocableIO[T] = new IrrevocableIO(gen)
+  def apply[T <: Data](gen: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): IrrevocableIO[T] =
+    new IrrevocableIO(gen)
 
   /** Upconverts a DecoupledIO input to an IrrevocableIO, allowing an IrrevocableIO to be used
     * where a DecoupledIO is expected.
     *
     * @note unsafe (and will error) on the consumer (output) side of an DecoupledIO
     */
-  def apply[T <: Data](dec: DecoupledIO[T]): IrrevocableIO[T] = {
+  def apply[T <: Data](dec: DecoupledIO[T])
+                      (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): IrrevocableIO[T] = {
     require(DataMirror.directionOf(dec.bits) == Direction.Input, "Only safe to cast consumed Decoupled bits to Irrevocable.") // scalastyle:ignore line.size.limit
     val i = Wire(new IrrevocableIO(dec.bits))
     dec.bits := i.bits
@@ -189,7 +194,7 @@ class Queue[T <: Data](gen: T,
                        val entries: Int,
                        pipe: Boolean = false,
                        flow: Boolean = false)
-                      (implicit compileOptions: chisel3.CompileOptions)
+                      (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions)
     extends Module() {
   require(entries > -1, "Queue must have non-negative number of entries")
   require(entries != 0, "Use companion object Queue.apply for zero entries")
@@ -276,7 +281,7 @@ object Queue
       enq: ReadyValidIO[T],
       entries: Int = 2,
       pipe: Boolean = false,
-      flow: Boolean = false): DecoupledIO[T] = {
+      flow: Boolean = false)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): DecoupledIO[T] = {
     if (entries == 0) {
       val deq = Wire(new DecoupledIO(chiselTypeOf(enq.bits)))
       deq.valid := enq.valid
@@ -302,7 +307,7 @@ object Queue
       enq: ReadyValidIO[T],
       entries: Int = 2,
       pipe: Boolean = false,
-      flow: Boolean = false): IrrevocableIO[T] = {    
+      flow: Boolean = false)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): IrrevocableIO[T] = {
     val deq = apply(enq, entries, pipe, flow)
     require(entries > 0, "Zero-entry queues don't guarantee Irrevocability")
     val irr = Wire(new IrrevocableIO(chiselTypeOf(deq.bits)))

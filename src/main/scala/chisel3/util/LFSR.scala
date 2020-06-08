@@ -6,7 +6,8 @@
 package chisel3.util
 
 import chisel3._
-import chisel3.internal.naming.chiselName  // can't use chisel3_ version because of compile order
+import chisel3.internal.naming.chiselName
+import chisel3.internal.sourceinfo.SourceInfo
 import chisel3.util.random.FibonacciLFSR
 
 /** LFSR16 generates a 16-bit linear feedback shift register, returning the register contents.
@@ -35,7 +36,7 @@ object LFSR16 {
     */
   @deprecated("Use chisel3.util.random.LFSR(16) for a 16-bit LFSR", "3.2")
   @chiselName
-  def apply(increment: Bool = true.B): UInt =
+  def apply(increment: Bool = true.B)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     VecInit( FibonacciLFSR
               .maxPeriod(16, increment, seed = Some(BigInt(1) << 15))
               .asBools

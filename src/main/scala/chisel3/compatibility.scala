@@ -4,6 +4,7 @@
   *  while moving to the more standard package naming convention `chisel3` (lowercase c).
   */
 import chisel3._    // required for implicit conversions.
+import chisel3.internal.sourceinfo.SourceInfo
 
 package object Chisel {     // scalastyle:ignore package.object.name number.of.types number.of.methods
   import chisel3.internal.firrtl.Width
@@ -489,8 +490,8 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
   type Queue[T <: Data] = QueueCompatibility[T]
 
   sealed class QueueCompatibility[T <: Data](gen: T, entries: Int, pipe: Boolean = false, flow: Boolean = false)
-                                 (implicit compileOptions: chisel3.CompileOptions)
-      extends chisel3.util.Queue[T](gen, entries, pipe, flow)(compileOptions) {
+                                 (implicit sourceInfo: SourceInfo, compileOptions: chisel3.CompileOptions)
+      extends chisel3.util.Queue[T](gen, entries, pipe, flow)(sourceInfo, compileOptions) {
 
     def this(gen: T, entries: Int, pipe: Boolean, flow: Boolean, override_reset: Option[Bool]) = {
       this(gen, entries, pipe, flow)
