@@ -148,8 +148,7 @@ lazy val usePluginSettings = Seq(
 lazy val macros = (project in file("macros")).
   settings(name := "chisel3-macros").
   settings(commonSettings: _*).
-  settings(publishSettings: _*).
-  settings(mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-macros" % "3.3.0"))
+  settings(publishSettings: _*)
 
 lazy val core = (project in file("core")).
   settings(commonSettings: _*).
@@ -165,8 +164,7 @@ lazy val core = (project in file("core")).
       "-Xcheckinit",
       "-Xlint:infer-any"
 //      "-Xlint:missing-interpolator"
-    ),
-    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-core" % "3.3.0")
+    )
   ).
   dependsOn(macros)
 
@@ -190,7 +188,6 @@ lazy val chisel = (project in file(".")).
   dependsOn(plugin).
   aggregate(macros, core).
   settings(
-    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3" % "3.3.0"),
     scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
     scalacOptions in Compile in doc ++= Seq(
       "-diagrams",
