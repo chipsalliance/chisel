@@ -140,7 +140,7 @@ lazy val core = (project in file("core")).
       "-unchecked",
       "-Xcheckinit",
       "-Xlint:infer-any"
-//      "-Xlint:missing-interpolator"
+//      , "-Xlint:missing-interpolator"
     )
   ).
   dependsOn(macros)
@@ -185,3 +185,7 @@ lazy val chisel = (project in file(".")).
       }
     )
   )
+
+addCommandAlias("com", "all compile")
+addCommandAlias("lint", "; compile:scalafix --check ; test:scalafix --check")
+addCommandAlias("fix", "all compile:scalafix test:scalafix")
