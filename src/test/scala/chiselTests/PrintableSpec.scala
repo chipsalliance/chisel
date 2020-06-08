@@ -2,12 +2,13 @@
 
 package chiselTests
 
-import org.scalatest.{FlatSpec, Matchers}
 import chisel3._
 import chisel3.testers.BasicTester
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 /* Printable Tests */
-class PrintableSpec extends FlatSpec with Matchers {
+class PrintableSpec extends AnyFlatSpec with Matchers {
   // This regex is brittle, it specifically finds the clock and enable signals followed by commas
   private val PrintfRegex = """\s*printf\(\w+, [^,]+,(.*)\).*""".r
   private val StringRegex = """([^"]*)"(.*?)"(.*)""".r
@@ -92,6 +93,16 @@ class PrintableSpec extends FlatSpec with Matchers {
     val firrtl = Driver.emit(() => new MyModule)
     getPrintfs(firrtl) match {
       case Seq(Printf("%%", Seq())) =>
+      case e => fail()
+    }
+  }
+  it should "correctly emit tab" in {
+    class MyModule extends BasicTester {
+      printf(p"\t")
+    }
+    val firrtl = Driver.emit(() => new MyModule)
+    getPrintfs(firrtl) match {
+      case Seq(Printf("\\t", Seq())) =>
       case e => fail()
     }
   }

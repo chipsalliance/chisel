@@ -203,6 +203,32 @@ class PartialNamedModule extends NamedModuleTester {
   val test = innerNamedFunction()
 }
 
+@chiselName
+class NoChiselNamePrefixTester extends NamedModuleTester {
+  @chiselName
+  class NoChiselNamePrefixClass extends chisel3.experimental.NoChiselNamePrefix {
+    val a = expectName(1.U +& 2.U, "a")
+  }
+  val inst = new NoChiselNamePrefixClass
+  @chiselName
+  class NormalClass {
+    val b = 1.U +& 2.U
+  }
+  val foo = new NormalClass
+  expectName(foo.b, "foo_b")
+  val bar = new NormalClass with chisel3.experimental.NoChiselNamePrefix
+  expectName(bar.b, "b")
+
+  // Check that we're not matching by name but actual type
+  trait NoChiselNamePrefix
+  @chiselName
+  class FakeNoChiselNamePrefix extends NoChiselNamePrefix {
+    val c = 1.U +& 2.U
+  }
+  val fizz = new FakeNoChiselNamePrefix
+  expectName(fizz.c, "fizz_c")
+}
+
 
 /** A simple test that checks the recursive function val naming annotation both compiles and
   * generates the expected names.
@@ -239,5 +265,11 @@ class NamingAnnotationSpec extends ChiselPropSpec {
 
   property("NonBuilderFunction should run outside a Builder context") {
     NonNamedHelper.NonBuilderFunction() should be (2)
+  }
+
+  property("NoChiselNamePrefix should prevent prefixing when using @chiselName") {
+    var module: NoChiselNamePrefixTester = null
+    elaborate { module = new NoChiselNamePrefixTester; module }
+    assert(module.getNameFailures().isEmpty)
   }
 }

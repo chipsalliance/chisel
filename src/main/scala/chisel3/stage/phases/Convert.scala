@@ -6,7 +6,7 @@ import chisel3.experimental.RunFirrtlTransform
 import chisel3.internal.firrtl.Converter
 import chisel3.stage.ChiselCircuitAnnotation
 import firrtl.{AnnotationSeq, Transform}
-import firrtl.options.{Phase, PreservesAll}
+import firrtl.options.{Dependency, Phase, PreservesAll}
 import firrtl.stage.{FirrtlCircuitAnnotation, RunFirrtlTransformAnnotation}
 
 /** This prepares a [[ChiselCircuitAnnotation]] for compilation with FIRRTL. This does three things:
@@ -16,7 +16,7 @@ import firrtl.stage.{FirrtlCircuitAnnotation, RunFirrtlTransformAnnotation}
   */
 class Convert extends Phase with PreservesAll[Phase] {
 
-  override val prerequisites = Seq(classOf[Elaborate])
+  override val prerequisites = Seq(Dependency[Elaborate])
 
   def transform(annotations: AnnotationSeq): AnnotationSeq = annotations.flatMap {
     case a: ChiselCircuitAnnotation =>
@@ -34,7 +34,6 @@ class Convert extends Phase with PreservesAll[Phase] {
           case anno: RunFirrtlTransform => anno.transformClass
         }
         .distinct
-        .filterNot(_ == classOf[firrtl.Transform])
         .map { c: Class[_ <: Transform] => RunFirrtlTransformAnnotation(c.newInstance()) }
     case a => Some(a)
   }

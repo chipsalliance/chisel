@@ -2,15 +2,16 @@
 
 package chisel3.stage.phases
 
-import org.scalatest.{FlatSpec, Matchers}
 
 import chisel3.stage.{NoRunFirrtlCompilerAnnotation, ChiselOutputFileAnnotation}
 
 import firrtl.options.{OutputAnnotationFileAnnotation, StageOptions}
 import firrtl.options.Viewer.view
 import firrtl.stage.phases.DriverCompatibility.TopNameAnnotation
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class DriverCompatibilitySpec extends FlatSpec with Matchers {
+class DriverCompatibilitySpec extends AnyFlatSpec with Matchers {
 
   behavior of classOf[DriverCompatibility.AddImplicitOutputFile].toString
 
