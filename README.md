@@ -4,12 +4,9 @@
 
 ## Upcoming Events
 
-[The 3rd Chisel Community Conference (hosted by CHIPS Alliance) is happening on January 29--30, 2020!](https://events.linuxfoundation.org/chisel-community-conference/)
+Chisel/FIRRTL development meetings happen every Monday from 1100--1300 PT.
 
-We're [accepting talk proposals](https://events.linuxfoundation.org/chisel-community-conference/program/cfp/) for through December 12th.
-(*Acceptances are rolling, so if you have travel/visa requirements, get your submissions in!*)
-
-Make sure to [register](https://events.linuxfoundation.org/chisel-community-conference/register/) and attend to meet some other Chisel-ers and FIRRTL-ers!
+Call-in info and meeting notes are available [here](https://docs.google.com/document/d/1Mpnqigmx6F8jdC77YWP3akp9H2V1bS1b2XiYjVX0brE).
 
 ---
 
@@ -73,17 +70,33 @@ class FirFilter(bitWidth: Int, coeffs: Seq[UInt]) extends Module {
 
 and use and re-use them across designs:
 ```scala
-val movingAverage3Filter = FirFilter(8.W, Seq(1.U, 1.U, 1.U))  // same 3-point moving average filter as before
-val delayFilter = FirFilter(8.W, Seq(0.U, 1.U))  // 1-cycle delay as a FIR filter
-val triangleFilter = FirFilter(8.W, Seq(1.U, 2.U, 3.U, 2.U, 1.U))  // 5-point FIR filter with a triangle impulse response
+val movingAverage3Filter = Module(new FirFilter(8, Seq(1.U, 1.U, 1.U)))  // same 3-point moving average filter as before
+val delayFilter = Module(new FirFilter(8, Seq(0.U, 1.U)))  // 1-cycle delay as a FIR filter
+val triangleFilter = Module(new FirFilter(8, Seq(1.U, 2.U, 3.U, 2.U, 1.U)))  // 5-point FIR filter with a triangle impulse response
 ```
 
+The above can be converted to Verilog using `ChiselStage`:
+```scala
+import chisel3.stage.{ChiselStage, ChiselGeneratorAnnotation}
+
+(new chisel3.stage.ChiselStage).execute(
+  Array("-X", "verilog"),
+  Seq(ChiselGeneratorAnnotation(() => new FirFilter(8, Seq(1.U, 1.U, 1.U)))))
+```
+
+Alternatively, you may generate some Verilog directly for inspection:
+```scala
+val verilogString = (new chisel3.stage.ChiselStage).emitVerilog(new FirFilter(8, Seq(0.U, 1.U)))
+println(verilogString)
+```
 
 ## Getting Started
 
 ### Bootcamp Interactive Tutorial
 The [**online Chisel Bootcamp**](https://mybinder.org/v2/gh/freechipsproject/chisel-bootcamp/master) is the recommended way to get started with and learn Chisel.
 **No setup is required** (it runs in the browser), nor does it assume any prior knowledge of Scala.
+
+The [**classic Chisel tutorial**](https://github.com/ucb-bar/chisel-tutorial) contains small exercises and runs on your computer.
 
 ### Build Your Own Chisel Projects
 
@@ -116,7 +129,7 @@ These simulation-based verification tools are available for Chisel:
 - [**Wiki**](https://github.com/freechipsproject/chisel3/wiki), which contains various feature-specific tutorials and frequently-asked questions.
 - [**ScalaDoc**](https://www.chisel-lang.org/api/latest/chisel3/index.html), a listing, description, and examples of the functionality exposed by Chisel
 - [**Gitter**](https://gitter.im/freechipsproject/chisel3), where you can ask questions or discuss anything Chisel
-- [**Website**](https://www.chisel-lang.org)
+- [**Website**](https://www.chisel-lang.org) ([source](https://github.com/freechipsproject/www.chisel-lang.org/))
 
 If you are migrating from Chisel2, see [the migration guide](https://www.chisel-lang.org/chisel3/chisel3-vs-chisel2.html).
 
@@ -187,7 +200,7 @@ Also included is:
   contain commonly used interfaces and constructors (like `Decoupled`, which
   wraps a signal with a ready-valid pair) as well as fully parameterizable
   circuit generators (like arbiters and multiplexors).
-- **Driver utilities**, `chisel3.Driver`, which contains compilation and test
+- **Chisel Stage**, `chisel3.stage.*`, which contains compilation and test
   functions that are invoked in the standard Verilog generation and simulation
   testing infrastructure. These can also be used as part of custom flows.
 

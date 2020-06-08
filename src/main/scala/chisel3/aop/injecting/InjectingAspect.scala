@@ -12,21 +12,35 @@ import firrtl.stage.RunFirrtlTransformAnnotation
 import firrtl.{ir, _}
 
 import scala.collection.mutable
-import scala.reflect.runtime.universe.TypeTag
 
 /** Aspect to inject Chisel code into a module of type M
   *
   * @param selectRoots Given top-level module, pick the instances of a module to apply the aspect (root module)
   * @param injection Function to generate Chisel hardware that will be injected to the end of module m
   *                  Signals in m can be referenced and assigned to as if inside m (yes, it is a bit magical)
-  * @param tTag Needed to prevent type-erasure of the top-level module type
   * @tparam T Type of top-level module
   * @tparam M Type of root module (join point)
   */
-case class InjectingAspect[T <: RawModule,
-                           M <: RawModule](selectRoots: T => Iterable[M],
-                                           injection: M => Unit
-                                          )(implicit tTag: TypeTag[T]) extends Aspect[T] {
+case class InjectingAspect[T <: RawModule, M <: RawModule](
+    selectRoots: T => Iterable[M],
+    injection: M => Unit
+) extends InjectorAspect[T, M](
+    selectRoots,
+    injection
+)
+
+/** Extend to inject Chisel code into a module of type M
+  *
+  * @param selectRoots Given top-level module, pick the instances of a module to apply the aspect (root module)
+  * @param injection Function to generate Chisel hardware that will be injected to the end of module m
+  *                  Signals in m can be referenced and assigned to as if inside m (yes, it is a bit magical)
+  * @tparam T Type of top-level module
+  * @tparam M Type of root module (join point)
+  */
+abstract class InjectorAspect[T <: RawModule, M <: RawModule](
+    selectRoots: T => Iterable[M],
+    injection: M => Unit
+) extends Aspect[T] {
   final def toAnnotation(top: T): AnnotationSeq = {
     toAnnotation(selectRoots(top), top.name)
   }

@@ -119,9 +119,31 @@ class AsyncResetQueueTester extends BasicTester {
   }
 }
 
+class AsyncResetDontCareModule extends RawModule {
+  import chisel3.util.Valid
+  val monoPort = IO(Output(AsyncReset()))
+  monoPort := DontCare
+  val monoWire = Wire(AsyncReset())
+  monoWire := DontCare
+  val monoAggPort = IO(Output(Valid(AsyncReset())))
+  monoAggPort := DontCare
+  val monoAggWire = Wire(Valid(AsyncReset()))
+  monoAggWire := DontCare
+
+  // Can't bulk connect to Wire so only ports here
+  val bulkPort = IO(Output(AsyncReset()))
+  bulkPort <> DontCare
+  val bulkAggPort = IO(Output(Valid(AsyncReset())))
+  bulkAggPort <> DontCare
+}
+
 class AsyncResetSpec extends ChiselFlatSpec {
 
   behavior of "AsyncReset"
+
+  it should "be able to be connected to DontCare" in {
+    elaborate(new AsyncResetDontCareModule)
+  }
 
   it should "be allowed with literal reset values" in {
     elaborate(new BasicTester {
@@ -167,6 +189,54 @@ class AsyncResetSpec extends ChiselFlatSpec {
 
   it should "allow changing the reset type of whole modules like Queue" in {
     assertTesterPasses(new AsyncResetQueueTester)
+  }
+
+  it should "support SInt regs" in {
+    assertTesterPasses(new BasicTester {
+      // Also check that it traces through wires
+      val initValue = Wire(SInt())
+      val reg = withReset(reset.asAsyncReset)(RegNext(initValue, 27.S))
+      initValue := -43.S
+      val (count, done) = Counter(true.B, 4)
+      when (count === 0.U) {
+        chisel3.assert(reg === 27.S)
+      } .otherwise {
+        chisel3.assert(reg === -43.S)
+      }
+      when (done) { stop() }
+    })
+  }
+
+  it should "support Fixed regs" in {
+    import chisel3.experimental.{withReset => _, _}
+    assertTesterPasses(new BasicTester {
+      val reg = withReset(reset.asAsyncReset)(RegNext(-6.0.F(2.BP), 3.F(2.BP)))
+      val (count, done) = Counter(true.B, 4)
+      when (count === 0.U) {
+        chisel3.assert(reg === 3.F(2.BP))
+      } .otherwise {
+        chisel3.assert(reg === -6.0.F(2.BP))
+      }
+      when (done) { stop() }
+    })
+  }
+
+  it should "support Interval regs" in {
+    import chisel3.experimental.{withReset => _, _}
+    assertTesterPasses(new BasicTester {
+      val reg = withReset(reset.asAsyncReset) {
+        val x = RegInit(Interval(range"[0,13]"), 13.I)
+        x := 7.I
+        x
+      }
+      val (count, done) = Counter(true.B, 4)
+      when (count === 0.U) {
+        chisel3.assert(reg === 13.I)
+      } .otherwise {
+        chisel3.assert(reg === 7.I)
+      }
+      when (done) { stop() }
+    })
   }
 
   it should "allow literals cast to Bundles as reset values" in {

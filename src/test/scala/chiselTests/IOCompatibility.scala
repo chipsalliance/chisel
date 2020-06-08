@@ -4,6 +4,7 @@ package chiselTests
 
 import chisel3._
 import org.scalatest._
+import org.scalatest.matchers.should.Matchers
 
 class IOCSimpleIO extends Bundle {
   val in  = Input(UInt(32.W))

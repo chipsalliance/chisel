@@ -7,9 +7,11 @@ import chisel3.experimental.FixedPoint
 import chisel3.internal.firrtl.{BinaryPoint, Width}
 import chisel3.testers.BasicTester
 import org.scalatest._
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
 //scalastyle:off magic.number
-class FixedPointLiteralSpec extends FlatSpec with Matchers {
+class FixedPointLiteralSpec extends AnyFlatSpec with Matchers {
   behavior of "fixed point utilities"
 
   they should "allow conversion between doubles and the bigints needed to represent them" in {
@@ -18,6 +20,21 @@ class FixedPointLiteralSpec extends FlatSpec with Matchers {
     val finalDouble = FixedPoint.toDouble(bigInt, 4)
 
     initialDouble should be(finalDouble)
+  }
+
+  they should "have their literals support to double and to BigDecimal" in {
+    val d = -7.125
+    val lit1 = d.F(3.BP)
+    lit1.litToDouble should be (d)
+
+    val d2 = BigDecimal("1232123213131123.125")
+    val lit2 = d2.F(3.BP)
+    lit2.litToBigDecimal should be (d2)
+
+    // Numbers that are too big will throw exception
+    intercept[ChiselException] {
+      lit2.litToDouble
+    }
   }
 }
 
