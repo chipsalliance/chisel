@@ -16,7 +16,8 @@ import firrtl.passes.CheckWidths.{DisjointSqueeze, InvalidRange}
 import firrtl.passes.{PassExceptions, WrapWithRemainder}
 import firrtl.stage.{CompilerAnnotation, FirrtlCircuitAnnotation}
 import firrtl.{FIRRTLException, HighFirrtlCompiler, LowFirrtlCompiler, MiddleFirrtlCompiler, MinimumVerilogCompiler, NoneCompiler, SystemVerilogCompiler, VerilogCompiler}
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 //scalastyle:off magic.number
 //noinspection TypeAnnotation
@@ -423,7 +424,7 @@ class IntervalChainedSubTester extends BasicTester {
 }
 
 //TODO: need tests for dynamic shifts on intervals
-class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
+class IntervalSpec extends AnyFreeSpec with Matchers with ChiselRunners {
 
   type TempFirrtlException = Exception
 

@@ -6,6 +6,7 @@ import chisel3._
 import org.scalatest._
 import chisel3.testers.BasicTester
 import org.scalacheck.Shrink
+import org.scalatest.matchers.should.Matchers
 
 class UIntOps extends Module {
   val io = IO(new Bundle {

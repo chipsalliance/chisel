@@ -7,7 +7,9 @@ import chisel3.stage.ChiselMain
 import java.io.File
 
 import chisel3.aop.inspecting.{InspectingAspect, InspectorAspect}
-import org.scalatest.{FeatureSpec, GivenWhenThen, Matchers}
+import org.scalatest.GivenWhenThen
+import org.scalatest.featurespec.AnyFeatureSpec
+import org.scalatest.matchers.should.Matchers
 
 object ChiselMainSpec {
 
@@ -40,7 +42,7 @@ case object TestObjectAspect extends InspectorAspect[RawModule] ({
   _: RawModule => println("Ran inspectingAspect")
 })
 
-class ChiselMainSpec extends FeatureSpec with GivenWhenThen with Matchers with chiselTests.Utils {
+class ChiselMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers with chiselTests.Utils {
 
   import ChiselMainSpec._
 
