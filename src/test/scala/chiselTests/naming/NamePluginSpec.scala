@@ -2,9 +2,9 @@
 
 package chiselTests.naming
 
-import chisel3. _
+import chisel3._
 import chisel3.aop.Select
-import chisel3.experimental.prefix
+import chisel3.experimental.{prefix, treedump}
 import chiselTests.ChiselPropSpec
 
 class NamePluginSpec extends ChiselPropSpec {
@@ -52,11 +52,15 @@ class NamePluginSpec extends ChiselPropSpec {
         val wire2 = Wire(UInt(3.W))
         wire2
       }
-      val x1 = prefix("first") {
-        builder()
+      {
+        val x1 = prefix("first") {
+          builder()
+        }
       }
-      val x2 = prefix("second") {
-        builder()
+      {
+        val x2 = prefix("second") {
+          builder()
+        }
       }
     }
     aspectTest(() => new Test) {
@@ -72,7 +76,7 @@ class NamePluginSpec extends ChiselPropSpec {
         Some(a)
       }
 
-      val blah = builder()
+      { val blah = builder() }
     }
     aspectTest(() => new Test) {
       top: Test =>
@@ -88,8 +92,11 @@ class NamePluginSpec extends ChiselPropSpec {
         val b = Wire(UInt(3.W))
         Seq(a, b)
       }
-
-      val blah = builder()
+      {
+        val blah = {
+          builder()
+        }
+      }
     }
     aspectTest(() => new Test) {
       top: Test =>
@@ -107,11 +114,37 @@ class NamePluginSpec extends ChiselPropSpec {
         Container(a, b)
       }
 
-      val blah = builder()
+      { val blah = builder() }
     }
     aspectTest(() => new Test) {
       top: Test =>
         Select.wires(top).map(_.instanceName) should be (List("a", "b"))
+    }
+  }
+
+  property("Multiple names on an IO gets the first name") {
+    class Test extends RawModule {
+      val a = IO(Output(UInt(3.W)))
+      val b = a
+    }
+
+    aspectTest(() => new Test) {
+      top: Test =>
+        Select.ios(top).map(_.instanceName) should be (List("a"))
+    }
+  }
+
+  property("Multiple names on a non-IO gets the last name") {
+    class Test extends MultiIOModule {
+      {
+        val a = Wire(UInt(3.W))
+        val b = a
+      }
+    }
+
+    aspectTest(() => new Test) {
+      top: Test =>
+        Select.wires(top).map(_.instanceName) should be (List("b"))
     }
   }
 }

@@ -97,7 +97,7 @@ private[chisel3] trait HasId extends InstanceId {
   private var plugin_name: Option[(String, Prefix)] = None
   private val postname_hooks = scala.collection.mutable.ListBuffer.empty[String=>Unit]
 
-  /** Takes the first name suggested. Multiple calls to this function will be ignored.
+  /** Takes the last name suggested. Multiple calls to this function will take the last given name.
     * If this name conflicts with another name, it may get uniquified by appending
     * a digit at the end.
     *
@@ -107,7 +107,11 @@ private[chisel3] trait HasId extends InstanceId {
     * @return this object
     */
   def pluginName(name: String): this.type = {
-    if(plugin_name.isEmpty) plugin_name = Some((name, Builder.getPrefix()))
+    plugin_name = Some((name, Builder.getPrefix()))
+    //_ref match {
+    //  case Some(_: ModuleIO) if plugin_name.nonEmpty =>
+    //  case _ => plugin_name = Some((name, Builder.getPrefix()))
+    //}
     this
   }
 
@@ -154,6 +158,7 @@ private[chisel3] trait HasId extends InstanceId {
     }
   }
   def getName: Option[String] = seedOpt
+  private[chisel3] def pluginedName: Option[String] = plugin_name.map(x => constructName(x._1, x._2))
   private[chisel3] def suggestedName: Option[String] = suggested_name.map(x => constructName(x._1, x._2))
   private[chisel3] def addPostnameHook(hook: String=>Unit): Unit = postname_hooks += hook
 

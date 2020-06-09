@@ -284,6 +284,13 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
     }
   }
 
+  override def pluginName(name: String): this.type = {
+    topBindingOpt match {
+      case Some(_: PortBinding) if pluginedName.nonEmpty => this
+      case _ => super.pluginName(name)
+    }
+  }
+
   // User-specified direction, local at this node only.
   // Note that the actual direction of this node can differ from child and parent specifiedDirection.
   private var _specifiedDirection: SpecifiedDirection = SpecifiedDirection.Unspecified

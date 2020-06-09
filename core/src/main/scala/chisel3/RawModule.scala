@@ -42,7 +42,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
 
   private[chisel3] def namePorts(names: HashMap[HasId, String]): Unit = {
     for (port <- getModulePorts) {
-      port.suggestedName.orElse(names.get(port)) match {
+      port.suggestedName.orElse(port.pluginedName)/*.orElse(names.get(port))*/ match {
         case Some(name) =>
           if (_namespace.contains(name)) {
             Builder.error(s"""Unable to name port $port to "$name" in $this,""" +
@@ -69,19 +69,27 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
 
     // Then everything else gets named
     for ((node, name) <- names) {
-      node.suggestName(name)
+      //node.suggestName(name)
     }
 
     // All suggestions are in, force names to every node.
     for (id <- getIds) {
       id match {
         case id: BaseModule => id.forceName(default=id.desiredName, _namespace)
-        case id: MemBase[_] => id.forceName(default="T", _namespace)
+        case id: MemBase[_] => id.forceName(default="MEM", _namespace)
         case id: Data  =>
           if (id.isSynthesizable) {
             id.topBinding match {
-              case OpBinding(_) | MemoryPortBinding(_) | PortBinding(_) | RegBinding(_) | WireBinding(_) =>
+              case OpBinding(_) =>
                 id.forceName(default="T", _namespace)
+              case MemoryPortBinding(_) =>
+                id.forceName(default="MPORT", _namespace)
+              case PortBinding(_) =>
+                id.forceName(default="PORT", _namespace)
+              case RegBinding(_) =>
+                id.forceName(default="REG", _namespace)
+              case WireBinding(_) =>
+                id.forceName(default="WIRE", _namespace)
               case _ =>  // don't name literals
             }
           } // else, don't name unbound types
@@ -152,8 +160,8 @@ trait RequireSyncReset extends MultiIOModule {
 abstract class MultiIOModule(implicit moduleCompileOptions: CompileOptions)
     extends RawModule {
   // Implicit clock and reset pins
-  final val clock: Clock = IO(Input(Clock()))
-  final val reset: Reset = IO(Input(mkReset))
+  final val clock: Clock = IO(Input(Clock())).pluginName("clock")
+  final val reset: Reset = IO(Input(mkReset)).pluginName("reset")
 
   private[chisel3] def mkReset: Reset = {
     // Top module and compatibility mode use Bool for reset

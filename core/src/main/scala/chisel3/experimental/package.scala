@@ -143,7 +143,7 @@ package object experimental {  // scalastyle:ignore object.name
   val noPrefix = chisel3.internal.noPrefix
   def pluginNameRecursively[T <: Any](name: String, nameMe: T): T = {
     chisel3.internal.Builder.nameRecursively(
-      name,
+      name.strip(),
       nameMe,
       (id: chisel3.internal.HasId, n: String) => id.pluginName(n)
     )

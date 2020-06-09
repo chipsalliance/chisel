@@ -73,11 +73,11 @@ abstract class Arg {
 case class Node(id: HasId) extends Arg {
   override def fullName(ctx: Component): String = id.getOptionRef match {
     case Some(arg) => arg.fullName(ctx)
-    case None => id.suggestedName.getOrElse("??")
+    case None => id.suggestedName.orElse(id.pluginedName).getOrElse("??")
   }
   def name: String = id.getOptionRef match {
     case Some(arg) => arg.name
-    case None => id.suggestedName.getOrElse("??")
+    case None => id.suggestedName.orElse(id.pluginedName).getOrElse("??")
   }
 }
 

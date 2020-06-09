@@ -16,11 +16,15 @@ class PrefixSpec extends ChiselPropSpec {
         wire2
       }
 
-      val x1 = prefix("first") {
-        builder()
+      {
+        val x1 = prefix("first") {
+          builder()
+        }
       }
-      val x2 = prefix("second") {
-        builder()
+      {
+        val x2 = prefix("second") {
+          builder()
+        }
       }
     }
     aspectTest(() => new Test) {
@@ -42,8 +46,8 @@ class PrefixSpec extends ChiselPropSpec {
           builder2()
         }
       }
-      val x1 = builder()
-      val x2 = builder()
+      { val x1 = builder() }
+      { val x2 = builder() }
     }
     aspectTest(() => new Test) {
       top: Test =>
@@ -71,13 +75,15 @@ class PrefixSpec extends ChiselPropSpec {
         wire := 3.U
         wire
       }
-      val x1 = Wire(UInt(3.W))
-      x1 := {
-        builder()
-      }
-      val x2 = Wire(UInt(3.W))
-      x2 := {
-        builder()
+      {
+        val x1 = Wire(UInt(3.W))
+        x1 := {
+          builder()
+        }
+        val x2 = Wire(UInt(3.W))
+        x2 := {
+          builder()
+        }
       }
     }
     aspectTest(() => new Test) {
@@ -95,8 +101,10 @@ class PrefixSpec extends ChiselPropSpec {
         b
       }
 
-      val ADAM = builder()
-      val JACOB = builder()
+      {
+        val ADAM = builder()
+        val JACOB = builder()
+      }
     }
     aspectTest(() => new Test) {
       top: Test =>
@@ -113,7 +121,7 @@ class PrefixSpec extends ChiselPropSpec {
         b
       }
 
-      val noprefix = builder()
+      { val noprefix = builder() }
     }
     aspectTest(() => new Test) {
       top: Test =>
@@ -130,7 +138,7 @@ class PrefixSpec extends ChiselPropSpec {
         a +& (b * a)
       }
 
-      val blah = builder()
+      { val blah = builder() }
     }
     aspectTest(() => new Test) {
       top: Test =>
@@ -143,17 +151,21 @@ class PrefixSpec extends ChiselPropSpec {
 
   property("Prefixing should not leak into child modules") {
     class Child extends MultiIOModule {
-      val wire = Wire(UInt())
+      {
+        val wire = Wire(UInt())
+      }
     }
 
     class Test extends MultiIOModule {
-      val child = prefix("InTest") {
-        Module(new Child)
+      {
+        val child = prefix("InTest") {
+          Module(new Child)
+        }
       }
     }
     aspectTest(() => new Test) {
       top: Test =>
-        Select.wires(top.child).map(_.instanceName) should be (List("wire"))
+        Select.wires(Select.instances(top).head).map(_.instanceName) should be (List("wire"))
     }
   }
 }

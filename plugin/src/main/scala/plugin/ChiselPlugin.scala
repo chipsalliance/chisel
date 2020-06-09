@@ -36,8 +36,23 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
 
     // Determines if a type has a given parent trait
     def typeHasTrait(s: Type, name: String): Boolean = {
-      s.parents.exists { p =>
+      s.toString().toString == name  || s.parents.exists { p =>
         p.toString().toString == name  || typeHasTrait(p, name)
+      }
+    }
+
+    def iterableTypeHasTrait(s: Type, name: String): Boolean = {
+      def check(t: Type): Boolean = {
+        val str = t.toString
+        val isIter = (str.startsWith("Option[") || str.startsWith("Iterable[")) && typeHasTrait(t.typeArgs.head, name)
+        isIter || typeHasTrait(t, name)
+      }
+      check(s) || s.parents.exists { p =>
+        //if(p.toString.toString.contains("Option")) {
+        //  println(p.toString().toString)
+        //  println(p.typeArgs.map(_.toString.toString))
+        //}
+        check(p) || iterableTypeHasTrait(p, name)
       }
     }
 
@@ -50,20 +65,8 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
       write("modified", show(modified))
     }
 
-    def okConnect(dd: Apply): Boolean = {
-      dd match {
-        case Apply(Select(loc, TermName("$colon$eq")), rhs) =>
-          val isNull = rhs match {
-            case List(Literal(Constant(null))) => true
-            case _ => false
-          }
-          typeHasTrait(loc.tpe, "chisel3.internal.Data") && !isNull && rhs != EmptyTree
-        case _ => false
-      }
-    }
-
     // Indicates whether a ValDef is properly formed to get name
-    def okVal(dd: ValDef): Boolean = {
+    def okVal(dd: ValDef, tpe: String): Boolean = {
 
       // These were found through trial and error
       def okFlags(mods: Modifiers): Boolean = {
@@ -83,26 +86,28 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
         case Literal(Constant(null)) => true
         case _ => false
       }
-      okFlags(dd.mods) && typeHasTrait(dd.tpt.tpe, "chisel3.internal.HasId") && !isNull && dd.rhs != EmptyTree
+      okFlags(dd.mods) && iterableTypeHasTrait(dd.tpt.tpe, tpe) && !isNull && dd.rhs != EmptyTree
     }
 
     // Method called by the compiler to modify source tree
     override def transform(tree: Tree): Tree = tree match {
-      case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd) && !localTyper.context.reporter.hasErrors =>
+      // If a Data, get name and prefix
+      //case dd @ ValDef(mods, name, tpt, rhs) if name.toString.contains("CHECKME") =>
+      //  write("iterable", showRaw(dd, true))
+      //  write("res", iterableTypeHasTrait(tpt.tpe, "chisel3.Data").toString)
+      //  dd
+      case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd, "chisel3.Data") =>
         val TermName(str: String) = name
         val newRHS = super.transform(rhs)
         val prefixed = q"chisel3.experimental.prefix.apply[$tpt](name=$str)(f=$newRHS)"
         val named = q"chisel3.experimental.pluginNameRecursively($str, $prefixed)"
         treeCopy.ValDef(dd, mods, name, tpt, localTyper typed named)
-      //case dd @ Apply(fun@Select(loc, TermName("$colon$eq")), List(rhs)) => //if okConnect(dd) =>
-      //  val newRHS = super.transform(rhs)
-      //  loc match {
-      //    case Ident(TermName(str: String)) =>
-      //      val prefixed = q"chisel3.experimental.prefix.apply[${rhs.tpe}](name=$str)(f=$newRHS)"
-      //      treeCopy.Apply(dd, fun, List(prefixed))
-      //    case _ =>
-      //      treeCopy.Apply(dd, fun, List(newRHS))
-      //  }
+      // If a HasId (includes modules/instances) just get name
+      case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd, "chisel3.internal.HasId") =>
+        val TermName(str: String) = name
+        val newRHS = super.transform(rhs)
+        val named = q"chisel3.experimental.pluginNameRecursively($str, $newRHS)"
+        treeCopy.ValDef(dd, mods, name, tpt, localTyper typed named)
       case _ => super.transform(tree)
     }
   }
