@@ -53,7 +53,10 @@ object ExpandWhens extends Pass {
   }
 
   /** Maps an expression to a declared node name. Used to memoize predicates */
+  @deprecated("This will be removed in FIRRTL 1.4.0", "FIRRTL 1.3.2")
   type NodeMap = mutable.HashMap[MemoizedHash[Expression], String]
+
+  private type NodeLookup = mutable.HashMap[WrappedExpression, String]
 
   /** Maps a reference to whatever connects to it. Used to resolve last connect semantics */
   type Netlist = mutable.LinkedHashMap[WrappedExpression, Expression]
@@ -88,10 +91,10 @@ object ExpandWhens extends Pass {
     val simlist = new Simlist
 
     // Memoizes if an expression contains any WVoids inserted in this pass
-    val memoizedVoid = new mutable.HashSet[MemoizedHash[Expression]] += WVoid
+    val memoizedVoid = new mutable.HashSet[WrappedExpression] += WVoid
 
     // Memoizes the node that holds a particular expression, if any
-    val nodes = new NodeMap
+    val nodes = new NodeLookup
 
     // Seq of attaches in order
     lazy val attaches = mutable.ArrayBuffer.empty[Attach]
