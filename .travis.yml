@@ -42,12 +42,28 @@ jobs:
         - verilator --version
         - bash .install_yosys.sh
         - yosys -V
+    - stage: prepare
+      name: "Compile FIRRTL to share with subsequent stages"
+      script:
+        - sbt $SBT_ARGS assembly
+      workspaces:
+        create:
+          name: firrtl_build
+          paths:
+            - target/
+            - utils/bin/firrtl.jar
+            - project/project/
+            - project/target/
     - stage: test
       name: "Unidoc builds (no warnings)"
+      workspaces:
+        use: firrtl_build
       script:
         - sbt $SBT_ARGS unidoc
     - stage: test
       name: "Tests: FIRRTL (2.12)"
+      workspaces:
+        use: firrtl_build
       script:
         - verilator --version
         - sbt $SBT_ARGS test
@@ -58,35 +74,47 @@ jobs:
         - sbt ++2.11.12 $SBT_ARGS test
     - stage: test
       name: "Tests: chisel3 (2.12)"
+      workspaces:
+        use: firrtl_build
       script:
         - verilator --version
-        - sbt $SBT_ARGS clean assembly publishLocal
         - bash .run_chisel_tests.sh
     - stage: test
       name: "Formal equivalence: RocketCore"
+      workspaces:
+        use: firrtl_build
       script:
         - yosys -V
         - "travis_wait 30 sleep 1800 &"
         - ./.run_formal_checks.sh RocketCore
     - stage: test
       name: "Formal equivalence: FPU"
+      workspaces:
+        use: firrtl_build
       script:
         - yosys -V
         - "travis_wait 30 sleep 1800 &"
         - ./.run_formal_checks.sh FPU
     - stage: test
       name: "Formal equivalence: ICache"
+      workspaces:
+        use: firrtl_build
       script:
         - yosys -V
         - "travis_wait 30 sleep 1800 &"
         - ./.run_formal_checks.sh ICache
     - stage: test
       name: "Formal equivalence: small expression-tree stress tests"
+      workspaces:
+        use: firrtl_build
       script:
         - yosys -V
         - "travis_wait 30 sleep 1800 &"
         - ./.run_formal_checks.sh Ops
         - ./.run_formal_checks.sh AddNot
     - stage: test
+      name: "Sanity check benchmarking scripts"
+      workspaces:
+        use: firrtl_build
       script:
         - benchmark/scripts/benchmark_cold_compile.py -N 2 --designs regress/ICache.fir --versions HEAD
