@@ -220,16 +220,12 @@ class MorphismSpec extends FlatSpec with Matchers {
       """|circuit Top:
          |  module Foo:
          |    node a = UInt<1>(0)
-         |    skip
          |  module Bop:
          |    node a = UInt<1>(0)
-         |    skip
          |  module Fub:
          |    node a = UInt<1>(0)
-         |    skip
          |  module Bar:
          |    node a = UInt<1>(0)
-         |    skip
          |  module Baz:
          |    input x: UInt<1>
          |    inst foo of Foo
@@ -246,7 +242,6 @@ class MorphismSpec extends FlatSpec with Matchers {
       """|circuit Top:
          |  module Foo:
          |    node a = UInt<1>(0)
-         |    skip
          |  module Baz:
          |    input x: UInt<1>
          |    inst foo of Foo
@@ -358,10 +353,8 @@ class MorphismSpec extends FlatSpec with Matchers {
       """|circuit Top:
          |  module Foo:
          |    node a = UInt<1>(0)
-         |    skip
          |  module Bar:
          |    node a = UInt<1>(0)
-         |    skip
          |  module Baz:
          |    input x: UInt<1>
          |    inst foo of Foo
@@ -374,22 +367,16 @@ class MorphismSpec extends FlatSpec with Matchers {
       """|circuit Top :
          |  module Foo___Top_baz_bar :
          |    node a = UInt<1>("h0")
-         |    skip
          |  module Foo___Top_qux_foox :
          |    node a = UInt<1>("h0")
-         |    skip
          |  module Foo___Top_qux_bar :
          |    node a = UInt<1>("h0")
-         |    skip
          |  module Foo___Top_baz_foox :
          |    node a = UInt<1>("h0")
-         |    skip
          |  module Foo___Top_baz_foo :
          |    node a = UInt<1>("h0")
-         |    skip
          |  module Foo___Top_qux_foo :
          |    node a = UInt<1>("h0")
-         |    skip
          |  module Baz___Top_baz :
          |    input x : UInt<1>
          |    inst foo of Foo___Top_baz_foo
@@ -486,10 +473,8 @@ class MorphismSpec extends FlatSpec with Matchers {
       """|circuit Top:
          |  module Foo:
          |    node a = UInt<1>(0)
-         |    skip
          |  module Bar:
          |    node a = UInt<1>(0)
-         |    skip
          |  module Baz:
          |    input x: UInt<1>
          |    inst foo of Foo
@@ -502,7 +487,6 @@ class MorphismSpec extends FlatSpec with Matchers {
       """|circuit Top :
          |  module Foo :
          |    node a = UInt<1>("h0")
-         |    skip
          |  module Baz :
          |    input x : UInt<1>
          |    inst foo of Foo
