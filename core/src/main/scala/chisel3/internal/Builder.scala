@@ -9,6 +9,7 @@ import chisel3.experimental._
 import chisel3.internal.firrtl._
 import chisel3.internal.naming._
 import _root_.firrtl.annotations.{CircuitName, ComponentName, IsMember, ModuleName, Named, ReferenceTarget}
+import logger.LazyLogging
 
 import scala.collection.mutable
 
@@ -223,7 +224,7 @@ private[chisel3] class DynamicContext() {
 }
 
 //scalastyle:off number.of.methods
-private[chisel3] object Builder {
+private[chisel3] object Builder extends LazyLogging {
   // All global mutable state must be referenced via dynamicContextVar!!
   private val dynamicContextVar = new DynamicVariable[Option[DynamicContext]](None)
   private def dynamicContext: DynamicContext = {
@@ -410,11 +411,11 @@ private[chisel3] object Builder {
 
   def build[T <: RawModule](f: => T): (Circuit, T) = {
     dynamicContextVar.withValue(Some(new DynamicContext())) {
-      errors.info("Elaborating design...")
+      logger.warn("Elaborating design...")
       val mod = f
       mod.forceName(mod.name, globalNamespace)
       errors.checkpoint()
-      errors.info("Done elaborating.")
+      logger.warn("Done elaborating.")
 
       (Circuit(components.last.name, components, annotations), mod)
     }
