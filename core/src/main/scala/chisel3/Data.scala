@@ -286,7 +286,8 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
 
   override def pluginName(name: String): this.type = {
     topBindingOpt match {
-      case Some(_: PortBinding) if pluginedName.nonEmpty => this
+      // if a current port in the current module, keep the existing name
+      case Some(PortBinding(m)) if pluginedName.nonEmpty && Builder.currentModule.contains(m) => this
       case _ => super.pluginName(name)
     }
   }

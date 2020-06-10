@@ -41,7 +41,7 @@ class TransitNameSpec extends AnyFlatSpec with Matchers {
     Driver.execute(Array("-X", "high", "--target-dir", "test_run_dir/TransitNameSpec"), () => new Top) match {
       case ChiselExecutionSuccess(_,_,Some(FirrtlExecutionSuccess(_,a))) =>
         info("""output FIRRTL includes "inst MyModule"""")
-        a should include ("inst MyModule of MyModule")
+        a should include ("inst _MyModule of MyModule")
 
         info("""output FIRRTL includes "inst bar"""")
         a should include ("inst bar of MyModule")

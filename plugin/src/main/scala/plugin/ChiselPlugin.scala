@@ -44,7 +44,8 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
     def iterableTypeHasTrait(s: Type, name: String): Boolean = {
       def check(t: Type): Boolean = {
         val str = t.toString
-        val isIter = (str.startsWith("Option[") || str.startsWith("Iterable[")) && typeHasTrait(t.typeArgs.head, name)
+        val isIter = (str.startsWith("Option[") || str.startsWith("Iterable[")) &&
+          iterableTypeHasTrait(t.typeArgs.head, name)
         isIter || typeHasTrait(t, name)
       }
       check(s) || s.parents.exists { p =>

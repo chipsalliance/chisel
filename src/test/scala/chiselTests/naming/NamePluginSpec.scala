@@ -104,6 +104,34 @@ class NamePluginSpec extends ChiselPropSpec {
     }
   }
 
+  property("Naming on nested iterables should work") {
+
+    class Test extends MultiIOModule {
+      def builder(): Seq[Seq[UInt]] = {
+        val a = Wire(UInt(3.W))
+        val b = Wire(UInt(3.W))
+        val c = Wire(UInt(3.W))
+        val d = Wire(UInt(3.W))
+        Seq(Seq(a, b), Seq(c, d))
+      }
+      {
+        val blah = {
+          builder()
+        }
+      }
+    }
+    aspectTest(() => new Test) {
+      top: Test =>
+        Select.wires(top).map(_.instanceName) should be (
+          List(
+            "blah_0_0",
+            "blah_0_1",
+            "blah_1_0",
+            "blah_1_1"
+          ))
+    }
+  }
+
   property("Naming on custom case classes should not work") {
     case class Container(a: UInt, b: UInt)
 
@@ -122,7 +150,7 @@ class NamePluginSpec extends ChiselPropSpec {
     }
   }
 
-  property("Multiple names on an IO gets the first name") {
+  property("Multiple names on an IO within a module gets the first name") {
     class Test extends RawModule {
       val a = IO(Output(UInt(3.W)))
       val b = a

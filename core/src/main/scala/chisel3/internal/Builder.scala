@@ -93,9 +93,11 @@ private[chisel3] trait HasId extends InstanceId {
 
   // Facilities for 'suggesting' a name to this.
   // Post-name hooks called to carry the suggestion to other candidates as needed
-  private var suggested_name: Option[(String, Prefix)] = None
-  private var plugin_name: Option[(String, Prefix)] = None
-  private val postname_hooks = scala.collection.mutable.ListBuffer.empty[String=>Unit]
+  private var suggested_name: Option[String] = None
+  private var plugin_name: Option[String] = None
+  private var prefix_name: Prefix = List.empty[Either[String, Data]]
+  private val suggest_postname_hooks = scala.collection.mutable.ListBuffer.empty[String=>Unit]
+  private val plugin_postname_hooks = scala.collection.mutable.ListBuffer.empty[String=>Unit]
 
   /** Takes the last name suggested. Multiple calls to this function will take the last given name.
     * If this name conflicts with another name, it may get uniquified by appending
@@ -107,11 +109,9 @@ private[chisel3] trait HasId extends InstanceId {
     * @return this object
     */
   def pluginName(name: String): this.type = {
-    plugin_name = Some((name, Builder.getPrefix()))
-    //_ref match {
-    //  case Some(_: ModuleIO) if plugin_name.nonEmpty =>
-    //  case _ => plugin_name = Some((name, Builder.getPrefix()))
-    //}
+    plugin_name = Some(name)
+    for(hook <- plugin_postname_hooks) { hook(name) }
+    prefix_name = Builder.getPrefix()
     this
   }
 
@@ -125,8 +125,9 @@ private[chisel3] trait HasId extends InstanceId {
     * @return this object
     */
   def suggestName(name: =>String): this.type = {
-    if(suggested_name.isEmpty) suggested_name = Some((name, Builder.getPrefix()))
-    for(hook <- postname_hooks) { hook(name) }
+    if(suggested_name.isEmpty) suggested_name = Some(name)
+    prefix_name = Builder.getPrefix()
+    for(hook <- suggest_postname_hooks) { hook(name) }
     this
   }
   private def constructName(seed: String, prefix: Prefix): String = {
@@ -141,26 +142,27 @@ private[chisel3] trait HasId extends InstanceId {
   }
   private def candidateName(default: String): String = {
     if(suggested_name.nonEmpty) {
-      constructName(suggested_name.get._1, suggested_name.get._2)
+      constructName(suggested_name.get, prefix_name)
     } else if(plugin_name.nonEmpty) {
-      constructName(plugin_name.get._1, plugin_name.get._2)
+      constructName(plugin_name.get, prefix_name)
     } else {
       constructName(default, Left("") +: construction_prefix)
     }
   }
   private[chisel3] def seedOpt: Option[String] = {
     if(suggested_name.nonEmpty) {
-      suggested_name.map(_._1)
+      suggested_name
     } else if(plugin_name.nonEmpty) {
-      plugin_name.map(_._1)
+      plugin_name
     } else {
       None
     }
   }
   def getName: Option[String] = seedOpt
-  private[chisel3] def pluginedName: Option[String] = plugin_name.map(x => constructName(x._1, x._2))
-  private[chisel3] def suggestedName: Option[String] = suggested_name.map(x => constructName(x._1, x._2))
-  private[chisel3] def addPostnameHook(hook: String=>Unit): Unit = postname_hooks += hook
+  private[chisel3] def pluginedName: Option[String] = plugin_name.map(x => constructName(x, prefix_name))
+  private[chisel3] def suggestedName: Option[String] = suggested_name.map(x => constructName(x, prefix_name))
+  private[chisel3] def addSuggestPostnameHook(hook: String=>Unit): Unit = suggest_postname_hooks += hook
+  private[chisel3] def addPluginPostnameHook(hook: String=>Unit): Unit = plugin_postname_hooks += hook
 
   // Uses a namespace to convert suggestion into a true name
   // Will not do any naming if the reference already assigned.

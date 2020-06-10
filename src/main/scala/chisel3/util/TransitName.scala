@@ -43,7 +43,8 @@ object TransitName {
     * @return the `from` parameter
     */
   def apply[T<:HasId](from: T, to: HasId): T = {
-    from.addPostnameHook((given_name: String) => {to.suggestName(given_name)})
+    from.addSuggestPostnameHook((given_name: String) => {to.suggestName(given_name)})
+    from.addPluginPostnameHook((given_name: String) => {to.pluginName(given_name)})
     from
   }
 
@@ -55,7 +56,8 @@ object TransitName {
     * @return the `from` parameter
     */
   def withSuffix[T<:HasId](suffix: String)(from: T, to: HasId): T = {
-    from.addPostnameHook((given_name: String) => {to.suggestName(given_name + suffix)})
+    from.addSuggestPostnameHook((given_name: String) => {to.suggestName(given_name + suffix)})
+    from.addPluginPostnameHook((given_name: String) => {to.pluginName(given_name + suffix)})
     from
   }
 
