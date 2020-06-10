@@ -118,3 +118,4 @@ jobs:
         use: firrtl_build
       script:
         - benchmark/scripts/benchmark_cold_compile.py -N 2 --designs regress/ICache.fir --versions HEAD
+        - benchmark/scripts/find_heap_bound.py -- -cp firrtl*jar firrtl.stage.FirrtlMain -i regress/ICache.fir -o out -X verilog
