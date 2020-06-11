@@ -218,6 +218,83 @@ class PrefixSpec extends ChiselPropSpec {
     }
   }
 
+  property("Prefixing should be the prefix during the last call to autoName/suggestName") {
+    class Test extends MultiIOModule {
+      {
+        val wire = {
+          val x = Wire(UInt(3.W)).suggestName("mywire")
+          x
+        }
+      }
+    }
+    aspectTest(() => new Test) {
+      top: Test =>
+        Select.wires(top).map(_.instanceName) should be (List("mywire"))
+        Select.wires(top).map(_.instanceName) shouldNot be (List("wire_mywire"))
+    }
+  }
 
+  property("Prefixing have intuitive behavior") {
+    class Test extends MultiIOModule {
+      {
+        val wire = {
+          val x = Wire(UInt(3.W)).suggestName("mywire")
+          val y = Wire(UInt(3.W)).suggestName("mywire2")
+          y := x
+          y
+        }
+      }
+    }
+    aspectTest(() => new Test) {
+      top: Test => Select.wires(top).map(_.instanceName) should be (List("wire_mywire", "mywire2"))
+    }
+  }
 
+  property("Prefixing on connection to subfields work") {
+    class Test extends MultiIOModule {
+      {
+        val wire = Wire(new Bundle {
+          val x = UInt(3.W)
+          val y = UInt(3.W)
+          val vec = Vec(4, UInt(3.W))
+        })
+        wire.x := RegNext(3.U)
+        wire.y := RegNext(3.U)
+        wire.vec(0) := RegNext(3.U)
+        wire.vec(wire.x) := RegNext(3.U)
+      }
+    }
+    aspectTest(() => new Test) {
+      top: Test =>
+        Select.registers(top).map(_.instanceName) should be (List(
+          "_wire_x_REG",
+          "_wire_y_REG",
+          "_wire_vec_0_REG",
+          "_wire_vec_REG"
+        ))
+    }
+  }
+
+  property("Prefixing on connection to IOs should work") {
+    class Child extends MultiIOModule {
+      val in = IO(Input(UInt(3.W)))
+      val out = IO(Output(UInt(3.W)))
+      out := RegNext(in)
+    }
+    class Test extends MultiIOModule {
+      {
+        val child = Module(new Child)
+        child.in := RegNext(3.U)
+      }
+    }
+    aspectTest(() => new Test) {
+      top: Test =>
+        Select.registers(top).map(_.instanceName) should be (List(
+          "_child_in_REG"
+        ))
+        Select.registers(Select.instances(top).head).map(_.instanceName) should be (List(
+          "_out_REG"
+        ))
+    }
+  }
 }

@@ -500,11 +500,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
     * @group Connect
     */
   final def := (that: => Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = {
-    if(hasSeed) {
-      prefix(this) {
-        this.connect(that)(sourceInfo, connectionCompileOptions)
-      }
-    } else {
+    prefix(this) {
       this.connect(that)(sourceInfo, connectionCompileOptions)
     }
   } // scalastyle:ignore line.size.limit

@@ -142,6 +142,19 @@ private[chisel3] trait HasId extends InstanceId {
   }
 
   def computeName(defaultSeed: Option[String]): Option[String] = {
+    def buildAggName(id: HasId): Option[String] = {
+      def recArg(node: Arg): Option[String] = node match {
+        case Slot(imm, name) => recArg(imm).map(_ + "_" + name)
+        case Index(imm, ILit(n)) => recArg(imm).map(_ + "_" + n)
+        case Index(imm, n: Node) => recArg(imm)
+        case Node(id) => recArg(id.getOptionRef.get)
+        case Ref(name) => Some(name)
+        case ModuleIO(mod, name) if _parent.contains(mod) => Some(name)
+        case ModuleIO(mod, name) => recArg(mod.getRef).map(_ + "_" + name)
+      }
+
+      id.getOptionRef.flatMap(recArg)
+    }
 
     /** Computes a name of this signal, given the seed and prefix
       * @param seed
@@ -152,7 +165,11 @@ private[chisel3] trait HasId extends InstanceId {
       val builder = new StringBuilder()
       prefix.foreach {
         case Left(s: String) => builder ++= s + "_"
-        case Right(d: HasId) if d.seedOpt.nonEmpty => builder ++= d.seedOpt.get + "_"
+        case Right(d: HasId) =>
+          buildAggName(d) match {
+            case Some(n) => builder ++= n + "_"
+            case _ =>
+          }
         case _ =>
       }
       builder ++= seed

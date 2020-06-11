@@ -102,8 +102,6 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
     // Method called by the compiler to modify source tree
     // TODO: Why does pluginName on Data specialize ports in current module?
     // TODO: determine seed/name/prefix terms to help with clarity
-    // TODO: Why is prefix set for all calls to autoName/suggestName, yet the seed is not?
-    // TODO: Test prefix for assigning to subfield/subindex of aggregate
     override def transform(tree: Tree): Tree = tree match {
       // If a Data, get name and prefix
       case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd) =>
