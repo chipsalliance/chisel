@@ -36,25 +36,29 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
 
     // Determines if a type has a given parent trait
     def typeHasTrait(s: Type, name: String): Boolean = {
-      s.toString().toString == name  || s.parents.exists { p =>
-        p.toString().toString == name  || typeHasTrait(p, name)
+      s.toString == name  || s.parents.exists { p =>
+        p.toString == name  || typeHasTrait(p, name)
       }
     }
 
-    def iterableTypeHasTrait(s: Type, name: String): Boolean = {
-      def check(t: Type): Boolean = {
-        val str = t.toString
-        val isIter = (str.startsWith("Option[") || str.startsWith("Iterable[")) &&
-          iterableTypeHasTrait(t.typeArgs.head, name)
-        isIter || typeHasTrait(t, name)
-      }
-      check(s) || s.parents.exists { p =>
-        //if(p.toString.toString.contains("Option")) {
-        //  println(p.toString().toString)
-        //  println(p.typeArgs.map(_.toString.toString))
-        //}
-        check(p) || iterableTypeHasTrait(p, name)
-      }
+    def inferType(t: Tree): Type = localTyper.typed(t, nsc.Mode.TYPEmode).tpe
+
+    def containerTpe(givenTpe: Type, internalTpe: Type): Boolean = {
+      lazy val isType =
+        givenTpe <:< internalTpe
+      lazy val isIType =
+        givenTpe.matchesPattern(inferType(tq"Iterable[$internalTpe]"))
+      lazy val isOType =
+        givenTpe.matchesPattern(inferType(tq"Option[$internalTpe]"))
+      lazy val isIIType =
+        givenTpe.matchesPattern(inferType(tq"Iterable[Iterable[_]]"))
+      lazy val isIOType =
+        givenTpe.matchesPattern(inferType(tq"Iterable[Option[_]]"))
+      lazy val isOIType =
+        givenTpe.matchesPattern(inferType(tq"Option[Iterable[_]]"))
+      lazy val isOOType =
+        givenTpe.matchesPattern(inferType(tq"Option[Option[_]]"))
+      isType || isIType || isOType || isIIType || isIOType || isOIType || isOOType
     }
 
     // Utility function to help debug compiler plugin
@@ -67,7 +71,7 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
     }
 
     // Indicates whether a ValDef is properly formed to get name
-    def okVal(dd: ValDef, tpe: String): Boolean = {
+    def okVal(dd: ValDef, tpe: Tree): Boolean = {
 
       // These were found through trial and error
       def okFlags(mods: Modifiers): Boolean = {
@@ -87,24 +91,23 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
         case Literal(Constant(null)) => true
         case _ => false
       }
-      okFlags(dd.mods) && iterableTypeHasTrait(dd.tpt.tpe, tpe) && !isNull && dd.rhs != EmptyTree
+      okFlags(dd.mods) && containerTpe(inferType(dd.tpt), inferType(tpe)) && !isNull && dd.rhs != EmptyTree
     }
 
     // Method called by the compiler to modify source tree
     override def transform(tree: Tree): Tree = tree match {
       // If a Data, get name and prefix
-      //case dd @ ValDef(mods, name, tpt, rhs) if name.toString.contains("CHECKME") =>
-      //  write("iterable", showRaw(dd, true))
-      //  write("res", iterableTypeHasTrait(tpt.tpe, "chisel3.Data").toString)
-      //  dd
-      case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd, "chisel3.Data") =>
+      case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd, tq"chisel3.Data") =>
         val TermName(str: String) = name
         val newRHS = super.transform(rhs)
         val prefixed = q"chisel3.experimental.prefix.apply[$tpt](name=$str)(f=$newRHS)"
         val named = q"chisel3.experimental.pluginNameRecursively($str, $prefixed)"
         treeCopy.ValDef(dd, mods, name, tpt, localTyper typed named)
       // If a HasId (includes modules/instances) just get name
-      case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd, "chisel3.internal.HasId") =>
+      // TODO: Add test for doubled-nested modules getting prefixed
+      // TODO: Why do modules elide the prefixing? Add test
+      // TODO: Why does pluginName on Data specialize ports in current module?
+      case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd, tq"chisel3.experimental.BaseModule") =>
         val TermName(str: String) = name
         val newRHS = super.transform(rhs)
         val named = q"chisel3.experimental.pluginNameRecursively($str, $newRHS)"

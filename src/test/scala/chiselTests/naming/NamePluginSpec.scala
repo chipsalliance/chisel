@@ -12,6 +12,7 @@ class NamePluginSpec extends ChiselPropSpec {
   property("Scala plugin should name internally scoped components") {
     class Test extends MultiIOModule {
       { val mywire = Wire(UInt(3.W))}
+
     }
     aspectTest(() => new Test) {
       top: Test => Select.wires(top).head.toTarget.ref should be("mywire")
