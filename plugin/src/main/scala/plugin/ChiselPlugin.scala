@@ -34,44 +34,49 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
   class MyTypingTransformer(unit: CompilationUnit)
     extends TypingTransformer(unit) {
 
-    // Determines if a type has a given parent trait
-    def typeHasTrait(s: Type, name: String): Boolean = {
-      s.toString == name  || s.parents.exists { p =>
-        p.toString == name  || typeHasTrait(p, name)
+    // Determines if the chisel plugin should match on this type
+    def shouldMatch(q: Type): Boolean = {
+
+      // If subtype of Data or BaseModule, its a match!
+      def terminate(t: Type): Boolean = {
+        t <:< inferType(tq"chisel3.Data") || t <:< inferType(tq"chisel3.experimental.BaseModule")
+      }
+
+      // Recurse through subtype hierarchy finding containers
+      def recShouldMatch(s: Type): Boolean = {
+        def outerMatches(t: Type): Boolean = {
+          val str = t.toString
+          str.startsWith("Option[") || str.startsWith("Iterable[")
+        }
+        if(terminate(s)) {
+          true
+        } else if(outerMatches(s)) {
+          recShouldMatch(s.typeArgs.head)
+        } else {
+          s.parents.exists( p => recShouldMatch(p) )
+        }
+      }
+
+      // If doesn't match container pattern, exit early
+      def earlyExit(t: Type): Boolean = {
+        !(t.matchesPattern(inferType(tq"Iterable[_]")) || t.matchesPattern(inferType(tq"Option[_]")))
+      }
+
+      // First check if a match, then check early exit, then recurse
+      if(terminate(q)){
+        true
+      } else if(earlyExit(q)) {
+        false
+      } else {
+        recShouldMatch(q)
       }
     }
 
+    // Given a type tree, infer the type and return it
     def inferType(t: Tree): Type = localTyper.typed(t, nsc.Mode.TYPEmode).tpe
 
-    def containerTpe(givenTpe: Type, internalTpe: Type): Boolean = {
-      lazy val isType =
-        givenTpe <:< internalTpe
-      lazy val isIType =
-        givenTpe.matchesPattern(inferType(tq"Iterable[$internalTpe]"))
-      lazy val isOType =
-        givenTpe.matchesPattern(inferType(tq"Option[$internalTpe]"))
-      lazy val isIIType =
-        givenTpe.matchesPattern(inferType(tq"Iterable[Iterable[_]]"))
-      lazy val isIOType =
-        givenTpe.matchesPattern(inferType(tq"Iterable[Option[_]]"))
-      lazy val isOIType =
-        givenTpe.matchesPattern(inferType(tq"Option[Iterable[_]]"))
-      lazy val isOOType =
-        givenTpe.matchesPattern(inferType(tq"Option[Option[_]]"))
-      isType || isIType || isOType || isIIType || isIOType || isOIType || isOOType
-    }
-
-    // Utility function to help debug compiler plugin
-    def serializeError(original: ValDef, modified: ValDef): Unit = {
-      global.reporter.error(modified.pos, show(modified))
-      writeAST("originalRaw", showRaw(original))
-      write("original", show(original))
-      writeAST("modifiedRaw", showRaw(modified))
-      write("modified", show(modified))
-    }
-
     // Indicates whether a ValDef is properly formed to get name
-    def okVal(dd: ValDef, tpe: Tree): Boolean = {
+    def okVal(dd: ValDef): Boolean = {
 
       // These were found through trial and error
       def okFlags(mods: Modifiers): Boolean = {
@@ -91,26 +96,21 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
         case Literal(Constant(null)) => true
         case _ => false
       }
-      okFlags(dd.mods) && containerTpe(inferType(dd.tpt), inferType(tpe)) && !isNull && dd.rhs != EmptyTree
+      okFlags(dd.mods) && shouldMatch(inferType(dd.tpt)) && !isNull && dd.rhs != EmptyTree
     }
 
     // Method called by the compiler to modify source tree
+    // TODO: Why does pluginName on Data specialize ports in current module?
+    // TODO: determine seed/name/prefix terms to help with clarity
+    // TODO: Why is prefix set for all calls to autoName/suggestName, yet the seed is not?
+    // TODO: Test prefix for assigning to subfield/subindex of aggregate
     override def transform(tree: Tree): Tree = tree match {
       // If a Data, get name and prefix
-      case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd, tq"chisel3.Data") =>
+      case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd) =>
         val TermName(str: String) = name
         val newRHS = super.transform(rhs)
         val prefixed = q"chisel3.experimental.prefix.apply[$tpt](name=$str)(f=$newRHS)"
         val named = q"chisel3.experimental.pluginNameRecursively($str, $prefixed)"
-        treeCopy.ValDef(dd, mods, name, tpt, localTyper typed named)
-      // If a HasId (includes modules/instances) just get name
-      // TODO: Add test for doubled-nested modules getting prefixed
-      // TODO: Why do modules elide the prefixing? Add test
-      // TODO: Why does pluginName on Data specialize ports in current module?
-      case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd, tq"chisel3.experimental.BaseModule") =>
-        val TermName(str: String) = name
-        val newRHS = super.transform(rhs)
-        val named = q"chisel3.experimental.pluginNameRecursively($str, $newRHS)"
         treeCopy.ValDef(dd, mods, name, tpt, localTyper typed named)
       case _ => super.transform(tree)
     }

@@ -168,4 +168,56 @@ class PrefixSpec extends ChiselPropSpec {
         Select.wires(Select.instances(top).head).map(_.instanceName) should be (List("wire"))
     }
   }
+
+  property("Prefixing should not leak into child modules, example 2") {
+    class Child extends MultiIOModule {
+      {
+        val wire = Wire(UInt())
+      }
+    }
+
+    class Test extends MultiIOModule {
+      {
+        lazy val module = new Child
+        val child = Module(module)
+      }
+    }
+    aspectTest(() => new Test) {
+      top: Test =>
+        Select.wires(Select.instances(top).head).map(_.instanceName) should be (List("wire"))
+    }
+  }
+
+  property("Prefixing should not be caused by nested Iterable[Iterable[Any]]") {
+    class Test extends MultiIOModule {
+      {
+        val iia = {
+          val wire = Wire(UInt(3.W))
+          List(List("Blah"))
+        }
+      }
+    }
+    aspectTest(() => new Test) {
+      top: Test =>
+        Select.wires(top).map(_.instanceName) should be (List("wire"))
+    }
+  }
+
+  property("Prefixing should be caused by nested Iterable[Iterable[Data]]") {
+    class Test extends MultiIOModule {
+      {
+        val iia = {
+          val wire = Wire(UInt(3.W))
+          List(List(3.U))
+        }
+      }
+    }
+    aspectTest(() => new Test) {
+      top: Test =>
+        Select.wires(top).map(_.instanceName) should be (List("iia_wire"))
+    }
+  }
+
+
+
 }

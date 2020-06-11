@@ -44,7 +44,7 @@ object TransitName {
     */
   def apply[T<:HasId](from: T, to: HasId): T = {
     from.addSuggestPostnameHook((given_name: String) => {to.suggestName(given_name)})
-    from.addPluginPostnameHook((given_name: String) => {to.pluginName(given_name)})
+    from.addAutoPostnameHook((given_name: String) => {to.autoSeed(given_name)})
     from
   }
 
@@ -57,7 +57,7 @@ object TransitName {
     */
   def withSuffix[T<:HasId](suffix: String)(from: T, to: HasId): T = {
     from.addSuggestPostnameHook((given_name: String) => {to.suggestName(given_name + suffix)})
-    from.addPluginPostnameHook((given_name: String) => {to.pluginName(given_name + suffix)})
+    from.addAutoPostnameHook((given_name: String) => {to.autoSeed(given_name + suffix)})
     from
   }
 

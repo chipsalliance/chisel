@@ -145,7 +145,7 @@ package object experimental {  // scalastyle:ignore object.name
     chisel3.internal.Builder.nameRecursively(
       name.strip(),
       nameMe,
-      (id: chisel3.internal.HasId, n: String) => id.pluginName(n)
+      (id: chisel3.internal.HasId, n: String) => id.autoSeed(n)
     )
     nameMe
   }

@@ -284,11 +284,11 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
     }
   }
 
-  override def pluginName(name: String): this.type = {
+  override def autoSeed(name: String): this.type = {
     topBindingOpt match {
       // if a current port in the current module, keep the existing name
-      case Some(PortBinding(m)) if pluginedName.nonEmpty && Builder.currentModule.contains(m) => this
-      case _ => super.pluginName(name)
+      case Some(PortBinding(m)) if hasAutoSeed && Builder.currentModule.contains(m) => this
+      case _ => super.autoSeed(name)
     }
   }
 
@@ -500,7 +500,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
     * @group Connect
     */
   final def := (that: => Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = {
-    if(getName.nonEmpty) {
+    if(hasSeed) {
       prefix(this) {
         this.connect(that)(sourceInfo, connectionCompileOptions)
       }

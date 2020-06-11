@@ -45,7 +45,11 @@ private[chisel3] object prefix { // scalastyle:ignore
   def apply[T](name: String)(f: => T): T = {
     Builder.pushPrefix(name)
     val ret = f
-    Builder.popPrefix()
+    // Sometimes val's can occur between the Module.apply and Module constructor
+    // This causes extra prefixes to be added, and subsequently cleared in the
+    // Module constructor. Thus, we need to just make sure if the previous push
+    // was an incorrect one, to not pop off an empty stack
+    if(Builder.getPrefix().nonEmpty) Builder.popPrefix()
     ret
   }
 }

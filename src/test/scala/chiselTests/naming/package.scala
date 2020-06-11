@@ -4,12 +4,12 @@ package chiselTests
 
 import chisel3.RawModule
 import chisel3.aop.Aspect
-import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage, NoRunFirrtlCompilerAnnotation}
+import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage, NoRunFirrtlCompilerAnnotation, PrintFullStackTraceAnnotation}
 import firrtl.AnnotationSeq
 
 package object naming {
   private def run[T <: RawModule](gen: () => T, annotations: AnnotationSeq): AnnotationSeq = {
-    new ChiselStage().run(Seq(ChiselGeneratorAnnotation(gen), NoRunFirrtlCompilerAnnotation) ++ annotations)
+    new ChiselStage().run(Seq(ChiselGeneratorAnnotation(gen), NoRunFirrtlCompilerAnnotation, PrintFullStackTraceAnnotation) ++ annotations)
   }
 
   /** A tester which runs generator and uses an aspect to check the returned object

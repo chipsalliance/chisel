@@ -42,7 +42,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
 
   private[chisel3] def namePorts(names: HashMap[HasId, String]): Unit = {
     for (port <- getModulePorts) {
-      port.suggestedName.orElse(port.pluginedName)/*.orElse(names.get(port))*/ match {
+      port.computeName(None)/*.orElse(names.get(port))*/ match {
         case Some(name) =>
           if (_namespace.contains(name)) {
             Builder.error(s"""Unable to name port $port to "$name" in $this,""" +
@@ -160,8 +160,8 @@ trait RequireSyncReset extends MultiIOModule {
 abstract class MultiIOModule(implicit moduleCompileOptions: CompileOptions)
     extends RawModule {
   // Implicit clock and reset pins
-  final val clock: Clock = IO(Input(Clock())).pluginName("clock")
-  final val reset: Reset = IO(Input(mkReset)).pluginName("reset")
+  final val clock: Clock = IO(Input(Clock())).autoSeed("clock")
+  final val reset: Reset = IO(Input(mkReset)).autoSeed("reset")
 
   private[chisel3] def mkReset: Reset = {
     // Top module and compatibility mode use Bool for reset
@@ -172,6 +172,7 @@ abstract class MultiIOModule(implicit moduleCompileOptions: CompileOptions)
   // Setup ClockAndReset
   Builder.currentClock = Some(clock)
   Builder.currentReset = Some(reset)
+  Builder.clearPrefix()
 
   private[chisel3] override def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
     implicit val sourceInfo = UnlocatableSourceInfo

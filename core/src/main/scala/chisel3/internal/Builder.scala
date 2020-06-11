@@ -89,87 +89,105 @@ private[chisel3] trait HasId extends InstanceId {
   override def hashCode: Int = super.hashCode()
   override def equals(that: Any): Boolean = super.equals(that)
 
+  // Contains suggested seed (user-decided seed)
+  private var suggested_seed: Option[String] = None
+
+  // Contains the seed computed automatically by the compiler plugin
+  private var auto_seed: Option[String] = None
+
+  // Prefix at time when this class is constructed
   private val construction_prefix: Prefix = Builder.getPrefix()
 
-  // Facilities for 'suggesting' a name to this.
-  // Post-name hooks called to carry the suggestion to other candidates as needed
-  private var suggested_name: Option[String] = None
-  private var plugin_name: Option[String] = None
-  private var prefix_name: Prefix = List.empty[Either[String, Data]]
-  private val suggest_postname_hooks = scala.collection.mutable.ListBuffer.empty[String=>Unit]
-  private val plugin_postname_hooks = scala.collection.mutable.ListBuffer.empty[String=>Unit]
+  // Prefix when the latest [[suggestSeed]] or [[autoSeed]] is called
+  private var prefix_seed: Prefix = List.empty[Either[String, Data]]
 
-  /** Takes the last name suggested. Multiple calls to this function will take the last given name.
-    * If this name conflicts with another name, it may get uniquified by appending
-    * a digit at the end.
+  // Post-seed hooks called to carry the suggested seeds to other candidates as needed
+  private val suggest_postseed_hooks = scala.collection.mutable.ListBuffer.empty[String=>Unit]
+
+  // Post-seed hooks called to carry the auto seeds to other candidates as needed
+  private val auto_postseed_hooks = scala.collection.mutable.ListBuffer.empty[String=>Unit]
+
+  /** Takes the last seed suggested. Multiple calls to this function will take the last given seed.
+    * If the final computed name conflicts with the final name of another signal, the final name may get uniquified by
+    * appending a digit at the end of the name.
     *
-    * Is a lower priority than [[suggestName]], in that regardless of whether [[pluginName]]
+    * Is a lower priority than [[suggestName]], in that regardless of whether [[autoSeed]]
     * was called, [[suggestName]] will always take precedence if it was called.
-    * @param name Name this component should be given
+ *
+    * @param seed Seed for the name of this component
     * @return this object
     */
-  def pluginName(name: String): this.type = {
-    plugin_name = Some(name)
-    for(hook <- plugin_postname_hooks) { hook(name) }
-    prefix_name = Builder.getPrefix()
+  def autoSeed(seed: String): this.type = {
+    auto_seed = Some(seed)
+    for(hook <- auto_postseed_hooks) { hook(seed) }
+    prefix_seed = Builder.getPrefix()
     this
   }
 
-  /** Takes the first name suggested. Multiple calls to this function will be ignored.
-    * If this name conflicts with another name, it may get uniquified by appending
+  /** Takes the first seed suggested. Multiple calls to this function will be ignored.
+    * If the final computed name conflicts with another name, it may get uniquified by appending
     * a digit at the end.
     *
-    * Is a higher priority than [[pluginName]], in that regardless of whether [[pluginName]]
+    * Is a higher priority than [[autoSeed]], in that regardless of whether [[autoSeed]]
     * was called, [[suggestName]] will always take precedence.
-    * @param name Name this component should be given
+ *
+    * @param seed The seed for the name of this component
     * @return this object
     */
-  def suggestName(name: =>String): this.type = {
-    if(suggested_name.isEmpty) suggested_name = Some(name)
-    prefix_name = Builder.getPrefix()
-    for(hook <- suggest_postname_hooks) { hook(name) }
+  def suggestName(seed: =>String): this.type = {
+    if(suggested_seed.isEmpty) suggested_seed = Some(seed)
+    prefix_seed = Builder.getPrefix()
+    for(hook <- suggest_postseed_hooks) { hook(seed) }
     this
   }
-  private def constructName(seed: String, prefix: Prefix): String = {
-    val builder = new StringBuilder()
-    prefix.foreach {
-      case Left(s: String) => builder ++= s + "_"
-      case Right(d: HasId) if d.seedOpt.nonEmpty => builder ++= d.seedOpt.get + "_"
-      case _ =>
+
+  def computeName(defaultSeed: Option[String]): Option[String] = {
+
+    /** Computes a name of this signal, given the seed and prefix
+      * @param seed
+      * @param prefix
+      * @return
+      */
+    def buildName(seed: String, prefix: Prefix): String = {
+      val builder = new StringBuilder()
+      prefix.foreach {
+        case Left(s: String) => builder ++= s + "_"
+        case Right(d: HasId) if d.seedOpt.nonEmpty => builder ++= d.seedOpt.get + "_"
+        case _ =>
+      }
+      builder ++= seed
+      builder.toString
     }
-    builder ++= seed
-    builder.toString
-  }
-  private def candidateName(default: String): String = {
-    if(suggested_name.nonEmpty) {
-      constructName(suggested_name.get, prefix_name)
-    } else if(plugin_name.nonEmpty) {
-      constructName(plugin_name.get, prefix_name)
+
+    if(hasSeed) {
+      Some(buildName(seedOpt.get, prefix_seed))
     } else {
-      constructName(default, Left("") +: construction_prefix)
+      defaultSeed.map { ds =>
+        buildName(ds, Left("") +: construction_prefix)
+      }
     }
   }
-  private[chisel3] def seedOpt: Option[String] = {
-    if(suggested_name.nonEmpty) {
-      suggested_name
-    } else if(plugin_name.nonEmpty) {
-      plugin_name
-    } else {
-      None
-    }
-  }
-  def getName: Option[String] = seedOpt
-  private[chisel3] def pluginedName: Option[String] = plugin_name.map(x => constructName(x, prefix_name))
-  private[chisel3] def suggestedName: Option[String] = suggested_name.map(x => constructName(x, prefix_name))
-  private[chisel3] def addSuggestPostnameHook(hook: String=>Unit): Unit = suggest_postname_hooks += hook
-  private[chisel3] def addPluginPostnameHook(hook: String=>Unit): Unit = plugin_postname_hooks += hook
+
+  /** This resolves the precedence of [[autoSeed]] and [[suggestName]]
+ *
+    * @return the current calculation of a name, if it exists
+    */
+  private[chisel3] def seedOpt: Option[String] = suggested_seed.orElse(auto_seed)
+
+  /** @return Whether either autoName or suggestName has been called */
+  def hasSeed: Boolean = seedOpt.isDefined
+
+  private[chisel3] def hasAutoSeed: Boolean = auto_seed.isDefined
+
+  private[chisel3] def addSuggestPostnameHook(hook: String=>Unit): Unit = suggest_postseed_hooks += hook
+  private[chisel3] def addAutoPostnameHook(hook: String=>Unit): Unit = auto_postseed_hooks += hook
 
   // Uses a namespace to convert suggestion into a true name
   // Will not do any naming if the reference already assigned.
   // (e.g. tried to suggest a name to part of a Record)
   private[chisel3] def forceName(default: =>String, namespace: Namespace): Unit =
     if(_ref.isEmpty) {
-      val candidate_name = candidateName(default)
+      val candidate_name = computeName(Some(default)).get
       val available_name = namespace.name(candidate_name)
       setRef(Ref(available_name))
     }
@@ -187,7 +205,7 @@ private[chisel3] trait HasId extends InstanceId {
     case Some(p) => p._component match {
       case Some(c) => _ref match {
         case Some(arg) => arg fullName c
-        case None => candidateName("??")
+        case None => computeName(None).get
       }
       case None => throwException("signalName/pathName should be called after circuit elaboration")
     }
