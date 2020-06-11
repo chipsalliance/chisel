@@ -100,12 +100,12 @@ class Compiler extends Phase with Translator[AnnotationSeq, Seq[CompilerRun]] wi
       val tm = new firrtl.stage.transforms.Compiler(targets)
       /* Transform order is lazily evaluated. Force it here to remove its resolution time from actual compilation. */
       val (timeResolveDependencies, _) = firrtl.Utils.time { tm.flattenedTransformOrder }
-      logger.error(f"Computed transform order in: $timeResolveDependencies%.1f ms")
+      logger.info(f"Computed transform order in: $timeResolveDependencies%.1f ms")
       /* Show the determined transform order */
       logger.info("Determined Transform order that will be executed:\n" + tm.prettyPrint("  "))
       /* Run all determined transforms tracking how long everything takes to run */
       val (timeExecute, annotationsOut) = firrtl.Utils.time { tm.transform(c.stateIn) }
-      logger.error(f"Total FIRRTL Compile Time: $timeExecute%.1f ms")
+      logger.info(f"Total FIRRTL Compile Time: $timeExecute%.1f ms")
       c.copy(stateOut = Some(annotationsOut))
     }
 
