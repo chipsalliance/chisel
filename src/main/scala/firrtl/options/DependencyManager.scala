@@ -167,8 +167,13 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
         blacklist = _currentState,
 
         /* Explore all invalidated transforms **EXCEPT** the current transform! */
-        extractor = (p: B) => v.filter(p.invalidates).map(oToD(_)).toSet - oToD(p)))
-      .reverse
+        extractor = (p: B) => {
+          val filtered = new LinkedHashSet[Dependency[B]]
+          filtered ++= v.filter(p.invalidates).map(oToD(_))
+          filtered -= oToD(p)
+          filtered
+        })
+    ).reverse
   }
 
   /** Wrap a possible [[CyclicException]] thrown by a thunk in a [[DependencyManagerException]] */
