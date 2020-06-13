@@ -4,6 +4,7 @@
   *  while moving to the more standard package naming convention `chisel3` (lowercase c).
   */
 import chisel3._    // required for implicit conversions.
+import chisel3.stage.{ChiselCircuitAnnotation, ChiselOutputFileAnnotation, ChiselStage, phases}
 
 package object Chisel {     // scalastyle:ignore package.object.name number.of.types number.of.methods
   import chisel3.internal.firrtl.Width
@@ -400,14 +401,26 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
   object chiselMain {
     import java.io.File
 
+    private var target_dir: Option[String] = None
+
+    private def parseArgs(args: Array[String]): Unit = {
+      for (i <- 0 until args.size) {
+        if (args(i) == "--targetDir") {
+          target_dir = Some(args(i + 1))
+        }
+      }
+    }
+
     def apply[T <: Module](args: Array[String], gen: () => T): Unit =
       Predef.assert(false, "No more chiselMain in Chisel3")
 
     def run[T <: Module] (args: Array[String], gen: () => T): Unit = {
-      val circuit = Driver.elaborate(gen)
-      Driver.parseArgs(args)
-      val output_file = new File(Driver.targetDir + "/" + circuit.name + ".fir")
-      Driver.dumpFirrtl(circuit, Option(output_file))
+      val circuit = ChiselStage.elaborate(gen())
+      parseArgs(args)
+      val output_file = new File(target_dir.getOrElse(new File(".").getCanonicalPath) + "/" + circuit.name + ".fir")
+
+      (new phases.Emitter).transform(Seq(ChiselCircuitAnnotation(circuit),
+                                         ChiselOutputFileAnnotation(output_file.toString)))
     }
   }
 
