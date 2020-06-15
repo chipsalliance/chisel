@@ -107,7 +107,9 @@ private[chisel3] trait HasId extends InstanceId {
   // Post-seed hooks called to carry the auto seeds to other candidates as needed
   private val auto_postseed_hooks = scala.collection.mutable.ListBuffer.empty[String=>Unit]
 
-  /** Takes the last seed suggested. Multiple calls to this function will take the last given seed.
+  /** Takes the last seed suggested. Multiple calls to this function will take the last given seed, unless
+    * this HasId is a module port (see overridden method in Data.scala).
+    *
     * If the final computed name conflicts with the final name of another signal, the final name may get uniquified by
     * appending a digit at the end of the name.
     *
