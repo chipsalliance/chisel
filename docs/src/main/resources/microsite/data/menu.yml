@@ -282,6 +282,14 @@ options:
   - title: Treadle
     url: treadle/
     menu_type: treadle
+  - title: How it works
+    url: treadle/HowItWorks.html
+    menu_type: treadle
+    menu_section: introduction
+  - title: TreadleRepl
+    url: treadle/TreadleRepl.html
+    menu_type: treadle
+    menu_section: introduction
   - title: API Documentation
     url: api/treadle/latest/
     menu_type: treadle

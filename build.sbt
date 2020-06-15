@@ -62,11 +62,7 @@ lazy val micrositeSettings = Seq(
       Map("title" -> "FIRRTL",
           "section" -> "firrtl",
           "position" -> "4")),
-    file("treadle/README.md") -> ExtraMdFileConfig(
-      "treadle/index.md", "docs",
-      Map("title" -> "Treadle",
-          "section" -> "treadle",
-          "position" -> "5")),
+//    Treadle occupies position 5
     file("diagrammer/README.md") -> ExtraMdFileConfig(
       "diagrammer/index.md", "docs",
       Map("title" -> "Diagrammer",
