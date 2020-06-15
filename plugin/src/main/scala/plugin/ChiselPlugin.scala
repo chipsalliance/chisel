@@ -35,11 +35,12 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
     extends TypingTransformer(unit) {
 
     // Determines if the chisel plugin should match on this type
-    def shouldMatch(q: Type): Boolean = {
+    def shouldMatch(q: Type, base: Tree): Boolean = {
 
       // If subtype of Data or BaseModule, its a match!
       def terminate(t: Type): Boolean = {
-        t <:< inferType(tq"chisel3.Data") || t <:< inferType(tq"chisel3.experimental.BaseModule")
+        //t <:< inferType(tq"chisel3.Data") || t <:< inferType(tq"chisel3.experimental.BaseModule")
+        t <:< inferType(base)
       }
 
       // Recurse through subtype hierarchy finding containers
@@ -76,7 +77,7 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
     def inferType(t: Tree): Type = localTyper.typed(t, nsc.Mode.TYPEmode).tpe
 
     // Indicates whether a ValDef is properly formed to get name
-    def okVal(dd: ValDef): Boolean = {
+    def okVal(dd: ValDef, base: Tree): Boolean = {
 
       // These were found through trial and error
       def okFlags(mods: Modifiers): Boolean = {
@@ -96,7 +97,7 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
         case Literal(Constant(null)) => true
         case _ => false
       }
-      okFlags(dd.mods) && shouldMatch(inferType(dd.tpt)) && !isNull && dd.rhs != EmptyTree
+      okFlags(dd.mods) && shouldMatch(inferType(dd.tpt), base) && !isNull && dd.rhs != EmptyTree
     }
 
     // Method called by the compiler to modify source tree
@@ -104,11 +105,18 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
     // TODO: determine seed/name/prefix terms to help with clarity
     override def transform(tree: Tree): Tree = tree match {
       // If a Data, get name and prefix
-      case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd) =>
+      case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd, tq"chisel3.Data") =>
         val TermName(str: String) = name
         val newRHS = super.transform(rhs)
         val prefixed = q"chisel3.experimental.prefix.apply[$tpt](name=$str)(f=$newRHS)"
         val named = q"chisel3.experimental.pluginNameRecursively($str, $prefixed)"
+        treeCopy.ValDef(dd, mods, name, tpt, localTyper typed named)
+      case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd, tq"chisel3.experimental.BaseModule") =>
+        val TermName(str: String) = name
+        val newRHS = super.transform(rhs)
+        val named = q"chisel3.experimental.pluginNameRecursively($str, $newRHS)"
+        //val prefixed = q"chisel3.experimental.prefix.apply[$tpt](name=$str)(f=$newRHS)"
+        //val named = q"chisel3.experimental.pluginNameRecursively($str, $prefixed)"
         treeCopy.ValDef(dd, mods, name, tpt, localTyper typed named)
       case _ => super.transform(tree)
     }

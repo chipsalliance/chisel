@@ -145,8 +145,9 @@ private[chisel3] trait HasId extends InstanceId {
     def buildAggName(id: HasId): Option[String] = {
       def recArg(node: Arg): Option[String] = node match {
         case Slot(imm, name) => recArg(imm).map(_ + "_" + name)
-        case Index(imm, ILit(n)) => recArg(imm).map(_ + "_" + n)
-        case Index(imm, n: Node) => recArg(imm)
+        case Index(imm, ILit(num)) => recArg(imm).map(_ + "_" + num)
+        case Index(imm, n: LitArg) => recArg(imm).map(_ + "_" + n.num)
+        case Index(imm, _: Node) => recArg(imm)
         case Node(id) => recArg(id.getOptionRef.get)
         case Ref(name) => Some(name)
         case ModuleIO(mod, name) if _parent.contains(mod) => Some(name)

@@ -176,5 +176,19 @@ class NamePluginSpec extends ChiselPropSpec {
         Select.wires(top).map(_.instanceName) should be (List("b"))
     }
   }
+
+  property("Unapply assignments should still be named") {
+    class Test extends MultiIOModule {
+      {
+        @treedump
+        val (a, b) = (Wire(UInt(3.W)), Wire(UInt(3.W)))
+      }
+    }
+
+    aspectTest(() => new Test) {
+      top: Test =>
+        Select.wires(top).map(_.instanceName) should be (List("a", "b"))
+    }
+  }
 }
 

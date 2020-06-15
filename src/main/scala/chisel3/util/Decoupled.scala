@@ -271,7 +271,7 @@ class Queue[T <: Data](gen: T,
 object Queue
 {
   /** Create a queue and supply a DecoupledIO containing the product. */
-  @chiselName
+  //@chiselName
   def apply[T <: Data](
       enq: ReadyValidIO[T],
       entries: Int = 2,
@@ -288,7 +288,8 @@ object Queue
       q.io.enq.valid := enq.valid // not using <> so that override is allowed
       q.io.enq.bits := enq.bits
       enq.ready := q.io.enq.ready
-      TransitName(q.io.deq, q)
+      //TransitName(q.io.deq, q)
+      q.io.deq
     }
   }
 

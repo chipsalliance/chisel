@@ -188,6 +188,29 @@ class PrefixSpec extends ChiselPropSpec {
     }
   }
 
+  property("Instance names should not be added to prefix") {
+    class Child(tpe: UInt) extends MultiIOModule {
+      {
+        val io = IO(Input(tpe))
+      }
+    }
+
+    class Test extends MultiIOModule {
+      {
+        lazy val module = {
+          val x = UInt(3.W)
+          new Child(x)
+        }
+        val child = Module(module)
+      }
+    }
+    aspectTest(() => new Test) {
+      top: Test =>
+        Select.ios(Select.instances(top).head).map(_.instanceName) should be (List("clock", "reset", "io"))
+    }
+  }
+
+
   property("Prefixing should not be caused by nested Iterable[Iterable[Any]]") {
     class Test extends MultiIOModule {
       {
@@ -285,6 +308,29 @@ class PrefixSpec extends ChiselPropSpec {
       {
         val child = Module(new Child)
         child.in := RegNext(3.U)
+      }
+    }
+    aspectTest(() => new Test) {
+      top: Test =>
+        Select.registers(top).map(_.instanceName) should be (List(
+          "_child_in_REG"
+        ))
+        Select.registers(Select.instances(top).head).map(_.instanceName) should be (List(
+          "_out_REG"
+        ))
+    }
+  }
+
+  property("Prefixing on bulk connects should work") {
+    class Child extends MultiIOModule {
+      val in = IO(Input(UInt(3.W)))
+      val out = IO(Output(UInt(3.W)))
+      out := RegNext(in)
+    }
+    class Test extends MultiIOModule {
+      {
+        val child = Module(new Child)
+        child.in <> RegNext(3.U)
       }
     }
     aspectTest(() => new Test) {

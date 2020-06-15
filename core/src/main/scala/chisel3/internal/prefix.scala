@@ -2,6 +2,8 @@
 
 package chisel3.internal
 
+import chisel3.Data
+
 /** Use to add a prefix to any components generated in the provided scope.
   *
   * @example {{{
@@ -28,10 +30,14 @@ private[chisel3] object prefix { // scalastyle:ignore
     * @return The return value of the provided function
     */
   def apply[T](name: HasId)(f: => T): T = {
-    Builder.pushPrefix(name)
-    val ret = f
-    Builder.popPrefix()
-    ret
+  //  name match {
+  //    case _: Data =>
+        Builder.pushPrefix(name)
+        val ret = f
+        Builder.popPrefix()
+        ret
+  //    case _ => f
+  //  }
   }
 
   /** Use to add a prefix to any components generated in the provided scope
