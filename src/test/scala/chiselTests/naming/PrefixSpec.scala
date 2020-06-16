@@ -290,10 +290,10 @@ class PrefixSpec extends ChiselPropSpec {
     aspectTest(() => new Test) {
       top: Test =>
         Select.registers(top).map(_.instanceName) should be (List(
-          "_wire_x_REG",
-          "_wire_y_REG",
-          "_wire_vec_0_REG",
-          "_wire_vec_REG"
+          "wire_x_REG",
+          "wire_y_REG",
+          "wire_vec_0_REG",
+          "wire_vec_REG"
         ))
     }
   }
@@ -313,10 +313,10 @@ class PrefixSpec extends ChiselPropSpec {
     aspectTest(() => new Test) {
       top: Test =>
         Select.registers(top).map(_.instanceName) should be (List(
-          "_child_in_REG"
+          "child_in_REG"
         ))
         Select.registers(Select.instances(top).head).map(_.instanceName) should be (List(
-          "_out_REG"
+          "out_REG"
         ))
     }
   }
@@ -336,10 +336,10 @@ class PrefixSpec extends ChiselPropSpec {
     aspectTest(() => new Test) {
       top: Test =>
         Select.registers(top).map(_.instanceName) should be (List(
-          "_child_in_REG"
+          "child_in_REG"
         ))
         Select.registers(Select.instances(top).head).map(_.instanceName) should be (List(
-          "_out_REG"
+          "out_REG"
         ))
     }
   }

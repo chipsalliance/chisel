@@ -181,6 +181,10 @@ private[chisel3] trait HasId extends InstanceId {
 
     if(hasSeed) {
       Some(buildName(seedOpt.get, prefix_seed))
+    } else if(defaultSeed.contains("REG")) {
+      defaultSeed.map { ds =>
+        buildName(ds, construction_prefix)
+      }
     } else {
       defaultSeed.map { ds =>
         buildName(ds, Left("") +: construction_prefix)
