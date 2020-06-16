@@ -26,14 +26,14 @@ object TesterDriver extends BackendCompilationUtilities {
 
   val defaultBackends: Seq[Backend] = lookupTestBackend
 
-  val TestBackendConfigFile = "TestBackendName"
-
   /* if a file named `TestBackendName` is present then it will be scanned for the strings
    * treadle or verilator and return a sequence with one backend in it
    * The possibility of multiple backends in list is not currently supported
    *
    */
   def lookupTestBackend: Seq[Backend] = {
+    val TestBackendConfigFile = "TestBackendName"
+
     if ((new File(TestBackendConfigFile)).exists()) {
       val backendsFromFile = FileUtils.getLines(TestBackendConfigFile).map(_.trim).map(_.toLowerCase).flatMap {
         case "treadle" => Some(TreadleBackend)
