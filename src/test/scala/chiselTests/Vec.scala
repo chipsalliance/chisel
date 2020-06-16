@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
 import chisel3.util._
 import org.scalacheck.Shrink
@@ -180,7 +181,7 @@ class ModuleIODynamicIndexTester(n: Int) extends BasicTester {
   when (done) { stop() }
 }
 
-class VecSpec extends ChiselPropSpec {
+class VecSpec extends ChiselPropSpec with Utils {
   // Disable shrinking on error.
   implicit val noShrinkListVal = Shrink[List[Int]](_ => Stream.empty)
   implicit val noShrinkInt = Shrink[Int](_ => Stream.empty)
@@ -200,8 +201,8 @@ class VecSpec extends ChiselPropSpec {
   property("Vec.fill with a pure type should generate an exception") {
     // We don't really need a sequence of random widths here, since any should throw an exception.
     forAll(safeUIntWidth) { case(w: Int) =>
-      an[BindingException] should be thrownBy {
-        elaborate(new IOTesterModFill(w))
+      an[BindingException] should be thrownBy extractCause[BindingException] {
+        ChiselStage.elaborate(new IOTesterModFill(w))
       }
     }
   }
@@ -243,7 +244,7 @@ class VecSpec extends ChiselPropSpec {
   }
 
   property("It should be possible to bulk connect a Vec and a Seq") {
-    elaborate(new Module {
+    ChiselStage.elaborate(new Module {
       val io = IO(new Bundle {
         val out = Output(Vec(4, UInt(8.W)))
       })
@@ -253,8 +254,8 @@ class VecSpec extends ChiselPropSpec {
   }
 
   property("Bulk connecting a Vec and Seq of different sizes should report a ChiselException") {
-    a [ChiselException] should be thrownBy {
-      elaborate(new Module {
+    a [ChiselException] should be thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate(new Module {
         val io = IO(new Bundle {
           val out = Output(Vec(4, UInt(8.W)))
         })
@@ -265,7 +266,7 @@ class VecSpec extends ChiselPropSpec {
   }
 
   property("It should be possible to initialize a Vec with DontCare") {
-    elaborate(new Module {
+    ChiselStage.elaborate(new Module {
       val io = IO(new Bundle {
         val out = Output(Vec(4, UInt(8.W)))
       })
@@ -274,8 +275,8 @@ class VecSpec extends ChiselPropSpec {
   }
 
   property("Indexing a Chisel type Vec by a hardware type should give a sane error message") {
-    assertThrows[ExpectedHardwareException] {
-      elaborate{
+    a [ExpectedHardwareException] should be thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate{
         new Module {
           val io = IO(new Bundle{})
           val foo = Vec(2, Bool())

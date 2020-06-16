@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
 
 trait BundleSpecUtils {
@@ -55,9 +56,9 @@ trait BundleSpecUtils {
   }
 }
 
-class BundleSpec extends ChiselFlatSpec with BundleSpecUtils {
+class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
   "Bundles with the same fields but in different orders" should "bulk connect" in {
-    elaborate { new MyModule(new BundleFooBar, new BundleBarFoo) }
+    ChiselStage.elaborate { new MyModule(new BundleFooBar, new BundleBarFoo) }
   }
 
   "Bundles" should "follow UInt serialization/deserialization API" in {
@@ -65,18 +66,18 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils {
   }
 
   "Bulk connect on Bundles" should "check that the fields match" in {
-    (the [ChiselException] thrownBy {
-      elaborate { new MyModule(new BundleFooBar, new BundleFoo) }
+    (the [ChiselException] thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate { new MyModule(new BundleFooBar, new BundleFoo) }
     }).getMessage should include ("Right Record missing field")
 
-    (the [ChiselException] thrownBy {
-      elaborate { new MyModule(new BundleFoo, new BundleFooBar) }
+    (the [ChiselException] thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate { new MyModule(new BundleFoo, new BundleFooBar) }
     }).getMessage should include ("Left Record missing field")
   }
 
   "Bundles" should "not be able to use Seq for constructing hardware" in {
-    (the[ChiselException] thrownBy {
-      elaborate {
+    (the[ChiselException] thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate {
         new Module {
           val io = IO(new Bundle {
             val b = new BadSeqBundle
@@ -116,8 +117,8 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils {
   }
 
   "Bundles" should "not have aliased fields" in {
-    (the[ChiselException] thrownBy {
-      elaborate { new Module {
+    (the[ChiselException] thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate { new Module {
         val io = IO(Output(new Bundle {
           val a = UInt(8.W)
           val b = a

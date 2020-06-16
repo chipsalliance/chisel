@@ -4,6 +4,7 @@ package chiselTests
 
 import org.scalatest._
 import chisel3._
+import chisel3.stage.ChiselStage
 import org.scalatest.matchers.should.Matchers
 
 class DirectionedBundle extends Bundle {
@@ -40,41 +41,41 @@ class TopDirectionOutput extends Module {
   io.out := 117.U
 }
 
-class DirectionSpec extends ChiselPropSpec with Matchers {
+class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
 
   //TODO: In Chisel3 these are actually FIRRTL errors. Remove from tests?
 
   property("Outputs should be assignable") {
-    elaborate(new GoodDirection)
+    ChiselStage.elaborate(new GoodDirection)
   }
 
   property("Inputs should not be assignable") {
-    a[Exception] should be thrownBy {
-     elaborate(new BadDirection)
+    a[Exception] should be thrownBy extractCause[Exception] {
+     ChiselStage.elaborate(new BadDirection)
     }
-    a[Exception] should be thrownBy {
-     elaborate(new BadSubDirection)
+    a[Exception] should be thrownBy extractCause[Exception] {
+     ChiselStage.elaborate(new BadSubDirection)
     }
   }
 
   property("Top-level forced outputs should be assignable") {
-    elaborate(new TopDirectionOutput)
+    ChiselStage.elaborate(new TopDirectionOutput)
   }
 
   property("Empty Vecs with directioned sample_element should not cause direction errors") {
-    elaborate(new Module {
+    ChiselStage.elaborate(new Module {
       val io = IO(new Bundle {
         val foo = Input(UInt(8.W))
         val x = Vec(0, Output(UInt(8.W)))
       })
     })
-    elaborate(new Module {
+    ChiselStage.elaborate(new Module {
       val io = IO(new Bundle {
         val foo = Input(UInt(8.W))
         val x = Flipped(Vec(0, Output(UInt(8.W))))
       })
     })
-    elaborate(new Module {
+    ChiselStage.elaborate(new Module {
       val io = IO(new Bundle {
         val foo = Input(UInt(8.W))
         val x = Output(Vec(0, UInt(8.W)))
@@ -83,8 +84,8 @@ class DirectionSpec extends ChiselPropSpec with Matchers {
   }
 
   property("Empty Vecs with no direction on the sample_element *should* cause direction errors") {
-    an [Exception] should be thrownBy {
-      elaborate(new Module {
+    an [Exception] should be thrownBy extractCause[Exception] {
+      ChiselStage.elaborate(new Module {
         val io = IO(new Bundle {
           val foo = Input(UInt(8.W))
           val x = Vec(0, UInt(8.W))
@@ -94,19 +95,19 @@ class DirectionSpec extends ChiselPropSpec with Matchers {
   }
 
   property("Empty Bundles should not cause direction errors") {
-    elaborate(new Module {
+    ChiselStage.elaborate(new Module {
       val io = IO(new Bundle {
         val foo = Input(UInt(8.W))
         val x = new Bundle {}
       })
     })
-    elaborate(new Module {
+    ChiselStage.elaborate(new Module {
       val io = IO(new Bundle {
         val foo = Input(UInt(8.W))
         val x = Flipped(new Bundle {})
       })
     })
-    elaborate(new Module {
+    ChiselStage.elaborate(new Module {
       val io = IO(new Bundle {
         val foo = Input(UInt(8.W))
         val x = new Bundle {
@@ -117,8 +118,8 @@ class DirectionSpec extends ChiselPropSpec with Matchers {
   }
 
   property("Explicitly directioned but empty Bundles should cause direction errors") {
-    an [Exception] should be thrownBy {
-      elaborate(new Module {
+    an [Exception] should be thrownBy extractCause[Exception] {
+      ChiselStage.elaborate(new Module {
         val io = IO(new Bundle {
           val foo = UInt(8.W)
           val x = Input(new Bundle {})
@@ -130,7 +131,7 @@ class DirectionSpec extends ChiselPropSpec with Matchers {
   import chisel3.experimental.{DataMirror, Direction}
 
   property("Directions should be preserved through cloning and binding of Bundles") {
-    elaborate(new MultiIOModule {
+    ChiselStage.elaborate(new MultiIOModule {
       class MyBundle extends Bundle {
         val foo = Input(UInt(8.W))
         val bar = Output(UInt(8.W))
@@ -167,7 +168,7 @@ class DirectionSpec extends ChiselPropSpec with Matchers {
   }
 
   property("Directions should be preserved through cloning and binding of Vecs") {
-    elaborate(new MultiIOModule {
+    ChiselStage.elaborate(new MultiIOModule {
       val a = Vec(1, Input(UInt(8.W)))
       val b = Vec(1, a)
       val c = Vec(1, Flipped(a))
@@ -239,10 +240,8 @@ class DirectionSpec extends ChiselPropSpec with Matchers {
       assert(DataMirror.directionOf(flippedVecFlipped(index).b) == Direction.Output)
     }
 
-    val elaborated = Driver.elaborate(() => new MyModule)
-
-    val emitted: String = Driver.emit(elaborated)
-    val firrtl: String = Driver.toFirrtl(elaborated).serialize
+    val emitted: String = (new ChiselStage).emitChirrtl(new MyModule)
+    val firrtl: String = ChiselStage.convert(new MyModule).serialize
 
     // Check that emitted directions are correct.
     Seq(emitted, firrtl).foreach { o => {
@@ -308,10 +307,8 @@ class DirectionSpec extends ChiselPropSpec with Matchers {
       assert(DataMirror.directionOf(vecOutputFlipped(index).b) == Direction.Output)
     }
 
-    val elaborated = Driver.elaborate(() => new MyModule)
-
-    val emitted: String = Driver.emit(elaborated)
-    val firrtl: String = Driver.toFirrtl(elaborated).serialize
+    val emitted: String = (new ChiselStage).emitChirrtl(new MyModule)
+    val firrtl: String = ChiselStage.convert(new MyModule).serialize
 
     // Check that emitted directions are correct.
     Seq(emitted, firrtl).foreach { o => {

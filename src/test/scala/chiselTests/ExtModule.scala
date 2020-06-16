@@ -4,6 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.experimental._
+import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
 
 // Avoid collisions with regular BlackBox tests by putting ExtModule blackboxes
@@ -68,7 +69,7 @@ class ExtModuleSpec extends ChiselFlatSpec {
         Seq("/chisel3/BlackBoxTest.v"))
   }
   "DataMirror.modulePorts" should "work with ExtModule" in {
-    elaborate(new Module {
+    ChiselStage.elaborate(new Module {
       val io = IO(new Bundle { })
       val m = Module(new ExtModule.BlackBoxPassthrough)
       assert(DataMirror.modulePorts(m) == Seq(

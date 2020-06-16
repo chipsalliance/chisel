@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.stage.ChiselStage
 import chisel3.experimental.DataMirror
 
 class SimpleIO extends Bundle {
@@ -75,46 +76,46 @@ class NullModuleWrapper extends Module {
   val child = Module(new ModuleWire)
 }
 
-class ModuleSpec extends ChiselPropSpec {
+class ModuleSpec extends ChiselPropSpec with Utils {
 
   property("ModuleVec should elaborate") {
-    elaborate { new ModuleVec(2) }
+    ChiselStage.elaborate { new ModuleVec(2) }
   }
 
   ignore("ModuleVecTester should return the correct result") { }
 
   property("ModuleWire should elaborate") {
-    elaborate { new ModuleWire }
+    ChiselStage.elaborate { new ModuleWire }
   }
 
   ignore("ModuleWireTester should return the correct result") { }
 
   property("ModuleWhen should elaborate") {
-    elaborate { new ModuleWhen }
+    ChiselStage.elaborate { new ModuleWhen }
   }
 
   ignore("ModuleWhenTester should return the correct result") { }
 
   property("Forgetting a Module() wrapper should result in an error") {
-    (the [ChiselException] thrownBy {
-      elaborate { new ModuleForgetWrapper }
+    (the [ChiselException] thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate { new ModuleForgetWrapper }
     }).getMessage should include("attempted to instantiate a Module without wrapping it")
   }
 
   property("Double wrapping a Module should result in an error") {
-    (the [ChiselException] thrownBy {
-      elaborate { new ModuleDoubleWrap }
+    (the [ChiselException] thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate { new ModuleDoubleWrap }
     }).getMessage should include("Called Module() twice without instantiating a Module")
   }
 
   property("Rewrapping an already instantiated Module should result in an error") {
-    (the [ChiselException] thrownBy {
-      elaborate { new ModuleRewrap }
+    (the [ChiselException] thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate { new ModuleRewrap }
     }).getMessage should include("This is probably due to rewrapping a Module instance")
   }
 
   property("object Module.clock should return a reference to the currently in scope clock") {
-    elaborate(new Module {
+    ChiselStage.elaborate(new Module {
       val io = IO(new Bundle {
         val clock2 = Input(Clock())
       })
@@ -123,7 +124,7 @@ class ModuleSpec extends ChiselPropSpec {
     })
   }
   property("object Module.reset should return a reference to the currently in scope reset") {
-    elaborate(new Module {
+    ChiselStage.elaborate(new Module {
       val io = IO(new Bundle {
         val reset2 = Input(Bool())
       })
@@ -133,14 +134,14 @@ class ModuleSpec extends ChiselPropSpec {
   }
   property("object Module.currentModule should return an Option reference to the current Module") {
     def checkModule(mod: Module): Boolean = Module.currentModule.map(_ eq mod).getOrElse(false)
-    elaborate(new Module {
+    ChiselStage.elaborate(new Module {
       val io = IO(new Bundle { })
       assert(Module.currentModule.get eq this)
       assert(checkModule(this))
     })
   }
   property("DataMirror.modulePorts should work") {
-    elaborate(new Module {
+    ChiselStage.elaborate(new Module {
       val io = IO(new Bundle { })
       val m = Module(new chisel3.MultiIOModule {
         val a = IO(UInt(8.W))
@@ -152,10 +153,10 @@ class ModuleSpec extends ChiselPropSpec {
     })
   }
   property("A desiredName parameterized by a submodule should work") {
-    Driver.elaborate(() => new ModuleWrapper(new ModuleWire)).name should be ("ModuleWireWrapper")
+    ChiselStage.elaborate(new ModuleWrapper(new ModuleWire)).name should be ("ModuleWireWrapper")
   }
   property("A name generating a null pointer exception should provide a good error message") {
-    (the [Exception] thrownBy (Driver.elaborate(() => new NullModuleWrapper)))
+    (the [ChiselException] thrownBy extractCause[ChiselException] (ChiselStage.elaborate(new NullModuleWrapper)))
       .getMessage should include ("desiredName of chiselTests.NullModuleWrapper is null")
   }
   property("The name of a module in a function should be sane") {
@@ -165,12 +166,12 @@ class ModuleSpec extends ChiselPropSpec {
       }
       new Foo1
     }
-    Driver.elaborate(() => foo)
+    ChiselStage.elaborate(foo)
   }
   property("The name of an anonymous module should include '_Anon'") {
     trait Foo { this: RawModule =>
       assert(name.contains("_Anon"))
     }
-    Driver.elaborate(() => new RawModule with Foo)
+    ChiselStage.elaborate(new RawModule with Foo)
   }
 }

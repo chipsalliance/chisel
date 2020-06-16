@@ -7,12 +7,37 @@ import java.io._
 
 import chisel3.aop.Aspect
 import chisel3.experimental.RunFirrtlTransform
-import chisel3.stage.phases.AspectPhase
-import chisel3.stage.{ChiselCircuitAnnotation, ChiselStage, DesignAnnotation}
+import chisel3.stage.phases.{AspectPhase, Convert, Elaborate, Emitter}
+import chisel3.stage.{
+  ChiselCircuitAnnotation,
+  ChiselGeneratorAnnotation,
+  ChiselOutputFileAnnotation,
+  ChiselStage,
+  DesignAnnotation
+}
 import firrtl.{Driver => _, _}
+import firrtl.options.{Dependency, Phase, PhaseManager}
+import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlStage}
 import firrtl.transforms.BlackBoxSourceHelper.writeResourceToDirectory
 
 object TesterDriver extends BackendCompilationUtilities {
+
+  /** Set the target directory to the name of the top module after elaboration */
+  final class AddImplicitTesterDirectory extends Phase {
+    override def prerequisites = Seq(Dependency[Elaborate])
+    override def optionalPrerequisites = Seq.empty
+    override def optionalPrerequisiteOf = Seq(Dependency[Emitter])
+    override def invalidates(a: Phase) = false
+
+    override def transform(a: AnnotationSeq) = a.flatMap {
+      case a@ ChiselCircuitAnnotation(circuit) =>
+        Seq(a, TargetDirAnnotation(
+              firrtl.util.BackendCompilationUtilities.createTestDirectory(circuit.name)
+                .getAbsolutePath
+                .toString))
+      case a => Seq(a)
+    }
+  }
 
   /** For use with modules that should successfully be elaborated by the
     * frontend, and which can be turned into executables with assertions. */
@@ -20,21 +45,15 @@ object TesterDriver extends BackendCompilationUtilities {
               additionalVResources: Seq[String] = Seq(),
               annotations: AnnotationSeq = Seq()
              ): Boolean = {
-    // Invoke the chisel compiler to get the circuit's IR
-    val (circuit, dut) = new chisel3.stage.ChiselGeneratorAnnotation(finishWrapper(t)).elaborate.toSeq match {
-      case Seq(ChiselCircuitAnnotation(cir), d:DesignAnnotation[_]) => (cir, d)
-    }
+    val pm = new PhaseManager(
+      targets = Seq(Dependency[AddImplicitTesterDirectory],
+                    Dependency[Emitter],
+                    Dependency[Convert]))
 
-    // Set up a bunch of file handlers based on a random temp filename,
-    // plus the quirks of Verilator's naming conventions
-    val target = circuit.name
+    val annotationsx = pm.transform(ChiselGeneratorAnnotation(t) +: annotations)
 
-    val path = createTestDirectory(target)
-    val fname = new File(path, target)
-
-    // For now, dump the IR out to a file
-    Driver.dumpFirrtl(circuit, Some(new File(fname.toString + ".fir")))
-    val firrtlCircuit = Driver.toFirrtl(circuit)
+    val target: String = annotationsx.collectFirst { case FirrtlCircuitAnnotation(cir) => cir.main }.get
+    val path = annotationsx.collectFirst { case TargetDirAnnotation(dir) => dir }.map(new File(_)).get
 
     // Copy CPP harness and other Verilog sources from resources into files
     val cppHarness =  new File(path, "top.cpp")
@@ -47,24 +66,7 @@ object TesterDriver extends BackendCompilationUtilities {
       writeResourceToDirectory(name, path)
     })
 
-    // Compile firrtl
-    val transforms = circuit.annotations.collect {
-      case anno: RunFirrtlTransform => anno.transformClass
-    }.distinct
-     .filterNot(_ == classOf[Transform])
-     .map { transformClass: Class[_ <: Transform] => transformClass.newInstance() }
-    val newAnnotations = circuit.annotations.map(_.toFirrtl).toList ++ annotations ++ Seq(dut)
-    val resolvedAnnotations = new AspectPhase().transform(newAnnotations).toList
-    val optionsManager = new ExecutionOptionsManager("chisel3") with HasChiselExecutionOptions with HasFirrtlOptions {
-      commonOptions = CommonOptions(topName = target, targetDirName = path.getAbsolutePath)
-      firrtlOptions = FirrtlExecutionOptions(compilerName = "verilog", annotations = resolvedAnnotations,
-                                             customTransforms = transforms,
-                                             firrtlCircuit = Some(firrtlCircuit))
-    }
-    firrtl.Driver.execute(optionsManager) match {
-      case _: FirrtlExecutionFailure => return false
-      case _ =>
-    }
+    (new FirrtlStage).execute(Array("--compiler", "verilog"), annotationsx)
 
     // Use sys.Process to invoke a bunch of backend stuff, then run the resulting exe
     if ((verilogToCpp(target, path, additionalVFiles, cppHarness) #&&

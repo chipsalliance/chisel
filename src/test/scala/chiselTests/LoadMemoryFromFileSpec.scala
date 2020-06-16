@@ -5,6 +5,7 @@ package chiselTests
 import java.io.File
 
 import chisel3._
+import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import chisel3.util.experimental.loadMemoryFromFile
 import chisel3.util.log2Ceil
 import firrtl.FirrtlExecutionSuccess
@@ -126,64 +127,53 @@ class LoadMemoryFromFileSpec extends AnyFreeSpec with Matchers {
   "Users can specify a source file to load memory from" in {
     val testDirName = "test_run_dir/load_memory_spec"
 
-    val result = Driver.execute(
+    val result = (new ChiselStage).execute(
       args = Array("-X", "verilog", "--target-dir", testDirName),
-      dut = () => new UsesMem(memoryDepth = 8, memoryType = UInt(16.W))    )
+      annotations = Seq(ChiselGeneratorAnnotation(() => new UsesMem(memoryDepth = 8, memoryType = UInt(16.W))))
+    )
 
-    result match {
-      case ChiselExecutionSuccess(_, _, Some(FirrtlExecutionSuccess(_, _))) =>
-        val dir = new File(testDirName)
-        fileExistsWithMem(new File(dir, "UsesMem.UsesMem.memory.v"), Some("./mem1"))
-        fileExistsWithMem(new File(dir, "UsesMem.UsesMemLow.memory.v"), Some("./mem2"))
-        fileExistsWithMem(new File(dir, "firrtl_black_box_resource_files.f"))
-      case _=>
-        throw new Exception("Failed compile")
-    }
+    val dir = new File(testDirName)
+    fileExistsWithMem(new File(dir, "UsesMem.UsesMem.memory.v"), Some("./mem1"))
+    fileExistsWithMem(new File(dir, "UsesMem.UsesMemLow.memory.v"), Some("./mem2"))
+    fileExistsWithMem(new File(dir, "firrtl_black_box_resource_files.f"))
+
   }
 
   "Calling a module that loads memories from a file more than once should work" in {
     val testDirName = "test_run_dir/load_three_memory_spec"
 
-    val result = Driver.execute(
+    val result = (new ChiselStage).execute(
       args = Array("-X", "verilog", "--target-dir", testDirName),
-      dut = () => new UsesThreeMems(memoryDepth = 8, memoryType = UInt(16.W))
+      annotations = Seq(ChiselGeneratorAnnotation(() => new UsesThreeMems(memoryDepth = 8, memoryType = UInt(16.W))))
     )
 
-    result match {
-      case ChiselExecutionSuccess(_, _, Some(FirrtlExecutionSuccess(_, _))) =>
-        val dir = new File(testDirName)
-        fileExistsWithMem( new File(dir, "UsesThreeMems.UsesThreeMems.memory1.v"), Some("./mem1"))
-        fileExistsWithMem( new File(dir, "UsesThreeMems.UsesThreeMems.memory2.v"), Some("./mem1"))
-        fileExistsWithMem( new File(dir, "UsesThreeMems.UsesThreeMems.memory3.v"), Some("./mem1"))
-        fileExistsWithMem( new File(dir, "firrtl_black_box_resource_files.f"))
-      case _=>
-        throw new Exception("Failed compile")
-    }  }
+    val dir = new File(testDirName)
+    fileExistsWithMem( new File(dir, "UsesThreeMems.UsesThreeMems.memory1.v"), Some("./mem1"))
+    fileExistsWithMem( new File(dir, "UsesThreeMems.UsesThreeMems.memory2.v"), Some("./mem1"))
+    fileExistsWithMem( new File(dir, "UsesThreeMems.UsesThreeMems.memory3.v"), Some("./mem1"))
+    fileExistsWithMem( new File(dir, "firrtl_black_box_resource_files.f"))
+
+  }
 
   "In this example the memory has a complex memory type containing a bundle" in {
     val complexTestDirName = "test_run_dir/complex_memory_load"
 
-    val result = Driver.execute(
+    val result = (new ChiselStage).execute(
       args = Array("-X", "verilog", "--target-dir", complexTestDirName),
-      dut = () => new HasComplexMemory(memoryDepth = 8)
+      annotations = Seq(ChiselGeneratorAnnotation(() => new HasComplexMemory(memoryDepth = 8)))
     )
 
-    result match {
-      case ChiselExecutionSuccess(_, _, Some(FirrtlExecutionSuccess(emitType, firrtlEmitted))) =>
-        val dir = new File(complexTestDirName)
-        val memoryElements = Seq("a", "b", "c")
+    val dir = new File(complexTestDirName)
+    val memoryElements = Seq("a", "b", "c")
 
-        memoryElements.foreach { element =>
-          val file = new File(dir, s"HasComplexMemory.HasComplexMemory.memory_$element.v")
-          file.exists() should be (true)
-          val fileText = io.Source.fromFile(file).getLines().mkString("\n")
-          fileText should include (s"""$$readmemh("./mem_$element", HasComplexMemory.memory_$element);""")
-          file.delete()
-        }
-
-      case _=>
-        fail(s"Failed compile")
+    memoryElements.foreach { element =>
+      val file = new File(dir, s"HasComplexMemory.HasComplexMemory.memory_$element.v")
+      file.exists() should be (true)
+      val fileText = io.Source.fromFile(file).getLines().mkString("\n")
+      fileText should include (s"""$$readmemh("./mem_$element", HasComplexMemory.memory_$element);""")
+      file.delete()
     }
+
   }
 
 }
