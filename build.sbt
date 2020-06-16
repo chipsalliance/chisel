@@ -28,7 +28,7 @@ def javacOptionsVersion(scalaVersion: String): Seq[String] = {
   }
 }
 
-val defaultVersions = Map("firrtl" -> "1.3-SNAPSHOT")
+val defaultVersions = Map("firrtl" -> "1.4-SNAPSHOT")
 
 lazy val commonSettings = Seq (
   resolvers ++= Seq(
@@ -36,7 +36,7 @@ lazy val commonSettings = Seq (
     Resolver.sonatypeRepo("releases")
   ),
   organization := "edu.berkeley.cs",
-  version := "3.3-SNAPSHOT",
+  version := "3.4-SNAPSHOT",
   autoAPIMappings := true,
   scalaVersion := "2.12.11",
   crossScalaVersions := Seq("2.12.11", "2.11.12"),
@@ -163,7 +163,7 @@ lazy val core = (project in file("core")).
       "-unchecked",
       "-Xcheckinit",
       "-Xlint:infer-any"
-//      "-Xlint:missing-interpolator"
+//      , "-Xlint:missing-interpolator"
     )
   ).
   dependsOn(macros)
@@ -210,3 +210,7 @@ lazy val chisel = (project in file(".")).
       }
     )
   )
+
+addCommandAlias("com", "all compile")
+addCommandAlias("lint", "; compile:scalafix --check ; test:scalafix --check")
+addCommandAlias("fix", "all compile:scalafix test:scalafix")
