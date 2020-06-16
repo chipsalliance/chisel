@@ -8,10 +8,12 @@ import chisel3.testers.BasicTester
 import chisel3.experimental.{BaseModule, ChiselAnnotation, RunFirrtlTransform}
 import chisel3.util.experimental.BoringUtils
 
-import firrtl.{CircuitForm, CircuitState, ChirrtlForm, Transform}
+import firrtl.{CircuitForm, CircuitState, ChirrtlForm, DependencyAPIMigration, Transform}
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
+import firrtl.options.Dependency
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
-import firrtl.passes.wiring.WiringException
+import firrtl.passes.wiring.{WiringException, WiringTransform}
+import firrtl.stage.Forms
 
 abstract class ShouldntAssertTester(cyclesToWait: BigInt = 4) extends BasicTester {
   val dut: BaseModule
@@ -19,11 +21,14 @@ abstract class ShouldntAssertTester(cyclesToWait: BigInt = 4) extends BasicTeste
   when (done) { stop() }
 }
 
-class StripNoDedupAnnotation extends Transform {
-  def inputForm: CircuitForm = ChirrtlForm
-  def outputForm: CircuitForm = ChirrtlForm
-  def execute(state: CircuitState): CircuitState =
+class StripNoDedupAnnotation extends Transform with DependencyAPIMigration {
+  override def prerequisites = Forms.ChirrtlForm
+  override def optionalPrerequisites = Seq.empty
+  override def optionalPrerequisiteOf = Dependency[WiringTransform] +: Forms.ChirrtlEmitters
+  override def invalidates(a: Transform) = false
+  def execute(state: CircuitState): CircuitState = {
     state.copy(annotations = state.annotations.filter{ case _: NoDedupAnnotation => false; case _ => true })
+  }
 }
 
 class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
