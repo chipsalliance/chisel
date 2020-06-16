@@ -192,3 +192,33 @@ lazy val chisel = (project in file(".")).
 addCommandAlias("com", "all compile")
 addCommandAlias("lint", "; compile:scalafix --check ; test:scalafix --check")
 addCommandAlias("fix", "all compile:scalafix test:scalafix")
+
+// Tasks for running tests with different backends
+//
+//
+
+lazy val setTreadleBackend = taskKey[Int]("Sets the test harnes backend to treadle")
+lazy val setVerilatorBackend = taskKey[Int]("Sets the test harness backend to verilator")
+lazy val setDefaultBackend = taskKey[Int]("Sets the test harness backend to default")
+
+import java.io.PrintWriter
+
+setTreadleBackend := {
+  val p = new PrintWriter(new File("TestBackendName"))
+  p.println(s"treadle")
+  p.close()
+  0
+}
+
+setVerilatorBackend := {
+  val p = new PrintWriter(new File("TestBackendName"))
+  p.println(s"verilator")
+  p.close()
+  0
+}
+
+setDefaultBackend := {
+  val f = new File("TestBackendName")
+  if (f.exists()) { f.delete() }
+  0
+}

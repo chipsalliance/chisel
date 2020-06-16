@@ -24,9 +24,47 @@ object TesterDriver extends BackendCompilationUtilities {
   case object TreadleBackend extends Backend
   case object NoBackend extends Backend
 
-//  val defaultBackends: Seq[Backend] = Seq(TreadleBackend)
-  val defaultBackends: Seq[Backend] = Seq(VerilatorBackend)
-//  val defaultBackends: Seq[Backend] = Seq(TreadleBackend, VerilatorBackend)
+  val defaultBackends: Seq[Backend] = lookupTestBackend
+
+  val TestBackendConfigFile = "TestBackendName"
+
+  /* if a file named `TestBackendName` is present then it will be scanned for the strings
+   * treadle or verilator and return a sequence with one backend in it
+   * The possibility of multiple backends in list is not currently supported
+   *
+   */
+  def lookupTestBackend: Seq[Backend] = {
+    if ((new File(TestBackendConfigFile)).exists()) {
+      val backendsFromFile = FileUtils.getLines(TestBackendConfigFile).map(_.trim).map(_.toLowerCase).flatMap {
+        case "treadle" => Some(TreadleBackend)
+        case "verilator" => Some(VerilatorBackend)
+        case otherString =>
+          if (otherString.startsWith("#")) {
+            None
+          } else {
+            logger.error(
+              s"SetBackendTest file exists and contains unparsable line $otherString. " +
+                s"Line must be treadle, verilator or comment line starting with #"
+            )
+            System.exit(1)
+            Seq.empty
+          }
+      }
+      if (backendsFromFile.length == 1) {
+        backendsFromFile
+      } else {
+        logger.error(
+          s"SetBackendTest file exists and contains multiple backends, not currently supported. " +
+            s"Line must be treadle, verilator or comment line starting with #"
+        )
+        System.exit(1)
+        Seq.empty
+      }
+    } else {
+      Seq(VerilatorBackend)
+    }
+
+  }
 
   /** Use this to force a test to be run only with backends that are not Treadle
     */
