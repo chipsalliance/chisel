@@ -84,6 +84,47 @@ case class ManipulateNamesAllowlistAnnotation[A <: ManipulateNames[_]](
 
 }
 
+/** Records the result of name changes for any targets included in a [[ManipulateNamesAllowlistAnnotation]]
+  *
+  * If targets are later removed, then a target and old target will be removed from this annotation. If all targets are
+  * removed, then this annotation will be deleted.
+  *
+  * @param targets the new targets
+  * @param transform the transform that performed this rename
+  * @param oldTargets the old targets
+  */
+case class ManipulateNamesAllowlistResultAnnotation[A <: ManipulateNames[_]](
+  targets: Seq[Seq[Target]],
+  transform: Dependency[A],
+  oldTargets: Seq[Seq[Target]]) extends MultiTargetAnnotation {
+
+  override def duplicate(a: Seq[Seq[Target]]) = this.copy(targets = a)
+
+  override def update(renames: RenameMap) = {
+    val (targetsx, oldTargetsx) = targets.zip(oldTargets).foldLeft((Seq.empty[Seq[Target]], Seq.empty[Seq[Target]])) {
+      case ((accT, accO), (t, o)) => t.flatMap(renames(_)) match {
+        /* If the target was deleted, delete the old target */
+        case tx if tx.isEmpty => (accT, accO)
+        case tx               => (Seq(tx) ++ accT, Seq(o) ++ accO)
+      }
+    }
+    targetsx match {
+      /* If all targets were deleted, delete the annotation */
+      case Nil => Seq.empty
+      case _   => Seq(this.copy(targets = targetsx, oldTargets = oldTargetsx))
+    }
+  }
+
+  /** Return [[firrtl.RenameMap RenameMap]] from old targets to new targets */
+  def toRenameMap: RenameMap = {
+    val m = oldTargets.zip(targets).flatMap {
+      case (a, b) => a.map(_ -> b)
+    }.toMap.asInstanceOf[Map[CompleteTarget, Seq[CompleteTarget]]]
+    RenameMap.create(m)
+  }
+
+}
+
 /** A datastructure used to do single-pass name manipulation
   * @param circuit the [[ir.Circuit]] that will be manipulated
   * @param renames a rename map
@@ -402,7 +443,19 @@ abstract class ManipulateNames[A <: ManipulateNames[_] : ClassTag] extends Trans
     }
 
     val renames = RenameMap()
-    state.copy(circuit = run(state.circuit, renames, block, allow), renames = Some(renames))
+    val circuitx = run(state.circuit, renames, block, allow)
+
+    val annotationsx = state.annotations.flatMap {
+      /* Consume blocklist annotations */
+      case ManipulateNamesBlocklistAnnotation(_, _: Dependency[A]) => None
+      /* Convert allowlist annotations to result annotations */
+      case ManipulateNamesAllowlistAnnotation(a, t: Dependency[A]) => (a, a.map(_.map(renames(_)).flatten)) match {
+        case (a, b) => Some(ManipulateNamesAllowlistResultAnnotation(b, t, a))
+      }
+      case a => Some(a)
+    }
+
+    state.copy(circuit = circuitx, annotations = annotationsx, renames = Some(renames))
   }
 
 }
