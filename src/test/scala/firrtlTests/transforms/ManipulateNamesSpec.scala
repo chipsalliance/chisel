@@ -2,14 +2,22 @@
 
 package firrtlTests.transforms
 
-import firrtl.{ir, CircuitState, FirrtlUserException, Namespace, Parser}
+import firrtl.{
+  ir,
+  CircuitState,
+  FirrtlUserException,
+  Namespace,
+  Parser,
+  RenameMap
+}
 import firrtl.annotations.CircuitTarget
 import firrtl.options.Dependency
 import firrtl.testutils.FirrtlCheckers._
 import firrtl.transforms.{
   ManipulateNames,
   ManipulateNamesBlocklistAnnotation,
-  ManipulateNamesAllowlistAnnotation
+  ManipulateNamesAllowlistAnnotation,
+  ManipulateNamesAllowlistResultAnnotation
 }
 
 import org.scalatest.flatspec.AnyFlatSpec
@@ -171,6 +179,51 @@ class ManipulateNamesSpec extends AnyFlatSpec with Matchers {
     assertThrows[java.lang.IllegalArgumentException]{
       Seq(ManipulateNamesBlocklistAnnotation(Seq(Seq(barA)), Dependency[AddPrefix]))
     }
+  }
+
+  behavior of "ManipulateNamesAllowlistResultAnnotation"
+
+  it should "delete itself if the new target is deleted" in {
+    val `~Foo|Bar` = CircuitTarget("Foo").module("Bar")
+    val `~Foo|prefix_Bar` = CircuitTarget("Foo").module("prefix_Bar")
+
+    val a = ManipulateNamesAllowlistResultAnnotation(
+      targets = Seq(Seq(`~Foo|prefix_Bar`)),
+      transform = Dependency[AddPrefix],
+      oldTargets = Seq(Seq(`~Foo|Bar`))
+    )
+
+    val r = RenameMap()
+    r.delete(`~Foo|prefix_Bar`)
+
+    a.update(r) should be (empty)
+  }
+
+  it should "drop a deleted target" in {
+    val `~Foo|Bar` = CircuitTarget("Foo").module("Bar")
+    val `~Foo|prefix_Bar` = CircuitTarget("Foo").module("prefix_Bar")
+    val `~Foo|Baz` = CircuitTarget("Foo").module("Baz")
+    val `~Foo|prefix_Baz` = CircuitTarget("Foo").module("prefix_Baz")
+
+    val a = ManipulateNamesAllowlistResultAnnotation(
+      targets = Seq(Seq(`~Foo|prefix_Bar`), Seq(`~Foo|prefix_Baz`)),
+      transform = Dependency[AddPrefix],
+      oldTargets = Seq(Seq(`~Foo|Bar`), Seq(`~Foo|Baz`))
+    )
+
+    val r = RenameMap()
+    r.delete(`~Foo|prefix_Bar`)
+
+    val ax = a.update(r).collect {
+      case b: ManipulateNamesAllowlistResultAnnotation[_] => b
+    }
+
+    ax should not be length (1)
+
+    val keys = ax.head.toRenameMap.getUnderlying.keys
+
+    keys should not contain (`~Foo|Bar`)
+    keys should contain (`~Foo|Baz`)
   }
 
 }
