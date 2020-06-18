@@ -28,7 +28,9 @@ def javacOptionsVersion(scalaVersion: String): Seq[String] = {
   }
 }
 
-val defaultVersions = Map("firrtl" -> "1.4-SNAPSHOT")
+val defaultVersions = Seq(
+  "edu.berkeley.cs" %% "firrtl" % "1.4-SNAPSHOT"
+)
 
 lazy val commonSettings = Seq (
   resolvers ++= Seq(
@@ -50,11 +52,12 @@ lazy val commonSettings = Seq (
   //  this has to be a Task setting.
   //  Fortunately, allDependencies is a Task Setting, so we can modify that.
   allDependencies := {
-    allDependencies.value ++ Seq("firrtl").collect {
+    allDependencies.value ++ defaultVersions.collect {
       // If we have an unmanaged jar file on the classpath, assume we're to use that,
-      case dep: String if !(unmanagedClasspath in Compile).value.toString.contains(s"$dep.jar") =>
-        //  otherwise let sbt fetch the appropriate version.
-        "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep))
+      case m: ModuleID if !(unmanagedClasspath in Compile).value.toString.contains(s"${m.name}.jar") =>
+        //  otherwise let sbt fetch the appropriate artifact, possibly with a specific revision.
+        val mWithRevision = m.withRevision(sys.props.getOrElse(m.name + "Version", m.revision))
+        mWithRevision
     }
   }
 )
