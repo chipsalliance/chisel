@@ -811,7 +811,16 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
       }
     }
 
+    val isAnonFunc = ".*\\$\\$anonfun\\$\\d+$".r
+    def getNonFuncClass(clz: Class[_]): Option[Class[_]] = {
+      clz.getName match {
+        case isAnonFunc() => getNonFuncClass(clz.getEnclosingClass)
+        case _ => Some(clz)
+      }
+    }
+
     val mirror = runtimeMirror(clazz.getClassLoader)
+
     val classSymbolOption = try {
       Some(mirror.reflect(this).symbol)
     } catch {
@@ -821,7 +830,7 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     val enclosingClassOption = (clazz.getEnclosingClass, classSymbolOption) match {
       case (null, _) => None
       case (_, Some(classSymbol)) if classSymbol.isStatic => None  // allows support for members of companion objects
-      case (outerClass, _) => Some(outerClass)
+      case (parent, _) => getNonFuncClass(parent)
     }
 
     // For compatibility with pre-3.1, where null is tried as an argument to the constructor.
