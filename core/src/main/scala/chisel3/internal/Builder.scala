@@ -263,9 +263,14 @@ private[chisel3] trait HasId extends InstanceId {
       }
     }
     val valNames = getValNames(this.getClass)
-    def isPublicVal(m: java.lang.reflect.Method) =
-      m.getParameterTypes.isEmpty && valNames.contains(m.getName) && !m.getDeclaringClass.isAssignableFrom(rootClass)
-    this.getClass.getMethods.sortWith(_.getName < _.getName).filter(isPublicVal(_))
+    def isPublicVal(m: java.lang.reflect.Method) = {
+      val noParameters = m.getParameterTypes.isEmpty
+      val aVal = valNames.contains(m.getName)
+      val notAssignable = !m.getDeclaringClass.isAssignableFrom(rootClass)
+      val notWeirdVal = !m.getName.contains('$')
+      noParameters && aVal && notAssignable && notWeirdVal
+    }
+    this.getClass.getMethods.filter(isPublicVal).sortWith(_.getName < _.getName)
   }
 }
 /** Holds the implementation of toNamed for Data and MemBase */
