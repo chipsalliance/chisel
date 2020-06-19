@@ -3,7 +3,7 @@ package firrtl.passes
 import firrtl.Utils.{create_exps, flow, kind, toWrappedExpression}
 import firrtl.ir._
 import firrtl.Mappers._
-import firrtl.options.{Dependency, PreservesAll}
+import firrtl.options.Dependency
 import firrtl._
 
 import scala.collection.mutable
@@ -18,7 +18,7 @@ import scala.collection.mutable
   *
   * @note The result of this pass is NOT legal Firrtl
   */
-object VerilogPrep extends Pass with PreservesAll[Transform] {
+object VerilogPrep extends Pass {
 
   override def prerequisites = firrtl.stage.Forms.LowFormMinimumOptimized ++
     Seq( Dependency[firrtl.transforms.BlackBoxSourceHelper],
@@ -34,6 +34,8 @@ object VerilogPrep extends Pass with PreservesAll[Transform] {
   override def optionalPrerequisites = firrtl.stage.Forms.LowFormOptimized
 
   override def optionalPrerequisiteOf = Seq.empty
+
+  override def invalidates(a: Transform) = false
 
   type AttachSourceMap = Map[WrappedExpression, Expression]
 

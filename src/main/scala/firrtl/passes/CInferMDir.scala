@@ -5,12 +5,14 @@ package firrtl.passes
 import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
-import firrtl.options.{Dependency, PreservesAll}
+import firrtl.options.Dependency
 import Utils.throwInternalError
 
-object CInferMDir extends Pass with PreservesAll[Transform] {
+object CInferMDir extends Pass {
 
   override def prerequisites = firrtl.stage.Forms.ChirrtlForm :+ Dependency(CInferTypes)
+
+  override def invalidates(a: Transform) = false
 
   type MPortDirMap = collection.mutable.LinkedHashMap[String, MPortDir]
 

@@ -9,9 +9,9 @@ import firrtl.Utils._
 import firrtl.traversals.Foreachers._
 import firrtl.WrappedType._
 import firrtl.constraint.{Constraint, IsKnown}
-import firrtl.options.{Dependency, PreservesAll}
+import firrtl.options.Dependency
 
-object CheckTypes extends Pass with PreservesAll[Transform] {
+object CheckTypes extends Pass {
 
   override def prerequisites = Dependency(InferTypes) +: firrtl.stage.Forms.WorkingIR
 
@@ -21,6 +21,8 @@ object CheckTypes extends Pass with PreservesAll[Transform] {
          Dependency(passes.CheckFlows),
          Dependency[passes.InferWidths],
          Dependency(passes.CheckWidths) )
+
+  override def invalidates(a: Transform) = false
 
   // Custom Exceptions
   class SubfieldNotInBundle(info: Info, mname: String, name: String) extends PassException(

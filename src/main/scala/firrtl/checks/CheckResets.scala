@@ -3,7 +3,7 @@
 package firrtl.checks
 
 import firrtl._
-import firrtl.options.{Dependency, PreservesAll}
+import firrtl.options.Dependency
 import firrtl.passes.{Errors, PassException}
 import firrtl.ir._
 import firrtl.Utils.isCast
@@ -28,7 +28,7 @@ object CheckResets {
 // Must run after ExpandWhens
 // Requires
 //   - static single connections of ground types
-class CheckResets extends Transform with DependencyAPIMigration with PreservesAll[Transform] {
+class CheckResets extends Transform with DependencyAPIMigration {
 
   override def prerequisites =
     Seq( Dependency(passes.LowerTypes),
@@ -38,6 +38,8 @@ class CheckResets extends Transform with DependencyAPIMigration with PreservesAl
   override def optionalPrerequisites = Seq(Dependency[firrtl.transforms.CheckCombLoops])
 
   override def optionalPrerequisiteOf = Seq.empty
+
+  override def invalidates(a: Transform) = false
 
   import CheckResets._
 

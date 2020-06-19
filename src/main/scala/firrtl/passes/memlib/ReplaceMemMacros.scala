@@ -10,7 +10,6 @@ import firrtl.Mappers._
 import MemPortUtils.{MemPortMap, Modules}
 import MemTransformUtils._
 import firrtl.annotations._
-import firrtl.options.PreservesAll
 import firrtl.stage.Forms
 import wiring._
 
@@ -26,11 +25,12 @@ object ReplaceMemMacros {
   * This will not generate wmask ports if not needed.
   * Creates the minimum # of black boxes needed by the design.
   */
-class ReplaceMemMacros(writer: ConfWriter) extends Transform with DependencyAPIMigration with PreservesAll[Transform] {
+class ReplaceMemMacros(writer: ConfWriter) extends Transform with DependencyAPIMigration {
 
   override def prerequisites = Forms.MidForm
   override def optionalPrerequisites = Seq.empty
   override def optionalPrerequisiteOf = Forms.MidEmitters
+  override def invalidates(a: Transform) = false
 
   /** Return true if mask granularity is per bit, false if per byte or unspecified
     */

@@ -6,11 +6,12 @@ import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.traversals.Foreachers._
-import firrtl.options.PreservesAll
 
-object ResolveKinds extends Pass with PreservesAll[Transform] {
+object ResolveKinds extends Pass {
 
   override def prerequisites = firrtl.stage.Forms.WorkingIR
+
+  override def invalidates(a: Transform) = false
 
   type KindMap = collection.mutable.HashMap[String, Kind]
 
@@ -45,4 +46,3 @@ object ResolveKinds extends Pass with PreservesAll[Transform] {
   def run(c: Circuit): Circuit =
     c copy (modules = c.modules map resolve_kinds)
 }
-

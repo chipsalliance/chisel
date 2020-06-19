@@ -3,18 +3,20 @@
 package firrtl.stage.phases
 
 import firrtl.AnnotationSeq
-import firrtl.options.{Phase, PreservesAll, TargetDirAnnotation}
+import firrtl.options.{Phase, TargetDirAnnotation}
 import firrtl.transforms.BlackBoxTargetDirAnno
 import firrtl.stage.{CompilerAnnotation, InfoModeAnnotation, FirrtlOptions}
 
 /** [[firrtl.options.Phase Phase]] that adds default [[FirrtlOption]] [[firrtl.annotations.Annotation Annotation]]s.
   * This is a part of the preprocessing done by [[FirrtlStage]].
   */
-class AddDefaults extends Phase with PreservesAll[Phase] {
+class AddDefaults extends Phase {
 
   override def prerequisites = Seq.empty
 
   override def optionalPrerequisiteOf = Seq.empty
+
+  override def invalidates(a: Phase) = false
 
   /** Append any missing default annotations to an annotation sequence */
   def transform(annotations: AnnotationSeq): AnnotationSeq = {

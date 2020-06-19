@@ -3,20 +3,22 @@ package firrtl.passes
 import firrtl.PrimOps._
 import firrtl.Utils.{BoolType, error, zero}
 import firrtl.ir._
-import firrtl.options.{PreservesAll, Dependency}
+import firrtl.options.Dependency
 import firrtl.transforms.ConstantPropagation
 import firrtl.{Transform, bitWidth}
 import firrtl.Mappers._
 
 // Replace shr by amount >= arg width with 0 for UInts and MSB for SInts
 // TODO replace UInt with zero-width wire instead
-object Legalize extends Pass with PreservesAll[Transform] {
+object Legalize extends Pass {
 
   override def prerequisites = firrtl.stage.Forms.MidForm :+ Dependency(LowerTypes)
 
   override def optionalPrerequisites = Seq.empty
 
   override def optionalPrerequisiteOf = Seq.empty
+
+  override def invalidates(a: Transform) = false
 
   private def legalizeShiftRight(e: DoPrim): Expression = {
     require(e.op == Shr)

@@ -8,7 +8,7 @@ import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.PrimOps._
 import firrtl.Utils.{one, zero, BoolType}
-import firrtl.options.{HasShellOptions, PreservesAll, ShellOption}
+import firrtl.options.{HasShellOptions, ShellOption}
 import MemPortUtils.memPortField
 import firrtl.passes.memlib.AnalysisUtils.{Connects, getConnects, getOrigin}
 import WrappedExpression.weq
@@ -146,13 +146,13 @@ object InferReadWritePass extends Pass {
 // To use this transform, circuit name should be annotated with its TransId.
 class InferReadWrite extends Transform
     with DependencyAPIMigration
-    with PreservesAll[Transform]
     with SeqTransformBased
     with HasShellOptions {
 
   override def prerequisites = Forms.MidForm
   override def optionalPrerequisites = Seq.empty
   override def optionalPrerequisiteOf = Forms.MidEmitters
+  override def invalidates(a: Transform) = false
 
   val options = Seq(
     new ShellOption[Unit](

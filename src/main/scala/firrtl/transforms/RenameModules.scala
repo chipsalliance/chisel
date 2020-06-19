@@ -5,7 +5,6 @@ package firrtl.transforms
 import firrtl.analyses.{InstanceGraph, ModuleNamespaceAnnotation}
 import firrtl.ir._
 import firrtl._
-import firrtl.options.PreservesAll
 import firrtl.stage.Forms
 
 import scala.collection.mutable
@@ -14,11 +13,12 @@ import scala.collection.mutable
   *
   * using namespace created by [[analyses.GetNamespace]], create unique names for modules
   */
-class RenameModules extends Transform with DependencyAPIMigration with PreservesAll[Transform] {
+class RenameModules extends Transform with DependencyAPIMigration {
 
   override def prerequisites = Forms.LowForm
   override def optionalPrerequisites = Seq.empty
   override def optionalPrerequisiteOf = Forms.LowEmitters
+  override def invalidates(a: Transform) = false
 
   def collectNameMapping(namespace: Namespace, moduleNameMap: mutable.HashMap[String, String])(mod: DefModule): Unit = {
     val newName = namespace.newName(mod.name)

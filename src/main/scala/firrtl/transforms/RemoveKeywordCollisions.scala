@@ -10,7 +10,7 @@ import firrtl.ir
 import firrtl.passes.{Uniquify, PassException}
 import firrtl.Utils.v_keywords
 import firrtl.Mappers._
-import firrtl.options.{Dependency, PreservesAll}
+import firrtl.options.Dependency
 
 import scala.collection.mutable
 
@@ -231,7 +231,7 @@ class RemoveKeywordCollisions(keywords: Set[String]) extends Transform with Depe
 }
 
 /** Transform that removes collisions with Verilog keywords */
-class VerilogRename extends RemoveKeywordCollisions(v_keywords) with PreservesAll[Transform] {
+class VerilogRename extends RemoveKeywordCollisions(v_keywords) {
 
   override def prerequisites = firrtl.stage.Forms.LowFormMinimumOptimized ++
     Seq( Dependency[BlackBoxSourceHelper],
@@ -246,5 +246,7 @@ class VerilogRename extends RemoveKeywordCollisions(v_keywords) with PreservesAl
   override def optionalPrerequisites = firrtl.stage.Forms.LowFormOptimized
 
   override def optionalPrerequisiteOf = Seq.empty
+
+  override def invalidates(a: Transform) = false
 
 }

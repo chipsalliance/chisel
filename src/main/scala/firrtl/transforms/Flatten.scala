@@ -7,7 +7,6 @@ import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.annotations._
 import scala.collection.mutable
-import firrtl.options.PreservesAll
 import firrtl.passes.{InlineInstances,PassException}
 import firrtl.stage.Forms
 
@@ -24,11 +23,12 @@ case class FlattenAnnotation(target: Named) extends SingleTargetAnnotation[Named
   * @note Flattening a module means inlining all its fully-defined child instances
   * @note Instances of extmodules are not (and cannot be) inlined
   */
-class Flatten extends Transform with DependencyAPIMigration with PreservesAll[Transform] {
+class Flatten extends Transform with DependencyAPIMigration {
 
    override def prerequisites = Forms.LowForm
    override def optionalPrerequisites = Seq.empty
    override def optionalPrerequisiteOf = Forms.LowEmitters
+  override def invalidates(a: Transform) = false
 
    val inlineTransform = new InlineInstances
 
