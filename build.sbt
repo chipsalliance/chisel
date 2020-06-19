@@ -28,8 +28,8 @@ def javacOptionsVersion(scalaVersion: String): Seq[String] = {
   }
 }
 
-val defaultVersions = Seq(
-  "edu.berkeley.cs" %% "firrtl" % "1.4-SNAPSHOT"
+val chiselDependencies = Seq(
+  ChiselIvy("edu.berkeley.cs",  "firrtl", "1.4-SNAPSHOT")
 )
 
 lazy val commonSettings = Seq (
@@ -52,12 +52,10 @@ lazy val commonSettings = Seq (
   //  this has to be a Task setting.
   //  Fortunately, allDependencies is a Task Setting, so we can modify that.
   allDependencies := {
-    allDependencies.value ++ defaultVersions.collect {
+    allDependencies.value ++ chiselDependencies.collect {
       // If we have an unmanaged jar file on the classpath, assume we're to use that,
-      case m: ModuleID if !(unmanagedClasspath in Compile).value.toString.contains(s"${m.name}.jar") =>
-        //  otherwise let sbt fetch the appropriate artifact, possibly with a specific revision.
-        val mWithRevision = m.withRevision(sys.props.getOrElse(m.name + "Version", m.revision))
-        mWithRevision
+      //  otherwise, get sbt's ModuleId
+      case d: ChiselIvy if !(unmanagedClasspath in Compile).value.toString.contains(s"${d.moduleName}.jar") => d.toSbtModuleId
     }
   }
 )
