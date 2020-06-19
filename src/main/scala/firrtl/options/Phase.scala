@@ -184,6 +184,8 @@ trait DependencyAPI[A <: DependencyAPI[A]] { this: TransformLike[_] =>
 /** A trait indicating that no invalidations occur, i.e., all previous transforms are preserved
   * @tparam A some [[TransformLike]]
   */
+@deprecated("Use an explicit `override def invalidates` returning false. This will be removed in FIRRTL 1.5.",
+            "FIRRTL 1.4")
 trait PreservesAll[A <: DependencyAPI[A]] { this: DependencyAPI[A] =>
 
   override final def invalidates(a: A): Boolean = false
