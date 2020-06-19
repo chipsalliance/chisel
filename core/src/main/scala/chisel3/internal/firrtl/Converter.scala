@@ -127,8 +127,8 @@ private[chisel3] object Converter {
       val (fmt, args) = unpack(pable, ctx)
       Some(fir.Print(convert(info), fir.StringLit(fmt),
                      args.map(a => convert(a, ctx)), convert(clock, ctx), firrtl.Utils.one))
-    case Check(info, arg) =>
-      Some(fir.Check(convert(info), convert(arg, ctx)))
+    case Assert(info, clk, pred, msg) =>
+      Some(fir.Verification(fir.Formal.Assert, convert(info), convert(clk, ctx), convert(pred, ctx), firrtl.Utils.one, fir.StringLit(msg)))
     case _ => None
   }
 
