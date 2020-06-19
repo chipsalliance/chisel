@@ -100,10 +100,19 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
       okFlags(dd.mods) && shouldMatch(inferType(dd.tpt), bases) && !isNull && dd.rhs != EmptyTree
     }
 
+    def inBundle(dd: ValDef): Boolean = {
+      dd.symbol.logicallyEnclosingMember.thisType <:< inferType(tq"chisel3.Bundle")
+    }
+
     // Method called by the compiler to modify source tree
     // TODO: determine seed/name/prefix terms to help with clarity
     override def transform(tree: Tree): Tree = tree match {
       // If a Data, get name and prefix
+      case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd, tq"chisel3.Data") && inBundle(dd) =>
+        val TermName(str: String) = name
+        val newRHS = super.transform(rhs)
+        val named = q"chisel3.experimental.pluginNameRecursively($str, $newRHS)"
+        treeCopy.ValDef(dd, mods, name, tpt, localTyper typed named)
       case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd, tq"chisel3.Data", tq"chisel3.MemBase[_]") =>
         val TermName(str: String) = name
         val newRHS = super.transform(rhs)
