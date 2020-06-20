@@ -171,7 +171,9 @@ class LoweringCompilersSpec extends FlatSpec with Matchers {
       Del(13),
       Add(12, Seq(Dependency(firrtl.passes.ResolveFlows),
                   Dependency[firrtl.passes.InferWidths])),
-      Del(14)
+      Del(14),
+      Add(15, Seq(Dependency(firrtl.passes.ResolveKinds),
+                  Dependency(firrtl.passes.InferTypes)))
     )
     compare(legacyTransforms(new HighFirrtlToMiddleFirrtl), tm, patches)
   }
@@ -349,7 +351,7 @@ class LoweringCompilersSpec extends FlatSpec with Matchers {
         Seq(new Transforms.LowToLow, new firrtl.MinimumVerilogEmitter)
     val tm = (new TransformManager(Seq(Dependency[firrtl.MinimumVerilogEmitter], Dependency[Transforms.LowToLow])))
     val patches = Seq(
-      Add(60, Seq(Dependency[firrtl.transforms.LegalizeAndReductionsTransform]))
+      Add(62, Seq(Dependency[firrtl.transforms.LegalizeAndReductionsTransform]))
     )
     compare(expected, tm, patches)
   }
@@ -360,7 +362,7 @@ class LoweringCompilersSpec extends FlatSpec with Matchers {
         Seq(new Transforms.LowToLow, new firrtl.VerilogEmitter)
     val tm = (new TransformManager(Seq(Dependency[firrtl.VerilogEmitter], Dependency[Transforms.LowToLow])))
     val patches = Seq(
-      Add(67, Seq(Dependency[firrtl.transforms.LegalizeAndReductionsTransform]))
+      Add(69, Seq(Dependency[firrtl.transforms.LegalizeAndReductionsTransform]))
     )
     compare(expected, tm, patches)
   }

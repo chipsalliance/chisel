@@ -8,7 +8,7 @@ import firrtl._
 import firrtl.Mappers._
 import Implicits.{bigint2WInt}
 import firrtl.constraint.IsKnown
-import firrtl.options.{Dependency, PreservesAll}
+import firrtl.options.Dependency
 
 import scala.math.BigDecimal.RoundingMode._
 
@@ -36,7 +36,7 @@ class WrapWithRemainder(info: Info, mname: String, wrap: DoPrim)
   *      c. replace with SIntType
   * 3) Run InferTypes
   */
-class RemoveIntervals extends Pass with PreservesAll[Transform] {
+class RemoveIntervals extends Pass {
 
   override def prerequisites: Seq[Dependency[Transform]] =
     Seq( Dependency(PullMuxes),
@@ -45,13 +45,20 @@ class RemoveIntervals extends Pass with PreservesAll[Transform] {
          Dependency(RemoveAccesses),
          Dependency[ExpandWhensAndCheck] ) ++ firrtl.stage.Forms.Deduped
 
+  override def invalidates(transform: Transform): Boolean = {
+    transform match {
+      case InferTypes | ResolveKinds => true
+      case _ => false
+    }
+  }
+
   def run(c: Circuit): Circuit = {
     val alignedCircuit = c
     val errors = new Errors()
     val wiredCircuit = alignedCircuit map makeWireModule
     val replacedCircuit = wiredCircuit map replaceModuleInterval(errors)
     errors.trigger()
-    InferTypes.run(replacedCircuit)
+    replacedCircuit
   }
 
   /* Replace interval types */
