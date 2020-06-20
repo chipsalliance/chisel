@@ -90,7 +90,12 @@ object ChiselGeneratorAnnotation extends HasShellOptions {
 /** Stores a Chisel Circuit
   * @param circuit a Chisel Circuit
   */
-case class ChiselCircuitAnnotation(circuit: Circuit) extends NoTargetAnnotation with ChiselOption
+case class ChiselCircuitAnnotation(circuit: Circuit) extends NoTargetAnnotation with ChiselOption {
+  /* Caching the hashCode for a large circuit is necessary due to repeated queries.
+   * Not caching the hashCode will cause severe performance degredations for large [[Circuit]]s.
+   */
+  override lazy val hashCode: Int = circuit.hashCode
+}
 
 case class ChiselOutputFileAnnotation(file: String) extends NoTargetAnnotation with ChiselOption
 
