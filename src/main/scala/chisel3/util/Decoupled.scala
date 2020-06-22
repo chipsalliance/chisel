@@ -92,6 +92,15 @@ object Decoupled
   /** Wraps some Data with a DecoupledIO interface. */
   def apply[T <: Data](gen: T): DecoupledIO[T] = new DecoupledIO(gen)
 
+  // TODO: use a proper empty data type, this is a quick and dirty solution
+  private final class EmptyBundle extends Bundle
+
+  // Both of these methods return DecoupledIO parameterized by the most generic type: Data
+  /** Returns a [[DecoupledIO]] inteface with no payload */
+  def apply(): DecoupledIO[Data] = apply(new EmptyBundle)
+  /** Returns a [[DecoupledIO]] inteface with no payload */
+  def empty: DecoupledIO[Data] = Decoupled()
+
   /** Downconverts an IrrevocableIO output to a DecoupledIO, dropping guarantees of irrevocability.
     *
     * @note unsafe (and will error) on the producer (input) side of an IrrevocableIO
