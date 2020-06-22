@@ -3,16 +3,71 @@
 package chiselTests.util.random
 
 import chisel3._
-import chisel3.util.{Counter, Enum}
+import chisel3.util.{Cat, Counter, Enum}
 import chisel3.util.random._
 import chisel3.testers.BasicTester
 
-import chiselTests.{ChiselFlatSpec, LFSRDistribution, LFSRMaxPeriod}
+import chiselTests.{ChiselFlatSpec, Utils}
 
 import math.pow
 
 class FooLFSR(val reduction: LFSRReduce, seed: Option[BigInt]) extends PRNG(4, seed) with LFSR {
   def delta(s: Seq[Bool]): Seq[Bool] = s
+}
+
+class LFSRMaxPeriod(gen: => UInt) extends BasicTester {
+
+  val rv = gen
+  val started = RegNext(true.B, false.B)
+  val seed = withReset(!started) { RegInit(rv) }
+
+  val (_, wrap) = Counter(started, math.pow(2.0, rv.getWidth).toInt - 1)
+
+  when (rv === seed && started) {
+    chisel3.assert(wrap)
+    stop()
+  }
+
+  val last = RegNext(rv)
+  chisel3.assert(rv =/= last, "LFSR last value (0b%b) was equal to current value (0b%b)", rv, last)
+
+}
+
+/**
+  * This test creates two 4 sided dice.
+  * Each cycle it adds them together and adds a count to the bin corresponding to that value
+  * The asserts check that the bins show the correct distribution.
+  */
+//scalastyle:off magic.number
+class LFSRDistribution(gen: => UInt, cycles: Int = 10000) extends BasicTester {
+
+  val rv = gen
+  val bins = Reg(Vec(8, UInt(32.W)))
+
+  // Use tap points on each LFSR so values are more independent
+  val die0 = Cat(Seq.tabulate(2) { i => rv(i) })
+  val die1 = Cat(Seq.tabulate(2) { i => rv(i + 2) })
+
+  val (trial, done) = Counter(true.B, cycles)
+
+  val rollValue = die0 +& die1  // Note +& is critical because sum will need an extra bit.
+
+  bins(rollValue) := bins(rollValue) + 1.U
+
+  when(done) {
+    printf(p"bins: $bins\n") // Note using the printable interpolator p"" to print out a Vec
+
+    // test that the distribution feels right.
+    assert(bins(1) > bins(0))
+    assert(bins(2) > bins(1))
+    assert(bins(3) > bins(2))
+    assert(bins(4) < bins(3))
+    assert(bins(5) < bins(4))
+    assert(bins(6) < bins(5))
+    assert(bins(7) === 0.U)
+
+    stop()
+  }
 }
 
 /** This tests that after reset an LFSR is not locked up. This manually sets the seed of the LFSR at run-time to the
