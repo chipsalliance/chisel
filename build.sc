@@ -9,7 +9,7 @@ import mill.contrib.buildinfo.BuildInfo
 object chisel3 extends mill.Cross[chisel3CrossModule]("2.11.12", "2.12.11") 
 
 // A class to represent chisel dependent libraries.
-case class ChiselIvy(organization: String, moduleName: String, defaultVersion: String, configuration: Option[String] = None) {
+case class ChiselLibrary(organization: String, moduleName: String, defaultVersion: String, configuration: Option[String] = None) {
   val version = sys.props.getOrElse(moduleName + "Version", defaultVersion)
   def toMillIvy = {
     ivy"$organization::$moduleName:$version"
@@ -21,7 +21,7 @@ case class ChiselIvy(organization: String, moduleName: String, defaultVersion: S
 // Please retain it.
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
 val chiselDependencies = Seq(
-  ChiselIvy("edu.berkeley.cs", "firrtl", "1.4-SNAPSHOT")
+  ChiselLibrary("edu.berkeley.cs", "firrtl", "1.4-SNAPSHOT")
 )
 
 // Since chisel contains submodule core and macros, a CommonModule is needed

@@ -29,7 +29,7 @@ def javacOptionsVersion(scalaVersion: String): Seq[String] = {
 }
 
 val chiselDependencies = Seq(
-  ChiselIvy("edu.berkeley.cs",  "firrtl", "1.4-SNAPSHOT")
+  ChiselLibrary("edu.berkeley.cs",  "firrtl", "1.4-SNAPSHOT")
 )
 
 lazy val commonSettings = Seq (
@@ -55,7 +55,7 @@ lazy val commonSettings = Seq (
     allDependencies.value ++ chiselDependencies.collect {
       // If we have an unmanaged jar file on the classpath, assume we're to use that,
       //  otherwise, get sbt's ModuleId
-      case d: ChiselIvy if !(unmanagedClasspath in Compile).value.toString.contains(s"${d.moduleName}.jar") => d.toSbtModuleId
+      case d: ChiselLibrary if !(unmanagedClasspath in Compile).value.toString.contains(s"${d.moduleName}.jar") => d.toSbtModuleId
     }
   }
 )

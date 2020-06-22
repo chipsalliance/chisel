@@ -1,7 +1,7 @@
 import sbt._
 
 // A class to represent chisel dependent libraries.
-case class ChiselIvy(organization: String, moduleName: String, defaultVersion: String, configuration: Option[String] = None) {
+case class ChiselLibrary(organization: String, moduleName: String, defaultVersion: String, configuration: Option[String] = None) {
   val version = sys.props.getOrElse(moduleName + "Version", defaultVersion)
 
   def toSbtModuleId = {
