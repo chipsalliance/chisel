@@ -115,7 +115,7 @@ class Compiler extends Phase with Translator[AnnotationSeq, Seq[CompilerRun]] wi
 
   private def compilerToTransforms(a: FirrtlCompiler): Seq[TransformDependency] = a match {
     case _: firrtl.NoneCompiler                                      => Forms.ChirrtlForm
-    case _: firrtl.HighFirrtlCompiler                                => Forms.HighForm
+    case _: firrtl.HighFirrtlCompiler                                => Forms.MinimalHighForm
     case _: firrtl.MiddleFirrtlCompiler                              => Forms.MidForm
     case _: firrtl.LowFirrtlCompiler                                 => Forms.LowForm
     case _: firrtl.VerilogCompiler | _: firrtl.SystemVerilogCompiler => Forms.LowFormOptimized
