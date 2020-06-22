@@ -92,6 +92,7 @@ object Decoupled
   /** Wraps some Data with a DecoupledIO interface. */
   def apply[T <: Data](gen: T): DecoupledIO[T] = new DecoupledIO(gen)
 
+  // TODO: use a proper empty data type, this is a quick and dirty solution
   private final class EmptyBundle extends Bundle
 
   // Both of these methods return DecoupledIO parameterized by the most generic type: Data
