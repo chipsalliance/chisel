@@ -517,18 +517,18 @@ class VerilogEmitter extends SeqTransform with Emitter {
     * @param moduleMap        a map of modules so submodules can be discovered
     * @param writer           where rendered information is placed.
     */
-  class VerilogRender(description: Description,
-                      portDescriptions: Map[String, Description],
+  class VerilogRender(description: Seq[Description],
+                      portDescriptions: Map[String, Seq[Description]],
                       m: Module,
                       moduleMap: Map[String, DefModule],
                       circuitName: String,
                       emissionOptions: EmissionOptions)(implicit writer: Writer) {
 
     def this(m: Module, moduleMap: Map[String, DefModule], circuitName: String, emissionOptions: EmissionOptions)(implicit writer: Writer) {
-      this(EmptyDescription, Map.empty, m, moduleMap, circuitName, emissionOptions)(writer)
+      this(Seq(), Map.empty, m, moduleMap, circuitName, emissionOptions)(writer)
     }
     def this(m: Module, moduleMap: Map[String, DefModule])(implicit writer: Writer) {
-      this(EmptyDescription, Map.empty, m, moduleMap, "", new EmissionOptions(Seq.empty))(writer)
+      this(Seq(), Map.empty, m, moduleMap, "", new EmissionOptions(Seq.empty))(writer)
     }
 
     val netlist = mutable.LinkedHashMap[WrappedExpression, Expression]()
@@ -803,6 +803,10 @@ class VerilogEmitter extends SeqTransform with Emitter {
       }
     }
 
+    def build_attribute(attrs: String): Seq[Seq[String]] = {
+      Seq(Seq("(* ") ++ Seq(attrs) ++ Seq(" *)"))
+    }
+
     // Turn ports into Seq[String] and add to portdefs
     def build_ports(): Unit = {
       def padToMax(strs: Seq[String]): Seq[String] = {
@@ -827,11 +831,9 @@ class VerilogEmitter extends SeqTransform with Emitter {
       // dirs are already padded
       (dirs, padToMax(tpes), m.ports).zipped.toSeq.zipWithIndex.foreach {
         case ((dir, tpe, Port(info, name, _, _)), i) =>
-          portDescriptions.get(name) match {
-            case Some(DocString(s)) =>
-              portdefs += Seq("")
-              portdefs ++= build_comment(s.string)
-            case other =>
+          portDescriptions.get(name).map { case d =>
+            portdefs += Seq("")
+            portdefs ++= build_description(d)
           }
 
           if (i != m.ports.size - 1) {
@@ -842,18 +844,21 @@ class VerilogEmitter extends SeqTransform with Emitter {
       }
     }
 
+    def build_description(d: Seq[Description]): Seq[Seq[String]] = d.flatMap {
+      case DocString(desc) => build_comment(desc.string)
+      case Attribute(attr) => build_attribute(attr.string)
+    }
+
     def build_streams(s: Statement): Unit = {
       val withoutDescription = s match {
-        case DescribedStmt(DocString(desc), stmt) =>
-          val comment = Seq("") +: build_comment(desc.string)
+        case DescribedStmt(d, stmt) =>
           stmt match {
             case sx: IsDeclaration =>
-              declares ++= comment
-            case sx =>
+              declares ++= build_description(d)
+            case _ =>
           }
           stmt
-        case DescribedStmt(EmptyDescription, stmt) => stmt
-        case other => other
+        case stmt => stmt
       }
       withoutDescription.foreach(build_streams)
       withoutDescription match {
@@ -974,10 +979,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
     }
 
     def emit_streams(): Unit = {
-      description match {
-        case DocString(s) => build_comment(s.string).foreach(emit(_))
-        case other =>
-      }
+      build_description(description).foreach(emit(_))
       emit(Seq("module ", m.name, "(", m.info))
       for (x <- portdefs) emit(Seq(tab, x))
       emit(Seq(");"))
@@ -1107,10 +1109,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
       build_netlist(m.body)
       build_ports()
 
-      description match {
-        case DocString(s) => build_comment(s.string).foreach(emit(_))
-        case other =>
-      }
+      build_description(description).foreach(emit(_))
 
       emit(Seq("module ", overrideName, "(", m.info))
       for (x <- portdefs) emit(Seq(tab, x))

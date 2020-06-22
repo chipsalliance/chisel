@@ -7,31 +7,79 @@ import firrtl.annotations._
 import firrtl.Mappers._
 import firrtl.options.{Dependency, PreservesAll}
 
-case class DescriptionAnnotation(named: Named, description: String) extends Annotation {
-  def update(renames: RenameMap): Seq[DescriptionAnnotation] = {
-    renames.get(named) match {
+/**
+  * A base trait for `Annotation`s that describe a `FirrtlNode`.
+  * Usually, we would like to emit these descriptions in some way.
+  */
+sealed trait DescriptionAnnotation extends Annotation {
+  def target: Target
+  def description: String
+}
+
+/**
+  * A docstring description (a comment).
+  * @param target the object being described
+  * @param description the docstring describing the object
+  */
+case class DocStringAnnotation(target: Target, description: String) extends DescriptionAnnotation {
+  def update(renames: RenameMap): Seq[DocStringAnnotation] = {
+    renames.get(target) match {
       case None => Seq(this)
-      case Some(seq) => seq.map(n => this.copy(named = n))
+      case Some(seq) => seq.map(n => this.copy(target = n))
     }
   }
 }
 
-private sealed trait HasDescription {
-  def description: Description
+/**
+  * An Verilog-style attribute.
+  * @param target the object being given an attribute
+  * @param description the attribute
+  */
+case class AttributeAnnotation(target: Target, description: String) extends DescriptionAnnotation {
+  def update(renames: RenameMap): Seq[AttributeAnnotation] = {
+    renames.get(target) match {
+      case None => Seq(this)
+      case Some(seq) => seq.map(n => this.copy(target = n))
+    }
+  }
 }
 
-private abstract class Description extends FirrtlNode
+/**
+  * Base trait for an object that has associated descriptions
+  */
+private sealed trait HasDescription {
+  def descriptions: Seq[Description]
+}
 
-private case class DocString(string: StringLit) extends Description {
+/**
+  * Base trait for a description that gives some information about a `FirrtlNode`.
+  * Usually, we would like to emit these descriptions in some way.
+  */
+sealed trait Description extends FirrtlNode
+
+/**
+  * A docstring description (a comment)
+  * @param string a comment
+  */
+case class DocString(string: StringLit) extends Description {
   def serialize: String = "@[" + string.serialize + "]"
 }
 
-private case object EmptyDescription extends Description {
-  def serialize: String = ""
+/**
+  * A Verilog-style attribute.
+  * @param string the attribute
+  */
+case class Attribute(string: StringLit) extends Description {
+  def serialize: String = "@[" + string.serialize + "]"
 }
 
-private case class DescribedStmt(description: Description, stmt: Statement) extends Statement with HasDescription {
-  def serialize: String = s"${description.serialize}\n${stmt.serialize}"
+/**
+  * A statement with descriptions
+  * @param descriptions
+  * @param stmt the encapsulated statement
+  */
+private case class DescribedStmt(descriptions: Seq[Description], stmt: Statement) extends Statement with HasDescription {
+  def serialize: String = s"${descriptions.map(_.serialize).mkString("\n")}\n${stmt.serialize}"
   def mapStmt(f: Statement => Statement): Statement = f(stmt)
   def mapExpr(f: Expression => Expression): Statement = this.copy(stmt = stmt.mapExpr(f))
   def mapType(f: Type => Type): Statement = this.copy(stmt = stmt.mapType(f))
@@ -44,13 +92,19 @@ private case class DescribedStmt(description: Description, stmt: Statement) exte
   def foreachInfo(f: Info => Unit): Unit = stmt.foreachInfo(f)
 }
 
-private case class DescribedMod(description: Description,
-  portDescriptions: Map[String, Description],
+/**
+  * A module with descriptions
+  * @param descriptions list of descriptions for the module
+  * @param portDescriptions list of descriptions for the module's ports
+  * @param mod the encapsulated module
+  */
+private case class DescribedMod(descriptions: Seq[Description],
+  portDescriptions: Map[String, Seq[Description]],
   mod: DefModule) extends DefModule with HasDescription {
   val info = mod.info
   val name = mod.name
   val ports = mod.ports
-  def serialize: String = s"${description.serialize}\n${mod.serialize}"
+  def serialize: String = s"${descriptions.map(_.serialize).mkString("\n")}\n${mod.serialize}"
   def mapStmt(f: Statement => Statement): DefModule = this.copy(mod = mod.mapStmt(f))
   def mapPort(f: Port => Port): DefModule = this.copy(mod = mod.mapPort(f))
   def mapString(f: String => String): DefModule = this.copy(mod = mod.mapString(f))
@@ -87,44 +141,97 @@ class AddDescriptionNodes extends Transform with DependencyAPIMigration with Pre
 
   override def optionalPrerequisiteOf = Seq.empty
 
-  def onStmt(compMap: Map[String, Seq[String]])(stmt: Statement): Statement = {
-    stmt.map(onStmt(compMap)) match {
-      case d: IsDeclaration if compMap.contains(d.name) =>
-        DescribedStmt(DocString(StringLit.unescape(compMap(d.name).mkString("\n\n"))), d)
-      case other => other
+  def onStmt(compMap: Map[String, Seq[Description]])(stmt: Statement): Statement = {
+    val s = stmt.map(onStmt(compMap))
+    val sname = s match {
+      case d: IsDeclaration => Some(d.name)
+      case _ => None
+    }
+    val descs = sname.flatMap({ case name =>
+      compMap.get(name)
+    })
+    (descs, s) match {
+      case (Some(d), DescribedStmt(prevDescs, ss)) => DescribedStmt(prevDescs ++ d, ss)
+      case (Some(d), ss) => DescribedStmt(d, ss)
+      case (None, _) => s
     }
   }
 
-  def onModule(modMap: Map[String, Seq[String]], compMaps: Map[String, Map[String, Seq[String]]])
+  def onModule(modMap: Map[String, Seq[Description]], compMaps: Map[String, Map[String, Seq[Description]]])
     (mod: DefModule): DefModule = {
-    val (newMod, portDesc: Map[String, Description]) = compMaps.get(mod.name) match {
-      case None => (mod, Map.empty)
-      case Some(compMap) => (mod.mapStmt(onStmt(compMap)), mod.ports.collect {
-        case p @ Port(_, name, _, _) if compMap.contains(name) =>
-          name -> DocString(StringLit.unescape(compMap(name).mkString("\n\n")))
-      }.toMap)
-    }
+    val compMap = compMaps.getOrElse(mod.name, Map())
+    val newMod = mod.mapStmt(onStmt(compMap))
+    val portDesc = mod.ports.collect {
+      case p @ Port(_, name, _, _) if compMap.contains(name) =>
+        name -> compMap(name)
+    }.toMap
 
-    val modDesc = modMap.get(newMod.name).map {
-      desc => DocString(StringLit.unescape(desc.mkString("\n\n")))
-    }
+    val modDesc = modMap.get(newMod.name).getOrElse(Seq())
 
     if (portDesc.nonEmpty || modDesc.nonEmpty) {
-      DescribedMod(modDesc.getOrElse(EmptyDescription), portDesc, newMod)
+      DescribedMod(modDesc, portDesc, newMod)
     } else {
       newMod
     }
   }
 
-  def collectMaps(annos: Seq[Annotation]): (Map[String, Seq[String]], Map[String, Map[String, Seq[String]]]) = {
-    val modMap = annos.collect {
-      case DescriptionAnnotation(ModuleName(m, CircuitName(c)), desc) => (m, desc)
-    }.groupBy(_._1).mapValues(_.map(_._2))
+  /**
+    * Merges descriptions of like types.
+    *
+    * Multiple DocStrings on the same object get merged together into one big multi-line comment.
+    * Similarly, multiple attributes on the same object get merged into one attribute with attributes separated by
+    * commas.
+    * @param descs List of `Description`s that are modifying the same object
+    * @return List of `Description`s with some descriptions merged
+    */
+  def mergeDescriptions(descs: Seq[Description]): Seq[Description] = {
+    val (docs: Seq[DocString] @unchecked, nodocs) = descs.partition {
+      case _: DocString => true
+      case _ => false
+    }
+    val (attrs: Seq[Attribute] @unchecked, rest) = nodocs.partition {
+      case _: Attribute => true
+      case _ => false
+    }
 
-    val compMap = annos.collect {
-      case DescriptionAnnotation(ComponentName(comp, ModuleName(mod, CircuitName(circ))), desc) =>
-        (mod, comp, desc)
-    }.groupBy(_._1).mapValues(_.groupBy(_._2).mapValues(_.map(_._3)))
+    val doc = if (docs.nonEmpty) {
+      Seq(DocString(StringLit.unescape(docs.map(_.string.string).mkString("\n\n"))))
+    } else {
+      Seq()
+    }
+    val attr = if (attrs.nonEmpty) {
+      Seq(Attribute(StringLit.unescape(attrs.map(_.string.string).mkString(", "))))
+    } else {
+      Seq()
+    }
+
+    rest ++ doc ++ attr
+  }
+
+  def collectMaps(annos: Seq[Annotation]): (Map[String, Seq[Description]], Map[String, Map[String, Seq[Description]]]) = {
+    val modList = annos.collect {
+      case DocStringAnnotation(ModuleTarget(_, m), desc) => (m, DocString(StringLit.unescape(desc)))
+      case AttributeAnnotation(ModuleTarget(_, m), desc) => (m, Attribute(StringLit.unescape(desc)))
+    }
+
+    // map field 1 (module name) -> field 2 (a list of Descriptions)
+    val modMap = modList.groupBy(_._1).mapValues(_.map(_._2))
+      // and then merge like descriptions (e.g. multiple docstrings into one big docstring)
+      .mapValues(mergeDescriptions)
+
+    val compList = annos.collect {
+      case DocStringAnnotation(ReferenceTarget(_, m, _, c, _), desc) =>
+        (m, c, DocString(StringLit.unescape(desc)))
+      case AttributeAnnotation(ReferenceTarget(_, m, _, c, _), desc) =>
+        (m, c, Attribute(StringLit.unescape(desc)))
+    }
+
+    // map field 1 (name) -> a map that we build
+    val compMap = compList.groupBy(_._1).mapValues(
+      // map field 2 (component name) -> field 3 (a list of Descriptions)
+      _.groupBy(_._2).mapValues(_.map(_._3))
+      // and then merge like descriptions (e.g. multiple docstrings into one big docstring)
+      .mapValues(mergeDescriptions))
 
     (modMap, compMap)
   }
