@@ -8,11 +8,11 @@ import firrtl.ir._
 import firrtl._
 import firrtl.Mappers._
 import firrtl.Utils.{sub_type, module_type, field_type, max, throwInternalError}
-import firrtl.options.{Dependency, PreservesAll}
+import firrtl.options.Dependency
 
 /** Replaces FixedType with SIntType, and correctly aligns all binary points
   */
-object ConvertFixedToSInt extends Pass with PreservesAll[Transform] {
+object ConvertFixedToSInt extends Pass {
 
   override def prerequisites =
     Seq( Dependency(PullMuxes),
@@ -21,6 +21,8 @@ object ConvertFixedToSInt extends Pass with PreservesAll[Transform] {
          Dependency(RemoveAccesses),
          Dependency[ExpandWhensAndCheck],
          Dependency[RemoveIntervals] ) ++ firrtl.stage.Forms.Deduped
+
+  override def invalidates(a: Transform) = false
 
   def alignArg(e: Expression, point: BigInt): Expression = e.tpe match {
     case FixedType(IntWidth(w), IntWidth(p)) => // assert(point >= p)

@@ -6,14 +6,16 @@ import firrtl.Transform
 import firrtl.ir._
 import firrtl.{WSubAccess, WSubIndex}
 import firrtl.Mappers._
-import firrtl.options.{Dependency, PreservesAll}
+import firrtl.options.Dependency
 
 /** Replaces constant [[firrtl.WSubAccess]] with [[firrtl.WSubIndex]]
   * TODO Fold in to High Firrtl Const Prop
   */
-object ReplaceAccesses extends Pass with PreservesAll[Transform] {
+object ReplaceAccesses extends Pass {
 
   override def prerequisites = firrtl.stage.Forms.Deduped :+ Dependency(PullMuxes)
+
+  override def invalidates(a: Transform) = false
 
   def run(c: Circuit): Circuit = {
     def onStmt(s: Statement): Statement = s map onStmt map onExp

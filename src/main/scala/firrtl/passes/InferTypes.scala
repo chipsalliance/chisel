@@ -6,11 +6,12 @@ import firrtl._
 import firrtl.ir._
 import firrtl.Utils._
 import firrtl.Mappers._
-import firrtl.options.{Dependency, PreservesAll}
+import firrtl.options.Dependency
 
-object InferTypes extends Pass with PreservesAll[Transform] {
+object InferTypes extends Pass {
 
   override def prerequisites = Dependency(ResolveKinds) +: firrtl.stage.Forms.WorkingIR
+  override def invalidates(a: Transform) = false
 
   @deprecated("This should never have been public", "1.3.2")
   type TypeMap = collection.mutable.LinkedHashMap[String, Type]
@@ -91,9 +92,10 @@ object InferTypes extends Pass with PreservesAll[Transform] {
   }
 }
 
-object CInferTypes extends Pass with PreservesAll[Transform] {
+object CInferTypes extends Pass {
 
   override def prerequisites = firrtl.stage.Forms.ChirrtlForm
+  override def invalidates(a: Transform) = false
 
   @deprecated("This should never have been public", "1.3.2")
   type TypeMap = collection.mutable.LinkedHashMap[String, Type]

@@ -10,7 +10,7 @@ import firrtl.analyses.InstanceGraph
 import firrtl.Mappers._
 import firrtl.Utils.{throwInternalError, kind}
 import firrtl.MemoizedHash._
-import firrtl.options.{Dependency, PreservesAll, RegisteredTransform, ShellOption}
+import firrtl.options.{Dependency, RegisteredTransform, ShellOption}
 
 import collection.mutable
 
@@ -32,8 +32,7 @@ import collection.mutable
 class DeadCodeElimination extends Transform
     with ResolvedAnnotationPaths
     with RegisteredTransform
-    with DependencyAPIMigration
-    with PreservesAll[Transform] {
+    with DependencyAPIMigration {
 
   override def prerequisites = firrtl.stage.Forms.LowForm ++
     Seq( Dependency(firrtl.passes.RemoveValidIf),
@@ -53,6 +52,8 @@ class DeadCodeElimination extends Transform
          Dependency[firrtl.transforms.VerilogRename],
          Dependency(passes.VerilogPrep),
          Dependency[firrtl.AddDescriptionNodes] )
+
+  override def invalidates(a: Transform) = false
 
   val options = Seq(
     new ShellOption[Unit](

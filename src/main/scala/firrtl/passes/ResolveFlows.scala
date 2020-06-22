@@ -5,14 +5,16 @@ package firrtl.passes
 import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
-import firrtl.options.{Dependency, PreservesAll}
+import firrtl.options.Dependency
 
-object ResolveFlows extends Pass with PreservesAll[Transform] {
+object ResolveFlows extends Pass {
 
   override def prerequisites =
     Seq( Dependency(passes.ResolveKinds),
          Dependency(passes.InferTypes),
          Dependency(passes.Uniquify) ) ++ firrtl.stage.Forms.WorkingIR
+
+  override def invalidates(a: Transform) = false
 
   def resolve_e(g: Flow)(e: Expression): Expression = e match {
     case ex: WRef => ex copy (flow = g)

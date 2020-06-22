@@ -10,7 +10,7 @@ import firrtl._
 import firrtl.annotations._
 import firrtl.constraint.{ConstraintSolver, IsMax}
 import firrtl.ir._
-import firrtl.options.{Dependency, PreservesAll}
+import firrtl.options.Dependency
 
 object InferWidths {
   def apply(): InferWidths = new InferWidths()
@@ -62,8 +62,7 @@ case class WidthGeqConstraintAnnotation(loc: ReferenceTarget, exp: ReferenceTarg
   */
 class InferWidths extends Transform
     with ResolvedAnnotationPaths
-    with DependencyAPIMigration
-    with PreservesAll[Transform] {
+    with DependencyAPIMigration {
 
   override def prerequisites =
     Seq( Dependency(passes.ResolveKinds),
@@ -72,6 +71,7 @@ class InferWidths extends Transform
          Dependency(passes.ResolveFlows),
          Dependency[passes.InferBinaryPoints],
          Dependency[passes.TrimIntervals] ) ++ firrtl.stage.Forms.WorkingIR
+  override def invalidates(a: Transform) = false
 
   private val constraintSolver = new ConstraintSolver()
 

@@ -5,7 +5,7 @@ package memlib
 
 import firrtl._
 import firrtl.annotations._
-import firrtl.options.{HasShellOptions, PreservesAll, ShellOption}
+import firrtl.options.{HasShellOptions, ShellOption}
 import Utils.error
 import java.io.{File, CharArrayWriter, PrintWriter}
 import wiring._
@@ -103,11 +103,12 @@ class SimpleTransform(p: Pass, form: CircuitForm) extends Transform {
 class SimpleMidTransform(p: Pass) extends SimpleTransform(p, MidForm)
 
 // SimpleRun instead of PassBased because of the arguments to passSeq
-class ReplSeqMem extends Transform with HasShellOptions with DependencyAPIMigration with PreservesAll[Transform] {
+class ReplSeqMem extends Transform with HasShellOptions with DependencyAPIMigration {
 
   override def prerequisites = Forms.MidForm
   override def optionalPrerequisites = Seq.empty
   override def optionalPrerequisiteOf = Forms.MidEmitters
+  override def invalidates(a: Transform) = false
 
   val options = Seq(
     new ShellOption[String](

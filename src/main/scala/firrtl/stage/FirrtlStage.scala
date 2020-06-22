@@ -3,13 +3,15 @@
 package firrtl.stage
 
 import firrtl.AnnotationSeq
-import firrtl.options.{Dependency, Phase, PhaseManager, PreservesAll, Shell, Stage, StageMain}
+import firrtl.options.{Dependency, Phase, PhaseManager, Shell, Stage, StageMain}
 import firrtl.options.phases.DeletedWrapper
 import firrtl.stage.phases.CatchExceptions
 
 class FirrtlPhase
-    extends PhaseManager(targets=Seq(Dependency[firrtl.stage.phases.Compiler], Dependency[firrtl.stage.phases.WriteEmitted]))
-    with PreservesAll[Phase] {
+    extends PhaseManager(targets=Seq(Dependency[firrtl.stage.phases.Compiler],
+                                     Dependency[firrtl.stage.phases.WriteEmitted])) {
+
+  override def invalidates(a: Phase) = false
 
   override val wrappers = Seq(CatchExceptions(_: Phase), DeletedWrapper(_: Phase))
 

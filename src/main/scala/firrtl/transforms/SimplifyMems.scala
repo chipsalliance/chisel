@@ -9,7 +9,6 @@ import firrtl.annotations._
 import firrtl.passes._
 import firrtl.passes.memlib._
 import firrtl.stage.Forms
-import firrtl.options.PreservesAll
 import scala.collection.mutable
 
 import AnalysisUtils._
@@ -19,11 +18,12 @@ import ResolveMaskGranularity._
 /**
   * Lowers memories without splitting them, but without the complexity of ReplaceMemMacros
   */
-class SimplifyMems extends Transform with DependencyAPIMigration with PreservesAll[Transform] {
+class SimplifyMems extends Transform with DependencyAPIMigration {
 
   override def prerequisites = Forms.MidForm
   override def optionalPrerequisites = Seq.empty
   override def optionalPrerequisiteOf = Forms.MidEmitters
+  override def invalidates(a: Transform) = false
 
   def onModule(c: Circuit, renames: RenameMap)(m: DefModule): DefModule = {
     val moduleNS = Namespace(m)

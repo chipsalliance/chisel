@@ -11,7 +11,7 @@ import firrtl.passes.{InferTypes, MemPortUtils}
 import firrtl.Utils.throwInternalError
 import firrtl.annotations.transforms.DupedResult
 import firrtl.annotations.TargetToken.{OfModule, Instance}
-import firrtl.options.{HasShellOptions, PreservesAll, ShellOption}
+import firrtl.options.{HasShellOptions, ShellOption}
 import logger.LazyLogging
 
 // Datastructures
@@ -73,11 +73,13 @@ case class DedupedResult(original: ModuleTarget, duplicate: Option[IsModule], in
   * This transform will also emit [[DedupedResult]] for deduped modules that
   * only have one instance.
   */
-class DedupModules extends Transform with DependencyAPIMigration with PreservesAll[Transform] {
+class DedupModules extends Transform with DependencyAPIMigration {
 
   override def prerequisites = firrtl.stage.Forms.Resolved
 
   override def optionalPrerequisiteOf = Seq.empty
+
+  override def invalidates(a: Transform) = false
 
   /** Deduplicate a Circuit
     * @param state Input Firrtl AST

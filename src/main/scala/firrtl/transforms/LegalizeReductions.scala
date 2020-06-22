@@ -3,7 +3,7 @@ package transforms
 
 import firrtl.ir._
 import firrtl.Mappers._
-import firrtl.options.{Dependency, PreservesAll}
+import firrtl.options.Dependency
 import firrtl.Utils.BoolType
 
 
@@ -31,7 +31,7 @@ object LegalizeAndReductionsTransform {
   * Workaround a bug in Verilator v4.026 - v4.032 (inclusive).
   * For context, see https://github.com/verilator/verilator/issues/2300
   */
-class LegalizeAndReductionsTransform extends Transform with DependencyAPIMigration with PreservesAll[Transform] {
+class LegalizeAndReductionsTransform extends Transform with DependencyAPIMigration {
 
   override def prerequisites =
     firrtl.stage.Forms.WorkingIR ++
@@ -41,6 +41,8 @@ class LegalizeAndReductionsTransform extends Transform with DependencyAPIMigrati
   override def optionalPrerequisites = Nil
 
   override def optionalPrerequisiteOf = Nil
+
+  override def invalidates(a: Transform) = false
 
   def execute(state: CircuitState): CircuitState = {
     val modulesx = state.circuit.modules.map(LegalizeAndReductionsTransform.onMod(_))

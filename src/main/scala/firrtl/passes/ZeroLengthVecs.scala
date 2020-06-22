@@ -6,7 +6,7 @@ import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.PrimOps._
-import firrtl.options.{Dependency, PreservesAll}
+import firrtl.options.Dependency
 
 /** Handles dynamic accesses to zero-length vectors.
   *
@@ -15,12 +15,14 @@ import firrtl.options.{Dependency, PreservesAll}
   * @note Removes attaches that become degenerate after zero-length-accessor removal
   * @note Replaces "source" references to elements of zero-length vectors with always-invalid validif
   */
-object ZeroLengthVecs extends Pass with PreservesAll[Transform] {
+object ZeroLengthVecs extends Pass {
   override def prerequisites =
     Seq( Dependency(PullMuxes),
          Dependency(ResolveKinds),
          Dependency(InferTypes),
          Dependency(ExpandConnects) )
+
+  override def invalidates(a: Transform) = false
 
   // Pass in an expression, not just a type, since it's not possible to generate an expression of
   // interval type with the type alone unless you declare a component

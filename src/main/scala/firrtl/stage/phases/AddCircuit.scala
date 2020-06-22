@@ -5,7 +5,7 @@ package firrtl.stage.phases
 import firrtl.stage._
 
 import firrtl.{AnnotationSeq, Parser}
-import firrtl.options.{Dependency, Phase, PhasePrerequisiteException, PreservesAll}
+import firrtl.options.{Dependency, Phase, PhasePrerequisiteException}
 
 /** [[firrtl.options.Phase Phase]] that expands [[FirrtlFileAnnotation]]/[[FirrtlSourceAnnotation]] into
   * [[FirrtlCircuitAnnotation]]s and deletes the originals. This is part of the preprocessing done on an input
@@ -25,11 +25,13 @@ import firrtl.options.{Dependency, Phase, PhasePrerequisiteException, PreservesA
   * an [[InfoModeAnnotation]].'''.
   * @define infoModeException firrtl.options.PhasePrerequisiteException if no [[InfoModeAnnotation]] is present
   */
-class AddCircuit extends Phase with PreservesAll[Phase] {
+class AddCircuit extends Phase {
 
   override val prerequisites = Seq(Dependency[AddDefaults], Dependency[Checks])
 
   override val optionalPrerequisiteOf = Seq.empty
+
+  override def invalidates(a: Phase) = false
 
   /** Extract the info mode from an [[AnnotationSeq]] or use the default info mode if no annotation exists
     * @param annotations some annotations

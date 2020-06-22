@@ -7,7 +7,6 @@ import firrtl.Mappers._
 import firrtl.PrimOps._
 import firrtl.WrappedExpression._
 import firrtl.annotations.NoTargetAnnotation
-import firrtl.options.PreservesAll
 import firrtl.options.Dependency
 
 import scala.collection.mutable
@@ -53,7 +52,7 @@ object CombineCats {
   * Use [[MaxCatLenAnnotation]] to limit the number of elements that can be concatenated.
   * The default maximum number of elements is 10.
   */
-class CombineCats extends Transform with DependencyAPIMigration with PreservesAll[Transform] {
+class CombineCats extends Transform with DependencyAPIMigration {
 
   override def prerequisites = firrtl.stage.Forms.LowForm ++
     Seq( Dependency(passes.RemoveValidIf),
@@ -66,6 +65,8 @@ class CombineCats extends Transform with DependencyAPIMigration with PreservesAl
   override def optionalPrerequisiteOf = Seq(
     Dependency[SystemVerilogEmitter],
     Dependency[VerilogEmitter] )
+
+  override def invalidates(a: Transform) = false
 
   val defaultMaxCatLen = 10
 

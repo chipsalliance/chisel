@@ -6,7 +6,7 @@ package transforms
 import firrtl.PrimOps._
 import firrtl.annotations._
 import firrtl.ir.{AsyncResetType, _}
-import firrtl.options.{Dependency, PreservesAll}
+import firrtl.options.Dependency
 
 import scala.collection.mutable
 
@@ -36,7 +36,7 @@ object PropagatePresetAnnotations {
   *
   * @note This pass must run before InlineCastsTransform
   */
-class PropagatePresetAnnotations extends Transform with DependencyAPIMigration with PreservesAll[Transform] {
+class PropagatePresetAnnotations extends Transform with DependencyAPIMigration {
 
   override def prerequisites = firrtl.stage.Forms.LowFormMinimumOptimized ++
     Seq( Dependency[BlackBoxSourceHelper],
@@ -47,6 +47,7 @@ class PropagatePresetAnnotations extends Transform with DependencyAPIMigration w
 
   override def optionalPrerequisiteOf = Seq.empty
 
+  override def invalidates(a: Transform) = false
 
   import PropagatePresetAnnotations._
 

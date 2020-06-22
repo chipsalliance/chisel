@@ -4,7 +4,7 @@ package firrtlTests.options
 
 
 import firrtl.AnnotationSeq
-import firrtl.options.{DependencyManagerException, Phase, PhaseManager, PreservesAll, Dependency}
+import firrtl.options.{DependencyManagerException, Phase, PhaseManager, Dependency}
 
 import java.io.{File, PrintWriter}
 
@@ -14,6 +14,10 @@ import org.scalatest.matchers.should.Matchers
 
 trait IdentityPhase extends Phase {
   def transform(annotations: AnnotationSeq): AnnotationSeq = annotations
+}
+
+trait PreservesAll { this: Phase =>
+  override def invalidates(phase: Phase) = false
 }
 
 /** Default [[Phase]] that has no prerequisites and invalidates nothing */
@@ -68,11 +72,11 @@ class G extends IdentityPhase {
   }
 }
 
-class CyclicA extends IdentityPhase with PreservesAll[Phase] {
+class CyclicA extends IdentityPhase with PreservesAll {
   override def prerequisites = Seq(Dependency[CyclicB])
 }
 
-class CyclicB extends IdentityPhase with PreservesAll[Phase] {
+class CyclicB extends IdentityPhase with PreservesAll {
   override def prerequisites = Seq(Dependency[CyclicA])
 }
 
@@ -236,22 +240,22 @@ object UnrelatedFixture {
   }
 
   class B0 extends IdentityPhase with InvalidatesB8Dep
-  class B1 extends IdentityPhase with PreservesAll[Phase]
-  class B2 extends IdentityPhase with PreservesAll[Phase]
-  class B3 extends IdentityPhase with PreservesAll[Phase]
-  class B4 extends IdentityPhase with PreservesAll[Phase]
-  class B5 extends IdentityPhase with PreservesAll[Phase]
-  class B6 extends IdentityPhase with PreservesAll[Phase]
-  class B7 extends IdentityPhase with PreservesAll[Phase]
+  class B1 extends IdentityPhase with PreservesAll
+  class B2 extends IdentityPhase with PreservesAll
+  class B3 extends IdentityPhase with PreservesAll
+  class B4 extends IdentityPhase with PreservesAll
+  class B5 extends IdentityPhase with PreservesAll
+  class B6 extends IdentityPhase with PreservesAll
+  class B7 extends IdentityPhase with PreservesAll
 
-  class B8 extends IdentityPhase with PreservesAll[Phase]
-  class B9 extends IdentityPhase with PreservesAll[Phase]
-  class B10 extends IdentityPhase with PreservesAll[Phase]
-  class B11 extends IdentityPhase with PreservesAll[Phase]
-  class B12 extends IdentityPhase with PreservesAll[Phase]
-  class B13 extends IdentityPhase with PreservesAll[Phase]
-  class B14 extends IdentityPhase with PreservesAll[Phase]
-  class B15 extends IdentityPhase with PreservesAll[Phase]
+  class B8 extends IdentityPhase with PreservesAll
+  class B9 extends IdentityPhase with PreservesAll
+  class B10 extends IdentityPhase with PreservesAll
+  class B11 extends IdentityPhase with PreservesAll
+  class B12 extends IdentityPhase with PreservesAll
+  class B13 extends IdentityPhase with PreservesAll
+  class B14 extends IdentityPhase with PreservesAll
+  class B15 extends IdentityPhase with PreservesAll
 
   class B6Sub extends B6 {
     override def prerequisites = Seq(Dependency[B6])
@@ -300,29 +304,29 @@ object UnrelatedFixture {
 
 object CustomAfterOptimizationFixture {
 
-  class Root extends IdentityPhase with PreservesAll[Phase]
+  class Root extends IdentityPhase with PreservesAll
 
-  class OptMinimum extends IdentityPhase with PreservesAll[Phase] {
+  class OptMinimum extends IdentityPhase with PreservesAll {
     override def prerequisites = Seq(Dependency[Root])
     override def optionalPrerequisiteOf = Seq(Dependency[AfterOpt])
   }
 
-  class OptFull extends IdentityPhase with PreservesAll[Phase] {
+  class OptFull extends IdentityPhase with PreservesAll {
     override def prerequisites = Seq(Dependency[Root], Dependency[OptMinimum])
     override def optionalPrerequisiteOf = Seq(Dependency[AfterOpt])
   }
 
-  class AfterOpt extends IdentityPhase with PreservesAll[Phase]
+  class AfterOpt extends IdentityPhase with PreservesAll
 
-  class DoneMinimum extends IdentityPhase with PreservesAll[Phase] {
+  class DoneMinimum extends IdentityPhase with PreservesAll {
     override def prerequisites = Seq(Dependency[OptMinimum])
   }
 
-  class DoneFull extends IdentityPhase with PreservesAll[Phase] {
+  class DoneFull extends IdentityPhase with PreservesAll {
     override def prerequisites = Seq(Dependency[OptFull])
   }
 
-  class Custom extends IdentityPhase with PreservesAll[Phase] {
+  class Custom extends IdentityPhase with PreservesAll {
     override def prerequisites = Seq(Dependency[Root], Dependency[AfterOpt])
     override def optionalPrerequisiteOf = Seq(Dependency[DoneMinimum], Dependency[DoneFull])
   }
@@ -333,23 +337,23 @@ object OptionalPrerequisitesFixture {
 
   class Root extends IdentityPhase
 
-  class OptMinimum extends IdentityPhase with PreservesAll[Phase] {
+  class OptMinimum extends IdentityPhase with PreservesAll {
     override def prerequisites = Seq(Dependency[Root])
   }
 
-  class OptFull extends IdentityPhase with PreservesAll[Phase] {
+  class OptFull extends IdentityPhase with PreservesAll {
     override def prerequisites = Seq(Dependency[Root], Dependency[OptMinimum])
   }
 
-  class DoneMinimum extends IdentityPhase with PreservesAll[Phase] {
+  class DoneMinimum extends IdentityPhase with PreservesAll {
     override def prerequisites = Seq(Dependency[OptMinimum])
   }
 
-  class DoneFull extends IdentityPhase with PreservesAll[Phase] {
+  class DoneFull extends IdentityPhase with PreservesAll {
     override def prerequisites = Seq(Dependency[OptFull])
   }
 
-  class Custom extends IdentityPhase with PreservesAll[Phase] {
+  class Custom extends IdentityPhase with PreservesAll {
     override def prerequisites = Seq(Dependency[Root])
     override def optionalPrerequisites = Seq(Dependency[OptMinimum], Dependency[OptFull])
     override def optionalPrerequisiteOf = Seq(Dependency[DoneMinimum], Dependency[DoneFull])
@@ -359,7 +363,7 @@ object OptionalPrerequisitesFixture {
 
 object OrderingFixture {
 
-  class A extends IdentityPhase with PreservesAll[Phase]
+  class A extends IdentityPhase with PreservesAll
 
   class B extends IdentityPhase {
     override def invalidates(phase: Phase): Boolean = phase match {

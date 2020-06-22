@@ -6,7 +6,7 @@ import firrtl.PrimOps._
 import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.constraint.{IsFloor, IsKnown, IsMul}
-import firrtl.options.{Dependency, PreservesAll}
+import firrtl.options.Dependency
 import firrtl.Transform
 
 /** Replaces IntervalType with SIntType, three AST walks:
@@ -20,7 +20,7 @@ import firrtl.Transform
   *      c. replace with SIntType
   * 3) Run InferTypes
   */
-class TrimIntervals extends Pass with PreservesAll[Transform] {
+class TrimIntervals extends Pass {
 
   override def prerequisites =
     Seq( Dependency(ResolveKinds),
@@ -30,6 +30,8 @@ class TrimIntervals extends Pass with PreservesAll[Transform] {
          Dependency[InferBinaryPoints] )
 
   override def optionalPrerequisiteOf = Seq.empty
+
+  override def invalidates(a: Transform) = false
 
   def run(c: Circuit): Circuit = {
     // Open -> closed

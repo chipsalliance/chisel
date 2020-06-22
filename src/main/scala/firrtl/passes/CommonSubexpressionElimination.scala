@@ -5,9 +5,9 @@ package firrtl.passes
 import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
-import firrtl.options.{Dependency, PreservesAll}
+import firrtl.options.Dependency
 
-object CommonSubexpressionElimination extends Pass with PreservesAll[Transform] {
+object CommonSubexpressionElimination extends Pass {
 
   override def prerequisites = firrtl.stage.Forms.LowForm ++
     Seq( Dependency(firrtl.passes.RemoveValidIf),
@@ -19,6 +19,8 @@ object CommonSubexpressionElimination extends Pass with PreservesAll[Transform] 
   override def optionalPrerequisiteOf =
     Seq( Dependency[SystemVerilogEmitter],
          Dependency[VerilogEmitter] )
+
+  override def invalidates(a: Transform) = false
 
   private def cse(s: Statement): Statement = {
     val expressions = collection.mutable.HashMap[MemoizedHash[Expression], String]()

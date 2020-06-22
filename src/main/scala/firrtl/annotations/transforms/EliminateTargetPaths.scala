@@ -10,7 +10,6 @@ import firrtl.annotations.analysis.DuplicationHelper
 import firrtl.annotations._
 import firrtl.ir._
 import firrtl.{AnnotationSeq, CircuitState, DependencyAPIMigration, FirrtlInternalException, RenameMap, Transform}
-import firrtl.options.PreservesAll
 import firrtl.stage.Forms
 import firrtl.transforms.DedupedResult
 
@@ -102,12 +101,13 @@ object EliminateTargetPaths {
   * B/x -> (B/x, B_/x) // where x is any reference in B
   * C/x -> (C/x, C_/x) // where x is any reference in C
   */
-class EliminateTargetPaths extends Transform with DependencyAPIMigration with PreservesAll[Transform] {
+class EliminateTargetPaths extends Transform with DependencyAPIMigration {
   import EliminateTargetPaths._
 
   override def prerequisites = Forms.MinimalHighForm
   override def optionalPrerequisites = Seq.empty
   override def optionalPrerequisiteOf = Seq.empty
+  override def invalidates(a: Transform) = false
 
   /** Replaces old ofModules with new ofModules by calling dupMap methods
     * Updates oldUsedOfModules, newUsedOfModules

@@ -6,9 +6,9 @@ import firrtl._
 import firrtl.ir._
 import firrtl.Utils._
 import firrtl.traversals.Foreachers._
-import firrtl.options.{Dependency, PreservesAll}
+import firrtl.options.Dependency
 
-object CheckFlows extends Pass with PreservesAll[Transform] {
+object CheckFlows extends Pass {
 
   override def prerequisites = Dependency(passes.ResolveFlows) +: firrtl.stage.Forms.WorkingIR
 
@@ -17,6 +17,8 @@ object CheckFlows extends Pass with PreservesAll[Transform] {
          Dependency[passes.TrimIntervals],
          Dependency[passes.InferWidths],
          Dependency[transforms.InferResets] )
+
+  override def invalidates(a: Transform) = false
 
   type FlowMap = collection.mutable.HashMap[String, Flow]
 

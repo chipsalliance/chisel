@@ -2,12 +2,13 @@ package firrtl.passes
 
 import firrtl.ir._
 import firrtl.Mappers._
-import firrtl.options.PreservesAll
 import firrtl.{Transform, WSubAccess, WSubField, WSubIndex}
 
-object PullMuxes extends Pass with PreservesAll[Transform] {
+object PullMuxes extends Pass {
 
   override def prerequisites = firrtl.stage.Forms.Deduped
+
+  override def invalidates(a: Transform) = false
 
   def run(c: Circuit): Circuit = {
      def pull_muxes_e(e: Expression): Expression = e map pull_muxes_e match {

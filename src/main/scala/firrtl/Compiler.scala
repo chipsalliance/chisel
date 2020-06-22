@@ -13,7 +13,7 @@ import firrtl.annotations._
 import firrtl.ir.Circuit
 import firrtl.Utils.throwInternalError
 import firrtl.annotations.transforms.{EliminateTargetPaths, ResolvePaths}
-import firrtl.options.{DependencyAPI, Dependency, PreservesAll, StageUtils, TransformLike}
+import firrtl.options.{DependencyAPI, Dependency, StageUtils, TransformLike}
 import firrtl.stage.Forms
 
 /** Container of all annotations for a Firrtl compiler */
@@ -420,7 +420,10 @@ trait ResolvedAnnotationPaths {
 }
 
 /** Defines old API for Emission. Deprecated */
-trait Emitter extends Transform with PreservesAll[Transform] {
+trait Emitter extends Transform {
+
+  override def invalidates(a: Transform) = false
+
   @deprecated("Use emission annotations instead", "firrtl 1.0")
   def emit(state: CircuitState, writer: Writer): Unit
 
