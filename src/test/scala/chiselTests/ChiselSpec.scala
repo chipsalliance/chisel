@@ -270,11 +270,19 @@ trait Utils {
     }
   }
 
-  /** Run some code extracting an exception cause that matches a type parameter
+  /** Run some code and rethrow an exception with a specific type if an exception of that type occurs anywhere in the
+    * stack trace.
+    *
+    * This is useful for "extracting" one exception that may be wrapped by other exceptions.
+    *
+    * Example usage:
+    * {{{
+    * a [ChiselException] should be thrownBy extractCause[ChiselException] { /* ... */ }
+    * }}}
+    *
     * @param thunk some code to run
-    * @tparam A the type of the exception to expect
+    * @tparam A the type of the exception to extract
     * @return nothing
-    * @throws the exception of type parameter A if it was found
     */
   def extractCause[A <: Throwable : ClassTag](thunk: => Any): Unit = {
     def unrollCauses(a: Throwable): Seq[Throwable] = a match {
