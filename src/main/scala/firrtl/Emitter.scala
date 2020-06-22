@@ -475,11 +475,15 @@ class VerilogEmitter extends SeqTransform with Emitter {
     */
   private[firrtl] class EmissionOptions(annotations: AnnotationSeq) {
     // Private so that we can present an immutable API
+    private val memoryEmissionOption = new EmissionOptionMap[MemoryEmissionOption](MemoryEmissionOptionDefault)
     private val registerEmissionOption = new EmissionOptionMap[RegisterEmissionOption](RegisterEmissionOptionDefault)
     private val wireEmissionOption = new EmissionOptionMap[WireEmissionOption](WireEmissionOptionDefault)
     private val portEmissionOption = new EmissionOptionMap[PortEmissionOption](PortEmissionOptionDefault)
     private val nodeEmissionOption = new EmissionOptionMap[NodeEmissionOption](NodeEmissionOptionDefault)
     private val connectEmissionOption = new EmissionOptionMap[ConnectEmissionOption](ConnectEmissionOptionDefault)
+
+    def getMemoryEmissionOption(target: ReferenceTarget): MemoryEmissionOption =
+      memoryEmissionOption(target)
 
     def getRegisterEmissionOption(target: ReferenceTarget): RegisterEmissionOption =
       registerEmissionOption(target)
@@ -500,6 +504,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
       case m : SingleTargetAnnotation[ReferenceTarget] @unchecked with EmissionOption => m
     }
     // using multiple foreach instead of a single partial function as an Annotation can gather multiple EmissionOptions for simplicity
+    emissionAnnos.foreach { case a :MemoryEmissionOption   => memoryEmissionOption += ((a.target,a))   case _ => }
     emissionAnnos.foreach { case a :RegisterEmissionOption => registerEmissionOption += ((a.target,a)) case _ => }
     emissionAnnos.foreach { case a :WireEmissionOption     => wireEmissionOption += ((a.target,a))     case _ => }
     emissionAnnos.foreach { case a :PortEmissionOption     => portEmissionOption += ((a.target,a))     case _ => }
@@ -586,6 +591,8 @@ class VerilogEmitter extends SeqTransform with Emitter {
     // reset. To fix this, we need extra initial block logic to reset async reset registers again
     // post-randomize.
     val asyncInitials = ArrayBuffer[Seq[Any]]()
+    // memories need to be initialized even when randomization is disabled
+    val memoryInitials = ArrayBuffer[Seq[Any]]()
     val simulates = ArrayBuffer[Seq[Any]]()
 
     def bigIntToVLit(bi: BigInt): String =
@@ -751,15 +758,45 @@ class VerilogEmitter extends SeqTransform with Emitter {
       }
     }
 
-    def initialize_mem(s: DefMemory): Unit = {
+    def initialize_mem(s: DefMemory, opt: MemoryEmissionOption): Unit = {
       if (s.depth > maxMemSize) {
         maxMemSize = s.depth
       }
-      val index = wref("initvar", s.dataType)
-      val rstring = rand_string(s.dataType, "RANDOMIZE_MEM_INIT")
-      ifdefInitials("RANDOMIZE_MEM_INIT") += Seq("for (initvar = 0; initvar < ", bigIntToVLit(s.depth), "; initvar = initvar+1)")
-      ifdefInitials("RANDOMIZE_MEM_INIT") += Seq(tab, WSubAccess(wref(s.name, s.dataType), index, s.dataType, SinkFlow),
-                      " = ", rstring, ";")
+
+      val dataWidth = bitWidth(s.dataType)
+      val maxDataValue = (BigInt(1) << dataWidth.toInt) - 1
+
+      def checkValueRange(value: BigInt, at: String): Unit = {
+        if(value < 0) throw EmitterException(s"Memory ${at} cannot be initialized with negative value: $value")
+        if(value > maxDataValue) throw EmitterException(s"Memory ${at} cannot be initialized with value: $value. Too large (> $maxDataValue)!")
+      }
+
+      opt.initValue match {
+        case MemoryArrayInit(values) =>
+          if(values.length != s.depth) throw EmitterException(
+            s"Memory ${s.name} of depth ${s.depth} cannot be initialized with an array of length ${values.length}!"
+          )
+          val memName = LowerTypes.loweredName(wref(s.name, s.dataType))
+          values.zipWithIndex.foreach { case (value, addr) =>
+            checkValueRange(value, s"${s.name}[$addr]")
+            val access = s"$memName[${bigIntToVLit(addr)}]"
+            memoryInitials += Seq(access, " = ", bigIntToVLit(value), ";")
+          }
+        case MemoryScalarInit(value) =>
+          checkValueRange(value, s.name)
+          // note: s.dataType is the incorrect type for initvar, but it is ignored in the serialization
+          val index = wref("initvar", s.dataType)
+          memoryInitials += Seq("for (initvar = 0; initvar < ", bigIntToVLit(s.depth), "; initvar = initvar+1)")
+          memoryInitials += Seq(tab, WSubAccess(wref(s.name, s.dataType), index, s.dataType, SinkFlow),
+            " = ", bigIntToVLit(value), ";")
+        case MemoryRandomInit =>
+          // note: s.dataType is the incorrect type for initvar, but it is ignored in the serialization
+          val index = wref("initvar", s.dataType)
+          val rstring = rand_string(s.dataType, "RANDOMIZE_MEM_INIT")
+          ifdefInitials("RANDOMIZE_MEM_INIT") += Seq("for (initvar = 0; initvar < ", bigIntToVLit(s.depth), "; initvar = initvar+1)")
+          ifdefInitials("RANDOMIZE_MEM_INIT") += Seq(tab, WSubAccess(wref(s.name, s.dataType), index, s.dataType, SinkFlow),
+            " = ", rstring, ";")
+      }
     }
 
     def simulate(clk: Expression, en: Expression, s: Seq[Any], cond: Option[String], info: Info) = {
@@ -914,12 +951,13 @@ class VerilogEmitter extends SeqTransform with Emitter {
           }
           instdeclares += Seq(");")
         case sx: DefMemory =>
+          val options = emissionOptions.getMemoryEmissionOption(moduleTarget.ref(sx.name))
           val fullSize = sx.depth * (sx.dataType match {
                                        case GroundType(IntWidth(width)) => width
                                      })
           val decl = if (fullSize > (1 << 29)) "reg /* sparse */" else "reg"
           declareVectorType(decl, sx.name, sx.dataType, sx.depth, sx.info)
-          initialize_mem(sx)
+          initialize_mem(sx, options)
           if (sx.readLatency != 0 || sx.writeLatency != 1)
             throw EmitterException("All memories should be transformed into " +
                                      "blackboxes or combinational by previous passses")
@@ -1014,7 +1052,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
         emit(Seq(tab, "end"))
       }
 
-      if (initials.nonEmpty || ifdefInitials.nonEmpty) {
+      if (initials.nonEmpty || ifdefInitials.nonEmpty || memoryInitials.nonEmpty) {
         emit(Seq("// Register and memory initialization"))
         emit(Seq("`ifdef RANDOMIZE_GARBAGE_ASSIGN"))
         emit(Seq("`define RANDOMIZE"))
@@ -1031,7 +1069,8 @@ class VerilogEmitter extends SeqTransform with Emitter {
         emit(Seq("`ifndef RANDOM"))
         emit(Seq("`define RANDOM $random"))
         emit(Seq("`endif"))
-        emit(Seq("`ifdef RANDOMIZE_MEM_INIT"))
+        // the initvar is also used to initialize memories to constants
+        if(memoryInitials.isEmpty) emit(Seq("`ifdef RANDOMIZE_MEM_INIT"))
         // Since simulators don't actually support memories larger than 2^31 - 1, there is no reason
         // to change Verilog emission in the common case. Instead, we only emit a larger initvar
         // where necessary
@@ -1042,7 +1081,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
           val width = maxMemSize.bitLength - 1 // minus one because [width-1:0] has a width of "width"
           emit(Seq(s"  reg [$width:0] initvar;"))
         }
-        emit(Seq("`endif"))
+        if(memoryInitials.isEmpty) emit(Seq("`endif"))
         emit(Seq("`ifndef SYNTHESIS"))
         // User-defined macro of code to run before an initial block
         emit(Seq("`ifdef FIRRTL_BEFORE_INITIAL"))
@@ -1072,6 +1111,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
         for (x <- initials) emit(Seq(tab, x))
         for (x <- asyncInitials) emit(Seq(tab, x))
         emit(Seq("  `endif // RANDOMIZE"))
+        for(x <- memoryInitials) emit(Seq(tab, x))
         emit(Seq("end // initial"))
         // User-defined macro of code to run after an initial block
         emit(Seq("`ifdef FIRRTL_AFTER_INITIAL"))

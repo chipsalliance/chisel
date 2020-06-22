@@ -8,6 +8,7 @@ import firrtl.ir._
 import firrtl.Utils._
 import MemPortUtils.memType
 import firrtl.Mappers._
+import firrtl.annotations.MemoryInitAnnotation
 
 /** Removes all aggregate types from a [[firrtl.ir.Circuit]]
   *
@@ -166,9 +167,9 @@ object LowerTypes extends Transform with DependencyAPIMigration {
     case e @ (_: UIntLiteral | _: SIntLiteral) => e
   }
   def lowerTypesStmt(memDataTypeMap: MemDataTypeMap,
-      minfo: Info, mname: String, renames: RenameMap)(s: Statement): Statement = {
+      minfo: Info, mname: String, renames: RenameMap, initializedMems: Set[(String, String)])(s: Statement): Statement = {
     val info = get_info(s) match {case NoInfo => minfo case x => x}
-    s map lowerTypesStmt(memDataTypeMap, info, mname, renames) match {
+    s map lowerTypesStmt(memDataTypeMap, info, mname, renames, initializedMems) match {
       case s: DefWire => s.tpe match {
         case _: GroundType => s
         case _ =>
@@ -210,6 +211,10 @@ object LowerTypes extends Transform with DependencyAPIMigration {
         sx.dataType match {
           case _: GroundType => sx
           case _ =>
+            // right now only ground type memories can be initialized
+            if(initializedMems.contains((mname, sx.name))) {
+              error(s"Cannot initialize memory of non ground type ${sx.dataType.serialize}")(info, mname)
+            }
             // Rename ports
             val seen: mutable.Set[String] = mutable.Set[String]()
             create_exps(sx.name, memType(sx)) foreach { e =>
@@ -264,7 +269,7 @@ object LowerTypes extends Transform with DependencyAPIMigration {
     }
   }
 
-  def lowerTypes(renames: RenameMap)(m: DefModule): DefModule = {
+  def lowerTypes(renames: RenameMap, initializedMems: Set[(String, String)])(m: DefModule): DefModule = {
     val memDataTypeMap = new MemDataTypeMap
     renames.setModule(m.name)
     // Lower Ports
@@ -280,15 +285,19 @@ object LowerTypes extends Transform with DependencyAPIMigration {
       case m: ExtModule =>
         m copy (ports = portsx)
       case m: Module =>
-        m copy (ports = portsx) map lowerTypesStmt(memDataTypeMap, m.info, m.name, renames)
+        m copy (ports = portsx) map lowerTypesStmt(memDataTypeMap, m.info, m.name, renames, initializedMems)
     }
   }
 
   def execute(state: CircuitState): CircuitState = {
+    // remember which memories need to be initialized, for these memories, lowering non-ground types is not supported
+    val initializedMems = state.annotations.collect{
+      case m : MemoryInitAnnotation if !m.isRandomInit =>
+      (m.target.encapsulatingModule, m.target.ref) }.toSet
     val c = state.circuit
     val renames = RenameMap()
     renames.setCircuit(c.main)
-    val result = c copy (modules = c.modules map lowerTypes(renames))
+    val result = c copy (modules = c.modules map lowerTypes(renames, initializedMems))
     CircuitState(result, outputForm, state.annotations, Some(renames))
   }
 }

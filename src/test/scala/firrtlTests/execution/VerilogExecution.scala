@@ -13,11 +13,15 @@ import firrtl.options.TargetDirAnnotation
   */
 trait VerilogExecution extends TestExecution {
   this: SimpleExecutionTest =>
+
+  /** can be overwritten to mix-in custom annotations */
+  val customAnnotations: AnnotationSeq = Seq()
+
   def runEmittedDUT(c: Circuit, testDir: File): Unit = {
     // Run FIRRTL, emit Verilog file
     val cAnno = FirrtlCircuitAnnotation(c)
     val tdAnno = TargetDirAnnotation(testDir.getAbsolutePath)
-    (new FirrtlStage).run(AnnotationSeq(Seq(cAnno, tdAnno)))
+    (new FirrtlStage).run(AnnotationSeq(Seq(cAnno, tdAnno) ++ customAnnotations))
 
     // Copy harness resource to test directory
     val harness = new File(testDir, s"top.cpp")
