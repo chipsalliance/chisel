@@ -405,7 +405,7 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
     private var target_dir: Option[String] = None
 
     private def parseArgs(args: Array[String]): Unit = {
-      for (i <- 0 until args.size) {
+      for (i <- args.indices) {
         if (args(i) == "--targetDir") {
           target_dir = Some(args(i + 1))
         }
