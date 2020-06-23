@@ -29,7 +29,7 @@ def javacOptionsVersion(scalaVersion: String): Seq[String] = {
 }
 
 val defaultVersions = Seq(
-  "edu.berkeley.cs" %% "firrtl" % "1.4-SNAPSHOT"
+  "edu.berkeley.cs" %% "firrtl" % "1.4-20200603-SNAPSHOT"
 )
 
 lazy val commonSettings = Seq (
