@@ -3,6 +3,7 @@ package chiselTests
 
 
 import chisel3._
+import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import chisel3.util.TransitName
 
 import firrtl.FirrtlExecutionSuccess
@@ -38,18 +39,17 @@ class TransitNameSpec extends AnyFlatSpec with Matchers {
 
   it should "transit a name" in {
 
-    Driver.execute(Array("-X", "high", "--target-dir", "test_run_dir/TransitNameSpec"), () => new Top) match {
-      case ChiselExecutionSuccess(_,_,Some(FirrtlExecutionSuccess(_,a))) =>
-        info("""output FIRRTL includes "inst MyModule"""")
-        a should include ("inst MyModule of MyModule")
+    val firrtl = (new ChiselStage)
+      .emitFirrtl(new Top, Array("--target-dir", "test_run_dir/TransitNameSpec"))
 
-        info("""output FIRRTL includes "inst bar"""")
-        a should include ("inst bar of MyModule")
+    info("""output FIRRTL includes "inst MyModule"""")
+    firrtl should include ("inst MyModule of MyModule")
 
-        info("""output FIRRTL includes "inst baz_generated"""")
-        a should include ("inst baz_generated of MyModule")
-      case _ => fail
-    }
+    info("""output FIRRTL includes "inst bar"""")
+    firrtl should include ("inst bar of MyModule")
+
+    info("""output FIRRTL includes "inst baz_generated"""")
+    firrtl should include ("inst baz_generated of MyModule")
   }
 
 }

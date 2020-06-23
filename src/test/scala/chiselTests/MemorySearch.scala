@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.stage.ChiselStage
 
 class MemorySearch extends Module {
   val io = IO(new Bundle {
@@ -50,7 +51,7 @@ class MemorySearchTester(c: MemorySearch) extends Tester(c) {
 class MemorySearchSpec extends ChiselPropSpec {
 
   property("MemorySearch should elaborate") {
-    elaborate { new EnableShiftRegister }
+    ChiselStage.elaborate { new EnableShiftRegister }
   }
 
   ignore("MemorySearch should return the correct result") { }

@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.stage.ChiselStage
 import chisel3.util.{Queue, EnqIO, DeqIO, QueueIO, log2Ceil}
 import chisel3.experimental.{CloneModuleAsRecord, IO}
 import chisel3.testers.BasicTester
@@ -71,7 +72,7 @@ class CloneModuleSpec extends ChiselPropSpec {
   }
 
   property("QueueClone's cloned queues should share the same module") {
-    val c = Driver.toFirrtl(Driver.elaborate(() => new QueueClone))
+    val c = ChiselStage.convert(new QueueClone)
     assert(c.modules.length == 2)
   }
 
@@ -82,7 +83,7 @@ class CloneModuleSpec extends ChiselPropSpec {
   }
 
   property("Clones of MultiIOModules should share the same module") {
-    val c = Driver.toFirrtl(Driver.elaborate(() => new QueueClone(multiIO=true)))
+    val c = ChiselStage.convert(new QueueClone(multiIO=true))
     assert(c.modules.length == 3)
   }
 

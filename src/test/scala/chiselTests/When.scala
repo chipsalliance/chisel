@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
 import chisel3.util._
 
@@ -91,7 +92,7 @@ class SubmoduleWhenTester extends BasicTester {
   }
 }
 
-class WhenSpec extends ChiselFlatSpec {
+class WhenSpec extends ChiselFlatSpec with Utils {
   "When, elsewhen, and otherwise with orthogonal conditions" should "work" in {
     assertTesterPasses{ new WhenTester }
   }
@@ -106,8 +107,8 @@ class WhenSpec extends ChiselFlatSpec {
   }
 
   "Returning in a when scope" should "give a reasonable error message" in {
-    val e = the [ChiselException] thrownBy {
-      elaborate(new Module {
+    val e = the [ChiselException] thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate(new Module {
         val io = IO(new Bundle {
           val foo = Input(UInt(8.W))
           val bar = Input(UInt(8.W))

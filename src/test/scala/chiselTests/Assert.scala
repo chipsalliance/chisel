@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
 import chisel3.util._
 
@@ -60,7 +61,7 @@ class BadUnescapedPercentAssertTester extends BasicTester {
   stop()
 }
 
-class AssertSpec extends ChiselFlatSpec {
+class AssertSpec extends ChiselFlatSpec with Utils {
   "A failing assertion" should "fail the testbench" in {
     assert(!runTester{ new FailingAssertTester })
   }
@@ -78,7 +79,9 @@ class AssertSpec extends ChiselFlatSpec {
   }
   they should "not allow unescaped % in the message" in {
     a [java.util.UnknownFormatConversionException] should be thrownBy {
-      elaborate { new BadUnescapedPercentAssertTester }
+      extractCause[java.util.UnknownFormatConversionException] {
+        ChiselStage.elaborate { new BadUnescapedPercentAssertTester }
+      }
     }
   }
 }

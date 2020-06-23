@@ -3,6 +3,7 @@
 package chiselTests.util.random
 
 import chisel3._
+import chisel3.stage.ChiselStage
 import chisel3.util.{Cat, Counter, Enum}
 import chisel3.util.random._
 import chisel3.testers.BasicTester
@@ -105,7 +106,7 @@ class LFSRResetTester(gen: => LFSR, lockUpValue: BigInt) extends BasicTester {
 
 }
 
-class LFSRSpec extends ChiselFlatSpec {
+class LFSRSpec extends ChiselFlatSpec with Utils {
 
   def periodCheck(gen: (Int, Set[Int], LFSRReduce) => PRNG, reduction: LFSRReduce, range: Range): Unit = {
     it should s"have a maximal period over a range of widths (${range.head} to ${range.last}) using ${reduction.getClass}" in {
@@ -122,13 +123,15 @@ class LFSRSpec extends ChiselFlatSpec {
   behavior of "LFSR"
 
   it should "throw an exception if initialized to a seed of zero for XOR configuration" in {
-    { the [IllegalArgumentException] thrownBy elaborate(new FooLFSR(XOR, Some(0))) }
-      .getMessage should include ("Seed cannot be zero")
+    { the [IllegalArgumentException] thrownBy extractCause[IllegalArgumentException] {
+       ChiselStage.elaborate(new FooLFSR(XOR, Some(0))) }
+    }.getMessage should include ("Seed cannot be zero")
   }
 
   it should "throw an exception if initialized to a seed of all ones for XNOR configuration" in {
-    { the [IllegalArgumentException] thrownBy elaborate(new FooLFSR(XNOR, Some(15))) }
-      .getMessage should include ("Seed cannot be all ones")
+    { the [IllegalArgumentException] thrownBy extractCause[IllegalArgumentException] {
+       ChiselStage.elaborate(new FooLFSR(XNOR, Some(15))) }
+    }.getMessage should include ("Seed cannot be all ones")
   }
 
   it should "reset correctly without a seed for XOR configuration" in {
@@ -142,8 +145,9 @@ class LFSRSpec extends ChiselFlatSpec {
   behavior of "MaximalPeriodGaloisLFSR"
 
   it should "throw an exception if no LFSR taps are known" in {
-    { the [IllegalArgumentException] thrownBy elaborate(new MaxPeriodGaloisLFSR(787)) }
-      .getMessage should include ("No max period LFSR taps stored for requested width")
+    { the [IllegalArgumentException] thrownBy extractCause[IllegalArgumentException] {
+       ChiselStage.elaborate(new MaxPeriodGaloisLFSR(787)) }
+    }.getMessage should include ("No max period LFSR taps stored for requested width")
   }
 
   periodCheck((w: Int, t: Set[Int], r: LFSRReduce) => new GaloisLFSR(w, t, reduction=r), XOR, 2 to 16)

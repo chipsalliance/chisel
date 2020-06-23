@@ -8,16 +8,18 @@ import chisel3.experimental.{ChiselAnnotation, RunFirrtlTransform}
 import chisel3.stage.ChiselGeneratorAnnotation
 import chisel3.stage.phases.{Convert, Elaborate}
 
-import firrtl.{AnnotationSeq, CircuitForm, CircuitState, Transform, UnknownForm}
+import firrtl.{AnnotationSeq, CircuitForm, CircuitState, DependencyAPIMigration, Transform, UnknownForm}
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.options.Phase
 import firrtl.stage.{FirrtlCircuitAnnotation, RunFirrtlTransformAnnotation}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-class ConvertSpecFirrtlTransform extends Transform {
-  def inputForm: CircuitForm = UnknownForm
-  def outputForm: CircuitForm = UnknownForm
+class ConvertSpecFirrtlTransform extends Transform with DependencyAPIMigration {
+  override def prerequisites = Seq.empty
+  override def optionalPrerequisites = Seq.empty
+  override def optionalPrerequisiteOf = Seq.empty
+  override def invalidates(a: Transform) = false
   def execute(state: CircuitState): CircuitState = state
 }
 

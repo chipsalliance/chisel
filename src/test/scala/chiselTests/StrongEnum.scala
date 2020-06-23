@@ -6,6 +6,7 @@ import chisel3._
 import chisel3.experimental.ChiselEnum
 import chisel3.internal.firrtl.UnknownWidth
 import chisel3.internal.naming.chiselName
+import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import chisel3.util._
 import chisel3.testers.BasicTester
 import org.scalatest.Assertion
@@ -269,41 +270,41 @@ class StrongEnumFSMTester extends BasicTester {
   }
 }
 
-class StrongEnumSpec extends ChiselFlatSpec {
+class StrongEnumSpec extends ChiselFlatSpec with Utils {
   import chisel3.internal.ChiselException
 
   behavior of "Strong enum tester"
 
   it should "fail to instantiate non-literal enums with the Value function" in {
-    an [ExceptionInInitializerError] should be thrownBy {
-      elaborate(new SimpleConnector(NonLiteralEnumType(), NonLiteralEnumType()))
+    an [ExceptionInInitializerError] should be thrownBy extractCause[ExceptionInInitializerError] {
+      ChiselStage.elaborate(new SimpleConnector(NonLiteralEnumType(), NonLiteralEnumType()))
     }
   }
 
   it should "fail to instantiate non-increasing enums with the Value function" in {
-    an [ExceptionInInitializerError] should be thrownBy {
-      elaborate(new SimpleConnector(NonIncreasingEnum(), NonIncreasingEnum()))
+    an [ExceptionInInitializerError] should be thrownBy extractCause[ExceptionInInitializerError]  {
+      ChiselStage.elaborate(new SimpleConnector(NonIncreasingEnum(), NonIncreasingEnum()))
     }
   }
 
   it should "connect enums of the same type" in {
-    elaborate(new SimpleConnector(EnumExample(), EnumExample()))
-    elaborate(new SimpleConnector(EnumExample(), EnumExample.Type()))
+    ChiselStage.elaborate(new SimpleConnector(EnumExample(), EnumExample()))
+    ChiselStage.elaborate(new SimpleConnector(EnumExample(), EnumExample.Type()))
   }
 
   it should "fail to connect a strong enum to a UInt" in {
-    a [ChiselException] should be thrownBy {
-      elaborate(new SimpleConnector(EnumExample(), UInt()))
+    a [ChiselException] should be thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate(new SimpleConnector(EnumExample(), UInt()))
     }
   }
 
   it should "fail to connect enums of different types" in {
-    a [ChiselException] should be thrownBy {
-      elaborate(new SimpleConnector(EnumExample(), OtherEnum()))
+    a [ChiselException] should be thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate(new SimpleConnector(EnumExample(), OtherEnum()))
     }
 
-    a [ChiselException] should be thrownBy {
-      elaborate(new SimpleConnector(EnumExample.Type(), OtherEnum.Type()))
+    a [ChiselException] should be thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate(new SimpleConnector(EnumExample.Type(), OtherEnum.Type()))
     }
   }
 
@@ -320,22 +321,22 @@ class StrongEnumSpec extends ChiselFlatSpec {
   }
 
   it should "prevent illegal literal casts to enums" in {
-    a [ChiselException] should be thrownBy {
-      elaborate(new CastToInvalidEnumTester)
+    a [ChiselException] should be thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate(new CastToInvalidEnumTester)
     }
   }
 
   it should "only allow non-literal casts to enums if the width is smaller than or equal to the enum width" in {
     for (w <- 0 to EnumExample.getWidth)
-      elaborate(new CastFromNonLitWidth(Some(w)))
+      ChiselStage.elaborate(new CastFromNonLitWidth(Some(w)))
 
-    a [ChiselException] should be thrownBy {
-      elaborate(new CastFromNonLitWidth)
+    a [ChiselException] should be thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate(new CastFromNonLitWidth)
     }
 
     for (w <- (EnumExample.getWidth + 1) to (EnumExample.getWidth + 100)) {
-      a [ChiselException] should be thrownBy {
-        elaborate(new CastFromNonLitWidth(Some(w)))
+      a [ChiselException] should be thrownBy extractCause[ChiselException] {
+        ChiselStage.elaborate(new CastFromNonLitWidth(Some(w)))
       }
     }
   }
@@ -345,8 +346,8 @@ class StrongEnumSpec extends ChiselFlatSpec {
   }
 
   it should "fail to compare enums of different types" in {
-    a [ChiselException] should be thrownBy {
-      elaborate(new InvalidEnumOpsTester)
+    a [ChiselException] should be thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate(new InvalidEnumOpsTester)
     }
   }
 
@@ -597,23 +598,17 @@ class StrongEnumAnnotationSpec extends AnyFreeSpec with Matchers {
     corrects.forall(c => annos.exists(isCorrect(_, c)))
 
   def test(strongEnumAnnotatorGen: () => Module) {
-    Driver.execute(Array("--target-dir", "test_run_dir"), strongEnumAnnotatorGen) match {
-      case ChiselExecutionSuccess(Some(circuit), emitted, _) =>
-        val annos = circuit.annotations.map(_.toFirrtl)
+    val annos = (new ChiselStage).execute(Array("--target-dir", "test_run_dir", "--no-run-firrtl"),
+                                          Seq(ChiselGeneratorAnnotation(strongEnumAnnotatorGen)))
 
-        printAnnos(annos)
+    val enumDefAnnos = annos.collect { case a: EnumDefAnnotation => a }
+    val enumCompAnnos = annos.collect { case a: EnumComponentAnnotation => a }
+    val enumVecAnnos = annos.collect { case a: EnumVecAnnotation => a }
 
-        val enumDefAnnos = annos.collect { case a: EnumDefAnnotation => a }
-        val enumCompAnnos = annos.collect { case a: EnumComponentAnnotation => a }
-        val enumVecAnnos = annos.collect { case a: EnumVecAnnotation => a }
+    allCorrectDefs(enumDefAnnos, correctDefAnnos) should be(true)
+    allCorrectComps(enumCompAnnos, correctCompAnnos) should be(true)
+    allCorrectVecs(enumVecAnnos, correctVecAnnos) should be(true)
 
-        allCorrectDefs(enumDefAnnos, correctDefAnnos) should be(true)
-        allCorrectComps(enumCompAnnos, correctCompAnnos) should be(true)
-        allCorrectVecs(enumVecAnnos, correctVecAnnos) should be(true)
-
-      case _ =>
-        assert(false)
-    }
   }
 
   "Test that strong enums annotate themselves appropriately" in {

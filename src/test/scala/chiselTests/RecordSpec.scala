@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
 import chisel3.util.{Counter, Queue}
 import chisel3.experimental.{DataMirror, requireIsChiselType}
@@ -109,15 +110,15 @@ trait RecordSpecUtils {
   }
 }
 
-class RecordSpec extends ChiselFlatSpec with RecordSpecUtils {
+class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
   behavior of "Records"
 
   they should "bulk connect similarly to Bundles" in {
-    elaborate { new MyModule(fooBarType, fooBarType) }
+    ChiselStage.elaborate { new MyModule(fooBarType, fooBarType) }
   }
 
   they should "bulk connect to Bundles" in {
-    elaborate { new MyModule(new MyBundle, fooBarType) }
+    ChiselStage.elaborate { new MyModule(new MyBundle, fooBarType) }
   }
 
   they should "follow UInt serialization/deserialization API" in {
@@ -137,17 +138,17 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils {
   }
 
   "Bulk connect on Record" should "check that the fields match" in {
-    (the [ChiselException] thrownBy {
-      elaborate { new MyModule(fooBarType, new CustomBundle("bar" -> UInt(32.W))) }
+    (the [ChiselException] thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate { new MyModule(fooBarType, new CustomBundle("bar" -> UInt(32.W))) }
     }).getMessage should include ("Right Record missing field")
 
-    (the [ChiselException] thrownBy {
-      elaborate { new MyModule(new CustomBundle("bar" -> UInt(32.W)), fooBarType) }
+    (the [ChiselException] thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate { new MyModule(new CustomBundle("bar" -> UInt(32.W)), fooBarType) }
     }).getMessage should include ("Left Record missing field")
   }
 
   "CustomBundle" should "work like built-in aggregates" in {
-    elaborate(new Module {
+    ChiselStage.elaborate(new Module {
       val gen = new CustomBundle("foo" -> UInt(32.W))
       val io = IO(Output(gen))
       val wire = Wire(gen)
@@ -156,6 +157,6 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils {
   }
 
   "CustomBundle" should "check the types" in {
-    elaborate { new RecordTypeTester }
+    ChiselStage.elaborate { new RecordTypeTester }
   }
 }

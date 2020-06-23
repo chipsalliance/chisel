@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -37,7 +38,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
     class MyModule extends BasicTester {
       printf(p"An exact string")
     }
-    val firrtl = Driver.emit(() => new MyModule)
+    val firrtl = (new ChiselStage).emitChirrtl(new MyModule)
     getPrintfs(firrtl) match {
       case Seq(Printf("An exact string", Seq())) =>
       case e => fail()
@@ -47,7 +48,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
     class MyModule extends BasicTester {
       printf(p"First " + PString("Second ") + "Third")
     }
-    val firrtl = Driver.emit(() => new MyModule)
+    val firrtl = (new ChiselStage).emitChirrtl(new MyModule)
     getPrintfs(firrtl) match {
       case Seq(Printf("First Second Third", Seq())) =>
       case e => fail()
@@ -58,7 +59,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
       val myInt = 1234
       printf(p"myInt = $myInt")
     }
-    val firrtl = Driver.emit(() => new MyModule)
+    val firrtl = (new ChiselStage).emitChirrtl(new MyModule)
     getPrintfs(firrtl) match {
       case Seq(Printf("myInt = 1234", Seq())) =>
       case e => fail()
@@ -69,7 +70,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
       val myWire = WireDefault(1234.U)
       printf(p"myWire = ${Decimal(myWire)}")
     }
-    val firrtl = Driver.emit(() => new MyModule)
+    val firrtl = (new ChiselStage).emitChirrtl(new MyModule)
     getPrintfs(firrtl) match {
       case Seq(Printf("myWire = %d", Seq("myWire"))) =>
       case e => fail()
@@ -79,7 +80,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
     class MyModule extends BasicTester {
       printf(Decimal(10.U(32.W)))
     }
-    val firrtl = Driver.emit(() => new MyModule)
+    val firrtl = (new ChiselStage).emitChirrtl(new MyModule)
     getPrintfs(firrtl) match {
       case Seq(Printf("%d", Seq(lit))) =>
         assert(lit contains "UInt<32>")
@@ -90,7 +91,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
     class MyModule extends BasicTester {
       printf(p"%")
     }
-    val firrtl = Driver.emit(() => new MyModule)
+    val firrtl = (new ChiselStage).emitChirrtl(new MyModule)
     getPrintfs(firrtl) match {
       case Seq(Printf("%%", Seq())) =>
       case e => fail()
@@ -100,7 +101,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
     class MyModule extends BasicTester {
       printf(p"\t")
     }
-    val firrtl = Driver.emit(() => new MyModule)
+    val firrtl = (new ChiselStage).emitChirrtl(new MyModule)
     getPrintfs(firrtl) match {
       case Seq(Printf("\\t", Seq())) =>
       case e => fail()
@@ -126,7 +127,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
       printf(p"${FullName(myWire.foo)}")
       printf(p"${FullName(myInst.io.fizz)}")
     }
-    val firrtl = Driver.emit(() => new MyModule)
+    val firrtl = (new ChiselStage).emitChirrtl(new MyModule)
     println(firrtl) // scalastyle:ignore regex
     getPrintfs(firrtl) match {
       case Seq(Printf("foo", Seq()),
@@ -145,7 +146,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
       val myInst = Module(new MySubModule)
       printf(p"${myInst.io.fizz}")
     }
-    val firrtl = Driver.emit(() => new MyModule)
+    val firrtl = (new ChiselStage).emitChirrtl(new MyModule)
     getPrintfs(firrtl) match {
       case Seq(Printf("%d", Seq("myInst.io.fizz"))) =>
       case e => fail()
@@ -157,7 +158,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
       val mySInt = WireDefault(-1.S)
       printf(p"$myUInt & $mySInt")
     }
-    val firrtl = Driver.emit(() => new MyModule)
+    val firrtl = (new ChiselStage).emitChirrtl(new MyModule)
     getPrintfs(firrtl) match {
       case Seq(Printf("%d & %d", Seq("myUInt", "mySInt"))) =>
       case e => fail()
@@ -169,7 +170,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
       myVec foreach (_ := 0.U)
       printf(p"$myVec")
     }
-    val firrtl = Driver.emit(() => new MyModule)
+    val firrtl = (new ChiselStage).emitChirrtl(new MyModule)
     getPrintfs(firrtl) match {
       case Seq(Printf("Vec(%d, %d, %d, %d)",
                Seq("myVec[0]", "myVec[1]", "myVec[2]", "myVec[3]"))) =>
@@ -186,7 +187,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
       myBun.bar := 0.U
       printf(p"$myBun")
     }
-    val firrtl = Driver.emit(() => new MyModule)
+    val firrtl = (new ChiselStage).emitChirrtl(new MyModule)
     getPrintfs(firrtl) match {
       case Seq(Printf("AnonymousBundle(foo -> %d, bar -> %d)",
                Seq("myBun.foo", "myBun.bar"))) =>
