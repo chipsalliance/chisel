@@ -42,7 +42,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
 
   private[chisel3] def namePorts(names: HashMap[HasId, String]): Unit = {
     for (port <- getModulePorts) {
-      port.computeName(None)/*.orElse(names.get(port))*/ match {
+      port.computeName(None).orElse(names.get(port)) match {
         case Some(name) =>
           if (_namespace.contains(name)) {
             Builder.error(s"""Unable to name port $port to "$name" in $this,""" +
@@ -69,7 +69,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
 
     // Then everything else gets named
     for ((node, name) <- names) {
-      //node.suggestName(name)
+      node.suggestName(name)
     }
 
     // All suggestions are in, force names to every node.

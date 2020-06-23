@@ -27,7 +27,9 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
   class ChiselComponentPhase(prev: Phase) extends StdPhase(prev) {
     override def name: String = phaseName
     def apply(unit: CompilationUnit): Unit = {
-      unit.body = new MyTypingTransformer(unit).transform(unit.body)
+      if(scala.util.Properties.versionNumberString.split('.')(1).toInt >= 12) {
+        unit.body = new MyTypingTransformer(unit).transform(unit.body)
+      }
     }
   }
 

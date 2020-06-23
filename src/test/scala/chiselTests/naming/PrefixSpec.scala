@@ -5,9 +5,10 @@ package chiselTests.naming
 import chisel3._
 import chisel3.aop.Select
 import chisel3.experimental.{dump, noPrefix, prefix, treedump}
-import chiselTests.ChiselPropSpec
+import chiselTests.{ChiselPropSpec, Utils}
 
-class PrefixSpec extends ChiselPropSpec {
+class PrefixSpec extends ChiselPropSpec with Utils {
+  implicit val minimumMajorVersion: Int = 12
   property("Scala plugin should interact with prefixing so last plugin name wins?") {
     class Test extends MultiIOModule {
       def builder(): UInt = {
@@ -177,7 +178,8 @@ class PrefixSpec extends ChiselPropSpec {
     }
 
     class Test extends MultiIOModule {
-      {
+      val x = IO(Input(UInt(3.W)))
+      val y = {
         lazy val module = new Child
         val child = Module(module)
       }

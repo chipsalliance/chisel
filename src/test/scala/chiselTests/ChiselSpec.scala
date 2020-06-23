@@ -12,6 +12,9 @@ import firrtl.{AnnotationSeq, CommonOptions, ExecutionOptionsManager, FirrtlExec
 import firrtl.util.BackendCompilationUtilities
 import java.io.ByteArrayOutputStream
 import java.security.Permission
+
+import chisel3.aop.Aspect
+import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage, NoRunFirrtlCompilerAnnotation, PrintFullStackTraceAnnotation}
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
 /** Common utility functions for Chisel unit tests. */
@@ -284,4 +287,29 @@ trait Utils {
     }
   }
 
+  /** Fixture to help run tests only on specific Scala versions
+    * @param majorVersion runs test if Scala version is at least this major version
+    */
+  abstract class MinimumScalaVersion(majorVersion: Int) {
+    implicit val scalaMajorVerision = majorVersion
+  }
+
+  private def run[T <: RawModule](gen: () => T, annotations: AnnotationSeq): AnnotationSeq = {
+    new ChiselStage().run(Seq(ChiselGeneratorAnnotation(gen), NoRunFirrtlCompilerAnnotation, PrintFullStackTraceAnnotation) ++ annotations)
+  }
+
+  /** A tester which runs generator and uses an aspect to check the returned object
+    * @param gen function to generate a Chisel module
+    * @param f a function to check the Chisel module
+    * @tparam T the Chisel module class
+    */
+  def aspectTest[T <: RawModule](gen: () => T)(f: T => Unit)(implicit scalaMajorVersion: Int): Unit = {
+    case object BuiltAspect extends Aspect[T] {
+      override def toAnnotation(top: T): AnnotationSeq = {f(top); Nil}
+    }
+    val currentMajorVersion = scala.util.Properties.versionNumberString.split('.')(1).toInt
+    if(currentMajorVersion >= scalaMajorVersion) {
+      run(gen, Seq(BuiltAspect))
+    }
+  }
 }

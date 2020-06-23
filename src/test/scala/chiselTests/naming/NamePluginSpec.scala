@@ -5,21 +5,24 @@ package chiselTests.naming
 import chisel3._
 import chisel3.aop.Select
 import chisel3.experimental.{prefix, treedump}
-import chiselTests.ChiselPropSpec
+import chiselTests.{ChiselFlatSpec, Utils}
 
-class NamePluginSpec extends ChiselPropSpec {
+import scala.tools.nsc.settings.ScalaVersion
 
-  property("Scala plugin should name internally scoped components") {
+
+class NamePluginSpec extends ChiselFlatSpec with Utils {
+  implicit val minimumScalaVersion: Int = 12
+
+  "Scala plugin" should "name internally scoped components" in {
     class Test extends MultiIOModule {
       { val mywire = Wire(UInt(3.W))}
-
     }
     aspectTest(() => new Test) {
       top: Test => Select.wires(top).head.toTarget.ref should be("mywire")
     }
   }
 
-  property("Scala plugin should name internally scoped instances") {
+  "Scala plugin" should "name internally scoped instances" in {
     class Inner extends MultiIOModule { }
     class Test extends MultiIOModule {
       { val myinstance = Module(new Inner) }
@@ -29,7 +32,7 @@ class NamePluginSpec extends ChiselPropSpec {
     }
   }
 
-  property("Scala plugin interact with prefixing") {
+  "Scala plugin" should "interact with prefixing" in {
     class Test extends MultiIOModule {
       def builder() = {
         val wire = Wire(UInt(3.W))
@@ -46,7 +49,7 @@ class NamePluginSpec extends ChiselPropSpec {
     }
   }
 
-  property("Scala plugin should interact with prefixing so last val name wins") {
+  "Scala plugin" should "interact with prefixing so last val name wins" in {
     class Test extends MultiIOModule {
       def builder() = {
         val wire1 = Wire(UInt(3.W))
@@ -69,7 +72,7 @@ class NamePluginSpec extends ChiselPropSpec {
     }
   }
 
-  property("Naming on option should work") {
+  "Naming on option" should "work" in {
 
     class Test extends MultiIOModule {
       def builder(): Option[UInt] = {
@@ -85,7 +88,7 @@ class NamePluginSpec extends ChiselPropSpec {
     }
   }
 
-  property("Naming on iterables should work") {
+  "Naming on iterables" should "work" in {
 
     class Test extends MultiIOModule {
       def builder(): Seq[UInt] = {
@@ -105,7 +108,7 @@ class NamePluginSpec extends ChiselPropSpec {
     }
   }
 
-  property("Naming on nested iterables should work") {
+  "Naming on nested iterables" should "work" in {
 
     class Test extends MultiIOModule {
       def builder(): Seq[Seq[UInt]] = {
@@ -133,7 +136,7 @@ class NamePluginSpec extends ChiselPropSpec {
     }
   }
 
-  property("Naming on custom case classes should not work") {
+  "Naming on custom case classes" should "not work" in {
     case class Container(a: UInt, b: UInt)
 
     class Test extends MultiIOModule {
@@ -151,10 +154,12 @@ class NamePluginSpec extends ChiselPropSpec {
     }
   }
 
-  property("Multiple names on an IO within a module gets the first name") {
+  "Multiple names on an IO within a module" should "get the first name" in {
     class Test extends RawModule {
-      val a = IO(Output(UInt(3.W)))
-      val b = a
+      {
+        val a = IO(Output(UInt(3.W)))
+        val b = a
+      }
     }
 
     aspectTest(() => new Test) {
@@ -163,7 +168,7 @@ class NamePluginSpec extends ChiselPropSpec {
     }
   }
 
-  property("Multiple names on a non-IO gets the last name") {
+  "Multiple names on a non-IO" should "get the last name" in {
     class Test extends MultiIOModule {
       {
         val a = Wire(UInt(3.W))
@@ -177,7 +182,7 @@ class NamePluginSpec extends ChiselPropSpec {
     }
   }
 
-  property("Unapply assignments should still be named") {
+  "Unapply assignments" should "still be named" in {
     class Test extends MultiIOModule {
       {
         @treedump

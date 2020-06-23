@@ -267,7 +267,8 @@ private[chisel3] trait HasId extends InstanceId {
       val noParameters = m.getParameterTypes.isEmpty
       val aVal = valNames.contains(m.getName)
       val notAssignable = !m.getDeclaringClass.isAssignableFrom(rootClass)
-      noParameters && aVal && notAssignable
+      val notWeirdVal = !m.getName.contains('$')
+      noParameters && aVal && notAssignable && notWeirdVal
     }
     this.getClass.getMethods.filter(isPublicVal).sortWith(_.getName < _.getName)
   }
