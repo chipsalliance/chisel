@@ -83,13 +83,13 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
               case OpBinding(_) =>
                 id.forceName(Some(""), default="T", _namespace)
               case MemoryPortBinding(_) =>
-                id.forceName(Some(""), default="MPORT", _namespace)
+                id.forceName(None, default="MPORT", _namespace)
               case PortBinding(_) =>
-                id.forceName(Some(""), default="PORT", _namespace)
+                id.forceName(None, default="PORT", _namespace)
               case RegBinding(_) =>
-                id.forceName(Some(""), default="REG", _namespace)
+                id.forceName(None, default="REG", _namespace)
               case WireBinding(_) =>
-                id.forceName(None, default="WIRE", _namespace)
+                id.forceName(Some(""), default="WIRE", _namespace)
               case _ =>  // don't name literals
             }
           } // else, don't name unbound types
