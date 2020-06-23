@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.stage.ChiselStage
 import chisel3.util._
 
 import scala.collection.mutable
@@ -63,19 +64,19 @@ class BetterNamingTests extends ChiselFlatSpec {
 
   it should "provide unique counters for each name" in {
     var module: PerNameIndexing = null
-    elaborate { module = new PerNameIndexing(4); module }
+    ChiselStage.elaborate { module = new PerNameIndexing(4); module }
     assert(module.getNameFailures() == Nil)
   }
 
   it should "provide names for things defined in Iterable[HasId] and Option[HasId]" in {
     var module: IterableNaming = null
-    elaborate { module = new IterableNaming; module }
+    ChiselStage.elaborate { module = new IterableNaming; module }
     assert(module.getNameFailures() == Nil)
   }
 
   it should "allow digits to be field names in Records" in {
     var module: DigitFieldNamesInRecord  = null
-    elaborate { module = new DigitFieldNamesInRecord; module }
+    ChiselStage.elaborate { module = new DigitFieldNamesInRecord; module }
     assert(module.getNameFailures() == Nil)
   }
 
@@ -87,8 +88,9 @@ class BetterNamingTests extends ChiselFlatSpec {
       }
       WireDefault(3.U)
     }
-    val withLits = chisel3.Driver.emit(() => new MyModule(true))
-    val noLits = chisel3.Driver.emit(() => new MyModule(false))
+    val stage = new ChiselStage
+    val withLits = stage.emitChirrtl(new MyModule(true))
+    val noLits = stage.emitChirrtl(new MyModule(false))
     withLits should equal (noLits)
   }
 }

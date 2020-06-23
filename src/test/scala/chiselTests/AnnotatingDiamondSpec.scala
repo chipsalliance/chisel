@@ -5,13 +5,16 @@ package chiselTests
 import chisel3._
 import chisel3.experimental.{ChiselAnnotation, RunFirrtlTransform, annotate}
 import chisel3.internal.InstanceId
+import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import chisel3.testers.BasicTester
-import firrtl.{CircuitForm, CircuitState, LowForm, Transform}
+import firrtl.{CircuitForm, CircuitState, DependencyAPIMigration, LowForm, Transform}
 import firrtl.annotations.{
+  CircuitName,
+  CircuitTarget,
   SingleTargetAnnotation,
-  ModuleName,
-  Named
+  Target
 }
+import firrtl.stage.Forms
 import org.scalatest._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -19,8 +22,8 @@ import org.scalatest.matchers.should.Matchers
 /** These annotations and the IdentityTransform class serve as an example of how to write a
   * Chisel/Firrtl library
   */
-case class IdentityAnnotation(target: Named, value: String) extends SingleTargetAnnotation[Named] {
-  def duplicate(n: Named): IdentityAnnotation = this.copy(target = n)
+case class IdentityAnnotation(target: Target, value: String) extends SingleTargetAnnotation[Target] {
+  def duplicate(n: Target): IdentityAnnotation = this.copy(target = n)
 }
 /** ChiselAnnotation that corresponds to the above FIRRTL annotation */
 case class IdentityChiselAnnotation(target: InstanceId, value: String)
@@ -35,9 +38,11 @@ object identify { // scalastyle:ignore object.name
   }
 }
 
-class IdentityTransform extends Transform {
-  def inputForm: CircuitForm = LowForm
-  def outputForm: CircuitForm = LowForm
+class IdentityTransform extends Transform with DependencyAPIMigration {
+  override def prerequisites = Forms.LowForm
+  override def optionalPrerequisites = Seq.empty
+  override def optionalPrerequisiteOf = Forms.LowEmitters
+  override def invalidates(a: Transform) = false
 
   def execute(state: CircuitState): CircuitState = {
     val annosx = state.annotations.map {
@@ -133,33 +138,29 @@ class DiamondTester extends BasicTester {
 
 class AnnotatingDiamondSpec extends AnyFreeSpec with Matchers {
 
-  """
-    |Diamond is an example of a module that has two sub-modules A and B who both instantiate their
-    |own instances of module C.  This highlights the difference between specific and general
-    |annotation scopes
-  """.stripMargin - {
+  """|Diamond is an example of a module that has two sub-modules A and B who both instantiate their
+     |own instances of module C.  This highlights the difference between specific and general
+     |annotation scopes""".stripMargin - {
 
-    """
-      |annotations are not resolved at after circuit elaboration,
-      |that happens only after emit has been called on circuit""".stripMargin in {
+    """|annotations are not resolved at after circuit elaboration,
+       |that happens only after emit has been called on circuit""".stripMargin in {
 
-      Driver.execute(Array("--target-dir", "test_run_dir"), () => new TopOfDiamond) match {
-        case ChiselExecutionSuccess(Some(circuit), emitted, _) =>
-          val annos = circuit.annotations.map(_.toFirrtl)
-          annos.count(_.isInstanceOf[IdentityAnnotation]) should be (10)
+      val annos = (new ChiselStage)
+        .execute(Array("--target-dir", "test_run_dir", "--no-run-firrtl"),
+                 Seq(ChiselGeneratorAnnotation(() => new TopOfDiamond)))
+        .filter {
+          case _: IdentityAnnotation => true
+          case _                     => false
+        }.toSeq
 
-          annos.count {
-            case IdentityAnnotation(ModuleName("ModC", _), "ModC(16)") => true
-            case _ => false
-          } should be (1)
+      info("Found ten (10) 'IdentityAnnotation's")
+      annos should have length (10)
 
-          annos.count {
-            case IdentityAnnotation(ModuleName("ModC_1", _), "ModC(32)") => true
-            case _ => false
-          } should be (1)
-        case _ =>
-          assert(false)
-      }
+      info("Found IdentityAnnotation targeting '~*|ModC' with value 'ModC(16)'")
+      annos should contain (IdentityAnnotation(CircuitTarget("TopOfDiamond").module("ModC"), "ModC(16)"))
+
+      info("Found IdentityAnnotation targeting '~*|ModC_1:seen' with value 'ModC(32)'")
+      annos should contain (IdentityAnnotation(CircuitTarget("TopOfDiamond").module("ModC_1"), "ModC(32)"))
     }
   }
 }
