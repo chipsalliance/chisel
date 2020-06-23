@@ -5,7 +5,7 @@ package chiselTests.experimental
 import chiselTests.ChiselFlatSpec
 import chisel3._
 import chisel3.RawModule
-import chisel3.stage.{ChiselGeneratorAnnotation, ChiselMain}
+import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import chisel3.util.experimental.group
 import firrtl.analyses.InstanceGraph
 import firrtl.options.TargetDirAnnotation
@@ -31,15 +31,13 @@ class GroupSpec extends ChiselFlatSpec {
   }
 
   def lower[T <: RawModule](gen: () => T): fir.Circuit = {
-    (ChiselMain.stage.run(
-      Seq(
-        CompilerAnnotation(new LowFirrtlCompiler()),
-        TargetDirAnnotation("test_run_dir"),
-        ChiselGeneratorAnnotation(gen)
-      )
-    ) collectFirst {
-      case firrtl.stage.FirrtlCircuitAnnotation(circuit) => circuit
-    }).get
+    (new ChiselStage)
+      .execute(Array("--compiler", "low",
+                     "--target-dir", "test_run_dir"),
+               Seq(ChiselGeneratorAnnotation(gen)))
+      .collectFirst {
+        case firrtl.stage.FirrtlCircuitAnnotation(circuit) => circuit
+      }.get
   }
 
   "Module Grouping" should "compile to low FIRRTL" in {

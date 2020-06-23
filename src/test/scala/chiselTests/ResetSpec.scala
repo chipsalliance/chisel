@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.stage.ChiselStage
 import chisel3.util.{Counter, Queue}
 import chisel3.testers.BasicTester
 
@@ -35,12 +36,12 @@ class AbstractResetDontCareModule extends RawModule {
 }
 
 
-class ResetSpec extends ChiselFlatSpec {
+class ResetSpec extends ChiselFlatSpec with Utils {
 
   behavior of "Reset"
 
   it should "be able to be connected to DontCare" in {
-    elaborate(new AbstractResetDontCareModule)
+    ChiselStage.elaborate(new AbstractResetDontCareModule)
   }
 
   it should "allow writing modules that are reset agnostic" in {
@@ -72,22 +73,22 @@ class ResetSpec extends ChiselFlatSpec {
   behavior of "Users"
 
   they should "be able to force implicit reset to be synchronous" in {
-    val fir = generateFirrtl(new MultiIOModule with RequireSyncReset {
+    val fir = (new ChiselStage).emitChirrtl(new MultiIOModule with RequireSyncReset {
       reset shouldBe a [Bool]
     })
     fir should include ("input reset : UInt<1>")
   }
 
   they should "be able to force implicit reset to be asynchronous" in {
-    val fir = generateFirrtl(new MultiIOModule with RequireAsyncReset {
+    val fir = (new ChiselStage).emitChirrtl(new MultiIOModule with RequireAsyncReset {
       reset shouldBe an [AsyncReset]
     })
     fir should include ("input reset : AsyncReset")
   }
 
   "Chisel" should "error if sync and async modules are nested" in {
-    a [ChiselException] shouldBe thrownBy {
-      elaborate(new MultiIOModule with RequireAsyncReset {
+    a [ChiselException] should be thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate(new MultiIOModule with RequireAsyncReset {
         val mod = Module(new MultiIOModule with RequireSyncReset)
       })
     }

@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.stage.ChiselStage
 
 class BundleWithIntArg(val i: Int) extends Bundle {
   val out = UInt(i.W)
@@ -64,9 +65,9 @@ class NestedAnonymousBundle extends Bundle {
 // Not necessarily good style (and not necessarily recommended), but allowed to preserve compatibility.
 class BundleWithArgumentField(val x: Data, val y: Data) extends Bundle
 
-class AutoClonetypeSpec extends ChiselFlatSpec {
+class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
   "Bundles with Scala args" should "not need clonetype" in {
-    elaborate { new Module {
+    ChiselStage.elaborate { new Module {
       val io = IO(new Bundle{})
 
       val myWire = Wire(new BundleWithIntArg(8))
@@ -75,7 +76,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec {
   }
 
   "Bundles with Scala implicit args" should "not need clonetype" in {
-    elaborate { new Module {
+    ChiselStage.elaborate { new Module {
       val io = IO(new Bundle{})
 
       implicit val implicitInt: Int = 4
@@ -86,7 +87,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec {
   }
 
   "Bundles with Scala explicit and impicit args" should "not need clonetype" in {
-    elaborate { new Module {
+    ChiselStage.elaborate { new Module {
       val io = IO(new Bundle{})
 
       implicit val implicitInt: Int = 4
@@ -98,7 +99,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec {
   }
 
   "Subtyped Bundles" should "not need clonetype" in {
-    elaborate { new Module {
+    ChiselStage.elaborate { new Module {
       val io = IO(new Bundle{})
 
       val myWire = Wire(new SubBundle(8, 4))
@@ -106,7 +107,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec {
       assert(myWire.i == 8)
       assert(myWire.i2 == 4)
     } }
-    elaborate { new Module {
+    ChiselStage.elaborate { new Module {
       val io = IO(new Bundle{})
 
       val myWire = Wire(new SubBundleVal(8, 4))
@@ -117,8 +118,8 @@ class AutoClonetypeSpec extends ChiselFlatSpec {
   }
 
   "Subtyped Bundles that don't clone well" should "be caught" in {
-    a [ChiselException] should be thrownBy {
-      elaborate { new Module {
+    a [ChiselException] should be thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate { new Module {
         val io = IO(new Bundle{})
         val myWire = Wire(new SubBundleInvalid(8, 4))
       } }
@@ -126,11 +127,11 @@ class AutoClonetypeSpec extends ChiselFlatSpec {
   }
 
   "Inner bundles with Scala args" should "not need clonetype" in {
-    elaborate { new ModuleWithInner }
+    ChiselStage.elaborate { new ModuleWithInner }
   }
 
   "Bundles with arguments as fields" should "not need clonetype" in {
-    elaborate { new Module {
+    ChiselStage.elaborate { new Module {
       val io = IO(Output(new BundleWithArgumentField(UInt(8.W), UInt(8.W))))
       io.x := 1.U
       io.y := 1.U
@@ -138,21 +139,21 @@ class AutoClonetypeSpec extends ChiselFlatSpec {
   }
 
   "Bundles inside companion objects" should "not need clonetype" in {
-    elaborate { new Module {
+    ChiselStage.elaborate { new Module {
       val io = IO(Output(new CompanionObjectWithBundle.Inner))
       io.data := 1.U
     } }
   }
 
   "Parameterized bundles inside companion objects" should "not need clonetype" in {
-    elaborate { new Module {
+    ChiselStage.elaborate { new Module {
       val io = IO(Output(new CompanionObjectWithBundle.ParameterizedInner(8)))
       io.data := 1.U
     } }
   }
 
   "Nested directioned anonymous Bundles" should "not need clonetype" in {
-    elaborate { new Module {
+    ChiselStage.elaborate { new Module {
       val io = IO(new NestedAnonymousBundle)
       val a = WireDefault(io)
       io.a.a := 1.U
@@ -160,7 +161,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec {
   }
 
   "3.0 null compatibility" should "not need clonetype" in {
-    elaborate { new Module {
+    ChiselStage.elaborate { new Module {
       class InnerClassThing {
         def createBundle: Bundle = new Bundle {
           val a = Output(UInt(8.W))
@@ -172,8 +173,8 @@ class AutoClonetypeSpec extends ChiselFlatSpec {
   }
 
   "Aliased fields" should "be caught" in {
-    a [ChiselException] should be thrownBy {
-      elaborate { new Module {
+    a [ChiselException] should be thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate { new Module {
         val bundleFieldType = UInt(8.W)
         val io = IO(Output(new Bundle {
           val a = bundleFieldType
@@ -184,12 +185,12 @@ class AutoClonetypeSpec extends ChiselFlatSpec {
   }
 
   "Aliased fields from inadequate autoclonetype" should "be caught" in {
-    a [ChiselException] should be thrownBy {
+    a [ChiselException] should be thrownBy extractCause[ChiselException] {
       class BadBundle(val typeTuple: (Data, Int)) extends Bundle {
         val a = typeTuple._1
       }
 
-      elaborate { new Module {
+      ChiselStage.elaborate { new Module {
         val io = IO(Output(new BadBundle(UInt(8.W), 1)))
         io.a := 0.U
       } }

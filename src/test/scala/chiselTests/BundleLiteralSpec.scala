@@ -3,12 +3,13 @@
 package chiselTests
 
 import chisel3._
+import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
 import chisel3.experimental.BundleLiterals._
 import chisel3.experimental.BundleLiteralException
 import chisel3.experimental.ChiselEnum
 
-class BundleLiteralSpec extends ChiselFlatSpec {
+class BundleLiteralSpec extends ChiselFlatSpec with Utils {
   object MyEnum extends ChiselEnum {
     val sA, sB = Value
   }
@@ -134,49 +135,84 @@ class BundleLiteralSpec extends ChiselFlatSpec {
   }
 
   "bundle literals with bad field specifiers" should "fail" in {
-    val exc = intercept[BundleLiteralException] { elaborate { new RawModule {
-      val bundle = new MyBundle
-      bundle.Lit(x => bundle.a -> 0.U)  // DONT DO THIS, this gets past a syntax error to exercise the failure
-    }}}
+    val exc = intercept[BundleLiteralException] {
+      extractCause[BundleLiteralException] {
+        ChiselStage.elaborate {
+          new RawModule {
+            val bundle = new MyBundle
+            bundle.Lit(x => bundle.a -> 0.U)  // DONT DO THIS, this gets past a syntax error to exercise the failure
+          }
+        }
+      }
+    }
     exc.getMessage should include ("not a field")
   }
 
   "bundle literals with duplicate fields" should "fail" in {
-    val exc = intercept[BundleLiteralException] { elaborate { new RawModule {
-      (new MyBundle).Lit(_.a -> 0.U, _.a -> 0.U)
-    }}}
+    val exc = intercept[BundleLiteralException] {
+      extractCause[BundleLiteralException] {
+        ChiselStage.elaborate {
+          new RawModule {
+            (new MyBundle).Lit(_.a -> 0.U, _.a -> 0.U)
+          }
+        }
+      }
+    }
     exc.getMessage should include ("duplicate")
     exc.getMessage should include (".a")
   }
 
   "bundle literals with non-literal values" should "fail" in {
-    val exc = intercept[BundleLiteralException] { elaborate { new RawModule {
-      (new MyBundle).Lit(_.a -> UInt())
-    }}}
+    val exc = intercept[BundleLiteralException] {
+      extractCause[BundleLiteralException] {
+        ChiselStage.elaborate { new RawModule {
+                     (new MyBundle).Lit(_.a -> UInt())
+                   }
+        }
+      }
+    }
     exc.getMessage should include ("non-literal value")
     exc.getMessage should include (".a")
   }
 
   "bundle literals with non-type-equivalent element fields" should "fail" in {
-    val exc = intercept[BundleLiteralException] { elaborate { new RawModule {
-      (new MyBundle).Lit(_.a -> true.B)
-    }}}
+    val exc = intercept[BundleLiteralException] {
+      extractCause[BundleLiteralException] {
+        ChiselStage.elaborate {
+          new RawModule {
+            (new MyBundle).Lit(_.a -> true.B)
+          }
+        }
+      }
+    }
     exc.getMessage should include ("non-type-equivalent value")
     exc.getMessage should include (".a")
   }
 
   "bundle literals with non-type-equivalent sub-bundles" should "fail" in {
-    val exc = intercept[BundleLiteralException] { elaborate { new RawModule {
-      (new MyOuterBundle).Lit(_.b -> (new MyBundle).Lit(_.a -> 0.U))
-    }}}
+    val exc = intercept[BundleLiteralException] {
+      extractCause[BundleLiteralException] {
+        ChiselStage.elaborate {
+          new RawModule {
+            (new MyOuterBundle).Lit(_.b -> (new MyBundle).Lit(_.a -> 0.U))
+          }
+        }
+      }
+    }
     exc.getMessage should include ("non-type-equivalent value")
     exc.getMessage should include (".b")
   }
 
   "bundle literals with non-type-equivalent enum element fields" should "fail" in {
-    val exc = intercept[BundleLiteralException] { elaborate { new RawModule {
-      (new MyBundle).Lit(_.c -> MyEnumB.sB)
-    }}}
+    val exc = intercept[BundleLiteralException] {
+      extractCause[BundleLiteralException] {
+        ChiselStage.elaborate {
+          new RawModule {
+            (new MyBundle).Lit(_.c -> MyEnumB.sB)
+          }
+        }
+      }
+    }
     exc.getMessage should include ("non-type-equivalent enum value")
     exc.getMessage should include (".c")
   }

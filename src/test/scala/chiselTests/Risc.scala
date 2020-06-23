@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.stage.ChiselStage
 import chisel3.util._
 
 class Risc extends Module {
@@ -117,7 +118,7 @@ class RiscTester(c: Risc) extends Tester(c) {
 class RiscSpec extends ChiselPropSpec {
 
   property("Risc should elaborate") {
-    elaborate { new Risc }
+    ChiselStage.elaborate { new Risc }
   }
 
   ignore("RiscTester should return the correct result") { }

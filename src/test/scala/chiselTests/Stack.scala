@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.stage.ChiselStage
 import chisel3.util._
 
 class ChiselStack(val depth: Int) extends Module {
@@ -69,7 +70,7 @@ class StackTester(c: Stack) extends Tester(c) {
 class StackSpec extends ChiselPropSpec {
 
   property("Stack should elaborate") {
-    elaborate { new ChiselStack(2) }
+    ChiselStage.elaborate { new ChiselStack(2) }
   }
 
   ignore("StackTester should return the correct result") { }
