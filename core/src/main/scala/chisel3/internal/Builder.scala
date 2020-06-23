@@ -143,7 +143,13 @@ private[chisel3] trait HasId extends InstanceId {
     this
   }
 
-  def computeName(defaultSeed: Option[String]): Option[String] = {
+  /** Computes the name of this HasId, if one exists
+    * @param defaultPrefix Optionally provide a default prefix for computing the name
+    * @param defaultSeed Optionally provide default seed for computing the name
+    * @return the name, if it can be computed
+    */
+  def computeName(defaultPrefix: Option[String], defaultSeed: Option[String]): Option[String] = {
+    // Recursively builds a name if referenced fields of an aggregate type
     def buildAggName(id: HasId): Option[String] = {
       def recArg(node: Arg): Option[String] = node match {
         case Slot(imm, name) => recArg(imm).map(_ + "_" + name)
@@ -155,7 +161,6 @@ private[chisel3] trait HasId extends InstanceId {
         case ModuleIO(mod, name) if _parent.contains(mod) => Some(name)
         case ModuleIO(mod, name) => recArg(mod.getRef).map(_ + "_" + name)
       }
-
       id.getOptionRef.flatMap(recArg)
     }
 
@@ -181,13 +186,12 @@ private[chisel3] trait HasId extends InstanceId {
 
     if(hasSeed) {
       Some(buildName(seedOpt.get, prefix_seed))
-    } else if(defaultSeed.contains("REG")) {
-      defaultSeed.map { ds =>
-        buildName(ds, construction_prefix)
-      }
     } else {
-      defaultSeed.map { ds =>
-        buildName(ds, Left("") +: construction_prefix)
+      defaultSeed.map { default =>
+        defaultPrefix match {
+          case Some(p) => buildName(default, Left(p) +: construction_prefix)
+          case None => buildName(default, construction_prefix)
+        }
       }
     }
   }
@@ -209,9 +213,9 @@ private[chisel3] trait HasId extends InstanceId {
   // Uses a namespace to convert suggestion into a true name
   // Will not do any naming if the reference already assigned.
   // (e.g. tried to suggest a name to part of a Record)
-  private[chisel3] def forceName(default: =>String, namespace: Namespace): Unit =
+  private[chisel3] def forceName(prefix: Option[String], default: =>String, namespace: Namespace): Unit =
     if(_ref.isEmpty) {
-      val candidate_name = computeName(Some(default)).get
+      val candidate_name = computeName(prefix, Some(default)).get
       val available_name = namespace.name(candidate_name)
       setRef(Ref(available_name))
     }
@@ -229,7 +233,7 @@ private[chisel3] trait HasId extends InstanceId {
     case Some(p) => p._component match {
       case Some(c) => _ref match {
         case Some(arg) => arg fullName c
-        case None => computeName(None).get
+        case None => computeName(None, None).get
       }
       case None => throwException("signalName/pathName should be called after circuit elaboration")
     }
@@ -566,7 +570,7 @@ private[chisel3] object Builder {
     dynamicContextVar.withValue(Some(new DynamicContext())) {
       errors.info("Elaborating design...")
       val mod = f
-      mod.forceName(mod.name, globalNamespace)
+      mod.forceName(None, mod.name, globalNamespace)
       errors.checkpoint()
       errors.info("Done elaborating.")
 

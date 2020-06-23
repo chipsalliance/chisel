@@ -42,8 +42,8 @@ class TransitNameSpec extends AnyFlatSpec with Matchers {
     val firrtl = (new ChiselStage)
       .emitFirrtl(new Top, Array("--target-dir", "test_run_dir/TransitNameSpec"))
 
-    info("""output FIRRTL includes "inst _MyModule"""")
-    firrtl should include ("inst _MyModule of MyModule")
+    info("""output FIRRTL includes "inst MyModule"""")
+    firrtl should include ("inst MyModule of MyModule")
 
     info("""output FIRRTL includes "inst bar"""")
     firrtl should include ("inst bar of MyModule")

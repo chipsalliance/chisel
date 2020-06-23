@@ -42,7 +42,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
 
   private[chisel3] def namePorts(names: HashMap[HasId, String]): Unit = {
     for (port <- getModulePorts) {
-      port.computeName(None).orElse(names.get(port)) match {
+      port.computeName(None, None).orElse(names.get(port)) match {
         case Some(name) =>
           if (_namespace.contains(name)) {
             Builder.error(s"""Unable to name port $port to "$name" in $this,""" +
@@ -75,21 +75,21 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
     // All suggestions are in, force names to every node.
     for (id <- getIds) {
       id match {
-        case id: BaseModule => id.forceName(default=id.desiredName, _namespace)
-        case id: MemBase[_] => id.forceName(default="MEM", _namespace)
+        case id: BaseModule => id.forceName(None, default=id.desiredName, _namespace)
+        case id: MemBase[_] => id.forceName(None, default="MEM", _namespace)
         case id: Data  =>
           if (id.isSynthesizable) {
             id.topBinding match {
               case OpBinding(_) =>
-                id.forceName(default="T", _namespace)
+                id.forceName(Some(""), default="T", _namespace)
               case MemoryPortBinding(_) =>
-                id.forceName(default="MPORT", _namespace)
+                id.forceName(Some(""), default="MPORT", _namespace)
               case PortBinding(_) =>
-                id.forceName(default="PORT", _namespace)
+                id.forceName(Some(""), default="PORT", _namespace)
               case RegBinding(_) =>
-                id.forceName(default="REG", _namespace)
+                id.forceName(Some(""), default="REG", _namespace)
               case WireBinding(_) =>
-                id.forceName(default="WIRE", _namespace)
+                id.forceName(None, default="WIRE", _namespace)
               case _ =>  // don't name literals
             }
           } // else, don't name unbound types
