@@ -94,6 +94,9 @@ object FromProto {
   def convert(mux: Firrtl.Expression.Mux): ir.Mux =
     ir.Mux(convert(mux.getCondition), convert(mux.getTValue), convert(mux.getFValue), ir.UnknownType)
 
+  def convert(validif: Firrtl.Expression.ValidIf): ir.ValidIf =
+    ir.ValidIf(convert(validif.getCondition), convert(validif.getValue), ir.UnknownType)
+
   def convert(expr: Firrtl.Expression): ir.Expression = {
     import Firrtl.Expression._
     expr.getExpressionCase.getNumber match {
@@ -106,6 +109,7 @@ object FromProto {
       case FIXED_LITERAL_FIELD_NUMBER => convert(expr.getFixedLiteral)
       case PRIM_OP_FIELD_NUMBER => convert(expr.getPrimOp)
       case MUX_FIELD_NUMBER => convert(expr.getMux)
+      case VALID_IF_FIELD_NUMBER => convert(expr.getValidIf)
     }
   }
 
