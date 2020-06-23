@@ -72,7 +72,7 @@ class InlineSpec extends AnyFreeSpec with ChiselRunners with Matchers {
     "should compile to low FIRRTL" - {
       val chiselAnnotations =
         chiselStage
-          .execute(Array("-X", "low", "--target-dir", "test_run_dir"),
+          .execute(Array("--no-run-firrtl", "--target-dir", "test_run_dir"),
                    Seq(ChiselGeneratorAnnotation(() => new Top)))
 
       chiselAnnotations.collect{ case a: FlattenAnnotation => a} should have length(1)
