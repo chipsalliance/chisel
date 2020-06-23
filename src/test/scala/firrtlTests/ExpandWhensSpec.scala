@@ -134,6 +134,20 @@ class ExpandWhensSpec extends FirrtlFlatSpec {
     val check = "mux(p, in[0], in[1])"
     executeTest(input, check, true)
   }
+  it should "handle asserts" in {
+    val input =
+      """circuit Test :
+        |  module Test :
+        |    input clock : Clock
+        |    input in : UInt<32>
+        |    input p : UInt<1>
+        |    when p :
+        |      assert(clock, eq(in, UInt<1>("h1")), UInt<1>("h1"), "assert0")
+        |    else :
+        |      skip""".stripMargin
+    val check = "assert(clock, eq(in, UInt<1>(\"h1\")), and(and(UInt<1>(\"h1\"), p), UInt<1>(\"h1\")), \"assert0\")"
+    executeTest(input, check, true)
+  }
 }
 
 class ExpandWhensExecutionTest extends ExecutionTest("ExpandWhens", "/passes/ExpandWhens")

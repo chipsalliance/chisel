@@ -1024,6 +1024,52 @@ Format strings support the following escape characters:
 \item \verb|\'| : Single quote
 \end{itemize}
 
+\subsection{Verification}
+
+To facilitate simulation, model checking and formal methods, there are three non-synthesizable verification statements available: assert, assume and cover. Each type of verification statement requires a clock signal, a predicate signal, an enable signal and an explanatory message string literal. The predicate and enable signals must have single bit unsigned integer type. When an assert is violated the explanatory message may be issued as guidance. The explanatory message may be phrased as if prefixed by the words ``Verifies that...''.
+
+Backends are free to generate the corresponding model checking constructs in the target language, but this is not required by the FIRRTL specification. Backends that do not generate such constructs should issue a warning. For example, the SystemVerilog emitter produces SystemVerilog assert, assume and cover statements, but the Verilog emitter does not and instead warns the user if any verification statements are encountered.
+
+
+\subsubsection{Assert}
+
+The assert statement verifies that the predicate is true on the rising edge of any clock cycle when the enable is true. In other words, it verifies that enable implies predicate.
+
+\begin{lstlisting}
+wire clk:Clock
+wire pred:UInt<1>
+wire en:UInt<1>
+pred <= eq(X, Y)
+en <= Z_valid
+assert(clk, pred, en, "X equals Y when Z is valid")
+\end{lstlisting}
+
+\subsubsection{Assume}
+
+The assume statement directs the model checker to disregard any states where the enable is true and the predicate is not true at the rising edge of the clock cycle. In other words, it reduces the states to be checked to only those where enable implies predicate is true by definition. In simulation, assume is treated as an assert.
+
+\begin{lstlisting}
+wire clk:Clock
+wire pred:UInt<1>
+wire en:UInt<1>
+pred <= eq(X, Y)
+en <= Z_valid
+assume(clk, pred, en, "X equals Y when Z is valid")
+\end{lstlisting}
+
+\subsubsection{Cover}
+
+The cover statement verifies that the predicate is true on the rising edge of some clock cycle when the enable is true. In other words, it directs the model checker to find some way to make enable implies predicate true at some time step.
+
+\begin{lstlisting}
+wire clk:Clock
+wire pred:UInt<1>
+wire en:UInt<1>
+pred <= eq(X, Y)
+en <= Z_valid
+cover(clk, pred, en, "X equals Y when Z is valid")
+\end{lstlisting}
+
 \section{Expressions}
 
 FIRRTL expressions are used for creating literal unsigned and signed integers, for referring to a declared circuit component, for statically and dynamically accessing a nested element within a component, for creating multiplexers and conditionally valid signals, and for performing primitive operations.

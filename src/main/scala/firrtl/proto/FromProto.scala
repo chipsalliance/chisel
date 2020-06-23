@@ -8,7 +8,7 @@ import java.io.{File, FileInputStream, InputStream}
 import collection.JavaConverters._
 import FirrtlProtos._
 import com.google.protobuf.CodedInputStream
-import Firrtl.Statement.ReadUnderWrite
+import Firrtl.Statement.{ReadUnderWrite, Formal}
 
 object FromProto {
 
@@ -180,6 +180,16 @@ object FromProto {
 
   def convert(stop: Firrtl.Statement.Stop, info: Firrtl.SourceInfo): ir.Stop =
     ir.Stop(convert(info), stop.getReturnValue, convert(stop.getClk), convert(stop.getEn))
+
+  def convert(formal: Formal): ir.Formal.Value = formal match {
+    case Formal.ASSERT => ir.Formal.Assert
+    case Formal.ASSUME => ir.Formal.Assume
+    case Formal.COVER => ir.Formal.Cover
+  }
+
+  def convert(ver: Firrtl.Statement.Verification, info: Firrtl.SourceInfo): ir.Verification =
+    ir.Verification(convert(ver.getOp), convert(info), convert(ver.getClk),
+      convert(ver.getCond), convert(ver.getEn), ir.StringLit(ver.getMsg))
 
   def convert(mem: Firrtl.Statement.Memory, info: Firrtl.SourceInfo): ir.DefMemory = {
     val dtype = convert(mem.getType)

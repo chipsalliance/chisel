@@ -124,7 +124,7 @@ class RemoveWires extends Transform with DependencyAPIMigration {
               netlist(we(expr)) = (Seq(ValidIf(Utils.zero, UIntLiteral(BigInt(0), width), expr.tpe)), info)
             case _ => otherStmts += invalid
           }
-        case other @ (_: Print | _: Stop | _: Attach) =>
+        case other @ (_: Print | _: Stop | _: Attach | _: Verification) =>
           otherStmts += other
         case EmptyStmt => // Dont bother keeping EmptyStmts around
         case block: Block => block.foreach(onStmt)

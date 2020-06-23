@@ -154,6 +154,10 @@ class DeadCodeElimination extends Transform
         Seq(clk, en).flatMap(getDeps(_)).foreach(ref => depGraph.addPairWithEdge(circuitSink, ref))
       case Print(_, _, args, clk, en) =>
         (args :+ clk :+ en).flatMap(getDeps(_)).foreach(ref => depGraph.addPairWithEdge(circuitSink, ref))
+      case s: Verification =>
+        for (expr <- Seq(s.clk, s.pred, s.en)) {
+          getDeps(expr).foreach(ref => depGraph.addPairWithEdge(circuitSink, ref))
+        }
       case Block(stmts) => stmts.foreach(onStmt(_))
       case ignore @ (_: IsInvalid | _: WDefInstance | EmptyStmt) => // do nothing
       case other => throw new Exception(s"Unexpected Statement $other")
@@ -256,6 +260,7 @@ class DeadCodeElimination extends Transform
           else decl
         case print: Print => deleteIfNotEnabled(print, print.en)
         case stop: Stop => deleteIfNotEnabled(stop, stop.en)
+        case formal: Verification => deleteIfNotEnabled(formal, formal.en)
         case con: Connect =>
           val node = getDeps(con.loc) match { case Seq(elt) => elt }
           if (deadNodes.contains(node)) EmptyStmt else con

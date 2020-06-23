@@ -5,7 +5,6 @@ package firrtl
 import java.io.Writer
 
 import scala.collection.mutable
-
 import firrtl.ir._
 import firrtl.passes._
 import firrtl.transforms.LegalizeAndReductionsTransform
@@ -15,8 +14,9 @@ import firrtl.PrimOps._
 import firrtl.WrappedExpression._
 import Utils._
 import MemPortUtils.{memPortField, memType}
-import firrtl.options.{Dependency, HasShellOptions, ShellOption, StageUtils, PhaseException, Unserializable}
+import firrtl.options.{Dependency, HasShellOptions, PhaseException, ShellOption, Unserializable}
 import firrtl.stage.{RunFirrtlTransformAnnotation, TransformManager}
+import firrtl.transforms.formal.RemoveVerificationStatements
 // Datastructures
 import scala.collection.mutable.ArrayBuffer
 
@@ -182,6 +182,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
   def outputForm = LowForm
 
   override def prerequisites =
+    Dependency[RemoveVerificationStatements] +:
     Dependency[LegalizeAndReductionsTransform] +:
     firrtl.stage.Forms.LowFormOptimized
 
@@ -454,6 +455,13 @@ class VerilogEmitter extends SeqTransform with Emitter {
       case m: Module => new VerilogRender(m, moduleMap)(writer)
     }
   }
+
+  def addFormalStatement(formals: mutable.Map[Expression, ArrayBuffer[Seq[Any]]],
+                                 clk: Expression, en: Expression,
+                                 stmt: Seq[Any], info: Info): Unit = {
+    throw EmitterException("Cannot emit verification statements in Verilog" +
+      "(2001). Use the SystemVerilog emitter instead.")
+  }
   
   /** 
     * Store Emission option per Target
@@ -594,6 +602,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
     // memories need to be initialized even when randomization is disabled
     val memoryInitials = ArrayBuffer[Seq[Any]]()
     val simulates = ArrayBuffer[Seq[Any]]()
+    val formals = mutable.LinkedHashMap[Expression, ArrayBuffer[Seq[Any]]]()
 
     def bigIntToVLit(bi: BigInt): String =
       if (bi.isValidInt) bi.toString else s"${bi.bitLength}'d$bi"
@@ -818,6 +827,14 @@ class VerilogEmitter extends SeqTransform with Emitter {
       lines += Seq("`endif // SYNTHESIS")
     }
 
+    def addFormal(clk: Expression, en: Expression, stmt: Seq[Any], info: Info) = {
+      addFormalStatement(formals, clk, en, stmt, info)
+    }
+
+    def formalStatement(op: Formal.Value, cond: Expression): Seq[Any] = {
+      Seq(op.toString, "(", cond, ");")
+    }
+
     def stop(ret: Int): Seq[Any] = Seq(if (ret == 0) "$finish;" else "$fatal;")
 
     def printf(str: StringLit, args: Seq[Expression]): Seq[Any] = {
@@ -921,6 +938,8 @@ class VerilogEmitter extends SeqTransform with Emitter {
           simulate(sx.clk, sx.en, stop(sx.ret), Some("STOP_COND"), sx.info)
         case sx: Print =>
           simulate(sx.clk, sx.en, printf(sx.string, sx.args), Some("PRINTF_COND"), sx.info)
+        case sx: Verification =>
+          addFormal(sx.clk, sx.en, formalStatement(sx.op, sx.pred), sx.info)
         // If we are emitting an Attach, it must not have been removable in VerilogPrep
         case sx: Attach =>
           // For Synthesis
@@ -1120,6 +1139,14 @@ class VerilogEmitter extends SeqTransform with Emitter {
         emit(Seq("`endif // SYNTHESIS"))
       }
 
+      if (formals.keys.nonEmpty) {
+        for ((clk, content) <- formals if content.nonEmpty) {
+          emit(Seq(tab, "always @(posedge ", clk, ") begin"))
+          for (line <- content) emit(Seq(tab, tab, line))
+          emit(Seq(tab, "end"))
+        }
+      }
+
       emit(Seq("endmodule"))
     }
 
@@ -1213,6 +1240,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
 class MinimumVerilogEmitter extends VerilogEmitter with Emitter {
 
   override def prerequisites =
+    Dependency[RemoveVerificationStatements] +:
     Dependency[LegalizeAndReductionsTransform] +:
     firrtl.stage.Forms.LowFormMinimumOptimized
 
@@ -1224,8 +1252,20 @@ class MinimumVerilogEmitter extends VerilogEmitter with Emitter {
 class SystemVerilogEmitter extends VerilogEmitter {
   override val outputSuffix: String = ".sv"
 
+  override def prerequisites =
+      Dependency[LegalizeAndReductionsTransform] +:
+      firrtl.stage.Forms.LowFormOptimized
+
+  override def addFormalStatement(formals: mutable.Map[Expression, ArrayBuffer[Seq[Any]]],
+                                  clk: Expression, en: Expression,
+                                  stmt: Seq[Any], info: Info): Unit = {
+    val lines = formals.getOrElseUpdate(clk, ArrayBuffer[Seq[Any]]())
+    lines += Seq("if (", en, ") begin")
+    lines += Seq(tab, stmt, info)
+    lines += Seq("end")
+  }
+
   override def execute(state: CircuitState): CircuitState = {
-    StageUtils.dramaticWarning("SystemVerilog Emitter is the same as the Verilog Emitter!")
     super.execute(state)
   }
 }

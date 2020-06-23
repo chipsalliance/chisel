@@ -105,6 +105,10 @@ object CheckFlows extends Pass {
         case (s: Stop) =>
           check_flow(info, mname, flows, SourceFlow)(s.en)
           check_flow(info, mname, flows, SourceFlow)(s.clk)
+        case (s: Verification) =>
+          check_flow(info, mname, flows, SourceFlow)(s.clk)
+          check_flow(info, mname, flows, SourceFlow)(s.pred)
+          check_flow(info, mname, flows, SourceFlow)(s.en)
         case _ =>
       }
       s foreach check_flows_e(info, mname, flows)

@@ -3,7 +3,6 @@
 package firrtl
 
 import firrtl.transforms.IdentityTransform
-import firrtl.options.StageUtils
 import firrtl.stage.{Forms, TransformManager}
 
 @deprecated("Use a TransformManager or some other Stage/Phase class. Will be removed in 1.4.", "FIRRTL 1.2")
@@ -174,5 +173,4 @@ class MinimumVerilogCompiler extends Compiler {
 )
 class SystemVerilogCompiler extends VerilogCompiler {
   override val emitter = new SystemVerilogEmitter
-  StageUtils.dramaticWarning("SystemVerilog Compiler behaves the same as the Verilog Compiler!")
 }

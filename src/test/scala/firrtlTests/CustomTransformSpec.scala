@@ -6,12 +6,11 @@ import firrtl.ir.Circuit
 import firrtl._
 import firrtl.passes.Pass
 import firrtl.ir._
-
 import firrtl.stage.{FirrtlSourceAnnotation, FirrtlStage, Forms, RunFirrtlTransformAnnotation}
 import firrtl.options.Dependency
 import firrtl.transforms.{IdentityTransform, LegalizeAndReductionsTransform}
-
 import firrtl.testutils._
+import firrtl.transforms.formal.RemoveVerificationStatements
 
 import scala.reflect.runtime
 
@@ -173,10 +172,15 @@ class CustomTransformSpec extends FirrtlFlatSpec {
         .map(target => new firrtl.stage.transforms.Compiler(target))
         .map(_.flattenedTransformOrder.map(Dependency.fromTransform(_)))
 
-    Seq( (Seq(Dependency[LowFirrtlEmitter]),                                                  Seq(low.last)      ),
-         (Seq(Dependency[LegalizeAndReductionsTransform], Dependency[MinimumVerilogEmitter]), Seq(lowMinOpt.last)),
-         (Seq(Dependency[LegalizeAndReductionsTransform], Dependency[VerilogEmitter]),        Seq(lowOpt.last)    ),
-         (Seq(Dependency[LegalizeAndReductionsTransform], Dependency[SystemVerilogEmitter]),  Seq(lowOpt.last)   )
+    Seq( (Seq(Dependency[LowFirrtlEmitter]),             Seq(low.last)      ),
+         (Seq(Dependency[LegalizeAndReductionsTransform],
+           Dependency[RemoveVerificationStatements],
+           Dependency[MinimumVerilogEmitter]),           Seq(lowMinOpt.last)),
+         (Seq(Dependency[LegalizeAndReductionsTransform],
+           Dependency[RemoveVerificationStatements],
+           Dependency[VerilogEmitter]),                  Seq(lowOpt.last)    ),
+         (Seq(Dependency[LegalizeAndReductionsTransform],
+           Dependency[SystemVerilogEmitter]),            Seq(lowOpt.last)   )
     ).foreach((testOrder _).tupled)
   }
 

@@ -310,6 +310,10 @@ object CheckTypes extends Pass {
             errors.append(new PrintfArgNotGround(info, mname))
           if (wt(sx.clk.tpe) != wt(ClockType)) errors.append(new ReqClk(info, mname))
           if (wt(sx.en.tpe) != wt(ut)) errors.append(new EnNotUInt(info, mname))
+        case sx: Verification =>
+          if (wt(sx.clk.tpe) != wt(ClockType)) errors.append(new ReqClk(info, mname))
+          if (wt(sx.pred.tpe) != wt(ut)) errors.append(new PredNotUInt(info, mname))
+          if (wt(sx.en.tpe) != wt(ut)) errors.append(new EnNotUInt(info, mname))
         case sx: DefMemory => sx.dataType match {
           case AnalogType(w) => errors.append(new IllegalAnalogDeclaration(info, mname, sx.name))
           case t =>

@@ -200,8 +200,7 @@ class FirrtlMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
       FirrtlMainTest(args   = Array("-X", "verilog", "-E", "verilog", "-foaf", "foo.anno"),
                       files  = Seq("Top.v", "foo.anno.anno.json")),
       FirrtlMainTest(args   = Array("-X", "sverilog", "-E", "sverilog", "-foaf", "foo.json"),
-                      files  = Seq("Top.sv", "foo.json.anno.json"),
-                      stdout = Some("SystemVerilog Compiler behaves the same as the Verilog Compiler!")),
+                      files  = Seq("Top.sv", "foo.json.anno.json")),
 
       /* Test all one file per module emitters */
       FirrtlMainTest(args   = Array("-X", "none", "-e", "chirrtl"),
@@ -215,8 +214,7 @@ class FirrtlMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
       FirrtlMainTest(args   = Array("-X", "verilog", "-e", "verilog"),
                       files  = Seq("Top.v", "Child.v")),
       FirrtlMainTest(args   = Array("-X", "sverilog", "-e", "sverilog"),
-                      files  = Seq("Top.sv", "Child.sv"),
-                      stdout = Some("SystemVerilog Compiler behaves the same as the Verilog Compiler!")),
+                      files  = Seq("Top.sv", "Child.sv")),
 
       /* Test mixing of -E with -e */
       FirrtlMainTest(args     = Array("-X", "middle", "-E", "high", "-e", "middle"),
@@ -235,8 +233,7 @@ class FirrtlMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
       FirrtlMainTest(args   = Array("-X", "verilog", "-E", "verilog", "-o", "foo.sv"),
                       files  = Seq("foo.sv.v")),
       FirrtlMainTest(args   = Array("-X", "sverilog", "-E", "sverilog", "-o", "Foo"),
-                      files  = Seq("Foo.sv"),
-                      stdout = Some("SystemVerilog Compiler behaves the same as the Verilog Compiler!"))
+                      files  = Seq("Foo.sv"))
     )
       .foreach(runStageExpectFiles)
 

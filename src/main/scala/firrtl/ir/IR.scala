@@ -541,6 +541,38 @@ case class Print(
   def foreachString(f: String => Unit): Unit = Unit
   def foreachInfo(f: Info => Unit): Unit = f(info)
 }
+
+// formal
+object Formal extends Enumeration {
+  val Assert = Value("assert")
+  val Assume = Value("assume")
+  val Cover = Value("cover")
+}
+
+case class Verification(
+  op: Formal.Value,
+  info: Info,
+  clk: Expression,
+  pred: Expression,
+  en: Expression,
+  msg: StringLit
+) extends Statement with HasInfo {
+  def serialize: String = op + "(" + Seq(clk, pred, en).map(_.serialize)
+    .mkString(", ") + ", \"" + msg.serialize + "\")" + info.serialize
+  def mapStmt(f: Statement => Statement): Statement = this
+  def mapExpr(f: Expression => Expression): Statement =
+    copy(clk = f(clk), pred = f(pred), en = f(en))
+  def mapType(f: Type => Type): Statement = this
+  def mapString(f: String => String): Statement = this
+  def mapInfo(f: Info => Info): Statement = copy(info = f(info))
+  def foreachStmt(f: Statement => Unit): Unit = Unit
+  def foreachExpr(f: Expression => Unit): Unit = { f(clk); f(pred); f(en); }
+  def foreachType(f: Type => Unit): Unit = Unit
+  def foreachString(f: String => Unit): Unit = Unit
+  def foreachInfo(f: Info => Unit): Unit = f(info)
+}
+// end formal
+
 case object EmptyStmt extends Statement {
   def serialize: String = "skip"
   def mapStmt(f: Statement => Statement): Statement = this

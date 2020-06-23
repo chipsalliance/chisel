@@ -188,6 +188,25 @@ message Firrtl {
       Expression en = 4;
     }
 
+    enum Formal {
+      ASSERT = 0;
+      ASSUME = 1;
+      COVER = 2;
+    }
+
+    message Verification {
+      // Required.
+      Formal op = 1;
+      // Required.
+      Expression clk = 2;
+      // Required.
+      Expression cond = 3;
+      // Required.
+      Expression en = 4;
+      // Required.
+      string msg = 5;
+    }
+
     message Skip {
       // Empty
     }
