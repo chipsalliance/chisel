@@ -280,7 +280,7 @@ class Queue[T <: Data](gen: T,
 object Queue
 {
   /** Create a queue and supply a DecoupledIO containing the product. */
-  //@chiselName
+  @chiselName
   def apply[T <: Data](
       enq: ReadyValidIO[T],
       entries: Int = 2,

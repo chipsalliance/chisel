@@ -140,8 +140,10 @@ package object experimental {  // scalastyle:ignore object.name
 
   // Use to add a prefix to any component generated in input scope
   val prefix = chisel3.internal.prefix
+  // Use to remove prefixes not in provided scope
   val noPrefix = chisel3.internal.noPrefix
-  def pluginNameRecursively[T <: Any](name: String, nameMe: T): T = {
+  // Used by Chisel's compiler plugin to automatically name signals
+  def autoNameRecursively[T <: Any](name: String, nameMe: T): T = {
     chisel3.internal.Builder.nameRecursively(
       name.replace(" ", ""),
       nameMe,

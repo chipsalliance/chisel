@@ -27,6 +27,8 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
   class ChiselComponentPhase(prev: Phase) extends StdPhase(prev) {
     override def name: String = phaseName
     def apply(unit: CompilationUnit): Unit = {
+      // This plugin doesn't work on Scala 2.11. Rather than complicate the sbt build flow,
+      // instead we just check the version and if its an early Scala version, the plugin does nothing
       if(scala.util.Properties.versionNumberString.split('.')(1).toInt >= 12) {
         unit.body = new MyTypingTransformer(unit).transform(unit.body)
       }
@@ -40,10 +42,7 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
     def shouldMatch(q: Type, bases: Seq[Tree]): Boolean = {
 
       // If subtype of Data or BaseModule, its a match!
-      def terminate(t: Type): Boolean = {
-        //t <:< inferType(tq"chisel3.Data") || t <:< inferType(tq"chisel3.experimental.BaseModule")
-        bases.exists { base => t <:< inferType(base) }
-      }
+      def terminate(t: Type): Boolean = bases.exists { base => t <:< inferType(base) }
 
       // Recurse through subtype hierarchy finding containers
       def recShouldMatch(s: Type): Boolean = {
@@ -94,7 +93,7 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
         badFlags.forall{ x => !mods.hasFlag(x)}
       }
 
-      // Ensure expression isn't null, as you can't call `null.pluginName("myname")`
+      // Ensure expression isn't null, as you can't call `null.autoName("myname")`
       val isNull = dd.rhs match {
         case Literal(Constant(null)) => true
         case _ => false
@@ -102,30 +101,33 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
       okFlags(dd.mods) && shouldMatch(inferType(dd.tpt), bases) && !isNull && dd.rhs != EmptyTree
     }
 
+    // Whether this val is directly enclosed by a Bundle type
     def inBundle(dd: ValDef): Boolean = {
       dd.symbol.logicallyEnclosingMember.thisType <:< inferType(tq"chisel3.Bundle")
     }
 
     // Method called by the compiler to modify source tree
-    // TODO: determine seed/name/prefix terms to help with clarity
     override def transform(tree: Tree): Tree = tree match {
-      // If a Data, get name and prefix
+      // If a Data and in a Bundle, just get the name but not a prefix
       case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd, tq"chisel3.Data") && inBundle(dd) =>
         val TermName(str: String) = name
         val newRHS = super.transform(rhs)
-        val named = q"chisel3.experimental.pluginNameRecursively($str, $newRHS)"
+        val named = q"chisel3.experimental.autoNameRecursively($str, $newRHS)"
         treeCopy.ValDef(dd, mods, name, tpt, localTyper typed named)
+      // If a Data or a Memory, get the name and a prefix
       case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd, tq"chisel3.Data", tq"chisel3.MemBase[_]") =>
         val TermName(str: String) = name
         val newRHS = super.transform(rhs)
         val prefixed = q"chisel3.experimental.prefix.apply[$tpt](name=$str)(f=$newRHS)"
-        val named = q"chisel3.experimental.pluginNameRecursively($str, $prefixed)"
+        val named = q"chisel3.experimental.autoNameRecursively($str, $prefixed)"
         treeCopy.ValDef(dd, mods, name, tpt, localTyper typed named)
+      // If an instance, just get a name but no prefix
       case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd, tq"chisel3.experimental.BaseModule") =>
         val TermName(str: String) = name
         val newRHS = super.transform(rhs)
-        val named = q"chisel3.experimental.pluginNameRecursively($str, $newRHS)"
+        val named = q"chisel3.experimental.autoNameRecursively($str, $newRHS)"
         treeCopy.ValDef(dd, mods, name, tpt, localTyper typed named)
+      // Otherwise, continue
       case _ => super.transform(tree)
     }
   }

@@ -391,17 +391,19 @@ private[chisel3] object Builder {
     chiselContext.get().prefixStack += Right(d)
   }
 
-  // Remove a prefix from the stack
+  // Remove a prefix from top of the stack
   def popPrefix(): Either[String, HasId] = {
     val ps = chiselContext.get().prefixStack
     ps.remove(ps.size - 1)
   }
 
+  // Removes all prefixes from the prefix stack
   def clearPrefix(): Unit = {
     val ps = chiselContext.get().prefixStack
     ps.clear()
   }
 
+  // Clears existing prefixes and sets to new prefix stack
   def setPrefix(prefix: Prefix): Unit = {
     val ps = chiselContext.get().prefixStack
     clearPrefix()

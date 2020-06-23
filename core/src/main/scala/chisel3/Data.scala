@@ -503,7 +503,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
     prefix(this) {
       this.connect(that)(sourceInfo, connectionCompileOptions)
     }
-  } // scalastyle:ignore line.size.limit
+  }
 
   /** Connect this $coll to that $coll bi-directionally and element-wise.
     *
@@ -516,7 +516,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc { // sc
     prefix(this) {
       this.bulkConnect(that)(sourceInfo, connectionCompileOptions)
     }
-  } // scalastyle:ignore line.size.limit
+  }
 
   @chiselRuntimeDeprecated
   @deprecated("litArg is deprecated, use litOption or litTo*Option", "3.2")
