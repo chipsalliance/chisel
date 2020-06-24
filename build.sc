@@ -8,15 +8,21 @@ import mill.contrib.buildinfo.BuildInfo
 
 object chisel3 extends mill.Cross[chisel3CrossModule]("2.11.12", "2.12.11") 
 
+// A class to represent chisel dependent libraries.
+case class ChiselLibrary(organization: String, moduleName: String, defaultVersion: String, configuration: Option[String] = None) {
+  val version = sys.props.getOrElse(moduleName + "Version", defaultVersion)
+  def toMillIvy = {
+    ivy"$organization::$moduleName:$version"
+  }
+  def withRevision(newVersion: String) = this.copy(defaultVersion = newVersion)
+}
+
 // The following stanza is searched for and used when preparing releases.
 // Please retain it.
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
-val defaultVersions = Map("firrtl" -> "1.4-SNAPSHOT")
-
-def getVersion(dep: String, org: String = "edu.berkeley.cs") = {
-  val version = sys.env.getOrElse(dep + "Version", defaultVersions(dep))
-  ivy"$org::$dep:$version"
-}
+val chiselDependencies = Seq(
+  ChiselLibrary("edu.berkeley.cs", "firrtl", "1.4-SNAPSHOT")
+)
 
 // Since chisel contains submodule core and macros, a CommonModule is needed
 trait CommonModule extends ScalaModule with SbtModule with PublishModule {
@@ -41,9 +47,9 @@ trait CommonModule extends ScalaModule with SbtModule with PublishModule {
     case _ => Seq("-Xsource:2.11")
   }
   
-  def ivyDeps = if(firrtlModule.isEmpty) Agg(
-    getVersion("firrtl"),
-  ) else Agg.empty[Dep]
+  def ivyDeps = Agg(
+    chiselDependencies.filter{ case d => d.configuration.isEmpty && (d.moduleName != "firrtl" || firrtlModule.isEmpty)}.map(_.toMillIvy): _*
+  )
 
   def moduleDeps = Seq() ++ firrtlModule
 
@@ -96,11 +102,16 @@ class chisel3CrossModule(crossVersionValue: String) extends CommonModule with Pu
       case _ => Agg()
     }
 
+
+    def chiselTestDeps = Agg(
+      chiselDependencies.filter{ case d => d.configuration.getOrElse("compile") == "test" && (d.moduleName != "firrtl" || firrtlModule.isEmpty)}.map(_.toMillIvy): _*
+    )
+
     def ivyDeps = Agg(
       ivy"org.scalatest::scalatest:3.1.2",
       ivy"org.scalatestplus::scalacheck-1-14:3.1.1.1",
       ivy"com.github.scopt::scopt:3.7.1"
-    ) ++ ivyCrossDeps
+    ) ++ ivyCrossDeps ++ chiselTestDeps
 
     def testFrameworks = Seq("org.scalatest.tools.Framework")
 
