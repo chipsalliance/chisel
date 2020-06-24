@@ -81,7 +81,7 @@ private class Emitter(circuit: Circuit) {
           "\"" + printf.format(fmt) + "\"") ++ args
         printfArgs mkString ("printf(", ", ", ")")
       // formal
-      case e: Assert => s"assert(${e.clock.fullName(ctx)}, ${e.predicate.fullName(ctx)}, " +
+      case e: Verification => s"${e.op}(${e.clock.fullName(ctx)}, ${e.predicate.fullName(ctx)}, " +
         s"UInt<1>(1), " + "\"" + s"${printf.format(e.message)}" + "\")"
       // end formal
       case e: DefInvalid => s"${e.arg.fullName(ctx)} is invalid"

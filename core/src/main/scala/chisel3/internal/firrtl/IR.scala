@@ -740,7 +740,13 @@ case class Stop(sourceInfo: SourceInfo, clock: Arg, ret: Int) extends Command
 case class Port(id: Data, dir: SpecifiedDirection)
 case class Printf(sourceInfo: SourceInfo, clock: Arg, pable: Printable) extends Command
 // formal
-case class Assert(sourceInfo: SourceInfo, clock: Arg, predicate: Arg, message: String) extends Command
+object Formal extends Enumeration {
+  val Assert = Value("assert")
+  val Assume = Value("assume")
+  val Cover = Value("cover")
+}
+case class Verification(op: Formal.Value, sourceInfo: SourceInfo, clock: Arg,
+                        predicate: Arg, message: String) extends Command
 // end formal
 abstract class Component extends Arg {
   def id: BaseModule
