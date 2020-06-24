@@ -44,6 +44,7 @@ class RemoveVerificationStatements extends Transform
     val newState = state.copy(circuit = run(state.circuit))
     if (removedCounter > 0) {
       StageUtils.dramaticWarning(s"$removedCounter verification statements " +
+        "(assert, assume or cover) " +
         "were removed when compiling to Verilog because the basic Verilog " +
         "standard does not support them. If this was not intended, compile " +
         "to System Verilog instead using the `-X sverilog` compiler flag.")
