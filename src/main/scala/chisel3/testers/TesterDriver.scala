@@ -50,7 +50,7 @@ object TesterDriver extends BackendCompilationUtilities {
                     Dependency[Emitter],
                     Dependency[Convert]))
 
-    val annotationsx = pm.transform(ChiselGeneratorAnnotation(t) +: annotations)
+    val annotationsx = pm.transform(ChiselGeneratorAnnotation(finishWrapper(t)) +: annotations)
 
     val target: String = annotationsx.collectFirst { case FirrtlCircuitAnnotation(cir) => cir.main }.get
     val path = annotationsx.collectFirst { case TargetDirAnnotation(dir) => dir }.map(new File(_)).get
