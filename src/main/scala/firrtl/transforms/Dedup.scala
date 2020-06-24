@@ -5,14 +5,17 @@ package transforms
 
 import firrtl.ir._
 import firrtl.Mappers._
+import firrtl.traversals.Foreachers._
 import firrtl.analyses.InstanceGraph
 import firrtl.annotations._
 import firrtl.passes.{InferTypes, MemPortUtils}
-import firrtl.Utils.throwInternalError
+import firrtl.Utils.{kind, splitRef, throwInternalError}
 import firrtl.annotations.transforms.DupedResult
 import firrtl.annotations.TargetToken.{OfModule, Instance}
 import firrtl.options.{HasShellOptions, ShellOption}
 import logger.LazyLogging
+
+import scala.annotation.tailrec
 
 // Datastructures
 import scala.collection.mutable
@@ -446,6 +449,48 @@ object DedupModules extends LazyLogging {
     changeInternals({n => n}, retype, {i => i}, renameOfModule)(module)
   }
 
+  @tailrec
+  private def hasBundleType(tpe: Type): Boolean = tpe match {
+    case _: BundleType => true
+    case _: GroundType => false
+    case VectorType(t, _) => hasBundleType(t)
+  }
+
+  // Find modules that should not have their ports agnostified to avoid bug in
+  // https://github.com/freechipsproject/firrtl/issues/1703
+  // Marks modules that have a port of BundleType that are connected via an aggregate connect or
+  // partial connect in an instantiating parent
+  // Order of modules does not matter
+  private def modsToNotAgnostifyPorts(modules: Seq[DefModule]): Set[String] = {
+    val dontDedup = mutable.HashSet.empty[String]
+    def onModule(mod: DefModule): Unit = {
+      val instToModule = mutable.HashMap.empty[String, String]
+      def markAggregatePorts(expr: Expression): Unit = {
+        if (kind(expr) == InstanceKind && hasBundleType(expr.tpe)) {
+          val (WRef(inst, _, _, _), _) = splitRef(expr)
+          dontDedup += instToModule(inst)
+        }
+      }
+      def onStmt(stmt: Statement): Unit = {
+        stmt.foreach(onStmt)
+        stmt match {
+          case inst: DefInstance =>
+            instToModule(inst.name) = inst.module
+          case Connect(_, lhs, rhs) =>
+            markAggregatePorts(lhs)
+            markAggregatePorts(rhs)
+          case PartialConnect(_, lhs, rhs) =>
+            markAggregatePorts(lhs)
+            markAggregatePorts(rhs)
+          case _ =>
+        }
+      }
+      mod.foreach(onStmt)
+    }
+    modules.foreach(onModule)
+    dontDedup.toSet
+  }
+
   //scalastyle:off
   /** Returns
     *  1) map of tag to all matching module names,
@@ -470,6 +515,8 @@ object DedupModules extends LazyLogging {
 
     val agnosticRename = RenameMap()
 
+    val dontAgnostifyPorts = modsToNotAgnostifyPorts(moduleLinearization)
+
     moduleLinearization.foreach { originalModule =>
       // Replace instance references to new deduped modules
       val dontcare = RenameMap()
@@ -487,7 +534,13 @@ object DedupModules extends LazyLogging {
 
         // Build tag
         val builder = new mutable.ArrayBuffer[Any]()
-        agnosticModule.ports.foreach { builder ++= _.serialize }
+
+        // It may seem weird to use non-agnostified ports with an agnostified body because
+        // technically it would be invalid FIRRTL, but it is logically sound for the purpose of
+        // calculating deduplication tags
+        val ports =
+          if (dontAgnostifyPorts(originalModule.name)) originalModule.ports else agnosticModule.ports
+        ports.foreach { builder ++= _.serialize }
 
         agnosticModule match {
           case Module(i, n, ps, b) => builder ++= fastSerializedHash(b).toString()//.serialize
