@@ -55,16 +55,16 @@ object LowerTypes extends Transform with DependencyAPIMigration {
       val name = root + loweredName(e)
       renames.rename(root + e.serialize, name)
       Seq(name)
-    case (t: BundleType) => t.fields.flatMap { f =>
-      val subNames = renameExps(renames, WSubField(e, f.name, f.tpe, times(flow(e), f.flip)), root)
+    case (t: BundleType) =>
+      val subNames = t.fields.flatMap { f =>
+        renameExps(renames, WSubField(e, f.name, f.tpe, times(flow(e), f.flip)), root)
+      }
       renames.rename(root + e.serialize, subNames)
       subNames
-    }
-    case (t: VectorType) => (0 until t.size).flatMap { i =>
-      val subNames = renameExps(renames, WSubIndex(e, i, t.tpe,flow(e)), root)
+    case (t: VectorType) =>
+      val subNames = (0 until t.size).flatMap { i => renameExps(renames, WSubIndex(e, i, t.tpe,flow(e)), root) }
       renames.rename(root + e.serialize, subNames)
       subNames
-    }
   }
 
   private def renameMemExps(renames: RenameMap, e: Expression, portAndField: Expression): Seq[String] = e.tpe match {
@@ -224,9 +224,10 @@ object LowerTypes extends Transform with DependencyAPIMigration {
                 val d = WRef(mem.name, sx.dataType)
                 tail match {
                   case None =>
-                    create_exps(mem.name, sx.dataType) foreach { x =>
-                      renames.rename(e.serialize, s"${loweredName(x)}.${port.serialize}.${field.serialize}")
+                    val names = create_exps(mem.name, sx.dataType).map { x =>
+                      s"${loweredName(x)}.${port.serialize}.${field.serialize}"
                     }
+                    renames.rename(e.serialize, names)
                   case Some(_) =>
                     renameMemExps(renames, d, mergeRef(port, field))
                 }

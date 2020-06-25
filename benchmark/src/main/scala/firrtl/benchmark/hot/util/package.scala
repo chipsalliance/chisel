@@ -15,6 +15,7 @@ package object util {
     // Benchmark
     val times: Array[Double] = Array.fill(nRun)(0.0)
     for (i <- 0 until nRun) {
+      System.gc
       val (t, res) = time(f)
       times(i) = t
       println(f"Benchmark run $i took $t%.1f ms")
