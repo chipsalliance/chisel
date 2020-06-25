@@ -891,4 +891,14 @@ private[chisel3] trait BoolIntf extends ToBoolable { self: Bool =>
 
   /** @group SourceInfoTransformMacro */
   def do_asAsyncReset(implicit sourceInfo: SourceInfo): AsyncReset = _asAsyncResetImpl
+
+  /** Logical implication
+   *
+   * @param that a boolean signal
+   * @return [[!this || that]]
+   */
+  def implies(that: Bool): Bool = macro SourceInfoTransform.thatArg
+
+  /** @group SourceInfoTransformMacro */
+  def do_implies(that: Bool)(implicit sourceInfo: SourceInfo): Bool = (!this) | that
 }
