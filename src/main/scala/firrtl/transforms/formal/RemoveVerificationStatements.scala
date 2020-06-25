@@ -19,7 +19,7 @@ class RemoveVerificationStatements extends Transform
   with PreservesAll[Transform] {
 
   override def prerequisites: Seq[TransformDependency] = Seq.empty
-  override def optionalPrerequisites: Seq[TransformDependency] = Seq.empty
+  override def optionalPrerequisites: Seq[TransformDependency] = Seq(Dependency(ConvertAsserts))
   override def optionalPrerequisiteOf: Seq[TransformDependency] =
     Seq( Dependency[VerilogEmitter],
       Dependency[MinimumVerilogEmitter])
