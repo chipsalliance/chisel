@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.stage.ChiselStage
 import chisel3.util._
 import chisel3.testers.BasicTester
 import chisel3.experimental.{Analog, attach, BaseModule}
@@ -82,12 +83,12 @@ abstract class AnalogTester extends BasicTester {
     assert(reader.out === BusValue)
 }
 
-class AnalogSpec extends ChiselFlatSpec {
+class AnalogSpec extends ChiselFlatSpec with Utils {
   behavior of "Analog"
 
   it should "NOT be bindable to registers" in {
-    a [ChiselException] should be thrownBy {
-      elaborate { new Module {
+    a [ChiselException] should be thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate { new Module {
         val io = IO(new Bundle {})
         val reg = Reg(Analog(32.W))
       }}
@@ -95,15 +96,15 @@ class AnalogSpec extends ChiselFlatSpec {
   }
 
   it should "NOT be bindable to a direction" in {
-    a [ChiselException] should be thrownBy {
-      elaborate { new Module {
+    a [ChiselException] should be thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate { new Module {
         val io = IO(new Bundle {
           val a = Input(Analog(32.W))
         })
       }}
     }
-    a [ChiselException] should be thrownBy {
-      elaborate { new Module {
+    a [ChiselException] should be thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate { new Module {
         val io = IO(new Bundle {
           val a = Output(Analog(32.W))
         })
@@ -112,7 +113,7 @@ class AnalogSpec extends ChiselFlatSpec {
   }
 
   it should "be flippable" in {
-    elaborate { new Module {
+    ChiselStage.elaborate { new Module {
       val io = IO(new Bundle {
         val a = Flipped(Analog(32.W))
       })
@@ -122,8 +123,8 @@ class AnalogSpec extends ChiselFlatSpec {
   // There is no binding on the type of a memory
   // Should this be an error?
   ignore should "NOT be a legal type for Mem" in {
-    a [ChiselException] should be thrownBy {
-      elaborate { new Module {
+    a [ChiselException] should be thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate { new Module {
         val io = IO(new Bundle {})
         val mem = Mem(16, Analog(32.W))
       }}
@@ -131,8 +132,8 @@ class AnalogSpec extends ChiselFlatSpec {
   }
 
   it should "NOT be bindable to Mem ports" in {
-    a [ChiselException] should be thrownBy {
-      elaborate { new Module {
+    a [ChiselException] should be thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate { new Module {
         val io = IO(new Bundle {})
         val mem = Mem(16, Analog(32.W))
         val port = mem(5.U)
@@ -161,16 +162,16 @@ class AnalogSpec extends ChiselFlatSpec {
   }
 
   it should "error if any bulk connected more than once" in {
-    a [ChiselException] should be thrownBy {
-      elaborate(new Module {
+    a [ChiselException] should be thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate(new Module {
         val io = IO(new Bundle {})
         val wires = List.fill(3)(Wire(Analog(32.W)))
         wires(0) <> wires(1)
         wires(0) <> wires(2)
       })
     }
-    a [ChiselException] should be thrownBy {
-      elaborate(new Module {
+    a [ChiselException] should be thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate(new Module {
         val io = IO(new Bundle {})
         val wires = List.fill(2)(Wire(Analog(32.W)))
         wires(0) <> DontCare
@@ -180,13 +181,13 @@ class AnalogSpec extends ChiselFlatSpec {
   }
 
   it should "allow DontCare connection" in {
-    elaborate(new Module {
+    ChiselStage.elaborate(new Module {
       val io = IO(new Bundle {
         val a = Analog(1.W)
       })
       io.a := DontCare
     })
-    elaborate(new Module {
+    ChiselStage.elaborate(new Module {
       val io = IO(new Bundle {
         val a = Analog(1.W)
       })
@@ -199,14 +200,14 @@ class AnalogSpec extends ChiselFlatSpec {
       val x = Input(UInt(8.W))
       val y = Analog(8.W)
     }
-    elaborate(new Module {
+    ChiselStage.elaborate(new Module {
       val io = IO(new Bundle {
         val a = new MyBundle
       })
       val w = Wire(new MyBundle)
       w <> io.a
     })
-    elaborate(new Module {
+    ChiselStage.elaborate(new Module {
       val io = IO(new Bundle {
         val a = Vec(1, new MyBundle)
       })
@@ -295,4 +296,3 @@ class AnalogSpec extends ChiselFlatSpec {
     }, Seq("/chisel3/AnalogBlackBox.v"))
   }
 }
-

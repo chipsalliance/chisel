@@ -387,7 +387,13 @@ private[chisel3] object Builder {
   }
 
   def errors: ErrorLog = dynamicContext.errors
-  def error(m: => String): Unit = if (dynamicContextVar.value.isDefined) errors.error(m)
+  def error(m: => String): Unit = {
+    if (dynamicContextVar.value.isDefined) {
+      errors.error(m)
+    } else {
+      throwException(m)
+    }
+  }
   def warning(m: => String): Unit = if (dynamicContextVar.value.isDefined) errors.warning(m)
   def deprecated(m: => String, location: Option[String] = None): Unit =
     if (dynamicContextVar.value.isDefined) errors.deprecated(m, location)

@@ -186,7 +186,7 @@ private class Emitter(circuit: Circuit) {
   private def withIndent(f: => Unit) { indent(); f; unindent() }
 
   private val res = new StringBuilder()
-  res ++= s";${Driver.chiselVersionString}\n"
+  res ++= s";${BuildInfo.toString}\n"
   res ++= s"circuit ${circuit.name} : "
   withIndent { circuit.components.foreach(c => res ++= emit(c)) }
   res ++= newline

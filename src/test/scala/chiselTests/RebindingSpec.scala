@@ -3,11 +3,12 @@
 package chiselTests
 
 import chisel3._
+import chisel3.stage.ChiselStage
 
-class RebindingSpec extends ChiselFlatSpec {
+class RebindingSpec extends ChiselFlatSpec with Utils {
   "Rebinding a literal" should "fail" in {
-    a [BindingException] should be thrownBy {
-      elaborate { new Module {
+    a [BindingException] should be thrownBy extractCause[BindingException] {
+      ChiselStage.elaborate { new Module {
         val io = IO(new Bundle {
           val a = 4.U
         })
@@ -16,8 +17,8 @@ class RebindingSpec extends ChiselFlatSpec {
   }
 
   "Rebinding a hardware type" should "fail" in {
-    a [BindingException] should be thrownBy {
-      elaborate { new Module {
+    a [BindingException] should be thrownBy extractCause[BindingException] {
+      ChiselStage.elaborate { new Module {
         val io = IO(new Bundle {
           val a = Reg(UInt(32.W))
         })

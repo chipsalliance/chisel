@@ -2,6 +2,7 @@
 
 package chiselTests
 import chisel3._
+import chisel3.stage.ChiselStage
 
 class EnableShiftRegister extends Module {
   val io = IO(new Bundle {
@@ -47,7 +48,7 @@ class EnableShiftRegisterTester(c: EnableShiftRegister) extends Tester(c) {
 class EnableShiftRegisterSpec extends ChiselPropSpec {
 
   property("EnableShiftRegister should elaborate") {
-    elaborate { new EnableShiftRegister }
+    ChiselStage.elaborate { new EnableShiftRegister }
   }
 
   ignore("EnableShiftRegisterTester should return the correct result") { }
