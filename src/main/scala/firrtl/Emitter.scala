@@ -16,7 +16,7 @@ import Utils._
 import MemPortUtils.{memPortField, memType}
 import firrtl.options.{Dependency, HasShellOptions, PhaseException, ShellOption, Unserializable}
 import firrtl.stage.{RunFirrtlTransformAnnotation, TransformManager}
-import firrtl.transforms.formal.RemoveVerificationStatements
+import firrtl.transforms.formal.{RemoveVerificationStatements, ConvertAsserts}
 // Datastructures
 import scala.collection.mutable.ArrayBuffer
 
@@ -182,6 +182,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
   def outputForm = LowForm
 
   override def prerequisites =
+    Dependency(ConvertAsserts) +:
     Dependency[RemoveVerificationStatements] +:
     Dependency[LegalizeAndReductionsTransform] +:
     firrtl.stage.Forms.LowFormOptimized
@@ -1240,6 +1241,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
 class MinimumVerilogEmitter extends VerilogEmitter with Emitter {
 
   override def prerequisites =
+    Dependency(ConvertAsserts) +:
     Dependency[RemoveVerificationStatements] +:
     Dependency[LegalizeAndReductionsTransform] +:
     firrtl.stage.Forms.LowFormMinimumOptimized

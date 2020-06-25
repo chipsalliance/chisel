@@ -10,7 +10,7 @@ import firrtl.stage.{FirrtlSourceAnnotation, FirrtlStage, Forms, RunFirrtlTransf
 import firrtl.options.Dependency
 import firrtl.transforms.{IdentityTransform, LegalizeAndReductionsTransform}
 import firrtl.testutils._
-import firrtl.transforms.formal.RemoveVerificationStatements
+import firrtl.transforms.formal.{RemoveVerificationStatements, ConvertAsserts}
 
 import scala.reflect.runtime
 
@@ -174,9 +174,11 @@ class CustomTransformSpec extends FirrtlFlatSpec {
 
     Seq( (Seq(Dependency[LowFirrtlEmitter]),             Seq(low.last)      ),
          (Seq(Dependency[LegalizeAndReductionsTransform],
+           Dependency(ConvertAsserts),
            Dependency[RemoveVerificationStatements],
            Dependency[MinimumVerilogEmitter]),           Seq(lowMinOpt.last)),
          (Seq(Dependency[LegalizeAndReductionsTransform],
+           Dependency(ConvertAsserts),
            Dependency[RemoveVerificationStatements],
            Dependency[VerilogEmitter]),                  Seq(lowOpt.last)    ),
          (Seq(Dependency[LegalizeAndReductionsTransform],
