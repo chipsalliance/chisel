@@ -5,17 +5,11 @@ package chisel3.testers
 import java.io._
 
 import chisel3._
-import chisel3.experimental.RunFirrtlTransform
-import chisel3.stage.phases.{AspectPhase, Convert, Elaborate, Emitter}
-import chisel3.stage.{
-  ChiselCircuitAnnotation,
-  ChiselGeneratorAnnotation,
-  ChiselOutputFileAnnotation,
-  ChiselStage,
-  DesignAnnotation
-}
-import firrtl.{Driver => _, _}
-import firrtl.options.{Dependency, Phase, PhaseManager}
+import chisel3.stage.phases.{Convert, Elaborate, Emitter}
+import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation, ChiselStage, NoRunFirrtlCompilerAnnotation}
+import firrtl.AnnotationSeq
+import firrtl.annotations.NoTargetAnnotation
+import firrtl.options.{Dependency, Phase, PhaseManager, TargetDirAnnotation, Unserializable}
 import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlStage}
 import firrtl.transforms.BlackBoxSourceHelper.writeResourceToDirectory
 import treadle.executable.StopException
@@ -33,7 +27,8 @@ object TesterDriver extends BackendCompilationUtilities {
 
   /*
   Currently the only mechanism for running with the Treadle backend is to edit this
-  statement locally.
+  statement locally. To:
+  `val defaultBackend: Backend = TreadleBackend`
    */
   val defaultBackend: Backend = VerilatorBackend
 
@@ -84,6 +79,8 @@ object TesterDriver extends BackendCompilationUtilities {
         executeTreadle(t, additionalVResources, annotations, nameHint)
       case VerilatorBackend =>
         executeVerilog(t, additionalVResources, annotations, nameHint)
+      case NoBackend =>
+        true
       case _ =>
         throw new ChiselException(s"Unknown backend specified: $backendAnnotation")
     }

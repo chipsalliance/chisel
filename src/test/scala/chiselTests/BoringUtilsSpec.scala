@@ -4,7 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.util.Counter
-import chisel3.testers.{BasicTester, TesterDriver}
+import chisel3.testers._
 import chisel3.experimental.{BaseModule, ChiselAnnotation, RunFirrtlTransform}
 import chisel3.util.experimental.BoringUtils
 
