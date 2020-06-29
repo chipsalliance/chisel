@@ -52,18 +52,17 @@ sealed abstract class Aggregate extends Data {
     // Shift the accumulated value by our width and add in our component, masked by our width.
     def shiftAdd(accumulator: BigInt, shiftadd: (Int, BigInt)): BigInt = {
       val width = shiftadd._1
-      val mask = (1 << width) - 1
-      val value = shiftadd._2 & mask
-      (accumulator << width) + value
+      require(shiftadd._2 < (BigInt(1) << width))  // sanity check to make value fits within the width
+      (accumulator << width) + shiftadd._2
     }
-    try {
-      topBindingOpt match {
-        case Some(BundleLitBinding(_)) =>
-          Some(getElements.reverse.map{ case e => (e.width.get, e.litOption().get)}.foldLeft(BigInt(0))(shiftAdd(_, _)))
-        case _ =>  None
-      }
-    } catch {
-      case e: NoSuchElementException => None
+    topBindingOpt match {
+      case Some(BundleLitBinding(_)) =>
+        Some(getElements
+            .reverse
+            .map{ case e => (e.width.get, e.litOption().get) }
+            .foldLeft(BigInt(0))(shiftAdd(_, _))
+        )
+      case _ =>  None
     }
   }
 
