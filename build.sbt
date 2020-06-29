@@ -28,7 +28,9 @@ def javacOptionsVersion(scalaVersion: String): Seq[String] = {
   }
 }
 
-val defaultVersions = Map("firrtl" -> "1.3-SNAPSHOT")
+val defaultVersions = Seq(
+  "edu.berkeley.cs" %% "firrtl" % "1.4-SNAPSHOT"
+)
 
 lazy val commonSettings = Seq (
   resolvers ++= Seq(
@@ -36,13 +38,13 @@ lazy val commonSettings = Seq (
     Resolver.sonatypeRepo("releases")
   ),
   organization := "edu.berkeley.cs",
-  version := "3.3-SNAPSHOT",
+  version := "3.4-SNAPSHOT",
   autoAPIMappings := true,
-  scalaVersion := "2.12.10",
-  crossScalaVersions := Seq("2.12.10", "2.11.12"),
+  scalaVersion := "2.12.11",
+  crossScalaVersions := Seq("2.12.11", "2.11.12"),
   scalacOptions := Seq("-deprecation", "-feature") ++ scalacOptionsVersion(scalaVersion.value),
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-  addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
+  addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full),
   (scalastyleConfig in Test) := (baseDirectory in root).value / "scalastyle-test-config.xml",
   // Use the root project's unmanaged base for all sub-projects.
   unmanagedBase := (unmanagedBase in root).value,
@@ -50,11 +52,12 @@ lazy val commonSettings = Seq (
   //  this has to be a Task setting.
   //  Fortunately, allDependencies is a Task Setting, so we can modify that.
   allDependencies := {
-    allDependencies.value ++ Seq("firrtl").collect {
+    allDependencies.value ++ defaultVersions.collect {
       // If we have an unmanaged jar file on the classpath, assume we're to use that,
-      case dep: String if !(unmanagedClasspath in Compile).value.toString.contains(s"$dep.jar") =>
-        //  otherwise let sbt fetch the appropriate version.
-        "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep))
+      case m: ModuleID if !(unmanagedClasspath in Compile).value.toString.contains(s"${m.name}.jar") =>
+        //  otherwise let sbt fetch the appropriate artifact, possibly with a specific revision.
+        val mWithRevision = m.withRevision(sys.props.getOrElse(m.name + "Version", m.revision))
+        mWithRevision
     }
   }
 )
@@ -104,9 +107,9 @@ lazy val chiselSettings = Seq (
 // when compiling tests under 2.11.12
 // An explicit dependency on junit seems to alleviate this.
   libraryDependencies ++= Seq(
-    "junit" % "junit" % "4.12" % "test",
-    "org.scalatest" %% "scalatest" % "3.0.8" % "test",
-    "org.scalacheck" %% "scalacheck" % "1.14.0" % "test",
+    "junit" % "junit" % "4.13" % "test",
+    "org.scalatest" %% "scalatest" % "3.1.2" % "test",
+    "org.scalatestplus" %% "scalacheck-1-14" % "3.1.1.1" % "test",
     "com.github.scopt" %% "scopt" % "3.7.1"
   ),
   javacOptions ++= javacOptionsVersion(scalaVersion.value)
@@ -122,16 +125,16 @@ lazy val chiselSettings = Seq (
   }
 )
 
-lazy val coreMacros = (project in file("coreMacros")).
+lazy val macros = (project in file("macros")).
+  settings(name := "chisel3-macros").
   settings(commonSettings: _*).
-  // Prevent separate JARs from being generated for coreMacros.
-  settings(skip in publish := true)
+  settings(publishSettings: _*)
 
-lazy val chiselFrontend = (project in file("chiselFrontend")).
+lazy val core = (project in file("core")).
   settings(commonSettings: _*).
-  // Prevent separate JARs from being generated for chiselFrontend.
-  settings(skip in publish := true).
+  settings(publishSettings: _*).
   settings(
+    name := "chisel3-core",
     scalacOptions := scalacOptions.value ++ Seq(
       "-deprecation",
       "-explaintypes",
@@ -140,10 +143,10 @@ lazy val chiselFrontend = (project in file("chiselFrontend")).
       "-unchecked",
       "-Xcheckinit",
       "-Xlint:infer-any"
-//      "-Xlint:missing-interpolator"
+//      , "-Xlint:missing-interpolator"
     )
   ).
-  dependsOn(coreMacros)
+  dependsOn(macros)
 
 // This will always be the root project, even if we are a sub-project.
 lazy val root = RootProject(file("."))
@@ -159,15 +162,9 @@ lazy val chisel = (project in file(".")).
   settings(commonSettings: _*).
   settings(chiselSettings: _*).
   settings(publishSettings: _*).
-  dependsOn(coreMacros % "compile-internal;test-internal").
-  dependsOn(chiselFrontend % "compile-internal;test-internal").
-  // We used to have to disable aggregation in general in order to suppress
-  //  creation of subproject JARs (coreMacros and chiselFrontend) during publishing.
-  // This had the unfortunate side-effect of suppressing coverage tests and scaladoc generation in subprojects.
-  // The "skip in publish := true" setting in subproject settings seems to be
-  //   sufficient to suppress subproject JAR creation, so we can restore
-  //   general aggregation, and thus get coverage tests and scaladoc for subprojects.
-  aggregate(coreMacros, chiselFrontend).
+  dependsOn(macros).
+  dependsOn(core).
+  aggregate(macros, core).
   settings(
     scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
     scalacOptions in Compile in doc ++= Seq(
@@ -189,13 +186,9 @@ lazy val chisel = (project in file(".")).
           }
         s"https://github.com/freechipsproject/chisel3/tree/$branch/€{FILE_PATH}.scala"
       }
-    ),
-    // Include macro classes, resources, and sources main JAR since we don't create subproject JARs.
-    mappings in (Compile, packageBin) ++= (mappings in (coreMacros, Compile, packageBin)).value,
-    mappings in (Compile, packageSrc) ++= (mappings in (coreMacros, Compile, packageSrc)).value,
-    mappings in (Compile, packageBin) ++= (mappings in (chiselFrontend, Compile, packageBin)).value,
-    mappings in (Compile, packageSrc) ++= (mappings in (chiselFrontend, Compile, packageSrc)).value,
-    // Export the packaged JAR so projects that depend directly on Chisel project (rather than the
-    // published artifact) also see the stuff in coreMacros and chiselFrontend.
-    exportJars := true
+    )
   )
+
+addCommandAlias("com", "all compile")
+addCommandAlias("lint", "; compile:scalafix --check ; test:scalafix --check")
+addCommandAlias("fix", "all compile:scalafix test:scalafix")

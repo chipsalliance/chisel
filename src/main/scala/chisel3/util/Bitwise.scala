@@ -61,6 +61,7 @@ object Fill {
   /** Create n repetitions of x using a tree fanout topology.
     *
     * Output data-equivalent to x ## x ## ... ## x (n repetitions).
+    * @throws java.lang.IllegalArgumentException if `n` is less than zero
     */
   def apply(n: Int, x: UInt): UInt = {
     n match {

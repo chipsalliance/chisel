@@ -16,7 +16,8 @@ import firrtl.passes.CheckWidths.{DisjointSqueeze, InvalidRange}
 import firrtl.passes.{PassExceptions, WrapWithRemainder}
 import firrtl.stage.{CompilerAnnotation, FirrtlCircuitAnnotation}
 import firrtl.{FIRRTLException, HighFirrtlCompiler, LowFirrtlCompiler, MiddleFirrtlCompiler, MinimumVerilogCompiler, NoneCompiler, SystemVerilogCompiler, VerilogCompiler}
-import org.scalatest.{FreeSpec, Matchers}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 //scalastyle:off magic.number
 //noinspection TypeAnnotation
@@ -31,30 +32,18 @@ object IntervalTestHelper {
     */
   //scalastyle:off cyclomatic.complexity
   def makeFirrtl[T <: RawModule](compilerName: String)(gen: () => T): String = {
-    val c = compilerName match {
-      case "none"     => new NoneCompiler()
-      case "high"     => new HighFirrtlCompiler()
-      case "lo"       => new LowFirrtlCompiler()
-      case "low"      => new LowFirrtlCompiler()
-      case "middle"   => new MiddleFirrtlCompiler()
-      case "verilog"  => new VerilogCompiler()
-      case "mverilog" => new MinimumVerilogCompiler()
-      case "sverilog" => new SystemVerilogCompiler()
-      case _ =>
-        throw new Exception(
-          s"Unknown compiler name '$compilerName'! (Did you misspell it?)"
-        )
-    }
-    val compiler = CompilerAnnotation(c)
-    val annotations = Seq(new ChiselGeneratorAnnotation(gen), TargetDirAnnotation("test_run_dir/IntervalSpec"), compiler)
-    val processed = (new ChiselStage).run(annotations)
-    processed.collectFirst { case FirrtlCircuitAnnotation(source) => source } match {
-      case Some(circuit) => circuit.serialize
-      case _ =>
-        throw new Exception(
-          s"makeFirrtl($compilerName) failed to generate firrtl circuit"
-        )
-    }
+    (new ChiselStage)
+      .execute(Array("--compiler", compilerName,
+                     "--target-dir", "test_run_dir/IntervalSpec"),
+               Seq(ChiselGeneratorAnnotation(gen)))
+      .collectFirst { case FirrtlCircuitAnnotation(source) => source } match {
+        case Some(circuit) => circuit.serialize
+        case _ =>
+          throw new Exception(
+            s"makeFirrtl($compilerName) failed to generate firrtl circuit"
+          )
+      }
+
   }
 }
 
@@ -423,7 +412,7 @@ class IntervalChainedSubTester extends BasicTester {
 }
 
 //TODO: need tests for dynamic shifts on intervals
-class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
+class IntervalSpec extends AnyFreeSpec with Matchers with ChiselRunners {
 
   type TempFirrtlException = Exception
 
@@ -458,6 +447,63 @@ class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
               val x = 5.I(range"[0,4]")
           }
         ).elaborate
+      }
+    }
+  }
+
+  "Interval literals support to double and to BigDecimal" in {
+    val d = -7.125
+    val lit1 = d.I(3.BP)
+    lit1.litToDouble should be (d)
+
+    val d2 = BigDecimal("1232123213131123.125")
+    val lit2 = d2.I(3.BP)
+    lit2.litToBigDecimal should be (d2)
+
+    // Numbers that are too big will throw exception
+    intercept[ChiselException] {
+      lit2.litToDouble
+    }
+  }
+
+  "Interval literals creation handles edge cases" - {
+    "value at closed boundaries works" in {
+      val inputRange = range"[-6, 6].2"
+      val in1 = (-6.0).I(inputRange)
+      val in2 = 6.0.I(inputRange)
+      BigDecimal(in1.litValue()) / (1 << inputRange.binaryPoint.get) should be (-6)
+      BigDecimal(in2.litValue()) / (1 << inputRange.binaryPoint.get) should be (6)
+      intercept[ChiselException] {
+        (-6.25).I(inputRange)
+      }
+      intercept[ChiselException] {
+        (6.25).I(inputRange)
+      }
+    }
+    "value at open boundaries works" in {
+      val inputRange = range"(-6, 6).2"
+      val in1 = (-5.75).I(inputRange)
+      val in2 = 5.75.I(inputRange)
+      BigDecimal(in1.litValue()) / (1 << inputRange.binaryPoint.get) should be (-5.75)
+      BigDecimal(in2.litValue()) / (1 << inputRange.binaryPoint.get) should be (5.75)
+      intercept[ChiselException] {
+        (-6.0).I(inputRange)
+      }
+      intercept[ChiselException] {
+        (6.0).I(inputRange)
+      }
+    }
+    "values not precisely at open boundaries works but are converted to nearest match" in {
+      val inputRange = range"(-6, 6).2"
+      val in1 = (-5.95).I(inputRange)
+      val in2 = 5.95.I(inputRange)
+      BigDecimal(in1.litValue()) / (1 << inputRange.binaryPoint.get) should be (-5.75)
+      BigDecimal(in2.litValue()) / (1 << inputRange.binaryPoint.get) should be (5.75)
+      intercept[ChiselException] {
+        (-6.1).I(inputRange)
+      }
+      intercept[ChiselException] {
+        (6.1).I(inputRange)
       }
     }
   }
@@ -656,7 +702,7 @@ class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
       }
       "squeeze disjoint from Module gives exception" in {
         intercept[DisjointSqueeze] {
-          makeFirrtl("lo")(
+          makeFirrtl("low")(
             () =>
               new Module {
                 val io = IO(new Bundle {
@@ -673,7 +719,7 @@ class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
         }
       }
       "clip disjoint from Module gives no error" in {
-        makeFirrtl("lo")(
+        makeFirrtl("low")(
           () =>
             new Module {
               val io = IO(new Bundle {
@@ -690,7 +736,7 @@ class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
       }
       "wrap disjoint from Module wrap with remainder" in {
         intercept[WrapWithRemainder] {
-          makeFirrtl("lo")(
+          makeFirrtl("low")(
             () =>
               new Module {
                 val io = IO(new Bundle {
@@ -721,7 +767,7 @@ class IntervalSpec extends FreeSpec with Matchers with ChiselRunners {
   "Intervals should catch assignment of literals outside of range" - {
     "when literal is too small" in {
       intercept[InvalidConnect] {
-        makeFirrtl("lo")(
+        makeFirrtl("low")(
           () =>
             new Module {
               val io = IO(new Bundle { val out = Output(Interval()) })

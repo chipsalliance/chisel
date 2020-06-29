@@ -5,6 +5,7 @@ package chiselTests
 import chisel3._
 import chisel3.util.Counter
 import chisel3.testers.BasicTester
+import chisel3.stage.ChiselStage
 
 /** Multi-clock test of a Reg using a different clock via withClock */
 class ClockDividerTest extends BasicTester {
@@ -123,7 +124,7 @@ class MultiClockSpec extends ChiselFlatSpec {
   }
 
   it should "return like a normal Scala block" in {
-    elaborate(new BasicTester {
+    ChiselStage.elaborate(new BasicTester {
       assert(withClock(this.clock) { 5 } == 5)
     })
   }
@@ -137,7 +138,7 @@ class MultiClockSpec extends ChiselFlatSpec {
   }
 
   it should "return like a normal Scala block" in {
-    elaborate(new BasicTester {
+    ChiselStage.elaborate(new BasicTester {
       assert(withReset(this.reset) { 5 } == 5)
     })
   }
@@ -155,7 +156,7 @@ class MultiClockSpec extends ChiselFlatSpec {
   }
 
   "withClockAndReset" should "return like a normal Scala block" in {
-    elaborate(new BasicTester {
+    ChiselStage.elaborate(new BasicTester {
       assert(withClockAndReset(this.clock, this.reset) { 5 } == 5)
     })
   }

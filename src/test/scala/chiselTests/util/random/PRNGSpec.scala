@@ -3,11 +3,12 @@
 package chiselTests.util.random
 
 import chisel3._
+import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
 import chisel3.util.Counter
 import chisel3.util.random.PRNG
 
-import chiselTests.ChiselFlatSpec
+import chiselTests.{ChiselFlatSpec, Utils}
 
 class CyclePRNG(width: Int, seed: Option[BigInt], step: Int, updateSeed: Boolean)
     extends PRNG(width, seed, step, updateSeed) {
@@ -61,18 +62,20 @@ class PRNGUpdateSeedTest(updateSeed: Boolean, seed: BigInt, expected: BigInt) ex
 
 }
 
-class PRNGSpec extends ChiselFlatSpec {
+class PRNGSpec extends ChiselFlatSpec with Utils {
 
   behavior of "PRNG"
 
   it should "throw an exception if the step size is < 1" in {
-    { the [IllegalArgumentException] thrownBy elaborate(new CyclePRNG(0, Some(1), 1, true)) }
-      .getMessage should include ("Width must be greater than zero!")
+    { the [IllegalArgumentException] thrownBy extractCause[IllegalArgumentException] {
+       ChiselStage.elaborate(new CyclePRNG(0, Some(1), 1, true)) }
+    }.getMessage should include ("Width must be greater than zero!")
   }
 
   it should "throw an exception if the step size is <= 0" in {
-    { the [IllegalArgumentException] thrownBy elaborate(new CyclePRNG(1, Some(1), 0, true)) }
-      .getMessage should include ("Step size must be greater than one!")
+    { the [IllegalArgumentException] thrownBy extractCause[IllegalArgumentException] {
+       ChiselStage.elaborate(new CyclePRNG(1, Some(1), 0, true)) }
+    }.getMessage should include ("Step size must be greater than one!")
   }
 
   it should "handle non-unary steps" in {

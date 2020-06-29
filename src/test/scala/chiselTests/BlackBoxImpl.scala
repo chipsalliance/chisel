@@ -6,9 +6,12 @@ import java.io.File
 
 import chisel3._
 import chisel3.util.{HasBlackBoxInline, HasBlackBoxResource, HasBlackBoxPath}
+import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import firrtl.FirrtlExecutionSuccess
 import org.scalacheck.Test.Failed
-import org.scalatest.{FreeSpec, Matchers, Succeeded}
+import org.scalatest.Succeeded
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 //scalastyle:off magic.number
 
@@ -87,41 +90,31 @@ class UsesBlackBoxMinusViaPath extends Module {
   io.out := mod0.io.out
 }
 
-class BlackBoxImplSpec extends FreeSpec with Matchers {
+class BlackBoxImplSpec extends AnyFreeSpec with Matchers {
   val targetDir = "test_run_dir"
+  val stage = new ChiselStage
   "BlackBox can have verilator source implementation" - {
     "Implementations can be contained in-line" in {
-      Driver.execute(Array("-X", "verilog", "--target-dir", targetDir), () => new UsesBlackBoxAddViaInline) match {
-        case ChiselExecutionSuccess(_, _, Some(_: FirrtlExecutionSuccess)) =>
-          val verilogOutput = new File(targetDir, "BlackBoxAdd.v")
-          verilogOutput.exists() should be (true)
-          verilogOutput.delete()
-          Succeeded
-        case _ =>
-          Failed
-      }
+      stage.execute(Array("-X", "verilog", "--target-dir", targetDir),
+                    Seq(ChiselGeneratorAnnotation(() => new UsesBlackBoxAddViaInline)))
+      val verilogOutput = new File(targetDir, "BlackBoxAdd.v")
+      verilogOutput.exists() should be (true)
+      verilogOutput.delete()
     }
     "Implementations can be contained in resource files" in {
-      Driver.execute(Array("-X", "low", "--target-dir", targetDir), () => new UsesBlackBoxMinusViaResource) match {
-        case ChiselExecutionSuccess(_, _, Some(_: FirrtlExecutionSuccess)) =>
-          val verilogOutput = new File(targetDir, "BlackBoxTest.v")
-          verilogOutput.exists() should be (true)
-          verilogOutput.delete()
-          Succeeded
-        case _ =>
-          Failed
-      }
+      stage.execute(Array("-X", "low", "--target-dir", targetDir),
+                    Seq(ChiselGeneratorAnnotation(() => new UsesBlackBoxMinusViaResource)))
+      val verilogOutput = new File(targetDir, "BlackBoxTest.v")
+      verilogOutput.exists() should be (true)
+      verilogOutput.delete()
     }
     "Implementations can be contained in arbitrary files" in {
-      Driver.execute(Array("-X", "low", "--target-dir", targetDir), () => new UsesBlackBoxMinusViaPath) match {
-        case ChiselExecutionSuccess(_, _, Some(_: FirrtlExecutionSuccess)) =>
-          val verilogOutput = new File(targetDir, "BlackBoxTest.v")
-          verilogOutput.exists() should be (true)
-          verilogOutput.delete()
-          Succeeded
-        case _ =>
-          Failed
-      }
+      stage.execute(Array("-X", "low", "--target-dir", targetDir),
+                    Seq(ChiselGeneratorAnnotation(() => new UsesBlackBoxMinusViaPath)))
+      val verilogOutput = new File(targetDir, "BlackBoxTest.v")
+      verilogOutput.exists() should be (true)
+      verilogOutput.delete()
+      Succeeded
     }
   }
 }
