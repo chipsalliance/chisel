@@ -50,18 +50,19 @@ sealed abstract class Aggregate extends Data {
     */
   override def litOption: Option[BigInt] = {
     // Shift the accumulated value by our width and add in our component, masked by our width.
-    def shiftAdd(accumulator: BigInt, shiftadd: (Int, BigInt)): BigInt = {
-      val width = shiftadd._1
-      require(shiftadd._2 < (BigInt(1) << width))  // sanity check to make value fits within the width
-      (accumulator << width) + shiftadd._2
+    def shiftAdd(accumulator: Option[BigInt], elt: Data): Option[BigInt] = (accumulator, elt.litOption()) match {
+      case (Some(accumulator), Some(eltLit)) =>
+        val width = elt.width.get
+        require(eltLit < (BigInt(1) << width))
+        Some((accumulator << width) + eltLit)
+      case (None, _) => None
+      case (_, None) => None
     }
     topBindingOpt match {
       case Some(BundleLitBinding(_)) =>
-        Some(getElements
-            .reverse
-            .map{ case e => (e.width.get, e.litOption().get) }
-            .foldLeft(BigInt(0))(shiftAdd(_, _))
-        )
+        getElements
+          .reverse
+          .foldLeft[Option[BigInt]](Some(BigInt(0)))(shiftAdd)
       case _ =>  None
     }
   }
