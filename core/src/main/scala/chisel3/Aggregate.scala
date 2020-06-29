@@ -53,8 +53,8 @@ sealed abstract class Aggregate extends Data {
     def shiftAdd(accumulator: Option[BigInt], elt: Data): Option[BigInt] = (accumulator, elt.litOption()) match {
       case (Some(accumulator), Some(eltLit)) =>
         val width = elt.width.get
-        require(eltLit < (BigInt(1) << width))
-        Some((accumulator << width) + eltLit)
+        val masked = ((BigInt(1) << width) - 1) & eltLit  // also handles the negative case with two's complement
+        Some((accumulator << width) + masked)
       case (None, _) => None
       case (_, None) => None
     }

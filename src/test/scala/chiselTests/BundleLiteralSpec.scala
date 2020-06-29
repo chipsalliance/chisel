@@ -8,6 +8,7 @@ import chisel3.testers.BasicTester
 import chisel3.experimental.BundleLiterals._
 import chisel3.experimental.BundleLiteralException
 import chisel3.experimental.ChiselEnum
+import chisel3.experimental.FixedPoint
 
 class BundleLiteralSpec extends ChiselFlatSpec with Utils {
   object MyEnum extends ChiselEnum {
@@ -22,12 +23,26 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
     val c = MyEnum()
   }
 
-  "bundle literals" should "pack" in {
-    assertTesterPasses{ new BasicTester{
-      val bundleLit = (new MyBundle).Lit(_.a -> 42.U, _.b -> true.B, _.c -> MyEnum.sB)
-      bundleLit.litOption should equal (Some(171))  // packed as 42 (8-bit), true=1 (1-bit), sB=1 (1-bit)
+  class LongBundle extends Bundle {
+    val a = UInt(48.W)
+    val b = SInt(32.W)
+    val c = FixedPoint(16.W, 4.BP)
+  }
 
-      chisel3.assert(bundleLit.asUInt() === 171.U)  // check runtime packing behavior matches expected packing
+  "bundle literals" should "pack" in {
+    assertTesterPasses{ new BasicTester {
+      val bundleLit = (new MyBundle).Lit(_.a -> 42.U, _.b -> false.B, _.c -> MyEnum.sB)
+      bundleLit.litOption should equal (Some(169))  // packed as 42 (8-bit), false=0 (1-bit), sB=1 (1-bit)
+      chisel3.assert(bundleLit.asUInt() === bundleLit.litOption.get.U)  // sanity-check consistency with runtime
+
+      val longBundleLit = (new LongBundle).Lit(
+        _.a -> 0xDEADDEADBEEFL.U, _.b -> -0x0BEEF00DL.S(32.W), _.c -> 4.5.F(16.W, 4.BP))
+      longBundleLit.litOption should equal (Some(
+        (BigInt(0xDEADDEADBEEFL) << 48)
+        + (BigInt(0xFFFFFFFFL - 0xBEEF00DL + 1) << 16)
+        + BigInt(72)))
+      chisel3.assert(longBundleLit.asUInt() === longBundleLit.litOption.get.U)
+
       stop()
     } }
   }
@@ -241,18 +256,6 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
     ChiselStage.elaborate { new RawModule {
       val bundleLit = (new MyBundle).Lit(_.a -> 42.U)
       bundleLit.litOption should equal (None)
-    } }
-  }
-
-  class LongBundle extends Bundle {
-    val a = UInt(48.W)
-    val b = UInt(32.W)
-  }
-
-  "long bundle literals" should "pack" in {
-    ChiselStage.elaborate { new RawModule {
-      val bundleLit = (new LongBundle).Lit(_.a -> 0xDEADDEADBEEFL.U, _.b -> 0xBEEFF00DL.U)
-      bundleLit.litOption should equal (Some((BigInt(0xDEADDEADBEEFL) << 32) + BigInt(0xBEEFF00DL)))
     } }
   }
 }
