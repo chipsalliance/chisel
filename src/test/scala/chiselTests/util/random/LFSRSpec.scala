@@ -6,8 +6,7 @@ import chisel3._
 import chisel3.stage.ChiselStage
 import chisel3.util.{Cat, Counter, Enum}
 import chisel3.util.random._
-import chisel3.testers.BasicTester
-
+import chisel3.testers.{BasicTester, TesterDriver}
 import chiselTests.{ChiselFlatSpec, Utils}
 
 import math.pow
@@ -109,12 +108,15 @@ class LFSRResetTester(gen: => LFSR, lockUpValue: BigInt) extends BasicTester {
 class LFSRSpec extends ChiselFlatSpec with Utils {
 
   def periodCheck(gen: (Int, Set[Int], LFSRReduce) => PRNG, reduction: LFSRReduce, range: Range): Unit = {
-    it should s"have a maximal period over a range of widths (${range.head} to ${range.last}) using ${reduction.getClass}" in {
+    val testName = s"have a maximal period over a range of widths (${range.head} to ${range.last})" +
+      s" using ${reduction.getClass}"
+    it should testName in {
       range
         .foreach{ width =>
           LFSR.tapsMaxPeriod(width).foreach{ taps =>
             info(s"""width $width okay using taps: ${taps.mkString(", ")}""")
-            assertTesterPasses(new LFSRMaxPeriod(PRNG(gen(width, taps, reduction))))
+            assertTesterPasses(new LFSRMaxPeriod(PRNG(gen(width, taps, reduction))),
+              annotations = TesterDriver.verilatorOnly)
           }
         }
     }
