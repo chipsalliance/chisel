@@ -25,8 +25,12 @@ import org.scalatest.matchers.should.Matchers
 
 object ManipulateNamesSpec {
 
-  class AddPrefix extends ManipulateNames {
+  class AddPrefix extends ManipulateNames[AddPrefix] {
     override def manipulate = (a: String, b: Namespace) => Some(b.newName("prefix_" + a))
+  }
+
+  class AddSuffix extends ManipulateNames[AddSuffix] {
+    override def manipulate = (a: String, b: Namespace) => Some(b.newName(a + "_suffix"))
   }
 
 }
@@ -170,6 +174,26 @@ class ManipulateNamesSpec extends AnyFlatSpec with Matchers {
     intercept [FirrtlUserException] {
       (new AddPrefix).transform(state)
     }.getMessage should include ("LowerTypes")
+  }
+
+  it should "only consume annotations whose type parameter matches" in new CircuitFixture {
+    val annotations = Seq(
+      ManipulateNamesBlocklistAnnotation(Seq(Seq(`~Foo|Bar>a`)), Dependency[AddPrefix]),
+      ManipulateNamesAllowlistAnnotation(Seq(Seq(`~Foo`)), Dependency[AddSuffix]),
+      ManipulateNamesAllowlistAnnotation(Seq(Seq(`~Foo|Bar>a`)), Dependency[AddSuffix])
+    )
+    val state = CircuitState(Parser.parse(input), annotations)
+    override val tm = new firrtl.stage.transforms.Compiler(Seq(Dependency[AddPrefix], Dependency[AddSuffix]))
+    val statex = tm.execute(state)
+    val expected: Seq[PartialFunction[Any, Boolean]] = Seq(
+      { case ir.Circuit(_, _, "prefix_Foo") => true },
+      { case ir.Module(_, "prefix_Foo", _, _) => true},
+      { case ir.DefInstance(_, "prefix_bar", "prefix_Bar", _) => true},
+      { case ir.DefInstance(_, "prefix_bar2", "prefix_Bar", _) => true},
+      { case ir.Module(_, "prefix_Bar", _, _) => true},
+      { case ir.DefNode(_, "a_suffix", _) => true}
+    )
+    expected.foreach(statex should containTree (_))
   }
 
   behavior of "ManipulateNamesBlocklistAnnotation"

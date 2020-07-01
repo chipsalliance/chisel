@@ -432,14 +432,24 @@ abstract class ManipulateNames[A <: ManipulateNames[_] : ClassTag] extends Trans
   def execute(state: CircuitState): CircuitState = {
 
     val block = state.annotations.collect {
-      case ManipulateNamesBlocklistAnnotation(targetSeq, _: Dependency[A]) => targetSeq
+      case ManipulateNamesBlocklistAnnotation(targetSeq, t) => t.getObject match {
+        case _: A => targetSeq
+        case _    => Nil
+      }
     }.flatten.flatten.toSet
 
-    val allow = state.annotations.collect {
-      case ManipulateNamesAllowlistAnnotation(targetSeq, _: Dependency[A]) => targetSeq
-    } match {
-      case Nil => (a: Target) => true
-      case a   => a.flatten.flatten.toSet
+    val allow = {
+      val allowx = state.annotations.collect {
+         case ManipulateNamesAllowlistAnnotation(targetSeq, t) => t.getObject match {
+           case _: A => targetSeq
+           case _    => Nil
+         }
+      }.flatten.flatten
+
+      allowx match {
+        case Nil => (a: Target) => true
+        case a   => a.toSet
+      }
     }
 
     val renames = RenameMap()
@@ -447,11 +457,18 @@ abstract class ManipulateNames[A <: ManipulateNames[_] : ClassTag] extends Trans
 
     val annotationsx = state.annotations.flatMap {
       /* Consume blocklist annotations */
-      case ManipulateNamesBlocklistAnnotation(_, _: Dependency[A]) => None
-      /* Convert allowlist annotations to result annotations */
-      case ManipulateNamesAllowlistAnnotation(a, t: Dependency[A]) => (a, a.map(_.map(renames(_)).flatten)) match {
-        case (a, b) => Some(ManipulateNamesAllowlistResultAnnotation(b, t, a))
+      case foo@ ManipulateNamesBlocklistAnnotation(_, t) => t.getObject match {
+        case _: A => None
+        case _    => Some(foo)
       }
+      /* Convert allowlist annotations to result annotations */
+      case foo@ ManipulateNamesAllowlistAnnotation(a, t) =>
+        t.getObject match {
+          case _: A => (a, a.map(_.map(renames(_)).flatten)) match {
+            case (a, b) => Some(ManipulateNamesAllowlistResultAnnotation(b, t, a))
+          }
+          case _  => Some(foo)
+        }
       case a => Some(a)
     }
 

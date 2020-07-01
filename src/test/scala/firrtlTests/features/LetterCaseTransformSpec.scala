@@ -67,7 +67,8 @@ class LetterCaseTransformSpec extends AnyFlatSpec with Matchers {
     private val Bar = Foo.module("Bar")
 
     val annotations = Seq(TrackingAnnotation(Foo.module("Foo").ref("MeM").field("wRITE")field("en")),
-                          ManipulateNamesBlocklistAnnotation(Seq(Seq(Bar)), Dependency[LowerCaseNames]))
+                          ManipulateNamesBlocklistAnnotation(Seq(Seq(Bar)), Dependency[LowerCaseNames]),
+                          ManipulateNamesBlocklistAnnotation(Seq(Seq(Bar.ref("OuT"))), Dependency[UpperCaseNames]))
     val state = CircuitState(Parser.parse(input), annotations)
   }
 
@@ -125,8 +126,8 @@ class LetterCaseTransformSpec extends AnyFlatSpec with Matchers {
       { case ir.Circuit(_, _, "FOO") => true },
       { case ir.Module(_, "FOO",
                        Seq(ir.Port(_, "CLK", _, _), ir.Port(_, "RST_P", _, _), ir.Port(_, "ADDR", _, _)), _) => true },
-      /* Module "Bar" should be skipped via a ManipulateNamesBlocklistAnnotation */
-      { case ir.Module(_, "Bar", Seq(ir.Port(_, "OUT", _, _)), _) => true },
+      /* "Bar>OuT" should be skipped via a ManipulateNamesBlocklistAnnotation */
+      { case ir.Module(_, "BAR", Seq(ir.Port(_, "OuT", _, _)), _) => true },
       { case ir.Module(_, "BAZ", Seq(ir.Port(_, "OUT", _, _)), _) => true },
       { case ir.Module(_, "BAZ_0", Seq(ir.Port(_, "OUT", _, _)), _) => true },
       /* External module "Ext" is not renamed */
@@ -143,10 +144,7 @@ class LetterCaseTransformSpec extends AnyFlatSpec with Matchers {
       { case ir.IsInvalid(_, WSubField(WSubField(WRef("MEM", _, _, _), "READ", _, _), "addr", _, _)) => true },
       { case ir.IsInvalid(_, WSubField(WSubField(WRef("MEM", _, _, _), "WRITE", _, _), "addr", _, _)) => true },
       { case ir.IsInvalid(_, WSubField(WSubField(WRef("MEM", _, _, _), "RW", _, _), "addr", _, _)) => true },
-      /* Module "Bar" was skipped via a ManipulateNamesBlocklistAnnotation. The instance "SuB1" is renamed to "SUB1"
-       * because this statement occurs before the "sub1" node later. This differs from the lower case test.
-       */
-      { case WDefInstance(_, "SUB1", "Bar", _) => true },
+      { case WDefInstance(_, "SUB1", "BAR", _) => true },
       /* Instance "SuB2" and "SuB3" switch their modules from the lower case test due to namespace behavior. */
       { case WDefInstance(_, "SUB2", "BAZ", _) => true },
       { case WDefInstance(_, "SUB3", "BAZ_0", _) => true },
@@ -154,7 +152,8 @@ class LetterCaseTransformSpec extends AnyFlatSpec with Matchers {
       { case WDefInstance(_, "SUB4", "Ext", _) => true },
       /* Node "sub1" becomes "SUB1_0" because instance "SuB1" already got the "SUB1" name. */
       { case ir.DefNode(_, "SUB1_0", _) => true },
-      { case ir.DefNode(_, "CORGE_CORGE", WSubField(WRef("SUB1", _, _, _), "OUT", _, _)) => true },
+      /* Port "OuT" was skipped via a ManipulateNamesBlocklistAnnotation */
+      { case ir.DefNode(_, "CORGE_CORGE", WSubField(WRef("SUB1", _, _, _), "OuT", _, _)) => true },
       { case ir.DefNode(_, "QUUZQUUZ",
                         ir.DoPrim(_,Seq(WSubField(WRef("SUB2", _, _, _), "OUT", _, _),
                                         WSubField(WRef("SUB3", _, _, _), "OUT", _, _)), _, _)) => true },
