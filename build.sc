@@ -11,7 +11,10 @@ object chisel3 extends mill.Cross[chisel3CrossModule]("2.11.12", "2.12.11")
 // The following stanza is searched for and used when preparing releases.
 // Please retain it.
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
-val defaultVersions = Map("firrtl" -> "1.4-SNAPSHOT")
+val defaultVersions = Map(
+  "firrtl" -> "1.4-SNAPSHOT",
+  "treadle" -> "1.3-SNAPSHOT"
+)
 
 def getVersion(dep: String, org: String = "edu.berkeley.cs") = {
   val version = sys.env.getOrElse(dep + "Version", defaultVersions(dep))
@@ -42,10 +45,10 @@ trait CommonModule extends ScalaModule with SbtModule with PublishModule {
   }
   
   def ivyDeps = if(firrtlModule.isEmpty) Agg(
-    getVersion("firrtl"),
+    getVersion("firrtl")
   ) else Agg.empty[Dep]
 
-  def moduleDeps = Seq() ++ firrtlModule
+  def moduleDeps = Seq() ++ firrtlModule 
 
   private def javacCrossOptions = majorVersion match {
     case i if i < 12 => Seq("-source", "1.7", "-target", "1.7")
@@ -88,19 +91,29 @@ class chisel3CrossModule(crossVersionValue: String) extends CommonModule with Pu
 
   def firrtlModule: Option[PublishModule] = None
 
-  override def moduleDeps = super.moduleDeps ++ Seq(macros, core) ++ firrtlModule
+  def treadleModule: Option[PublishModule] = None
   
+  private def treadleIvyDeps = if(treadleModule.isEmpty) Agg(
+    getVersion("treadle")
+  ) else Agg.empty[Dep]
+
+  def ivyDeps = super.ivyDeps() ++ treadleIvyDeps
+
+  override def moduleDeps = super.moduleDeps ++ Seq(macros, core) ++ firrtlModule ++ treadleModule
+
   object test extends Tests {
     private def ivyCrossDeps = majorVersion match {
       case i if i < 12 => Agg(ivy"junit:junit:4.13")
       case _ => Agg()
     }
+    
+    override def moduleDeps = m.moduleDeps 
 
     def ivyDeps = Agg(
       ivy"org.scalatest::scalatest:3.1.2",
       ivy"org.scalatestplus::scalacheck-1-14:3.1.1.1",
       ivy"com.github.scopt::scopt:3.7.1"
-    ) ++ ivyCrossDeps
+    ) ++ ivyCrossDeps ++ treadleIvyDeps
 
     def testFrameworks = Seq("org.scalatest.tools.Framework")
 
