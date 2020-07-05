@@ -2,7 +2,7 @@
 
 package chiselTests.aop
 
-import chisel3.testers.BasicTester
+import chisel3.testers.{BasicTester, TesterDriver}
 import chiselTests.ChiselFlatSpec
 import chisel3._
 import chisel3.aop.injecting.InjectingAspect
@@ -47,10 +47,12 @@ class InjectionSpec extends ChiselFlatSpec {
     assertTesterFails{ new AspectTester(Seq(9, 9, 9)) }
   }
   "Test" should "pass if pass wrong values, but correct with aspect" in {
-    assertTesterPasses({ new AspectTester(Seq(9, 9, 9))} , Nil, Seq(correctValueAspect))
+    assertTesterPasses({ new AspectTester(Seq(9, 9, 9))} , Nil, Seq(correctValueAspect) ++ TesterDriver.verilatorOnly)
   }
   "Test" should "pass if pass wrong values, then wrong aspect, then correct aspect" in {
-    assertTesterPasses({ new AspectTester(Seq(9, 9, 9))} , Nil, Seq(wrongValueAspect, correctValueAspect))
+    assertTesterPasses(
+      new AspectTester(Seq(9, 9, 9)), Nil, Seq(wrongValueAspect, correctValueAspect) ++ TesterDriver.verilatorOnly
+    )
   }
   "Test" should "fail if pass wrong values, then correct aspect, then wrong aspect" in {
     assertTesterFails({ new AspectTester(Seq(9, 9, 9))} , Nil, Seq(correctValueAspect, wrongValueAspect))

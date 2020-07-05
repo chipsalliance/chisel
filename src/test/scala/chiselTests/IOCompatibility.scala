@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.stage.ChiselStage
 import org.scalatest._
 import org.scalatest.matchers.should.Matchers
 
@@ -35,14 +36,14 @@ class IOCModuleWire extends Module {
   io.out := inc.out
 }
 
-class IOCompatibilitySpec extends ChiselPropSpec with Matchers {
+class IOCompatibilitySpec extends ChiselPropSpec with Matchers with Utils {
 
   property("IOCModuleVec should elaborate") {
-    elaborate { new IOCModuleVec(2) }
+    ChiselStage.elaborate { new IOCModuleVec(2) }
   }
 
   property("IOCModuleWire should elaborate") {
-    elaborate { new IOCModuleWire }
+    ChiselStage.elaborate { new IOCModuleWire }
   }
 
 
@@ -52,8 +53,8 @@ class IOCompatibilitySpec extends ChiselPropSpec with Matchers {
   }
 
   property("Unwrapped IO should generate an exception") {
-    a [BindingException] should be thrownBy {
-      elaborate(new IOUnwrapped)
+    a [BindingException] should be thrownBy extractCause[BindingException] {
+      ChiselStage.elaborate(new IOUnwrapped)
     }
   }
 }

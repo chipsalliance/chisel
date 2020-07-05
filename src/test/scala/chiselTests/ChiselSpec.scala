@@ -7,12 +7,15 @@ import org.scalatest.prop._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalacheck._
 import chisel3._
+import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import chisel3.testers._
-import firrtl.{AnnotationSeq, CommonOptions, ExecutionOptionsManager, FirrtlExecutionFailure, FirrtlExecutionSuccess, HasFirrtlOptions}
+import firrtl.{AnnotationSeq, CommonOptions, EmittedVerilogCircuitAnnotation, ExecutionOptionsManager, FirrtlExecutionFailure, FirrtlExecutionSuccess, HasFirrtlOptions}
+import firrtl.annotations.DeletedAnnotation
 import firrtl.util.BackendCompilationUtilities
 import java.io.ByteArrayOutputStream
 import java.security.Permission
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
+import scala.reflect.ClassTag
 
 /** Common utility functions for Chisel unit tests. */
 trait ChiselRunners extends Assertions with BackendCompilationUtilities {
@@ -34,7 +37,6 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
                        ): Unit = {
     assert(!runTester(t, additionalVResources, annotations))
   }
-  def elaborate(t: => RawModule): Unit = Driver.elaborate(() => t)
 
   def assertKnownWidth(expected: Int)(gen: => Data): Unit = {
     assertTesterPasses(new BasicTester {
@@ -63,34 +65,18 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
     })
   }
 
-  /** Given a generator, return the Firrtl that it generates.
-    *
-    * @param t Module generator
-    * @return Firrtl representation as a String
-    */
-  def generateFirrtl(t: => RawModule): String = Driver.emit(() => t)
-
   /** Compiles a Chisel Module to Verilog
     * NOTE: This uses the "test_run_dir" as the default directory for generated code.
     * @param t the generator for the module
     * @return the Verilog code as a string.
     */
   def compile(t: => RawModule): String = {
-    val testDir = createTestDirectory(this.getClass.getSimpleName)
-    val manager = new ExecutionOptionsManager("compile") with HasFirrtlOptions
-                                                         with HasChiselExecutionOptions {
-      commonOptions = CommonOptions(targetDirName = testDir.toString)
-    }
-
-    Driver.execute(manager, () => t) match {
-      case ChiselExecutionSuccess(_, _, Some(firrtlExecRes)) =>
-        firrtlExecRes match {
-          case FirrtlExecutionSuccess(_, verilog) => verilog
-          case FirrtlExecutionFailure(msg) => fail(msg)
-        }
-      case ChiselExecutionSuccess(_, _, None) => fail() // This shouldn't happen
-      case ChiselExecutionFailure(msg) => fail(msg)
-    }
+    (new ChiselStage)
+      .execute(Array("--target-dir", createTestDirectory(this.getClass.getSimpleName).toString),
+               Seq(ChiselGeneratorAnnotation(() => t)))
+      .collectFirst {
+        case DeletedAnnotation(_, EmittedVerilogCircuitAnnotation(a)) => a.value
+      }.getOrElse(fail("No Verilog circuit was emitted by the FIRRTL compiler!"))
   }
 }
 
@@ -282,6 +268,43 @@ trait Utils {
     } finally {
       System.setSecurityManager(null)
     }
+  }
+
+  /** Run some code and rethrow an exception with a specific type if an exception of that type occurs anywhere in the
+    * stack trace.
+    *
+    * This is useful for "extracting" one exception that may be wrapped by other exceptions.
+    *
+    * Example usage:
+    * {{{
+    * a [ChiselException] should be thrownBy extractCause[ChiselException] { /* ... */ }
+    * }}}
+    *
+    * @param thunk some code to run
+    * @tparam A the type of the exception to extract
+    * @return nothing
+    */
+  def extractCause[A <: Throwable : ClassTag](thunk: => Any): Unit = {
+    def unrollCauses(a: Throwable): Seq[Throwable] = a match {
+      case null => Seq.empty
+      case _    => a +: unrollCauses(a.getCause)
+    }
+
+    val exceptions: Seq[_ <: Throwable] = try {
+      thunk
+      Seq.empty
+    } catch {
+      case a: Throwable => unrollCauses(a)
+    }
+
+    exceptions.collectFirst{ case a: A => a } match {
+      case Some(a) => throw a
+      case None => exceptions match {
+        case Nil    => Unit
+        case h :: t => throw h
+      }
+    }
+
   }
 
 }
