@@ -11,7 +11,10 @@ object chisel3 extends mill.Cross[chisel3CrossModule]("2.11.12", "2.12.11")
 // The following stanza is searched for and used when preparing releases.
 // Please retain it.
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
-val defaultVersions = Map("firrtl" -> "1.4-SNAPSHOT")
+val defaultVersions = Map(
+  "firrtl" -> "1.4-SNAPSHOT",
+  "treadle" -> "1.3-SNAPSHOT"
+)
 
 def getVersion(dep: String, org: String = "edu.berkeley.cs") = {
   val version = sys.env.getOrElse(dep + "Version", defaultVersions(dep))
@@ -20,7 +23,21 @@ def getVersion(dep: String, org: String = "edu.berkeley.cs") = {
 
 // Since chisel contains submodule core and macros, a CommonModule is needed
 trait CommonModule extends ScalaModule with SbtModule with PublishModule {
-  def firrtlModule: Option[PublishModule]
+  def firrtlModule: Option[PublishModule] = None
+
+  def firrtlIvyDeps = if(firrtlModule.isEmpty) Agg(
+    getVersion("firrtl")
+  ) else Agg.empty[Dep]
+
+  def treadleModule: Option[PublishModule] = None
+  
+  def treadleIvyDeps = if(treadleModule.isEmpty) Agg(
+    getVersion("treadle")
+  ) else Agg.empty[Dep]
+  
+  def moduleDeps = super.moduleDeps ++ firrtlModule 
+
+  def ivyDeps = super.ivyDeps() ++ firrtlIvyDeps
 
   def publishVersion = "3.4-SNAPSHOT"
 
@@ -40,12 +57,6 @@ trait CommonModule extends ScalaModule with SbtModule with PublishModule {
     case i if i < 12 => Seq()
     case _ => Seq("-Xsource:2.11")
   }
-  
-  def ivyDeps = if(firrtlModule.isEmpty) Agg(
-    getVersion("firrtl"),
-  ) else Agg.empty[Dep]
-
-  def moduleDeps = Seq() ++ firrtlModule
 
   private def javacCrossOptions = majorVersion match {
     case i if i < 12 => Seq("-source", "1.7", "-target", "1.7")
@@ -86,17 +97,17 @@ class chisel3CrossModule(crossVersionValue: String) extends CommonModule with Pu
 
   def mainClass = Some("chisel3.stage.ChiselMain")
 
-  def firrtlModule: Option[PublishModule] = None
-
-  override def moduleDeps = super.moduleDeps ++ Seq(macros, core) ++ firrtlModule
+  def ivyDeps = super.ivyDeps() ++ treadleIvyDeps
   
+  override def moduleDeps = super.moduleDeps ++ Seq(macros, core) ++ treadleModule
+
   object test extends Tests {
     private def ivyCrossDeps = majorVersion match {
       case i if i < 12 => Agg(ivy"junit:junit:4.13")
       case _ => Agg()
     }
-
-    def ivyDeps = Agg(
+    
+    def ivyDeps = m.ivyDeps() ++ Agg(
       ivy"org.scalatest::scalatest:3.1.2",
       ivy"org.scalatestplus::scalacheck-1-14:3.1.1.1",
       ivy"com.github.scopt::scopt:3.7.1"
@@ -136,7 +147,7 @@ class chisel3CrossModule(crossVersionValue: String) extends CommonModule with Pu
 
     def crossVersion = crossVersionValue
 
-    def moduleDeps = super.moduleDeps ++ Seq(macros) ++ firrtlModule
+    def moduleDeps = super.moduleDeps ++ Seq(macros)
 
     def scalacOptions = super.scalacOptions() ++ Seq(
       "-deprecation",
