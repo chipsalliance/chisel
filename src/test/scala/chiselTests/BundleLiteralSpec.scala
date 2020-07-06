@@ -36,7 +36,7 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
       chisel3.assert(bundleLit.asUInt() === bundleLit.litOption.get.U)  // sanity-check consistency with runtime
 
       val longBundleLit = (new LongBundle).Lit(
-        _.a -> 0xDEADDEADBEEFL.U, _.b -> -0x0BEEF00DL.S(32.W), _.c -> 4.5.F(16.W, 4.BP))
+        _.a -> 0xDEADDEADBEEFL.U, _.b -> (-0x0BEEF00DL).S(32.W), _.c -> 4.5.F(16.W, 4.BP))
       longBundleLit.litOption should equal (Some(
         (BigInt(0xDEADDEADBEEFL) << 48)
         + (BigInt(0xFFFFFFFFL - 0xBEEF00DL + 1) << 16)

@@ -63,7 +63,7 @@ sealed abstract class Aggregate extends Data {
         getElements
           .reverse
           .foldLeft[Option[BigInt]](Some(BigInt(0)))(shiftAdd)
-      case _ =>  None
+      case _ => None
     }
   }
 
