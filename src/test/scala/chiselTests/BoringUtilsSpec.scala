@@ -4,7 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.util.Counter
-import chisel3.testers.BasicTester
+import chisel3.testers._
 import chisel3.experimental.{BaseModule, ChiselAnnotation, RunFirrtlTransform}
 import chisel3.util.experimental.BoringUtils
 
@@ -49,7 +49,8 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
   behavior of "BoringUtils.{addSink, addSource}"
 
   it should "connect two wires within a module" in {
-    runTester(new ShouldntAssertTester { val dut = Module(new BoringInverter) } ) should be (true)
+    runTester(new ShouldntAssertTester { val dut = Module(new BoringInverter) },
+      annotations = TesterDriver.verilatorOnly) should be (true)
   }
 
   trait WireX { this: BaseModule =>
@@ -103,11 +104,12 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
   behavior of "BoringUtils.bore"
 
   it should "connect across modules using BoringUtils.bore" in {
-    runTester(new TopTester) should be (true)
+    runTester(new TopTester, annotations = TesterDriver.verilatorOnly) should be (true)
   }
 
   it should "throw an exception if NoDedupAnnotations are removed" in {
-    intercept[WiringException] { runTester(new TopTester with FailViaDedup) }
+    intercept[WiringException] { runTester(new TopTester with FailViaDedup,
+      annotations = Seq(TesterDriver.VerilatorBackend)) }
       .getMessage should startWith ("Unable to determine source mapping for sink")
   }
 
@@ -125,7 +127,7 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
   }
 
   it should "work for an internal (same module) BoringUtils.bore" in {
-    runTester(new InternalBoreTester) should be (true)
+    runTester(new InternalBoreTester, annotations = TesterDriver.verilatorOnly) should be (true)
   }
 
 }
