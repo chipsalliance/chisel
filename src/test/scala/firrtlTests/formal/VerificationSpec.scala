@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 package firrtlTests.formal
 
 import firrtl.{SystemVerilogCompiler}
@@ -38,12 +40,15 @@ class VerificationSpec extends FirrtlFlatSpec {
         |  wire outputEquals0xAA = out == 8'haa;
         |  assign out = in;
         |  always @(posedge clock) begin
+        |    // assume input is 0xAA
         |    if (1'h1) begin
         |      assume(inputEquals0xAA);
         |    end
+        |    // assert that output equals input
         |    if (1'h1) begin
         |      assert(areEqual);
         |    end
+        |    // cover output is 0xAA
         |    if (1'h1) begin
         |      cover(outputEquals0xAA);
         |    end
