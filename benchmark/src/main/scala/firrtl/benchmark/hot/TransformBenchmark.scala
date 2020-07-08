@@ -7,8 +7,8 @@ package hot
 import firrtl._
 import firrtl.passes.LowerTypes
 import firrtl.stage.TransformManager
-
 import firrtl.benchmark.util._
+import firrtl.transforms.DedupModules
 
 abstract class TransformBenchmark(factory: () => Transform) extends App {
   val inputFile = args(0)
@@ -25,3 +25,5 @@ abstract class TransformBenchmark(factory: () => Transform) extends App {
 }
 
 object LowerTypesBenchmark extends TransformBenchmark(() => LowerTypes)
+
+object DedupBenchmark extends TransformBenchmark(() => new DedupModules())
