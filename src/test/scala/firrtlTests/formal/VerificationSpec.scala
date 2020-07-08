@@ -5,6 +5,7 @@ package firrtlTests.formal
 import firrtl.{SystemVerilogCompiler}
 import firrtl.testutils.FirrtlFlatSpec
 import logger.{LogLevel, Logger}
+import firrtl.ir
 
 class VerificationSpec extends FirrtlFlatSpec {
   behavior of "Formal"
@@ -56,5 +57,24 @@ class VerificationSpec extends FirrtlFlatSpec {
         |endmodule
         |""".stripMargin.split("\n") map normalized
     executeTest(input, expected, compiler)
+  }
+
+  "VerificationStatement" should "serialize correctly" in {
+    val clk = ir.Reference("clk")
+    val en = ir.Reference("en")
+    val pred = ir.Reference("pred")
+    val a = ir.Verification(ir.Formal.Assert, ir.NoInfo, clk, pred, en, ir.StringLit("test"))
+
+    assert(a.serialize == "assert(clk, pred, en, \"test\")")
+    assert(ir.Serializer.serialize(a) == "assert(clk, pred, en, \"test\")")
+
+    val b = ir.Verification(ir.Formal.Assume, ir.NoInfo, clk, en, pred, ir.StringLit("test \n test"))
+    assert(b.serialize == "assume(clk, en, pred, \"test \\n test\")")
+    assert(ir.Serializer.serialize(b) == "assume(clk, en, pred, \"test \\n test\")")
+
+    val c = ir.Verification(ir.Formal.Assume, ir.NoInfo, clk, pred, en, ir.StringLit("test \t test"))
+    assert(c.serialize == "assume(clk, pred, en, \"test \\t test\")")
+    assert(ir.Serializer.serialize(c) == "assume(clk, pred, en, \"test \\t test\")")
+
   }
 }
