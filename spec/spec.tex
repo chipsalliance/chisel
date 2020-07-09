@@ -772,7 +772,7 @@ module MyModule :
 This is an illegal FIRRTL circuit and an error will be thrown during compilation. All wires, memory ports, instance ports, and module ports that can be connected to must be connected to under all conditions. Registers do not need to be connected to under all conditions, as it will keep its previous value if unconnected.
 
 \subsubsection{Scoping}
-The conditional statement creates a new {\em scope} within each of its \verb|when| and \verb|else| branches. It is an error to refer to any component declared within a branch after the branch has ended.
+The conditional statement creates a new {\em scope} within each of its \verb|when| and \verb|else| branches. It is an error to refer to any component declared within a branch after the branch has ended. As mention in section~\ref{namespaces}, circuit component declarations in a module must be unique within the module's flat namespace; this means that shadowing a component in an enclosing scope with a component of the same name inside a conditional statement is not allowed.
 
 \subsubsection{Conditional Last Connect Semantics}\label{conditional_last_connect}
 In the case where a connection to a circuit component is followed by a conditional statement containing a connection to the same component, the connection is overwritten only when the condition holds. Intuitively, a multiplexer is generated such that when the condition is low, the multiplexer returns the old value, and otherwise returns the new value. For details about the multiplexer, see section \ref{multiplexers}.
@@ -1880,7 +1880,7 @@ The width of the integer literal expressions is detailed in their respective sec
   \egroup
 \end{figure}
 
-\section{Namespaces}
+\section{Namespaces} \label{namespaces}
 
 All modules in a circuit exist in the same module namespace, and thus must all have a unique name.
 
