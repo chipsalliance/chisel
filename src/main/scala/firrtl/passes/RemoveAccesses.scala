@@ -101,14 +101,14 @@ object RemoveAccesses extends Pass {
           (DefWire(get_info(s), n, e.tpe), WRef(n, e.tpe, kind(e), flow(e)))
         }
 
-        /** Replaces a subaccess in a given male expression
+        /** Replaces a subaccess in a given source expression
           */
         val stmts = mutable.ArrayBuffer[Statement]()
-        def removeMale(e: Expression): Expression = e match {
+        def removeSource(e: Expression): Expression = e match {
           case (_:WSubAccess| _: WSubField| _: WSubIndex| _: WRef) if hasAccess(e) =>
             val rs = getLocations(e)
             rs find (x => x.guard != one) match {
-              case None => throwInternalError(s"removeMale: shouldn't be here - $e")
+              case None => throwInternalError(s"removeSource: shouldn't be here - $e")
               case Some(_) =>
                 val (wire, temp) = create_temp(e)
                 val temps = create_exps(temp)
@@ -126,9 +126,9 @@ object RemoveAccesses extends Pass {
           case _ => e
         }
 
-        /** Replaces a subaccess in a given female expression
+        /** Replaces a subaccess in a given sink expression
           */
-        def removeFemale(info: Info, loc: Expression): Expression = loc match {
+        def removeSink(info: Info, loc: Expression): Expression = loc match {
           case (_: WSubAccess| _: WSubField| _: WSubIndex| _: WRef) if hasAccess(loc) =>
             val ls = getLocations(loc)
             if (ls.size == 1 & weq(ls.head.guard,one)) loc
@@ -142,30 +142,30 @@ object RemoveAccesses extends Pass {
           case _ => loc
         }
 
-        /** Recursively walks a male expression and fixes all subaccesses
+        /** Recursively walks a source expression and fixes all subaccesses
           * If we see a sub-access, replace it.
           * Otherwise, map to children.
           */
-        def fixMale(e: Expression): Expression = e match {
-          case w: WSubAccess => removeMale(WSubAccess(w.expr, fixMale(w.index), w.tpe, w.flow))
-          //case w: WSubIndex => removeMale(w)
-          //case w: WSubField => removeMale(w)
-          case x => x map fixMale
+        def fixSource(e: Expression): Expression = e match {
+          case w: WSubAccess => removeSource(WSubAccess(w.expr, fixSource(w.index), w.tpe, w.flow))
+          //case w: WSubIndex => removeSource(w)
+          //case w: WSubField => removeSource(w)
+          case x => x map fixSource
         }
 
-        /** Recursively walks a female expression and fixes all subaccesses
-          * If we see a sub-access, its index is a male expression, and we must replace it.
+        /** Recursively walks a sink expression and fixes all subaccesses
+          * If we see a sub-access, its index is a source expression, and we must replace it.
           * Otherwise, map to children.
           */
-        def fixFemale(e: Expression): Expression = e match {
-          case w: WSubAccess => WSubAccess(fixFemale(w.expr), fixMale(w.index), w.tpe, w.flow)
-          case x => x map fixFemale
+        def fixSink(e: Expression): Expression = e match {
+          case w: WSubAccess => WSubAccess(fixSink(w.expr), fixSource(w.index), w.tpe, w.flow)
+          case x => x map fixSink
         }
 
         val sx = s match {
           case Connect(info, loc, exp) =>
-            Connect(info, removeFemale(info, fixFemale(loc)), fixMale(exp))
-          case sxx => sxx map fixMale map onStmt
+            Connect(info, removeSink(info, fixSink(loc)), fixSource(exp))
+          case sxx => sxx map fixSource map onStmt
         }
         stmts += sx
         if (stmts.size != 1) Block(stmts) else stmts(0)

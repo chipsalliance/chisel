@@ -121,22 +121,22 @@ object ExpandWhens extends Pass {
                     defaults: Defaults,
                     p: Expression)
                     (s: Statement): Statement = s match {
-      // For each non-register declaration, update netlist with value WVoid for each female reference
+      // For each non-register declaration, update netlist with value WVoid for each sink reference
       // Return self, unchanged
       case stmt @ (_: DefNode | EmptyStmt) => stmt
       case w: DefWire =>
-        netlist ++= (getFemaleRefs(w.name, w.tpe, DuplexFlow) map (ref => we(ref) -> WVoid))
+        netlist ++= (getSinkRefs(w.name, w.tpe, DuplexFlow) map (ref => we(ref) -> WVoid))
         w
       case w: DefMemory =>
-        netlist ++= (getFemaleRefs(w.name, MemPortUtils.memType(w), SourceFlow) map (ref => we(ref) -> WVoid))
+        netlist ++= (getSinkRefs(w.name, MemPortUtils.memType(w), SourceFlow) map (ref => we(ref) -> WVoid))
         w
       case w: WDefInstance =>
-        netlist ++= (getFemaleRefs(w.name, w.tpe, SourceFlow).map(ref => we(ref) -> WVoid))
+        netlist ++= (getSinkRefs(w.name, w.tpe, SourceFlow).map(ref => we(ref) -> WVoid))
         w
-      // Update netlist with self reference for each female reference
+      // Update netlist with self reference for each sink reference
       // Return self, unchanged
       case r: DefRegister =>
-        netlist ++= (getFemaleRefs(r.name, r.tpe, DuplexFlow) map (ref => we(ref) -> ref))
+        netlist ++= (getSinkRefs(r.name, r.tpe, DuplexFlow) map (ref => we(ref) -> ref))
         r
       // For value assignments, update netlist/attaches and return EmptyStmt
       case c: Connect =>
@@ -231,15 +231,15 @@ object ExpandWhens extends Pass {
     val netlist = new Netlist
     // Add ports to netlist
     netlist ++= (m.ports flatMap { case Port(_, name, dir, tpe) =>
-      getFemaleRefs(name, tpe, to_flow(dir)) map (ref => we(ref) -> WVoid)
+      getSinkRefs(name, tpe, to_flow(dir)) map (ref => we(ref) -> WVoid)
     })
     val bodyx = expandWhens(netlist, Seq(netlist), one)(m.body)
     (netlist, simlist, attaches, bodyx, infoMap)
   }
 
 
-  /** Returns all references to all Female leaf subcomponents of a reference */
-  private def getFemaleRefs(n: String, t: Type, g: Flow): Seq[Expression] = {
+  /** Returns all references to all sink leaf subcomponents of a reference */
+  private def getSinkRefs(n: String, t: Type, g: Flow): Seq[Expression] = {
     val exps = create_exps(WRef(n, t, ExpKind, g))
     exps.flatMap { case exp =>
       exp.tpe match {
