@@ -1613,6 +1613,16 @@ package experimental {
         }
       }
 
+      implicit class fromBigIntToLiteral(bigInt: BigInt) {
+        def F(binaryPoint: BinaryPoint): FixedPoint = {
+          FixedPoint.fromBigDecimal(BigDecimal(bigInt), Width(), binaryPoint)
+        }
+
+        def F(width: Width, binaryPoint: BinaryPoint): FixedPoint = {
+          FixedPoint.fromBigInt(bigInt, width, binaryPoint)
+        }
+      }
+
       implicit class fromBigDecimalToLiteral(bigDecimal: BigDecimal) {
         def F(binaryPoint: BinaryPoint): FixedPoint = {
           FixedPoint.fromBigDecimal(bigDecimal, Width(), binaryPoint)
@@ -2181,10 +2191,19 @@ package experimental {
       val lit = IntervalLit(value, range.getWidth, range.binaryPoint)
       val bigDecimal = BigDecimal(value) / (1 << lit.binaryPoint.get)
       val inRange = (range.lowerBound, range.upperBound) match {
-        case (firrtlir.Closed(l), firrtlir.Closed(u)) => l <= bigDecimal && bigDecimal <= u
-        case (firrtlir.Closed(l), firrtlir.Open(u))   => l <= bigDecimal && bigDecimal < u
-        case (firrtlir.Open(l), firrtlir.Closed(u))   => l < bigDecimal && bigDecimal <= u
-        case (firrtlir.Open(l), firrtlir.Open(u))     => l < bigDecimal && bigDecimal < u
+        case (firrtlir.Closed(l), firrtlir.Closed(u))    => l <= bigDecimal && bigDecimal <= u
+        case (firrtlir.Closed(l), firrtlir.Open(u))      => l <= bigDecimal && bigDecimal < u
+        case (firrtlir.Open(l), firrtlir.Closed(u))      => l < bigDecimal && bigDecimal <= u
+        case (firrtlir.Open(l), firrtlir.Open(u))        => l < bigDecimal && bigDecimal < u
+        case (firrtlir.UnknownBound, firrtlir.Closed(u)) => bigDecimal <= u
+        case (firrtlir.UnknownBound, firrtlir.Open(u))   => bigDecimal < u
+        case (firrtlir.UnknownBound, firrtlir.Closed(u)) => bigDecimal <= u
+        case (firrtlir.UnknownBound, firrtlir.Open(u))   => bigDecimal < u
+        case (firrtlir.Closed(l), firrtlir.UnknownBound) => l <= bigDecimal
+        case (firrtlir.Closed(l), firrtlir.UnknownBound) => l <= bigDecimal
+        case (firrtlir.Open(l), firrtlir.UnknownBound)   => l < bigDecimal
+        case (firrtlir.Open(l), firrtlir.UnknownBound)   => l < bigDecimal
+        case (firrtlir.UnknownBound, firrtlir.UnknownBound) => true
       }
       if(! inRange) {
         throw new ChiselException(
@@ -2247,15 +2266,15 @@ package experimental {
         }
 
         def I(binaryPoint: BinaryPoint): Interval = {
-          Interval.Lit(bigInt, width = Width(), binaryPoint = binaryPoint)
+          Interval.Lit(Interval.toBigInt(BigDecimal(bigInt), binaryPoint), width = Width(), binaryPoint = binaryPoint)
         }
 
         def I(width: Width, binaryPoint: BinaryPoint): Interval = {
-          Interval.Lit(bigInt, width, binaryPoint)
+          Interval.Lit(Interval.toBigInt(BigDecimal(bigInt), binaryPoint), width, binaryPoint)
         }
 
         def I(range: IntervalRange): Interval = {
-          Interval.Lit(bigInt, range)
+          Interval.Lit(Interval.toBigInt(BigDecimal(bigInt), range.binaryPoint), range)
         }
       }
 

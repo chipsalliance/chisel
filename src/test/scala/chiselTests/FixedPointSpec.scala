@@ -167,4 +167,11 @@ class FixedPointSpec extends ChiselPropSpec with Utils {
   property("Bit extraction on literals should work for all non-negative indices") {
     assertTesterPasses(new FixedPointLitExtractTester)
   }
+  property("FixedPoint literals generated from equivalent values should all be the same") {
+    BigDecimal(-2.0).F(2.BP).litToBigDecimal should be(BigDecimal(-2.0)) // From BigDecimal
+    (-2.0).F(2.BP).litToBigDecimal should be(BigDecimal(-2.0)) // From Double
+    BigInt(-2).F(2.BP).litToBigDecimal should be(BigDecimal(-2.0)) // From BigInt
+    (-2L).F(2.BP).litToBigDecimal should be(BigDecimal(-2.0)) // From Long
+    (-2).F(2.BP).litToBigDecimal should be(BigDecimal(-2.0)) // From Int
+  }
 }

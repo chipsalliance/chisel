@@ -4,6 +4,7 @@ import chisel3.internal.firrtl.BinaryPoint
 
 /** This package contains the main chisel3 API.
  */
+//scalastyle:off number.of.methods
 package object chisel3 {    // scalastyle:ignore package.object.name
   import internal.firrtl.{Port, Width}
   import internal.Builder
@@ -117,6 +118,9 @@ package object chisel3 {    // scalastyle:ignore package.object.name
 
   implicit class fromBigDecimalToLiteral(bigDecimal: BigDecimal)
     extends experimental.FixedPoint.Implicits.fromBigDecimalToLiteral(bigDecimal)
+
+  implicit class fromBigIntToLiteralFixedPoint(bigInt: BigInt)
+    extends experimental.FixedPoint.Implicits.fromBigIntToLiteral(bigInt)
 
   // Interval is experimental for now, but we alias the implicit conversion classes here
   //  to minimize disruption with existing code.

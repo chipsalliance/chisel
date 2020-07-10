@@ -962,4 +962,18 @@ class IntervalSpec extends AnyFreeSpec with Matchers with ChiselRunners {
       })
     }
   }
+
+  "Interval literals generated from equivalent values should all be the same" in {
+    BigDecimal(-2.0).I(2.BP).litToBigDecimal should be(BigDecimal(-2.0)) // From BigDecimal
+    (-2.0).I(2.BP).litToBigDecimal should be(BigDecimal(-2.0)) // From Double
+    BigInt(-2).I(2.BP).litToBigDecimal should be(BigDecimal(-2.0)) // From BigInt
+    (-2L).I(2.BP).litToBigDecimal should be(BigDecimal(-2.0)) // From Long
+    (-2).I(2.BP).litToBigDecimal should be(BigDecimal(-2.0)) // From Int
+
+    BigDecimal(-2.0).I(range"[?,?].2").litToBigDecimal should be(BigDecimal(-2.0)) // From BigDecimal
+    (-2.0).I(range"[?,?].2").litToBigDecimal should be(BigDecimal(-2.0)) // From Double
+    BigInt(-2).I(range"[?,?].2").litToBigDecimal should be(BigDecimal(-2.0)) // From BigInt
+    (-2L).I(range"[?,?].2").litToBigDecimal should be(BigDecimal(-2.0)) // From Long
+    (-2).I(range"[?,?].2").litToBigDecimal should be(BigDecimal(-2.0)) // From Int
+  }
 }
