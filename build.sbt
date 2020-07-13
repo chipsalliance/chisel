@@ -65,8 +65,7 @@ lazy val protobufSettings = Seq(
   sourceDirectory in ProtobufConfig := baseDirectory.value / "src" / "main" / "proto",
   protobufRunProtoc in ProtobufConfig := (args =>
     com.github.os72.protocjar.Protoc.runProtoc("-v351" +: args.toArray)
-  ),
-  javaSource in ProtobufConfig := (sourceManaged in Compile).value
+  )
 )
 
 lazy val assemblySettings = Seq(
