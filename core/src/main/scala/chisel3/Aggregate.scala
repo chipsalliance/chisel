@@ -812,6 +812,10 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     }
 
     val isAnonFunc = ".*\\$\\$anonfun\\$\\d+$".r
+    // In Scala 2.11, anonymous functions were compiled to their own classes, while in Scala 2.12,
+    // they are directly compiled into the enclosing classes. This meant that checking the enclosing
+    // parent in 2.12 would work, but in 2.11 they wouldn't. This fix just looks for the first enclosing class
+    // which is not an anonymous function.
     def getNonFuncClass(clz: Class[_]): Option[Class[_]] = {
       clz.getName match {
         case isAnonFunc() => getNonFuncClass(clz.getEnclosingClass)
