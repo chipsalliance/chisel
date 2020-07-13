@@ -977,10 +977,16 @@ Modules have the property that instances can always be {\em inlined} into the pa
 
 To disallow infinitely recursive hardware, modules cannot contain instances of itself, either directly, or indirectly through instances of other modules it instantiates.
 
-\subsection{Stops}
+\subsection{Stops} \label{stop_stmt}
 The stop statement is used to halt simulations of the circuit. Backends are free to generate hardware to stop a running circuit for the purpose of debugging, but this is not required by the FIRRTL specification.
 
 A stop statement requires a clock signal, a halt condition signal that has a single bit unsigned integer type, and an integer exit code.
+
+For clocked statements that have side effects in the environment (stop, print, and verification
+statements), the order of execution of any such statements that are triggered on the same clock edge
+is determined by their syntactic order in the enclosing module. The order of execution of clocked,
+side-effect-having statements in different modules or with different clocks that trigger
+concurrently is undefined.
 
 \begin{lstlisting}
 wire clk:Clock
@@ -993,6 +999,9 @@ stop(clk,halt,42)
 The formatted print statement is used to print a formatted string during simulations of the circuit. Backends are free to generate hardware that relays this information to a hardware test harness, but this is not required by the FIRRTL specification.
 
 A printf statement requires a clock signal, a print condition signal, a format string, and a variable list of argument signals. The condition signal must be a single bit unsigned integer type, and the argument signals must each have a ground type.
+
+For information about execution ordering of clocked statements with observable environmental side
+effects, see section \ref{stop_stmt}.
 
 \begin{lstlisting}
 wire clk:Clock
@@ -1030,6 +1039,8 @@ To facilitate simulation, model checking and formal methods, there are three non
 
 Backends are free to generate the corresponding model checking constructs in the target language, but this is not required by the FIRRTL specification. Backends that do not generate such constructs should issue a warning. For example, the SystemVerilog emitter produces SystemVerilog assert, assume and cover statements, but the Verilog emitter does not and instead warns the user if any verification statements are encountered.
 
+For information about execution ordering of clocked statements with observable environmental side
+effects, see section \ref{stop_stmt}.
 
 \subsubsection{Assert}
 
