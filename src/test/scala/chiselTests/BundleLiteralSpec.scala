@@ -8,6 +8,7 @@ import chisel3.testers.BasicTester
 import chisel3.experimental.BundleLiterals._
 import chisel3.experimental.BundleLiteralException
 import chisel3.experimental.ChiselEnum
+import chisel3.experimental.FixedPoint
 
 class BundleLiteralSpec extends ChiselFlatSpec with Utils {
   object MyEnum extends ChiselEnum {
@@ -22,6 +23,30 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
     val c = MyEnum()
   }
 
+  class LongBundle extends Bundle {
+    val a = UInt(48.W)
+    val b = SInt(32.W)
+    val c = FixedPoint(16.W, 4.BP)
+  }
+
+  "bundle literals" should "pack" in {
+    assertTesterPasses{ new BasicTester {
+      val bundleLit = (new MyBundle).Lit(_.a -> 42.U, _.b -> false.B, _.c -> MyEnum.sB)
+      bundleLit.litOption should equal (Some(169))  // packed as 42 (8-bit), false=0 (1-bit), sB=1 (1-bit)
+      chisel3.assert(bundleLit.asUInt() === bundleLit.litOption.get.U)  // sanity-check consistency with runtime
+
+      val longBundleLit = (new LongBundle).Lit(
+        _.a -> 0xDEADDEADBEEFL.U, _.b -> (-0x0BEEF00DL).S(32.W), _.c -> 4.5.F(16.W, 4.BP))
+      longBundleLit.litOption should equal (Some(
+        (BigInt(0xDEADDEADBEEFL) << 48)
+        + (BigInt(0xFFFFFFFFL - 0xBEEF00DL + 1) << 16)
+        + BigInt(72)))
+      chisel3.assert(longBundleLit.asUInt() === longBundleLit.litOption.get.U)
+
+      stop()
+    } }
+  }
+
   "bundle literals" should "work in RTL" in {
     val outsideBundleLit = (new MyBundle).Lit(_.a -> 42.U, _.b -> true.B, _.c -> MyEnum.sB)
     assertTesterPasses{ new BasicTester{
@@ -29,7 +54,8 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
       chisel3.assert(outsideBundleLit.a === 42.U)
       chisel3.assert(outsideBundleLit.b === true.B)
       chisel3.assert(outsideBundleLit.c === MyEnum.sB)
-
+      chisel3.assert(outsideBundleLit.isLit())
+      chisel3.assert(outsideBundleLit.litValue().U === outsideBundleLit.asUInt())
       val bundleLit = (new MyBundle).Lit(_.a -> 42.U, _.b -> true.B, _.c -> MyEnum.sB)
       chisel3.assert(bundleLit.a === 42.U)
       chisel3.assert(bundleLit.b === true.B)
@@ -83,6 +109,8 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
       chisel3.assert(explicitBundleLit.a.a === 42.U)
       chisel3.assert(explicitBundleLit.a.b === true.B)
       chisel3.assert(explicitBundleLit.a.c === MyEnum.sB)
+      chisel3.assert(explicitBundleLit.a.isLit())
+      chisel3.assert(explicitBundleLit.a.litValue().U === explicitBundleLit.a.asUInt())
 
       // Specify the inner Bundle fields directly
       val expandedBundleLit = (new MyOuterBundle).Lit(
@@ -96,6 +124,10 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
       chisel3.assert(expandedBundleLit.b.c === false.B)
       chisel3.assert(expandedBundleLit.b.d === 255.U)
       chisel3.assert(expandedBundleLit.b.e === MyEnum.sB)
+      chisel3.assert(! expandedBundleLit.a.isLit())   // element e is missing
+      chisel3.assert(expandedBundleLit.b.isLit())
+      chisel3.assert(! expandedBundleLit.isLit())     // element a.e is missing
+      chisel3.assert(expandedBundleLit.b.litValue().U === expandedBundleLit.b.asUInt())
 
       // Anonymously contruct the inner Bundle literal
       // A bit of weird syntax that depends on implementation details of the Bundle literal constructor
@@ -105,6 +137,9 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
       chisel3.assert(childBundleLit.b.c === false.B)
       chisel3.assert(childBundleLit.b.d === 255.U)
       chisel3.assert(childBundleLit.b.e === MyEnum.sB)
+      chisel3.assert(childBundleLit.b.isLit())
+      chisel3.assert(! childBundleLit.isLit())     // elements a and f are missing
+      chisel3.assert(childBundleLit.b.litValue().U === childBundleLit.b.asUInt())
 
       stop()
     } }
@@ -217,4 +252,10 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
     exc.getMessage should include (".c")
   }
 
+  "partial bundle literals" should "fail to pack" in {
+    ChiselStage.elaborate { new RawModule {
+      val bundleLit = (new MyBundle).Lit(_.a -> 42.U)
+      bundleLit.litOption should equal (None)
+    } }
+  }
 }
