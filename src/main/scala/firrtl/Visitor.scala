@@ -304,16 +304,17 @@ class Visitor(infoMode: InfoMode) extends AbstractParseTreeVisitor[FirrtlNode] w
         case "reg" =>
           val name = ctx.id(0).getText
           val tpe = visitType(ctx.`type`())
-          val (reset, init) = {
+          val (reset, init, rinfo) = {
             val rb = ctx.reset_block()
             if (rb != null) {
               val sr = rb.simple_reset.simple_reset0()
-              (visitExp(sr.exp(0)), visitExp(sr.exp(1)))
+              val innerInfo = if (info == NoInfo) visitInfo(Option(rb.info), ctx) else info
+              (visitExp(sr.exp(0)), visitExp(sr.exp(1)), innerInfo)
             }
             else
-              (UIntLiteral(0, IntWidth(1)), Reference(name, tpe))
+              (UIntLiteral(0, IntWidth(1)), Reference(name, tpe), info)
           }
-          DefRegister(info, name, tpe, visitExp(ctx_exp(0)), reset, init)
+          DefRegister(rinfo, name, tpe, visitExp(ctx_exp(0)), reset, init)
         case "mem" => visitMem(ctx)
         case "cmem" =>
           val (tpe, size) = visitCMemType(ctx.`type`())
