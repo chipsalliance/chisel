@@ -2,17 +2,15 @@
 
 package chisel3
 
-import scala.collection.immutable.ListMap
-import scala.collection.mutable.{HashSet, LinkedHashMap}
-import scala.language.experimental.macros
-
-import chisel3.experimental.BaseModule
-import chisel3.experimental.BundleLiteralException
-import chisel3.experimental.EnumType
-import chisel3.internal._
+import chisel3.experimental.{BaseModule, BundleLiteralException, EnumType, FixedPoint, Interval}
 import chisel3.internal.Builder.pushCommand
+import chisel3.internal._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo._
+
+import scala.collection.immutable.ListMap
+import scala.collection.mutable.LinkedHashMap
+import scala.language.experimental.macros
 
 class AliasedAggregateFieldException(message: String) extends ChiselException(message)
 
@@ -544,6 +542,17 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     val clone = cloneType
     val cloneFields = getRecursiveFields(clone, "(bundle root)").toMap
 
+    def reflectLitArg(data: Data, l: LitArg): LitArg = if (isWidthKnown) {
+      l match {
+        case lit: FPLit => lit.copy(w = data.asInstanceOf[FixedPoint].width, binaryPoint = data.asInstanceOf[FixedPoint].binaryPoint)
+        case lit: IntervalLit => lit.copy(w = data.asInstanceOf[Interval].width, binaryPoint = data.asInstanceOf[Interval].binaryPoint)
+        case lit: SLit => lit.copy(w = data.asInstanceOf[SInt].width)
+        case lit: ULit => lit.copy(w = data.asInstanceOf[UInt].width)
+      }
+    } else {
+      l
+    }
+
     // Create the Bundle literal binding from litargs of arguments
     val bundleLitMap = elems.map { fn => fn(clone) }.flatMap { case (field, value) =>
       val fieldName = cloneFields.getOrElse(field,
@@ -562,9 +571,10 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
             throw new BundleLiteralException(s"Field $fieldName $field specified with non-type-equivalent value $value")
           }
           val litArg = valueBinding match {
-            case ElementLitBinding(litArg) => litArg
-            case BundleLitBinding(litMap) => litMap.getOrElse(value,
-                throw new BundleLiteralException(s"Field $fieldName specified with unspecified value"))
+            case e: ElementLitBinding => reflectLitArg(field, e.litArg)
+            case b: BundleLitBinding => reflectLitArg(field, b.litMap.getOrElse(value,
+              throw new BundleLiteralException(s"Field $fieldName specified with unspecified value")
+            ))
           }
           Seq(field -> litArg)
         case field: Record =>
