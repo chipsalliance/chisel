@@ -53,7 +53,6 @@ object Serializer {
 
   private def s(str: StringLit)(implicit b: StringBuilder, indent: Int): Unit = b ++= str.serialize
 
-  //scalastyle:off cyclomatic.complexity
   private def s(node: Expression)(implicit b: StringBuilder, indent: Int): Unit = node match {
     case Reference(name, _, _, _) => b ++= name
     case DoPrim(op, args, consts, _) =>
@@ -78,7 +77,6 @@ object Serializer {
     case firrtl.EmptyExpression => b ++= "EMPTY"
   }
 
-  //scalastyle:off cyclomatic.complexity method.length
   private def s(node: Statement)(implicit b: StringBuilder, indent: Int): Unit = node match {
     case DefNode(info, name, value) => b ++= "node " ; b ++= name ; b ++= " = " ; s(value) ; s(info)
     case Connect(info, loc, expr) => s(loc) ; b ++= " <= " ; s(expr) ; s(info)

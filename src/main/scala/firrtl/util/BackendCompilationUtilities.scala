@@ -159,7 +159,7 @@ object BackendCompilationUtilities extends LazyLogging {
         s"""-Wno-undefined-bool-conversion -O1 -DTOP_TYPE=V$dutFile -DVL_USER_FINISH -include V$dutFile.h""",
         "-Mdir", dir.getAbsolutePath,
         "--exe", cppHarness.getAbsolutePath)
-    logger.info(s"${command.mkString(" ")}") // scalastyle:ignore regex
+    logger.info(s"${command.mkString(" ")}")
     command
   }
 
@@ -175,7 +175,7 @@ object BackendCompilationUtilities extends LazyLogging {
     val e = Process(s"./V$prefix", dir) !
       ProcessLogger(line => {
         triggered = triggered || (assertionMessageSupplied && line.contains(assertionMsg))
-        logger.info(line) // scalastyle:ignore regex
+        logger.info(line)
       },
       logger.warn(_))
     // Fail if a line contained an assertion or if we get a non-zero exit code

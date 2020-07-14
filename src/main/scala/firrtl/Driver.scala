@@ -72,7 +72,6 @@ object Driver {
     * @param optionsManager use optionsManager config to load annotation files
     * @return Annotations read from files
     */
-  //scalastyle:off cyclomatic.complexity method.length
   def getAnnotations(
       optionsManager: ExecutionOptionsManager with HasFirrtlOptions
   ): Seq[Annotation] = {

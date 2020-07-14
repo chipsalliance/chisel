@@ -189,7 +189,6 @@ private[firrtl] object LegacyAnnotation {
   import firrtl.passes.clocklist._
 
   // Attempt to convert common Annotations and error on the rest of old-style build-in annotations
-  // scalastyle:off
   def convertLegacyAnno(anno: LegacyAnnotation): Annotation = anno match {
     // All old-style Emitter annotations are illegal
     case LegacyAnnotation(_,_,"emitCircuit") => errorIllegalAnno("EmitCircuitAnnotation")
@@ -236,7 +235,6 @@ private[firrtl] object LegacyAnnotation {
       OptimizableExtModuleAnnotation(c)
     case other => other
   }
-  // scalastyle:on
   def convertLegacyAnnos(annos: AnnotationSeq): AnnotationSeq = {
     var warned: Boolean = false
     annos.map {

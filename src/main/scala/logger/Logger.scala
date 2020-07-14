@@ -224,7 +224,6 @@ object Logger {
     * @param className class name of statement
     * @param message   a function returning a string with the message
     */
-  //scalastyle:off regex
   private def showMessage(level: LogLevel.Value, className: String, message: => String): Unit = {
     def logIt(): Unit = {
       if(state.logClassNames) {

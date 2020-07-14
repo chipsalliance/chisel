@@ -114,7 +114,6 @@ sealed abstract class CircuitForm(private val value: Int) extends Ordered[Circui
   def outputSuffix: String
 }
 
-// scalastyle:off magic.number
 // These magic numbers give an ordering to CircuitForm
 /** Chirrtl Form
   *
@@ -191,7 +190,6 @@ final case object UnknownForm extends CircuitForm(-1) {
 
   val outputSuffix: String = ".unknown.fir"
 }
-// scalastyle:on magic.number
 
 // Internal utilities to keep code DRY, not a clean interface
 private[firrtl] object Transform {

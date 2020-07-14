@@ -5,7 +5,6 @@ package firrtlTests.graph
 import firrtl.graph._
 import firrtl.testutils._
 
-//scalastyle:off magic.number
 class DiGraphTests extends FirrtlFlatSpec {
 
   val acyclicGraph = DiGraph(Map(

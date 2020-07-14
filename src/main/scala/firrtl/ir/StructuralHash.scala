@@ -58,7 +58,6 @@ object StructuralHash {
   // see: https://docs.oracle.com/javase/7/docs/api/java/security/MessageDigest.html
   private val SHA256 = "SHA-256"
 
-  //scalastyle:off cyclomatic.complexity
   private def hash(node: FirrtlNode, h: Hasher, rename: String => String): Unit = node match {
     case n : Expression => new StructuralHash(h, rename).hash(n)
     case n : Statement => new StructuralHash(h, rename).hash(n)
@@ -74,7 +73,6 @@ object StructuralHash {
     case n : Circuit => hashCircuit(n, h, rename)
     case n : StringLit => h.update(n.toString)
   }
-  //scalastyle:on cyclomatic.complexity
 
   private def hashModuleAndPortNames(m: DefModule, h: Hasher, rename: String => String): Unit = {
     val sh = new StructuralHash(h, rename)
@@ -190,8 +188,6 @@ class StructuralHash private(h: Hasher, renameModule: String => String) {
   @inline private def hash(i: BigDecimal): Unit = h.update(i)
   @inline private def hash(s: String): Unit = h.update(s)
 
-  //scalastyle:off magic.number
-  //scalastyle:off cyclomatic.complexity
   private def hash(node: Expression): Unit = node match {
     case Reference(name, _, _, _) => id(0) ; n(name)
     case DoPrim(op, args, consts, _) =>
@@ -227,9 +223,7 @@ class StructuralHash private(h: Hasher, renameModule: String => String) {
     case firrtl.VRandom(width) => id(13) ;  hash(width)
     // ids 14 ... 19 are reserved for future Expression nodes
   }
-  //scalastyle:on cyclomatic.complexity
 
-  //scalastyle:off cyclomatic.complexity method.length
   private def hash(node: Statement): Unit = node match {
     // all info fields are ignore
     case DefNode(_, name, value) => id(20) ; n(name) ; hash(value)
@@ -282,7 +276,6 @@ class StructuralHash private(h: Hasher, renameModule: String => String) {
       id(36) ; hash(StructuralHash.verificationOp(op)) ; hash(clk) ; hash(pred) ; hash(en) ; hash(msg.string)
     // ids 37 ... 39 are reserved for future Statement nodes
   }
-  //scalastyle:on cyclomatic.complexity method.length
 
   // ReadUnderWrite is never used in place of a FirrtlNode and thus we can start a new id namespace
   private def hash(ruw: ReadUnderWrite.Value): Unit = ruw match {
@@ -316,7 +309,6 @@ class StructuralHash private(h: Hasher, renameModule: String => String) {
     id(48) ; hash(node.flip) ; hash(node.tpe)
   }
 
-  //scalastyle:off cyclomatic.complexity
   private def hash(node: Type): Unit = node match {
     // Types
     case UIntType(width: Width) => id(50) ; hash(width)
@@ -332,7 +324,6 @@ class StructuralHash private(h: Hasher, renameModule: String => String) {
     case IntervalType(lower, upper, point) => id(60) ; hash(lower) ;  hash(upper) ;  hash(point)
     // ids 61 ... 65 are reserved for future Type nodes
   }
-  //scalastyle:on cyclomatic.complexity
 
   private def hash(node: Direction): Unit = node match {
     case Input => id(66)
