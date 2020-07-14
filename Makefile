@@ -34,7 +34,6 @@ test-scala:
 
 jenkins-build:	clean
 	$(SBT) $(SBT_FLAGS) +clean +test +publish-local
-	$(SBT) $(SBT_FLAGS) scalastyle coverage test
 	$(SBT) $(SBT_FLAGS) coverageReport
 
 .PHONY: build clean regress build-scala test-scala
