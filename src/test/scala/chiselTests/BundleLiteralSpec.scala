@@ -158,6 +158,15 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
     } }
   }
 
+  "Bundle literals without width" should "pass" in {
+    assertTesterPasses{ new BasicTester{
+      val bun1 = (new LongBundle).Lit(_.a -> 0xBE.U, _.b -> 0xEF.S, _.c -> 4.5.F(16.W, 4.BP))
+      val bun2 = (new LongBundle).Lit(_.a -> 0xBE.U(32.W), _.b -> 0xEF.S(32.W), _.c -> 4.5.F(16.W, 4.BP))
+      chisel3.assert(bun1.asUInt() === bun2.asUInt())
+      stop()
+    } }
+  }
+
   "partially initialized Bundle literals" should "assign" in {
     assertTesterPasses{ new BasicTester{
       val bundleWire = Wire(Output(new MyBundle))
