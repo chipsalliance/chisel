@@ -1,11 +1,12 @@
+// See LICENSE for license details.
 
-package chiselTests.formal
+package chiselTests.experimental.verification
 
 import chisel3._
-import chisel3.formal
+import chisel3.experimental.{verification => formal}
 import chiselTests.ChiselPropSpec
 
-class AssertModule extends Module {
+class VerificationModule extends Module {
   val io = IO(new Bundle{
     val in = Input(UInt(8.W))
     val out = Output(UInt(8.W))
@@ -18,7 +19,7 @@ class AssertModule extends Module {
   }
 }
 
-class AssertSpec extends ChiselPropSpec {
+class VerificationSpec extends ChiselPropSpec {
 
   def assertContains[T](s: Seq[T], x: T): Unit = {
     val contains = s.map(_ == x).reduce(_ || _)
@@ -26,11 +27,11 @@ class AssertSpec extends ChiselPropSpec {
   }
 
   property("basic equality check should work") {
-    val fir = generateFirrtl(new AssertModule)
+    val fir = generateFirrtl(new VerificationModule)
     println(fir)
     val lines = fir.split("\n").map(_.trim)
-    assertContains(lines, "cover(clock, _T, UInt<1>(1), \"\") @[VerificationSpec.scala 14:15]")
-    assertContains(lines, "assume(clock, _T_2, UInt<1>(1), \"\") @[VerificationSpec.scala 16:18]")
-    assertContains(lines, "assert(clock, _T_3, UInt<1>(1), \"\") @[VerificationSpec.scala 17:18]")
+    assertContains(lines, "cover(clock, _T, UInt<1>(1), \"\") @[VerificationSpec.scala 15:15]")
+    assertContains(lines, "assume(clock, _T_2, UInt<1>(1), \"\") @[VerificationSpec.scala 17:18]")
+    assertContains(lines, "assert(clock, _T_3, UInt<1>(1), \"\") @[VerificationSpec.scala 18:18]")
   }
 }
