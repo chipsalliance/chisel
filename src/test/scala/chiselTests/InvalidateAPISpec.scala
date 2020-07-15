@@ -3,18 +3,21 @@
 package chiselTests
 
 import chisel3._
+import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import chisel3.util.Counter
 import firrtl.passes.CheckInitialization.RefNotInitializedException
 import firrtl.util.BackendCompilationUtilities
 import org.scalatest._
 import org.scalatest.matchers.should.Matchers
 
-class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompilationUtilities {
+class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompilationUtilities with Utils {
 
-  def myGenerateFirrtl(t: => Module): String = Driver.emit(() => t)
+  def myGenerateFirrtl(t: => Module): String = (new ChiselStage).emitChirrtl(t)
   def compileFirrtl(t: => Module): Unit = {
     val testDir = createTestDirectory(this.getClass.getSimpleName)
-    Driver.execute(Array[String]("-td", testDir.getAbsolutePath, "--compiler", "verilog"), () => t)
+
+    (new ChiselStage).execute(Array[String]("-td", testDir.getAbsolutePath, "--compiler", "verilog"),
+                              Seq(ChiselGeneratorAnnotation(() => t)))
   }
   class TrivialInterface extends Bundle {
     val in  = Input(Bool())
@@ -99,7 +102,9 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompila
       DontCare := io.in
     }
     val exception = intercept[ChiselException] {
-      elaborate(new ModuleWithDontCareSink)
+      extractCause[ChiselException] {
+        ChiselStage.elaborate(new ModuleWithDontCareSink)
+      }
     }
     exception.getMessage should include("DontCare cannot be a connection sink (LHS)")
   }
@@ -111,7 +116,9 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompila
       DontCare <> io.in
     }
     val exception = intercept[BiConnectException] {
-      elaborate(new ModuleWithDontCareSink)
+      extractCause[BiConnectException] {
+        ChiselStage.elaborate(new ModuleWithDontCareSink)
+      }
     }
     exception.getMessage should include("DontCare cannot be a connection sink (LHS)")
   }

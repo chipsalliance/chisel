@@ -69,7 +69,7 @@ class ChiselMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
   }
 
   def runStageExpectFiles(p: ChiselMainTest): Unit = {
-    scenario(s"""User runs Chisel Stage with '${p.argsString}'""") {
+    Scenario(s"""User runs Chisel Stage with '${p.argsString}'""") {
       val f = new ChiselMainFixture
       val td = new TargetDirectoryFixture(p.testName)
 
@@ -123,7 +123,7 @@ class ChiselMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
 
   info("As a Chisel user")
   info("I screw up and compile some bad code")
-  feature("Stack trace trimming") {
+  Feature("Stack trace trimming") {
     Seq(
       ChiselMainTest(args = Array("-X", "low"),
                      generator = Some(classOf[DifferentTypesModule]),
@@ -135,7 +135,7 @@ class ChiselMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
                      result = 1)
     ).foreach(runStageExpectFiles)
   }
-  feature("Report properly trimmed stack traces") {
+  Feature("Report properly trimmed stack traces") {
     Seq(
       ChiselMainTest(args = Array("-X", "low"),
                      generator = Some(classOf[FailingRequirementModule]),
@@ -150,7 +150,7 @@ class ChiselMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
 
   info("As an aspect writer")
   info("I write an aspect")
-  feature("Running aspects via the command line") {
+  Feature("Running aspects via the command line") {
     Seq(
       ChiselMainTest(args = Array( "-X", "high", "--with-aspect", "chiselTests.stage.TestClassAspect" ),
         generator = Some(classOf[SameTypesModule]),
