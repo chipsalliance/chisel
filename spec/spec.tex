@@ -2044,23 +2044,26 @@ circuit Foo :
        b <= not(a)
 \end{lstlisting}
 
-All circuits, modules, ports and statements can optionally be followed with the info token \verb|@[fileinfo]| where fileinfo is a string containing the source file information from where it was generated.
+All circuits, modules, ports and statements can optionally be followed with the info token \verb|@[fileinfo]|
+where fileinfo is a string containing the source file information from where it was generated.
+The following characters need to be escaped with a leading `\verb|\|':
+`\verb|\n|' (new line), `\verb|\t|' (tab), `\verb|]|' and `\verb|\|' itself.
 
 The following example shows the info tokens included:
 
 \begin{lstlisting}
-circuit Top : @["myfile.txt: 14, 8"]
-   module Top : @["myfile.txt: 15, 2"]
-     output out:UInt @["myfile.txt: 16, 3"]
-     input b:UInt<32> @["myfile.txt: 17, 3"]
-     input c:UInt<1> @["myfile.txt: 18, 3"]
-     input d:UInt<16> @["myfile.txt: 19, 3"]
-     wire a:UInt @["myfile.txt: 21, 8"]
-     when c : @["myfile.txt: 24, 8"]
-       a <= b @["myfile.txt: 27, 16"]
+circuit Top : @[myfile.txt 14:8]
+   module Top : @[myfile.txt 15:2]
+     output out:UInt @[myfile.txt 16:3]
+     input b:UInt<32> @[myfile.txt 17:3]
+     input c:UInt<1> @[myfile.txt 18:3]
+     input d:UInt<16> @[myfile.txt 19:3]
+     wire a:UInt @[myfile.txt 21:8]
+     when c : @[myfile.txt 24:8]
+       a <= b @[myfile.txt 27:16]
      else :
-       a <= d @["myfile.txt: 29, 17"]
-     out <= add(a,a) @["myfile.txt: 34, 4"]
+       a <= d @[myfile.txt 29:17]
+     out <= add(a,a) @[myfile.txt 34:4]
 \end{lstlisting}
 
 \section{FIRRTL Language Definition}

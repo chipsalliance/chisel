@@ -44,7 +44,7 @@ object Serializer {
   }
 
   private def s(node: Info)(implicit b: StringBuilder, indent: Int): Unit = node match {
-    case FileInfo(info) => b ++= " @[" ; s(info) ; b ++= "]"
+    case f : FileInfo => b ++= " @[" ; b ++= f.escaped ; b ++= "]"
     case NoInfo => // empty string
     case MultiInfo(infos) =>
       val ii = flattenInfo(infos)

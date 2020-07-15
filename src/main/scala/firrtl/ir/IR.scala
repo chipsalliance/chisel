@@ -5,7 +5,9 @@ package ir
 
 import Utils.{dec2string, indent, trim}
 import firrtl.constraint.{Constraint, IsKnown, IsVar}
+import org.apache.commons.text.translate.{AggregateTranslator, JavaUnicodeEscaper, LookupTranslator}
 
+import scala.collection.JavaConverters._
 import scala.math.BigDecimal.RoundingMode._
 
 /** Intermediate Representation */
@@ -22,22 +24,71 @@ case object NoInfo extends Info {
   override def toString: String = ""
   def ++(that: Info): Info = that
 }
-case class FileInfo(info: StringLit) extends Info {
-  override def toString: String = " @[" + info.serialize + "]"
+
+/** Stores the string of a file info annotation in its escaped form. */
+case class FileInfo(escaped: String) extends Info {
+  override def toString: String = " @[" + escaped + "]"
   def ++(that: Info): Info = if (that == NoInfo) this else MultiInfo(Seq(this, that))
+  def unescaped: String = FileInfo.unescape(escaped)
+  @deprecated("Use FileInfo.unescaped instead. FileInfo.info will be removed in FIRRTL 1.5.", "FIRRTL 1.4")
+  def info: StringLit = StringLit(this.unescaped)
 }
+
+object FileInfo {
+  @deprecated("Use FileInfo.fromUnEscaped instead. FileInfo.apply will be removed in FIRRTL 1.5.", "FIRRTL 1.4")
+  def apply(info: StringLit): FileInfo = new FileInfo(escape(info.string))
+  def fromEscaped(s: String): FileInfo = new FileInfo(s)
+  def fromUnescaped(s: String): FileInfo = new FileInfo(escape(s))
+  /** prepends a `\` to: `\`, `\n`, `\t` and `]` */
+  def escape(s: String): String = EscapeFirrtl.translate(s)
+  /** removes the `\` in front of `\`, `\n`, `\t` and `]` */
+  def unescape(s: String): String = UnescapeFirrtl.translate(s)
+  /** take an already escaped String and do the additional escaping needed for Verilog comment */
+  def escapedToVerilog(s: String) = EscapedToVerilog.translate(s)
+
+  // custom `CharSequenceTranslator` for FIRRTL Info String escaping
+  type CharMap = (CharSequence, CharSequence)
+  private val EscapeFirrtl = new LookupTranslator(Seq[CharMap](
+    "\\" -> "\\\\",
+    "\n" -> "\\n",
+    "\t" -> "\\t",
+    "]" -> "\\]"
+  ).toMap.asJava)
+  private val UnescapeFirrtl = new LookupTranslator(Seq[CharMap](
+    "\\\\" -> "\\",
+    "\\n" -> "\n",
+    "\\t" -> "\t",
+    "\\]" -> "]"
+  ).toMap.asJava)
+  // EscapeFirrtl + EscapedToVerilog essentially does the same thing as running StringEscapeUtils.unescapeJava
+  private val EscapedToVerilog = new AggregateTranslator(
+    new LookupTranslator(Seq[CharMap](
+      // ] is the one character that firrtl needs to be escaped that does not need to be escaped in
+      "\\]" -> "]",
+      "\"" -> "\\\"",
+      // \n and \t are already escaped
+      "\b" -> "\\b",
+      "\f" -> "\\f",
+      "\r" -> "\\r"
+    ).toMap.asJava),
+    JavaUnicodeEscaper.outsideOf(32, 0x7f)
+  )
+
+}
+
 case class MultiInfo(infos: Seq[Info]) extends Info {
-  private def collectStringLits(info: Info): Seq[StringLit] = info match {
-    case FileInfo(lit) => Seq(lit)
-    case MultiInfo(seq) => seq flatMap collectStringLits
+  private def collectStrings(info: Info): Seq[String] = info match {
+    case f : FileInfo => Seq(f.escaped)
+    case MultiInfo(seq) => seq flatMap collectStrings
     case NoInfo => Seq.empty
   }
   override def toString: String = {
-    val parts = collectStringLits(this)
-    if (parts.nonEmpty) parts.map(_.serialize).mkString(" @[", " ", "]")
+    val parts = collectStrings(this)
+    if (parts.nonEmpty) parts.mkString(" @[", " ", "]")
     else ""
   }
   def ++(that: Info): Info = if (that == NoInfo) this else MultiInfo(infos :+ that)
+  def flatten: Seq[FileInfo] = MultiInfo.flattenInfo(infos)
 }
 object MultiInfo {
   def apply(infos: Info*) = {
@@ -47,6 +98,11 @@ object MultiInfo {
       case 1 => infosx.head
       case _ => new MultiInfo(infosx)
     }
+  }
+  private def flattenInfo(infos: Seq[Info]): Seq[FileInfo] = infos.flatMap {
+    case NoInfo => Seq()
+    case f : FileInfo => Seq(f)
+    case MultiInfo(infos) => flattenInfo(infos)
   }
 }
 

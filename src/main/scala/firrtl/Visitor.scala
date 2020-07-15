@@ -69,15 +69,15 @@ class Visitor(infoMode: InfoMode) extends AbstractParseTreeVisitor[FirrtlNode] w
     infoMode match {
       case UseInfo =>
         if (useInfo.length == 0) NoInfo
-        else ir.FileInfo(ir.StringLit.unescape(useInfo))
+        else ir.FileInfo.fromEscaped(useInfo)
       case AppendInfo(filename) if (useInfo.length == 0) =>
-        ir.FileInfo(ir.StringLit.unescape(genInfo(filename)))
+        ir.FileInfo.fromEscaped(genInfo(filename))
       case AppendInfo(filename) =>
-        val useFileInfo = ir.FileInfo(ir.StringLit.unescape(useInfo))
-        val newFileInfo = ir.FileInfo(ir.StringLit.unescape(genInfo(filename)))
+        val useFileInfo = ir.FileInfo.fromEscaped(useInfo)
+        val newFileInfo = ir.FileInfo.fromEscaped(genInfo(filename))
         ir.MultiInfo(useFileInfo, newFileInfo)
       case GenInfo(filename) =>
-        ir.FileInfo(ir.StringLit.unescape(genInfo(filename)))
+        ir.FileInfo.fromEscaped(genInfo(filename))
       case IgnoreInfo => NoInfo
     }
   }

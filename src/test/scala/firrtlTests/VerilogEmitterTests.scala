@@ -727,6 +727,26 @@ class VerilogEmitterSpec extends FirrtlFlatSpec {
     result should    containLine("wire [2:0] _GEN_0 = $signed(x) - 3'sh2;")
     result should    containLine("assign z = _GEN_0[1:0];")
   }
+
+  it should "emit FileInfo as Verilog comment" in {
+    def result(info: String): CircuitState = compileBody(
+      s"""input x : UInt<2>
+        |output z : UInt<2>
+        |z <= x @[$info]
+        |""".stripMargin
+    )
+    result("test") should containLine("  assign z = x; // @[test]")
+    // newlines currently are supposed to be escaped for both firrtl and Verilog
+    // (alternatively one could emit a multi-line comment)
+    result("test\\nx") should containLine("  assign z = x; // @[test\\nx]")
+    // not sure why, but we are also escaping tabs
+    result("test\\tx") should containLine("  assign z = x; // @[test\\tx]")
+    // escaping closing square brackets is only a firrtl issue, should not be reflected in the Verilog emission
+    result("test\\]") should containLine("  assign z = x; // @[test]]")
+    // while firrtl allows for Unicode in the info field they should be escaped for Verilog
+    result("test \uD83D\uDE0E") should containLine("  assign z = x; // @[test \\uD83D\\uDE0E]")
+
+  }
 }
 
 class VerilogDescriptionEmitterSpec extends FirrtlFlatSpec {

@@ -211,4 +211,19 @@ class ProtoBufSpec extends FirrtlFlatSpec {
     val expected = ir.ValidIf(ir.Reference("en"), ir.Reference("x"), UnknownType)
     FromProto.convert(ToProto.convert(vi).build) should equal (expected)
   }
+
+  it should "appropriately escape and unescape FileInfo strings" in {
+    val pairs = Seq(
+      "test\\ntest" -> "test\ntest",
+      "test\\ttest" -> "test\ttest",
+      "test\\\\test" -> "test\\test",
+      "test\\]test" -> "test]test"
+    )
+
+    pairs.foreach { case (escaped, unescaped) =>
+      val info = ir.FileInfo(escaped)
+      ToProto.convert(info).build().getText should equal (unescaped)
+      FromProto.convert(ToProto.convert(info).build) should equal (info)
+    }
+  }
 }

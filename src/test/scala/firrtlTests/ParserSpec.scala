@@ -244,6 +244,18 @@ class ParserSpec extends FirrtlFlatSpec {
       Driver.execute(manager)
     }
   }
+
+  it should "be able to parse a MultiInfo as a FileInfo" in {
+    // currently MultiInfo gets flattened into a single string which can only be recovered as a FileInfo
+    val info = ir.MultiInfo(Seq(ir.MultiInfo(Seq(ir.FileInfo("a"))), ir.FileInfo("b"), ir.FileInfo("c")))
+    val input =
+      s"""circuit m:${info.serialize}
+        |  module m:
+        |    skip
+        |""".stripMargin
+    val c = firrtl.Parser.parse(input)
+    assert(c.info == ir.FileInfo("a b c"))
+  }
 }
 
 class ParserPropSpec extends FirrtlPropSpec {

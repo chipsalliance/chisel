@@ -265,7 +265,12 @@ class VerilogEmitter extends SeqTransform with Emitter {
       case (i: BigInt) => w write i.toString
       case (i: Info) => i match {
         case NoInfo => // Do nothing
-        case ix => w.write(s" //$ix")
+        case f: FileInfo =>
+          val escaped = FileInfo.escapedToVerilog(f.escaped)
+          w.write(s" // @[$escaped]")
+        case m: MultiInfo =>
+          val escaped = FileInfo.escapedToVerilog(m.flatten.map(_.escaped).mkString(" "))
+          w.write(s" // @[$escaped]")
       }
       case (s: Seq[Any]) =>
         s foreach (emit(_, top + 1))
