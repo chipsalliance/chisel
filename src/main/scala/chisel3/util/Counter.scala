@@ -19,27 +19,47 @@ import chisel3.internal.naming.chiselName  // can't use chisel3_ version because
   *     ...
   *   }
   * }}}
-  *
-  * @param n number of counts before the counter resets (or one more than the
-  * maximum output value of the counter), need not be a power of two
   */
 @chiselName
-class Counter(val n: Int) {
-  require(n >= 0, s"Counter value must be nonnegative, got: $n")
-  val value = if (n > 1) RegInit(0.U(log2Ceil(n).W)) else 0.U
+class Counter private (r: Range) {
+  require(r.start >= 0 && r.end >= 0, s"Counter range must be positive, got: $r")
 
-  /** Increment the counter
+  private val delta = math.abs(r.step).U
+  private val width = math.max(log2Up(r.start), log2Up(r.end)) + 1
+
+  /** Creates a counter with the specified number of steps.
+    *
+    * @param n number of steps before the counter resets
+    */
+  def this(n: Int) { this(0 until n) }
+
+  /** The current value of the counter. */
+  val value = if (r.length > 1) RegInit(r.start.U(width.W)) else r.start.U
+
+  /** The range of the counter values. */
+  def range: Range = r
+
+  /** Increments the counter by a step.
     *
     * @note The incremented value is registered and will be visible on the next clock cycle
-    * @return whether the counter will wrap to zero on the next cycle
+    * @return whether the counter will wrap on the next clock cycle
     */
   def inc(): Bool = {
-    if (n > 1) {
-      val wrap = value === (n-1).U
-      value := value + 1.U
-      if (!isPow2(n)) {
-        when (wrap) { value := 0.U }
+    if (r.length > 1) {
+      val wrap = value === r.last.U
+
+      when (wrap) {
+        value := r.start.U
+      } otherwise {
+        if (r.step > 0) {
+          // Increasing range
+          value := value + delta
+        } else {
+          // Decreasing range
+          value := value - delta
+        }
       }
+
       wrap
     } else {
       true.B
@@ -65,6 +85,21 @@ object Counter
     val c = new Counter(n)
     val wrap = WireInit(false.B)
     when (cond) { wrap := c.inc() }
+    (c.value, wrap)
+  }
+
+  /** Creates a counter that steps through a specified range of values.
+    *
+    * @param r the range of counter values
+    * @param enable controls whether the counter increments this cycle
+    * @return tuple of the counter value and whether the counter will wrap (the value is at
+    * maximum and the condition is true).
+    */
+  @chiselName
+  def apply(r: Range, enable: Bool = true.B): (UInt, Bool) = {
+    val c = new Counter(r)
+    val wrap = WireInit(false.B)
+    when (enable) { wrap := c.inc() }
     (c.value, wrap)
   }
 }

@@ -35,6 +35,14 @@ class WrapTester(max: Int) extends BasicTester {
   }
 }
 
+class RangeTester(r: Range) extends BasicTester {
+  val (cnt, wrap) = Counter(r)
+  when(wrap) {
+    assert(cnt === r.last.U)
+    stop()
+  }
+}
+
 class CounterSpec extends ChiselPropSpec {
   property("Counter should count up") {
     forAll(smallPosInts) { (max: Int) => assertTesterPasses{ new CountTester(max) } }
@@ -46,5 +54,11 @@ class CounterSpec extends ChiselPropSpec {
 
   property("Counter should wrap") {
     forAll(smallPosInts) { (max: Int) => assertTesterPasses{ new WrapTester(max) } }
+  }
+
+  property("Counter should handle a range") {
+    forAll(posRange) { (r: Range) =>
+      assertTesterPasses{ new RangeTester(r) }
+    }
   }
 }
