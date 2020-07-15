@@ -4,6 +4,7 @@ package chiselTests.experimental.verification
 
 import chisel3._
 import chisel3.experimental.{verification => formal}
+import chisel3.stage.ChiselStage
 import chiselTests.ChiselPropSpec
 
 class VerificationModule extends Module {
@@ -22,16 +23,16 @@ class VerificationModule extends Module {
 class VerificationSpec extends ChiselPropSpec {
 
   def assertContains[T](s: Seq[T], x: T): Unit = {
-    val contains = s.map(_ == x).reduce(_ || _)
-    assert(contains, s"$x was not found in [${s.mkString(", ")}]")
+    val containsLine = s.map(_ == x).reduce(_ || _)
+    assert(containsLine, s"\n  $x\nwas not found in`\n  ${s.mkString("\n  ")}``")
   }
 
   property("basic equality check should work") {
-    val fir = generateFirrtl(new VerificationModule)
-    println(fir)
+    val stage = new ChiselStage
+    val fir = stage.emitFirrtl(new VerificationModule)
     val lines = fir.split("\n").map(_.trim)
-    assertContains(lines, "cover(clock, _T, UInt<1>(1), \"\") @[VerificationSpec.scala 15:15]")
-    assertContains(lines, "assume(clock, _T_2, UInt<1>(1), \"\") @[VerificationSpec.scala 17:18]")
-    assertContains(lines, "assert(clock, _T_3, UInt<1>(1), \"\") @[VerificationSpec.scala 18:18]")
+    assertContains(lines, "cover(clock, _T, UInt<1>(\"h1\"), \"\") @[VerificationSpec.scala 16:15]")
+    assertContains(lines, "assume(clock, _T_2, UInt<1>(\"h1\"), \"\") @[VerificationSpec.scala 18:18]")
+    assertContains(lines, "assert(clock, _T_3, UInt<1>(\"h1\"), \"\") @[VerificationSpec.scala 19:18]")
   }
 }
