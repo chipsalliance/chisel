@@ -22,6 +22,9 @@ executors:
       FIRRTL_REPO: git@github.com:freechipsproject/firrtl.git
       FIRRTL_BRANCH: master
       FIRRTL_REV: master
+      TREADLE_REPO: git@github.com:freechipsproject/treadle.git
+      TREADLE_BRANCH: master
+      TREADLE_REV: master
       CHECKSTYLE_LIMIT: 40
       SBT_ARGS: ""
 
@@ -63,6 +66,8 @@ jobs:
             ls -l
             git clone --depth 10 --branch $FIRRTL_BRANCH "$FIRRTL_REPO" firrtl && (cd firrtl && git checkout $FIRRTL_REV)
             echo $FIRRTL_REV && (cd firrtl && git log -1 > ../firrtl.log)
+            git clone --depth 10 --branch $TREADLE_BRANCH "$TREADLE_REPO" treadle && (cd treadle && git checkout $TREADLE_REV)
+            echo $TREADLE_REV && (cd treadle && git log -1 > ../treadle.log)
 
 
       - persist_to_workspace:
@@ -85,6 +90,27 @@ jobs:
           command: |
             date > date.firrtl
             (cd firrtl && cat /dev/null | sbt $SBT_ARGS +publishLocal)
+
+      - persist_to_workspace:
+          root: /home/chisel
+          paths:
+            - repo
+            - .ivy2
+            - .m2
+            - .sbt
+
+  build-treadle:
+    executor: chisel-executor
+
+    steps:
+      - attach_workspace:
+          at: /home/chisel
+
+      # publish Treadle
+      - run:
+          command: |
+            date > date.treadle
+            (cd treadle && cat /dev/null | sbt $SBT_ARGS +publishLocal)
 
       - persist_to_workspace:
           root: /home/chisel
@@ -145,12 +171,15 @@ workflows:
       - build-firrtl:
           requires:
             - build-prep
+      - build-treadle:
+          requires:
+            - build-firrtl
       - test-chisel-2_11:
           requires:
-            - build-firrtl
+            - build-treadle
       - test-chisel-2_12:
           requires:
-            - build-firrtl
+            - build-treadle
       - checkstyle-chisel:
           # Strictly speaking, this is only dependent on build-firrtl,
           #  but it is faster than the test jobs so if it fails,
