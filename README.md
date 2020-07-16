@@ -95,6 +95,73 @@ utils/bin/firrtl -i regress/rocket.fir -o regress/rocket.v -X verilog // Compile
 utils/bin/firrtl --help // Returns usage string
 ```
 
+##### Using the JQF Fuzzer
+The `build.sbt` defines the `fuzzer/jqfFuzz` and `fuzzer/jqfRepro` tasks. These
+can be used to randomly generate and run test cases and reproduce failing test
+cases respectively. These tasks are Scala implementations of the [FuzzGoal and
+ReproGoal](https://github.com/rohanpadhye/JQF/tree/master/maven-plugin/src/main/java/edu/berkeley/cs/jqf/plugin)
+of the JQF maven plugin and should be functionally identical.
+
+The format for the arguments to jqfFuzz are as follows:
+```
+sbt> fuzzer/jqfFuzz <testClassName> <testMethodName> <otherArgs>...
+```
+
+The available options are:
+```
+  --classpath <value>       the classpath to instrument and load the test class from
+  --outputDirectory <value> the directory to output test results
+  --testClassName <value>   the full class path of the test class
+  --testMethod <value>      the method of the test class to run
+  --excludes <value>        comma-separated list of FQN prefixes to exclude from coverage instrumentation
+  --includes <value>        comma-separated list of FQN prefixes to forcibly include, even if they match an exclude
+  --time <value>            the duration of time for which to run fuzzing
+  --blind                   whether to generate inputs blindly without taking into account coverage feedback
+  --engine <value>          the fuzzing engine, valid choices are zest|zeal
+  --disableCoverage         disable code-coverage instrumentation
+  --inputDirectory <value>  the name of the input directory containing seed files
+  --saveAll                 save ALL inputs generated during fuzzing, even the ones that do not have any unique code coverage
+  --libFuzzerCompatOutput   use libFuzzer like output instead of AFL like stats screen
+  --quiet                   avoid printing fuzzing statistics progress in the console
+  --exitOnCrash             stop fuzzing once a crash is found.
+  --runTimeout <value>      the timeout for each individual trial, in milliseconds
+```
+
+The `fuzzer/jqfFuzz` sbt task is a thin wrapper around the `firrtl.jqf.jqfFuzz`
+main method that provides the `--classpath` argument and a default
+`--outputDirectory` and passes the rest of the arguments to the main method
+verbatim.
+
+The results will be put in the `fuzzer/target/JQf/$testClassName/$testMethod`
+directory. Input files in the
+`fuzzer/target/JQf/$testClassName/$testMethod/corpus` and
+`fuzzer/target/JQf/$testClassName/$testMethod/failures` directories can be
+passed as inputs to the `fuzzer/jqfRepro` task.
+
+
+The format for the arguments to jqfRepro are the same as `jqfFuzz`
+```
+sbt> fuzzer/jqfRepro <testClassName> <testMethodName> <otherArgs>...
+```
+
+The available options are:
+
+```
+  --classpath <value>      the classpath to instrument and load the test class from
+  --testClassName <value>  the full class path of the test class
+  --testMethod <value>     the method of the test class to run
+  --input <value>          input file or directory to reproduce test case(s)
+  --logCoverage <value>    output file to dump coverage info
+  --excludes <value>       comma-separated list of FQN prefixes to exclude from coverage instrumentation
+  --includes <value>       comma-separated list of FQN prefixes to forcibly include, even if they match an exclude
+  --printArgs              whether to print the args to each test case
+```
+
+Like `fuzzer/jqfFuzz`, the `fuzzer/jqfRepro` sbt task is a thin wrapper around
+the `firrtl.jqf.jqfRepro` main method that provides the `--classpath` argument
+and a default `--outputDirectory` and passes the rest of the arguments to the
+main method verbatim.
+
 ##### Citing Firrtl
 
 If you use Firrtl in a paper, please cite the following ICCAD paper and technical report:

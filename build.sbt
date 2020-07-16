@@ -192,3 +192,64 @@ lazy val benchmark = (project in file("benchmark"))
     test in assembly := {},
     assemblyOutputPath in assembly := file("./utils/bin/firrtl-benchmark.jar")
   )
+
+val JQF_VERSION = "1.5"
+
+lazy val jqf = (project in file("jqf"))
+  .settings(
+    libraryDependencies ++= Seq(
+      "edu.berkeley.cs.jqf" % "jqf-fuzz" % JQF_VERSION,
+      "edu.berkeley.cs.jqf" % "jqf-instrument" % JQF_VERSION,
+      "com.github.scopt" %% "scopt" % "3.7.1",
+    )
+  )
+
+
+lazy val jqfFuzz = sbt.inputKey[Unit]("input task that runs the firrtl.jqf.JQFFuzz main method")
+lazy val jqfRepro = sbt.inputKey[Unit]("input task that runs the firrtl.jqf.JQFRepro main method")
+
+lazy val testClassAndMethodParser = {
+  import sbt.complete.DefaultParsers._
+  val spaces = SpaceClass.+.string
+  val testClassName = token(Space) ~> token(charClass(c => isScalaIDChar(c) || (c == '.')).+.string, "<test class name>")
+  val testMethod = spaces ~> token(charClass(isScalaIDChar).+.string, "<test method name>")
+  val rest = spaces.? ~> token(any.*.string, "<other args>")
+  (testClassName ~ testMethod ~ rest).map {
+    case ((a, b), c) => (a, b, c)
+  }
+}
+
+lazy val fuzzer = (project in file("fuzzer"))
+  .dependsOn(firrtl)
+  .settings(
+    libraryDependencies ++= Seq(
+      "com.pholser" % "junit-quickcheck-core" % "0.8",
+      "com.pholser" % "junit-quickcheck-generators" % "0.8",
+      "edu.berkeley.cs.jqf" % "jqf-fuzz" % JQF_VERSION,
+      "org.scalacheck" %% "scalacheck" % "1.14.3" % Test
+    ),
+
+    jqfFuzz := (Def.inputTaskDyn {
+      val (testClassName, testMethod, otherArgs) = testClassAndMethodParser.parsed
+      val outputDir = target.in(Compile).value / "JQF" / testClassName / testMethod
+      val classpath = (Compile / fullClasspathAsJars).toTask.value.files.mkString(":")
+      (jqf/runMain).in(Compile).toTask(
+        s" firrtl.jqf.JQFFuzz " +
+        s"--testClassName $testClassName " +
+        s"--testMethod $testMethod " +
+        s"--classpath $classpath " +
+        s"--outputDirectory $outputDir " +
+        otherArgs)
+    }).evaluated,
+
+    jqfRepro := (Def.inputTaskDyn {
+      val (testClassName, testMethod, otherArgs) = testClassAndMethodParser.parsed
+      val classpath = (Compile / fullClasspathAsJars).toTask.value.files.mkString(":")
+      (jqf/runMain).in(Compile).toTask(
+        s" firrtl.jqf.JQFRepro " +
+        s"--testClassName $testClassName " +
+        s"--testMethod $testMethod " +
+        s"--classpath $classpath " +
+        otherArgs)
+    }).evaluated,
+  )
