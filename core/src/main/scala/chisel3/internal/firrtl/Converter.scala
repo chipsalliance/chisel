@@ -81,7 +81,7 @@ private[chisel3] object Converter {
   }
 
   /** Convert Commands that map 1:1 to Statements */
-  def convertSimpleCommand(cmd: Command, ctx: Component): Option[fir.Statement] = cmd match { // scalastyle:ignore cyclomatic.complexity line.size.limit
+  def convertSimpleCommand(cmd: Command, ctx: Component): Option[fir.Statement] = cmd match { // scalastyle:ignore cyclomatic.complexity line.size.limit method.length
     case e: DefPrim[_] =>
       val consts = e.args.collect { case ILit(i) => i }
       val args = e.args.flatMap {
@@ -133,7 +133,8 @@ private[chisel3] object Converter {
         case Formal.Assume => fir.Formal.Assume
         case Formal.Cover => fir.Formal.Cover
       }
-      Some(fir.Verification(firOp, convert(info), convert(clk, ctx), convert(pred, ctx), firrtl.Utils.one, fir.StringLit(msg)))
+      Some(fir.Verification(firOp, convert(info), convert(clk, ctx),
+        convert(pred, ctx), firrtl.Utils.one, fir.StringLit(msg)))
     case _ => None
   }
 
