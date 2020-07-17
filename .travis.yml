@@ -59,7 +59,7 @@ jobs:
       workspaces:
         use: firrtl_build
       script:
-        - sbt $SBT_ARGS unidoc
+        - sbt $SBT_ARGS +unidoc
     - stage: test
       name: "Tests: FIRRTL (2.12)"
       workspaces:
