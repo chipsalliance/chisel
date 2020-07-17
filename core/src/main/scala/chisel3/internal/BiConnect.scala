@@ -318,7 +318,9 @@ private[chisel3] object BiConnect {
 
     // Not quite sure where left and right are compared to current module
     // so just error out
-    else throw UnknownRelationException
+    else {
+      throw UnknownRelationException
+    }
   }
 
   // This function checks if analog element-level attaching is allowed, then marks the Analog as connected

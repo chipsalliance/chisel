@@ -44,7 +44,8 @@ object SpecifiedDirection {
       case (SpecifiedDirection.Flip, thisDirection) => SpecifiedDirection.flip(thisDirection)
     }
 
-  private[chisel3] def specifiedDirection[T<:Data](source: T)(dir: SpecifiedDirection)(implicit compileOptions: CompileOptions): T = {
+  private[chisel3] def specifiedDirection[T<:Data](source: T)(
+    dir: SpecifiedDirection)(implicit compileOptions: CompileOptions): T = {
     if (compileOptions.checkSynthesizable) {
       requireIsChiselType(source)
     }

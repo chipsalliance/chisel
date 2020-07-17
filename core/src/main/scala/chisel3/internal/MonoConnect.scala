@@ -259,6 +259,8 @@ private[chisel3] object MonoConnect {
 
     // Not quite sure where left and right are compared to current module
     // so just error out
-    else throw UnknownRelationException
+    else {
+      throw UnknownRelationException
+    }
   }
 }

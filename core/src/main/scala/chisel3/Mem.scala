@@ -29,7 +29,8 @@ object Mem {
   def apply[T <: Data](size: Int, t: T): Mem[T] = macro MemTransform.apply[T]
 
   /** @group SourceInfoTransformMacro */
-  def do_apply[T <: Data](size: BigInt, t: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Mem[T] = {
+  def do_apply[T <: Data](size: BigInt, t: T)(
+    implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Mem[T] = {
     if (compileOptions.declaredTypeMustBeUnbound) {
       requireIsChiselType(t, "memory type")
     }

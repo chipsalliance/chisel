@@ -13,9 +13,9 @@ import chisel3._
   *
   * @param addr common select for cases, shared (same) across all list elements
   * @param default default value for each list element, should the address not match any case
-  * @param mapping list of cases, where each entry consists of a [[chisel3.util.BitPat BitPath]] (compared against addr) and
-  *                a list of elements (same length as default) that is the output value for that
-  *                element (will have the same index in the output).
+  * @param mapping list of cases, where each entry consists of a [[chisel3.util.BitPat BitPath]]
+  *                (compared against addr) and a list of elements (same length as default) that
+  *                is the output value for that element (will have the same index in the output).
   *
   * @example {{{
   * ListLookup(2.U,  // address for comparison
@@ -44,8 +44,8 @@ object ListLookup {
   *
   * @param addr address to select between cases
   * @param default default value should the address not match any case
-  * @param mapping list of cases, where each entry consists of a [[chisel3.util.BitPat BitPat]] (compared against addr) and the
-  *          output value if the BitPat matches
+  * @param mapping list of cases, where each entry consists of a [[chisel3.util.BitPat BitPat]]
+  *                (compared against addr) and the output value if the BitPat matches
   */
 object Lookup {
   def apply[T <: Bits](addr: UInt, default: T, mapping: Seq[(BitPat, T)]): T =

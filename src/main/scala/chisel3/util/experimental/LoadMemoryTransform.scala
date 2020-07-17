@@ -154,8 +154,8 @@ class LoadMemoryTransform extends Transform {
 
     val modulesByName = circuit.modules.collect { case module: firrtl.ir.Module =>  module.name -> module }.toMap
 
-    /* Walk the module and for memories that are annotated with [[LoadMemoryAnnotation]]s generate the bindable modules for
-     * Verilog emission.
+    /* Walk the module and for memories that are annotated with [[LoadMemoryAnnotation]]s
+     * generate the bindable modules for Verilog emission.
      * @param myModule module being searched for memories
      */
     def processModule(myModule: DefModule): DefModule = {

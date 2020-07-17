@@ -13,7 +13,7 @@ import scala.collection.mutable
 /** Use to select Chisel components in a module, after that module has been constructed
   * Useful for adding additional Chisel annotations or for use within an [[Aspect]]
   */
-object Select {
+object Select {  // scalastyle:off number.of.methods
 
   /** Return just leaf components of expanded node
     *
@@ -223,7 +223,9 @@ object Select {
     check(module)
     val sensitivitySignals = getIntermediateAndLeafs(signal).toSet
     val predicatedConnects = mutable.ArrayBuffer[PredicatedConnect]()
-    val isPort = module._component.get.asInstanceOf[DefModule].ports.flatMap{ p => getIntermediateAndLeafs(p.id) }.contains(signal)
+    val isPort = module._component.get.asInstanceOf[DefModule].ports.flatMap {
+      p => getIntermediateAndLeafs(p.id)
+    }.contains(signal)
     var prePredicates: Seq[Predicate] = Nil
     var seenDef = isPort
     searchWhens(module, (cmd: Command, preds) => {
@@ -235,14 +237,16 @@ object Select {
           val effected = getEffected(loc).toSet
           if(sensitivitySignals.intersect(effected).nonEmpty) {
             val expData = getData(exp)
-            prePredicates.reverse.zip(preds.reverse).foreach(x => assert(x._1 == x._2, s"Prepredicates $x must match for signal $signal"))
+            prePredicates.reverse.zip(preds.reverse).foreach(x => assert(
+              x._1 == x._2, s"Prepredicates $x must match for signal $signal"))
             predicatedConnects += PredicatedConnect(preds.dropRight(prePredicates.size), d, expData, isBulk = false)
           }
         case BulkConnect(_, loc@Node(d: Data), exp) =>
           val effected = getEffected(loc).toSet
           if(sensitivitySignals.intersect(effected).nonEmpty) {
             val expData = getData(exp)
-            prePredicates.reverse.zip(preds.reverse).foreach(x => assert(x._1 == x._2, s"Prepredicates $x must match for signal $signal"))
+            prePredicates.reverse.zip(preds.reverse).foreach(x => assert(
+              x._1 == x._2, s"Prepredicates $x must match for signal $signal"))
             predicatedConnects += PredicatedConnect(preds.dropRight(prePredicates.size), d, expData, isBulk = true)
           }
         case other =>
@@ -276,7 +280,9 @@ object Select {
     val printfs = mutable.ArrayBuffer[Printf]()
     searchWhens(module, (cmd: Command, preds: Seq[Predicate]) => {
       cmd match {
-        case chisel3.internal.firrtl.Printf(_, clock, pable) => printfs += Printf(preds, pable, getId(clock).asInstanceOf[Clock])
+        case chisel3.internal.firrtl.Printf(_, clock, pable) => {
+          printfs += Printf(preds, pable, getId(clock).asInstanceOf[Clock])
+        }
         case other =>
       }
     })

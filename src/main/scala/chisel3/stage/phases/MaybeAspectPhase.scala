@@ -13,8 +13,10 @@ class MaybeAspectPhase extends Phase with PreservesAll[Phase] {
   override val prerequisites = Seq(Dependency[Elaborate])
 
   def transform(annotations: AnnotationSeq): AnnotationSeq = {
-    if(annotations.collectFirst { case a: Aspect[_] => annotations }.isDefined) {
+    if (annotations.collectFirst { case a: Aspect[_] => annotations }.isDefined) {
       new AspectPhase().transform(annotations)
-    } else annotations
+    } else {
+      annotations
+    }
   }
 }

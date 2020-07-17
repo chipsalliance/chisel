@@ -230,7 +230,8 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
     * @note the length of this Vec must match the length of the input Seq
     */
   def := (that: Seq[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit = {
-    require(this.length == that.length, s"Cannot assign to a Vec of length ${this.length} from a Seq of different length ${that.length}")
+    require(this.length == that.length,
+      s"Cannot assign to a Vec of length ${this.length} from a Seq of different length ${that.length}")
     for ((a, b) <- this zip that)
       a := b
   }
@@ -578,7 +579,8 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
           }
         case field: EnumType => {
           if (!(field typeEquivalent value)) {
-            throw new BundleLiteralException(s"field $fieldName $field specified with non-type-equivalent enum value $value")
+            throw new BundleLiteralException(
+              s"field $fieldName $field specified with non-type-equivalent enum value $value")
           }
           val litArg = valueBinding match {
             case ElementLitBinding(litArg) => litArg
