@@ -32,7 +32,7 @@ trait SourceOfRandomnessGen[A] {
 
 object SourceOfRandomnessGen {
   implicit def sourceOfRandomnessGenGenMonadInstance(implicit r: SourceOfRandomness): GenMonad[SourceOfRandomnessGen] = new GenMonad[SourceOfRandomnessGen] {
-    import scala.collection.JavaConverters.seqAsJavaList
+    import scala.collection.JavaConverters.seqAsJavaListConverter
     type G[T] = SourceOfRandomnessGen[T]
     def flatMap[A, B](a: G[A])(f: A => G[B]): G[B] = a.flatMap(f)
     def map[A, B](a: G[A])(f: A => B): G[B] = a.map(f)
@@ -40,8 +40,8 @@ object SourceOfRandomnessGen {
       r.nextLong(min, max).toInt // use r.nextLong instead of r.nextInt because r.nextInt is exclusive of max
     }
     def oneOf[T](items: T*): G[T] = {
-      val arr = seqAsJavaList(items)
-      const(arr).map(r.choose(_))
+      val arr = seqAsJavaListConverter(items)
+      const(arr.asJava).map(r.choose(_))
     }
     def const[T](c: T): G[T] = SourceOfRandomnessGen(c)
     def widen[A, B >: A](ga: G[A]): G[B] = ga.widen[B]
