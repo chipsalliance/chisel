@@ -550,17 +550,19 @@ class VerilogEmitter extends SeqTransform with Emitter {
       this(Seq(), Map.empty, m, moduleMap, "", new EmissionOptions(Seq.empty))(writer)
     }
 
-    val netlist = mutable.LinkedHashMap[WrappedExpression, Expression]()
+    val netlist = mutable.LinkedHashMap[WrappedExpression, InfoExpr]()
     val namespace = Namespace(m)
     namespace.newName("_RAND") // Start rand names at _RAND_0
     def build_netlist(s: Statement): Unit = {
       s.foreach(build_netlist)
       s match {
-        case sx: Connect => netlist(sx.loc) = sx.expr
+        case sx: Connect => netlist(sx.loc) = InfoExpr(sx.info, sx.expr)
         case sx: IsInvalid => error("Should have removed these!")
+        // TODO Since only register update and memories use the netlist anymore, I think nodes are
+        // unnecessary
         case sx: DefNode =>
           val e = WRef(sx.name, sx.value.tpe, NodeKind, SourceFlow)
-          netlist(e) = sx.value
+          netlist(e) = InfoExpr(sx.info, sx.value)
         case _ =>
       }
     }
@@ -663,6 +665,9 @@ class VerilogEmitter extends SeqTransform with Emitter {
     def declare(b: String, n: String, t: Type, info: Info): Unit =
       declare(b, n, t, info, None)
 
+    def assign(e: Expression, infoExpr: InfoExpr): Unit =
+      assign(e, infoExpr.expr, infoExpr.info)
+
     def assign(e: Expression, value: Expression, info: Info): Unit = {
       assigns += Seq("assign ", e, " = ", value, ";", info)
     }
@@ -684,19 +689,20 @@ class VerilogEmitter extends SeqTransform with Emitter {
     }
 
     def regUpdate(r: Expression, clk: Expression, reset: Expression, init: Expression) = {
-      def addUpdate(expr: Expression, tabs: String): Seq[Seq[Any]] = expr match {
+      def addUpdate(info: Info, expr: Expression, tabs: String): Seq[Seq[Any]] = expr match {
         case m: Mux =>
           if (m.tpe == ClockType) throw EmitterException("Cannot emit clock muxes directly")
           if (m.tpe == AsyncResetType) throw EmitterException("Cannot emit async reset muxes directly")
 
-          lazy val _if     = Seq(tabs, "if (", m.cond, ") begin")
+          val (eninfo, tinfo, finfo) = MultiInfo.demux(info)
+          lazy val _if     = Seq(tabs, "if (", m.cond, ") begin", eninfo)
           lazy val _else   = Seq(tabs, "end else begin")
-          lazy val _ifNot  = Seq(tabs, "if (!(", m.cond, ")) begin")
+          lazy val _ifNot  = Seq(tabs, "if (!(", m.cond, ")) begin", eninfo)
           lazy val _end    = Seq(tabs, "end")
-          lazy val _true   = addUpdate(m.tval, tabs + tab)
-          lazy val _false  = addUpdate(m.fval, tabs + tab)
+          lazy val _true   = addUpdate(tinfo, m.tval, tabs + tab)
+          lazy val _false  = addUpdate(finfo, m.fval, tabs + tab)
           lazy val _elseIfFalse = {
-            val _falsex = addUpdate(m.fval, tabs) // _false, but without an additional tab
+            val _falsex = addUpdate(finfo, m.fval, tabs) // _false, but without an additional tab
             Seq(tabs, "end else ", _falsex.head.tail) +: _falsex.tail
           }
 
@@ -719,15 +725,17 @@ class VerilogEmitter extends SeqTransform with Emitter {
             case (_, _: Mux)                      => (_if    +: _true) ++ _elseIfFalse
             case _                                => (_if    +: _true  :+ _else)       ++ _false :+ _end
           }
-        case e => Seq(Seq(tabs, r, " <= ", e, ";"))
+        case e => Seq(Seq(tabs, r, " <= ", e, ";", info))
       }
       if (weq(init, r)) { // Synchronous Reset
-        noResetAlwaysBlocks.getOrElseUpdate(clk, ArrayBuffer[Seq[Any]]()) ++= addUpdate(netlist(r), "")
+        val InfoExpr(info, e) = netlist(r)
+        noResetAlwaysBlocks.getOrElseUpdate(clk, ArrayBuffer[Seq[Any]]()) ++= addUpdate(info, e, "")
       } else { // Asynchronous Reset
         assert(reset.tpe == AsyncResetType, "Error! Synchronous reset should have been removed!")
         val tv = init
-        val fv = netlist(r)
-        asyncResetAlwaysBlocks += ((clk, reset, addUpdate(Mux(reset, tv, fv, mux_type_and_widths(tv, fv)), "")))
+        val InfoExpr(finfo, fv) = netlist(r)
+        // TODO add register info argument and build a MultiInfo to pass
+        asyncResetAlwaysBlocks += ((clk, reset, addUpdate(NoInfo, Mux(reset, tv, fv, mux_type_and_widths(tv, fv)), "")))
       }
     }
 
@@ -996,7 +1004,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
             // declare("wire", LowerTypes.loweredName(en), en.tpe)
 
             //; Read port
-            assign(addr, netlist(addr), NoInfo) // Info should come from addr connection
+            assign(addr, netlist(addr))
                                                 // assign(en, netlist(en))     //;Connects value to m.r.en
             val mem = WRef(sx.name, memType(sx), MemKind, UnknownFlow)
             val memPort = WSubAccess(mem, addr, sx.dataType, UnknownFlow)
@@ -1015,7 +1023,8 @@ class VerilogEmitter extends SeqTransform with Emitter {
             val mask = memPortField(sx, w, "mask")
             val en = memPortField(sx, w, "en")
             //Ports should share an always@posedge, so can't have intermediary wire
-            val clk = netlist(memPortField(sx, w, "clk"))
+            // TODO should we use the info here for anything?
+            val InfoExpr(_, clk) = netlist(memPortField(sx, w, "clk"))
 
             declare("wire", LowerTypes.loweredName(data), data.tpe, sx.info)
             declare("wire", LowerTypes.loweredName(addr), addr.tpe, sx.info)
@@ -1023,11 +1032,10 @@ class VerilogEmitter extends SeqTransform with Emitter {
             declare("wire", LowerTypes.loweredName(en), en.tpe, sx.info)
 
             // Write port
-            // Info should come from netlist
-            assign(data, netlist(data), NoInfo)
-            assign(addr, netlist(addr), NoInfo)
-            assign(mask, netlist(mask), NoInfo)
-            assign(en, netlist(en), NoInfo)
+            assign(data, netlist(data))
+            assign(addr, netlist(addr))
+            assign(mask, netlist(mask))
+            assign(en, netlist(en))
 
             val mem = WRef(sx.name, memType(sx), MemKind, UnknownFlow)
             val memPort = WSubAccess(mem, addr, sx.dataType, UnknownFlow)

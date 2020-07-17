@@ -95,10 +95,18 @@ object MultiInfo {
     val infosx = infos.filterNot(_ == NoInfo)
     infosx.size match {
       case 0 => NoInfo
-      case 1 => infosx.head
-      case _ => new MultiInfo(infosx)
+      case 1 => infos.head
+      case _ => new MultiInfo(infos)
     }
   }
+
+  // Internal utility for unpacking implicit MultiInfo structure for muxes
+  // TODO should this be made into an API?
+  private[firrtl] def demux(info: Info): (Info, Info, Info) = info match {
+    case MultiInfo(infos) if infos.lengthCompare(3) == 0 => (infos(0), infos(1), infos(2))
+    case other => (other, NoInfo, NoInfo) // if not exactly 3, we don't know what to do
+  }
+  
   private def flattenInfo(infos: Seq[Info]): Seq[FileInfo] = infos.flatMap {
     case NoInfo => Seq()
     case f : FileInfo => Seq(f)

@@ -169,6 +169,44 @@ case object Dshlw extends PrimOp {
   }
 }
 
+/** Internal class used for propagating [[Info]] across [[Expression]]s
+  *
+  * In particular, this is useful in "Netlist" datastructures mapping node or other [[Statement]]s
+  * to [[Expression]]s
+  *
+  * @note This is not allowed to leak from any transform
+  */
+private[firrtl] case class InfoExpr(info: Info, expr: Expression) extends Expression {
+  def foreachExpr(f: Expression => Unit): Unit = f(expr)
+  def foreachType(f: Type => Unit): Unit = ()
+  def foreachWidth(f: Width => Unit): Unit = ()
+  def mapExpr(f: Expression => Expression): Expression = this.copy(expr = f(this.expr))
+  def mapType(f: Type => Type): Expression = this
+  def mapWidth(f: Width => Width): Expression = this
+  def tpe: Type = expr.tpe
+
+  // Members declared in firrtl.ir.FirrtlNode
+  def serialize: String = s"(${expr.serialize}: ${info.serialize})"
+}
+
+private[firrtl] object InfoExpr {
+  def wrap(info: Info, expr: Expression): Expression =
+    if (info == NoInfo) expr else InfoExpr(info, expr)
+
+  def unwrap(expr: Expression): (Info, Expression) = expr match {
+    case InfoExpr(i, e) => (i, e)
+    case other          => (NoInfo, other)
+  }
+
+  def orElse(info: Info, alt: => Info): Info = if (info == NoInfo) alt else info
+
+  // TODO this the right name?
+  def map(expr: Expression)(f: Expression => Expression): Expression = expr match {
+    case ie: InfoExpr => ie.mapExpr(f)
+    case e            => f(e)
+  }
+}
+
 object WrappedExpression {
   def apply(e: Expression) = new WrappedExpression(e)
   def we(e: Expression) = new WrappedExpression(e)

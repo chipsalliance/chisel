@@ -9,6 +9,7 @@ import firrtl.Mappers._
 import firrtl.PrimOps._
 import firrtl.WrappedExpression._
 import firrtl.options.Dependency
+import firrtl.InfoExpr.unwrap
 
 import annotation.tailrec
 import collection.mutable
@@ -42,12 +43,7 @@ object ExpandWhens extends Pass {
   def run(c: Circuit): Circuit = {
     val modulesx = c.modules map {
       case m: ExtModule => m
-      case m: Module =>
-      val (netlist, simlist, attaches, bodyx, sourceInfoMap) = expandWhens(m)
-      val attachedAnalogs = attaches.flatMap(_.exprs.map(we)).toSet
-      val newBody = Block(Seq(squashEmpty(bodyx)) ++ expandNetlist(netlist, attachedAnalogs, sourceInfoMap) ++
-                              combineAttaches(attaches) ++ simlist)
-      Module(m.info, m.name, m.ports, newBody)
+      case m: Module => onModule(m)
     }
     Circuit(c.info, modulesx, c.main)
   }
@@ -61,15 +57,6 @@ object ExpandWhens extends Pass {
   /** Maps a reference to whatever connects to it. Used to resolve last connect semantics */
   type Netlist = mutable.LinkedHashMap[WrappedExpression, Expression]
 
-  /** Collects Info data serialized names for nodes, aggregating into MultiInfo when necessary */
-  class InfoMap extends mutable.HashMap[String, Info] {
-    override def default(key: String): Info = {
-      val x = NoInfo
-      this(key) = x
-      x
-    }
-  }
-
   /** Contains all simulation constructs */
   type Simlist = mutable.ArrayBuffer[Statement]
 
@@ -78,36 +65,28 @@ object ExpandWhens extends Pass {
     */
   type Defaults = Seq[mutable.Map[WrappedExpression, Expression]]
 
-
-  /** Expands a module's when statements
-    * @param m Module to expand
-    * @note Netlist maps a reference to whatever connects to it
-    * @note Simlist contains all simulation constructs in m
-    * @note Seq[Attach] contains all Attach statements (unsimplified)
-    * @note Statement contains all declarations in the module (including DefNode's)
-    */
-  def expandWhens(m: Module): (Netlist, Simlist, Seq[Attach], Statement, InfoMap) = {
+  /** Expands a module's when statements */
+  private def onModule(m: Module): Module = {
     val namespace = Namespace(m)
     val simlist = new Simlist
 
     // Memoizes if an expression contains any WVoids inserted in this pass
     val memoizedVoid = new mutable.HashSet[WrappedExpression] += WVoid
 
+    // Does an expression contain WVoid inserted in this pass?
+    def containsVoid(e: Expression): Boolean = e match {
+      case WVoid => true
+      case ValidIf(_, value, _) => memoizedVoid(value)
+      case Mux(_, tv, fv, _) => memoizedVoid(tv) || memoizedVoid(fv)
+      case _ => false
+    }
+
+
     // Memoizes the node that holds a particular expression, if any
     val nodes = new NodeLookup
 
     // Seq of attaches in order
     lazy val attaches = mutable.ArrayBuffer.empty[Attach]
-
-    val infoMap: InfoMap = new InfoMap
-
-    /* Adds into into map, aggregates info into MultiInfo where necessary
-     * @param key  serialized name of node
-     * @param info info being recorded
-     */
-    def saveInfo(key: String, info: Info): Unit = {
-      infoMap(key) = infoMap(key) ++ info
-    }
 
     /* Removes connections/attaches from the statement
      * Mutates namespace, simlist, nodes, attaches
@@ -133,15 +112,13 @@ object ExpandWhens extends Pass {
       case w: WDefInstance =>
         netlist ++= (getSinkRefs(w.name, w.tpe, SourceFlow).map(ref => we(ref) -> WVoid))
         w
-      // Update netlist with self reference for each sink reference
-      // Return self, unchanged
       case r: DefRegister =>
-        netlist ++= (getSinkRefs(r.name, r.tpe, DuplexFlow) map (ref => we(ref) -> ref))
+        // Update netlist with self reference for each sink reference
+        netlist ++= getSinkRefs(r.name, r.tpe, DuplexFlow).map(ref => we(ref) -> InfoExpr(r.info, ref))
         r
       // For value assignments, update netlist/attaches and return EmptyStmt
       case c: Connect =>
-        saveInfo(c.loc.serialize, c.info)
-        netlist(c.loc) = c.expr
+        netlist(c.loc) = InfoExpr(c.info, c.expr)
         EmptyStmt
       case c: IsInvalid =>
         netlist(c.expr) = WInvalid
@@ -179,27 +156,20 @@ object ExpandWhens extends Pass {
             case Some(v) => Some(v)
             case None => getDefault(lvalue, defaults)
           }
-          val res = default match {
+          // info0 and info1 correspond to Mux infos, use info0 only if ValidIf
+          val (res, info0, info1) = default match {
             case Some(defaultValue) =>
-              val trueValue = conseqNetlist getOrElse (lvalue, defaultValue)
-              val falseValue = altNetlist getOrElse (lvalue, defaultValue)
+              val (tinfo, trueValue) = unwrap(conseqNetlist.getOrElse(lvalue, defaultValue))
+              val (finfo, falseValue) = unwrap(altNetlist.getOrElse(lvalue, defaultValue))
               (trueValue, falseValue) match {
-                case (WInvalid, WInvalid) => WInvalid
-                case (WInvalid, fv) => ValidIf(NOT(sx.pred), fv, fv.tpe)
-                case (tv, WInvalid) => ValidIf(sx.pred, tv, tv.tpe)
-                case (tv, fv) => Mux(sx.pred, tv, fv, mux_type_and_widths(tv, fv)) //Muxing clocks will be checked during type checking
+                case (WInvalid, WInvalid) => (WInvalid, NoInfo, NoInfo)
+                case (WInvalid, fv) => (ValidIf(NOT(sx.pred), fv, fv.tpe), finfo, NoInfo)
+                case (tv, WInvalid) => (ValidIf(sx.pred, tv, tv.tpe), tinfo, NoInfo)
+                case (tv, fv) => (Mux(sx.pred, tv, fv, mux_type_and_widths(tv, fv)), tinfo, finfo)
               }
             case None =>
               // Since not in netlist, lvalue must be declared in EXACTLY one of conseq or alt
-              conseqNetlist getOrElse (lvalue, altNetlist(lvalue))
-          }
-
-          // Does an expression contain WVoid inserted in this pass?
-          def containsVoid(e: Expression): Boolean = e match {
-            case WVoid => true
-            case ValidIf(_, value, _) => memoizedVoid(value)
-            case Mux(_, tv, fv, _) => memoizedVoid(tv) || memoizedVoid(fv)
-            case _ => false
+              (conseqNetlist.getOrElse(lvalue, altNetlist(lvalue)), NoInfo, NoInfo)
           }
 
           res match {
@@ -217,7 +187,9 @@ object ExpandWhens extends Pass {
                 val name = namespace.newTemp
                 nodes(res) = name
                 netlist(lvalue) = WRef(name, res.tpe, NodeKind, SourceFlow)
-                DefNode(sx.info, name, res)
+                // Use MultiInfo constructor to preserve NoInfos
+                val info = new MultiInfo(List(sx.info, info0, info1))
+                DefNode(info, name, res)
             }
             case _ =>
               netlist(lvalue) = res
@@ -233,8 +205,13 @@ object ExpandWhens extends Pass {
     netlist ++= (m.ports flatMap { case Port(_, name, dir, tpe) =>
       getSinkRefs(name, tpe, to_flow(dir)) map (ref => we(ref) -> WVoid)
     })
+    // Do traversal and construct mutable datastructures
     val bodyx = expandWhens(netlist, Seq(netlist), one)(m.body)
-    (netlist, simlist, attaches, bodyx, infoMap)
+
+    val attachedAnalogs = attaches.flatMap(_.exprs.map(we)).toSet
+    val newBody = Block(Seq(squashEmpty(bodyx)) ++ expandNetlist(netlist, attachedAnalogs) ++
+                            combineAttaches(attaches) ++ simlist)
+    Module(m.info, m.name, m.ports, newBody)
   }
 
 
@@ -253,17 +230,20 @@ object ExpandWhens extends Pass {
   }
 
   /** Returns all connections/invalidations in the circuit
-    * @todo Preserve Info
     * @note Remove IsInvalids on attached Analog-typed components
     */
-  private def expandNetlist(netlist: Netlist, attached: Set[WrappedExpression], sourceInfoMap: InfoMap) =
-    netlist map {
-      case (k, WInvalid) => // Remove IsInvalids on attached Analog types
-        if (attached.contains(k)) EmptyStmt else IsInvalid(NoInfo, k.e1)
+  private def expandNetlist(netlist: Netlist, attached: Set[WrappedExpression]) = {
+    // Remove IsInvalids on attached Analog types
+    def handleInvalid(k: WrappedExpression, info: Info): Statement =
+      if (attached.contains(k)) EmptyStmt else IsInvalid(info, k.e1)
+    netlist.map {
+      case (k, WInvalid) => handleInvalid(k, NoInfo)
+      case (k, InfoExpr(info, WInvalid)) => handleInvalid(k, info)
       case (k, v) =>
-        val info = sourceInfoMap(k.e1.serialize)
-        Connect(info, k.e1, v)
+        val (info, expr) = unwrap(v)
+        Connect(info, k.e1, expr)
     }
+  }
 
   /** Returns new sequence of combined Attaches
     * @todo Preserve Info
