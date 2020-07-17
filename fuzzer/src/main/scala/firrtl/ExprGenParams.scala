@@ -70,7 +70,7 @@ sealed trait ExprGenParams {
         case SIntType(IntWidth(width)) if width == BigInt(1) => ExprGen.ReferenceGen.boolSIntGen[ExprGenParams, G].get
         case SIntType(IntWidth(width)) => ExprGen.ReferenceGen.sintGen[ExprGenParams, G].get(width)
       }
-      unboundRefs <- StateGen.inspect { ExprState[ExprGenParams].unboundRefs(_) }
+      unboundRefs <- StateGen.inspect { ExprState[ExprGenParams].unboundRefs }
     } yield {
       val outputPort = Port(
         NoInfo,
