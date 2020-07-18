@@ -24,8 +24,8 @@ import chisel3.internal.naming.chiselName  // can't use chisel3_ version because
 class Counter private (r: Range) {
   require(r.start >= 0 && r.end >= 0, s"Counter range must be positive, got: $r")
 
-  private val delta = math.abs(r.step).U
-  private val width = math.max(log2Up(r.head), log2Up(r.last)) + 1
+  private val delta = math.abs(r.step)
+  private val width = math.max(log2Up(r.last + 1), log2Up(r.head + 1))
 
   /** Creates a counter with the specified number of steps.
     *
@@ -34,7 +34,7 @@ class Counter private (r: Range) {
   def this(n: Int) { this(0 until n) }
 
   /** The current value of the counter. */
-  val value = if (r.length > 1) RegInit(r.start.U(width.W)) else r.start.U
+  val value = if (r.length > 1) RegInit(r.head.U(width.W)) else r.head.U
 
   /** The range of the counter values. */
   def range: Range = r
@@ -48,16 +48,19 @@ class Counter private (r: Range) {
     if (r.length > 1) {
       val wrap = value === r.last.U
 
-      when (wrap) {
-        value := r.start.U
-      } otherwise {
-        if (r.step > 0) {
-          // Increasing range
-          value := value + delta
-        } else {
-          // Decreasing range
-          value := value - delta
-        }
+      if (r.step > 0) {
+        // Increasing range
+        value := value + delta.U
+      } else {
+        // Decreasing range
+        value := value - delta.U
+      }
+
+      // We only need to explicitly wrap counters that don't start at zero, or
+      // end on a power of two. Otherwise we just let the counter overflow
+      // naturally to avoid wasting an extra mux.
+      if (!(r.head == 0 && isPow2(r.last + delta))) {
+        when(wrap) { value := r.head.U }
       }
 
       wrap

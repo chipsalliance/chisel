@@ -37,9 +37,14 @@ class WrapTester(max: Int) extends BasicTester {
 
 class RangeTester(r: Range) extends BasicTester {
   val (cnt, wrap) = Counter(r)
-  when(wrap) {
-    assert(cnt === r.last.U)
+  val checkWrap = RegInit(false.B)
+
+  when(checkWrap) {
+    assert(cnt === r.head.U)
     stop()
+  }.elsewhen(wrap) {
+    assert(cnt === r.last.U)
+    checkWrap := true.B
   }
 }
 
