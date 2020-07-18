@@ -15,6 +15,15 @@ import firrtl.annotations.TargetToken._
   *
   * @constructor constructs an instance graph from a Circuit
   * @param c the Circuit to analyze
+  * @note The current implementation has some performance problems, which is why [[InstanceKeyGraph]]
+  *       exists and should be preferred for new use cases. Eventually the old class will be deprecated
+  *       in favor of the new implementation.
+  *       The performance problems in the old implementation stem from the fact that DefInstance is used as the
+  *       key to the underlying Map. DefInstance contains the type of the module besides the module and instance names.
+  *       This type is not needed as it can be inferred from the module name. If the module name is the same,
+  *       the type will be the same and vice versa.
+  *       Hashing and comparing deep bundle types however is inefficient which can manifest in slower then necessary
+  *       lookups and insertions.
   */
 class InstanceGraph(c: Circuit) {
 

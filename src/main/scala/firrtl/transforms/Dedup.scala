@@ -6,12 +6,12 @@ package transforms
 import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.traversals.Foreachers._
-import firrtl.analyses.InstanceGraph
+import firrtl.analyses.InstanceKeyGraph
 import firrtl.annotations._
 import firrtl.passes.{InferTypes, MemPortUtils}
 import firrtl.Utils.{kind, splitRef, throwInternalError}
 import firrtl.annotations.transforms.DupedResult
-import firrtl.annotations.TargetToken.{OfModule, Instance}
+import firrtl.annotations.TargetToken.{Instance, OfModule}
 import firrtl.options.{HasShellOptions, ShellOption}
 import logger.LazyLogging
 
@@ -157,7 +157,7 @@ class DedupModules extends Transform with DependencyAPIMigration {
     moduleRenameMap.recordAll(map)
 
     // Build instanceify renaming map
-    val instanceGraph = new InstanceGraph(c)
+    val instanceGraph = new InstanceKeyGraph(c)
     val instanceify = RenameMap()
     val moduleName2Index = c.modules.map(_.name).zipWithIndex.map { case (n, i) =>
       {
@@ -171,16 +171,14 @@ class DedupModules extends Transform with DependencyAPIMigration {
 
     // get the ordered set of instances a module, includes new Deduped modules
     val getChildrenInstances = {
-      val childrenMap = instanceGraph.getChildrenInstances
-      val newModsMap: Map[String, mutable.LinkedHashSet[WDefInstance]] = dedupMap.map {
-        case (name, m: Module) =>
-          val set = new mutable.LinkedHashSet[WDefInstance]
-          InstanceGraph.collectInstances(set)(m.body)
-          m.name -> set
-        case (name, m: DefModule) =>
-          m.name -> mutable.LinkedHashSet.empty[WDefInstance]
-      }.toMap
-      (mod: String) => childrenMap.get(mod).getOrElse(newModsMap(mod))
+      val childrenMap = instanceGraph.getChildInstances.toMap
+      val newModsMap = dedupMap.map {
+        case (_, m: Module) =>
+          m.name -> InstanceKeyGraph.collectInstances(m)
+        case (_, m: DefModule) =>
+          m.name -> List()
+      }
+      (mod: String) => childrenMap.getOrElse(mod, newModsMap(mod))
     }
 
     val instanceNameMap: Map[OfModule, Map[Instance, Instance]] = {
@@ -200,7 +198,7 @@ class DedupModules extends Transform with DependencyAPIMigration {
           // If dedupedAnnos is exactly annos, contains is because dedupedAnnos is type Option
           val newTargets = paths.map { path =>
             val root: IsModule = ct.module(c)
-            path.foldLeft(root -> root) { case ((oldRelPath, newRelPath), WDefInstance(_, name, mod, _)) =>
+            path.foldLeft(root -> root) { case ((oldRelPath, newRelPath), InstanceKeyGraph.InstanceKey(name, mod)) =>
               if(mod == c) {
                 val mod = CircuitTarget(c).module(c)
                 mod -> mod
@@ -333,9 +331,8 @@ object DedupModules extends LazyLogging {
     // If black box, return it (it has no instances)
     if (module.isInstanceOf[ExtModule]) return module
 
-    // Get all instances to know what to rename in the module
-    val instances = mutable.Set[WDefInstance]()
-    InstanceGraph.collectInstances(instances)(module.asInstanceOf[Module].body)
+    // Get all instances to know what to rename in the module s
+    val instances = InstanceKeyGraph.collectInstances(module)
     val instanceModuleMap = instances.map(i => i.name -> i.module).toMap
 
     def getNewModule(old: String): DefModule = {
@@ -470,7 +467,7 @@ object DedupModules extends LazyLogging {
                   renameMap: RenameMap): Map[String, DefModule] = {
 
     val (moduleMap, moduleLinearization) = {
-      val iGraph = new InstanceGraph(circuit)
+      val iGraph = new InstanceKeyGraph(circuit)
       (iGraph.moduleMap, iGraph.moduleOrder.reverse)
     }
     val main = circuit.main
