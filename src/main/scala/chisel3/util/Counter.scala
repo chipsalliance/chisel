@@ -25,7 +25,7 @@ class Counter private (r: Range) {
   require(r.start >= 0 && r.end >= 0, s"Counter range must be positive, got: $r")
 
   private val delta = math.abs(r.step).U
-  private val width = math.max(log2Up(r.start), log2Up(r.end)) + 1
+  private val width = math.max(log2Up(r.head), log2Up(r.last)) + 1
 
   /** Creates a counter with the specified number of steps.
     *
