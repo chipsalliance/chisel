@@ -15,6 +15,7 @@
 package chisel3.internal.sourceinfo
 
 import scala.language.experimental.macros
+import scala.reflect.io.File
 import scala.reflect.macros.blackbox.Context
 
 /** Abstract base class for generalized source information.
@@ -52,7 +53,15 @@ object SourceInfoMacro {
   def generate_source_info(c: Context): c.Tree = {
     import c.universe._
     val p = c.enclosingPosition
-    q"_root_.chisel3.internal.sourceinfo.SourceLine(${p.source.file.name}, ${p.line}, ${p.column})"
+
+    val source = p.source.file
+    val sourceInfoLocation =
+      if (source.file != null)
+        File(".").toURI.relativize(source.file.toURI).getPath
+      else
+        source.name
+
+    q"_root_.chisel3.internal.sourceinfo.SourceLine($sourceInfoLocation, ${p.line}, ${p.column})"
   }
 }
 
