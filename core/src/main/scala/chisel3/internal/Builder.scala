@@ -332,7 +332,7 @@ private[chisel3] class DynamicContext() {
   // Set by object Module.apply before calling class Module constructor
   // Used to distinguish between no Module() wrapping, multiple wrappings, and rewrapping
   var readyForModuleConstr: Boolean = false
-  var whenDepth: Int = 0 // Depth of when nesting
+  var whenStack: List[WhenContext] = Nil
   var currentClock: Option[Clock] = None
   var currentReset: Option[Reset] = None
   val errors = new ErrorLog
@@ -461,10 +461,26 @@ private[chisel3] object Builder {
   def readyForModuleConstr_=(target: Boolean): Unit = {
     dynamicContext.readyForModuleConstr = target
   }
-  def whenDepth: Int = dynamicContext.whenDepth
-  def whenDepth_=(target: Int): Unit = {
-    dynamicContext.whenDepth = target
+
+  def whenDepth: Int = dynamicContext.whenStack.length
+
+  def pushWhen(wc: WhenContext): Unit = {
+    dynamicContext.whenStack = wc :: dynamicContext.whenStack
   }
+
+  def popWhen(): WhenContext = {
+    val lastWhen = dynamicContext.whenStack.head
+    dynamicContext.whenStack = dynamicContext.whenStack.tail
+    lastWhen
+  }
+
+  def whenStack: List[WhenContext] = dynamicContext.whenStack
+  def whenStack_=(s: List[WhenContext]): Unit = {
+    dynamicContext.whenStack = s
+  }
+
+  def currentWhen(): Option[WhenContext] = dynamicContext.whenStack.headOption
+
   def currentClock: Option[Clock] = dynamicContext.currentClock
   def currentClock_=(newClock: Option[Clock]): Unit = {
     dynamicContext.currentClock = newClock
@@ -490,7 +506,7 @@ private[chisel3] object Builder {
   }
   def pushOp[T <: Data](cmd: DefPrim[T]): T = {
     // Bind each element of the returned Data to being a Op
-    cmd.id.bind(OpBinding(forcedUserModule))
+    cmd.id.bind(OpBinding(forcedUserModule, currentWhen()))
     pushCommand(cmd).id
   }
 

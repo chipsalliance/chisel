@@ -376,16 +376,16 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   // TODO Is this okay for sample_element? It *shouldn't* be visible to users
   protected def bindingToString: String = topBindingOpt match {
     case None => ""
-    case Some(OpBinding(enclosure)) => s"(OpResult in ${enclosure.desiredName})"
-    case Some(MemoryPortBinding(enclosure)) => s"(MemPort in ${enclosure.desiredName})"
+    case Some(OpBinding(enclosure, _)) => s"(OpResult in ${enclosure.desiredName})"
+    case Some(MemoryPortBinding(enclosure, _)) => s"(MemPort in ${enclosure.desiredName})"
     case Some(PortBinding(enclosure)) if !enclosure.isClosed => s"(IO in unelaborated ${enclosure.desiredName})"
     case Some(PortBinding(enclosure)) if enclosure.isClosed =>
       DataMirror.fullModulePorts(enclosure).find(_._2 eq this) match {
         case Some((name, _)) => s"(IO $name in ${enclosure.desiredName})"
         case None => s"(IO (unknown) in ${enclosure.desiredName})"
       }
-    case Some(RegBinding(enclosure)) => s"(Reg in ${enclosure.desiredName})"
-    case Some(WireBinding(enclosure)) => s"(Wire in ${enclosure.desiredName})"
+    case Some(RegBinding(enclosure, _)) => s"(Reg in ${enclosure.desiredName})"
+    case Some(WireBinding(enclosure, _)) => s"(Wire in ${enclosure.desiredName})"
     case Some(DontCareBinding()) => s"(DontCare)"
     case Some(ElementLitBinding(litArg)) => s"(unhandled literal)"
     case Some(BundleLitBinding(litMap)) => s"(unhandled bundle literal)"
@@ -595,7 +595,7 @@ trait WireFactory {
     val x = t.cloneTypeFull
 
     // Bind each element of x to being a Wire
-    x.bind(WireBinding(Builder.forcedUserModule))
+    x.bind(WireBinding(Builder.forcedUserModule, Builder.currentWhen()))
 
     pushCommand(DefWire(sourceInfo, x))
     if (!compileOptions.explicitInvalidate) {

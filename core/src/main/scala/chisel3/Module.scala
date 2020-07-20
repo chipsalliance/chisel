@@ -37,7 +37,7 @@ object Module extends SourceInfoDoc {
     Builder.readyForModuleConstr = true
 
     val parent = Builder.currentModule
-    val whenDepth: Int = Builder.whenDepth
+    val parentWhenStack = Builder.whenStack
 
     // Save then clear clock and reset to prevent leaking scope, must be set again in the Module
     val (saveClock, saveReset)  = (Builder.currentClock, Builder.currentReset)
@@ -49,7 +49,7 @@ object Module extends SourceInfoDoc {
     // Execute the module, this has the following side effects:
     //   - set currentModule
     //   - unset readyForModuleConstr
-    //   - reset whenDepth to 0
+    //   - reset whenStack to be empty
     //   - set currentClockAndReset
     val module: T = bc  // bc is actually evaluated here
 
@@ -62,7 +62,7 @@ object Module extends SourceInfoDoc {
                      sourceInfo.makeMessage(" See " + _))
     }
     Builder.currentModule = parent // Back to parent!
-    Builder.whenDepth = whenDepth
+    Builder.whenStack = parentWhenStack
     Builder.currentClock = saveClock   // Back to clock and reset scope
     Builder.currentReset = saveReset
 
@@ -137,7 +137,7 @@ package internal {
     private[chisel3] def cloneIORecord(proto: BaseModule)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): ClonePorts = {
       require(proto.isClosed, "Can't clone a module before module close")
       val clonePorts = new ClonePorts(proto.getModulePorts: _*)
-      clonePorts.bind(WireBinding(Builder.forcedUserModule))
+      clonePorts.bind(WireBinding(Builder.forcedUserModule, Builder.currentWhen()))
       val cloneInstance = new DefInstance(sourceInfo, proto, proto._component.get.ports) {
         override def name = clonePorts.getRef.name
       }
@@ -169,7 +169,7 @@ package experimental {
     readyForModuleConstr = false
 
     Builder.currentModule = Some(this)
-    Builder.whenDepth = 0
+    Builder.whenStack = Nil
 
     //
     // Module Construction Internals
