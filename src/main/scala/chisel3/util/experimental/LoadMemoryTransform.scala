@@ -123,7 +123,6 @@ object loadMemoryFromFile {
   * Currently the only non-Verilog based simulation that can support loading memory from a file is treadle but it does
   * not need this transform to do that.
   */
-//scalastyle:off method.length
 class LoadMemoryTransform extends Transform {
   def inputForm: CircuitForm  = LowForm
   def outputForm: CircuitForm = LowForm

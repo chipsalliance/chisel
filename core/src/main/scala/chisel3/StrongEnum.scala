@@ -115,14 +115,12 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
   final def > (that: EnumType): Bool = macro SourceInfoTransform.thatArg
   final def >= (that: EnumType): Bool = macro SourceInfoTransform.thatArg
 
-  // scalastyle:off line.size.limit method.name
   def do_=== (that: EnumType)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, EqualOp, that)
   def do_=/= (that: EnumType)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, NotEqualOp, that)
   def do_< (that: EnumType)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, LessOp, that)
   def do_> (that: EnumType)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, GreaterOp, that)
   def do_<= (that: EnumType)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, LessEqOp, that)
   def do_>= (that: EnumType)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, GreaterEqOp, that)
-  // scalastyle:on line.size.limit method.name
 
   override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     pushOp(DefPrim(sourceInfo, UInt(width), AsUIntOp, ref))
@@ -246,8 +244,8 @@ abstract class EnumFactory {
     enum_records.find(_.inst.litValue() == id).map(_.name)
   }
 
-  protected def Value: Type = macro EnumMacros.ValImpl // scalastyle:off method.name
-  protected def Value(id: UInt): Type = macro EnumMacros.ValCustomImpl // scalastyle:off method.name
+  protected def Value: Type = macro EnumMacros.ValImpl
+  protected def Value(id: UInt): Type = macro EnumMacros.ValCustomImpl
 
   protected def do_Value(name: String): Type = {
     val result = new Type
@@ -280,7 +278,6 @@ abstract class EnumFactory {
   def apply(): Type = new Type
 
   def apply(n: UInt)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Type = {
-    // scalastyle:off line.size.limit
     if (n.litOption.isDefined) {
       enumInstances.find(_.litValue == n.litValue) match {
         case Some(result) => result
@@ -300,12 +297,11 @@ abstract class EnumFactory {
       result
     }
   }
-  // scalastyle:on line.size.limit
 }
 
 
 private[chisel3] object EnumMacros {
-  def ValImpl(c: Context) : c.Tree = { // scalastyle:off method.name
+  def ValImpl(c: Context) : c.Tree = {
     import c.universe._
 
     // Much thanks to michael_s for this solution:
@@ -320,7 +316,7 @@ private[chisel3] object EnumMacros {
     q"""this.do_Value($name)"""
   }
 
-  def ValCustomImpl(c: Context)(id: c.Expr[UInt]): c.universe.Tree = { // scalastyle:off method.name
+  def ValCustomImpl(c: Context)(id: c.Expr[UInt]): c.universe.Tree = {
     import c.universe._
 
     val term = c.internal.enclosingOwner

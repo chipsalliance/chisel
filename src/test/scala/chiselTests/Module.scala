@@ -72,7 +72,7 @@ class ModuleWrapper(gen: => Module) extends Module {
 class NullModuleWrapper extends Module {
   val io = IO(new Bundle{})
   override lazy val desiredName = s"${child.desiredName}Wrapper"
-  println(s"My name is ${name}") // scalastyle:ignore regex
+  println(s"My name is ${name}")
   val child = Module(new ModuleWire)
 }
 
