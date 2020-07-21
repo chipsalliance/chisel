@@ -127,14 +127,39 @@ lazy val chiselSettings = Seq (
 
 autoCompilerPlugins := true
 
+// Plugin must be fully cross-versioned (published for Scala minor version)
+// The plugin only works in Scala 2.12+
+lazy val pluginScalaVersions = Seq(
+  "2.11.12", // Only to support chisel3 cross building for 2.11, plugin does nothing in 2.11
+  // scalamacros paradise version used is not published for 2.12.0 and 2.12.1
+  "2.12.2",
+  "2.12.3",
+  "2.12.4",
+  "2.12.5",
+  "2.12.6",
+  "2.12.7",
+  "2.12.8",
+  "2.12.9",
+  "2.12.10",
+  "2.12.11"
+)
+
 lazy val plugin = (project in file("plugin")).
   settings(name := "chisel3-plugin").
   settings(commonSettings: _*).
   settings(publishSettings: _*).
   settings(
     libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value,
-    publishArtifact in Compile := false,
-    scalacOptions += "-Xfatal-warnings"
+    scalacOptions += "-Xfatal-warnings",
+    crossScalaVersions := pluginScalaVersions,
+    // Must be published for Scala minor version
+    crossVersion := CrossVersion.full,
+		crossTarget := {
+			// workaround for https://github.com/sbt/sbt/issues/5097
+			target.value / s"scala-${scalaVersion.value}"
+		},
+    // Only publish for Scala 2.12
+    publish / skip := !scalaVersion.value.startsWith("2.12")
   )
 
 lazy val usePluginSettings = Seq(
@@ -189,7 +214,7 @@ lazy val chisel = (project in file(".")).
   dependsOn(macros).
   dependsOn(core).
   dependsOn(plugin).
-  aggregate(macros, core).
+  aggregate(macros, core, plugin).
   settings(
     scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
     scalacOptions in Compile in doc ++= Seq(
