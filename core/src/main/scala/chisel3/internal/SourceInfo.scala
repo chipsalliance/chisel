@@ -52,15 +52,7 @@ object SourceInfoMacro {
   def generate_source_info(c: Context): c.Tree = {
     import c.universe._
     val p = c.enclosingPosition
-    def trimPath(path: String): String = {
-      val regex = "^.*/scala/(.*)$".r
-      path match {
-        case regex(trim) => trim
-        case other => other
-      }
-    }
-    //q"_root_.chisel3.internal.sourceinfo.SourceLine(${p.source.file.name}, ${p.line}, ${p.column})"
-    q"_root_.chisel3.internal.sourceinfo.SourceLine(${trimPath(p.source.file.path)}, ${p.line}, ${p.column})"
+    q"_root_.chisel3.internal.sourceinfo.SourceLine(${p.source.file.name}, ${p.line}, ${p.column})"
   }
 }
 
