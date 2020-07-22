@@ -9,7 +9,7 @@ import chisel3.internal.firrtl.{Formal, Verification}
 import chisel3.internal.sourceinfo.SourceInfo
 
 package object verification {
-  object assert { // scalastyle:ignore object.name
+  object assert {
     def apply(predicate: Bool, msg: String = "")(
       implicit sourceInfo: SourceInfo,
       compileOptions: CompileOptions): Unit = {
@@ -19,7 +19,7 @@ package object verification {
     }
   }
 
-  object assume { // scalastyle:ignore object.name
+  object assume {
     def apply(predicate: Bool, msg: String = "")(
       implicit sourceInfo: SourceInfo,
       compileOptions: CompileOptions): Unit = {
@@ -29,7 +29,7 @@ package object verification {
     }
   }
 
-  object cover { // scalastyle:ignore object.name
+  object cover {
     def apply(predicate: Bool, msg: String = "")(
       implicit sourceInfo: SourceInfo,
       compileOptions: CompileOptions): Unit = {
