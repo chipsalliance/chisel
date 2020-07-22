@@ -31,7 +31,7 @@ case class IdentityChiselAnnotation(target: InstanceId, value: String)
   def toFirrtl: IdentityAnnotation = IdentityAnnotation(target.toNamed, value)
   def transformClass: Class[IdentityTransform] = classOf[IdentityTransform]
 }
-object identify { // scalastyle:ignore object.name
+object identify {
   def apply(component: InstanceId, value: String): Unit = {
     val anno = IdentityChiselAnnotation(component, value)
     annotate(anno)

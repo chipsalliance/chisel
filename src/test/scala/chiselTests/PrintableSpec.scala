@@ -128,7 +128,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
       printf(p"${FullName(myInst.io.fizz)}")
     }
     val firrtl = (new ChiselStage).emitChirrtl(new MyModule)
-    println(firrtl) // scalastyle:ignore regex
+    println(firrtl)
     getPrintfs(firrtl) match {
       case Seq(Printf("foo", Seq()),
                Printf("myWire.foo", Seq()),

@@ -9,7 +9,7 @@ import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{SourceInfo}
 
-object when {  // scalastyle:ignore object.name
+object when {
   /** Create a `when` condition block, where whether a block of logic is
     * executed or not depends on the conditional.
     *
@@ -28,7 +28,7 @@ object when {  // scalastyle:ignore object.name
     * }}}
     */
 
-  def apply(cond: => Bool)(block: => Any)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): WhenContext = { // scalastyle:ignore line.size.limit
+  def apply(cond: => Bool)(block: => Any)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): WhenContext = {
     new WhenContext(sourceInfo, Some(() => cond), block)
   }
 }
@@ -51,7 +51,7 @@ final class WhenContext(sourceInfo: SourceInfo, cond: Option[() => Bool], block:
     * declaration and assignment of the Bool node of the predicate in
     * the correct place.
     */
-  def elsewhen (elseCond: => Bool)(block: => Any)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): WhenContext = { // scalastyle:ignore line.size.limit
+  def elsewhen (elseCond: => Bool)(block: => Any)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): WhenContext = {
     new WhenContext(sourceInfo, Some(() => elseCond), block, firrtlDepth + 1)
   }
 

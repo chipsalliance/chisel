@@ -38,7 +38,6 @@ class LFSRMaxPeriod(gen: => UInt) extends BasicTester {
   * Each cycle it adds them together and adds a count to the bin corresponding to that value
   * The asserts check that the bins show the correct distribution.
   */
-//scalastyle:off magic.number
 class LFSRDistribution(gen: => UInt, cycles: Int = 10000) extends BasicTester {
 
   val rv = gen

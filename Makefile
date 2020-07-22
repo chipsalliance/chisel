@@ -28,7 +28,7 @@ CHISEL_VERSION = $(shell "$(SBT)" $(SBT_FLAGS) "show version" | tail -n 1 | cut 
 TEST_OUTPUT_DIR ?= ./test_run_dur
 RM_DIRS 	:= $(TEST_OUTPUT_DIR)
 
-.PHONY:	smoke publish-local pubishLocal check clean jenkins-build coverage scaladoc test checkstyle compile \
+.PHONY:	smoke publish-local pubishLocal check clean jenkins-build coverage scaladoc test compile \
 	mill.build mill.test mill.publishLocal mill.build.all mill.test.all mill.publishLocal.all mill-tools
 
 default:	publishLocal
@@ -41,9 +41,6 @@ publish-local publishLocal:
 
 test:
 	$(SBT) $(SBT_FLAGS) test
-
-checkstyle:
-	$(SBT) $(SBT_FLAGS) scalastyle test:scalastyle
 
 coverage:
 	$(SBT) $(SBT_FLAGS) coverage test
@@ -72,7 +69,7 @@ site:
 jenkins-build: clean
 	$(SBT) $(SBT_FLAGS) test
 	$(SBT) $(SBT_FLAGS) clean publishLocal
-	$(SBT) $(SBT_FLAGS) scalastyle coverage test
+	$(SBT) $(SBT_FLAGS) coverage test
 	$(SBT) $(SBT_FLAGS) coverageReport
 
 # Compile and package jar

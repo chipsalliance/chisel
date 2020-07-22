@@ -250,7 +250,7 @@ package experimental {
       Builder.globalNamespace.name(desiredName)
     } catch {
       case e: NullPointerException => throwException(
-        s"Error: desiredName of ${this.getClass.getName} is null. Did you evaluate 'name' before all values needed by desiredName were available?", e) // scalastyle:ignore line.size.limit
+        s"Error: desiredName of ${this.getClass.getName} is null. Did you evaluate 'name' before all values needed by desiredName were available?", e)
       case t: Throwable => throw t
     }
 
@@ -329,12 +329,12 @@ package experimental {
       *
       * TODO: remove this, perhaps by removing Bindings checks in compatibility mode.
       */
-    def _compatAutoWrapPorts() {} // scalastyle:ignore method.name
+    def _compatAutoWrapPorts() {}
 
     /** Chisel2 code didn't require the IO(...) wrapper and would assign a Chisel type directly to
       * io, then do operations on it. This binds a Chisel type in-place (mutably) as an IO.
       */
-    protected def _bindIoInPlace(iodef: Data): Unit = { // scalastyle:ignore method.name
+    protected def _bindIoInPlace(iodef: Data): Unit = {
       // Compatibility code: Chisel2 did not require explicit direction on nodes
       // (unspecified treated as output, and flip on nothing was input).
       // This sets assigns the explicit directions required by newer semantics on
@@ -385,7 +385,7 @@ package experimental {
       * TODO(twigg): Specifically walk the Data definition to call out which nodes
       * are problematic.
       */
-    protected def IO[T <: Data](iodef: T): T = chisel3.experimental.IO.apply(iodef) // scalastyle:ignore method.name
+    protected def IO[T <: Data](iodef: T): T = chisel3.experimental.IO.apply(iodef)
 
     //
     // Internal Functions

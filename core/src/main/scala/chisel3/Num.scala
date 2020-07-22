@@ -8,7 +8,6 @@ import chisel3.internal.firrtl.{BinaryPoint, KnownBinaryPoint}
 import scala.language.experimental.macros
 import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform}
 
-// scalastyle:off method.name
 
 // REVIEW TODO: Further discussion needed on what Num actually is.
 

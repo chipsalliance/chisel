@@ -25,7 +25,6 @@ executors:
       TREADLE_REPO: git@github.com:freechipsproject/treadle.git
       TREADLE_BRANCH: master
       TREADLE_REV: master
-      CHECKSTYLE_LIMIT: 40
       SBT_ARGS: ""
 
 commands:
@@ -152,17 +151,6 @@ jobs:
       - test-chisel:
           scalaVersion: "++2.12.11"
 
-  checkstyle-chisel:
-    executor: chisel-executor
-    steps:
-      - attach_workspace:
-          at: /home/chisel
-
-      - run:
-          command: |
-            # We expect the "[info]" field from sbt so the warning count will be in column 4
-            (cd chisel3 && cat /dev/null | sbt $SBT_ARGS scalastyle | gawk -v WARN_FAIL=2 -e '/scalastyle Found [0-9]+ warnings/ { print $0; if ($4 > ENVIRON["CHECKSTYLE_LIMIT"]) WARN_FAIL=1; else if (WARN_FAIL == 2) WARN_FAIL=0 }' -e 'END { exit WARN_FAIL}')
-
 workflows:
 
   build_and_test:
@@ -180,11 +168,4 @@ workflows:
       - test-chisel-2_12:
           requires:
             - build-treadle
-      - checkstyle-chisel:
-          # Strictly speaking, this is only dependent on build-firrtl,
-          #  but it is faster than the test jobs so if it fails,
-          #  it fails the entire build before we get a chance to complete the tests.
-          # If we make it dependent on at least one of the tests,
-          #  there's a better chance to see if the tests fail before we flag a style failure
-          requires:
-            - test-chisel-2_12
+

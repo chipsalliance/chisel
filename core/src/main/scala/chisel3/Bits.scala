@@ -14,7 +14,6 @@ import chisel3.internal.firrtl.PrimOp._
 import _root_.firrtl.{ir => firrtlir}
 import _root_.firrtl.{constraint => firrtlconstraint}
 
-// scalastyle:off method.name line.size.limit file.size.limit
 
 /** Exists to unify common interfaces of [[Bits]] and [[Reset]].
   *
@@ -49,7 +48,7 @@ private[chisel3] sealed trait ToBoolable extends Element {
   * @define sumWidth       @note The width of the returned $coll is `width of this` + `width of that`.
   * @define unchangedWidth @note The width of the returned $coll is unchanged, i.e., the `width of this`.
   */
-sealed abstract class Bits(private[chisel3] val width: Width) extends Element with ToBoolable { //scalastyle:off number.of.methods
+sealed abstract class Bits(private[chisel3] val width: Width) extends Element with ToBoolable {
   // TODO: perhaps make this concrete?
   // Arguments for: self-checking code (can't do arithmetic on bits)
   // Arguments against: generates down to a FIRRTL UInt anyways
@@ -1212,7 +1211,6 @@ package experimental {
       */
     def litToBigDecimal: BigDecimal = litToBigDecimalOption.get
   }
-  //scalastyle:off number.of.methods
   /** A sealed class representing a fixed point number that has a bit width and a binary point The width and binary point
     * may be inferred.
     *
@@ -1625,7 +1623,6 @@ package experimental {
     }
   }
 
-  //scalastyle:off number.of.methods cyclomatic.complexity
   /**
     * A sealed class representing a fixed point number that has a range, an additional
     * parameter that can determine a minimum and maximum supported value.
@@ -1657,7 +1654,6 @@ package experimental {
     private[chisel3] override def cloneTypeWidth(w: Width): this.type =
       new Interval(range).asInstanceOf[this.type]
 
-    //scalastyle:off cyclomatic.complexity
     def toType: String = {
       val zdec1 = """([+\-]?[0-9]\d*)(\.[0-9]*[1-9])(0*)""".r
       val zdec2 = """([+\-]?[0-9]\d*)(\.0*)""".r

@@ -41,7 +41,7 @@ private[chisel3] object Converter {
   // TODO
   //   * Memoize?
   //   * Move into the Chisel IR?
-  def convert(arg: Arg, ctx: Component): fir.Expression = arg match { // scalastyle:ignore cyclomatic.complexity
+  def convert(arg: Arg, ctx: Component): fir.Expression = arg match {
     case Node(id) =>
       convert(id.getRef, ctx)
     case Ref(name) =>
@@ -53,10 +53,8 @@ private[chisel3] object Converter {
     case Index(imm, value) =>
       fir.SubAccess(convert(imm, ctx), convert(value, ctx), fir.UnknownType)
     case ModuleIO(mod, name) =>
-      // scalastyle:off if.brace
       if (mod eq ctx.id) fir.Reference(name, fir.UnknownType)
       else fir.SubField(fir.Reference(mod.getRef.name, fir.UnknownType), name, fir.UnknownType)
-    // scalastyle:on if.brace
     case u @ ULit(n, UnknownWidth()) =>
       fir.UIntLiteral(n, fir.IntWidth(u.minWidth))
     case ULit(n, w) =>
@@ -81,7 +79,7 @@ private[chisel3] object Converter {
   }
 
   /** Convert Commands that map 1:1 to Statements */
-  def convertSimpleCommand(cmd: Command, ctx: Component): Option[fir.Statement] = cmd match { // scalastyle:ignore cyclomatic.complexity line.size.limit
+  def convertSimpleCommand(cmd: Command, ctx: Component): Option[fir.Statement] = cmd match {
     case e: DefPrim[_] =>
       val consts = e.args.collect { case ILit(i) => i }
       val args = e.args.flatMap {
@@ -151,9 +149,8 @@ private[chisel3] object Converter {
     * @param ctx Component (Module) context within which we are translating
     * @return FIRRTL Statement that is equivalent to the input cmds
     */
-  def convert(cmds: Seq[Command], ctx: Component): fir.Statement = { // scalastyle:ignore cyclomatic.complexity
+  def convert(cmds: Seq[Command], ctx: Component): fir.Statement = {
     @tailrec
-    // scalastyle:off if.brace
     def rec(acc: Queue[fir.Statement],
             scope: List[WhenFrame])
            (cmds: Seq[Command]): Seq[fir.Statement] = {
@@ -197,7 +194,6 @@ private[chisel3] object Converter {
         }
       }
     }
-    // scalastyle:on if.brace
     fir.Block(rec(Queue.empty, List.empty)(cmds))
   }
 
@@ -217,7 +213,7 @@ private[chisel3] object Converter {
     case d => d.specifiedDirection
   }
 
-  def extractType(data: Data, clearDir: Boolean = false): fir.Type = data match { // scalastyle:ignore cyclomatic.complexity line.size.limit
+  def extractType(data: Data, clearDir: Boolean = false): fir.Type = data match {
     case _: Clock => fir.ClockType
     case _: AsyncReset => fir.AsyncResetType
     case _: ResetType => fir.ResetType
