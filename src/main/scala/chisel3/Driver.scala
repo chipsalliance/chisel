@@ -211,7 +211,7 @@ object Driver extends BackendCompilationUtilities {
     * @return                       An execution result with useful stuff, or failure with message
     */
   @deprecated("Use chisel3.stage.ChiselStage.execute. This will be removed in 3.4.", "3.2.2")
-  def execute( // scalastyle:ignore method.length
+  def execute(
       optionsManager: ExecutionOptionsManager with HasChiselExecutionOptions with HasFirrtlOptions,
       dut: () => RawModule): ChiselExecutionResult = {
 

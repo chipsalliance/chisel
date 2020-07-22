@@ -13,7 +13,6 @@ import org.scalatest.Succeeded
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
-//scalastyle:off magic.number
 
 class BlackBoxAdd(n : Int) extends HasBlackBoxInline {
   val io = IO(new Bundle {
@@ -21,7 +20,6 @@ class BlackBoxAdd(n : Int) extends HasBlackBoxInline {
     val out = Output(UInt(16.W))
   })
 
-  //scalastyle:off regex
   setInline("BlackBoxAdd.v",
     s"""
       |module BlackBoxAdd(

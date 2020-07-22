@@ -60,7 +60,7 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
     val value: Int = Gen.choose(2, 2048).sample.get
     log2Up(value) shouldBe (1 max BigInt(value - 1).bitLength)
     log2Ceil(value) shouldBe (BigInt(value - 1).bitLength)
-    log2Down(value) shouldBe ((1 max BigInt(value - 1).bitLength) - (if (value > 0 && ((value & (value - 1)) == 0)) 0 else 1)) // scalastyle:ignore line.size.limit
+    log2Down(value) shouldBe ((1 max BigInt(value - 1).bitLength) - (if (value > 0 && ((value & (value - 1)) == 0)) 0 else 1))
     log2Floor(value) shouldBe (BigInt(value - 1).bitLength - (if (value > 0 && ((value & (value - 1)) == 0)) 0 else 1))
     isPow2(BigInt(1) << value) shouldBe true
     isPow2((BigInt(1) << value) - 1) shouldBe false
@@ -201,7 +201,6 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
     override def cloneType: this.type = (new BigBundle).asInstanceOf[this.type]
   }
 
-  // scalastyle:off line.size.limit
   "A Module with missing bundle fields when compiled with the Chisel compatibility package" should "not throw an exception" in {
 
     class ConnectFieldMismatchModule extends Module {
@@ -348,7 +347,6 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
       Chisel.assert(io.bar.dir == INPUT)
     })
   }
-  // scalastyle:on line.size.limit
 
   behavior of "BitPat"
 

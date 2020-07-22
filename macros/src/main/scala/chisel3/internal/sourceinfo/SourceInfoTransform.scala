@@ -106,7 +106,7 @@ abstract class AutoSourceTransform extends SourceInfoTransformMacro {
   def doFuncTerm: TermName = {
     val funcName = c.macroApplication match {
       case q"$_.$funcName[..$_](...$_)" => funcName
-      case _ => throw new Exception(s"Chisel Internal Error: Could not resolve function name from macro application: ${showCode(c.macroApplication)}") // scalastyle:ignore line.size.limit
+      case _ => throw new Exception(s"Chisel Internal Error: Could not resolve function name from macro application: ${showCode(c.macroApplication)}")
     }
     TermName("do_" + funcName)
   }

@@ -16,7 +16,6 @@ import treadle.executable.StopException
 import treadle.stage.TreadleTesterPhase
 import treadle.{CallResetAtStartupAnnotation, TreadleTesterAnnotation, WriteVcdAnnotation}
 
-//scalastyle:off magic.number method.length
 object TesterDriver extends BackendCompilationUtilities {
   var MaxTreadleCycles = 10000L
 
@@ -125,7 +124,6 @@ object TesterDriver extends BackendCompilationUtilities {
     }
   }
 
-  //scalastyle:off cyclomatic.complexity method.length
   def executeTreadle(t:                    () => BasicTester,
                      additionalVResources: Seq[String] = Seq(),
                      annotations:          AnnotationSeq = Seq(),

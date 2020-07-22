@@ -21,7 +21,6 @@ class CompileOptionsSpec extends ChiselFlatSpec with Utils {
     override def cloneType: this.type = (new BigBundle).asInstanceOf[this.type]
   }
 
-  // scalastyle:off line.size.limit
   "A Module with missing bundle fields when compiled with implicit Strict.CompileOption " should "throw an exception" in {
     a [ChiselException] should be thrownBy extractCause[ChiselException] {
       import chisel3.ExplicitCompileOptions.Strict
@@ -185,5 +184,4 @@ class CompileOptionsSpec extends ChiselFlatSpec with Utils {
     }
     ChiselStage.elaborate { new DirectionLessConnectionModule() }
   }
-  // scalastyle:on line.size.limit
 }

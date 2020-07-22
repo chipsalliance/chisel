@@ -14,7 +14,6 @@ import _root_.firrtl.PrimOps
 import scala.collection.immutable.NumericRange
 import scala.math.BigDecimal.RoundingMode
 
-// scalastyle:off number.of.types
 
 case class PrimOp(name: String) {
   override def toString: String = name
@@ -95,7 +94,7 @@ abstract class LitArg(val num: BigInt, widthArg: Width) extends Arg {
   protected def minWidth: Int
   if (forcedWidth) {
     require(widthArg.get >= minWidth,
-      s"The literal value ${num} was elaborated with a specified width of ${widthArg.get} bits, but at least ${minWidth} bits are required.") // scalastyle:ignore line.size.limit
+      s"The literal value ${num} was elaborated with a specified width of ${widthArg.get} bits, but at least ${minWidth} bits are required.")
   }
 }
 
@@ -359,7 +358,6 @@ object IntervalRange {
     }
   }
 
-  //scalastyle:off method.name
   def Unknown: IntervalRange = range"[?,?].?"
 }
 
@@ -390,7 +388,6 @@ sealed class IntervalRange(
     case _ =>
   }
 
-  //scalastyle:off cyclomatic.complexity
   override def toString: String = {
     val binaryPoint = firrtlBinaryPoint match {
       case firrtlir.IntWidth(n) => s"$n"
@@ -718,7 +715,6 @@ abstract class Definition extends Command {
   def id: HasId
   def name: String = id.getRef.name
 }
-// scalastyle:off line.size.limit
 case class DefPrim[T <: Data](sourceInfo: SourceInfo, id: T, op: PrimOp, args: Arg*) extends Definition
 case class DefInvalid(sourceInfo: SourceInfo, arg: Arg) extends Command
 case class DefWire(sourceInfo: SourceInfo, id: Data) extends Definition
