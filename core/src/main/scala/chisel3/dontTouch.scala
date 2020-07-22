@@ -1,5 +1,3 @@
-// See LICENSE for license details.
-
 package chisel3
 
 import chisel3.experimental.{ChiselAnnotation, annotate, requireIsHardware}

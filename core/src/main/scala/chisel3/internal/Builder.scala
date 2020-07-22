@@ -447,7 +447,7 @@ object DynamicNamingStack {
     }
     prefixRef
   }
-
+  
   def length() : Int = Builder.namingStackOption.get.length
 }
 
