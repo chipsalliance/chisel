@@ -764,6 +764,15 @@ object Utils extends LazyLogging {
       .toSeq
       .foldLeft(Seq[String]()){ case (seq, id) => seq :+ name.splitAt(id)._1 }
   }
+
+  /** Returns the value masked with the width.
+    *
+    * This supports truncating negative values as well as values that are too
+    * wide for the width
+    */
+  def maskBigInt(value: BigInt, width: Int): BigInt = {
+    value & ((BigInt(1) << width) - 1)
+  }
 }
 
 object MemoizedHash {

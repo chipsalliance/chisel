@@ -1629,6 +1629,19 @@ class ConstantPropagationEquivalenceSpec extends FirrtlFlatSpec {
     firrtlEquivalenceTest(input, transforms)
   }
 
+  "reduction of literals" should "be propagated" in {
+    val input =
+      s"""circuit ConstPropReductionTester :
+         |  module ConstPropReductionTester :
+         |    output out1 : UInt<1>
+         |    output out2 : UInt<1>
+         |    output out3 : UInt<1>
+         |    out1 <= xorr(SInt<2>(-1))
+         |    out2 <= andr(SInt<2>(-1))
+         |    out3 <= orr(SInt<2>(-1))""".stripMargin
+    firrtlEquivalenceTest(input, transforms)
+  }
+
    "addition of negative literals" should "be propagated" in {
      val input =
        s"""circuit AddTester :
