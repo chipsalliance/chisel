@@ -44,6 +44,9 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
       // If subtype of Data or BaseModule, its a match!
       def terminate(t: Type): Boolean = bases.exists { base => t <:< inferType(base) }
 
+      // Detect recursive types
+      def loop(t: Type): Boolean = t <:< q
+
       // Recurse through subtype hierarchy finding containers
       def recShouldMatch(s: Type): Boolean = {
         def outerMatches(t: Type): Boolean = {
@@ -54,6 +57,8 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
           true
         } else if(outerMatches(s)) {
           recShouldMatch(s.typeArgs.head)
+        } else if (loop(s)) {
+          false
         } else {
           s.parents.exists( p => recShouldMatch(p) )
         }
