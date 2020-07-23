@@ -7,7 +7,7 @@ import java.io.Writer
 import scala.collection.mutable
 import firrtl.ir._
 import firrtl.passes._
-import firrtl.transforms.LegalizeAndReductionsTransform
+import firrtl.transforms.{FixAddingNegativeLiterals, LegalizeAndReductionsTransform}
 import firrtl.annotations._
 import firrtl.traversals.Foreachers._
 import firrtl.PrimOps._
@@ -286,6 +286,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
      case SIntLiteral(value, IntWidth(width)) =>
        val stringLiteral = value.toString(16)
        w write (stringLiteral.head match {
+         case '-' if value == FixAddingNegativeLiterals.minNegValue(width) => s"$width'sh${stringLiteral.tail}"
          case '-' => s"-$width'sh${stringLiteral.tail}"
          case _ => s"$width'sh${stringLiteral}"
        })

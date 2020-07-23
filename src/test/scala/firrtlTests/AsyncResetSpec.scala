@@ -278,7 +278,7 @@ class AsyncResetSpec extends FirrtlFlatSpec {
         |z <= r""".stripMargin
       )
     fixedResult should containLine ("always @(posedge clock or posedge reset) begin")
-    fixedResult should containLine ("r <= -2'sh2;")
+    fixedResult should containLine ("r <= 2'sh2;")
 
     val intervalResult = compileBody(s"""
         |input clock : Clock

@@ -1604,4 +1604,14 @@ class ConstantPropagationEquivalenceSpec extends FirrtlFlatSpec {
          |    out <= head_temp""".stripMargin
     firrtlEquivalenceTest(input, transforms)
   }
+
+   "addition of negative literals" should "be propagated" in {
+     val input =
+       s"""circuit AddTester :
+          |  module AddTester :
+          |    output ref : SInt<2>
+          |    ref <= add(SInt<1>("h-1"), SInt<1>("h-1"))
+          |""".stripMargin
+     firrtlEquivalenceTest(input, transforms)
+   }
 }
