@@ -297,6 +297,15 @@ case class UIntLiteral(value: BigInt, width: Width) extends Literal {
 object UIntLiteral {
   def minWidth(value: BigInt): Width = IntWidth(math.max(value.bitLength, 1))
   def apply(value: BigInt): UIntLiteral = new UIntLiteral(value, minWidth(value))
+
+  /** Utility to construct UIntLiterals masked by the width
+    *
+    * This supports truncating negative values as well as values that are too wide for the width
+    */
+  def masked(value: BigInt, width: IntWidth): UIntLiteral = {
+    val mask = (BigInt(1) << width.width.toInt) - 1
+    UIntLiteral(value & mask, width)
+  }
 }
 case class SIntLiteral(value: BigInt, width: Width) extends Literal {
   def tpe = SIntType(width)

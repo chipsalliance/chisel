@@ -207,7 +207,10 @@ class ConstantPropagation extends Transform with DependencyAPIMigration with Res
   }
 
   object FoldAND extends FoldCommutativeOp {
-    def fold(c1: Literal, c2: Literal) = UIntLiteral(c1.value & c2.value, c1.width max c2.width)
+    def fold(c1: Literal, c2: Literal) = {
+      val width = (c1.width max c2.width).asInstanceOf[IntWidth]
+      UIntLiteral.masked(c1.value & c2.value, width)
+    }
     def simplify(e: Expression, lhs: Literal, rhs: Expression) = lhs match {
       case UIntLiteral(v, w) if v == BigInt(0) => UIntLiteral(0, w)
       case SIntLiteral(v, w) if v == BigInt(0) => UIntLiteral(0, w)
@@ -218,7 +221,10 @@ class ConstantPropagation extends Transform with DependencyAPIMigration with Res
   }
 
   object FoldOR extends FoldCommutativeOp {
-    def fold(c1: Literal, c2: Literal) = UIntLiteral(c1.value | c2.value, c1.width max c2.width)
+    def fold(c1: Literal, c2: Literal) = {
+      val width = (c1.width max c2.width).asInstanceOf[IntWidth]
+      UIntLiteral.masked((c1.value | c2.value), width)
+    }
     def simplify(e: Expression, lhs: Literal, rhs: Expression) = lhs match {
       case UIntLiteral(v, _) if v == BigInt(0) => rhs
       case SIntLiteral(v, _) if v == BigInt(0) => asUInt(rhs, e.tpe)
@@ -229,7 +235,10 @@ class ConstantPropagation extends Transform with DependencyAPIMigration with Res
   }
 
   object FoldXOR extends FoldCommutativeOp {
-    def fold(c1: Literal, c2: Literal) = UIntLiteral(c1.value ^ c2.value, c1.width max c2.width)
+    def fold(c1: Literal, c2: Literal) = {
+      val width = (c1.width max c2.width).asInstanceOf[IntWidth]
+      UIntLiteral.masked((c1.value ^ c2.value), width)
+    }
     def simplify(e: Expression, lhs: Literal, rhs: Expression) = lhs match {
       case UIntLiteral(v, _) if v == BigInt(0) => rhs
       case SIntLiteral(v, _) if v == BigInt(0) => asUInt(rhs, e.tpe)

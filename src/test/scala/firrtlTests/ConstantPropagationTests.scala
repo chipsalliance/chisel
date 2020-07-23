@@ -1508,6 +1508,30 @@ class ConstantPropagationIntegrationSpec extends LowTransformSpec {
     execute(input, check, Seq.empty)
   }
 
+  it should "optimize bitwise operations of signed literals" in {
+    val input =
+      s"""|circuit Foo:
+          |  module Foo:
+          |    output out1: UInt<2>
+          |    output out2: UInt<2>
+          |    output out3: UInt<2>
+          |    out1 <= xor(SInt<2>(-1), SInt<2>(1))
+          |    out2 <= or(SInt<2>(-1), SInt<2>(1))
+          |    out3 <= and(SInt<2>(-1), SInt<2>(-2))
+          |""".stripMargin
+    val check =
+      s"""|circuit Foo:
+          |  module Foo:
+          |    output out1: UInt<2>
+          |    output out2: UInt<2>
+          |    output out3: UInt<2>
+          |    out1 <= UInt<2>(2)
+          |    out2 <= UInt<2>(3)
+          |    out3 <= UInt<2>(2)
+          |""".stripMargin
+    execute(input, check, Seq.empty)
+  }
+
 }
 
 
