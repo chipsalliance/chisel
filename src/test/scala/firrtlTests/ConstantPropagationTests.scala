@@ -1651,4 +1651,14 @@ class ConstantPropagationEquivalenceSpec extends FirrtlFlatSpec {
           |""".stripMargin
      firrtlEquivalenceTest(input, transforms)
    }
+
+  "propagation of signed expressions" should "have the correct signs" in {
+    val input =
+      s"""circuit SignTester :
+         |  module SignTester :
+         |    output ref : SInt<3>
+         |    ref <= mux(UInt<1>("h0"), SInt<3>("h0"), neg(UInt<2>("h3")))
+         |""".stripMargin
+    firrtlEquivalenceTest(input, transforms)
+  }
 }
