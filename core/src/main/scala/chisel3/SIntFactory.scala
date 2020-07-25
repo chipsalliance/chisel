@@ -16,7 +16,6 @@ trait SIntFactory {
   }
 
   /** Create an SInt literal with specified width. */
-  // scalastyle:off method.name
   protected[chisel3] def Lit(value: BigInt, width: Width): SInt = {
     val lit = SLit(value, width)
     val result = new SInt(lit.width)

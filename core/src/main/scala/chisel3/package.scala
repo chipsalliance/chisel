@@ -4,7 +4,7 @@ import chisel3.internal.firrtl.BinaryPoint
 
 /** This package contains the main chisel3 API.
  */
-package object chisel3 {    // scalastyle:ignore package.object.name
+package object chisel3 {
   import internal.firrtl.{Port, Width}
   import internal.Builder
 
@@ -30,23 +30,23 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   implicit class fromBigIntToLiteral(bigint: BigInt) {
     /** Int to Bool conversion, allowing compact syntax like 1.B and 0.B
       */
-    def B: Bool = bigint match { // scalastyle:ignore method.name
+    def B: Bool = bigint match {
       case bigint if bigint == 0 => Bool.Lit(false)
       case bigint if bigint == 1 => Bool.Lit(true)
       case bigint => Builder.error(s"Cannot convert $bigint to Bool, must be 0 or 1"); Bool.Lit(false)
     }
     /** Int to UInt conversion, recommended style for constants.
       */
-    def U: UInt = UInt.Lit(bigint, Width())  // scalastyle:ignore method.name
+    def U: UInt = UInt.Lit(bigint, Width())
     /** Int to SInt conversion, recommended style for constants.
       */
-    def S: SInt = SInt.Lit(bigint, Width())  // scalastyle:ignore method.name
+    def S: SInt = SInt.Lit(bigint, Width())
     /** Int to UInt conversion with specified width, recommended style for constants.
       */
-    def U(width: Width): UInt = UInt.Lit(bigint, width)  // scalastyle:ignore method.name
+    def U(width: Width): UInt = UInt.Lit(bigint, width)
     /** Int to SInt conversion with specified width, recommended style for constants.
       */
-    def S(width: Width): SInt = SInt.Lit(bigint, width)  // scalastyle:ignore method.name
+    def S(width: Width): SInt = SInt.Lit(bigint, width)
 
     /** Int to UInt conversion, recommended style for variables.
       */
@@ -68,10 +68,10 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   implicit class fromStringToLiteral(str: String) {
     /** String to UInt parse, recommended style for constants.
       */
-    def U: UInt = str.asUInt() // scalastyle:ignore method.name
+    def U: UInt = str.asUInt()
     /** String to UInt parse with specified width, recommended style for constants.
       */
-    def U(width: Width): UInt = str.asUInt(width) // scalastyle:ignore method.name
+    def U(width: Width): UInt = str.asUInt(width)
 
     /** String to UInt parse, recommended style for variables.
       */
@@ -97,13 +97,13 @@ package object chisel3 {    // scalastyle:ignore package.object.name
   }
 
   implicit class fromIntToBinaryPoint(int: Int) {
-    def BP: BinaryPoint = BinaryPoint(int) // scalastyle:ignore method.name
+    def BP: BinaryPoint = BinaryPoint(int)
   }
 
   implicit class fromBooleanToLiteral(boolean: Boolean) {
     /** Boolean to Bool conversion, recommended style for constants.
       */
-    def B: Bool = Bool.Lit(boolean)  // scalastyle:ignore method.name
+    def B: Bool = Bool.Lit(boolean)
 
     /** Boolean to Bool conversion, recommended style for variables.
       */
@@ -136,7 +136,7 @@ package object chisel3 {    // scalastyle:ignore package.object.name
     extends experimental.Interval.Implicits.fromBigDecimalToLiteralInterval(bigDecimal)
 
   implicit class fromIntToWidth(int: Int) {
-    def W: Width = Width(int)  // scalastyle:ignore method.name
+    def W: Width = Width(int)
   }
 
   val WireInit = WireDefault

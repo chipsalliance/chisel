@@ -13,7 +13,7 @@ import chisel3.internal.sourceinfo.SourceInfo
   *
   * See apply methods for use
   */
-object printf { // scalastyle:ignore object.name
+object printf {
   /** Helper for packing escape characters */
   private[chisel3] def format(formatIn: String): String = {
     require(formatIn forall (c => c.toInt > 0 && c.toInt < 128),
@@ -93,10 +93,10 @@ object printf { // scalastyle:ignore object.name
     }
   }
 
-  private[chisel3] def printfWithoutReset(pable: Printable)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit = { // scalastyle:ignore line.size.limit
+  private[chisel3] def printfWithoutReset(pable: Printable)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit = {
     val clock = Builder.forcedClock
     pushCommand(Printf(sourceInfo, clock.ref, pable))
   }
-  private[chisel3] def printfWithoutReset(fmt: String, data: Bits*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit = // scalastyle:ignore line.size.limit
+  private[chisel3] def printfWithoutReset(fmt: String, data: Bits*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit =
     printfWithoutReset(Printable.pack(fmt, data:_*))
 }

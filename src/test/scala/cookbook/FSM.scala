@@ -53,7 +53,7 @@ class DetectTwoOnesTester extends CookbookTester(10) {
 
   // Inputs and expected results
   val inputs: Vec[Bool] = VecInit(false.B, true.B, false.B, true.B, true.B, true.B, false.B, true.B, true.B, false.B)
-  val expected: Vec[Bool] = VecInit(false.B, false.B, false.B, false.B, false.B, true.B, true.B, false.B, false.B, true.B) // scalastyle:ignore line.size.limit
+  val expected: Vec[Bool] = VecInit(false.B, false.B, false.B, false.B, false.B, true.B, true.B, false.B, false.B, true.B)
 
   dut.io.in := inputs(cycle)
   assert(dut.io.out === expected(cycle))

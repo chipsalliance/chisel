@@ -21,7 +21,7 @@ class RuntimeDeprecatedTransform(val c: Context) {
           case q"new deprecated($desc, $since)" => desc
         } match {  // ensure there's only one and return it
           case msg :: Nil => msg
-          case _ => c.abort(c.enclosingPosition, s"@chiselRuntimeDeprecated annotion must be used with exactly one @deprecated annotation, got annotations $annotations") // scalastyle:ignore line.size.limit
+          case _ => c.abort(c.enclosingPosition, s"@chiselRuntimeDeprecated annotion must be used with exactly one @deprecated annotation, got annotations $annotations")
         }
         val message = s"$tname is deprecated: $annotationMessage"
         val transformedExpr = q""" {
@@ -30,7 +30,7 @@ class RuntimeDeprecatedTransform(val c: Context) {
         } """
         q"$mods def $tname[..$tparams](...$paramss): $tpt = $transformedExpr"
       }
-      case other => c.abort(c.enclosingPosition, s"@chiselRuntimeDeprecated annotion may only be used on defs, got ${showCode(other)}") // scalastyle:ignore line.size.limit
+      case other => c.abort(c.enclosingPosition, s"@chiselRuntimeDeprecated annotion may only be used on defs, got ${showCode(other)}")
     })
     q"..$transformed"
   }

@@ -21,7 +21,7 @@ sealed class Clock(private[chisel3] val width: Width = Width(1)) extends Element
   private[chisel3] def typeEquivalent(that: Data): Boolean =
     this.getClass == that.getClass
 
-  override def connect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = that match { // scalastyle:ignore line.size.limit
+  override def connect(that: Data)(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): Unit = that match {
     case _: Clock => super.connect(that)(sourceInfo, connectCompileOptions)
     case _ => super.badConnect(that)(sourceInfo)
   }
@@ -35,7 +35,7 @@ sealed class Clock(private[chisel3] val width: Width = Width(1)) extends Element
   final def asBool(): Bool = macro SourceInfoTransform.noArg
   def do_asBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = this.asUInt().asBool()
 
-  override def do_asUInt(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): UInt = pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref)) // scalastyle:ignore line.size.limit
+  override def do_asUInt(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): UInt = pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref))
   private[chisel3] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
       compileOptions: CompileOptions): Unit = {
     this := that.asBool.asClock

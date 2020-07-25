@@ -8,7 +8,7 @@ import chisel3.experimental.chiselName
 import chisel3.util.random.FibonacciLFSR
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselOutputFileAnnotation, ChiselStage, phases}
 
-package object Chisel {     // scalastyle:ignore package.object.name number.of.types number.of.methods
+package object Chisel {
   import chisel3.internal.firrtl.Width
 
   import scala.language.experimental.macros
@@ -207,8 +207,8 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
     /** Create an SInt literal with specified width. */
     def apply(value: BigInt, width: Width): SInt = value.asSInt(width)
 
-    def Lit(value: BigInt): SInt = value.asSInt // scalastyle:ignore method.name
-    def Lit(value: BigInt, width: Int): SInt = value.asSInt(width.W) // scalastyle:ignore method.name
+    def Lit(value: BigInt): SInt = value.asSInt
+    def Lit(value: BigInt, width: Int): SInt = value.asSInt(width.W)
 
     /** Create a SInt with a specified width - compatibility with Chisel2. */
     def apply(dir: Option[Direction] = None, width: Int): SInt = apply(width.W)
@@ -263,7 +263,7 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
   abstract class BlackBox(params: Map[String, Param] = Map.empty[String, Param]) extends chisel3.BlackBox(params) {
     // This class auto-wraps the BlackBox with IO(...), allowing legacy code (where IO(...) wasn't
     // required) to build.
-    override def _compatAutoWrapPorts(): Unit = { // scalastyle:ignore method.name
+    override def _compatAutoWrapPorts(): Unit = {
       if (!_compatIoPortBound()) {
         _bindIoInPlace(io)
       }
@@ -322,7 +322,7 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
     def this(_clock: Clock, _reset: Bool)(implicit moduleCompileOptions: CompileOptions) =
       this(Option(_clock), Option(_reset))(moduleCompileOptions)
 
-    override def _compatAutoWrapPorts(): Unit = { // scalastyle:ignore method.name
+    override def _compatAutoWrapPorts(): Unit = {
       if (!_compatIoPortBound() && io != null) {
         _bindIoInPlace(io)
       }
@@ -426,7 +426,7 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
   }
 
   @deprecated("debug doesn't do anything in Chisel3 as no pruning happens in the frontend", "chisel3")
-  object debug {  // scalastyle:ignore object.name
+  object debug {
     def apply (arg: Data): Data = arg
   }
 
@@ -439,7 +439,7 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
     }
   }
 
-  object testers {    // scalastyle:ignore object.name
+  object testers {
     type BasicTester = chisel3.testers.BasicTester
     val TesterDriver = chisel3.testers.TesterDriver
   }
@@ -593,7 +593,6 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
     *
     * }}}
     */
-  // scalastyle:off magic.number
   object LFSR16 {
     /** Generates a 16-bit linear feedback shift register, returning the register contents.
       * @param increment optional control to gate when the LFSR updates.
@@ -607,7 +606,6 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
         .asUInt
 
   }
-  // scalastyle:on magic.number
 
   val ListLookup = chisel3.util.ListLookup
   val Lookup = chisel3.util.Lookup
@@ -636,12 +634,12 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
     * Because its contents won't necessarily have the same level of stability and support as
     * non-experimental, you must explicitly import this package to use its contents.
     */
-  object experimental {  // scalastyle:ignore object.name
+  object experimental {
     import scala.annotation.compileTimeOnly
 
-    class dump extends chisel3.internal.naming.dump  // scalastyle:ignore class.name
-    class treedump extends chisel3.internal.naming.treedump  // scalastyle:ignore class.name
-    class chiselName extends chisel3.internal.naming.chiselName  // scalastyle:ignore class.name
+    class dump extends chisel3.internal.naming.dump
+    class treedump extends chisel3.internal.naming.treedump
+    class chiselName extends chisel3.internal.naming.chiselName
   }
 
   implicit class DataCompatibility(a: Data) {

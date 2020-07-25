@@ -20,7 +20,7 @@ class AliasedAggregateFieldException(message: String) extends ChiselException(me
   * of) other Data objects.
   */
 sealed abstract class Aggregate extends Data {
-  private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection) { // scalastyle:ignore cyclomatic.complexity line.size.limit
+  private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection) {
     binding = target
 
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
@@ -117,18 +117,15 @@ trait VecFactory extends SourceInfoDoc {
   }
 
   /** Truncate an index to implement modulo-power-of-2 addressing. */
-  private[chisel3] def truncateIndex(idx: UInt, n: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = { // scalastyle:ignore line.size.limit
-    // scalastyle:off if.brace
+  private[chisel3] def truncateIndex(idx: UInt, n: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
     val w = (n-1).bitLength
     if (n <= 1) 0.U
     else if (idx.width.known && idx.width.get <= w) idx
     else if (idx.width.known) idx(w-1,0)
     else (idx | 0.U(w.W))(w-1,0)
-    // scalastyle:on if.brace
   }
 }
 
-// scalastyle:off line.size.limit
 /** A vector (array) of [[Data]] elements. Provides hardware versions of various
   * collection transformation functions found in software array implementations.
   *
@@ -155,7 +152,6 @@ trait VecFactory extends SourceInfoDoc {
   *  - when multiple conflicting assignments are performed on a Vec element, the last one takes effect (unlike Mem, where the result is undefined)
   *  - Vecs, unlike classes in Scala's collection library, are propagated intact to FIRRTL as a vector type, which may make debugging easier
   */
-// scalastyle:on line.size.limit
 sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
     extends Aggregate with VecLike[T] {
   override def toString: String = {
@@ -223,7 +219,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
   }
 
   // TODO: eliminate once assign(Seq) isn't ambiguous with assign(Data) since Vec extends Seq and Data
-  def <> (that: Vec[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit = this bulkConnect that.asInstanceOf[Data] // scalastyle:ignore line.size.limit
+  def <> (that: Vec[T])(implicit sourceInfo: SourceInfo, moduleCompileOptions: CompileOptions): Unit = this bulkConnect that.asInstanceOf[Data]
 
   /** Strong bulk connect, assigning elements in this Vec from elements in a Seq.
     *
@@ -284,11 +280,9 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
     * Results in "Vec(elt0, elt1, ...)"
     */
   def toPrintable: Printable = {
-    // scalastyle:off if.brace
     val elts =
       if (length == 0) List.empty[Printable]
       else self flatMap (e => List(e.toPrintable, PString(", "))) dropRight 1
-    // scalastyle:on if.brace
     PString("Vec(") + Printables(elts) + PString(")")
   }
 
@@ -391,7 +385,7 @@ object VecInit extends SourceInfoDoc {
   def tabulate[T <: Data](n: Int)(gen: (Int) => T): Vec[T] = macro VecTransform.tabulate
 
   /** @group SourceInfoTransformMacro */
-  def do_tabulate[T <: Data](n: Int)(gen: (Int) => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =  // scalastyle:ignore line.size.limit
+  def do_tabulate[T <: Data](n: Int)(gen: (Int) => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
     apply((0 until n).map(i => gen(i)))
 }
 
@@ -519,7 +513,7 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     * )
     * }}}
     */
-  private[chisel3] def _makeLit(elems: (this.type => (Data, Data))*): this.type = {  // scalastyle:ignore line.size.limit method.length method.name cyclomatic.complexity
+  private[chisel3] def _makeLit(elems: (this.type => (Data, Data))*): this.type = {
     // Returns pairs of all fields, element-level and containers, in a Record and their path names
     def getRecursiveFields(data: Data, path: String): Seq[(Data, String)] = data match {
       case data: Record => data.elements.map { case (fieldName, fieldData) =>
@@ -640,7 +634,7 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
   }
 
   // NOTE: This sets up dependent references, it can be done before closing the Module
-  private[chisel3] override def _onModuleClose: Unit = { // scalastyle:ignore method.name
+  private[chisel3] override def _onModuleClose: Unit = {
     // Since Bundle names this via reflection, it is impossible for two elements to have the same
     // identifier; however, Namespace sanitizes identifiers to make them legal for Firrtl/Verilog
     // which can cause collisions
@@ -654,13 +648,11 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
 
   // Helper because Bundle elements are reversed before printing
   private[chisel3] def toPrintableHelper(elts: Seq[(String, Data)]): Printable = {
-    // scalastyle:off if.brace
     val xs =
       if (elts.isEmpty) List.empty[Printable] // special case because of dropRight below
       else elts flatMap { case (name, data) =>
              List(PString(s"$name -> "), data.toPrintable, PString(", "))
            } dropRight 1 // Remove trailing ", "
-    // scalastyle:on if.brace
     PString(s"$className(") + Printables(xs) + PString(")")
   }
   /** Default "pretty-print" implementation
@@ -778,7 +770,6 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
       }
     }
     ListMap(nameMap.toSeq sortWith { case ((an, a), (bn, b)) => (a._id > b._id) || ((a eq b) && (an > bn)) }: _*)
-    // scalastyle:ignore method.length
   }
 
   /**
@@ -805,7 +796,7 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
   private val _containingModule: Option[BaseModule] = Builder.currentModule
   private val _containingBundles: Seq[Bundle] = Builder.updateBundleStack(this)
 
-  override def cloneType : this.type = { // scalastyle:ignore cyclomatic.complexity method.length
+  override def cloneType : this.type = {
     // This attempts to infer constructor and arguments to clone this Bundle subtype without
     // requiring the user explicitly overriding cloneType.
     import scala.language.existentials
@@ -901,7 +892,7 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
           Some(ctor.newInstance().asInstanceOf[this.type])
         case (argType :: Nil, Some((_, outerInstance))) =>
           if (outerInstance == null) {
-            Builder.deprecated(s"chisel3.1 autoclonetype failed, falling back to 3.0 behavior using null as the outer instance." + // scalastyle:ignore line.size.limit
+            Builder.deprecated(s"chisel3.1 autoclonetype failed, falling back to 3.0 behavior using null as the outer instance." +
                 s" Autoclonetype failure reason: ${outerClassError.get}",
                 Some(s"$clazz"))
             Some(ctor.newInstance(outerInstance).asInstanceOf[this.type])
@@ -925,7 +916,7 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     // Get constructor parameters and accessible fields
     val classSymbol = classSymbolOption.getOrElse(autoClonetypeError(s"scala reflection failed." +
         " This is known to occur with inner classes on anonymous outer classes." +
-        " In those cases, autoclonetype only works with no-argument constructors, or you can define a custom cloneType.")) // scalastyle:ignore line.size.limit
+        " In those cases, autoclonetype only works with no-argument constructors, or you can define a custom cloneType."))
 
     val decls = classSymbol.typeSignature.decls
     val ctors = decls.collect { case meth: MethodSymbol if meth.isConstructor => meth }
@@ -977,10 +968,8 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     val accessorsName = accessors.filter(_.isStable).map(_.name.toString)
     val paramsDiff = ctorParamsNames.toSet -- accessorsName.toSet
     if (!paramsDiff.isEmpty) {
-      // scalastyle:off line.size.limit
       autoClonetypeError(s"constructor has parameters (${paramsDiff.toList.sorted.mkString(", ")}) that are not both immutable and accessible." +
           " Either make all parameters immutable and accessible (vals) so cloneType can be inferred, or define a custom cloneType method.")
-      // scalastyle:on line.size.limit
     }
 
     // Get all the argument values
@@ -997,10 +986,8 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
       case (paramName, paramVal: Data) if paramVal.topBindingOpt.isDefined => paramName
     }
     if (boundDataParamNames.nonEmpty) {
-      // scalastyle:off line.size.limit
       autoClonetypeError(s"constructor parameters (${boundDataParamNames.sorted.mkString(", ")}) have values that are hardware types, which is likely to cause subtle errors." +
           " Use chisel types instead: use the value before it is turned to a hardware type (with Wire(...), Reg(...), etc) or use chiselTypeOf(...) to extract the chisel type.")
-      // scalastyle:on line.size.limit
     }
 
     // Clone unbound parameters in case they are being used as bundle fields.
@@ -1033,6 +1020,4 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     *   the fields in the order they were defined
     */
   override def toPrintable: Printable = toPrintableHelper(elements.toList.reverse)
-  // scalastyle:off method.length
 }
-// scalastyle:off file.size.limit
