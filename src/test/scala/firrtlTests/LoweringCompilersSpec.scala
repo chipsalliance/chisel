@@ -192,7 +192,8 @@ class LoweringCompilersSpec extends FlatSpec with Matchers {
     val tm = new TransformManager(Forms.LowFormMinimumOptimized, Forms.LowForm)
     val patches = Seq(
       Add(4, Seq(Dependency(firrtl.passes.ResolveFlows))),
-      Add(5, Seq(Dependency(firrtl.passes.ResolveKinds)))
+      Add(6, Seq(Dependency[firrtl.transforms.LegalizeAndReductionsTransform],
+                 Dependency(firrtl.passes.ResolveKinds)))
     )
     compare(legacyTransforms(new MinimumLowFirrtlOptimization), tm, patches)
   }
@@ -204,7 +205,8 @@ class LoweringCompilersSpec extends FlatSpec with Matchers {
     val patches = Seq(
       Add(6, Seq(Dependency(firrtl.passes.ResolveFlows))),
       Add(7, Seq(Dependency(firrtl.passes.Legalize))),
-      Add(8, Seq(Dependency(firrtl.passes.ResolveKinds)))
+      Add(8, Seq(Dependency[firrtl.transforms.LegalizeAndReductionsTransform],
+                 Dependency(firrtl.passes.ResolveKinds)))
     )
     compare(legacyTransforms(new LowFirrtlOptimization), tm, patches)
   }

@@ -150,13 +150,6 @@ class CustomTransformSpec extends FirrtlFlatSpec {
 
   they should "run right before the emitter* when inputForm=LowForm" in {
 
-    val locationMap = Map(
-      Dependency[LowFirrtlEmitter]      -> Dependency[LowFirrtlEmitter],
-      Dependency[MinimumVerilogEmitter] -> Dependency(ConvertAsserts),
-      Dependency[VerilogEmitter]        -> Dependency(ConvertAsserts),
-      Dependency[SystemVerilogEmitter]  -> Dependency[LegalizeAndReductionsTransform]
-    )
-
     Seq(
       Dependency[LowFirrtlEmitter],
       Dependency[MinimumVerilogEmitter],
@@ -170,7 +163,7 @@ class CustomTransformSpec extends FirrtlFlatSpec {
         .flattenedTransformOrder
         .map(Dependency.fromTransform)
         .sliding(2)
-        .toList should contain (Seq(custom, locationMap(emitter)))
+        .toList should contain (Seq(custom, emitter))
     }
 
   }

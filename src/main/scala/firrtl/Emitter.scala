@@ -7,16 +7,15 @@ import java.io.Writer
 import scala.collection.mutable
 import firrtl.ir._
 import firrtl.passes._
-import firrtl.transforms.{FixAddingNegativeLiterals, LegalizeAndReductionsTransform}
+import firrtl.transforms.FixAddingNegativeLiterals
 import firrtl.annotations._
 import firrtl.traversals.Foreachers._
 import firrtl.PrimOps._
 import firrtl.WrappedExpression._
 import Utils._
 import MemPortUtils.{memPortField, memType}
-import firrtl.options.{Dependency, HasShellOptions, PhaseException, ShellOption, Unserializable}
+import firrtl.options.{HasShellOptions, PhaseException, ShellOption, Unserializable}
 import firrtl.stage.{RunFirrtlTransformAnnotation, TransformManager}
-import firrtl.transforms.formal.{RemoveVerificationStatements, ConvertAsserts}
 // Datastructures
 import scala.collection.mutable.ArrayBuffer
 
@@ -181,10 +180,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
   def inputForm = LowForm
   def outputForm = LowForm
 
-  override def prerequisites =
-    Dependency(ConvertAsserts) +:
-    Dependency[RemoveVerificationStatements] +:
-    Dependency[LegalizeAndReductionsTransform] +:
+  override def prerequisites = firrtl.stage.Forms.AssertsRemoved ++
     firrtl.stage.Forms.LowFormOptimized
 
   override def optionalPrerequisiteOf = Seq.empty
@@ -1254,10 +1250,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
 
 class MinimumVerilogEmitter extends VerilogEmitter with Emitter {
 
-  override def prerequisites =
-    Dependency(ConvertAsserts) +:
-    Dependency[RemoveVerificationStatements] +:
-    Dependency[LegalizeAndReductionsTransform] +:
+  override def prerequisites = firrtl.stage.Forms.AssertsRemoved ++
     firrtl.stage.Forms.LowFormMinimumOptimized
 
   override def transforms = new TransformManager(firrtl.stage.Forms.VerilogMinimumOptimized, prerequisites)
@@ -1268,9 +1261,7 @@ class MinimumVerilogEmitter extends VerilogEmitter with Emitter {
 class SystemVerilogEmitter extends VerilogEmitter {
   override val outputSuffix: String = ".sv"
 
-  override def prerequisites =
-      Dependency[LegalizeAndReductionsTransform] +:
-      firrtl.stage.Forms.LowFormOptimized
+  override def prerequisites = firrtl.stage.Forms.LowFormOptimized
 
   override def addFormalStatement(formals: mutable.Map[Expression, ArrayBuffer[Seq[Any]]],
                                   clk: Expression, en: Expression,

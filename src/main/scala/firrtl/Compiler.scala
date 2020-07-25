@@ -313,7 +313,7 @@ trait Transform extends TransformLike[CircuitState] with DependencyAPI[Transform
   }
 
   override def optionalPrerequisites: Seq[Dependency[Transform]] = inputForm match {
-    case L => Forms.LowFormOptimized
+    case L => Forms.LowFormOptimized ++ Forms.AssertsRemoved
     case _ => Seq.empty
   }
 

@@ -72,7 +72,8 @@ object Forms {
     Seq( Dependency(passes.RemoveValidIf),
          Dependency(passes.PadWidths),
          Dependency(passes.memlib.VerilogMemDelays),
-         Dependency(passes.SplitExpressions) )
+         Dependency(passes.SplitExpressions),
+         Dependency[firrtl.transforms.LegalizeAndReductionsTransform] )
 
   val LowFormOptimized: Seq[TransformDependency] = LowFormMinimumOptimized ++
     Seq( Dependency[firrtl.transforms.ConstantPropagation],
@@ -94,6 +95,10 @@ object Forms {
          Dependency[firrtl.AddDescriptionNodes] )
 
   val VerilogOptimized: Seq[TransformDependency] = LowFormOptimized ++ VerilogMinimumOptimized
+
+  val AssertsRemoved: Seq[TransformDependency] =
+    Seq( Dependency(firrtl.transforms.formal.ConvertAsserts),
+         Dependency[firrtl.transforms.formal.RemoveVerificationStatements] )
 
   val BackendEmitters =
     Seq( Dependency[VerilogEmitter],
