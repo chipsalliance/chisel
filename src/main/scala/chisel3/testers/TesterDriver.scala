@@ -7,13 +7,13 @@ import java.io._
 import chisel3._
 import chisel3.stage.phases.{Convert, Elaborate, Emitter}
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation, ChiselStage, NoRunFirrtlCompilerAnnotation}
+import treadle.stage.TreadleTesterPhase
 import firrtl.AnnotationSeq
 import firrtl.annotations.NoTargetAnnotation
 import firrtl.options.{Dependency, Phase, PhaseManager, TargetDirAnnotation, Unserializable}
 import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlStage}
 import firrtl.transforms.BlackBoxSourceHelper.writeResourceToDirectory
 import treadle.executable.StopException
-import treadle.stage.TreadleTesterPhase
 import treadle.{CallResetAtStartupAnnotation, TreadleTesterAnnotation, WriteVcdAnnotation}
 
 object TesterDriver extends BackendCompilationUtilities {
@@ -154,7 +154,7 @@ object TesterDriver extends BackendCompilationUtilities {
     )
 
     // This generates a TreadleTesterAnnotation with a treadle tester instance
-    annotationSeq = TreadleTesterPhase.transform(annotationSeq)
+    annotationSeq = (new TreadleTesterPhase).transform(annotationSeq)
 
     val treadleTester = annotationSeq.collectFirst { case TreadleTesterAnnotation(t) => t }.getOrElse(
       throw new Exception(
