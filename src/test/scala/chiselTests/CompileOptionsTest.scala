@@ -165,23 +165,4 @@ class CompileOptionsSpec extends ChiselFlatSpec with Utils {
     }
   }
 
-  "A Module with directionless connections when compiled with implicit NotStrict.CompileOption " should "not throw an exception" in {
-    import chisel3.ExplicitCompileOptions.NotStrict
-
-    class SimpleModule extends Module {
-      val io = IO(new Bundle {
-        val in = Input(UInt(3.W))
-        val out = Output(UInt(4.W))
-      })
-      val noDir = Wire(UInt(3.W))
-    }
-
-    class DirectionLessConnectionModule extends SimpleModule {
-      val a = 0.U(3.W)
-      val b = Wire(UInt(3.W))
-      val child = Module(new SimpleModule)
-      b := child.noDir
-    }
-    ChiselStage.elaborate { new DirectionLessConnectionModule() }
-  }
 }
