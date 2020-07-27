@@ -22,16 +22,17 @@ import chisel3.internal.naming.chiselName  // can't use chisel3_ version because
   */
 @chiselName
 class Counter private (r: Range) {
+  require(r.length > 0, s"Counter range cannot be empty, got: $r")
   require(r.start >= 0 && r.end >= 0, s"Counter range must be positive, got: $r")
 
-  private val delta = math.abs(r.step)
-  private val width = math.max(log2Up(r.last + 1), log2Up(r.head + 1))
+  private lazy val delta = math.abs(r.step)
+  private lazy val width = math.max(log2Up(r.last + 1), log2Up(r.head + 1))
 
   /** Creates a counter with the specified number of steps.
     *
     * @param n number of steps before the counter resets
     */
-  def this(n: Int) { this(0 until n) }
+  def this(n: Int) { this(0 until math.max(1, n)) }
 
   /** The current value of the counter. */
   val value = if (r.length > 1) RegInit(r.head.U(width.W)) else r.head.U
