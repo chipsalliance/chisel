@@ -64,6 +64,7 @@ private[chisel3] object MonoConnect {
 
   def checkWhenVisibility(x: Data): Boolean = {
     x.topBinding match {
+      case mp: MemoryPortBinding => true // TODO (albert-magyar): remove this "bridge" for odd enable logic of current CHIRRTL memories
       case cd: ConditionalDeclarable => cd.visibility.map(_.active()).getOrElse(true)
       case _ => true
     }
