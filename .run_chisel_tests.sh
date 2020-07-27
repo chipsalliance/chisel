@@ -5,6 +5,8 @@ set -e
 if git log --format=%B --no-merges ${TRAVIS_COMMIT_RANGE/.../..} | grep '\[skip chisel tests\]'; then
   exit 0
 else
+  git clone https://github.com/freechipsproject/treadle.git --depth 10
+  (cd treadle && sbt $SBT_ARGS +publishLocal)
   git clone https://github.com/ucb-bar/chisel3.git
   mkdir -p chisel3/lib
   cp utils/bin/firrtl.jar chisel3/lib
