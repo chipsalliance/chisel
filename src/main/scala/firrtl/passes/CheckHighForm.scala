@@ -12,6 +12,25 @@ import firrtl.options.Dependency
 trait CheckHighFormLike { this: Pass =>
   type NameSet = collection.mutable.HashSet[String]
 
+  private object ScopeView {
+    def apply(): ScopeView = new ScopeView(new NameSet, List(new NameSet))
+  }
+
+  private class ScopeView private (moduleNS: NameSet, scopes: List[NameSet]) {
+    require(scopes.nonEmpty)
+    def declare(name: String): Unit = {
+      moduleNS += name
+      scopes.head += name
+    }
+    def expandMPortVisibility(port: CDefMPort): Unit = {
+      // Legacy CHIRRTL ports are visible in any scope where their parent memory is visible
+      scopes.find(_.contains(port.mem)).getOrElse(scopes.head) += port.name
+    }
+    def legalDecl(name: String): Boolean = !moduleNS.contains(name)
+    def legalRef(name: String): Boolean = scopes.exists(_.contains(name))
+    def childScope(): ScopeView = new ScopeView(moduleNS, new NameSet +: scopes)
+  }
+
   // Custom Exceptions
   class NotUniqueException(info: Info, mname: String, name: String) extends PassException(
     s"$info: [module $mname] Reference $name does not have a unique name.")
@@ -176,11 +195,11 @@ trait CheckHighFormLike { this: Pass =>
       }
     }
 
-    def checkHighFormE(info: Info, mname: String, names: NameSet)(e: Expression): Unit = {
+    def checkHighFormE(info: Info, mname: String, names: ScopeView)(e: Expression): Unit = {
       e match {
-        case ex: Reference if !names(ex.name) =>
+        case ex: Reference if !names.legalRef(ex.name) =>
           errors.append(new UndeclaredReferenceException(info, mname, ex.name))
-        case ex: WRef if !names(ex.name) =>
+        case ex: WRef if !names.legalRef(ex.name) =>
           errors.append(new UndeclaredReferenceException(info, mname, ex.name))
         case ex: UIntLiteral if ex.value < 0 =>
           errors.append(new NegUIntException(info, mname))
@@ -194,10 +213,10 @@ trait CheckHighFormLike { this: Pass =>
       e foreach checkHighFormE(info, mname, names)
     }
 
-    def checkName(info: Info, mname: String, names: NameSet)(name: String): Unit = {
-      if (names(name))
+    def checkName(info: Info, mname: String, names: ScopeView)(name: String): Unit = {
+      if (!names.legalDecl(name))
         errors.append(new NotUniqueException(info, mname, name))
-      names += name
+      names.declare(name)
     }
 
     def checkInstance(info: Info, child: String, parent: String): Unit = {
@@ -209,7 +228,7 @@ trait CheckHighFormLike { this: Pass =>
         errors.append(new InstanceLoop(info, parent, childToParent mkString "->"))
     }
 
-    def checkHighFormS(minfo: Info, mname: String, names: NameSet)(s: Statement): Unit = {
+    def checkHighFormS(minfo: Info, mname: String, names: ScopeView)(s: Statement): Unit = {
       val info = get_info(s) match {case NoInfo => minfo case x => x}
       s foreach checkName(info, mname, names)
       s match {
@@ -228,18 +247,26 @@ trait CheckHighFormLike { this: Pass =>
         case sx: Connect => checkValidLoc(info, mname, sx.loc)
         case sx: PartialConnect => checkValidLoc(info, mname, sx.loc)
         case sx: Print => checkFstring(info, mname, sx.string, sx.args.length)
-        case _: CDefMemory | _: CDefMPort => errorOnChirrtl(info, mname, s).foreach { e => errors.append(e) }
+        case _: CDefMemory => errorOnChirrtl(info, mname, s).foreach { e => errors.append(e) }
+        case mport: CDefMPort =>
+          errorOnChirrtl(info, mname, s).foreach { e => errors.append(e) }
+          names.expandMPortVisibility(mport)
         case sx => // Do Nothing
       }
       s foreach checkHighFormT(info, mname)
       s foreach checkHighFormE(info, mname, names)
-      s foreach checkHighFormS(minfo, mname, names)
+      s match {
+        case Conditionally(_,_, conseq, alt) =>
+          checkHighFormS(minfo, mname, names.childScope())(conseq)
+          checkHighFormS(minfo, mname, names.childScope())(alt)
+        case _ => s foreach checkHighFormS(minfo, mname, names)
+      }
     }
 
-    def checkHighFormP(mname: String, names: NameSet)(p: Port): Unit = {
-      if (names(p.name))
+    def checkHighFormP(mname: String, names: ScopeView)(p: Port): Unit = {
+      if (!names.legalDecl(p.name))
         errors.append(new NotUniqueException(NoInfo, mname, p.name))
-      names += p.name
+      names.declare(p.name)
       checkHighFormT(p.info, mname)(p.tpe)
     }
 
@@ -255,7 +282,7 @@ trait CheckHighFormLike { this: Pass =>
     }
 
     def checkHighFormM(m: DefModule): Unit = {
-      val names = new NameSet
+      val names = ScopeView()
       m foreach checkHighFormP(m.name, names)
       m foreach checkHighFormS(m.info, m.name, names)
       m match {
