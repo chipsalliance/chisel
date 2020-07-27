@@ -446,9 +446,23 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     */
   private[chisel3] def typeEquivalent(that: Data): Boolean
 
+  private def requireVisible(): Unit = {
+    val mod = topBindingOpt.flatMap(_.location)
+    topBindingOpt match {
+      case Some(tb: TopBinding) if (mod == Builder.currentModule) =>
+      case Some(pb: PortBinding) if (mod.flatMap(_._parent) == Builder.currentModule) =>
+      case _ =>
+        throwException(s"operand is not visible from the current module")
+    }
+    if (!MonoConnect.checkWhenVisibility(this)) {
+      throwException(s"operand has escaped the scope of the when in which it was constructed")
+    }
+  }
+
   // Internal API: returns a ref that can be assigned to, if consistent with the binding
   private[chisel3] def lref: Node = {
     requireIsHardware(this)
+    requireVisible()
     topBindingOpt match {
       case Some(binding: ReadOnlyBinding) => throwException(s"internal error: attempted to generate LHS ref to ReadOnlyBinding $binding")
       case Some(binding: TopBinding) => Node(this)
@@ -460,6 +474,11 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   // Internal API: returns a ref, if bound. Literals should override this as needed.
   private[chisel3] def ref: Arg = {
     requireIsHardware(this)
+    if (Builder.currentModule.isDefined) {
+      // This is allowed (among other cases) for evaluating args of Printf / Assert / Printable, which are
+      // partially resolved *after* elaboration completes. If this is resolved, the check should be unconditional.
+      requireVisible()
+    }
     topBindingOpt match {
       case Some(binding: LitBinding) => throwException(s"internal error: can't handle literal binding $binding")
       case Some(binding: TopBinding) => Node(this)
