@@ -71,7 +71,7 @@ class PropagatePresetAnnotations extends Transform with DependencyAPIMigration {
     * @param presetAnnos all the annotations
     * @return updated annotations
     */
-  private def propagate(cs: CircuitState, presetAnnos: Seq[PresetAnnotation]): AnnotationSeq = {
+  private def propagate(cs: CircuitState, presetAnnos: Seq[PresetAnnotation], otherAnnos: Seq[Annotation]): AnnotationSeq = {
     val presets = presetAnnos.groupBy(_.target)
     // store all annotated asyncreset references
     val asyncToAnnotate = new TargetSet()
@@ -80,9 +80,7 @@ class PropagatePresetAnnotations extends Transform with DependencyAPIMigration {
     // store async-reset trees
     val asyncCoMap = new TargetSetMap()
     // Annotations to be appended and returned as result of the transform
-    val annos = (cs.annotations.toSet -- presetAnnos).to(mutable.ArrayBuffer)
-    // TODO: annotations should be filtered with a .partition instead of trying to do set operations
-    //       to filter out the non-preset annotations
+    val newAnnos = mutable.ArrayBuffer[Annotation]()
 
     val circuitTarget = CircuitTarget(cs.circuit.main)
 
@@ -280,7 +278,7 @@ class PropagatePresetAnnotations extends Transform with DependencyAPIMigration {
         if (asyncRegMap.contains(ta)) {
           annotateRegSet(asyncRegMap(ta))
         } else {
-          annos += new PresetRegAnnotation(ta)
+          newAnnos += PresetRegAnnotation(ta)
         }
       })
     }
@@ -303,7 +301,7 @@ class PropagatePresetAnnotations extends Transform with DependencyAPIMigration {
 
     cs.circuit.foreachModule(processModule) // PHASE 1 : Initialize
     annotateAsyncSet(asyncToAnnotate)       // PHASE 2 : Annotate
-    annos.toSeq
+    otherAnnos ++ newAnnos
   }
 
   /*
@@ -424,15 +422,14 @@ class PropagatePresetAnnotations extends Transform with DependencyAPIMigration {
 
   def execute(state: CircuitState): CircuitState = {
     // Collect all user-defined PresetAnnotation
-    val presets = state.annotations
-      .collect{ case m : PresetAnnotation => m }
+    val (presets, otherAnnos) = state.annotations.partition { case _: PresetAnnotation => true ; case _ => false }
 
     // No PresetAnnotation => no need to walk the IR
-    if (presets.size == 0){
+    if (presets.isEmpty){
       state
     } else {
       // PHASE I - Propagate
-      val annos = propagate(state, presets)
+      val annos = propagate(state, presets.asInstanceOf[Seq[PresetAnnotation]], otherAnnos)
       // PHASE II - CleanUp
       val cleanCircuit = cleanUpPresetTree(state.circuit, annos)
       // Because toCleanup is a class field, we need to clear it
