@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
 
 class ClockAsUIntTester extends BasicTester {
@@ -30,7 +31,7 @@ class ClockSpec extends ChiselPropSpec {
   }
 
   property("Should be able to use withClock in a module with no reset") {
-    val circuit = Driver.emit { () => new WithClockAndNoReset }
+    val circuit = (new ChiselStage).emitChirrtl(new WithClockAndNoReset)
     circuit.contains("reg a : UInt<1>, clock2") should be (true)
   }
 }

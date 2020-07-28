@@ -22,7 +22,9 @@ executors:
       FIRRTL_REPO: git@github.com:freechipsproject/firrtl.git
       FIRRTL_BRANCH: master
       FIRRTL_REV: master
-      CHECKSTYLE_LIMIT: 40
+      TREADLE_REPO: git@github.com:freechipsproject/treadle.git
+      TREADLE_BRANCH: master
+      TREADLE_REV: master
       SBT_ARGS: ""
 
 commands:
@@ -63,6 +65,8 @@ jobs:
             ls -l
             git clone --depth 10 --branch $FIRRTL_BRANCH "$FIRRTL_REPO" firrtl && (cd firrtl && git checkout $FIRRTL_REV)
             echo $FIRRTL_REV && (cd firrtl && git log -1 > ../firrtl.log)
+            git clone --depth 10 --branch $TREADLE_BRANCH "$TREADLE_REPO" treadle && (cd treadle && git checkout $TREADLE_REV)
+            echo $TREADLE_REV && (cd treadle && git log -1 > ../treadle.log)
 
 
       - persist_to_workspace:
@@ -85,6 +89,27 @@ jobs:
           command: |
             date > date.firrtl
             (cd firrtl && cat /dev/null | sbt $SBT_ARGS +publishLocal)
+
+      - persist_to_workspace:
+          root: /home/chisel
+          paths:
+            - repo
+            - .ivy2
+            - .m2
+            - .sbt
+
+  build-treadle:
+    executor: chisel-executor
+
+    steps:
+      - attach_workspace:
+          at: /home/chisel
+
+      # publish Treadle
+      - run:
+          command: |
+            date > date.treadle
+            (cd treadle && cat /dev/null | sbt $SBT_ARGS +publishLocal)
 
       - persist_to_workspace:
           root: /home/chisel
@@ -126,17 +151,6 @@ jobs:
       - test-chisel:
           scalaVersion: "++2.12.11"
 
-  checkstyle-chisel:
-    executor: chisel-executor
-    steps:
-      - attach_workspace:
-          at: /home/chisel
-
-      - run:
-          command: |
-            # We expect the "[info]" field from sbt so the warning count will be in column 4
-            (cd chisel3 && cat /dev/null | sbt $SBT_ARGS scalastyle | gawk -v WARN_FAIL=2 -e '/scalastyle Found [0-9]+ warnings/ { print $0; if ($4 > ENVIRON["CHECKSTYLE_LIMIT"]) WARN_FAIL=1; else if (WARN_FAIL == 2) WARN_FAIL=0 }' -e 'END { exit WARN_FAIL}')
-
 workflows:
 
   build_and_test:
@@ -145,17 +159,13 @@ workflows:
       - build-firrtl:
           requires:
             - build-prep
+      - build-treadle:
+          requires:
+            - build-firrtl
       - test-chisel-2_11:
           requires:
-            - build-firrtl
+            - build-treadle
       - test-chisel-2_12:
           requires:
-            - build-firrtl
-      - checkstyle-chisel:
-          # Strictly speaking, this is only dependent on build-firrtl,
-          #  but it is faster than the test jobs so if it fails,
-          #  it fails the entire build before we get a chance to complete the tests.
-          # If we make it dependent on at least one of the tests,
-          #  there's a better chance to see if the tests fail before we flag a style failure
-          requires:
-            - test-chisel-2_12
+            - build-treadle
+

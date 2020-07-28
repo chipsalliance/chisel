@@ -19,7 +19,6 @@ import firrtl.{FIRRTLException, HighFirrtlCompiler, LowFirrtlCompiler, MiddleFir
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
-//scalastyle:off magic.number
 //noinspection TypeAnnotation
 
 object IntervalTestHelper {
@@ -30,32 +29,19 @@ object IntervalTestHelper {
     * @param gen the generator for the module
     * @return the Verilog code as a string.
     */
-  //scalastyle:off cyclomatic.complexity
   def makeFirrtl[T <: RawModule](compilerName: String)(gen: () => T): String = {
-    val c = compilerName match {
-      case "none"     => new NoneCompiler()
-      case "high"     => new HighFirrtlCompiler()
-      case "lo"       => new LowFirrtlCompiler()
-      case "low"      => new LowFirrtlCompiler()
-      case "middle"   => new MiddleFirrtlCompiler()
-      case "verilog"  => new VerilogCompiler()
-      case "mverilog" => new MinimumVerilogCompiler()
-      case "sverilog" => new SystemVerilogCompiler()
-      case _ =>
-        throw new Exception(
-          s"Unknown compiler name '$compilerName'! (Did you misspell it?)"
-        )
-    }
-    val compiler = CompilerAnnotation(c)
-    val annotations = Seq(new ChiselGeneratorAnnotation(gen), TargetDirAnnotation("test_run_dir/IntervalSpec"), compiler)
-    val processed = (new ChiselStage).run(annotations)
-    processed.collectFirst { case FirrtlCircuitAnnotation(source) => source } match {
-      case Some(circuit) => circuit.serialize
-      case _ =>
-        throw new Exception(
-          s"makeFirrtl($compilerName) failed to generate firrtl circuit"
-        )
-    }
+    (new ChiselStage)
+      .execute(Array("--compiler", compilerName,
+                     "--target-dir", "test_run_dir/IntervalSpec"),
+               Seq(ChiselGeneratorAnnotation(gen)))
+      .collectFirst { case FirrtlCircuitAnnotation(source) => source } match {
+        case Some(circuit) => circuit.serialize
+        case _ =>
+          throw new Exception(
+            s"makeFirrtl($compilerName) failed to generate firrtl circuit"
+          )
+      }
+
   }
 }
 
@@ -714,7 +700,7 @@ class IntervalSpec extends AnyFreeSpec with Matchers with ChiselRunners {
       }
       "squeeze disjoint from Module gives exception" in {
         intercept[DisjointSqueeze] {
-          makeFirrtl("lo")(
+          makeFirrtl("low")(
             () =>
               new Module {
                 val io = IO(new Bundle {
@@ -731,7 +717,7 @@ class IntervalSpec extends AnyFreeSpec with Matchers with ChiselRunners {
         }
       }
       "clip disjoint from Module gives no error" in {
-        makeFirrtl("lo")(
+        makeFirrtl("low")(
           () =>
             new Module {
               val io = IO(new Bundle {
@@ -748,7 +734,7 @@ class IntervalSpec extends AnyFreeSpec with Matchers with ChiselRunners {
       }
       "wrap disjoint from Module wrap with remainder" in {
         intercept[WrapWithRemainder] {
-          makeFirrtl("lo")(
+          makeFirrtl("low")(
             () =>
               new Module {
                 val io = IO(new Bundle {
@@ -779,7 +765,7 @@ class IntervalSpec extends AnyFreeSpec with Matchers with ChiselRunners {
   "Intervals should catch assignment of literals outside of range" - {
     "when literal is too small" in {
       intercept[InvalidConnect] {
-        makeFirrtl("lo")(
+        makeFirrtl("low")(
           () =>
             new Module {
               val io = IO(new Bundle { val out = Output(Interval()) })

@@ -4,7 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.util._
-import chisel3.testers.BasicTester
+import chisel3.testers.{BasicTester, TesterDriver}
 import chisel3.experimental._
 
 /* This test is different from AnalogSpec in that it uses more complicated black boxes that can each
@@ -126,10 +126,18 @@ class AnalogIntegrationTester(mod: => AnalogDUTModule) extends BasicTester {
 class AnalogIntegrationSpec extends ChiselFlatSpec {
   behavior of "Verilator"
   it should "support simple bidirectional wires" in {
-    assertTesterPasses(new AnalogIntegrationTester(new AnalogSmallDUT), Seq("/chisel3/AnalogBlackBox.v"))
+    assertTesterPasses(
+      new AnalogIntegrationTester(new AnalogSmallDUT),
+      Seq("/chisel3/AnalogBlackBox.v"),
+      TesterDriver.verilatorOnly
+    )
   }
   // Use this test once Verilator supports alias
   ignore should "support arbitrary bidirectional wires" in {
-    assertTesterPasses(new AnalogIntegrationTester(new AnalogDUT), Seq("/chisel3/AnalogBlackBox.v"))
+    assertTesterPasses(
+      new AnalogIntegrationTester(new AnalogDUT),
+      Seq("/chisel3/AnalogBlackBox.v"),
+      TesterDriver.verilatorOnly
+    )
   }
 }

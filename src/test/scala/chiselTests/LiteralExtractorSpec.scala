@@ -5,6 +5,7 @@ package chiselTests
 import chisel3._
 import chisel3.experimental._
 import chisel3.experimental.BundleLiterals._
+import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
 import scala.collection.immutable.ListMap
 
@@ -50,7 +51,7 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
   }
 
   "litOption" should "return None for non-literal hardware" in {
-    elaborate { new RawModule {
+    ChiselStage.elaborate { new RawModule {
       val a = Wire(UInt())
       assert(a.litOption == None)
     }}
@@ -109,7 +110,7 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
 
       // the following errors with "assertion failed"
 
-      println(outsideLiteral === insideLiteral) // scalastyle:ignore regex
+      println(outsideLiteral === insideLiteral)
       // chisel3.assert(outsideLiteral === insideLiteral)
 
       // the following lines of code error

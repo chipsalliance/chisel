@@ -7,7 +7,7 @@ package chisel3
   * Because its contents won't necessarily have the same level of stability and support as
   * non-experimental, you must explicitly import this package to use its contents.
   */
-package object experimental {  // scalastyle:ignore object.name
+package object experimental {
   import scala.language.implicitConversions
   import chisel3.internal.BaseModule
 
@@ -44,7 +44,7 @@ package object experimental {  // scalastyle:ignore object.name
       * q2_io.enq <> q1.io.deq
       * }}}
       */
-    def apply(proto: BaseModule)(implicit sourceInfo: chisel3.internal.sourceinfo.SourceInfo, compileOptions: CompileOptions): ClonePorts = { // scalastyle:ignore line.size.limit
+    def apply(proto: BaseModule)(implicit sourceInfo: chisel3.internal.sourceinfo.SourceInfo, compileOptions: CompileOptions): ClonePorts = {
       BaseModule.cloneIORecord(proto)
     }
   }
@@ -69,8 +69,8 @@ package object experimental {  // scalastyle:ignore object.name
     def range(args: Any*): chisel3.internal.firrtl.IntervalRange = macro chisel3.internal.RangeTransform.apply
   }
 
-  class dump extends chisel3.internal.naming.dump  // scalastyle:ignore class.name
-  class treedump extends chisel3.internal.naming.treedump  // scalastyle:ignore class.name
+  class dump extends chisel3.internal.naming.dump
+  class treedump extends chisel3.internal.naming.treedump
   /** Experimental macro for naming Chisel hardware values
     *
     * By default, Chisel uses reflection for naming which only works for public fields of `Bundle`
@@ -96,7 +96,7 @@ package object experimental {  // scalastyle:ignore object.name
     * }
     * }}}
     */
-  class chiselName extends chisel3.internal.naming.chiselName  // scalastyle:ignore class.name
+  class chiselName extends chisel3.internal.naming.chiselName
   /** Do not name instances of this type in [[chiselName]]
     *
     * By default, `chiselName` will include `val` names of instances of annotated classes as a
@@ -131,7 +131,6 @@ package object experimental {  // scalastyle:ignore object.name
 
   object BundleLiterals {
     implicit class AddBundleLiteralConstructor[T <: Record](x: T) {
-      //scalastyle:off method.name
       def Lit(elems: (T => (Data, Data))*): T = {
         x._makeLit(elems: _*)
       }

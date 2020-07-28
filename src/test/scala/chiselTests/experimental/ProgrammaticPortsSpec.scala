@@ -4,6 +4,7 @@ package chiselTests
 package experimental
 
 import chisel3._
+import chisel3.stage.ChiselStage
 
 // NOTE This is currently an experimental API and subject to change
 // Example using a private port
@@ -31,11 +32,11 @@ class PortsWinTester extends NamedModuleTester {
   val output = expectName(IO(Output(UInt())).suggestName("wire"), "wire")
 }
 
-class ProgrammaticPortsSpec extends ChiselFlatSpec {
+class ProgrammaticPortsSpec extends ChiselFlatSpec with Utils {
 
   private def doTest(testMod: => NamedModuleTester): Unit = {
     var module: NamedModuleTester = null
-    elaborate { module = testMod; module }
+    ChiselStage.elaborate { module = testMod; module }
     assert(module.getNameFailures() == Nil)
   }
 
@@ -63,12 +64,11 @@ class ProgrammaticPortsSpec extends ChiselFlatSpec {
   }
 
   "SuggestName collisions on ports" should "be illegal" in {
-    a [ChiselException] should be thrownBy {
-      elaborate(new MultiIOModule {
+    a [ChiselException] should be thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate(new MultiIOModule {
         val foo = IO(UInt(8.W)).suggestName("apple")
         val bar = IO(UInt(8.W)).suggestName("apple")
       })
     }
   }
 }
-

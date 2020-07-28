@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.stage.ChiselStage
 
 class Padder extends Module {
   val io = IO(new Bundle {
@@ -35,7 +36,7 @@ class PadsTester(c: Pads) extends Tester(c) {
 class PadderSpec extends ChiselPropSpec {
 
   property("Padder should elaborate") {
-    elaborate { new Padder }
+    ChiselStage.elaborate { new Padder }
   }
 
   ignore("PadderTester should return the correct result") { }

@@ -78,7 +78,7 @@ trait InstanceId {
 }
 
 private[chisel3] trait HasId extends InstanceId {
-  private[chisel3] def _onModuleClose: Unit = {} // scalastyle:ignore method.name
+  private[chisel3] def _onModuleClose: Unit = {}
   private[chisel3] val _parent: Option[BaseModule] = Builder.currentModule
   _parent.foreach(_.addId(this))
 
@@ -222,7 +222,6 @@ private[chisel3] class DynamicContext() {
   val namingStack = new NamingStack
 }
 
-//scalastyle:off number.of.methods
 private[chisel3] object Builder {
   // All global mutable state must be referenced via dynamicContextVar!!
   private val dynamicContextVar = new DynamicVariable[Option[DynamicContext]](None)
@@ -288,7 +287,7 @@ private[chisel3] object Builder {
           case other => module
         }
       case _ => throwException(
-        "Error: Not in a RawModule. Likely cause: Missed Module() wrap, bare chisel API call, or attempting to construct hardware inside a BlackBox." // scalastyle:ignore line.size.limit
+        "Error: Not in a RawModule. Likely cause: Missed Module() wrap, bare chisel API call, or attempting to construct hardware inside a BlackBox."
         // A bare api call is, e.g. calling Wire() from the scala console).
       )
     }
@@ -296,7 +295,7 @@ private[chisel3] object Builder {
   def forcedUserModule: RawModule = currentModule match {
     case Some(module: RawModule) => module
     case _ => throwException(
-      "Error: Not in a UserModule. Likely cause: Missed Module() wrap, bare chisel API call, or attempting to construct hardware inside a BlackBox." // scalastyle:ignore line.size.limit
+      "Error: Not in a UserModule. Likely cause: Missed Module() wrap, bare chisel API call, or attempting to construct hardware inside a BlackBox."
       // A bare api call is, e.g. calling Wire() from the scala console).
     )
   }
@@ -387,7 +386,13 @@ private[chisel3] object Builder {
   }
 
   def errors: ErrorLog = dynamicContext.errors
-  def error(m: => String): Unit = if (dynamicContextVar.value.isDefined) errors.error(m)
+  def error(m: => String): Unit = {
+    if (dynamicContextVar.value.isDefined) {
+      errors.error(m)
+    } else {
+      throwException(m)
+    }
+  }
   def warning(m: => String): Unit = if (dynamicContextVar.value.isDefined) errors.warning(m)
   def deprecated(m: => String, location: Option[String] = None): Unit =
     if (dynamicContextVar.value.isDefined) errors.deprecated(m, location)
