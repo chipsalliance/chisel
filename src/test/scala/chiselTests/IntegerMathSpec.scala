@@ -5,7 +5,6 @@ package chiselTests
 import chisel3._
 import chisel3.testers.BasicTester
 
-//scalastyle:off magic.number
 class IntegerMathTester extends BasicTester {
 
   //TODO: Add more operators

@@ -58,7 +58,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
   }
 
 
-  private[chisel3] override def generateComponent(): Component = { // scalastyle:ignore cyclomatic.complexity
+  private[chisel3] override def generateComponent(): Component = {
     require(!_closed, "Can't generate module more than once")
     _closed = true
 
@@ -194,7 +194,7 @@ package internal {
     def io: Record
 
     // Allow access to bindings from the compatibility package
-    protected def _compatIoPortBound() = portsContains(io)// scalastyle:ignore method.name
+    protected def _compatIoPortBound() = portsContains(io)
 
     private[chisel3] override def namePorts(names: HashMap[HasId, String]): Unit = {
       for (port <- getModulePorts) {
@@ -211,7 +211,7 @@ package internal {
       // Restrict IO to just io, clock, and reset
       require(io != null, "Module must have io")
       require(portsContains(io), "Module must have io wrapped in IO(...)")
-      require((portsContains(clock)) && (portsContains(reset)), "Internal error, module did not have clock or reset as IO") // scalastyle:ignore line.size.limit
+      require((portsContains(clock)) && (portsContains(reset)), "Internal error, module did not have clock or reset as IO")
       require(portsSize == 3, "Module must only have io, clock, and reset as IO")
 
       super.generateComponent()

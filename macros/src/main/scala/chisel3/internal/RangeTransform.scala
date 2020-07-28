@@ -27,7 +27,6 @@ object RangeTransform {
   *
   * @param c contains the string context to be parsed
   */
-//scalastyle:off cyclomatic.complexity method.length
 class RangeTransform(val c: blackbox.Context) {
   import c.universe._
   def apply(args: c.Tree*): c.Tree = {

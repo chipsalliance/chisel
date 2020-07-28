@@ -78,7 +78,7 @@ class NamingTransforms(val c: Context) {
     */
   class ClassBodyTransformer(val contextVar: TermName) extends ValNameTransformer {
     override def transform(tree: Tree): Tree = tree match {
-      case q"$mods class $tpname[..$tparams] $ctorMods(...$paramss) extends { ..$earlydefns } with ..$parents { $self => ..$stats }" => // scalastyle:ignore line.size.limit
+      case q"$mods class $tpname[..$tparams] $ctorMods(...$paramss) extends { ..$earlydefns } with ..$parents { $self => ..$stats }" =>
         tree  // don't recurse into inner classes
       case q"$mods trait $tpname[..$tparams] extends { ..$earlydefns } with ..$parents { $self => ..$stats }" =>
         tree  // don't recurse into inner classes
@@ -164,7 +164,6 @@ class NamingTransforms(val c: Context) {
     var namedElts: Int = 0
 
     val transformed = annottees.map(annottee => annottee match {
-      // scalastyle:off line.size.limit
       case q"$mods class $tpname[..$tparams] $ctorMods(...$paramss) extends { ..$earlydefns } with ..$parents { $self => ..$stats }" => {
         val transformedStats = transformClassBody(stats)
         namedElts += 1
@@ -185,21 +184,20 @@ class NamingTransforms(val c: Context) {
     if (namedElts != 1) {
       c.abort(c.enclosingPosition, s"@chiselName annotation did not match exactly one valid tree, got:\r\n${annottees.map(tree => showCode(tree)).mkString("\r\n\r\n")}")
     }
-    // scalastyle:on line.size.limit
 
     q"..$transformed"
   }
 }
 
 @compileTimeOnly("enable macro paradise to expand macro annotations")
-class dump extends StaticAnnotation { // scalastyle:ignore class.name
+class dump extends StaticAnnotation {
   def macroTransform(annottees: Any*): Any = macro chisel3.internal.naming.DebugTransforms.dump
 }
 @compileTimeOnly("enable macro paradise to expand macro annotations")
-class treedump extends StaticAnnotation { // scalastyle:ignore class.name
+class treedump extends StaticAnnotation {
   def macroTransform(annottees: Any*): Any = macro chisel3.internal.naming.DebugTransforms.treedump
 }
 @compileTimeOnly("enable macro paradise to expand macro annotations")
-class chiselName extends StaticAnnotation { // scalastyle:ignore class.name
+class chiselName extends StaticAnnotation {
   def macroTransform(annottees: Any*): Any = macro chisel3.internal.naming.NamingTransforms.chiselName
 }

@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.stage.ChiselStage
 import chisel3.util.{Counter, Queue}
 import chisel3.testers.BasicTester
 import firrtl.checks.CheckResets.NonLiteralAsyncResetValueException
@@ -137,22 +138,22 @@ class AsyncResetDontCareModule extends RawModule {
   bulkAggPort <> DontCare
 }
 
-class AsyncResetSpec extends ChiselFlatSpec {
+class AsyncResetSpec extends ChiselFlatSpec with Utils {
 
   behavior of "AsyncReset"
 
   it should "be able to be connected to DontCare" in {
-    elaborate(new AsyncResetDontCareModule)
+    ChiselStage.elaborate(new AsyncResetDontCareModule)
   }
 
   it should "be allowed with literal reset values" in {
-    elaborate(new BasicTester {
+    ChiselStage.elaborate(new BasicTester {
       withReset(reset.asAsyncReset)(RegInit(123.U))
     })
   }
 
   it should "NOT be allowed with non-literal reset values" in {
-    a [NonLiteralAsyncResetValueException] shouldBe thrownBy {
+    a [NonLiteralAsyncResetValueException] should be thrownBy extractCause[NonLiteralAsyncResetValueException] {
       compile(new BasicTester {
         val x = WireInit(123.U + 456.U)
         withReset(reset.asAsyncReset)(RegInit(x))
@@ -161,8 +162,8 @@ class AsyncResetSpec extends ChiselFlatSpec {
   }
 
   it should "NOT be allowed to connect directly to a Bool" in {
-    a [ChiselException] shouldBe thrownBy {
-      elaborate(new BasicTester {
+    a [ChiselException] should be thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate(new BasicTester {
         val bool = Wire(Bool())
         val areset = reset.asAsyncReset
         bool := areset
@@ -179,7 +180,7 @@ class AsyncResetSpec extends ChiselFlatSpec {
   }
 
   it should "allow casting to and from Bool" in {
-    elaborate(new BasicTester {
+    ChiselStage.elaborate(new BasicTester {
       val r: Reset = reset
       val a: AsyncReset = WireInit(r.asAsyncReset)
       val b: Bool = a.asBool

@@ -132,11 +132,11 @@ package experimental {
   * }}}
   * @note The parameters API is experimental and may change
   */
-abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param])(implicit compileOptions: CompileOptions) extends BaseBlackBox { // scalastyle:ignore line.size.limit
+abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param])(implicit compileOptions: CompileOptions) extends BaseBlackBox {
   def io: Record
 
   // Allow access to bindings from the compatibility package
-  protected def _compatIoPortBound() = portsContains(io) // scalastyle:ignore method.name
+  protected def _compatIoPortBound() = portsContains(io)
 
   private[chisel3] override def generateComponent(): Component = {
     _compatAutoWrapPorts()  // pre-IO(...) compatibility hack

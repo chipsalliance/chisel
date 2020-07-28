@@ -12,7 +12,7 @@ import scala.reflect.macros.blackbox._
 import chisel3._
 
 @deprecated("The unless conditional is deprecated, use when(!condition){...} instead", "3.2")
-object unless {  // scalastyle:ignore object.name
+object unless {
   /** Does the same thing as [[when$ when]], but with the condition inverted.
     */
   def apply(c: Bool)(block: => Any) {
@@ -56,7 +56,7 @@ class SwitchContext[T <: Element](cond: T, whenContext: Option[WhenContext], lit
   * @note dummy implementation, a macro inside [[switch]] transforms this into the actual
   * implementation
   */
-object is {   // scalastyle:ignore object.name
+object is {
   // TODO: Begin deprecation of non-type-parameterized is statements.
   /** Executes `block` if the switch condition is equal to any of the values in `v`.
     */
@@ -90,7 +90,7 @@ object is {   // scalastyle:ignore object.name
   * }
   * }}}
   */
-object switch {  // scalastyle:ignore object.name
+object switch {
   def apply[T <: Element](cond: T)(x: => Any): Unit = macro impl
   def impl(c: Context)(cond: c.Tree)(x: c.Tree): c.Tree = { import c.universe._
     val q"..$body" = x

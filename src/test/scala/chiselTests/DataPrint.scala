@@ -7,6 +7,7 @@ import org.scalatest._
 import chisel3._
 import chisel3.experimental.{ChiselEnum, FixedPoint}
 import chisel3.experimental.BundleLiterals._
+import chisel3.stage.ChiselStage
 import org.scalatest.matchers.should.Matchers
 
 class DataPrintSpec extends ChiselFlatSpec with Matchers {
@@ -20,7 +21,7 @@ class DataPrintSpec extends ChiselFlatSpec with Matchers {
   }
 
   "Data types" should "have a meaningful string representation" in {
-    elaborate { new RawModule {
+    ChiselStage.elaborate { new RawModule {
       UInt().toString should be ("UInt")
       UInt(8.W).toString should be ("UInt<8>")
       SInt(15.W).toString should be ("SInt<15>")
@@ -54,11 +55,11 @@ class DataPrintSpec extends ChiselFlatSpec with Matchers {
   }
 
   "Bound data types" should "have a meaningful string representation" in {
-    elaborate { new BoundDataModule }
+    ChiselStage.elaborate { new BoundDataModule }
   }
 
   "Literals" should "have a meaningful string representation" in {
-    elaborate { new RawModule {
+    ChiselStage.elaborate { new RawModule {
       3.U.toString should be ("UInt<2>(3)")
       3.U(5.W).toString should be ("UInt<5>(3)")
       -1.S.toString should be ("SInt<1>(-1)")
