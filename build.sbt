@@ -2,18 +2,6 @@
 
 enablePlugins(SiteScaladocPlugin)
 
-def scalacOptionsVersion(scalaVersion: String): Seq[String] = {
-  Seq() ++ {
-    // If we're building with Scala > 2.11, enable the compile option
-    //  switch to support our anonymous Bundle definitions:
-    //  https://github.com/scala/bug/issues/10047
-    CrossVersion.partialVersion(scalaVersion) match {
-      case Some((2, scalaMajor: Long)) if scalaMajor < 12 => Seq()
-      case _ => Seq("-Xsource:2.11")
-    }
-  }
-}
-
 def javacOptionsVersion(scalaVersion: String): Seq[String] = {
   Seq() ++ {
     // Scala 2.12 requires Java 8, but we continue to generate
@@ -35,7 +23,7 @@ lazy val commonSettings = Seq(
   version := "1.4-SNAPSHOT",
   scalaVersion := "2.12.11",
   crossScalaVersions := Seq("2.13.2", "2.12.11", "2.11.12"),
-  scalacOptions := scalacOptionsVersion(scalaVersion.value) ++ Seq(
+  scalacOptions := Seq(
     "-deprecation",
     "-unchecked",
     "-language:reflectiveCalls",
@@ -169,7 +157,7 @@ lazy val docSettings = Seq(
         }
       s"https://github.com/freechipsproject/firrtl/tree/$branch€{FILE_PATH}.scala"
     }
-  ) ++ scalacOptionsVersion(scalaVersion.value) ++ scalacDocOptionsVersion(scalaVersion.value)
+  ) ++ scalacDocOptionsVersion(scalaVersion.value)
 )
 
 lazy val firrtl = (project in file("."))
