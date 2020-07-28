@@ -10,8 +10,6 @@ import FirrtlProtos._
 import com.google.protobuf.CodedInputStream
 import Firrtl.Statement.{Formal, ReadUnderWrite}
 
-import scala.collection.mutable
-
 object FromProto {
 
   /** Deserialize ProtoBuf representation of [[ir.Circuit]]
@@ -36,9 +34,9 @@ object FromProto {
   }
 
   // Convert from ProtoBuf message repeated Statements to FIRRRTL Block
-  private def compressStmts(stmts: mutable.Seq[ir.Statement]): ir.Statement = stmts match {
-    case mutable.Seq() => ir.EmptyStmt
-    case mutable.Seq(stmt) => stmt
+  private def compressStmts(stmts: scala.collection.Seq[ir.Statement]): ir.Statement = stmts match {
+    case scala.collection.Seq() => ir.EmptyStmt
+    case scala.collection.Seq(stmt) => stmt
     case multiple => ir.Block(multiple.toSeq)
   }
 

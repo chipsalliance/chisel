@@ -10,8 +10,6 @@ import firrtl.Utils._
 import firrtl.Mappers._
 import firrtl.options.Dependency
 
-import scala.collection.mutable
-
 case class MPort(name: String, clk: Expression)
 case class MPorts(readers: ArrayBuffer[MPort], writers: ArrayBuffer[MPort], readwriters: ArrayBuffer[MPort])
 case class DataRef(exp: Expression, source: String, sink: String, mask: String, rdwrite: Boolean)
@@ -82,14 +80,14 @@ object RemoveCHIRRTL extends Transform with DependencyAPIMigration {
       types(sx.name) = sx.tpe
       val taddr = UIntType(IntWidth(1 max getUIntWidth(sx.size - 1)))
       val tdata = sx.tpe
-      def set_poison(vec: mutable.Seq[MPort]) = vec.toSeq.flatMap (r => Seq(
+      def set_poison(vec: scala.collection.Seq[MPort]) = vec.toSeq.flatMap (r => Seq(
         IsInvalid(sx.info, SubField(SubField(Reference(sx.name, ut), r.name, ut), "addr", taddr)),
         IsInvalid(sx.info, SubField(SubField(Reference(sx.name, ut), r.name, ut), "clk", ClockType))
       ))
-      def set_enable(vec: mutable.Seq[MPort], en: String) = vec.toSeq.map (r =>
+      def set_enable(vec: scala.collection.Seq[MPort], en: String) = vec.toSeq.map (r =>
         Connect(sx.info, SubField(SubField(Reference(sx.name, ut), r.name, ut), en, BoolType), zero)
       )
-      def set_write(vec: mutable.Seq[MPort], data: String, mask: String) = vec.toSeq.flatMap { r =>
+      def set_write(vec: scala.collection.Seq[MPort], data: String, mask: String) = vec.toSeq.flatMap { r =>
         val tmask = createMask(sx.tpe)
         val portRef = SubField(Reference(sx.name, ut), r.name, ut)
         Seq(IsInvalid(sx.info, SubField(portRef, data, tdata)), IsInvalid(sx.info, SubField(portRef, mask, tmask)))
