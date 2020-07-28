@@ -262,7 +262,7 @@ class PropagatePresetAnnotations extends Transform with DependencyAPIMigration {
      */
 
     /** Annotate a given target and all its children according to the asyncCoMap */
-    def annotateCo(ta: ReferenceTarget){
+    def annotateCo(ta: ReferenceTarget): Unit = {
       if (asyncCoMap.contains(ta)){
         toCleanUp += ta
         asyncCoMap(ta) foreach( (t: ReferenceTarget) => {

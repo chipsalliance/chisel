@@ -542,10 +542,10 @@ class VerilogEmitter extends SeqTransform with Emitter {
                       circuitName: String,
                       emissionOptions: EmissionOptions)(implicit writer: Writer) {
 
-    def this(m: Module, moduleMap: Map[String, DefModule], circuitName: String, emissionOptions: EmissionOptions)(implicit writer: Writer) {
+    def this(m: Module, moduleMap: Map[String, DefModule], circuitName: String, emissionOptions: EmissionOptions)(implicit writer: Writer) = {
       this(Seq(), Map.empty, m, moduleMap, circuitName, emissionOptions)(writer)
     }
-    def this(m: Module, moduleMap: Map[String, DefModule])(implicit writer: Writer) {
+    def this(m: Module, moduleMap: Map[String, DefModule])(implicit writer: Writer) = {
       this(Seq(), Map.empty, m, moduleMap, "", new EmissionOptions(Seq.empty))(writer)
     }
 
