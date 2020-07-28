@@ -36,7 +36,7 @@ object CheckWidths extends Pass {
   class WidthTooBig(info: Info, mname: String, b: BigInt) extends PassException(
     s"$info : [target $mname]  Width $b greater than max allowed width of $MaxWidth bits")
   class DshlTooBig(info: Info, mname: String) extends PassException(
-    s"$info : [target $mname]  Width of dshl shift amount cannot be larger than $DshlMaxWidth bits.")
+    s"$info : [target $mname]  Width of dshl shift amount must be less than $DshlMaxWidth bits.")
   class MultiBitAsClock(info: Info, mname: String) extends PassException(
     s"$info : [target $mname]  Cannot cast a multi-bit signal to a Clock.")
   class MultiBitAsAsyncReset(info: Info, mname: String) extends PassException(
