@@ -37,7 +37,7 @@ class RemoveWiresSpec extends FirrtlFlatSpec {
     circuit.modules.head match {
       case Module(_,_,_, body) => onStmt(body)
     }
-    (nodes, wires)
+    (nodes.toSeq, wires.toSeq)
   }
 
   def orderedNames(circuit: Circuit): Seq[String] = {
@@ -55,7 +55,7 @@ class RemoveWiresSpec extends FirrtlFlatSpec {
     circuit.modules.head match {
       case Module(_,_,_, body) => onStmt(body)
     }
-    names
+    names.toSeq
   }
 
   "Remove Wires" should "turn wires and their single connect into nodes" in {

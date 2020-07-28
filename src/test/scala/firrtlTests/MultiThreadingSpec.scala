@@ -30,7 +30,7 @@ class MultiThreadingSpec extends FirrtlPropSpec {
 
     // Begin the actual test
 
-    val inputStrings = FileUtils.getLinesResource(inputFilePath)
+    val inputStrings = FileUtils.getLinesResource(inputFilePath).toSeq
 
     import ExecutionContext.Implicits.global
     try { // Use try-catch because error can manifest in many ways

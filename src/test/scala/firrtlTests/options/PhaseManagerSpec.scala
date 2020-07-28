@@ -392,7 +392,7 @@ class PhaseManagerSpec extends AnyFlatSpec with Matchers {
 
     /** Convert a Graphviz file to PNG using */
     def maybeToPng(f: File): Unit = try {
-      s"dot -Tpng -O ${f}" !
+      s"dot -Tpng -O ${f}".!
     } catch {
       case _: java.io.IOException =>
     }
