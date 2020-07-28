@@ -34,16 +34,13 @@ lazy val commonSettings = Seq(
   name := "firrtl",
   version := "1.4-SNAPSHOT",
   scalaVersion := "2.12.11",
-  crossScalaVersions := Seq("2.12.11", "2.11.12"),
-  addCompilerPlugin(scalafixSemanticdb),
+  crossScalaVersions := Seq("2.13.2", "2.12.11", "2.11.12"),
   scalacOptions := scalacOptionsVersion(scalaVersion.value) ++ Seq(
     "-deprecation",
     "-unchecked",
     "-language:reflectiveCalls",
     "-language:existentials",
     "-language:implicitConversions",
-    "-Yrangepos",          // required by SemanticDB compiler plugin
-    "-Ywarn-unused-import" // required by `RemoveUnused` rule
   ),
   javacOptions ++= javacOptionsVersion(scalaVersion.value),
   libraryDependencies ++= Seq(
