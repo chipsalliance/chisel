@@ -1,6 +1,8 @@
 language: scala
 sudo: false
 
+jdk: openjdk8
+
 cache:
   directories:
     $HOME/.cache/coursier
