@@ -10,6 +10,8 @@ import firrtl.Utils._
 import firrtl.Mappers._
 import firrtl.options.Dependency
 
+import scala.collection.mutable
+
 case class MPort(name: String, clk: Expression)
 case class MPorts(readers: ArrayBuffer[MPort], writers: ArrayBuffer[MPort], readwriters: ArrayBuffer[MPort])
 case class DataRef(exp: Expression, source: String, sink: String, mask: String, rdwrite: Boolean)
@@ -80,14 +82,14 @@ object RemoveCHIRRTL extends Transform with DependencyAPIMigration {
       types(sx.name) = sx.tpe
       val taddr = UIntType(IntWidth(1 max getUIntWidth(sx.size - 1)))
       val tdata = sx.tpe
-      def set_poison(vec: Seq[MPort]) = vec flatMap (r => Seq(
+      def set_poison(vec: mutable.Seq[MPort]) = vec.toSeq.flatMap (r => Seq(
         IsInvalid(sx.info, SubField(SubField(Reference(sx.name, ut), r.name, ut), "addr", taddr)),
         IsInvalid(sx.info, SubField(SubField(Reference(sx.name, ut), r.name, ut), "clk", ClockType))
       ))
-      def set_enable(vec: Seq[MPort], en: String) = vec map (r =>
+      def set_enable(vec: mutable.Seq[MPort], en: String) = vec.toSeq.map (r =>
         Connect(sx.info, SubField(SubField(Reference(sx.name, ut), r.name, ut), en, BoolType), zero)
       )
-      def set_write(vec: Seq[MPort], data: String, mask: String) = vec flatMap { r =>
+      def set_write(vec: mutable.Seq[MPort], data: String, mask: String) = vec.toSeq.flatMap { r =>
         val tmask = createMask(sx.tpe)
         val portRef = SubField(Reference(sx.name, ut), r.name, ut)
         Seq(IsInvalid(sx.info, SubField(portRef, data, tdata)), IsInvalid(sx.info, SubField(portRef, mask, tmask)))
@@ -105,7 +107,7 @@ object RemoveCHIRRTL extends Transform with DependencyAPIMigration {
         set_enable(rws, "en") ++
         set_write(rws, "wdata", "wmask")
       val mem = DefMemory(sx.info, sx.name, sx.tpe, sx.size, 1, if (sx.seq) 1 else 0,
-                  rds map (_.name), wrs map (_.name), rws map (_.name), sx.readUnderWrite)
+                  rds.map(_.name).toSeq, wrs.map(_.name).toSeq, rws.map(_.name).toSeq, sx.readUnderWrite)
       Block(mem +: stmts)
     case sx: CDefMPort =>
       types.get(sx.mem) match {
@@ -162,8 +164,8 @@ object RemoveCHIRRTL extends Transform with DependencyAPIMigration {
           }
         case MInfer => // do nothing if it's not being used
       }
-      Block(
-        (addrs map (x => Connect(sx.info, SubField(portRef, x, ut), sx.exps.head))) ++
+      Block(List() ++
+        (addrs.map (x => Connect(sx.info, SubField(portRef, x, ut), sx.exps.head))) ++
         (clks map (x => Connect(sx.info, SubField(portRef, x, ut), sx.exps(1)))) ++
         (ens map (x => Connect(sx.info,SubField(portRef, x, ut), one))) ++
          masks.map(lhs => Connect(sx.info, lhs, zero))
@@ -233,7 +235,7 @@ object RemoveCHIRRTL extends Transform with DependencyAPIMigration {
             case Some(wmode) => stmts += Connect(info, wmode, one)
           }
         }
-        if (stmts.isEmpty) sx else Block(sx +: stmts)
+        if (stmts.isEmpty) sx else Block(sx +: stmts.toSeq)
       case PartialConnect(info, loc, expr) =>
         val locx = remove_chirrtl_e(SinkFlow)(loc)
         val rocx = remove_chirrtl_e(SourceFlow)(expr)
@@ -252,7 +254,7 @@ object RemoveCHIRRTL extends Transform with DependencyAPIMigration {
             case Some(wmode) => stmts += Connect(info, wmode, one)
           }
         }
-        if (stmts.isEmpty) sx else Block(sx +: stmts)
+        if (stmts.isEmpty) sx else Block(sx +: stmts.toSeq)
       case sx => sx map remove_chirrtl_s(refs, raddrs) map remove_chirrtl_e(SourceFlow)
     }
   }

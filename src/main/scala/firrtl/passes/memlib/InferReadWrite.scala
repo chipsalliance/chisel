@@ -135,7 +135,7 @@ object InferReadWritePass extends Pass {
     (m map inferReadWriteStmt(connects, repl, stmts)
        map replaceStmt(repl)) match {
       case m: ExtModule => m
-      case m: Module => m copy (body = Block(m.body +: stmts))
+      case m: Module => m copy (body = Block(m.body +: stmts.toSeq))
     }
   }
 

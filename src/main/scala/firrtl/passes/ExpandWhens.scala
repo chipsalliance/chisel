@@ -210,7 +210,7 @@ object ExpandWhens extends Pass {
 
     val attachedAnalogs = attaches.flatMap(_.exprs.map(we)).toSet
     val newBody = Block(Seq(squashEmpty(bodyx)) ++ expandNetlist(netlist, attachedAnalogs) ++
-                            combineAttaches(attaches) ++ simlist)
+                            combineAttaches(attaches.toSeq) ++ simlist)
     Module(m.info, m.name, m.ports, newBody)
   }
 

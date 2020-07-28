@@ -96,7 +96,7 @@ trait CheckHighFormLike { this: Pass =>
 
     val intModuleNames = c.modules.view.collect({ case m: Module => m.name }).toSet
 
-    c.modules.view.groupBy(_.name).filter(_._2.length > 1).flatMap(_._2).foreach {
+    c.modules.groupBy(_.name).filter(_._2.length > 1).flatMap(_._2).foreach {
       m => errors.append(new ModuleNameNotUniqueException(m.info, m.name))
     }
 

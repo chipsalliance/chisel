@@ -22,7 +22,7 @@ object MemPort {
     s.split(",").toSeq.map(MemPort.apply).map(_ match {
       case Some(x) => x
       case _ => throw new Exception(s"Error parsing MemPort string : ${s}")
-    }).groupBy(identity).mapValues(_.size)
+    }).groupBy(identity).mapValues(_.size).toMap
   }
 }
 
@@ -64,6 +64,6 @@ object MemConf {
       (if (writePorts == 0) Map.empty[MemPort, Int] else Map(MaskedWritePort -> writePorts)) ++
       (if (readWritePorts == 0) Map.empty[MemPort, Int] else Map(MaskedReadWritePort -> readWritePorts))
     }) ++ (if (readPorts == 0) Map.empty[MemPort, Int] else Map(ReadPort -> readPorts))
-    return new MemConf(name, depth, width, ports, maskGranularity)
+    new MemConf(name, depth, width, ports, maskGranularity)
   }
 }

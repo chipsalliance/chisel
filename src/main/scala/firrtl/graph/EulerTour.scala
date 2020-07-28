@@ -25,7 +25,7 @@ object EulerTour {
     }
 
     tour(start, Vector.empty, 0)
-    new EulerTour(r.toMap, e, h)
+    new EulerTour(r.toMap, e.toSeq, h.toSeq)
   }
 }
 

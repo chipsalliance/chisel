@@ -233,9 +233,9 @@ class AddDescriptionNodes extends Transform with DependencyAPIMigration {
       // map field 2 (component name) -> field 3 (a list of Descriptions)
       _.groupBy(_._2).mapValues(_.map(_._3))
       // and then merge like descriptions (e.g. multiple docstrings into one big docstring)
-      .mapValues(mergeDescriptions))
+      .mapValues(mergeDescriptions).toMap)
 
-    (modMap, compMap)
+    (modMap.toMap, compMap.toMap)
   }
 
   def executeModule(module: DefModule, annos: Seq[Annotation]): DefModule = {

@@ -211,7 +211,7 @@ class EliminateTargetPaths extends Transform with DependencyAPIMigration {
     }
 
     // Return modified circuit and associated renameMap
-    (cir.copy(modules = finalModuleList), renameMap, annos)
+    (cir.copy(modules = finalModuleList.toSeq), renameMap, annos)
   }
 
   override def execute(state: CircuitState): CircuitState = {

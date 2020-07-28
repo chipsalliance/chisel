@@ -261,13 +261,13 @@ class GroupComponents extends Transform with DependencyAPIMigration {
           val topStmts = mutable.ArrayBuffer[Statement]()
           val group = byNode(r.name)
           groupStatements(group) += r mapExpr inGroupFixExps(group, topStmts)
-          Block(topStmts)
+          Block(topStmts.toSeq)
         case c: Connect if byNode(getWRef(c.loc).name) != "" =>
           // Sink is in a group
           val topStmts = mutable.ArrayBuffer[Statement]()
           val group = byNode(getWRef(c.loc).name)
           groupStatements(group) += Connect(c.info, c.loc, inGroupFixExps(group, topStmts)(c.expr))
-          Block(topStmts)
+          Block(topStmts.toSeq)
         case i: IsInvalid if byNode(getWRef(i.expr).name) != "" =>
           // Sink is in group
           val group = byNode(getWRef(i.expr).name)
@@ -289,7 +289,7 @@ class GroupComponents extends Transform with DependencyAPIMigration {
 
     // For all group labels (not including the original module label), return a new Module.
     val newModules = labelOrder.filter(_ != "") map { group =>
-      Module(NoInfo, label2module(group), groupPorts(group).distinct, Block(groupStatements(group).distinct))
+      Module(NoInfo, label2module(group), groupPorts(group).distinct.toSeq, Block(groupStatements(group).distinct.toSeq))
     }
     Seq(m.copy(body = finalTopBody)) ++ newModules
   }

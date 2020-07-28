@@ -819,7 +819,7 @@ class ConstantPropagation extends Transform with DependencyAPIMigration with Res
     }
     // Map from module name to component names
     val dontTouchMap: Map[OfModule, Set[String]] =
-      dontTouches.groupBy(_._1).mapValues(_.map(_._2).toSet)
+      dontTouches.groupBy(_._1).mapValues(_.map(_._2).toSet).toMap
 
     state.copy(circuit = run(state.circuit, dontTouchMap))
   }

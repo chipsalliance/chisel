@@ -106,11 +106,11 @@ class InlineInstances extends Transform with DependencyAPIMigration with Registe
       }
 
       moduleNames.foreach{mn => checkExists(mn.name)}
-      if (errors.nonEmpty) throw new PassExceptions(errors)
+      if (errors.nonEmpty) throw new PassExceptions(errors.toSeq)
       moduleNames.foreach{mn => checkExternal(mn.name)}
-      if (errors.nonEmpty) throw new PassExceptions(errors)
+      if (errors.nonEmpty) throw new PassExceptions(errors.toSeq)
       instanceNames.foreach{cn => checkInstance(cn)}
-      if (errors.nonEmpty) throw new PassExceptions(errors)
+      if (errors.nonEmpty) throw new PassExceptions(errors.toSeq)
    }
 
 

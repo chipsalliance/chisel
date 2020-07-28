@@ -72,7 +72,7 @@ class ResolveMemoryReference extends Transform with DependencyAPIMigration {
     val noDedups = state.annotations.collect {
       case NoDedupMemAnnotation(ComponentName(cn, ModuleName(mn, _))) => mn -> cn
     }
-    val noDedupMap: Map[String, Set[String]] = noDedups.groupBy(_._1).mapValues(_.map(_._2).toSet)
+    val noDedupMap: Map[String, Set[String]] = noDedups.groupBy(_._1).mapValues(_.map(_._2).toSet).toMap
     state.copy(circuit = run(state.circuit, noDedupMap))
   }
 }

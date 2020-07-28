@@ -81,7 +81,7 @@ object InstanceKeyGraph {
         case other => other.foreachStmt(onStmt)
       }
       onStmt(body)
-      instances
+      instances.toSeq
     }
   }
 

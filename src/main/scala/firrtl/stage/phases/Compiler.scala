@@ -82,7 +82,7 @@ class Compiler extends Phase with Translator[AnnotationSeq, Seq[CompilerRun]] {
         case annotation => d.copy(annotations = annotation +: d.annotations)
       }
     }
-    c
+    c.toSeq
   }
 
   /** Expand compiler output back into an [[AnnotationSeq]]. Annotations used in the construction of the compiler run are

@@ -513,7 +513,7 @@ case class Block(stmts: Seq[Statement]) extends Statement {
         its = its.tail
       }
     }
-    Block(res)
+    Block(res.toSeq)
   }
   def mapExpr(f: Expression => Expression): Statement = this
   def mapType(f: Type => Type): Statement = this
