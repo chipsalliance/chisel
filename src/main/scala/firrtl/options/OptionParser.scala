@@ -11,7 +11,7 @@ case object OptionsHelpException extends Exception("Usage help invoked")
 /** OptionParser mixin that causes the OptionParser to not call exit (call `sys.exit`) if the `--help` option is
   * passed */
 trait DoNotTerminateOnExit { this: OptionParser[_] =>
-  override def terminate(exitState: Either[String, Unit]): Unit = Unit
+  override def terminate(exitState: Either[String, Unit]): Unit = ()
 }
 
 /** OptionParser mixin that converts to [[OptionsException]]
@@ -28,7 +28,7 @@ trait ExceptOnError { this: OptionParser[_] =>
   */
 trait DuplicateHandling extends OptionParser[AnnotationSeq] {
 
-  override def parse(args: Seq[String], init: AnnotationSeq): Option[AnnotationSeq] = {
+  override def parse(args: scala.collection.Seq[String], init: AnnotationSeq): Option[AnnotationSeq] = {
 
     /** Message for found duplicate options */
     def msg(x: String, y: String) = s"""Duplicate $x "$y" (did your custom Transform or OptionsManager add this?)"""
