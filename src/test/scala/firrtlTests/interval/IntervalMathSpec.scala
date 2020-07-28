@@ -19,24 +19,24 @@ class IntervalMathSpec extends FirrtlFlatSpec {
   val DShiftLeftPattern   = """.*output dshl.*<(\d+)>.*""".r
   val DShiftRightPattern  = """.*output dshr.*<(\d+)>.*""".r
   val ArithAssignPattern = """\s*(\w+) <= asSInt\(bits\((\w+)\((.*)\).*\)\)\s*""".r
-  def getBound(bound: String, value: Double): IsKnown = bound match {
-    case "[" => Closed(BigDecimal(value))
-    case "]" => Closed(BigDecimal(value))
-    case "(" => Open(BigDecimal(value))
-    case ")" => Open(BigDecimal(value))
+  def getBound(bound: String, value: BigDecimal): IsKnown = bound match {
+    case "[" => Closed(value)
+    case "]" => Closed(value)
+    case "(" => Open(value)
+    case ")" => Open(value)
   }
 
   val prec = 0.5
 
   for {
     lb1        <- Seq("[", "(")
-    lv1        <- Range.Double(-1.0, 1.0, prec)
-    uv1        <- if(lb1 == "[") Range.Double(lv1, 1.0, prec) else Range.Double(lv1 + prec, 1.0, prec)
+    lv1        <- Range.BigDecimal(-1.0, 1.0, prec)
+    uv1        <- if(lb1 == "[") Range.BigDecimal(lv1, 1.0, prec) else Range.BigDecimal(lv1 + prec, 1.0, prec)
     ub1        <- if (lv1 == uv1) Seq("]") else Seq("]", ")")
     bp1        <- 0 to 1
     lb2        <- Seq("[", "(")
-    lv2        <- Range.Double(-1.0, 1.0, prec)
-    uv2        <- if(lb2 == "[") Range.Double(lv2, 1.0, prec) else Range.Double(lv2 + prec, 1.0, prec)
+    lv2        <- Range.BigDecimal(-1.0, 1.0, prec)
+    uv2        <- if(lb2 == "[") Range.BigDecimal(lv2, 1.0, prec) else Range.BigDecimal(lv2 + prec, 1.0, prec)
     ub2        <- if (lv2 == uv2) Seq("]") else Seq("]", ")")
     bp2        <- 0 to 1
   } {
