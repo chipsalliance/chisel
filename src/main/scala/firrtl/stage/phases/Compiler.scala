@@ -111,8 +111,9 @@ class Compiler extends Phase with Translator[AnnotationSeq, Seq[CompilerRun]] {
       c.copy(stateOut = Some(annotationsOut))
     }
 
-    if (b.size <= 1) { b.map(f)         }
-    else             { b.par.map(f).seq }
+    if (b.size <= 1) { b.map(f) } else {
+      collection.parallel.immutable.ParVector(b :_*).par.map(f).seq
+    }
   }
 
   private def compilerToTransforms(a: FirrtlCompiler): Seq[TransformDependency] = a match {

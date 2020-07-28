@@ -52,6 +52,13 @@ lazy val commonSettings = Seq(
     "org.json4s" %% "json4s-native" % "3.6.8",
     "org.apache.commons" % "commons-text" % "1.8"
   ),
+  // starting with scala 2.13 the parallel collections are separate from the standard library
+  libraryDependencies ++= {
+    CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, major)) if major <= 12 => Seq()
+      case _ => Seq("org.scala-lang.modules" %% "scala-parallel-collections" % "0.2.0")
+    }
+  },
   resolvers ++= Seq(
     Resolver.sonatypeRepo("snapshots"),
     Resolver.sonatypeRepo("releases")
