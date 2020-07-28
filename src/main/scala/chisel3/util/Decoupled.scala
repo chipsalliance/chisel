@@ -185,7 +185,7 @@ class QueueIO[T <: Data](private val gen: T, val entries: Int) extends Bundle
   * }}}
   */
 @chiselName
-class Queue[T <: Data](gen: T,
+class Queue[T <: Data](val gen: T,
                        val entries: Int,
                        val pipe: Boolean = false,
                        val flow: Boolean = false)
