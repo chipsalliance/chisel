@@ -28,7 +28,10 @@ def javacOptionsVersion(scalaVersion: String): Seq[String] = {
   }
 }
 
-val defaultVersions = Map("firrtl" -> "1.3-SNAPSHOT")
+val defaultVersions = Seq(
+  "edu.berkeley.cs" %% "firrtl" % "1.4-SNAPSHOT",
+  "edu.berkeley.cs" %% "treadle" % "1.3-SNAPSHOT"
+)
 
 lazy val commonSettings = Seq (
   resolvers ++= Seq(
@@ -36,25 +39,25 @@ lazy val commonSettings = Seq (
     Resolver.sonatypeRepo("releases")
   ),
   organization := "edu.berkeley.cs",
-  version := "3.3-SNAPSHOT",
+  version := "3.4-SNAPSHOT",
   autoAPIMappings := true,
   scalaVersion := "2.12.11",
   crossScalaVersions := Seq("2.12.11", "2.11.12"),
   scalacOptions := Seq("-deprecation", "-feature") ++ scalacOptionsVersion(scalaVersion.value),
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full),
-  (scalastyleConfig in Test) := (baseDirectory in root).value / "scalastyle-test-config.xml",
   // Use the root project's unmanaged base for all sub-projects.
   unmanagedBase := (unmanagedBase in root).value,
   // Since we want to examine the classpath to determine if a dependency on firrtl is required,
   //  this has to be a Task setting.
   //  Fortunately, allDependencies is a Task Setting, so we can modify that.
   allDependencies := {
-    allDependencies.value ++ Seq("firrtl").collect {
+    allDependencies.value ++ defaultVersions.collect {
       // If we have an unmanaged jar file on the classpath, assume we're to use that,
-      case dep: String if !(unmanagedClasspath in Compile).value.toString.contains(s"$dep.jar") =>
-        //  otherwise let sbt fetch the appropriate version.
-        "edu.berkeley.cs" %% dep % sys.props.getOrElse(dep + "Version", defaultVersions(dep))
+      case m: ModuleID if !(unmanagedClasspath in Compile).value.toString.contains(s"${m.name}.jar") =>
+        //  otherwise let sbt fetch the appropriate artifact, possibly with a specific revision.
+        val mWithRevision = m.withRevision(sys.props.getOrElse(m.name + "Version", m.revision))
+        mWithRevision
     }
   }
 )
@@ -140,7 +143,7 @@ lazy val core = (project in file("core")).
       "-unchecked",
       "-Xcheckinit",
       "-Xlint:infer-any"
-//      "-Xlint:missing-interpolator"
+//      , "-Xlint:missing-interpolator"
     )
   ).
   dependsOn(macros)
@@ -185,3 +188,7 @@ lazy val chisel = (project in file(".")).
       }
     )
   )
+
+addCommandAlias("com", "all compile")
+addCommandAlias("lint", "; compile:scalafix --check ; test:scalafix --check")
+addCommandAlias("fix", "all compile:scalafix test:scalafix")

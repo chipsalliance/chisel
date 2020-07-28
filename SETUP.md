@@ -39,7 +39,7 @@ Note that both [PeekPokeTester](https://github.com/freechipsproject/chisel-teste
     3.  In the Verilator repository directory, check out a known good version:	
         ```	
         git pull	
-        git checkout verilator_4_016	
+        git checkout v4.016	
         ```
 
     4.  In the Verilator repository directory, build and install:	

@@ -103,7 +103,7 @@ object LFSR {
   lazy val tapsMaxPeriod: Map[Int, Seq[Set[Int]]] = tapsFirst ++ tapsSecond
 
   /** First portion of known taps (a combined map hits the 64KB JVM method limit) */
-  private def tapsFirst = Map( // scalastyle:off magic.number
+  private def tapsFirst = Map(
     2    -> Seq(Set(2, 1)),
     3    -> Seq(Set(3, 2)),
     4    -> Seq(Set(4, 3)),
@@ -894,6 +894,6 @@ object LFSR {
     786  -> Seq(Set(786, 782, 780, 771)),
     1024 -> Seq(Set(1024, 1015, 1002, 1001)),
     2048 -> Seq(Set(2048, 2035, 2034, 2029)),
-    4096 -> Seq(Set(4096, 4095, 4081, 4069)) ) // scalastyle:on magic.number
+    4096 -> Seq(Set(4096, 4095, 4081, 4069)) )
 
 }

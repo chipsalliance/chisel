@@ -4,8 +4,11 @@
   *  while moving to the more standard package naming convention `chisel3` (lowercase c).
   */
 import chisel3._    // required for implicit conversions.
+import chisel3.experimental.chiselName
+import chisel3.util.random.FibonacciLFSR
+import chisel3.stage.{ChiselCircuitAnnotation, ChiselOutputFileAnnotation, ChiselStage, phases}
 
-package object Chisel {     // scalastyle:ignore package.object.name number.of.types number.of.methods
+package object Chisel {
   import chisel3.internal.firrtl.Width
 
   import scala.language.experimental.macros
@@ -204,8 +207,8 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
     /** Create an SInt literal with specified width. */
     def apply(value: BigInt, width: Width): SInt = value.asSInt(width)
 
-    def Lit(value: BigInt): SInt = value.asSInt // scalastyle:ignore method.name
-    def Lit(value: BigInt, width: Int): SInt = value.asSInt(width.W) // scalastyle:ignore method.name
+    def Lit(value: BigInt): SInt = value.asSInt
+    def Lit(value: BigInt, width: Int): SInt = value.asSInt(width.W)
 
     /** Create a SInt with a specified width - compatibility with Chisel2. */
     def apply(dir: Option[Direction] = None, width: Int): SInt = apply(width.W)
@@ -260,7 +263,7 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
   abstract class BlackBox(params: Map[String, Param] = Map.empty[String, Param]) extends chisel3.BlackBox(params) {
     // This class auto-wraps the BlackBox with IO(...), allowing legacy code (where IO(...) wasn't
     // required) to build.
-    override def _compatAutoWrapPorts(): Unit = { // scalastyle:ignore method.name
+    override def _compatAutoWrapPorts(): Unit = {
       if (!_compatIoPortBound()) {
         _bindIoInPlace(io)
       }
@@ -319,7 +322,7 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
     def this(_clock: Clock, _reset: Bool)(implicit moduleCompileOptions: CompileOptions) =
       this(Option(_clock), Option(_reset))(moduleCompileOptions)
 
-    override def _compatAutoWrapPorts(): Unit = { // scalastyle:ignore method.name
+    override def _compatAutoWrapPorts(): Unit = {
       if (!_compatIoPortBound() && io != null) {
         _bindIoInPlace(io)
       }
@@ -393,26 +396,37 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
   implicit class fromIntToWidth(x: Int) extends chisel3.fromIntToWidth(x)
 
   type BackendCompilationUtilities = firrtl.util.BackendCompilationUtilities
-  val Driver = chisel3.Driver
   val ImplicitConversions = chisel3.util.ImplicitConversions
 
   // Deprecated as of Chisel3
   object chiselMain {
     import java.io.File
 
+    private var target_dir: Option[String] = None
+
+    private def parseArgs(args: Array[String]): Unit = {
+      for (i <- args.indices) {
+        if (args(i) == "--targetDir") {
+          target_dir = Some(args(i + 1))
+        }
+      }
+    }
+
     def apply[T <: Module](args: Array[String], gen: () => T): Unit =
       Predef.assert(false, "No more chiselMain in Chisel3")
 
     def run[T <: Module] (args: Array[String], gen: () => T): Unit = {
-      val circuit = Driver.elaborate(gen)
-      Driver.parseArgs(args)
-      val output_file = new File(Driver.targetDir + "/" + circuit.name + ".fir")
-      Driver.dumpFirrtl(circuit, Option(output_file))
+      val circuit = ChiselStage.elaborate(gen())
+      parseArgs(args)
+      val output_file = new File(target_dir.getOrElse(new File(".").getCanonicalPath) + "/" + circuit.name + ".fir")
+
+      (new phases.Emitter).transform(Seq(ChiselCircuitAnnotation(circuit),
+                                         ChiselOutputFileAnnotation(output_file.toString)))
     }
   }
 
   @deprecated("debug doesn't do anything in Chisel3 as no pruning happens in the frontend", "chisel3")
-  object debug {  // scalastyle:ignore object.name
+  object debug {
     def apply (arg: Data): Data = arg
   }
 
@@ -425,7 +439,7 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
     }
   }
 
-  object testers {    // scalastyle:ignore object.name
+  object testers {
     type BasicTester = chisel3.testers.BasicTester
     val TesterDriver = chisel3.testers.TesterDriver
   }
@@ -561,7 +575,37 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
     }
   }
 
-  val LFSR16 = chisel3.util.LFSR16
+  /** LFSR16 generates a 16-bit linear feedback shift register, returning the register contents.
+    * This is useful for generating a pseudo-random sequence.
+    *
+    * The example below, taken from the unit tests, creates two 4-sided dice using `LFSR16` primitives:
+    * @example {{{
+    *   val bins = Reg(Vec(8, UInt(32.W)))
+    *
+    *   // Create two 4 sided dice and roll them each cycle.
+    *   // Use tap points on each LFSR so values are more independent
+    *   val die0 = Cat(Seq.tabulate(2) { i => LFSR16()(i) })
+    *   val die1 = Cat(Seq.tabulate(2) { i => LFSR16()(i + 2) })
+    *
+    *   val rollValue = die0 +& die1  // Note +& is critical because sum will need an extra bit.
+    *
+    *   bins(rollValue) := bins(rollValue) + 1.U
+    *
+    * }}}
+    */
+  object LFSR16 {
+    /** Generates a 16-bit linear feedback shift register, returning the register contents.
+      * @param increment optional control to gate when the LFSR updates.
+      */
+    @chiselName
+    def apply(increment: Bool = true.B): UInt =
+      VecInit( FibonacciLFSR
+                .maxPeriod(16, increment, seed = Some(BigInt(1) << 15))
+                .asBools
+                .reverse )
+        .asUInt
+
+  }
 
   val ListLookup = chisel3.util.ListLookup
   val Lookup = chisel3.util.Lookup
@@ -590,12 +634,12 @@ package object Chisel {     // scalastyle:ignore package.object.name number.of.t
     * Because its contents won't necessarily have the same level of stability and support as
     * non-experimental, you must explicitly import this package to use its contents.
     */
-  object experimental {  // scalastyle:ignore object.name
+  object experimental {
     import scala.annotation.compileTimeOnly
 
-    class dump extends chisel3.internal.naming.dump  // scalastyle:ignore class.name
-    class treedump extends chisel3.internal.naming.treedump  // scalastyle:ignore class.name
-    class chiselName extends chisel3.internal.naming.chiselName  // scalastyle:ignore class.name
+    class dump extends chisel3.internal.naming.dump
+    class treedump extends chisel3.internal.naming.treedump
+    class chiselName extends chisel3.internal.naming.chiselName
   }
 
   implicit class DataCompatibility(a: Data) {

@@ -9,7 +9,6 @@ import chisel3.internal.firrtl.{BinaryPoint, IntervalRange, KnownBinaryPoint, Un
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
-//scalastyle:off method.name magic.number
 class IntervalRangeSpec extends AnyFreeSpec with Matchers {
 
   "IntervalRanges" - {

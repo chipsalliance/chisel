@@ -4,7 +4,6 @@ package chisel3
 
 import chisel3.internal.firrtl.{ULit, Width}
 
-// scalastyle:off method.name
 
 trait BoolFactory {
   /** Creates an empty Bool.

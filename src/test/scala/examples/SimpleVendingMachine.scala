@@ -3,7 +3,7 @@
 package examples
 
 import chiselTests.ChiselFlatSpec
-import chisel3.testers.BasicTester
+import chisel3.testers.{BasicTester, TesterDriver}
 import chisel3._
 import chisel3.util._
 
@@ -49,7 +49,7 @@ class FSMVendingMachine extends SimpleVendingMachine {
 }
 
 class VerilogVendingMachine extends BlackBox {
-  // Because this is a blackbox, we must explicity add clock and reset
+  // Because this is a blackbox, we must explicitly add clock and reset
   val io = IO(new SimpleVendingMachineIO {
     val clock = Input(Clock())
     val reset = Input(Reset())
@@ -90,6 +90,6 @@ class SimpleVendingMachineSpec extends ChiselFlatSpec {
   }
   "An Verilog implementation of a vending machine" should "work" in {
     assertTesterPasses(new SimpleVendingMachineTester(new VerilogVendingMachineWrapper),
-                       List("/chisel3/VerilogVendingMachine.v"))
+                       List("/chisel3/VerilogVendingMachine.v"), annotations = TesterDriver.verilatorOnly)
   }
 }
