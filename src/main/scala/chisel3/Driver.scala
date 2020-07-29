@@ -95,7 +95,7 @@ object Driver extends BackendCompilationUtilities {
     * @return The resulting Chisel IR in the form of a Circuit. (TODO: Should be FIRRTL IR)
     */
   @deprecated("Use ChiselStage.elaborate or use a ChiselStage class. This will be removed in 3.4.", "3.2.4")
-  def elaborate[T <: RawModule](gen: () => T): Circuit = internal.Builder.build(Module(gen()))._1
+  def elaborate[T <: RawModule](gen: () => T): Circuit = internal.Builder.build(Module(gen()), Nil)._1
 
   /**
     * Convert the given Chisel IR Circuit to a FIRRTL Circuit.

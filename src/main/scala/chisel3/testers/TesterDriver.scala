@@ -49,6 +49,16 @@ object TesterDriver extends BackendCompilationUtilities {
       targets = Seq(Dependency[AddImplicitTesterDirectory],
                     Dependency[Emitter],
                     Dependency[Convert]))
+//=======
+//    // Invoke the chisel compiler to get the circuit's IR
+//    val (circuit, dut) = new chisel3.stage.ChiselGeneratorAnnotation(finishWrapper(t)).elaborate(Nil).toSeq match {
+//      case Seq(ChiselCircuitAnnotation(cir), d:DesignAnnotation[_]) => (cir, d)
+//    }
+//
+//    // Set up a bunch of file handlers based on a random temp filename,
+//    // plus the quirks of Verilator's naming conventions
+//    val target = circuit.name
+//>>>>>>> 2fda8d58f26d3042bfa397ce4f7c6f158e99ca2a
 
     val annotationsx = pm.transform(ChiselGeneratorAnnotation(t) +: annotations)
 

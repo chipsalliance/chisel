@@ -6,6 +6,7 @@ import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.options.{HasShellOptions, OptionsException, ShellOption, Unserializable}
 import chisel3.{ChiselException, Module}
 import chisel3.RawModule
+import chisel3.core.BaseModule
 import chisel3.internal.Builder
 import chisel3.internal.firrtl.Circuit
 import firrtl.AnnotationSeq
@@ -42,12 +43,12 @@ case object PrintFullStackTraceAnnotation extends NoTargetAnnotation with Chisel
 /** An [[firrtl.annotations.Annotation]] storing a function that returns a Chisel module
   * @param gen a generator function
   */
-case class ChiselGeneratorAnnotation(gen: () => RawModule) extends NoTargetAnnotation with Unserializable {
+case class ChiselGeneratorAnnotation(gen: () => BaseModule) extends NoTargetAnnotation with Unserializable {
 
   /** Run elaboration on the Chisel module generator function stored by this [[firrtl.annotations.Annotation]]
     */
-  def elaborate: AnnotationSeq  = try {
-    val (circuit, dut) = Builder.build(Module(gen()))
+  def elaborate(annotations: AnnotationSeq = Nil): AnnotationSeq  = try {
+    val (circuit, dut) = Builder.build(Module(gen()), annotations)
     Seq(ChiselCircuitAnnotation(circuit), DesignAnnotation(dut))
   } catch {
     case e @ (_: OptionsException | _: ChiselException) => throw e
@@ -116,4 +117,4 @@ object ChiselOutputFileAnnotation extends HasShellOptions {
   * @param design top-level Chisel design
   * @tparam DUT Type of the top-level Chisel design
   */
-case class DesignAnnotation[DUT <: RawModule](design: DUT) extends NoTargetAnnotation with Unserializable
+case class DesignAnnotation[DUT <: BaseModule](design: DUT) extends NoTargetAnnotation with Unserializable
