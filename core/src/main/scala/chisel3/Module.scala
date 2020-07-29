@@ -168,6 +168,15 @@ package experimental {
     }
     readyForModuleConstr = false
 
+    def useInstance[X](name: String)(thing: X): X = {
+      val instance = Builder.getInstance(InstanceKey(name, Builder.currentModule.get._id, this._id))
+      val portMap = this.getModulePorts.zip(instance.io.elements.values).toMap
+      thing match {
+        case d: Data if portMap.contains(d) => portMap(d).asInstanceOf[X]
+        case _ => thing
+      }
+    }
+
     Builder.currentModule = Some(this)
     Builder.whenDepth = 0
 
