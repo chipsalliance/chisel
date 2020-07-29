@@ -20,7 +20,6 @@ object InferTypes extends Pass {
 
   def run(c: Circuit): Circuit = {
     val namespace = Namespace()
-    val mtypes = (c.modules map (m => m.name -> module_type(m))).toMap
 
     def remove_unknowns_b(b: Bound): Bound = b match {
       case UnknownBound => VarBound(namespace.newName("b"))
@@ -39,6 +38,11 @@ object InferTypes extends Pass {
         case x => x
       }
     }
+
+    // we first need to remove the unknown widths and bounds from all ports,
+    // as their type will determine the module types
+    val portsKnown = c.modules.map(_.map{ p: Port => p.copy(tpe = remove_unknowns(p.tpe)) })
+    val mtypes = portsKnown.map(m => m.name -> module_type(m)).toMap
 
     def infer_types_e(types: TypeLookup)(e: Expression): Expression =
       e map infer_types_e(types) match {
@@ -71,9 +75,10 @@ object InferTypes extends Pass {
         types(sx.name) = t
         sx copy (tpe = t) map infer_types_e(types)
       case sx: DefMemory =>
-        val t = remove_unknowns(MemPortUtils.memType(sx))
-        types(sx.name) = t
-        sx copy (dataType = remove_unknowns(sx.dataType))
+        // we need to remove the unknowns from the data type so that all ports get the same VarWidth
+        val knownDataType = sx.copy(dataType = remove_unknowns(sx.dataType))
+        types(sx.name) = MemPortUtils.memType(knownDataType)
+        knownDataType
       case sx => sx map infer_types_s(types) map infer_types_e(types)
     }
 
@@ -88,7 +93,7 @@ object InferTypes extends Pass {
       m map infer_types_p(types) map infer_types_s(types)
     }
 
-    c copy (modules = c.modules map infer_types)
+    c.copy(modules = portsKnown.map(infer_types))
   }
 }
 

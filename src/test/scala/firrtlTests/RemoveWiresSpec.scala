@@ -163,7 +163,7 @@ class RemoveWiresSpec extends FirrtlFlatSpec {
       |c <= n""".stripMargin
     )
     // Check declaration before use is maintained
-    passes.CheckHighForm.execute(result)
+    firrtl.passes.CheckHighForm.execute(result)
   }
 
   it should "order registers with async reset correctly" in {
@@ -180,7 +180,7 @@ class RemoveWiresSpec extends FirrtlFlatSpec {
       |""".stripMargin
     )
     // Check declaration before use is maintained
-    passes.CheckHighForm.execute(result)
+    firrtl.passes.CheckHighForm.execute(result)
   }
 
   it should "order registers respecting initializations" in {
@@ -195,7 +195,7 @@ class RemoveWiresSpec extends FirrtlFlatSpec {
           |bar <= y
           |""".stripMargin)
     // Check declaration before use is maintained
-    passes.CheckHighForm.execute(result)
+    firrtl.passes.CheckHighForm.execute(result)
   }
 
 }
