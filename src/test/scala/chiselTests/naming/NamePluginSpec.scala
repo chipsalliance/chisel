@@ -88,6 +88,7 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
     }
   }
 
+
   "Naming on iterables" should "work" in {
 
     class Test extends MultiIOModule {
@@ -185,7 +186,6 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
   "Unapply assignments" should "still be named" in {
     class Test extends MultiIOModule {
       {
-        @treedump
         val (a, b) = (Wire(UInt(3.W)), Wire(UInt(3.W)))
       }
     }
@@ -193,6 +193,17 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
     aspectTest(() => new Test) {
       top: Test =>
         Select.wires(top).map(_.instanceName) should be (List("a", "b"))
+    }
+  }
+
+  "Recursive types" should "not infinitely loop" in {
+    // When this fails, it causes a StackOverflow when compiling the tests
+    // Unfortunately, this doesn't seem to work with assertCompiles(...), it probably ignores the
+    // custom project scalacOptions
+    def func(x: String) = {
+      // We only check types of vals, we don't actually want to run this code though
+      val y = scala.xml.XML.loadFile(x)
+      y
     }
   }
 }

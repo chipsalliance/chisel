@@ -44,23 +44,23 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
       // If subtype of Data or BaseModule, its a match!
       def terminate(t: Type): Boolean = bases.exists { base => t <:< inferType(base) }
 
-      // Detect recursive types
-      def loop(t: Type): Boolean = t <:< q
-
       // Recurse through subtype hierarchy finding containers
-      def recShouldMatch(s: Type): Boolean = {
+      // Seen is only updated when we recurse into type parameters, thus it is typically small
+      def recShouldMatch(s: Type, seen: Set[Type]): Boolean = {
         def outerMatches(t: Type): Boolean = {
           val str = t.toString
           str.startsWith("Option[") || str.startsWith("Iterable[")
         }
-        if(terminate(s)) {
+        if (terminate(s)) {
           true
-        } else if(outerMatches(s)) {
-          recShouldMatch(s.typeArgs.head)
-        } else if (loop(s)) {
+        } else if (seen.contains(s)) {
           false
+        } else if (outerMatches(s)) {
+          // These are type parameters, loops *are* possible here
+          recShouldMatch(s.typeArgs.head, seen + s)
         } else {
-          s.parents.exists( p => recShouldMatch(p) )
+          // This is the standard inheritance hierarchy, Scalac catches loops here
+          s.parents.exists( p => recShouldMatch(p, seen) )
         }
       }
 
@@ -75,7 +75,7 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
       } else if(earlyExit(q)) {
         false
       } else {
-        recShouldMatch(q)
+        recShouldMatch(q, Set.empty)
       }
     }
 
