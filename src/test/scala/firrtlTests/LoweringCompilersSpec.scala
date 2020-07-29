@@ -189,7 +189,11 @@ class LoweringCompilersSpec extends FlatSpec with Matchers {
 
   it should "replicate the old order" in {
     val tm = new TransformManager(Forms.LowForm, Forms.MidForm)
-    compare(legacyTransforms(new MiddleFirrtlToLowFirrtl), tm)
+    val patches = Seq(
+      // RemoveWires now visibly invalidates ResolveKinds
+      Add(11, Seq(Dependency(firrtl.passes.ResolveKinds)))
+    )
+    compare(legacyTransforms(new MiddleFirrtlToLowFirrtl), tm, patches)
   }
 
   behavior of "MinimumLowFirrtlOptimization"
