@@ -809,4 +809,45 @@ class RenameMapSpec extends FirrtlFlatSpec {
     r.delete(Mod)
     r.get(foo) should be (Some(Nil))
   }
+
+  it should "rename an instance if it has been renamed" in {
+    // this could happen if the instance name needed to be uniquified to avoid clashes in LowerTypes
+    val top = CircuitTarget("top").module("top")
+
+    val r = RenameMap()
+    val i = top.instOf("i", "child")
+    val i_ = top.instOf("i_", "child")
+    r.record(i, i_)
+    r.get(i) should be (Some(Seq(i_)))
+    r.get(i.ref("a")) should be (Some(Seq(i_.ref("a"))))
+  }
+
+  it should "rename references to an instance's ports if the ports of the module have been renamed" in {
+    // this could happen if the port name needed to be uniquified to avoid clashes in LowerTypes
+    val top = CircuitTarget("top").module("top")
+    val child = CircuitTarget("top").module("child")
+
+    val r = RenameMap()
+    r.record(child.ref("a"), Seq(child.ref("a_0"), child.ref("a_1")))
+    val i = top.instOf("i", "child")
+    r.get(i.ref("a")) should be (Some(Seq(i.ref("a_0"), i.ref("a_1"))))
+  }
+
+  it should "rename references to renamed instance's ports if the ports of the module have been renamed" in {
+    // this could happen if the instance as well as the port name needed to be uniquified to avoid clashes in LowerTypes
+    val top = CircuitTarget("top").module("top")
+    val child = CircuitTarget("top").module("child")
+
+    val portRenames = RenameMap()
+    portRenames.record(child.ref("a"), Seq(child.ref("a_0"), child.ref("a_1")))
+
+    val instanceRenames = RenameMap()
+    val i = top.instOf("i", "child")
+    val i_ = top.instOf("i_", "child")
+    instanceRenames.record(i, i_)
+
+    // The port and instance renames must be *explicitly* chained!
+    val r = portRenames.andThen(instanceRenames)
+    r.get(i.ref("a")) should be (Some(Seq(i_.ref("a_0"), i_.ref("a_1"))))
+  }
 }
