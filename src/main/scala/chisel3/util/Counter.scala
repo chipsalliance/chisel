@@ -35,7 +35,7 @@ class Counter private (r: Range) {
   def this(n: Int) { this(0 until math.max(1, n)) }
 
   /** The current value of the counter. */
-  val value = if (r.length > 1) RegInit(r.head.U(width.W)) else r.head.U
+  val value = if (r.length > 1) RegInit(r.head.U(width.W)) else WireInit(r.head.U)
 
   /** The range of the counter values. */
   def range: Range = r
@@ -69,6 +69,11 @@ class Counter private (r: Range) {
       true.B
     }
   }
+
+  /** Resets the counter to its initial value */
+  def reset(): Unit = {
+    value := r.head.U
+  }
 }
 
 object Counter
@@ -96,14 +101,21 @@ object Counter
     *
     * @param r the range of counter values
     * @param enable controls whether the counter increments this cycle
+    * @param reset resets the counter to its initial value during this cycle
     * @return tuple of the counter value and whether the counter will wrap (the value is at
     * maximum and the condition is true).
     */
   @chiselName
-  def apply(r: Range, enable: Bool = true.B): (UInt, Bool) = {
+  def apply(r: Range, enable: Bool = true.B, reset: Bool = false.B): (UInt, Bool) = {
     val c = new Counter(r)
     val wrap = WireInit(false.B)
-    when (enable) { wrap := c.inc() }
+
+    when(reset) {
+      c.reset()
+    }.elsewhen(enable) {
+      wrap := c.inc()
+    }
+
     (c.value, wrap)
   }
 }
