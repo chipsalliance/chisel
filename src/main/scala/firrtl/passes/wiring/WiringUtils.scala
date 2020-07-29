@@ -112,29 +112,39 @@ object WiringUtils {
     * @return a map of sink instance names to source instance names
     * @throws WiringException if a sink is equidistant to two sources
     */
-  def sinksToSources(sinks: Seq[Named],
+  @deprecated("This method can lead to non-determinism in your compiler pass. Use sinksToSourcesSeq instead!", "Firrtl 1.4")
+  def sinksToSources(sinks: Seq[Named], source: String, i: InstanceGraph): Map[Seq[WDefInstance], Seq[WDefInstance]] =
+    sinksToSourcesSeq(sinks, source, i).toMap
+
+  /** Return a map of sink instances to source instances that minimizes
+    * distance
+    *
+    * @param sinks a sequence of sink modules
+    * @param source the source module
+    * @param i a graph representing a circuit
+    * @return a map of sink instance names to source instance names
+    * @throws WiringException if a sink is equidistant to two sources
+    */
+  def sinksToSourcesSeq(sinks: Seq[Named],
                      source: String,
                      i: InstanceGraph):
-      Map[Seq[WDefInstance], Seq[WDefInstance]] = {
-    val owners = new mutable.HashMap[Seq[WDefInstance], Vector[Seq[WDefInstance]]]
-      .withDefaultValue(Vector())
+      Seq[(Seq[WDefInstance], Seq[WDefInstance])] = {
+    // The order of owners influences the order of the results, it thus needs to be deterministic with a  LinkedHashMap.
+    val owners = new mutable.LinkedHashMap[Seq[WDefInstance], Vector[Seq[WDefInstance]]]
     val queue = new mutable.Queue[Seq[WDefInstance]]
     val visited = new mutable.HashMap[Seq[WDefInstance], Boolean]
       .withDefaultValue(false)
 
-    i.fullHierarchy.keys.filter { case WDefInstance(_,_,m,_) => m == source }
-      .foreach( i.fullHierarchy(_)
-                 .foreach { l =>
-                   queue.enqueue(l)
-                   owners(l) = Vector(l)
-                 }
-      )
+    val sourcePaths = i.fullHierarchy.collect { case (k,v) if k.module == source =>  v }
+    sourcePaths.flatten.foreach { l =>
+      queue.enqueue(l)
+      owners(l) = Vector(l)
+    }
 
-    val sinkInsts = i.fullHierarchy.keys
-      .filter { case WDefInstance(_, _, module, _) =>
-        sinks.map(getModuleName(_)).contains(module) }
-      .flatMap { k => i.fullHierarchy(k)          }
-      .toSet
+    val sinkModuleNames = sinks.map(getModuleName).toSet
+    val sinkPaths = i.fullHierarchy.collect { case (k,v) if sinkModuleNames.contains(k.module) => v }
+    // sinkInsts needs to have unique entries but is also iterated over which is why we use a LinkedHashSet
+    val sinkInsts = mutable.LinkedHashSet() ++ sinkPaths.flatten
 
     /** If we're lucky and there is only one source, then that source owns
       * all sinks. If we're unlucky, we need to do a full (slow) BFS
@@ -161,7 +171,7 @@ object WiringUtils {
         edges
           .filter( e => !visited(e) && e.nonEmpty )
           .foreach{ v =>
-            owners(v) = owners(v) ++ owners(u)
+            owners(v) = owners.getOrElse(v, Vector()) ++ owners(u)
             queue.enqueue(v)
           }
       }
@@ -175,8 +185,7 @@ object WiringUtils {
       }
     }
 
-    owners
-      .collect { case (k, v) if sinkInsts.contains(k) => (k, v.flatten) }.toMap
+    owners.collect { case (k, v) if sinkInsts.contains(k) => (k, v.flatten) }.toSeq
   }
 
   /** Helper script to extract a module name from a named Module or Target */

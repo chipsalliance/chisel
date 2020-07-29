@@ -81,24 +81,28 @@ class Wiring(wiSeq: Seq[WiringInfo]) extends Pass {
         case (a, (c, m)) => a ++ Map(m -> (Seq(c) ++ a.getOrElse(m, Nil)) ) }
 
     // Determine "ownership" of sources to sinks via minimum distance
-    val owners = sinksToSources(sinks, source, iGraph)
+    val owners = sinksToSourcesSeq(sinks, source, iGraph)
 
     // Determine port and pending modifications for all sink--source
     // ownership pairs
     val meta = new mutable.HashMap[String, Modifications]
       .withDefaultValue(Modifications())
+
+    // only make something a wire if it isn't an output or input already
+    def makeWire(m: Modifications, portName: String): Modifications =
+      m.copy(addPortOrWire = Some(m.addPortOrWire.getOrElse((portName, DecWire))))
+    def makeWireC(m: Modifications, portName: String, c: (String, String)): Modifications =
+      m.copy(addPortOrWire = Some(m.addPortOrWire.getOrElse((portName, DecWire))), cons = (m.cons :+ c).distinct )
+
     owners.foreach { case (sink, source) =>
       val lca = iGraph.lowestCommonAncestor(sink, source)
 
       // Compute metadata along Sink to LCA paths.
-      sink.drop(lca.size - 1).sliding(2).toList.reverse.map {
+      sink.drop(lca.size - 1).sliding(2).toList.reverse.foreach {
         case Seq(WDefInstance(_,_,pm,_), WDefInstance(_,ci,cm,_)) =>
           val to = s"$ci.${portNames(cm)}"
           val from = s"${portNames(pm)}"
-          meta(pm) = meta(pm).copy(
-            addPortOrWire = Some((portNames(pm), DecWire)),
-            cons = (meta(pm).cons :+( (to, from) )).distinct
-          )
+          meta(pm) = makeWireC(meta(pm), portNames(pm), (to, from))
           meta(cm) = meta(cm).copy(
             addPortOrWire = Some((portNames(cm), DecInput))
           )
@@ -106,17 +110,12 @@ class Wiring(wiSeq: Seq[WiringInfo]) extends Pass {
         case Seq(WDefInstance(_,_,pm,_)) =>
           // Case where the source is also the LCA
           if (source.drop(lca.size).isEmpty) {
-            meta(pm) = meta(pm).copy (
-              addPortOrWire = Some((portNames(pm), DecWire))
-            )
+            meta(pm) = makeWire(meta(pm), portNames(pm))
           } else {
             val WDefInstance(_,ci,cm,_) = source.drop(lca.size).head
             val to = s"${portNames(pm)}"
             val from = s"$ci.${portNames(cm)}"
-            meta(pm) = meta(pm).copy(
-              addPortOrWire = Some((portNames(pm), DecWire)),
-              cons = (meta(pm).cons :+( (to, from) )).distinct
-            )
+            meta(pm) = makeWireC(meta(pm), portNames(pm), (to, from))
           }
       }
 
