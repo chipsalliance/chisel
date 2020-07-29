@@ -112,7 +112,7 @@ class NamingTransforms(val c: Context) {
     }
   }
 
-  /** Applies the val name transform to a class body. 
+  /** Applies the val name transform to a class body.
     * Closes context on top level or return local context to englobing context.
     * Closing context only makes sense when top level a Module.
     * A Module is always the naming top level.
@@ -128,7 +128,7 @@ class NamingTransforms(val c: Context) {
     if($globalNamingStack.length == 1){
       $contextVar.namePrefix("")
     }
-    $globalNamingStack.popReturnContext(this, $contextVar) 
+    $globalNamingStack.popReturnContext(this, $contextVar)
     """
   }
 

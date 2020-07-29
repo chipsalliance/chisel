@@ -1,0 +1,4 @@
+<plugin>
+    <name>chiselplugin</name>
+    <classname>plugin.ChiselPlugin</classname>
+</plugin>
