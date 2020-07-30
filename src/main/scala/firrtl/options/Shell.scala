@@ -29,7 +29,7 @@ class Shell(val applicationName: String) {
       lib.addOptions(parser)
     }
 
-    libraries
+    libraries.toSeq
   }
 
   /** Contains all discovered [[RegisteredTransform]] */
@@ -43,7 +43,7 @@ class Shell(val applicationName: String) {
       tx.addOptions(parser)
     }
 
-    transforms
+    transforms.toSeq
   }
 
   /** The [[AnnotationSeq]] generated from command line arguments

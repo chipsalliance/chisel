@@ -89,7 +89,7 @@ trait IdentityLike[A] { this: TransformLike[A] =>
     * @param a an input object
     * @return nothing
     */
-  protected def internalTransform(a: A): Unit = Unit
+  protected def internalTransform(a: A): Unit = ()
 
   /** This method will execute `internalTransform` and then return the original input object
     * @param a an input object

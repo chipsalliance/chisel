@@ -94,7 +94,7 @@ class DeadCodeElimination extends Transform
       e
     }
     rec(expr)
-    refs
+    refs.toSeq
   }
 
   // Gets all dependencies and constructs LogicNodes from them

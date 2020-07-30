@@ -299,7 +299,7 @@ object Utils extends LazyLogging {
       expr
     }
     onExp(expression)
-    ReferenceTarget(main, module, Nil, ref, tokens)
+    ReferenceTarget(main, module, Nil, ref, tokens.toSeq)
   }
    @deprecated("get_flip is fundamentally slow, use to_flip(flow(expr))", "1.2")
    def get_flip(t: Type, i: Int, f: Orientation): Orientation = {
@@ -358,7 +358,7 @@ object Utils extends LazyLogging {
       e
     }
     e map addKids
-    kids
+    kids.toSeq
   }
 
   /** Walks two expression trees and returns a sequence of tuples of where they differ */

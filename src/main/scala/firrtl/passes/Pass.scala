@@ -23,6 +23,6 @@ class Errors {
     case 1 => throw errors.head
     case _ =>
       append(new PassException(s"${errors.length} errors detected!"))
-      throw new PassExceptions(errors)
+      throw new PassExceptions(errors.toSeq)
   }
 }

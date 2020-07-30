@@ -1,6 +1,8 @@
 language: scala
 sudo: false
 
+jdk: openjdk8
+
 cache:
   directories:
     $HOME/.cache/coursier
@@ -60,6 +62,13 @@ jobs:
         use: firrtl_build
       script:
         - sbt $SBT_ARGS +unidoc
+    - stage: test
+      name: "Tests: FIRRTL (2.13)"
+      workspaces:
+        use: firrtl_build
+      script:
+        - verilator --version
+        - sbt ++2.13.2 $SBT_ARGS test
     - stage: test
       name: "Tests: FIRRTL (2.12)"
       workspaces:

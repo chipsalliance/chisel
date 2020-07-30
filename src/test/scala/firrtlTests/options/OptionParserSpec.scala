@@ -40,7 +40,7 @@ class OptionParserSpec extends AnyFlatSpec with Matchers with firrtl.testutils.U
     catchStatus { parser.terminate(Left("some message")) } should be (Left(1))
 
     info("exit status of 0 for success")
-    catchStatus { parser.terminate(Right(Unit)) } should be (Left(0))
+    catchStatus { parser.terminate(Right(())) } should be (Left(0))
   }
 
   it should "print to stderr on an invalid option" in new WithIntParser {
@@ -56,7 +56,7 @@ class OptionParserSpec extends AnyFlatSpec with Matchers with firrtl.testutils.U
     catchStatus { parser.terminate(Left("some message")) } should be (Right(()))
 
     info("no exit for success")
-    catchStatus { parser.terminate(Right(Unit)) } should be (Right(()))
+    catchStatus { parser.terminate(Right(())) } should be (Right(()))
   }
 
   behavior of "An OptionParser with DuplicateHandling mixed in"

@@ -168,7 +168,7 @@ object RemoveAccesses extends Pass {
           case sxx => sxx map fixSource map onStmt
         }
         stmts += sx
-        if (stmts.size != 1) Block(stmts) else stmts(0)
+        if (stmts.size != 1) Block(stmts.toSeq) else stmts(0)
       }
       Module(m.info, m.name, m.ports, squashEmpty(onStmt(m.body)))
     }

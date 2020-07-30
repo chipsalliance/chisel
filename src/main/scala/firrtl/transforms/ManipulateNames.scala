@@ -141,17 +141,21 @@ private class RenameDataStructure(
   val namespaces: mutable.HashMap[CompleteTarget, Namespace] =
     mutable.HashMap(CircuitTarget(circuit.main) -> Namespace(circuit))
 
+  /** Wraps a HashMap to provide better error messages when accessing a non-existing element  */
+  class InstanceHashMap {
+    type Key = ReferenceTarget
+    type Value = Either[ReferenceTarget, InstanceTarget]
+    private val m = mutable.HashMap[Key, Value]()
+    def apply(key: ReferenceTarget):  Value = m.getOrElse(key, {
+      throw new FirrtlUserException(
+        s"""|Reference target '${key.serialize}' did not exist in mapping of reference targets to insts/mems.
+            |    This is indicative of a circuit that has not been run through LowerTypes.""".stripMargin)
+    })
+    def update(key: Key, value: Value): Unit = m.update(key, value)
+  }
+
   /** A mapping of a reference to either an instance or a memory (encoded as a [[ReferenceTarget]] */
-  val instanceMap: mutable.HashMap[ReferenceTarget, Either[ReferenceTarget, InstanceTarget]] =
-    new mutable.HashMap[ReferenceTarget, Either[ReferenceTarget, InstanceTarget]] {
-      override def apply(a: ReferenceTarget) = try {
-        super.apply(a)
-      } catch {
-        case t: NoSuchElementException => throw new FirrtlUserException(
-          s"""|Reference target '${a.serialize}' did not exist in mapping of reference targets to insts/mems.
-              |    This is indicative of a circuit that has not been run through LowerTypes.""".stripMargin, t)
-      }
-    }
+  val instanceMap: InstanceHashMap = new InstanceHashMap
 
   /** Return true if a target should be skipped based on allow and block parameters */
   def skip(a: Target): Boolean = block(a) || !allow(a)

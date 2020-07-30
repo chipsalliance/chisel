@@ -90,7 +90,7 @@ object InferResets {
           tokens.groupBy { case (TargetToken.Field(n) +: t, _) => n }
                 .mapValues { ts =>
                   fromTokens(ts.map { case (_ +: t, tpe) => (t, tpe) }:_*)
-                }
+                }.toMap
         BundleTree(fields)
     }
   }
@@ -281,7 +281,7 @@ class InferResets extends Transform with DependencyAPIMigration {
   private def makeDeclMap(map: Map[ReferenceTarget, Type]): Map[String, TypeTree] =
     map.groupBy(_._1.ref).mapValues { ts =>
       TypeTree.fromTokens(ts.toSeq.map { case (target, tpe) => (target.component, tpe) }:_*)
-    }
+    }.toMap
 
   private def implPort(map: Map[String, TypeTree])(port: Port): Port =
     map.get(port.name)

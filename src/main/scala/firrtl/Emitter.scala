@@ -126,7 +126,7 @@ sealed abstract class FirrtlEmitter(form: CircuitForm) extends Transform with Em
         case other => other.foreach(onStmt)
       }
       onStmt(mod.body)
-      modules.distinct
+      modules.distinct.toSeq
     }
     val modMap = circuit.modules.map(m => m.name -> m).toMap
     // Turn each module into it's own circuit with it as the top and all instantied modules as ExtModules
@@ -171,9 +171,9 @@ case class VRandom(width: BigInt) extends Expression {
   def mapExpr(f: Expression => Expression): Expression = this
   def mapType(f: Type => Type): Expression = this
   def mapWidth(f: Width => Width): Expression = this
-  def foreachExpr(f: Expression => Unit): Unit = Unit
-  def foreachType(f: Type => Unit): Unit = Unit
-  def foreachWidth(f: Width => Unit): Unit = Unit
+  def foreachExpr(f: Expression => Unit): Unit = ()
+  def foreachType(f: Type => Unit): Unit = ()
+  def foreachWidth(f: Width => Unit): Unit = ()
 }
 
 class VerilogEmitter extends SeqTransform with Emitter {
@@ -470,13 +470,15 @@ class VerilogEmitter extends SeqTransform with Emitter {
     * Store Emission option per Target
     * Guarantee only one emission option per Target 
     */
-  private[firrtl] class EmissionOptionMap[V <: EmissionOption](val df : V) extends collection.mutable.HashMap[ReferenceTarget, V] {
-    override def default(key: ReferenceTarget) = df
-    override def +=(elem : (ReferenceTarget, V)) : EmissionOptionMap.this.type = {
-      if (this.contains(elem._1))
-        throw EmitterException(s"Multiple EmissionOption for the target ${elem._1} (${this(elem._1)} ; ${elem._2})")
-      super.+=(elem)
-    } 
+  private[firrtl] class EmissionOptionMap[V <: EmissionOption](val df : V) {
+    private val m = collection.mutable.HashMap[ReferenceTarget, V]().withDefaultValue(df)
+    def +=(elem : (ReferenceTarget, V)) : EmissionOptionMap.this.type = {
+      if (m.contains(elem._1))
+        throw EmitterException(s"Multiple EmissionOption for the target ${elem._1} (${m(elem._1)} ; ${elem._2})")
+      m += (elem)
+      this
+    }
+    def apply(key: ReferenceTarget): V = m.apply(key)
   }
   
   /** Provide API to retrieve EmissionOptions based on the provided [[AnnotationSeq]]
@@ -540,10 +542,10 @@ class VerilogEmitter extends SeqTransform with Emitter {
                       circuitName: String,
                       emissionOptions: EmissionOptions)(implicit writer: Writer) {
 
-    def this(m: Module, moduleMap: Map[String, DefModule], circuitName: String, emissionOptions: EmissionOptions)(implicit writer: Writer) {
+    def this(m: Module, moduleMap: Map[String, DefModule], circuitName: String, emissionOptions: EmissionOptions)(implicit writer: Writer) = {
       this(Seq(), Map.empty, m, moduleMap, circuitName, emissionOptions)(writer)
     }
-    def this(m: Module, moduleMap: Map[String, DefModule])(implicit writer: Writer) {
+    def this(m: Module, moduleMap: Map[String, DefModule])(implicit writer: Writer) = {
       this(Seq(), Map.empty, m, moduleMap, "", new EmissionOptions(Seq.empty))(writer)
     }
 

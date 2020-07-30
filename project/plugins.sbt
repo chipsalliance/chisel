@@ -18,7 +18,7 @@ addSbtPlugin("com.simplytyped" % "sbt-antlr4" % "0.8.2")
 
 addSbtPlugin("com.github.gseitz" % "sbt-protobuf" % "0.6.5")
 
-addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.9.15")
+addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.9.19")
 
 addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "3.0.0")
 
