@@ -41,6 +41,8 @@ object Module extends SourceInfoDoc {
 
     // Save then clear clock and reset to prevent leaking scope, must be set again in the Module
     val (saveClock, saveReset)  = (Builder.currentClock, Builder.currentReset)
+    val savePrefix = Builder.getPrefix()
+    Builder.clearPrefix()
     Builder.currentClock = None
     Builder.currentReset = None
 
@@ -66,6 +68,8 @@ object Module extends SourceInfoDoc {
 
     val component = module.generateComponent()
     Builder.components += component
+
+    Builder.setPrefix(savePrefix)
 
     // Handle connections at enclosing scope
     if(!Builder.currentModule.isEmpty) {
