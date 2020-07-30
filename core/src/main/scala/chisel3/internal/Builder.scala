@@ -426,14 +426,6 @@ private[chisel3] object Builder {
   // Returns the prefix stack at this moment
   def getPrefix(): Prefix = chiselContext.get().prefixStack.toList.asInstanceOf[Prefix]
 
-  def addInstance(key: InstanceKey, instance: BlackBox): Unit = {
-    chiselContext.get.instanceMap(key) = instance
-  }
-
-  def getInstance(key: InstanceKey): BlackBox = {
-    chiselContext.get.instanceMap(key)
-  }
-
   def currentModule: Option[BaseModule] = dynamicContextVar.value match {
     case Some(dyanmicContext) => dynamicContext.currentModule
     case _ => None
