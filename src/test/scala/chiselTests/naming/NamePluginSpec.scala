@@ -7,9 +7,6 @@ import chisel3.aop.Select
 import chisel3.experimental.{prefix, treedump}
 import chiselTests.{ChiselFlatSpec, Utils}
 
-import scala.tools.nsc.settings.ScalaVersion
-
-
 class NamePluginSpec extends ChiselFlatSpec with Utils {
   implicit val minimumScalaVersion: Int = 12
 

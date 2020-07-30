@@ -164,7 +164,7 @@ lazy val plugin = (project in file("plugin")).
 
 lazy val usePluginSettings = Seq(
   scalacOptions in Compile ++= {
-    val jar = (Keys.`package` in (plugin, Compile)).value
+    val jar = (plugin / Compile / Keys.`package`).value
     val addPlugin = "-Xplugin:" + jar.getAbsolutePath
     // add plugin timestamp to compiler options to trigger recompile of
     // main after editing the plugin. (Otherwise a 'clean' is needed.)
@@ -213,7 +213,6 @@ lazy val chisel = (project in file(".")).
   settings(usePluginSettings: _*).
   dependsOn(macros).
   dependsOn(core).
-  dependsOn(plugin).
   aggregate(macros, core, plugin).
   settings(
     scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
