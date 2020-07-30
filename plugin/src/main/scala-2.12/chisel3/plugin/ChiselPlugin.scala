@@ -1,6 +1,6 @@
 // See LICENSE for license details.
 
-package plugin
+package chisel3.plugin
 
 import scala.tools.nsc
 import nsc.{Global, Phase}
