@@ -216,6 +216,6 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
         val x = Output(UInt(blah.W))
       }))
     }
-    elaborate { new TestModule(3) }
+    ChiselStage.elaborate { new TestModule(3) }
   }
 }
