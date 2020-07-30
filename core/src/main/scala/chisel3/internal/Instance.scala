@@ -10,8 +10,8 @@ import scala.collection.mutable
 case class InstanceKey(name: String, parentModule: Long, module: Long)
 
 object Instance {
-  def apply[T <: BaseModule](module: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
-    createInstance(module, None)
+  def apply[T <: BaseModule](module: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions, valName: ValName): T = {
+    createInstance(module, Some(valName.name))
   }
   def createInstance[T <: BaseModule](module: T, name: Option[String])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     require(name.isDefined)

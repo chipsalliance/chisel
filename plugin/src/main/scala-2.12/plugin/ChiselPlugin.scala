@@ -114,6 +114,31 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
     // Method called by the compiler to modify source tree
     override def transform(tree: Tree): Tree = tree match {
       // If a Data and in a Bundle, just get the name but not a prefix
+      //case dd @ ValDef(mods, name, tpt, pq"chisel3.internal.Instance.apply[$t]($other)") if other.tpe <:< inferType(tq"chisel3.experimental.BaseModule") =>
+      //case pq"chisel3.internal.Instance.apply[$t]($module)" =>
+      //  error("Matched on patterned instance apply")
+      //  println(showRaw(module))
+      //  println(show(module))
+      //  ???
+      //case dd @ ValDef(mods, name, tpt, other) if other.toString.contains("Instance") && other.toString.contains("simple") =>
+      //  error("Matched on instance apply")
+      //  println(showRaw(other))
+      //  println(show(other))
+      //  super.transform(dd)
+      case dd @ Select(quals, data) if quals.tpe <:< inferType(tq"chisel3.experimental.BaseModule") && dd.tpe <:< inferType(tq"chisel3.Data") => //&& dd.toString.contains("SIMPLE") =>
+        //println("Matched on name, base type, member type")
+        //println(showRaw(dd))
+        val ret = quals match {
+          case Select(_, TermName(name)) =>
+            localTyper typed q"$quals.useInstance($name)($dd)"
+          case other =>
+            //error("BAD - didn't match on second select")
+            //println(show(dd))
+            dd
+        }
+        //println(showRaw(ret))
+        //error("BAD")
+        ret
       case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd, tq"chisel3.Data") && inBundle(dd) =>
         val TermName(str: String) = name
         val newRHS = super.transform(rhs)

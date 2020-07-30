@@ -385,8 +385,8 @@ private[chisel3] object Builder {
     chiselContext.get.instanceMap(key) = instance
   }
 
-  def getInstance(key: InstanceKey): BlackBox = {
-    chiselContext.get.instanceMap(key)
+  def getInstance(key: InstanceKey): Option[BlackBox] = {
+    chiselContext.get.instanceMap.get(key)
   }
 
   // Puts either a prefix string or hasId onto the prefix stack
