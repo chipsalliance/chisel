@@ -79,7 +79,7 @@ case class Attribute(string: StringLit) extends Description {
   * @param stmt the encapsulated statement
   */
 private case class DescribedStmt(descriptions: Seq[Description], stmt: Statement) extends Statement with HasDescription {
-  def serialize: String = s"${descriptions.map(_.serialize).mkString("\n")}\n${stmt.serialize}"
+  override def serialize: String = s"${descriptions.map(_.serialize).mkString("\n")}\n${stmt.serialize}"
   def mapStmt(f: Statement => Statement): Statement = f(stmt)
   def mapExpr(f: Expression => Expression): Statement = this.copy(stmt = stmt.mapExpr(f))
   def mapType(f: Type => Type): Statement = this.copy(stmt = stmt.mapType(f))
@@ -104,7 +104,7 @@ private case class DescribedMod(descriptions: Seq[Description],
   val info = mod.info
   val name = mod.name
   val ports = mod.ports
-  def serialize: String = s"${descriptions.map(_.serialize).mkString("\n")}\n${mod.serialize}"
+  override def serialize: String = s"${descriptions.map(_.serialize).mkString("\n")}\n${mod.serialize}"
   def mapStmt(f: Statement => Statement): DefModule = this.copy(mod = mod.mapStmt(f))
   def mapPort(f: Port => Port): DefModule = this.copy(mod = mod.mapPort(f))
   def mapString(f: String => String): DefModule = this.copy(mod = mod.mapString(f))

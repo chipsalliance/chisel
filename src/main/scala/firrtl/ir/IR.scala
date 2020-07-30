@@ -3,7 +3,7 @@
 package firrtl
 package ir
 
-import Utils.{dec2string, indent, trim}
+import Utils.{dec2string, trim}
 import firrtl.constraint.{Constraint, IsKnown, IsVar}
 import org.apache.commons.text.translate.{AggregateTranslator, JavaUnicodeEscaper, LookupTranslator}
 
@@ -17,7 +17,7 @@ abstract class FirrtlNode {
 
 abstract class Info extends FirrtlNode {
   // default implementation
-  def serialize: String = this.toString
+  def serialize: String = Serializer.serialize(this)
   def ++(that: Info): Info
 }
 case object NoInfo extends Info {
@@ -194,6 +194,7 @@ abstract class PrimOp extends FirrtlNode {
 }
 
 abstract class Expression extends FirrtlNode {
+  def serialize: String = Serializer.serialize(this)
   def tpe: Type
   def mapExpr(f: Expression => Expression): Expression
   def mapType(f: Type => Type): Expression
@@ -220,7 +221,6 @@ object Reference {
 
 case class Reference(name: String, tpe: Type = UnknownType, kind: Kind = UnknownKind, flow: Flow = UnknownFlow)
     extends Expression with HasName {
-  def serialize: String = name
   def mapExpr(f: Expression => Expression): Expression = this
   def mapType(f: Type => Type): Expression = this.copy(tpe = f(tpe))
   def mapWidth(f: Width => Width): Expression = this
@@ -231,7 +231,6 @@ case class Reference(name: String, tpe: Type = UnknownType, kind: Kind = Unknown
 
 case class SubField(expr: Expression, name: String, tpe: Type = UnknownType, flow: Flow = UnknownFlow)
     extends Expression with HasName {
-  def serialize: String = s"${expr.serialize}.$name"
   def mapExpr(f: Expression => Expression): Expression = this.copy(expr = f(expr))
   def mapType(f: Type => Type): Expression = this.copy(tpe = f(tpe))
   def mapWidth(f: Width => Width): Expression = this
@@ -242,7 +241,6 @@ case class SubField(expr: Expression, name: String, tpe: Type = UnknownType, flo
 
 case class SubIndex(expr: Expression, value: Int, tpe: Type, flow: Flow = UnknownFlow)
     extends Expression {
-  def serialize: String = s"${expr.serialize}[$value]"
   def mapExpr(f: Expression => Expression): Expression = this.copy(expr = f(expr))
   def mapType(f: Type => Type): Expression = this.copy(tpe = f(tpe))
   def mapWidth(f: Width => Width): Expression = this
@@ -253,7 +251,6 @@ case class SubIndex(expr: Expression, value: Int, tpe: Type, flow: Flow = Unknow
 
 case class SubAccess(expr: Expression, index: Expression, tpe: Type, flow: Flow = UnknownFlow)
     extends Expression {
-  def serialize: String = s"${expr.serialize}[${index.serialize}]"
   def mapExpr(f: Expression => Expression): Expression = this.copy(expr = f(expr), index = f(index))
   def mapType(f: Type => Type): Expression = this.copy(tpe = f(tpe))
   def mapWidth(f: Width => Width): Expression = this
@@ -263,7 +260,6 @@ case class SubAccess(expr: Expression, index: Expression, tpe: Type, flow: Flow 
 }
 
 case class Mux(cond: Expression, tval: Expression, fval: Expression, tpe: Type = UnknownType) extends Expression {
-  def serialize: String = s"mux(${cond.serialize}, ${tval.serialize}, ${fval.serialize})"
   def mapExpr(f: Expression => Expression): Expression = Mux(f(cond), f(tval), f(fval), tpe)
   def mapType(f: Type => Type): Expression = this.copy(tpe = f(tpe))
   def mapWidth(f: Width => Width): Expression = this
@@ -272,7 +268,6 @@ case class Mux(cond: Expression, tval: Expression, fval: Expression, tpe: Type =
   def foreachWidth(f: Width => Unit): Unit = ()
 }
 case class ValidIf(cond: Expression, value: Expression, tpe: Type) extends Expression {
-  def serialize: String = s"validif(${cond.serialize}, ${value.serialize})"
   def mapExpr(f: Expression => Expression): Expression = ValidIf(f(cond), f(value), tpe)
   def mapType(f: Type => Type): Expression = this.copy(tpe = f(tpe))
   def mapWidth(f: Width => Width): Expression = this
@@ -286,7 +281,6 @@ abstract class Literal extends Expression {
 }
 case class UIntLiteral(value: BigInt, width: Width) extends Literal {
   def tpe = UIntType(width)
-  def serialize = s"""UInt${width.serialize}("h""" + value.toString(16)+ """")"""
   def mapExpr(f: Expression => Expression): Expression = this
   def mapType(f: Type => Type): Expression = this
   def mapWidth(f: Width => Width): Expression = UIntLiteral(value, f(width))
@@ -309,7 +303,6 @@ object UIntLiteral {
 }
 case class SIntLiteral(value: BigInt, width: Width) extends Literal {
   def tpe = SIntType(width)
-  def serialize = s"""SInt${width.serialize}("h""" + value.toString(16)+ """")"""
   def mapExpr(f: Expression => Expression): Expression = this
   def mapType(f: Type => Type): Expression = this
   def mapWidth(f: Width => Width): Expression = SIntLiteral(value, f(width))
@@ -323,10 +316,6 @@ object SIntLiteral {
 }
 case class FixedLiteral(value: BigInt, width: Width, point: Width) extends Literal {
   def tpe = FixedType(width, point)
-  def serialize = {
-    val pstring = if(point == UnknownWidth) "" else s"<${point.serialize}>"
-    s"""Fixed${width.serialize}$pstring("h${value.toString(16)}")"""
-  }
   def mapExpr(f: Expression => Expression): Expression = this
   def mapType(f: Type => Type): Expression = this
   def mapWidth(f: Width => Width): Expression = FixedLiteral(value, f(width), f(point))
@@ -335,8 +324,6 @@ case class FixedLiteral(value: BigInt, width: Width, point: Width) extends Liter
   def foreachWidth(f: Width => Unit): Unit = { f(width); f(point) }
 }
 case class DoPrim(op: PrimOp, args: Seq[Expression], consts: Seq[BigInt], tpe: Type) extends Expression {
-  def serialize: String = op.serialize + "(" +
-    (args.map(_.serialize) ++ consts.map(_.toString)).mkString(", ") + ")"
   def mapExpr(f: Expression => Expression): Expression = this.copy(args = args map f)
   def mapType(f: Type => Type): Expression = this.copy(tpe = f(tpe))
   def mapWidth(f: Width => Width): Expression = this
@@ -346,6 +333,7 @@ case class DoPrim(op: PrimOp, args: Seq[Expression], consts: Seq[BigInt], tpe: T
 }
 
 abstract class Statement extends FirrtlNode {
+  def serialize: String = Serializer.serialize(this)
   def mapStmt(f: Statement => Statement): Statement
   def mapExpr(f: Expression => Expression): Statement
   def mapType(f: Type => Type): Statement
@@ -358,7 +346,6 @@ abstract class Statement extends FirrtlNode {
   def foreachInfo(f: Info => Unit): Unit
 }
 case class DefWire(info: Info, name: String, tpe: Type) extends Statement with IsDeclaration {
-  def serialize: String = s"wire $name : ${tpe.serialize}" + info.serialize
   def mapStmt(f: Statement => Statement): Statement = this
   def mapExpr(f: Expression => Expression): Statement = this
   def mapType(f: Type => Type): Statement = DefWire(info, name, f(tpe))
@@ -377,9 +364,6 @@ case class DefRegister(
     clock: Expression,
     reset: Expression,
     init: Expression) extends Statement with IsDeclaration {
-  def serialize: String =
-    s"reg $name : ${tpe.serialize}, ${clock.serialize} with :" +
-    indent("\n" + s"reset => (${reset.serialize}, ${init.serialize})" + info.serialize)
   def mapStmt(f: Statement => Statement): Statement = this
   def mapExpr(f: Expression => Expression): Statement =
     DefRegister(info, name, tpe, f(clock), f(reset), f(init))
@@ -399,7 +383,6 @@ object DefInstance {
 
 case class DefInstance(info: Info, name: String, module: String, tpe: Type = UnknownType)
     extends Statement with IsDeclaration {
-  def serialize: String = s"inst $name of $module" + info.serialize
   def mapExpr(f: Expression => Expression): Statement = this
   def mapStmt(f: Statement => Statement): Statement = this
   def mapType(f: Type => Type): Statement = this.copy(tpe = f(tpe))
@@ -430,17 +413,6 @@ case class DefMemory(
     readwriters: Seq[String],
     // TODO: handle read-under-write
     readUnderWrite: ReadUnderWrite.Value = ReadUnderWrite.Undefined) extends Statement with IsDeclaration {
-  def serialize: String =
-    s"mem $name :" + info.serialize +
-    indent(
-      (Seq("\ndata-type => " + dataType.serialize,
-          "depth => " + depth,
-          "read-latency => " + readLatency,
-          "write-latency => " + writeLatency) ++
-          (readers map ("reader => " + _)) ++
-          (writers map ("writer => " + _)) ++
-          (readwriters map ("readwriter => " + _)) ++
-       Seq(s"read-under-write => ${readUnderWrite}")) mkString "\n")
   def mapStmt(f: Statement => Statement): Statement = this
   def mapExpr(f: Expression => Expression): Statement = this
   def mapType(f: Type => Type): Statement = this.copy(dataType = f(dataType))
@@ -453,7 +425,6 @@ case class DefMemory(
   def foreachInfo(f: Info => Unit): Unit = f(info)
 }
 case class DefNode(info: Info, name: String, value: Expression) extends Statement with IsDeclaration {
-  def serialize: String = s"node $name = ${value.serialize}" + info.serialize
   def mapStmt(f: Statement => Statement): Statement = this
   def mapExpr(f: Expression => Expression): Statement = DefNode(info, name, f(value))
   def mapType(f: Type => Type): Statement = this
@@ -470,11 +441,6 @@ case class Conditionally(
     pred: Expression,
     conseq: Statement,
     alt: Statement) extends Statement with HasInfo {
-  def serialize: String =
-    s"when ${pred.serialize} :" + info.serialize +
-    indent("\n" + conseq.serialize) +
-    (if (alt == EmptyStmt) ""
-    else "\nelse :" + indent("\n" + alt.serialize))
   def mapStmt(f: Statement => Statement): Statement = Conditionally(info, pred, f(conseq), f(alt))
   def mapExpr(f: Expression => Expression): Statement = Conditionally(info, f(pred), conseq, alt)
   def mapType(f: Type => Type): Statement = this
@@ -492,10 +458,6 @@ object Block {
 }
 
 case class Block(stmts: Seq[Statement]) extends Statement {
-  def serialize: String = {
-    val res = stmts.view.map(_.serialize).mkString("\n")
-    if (res.nonEmpty) res else EmptyStmt.serialize
-  }
   def mapStmt(f: Statement => Statement): Statement = {
     val res = new scala.collection.mutable.ArrayBuffer[Statement]()
     var its = stmts.iterator :: Nil
@@ -526,7 +488,6 @@ case class Block(stmts: Seq[Statement]) extends Statement {
   def foreachInfo(f: Info => Unit): Unit = ()
 }
 case class PartialConnect(info: Info, loc: Expression, expr: Expression) extends Statement with HasInfo {
-  def serialize: String =  s"${loc.serialize} <- ${expr.serialize}" + info.serialize
   def mapStmt(f: Statement => Statement): Statement = this
   def mapExpr(f: Expression => Expression): Statement = PartialConnect(info, f(loc), f(expr))
   def mapType(f: Type => Type): Statement = this
@@ -539,7 +500,6 @@ case class PartialConnect(info: Info, loc: Expression, expr: Expression) extends
   def foreachInfo(f: Info => Unit): Unit = f(info)
 }
 case class Connect(info: Info, loc: Expression, expr: Expression) extends Statement with HasInfo {
-  def serialize: String =  s"${loc.serialize} <= ${expr.serialize}" + info.serialize
   def mapStmt(f: Statement => Statement): Statement = this
   def mapExpr(f: Expression => Expression): Statement = Connect(info, f(loc), f(expr))
   def mapType(f: Type => Type): Statement = this
@@ -552,7 +512,6 @@ case class Connect(info: Info, loc: Expression, expr: Expression) extends Statem
   def foreachInfo(f: Info => Unit): Unit = f(info)
 }
 case class IsInvalid(info: Info, expr: Expression) extends Statement with HasInfo {
-  def serialize: String =  s"${expr.serialize} is invalid" + info.serialize
   def mapStmt(f: Statement => Statement): Statement = this
   def mapExpr(f: Expression => Expression): Statement = IsInvalid(info, f(expr))
   def mapType(f: Type => Type): Statement = this
@@ -565,7 +524,6 @@ case class IsInvalid(info: Info, expr: Expression) extends Statement with HasInf
   def foreachInfo(f: Info => Unit): Unit = f(info)
 }
 case class Attach(info: Info, exprs: Seq[Expression]) extends Statement with HasInfo {
-  def serialize: String = "attach " + exprs.map(_.serialize).mkString("(", ", ", ")")
   def mapStmt(f: Statement => Statement): Statement = this
   def mapExpr(f: Expression => Expression): Statement = Attach(info, exprs map f)
   def mapType(f: Type => Type): Statement = this
@@ -578,7 +536,6 @@ case class Attach(info: Info, exprs: Seq[Expression]) extends Statement with Has
   def foreachInfo(f: Info => Unit): Unit = f(info)
 }
 case class Stop(info: Info, ret: Int, clk: Expression, en: Expression) extends Statement with HasInfo {
-  def serialize: String = s"stop(${clk.serialize}, ${en.serialize}, $ret)" + info.serialize
   def mapStmt(f: Statement => Statement): Statement = this
   def mapExpr(f: Expression => Expression): Statement = Stop(info, ret, f(clk), f(en))
   def mapType(f: Type => Type): Statement = this
@@ -596,11 +553,6 @@ case class Print(
     args: Seq[Expression],
     clk: Expression,
     en: Expression) extends Statement with HasInfo {
-  def serialize: String = {
-    val strs = Seq(clk.serialize, en.serialize, string.escape) ++
-               (args map (_.serialize))
-    "printf(" + (strs mkString ", ") + ")" + info.serialize
-  }
   def mapStmt(f: Statement => Statement): Statement = this
   def mapExpr(f: Expression => Expression): Statement = Print(info, string, args map f, f(clk), f(en))
   def mapType(f: Type => Type): Statement = this
@@ -628,8 +580,6 @@ case class Verification(
   en: Expression,
   msg: StringLit
 ) extends Statement with HasInfo {
-  def serialize: String = op + "(" + Seq(clk, pred, en).map(_.serialize)
-    .mkString(", ") + ", \"" + msg.serialize + "\")" + info.serialize
   def mapStmt(f: Statement => Statement): Statement = this
   def mapExpr(f: Expression => Expression): Statement =
     copy(clk = f(clk), pred = f(pred), en = f(en))
@@ -645,7 +595,6 @@ case class Verification(
 // end formal
 
 case object EmptyStmt extends Statement {
-  def serialize: String = "skip"
   def mapStmt(f: Statement => Statement): Statement = this
   def mapExpr(f: Expression => Expression): Statement = this
   def mapType(f: Type => Type): Statement = this
@@ -659,6 +608,7 @@ case object EmptyStmt extends Statement {
 }
 
 abstract class Width extends FirrtlNode {
+  def serialize: String = Serializer.serialize(this)
   def +(x: Width): Width = (this, x) match {
     case (a: IntWidth, b: IntWidth) => IntWidth(a.width + b.width)
     case _ => UnknownWidth
@@ -695,7 +645,6 @@ object IntWidth {
   def unapply(w: IntWidth): Option[BigInt] = Some(w.width)
 }
 class IntWidth(val width: BigInt) extends Width with Product {
-  def serialize: String = s"<$width>"
   override def equals(that: Any) = that match {
     case w: IntWidth => width == w.width
     case _ => false
@@ -711,14 +660,12 @@ class IntWidth(val width: BigInt) extends Width with Product {
     case _ => throw new IndexOutOfBoundsException
   }
 }
-case object UnknownWidth extends Width {
-  def serialize: String = ""
-}
-case class CalcWidth(arg: Constraint) extends Width {
-  def serialize: String = s"calcw(${arg.serialize})"
-}
+case object UnknownWidth extends Width
+
+case class CalcWidth(arg: Constraint) extends Width
+
 case class VarWidth(name: String) extends Width with IsVar {
-  override def serialize: String = s"<$name>"
+  override def serialize: String = name
 }
 
 /** Orientation of [[Field]] */
@@ -732,28 +679,28 @@ case object Flip extends Orientation {
 
 /** Field of [[BundleType]] */
 case class Field(name: String, flip: Orientation, tpe: Type) extends FirrtlNode with HasName {
-  def serialize: String = flip.serialize + name + " : " + tpe.serialize
+  def serialize: String = Serializer.serialize(this)
 }
 
 
 /** Bounds of [[IntervalType]] */
 
 trait Bound extends Constraint {
-  def serialize: String
+  def serialize: String = Serializer.serialize(this)
 }
 case object UnknownBound extends Bound {
-  def serialize: String = "?"
   def map(f: Constraint=>Constraint): Constraint = this
   override def reduce(): Constraint = this
   val children = Vector()
 }
 case class CalcBound(arg: Constraint) extends Bound {
-  def serialize: String = s"calcb(${arg.serialize})"
   def map(f: Constraint=>Constraint): Constraint = f(arg)
   override def reduce(): Constraint = arg
   val children = Vector(arg)
 }
-case class VarBound(name: String) extends IsVar with Bound
+case class VarBound(name: String) extends IsVar with Bound {
+  override def serialize: String = Serializer.serialize(this)
+}
 object KnownBound {
   def unapply(b: Constraint): Option[BigDecimal] = b match {
     case k: IsKnown => Some(k.value)
@@ -765,7 +712,6 @@ object KnownBound {
   }
 }
 case class Open(value: BigDecimal) extends IsKnown with Bound {
-  def serialize = s"o($value)"
   def +(that: IsKnown): IsKnown = Open(value + that.value)
   def *(that: IsKnown): IsKnown = that match {
     case Closed(x) if x == 0 => Closed(x)
@@ -778,7 +724,6 @@ case class Open(value: BigDecimal) extends IsKnown with Bound {
   def pow: IsKnown = if(value.isBinaryDouble) Open(BigDecimal(BigInt(1) << value.toInt)) else sys.error("Shouldn't be here")
 }
 case class Closed(value: BigDecimal) extends IsKnown with Bound {
-  def serialize = s"c($value)"
   def +(that: IsKnown): IsKnown = that match {
     case Open(x) => Open(value + x)
     case Closed(x) => Closed(value + x)
@@ -797,6 +742,7 @@ case class Closed(value: BigDecimal) extends IsKnown with Bound {
 
 /** Types of [[FirrtlNode]] */
 abstract class Type extends FirrtlNode {
+  def serialize: String = Serializer.serialize(this)
   def mapType(f: Type => Type): Type
   def mapWidth(f: Width => Width): Type
   def foreachType(f: Type => Unit): Unit
@@ -815,20 +761,14 @@ abstract class AggregateType extends Type {
   def foreachWidth(f: Width => Unit): Unit = ()
 }
 case class UIntType(width: Width) extends GroundType {
-  def serialize: String = "UInt" + width.serialize
   def mapWidth(f: Width => Width): Type = UIntType(f(width))
   def foreachWidth(f: Width => Unit): Unit = f(width)
 }
 case class SIntType(width: Width) extends GroundType {
-  def serialize: String = "SInt" + width.serialize
   def mapWidth(f: Width => Width): Type = SIntType(f(width))
   def foreachWidth(f: Width => Unit): Unit = f(width)
 }
 case class FixedType(width: Width, point: Width) extends GroundType {
-  override def serialize: String = {
-    val pstring = if(point == UnknownWidth) "" else s"<${point.serialize}>"
-    s"Fixed${width.serialize}$pstring"
-  }
   def mapWidth(f: Width => Width): Type = FixedType(f(width), f(point))
   def foreachWidth(f: Width => Unit): Unit = { f(width); f(point) }
 }
@@ -911,42 +851,35 @@ case class IntervalType(lower: Bound, upper: Bound, point: Width) extends Ground
 }
 
 case class BundleType(fields: Seq[Field]) extends AggregateType {
-  def serialize: String = "{ " + (fields map (_.serialize) mkString ", ") + "}"
   def mapType(f: Type => Type): Type =
     BundleType(fields map (x => x.copy(tpe = f(x.tpe))))
   def foreachType(f: Type => Unit): Unit = fields.foreach{ x => f(x.tpe) }
 }
 case class VectorType(tpe: Type, size: Int) extends AggregateType {
-  def serialize: String = tpe.serialize + s"[$size]"
   def mapType(f: Type => Type): Type = this.copy(tpe = f(tpe))
   def foreachType(f: Type => Unit): Unit = f(tpe)
 }
 case object ClockType extends GroundType {
   val width = IntWidth(1)
-  def serialize: String = "Clock"
   def mapWidth(f: Width => Width): Type = this
   def foreachWidth(f: Width => Unit): Unit = ()
 }
 /* Abstract reset, will be inferred to UInt<1> or AsyncReset */
 case object ResetType extends GroundType {
   val width = IntWidth(1)
-  def serialize: String = "Reset"
   def mapWidth(f: Width => Width): Type = this
   def foreachWidth(f: Width => Unit): Unit = ()
 }
 case object AsyncResetType extends GroundType {
   val width = IntWidth(1)
-  def serialize: String = "AsyncReset"
   def mapWidth(f: Width => Width): Type = this
   def foreachWidth(f: Width => Unit): Unit = ()
 }
 case class AnalogType(width: Width) extends GroundType {
-  def serialize: String = "Analog" + width.serialize
   def mapWidth(f: Width => Width): Type = AnalogType(f(width))
   def foreachWidth(f: Width => Unit): Unit = f(width)
 }
 case object UnknownType extends Type {
-  def serialize: String = "?"
   def mapType(f: Type => Type): Type = this
   def mapWidth(f: Width => Width): Type = this
   def foreachType(f: Type => Unit): Unit = ()
@@ -968,7 +901,7 @@ case class Port(
     name: String,
     direction: Direction,
     tpe: Type) extends FirrtlNode with IsDeclaration {
-  def serialize: String = s"${direction.serialize} $name : ${tpe.serialize}" + info.serialize
+  def serialize: String = Serializer.serialize(this)
   def mapType(f: Type => Type): Port = Port(info, name, direction, f(tpe))
   def mapString(f: String => String): Port = Port(info, f(name), direction, tpe)
 }
@@ -976,35 +909,26 @@ case class Port(
 /** Parameters for external modules */
 sealed abstract class Param extends FirrtlNode {
   def name: String
-  def serialize: String = s"parameter $name = "
+  def serialize: String = Serializer.serialize(this)
 }
 /** Integer (of any width) Parameter */
-case class IntParam(name: String, value: BigInt) extends Param {
-  override def serialize: String = super.serialize + value
-}
+case class IntParam(name: String, value: BigInt) extends Param
 /** IEEE Double Precision Parameter (for Verilog real) */
-case class DoubleParam(name: String, value: Double) extends Param {
-  override def serialize: String = super.serialize + value
-}
+case class DoubleParam(name: String, value: Double) extends Param
 /** String Parameter */
-case class StringParam(name: String, value: StringLit) extends Param {
-  override def serialize: String = super.serialize + value.escape
-}
+case class StringParam(name: String, value: StringLit) extends Param
 /** Raw String Parameter
   * Useful for Verilog type parameters
   * @note Firrtl doesn't guarantee anything about this String being legal in any backend
   */
-case class RawStringParam(name: String, value: String) extends Param {
-  override def serialize: String = super.serialize + s"'${value.replace("'", "\\'")}'"
-}
+case class RawStringParam(name: String, value: String) extends Param
 
 /** Base class for modules */
 abstract class DefModule extends FirrtlNode with IsDeclaration {
   val info : Info
   val name : String
   val ports : Seq[Port]
-  protected def serializeHeader(tpe: String): String =
-    s"$tpe $name :${info.serialize}${indent(ports.map("\n" + _.serialize).mkString)}\n"
+  def serialize: String = Serializer.serialize(this)
   def mapStmt(f: Statement => Statement): DefModule
   def mapPort(f: Port => Port): DefModule
   def mapString(f: String => String): DefModule
@@ -1019,7 +943,6 @@ abstract class DefModule extends FirrtlNode with IsDeclaration {
   * An instantiable hardware block
   */
 case class Module(info: Info, name: String, ports: Seq[Port], body: Statement) extends DefModule {
-  def serialize: String = serializeHeader("module") + indent("\n" + body.serialize)
   def mapStmt(f: Statement => Statement): DefModule = this.copy(body = f(body))
   def mapPort(f: Port => Port): DefModule = this.copy(ports = ports map f)
   def mapString(f: String => String): DefModule = this.copy(name = f(name))
@@ -1040,8 +963,6 @@ case class ExtModule(
     ports: Seq[Port],
     defname: String,
     params: Seq[Param]) extends DefModule {
-  def serialize: String = serializeHeader("extmodule") +
-    indent(s"\ndefname = $defname\n" + params.map(_.serialize).mkString("\n"))
   def mapStmt(f: Statement => Statement): DefModule = this
   def mapPort(f: Port => Port): DefModule = this.copy(ports = ports map f)
   def mapString(f: String => String): DefModule = this.copy(name = f(name))
@@ -1053,9 +974,7 @@ case class ExtModule(
 }
 
 case class Circuit(info: Info, modules: Seq[DefModule], main: String) extends FirrtlNode with HasInfo {
-  def serialize: String =
-    s"circuit $main :" + info.serialize +
-    (modules map ("\n" + _.serialize) map indent mkString "\n") + "\n"
+  def serialize: String = Serializer.serialize(this)
   def mapModule(f: DefModule => DefModule): Circuit = this.copy(modules = modules map f)
   def mapString(f: String => String): Circuit = this.copy(main = f(main))
   def mapInfo(f: Info => Info): Circuit = this.copy(f(info))

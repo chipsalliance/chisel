@@ -65,7 +65,6 @@ object WSubAccess {
 
 case object WVoid extends Expression {
   def tpe = UnknownType
-  def serialize: String = "VOID"
   def mapExpr(f: Expression => Expression): Expression = this
   def mapType(f: Type => Type): Expression = this
   def mapWidth(f: Width => Width): Expression = this
@@ -75,7 +74,6 @@ case object WVoid extends Expression {
 }
 case object WInvalid extends Expression {
   def tpe = UnknownType
-  def serialize: String = "INVALID"
   def mapExpr(f: Expression => Expression): Expression = this
   def mapType(f: Type => Type): Expression = this
   def mapWidth(f: Width => Width): Expression = this
@@ -86,7 +84,6 @@ case object WInvalid extends Expression {
 // Useful for splitting then remerging references
 case object EmptyExpression extends Expression {
   def tpe = UnknownType
-  def serialize: String = "EMPTY"
   def mapExpr(f: Expression => Expression): Expression = this
   def mapType(f: Type => Type): Expression = this
   def mapWidth(f: Width => Width): Expression = this
@@ -109,8 +106,6 @@ case class WDefInstanceConnector(
     module: String,
     tpe: Type,
     portCons: Seq[(Expression, Expression)]) extends Statement with IsDeclaration {
-  def serialize: String = s"inst $name of $module with ${tpe.serialize} connected to " +
-                          portCons.map(_._2.serialize).mkString("(", ", ", ")") + info.serialize
   def mapExpr(f: Expression => Expression): Statement =
     this.copy(portCons = portCons map { case (e1, e2) => (f(e1), f(e2)) })
   def mapStmt(f: Statement => Statement): Statement = this
@@ -186,7 +181,7 @@ private[firrtl] case class InfoExpr(info: Info, expr: Expression) extends Expres
   def tpe: Type = expr.tpe
 
   // Members declared in firrtl.ir.FirrtlNode
-  def serialize: String = s"(${expr.serialize}: ${info.serialize})"
+  override def serialize: String = s"(${expr.serialize}: ${info.serialize})"
 }
 
 private[firrtl] object InfoExpr {
@@ -331,8 +326,6 @@ case class CDefMemory(
     size: BigInt,
     seq: Boolean,
     readUnderWrite: ReadUnderWrite.Value = ReadUnderWrite.Undefined) extends Statement with HasInfo {
-  def serialize: String = (if (seq) "smem" else "cmem") +
-    s" $name : ${tpe.serialize} [$size]" + info.serialize
   def mapExpr(f: Expression => Expression): Statement = this
   def mapStmt(f: Statement => Statement): Statement = this
   def mapType(f: Type => Type): Statement = this.copy(tpe = f(tpe))
@@ -350,10 +343,6 @@ case class CDefMPort(info: Info,
     mem: String,
     exps: Seq[Expression],
     direction: MPortDir) extends Statement with HasInfo {
-  def serialize: String = {
-    val dir = direction.serialize
-    s"$dir mport $name = $mem[${exps.head.serialize}], ${exps(1).serialize}" + info.serialize
-  }
   def mapExpr(f: Expression => Expression): Statement = this.copy(exps = exps map f)
   def mapStmt(f: Statement => Statement): Statement = this
   def mapType(f: Type => Type): Statement = this.copy(tpe = f(tpe))

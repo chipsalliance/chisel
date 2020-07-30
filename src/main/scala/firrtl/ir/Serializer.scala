@@ -46,9 +46,14 @@ object Serializer {
   private def s(node: Info)(implicit b: StringBuilder, indent: Int): Unit = node match {
     case f : FileInfo => b ++= " @[" ; b ++= f.escaped ; b ++= "]"
     case NoInfo => // empty string
-    case MultiInfo(infos) =>
-      val ii = flattenInfo(infos)
-      b ++= " @[" ; sInfo(ii, ", ") ; b ++= "]"
+    case m : MultiInfo =>
+      val infos = m.flatten
+      if(infos.nonEmpty) {
+        val lastId = infos.length - 1
+        b ++= " @["
+        infos.zipWithIndex.foreach { case (f, i) => b ++= f.escaped; if (i < lastId) b += ' ' }
+        b += ']'
+      }
   }
 
   private def s(str: StringLit)(implicit b: StringBuilder, indent: Int): Unit = b ++= str.serialize
@@ -68,9 +73,8 @@ object Serializer {
     case SIntLiteral(value, width) =>
       b ++= "SInt" ; s(width) ; b ++= "(\"h" ; b ++= value.toString(16) ; b ++= "\")"
     case FixedLiteral(value, width, point) =>
-      b ++= "Fixed"
-      if(width != UnknownWidth) { b += '<' ; s(width) ; b += '>' }
-      s(point) ; b ++= "(\"h" ; b ++= value.toString(16) ; b ++= "\")"
+      b ++= "Fixed" ; s(width) ; sPoint(point)
+      b ++= "(\"h" ; b ++= value.toString(16) ; b ++= "\")"
     // WIR
     case firrtl.WVoid => b ++= "VOID"
     case firrtl.WInvalid => b ++= "INVALID"
@@ -88,6 +92,7 @@ object Serializer {
         newLineAndIndent(1) ; s(alt)(b, indent + 1)
       }
     case EmptyStmt => b ++= "skip"
+    case Block(Seq()) => b ++= "skip"
     case Block(stmts) =>
       val it = stmts.iterator
       while(it.hasNext) {
@@ -131,6 +136,9 @@ object Serializer {
     case firrtl.CDefMPort(info, name, _, mem, exps, direction) =>
       b ++= direction.serialize ; b ++= " mport " ; b ++= name ; b ++= " = " ; b ++= mem
       b += '[' ; s(exps.head) ; b ++= "], " ; s(exps(1)) ; s(info)
+    case firrtl.WDefInstanceConnector(info, name, module, tpe, portCons) =>
+      b ++= "inst " ; b ++= name ; b ++= " of " ; b ++= module ; b ++= " with " ; s(tpe) ; b ++= " connected to ("
+      s(portCons.map(_._2), ",  ") ; b += ')' ; s(info)
   }
 
   private def s(node: Width)(implicit b: StringBuilder, indent: Int): Unit = node match {
@@ -138,6 +146,13 @@ object Serializer {
     case UnknownWidth => // empty string
     case CalcWidth(arg) => b ++= "calcw("; s(arg); b += ')'
     case VarWidth(name) => b += '<'; b ++= name; b += '>'
+  }
+
+  private def sPoint(node: Width)(implicit b: StringBuilder, indent: Int): Unit = node match {
+    case IntWidth(width) => b ++= "<<"; b ++= width.toString(); b ++= ">>"
+    case UnknownWidth => // empty string
+    case CalcWidth(arg) => b ++= "calcw("; s(arg); b += ')'
+    case VarWidth(name) => b ++= "<<"; b ++= name; b ++= ">>"
   }
 
   private def s(node: Orientation)(implicit b: StringBuilder, indent: Int): Unit = node match {
@@ -153,7 +168,7 @@ object Serializer {
     // Types
     case UIntType(width: Width) => b ++= "UInt"; s(width)
     case SIntType(width: Width) => b ++= "SInt"; s(width)
-    case FixedType(width, point) => b ++= "Fixed"; s(width); s(point)
+    case FixedType(width, point) => b ++= "Fixed"; s(width); sPoint(point)
     case BundleType(fields) => b ++= "{ "; sField(fields, ", "); b += '}'
     case VectorType(tpe, size) => s(tpe); b += '['; b ++= size.toString; b += ']'
     case ClockType => b ++= "Clock"
@@ -188,11 +203,8 @@ object Serializer {
     case Module(info, name, ports, body) =>
       b ++= "module " ; b ++= name ; b ++= " :" ; s(info)
       ports.foreach{ p => newLineAndIndent(1) ;  s(p) }
-      val isEmpty = body == EmptyStmt || body == Block(Seq())
-      if(!isEmpty) {
-        newLineNoIndent() // add a new line between port declaration and body
-        newLineAndIndent(1) ; s(body)(b, indent + 1)
-      }
+      newLineNoIndent() // add a new line between port declaration and body
+      newLineAndIndent(1) ; s(body)(b, indent + 1)
     case ExtModule(info, name, ports, defname, params) =>
       b ++= "extmodule " ; b ++= name ; b ++= " :" ; s(info)
       ports.foreach{ p => newLineAndIndent(1) ; s(p) }
@@ -214,7 +226,10 @@ object Serializer {
     // Bounds
     case UnknownBound => b += '?'
     case CalcBound(arg) => b ++= "calcb(" ; s(arg) ; b += ')'
-    case other => b ++= other.serialize
+    case VarBound(name) => b ++= name
+    case Open(value) => b ++ "o(" ; b ++= value.toString ; b += ')'
+    case Closed(value) => b ++ "c(" ; b ++= value.toString ; b += ')'
+    case other => other.serialize
   }
 
   /** create a new line with the appropriate indent */
@@ -230,7 +245,7 @@ object Serializer {
   }
 
   /** serialize firrtl Expression nodes with a custom separator and the option to include the separator at the end */
-  private def s(nodes: Seq[Expression], sep: String, noFinalSep: Boolean = true)
+  private def s(nodes: Iterable[Expression], sep: String, noFinalSep: Boolean = true)
                (implicit b: StringBuilder, indent: Int): Unit = {
     val it = nodes.iterator
     while(it.hasNext) {
@@ -239,20 +254,9 @@ object Serializer {
     }
   }
 
-  /** serialize firrtl Info nodes with a custom separator and the option to include the separator at the end */
-  @inline
-  private def sInfo(nodes: Seq[Info], sep: String)
-               (implicit b: StringBuilder, indent: Int): Unit = {
-    val it = nodes.iterator
-    while(it.hasNext) {
-      s(it.next())
-      if(it.hasNext) b ++= sep
-    }
-  }
-
   /** serialize firrtl Field nodes with a custom separator and the option to include the separator at the end */
   @inline
-  private def sField(nodes: Seq[Field], sep: String)
+  private def sField(nodes: Iterable[Field], sep: String)
                (implicit b: StringBuilder, indent: Int): Unit = {
     val it = nodes.iterator
     while(it.hasNext) {
@@ -262,7 +266,7 @@ object Serializer {
   }
 
   /** serialize BigInts with a custom separator */
-  private def s(consts: Seq[BigInt], sep: String)(implicit b: StringBuilder): Unit = {
+  private def s(consts: Iterable[BigInt], sep: String)(implicit b: StringBuilder): Unit = {
     val it = consts.iterator
     while(it.hasNext) {
       b ++= it.next().toString()

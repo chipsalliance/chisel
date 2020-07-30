@@ -167,7 +167,7 @@ case class VRandom(width: BigInt) extends Expression {
   def tpe = UIntType(IntWidth(width))
   def nWords = (width + 31) / 32
   def realWidth = nWords * 32
-  def serialize: String = "RANDOM"
+  override def serialize: String = "RANDOM"
   def mapExpr(f: Expression => Expression): Expression = this
   def mapType(f: Type => Type): Expression = this
   def mapWidth(f: Width => Width): Expression = this

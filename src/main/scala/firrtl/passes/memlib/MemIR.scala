@@ -39,7 +39,7 @@ case class DefAnnotatedMemory(
     memRef: Option[(String, String)] /* (Module, Mem) */
     //pins: Seq[Pin],
     ) extends Statement with IsDeclaration {
-  def serialize: String = this.toMem.serialize
+  override def serialize: String = this.toMem.serialize
   def mapStmt(f: Statement => Statement): Statement = this
   def mapExpr(f: Expression => Expression): Statement = this
   def mapType(f: Type => Type): Statement = this.copy(dataType = f(dataType))
