@@ -8,7 +8,6 @@ import chisel3.internal.throwException
 import scala.language.experimental.macros
 import chisel3.internal.sourceinfo._
 
-//scalastyle:off method.name
 
 private[chisel3] object SeqUtils {
   /** Concatenates the data elements of the input sequence, in sequence order, together.
@@ -65,7 +64,6 @@ private[chisel3] object SeqUtils {
     */
   def oneHotMux[T <: Data](in: Iterable[(Bool, T)]): T = macro SourceInfoTransform.inArg
 
-  //scalastyle:off method.length cyclomatic.complexity
   /** @group SourceInfoTransformMacros */
   def do_oneHotMux[T <: Data](in: Iterable[(Bool, T)])
                              (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {

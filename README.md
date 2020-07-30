@@ -4,7 +4,7 @@
 
 ## Upcoming Events
 
-Chisel/FIRRTL development meetings happen every Monday from 1100--1300 PT.
+Chisel/FIRRTL development meetings happen every Monday and Tuesday from 1100--1200 PT.
 
 Call-in info and meeting notes are available [here](https://docs.google.com/document/d/1Mpnqigmx6F8jdC77YWP3akp9H2V1bS1b2XiYjVX0brE).
 
@@ -143,9 +143,20 @@ This section describes how to get started developing Chisel itself, including ho
 
 ### Compiling and Testing Chisel
 
-In the chisel3 repository directory compile the Chisel library:
+First, clone and build the master branch of [FIRRTL](https://github.com/freechipsproject/firrtl) and [Treadle](https://github.com/freechipsproject/treadle), as the master branch of Chisel may depend on unreleased changes in those projects:
 
 ```
+git clone https://github.com/freechipsproject/firrtl.git
+git clone https://github.com/freechipsproject/treadle.git
+pushd firrtl; sbt publishLocal; popd
+pushd treadle; sbt publishLocal; popd
+```
+
+Clone and build the Chisel library:
+
+```
+git clone https://github.com/freechipsproject/chisel3.git
+cd chisel3
 sbt compile
 ```
 

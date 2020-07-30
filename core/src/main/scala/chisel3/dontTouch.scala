@@ -20,7 +20,7 @@ import firrtl.transforms.DontTouchAnnotation
   * file. This file must be passed to FIRRTL independently of the `.fir` file. The execute methods
   * in [[chisel3.Driver]] will pass the annotations to FIRRTL automatically.
   */
-object dontTouch { // scalastyle:ignore object.name
+object dontTouch {
   /** Marks a signal to be preserved in Chisel and Firrtl
     *
     * @note Requires the argument to be bound to hardware

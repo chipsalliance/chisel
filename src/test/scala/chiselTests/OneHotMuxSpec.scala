@@ -11,7 +11,6 @@ import org.scalatest._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
-//scalastyle:off magic.number
 
 class OneHotMuxSpec extends AnyFreeSpec with Matchers with ChiselRunners {
   "simple one hot mux with uint should work" in {

@@ -19,7 +19,6 @@ import firrtl.{FIRRTLException, HighFirrtlCompiler, LowFirrtlCompiler, MiddleFir
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
-//scalastyle:off magic.number
 //noinspection TypeAnnotation
 
 object IntervalTestHelper {
@@ -30,7 +29,6 @@ object IntervalTestHelper {
     * @param gen the generator for the module
     * @return the Verilog code as a string.
     */
-  //scalastyle:off cyclomatic.complexity
   def makeFirrtl[T <: RawModule](compilerName: String)(gen: () => T): String = {
     (new ChiselStage)
       .execute(Array("--compiler", compilerName,

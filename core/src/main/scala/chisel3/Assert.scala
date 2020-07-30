@@ -10,7 +10,7 @@ import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.SourceInfo
 
-object assert { // scalastyle:ignore object.name
+object assert {
   /** Checks for a condition to be valid in the circuit at all times. If the
     * condition evaluates to false, the circuit simulation stops with an error.
     *
@@ -32,10 +32,10 @@ object assert { // scalastyle:ignore object.name
     * that
     */
   // Macros currently can't take default arguments, so we need two functions to emulate defaults.
-  def apply(cond: Bool, message: String, data: Bits*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit = macro apply_impl_msg_data // scalastyle:ignore line.size.limit
+  def apply(cond: Bool, message: String, data: Bits*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit = macro apply_impl_msg_data
   def apply(cond: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit = macro apply_impl
 
-  def apply_impl_msg_data(c: Context)(cond: c.Tree, message: c.Tree, data: c.Tree*)(sourceInfo: c.Tree, compileOptions: c.Tree): c.Tree = { // scalastyle:ignore line.size.limit
+  def apply_impl_msg_data(c: Context)(cond: c.Tree, message: c.Tree, data: c.Tree*)(sourceInfo: c.Tree, compileOptions: c.Tree): c.Tree = {
     import c.universe._
     val p = c.enclosingPosition
     val condStr = s"${p.source.file.name}:${p.line} ${p.lineContent.trim}"
@@ -51,7 +51,7 @@ object assert { // scalastyle:ignore object.name
     q"$apply_impl_do($cond, $condStr, _root_.scala.None)($sourceInfo, $compileOptions)"
   }
 
-  def apply_impl_do(cond: Bool, line: String, message: Option[String], data: Bits*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) { // scalastyle:ignore line.size.limit
+  def apply_impl_do(cond: Bool, line: String, message: Option[String], data: Bits*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) {
     val escLine = line.replaceAll("%", "%%")
     when (!(cond || Module.reset.asBool)) {
       val fmt = message match {
@@ -77,7 +77,7 @@ object assert { // scalastyle:ignore object.name
   }
 }
 
-object stop { // scalastyle:ignore object.name
+object stop {
   /** Terminate execution with a failure code. */
   def apply(code: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit = {
     when (!Module.reset.asBool) {
