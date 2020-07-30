@@ -154,10 +154,10 @@ lazy val plugin = (project in file("plugin")).
     crossScalaVersions := pluginScalaVersions,
     // Must be published for Scala minor version
     crossVersion := CrossVersion.full,
-		crossTarget := {
-			// workaround for https://github.com/sbt/sbt/issues/5097
-			target.value / s"scala-${scalaVersion.value}"
-		},
+    crossTarget := {
+      // workaround for https://github.com/sbt/sbt/issues/5097
+      target.value / s"scala-${scalaVersion.value}"
+    },
     // Only publish for Scala 2.12
     publish / skip := !scalaVersion.value.startsWith("2.12")
   )
