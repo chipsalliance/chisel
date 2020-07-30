@@ -150,6 +150,20 @@ class ChiselPropSpec extends PropSpec with ChiselRunners with ScalaCheckProperty
   // Generator for small positive integers.
   val smallPosInts = Gen.choose(1, 4)
 
+  // Generator for positive (ascending or descending) ranges.
+  def posRange: Gen[Range] = for {
+    dir <- Gen.oneOf(true, false)
+    step <- Gen.choose(1, 3)
+    m <- Gen.choose(1, 10)
+    n <- Gen.choose(1, 10)
+  } yield {
+    if (dir) {
+      Range(m, (m+n)*step, step)
+    } else {
+      Range((m+n)*step, m, -step)
+    }
+  }
+
   // Generator for widths considered "safe".
   val safeUIntWidth = Gen.choose(1, 30)
 
