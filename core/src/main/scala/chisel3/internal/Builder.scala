@@ -79,7 +79,7 @@ trait InstanceId {
 }
 
 private[chisel3] trait HasId extends InstanceId {
-  private[chisel3] def _onModuleClose: Unit = {} // scalastyle:ignore method.name
+  private[chisel3] def _onModuleClose: Unit = {}
   private[chisel3] val _parent: Option[BaseModule] = Builder.currentModule
   _parent.foreach(_.addId(this))
 
@@ -339,7 +339,6 @@ private[chisel3] class DynamicContext() {
   val namingStack = new NamingStack
 }
 
-//scalastyle:off number.of.methods
 private[chisel3] object Builder {
 
   // Represents the current state of the prefixes given
@@ -446,7 +445,7 @@ private[chisel3] object Builder {
           case other => module
         }
       case _ => throwException(
-        "Error: Not in a RawModule. Likely cause: Missed Module() wrap, bare chisel API call, or attempting to construct hardware inside a BlackBox." // scalastyle:ignore line.size.limit
+        "Error: Not in a RawModule. Likely cause: Missed Module() wrap, bare chisel API call, or attempting to construct hardware inside a BlackBox."
         // A bare api call is, e.g. calling Wire() from the scala console).
       )
     }
@@ -454,7 +453,7 @@ private[chisel3] object Builder {
   def forcedUserModule: RawModule = currentModule match {
     case Some(module: RawModule) => module
     case _ => throwException(
-      "Error: Not in a UserModule. Likely cause: Missed Module() wrap, bare chisel API call, or attempting to construct hardware inside a BlackBox." // scalastyle:ignore line.size.limit
+      "Error: Not in a UserModule. Likely cause: Missed Module() wrap, bare chisel API call, or attempting to construct hardware inside a BlackBox."
       // A bare api call is, e.g. calling Wire() from the scala console).
     )
   }

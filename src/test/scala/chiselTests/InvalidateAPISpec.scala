@@ -24,7 +24,6 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompila
     val out = Output(Bool())
   }
 
-  // scalastyle:off line.size.limit
   property("an output connected to DontCare should emit a Firrtl \"is invalid\" with Strict CompileOptions") {
     import chisel3.ExplicitCompileOptions.Strict
     class ModuleWithDontCare extends Module {
@@ -215,5 +214,4 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompila
     val firrtlOutput = myGenerateFirrtl(new ModuleWithoutDontCare)
     firrtlOutput should include("is invalid")
   }
-  // scalastyle:on line.size.limit
 }

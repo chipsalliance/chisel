@@ -6,7 +6,7 @@ import chisel3.internal._
 
 import scala.language.experimental.macros
 
-object withClockAndReset {  // scalastyle:ignore object.name
+object withClockAndReset {
   /** Creates a new Clock and Reset scope
     *
     * @param clock the new implicit Clock
@@ -31,7 +31,7 @@ object withClockAndReset {  // scalastyle:ignore object.name
   }
 }
 
-object withClock {  // scalastyle:ignore object.name
+object withClock {
   /** Creates a new Clock scope
     *
     * @param clock the new implicit Clock
@@ -49,7 +49,7 @@ object withClock {  // scalastyle:ignore object.name
   }
 }
 
-object withReset {  // scalastyle:ignore object.name
+object withReset {
   /** Creates a new Reset scope
     *
     * @param reset the new implicit Reset

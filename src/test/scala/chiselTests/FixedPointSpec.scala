@@ -11,7 +11,6 @@ import org.scalatest._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-//scalastyle:off magic.number
 class FixedPointLiteralSpec extends AnyFlatSpec with Matchers {
   behavior of "fixed point utilities"
 

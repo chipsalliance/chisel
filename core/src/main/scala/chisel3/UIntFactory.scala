@@ -15,7 +15,6 @@ trait UIntFactory {
   def apply(width: Width): UInt = new UInt(width)
 
   /** Create a UInt literal with specified width. */
-  // scalastyle:off method.name
   protected[chisel3] def Lit(value: BigInt, width: Width): UInt = {
     val lit = ULit(value, width)
     val result = new UInt(lit.width)
@@ -24,7 +23,6 @@ trait UIntFactory {
   }
   /** Create a UInt with the specified range, validate that range is effectively > 0
     */
-  //scalastyle:off cyclomatic.complexity
   def apply(range: IntervalRange): UInt = {
     // Check is only done against lower bound because range will already insist that range high >= low
     range.lowerBound match {
