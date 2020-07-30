@@ -12,7 +12,7 @@ import scala.tools.nsc.transform.TypingTransformers
 // The plugin to be run by the Scala compiler during compilation of Chisel code
 class ChiselPlugin(val global: Global) extends Plugin {
   val name = "chiselplugin"
-  val description = "chisel's plugin"
+  val description = "Plugin for Chisel 3 Hardware Description Language"
   val components = List[PluginComponent](new ChiselComponent(global))
 }
 
