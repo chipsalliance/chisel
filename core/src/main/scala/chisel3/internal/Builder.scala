@@ -382,6 +382,14 @@ private[chisel3] object Builder {
   def annotations: ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
   def namingStack: NamingStack = dynamicContext.namingStack
 
+  def addInstance(key: InstanceKey, instance: BlackBox): Unit = {
+    chiselContext.get.instanceMap(key) = instance
+  }
+
+  def getInstance(key: InstanceKey): Option[BlackBox] = {
+    chiselContext.get.instanceMap.get(key)
+  }
+
   // Puts either a prefix string or hasId onto the prefix stack
   def pushPrefix(d: Either[String, HasId]): Unit = {
     chiselContext.get().prefixStack += d

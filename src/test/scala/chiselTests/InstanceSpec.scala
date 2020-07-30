@@ -6,13 +6,22 @@ import chisel3.internal.Instance
 import firrtl.options.Dependency
 import firrtl.stage.FirrtlCircuitAnnotation
 
-class Simple extends MultiIOModule {
+class Leaf extends MultiIOModule {
   val in  = IO(Input(UInt(3.W)))
   val out = IO(Output(UInt(3.W)))
   out := in + in
+  val x = 10
 }
 
-class Top(simple: Simple) extends MultiIOModule {
+class Simple extends MultiIOModule {
+  val in  = IO(Input(UInt(3.W)))
+  val out = IO(Output(UInt(3.W)))
+  val leaf = Module(new Leaf)
+  out := in + in
+  val x = 10
+}
+
+class TopExplicit(simple: Simple) extends MultiIOModule {
   val in  = IO(Input(UInt(3.W)))
   val out = IO(Output(UInt(3.W)))
 
@@ -24,6 +33,19 @@ class Top(simple: Simple) extends MultiIOModule {
 
   //out := SIMPLE.out
   out := SIMPLE.useInstance("SIMPLE")(SIMPLE.out)
+}
+
+class TopImplicit(simple: Simple) extends MultiIOModule {
+  val in  = IO(Input(UInt(3.W)))
+  val out = IO(Output(UInt(3.W)))
+
+  val SIMPLE: Simple = Instance(simple)
+  val SIMPLE2: Simple = Instance(simple)
+
+  SIMPLE.in := in
+  SIMPLE2.in := SIMPLE.out
+  out := SIMPLE2.out
+
 }
 
 class InstanceSpec extends ChiselPropSpec with Utils {
@@ -47,7 +69,12 @@ class InstanceSpec extends ChiselPropSpec with Utils {
 
   property("First example test case") {
     val simple: Simple = build { new Simple }
-    val top: Top = build { new Top(simple) }
+    val top: TopImplicit = build { new TopImplicit(simple) }
+  }
+
+  property("Explicit example test case") {
+    val simple: Simple = build { new Simple }
+    val top: TopExplicit = build { new TopExplicit(simple) }
   }
 
 }
