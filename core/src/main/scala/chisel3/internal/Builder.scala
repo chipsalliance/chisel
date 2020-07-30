@@ -9,6 +9,7 @@ import chisel3.experimental._
 import chisel3.internal.firrtl._
 import chisel3.internal.naming._
 import _root_.firrtl.annotations.{CircuitName, ComponentName, IsMember, ModuleName, Named, ReferenceTarget}
+import chisel3.internal.Builder.Prefix
 
 import scala.collection.mutable
 
@@ -88,25 +89,133 @@ private[chisel3] trait HasId extends InstanceId {
   override def hashCode: Int = super.hashCode()
   override def equals(that: Any): Boolean = super.equals(that)
 
-  // Facilities for 'suggesting' a name to this.
-  // Post-name hooks called to carry the suggestion to other candidates as needed
-  private var suggested_name: Option[String] = None
-  private val postname_hooks = scala.collection.mutable.ListBuffer.empty[String=>Unit]
-  // Only takes the first suggestion!
-  def suggestName(name: =>String): this.type = {
-    if(suggested_name.isEmpty) suggested_name = Some(name)
-    for(hook <- postname_hooks) { hook(name) }
+  // Contains suggested seed (user-decided seed)
+  private var suggested_seed: Option[String] = None
+
+  // Contains the seed computed automatically by the compiler plugin
+  private var auto_seed: Option[String] = None
+
+  // Prefix at time when this class is constructed
+  private val construction_prefix: Prefix = Builder.getPrefix()
+
+  // Prefix when the latest [[suggestSeed]] or [[autoSeed]] is called
+  private var prefix_seed: Prefix = List.empty[Either[String, Data]]
+
+  // Post-seed hooks called to carry the suggested seeds to other candidates as needed
+  private val suggest_postseed_hooks = scala.collection.mutable.ListBuffer.empty[String=>Unit]
+
+  // Post-seed hooks called to carry the auto seeds to other candidates as needed
+  private val auto_postseed_hooks = scala.collection.mutable.ListBuffer.empty[String=>Unit]
+
+  /** Takes the last seed suggested. Multiple calls to this function will take the last given seed, unless
+    * this HasId is a module port (see overridden method in Data.scala).
+    *
+    * If the final computed name conflicts with the final name of another signal, the final name may get uniquified by
+    * appending a digit at the end of the name.
+    *
+    * Is a lower priority than [[suggestName]], in that regardless of whether [[autoSeed]]
+    * was called, [[suggestName]] will always take precedence if it was called.
+ *
+    * @param seed Seed for the name of this component
+    * @return this object
+    */
+  def autoSeed(seed: String): this.type = {
+    auto_seed = Some(seed)
+    for(hook <- auto_postseed_hooks) { hook(seed) }
+    prefix_seed = Builder.getPrefix()
     this
   }
-  private[chisel3] def suggestedName: Option[String] = suggested_name
-  private[chisel3] def addPostnameHook(hook: String=>Unit): Unit = postname_hooks += hook
+
+  /** Takes the first seed suggested. Multiple calls to this function will be ignored.
+    * If the final computed name conflicts with another name, it may get uniquified by appending
+    * a digit at the end.
+    *
+    * Is a higher priority than [[autoSeed]], in that regardless of whether [[autoSeed]]
+    * was called, [[suggestName]] will always take precedence.
+ *
+    * @param seed The seed for the name of this component
+    * @return this object
+    */
+  def suggestName(seed: =>String): this.type = {
+    if(suggested_seed.isEmpty) suggested_seed = Some(seed)
+    prefix_seed = Builder.getPrefix()
+    for(hook <- suggest_postseed_hooks) { hook(seed) }
+    this
+  }
+
+  /** Computes the name of this HasId, if one exists
+    * @param defaultPrefix Optionally provide a default prefix for computing the name
+    * @param defaultSeed Optionally provide default seed for computing the name
+    * @return the name, if it can be computed
+    */
+  def computeName(defaultPrefix: Option[String], defaultSeed: Option[String]): Option[String] = {
+    // Recursively builds a name if referenced fields of an aggregate type
+    def buildAggName(id: HasId): Option[String] = {
+      def recArg(node: Arg): Option[String] = node match {
+        case Slot(imm, name) => recArg(imm).map(_ + "_" + name)
+        case Index(imm, ILit(num)) => recArg(imm).map(_ + "_" + num)
+        case Index(imm, n: LitArg) => recArg(imm).map(_ + "_" + n.num)
+        case Index(imm, _: Node) => recArg(imm)
+        case Node(id) => recArg(id.getOptionRef.get)
+        case Ref(name) => Some(name)
+        case ModuleIO(mod, name) if _parent.contains(mod) => Some(name)
+        case ModuleIO(mod, name) => recArg(mod.getRef).map(_ + "_" + name)
+      }
+      id.getOptionRef.flatMap(recArg)
+    }
+
+    /** Computes a name of this signal, given the seed and prefix
+      * @param seed
+      * @param prefix
+      * @return
+      */
+    def buildName(seed: String, prefix: Prefix): String = {
+      val builder = new StringBuilder()
+      prefix.foreach {
+        case Left(s: String) => builder ++= s + "_"
+        case Right(d: HasId) =>
+          buildAggName(d) match {
+            case Some(n) => builder ++= n + "_"
+            case _ =>
+          }
+        case _ =>
+      }
+      builder ++= seed
+      builder.toString
+    }
+
+    if(hasSeed) {
+      Some(buildName(seedOpt.get, prefix_seed))
+    } else {
+      defaultSeed.map { default =>
+        defaultPrefix match {
+          case Some(p) => buildName(default, Left(p) +: construction_prefix)
+          case None => buildName(default, construction_prefix)
+        }
+      }
+    }
+  }
+
+  /** This resolves the precedence of [[autoSeed]] and [[suggestName]]
+ *
+    * @return the current calculation of a name, if it exists
+    */
+  private[chisel3] def seedOpt: Option[String] = suggested_seed.orElse(auto_seed)
+
+  /** @return Whether either autoName or suggestName has been called */
+  def hasSeed: Boolean = seedOpt.isDefined
+
+  private[chisel3] def hasAutoSeed: Boolean = auto_seed.isDefined
+
+  private[chisel3] def addSuggestPostnameHook(hook: String=>Unit): Unit = suggest_postseed_hooks += hook
+  private[chisel3] def addAutoPostnameHook(hook: String=>Unit): Unit = auto_postseed_hooks += hook
 
   // Uses a namespace to convert suggestion into a true name
   // Will not do any naming if the reference already assigned.
   // (e.g. tried to suggest a name to part of a Record)
-  private[chisel3] def forceName(default: =>String, namespace: Namespace): Unit =
+  private[chisel3] def forceName(prefix: Option[String], default: =>String, namespace: Namespace): Unit =
     if(_ref.isEmpty) {
-      val candidate_name = suggested_name.getOrElse(default)
+      val candidate_name = computeName(prefix, Some(default)).get
       val available_name = namespace.name(candidate_name)
       setRef(Ref(available_name))
     }
@@ -124,7 +233,7 @@ private[chisel3] trait HasId extends InstanceId {
     case Some(p) => p._component match {
       case Some(c) => _ref match {
         case Some(arg) => arg fullName c
-        case None => suggested_name.getOrElse("??")
+        case None => computeName(None, None).get
       }
       case None => throwException("signalName/pathName should be called after circuit elaboration")
     }
@@ -158,9 +267,14 @@ private[chisel3] trait HasId extends InstanceId {
       }
     }
     val valNames = getValNames(this.getClass)
-    def isPublicVal(m: java.lang.reflect.Method) =
-      m.getParameterTypes.isEmpty && valNames.contains(m.getName) && !m.getDeclaringClass.isAssignableFrom(rootClass)
-    this.getClass.getMethods.sortWith(_.getName < _.getName).filter(isPublicVal(_))
+    def isPublicVal(m: java.lang.reflect.Method) = {
+      val noParameters = m.getParameterTypes.isEmpty
+      val aVal = valNames.contains(m.getName)
+      val notAssignable = !m.getDeclaringClass.isAssignableFrom(rootClass)
+      val notWeirdVal = !m.getName.contains('$')
+      noParameters && aVal && notAssignable && notWeirdVal
+    }
+    this.getClass.getMethods.filter(isPublicVal).sortWith(_.getName < _.getName)
   }
 }
 /** Holds the implementation of toNamed for Data and MemBase */
@@ -199,6 +313,9 @@ private[chisel3] class ChiselContext() {
 
   // Record the Bundle instance, class name, method name, and reverse stack trace position of open Bundles
   val bundleStack: ArrayBuffer[(Bundle, String, String, Int)] = ArrayBuffer()
+
+  // Records the different prefixes which have been scoped at this point in time
+  val prefixStack: ArrayBuffer[Either[String, HasId]] = ArrayBuffer()
 }
 
 private[chisel3] class DynamicContext() {
@@ -223,6 +340,10 @@ private[chisel3] class DynamicContext() {
 }
 
 private[chisel3] object Builder {
+
+  // Represents the current state of the prefixes given
+  type Prefix = List[Either[String, Data]]
+
   // All global mutable state must be referenced via dynamicContextVar!!
   private val dynamicContextVar = new DynamicVariable[Option[DynamicContext]](None)
   private def dynamicContext: DynamicContext = {
@@ -257,6 +378,43 @@ private[chisel3] object Builder {
   def components: ArrayBuffer[Component] = dynamicContext.components
   def annotations: ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
   def namingStack: NamingStack = dynamicContext.namingStack
+
+  // Puts either a prefix string or hasId onto the prefix stack
+  def pushPrefix(d: Either[String, HasId]): Unit = {
+    chiselContext.get().prefixStack += d
+  }
+
+  // Puts a prefix string onto the prefix stack
+  def pushPrefix(d: String): Unit = {
+    chiselContext.get().prefixStack += Left(d)
+  }
+
+  // Puts a prefix data onto the prefix stack
+  def pushPrefix(d: HasId): Unit = {
+    chiselContext.get().prefixStack += Right(d)
+  }
+
+  // Remove a prefix from top of the stack
+  def popPrefix(): Either[String, HasId] = {
+    val ps = chiselContext.get().prefixStack
+    ps.remove(ps.size - 1)
+  }
+
+  // Removes all prefixes from the prefix stack
+  def clearPrefix(): Unit = {
+    val ps = chiselContext.get().prefixStack
+    ps.clear()
+  }
+
+  // Clears existing prefixes and sets to new prefix stack
+  def setPrefix(prefix: Prefix): Unit = {
+    val ps = chiselContext.get().prefixStack
+    clearPrefix()
+    ps.insertAll(0, prefix)
+  }
+
+  // Returns the prefix stack at this moment
+  def getPrefix(): Prefix = chiselContext.get().prefixStack.toList.asInstanceOf[Prefix]
 
   def currentModule: Option[BaseModule] = dynamicContextVar.value match {
     case Some(dyanmicContext) => dynamicContext.currentModule
@@ -411,7 +569,7 @@ private[chisel3] object Builder {
     dynamicContextVar.withValue(Some(new DynamicContext())) {
       errors.info("Elaborating design...")
       val mod = f
-      mod.forceName(mod.name, globalNamespace)
+      mod.forceName(None, mod.name, globalNamespace)
       errors.checkpoint()
       errors.info("Done elaborating.")
 
@@ -446,7 +604,7 @@ object DynamicNamingStack {
     }
     prefixRef
   }
-  
+
   def length() : Int = Builder.namingStackOption.get.length
 }
 
