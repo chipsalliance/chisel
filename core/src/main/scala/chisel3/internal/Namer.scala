@@ -72,7 +72,7 @@ class NamingContext extends NamingContextInterface {
   val descendants = new IdentityHashMap[AnyRef, ListBuffer[NamingContext]]()
   val anonymousDescendants = ListBuffer[NamingContext]()
   val items = ListBuffer[(AnyRef, String)]()
-  var closed = false  // a sanity check to ensure no more name() calls are done after name_prefix
+  var closed = false  // a sanity check to ensure no more name() calls are done after namePrefix
 
   /** Adds a NamingContext object as a descendant - where its contained objects will have names
     * prefixed with the name given to the reference object, if the reference object is named in the
@@ -87,7 +87,7 @@ class NamingContext extends NamingContextInterface {
   }
 
   def name[T](obj: T, name: String): T = {
-    assert(!closed, "Can't name elements after name_prefix called")
+    assert(!closed, "Can't name elements after namePrefix called")
     obj match {
       case _: NoChiselNamePrefix => // Don't name things with NoChiselNamePrefix
       case ref: AnyRef => items += ((ref, name))
@@ -149,6 +149,6 @@ class NamingStack {
       namingStack.top.addDescendant(prefixRef, until)
     }
   }
-  
+
   def length() : Int = namingStack.length
 }

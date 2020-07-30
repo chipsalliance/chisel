@@ -283,6 +283,14 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     }
   }
 
+  override def autoSeed(name: String): this.type = {
+    topBindingOpt match {
+      // Ports are special in that the autoSeed will keep the first name, not the last name
+      case Some(PortBinding(m)) if hasAutoSeed && Builder.currentModule.contains(m) => this
+      case _ => super.autoSeed(name)
+    }
+  }
+
   // User-specified direction, local at this node only.
   // Note that the actual direction of this node can differ from child and parent specifiedDirection.
   private var _specifiedDirection: SpecifiedDirection = SpecifiedDirection.Unspecified
@@ -490,7 +498,11 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     * @param that the $coll to connect to
     * @group Connect
     */
-  final def := (that: Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = this.connect(that)(sourceInfo, connectionCompileOptions)
+  final def := (that: => Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = {
+    prefix(this) {
+      this.connect(that)(sourceInfo, connectionCompileOptions)
+    }
+  }
 
   /** Connect this $coll to that $coll bi-directionally and element-wise.
     *
@@ -499,7 +511,11 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     * @param that the $coll to connect to
     * @group Connect
     */
-  final def <> (that: Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = this.bulkConnect(that)(sourceInfo, connectionCompileOptions)
+  final def <> (that: => Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = {
+    prefix(this) {
+      this.bulkConnect(that)(sourceInfo, connectionCompileOptions)
+    }
+  }
 
   @chiselRuntimeDeprecated
   @deprecated("litArg is deprecated, use litOption or litTo*Option", "3.2")

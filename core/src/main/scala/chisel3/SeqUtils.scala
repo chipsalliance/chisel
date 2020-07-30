@@ -3,7 +3,7 @@
 package chisel3
 
 import chisel3.experimental.FixedPoint
-import chisel3.internal.throwException
+import chisel3.internal.{prefix, throwException}
 
 import scala.language.experimental.macros
 import chisel3.internal.sourceinfo._
@@ -23,8 +23,12 @@ private[chisel3] object SeqUtils {
     if (in.tail.isEmpty) {
       in.head.asUInt
     } else {
-      val left = asUInt(in.slice(0, in.length/2))
-      val right = asUInt(in.slice(in.length/2, in.length))
+      val left = prefix("left") {
+        asUInt(in.slice(0, in.length/2))
+      }.autoSeed("left")
+      val right = prefix("right") {
+        asUInt(in.slice(in.length/2, in.length))
+      }.autoSeed("right")
       right ## left
     }
   }
