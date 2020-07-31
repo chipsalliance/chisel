@@ -203,7 +203,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec {
         val x = Output(UInt(3.W))
       }))
     }
-    ChiselStage.elaborate { new TestModule }
+    elaborate { new TestModule }
   }
 
   "Wrapped IO construction with parent references" should "not fail for autoclonetype" in {
@@ -215,6 +215,6 @@ class AutoClonetypeSpec extends ChiselFlatSpec {
         val x = Output(UInt(blah.W))
       }))
     }
-    ChiselStage.elaborate { new TestModule(3) }
+    elaborate { new TestModule(3) }
   }
 }
