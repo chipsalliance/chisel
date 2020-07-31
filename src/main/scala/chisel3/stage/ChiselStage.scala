@@ -73,7 +73,7 @@ class ChiselStage extends Stage with PreservesAll[Phase] {
     * @param gen a call-by-name Chisel module
     * @param args additional command line arguments to pass to Chisel
     * param annotations additional annotations to pass to Chisel
-    * @return a string containing the Verilog output
+    * @return a string containing the FIRRTL output
     */
   final def emitFirrtl(
     gen: => RawModule,
@@ -108,6 +108,24 @@ class ChiselStage extends Stage with PreservesAll[Phase] {
       .value
   }
 
+  /** Convert a Chisel module to SystemVerilog
+    * @param gen a call-by-name Chisel module
+    * @param args additional command line arguments to pass to Chisel
+    * param annotations additional annotations to pass to Chisel
+    * @return a string containing the SystemVerilog output
+    */
+  final def emitSystemVerilog(
+                         gen: => RawModule,
+                         args: Array[String] = Array.empty,
+                         annotations: AnnotationSeq = Seq.empty): String = {
+
+    execute(Array("-X", "sverilog") ++ args, ChiselGeneratorAnnotation(() => gen) +: annotations)
+      .collectFirst {
+        case DeletedAnnotation(_, EmittedVerilogCircuitAnnotation(a)) => a
+      }
+      .get
+      .value
+  }
 }
 
 object ChiselMain extends StageMain(new ChiselStage)
