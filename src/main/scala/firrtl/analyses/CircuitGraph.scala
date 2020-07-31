@@ -36,25 +36,25 @@ object CircuitGraph {
   *
   * @param connectionGraph Source-to-sink connectivity graph
   */
-class CircuitGraph private[analyses] (val connectionGraph: ConnectionGraph) {
+class CircuitGraph private[analyses] (connectionGraph: ConnectionGraph) {
 
   // Reverse (sink-to-source) connectivity graph
-  lazy val reverseConnectionGraph = connectionGraph.reverseConnectionGraph
+  private lazy val reverseConnectionGraph = connectionGraph.reverseConnectionGraph
 
   // AST Circuit
-  val circuit = connectionGraph.circuit
+  private val circuit = connectionGraph.circuit
 
   // AST Information
-  val irLookup = connectionGraph.irLookup
+  private val irLookup = connectionGraph.irLookup
 
   // Module/Instance Hierarchy information
-  lazy val instanceGraph = new InstanceGraph(circuit)
+  private lazy val instanceGraph = new InstanceGraph(circuit)
 
   // Per module, which modules does it instantiate
-  lazy val moduleChildren = instanceGraph.getChildrenInstanceOfModule
+  private lazy val moduleChildren = instanceGraph.getChildrenInstanceOfModule
 
   // Top-level module target
-  val main = ModuleTarget(circuit.main, circuit.main)
+  private val main = ModuleTarget(circuit.main, circuit.main)
 
   /** Given a signal, return the signals that it drives
     * @param source
