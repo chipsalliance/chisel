@@ -127,7 +127,7 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt) extends H
        t.cloneTypeFull, Node(this), dir, i.ref, Builder.forcedClock.ref)
     ).id
     // Bind each element of port to being a MemoryPort
-    port.bind(MemoryPortBinding(Builder.forcedUserModule))
+    port.bind(MemoryPortBinding(Builder.forcedUserModule, Builder.currentWhen()))
     port
   }
 }

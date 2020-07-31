@@ -40,6 +40,10 @@ private[chisel3] object MonoConnect {
     MonoConnectException(": Source is unreadable from current module.")
   def UnwritableSinkException =
     MonoConnectException(": Sink is unwriteable by current module.")
+  def SourceEscapedWhenScopeException =
+    MonoConnectException(": Source has escaped the scope of the when in which it was constructed.")
+  def SinkEscapedWhenScopeException =
+    MonoConnectException(": Sink has escaped the scope of the when in which it was constructed.")
   def UnknownRelationException =
     MonoConnectException(": Sink or source unavailable to current module.")
   // These are when recursing down aggregate types
@@ -57,6 +61,14 @@ private[chisel3] object MonoConnect {
     MonoConnectException(": Analog cannot participate in a mono connection (source - RHS)")
   def AnalogMonoConnectionException =
     MonoConnectException(": Analog cannot participate in a mono connection (source and sink)")
+
+  def checkWhenVisibility(x: Data): Boolean = {
+    x.topBinding match {
+      case mp: MemoryPortBinding => true // TODO (albert-magyar): remove this "bridge" for odd enable logic of current CHIRRTL memories
+      case cd: ConditionalDeclarable => cd.visibility.map(_.active()).getOrElse(true)
+      case _ => true
+    }
+  }
 
   /** This function is what recursively tries to connect a sink and source together
   *
@@ -183,6 +195,14 @@ private[chisel3] object MonoConnect {
 
     val sink_direction = BindingDirection.from(sink.topBinding, sink.direction)
     val source_direction = BindingDirection.from(source.topBinding, source.direction)
+
+    if (!checkWhenVisibility(sink)) {
+      throw SinkEscapedWhenScopeException
+    }
+
+    if (!checkWhenVisibility(source)) {
+      throw SourceEscapedWhenScopeException
+    }
 
     // CASE: Context is same module that both left node and right node are in
     if( (context_mod == sink_mod) && (context_mod == source_mod) ) {

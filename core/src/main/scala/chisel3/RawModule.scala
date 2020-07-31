@@ -80,15 +80,15 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
         case id: Data  =>
           if (id.isSynthesizable) {
             id.topBinding match {
-              case OpBinding(_) =>
+              case OpBinding(_, _) =>
                 id.forceName(Some(""), default="T", _namespace)
-              case MemoryPortBinding(_) =>
+              case MemoryPortBinding(_, _) =>
                 id.forceName(None, default="MPORT", _namespace)
               case PortBinding(_) =>
                 id.forceName(None, default="PORT", _namespace)
-              case RegBinding(_) =>
+              case RegBinding(_, _) =>
                 id.forceName(None, default="REG", _namespace)
-              case WireBinding(_) =>
+              case WireBinding(_, _) =>
                 id.forceName(Some(""), default="WIRE", _namespace)
               case _ =>  // don't name literals
             }

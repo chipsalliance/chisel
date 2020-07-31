@@ -45,6 +45,8 @@ object when {
   */
 final class WhenContext(sourceInfo: SourceInfo, cond: Option[() => Bool], block: => Any, firrtlDepth: Int = 0) {
 
+  private var scopeOpen = false
+
   /** This block of logic gets executed if above conditions have been
     * false and this condition is true. The lazy argument pattern
     * makes it possible to delay evaluation of cond, emitting the
@@ -65,13 +67,16 @@ final class WhenContext(sourceInfo: SourceInfo, cond: Option[() => Bool], block:
   def otherwise(block: => Any)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit =
     new WhenContext(sourceInfo, None, block, firrtlDepth + 1)
 
+  def active(): Boolean = scopeOpen
+
   /*
    *
    */
   if (firrtlDepth > 0) { pushCommand(AltBegin(sourceInfo)) }
   cond.foreach( c => pushCommand(WhenBegin(sourceInfo, c().ref)) )
-  Builder.whenDepth += 1
+  Builder.pushWhen(this)
   try {
+    scopeOpen = true
     block
   } catch {
     case ret: scala.runtime.NonLocalReturnControl[_] =>
@@ -79,7 +84,8 @@ final class WhenContext(sourceInfo: SourceInfo, cond: Option[() => Bool], block:
         " Perhaps you meant to use Mux or a Wire as a return value?"
       )
   }
-  Builder.whenDepth -= 1
+  scopeOpen = false
+  Builder.popWhen()
   cond.foreach( c => pushCommand(WhenEnd(sourceInfo,firrtlDepth)) )
   if (cond.isEmpty) { pushCommand(OtherwiseEnd(sourceInfo,firrtlDepth)) }
 }
