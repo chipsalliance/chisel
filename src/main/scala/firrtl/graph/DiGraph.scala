@@ -2,9 +2,8 @@
 
 package firrtl.graph
 
-import scala.collection.{Set, Map}
-import scala.collection.mutable
-import scala.collection.mutable.{LinkedHashSet, LinkedHashMap}
+import scala.collection.{Map, Set, mutable}
+import scala.collection.mutable.{LinkedHashMap, LinkedHashSet}
 
 /** An exception that is raised when an assumed DAG has a cycle */
 class CyclicException(val node: Any) extends Exception(s"No valid linearization for cyclic graph, found at $node")
@@ -18,7 +17,7 @@ object DiGraph {
   def apply[T](mdg: MutableDiGraph[T]): DiGraph[T] = mdg
 
   /** Create a DiGraph from a Map[T,Set[T]] of edge data */
-  def apply[T](edgeData: Map[T,Set[T]]): DiGraph[T] = {
+  def apply[T](edgeData: Map[T, Set[T]]): DiGraph[T] = {
     val edgeDataCopy = new LinkedHashMap[T, LinkedHashSet[T]]
     for ((k, v) <- edgeData) {
       edgeDataCopy(k) = new LinkedHashSet[T]
@@ -34,7 +33,7 @@ object DiGraph {
 }
 
 /** Represents common behavior of all directed graphs */
-class DiGraph[T] private[graph] (private[graph] val edges: LinkedHashMap[T, LinkedHashSet[T]]) {
+class DiGraph[T] (private[graph] val edges: LinkedHashMap[T, LinkedHashSet[T]]) {
   /** Check whether the graph contains vertex v */
   def contains(v: T): Boolean = edges.contains(v)
 
@@ -188,7 +187,7 @@ class DiGraph[T] private[graph] (private[graph] val edges: LinkedHashMap[T, Link
     *
     * @param start the start node
     * @param end the destination node
-    * @throws PathNotFoundException
+    * @throws firrtl.graph.PathNotFoundException
     * @return a Seq[T] of nodes defining an arbitrary valid path
     */
   def path(start: T, end: T): Seq[T] = path(start, end, Set.empty[T])
@@ -198,7 +197,7 @@ class DiGraph[T] private[graph] (private[graph] val edges: LinkedHashMap[T, Link
     * @param start the start node
     * @param end the destination node
     * @param blacklist list of nodes which break path, if encountered
-    * @throws PathNotFoundException
+    * @throws firrtl.graph.PathNotFoundException
     * @return a Seq[T] of nodes defining an arbitrary valid path
     */
   def path(start: T, end: T, blacklist: Set[T]): Seq[T] = {
@@ -336,7 +335,7 @@ class DiGraph[T] private[graph] (private[graph] val edges: LinkedHashMap[T, Link
     * Any edge including a deleted node will be deleted
     *
     * @param vprime the Set[T] of desired vertices
-    * @throws scala.IllegalArgumentException if vprime is not a subset of V
+    * @throws java.lang.IllegalArgumentException if vprime is not a subset of V
     * @return the subgraph
     */
   def subgraph(vprime: Set[T]): DiGraph[T] = {
@@ -350,12 +349,12 @@ class DiGraph[T] private[graph] (private[graph] val edges: LinkedHashMap[T, Link
     * transformed into an edge (u,v).
     *
     * @param vprime the Set[T] of desired vertices
-    * @throws scala.IllegalArgumentException if vprime is not a subset of V
+    * @throws java.lang.IllegalArgumentException if vprime is not a subset of V
     * @return the simplified graph
     */
   def simplify(vprime: Set[T]): DiGraph[T] = {
     require(vprime.subsetOf(edges.keySet))
-    val pathEdges = vprime.map( v => (v, reachableFrom(v) & (vprime-v)) )
+    val pathEdges = vprime.map(v => (v, reachableFrom(v) & (vprime-v)) )
     new DiGraph(new LinkedHashMap[T, LinkedHashSet[T]] ++ pathEdges)
   }
 
@@ -394,7 +393,7 @@ class MutableDiGraph[T] extends DiGraph[T](new LinkedHashMap[T, LinkedHashSet[T]
   }
 
   /** Add edge (u,v) to the graph.
-    * @throws scala.IllegalArgumentException if u and/or v is not in the graph
+    * @throws java.lang.IllegalArgumentException if u and/or v is not in the graph
     */
   def addEdge(u: T, v: T): Unit = {
     require(contains(u))
