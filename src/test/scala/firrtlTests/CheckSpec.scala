@@ -399,6 +399,142 @@ class CheckSpec extends AnyFlatSpec with Matchers {
       checkHighInput(input)
     }
   }
+
+  behavior of "CheckHighForm running on circuits containing ExtModules"
+
+  it should "throw an exception if parameterless ExtModules have the same ports, but different widths" in {
+    val input =
+      s"""|circuit Foo:
+          |  extmodule Bar:
+          |    input a: UInt<1>
+          |    defname = bar
+          |  extmodule Baz:
+          |    input a: UInt<2>
+          |    defname = bar
+          |  module Foo:
+          |    skip
+          |""".stripMargin
+    assertThrows[CheckHighForm.DefnameDifferentPortsException] {
+      try {
+        checkHighInput(input)
+      } catch {
+        case e: firrtl.passes.PassExceptions => throw e.exceptions.head
+      }
+    }
+  }
+
+  it should "throw an exception if ExtModules have different port names, but identical widths" in {
+    val input =
+      s"""|circuit Foo:
+          |  extmodule Bar:
+          |    input a: UInt<1>
+          |    defname = bar
+          |  extmodule Baz:
+          |    input b: UInt<1>
+          |    defname = bar
+          |  module Foo:
+          |    skip
+          |""".stripMargin
+    assertThrows[CheckHighForm.DefnameDifferentPortsException] {
+      try {
+        checkHighInput(input)
+      } catch {
+        case e: firrtl.passes.PassExceptions => throw e.exceptions.head
+      }
+    }
+  }
+
+  it should "NOT throw an exception if ExtModules have parameters, matching port names, but different widths" in {
+    val input =
+      s"""|circuit Foo:
+          |  extmodule Bar:
+          |    input a: UInt<1>
+          |    defname = bar
+          |    parameter width = 1
+          |  extmodule Baz:
+          |    input a: UInt<2>
+          |    defname = bar
+          |    parameter width = 2
+          |  module Foo:
+          |    skip
+          |""".stripMargin
+    checkHighInput(input)
+  }
+
+  it should "throw an exception if ExtModules have matching port names and widths, but a different order" in {
+    val input =
+      s"""|circuit Foo:
+          |  extmodule Bar:
+          |    input a: UInt<1>
+          |    input b: UInt<1>
+          |    defname = bar
+          |  extmodule Baz:
+          |    input b: UInt<1>
+          |    input a: UInt<1>
+          |    defname = bar
+          |  module Foo:
+          |    skip
+          |""".stripMargin
+    assertThrows[CheckHighForm.DefnameDifferentPortsException] {
+      try {
+        checkHighInput(input)
+      } catch {
+        case e: firrtl.passes.PassExceptions => throw e.exceptions.head
+      }
+    }
+  }
+
+  it should "throw an exception if ExtModules have matching port names, but one is a Clock and one is a UInt<1>" in {
+    val input =
+      s"""|circuit Foo:
+          |  extmodule Bar:
+          |    input a: UInt<1>
+          |    defname = bar
+          |  extmodule Baz:
+          |    input a: Clock
+          |    defname = bar
+          |  module Foo:
+          |    skip
+          |""".stripMargin
+    assertThrows[CheckHighForm.DefnameDifferentPortsException] {
+      try {
+        checkHighInput(input)
+      } catch {
+        case e: firrtl.passes.PassExceptions => throw e.exceptions.head
+      }
+    }
+  }
+
+  it should "throw an exception if ExtModules have differing concrete reset types" in {
+    def input(rst1: String, rst2: String) =
+      s"""|circuit Foo:
+          |  extmodule Bar:
+          |    input rst: $rst1
+          |    defname = bar
+          |  extmodule Baz:
+          |    input rst: $rst2
+          |    defname = bar
+          |  module Foo:
+          |    skip
+          |""".stripMargin
+    info("exception thrown for 'UInt<1>' compared to 'AsyncReset'")
+    assertThrows[CheckHighForm.DefnameDifferentPortsException] {
+      try {
+        checkHighInput(input("UInt<1>", "AsyncReset"))
+      } catch {
+        case e: firrtl.passes.PassExceptions => throw e.exceptions.head
+      }
+    }
+    info("exception thrown for 'UInt<1>' compared to 'Reset'")
+    assertThrows[CheckHighForm.DefnameDifferentPortsException] {
+      try {
+        checkHighInput(input("UInt<1>", "Reset"))
+      } catch {
+        case e: firrtl.passes.PassExceptions => throw e.exceptions.head
+      }
+    }
+  }
+
 }
 
 object CheckSpec {

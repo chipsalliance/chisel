@@ -193,13 +193,13 @@ class DedupModuleTests extends HighTransformSpec {
           |  module A_ : @[xx 1:1]
           |    output y: UInt<1> @[xx 1:1]
           |    inst c of C
-          |    y <= c.v
+          |    y <= c.u
           |  extmodule B : @[aa 3:3]
           |    output u : UInt<1> @[aa 4:4]
           |    defname = BB
           |    parameter N = 0
           |  extmodule C : @[bb 5:5]
-          |    output v : UInt<1> @[bb 6:6]
+          |    output u : UInt<1> @[bb 6:6]
           |    defname = BB
           |    parameter N = 0
         """.stripMargin
@@ -238,13 +238,13 @@ class DedupModuleTests extends HighTransformSpec {
           |  module A_ : @[xx 1:1]
           |    output y: UInt<1> @[xx 1:1]
           |    inst c of C
-          |    y <= c.v
+          |    y <= c.u
           |  extmodule B : @[aa 3:3]
           |    output u : UInt<1> @[aa 4:4]
           |    defname = ${defnames._1}
           |    parameter N = ${params._1}
           |  extmodule C : @[bb 5:5]
-          |    output v : UInt<1> @[bb 6:6]
+          |    output u : UInt<1> @[bb 6:6]
           |    defname = ${defnames._2}
           |    parameter N = ${params._2}
         """.stripMargin
@@ -875,4 +875,3 @@ class DedupModuleTests extends HighTransformSpec {
     csDeduped.annotations.toSeq should contain (expectedAnnB)
   }
 }
-

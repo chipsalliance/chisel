@@ -54,6 +54,8 @@ trait CheckHighFormLike { this: Pass =>
     s"$info: Repeat definition of module $mname")
   class DefnameConflictException(info: Info, mname: String, defname: String) extends PassException(
     s"$info: defname $defname of extmodule $mname conflicts with an existing module")
+  class DefnameDifferentPortsException(info: Info, mname: String, defname: String) extends PassException(
+    s"""$info: ports of extmodule $mname with defname $defname are different for an extmodule with the same defname""")
   class ModuleNotDefinedException(info: Info, mname: String, name: String) extends PassException(
     s"$info: Module $name is not defined.")
   class IncorrectNumArgsException(info: Info, mname: String, op: String, n: Int) extends PassException(
@@ -100,9 +102,37 @@ trait CheckHighFormLike { this: Pass =>
       m => errors.append(new ModuleNameNotUniqueException(m.info, m.name))
     }
 
+    /** Strip all widths from types */
+    def stripWidth(tpe: Type): Type = tpe match {
+      case a: GroundType    => a.mapWidth(_ => UnknownWidth)
+      case a: AggregateType => a.mapType(stripWidth)
+    }
+
+    val extmoduleCollidingPorts = c.modules.collect {
+      case a: ExtModule => a
+    }.groupBy(a => (a.defname, a.params.nonEmpty)).map {
+      /* There are no parameters, so all ports must match exactly. */
+      case (k@ (_, false), a) =>
+        k -> a.map(_.copy(info=NoInfo)).map(_.ports.map(_.copy(info=NoInfo))).toSet
+      /* If there are parameters, then only port names must match because parameters could parameterize widths.
+       * This means that this check cannot produce false positives, but can have false negatives.
+       */
+      case (k@ (_, true),  a) =>
+        k -> a.map(_.copy(info=NoInfo)).map(_.ports.map(_.copy(info=NoInfo).mapType(stripWidth))).toSet
+    }.filter(_._2.size > 1)
+
     c.modules.collect {
-      case ExtModule(info, name, _, defname, _) if (intModuleNames.contains(defname)) =>
-        errors.append(new DefnameConflictException(info, name, defname))
+      case a: ExtModule =>
+        a match {
+          case ExtModule(info, name, _, defname, _) if (intModuleNames.contains(defname)) =>
+            errors.append(new DefnameConflictException(info, name, defname))
+          case _ =>
+        }
+        a match {
+          case ExtModule(info, name, _, defname, params) if extmoduleCollidingPorts.contains((defname, params.nonEmpty)) =>
+            errors.append(new DefnameDifferentPortsException(info, name, defname))
+          case _ =>
+        }
     }
 
     def checkHighFormPrimop(info: Info, mname: String, e: DoPrim): Unit = {
