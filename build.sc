@@ -13,7 +13,7 @@ object chisel3 extends mill.Cross[chisel3CrossModule]("2.11.12", "2.12.11")
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
 val defaultVersions = Map(
   "firrtl" -> "1.4-SNAPSHOT",
-  "treadle" -> "1.3-SNAPSHOT"
+  "treadle" -> "1.3-20200728-SNAPSHOT"
 )
 
 def getVersion(dep: String, org: String = "edu.berkeley.cs") = {
