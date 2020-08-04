@@ -217,7 +217,7 @@ private[chisel3] object MonoConnect {
 
     // CASE: Context is same module as sink node and right node is in a child module
     else if( (sink_mod == context_mod) &&
-             (source_mod._parent.map(_ == context_mod).getOrElse(false)) ) {
+             (isSubmodule(source_mod, context_mod)) ) {
       // Thus, right node better be a port node and thus have a direction
       ((sink_direction, source_direction): @unchecked) match {
         //    SINK          SOURCE
@@ -240,7 +240,7 @@ private[chisel3] object MonoConnect {
 
     // CASE: Context is same module as source node and sink node is in child module
     else if( (source_mod == context_mod) &&
-             (sink_mod._parent.map(_ == context_mod).getOrElse(false)) ) {
+             (isSubmodule(sink_mod, context_mod)) ) {
       // Thus, left node better be a port node and thus have a direction
       ((sink_direction, source_direction): @unchecked) match {
         //    SINK          SOURCE
@@ -254,8 +254,8 @@ private[chisel3] object MonoConnect {
     // CASE: Context is the parent module of both the module containing sink node
     //                                        and the module containing source node
     //   Note: This includes case when sink and source in same module but in parent
-    else if( (sink_mod._parent.map(_ == context_mod).getOrElse(false)) &&
-             (source_mod._parent.map(_ == context_mod).getOrElse(false))
+    else if( (isSubmodule(sink_mod, context_mod)) &&
+             (isSubmodule(source_mod, context_mod))
     ) {
       // Thus both nodes must be ports and have a direction
       ((sink_direction, source_direction): @unchecked) match {
@@ -277,6 +277,19 @@ private[chisel3] object MonoConnect {
 
     // Not quite sure where left and right are compared to current module
     // so just error out
-    else throw UnknownRelationException
+    else {
+      throw UnknownRelationException
+    }
+  }
+
+  def isSubmodule (module: BaseModule, context_mod: RawModule): Boolean = {
+    val parent = module._parent match {
+      case Some(parentModule) => Builder.aspectModule(parentModule) match {
+        case Some(aspect) => aspect
+        case _ => parentModule
+      }
+      case _ => None
+    }
+    parent == context_mod
   }
 }
