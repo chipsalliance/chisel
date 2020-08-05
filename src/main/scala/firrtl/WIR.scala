@@ -63,7 +63,7 @@ object WSubAccess {
   def unapply(wsa: WSubAccess): Option[(Expression, Expression, Type, Flow)] = Some((wsa.expr, wsa.index, wsa.tpe, wsa.flow))
 }
 
-case object WVoid extends Expression {
+case object WVoid extends Expression with UseSerializer {
   def tpe = UnknownType
   def mapExpr(f: Expression => Expression): Expression = this
   def mapType(f: Type => Type): Expression = this
@@ -72,7 +72,7 @@ case object WVoid extends Expression {
   def foreachType(f: Type => Unit): Unit = ()
   def foreachWidth(f: Width => Unit): Unit = ()
 }
-case object WInvalid extends Expression {
+case object WInvalid extends Expression with UseSerializer {
   def tpe = UnknownType
   def mapExpr(f: Expression => Expression): Expression = this
   def mapType(f: Type => Type): Expression = this
@@ -82,7 +82,7 @@ case object WInvalid extends Expression {
   def foreachWidth(f: Width => Unit): Unit = ()
 }
 // Useful for splitting then remerging references
-case object EmptyExpression extends Expression {
+case object EmptyExpression extends Expression with UseSerializer {
   def tpe = UnknownType
   def mapExpr(f: Expression => Expression): Expression = this
   def mapType(f: Type => Type): Expression = this
@@ -105,7 +105,7 @@ case class WDefInstanceConnector(
     name: String,
     module: String,
     tpe: Type,
-    portCons: Seq[(Expression, Expression)]) extends Statement with IsDeclaration {
+    portCons: Seq[(Expression, Expression)]) extends Statement with IsDeclaration with UseSerializer {
   def mapExpr(f: Expression => Expression): Statement =
     this.copy(portCons = portCons map { case (e1, e2) => (f(e1), f(e2)) })
   def mapStmt(f: Statement => Statement): Statement = this
@@ -325,7 +325,7 @@ case class CDefMemory(
     tpe: Type,
     size: BigInt,
     seq: Boolean,
-    readUnderWrite: ReadUnderWrite.Value = ReadUnderWrite.Undefined) extends Statement with HasInfo {
+    readUnderWrite: ReadUnderWrite.Value = ReadUnderWrite.Undefined) extends Statement with HasInfo with UseSerializer {
   def mapExpr(f: Expression => Expression): Statement = this
   def mapStmt(f: Statement => Statement): Statement = this
   def mapType(f: Type => Type): Statement = this.copy(tpe = f(tpe))
@@ -342,7 +342,7 @@ case class CDefMPort(info: Info,
     tpe: Type,
     mem: String,
     exps: Seq[Expression],
-    direction: MPortDir) extends Statement with HasInfo {
+    direction: MPortDir) extends Statement with HasInfo with UseSerializer {
   def mapExpr(f: Expression => Expression): Statement = this.copy(exps = exps map f)
   def mapStmt(f: Statement => Statement): Statement = this
   def mapType(f: Type => Type): Statement = this.copy(tpe = f(tpe))
