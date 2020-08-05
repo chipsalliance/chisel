@@ -11,7 +11,7 @@ import firrtl.traversals.Foreachers._
 import firrtl.annotations._
 import firrtl.Utils.throwInternalError
 import firrtl.graph._
-import firrtl.analyses.InstanceGraph
+import firrtl.analyses.InstanceKeyGraph
 import firrtl.options.{Dependency, RegisteredTransform, ShellOption}
 
 /**
@@ -241,7 +241,7 @@ class CheckCombLoops extends Transform
       case ann: Annotation => CircuitTarget(c.main)
     }
     val moduleMap = c.modules.map({m => (m.name,m) }).toMap
-    val iGraph = new InstanceGraph(c).graph
+    val iGraph = InstanceKeyGraph(c).graph
     val moduleDeps = iGraph.getEdgeMap.map({ case (k,v) => (k.module, (v map { i => (i.name, i.module) }).toMap) }).toMap
     val topoSortedModules = iGraph.transformNodes(_.module).linearize.reverse map { moduleMap(_) }
     val moduleGraphs = new mutable.HashMap[String, ConnMap]

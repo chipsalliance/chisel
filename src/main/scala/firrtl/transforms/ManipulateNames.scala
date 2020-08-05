@@ -3,7 +3,7 @@
 package firrtl.transforms
 
 import firrtl._
-import firrtl.analyses.InstanceGraph
+import firrtl.analyses.InstanceKeyGraph
 import firrtl.Mappers._
 
 import firrtl.annotations.{
@@ -422,7 +422,7 @@ abstract class ManipulateNames[A <: ManipulateNames[_] : ClassTag] extends Trans
          * roots ensures that the rename map is safe for parents to blindly consult. Store this in mapping of old module
          * target to new module to allow the modules to be put in the old order.
          */
-        val modulesx: Map[ModuleTarget, ir.DefModule] = new InstanceGraph(c).moduleOrder.reverse
+        val modulesx: Map[ModuleTarget, ir.DefModule] = InstanceKeyGraph(c).moduleOrder.reverse
           .map(m => t.module(m.name) -> onModule(m, r, t))
           .toMap
 

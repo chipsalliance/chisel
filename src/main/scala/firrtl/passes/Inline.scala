@@ -7,7 +7,7 @@ import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.annotations._
 import firrtl.annotations.TargetToken.{Instance, OfModule}
-import firrtl.analyses.{InstanceGraph}
+import firrtl.analyses.InstanceKeyGraph
 import firrtl.graph.{DiGraph, MutableDiGraph}
 import firrtl.stage.{Forms, RunFirrtlTransformAnnotation}
 import firrtl.options.{RegisteredTransform, ShellOption}
@@ -80,7 +80,7 @@ class InlineInstances extends Transform with DependencyAPIMigration with Registe
    // 3) All annotated instances exist, and their modules can be inline
    def check(c: Circuit, moduleNames: Set[ModuleName], instanceNames: Set[ComponentName]): Unit = {
       val errors = mutable.ArrayBuffer[PassException]()
-      val moduleMap = new InstanceGraph(c).moduleMap
+      val moduleMap = InstanceKeyGraph(c).moduleMap
       def checkExists(name: String): Unit =
          if (!moduleMap.contains(name))
             errors += new PassException(s"Annotated module does not exist: $name")
@@ -136,10 +136,10 @@ class InlineInstances extends Transform with DependencyAPIMigration with Registe
     check(c, modsToInline, instsToInline)
     val flatModules = modsToInline.map(m => m.name)
     val flatInstances: Set[(OfModule, Instance)] = instsToInline.map(i => OfModule(i.module.name) -> Instance(i.name)) ++ getInstancesOf(c, flatModules)
-    val iGraph = new InstanceGraph(c)
+    val iGraph = InstanceKeyGraph(c)
     val namespaceMap = collection.mutable.Map[String, Namespace]()
     // Map of Module name to Map of instance name to Module name
-    val instMaps = iGraph.getChildrenInstanceMap
+    val instMaps = iGraph.getChildInstanceMap
 
     /** Add a prefix to all declarations updating a [[Namespace]] and appending to a [[RenameMap]] */
     def appendNamePrefix(

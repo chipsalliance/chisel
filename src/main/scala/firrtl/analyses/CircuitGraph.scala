@@ -3,6 +3,7 @@
 package firrtl.analyses
 
 import firrtl.Kind
+import firrtl.analyses.InstanceKeyGraph.InstanceKey
 import firrtl.annotations.TargetToken.{Instance, OfModule}
 import firrtl.annotations._
 import firrtl.ir.{Circuit, DefInstance}
@@ -48,10 +49,10 @@ class CircuitGraph private[analyses] (connectionGraph: ConnectionGraph) {
   private val irLookup = connectionGraph.irLookup
 
   // Module/Instance Hierarchy information
-  private lazy val instanceGraph = new InstanceGraph(circuit)
+  private lazy val instanceGraph = InstanceKeyGraph(circuit)
 
   // Per module, which modules does it instantiate
-  private lazy val moduleChildren = instanceGraph.getChildrenInstanceOfModule
+  private lazy val moduleChildren = instanceGraph.getChildInstances.toMap
 
   // Top-level module target
   private val main = ModuleTarget(circuit.main, circuit.main)
@@ -80,7 +81,7 @@ class CircuitGraph private[analyses] (connectionGraph: ConnectionGraph) {
     */
   def absolutePaths(mt: ModuleTarget): Seq[IsModule] = instanceGraph.findInstancesInHierarchy(mt.module).map {
     case seq if seq.nonEmpty => seq.foldLeft(CircuitTarget(circuit.main).module(circuit.main): IsModule) {
-      case (it, DefInstance(_, instance, ofModule, _)) => it.instOf(instance, ofModule)
+      case (it, InstanceKey(instance, ofModule)) => it.instOf(instance, ofModule)
     }
   }
 
@@ -113,9 +114,7 @@ class CircuitGraph private[analyses] (connectionGraph: ConnectionGraph) {
     val leafModule = path.leafModule
     val children = moduleChildren(leafModule)
     val localRefs = localReferences(path, kind)
-    localRefs ++ children.flatMap {
-      case (Instance(inst), OfModule(ofModule)) => deepReferences(kind, path.instOf(inst, ofModule))
-    }
+    localRefs ++ children.flatMap { child => deepReferences(kind, path.instOf(child.name, child.module)) }
   }
 
   /** Return all absolute references to signals of the given kind directly contained in the module

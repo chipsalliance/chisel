@@ -4,7 +4,7 @@ package firrtl.analyses
 
 import firrtl.annotations._
 import firrtl.annotations.TargetToken._
-import firrtl.graph.{DiGraph, MutableDiGraph}
+import firrtl.graph.{DiGraph, EulerTour, MutableDiGraph}
 import firrtl.ir
 
 import scala.collection.mutable
@@ -14,7 +14,7 @@ import scala.collection.mutable
   * pairs of InstanceName and Module name as vertex keys instead of using WDefInstance
   * which will hash the instance type causing some performance issues.
   */
-class InstanceKeyGraph(c: ir.Circuit) {
+class InstanceKeyGraph private(c: ir.Circuit) {
   import InstanceKeyGraph._
 
   private val nameToModule: Map[String, ir.DefModule] = c.modules.map({m => (m.name,m) }).toMap
@@ -23,23 +23,59 @@ class InstanceKeyGraph(c: ir.Circuit) {
   }
   private val instantiated = childInstances.flatMap(_._2).map(_.module).toSet
   private val roots = c.modules.map(_.name).filterNot(instantiated)
-  private val graph = buildGraph(childInstances, roots)
+  private val internalGraph = buildGraph(childInstances, roots)
   private val circuitTopInstance = topKey(c.main)
   // cache vertices to speed up repeat calls to findInstancesInHierarchy
-  private lazy val vertices = graph.getVertices
+  private lazy val vertices = internalGraph.getVertices
 
   /** A list of absolute paths (each represented by a Seq of instances) of all module instances in the Circuit. */
-  private lazy val fullHierarchy: mutable.LinkedHashMap[InstanceKey, Seq[Seq[InstanceKey]]] =
-    graph.pathsInDAG(circuitTopInstance)
+  private lazy val cachedFullHierarchy: mutable.LinkedHashMap[InstanceKey, Seq[Seq[InstanceKey]]] =
+    internalGraph.pathsInDAG(circuitTopInstance)
+
+  /** modules reachable from the main module as well as the main modules itself */
+  private lazy val cachedReachableModules: Seq[OfModule] =
+    circuitTopInstance.OfModule +: internalGraph.reachableFrom(circuitTopInstance).toSeq.map(_.OfModule)
+
+  private lazy val cachedUnreachableModules: Seq[OfModule] = {
+    val all = mutable.LinkedHashSet(childInstances.map(c => OfModule(c._1)):_*)
+    val reachable = mutable.LinkedHashSet(cachedReachableModules:_*)
+    all.diff(reachable).toSeq
+  }
+
+  /** returns the underlying graph */
+  def graph: DiGraph[InstanceKey] = internalGraph
+
+  /** returns the key to the top (main) module */
+  def top: InstanceKey = circuitTopInstance
 
   /** maps module names to the DefModule node */
   def moduleMap: Map[String, ir.DefModule] = nameToModule
 
   /** Module order from highest module to leaf module */
-  def moduleOrder: Seq[ir.DefModule] = graph.transformNodes(_.module).linearize.map(nameToModule(_))
+  def moduleOrder: Seq[ir.DefModule] = internalGraph.transformNodes(_.module).linearize.map(nameToModule(_))
 
   /** Returns a sequence that can be turned into a map from module name to instances defined in said module. */
   def getChildInstances: Seq[(String, Seq[InstanceKey])] = childInstances
+
+  /** A count of the *static* number of instances of each module. For any module other than the top (main) module,
+    * this is equivalent to the number of inst statements in the circuit instantiating each module,
+    * irrespective of the number of times (if any) the enclosing module appears in the hierarchy.
+    * Note that top module of the circuit has an associated count of one, even though it is never directly instantiated.
+    * Any modules *not* instantiated at all will have a count of zero.
+    */
+  def staticInstanceCount: Map[OfModule, Int] = cachedStaticInstanceCount
+
+  private lazy val cachedStaticInstanceCount = {
+    val foo = mutable.LinkedHashMap.empty[OfModule, Int]
+    childInstances.foreach {
+      case (main, _) if main == c.main => foo += main.OfModule  -> 1
+      case (other, _)                  => foo += other.OfModule -> 0
+    }
+    childInstances.flatMap(_._2).map(_.OfModule).foreach {
+      mod => foo += mod -> (foo(mod) + 1)
+    }
+    foo.toMap
+  }
 
   /** Finds the absolute paths (each represented by a Seq of instances
     * representing the chain of hierarchy) of all instances of a particular
@@ -52,12 +88,32 @@ class InstanceKeyGraph(c: ir.Circuit) {
     */
   def findInstancesInHierarchy(module: String): Seq[Seq[InstanceKey]] = {
     val instances = vertices.filter(_.module == module).toSeq
-    instances.flatMap{ i => fullHierarchy.getOrElse(i, Nil) }
+    instances.flatMap{ i => cachedFullHierarchy.getOrElse(i, Nil) }
   }
+
+  /** Given a circuit, returns a map from module name to a map
+    * in turn mapping instances names to corresponding module names
+    */
+  def getChildInstanceMap: mutable.LinkedHashMap[OfModule, mutable.LinkedHashMap[Instance, OfModule]] =
+    mutable.LinkedHashMap(childInstances.map { case (k, v) =>
+      val moduleMap: mutable.LinkedHashMap[Instance, OfModule] = mutable.LinkedHashMap(v.map(_.toTokens):_*)
+      TargetToken.OfModule(k) -> moduleMap
+    }:_*)
+
+  /** All modules in the circuit reachable from the top module */
+  def reachableModules: Seq[OfModule] = cachedReachableModules
+
+  /** All modules *not* reachable from the top module of the circuit */
+  def unreachableModules: Seq[OfModule] = cachedUnreachableModules
+
+  /** A list of absolute paths (each represented by a Seq of instances) of all module instances in the Circuit. */
+  def fullHierarchy: mutable.LinkedHashMap[InstanceKey, Seq[Seq[InstanceKey]]] = cachedFullHierarchy
 }
 
 
 object InstanceKeyGraph {
+  def apply(c: ir.Circuit): InstanceKeyGraph = new InstanceKeyGraph(c)
+
   /** We want to only use this untyped version as key because hashing bundle types is expensive
     * @param name the name of the instance
     * @param module the name of the module that is instantiated

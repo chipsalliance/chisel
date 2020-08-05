@@ -6,7 +6,7 @@ import firrtl.ir._
 import firrtl.passes._
 import firrtl.annotations._
 import firrtl.graph._
-import firrtl.analyses.InstanceGraph
+import firrtl.analyses.InstanceKeyGraph
 import firrtl.Mappers._
 import firrtl.Utils.{throwInternalError, kind}
 import firrtl.MemoizedHash._
@@ -314,7 +314,7 @@ class DeadCodeElimination extends Transform
           doTouchExtMods: Set[String]): CircuitState = {
     val c = state.circuit
     val moduleMap = c.modules.map(m => m.name -> m).toMap
-    val iGraph = new InstanceGraph(c)
+    val iGraph = InstanceKeyGraph(c)
     val moduleDeps = iGraph.graph.getEdgeMap.map({ case (k,v) =>
       k.module -> v.map(i => i.name -> i.module).toMap
     })

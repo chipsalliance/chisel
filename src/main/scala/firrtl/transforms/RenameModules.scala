@@ -2,7 +2,7 @@
 
 package firrtl.transforms
 
-import firrtl.analyses.{InstanceGraph, ModuleNamespaceAnnotation}
+import firrtl.analyses.{InstanceKeyGraph, ModuleNamespaceAnnotation}
 import firrtl.ir._
 import firrtl._
 import firrtl.stage.Forms
@@ -39,7 +39,7 @@ class RenameModules extends Transform with DependencyAPIMigration {
       logger.warn("Skipping Rename Modules")
       state
     } else {
-      val moduleOrder = new InstanceGraph(state.circuit).moduleOrder.reverse
+      val moduleOrder = InstanceKeyGraph(state.circuit).moduleOrder.reverse
       val nameMappings = new mutable.HashMap[String, String]()
       moduleOrder.foreach(collectNameMapping(namespace.get, nameMappings))
 
