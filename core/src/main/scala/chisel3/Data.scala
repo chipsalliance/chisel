@@ -451,8 +451,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     topBindingOpt match {
       case Some(tb: TopBinding) if (mod == Builder.currentModule) =>
       case Some(pb: PortBinding) if (mod.flatMap(_._parent) == Builder.currentModule) ||
-        (mod.flatMap(_._parent).map(Builder.aspectModule(_).getOrElse(None)) ==
-          Builder.currentModule) =>
+        (mod.flatMap(Builder.parentAspectModule(_)) == Builder.currentModule) =>
       case _ =>
         throwException(s"operand is not visible from the current module")
     }
