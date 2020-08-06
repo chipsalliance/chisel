@@ -25,27 +25,25 @@ class TopExplicit(simple: Simple) extends MultiIOModule {
   val in  = IO(Input(UInt(3.W)))
   val out = IO(Output(UInt(3.W)))
 
-  //val SIMPLE: Simple = Instance(simple)
-  val SIMPLE: Simple = Instance.createInstance(simple, Some("SIMPLE"))
+  val SIMPLE: Simple = Instance(simple)
+  //val SIMPLE: Simple = Instance.createInstance(simple, Some("SIMPLE"))
 
-  //SIMPLE.in := in
-  SIMPLE.useInstance("SIMPLE")(SIMPLE.in) := in
+  SIMPLE.in := in
+  //SIMPLE.useInstance("SIMPLE")(SIMPLE.in) := in
 
-  //out := SIMPLE.out
-  out := SIMPLE.useInstance("SIMPLE")(SIMPLE.out)
+  out := SIMPLE.out
+  //out := SIMPLE.useInstance("SIMPLE")(SIMPLE.out)
 }
 
-class TopImplicit(simple: Simple) extends MultiIOModule {
+class TopImplicit(n: Int, simple: Simple) extends MultiIOModule {
   val in  = IO(Input(UInt(3.W)))
   val out = IO(Output(UInt(3.W)))
 
-  val SIMPLE: Simple = Instance(simple)
-  val SIMPLE2: Simple = Instance(simple)
-
-  SIMPLE.in := in
-  SIMPLE2.in := SIMPLE.out
-  out := SIMPLE2.out
-
+  out := (0 until n).foldLeft(in) { (i, int) =>
+    val INST = Instance(simple)
+    INST.in := i
+    INST.out
+  }
 }
 
 class InstanceSpec extends ChiselPropSpec with Utils {
@@ -69,7 +67,7 @@ class InstanceSpec extends ChiselPropSpec with Utils {
 
   property("First example test case") {
     val simple: Simple = build { new Simple }
-    val top: TopImplicit = build { new TopImplicit(simple) }
+    val top: TopImplicit = build { new TopImplicit(2, simple) }
   }
 
   property("Explicit example test case") {

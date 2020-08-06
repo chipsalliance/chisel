@@ -24,7 +24,6 @@ object Instance {
     Builder.addInstance(key, wrapper)
     module
   }
-
 }
 
 class Instance[T <: BaseModule] private[chisel3]( moduleName: String, ports: Record, module: T )
