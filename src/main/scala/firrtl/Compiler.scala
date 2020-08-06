@@ -540,7 +540,10 @@ trait Compiler extends Transform with DependencyAPIMigration {
     * @param customTransforms Any custom [[Transform]]s that will be inserted
     *   into the compilation process by [[CompilerUtils.mergeTransforms]]
     */
-  @deprecated("Please use compileAndEmit or other compile method instead", "firrtl 1.0")
+  @deprecated(
+    "Migrate to '(new FirrtlStage).execute(args: Array[String], annotations: AnnotationSeq)'." +
+      "This will be removed in 1.4.",
+    "FIRRTL 1.0")
   def compile(state: CircuitState,
               writer: Writer,
               customTransforms: Seq[Transform] = Seq.empty): CircuitState = {
@@ -561,6 +564,10 @@ trait Compiler extends Transform with DependencyAPIMigration {
     *   into the compilation process by [[CompilerUtils.mergeTransforms]]
     * @return result of compilation with emitted circuit annotated
     */
+  @deprecated(
+    "Migrate to '(new FirrtlStage).execute(args: Array[String], annotations: AnnotationSeq)'." +
+      "This will be removed in 1.4.",
+    "FIRRTL 1.3.3")
   def compileAndEmit(state: CircuitState,
                      customTransforms: Seq[Transform] = Seq.empty): CircuitState = {
     val emitAnno = EmitCircuitAnnotation(emitter.getClass)
@@ -576,6 +583,10 @@ trait Compiler extends Transform with DependencyAPIMigration {
     *   process by [[CompilerUtils.mergeTransforms]]
     * @return result of compilation
     */
+  @deprecated(
+    "Migrate to '(new FirrtlStage).execute(args: Array[String], annotations: AnnotationSeq)'." +
+      "This will be removed in 1.4.",
+    "FIRRTL 1.3.3")
   def compile(state: CircuitState, customTransforms: Seq[Transform]): CircuitState = {
     val transformManager = new stage.transforms.Compiler (
       targets = (emitter +: customTransforms ++: transforms).map(Dependency.fromTransform),
