@@ -222,17 +222,14 @@ private[chisel3] object BiConnect {
     val left_mod: BaseModule  = left.topBinding.location.getOrElse(context_mod)
     val right_mod: BaseModule = right.topBinding.location.getOrElse(context_mod)
 
-    val left_aspect = Builder.parentAspectModule(left_mod).getOrElse(None)
-    val right_aspect = Builder.parentAspectModule(right_mod).getOrElse(None)
+    val left_parent = Builder.retrieveParent(left_mod, context_mod).getOrElse(None)
+    val right_parent = Builder.retrieveParent(right_mod, context_mod).getOrElse(None)
 
     val left_direction = BindingDirection.from(left.topBinding, left.direction)
     val right_direction = BindingDirection.from(right.topBinding, right.direction)
 
     // CASE: Context is same module as left node and right node is in a child module
-    if( ((left_mod == context_mod) &&
-        (right_mod._parent.map(_ == context_mod).getOrElse(false))) ||
-        ((left_mod == context_mod) &&
-        (right_aspect == context_mod))) {
+    if((left_mod == context_mod) && (right_parent == context_mod)) {
       // Thus, right node better be a port node and thus have a direction hint
       ((left_direction, right_direction): @unchecked) match {
         //    CURRENT MOD   CHILD MOD
@@ -249,10 +246,7 @@ private[chisel3] object BiConnect {
     }
 
     // CASE: Context is same module as right node and left node is in child module
-    else if( ((right_mod == context_mod) &&
-             (left_mod._parent.map(_ == context_mod).getOrElse(false))) ||
-             ((right_mod == context_mod) &&
-             (left_aspect == context_mod))) {
+    else if((right_mod == context_mod) && (left_parent == context_mod)) {
       // Thus, left node better be a port node and thus have a direction hint
       ((left_direction, right_direction): @unchecked) match {
         //    CHILD MOD     CURRENT MOD
@@ -295,10 +289,7 @@ private[chisel3] object BiConnect {
     // CASE: Context is the parent module of both the module containing left node
     //                                        and the module containing right node
     //   Note: This includes case when left and right in same module but in parent
-    else if( ((left_mod._parent.map(_ == context_mod).getOrElse(false)) &&
-             (right_mod._parent.map(_ == context_mod).getOrElse(false))) ||
-             ((left_aspect == context_mod) &&
-             (right_aspect == context_mod))) {
+    else if((left_parent == context_mod) && (right_parent == context_mod)) {
       // Thus both nodes must be ports and have a direction hint
       ((left_direction, right_direction): @unchecked) match {
         //    CHILD MOD     CHILD MOD
