@@ -122,34 +122,39 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
 
     // Method called by the compiler to modify source tree
     override def transform(tree: Tree): Tree = tree match {
-      case dd @ ClassDef(mods, name, tparams, impl) if name.toString.contains("SimpleX") =>
+      case dd @ ClassDef(mods, name, tparams, impl) if impl.tpe <:< inferType(tq"chisel3.experimental.BaseModule") =>
         val newBody = impl.body.map {
           case t @ ValDef(mods, name, tpt, rhs) if okFlags(mods) =>
             val newRhs = localTyper typed q"chisel3.experimental.isInstance.check[$tpt]($rhs)"
             localTyper typed treeCopy.ValDef(t, mods, name, tpt, newRhs)
-          case t: TermTree =>
+          case t: TermTree if t.tpe != NoType =>
             val curry = localTyper typed q"$t"
-            localTyper typed q"(chisel3.experimental.isInstance.check[${TypeTree(t.tpe)}]($curry))"
+            localTyper typed q"(chisel3.experimental.isInstance.check[${TypeTree(curry.tpe)}]($curry))"
           case other => other
         }
         val newImpl = transform(localTyper typed treeCopy.Template(impl, impl.parents, impl.self, newBody.toList))
         val ret = localTyper typed treeCopy.ClassDef(dd, mods, name, tparams, newImpl.asInstanceOf[Template])
+
+        //if(name.toString.contains("SimpleX")) {
+        //  error(showRaw(ret, printTypes = true))
+        //  error(show(ret))
+        //}
         ret
-      case dd @ Select(quals, data) if quals.tpe <:< inferType(tq"chisel3.experimental.BaseModule") && dd.tpe <:< inferType(tq"chisel3.Data") && quals.toString.contains("SIMPLE") =>
+      case dd @ Select(quals, data) if quals.tpe <:< inferType(tq"chisel3.experimental.BaseModule") && dd.tpe <:< inferType(tq"chisel3.Data") =>
         //out := SIMPLE.useInstance(SIMPLE.getBackingModule[Simple].out)
         val ret = quals match {
           // If not a member of the parent class
           case Ident(TermName(name)) =>
             val newQuals = transform(quals)
-            val backingModule = localTyper typed q"$newQuals.getBackingModule[${newQuals.tpe}]"
-            val newSelection = treeCopy.Select(dd, backingModule, data)
-            localTyper typed q"$newQuals.useInstance($newSelection)"
+            val backingModule = localTyper typed q"$newQuals.getBackingModule[${quals.tpe}]"
+            val newSelection = localTyper typed treeCopy.Select(dd, backingModule, data)
+            localTyper typed q"$newQuals.useInstance[${dd.tpe}]($newSelection)"
           // If a member of the parent class
           case Select(_, TermName(name)) =>
             val newQuals = transform(quals)
-            val backingModule = localTyper typed q"$newQuals.getBackingModule[${newQuals.tpe}]"
-            val newSelection = treeCopy.Select(dd, backingModule, data)
-            localTyper typed q"$newQuals.useInstance($newSelection)"
+            val backingModule = localTyper typed q"$newQuals.getBackingModule[${quals.tpe}]"
+            val newSelection = localTyper typed treeCopy.Select(dd, backingModule, data)
+            localTyper typed q"$newQuals.useInstance[${dd.tpe}]($newSelection)"
           case other => super.transform(dd)
         }
         //error(showRaw(dd))

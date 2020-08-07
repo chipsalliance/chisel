@@ -23,6 +23,7 @@ class Leaf extends MultiIOModule {
   val out = IO(Output(UInt(3.W)))
   out := in + in
   val x = 10
+  println("Elaborated Leaf!")
 }
 
 class SimpleX(int: Int) extends MultiIOModule {
@@ -90,6 +91,7 @@ class InstanceSpec extends ChiselPropSpec with Utils {
 //Prints out:
 /*
 [info] [0.002] Elaborating design...
+Elaborated Leaf!
 [info] [0.063] Done elaborating.
 circuit SimpleX :
   module Leaf :
