@@ -28,10 +28,36 @@ def javacOptionsVersion(scalaVersion: String): Seq[String] = {
   }
 }
 
-val defaultVersions = Seq(
-  "edu.berkeley.cs" %% "firrtl" % "1.4-SNAPSHOT",
-  "edu.berkeley.cs" %% "treadle" % "1.3-SNAPSHOT"
+val defaultVersions = Map(
+  "firrtl" -> "edu.berkeley.cs" %% "firrtl" % "1.4-SNAPSHOT",
+  "treadle" -> "edu.berkeley.cs" %% "treadle" % "1.3-SNAPSHOT"
 )
+
+// Optionally depend on firrtl from source
+val firrtlDirOpt = sys.props.get("chisel3.firrtl.path")
+lazy val firrtl = project in file(firrtlDirOpt.getOrElse(".fake_firrtl"))
+
+lazy val firrtlLibraryDepSettings = Seq(
+  libraryDependencies += defaultVersions("firrtl")
+)
+
+def dependOnFirrtl(proj: Project): Project = firrtlDirOpt match {
+  case None    => proj.settings(firrtlLibraryDepSettings)
+  case Some(_) => proj.dependsOn(firrtl)
+}
+
+// Optionally depend on treadle from source
+val treadleDirOpt = sys.props.get("chisel3.treadle.path")
+lazy val treadle = project in file(treadleDirOpt.getOrElse(".fake_treadle"))
+
+lazy val treadleLibraryDepSettings = Seq(
+  libraryDependencies += defaultVersions("treadle")
+)
+
+def dependOnTreadle(proj: Project): Project = treadleDirOpt match {
+  case None    => proj.settings(treadleLibraryDepSettings)
+  case Some(_) => proj.dependsOn(treadle)
+}
 
 lazy val commonSettings = Seq (
   resolvers ++= Seq(
@@ -46,20 +72,6 @@ lazy val commonSettings = Seq (
   scalacOptions := Seq("-deprecation", "-feature") ++ scalacOptionsVersion(scalaVersion.value),
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full),
-  // Use the root project's unmanaged base for all sub-projects.
-  unmanagedBase := (unmanagedBase in root).value,
-  // Since we want to examine the classpath to determine if a dependency on firrtl is required,
-  //  this has to be a Task setting.
-  //  Fortunately, allDependencies is a Task Setting, so we can modify that.
-  allDependencies := {
-    allDependencies.value ++ defaultVersions.collect {
-      // If we have an unmanaged jar file on the classpath, assume we're to use that,
-      case m: ModuleID if !(unmanagedClasspath in Compile).value.toString.contains(s"${m.name}.jar") =>
-        //  otherwise let sbt fetch the appropriate artifact, possibly with a specific revision.
-        val mWithRevision = m.withRevision(sys.props.getOrElse(m.name + "Version", m.revision))
-        mWithRevision
-    }
-  }
 )
 
 lazy val publishSettings = Seq (
@@ -178,7 +190,7 @@ lazy val macros = (project in file("macros")).
   settings(commonSettings: _*).
   settings(publishSettings: _*)
 
-lazy val core = (project in file("core")).
+lazy val core = dependOnFirrtl(project in file("core")).
   settings(commonSettings: _*).
   settings(publishSettings: _*).
   settings(
@@ -196,10 +208,7 @@ lazy val core = (project in file("core")).
   ).
   dependsOn(macros)
 
-// This will always be the root project, even if we are a sub-project.
-lazy val root = RootProject(file("."))
-
-lazy val chisel = (project in file(".")).
+lazy val chisel = dependOnTreadle(dependOnFirrtl((project in file(".")))).
   enablePlugins(BuildInfoPlugin).
   enablePlugins(ScalaUnidocPlugin).
   settings(
