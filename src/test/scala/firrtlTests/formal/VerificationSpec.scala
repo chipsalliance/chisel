@@ -2,10 +2,11 @@
 
 package firrtlTests.formal
 
-import firrtl.{SystemVerilogCompiler}
+import firrtl.{CircuitState, SystemVerilogCompiler, ir}
 import firrtl.testutils.FirrtlFlatSpec
 import logger.{LogLevel, Logger}
-import firrtl.ir
+import firrtl.options.Dependency
+import firrtl.stage.TransformManager
 
 class VerificationSpec extends FirrtlFlatSpec {
   behavior of "Formal"
@@ -76,5 +77,21 @@ class VerificationSpec extends FirrtlFlatSpec {
     assert(c.serialize == "assume(clk, pred, en, \"test \\t test\")")
     assert(ir.Serializer.serialize(c) == "assume(clk, pred, en, \"test \\t test\")")
 
+  }
+
+  "VerificationStatements" should "end up at the bottom of the circuit like other simulation statements" in {
+    val compiler = new TransformManager(Seq(Dependency(firrtl.passes.ExpandWhens)))
+    val in =
+      """circuit m :
+        |  module m :
+        |    input clock : Clock
+        |    input a : UInt<8>
+        |    output b : UInt<16>
+        |    b <= a
+        |    assert(clock, eq(a, b), UInt<1>("h1"), "")
+        |""".stripMargin
+    val afterExpandWhens = compiler.transform(CircuitState(firrtl.Parser.parse(in), Seq())).circuit.serialize
+    val lastLine = afterExpandWhens.split("\n").last
+    assert(lastLine.trim.startsWith("assert"))
   }
 }

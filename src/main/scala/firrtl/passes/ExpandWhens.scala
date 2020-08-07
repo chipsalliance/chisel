@@ -133,7 +133,9 @@ object ExpandWhens extends Pass {
       case sx: Stop =>
         simlist += (if (weq(p, one)) sx else Stop(sx.info, sx.ret, sx.clk, AND(p, sx.en)))
         EmptyStmt
-      case sx: Verification => if (weq(p, one)) sx else sx.copy(en = AND(p, sx.en))
+      case sx: Verification =>
+        simlist += (if (weq(p, one)) sx else sx.copy(en = AND(p, sx.en)))
+        EmptyStmt
       // Expand conditionally, see comments below
       case sx: Conditionally =>
         /* 1) Recurse into conseq and alt with empty netlist, updated defaults, updated predicate
