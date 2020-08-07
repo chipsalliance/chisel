@@ -7,6 +7,23 @@ import chiselTests.ChiselFlatSpec
 import chisel3._
 import chisel3.aop.injecting.InjectingAspect
 
+class SubmoduleManipulationTester extends BasicTester {
+  val moduleSubmoduleA = Module(new SubmoduleA)
+}
+
+class SubmoduleA extends Module {
+  val io = IO(new Bundle {
+    val out = Output(Bool())
+  })
+  io.out := false.B
+}
+
+class SubmoduleB extends Module {
+  val io = IO(new Bundle {
+    val in = Input(Bool())
+  })
+}
+
 class AspectTester(results: Seq[Int]) extends BasicTester {
   val values = VecInit(results.map(_.U))
   val counter = RegInit(0.U(results.length.W))
@@ -40,6 +57,16 @@ class InjectionSpec extends ChiselFlatSpec {
     }
   )
 
+  val manipulateSubmoduleAspect = InjectingAspect(
+    {dut: SubmoduleManipulationTester => Seq(dut)},
+    {dut: SubmoduleManipulationTester =>
+      val moduleSubmoduleB = Module(new SubmoduleB)
+      moduleSubmoduleB.io.in := dut.moduleSubmoduleA.io.out
+      //if we're here then we've elaborated correctly
+      stop()
+    }
+  )
+
   "Test" should "pass if inserted the correct values" in {
     assertTesterPasses{ new AspectTester(Seq(0, 1, 2)) }
   }
@@ -56,5 +83,9 @@ class InjectionSpec extends ChiselFlatSpec {
   }
   "Test" should "fail if pass wrong values, then correct aspect, then wrong aspect" in {
     assertTesterFails({ new AspectTester(Seq(9, 9, 9))} , Nil, Seq(correctValueAspect, wrongValueAspect))
+  }
+
+  "Test" should "pass if the submodules in SubmoduleManipulationTester can be manipulated by manipulateSubmoduleAspect" in {
+    assertTesterPasses({ new SubmoduleManipulationTester} , Nil, Seq(manipulateSubmoduleAspect) ++ TesterDriver.verilatorOnly)
   }
 }
