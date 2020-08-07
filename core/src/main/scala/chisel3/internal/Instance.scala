@@ -6,6 +6,7 @@ import chisel3.internal.BaseModule.ClonePorts
 import chisel3.internal.sourceinfo.SourceInfo
 
 import scala.collection.mutable
+import scala.runtime.{IntRef, ObjectRef}
 
 case class InstanceKey(name: String, parentModule: Long, module: Long)
 
@@ -15,14 +16,20 @@ object Instance {
   }
   def createInstance[T <: BaseModule](module: T, name: Option[String])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     require(name.isDefined)
-    require(Builder.currentModule.isDefined)
-    val key = InstanceKey(name.get, Builder.currentModule.get._id, module._id)
     val wrapper = {
       val record = new ClonePorts(module.getModulePorts:_*)
       chisel3.Module.do_apply(new Instance[T](module.name, record, module)).suggestName(name.get)
     }
-    Builder.addInstance(key, wrapper)
-    module
+    val constr = module.getClass().getConstructors.head
+    val paramVals = constr.getParameterTypes.map {
+      case c: Class[_] if c.isPrimitive => 0.asInstanceOf[Object]
+      case other => null.asInstanceOf[Object]
+    }
+    require(Builder.currentModule.isDefined)
+    Builder.setBackingModule(module, wrapper)
+    val fakeModule = chisel3.Module.do_apply(constr.newInstance(paramVals:_*).asInstanceOf[T])
+    Builder.clearBackingModule()
+    fakeModule
   }
 }
 

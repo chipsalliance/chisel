@@ -318,6 +318,8 @@ private[chisel3] class ChiselContext() {
 
   // Records the different prefixes which have been scoped at this point in time
   val prefixStack: ArrayBuffer[Either[String, HasId]] = ArrayBuffer()
+
+  var backingModule: Option[(BaseModule, BlackBox)] = None
 }
 
 private[chisel3] class DynamicContext() {
@@ -387,6 +389,18 @@ private[chisel3] object Builder {
 
   def getInstance(key: InstanceKey): Option[BlackBox] = {
     chiselContext.get.instanceMap.get(key)
+  }
+
+  def getBackingModule(): Option[(BaseModule, BlackBox)] = {
+    chiselContext.get.backingModule
+  }
+
+  def setBackingModule(m: BaseModule, i: BlackBox): Unit = {
+    chiselContext.get.backingModule = Some(m, i)
+  }
+
+  def clearBackingModule(): Unit = {
+    chiselContext.get.backingModule = None
   }
 
   // Puts either a prefix string or hasId onto the prefix stack

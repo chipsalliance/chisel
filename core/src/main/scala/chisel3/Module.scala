@@ -67,12 +67,14 @@ object Module extends SourceInfoDoc {
     Builder.currentReset = saveReset
 
     val component = module.generateComponent()
-    Builder.components += component
+    if(Builder.getBackingModule().isEmpty) {
+      Builder.components += component
+    }
 
     Builder.setPrefix(savePrefix)
 
     // Handle connections at enclosing scope
-    if(!Builder.currentModule.isEmpty) {
+    if(!Builder.currentModule.isEmpty && Builder.getBackingModule().isEmpty) {
       pushCommand(DefInstance(sourceInfo, module, component.ports))
       module.initializeInParent(compileOptions)
     }
@@ -156,6 +158,13 @@ package internal {
 
 package experimental {
 
+  object isInstance {
+    def check[X](thing: => X)/*(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions)*/: X = if(Builder.getBackingModule().isDefined) null.asInstanceOf[X] else {
+      val x = thing
+      x
+    }
+  }
+
   /** Abstract base class for Modules, an instantiable organizational unit for RTL.
     */
   // TODO: seal this?
@@ -168,16 +177,19 @@ package experimental {
     }
     readyForModuleConstr = false
 
-    def useInstance[X](name: String)(thing: X): X = {
-      val instanceOpt = Builder.getInstance(InstanceKey(name, Builder.currentModule.get._id, this._id))
-      instanceOpt match {
-        case Some(instance) =>
-          val portMap = this.getModulePorts.zip(instance.io.elements.values).toMap
+    val backingModule: Option[(BaseModule, BlackBox)] = Builder.getBackingModule()
+    def isInstance = Builder.getBackingModule().isDefined
+    def getBackingModule[X](): X = backingModule.get._1.asInstanceOf[X]
+
+    def useInstance[X](thing: X): X = {
+      backingModule match {
+        case Some((module, instance)) =>
+          val portMap = module.getModulePorts.zip(instance.io.elements.values).toMap
           thing match {
             case d: Data if portMap.contains(d) => portMap(d).asInstanceOf[X]
             case _ => thing
           }
-        case None => thing
+        case _ => thing
       }
     }
 

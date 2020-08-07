@@ -82,21 +82,22 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
     // Given a type tree, infer the type and return it
     def inferType(t: Tree): Type = localTyper.typed(t, nsc.Mode.TYPEmode).tpe
 
+    // These were found through trial and error
+    def okFlags(mods: Modifiers): Boolean = {
+      val badFlags = Set(
+        Flag.PARAM,
+        Flag.SYNTHETIC,
+        Flag.DEFERRED,
+        Flags.TRIEDCOOKING,
+        Flags.CASEACCESSOR,
+        Flags.PARAMACCESSOR
+      )
+      badFlags.forall{ x => !mods.hasFlag(x)}
+    }
+
     // Indicates whether a ValDef is properly formed to get name
     def okVal(dd: ValDef, bases: Tree*): Boolean = {
 
-      // These were found through trial and error
-      def okFlags(mods: Modifiers): Boolean = {
-        val badFlags = Set(
-          Flag.PARAM,
-          Flag.SYNTHETIC,
-          Flag.DEFERRED,
-          Flags.TRIEDCOOKING,
-          Flags.CASEACCESSOR,
-          Flags.PARAMACCESSOR
-        )
-        badFlags.forall{ x => !mods.hasFlag(x)}
-      }
 
       // Ensure expression isn't null, as you can't call `null.autoName("myname")`
       val isNull = dd.rhs match {
@@ -111,21 +112,44 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
       dd.symbol.logicallyEnclosingMember.thisType <:< inferType(tq"chisel3.Bundle")
     }
 
+    def inModule(dd: Tree): Boolean = {
+      if(dd.symbol != null) {
+        //val x = dd.symbol.logicallyEnclosingMember
+        val x = dd.symbol.enclClass
+        x.thisType <:< inferType(tq"chisel3.experimental.BaseModule") && x.toString.contains("SimpleX")
+      } else false
+    }
+
     // Method called by the compiler to modify source tree
     override def transform(tree: Tree): Tree = tree match {
-      //case dd @ ValDef(mods, name, tpt, rhs) if dd.toString.contains("BLAH") =>
-      //  error(showRaw(dd))
-      //  super.transform(dd)
-      case dd @ Select(quals, data) if quals.tpe <:< inferType(tq"chisel3.experimental.BaseModule") && dd.tpe <:< inferType(tq"chisel3.Data") && quals.toString.contains("INST") =>
+      case dd @ ClassDef(mods, name, tparams, impl) if name.toString.contains("SimpleX") =>
+        val newBody = impl.body.map {
+          case t @ ValDef(mods, name, tpt, rhs) if okFlags(mods) =>
+            val newRhs = localTyper typed q"chisel3.experimental.isInstance.check[$tpt]($rhs)"
+            localTyper typed treeCopy.ValDef(t, mods, name, tpt, newRhs)
+          case t: TermTree =>
+            val curry = localTyper typed q"$t"
+            localTyper typed q"(chisel3.experimental.isInstance.check[${TypeTree(t.tpe)}]($curry))"
+          case other => other
+        }
+        val newImpl = transform(localTyper typed treeCopy.Template(impl, impl.parents, impl.self, newBody.toList))
+        val ret = localTyper typed treeCopy.ClassDef(dd, mods, name, tparams, newImpl.asInstanceOf[Template])
+        ret
+      case dd @ Select(quals, data) if quals.tpe <:< inferType(tq"chisel3.experimental.BaseModule") && dd.tpe <:< inferType(tq"chisel3.Data") && quals.toString.contains("SIMPLE") =>
+        //out := SIMPLE.useInstance(SIMPLE.getBackingModule[Simple].out)
         val ret = quals match {
           // If not a member of the parent class
           case Ident(TermName(name)) =>
             val newQuals = transform(quals)
-            localTyper typed q"$newQuals.useInstance($name)($dd)"
+            val backingModule = localTyper typed q"$newQuals.getBackingModule[${newQuals.tpe}]"
+            val newSelection = treeCopy.Select(dd, backingModule, data)
+            localTyper typed q"$newQuals.useInstance($newSelection)"
           // If a member of the parent class
           case Select(_, TermName(name)) =>
             val newQuals = transform(quals)
-            localTyper typed q"$newQuals.useInstance($name)($dd)"
+            val backingModule = localTyper typed q"$newQuals.getBackingModule[${newQuals.tpe}]"
+            val newSelection = treeCopy.Select(dd, backingModule, data)
+            localTyper typed q"$newQuals.useInstance($newSelection)"
           case other => super.transform(dd)
         }
         //error(showRaw(dd))
