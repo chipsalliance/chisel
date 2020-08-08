@@ -3,6 +3,7 @@ package chiselTests
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage, DesignAnnotation}
 import chisel3._
 import chisel3.internal.Instance
+import chisel3.util.{Pipe, Valid}
 import firrtl.options.Dependency
 import firrtl.stage.FirrtlCircuitAnnotation
 
@@ -22,7 +23,6 @@ class Leaf extends MultiIOModule {
   val in  = IO(Input(UInt(3.W)))
   val out = IO(Output(UInt(3.W)))
   out := in + in
-  val x = 10
   println("Elaborated Leaf!")
 }
 
@@ -37,8 +37,54 @@ class SimpleX(int: Int) extends MultiIOModule {
   //chisel3.experimental.isInstance.check(() => out := in + in)
   val x = int
   //val x = chisel3.experimental.isInstance.check(int)
+  def tieoff() = in := 0.U
 }
 
+
+class MyPipe2(gen: Data, latency: Int = 1)(implicit compileOptions: CompileOptions) extends Module {
+  /** Interface for [[Pipe]]s composed of a [[Valid]] input and [[Valid]] output
+    * @define notAQueue
+    */
+  class MyPipeIO extends Bundle {
+
+    /** [[Valid]] input */
+    val enq = Input(Valid(UInt(3.W)))
+
+    /** [[Valid]] output. Data will appear here `latency` cycles after being valid at `enq`. */
+    val deq = Output(Valid(UInt(3.W)))
+  }
+
+  val io = IO(new MyPipeIO)
+  //val io = IO(new Bundle { val x = UInt(3.W) })
+
+  //io.deq <> Pipe(io.enq, latency)
+}
+
+
+//class MyPipe[T <: Data](gen: T, latency: Int = 1)(implicit compileOptions: CompileOptions) extends Module {
+//
+//  /** Interface for [[Pipe]]s composed of a [[Valid]] input and [[Valid]] output
+//    * @define notAQueue
+//    */
+//  class MyPipeIO extends Bundle {
+//
+//    /** [[Valid]] input */
+//    val enq = Input(Valid(gen))
+//
+//    /** [[Valid]] output. Data will appear here `latency` cycles after being valid at `enq`. */
+//    val deq = Output(Valid(gen))
+//  }
+//
+//  val io = IO(new MyPipeIO)
+//
+//  io.deq <> Pipe(io.enq, latency)
+//}
+
+object YunsupFunc {
+  def func(simple: SimpleX): Unit = {
+    simple.in := simple.out
+  }
+}
 
 class Top(simple: SimpleX) extends MultiIOModule {
   val in  = IO(Input(UInt(3.W)))
@@ -48,8 +94,17 @@ class Top(simple: SimpleX) extends MultiIOModule {
   // 2) New Black Box module
   // 3) New Empty Module of type Simple
 
+  // Jack's thoughts
+  // Make sure we check if plugin has been run
+
   val SIMPLE: SimpleX = Instance(simple)
-  val SIMPLE2: SimpleX = Instance(simple)
+  val SIMPLE2: SimpleX = Module(new SimpleX(10))
+
+  SIMPLE.tieoff()
+  SIMPLE2.tieoff()
+
+  YunsupFunc.func(SIMPLE)
+  YunsupFunc.func(SIMPLE2)
 
   SIMPLE.in := in
   //SIMPLE.useInstance(SIMPLE.getBackingModule[SimpleX].in) := in
@@ -80,6 +135,7 @@ class InstanceSpec extends ChiselPropSpec with Utils {
   }
 
   property("Explicit example test case") {
+
     //Diplomacy occurs
 
     //Chisel Construction

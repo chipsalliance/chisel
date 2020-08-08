@@ -159,7 +159,7 @@ package internal {
 package experimental {
 
   object isInstance {
-    def check[X](thing: => X)/*(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions)*/: X = if(Builder.getBackingModule().isDefined) null.asInstanceOf[X] else {
+    def check[X](thing: => X)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): X = if(Builder.getBackingModule().isDefined) null.asInstanceOf[X] else {
       val x = thing
       x
     }
@@ -179,7 +179,7 @@ package experimental {
 
     val backingModule: Option[(BaseModule, BlackBox)] = Builder.getBackingModule()
     def isInstance = Builder.getBackingModule().isDefined
-    def getBackingModule[X](): X = backingModule.get._1.asInstanceOf[X]
+    def getBackingModule[X](): X = backingModule.map(_._1).getOrElse(this).asInstanceOf[X]
 
     def useInstance[X](thing: X): X = {
       backingModule match {

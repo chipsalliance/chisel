@@ -127,21 +127,35 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
           case t @ ValDef(mods, name, tpt, rhs) if okFlags(mods) =>
             val newRhs = localTyper typed q"chisel3.experimental.isInstance.check[$tpt]($rhs)"
             localTyper typed treeCopy.ValDef(t, mods, name, tpt, newRhs)
+          case t @ ValDef(mods, name, tpt, rhs) if okFlags(mods) =>
+            val newRhs = localTyper typed q"chisel3.experimental.isInstance.check[$tpt]($rhs)"
+            localTyper typed treeCopy.ValDef(t, mods, name, tpt, newRhs)
           case t: TermTree if t.tpe != NoType =>
             val curry = localTyper typed q"$t"
             localTyper typed q"(chisel3.experimental.isInstance.check[${TypeTree(curry.tpe)}]($curry))"
           case other => other
         }
-        val newImpl = transform(localTyper typed treeCopy.Template(impl, impl.parents, impl.self, newBody.toList))
+        val newImpl = localTyper typed transform(localTyper typed treeCopy.Template(impl, impl.parents, impl.self, newBody.toList))
         val ret = localTyper typed treeCopy.ClassDef(dd, mods, name, tparams, newImpl.asInstanceOf[Template])
 
-        //if(name.toString.contains("SimpleX")) {
-        //  error(showRaw(ret, printTypes = true))
-        //  error(show(ret))
+        //if(name.toString.contains("DedupQueues")) {
+        //  //error(showRaw(ret, printTypes = true))
+        //  //error(show(ret))
+        //  //println(showRaw(ret, printTypes = true))
+        //  println(show(dd))
+        //  println(showRaw(dd))
+        //  println(show(ret))
         //}
         ret
-      case dd @ Select(quals, data) if quals.tpe <:< inferType(tq"chisel3.experimental.BaseModule") && dd.tpe <:< inferType(tq"chisel3.Data") =>
-        //out := SIMPLE.useInstance(SIMPLE.getBackingModule[Simple].out)
+
+      // Don't go into accessors, as they are needed for updating vars
+      case dd @ DefDef(mods, name, tparams, vparamss, tpt, rhs) if mods.hasFlag(Flags.ACCESSOR) => dd
+      // Don't recurse into a new Module.Bundle constructing a class
+      // We hit this case when you declare a Bundle inside a module - you reference a Select(outsidemodule, innerbundle)
+      // calling 'new' on it
+      case dd @ New(Select(quals, data)) if quals.tpe <:< inferType(tq"chisel3.experimental.BaseModule") && dd.tpe <:< inferType(tq"chisel3.Data") => //&& dd.toString.contains("MyPipe") =>
+        dd
+      case dd @ Select(quals, data) if quals.tpe <:< inferType(tq"chisel3.experimental.BaseModule") && dd.tpe <:< inferType(tq"chisel3.Data") => // && dd.toString.contains("MyPipe") =>
         val ret = quals match {
           // If not a member of the parent class
           case Ident(TermName(name)) =>
@@ -155,30 +169,39 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
             val backingModule = localTyper typed q"$newQuals.getBackingModule[${quals.tpe}]"
             val newSelection = localTyper typed treeCopy.Select(dd, backingModule, data)
             localTyper typed q"$newQuals.useInstance[${dd.tpe}]($newSelection)"
+          // If a member of this class
+          case This(typeName) =>
+            val newQuals = localTyper typed transform(quals)
+            //println(show(newQuals))
+            //println(showRaw(newQuals))
+            val backingModule = localTyper typed q"$newQuals.getBackingModule[${quals.tpe}]"
+            val newSelection = localTyper typed treeCopy.Select(dd, backingModule, data)
+            val ret = localTyper typed q"$newQuals.useInstance[${dd.tpe}]($newSelection)"
+            //println(show(ret))
+            //println(showRaw(ret))
+            ret
           case other => super.transform(dd)
         }
-        //error(showRaw(dd))
-        //error(showRaw(ret))
         ret
       // If a Data and in a Bundle, just get the name but not a prefix
-      case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd, tq"chisel3.Data") && inBundle(dd) =>
-        val TermName(str: String) = name
-        val newRHS = transform(rhs)
-        val named = q"chisel3.experimental.autoNameRecursively($str, $newRHS)"
-        treeCopy.ValDef(dd, mods, name, tpt, localTyper typed named)
-      // If a Data or a Memory, get the name and a prefix
-      case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd, tq"chisel3.Data", tq"chisel3.MemBase[_]") =>
-        val TermName(str: String) = name
-        val newRHS = transform(rhs)
-        val prefixed = q"chisel3.experimental.prefix.apply[$tpt](name=$str)(f=$newRHS)"
-        val named = q"chisel3.experimental.autoNameRecursively($str, $prefixed)"
-        treeCopy.ValDef(dd, mods, name, tpt, localTyper typed named)
-      // If an instance, just get a name but no prefix
-      case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd, tq"chisel3.experimental.BaseModule") =>
-        val TermName(str: String) = name
-        val newRHS = transform(rhs)
-        val named = q"chisel3.experimental.autoNameRecursively($str, $newRHS)"
-        treeCopy.ValDef(dd, mods, name, tpt, localTyper typed named)
+      //case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd, tq"chisel3.Data") && inBundle(dd) =>
+      //  val TermName(str: String) = name
+      //  val newRHS = transform(rhs)
+      //  val named = q"chisel3.experimental.autoNameRecursively($str, $newRHS)"
+      //  treeCopy.ValDef(dd, mods, name, tpt, localTyper typed named)
+      //// If a Data or a Memory, get the name and a prefix
+      //case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd, tq"chisel3.Data", tq"chisel3.MemBase[_]") =>
+      //  val TermName(str: String) = name
+      //  val newRHS = transform(rhs)
+      //  val prefixed = q"chisel3.experimental.prefix.apply[$tpt](name=$str)(f=$newRHS)"
+      //  val named = q"chisel3.experimental.autoNameRecursively($str, $prefixed)"
+      //  treeCopy.ValDef(dd, mods, name, tpt, localTyper typed named)
+      //// If an instance, just get a name but no prefix
+      //case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd, tq"chisel3.experimental.BaseModule") =>
+      //  val TermName(str: String) = name
+      //  val newRHS = transform(rhs)
+      //  val named = q"chisel3.experimental.autoNameRecursively($str, $newRHS)"
+      //  treeCopy.ValDef(dd, mods, name, tpt, localTyper typed named)
       // Otherwise, continue
       case _ => super.transform(tree)
     }
