@@ -184,24 +184,24 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
         }
         ret
       // If a Data and in a Bundle, just get the name but not a prefix
-      //case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd, tq"chisel3.Data") && inBundle(dd) =>
-      //  val TermName(str: String) = name
-      //  val newRHS = transform(rhs)
-      //  val named = q"chisel3.experimental.autoNameRecursively($str, $newRHS)"
-      //  treeCopy.ValDef(dd, mods, name, tpt, localTyper typed named)
-      //// If a Data or a Memory, get the name and a prefix
-      //case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd, tq"chisel3.Data", tq"chisel3.MemBase[_]") =>
-      //  val TermName(str: String) = name
-      //  val newRHS = transform(rhs)
-      //  val prefixed = q"chisel3.experimental.prefix.apply[$tpt](name=$str)(f=$newRHS)"
-      //  val named = q"chisel3.experimental.autoNameRecursively($str, $prefixed)"
-      //  treeCopy.ValDef(dd, mods, name, tpt, localTyper typed named)
-      //// If an instance, just get a name but no prefix
-      //case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd, tq"chisel3.experimental.BaseModule") =>
-      //  val TermName(str: String) = name
-      //  val newRHS = transform(rhs)
-      //  val named = q"chisel3.experimental.autoNameRecursively($str, $newRHS)"
-      //  treeCopy.ValDef(dd, mods, name, tpt, localTyper typed named)
+      case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd, tq"chisel3.Data") && inBundle(dd) =>
+        val TermName(str: String) = name
+        val newRHS = transform(rhs)
+        val named = q"chisel3.experimental.autoNameRecursively($str, $newRHS)"
+        treeCopy.ValDef(dd, mods, name, tpt, localTyper typed named)
+      // If a Data or a Memory, get the name and a prefix
+      case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd, tq"chisel3.Data", tq"chisel3.MemBase[_]") =>
+        val TermName(str: String) = name
+        val newRHS = transform(rhs)
+        val prefixed = q"chisel3.experimental.prefix.apply[$tpt](name=$str)(f=$newRHS)"
+        val named = q"chisel3.experimental.autoNameRecursively($str, $prefixed)"
+        treeCopy.ValDef(dd, mods, name, tpt, localTyper typed named)
+      // If an instance, just get a name but no prefix
+      case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd, tq"chisel3.experimental.BaseModule") =>
+        val TermName(str: String) = name
+        val newRHS = transform(rhs)
+        val named = q"chisel3.experimental.autoNameRecursively($str, $newRHS)"
+        treeCopy.ValDef(dd, mods, name, tpt, localTyper typed named)
       // Otherwise, continue
       case _ => super.transform(tree)
     }
