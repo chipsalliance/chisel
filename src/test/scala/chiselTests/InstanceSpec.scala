@@ -7,18 +7,6 @@ import chisel3.util.{Pipe, Valid}
 import firrtl.options.Dependency
 import firrtl.stage.FirrtlCircuitAnnotation
 
-
-
-
-
-
-
-
-
-
-
-
-
 class Leaf extends MultiIOModule {
   val in  = IO(Input(UInt(3.W)))
   val out = IO(Output(UInt(3.W)))
@@ -39,7 +27,6 @@ class SimpleX(int: Int) extends MultiIOModule {
   //val x = chisel3.experimental.isInstance.check(int)
   def tieoff() = in := 0.U
 }
-
 
 class MyPipe2(gen: Data, latency: Int = 1)(implicit compileOptions: CompileOptions) extends Module {
   /** Interface for [[Pipe]]s composed of a [[Valid]] input and [[Valid]] output
@@ -142,6 +129,13 @@ class InstanceSpec extends ChiselPropSpec with Utils {
     val simple: SimpleX = build { new SimpleX(10) }
     val top: Top = build { new Top(simple) }
   }
+
+  property("Calling a module's function which references its instance ports, e.g. tieoffs") {}
+  property("Calling a module's function which references its internal state should error gracefully") {}
+  property("Passing instances to a function should work") {}
+  property("Programmatic construction of instances should work") {}
+  property("Defining and constructing a bundle in a Module should work") {}
+  property("Defining stuff in a mix-in trait should still be nullified") {}
 
 }
 //Prints out:
