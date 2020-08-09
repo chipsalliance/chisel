@@ -158,13 +158,6 @@ package internal {
 
 package experimental {
 
-  object isInstance {
-    def check[X](thing: => X)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): X = if(Builder.getBackingModule().isDefined) null.asInstanceOf[X] else {
-      val x = thing
-      x
-    }
-  }
-
   /** Abstract base class for Modules, an instantiable organizational unit for RTL.
     */
   // TODO: seal this?
@@ -177,9 +170,7 @@ package experimental {
     }
     readyForModuleConstr = false
 
-    val backingModule: Option[(BaseModule, BlackBox)] = Builder.getBackingModule()
-    def isInstance = Builder.getBackingModule().isDefined
-    def getBackingModule[X](): X = backingModule.map(_._1).getOrElse(this).asInstanceOf[X]
+    private[chisel3] val backingModule: Option[(BaseModule, BlackBox)] = Builder.getBackingModule()
 
     def useInstance[X](thing: X): X = {
       backingModule match {

@@ -97,8 +97,6 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
 
     // Indicates whether a ValDef is properly formed to get name
     def okVal(dd: ValDef, bases: Tree*): Boolean = {
-
-
       // Ensure expression isn't null, as you can't call `null.autoName("myname")`
       val isNull = dd.rhs match {
         case Literal(Constant(null)) => true
@@ -112,33 +110,25 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
       dd.symbol.logicallyEnclosingMember.thisType <:< inferType(tq"chisel3.Bundle")
     }
 
-    def inModule(dd: Tree): Boolean = {
-      if(dd.symbol != null) {
-        //val x = dd.symbol.logicallyEnclosingMember
-        val x = dd.symbol.enclClass
-        x.thisType <:< inferType(tq"chisel3.experimental.BaseModule") && x.toString.contains("SimpleX")
-      } else false
-    }
-
     // Method called by the compiler to modify source tree
     override def transform(tree: Tree): Tree = tree match {
       case dd @ ClassDef(mods, name, tparams, impl) if impl.tpe <:< inferType(tq"chisel3.experimental.BaseModule") =>
         val newBody = impl.body.map {
           case t @ ValDef(mods, name, tpt, rhs) if okFlags(mods) =>
-            val newRhs = localTyper typed q"chisel3.experimental.isInstance.check[$tpt]($rhs)"
+            val newRhs = localTyper typed q"chisel3.plugin.APIs.nullifyIfInstance[$tpt]($rhs)"
             localTyper typed treeCopy.ValDef(t, mods, name, tpt, newRhs)
           case t @ ValDef(mods, name, tpt, rhs) if okFlags(mods) =>
-            val newRhs = localTyper typed q"chisel3.experimental.isInstance.check[$tpt]($rhs)"
+            val newRhs = localTyper typed q"chisel3.plugin.APIs.nullifyIfInstance[$tpt]($rhs)"
             localTyper typed treeCopy.ValDef(t, mods, name, tpt, newRhs)
           case t: TermTree if t.tpe != NoType =>
             val curry = localTyper typed q"$t"
-            localTyper typed q"(chisel3.experimental.isInstance.check[${TypeTree(curry.tpe)}]($curry))"
+            localTyper typed q"chisel3.plugin.APIs.nullifyIfInstance[${TypeTree(curry.tpe)}]($curry)"
           case other => other
         }
         val newImpl = localTyper typed transform(localTyper typed treeCopy.Template(impl, impl.parents, impl.self, newBody.toList))
         val ret = localTyper typed treeCopy.ClassDef(dd, mods, name, tparams, newImpl.asInstanceOf[Template])
 
-        //if(name.toString.contains("DedupQueues")) {
+        //if(name.toString.contains("Leaf")) {
         //  //error(showRaw(ret, printTypes = true))
         //  //error(show(ret))
         //  //println(showRaw(ret, printTypes = true))
@@ -156,31 +146,20 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
       case dd @ New(Select(quals, data)) if quals.tpe <:< inferType(tq"chisel3.experimental.BaseModule") && dd.tpe <:< inferType(tq"chisel3.Data") => //&& dd.toString.contains("MyPipe") =>
         dd
       case dd @ Select(quals, data) if quals.tpe <:< inferType(tq"chisel3.experimental.BaseModule") && dd.tpe <:< inferType(tq"chisel3.Data") => // && dd.toString.contains("MyPipe") =>
+        def resolve(): Tree = {
+          val newQuals = transform(quals)
+          val backingModule = localTyper typed q"chisel3.plugin.APIs.resolveBackingModule[${quals.tpe}]($newQuals)"
+          val newSelection = localTyper typed treeCopy.Select(dd, backingModule, data)
+          localTyper typed q"chisel3.plugin.APIs.resolveModuleAccess[${dd.tpe}]($newQuals, $newSelection)"
+        }
         val ret = quals match {
           // If not a member of the parent class
-          case Ident(TermName(name)) =>
-            val newQuals = transform(quals)
-            val backingModule = localTyper typed q"$newQuals.getBackingModule[${quals.tpe}]"
-            val newSelection = localTyper typed treeCopy.Select(dd, backingModule, data)
-            localTyper typed q"$newQuals.useInstance[${dd.tpe}]($newSelection)"
+          case Ident(TermName(_)) => resolve()
           // If a member of the parent class
-          case Select(_, TermName(name)) =>
-            val newQuals = transform(quals)
-            val backingModule = localTyper typed q"$newQuals.getBackingModule[${quals.tpe}]"
-            val newSelection = localTyper typed treeCopy.Select(dd, backingModule, data)
-            localTyper typed q"$newQuals.useInstance[${dd.tpe}]($newSelection)"
+          case Select(_, TermName(_)) => resolve()
           // If a member of this class
-          case This(typeName) =>
-            val newQuals = localTyper typed transform(quals)
-            //println(show(newQuals))
-            //println(showRaw(newQuals))
-            val backingModule = localTyper typed q"$newQuals.getBackingModule[${quals.tpe}]"
-            val newSelection = localTyper typed treeCopy.Select(dd, backingModule, data)
-            val ret = localTyper typed q"$newQuals.useInstance[${dd.tpe}]($newSelection)"
-            //println(show(ret))
-            //println(showRaw(ret))
-            ret
-          case other => super.transform(dd)
+          case This(typeName) => resolve()
+          case _ => super.transform(dd)
         }
         ret
       // If a Data and in a Bundle, just get the name but not a prefix
