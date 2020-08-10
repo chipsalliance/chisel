@@ -7,10 +7,10 @@ import firrtl.options.Dependency
 import firrtl.stage.TransformManager
 import firrtl.{InstanceKind, MemKind, NodeKind, PortKind, RegKind, WireKind}
 import firrtl.{CircuitState,  SinkFlow, SourceFlow, ir, passes}
-import org.scalatest._
+import org.scalatest.flatspec.AnyFlatSpec
 
 /** Tests the combined results of ResolveKinds, InferTypes and ResolveFlows */
-class InferTypesFlowsAndKindsSpec extends FlatSpec {
+class InferTypesFlowsAndKindsSpec extends AnyFlatSpec {
   private val deps = Seq(
     Dependency(passes.ResolveKinds),
     Dependency(passes.InferTypes),

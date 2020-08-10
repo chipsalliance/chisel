@@ -2,7 +2,8 @@
 
 package firrtlTests
 
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should._
 
 import firrtl._
 import firrtl.options.Dependency
@@ -31,7 +32,7 @@ object Transforms {
   class LowToLow         extends IdentityTransformDiff(L, L)
 }
 
-class LoweringCompilersSpec extends FlatSpec with Matchers {
+class LoweringCompilersSpec extends AnyFlatSpec with Matchers {
 
   def legacyTransforms(a: CoreTransform): Seq[Transform] = a match {
     case _: ChirrtlToHighFirrtl => Seq(

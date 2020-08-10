@@ -6,9 +6,10 @@ import firrtl._
 import firrtl.annotations.{Annotation, CircuitTarget, CompleteTarget, DeletedAnnotation}
 import firrtl.annotations.transforms.{DupedResult, ResolvePaths}
 import firrtl.transforms.DedupedResult
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should._
 
-class MorphismSpec extends FlatSpec with Matchers {
+class MorphismSpec extends AnyFlatSpec with Matchers {
 
   object AnAnnotation {
     def apply(target: CompleteTarget) = new AnAnnotation(Some(target))

@@ -7,7 +7,8 @@ import firrtl.annotations.{JsonProtocol, NoTargetAnnotation}
 import firrtl.ir._
 import firrtl.options.Dependency
 import _root_.logger.{Logger, LogLevel, LogLevelAnnotation}
-import org.scalatest.{FlatSpec, Matchers}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should._
 
 case class AnAnnotation(
     info: Info,
@@ -30,7 +31,7 @@ class AnnoInjector extends Transform with DependencyAPIMigration {
   }
 }
 
-class JsonProtocolSpec extends FlatSpec with Matchers {
+class JsonProtocolSpec extends AnyFlatSpec with Matchers {
   "JsonProtocol" should "serialize and deserialize FIRRTL types" in {
 
     val circuit =
