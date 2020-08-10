@@ -33,29 +33,23 @@ val defaultVersions = Map(
   "treadle" -> "edu.berkeley.cs" %% "treadle" % "1.3-SNAPSHOT"
 )
 
-// Optionally depend on firrtl from source
-val firrtlDirOpt = sys.props.get("chisel3.firrtl.path")
-lazy val firrtl = project in file(firrtlDirOpt.getOrElse(".fake_firrtl"))
-
-lazy val firrtlLibraryDepSettings = Seq(
-  libraryDependencies += defaultVersions("firrtl")
-)
-
-def dependOnFirrtl(proj: Project): Project = firrtlDirOpt match {
-  case None    => proj.settings(firrtlLibraryDepSettings)
-  case Some(_) => proj.dependsOn(firrtl)
-}
-
-// Optionally depend on treadle from source
+// Optionally depend on treadle (and transitively firrtl) from source
 val treadleDirOpt = sys.props.get("chisel3.treadle.path")
 lazy val treadle = project in file(treadleDirOpt.getOrElse(".fake_treadle"))
 
-lazy val treadleLibraryDepSettings = Seq(
-  libraryDependencies += defaultVersions("treadle")
-)
-
-def dependOnTreadle(proj: Project): Project = treadleDirOpt match {
-  case None    => proj.settings(treadleLibraryDepSettings)
+// For publishing, core just depends on firrtl
+// For building from source, depend on treadle and get firrtl transitively
+def coreDependencies(proj: Project): Project = treadleDirOpt match {
+  case None    => proj.settings(libraryDependencies += defaultVersions("firrtl"))
+  case Some(_) => proj.dependsOn(treadle)
+}
+// For publishing, chisel depends on firrtl and treadle
+// For building from source, depend on treadle and get firrtl transitively
+def chiselDependencies(proj: Project): Project = treadleDirOpt match {
+  case None    =>
+    proj.settings(
+      libraryDependencies ++= Seq(defaultVersions("firrtl"), defaultVersions("treadle"))
+    )
   case Some(_) => proj.dependsOn(treadle)
 }
 
@@ -190,7 +184,7 @@ lazy val macros = (project in file("macros")).
   settings(commonSettings: _*).
   settings(publishSettings: _*)
 
-lazy val core = dependOnFirrtl(project in file("core")).
+lazy val core = coreDependencies(project in file("core")).
   settings(commonSettings: _*).
   settings(publishSettings: _*).
   settings(
@@ -208,7 +202,7 @@ lazy val core = dependOnFirrtl(project in file("core")).
   ).
   dependsOn(macros)
 
-lazy val chisel = dependOnTreadle(dependOnFirrtl((project in file(".")))).
+lazy val chisel = chiselDependencies(project in file(".")).
   enablePlugins(BuildInfoPlugin).
   enablePlugins(ScalaUnidocPlugin).
   settings(
