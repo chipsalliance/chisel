@@ -427,19 +427,12 @@ private[chisel3] object Builder {
     case Some(dynamicContext) => dynamicContext.aspectModule.get(module)
     case _ => None
   }
-  /**determines if the parent module may have an attached aspect
-  if there isn't a parent, return None
-  if the parent doesn't have and attached aspect, return the parent
-  */
-  def parentAspectModule(module: BaseModule): Option[BaseModule] = {
-    module._parent match {
-      case Some(parentModule) => Builder.aspectModule(parentModule) match {
-          case Some(aspect) => Some(aspect)
-          case _ => Some(parentModule)
-      }
-      case _ => None
-    }
-  }
+  /** Retrieves the parent of a module based on the elaboration context
+   *
+   * @param module the module to get the parent of
+   * @param context the context the parent should be evaluated in
+   * @return the parent of the module provided
+   */
   def retrieveParent(module: BaseModule, context: BaseModule): Option[BaseModule] = {
     module._parent match {
       case Some(parentModule) => { //if a parent exists investigate, otherwise return None
