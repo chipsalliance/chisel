@@ -3,106 +3,15 @@ package chiselTests
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage, DesignAnnotation}
 import chisel3._
 import chisel3.internal.Instance
-import chisel3.util.{Pipe, Valid}
-import firrtl.options.Dependency
+import firrtl.ir.Circuit
+import firrtl.options.{Dependency, StageError}
 import firrtl.stage.FirrtlCircuitAnnotation
+import org.scalactic.source
 
-class Leaf extends MultiIOModule {
-  val in  = IO(Input(UInt(3.W)))
-  val out = IO(Output(UInt(3.W)))
-  out := in + in
-  println("Elaborated Leaf!")
-}
-
-class SimpleX(int: Int) extends MultiIOModule {
-  val in  = IO(Input(UInt(3.W)))
-  //val in  = chisel3.experimental.isInstance.check(IO(Input(UInt(3.W))))
-  val out = IO(Output(UInt(3.W)))
-  //val out = chisel3.experimental.isInstance.check(IO(Output(UInt(3.W))))
-  val leaf = Module(new Leaf)
-  //val leaf = chisel3.experimental.isInstance.check(Module(new Leaf))
-  out := in + in
-  //chisel3.experimental.isInstance.check(() => out := in + in)
-  val x = int
-  //val x = chisel3.experimental.isInstance.check(int)
-  def tieoff() = in := 0.U
-}
-
-class MyPipe2(gen: Data, latency: Int = 1)(implicit compileOptions: CompileOptions) extends Module {
-  /** Interface for [[Pipe]]s composed of a [[Valid]] input and [[Valid]] output
-    * @define notAQueue
-    */
-  class MyPipeIO extends Bundle {
-
-    /** [[Valid]] input */
-    val enq = Input(Valid(UInt(3.W)))
-
-    /** [[Valid]] output. Data will appear here `latency` cycles after being valid at `enq`. */
-    val deq = Output(Valid(UInt(3.W)))
-  }
-
-  val io = IO(new MyPipeIO)
-  //val io = IO(new Bundle { val x = UInt(3.W) })
-
-  //io.deq <> Pipe(io.enq, latency)
-}
-
-
-//class MyPipe[T <: Data](gen: T, latency: Int = 1)(implicit compileOptions: CompileOptions) extends Module {
-//
-//  /** Interface for [[Pipe]]s composed of a [[Valid]] input and [[Valid]] output
-//    * @define notAQueue
-//    */
-//  class MyPipeIO extends Bundle {
-//
-//    /** [[Valid]] input */
-//    val enq = Input(Valid(gen))
-//
-//    /** [[Valid]] output. Data will appear here `latency` cycles after being valid at `enq`. */
-//    val deq = Output(Valid(gen))
-//  }
-//
-//  val io = IO(new MyPipeIO)
-//
-//  io.deq <> Pipe(io.enq, latency)
-//}
-
-object YunsupFunc {
-  def func(simple: SimpleX): Unit = {
-    simple.in := simple.out
-  }
-}
-
-class Top(simple: SimpleX) extends MultiIOModule {
-  val in  = IO(Input(UInt(3.W)))
-  val out = IO(Output(UInt(3.W)))
-
-  // 1) Original backing module of type Simple
-  // 2) New Black Box module
-  // 3) New Empty Module of type Simple
-
-  // Jack's thoughts
-  // Make sure we check if plugin has been run
-
-  val SIMPLE: SimpleX = Instance(simple)
-  val SIMPLE2: SimpleX = Module(new SimpleX(10))
-
-  SIMPLE.tieoff()
-  SIMPLE2.tieoff()
-
-  YunsupFunc.func(SIMPLE)
-  YunsupFunc.func(SIMPLE2)
-
-  SIMPLE.in := in
-  //SIMPLE.useInstance(SIMPLE.getBackingModule[SimpleX].in) := in
-
-  SIMPLE2.in := SIMPLE.out
-
-  out:= SIMPLE2.out
-  //out := SIMPLE2.useInstance(SIMPLE.getBackingModule[SimpleX].out)
-}
+import scala.reflect.ClassTag
 
 class InstanceSpec extends ChiselPropSpec with Utils {
+
   /** Return a Chisel circuit for a Chisel module
     * @param gen a call-by-name Chisel module
     */
@@ -121,23 +30,201 @@ class InstanceSpec extends ChiselPropSpec with Utils {
     ret.collectFirst { case DesignAnnotation(a) => a } .get.asInstanceOf[T]
   }
 
-  property("Explicit example test case") {
+  /** Return a FIRRTL circuit for a Chisel module
+    * @param gen a call-by-name Chisel module
+    */
+  def buildFirrtl[T <: RawModule](gen: => T): Circuit = {
+    val stage = new ChiselStage {
+      override val targets = Seq( Dependency[chisel3.stage.phases.Checks],
+        Dependency[chisel3.stage.phases.Elaborate],
+        Dependency[chisel3.stage.phases.Convert]
+      )
+    }
 
-    //Diplomacy occurs
+    val ret = stage
+      .execute(Array("--no-run-firrtl"), Seq(ChiselGeneratorAnnotation(() => gen)))
 
-    //Chisel Construction
-    val simple: SimpleX = build { new SimpleX(10) }
-    val top: Top = build { new Top(simple) }
+    ret.collectFirst { case FirrtlCircuitAnnotation(cir) => cir }.get
   }
 
-  property("Calling a module's function which references its instance ports, e.g. tieoffs") {}
-  property("Calling a module's function which references its internal state should error gracefully") {}
-  property("Passing instances to a function should work") {}
-  property("Programmatic construction of instances should work") {}
-  property("Defining and constructing a bundle in a Module should work") {}
-  property("Defining stuff in a mix-in trait should still be nullified") {}
+  /** Intercept a specific ChiselException
+    * @param message
+    * @param f
+    * @param classTag
+    * @param pos
+    * @tparam T
+    */
+  def intercept[T <: AnyRef](message: String)(f: => Any)(implicit classTag: ClassTag[T], pos: source.Position): Unit = {
+    intercept[StageError] {
+      val x = f
+      x
+    } match {
+      case s: StageError => s.getCause match {
+        case c: ChiselException => assert(c.getMessage.contains(message))
+      }
+    }
+  }
 
+
+  property("Calling a module's function which references its instance ports, e.g. tieoffs") {
+    class Child(val width: Int) extends MultiIOModule {
+      val in  = IO(Input(UInt(width.W)))
+      val out = IO(Output(UInt(width.W)))
+      out := in + in
+      def tieoff(): Unit = in := 0.U
+    }
+    class Parent(child: Child) extends MultiIOModule {
+      val in  = IO(Input(UInt(child.width.W)))
+      val out = IO(Output(UInt(child.width.W)))
+      val c = Instance(child)
+      c.tieoff()
+      out := c.out + c.out
+    }
+    val child: Child = build { new Child(10) }
+    buildFirrtl { new Parent(child) }
+  }
+
+  property("Calling a module's function which references its internal state should error gracefully") {
+    class Child(val width: Int) extends MultiIOModule {
+      val in  = IO(Input(UInt(width.W)))
+      val out = IO(Output(UInt(width.W)))
+      val reg = Reg(UInt(width.W))
+      out := reg + reg
+      def connectToReg(): Unit = reg := in
+    }
+    class Parent(child: Child) extends MultiIOModule {
+      val in  = IO(Input(UInt(child.width.W)))
+      val out = IO(Output(UInt(child.width.W)))
+      val c = Instance(child)
+      c.connectToReg()
+      out := c.out + c.out
+    }
+    val child: Child = build { new Child(10) }
+    intercept[StageError](
+      "Connection between sink (UInt<10>(Reg in Child)) and source (UInt<10>(IO in in Child)) failed"
+    ) {
+      buildFirrtl { new Parent(child) }
+    }
+  }
+
+  property("Passing instances to a function should work") {
+    def tieoff(child: Child): Unit = {
+      child.in := 0.U
+    }
+    class Child(val width: Int) extends MultiIOModule {
+      val in  = IO(Input(UInt(width.W)))
+      val out = IO(Output(UInt(width.W)))
+      val reg = Reg(UInt(width.W))
+      out := reg + reg
+    }
+    class Parent(child: Child) extends MultiIOModule {
+      val in  = IO(Input(UInt(child.width.W)))
+      val out = IO(Output(UInt(child.width.W)))
+      val c = Instance(child)
+      tieoff(c)
+      out := c.out + c.out
+    }
+    val child: Child = build { new Child(10) }
+    buildFirrtl { new Parent(child) }
+  }
+
+  property("Programmatic construction of instances should work") {
+    class Child(val width: Int) extends MultiIOModule {
+      val in  = IO(Input(UInt(width.W)))
+      val out = IO(Output(UInt(width.W)))
+      val reg = Reg(UInt(width.W))
+      out := reg + reg
+    }
+    class Parent(child: Child, nChildren: Int) extends MultiIOModule {
+      val in  = IO(Input(UInt(child.width.W)))
+      val out = IO(Output(UInt(child.width.W)))
+      val c = Instance(child)
+      out := (0 until nChildren).foldLeft(in) {
+        case (in, int) =>
+          val c = Instance(child)
+          c.in := in
+          c.out
+      }
+    }
+    val child: Child = build { new Child(10) }
+    buildFirrtl { new Parent(child, 3) }
+
+  }
+
+  property("Defining and constructing a bundle in a Module should work") {
+    class MyModule() extends Module {
+      class MyBundle extends Bundle {
+        val in = Input(UInt(3.W))
+        val out = Output(UInt(3.W))
+      }
+
+      // Without a special case in the compiler plugin, this would fail because referencing `MyBundle`
+      //  is via `MyModule.MyBundle`, which matches the general pattern the compiler plugin looks for
+      //  to intercept references to Data members of Modules
+      val io = IO(new MyBundle)
+    }
+
+    build { new MyModule() }
+  }
+
+  property("Connecting internal modules should not give null pointer exception") {
+    class Leaf(val width: Int) extends MultiIOModule {
+      val in  = IO(Input(UInt(width.W)))
+    }
+    class Child(val width: Int) extends MultiIOModule {
+      val in  = IO(Input(UInt(width.W)))
+      val out = IO(Output(UInt(width.W)))
+      val leaf = Module(new Leaf(width))
+      def connectToLeaf(): Unit = leaf.in := in
+    }
+    class Parent(child: Child) extends MultiIOModule {
+      val in  = IO(Input(UInt(child.width.W)))
+      val out = IO(Output(UInt(child.width.W)))
+      val c = Instance(child)
+      c.connectToLeaf()
+      out := c.out + c.out
+    }
+    val child: Child = build { new Child(10) }
+    intercept[StageError](
+      "Connection between sink "
+    ) {
+      buildFirrtl { new Parent(child) }
+    }
+
+  }
+
+  property("Defining stuff in a mix-in trait should still be nullified") {
+    var nLeafs = 0
+    class Leaf extends MultiIOModule {
+      nLeafs += 1
+      val in  = IO(Input(UInt(3.W)))
+      val out = IO(Output(UInt(3.W)))
+      out := in
+    }
+
+    trait InModuleBody { this: MultiIOModule =>
+      val leaf = Module(new Leaf)
+      leaf.in := 0.U
+    }
+
+    class Child extends MultiIOModule with InModuleBody {
+      val out = IO(Output(UInt(3.W)))
+      out := leaf.out
+    }
+
+    class Parent(child: Child) extends MultiIOModule {
+      val in  = IO(Input(UInt(3.W)))
+      val out = IO(Output(UInt(3.W)))
+      val c = Instance(child)
+      out := c.out + c.out
+    }
+
+    val child: Child = build { new Child() }
+    buildFirrtl { new Parent(child) }
+    assert(nLeafs == 1, "Leaf must only be elaborated once")
+  }
 }
+
 //Prints out:
 /*
 [info] [0.002] Elaborating design...
@@ -207,4 +294,87 @@ circuit Top :
     SIMPLE.in <= in @[InstanceSpec.scala 53:13]
     SIMPLE2.in <= SIMPLE.out @[InstanceSpec.scala 56:14]
     out <= SIMPLE2.out @[InstanceSpec.scala 58:6]
+ */
+
+/*
+class Leaf extends MultiIOModule {
+  val in  = IO(Input(UInt(3.W)))
+  val out = IO(Output(UInt(3.W)))
+  out := in + in
+  println("Elaborated Leaf!")
+}
+
+class SimpleX(int: Int) extends MultiIOModule {
+  val in  = IO(Input(UInt(3.W)))
+  //val in  = chisel3.experimental.isInstance.check(IO(Input(UInt(3.W))))
+  val out = IO(Output(UInt(3.W)))
+  //val out = chisel3.experimental.isInstance.check(IO(Output(UInt(3.W))))
+  val leaf = Module(new Leaf)
+  val reg = Reg(UInt(3.W))
+  //val leaf = chisel3.experimental.isInstance.check(Module(new Leaf))
+  out := in + in
+  //chisel3.experimental.isInstance.check(() => out := in + in)
+  val x = int
+  //val x = chisel3.experimental.isInstance.check(int)
+  def tieoff() = in := 0.U
+  def connectInternals() = reg := in
+}
+
+class MyPipe2(gen: Data, latency: Int = 1)(implicit compileOptions: CompileOptions) extends Module {
+  /** Interface for [[Pipe]]s composed of a [[Valid]] input and [[Valid]] output
+    * @define notAQueue
+    */
+  class MyPipeIO extends Bundle {
+
+    /** [[Valid]] input */
+    val enq = Input(Valid(UInt(3.W)))
+
+    /** [[Valid]] output. Data will appear here `latency` cycles after being valid at `enq`. */
+    val deq = Output(Valid(UInt(3.W)))
+  }
+
+  val io = IO(new MyPipeIO)
+  //val io = IO(new Bundle { val x = UInt(3.W) })
+
+  //io.deq <> Pipe(io.enq, latency)
+}
+
+
+class Top(simple: SimpleX) extends MultiIOModule {
+  val in  = IO(Input(UInt(3.W)))
+  val out = IO(Output(UInt(3.W)))
+
+  // 1) Original backing module of type Simple
+  // 2) New Black Box module
+  // 3) New Empty Module of type Simple
+
+  // Jack's thoughts
+  // Make sure we check if plugin has been run
+
+  val SIMPLE: SimpleX = Instance(simple)
+  val SIMPLE2: SimpleX = Module(new SimpleX(10))
+
+  SIMPLE.tieoff()
+  SIMPLE2.tieoff()
+  //SIMPLE.connectInternals()
+
+  YunsupFunc.func(SIMPLE)
+  YunsupFunc.func(SIMPLE2)
+
+  SIMPLE.in := in
+  //SIMPLE.useInstance(SIMPLE.getBackingModule[SimpleX].in) := in
+
+  SIMPLE2.in := SIMPLE.out
+
+  out:= SIMPLE2.out
+  //out := SIMPLE2.useInstance(SIMPLE.getBackingModule[SimpleX].out)
+}
+  //property("Explicit example test case") {
+  //  //Diplomacy occurs
+  //  //Chisel Construction
+  //  val simple: SimpleX = build { new SimpleX(10) }
+  //  val top: Top = build { new Top(simple) }
+  //}
+
+
  */
