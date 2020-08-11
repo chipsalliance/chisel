@@ -98,7 +98,14 @@ class Compiler extends Phase with Translator[AnnotationSeq, Seq[CompilerRun]] {
     def f(c: CompilerRun): CompilerRun = {
       val targets = c.compiler match {
         case Some(d) => c.transforms.reverse.map(Dependency.fromTransform(_)) ++ compilerToTransforms(d)
-        case None    => throw new PhasePrerequisiteException("No compiler specified!") }
+        case None    =>
+          val hasEmitter = c.transforms.collectFirst { case _: firrtl.Emitter => true }.isDefined
+          if(!hasEmitter) {
+            throw new PhasePrerequisiteException("No compiler specified!")
+          } else {
+            c.transforms.reverse.map(Dependency.fromTransform)
+          }
+      }
       val tm = new firrtl.stage.transforms.Compiler(targets)
       /* Transform order is lazily evaluated. Force it here to remove its resolution time from actual compilation. */
       val (timeResolveDependencies, _) = firrtl.Utils.time { tm.flattenedTransformOrder }

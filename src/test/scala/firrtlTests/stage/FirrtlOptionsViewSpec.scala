@@ -38,7 +38,6 @@ class FirrtlOptionsViewSpec extends AnyFlatSpec with Matchers {
     val out = view[FirrtlOptions](annotations)
 
     out.outputFileName should be (Some("bar"))
-    out.compiler.getClass should be (classOf[BazCompiler])
     out.infoModeName should be ("use")
     out.firrtlCircuit should be (Some(grault))
   }
@@ -59,7 +58,6 @@ class FirrtlOptionsViewSpec extends AnyFlatSpec with Matchers {
     val out = view[FirrtlOptions](annotations ++ overwrites)
 
     out.outputFileName should be (Some("bar_"))
-    out.compiler.getClass should be (classOf[Baz_Compiler])
     out.infoModeName should be ("gen")
     out.firrtlCircuit should be (Some(grault_))
   }

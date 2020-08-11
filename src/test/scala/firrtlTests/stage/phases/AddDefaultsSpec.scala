@@ -7,8 +7,8 @@ import firrtl.NoneCompiler
 import firrtl.annotations.Annotation
 import firrtl.stage.phases.AddDefaults
 import firrtl.transforms.BlackBoxTargetDirAnno
-import firrtl.stage.{CompilerAnnotation, InfoModeAnnotation}
-import firrtl.options.{Phase, TargetDirAnnotation}
+import firrtl.stage.{CompilerAnnotation, InfoModeAnnotation, RunFirrtlTransformAnnotation}
+import firrtl.options.{Dependency, Phase, TargetDirAnnotation}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -21,7 +21,8 @@ class AddDefaultsSpec extends AnyFlatSpec with Matchers {
   it should "add expected default annotations and nothing else" in new Fixture {
     val expected = Seq(
       (a: Annotation) => a match { case BlackBoxTargetDirAnno(b) => b == TargetDirAnnotation().directory },
-      (a: Annotation) => a match { case CompilerAnnotation(b) => b.getClass == CompilerAnnotation().compiler.getClass },
+      (a: Annotation) => a match { case RunFirrtlTransformAnnotation(e: firrtl.Emitter) =>
+        Dependency.fromTransform(e) == Dependency[firrtl.VerilogEmitter] },
       (a: Annotation) => a match { case InfoModeAnnotation(b) => b == InfoModeAnnotation().modeName } )
 
     phase.transform(Seq.empty).zip(expected).map { case (x, f) => f(x) should be (true) }
