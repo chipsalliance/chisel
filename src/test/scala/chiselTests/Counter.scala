@@ -8,8 +8,10 @@ import chisel3.util._
 
 class CountTester(max: Int) extends BasicTester {
   val cnt = Counter(max)
+  assert(cnt.n == max)
   when(true.B) { cnt.inc() }
-  when(cnt.value === (max-1).asUInt) {
+  val expected = if (max == 0) 0.U else (max - 1).U
+  when(cnt.value === expected) {
     stop()
   }
 }
@@ -50,7 +52,9 @@ class RangeTester(r: Range) extends BasicTester {
 
 class CounterSpec extends ChiselPropSpec {
   property("Counter should count up") {
-    forAll(smallPosInts) { (max: Int) => assertTesterPasses{ new CountTester(max) } }
+    for (i <- 0 until 4) {
+      assertTesterPasses(new CountTester(i))
+    }
   }
 
   property("Counter can be en/disabled") {
