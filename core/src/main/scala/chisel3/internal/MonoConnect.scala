@@ -193,6 +193,9 @@ private[chisel3] object MonoConnect {
     val sink_mod: BaseModule   = sink.topBinding.location.getOrElse(throw UnwritableSinkException)
     val source_mod: BaseModule = source.topBinding.location.getOrElse(context_mod)
 
+    val sink_parent = Builder.retrieveParent(sink_mod, context_mod).getOrElse(None)
+    val source_parent = Builder.retrieveParent(source_mod, context_mod).getOrElse(None)
+
     val sink_direction = BindingDirection.from(sink.topBinding, sink.direction)
     val source_direction = BindingDirection.from(source.topBinding, source.direction)
 
@@ -216,8 +219,7 @@ private[chisel3] object MonoConnect {
     }
 
     // CASE: Context is same module as sink node and right node is in a child module
-    else if( (sink_mod == context_mod) &&
-             (source_mod._parent.map(_ == context_mod).getOrElse(false)) ) {
+    else if((sink_mod == context_mod) && (source_parent == context_mod)) {
       // Thus, right node better be a port node and thus have a direction
       ((sink_direction, source_direction): @unchecked) match {
         //    SINK          SOURCE
@@ -239,8 +241,7 @@ private[chisel3] object MonoConnect {
     }
 
     // CASE: Context is same module as source node and sink node is in child module
-    else if( (source_mod == context_mod) &&
-             (sink_mod._parent.map(_ == context_mod).getOrElse(false)) ) {
+    else if((source_mod == context_mod) && (sink_parent == context_mod)) {
       // Thus, left node better be a port node and thus have a direction
       ((sink_direction, source_direction): @unchecked) match {
         //    SINK          SOURCE
@@ -254,9 +255,7 @@ private[chisel3] object MonoConnect {
     // CASE: Context is the parent module of both the module containing sink node
     //                                        and the module containing source node
     //   Note: This includes case when sink and source in same module but in parent
-    else if( (sink_mod._parent.map(_ == context_mod).getOrElse(false)) &&
-             (source_mod._parent.map(_ == context_mod).getOrElse(false))
-    ) {
+    else if((sink_parent == context_mod) && (source_parent == context_mod)) {
       // Thus both nodes must be ports and have a direction
       ((sink_direction, source_direction): @unchecked) match {
         //    SINK          SOURCE
