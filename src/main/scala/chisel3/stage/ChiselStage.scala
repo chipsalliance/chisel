@@ -62,7 +62,7 @@ class ChiselStage extends Stage with PreservesAll[Phase] {
 
     annos
       .collectFirst {
-        case a: ChiselCircuitAnnotation => a.toBytes.get
+        case a: ChiselCircuitAnnotation => a.getBytes
       }
       .get
       .map(_.toChar)

@@ -115,7 +115,7 @@ case class ChiselCircuitAnnotation(circuit: Circuit)
 
   protected def suffix: Option[String] = Some(".fir")
 
-  override def toBytes: Iterable[Byte] = OldEmitter.emit(circuit).toBytes
+  override def getBytes: Iterable[Byte] = OldEmitter.emit(circuit).getBytes
 
 }
 

@@ -33,7 +33,7 @@ package object stage {
       options.foreach {
         case a@ ChiselCircuitAnnotation(b) =>
           chiselCircuit = Some(b)
-          chirrtlCircuit = a.toBytes.map(_.map(_.toChar).mkString)
+          chirrtlCircuit = Some(a.getBytes.map(_.toChar).mkString)
         case _ =>
       }
 
