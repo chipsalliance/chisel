@@ -166,25 +166,25 @@ class InstanceSpec extends ChiselPropSpec with Utils {
 
     build { new MyModule() }
   }
-
   property("Connecting internal modules should not give null pointer exception") {
     class Leaf(val width: Int) extends MultiIOModule {
       val in  = IO(Input(UInt(width.W)))
     }
-    class Child(val width: Int) extends MultiIOModule {
+
+    class ChildX(val width: Int) extends MultiIOModule {
       val in  = IO(Input(UInt(width.W)))
       val out = IO(Output(UInt(width.W)))
       val leaf = Module(new Leaf(width))
       def connectToLeaf(): Unit = leaf.in := in
     }
-    class Parent(child: Child) extends MultiIOModule {
+    class Parent(child: ChildX) extends MultiIOModule {
       val in  = IO(Input(UInt(child.width.W)))
       val out = IO(Output(UInt(child.width.W)))
       val c = Instance(child)
       c.connectToLeaf()
       out := c.out + c.out
     }
-    val child: Child = build { new Child(10) }
+    val child: ChildX = build { new ChildX(10) }
     intercept[StageError](
       "Connection between sink "
     ) {
@@ -194,35 +194,37 @@ class InstanceSpec extends ChiselPropSpec with Utils {
   }
 
   property("Defining stuff in a mix-in trait should still be nullified") {
-    var nLeafs = 0
-    class Leaf extends MultiIOModule {
-      nLeafs += 1
-      val in  = IO(Input(UInt(3.W)))
-      val out = IO(Output(UInt(3.W)))
-      out := in
+    class Leaf(val width: Int) extends MultiIOModule {
+      val in  = IO(Input(UInt(width.W)))
     }
-
     trait InModuleBody { this: MultiIOModule =>
-      val leaf = Module(new Leaf)
+      val leaf = Module(new Leaf(10))
       leaf.in := 0.U
     }
 
     class Child extends MultiIOModule with InModuleBody {
-      val out = IO(Output(UInt(3.W)))
-      out := leaf.out
+      val in = IO(Input(UInt(3.W)))
+      leaf.in := in
     }
 
     class Parent(child: Child) extends MultiIOModule {
       val in  = IO(Input(UInt(3.W)))
       val out = IO(Output(UInt(3.W)))
       val c = Instance(child)
-      out := c.out + c.out
+      c.in := in
+      out := in
     }
 
     val child: Child = build { new Child() }
-    buildFirrtl { new Parent(child) }
-    assert(nLeafs == 1, "Leaf must only be elaborated once")
+    val cir = buildFirrtl { new Parent(child) }
+    val nLeafs = cir.modules.collect {
+      case m: firrtl.ir.Module if m.name == "Leaf" => m
+    }
+    assert(nLeafs.isEmpty, "Leaf not be elaborated when building Parent")
   }
+
+  property("Passing non-int primitives") { }
+  property("Passing classes") { }
 }
 
 //Prints out:
@@ -378,3 +380,4 @@ class Top(simple: SimpleX) extends MultiIOModule {
 
 
  */
+

@@ -19,13 +19,14 @@ object APIs {
     * @tparam X Return type of code to optionally execute
     * @return Returns either thing (executed) or null
     */
-  def nullifyIfInstance[X](thing: => X)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): X =
-    if(Builder.getBackingModule().isDefined) {
+  def nullifyIfInstance[X](thing: => X)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): X = {
+    if (Builder.getBackingModule().isDefined) {
       null.asInstanceOf[X]
     } else {
       val x = thing
       x
     }
+  }
 
   /** If its an instance, return the backing module. Otherwise, returns provided module.
     * @param moduleOrInstance

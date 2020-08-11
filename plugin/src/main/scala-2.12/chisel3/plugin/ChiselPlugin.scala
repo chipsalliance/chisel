@@ -113,7 +113,8 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
     // Method called by the compiler to modify source tree
     override def transform(tree: Tree): Tree = tree match {
       case dd @ ClassDef(mods, name, tparams, impl) if impl.tpe <:< inferType(tq"chisel3.experimental.BaseModule") =>
-        val newBody = impl.body.map {
+        val newImpl = (localTyper typed transform(impl)).asInstanceOf[Template]
+        val newBody = newImpl.body.map {
           case t @ ValDef(mods, name, tpt, rhs) if okFlags(mods) =>
             val newRhs = localTyper typed q"chisel3.plugin.APIs.nullifyIfInstance[$tpt]($rhs)"
             localTyper typed treeCopy.ValDef(t, mods, name, tpt, newRhs)
@@ -125,17 +126,17 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
             localTyper typed q"chisel3.plugin.APIs.nullifyIfInstance[${TypeTree(curry.tpe)}]($curry)"
           case other => other
         }
-        val newImpl = localTyper typed transform(localTyper typed treeCopy.Template(impl, impl.parents, impl.self, newBody.toList))
-        val ret = localTyper typed treeCopy.ClassDef(dd, mods, name, tparams, newImpl.asInstanceOf[Template])
+        val finalImpl = (localTyper typed treeCopy.Template(newImpl, newImpl.parents, newImpl.self, newBody)).asInstanceOf[Template]
+        val ret = localTyper typed treeCopy.ClassDef(dd, mods, name, tparams, finalImpl)
 
-        //if(name.toString.contains("Leaf")) {
-        //  //error(showRaw(ret, printTypes = true))
-        //  //error(show(ret))
-        //  //println(showRaw(ret, printTypes = true))
-        //  println(show(dd))
-        //  println(showRaw(dd))
-        //  println(show(ret))
-        //}
+        if(name.toString.contains("ChildY")) {
+          //error(showRaw(ret, printTypes = true))
+          //error(show(ret))
+          //println(showRaw(ret, printTypes = true))
+          //println(show(dd))
+          //println(showRaw(dd))
+          //println(show(ret))
+        }
         ret
 
       // Don't go into accessors, as they are needed for updating vars
@@ -143,9 +144,9 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
       // Don't recurse into a new Module.Bundle constructing a class
       // We hit this case when you declare a Bundle inside a module - you reference a Select(outsidemodule, innerbundle)
       // calling 'new' on it
-      case dd @ New(Select(quals, data)) if quals.tpe <:< inferType(tq"chisel3.experimental.BaseModule") && dd.tpe <:< inferType(tq"chisel3.Data") => //&& dd.toString.contains("MyPipe") =>
+      case dd @ New(Select(quals, data)) if quals.tpe <:< inferType(tq"chisel3.experimental.BaseModule") && (dd.tpe <:< inferType(tq"chisel3.Data") || dd.tpe <:< inferType(tq"chisel3.experimental.BaseModule")) =>
         dd
-      case dd @ Select(quals, data) if quals.tpe <:< inferType(tq"chisel3.experimental.BaseModule") && dd.tpe <:< inferType(tq"chisel3.Data") => // && dd.toString.contains("MyPipe") =>
+      case dd @ Select(quals, data) if quals.tpe <:< inferType(tq"chisel3.experimental.BaseModule") && (dd.tpe <:< inferType(tq"chisel3.Data") || dd.tpe <:< inferType(tq"chisel3.experimental.BaseModule")) =>
         def resolve(): Tree = {
           val newQuals = transform(quals)
           val backingModule = localTyper typed q"chisel3.plugin.APIs.resolveBackingModule[${quals.tpe}]($newQuals)"

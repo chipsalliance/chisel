@@ -1,5 +1,7 @@
 package chisel3.internal
 
+import java.lang.reflect.Field
+
 import chisel3.{BlackBox, CompileOptions, Record}
 import chisel3.experimental.BaseModule
 import chisel3.internal.BaseModule.ClonePorts
@@ -21,9 +23,26 @@ object Instance {
       chisel3.Module.do_apply(new Instance[T](module.name, record, module)).suggestName(name.get)
     }
     val constr = module.getClass().getConstructors.head
-    val paramVals = constr.getParameterTypes.map {
-      case c: Class[_] if c.isPrimitive => 0.asInstanceOf[Object]
-      case other => null.asInstanceOf[Object]
+
+    // Special case for inner classes - we must find the outer class and pass it to the constructor of our nullified
+    //  inner class
+    val paramVals: Seq[Object] = try {
+      val fields = module.getClass.getDeclaredFields.collectFirst {
+        case f: Field if f.toString.contains("$outer") => f
+      }.toList
+      fields.foreach(_.setAccessible(true))
+      val outers: Seq[Object] = fields.map(f => f.get(module))
+      val otherPs: Seq[Object] = constr.getParameterTypes.drop(outers.size).map {
+        // TODO: Support more than just int primitives
+        case c: Class[_] if c.isPrimitive => 0.asInstanceOf[Object]
+        case _ => null.asInstanceOf[Object]
+      }
+      outers ++ otherPs
+    } catch { case e: NoSuchFieldException =>
+      constr.getParameterTypes.map {
+        case c: Class[_] if c.isPrimitive => 0.asInstanceOf[Object]
+        case _ => null.asInstanceOf[Object]
+      }
     }
     require(Builder.currentModule.isDefined)
     Builder.setBackingModule(module, wrapper)
