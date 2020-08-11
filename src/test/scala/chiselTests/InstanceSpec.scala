@@ -2,6 +2,7 @@ package chiselTests
 
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage, DesignAnnotation}
 import chisel3._
+import chisel3.experimental.treedump
 import chisel3.internal.Instance
 import firrtl.ir.Circuit
 import firrtl.options.{Dependency, StageError}
@@ -76,7 +77,7 @@ class InstanceSpec extends ChiselPropSpec with Utils {
     class Parent(child: Child) extends MultiIOModule {
       val in  = IO(Input(UInt(child.width.W)))
       val out = IO(Output(UInt(child.width.W)))
-      val c = Instance(child)
+      val c: Child = Instance(child)
       c.tieoff()
       out := c.out + c.out
     }
@@ -197,6 +198,7 @@ class InstanceSpec extends ChiselPropSpec with Utils {
     class Leaf(val width: Int) extends MultiIOModule {
       val in  = IO(Input(UInt(width.W)))
     }
+    @treedump
     trait InModuleBody { this: MultiIOModule =>
       val leaf = Module(new Leaf(10))
       leaf.in := 0.U

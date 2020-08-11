@@ -110,34 +110,45 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
       dd.symbol.logicallyEnclosingMember.thisType <:< inferType(tq"chisel3.Bundle")
     }
 
+    def mixesModule(valDef: ValDef): Boolean = valDef match {
+      case ValDef(_, _, tpt, _) if inferType(tpt) <:< inferType(tq"chisel3.experimental.BaseModule") => true
+      case _ => false
+    }
+
+    def updateClass(dd: ClassDef): Tree = {
+      val newImpl = (localTyper typed transform(dd.impl)).asInstanceOf[Template]
+      val newBody = newImpl.body.map {
+        case t @ ValDef(mods, name, tpt, rhs) if okFlags(mods) =>
+          val newRhs = localTyper typed q"chisel3.plugin.APIs.nullifyIfInstance[$tpt]($rhs)"
+          localTyper typed treeCopy.ValDef(t, mods, name, tpt, newRhs)
+        case t @ ValDef(mods, name, tpt, rhs) if okFlags(mods) =>
+          val newRhs = localTyper typed q"chisel3.plugin.APIs.nullifyIfInstance[$tpt]($rhs)"
+          localTyper typed treeCopy.ValDef(t, mods, name, tpt, newRhs)
+        case t: TermTree if t.tpe != NoType =>
+          val curry = localTyper typed q"$t"
+          localTyper typed q"chisel3.plugin.APIs.nullifyIfInstance[${TypeTree(curry.tpe)}]($curry)"
+        case other => other
+      }
+      val finalImpl = (localTyper typed treeCopy.Template(newImpl, newImpl.parents, newImpl.self, newBody)).asInstanceOf[Template]
+      val ret = localTyper typed treeCopy.ClassDef(dd, dd.mods, dd.name, dd.tparams, finalImpl)
+
+      if(dd.name.toString.contains("ChildY")) {
+        //error(showRaw(ret, printTypes = true))
+        //error(show(ret))
+        //println(showRaw(ret, printTypes = true))
+        //println(show(dd))
+        //println(showRaw(dd))
+        //println(show(ret))
+      }
+      ret
+    }
+
     // Method called by the compiler to modify source tree
     override def transform(tree: Tree): Tree = tree match {
+      case dd @ ClassDef(mods, name, tparams, Template(parents, self, body)) if mixesModule(self) =>
+        updateClass(dd)
       case dd @ ClassDef(mods, name, tparams, impl) if impl.tpe <:< inferType(tq"chisel3.experimental.BaseModule") =>
-        val newImpl = (localTyper typed transform(impl)).asInstanceOf[Template]
-        val newBody = newImpl.body.map {
-          case t @ ValDef(mods, name, tpt, rhs) if okFlags(mods) =>
-            val newRhs = localTyper typed q"chisel3.plugin.APIs.nullifyIfInstance[$tpt]($rhs)"
-            localTyper typed treeCopy.ValDef(t, mods, name, tpt, newRhs)
-          case t @ ValDef(mods, name, tpt, rhs) if okFlags(mods) =>
-            val newRhs = localTyper typed q"chisel3.plugin.APIs.nullifyIfInstance[$tpt]($rhs)"
-            localTyper typed treeCopy.ValDef(t, mods, name, tpt, newRhs)
-          case t: TermTree if t.tpe != NoType =>
-            val curry = localTyper typed q"$t"
-            localTyper typed q"chisel3.plugin.APIs.nullifyIfInstance[${TypeTree(curry.tpe)}]($curry)"
-          case other => other
-        }
-        val finalImpl = (localTyper typed treeCopy.Template(newImpl, newImpl.parents, newImpl.self, newBody)).asInstanceOf[Template]
-        val ret = localTyper typed treeCopy.ClassDef(dd, mods, name, tparams, finalImpl)
-
-        if(name.toString.contains("ChildY")) {
-          //error(showRaw(ret, printTypes = true))
-          //error(show(ret))
-          //println(showRaw(ret, printTypes = true))
-          //println(show(dd))
-          //println(showRaw(dd))
-          //println(show(ret))
-        }
-        ret
+        updateClass(dd)
 
       // Don't go into accessors, as they are needed for updating vars
       case dd @ DefDef(mods, name, tparams, vparamss, tpt, rhs) if mods.hasFlag(Flags.ACCESSOR) => dd
