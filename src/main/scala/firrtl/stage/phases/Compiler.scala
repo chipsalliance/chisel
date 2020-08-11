@@ -51,7 +51,7 @@ class Compiler extends Phase with Translator[AnnotationSeq, Seq[CompilerRun]] {
         Dependency[AddCircuit],
         Dependency[AddImplicitOutputFile])
 
-  override def optionalPrerequisiteOf = Seq(Dependency[WriteEmitted])
+  override def optionalPrerequisiteOf = Seq.empty
 
   override def invalidates(a: Phase) = false
 

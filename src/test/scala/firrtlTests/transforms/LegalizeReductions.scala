@@ -65,7 +65,7 @@ circuit $name :
       TargetDirAnnotation(testDir.toString) ::
       CompilerAnnotation(new MinimumVerilogCompiler) ::
       Nil
-    val resultAnnos = (new FirrtlStage).run(annos)
+    val resultAnnos = (new FirrtlStage).transform(annos)
     val outputFilename = resultAnnos.collectFirst { case OutputFileAnnotation(f) => f }
     outputFilename.toRight(s"Output file not found!")
     // Copy Verilator harness

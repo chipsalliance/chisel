@@ -39,11 +39,9 @@ package object stage {
 
   private [firrtl] implicit object FirrtlExecutionResultView extends OptionsView[FirrtlExecutionResult] with LazyLogging {
 
-    private lazy val dummyWriteEmitted = new WriteEmitted
-
     def view(options: AnnotationSeq): FirrtlExecutionResult = {
       val emittedRes = options
-        .collect{ case DeletedAnnotation(dummyWriteEmitted.name, a: EmittedAnnotation[_]) => a.value.value }
+        .collect{ case a: EmittedAnnotation[_] => a.value.value }
         .mkString("\n")
 
       val emitters = options.collect{ case RunFirrtlTransformAnnotation(e: Emitter) => e }

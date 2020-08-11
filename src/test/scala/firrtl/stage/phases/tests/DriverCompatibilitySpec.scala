@@ -125,7 +125,7 @@ class DriverCompatibilitySpec extends AnyFlatSpec with Matchers with PrivateMeth
   new PhaseFixture(new AddImplicitFirrtlFile) {
     val annotations = Seq( TopNameAnnotation("foo") )
     val expected = annotations.toSet +
-      FirrtlFileAnnotation(new File("foo.fir").getCanonicalPath)
+      FirrtlFileAnnotation(new File("foo.fir").getPath())
 
     phase.transform(annotations).toSet should be (expected)
   }

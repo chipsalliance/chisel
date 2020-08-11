@@ -14,10 +14,13 @@ import firrtl.PrimOps._
 import firrtl.WrappedExpression._
 import Utils._
 import MemPortUtils.{memPortField, memType}
-import firrtl.options.{HasShellOptions, PhaseException, ShellOption, Unserializable}
-import firrtl.stage.{RunFirrtlTransformAnnotation, TransformManager}
+import firrtl.options.{HasShellOptions, CustomFileEmission, ShellOption, PhaseException}
+import firrtl.options.Viewer.view
+import firrtl.stage.{FirrtlFileAnnotation, FirrtlOptions, RunFirrtlTransformAnnotation, TransformManager}
 // Datastructures
 import scala.collection.mutable.ArrayBuffer
+
+import java.io.File
 
 case class EmitterException(message: String) extends PassException(message)
 
@@ -92,17 +95,35 @@ final case class EmittedFirrtlModule(name: String, value: String, outputSuffix: 
 final case class EmittedVerilogModule(name: String, value: String, outputSuffix: String) extends EmittedModule
 
 /** Traits for Annotations containing emitted components */
-sealed trait EmittedAnnotation[T <: EmittedComponent] extends NoTargetAnnotation with Unserializable {
+sealed trait EmittedAnnotation[T <: EmittedComponent] extends NoTargetAnnotation with CustomFileEmission {
   val value: T
+
+  override protected def baseFileName(annotations: AnnotationSeq): String = {
+    view[FirrtlOptions](annotations).outputFileName.getOrElse(value.name)
+  }
+
+  override protected val suffix: Option[String] = Some(value.outputSuffix)
+
 }
-sealed trait EmittedCircuitAnnotation[T <: EmittedCircuit] extends EmittedAnnotation[T]
-sealed trait EmittedModuleAnnotation[T <: EmittedModule] extends EmittedAnnotation[T]
+sealed trait EmittedCircuitAnnotation[T <: EmittedCircuit] extends EmittedAnnotation[T] {
+
+  override def getBytes = value.value.getBytes
+
+}
+sealed trait EmittedModuleAnnotation[T <: EmittedModule] extends EmittedAnnotation[T] {
+
+  override def getBytes = value.value.getBytes
+
+}
 
 case class EmittedFirrtlCircuitAnnotation(value: EmittedFirrtlCircuit)
-    extends EmittedCircuitAnnotation[EmittedFirrtlCircuit]
+    extends EmittedCircuitAnnotation[EmittedFirrtlCircuit] {
+
+  override def replacements(file: File): AnnotationSeq = Seq(FirrtlFileAnnotation(file.toString))
+
+}
 case class EmittedVerilogCircuitAnnotation(value: EmittedVerilogCircuit)
     extends EmittedCircuitAnnotation[EmittedVerilogCircuit]
-
 case class EmittedFirrtlModuleAnnotation(value: EmittedFirrtlModule)
     extends EmittedModuleAnnotation[EmittedFirrtlModule]
 case class EmittedVerilogModuleAnnotation(value: EmittedVerilogModule)
@@ -465,10 +486,10 @@ class VerilogEmitter extends SeqTransform with Emitter {
     throw EmitterException("Cannot emit verification statements in Verilog" +
       "(2001). Use the SystemVerilog emitter instead.")
   }
-  
-  /** 
+
+  /**
     * Store Emission option per Target
-    * Guarantee only one emission option per Target 
+    * Guarantee only one emission option per Target
     */
   private[firrtl] class EmissionOptionMap[V <: EmissionOption](val df : V) {
     private val m = collection.mutable.HashMap[ReferenceTarget, V]().withDefaultValue(df)
@@ -480,9 +501,9 @@ class VerilogEmitter extends SeqTransform with Emitter {
     }
     def apply(key: ReferenceTarget): V = m.apply(key)
   }
-  
+
   /** Provide API to retrieve EmissionOptions based on the provided [[AnnotationSeq]]
-    * 
+    *
     * @param annotations : AnnotationSeq to be searched for EmissionOptions
     *
     */
@@ -500,16 +521,16 @@ class VerilogEmitter extends SeqTransform with Emitter {
 
     def getRegisterEmissionOption(target: ReferenceTarget): RegisterEmissionOption =
       registerEmissionOption(target)
-      
+
     def getWireEmissionOption(target: ReferenceTarget): WireEmissionOption =
       wireEmissionOption(target)
-      
+
     def getPortEmissionOption(target: ReferenceTarget): PortEmissionOption =
       portEmissionOption(target)
-      
+
     def getNodeEmissionOption(target: ReferenceTarget): NodeEmissionOption =
       nodeEmissionOption(target)
-      
+
     def getConnectEmissionOption(target: ReferenceTarget): ConnectEmissionOption =
       connectEmissionOption(target)
 

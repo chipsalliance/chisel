@@ -104,13 +104,13 @@ trait FirrtlRunners extends BackendCompilationUtilities {
     val customName = s"${prefix}_custom"
     val customAnnos = getBaseAnnos(customName) ++: toAnnos((new GetNamespace) +: customTransforms) ++: customAnnotations
 
-    val customResult = (new firrtl.stage.FirrtlStage).run(customAnnos)
+    val customResult = (new firrtl.stage.FirrtlStage).execute(Array.empty, customAnnos)
     val nsAnno = customResult.collectFirst { case m: ModuleNamespaceAnnotation => m }.get
 
     val refSuggestedName = s"${prefix}_ref"
     val refAnnos = getBaseAnnos(refSuggestedName) ++: Seq(RunFirrtlTransformAnnotation(new RenameModules), nsAnno)
 
-    val refResult = (new firrtl.stage.FirrtlStage).run(refAnnos)
+    val refResult = (new firrtl.stage.FirrtlStage).execute(Array.empty, refAnnos)
     val refName = refResult.collectFirst({ case stage.FirrtlCircuitAnnotation(c) => c.main }).getOrElse(refSuggestedName)
 
     assert(BackendCompilationUtilities.yosysExpectSuccess(customName, refName, testDir, timesteps))
@@ -145,7 +145,7 @@ trait FirrtlRunners extends BackendCompilationUtilities {
       annotations ++:
       (customTransforms ++ extraCheckTransforms).map(RunFirrtlTransformAnnotation(_))
 
-    (new firrtl.stage.FirrtlStage).run(annos)
+    (new firrtl.stage.FirrtlStage).execute(Array.empty, annos)
 
     testDir
   }

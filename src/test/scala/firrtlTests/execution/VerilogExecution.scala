@@ -21,7 +21,8 @@ trait VerilogExecution extends TestExecution {
     // Run FIRRTL, emit Verilog file
     val cAnno = FirrtlCircuitAnnotation(c)
     val tdAnno = TargetDirAnnotation(testDir.getAbsolutePath)
-    (new FirrtlStage).run(AnnotationSeq(Seq(cAnno, tdAnno) ++ customAnnotations))
+
+    (new FirrtlStage).execute(Array.empty, AnnotationSeq(Seq(cAnno, tdAnno)) ++ customAnnotations)
 
     // Copy harness resource to test directory
     val harness = new File(testDir, s"top.cpp")
