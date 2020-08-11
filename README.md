@@ -17,6 +17,30 @@ To build the website you need:
 
 ## Building the Website
 
+**tl;dr:**
+
+``` bash
+# Clone this git repository
+git clone git@github.com:freechipsproject/www.chisel-lang.org
+
+# Change into the directory where the clone lives
+cd www.chisel-lang.org
+
+# Checkout submodules (the README.md of submodules are used to populate the site)
+git submodule update --init --recursive
+
+# (Optionally:) Download a copy of the API documentation (this speeds up the build)
+wget https://github.com/freechipsproject/www.chisel-lang.org/releases/latest/download/build.tgz -O - | tar -xz
+
+# Build the website
+make
+
+# Serve the website
+make serve
+
+# In a web browser navigate to localhost:4000 to preview the website
+```
+
 The build process uses a [`Makefile`](https://github.com/freechipsproject/www.chisel-lang.org/blob/master/Makefile) to orchestrate building the website.
 This `Makefile` does a number of actions:
 
