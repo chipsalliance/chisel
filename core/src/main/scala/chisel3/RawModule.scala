@@ -200,10 +200,14 @@ package internal {
 
     // IO for this Module. At the Scala level (pre-FIRRTL transformations),
     // connections in and out of a Module may only go through `io` elements.
+    @deprecated("For type-safe interfaces, provide your own trait. For reflective API, use DataMirror", "Chisel 3.4")
     def io: Record
 
+    // Private accessor to reduce number of deprecation warnings
+    private[chisel3] def _io: Record = io
+
     // Allow access to bindings from the compatibility package
-    protected def _compatIoPortBound() = portsContains(io)
+    protected def _compatIoPortBound() = portsContains(_io)
 
     private[chisel3] override def namePorts(names: HashMap[HasId, String]): Unit = {
       for (port <- getModulePorts) {
@@ -218,8 +222,8 @@ package internal {
       _compatAutoWrapPorts()  // pre-IO(...) compatibility hack
 
       // Restrict IO to just io, clock, and reset
-      require(io != null, "Module must have io")
-      require(portsContains(io), "Module must have io wrapped in IO(...)")
+      require(_io != null, "Module must have io")
+      require(portsContains(_io), "Module must have io wrapped in IO(...)")
       require((portsContains(clock)) && (portsContains(reset)), "Internal error, module did not have clock or reset as IO")
       require(portsSize == 3, "Module must only have io, clock, and reset as IO")
 
@@ -232,7 +236,7 @@ package internal {
       implicit val sourceInfo = UnlocatableSourceInfo
 
       if (!parentCompileOptions.explicitInvalidate) {
-        pushCommand(DefInvalid(sourceInfo, io.ref))
+        pushCommand(DefInvalid(sourceInfo, _io.ref))
       }
 
       clock := override_clock.getOrElse(Builder.forcedClock)
