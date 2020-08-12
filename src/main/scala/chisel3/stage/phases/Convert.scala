@@ -20,6 +20,7 @@ class Convert extends Phase with PreservesAll[Phase] {
 
   def transform(annotations: AnnotationSeq): AnnotationSeq = annotations.flatMap {
     case a: ChiselCircuitAnnotation =>
+      Some(a) ++
       /* Convert this Chisel Circuit to a FIRRTL Circuit */
       Some(FirrtlCircuitAnnotation(Converter.convert(a.circuit))) ++
       /* Convert all Chisel Annotations to FIRRTL Annotations */

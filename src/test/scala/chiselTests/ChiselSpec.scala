@@ -78,7 +78,7 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
       .execute(Array("--target-dir", createTestDirectory(this.getClass.getSimpleName).toString),
                Seq(ChiselGeneratorAnnotation(() => t)))
       .collectFirst {
-        case DeletedAnnotation(_, EmittedVerilogCircuitAnnotation(a)) => a.value
+        case EmittedVerilogCircuitAnnotation(a) => a.value
       }.getOrElse(fail("No Verilog circuit was emitted by the FIRRTL compiler!"))
   }
 }
