@@ -509,9 +509,15 @@ object Utils extends LazyLogging {
     case Default => Flip
     case Flip => Default
   }
+  // Input  <-> SourceFlow <-> Flip
+  // Output <-> SinkFlow   <-> Default
   def to_dir(g: Flow): Direction = g match {
     case SourceFlow => Input
     case SinkFlow => Output
+  }
+  def to_dir(o: Orientation): Direction = o match {
+    case Flip => Input
+    case Default => Output
   }
   def to_flow(d: Direction): Flow = d match {
     case Input => SourceFlow

@@ -31,8 +31,7 @@ object ExpandWhens extends Pass {
     Seq( Dependency(PullMuxes),
          Dependency(ReplaceAccesses),
          Dependency(ExpandConnects),
-         Dependency(RemoveAccesses),
-         Dependency(Uniquify) ) ++ firrtl.stage.Forms.Resolved
+         Dependency(RemoveAccesses) ) ++ firrtl.stage.Forms.Resolved
 
   override def invalidates(a: Transform): Boolean = a match {
     case CheckInitialization | ResolveKinds | InferTypes => true
@@ -294,8 +293,7 @@ class ExpandWhensAndCheck extends Transform with DependencyAPIMigration {
     Seq( Dependency(PullMuxes),
          Dependency(ReplaceAccesses),
          Dependency(ExpandConnects),
-         Dependency(RemoveAccesses),
-         Dependency(Uniquify) ) ++ firrtl.stage.Forms.Deduped
+         Dependency(RemoveAccesses) ) ++ firrtl.stage.Forms.Deduped
 
   override def invalidates(a: Transform): Boolean = a match {
     case ResolveKinds | InferTypes | ResolveFlows | _: InferWidths => true

@@ -129,7 +129,7 @@ class MemInitSpec extends FirrtlFlatSpec {
       val annos = Seq(MemoryScalarInitAnnotation(mRef, 0))
       compile(annos, "UInt<32>[2]")
     }
-    assert(caught.getMessage.endsWith("[module MemTest] Cannot initialize memory of non ground type UInt<32>[2]"))
+    assert(caught.getMessage.endsWith("Cannot initialize memory m of non ground type UInt<32>[2]"))
   }
 
   "MemoryScalarInitAnnotation on Memory with Bundle type" should "fail" in {
@@ -137,7 +137,7 @@ class MemInitSpec extends FirrtlFlatSpec {
       val annos = Seq(MemoryScalarInitAnnotation(mRef, 0))
       compile(annos, "{real: SInt<10>, imag: SInt<10>}")
     }
-    assert(caught.getMessage.endsWith("[module MemTest] Cannot initialize memory of non ground type { real : SInt<10>, imag : SInt<10>}"))
+    assert(caught.getMessage.endsWith("Cannot initialize memory m of non ground type { real : SInt<10>, imag : SInt<10>}"))
   }
 
   private def jsonAnno(name: String, suffix: String): String =

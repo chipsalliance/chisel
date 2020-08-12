@@ -67,7 +67,6 @@ class InferWidths extends Transform
   override def prerequisites =
     Seq( Dependency(passes.ResolveKinds),
          Dependency(passes.InferTypes),
-         Dependency(passes.Uniquify),
          Dependency(passes.ResolveFlows),
          Dependency[passes.InferBinaryPoints],
          Dependency[passes.TrimIntervals] ) ++ firrtl.stage.Forms.WorkingIR

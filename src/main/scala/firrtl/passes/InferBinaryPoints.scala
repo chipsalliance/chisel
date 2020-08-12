@@ -15,7 +15,6 @@ class InferBinaryPoints extends Pass {
   override def prerequisites =
     Seq( Dependency(ResolveKinds),
          Dependency(InferTypes),
-         Dependency(Uniquify),
          Dependency(ResolveFlows) )
 
   override def optionalPrerequisiteOf = Seq.empty

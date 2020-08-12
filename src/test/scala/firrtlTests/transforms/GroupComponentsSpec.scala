@@ -364,9 +364,9 @@ class GroupComponentsSpec extends MiddleTransformSpec {
          |    out <= add(in, wrapper.other_out)
          |  module Wrapper :
          |    output other_out: UInt<16>
-         |    inst other_ of Other
-         |    other_out <= other_.out
-         |    other_.in is invalid
+         |    inst other of Other
+         |    other_out <= other.out
+         |    other.in is invalid
          |  module Other:
          |    input in: UInt<16>
          |    output out: UInt<16>

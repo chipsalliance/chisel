@@ -12,7 +12,7 @@ import firrtl.options.Dependency
 
 import MemPortUtils.memType
 
-/** Resolve name collisions that would occur in [[LowerTypes]]
+/** Resolve name collisions that would occur in the old [[LowerTypes]] pass
   *
   *  @note Must be run after [[InferTypes]] because [[ir.DefNode]]s need type
   *  @example
@@ -244,6 +244,8 @@ object Uniquify extends Transform with DependencyAPIMigration {
   }
 
   // Everything wrapped in run so that it's thread safe
+  @deprecated("The functionality of Uniquify is now part of LowerTypes." +
+    "Please file an issue with firrtl if you use Uniquify outside of the context of LowerTypes.", "Firrtl 1.4")
   def execute(state: CircuitState): CircuitState = {
     val c = state.circuit
     val renames = RenameMap()

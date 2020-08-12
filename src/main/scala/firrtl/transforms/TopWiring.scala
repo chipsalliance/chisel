@@ -4,7 +4,7 @@ package TopWiring
 
 import firrtl._
 import firrtl.ir._
-import firrtl.passes.{ExpandConnects, InferTypes, LowerTypes, ResolveFlows, ResolveKinds}
+import firrtl.passes.{InferTypes, LowerTypes, ResolveKinds, ResolveFlows, ExpandConnects}
 import firrtl.annotations._
 import firrtl.Mappers._
 import firrtl.analyses.InstanceKeyGraph

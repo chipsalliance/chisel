@@ -2,35 +2,31 @@
 
 package firrtl.passes
 
-import scala.collection.mutable
-import firrtl._
+import firrtl.analyses.{InstanceKeyGraph, SymbolTable}
+import firrtl.annotations.{CircuitTarget, MemoryInitAnnotation, MemoryRandomInitAnnotation, ModuleTarget, ReferenceTarget}
+import firrtl.{CircuitForm, CircuitState, DependencyAPIMigration, InstanceKind, Kind, MemKind, PortKind, RenameMap, Transform, UnknownForm, Utils}
 import firrtl.ir._
-import firrtl.Utils._
-import MemPortUtils.memType
-import firrtl.Mappers._
-import firrtl.annotations.MemoryInitAnnotation
+import firrtl.options.Dependency
+import firrtl.stage.TransformManager.TransformDependency
 
-/** Removes all aggregate types from a [[firrtl.ir.Circuit]]
-  *
-  * @note Assumes [[firrtl.ir.SubAccess]]es have been removed
-  * @note Assumes [[firrtl.ir.Connect]]s and [[firrtl.ir.IsInvalid]]s only operate on [[firrtl.ir.Expression]]s of ground type
-  * @example
-  * {{{
-  *   wire foo : { a : UInt<32>, b : UInt<16> }
-  * }}} lowers to
-  * {{{
-  *   wire foo_a : UInt<32>
-  *   wire foo_b : UInt<16>
-  * }}}
+import scala.annotation.tailrec
+import scala.collection.mutable
+
+/** Flattens Bundles and Vecs.
+  * - Some implicit bundle types remain, but with a limited depth:
+  *   - the type of a memory is still a bundle with depth 2 (mem -> port -> field), see [[MemPortUtils.memType]]
+  *   - the type of a module instance is still a bundle with depth 1 (instance -> port)
   */
 object LowerTypes extends Transform with DependencyAPIMigration {
-
-  override def prerequisites = firrtl.stage.Forms.MidForm
-
-  override def optionalPrerequisiteOf = Seq.empty
-
+  override def prerequisites: Seq[TransformDependency] = Seq(
+    Dependency(RemoveAccesses), // we require all SubAccess nodes to have been removed
+    Dependency(CheckTypes),     // we require all types to be correct
+    Dependency(InferTypes),     // we require instance types to be resolved (i.e., DefInstance.tpe != UnknownType)
+    Dependency(ExpandConnects)  // we require all PartialConnect nodes to have been expanded
+  )
+  override def optionalPrerequisiteOf: Seq[TransformDependency]  = Seq.empty
   override def invalidates(a: Transform): Boolean = a match {
-    case ResolveKinds | InferTypes | ResolveFlows | _: InferWidths => true
+    case ResolveFlows => true // we generate UnknownFlow for now (could be fixed)
     case _ => false
   }
 
@@ -39,266 +35,451 @@ object LowerTypes extends Transform with DependencyAPIMigration {
   /** Expands a chain of referential [[firrtl.ir.Expression]]s into the equivalent lowered name
     * @param e [[firrtl.ir.Expression]] made up of _only_ [[firrtl.WRef]], [[firrtl.WSubField]], and [[firrtl.WSubIndex]]
     * @return Lowered name of e
+    * @note Please make sure that there will be no name collisions when you use this outside of the context of LowerTypes!
     */
   def loweredName(e: Expression): String = e match {
-    case e: WRef => e.name
-    case e: WSubField => s"${loweredName(e.expr)}$delim${e.name}"
-    case e: WSubIndex => s"${loweredName(e.expr)}$delim${e.value}"
+    case e: Reference => e.name
+    case e: SubField => s"${loweredName(e.expr)}$delim${e.name}"
+    case e: SubIndex => s"${loweredName(e.expr)}$delim${e.value}"
   }
-  def loweredName(s: Seq[String]): String = s mkString delim
-  def renameExps(renames: RenameMap, n: String, t: Type, root: String): Seq[String] =
-    renameExps(renames, WRef(n, t, ExpKind, UnknownFlow), root)
-  def renameExps(renames: RenameMap, n: String, t: Type): Seq[String] =
-    renameExps(renames, WRef(n, t, ExpKind, UnknownFlow), "")
-  def renameExps(renames: RenameMap, e: Expression, root: String): Seq[String] = e.tpe match {
-    case (_: GroundType) =>
-      val name = root + loweredName(e)
-      renames.rename(root + e.serialize, name)
-      Seq(name)
-    case (t: BundleType) =>
-      val subNames = t.fields.flatMap { f =>
-        renameExps(renames, WSubField(e, f.name, f.tpe, times(flow(e), f.flip)), root)
+  def loweredName(s: Seq[String]): String = s.mkString(delim)
+
+  override def execute(state: CircuitState): CircuitState = {
+    // When memories are lowered to ground type, we have to fix the init annotation or error on it.
+    val (memInitAnnos, otherAnnos) = state.annotations.partition {
+      case _: MemoryRandomInitAnnotation => false
+      case _: MemoryInitAnnotation => true
+      case _ => false
+    }
+    val memInitByModule = memInitAnnos.map(_.asInstanceOf[MemoryInitAnnotation]).groupBy(_.target.encapsulatingModule)
+
+    val c = CircuitTarget(state.circuit.main)
+    val resultAndRenames = state.circuit.modules.map(m => onModule(c, m, memInitByModule.getOrElse(m.name, Seq())))
+    val result = state.circuit.copy(modules = resultAndRenames.map(_._1))
+
+    // memory init annotations could have been modified
+    val newAnnos = otherAnnos ++ resultAndRenames.flatMap(_._3)
+
+    // chain module renames in topological order
+    val moduleRenames = resultAndRenames.map{ case(m,r, _) => m.name -> r }.toMap
+    val moduleOrderBottomUp = InstanceKeyGraph(result).moduleOrder.reverseIterator
+    val renames = moduleOrderBottomUp.map(m => moduleRenames(m.name)).reduce((a,b) => a.andThen(b))
+
+    state.copy(circuit = result, renames = Some(renames), annotations = newAnnos)
+  }
+
+  private def onModule(c: CircuitTarget, m: DefModule, memoryInit: Seq[MemoryInitAnnotation]): (DefModule, RenameMap, Seq[MemoryInitAnnotation]) = {
+    val renameMap = RenameMap()
+    val ref = c.module(m.name)
+
+    // first we lower the ports in order to ensure that their names are independent of the module body
+    val (mLoweredPorts, portRefs) = lowerPorts(ref, m, renameMap)
+
+    // scan modules to find all references
+    val scan = SymbolTable.scanModule(mLoweredPorts, new LoweringSymbolTable)
+    // replace all declarations and references with the destructed types
+    implicit val symbols: LoweringTable = new LoweringTable(scan, renameMap, ref, portRefs)
+    implicit val memInit: Seq[MemoryInitAnnotation] = memoryInit
+    val newMod = mLoweredPorts.mapStmt(onStatement)
+
+    (newMod, renameMap, memInit)
+  }
+
+  // We lower ports in a separate pass in order to ensure that statements inside the module do not influence port names.
+  private def lowerPorts(ref: ModuleTarget, m: DefModule, renameMap: RenameMap):
+  (DefModule, Seq[(String, Seq[Reference])]) = {
+    val namespace = mutable.HashSet[String]() ++ m.ports.map(_.name)
+    val loweredPortsAndRefs = m.ports.flatMap { p =>
+      val fieldsAndRefs = DestructTypes.destruct(ref, Field(p.name, Utils.to_flip(p.direction), p.tpe), namespace, renameMap, Set())
+      fieldsAndRefs.map { case (f, ref) =>
+        (Port(p.info, f.name, Utils.to_dir(f.flip), f.tpe), ref -> Seq(Reference(f.name, f.tpe, PortKind)))
       }
-      renames.rename(root + e.serialize, subNames)
-      subNames
-    case (t: VectorType) =>
-      val subNames = (0 until t.size).flatMap { i => renameExps(renames, WSubIndex(e, i, t.tpe,flow(e)), root) }
-      renames.rename(root + e.serialize, subNames)
-      subNames
+    }
+    val newM = m match {
+      case e : ExtModule => e.copy(ports = loweredPortsAndRefs.map(_._1))
+      case mod: Module => mod.copy(ports = loweredPortsAndRefs.map(_._1))
+    }
+    (newM, loweredPortsAndRefs.map(_._2))
   }
 
-  private def renameMemExps(renames: RenameMap, e: Expression, portAndField: Expression): Seq[String] = e.tpe match {
-    case (_: GroundType) =>
-      val (mem, tail) = splitRef(e)
-      val loRef = mergeRef(WRef(loweredName(e)), portAndField)
-      val hiRef = mergeRef(mem, mergeRef(portAndField, tail))
-      renames.rename(hiRef.serialize, loRef.serialize)
-      Seq(loRef.serialize)
-    case (t: BundleType) => t.fields.foldLeft(Seq[String]()){(names, f) =>
-      val subNames = renameMemExps(renames, WSubField(e, f.name, f.tpe, times(flow(e), f.flip)), portAndField)
-      val (mem, tail) = splitRef(e)
-      val hiRef = mergeRef(mem, mergeRef(portAndField, tail))
-      renames.rename(hiRef.serialize, subNames)
-      names ++ subNames
-    }
-    case (t: VectorType) => (0 until t.size).foldLeft(Seq[String]()){(names, i) =>
-      val subNames = renameMemExps(renames, WSubIndex(e, i, t.tpe,flow(e)), portAndField)
-      val (mem, tail) = splitRef(e)
-      val hiRef = mergeRef(mem, mergeRef(portAndField, tail))
-      renames.rename(hiRef.serialize, subNames)
-      names ++ subNames
-    }
+  private def onStatement(s: Statement)(implicit symbols: LoweringTable, memInit: Seq[MemoryInitAnnotation]): Statement = s match {
+    // declarations
+    case d : DefWire =>
+      Block(symbols.lower(d.name, d.tpe, firrtl.WireKind).map { case (name, tpe, _) => d.copy(name=name, tpe=tpe) })
+    case d @ DefRegister(info, _, _, clock, reset, _) =>
+      // clock and reset are always of ground type
+      val loweredClock = onExpression(clock)
+      val loweredReset = onExpression(reset)
+      // It is important to first lower the declaration, because the reset can refer to the register itself!
+      val loweredRegs = symbols.lower(d.name, d.tpe, firrtl.RegKind)
+      val inits = Utils.create_exps(d.init).map(onExpression)
+      Block(
+        loweredRegs.zip(inits).map { case ((name, tpe, _), init) =>
+          DefRegister(info, name, tpe, loweredClock, loweredReset, init)
+      })
+    case d : DefNode =>
+      val values = Utils.create_exps(d.value).map(onExpression)
+      Block(
+        symbols.lower(d.name, d.value.tpe, firrtl.NodeKind).zip(values).map{ case((name, tpe, _), value) =>
+          assert(tpe == value.tpe)
+          DefNode(d.info, name, value)
+      })
+    case d : DefMemory =>
+      // TODO: as an optimization, we could just skip ground type memories here.
+      //       This would require that we don't error in getReferences() but instead return the old reference.
+      val mems = symbols.lower(d)
+      if(mems.length > 1 && memInit.exists(_.target.ref == d.name)) {
+        val mod = memInit.find(_.target.ref == d.name).get.target.encapsulatingModule
+        val msg = s"[module $mod] Cannot initialize memory ${d.name} of non ground type ${d.dataType.serialize}"
+        throw new RuntimeException(msg)
+      }
+      Block(mems)
+    case d : DefInstance => symbols.lower(d)
+    // connections
+    case Connect(info, loc, expr) =>
+      if(!expr.tpe.isInstanceOf[GroundType]) {
+        throw new RuntimeException(s"LowerTypes expects Connects to have been expanded! ${expr.tpe.serialize}")
+      }
+      val rhs = onExpression(expr)
+      // We can get multiple refs on the lhs because of ground-type memory ports like "clk" which can get duplicated.
+      val lhs = symbols.getReferences(loc.asInstanceOf[RefLikeExpression])
+      Block(lhs.map(loc => Connect(info, loc, rhs)))
+    case p : PartialConnect =>
+      throw new RuntimeException(s"LowerTypes expects PartialConnects to be resolved! $p")
+    case IsInvalid(info, expr) =>
+      if(!expr.tpe.isInstanceOf[GroundType]) {
+        throw new RuntimeException(s"LowerTypes expects IsInvalids to have been expanded! ${expr.tpe.serialize}")
+      }
+      // We can get multiple refs on the lhs because of ground-type memory ports like "clk" which can get duplicated.
+      val lhs = symbols.getReferences(expr.asInstanceOf[RefLikeExpression])
+      Block(lhs.map(loc => IsInvalid(info, loc)))
+    // others
+    case other => other.mapExpr(onExpression).mapStmt(onStatement)
   }
-  private case class LowerTypesException(msg: String) extends FirrtlInternalException(msg)
-  private def error(msg: String)(info: Info, mname: String) =
-    throw LowerTypesException(s"$info: [module $mname] $msg")
 
-  // TODO Improve? Probably not the best way to do this
-  private def splitMemRef(e1: Expression): (WRef, WRef, WRef, Option[Expression]) = {
-    val (mem, tail1) = splitRef(e1)
-    val (port, tail2) = splitRef(tail1)
-    tail2 match {
-      case e2: WRef =>
-        (mem, port, e2, None)
-      case _ =>
-        val (field, tail3) = splitRef(tail2)
-        (mem, port, field, Some(tail3))
-    }
+  /** Replaces all Reference, SubIndex and SubField nodes with the updated references */
+  private def onExpression(e: Expression)(implicit symbols: LoweringTable): Expression = e match {
+    case r: RefLikeExpression =>
+      // When reading (and not assigning to) an expression, we can always just pick the first one.
+      // Only very few ground-type references are duplicated and they are all related to lowered memories.
+      // e.g., the `clk` field of a memory port gets duplicated when the memory is split into ground-types.
+      // We ensure that all of these references carry the same value when they are expanded in onStatement.
+      symbols.getReferences(r).head
+    case other => other.mapExpr(onExpression)
+  }
+}
+
+// Holds the first level of the module-level namespace.
+// (i.e. everything that can be addressed directly by a Reference node)
+private class LoweringSymbolTable extends SymbolTable {
+  def declare(name: String, tpe: Type, kind: Kind): Unit = symbols.append(name)
+  def declareInstance(name: String, module: String): Unit = symbols.append(name)
+  private val symbols = mutable.ArrayBuffer[String]()
+  def getSymbolNames: Iterable[String] = symbols
+}
+
+// Lowers types and keeps track of references to lowered types.
+private class LoweringTable(table: LoweringSymbolTable, renameMap: RenameMap, m: ModuleTarget,
+                            portNameToExprs: Seq[(String, Seq[Reference])]) {
+  private val portNames: Set[String] = portNameToExprs.map(_._2.head.name).toSet
+  private val namespace = mutable.HashSet[String]() ++ table.getSymbolNames
+  // Serialized old access string to new ground type reference.
+  private val nameToExprs = mutable.HashMap[String, Seq[RefLikeExpression]]() ++ portNameToExprs
+
+  def lower(mem: DefMemory): Seq[DefMemory] = {
+    val (mems, refs) = DestructTypes.destructMemory(m, mem, namespace, renameMap, portNames)
+    nameToExprs ++= refs.groupBy(_._1).mapValues(_.map(_._2))
+    mems
+  }
+  def lower(inst: DefInstance): DefInstance = {
+    val (newInst, refs) = DestructTypes.destructInstance(m, inst, namespace, renameMap, portNames)
+    nameToExprs ++= refs.map { case (name, r) => name -> List(r) }
+    newInst
+  }
+  /** used to lower nodes, registers and wires */
+  def lower(name: String, tpe: Type, kind: Kind, flip: Orientation = Default): Seq[(String, Type, Orientation)] = {
+    val fieldsAndRefs = DestructTypes.destruct(m, Field(name, flip, tpe), namespace, renameMap, portNames)
+    nameToExprs ++= fieldsAndRefs.map{ case (f, ref) => ref -> List(Reference(f.name, f.tpe, kind)) }
+    fieldsAndRefs.map { case (f, _) => (f.name, f.tpe, f.flip) }
+  }
+  def lower(p: Port): Seq[Port] = {
+    val fields = lower(p.name, p.tpe, PortKind, Utils.to_flip(p.direction))
+    fields.map { case (name, tpe, flip) => Port(p.info, name, Utils.to_dir(flip), tpe) }
   }
 
-  // Lowers an expression of MemKind
-  // Since mems with Bundle type must be split into multiple ground type
-  //   mem, references to fields addr, en, clk, and rmode must be replicated
-  //   for each resulting memory
-  // References to data, mask, rdata, wdata, and wmask have already been split in expand connects
-  //   and just need to be converted to refer to the correct new memory
-  type MemDataTypeMap = collection.mutable.HashMap[String, Type]
-  def lowerTypesMemExp(memDataTypeMap: MemDataTypeMap,
-      info: Info, mname: String)(e: Expression): Seq[Expression] = {
-    val (mem, port, field, tail) = splitMemRef(e)
-    field.name match {
-      // Fields that need to be replicated for each resulting mem
-      case "addr" | "en" | "clk" | "wmode" =>
-        require(tail.isEmpty) // there can't be a tail for these
-        memDataTypeMap(mem.name) match {
-          case _: GroundType => Seq(e)
-          case memType => create_exps(mem.name, memType) map { e =>
-            val loMemName = loweredName(e)
-            val loMem = WRef(loMemName, UnknownType, kind(mem), UnknownFlow)
-            mergeRef(loMem, mergeRef(port, field))
+  def getReferences(expr: RefLikeExpression): Seq[RefLikeExpression] = nameToExprs(serialize(expr))
+
+  // We could just use FirrtlNode.serialize here, but we want to make sure there are not SubAccess nodes left.
+  private def serialize(expr: RefLikeExpression): String = expr match {
+    case Reference(name, _, _, _) => name
+    case SubField(expr, name, _, _) => serialize(expr.asInstanceOf[RefLikeExpression]) + "." + name
+    case SubIndex(expr, index, _, _) => serialize(expr.asInstanceOf[RefLikeExpression]) + "[" + index.toString + "]"
+    case a : SubAccess =>
+      throw new RuntimeException(s"LowerTypes expects all SubAccesses to have been expanded! ${a.serialize}")
+  }
+}
+
+/** Calculate new type layouts and names. */
+private object DestructTypes {
+  type Namespace = mutable.HashSet[String]
+
+  /** Does the following with a reference:
+    * - rename reference and any bundle fields to avoid name collisions after destruction
+    * - updates rename map with new targets
+    * - generates all ground type fields
+    * - generates a list of all old reference name that now refer to the particular ground type field
+    * - updates namespace with all possibly conflicting names
+    */
+  def destruct(m: ModuleTarget, ref: Field, namespace: Namespace, renameMap: RenameMap, reserved: Set[String]):
+    Seq[(Field, String)] = {
+    // field renames (uniquify) are computed bottom up
+    val (rename, _) = uniquify(ref, namespace, reserved)
+
+    // early exit for ground types that do not need renaming
+    if(ref.tpe.isInstanceOf[GroundType] && rename.isEmpty) {
+      return List((ref, ref.name))
+    }
+
+    // the reference renames are computed top down since they do need the full path
+    val res = destruct(m, ref, rename)
+    recordRenames(res, renameMap, ModuleParentRef(m))
+
+    res.map { case (c, r) => c -> extractGroundTypeRefString(r) }
+  }
+
+  /** instances are special because they remain a 1-deep bundle
+    * @note this relies on the ports of the module having been properly renamed.
+    * @return The potentially renamed instance with newly flattened type.
+    *         Note that the list of fields is only of the child fields, and needs a SubField node
+    *         instead of a flat Reference when turning them into access expressions.
+    */
+  def destructInstance(m: ModuleTarget, instance: DefInstance, namespace: Namespace, renameMap: RenameMap,
+                       reserved: Set[String]): (DefInstance, Seq[(String, SubField)]) = {
+    val (rename, _) = uniquify(Field(instance.name, Default, instance.tpe), namespace, reserved)
+    val newName = rename.map(_.name).getOrElse(instance.name)
+
+    // only destruct the sub-fields (aka ports)
+    val oldParent = RefParentRef(m.ref(instance.name))
+    val children = instance.tpe.asInstanceOf[BundleType].fields.flatMap { f =>
+      val childRename = rename.flatMap(_.children.get(f.name))
+      destruct("", oldParent, f, isVecField = false, rename = childRename)
+    }
+
+    // rename all references to the instance if necessary
+    if(newName != instance.name) {
+      renameMap.record(m.instOf(instance.name, instance.module), m.instOf(newName, instance.module))
+    }
+    // The ports do not need to be explicitly renamed here. They are renamed when the module ports are lowered.
+
+    val newInstance = instance.copy(name = newName, tpe = BundleType(children.map(_._1)))
+    val instanceRef = Reference(newName, newInstance.tpe, InstanceKind)
+    val refs = children.map{ case(c,r) => extractGroundTypeRefString(r) -> SubField(instanceRef, c.name, c.tpe) }
+
+    (newInstance, refs)
+  }
+
+  private val BoolType = UIntType(IntWidth(1))
+
+  /** memories are special because they end up a 2-deep bundle.
+    * @note That a single old ground type reference could be replaced with multiple new ground type reference.
+    *       e.g. ("mem_a.r.clk", "mem.r.clk") and ("mem_b.r.clk", "mem.r.clk")
+    *       Thus it is appropriate to groupBy old reference string instead of just inserting into a hash table.
+    */
+  def destructMemory(m: ModuleTarget, mem: DefMemory, namespace: Namespace, renameMap: RenameMap,
+                     reserved: Set[String]): (Seq[DefMemory], Seq[(String, SubField)]) = {
+    // Uniquify the lowered memory names: When memories get split up into ground types, the access order is changes.
+    // E.g. `mem.r.data.x` becomes `mem_x.r.data`.
+    // This is why we need to create the new bundle structure before we can resolve any name clashes.
+    val bundle = memBundle(mem)
+    val (dataTypeRenames, _) = uniquify(bundle, namespace, reserved)
+    val res = destruct(m, Field(mem.name, Default, mem.dataType), dataTypeRenames)
+
+    // Renames are now of the form `mem.a.b` --> `mem_a_b`.
+    // We want to turn them into `mem.r.data.a.b` --> `mem_a_b.r.data`, etc. (for all readers, writers and for all ports)
+    val oldMemRef = m.ref(mem.name)
+
+    // the "old dummy field" is used as a template for the new memory port types
+    val oldDummyField = Field("dummy", Default, MemPortUtils.memType(mem.copy(dataType = BoolType)))
+
+    val newMemAndSubFields = res.map { case (field, refs) =>
+      val newMem = mem.copy(name = field.name, dataType = field.tpe)
+      val newMemRef = m.ref(field.name)
+      val memWasRenamed = field.name != mem.name // false iff the dataType was a GroundType
+      if(memWasRenamed) { renameMap.record(oldMemRef, newMemRef) }
+
+      val newMemReference = Reference(field.name, MemPortUtils.memType(newMem), MemKind)
+      val refSuffixes = refs.map(_.component).filterNot(_.isEmpty)
+
+      val subFields = oldDummyField.tpe.asInstanceOf[BundleType].fields.flatMap { port =>
+        val oldPortRef = oldMemRef.field(port.name)
+        val newPortRef = newMemRef.field(port.name)
+
+        val newPortType = newMemReference.tpe.asInstanceOf[BundleType].fields.find(_.name == port.name).get.tpe
+        val newPortAccess = SubField(newMemReference, port.name, newPortType)
+
+        port.tpe.asInstanceOf[BundleType].fields.map { portField =>
+          val isDataField = portField.name == "data" || portField.name == "wdata" || portField.name == "rdata"
+          val isMaskField = portField.name == "mask" || portField.name == "wmask"
+          val isDataOrMaskField = isDataField || isMaskField
+          val oldFieldRefs = if(memWasRenamed && isDataOrMaskField) {
+            // there might have been multiple different fields which now alias to the same lowered field.
+            val oldPortFieldBaseRef = oldPortRef.field(portField.name)
+            refSuffixes.map(s => oldPortFieldBaseRef.copy(component = oldPortFieldBaseRef.component ++ s))
+          } else {
+            List(oldPortRef.field(portField.name))
           }
-        }
-      // Fields that need not be replicated for each
-      // eg. mem.reader.data[0].a
-      // (Connect/IsInvalid must already have been split to ground types)
-      case "data" | "mask" | "rdata" | "wdata" | "wmask" =>
-        val loMem = tail match {
-          case Some(ex) =>
-            val loMemExp = mergeRef(mem, ex)
-            val loMemName = loweredName(loMemExp)
-            WRef(loMemName, UnknownType, kind(mem), UnknownFlow)
-          case None => mem
-        }
-        Seq(mergeRef(loMem, mergeRef(port, field)))
-      case name => error(s"Error! Unhandled memory field $name")(info, mname)
-    }
-  }
 
-  def lowerTypesExp(memDataTypeMap: MemDataTypeMap,
-      info: Info, mname: String)(e: Expression): Expression = e match {
-    case e: WRef => e
-    case (_: WSubField | _: WSubIndex) => kind(e) match {
-      case InstanceKind =>
-        val (root, tail) = splitRef(e)
-        val name = loweredName(tail)
-        WSubField(root, name, e.tpe, flow(e))
-      case MemKind =>
-        val exps = lowerTypesMemExp(memDataTypeMap, info, mname)(e)
-        exps.size match {
-          case 1 => exps.head
-          case _ => error("Error! lowerTypesExp called on MemKind " +
-                          "SubField that needs to be expanded!")(info, mname)
-        }
-      case _ => WRef(loweredName(e), e.tpe, kind(e), flow(e))
-    }
-    case e: Mux => e map lowerTypesExp(memDataTypeMap, info, mname)
-    case e: ValidIf => e map lowerTypesExp(memDataTypeMap, info, mname)
-    case e: DoPrim => e map lowerTypesExp(memDataTypeMap, info, mname)
-    case e @ (_: UIntLiteral | _: SIntLiteral) => e
-  }
-  def lowerTypesStmt(memDataTypeMap: MemDataTypeMap,
-      minfo: Info, mname: String, renames: RenameMap, initializedMems: Set[(String, String)])(s: Statement): Statement = {
-    val info = get_info(s) match {case NoInfo => minfo case x => x}
-    s map lowerTypesStmt(memDataTypeMap, info, mname, renames, initializedMems) match {
-      case s: DefWire => s.tpe match {
-        case _: GroundType => s
-        case _ =>
-          val exps = create_exps(s.name, s.tpe)
-          val names = exps map loweredName
-          renameExps(renames, s.name, s.tpe)
-          Block((exps zip names) map { case (e, n) =>
-            DefWire(s.info, n, e.tpe)
-          })
-      }
-      case sx: DefRegister => sx.tpe match {
-        case _: GroundType => sx map lowerTypesExp(memDataTypeMap, info, mname)
-        case _ =>
-          val es = create_exps(sx.name, sx.tpe)
-          val names = es map loweredName
-          renameExps(renames, sx.name, sx.tpe)
-          val inits = create_exps(sx.init) map lowerTypesExp(memDataTypeMap, info, mname)
-          val clock = lowerTypesExp(memDataTypeMap, info, mname)(sx.clock)
-          val reset = lowerTypesExp(memDataTypeMap, info, mname)(sx.reset)
-          Block((es zip names) zip inits map { case ((e, n), i) =>
-            DefRegister(sx.info, n, e.tpe, clock, reset, i)
-          })
-      }
-      // Could instead just save the type of each Module as it gets processed
-      case sx: WDefInstance => sx.tpe match {
-        case t: BundleType =>
-          val fieldsx = t.fields flatMap { f =>
-            renameExps(renames, f.name, f.tpe, s"${sx.name}.")
-            create_exps(WRef(f.name, f.tpe, ExpKind, times(f.flip, SourceFlow))) map { e =>
-              // Flip because inst flows are reversed from Module type
-              Field(loweredName(e), swap(to_flip(flow(e))), e.tpe)
-            }
+          val newPortType = if(isDataField) { newMem.dataType } else { portField.tpe }
+          val newPortFieldAccess = SubField(newPortAccess, portField.name, newPortType)
+
+          // record renames only for the data field which is the only port field of non-ground type
+          val newPortFieldRef = newPortRef.field(portField.name)
+          if(memWasRenamed && isDataOrMaskField) {
+            oldFieldRefs.foreach { o => renameMap.record(o, newPortFieldRef) }
           }
-          WDefInstance(sx.info, sx.name, sx.module, BundleType(fieldsx))
-        case _ => error("WDefInstance type should be Bundle!")(info, mname)
-      }
-      case sx: DefMemory =>
-        memDataTypeMap(sx.name) = sx.dataType
-        sx.dataType match {
-          case _: GroundType => sx
-          case _ =>
-            // right now only ground type memories can be initialized
-            if(initializedMems.contains((mname, sx.name))) {
-              error(s"Cannot initialize memory of non ground type ${sx.dataType.serialize}")(info, mname)
-            }
-            // Rename ports
-            val seen: mutable.Set[String] = mutable.Set[String]()
-            create_exps(sx.name, memType(sx)) foreach { e =>
-              val (mem, port, field, tail) = splitMemRef(e)
-              if (!seen.contains(field.name)) {
-                seen += field.name
-                val d = WRef(mem.name, sx.dataType)
-                tail match {
-                  case None =>
-                    val names = create_exps(mem.name, sx.dataType).map { x =>
-                      s"${loweredName(x)}.${port.serialize}.${field.serialize}"
-                    }
-                    renames.rename(e.serialize, names)
-                  case Some(_) =>
-                    renameMemExps(renames, d, mergeRef(port, field))
-                }
-              }
-            }
-            Block(create_exps(sx.name, sx.dataType) map {e =>
-              val newName = loweredName(e)
-              // Rename mems
-              renames.rename(sx.name, newName)
-              sx copy (name = newName, dataType = e.tpe)
-            })
+
+          val oldFieldStringRef = extractGroundTypeRefString(oldFieldRefs)
+          (oldFieldStringRef, newPortFieldAccess)
         }
-      // wire foo : { a , b }
-      // node x = foo
-      // node y = x.a
-      //  ->
-      // node x_a = foo_a
-      // node x_b = foo_b
-      // node y = x_a
-      case sx: DefNode =>
-        val names = create_exps(sx.name, sx.value.tpe) map lowerTypesExp(memDataTypeMap, info, mname)
-        val exps = create_exps(sx.value) map lowerTypesExp(memDataTypeMap, info, mname)
-        renameExps(renames, sx.name, sx.value.tpe)
-        Block(names zip exps map { case (n, e) =>
-          DefNode(info, loweredName(n), e)
-        })
-      case sx: IsInvalid => kind(sx.expr) match {
-        case MemKind =>
-          Block(lowerTypesMemExp(memDataTypeMap, info, mname)(sx.expr) map (IsInvalid(info, _)))
-        case _ => sx map lowerTypesExp(memDataTypeMap, info, mname)
       }
-      case sx: Connect => kind(sx.loc) match {
-        case MemKind =>
-          val exp = lowerTypesExp(memDataTypeMap, info, mname)(sx.expr)
-          val locs = lowerTypesMemExp(memDataTypeMap, info, mname)(sx.loc)
-          Block(locs map (Connect(info, _, exp)))
-        case _ => sx map lowerTypesExp(memDataTypeMap, info, mname)
-      }
-      case sx => sx map lowerTypesExp(memDataTypeMap, info, mname)
+      (newMem, subFields)
+    }
+
+    (newMemAndSubFields.map(_._1), newMemAndSubFields.flatMap(_._2))
+  }
+
+  private def memBundle(mem: DefMemory): Field = mem.dataType match {
+    case _: GroundType => Field(mem.name, Default, mem.dataType)
+    case _: BundleType | _: VectorType =>
+      val subMems = getFields(mem.dataType).map(f => mem.copy(name = f.name, dataType = f.tpe))
+      val fields = subMems.map(memBundle)
+      Field(mem.name, Default, BundleType(fields))
+  }
+
+  private def recordRenames(fieldToRefs: Seq[(Field, Seq[ReferenceTarget])], renameMap: RenameMap, parent: ParentRef):
+  Unit = {
+    // TODO: if we group by ReferenceTarget, we could reduce the number of calls to `record`. Is it worth it?
+    fieldToRefs.foreach { case(field, refs) =>
+      val fieldRef = parent.ref(field.name)
+      refs.foreach{ r => renameMap.record(r, fieldRef) }
     }
   }
 
-  def lowerTypes(renames: RenameMap, initializedMems: Set[(String, String)])(m: DefModule): DefModule = {
-    val memDataTypeMap = new MemDataTypeMap
-    renames.setModule(m.name)
-    // Lower Ports
-    val portsx = m.ports flatMap { p =>
-      val exps = create_exps(WRef(p.name, p.tpe, PortKind, to_flow(p.direction)))
-      val names = exps map loweredName
-      renameExps(renames, p.name, p.tpe)
-      (exps zip names) map { case (e, n) =>
-        Port(p.info, n, to_dir(flow(e)), e.tpe)
-      }
-    }
-    m match {
-      case m: ExtModule =>
-        m copy (ports = portsx)
-      case m: Module =>
-        m copy (ports = portsx) map lowerTypesStmt(memDataTypeMap, m.info, m.name, renames, initializedMems)
+  private def extractGroundTypeRefString(refs: Seq[ReferenceTarget]): String = {
+    if (refs.isEmpty) { "" } else {
+      // Since we depend on ExpandConnects any reference we encounter will be of ground type
+      // and thus the one with the longest access path.
+      refs.reduceLeft((x, y) => if (x.component.length > y.component.length) x else y)
+        // convert references to strings relative to the module
+        .serialize.dropWhile(_ != '>').tail
     }
   }
 
-  def execute(state: CircuitState): CircuitState = {
-    // remember which memories need to be initialized, for these memories, lowering non-ground types is not supported
-    val initializedMems = state.annotations.collect{
-      case m : MemoryInitAnnotation if !m.isRandomInit =>
-      (m.target.encapsulatingModule, m.target.ref) }.toSet
-    val c = state.circuit
-    val renames = RenameMap()
-    renames.setCircuit(c.main)
-    val result = c copy (modules = c.modules map lowerTypes(renames, initializedMems))
-    CircuitState(result, outputForm, state.annotations, Some(renames))
+  private def destruct(m: ModuleTarget, field: Field, rename: Option[RenameNode]): Seq[(Field, Seq[ReferenceTarget])] =
+    destruct(prefix = "", oldParent = ModuleParentRef(m), oldField = field, isVecField = false, rename = rename)
+
+  /** Lowers a field into its ground type fields.
+    * @param prefix carries the prefix of the new ground type name
+    * @param isVecField is used to generate an appropriate old (field/index) reference
+    * @param rename The information from the `uniquify` function is consumed to appropriately rename generated fields.
+    * @return a sequence of ground type fields with new names and, for each field,
+    *         a sequence of old references that should to be renamed to point to the particular field
+    */
+  private def destruct(prefix: String, oldParent: ParentRef, oldField: Field,
+                       isVecField: Boolean, rename: Option[RenameNode]): Seq[(Field, Seq[ReferenceTarget])] = {
+    val newName = rename.map(_.name).getOrElse(oldField.name)
+    val oldRef = oldParent.ref(oldField.name, isVecField)
+
+    oldField.tpe match {
+      case _ : GroundType => List((oldField.copy(name = prefix + newName), List(oldRef)))
+      case _ : BundleType | _ : VectorType =>
+        val newPrefix = prefix + newName + LowerTypes.delim
+        val isVecField = oldField.tpe.isInstanceOf[VectorType]
+        val fields = getFields(oldField.tpe)
+        val fieldsWithCorrectOrientation = fields.map(f => f.copy(flip = Utils.times(f.flip, oldField.flip)))
+        val children = fieldsWithCorrectOrientation.flatMap { f =>
+          destruct(newPrefix, RefParentRef(oldRef), f, isVecField, rename.flatMap(_.children.get(f.name)))
+        }
+        // the bundle/vec reference refers to all children
+        children.map{ case(c, r) => (c, r :+ oldRef) }
+    }
+  }
+
+  private case class RenameNode(name: String, children: Map[String, RenameNode])
+
+  /** Implements the core functionality of the old Uniquify pass: rename bundle fields and top-level references
+    * where necessary in order to avoid name clashes when lowering aggregate type with the `_` delimiter.
+    * We don't actually do the rename here but just calculate a rename tree. */
+  private def uniquify(ref: Field, namespace: Namespace, reserved: Set[String]): (Option[RenameNode], Seq[String]) = {
+    // ensure that there are no name clashes with the list of reserved (port) names
+    val newRefName = findValidPrefix(ref.name, reserved.contains)
+    ref.tpe match {
+      case BundleType(fields) =>
+        // we rename bottom-up
+        val localNamespace = new Namespace() ++ fields.map(_.name)
+        val renamedFields = fields.map(f => uniquify(f, localNamespace, Set()))
+
+        // Need leading _ for findValidPrefix, it doesn't add _ for checks
+        val renamedFieldNames = renamedFields.flatMap(_._2)
+        val suffixNames: Seq[String] = renamedFieldNames.map(f => LowerTypes.delim + f)
+        val prefix = findValidPrefix(newRefName, namespace.contains, suffixNames)
+        // We added f.name in previous map, delete if we change it
+        val renamed = prefix != ref.name
+        if (renamed) {
+          if(!reserved.contains(ref.name)) namespace -= ref.name
+          namespace += prefix
+        }
+        val suffixes = renamedFieldNames.map(f => prefix + LowerTypes.delim + f)
+
+        val anyChildRenamed = renamedFields.exists(_._1.isDefined)
+        val rename = if(renamed || anyChildRenamed){
+          val children = renamedFields.map(_._1).zip(fields).collect{ case (Some(r), f) => f.name -> r }.toMap
+          Some(RenameNode(prefix, children))
+        } else { None }
+
+        (rename, suffixes :+ prefix)
+      case v : VectorType=>
+        // if Vecs are to be lowered, we can just treat them like a bundle
+        uniquify(ref.copy(tpe = vecToBundle(v)), namespace, reserved)
+      case _ : GroundType =>
+        if(newRefName == ref.name) {
+          (None, List(ref.name))
+        } else {
+          (Some(RenameNode(newRefName, Map())), List(newRefName))
+        }
+      case UnknownType => throw new RuntimeException(s"Cannot uniquify field of unknown type: $ref")
+    }
+  }
+
+  /** Appends delim to prefix until no collisions of prefix + elts in names We don't add an _ in the collision check
+    * because elts could be Seq("") In this case, we're just really checking if prefix itself collides */
+  @tailrec
+  private def findValidPrefix(prefix: String, inNamespace: String => Boolean, elts: Seq[String] = List("")): String = {
+    elts.find(elt => inNamespace(prefix + elt)) match {
+      case Some(_) => findValidPrefix(prefix + "_", inNamespace, elts)
+      case None => prefix
+    }
+  }
+
+  private def getFields(tpe: Type): Seq[Field] = tpe match {
+    case BundleType(fields) => fields
+    case v : VectorType => vecToBundle(v).fields
+  }
+
+  private def vecToBundle(v: VectorType): BundleType = {
+    BundleType(( 0 until v.size).map(i => Field(i.toString, Default, v.tpe)))
+  }
+
+  /** Used to abstract over module and reference parents.
+    * This helps us simplify the `destruct` method as it does not need to distinguish between
+    * a module (in the initial call) or a bundle/vector (in the recursive call) reference as parent.
+    */
+  private trait ParentRef { def ref(name: String, asVecField: Boolean = false): ReferenceTarget }
+  private case class ModuleParentRef(m: ModuleTarget) extends ParentRef {
+    override def ref(name: String, asVecField: Boolean): ReferenceTarget = m.ref(name)
+  }
+  private case class RefParentRef(r: ReferenceTarget) extends ParentRef {
+    override def ref(name: String, asVecField: Boolean): ReferenceTarget =
+      if(asVecField) { r.index(name.toInt) } else { r.field(name) }
   }
 }

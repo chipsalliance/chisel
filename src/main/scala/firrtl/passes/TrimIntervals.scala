@@ -25,7 +25,6 @@ class TrimIntervals extends Pass {
   override def prerequisites =
     Seq( Dependency(ResolveKinds),
          Dependency(InferTypes),
-         Dependency(Uniquify),
          Dependency(ResolveFlows),
          Dependency[InferBinaryPoints] )
 

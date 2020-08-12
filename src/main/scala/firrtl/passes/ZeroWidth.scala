@@ -15,7 +15,6 @@ object ZeroWidth extends Transform with DependencyAPIMigration {
          Dependency(ReplaceAccesses),
          Dependency(ExpandConnects),
          Dependency(RemoveAccesses),
-         Dependency(Uniquify),
          Dependency[ExpandWhensAndCheck],
          Dependency(ConvertFixedToSInt) ) ++ firrtl.stage.Forms.Deduped
 

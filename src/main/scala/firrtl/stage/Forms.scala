@@ -33,7 +33,6 @@ object Forms {
   val Resolved: Seq[TransformDependency] = WorkingIR ++ Checks ++
     Seq( Dependency(passes.ResolveKinds),
          Dependency(passes.InferTypes),
-         Dependency(passes.Uniquify),
          Dependency(passes.ResolveFlows),
          Dependency[passes.InferBinaryPoints],
          Dependency[passes.TrimIntervals],

@@ -344,7 +344,6 @@ object CheckHighForm extends Pass with CheckHighFormLike {
   override def optionalPrerequisiteOf =
     Seq( Dependency(passes.ResolveKinds),
          Dependency(passes.InferTypes),
-         Dependency(passes.Uniquify),
          Dependency(passes.ResolveFlows),
          Dependency[passes.InferWidths],
          Dependency[transforms.InferResets] )
