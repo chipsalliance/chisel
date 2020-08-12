@@ -39,7 +39,7 @@ lazy val commonSettings = Seq(
     "org.scalatestplus" %% "scalacheck-1-14" % "3.1.3.0" % "test",
     "com.github.scopt" %% "scopt" % "3.7.1",
     "net.jcazevedo" %% "moultingyaml" % "0.4.2",
-    "org.json4s" %% "json4s-native" % "3.6.8",
+    "org.json4s" %% "json4s-native" % "3.6.9",
     "org.apache.commons" % "commons-text" % "1.8"
   ),
   // starting with scala 2.13 the parallel collections are separate from the standard library
