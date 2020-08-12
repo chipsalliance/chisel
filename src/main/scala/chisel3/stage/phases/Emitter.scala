@@ -22,6 +22,8 @@ import java.io.{File, FileWriter}
   * that the emitted CHIRRTL can be provided back to the old Driver. This should be removed or a better solution
   * developed.
   */
+@deprecated("Use a Stage or manually include the WriteOutputAnnotations phase. Emitter will be removed in Chisel 3.5.0",
+            "Chisel 3.4.0")
 class Emitter extends Phase {
 
   override val prerequisites =
