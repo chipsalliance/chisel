@@ -51,8 +51,7 @@ case class ChiselGeneratorAnnotation(gen: () => RawModule) extends NoTargetAnnot
     Seq(ChiselCircuitAnnotation(circuit), DesignAnnotation(dut))
   } catch {
     case e @ (_: OptionsException | _: ChiselException) => throw e
-    case e: Throwable =>
-      throw new ChiselException(s"Exception thrown when elaborating ChiselGeneratorAnnotation", e)
+    case e: Throwable => throw e
   }
 
 }

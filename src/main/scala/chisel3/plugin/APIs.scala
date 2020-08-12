@@ -20,7 +20,8 @@ object APIs {
     * @return Returns either thing (executed) or null
     */
   def nullifyIfInstance[X](thing: => X)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): X = {
-    if (Builder.getBackingModule().isDefined) {
+    val back = Builder.getBackingModule() orElse Builder.currentModule.flatMap(_.backingModule)
+    if (back.isDefined) {
       null.asInstanceOf[X]
     } else {
       val x = thing

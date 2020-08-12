@@ -2,7 +2,6 @@ package chiselTests
 
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage, DesignAnnotation}
 import chisel3._
-import chisel3.experimental.treedump
 import chisel3.internal.Instance
 import firrtl.ir.Circuit
 import firrtl.options.{Dependency, StageError}
@@ -194,12 +193,42 @@ class InstanceSpec extends ChiselPropSpec with Utils {
 
   }
 
+
   property("Defining stuff in a mix-in trait should still be nullified") {
+    class LeafZ(val width: Int) extends MultiIOModule {
+      val in  = IO(Input(UInt(width.W)))
+    }
+    trait InModuleBodyZ { this: MultiIOModule =>
+      val leaf = Module(new LeafZ(10))
+      leaf.in := 0.U
+    }
+
+    class ChildZ extends MultiIOModule with InModuleBodyZ {
+      val in = IO(Input(UInt(3.W)))
+      leaf.in := in
+    }
+
+    class ParentZ(child: ChildZ) extends MultiIOModule {
+      val in  = IO(Input(UInt(3.W)))
+      val out = IO(Output(UInt(3.W)))
+      val c = Instance(child)
+      c.in := in
+      out := in
+    }
+
+    val child: ChildZ = build { new ChildZ() }
+    val cir = buildFirrtl { new ParentZ(child) }
+    val nLeafs = cir.modules.collect {
+      case m: firrtl.ir.Module if m.name == "Leaf" => m
+    }
+    assert(nLeafs.isEmpty, "Leaf not be elaborated when building Parent")
+  }
+
+  property("Defining stuff in a mix-in trait without self type should error gracefully") {
     class Leaf(val width: Int) extends MultiIOModule {
       val in  = IO(Input(UInt(width.W)))
     }
-    @treedump
-    trait InModuleBody { this: MultiIOModule =>
+    trait InModuleBody {
       val leaf = Module(new Leaf(10))
       leaf.in := 0.U
     }
@@ -218,12 +247,10 @@ class InstanceSpec extends ChiselPropSpec with Utils {
     }
 
     val child: Child = build { new Child() }
-    val cir = buildFirrtl { new Parent(child) }
-    val nLeafs = cir.modules.collect {
-      case m: firrtl.ir.Module if m.name == "Leaf" => m
-    }
-    assert(nLeafs.isEmpty, "Leaf not be elaborated when building Parent")
+
+    intercept[StageError]("Called Module() within an instance.") { build { new Parent(child) } }
   }
+
 
   property("Passing non-int primitives") { }
   property("Passing classes") { }

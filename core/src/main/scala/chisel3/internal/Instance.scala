@@ -1,6 +1,6 @@
 package chisel3.internal
 
-import java.lang.reflect.Field
+import java.lang.reflect.{Field, InvocationTargetException}
 
 import chisel3.{BlackBox, CompileOptions, Record}
 import chisel3.experimental.BaseModule
@@ -46,7 +46,13 @@ object Instance {
     }
     require(Builder.currentModule.isDefined)
     Builder.setBackingModule(module, wrapper)
-    val fakeModule = chisel3.Module.do_apply(constr.newInstance(paramVals:_*).asInstanceOf[T])
+    val fakeModule = try {
+       chisel3.Module.do_apply(constr.newInstance(paramVals:_*).asInstanceOf[T])
+    } catch {
+      case e: InvocationTargetException if e.getCause.isInstanceOf[ChiselException] =>
+        throw e.getCause
+      case other => throw other
+    }
     Builder.clearBackingModule()
     fakeModule
   }
