@@ -58,9 +58,9 @@ class BlackBoxSourceHelper extends Transform with DependencyAPIMigration {
   import BlackBoxSourceHelper._
   private val DefaultTargetDir = new File(".")
 
-  override def prerequisites = firrtl.stage.Forms.LowFormMinimumOptimized
+  override def prerequisites = Seq.empty
 
-  override def optionalPrerequisites = firrtl.stage.Forms.LowFormOptimized
+  override def optionalPrerequisites = Seq.empty
 
   override def optionalPrerequisiteOf = Seq.empty
 
