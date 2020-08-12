@@ -24,6 +24,20 @@ object Instance {
     }
     val constr = module.getClass().getConstructors.head
 
+
+    def getParamVals(classes: Array[Class[_]]): Seq[Object] = {
+      classes.map {
+        case c: Class[_] if 0.toByte.getClass == c  => 0.toByte.asInstanceOf[Object]
+        case c: Class[_] if 0.toShort.getClass == c => 0.toShort.asInstanceOf[Object]
+        case c: Class[_] if 0.getClass == c         => 0.toInt.asInstanceOf[Object]
+        case c: Class[_] if 0L.getClass == c        => 0L.asInstanceOf[Object]
+        case c: Class[_] if 0F.getClass == c        => 0F.asInstanceOf[Object]
+        case c: Class[_] if 0.0.getClass == c       => 0.0.asInstanceOf[Object]
+        case c: Class[_] if true.getClass == c      => true.asInstanceOf[Object]
+        case c: Class[_] if 'a'.getClass == c       => 'a'.asInstanceOf[Object]
+        case _                                      => null.asInstanceOf[Object]
+      }
+    }
     // Special case for inner classes - we must find the outer class and pass it to the constructor of our nullified
     //  inner class
     val paramVals: Seq[Object] = try {
@@ -32,17 +46,10 @@ object Instance {
       }.toList
       fields.foreach(_.setAccessible(true))
       val outers: Seq[Object] = fields.map(f => f.get(module))
-      val otherPs: Seq[Object] = constr.getParameterTypes.drop(outers.size).map {
-        // TODO: Support more than just int primitives
-        case c: Class[_] if c.isPrimitive => 0.asInstanceOf[Object]
-        case _ => null.asInstanceOf[Object]
-      }
+      val otherPs: Seq[Object] = getParamVals(constr.getParameterTypes.drop(outers.size))
       outers ++ otherPs
     } catch { case e: NoSuchFieldException =>
-      constr.getParameterTypes.map {
-        case c: Class[_] if c.isPrimitive => 0.asInstanceOf[Object]
-        case _ => null.asInstanceOf[Object]
-      }
+        getParamVals(constr.getParameterTypes)
     }
     require(Builder.currentModule.isDefined)
     Builder.setBackingModule(module, wrapper)

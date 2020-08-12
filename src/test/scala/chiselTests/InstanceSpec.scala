@@ -252,8 +252,39 @@ class InstanceSpec extends ChiselPropSpec with Utils {
   }
 
 
-  property("Passing non-int primitives") { }
-  property("Passing classes") { }
+  property("Passing non-int primitives and classes should work") {
+    case class Parameters(name: String)
+
+    //byte , short , int , long , float , double , boolean and char.
+    class Child(byte: Byte,
+                short: Short,
+                int: Int,
+                long: Long,
+                float: Float,
+                double: Double,
+                boolean: Boolean,
+                char: Char,
+                parameters: Parameters) extends MultiIOModule {
+      val myName: String = parameters.name + byte + short + int + long + float + double + boolean + char
+      val in = IO(Input(UInt(3.W)))
+      val out = IO(Output(UInt(3.W)))
+      out := in
+    }
+
+    class Parent(child: Child) extends MultiIOModule {
+      val in  = IO(Input(UInt(3.W)))
+      val out = IO(Output(UInt(3.W)))
+      val c = Instance(child)
+      c.in := in
+      out := c.out
+    }
+
+    val child: Child = build { new Child(
+      0, 1, 2, 3, 4, 5.0, true, 'a', Parameters("foo")
+    ) }
+    build { new Parent(child) }
+  }
+  property("Accessing non-data members of instance should work") { }
 }
 
 //Prints out:
