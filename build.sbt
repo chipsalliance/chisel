@@ -180,6 +180,12 @@ lazy val macros = (project in file("macros")).
 
 lazy val core = (project in file("core")).
   settings(commonSettings: _*).
+  enablePlugins(BuildInfoPlugin).
+  settings(
+    buildInfoPackage := "chisel3",
+    buildInfoUsePackageAsPath := true,
+    buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
+  ).
   settings(publishSettings: _*).
   settings(
     name := "chisel3-core",
@@ -200,13 +206,7 @@ lazy val core = (project in file("core")).
 lazy val root = RootProject(file("."))
 
 lazy val chisel = (project in file(".")).
-  enablePlugins(BuildInfoPlugin).
   enablePlugins(ScalaUnidocPlugin).
-  settings(
-    buildInfoPackage := name.value,
-    buildInfoUsePackageAsPath := true,
-    buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
-  ).
   settings(commonSettings: _*).
   settings(chiselSettings: _*).
   settings(publishSettings: _*).
