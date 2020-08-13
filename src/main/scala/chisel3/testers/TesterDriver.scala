@@ -45,7 +45,7 @@ object TesterDriver extends BackendCompilationUtilities {
   final class AddImplicitTesterDirectory extends Phase {
     override def prerequisites = Seq(Dependency[Elaborate])
     override def optionalPrerequisites = Seq.empty
-    override def optionalPrerequisiteOf = Seq(Dependency[Emitter])
+    override def optionalPrerequisiteOf = Seq.empty
     override def invalidates(a: Phase) = false
 
     override def transform(a: AnnotationSeq) = a.flatMap {
@@ -92,12 +92,10 @@ object TesterDriver extends BackendCompilationUtilities {
               annotations: AnnotationSeq = Seq(),
               nameHint:    Option[String] = None
              ): Boolean = {
-    val pm = new PhaseManager(
-      targets = Seq(Dependency[AddImplicitTesterDirectory],
-                    Dependency[Emitter],
-                    Dependency[Convert]))
 
-    val annotationsx = pm.transform(ChiselGeneratorAnnotation(finishWrapper(t)) +: annotations)
+    val annotationsx = (new ChiselStage).execute(
+      Array("--no-run-firrtl"),
+      ChiselGeneratorAnnotation(finishWrapper(t)) +: annotations)
 
     val target: String = annotationsx.collectFirst { case FirrtlCircuitAnnotation(cir) => cir.main }.get
     val path = annotationsx.collectFirst { case TargetDirAnnotation(dir) => dir }.map(new File(_)).get
