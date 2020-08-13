@@ -6,7 +6,7 @@ import coursier.maven.MavenRepository
 import $ivy.`com.lihaoyi::mill-contrib-buildinfo:$MILL_VERSION`
 import mill.contrib.buildinfo.BuildInfo
 
-object chisel3 extends mill.Cross[chisel3CrossModule]("2.11.12", "2.12.11") 
+object chisel3 extends mill.Cross[chisel3CrossModule]("2.11.12", "2.12.12")
 
 // The following stanza is searched for and used when preparing releases.
 // Please retain it.
@@ -41,7 +41,7 @@ trait CommonModule extends ScalaModule with SbtModule with PublishModule {
 
   def publishVersion = "3.4-SNAPSHOT"
 
-  // 2.12.11 -> Array("2", "12", "10") -> "12" -> 12
+  // 2.12.10 -> Array("2", "12", "10") -> "12" -> 12
   protected def majorVersion = crossVersion.split('.')(1).toInt
 
   def crossVersion: String
@@ -90,7 +90,7 @@ trait CommonModule extends ScalaModule with SbtModule with PublishModule {
 
 class chisel3CrossModule(crossVersionValue: String) extends CommonModule with PublishModule with BuildInfo { m =>
   // different scala version shares same sources
-  // mill use foo/2.11.12 foo/2.12.11 as millSourcePath by default
+  // mill use foo/2.11.12 foo/2.12.12 as millSourcePath by default
   override def millSourcePath = super.millSourcePath / os.up / os.up
 
   def crossVersion = crossVersionValue
@@ -116,7 +116,7 @@ class chisel3CrossModule(crossVersionValue: String) extends CommonModule with Pu
     def testFrameworks = Seq("org.scalatest.tools.Framework")
 
     // a sbt-like testOnly command.
-    // for example, mill -i "chisel3[2.12.11].test.testOnly" "chiselTests.BitwiseOpsSpec" 
+    // for example, mill -i "chisel3[2.12.12].test.testOnly" "chiselTests.BitwiseOpsSpec"
     def testOnly(args: String*) = T.command {
       super.runMain("org.scalatest.run", args: _*)
     }
@@ -130,10 +130,6 @@ class chisel3CrossModule(crossVersionValue: String) extends CommonModule with Pu
       "version" -> publishVersion(),
       "scalaVersion" -> scalaVersion()
     )
-  }
-
-  override def generatedSources = T {
-    Seq(generatedBuildInfo()._2)
   }
 
   object macros extends CommonModule {
@@ -158,6 +154,11 @@ class chisel3CrossModule(crossVersionValue: String) extends CommonModule with Pu
       "-Xcheckinit",
       "-Xlint:infer-any"
     )
+
+    override def generatedSources = T {
+      Seq(generatedBuildInfo()._2)
+    }
+
   }
   // make mill publish sbt compatible package
   def artifactName = "chisel3"
