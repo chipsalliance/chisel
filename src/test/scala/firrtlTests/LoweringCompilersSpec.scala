@@ -36,6 +36,7 @@ class LoweringCompilersSpec extends AnyFlatSpec with Matchers {
 
   def legacyTransforms(a: CoreTransform): Seq[Transform] = a match {
     case _: ChirrtlToHighFirrtl => Seq(
+      new firrtl.stage.transforms.CheckScalaVersion,
       firrtl.passes.CheckChirrtl,
       firrtl.passes.CInferTypes,
       firrtl.passes.CInferMDir,

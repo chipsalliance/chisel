@@ -33,6 +33,7 @@ package object stage {
           case InfoModeAnnotation(i)             => c.copy(infoModeName = i)
           case FirrtlCircuitAnnotation(cir)      => c.copy(firrtlCircuit = Some(cir))
           case a : CompilerAnnotation => logger.warn(s"Use of CompilerAnnotation is deprecated. Ignoring $a") ; c
+          case SuppressScalaVersionWarning       => c
         }
       }
   }

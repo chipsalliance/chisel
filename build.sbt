@@ -178,6 +178,12 @@ lazy val firrtl = (project in file("."))
   .settings(testAssemblySettings)
   .settings(publishSettings)
   .settings(docSettings)
+  .enablePlugins(BuildInfoPlugin)
+  .settings(
+    buildInfoPackage := name.value,
+    buildInfoUsePackageAsPath := true,
+    buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
+  )
 
 lazy val benchmark = (project in file("benchmark"))
   .dependsOn(firrtl)

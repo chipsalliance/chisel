@@ -19,7 +19,8 @@ trait FirrtlCli { this: Shell =>
        RunFirrtlTransformAnnotation,
        firrtl.EmitCircuitAnnotation,
        firrtl.EmitAllModulesAnnotation,
-       NoCircuitDedupAnnotation )
+       NoCircuitDedupAnnotation,
+       SuppressScalaVersionWarning)
     .map(_.addOptions(parser))
 
   phases.DriverCompatibility.TopNameAnnotation.addOptions(parser)

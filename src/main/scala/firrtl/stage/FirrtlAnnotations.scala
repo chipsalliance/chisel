@@ -222,3 +222,18 @@ case class FirrtlCircuitAnnotation(circuit: Circuit) extends NoTargetAnnotation 
   override lazy val hashCode: Int = circuit.hashCode
 
 }
+
+/** Suppresses warning about Scala 2.11 deprecation
+  *
+  *  - set with `--Wno-scala-version-warning`
+  */
+case object SuppressScalaVersionWarning extends NoTargetAnnotation with FirrtlOption with HasShellOptions {
+  def longOption: String = "Wno-scala-version-warning"
+  val options = Seq(
+    new ShellOption[Unit](
+      longOption      = longOption,
+      toAnnotationSeq = { _ => Seq(this) },
+      helpText        = "Suppress Scala 2.11 deprecation warning (ignored in Scala 2.12+)"
+    )
+  )
+}
