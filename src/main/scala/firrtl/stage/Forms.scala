@@ -20,7 +20,8 @@ object Forms {
     Seq( Dependency(passes.CheckChirrtl),
          Dependency(passes.CInferTypes),
          Dependency(passes.CInferMDir),
-         Dependency(passes.RemoveCHIRRTL) )
+         Dependency(passes.RemoveCHIRRTL),
+         Dependency[annotations.transforms.CleanupNamedTargets] )
 
   val WorkingIR: Seq[TransformDependency] = MinimalHighForm :+ Dependency(passes.ToWorkingIR)
 
