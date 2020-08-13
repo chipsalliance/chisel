@@ -111,6 +111,8 @@ options:
         url: chisel3/chisel3-vs-chisel2.html
       - title: Experimental Features
         url: chisel3/experimental-features.html
+      - title: Upgrading From Scala 2.11
+        url: chisel3/upgrading-from-scala-2-11.html
   - title: Developers
     url: chisel3/developers.html
     menu_type: chisel3
