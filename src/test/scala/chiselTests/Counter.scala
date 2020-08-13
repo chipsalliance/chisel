@@ -29,6 +29,19 @@ class EnableTester(seed: Int) extends BasicTester {
   }
 }
 
+class ResetTester(n: Int) extends BasicTester {
+  val triggerReset = WireInit(false.B)
+  val wasReset = RegNext(triggerReset)
+  val (value, _) = Counter(0 until 8, reset = triggerReset)
+
+  triggerReset := value === (n-1).U
+
+  when(wasReset) {
+    assert(value === 0.U)
+    stop()
+  }
+}
+
 class WrapTester(max: Int) extends BasicTester {
   val (cnt, wrap) = Counter(true.B, max)
   when(wrap) {
@@ -59,6 +72,10 @@ class CounterSpec extends ChiselPropSpec {
 
   property("Counter can be en/disabled") {
     forAll(safeUInts) { (seed: Int) => whenever(seed >= 0) { assertTesterPasses{ new EnableTester(seed) } } }
+  }
+
+  property("Counter can be reset") {
+    forAll(smallPosInts) { (seed: Int) => assertTesterPasses{ new ResetTester(seed) } }
   }
 
   property("Counter should wrap") {
