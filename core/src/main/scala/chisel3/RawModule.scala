@@ -200,7 +200,11 @@ package internal {
 
     // IO for this Module. At the Scala level (pre-FIRRTL transformations),
     // connections in and out of a Module may only go through `io` elements.
-    @deprecated("For type-safe interfaces, provide your own trait. For reflective API, use DataMirror", "Chisel 3.4")
+    @deprecated("Removed for causing issues in Scala 2.12+. You remain free to define io Bundles " +
+      "in your Modules, but you cannot rely on an io field in every Module. " +
+      "For more information, see: https://github.com/freechipsproject/chisel3/pull/1550.",
+      "Chisel 3.4"
+    )
     def io: Record
 
     // Private accessor to reduce number of deprecation warnings

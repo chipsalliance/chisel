@@ -133,7 +133,12 @@ package experimental {
   * @note The parameters API is experimental and may change
   */
 abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param])(implicit compileOptions: CompileOptions) extends BaseBlackBox {
-  @deprecated("For type-safe interfaces, provide your own trait. For reflective API, use DataMirror", "Chisel 3.4")
+
+  @deprecated("Removed for causing issues in Scala 2.12+. You remain free to define io Bundles " +
+    "in your BlackBoxes, but you cannot rely on an io field in every BlackBox. " +
+    "For more information, see: https://github.com/freechipsproject/chisel3/pull/1550.",
+    "Chisel 3.4"
+  )
   def io: Record
 
   // Private accessor to reduce number of deprecation warnings
