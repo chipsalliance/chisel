@@ -231,7 +231,8 @@ object Driver extends BackendCompilationUtilities {
            Dependency[DriverCompatibility.FirrtlPreprocessing],
            Dependency[chisel3.stage.phases.MaybeFirrtlStage] )
     val currentState =
-      Seq( Dependency[firrtl.stage.phases.DriverCompatibility.AddImplicitFirrtlFile] )
+      Seq( Dependency[firrtl.stage.phases.DriverCompatibility.AddImplicitFirrtlFile],
+           Dependency[chisel3.stage.phases.Convert] )
 
     val phases: Seq[Phase] = new PhaseManager(targets, currentState) {
       override val wrappers = Seq( DeletedWrapper(_: Phase) )

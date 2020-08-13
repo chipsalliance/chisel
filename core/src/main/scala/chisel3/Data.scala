@@ -450,7 +450,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     val mod = topBindingOpt.flatMap(_.location)
     topBindingOpt match {
       case Some(tb: TopBinding) if (mod == Builder.currentModule) =>
-      case Some(pb: PortBinding) if (mod.flatMap(_._parent) == Builder.currentModule) =>
+      case Some(pb: PortBinding) if (mod.flatMap(Builder.retrieveParent(_,Builder.currentModule.get)) == Builder.currentModule) =>
       case _ =>
         throwException(s"operand is not visible from the current module")
     }

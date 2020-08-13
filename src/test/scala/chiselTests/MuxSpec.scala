@@ -38,7 +38,7 @@ class MuxLookupWrapper(keyWidth: Int, default: Int, mapping: () => Seq[(UInt, UI
 class MuxLookupExhaustiveSpec extends ChiselPropSpec {
   val keyWidth = 2
   val default = 9 // must be less than 10 to avoid hex/decimal mismatches
-  val firrtlLit = s"""UInt<4>("h$default")"""
+  val firrtlLit = s"""UInt<4>("h0$default")"""
   val stage = new ChiselStage
 
   // Assumes there are no literals with 'UInt<4>("h09")' in the output FIRRTL
