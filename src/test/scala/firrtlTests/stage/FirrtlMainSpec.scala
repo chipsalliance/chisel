@@ -304,69 +304,6 @@ class FirrtlMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
      * behavior.
      */
 
-    Scenario("User tries to use an implicit annotation file") {
-      val f = new FirrtlMainFixture
-      val td = new TargetDirectoryFixture("implict-annotation-file")
-      val circuit = new SimpleFirrtlCircuitFixture
-
-      And("implicit legacy and extant annotation files")
-      val annoFiles = Array( (new File(td.dir + "/Top.anno"), "/annotations/SampleAnnotations.anno"),
-                             (new File(td.dir + "/Top.anno.json"), "/annotations/SampleAnnotations.anno.json") )
-      annoFiles.foreach{ case (file, source) => copyResourceToFile(source, file) }
-
-      When("the user implies an annotation file (an annotation file has the same base name as an input file)")
-      val in = new File(td.dir + "/Top.fir")
-      val pw = new PrintWriter(in)
-      pw.write(circuit.input)
-      pw.close()
-      val (out, _, result) = grabStdOutErr{ catchStatus { f.stage.main(Array("-td", td.dir.toString,
-                                                                             "-i", in.toString,
-                                                                             "-foaf", "Top.out",
-                                                                             "-X", "high",
-                                                                             "-E", "high")) } }
-
-      Then("the implicit annotation file should NOT be read")
-      val annoFileOut = new File(td.dir + "/Top.out.anno.json")
-      val annotationJson = FileUtils.getText(annoFileOut)
-      annotationJson should not include ("InlineInstances")
-
-      And("no warning should be printed")
-      out should not include ("Warning:")
-
-      And("no error should be printed")
-      out should not include ("Error:")
-
-      And("the exit code should be 0")
-      result shouldBe a [Right[_,_]]
-    }
-
-    Scenario("User provides unsupported legacy annotations") {
-      val f = new FirrtlMainFixture
-      val td = new TargetDirectoryFixture("legacy-annotation-file")
-      val circuit = new SimpleFirrtlCircuitFixture
-
-      And("a legacy annotation file")
-      val annoFile = new File(td.dir + "/legacy.anno")
-      copyResourceToFile("/annotations/SampleAnnotations.anno", annoFile)
-
-      When("the user provides legacy annotations")
-      val in = new File(td.dir + "/Top.fir")
-      val pw = new PrintWriter(in)
-      pw.write(circuit.input)
-      pw.close()
-      val (out, _, result) = grabStdOutErr{ catchStatus { f.stage.main(Array("-td", td.dir.toString,
-                                                                             "-i", in.toString,
-                                                                             "-faf", annoFile.toString,
-                                                                             "-foaf", "Top",
-                                                                             "-X", "high")) } }
-
-      Then("a warning should be printed")
-      out should include ("YAML Annotation files are deprecated")
-
-      And("the exit code should be 0")
-      result shouldBe a [Right[_,_]]
-    }
-
     Seq(
       /* Erroneous inputs */
       FirrtlMainTest(args    = Array("--thisIsNotASupportedOption"),

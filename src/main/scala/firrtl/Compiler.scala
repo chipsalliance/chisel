@@ -356,18 +356,6 @@ trait Transform extends TransformLike[CircuitState] with DependencyAPI[Transform
     }
   }
 
-  /** Convenience method to get annotations relevant to this Transform
-    *
-    * @param state The [[CircuitState]] form which to extract annotations
-    * @return A collection of annotations
-    */
-  @deprecated("Just collect the actual Annotation types the transform wants", "1.1")
-  final def getMyAnnotations(state: CircuitState): Seq[Annotation] = {
-    val msg = "getMyAnnotations is deprecated, use collect and match on concrete types"
-    StageUtils.dramaticWarning(msg)
-    state.annotations.collect { case a: LegacyAnnotation if a.transform == this.getClass => a }
-  }
-
   /** Executes before any transform's execute method
     * @param state
     * @return

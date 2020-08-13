@@ -32,8 +32,7 @@ abstract class Stage extends Phase {
     */
   final def transform(annotations: AnnotationSeq): AnnotationSeq = {
     val annotationsx =
-      Seq( new phases.GetIncludes,
-           new phases.ConvertLegacyAnnotations )
+      Seq(new phases.GetIncludes)
         .map(phases.DeletedWrapper(_))
         .foldLeft(annotations)((a, p) => p.transform(a))
 

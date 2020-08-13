@@ -2,11 +2,8 @@
 
 package firrtl.options.phases
 
-import net.jcazevedo.moultingyaml._
-
 import firrtl.AnnotationSeq
-import firrtl.annotations.{AnnotationFileNotFoundException, JsonProtocol, LegacyAnnotation}
-import firrtl.annotations.AnnotationYamlProtocol._
+import firrtl.annotations.{AnnotationFileNotFoundException, JsonProtocol}
 import firrtl.options.{InputAnnotationFileAnnotation, Phase, StageUtils}
 import firrtl.FileUtils
 
@@ -31,18 +28,7 @@ class GetIncludes extends Phase {
   private def readAnnotationsFromFile(filename: String): AnnotationSeq = {
     val file = new File(filename).getCanonicalFile
     if (!file.exists) { throw new AnnotationFileNotFoundException(file) }
-    JsonProtocol.deserializeTry(file).recoverWith { case jsonException =>
-      // Try old protocol if new one fails
-      Try {
-        val yaml = FileUtils.getText(file).parseYaml
-        val result = yaml.convertTo[List[LegacyAnnotation]]
-        val msg = s"$file is a YAML file!\n" + (" "*9) + "YAML Annotation files are deprecated! Use JSON"
-        StageUtils.dramaticWarning(msg)
-        result
-      }.orElse { // Propagate original JsonProtocol exception if YAML also fails
-        Failure(jsonException)
-      }
-    }.get
+    JsonProtocol.deserialize(file)
   }
 
   /** Recursively read all [[Annotation]]s from any [[InputAnnotationFileAnnotation]]s while making sure that each file is

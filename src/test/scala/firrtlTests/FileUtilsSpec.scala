@@ -9,7 +9,7 @@ import org.scalatest.matchers.should.Matchers
 
 class FileUtilsSpec extends AnyFlatSpec with Matchers {
 
-  private val sampleAnnotations: String = "annotations/SampleAnnotations.anno"
+  private val sampleAnnotations: String = "annotations/SampleAnnotations.anno.json"
   private val sampleAnnotationsFileName: String = s"src/test/resources/$sampleAnnotations"
 
   behavior of "FileUtils.getLines"

@@ -5,9 +5,7 @@ package firrtl
 import scala.collection._
 import scala.util.{Failure, Try}
 import java.io.{File, FileNotFoundException}
-import net.jcazevedo.moultingyaml._
 import annotations._
-import firrtl.annotations.AnnotationYamlProtocol._
 import firrtl.transforms._
 import firrtl.Utils.throwInternalError
 import firrtl.stage.{FirrtlExecutionResultView, FirrtlStage}
@@ -93,33 +91,20 @@ object Driver {
 
     // Warnings to get people to change to drop old API
     if (firrtlConfig.annotationFileNameOverride.nonEmpty) {
-      val msg = "annotationFileNameOverride is deprecated! " +
+      val msg = "annotationFileNameOverride has been removed, file will be ignored! " +
                 "Use annotationFileNames"
-      dramaticWarning(msg)
+      dramaticError(msg)
     } else if (usingImplicitAnnoFile) {
-      val msg = "Implicit .anno file from top-name is deprecated!\n" +
+      val msg = "Implicit .anno file from top-name has been removed, file will be ignored!\n" +
              (" "*9) + "Use explicit -faf option or annotationFileNames"
-      Driver.dramaticWarning(msg)
+      dramaticError(msg)
     }
 
     val loadedAnnos = annoFiles.flatMap { file =>
       if (!file.exists) {
         throw new AnnotationFileNotFoundException(file)
       }
-      // Try new protocol first
-      JsonProtocol.deserializeTry(file).recoverWith { case jsonException =>
-        // Try old protocol if new one fails
-        Try {
-          val yaml = FileUtils.getText(file).parseYaml
-          val result = yaml.convertTo[List[LegacyAnnotation]]
-          val msg = s"$file is a YAML file!\n" +
-                    (" "*9) + "YAML Annotation files are deprecated! Use JSON"
-          Driver.dramaticWarning(msg)
-          result
-        }.orElse { // Propagate original JsonProtocol exception if YAML also fails
-          Failure(jsonException)
-        }
-      }.get
+      JsonProtocol.deserialize(file)
     }
 
     val targetDirAnno = List(BlackBoxTargetDirAnno(optionsManager.targetDirName))
@@ -131,9 +116,7 @@ object Driver {
       (if (firrtlConfig.dontCheckCombLoops) Seq(DontCheckCombLoopsAnnotation) else Seq()) ++
       (if (firrtlConfig.noDCE) Seq(NoDCEAnnotation) else Seq())
 
-    val annos = targetDirAnno ++ outputAnnos ++ globalAnnos ++
-                firrtlConfig.annotations ++ loadedAnnos
-    LegacyAnnotation.convertLegacyAnnos(annos)
+    targetDirAnno ++ outputAnnos ++ globalAnnos ++ firrtlConfig.annotations ++ loadedAnnos
   }
 
   private sealed trait FileExtension

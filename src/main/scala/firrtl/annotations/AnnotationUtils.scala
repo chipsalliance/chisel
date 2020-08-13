@@ -5,10 +5,6 @@ package annotations
 
 import java.io.File
 
-
-import net.jcazevedo.moultingyaml._
-import firrtl.annotations.AnnotationYamlProtocol._
-
 import firrtl.ir._
 
 case class InvalidAnnotationFileException(file: File, cause: FirrtlUserException = null)
@@ -22,8 +18,6 @@ case class AnnotationClassNotFoundException(className: String) extends FirrtlUse
 )
 
 object AnnotationUtils {
-  def toYaml(a: LegacyAnnotation): String = a.toYaml.prettyPrint
-  def fromYaml(s: String): LegacyAnnotation = s.parseYaml.convertTo[LegacyAnnotation]
 
   /** Returns true if a valid Module name */
   val SerializedModuleName = """([a-zA-Z_][a-zA-Z_0-9~!@#$%^*\-+=?/]*)""".r

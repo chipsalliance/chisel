@@ -12,7 +12,7 @@ import firrtl.options.{Dependency, Phase, TargetDirAnnotation}
   */
 class AddDefaults extends Phase {
 
-  override def prerequisites = Seq(Dependency[GetIncludes], Dependency[ConvertLegacyAnnotations])
+  override def prerequisites = Seq(Dependency[GetIncludes])
 
   override def optionalPrerequisiteOf = Seq.empty
 

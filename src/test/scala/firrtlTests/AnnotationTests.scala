@@ -4,7 +4,6 @@ package firrtlTests
 
 import java.io.{File, FileWriter}
 
-import firrtl.annotations.AnnotationYamlProtocol._
 import firrtl.annotations._
 import firrtl._
 import firrtl.FileUtils
@@ -13,7 +12,6 @@ import firrtl.passes.InlineAnnotation
 import firrtl.passes.memlib.PinAnnotation
 import firrtl.util.BackendCompilationUtilities
 import firrtl.testutils._
-import net.jcazevedo.moultingyaml._
 import org.scalatest.matchers.should.Matchers
 
 /**
@@ -470,50 +468,6 @@ abstract class AnnotationTests extends AnnotationSpec with Matchers {
     resultAnno should not contain (anno("c_0_d"))
     resultAnno should not contain (anno("c_1_d"))
   }
-}
-
-class LegacyAnnotationTests extends AnnotationTests {
-  def anno(s: String, value: String ="this is a value", mod: String = "Top"): Annotation =
-    Annotation(ComponentName(s, ModuleName(mod, CircuitName("Top"))), classOf[Transform], value)
-  def manno(mod: String): Annotation =
-    Annotation(ModuleName(mod, CircuitName("Top")), classOf[Transform], "some value")
-
-  "LegacyAnnotations" should "be readable from file" in {
-    val annotationsYaml = FileUtils.getTextResource("/annotations/SampleAnnotations.anno").parseYaml
-    val annotationArray = annotationsYaml.convertTo[Array[LegacyAnnotation]]
-    annotationArray.length should be (9)
-    annotationArray(0).targetString should be ("ModC")
-    annotationArray(7).transformClass should be ("firrtl.passes.InlineInstances")
-    val expectedValue = "TopOfDiamond\nWith\nSome new lines"
-    annotationArray(7).value should be (expectedValue)
-  }
-
-  "Badly formatted LegacyAnnotation serializations" should "return reasonable error messages" in {
-    var badYaml =
-      """
-        |- transformClass: firrtl.passes.InlineInstances
-        |  targetString: circuit.module..
-        |  value: ModC.this params 16 32
-      """.stripMargin.parseYaml
-
-    var thrown = intercept[Exception] {
-      badYaml.convertTo[Array[LegacyAnnotation]]
-    }
-    thrown.getMessage should include ("Illegal component name")
-
-    badYaml =
-      """
-        |- transformClass: firrtl.passes.InlineInstances
-        |  targetString: .circuit.module.component
-        |  value: ModC.this params 16 32
-      """.stripMargin.parseYaml
-
-    thrown = intercept[Exception] {
-      badYaml.convertTo[Array[LegacyAnnotation]]
-    }
-    thrown.getMessage should include ("Illegal circuit name")
-  }
-
 }
 
 class JsonAnnotationTests extends AnnotationTests with BackendCompilationUtilities {

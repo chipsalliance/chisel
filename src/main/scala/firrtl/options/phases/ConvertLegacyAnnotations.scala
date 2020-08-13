@@ -3,10 +3,9 @@
 package firrtl.options.phases
 
 import firrtl.AnnotationSeq
-import firrtl.annotations.LegacyAnnotation
 import firrtl.options.{Dependency, Phase}
 
-/** Convert any [[firrtl.annotations.LegacyAnnotation LegacyAnnotation]]s to non-legacy variants */
+@deprecated("LegacyAnnotation has been removed, this is a no-op", "FIRRTL 1.4")
 class ConvertLegacyAnnotations extends Phase {
 
   override def prerequisites = Seq(Dependency[GetIncludes])
@@ -15,6 +14,5 @@ class ConvertLegacyAnnotations extends Phase {
 
   override def invalidates(a: Phase) = false
 
-  def transform(annotations: AnnotationSeq): AnnotationSeq = LegacyAnnotation.convertLegacyAnnos(annotations)
-
+  def transform(annotations: AnnotationSeq): AnnotationSeq = annotations
 }

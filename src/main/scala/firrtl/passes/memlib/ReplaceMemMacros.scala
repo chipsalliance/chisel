@@ -260,7 +260,7 @@ class ReplaceMemMacros(writer: ConfWriter) extends Transform with DependencyAPIM
     val pins = pannos match {
       case Seq() => Nil
       case Seq(PinAnnotation(pins)) => pins
-      case _ => throwInternalError(s"execute: getMyAnnotations - ${getMyAnnotations(state)}")
+      case _ => throwInternalError("Something went wrong")
     }
     val annos = pins.foldLeft(Seq[Annotation]()) { (seq, pin) =>
       seq ++ memMods.collect {
