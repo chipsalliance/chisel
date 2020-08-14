@@ -29,8 +29,7 @@ def javacOptionsVersion(scalaVersion: String): Seq[String] = {
 }
 
 val defaultVersions = Seq(
-  "edu.berkeley.cs" %% "firrtl" % "1.4-SNAPSHOT",
-  "edu.berkeley.cs" %% "treadle" % "1.3-SNAPSHOT"
+  "edu.berkeley.cs" %% "firrtl" % "1.4-SNAPSHOT"
 )
 
 lazy val commonSettings = Seq (
@@ -41,8 +40,8 @@ lazy val commonSettings = Seq (
   organization := "edu.berkeley.cs",
   version := "3.4-SNAPSHOT",
   autoAPIMappings := true,
-  scalaVersion := "2.12.11",
-  crossScalaVersions := Seq("2.12.11", "2.11.12"),
+  scalaVersion := "2.12.12",
+  crossScalaVersions := Seq("2.12.12", "2.11.12"),
   scalacOptions := Seq("-deprecation", "-feature") ++ scalacOptionsVersion(scalaVersion.value),
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full),
@@ -109,7 +108,8 @@ lazy val chiselSettings = Seq (
   libraryDependencies ++= Seq(
     "junit" % "junit" % "4.13" % "test",
     "org.scalatest" %% "scalatest" % "3.1.2" % "test",
-    "org.scalatestplus" %% "scalacheck-1-14" % "3.1.3.0" % "test",
+    "org.scalatestplus" %% "scalacheck-1-14" % "3.1.1.1" % "test",
+    "edu.berkeley.cs" %% "treadle" % "1.3-SNAPSHOT" % "test",
     "com.github.scopt" %% "scopt" % "3.7.1"
   ),
   javacOptions ++= javacOptionsVersion(scalaVersion.value)
@@ -141,7 +141,8 @@ lazy val pluginScalaVersions = Seq(
   "2.12.8",
   "2.12.9",
   "2.12.10",
-  "2.12.11"
+  "2.12.11",
+  "2.12.12",
 )
 
 lazy val plugin = (project in file("plugin")).
@@ -180,6 +181,12 @@ lazy val macros = (project in file("macros")).
 
 lazy val core = (project in file("core")).
   settings(commonSettings: _*).
+  enablePlugins(BuildInfoPlugin).
+  settings(
+    buildInfoPackage := "chisel3",
+    buildInfoUsePackageAsPath := true,
+    buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
+  ).
   settings(publishSettings: _*).
   settings(
     name := "chisel3-core",
@@ -200,13 +207,7 @@ lazy val core = (project in file("core")).
 lazy val root = RootProject(file("."))
 
 lazy val chisel = (project in file(".")).
-  enablePlugins(BuildInfoPlugin).
   enablePlugins(ScalaUnidocPlugin).
-  settings(
-    buildInfoPackage := name.value,
-    buildInfoUsePackageAsPath := true,
-    buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
-  ).
   settings(commonSettings: _*).
   settings(chiselSettings: _*).
   settings(publishSettings: _*).

@@ -133,23 +133,32 @@ package experimental {
   * @note The parameters API is experimental and may change
   */
 abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param])(implicit compileOptions: CompileOptions) extends BaseBlackBox {
+
+  @deprecated("Removed for causing issues in Scala 2.12+. You remain free to define io Bundles " +
+    "in your BlackBoxes, but you cannot rely on an io field in every BlackBox. " +
+    "For more information, see: https://github.com/freechipsproject/chisel3/pull/1550.",
+    "Chisel 3.4"
+  )
   def io: Record
 
+  // Private accessor to reduce number of deprecation warnings
+  private[chisel3] def _io: Record = io
+
   // Allow access to bindings from the compatibility package
-  protected def _compatIoPortBound() = portsContains(io)
+  protected def _compatIoPortBound() = portsContains(_io)
 
   private[chisel3] override def generateComponent(): Component = {
     _compatAutoWrapPorts()  // pre-IO(...) compatibility hack
 
     // Restrict IO to just io, clock, and reset
-    require(io != null, "BlackBox must have io")
-    require(portsContains(io), "BlackBox must have io wrapped in IO(...)")
+    require(_io != null, "BlackBox must have io")
+    require(portsContains(_io), "BlackBox must have io wrapped in IO(...)")
     require(portsSize == 1, "BlackBox must only have io as IO")
 
     require(!_closed, "Can't generate module more than once")
     _closed = true
 
-    val namedPorts = io.elements.toSeq.reverse  // ListMaps are stored in reverse order
+    val namedPorts = _io.elements.toSeq.reverse  // ListMaps are stored in reverse order
 
     // setRef is not called on the actual io.
     // There is a risk of user improperly attempting to connect directly with io
@@ -163,18 +172,18 @@ abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param
     // of the io bundle, but NOT on the io bundle itself.
     // Doing so would cause the wrong names to be assigned, since their parent
     // is now the module itself instead of the io bundle.
-    for (id <- getIds; if id ne io) {
+    for (id <- getIds; if id ne _io) {
       id._onModuleClose
     }
 
     val firrtlPorts = namedPorts map {namedPort => Port(namedPort._2, namedPort._2.specifiedDirection)}
-    val component = DefBlackBox(this, name, firrtlPorts, io.specifiedDirection, params)
+    val component = DefBlackBox(this, name, firrtlPorts, _io.specifiedDirection, params)
     _component = Some(component)
     component
   }
 
   private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
-    for ((_, port) <- io.elements) {
+    for ((_, port) <- _io.elements) {
       pushCommand(DefInvalid(UnlocatableSourceInfo, port.ref))
     }
   }
