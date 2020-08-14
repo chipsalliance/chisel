@@ -59,6 +59,12 @@ jobs:
             - project/project/
             - project/target/
     - stage: test
+      name: "All files must be formatted with scalafmt"
+      workspaces:
+        use: firrtl_build
+      script:
+        - sbt scalafmtCheck
+    - stage: test
       name: "Unidoc builds (no warnings)"
       workspaces:
         use: firrtl_build
