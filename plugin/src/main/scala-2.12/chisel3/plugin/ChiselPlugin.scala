@@ -155,14 +155,15 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
       // Don't recurse into a new Module.Bundle constructing a class
       // We hit this case when you declare a Bundle inside a module - you reference a Select(outsidemodule, innerbundle)
       // calling 'new' on it
-      case dd @ New(Select(quals, data)) if quals.tpe <:< inferType(tq"chisel3.experimental.BaseModule") && (dd.tpe <:< inferType(tq"chisel3.Data") || dd.tpe <:< inferType(tq"chisel3.experimental.BaseModule")) =>
-        dd
-      case dd @ Select(quals, data) if quals.tpe <:< inferType(tq"chisel3.experimental.BaseModule") && (dd.tpe <:< inferType(tq"chisel3.Data") || dd.tpe <:< inferType(tq"chisel3.experimental.BaseModule")) =>
+      case dd @ New(Select(quals, data)) if quals.tpe <:< inferType(tq"chisel3.experimental.BaseModule") => dd
+      case dd @ Select(quals, data) if quals.tpe <:< inferType(tq"chisel3.experimental.BaseModule")  && dd.tpe <:< inferType(tq"Object") && !data.isInstanceOf[TypeName] => //&&
+        //((quals.toString.contains("result") && data.toString.contains("compileOptions")) || quals.toString.contains("resolveBackingModule")) =>
         def resolve(): Tree = {
-          val newQuals = transform(quals)
+          val newQuals = localTyper typed transform(quals)
           val backingModule = localTyper typed q"chisel3.plugin.APIs.resolveBackingModule[${quals.tpe}]($newQuals)"
           val newSelection = localTyper typed treeCopy.Select(dd, backingModule, data)
-          localTyper typed q"chisel3.plugin.APIs.resolveModuleAccess[${dd.tpe}]($newQuals, $newSelection)"
+          val ret = localTyper typed q"chisel3.plugin.APIs.resolveModuleAccess[${dd.tpe}]($newQuals, $newSelection)"
+          ret
         }
         val ret = quals match {
           // If not a member of the parent class
@@ -171,9 +172,54 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
           case Select(_, TermName(_)) => resolve()
           // If a member of this class
           case This(typeName) => resolve()
+          // If return value from a function
+          case t@TypeApply(fun, args) if fun.toString.contains("asInstanceOf") =>
+            val newFun = transform(fun)
+            val ret = localTyper typed treeCopy.TypeApply(t, newFun, args)
+            println(show(ret))
+            println(showRaw(ret, true))
+            //super.transform(dd)
+            localTyper typed treeCopy.Select(dd, ret, data)
+          case Apply(fun, args) if !fun.toString.contains("resolveBackingModule") => resolve()
+          case TypeApply(fun, args) if !fun.toString.contains("resolveBackingModule") => resolve()
           case _ => super.transform(dd)
         }
         ret
+        //if(quals.toString.contains("resolveBackingModule")) {
+        //  dd match {
+        //    case Select(Apply(TypeApply(Select(Select(Select(Ident(_), _), _), TermName("resolveBackingModule")), List(t: TypeTree)), List(Ident(TermName("result")))), TermName("compileOptions")) =>
+        //      println("HERHERHERHEH")
+        //      println(showRaw(t))
+        //      println(showRaw(t.original))
+        //  }
+        //}
+        //if(quals.toString.contains("result") && data.toString.contains("compileOptions")) {
+        //  ret match {
+        //    case Apply(_, List(Ident(TermName("result")),
+        //         Select(Apply(TypeApply(Select(_, TermName("resolveBackingModule")), List(t: TypeTree)), List(Ident(TermName("result")))), TermName("compileOptions"))
+        //    )) =>
+        //      println("BLAHBLAH")
+        //      println(showRaw(t))
+        //      println(showRaw(t.original))
+        //      val tpeTree = Ident(TypeName("Foo")).defineType(quals.tpe)
+        //      println(showRaw(tpeTree, true))
+        //      val x = t.setOriginal(tpeTree)
+        //      println(showRaw(t.original, true))
+        //      println(showRaw(x))
+        //      println(showRaw(t))
+
+        //    case Select(Apply(TypeApply(Select(_, TermName("resolveBackingModule")), List(t: TypeTree)), List(Ident(TermName("result")))), TermName("compileOptions")) =>
+        //      println("HERHERHERHEH")
+        //      println(showRaw(t))
+        //      println(showRaw(t.original, true))
+        //  }
+        //}
+        //println("++++++++++")
+        //// Select(Apply(TypeApply(Select(Select(Select(Ident(chisel3), chisel3.plugin), chisel3.plugin.APIs), TermName("resolveBackingModule")), List(TypeTree())), List(Ident(TermName("result")))), TermName("compileOptions"))))
+        //// Select(Apply(TypeApply(Select(Select(Select(Ident(chisel3), chisel3.plugin), chisel3.plugin.APIs), TermName("resolveBackingModule")), List(TypeTree().setOriginal(Ident(TypeName("Foo"))))), List(Ident(TermName("result")))), TermName("compileOptions"))
+        //println(showRaw(dd))
+        //println(showRaw(ret, true))
+        //println("==========")
       // If a Data and in a Bundle, just get the name but not a prefix
       case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd, tq"chisel3.Data") && inBundle(dd) =>
         val TermName(str: String) = name

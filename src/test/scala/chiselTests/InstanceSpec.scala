@@ -1,5 +1,6 @@
 package chiselTests
 
+import Chisel.{Bundle, Module}
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage, DesignAnnotation}
 import chisel3._
 import chisel3.internal.Instance
@@ -284,7 +285,65 @@ class InstanceSpec extends ChiselPropSpec with Utils {
     ) }
     build { new Parent(child) }
   }
-  property("Accessing non-data members of instance should work") { }
+
+  property("Accessing non-data members of instance should work") {
+    class Child(n: String) extends MultiIOModule {
+      val myName: String = n
+      val in = IO(Input(UInt(3.W)))
+      val out = IO(Output(UInt(3.W)))
+      out := in
+    }
+
+    class Parent(child: Child) extends MultiIOModule {
+      val in  = IO(Input(UInt(3.W)))
+      val out = IO(Output(UInt(3.W)))
+      val c = Instance(child)
+      c.in := in
+      out := c.out
+      assert(child.myName == c.myName)
+    }
+
+    val child: Child = build { new Child("foobar" ) }
+    build { new Parent(child) }
+  }
+
+  property("Returning value from a function should work") {
+    class Child(n: String) extends MultiIOModule {
+      val myName: String = n
+      val in = IO(Input(UInt(3.W)))
+      val out = IO(Output(UInt(3.W)))
+      out := in
+    }
+
+    class Parent(child: Child) extends MultiIOModule {
+      val in  = IO(Input(UInt(3.W)))
+      val out = IO(Output(UInt(3.W)))
+      def createInstance(): Child = Instance(child).suggestName(child.myName)
+      createInstance().in := in
+    }
+
+    val child: Child = build { new Child("foobar" ) }
+    build { new Parent(child) }
+
+  }
+  property("Using var+null build pattern should work") {
+    class Foo extends Module {
+      val io = new Bundle {}
+    }
+    var result: Foo = null
+    build { result = new Foo; result }
+    //TODO: Uncommenting the following will trigger a bad error. I've tried for a while to figure out
+    // how to fix it on the compiler side and haven't found a solution. two user-facing solutions are shown here
+    //result.name should be ("Foo")
+
+    // Solution 1: casting using asInstanceOf
+    result.asInstanceOf[Foo].name should be ("Foo")
+
+    // Solution 2: intermediate val
+    val x = result
+    x.name should be ("Foo")
+
+  }
 }
 
 //Prints out:
