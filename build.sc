@@ -12,12 +12,20 @@ object chisel3 extends mill.Cross[chisel3CrossModule]("2.11.12", "2.12.12")
 // Please retain it.
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
 val defaultVersions = Map(
-  "firrtl" -> "1.4-SNAPSHOT",
+  "firrtl" -> "1.4-SNAPSHOT"
+)
+
+val testDefaultVersions = Map(
   "treadle" -> "1.3-SNAPSHOT"
 )
 
 def getVersion(dep: String, org: String = "edu.berkeley.cs") = {
   val version = sys.env.getOrElse(dep + "Version", defaultVersions(dep))
+  ivy"$org::$dep:$version"
+}
+
+def getTestVersion(dep: String, org: String = "edu.berkeley.cs") = {
+  val version = sys.env.getOrElse(dep + "Version", testDefaultVersions(dep))
   ivy"$org::$dep:$version"
 }
 
@@ -32,7 +40,7 @@ trait CommonModule extends ScalaModule with SbtModule with PublishModule {
   def treadleModule: Option[PublishModule] = None
   
   def treadleIvyDeps = if(treadleModule.isEmpty) Agg(
-    getVersion("treadle")
+    getTestVersion("treadle")
   ) else Agg.empty[Dep]
   
   def moduleDeps = super.moduleDeps ++ firrtlModule 
