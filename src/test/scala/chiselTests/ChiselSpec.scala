@@ -10,7 +10,7 @@ import chisel3._
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import chisel3.testers._
 import firrtl.{AnnotationSeq, CommonOptions, EmittedVerilogCircuitAnnotation, ExecutionOptionsManager, FirrtlExecutionFailure, FirrtlExecutionSuccess, HasFirrtlOptions}
-import firrtl.annotations.DeletedAnnotation
+import firrtl.annotations.{Annotation, DeletedAnnotation}
 import firrtl.util.BackendCompilationUtilities
 import java.io.ByteArrayOutputStream
 import java.security.Permission
@@ -26,7 +26,11 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
                 additionalVResources: Seq[String] = Seq(),
                 annotations: AnnotationSeq = Seq()
                ): Boolean = {
-    TesterDriver.execute(() => t, additionalVResources, annotations)
+    // Change this to enable Treadle as a backend
+    val defaultBackend = chisel3.testers.TesterDriver.defaultBackend
+    val hasBackend = TestUtils.containsBackend(annotations)
+    val annos: Seq[Annotation] = if (hasBackend) annotations else defaultBackend +: annotations
+    TesterDriver.execute(() => t, additionalVResources, annos)
   }
   def assertTesterPasses(t: => BasicTester,
                          additionalVResources: Seq[String] = Seq(),

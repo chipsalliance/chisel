@@ -29,8 +29,7 @@ def javacOptionsVersion(scalaVersion: String): Seq[String] = {
 }
 
 val defaultVersions = Seq(
-  "edu.berkeley.cs" %% "firrtl" % "1.4-SNAPSHOT",
-  "edu.berkeley.cs" %% "treadle" % "1.3-SNAPSHOT"
+  "edu.berkeley.cs" %% "firrtl" % "1.4-SNAPSHOT"
 )
 
 lazy val commonSettings = Seq (
@@ -110,6 +109,7 @@ lazy val chiselSettings = Seq (
     "junit" % "junit" % "4.13" % "test",
     "org.scalatest" %% "scalatest" % "3.1.2" % "test",
     "org.scalatestplus" %% "scalacheck-1-14" % "3.1.1.1" % "test",
+    "edu.berkeley.cs" %% "treadle" % "1.3-SNAPSHOT" % "test",
     "com.github.scopt" %% "scopt" % "3.7.1"
   ),
   javacOptions ++= javacOptionsVersion(scalaVersion.value)

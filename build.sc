@@ -97,9 +97,7 @@ class chisel3CrossModule(crossVersionValue: String) extends CommonModule with Pu
 
   def mainClass = Some("chisel3.stage.ChiselMain")
 
-  def ivyDeps = super.ivyDeps() ++ treadleIvyDeps
-  
-  override def moduleDeps = super.moduleDeps ++ Seq(macros, core) ++ treadleModule
+  override def moduleDeps = super.moduleDeps ++ Seq(macros, core) ++ firrtlModule
 
   object test extends Tests {
     private def ivyCrossDeps = majorVersion match {
@@ -111,7 +109,9 @@ class chisel3CrossModule(crossVersionValue: String) extends CommonModule with Pu
       ivy"org.scalatest::scalatest:3.1.2",
       ivy"org.scalatestplus::scalacheck-1-14:3.1.1.1",
       ivy"com.github.scopt::scopt:3.7.1"
-    ) ++ ivyCrossDeps
+    ) ++ ivyCrossDeps ++ m.treadleIvyDeps
+
+    override def moduleDeps = super.moduleDeps ++ treadleModule
 
     def testFrameworks = Seq("org.scalatest.tools.Framework")
 
