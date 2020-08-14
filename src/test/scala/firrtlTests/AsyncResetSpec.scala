@@ -6,9 +6,7 @@ import firrtl._
 import firrtl.testutils._
 import FirrtlCheckers._
 
-class AsyncResetSpec extends FirrtlFlatSpec {
-  def compile(input: String): CircuitState =
-    (new VerilogCompiler).compileAndEmit(CircuitState(parse(input), ChirrtlForm), List.empty)
+class AsyncResetSpec extends VerilogTransformSpec {
   def compileBody(body: String) = {
     val str = """
       |circuit Test :

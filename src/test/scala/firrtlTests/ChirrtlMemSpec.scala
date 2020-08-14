@@ -11,7 +11,7 @@ import firrtl.PrimOps.AsClock
 import firrtl.testutils._
 import firrtl.testutils.FirrtlCheckers._
 
-class ChirrtlMemSpec extends LowTransformSpec {
+class ChirrtlMemSpec extends LowFirrtlTransformSpec {
   object MemEnableCheckPass extends Pass {
     type Netlist = collection.mutable.HashMap[String, Expression]
     def buildNetlist(netlist: Netlist)(s: Statement): Statement = {
@@ -53,12 +53,6 @@ class ChirrtlMemSpec extends LowTransformSpec {
     }
   }
 
-  def transform = new SeqTransform {
-    def inputForm = LowForm
-    def outputForm = LowForm
-    def transforms = Seq(new ConstantPropagation, MemEnableCheckPass)
-  }
-
   "Sequential Memory" should "have correct enable signals" in {
     val input = """
 circuit foo :
@@ -78,7 +72,7 @@ circuit foo :
     io.out <= bar
 """.stripMargin
 
-    val res = compileAndEmit(CircuitState(parse(input), ChirrtlForm))
+    val res = compile(parse(input))
     // Check correctness of firrtl
     parse(res.getEmittedCircuit.value)
   }
@@ -103,7 +97,7 @@ circuit foo :
     io.out <= bar
 """.stripMargin
 
-    val res = compileAndEmit(CircuitState(parse(input), ChirrtlForm))
+    val res = compile(parse(input))
     // Check correctness of firrtl
     parse(res.getEmittedCircuit.value)
   }
@@ -121,7 +115,7 @@ circuit foo :
          |    io.out <= _T_11""".stripMargin
 
     intercept[PassException]{
-      (new LowFirrtlCompiler).compile(CircuitState(parse(input), ChirrtlForm), Seq()).circuit
+      compile(parse(input))
     }.getMessage should startWith ("Undefined memory m referenced by mport _T_11")
   }
 
@@ -172,7 +166,7 @@ circuit foo :
         |      skip @[Stack.scala 19:16]
         |    io.dataOut <= out @[Stack.scala 31:14]
         """.stripMargin
-    val res = (new LowFirrtlCompiler).compile(CircuitState(parse(input), ChirrtlForm), Seq()).circuit
+    val res = compile(parse(input))
     assert(res search {
       case Connect(_, WSubField(WSubField(WRef("stack_mem", _, _, _), "_T_35",_, _), "clk", _, _), WRef("clock", _, _, _)) => true
       case Connect(_, WSubField(WSubField(WRef("stack_mem", _, _, _), "_T_17",_, _), "clk", _, _), WRef("clock", _, _, _)) => true
@@ -193,7 +187,7 @@ circuit foo :
         |      read mport bar = mem[addr], clock
         |      out <= bar
         |""".stripMargin
-    val res = (new LowFirrtlCompiler).compile(CircuitState(parse(input), ChirrtlForm), Seq()).circuit
+    val res = compile(parse(input))
     assert(res search {
       case Connect(_, WSubField(WSubField(WRef("mem", _, _, _), "bar",_, _), "clk", _, _), WRef("clock", _, _, _)) => true
     })
@@ -214,7 +208,7 @@ circuit foo :
         |      read mport bar = mem[addr], local
         |      out <= bar
         |""".stripMargin
-    val res = new LowFirrtlCompiler().compile(CircuitState(parse(input), ChirrtlForm), Seq()).circuit
+    val res = compile(parse(input))
     assert(res search {
       case Connect(_, WSubField(WSubField(WRef("mem", _, _, _), "bar",_, _), "clk", _, _), WRef("clock", _, _, _)) => true
     })
