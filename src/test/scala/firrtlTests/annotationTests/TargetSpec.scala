@@ -24,8 +24,9 @@ class TargetSpec extends FirrtlPropSpec {
         (top.ref("r").index(1).field("hi").clock, "~Circuit|Top>r[1].hi@clock"),
         (GenericTarget(None, None, Vector(Ref("r"))), "~???|???>r")
       )
-    targets.foreach { case (t, str) =>
-      assert(t.serialize == str, s"$t does not properly serialize")
+    targets.foreach {
+      case (t, str) =>
+        assert(t.serialize == str, s"$t does not properly serialize")
     }
   }
   property("Should convert to/from Named") {
@@ -38,7 +39,7 @@ class TargetSpec extends FirrtlPropSpec {
     check(Target(Some("Top"), Some("Top"), r2))
   }
   property("Should enable creating from API") {
-    val top = ModuleTarget("Top","Top")
+    val top = ModuleTarget("Top", "Top")
     val x_reg0_data = top.instOf("x", "X").ref("reg0").field("data")
     top.instOf("x", "x")
     top.ref("y")
@@ -47,8 +48,14 @@ class TargetSpec extends FirrtlPropSpec {
     val circuit = CircuitTarget("Circuit")
     val top = circuit.module("Top")
     val targets: Seq[Target] =
-      Seq(circuit, top, top.instOf("i", "I"), top.ref("r"),
-        top.ref("r").index(1).field("hi").clock, GenericTarget(None, None, Vector(Ref("r"))))
+      Seq(
+        circuit,
+        top,
+        top.instOf("i", "I"),
+        top.ref("r"),
+        top.ref("r").index(1).field("hi").clock,
+        GenericTarget(None, None, Vector(Ref("r")))
+      )
     targets.foreach { t =>
       assert(Target.deserialize(t.serialize) == t, s"$t does not properly serialize/deserialize")
     }
@@ -58,25 +65,20 @@ class TargetSpec extends FirrtlPropSpec {
     val top = circuit.module("B")
     val targets = Seq(
       (circuit, "circuit A:"),
-      (top,
-       """|circuit A:
-          |└── module B:""".stripMargin),
-      (top.instOf("c", "C"),
-       """|circuit A:
-          |└── module B:
-          |    └── inst c of C:""".stripMargin),
-      (top.ref("r"),
-       """|circuit A:
-          |└── module B:
-          |    └── r""".stripMargin),
-      (top.ref("r").index(1).field("hi").clock,
-       """|circuit A:
-          |└── module B:
-          |    └── r[1].hi@clock""".stripMargin),
-      (GenericTarget(None, None, Vector(Ref("r"))),
-       """|circuit ???:
-          |└── module ???:
-          |    └── r""".stripMargin)
+      (top, """|circuit A:
+              |└── module B:""".stripMargin),
+      (top.instOf("c", "C"), """|circuit A:
+                               |└── module B:
+                               |    └── inst c of C:""".stripMargin),
+      (top.ref("r"), """|circuit A:
+                       |└── module B:
+                       |    └── r""".stripMargin),
+      (top.ref("r").index(1).field("hi").clock, """|circuit A:
+                                                  |└── module B:
+                                                  |    └── r[1].hi@clock""".stripMargin),
+      (GenericTarget(None, None, Vector(Ref("r"))), """|circuit ???:
+                                                      |└── module ???:
+                                                      |    └── r""".stripMargin)
     )
     targets.foreach { case (t, str) => assert(t.prettyPrint() == str, s"$t didn't properly prettyPrint") }
   }

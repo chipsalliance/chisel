@@ -11,7 +11,6 @@ import firrtl.annotations.{Annotation, NoTargetAnnotation}
 case object FoundTargetDirTransformRanAnnotation extends NoTargetAnnotation
 case object FoundTargetDirTransformFoundTargetDirAnnotation extends NoTargetAnnotation
 
-
 /** Looks for [[TargetDirAnnotation]] */
 class FindTargetDirTransform extends Transform {
   def inputForm = HighForm
@@ -19,14 +18,15 @@ class FindTargetDirTransform extends Transform {
 
   def execute(state: CircuitState): CircuitState = {
     val a: Option[Annotation] = state.annotations.collectFirst {
-      case TargetDirAnnotation("a/b/c") => FoundTargetDirTransformFoundTargetDirAnnotation }
+      case TargetDirAnnotation("a/b/c") => FoundTargetDirTransformFoundTargetDirAnnotation
+    }
     state.copy(annotations = state.annotations ++ a ++ Some(FoundTargetDirTransformRanAnnotation))
   }
 }
 
 class TargetDirAnnotationSpec extends FirrtlFlatSpec {
 
-  behavior of "The target directory"
+  behavior.of("The target directory")
 
   val input =
     """circuit Top :
@@ -41,37 +41,35 @@ class TargetDirAnnotationSpec extends FirrtlFlatSpec {
     val findTargetDir = new FindTargetDirTransform // looks for the annotation
 
     val optionsManager = new ExecutionOptionsManager("TargetDir") with HasFirrtlOptions {
-      commonOptions = commonOptions.copy(targetDirName = targetDir,
-                                         topName = "Top")
-      firrtlOptions = firrtlOptions.copy(compilerName = "high",
-                                         firrtlSource = Some(input),
-                                         customTransforms = Seq(findTargetDir))
+      commonOptions = commonOptions.copy(targetDirName = targetDir, topName = "Top")
+      firrtlOptions =
+        firrtlOptions.copy(compilerName = "high", firrtlSource = Some(input), customTransforms = Seq(findTargetDir))
     }
     val annotations: Seq[Annotation] = Driver.execute(optionsManager) match {
       case a: FirrtlExecutionSuccess => a.circuitState.annotations
       case _ => fail
     }
 
-    annotations should contain (FoundTargetDirTransformRanAnnotation)
-    annotations should contain (FoundTargetDirTransformFoundTargetDirAnnotation)
+    annotations should contain(FoundTargetDirTransformRanAnnotation)
+    annotations should contain(FoundTargetDirTransformFoundTargetDirAnnotation)
 
     // Delete created directory
     val dir = new java.io.File(targetDir)
-    dir.exists should be (true)
-    FileUtils.deleteDirectoryHierarchy("a") should be (true)
+    dir.exists should be(true)
+    FileUtils.deleteDirectoryHierarchy("a") should be(true)
   }
 
   it should "NOT be available as an annotation when using a raw compiler" in {
     val findTargetDir = new FindTargetDirTransform // looks for the annotation
     val compiler = new VerilogCompiler
-    val circuit = Parser.parse(input split "\n")
+    val circuit = Parser.parse(input.split("\n"))
 
     val annotations: Seq[Annotation] = compiler
       .compileAndEmit(CircuitState(circuit, HighForm), Seq(findTargetDir))
       .annotations
 
     // Check that FindTargetDirTransform does not find the annotation
-    annotations should contain (FoundTargetDirTransformRanAnnotation)
+    annotations should contain(FoundTargetDirTransformRanAnnotation)
     annotations should not contain (FoundTargetDirTransformFoundTargetDirAnnotation)
   }
 }

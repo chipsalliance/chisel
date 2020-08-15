@@ -2,7 +2,6 @@
 
 package firrtlTests.stage.phases
 
-
 import firrtl.stage._
 
 import firrtl.{AnnotationSeq, ChirrtlEmitter, EmitAllModulesAnnotation, NoneCompiler}
@@ -25,9 +24,9 @@ class ChecksSpec extends AnyFlatSpec with Matchers {
   val min = Seq(inputFile, goodCompiler, infoMode)
 
   def checkExceptionMessage(phase: Phase, annotations: AnnotationSeq, messageStart: String): Unit =
-    intercept[OptionsException]{ phase.transform(annotations) }.getMessage should startWith(messageStart)
+    intercept[OptionsException] { phase.transform(annotations) }.getMessage should startWith(messageStart)
 
-  behavior of classOf[Checks].toString
+  behavior.of(classOf[Checks].toString)
 
   it should "require exactly one input source" in new Fixture {
     info("0 input source causes an exception")
@@ -74,8 +73,11 @@ class ChecksSpec extends AnyFlatSpec with Matchers {
 
   it should "enforce exactly one info mode" in new Fixture {
     info("0 info modes should throw an exception")
-    checkExceptionMessage(phase, Seq(inputFile, goodCompiler),
-                          "Exactly one info mode must be specified, but none found")
+    checkExceptionMessage(
+      phase,
+      Seq(inputFile, goodCompiler),
+      "Exactly one info mode must be specified, but none found"
+    )
 
     info("2 info modes should throw an exception")
     val i = infoMode.modeName

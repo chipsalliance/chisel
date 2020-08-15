@@ -2,12 +2,10 @@
 
 package firrtlTests.options.phases
 
-
 import java.io.{File, PrintWriter}
 
 import firrtl.AnnotationSeq
-import firrtl.annotations.{AnnotationFileNotFoundException, JsonProtocol,
-  NoTargetAnnotation}
+import firrtl.annotations.{AnnotationFileNotFoundException, JsonProtocol, NoTargetAnnotation}
 import firrtl.options.phases.GetIncludes
 import firrtl.options.{InputAnnotationFileAnnotation, Phase}
 import firrtl.util.BackendCompilationUtilities
@@ -29,10 +27,10 @@ class GetIncludesSpec extends AnyFlatSpec with Matchers with BackendCompilationU
 
   def checkAnnos(a: AnnotationSeq, b: AnnotationSeq): Unit = {
     info("read the expected number of annotations")
-    a.size should be (b.size)
+    a.size should be(b.size)
 
     info("annotations match exact order")
-    a.zip(b).foreach{ case (ax, bx) => ax should be (bx) }
+    a.zip(b).foreach { case (ax, bx) => ax should be(bx) }
   }
 
   val files = Seq(
@@ -43,19 +41,21 @@ class GetIncludesSpec extends AnyFlatSpec with Matchers with BackendCompilationU
     new File(dir + "/e.anno.json") -> Seq(E)
   )
 
-  files.foreach{ case (file, annotations) =>
-    val pw = new PrintWriter(file)
-    pw.write(JsonProtocol.serialize(annotations))
-    pw.close()
+  files.foreach {
+    case (file, annotations) =>
+      val pw = new PrintWriter(file)
+      pw.write(JsonProtocol.serialize(annotations))
+      pw.close()
   }
 
   class Fixture { val phase: Phase = new GetIncludes }
 
-  behavior of classOf[GetIncludes].toString
+  behavior.of(classOf[GetIncludes].toString)
 
   it should "throw an exception if the annotation file doesn't exit" in new Fixture {
-    intercept[AnnotationFileNotFoundException]{ phase.transform(Seq(ref("f"))) }
-      .getMessage should startWith("Annotation file")
+    intercept[AnnotationFileNotFoundException] { phase.transform(Seq(ref("f"))) }.getMessage should startWith(
+      "Annotation file"
+    )
   }
 
   it should "read annotations from a file" in new Fixture {
@@ -75,9 +75,9 @@ class GetIncludesSpec extends AnyFlatSpec with Matchers with BackendCompilationU
 
     checkAnnos(out, expect)
 
-    Seq("d", "e").foreach{ x =>
+    Seq("d", "e").foreach { x =>
       info(s"a warning about '$x.anno.json' was printed")
-      stdout should include (s"Warning: Annotation file ($dir/$x.anno.json) already included!")
+      stdout should include(s"Warning: Annotation file ($dir/$x.anno.json) already included!")
     }
   }
 
@@ -90,7 +90,7 @@ class GetIncludesSpec extends AnyFlatSpec with Matchers with BackendCompilationU
     checkAnnos(out, expect)
 
     info("a warning about 'a.anno.json' was printed")
-    stdout should include (s"Warning: Annotation file ($dir/a.anno.json)")
+    stdout should include(s"Warning: Annotation file ($dir/a.anno.json)")
   }
 
 }

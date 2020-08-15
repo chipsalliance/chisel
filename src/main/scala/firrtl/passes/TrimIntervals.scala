@@ -23,10 +23,7 @@ import firrtl.Transform
 class TrimIntervals extends Pass {
 
   override def prerequisites =
-    Seq( Dependency(ResolveKinds),
-         Dependency(InferTypes),
-         Dependency(ResolveFlows),
-         Dependency[InferBinaryPoints] )
+    Seq(Dependency(ResolveKinds), Dependency(InferTypes), Dependency(ResolveFlows), Dependency[InferBinaryPoints])
 
   override def optionalPrerequisiteOf = Seq.empty
 
@@ -34,48 +31,51 @@ class TrimIntervals extends Pass {
 
   def run(c: Circuit): Circuit = {
     // Open -> closed
-    val firstPass = InferTypes.run(c map replaceModuleInterval)
+    val firstPass = InferTypes.run(c.map(replaceModuleInterval))
     // Align binary points and adjust range accordingly (loss of precision changes range)
-    firstPass map alignModuleBP
+    firstPass.map(alignModuleBP)
   }
 
   /* Replace interval types */
-  private def replaceModuleInterval(m: DefModule): DefModule = m map replaceStmtInterval map replacePortInterval
+  private def replaceModuleInterval(m: DefModule): DefModule = m.map(replaceStmtInterval).map(replacePortInterval)
 
-  private def replaceStmtInterval(s: Statement): Statement = s map replaceTypeInterval map replaceStmtInterval
+  private def replaceStmtInterval(s: Statement): Statement = s.map(replaceTypeInterval).map(replaceStmtInterval)
 
-  private def replacePortInterval(p: Port): Port = p map replaceTypeInterval
+  private def replacePortInterval(p: Port): Port = p.map(replaceTypeInterval)
 
   private def replaceTypeInterval(t: Type): Type = t match {
-    case i@IntervalType(l: IsKnown, u: IsKnown, IntWidth(p)) =>
+    case i @ IntervalType(l: IsKnown, u: IsKnown, IntWidth(p)) =>
       IntervalType(Closed(i.min.get), Closed(i.max.get), IntWidth(p))
     case i: IntervalType => i
-    case v => v map replaceTypeInterval
+    case v => v.map(replaceTypeInterval)
   }
 
   /* Align interval binary points -- BINARY POINT ALIGNMENT AFFECTS RANGE INFERENCE! */
-  private def alignModuleBP(m: DefModule): DefModule = m map alignStmtBP
+  private def alignModuleBP(m: DefModule): DefModule = m.map(alignStmtBP)
 
-  private def alignStmtBP(s: Statement): Statement = s map alignExpBP match {
-    case c@Connect(info, loc, expr) => loc.tpe match {
-      case IntervalType(_, _, p) => Connect(info, loc, fixBP(p)(expr))
-      case _ => c
-    }
-    case c@PartialConnect(info, loc, expr) => loc.tpe match {
-      case IntervalType(_, _, p) => PartialConnect(info, loc, fixBP(p)(expr))
-      case _ => c
-    }
-    case other => other map alignStmtBP
+  private def alignStmtBP(s: Statement): Statement = s.map(alignExpBP) match {
+    case c @ Connect(info, loc, expr) =>
+      loc.tpe match {
+        case IntervalType(_, _, p) => Connect(info, loc, fixBP(p)(expr))
+        case _                     => c
+      }
+    case c @ PartialConnect(info, loc, expr) =>
+      loc.tpe match {
+        case IntervalType(_, _, p) => PartialConnect(info, loc, fixBP(p)(expr))
+        case _                     => c
+      }
+    case other => other.map(alignStmtBP)
   }
 
   // Note - wrap/clip/squeeze ignore the binary point of the second argument, thus not needed to be aligned
   // Note - Mul does not need its binary points aligned, because multiplication is cool like that
-  private val opsToFix = Seq(Add, Sub, Lt, Leq, Gt, Geq, Eq, Neq/*, Wrap, Clip, Squeeze*/)
+  private val opsToFix = Seq(Add, Sub, Lt, Leq, Gt, Geq, Eq, Neq /*, Wrap, Clip, Squeeze*/ )
 
-  private def alignExpBP(e: Expression): Expression = e map alignExpBP match {
+  private def alignExpBP(e: Expression): Expression = e.map(alignExpBP) match {
     case DoPrim(SetP, Seq(arg), Seq(const), tpe: IntervalType) => fixBP(IntWidth(const))(arg)
-    case DoPrim(o, args, consts, t) if opsToFix.contains(o) &&
-      (args.map(_.tpe).collect { case x: IntervalType => x }).size == args.size =>
+    case DoPrim(o, args, consts, t)
+        if opsToFix.contains(o) &&
+          (args.map(_.tpe).collect { case x: IntervalType => x }).size == args.size =>
       val maxBP = args.map(_.tpe).collect { case IntervalType(_, _, p) => p }.reduce(_ max _)
       DoPrim(o, args.map { a => fixBP(maxBP)(a) }, consts, t)
     case Mux(cond, tval, fval, t: IntervalType) =>
@@ -85,9 +85,9 @@ class TrimIntervals extends Pass {
   }
   private def fixBP(p: Width)(e: Expression): Expression = (p, e.tpe) match {
     case (IntWidth(desired), IntervalType(l, u, IntWidth(current))) if desired == current => e
-    case (IntWidth(desired), IntervalType(l, u, IntWidth(current))) if desired > current  =>
+    case (IntWidth(desired), IntervalType(l, u, IntWidth(current))) if desired > current =>
       DoPrim(IncP, Seq(e), Seq(desired - current), IntervalType(l, u, IntWidth(desired)))
-    case (IntWidth(desired), IntervalType(l, u, IntWidth(current))) if desired < current  =>
+    case (IntWidth(desired), IntervalType(l, u, IntWidth(current))) if desired < current =>
       val shiftAmt = current - desired
       val shiftGain = BigDecimal(BigInt(1) << shiftAmt.toInt)
       val shiftMul = Closed(BigDecimal(1) / shiftGain)

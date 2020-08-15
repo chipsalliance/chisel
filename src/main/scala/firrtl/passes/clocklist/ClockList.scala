@@ -13,8 +13,8 @@ import Utils._
 import memlib.AnalysisUtils._
 
 /** Starting with a top module, determine the clock origins of each child instance.
- *  Write the result to writer.
- */
+  *  Write the result to writer.
+  */
 class ClockList(top: String, writer: Writer) extends Pass {
   def run(c: Circuit): Circuit = {
     // Build useful datastructures
@@ -29,7 +29,7 @@ class ClockList(top: String, writer: Writer) extends Pass {
 
     // Clock sources must be blackbox outputs and top's clock
     val partialSourceList = getSourceList(moduleMap)(lineages)
-    val sourceList = partialSourceList ++ moduleMap(top).ports.collect{ case Port(i, n, Input, ClockType) => n }
+    val sourceList = partialSourceList ++ moduleMap(top).ports.collect { case Port(i, n, Input, ClockType) => n }
     writer.append(s"Sourcelist: $sourceList \n")
 
     // Remove everything from the circuit, unless it has a clock type
@@ -37,8 +37,9 @@ class ClockList(top: String, writer: Writer) extends Pass {
     val onlyClockCircuit = RemoveAllButClocks.run(c)
 
     // Inline the clock-only circuit up to the specified top module
-    val modulesToInline = (c.modules.collect { case Module(_, n, _, _) if n != top => ModuleName(n, CircuitName(c.main)) }).toSet
-    val inlineTransform = new InlineInstances{ override val inlineDelim = "$" }
+    val modulesToInline =
+      (c.modules.collect { case Module(_, n, _, _) if n != top => ModuleName(n, CircuitName(c.main)) }).toSet
+    val inlineTransform = new InlineInstances { override val inlineDelim = "$" }
     val inlinedCircuit = inlineTransform.run(onlyClockCircuit, modulesToInline, Set(), Seq()).circuit
     val topModule = inlinedCircuit.modules.find(_.name == top).getOrElse(throwInternalError("no top module"))
 
@@ -49,13 +50,14 @@ class ClockList(top: String, writer: Writer) extends Pass {
     val origins = getOrigins(connects, "", moduleMap)(lineages)
 
     // If the clock origin is contained in the source list, label good (otherwise bad)
-    origins.foreach { case (instance, origin) =>
-      val sep = if(instance == "") "" else "."
-      if(!sourceList.contains(origin.replace('.','$'))){
-        outputBuffer.append(s"Bad Origin of $instance${sep}clock is $origin\n")
-      } else {
-        outputBuffer.append(s"Good Origin of $instance${sep}clock is $origin\n")
-      }
+    origins.foreach {
+      case (instance, origin) =>
+        val sep = if (instance == "") "" else "."
+        if (!sourceList.contains(origin.replace('.', '$'))) {
+          outputBuffer.append(s"Bad Origin of $instance${sep}clock is $origin\n")
+        } else {
+          outputBuffer.append(s"Good Origin of $instance${sep}clock is $origin\n")
+        }
     }
 
     // Write to output file

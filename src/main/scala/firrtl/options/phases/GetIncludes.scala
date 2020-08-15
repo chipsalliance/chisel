@@ -10,7 +10,7 @@ import firrtl.FileUtils
 import java.io.File
 
 import scala.collection.mutable
-import scala.util.{Try, Failure}
+import scala.util.{Failure, Try}
 
 /** Recursively expand all [[InputAnnotationFileAnnotation]]s in an [[AnnotationSeq]] */
 class GetIncludes extends Phase {
@@ -37,8 +37,7 @@ class GetIncludes extends Phase {
     * @param annos a sequence of annotations
     * @return the original annotation sequence with any discovered annotations added
     */
-  private def getIncludes(includeGuard: mutable.Set[String] = mutable.Set())
-                         (annos: AnnotationSeq): AnnotationSeq = {
+  private def getIncludes(includeGuard: mutable.Set[String] = mutable.Set())(annos: AnnotationSeq): AnnotationSeq = {
     annos.flatMap {
       case a @ InputAnnotationFileAnnotation(value) =>
         if (includeGuard.contains(value)) {

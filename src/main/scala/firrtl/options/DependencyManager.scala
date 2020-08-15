@@ -3,7 +3,7 @@
 package firrtl.options
 
 import firrtl.AnnotationSeq
-import firrtl.graph.{DiGraph, CyclicException}
+import firrtl.graph.{CyclicException, DiGraph}
 
 import scala.collection.Set
 import scala.collection.immutable.{Set => ISet}
@@ -22,7 +22,6 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
 
   override def prerequisites = currentState
 
-
   override def optionalPrerequisites = Seq.empty
 
   override def optionalPrerequisiteOf = Seq.empty
@@ -34,13 +33,13 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
     */
   def targets: Seq[Dependency[B]]
   private lazy val _targets: LinkedHashSet[Dependency[B]] = targets
-    .foldLeft(new LinkedHashSet[Dependency[B]]()){ case (a, b) => a += b }
+    .foldLeft(new LinkedHashSet[Dependency[B]]()) { case (a, b) => a += b }
 
   /** A sequence of [[firrtl.Transform]]s that have been run. Internally, this will be converted to an ordered set.
     */
   def currentState: Seq[Dependency[B]]
   private lazy val _currentState: LinkedHashSet[Dependency[B]] = currentState
-    .foldLeft(new LinkedHashSet[Dependency[B]]()){ case (a, b) => a += b }
+    .foldLeft(new LinkedHashSet[Dependency[B]]()) { case (a, b) => a += b }
 
   /** Existing transform objects that have already been constructed */
   def knownObjects: Set[B]
@@ -64,9 +63,10 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
     * requirements. This is used to solve sub-problems arising from invalidations.
     */
   protected def copy(
-    targets: Seq[Dependency[B]],
+    targets:      Seq[Dependency[B]],
     currentState: Seq[Dependency[B]],
-    knownObjects: ISet[B] = dependencyToObject.values.toSet): B
+    knownObjects: ISet[B] = dependencyToObject.values.toSet
+  ): B
 
   /** Implicit conversion from Dependency to B */
   private implicit def dToO(d: Dependency[B]): B = dependencyToObject.getOrElseUpdate(d, d.getObject())
@@ -77,14 +77,16 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
   /** Modified breadth-first search that supports multiple starting nodes and a custom extractor that can be used to
     * generate/filter the edges to explore. Additionally, this will include edges to previously discovered nodes.
     */
-  private def bfs( start: LinkedHashSet[Dependency[B]],
-                   blacklist: LinkedHashSet[Dependency[B]],
-                   extractor: B => Set[Dependency[B]] ): LinkedHashMap[B, LinkedHashSet[B]] = {
+  private def bfs(
+    start:     LinkedHashSet[Dependency[B]],
+    blacklist: LinkedHashSet[Dependency[B]],
+    extractor: B => Set[Dependency[B]]
+  ): LinkedHashMap[B, LinkedHashSet[B]] = {
 
     val (queue, edges) = {
-      val a: Queue[Dependency[B]]                    = Queue(start.toSeq:_*)
-      val b: LinkedHashMap[B, LinkedHashSet[B]] = LinkedHashMap[B, LinkedHashSet[B]](
-        start.map((dToO(_) -> LinkedHashSet[B]())).toSeq:_*)
+      val a: Queue[Dependency[B]] = Queue(start.toSeq: _*)
+      val b: LinkedHashMap[B, LinkedHashSet[B]] =
+        LinkedHashMap[B, LinkedHashSet[B]](start.map((dToO(_) -> LinkedHashSet[B]())).toSeq: _*)
       (a, b)
     }
 
@@ -117,7 +119,8 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
     val edges = bfs(
       start = _targets &~ _currentState,
       blacklist = _currentState,
-      extractor = (p: B) => p._prerequisites &~ _currentState)
+      extractor = (p: B) => p._prerequisites &~ _currentState
+    )
     DiGraph(edges)
   }
 
@@ -144,11 +147,14 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
     val edges = {
       val x = new LinkedHashMap ++ _targets
         .map(dependencyToObject)
-        .map{ a => a -> prerequisiteGraph.getVertices.filter(a._optionalPrerequisiteOf(_)) }
-      x
-        .values
+        .map { a => a -> prerequisiteGraph.getVertices.filter(a._optionalPrerequisiteOf(_)) }
+      x.values
         .reduce(_ ++ _)
-        .foldLeft(x){ case (xx, y) => if (xx.contains(y)) { xx } else { xx ++ Map(y -> Set.empty[B]) } }
+        .foldLeft(x) {
+          case (xx, y) =>
+            if (xx.contains(y)) { xx }
+            else { xx ++ Map(y -> Set.empty[B]) }
+        }
     }
     DiGraph(edges).reverse
   }
@@ -165,23 +171,26 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
       bfs(
         start = v.map(oToD(_)),
         blacklist = _currentState,
-
         /* Explore all invalidated transforms **EXCEPT** the current transform! */
         extractor = (p: B) => {
           val filtered = new LinkedHashSet[Dependency[B]]
           filtered ++= v.filter(p.invalidates).map(oToD(_))
           filtered -= oToD(p)
           filtered
-        })
+        }
+      )
     ).reverse
   }
 
   /** Wrap a possible [[CyclicException]] thrown by a thunk in a [[DependencyManagerException]] */
-  private def cyclePossible[A](a: String, diGraph: DiGraph[_])(thunk: => A): A = try { thunk } catch {
+  private def cyclePossible[A](a: String, diGraph: DiGraph[_])(thunk: => A): A = try { thunk }
+  catch {
     case e: CyclicException =>
       throw new DependencyManagerException(
         s"""|No transform ordering possible due to cyclic dependency in $a with cycles:
-            |${diGraph.findSCCs.filter(_.size > 1).mkString("    - ", "\n    - ", "")}""".stripMargin, e)
+            |${diGraph.findSCCs.filter(_.size > 1).mkString("    - ", "\n    - ", "")}""".stripMargin,
+        e
+      )
   }
 
   /** An ordering of [[firrtl.options.TransformLike TransformLike]]s that causes the requested [[DependencyManager.targets
@@ -198,38 +207,39 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
      */
     val sorted = {
       val edges = {
-        val v = cyclePossible("invalidates", invalidateGraph){ invalidateGraph.linearize }.reverse
+        val v = cyclePossible("invalidates", invalidateGraph) { invalidateGraph.linearize }.reverse
         /* A comparison function that will sort vertices based on the topological sort of the invalidation graph */
         val cmp =
-          (l: B, r: B) => v.foldLeft((Map.empty[B, Dependency[B] => Boolean], Set.empty[Dependency[B]])){
-            case ((m, s), r) => (m + (r -> ((a: Dependency[B]) => !s(a))), s + r) }._1(l)(r)
+          (l: B, r: B) =>
+            v.foldLeft((Map.empty[B, Dependency[B] => Boolean], Set.empty[Dependency[B]])) {
+              case ((m, s), r) => (m + (r -> ((a: Dependency[B]) => !s(a))), s + r)
+            }._1(l)(r)
         new LinkedHashMap() ++
           v.map(vv => vv -> (new LinkedHashSet() ++ (dependencyGraph.getEdges(vv).toSeq.sortWith(cmp))))
       }
 
       cyclePossible("prerequisites", dependencyGraph) {
-        DiGraph(edges)
-          .linearize
-          .reverse
+        DiGraph(edges).linearize.reverse
           .dropWhile(b => _currentState.contains(b))
       }
     }
 
     /* [todo] Seq is inefficient here, but Array has ClassTag problems. Use something else? */
-    val (s, l) = sorted.foldLeft((_currentState, Seq[B]())){ case ((state, out), in) =>
-      val prereqs = in._prerequisites ++
-        dependencyGraph.getEdges(in).toSeq.map(oToD) ++
-        otherPrerequisites.getEdges(in).toSeq.map(oToD)
-      val preprocessing: Option[B] = {
-        if ((prereqs -- state).nonEmpty) { Some(this.copy(prereqs.toSeq, state.toSeq)) }
-        else                             { None                                        }
-      }
-      /* "in" is added *after* invalidation because a transform my not invalidate itself! */
-      ((state ++ prereqs).map(dToO).filterNot(in.invalidates).map(oToD) + in, out ++ preprocessing :+ in)
+    val (s, l) = sorted.foldLeft((_currentState, Seq[B]())) {
+      case ((state, out), in) =>
+        val prereqs = in._prerequisites ++
+          dependencyGraph.getEdges(in).toSeq.map(oToD) ++
+          otherPrerequisites.getEdges(in).toSeq.map(oToD)
+        val preprocessing: Option[B] = {
+          if ((prereqs -- state).nonEmpty) { Some(this.copy(prereqs.toSeq, state.toSeq)) }
+          else { None }
+        }
+        /* "in" is added *after* invalidation because a transform my not invalidate itself! */
+        ((state ++ prereqs).map(dToO).filterNot(in.invalidates).map(oToD) + in, out ++ preprocessing :+ in)
     }
     val postprocessing: Option[B] = {
       if ((_targets -- s).nonEmpty) { Some(this.copy(_targets.toSeq, s.toSeq)) }
-      else                          { None                                     }
+      else { None }
     }
     l ++ postprocessing
   }
@@ -252,20 +262,21 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
      * applied while tracking the state of the underlying A. If the state ever disagrees with a prerequisite, then this
      * throws an exception.
      */
-    flattenedTransformOrder
-      .map{ t =>
-        val w = wrappers.foldLeft(t){ case (tx, wrapper) => wrapper(tx) }
-        wrapperToClass += (w -> t)
-        w
-      }.foldLeft((annotations, _currentState)){ case ((a, state), t) =>
-          if (!t.prerequisites.toSet.subsetOf(state)) {
-            throw new DependencyManagerException(
-              s"""|Tried to execute '$t' for which run-time prerequisites were not satisfied:
-                  |  state: ${state.mkString("\n    -", "\n    -", "")}
-                  |  prerequisites: ${prerequisites.mkString("\n    -", "\n    -", "")}""".stripMargin)
-          }
-          (t.transform(a), ((state + wrapperToClass(t)).map(dToO).filterNot(t.invalidates).map(oToD)))
-      }._1
+    flattenedTransformOrder.map { t =>
+      val w = wrappers.foldLeft(t) { case (tx, wrapper) => wrapper(tx) }
+      wrapperToClass += (w -> t)
+      w
+    }.foldLeft((annotations, _currentState)) {
+      case ((a, state), t) =>
+        if (!t.prerequisites.toSet.subsetOf(state)) {
+          throw new DependencyManagerException(
+            s"""|Tried to execute '$t' for which run-time prerequisites were not satisfied:
+                |  state: ${state.mkString("\n    -", "\n    -", "")}
+                |  prerequisites: ${prerequisites.mkString("\n    -", "\n    -", "")}""".stripMargin
+          )
+        }
+        (t.transform(a), ((state + wrapperToClass(t)).map(dToO).filterNot(t.invalidates).map(oToD)))
+    }._1
   }
 
   /** This colormap uses Colorbrewer's 4-class OrRd color scheme */
@@ -282,13 +293,13 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
 
     def toGraphviz(digraph: DiGraph[B], attributes: String = "", tab: String = "    "): Option[String] = {
       val edges =
-        digraph
-          .getEdgeMap
-          .collect{ case (v, edges) if edges.nonEmpty => (v -> edges) }
-          .map{ case (v, edges) =>
-            s"""${transformName(v)} -> ${edges.map(e => transformName(e)).mkString("{ ", " ", " }")}""" }
+        digraph.getEdgeMap.collect { case (v, edges) if edges.nonEmpty => (v -> edges) }.map {
+          case (v, edges) =>
+            s"""${transformName(v)} -> ${edges.map(e => transformName(e)).mkString("{ ", " ", " }")}"""
+        }
 
-      if (edges.isEmpty) { None } else {
+      if (edges.isEmpty) { None }
+      else {
         Some(
           s"""|  { $attributes
               |${edges.mkString(tab, "\n" + tab, "")}
@@ -298,16 +309,16 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
     }
 
     val connections =
-      Seq( (prerequisiteGraph, "edge []"),
-           (optionalPrerequisiteOfGraph,   """edge [style=bold color="#4292c6"]"""),
-           (invalidateGraph,   """edge [minlen=2 style=dashed constraint=false color="#fb6a4a"]"""),
-           (optionalPrerequisitesGraph, """edge [style=dotted color="#a1d99b"]""") )
-        .flatMap{ case (a, b) => toGraphviz(a, b) }
+      Seq(
+        (prerequisiteGraph, "edge []"),
+        (optionalPrerequisiteOfGraph, """edge [style=bold color="#4292c6"]"""),
+        (invalidateGraph, """edge [minlen=2 style=dashed constraint=false color="#fb6a4a"]"""),
+        (optionalPrerequisitesGraph, """edge [style=dotted color="#a1d99b"]""")
+      ).flatMap { case (a, b) => toGraphviz(a, b) }
         .mkString("\n")
 
     val nodes =
-      (prerequisiteGraph + optionalPrerequisiteOfGraph + invalidateGraph + otherPrerequisites)
-        .getVertices
+      (prerequisiteGraph + optionalPrerequisiteOfGraph + invalidateGraph + otherPrerequisites).getVertices
         .map(v => s"""${transformName(v)} [label="${v.name}"]""")
 
     s"""|digraph DependencyManager {
@@ -322,9 +333,9 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
   def transformOrderToGraphviz(colormap: Seq[String] = colormap): String = {
 
     def rotate[A](a: Seq[A]): Seq[A] = a match {
-      case Nil => Nil
+      case Nil        => Nil
       case car :: cdr => cdr :+ car
-      case car => car
+      case car        => car
     }
 
     val sorted = ArrayBuffer.empty[String]
@@ -340,7 +351,7 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
                        |$tab  labeljust=l
                        |$tab  node [fillcolor="${cm.head}"]""".stripMargin
 
-      val body = pm.transformOrder.map{
+      val body = pm.transformOrder.map {
         case a: DependencyManager[A, B] =>
           val (str, d) = rec(a, rotate(cm), tab + "  ", offset + 1)
           offset = d
@@ -369,9 +380,10 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
     * @param size the number of nodes at the current level of the tree
     */
   def customPrintHandling(
-    tab: String,
+    tab:     String,
     charSet: CharSet,
-    size: Int): Option[PartialFunction[(B, Int), Seq[String]]] = None
+    size:    Int
+  ): Option[PartialFunction[(B, Int), Seq[String]]] = None
 
   /** Helper utility when recursing during pretty printing
     * @param tab an indentation string to use for every line of output
@@ -386,9 +398,9 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
     val defaultHandling: PartialFunction[(B, Int), Seq[String]] = {
       case (a: DependencyManager[_, _], `last`) =>
         Seq(s"$tab$l ${a.name}") ++ a.prettyPrintRec(s"""$tab${" " * c.size} """, charSet)
-      case (a: DependencyManager[_, _], _)      => Seq(s"$tab$n ${a.name}") ++ a.prettyPrintRec(s"$tab$c ", charSet)
-      case (a, `last`)                          => Seq(s"$tab$l ${a.name}")
-      case (a, _)                               => Seq(s"$tab$n ${a.name}")
+      case (a: DependencyManager[_, _], _) => Seq(s"$tab$n ${a.name}") ++ a.prettyPrintRec(s"$tab$c ", charSet)
+      case (a, `last`) => Seq(s"$tab$l ${a.name}")
+      case (a, _)      => Seq(s"$tab$n ${a.name}")
     }
 
     val handling = customPrintHandling(tab, charSet, transformOrder.size) match {
@@ -396,8 +408,7 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
       case None    => defaultHandling
     }
 
-    transformOrder
-      .zipWithIndex
+    transformOrder.zipWithIndex
       .flatMap(handling)
   }
 
@@ -406,8 +417,9 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
     * @param charSet a collection of characters to use when printing
     */
   def prettyPrint(
-    tab: String = "",
-    charSet: DependencyManagerUtils.CharSet = DependencyManagerUtils.PrettyCharSet): String = {
+    tab:     String = "",
+    charSet: DependencyManagerUtils.CharSet = DependencyManagerUtils.PrettyCharSet
+  ): String = {
 
     (Seq(s"$tab$name") ++ prettyPrintRec(tab, charSet)).mkString("\n")
 
@@ -422,9 +434,11 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
   * @param targets the [[Phase]]s you want to run
   */
 class PhaseManager(
-  val targets: Seq[PhaseManager.PhaseDependency],
+  val targets:      Seq[PhaseManager.PhaseDependency],
   val currentState: Seq[PhaseManager.PhaseDependency] = Seq.empty,
-  val knownObjects: Set[Phase] = Set.empty) extends DependencyManager[AnnotationSeq, Phase] with Phase {
+  val knownObjects: Set[Phase] = Set.empty)
+    extends DependencyManager[AnnotationSeq, Phase]
+    with Phase {
 
   import PhaseManager.PhaseDependency
   protected def copy(a: Seq[PhaseDependency], b: Seq[PhaseDependency], c: ISet[Phase]) = new PhaseManager(a, b, c)
@@ -444,6 +458,7 @@ object DependencyManagerUtils {
     * @see [[ASCIICharSet]]
     */
   trait CharSet {
+
     /** Used when printing the last node */
     val lastNode: String
 
@@ -456,15 +471,15 @@ object DependencyManagerUtils {
 
   /** Uses prettier characters, but possibly not supported by all fonts */
   object PrettyCharSet extends CharSet {
-    val lastNode     = "└──"
-    val notLastNode  = "├──"
+    val lastNode = "└──"
+    val notLastNode = "├──"
     val continuation = "│  "
   }
 
   /** Basic ASCII output */
   object ASCIICharSet extends CharSet {
-    val lastNode     = "\\--"
-    val notLastNode  = "|--"
+    val lastNode = "\\--"
+    val notLastNode = "|--"
     val continuation = "|  "
   }
 

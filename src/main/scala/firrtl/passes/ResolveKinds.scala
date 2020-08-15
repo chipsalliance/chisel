@@ -20,21 +20,21 @@ object ResolveKinds extends Pass {
   }
 
   def resolve_expr(kinds: KindMap)(e: Expression): Expression = e match {
-    case ex: WRef => ex copy (kind = kinds(ex.name))
-    case _ => e map resolve_expr(kinds)
+    case ex: WRef => ex.copy(kind = kinds(ex.name))
+    case _ => e.map(resolve_expr(kinds))
   }
 
   def resolve_stmt(kinds: KindMap)(s: Statement): Statement = {
     s match {
-      case sx: DefWire => kinds(sx.name) = WireKind
-      case sx: DefNode => kinds(sx.name) = NodeKind
-      case sx: DefRegister => kinds(sx.name) = RegKind
+      case sx: DefWire      => kinds(sx.name) = WireKind
+      case sx: DefNode      => kinds(sx.name) = NodeKind
+      case sx: DefRegister  => kinds(sx.name) = RegKind
       case sx: WDefInstance => kinds(sx.name) = InstanceKind
-      case sx: DefMemory => kinds(sx.name) = MemKind
+      case sx: DefMemory    => kinds(sx.name) = MemKind
       case _ =>
     }
     s.map(resolve_stmt(kinds))
-     .map(resolve_expr(kinds))
+      .map(resolve_expr(kinds))
   }
 
   def resolve_kinds(m: DefModule): DefModule = {
@@ -44,5 +44,5 @@ object ResolveKinds extends Pass {
   }
 
   def run(c: Circuit): Circuit =
-    c copy (modules = c.modules map resolve_kinds)
+    c.copy(modules = c.modules.map(resolve_kinds))
 }

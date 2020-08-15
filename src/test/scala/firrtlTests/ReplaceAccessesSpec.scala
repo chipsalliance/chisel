@@ -7,17 +7,14 @@ import firrtl.passes._
 import firrtl.testutils._
 
 class ReplaceAccessesSpec extends FirrtlFlatSpec {
-  val transforms = Seq(
-    ToWorkingIR,
-    ResolveKinds,
-    InferTypes,
-    ResolveFlows,
-    new InferWidths,
-    ReplaceAccesses)
+  val transforms = Seq(ToWorkingIR, ResolveKinds, InferTypes, ResolveFlows, new InferWidths, ReplaceAccesses)
   protected def exec(input: String) = {
-    transforms.foldLeft(CircuitState(parse(input), UnknownForm)) {
-      (c: CircuitState, t: Transform) => t.runTransform(c)
-    }.circuit.serialize
+    transforms
+      .foldLeft(CircuitState(parse(input), UnknownForm)) { (c: CircuitState, t: Transform) =>
+        t.runTransform(c)
+      }
+      .circuit
+      .serialize
   }
 }
 
@@ -40,7 +37,7 @@ class ReplaceAccessesMultiDim extends ReplaceAccessesSpec {
       reset => (UInt<1>(0), r_vec)
     out <= r_vec[2][1]
 """
-    (parse(exec(input))) should be (parse(check))
+    (parse(exec(input))) should be(parse(check))
   }
 
   "ReplacesAccesses" should "NOT generate out-of-bounds indices" in {
@@ -61,6 +58,6 @@ class ReplaceAccessesMultiDim extends ReplaceAccessesSpec {
       reset => (UInt<1>(0), r_vec)
     out <= r_vec[1][UInt<3>(8)]
 """
-    (parse(exec(input))) should be (parse(check))
+    (parse(exec(input))) should be(parse(check))
   }
 }

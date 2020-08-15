@@ -21,24 +21,29 @@ class UniquifySpec extends FirrtlFlatSpec {
     Uniquify
   )
 
-  private def executeTest(input: String, expected: Seq[String]): Unit = executeTest(input, expected, Seq.empty, Seq.empty)
-  private def executeTest(input: String, expected: Seq[String],
-    inputAnnos: Seq[Annotation], expectedAnnos: Seq[Annotation]): Unit = {
+  private def executeTest(input: String, expected: Seq[String]): Unit =
+    executeTest(input, expected, Seq.empty, Seq.empty)
+  private def executeTest(
+    input:         String,
+    expected:      Seq[String],
+    inputAnnos:    Seq[Annotation],
+    expectedAnnos: Seq[Annotation]
+  ): Unit = {
     val circuit = Parser.parse(input.split("\n").toIterator)
     val result = transforms.foldLeft(CircuitState(circuit, UnknownForm, inputAnnos)) {
       (c: CircuitState, p: Transform) => p.runTransform(c)
     }
     val c = result.circuit
-    val lines = c.serialize.split("\n") map normalized
+    val lines = c.serialize.split("\n").map(normalized)
 
-    expected foreach { e =>
+    expected.foreach { e =>
       lines should contain(e)
     }
 
     result.annotations.toSeq should equal(expectedAnnos)
   }
 
-  behavior of "Uniquify"
+  behavior.of("Uniquify")
 
   it should "rename colliding ports" in {
     val input =
@@ -51,13 +56,22 @@ class UniquifySpec extends FirrtlFlatSpec {
     val expected = Seq(
       "input a__ : { flip b : UInt<1>, c_ : { d : UInt<2>, flip e : UInt<3>}[2], c_1_e : UInt<4>}[2]",
       "output a_0_c_ : UInt<5>",
-      "output a__0 : UInt<6>") map normalized
+      "output a__0 : UInt<6>"
+    ).map(normalized)
 
-    val inputAnnos = Seq(DontTouchAnnotation(ReferenceTarget("Test", "Test", Seq.empty, "a", Seq(Index(0), Field("b")))),
-      DontTouchAnnotation(ReferenceTarget("Test", "Test", Seq.empty, "a", Seq(Index(0), Field("c"), Index(0), Field("e")))))
+    val inputAnnos = Seq(
+      DontTouchAnnotation(ReferenceTarget("Test", "Test", Seq.empty, "a", Seq(Index(0), Field("b")))),
+      DontTouchAnnotation(
+        ReferenceTarget("Test", "Test", Seq.empty, "a", Seq(Index(0), Field("c"), Index(0), Field("e")))
+      )
+    )
 
-    val expectedAnnos = Seq(DontTouchAnnotation(ReferenceTarget("Test", "Test", Seq.empty, "a__", Seq(Index(0), Field("b")))),
-      DontTouchAnnotation(ReferenceTarget("Test", "Test", Seq.empty, "a__", Seq(Index(0), Field("c_"), Index(0), Field("e")))))
+    val expectedAnnos = Seq(
+      DontTouchAnnotation(ReferenceTarget("Test", "Test", Seq.empty, "a__", Seq(Index(0), Field("b")))),
+      DontTouchAnnotation(
+        ReferenceTarget("Test", "Test", Seq.empty, "a__", Seq(Index(0), Field("c_"), Index(0), Field("e")))
+      )
+    )
 
     executeTest(input, expected, inputAnnos, expectedAnnos)
   }
@@ -74,7 +88,8 @@ class UniquifySpec extends FirrtlFlatSpec {
     val expected = Seq(
       "reg a__ : { b : UInt<1>, c_ : { d : UInt<2>, e : UInt<3>}[2], c_1_e : UInt<4>}[2], clock with :",
       "reg a_0_c_ : UInt<5>, clock with :",
-      "reg a__0 : UInt<6>, clock with :") map normalized
+      "reg a__0 : UInt<6>, clock with :"
+    ).map(normalized)
 
     executeTest(input, expected)
   }
@@ -89,11 +104,10 @@ class UniquifySpec extends FirrtlFlatSpec {
         |    node a_0_c_ = a[0].b
         |    node a__0  = a[1].c[0].d
       """.stripMargin
-    val expected = Seq("node a__ = x") map normalized
+    val expected = Seq("node a__ = x").map(normalized)
 
     executeTest(input, expected)
   }
-
 
   it should "rename DefRegister expressions: clock, reset, and init" in {
     val input =
@@ -111,7 +125,7 @@ class UniquifySpec extends FirrtlFlatSpec {
     val expected = Seq(
       "reg foo : UInt<4>, clock_[1] with :",
       "reset => (reset_.a, init_[3].b_[1].d)"
-    ) map normalized
+    ).map(normalized)
 
     executeTest(input, expected)
   }
@@ -126,7 +140,7 @@ class UniquifySpec extends FirrtlFlatSpec {
     val expected = Seq(
       "input data : { a : UInt<4>, b : UInt<4>}[2]",
       "node data_0_a_ = data[0].a"
-    ) map normalized
+    ).map(normalized)
 
     executeTest(input, expected)
   }
@@ -141,9 +155,7 @@ class UniquifySpec extends FirrtlFlatSpec {
         |    node foo = data.a
         |    node bar = data.b[1]
       """.stripMargin
-    val expected = Seq(
-      "node foo = data__.a",
-      "node bar = data__.b[1]") map normalized
+    val expected = Seq("node foo = data__.a", "node bar = data__.b[1]").map(normalized)
 
     executeTest(input, expected)
   }
@@ -158,25 +170,22 @@ class UniquifySpec extends FirrtlFlatSpec {
         |    a_0_b <= a[0].b
         |    a[0].c <- a__0_c_
       """.stripMargin
-    val expected = Seq(
-      "a_0_b <= a__[0].b",
-      "a__[0].c_ <- a__0_c_") map normalized
+    val expected = Seq("a_0_b <= a__[0].b", "a__[0].c_ <- a__0_c_").map(normalized)
 
     executeTest(input, expected)
   }
 
   it should "rename SubAccesses" in {
     val input =
-     """circuit Test :
-       |  module Test :
-       |    input a : { b : UInt<1>, c : { d : UInt<2>, e : UInt<3>}[2], c_1_e : UInt<4>}[2]
-       |    output a_0_b : UInt<2>
-       |    input i : UInt<1>[2]
-       |    output i_0 : UInt<1>
-       |    a_0_b <= a.c[i[1]].d
+      """circuit Test :
+        |  module Test :
+        |    input a : { b : UInt<1>, c : { d : UInt<2>, e : UInt<3>}[2], c_1_e : UInt<4>}[2]
+        |    output a_0_b : UInt<2>
+        |    input i : UInt<1>[2]
+        |    output i_0 : UInt<1>
+        |    a_0_b <= a.c[i[1]].d
      """.stripMargin
-    val expected = Seq(
-      "a_0_b <= a_.c_[i_[1]].d") map normalized
+    val expected = Seq("a_0_b <= a_.c_[i_[1]].d").map(normalized)
 
     executeTest(input, expected)
   }
@@ -192,7 +201,7 @@ class UniquifySpec extends FirrtlFlatSpec {
       """.stripMargin
     val expected = Seq(
       "a_0_b <= mux(a__[UInt<1>(\"h0\")].c_1_e, or(a__[or(a__[0].b, a__[1].b)].b, xorr(a__[0].c_1_e)), orr(cat(a__0_c_[0].e, a__[1].c_1_e)))"
-    ) map normalized
+    ).map(normalized)
 
     executeTest(input, expected)
   }
@@ -220,10 +229,7 @@ class UniquifySpec extends FirrtlFlatSpec {
         |    mem.write.en <= UInt(0)
         |    mem.write.clk <= clock
       """.stripMargin
-    val expected = Seq(
-      "mem mem_ :",
-      "node mem_0_b = mem_.read.data[0].b",
-      "mem_.read.addr is invalid") map normalized
+    val expected = Seq("mem mem_ :", "node mem_0_b = mem_.read.data[0].b", "mem_.read.addr is invalid").map(normalized)
 
     executeTest(input, expected)
   }
@@ -251,33 +257,29 @@ class UniquifySpec extends FirrtlFlatSpec {
         |    mem.write.en <= UInt(0)
         |    mem.write.clk <= clock
       """.stripMargin
-    val expected = Seq(
-      "data-type => { a : UInt<8>, b_ : UInt<8>[2], b_0 : UInt<8>}",
-      "node x = mem.read.data.b_[0]") map normalized
+    val expected =
+      Seq("data-type => { a : UInt<8>, b_ : UInt<8>[2], b_0 : UInt<8>}", "node x = mem.read.data.b_[0]").map(normalized)
 
     executeTest(input, expected)
   }
 
   it should "rename instances and their ports" in {
     val input =
-     """circuit Test :
-       |  module Other :
-       |    input a : { b : UInt<4>, c : UInt<4> }
-       |    output a_b : UInt<4>
-       |    a_b <= a.b
-       |
-       |  module Test :
-       |    node x = UInt(6)
-       |    inst mod of Other
-       |    mod.a.b <= x
-       |    mod.a.c <= x
-       |    node mod_a_b = mod.a_b
+      """circuit Test :
+        |  module Other :
+        |    input a : { b : UInt<4>, c : UInt<4> }
+        |    output a_b : UInt<4>
+        |    a_b <= a.b
+        |
+        |  module Test :
+        |    node x = UInt(6)
+        |    inst mod of Other
+        |    mod.a.b <= x
+        |    mod.a.c <= x
+        |    node mod_a_b = mod.a_b
      """.stripMargin
-    val expected = Seq(
-      "inst mod_ of Other",
-      "mod_.a_.b <= x",
-      "mod_.a_.c <= x",
-      "node mod_a_b = mod_.a_b") map normalized
+    val expected =
+      Seq("inst mod_ of Other", "mod_.a_.b <= x", "mod_.a_.c <= x", "node mod_a_b = mod_.a_b").map(normalized)
 
     executeTest(input, expected)
   }
@@ -296,7 +298,7 @@ class UniquifySpec extends FirrtlFlatSpec {
     // Run the "quick" test three times and choose the longest time as the basis.
     val nCalibrationRuns = 3
     def mkType(i: Int): String = {
-      if(i == 0) "UInt<8>" else s"{x: ${mkType(i - 1)}}"
+      if (i == 0) "UInt<8>" else s"{x: ${mkType(i - 1)}}"
     }
     val timesMs = (
       for (depth <- (List.fill(nCalibrationRuns)(1) :+ depth)) yield {
@@ -308,12 +310,12 @@ class UniquifySpec extends FirrtlFlatSpec {
                        |""".stripMargin
         val (ms, _) = Utils.time(compileToVerilog(input))
         ms
-        }
+      }
     ).toArray
     // The baseMs will be the maximum of the first calibration runs
     val baseMs = timesMs.slice(0, nCalibrationRuns - 1).max
     val renameMs = timesMs(nCalibrationRuns)
     if (TestOptions.accurateTiming)
-      renameMs shouldBe < (baseMs * threshold)
+      renameMs shouldBe <(baseMs * threshold)
   }
 }

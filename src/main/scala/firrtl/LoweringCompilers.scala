@@ -91,10 +91,10 @@ class LowFirrtlOptimization extends CoreTransform {
 }
 
 /** Runs runs only the optimization passes needed for Verilog emission */
-  @deprecated(
-    "Use 'new TransformManager(Forms.LowFormMinimumOptimized, Forms.LowForm)'. This will be removed in 1.4.",
-    "FIRRTL 1.3"
-  )
+@deprecated(
+  "Use 'new TransformManager(Forms.LowFormMinimumOptimized, Forms.LowForm)'. This will be removed in 1.4.",
+  "FIRRTL 1.3"
+)
 class MinimumLowFirrtlOptimization extends CoreTransform {
   def inputForm = LowForm
   def outputForm = LowForm

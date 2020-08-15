@@ -47,7 +47,10 @@ object DriverCompatibility {
   /** Holds the name of the top (main) module in an input circuit
     * @param value top module name
     */
-  @deprecated(""""top-name" is deprecated as part of the Stage/Phase refactor. Use explicit input/output files.""", "1.2")
+  @deprecated(
+    """"top-name" is deprecated as part of the Stage/Phase refactor. Use explicit input/output files.""",
+    "1.2"
+  )
   case class TopNameAnnotation(topName: String) extends NoTargetAnnotation
 
   object TopNameAnnotation {
@@ -57,7 +60,7 @@ object DriverCompatibility {
       .abbr("tn")
       .hidden
       .unbounded
-      .action( (_, _) => throw new OptionsException(optionRemoved("--top-name/-tn")) )
+      .action((_, _) => throw new OptionsException(optionRemoved("--top-name/-tn")))
   }
 
   /** Indicates that the implicit emitter, derived from a [[CompilerAnnotation]] should be an [[EmitAllModulesAnnotation]]
@@ -70,7 +73,7 @@ object DriverCompatibility {
       .abbr("fsm")
       .hidden
       .unbounded
-      .action( (_, _) => throw new OptionsException(optionRemoved("--split-modules/-fsm")) )
+      .action((_, _) => throw new OptionsException(optionRemoved("--split-modules/-fsm")))
 
   }
 
@@ -84,13 +87,16 @@ object DriverCompatibility {
     * @return the top module ''if it can be determined''
     */
   private def topName(annotations: AnnotationSeq): Option[String] =
-    annotations.collectFirst{ case TopNameAnnotation(n) => n }.orElse(
-      annotations.collectFirst{ case FirrtlCircuitAnnotation(c) => c.main }.orElse(
-        annotations.collectFirst{ case FirrtlSourceAnnotation(s) => Parser.parse(s).main }.orElse(
-          annotations.collectFirst{ case FirrtlFileAnnotation(f) =>
-            FirrtlStageUtils.getFileExtension(f) match {
-              case ProtoBufFile => FromProto.fromFile(f).main
-              case FirrtlFile   => Parser.parse(FileUtils.getText(f)).main } } )))
+    annotations.collectFirst { case TopNameAnnotation(n) => n }
+      .orElse(annotations.collectFirst { case FirrtlCircuitAnnotation(c) => c.main }.orElse(annotations.collectFirst {
+        case FirrtlSourceAnnotation(s) => Parser.parse(s).main
+      }.orElse(annotations.collectFirst {
+        case FirrtlFileAnnotation(f) =>
+          FirrtlStageUtils.getFileExtension(f) match {
+            case ProtoBufFile => FromProto.fromFile(f).main
+            case FirrtlFile   => Parser.parse(FileUtils.getText(f)).main
+          }
+      })))
 
   /** Determine the target directory with the following precedence (highest to lowest):
     *  - Explicitly from the user-specified [[firrtl.options.TargetDirAnnotation TargetDirAnnotation]]
@@ -131,22 +137,27 @@ object DriverCompatibility {
     override def invalidates(a: Phase) = false
 
     /** Try to add an [[firrtl.options.InputAnnotationFileAnnotation InputAnnotationFileAnnotation]] implicitly specified by
-      * an [[AnnotationSeq]]. */
-    def transform(annotations: AnnotationSeq): AnnotationSeq = annotations
-      .collectFirst{ case a: InputAnnotationFileAnnotation => a } match {
-        case Some(_) => annotations
-        case None => topName(annotations) match {
+      * an [[AnnotationSeq]].
+      */
+    def transform(annotations: AnnotationSeq): AnnotationSeq = annotations.collectFirst {
+      case a: InputAnnotationFileAnnotation => a
+    } match {
+      case Some(_) => annotations
+      case None =>
+        topName(annotations) match {
           case Some(n) =>
             val filename = targetDir(annotations) + "/" + n + ".anno"
             if (new File(filename).exists) {
               StageUtils.dramaticWarning(
-                s"Implicit reading of the annotation file is deprecated! Use an explict --annotation-file argument.")
+                s"Implicit reading of the annotation file is deprecated! Use an explict --annotation-file argument."
+              )
               annotations :+ InputAnnotationFileAnnotation(filename)
             } else {
               annotations
             }
           case None => annotations
-        } }
+        }
+    }
 
   }
 
@@ -180,7 +191,8 @@ object DriverCompatibility {
         annotations
       } else if (main.nonEmpty) {
         StageUtils.dramaticWarning(
-          s"Implicit reading of the input file is deprecated! Use an explict --input-file argument.")
+          s"Implicit reading of the input file is deprecated! Use an explict --input-file argument."
+        )
         FirrtlFileAnnotation(Viewer[StageOptions].view(annotations).getBuildFileName(s"${main.get}.fir")) +: annotations
       } else {
         annotations
@@ -194,8 +206,10 @@ object DriverCompatibility {
     * this adds an [[EmitCircuitAnnotation]]. This replicates old behavior where specifying a compiler automatically
     * meant that an emitter would also run.
     */
-  @deprecated("""AddImplicitEmitter should only be used to build Driver compatibility wrappers. Switch to Stage.""",
-              "1.2")
+  @deprecated(
+    """AddImplicitEmitter should only be used to build Driver compatibility wrappers. Switch to Stage.""",
+    "1.2"
+  )
   class AddImplicitEmitter extends Phase {
 
     override def prerequisites = Seq.empty
@@ -206,13 +220,13 @@ object DriverCompatibility {
 
     /** Add one [[EmitAnnotation]] foreach [[CompilerAnnotation]]. */
     def transform(annotations: AnnotationSeq): AnnotationSeq = {
-      val splitModules = annotations.collectFirst{ case a: EmitOneFilePerModuleAnnotation.type => a }.isDefined
+      val splitModules = annotations.collectFirst { case a: EmitOneFilePerModuleAnnotation.type => a }.isDefined
 
       annotations.flatMap {
         case a @ CompilerAnnotation(c) =>
           val b = RunFirrtlTransformAnnotation(a.compiler.emitter)
           if (splitModules) { Seq(a, b, EmitAllModulesAnnotation(c.emitter.getClass)) }
-          else              { Seq(a, b, EmitCircuitAnnotation   (c.emitter.getClass)) }
+          else { Seq(a, b, EmitCircuitAnnotation(c.emitter.getClass)) }
         case a => Seq(a)
       }
     }
@@ -222,8 +236,10 @@ object DriverCompatibility {
   /** Adds an [[OutputFileAnnotation]] derived from a [[TopNameAnnotation]] if no [[OutputFileAnnotation]] already
     * exists. If no [[TopNameAnnotation]] exists, then no [[OutputFileAnnotation]] is added.
     */
-  @deprecated("""AddImplicitOutputFile should only be used to build Driver compatibility wrappers. Switch to Stage.""",
-              "1.2")
+  @deprecated(
+    """AddImplicitOutputFile should only be used to build Driver compatibility wrappers. Switch to Stage.""",
+    "1.2"
+  )
   class AddImplicitOutputFile extends Phase {
 
     override def prerequisites = Seq(Dependency[AddImplicitFirrtlFile])
@@ -234,9 +250,9 @@ object DriverCompatibility {
 
     /** Add an [[OutputFileAnnotation]] derived from a [[TopNameAnnotation]] if needed. */
     def transform(annotations: AnnotationSeq): AnnotationSeq = {
-      val hasOutputFile = annotations
-        .collectFirst{ case a @(_: EmitOneFilePerModuleAnnotation.type | _: OutputFileAnnotation) => a }
-        .isDefined
+      val hasOutputFile = annotations.collectFirst {
+        case a @ (_: EmitOneFilePerModuleAnnotation.type | _: OutputFileAnnotation) => a
+      }.isDefined
       val top = topName(annotations)
 
       if (!hasOutputFile && top.isDefined) {

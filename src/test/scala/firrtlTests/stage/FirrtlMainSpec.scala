@@ -21,7 +21,11 @@ import org.scalatest.matchers.should.Matchers
   * This test uses the [[org.scalatest.FeatureSpec FeatureSpec]] intentionally as this test exercises the top-level
   * interface and is more suitable to an Acceptance Testing style.
   */
-class FirrtlMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers with firrtl.testutils.Utils
+class FirrtlMainSpec
+    extends AnyFeatureSpec
+    with GivenWhenThen
+    with Matchers
+    with firrtl.testutils.Utils
     with BackendCompilationUtilities {
 
   /** Parameterizes one test of [[FirrtlMain]]. Running the [[FirrtlMain]] `main` with certain args should produce
@@ -36,13 +40,14 @@ class FirrtlMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
     * @param result expected exit code
     */
   case class FirrtlMainTest(
-    args: Array[String],
-    circuit: Option[FirrtlCircuitFixture] = Some(new SimpleFirrtlCircuitFixture),
-    files: Seq[String] = Seq.empty,
+    args:     Array[String],
+    circuit:  Option[FirrtlCircuitFixture] = Some(new SimpleFirrtlCircuitFixture),
+    files:    Seq[String] = Seq.empty,
     notFiles: Seq[String] = Seq.empty,
-    stdout: Option[String] = None,
-    stderr: Option[String] = None,
-    result: Int = 0) {
+    stdout:   Option[String] = None,
+    stderr:   Option[String] = None,
+    result:   Int = 0) {
+
     /** Generate a name for the test based on the arguments */
     def testName: String = "args" + args.mkString("_")
 
@@ -70,8 +75,8 @@ class FirrtlMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
         case None => Array.empty
       }
 
-      p.files.foreach( f => new File(td.buildDir + s"/$f").delete() )
-      p.notFiles.foreach( f => new File(td.buildDir + s"/$f").delete() )
+      p.files.foreach(f => new File(td.buildDir + s"/$f").delete())
+      p.notFiles.foreach(f => new File(td.buildDir + s"/$f").delete())
 
       When(s"""the user tries to compile with '${p.argsString}'""")
       val (stdout, stderr, result) =
@@ -80,25 +85,25 @@ class FirrtlMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
       p.stdout match {
         case Some(a) =>
           Then(s"""STDOUT should include "$a"""")
-          stdout should include (a)
+          stdout should include(a)
         case None =>
           Then(s"nothing should print to STDOUT")
-          stdout should be (empty)
+          stdout should be(empty)
       }
 
       p.stderr match {
         case Some(a) =>
           And(s"""STDERR should include "$a"""")
-          stderr should include (a)
+          stderr should include(a)
         case None =>
           And(s"nothing should print to STDERR")
-          stderr should be (empty)
+          stderr should be(empty)
       }
 
       p.result match {
         case 0 =>
           And(s"the exit code should be 0")
-          result shouldBe a [Right[_,_]]
+          result shouldBe a[Right[_, _]]
         case a =>
           And(s"the exit code should be $a")
           result shouldBe (Left(a))
@@ -113,11 +118,10 @@ class FirrtlMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
       p.notFiles.foreach { f =>
         And(s"file '$f' should NOT be emitted in the target directory")
         val out = new File(td.buildDir + s"/$f")
-        out should not (exist)
+        out should not(exist)
       }
     }
   }
-
 
   /** Test fixture that links to the [[FirrtlMain]] object. This could be done without, but its use matches the
     * Given/When/Then style more accurately.
@@ -137,7 +141,7 @@ class FirrtlMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
   }
 
   trait FirrtlCircuitFixture {
-    val main: String
+    val main:  String
     val input: String
   }
 
@@ -185,13 +189,13 @@ class FirrtlMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
       val (out, _, result) = grabStdOutErr { catchStatus { f.stage.main(Array("--help")) } }
 
       Then("the usage text should be shown")
-      out should include ("Usage: firrtl")
+      out should include("Usage: firrtl")
 
       And("usage text should show known registered transforms")
-      out should include ("--no-dce")
+      out should include("--no-dce")
 
       And("usage text should show known registered libraries")
-      out should include ("MemLib Options")
+      out should include("MemLib Options")
 
       info("""And the exit code should be 0, but scopt catches all throwable, so we can't check this... ¯\_(ツ)_/¯""")
       // And("the exit code should be zero")
@@ -200,67 +204,89 @@ class FirrtlMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
 
     Seq(
       /* Test all standard emitters with and without annotation file outputs */
-      FirrtlMainTest(args   = Array("-X", "none", "-E", "chirrtl"),
-                      files  = Seq("Top.fir")),
-      FirrtlMainTest(args   = Array("-X", "high", "-E", "high"),
-                      stdout = defaultStdOut,
-                      files  = Seq("Top.hi.fir")),
-      FirrtlMainTest(args   = Array("-X", "middle", "-E", "middle", "-foaf", "Top"),
-                      stdout = defaultStdOut,
-                      files  = Seq("Top.mid.fir", "Top.anno.json")),
-      FirrtlMainTest(args   = Array("-X", "low", "-E", "low", "-foaf", "annotations.anno.json"),
-                      stdout = defaultStdOut,
-                      files  = Seq("Top.lo.fir", "annotations.anno.json")),
-      FirrtlMainTest(args   = Array("-X", "verilog", "-E", "verilog", "-foaf", "foo.anno"),
-                      stdout = defaultStdOut,
-                      files  = Seq("Top.v", "foo.anno.anno.json")),
-      FirrtlMainTest(args   = Array("-X", "sverilog", "-E", "sverilog", "-foaf", "foo.json"),
-                      stdout = defaultStdOut,
-                      files  = Seq("Top.sv", "foo.json.anno.json")),
-
+      FirrtlMainTest(args = Array("-X", "none", "-E", "chirrtl"), files = Seq("Top.fir")),
+      FirrtlMainTest(args = Array("-X", "high", "-E", "high"), stdout = defaultStdOut, files = Seq("Top.hi.fir")),
+      FirrtlMainTest(
+        args = Array("-X", "middle", "-E", "middle", "-foaf", "Top"),
+        stdout = defaultStdOut,
+        files = Seq("Top.mid.fir", "Top.anno.json")
+      ),
+      FirrtlMainTest(
+        args = Array("-X", "low", "-E", "low", "-foaf", "annotations.anno.json"),
+        stdout = defaultStdOut,
+        files = Seq("Top.lo.fir", "annotations.anno.json")
+      ),
+      FirrtlMainTest(
+        args = Array("-X", "verilog", "-E", "verilog", "-foaf", "foo.anno"),
+        stdout = defaultStdOut,
+        files = Seq("Top.v", "foo.anno.anno.json")
+      ),
+      FirrtlMainTest(
+        args = Array("-X", "sverilog", "-E", "sverilog", "-foaf", "foo.json"),
+        stdout = defaultStdOut,
+        files = Seq("Top.sv", "foo.json.anno.json")
+      ),
       /* Test all one file per module emitters */
-      FirrtlMainTest(args   = Array("-X", "none", "-e", "chirrtl"),
-                      files  = Seq("Top.fir", "Child.fir")),
-      FirrtlMainTest(args   = Array("-X", "high", "-e", "high"),
-                      stdout = defaultStdOut,
-                      files  = Seq("Top.hi.fir", "Child.hi.fir")),
-      FirrtlMainTest(args   = Array("-X", "middle", "-e", "middle"),
-                      stdout = defaultStdOut,
-                      files  = Seq("Top.mid.fir", "Child.mid.fir")),
-      FirrtlMainTest(args   = Array("-X", "low", "-e", "low"),
-                      stdout = defaultStdOut,
-                      files  = Seq("Top.lo.fir", "Child.lo.fir")),
-      FirrtlMainTest(args   = Array("-X", "verilog", "-e", "verilog"),
-                      stdout = defaultStdOut,
-                      files  = Seq("Top.v", "Child.v")),
-      FirrtlMainTest(args   = Array("-X", "sverilog", "-e", "sverilog"),
-                      stdout = defaultStdOut,
-                      files  = Seq("Top.sv", "Child.sv")),
-
+      FirrtlMainTest(args = Array("-X", "none", "-e", "chirrtl"), files = Seq("Top.fir", "Child.fir")),
+      FirrtlMainTest(
+        args = Array("-X", "high", "-e", "high"),
+        stdout = defaultStdOut,
+        files = Seq("Top.hi.fir", "Child.hi.fir")
+      ),
+      FirrtlMainTest(
+        args = Array("-X", "middle", "-e", "middle"),
+        stdout = defaultStdOut,
+        files = Seq("Top.mid.fir", "Child.mid.fir")
+      ),
+      FirrtlMainTest(
+        args = Array("-X", "low", "-e", "low"),
+        stdout = defaultStdOut,
+        files = Seq("Top.lo.fir", "Child.lo.fir")
+      ),
+      FirrtlMainTest(
+        args = Array("-X", "verilog", "-e", "verilog"),
+        stdout = defaultStdOut,
+        files = Seq("Top.v", "Child.v")
+      ),
+      FirrtlMainTest(
+        args = Array("-X", "sverilog", "-e", "sverilog"),
+        stdout = defaultStdOut,
+        files = Seq("Top.sv", "Child.sv")
+      ),
       /* Test mixing of -E with -e */
-      FirrtlMainTest(args     = Array("-X", "middle", "-E", "high", "-e", "middle"),
-                     stdout   = defaultStdOut,
-                     files    = Seq("Top.hi.fir", "Top.mid.fir", "Child.mid.fir"),
-                     notFiles = Seq("Child.hi.fir")),
-
+      FirrtlMainTest(
+        args = Array("-X", "middle", "-E", "high", "-e", "middle"),
+        stdout = defaultStdOut,
+        files = Seq("Top.hi.fir", "Top.mid.fir", "Child.mid.fir"),
+        notFiles = Seq("Child.hi.fir")
+      ),
       /* Test changes to output file name */
-      FirrtlMainTest(args   = Array("-X", "none", "-E", "chirrtl", "-o", "foo"),
-                      files  = Seq("foo.fir")),
-      FirrtlMainTest(args   = Array("-X", "high", "-E", "high", "-o", "foo"),
-                      stdout = defaultStdOut,
-                      files  = Seq("foo.hi.fir")),
-      FirrtlMainTest(args   = Array("-X", "middle", "-E", "middle", "-o", "foo.middle"),
-                      stdout = defaultStdOut,
-                      files  = Seq("foo.middle.mid.fir")),
-      FirrtlMainTest(args   = Array("-X", "low", "-E", "low", "-o", "foo.lo.fir"),
-                      stdout = defaultStdOut,
-                      files  = Seq("foo.lo.fir")),
-      FirrtlMainTest(args   = Array("-X", "verilog", "-E", "verilog", "-o", "foo.sv"),
-                      stdout = defaultStdOut,
-                      files  = Seq("foo.sv.v")),
-      FirrtlMainTest(args   = Array("-X", "sverilog", "-E", "sverilog", "-o", "Foo"),
-                      stdout = defaultStdOut,
-                      files  = Seq("Foo.sv"))
+      FirrtlMainTest(args = Array("-X", "none", "-E", "chirrtl", "-o", "foo"), files = Seq("foo.fir")),
+      FirrtlMainTest(
+        args = Array("-X", "high", "-E", "high", "-o", "foo"),
+        stdout = defaultStdOut,
+        files = Seq("foo.hi.fir")
+      ),
+      FirrtlMainTest(
+        args = Array("-X", "middle", "-E", "middle", "-o", "foo.middle"),
+        stdout = defaultStdOut,
+        files = Seq("foo.middle.mid.fir")
+      ),
+      FirrtlMainTest(
+        args = Array("-X", "low", "-E", "low", "-o", "foo.lo.fir"),
+        stdout = defaultStdOut,
+        files = Seq("foo.lo.fir")
+      ),
+      FirrtlMainTest(
+        args = Array("-X", "verilog", "-E", "verilog", "-o", "foo.sv"),
+        stdout = defaultStdOut,
+        files = Seq("foo.sv.v")
+      ),
+      FirrtlMainTest(
+        args = Array("-X", "sverilog", "-E", "sverilog", "-o", "Foo"),
+        stdout = defaultStdOut,
+        files = Seq("Foo.sv")
+      )
     )
       .foreach(runStageExpectFiles)
 
@@ -272,15 +298,17 @@ class FirrtlMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
       val out = new File(s"$outName.hi.fir")
       out.delete()
       val result = catchStatus {
-        f.stage.main(Array("-i", "src/test/resources/integration/GCDTester.fir", "-o", outName, "-X", "high",
-                           "-E", "high")) }
+        f.stage.main(
+          Array("-i", "src/test/resources/integration/GCDTester.fir", "-o", outName, "-X", "high", "-E", "high")
+        )
+      }
 
       Then("outputs should be written to current directory")
       out should (exist)
       out.delete()
 
       And("the exit code should be 0")
-      result shouldBe a [Right[_,_]]
+      result shouldBe a[Right[_, _]]
     }
 
     Scenario("User provides Protocol Buffer input") {
@@ -292,8 +320,9 @@ class FirrtlMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
       copyResourceToFile("/integration/GCDTester.pb", protobufIn)
 
       When("the user tries to compile to High FIRRTL")
-      f.stage.main(Array("-i", protobufIn.toString, "-X", "high", "-E", "high", "-td", td.buildDir.toString,
-                         "-o", "Foo"))
+      f.stage.main(
+        Array("-i", protobufIn.toString, "-X", "high", "-E", "high", "-td", td.buildDir.toString, "-o", "Foo")
+      )
 
       Then("the output should be the same as using FIRRTL input")
       new File(td.buildDir + "/Foo.hi.fir") should (exist)
@@ -311,16 +340,16 @@ class FirrtlMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
       val (out, err, result) = grabStdOutErr { catchStatus { f.stage.main(Array.empty) } }
 
       Then("an error should be printed on stdout")
-      out should include (s"Error: Unable to determine FIRRTL source to read")
+      out should include(s"Error: Unable to determine FIRRTL source to read")
 
       And("no usage text should be shown")
-      out should not include ("Usage: firrtl")
+      (out should not).include("Usage: firrtl")
 
       And("nothing should print to stderr")
-      err should be (empty)
+      err should be(empty)
 
       And("the exit code should be 1")
-      result should be (Left(1))
+      result should be(Left(1))
     }
   }
 
@@ -333,22 +362,30 @@ class FirrtlMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
 
     Seq(
       /* Erroneous inputs */
-      FirrtlMainTest(args    = Array("--thisIsNotASupportedOption"),
-                      circuit = None,
-                      stdout  = Some("Error: Unknown option"),
-                      result  = 1),
-      FirrtlMainTest(args    = Array("-i", "foo", "--info-mode", "Use"),
-                      circuit = None,
-                      stdout  = Some("Unknown info mode 'Use'! (Did you misspell it?)"),
-                      result  = 1),
-      FirrtlMainTest(args    = Array("-i", "test_run_dir/I-DO-NOT-EXIST"),
-                      circuit = None,
-                      stdout  = Some("Input file 'test_run_dir/I-DO-NOT-EXIST' not found!"),
-                      result  = 1),
-      FirrtlMainTest(args    = Array("-i", "foo", "-X", "Verilog"),
-                      circuit = None,
-                      stdout  = Some("Unknown compiler name 'Verilog'! (Did you misspell it?)"),
-                      result  = 1)
+      FirrtlMainTest(
+        args = Array("--thisIsNotASupportedOption"),
+        circuit = None,
+        stdout = Some("Error: Unknown option"),
+        result = 1
+      ),
+      FirrtlMainTest(
+        args = Array("-i", "foo", "--info-mode", "Use"),
+        circuit = None,
+        stdout = Some("Unknown info mode 'Use'! (Did you misspell it?)"),
+        result = 1
+      ),
+      FirrtlMainTest(
+        args = Array("-i", "test_run_dir/I-DO-NOT-EXIST"),
+        circuit = None,
+        stdout = Some("Input file 'test_run_dir/I-DO-NOT-EXIST' not found!"),
+        result = 1
+      ),
+      FirrtlMainTest(
+        args = Array("-i", "foo", "-X", "Verilog"),
+        circuit = None,
+        stdout = Some("Unknown compiler name 'Verilog'! (Did you misspell it?)"),
+        result = 1
+      )
     )
       .foreach(runStageExpectFiles)
 
@@ -364,13 +401,13 @@ class FirrtlMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
       val (out, _, result) = grabStdOutErr { catchStatus { f.stage.main(Array("--show-registrations")) } }
 
       Then("stdout should show registered transforms")
-      out should include ("firrtl.passes.InlineInstances")
+      out should include("firrtl.passes.InlineInstances")
 
       And("stdout should show registered libraries")
       out should include("firrtl.passes.memlib.MemLibOptions")
 
       And("the exit code should be 1")
-      result should be (Left(1))
+      result should be(Left(1))
     }
   }
 
@@ -380,23 +417,21 @@ class FirrtlMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
     def optionRemoved(a: String): Option[String] = Some(s"Option '$a' was removed as part of the FIRRTL Stage refactor")
     Seq(
       /* Removed --top-name/-tn handling */
-      FirrtlMainTest(args    = Array("--top-name", "foo"),
-                      circuit = None,
-                      stdout  = optionRemoved("--top-name/-tn"),
-                      result  = 1),
-      FirrtlMainTest(args    = Array("-tn"),
-                      circuit = None,
-                      stdout  = optionRemoved("--top-name/-tn"),
-                      result  = 1),
+      FirrtlMainTest(
+        args = Array("--top-name", "foo"),
+        circuit = None,
+        stdout = optionRemoved("--top-name/-tn"),
+        result = 1
+      ),
+      FirrtlMainTest(args = Array("-tn"), circuit = None, stdout = optionRemoved("--top-name/-tn"), result = 1),
       /* Removed --split-modules/-fsm handling */
-      FirrtlMainTest(args    = Array("--split-modules"),
-                      circuit = None,
-                      stdout  = optionRemoved("--split-modules/-fsm"),
-                      result  = 1),
-      FirrtlMainTest(args    = Array("-fsm"),
-                      circuit = None,
-                      stdout  = optionRemoved("--split-modules/-fsm"),
-                      result  = 1)
+      FirrtlMainTest(
+        args = Array("--split-modules"),
+        circuit = None,
+        stdout = optionRemoved("--split-modules/-fsm"),
+        result = 1
+      ),
+      FirrtlMainTest(args = Array("-fsm"), circuit = None, stdout = optionRemoved("--split-modules/-fsm"), result = 1)
     )
       .foreach(runStageExpectFiles)
   }

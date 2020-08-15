@@ -8,7 +8,7 @@ import firrtl.options.Dependency
 import org.scalatest.flatspec.AnyFlatSpec
 
 class SymbolTableSpec extends AnyFlatSpec {
-  behavior of "SymbolTable"
+  behavior.of("SymbolTable")
 
   private val src =
     """circuit m:
@@ -50,9 +50,20 @@ class SymbolTableSpec extends AnyFlatSpec {
     assert(syms("r").tpe == ir.SIntType(ir.IntWidth(4)) && syms("r").kind == firrtl.RegKind)
     val mType = firrtl.passes.MemPortUtils.memType(
       // only dataType, depth and reader, writer, readwriter properties affect the data type
-      ir.DefMemory(ir.NoInfo, "???", ir.UIntType(ir.IntWidth(8)), 32, 10, 10, Seq("r"), Seq(), Seq(), ir.ReadUnderWrite.New)
+      ir.DefMemory(
+        ir.NoInfo,
+        "???",
+        ir.UIntType(ir.IntWidth(8)),
+        32,
+        10,
+        10,
+        Seq("r"),
+        Seq(),
+        Seq(),
+        ir.ReadUnderWrite.New
+      )
     )
-    assert(syms("m") .tpe == mType && syms("m").kind == firrtl.MemKind)
+    assert(syms("m").tpe == mType && syms("m").kind == firrtl.MemKind)
   }
 
   it should "find all declarations in module m after InferTypes" in {
@@ -69,7 +80,7 @@ class SymbolTableSpec extends AnyFlatSpec {
     assert(syms("i").tpe == iType && syms("i").kind == firrtl.InstanceKind)
   }
 
-  behavior of "WithSeq"
+  behavior.of("WithSeq")
 
   it should "preserve declaration order" in {
     val c = firrtl.Parser.parse(src)
@@ -79,7 +90,7 @@ class SymbolTableSpec extends AnyFlatSpec {
     assert(syms.getSymbols.map(_.name) == Seq("clk", "x", "y", "z", "a", "i", "r", "m"))
   }
 
-  behavior of "ModuleTypesSymbolTable"
+  behavior.of("ModuleTypesSymbolTable")
 
   it should "derive the module type from the module types map" in {
     val c = firrtl.Parser.parse(src)

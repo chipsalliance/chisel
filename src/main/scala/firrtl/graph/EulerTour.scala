@@ -6,6 +6,7 @@ import scala.collection.mutable
 
 /** Euler Tour companion object */
 object EulerTour {
+
   /** Create an Euler Tour of a `DiGraph[T]` */
   def apply[T](diGraph: DiGraph[T], start: T): EulerTour[Seq[T]] = {
     val r = mutable.Map[Seq[T], Int]()
@@ -66,8 +67,8 @@ class EulerTour[T](r: Map[T, Int], e: Seq[T], h: Seq[Int]) {
     * the index of that minimum in each block, b.
     */
   private lazy val blocks = (h ++ (1 to (m - n % m))).grouped(m).toArray
-  private lazy val a = blocks map (_.min)
-  private lazy val b = blocks map (b => b.indexOf(b.min))
+  private lazy val a = blocks.map(_.min)
+  private lazy val b = blocks.map(b => b.indexOf(b.min))
 
   /** Construct a Sparse Table (ST) representation for the minimum index
     * of a sequence of integers. Data in the returned array is indexed
@@ -75,7 +76,10 @@ class EulerTour[T](r: Map[T, Int], e: Seq[T], h: Seq[Int]) {
     */
   private def constructSparseTable(x: Seq[Int]): Array[Array[Int]] = {
     val tmp = Array.ofDim[Int](x.size + 1, math.ceil(lg(x.size)).toInt)
-    for (i <- 0 to x.size - 1; j <- 0 to math.ceil(lg(x.size)).toInt - 1) {
+    for {
+      i <- 0 to x.size - 1
+      j <- 0 to math.ceil(lg(x.size)).toInt - 1
+    } {
       tmp(i)(j) = -1
     }
 
@@ -86,11 +90,11 @@ class EulerTour[T](r: Map[T, Int], e: Seq[T], h: Seq[Int]) {
       } else {
         val (a, b, c) = (base, base + (1 << (size - 1)), size - 1)
 
-        val l = if (tmp(a)(c) != -1) { tmp(a)(c)            }
-        else                         { tableRecursive(a, c) }
+        val l = if (tmp(a)(c) != -1) { tmp(a)(c) }
+        else { tableRecursive(a, c) }
 
-        val r = if (tmp(b)(c) != -1) { tmp(b)(c)            }
-        else                         { tableRecursive(b, c) }
+        val r = if (tmp(b)(c) != -1) { tmp(b)(c) }
+        else { tableRecursive(b, c) }
 
         val min = if (x(l) < x(r)) l else r
         tmp(base)(size) = min
@@ -99,9 +103,11 @@ class EulerTour[T](r: Map[T, Int], e: Seq[T], h: Seq[Int]) {
       }
     }
 
-    for (i <- (0 to x.size - 1);
-         j <- (0 to math.ceil(lg(x.size)).toInt - 1);
-         if i + (1 << j) - 1 < x.size) {
+    for {
+      i <- (0 to x.size - 1)
+      j <- (0 to math.ceil(lg(x.size)).toInt - 1)
+      if i + (1 << j) - 1 < x.size
+    } {
       tableRecursive(i, j)
     }
     tmp
@@ -117,16 +123,26 @@ class EulerTour[T](r: Map[T, Int], e: Seq[T], h: Seq[Int]) {
     }
 
     val size = m - 1
-    val out = Seq.fill(size)(Seq(-1, 1))
-      .flatten.combinations(m - 1).flatMap(_.permutations).toList
+    val out = Seq
+      .fill(size)(Seq(-1, 1))
+      .flatten
+      .combinations(m - 1)
+      .flatMap(_.permutations)
+      .toList
       .sortWith(sortSeqSeq)
       .map(_.foldLeft(Seq(0))((h, pm) => (h.head + pm) +: h).reverse)
-      .map{ a =>
+      .map { a =>
         val tmp = Array.ofDim[Int](m, m)
-        for (i <- 0 to size; j <- i to size) yield {
+        for {
+          i <- 0 to size
+          j <- i to size
+        } yield {
           val window = a.slice(i, j + 1)
-          tmp(i)(j) = window.indexOf(window.min) + i }
-        tmp }.toArray
+          tmp(i)(j) = window.indexOf(window.min) + i
+        }
+        tmp
+      }
+      .toArray
     out
   }
   private lazy val tables = constructTableLookups(m)
@@ -167,7 +183,7 @@ class EulerTour[T](r: Map[T, Int], e: Seq[T], h: Seq[Int]) {
 
     // Compute block and word indices
     val (block_i, block_j) = (i / m, j / m)
-    val (word_i,  word_j)  = (i % m, j % m)
+    val (word_i, word_j) = (i % m, j % m)
 
     /** Up to four possible minimum indices are then computed based on the
       * following conditions:
@@ -187,12 +203,12 @@ class EulerTour[T](r: Map[T, Int], e: Seq[T], h: Seq[Int]) {
         val min_i = block_i * m + tables(tableIdx(block_i))(word_i)(word_j)
         Seq(min_i)
       case (bi, bj) if (block_i == block_j - 1) =>
-        val min_i = block_i * m + tables(tableIdx(block_i))(word_i)( m - 1)
-        val min_j = block_j * m + tables(tableIdx(block_j))(     0)(word_j)
+        val min_i = block_i * m + tables(tableIdx(block_i))(word_i)(m - 1)
+        val min_j = block_j * m + tables(tableIdx(block_j))(0)(word_j)
         Seq(min_i, min_j)
       case _ =>
-        val min_i = block_i * m + tables(tableIdx(block_i))(word_i)( m - 1)
-        val min_j = block_j * m + tables(tableIdx(block_j))(     0)(word_j)
+        val min_i = block_i * m + tables(tableIdx(block_i))(word_i)(m - 1)
+        val min_j = block_j * m + tables(tableIdx(block_j))(0)(word_j)
         val (min_between_l, min_between_r) = {
           val range = math.floor(lg(block_j - block_i - 1)).toInt
           val base_0 = block_i + 1
@@ -200,7 +216,8 @@ class EulerTour[T](r: Map[T, Int], e: Seq[T], h: Seq[Int]) {
 
           val (idx_0, idx_1) = (st(base_0)(range), st(base_1)(range))
           val (min_0, min_1) = (b(idx_0) + idx_0 * m, b(idx_1) + idx_1 * m)
-          (min_0, min_1) }
+          (min_0, min_1)
+        }
         Seq(min_i, min_between_l, min_between_r, min_j)
     }
 

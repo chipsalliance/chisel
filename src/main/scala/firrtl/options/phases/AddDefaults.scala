@@ -19,7 +19,7 @@ class AddDefaults extends Phase {
   override def invalidates(a: Phase) = false
 
   def transform(annotations: AnnotationSeq): AnnotationSeq = {
-    val td = annotations.collectFirst{ case a: TargetDirAnnotation => a}.isEmpty
+    val td = annotations.collectFirst { case a: TargetDirAnnotation => a }.isEmpty
 
     (if (td) Seq(TargetDirAnnotation()) else Seq()) ++
       annotations

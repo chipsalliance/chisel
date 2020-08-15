@@ -13,7 +13,6 @@ import firrtl.stage.phases.DriverCompatibility
 import firrtl.options.{Dependency, Phase, PhaseManager, StageUtils, Viewer}
 import firrtl.options.phases.DeletedWrapper
 
-
 /**
   * The driver provides methods to access the firrtl compiler.
   * Invoke the compiler with either a FirrtlExecutionOption
@@ -37,6 +36,7 @@ import firrtl.options.phases.DeletedWrapper
   */
 @deprecated("Use firrtl.stage.FirrtlStage", "1.2")
 object Driver {
+
   /** Print a warning message
     *
     * @param message error message
@@ -71,7 +71,7 @@ object Driver {
     * @return Annotations read from files
     */
   def getAnnotations(
-      optionsManager: ExecutionOptionsManager with HasFirrtlOptions
+    optionsManager: ExecutionOptionsManager with HasFirrtlOptions
   ): Seq[Annotation] = {
     val firrtlConfig = optionsManager.firrtlOptions
 
@@ -92,11 +92,11 @@ object Driver {
     // Warnings to get people to change to drop old API
     if (firrtlConfig.annotationFileNameOverride.nonEmpty) {
       val msg = "annotationFileNameOverride has been removed, file will be ignored! " +
-                "Use annotationFileNames"
+        "Use annotationFileNames"
       dramaticError(msg)
     } else if (usingImplicitAnnoFile) {
       val msg = "Implicit .anno file from top-name has been removed, file will be ignored!\n" +
-             (" "*9) + "Use explicit -faf option or annotationFileNames"
+        (" " * 9) + "Use explicit -faf option or annotationFileNames"
       dramaticError(msg)
     }
 
@@ -126,7 +126,7 @@ object Driver {
   private def getFileExtension(filename: String): FileExtension =
     filename.drop(filename.lastIndexOf('.')) match {
       case ".pb" => ProtoBufFile
-      case _ => FirrtlFile // Default to FIRRTL File
+      case _     => FirrtlFile // Default to FIRRTL File
     }
 
   // Useful for handling erros in the options
@@ -143,7 +143,8 @@ object Driver {
       val circuitSources = Map(
         "firrtlSource" -> firrtlConfig.firrtlSource.isDefined,
         "firrtlCircuit" -> firrtlConfig.firrtlCircuit.isDefined,
-        "inputFileNameOverride" -> firrtlConfig.inputFileNameOverride.nonEmpty)
+        "inputFileNameOverride" -> firrtlConfig.inputFileNameOverride.nonEmpty
+      )
       if (circuitSources.values.count(x => x) > 1) {
         val msg = circuitSources.collect { case (s, true) => s }.mkString(" and ") +
           " are set, only 1 can be set at a time!"
@@ -157,8 +158,9 @@ object Driver {
           }
           if (
             optionsManager.topName.isEmpty &&
-              firrtlConfig.inputFileNameOverride.nonEmpty &&
-              firrtlConfig.outputFileNameOverride.isEmpty) {
+            firrtlConfig.inputFileNameOverride.nonEmpty &&
+            firrtlConfig.outputFileNameOverride.isEmpty
+          ) {
             val message = "inputFileName set but neither top-name or output-file-override is set"
             throw new OptionsException(message)
           }
@@ -167,10 +169,9 @@ object Driver {
             // TODO What does InfoMode mean to ProtoBuf?
             getFileExtension(inputFileName) match {
               case ProtoBufFile => proto.FromProto.fromFile(inputFileName)
-              case FirrtlFile => Parser.parseFile(inputFileName, firrtlConfig.infoMode)
+              case FirrtlFile   => Parser.parseFile(inputFileName, firrtlConfig.infoMode)
             }
-          }
-          catch {
+          } catch {
             case _: FileNotFoundException =>
               val message = s"Input file $inputFileName not found"
               throw new OptionsException(message)
@@ -195,20 +196,23 @@ object Driver {
     val phases: Seq[Phase] = {
       import DriverCompatibility._
       new PhaseManager(
-        List( Dependency[AddImplicitFirrtlFile],
-             Dependency[AddImplicitAnnotationFile],
-             Dependency[AddImplicitOutputFile],
-             Dependency[AddImplicitEmitter],
-             Dependency[FirrtlStage] ))
-        .transformOrder
+        List(
+          Dependency[AddImplicitFirrtlFile],
+          Dependency[AddImplicitAnnotationFile],
+          Dependency[AddImplicitOutputFile],
+          Dependency[AddImplicitEmitter],
+          Dependency[FirrtlStage]
+        )
+      ).transformOrder
         .map(DeletedWrapper(_))
     }
 
-    val annosx = try {
-      phases.foldLeft(annos)( (a, p) => p.transform(a) )
-    } catch {
-      case e: firrtl.options.OptionsException => return FirrtlExecutionFailure(e.message)
-    }
+    val annosx =
+      try {
+        phases.foldLeft(annos)((a, p) => p.transform(a))
+      } catch {
+        case e: firrtl.options.OptionsException => return FirrtlExecutionFailure(e.message)
+      }
 
     Viewer[FirrtlExecutionResult].view(annosx)
   }
@@ -223,7 +227,7 @@ object Driver {
   def execute(args: Array[String]): FirrtlExecutionResult = {
     val optionsManager = new ExecutionOptionsManager("firrtl") with HasFirrtlOptions
 
-    if(optionsManager.parse(args)) {
+    if (optionsManager.parse(args)) {
       execute(optionsManager) match {
         case success: FirrtlExecutionSuccess =>
           success
@@ -233,8 +237,7 @@ object Driver {
         case result =>
           throwInternalError(s"Error: Unknown Firrtl Execution result $result")
       }
-    }
-    else {
+    } else {
       FirrtlExecutionFailure("Could not parser command line options")
     }
   }

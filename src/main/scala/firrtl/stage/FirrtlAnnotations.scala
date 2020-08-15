@@ -35,14 +35,16 @@ sealed trait CircuitOption extends Unserializable { this: Annotation =>
 case class FirrtlFileAnnotation(file: String) extends NoTargetAnnotation with CircuitOption {
 
   def toCircuit(info: Parser.InfoMode): FirrtlCircuitAnnotation = {
-    val circuit = try {
-      FirrtlStageUtils.getFileExtension(file) match {
-        case ProtoBufFile => proto.FromProto.fromFile(file)
-        case FirrtlFile => Parser.parseFile(file, info) }
-    } catch {
-      case a @ (_: FileNotFoundException | _: NoSuchFileException) =>
-        throw new OptionsException(s"Input file '$file' not found! (Did you misspell it?)", a)
-    }
+    val circuit =
+      try {
+        FirrtlStageUtils.getFileExtension(file) match {
+          case ProtoBufFile => proto.FromProto.fromFile(file)
+          case FirrtlFile   => Parser.parseFile(file, info)
+        }
+      } catch {
+        case a @ (_: FileNotFoundException | _: NoSuchFileException) =>
+          throw new OptionsException(s"Input file '$file' not found! (Did you misspell it?)", a)
+      }
     FirrtlCircuitAnnotation(circuit)
   }
 
@@ -52,11 +54,13 @@ object FirrtlFileAnnotation extends HasShellOptions {
 
   val options = Seq(
     new ShellOption[String](
-      longOption      = "input-file",
+      longOption = "input-file",
       toAnnotationSeq = a => Seq(FirrtlFileAnnotation(a)),
-      helpText        = "An input FIRRTL file",
-      shortOption     = Some("i"),
-      helpValueName   = Some("<file>") ) )
+      helpText = "An input FIRRTL file",
+      shortOption = Some("i"),
+      helpValueName = Some("<file>")
+    )
+  )
 
 }
 
@@ -70,11 +74,13 @@ object OutputFileAnnotation extends HasShellOptions {
 
   val options = Seq(
     new ShellOption[String](
-      longOption      = "output-file",
+      longOption = "output-file",
       toAnnotationSeq = a => Seq(OutputFileAnnotation(a)),
-      helpText        = "The output FIRRTL file",
-      shortOption     = Some("o"),
-      helpValueName   = Some("<file>") ) )
+      helpText = "The output FIRRTL file",
+      shortOption = Some("o"),
+      helpValueName = Some("<file>")
+    )
+  )
 
 }
 
@@ -84,8 +90,10 @@ object OutputFileAnnotation extends HasShellOptions {
   * @note This cannote be directly converted to [[Parser.InfoMode]] as that depends on an optional [[FirrtlFileAnnotation]]
   */
 case class InfoModeAnnotation(modeName: String = "use") extends NoTargetAnnotation with FirrtlOption {
-  require(modeName match { case "use" | "ignore" | "gen" | "append" => true; case _ => false },
-          s"Unknown info mode '$modeName'! (Did you misspell it?)")
+  require(
+    modeName match { case "use" | "ignore" | "gen" | "append" => true; case _ => false },
+    s"Unknown info mode '$modeName'! (Did you misspell it?)"
+  )
 
   /** Return the [[Parser.InfoMode]] equivalent for this [[firrtl.annotations.Annotation Annotation]]
     * @param infoSource the name of a file to use for "gen" or "append" info modes
@@ -93,7 +101,7 @@ case class InfoModeAnnotation(modeName: String = "use") extends NoTargetAnnotati
   def toInfoMode(infoSource: Option[String] = None): Parser.InfoMode = modeName match {
     case "use"    => Parser.UseInfo
     case "ignore" => Parser.IgnoreInfo
-    case _        =>
+    case _ =>
       val a = infoSource.getOrElse("unknown source")
       modeName match {
         case "gen"    => Parser.GenInfo(a)
@@ -106,10 +114,12 @@ object InfoModeAnnotation extends HasShellOptions {
 
   val options = Seq(
     new ShellOption[String](
-      longOption      = "info-mode",
+      longOption = "info-mode",
       toAnnotationSeq = a => Seq(InfoModeAnnotation(a)),
-      helpText        = s"Source file info handling mode (default: ${apply().modeName})",
-      helpValueName   = Some("<ignore|use|gen|append>") ) )
+      helpText = s"Source file info handling mode (default: ${apply().modeName})",
+      helpValueName = Some("<ignore|use|gen|append>")
+    )
+  )
 
 }
 
@@ -128,10 +138,12 @@ object FirrtlSourceAnnotation extends HasShellOptions {
 
   val options = Seq(
     new ShellOption[String](
-      longOption      = "firrtl-source",
+      longOption = "firrtl-source",
       toAnnotationSeq = a => Seq(FirrtlSourceAnnotation(a)),
-      helpText        = "An input FIRRTL circuit string",
-      helpValueName   = Some("<string>") ) )
+      helpText = "An input FIRRTL circuit string",
+      helpValueName = Some("<string>")
+    )
+  )
 
 }
 
@@ -144,27 +156,29 @@ case class CompilerAnnotation(compiler: Compiler = new VerilogCompiler()) extend
 
 object CompilerAnnotation extends HasShellOptions {
 
-  private [firrtl] def apply(compilerName: String): CompilerAnnotation = {
+  private[firrtl] def apply(compilerName: String): CompilerAnnotation = {
     val c = compilerName match {
-      case "none"      => new NoneCompiler()
-      case "high"      => new HighFirrtlCompiler()
-      case "low"       => new LowFirrtlCompiler()
-      case "middle"    => new MiddleFirrtlCompiler()
-      case "verilog"   => new VerilogCompiler()
-      case "mverilog"  => new MinimumVerilogCompiler()
-      case "sverilog"  => new SystemVerilogCompiler()
-      case _           => throw new OptionsException(s"Unknown compiler name '$compilerName'! (Did you misspell it?)")
+      case "none"     => new NoneCompiler()
+      case "high"     => new HighFirrtlCompiler()
+      case "low"      => new LowFirrtlCompiler()
+      case "middle"   => new MiddleFirrtlCompiler()
+      case "verilog"  => new VerilogCompiler()
+      case "mverilog" => new MinimumVerilogCompiler()
+      case "sverilog" => new SystemVerilogCompiler()
+      case _          => throw new OptionsException(s"Unknown compiler name '$compilerName'! (Did you misspell it?)")
     }
     CompilerAnnotation(c)
   }
 
   val options = Seq(
     new ShellOption[String](
-      longOption      = "compiler",
+      longOption = "compiler",
       toAnnotationSeq = a => Seq(CompilerAnnotation(a)),
-      helpText        = "The FIRRTL compiler to use (default: verilog)",
-      shortOption     = Some("X"),
-      helpValueName   = Some("<none|high|middle|low|verilog|mverilog|sverilog>") ) )
+      helpText = "The FIRRTL compiler to use (default: verilog)",
+      shortOption = Some("X"),
+      helpValueName = Some("<none|high|middle|low|verilog|mverilog|sverilog>")
+    )
+  )
 
 }
 
@@ -188,21 +202,26 @@ object RunFirrtlTransformAnnotation extends HasShellOptions {
           val tx = Class.forName(txName).asInstanceOf[Class[_ <: Transform]].newInstance()
           RunFirrtlTransformAnnotation(tx)
         } catch {
-          case e: ClassNotFoundException => throw new OptionsException(
-            s"Unable to locate custom transform $txName (did you misspell it?)", e)
-          case e: InstantiationException => throw new OptionsException(
-            s"Unable to create instance of Transform $txName (is this an anonymous class?)", e)
-          case e: Throwable => throw new OptionsException(
-            s"Unknown error when instantiating class $txName", e) }),
+          case e: ClassNotFoundException =>
+            throw new OptionsException(s"Unable to locate custom transform $txName (did you misspell it?)", e)
+          case e: InstantiationException =>
+            throw new OptionsException(
+              s"Unable to create instance of Transform $txName (is this an anonymous class?)",
+              e
+            )
+          case e: Throwable => throw new OptionsException(s"Unknown error when instantiating class $txName", e)
+        }
+      ),
       helpText = "Run these transforms during compilation",
       shortOption = Some("fct"),
-      helpValueName = Some("<package>.<class>") ),
+      helpValueName = Some("<package>.<class>")
+    ),
     new ShellOption[String](
       longOption = "change-name-case",
       toAnnotationSeq = _ match {
         case "lower" => Seq(RunFirrtlTransformAnnotation(new firrtl.features.LowerCaseNames))
         case "upper" => Seq(RunFirrtlTransformAnnotation(new firrtl.features.UpperCaseNames))
-        case a => throw new OptionsException(s"Unknown case '$a'. Did you misspell it?")
+        case a       => throw new OptionsException(s"Unknown case '$a'. Did you misspell it?")
       },
       helpText = "Convert all FIRRTL names to a specific case",
       helpValueName = Some("<lower|upper>")
@@ -231,9 +250,9 @@ case object SuppressScalaVersionWarning extends NoTargetAnnotation with FirrtlOp
   def longOption: String = "Wno-scala-version-warning"
   val options = Seq(
     new ShellOption[Unit](
-      longOption      = longOption,
+      longOption = longOption,
       toAnnotationSeq = { _ => Seq(this) },
-      helpText        = "Suppress Scala 2.11 deprecation warning (ignored in Scala 2.12+)"
+      helpText = "Suppress Scala 2.11 deprecation warning (ignored in Scala 2.12+)"
     )
   )
 }

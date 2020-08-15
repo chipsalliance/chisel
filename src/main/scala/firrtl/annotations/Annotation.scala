@@ -5,7 +5,6 @@ package annotations
 
 import firrtl.options.StageUtils
 
-
 case class AnnotationException(message: String) extends Exception(message)
 
 /** Base type of auxiliary information */
@@ -26,8 +25,8 @@ trait Annotation extends Product {
     */
   private def extractComponents(ls: scala.collection.Traversable[_]): Seq[Target] = {
     ls.collect {
-      case c: Target => Seq(c)
-      case o: Product => extractComponents(o.productIterator.toIterable)
+      case c: Target                          => Seq(c)
+      case o: Product                         => extractComponents(o.productIterator.toIterable)
       case x: scala.collection.Traversable[_] => extractComponents(x)
     }.foldRight(Seq.empty[Target])((seq, c) => c ++ seq)
   }
@@ -62,52 +61,54 @@ trait SingleTargetAnnotation[T <: Named] extends Annotation {
         x.map(newTargets => newTargets.map(t => duplicate(t.asInstanceOf[T]))).getOrElse(List(this))
       case from: Named =>
         val ret = renames.get(Target.convertNamed2Target(target))
-        ret.map(_.map { newT =>
-          val result = newT match {
-            case c: InstanceTarget => ModuleName(c.ofModule, CircuitName(c.circuit))
-            case c: IsMember =>
-              val local = Target.referringModule(c)
-              c.setPathTarget(local)
-            case c: CircuitTarget => c.toNamed
-            case other => throw Target.NamedException(s"Cannot convert $other to [[Named]]")
-          }
-          Target.convertTarget2Named(result) match {
-            case newTarget: T @unchecked =>
-              try {
-                duplicate(newTarget)
-              }
-              catch {
-                case _: java.lang.ClassCastException =>
-                  val msg = s"${this.getClass.getName} target ${target.getClass.getName} " +
-                    s"cannot be renamed to ${newTarget.getClass}"
-                  throw AnnotationException(msg)
-              }
-          }
-        }).getOrElse(List(this))
+        ret
+          .map(_.map { newT =>
+            val result = newT match {
+              case c: InstanceTarget => ModuleName(c.ofModule, CircuitName(c.circuit))
+              case c: IsMember =>
+                val local = Target.referringModule(c)
+                c.setPathTarget(local)
+              case c: CircuitTarget => c.toNamed
+              case other => throw Target.NamedException(s"Cannot convert $other to [[Named]]")
+            }
+            Target.convertTarget2Named(result) match {
+              case newTarget: T @unchecked =>
+                try {
+                  duplicate(newTarget)
+                } catch {
+                  case _: java.lang.ClassCastException =>
+                    val msg = s"${this.getClass.getName} target ${target.getClass.getName} " +
+                      s"cannot be renamed to ${newTarget.getClass}"
+                    throw AnnotationException(msg)
+                }
+            }
+          })
+          .getOrElse(List(this))
     }
   }
 }
 
 /** [[MultiTargetAnnotation]] keeps the renamed targets grouped within a single annotation. */
 trait MultiTargetAnnotation extends Annotation {
+
   /** Contains a sequence of [[firrtl.annotations.Target Target]].
     * When created, [[targets]] should be assigned by `Seq(Seq(TargetA), Seq(TargetB), Seq(TargetC))`
     */
   val targets: Seq[Seq[Target]]
 
-  /** Create another instance of this Annotation*/
+  /** Create another instance of this Annotation */
   def duplicate(n: Seq[Seq[Target]]): Annotation
 
   /** Assume [[RenameMap]] is `Map(TargetA -> Seq(TargetA1, TargetA2, TargetA3), TargetB -> Seq(TargetB1, TargetB2))`
     * in the update, this Annotation is still one annotation, but the contents are renamed in the below form
     * Seq(Seq(TargetA1, TargetA2, TargetA3), Seq(TargetB1, TargetB2), Seq(TargetC))
-    **/
+    */
   def update(renames: RenameMap): Seq[Annotation] = Seq(duplicate(targets.map(ts => ts.flatMap(renames(_)))))
 
   private def crossJoin[T](list: Seq[Seq[T]]): Seq[Seq[T]] =
     list match {
-      case Nil => Nil
-      case x :: Nil => x map (Seq(_))
+      case Nil      => Nil
+      case x :: Nil => x.map(Seq(_))
       case x :: xs =>
         val xsJoin = crossJoin(xs)
         for {
@@ -123,7 +124,7 @@ trait MultiTargetAnnotation extends Annotation {
     * Seq(Seq(TargetA1), Seq(TargetB1), Seq(TargetC)); Seq(Seq(TargetA1), Seq(TargetB2), Seq(TargetC))
     * Seq(Seq(TargetA2), Seq(TargetB1), Seq(TargetC)); Seq(Seq(TargetA2), Seq(TargetB2), Seq(TargetC))
     * Seq(Seq(TargetA3), Seq(TargetB1), Seq(TargetC)); Seq(Seq(TargetA3), Seq(TargetB2), Seq(TargetC))
-    * */
+    */
   def flat(): AnnotationSeq = crossJoin(targets).map(r => duplicate(r.map(Seq(_))))
 }
 

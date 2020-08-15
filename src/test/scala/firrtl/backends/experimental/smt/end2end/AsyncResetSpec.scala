@@ -10,9 +10,10 @@ import firrtl.stage.RunFirrtlTransformAnnotation
 class AsyncResetSpec extends EndToEndSMTBaseSpec {
   def annos(name: String) = Seq(
     RunFirrtlTransformAnnotation(Dependency[StutteringClockTransform]),
-    GlobalClockAnnotation(CircuitTarget(name).module(name).ref("global_clock")))
+    GlobalClockAnnotation(CircuitTarget(name).module(name).ref("global_clock"))
+  )
 
-  "a module with asynchronous reset" should "allow a register to change between clock edges" taggedAs(RequiresZ3) in {
+  "a module with asynchronous reset" should "allow a register to change between clock edges" taggedAs (RequiresZ3) in {
     def in(resetType: String) =
       s"""circuit AsyncReset00:
          |  module AsyncReset00:
@@ -39,8 +40,8 @@ class AsyncResetSpec extends EndToEndSMTBaseSpec {
          |    ; can the value of r change without the count changing?
          |    assert(global_clock, or(not(eq(count, past_count)), eq(r, past_r)), past_valid, "count = past(count) |-> r = past(r)")
          |""".stripMargin
-    test(in("AsyncReset"), MCFail(1), kmax=2, annos=annos("AsyncReset00"))
-    test(in("UInt<1>"), MCSuccess, kmax=2, annos=annos("AsyncReset00"))
+    test(in("AsyncReset"), MCFail(1), kmax = 2, annos = annos("AsyncReset00"))
+    test(in("UInt<1>"), MCSuccess, kmax = 2, annos = annos("AsyncReset00"))
   }
 
 }

@@ -16,37 +16,37 @@ class ChirrtlMemSpec extends LowFirrtlTransformSpec {
     type Netlist = collection.mutable.HashMap[String, Expression]
     def buildNetlist(netlist: Netlist)(s: Statement): Statement = {
       s match {
-        case s: Connect => Utils.kind(s.loc) match {
-          case MemKind => netlist(s.loc.serialize) = s.expr
-          case _ =>
-        }
+        case s: Connect =>
+          Utils.kind(s.loc) match {
+            case MemKind => netlist(s.loc.serialize) = s.expr
+            case _       =>
+          }
         case _ =>
       }
-      s map buildNetlist(netlist)
+      s.map(buildNetlist(netlist))
     }
 
     // walks on memories and checks whether or not read enables are high
     def checkStmt(netlist: Netlist)(s: Statement): Boolean = s match {
-      case s: DefMemory if s.name == "mem" && s.readers.size == 1=>
+      case s: DefMemory if s.name == "mem" && s.readers.size == 1 =>
         val en = MemPortUtils.memPortField(s, s.readers.head, "en")
         // memory read enable ?= 1
         WrappedExpression.weq(netlist(en.serialize), Utils.one)
       case s: Block =>
-        s.stmts exists checkStmt(netlist)
+        s.stmts.exists(checkStmt(netlist))
       case _ => false
     }
 
-    def run (c: Circuit) = {
+    def run(c: Circuit) = {
       val errors = new Errors
-      val check = c.modules exists {
+      val check = c.modules.exists {
         case m: Module =>
           val netlist = new Netlist
           checkStmt(netlist)(buildNetlist(netlist)(m.body))
         case m: ExtModule => false
       }
       if (!check) {
-        errors append new PassException(
-          "Enable signal for the read port is incorrect!")
+        errors.append(new PassException("Enable signal for the read port is incorrect!"))
         errors.trigger
       }
       c
@@ -105,18 +105,18 @@ circuit foo :
   "An mport that refers to an undefined memory" should "have a helpful error message" in {
     val input =
       """circuit testTestModule :
-         |  module testTestModule :
-         |    input clock : Clock
-         |    input reset : UInt<1>
-         |    output io : {flip in : UInt<10>, out : UInt<10>}
-         |
-         |    node _T_10 = bits(io.in, 1, 0)
-         |    read mport _T_11 = m[_T_10], clock
-         |    io.out <= _T_11""".stripMargin
+        |  module testTestModule :
+        |    input clock : Clock
+        |    input reset : UInt<1>
+        |    output io : {flip in : UInt<10>, out : UInt<10>}
+        |
+        |    node _T_10 = bits(io.in, 1, 0)
+        |    read mport _T_11 = m[_T_10], clock
+        |    io.out <= _T_11""".stripMargin
 
-    intercept[PassException]{
+    intercept[PassException] {
       compile(parse(input))
-    }.getMessage should startWith ("Undefined memory m referenced by mport _T_11")
+    }.getMessage should startWith("Undefined memory m referenced by mport _T_11")
   }
 
   ignore should "Memories should not have validif on port clocks when declared in a when" in {
@@ -167,9 +167,19 @@ circuit foo :
         |    io.dataOut <= out @[Stack.scala 31:14]
         """.stripMargin
     val res = compile(parse(input))
-    assert(res search {
-      case Connect(_, WSubField(WSubField(WRef("stack_mem", _, _, _), "_T_35",_, _), "clk", _, _), WRef("clock", _, _, _)) => true
-      case Connect(_, WSubField(WSubField(WRef("stack_mem", _, _, _), "_T_17",_, _), "clk", _, _), WRef("clock", _, _, _)) => true
+    assert(res.search {
+      case Connect(
+            _,
+            WSubField(WSubField(WRef("stack_mem", _, _, _), "_T_35", _, _), "clk", _, _),
+            WRef("clock", _, _, _)
+          ) =>
+        true
+      case Connect(
+            _,
+            WSubField(WSubField(WRef("stack_mem", _, _, _), "_T_17", _, _), "clk", _, _),
+            WRef("clock", _, _, _)
+          ) =>
+        true
     })
   }
 
@@ -188,8 +198,9 @@ circuit foo :
         |      out <= bar
         |""".stripMargin
     val res = compile(parse(input))
-    assert(res search {
-      case Connect(_, WSubField(WSubField(WRef("mem", _, _, _), "bar",_, _), "clk", _, _), WRef("clock", _, _, _)) => true
+    assert(res.search {
+      case Connect(_, WSubField(WSubField(WRef("mem", _, _, _), "bar", _, _), "clk", _, _), WRef("clock", _, _, _)) =>
+        true
     })
   }
 
@@ -209,8 +220,9 @@ circuit foo :
         |      out <= bar
         |""".stripMargin
     val res = compile(parse(input))
-    assert(res search {
-      case Connect(_, WSubField(WSubField(WRef("mem", _, _, _), "bar",_, _), "clk", _, _), WRef("clock", _, _, _)) => true
+    assert(res.search {
+      case Connect(_, WSubField(WSubField(WRef("mem", _, _, _), "bar", _, _), "clk", _, _), WRef("clock", _, _, _)) =>
+        true
     })
   }
 
@@ -230,11 +242,15 @@ circuit foo :
         |      out <= bar
         |""".stripMargin
     val res = new LowFirrtlCompiler().compile(CircuitState(parse(input), ChirrtlForm), Seq()).circuit
-    assert(res search {
-      case Connect(_, WSubField(WSubField(WRef("mem", _, _, _), "bar",_, _), "clk", _, _), DoPrim(AsClock, Seq(WRef("clock", _, _, _)), Nil, _)) => true
+    assert(res.search {
+      case Connect(
+            _,
+            WSubField(WSubField(WRef("mem", _, _, _), "bar", _, _), "clk", _, _),
+            DoPrim(AsClock, Seq(WRef("clock", _, _, _)), Nil, _)
+          ) =>
+        true
     })
   }
-
 
   ignore should "Mem non-local nested clock port assignment should be ok" in {
     val input =
@@ -251,8 +267,13 @@ circuit foo :
         |      out <= bar
         |""".stripMargin
     val res = (new HighFirrtlCompiler).compile(CircuitState(parse(input), ChirrtlForm), Seq()).circuit
-    assert(res search {
-      case Connect(_, SubField(SubField(Reference("mem", _, _, _), "bar", _, _), "clk", _, _), DoPrim(AsClock, Seq(Reference("clock", _, _, _)), _, _)) => true
+    assert(res.search {
+      case Connect(
+            _,
+            SubField(SubField(Reference("mem", _, _, _), "bar", _, _), "clk", _, _),
+            DoPrim(AsClock, Seq(Reference("clock", _, _, _)), _, _)
+          ) =>
+        true
     })
   }
 }

@@ -25,24 +25,27 @@ class Checks extends Phase {
 
     val td, outA = collection.mutable.ListBuffer[Annotation]()
     annotations.foreach {
-      case a: TargetDirAnnotation => td += a
+      case a: TargetDirAnnotation            => td += a
       case a: OutputAnnotationFileAnnotation => outA += a
       case _ =>
     }
 
     if (td.size != 1) {
-      val d = td.map{ case TargetDirAnnotation(x) => x }
+      val d = td.map { case TargetDirAnnotation(x) => x }
       throw new OptionsException(
         s"""|Exactly one target directory must be specified, but found `${d.mkString(", ")}` specified via:
             |    - explicit target directory: -td, --target-dir, TargetDirAnnotation
-            |    - fallback default value""".stripMargin )}
+            |    - fallback default value""".stripMargin
+      )
+    }
 
     if (outA.size > 1) {
-      val x = outA.map{ case OutputAnnotationFileAnnotation(x) => x }
+      val x = outA.map { case OutputAnnotationFileAnnotation(x) => x }
       throw new OptionsException(
         s"""|At most one output annotation file can be specified, but found '${x.mkString(", ")}' specified via:
-            |    - an option or annotation: -foaf, --output-annotation-file, OutputAnnotationFileAnnotation"""
-          .stripMargin )}
+            |    - an option or annotation: -foaf, --output-annotation-file, OutputAnnotationFileAnnotation""".stripMargin
+      )
+    }
 
     annotations
   }

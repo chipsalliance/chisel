@@ -26,7 +26,8 @@ private class Btor2Serializer private () {
   private def comment(c: String): Unit = { lines += s"; $c" }
   private def trailingComment(c: String): Unit = {
     val lastLine = lines.last
-    val newLine = if(lastLine.contains(';')) { lastLine + " " + c} else { lastLine + " ; " + c }
+    val newLine = if (lastLine.contains(';')) { lastLine + " " + c }
+    else { lastLine + " ; " + c }
     lines(lines.size - 1) = newLine
   }
 
@@ -38,54 +39,55 @@ private class Btor2Serializer private () {
   // bit vector expression serialization
   private def s(expr: BVExpr): Int = expr match {
     case BVLiteral(value, width) => lit(value, width)
-    case BVSymbol(name, _) => symbols(name)
-    case BVExtend(e, 0, _) => s(e)
-    case BVExtend(e, by, true) => line(s"sext ${t(expr.width)} ${s(e)} $by")
-    case BVExtend(e, by, false) => line(s"uext ${t(expr.width)} ${s(e)} $by")
+    case BVSymbol(name, _)       => symbols(name)
+    case BVExtend(e, 0, _)       => s(e)
+    case BVExtend(e, by, true)   => line(s"sext ${t(expr.width)} ${s(e)} $by")
+    case BVExtend(e, by, false)  => line(s"uext ${t(expr.width)} ${s(e)} $by")
     case BVSlice(e, hi, lo) =>
-      if (lo == 0 && hi == e.width - 1) { s(e) } else {
+      if (lo == 0 && hi == e.width - 1) { s(e) }
+      else {
         line(s"slice ${t(expr.width)} ${s(e)} $hi $lo")
       }
-    case BVNot(BVEqual(a, b)) => binary("neq", expr.width, a, b)
-    case BVNot(BVNot(e)) => s(e)
-    case BVNot(e) => unary("not", expr.width, e)
-    case BVNegate(e) => unary("neg", expr.width, e)
-    case BVReduceAnd(e) => unary("redand", expr.width, e)
-    case BVReduceOr(e) => unary("redor", expr.width, e)
-    case BVReduceXor(e) => unary("redxor", expr.width, e)
-    case BVImplies(BVLiteral(v, 1), b) if v == 1 => s(b)
-    case BVImplies(a, b) => binary("implies", expr.width, a, b)
-    case BVEqual(a, b) => binary("eq", expr.width, a, b)
-    case ArrayEqual(a, b) => line(s"eq ${t(expr.width)} ${s(a)} ${s(b)}")
-    case BVComparison(Compare.Greater, a, b, false) => binary("ugt", expr.width, a, b)
+    case BVNot(BVEqual(a, b))                            => binary("neq", expr.width, a, b)
+    case BVNot(BVNot(e))                                 => s(e)
+    case BVNot(e)                                        => unary("not", expr.width, e)
+    case BVNegate(e)                                     => unary("neg", expr.width, e)
+    case BVReduceAnd(e)                                  => unary("redand", expr.width, e)
+    case BVReduceOr(e)                                   => unary("redor", expr.width, e)
+    case BVReduceXor(e)                                  => unary("redxor", expr.width, e)
+    case BVImplies(BVLiteral(v, 1), b) if v == 1         => s(b)
+    case BVImplies(a, b)                                 => binary("implies", expr.width, a, b)
+    case BVEqual(a, b)                                   => binary("eq", expr.width, a, b)
+    case ArrayEqual(a, b)                                => line(s"eq ${t(expr.width)} ${s(a)} ${s(b)}")
+    case BVComparison(Compare.Greater, a, b, false)      => binary("ugt", expr.width, a, b)
     case BVComparison(Compare.GreaterEqual, a, b, false) => binary("ugte", expr.width, a, b)
-    case BVComparison(Compare.Greater, a, b, true) => binary("sgt", expr.width, a, b)
-    case BVComparison(Compare.GreaterEqual, a, b, true) => binary("sgte", expr.width, a, b)
-    case BVOp(op, a, b) => binary(s(op), expr.width, a, b)
-    case BVConcat(a, b) => binary("concat", expr.width, a, b)
+    case BVComparison(Compare.Greater, a, b, true)       => binary("sgt", expr.width, a, b)
+    case BVComparison(Compare.GreaterEqual, a, b, true)  => binary("sgte", expr.width, a, b)
+    case BVOp(op, a, b)                                  => binary(s(op), expr.width, a, b)
+    case BVConcat(a, b)                                  => binary("concat", expr.width, a, b)
     case ArrayRead(array, index) =>
       line(s"read ${t(expr.width)} ${s(array)} ${s(index)}")
     case BVIte(cond, tru, fals) =>
       line(s"ite ${t(expr.width)} ${s(cond)} ${s(tru)} ${s(fals)}")
-    case r : BVRawExpr =>
+    case r: BVRawExpr =>
       throw new RuntimeException(s"Raw expressions should never reach the btor2 encoder!: ${r.serialized}")
   }
 
   private def s(op: Op.Value): String = op match {
-    case Op.And => "and"
-    case Op.Or => "or"
-    case Op.Xor => "xor"
+    case Op.And                  => "and"
+    case Op.Or                   => "or"
+    case Op.Xor                  => "xor"
     case Op.ArithmeticShiftRight => "sra"
-    case Op.ShiftRight => "srl"
-    case Op.ShiftLeft => "sll"
-    case Op.Add => "add"
-    case Op.Mul => "mul"
-    case Op.Sub => "sub"
-    case Op.SignedDiv => "sdiv"
-    case Op.UnsignedDiv => "udiv"
-    case Op.SignedMod => "smod"
-    case Op.SignedRem => "srem"
-    case Op.UnsignedRem => "urem"
+    case Op.ShiftRight           => "srl"
+    case Op.ShiftLeft            => "sll"
+    case Op.Add                  => "add"
+    case Op.Mul                  => "mul"
+    case Op.Sub                  => "sub"
+    case Op.SignedDiv            => "sdiv"
+    case Op.UnsignedDiv          => "udiv"
+    case Op.SignedMod            => "smod"
+    case Op.SignedRem            => "srem"
+    case Op.UnsignedRem          => "urem"
   }
 
   private def unary(op: String, width: Int, e: BVExpr): Int = line(s"$op ${t(width)} ${s(e)}")
@@ -123,18 +125,18 @@ private class Btor2Serializer private () {
       // It is essential to model memories, so any support in the wild should be fairly well tested.
       line(s"ite ${t(expr.indexWidth, expr.dataWidth)} ${s(cond)} ${s(tru)} ${s(fals)}")
     case ArrayConstant(e, _) => s(e)
-    case r : ArrayRawExpr =>
+    case r: ArrayRawExpr =>
       throw new RuntimeException(s"Raw expressions should never reach the btor2 encoder!: ${r.serialized}")
   }
 
   private def s(expr: SMTExpr): Int = expr match {
-    case b: BVExpr => s(b)
+    case b: BVExpr    => s(b)
     case a: ArrayExpr => s(a)
   }
 
   // serialize the type of the expression
   private def t(expr: SMTExpr): Int = expr match {
-    case b: BVExpr => t(b.width)
+    case b: BVExpr    => t(b.width)
     case a: ArrayExpr => t(a.indexWidth, a.dataWidth)
   }
 
@@ -145,7 +147,7 @@ private class Btor2Serializer private () {
       symbols(name) = id
       if (!skipOutput && sys.outputs.contains(name)) line(s"output $id ; $name")
       if (sys.assumes.contains(name)) line(s"constraint $id ; $name")
-      if (sys.asserts.contains(name)){
+      if (sys.asserts.contains(name)) {
         val invertedId = line(s"not ${t(1)} $id")
         line(s"bad $invertedId ; $name")
       }

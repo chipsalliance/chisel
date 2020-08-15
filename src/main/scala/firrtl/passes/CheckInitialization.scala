@@ -22,10 +22,11 @@ object CheckInitialization extends Pass {
 
   private case class VoidExpr(stmt: Statement, voidDeps: Seq[Expression])
 
-  class RefNotInitializedException(info: Info, mname: String, name: String, trace: Seq[Statement]) extends PassException(
-      s"$info : [module $mname]  Reference $name is not fully initialized.\n" +
-      trace.map(s => s"  ${get_info(s)} : ${s.serialize}").mkString("\n")
-    )
+  class RefNotInitializedException(info: Info, mname: String, name: String, trace: Seq[Statement])
+      extends PassException(
+        s"$info : [module $mname]  Reference $name is not fully initialized.\n" +
+          trace.map(s => s"  ${get_info(s)} : ${s.serialize}").mkString("\n")
+      )
 
   private def getTrace(expr: WrappedExpression, voidExprs: Map[WrappedExpression, VoidExpr]): Seq[Statement] = {
     @tailrec
@@ -81,7 +82,7 @@ object CheckInitialization extends Pass {
           case node: DefNode => // Ignore nodes
           case decl: IsDeclaration =>
             val trace = getTrace(expr, voidExprs.toMap)
-            errors append new RefNotInitializedException(decl.info, m.name, decl.name, trace)
+            errors.append(new RefNotInitializedException(decl.info, m.name, decl.name, trace))
         }
       }
     }

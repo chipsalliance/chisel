@@ -1,4 +1,3 @@
-
 package firrtl.transforms.formal
 
 import firrtl.ir.{Circuit, Formal, Statement, Verification}
@@ -6,7 +5,6 @@ import firrtl.stage.TransformManager.TransformDependency
 import firrtl.{CircuitState, DependencyAPIMigration, Transform}
 import firrtl.annotations.NoTargetAnnotation
 import firrtl.options.{PreservesAll, RegisteredTransform, ShellOption}
-
 
 /**
   * Assert Submodule Assumptions
@@ -16,12 +14,13 @@ import firrtl.options.{PreservesAll, RegisteredTransform, ShellOption}
   * overly restrictive assume in a child module can prevent the model checker
   * from searching valid inputs and states in the parent module.
   */
-class AssertSubmoduleAssumptions extends Transform
-  with RegisteredTransform
-  with DependencyAPIMigration
-  with PreservesAll[Transform] {
+class AssertSubmoduleAssumptions
+    extends Transform
+    with RegisteredTransform
+    with DependencyAPIMigration
+    with PreservesAll[Transform] {
 
-  override def prerequisites: Seq[TransformDependency] = Seq.empty
+  override def prerequisites:         Seq[TransformDependency] = Seq.empty
   override def optionalPrerequisites: Seq[TransformDependency] = Seq.empty
   override def optionalPrerequisiteOf: Seq[TransformDependency] =
     firrtl.stage.Forms.MidEmitters
@@ -29,9 +28,10 @@ class AssertSubmoduleAssumptions extends Transform
   val options = Seq(
     new ShellOption[Unit](
       longOption = "no-asa",
-      toAnnotationSeq = (_: Unit) => Seq(
-        DontAssertSubmoduleAssumptionsAnnotation),
-      helpText = "Disable assert submodule assumptions" ) )
+      toAnnotationSeq = (_: Unit) => Seq(DontAssertSubmoduleAssumptionsAnnotation),
+      helpText = "Disable assert submodule assumptions"
+    )
+  )
 
   def assertAssumption(s: Statement): Statement = s match {
     case Verification(Formal.Assume, info, clk, cond, en, msg) =>
@@ -50,8 +50,7 @@ class AssertSubmoduleAssumptions extends Transform
   }
 
   def execute(state: CircuitState): CircuitState = {
-    val noASA = state.annotations.contains(
-      DontAssertSubmoduleAssumptionsAnnotation)
+    val noASA = state.annotations.contains(DontAssertSubmoduleAssumptionsAnnotation)
     if (noASA) {
       logger.info("Skipping assert submodule assumptions")
       state

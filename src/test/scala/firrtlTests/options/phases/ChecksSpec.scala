@@ -2,7 +2,6 @@
 
 package firrtlTests.options.phases
 
-
 import firrtl.AnnotationSeq
 import firrtl.options.{OptionsException, OutputAnnotationFileAnnotation, Phase, TargetDirAnnotation}
 import firrtl.options.phases.Checks
@@ -20,9 +19,9 @@ class ChecksSpec extends AnyFlatSpec with Matchers {
   val min = Seq(targetDir)
 
   def checkExceptionMessage(phase: Phase, annotations: AnnotationSeq, messageStart: String): Unit =
-    intercept[OptionsException]{ phase.transform(annotations) }.getMessage should startWith(messageStart)
+    intercept[OptionsException] { phase.transform(annotations) }.getMessage should startWith(messageStart)
 
-  behavior of classOf[Checks].toString
+  behavior.of(classOf[Checks].toString)
 
   it should "enforce exactly one TargetDirAnnotation" in new Fixture {
     info("0 target directories throws an exception")

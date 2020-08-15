@@ -18,7 +18,7 @@ object FIRRTLException {
 }
 @deprecated("External users should use either FirrtlUserException or their own hierarchy", "1.2")
 class FIRRTLException(val str: String, cause: Throwable = null)
-  extends RuntimeException(FIRRTLException.defaultMessage(str, cause), cause)
+    extends RuntimeException(FIRRTLException.defaultMessage(str, cause), cause)
 
 /** Exception indicating user error
   *
@@ -26,7 +26,8 @@ class FIRRTLException(val str: String, cause: Throwable = null)
   * This can be extended by custom transform writers.
   */
 class FirrtlUserException(message: String, cause: Throwable = null)
-  extends RuntimeException(message, cause) with NoStackTrace
+    extends RuntimeException(message, cause)
+    with NoStackTrace
 
 /** Wraps exceptions from CustomTransforms so they can be reported appropriately */
 case class CustomTransformException(cause: Throwable) extends Exception("", cause)
@@ -40,4 +41,4 @@ case class CustomTransformException(cause: Throwable) extends Exception("", caus
   * transforms are treated differently and should thus have their own structure
   */
 private[firrtl] class FirrtlInternalException(message: String, cause: Throwable = null)
-  extends Exception(message, cause)
+    extends Exception(message, cause)

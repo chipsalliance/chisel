@@ -6,7 +6,7 @@ package proto
 import java.io.OutputStream
 
 import FirrtlProtos._
-import Firrtl.Statement.{ReadUnderWrite, Formal}
+import Firrtl.Statement.{Formal, ReadUnderWrite}
 import Firrtl.Expression.PrimOp.Op
 import com.google.protobuf.{CodedOutputStream, WireFormat}
 import firrtl.PrimOps._
@@ -14,7 +14,6 @@ import firrtl.PrimOps._
 import scala.collection.JavaConverters._
 
 object ToProto {
-
 
   /** Serialize a FIRRTL Circuit to an Output Stream as a ProtoBuf message
     *
@@ -38,9 +37,9 @@ object ToProto {
   // Note this function is sensitive to changes to the Firrtl and Circuit protobuf message definitions
   def writeToStreamFast(
     ostream: OutputStream,
-    info: ir.Info,
+    info:    ir.Info,
     modules: Seq[() => ir.DefModule],
-    main: String
+    main:    String
   ): Unit = {
     val costream = CodedOutputStream.newInstance(ostream)
 
@@ -110,23 +109,25 @@ object ToProto {
 
   def convert(ruw: ir.ReadUnderWrite.Value): ReadUnderWrite = ruw match {
     case ir.ReadUnderWrite.Undefined => ReadUnderWrite.UNDEFINED
-    case ir.ReadUnderWrite.Old => ReadUnderWrite.OLD
-    case ir.ReadUnderWrite.New => ReadUnderWrite.NEW
+    case ir.ReadUnderWrite.Old       => ReadUnderWrite.OLD
+    case ir.ReadUnderWrite.New       => ReadUnderWrite.NEW
   }
 
   def convert(formal: ir.Formal.Value): Formal = formal match {
     case ir.Formal.Assert => Formal.ASSERT
     case ir.Formal.Assume => Formal.ASSUME
-    case ir.Formal.Cover => Formal.COVER
+    case ir.Formal.Cover  => Formal.COVER
   }
 
   def convertToIntegerLiteral(value: BigInt): Firrtl.Expression.IntegerLiteral.Builder = {
-    Firrtl.Expression.IntegerLiteral.newBuilder()
+    Firrtl.Expression.IntegerLiteral
+      .newBuilder()
       .setValue(value.toString)
   }
 
   def convertToBigInt(value: BigInt): Firrtl.BigInt.Builder = {
-    Firrtl.BigInt.newBuilder()
+    Firrtl.BigInt
+      .newBuilder()
       .setValue(com.google.protobuf.ByteString.copyFrom(value.toByteArray))
   }
 
@@ -135,7 +136,7 @@ object ToProto {
     info match {
       case ir.NoInfo =>
         ib.setNone(Firrtl.SourceInfo.None.newBuilder)
-      case f : ir.FileInfo =>
+      case f: ir.FileInfo =>
         ib.setText(f.unescaped)
       // TODO properly implement MultiInfo
       case ir.MultiInfo(infos) =>
@@ -148,54 +149,64 @@ object ToProto {
     val eb = Firrtl.Expression.newBuilder()
     expr match {
       case ir.Reference(name, _, _, _) =>
-        val rb = Firrtl.Expression.Reference.newBuilder()
+        val rb = Firrtl.Expression.Reference
+          .newBuilder()
           .setId(name)
         eb.setReference(rb)
       case ir.SubField(e, name, _, _) =>
-        val sb = Firrtl.Expression.SubField.newBuilder()
+        val sb = Firrtl.Expression.SubField
+          .newBuilder()
           .setExpression(convert(e))
           .setField(name)
         eb.setSubField(sb)
       case ir.SubIndex(e, value, _, _) =>
-        val sb = Firrtl.Expression.SubIndex.newBuilder()
+        val sb = Firrtl.Expression.SubIndex
+          .newBuilder()
           .setExpression(convert(e))
           .setIndex(convertToIntegerLiteral(value))
         eb.setSubIndex(sb)
       case ir.SubAccess(e, index, _, _) =>
-        val sb = Firrtl.Expression.SubAccess.newBuilder()
+        val sb = Firrtl.Expression.SubAccess
+          .newBuilder()
           .setExpression(convert(e))
           .setIndex(convert(index))
         eb.setSubAccess(sb)
       case ir.UIntLiteral(value, width) =>
-        val ub = Firrtl.Expression.UIntLiteral.newBuilder()
+        val ub = Firrtl.Expression.UIntLiteral
+          .newBuilder()
           .setValue(convertToIntegerLiteral(value))
         convert(width).foreach(ub.setWidth)
         eb.setUintLiteral(ub)
       case ir.SIntLiteral(value, width) =>
-        val sb = Firrtl.Expression.SIntLiteral.newBuilder()
+        val sb = Firrtl.Expression.SIntLiteral
+          .newBuilder()
           .setValue(convertToIntegerLiteral(value))
         convert(width).foreach(sb.setWidth)
         eb.setSintLiteral(sb)
       case ir.FixedLiteral(value, width, point) =>
-        val fb = Firrtl.Expression.FixedLiteral.newBuilder()
+        val fb = Firrtl.Expression.FixedLiteral
+          .newBuilder()
           .setValue(convertToBigInt(value))
         convert(width).foreach(fb.setWidth)
         convert(point).foreach(fb.setPoint)
         eb.setFixedLiteral(fb)
       case ir.DoPrim(op, args, consts, _) =>
-        val db = Firrtl.Expression.PrimOp.newBuilder()
+        val db = Firrtl.Expression.PrimOp
+          .newBuilder()
           .setOp(convert(op))
         consts.foreach(c => db.addConst(convertToIntegerLiteral(c)))
         args.foreach(a => db.addArg(convert(a)))
         eb.setPrimOp(db)
       case ir.Mux(cond, tval, fval, _) =>
-        val mb = Firrtl.Expression.Mux.newBuilder()
+        val mb = Firrtl.Expression.Mux
+          .newBuilder()
           .setCondition(convert(cond))
           .setTValue(convert(tval))
           .setFValue(convert(fval))
         eb.setMux(mb)
       case ir.ValidIf(cond, value, _) =>
-        val vb = Firrtl.Expression.ValidIf.newBuilder()
+        val vb = Firrtl.Expression.ValidIf
+          .newBuilder()
           .setCondition(convert(cond))
           .setValue(convert(value))
         eb.setValidIf(vb)
@@ -205,37 +216,41 @@ object ToProto {
   def convert(dir: MPortDir): Firrtl.Statement.MemoryPort.Direction = {
     import Firrtl.Statement.MemoryPort.Direction._
     dir match {
-      case MInfer => MEMORY_PORT_DIRECTION_INFER
-      case MRead => MEMORY_PORT_DIRECTION_READ
-      case MWrite => MEMORY_PORT_DIRECTION_WRITE
+      case MInfer     => MEMORY_PORT_DIRECTION_INFER
+      case MRead      => MEMORY_PORT_DIRECTION_READ
+      case MWrite     => MEMORY_PORT_DIRECTION_WRITE
       case MReadWrite => MEMORY_PORT_DIRECTION_READ_WRITE
     }
   }
 
   def convert(tpe: ir.Type, depth: BigInt): Firrtl.Statement.CMemory.TypeAndDepth.Builder =
-    Firrtl.Statement.CMemory.TypeAndDepth.newBuilder()
+    Firrtl.Statement.CMemory.TypeAndDepth
+      .newBuilder()
       .setDataType(convert(tpe))
       .setDepth(convertToBigInt(depth))
 
   def convert(stmt: ir.Statement): Seq[Firrtl.Statement.Builder] = {
     stmt match {
       case ir.Block(stmts) => stmts.flatMap(convert(_))
-      case ir.EmptyStmt => Seq.empty
+      case ir.EmptyStmt    => Seq.empty
       case other =>
         val sb = Firrtl.Statement.newBuilder()
         other match {
           case ir.DefNode(_, name, expr) =>
-            val nb = Firrtl.Statement.Node.newBuilder()
+            val nb = Firrtl.Statement.Node
+              .newBuilder()
               .setId(name)
               .setExpression(convert(expr))
             sb.setNode(nb)
           case ir.DefWire(_, name, tpe) =>
-            val wb = Firrtl.Statement.Wire.newBuilder()
+            val wb = Firrtl.Statement.Wire
+              .newBuilder()
               .setId(name)
               .setType(convert(tpe))
             sb.setWire(wb)
           case ir.DefRegister(_, name, tpe, clock, reset, init) =>
-            val rb = Firrtl.Statement.Register.newBuilder()
+            val rb = Firrtl.Statement.Register
+              .newBuilder()
               .setId(name)
               .setType(convert(tpe))
               .setClock(convert(clock))
@@ -243,54 +258,63 @@ object ToProto {
               .setInit(convert(init))
             sb.setRegister(rb)
           case ir.DefInstance(_, name, module, _) =>
-            val ib = Firrtl.Statement.Instance.newBuilder()
+            val ib = Firrtl.Statement.Instance
+              .newBuilder()
               .setId(name)
               .setModuleId(module)
             sb.setInstance(ib)
           case ir.Connect(_, loc, expr) =>
-            val cb = Firrtl.Statement.Connect.newBuilder()
+            val cb = Firrtl.Statement.Connect
+              .newBuilder()
               .setLocation(convert(loc))
               .setExpression(convert(expr))
             sb.setConnect(cb)
           case ir.PartialConnect(_, loc, expr) =>
-            val cb = Firrtl.Statement.PartialConnect.newBuilder()
+            val cb = Firrtl.Statement.PartialConnect
+              .newBuilder()
               .setLocation(convert(loc))
               .setExpression(convert(expr))
             sb.setPartialConnect(cb)
           case ir.Conditionally(_, pred, conseq, alt) =>
             val cs = convert(conseq)
             val as = convert(alt)
-            val wb = Firrtl.Statement.When.newBuilder()
+            val wb = Firrtl.Statement.When
+              .newBuilder()
               .setPredicate(convert(pred))
             cs.foreach(wb.addConsequent)
             as.foreach(wb.addOtherwise)
             sb.setWhen(wb)
           case ir.Print(_, string, args, clk, en) =>
-            val pb = Firrtl.Statement.Printf.newBuilder()
+            val pb = Firrtl.Statement.Printf
+              .newBuilder()
               .setValue(string.string)
               .setClk(convert(clk))
               .setEn(convert(en))
             args.foreach(a => pb.addArg(convert(a)))
             sb.setPrintf(pb)
           case ir.Stop(_, ret, clk, en) =>
-            val stopb = Firrtl.Statement.Stop.newBuilder()
+            val stopb = Firrtl.Statement.Stop
+              .newBuilder()
               .setReturnValue(ret)
               .setClk(convert(clk))
               .setEn(convert(en))
             sb.setStop(stopb)
           case ir.Verification(op, _, clk, cond, en, msg) =>
-            val vb = Firrtl.Statement.Verification.newBuilder()
+            val vb = Firrtl.Statement.Verification
+              .newBuilder()
               .setOp(convert(op))
               .setClk(convert(clk))
               .setCond(convert(cond))
               .setEn(convert(en))
               .setMsg(msg.string)
           case ir.IsInvalid(_, expr) =>
-            val ib = Firrtl.Statement.IsInvalid.newBuilder()
+            val ib = Firrtl.Statement.IsInvalid
+              .newBuilder()
               .setExpression(convert(expr))
             sb.setIsInvalid(ib)
           case ir.DefMemory(_, name, dtype, depth, wlat, rlat, rs, ws, rws, ruw) =>
-            val mem = Firrtl.Statement.Memory.newBuilder()
+            val mem = Firrtl.Statement.Memory
+              .newBuilder()
               .setId(name)
               .setType(convert(dtype))
               .setBigintDepth(convertToBigInt(depth))
@@ -302,14 +326,16 @@ object ToProto {
             mem.addAllReadwriterId(rws.asJava)
             sb.setMemory(mem)
           case CDefMemory(_, name, tpe, size, seq, ruw) =>
-            val mb = Firrtl.Statement.CMemory.newBuilder()
+            val mb = Firrtl.Statement.CMemory
+              .newBuilder()
               .setId(name)
               .setTypeAndDepth(convert(tpe, size))
               .setSyncRead(seq)
               .setReadUnderWrite(convert(ruw))
             sb.setCmemory(mb)
           case CDefMPort(_, name, _, mem, exprs, dir) =>
-            val pb = Firrtl.Statement.MemoryPort.newBuilder()
+            val pb = Firrtl.Statement.MemoryPort
+              .newBuilder()
               .setId(name)
               .setMemoryId(mem)
               .setMemoryIndex(convert(exprs.head))
@@ -330,7 +356,8 @@ object ToProto {
   }
 
   def convert(field: ir.Field): Firrtl.Type.BundleType.Field.Builder = {
-    val b = Firrtl.Type.BundleType.Field.newBuilder()
+    val b = Firrtl.Type.BundleType.Field
+      .newBuilder()
       .setId(field.name)
       .setIsFlipped(field.flip == ir.Flip)
       .setType(convert(field.tpe))
@@ -343,12 +370,13 @@ object ToProto {
     * @return Option width where None means the width field should be cleared in the parent object
     */
   def convert(width: ir.Width): Option[Firrtl.Width.Builder] = width match {
-    case ir.IntWidth(w) => Some(Firrtl.Width.newBuilder().setValue(w.toInt))
+    case ir.IntWidth(w)  => Some(Firrtl.Width.newBuilder().setValue(w.toInt))
     case ir.UnknownWidth => None
   }
 
   def convert(vtpe: ir.VectorType): Firrtl.Type.VectorType.Builder =
-    Firrtl.Type.VectorType.newBuilder()
+    Firrtl.Type.VectorType
+      .newBuilder()
       .setType(convert(vtpe.tpe))
       .setSize(vtpe.size)
 
@@ -379,7 +407,7 @@ object ToProto {
         tb.setResetType(rt)
       case ir.AnalogType(width) =>
         val at = Firrtl.Type.AnalogType.newBuilder()
-          convert(width).foreach(at.setWidth)
+        convert(width).foreach(at.setWidth)
         tb.setAnalogType(at)
       case ir.BundleType(fields) =>
         val bt = Firrtl.Type.BundleType.newBuilder()
@@ -392,12 +420,13 @@ object ToProto {
   }
 
   def convert(direction: ir.Direction): Firrtl.Port.Direction = direction match {
-    case ir.Input => Firrtl.Port.Direction.PORT_DIRECTION_IN
+    case ir.Input  => Firrtl.Port.Direction.PORT_DIRECTION_IN
     case ir.Output => Firrtl.Port.Direction.PORT_DIRECTION_OUT
   }
 
   def convert(port: ir.Port): Firrtl.Port.Builder = {
-    Firrtl.Port.newBuilder()
+    Firrtl.Port
+      .newBuilder()
       .setId(port.name)
       .setDirection(convert(port.direction))
       .setType(convert(port.tpe))
@@ -405,7 +434,8 @@ object ToProto {
 
   def convert(param: ir.Param): Firrtl.Module.ExternalModule.Parameter.Builder = {
     import Firrtl.Module.ExternalModule._
-    val pb = Parameter.newBuilder()
+    val pb = Parameter
+      .newBuilder()
       .setId(param.name)
     param match {
       case ir.IntParam(_, value) =>
@@ -425,13 +455,15 @@ object ToProto {
     module match {
       case mod: ir.Module =>
         val stmts = convert(mod.body)
-        val mb = Firrtl.Module.UserModule.newBuilder()
+        val mb = Firrtl.Module.UserModule
+          .newBuilder()
           .setId(mod.name)
         ports.foreach(mb.addPort)
         stmts.foreach(mb.addStatement)
         b.setUserModule(mb)
       case ext: ir.ExtModule =>
-        val eb = Firrtl.Module.ExternalModule.newBuilder()
+        val eb = Firrtl.Module.ExternalModule
+          .newBuilder()
           .setId(ext.name)
           .setDefinedName(ext.defname)
         ports.foreach(eb.addPort)
@@ -448,7 +480,8 @@ object ToProto {
     for (m <- moduleBuilders) {
       cb.addModule(m)
     }
-    Firrtl.newBuilder()
+    Firrtl
+      .newBuilder()
       .addCircuit(cb.build())
       .build()
   }

@@ -2,8 +2,8 @@
 
 package firrtl
 
-/** 
-  * Base type for emission customization options 
+/**
+  * Base type for emission customization options
   * NOTE: all the following traits must be mixed with SingleTargetAnnotation[T <: Named]
   *       in order to be taken into account in the Emitter
   */
@@ -24,40 +24,37 @@ case object MemoryEmissionOptionDefault extends MemoryEmissionOption
 
 /** Emission customization options for registers */
 trait RegisterEmissionOption extends EmissionOption {
+
   /** when true the reset init value will be used to emit a bitstream preset */
-  def useInitAsPreset : Boolean = false
-  
+  def useInitAsPreset: Boolean = false
+
   /** when true the initial randomization is disabled for this register */
-  def disableRandomization : Boolean = false
+  def disableRandomization: Boolean = false
 }
 
 /** default Emitter behavior for registers */
-case object RegisterEmissionOptionDefault extends RegisterEmissionOption 
-
+case object RegisterEmissionOptionDefault extends RegisterEmissionOption
 
 /** Emission customization options for IO ports */
-trait PortEmissionOption extends EmissionOption 
+trait PortEmissionOption extends EmissionOption
 
 /** default Emitter behavior for IO ports */
-case object PortEmissionOptionDefault extends PortEmissionOption 
-
+case object PortEmissionOptionDefault extends PortEmissionOption
 
 /** Emission customization options for wires */
-trait WireEmissionOption extends EmissionOption 
+trait WireEmissionOption extends EmissionOption
 
 /** default Emitter behavior for wires */
-case object WireEmissionOptionDefault extends WireEmissionOption 
-
+case object WireEmissionOptionDefault extends WireEmissionOption
 
 /** Emission customization options for nodes */
-trait NodeEmissionOption extends EmissionOption 
+trait NodeEmissionOption extends EmissionOption
 
 /** default Emitter behavior for nodes */
-case object NodeEmissionOptionDefault extends NodeEmissionOption 
-
+case object NodeEmissionOptionDefault extends NodeEmissionOption
 
 /** Emission customization options for connect */
 trait ConnectEmissionOption extends EmissionOption
 
 /** default Emitter behavior for connect */
-case object ConnectEmissionOptionDefault extends ConnectEmissionOption 
+case object ConnectEmissionOptionDefault extends ConnectEmissionOption

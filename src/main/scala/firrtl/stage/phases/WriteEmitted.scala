@@ -2,7 +2,7 @@
 
 package firrtl.stage.phases
 
-import firrtl.{AnnotationSeq, EmittedModuleAnnotation, EmittedCircuitAnnotation}
+import firrtl.{AnnotationSeq, EmittedCircuitAnnotation, EmittedModuleAnnotation}
 import firrtl.options.{Phase, StageOptions, Viewer}
 import firrtl.stage.FirrtlOptions
 
@@ -24,8 +24,11 @@ import java.io.PrintWriter
   *
   * Any annotations written to files will be deleted.
   */
-@deprecated("Annotations that mixin the CustomFileEmission trait are automatically serialized by stages." +
-              "This will be removed in FIRRTL 1.5", "FIRRTL 1.4.0")
+@deprecated(
+  "Annotations that mixin the CustomFileEmission trait are automatically serialized by stages." +
+    "This will be removed in FIRRTL 1.5",
+  "FIRRTL 1.4.0"
+)
 class WriteEmitted extends Phase {
 
   override def prerequisites = Seq.empty
@@ -47,7 +50,8 @@ class WriteEmitted extends Phase {
         None
       case a: EmittedCircuitAnnotation[_] =>
         val pw = new PrintWriter(
-          sopts.getBuildFileName(fopts.outputFileName.getOrElse(a.value.name), Some(a.value.outputSuffix)))
+          sopts.getBuildFileName(fopts.outputFileName.getOrElse(a.value.name), Some(a.value.outputSuffix))
+        )
         pw.write(a.value.value)
         pw.close()
         None

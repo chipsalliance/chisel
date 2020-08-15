@@ -26,21 +26,21 @@ class AddDefaults extends Phase {
     var bb, c, em, im = true
     annotations.foreach {
       case _: BlackBoxTargetDirAnno => bb = false
-      case _: CompilerAnnotation => c  = false
-      case _: InfoModeAnnotation => im = false
-      case RunFirrtlTransformAnnotation(_ : firrtl.Emitter) => em = false
+      case _: CompilerAnnotation    => c = false
+      case _: InfoModeAnnotation    => im = false
+      case RunFirrtlTransformAnnotation(_: firrtl.Emitter) => em = false
       case _ =>
     }
 
     val default = new FirrtlOptions()
-    val targetDir = annotations
-      .collectFirst { case d: TargetDirAnnotation => d }
-      .getOrElse(TargetDirAnnotation()).directory
+    val targetDir = annotations.collectFirst { case d: TargetDirAnnotation => d }
+      .getOrElse(TargetDirAnnotation())
+      .directory
 
-    (if (bb) Seq(BlackBoxTargetDirAnno(targetDir)) else Seq() ) ++
-    // if there is no compiler or emitter specified, add the default emitter
-      (if (c && em) Seq(RunFirrtlTransformAnnotation(DefaultEmitterTarget)) else Seq() ) ++
-      (if (im) Seq(InfoModeAnnotation()) else Seq() ) ++
+    (if (bb) Seq(BlackBoxTargetDirAnno(targetDir)) else Seq()) ++
+      // if there is no compiler or emitter specified, add the default emitter
+      (if (c && em) Seq(RunFirrtlTransformAnnotation(DefaultEmitterTarget)) else Seq()) ++
+      (if (im) Seq(InfoModeAnnotation()) else Seq()) ++
       annotations
   }
 

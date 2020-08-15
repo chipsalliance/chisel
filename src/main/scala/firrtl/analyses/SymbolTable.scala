@@ -17,26 +17,27 @@ import scala.collection.mutable
   * Different implementations of SymbolTable might want to store different
   * information (e.g., only the names without the types) or build
   * different indices depending on what information the transform needs.
-  * */
+  */
 trait SymbolTable {
   // methods that need to be implemented by any Symbol table
-  def declare(name: String, tpe: Type, kind: Kind): Unit
+  def declare(name:         String, tpe:    Type, kind: Kind): Unit
   def declareInstance(name: String, module: String): Unit
 
   // convenience methods
   def declare(d: DefInstance): Unit = declareInstance(d.name, d.module)
-  def declare(d: DefMemory): Unit = declare(d.name, MemPortUtils.memType(d), firrtl.MemKind)
-  def declare(d: DefNode): Unit = declare(d.name, d.value.tpe, firrtl.NodeKind)
-  def declare(d: DefWire): Unit = declare(d.name, d.tpe, firrtl.WireKind)
+  def declare(d: DefMemory):   Unit = declare(d.name, MemPortUtils.memType(d), firrtl.MemKind)
+  def declare(d: DefNode):     Unit = declare(d.name, d.value.tpe, firrtl.NodeKind)
+  def declare(d: DefWire):     Unit = declare(d.name, d.tpe, firrtl.WireKind)
   def declare(d: DefRegister): Unit = declare(d.name, d.tpe, firrtl.RegKind)
-  def declare(d: Port): Unit = declare(d.name, d.tpe, firrtl.PortKind)
+  def declare(d: Port):        Unit = declare(d.name, d.tpe, firrtl.PortKind)
 }
 
 /** Trusts the type annotation on DefInstance nodes instead of re-deriving the type from
-  * the module ports which would require global (cross-module) information. */
+  * the module ports which would require global (cross-module) information.
+  */
 private[firrtl] abstract class LocalSymbolTable extends SymbolTable {
   def declareInstance(name: String, module: String): Unit = declare(name, UnknownType, InstanceKind)
-  override def declare(d: WDefInstance): Unit = declare(d.name, d.tpe, InstanceKind)
+  override def declare(d:   WDefInstance): Unit = declare(d.name, d.tpe, InstanceKind)
 }
 
 /** Uses a function to derive instance types from module names */
@@ -63,10 +64,10 @@ private[firrtl] trait WithMap extends SymbolTable {
 }
 
 private case class Sym(name: String, tpe: Type, kind: Kind) extends Symbol
-private[firrtl] trait Symbol { def name: String; def tpe: Type;  def kind: Kind }
+private[firrtl] trait Symbol { def name: String; def tpe: Type; def kind: Kind }
 
 /** only remembers the names of symbols */
-private[firrtl] class NamespaceTable  extends LocalSymbolTable {
+private[firrtl] class NamespaceTable extends LocalSymbolTable {
   private var names = List[String]()
   override def declare(name: String, tpe: Type, kind: Kind): Unit = names = name :: names
   def getNames: Seq[String] = names
@@ -82,9 +83,9 @@ object SymbolTable {
   }
   private def scanStatement(s: Statement)(implicit table: SymbolTable): Unit = s match {
     case d: DefInstance => table.declare(d)
-    case d: DefMemory => table.declare(d)
-    case d: DefNode => table.declare(d)
-    case d: DefWire => table.declare(d)
+    case d: DefMemory   => table.declare(d)
+    case d: DefNode     => table.declare(d)
+    case d: DefWire     => table.declare(d)
     case d: DefRegister => table.declare(d)
     case other => other.foreachStmt(scanStatement)
   }

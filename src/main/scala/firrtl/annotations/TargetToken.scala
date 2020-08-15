@@ -3,12 +3,12 @@
 package firrtl.annotations
 
 import firrtl._
-import ir.{DefModule, DefInstance}
+import ir.{DefInstance, DefModule}
 
 /** Building block to represent a [[Target]] of a FIRRTL component */
 sealed trait TargetToken {
   def keyword: String
-  def value: Any
+  def value:   Any
 
   /** Returns whether this token is one of the type of tokens whose keyword is passed as an argument
     * @param keywords
@@ -16,8 +16,10 @@ sealed trait TargetToken {
     */
   def is(keywords: String*): Boolean = {
     keywords.map { kw =>
-      require(TargetToken.keyword2targettoken.keySet.contains(kw),
-        s"Keyword $kw must be in set ${TargetToken.keyword2targettoken.keys}")
+      require(
+        TargetToken.keyword2targettoken.keySet.contains(kw),
+        s"Keyword $kw must be in set ${TargetToken.keyword2targettoken.keys}"
+      )
       val lastClass = this.getClass
       lastClass == TargetToken.keyword2targettoken(kw)("0").getClass
     }.reduce(_ || _)
@@ -26,20 +28,20 @@ sealed trait TargetToken {
 
 /** Object containing all [[TargetToken]] subclasses */
 case object TargetToken {
-  case class Instance(value: String)  extends TargetToken { override def keyword: String = "inst" }
-  case class OfModule(value: String)  extends TargetToken { override def keyword: String = "of" }
-  case class Ref(value: String)       extends TargetToken { override def keyword: String = "ref" }
-  case class Index(value: Int)        extends TargetToken { override def keyword: String = "[]" }
-  case class Field(value: String)     extends TargetToken { override def keyword: String = "." }
-  case object Clock                   extends TargetToken { override def keyword: String = "clock"; val value = "" }
-  case object Init                    extends TargetToken { override def keyword: String = "init";  val value = "" }
-  case object Reset                   extends TargetToken { override def keyword: String = "reset"; val value = "" }
+  case class Instance(value: String) extends TargetToken { override def keyword: String = "inst" }
+  case class OfModule(value: String) extends TargetToken { override def keyword: String = "of" }
+  case class Ref(value: String) extends TargetToken { override def keyword: String = "ref" }
+  case class Index(value: Int) extends TargetToken { override def keyword: String = "[]" }
+  case class Field(value: String) extends TargetToken { override def keyword: String = "." }
+  case object Clock extends TargetToken { override def keyword: String = "clock"; val value = "" }
+  case object Init extends TargetToken { override def keyword: String = "init"; val value = "" }
+  case object Reset extends TargetToken { override def keyword: String = "reset"; val value = "" }
 
   implicit class fromStringToTargetToken(s: String) {
     def Instance: Instance = new TargetToken.Instance(s)
     def OfModule: OfModule = new TargetToken.OfModule(s)
-    def Ref: Ref = new TargetToken.Ref(s)
-    def Field: Field = new TargetToken.Field(s)
+    def Ref:      Ref = new TargetToken.Ref(s)
+    def Field:    Field = new TargetToken.Field(s)
   }
 
   implicit class fromIntToTargetToken(i: Int) {
@@ -67,4 +69,3 @@ case object TargetToken {
     "reset" -> ((value: String) => Reset)
   )
 }
-

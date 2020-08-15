@@ -17,7 +17,6 @@ case class InvalidStringLitException(message: String) extends ParserException(me
 case class InvalidEscapeCharException(message: String) extends ParserException(message)
 case class SyntaxErrorsException(message: String) extends ParserException(message)
 
-
 object Parser extends LazyLogging {
 
   /** Parses a file in a given filename and returns a parsed [[firrtl.ir.Circuit Circuit]] */
@@ -57,12 +56,12 @@ object Parser extends LazyLogging {
 
     ast
   }
+
   /** Takes Iterator over lines of FIRRTL, returns FirrtlNode (root node is Circuit) */
   def parse(lines: Iterator[String], infoMode: InfoMode = UseInfo): Circuit =
     parseString(lines.mkString("\n"), infoMode)
 
   def parse(lines: Seq[String]): Circuit = parseString(lines.mkString("\n"), UseInfo)
-
 
   /** Parse the concrete syntax of a FIRRTL [[firrtl.ir.Circuit]], e.g.
     *   {{{
@@ -106,7 +105,7 @@ object Parser extends LazyLogging {
 
   def parse(lines: Seq[String], infoMode: InfoMode): Circuit = parse(lines.iterator, infoMode)
 
-  def parse(text: String, infoMode: InfoMode): Circuit = parse(text split "\n", infoMode)
+  def parse(text: String, infoMode: InfoMode): Circuit = parse(text.split("\n"), infoMode)
 
   /** Parse the concrete syntax of a FIRRTL [[firrtl.ir.Expression]], e.g.
     *   "add(x, y)" becomes:

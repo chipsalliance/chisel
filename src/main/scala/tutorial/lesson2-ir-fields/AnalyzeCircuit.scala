@@ -4,9 +4,9 @@ package tutorial
 package lesson2
 
 // Compiler Infrastructure
-import firrtl.{Transform, LowForm, CircuitState}
+import firrtl.{CircuitState, LowForm, Transform}
 // Firrtl IR classes
-import firrtl.ir.{DefModule, Statement, Expression, Mux, DefInstance}
+import firrtl.ir.{DefInstance, DefModule, Expression, Mux, Statement}
 // Map functions
 import firrtl.Mappers._
 // Scala's mutable collections
@@ -27,7 +27,7 @@ class Ledger {
   private val moduleMuxMap = mutable.Map[String, Int]()
   private val moduleInstanceMap = mutable.Map[String, Seq[String]]()
   def getModuleName: String = moduleName match {
-    case None => sys.error("Module name not defined in Ledger!")
+    case None       => sys.error("Module name not defined in Ledger!")
     case Some(name) => name
   }
   def setModuleName(myName: String): Unit = {
@@ -47,14 +47,14 @@ class Ledger {
   private def countMux(myName: String): Int = {
     val myMuxes = moduleMuxMap.getOrElse(myName, 0)
     val myInstanceMuxes =
-      moduleInstanceMap.getOrElse(myName, Nil).foldLeft(0) {
-        (total, name) => total + countMux(name)
+      moduleInstanceMap.getOrElse(myName, Nil).foldLeft(0) { (total, name) =>
+        total + countMux(name)
       }
     myMuxes + myInstanceMuxes
   }
   // Display recursive total of muxes
   def serialize: String = {
-    modules map { myName => s"$myName => ${countMux(myName)} muxes!" } mkString "\n"
+    modules.map { myName => s"$myName => ${countMux(myName)} muxes!" }.mkString("\n")
   }
 }
 
@@ -76,7 +76,6 @@ class Ledger {
   *   - Kind -> ExpKind
   *   - Flow -> UnknownFlow
   *   - Type -> UnknownType
-  *
   */
 class AnalyzeCircuit extends Transform {
   def inputForm = LowForm
@@ -88,7 +87,7 @@ class AnalyzeCircuit extends Transform {
     val circuit = state.circuit
 
     // Execute the function walkModule(ledger) on all [[DefModule]] in circuit
-    circuit map walkModule(ledger)
+    circuit.map(walkModule(ledger))
 
     // Print our ledger
     println(ledger.serialize)
@@ -103,13 +102,13 @@ class AnalyzeCircuit extends Transform {
     ledger.setModuleName(m.name)
 
     // Execute the function walkStatement(ledger) on every [[Statement]] in m.
-    m map walkStatement(ledger)
+    m.map(walkStatement(ledger))
   }
 
   // Deeply visits every [[Statement]] and [[Expression]] in s.
   def walkStatement(ledger: Ledger)(s: Statement): Statement = {
     // Map the functions walkStatement(ledger) and walkExpression(ledger)
-    val visited = s map walkStatement(ledger) map walkExpression(ledger)
+    val visited = s.map(walkStatement(ledger)).map(walkExpression(ledger))
     visited match {
       case DefInstance(info, name, module, tpe) =>
         ledger.foundInstance(module)
@@ -122,7 +121,7 @@ class AnalyzeCircuit extends Transform {
   def walkExpression(ledger: Ledger)(e: Expression): Expression = {
     // Execute the function walkExpression(ledger) on every [[Expression]] in e,
     //  then handle if a [[Mux]].
-    e map walkExpression(ledger) match {
+    e.map(walkExpression(ledger)) match {
       case mux: Mux =>
         ledger.foundMux()
         mux

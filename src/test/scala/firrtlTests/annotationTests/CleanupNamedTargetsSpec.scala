@@ -11,7 +11,8 @@ import firrtl.annotations.{
   MultiTargetAnnotation,
   ReferenceTarget,
   SingleTargetAnnotation,
-  Target}
+  Target
+}
 import firrtl.annotations.transforms.CleanupNamedTargets
 
 import org.scalatest.flatspec.AnyFlatSpec
@@ -56,7 +57,7 @@ class CleanupNamedTargetsSpec extends AnyFlatSpec with Matchers {
 
   }
 
-  behavior of "CleanupNamedTargets"
+  behavior.of("CleanupNamedTargets")
 
   it should "convert a SingleTargetAnnotation[ReferenceTarget] of an instance to an InstanceTarget" in new F {
     val annotations: AnnotationSeq = Seq(SingleReferenceAnnotation(barTarget))
@@ -71,10 +72,10 @@ class CleanupNamedTargetsSpec extends AnyFlatSpec with Matchers {
 
     val renames = transform.transform(circuitState(annotations)).renames.get
 
-    renames.get(barTarget) should be (Some(Seq(foo.instOf("bar", "Bar"))))
+    renames.get(barTarget) should be(Some(Seq(foo.instOf("bar", "Bar"))))
 
     info("and not touch a true ReferenceAnnotation")
-    renames.get(bazTarget) should be (None)
+    renames.get(bazTarget) should be(None)
 
   }
 

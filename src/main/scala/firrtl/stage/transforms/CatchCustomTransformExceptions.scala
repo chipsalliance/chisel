@@ -9,7 +9,8 @@ class CatchCustomTransformExceptions(val underlying: Transform) extends Transfor
   override def execute(c: CircuitState): CircuitState = try {
     underlying.transform(c)
   } catch {
-    case e: Exception if CatchCustomTransformExceptions.isCustomTransform(trueUnderlying) => throw CustomTransformException(e)
+    case e: Exception if CatchCustomTransformExceptions.isCustomTransform(trueUnderlying) =>
+      throw CustomTransformException(e)
   }
 
 }

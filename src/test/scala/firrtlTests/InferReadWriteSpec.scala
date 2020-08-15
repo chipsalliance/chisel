@@ -10,8 +10,7 @@ import firrtl.testutils._
 import firrtl.testutils.FirrtlCheckers._
 
 class InferReadWriteSpec extends SimpleTransformSpec {
-  class InferReadWriteCheckException extends PassException(
-    "Readwrite ports are not found!")
+  class InferReadWriteCheckException extends PassException("Readwrite ports are not found!")
 
   object InferReadWriteCheck extends Pass {
     override def prerequisites = Forms.MidForm
@@ -23,18 +22,18 @@ class InferReadWriteSpec extends SimpleTransformSpec {
       case s: DefMemory if s.readLatency > 0 && s.readwriters.size == 1 =>
         s.name == "mem" && s.readwriters.head == "rw"
       case s: Block =>
-        s.stmts exists findReadWrite
+        s.stmts.exists(findReadWrite)
       case _ => false
     }
 
-    def run (c: Circuit) = {
+    def run(c: Circuit) = {
       val errors = new Errors
-      val foundReadWrite = c.modules exists {
-        case m: Module => findReadWrite(m.body)
+      val foundReadWrite = c.modules.exists {
+        case m: Module    => findReadWrite(m.body)
         case m: ExtModule => false
       }
       if (!foundReadWrite) {
-        errors append new InferReadWriteCheckException
+        errors.append(new InferReadWriteCheckException)
         errors.trigger
       }
       c
@@ -176,6 +175,6 @@ circuit sram6t :
     val annos = Seq(memlib.InferReadWriteAnnotation)
     val res = compileAndEmit(CircuitState(parse(input), ChirrtlForm, annos))
     // Check correctness of firrtl
-    res should containLine (s"mem.rw.wmode <= wen")
+    res should containLine(s"mem.rw.wmode <= wen")
   }
 }

@@ -7,9 +7,9 @@ import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.traversals.Foreachers._
 import firrtl.annotations.{ReferenceTarget, TargetToken}
-import firrtl.Utils.{toTarget, throwInternalError}
+import firrtl.Utils.{throwInternalError, toTarget}
 import firrtl.options.Dependency
-import firrtl.passes.{Pass, PassException, InferTypes}
+import firrtl.passes.{InferTypes, Pass, PassException}
 import firrtl.graph.MutableDiGraph
 
 import scala.collection.mutable
@@ -83,14 +83,13 @@ object InferResets {
         // Vectors must all have the same type, so we only process Index 0
         // If the subtype is an aggregate, there can be multiple of each index
         val ts = tokens.collect { case (TargetToken.Index(0) +: tail, tpe) => (tail, tpe) }
-        VectorTree(fromTokens(ts:_*))
+        VectorTree(fromTokens(ts: _*))
       // BundleTree
       case (TargetToken.Field(_) +: _, _) +: _ =>
         val fields =
-          tokens.groupBy { case (TargetToken.Field(n) +: t, _) => n }
-                .mapValues { ts =>
-                  fromTokens(ts.map { case (_ +: t, tpe) => (t, tpe) }:_*)
-                }.toMap
+          tokens.groupBy { case (TargetToken.Field(n) +: t, _) => n }.mapValues { ts =>
+            fromTokens(ts.map { case (_ +: t, tpe) => (t, tpe) }: _*)
+          }.toMap
         BundleTree(fields)
     }
   }
@@ -113,14 +112,16 @@ object InferResets {
 class InferResets extends Transform with DependencyAPIMigration {
 
   override def prerequisites =
-    Seq( Dependency(passes.ResolveKinds),
-         Dependency(passes.InferTypes),
-         Dependency(passes.ResolveFlows),
-         Dependency[passes.InferWidths] ) ++ stage.Forms.WorkingIR
+    Seq(
+      Dependency(passes.ResolveKinds),
+      Dependency(passes.InferTypes),
+      Dependency(passes.ResolveFlows),
+      Dependency[passes.InferWidths]
+    ) ++ stage.Forms.WorkingIR
 
   override def invalidates(a: Transform): Boolean = a match {
     case _: checks.CheckResets | passes.CheckTypes => true
-    case _                                         => false
+    case _ => false
   }
 
   import InferResets._
@@ -138,7 +139,7 @@ class InferResets extends Transform with DependencyAPIMigration {
             val mod = instMap(target.ref)
             val port = target.component.head match {
               case TargetToken.Field(name) => name
-              case bad => Utils.throwInternalError(s"Unexpected token $bad")
+              case bad                     => Utils.throwInternalError(s"Unexpected token $bad")
             }
             target.copy(module = mod, ref = port, component = target.component.tail)
           case _ => target
@@ -148,17 +149,18 @@ class InferResets extends Transform with DependencyAPIMigration {
         // Mark driver of a ResetType leaf
         def markResetDriver(lhs: Expression, rhs: Expression): Unit = {
           val con = Utils.flow(lhs) match {
-            case SinkFlow   if lhs.tpe == ResetType => Some((lhs, rhs))
+            case SinkFlow if lhs.tpe == ResetType   => Some((lhs, rhs))
             case SourceFlow if rhs.tpe == ResetType => Some((rhs, lhs))
             // If sink is not ResetType, do nothing
-            case _                                  => None
+            case _ => None
           }
-          con.foreach { case (loc, exp) =>
-            val driver = exp.tpe match {
-              case ResetType => TargetDriver(makeTarget(exp))
-              case tpe       => TypeDriver(tpe, () => makeTarget(exp))
-            }
-            map.getOrElseUpdate(makeTarget(loc), mutable.ListBuffer()) += driver
+          con.foreach {
+            case (loc, exp) =>
+              val driver = exp.tpe match {
+                case ResetType => TargetDriver(makeTarget(exp))
+                case tpe       => TypeDriver(tpe, () => makeTarget(exp))
+              }
+              map.getOrElseUpdate(makeTarget(loc), mutable.ListBuffer()) += driver
           }
         }
         stmt match {
@@ -227,7 +229,7 @@ class InferResets extends Transform with DependencyAPIMigration {
   private def resolve(map: Map[ReferenceTarget, List[ResetDriver]]): Try[Map[ReferenceTarget, Type]] = {
     val graph = new MutableDiGraph[Node]
     val asyncNode = Typ(AsyncResetType)
-    val syncNode  = Typ(Utils.BoolType)
+    val syncNode = Typ(Utils.BoolType)
     for ((target, drivers) <- map) {
       val v = Var(target)
       drivers.foreach {
@@ -247,7 +249,7 @@ class InferResets extends Transform with DependencyAPIMigration {
           // do the actual inference, the check is simply if syncNode is reachable from asyncNode
           graph.addPairWithEdge(v, u)
         case InvalidDriver =>
-          graph.addVertex(v)   // Must be in the graph or won't be inferred
+          graph.addVertex(v) // Must be in the graph or won't be inferred
       }
     }
     val async = graph.reachableFrom(asyncNode)
@@ -257,7 +259,7 @@ class InferResets extends Transform with DependencyAPIMigration {
         case (a, _) if a.contains(syncNode) => throw InferResetsException(graph.path(asyncNode, syncNode))
         case (a, s) =>
           (a.view.collect { case Var(t) => t -> asyncNode.tpe } ++
-           s.view.collect { case Var(t) => t -> syncNode.tpe  }).toMap
+            s.view.collect { case Var(t) => t -> syncNode.tpe }).toMap
       }
     }
   }
@@ -265,34 +267,40 @@ class InferResets extends Transform with DependencyAPIMigration {
   private def fixupType(tpe: Type, tree: TypeTree): Type = (tpe, tree) match {
     case (BundleType(fields), BundleTree(map)) =>
       val fieldsx =
-        fields.map(f => map.get(f.name) match {
-          case Some(t) => f.copy(tpe = fixupType(f.tpe, t))
-          case None => f
-        })
+        fields.map(f =>
+          map.get(f.name) match {
+            case Some(t) => f.copy(tpe = fixupType(f.tpe, t))
+            case None    => f
+          }
+        )
       BundleType(fieldsx)
     case (VectorType(vtpe, size), VectorTree(t)) =>
       VectorType(fixupType(vtpe, t), size)
     case (_, GroundTree(t)) => t
-    case x => throw new Exception(s"Error! Unexpected pair $x")
+    case x                  => throw new Exception(s"Error! Unexpected pair $x")
   }
 
   // Assumes all ReferenceTargets are in the same module
   private def makeDeclMap(map: Map[ReferenceTarget, Type]): Map[String, TypeTree] =
-    map.groupBy(_._1.ref).mapValues { ts =>
-      TypeTree.fromTokens(ts.toSeq.map { case (target, tpe) => (target.component, tpe) }:_*)
-    }.toMap
+    map
+      .groupBy(_._1.ref)
+      .mapValues { ts =>
+        TypeTree.fromTokens(ts.toSeq.map { case (target, tpe) => (target.component, tpe) }: _*)
+      }
+      .toMap
 
   private def implPort(map: Map[String, TypeTree])(port: Port): Port =
-    map.get(port.name)
-       .map(tree => port.copy(tpe = fixupType(port.tpe, tree)))
-       .getOrElse(port)
+    map
+      .get(port.name)
+      .map(tree => port.copy(tpe = fixupType(port.tpe, tree)))
+      .getOrElse(port)
   private def implStmt(map: Map[String, TypeTree])(stmt: Statement): Statement =
     stmt.map(implStmt(map)) match {
       case decl: IsDeclaration if map.contains(decl.name) =>
         val tree = map(decl.name)
         decl match {
-          case reg: DefRegister => reg.copy(tpe = fixupType(reg.tpe, tree))
-          case wire: DefWire => wire.copy(tpe = fixupType(wire.tpe, tree))
+          case reg:  DefRegister => reg.copy(tpe = fixupType(reg.tpe, tree))
+          case wire: DefWire     => wire.copy(tpe = fixupType(wire.tpe, tree))
           // TODO Can this really happen?
           case mem: DefMemory => mem.copy(dataType = fixupType(mem.dataType, tree))
           case other => other
@@ -303,10 +311,13 @@ class InferResets extends Transform with DependencyAPIMigration {
   private def implement(c: Circuit, map: Map[ReferenceTarget, Type]): Circuit = {
     val modMaps = map.groupBy(_._1.module)
     def onMod(mod: DefModule): DefModule = {
-      modMaps.get(mod.name).map { tmap =>
-        val declMap = makeDeclMap(tmap)
-        mod.map(implPort(declMap)).map(implStmt(declMap))
-      }.getOrElse(mod)
+      modMaps
+        .get(mod.name)
+        .map { tmap =>
+          val declMap = makeDeclMap(tmap)
+          mod.map(implPort(declMap)).map(implStmt(declMap))
+        }
+        .getOrElse(mod)
     }
     c.map(onMod)
   }

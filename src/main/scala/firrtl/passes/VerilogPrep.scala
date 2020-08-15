@@ -21,15 +21,17 @@ import scala.collection.mutable
 object VerilogPrep extends Pass {
 
   override def prerequisites = firrtl.stage.Forms.LowFormMinimumOptimized ++
-    Seq( Dependency[firrtl.transforms.BlackBoxSourceHelper],
-         Dependency[firrtl.transforms.FixAddingNegativeLiterals],
-         Dependency[firrtl.transforms.ReplaceTruncatingArithmetic],
-         Dependency[firrtl.transforms.InlineBitExtractionsTransform],
-         Dependency[firrtl.transforms.InlineCastsTransform],
-         Dependency[firrtl.transforms.LegalizeClocksTransform],
-         Dependency[firrtl.transforms.FlattenRegUpdate],
-         Dependency(passes.VerilogModulusCleanup),
-         Dependency[firrtl.transforms.VerilogRename] )
+    Seq(
+      Dependency[firrtl.transforms.BlackBoxSourceHelper],
+      Dependency[firrtl.transforms.FixAddingNegativeLiterals],
+      Dependency[firrtl.transforms.ReplaceTruncatingArithmetic],
+      Dependency[firrtl.transforms.InlineBitExtractionsTransform],
+      Dependency[firrtl.transforms.InlineCastsTransform],
+      Dependency[firrtl.transforms.LegalizeClocksTransform],
+      Dependency[firrtl.transforms.FlattenRegUpdate],
+      Dependency(passes.VerilogModulusCleanup),
+      Dependency[firrtl.transforms.VerilogRename]
+    )
 
   override def optionalPrerequisites = firrtl.stage.Forms.LowFormOptimized
 
@@ -46,9 +48,9 @@ object VerilogPrep extends Pass {
     val sourceMap = mutable.HashMap.empty[WrappedExpression, Expression]
     lazy val namespace = Namespace(m)
 
-    def onStmt(stmt: Statement): Statement = stmt map onStmt match {
+    def onStmt(stmt: Statement): Statement = stmt.map(onStmt) match {
       case attach: Attach =>
-        val wires = attach.exprs groupBy kind
+        val wires = attach.exprs.groupBy(kind)
         val sources = wires.getOrElse(PortKind, Seq.empty) ++ wires.getOrElse(WireKind, Seq.empty)
         val instPorts = wires.getOrElse(InstanceKind, Seq.empty)
         // Sanity check (Should be caught by CheckTypes)
@@ -71,14 +73,14 @@ object VerilogPrep extends Pass {
       case s => s
     }
 
-    (m map onStmt, sourceMap.toMap)
+    (m.map(onStmt), sourceMap.toMap)
   }
 
   def run(c: Circuit): Circuit = {
     def lowerE(e: Expression): Expression = e match {
       case (_: WRef | _: WSubField) if kind(e) == InstanceKind =>
         WRef(LowerTypes.loweredName(e), e.tpe, kind(e), flow(e))
-      case _ => e map lowerE
+      case _ => e.map(lowerE)
     }
 
     def lowerS(attachMap: AttachSourceMap)(s: Statement): Statement = s match {
@@ -96,12 +98,12 @@ object VerilogPrep extends Pass {
         }.unzip
         val newInst = WDefInstanceConnector(info, name, module, tpe, portCons)
         Block(wires.flatten :+ newInst)
-      case other => other map lowerS(attachMap) map lowerE
+      case other => other.map(lowerS(attachMap)).map(lowerE)
     }
 
-    val modulesx = c.modules map { mod =>
+    val modulesx = c.modules.map { mod =>
       val (modx, attachMap) = collectAndRemoveAttach(mod)
-      modx map lowerS(attachMap)
+      modx.map(lowerS(attachMap))
     }
     c.copy(modules = modulesx)
   }

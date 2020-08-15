@@ -25,54 +25,58 @@ case object DecWire extends DecKind
 /** Store of pending wiring information for a Module */
 case class Modifications(
   addPortOrWire: Option[(String, DecKind)] = None,
-  cons: Seq[(String, String)] = Seq.empty) {
+  cons:          Seq[(String, String)] = Seq.empty) {
 
   override def toString: String = serialize("")
 
   def serialize(tab: String): String = s"""
-   |$tab addPortOrWire: $addPortOrWire
-   |$tab cons: $cons
-   |""".stripMargin
+                                          |$tab addPortOrWire: $addPortOrWire
+                                          |$tab cons: $cons
+                                          |""".stripMargin
 }
 
 /** A lineage tree representing the instance hierarchy in a design
   */
 @deprecated("Use DiGraph/InstanceGraph", "1.1.1")
 case class Lineage(
-    name: String,
-    children: Seq[(String, Lineage)] = Seq.empty,
-    source: Boolean = false,
-    sink: Boolean = false,
-    sourceParent: Boolean = false,
-    sinkParent: Boolean = false,
-    sharedParent: Boolean = false,
-    addPort: Option[(String, DecKind)] = None,
-    cons: Seq[(String, String)] = Seq.empty) {
+  name:         String,
+  children:     Seq[(String, Lineage)] = Seq.empty,
+  source:       Boolean = false,
+  sink:         Boolean = false,
+  sourceParent: Boolean = false,
+  sinkParent:   Boolean = false,
+  sharedParent: Boolean = false,
+  addPort:      Option[(String, DecKind)] = None,
+  cons:         Seq[(String, String)] = Seq.empty) {
 
   def map(f: Lineage => Lineage): Lineage =
-    this.copy(children = children.map{ case (i, m) => (i, f(m)) })
+    this.copy(children = children.map { case (i, m) => (i, f(m)) })
 
   override def toString: String = shortSerialize("")
 
   def shortSerialize(tab: String): String = s"""
-    |$tab name: $name,
-    |$tab children: ${children.map(c => tab + "   " + c._2.shortSerialize(tab + "    "))}
-    |""".stripMargin
+                                               |$tab name: $name,
+                                               |$tab children: ${children.map(c =>
+    tab + "   " + c._2.shortSerialize(tab + "    ")
+  )}
+                                               |""".stripMargin
 
   def foldLeft[B](z: B)(op: (B, (String, Lineage)) => B): B =
     this.children.foldLeft(z)(op)
 
   def serialize(tab: String): String = s"""
-    |$tab name: $name,
-    |$tab source: $source,
-    |$tab sink: $sink,
-    |$tab sourceParent: $sourceParent,
-    |$tab sinkParent: $sinkParent,
-    |$tab sharedParent: $sharedParent,
-    |$tab addPort: $addPort
-    |$tab cons: $cons
-    |$tab children: ${children.map(c => tab + "   " + c._2.serialize(tab + "    "))}
-    |""".stripMargin
+                                          |$tab name: $name,
+                                          |$tab source: $source,
+                                          |$tab sink: $sink,
+                                          |$tab sourceParent: $sourceParent,
+                                          |$tab sinkParent: $sinkParent,
+                                          |$tab sharedParent: $sharedParent,
+                                          |$tab addPort: $addPort
+                                          |$tab cons: $cons
+                                          |$tab children: ${children.map(c =>
+    tab + "   " + c._2.serialize(tab + "    ")
+  )}
+                                          |""".stripMargin
 }
 
 object WiringUtils {
@@ -87,12 +91,12 @@ object WiringUtils {
     val childrenMap = new ChildrenMap()
     def getChildren(mname: String)(s: Statement): Unit = s match {
       case s: WDefInstance =>
-        childrenMap(mname) = childrenMap(mname) :+( (s.name, s.module) )
+        childrenMap(mname) = childrenMap(mname) :+ ((s.name, s.module))
       case s: DefInstance =>
-        childrenMap(mname) = childrenMap(mname) :+( (s.name, s.module) )
+        childrenMap(mname) = childrenMap(mname) :+ ((s.name, s.module))
       case s => s.foreach(getChildren(mname))
     }
-    c.modules.foreach{ m =>
+    c.modules.foreach { m =>
       childrenMap(m.name) = Nil
       m.foreach(getChildren(m.name))
     }
@@ -103,7 +107,7 @@ object WiringUtils {
     */
   @deprecated("Use DiGraph/InstanceGraph", "1.1.1")
   def getLineage(childrenMap: ChildrenMap, module: String): Lineage =
-    Lineage(module, childrenMap(module) map { case (i, m) => (i, getLineage(childrenMap, m)) } )
+    Lineage(module, childrenMap(module).map { case (i, m) => (i, getLineage(childrenMap, m)) })
 
   /** Return a map of sink instances to source instances that minimizes
     * distance
@@ -114,22 +118,25 @@ object WiringUtils {
     * @return a map of sink instance names to source instance names
     * @throws WiringException if a sink is equidistant to two sources
     */
-  @deprecated("This method can lead to non-determinism in your compiler pass and exposes internal details." +
-    " Please file an issue with firrtl if you have a use case!", "Firrtl 1.4")
+  @deprecated(
+    "This method can lead to non-determinism in your compiler pass and exposes internal details." +
+      " Please file an issue with firrtl if you have a use case!",
+    "Firrtl 1.4"
+  )
   def sinksToSources(sinks: Seq[Named], source: String, i: InstanceGraph): Map[Seq[WDefInstance], Seq[WDefInstance]] = {
     // The order of owners influences the order of the results, it thus needs to be deterministic with a  LinkedHashMap.
     val owners = new mutable.LinkedHashMap[Seq[WDefInstance], Vector[Seq[WDefInstance]]]
     val queue = new mutable.Queue[Seq[WDefInstance]]
     val visited = new mutable.HashMap[Seq[WDefInstance], Boolean].withDefaultValue(false)
 
-    val sourcePaths = i.fullHierarchy.collect { case (k,v) if k.module == source =>  v }
+    val sourcePaths = i.fullHierarchy.collect { case (k, v) if k.module == source => v }
     sourcePaths.flatten.foreach { l =>
       queue.enqueue(l)
       owners(l) = Vector(l)
     }
 
     val sinkModuleNames = sinks.map(getModuleName).toSet
-    val sinkPaths = i.fullHierarchy.collect { case (k,v) if sinkModuleNames.contains(k.module) => v }
+    val sinkPaths = i.fullHierarchy.collect { case (k, v) if sinkModuleNames.contains(k.module) => v }
     // sinkInsts needs to have unique entries but is also iterated over which is why we use a LinkedHashSet
     val sinkInsts = mutable.LinkedHashSet() ++ sinkPaths.flatten
 
@@ -156,8 +163,8 @@ object WiringUtils {
 
         // [todo] This is the critical section
         edges
-          .filter( e => !visited(e) && e.nonEmpty )
-          .foreach{ v =>
+          .filter(e => !visited(e) && e.nonEmpty)
+          .foreach { v =>
             owners(v) = owners.getOrElse(v, Vector()) ++ owners(u)
             queue.enqueue(v)
           }
@@ -167,8 +174,8 @@ object WiringUtils {
       // this should fail is if a sink is equidistant to two sources.
       sinkInsts.foreach { s =>
         if (!owners.contains(s) || owners(s).size > 1) {
-          throw new WiringException(
-            s"Unable to determine source mapping for sink '${s.map(_.name)}'") }
+          throw new WiringException(s"Unable to determine source mapping for sink '${s.map(_.name)}'")
+        }
       }
     }
 
@@ -184,21 +191,24 @@ object WiringUtils {
     * @return a map of sink instance names to source instance names
     * @throws WiringException if a sink is equidistant to two sources
     */
-  private[firrtl] def sinksToSourcesSeq(sinks: Seq[Named], source: String, i: InstanceKeyGraph):
-      Seq[(Seq[InstanceKey], Seq[InstanceKey])] = {
+  private[firrtl] def sinksToSourcesSeq(
+    sinks:  Seq[Named],
+    source: String,
+    i:      InstanceKeyGraph
+  ): Seq[(Seq[InstanceKey], Seq[InstanceKey])] = {
     // The order of owners influences the order of the results, it thus needs to be deterministic with a  LinkedHashMap.
     val owners = new mutable.LinkedHashMap[Seq[InstanceKey], Vector[Seq[InstanceKey]]]
     val queue = new mutable.Queue[Seq[InstanceKey]]
     val visited = new mutable.HashMap[Seq[InstanceKey], Boolean].withDefaultValue(false)
 
-    val sourcePaths = i.fullHierarchy.collect { case (k,v) if k.module == source =>  v }
+    val sourcePaths = i.fullHierarchy.collect { case (k, v) if k.module == source => v }
     sourcePaths.flatten.foreach { l =>
       queue.enqueue(l)
       owners(l) = Vector(l)
     }
 
     val sinkModuleNames = sinks.map(getModuleName).toSet
-    val sinkPaths = i.fullHierarchy.collect { case (k,v) if sinkModuleNames.contains(k.module) => v }
+    val sinkPaths = i.fullHierarchy.collect { case (k, v) if sinkModuleNames.contains(k.module) => v }
     // sinkInsts needs to have unique entries but is also iterated over which is why we use a LinkedHashSet
     val sinkInsts = mutable.LinkedHashSet() ++ sinkPaths.flatten
 
@@ -225,8 +235,8 @@ object WiringUtils {
 
         // [todo] This is the critical section
         edges
-          .filter( e => !visited(e) && e.nonEmpty )
-          .foreach{ v =>
+          .filter(e => !visited(e) && e.nonEmpty)
+          .foreach { v =>
             owners(v) = owners.getOrElse(v, Vector()) ++ owners(u)
             queue.enqueue(v)
           }
@@ -236,8 +246,8 @@ object WiringUtils {
       // this should fail is if a sink is equidistant to two sources.
       sinkInsts.foreach { s =>
         if (!owners.contains(s) || owners(s).size > 1) {
-          throw new WiringException(
-            s"Unable to determine source mapping for sink '${s.map(_.name)}'") }
+          throw new WiringException(s"Unable to determine source mapping for sink '${s.map(_.name)}'")
+        }
       }
     }
 
@@ -249,8 +259,7 @@ object WiringUtils {
     n match {
       case ModuleName(m, _)                   => m
       case ComponentName(_, ModuleName(m, _)) => m
-      case _ => throw new WiringException(
-        "Only Components or Modules have an associated Module name")
+      case _                                  => throw new WiringException("Only Components or Modules have an associated Module name")
     }
   }
 
@@ -266,9 +275,9 @@ object WiringUtils {
   def getType(c: Circuit, module: String, comp: String): Type = {
     def getRoot(e: Expression): String = e match {
       case r: Reference => r.name
-      case i: SubIndex => getRoot(i.expr)
+      case i: SubIndex  => getRoot(i.expr)
       case a: SubAccess => getRoot(a.expr)
-      case f: SubField => getRoot(f.expr)
+      case f: SubField  => getRoot(f.expr)
     }
     val eComp = toExp(comp)
     val root = getRoot(eComp)
@@ -289,11 +298,12 @@ object WiringUtils {
       case sx: DefMemory if sx.name == root =>
         tpe = Some(MemPortUtils.memType(sx))
         sx
-      case sx => sx map getType
+      case sx => sx.map(getType)
     }
-    val m = c.modules find (_.name == module) getOrElse {
-      throw new WiringException(s"Must have a module named $module") }
-    tpe = m.ports find (_.name == root) map (_.tpe)
+    val m = c.modules.find(_.name == module).getOrElse {
+      throw new WiringException(s"Must have a module named $module")
+    }
+    tpe = m.ports.find(_.name == root).map(_.tpe)
     m match {
       case Module(i, n, ps, b) => getType(b)
       case e: ExtModule =>
@@ -301,10 +311,10 @@ object WiringUtils {
     tpe match {
       case None => throw new WiringException(s"Didn't find $comp in $module!")
       case Some(t) =>
-        def setType(e: Expression): Expression = e map setType match {
+        def setType(e: Expression): Expression = e.map(setType) match {
           case ex: Reference => ex.copy(tpe = t)
-          case ex: SubField => ex.copy(tpe = field_type(ex.expr.tpe, ex.name))
-          case ex: SubIndex => ex.copy(tpe = sub_type(ex.expr.tpe))
+          case ex: SubField  => ex.copy(tpe = field_type(ex.expr.tpe, ex.name))
+          case ex: SubIndex  => ex.copy(tpe = sub_type(ex.expr.tpe))
           case ex: SubAccess => ex.copy(tpe = sub_type(ex.expr.tpe))
         }
         setType(eComp).tpe

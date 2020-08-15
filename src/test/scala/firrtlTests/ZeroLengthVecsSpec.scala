@@ -7,18 +7,14 @@ import firrtl.passes._
 import firrtl.testutils.FirrtlFlatSpec
 
 class ZeroLengthVecsSpec extends FirrtlFlatSpec {
-  val transforms = Seq(
-    ToWorkingIR,
-    ResolveKinds,
-    InferTypes,
-    ResolveFlows,
-    new InferWidths,
-    ZeroLengthVecs,
-    CheckTypes)
+  val transforms = Seq(ToWorkingIR, ResolveKinds, InferTypes, ResolveFlows, new InferWidths, ZeroLengthVecs, CheckTypes)
   protected def exec(input: String) = {
-    transforms.foldLeft(CircuitState(parse(input), UnknownForm)) {
-      (c: CircuitState, t: Transform) => t.runTransform(c)
-    }.circuit.serialize
+    transforms
+      .foldLeft(CircuitState(parse(input), UnknownForm)) { (c: CircuitState, t: Transform) =>
+        t.runTransform(c)
+      }
+      .circuit
+      .serialize
   }
 
   "ZeroLengthVecs" should "drop subaccesses to zero-length vectors" in {
@@ -42,7 +38,7 @@ class ZeroLengthVecsSpec extends FirrtlFlatSpec {
         |    skip
         |    o <= validif(UInt<1>(0), UInt<8>(0))
         |""".stripMargin
-    (parse(exec(input))) should be (parse(check))
+    (parse(exec(input))) should be(parse(check))
   }
 
   "ZeroLengthVecs" should "handle intervals correctly" in {
@@ -62,7 +58,7 @@ class ZeroLengthVecsSpec extends FirrtlFlatSpec {
         |    output o : Interval[3,4].0
         |    o <= validif(UInt<1>(0), clip(asInterval(SInt<1>(0), 0, 0, 0), i[sel]))
         |""".stripMargin
-    (parse(exec(input))) should be (parse(check))
+    (parse(exec(input))) should be(parse(check))
   }
 
 }

@@ -5,7 +5,6 @@ package logger
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.options.{HasShellOptions, ShellOption}
 
-
 /** An annotation associated with a Logger command line option */
 sealed trait LoggerOption { this: Annotation => }
 
@@ -14,7 +13,9 @@ sealed trait LoggerOption { this: Annotation => }
   *  - if unset, a [[LogLevelAnnotation]] with the default log level will be emitted
   * @param level the level of logging
   */
-case class LogLevelAnnotation(globalLogLevel: LogLevel.Value = LogLevel.Warn) extends NoTargetAnnotation with LoggerOption
+case class LogLevelAnnotation(globalLogLevel: LogLevel.Value = LogLevel.Warn)
+    extends NoTargetAnnotation
+    with LoggerOption
 
 object LogLevelAnnotation extends HasShellOptions {
 
@@ -24,7 +25,9 @@ object LogLevelAnnotation extends HasShellOptions {
       toAnnotationSeq = (a: String) => Seq(LogLevelAnnotation(LogLevel(a))),
       helpText = s"Set global logging verbosity (default: ${new LoggerOptions().globalLogLevel}",
       shortOption = Some("ll"),
-      helpValueName = Some("{error|warn|info|debug|trace}") ) )
+      helpValueName = Some("{error|warn|info|debug|trace}")
+    )
+  )
 
 }
 
@@ -33,20 +36,26 @@ object LogLevelAnnotation extends HasShellOptions {
   * @param name the class name to log
   * @param level the verbosity level
   */
-case class ClassLogLevelAnnotation(className: String, level: LogLevel.Value) extends NoTargetAnnotation with LoggerOption
+case class ClassLogLevelAnnotation(className: String, level: LogLevel.Value)
+    extends NoTargetAnnotation
+    with LoggerOption
 
 object ClassLogLevelAnnotation extends HasShellOptions {
 
   val options = Seq(
     new ShellOption[Seq[String]](
       longOption = "class-log-level",
-      toAnnotationSeq = (a: Seq[String]) => a.map { aa =>
-        val className :: levelName :: _ = aa.split(":").toList
-        val level = LogLevel(levelName)
-        ClassLogLevelAnnotation(className, level) },
+      toAnnotationSeq = (a: Seq[String]) =>
+        a.map { aa =>
+          val className :: levelName :: _ = aa.split(":").toList
+          val level = LogLevel(levelName)
+          ClassLogLevelAnnotation(className, level)
+        },
       helpText = "Set per-class logging verbosity",
       shortOption = Some("cll"),
-      helpValueName = Some("<FullClassName:{error|warn|info|debug|trace}>...") ) )
+      helpValueName = Some("<FullClassName:{error|warn|info|debug|trace}>...")
+    )
+  )
 
 }
 
@@ -63,7 +72,9 @@ object LogFileAnnotation extends HasShellOptions {
       longOption = "log-file",
       toAnnotationSeq = (a: String) => Seq(LogFileAnnotation(Some(a))),
       helpText = "Log to a file instead of STDOUT",
-      helpValueName = Some("<file>") ) )
+      helpValueName = Some("<file>")
+    )
+  )
 
 }
 
@@ -77,6 +88,8 @@ case object LogClassNamesAnnotation extends NoTargetAnnotation with LoggerOption
       longOption = "log-class-names",
       toAnnotationSeq = (a: Unit) => Seq(LogClassNamesAnnotation),
       helpText = "Show class names and log level in logging output",
-      shortOption = Some("lcn") ) )
+      shortOption = Some("lcn")
+    )
+  )
 
 }

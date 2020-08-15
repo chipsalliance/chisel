@@ -10,10 +10,10 @@ package annotations
   * @param target ReferenceTarget to an AsyncReset
   */
 case class PresetAnnotation(target: ReferenceTarget)
-    extends SingleTargetAnnotation[ReferenceTarget] with firrtl.transforms.DontTouchAllTargets {
+    extends SingleTargetAnnotation[ReferenceTarget]
+    with firrtl.transforms.DontTouchAllTargets {
   override def duplicate(n: ReferenceTarget) = this.copy(target = n)
 }
-
 
 /**
   * Transform the targeted asynchronously-reset Reg into a bitstream preset Reg
@@ -22,12 +22,10 @@ case class PresetAnnotation(target: ReferenceTarget)
   * @param target ReferenceTarget to a Reg
   */
 private[firrtl] case class PresetRegAnnotation(
-  target: ReferenceTarget
-) extends SingleTargetAnnotation[ReferenceTarget] with RegisterEmissionOption {
+  target: ReferenceTarget)
+    extends SingleTargetAnnotation[ReferenceTarget]
+    with RegisterEmissionOption {
   def duplicate(n: ReferenceTarget) = this.copy(target = n)
   override def useInitAsPreset = true
   override def disableRandomization = true
 }
-
-
-

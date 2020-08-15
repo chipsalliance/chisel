@@ -7,8 +7,7 @@ import firrtl.options.{Dependency, Phase, PhaseManager, Shell, Stage, StageMain}
 import firrtl.options.phases.DeletedWrapper
 import firrtl.stage.phases.CatchExceptions
 
-class FirrtlPhase
-    extends PhaseManager(targets=Seq(Dependency[firrtl.stage.phases.Compiler])) {
+class FirrtlPhase extends PhaseManager(targets = Seq(Dependency[firrtl.stage.phases.Compiler])) {
 
   override def invalidates(a: Phase) = false
 

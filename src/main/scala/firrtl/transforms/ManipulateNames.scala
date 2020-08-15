@@ -57,8 +57,9 @@ sealed trait ManipulateNamesListAnnotation[A <: ManipulateNames[_]] extends Mult
   * @note $noteLocalTargets
   */
 case class ManipulateNamesBlocklistAnnotation[A <: ManipulateNames[_]](
-  targets: Seq[Seq[Target]],
-  transform: Dependency[A]) extends ManipulateNamesListAnnotation[A] {
+  targets:   Seq[Seq[Target]],
+  transform: Dependency[A])
+    extends ManipulateNamesListAnnotation[A] {
 
   override def duplicate(a: Seq[Seq[Target]]) = this.copy(targets = a)
 
@@ -77,8 +78,9 @@ case class ManipulateNamesBlocklistAnnotation[A <: ManipulateNames[_]](
   * @note $noteLocalTargets
   */
 case class ManipulateNamesAllowlistAnnotation[A <: ManipulateNames[_]](
-  targets: Seq[Seq[Target]],
-  transform: Dependency[A]) extends ManipulateNamesListAnnotation[A] {
+  targets:   Seq[Seq[Target]],
+  transform: Dependency[A])
+    extends ManipulateNamesListAnnotation[A] {
 
   override def duplicate(a: Seq[Seq[Target]]) = this.copy(targets = a)
 
@@ -94,19 +96,21 @@ case class ManipulateNamesAllowlistAnnotation[A <: ManipulateNames[_]](
   * @param oldTargets the old targets
   */
 case class ManipulateNamesAllowlistResultAnnotation[A <: ManipulateNames[_]](
-  targets: Seq[Seq[Target]],
-  transform: Dependency[A],
-  oldTargets: Seq[Seq[Target]]) extends MultiTargetAnnotation {
+  targets:    Seq[Seq[Target]],
+  transform:  Dependency[A],
+  oldTargets: Seq[Seq[Target]])
+    extends MultiTargetAnnotation {
 
   override def duplicate(a: Seq[Seq[Target]]) = this.copy(targets = a)
 
   override def update(renames: RenameMap) = {
     val (targetsx, oldTargetsx) = targets.zip(oldTargets).foldLeft((Seq.empty[Seq[Target]], Seq.empty[Seq[Target]])) {
-      case ((accT, accO), (t, o)) => t.flatMap(renames(_)) match {
-        /* If the target was deleted, delete the old target */
-        case tx if tx.isEmpty => (accT, accO)
-        case tx               => (Seq(tx) ++ accT, Seq(o) ++ accO)
-      }
+      case ((accT, accO), (t, o)) =>
+        t.flatMap(renames(_)) match {
+          /* If the target was deleted, delete the old target */
+          case tx if tx.isEmpty => (accT, accO)
+          case tx               => (Seq(tx) ++ accT, Seq(o) ++ accO)
+        }
     }
     targetsx match {
       /* If all targets were deleted, delete the annotation */
@@ -117,9 +121,13 @@ case class ManipulateNamesAllowlistResultAnnotation[A <: ManipulateNames[_]](
 
   /** Return [[firrtl.RenameMap RenameMap]] from old targets to new targets */
   def toRenameMap: RenameMap = {
-    val m = oldTargets.zip(targets).flatMap {
-      case (a, b) => a.map(_ -> b)
-    }.toMap.asInstanceOf[Map[CompleteTarget, Seq[CompleteTarget]]]
+    val m = oldTargets
+      .zip(targets)
+      .flatMap {
+        case (a, b) => a.map(_ -> b)
+      }
+      .toMap
+      .asInstanceOf[Map[CompleteTarget, Seq[CompleteTarget]]]
     RenameMap.create(m)
   }
 
@@ -132,25 +140,28 @@ case class ManipulateNamesAllowlistResultAnnotation[A <: ManipulateNames[_]](
   * @param allow a function that returns true if a [[firrtl.annotations.Target Target]] should be renamed
   */
 private class RenameDataStructure(
-  circuit: ir.Circuit,
+  circuit:     ir.Circuit,
   val renames: RenameMap,
-  val block: Target => Boolean,
-  val allow: Target => Boolean) {
+  val block:   Target => Boolean,
+  val allow:   Target => Boolean) {
 
   /** A mapping of targets to associated namespaces */
   val namespaces: mutable.HashMap[CompleteTarget, Namespace] =
     mutable.HashMap(CircuitTarget(circuit.main) -> Namespace(circuit))
 
-  /** Wraps a HashMap to provide better error messages when accessing a non-existing element  */
+  /** Wraps a HashMap to provide better error messages when accessing a non-existing element */
   class InstanceHashMap {
     type Key = ReferenceTarget
     type Value = Either[ReferenceTarget, InstanceTarget]
     private val m = mutable.HashMap[Key, Value]()
-    def apply(key: ReferenceTarget):  Value = m.getOrElse(key, {
-      throw new FirrtlUserException(
-        s"""|Reference target '${key.serialize}' did not exist in mapping of reference targets to insts/mems.
-            |    This is indicative of a circuit that has not been run through LowerTypes.""".stripMargin)
-    })
+    def apply(key: ReferenceTarget): Value = m.getOrElse(
+      key, {
+        throw new FirrtlUserException(
+          s"""|Reference target '${key.serialize}' did not exist in mapping of reference targets to insts/mems.
+              |    This is indicative of a circuit that has not been run through LowerTypes.""".stripMargin
+        )
+      }
+    )
     def update(key: Key, value: Value): Unit = m.update(key, value)
   }
 
@@ -165,17 +176,17 @@ private class RenameDataStructure(
 /** Transform for manipulate all the names in a FIRRTL circuit.
   * @tparam A the type of the child transform
   */
-abstract class ManipulateNames[A <: ManipulateNames[_] : ClassTag] extends Transform with DependencyAPIMigration {
+abstract class ManipulateNames[A <: ManipulateNames[_]: ClassTag] extends Transform with DependencyAPIMigration {
 
   /** A function used to manipulate a name in a FIRRTL circuit */
   def manipulate: (String, Namespace) => Option[String]
 
-  override def prerequisites: Seq[TransformDependency] = Seq(Dependency(firrtl.passes.LowerTypes))
-  override def optionalPrerequisites: Seq[TransformDependency] = Seq.empty
+  override def prerequisites:          Seq[TransformDependency] = Seq(Dependency(firrtl.passes.LowerTypes))
+  override def optionalPrerequisites:  Seq[TransformDependency] = Seq.empty
   override def optionalPrerequisiteOf: Seq[TransformDependency] = Forms.LowEmitters
   override def invalidates(a: Transform) = a match {
     case _: analyses.GetNamespace => true
-    case _                        => false
+    case _ => false
   }
 
   /** Compute a new name for some target and record the rename if the new name differs. If the top module or the circuit
@@ -192,27 +203,31 @@ abstract class ManipulateNames[A <: ManipulateNames[_] : ClassTag] extends Trans
       case a if r.skip(a) =>
         (name, None)
       /* Circuit renaming */
-      case a@ CircuitTarget(b) => manipulate(b, r.namespaces(a)) match {
-        case Some(str) => (str, Some(a.copy(circuit = str)))
-        case None      => (b, None)
-      }
+      case a @ CircuitTarget(b) =>
+        manipulate(b, r.namespaces(a)) match {
+          case Some(str) => (str, Some(a.copy(circuit = str)))
+          case None      => (b, None)
+        }
       /* Module renaming for non-top modules */
-      case a@ ModuleTarget(_, b) => manipulate(b, r.namespaces(a.circuitTarget)) match {
-        case Some(str) => (str, Some(a.copy(module = str)))
-        case None      => (b, None)
-      }
+      case a @ ModuleTarget(_, b) =>
+        manipulate(b, r.namespaces(a.circuitTarget)) match {
+          case Some(str) => (str, Some(a.copy(module = str)))
+          case None      => (b, None)
+        }
       /* Instance renaming */
-      case a@ InstanceTarget(_, _, Nil, b, c) => manipulate(b, r.namespaces(a.moduleTarget)) match {
-        case Some(str) => (str, Some(a.copy(instance = str)))
-        case None      => (b, None)
-      }
+      case a @ InstanceTarget(_, _, Nil, b, c) =>
+        manipulate(b, r.namespaces(a.moduleTarget)) match {
+          case Some(str) => (str, Some(a.copy(instance = str)))
+          case None      => (b, None)
+        }
       /* Rename either a module component or a memory */
-      case a@ ReferenceTarget(_, _, _, b, Nil) => manipulate(b, r.namespaces(a.moduleTarget)) match {
-        case Some(str) => (str, Some(a.copy(ref = str)))
-        case None      => (b, None)
-      }
+      case a @ ReferenceTarget(_, _, _, b, Nil) =>
+        manipulate(b, r.namespaces(a.moduleTarget)) match {
+          case Some(str) => (str, Some(a.copy(ref = str)))
+          case None      => (b, None)
+        }
       /* Rename an instance port or a memory reader/writer/readwriter */
-      case a@ ReferenceTarget(_, _, _, b, (token@ TargetToken.Field(c)) :: Nil) =>
+      case a @ ReferenceTarget(_, _, _, b, (token @ TargetToken.Field(c)) :: Nil) =>
         val ref = r.instanceMap(a.moduleTarget.ref(b)) match {
           case Right(inst) => inst.ofModuleTarget
           case Left(mem)   => mem
@@ -224,8 +239,8 @@ abstract class ManipulateNames[A <: ManipulateNames[_] : ClassTag] extends Trans
     }
     /* Record the optional rename. If the circuit was renamed, also rename the top module. If the top module was
      * renamed, also rename the circuit. */
-    ax.foreach(
-      axx => target match {
+    ax.foreach(axx =>
+      target match {
         case c: CircuitTarget =>
           r.renames.rename(target, r.renames(axx))
           r.renames.rename(c.module(c.circuit), CircuitTarget(namex).module(namex))
@@ -252,21 +267,26 @@ abstract class ManipulateNames[A <: ManipulateNames[_] : ClassTag] extends Trans
     r.renames.underlying.get(t) match {
       case Some(ax) if ax.size == 1 =>
         ax match {
-          case Seq(foo: CircuitTarget)   => foo.name
-          case Seq(foo: ModuleTarget)    => foo.module
-          case Seq(foo: InstanceTarget)  => foo.instance
-          case Seq(foo: ReferenceTarget) => foo.tokens.last match {
-            case TargetToken.Ref(value)   => value
-            case TargetToken.Field(value) => value
-            case _ => Utils.throwInternalError(
-              s"""|Reference target '${t.serialize}'must end in 'Ref' or 'Field'
+          case Seq(foo: CircuitTarget) => foo.name
+          case Seq(foo: ModuleTarget) => foo.module
+          case Seq(foo: InstanceTarget) => foo.instance
+          case Seq(foo: ReferenceTarget) =>
+            foo.tokens.last match {
+              case TargetToken.Ref(value)   => value
+              case TargetToken.Field(value) => value
+              case _ =>
+                Utils.throwInternalError(
+                  s"""|Reference target '${t.serialize}'must end in 'Ref' or 'Field'
                   |    This is indicative of a circuit that has not been run through LowerTypes.""",
-              Some(new MatchError(foo.serialize)))
-          }
+                  Some(new MatchError(foo.serialize))
+                )
+            }
         }
-      case s@ Some(ax) => Utils.throwInternalError(
-        s"""Found multiple renames '${t}' -> [${ax.map(_.serialize).mkString(",")}]. This should be impossible.""",
-        Some(new MatchError(s)))
+      case s @ Some(ax) =>
+        Utils.throwInternalError(
+          s"""Found multiple renames '${t}' -> [${ax.map(_.serialize).mkString(",")}]. This should be impossible.""",
+          Some(new MatchError(s))
+        )
       case None => name
     }
 
@@ -280,27 +300,34 @@ abstract class ManipulateNames[A <: ManipulateNames[_] : ClassTag] extends Trans
     /* A reference to something inside this module */
     case w: WRef => w.copy(name = maybeRename(w.name, r, Target.asTarget(t)(w)))
     /* This is either the subfield of an instance or a subfield of a memory reader/writer/readwriter */
-    case w@ WSubField(expr, ref, _, _) => expr match {
-      /* This is an instance */
-      case we@ WRef(inst, _, _, _) =>
-        val tx = Target.asTarget(t)(we)
-        val (rTarget: ReferenceTarget, iTarget: InstanceTarget) = r.instanceMap(tx) match {
-          case Right(a) => (a.ofModuleTarget.ref(ref), a)
-          case a@ Left(ref)  => throw new FirrtlUserException(
-            s"""|Unexpected '${ref.serialize}' in instanceMap for key '${tx.serialize}' on expression '${w.serialize}'.
-                |    This is indicative of a circuit that has not been run through LowerTypes.""", new MatchError(a))
-        }
-        w.copy(we.copy(name=maybeRename(inst, r, iTarget)), name=maybeRename(ref, r, rTarget))
-      /* This is a reader/writer/readwriter */
-      case ws@ WSubField(expr, port, _, _) => expr match {
-        /* This is the memory. */
-        case wr@ WRef(mem, _, _, _) =>
-          w.copy(
-            expr=ws.copy(
-              expr=wr.copy(name=maybeRename(mem, r, t.ref(mem))),
-              name=maybeRename(port, r, t.ref(mem).field(port))))
+    case w @ WSubField(expr, ref, _, _) =>
+      expr match {
+        /* This is an instance */
+        case we @ WRef(inst, _, _, _) =>
+          val tx = Target.asTarget(t)(we)
+          val (rTarget: ReferenceTarget, iTarget: InstanceTarget) = r.instanceMap(tx) match {
+            case Right(a) => (a.ofModuleTarget.ref(ref), a)
+            case a @ Left(ref) =>
+              throw new FirrtlUserException(
+                s"""|Unexpected '${ref.serialize}' in instanceMap for key '${tx.serialize}' on expression '${w.serialize}'.
+                |    This is indicative of a circuit that has not been run through LowerTypes.""",
+                new MatchError(a)
+              )
+          }
+          w.copy(we.copy(name = maybeRename(inst, r, iTarget)), name = maybeRename(ref, r, rTarget))
+        /* This is a reader/writer/readwriter */
+        case ws @ WSubField(expr, port, _, _) =>
+          expr match {
+            /* This is the memory. */
+            case wr @ WRef(mem, _, _, _) =>
+              w.copy(
+                expr = ws.copy(
+                  expr = wr.copy(name = maybeRename(mem, r, t.ref(mem))),
+                  name = maybeRename(port, r, t.ref(mem).field(port))
+                )
+              )
+          }
       }
-    }
     case e => e.map(onExpression(_: ir.Expression, r, t))
   }
 
@@ -310,30 +337,31 @@ abstract class ManipulateNames[A <: ManipulateNames[_] : ClassTag] extends Trans
     * and readwriters.
     */
   private def onStatement(s: ir.Statement, r: RenameDataStructure, t: ModuleTarget): ir.Statement = s match {
-    case decl: ir.IsDeclaration => decl match {
-      case decl@ WDefInstance(_, inst, mod, _) =>
-        val modx = maybeRename(mod, r, t.circuitTarget.module(mod))
-        val instx = doRename(inst, r, t.instOf(inst, mod))
-        r.instanceMap(t.ref(inst)) = Right(t.instOf(inst, mod))
-        decl.copy(name = instx, module = modx)
-      case decl: ir.DefMemory =>
-        val namex = doRename(decl.name, r, t.ref(decl.name))
-        val tx = t.ref(decl.name)
-        r.namespaces(tx) = Namespace(decl.readers ++ decl.writers ++ decl.readwriters)
-        r.instanceMap(tx) = Left(tx)
-        decl
-          .copy(
-            name = namex,
-            readers = decl.readers.map(_r => doRename(_r, r, tx.field(_r))),
-            writers = decl.writers.map(_w => doRename(_w, r, tx.field(_w))),
-            readwriters = decl.readwriters.map(_rw => doRename(_rw, r, tx.field(_rw)))
-          )
-          .map(onExpression(_: ir.Expression, r, t))
-      case decl =>
-        decl
-          .map(doRename(_: String, r, t.ref(decl.name)))
-          .map(onExpression(_: ir.Expression, r, t))
-    }
+    case decl: ir.IsDeclaration =>
+      decl match {
+        case decl @ WDefInstance(_, inst, mod, _) =>
+          val modx = maybeRename(mod, r, t.circuitTarget.module(mod))
+          val instx = doRename(inst, r, t.instOf(inst, mod))
+          r.instanceMap(t.ref(inst)) = Right(t.instOf(inst, mod))
+          decl.copy(name = instx, module = modx)
+        case decl: ir.DefMemory =>
+          val namex = doRename(decl.name, r, t.ref(decl.name))
+          val tx = t.ref(decl.name)
+          r.namespaces(tx) = Namespace(decl.readers ++ decl.writers ++ decl.readwriters)
+          r.instanceMap(tx) = Left(tx)
+          decl
+            .copy(
+              name = namex,
+              readers = decl.readers.map(_r => doRename(_r, r, tx.field(_r))),
+              writers = decl.writers.map(_w => doRename(_w, r, tx.field(_w))),
+              readwriters = decl.readwriters.map(_rw => doRename(_rw, r, tx.field(_rw)))
+            )
+            .map(onExpression(_: ir.Expression, r, t))
+        case decl =>
+          decl
+            .map(doRename(_: String, r, t.ref(decl.name)))
+            .map(onExpression(_: ir.Expression, r, t))
+      }
     case s =>
       s
         .map(onStatement(_: ir.Statement, r, t))
@@ -362,7 +390,7 @@ abstract class ManipulateNames[A <: ManipulateNames[_] : ClassTag] extends Trans
        */
       val onName: String => String = t.circuit match {
         case `main` => maybeRename(_, r, moduleTarget)
-        case _      =>    doRename(_, r, moduleTarget)
+        case _      => doRename(_, r, moduleTarget)
       }
 
       m
@@ -380,11 +408,11 @@ abstract class ManipulateNames[A <: ManipulateNames[_] : ClassTag] extends Trans
     * @return the circuit with manipulated names
     */
   def run(
-    c: ir.Circuit,
+    c:       ir.Circuit,
     renames: RenameMap,
-    block: Target => Boolean,
-    allow: Target => Boolean)
-      : ir.Circuit = {
+    block:   Target => Boolean,
+    allow:   Target => Boolean
+  ): ir.Circuit = {
     val t = CircuitTarget(c.main)
 
     /* If the circuit is a skip, return the original circuit. Otherwise, walk all the modules and rename them. Rename the
@@ -427,8 +455,7 @@ abstract class ManipulateNames[A <: ManipulateNames[_] : ClassTag] extends Trans
           .toMap
 
         /* Replace the old modules making sure that they are still in the same order */
-        c.copy(modules = c.modules.map(m => modulesx(t.module(m.name))),
-               main = mainx)
+        c.copy(modules = c.modules.map(m => modulesx(t.module(m.name))), main = mainx)
     }
   }
 
@@ -436,18 +463,20 @@ abstract class ManipulateNames[A <: ManipulateNames[_] : ClassTag] extends Trans
   def execute(state: CircuitState): CircuitState = {
 
     val block = state.annotations.collect {
-      case ManipulateNamesBlocklistAnnotation(targetSeq, t) => t.getObject match {
-        case _: A => targetSeq
-        case _    => Nil
-      }
+      case ManipulateNamesBlocklistAnnotation(targetSeq, t) =>
+        t.getObject match {
+          case _: A => targetSeq
+          case _ => Nil
+        }
     }.flatten.flatten.toSet
 
     val allow = {
       val allowx = state.annotations.collect {
-         case ManipulateNamesAllowlistAnnotation(targetSeq, t) => t.getObject match {
-           case _: A => targetSeq
-           case _    => Nil
-         }
+        case ManipulateNamesAllowlistAnnotation(targetSeq, t) =>
+          t.getObject match {
+            case _: A => targetSeq
+            case _ => Nil
+          }
       }.flatten.flatten
 
       allowx match {
@@ -461,17 +490,19 @@ abstract class ManipulateNames[A <: ManipulateNames[_] : ClassTag] extends Trans
 
     val annotationsx = state.annotations.flatMap {
       /* Consume blocklist annotations */
-      case foo@ ManipulateNamesBlocklistAnnotation(_, t) => t.getObject match {
-        case _: A => None
-        case _    => Some(foo)
-      }
-      /* Convert allowlist annotations to result annotations */
-      case foo@ ManipulateNamesAllowlistAnnotation(a, t) =>
+      case foo @ ManipulateNamesBlocklistAnnotation(_, t) =>
         t.getObject match {
-          case _: A => (a, a.map(_.map(renames(_)).flatten)) match {
-            case (a, b) => Some(ManipulateNamesAllowlistResultAnnotation(b, t, a))
-          }
-          case _  => Some(foo)
+          case _: A => None
+          case _ => Some(foo)
+        }
+      /* Convert allowlist annotations to result annotations */
+      case foo @ ManipulateNamesAllowlistAnnotation(a, t) =>
+        t.getObject match {
+          case _: A =>
+            (a, a.map(_.map(renames(_)).flatten)) match {
+              case (a, b) => Some(ManipulateNamesAllowlistResultAnnotation(b, t, a))
+            }
+          case _ => Some(foo)
         }
       case a => Some(a)
     }

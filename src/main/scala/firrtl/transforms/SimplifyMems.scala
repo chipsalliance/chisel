@@ -33,12 +33,13 @@ class SimplifyMems extends Transform with DependencyAPIMigration {
 
     def onExpr(e: Expression): Expression = e.map(onExpr) match {
       case wr @ WRef(name, _, MemKind, _) if memAdapters.contains(name) => wr.copy(kind = WireKind)
-      case e => e
+      case e                                                            => e
     }
 
     def simplifyMem(mem: DefMemory): Statement = {
       val adapterDecl = DefWire(mem.info, mem.name, memType(mem))
-      val simpleMemDecl = mem.copy(name = moduleNS.newName(s"${mem.name}_flattened"), dataType = flattenType(mem.dataType))
+      val simpleMemDecl =
+        mem.copy(name = moduleNS.newName(s"${mem.name}_flattened"), dataType = flattenType(mem.dataType))
       val oldRT = mTarget.ref(mem.name)
       val adapterConnects = memType(simpleMemDecl).fields.flatMap {
         case Field(pName, Flip, pType: BundleType) =>
@@ -63,8 +64,10 @@ class SimplifyMems extends Transform with DependencyAPIMigration {
 
     def canSimplify(mem: DefMemory) = mem.dataType match {
       case at: AggregateType =>
-        val wMasks = mem.writers.map(w => getMaskBits(connects, memPortField(mem, w, "en"), memPortField(mem, w, "mask")))
-        val rwMasks = mem.readwriters.map(w => getMaskBits(connects, memPortField(mem, w, "wmode"), memPortField(mem, w, "wmask")))
+        val wMasks =
+          mem.writers.map(w => getMaskBits(connects, memPortField(mem, w, "en"), memPortField(mem, w, "mask")))
+        val rwMasks =
+          mem.readwriters.map(w => getMaskBits(connects, memPortField(mem, w, "wmode"), memPortField(mem, w, "wmask")))
         (wMasks ++ rwMasks).flatten.isEmpty
       case _ => false
     }

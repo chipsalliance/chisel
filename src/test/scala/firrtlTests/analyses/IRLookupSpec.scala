@@ -10,7 +10,6 @@ import firrtl.passes.ExpandWhensAndCheck
 import firrtl.stage.{Forms, TransformManager}
 import firrtl.testutils.FirrtlFlatSpec
 
-
 class IRLookupSpec extends FirrtlFlatSpec {
 
   "IRLookup" should "return declarations" in {
@@ -38,9 +37,11 @@ class IRLookupSpec extends FirrtlFlatSpec {
         |    out <= UInt(1)
         |""".stripMargin
 
-    val circuit = new firrtl.stage.transforms.Compiler(Seq(Dependency[ExpandWhensAndCheck])).runTransform(
-      CircuitState(parse(input), UnknownForm)
-    ).circuit
+    val circuit = new firrtl.stage.transforms.Compiler(Seq(Dependency[ExpandWhensAndCheck]))
+      .runTransform(
+        CircuitState(parse(input), UnknownForm)
+      )
+      .circuit
     val irLookup = IRLookup(circuit)
     val Test = ModuleTarget("Test", "Test")
     val uint8 = UIntType(IntWidth(8))
@@ -49,7 +50,10 @@ class IRLookupSpec extends FirrtlFlatSpec {
     irLookup.declaration(Test.ref("clk")) shouldBe Port(NoInfo, "clk", Input, ClockType)
     irLookup.declaration(Test.ref("reset")) shouldBe Port(NoInfo, "reset", Input, UIntType(IntWidth(1)))
 
-    val out = Port(NoInfo, "out", Output,
+    val out = Port(
+      NoInfo,
+      "out",
+      Output,
       BundleType(Seq(Field("a", Default, uint8), Field("b", Default, VectorType(uint8, 2))))
     )
     irLookup.declaration(Test.ref("out")) shouldBe out
@@ -73,7 +77,8 @@ class IRLookupSpec extends FirrtlFlatSpec {
     irLookup.declaration(Test.ref("y")) shouldBe DefWire(NoInfo, "y", uint8)
 
     irLookup.declaration(Test.ref("@and#0")) shouldBe
-      DoPrim(PrimOps.And,
+      DoPrim(
+        PrimOps.And,
         Seq(WRef("y", uint8, WireKind, SourceFlow), DoPrim(AsUInt, Seq(SIntLiteral(-1)), Nil, UIntType(IntWidth(1)))),
         Nil,
         uint8
@@ -84,12 +89,14 @@ class IRLookupSpec extends FirrtlFlatSpec {
     irLookup.declaration(Test.ref("child").field("out")) shouldBe inst
     irLookup.declaration(Test.instOf("child", "Child").ref("out")) shouldBe Port(NoInfo, "out", Output, uint8)
 
-    intercept[IllegalArgumentException]{ irLookup.declaration(Test.instOf("child", "Child").ref("missing")) }
-    intercept[IllegalArgumentException]{ irLookup.declaration(Test.instOf("child", "Missing").ref("out")) }
-    intercept[IllegalArgumentException]{ irLookup.declaration(Test.instOf("missing", "Child").ref("out")) }
-    intercept[IllegalArgumentException]{ irLookup.declaration(Test.ref("missing")) }
-    intercept[IllegalArgumentException]{ irLookup.declaration(Test.ref("out").field("c")) }
-    intercept[IllegalArgumentException]{ irLookup.declaration(Test.instOf("child", "Child").ref("out").field("missing")) }
+    intercept[IllegalArgumentException] { irLookup.declaration(Test.instOf("child", "Child").ref("missing")) }
+    intercept[IllegalArgumentException] { irLookup.declaration(Test.instOf("child", "Missing").ref("out")) }
+    intercept[IllegalArgumentException] { irLookup.declaration(Test.instOf("missing", "Child").ref("out")) }
+    intercept[IllegalArgumentException] { irLookup.declaration(Test.ref("missing")) }
+    intercept[IllegalArgumentException] { irLookup.declaration(Test.ref("out").field("c")) }
+    intercept[IllegalArgumentException] {
+      irLookup.declaration(Test.instOf("child", "Child").ref("out").field("missing"))
+    }
   }
 
   "IRLookup" should "return mem declarations" in {
@@ -152,9 +159,11 @@ class IRLookupSpec extends FirrtlFlatSpec {
     val Readwriter = Mem.field("rw")
     val allSignals = readerTargets(Reader) ++ writerTargets(Writer) ++ readwriterTargets(Readwriter)
 
-    val circuit = new firrtl.stage.transforms.Compiler(Seq(Dependency[ExpandWhensAndCheck])).runTransform(
-      CircuitState(parse(input), UnknownForm)
-    ).circuit
+    val circuit = new firrtl.stage.transforms.Compiler(Seq(Dependency[ExpandWhensAndCheck]))
+      .runTransform(
+        CircuitState(parse(input), UnknownForm)
+      )
+      .circuit
     val irLookup = IRLookup(circuit)
     val uint8 = UIntType(IntWidth(8))
     val mem = DefMemory(NoInfo, "m", uint8, 2, 1, 0, Seq("r"), Seq("w"), Seq("rw"))
@@ -188,9 +197,11 @@ class IRLookupSpec extends FirrtlFlatSpec {
         |    out <= UInt(1)
         |""".stripMargin
 
-    val circuit = new firrtl.stage.transforms.Compiler(Seq(Dependency[ExpandWhensAndCheck])).runTransform(
-      CircuitState(parse(input), UnknownForm)
-    ).circuit
+    val circuit = new firrtl.stage.transforms.Compiler(Seq(Dependency[ExpandWhensAndCheck]))
+      .runTransform(
+        CircuitState(parse(input), UnknownForm)
+      )
+      .circuit
     val irLookup = IRLookup(circuit)
     val Test = ModuleTarget("Test", "Test")
     val uint8 = UIntType(IntWidth(8))
@@ -209,7 +220,8 @@ class IRLookupSpec extends FirrtlFlatSpec {
 
     val out = Test.ref("out")
     val outExpr =
-      WRef("out",
+      WRef(
+        "out",
         BundleType(Seq(Field("a", Default, uint8), Field("b", Default, VectorType(uint8, 2)))),
         PortKind,
         SinkFlow
@@ -237,8 +249,10 @@ class IRLookupSpec extends FirrtlFlatSpec {
 
     check(Test.ref("y"), WRef("y", uint8, WireKind, DuplexFlow))
 
-    check(Test.ref("@and#0"),
-      DoPrim(PrimOps.And,
+    check(
+      Test.ref("@and#0"),
+      DoPrim(
+        PrimOps.And,
         Seq(WRef("y", uint8, WireKind, SourceFlow), DoPrim(AsUInt, Seq(SIntLiteral(-1)), Nil, UIntType(IntWidth(1)))),
         Nil,
         uint8
@@ -247,33 +261,34 @@ class IRLookupSpec extends FirrtlFlatSpec {
 
     val child = WRef("child", BundleType(Seq(Field("out", Default, uint8))), InstanceKind, SourceFlow)
     check(Test.ref("child"), child)
-    check(Test.ref("child").field("out"),
-      WSubField(child, "out", uint8, SourceFlow)
-    )
+    check(Test.ref("child").field("out"), WSubField(child, "out", uint8, SourceFlow))
   }
 
   "IRLookup" should "cache expressions" in {
     def mkType(i: Int): String = {
-      if(i == 0) "UInt<8>" else s"{x: ${mkType(i - 1)}}"
+      if (i == 0) "UInt<8>" else s"{x: ${mkType(i - 1)}}"
     }
 
     val depth = 500
 
     val input =
       s"""circuit Test:
-        |  module Test :
-        |    input in: ${mkType(depth)}
-        |    output out: ${mkType(depth)}
-        |    out <= in
-        |""".stripMargin
+         |  module Test :
+         |    input in: ${mkType(depth)}
+         |    output out: ${mkType(depth)}
+         |    out <= in
+         |""".stripMargin
 
-    val circuit = new firrtl.stage.transforms.Compiler(Seq(Dependency[ExpandWhensAndCheck])).runTransform(
-      CircuitState(parse(input), UnknownForm)
-    ).circuit
+    val circuit = new firrtl.stage.transforms.Compiler(Seq(Dependency[ExpandWhensAndCheck]))
+      .runTransform(
+        CircuitState(parse(input), UnknownForm)
+      )
+      .circuit
     val Test = ModuleTarget("Test", "Test")
     val irLookup = IRLookup(circuit)
     def mkReferences(parent: ReferenceTarget, i: Int): Seq[ReferenceTarget] = {
-      if(i == 0) Seq(parent) else {
+      if (i == 0) Seq(parent)
+      else {
         val newParent = parent.field("x")
         newParent +: mkReferences(newParent, i - 1)
       }

@@ -34,11 +34,9 @@ trait IsKnown extends Constraint {
   /** Floor */
   def floor: IsKnown
 
-  override def map(f: Constraint=>Constraint): Constraint = this
+  override def map(f: Constraint => Constraint): Constraint = this
 
   val children: Vector[Constraint] = Vector.empty[Constraint]
 
   def reduce(): IsKnown = this
 }
-
-

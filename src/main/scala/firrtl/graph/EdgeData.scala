@@ -6,11 +6,10 @@ import scala.collection.mutable
 
 /**
   * An exception that indicates that an edge cannot be found in a graph with edge data.
-  * 
+  *
   * @note the vertex type is not captured as a type parameter, as it would be erased.
   */
-class EdgeNotFoundException(u: Any, v: Any)
-    extends IllegalArgumentException(s"Edge (${u}, ${v}) does not exist!")
+class EdgeNotFoundException(u: Any, v: Any) extends IllegalArgumentException(s"Edge (${u}, ${v}) does not exist!")
 
 /**
   * Mixing this trait into a DiGraph indicates that each edge may be associated with an optional

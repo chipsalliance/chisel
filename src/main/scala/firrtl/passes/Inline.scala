@@ -32,89 +32,100 @@ class InlineInstances extends Transform with DependencyAPIMigration with Registe
 
   override def invalidates(a: Transform): Boolean = a == ResolveKinds
 
-  private [firrtl] val inlineDelim: String = "_"
+  private[firrtl] val inlineDelim: String = "_"
 
   val options = Seq(
     new ShellOption[Seq[String]](
       longOption = "inline",
-      toAnnotationSeq = (a: Seq[String]) => a.map { value =>
-        value.split('.') match {
-          case Array(circuit) =>
-            InlineAnnotation(CircuitName(circuit))
-          case Array(circuit, module) =>
-            InlineAnnotation(ModuleName(module, CircuitName(circuit)))
-          case Array(circuit, module, inst) =>
-            InlineAnnotation(ComponentName(inst, ModuleName(module, CircuitName(circuit))))
-        }
-      } :+ RunFirrtlTransformAnnotation(new InlineInstances),
+      toAnnotationSeq = (a: Seq[String]) =>
+        a.map { value =>
+          value.split('.') match {
+            case Array(circuit) =>
+              InlineAnnotation(CircuitName(circuit))
+            case Array(circuit, module) =>
+              InlineAnnotation(ModuleName(module, CircuitName(circuit)))
+            case Array(circuit, module, inst) =>
+              InlineAnnotation(ComponentName(inst, ModuleName(module, CircuitName(circuit))))
+          }
+        } :+ RunFirrtlTransformAnnotation(new InlineInstances),
       helpText = "Inline selected modules",
       shortOption = Some("fil"),
-      helpValueName = Some("<circuit>[.<module>[.<instance>]][,...]") ) )
+      helpValueName = Some("<circuit>[.<module>[.<instance>]][,...]")
+    )
+  )
 
-   private def collectAnns(circuit: Circuit, anns: Iterable[Annotation]): (Set[ModuleName], Set[ComponentName]) =
-     anns.foldLeft( (Set.empty[ModuleName], Set.empty[ComponentName]) ) {
-       case ((modNames, instNames), ann) => ann match {
-         case InlineAnnotation(CircuitName(c)) =>
-           (circuit.modules.collect {
-             case Module(_, name, _, _) if name != circuit.main => ModuleName(name, CircuitName(c))
-           }.toSet, instNames)
-         case InlineAnnotation(ModuleName(mod, cir)) => (modNames + ModuleName(mod, cir), instNames)
-         case InlineAnnotation(ComponentName(com, mod)) => (modNames, instNames + ComponentName(com, mod))
-         case _ => (modNames, instNames)
-       }
-     }
+  private def collectAnns(circuit: Circuit, anns: Iterable[Annotation]): (Set[ModuleName], Set[ComponentName]) =
+    anns.foldLeft((Set.empty[ModuleName], Set.empty[ComponentName])) {
+      case ((modNames, instNames), ann) =>
+        ann match {
+          case InlineAnnotation(CircuitName(c)) =>
+            (
+              circuit.modules.collect {
+                case Module(_, name, _, _) if name != circuit.main => ModuleName(name, CircuitName(c))
+              }.toSet,
+              instNames
+            )
+          case InlineAnnotation(ModuleName(mod, cir))    => (modNames + ModuleName(mod, cir), instNames)
+          case InlineAnnotation(ComponentName(com, mod)) => (modNames, instNames + ComponentName(com, mod))
+          case _                                         => (modNames, instNames)
+        }
+    }
 
-   def execute(state: CircuitState): CircuitState = {
-     // TODO Add error check for more than one annotation for inlining
-     val (modNames, instNames) = collectAnns(state.circuit, state.annotations)
-     if (modNames.nonEmpty || instNames.nonEmpty) {
-       run(state.circuit, modNames, instNames, state.annotations)
-     } else {
-       state
-     }
-   }
+  def execute(state: CircuitState): CircuitState = {
+    // TODO Add error check for more than one annotation for inlining
+    val (modNames, instNames) = collectAnns(state.circuit, state.annotations)
+    if (modNames.nonEmpty || instNames.nonEmpty) {
+      run(state.circuit, modNames, instNames, state.annotations)
+    } else {
+      state
+    }
+  }
 
-   // Checks the following properties:
-   // 1) All annotated modules exist
-   // 2) All annotated modules are InModules (can be inlined)
-   // 3) All annotated instances exist, and their modules can be inline
-   def check(c: Circuit, moduleNames: Set[ModuleName], instanceNames: Set[ComponentName]): Unit = {
-      val errors = mutable.ArrayBuffer[PassException]()
-      val moduleMap = InstanceKeyGraph(c).moduleMap
-      def checkExists(name: String): Unit =
-         if (!moduleMap.contains(name))
-            errors += new PassException(s"Annotated module does not exist: $name")
-      def checkExternal(name: String): Unit = moduleMap(name) match {
-            case m: ExtModule => errors += new PassException(s"Annotated module cannot be an external module: $name")
-            case _ =>
-      }
-      def checkInstance(cn: ComponentName): Unit = {
-         var containsCN = false
-         def onStmt(name: String)(s: Statement): Statement = {
-            s match {
-               case WDefInstance(_, inst_name, module_name, tpe) =>
-                  if (name == inst_name) {
-                     containsCN = true
-                     checkExternal(module_name)
-                  }
-               case _ =>
+  // Checks the following properties:
+  // 1) All annotated modules exist
+  // 2) All annotated modules are InModules (can be inlined)
+  // 3) All annotated instances exist, and their modules can be inline
+  def check(c: Circuit, moduleNames: Set[ModuleName], instanceNames: Set[ComponentName]): Unit = {
+    val errors = mutable.ArrayBuffer[PassException]()
+    val moduleMap = InstanceKeyGraph(c).moduleMap
+    def checkExists(name: String): Unit =
+      if (!moduleMap.contains(name))
+        errors += new PassException(s"Annotated module does not exist: $name")
+    def checkExternal(name: String): Unit = moduleMap(name) match {
+      case m: ExtModule => errors += new PassException(s"Annotated module cannot be an external module: $name")
+      case _ =>
+    }
+    def checkInstance(cn: ComponentName): Unit = {
+      var containsCN = false
+      def onStmt(name: String)(s: Statement): Statement = {
+        s match {
+          case WDefInstance(_, inst_name, module_name, tpe) =>
+            if (name == inst_name) {
+              containsCN = true
+              checkExternal(module_name)
             }
-            s map onStmt(name)
-         }
-         onStmt(cn.name)(moduleMap(cn.module.name).asInstanceOf[Module].body)
-         if (!containsCN) errors += new PassException(s"Annotated instance does not exist: ${cn.module.name}.${cn.name}")
+          case _ =>
+        }
+        s.map(onStmt(name))
       }
+      onStmt(cn.name)(moduleMap(cn.module.name).asInstanceOf[Module].body)
+      if (!containsCN) errors += new PassException(s"Annotated instance does not exist: ${cn.module.name}.${cn.name}")
+    }
 
-      moduleNames.foreach{mn => checkExists(mn.name)}
-      if (errors.nonEmpty) throw new PassExceptions(errors.toSeq)
-      moduleNames.foreach{mn => checkExternal(mn.name)}
-      if (errors.nonEmpty) throw new PassExceptions(errors.toSeq)
-      instanceNames.foreach{cn => checkInstance(cn)}
-      if (errors.nonEmpty) throw new PassExceptions(errors.toSeq)
-   }
+    moduleNames.foreach { mn => checkExists(mn.name) }
+    if (errors.nonEmpty) throw new PassExceptions(errors.toSeq)
+    moduleNames.foreach { mn => checkExternal(mn.name) }
+    if (errors.nonEmpty) throw new PassExceptions(errors.toSeq)
+    instanceNames.foreach { cn => checkInstance(cn) }
+    if (errors.nonEmpty) throw new PassExceptions(errors.toSeq)
+  }
 
-
-  def run(c: Circuit, modsToInline: Set[ModuleName], instsToInline: Set[ComponentName], annos: AnnotationSeq): CircuitState = {
+  def run(
+    c:             Circuit,
+    modsToInline:  Set[ModuleName],
+    instsToInline: Set[ComponentName],
+    annos:         AnnotationSeq
+  ): CircuitState = {
     def getInstancesOf(c: Circuit, modules: Set[String]): Set[(OfModule, Instance)] =
       c.modules.foldLeft(Set[(OfModule, Instance)]()) { (set, d) =>
         d match {
@@ -125,7 +136,7 @@ class InlineInstances extends Transform with DependencyAPIMigration with Registe
               case WDefInstance(info, instName, moduleName, instTpe) if modules.contains(moduleName) =>
                 instances += (OfModule(m.name) -> Instance(instName))
                 s
-              case sx => sx map findInstances
+              case sx => sx.map(findInstances)
             }
             findInstances(m.body)
             instances.toSet ++ set
@@ -135,7 +146,8 @@ class InlineInstances extends Transform with DependencyAPIMigration with Registe
     // Check annotations and circuit match up
     check(c, modsToInline, instsToInline)
     val flatModules = modsToInline.map(m => m.name)
-    val flatInstances: Set[(OfModule, Instance)] = instsToInline.map(i => OfModule(i.module.name) -> Instance(i.name)) ++ getInstancesOf(c, flatModules)
+    val flatInstances: Set[(OfModule, Instance)] =
+      instsToInline.map(i => OfModule(i.module.name) -> Instance(i.name)) ++ getInstancesOf(c, flatModules)
     val iGraph = InstanceKeyGraph(c)
     val namespaceMap = collection.mutable.Map[String, Namespace]()
     // Map of Module name to Map of instance name to Module name
@@ -144,11 +156,13 @@ class InlineInstances extends Transform with DependencyAPIMigration with Registe
     /** Add a prefix to all declarations updating a [[Namespace]] and appending to a [[RenameMap]] */
     def appendNamePrefix(
       currentModule: IsModule,
-      nextModule: IsModule,
-      prefix: String,
-      ns: Namespace,
-      renames: mutable.HashMap[String, String],
-      renameMap: RenameMap)(s: Statement): Statement = {
+      nextModule:    IsModule,
+      prefix:        String,
+      ns:            Namespace,
+      renames:       mutable.HashMap[String, String],
+      renameMap:     RenameMap
+    )(s:             Statement
+    ): Statement = {
       def onName(ofModuleOpt: Option[String])(name: String) = {
         if (prefix.nonEmpty && !ns.tryName(prefix + name)) {
           throw new Exception(s"Inlining failed. Inlined name '${prefix + name}' already exists")
@@ -164,25 +178,29 @@ class InlineInstances extends Transform with DependencyAPIMigration with Registe
       }
 
       s match {
-        case s: WDefInstance => s.map(onName(Some(s.module))).map(appendNamePrefix(currentModule, nextModule, prefix, ns, renames, renameMap))
-        case other => s.map(onName(None)).map(appendNamePrefix(currentModule, nextModule, prefix, ns, renames, renameMap))
+        case s: WDefInstance =>
+          s.map(onName(Some(s.module))).map(appendNamePrefix(currentModule, nextModule, prefix, ns, renames, renameMap))
+        case other =>
+          s.map(onName(None)).map(appendNamePrefix(currentModule, nextModule, prefix, ns, renames, renameMap))
       }
     }
 
     /** Modify all references */
     def appendRefPrefix(
       currentModule: IsModule,
-      renames: mutable.HashMap[String, String])(s: Statement): Statement = {
-        def onExpr(e: Expression): Expression = e match {
-          case wr@ WRef(name, _, _, _) =>
-            renames.get(name) match {
-              case Some(prefixedName) => wr.copy(name = prefixedName)
-              case None => wr
-            }
-          case ex => ex.map(onExpr)
-        }
-        s.map(onExpr).map(appendRefPrefix(currentModule, renames))
+      renames:       mutable.HashMap[String, String]
+    )(s:             Statement
+    ): Statement = {
+      def onExpr(e: Expression): Expression = e match {
+        case wr @ WRef(name, _, _, _) =>
+          renames.get(name) match {
+            case Some(prefixedName) => wr.copy(name = prefixedName)
+            case None               => wr
+          }
+        case ex => ex.map(onExpr)
       }
+      s.map(onExpr).map(appendRefPrefix(currentModule, renames))
+    }
 
     val cache = mutable.HashMap.empty[ModuleTarget, Statement]
 
@@ -194,16 +212,19 @@ class InlineInstances extends Transform with DependencyAPIMigration with Registe
     val (renamesMap, renamesSeq) = {
       val mutableDiGraph = new MutableDiGraph[(OfModule, Instance)]
       // compute instance graph
-      instMaps.foreach { case (grandParentOfMod, parents) =>
-        parents.foreach { case (parentInst, parentOfMod) =>
-          val from = grandParentOfMod -> parentInst
-          mutableDiGraph.addVertex(from)
-          instMaps(parentOfMod).foreach { case (childInst, _) =>
-            val to = parentOfMod -> childInst
-            mutableDiGraph.addVertex(to)
-            mutableDiGraph.addEdge(from, to)
+      instMaps.foreach {
+        case (grandParentOfMod, parents) =>
+          parents.foreach {
+            case (parentInst, parentOfMod) =>
+              val from = grandParentOfMod -> parentInst
+              mutableDiGraph.addVertex(from)
+              instMaps(parentOfMod).foreach {
+                case (childInst, _) =>
+                  val to = parentOfMod -> childInst
+                  mutableDiGraph.addVertex(to)
+                  mutableDiGraph.addEdge(from, to)
+              }
           }
-        }
       }
 
       val diGraph = DiGraph(mutableDiGraph)
@@ -226,10 +247,12 @@ class InlineInstances extends Transform with DependencyAPIMigration with Registe
     }
 
     def fixupRefs(
-      instMap: collection.Map[Instance, OfModule],
-      currentModule: IsModule)(e: Expression): Expression = {
+      instMap:       collection.Map[Instance, OfModule],
+      currentModule: IsModule
+    )(e:             Expression
+    ): Expression = {
       e match {
-        case wsf@ WSubField(wr@ WRef(ref, _, InstanceKind, _), field, tpe, gen) =>
+        case wsf @ WSubField(wr @ WRef(ref, _, InstanceKind, _), field, tpe, gen) =>
           val inst = currentModule.instOf(ref, instMap(Instance(ref)).value)
           val renamesOpt = renamesMap.get(OfModule(currentModule.module) -> Instance(inst.instance))
           val port = inst.ref(field)
@@ -242,12 +265,12 @@ class InlineInstances extends Transform with DependencyAPIMigration with Registe
               }
             case None => wsf
           }
-        case wr@ WRef(name, _, InstanceKind, _) =>
+        case wr @ WRef(name, _, InstanceKind, _) =>
           val inst = currentModule.instOf(name, instMap(Instance(name)).value)
           val renamesOpt = renamesMap.get(OfModule(currentModule.module) -> Instance(inst.instance))
           val comp = currentModule.ref(name)
           renamesOpt.flatMap(_.get(comp)).getOrElse(Seq(comp)) match {
-            case Seq(car: ReferenceTarget) => wr.copy(name=car.ref)
+            case Seq(car: ReferenceTarget) => wr.copy(name = car.ref)
           }
         case ex => ex.map(fixupRefs(instMap, currentModule))
       }
@@ -258,7 +281,8 @@ class InlineInstances extends Transform with DependencyAPIMigration with Registe
       val ns = namespaceMap.getOrElseUpdate(currentModuleName, Namespace(iGraph.moduleMap(currentModuleName)))
       val instMap = instMaps(OfModule(currentModuleName))
       s match {
-        case wDef@ WDefInstance(_, instName, modName, _) if flatInstances.contains(OfModule(currentModuleName) -> Instance(instName)) =>
+        case wDef @ WDefInstance(_, instName, modName, _)
+            if flatInstances.contains(OfModule(currentModuleName) -> Instance(instName)) =>
           val renames = renamesMap(OfModule(currentModuleName) -> Instance(instName))
           val toInline = iGraph.moduleMap(modName) match {
             case m: ExtModule => throw new PassException(s"Cannot inline external module ${m.name}")
@@ -269,7 +293,7 @@ class InlineInstances extends Transform with DependencyAPIMigration with Registe
 
           val bodyx = {
             val module = currentModule.copy(module = modName)
-            cache.getOrElseUpdate(module, Block(ports :+ toInline.body) map onStmt(module))
+            cache.getOrElseUpdate(module, Block(ports :+ toInline.body).map(onStmt(module)))
           }
 
           val names = "" +: Uniquify
@@ -294,14 +318,14 @@ class InlineInstances extends Transform with DependencyAPIMigration with Registe
           renamedBody
         case sx =>
           sx
-          .map(fixupRefs(instMap, currentModule))
-          .map(onStmt(currentModule))
+            .map(fixupRefs(instMap, currentModule))
+            .map(onStmt(currentModule))
       }
     }
 
     val flatCircuit = c.copy(modules = c.modules.flatMap {
       case m if flatModules.contains(m.name) => None
-      case m                                 =>
+      case m =>
         Some(m.map(onStmt(ModuleName(m.name, CircuitName(c.main)))))
     })
 

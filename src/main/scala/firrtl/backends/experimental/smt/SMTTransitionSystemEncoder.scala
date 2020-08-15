@@ -10,7 +10,7 @@ import scala.collection.mutable
   * It if fairly compact, but unfortunately, the use of an uninterpreted sort for the state
   * prevents this encoding from working with boolector.
   * For simplicity reasons, we do not support hierarchical designs (no `_h` function).
-  * */
+  */
 private object SMTTransitionSystemEncoder {
 
   def encode(sys: TransitionSystem): Iterable[SMTCommand] = {
@@ -38,10 +38,10 @@ private object SMTTransitionSystemEncoder {
       cmds += DefineFunction(sym.name + suffix, List((State, stateType)), replaceSymbols(e))
     }
     sys.signals.foreach { signal =>
-      val kind = if(sys.outputs.contains(signal.name)) { "output"
-      } else if(sys.assumes.contains(signal.name)) { "assume"
-      } else if(sys.asserts.contains(signal.name)) { "assert"
-      } else { "wire" }
+      val kind = if (sys.outputs.contains(signal.name)) { "output" }
+      else if (sys.assumes.contains(signal.name)) { "assume" }
+      else if (sys.asserts.contains(signal.name)) { "assert" }
+      else { "wire" }
       val sym = SMTSymbol.fromExpr(signal.name, signal.e)
       cmds ++= toDescription(sym, kind, sys.comments.get)
       define(sym, signal.e)
@@ -105,18 +105,18 @@ private object SMTTransitionSystemEncoder {
   }
 
   private def andReduce(e: Iterable[BVExpr]): BVExpr =
-    if(e.isEmpty) BVLiteral(1, 1) else e.reduce((a,b) => BVOp(Op.And, a, b))
+    if (e.isEmpty) BVLiteral(1, 1) else e.reduce((a, b) => BVOp(Op.And, a, b))
 
   // All signals are modelled with functions that need to be called with the state as argument,
   // this replaces all Symbols with function applications to the state.
   private def replaceSymbols(e: SMTExpr): SMTExpr = {
     SMTExprVisitor.map(symbolToFunApp(_, SignalSuffix, State))(e)
   }
-  private def replaceSymbols(e: BVExpr): BVExpr = replaceSymbols(e.asInstanceOf[SMTExpr]).asInstanceOf[BVExpr]
+  private def replaceSymbols(e:   BVExpr): BVExpr = replaceSymbols(e.asInstanceOf[SMTExpr]).asInstanceOf[BVExpr]
   private def symbolToFunApp(sym: SMTExpr, suffix: String, arg: String): SMTExpr = sym match {
-    case BVSymbol(name, width) => BVRawExpr(s"(${id(name+suffix)} $arg)", width)
-    case ArraySymbol(name, indexWidth, dataWidth) => ArrayRawExpr(s"(${id(name+suffix)} $arg)", indexWidth, dataWidth)
-    case other => other
+    case BVSymbol(name, width)                    => BVRawExpr(s"(${id(name + suffix)} $arg)", width)
+    case ArraySymbol(name, indexWidth, dataWidth) => ArrayRawExpr(s"(${id(name + suffix)} $arg)", indexWidth, dataWidth)
+    case other                                    => other
   }
 }
 

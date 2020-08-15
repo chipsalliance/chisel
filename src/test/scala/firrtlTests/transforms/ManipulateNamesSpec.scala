@@ -2,22 +2,15 @@
 
 package firrtlTests.transforms
 
-import firrtl.{
-  ir,
-  CircuitState,
-  FirrtlUserException,
-  Namespace,
-  Parser,
-  RenameMap
-}
+import firrtl.{ir, CircuitState, FirrtlUserException, Namespace, Parser, RenameMap}
 import firrtl.annotations.CircuitTarget
 import firrtl.options.Dependency
 import firrtl.testutils.FirrtlCheckers._
 import firrtl.transforms.{
   ManipulateNames,
-  ManipulateNamesBlocklistAnnotation,
   ManipulateNamesAllowlistAnnotation,
-  ManipulateNamesAllowlistResultAnnotation
+  ManipulateNamesAllowlistResultAnnotation,
+  ManipulateNamesBlocklistAnnotation
 }
 
 import org.scalatest.flatspec.AnyFlatSpec
@@ -57,24 +50,24 @@ class ManipulateNamesSpec extends AnyFlatSpec with Matchers {
     val tm = new firrtl.stage.transforms.Compiler(Seq(Dependency[AddPrefix]))
   }
 
-  behavior of "ManipulateNames"
+  behavior.of("ManipulateNames")
 
   it should "rename everything by default" in new CircuitFixture {
     val state = CircuitState(Parser.parse(input), Seq.empty)
     val statex = tm.execute(state)
     val expected: Seq[PartialFunction[Any, Boolean]] = Seq(
       { case ir.Circuit(_, _, "prefix_Foo") => true },
-      { case ir.Module(_, "prefix_Foo", _, _) => true},
-      { case ir.Module(_, "prefix_Bar", _, _) => true}
+      { case ir.Module(_, "prefix_Foo", _, _) => true },
+      { case ir.Module(_, "prefix_Bar", _, _) => true }
     )
-    expected.foreach(statex should containTree (_))
+    expected.foreach(statex should containTree(_))
   }
 
   it should "do nothing if the circuit is blocklisted" in new CircuitFixture {
     val annotations = Seq(ManipulateNamesBlocklistAnnotation(Seq(Seq(`~Foo`)), Dependency[AddPrefix]))
     val state = CircuitState(Parser.parse(input), annotations)
     val statex = tm.execute(state)
-    state.circuit.serialize should be (statex.circuit.serialize)
+    state.circuit.serialize should be(statex.circuit.serialize)
   }
 
   it should "not rename the circuit if the top module is blocklisted" in new CircuitFixture {
@@ -82,31 +75,31 @@ class ManipulateNamesSpec extends AnyFlatSpec with Matchers {
     val state = CircuitState(Parser.parse(input), annotations)
     val expected: Seq[PartialFunction[Any, Boolean]] = Seq(
       { case ir.Circuit(_, _, "Foo") => true },
-      { case ir.Module(_, "Foo", _, _) => true},
-      { case ir.Module(_, "prefix_Bar", _, _) => true}
+      { case ir.Module(_, "Foo", _, _) => true },
+      { case ir.Module(_, "prefix_Bar", _, _) => true }
     )
     val statex = tm.execute(state)
-    expected.foreach(statex should containTree (_))
+    expected.foreach(statex should containTree(_))
   }
 
   it should "not rename instances if blocklisted" in new CircuitFixture {
     val annotations = Seq(ManipulateNamesBlocklistAnnotation(Seq(Seq(`~Foo|Foo/bar:Bar`)), Dependency[AddPrefix]))
     val state = CircuitState(Parser.parse(input), annotations)
     val expected: Seq[PartialFunction[Any, Boolean]] = Seq(
-      { case ir.DefInstance(_, "bar", "prefix_Bar", _) => true},
-      { case ir.Module(_, "prefix_Bar", _, _) => true}
+      { case ir.DefInstance(_, "bar", "prefix_Bar", _) => true },
+      { case ir.Module(_, "prefix_Bar", _, _) => true }
     )
     val statex = tm.execute(state)
-    expected.foreach(statex should containTree (_))
+    expected.foreach(statex should containTree(_))
   }
 
-  it  should "do nothing if the circuit is not allowlisted" in new CircuitFixture {
+  it should "do nothing if the circuit is not allowlisted" in new CircuitFixture {
     val annotations = Seq(
       ManipulateNamesAllowlistAnnotation(Seq(Seq(`~Foo|Foo`)), Dependency[AddPrefix])
     )
     val state = CircuitState(Parser.parse(input), annotations)
     val statex = tm.execute(state)
-    state.circuit.serialize should be (statex.circuit.serialize)
+    state.circuit.serialize should be(statex.circuit.serialize)
   }
 
   it should "rename only the circuit if allowlisted" in new CircuitFixture {
@@ -118,13 +111,13 @@ class ManipulateNamesSpec extends AnyFlatSpec with Matchers {
     val statex = tm.execute(state)
     val expected: Seq[PartialFunction[Any, Boolean]] = Seq(
       { case ir.Circuit(_, _, "prefix_Foo") => true },
-      { case ir.Module(_, "prefix_Foo", _, _) => true},
-      { case ir.DefInstance(_, "bar", "Bar", _) => true},
-      { case ir.DefInstance(_, "bar2", "Bar", _) => true},
-      { case ir.Module(_, "Bar", _, _) => true},
-      { case ir.DefNode(_, "a", _) => true}
+      { case ir.Module(_, "prefix_Foo", _, _) => true },
+      { case ir.DefInstance(_, "bar", "Bar", _) => true },
+      { case ir.DefInstance(_, "bar2", "Bar", _) => true },
+      { case ir.Module(_, "Bar", _, _) => true },
+      { case ir.DefNode(_, "a", _) => true }
     )
-    expected.foreach(statex should containTree (_))
+    expected.foreach(statex should containTree(_))
   }
 
   it should "rename an instance via allowlisting" in new CircuitFixture {
@@ -136,13 +129,13 @@ class ManipulateNamesSpec extends AnyFlatSpec with Matchers {
     val statex = tm.execute(state)
     val expected: Seq[PartialFunction[Any, Boolean]] = Seq(
       { case ir.Circuit(_, _, "Foo") => true },
-      { case ir.Module(_, "Foo", _, _) => true},
-      { case ir.DefInstance(_, "prefix_bar", "Bar", _) => true},
-      { case ir.DefInstance(_, "bar2", "Bar", _) => true},
-      { case ir.Module(_, "Bar", _, _) => true},
-      { case ir.DefNode(_, "a", _) => true}
+      { case ir.Module(_, "Foo", _, _) => true },
+      { case ir.DefInstance(_, "prefix_bar", "Bar", _) => true },
+      { case ir.DefInstance(_, "bar2", "Bar", _) => true },
+      { case ir.Module(_, "Bar", _, _) => true },
+      { case ir.DefNode(_, "a", _) => true }
     )
-    expected.foreach(statex should containTree (_))
+    expected.foreach(statex should containTree(_))
   }
 
   it should "rename a node via allowlisting" in new CircuitFixture {
@@ -154,13 +147,13 @@ class ManipulateNamesSpec extends AnyFlatSpec with Matchers {
     val statex = tm.execute(state)
     val expected: Seq[PartialFunction[Any, Boolean]] = Seq(
       { case ir.Circuit(_, _, "Foo") => true },
-      { case ir.Module(_, "Foo", _, _) => true},
-      { case ir.DefInstance(_, "bar", "Bar", _) => true},
-      { case ir.DefInstance(_, "bar2", "Bar", _) => true},
-      { case ir.Module(_, "Bar", _, _) => true},
-      { case ir.DefNode(_, "prefix_a", _) => true}
+      { case ir.Module(_, "Foo", _, _) => true },
+      { case ir.DefInstance(_, "bar", "Bar", _) => true },
+      { case ir.DefInstance(_, "bar2", "Bar", _) => true },
+      { case ir.Module(_, "Bar", _, _) => true },
+      { case ir.DefNode(_, "prefix_a", _) => true }
     )
-    expected.foreach(statex should containTree (_))
+    expected.foreach(statex should containTree(_))
   }
 
   it should "throw user errors on circuits that haven't been run through LowerTypes" in {
@@ -171,9 +164,9 @@ class ManipulateNamesSpec extends AnyFlatSpec with Matchers {
          |    node baz = bar.a
          |""".stripMargin
     val state = CircuitState(Parser.parse(input), Seq.empty)
-    intercept [FirrtlUserException] {
+    intercept[FirrtlUserException] {
       (new AddPrefix).transform(state)
-    }.getMessage should include ("LowerTypes")
+    }.getMessage should include("LowerTypes")
   }
 
   it should "only consume annotations whose type parameter matches" in new CircuitFixture {
@@ -187,25 +180,25 @@ class ManipulateNamesSpec extends AnyFlatSpec with Matchers {
     val statex = tm.execute(state)
     val expected: Seq[PartialFunction[Any, Boolean]] = Seq(
       { case ir.Circuit(_, _, "prefix_Foo") => true },
-      { case ir.Module(_, "prefix_Foo", _, _) => true},
-      { case ir.DefInstance(_, "prefix_bar", "prefix_Bar", _) => true},
-      { case ir.DefInstance(_, "prefix_bar2", "prefix_Bar", _) => true},
-      { case ir.Module(_, "prefix_Bar", _, _) => true},
-      { case ir.DefNode(_, "a_suffix", _) => true}
+      { case ir.Module(_, "prefix_Foo", _, _) => true },
+      { case ir.DefInstance(_, "prefix_bar", "prefix_Bar", _) => true },
+      { case ir.DefInstance(_, "prefix_bar2", "prefix_Bar", _) => true },
+      { case ir.Module(_, "prefix_Bar", _, _) => true },
+      { case ir.DefNode(_, "a_suffix", _) => true }
     )
-    expected.foreach(statex should containTree (_))
+    expected.foreach(statex should containTree(_))
   }
 
-  behavior of "ManipulateNamesBlocklistAnnotation"
+  behavior.of("ManipulateNamesBlocklistAnnotation")
 
   it should "throw an exception if a non-local target is skipped" in new CircuitFixture {
     val barA = CircuitTarget("Foo").module("Foo").instOf("bar", "Bar").ref("a")
-    assertThrows[java.lang.IllegalArgumentException]{
+    assertThrows[java.lang.IllegalArgumentException] {
       Seq(ManipulateNamesBlocklistAnnotation(Seq(Seq(barA)), Dependency[AddPrefix]))
     }
   }
 
-  behavior of "ManipulateNamesAllowlistResultAnnotation"
+  behavior.of("ManipulateNamesAllowlistResultAnnotation")
 
   it should "delete itself if the new target is deleted" in {
     val `~Foo|Bar` = CircuitTarget("Foo").module("Bar")
@@ -220,7 +213,7 @@ class ManipulateNamesSpec extends AnyFlatSpec with Matchers {
     val r = RenameMap()
     r.delete(`~Foo|prefix_Bar`)
 
-    a.update(r) should be (empty)
+    a.update(r) should be(empty)
   }
 
   it should "drop a deleted target" in {
@@ -242,12 +235,12 @@ class ManipulateNamesSpec extends AnyFlatSpec with Matchers {
       case b: ManipulateNamesAllowlistResultAnnotation[_] => b
     }
 
-    ax should not be length (1)
+    ax should not be length(1)
 
     val keys = ax.head.toRenameMap.getUnderlying.keys
 
     keys should not contain (`~Foo|Bar`)
-    keys should contain (`~Foo|Baz`)
+    keys should contain(`~Foo|Baz`)
   }
 
 }

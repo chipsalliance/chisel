@@ -8,7 +8,7 @@ import firrtl.Mappers._
 import firrtl.PrimOps.Pad
 import firrtl.options.Dependency
 
-import firrtl.Utils.{isCast, isBitExtract, NodeMap}
+import firrtl.Utils.{isBitExtract, isCast, NodeMap}
 
 object InlineCastsTransform {
 
@@ -17,8 +17,8 @@ object InlineCastsTransform {
   // Note that this can have false negatives but MUST NOT have false positives
   private def isSimpleCast(castSeen: Boolean)(expr: Expression): Boolean = expr match {
     case _: WRef | _: Literal | _: WSubField => castSeen
-    case DoPrim(op, args, _,_) if isCast(op) => args.forall(isSimpleCast(true))
-    case _ => false
+    case DoPrim(op, args, _, _) if isCast(op) => args.forall(isSimpleCast(true))
+    case _                                    => false
   }
 
   /** Recursively replace [[WRef]]s with new [[firrtl.ir.Expression Expression]]s
@@ -31,17 +31,20 @@ object InlineCastsTransform {
   def onExpr(replace: NodeMap)(expr: Expression): Expression = expr match {
     // Anything that may generate a part-select should not be inlined!
     case DoPrim(op, _, _, _) if (isBitExtract(op) || op == Pad) => expr
-    case e => e.map(onExpr(replace)) match {
-      case e @ WRef(name, _,_,_) =>
-        replace.get(name)
-          .filter(isSimpleCast(castSeen=false))
-          .getOrElse(e)
-      case e @ DoPrim(op, Seq(WRef(name, _,_,_)), _,_) if isCast(op) =>
-        replace.get(name)
-          .map(value => e.copy(args = Seq(value)))
-          .getOrElse(e)
-      case other => other // Not a candidate
-    }
+    case e =>
+      e.map(onExpr(replace)) match {
+        case e @ WRef(name, _, _, _) =>
+          replace
+            .get(name)
+            .filter(isSimpleCast(castSeen = false))
+            .getOrElse(e)
+        case e @ DoPrim(op, Seq(WRef(name, _, _, _)), _, _) if isCast(op) =>
+          replace
+            .get(name)
+            .map(value => e.copy(args = Seq(value)))
+            .getOrElse(e)
+        case other => other // Not a candidate
+      }
   }
 
   /** Inline casts in a Statement
@@ -69,11 +72,13 @@ object InlineCastsTransform {
 class InlineCastsTransform extends Transform with DependencyAPIMigration {
 
   override def prerequisites = firrtl.stage.Forms.LowFormMinimumOptimized ++
-    Seq( Dependency[BlackBoxSourceHelper],
-         Dependency[FixAddingNegativeLiterals],
-         Dependency[ReplaceTruncatingArithmetic],
-         Dependency[InlineBitExtractionsTransform],
-         Dependency[PropagatePresetAnnotations] )
+    Seq(
+      Dependency[BlackBoxSourceHelper],
+      Dependency[FixAddingNegativeLiterals],
+      Dependency[ReplaceTruncatingArithmetic],
+      Dependency[InlineBitExtractionsTransform],
+      Dependency[PropagatePresetAnnotations]
+    )
 
   override def optionalPrerequisites = firrtl.stage.Forms.LowFormOptimized
 
