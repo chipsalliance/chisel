@@ -56,7 +56,9 @@ case class Lineage(
 
   def shortSerialize(tab: String): String = s"""
                                                |$tab name: $name,
-                                               |$tab children: ${children.map(c => tab + "   " + c._2.shortSerialize(tab + "    "))}
+                                               |$tab children: ${children.map(c =>
+    tab + "   " + c._2.shortSerialize(tab + "    ")
+  )}
                                                |""".stripMargin
 
   def foldLeft[B](z: B)(op: (B, (String, Lineage)) => B): B =
@@ -71,7 +73,9 @@ case class Lineage(
                                           |$tab sharedParent: $sharedParent,
                                           |$tab addPort: $addPort
                                           |$tab cons: $cons
-                                          |$tab children: ${children.map(c => tab + "   " + c._2.serialize(tab + "    "))}
+                                          |$tab children: ${children.map(c =>
+    tab + "   " + c._2.serialize(tab + "    ")
+  )}
                                           |""".stripMargin
 }
 

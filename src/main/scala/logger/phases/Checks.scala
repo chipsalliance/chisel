@@ -40,8 +40,10 @@ object Checks extends Phase {
       )
     }
     if (lf.size > 1) {
-      throw new LoggerException(s"""|At most one log file can be specified, but found ${lf.size} combinations of:
-                                    |    - an options or annotation: -ltf, --log-to-file, --log-file, LogFileAnnotation""".stripMargin)
+      throw new LoggerException(
+        s"""|At most one log file can be specified, but found ${lf.size} combinations of:
+            |    - an options or annotation: -ltf, --log-to-file, --log-file, LogFileAnnotation""".stripMargin
+      )
     }
     annotations
   }

@@ -55,10 +55,12 @@ class Checks extends Phase {
 
     /* Only one FIRRTL input can exist */
     if (inF.size + inS.size + inC.size > 1) {
-      throw new OptionsException(s"""|Multiply defined input FIRRTL sources. More than one of the following was found:
-                                     |    - an input file (${inF.size} times):  -i, --input-file,    FirrtlFileAnnotation
-                                     |    - FIRRTL source (${inS.size} times):      --firrtl-source, FirrtlSourceAnnotation
-                                     |    - FIRRTL circuit (${inC.size} times):                      FirrtlCircuitAnnotation""".stripMargin)
+      throw new OptionsException(
+        s"""|Multiply defined input FIRRTL sources. More than one of the following was found:
+            |    - an input file (${inF.size} times):  -i, --input-file,    FirrtlFileAnnotation
+            |    - FIRRTL source (${inS.size} times):      --firrtl-source, FirrtlSourceAnnotation
+            |    - FIRRTL circuit (${inC.size} times):                      FirrtlCircuitAnnotation""".stripMargin
+      )
     }
 
     /* Specifying an output file and one-file-per module conflict */

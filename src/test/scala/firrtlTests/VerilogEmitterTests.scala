@@ -373,10 +373,13 @@ class VerilogEmitterSpec extends FirrtlFlatSpec {
 
     val renderer = emitter.getRenderer(module, moduleMap)(writer)
 
-    renderer.emitVerilogBind("BindsToTest", """
-                                             |$readmemh("file", memory);
-                                             |
-                                             |""".stripMargin)
+    renderer.emitVerilogBind(
+      "BindsToTest",
+      """
+        |$readmemh("file", memory);
+        |
+        |""".stripMargin
+    )
     val lines = writer.toString.split("\n")
 
     val outString = writer.toString
