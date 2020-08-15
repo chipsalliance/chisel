@@ -686,6 +686,7 @@ object Utils extends LazyLogging {
     }
   }
 
+  // format: off
   val v_keywords = Set(
     "alias", "always", "always_comb", "always_ff", "always_latch",
     "and", "assert", "assign", "assume", "attribute", "automatic",
@@ -755,6 +756,7 @@ object Utils extends LazyLogging {
     "SYNTHESIS",
     "PRINTF_COND",
     "VCS")
+  // format: on
 
   /** Expand a name into its prefixes, e.g., 'foo_bar__baz' becomes 'Seq[foo_, foo_bar__, foo_bar__baz]'. This can be used
     * to produce better names when generating prefix unique names.
