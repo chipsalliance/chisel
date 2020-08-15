@@ -2,9 +2,8 @@
 
 package firrtlTests.options
 
-
 import firrtl.AnnotationSeq
-import firrtl.options.{DependencyManagerException, Phase, PhaseManager, Dependency}
+import firrtl.options.{Dependency, DependencyManagerException, Phase, PhaseManager}
 
 import java.io.{File, PrintWriter}
 
@@ -61,7 +60,6 @@ class F extends IdentityPhase {
     case _ => false
   }
 }
-
 
 /** [[Phase]] that requires [[C]] and invalidates [[F]] */
 class G extends IdentityPhase {
@@ -235,7 +233,7 @@ object UnrelatedFixture {
   trait InvalidatesB8Dep { this: Phase =>
     override def invalidates(a: Phase) = a match {
       case _: B8Dep => true
-      case _        => false
+      case _ => false
     }
   }
 
@@ -368,7 +366,7 @@ object OrderingFixture {
   class B extends IdentityPhase {
     override def invalidates(phase: Phase): Boolean = phase match {
       case _: A => true
-      case _    => false
+      case _ => false
     }
   }
 
@@ -376,7 +374,7 @@ object OrderingFixture {
     override def prerequisites = Seq(Dependency[A], Dependency[B])
     override def invalidates(phase: Phase): Boolean = phase match {
       case _: B => true
-      case _    => false
+      case _ => false
     }
   }
 
@@ -423,7 +421,7 @@ class PhaseManagerSpec extends AnyFlatSpec with Matchers {
 
   }
 
-  behavior of this.getClass.getName
+  behavior.of(this.getClass.getName)
 
   it should "do nothing if all targets are reached" in {
     val targets = Seq(Dependency[A], Dependency[B], Dependency[C], Dependency[D])
@@ -431,7 +429,7 @@ class PhaseManagerSpec extends AnyFlatSpec with Matchers {
 
     writeGraphviz(pm, "test_run_dir/PhaseManagerSpec/DoNothing")
 
-    pm.flattenedTransformOrder should be (empty)
+    pm.flattenedTransformOrder should be(empty)
   }
 
   it should "handle a simple dependency" in {
@@ -441,7 +439,7 @@ class PhaseManagerSpec extends AnyFlatSpec with Matchers {
 
     writeGraphviz(pm, "test_run_dir/PhaseManagerSpec/SimpleDependency")
 
-    pm.flattenedTransformOrder.map(_.getClass) should be (order)
+    pm.flattenedTransformOrder.map(_.getClass) should be(order)
   }
 
   it should "handle a simple dependency with an invalidation" in {
@@ -451,7 +449,7 @@ class PhaseManagerSpec extends AnyFlatSpec with Matchers {
 
     writeGraphviz(pm, "test_run_dir/PhaseManagerSpec/OneInvalidate")
 
-    pm.flattenedTransformOrder.map(_.getClass) should be (order)
+    pm.flattenedTransformOrder.map(_.getClass) should be(order)
   }
 
   it should "handle a dependency with two invalidates optimally" in {
@@ -460,7 +458,7 @@ class PhaseManagerSpec extends AnyFlatSpec with Matchers {
 
     writeGraphviz(pm, "test_run_dir/PhaseManagerSpec/TwoInvalidates")
 
-    pm.flattenedTransformOrder.size should be (targets.size)
+    pm.flattenedTransformOrder.size should be(targets.size)
   }
 
   it should "throw an exception for cyclic prerequisites" in {
@@ -469,8 +467,9 @@ class PhaseManagerSpec extends AnyFlatSpec with Matchers {
 
     writeGraphviz(pm, "test_run_dir/PhaseManagerSpec/CyclicPrerequisites")
 
-    intercept[DependencyManagerException]{ pm.flattenedTransformOrder }
-      .getMessage should startWith ("No transform ordering possible")
+    intercept[DependencyManagerException] { pm.flattenedTransformOrder }.getMessage should startWith(
+      "No transform ordering possible"
+    )
   }
 
   it should "throw an exception for cyclic invalidates" in {
@@ -479,8 +478,9 @@ class PhaseManagerSpec extends AnyFlatSpec with Matchers {
 
     writeGraphviz(pm, "test_run_dir/PhaseManagerSpec/CyclicInvalidates")
 
-    intercept[DependencyManagerException]{ pm.flattenedTransformOrder }
-      .getMessage should startWith ("No transform ordering possible")
+    intercept[DependencyManagerException] { pm.flattenedTransformOrder }.getMessage should startWith(
+      "No transform ordering possible"
+    )
   }
 
   it should "handle a complicated graph" in {
@@ -491,41 +491,31 @@ class PhaseManagerSpec extends AnyFlatSpec with Matchers {
     writeGraphviz(pm, "test_run_dir/PhaseManagerSpec/Complicated")
 
     info("only one phase was recomputed")
-    pm.flattenedTransformOrder.size should be (targets.size + 1)
+    pm.flattenedTransformOrder.size should be(targets.size + 1)
   }
 
   it should "handle repeated recomputed analyses" in {
     val f = RepeatedAnalysisFixture
     val targets = Seq(Dependency[f.A], Dependency[f.B], Dependency[f.C])
     val order =
-      Seq( classOf[f.Analysis],
-           classOf[f.A],
-           classOf[f.Analysis],
-           classOf[f.B],
-           classOf[f.Analysis],
-           classOf[f.C])
+      Seq(classOf[f.Analysis], classOf[f.A], classOf[f.Analysis], classOf[f.B], classOf[f.Analysis], classOf[f.C])
     val pm = new PhaseManager(targets)
 
     writeGraphviz(pm, "test_run_dir/PhaseManagerSpec/RepeatedAnalysis")
 
-    pm.flattenedTransformOrder.map(_.getClass) should be (order)
+    pm.flattenedTransformOrder.map(_.getClass) should be(order)
   }
 
   it should "handle inverted repeated recomputed analyses" in {
     val f = InvertedAnalysisFixture
     val targets = Seq(Dependency[f.A], Dependency[f.B], Dependency[f.C])
     val order =
-      Seq( classOf[f.Analysis],
-           classOf[f.C],
-           classOf[f.Analysis],
-           classOf[f.B],
-           classOf[f.Analysis],
-           classOf[f.A])
+      Seq(classOf[f.Analysis], classOf[f.C], classOf[f.Analysis], classOf[f.B], classOf[f.Analysis], classOf[f.A])
     val pm = new PhaseManager(targets)
 
     writeGraphviz(pm, "test_run_dir/PhaseManagerSpec/InvertedRepeatedAnalysis")
 
-    pm.flattenedTransformOrder.map(_.getClass) should be (order)
+    pm.flattenedTransformOrder.map(_.getClass) should be(order)
   }
 
   /** This test shows how the optionalPrerequisiteOf member can be used to run one transform before another. */
@@ -535,7 +525,7 @@ class PhaseManagerSpec extends AnyFlatSpec with Matchers {
     info("without the custom transform it runs: First -> Second")
     val pm = new PhaseManager(Seq(Dependency[f.Second]))
     val orderNoCustom = Seq(classOf[f.First], classOf[f.Second])
-    pm.flattenedTransformOrder.map(_.getClass) should be (orderNoCustom)
+    pm.flattenedTransformOrder.map(_.getClass) should be(orderNoCustom)
 
     info("with the custom transform it runs:    First -> Custom -> Second")
     val pmCustom = new PhaseManager(Seq(Dependency[f.Custom], Dependency[f.Second]))
@@ -543,7 +533,7 @@ class PhaseManagerSpec extends AnyFlatSpec with Matchers {
 
     writeGraphviz(pmCustom, "test_run_dir/PhaseManagerSpec/SingleDependent")
 
-    pmCustom.flattenedTransformOrder.map(_.getClass) should be (orderCustom)
+    pmCustom.flattenedTransformOrder.map(_.getClass) should be(orderCustom)
   }
 
   it should "handle chained invalidation" in {
@@ -553,11 +543,11 @@ class PhaseManagerSpec extends AnyFlatSpec with Matchers {
     val current = Seq(Dependency[f.B], Dependency[f.C], Dependency[f.D])
 
     val pm = new PhaseManager(targets, current)
-    val order = Seq( classOf[f.A], classOf[f.B], classOf[f.C], classOf[f.D], classOf[f.E] )
+    val order = Seq(classOf[f.A], classOf[f.B], classOf[f.C], classOf[f.D], classOf[f.E])
 
     writeGraphviz(pm, "test_run_dir/PhaseManagerSpec/ChainedInvalidate")
 
-    pm.flattenedTransformOrder.map(_.getClass) should be (order)
+    pm.flattenedTransformOrder.map(_.getClass) should be(order)
   }
 
   it should "maintain the order of input targets" in {
@@ -565,62 +555,70 @@ class PhaseManagerSpec extends AnyFlatSpec with Matchers {
 
     /** A bunch of unrelated Phases. This ensures that these run in the order in which they are specified. */
     val targets =
-      Seq( Dependency[f.B0],
-           Dependency[f.B1],
-           Dependency[f.B2],
-           Dependency[f.B3],
-           Dependency[f.B4],
-           Dependency[f.B5],
-           Dependency[f.B6],
-           Dependency[f.B7],
-           Dependency[f.B8],
-           Dependency[f.B9],
-           Dependency[f.B10],
-           Dependency[f.B11],
-           Dependency[f.B12],
-           Dependency[f.B13],
-           Dependency[f.B14],
-           Dependency[f.B15] )
+      Seq(
+        Dependency[f.B0],
+        Dependency[f.B1],
+        Dependency[f.B2],
+        Dependency[f.B3],
+        Dependency[f.B4],
+        Dependency[f.B5],
+        Dependency[f.B6],
+        Dependency[f.B7],
+        Dependency[f.B8],
+        Dependency[f.B9],
+        Dependency[f.B10],
+        Dependency[f.B11],
+        Dependency[f.B12],
+        Dependency[f.B13],
+        Dependency[f.B14],
+        Dependency[f.B15]
+      )
+
     /** A sequence of custom transforms that should all run after B6 and before B7. This exercises correct ordering of the
       * prerequisiteGraph and optionalPrerequisiteOfGraph.
       */
     val prerequisiteTargets =
-      Seq( Dependency[f.B6_0],
-           Dependency[f.B6_1],
-           Dependency[f.B6_2],
-           Dependency[f.B6_3],
-           Dependency[f.B6_4],
-           Dependency[f.B6_5],
-           Dependency[f.B6_6],
-           Dependency[f.B6_7],
-           Dependency[f.B6_8],
-           Dependency[f.B6_9],
-           Dependency[f.B6_10],
-           Dependency[f.B6_11],
-           Dependency[f.B6_12],
-           Dependency[f.B6_13],
-           Dependency[f.B6_14],
-           Dependency[f.B6_15] )
+      Seq(
+        Dependency[f.B6_0],
+        Dependency[f.B6_1],
+        Dependency[f.B6_2],
+        Dependency[f.B6_3],
+        Dependency[f.B6_4],
+        Dependency[f.B6_5],
+        Dependency[f.B6_6],
+        Dependency[f.B6_7],
+        Dependency[f.B6_8],
+        Dependency[f.B6_9],
+        Dependency[f.B6_10],
+        Dependency[f.B6_11],
+        Dependency[f.B6_12],
+        Dependency[f.B6_13],
+        Dependency[f.B6_14],
+        Dependency[f.B6_15]
+      )
+
     /** A sequence of transforms that are invalidated by B0 and only define optionalPrerequisiteOf on B8. This exercises
       * the ordering defined by "otherPrerequisites".
       */
     val current =
-      Seq( Dependency[f.B8_0],
-           Dependency[f.B8_1],
-           Dependency[f.B8_2],
-           Dependency[f.B8_3],
-           Dependency[f.B8_4],
-           Dependency[f.B8_5],
-           Dependency[f.B8_6],
-           Dependency[f.B8_7],
-           Dependency[f.B8_8],
-           Dependency[f.B8_9],
-           Dependency[f.B8_10],
-           Dependency[f.B8_11],
-           Dependency[f.B8_12],
-           Dependency[f.B8_13],
-           Dependency[f.B8_14],
-           Dependency[f.B8_15] )
+      Seq(
+        Dependency[f.B8_0],
+        Dependency[f.B8_1],
+        Dependency[f.B8_2],
+        Dependency[f.B8_3],
+        Dependency[f.B8_4],
+        Dependency[f.B8_5],
+        Dependency[f.B8_6],
+        Dependency[f.B8_7],
+        Dependency[f.B8_8],
+        Dependency[f.B8_9],
+        Dependency[f.B8_10],
+        Dependency[f.B8_11],
+        Dependency[f.B8_12],
+        Dependency[f.B8_13],
+        Dependency[f.B8_14],
+        Dependency[f.B8_15]
+      )
 
     /** The resulting order: B0--B6, B6_0--B6_B15, B7, B8_0--B8_15, B8--B15 */
     val expectedDeps = targets.slice(0, 7) ++ prerequisiteTargets ++ Some(targets(7)) ++ current ++ targets.drop(8)
@@ -630,7 +628,7 @@ class PhaseManagerSpec extends AnyFlatSpec with Matchers {
 
     writeGraphviz(pm, "test_run_dir/PhaseManagerSpec/DeterministicOrder")
 
-    pm.flattenedTransformOrder.map(_.getClass) should be (expectedClasses)
+    pm.flattenedTransformOrder.map(_.getClass) should be(expectedClasses)
   }
 
   it should "allow conditional placement of custom transforms" in {
@@ -642,13 +640,21 @@ class PhaseManagerSpec extends AnyFlatSpec with Matchers {
     val targetsFull = Seq(Dependency[f.Custom], Dependency[f.DoneFull])
     val pmFull = new PhaseManager(targetsFull)
 
-    val expectedMinimum = Seq(classOf[f.Root], classOf[f.OptMinimum], classOf[f.AfterOpt], classOf[f.Custom], classOf[f.DoneMinimum])
+    val expectedMinimum =
+      Seq(classOf[f.Root], classOf[f.OptMinimum], classOf[f.AfterOpt], classOf[f.Custom], classOf[f.DoneMinimum])
     writeGraphviz(pmMinimum, "test_run_dir/PhaseManagerSpec/CustomAfterOptimization/minimum")
-    pmMinimum.flattenedTransformOrder.map(_.getClass) should be (expectedMinimum)
+    pmMinimum.flattenedTransformOrder.map(_.getClass) should be(expectedMinimum)
 
-    val expectedFull = Seq(classOf[f.Root], classOf[f.OptMinimum], classOf[f.OptFull], classOf[f.AfterOpt], classOf[f.Custom], classOf[f.DoneFull])
+    val expectedFull = Seq(
+      classOf[f.Root],
+      classOf[f.OptMinimum],
+      classOf[f.OptFull],
+      classOf[f.AfterOpt],
+      classOf[f.Custom],
+      classOf[f.DoneFull]
+    )
     writeGraphviz(pmFull, "test_run_dir/PhaseManagerSpec/CustomAfterOptimization/full")
-    pmFull.flattenedTransformOrder.map(_.getClass) should be (expectedFull)
+    pmFull.flattenedTransformOrder.map(_.getClass) should be(expectedFull)
   }
 
   it should "support optional prerequisites" in {
@@ -662,11 +668,12 @@ class PhaseManagerSpec extends AnyFlatSpec with Matchers {
 
     val expectedMinimum = Seq(classOf[f.Root], classOf[f.OptMinimum], classOf[f.Custom], classOf[f.DoneMinimum])
     writeGraphviz(pmMinimum, "test_run_dir/PhaseManagerSpec/CustomAfterOptimization/minimum")
-    pmMinimum.flattenedTransformOrder.map(_.getClass) should be (expectedMinimum)
+    pmMinimum.flattenedTransformOrder.map(_.getClass) should be(expectedMinimum)
 
-    val expectedFull = Seq(classOf[f.Root], classOf[f.OptMinimum], classOf[f.OptFull], classOf[f.Custom], classOf[f.DoneFull])
+    val expectedFull =
+      Seq(classOf[f.Root], classOf[f.OptMinimum], classOf[f.OptFull], classOf[f.Custom], classOf[f.DoneFull])
     writeGraphviz(pmFull, "test_run_dir/PhaseManagerSpec/CustomAfterOptimization/full")
-    pmFull.flattenedTransformOrder.map(_.getClass) should be (expectedFull)
+    pmFull.flattenedTransformOrder.map(_.getClass) should be(expectedFull)
   }
 
   /** This tests a situation the ordering of edges matters. Namely, this test is dependent on the ordering in which
@@ -678,13 +685,13 @@ class PhaseManagerSpec extends AnyFlatSpec with Matchers {
     {
       val targets = Seq(Dependency[f.A], Dependency[f.B], Dependency[f.C])
       val order = Seq(classOf[f.B], classOf[f.A], classOf[f.C], classOf[f.B], classOf[f.A])
-      (new PhaseManager(targets)).flattenedTransformOrder.map(_.getClass) should be (order)
+      (new PhaseManager(targets)).flattenedTransformOrder.map(_.getClass) should be(order)
     }
 
     {
       val targets = Seq(Dependency[f.A], Dependency[f.B], Dependency[f.Cx])
       val order = Seq(classOf[f.B], classOf[f.A], classOf[f.Cx], classOf[f.B], classOf[f.A])
-      (new PhaseManager(targets)).flattenedTransformOrder.map(_.getClass) should be (order)
+      (new PhaseManager(targets)).flattenedTransformOrder.map(_.getClass) should be(order)
     }
   }
 

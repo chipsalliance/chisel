@@ -5,10 +5,10 @@ package logger.phases
 import firrtl.AnnotationSeq
 import firrtl.options.Phase
 
-import logger.{LoggerOption, LogLevelAnnotation}
+import logger.{LogLevelAnnotation, LoggerOption}
 
 /** Add default logger [[Annotation]]s */
-private [logger] class AddDefaults extends Phase {
+private[logger] class AddDefaults extends Phase {
 
   override def prerequisites = Seq.empty
   override def optionalPrerequisiteOf = Seq.empty
@@ -20,12 +20,12 @@ private [logger] class AddDefaults extends Phase {
     */
   def transform(annotations: AnnotationSeq): AnnotationSeq = {
     var ll = true
-    annotations.collect{ case a: LoggerOption => a }.map{
+    annotations.collect { case a: LoggerOption => a }.map {
       case _: LogLevelAnnotation => ll = false
-      case _                     =>
+      case _ =>
     }
     annotations ++
-      (if (ll) Seq(LogLevelAnnotation()) else Seq() )
+      (if (ll) Seq(LogLevelAnnotation()) else Seq())
   }
 
 }

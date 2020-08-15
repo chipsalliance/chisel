@@ -30,7 +30,7 @@ trait VerilogExecution extends TestExecution {
 
     // Make and run Verilog simulation
     verilogToCpp(c.main, testDir, Nil, harness) #&&
-    cppToExe(c.main, testDir) ! loggingProcessLogger
+      cppToExe(c.main, testDir) ! loggingProcessLogger
     assert(executeExpectingSuccess(c.main, testDir))
   }
 }

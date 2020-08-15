@@ -88,10 +88,12 @@ case class DuplicationHelper(existingModules: Set[String]) {
     * @param originalOfModule original module being instantiated in originalModule
     * @return
     */
-  def getNewOfModule(originalModule: String,
-                     newModule: String,
-                     instance: Instance,
-                     originalOfModule: OfModule): OfModule = {
+  def getNewOfModule(
+    originalModule:   String,
+    newModule:        String,
+    instance:         Instance,
+    originalOfModule: OfModule
+  ): OfModule = {
     dupMap.get(originalModule) match {
       case None => // No duplication, can return originalOfModule
         originalOfModule
@@ -129,18 +131,18 @@ case class DuplicationHelper(existingModules: Set[String]) {
     val newTops = getDuplicates(top)
     newTops.map { newTop =>
       val newPath = mutable.ArrayBuffer[TargetToken]()
-      path.foldLeft((top, newTop)) { case ((originalModule, newModule), (instance, ofModule)) =>
-        val newOfModule = getNewOfModule(originalModule, newModule, instance, ofModule)
-        newPath ++= Seq(instance, newOfModule)
-        (ofModule.value, newOfModule.value)
+      path.foldLeft((top, newTop)) {
+        case ((originalModule, newModule), (instance, ofModule)) =>
+          val newOfModule = getNewOfModule(originalModule, newModule, instance, ofModule)
+          newPath ++= Seq(instance, newOfModule)
+          (ofModule.value, newOfModule.value)
       }
-      val module = if(newPath.nonEmpty) newPath.last.value.toString else newTop
+      val module = if (newPath.nonEmpty) newPath.last.value.toString else newTop
       t.notPath match {
-        case Seq() => ModuleTarget(t.circuit, module)
+        case Seq()                               => ModuleTarget(t.circuit, module)
         case Instance(i) +: OfModule(m) +: Seq() => ModuleTarget(t.circuit, module)
-        case Ref(r) +: components => ReferenceTarget(t.circuit, module, Nil, r, components)
+        case Ref(r) +: components                => ReferenceTarget(t.circuit, module, Nil, r, components)
       }
     }.toSeq
   }
 }
-

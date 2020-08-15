@@ -17,14 +17,10 @@ import firrtl.stage.TransformManager.TransformDependency
   */
 trait DependencyAPIMigration { this: Transform =>
 
-  @deprecated(
-    "Use Dependency API methods for equivalent functionality. See: https://bit.ly/2Voppre",
-    "FIRRTL 1.3")
+  @deprecated("Use Dependency API methods for equivalent functionality. See: https://bit.ly/2Voppre", "FIRRTL 1.3")
   final override def inputForm: CircuitForm = UnknownForm
 
-  @deprecated(
-    "Use Dependency API methods for equivalent functionality. See: https://bit.ly/2Voppre",
-    "FIRRTL 1.3")
+  @deprecated("Use Dependency API methods for equivalent functionality. See: https://bit.ly/2Voppre", "FIRRTL 1.3")
   final override def outputForm: CircuitForm = UnknownForm
 
   override def prerequisites: Seq[TransformDependency] = Seq.empty

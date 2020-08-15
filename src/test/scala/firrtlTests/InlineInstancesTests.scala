@@ -12,8 +12,8 @@ import firrtl.stage.TransformManager
 import firrtl.options.Dependency
 
 /**
- * Tests inline instances transformation
- */
+  * Tests inline instances transformation
+  */
 class InlineInstancesTests extends LowTransformSpec {
   def transform = new InlineInstances
   def inline(mod: String): Annotation = {
@@ -22,181 +22,181 @@ class InlineInstancesTests extends LowTransformSpec {
     val name = if (parts.size == 1) modName else ComponentName(parts.tail.mkString("."), modName)
     InlineAnnotation(name)
   }
-   // Set this to debug, this will apply to all tests
-   // Logger.setLevel(this.getClass, Debug)
-   "The module Inline" should "be inlined" in {
-      val input =
-         """circuit Top :
-           |  module Top :
-           |    input a : UInt<32>
-           |    output b : UInt<32>
-           |    inst i of Inline
-           |    i.a <= a
-           |    b <= i.b
-           |  module Inline :
-           |    input a : UInt<32>
-           |    output b : UInt<32>
-           |    b <= a""".stripMargin
-      val check =
-         """circuit Top :
-           |  module Top :
-           |    input a : UInt<32>
-           |    output b : UInt<32>
-           |    wire i_a : UInt<32>
-           |    wire i_b : UInt<32>
-           |    i_b <= i_a
-           |    b <= i_b
-           |    i_a <= a""".stripMargin
-      execute(input, check, Seq(inline("Inline")))
-   }
+  // Set this to debug, this will apply to all tests
+  // Logger.setLevel(this.getClass, Debug)
+  "The module Inline" should "be inlined" in {
+    val input =
+      """circuit Top :
+        |  module Top :
+        |    input a : UInt<32>
+        |    output b : UInt<32>
+        |    inst i of Inline
+        |    i.a <= a
+        |    b <= i.b
+        |  module Inline :
+        |    input a : UInt<32>
+        |    output b : UInt<32>
+        |    b <= a""".stripMargin
+    val check =
+      """circuit Top :
+        |  module Top :
+        |    input a : UInt<32>
+        |    output b : UInt<32>
+        |    wire i_a : UInt<32>
+        |    wire i_b : UInt<32>
+        |    i_b <= i_a
+        |    b <= i_b
+        |    i_a <= a""".stripMargin
+    execute(input, check, Seq(inline("Inline")))
+  }
 
-   "The all instances of Simple" should "be inlined" in {
-      val input =
-         """circuit Top :
-           |  module Top :
-           |    input a : UInt<32>
-           |    output b : UInt<32>
-           |    inst i0 of Simple
-           |    inst i1 of Simple
-           |    i0.a <= a
-           |    i1.a <= i0.b
-           |    b <= i1.b
-           |  module Simple :
-           |    input a : UInt<32>
-           |    output b : UInt<32>
-           |    b <= a""".stripMargin
-      val check =
-         """circuit Top :
-           |  module Top :
-           |    input a : UInt<32>
-           |    output b : UInt<32>
-           |    wire i0_a : UInt<32>
-           |    wire i0_b : UInt<32>
-           |    i0_b <= i0_a
-           |    wire i1_a : UInt<32>
-           |    wire i1_b : UInt<32>
-           |    i1_b <= i1_a
-           |    b <= i1_b
-           |    i0_a <= a
-           |    i1_a <= i0_b""".stripMargin
-      execute(input, check, Seq(inline("Simple")))
-   }
+  "The all instances of Simple" should "be inlined" in {
+    val input =
+      """circuit Top :
+        |  module Top :
+        |    input a : UInt<32>
+        |    output b : UInt<32>
+        |    inst i0 of Simple
+        |    inst i1 of Simple
+        |    i0.a <= a
+        |    i1.a <= i0.b
+        |    b <= i1.b
+        |  module Simple :
+        |    input a : UInt<32>
+        |    output b : UInt<32>
+        |    b <= a""".stripMargin
+    val check =
+      """circuit Top :
+        |  module Top :
+        |    input a : UInt<32>
+        |    output b : UInt<32>
+        |    wire i0_a : UInt<32>
+        |    wire i0_b : UInt<32>
+        |    i0_b <= i0_a
+        |    wire i1_a : UInt<32>
+        |    wire i1_b : UInt<32>
+        |    i1_b <= i1_a
+        |    b <= i1_b
+        |    i0_a <= a
+        |    i1_a <= i0_b""".stripMargin
+    execute(input, check, Seq(inline("Simple")))
+  }
 
-   "Only one instance of Simple" should "be inlined" in {
-      val input =
-         """circuit Top :
-           |  module Top :
-           |    input a : UInt<32>
-           |    output b : UInt<32>
-           |    inst i0 of Simple
-           |    inst i1 of Simple
-           |    i0.a <= a
-           |    i1.a <= i0.b
-           |    b <= i1.b
-           |  module Simple :
-           |    input a : UInt<32>
-           |    output b : UInt<32>
-           |    b <= a""".stripMargin
-      val check =
-         """circuit Top :
-           |  module Top :
-           |    input a : UInt<32>
-           |    output b : UInt<32>
-           |    wire i0_a : UInt<32>
-           |    wire i0_b : UInt<32>
-           |    i0_b <= i0_a
-           |    inst i1 of Simple
-           |    b <= i1.b
-           |    i0_a <= a
-           |    i1.a <= i0_b
-           |  module Simple :
-           |    input a : UInt<32>
-           |    output b : UInt<32>
-           |    b <= a""".stripMargin
-      execute(input, check, Seq(inline("Top.i0")))
-   }
+  "Only one instance of Simple" should "be inlined" in {
+    val input =
+      """circuit Top :
+        |  module Top :
+        |    input a : UInt<32>
+        |    output b : UInt<32>
+        |    inst i0 of Simple
+        |    inst i1 of Simple
+        |    i0.a <= a
+        |    i1.a <= i0.b
+        |    b <= i1.b
+        |  module Simple :
+        |    input a : UInt<32>
+        |    output b : UInt<32>
+        |    b <= a""".stripMargin
+    val check =
+      """circuit Top :
+        |  module Top :
+        |    input a : UInt<32>
+        |    output b : UInt<32>
+        |    wire i0_a : UInt<32>
+        |    wire i0_b : UInt<32>
+        |    i0_b <= i0_a
+        |    inst i1 of Simple
+        |    b <= i1.b
+        |    i0_a <= a
+        |    i1.a <= i0_b
+        |  module Simple :
+        |    input a : UInt<32>
+        |    output b : UInt<32>
+        |    b <= a""".stripMargin
+    execute(input, check, Seq(inline("Top.i0")))
+  }
 
-   "All instances of A" should "be inlined" in {
-      val input =
-         """circuit Top :
-           |  module Top :
-           |    input a : UInt<32>
-           |    output b : UInt<32>
-           |    inst i0 of A
-           |    inst i1 of B
-           |    i0.a <= a
-           |    i1.a <= i0.b
-           |    b <= i1.b
-           |  module A :
-           |    input a : UInt<32>
-           |    output b : UInt<32>
-           |    b <= a
-           |  module B :
-           |    input a : UInt<32>
-           |    output b : UInt<32>
-           |    inst i of A
-           |    i.a <= a
-           |    b <= i.b""".stripMargin
-      val check =
-         """circuit Top :
-           |  module Top :
-           |    input a : UInt<32>
-           |    output b : UInt<32>
-           |    wire i0_a : UInt<32>
-           |    wire i0_b : UInt<32>
-           |    i0_b <= i0_a
-           |    inst i1 of B
-           |    b <= i1.b
-           |    i0_a <= a
-           |    i1.a <= i0_b
-           |  module B :
-           |    input a : UInt<32>
-           |    output b : UInt<32>
-           |    wire i_a : UInt<32>
-           |    wire i_b : UInt<32>
-           |    i_b <= i_a
-           |    b <= i_b
-           |    i_a <= a""".stripMargin
-      execute(input, check, Seq(inline("A")))
-   }
+  "All instances of A" should "be inlined" in {
+    val input =
+      """circuit Top :
+        |  module Top :
+        |    input a : UInt<32>
+        |    output b : UInt<32>
+        |    inst i0 of A
+        |    inst i1 of B
+        |    i0.a <= a
+        |    i1.a <= i0.b
+        |    b <= i1.b
+        |  module A :
+        |    input a : UInt<32>
+        |    output b : UInt<32>
+        |    b <= a
+        |  module B :
+        |    input a : UInt<32>
+        |    output b : UInt<32>
+        |    inst i of A
+        |    i.a <= a
+        |    b <= i.b""".stripMargin
+    val check =
+      """circuit Top :
+        |  module Top :
+        |    input a : UInt<32>
+        |    output b : UInt<32>
+        |    wire i0_a : UInt<32>
+        |    wire i0_b : UInt<32>
+        |    i0_b <= i0_a
+        |    inst i1 of B
+        |    b <= i1.b
+        |    i0_a <= a
+        |    i1.a <= i0_b
+        |  module B :
+        |    input a : UInt<32>
+        |    output b : UInt<32>
+        |    wire i_a : UInt<32>
+        |    wire i_b : UInt<32>
+        |    i_b <= i_a
+        |    b <= i_b
+        |    i_a <= a""".stripMargin
+    execute(input, check, Seq(inline("A")))
+  }
 
-   "Non-inlined instances" should "still prepend prefix" in {
-      val input =
-         """circuit Top :
-           |  module Top :
-           |    input a : UInt<32>
-           |    output b : UInt<32>
-           |    inst i of A
-           |    i.a <= a
-           |    b <= i.b
-           |  module A :
-           |    input a : UInt<32>
-           |    output b : UInt<32>
-           |    inst i of B
-           |    i.a <= a
-           |    b <= i.b
-           |  module B :
-           |    input a : UInt<32>
-           |    output b : UInt<32>
-           |    b <= a""".stripMargin
-      val check =
-         """circuit Top :
-           |  module Top :
-           |    input a : UInt<32>
-           |    output b : UInt<32>
-           |    wire i_a : UInt<32>
-           |    wire i_b : UInt<32>
-           |    inst i_i of B
-           |    i_b <= i_i.b
-           |    i_i.a <= i_a
-           |    b <= i_b
-           |    i_a <= a
-           |  module B :
-           |    input a : UInt<32>
-           |    output b : UInt<32>
-           |    b <= a""".stripMargin
-      execute(input, check, Seq(inline("A")))
-   }
+  "Non-inlined instances" should "still prepend prefix" in {
+    val input =
+      """circuit Top :
+        |  module Top :
+        |    input a : UInt<32>
+        |    output b : UInt<32>
+        |    inst i of A
+        |    i.a <= a
+        |    b <= i.b
+        |  module A :
+        |    input a : UInt<32>
+        |    output b : UInt<32>
+        |    inst i of B
+        |    i.a <= a
+        |    b <= i.b
+        |  module B :
+        |    input a : UInt<32>
+        |    output b : UInt<32>
+        |    b <= a""".stripMargin
+    val check =
+      """circuit Top :
+        |  module Top :
+        |    input a : UInt<32>
+        |    output b : UInt<32>
+        |    wire i_a : UInt<32>
+        |    wire i_b : UInt<32>
+        |    inst i_i of B
+        |    i_b <= i_i.b
+        |    i_i.a <= i_a
+        |    b <= i_b
+        |    i_a <= a
+        |  module B :
+        |    input a : UInt<32>
+        |    output b : UInt<32>
+        |    b <= a""".stripMargin
+    execute(input, check, Seq(inline("A")))
+  }
 
   "A module with nested inlines" should "still prepend prefixes" in {
     val input =
@@ -291,57 +291,57 @@ class InlineInstancesTests extends LowTransformSpec {
     execute(input, check, Seq(inline("Foo"), inline("Foo.bar")))
   }
 
-   // ---- Errors ----
-   // 1) ext module
-   "External module" should "not be inlined" in {
-      val input =
-         """circuit Top :
-           |  module Top :
-           |    input a : UInt<32>
-           |    output b : UInt<32>
-           |    inst i of A
-           |    i.a <= a
-           |    b <= i.b
-           |  extmodule A :
-           |    input a : UInt<32>
-           |    output b : UInt<32>""".stripMargin
-      failingexecute(input, Seq(inline("A")))
-   }
-   // 2) ext instance
-   "External instance" should "not be inlined" in {
-      val input =
-         """circuit Top :
-           |  module Top :
-           |    input a : UInt<32>
-           |    output b : UInt<32>
-           |    inst i of A
-           |    i.a <= a
-           |    b <= i.b
-           |  extmodule A :
-           |    input a : UInt<32>
-           |    output b : UInt<32>""".stripMargin
-      failingexecute(input, Seq(inline("A")))
-   }
-   // 3) no module
-   "Inlined module" should "exist" in {
-      val input =
-         """circuit Top :
-           |  module Top :
-           |    input a : UInt<32>
-           |    output b : UInt<32>
-           |    b <= a""".stripMargin
-      failingexecute(input, Seq(inline("A")))
-   }
-   // 4) no inst
-   "Inlined instance" should "exist" in {
-      val input =
-         """circuit Top :
-           |  module Top :
-           |    input a : UInt<32>
-           |    output b : UInt<32>
-           |    b <= a""".stripMargin
-      failingexecute(input, Seq(inline("A")))
-   }
+  // ---- Errors ----
+  // 1) ext module
+  "External module" should "not be inlined" in {
+    val input =
+      """circuit Top :
+        |  module Top :
+        |    input a : UInt<32>
+        |    output b : UInt<32>
+        |    inst i of A
+        |    i.a <= a
+        |    b <= i.b
+        |  extmodule A :
+        |    input a : UInt<32>
+        |    output b : UInt<32>""".stripMargin
+    failingexecute(input, Seq(inline("A")))
+  }
+  // 2) ext instance
+  "External instance" should "not be inlined" in {
+    val input =
+      """circuit Top :
+        |  module Top :
+        |    input a : UInt<32>
+        |    output b : UInt<32>
+        |    inst i of A
+        |    i.a <= a
+        |    b <= i.b
+        |  extmodule A :
+        |    input a : UInt<32>
+        |    output b : UInt<32>""".stripMargin
+    failingexecute(input, Seq(inline("A")))
+  }
+  // 3) no module
+  "Inlined module" should "exist" in {
+    val input =
+      """circuit Top :
+        |  module Top :
+        |    input a : UInt<32>
+        |    output b : UInt<32>
+        |    b <= a""".stripMargin
+    failingexecute(input, Seq(inline("A")))
+  }
+  // 4) no inst
+  "Inlined instance" should "exist" in {
+    val input =
+      """circuit Top :
+        |  module Top :
+        |    input a : UInt<32>
+        |    output b : UInt<32>
+        |    b <= a""".stripMargin
+    failingexecute(input, Seq(inline("A")))
+  }
 
   "Jack's Bug" should "not fail" in {
 
@@ -384,163 +384,167 @@ class InlineInstancesTests extends LowTransformSpec {
     override def duplicate(n: ReferenceTarget): Annotation = DummyAnno(n)
   }
   "annotations" should "be renamed" in {
-     val input =
-        """circuit Top :
-          |  module Top :
-          |    input a : UInt<32>
-          |    output b : UInt<32>
-          |    inst i of Inline
-          |    i.a <= a
-          |    b <= i.b
-          |  module Inline :
-          |    input a : UInt<32>
-          |    output b : UInt<32>
-          |    inst foo of NestedInline
-          |    inst bar of NestedNoInline
-          |    foo.a <= a
-          |    bar.a <= foo.b
-          |    b <= bar.b
-          |  module NestedInline :
-          |    input a : UInt<32>
-          |    output b : UInt<32>
-          |    b <= a
-          |  module NestedNoInline :
-          |    input a : UInt<32>
-          |    output b : UInt<32>
-          |    b <= a
-          |""".stripMargin
-     val check =
-        """circuit Top :
-          |  module Top :
-          |    input a : UInt<32>
-          |    output b : UInt<32>
-          |    wire i_a : UInt<32>
-          |    wire i_b : UInt<32>
-          |    wire i_foo_a : UInt<32>
-          |    wire i_foo_b : UInt<32>
-          |    i_foo_b <= i_foo_a
-          |    inst i_bar of NestedNoInline
-          |    i_b <= i_bar.b
-          |    i_foo_a <= i_a
-          |    i_bar.a <= i_foo_b
-          |    b <= i_b
-          |    i_a <= a
-          |  module NestedNoInline :
-          |    input a : UInt<32>
-          |    output b : UInt<32>
-          |    b <= a
-          |""".stripMargin
+    val input =
+      """circuit Top :
+        |  module Top :
+        |    input a : UInt<32>
+        |    output b : UInt<32>
+        |    inst i of Inline
+        |    i.a <= a
+        |    b <= i.b
+        |  module Inline :
+        |    input a : UInt<32>
+        |    output b : UInt<32>
+        |    inst foo of NestedInline
+        |    inst bar of NestedNoInline
+        |    foo.a <= a
+        |    bar.a <= foo.b
+        |    b <= bar.b
+        |  module NestedInline :
+        |    input a : UInt<32>
+        |    output b : UInt<32>
+        |    b <= a
+        |  module NestedNoInline :
+        |    input a : UInt<32>
+        |    output b : UInt<32>
+        |    b <= a
+        |""".stripMargin
+    val check =
+      """circuit Top :
+        |  module Top :
+        |    input a : UInt<32>
+        |    output b : UInt<32>
+        |    wire i_a : UInt<32>
+        |    wire i_b : UInt<32>
+        |    wire i_foo_a : UInt<32>
+        |    wire i_foo_b : UInt<32>
+        |    i_foo_b <= i_foo_a
+        |    inst i_bar of NestedNoInline
+        |    i_b <= i_bar.b
+        |    i_foo_a <= i_a
+        |    i_bar.a <= i_foo_b
+        |    b <= i_b
+        |    i_a <= a
+        |  module NestedNoInline :
+        |    input a : UInt<32>
+        |    output b : UInt<32>
+        |    b <= a
+        |""".stripMargin
     val top = CircuitTarget("Top").module("Top")
     val inlined = top.instOf("i", "Inline")
     val nestedInlined = top.instOf("i", "Inline").instOf("foo", "NestedInline")
     val nestedNotInlined = top.instOf("i", "Inline").instOf("bar", "NestedNoInline")
 
-     executeWithAnnos(input, check,
-       Seq(
-         inline("Inline"),
-         inline("NestedInline"),
-         NoCircuitDedupAnnotation,
-         DummyAnno(inlined.ref("a")),
-         DummyAnno(inlined.ref("b")),
-         DummyAnno(nestedInlined.ref("a")),
-         DummyAnno(nestedInlined.ref("b")),
-         DummyAnno(nestedNotInlined.ref("a")),
-         DummyAnno(nestedNotInlined.ref("b"))
-       ),
-       Seq(
-         DummyAnno(top.ref("i_a")),
-         DummyAnno(top.ref("i_b")),
-         DummyAnno(top.ref("i_foo_a")),
-         DummyAnno(top.ref("i_foo_b")),
-         DummyAnno(top.instOf("i_bar", "NestedNoInline").ref("a")),
-         DummyAnno(top.instOf("i_bar", "NestedNoInline").ref("b"))
-       )
-     )
+    executeWithAnnos(
+      input,
+      check,
+      Seq(
+        inline("Inline"),
+        inline("NestedInline"),
+        NoCircuitDedupAnnotation,
+        DummyAnno(inlined.ref("a")),
+        DummyAnno(inlined.ref("b")),
+        DummyAnno(nestedInlined.ref("a")),
+        DummyAnno(nestedInlined.ref("b")),
+        DummyAnno(nestedNotInlined.ref("a")),
+        DummyAnno(nestedNotInlined.ref("b"))
+      ),
+      Seq(
+        DummyAnno(top.ref("i_a")),
+        DummyAnno(top.ref("i_b")),
+        DummyAnno(top.ref("i_foo_a")),
+        DummyAnno(top.ref("i_foo_b")),
+        DummyAnno(top.instOf("i_bar", "NestedNoInline").ref("a")),
+        DummyAnno(top.instOf("i_bar", "NestedNoInline").ref("b"))
+      )
+    )
   }
 
   "inlining both grandparent and grandchild" should "should work" in {
-     val input =
-        """circuit Top :
-          |  module Top :
-          |    input a : UInt<32>
-          |    output b : UInt<32>
-          |    inst i of Inline
-          |    i.a <= a
-          |    b <= i.b
-          |  module Inline :
-          |    input a : UInt<32>
-          |    output b : UInt<32>
-          |    inst foo of NestedInline
-          |    inst bar of NestedNoInline
-          |    foo.a <= a
-          |    bar.a <= foo.b
-          |    b <= bar.b
-          |  module NestedInline :
-          |    input a : UInt<32>
-          |    output b : UInt<32>
-          |    b <= a
-          |  module NestedNoInline :
-          |    input a : UInt<32>
-          |    output b : UInt<32>
-          |    inst foo of NestedInline
-          |    foo.a <= a
-          |    b <= foo.b
-          |""".stripMargin
-     val check =
-        """circuit Top :
-          |  module Top :
-          |    input a : UInt<32>
-          |    output b : UInt<32>
-          |    wire i_a : UInt<32>
-          |    wire i_b : UInt<32>
-          |    wire i_foo_a : UInt<32>
-          |    wire i_foo_b : UInt<32>
-          |    i_foo_b <= i_foo_a
-          |    inst i_bar of NestedNoInline
-          |    i_b <= i_bar.b
-          |    i_foo_a <= i_a
-          |    i_bar.a <= i_foo_b
-          |    b <= i_b
-          |    i_a <= a
-          |  module NestedNoInline :
-          |    input a : UInt<32>
-          |    output b : UInt<32>
-          |    wire foo_a : UInt<32>
-          |    wire foo_b : UInt<32>
-          |    foo_b <= foo_a
-          |    b <= foo_b
-          |    foo_a <= a
-          |""".stripMargin
+    val input =
+      """circuit Top :
+        |  module Top :
+        |    input a : UInt<32>
+        |    output b : UInt<32>
+        |    inst i of Inline
+        |    i.a <= a
+        |    b <= i.b
+        |  module Inline :
+        |    input a : UInt<32>
+        |    output b : UInt<32>
+        |    inst foo of NestedInline
+        |    inst bar of NestedNoInline
+        |    foo.a <= a
+        |    bar.a <= foo.b
+        |    b <= bar.b
+        |  module NestedInline :
+        |    input a : UInt<32>
+        |    output b : UInt<32>
+        |    b <= a
+        |  module NestedNoInline :
+        |    input a : UInt<32>
+        |    output b : UInt<32>
+        |    inst foo of NestedInline
+        |    foo.a <= a
+        |    b <= foo.b
+        |""".stripMargin
+    val check =
+      """circuit Top :
+        |  module Top :
+        |    input a : UInt<32>
+        |    output b : UInt<32>
+        |    wire i_a : UInt<32>
+        |    wire i_b : UInt<32>
+        |    wire i_foo_a : UInt<32>
+        |    wire i_foo_b : UInt<32>
+        |    i_foo_b <= i_foo_a
+        |    inst i_bar of NestedNoInline
+        |    i_b <= i_bar.b
+        |    i_foo_a <= i_a
+        |    i_bar.a <= i_foo_b
+        |    b <= i_b
+        |    i_a <= a
+        |  module NestedNoInline :
+        |    input a : UInt<32>
+        |    output b : UInt<32>
+        |    wire foo_a : UInt<32>
+        |    wire foo_b : UInt<32>
+        |    foo_b <= foo_a
+        |    b <= foo_b
+        |    foo_a <= a
+        |""".stripMargin
     val top = CircuitTarget("Top").module("Top")
     val inlined = top.instOf("i", "Inline")
     val nestedInlined = inlined.instOf("foo", "NestedInline")
     val nestedNotInlined = inlined.instOf("bar", "NestedNoInline")
     val innerNestedInlined = nestedNotInlined.instOf("foo", "NestedInline")
 
-     executeWithAnnos(input, check,
-       Seq(
-         inline("Inline"),
-         inline("NestedInline"),
-         DummyAnno(inlined.ref("a")),
-         DummyAnno(inlined.ref("b")),
-         DummyAnno(nestedInlined.ref("a")),
-         DummyAnno(nestedInlined.ref("b")),
-         DummyAnno(nestedNotInlined.ref("a")),
-         DummyAnno(nestedNotInlined.ref("b")),
-         DummyAnno(innerNestedInlined.ref("a")),
-         DummyAnno(innerNestedInlined.ref("b"))
-       ),
-       Seq(
-         DummyAnno(top.ref("i_a")),
-         DummyAnno(top.ref("i_b")),
-         DummyAnno(top.ref("i_foo_a")),
-         DummyAnno(top.ref("i_foo_b")),
-         DummyAnno(top.instOf("i_bar", "NestedNoInline").ref("a")),
-         DummyAnno(top.instOf("i_bar", "NestedNoInline").ref("b")),
-         DummyAnno(top.instOf("i_bar", "NestedNoInline").ref("foo_a")),
-         DummyAnno(top.instOf("i_bar", "NestedNoInline").ref("foo_b"))
-       )
-     )
+    executeWithAnnos(
+      input,
+      check,
+      Seq(
+        inline("Inline"),
+        inline("NestedInline"),
+        DummyAnno(inlined.ref("a")),
+        DummyAnno(inlined.ref("b")),
+        DummyAnno(nestedInlined.ref("a")),
+        DummyAnno(nestedInlined.ref("b")),
+        DummyAnno(nestedNotInlined.ref("a")),
+        DummyAnno(nestedNotInlined.ref("b")),
+        DummyAnno(innerNestedInlined.ref("a")),
+        DummyAnno(innerNestedInlined.ref("b"))
+      ),
+      Seq(
+        DummyAnno(top.ref("i_a")),
+        DummyAnno(top.ref("i_b")),
+        DummyAnno(top.ref("i_foo_a")),
+        DummyAnno(top.ref("i_foo_b")),
+        DummyAnno(top.instOf("i_bar", "NestedNoInline").ref("a")),
+        DummyAnno(top.instOf("i_bar", "NestedNoInline").ref("b")),
+        DummyAnno(top.instOf("i_bar", "NestedNoInline").ref("foo_a")),
+        DummyAnno(top.instOf("i_bar", "NestedNoInline").ref("foo_b"))
+      )
+    )
   }
 
   "InlineInstances" should "properly invalidate ResolveKinds" in {
@@ -562,7 +566,7 @@ class InlineInstancesTests extends LowTransformSpec {
     val result = manager.execute(state)
 
     result shouldNot containTree { case WRef("i_a", _, PortKind, _) => true }
-    result should    containTree { case WRef("i_a", _, WireKind, _) => true }
+    result should containTree { case WRef("i_a", _, WireKind, _) => true }
   }
 }
 

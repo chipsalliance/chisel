@@ -17,75 +17,75 @@ class GroupComponentsSpec extends MiddleTransformSpec {
   def topComp(name: String): ComponentName = ComponentName(name, ModuleName(top, CircuitName(top)))
   "The register r" should "be grouped" in {
     val input =
-    s"""circuit $top :
-        |  module $top :
-        |    input clk: Clock
-        |    input data: UInt<16>
-        |    output out: UInt<16>
-        |    reg r: UInt<16>, clk
-        |    r <= data
-        |    out <= r
+      s"""circuit $top :
+         |  module $top :
+         |    input clk: Clock
+         |    input data: UInt<16>
+         |    output out: UInt<16>
+         |    reg r: UInt<16>, clk
+         |    r <= data
+         |    out <= r
       """.stripMargin
     val groups = Seq(
       GroupAnnotation(Seq(topComp("r")), "MyReg", "rInst", Some("_OUT"), Some("_IN"))
     )
     val check =
-     s"""circuit Top :
-        |  module $top :
-        |    input clk: Clock
-        |    input data: UInt<16>
-        |    output out: UInt<16>
-        |    inst rInst of MyReg
-        |    rInst.clk_IN <= clk
-        |    out <= rInst.r_OUT
-        |    rInst.data_IN <= data
-        |  module MyReg :
-        |    input clk_IN: Clock
-        |    output r_OUT: UInt<16>
-        |    input data_IN: UInt<16>
-        |    reg r: UInt<16>, clk_IN
-        |    r_OUT <= r
-        |    r <= data_IN
+      s"""circuit Top :
+         |  module $top :
+         |    input clk: Clock
+         |    input data: UInt<16>
+         |    output out: UInt<16>
+         |    inst rInst of MyReg
+         |    rInst.clk_IN <= clk
+         |    out <= rInst.r_OUT
+         |    rInst.data_IN <= data
+         |  module MyReg :
+         |    input clk_IN: Clock
+         |    output r_OUT: UInt<16>
+         |    input data_IN: UInt<16>
+         |    reg r: UInt<16>, clk_IN
+         |    r_OUT <= r
+         |    r <= data_IN
       """.stripMargin
     execute(input, check, groups)
   }
   "Grouping" should "work even when there are unused nodes" in {
     val input =
-    s"""circuit $top :
-        |  module $top :
-        |    input in: UInt<16>
-        |    output out: UInt<16>
-        |    node n = UInt<16>("h0")
-        |    wire w : UInt<16>
-        |    wire a : UInt<16>
-        |    wire b : UInt<16>
-        |    a <= UInt<16>("h0")
-        |    b <= a
-        |    w <= in
-        |    out <= w
+      s"""circuit $top :
+         |  module $top :
+         |    input in: UInt<16>
+         |    output out: UInt<16>
+         |    node n = UInt<16>("h0")
+         |    wire w : UInt<16>
+         |    wire a : UInt<16>
+         |    wire b : UInt<16>
+         |    a <= UInt<16>("h0")
+         |    b <= a
+         |    w <= in
+         |    out <= w
       """.stripMargin
     val groups = Seq(
       GroupAnnotation(Seq(topComp("w")), "Child", "inst", Some("_OUT"), Some("_IN"))
     )
     val check =
-     s"""circuit Top :
-        |  module $top :
-        |    input in: UInt<16>
-        |    output out: UInt<16>
-        |    inst inst of Child
-        |    node n = UInt<16>("h0")
-        |    wire a : UInt<16>
-        |    wire b : UInt<16>
-        |    out <= inst.w_OUT
-        |    inst.in_IN <= in
-        |    a <= UInt<16>("h0")
-        |    b <= a
-        |  module Child :
-        |    output w_OUT : UInt<16>
-        |    input in_IN : UInt<16>
-        |    wire w : UInt<16>
-        |    w_OUT <= w
-        |    w <= in_IN
+      s"""circuit Top :
+         |  module $top :
+         |    input in: UInt<16>
+         |    output out: UInt<16>
+         |    inst inst of Child
+         |    node n = UInt<16>("h0")
+         |    wire a : UInt<16>
+         |    wire b : UInt<16>
+         |    out <= inst.w_OUT
+         |    inst.in_IN <= in
+         |    a <= UInt<16>("h0")
+         |    b <= a
+         |  module Child :
+         |    output w_OUT : UInt<16>
+         |    input in_IN : UInt<16>
+         |    wire w : UInt<16>
+         |    w_OUT <= w
+         |    w <= in_IN
       """.stripMargin
     execute(input, check, groups)
   }
@@ -116,8 +116,8 @@ class GroupComponentsSpec extends MiddleTransformSpec {
          |    out <= UInt(2)
       """.stripMargin
     val annotations = Seq(
-      GroupAnnotation(Seq(topComp("c1a"), topComp("c2a")/*, topComp("asum")*/), "A", "cA", Some("_OUT"), Some("_IN")),
-      GroupAnnotation(Seq(topComp("c1b"), topComp("c2b")/*, topComp("bsum")*/), "B", "cB", Some("_OUT"), Some("_IN")),
+      GroupAnnotation(Seq(topComp("c1a"), topComp("c2a") /*, topComp("asum")*/ ), "A", "cA", Some("_OUT"), Some("_IN")),
+      GroupAnnotation(Seq(topComp("c1b"), topComp("c2b") /*, topComp("bsum")*/ ), "B", "cB", Some("_OUT"), Some("_IN")),
       NoCircuitDedupAnnotation
     )
     val check =
@@ -380,7 +380,7 @@ class GroupComponentsIntegrationSpec extends FirrtlFlatSpec {
   def topComp(name: String): ComponentName = ComponentName(name, ModuleName("Top", CircuitName("Top")))
   "Grouping" should "properly set kinds" in {
     val input =
-     """circuit Top :
+      """circuit Top :
         |  module Top :
         |    input clk: Clock
         |    input data: UInt<16>
@@ -397,13 +397,13 @@ class GroupComponentsIntegrationSpec extends FirrtlFlatSpec {
       Seq(new GroupComponents)
     )
     result should containTree {
-      case Connect(_, WSubField(WRef("inst",_, InstanceKind,_), "data_IN", _,_), WRef("data",_,_,_)) => true
+      case Connect(_, WSubField(WRef("inst", _, InstanceKind, _), "data_IN", _, _), WRef("data", _, _, _)) => true
     }
     result should containTree {
-      case Connect(_, WSubField(WRef("inst",_, InstanceKind,_), "clk_IN", _,_), WRef("clk",_,_,_)) => true
+      case Connect(_, WSubField(WRef("inst", _, InstanceKind, _), "clk_IN", _, _), WRef("clk", _, _, _)) => true
     }
     result should containTree {
-      case Connect(_, WRef("out",_,_,_), WSubField(WRef("inst",_, InstanceKind,_), "r_OUT", _,_)) => true
+      case Connect(_, WRef("out", _, _, _), WSubField(WRef("inst", _, InstanceKind, _), "r_OUT", _, _)) => true
     }
   }
 }

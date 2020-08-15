@@ -2,7 +2,6 @@
 
 package firrtlTests.stage.phases
 
-
 import java.io.File
 
 import firrtl._
@@ -22,21 +21,22 @@ class WriteEmittedSpec extends AnyFlatSpec with Matchers {
 
   class Fixture { val phase: Phase = new WriteEmitted }
 
-  behavior of classOf[WriteEmitted].toString
+  behavior.of(classOf[WriteEmitted].toString)
 
   it should "write emitted circuits" in new Fixture {
     val annotations = Seq(
       TargetDirAnnotation("test_run_dir/WriteEmittedSpec"),
       EmittedFirrtlCircuitAnnotation(EmittedFirrtlCircuit("foo", "", ".foocircuit")),
       EmittedFirrtlCircuitAnnotation(EmittedFirrtlCircuit("bar", "", ".barcircuit")),
-      EmittedVerilogCircuitAnnotation(EmittedVerilogCircuit("baz", "", ".bazcircuit")) )
+      EmittedVerilogCircuitAnnotation(EmittedVerilogCircuit("baz", "", ".bazcircuit"))
+    )
     val expected = Seq("foo.foocircuit", "bar.barcircuit", "baz.bazcircuit")
       .map(a => new File(s"test_run_dir/WriteEmittedSpec/$a"))
 
     info("annotations are unmodified")
-    phase.transform(annotations).toSeq should be (removeEmitted(annotations).toSeq)
+    phase.transform(annotations).toSeq should be(removeEmitted(annotations).toSeq)
 
-    expected.foreach{ a =>
+    expected.foreach { a =>
       info(s"$a was written")
       a should (exist)
       a.delete()
@@ -47,11 +47,12 @@ class WriteEmittedSpec extends AnyFlatSpec with Matchers {
     val annotations = Seq(
       TargetDirAnnotation("test_run_dir/WriteEmittedSpec"),
       OutputFileAnnotation("quux"),
-      EmittedFirrtlCircuitAnnotation(EmittedFirrtlCircuit("qux", "", ".quxcircuit")) )
+      EmittedFirrtlCircuitAnnotation(EmittedFirrtlCircuit("qux", "", ".quxcircuit"))
+    )
     val expected = new File("test_run_dir/WriteEmittedSpec/quux.quxcircuit")
 
     info("annotations are unmodified")
-    phase.transform(annotations).toSeq should be (removeEmitted(annotations).toSeq)
+    phase.transform(annotations).toSeq should be(removeEmitted(annotations).toSeq)
 
     info(s"$expected was written")
     expected should (exist)
@@ -63,14 +64,15 @@ class WriteEmittedSpec extends AnyFlatSpec with Matchers {
       TargetDirAnnotation("test_run_dir/WriteEmittedSpec"),
       EmittedFirrtlModuleAnnotation(EmittedFirrtlModule("foo", "", ".foomodule")),
       EmittedFirrtlModuleAnnotation(EmittedFirrtlModule("bar", "", ".barmodule")),
-      EmittedVerilogModuleAnnotation(EmittedVerilogModule("baz", "", ".bazmodule")) )
+      EmittedVerilogModuleAnnotation(EmittedVerilogModule("baz", "", ".bazmodule"))
+    )
     val expected = Seq("foo.foomodule", "bar.barmodule", "baz.bazmodule")
       .map(a => new File(s"test_run_dir/WriteEmittedSpec/$a"))
 
     info("EmittedComponent annotations are deleted")
-    phase.transform(annotations).toSeq should be (removeEmitted(annotations).toSeq)
+    phase.transform(annotations).toSeq should be(removeEmitted(annotations).toSeq)
 
-    expected.foreach{ a =>
+    expected.foreach { a =>
       info(s"$a was written")
       a should (exist)
       a.delete()

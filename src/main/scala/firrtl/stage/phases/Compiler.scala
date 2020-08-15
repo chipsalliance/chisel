@@ -10,17 +10,17 @@ import firrtl.stage.TransformManager.TransformDependency
 import scala.collection.mutable
 
 /** An encoding of the information necessary to run the FIRRTL compiler once */
-private [stage] case class CompilerRun(
-  stateIn: CircuitState,
-  stateOut: Option[CircuitState],
+private[stage] case class CompilerRun(
+  stateIn:    CircuitState,
+  stateOut:   Option[CircuitState],
   transforms: Seq[Transform],
-  compiler: Option[FirrtlCompiler] )
+  compiler:   Option[FirrtlCompiler])
 
 /** An encoding of possible defaults for a [[CompilerRun]] */
-private [stage] case class Defaults(
+private[stage] case class Defaults(
   annotations: AnnotationSeq = Seq.empty,
-  transforms: Seq[Transform] = Seq.empty,
-  compiler: Option[FirrtlCompiler] = None)
+  transforms:  Seq[Transform] = Seq.empty,
+  compiler:    Option[FirrtlCompiler] = None)
 
 /** Runs the FIRRTL compilers on an [[AnnotationSeq]]. If the input [[AnnotationSeq]] contains more than one circuit
   * (i.e., more than one [[firrtl.stage.FirrtlCircuitAnnotation FirrtlCircuitAnnotation]]), then annotations will be
@@ -45,11 +45,13 @@ private [stage] case class Defaults(
 class Compiler extends Phase with Translator[AnnotationSeq, Seq[CompilerRun]] {
 
   override def prerequisites =
-    Seq(Dependency[AddDefaults],
-        Dependency[AddImplicitEmitter],
-        Dependency[Checks],
-        Dependency[AddCircuit],
-        Dependency[AddImplicitOutputFile])
+    Seq(
+      Dependency[AddDefaults],
+      Dependency[AddImplicitEmitter],
+      Dependency[Checks],
+      Dependency[AddCircuit],
+      Dependency[AddImplicitOutputFile]
+    )
 
   override def optionalPrerequisiteOf = Seq.empty
 
@@ -59,28 +61,30 @@ class Compiler extends Phase with Translator[AnnotationSeq, Seq[CompilerRun]] {
   protected def aToB(a: AnnotationSeq): Seq[CompilerRun] = {
     var foundFirstCircuit = false
     val c = mutable.ArrayBuffer.empty[CompilerRun]
-    a.foldLeft(Defaults()){
+    a.foldLeft(Defaults()) {
       case (d, FirrtlCircuitAnnotation(circuit)) =>
         foundFirstCircuit = true
         CompilerRun(CircuitState(circuit, ChirrtlForm, d.annotations, None), None, d.transforms, d.compiler) +=: c
         d
-      case (d, a) if foundFirstCircuit => a match {
-        case RunFirrtlTransformAnnotation(transform) =>
-          c(0) = c(0).copy(transforms = transform +: c(0).transforms)
-          d
-        case CompilerAnnotation(compiler) =>
-          c(0) = c(0).copy(compiler = Some(compiler))
-          d
-        case annotation =>
-          val state = c(0).stateIn
-          c(0) = c(0).copy(stateIn = state.copy(annotations = annotation +: state.annotations))
-          d
-      }
-      case (d, a) if !foundFirstCircuit => a match {
-        case RunFirrtlTransformAnnotation(transform) => d.copy(transforms = transform +: d.transforms)
-        case CompilerAnnotation(compiler) => d.copy(compiler = Some(compiler))
-        case annotation => d.copy(annotations = annotation +: d.annotations)
-      }
+      case (d, a) if foundFirstCircuit =>
+        a match {
+          case RunFirrtlTransformAnnotation(transform) =>
+            c(0) = c(0).copy(transforms = transform +: c(0).transforms)
+            d
+          case CompilerAnnotation(compiler) =>
+            c(0) = c(0).copy(compiler = Some(compiler))
+            d
+          case annotation =>
+            val state = c(0).stateIn
+            c(0) = c(0).copy(stateIn = state.copy(annotations = annotation +: state.annotations))
+            d
+        }
+      case (d, a) if !foundFirstCircuit =>
+        a match {
+          case RunFirrtlTransformAnnotation(transform) => d.copy(transforms = transform +: d.transforms)
+          case CompilerAnnotation(compiler)            => d.copy(compiler = Some(compiler))
+          case annotation                              => d.copy(annotations = annotation +: d.annotations)
+        }
     }
     c.toSeq
   }
@@ -89,7 +93,7 @@ class Compiler extends Phase with Translator[AnnotationSeq, Seq[CompilerRun]] {
     * removed ([[CompilerAnnotation]]s and [[RunFirrtlTransformAnnotation]]s).
     */
   protected def bToA(b: Seq[CompilerRun]): AnnotationSeq =
-    b.flatMap( bb => FirrtlCircuitAnnotation(bb.stateOut.get.circuit) +: bb.stateOut.get.annotations )
+    b.flatMap(bb => FirrtlCircuitAnnotation(bb.stateOut.get.circuit) +: bb.stateOut.get.annotations)
 
   /** Run the FIRRTL compiler some number of times. If more than one run is specified, a parallel collection will be
     * used.
@@ -98,9 +102,9 @@ class Compiler extends Phase with Translator[AnnotationSeq, Seq[CompilerRun]] {
     def f(c: CompilerRun): CompilerRun = {
       val targets = c.compiler match {
         case Some(d) => c.transforms.reverse.map(Dependency.fromTransform(_)) ++ compilerToTransforms(d)
-        case None    =>
+        case None =>
           val hasEmitter = c.transforms.collectFirst { case _: firrtl.Emitter => true }.isDefined
-          if(!hasEmitter) {
+          if (!hasEmitter) {
             throw new PhasePrerequisiteException("No compiler specified!")
           } else {
             c.transforms.reverse.map(Dependency.fromTransform)
@@ -118,18 +122,19 @@ class Compiler extends Phase with Translator[AnnotationSeq, Seq[CompilerRun]] {
       c.copy(stateOut = Some(annotationsOut))
     }
 
-    if (b.size <= 1) { b.map(f) } else {
-      collection.parallel.immutable.ParVector(b :_*).par.map(f).seq
+    if (b.size <= 1) { b.map(f) }
+    else {
+      collection.parallel.immutable.ParVector(b: _*).par.map(f).seq
     }
   }
 
   private def compilerToTransforms(a: FirrtlCompiler): Seq[TransformDependency] = a match {
-    case _: firrtl.NoneCompiler                                      => Forms.ChirrtlForm
-    case _: firrtl.HighFirrtlCompiler                                => Forms.MinimalHighForm
-    case _: firrtl.MiddleFirrtlCompiler                              => Forms.MidForm
-    case _: firrtl.LowFirrtlCompiler                                 => Forms.LowForm
+    case _: firrtl.NoneCompiler         => Forms.ChirrtlForm
+    case _: firrtl.HighFirrtlCompiler   => Forms.MinimalHighForm
+    case _: firrtl.MiddleFirrtlCompiler => Forms.MidForm
+    case _: firrtl.LowFirrtlCompiler    => Forms.LowForm
     case _: firrtl.VerilogCompiler | _: firrtl.SystemVerilogCompiler => Forms.LowFormOptimized
-    case _: firrtl.MinimumVerilogCompiler                            => Forms.LowFormMinimumOptimized
+    case _: firrtl.MinimumVerilogCompiler => Forms.LowFormMinimumOptimized
   }
 
 }

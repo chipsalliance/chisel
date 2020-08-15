@@ -12,15 +12,17 @@ import firrtl.options.{Dependency, DependencyManager}
   * @param knownObjects existing transform objects that have already been constructed
   */
 class TransformManager(
-  val targets: Seq[TransformManager.TransformDependency],
+  val targets:      Seq[TransformManager.TransformDependency],
   val currentState: Seq[TransformManager.TransformDependency] = Seq.empty,
-  val knownObjects: Set[Transform] = Set.empty) extends Transform
+  val knownObjects: Set[Transform] = Set.empty)
+    extends Transform
     with DependencyAPIMigration
     with DependencyManager[CircuitState, Transform] {
 
   override def execute(state: CircuitState): CircuitState = transform(state)
 
-  override protected def copy(a: Seq[Dependency[Transform]], b: Seq[Dependency[Transform]], c: Set[Transform]) = new TransformManager(a, b, c)
+  override protected def copy(a: Seq[Dependency[Transform]], b: Seq[Dependency[Transform]], c: Set[Transform]) =
+    new TransformManager(a, b, c)
 
 }
 

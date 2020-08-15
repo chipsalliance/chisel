@@ -30,13 +30,12 @@ class AddImplicitOutputFile extends Phase {
 
   /** Add an [[OutputFileAnnotation]] to an [[AnnotationSeq]] */
   def transform(annotations: AnnotationSeq): AnnotationSeq =
-    annotations
-      .collectFirst { case _: OutputFileAnnotation | _: EmitAllModulesAnnotation => annotations }
-      .getOrElse {
-        val topName = Viewer[FirrtlOptions].view(annotations)
-          .firrtlCircuit
-          .map(_.main)
-          .getOrElse("a")
-        OutputFileAnnotation(topName) +: annotations
-      }
+    annotations.collectFirst { case _: OutputFileAnnotation | _: EmitAllModulesAnnotation => annotations }.getOrElse {
+      val topName = Viewer[FirrtlOptions]
+        .view(annotations)
+        .firrtlCircuit
+        .map(_.main)
+        .getOrElse("a")
+      OutputFileAnnotation(topName) +: annotations
+    }
 }

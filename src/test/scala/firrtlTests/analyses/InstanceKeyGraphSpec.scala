@@ -9,10 +9,10 @@ import firrtl.graph.DiGraph
 import firrtl.testutils.FirrtlFlatSpec
 
 class InstanceKeyGraphSpec extends FirrtlFlatSpec {
-  behavior of "InstanceKeyGraph.graph"
+  behavior.of("InstanceKeyGraph.graph")
 
   private def getEdgeSet(graph: DiGraph[String]): collection.Map[String, collection.Set[String]] = {
-    (graph.getVertices map {v => (v, graph.getEdges(v))}).toMap
+    (graph.getVertices.map { v => (v, graph.getEdges(v)) }).toMap
   }
 
   it should "recognize a simple hierarchy" in {
@@ -37,7 +37,10 @@ class InstanceKeyGraphSpec extends FirrtlFlatSpec {
     getEdgeSet(graph) shouldBe Map(
       "Top" -> Set("Child1", "Child2"),
       "Child1" -> Set("Child1a", "Child1b"),
-      "Child2" -> Set(), "Child1a" -> Set(), "Child1b" -> Set())
+      "Child2" -> Set(),
+      "Child1a" -> Set(),
+      "Child1b" -> Set()
+    )
   }
 
   it should "recognize disconnected hierarchies" in {
@@ -69,7 +72,11 @@ class InstanceKeyGraphSpec extends FirrtlFlatSpec {
       "Top" -> Set("Child1"),
       "Top2" -> Set("Child2", "Child3"),
       "Child2" -> Set("Child2a", "Child2b"),
-      "Child1" -> Set(), "Child2a" -> Set(), "Child2b" -> Set(), "Child3" -> Set())
+      "Child1" -> Set(),
+      "Child2a" -> Set(),
+      "Child2b" -> Set(),
+      "Child3" -> Set()
+    )
   }
 
   it should "not drop duplicate nodes when they collide as a result of transformNodes" in {
@@ -101,8 +108,7 @@ class InstanceKeyGraphSpec extends FirrtlFlatSpec {
     g2.getEdges("Fizz") shouldBe Set("Foo", "Bar")
   }
 
-
-  behavior of "InstanceKeyGraph.getChildInstances"
+  behavior.of("InstanceKeyGraph.getChildInstances")
 
   // Note that due to optimized implementations of Map1-4, at least 5 entries are needed to
   // experience non-determinism
@@ -126,7 +132,7 @@ class InstanceKeyGraphSpec extends FirrtlFlatSpec {
     val circuit = parse(input)
     val instGraph = InstanceKeyGraph(circuit)
     val childMap = instGraph.getChildInstances
-    childMap.map(_._1) should equal (Seq("Top", "Child1", "Child1a", "Child1b", "Child2"))
+    childMap.map(_._1) should equal(Seq("Top", "Child1", "Child1a", "Child1b", "Child2"))
   }
 
   // Note that due to optimized implementations of Map1-4, at least 5 entries are needed to
@@ -148,10 +154,10 @@ class InstanceKeyGraphSpec extends FirrtlFlatSpec {
     val instGraph = InstanceKeyGraph(circuit)
     val childMap = instGraph.getChildInstances.toMap
     val insts = childMap("Top").map(_.name)
-    insts should equal (Seq("a", "b", "c", "d", "e", "f"))
+    insts should equal(Seq("a", "b", "c", "d", "e", "f"))
   }
 
-  behavior of "InstanceKeyGraph.moduleOrder"
+  behavior.of("InstanceKeyGraph.moduleOrder")
 
   it should "compute a correct and deterministic module order" in {
     val input = """
@@ -180,10 +186,10 @@ class InstanceKeyGraphSpec extends FirrtlFlatSpec {
     val instGraph = InstanceKeyGraph(circuit)
     val order = instGraph.moduleOrder.map(_.name)
     // Where it has freedom, the instance declaration order will be reversed.
-    order should equal (Seq("Top", "Child3", "Child4", "Child2", "Child1", "Child1b", "Child1a"))
+    order should equal(Seq("Top", "Child3", "Child4", "Child2", "Child1", "Child1b", "Child1a"))
   }
 
-  behavior of "InstanceKeyGraph.findInstancesInHierarchy"
+  behavior.of("InstanceKeyGraph.findInstancesInHierarchy")
 
   it should "find hierarchical instances correctly in disconnected hierarchies" in {
     val input =
@@ -221,7 +227,7 @@ class InstanceKeyGraphSpec extends FirrtlFlatSpec {
     iGraph.findInstancesInHierarchy("Child3") shouldBe Nil
   }
 
-  behavior of "InstanceKeyGraph.staticInstanceCount"
+  behavior.of("InstanceKeyGraph.staticInstanceCount")
 
   it should "report that there is one instance of the top module" in {
     val input =
@@ -231,7 +237,7 @@ class InstanceKeyGraphSpec extends FirrtlFlatSpec {
          |""".stripMargin
     val iGraph = InstanceKeyGraph(parse(input))
     val expectedCounts = Map(OfModule("Foo") -> 1)
-    iGraph.staticInstanceCount should be (expectedCounts)
+    iGraph.staticInstanceCount should be(expectedCounts)
   }
 
   it should "report correct number of instances for a sample circuit" in {
@@ -249,10 +255,8 @@ class InstanceKeyGraphSpec extends FirrtlFlatSpec {
          |    inst bar2 of Bar
          |""".stripMargin
     val iGraph = InstanceKeyGraph(parse(input))
-    val expectedCounts = Map(OfModule("Foo") -> 1,
-      OfModule("Bar") -> 2,
-      OfModule("Baz") -> 3)
-    iGraph.staticInstanceCount should be (expectedCounts)
+    val expectedCounts = Map(OfModule("Foo") -> 1, OfModule("Bar") -> 2, OfModule("Baz") -> 3)
+    iGraph.staticInstanceCount should be(expectedCounts)
   }
 
   it should "report zero instances for dead modules" in {
@@ -264,12 +268,11 @@ class InstanceKeyGraphSpec extends FirrtlFlatSpec {
          |    skip
          |""".stripMargin
     val iGraph = InstanceKeyGraph(parse(input))
-    val expectedCounts = Map(OfModule("Foo") -> 1,
-      OfModule("Bar") -> 0)
-    iGraph.staticInstanceCount should be (expectedCounts)
+    val expectedCounts = Map(OfModule("Foo") -> 1, OfModule("Bar") -> 0)
+    iGraph.staticInstanceCount should be(expectedCounts)
   }
 
-  behavior of "InstanceKeyGraph.getChildInstanceMap"
+  behavior.of("InstanceKeyGraph.getChildInstanceMap")
 
   it should "preserve Module declaration order" in {
     val input = """
@@ -302,15 +305,17 @@ class InstanceKeyGraphSpec extends FirrtlFlatSpec {
     assert(childMap(OfModule("Child1b")).isEmpty)
     assert(childMap(OfModule("Child2")).isEmpty)
 
-    val topInstances = childMap(OfModule("Top")).map { case (k,v) => k.value -> v.value}.toSeq
-    assert(topInstances ==
-      Seq("c1" -> "Child1", "c2" -> "Child2", "c3" -> "Child1", "c4" -> "Child1", "c5" -> "Child1"))
+    val topInstances = childMap(OfModule("Top")).map { case (k, v) => k.value -> v.value }.toSeq
+    assert(
+      topInstances ==
+        Seq("c1" -> "Child1", "c2" -> "Child2", "c3" -> "Child1", "c4" -> "Child1", "c5" -> "Child1")
+    )
 
-    val child1Instance = childMap(OfModule("Child1")).map { case (k,v) => k.value -> v.value}.toSeq
+    val child1Instance = childMap(OfModule("Child1")).map { case (k, v) => k.value -> v.value }.toSeq
     assert(child1Instance == Seq("a" -> "Child1a", "b" -> "Child1b"))
   }
 
-  behavior of "InstanceKeyGraph.fullHierarchy"
+  behavior.of("InstanceKeyGraph.fullHierarchy")
 
   // Note that due to optimized implementations of Map1-4, at least 5 entries are needed to
   // experience non-determinism
@@ -329,10 +334,10 @@ class InstanceKeyGraphSpec extends FirrtlFlatSpec {
 
     val instGraph = InstanceKeyGraph(parse(input))
     val hier = instGraph.fullHierarchy
-    hier.keys.toSeq.map(_.name) should equal (Seq("Top", "a", "b", "c", "d", "e"))
+    hier.keys.toSeq.map(_.name) should equal(Seq("Top", "a", "b", "c", "d", "e"))
   }
 
-  behavior of "Reachable/Unreachable helper methods"
+  behavior.of("Reachable/Unreachable helper methods")
 
   they should "report correct reachable/unreachable counts" in {
     val input =

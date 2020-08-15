@@ -14,9 +14,11 @@ class ConnectionGraphSpec extends FirrtlFlatSpec {
 
   "ConnectionGraph" should "build connection graph for rocket-chip" in {
     ConnectionGraph(
-      new firrtl.stage.transforms.Compiler(Seq(Dependency[ExpandWhensAndCheck])).runTransform(
-        CircuitState(parse(FileUtils.getTextResource("/regress/RocketCore.fir")), UnknownForm)
-      ).circuit
+      new firrtl.stage.transforms.Compiler(Seq(Dependency[ExpandWhensAndCheck]))
+        .runTransform(
+          CircuitState(parse(FileUtils.getTextResource("/regress/RocketCore.fir")), UnknownForm)
+        )
+        .circuit
     )
   }
 
@@ -44,9 +46,11 @@ class ConnectionGraphSpec extends FirrtlFlatSpec {
       |    out <= in
       |""".stripMargin
 
-  val circuit = new firrtl.stage.transforms.Compiler(Seq(Dependency[ExpandWhensAndCheck])).runTransform(
-    CircuitState(parse(input), UnknownForm)
-  ).circuit
+  val circuit = new firrtl.stage.transforms.Compiler(Seq(Dependency[ExpandWhensAndCheck]))
+    .runTransform(
+      CircuitState(parse(input), UnknownForm)
+    )
+    .circuit
 
   "ConnectionGraph" should "work with pathsInDAG" in {
     val Test = ModuleTarget("Test", "Test")

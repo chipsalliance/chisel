@@ -12,16 +12,17 @@ class ParserSpec extends FirrtlFlatSpec {
 
   private object MemTests {
     val prelude = Seq("circuit top :", "  module top :", "    mem m : ")
-    val fields = Map("data-type" -> "UInt<32>",
-                     "depth" -> "4",
-                     "read-latency" -> "1",
-                     "write-latency" -> "1",
-                     "reader" -> "a",
-                     "writer" -> "b",
-                     "readwriter" -> "c"
-                    )
+    val fields = Map(
+      "data-type" -> "UInt<32>",
+      "depth" -> "4",
+      "read-latency" -> "1",
+      "write-latency" -> "1",
+      "reader" -> "a",
+      "writer" -> "b",
+      "readwriter" -> "c"
+    )
     def fieldsToSeq(m: Map[String, String]): Seq[String] =
-      m.map { case (k,v) => s"      ${k} => ${v}" }.toSeq
+      m.map { case (k, v) => s"      ${k} => ${v}" }.toSeq
   }
 
   private object RegTests {
@@ -36,11 +37,51 @@ class ParserSpec extends FirrtlFlatSpec {
 
   private object KeywordTests {
     val prelude = Seq("circuit top :", "  module top :")
-    val keywords = Seq("circuit", "module", "extmodule", "parameter", "input", "output", "UInt",
-      "SInt", "Analog", "Fixed", "flip", "Clock", "wire", "reg", "reset", "with", "mem", "depth",
-      "reader", "writer", "readwriter", "inst", "of", "node", "is", "invalid", "when", "else",
-      "stop", "printf", "skip", "old", "new", "undefined", "mux", "validif", "cmem", "smem",
-      "mport", "infer", "read", "write", "rdwr") ++ PrimOps.listing
+    val keywords = Seq(
+      "circuit",
+      "module",
+      "extmodule",
+      "parameter",
+      "input",
+      "output",
+      "UInt",
+      "SInt",
+      "Analog",
+      "Fixed",
+      "flip",
+      "Clock",
+      "wire",
+      "reg",
+      "reset",
+      "with",
+      "mem",
+      "depth",
+      "reader",
+      "writer",
+      "readwriter",
+      "inst",
+      "of",
+      "node",
+      "is",
+      "invalid",
+      "when",
+      "else",
+      "stop",
+      "printf",
+      "skip",
+      "old",
+      "new",
+      "undefined",
+      "mux",
+      "validif",
+      "cmem",
+      "smem",
+      "mport",
+      "infer",
+      "read",
+      "write",
+      "rdwr"
+    ) ++ PrimOps.listing
   }
 
   // ********** Memories **********
@@ -48,7 +89,7 @@ class ParserSpec extends FirrtlFlatSpec {
     val fields = MemTests.fieldsToSeq(MemTests.fields)
     val golden = firrtl.Parser.parse((MemTests.prelude ++ fields))
 
-    fields.permutations foreach { permutation =>
+    fields.permutations.foreach { permutation =>
       val circuit = firrtl.Parser.parse((MemTests.prelude ++ permutation))
       assert(golden === circuit)
     }
@@ -56,13 +97,13 @@ class ParserSpec extends FirrtlFlatSpec {
 
   it should "have exactly one of each: data-type, depth, read-latency, and write-latency" in {
     import MemTests._
-    def parseWithoutField(s: String) = firrtl.Parser.parse((prelude ++ fieldsToSeq(fields - s)))
+    def parseWithoutField(s:  String) = firrtl.Parser.parse((prelude ++ fieldsToSeq(fields - s)))
     def parseWithDuplicate(k: String, v: String) =
       firrtl.Parser.parse((prelude ++ fieldsToSeq(fields) :+ s"      ${k} => ${v}"))
 
-    Seq("data-type", "depth", "read-latency", "write-latency") foreach { field =>
-      an [ParameterNotSpecifiedException] should be thrownBy { parseWithoutField(field) }
-      an [ParameterRedefinedException] should be thrownBy { parseWithDuplicate(field, fields(field)) }
+    Seq("data-type", "depth", "read-latency", "write-latency").foreach { field =>
+      an[ParameterNotSpecifiedException] should be thrownBy { parseWithoutField(field) }
+      an[ParameterRedefinedException] should be thrownBy { parseWithDuplicate(field, fields(field)) }
     }
   }
 
@@ -86,7 +127,7 @@ class ParserSpec extends FirrtlFlatSpec {
     import RegTests._
     val res = firrtl.Parser.parse((prelude :+ s"${reg} with : (${reset}) $finfo" :+ "    wire a : UInt"))
     CircuitState(res, Nil) should containTree {
-      case DefRegister(`fileInfo`, `regName`, _,_,_,_) => true
+      case DefRegister(`fileInfo`, `regName`, _, _, _, _) => true
     }
   }
 
@@ -94,7 +135,7 @@ class ParserSpec extends FirrtlFlatSpec {
     import RegTests._
     val res = firrtl.Parser.parse((prelude :+ s"${reg} with :\n      (${reset}) $finfo"))
     CircuitState(res, Nil) should containTree {
-      case DefRegister(`fileInfo`, `regName`, _,_,_,_) => true
+      case DefRegister(`fileInfo`, `regName`, _, _, _, _) => true
     }
   }
 
@@ -102,35 +143,34 @@ class ParserSpec extends FirrtlFlatSpec {
     import RegTests._
     val res = firrtl.Parser.parse((prelude :+ s"${reg} $finfo"))
     CircuitState(res, Nil) should containTree {
-      case DefRegister(`fileInfo`, `regName`, _,_,_,_) => true
+      case DefRegister(`fileInfo`, `regName`, _, _, _, _) => true
     }
   }
 
   // ********** Keywords **********
   "Keywords" should "be allowed as Ids" in {
     import KeywordTests._
-    keywords foreach { keyword =>
+    keywords.foreach { keyword =>
       firrtl.Parser.parse((prelude :+ s"      wire ${keyword} : UInt"))
     }
   }
 
   it should "be allowed on lhs in connects" in {
     import KeywordTests._
-    keywords foreach { keyword =>
-      firrtl.Parser.parse((prelude ++ Seq(s"      wire ${keyword} : UInt",
-                                          s"      ${keyword} <= ${keyword}")))
+    keywords.foreach { keyword =>
+      firrtl.Parser.parse((prelude ++ Seq(s"      wire ${keyword} : UInt", s"      ${keyword} <= ${keyword}")))
     }
   }
 
   // ********** Digits as Fields **********
   "Digits" should "be legal fields in bundles and in subexpressions" in {
     val input = """
-      |circuit Test :
-      |  module Test :
-      |    input in : { 0 : { 0 : UInt<32>, flip 1 : UInt<32> } }
-      |    input in2 : { 4 : { 23 : { foo : UInt<32>, bar : { flip 123 : UInt<32> } } } }
-      |    in.0.1 <= in.0.0
-      |    in2.4.23.bar.123 <= in2.4.23.foo
+                  |circuit Test :
+                  |  module Test :
+                  |    input in : { 0 : { 0 : UInt<32>, flip 1 : UInt<32> } }
+                  |    input in2 : { 4 : { 23 : { foo : UInt<32>, bar : { flip 123 : UInt<32> } } } }
+                  |    in.0.1 <= in.0.0
+                  |    in2.4.23.bar.123 <= in2.4.23.foo
       """.stripMargin
     val c = firrtl.Parser.parse(input)
     firrtl.Parser.parse(c.serialize)
@@ -148,7 +188,7 @@ class ParserSpec extends FirrtlFlatSpec {
     }
 
     def check(inFormat: String, ref: Integer): Unit = {
-      (circuit(inFormat)) should be (circuit(ref.toString))
+      (circuit(inFormat)) should be(circuit(ref.toString))
     }
 
     val checks = Map(
@@ -166,25 +206,25 @@ class ParserSpec extends FirrtlFlatSpec {
     )
 
     checks.foreach { case (k, v) => check(k, v) }
-   }
+  }
 
   // ********** Doubles as parameters **********
   "Doubles" should "be legal parameters for extmodules" in {
     val nums = Seq("1.0", "7.6", "3.00004", "1.0E10", "1.0023E-17")
     val signs = Seq("", "+", "-")
-    val tests = "0.0" +: (signs flatMap (s => nums map (n => s + n)))
+    val tests = "0.0" +: (signs.flatMap(s => nums.map(n => s + n)))
     for (test <- tests) {
       val input = s"""
-        |circuit Test :
-        |  extmodule Ext :
-        |    input foo : UInt<32>
-        |
-        |    defname = MyExtModule
-        |    parameter REAL = $test
-        |
-        |  module Test :
-        |    input foo : UInt<32>
-        |    output bar : UInt<32>
+                     |circuit Test :
+                     |  extmodule Ext :
+                     |    input foo : UInt<32>
+                     |
+                     |    defname = MyExtModule
+                     |    parameter REAL = $test
+                     |
+                     |  module Test :
+                     |    input foo : UInt<32>
+                     |    output bar : UInt<32>
         """.stripMargin
       val c = firrtl.Parser.parse(input)
       firrtl.Parser.parse(c.serialize)
@@ -193,16 +233,16 @@ class ParserSpec extends FirrtlFlatSpec {
 
   "Strings" should "be legal parameters for extmodules" in {
     val input = s"""
-      |circuit Test :
-      |  extmodule Ext :
-      |    input foo : UInt<32>
-      |
-      |    defname = MyExtModule
-      |    parameter STR = "hello=%d"
-      |
-      |  module Test :
-      |    input foo : UInt<32>
-      |    output bar : UInt<32>
+                   |circuit Test :
+                   |  extmodule Ext :
+                   |    input foo : UInt<32>
+                   |
+                   |    defname = MyExtModule
+                   |    parameter STR = "hello=%d"
+                   |
+                   |  module Test :
+                   |    input foo : UInt<32>
+                   |    output bar : UInt<32>
       """.stripMargin
     val c = firrtl.Parser.parse(input)
     firrtl.Parser.parse(c.serialize)
@@ -210,37 +250,37 @@ class ParserSpec extends FirrtlFlatSpec {
 
   "Parsing errors" should "be reported as normal exceptions" in {
     val input = s"""
-      |circuit Test
-      |  module Test :
+                   |circuit Test
+                   |  module Test :
 
-      |""".stripMargin
+                   |""".stripMargin
     val manager = new ExecutionOptionsManager("test") with HasFirrtlOptions {
       firrtlOptions = FirrtlExecutionOptions(firrtlSource = Some(input))
     }
-    a [SyntaxErrorsException] shouldBe thrownBy {
+    a[SyntaxErrorsException] shouldBe thrownBy {
       Driver.execute(manager)
     }
   }
 
   "Trailing syntax errors" should "be caught in the parser" in {
     val input = s"""
-      |circuit Foo:
-      |  module Bar:
-      |    input a: UInt<1>
-      |output b: UInt<1>
-      |    b <- a
-      |
-      |  module Foo:
-      |    input a: UInt<1>
-      |    output b: UInt<1>
-      |    inst bar of Bar
-      |    bar.a <- a
-      |    b <- bar.b
+                   |circuit Foo:
+                   |  module Bar:
+                   |    input a: UInt<1>
+                   |output b: UInt<1>
+                   |    b <- a
+                   |
+                   |  module Foo:
+                   |    input a: UInt<1>
+                   |    output b: UInt<1>
+                   |    inst bar of Bar
+                   |    bar.a <- a
+                   |    b <- bar.b
       """.stripMargin
     val manager = new ExecutionOptionsManager("test") with HasFirrtlOptions {
       firrtlOptions = FirrtlExecutionOptions(firrtlSource = Some(input))
     }
-    a [SyntaxErrorsException] shouldBe thrownBy {
+    a[SyntaxErrorsException] shouldBe thrownBy {
       Driver.execute(manager)
     }
   }
@@ -250,9 +290,9 @@ class ParserSpec extends FirrtlFlatSpec {
     val info = ir.MultiInfo(Seq(ir.MultiInfo(Seq(ir.FileInfo("a"))), ir.FileInfo("b"), ir.FileInfo("c")))
     val input =
       s"""circuit m:${info.serialize}
-        |  module m:
-        |    skip
-        |""".stripMargin
+         |  module m:
+         |    skip
+         |""".stripMargin
     val c = firrtl.Parser.parse(input)
     assert(c.info == ir.FileInfo("a b c"))
   }
@@ -272,14 +312,14 @@ class ParserPropSpec extends FirrtlPropSpec {
   } yield (x :: xs).mkString
 
   property("Identifiers should allow [A-Za-z0-9_$] but not allow starting with a digit or $") {
-    forAll (identifier) { id =>
+    forAll(identifier) { id =>
       whenever(id.nonEmpty) {
         val input = s"""
-           |circuit Test :
-           |  module Test :
-           |    input $id : UInt<32>
-           |""".stripMargin
-        firrtl.Parser.parse(input split "\n")
+                       |circuit Test :
+                       |  module Test :
+                       |    input $id : UInt<32>
+                       |""".stripMargin
+        firrtl.Parser.parse(input.split("\n"))
       }
     }
   }
@@ -289,15 +329,16 @@ class ParserPropSpec extends FirrtlPropSpec {
   } yield xs.mkString
 
   property("Bundle fields should allow [A-Za-z0-9_] including starting with a digit or $") {
-    forAll (identifier, bundleField) { case (id, field) =>
-      whenever(id.nonEmpty && field.nonEmpty) {
-        val input = s"""
-           |circuit Test :
-           |  module Test :
-           |    input $id : { $field : UInt<32> }
-           |""".stripMargin
-        firrtl.Parser.parse(input split "\n")
-      }
+    forAll(identifier, bundleField) {
+      case (id, field) =>
+        whenever(id.nonEmpty && field.nonEmpty) {
+          val input = s"""
+                         |circuit Test :
+                         |  module Test :
+                         |    input $id : { $field : UInt<32> }
+                         |""".stripMargin
+          firrtl.Parser.parse(input.split("\n"))
+        }
     }
   }
 }

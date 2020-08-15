@@ -6,5 +6,5 @@ import firrtl.Transform
 object ToWorkingIR extends Pass {
   override def prerequisites = firrtl.stage.Forms.MinimalHighForm
   override def invalidates(a: Transform) = false
-  def run(c:Circuit): Circuit = c
+  def run(c:                  Circuit): Circuit = c
 }

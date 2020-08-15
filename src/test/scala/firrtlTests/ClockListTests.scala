@@ -11,12 +11,12 @@ import clocklist._
 
 class ClockListTests extends FirrtlFlatSpec {
   private def executeTest(input: String, expected: Seq[String], passes: Seq[Pass]) = {
-    val c = passes.foldLeft(Parser.parse(input.split("\n").toIterator)) {
-      (c: Circuit, p: Pass) => p.run(c)
+    val c = passes.foldLeft(Parser.parse(input.split("\n").toIterator)) { (c: Circuit, p: Pass) =>
+      p.run(c)
     }
-    val lines = c.serialize.split("\n") map normalized
+    val lines = c.serialize.split("\n").map(normalized)
 
-    expected foreach { e =>
+    expected.foreach { e =>
       lines should contain(e)
     }
   }
@@ -69,19 +69,21 @@ class ClockListTests extends FirrtlFlatSpec {
         |    output clk2: Clock
         |    output clk3: Clock
         |""".stripMargin
-    val check = 
-  """Sourcelist: List(h$clkGen$clk1, h$clkGen$clk2, h$clkGen$clk3, clock) 
-    |Good Origin of clock is clock
-    |Good Origin of h.clock is h$clkGen.clk1
-    |Good Origin of h$b.clock is h$clkGen.clk2
-    |Good Origin of h$c.clock is h$clkGen.clk3
-    |""".stripMargin
-    val c = passes.foldLeft(CircuitState(parse(input), UnknownForm)) {
-      (c: CircuitState, p: Transform) => p.runTransform(c)
-    }.circuit
+    val check =
+      """Sourcelist: List(h$clkGen$clk1, h$clkGen$clk2, h$clkGen$clk3, clock) 
+        |Good Origin of clock is clock
+        |Good Origin of h.clock is h$clkGen.clk1
+        |Good Origin of h$b.clock is h$clkGen.clk2
+        |Good Origin of h$c.clock is h$clkGen.clk3
+        |""".stripMargin
+    val c = passes
+      .foldLeft(CircuitState(parse(input), UnknownForm)) { (c: CircuitState, p: Transform) =>
+        p.runTransform(c)
+      }
+      .circuit
     val writer = new StringWriter()
     val retC = new ClockList("HTop", writer).run(c)
-    (writer.toString) should be (check)
+    (writer.toString) should be(check)
   }
   "A->B->C, and A.clock == C.clock" should "still emit C.clock origin" in {
     val input =
@@ -101,18 +103,20 @@ class ClockListTests extends FirrtlFlatSpec {
         |    input clock: Clock
         |    reg r: UInt<5>, clock
         |""".stripMargin
-    val check = 
-  """Sourcelist: List(clock, clkB) 
-    |Good Origin of clock is clock
-    |Good Origin of b.clock is clkB
-    |Good Origin of b$c.clock is clock
-    |""".stripMargin
-    val c = passes.foldLeft(CircuitState(parse(input), UnknownForm)) {
-      (c: CircuitState, p: Transform) => p.runTransform(c)
-    }.circuit
+    val check =
+      """Sourcelist: List(clock, clkB) 
+        |Good Origin of clock is clock
+        |Good Origin of b.clock is clkB
+        |Good Origin of b$c.clock is clock
+        |""".stripMargin
+    val c = passes
+      .foldLeft(CircuitState(parse(input), UnknownForm)) { (c: CircuitState, p: Transform) =>
+        p.runTransform(c)
+      }
+      .circuit
     val writer = new StringWriter()
     val retC = new ClockList("A", writer).run(c)
-    (writer.toString) should be (check)
+    (writer.toString) should be(check)
   }
   "Have not circuit main be top of clocklist pass" should "still work" in {
     val input =
@@ -136,15 +140,17 @@ class ClockListTests extends FirrtlFlatSpec {
         |    input clock: Clock
         |""".stripMargin
     val check =
-  """Sourcelist: List(clock, clkC) 
-    |Good Origin of clock is clock
-    |Good Origin of c.clock is clkC
-    |""".stripMargin
-    val c = passes.foldLeft(CircuitState(parse(input), UnknownForm)) {
-      (c: CircuitState, p: Transform) => p.runTransform(c)
-    }.circuit
+      """Sourcelist: List(clock, clkC) 
+        |Good Origin of clock is clock
+        |Good Origin of c.clock is clkC
+        |""".stripMargin
+    val c = passes
+      .foldLeft(CircuitState(parse(input), UnknownForm)) { (c: CircuitState, p: Transform) =>
+        p.runTransform(c)
+      }
+      .circuit
     val writer = new StringWriter()
     val retC = new ClockList("B", writer).run(c)
-    (writer.toString) should be (check)
+    (writer.toString) should be(check)
   }
 }

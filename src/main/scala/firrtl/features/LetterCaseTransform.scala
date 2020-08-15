@@ -8,14 +8,15 @@ import firrtl.transforms.ManipulateNames
 import scala.reflect.ClassTag
 
 /** Parent of transforms that do change the letter case of names in a FIRRTL circuit */
-abstract class LetterCaseTransform[A <: ManipulateNames[_] : ClassTag] extends ManipulateNames[A] {
+abstract class LetterCaseTransform[A <: ManipulateNames[_]: ClassTag] extends ManipulateNames[A] {
 
   protected def newName: String => String
 
-  final def manipulate = (a: String, ns: Namespace) => newName(a) match {
-    case `a` => None
-    case b   => Some(ns.newName(b))
-  }
+  final def manipulate = (a: String, ns: Namespace) =>
+    newName(a) match {
+      case `a` => None
+      case b   => Some(ns.newName(b))
+    }
 }
 
 /** Convert all FIRRTL names to lowercase */

@@ -12,50 +12,41 @@ import FirrtlCheckers._
 
 class UnitTests extends FirrtlFlatSpec {
   private def executeTest(input: String, expected: Seq[String], transforms: Seq[Transform]) = {
-    val lines = execute(input, transforms).circuit.serialize.split("\n") map normalized
+    val lines = execute(input, transforms).circuit.serialize.split("\n").map(normalized)
 
-    expected foreach { e =>
+    expected.foreach { e =>
       lines should contain(e)
     }
   }
 
   private def executeTest(input: String, expected: String, transforms: Seq[Transform]) = {
-    execute(input, transforms).circuit should be (parse(expected))
+    execute(input, transforms).circuit should be(parse(expected))
   }
 
   def execute(input: String, transforms: Seq[Transform]): CircuitState = {
-    val c = transforms.foldLeft(CircuitState(parse(input), UnknownForm)) {
-      (c: CircuitState, t: Transform) => t.runTransform(c)
-    }.circuit
+    val c = transforms
+      .foldLeft(CircuitState(parse(input), UnknownForm)) { (c: CircuitState, t: Transform) =>
+        t.runTransform(c)
+      }
+      .circuit
     CircuitState(c, UnknownForm, Seq(), None)
   }
 
   "Pull muxes" should "not be exponential in runtime" in {
-    val passes = Seq(
-      ToWorkingIR,
-      CheckHighForm,
-      ResolveKinds,
-      InferTypes,
-      CheckTypes,
-      PullMuxes)
+    val passes = Seq(ToWorkingIR, CheckHighForm, ResolveKinds, InferTypes, CheckTypes, PullMuxes)
     val input =
       """circuit Unit :
         |  module Unit :
         |    input _2: UInt<1>
         |    output x: UInt<32>
         |    x <= cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(_2, cat(   _2, cat(_2, cat(_2, cat(_2, _2)))))))))))))))))))))))))))))))""".stripMargin
-    passes.foldLeft(parse(input)) {
-      (c: Circuit, p: Pass) => p.run(c)
+    passes.foldLeft(parse(input)) { (c: Circuit, p: Pass) =>
+      p.run(c)
     }
   }
 
   "Connecting bundles of different types" should "throw an exception" in {
-    val passes = Seq(
-      ToWorkingIR,
-      CheckHighForm,
-      ResolveKinds,
-      InferTypes,
-      CheckTypes)
+    val passes = Seq(ToWorkingIR, CheckHighForm, ResolveKinds, InferTypes, CheckTypes)
     val input =
       """circuit Unit :
         |  module Unit :
@@ -63,96 +54,78 @@ class UnitTests extends FirrtlFlatSpec {
         |    output x: {a : UInt<1>, b : UInt<1>}
         |    x <= y""".stripMargin
     intercept[CheckTypes.InvalidConnect] {
-      passes.foldLeft(parse(input)) {
-        (c: Circuit, p: Pass) => p.run(c)
+      passes.foldLeft(parse(input)) { (c: Circuit, p: Pass) =>
+        p.run(c)
       }
     }
   }
 
   "Initializing a register with a different type" should "throw an exception" in {
-    val passes = Seq(
-      ToWorkingIR,
-      CheckHighForm,
-      ResolveKinds,
-      InferTypes,
-      CheckTypes)
+    val passes = Seq(ToWorkingIR, CheckHighForm, ResolveKinds, InferTypes, CheckTypes)
     val input =
-     """circuit Unit :
-       |  module Unit :
-       |    input clock : Clock
-       |    input reset : UInt<1>
-       |    wire x : { valid : UInt<1> }
-       |    reg y : { valid : UInt<1>, bits : UInt<3> }, clock with :
-       |      reset => (reset, x)""".stripMargin
+      """circuit Unit :
+        |  module Unit :
+        |    input clock : Clock
+        |    input reset : UInt<1>
+        |    wire x : { valid : UInt<1> }
+        |    reg y : { valid : UInt<1>, bits : UInt<3> }, clock with :
+        |      reset => (reset, x)""".stripMargin
     intercept[CheckTypes.InvalidRegInit] {
-      passes.foldLeft(parse(input)) {
-        (c: Circuit, p: Pass) => p.run(c)
+      passes.foldLeft(parse(input)) { (c: Circuit, p: Pass) =>
+        p.run(c)
       }
     }
   }
 
   "Partial connection two bundle types whose relative flips don't match but leaf node directions do" should "connect correctly" in {
-    val passes = Seq(
-      ToWorkingIR,
-      CheckHighForm,
-      ResolveKinds,
-      InferTypes,
-      CheckTypes,
-      ResolveFlows,
-      ExpandConnects)
+    val passes = Seq(ToWorkingIR, CheckHighForm, ResolveKinds, InferTypes, CheckTypes, ResolveFlows, ExpandConnects)
     val input =
-     """circuit Unit :
-       |  module Unit :
-       |    wire x : { flip a: { b: UInt<32> } }
-       |    wire y : { a: { flip b: UInt<32> } }
-       |    x <- y""".stripMargin
+      """circuit Unit :
+        |  module Unit :
+        |    wire x : { flip a: { b: UInt<32> } }
+        |    wire y : { a: { flip b: UInt<32> } }
+        |    x <- y""".stripMargin
     val check =
-     """circuit Unit :
-       |  module Unit :
-       |    wire x : { flip a: { b: UInt<32> } }
-       |    wire y : { a: { flip b: UInt<32> } }
-       |    y.a.b <= x.a.b""".stripMargin
-    val c_result = passes.foldLeft(parse(input)) {
-      (c: Circuit, p: Pass) => p.run(c)
+      """circuit Unit :
+        |  module Unit :
+        |    wire x : { flip a: { b: UInt<32> } }
+        |    wire y : { a: { flip b: UInt<32> } }
+        |    y.a.b <= x.a.b""".stripMargin
+    val c_result = passes.foldLeft(parse(input)) { (c: Circuit, p: Pass) =>
+      p.run(c)
     }
     val writer = new StringWriter()
     (new HighFirrtlEmitter).emit(CircuitState(c_result, HighForm), writer)
-    (parse(writer.toString())) should be (parse(check))
+    (parse(writer.toString())) should be(parse(check))
   }
 
   val splitExpTestCode =
-     """
-       |circuit Unit :
-       |  module Unit :
-       |    input a : UInt<1>
-       |    input b : UInt<2>
-       |    input c : UInt<2>
-       |    output out : UInt<1>
-       |    out <= bits(mux(a, b, c), 0, 0)
-       |""".stripMargin
+    """
+      |circuit Unit :
+      |  module Unit :
+      |    input a : UInt<1>
+      |    input b : UInt<2>
+      |    input c : UInt<2>
+      |    output out : UInt<1>
+      |    out <= bits(mux(a, b, c), 0, 0)
+      |""".stripMargin
 
   "Emitting a nested expression" should "throw an exception" in {
-    val passes = Seq(
-      ToWorkingIR,
-      InferTypes,
-      ResolveKinds)
+    val passes = Seq(ToWorkingIR, InferTypes, ResolveKinds)
     intercept[PassException] {
       val c = Parser.parse(splitExpTestCode.split("\n").toIterator)
-      val c2 = passes.foldLeft(c)((c, p) => p run c)
+      val c2 = passes.foldLeft(c)((c, p) => p.run(c))
       val writer = new StringWriter()
       (new VerilogEmitter).emit(CircuitState(c2, LowForm), writer)
     }
   }
 
   "After splitting, emitting a nested expression" should "compile" in {
-    val passes = Seq(
-      ToWorkingIR,
-      SplitExpressions,
-      InferTypes)
+    val passes = Seq(ToWorkingIR, SplitExpressions, InferTypes)
     val c = Parser.parse(splitExpTestCode.split("\n").toIterator)
-    val c2 = passes.foldLeft(c)((c, p) => p run c)
-      val writer = new StringWriter()
-      (new VerilogEmitter).emit(CircuitState(c2, LowForm), writer)
+    val c2 = passes.foldLeft(c)((c, p) => p.run(c))
+    val writer = new StringWriter()
+    (new VerilogEmitter).emit(CircuitState(c2, LowForm), writer)
   }
 
   "Simple compound expressions" should "be split" in {
@@ -166,12 +139,12 @@ class UnitTests extends FirrtlFlatSpec {
     )
     val input =
       """circuit Top :
-         |  module Top :
-         |    input a : UInt<32>
-         |    input b : UInt<32>
-         |    input d : UInt<32>
-         |    output c : UInt<1>
-         |    c <= geq(add(a, b),d)""".stripMargin
+        |  module Top :
+        |    input a : UInt<32>
+        |    input b : UInt<32>
+        |    input d : UInt<32>
+        |    output c : UInt<1>
+        |    c <= geq(add(a, b),d)""".stripMargin
     val check = Seq(
       "node _GEN_0 = add(a, b)",
       "c <= geq(_GEN_0, d)"
@@ -190,14 +163,14 @@ class UnitTests extends FirrtlFlatSpec {
     )
     val input =
       """circuit Top :
-         |  module Top :
-         |    input a : UInt<32>
-         |    input b : UInt<20>
-         |    input pred : UInt<1>
-         |    output c : UInt<32>
-         |    c <= mux(pred,a,b)""".stripMargin
-     val check = Seq("c <= mux(pred, a, pad(b, 32))")
-     executeTest(input, check, passes)
+        |  module Top :
+        |    input a : UInt<32>
+        |    input b : UInt<20>
+        |    input pred : UInt<1>
+        |    output c : UInt<32>
+        |    c <= mux(pred,a,b)""".stripMargin
+    val check = Seq("c <= mux(pred, a, pad(b, 32))")
+    executeTest(input, check, passes)
   }
 
   "Indexes into sub-accesses" should "be dealt with" in {
@@ -214,40 +187,34 @@ class UnitTests extends FirrtlFlatSpec {
     )
     val input =
       """circuit AssignViaDeref :
-         |  module AssignViaDeref :
-         |    input clock : Clock
-         |    input reset : UInt<1>
-         |    output io : {a : UInt<8>, sel : UInt<1>}
-         |
-         |    io is invalid
-         |    reg table : {a : UInt<8>}[2], clock
-         |    reg otherTable : {a : UInt<8>}[2], clock
-         |    otherTable[table[UInt<1>("h01")].a].a <= UInt<1>("h00")""".stripMargin
-     //TODO(azidar): I realize this is brittle, but unfortunately there
-     //  isn't a better way to test this pass
-     val check = Seq(
-       """wire _table_1 : { a : UInt<8>}""",
-       """_table_1.a is invalid""",
-       """when UInt<1>("h1") :""",
-       """_table_1.a <= table[1].a""",
-       """wire _otherTable_table_1_a_a : UInt<8>""",
-       """when eq(UInt<1>("h0"), _table_1.a) :""",
-       """otherTable[0].a <= _otherTable_table_1_a_a""",
-       """when eq(UInt<1>("h1"), _table_1.a) :""",
-       """otherTable[1].a <= _otherTable_table_1_a_a""",
-       """_otherTable_table_1_a_a <= UInt<1>("h0")"""
-     )
-     executeTest(input, check, passes)
+        |  module AssignViaDeref :
+        |    input clock : Clock
+        |    input reset : UInt<1>
+        |    output io : {a : UInt<8>, sel : UInt<1>}
+        |
+        |    io is invalid
+        |    reg table : {a : UInt<8>}[2], clock
+        |    reg otherTable : {a : UInt<8>}[2], clock
+        |    otherTable[table[UInt<1>("h01")].a].a <= UInt<1>("h00")""".stripMargin
+    //TODO(azidar): I realize this is brittle, but unfortunately there
+    //  isn't a better way to test this pass
+    val check = Seq(
+      """wire _table_1 : { a : UInt<8>}""",
+      """_table_1.a is invalid""",
+      """when UInt<1>("h1") :""",
+      """_table_1.a <= table[1].a""",
+      """wire _otherTable_table_1_a_a : UInt<8>""",
+      """when eq(UInt<1>("h0"), _table_1.a) :""",
+      """otherTable[0].a <= _otherTable_table_1_a_a""",
+      """when eq(UInt<1>("h1"), _table_1.a) :""",
+      """otherTable[1].a <= _otherTable_table_1_a_a""",
+      """_otherTable_table_1_a_a <= UInt<1>("h0")"""
+    )
+    executeTest(input, check, passes)
   }
 
   "Oversized bit select" should "throw an exception" in {
-    val passes = Seq(
-      ToWorkingIR,
-      ResolveKinds,
-      InferTypes,
-      ResolveFlows,
-      new InferWidths,
-      CheckWidths)
+    val passes = Seq(ToWorkingIR, ResolveKinds, InferTypes, ResolveFlows, new InferWidths, CheckWidths)
     val input =
       """circuit Unit :
         |  module Unit :
@@ -260,13 +227,7 @@ class UnitTests extends FirrtlFlatSpec {
   }
 
   "Oversized head select" should "throw an exception" in {
-    val passes = Seq(
-      ToWorkingIR,
-      ResolveKinds,
-      InferTypes,
-      ResolveFlows,
-      new InferWidths,
-      CheckWidths)
+    val passes = Seq(ToWorkingIR, ResolveKinds, InferTypes, ResolveFlows, new InferWidths, CheckWidths)
     val input =
       """circuit Unit :
         |  module Unit :
@@ -279,14 +240,8 @@ class UnitTests extends FirrtlFlatSpec {
   }
 
   "zero head select" should "return an empty module" in {
-    val passes = Seq(
-      ToWorkingIR,
-      ResolveKinds,
-      InferTypes,
-      ResolveFlows,
-      new InferWidths,
-      CheckWidths,
-      new DeadCodeElimination)
+    val passes =
+      Seq(ToWorkingIR, ResolveKinds, InferTypes, ResolveFlows, new InferWidths, CheckWidths, new DeadCodeElimination)
     val input =
       """circuit Unit :
         |  module Unit :
@@ -299,13 +254,7 @@ class UnitTests extends FirrtlFlatSpec {
   }
 
   "Oversized tail select" should "throw an exception" in {
-    val passes = Seq(
-      ToWorkingIR,
-      ResolveKinds,
-      InferTypes,
-      ResolveFlows,
-      new InferWidths,
-      CheckWidths)
+    val passes = Seq(ToWorkingIR, ResolveKinds, InferTypes, ResolveFlows, new InferWidths, CheckWidths)
     val input =
       """circuit Unit :
         |  module Unit :
@@ -318,14 +267,8 @@ class UnitTests extends FirrtlFlatSpec {
   }
 
   "max tail select" should "return an empty module" in {
-    val passes = Seq(
-      ToWorkingIR,
-      ResolveKinds,
-      InferTypes,
-      ResolveFlows,
-      new InferWidths,
-      CheckWidths,
-      new DeadCodeElimination)
+    val passes =
+      Seq(ToWorkingIR, ResolveKinds, InferTypes, ResolveFlows, new InferWidths, CheckWidths, new DeadCodeElimination)
     val input =
       """circuit Unit :
         |  module Unit :
@@ -338,11 +281,7 @@ class UnitTests extends FirrtlFlatSpec {
   }
 
   "Partial connecting incompatable types" should "throw an exception" in {
-    val passes = Seq(
-      ToWorkingIR,
-      ResolveKinds,
-      InferTypes,
-      CheckTypes)
+    val passes = Seq(ToWorkingIR, ResolveKinds, InferTypes, CheckTypes)
     val input =
       """circuit Unit :
         |  module Unit :
@@ -419,12 +358,11 @@ class UnitTests extends FirrtlFlatSpec {
       """assign negSInt = -5'shd;"""
     )
     val out = compileToVerilog(input)
-    val lines = out.split("\n") map normalized
-    expected foreach { e =>
+    val lines = out.split("\n").map(normalized)
+    expected.foreach { e =>
       lines should contain(e)
     }
   }
-
 
   "Out of bound accesses" should "be invalid" in {
     val passes = Seq(
@@ -460,8 +398,9 @@ class UnitTests extends FirrtlFlatSpec {
     val index = WRef("index", ut2, PortKind, SourceFlow)
     val out = WRef("out", ut16, PortKind, SinkFlow)
 
-    def eq(e1: Expression, e2: Expression): Expression = DoPrim(PrimOps.Eq, Seq(e1, e2), Nil, ut1)
-    def array(v: Int): Expression = WSubIndex(WRef("array", VectorType(ut16, 3), WireKind, SourceFlow), v, ut16, SourceFlow)
+    def eq(e1:   Expression, e2: Expression): Expression = DoPrim(PrimOps.Eq, Seq(e1, e2), Nil, ut1)
+    def array(v: Int): Expression =
+      WSubIndex(WRef("array", VectorType(ut16, 3), WireKind, SourceFlow), v, ut16, SourceFlow)
 
     result should containTree { case DefWire(_, "_array_index", `ut16`) => true }
     result should containTree { case IsInvalid(_, `fgen`) => true }
@@ -490,6 +429,6 @@ class UnitTests extends FirrtlFlatSpec {
         |    out <= shl(in, 4)
         |""".stripMargin
     val res = (new VerilogCompiler).compileAndEmit(CircuitState(parse(input), ChirrtlForm))
-    res should containLine ("assign out = {in, 4'h0};")
+    res should containLine("assign out = {in, 4'h0};")
   }
 }

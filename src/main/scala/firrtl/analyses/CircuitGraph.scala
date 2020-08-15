@@ -80,9 +80,10 @@ class CircuitGraph private[analyses] (connectionGraph: ConnectionGraph) {
     * @return
     */
   def absolutePaths(mt: ModuleTarget): Seq[IsModule] = instanceGraph.findInstancesInHierarchy(mt.module).map {
-    case seq if seq.nonEmpty => seq.foldLeft(CircuitTarget(circuit.main).module(circuit.main): IsModule) {
-      case (it, InstanceKey(instance, ofModule)) => it.instOf(instance, ofModule)
-    }
+    case seq if seq.nonEmpty =>
+      seq.foldLeft(CircuitTarget(circuit.main).module(circuit.main): IsModule) {
+        case (it, InstanceKey(instance, ofModule)) => it.instOf(instance, ofModule)
+      }
   }
 
   /** Return the sequence of nodes from source to sink, inclusive

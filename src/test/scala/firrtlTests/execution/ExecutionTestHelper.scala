@@ -31,18 +31,18 @@ object ExecutionTestHelper {
 
     // Generate test step counter, create ExecutionTestHelper that represents initial test state
     val cnt = DefRegister(NoInfo, DUTRules.counter.name, counterType, DUTRules.clock, DUTRules.reset, Utils.zero)
-    val inc = Connect(NoInfo, DUTRules.counter, DoPrim(PrimOps.Add, Seq(DUTRules.counter, UIntLiteral(1)), Nil, UnknownType))
+    val inc =
+      Connect(NoInfo, DUTRules.counter, DoPrim(PrimOps.Add, Seq(DUTRules.counter, UIntLiteral(1)), Nil, UnknownType))
     ExecutionTestHelper(c, Seq(cnt, inc), Map.empty[Expression, Expression], Nil, Nil)
   }
 }
 
 case class ExecutionTestHelper(
-  dut: Circuit,
-  setup: Seq[Statement],
-  pokeRegs: Map[Expression, Expression],
+  dut:            Circuit,
+  setup:          Seq[Statement],
+  pokeRegs:       Map[Expression, Expression],
   completedSteps: Seq[Conditionally],
-  activeStep: Seq[Statement]
-) {
+  activeStep:     Seq[Statement]) {
 
   def step(n: Int): ExecutionTestHelper = {
     require(n > 0, "Step length must be positive")
@@ -52,9 +52,7 @@ case class ExecutionTestHelper(
   def poke(expString: String, value: Literal): ExecutionTestHelper = {
     val pokeExp = ParseExpression(expString)
     val pokeable = ensurePokeable(pokeExp)
-    pokeable.addStatements(
-      Connect(NoInfo, pokeExp, value),
-      Connect(NoInfo, pokeable.pokeRegs(pokeExp), value))
+    pokeable.addStatements(Connect(NoInfo, pokeExp, value), Connect(NoInfo, pokeable.pokeRegs(pokeExp), value))
   }
 
   def invalidate(expString: String): ExecutionTestHelper = {
@@ -85,7 +83,7 @@ case class ExecutionTestHelper(
   }
 
   private def top: Module = {
-    dut.modules.collectFirst({ case m: Module if m.name == dut.main  => m }).get
+    dut.modules.collectFirst({ case m: Module if m.name == dut.main => m }).get
   }
 
   private[execution] def emit: Circuit = {

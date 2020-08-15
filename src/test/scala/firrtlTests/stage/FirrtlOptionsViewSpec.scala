@@ -2,7 +2,6 @@
 
 package firrtlTests.stage
 
-
 import firrtl.stage._
 
 import firrtl.{ir, NoneCompiler, Parser}
@@ -17,7 +16,7 @@ class Baz_Compiler extends NoneCompiler
 
 class FirrtlOptionsViewSpec extends AnyFlatSpec with Matchers {
 
-  behavior of FirrtlOptionsView.getClass.getName
+  behavior.of(FirrtlOptionsView.getClass.getName)
 
   def circuitString(main: String): String = s"""|circuit $main:
                                                 |  module $main:
@@ -37,9 +36,9 @@ class FirrtlOptionsViewSpec extends AnyFlatSpec with Matchers {
   it should "construct a view from an AnnotationSeq" in {
     val out = view[FirrtlOptions](annotations)
 
-    out.outputFileName should be (Some("bar"))
-    out.infoModeName should be ("use")
-    out.firrtlCircuit should be (Some(grault))
+    out.outputFileName should be(Some("bar"))
+    out.infoModeName should be("use")
+    out.firrtlCircuit should be(Some(grault))
   }
 
   /* This test only exists to catch changes to existing behavior. This test does not indicate that this is the correct
@@ -57,9 +56,9 @@ class FirrtlOptionsViewSpec extends AnyFlatSpec with Matchers {
 
     val out = view[FirrtlOptions](annotations ++ overwrites)
 
-    out.outputFileName should be (Some("bar_"))
-    out.infoModeName should be ("gen")
-    out.firrtlCircuit should be (Some(grault_))
+    out.outputFileName should be(Some("bar_"))
+    out.infoModeName should be("gen")
+    out.firrtlCircuit should be(Some(grault_))
   }
 
 }

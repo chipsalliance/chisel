@@ -23,10 +23,11 @@ class GCDSplitEmissionExecutionTest extends FirrtlFlatSpec {
     val optionsManager = new ExecutionOptionsManager("GCDTesterSplitEmission") with HasFirrtlOptions {
       commonOptions = CommonOptions(topName = top, targetDirName = testDir.getPath)
       firrtlOptions = FirrtlExecutionOptions(
-                        inputFileNameOverride = sourceFile.getPath,
-                        compilerName = "verilog",
-                        infoModeName = "ignore",
-                        emitOneFilePerModule = true)
+        inputFileNameOverride = sourceFile.getPath,
+        compilerName = "verilog",
+        infoModeName = "ignore",
+        emitOneFilePerModule = true
+      )
     }
     firrtl.Driver.execute(optionsManager)
 
@@ -42,7 +43,7 @@ class GCDSplitEmissionExecutionTest extends FirrtlFlatSpec {
 
     // topFile will be compiled by Verilator command by default but we need to also include dutFile
     verilogToCpp(top, testDir, Seq(dutFile), harness) #&&
-    cppToExe(top, testDir) ! loggingProcessLogger
+      cppToExe(top, testDir) ! loggingProcessLogger
     assert(executeExpectingSuccess(top, testDir))
   }
 }
@@ -53,14 +54,14 @@ class ICacheCompilationTest extends CompilationTest("ICache", "/regress")
 class FPUCompilationTest extends CompilationTest("FPU", "/regress")
 class HwachaSequencerCompilationTest extends CompilationTest("HwachaSequencer", "/regress")
 
-abstract class CommonSubexprEliminationEquivTest(name: String, dir: String) extends
-  EquivalenceTest(Seq(firrtl.passes.CommonSubexpressionElimination), name, dir)
-abstract class DeadCodeEliminationEquivTest(name: String, dir: String) extends
-  EquivalenceTest(Seq(new firrtl.transforms.DeadCodeElimination), name, dir)
-abstract class ConstantPropagationEquivTest(name: String, dir: String) extends
-  EquivalenceTest(Seq(new firrtl.transforms.ConstantPropagation), name, dir)
-abstract class LowFirrtlOptimizationEquivTest(name: String, dir: String) extends
-  EquivalenceTest(Seq(new LowFirrtlOptimization), name, dir)
+abstract class CommonSubexprEliminationEquivTest(name: String, dir: String)
+    extends EquivalenceTest(Seq(firrtl.passes.CommonSubexpressionElimination), name, dir)
+abstract class DeadCodeEliminationEquivTest(name: String, dir: String)
+    extends EquivalenceTest(Seq(new firrtl.transforms.DeadCodeElimination), name, dir)
+abstract class ConstantPropagationEquivTest(name: String, dir: String)
+    extends EquivalenceTest(Seq(new firrtl.transforms.ConstantPropagation), name, dir)
+abstract class LowFirrtlOptimizationEquivTest(name: String, dir: String)
+    extends EquivalenceTest(Seq(new LowFirrtlOptimization), name, dir)
 
 class OpsCommonSubexprEliminationTest extends CommonSubexprEliminationEquivTest("Ops", "/regress")
 class OpsDeadCodeEliminationTest extends DeadCodeEliminationEquivTest("Ops", "/regress")

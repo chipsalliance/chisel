@@ -1,4 +1,3 @@
-
 package firrtlTests.formal
 
 import firrtl.{CircuitState, Parser, Transform, UnknownForm}
@@ -7,17 +6,18 @@ import firrtl.testutils.FirrtlFlatSpec
 import firrtl.transforms.formal.RemoveVerificationStatements
 
 class RemoveVerificationStatementsSpec extends FirrtlFlatSpec {
-  behavior of "RemoveVerificationStatements"
+  behavior.of("RemoveVerificationStatements")
 
-  val transforms = new TransformManager(Forms.HighForm, Forms.MinimalHighForm)
-    .flattenedTransformOrder ++ Seq(new RemoveVerificationStatements)
+  val transforms = new TransformManager(Forms.HighForm, Forms.MinimalHighForm).flattenedTransformOrder ++ Seq(
+    new RemoveVerificationStatements
+  )
 
   def run(input: String, antiCheck: Seq[String], debug: Boolean = false): Unit = {
     val circuit = Parser.parse(input.split("\n").toIterator)
-    val result = transforms.foldLeft(CircuitState(circuit, UnknownForm)) {
-      (c: CircuitState, p: Transform) => p.runTransform(c)
+    val result = transforms.foldLeft(CircuitState(circuit, UnknownForm)) { (c: CircuitState, p: Transform) =>
+      p.runTransform(c)
     }
-    val lines = result.circuit.serialize.split("\n") map normalized
+    val lines = result.circuit.serialize.split("\n").map(normalized)
 
     if (debug) {
       println(lines.mkString("\n"))

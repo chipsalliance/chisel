@@ -14,7 +14,7 @@ case class NoDedupMemAnnotation(target: ComponentName) extends SingleTargetAnnot
 }
 
 /** Resolves annotation ref to memories that exactly match (except name) another memory
- */
+  */
 class ResolveMemoryReference extends Transform with DependencyAPIMigration {
 
   override def prerequisites = Forms.MidForm
@@ -45,10 +45,12 @@ class ResolveMemoryReference extends Transform with DependencyAPIMigration {
   /** If a candidate memory is identical except for name to another, add an
     *   annotation that references the name of the other memory.
     */
-  def updateMemStmts(mname: String,
-                     existingMems: AnnotatedMemories,
-                     noDedupMap: Map[String, Set[String]])
-                    (s: Statement): Statement = s match {
+  def updateMemStmts(
+    mname:        String,
+    existingMems: AnnotatedMemories,
+    noDedupMap:   Map[String, Set[String]]
+  )(s:            Statement
+  ): Statement = s match {
     // If not dedupable, no need to add to existing (since nothing can dedup with it)
     // We just return the DefAnnotatedMemory as is in the default case below
     case m: DefAnnotatedMemory if dedupable(noDedupMap, mname, m.name) =>

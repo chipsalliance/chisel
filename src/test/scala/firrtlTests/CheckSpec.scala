@@ -3,17 +3,29 @@
 package firrtlTests
 
 import org.scalatest._
-import firrtl.{Parser, CircuitState, UnknownForm, Transform}
+import firrtl.{CircuitState, Parser, Transform, UnknownForm}
 import firrtl.ir.Circuit
-import firrtl.passes.{Pass,ToWorkingIR,CheckHighForm,ResolveKinds,InferTypes,CheckTypes,PassException,InferWidths,CheckWidths,ResolveFlows,CheckFlows}
+import firrtl.passes.{
+  CheckFlows,
+  CheckHighForm,
+  CheckTypes,
+  CheckWidths,
+  InferTypes,
+  InferWidths,
+  Pass,
+  PassException,
+  ResolveFlows,
+  ResolveKinds,
+  ToWorkingIR
+}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 class CheckSpec extends AnyFlatSpec with Matchers {
   val defaultPasses = Seq(ToWorkingIR, CheckHighForm)
   def checkHighInput(input: String) = {
-    defaultPasses.foldLeft(Parser.parse(input.split("\n").toIterator)) {
-      (c: Circuit, p: Pass) => p.run(c)
+    defaultPasses.foldLeft(Parser.parse(input.split("\n").toIterator)) { (c: Circuit, p: Pass) =>
+      p.run(c)
     }
   }
 
@@ -44,9 +56,7 @@ class CheckSpec extends AnyFlatSpec with Matchers {
   }
 
   "Memories with zero write latency" should "throw an exception" in {
-    val passes = Seq(
-      ToWorkingIR,
-      CheckHighForm)
+    val passes = Seq(ToWorkingIR, CheckHighForm)
     val input =
       """circuit Unit :
         |  module Unit :
@@ -56,8 +66,8 @@ class CheckSpec extends AnyFlatSpec with Matchers {
         |      read-latency => 0
         |      write-latency => 0""".stripMargin
     intercept[CheckHighForm.IllegalMemLatencyException] {
-      passes.foldLeft(Parser.parse(input.split("\n").toIterator)) {
-        (c: Circuit, p: Pass) => p.run(c)
+      passes.foldLeft(Parser.parse(input.split("\n").toIterator)) { (c: Circuit, p: Pass) =>
+        p.run(c)
       }
     }
   }
@@ -181,90 +191,81 @@ class CheckSpec extends AnyFlatSpec with Matchers {
       ResolveFlows,
       CheckFlows,
       new InferWidths,
-      CheckWidths)
+      CheckWidths
+    )
     val input =
       """
-          |circuit TheRealTop :
-          |
-          |  module Top :
-          |    output io : {flip debug_clk : Clock}
-          |
-          |  extmodule BlackBoxTop :
-          |    input jtag : {TCK : Clock}
-          |
-          |  module TheRealTop :
-          |    input clock : Clock
-          |    input reset : UInt<1>
-          |    output io : {flip jtag : {TCK : Clock}}
-          |
-          |    io is invalid
-          |    inst sub of Top
-          |    sub.io is invalid
-          |    inst bb of BlackBoxTop
-          |    bb.jtag is invalid
-          |    bb.jtag <- io.jtag
-          |
-          |    sub.io.debug_clk <= io.jtag.TCK
-          |
-          |""".stripMargin
+        |circuit TheRealTop :
+        |
+        |  module Top :
+        |    output io : {flip debug_clk : Clock}
+        |
+        |  extmodule BlackBoxTop :
+        |    input jtag : {TCK : Clock}
+        |
+        |  module TheRealTop :
+        |    input clock : Clock
+        |    input reset : UInt<1>
+        |    output io : {flip jtag : {TCK : Clock}}
+        |
+        |    io is invalid
+        |    inst sub of Top
+        |    sub.io is invalid
+        |    inst bb of BlackBoxTop
+        |    bb.jtag is invalid
+        |    bb.jtag <- io.jtag
+        |
+        |    sub.io.debug_clk <= io.jtag.TCK
+        |
+        |""".stripMargin
     passes.foldLeft(CircuitState(Parser.parse(input.split("\n").toIterator), UnknownForm)) {
       (c: CircuitState, p: Transform) => p.runTransform(c)
     }
   }
 
   "Clocks with types other than ClockType" should "throw an exception" in {
-    val passes = Seq(
-      ToWorkingIR,
-      CheckHighForm,
-      ResolveKinds,
-      InferTypes,
-      CheckTypes)
+    val passes = Seq(ToWorkingIR, CheckHighForm, ResolveKinds, InferTypes, CheckTypes)
     val input =
       """
-          |circuit Top :
-          |
-          |  module Top :
-          |    input clk : UInt<1>
-          |    input i : UInt<1>
-          |    output o : UInt<1>
-          |
-          |    reg r : UInt<1>, clk
-          |    r <= i
-          |    o <= r
-          |
-          |""".stripMargin
+        |circuit Top :
+        |
+        |  module Top :
+        |    input clk : UInt<1>
+        |    input i : UInt<1>
+        |    output o : UInt<1>
+        |
+        |    reg r : UInt<1>, clk
+        |    r <= i
+        |    o <= r
+        |
+        |""".stripMargin
     intercept[CheckTypes.RegReqClk] {
-      passes.foldLeft(Parser.parse(input.split("\n").toIterator)) {
-        (c: Circuit, p: Pass) => p.run(c)
+      passes.foldLeft(Parser.parse(input.split("\n").toIterator)) { (c: Circuit, p: Pass) =>
+        p.run(c)
       }
     }
   }
 
   "Illegal reset type" should "throw an exception" in {
-    val passes = Seq(
-      ToWorkingIR,
-      CheckHighForm,
-      ResolveKinds,
-      InferTypes,
-      CheckTypes)
+    val passes = Seq(ToWorkingIR, CheckHighForm, ResolveKinds, InferTypes, CheckTypes)
     val input =
       """
-          |circuit Top :
-          |
-          |  module Top :
-          |    input clk : Clock
-          |    input reset : UInt<2>
-          |    input i : UInt<1>
-          |    output o : UInt<1>
-          |
-          |    reg r : UInt<1>, clk with : (reset => (reset, UInt<1>("h00")))
-          |    r <= i
-          |    o <= r
-          |
-          |""".stripMargin
+        |circuit Top :
+        |
+        |  module Top :
+        |    input clk : Clock
+        |    input reset : UInt<2>
+        |    input i : UInt<1>
+        |    output o : UInt<1>
+        |
+        |    reg r : UInt<1>, clk with : (reset => (reset, UInt<1>("h00")))
+        |    r <= i
+        |    o <= r
+        |
+        |""".stripMargin
     intercept[CheckTypes.IllegalResetType] {
-      passes.foldLeft(Parser.parse(input.split("\n").toIterator)) {
-        (c: Circuit, p: Pass) => p.run(c)
+      passes.foldLeft(Parser.parse(input.split("\n").toIterator)) { (c: Circuit, p: Pass) =>
+        p.run(c)
       }
     }
   }
@@ -281,7 +282,7 @@ class CheckSpec extends AnyFlatSpec with Matchers {
       val exception = intercept[PassException] {
         checkHighInput(input)
       }
-      exception.getMessage should include (s"Primop $op argument $amount < 0")
+      exception.getMessage should include(s"Primop $op argument $amount < 0")
     }
   }
 
@@ -301,11 +302,11 @@ class CheckSpec extends AnyFlatSpec with Matchers {
     }
   }
 
-  behavior of "Uniqueness"
+  behavior.of("Uniqueness")
   for ((description, input) <- CheckSpec.nonUniqueExamples) {
     it should s"be asserted for $description" in {
       assertThrows[CheckHighForm.NotUniqueException] {
-        Seq(ToWorkingIR, CheckHighForm).foldLeft(Parser.parse(input)){ case (c, tx) => tx.run(c) }
+        Seq(ToWorkingIR, CheckHighForm).foldLeft(Parser.parse(input)) { case (c, tx) => tx.run(c) }
       }
     }
   }
@@ -400,7 +401,7 @@ class CheckSpec extends AnyFlatSpec with Matchers {
     }
   }
 
-  behavior of "CheckHighForm running on circuits containing ExtModules"
+  behavior.of("CheckHighForm running on circuits containing ExtModules")
 
   it should "throw an exception if parameterless ExtModules have the same ports, but different widths" in {
     val input =
@@ -539,19 +540,17 @@ class CheckSpec extends AnyFlatSpec with Matchers {
 
 object CheckSpec {
   val nonUniqueExamples = List(
-    ("two ports with the same name",
-     """|circuit Top:
-        |  module Top:
-        |    input a: UInt<1>
-        |    input a: UInt<1>""".stripMargin),
-    ("two nodes with the same name",
-     """|circuit Top:
-        |  module Top:
-        |    node a = UInt<1>("h0")
-        |    node a = UInt<1>("h0")""".stripMargin),
-    ("a port and a node with the same name",
-     """|circuit Top:
-        |  module Top:
-        |    input a: UInt<1>
-        |    node a = UInt<1>("h0") """.stripMargin) )
-  }
+    ("two ports with the same name", """|circuit Top:
+                                       |  module Top:
+                                       |    input a: UInt<1>
+                                       |    input a: UInt<1>""".stripMargin),
+    ("two nodes with the same name", """|circuit Top:
+                                       |  module Top:
+                                       |    node a = UInt<1>("h0")
+                                       |    node a = UInt<1>("h0")""".stripMargin),
+    ("a port and a node with the same name", """|circuit Top:
+                                               |  module Top:
+                                               |    input a: UInt<1>
+                                               |    node a = UInt<1>("h0") """.stripMargin)
+  )
+}

@@ -119,7 +119,7 @@ object FlattenRegUpdate {
       def rec(e: Expression): (Info, Expression) = {
         val (info, expr) = kind(e) match {
           case NodeKind | WireKind if !endpoints(e) => unwrap(netlist.getOrElse(e, e))
-          case _ => unwrap(e)
+          case _                                    => unwrap(e)
         }
         expr match {
           case Mux(cond, tval, fval, tpe) =>
@@ -128,16 +128,18 @@ object FlattenRegUpdate {
             val infox = combineInfos(info, tinfo, finfo)
             (infox, Mux(cond, tvalx, fvalx, tpe))
           // Return the original expression to end flattening
-          case _  => unwrap(e)
+          case _ => unwrap(e)
         }
       }
       rec(start)
     }
 
     def onStmt(stmt: Statement): Statement = stmt.map(onStmt) match {
-      case reg @ DefRegister(_, rname, _,_, resetCond, _) =>
-        assert(resetCond.tpe == AsyncResetType || resetCond == Utils.zero,
-          "Synchronous reset should have already been made explicit!")
+      case reg @ DefRegister(_, rname, _, _, resetCond, _) =>
+        assert(
+          resetCond.tpe == AsyncResetType || resetCond == Utils.zero,
+          "Synchronous reset should have already been made explicit!"
+        )
         val ref = WRef(reg)
         val (info, rhs) = constructRegUpdate(netlist.getOrElse(ref, ref))
         val update = Connect(info, ref, rhs)
@@ -145,7 +147,7 @@ object FlattenRegUpdate {
         reg
       // Remove connections to Registers so we preserve LowFirrtl single-connection semantics
       case Connect(_, lhs, _) if kind(lhs) == RegKind => EmptyStmt
-      case other => other
+      case other                                      => other
     }
 
     val bodyx = onStmt(mod.body)
@@ -163,12 +165,14 @@ object FlattenRegUpdate {
 class FlattenRegUpdate extends Transform with DependencyAPIMigration {
 
   override def prerequisites = firrtl.stage.Forms.LowFormMinimumOptimized ++
-    Seq( Dependency[BlackBoxSourceHelper],
-         Dependency[FixAddingNegativeLiterals],
-         Dependency[ReplaceTruncatingArithmetic],
-         Dependency[InlineBitExtractionsTransform],
-         Dependency[InlineCastsTransform],
-         Dependency[LegalizeClocksTransform] )
+    Seq(
+      Dependency[BlackBoxSourceHelper],
+      Dependency[FixAddingNegativeLiterals],
+      Dependency[ReplaceTruncatingArithmetic],
+      Dependency[InlineBitExtractionsTransform],
+      Dependency[InlineCastsTransform],
+      Dependency[LegalizeClocksTransform]
+    )
 
   override def optionalPrerequisites = firrtl.stage.Forms.LowFormOptimized
 
@@ -181,7 +185,7 @@ class FlattenRegUpdate extends Transform with DependencyAPIMigration {
 
   def execute(state: CircuitState): CircuitState = {
     val modulesx = state.circuit.modules.map {
-      case mod: Module => FlattenRegUpdate.flattenReg(mod)
+      case mod: Module    => FlattenRegUpdate.flattenReg(mod)
       case ext: ExtModule => ext
     }
     state.copy(circuit = state.circuit.copy(modules = modulesx))

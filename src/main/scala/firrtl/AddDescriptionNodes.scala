@@ -12,7 +12,7 @@ import firrtl.options.Dependency
   * Usually, we would like to emit these descriptions in some way.
   */
 sealed trait DescriptionAnnotation extends Annotation {
-  def target: Target
+  def target:      Target
   def description: String
 }
 
@@ -24,7 +24,7 @@ sealed trait DescriptionAnnotation extends Annotation {
 case class DocStringAnnotation(target: Target, description: String) extends DescriptionAnnotation {
   def update(renames: RenameMap): Seq[DocStringAnnotation] = {
     renames.get(target) match {
-      case None => Seq(this)
+      case None      => Seq(this)
       case Some(seq) => seq.map(n => this.copy(target = n))
     }
   }
@@ -38,7 +38,7 @@ case class DocStringAnnotation(target: Target, description: String) extends Desc
 case class AttributeAnnotation(target: Target, description: String) extends DescriptionAnnotation {
   def update(renames: RenameMap): Seq[AttributeAnnotation] = {
     renames.get(target) match {
-      case None => Seq(this)
+      case None      => Seq(this)
       case Some(seq) => seq.map(n => this.copy(target = n))
     }
   }
@@ -78,18 +78,20 @@ case class Attribute(string: StringLit) extends Description {
   * @param descriptions
   * @param stmt the encapsulated statement
   */
-private case class DescribedStmt(descriptions: Seq[Description], stmt: Statement) extends Statement with HasDescription {
+private case class DescribedStmt(descriptions: Seq[Description], stmt: Statement)
+    extends Statement
+    with HasDescription {
   override def serialize: String = s"${descriptions.map(_.serialize).mkString("\n")}\n${stmt.serialize}"
-  def mapStmt(f: Statement => Statement): Statement = f(stmt)
-  def mapExpr(f: Expression => Expression): Statement = this.copy(stmt = stmt.mapExpr(f))
-  def mapType(f: Type => Type): Statement = this.copy(stmt = stmt.mapType(f))
-  def mapString(f: String => String): Statement = this.copy(stmt = stmt.mapString(f))
-  def mapInfo(f: Info => Info): Statement = this.copy(stmt = stmt.mapInfo(f))
-  def foreachStmt(f: Statement => Unit): Unit = f(stmt)
-  def foreachExpr(f: Expression => Unit): Unit = stmt.foreachExpr(f)
-  def foreachType(f: Type => Unit): Unit = stmt.foreachType(f)
-  def foreachString(f: String => Unit): Unit = stmt.foreachString(f)
-  def foreachInfo(f: Info => Unit): Unit = stmt.foreachInfo(f)
+  def mapStmt(f:       Statement => Statement):   Statement = f(stmt)
+  def mapExpr(f:       Expression => Expression): Statement = this.copy(stmt = stmt.mapExpr(f))
+  def mapType(f:       Type => Type):             Statement = this.copy(stmt = stmt.mapType(f))
+  def mapString(f:     String => String):         Statement = this.copy(stmt = stmt.mapString(f))
+  def mapInfo(f:       Info => Info):             Statement = this.copy(stmt = stmt.mapInfo(f))
+  def foreachStmt(f:   Statement => Unit):        Unit = f(stmt)
+  def foreachExpr(f:   Expression => Unit):       Unit = stmt.foreachExpr(f)
+  def foreachType(f:   Type => Unit):             Unit = stmt.foreachType(f)
+  def foreachString(f: String => Unit):           Unit = stmt.foreachString(f)
+  def foreachInfo(f:   Info => Unit):             Unit = stmt.foreachInfo(f)
 }
 
 /**
@@ -98,21 +100,24 @@ private case class DescribedStmt(descriptions: Seq[Description], stmt: Statement
   * @param portDescriptions list of descriptions for the module's ports
   * @param mod the encapsulated module
   */
-private case class DescribedMod(descriptions: Seq[Description],
+private case class DescribedMod(
+  descriptions:     Seq[Description],
   portDescriptions: Map[String, Seq[Description]],
-  mod: DefModule) extends DefModule with HasDescription {
+  mod:              DefModule)
+    extends DefModule
+    with HasDescription {
   val info = mod.info
   val name = mod.name
   val ports = mod.ports
   override def serialize: String = s"${descriptions.map(_.serialize).mkString("\n")}\n${mod.serialize}"
-  def mapStmt(f: Statement => Statement): DefModule = this.copy(mod = mod.mapStmt(f))
-  def mapPort(f: Port => Port): DefModule = this.copy(mod = mod.mapPort(f))
-  def mapString(f: String => String): DefModule = this.copy(mod = mod.mapString(f))
-  def mapInfo(f: Info => Info): DefModule = this.copy(mod = mod.mapInfo(f))
-  def foreachStmt(f: Statement => Unit): Unit = mod.foreachStmt(f)
-  def foreachPort(f: Port => Unit): Unit = mod.foreachPort(f)
-  def foreachString(f: String => Unit): Unit = mod.foreachString(f)
-  def foreachInfo(f: Info => Unit): Unit = mod.foreachInfo(f)
+  def mapStmt(f:       Statement => Statement): DefModule = this.copy(mod = mod.mapStmt(f))
+  def mapPort(f:       Port => Port):           DefModule = this.copy(mod = mod.mapPort(f))
+  def mapString(f:     String => String):       DefModule = this.copy(mod = mod.mapString(f))
+  def mapInfo(f:       Info => Info):           DefModule = this.copy(mod = mod.mapInfo(f))
+  def foreachStmt(f:   Statement => Unit):      Unit = mod.foreachStmt(f)
+  def foreachPort(f:   Port => Unit):           Unit = mod.foreachPort(f)
+  def foreachString(f: String => Unit):         Unit = mod.foreachString(f)
+  def foreachInfo(f:   Info => Unit):           Unit = mod.foreachInfo(f)
 }
 
 /** Wraps modules or statements with their respective described nodes. Descriptions come from [[DescriptionAnnotation]].
@@ -125,17 +130,19 @@ private case class DescribedMod(descriptions: Seq[Description],
 class AddDescriptionNodes extends Transform with DependencyAPIMigration {
 
   override def prerequisites = firrtl.stage.Forms.LowFormMinimumOptimized ++
-    Seq( Dependency[firrtl.transforms.BlackBoxSourceHelper],
-         Dependency[firrtl.transforms.FixAddingNegativeLiterals],
-         Dependency[firrtl.transforms.ReplaceTruncatingArithmetic],
-         Dependency[firrtl.transforms.InlineBitExtractionsTransform],
-         Dependency[firrtl.transforms.PropagatePresetAnnotations],
-         Dependency[firrtl.transforms.InlineCastsTransform],
-         Dependency[firrtl.transforms.LegalizeClocksTransform],
-         Dependency[firrtl.transforms.FlattenRegUpdate],
-         Dependency(passes.VerilogModulusCleanup),
-         Dependency[firrtl.transforms.VerilogRename],
-         Dependency(firrtl.passes.VerilogPrep) )
+    Seq(
+      Dependency[firrtl.transforms.BlackBoxSourceHelper],
+      Dependency[firrtl.transforms.FixAddingNegativeLiterals],
+      Dependency[firrtl.transforms.ReplaceTruncatingArithmetic],
+      Dependency[firrtl.transforms.InlineBitExtractionsTransform],
+      Dependency[firrtl.transforms.PropagatePresetAnnotations],
+      Dependency[firrtl.transforms.InlineCastsTransform],
+      Dependency[firrtl.transforms.LegalizeClocksTransform],
+      Dependency[firrtl.transforms.FlattenRegUpdate],
+      Dependency(passes.VerilogModulusCleanup),
+      Dependency[firrtl.transforms.VerilogRename],
+      Dependency(firrtl.passes.VerilogPrep)
+    )
 
   override def optionalPrerequisites = firrtl.stage.Forms.LowFormOptimized
 
@@ -149,18 +156,22 @@ class AddDescriptionNodes extends Transform with DependencyAPIMigration {
       case d: IsDeclaration => Some(d.name)
       case _ => None
     }
-    val descs = sname.flatMap({ case name =>
-      compMap.get(name)
+    val descs = sname.flatMap({
+      case name =>
+        compMap.get(name)
     })
     (descs, s) match {
       case (Some(d), DescribedStmt(prevDescs, ss)) => DescribedStmt(prevDescs ++ d, ss)
-      case (Some(d), ss) => DescribedStmt(d, ss)
-      case (None, _) => s
+      case (Some(d), ss)                           => DescribedStmt(d, ss)
+      case (None, _)                               => s
     }
   }
 
-  def onModule(modMap: Map[String, Seq[Description]], compMaps: Map[String, Map[String, Seq[Description]]])
-    (mod: DefModule): DefModule = {
+  def onModule(
+    modMap:   Map[String, Seq[Description]],
+    compMaps: Map[String, Map[String, Seq[Description]]]
+  )(mod:      DefModule
+  ): DefModule = {
     val compMap = compMaps.getOrElse(mod.name, Map())
     val newMod = mod.mapStmt(onStmt(compMap))
     val portDesc = mod.ports.collect {
@@ -210,14 +221,18 @@ class AddDescriptionNodes extends Transform with DependencyAPIMigration {
     rest ++ doc ++ attr
   }
 
-  def collectMaps(annos: Seq[Annotation]): (Map[String, Seq[Description]], Map[String, Map[String, Seq[Description]]]) = {
+  def collectMaps(
+    annos: Seq[Annotation]
+  ): (Map[String, Seq[Description]], Map[String, Map[String, Seq[Description]]]) = {
     val modList = annos.collect {
       case DocStringAnnotation(ModuleTarget(_, m), desc) => (m, DocString(StringLit.unescape(desc)))
       case AttributeAnnotation(ModuleTarget(_, m), desc) => (m, Attribute(StringLit.unescape(desc)))
     }
 
     // map field 1 (module name) -> field 2 (a list of Descriptions)
-    val modMap = modList.groupBy(_._1).mapValues(_.map(_._2))
+    val modMap = modList
+      .groupBy(_._1)
+      .mapValues(_.map(_._2))
       // and then merge like descriptions (e.g. multiple docstrings into one big docstring)
       .mapValues(mergeDescriptions)
 
@@ -229,11 +244,16 @@ class AddDescriptionNodes extends Transform with DependencyAPIMigration {
     }
 
     // map field 1 (name) -> a map that we build
-    val compMap = compList.groupBy(_._1).mapValues(
-      // map field 2 (component name) -> field 3 (a list of Descriptions)
-      _.groupBy(_._2).mapValues(_.map(_._3))
-      // and then merge like descriptions (e.g. multiple docstrings into one big docstring)
-      .mapValues(mergeDescriptions).toMap)
+    val compMap = compList
+      .groupBy(_._1)
+      .mapValues(
+        // map field 2 (component name) -> field 3 (a list of Descriptions)
+        _.groupBy(_._2)
+          .mapValues(_.map(_._3))
+          // and then merge like descriptions (e.g. multiple docstrings into one big docstring)
+          .mapValues(mergeDescriptions)
+          .toMap
+      )
 
     (modMap.toMap, compMap.toMap)
   }

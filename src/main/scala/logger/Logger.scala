@@ -4,7 +4,7 @@ package logger
 
 import java.io.{ByteArrayOutputStream, File, FileOutputStream, PrintStream}
 
-import firrtl.{ExecutionOptionsManager, AnnotationSeq}
+import firrtl.{AnnotationSeq, ExecutionOptionsManager}
 import firrtl.options.Viewer.view
 import logger.phases.{AddDefaults, Checks}
 
@@ -38,7 +38,7 @@ object LogLevel extends Enumeration {
     case "info"  => LogLevel.Info
     case "debug" => LogLevel.Debug
     case "trace" => LogLevel.Trace
-    case level => throw new Exception(s"Unknown LogLevel '$level'")
+    case level   => throw new Exception(s"Unknown LogLevel '$level'")
   }
 }
 
@@ -58,8 +58,8 @@ private class LoggerState {
   val classLevels = new scala.collection.mutable.HashMap[String, LogLevel.Value]
   val classToLevelCache = new scala.collection.mutable.HashMap[String, LogLevel.Value]
   var logClassNames = false
-  var stream: PrintStream = System.out
-  var fromInvoke: Boolean = false  // this is used to not have invokes re-create run-state
+  var stream:             PrintStream = System.out
+  var fromInvoke:         Boolean = false // this is used to not have invokes re-create run-state
   var stringBufferOption: Option[Logger.OutputCaptor] = None
 
   override def toString: String = {
@@ -137,10 +137,9 @@ object Logger {
   @deprecated("Use makescope(opts: FirrtlOptions)", "1.2")
   def makeScope[A](args: Array[String] = Array.empty)(codeBlock: => A): A = {
     val executionOptionsManager = new ExecutionOptionsManager("logger")
-    if(executionOptionsManager.parse(args)) {
+    if (executionOptionsManager.parse(args)) {
       makeScope(executionOptionsManager)(codeBlock)
-    }
-    else {
+    } else {
       throw new Exception(s"logger invoke failed to parse args ${args.mkString(", ")}")
     }
   }
@@ -154,10 +153,9 @@ object Logger {
   def makeScope[A](options: AnnotationSeq)(codeBlock: => A): A = {
     val runState: LoggerState = {
       val newRunState = updatableLoggerState.value.getOrElse(new LoggerState)
-      if(newRunState.fromInvoke) {
+      if (newRunState.fromInvoke) {
         newRunState
-      }
-      else {
+      } else {
         val forcedNewRunState = new LoggerState
         forcedNewRunState.fromInvoke = true
         forcedNewRunState
@@ -179,39 +177,41 @@ object Logger {
     */
   private def testPackageNameMatch(className: String, level: LogLevel.Value): Option[Boolean] = {
     val classLevels = state.classLevels
-    if(classLevels.isEmpty) return None
+    if (classLevels.isEmpty) return None
 
     // If this class name in cache just use that value
-    val levelForThisClassName = state.classToLevelCache.getOrElse(className, {
-      // otherwise break up the class name in to full package path as list and find most specific entry you can
-      val packageNameList = className.split("""\.""").toList
-      /*
-       * start with full class path, lopping off from the tail until nothing left
-       */
-      def matchPathToFindLevel(packageList: List[String]): LogLevel.Value = {
-        if(packageList.isEmpty) {
-          LogLevel.None
+    val levelForThisClassName = state.classToLevelCache.getOrElse(
+      className, {
+        // otherwise break up the class name in to full package path as list and find most specific entry you can
+        val packageNameList = className.split("""\.""").toList
+        /*
+         * start with full class path, lopping off from the tail until nothing left
+         */
+        def matchPathToFindLevel(packageList: List[String]): LogLevel.Value = {
+          if (packageList.isEmpty) {
+            LogLevel.None
+          } else {
+            val partialName = packageList.mkString(".")
+            val level = classLevels.getOrElse(
+              partialName, {
+                matchPathToFindLevel(packageList.reverse.tail.reverse)
+              }
+            )
+            level
+          }
         }
-        else {
-          val partialName = packageList.mkString(".")
-          val level = classLevels.getOrElse(partialName, {
-            matchPathToFindLevel(packageList.reverse.tail.reverse)
-          })
-          level
+
+        val levelSpecified = matchPathToFindLevel(packageNameList)
+        if (levelSpecified != LogLevel.None) {
+          state.classToLevelCache(className) = levelSpecified
         }
+        levelSpecified
       }
+    )
 
-      val levelSpecified = matchPathToFindLevel(packageNameList)
-      if(levelSpecified != LogLevel.None) {
-        state.classToLevelCache(className) = levelSpecified
-      }
-      levelSpecified
-    })
-
-    if(levelForThisClassName != LogLevel.None) {
+    if (levelForThisClassName != LogLevel.None) {
       Some(levelForThisClassName >= level)
-    }
-    else {
+    } else {
       None
     }
   }
@@ -226,19 +226,20 @@ object Logger {
     */
   private def showMessage(level: LogLevel.Value, className: String, message: => String): Unit = {
     def logIt(): Unit = {
-      if(state.logClassNames) {
+      if (state.logClassNames) {
         state.stream.println(s"[$level:$className] $message")
-      }
-      else {
+      } else {
         state.stream.println(message)
       }
     }
     testPackageNameMatch(className, level) match {
-      case Some(true) => logIt()
+      case Some(true)  => logIt()
       case Some(false) =>
       case None =>
-        if((state.globalLevel == LogLevel.None && level == LogLevel.Error) ||
-          (state.globalLevel != LogLevel.None && state.globalLevel >= level)) {
+        if (
+          (state.globalLevel == LogLevel.None && level == LogLevel.Error) ||
+          (state.globalLevel != LogLevel.None && state.globalLevel >= level)
+        ) {
           logIt()
         }
     }
@@ -247,6 +248,7 @@ object Logger {
   def getGlobalLevel: LogLevel.Value = {
     state.globalLevel
   }
+
   /**
     * This resets everything in the current Logger environment, including the destination
     * use this with caution.  Unexpected things can happen
@@ -309,7 +311,7 @@ object Logger {
   def clearStringBuffer(): Unit = {
     state.stringBufferOption match {
       case Some(x) => x.byteArrayOutputStream.reset()
-      case None =>
+      case None    =>
     }
   }
 
@@ -360,16 +362,16 @@ object Logger {
     */
   def setOptions(inputAnnotations: AnnotationSeq): Unit = {
     val annotations =
-      Seq( new AddDefaults, Checks )
-      .foldLeft(inputAnnotations)((a, p) => p.transform(a))
+      Seq(new AddDefaults, Checks)
+        .foldLeft(inputAnnotations)((a, p) => p.transform(a))
 
     val lopts = view[LoggerOptions](annotations)
     state.globalLevel = (state.globalLevel, lopts.globalLogLevel) match {
       case (LogLevel.None, LogLevel.None) => LogLevel.None
-      case (x, LogLevel.None) => x
-      case (LogLevel.None, x) => x
-      case (_, x) => x
-      case _ => LogLevel.Error
+      case (x, LogLevel.None)             => x
+      case (LogLevel.None, x)             => x
+      case (_, x)                         => x
+      case _                              => LogLevel.Error
     }
     setClassLogLevels(lopts.classLogLevels)
 
@@ -386,6 +388,7 @@ object Logger {
   * @param containerClass  passed in from the LazyLogging trait in order to provide class level logging granularity
   */
 class Logger(containerClass: String) {
+
   /**
     * Log message at Error level
     * @param message message generator to be invoked if level is right
@@ -393,6 +396,7 @@ class Logger(containerClass: String) {
   def error(message: => String): Unit = {
     Logger.showMessage(LogLevel.Error, containerClass, message)
   }
+
   /**
     * Log message at Warn level
     * @param message message generator to be invoked if level is right
@@ -400,6 +404,7 @@ class Logger(containerClass: String) {
   def warn(message: => String): Unit = {
     Logger.showMessage(LogLevel.Warn, containerClass, message)
   }
+
   /**
     * Log message at Inof level
     * @param message message generator to be invoked if level is right
@@ -407,6 +412,7 @@ class Logger(containerClass: String) {
   def info(message: => String): Unit = {
     Logger.showMessage(LogLevel.Info, containerClass, message)
   }
+
   /**
     * Log message at Debug level
     * @param message message generator to be invoked if level is right
@@ -414,6 +420,7 @@ class Logger(containerClass: String) {
   def debug(message: => String): Unit = {
     Logger.showMessage(LogLevel.Debug, containerClass, message)
   }
+
   /**
     * Log message at Trace level
     * @param message message generator to be invoked if level is right

@@ -14,10 +14,10 @@ import scala.collection.mutable
   * pairs of InstanceName and Module name as vertex keys instead of using WDefInstance
   * which will hash the instance type causing some performance issues.
   */
-class InstanceKeyGraph private(c: ir.Circuit) {
+class InstanceKeyGraph private (c: ir.Circuit) {
   import InstanceKeyGraph._
 
-  private val nameToModule: Map[String, ir.DefModule] = c.modules.map({m => (m.name,m) }).toMap
+  private val nameToModule: Map[String, ir.DefModule] = c.modules.map({ m => (m.name, m) }).toMap
   private val childInstances: Seq[(String, Seq[InstanceKey])] = c.modules.map { m =>
     m.name -> InstanceKeyGraph.collectInstances(m)
   }
@@ -37,8 +37,8 @@ class InstanceKeyGraph private(c: ir.Circuit) {
     circuitTopInstance.OfModule +: internalGraph.reachableFrom(circuitTopInstance).toSeq.map(_.OfModule)
 
   private lazy val cachedUnreachableModules: Seq[OfModule] = {
-    val all = mutable.LinkedHashSet(childInstances.map(c => OfModule(c._1)):_*)
-    val reachable = mutable.LinkedHashSet(cachedReachableModules:_*)
+    val all = mutable.LinkedHashSet(childInstances.map(c => OfModule(c._1)): _*)
+    val reachable = mutable.LinkedHashSet(cachedReachableModules: _*)
     all.diff(reachable).toSeq
   }
 
@@ -68,11 +68,11 @@ class InstanceKeyGraph private(c: ir.Circuit) {
   private lazy val cachedStaticInstanceCount = {
     val foo = mutable.LinkedHashMap.empty[OfModule, Int]
     childInstances.foreach {
-      case (main, _) if main == c.main => foo += main.OfModule  -> 1
+      case (main, _) if main == c.main => foo += main.OfModule -> 1
       case (other, _)                  => foo += other.OfModule -> 0
     }
-    childInstances.flatMap(_._2).map(_.OfModule).foreach {
-      mod => foo += mod -> (foo(mod) + 1)
+    childInstances.flatMap(_._2).map(_.OfModule).foreach { mod =>
+      foo += mod -> (foo(mod) + 1)
     }
     foo.toMap
   }
@@ -88,17 +88,18 @@ class InstanceKeyGraph private(c: ir.Circuit) {
     */
   def findInstancesInHierarchy(module: String): Seq[Seq[InstanceKey]] = {
     val instances = vertices.filter(_.module == module).toSeq
-    instances.flatMap{ i => cachedFullHierarchy.getOrElse(i, Nil) }
+    instances.flatMap { i => cachedFullHierarchy.getOrElse(i, Nil) }
   }
 
   /** Given a circuit, returns a map from module name to a map
     * in turn mapping instances names to corresponding module names
     */
   def getChildInstanceMap: mutable.LinkedHashMap[OfModule, mutable.LinkedHashMap[Instance, OfModule]] =
-    mutable.LinkedHashMap(childInstances.map { case (k, v) =>
-      val moduleMap: mutable.LinkedHashMap[Instance, OfModule] = mutable.LinkedHashMap(v.map(_.toTokens):_*)
-      TargetToken.OfModule(k) -> moduleMap
-    }:_*)
+    mutable.LinkedHashMap(childInstances.map {
+      case (k, v) =>
+        val moduleMap: mutable.LinkedHashMap[Instance, OfModule] = mutable.LinkedHashMap(v.map(_.toTokens): _*)
+        TargetToken.OfModule(k) -> moduleMap
+    }: _*)
 
   /** All modules in the circuit reachable from the top module */
   def reachableModules: Seq[OfModule] = cachedReachableModules
@@ -109,7 +110,6 @@ class InstanceKeyGraph private(c: ir.Circuit) {
   /** A list of absolute paths (each represented by a Seq of instances) of all module instances in the Circuit. */
   def fullHierarchy: mutable.LinkedHashMap[InstanceKey, Seq[Seq[InstanceKey]]] = cachedFullHierarchy
 }
-
 
 object InstanceKeyGraph {
   def apply(c: ir.Circuit): InstanceKeyGraph = new InstanceKeyGraph(c)
@@ -126,12 +126,12 @@ object InstanceKeyGraph {
 
   /** Finds all instance definitions in a firrtl Module. */
   def collectInstances(m: ir.DefModule): Seq[InstanceKey] = m match {
-    case _ : ir.ExtModule => Seq()
+    case _: ir.ExtModule => Seq()
     case ir.Module(_, _, _, body) => {
       val instances = mutable.ArrayBuffer[InstanceKey]()
       def onStmt(s: ir.Statement): Unit = s match {
         case firrtl.WDefInstance(_, name, module, _) => instances += InstanceKey(name, module)
-        case ir.DefInstance(_, name, module, _)  => instances += InstanceKey(name, module)
+        case ir.DefInstance(_, name, module, _)      => instances += InstanceKey(name, module)
         case _: firrtl.WDefInstanceConnector =>
           firrtl.Utils.throwInternalError("Expecting WDefInstance, found a WDefInstanceConnector!")
         case other => other.foreachStmt(onStmt)
@@ -143,8 +143,10 @@ object InstanceKeyGraph {
 
   private def topKey(module: String): InstanceKey = InstanceKey(module, module)
 
-  private def buildGraph(childInstances: Seq[(String, Seq[InstanceKey])], roots: Iterable[String]):
-    DiGraph[InstanceKey] = {
+  private def buildGraph(
+    childInstances: Seq[(String, Seq[InstanceKey])],
+    roots:          Iterable[String]
+  ): DiGraph[InstanceKey] = {
     val instanceGraph = new MutableDiGraph[InstanceKey]
     val childInstanceMap = childInstances.toMap
 

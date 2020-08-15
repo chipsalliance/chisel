@@ -7,7 +7,7 @@ import java.io.File
 import firrtl.options.StageUtils
 
 import scala.collection.Seq
-import scala.sys.process.{BasicIO, ProcessLogger, stringSeqToProcess}
+import scala.sys.process.{stringSeqToProcess, BasicIO, ProcessLogger}
 
 object FileUtils {
 
@@ -17,7 +17,7 @@ object FileUtils {
     */
   def makeDirectory(directoryName: String): Boolean = {
     val dirFile = new File(directoryName)
-    if(dirFile.exists()) {
+    if (dirFile.exists()) {
       dirFile.isDirectory
     } else {
       dirFile.mkdirs()
@@ -33,6 +33,7 @@ object FileUtils {
   def deleteDirectoryHierarchy(directoryPathName: String): Boolean = {
     deleteDirectoryHierarchy(new File(directoryPathName))
   }
+
   /**
     * recursively delete all directories in a relative path
     * DO NOT DELETE absolute paths
@@ -40,18 +41,18 @@ object FileUtils {
     * @param file: a directory hierarchy to delete
     */
   def deleteDirectoryHierarchy(file: File, atTop: Boolean = true): Boolean = {
-    if(file.getPath.split("/").last.isEmpty ||
+    if (
+      file.getPath.split("/").last.isEmpty ||
       file.getAbsolutePath == "/" ||
-      file.getPath.startsWith("/")) {
+      file.getPath.startsWith("/")
+    ) {
       StageUtils.dramaticError(s"delete directory ${file.getPath} will not delete absolute paths")
       false
-    }
-    else {
+    } else {
       val result = {
-        if(file.isDirectory) {
-          file.listFiles().forall( f => deleteDirectoryHierarchy(f)) && file.delete()
-        }
-        else {
+        if (file.isDirectory) {
+          file.listFiles().forall(f => deleteDirectoryHierarchy(f)) && file.delete()
+        } else {
           file.delete()
         }
       }
@@ -81,7 +82,7 @@ object FileUtils {
     * @param cmd the command/executable (without any arguments).
     * @return true if ```cmd``` returns a 0 exit status.
     */
-  def isCommandAvailable(cmd:String): Boolean = {
+  def isCommandAvailable(cmd: String): Boolean = {
     isCommandAvailable(Seq(cmd))
   }
 
@@ -90,7 +91,7 @@ object FileUtils {
     * Instead we try to run the executable itself (with innocuous arguments) and interpret any errors/exceptions
     *  as an indication that the executable is unavailable.
     */
-  lazy val isVCSAvailable: Boolean = isCommandAvailable(Seq("vcs",  "-platform"))
+  lazy val isVCSAvailable: Boolean = isCommandAvailable(Seq("vcs", "-platform"))
 
   /** Read a text file and return it as a Seq of strings
     * Closes the file after read to avoid dangling file handles

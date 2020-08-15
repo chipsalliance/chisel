@@ -2,14 +2,14 @@
 
 package firrtlTests.formal
 
-import firrtl.{CircuitState, SystemVerilogCompiler, ir}
+import firrtl.{ir, CircuitState, SystemVerilogCompiler}
 import firrtl.testutils.FirrtlFlatSpec
 import logger.{LogLevel, Logger}
 import firrtl.options.Dependency
 import firrtl.stage.TransformManager
 
 class VerificationSpec extends FirrtlFlatSpec {
-  behavior of "Formal"
+  behavior.of("Formal")
 
   it should "generate SystemVerilog verification statements" in {
     val compiler = new SystemVerilogCompiler
@@ -56,7 +56,7 @@ class VerificationSpec extends FirrtlFlatSpec {
         |    end
         |  end
         |endmodule
-        |""".stripMargin.split("\n") map normalized
+        |""".stripMargin.split("\n").map(normalized)
     executeTest(input, expected, compiler)
   }
 

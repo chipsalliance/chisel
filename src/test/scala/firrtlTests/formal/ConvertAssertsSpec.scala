@@ -8,15 +8,15 @@ import firrtl.transforms.formal.ConvertAsserts
 
 class ConvertAssertsSpec extends FirrtlFlatSpec {
   val preamble =
-      """circuit DUT:
-        |  module DUT:
-        |    input clock: Clock
-        |    input reset: UInt<1>
-        |    input x: UInt<8>
-        |    output y: UInt<8>
-        |    y <= x
-        |    node ne5 = neq(x, UInt(5))
-        |""".stripMargin
+    """circuit DUT:
+      |  module DUT:
+      |    input clock: Clock
+      |    input reset: UInt<1>
+      |    input x: UInt<8>
+      |    output y: UInt<8>
+      |    y <= x
+      |    node ne5 = neq(x, UInt(5))
+      |""".stripMargin
 
   "assert nodes" should "be converted to predicated prints and stops" in {
     val input = preamble +
@@ -29,7 +29,7 @@ class ConvertAssertsSpec extends FirrtlFlatSpec {
         |""".stripMargin
 
     val outputCS = ConvertAsserts.execute(CircuitState(parse(input), Nil))
-    (parse(outputCS.circuit.serialize)) should be (parse(ref))
+    (parse(outputCS.circuit.serialize)) should be(parse(ref))
   }
 
   "assert nodes with no message" should "omit printed messages" in {
@@ -42,6 +42,6 @@ class ConvertAssertsSpec extends FirrtlFlatSpec {
         |""".stripMargin
 
     val outputCS = ConvertAsserts.execute(CircuitState(parse(input), Nil))
-    (parse(outputCS.circuit.serialize)) should be (parse(ref))
+    (parse(outputCS.circuit.serialize)) should be(parse(ref))
   }
 }

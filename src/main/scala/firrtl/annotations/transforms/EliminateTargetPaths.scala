@@ -5,7 +5,7 @@ package firrtl.annotations.transforms
 import firrtl.Mappers._
 import firrtl.analyses.InstanceKeyGraph
 import firrtl.annotations.ModuleTarget
-import firrtl.annotations.TargetToken.{Instance, OfModule, fromDefModuleToTargetToken}
+import firrtl.annotations.TargetToken.{fromDefModuleToTargetToken, Instance, OfModule}
 import firrtl.annotations.analysis.DuplicationHelper
 import firrtl.annotations._
 import firrtl.ir._
@@ -14,7 +14,6 @@ import firrtl.stage.Forms
 import firrtl.transforms.DedupedResult
 
 import scala.collection.mutable
-
 
 /** Group of targets that should become local targets
   * @param targets
@@ -36,7 +35,7 @@ case class DupedResult(newModules: Set[IsModule], originalModule: ModuleTarget) 
   override def duplicate(n: Seq[Seq[Target]]): Annotation = {
     n.toList match {
       case Seq(newMods) => DupedResult(newMods.collect { case x: IsModule => x }.toSet, originalModule)
-      case _ => DupedResult(Set.empty, originalModule)
+      case _            => DupedResult(Set.empty, originalModule)
     }
   }
 }
@@ -47,42 +46,41 @@ object EliminateTargetPaths {
 
   def renameModules(c: Circuit, toRename: Map[String, String], renameMap: RenameMap): Circuit = {
     val ct = CircuitTarget(c.main)
-    val cx = if(toRename.contains(c.main)) {
+    val cx = if (toRename.contains(c.main)) {
       renameMap.record(ct, CircuitTarget(toRename(c.main)))
       c.copy(main = toRename(c.main))
     } else {
       c
     }
     def onMod(m: DefModule): DefModule = {
-      m map onStmt match {
+      m.map(onStmt) match {
         case e: ExtModule if toRename.contains(e.name) =>
           renameMap.record(ct.module(e.name), ct.module(toRename(e.name)))
           e.copy(name = toRename(e.name))
-        case e: Module if toRename.contains(e.name)    =>
+        case e: Module if toRename.contains(e.name) =>
           renameMap.record(ct.module(e.name), ct.module(toRename(e.name)))
           e.copy(name = toRename(e.name))
         case o => o
       }
     }
-    def onStmt(s: Statement): Statement = s map onStmt match {
-      case w@DefInstance(info, name, module, _) if toRename.contains(module) => w.copy(module = toRename(module))
-      case other => other
+    def onStmt(s: Statement): Statement = s.map(onStmt) match {
+      case w @ DefInstance(info, name, module, _) if toRename.contains(module) => w.copy(module = toRename(module))
+      case other                                                               => other
     }
-    cx map onMod
+    cx.map(onMod)
   }
 
   def reorderModules(c: Circuit, toReorder: Map[String, Double]): Circuit = {
     val newOrderMap = c.modules.zipWithIndex.map {
       case (m, _) if toReorder.contains(m.name) => m.name -> toReorder(m.name)
-      case (m, i) if c.modules.size > 1 => m.name -> i.toDouble / (c.modules.size - 1)
-      case (m, _) => m.name -> 1.0
+      case (m, i) if c.modules.size > 1         => m.name -> i.toDouble / (c.modules.size - 1)
+      case (m, _)                               => m.name -> 1.0
     }.toMap
 
     val newOrder = c.modules.sortBy { m => newOrderMap(m.name) }
 
     c.copy(modules = newOrder)
   }
-
 
 }
 
@@ -116,24 +114,20 @@ class EliminateTargetPaths extends Transform with DependencyAPIMigration {
     * @param s
     * @return
     */
-  private def onStmt(dupMap: DuplicationHelper)
-                    (originalModule: String, newModule: String)
-                    (s: Statement): Statement = s match {
-    case d@DefInstance(_, name, module, _) =>
-      val ofModule = dupMap.getNewOfModule(originalModule, newModule, Instance(name), OfModule(module)).value
-      d.copy(module = ofModule)
-    case other => other map onStmt(dupMap)(originalModule, newModule)
-  }
+  private def onStmt(dupMap: DuplicationHelper)(originalModule: String, newModule: String)(s: Statement): Statement =
+    s match {
+      case d @ DefInstance(_, name, module, _) =>
+        val ofModule = dupMap.getNewOfModule(originalModule, newModule, Instance(name), OfModule(module)).value
+        d.copy(module = ofModule)
+      case other => other.map(onStmt(dupMap)(originalModule, newModule))
+    }
 
   /** Returns a modified circuit and [[RenameMap]] containing the associated target remapping
     * @param cir
     * @param targets
     * @return
     */
-  def run(cir: Circuit,
-          targets: Seq[IsMember],
-          iGraph: InstanceKeyGraph
-         ): (Circuit, RenameMap, AnnotationSeq) = {
+  def run(cir: Circuit, targets: Seq[IsMember], iGraph: InstanceKeyGraph): (Circuit, RenameMap, AnnotationSeq) = {
 
     val dupMap = DuplicationHelper(cir.modules.map(_.name).toSet)
 
@@ -161,7 +155,7 @@ class EliminateTargetPaths extends Transform with DependencyAPIMigration {
     }
 
     val finalModuleList = duplicatedModuleList
-    lazy val finalModuleSet = finalModuleList.map{ case a: DefModule => a.name }.toSet
+    lazy val finalModuleSet = finalModuleList.map { case a: DefModule => a.name }.toSet
 
     // Records how targets have been renamed
     val renameMap = RenameMap()
@@ -203,8 +197,9 @@ class EliminateTargetPaths extends Transform with DependencyAPIMigration {
     duplicatedParents.foreach { parent =>
       val paths = iGraph.findInstancesInHierarchy(parent.value)
       val newTargets = paths.map { path =>
-        path.tail.foldLeft(topMod: IsModule) { case (mod, wDefInst) =>
-          mod.instOf(wDefInst.name, wDefInst.module)
+        path.tail.foldLeft(topMod: IsModule) {
+          case (mod, wDefInst) =>
+            mod.instOf(wDefInst.name, wDefInst.module)
         }
       }
       newTargets.foreach(addSelfRecord(_))
@@ -219,13 +214,11 @@ class EliminateTargetPaths extends Transform with DependencyAPIMigration {
 
     val (remainingAnnotations, targetsToEliminate, previouslyDeduped) =
       state.annotations.foldLeft(
-        ( Vector.empty[Annotation],
-          Seq.empty[CompleteTarget],
-          Map.empty[IsModule, (ModuleTarget, Double)]
-        )
-      ) { case ((remainingAnnos, targets, dedupedResult), anno)  =>
+        (Vector.empty[Annotation], Seq.empty[CompleteTarget], Map.empty[IsModule, (ModuleTarget, Double)])
+      ) {
+        case ((remainingAnnos, targets, dedupedResult), anno) =>
           anno match {
-            case ResolvePaths(ts)          =>
+            case ResolvePaths(ts) =>
               (remainingAnnos, ts ++ targets, dedupedResult)
             case DedupedResult(orig, dups, idx) if dups.nonEmpty =>
               (remainingAnnos, targets, dedupedResult ++ dups.map(_ -> (orig, idx)).toMap)
@@ -234,29 +227,29 @@ class EliminateTargetPaths extends Transform with DependencyAPIMigration {
           }
       }
 
-
     // Collect targets that are not local
     val targets = targetsToEliminate.collect { case x: IsMember => x }
 
     // Check validity of paths in targets
     val iGraph = InstanceKeyGraph(state.circuit)
-    val instanceOfModules = iGraph.getChildInstances.map { case(k,v) => k -> v.map(_.toTokens) }.toMap
+    val instanceOfModules = iGraph.getChildInstances.map { case (k, v) => k -> v.map(_.toTokens) }.toMap
     val targetsWithInvalidPaths = mutable.ArrayBuffer[IsMember]()
     targets.foreach { t =>
       val path = t match {
-        case _: ModuleTarget => Nil
-        case i: InstanceTarget => i.asPath
+        case _: ModuleTarget    => Nil
+        case i: InstanceTarget  => i.asPath
         case r: ReferenceTarget => r.path
       }
-      path.foldLeft(t.module) { case (module, (inst: Instance, of: OfModule)) =>
-        val childrenOpt = instanceOfModules.get(module)
-        if(childrenOpt.isEmpty || !childrenOpt.get.contains((inst, of))) {
-          targetsWithInvalidPaths += t
-        }
-        of.value
+      path.foldLeft(t.module) {
+        case (module, (inst: Instance, of: OfModule)) =>
+          val childrenOpt = instanceOfModules.get(module)
+          if (childrenOpt.isEmpty || !childrenOpt.get.contains((inst, of))) {
+            targetsWithInvalidPaths += t
+          }
+          of.value
       }
     }
-    if(targetsWithInvalidPaths.nonEmpty) {
+    if (targetsWithInvalidPaths.nonEmpty) {
       val string = targetsWithInvalidPaths.mkString(",")
       throw NoSuchTargetException(s"""Some targets have illegal paths that cannot be resolved/eliminated: $string""")
     }
@@ -292,7 +285,7 @@ class EliminateTargetPaths extends Transform with DependencyAPIMigration {
             }
           val newTarget = t match {
             case r: ReferenceTarget => r.setPathTarget(newIsModule)
-            case i: InstanceTarget => newIsModule
+            case i: InstanceTarget  => newIsModule
           }
           firstRenameMap.record(t, Seq(newTarget))
           newTarget +: acc
@@ -312,10 +305,10 @@ class EliminateTargetPaths extends Transform with DependencyAPIMigration {
       }
 
     val iGraphx = InstanceKeyGraph(newCircuit)
-    val newlyUnreachableModules = iGraphx.unreachableModules.toSet diff iGraph.unreachableModules.toSet
+    val newlyUnreachableModules = iGraphx.unreachableModules.toSet.diff(iGraph.unreachableModules.toSet)
 
     val newCircuitGC = {
-      val modulesx = newCircuit.modules.flatMap{
+      val modulesx = newCircuit.modules.flatMap {
         case dead if newlyUnreachableModules(dead.OfModule) => None
         case live =>
           val m = CircuitTarget(newCircuit.main).module(live.name)
@@ -338,7 +331,8 @@ class EliminateTargetPaths extends Transform with DependencyAPIMigration {
 
     val renamedCircuit = renameModules(newCircuitGC, newModuleNameMapping, renamedModuleMap)
 
-    val reorderedCircuit = reorderModules(renamedCircuit,
+    val reorderedCircuit = reorderModules(
+      renamedCircuit,
       previouslyDeduped.map {
         case (current: IsModule, (orig: ModuleTarget, idx)) =>
           orig.name -> idx

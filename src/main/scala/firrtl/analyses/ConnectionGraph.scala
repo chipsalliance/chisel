@@ -16,22 +16,24 @@ import scala.collection.mutable
   * @param circuit firrtl AST of this graph.
   * @param digraph Directed graph of ReferenceTarget in the AST.
   * @param irLookup [[IRLookup]] instance of circuit graph.
-  * */
-class ConnectionGraph protected(val circuit: Circuit,
-                                val digraph: DiGraph[ReferenceTarget],
-                                val irLookup: IRLookup)
-  extends DiGraph[ReferenceTarget](digraph.getEdgeMap.asInstanceOf[mutable.LinkedHashMap[ReferenceTarget, mutable.LinkedHashSet[ReferenceTarget]]]) {
+  */
+class ConnectionGraph protected (val circuit: Circuit, val digraph: DiGraph[ReferenceTarget], val irLookup: IRLookup)
+    extends DiGraph[ReferenceTarget](
+      digraph.getEdgeMap.asInstanceOf[mutable.LinkedHashMap[ReferenceTarget, mutable.LinkedHashSet[ReferenceTarget]]]
+    ) {
 
   lazy val serialize: String = s"""{
-       |${getEdgeMap.map { case (k, vs) =>
+                                  |${getEdgeMap.map {
+    case (k, vs) =>
       s"""  "$k": {
-         |    "kind": "${irLookup.kind(k)}",
-         |    "type": "${irLookup.tpe(k)}",
-         |    "expr": "${irLookup.expr(k, irLookup.flow(k))}",
-         |    "sinks": [${vs.map { v => s""""$v"""" }.mkString(", ")}],
-         |    "declaration": "${irLookup.declaration(k)}"
-         |  }""".stripMargin }.mkString(",\n")}
-       |}""".stripMargin
+                                  |    "kind": "${irLookup.kind(k)}",
+                                  |    "type": "${irLookup.tpe(k)}",
+                                  |    "expr": "${irLookup.expr(k, irLookup.flow(k))}",
+                                  |    "sinks": [${vs.map { v => s""""$v"""" }.mkString(", ")}],
+                                  |    "declaration": "${irLookup.declaration(k)}"
+                                  |  }""".stripMargin
+  }.mkString(",\n")}
+                                  |}""".stripMargin
 
   /** Used by BFS to map each visited node to the list of instance inputs visited thus far
     *
@@ -134,7 +136,10 @@ class ConnectionGraph protected(val circuit: Circuit,
   /** @return a new, reversed connection graph where edges point from sinks to sources. */
   def reverseConnectionGraph: ConnectionGraph = new ConnectionGraph(circuit, digraph.reverse, irLookup)
 
-  override def BFS(root: ReferenceTarget, blacklist: collection.Set[ReferenceTarget]): collection.Map[ReferenceTarget, ReferenceTarget] = {
+  override def BFS(
+    root:      ReferenceTarget,
+    blacklist: collection.Set[ReferenceTarget]
+  ): collection.Map[ReferenceTarget, ReferenceTarget] = {
     val prev = new mutable.LinkedHashMap[ReferenceTarget, ReferenceTarget]()
     val ordering = new Ordering[ReferenceTarget] {
       override def compare(x: ReferenceTarget, y: ReferenceTarget): Int = x.path.size - y.path.size
@@ -216,7 +221,6 @@ class ConnectionGraph protected(val circuit: Circuit,
     bfsShortCuts.get(localSource) match {
       case Some(set) => set.map { x => x.setPathTarget(source.pathTarget) }
       case None =>
-
         val pathlessEdges = super.getEdges(localSource)
 
         val ret = pathlessEdges.flatMap {
@@ -246,7 +250,9 @@ class ConnectionGraph protected(val circuit: Circuit,
               // Exiting to parent, but had unresolved trip through child, so don't update shortcut
               portConnectivityStack(localSink) = localSource +: currentStack
             }
-            Set[ReferenceTarget](localSink.setPathTarget(source.noComponents.targetParent.asInstanceOf[IsComponent].pathTarget))
+            Set[ReferenceTarget](
+              localSink.setPathTarget(source.noComponents.targetParent.asInstanceOf[IsComponent].pathTarget)
+            )
 
           case localSink if enteringChildInstance(source)(localSink) =>
             portConnectivityStack(localSink) = localSource +: portConnectivityStack.getOrElse(localSource, Nil)
@@ -265,24 +271,31 @@ class ConnectionGraph protected(val circuit: Circuit,
 
   }
 
-  override def path(start: ReferenceTarget, end: ReferenceTarget, blacklist: collection.Set[ReferenceTarget]): Seq[ReferenceTarget] = {
+  override def path(
+    start:     ReferenceTarget,
+    end:       ReferenceTarget,
+    blacklist: collection.Set[ReferenceTarget]
+  ): Seq[ReferenceTarget] = {
     insertShortCuts(super.path(start, end, blacklist))
   }
 
   private def insertShortCuts(path: Seq[ReferenceTarget]): Seq[ReferenceTarget] = {
     val soFar = mutable.HashSet[ReferenceTarget]()
     if (path.size > 1) {
-      path.head +: path.sliding(2).flatMap {
-        case Seq(from, to) =>
-          getShortCut(from) match {
-            case Some(set) if set.contains(to) && soFar.contains(from.pathlessTarget) =>
-              soFar += from.pathlessTarget
-              Seq(from.pathTarget.ref("..."), to)
-            case _ =>
-              soFar += from.pathlessTarget
-              Seq(to)
-          }
-      }.toSeq
+      path.head +: path
+        .sliding(2)
+        .flatMap {
+          case Seq(from, to) =>
+            getShortCut(from) match {
+              case Some(set) if set.contains(to) && soFar.contains(from.pathlessTarget) =>
+                soFar += from.pathlessTarget
+                Seq(from.pathTarget.ref("..."), to)
+              case _ =>
+                soFar += from.pathlessTarget
+                Seq(to)
+            }
+        }
+        .toSeq
     } else path
   }
 
@@ -325,16 +338,16 @@ object ConnectionGraph {
     * @return
     */
   def asTarget(m: ModuleTarget, tagger: TokenTagger)(e: FirrtlNode): ReferenceTarget = e match {
-    case l: Literal => m.ref(tagger.getRef(l.value.toString))
+    case l: Literal   => m.ref(tagger.getRef(l.value.toString))
     case r: Reference => m.ref(r.name)
-    case s: SubIndex => asTarget(m, tagger)(s.expr).index(s.value)
-    case s: SubField => asTarget(m, tagger)(s.expr).field(s.name)
-    case d: DoPrim => m.ref(tagger.getRef(d.op.serialize))
-    case _: Mux => m.ref(tagger.getRef("mux"))
-    case _: ValidIf => m.ref(tagger.getRef("validif"))
+    case s: SubIndex  => asTarget(m, tagger)(s.expr).index(s.value)
+    case s: SubField  => asTarget(m, tagger)(s.expr).field(s.name)
+    case d: DoPrim    => m.ref(tagger.getRef(d.op.serialize))
+    case _: Mux       => m.ref(tagger.getRef("mux"))
+    case _: ValidIf   => m.ref(tagger.getRef("validif"))
     case WInvalid => m.ref(tagger.getRef("invalid"))
     case _: Print => m.ref(tagger.getRef("print"))
-    case _: Stop => m.ref(tagger.getRef("print"))
+    case _: Stop  => m.ref(tagger.getRef("print"))
     case other => sys.error(s"Unsupported: $other")
   }
 
@@ -354,22 +367,23 @@ object ConnectionGraph {
 
   def enteringNonParentInstance(source: ReferenceTarget)(localSink: ReferenceTarget): Boolean = {
     source.path.nonEmpty &&
-      (source.noComponents.targetParent.asInstanceOf[InstanceTarget].encapsulatingModule != localSink.module ||
-        localSink.ref != source.path.last._1.value)
+    (source.noComponents.targetParent.asInstanceOf[InstanceTarget].encapsulatingModule != localSink.module ||
+    localSink.ref != source.path.last._1.value)
   }
 
   def enteringChildInstance(source: ReferenceTarget)(localSink: ReferenceTarget): Boolean = source match {
     case ReferenceTarget(_, _, _, _, TargetToken.Field(port) +: comps)
-      if port == localSink.ref && comps == localSink.component => true
+        if port == localSink.ref && comps == localSink.component =>
+      true
     case _ => false
   }
 
   def leavingRootInstance(source: ReferenceTarget)(localSink: ReferenceTarget): Boolean = source match {
     case ReferenceTarget(_, _, Seq(), port, comps)
-      if port == localSink.component.head.value && comps == localSink.component.tail => true
+        if port == localSink.component.head.value && comps == localSink.component.tail =>
+      true
     case _ => false
   }
-
 
   private def buildCircuitGraph(circuit: Circuit): ConnectionGraph = {
     val mdg = new MutableDiGraph[ReferenceTarget]()
@@ -377,7 +391,7 @@ object ConnectionGraph {
     val circuitTarget = CircuitTarget(circuit.main)
     val moduleMap = circuit.modules.map { m => circuitTarget.module(m.name) -> m }.toMap
 
-    circuit map buildModule(circuitTarget)
+    circuit.map(buildModule(circuitTarget))
 
     def addLabeledVertex(v: ReferenceTarget, f: FirrtlNode): Unit = {
       mdg.addVertex(v)
@@ -386,7 +400,7 @@ object ConnectionGraph {
 
     def buildModule(c: CircuitTarget)(module: DefModule): DefModule = {
       val m = c.module(module.name)
-      module map buildPort(m) map buildStatement(m, new TokenTagger())
+      module.map(buildPort(m)).map(buildStatement(m, new TokenTagger()))
     }
 
     def buildPort(m: ModuleTarget)(port: Port): Port = {
@@ -412,7 +426,7 @@ object ConnectionGraph {
         (Utils.flow(instExp), Utils.flow(modExp)) match {
           case (SourceFlow, SinkFlow) => mdg.addPairWithEdge(it, mt)
           case (SinkFlow, SourceFlow) => mdg.addPairWithEdge(mt, it)
-          case _ => sys.error("Something went wrong...")
+          case _                      => sys.error("Something went wrong...")
         }
       }
     }
@@ -461,13 +475,14 @@ object ConnectionGraph {
       // Connect each subTarget to the corresponding init subTarget
       val allRegTargets = regTarget.leafSubTargets(d.tpe)
       val allInitTargets = initTarget.leafSubTargets(d.tpe).zip(Utils.create_exps(d.init))
-      allRegTargets.zip(allInitTargets).foreach { case (r, (i, e)) =>
-        mdg.addVertex(i)
-        mdg.addVertex(r)
-        mdg.addEdge(clockTarget, r)
-        mdg.addEdge(resetTarget, r)
-        mdg.addEdge(i, r)
-        buildExpression(m, tagger, i)(e)
+      allRegTargets.zip(allInitTargets).foreach {
+        case (r, (i, e)) =>
+          mdg.addVertex(i)
+          mdg.addVertex(r)
+          mdg.addEdge(clockTarget, r)
+          mdg.addEdge(resetTarget, r)
+          mdg.addEdge(i, r)
+          buildExpression(m, tagger, i)(e)
       }
     }
 
@@ -480,9 +495,10 @@ object ConnectionGraph {
           val sinkTarget = m.ref(d.name)
           addLabeledVertex(sinkTarget, stmt)
           val nodeTargets = sinkTarget.leafSubTargets(d.value.tpe)
-          nodeTargets.zip(Utils.create_exps(d.value)).foreach { case (n, e) =>
-            mdg.addVertex(n)
-            buildExpression(m, tagger, n)(e)
+          nodeTargets.zip(Utils.create_exps(d.value)).foreach {
+            case (n, e) =>
+              mdg.addVertex(n)
+              buildExpression(m, tagger, n)(e)
           }
 
         case c: Connect =>
@@ -512,10 +528,10 @@ object ConnectionGraph {
           addLabeledVertex(m.ref(d.name), d)
           buildMemory(m, d)
 
-        /** @todo [[firrtl.Transform.prerequisites]] ++ [[firrtl.passes.ExpandWhensAndCheck]]*/
+        /** @todo [[firrtl.Transform.prerequisites]] ++ [[firrtl.passes.ExpandWhensAndCheck]] */
         case _: Conditionally => sys.error("Unsupported! Only works on Middle Firrtl")
 
-        case s: Block => s map buildStatement(m, tagger)
+        case s: Block => s.map(buildStatement(m, tagger))
 
         case a: Attach =>
           val attachTargets = a.exprs.map { r =>
@@ -523,18 +539,25 @@ object ConnectionGraph {
             mdg.addVertex(at)
             at
           }
-          attachTargets.combinations(2).foreach { case Seq(l, r) =>
-            mdg.addEdge(l, r)
-            mdg.addEdge(r, l)
+          attachTargets.combinations(2).foreach {
+            case Seq(l, r) =>
+              mdg.addEdge(l, r)
+              mdg.addEdge(r, l)
           }
         case p: Print => addLabeledVertex(asTarget(m, tagger)(p), p)
-        case s: Stop => addLabeledVertex(asTarget(m, tagger)(s), s)
+        case s: Stop  => addLabeledVertex(asTarget(m, tagger)(s), s)
         case EmptyStmt =>
       }
       stmt
     }
 
-    def buildExpression(m: ModuleTarget, tagger: TokenTagger, sinkTarget: ReferenceTarget)(expr: Expression): Expression = {
+    def buildExpression(
+      m:          ModuleTarget,
+      tagger:     TokenTagger,
+      sinkTarget: ReferenceTarget
+    )(expr:       Expression
+    ): Expression = {
+
       /** @todo [[firrtl.Transform.prerequisites]] ++ [[firrtl.stage.Forms.Resolved]]. */
       val sourceTarget = asTarget(m, tagger)(expr)
       mdg.addVertex(sourceTarget)
@@ -542,7 +565,7 @@ object ConnectionGraph {
       expr match {
         case _: DoPrim | _: Mux | _: ValidIf | _: Literal =>
           addLabeledVertex(sourceTarget, expr)
-          expr map buildExpression(m, tagger, sourceTarget)
+          expr.map(buildExpression(m, tagger, sourceTarget))
         case _ =>
       }
       expr
@@ -551,7 +574,6 @@ object ConnectionGraph {
     new ConnectionGraph(circuit, DiGraph(mdg), new IRLookup(declarations.mapValues(_.toMap).toMap, moduleMap))
   }
 }
-
 
 /** Used for obtaining a tag for a given label unnamed Target. */
 class TokenTagger {

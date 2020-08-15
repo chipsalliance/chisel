@@ -21,18 +21,19 @@ class NodeCount private (node: FirrtlNode) {
 
   @tailrec
   private final def rec(xs: List[Any]): Unit =
-    if (xs.isEmpty) { }
-    else {
+    if (xs.isEmpty) {} else {
       val node = xs.head
-      require(node.isInstanceOf[Product] || !node.isInstanceOf[FirrtlNode],
-        "Unexpected FirrtlNode that does not implement Product!")
+      require(
+        node.isInstanceOf[Product] || !node.isInstanceOf[FirrtlNode],
+        "Unexpected FirrtlNode that does not implement Product!"
+      )
       val moreToVisit =
         if (identityMap.containsKey(node)) List.empty
         else { // Haven't seen yet
           identityMap.put(node, true)
           regularSet += node
           node match { // FirrtlNodes are Products
-            case p: Product => p.productIterator
+            case p: Product       => p.productIterator
             case i: Iterable[Any] => i
             case _ => List.empty
           }

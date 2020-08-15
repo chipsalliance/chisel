@@ -8,7 +8,7 @@ import firrtl.testutils.FirrtlFlatSpec
 import firrtl.testutils.FirrtlCheckers._
 
 import firrtl.{CircuitState, WRef}
-import firrtl.ir.{Connect, Mux, DefRegister}
+import firrtl.ir.{Connect, DefRegister, Mux}
 import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlSourceAnnotation, FirrtlStage}
 
 class RemoveResetSpec extends FirrtlFlatSpec with GivenWhenThen {
@@ -17,12 +17,12 @@ class RemoveResetSpec extends FirrtlFlatSpec with GivenWhenThen {
     When("the circuit is compiled to low FIRRTL")
     (new FirrtlStage)
       .execute(Array("-X", "low"), Seq(FirrtlSourceAnnotation(string)))
-      .collectFirst{ case FirrtlCircuitAnnotation(a) => a }
+      .collectFirst { case FirrtlCircuitAnnotation(a) => a }
       .map(a => firrtl.CircuitState(a, firrtl.UnknownForm))
       .get
   }
 
-  behavior of "RemoveReset"
+  behavior.of("RemoveReset")
 
   it should "not generate a reset mux for an invalid init" in {
     Given("a 1-bit register 'foo' initialized to invalid, 1-bit wire 'bar'")
@@ -44,7 +44,7 @@ class RemoveResetSpec extends FirrtlFlatSpec with GivenWhenThen {
     val outputState = toLowFirrtl(input)
 
     Then("'foo' is NOT connected to a reset mux")
-    outputState shouldNot containTree { case Connect(_, WRef("foo",_,_,_), Mux(_,_,_,_)) => true }
+    outputState shouldNot containTree { case Connect(_, WRef("foo", _, _, _), Mux(_, _, _, _)) => true }
   }
 
   it should "generate a reset mux for only the portion of an invalid aggregate that is reset" in {
@@ -71,11 +71,11 @@ class RemoveResetSpec extends FirrtlFlatSpec with GivenWhenThen {
     val outputState = toLowFirrtl(input)
 
     Then("foo.a[0] is NOT connected to a reset mux")
-    outputState shouldNot containTree { case Connect(_, WRef("foo_a_0",_,_,_), Mux(_,_,_,_)) => true }
+    outputState shouldNot containTree { case Connect(_, WRef("foo_a_0", _, _, _), Mux(_, _, _, _)) => true }
     And("foo.a[1] is connected to a reset mux")
-    outputState should    containTree { case Connect(_, WRef("foo_a_1",_,_,_), Mux(_,_,_,_)) => true }
+    outputState should containTree { case Connect(_, WRef("foo_a_1", _, _, _), Mux(_, _, _, _)) => true }
     And("foo.b is NOT connected to a reset mux")
-    outputState shouldNot containTree { case Connect(_, WRef("foo_b",_,_,_),   Mux(_,_,_,_)) => true }
+    outputState shouldNot containTree { case Connect(_, WRef("foo_b", _, _, _), Mux(_, _, _, _)) => true }
   }
 
   it should "propagate invalidations across connects" in {
@@ -107,9 +107,9 @@ class RemoveResetSpec extends FirrtlFlatSpec with GivenWhenThen {
     val outputState = toLowFirrtl(input)
 
     Then("'foo.a' is connected to a reset mux")
-    outputState should    containTree { case Connect(_, WRef("foo_a",_,_,_), Mux(_,_,_,_)) => true }
+    outputState should containTree { case Connect(_, WRef("foo_a", _, _, _), Mux(_, _, _, _)) => true }
     And("'foo.b' is NOT connected to a reset mux")
-    outputState shouldNot containTree { case Connect(_, WRef("foo_b",_,_,_), Mux(_,_,_,_)) => true }
+    outputState shouldNot containTree { case Connect(_, WRef("foo_b", _, _, _), Mux(_, _, _, _)) => true }
   }
 
   it should "canvert a reset wired to UInt<0> to a canonical non-reset" in {
@@ -128,8 +128,8 @@ class RemoveResetSpec extends FirrtlFlatSpec with GivenWhenThen {
     val outputState = toLowFirrtl(input)
 
     Then("foo has a canonical non-reset declaration after RemoveReset")
-    outputState should containTree { case DefRegister(_, "foo", _,_, firrtl.Utils.zero, WRef("foo", _,_,_)) => true }
+    outputState should containTree { case DefRegister(_, "foo", _, _, firrtl.Utils.zero, WRef("foo", _, _, _)) => true }
     And("foo is NOT connected to a reset mux")
-    outputState shouldNot containTree { case Connect(_, WRef("foo",_,_,_), Mux(_,_,_,_)) => true }
+    outputState shouldNot containTree { case Connect(_, WRef("foo", _, _, _), Mux(_, _, _, _)) => true }
   }
 }

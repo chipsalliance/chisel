@@ -18,16 +18,19 @@ class AddImplicitEmitter extends Phase {
   override def invalidates(a: Phase) = false
 
   def transform(annos: AnnotationSeq): AnnotationSeq = {
-    val emit = annos.collectFirst{ case a: EmitAnnotation => a }
-    val emitter = annos.collectFirst{ case RunFirrtlTransformAnnotation(e : Emitter) => e }
-    val compiler = annos.collectFirst{ case CompilerAnnotation(a) => a }
+    val emit = annos.collectFirst { case a: EmitAnnotation => a }
+    val emitter = annos.collectFirst { case RunFirrtlTransformAnnotation(e: Emitter) => e }
+    val compiler = annos.collectFirst { case CompilerAnnotation(a) => a }
 
     if (emit.isEmpty && (compiler.nonEmpty || emitter.nonEmpty)) {
-      annos.flatMap{
-        case a: CompilerAnnotation => Seq(a,
-                                          RunFirrtlTransformAnnotation(compiler.get.emitter),
-                                          EmitCircuitAnnotation(compiler.get.emitter.getClass))
-        case a @ RunFirrtlTransformAnnotation(e : Emitter) => Seq(a, EmitCircuitAnnotation(e.getClass))
+      annos.flatMap {
+        case a: CompilerAnnotation =>
+          Seq(
+            a,
+            RunFirrtlTransformAnnotation(compiler.get.emitter),
+            EmitCircuitAnnotation(compiler.get.emitter.getClass)
+          )
+        case a @ RunFirrtlTransformAnnotation(e: Emitter) => Seq(a, EmitCircuitAnnotation(e.getClass))
         case a => Some(a)
       }
     } else {

@@ -33,7 +33,7 @@ object FixAddingNegativeLiterals {
     */
   def fixupModule(m: DefModule): DefModule = {
     val namespace = Namespace(m)
-    m map fixupStatement(namespace)
+    m.map(fixupStatement(namespace))
   }
 
   /** Returns a statement with fixed additions of negative literals
@@ -43,8 +43,8 @@ object FixAddingNegativeLiterals {
     */
   def fixupStatement(namespace: Namespace)(s: Statement): Statement = {
     val stmtBuffer = mutable.ListBuffer[Statement]()
-    val ret = s map fixupStatement(namespace) map fixupOnExpr(Utils.get_info(s), namespace, stmtBuffer)
-    if(stmtBuffer.isEmpty) {
+    val ret = s.map(fixupStatement(namespace)).map(fixupOnExpr(Utils.get_info(s), namespace, stmtBuffer))
+    if (stmtBuffer.isEmpty) {
       ret
     } else {
       stmtBuffer += ret
@@ -58,8 +58,7 @@ object FixAddingNegativeLiterals {
     * @param e expression to fixup
     * @return generated statements and the fixed expression
     */
-  def fixupExpression(info: Info, namespace: Namespace)
-                     (e: Expression): (Seq[Statement], Expression) = {
+  def fixupExpression(info: Info, namespace: Namespace)(e: Expression): (Seq[Statement], Expression) = {
     val stmtBuffer = mutable.ListBuffer[Statement]()
     val retExpr = fixupOnExpr(info, namespace, stmtBuffer)(e)
     (stmtBuffer.toList, retExpr)
@@ -72,12 +71,16 @@ object FixAddingNegativeLiterals {
     * @param e expression to fixup
     * @return fixed expression
     */
-  private def fixupOnExpr(info: Info, namespace: Namespace, stmtBuffer: mutable.ListBuffer[Statement])
-                         (e: Expression): Expression = {
+  private def fixupOnExpr(
+    info:       Info,
+    namespace:  Namespace,
+    stmtBuffer: mutable.ListBuffer[Statement]
+  )(e:          Expression
+  ): Expression = {
 
     // Helper function to create the subtraction expression
     def fixupAdd(expr: Expression, litValue: BigInt, litWidth: BigInt): DoPrim = {
-      if(litValue == minNegValue(litWidth)) {
+      if (litValue == minNegValue(litWidth)) {
         val posLiteral = SIntLiteral(-litValue)
         assert(posLiteral.width.asInstanceOf[IntWidth].width - 1 == litWidth)
         val sub = DefNode(info, namespace.newTemp, setType(DoPrim(Sub, Seq(expr, posLiteral), Nil, UnknownType)))
@@ -91,10 +94,10 @@ object FixAddingNegativeLiterals {
       }
     }
 
-    e map fixupOnExpr(info, namespace, stmtBuffer) match {
-      case DoPrim(Add, Seq(arg, lit@SIntLiteral(value, w@IntWidth(width))), Nil, t: SIntType) if value < 0 =>
+    e.map(fixupOnExpr(info, namespace, stmtBuffer)) match {
+      case DoPrim(Add, Seq(arg, lit @ SIntLiteral(value, w @ IntWidth(width))), Nil, t: SIntType) if value < 0 =>
         fixupAdd(arg, value, width)
-      case DoPrim(Add, Seq(lit@SIntLiteral(value, w@IntWidth(width)), arg), Nil, t: SIntType) if value < 0 =>
+      case DoPrim(Add, Seq(lit @ SIntLiteral(value, w @ IntWidth(width)), arg), Nil, t: SIntType) if value < 0 =>
         fixupAdd(arg, value, width)
       case other => other
     }

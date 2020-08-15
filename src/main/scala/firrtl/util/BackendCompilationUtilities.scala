@@ -14,6 +14,7 @@ import firrtl.FileUtils
 import scala.sys.process.{ProcessBuilder, ProcessLogger, _}
 
 object BackendCompilationUtilities extends LazyLogging {
+
   /** Parent directory for tests */
   lazy val TestDirectory = new File("test_run_dir")
 
@@ -69,12 +70,7 @@ object BackendCompilationUtilities extends LazyLogging {
     * @return       true if compiler completed successfully
     */
   def firrtlToVerilog(prefix: String, dir: File): ProcessBuilder = {
-    Process(
-      Seq("firrtl",
-        "-i", s"$prefix.fir",
-        "-o", s"$prefix.v",
-        "-X", "verilog"),
-      dir)
+    Process(Seq("firrtl", "-i", s"$prefix.fir", "-o", s"$prefix.v", "-X", "verilog"), dir)
   }
 
   /** Generates a Verilator invocation to convert Verilog sources to C++
@@ -103,11 +99,11 @@ object BackendCompilationUtilities extends LazyLogging {
     * @param extraCmdLineArgs list of additional command line arguments
     */
   def verilogToCpp(
-    dutFile: String,
-    dir: File,
-    vSources: Seq[File],
-    cppHarness: File,
-    suppressVcd: Boolean = false,
+    dutFile:          String,
+    dir:              File,
+    vSources:         Seq[File],
+    cppHarness:       File,
+    suppressVcd:      Boolean = false,
     resourceFileName: String = firrtl.transforms.BlackBoxSourceHelper.defaultFileListName,
     extraCmdLineArgs: Seq[String] = Seq.empty
   ): ProcessBuilder = {
@@ -116,10 +112,9 @@ object BackendCompilationUtilities extends LazyLogging {
 
     val list_file = new File(dir, resourceFileName)
     val blackBoxVerilogList = {
-      if(list_file.exists()) {
+      if (list_file.exists()) {
         Seq("-f", list_file.getAbsolutePath)
-      }
-      else {
+      } else {
         Seq.empty[String]
       }
     }
@@ -128,37 +123,39 @@ object BackendCompilationUtilities extends LazyLogging {
     // If it's in the main .f resource file, don't explicitly include it on the command line.
     // Build a set of canonical file paths to use as a filter to exclude already included additional Verilog sources.
     val blackBoxHelperFiles: Set[String] = {
-      if(list_file.exists()) {
+      if (list_file.exists()) {
         FileUtils.getLines(list_file).toSet
-      }
-      else {
+      } else {
         Set.empty
       }
     }
     val vSourcesFiltered = vSources.filterNot(f => blackBoxHelperFiles.contains(f.getCanonicalPath))
     val command = Seq(
       "verilator",
-      "--cc", s"${dir.getAbsolutePath}/$dutFile.v"
+      "--cc",
+      s"${dir.getAbsolutePath}/$dutFile.v"
     ) ++
       extraCmdLineArgs ++
       blackBoxVerilogList ++
       vSourcesFiltered.flatMap(file => Seq("-v", file.getCanonicalPath)) ++
-      Seq("--assert",
-        "-Wno-fatal",
-        "-Wno-WIDTH",
-        "-Wno-STMTDLY"
-      ) ++
-      { if(suppressVcd) { Seq.empty } else { Seq("--trace")} } ++
+      Seq("--assert", "-Wno-fatal", "-Wno-WIDTH", "-Wno-STMTDLY") ++ {
+      if (suppressVcd) { Seq.empty }
+      else { Seq("--trace") }
+    } ++
       Seq(
         "-O1",
-        "--top-module", topModule,
+        "--top-module",
+        topModule,
         "+define+TOP_TYPE=V" + dutFile,
         s"+define+PRINTF_COND=!$topModule.reset",
         s"+define+STOP_COND=!$topModule.reset",
         "-CFLAGS",
         s"""-Wno-undefined-bool-conversion -O1 -DTOP_TYPE=V$dutFile -DVL_USER_FINISH -include V$dutFile.h""",
-        "-Mdir", dir.getAbsolutePath,
-        "--exe", cppHarness.getAbsolutePath)
+        "-Mdir",
+        dir.getAbsolutePath,
+        "--exe",
+        cppHarness.getAbsolutePath
+      )
     logger.info(s"${command.mkString(" ")}")
     command
   }
@@ -167,17 +164,20 @@ object BackendCompilationUtilities extends LazyLogging {
     Seq("make", "-C", dir.toString, "-j", "-f", s"V$prefix.mk", s"V$prefix")
 
   def executeExpectingFailure(
-                               prefix: String,
-                               dir: File,
-                               assertionMsg: String = ""): Boolean = {
+    prefix:       String,
+    dir:          File,
+    assertionMsg: String = ""
+  ): Boolean = {
     var triggered = false
     val assertionMessageSupplied = assertionMsg != ""
     val e = Process(s"./V$prefix", dir) !
-      ProcessLogger(line => {
-        triggered = triggered || (assertionMessageSupplied && line.contains(assertionMsg))
-        logger.info(line)
-      },
-      logger.warn(_))
+      ProcessLogger(
+        line => {
+          triggered = triggered || (assertionMessageSupplied && line.contains(assertionMsg))
+          logger.info(line)
+        },
+        logger.warn(_)
+      )
     // Fail if a line contained an assertion or if we get a non-zero exit code
     //  or, we get a SIGABRT (assertion failure) and we didn't provide a specific assertion message
     triggered || (e != 0 && (e != 134 || !assertionMessageSupplied))
@@ -201,10 +201,7 @@ object BackendCompilationUtilities extends LazyLogging {
     * @param timesteps    the maximum number of timesteps for Yosys equivalence
     *                     checking to consider
     */
-  def yosysExpectSuccess(customTop: String,
-                         referenceTop: String,
-                         testDir: File,
-                         timesteps: Int = 1): Boolean = {
+  def yosysExpectSuccess(customTop: String, referenceTop: String, testDir: File, timesteps: Int = 1): Boolean = {
     !yosysExpectFailure(customTop, referenceTop, testDir, timesteps)
   }
 
@@ -222,31 +219,26 @@ object BackendCompilationUtilities extends LazyLogging {
     * @param timesteps    the maximum number of timesteps for Yosys equivalence
     *                     checking to consider
     */
-  def yosysExpectFailure(customTop: String,
-                         referenceTop: String,
-                         testDir: File,
-                         timesteps: Int = 1): Boolean = {
+  def yosysExpectFailure(customTop: String, referenceTop: String, testDir: File, timesteps: Int = 1): Boolean = {
 
     val scriptFileName = s"${testDir.getAbsolutePath}/yosys_script"
     val yosysScriptWriter = new PrintWriter(scriptFileName)
-    yosysScriptWriter.write(
-      s"""read_verilog ${testDir.getAbsolutePath}/$customTop.v
-         |prep -flatten -top $customTop; proc; opt; memory
-         |design -stash custom
-         |read_verilog ${testDir.getAbsolutePath}/$referenceTop.v
-         |prep -flatten -top $referenceTop; proc; opt; memory
-         |design -stash reference
-         |design -copy-from custom -as custom $customTop
-         |design -copy-from reference -as reference $referenceTop
-         |equiv_make custom reference equiv
-         |hierarchy -top equiv
-         |prep -flatten -top equiv
-         |clean -purge
-         |equiv_simple -seq $timesteps
-         |equiv_induct -seq $timesteps
-         |equiv_status -assert
-         """
-        .stripMargin)
+    yosysScriptWriter.write(s"""read_verilog ${testDir.getAbsolutePath}/$customTop.v
+                               |prep -flatten -top $customTop; proc; opt; memory
+                               |design -stash custom
+                               |read_verilog ${testDir.getAbsolutePath}/$referenceTop.v
+                               |prep -flatten -top $referenceTop; proc; opt; memory
+                               |design -stash reference
+                               |design -copy-from custom -as custom $customTop
+                               |design -copy-from reference -as reference $referenceTop
+                               |equiv_make custom reference equiv
+                               |hierarchy -top equiv
+                               |prep -flatten -top equiv
+                               |clean -purge
+                               |equiv_simple -seq $timesteps
+                               |equiv_induct -seq $timesteps
+                               |equiv_status -assert
+         """.stripMargin)
     yosysScriptWriter.close()
 
     val resultFileName = testDir.getAbsolutePath + "/yosys_results"
@@ -258,28 +250,32 @@ object BackendCompilationUtilities extends LazyLogging {
 @deprecated("use object BackendCompilationUtilities", "1.3")
 trait BackendCompilationUtilities extends LazyLogging {
   lazy val TestDirectory = BackendCompilationUtilities.TestDirectory
-  def timeStamp: String = BackendCompilationUtilities.timeStamp
+  def timeStamp:            String = BackendCompilationUtilities.timeStamp
   def loggingProcessLogger: ProcessLogger = BackendCompilationUtilities.loggingProcessLogger
-  def copyResourceToFile(name: String, file: File): Unit = BackendCompilationUtilities.copyResourceToFile(name, file)
+  def copyResourceToFile(name:      String, file: File): Unit = BackendCompilationUtilities.copyResourceToFile(name, file)
   def createTestDirectory(testName: String): File = BackendCompilationUtilities.createTestDirectory(testName)
-  def makeHarness(template: String => String, post: String)(f: File): File = BackendCompilationUtilities.makeHarness(template, post)(f)
-  def firrtlToVerilog(prefix: String, dir: File): ProcessBuilder = BackendCompilationUtilities.firrtlToVerilog(prefix, dir)
+  def makeHarness(template:         String => String, post: String)(f: File): File =
+    BackendCompilationUtilities.makeHarness(template, post)(f)
+  def firrtlToVerilog(prefix: String, dir: File): ProcessBuilder =
+    BackendCompilationUtilities.firrtlToVerilog(prefix, dir)
   def verilogToCpp(
-                    dutFile: String,
-                    dir: File,
-                    vSources: Seq[File],
-                    cppHarness: File,
-                    suppressVcd: Boolean = false,
-                    resourceFileName: String = firrtl.transforms.BlackBoxSourceHelper.defaultFileListName
-                  ): ProcessBuilder = {
+    dutFile:          String,
+    dir:              File,
+    vSources:         Seq[File],
+    cppHarness:       File,
+    suppressVcd:      Boolean = false,
+    resourceFileName: String = firrtl.transforms.BlackBoxSourceHelper.defaultFileListName
+  ): ProcessBuilder = {
     BackendCompilationUtilities.verilogToCpp(dutFile, dir, vSources, cppHarness, suppressVcd, resourceFileName)
   }
   def cppToExe(prefix: String, dir: File): ProcessBuilder = BackendCompilationUtilities.cppToExe(prefix, dir)
   def executeExpectingFailure(
-                               prefix: String,
-                               dir: File,
-                               assertionMsg: String = ""): Boolean = {
+    prefix:       String,
+    dir:          File,
+    assertionMsg: String = ""
+  ): Boolean = {
     BackendCompilationUtilities.executeExpectingFailure(prefix, dir, assertionMsg)
   }
-  def executeExpectingSuccess(prefix: String, dir: File): Boolean = BackendCompilationUtilities.executeExpectingSuccess(prefix, dir)
+  def executeExpectingSuccess(prefix: String, dir: File): Boolean =
+    BackendCompilationUtilities.executeExpectingSuccess(prefix, dir)
 }

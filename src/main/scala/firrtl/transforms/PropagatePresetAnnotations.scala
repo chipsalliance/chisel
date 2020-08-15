@@ -11,8 +11,10 @@ import firrtl.options.Dependency
 import scala.collection.mutable
 
 object PropagatePresetAnnotations {
-  val advice = "Please Note that a Preset-annotated AsyncReset shall NOT be casted to other types with any of the following functions: asInterval, asUInt, asSInt, asClock, asFixedPoint, asAsyncReset."
-  case class TreeCleanUpOrphanException(message: String) extends FirrtlUserException(s"Node left an orphan during tree cleanup: $message $advice")
+  val advice =
+    "Please Note that a Preset-annotated AsyncReset shall NOT be casted to other types with any of the following functions: asInterval, asUInt, asSInt, asClock, asFixedPoint, asAsyncReset."
+  case class TreeCleanUpOrphanException(message: String)
+      extends FirrtlUserException(s"Node left an orphan during tree cleanup: $message $advice")
 }
 
 /** Propagate PresetAnnotations to all children of targeted AsyncResets
@@ -39,9 +41,11 @@ object PropagatePresetAnnotations {
 class PropagatePresetAnnotations extends Transform with DependencyAPIMigration {
 
   override def prerequisites = firrtl.stage.Forms.LowFormMinimumOptimized ++
-    Seq( Dependency[BlackBoxSourceHelper],
-         Dependency[FixAddingNegativeLiterals],
-         Dependency[ReplaceTruncatingArithmetic])
+    Seq(
+      Dependency[BlackBoxSourceHelper],
+      Dependency[FixAddingNegativeLiterals],
+      Dependency[ReplaceTruncatingArithmetic]
+    )
 
   override def optionalPrerequisites = firrtl.stage.Forms.LowFormOptimized
 
@@ -52,7 +56,7 @@ class PropagatePresetAnnotations extends Transform with DependencyAPIMigration {
   import PropagatePresetAnnotations._
 
   private type TargetSet = mutable.HashSet[ReferenceTarget]
-  private type TargetMap = mutable.HashMap[ReferenceTarget,String]
+  private type TargetMap = mutable.HashMap[ReferenceTarget, String]
   private type TargetSetMap = mutable.HashMap[ReferenceTarget, TargetSet]
 
   private val toCleanUp = new TargetSet()
@@ -71,7 +75,11 @@ class PropagatePresetAnnotations extends Transform with DependencyAPIMigration {
     * @param presetAnnos all the annotations
     * @return updated annotations
     */
-  private def propagate(cs: CircuitState, presetAnnos: Seq[PresetAnnotation], otherAnnos: Seq[Annotation]): AnnotationSeq = {
+  private def propagate(
+    cs:          CircuitState,
+    presetAnnos: Seq[PresetAnnotation],
+    otherAnnos:  Seq[Annotation]
+  ): AnnotationSeq = {
     val presets = presetAnnos.groupBy(_.target)
     // store all annotated asyncreset references
     val asyncToAnnotate = new TargetSet()
@@ -85,34 +93,34 @@ class PropagatePresetAnnotations extends Transform with DependencyAPIMigration {
     val circuitTarget = CircuitTarget(cs.circuit.main)
 
     /*
-    * WALK I PHASE 1 FUNCTIONS
-    */
+     * WALK I PHASE 1 FUNCTIONS
+     */
 
     /* Walk current module
-      *  - process ports
-      *     - store connections & entry points for PHASE 2
-      *  - process statements
-      *     - Instances => record local instances for cross module AsyncReset Tree Buidling
-      *     - Registers => store AsyncReset bound registers for PHASE 2
-      *     - Wire => store AsyncReset Connections & entry points for PHASE 2
-      *     - Connect => store AsyncReset Connections & entry points for PHASE 2
-      *
-      * @param m module
-      */
+     *  - process ports
+     *     - store connections & entry points for PHASE 2
+     *  - process statements
+     *     - Instances => record local instances for cross module AsyncReset Tree Buidling
+     *     - Registers => store AsyncReset bound registers for PHASE 2
+     *     - Wire => store AsyncReset Connections & entry points for PHASE 2
+     *     - Connect => store AsyncReset Connections & entry points for PHASE 2
+     *
+     * @param m module
+     */
     def processModule(m: DefModule): Unit = {
       val moduleTarget = circuitTarget.module(m.name)
       val localInstances = new TargetMap()
 
       /* Recursively process a given type
-        * Recursive on Bundle and Vector Type only
-        * Store Register and Connections for AsyncResetType
-        * @param tpe [[Type]] to be processed
-        * @param target [[ReferenceTarget]] associated to the tpe
-        * @param all Boolean indicating whether all subelements of the current
-        *            tpe should also be stored as Annotated AsyncReset entry points
-        */
+       * Recursive on Bundle and Vector Type only
+       * Store Register and Connections for AsyncResetType
+       * @param tpe [[Type]] to be processed
+       * @param target [[ReferenceTarget]] associated to the tpe
+       * @param all Boolean indicating whether all subelements of the current
+       *            tpe should also be stored as Annotated AsyncReset entry points
+       */
       def processType(tpe: Type, target: ReferenceTarget, all: Boolean): Unit = {
-        if(tpe == AsyncResetType){
+        if (tpe == AsyncResetType) {
           asyncRegMap(target) = new TargetSet()
           asyncCoMap(target) = new TargetSet()
           if (presets.contains(target) || all) {
@@ -121,14 +129,13 @@ class PropagatePresetAnnotations extends Transform with DependencyAPIMigration {
         } else {
           tpe match {
             case b: BundleType =>
-              b.fields.foreach{
-                (x: Field) =>
-                  val tar = target.field(x.name)
-                  processType(x.tpe, tar, (presets.contains(tar) || all))
+              b.fields.foreach { (x: Field) =>
+                val tar = target.field(x.name)
+                processType(x.tpe, tar, (presets.contains(tar) || all))
               }
 
             case v: VectorType =>
-              for(i <- 0 until v.size) {
+              for (i <- 0 until v.size) {
                 val tar = target.index(i)
                 processType(v.tpe, tar, (presets.contains(tar) || all))
               }
@@ -143,19 +150,19 @@ class PropagatePresetAnnotations extends Transform with DependencyAPIMigration {
       }
 
       /*  Recursively search for the ReferenceTarget of a given Expression
-        * @param e Targeted Expression
-        * @param ta Local ReferenceTarget of the Targeted Expression
-        * @return a ReferenceTarget in case of success, a GenericTarget otherwise
-        * @throws [[InternalError]] on unexpected recursive path return results
-        */
-      def getRef(e: Expression, ta: ReferenceTarget, annoCo: Boolean = false) : Target = {
+       * @param e Targeted Expression
+       * @param ta Local ReferenceTarget of the Targeted Expression
+       * @return a ReferenceTarget in case of success, a GenericTarget otherwise
+       * @throws [[InternalError]] on unexpected recursive path return results
+       */
+      def getRef(e: Expression, ta: ReferenceTarget, annoCo: Boolean = false): Target = {
         e match {
           case w: WRef => moduleTarget.ref(w.name)
           case w: WSubField =>
             getRef(w.expr, ta, annoCo) match {
               case rt: ReferenceTarget =>
-                if(localInstances.contains(rt)){
-                  val remote_ref =  circuitTarget.module(localInstances(rt))
+                if (localInstances.contains(rt)) {
+                  val remote_ref = circuitTarget.module(localInstances(rt))
                   if (annoCo)
                     asyncCoMap(ta) += rt.field(w.name)
                   remote_ref.ref(w.name)
@@ -163,7 +170,7 @@ class PropagatePresetAnnotations extends Transform with DependencyAPIMigration {
                   rt.field(w.name)
                 }
               case remote_target => remote_target
-             }
+            }
           case w: WSubIndex =>
             getRef(w.expr, ta, annoCo) match {
               case remote_target: ReferenceTarget =>
@@ -179,7 +186,7 @@ class PropagatePresetAnnotations extends Transform with DependencyAPIMigration {
 
       def processRegister(r: DefRegister): Unit = {
         getRef(r.reset, moduleTarget.ref(r.name), false) match {
-          case rt : ReferenceTarget =>
+          case rt: ReferenceTarget =>
             if (asyncRegMap.contains(rt)) {
               asyncRegMap(rt) += moduleTarget.ref(r.name)
             }
@@ -189,12 +196,12 @@ class PropagatePresetAnnotations extends Transform with DependencyAPIMigration {
       }
 
       def processConnect(c: Connect): Unit = {
-        getRef(c.expr, ReferenceTarget("","", Seq.empty, "", Seq.empty)) match {
+        getRef(c.expr, ReferenceTarget("", "", Seq.empty, "", Seq.empty)) match {
           case rhs: ReferenceTarget =>
             if (presets.contains(rhs) || asyncRegMap.contains(rhs)) {
               getRef(c.loc, rhs, true) match {
-                case lhs : ReferenceTarget =>
-                  if(asyncRegMap.contains(rhs)){
+                case lhs: ReferenceTarget =>
+                  if (asyncRegMap.contains(rhs)) {
                     asyncRegMap(rhs) += lhs
                   } else {
                     asyncToAnnotate += lhs
@@ -211,10 +218,10 @@ class PropagatePresetAnnotations extends Transform with DependencyAPIMigration {
         val target = moduleTarget.ref(n.name)
         processType(n.value.tpe, target, presets.contains(target))
 
-        getRef(n.value, ReferenceTarget("","", Seq.empty, "", Seq.empty)) match {
+        getRef(n.value, ReferenceTarget("", "", Seq.empty, "", Seq.empty)) match {
           case rhs: ReferenceTarget =>
             if (presets.contains(rhs) || asyncRegMap.contains(rhs)) {
-              if(asyncRegMap.contains(rhs)){
+              if (asyncRegMap.contains(rhs)) {
                 asyncRegMap(rhs) += target
               } else {
                 asyncToAnnotate += target
@@ -227,18 +234,18 @@ class PropagatePresetAnnotations extends Transform with DependencyAPIMigration {
 
       def processStatements(statement: Statement): Unit = {
         statement match {
-          case i : WDefInstance =>
+          case i: WDefInstance =>
             localInstances(moduleTarget.ref(i.name)) = i.module
-          case r : DefRegister => processRegister(r)
-          case w : DefWire     => processWire(w)
-          case n : DefNode     => processNode(n)
-          case c : Connect     => processConnect(c)
-          case s               => s.foreachStmt(processStatements)
+          case r: DefRegister => processRegister(r)
+          case w: DefWire     => processWire(w)
+          case n: DefNode     => processNode(n)
+          case c: Connect     => processConnect(c)
+          case s => s.foreachStmt(processStatements)
         }
       }
 
       def processPorts(port: Port): Unit = {
-        if(port.tpe == AsyncResetType){
+        if (port.tpe == AsyncResetType) {
           val target = moduleTarget.ref(port.name)
           asyncRegMap(target) = new TargetSet()
           asyncCoMap(target) = new TargetSet()
@@ -263,17 +270,17 @@ class PropagatePresetAnnotations extends Transform with DependencyAPIMigration {
 
     /** Annotate a given target and all its children according to the asyncCoMap */
     def annotateCo(ta: ReferenceTarget): Unit = {
-      if (asyncCoMap.contains(ta)){
+      if (asyncCoMap.contains(ta)) {
         toCleanUp += ta
-        asyncCoMap(ta) foreach( (t: ReferenceTarget) => {
+        asyncCoMap(ta).foreach((t: ReferenceTarget) => {
           toCleanUp += t
         })
       }
     }
 
     /** Annotate all registers somehow connected to the orignal annotated async reset */
-    def annotateRegSet(set: TargetSet) : Unit = {
-      set foreach ( (ta: ReferenceTarget) => {
+    def annotateRegSet(set: TargetSet): Unit = {
+      set.foreach((ta: ReferenceTarget) => {
         annotateCo(ta)
         if (asyncRegMap.contains(ta)) {
           annotateRegSet(asyncRegMap(ta))
@@ -287,8 +294,8 @@ class PropagatePresetAnnotations extends Transform with DependencyAPIMigration {
       * Walk AsyncReset Trees with all Annotated AsyncReset as entry points
       * Annotate all leaf registers and intermediate wires, nodes, connectors along the way
       */
-    def annotateAsyncSet(set: TargetSet) : Unit = {
-      set foreach ((t: ReferenceTarget) => {
+    def annotateAsyncSet(set: TargetSet): Unit = {
+      set.foreach((t: ReferenceTarget) => {
         annotateCo(t)
         if (asyncRegMap.contains(t))
           annotateRegSet(asyncRegMap(t))
@@ -300,7 +307,7 @@ class PropagatePresetAnnotations extends Transform with DependencyAPIMigration {
      */
 
     cs.circuit.foreachModule(processModule) // PHASE 1 : Initialize
-    annotateAsyncSet(asyncToAnnotate)       // PHASE 2 : Annotate
+    annotateAsyncSet(asyncToAnnotate) // PHASE 2 : Annotate
     otherAnnos ++ newAnnos
   }
 
@@ -312,21 +319,21 @@ class PropagatePresetAnnotations extends Transform with DependencyAPIMigration {
     * Clean-up useless reset tree (not relying on DCE)
     * Disconnect preset registers from their reset tree
     */
-  private def cleanUpPresetTree(circuit: Circuit, annos: AnnotationSeq) : Circuit = {
-    val presetRegs = annos.collect {case a : PresetRegAnnotation => a}.groupBy(_.target)
+  private def cleanUpPresetTree(circuit: Circuit, annos: AnnotationSeq): Circuit = {
+    val presetRegs = annos.collect { case a: PresetRegAnnotation => a }.groupBy(_.target)
     val circuitTarget = CircuitTarget(circuit.main)
 
     def processModule(m: DefModule): DefModule = {
       val moduleTarget = circuitTarget.module(m.name)
       val localInstances = new TargetMap()
 
-      def getRef(e: Expression) : Target = {
+      def getRef(e: Expression): Target = {
         e match {
           case w: WRef => moduleTarget.ref(w.name)
           case w: WSubField =>
             getRef(w.expr) match {
               case rt: ReferenceTarget =>
-                if(localInstances.contains(rt)){
+                if (localInstances.contains(rt)) {
                   circuitTarget.module(localInstances(rt)).ref(w.name)
                 } else {
                   rt.field(w.name)
@@ -341,14 +348,13 @@ class PropagatePresetAnnotations extends Transform with DependencyAPIMigration {
           case DoPrim(op, args, _, _) =>
             op match {
               case AsInterval | AsUInt | AsSInt | AsClock | AsFixedPoint | AsAsyncReset => getRef(args.head)
-              case _ => Target(None, None, Seq.empty)
+              case _                                                                    => Target(None, None, Seq.empty)
             }
           case _ => Target(None, None, Seq.empty)
         }
       }
 
-
-      def processRegister(r: DefRegister) : DefRegister = {
+      def processRegister(r: DefRegister): DefRegister = {
         if (presetRegs.contains(moduleTarget.ref(r.name))) {
           r.copy(reset = UIntLiteral(0))
         } else {
@@ -356,7 +362,7 @@ class PropagatePresetAnnotations extends Transform with DependencyAPIMigration {
         }
       }
 
-      def processWire(w: DefWire) : Statement = {
+      def processWire(w: DefWire): Statement = {
         if (toCleanUp.contains(moduleTarget.ref(w.name))) {
           EmptyStmt
         } else {
@@ -364,12 +370,12 @@ class PropagatePresetAnnotations extends Transform with DependencyAPIMigration {
         }
       }
 
-      def processNode(n: DefNode) : Statement = {
+      def processNode(n: DefNode): Statement = {
         if (toCleanUp.contains(moduleTarget.ref(n.name))) {
           EmptyStmt
         } else {
           getRef(n.value) match {
-            case rt : ReferenceTarget if(toCleanUp.contains(rt)) =>
+            case rt: ReferenceTarget if (toCleanUp.contains(rt)) =>
               throw TreeCleanUpOrphanException(s"Orphan (${moduleTarget.ref(n.name)}) the way.")
             case _ => n
           }
@@ -380,7 +386,7 @@ class PropagatePresetAnnotations extends Transform with DependencyAPIMigration {
         getRef(c.expr) match {
           case rhs: ReferenceTarget if (toCleanUp.contains(rhs)) =>
             getRef(c.loc) match {
-              case lhs : ReferenceTarget if(!toCleanUp.contains(lhs)) =>
+              case lhs: ReferenceTarget if (!toCleanUp.contains(lhs)) =>
                 throw TreeCleanUpOrphanException(s"Orphan ${lhs} connected deleted node $rhs.")
               case _ => EmptyStmt
             }
@@ -388,7 +394,7 @@ class PropagatePresetAnnotations extends Transform with DependencyAPIMigration {
         }
       }
 
-      def processInstance(i: WDefInstance) : WDefInstance = {
+      def processInstance(i: WDefInstance): WDefInstance = {
         localInstances(moduleTarget.ref(i.name)) = i.module
         val tpe = i.tpe match {
           case b: BundleType =>
@@ -401,12 +407,12 @@ class PropagatePresetAnnotations extends Transform with DependencyAPIMigration {
 
       def processStatements(statement: Statement): Statement = {
         statement match {
-          case i : WDefInstance => processInstance(i)
-          case r : DefRegister  => processRegister(r)
-          case w : DefWire      => processWire(w)
-          case n : DefNode      => processNode(n)
-          case c : Connect      => processConnect(c)
-          case s                => s.mapStmt(processStatements)
+          case i: WDefInstance => processInstance(i)
+          case r: DefRegister  => processRegister(r)
+          case w: DefWire      => processWire(w)
+          case n: DefNode      => processNode(n)
+          case c: Connect      => processConnect(c)
+          case s => s.mapStmt(processStatements)
         }
       }
 
@@ -422,10 +428,10 @@ class PropagatePresetAnnotations extends Transform with DependencyAPIMigration {
 
   def execute(state: CircuitState): CircuitState = {
     // Collect all user-defined PresetAnnotation
-    val (presets, otherAnnos) = state.annotations.partition { case _: PresetAnnotation => true ; case _ => false }
+    val (presets, otherAnnos) = state.annotations.partition { case _: PresetAnnotation => true; case _ => false }
 
     // No PresetAnnotation => no need to walk the IR
-    if (presets.isEmpty){
+    if (presets.isEmpty) {
       state
     } else {
       // PHASE I - Propagate

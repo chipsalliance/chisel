@@ -5,7 +5,9 @@ package firrtl.stage.transforms
 import firrtl.{CircuitState, Transform}
 import firrtl.options.Translator
 
-class UpdateAnnotations(val underlying: Transform) extends Transform with WrappedTransform
+class UpdateAnnotations(val underlying: Transform)
+    extends Transform
+    with WrappedTransform
     with Translator[CircuitState, (CircuitState, CircuitState)] {
 
   override def execute(c: CircuitState): CircuitState = underlying.transform(c)

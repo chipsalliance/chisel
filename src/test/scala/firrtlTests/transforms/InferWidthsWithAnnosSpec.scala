@@ -5,36 +5,25 @@ package firrtlTests.transforms
 import firrtl.testutils.FirrtlFlatSpec
 import firrtl._
 import firrtl.passes._
-import firrtl.passes.wiring.{WiringTransform, SourceAnnotation, SinkAnnotation}
+import firrtl.passes.wiring.{SinkAnnotation, SourceAnnotation, WiringTransform}
 import firrtl.annotations._
 import firrtl.annotations.TargetToken.{Field, Index}
 
-
 class InferWidthsWithAnnosSpec extends FirrtlFlatSpec {
-  private def executeTest(input: String,
-    check: String,
-    transforms: Seq[Transform],
-    annotations: Seq[Annotation]) = {
+  private def executeTest(input: String, check: String, transforms: Seq[Transform], annotations: Seq[Annotation]) = {
     val start = CircuitState(parse(input), ChirrtlForm, annotations)
-    val end = transforms.foldLeft(start) {
-      (c: CircuitState, t: Transform) => t.runTransform(c)
+    val end = transforms.foldLeft(start) { (c: CircuitState, t: Transform) =>
+      t.runTransform(c)
     }
-    val resLines = end.circuit.serialize.split("\n") map normalized
-    val checkLines = parse(check).serialize.split("\n") map normalized
+    val resLines = end.circuit.serialize.split("\n").map(normalized)
+    val checkLines = parse(check).serialize.split("\n").map(normalized)
 
-    resLines should be (checkLines)
+    resLines should be(checkLines)
   }
 
   "CheckWidths on wires with unknown widths" should "result in an error" in {
-    val transforms = Seq(
-      ToWorkingIR,
-      CheckHighForm,
-      ResolveKinds,
-      InferTypes,
-      CheckTypes,
-      ResolveFlows,
-      new InferWidths,
-      CheckWidths)
+    val transforms =
+      Seq(ToWorkingIR, CheckHighForm, ResolveKinds, InferTypes, CheckTypes, ResolveFlows, new InferWidths, CheckWidths)
 
     val input =
       """circuit Top :
@@ -55,19 +44,15 @@ class InferWidthsWithAnnosSpec extends FirrtlFlatSpec {
   }
 
   "InferWidthsWithAnnos" should "infer widths using WidthGeqConstraintAnnotation" in {
-    val transforms = Seq(
-      ToWorkingIR,
-      CheckHighForm,
-      ResolveKinds,
-      InferTypes,
-      CheckTypes,
-      ResolveFlows,
-      new InferWidths,
-      CheckWidths)
+    val transforms =
+      Seq(ToWorkingIR, CheckHighForm, ResolveKinds, InferTypes, CheckTypes, ResolveFlows, new InferWidths, CheckWidths)
 
-    val annos = Seq(WidthGeqConstraintAnnotation(
-      ReferenceTarget("Top", "A", Nil, "y", Nil),
-      ReferenceTarget("Top", "B", Nil, "x", Nil)))
+    val annos = Seq(
+      WidthGeqConstraintAnnotation(
+        ReferenceTarget("Top", "A", Nil, "y", Nil),
+        ReferenceTarget("Top", "B", Nil, "x", Nil)
+      )
+    )
 
     val input =
       """circuit Top :
@@ -98,15 +83,8 @@ class InferWidthsWithAnnosSpec extends FirrtlFlatSpec {
   }
 
   "InferWidthsWithAnnos" should "work with token paths" in {
-    val transforms = Seq(
-      ToWorkingIR,
-      CheckHighForm,
-      ResolveKinds,
-      InferTypes,
-      CheckTypes,
-      ResolveFlows,
-      new InferWidths,
-      CheckWidths)
+    val transforms =
+      Seq(ToWorkingIR, CheckHighForm, ResolveKinds, InferTypes, CheckTypes, ResolveFlows, new InferWidths, CheckWidths)
 
     val tokenLists = Seq(
       Seq(Field("x")),
@@ -117,7 +95,8 @@ class InferWidthsWithAnnosSpec extends FirrtlFlatSpec {
     val annos = tokenLists.map { tokens =>
       WidthGeqConstraintAnnotation(
         ReferenceTarget("Top", "A", Nil, "bundle", tokens),
-        ReferenceTarget("Top", "B", Nil, "bundle", tokens))
+        ReferenceTarget("Top", "B", Nil, "bundle", tokens)
+      )
     }
 
     val input =
@@ -174,7 +153,8 @@ class InferWidthsWithAnnosSpec extends FirrtlFlatSpec {
     val wgeqAnnos = tokenLists.map { tokens =>
       WidthGeqConstraintAnnotation(
         ReferenceTarget("Top", "A", Nil, "bundle", tokens),
-        ReferenceTarget("Top", "B", Nil, "bundle", tokens))
+        ReferenceTarget("Top", "B", Nil, "bundle", tokens)
+      )
     }
 
     val failAnnos = Seq(source, sink)
@@ -209,8 +189,7 @@ class InferWidthsWithAnnosSpec extends FirrtlFlatSpec {
         |  module A :
         |    output bundle_0 : {x : UInt<1>, y: {yy : UInt<3>}[2] }
         |    wire bundle : {x : UInt<1>, y: {yy : UInt<3>}[2] }
-        |    bundle_0 <= bundle"""
-        .stripMargin
+        |    bundle_0 <= bundle""".stripMargin
 
     // should fail without extra constraint annos due to UninferredWidths
     val exceptions = intercept[PassExceptions] {

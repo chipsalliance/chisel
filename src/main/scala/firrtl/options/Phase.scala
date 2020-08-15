@@ -12,7 +12,7 @@ import scala.reflect
 import scala.reflect.ClassTag
 
 object Dependency {
-  def apply[A <: DependencyAPI[_] : ClassTag]: Dependency[A] = {
+  def apply[A <: DependencyAPI[_]: ClassTag]: Dependency[A] = {
     val clazz = reflect.classTag[A].runtimeClass
     Dependency(Left(clazz.asInstanceOf[Class[A]]))
   }
@@ -40,26 +40,30 @@ object Dependency {
 
 case class Dependency[+A <: DependencyAPI[_]](id: Either[Class[_ <: A], A with Singleton]) {
   def getObject(): A = id match {
-    case Left(c) => safeConstruct(c)
+    case Left(c)  => safeConstruct(c)
     case Right(o) => o
   }
 
   def getSimpleName: String = id match {
-    case Left(c) => c.getSimpleName
+    case Left(c)  => c.getSimpleName
     case Right(o) => o.getClass.getSimpleName
   }
 
   def getName: String = id match {
-    case Left(c) => c.getName
+    case Left(c)  => c.getName
     case Right(o) => o.getClass.getName
   }
 
   /** Wrap an [[IllegalAccessException]] due to attempted object construction in a [[DependencyManagerException]] */
-  private def safeConstruct[A](a: Class[_ <: A]): A = try { a.newInstance } catch {
-    case e: IllegalAccessException => throw new DependencyManagerException(
-      s"Failed to construct '$a'! (Did you try to construct an object?)", e)
-    case e: InstantiationException => throw new DependencyManagerException(
-      s"Failed to construct '$a'! (Did you try to construct an inner class or a class with parameters?)", e)
+  private def safeConstruct[A](a: Class[_ <: A]): A = try { a.newInstance }
+  catch {
+    case e: IllegalAccessException =>
+      throw new DependencyManagerException(s"Failed to construct '$a'! (Did you try to construct an object?)", e)
+    case e: InstantiationException =>
+      throw new DependencyManagerException(
+        s"Failed to construct '$a'! (Did you try to construct an inner class or a class with parameters?)",
+        e
+      )
   }
 }
 
@@ -124,7 +128,7 @@ trait DependencyAPI[A <: DependencyAPI[A]] { this: TransformLike[_] =>
   /** All transform that must run before this transform
     * $seqNote
     */
-  def prerequisites: Seq[Dependency[A]] = Seq.empty
+  def prerequisites:                        Seq[Dependency[A]] = Seq.empty
   private[options] lazy val _prerequisites: LinkedHashSet[Dependency[A]] = new LinkedHashSet() ++ prerequisites
 
   /** All transforms that, if a prerequisite of *another* transform, will run before this transform.
@@ -184,8 +188,10 @@ trait DependencyAPI[A <: DependencyAPI[A]] { this: TransformLike[_] =>
 /** A trait indicating that no invalidations occur, i.e., all previous transforms are preserved
   * @tparam A some [[TransformLike]]
   */
-@deprecated("Use an explicit `override def invalidates` returning false. This will be removed in FIRRTL 1.5.",
-            "FIRRTL 1.4")
+@deprecated(
+  "Use an explicit `override def invalidates` returning false. This will be removed in FIRRTL 1.5.",
+  "FIRRTL 1.4"
+)
 trait PreservesAll[A <: DependencyAPI[A]] { this: DependencyAPI[A] =>
 
   override final def invalidates(a: A): Boolean = false

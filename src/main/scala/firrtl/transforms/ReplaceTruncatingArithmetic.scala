@@ -80,8 +80,7 @@ object ReplaceTruncatingArithmetic {
 class ReplaceTruncatingArithmetic extends Transform with DependencyAPIMigration {
 
   override def prerequisites = firrtl.stage.Forms.LowFormMinimumOptimized ++
-    Seq( Dependency[BlackBoxSourceHelper],
-         Dependency[FixAddingNegativeLiterals] )
+    Seq(Dependency[BlackBoxSourceHelper], Dependency[FixAddingNegativeLiterals])
 
   override def optionalPrerequisites = firrtl.stage.Forms.LowFormOptimized
 

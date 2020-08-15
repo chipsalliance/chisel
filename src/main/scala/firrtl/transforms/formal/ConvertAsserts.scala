@@ -14,10 +14,8 @@ import firrtl.options.Dependency
 object ConvertAsserts extends Transform with DependencyAPIMigration {
   override def prerequisites = Nil
   override def optionalPrerequisites = Nil
-  override def optionalPrerequisiteOf = Seq(
-    Dependency[VerilogEmitter],
-    Dependency[MinimumVerilogEmitter],
-    Dependency[RemoveVerificationStatements])
+  override def optionalPrerequisiteOf =
+    Seq(Dependency[VerilogEmitter], Dependency[MinimumVerilogEmitter], Dependency[RemoveVerificationStatements])
 
   override def invalidates(a: Transform): Boolean = false
 
@@ -28,7 +26,7 @@ object ConvertAsserts extends Transform with DependencyAPIMigration {
       val stop = Stop(i, 1, clk, gatedNPred)
       msg match {
         case StringLit("") => stop
-        case _ => Block(Print(i, msg, Nil, clk, gatedNPred), stop)
+        case _             => Block(Print(i, msg, Nil, clk, gatedNPred), stop)
       }
     case s => s.mapStmt(convertAsserts)
   }

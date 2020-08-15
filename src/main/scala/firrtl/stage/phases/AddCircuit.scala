@@ -39,11 +39,10 @@ class AddCircuit extends Phase {
     * @throws $infoModeException
     */
   private def infoMode(annotations: AnnotationSeq): Parser.InfoMode = {
-    val infoModeAnnotation = annotations
-      .collectFirst{ case a: InfoModeAnnotation => a }
-      .getOrElse { throw new PhasePrerequisiteException(
-                    "An InfoModeAnnotation must be present (did you forget to run AddDefaults?)") }
-    val infoSource = annotations.collectFirst{
+    val infoModeAnnotation = annotations.collectFirst { case a: InfoModeAnnotation => a }.getOrElse {
+      throw new PhasePrerequisiteException("An InfoModeAnnotation must be present (did you forget to run AddDefaults?)")
+    }
+    val infoSource = annotations.collectFirst {
       case FirrtlFileAnnotation(f) => f
       case _: FirrtlSourceAnnotation => "anonymous source"
     }.getOrElse("not defined")
@@ -58,7 +57,7 @@ class AddCircuit extends Phase {
     lazy val info = infoMode(annotations)
     annotations.map {
       case a: CircuitOption => a.toCircuit(info)
-      case a                => a
+      case a => a
     }
   }
 

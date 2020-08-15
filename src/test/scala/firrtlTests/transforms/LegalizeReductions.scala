@@ -12,12 +12,11 @@ import java.io.File
 
 object LegalizeAndReductionsTransformSpec extends FirrtlRunners {
   private case class Test(
-    name: String,
-    op: String,
-    input: BigInt,
-    expected: BigInt,
-    forceWidth: Option[Int] = None
-  ) {
+    name:       String,
+    op:         String,
+    input:      BigInt,
+    expected:   BigInt,
+    forceWidth: Option[Int] = None) {
     def toFirrtl: String = {
       val width = forceWidth.getOrElse(input.bitLength)
       val inputLit = s"""UInt("h${input.toString(16)}")"""
@@ -62,9 +61,9 @@ circuit $name :
     // Run FIRRTL
     val annos =
       FirrtlSourceAnnotation(test.toFirrtl) ::
-      TargetDirAnnotation(testDir.toString) ::
-      CompilerAnnotation(new MinimumVerilogCompiler) ::
-      Nil
+        TargetDirAnnotation(testDir.toString) ::
+        CompilerAnnotation(new MinimumVerilogCompiler) ::
+        Nil
     val resultAnnos = (new FirrtlStage).transform(annos)
     val outputFilename = resultAnnos.collectFirst { case OutputFileAnnotation(f) => f }
     outputFilename.toRight(s"Output file not found!")
@@ -73,8 +72,8 @@ circuit $name :
     copyResourceToFile(cppHarnessResourceName, harness)
     // Run Verilator
     verilogToCpp(prefix, testDir, Nil, harness, suppressVcd = true) #&&
-    cppToExe(prefix, testDir) !
-    loggingProcessLogger
+      cppToExe(prefix, testDir) !
+      loggingProcessLogger
     // Run binary
     if (!executeExpectingSuccess(prefix, testDir)) {
       throw new Exception("Test failed!") with scala.util.control.NoStackTrace
@@ -82,24 +81,23 @@ circuit $name :
   }
 }
 
-
 class LegalizeAndReductionsTransformSpec extends AnyFlatSpec {
 
   import LegalizeAndReductionsTransformSpec._
 
-  behavior of "LegalizeAndReductionsTransform"
+  behavior.of("LegalizeAndReductionsTransform")
 
   private val tests =
     //   name                      primop  input                          expected  width
-    Test("andreduce_ones",         "andr", BigInt("1"*68, 2),             1) ::
-    Test("andreduce_zero",         "andr", 0,                             0, Some(68)) ::
-    Test("orreduce_ones",          "orr",  BigInt("1"*68, 2),             1) ::
-    Test("orreduce_high_one",      "orr",  BigInt("1" + "0"*67, 2),       1) ::
-    Test("orreduce_zero",          "orr",  0,                             0, Some(68)) ::
-    Test("xorreduce_high_one",     "xorr", BigInt("1" + "0"*67, 2),       1) ::
-    Test("xorreduce_high_low_one", "xorr", BigInt("1" + "0"*66 + "1", 2), 0) ::
-    Test("xorreduce_zero",         "xorr", 0,                             0, Some(68)) ::
-    Nil
+    Test("andreduce_ones", "andr", BigInt("1" * 68, 2), 1) ::
+      Test("andreduce_zero", "andr", 0, 0, Some(68)) ::
+      Test("orreduce_ones", "orr", BigInt("1" * 68, 2), 1) ::
+      Test("orreduce_high_one", "orr", BigInt("1" + "0" * 67, 2), 1) ::
+      Test("orreduce_zero", "orr", 0, 0, Some(68)) ::
+      Test("xorreduce_high_one", "xorr", BigInt("1" + "0" * 67, 2), 1) ::
+      Test("xorreduce_high_low_one", "xorr", BigInt("1" + "0" * 66 + "1", 2), 0) ::
+      Test("xorreduce_zero", "xorr", 0, 0, Some(68)) ::
+      Nil
 
   for (test <- tests) {
     it should s"support ${test.name}" in {

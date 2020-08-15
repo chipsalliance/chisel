@@ -5,8 +5,7 @@ package firrtl.backends.experimental.smt
 import firrtl.{MemoryArrayInit, MemoryScalarInit, Utils}
 
 private class FirrtlModuleToTransitionSystemSpec extends SMTBackendBaseSpec {
-  behavior of "ModuleToTransitionSystem.run"
-
+  behavior.of("ModuleToTransitionSystem.run")
 
   it should "model registers as state" in {
     // if a signal is invalid, it could take on an arbitrary value in that cycle
@@ -42,39 +41,39 @@ private class FirrtlModuleToTransitionSystemSpec extends SMTBackendBaseSpec {
 
   private def memCircuit(depth: Int = 32) =
     s"""circuit m:
-      |  module m:
-      |    input reset : UInt<1>
-      |    input clock : Clock
-      |    input addr : UInt<${Utils.getUIntWidth(depth)}>
-      |    input in : UInt<8>
-      |    output out : UInt<8>
-      |
-      |    mem m:
-      |      data-type => UInt<8>
-      |      depth => $depth
-      |      reader => r
-      |      writer => w
-      |      read-latency => 0
-      |      write-latency => 1
-      |      read-under-write => new
-      |
-      |    m.w.clk <= clock
-      |    m.w.mask <= UInt(1)
-      |    m.w.en <= UInt(1)
-      |    m.w.data <= in
-      |    m.w.addr <= addr
-      |
-      |    m.r.clk <= clock
-      |    m.r.en <= UInt(1)
-      |    out <= m.r.data
-      |    m.r.addr <= addr
-      |
-      |""".stripMargin
+       |  module m:
+       |    input reset : UInt<1>
+       |    input clock : Clock
+       |    input addr : UInt<${Utils.getUIntWidth(depth)}>
+       |    input in : UInt<8>
+       |    output out : UInt<8>
+       |
+       |    mem m:
+       |      data-type => UInt<8>
+       |      depth => $depth
+       |      reader => r
+       |      writer => w
+       |      read-latency => 0
+       |      write-latency => 1
+       |      read-under-write => new
+       |
+       |    m.w.clk <= clock
+       |    m.w.mask <= UInt(1)
+       |    m.w.en <= UInt(1)
+       |    m.w.data <= in
+       |    m.w.addr <= addr
+       |
+       |    m.r.clk <= clock
+       |    m.r.en <= UInt(1)
+       |    out <= m.r.data
+       |    m.r.addr <= addr
+       |
+       |""".stripMargin
 
   it should "model memories as state" in {
     val sys = toSys(memCircuit())
 
-    assert(sys.signals.length == 9-2+1, "9 connects - 2 clock connects + 1 combinatorial read port")
+    assert(sys.signals.length == 9 - 2 + 1, "9 connects - 2 clock connects + 1 combinatorial read port")
 
     val sig = sys.signals.map(s => s.name -> s.e).toMap
 
@@ -140,40 +139,39 @@ private class FirrtlModuleToTransitionSystemSpec extends SMTBackendBaseSpec {
   it should "support memories with registered read port" in {
     def src(readUnderWrite: String) =
       s"""circuit m:
-        |  module m:
-        |    input reset : UInt<1>
-        |    input clock : Clock
-        |    input addr : UInt<5>
-        |    input in : UInt<8>
-        |    output out : UInt<8>
-        |
-        |    mem m:
-        |      data-type => UInt<8>
-        |      depth => 32
-        |      reader => r
-        |      writer => w1, w2
-        |      read-latency => 1
-        |      write-latency => 1
-        |      read-under-write => $readUnderWrite
-        |
-        |    m.w1.clk <= clock
-        |    m.w1.mask <= UInt(1)
-        |    m.w1.en <= UInt(1)
-        |    m.w1.data <= in
-        |    m.w1.addr <= addr
-        |    m.w2.clk <= clock
-        |    m.w2.mask <= UInt(1)
-        |    m.w2.en <= UInt(1)
-        |    m.w2.data <= in
-        |    m.w2.addr <= addr
-        |
-        |    m.r.clk <= clock
-        |    m.r.en <= UInt(1)
-        |    out <= m.r.data
-        |    m.r.addr <= addr
-        |
-        |""".stripMargin
-
+         |  module m:
+         |    input reset : UInt<1>
+         |    input clock : Clock
+         |    input addr : UInt<5>
+         |    input in : UInt<8>
+         |    output out : UInt<8>
+         |
+         |    mem m:
+         |      data-type => UInt<8>
+         |      depth => 32
+         |      reader => r
+         |      writer => w1, w2
+         |      read-latency => 1
+         |      write-latency => 1
+         |      read-under-write => $readUnderWrite
+         |
+         |    m.w1.clk <= clock
+         |    m.w1.mask <= UInt(1)
+         |    m.w1.en <= UInt(1)
+         |    m.w1.data <= in
+         |    m.w1.addr <= addr
+         |    m.w2.clk <= clock
+         |    m.w2.mask <= UInt(1)
+         |    m.w2.en <= UInt(1)
+         |    m.w2.data <= in
+         |    m.w2.addr <= addr
+         |
+         |    m.r.clk <= clock
+         |    m.r.en <= UInt(1)
+         |    out <= m.r.data
+         |    m.r.addr <= addr
+         |
+         |""".stripMargin
 
     val oldValue = toSys(src("old"))
     val oldMData = oldValue.states.find(_.sym.name == "m.r.data").get
@@ -186,9 +184,11 @@ private class FirrtlModuleToTransitionSystemSpec extends SMTBackendBaseSpec {
     val undefinedMData = undefinedValue.states.find(_.sym.name == "m.r.data").get
     assert(undefinedMData.sym.toString == "m.r.data")
     val undefined = "RANDOM.m_r_read_under_write_undefined"
-    assert(undefinedMData.next.get.toString ==
-      s"ite(or(eq(m.r.addr, m.w1.addr), eq(m.r.addr, m.w2.addr)), $undefined, m[m.r.addr])",
-      "randomize result if there is a write")
+    assert(
+      undefinedMData.next.get.toString ==
+        s"ite(or(eq(m.r.addr, m.w1.addr), eq(m.r.addr, m.w2.addr)), $undefined, m[m.r.addr])",
+      "randomize result if there is a write"
+    )
   }
 
   it should "support memories with potential write-write conflicts" in {
@@ -227,7 +227,6 @@ private class FirrtlModuleToTransitionSystemSpec extends SMTBackendBaseSpec {
          |    m.r.addr <= addr
          |
          |""".stripMargin
-
 
     val sys = toSys(src)
     val m = sys.states.find(_.sym.name == "m").get

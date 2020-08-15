@@ -6,7 +6,7 @@ import firrtl._
 import firrtl.annotations._
 import firrtl.annotations.analysis.DuplicationHelper
 import firrtl.annotations.transforms.{NoSuchTargetException}
-import firrtl.transforms.{DontTouchAnnotation, DedupedResult}
+import firrtl.transforms.{DedupedResult, DontTouchAnnotation}
 import firrtl.testutils.{FirrtlMatchers, FirrtlPropSpec}
 
 object EliminateTargetPathsSpec {
@@ -15,7 +15,7 @@ object EliminateTargetPathsSpec {
     override def duplicate(n: Target): Annotation = DummyAnnotation(n)
   }
   class DummyTransform() extends Transform with ResolvedAnnotationPaths {
-    override def inputForm: CircuitForm = LowForm
+    override def inputForm:  CircuitForm = LowForm
     override def outputForm: CircuitForm = LowForm
 
     override val annotationClasses: Traversable[Class[_]] = Seq(classOf[DummyAnnotation])
@@ -72,40 +72,47 @@ class EliminateTargetPathsSpec extends FirrtlPropSpec with FirrtlMatchers {
   property("Hierarchical tokens should be expanded properly") {
     val dupMap = DuplicationHelper(inputState.circuit.modules.map(_.name).toSet)
 
-
     // Only a few instance references
     dupMap.expandHierarchy(Top_m1_l1_a)
     dupMap.expandHierarchy(Top_m2_l1_a)
     dupMap.expandHierarchy(Middle_l1_a)
 
-    dupMap.makePathless(Top_m1_l1_a).foreach {Set(TopCircuit.module("Leaf___Top_m1_l1").ref("a")) should contain (_)}
-    dupMap.makePathless(Top_m2_l1_a).foreach {Set(TopCircuit.module("Leaf___Top_m2_l1").ref("a")) should contain (_)}
-    dupMap.makePathless(Top_m1_l2_a).foreach {Set(Leaf_a) should contain (_)}
-    dupMap.makePathless(Top_m2_l2_a).foreach {Set(Leaf_a) should contain (_)}
-    dupMap.makePathless(Middle_l1_a).foreach {Set(
-      TopCircuit.module("Leaf___Top_m1_l1").ref("a"),
-      TopCircuit.module("Leaf___Top_m2_l1").ref("a"),
-      TopCircuit.module("Leaf___Middle_l1").ref("a")
-    ) should contain (_) }
-    dupMap.makePathless(Middle_l2_a).foreach {Set(Leaf_a) should contain (_)}
-    dupMap.makePathless(Leaf_a).foreach {Set(
-      TopCircuit.module("Leaf___Top_m1_l1").ref("a"),
-      TopCircuit.module("Leaf___Top_m2_l1").ref("a"),
-      TopCircuit.module("Leaf___Middle_l1").ref("a"),
-      Leaf_a
-    ) should contain (_)}
-    dupMap.makePathless(Top).foreach {Set(Top) should contain (_)}
-    dupMap.makePathless(Middle).foreach {Set(
-      TopCircuit.module("Middle___Top_m1"),
-      TopCircuit.module("Middle___Top_m2"),
-      Middle
-    ) should contain (_)}
-    dupMap.makePathless(Leaf).foreach {Set(
-      TopCircuit.module("Leaf___Top_m1_l1"),
-      TopCircuit.module("Leaf___Top_m2_l1"),
-      TopCircuit.module("Leaf___Middle_l1"),
-      Leaf
-    ) should contain (_) }
+    dupMap.makePathless(Top_m1_l1_a).foreach { Set(TopCircuit.module("Leaf___Top_m1_l1").ref("a")) should contain(_) }
+    dupMap.makePathless(Top_m2_l1_a).foreach { Set(TopCircuit.module("Leaf___Top_m2_l1").ref("a")) should contain(_) }
+    dupMap.makePathless(Top_m1_l2_a).foreach { Set(Leaf_a) should contain(_) }
+    dupMap.makePathless(Top_m2_l2_a).foreach { Set(Leaf_a) should contain(_) }
+    dupMap.makePathless(Middle_l1_a).foreach {
+      Set(
+        TopCircuit.module("Leaf___Top_m1_l1").ref("a"),
+        TopCircuit.module("Leaf___Top_m2_l1").ref("a"),
+        TopCircuit.module("Leaf___Middle_l1").ref("a")
+      ) should contain(_)
+    }
+    dupMap.makePathless(Middle_l2_a).foreach { Set(Leaf_a) should contain(_) }
+    dupMap.makePathless(Leaf_a).foreach {
+      Set(
+        TopCircuit.module("Leaf___Top_m1_l1").ref("a"),
+        TopCircuit.module("Leaf___Top_m2_l1").ref("a"),
+        TopCircuit.module("Leaf___Middle_l1").ref("a"),
+        Leaf_a
+      ) should contain(_)
+    }
+    dupMap.makePathless(Top).foreach { Set(Top) should contain(_) }
+    dupMap.makePathless(Middle).foreach {
+      Set(
+        TopCircuit.module("Middle___Top_m1"),
+        TopCircuit.module("Middle___Top_m2"),
+        Middle
+      ) should contain(_)
+    }
+    dupMap.makePathless(Leaf).foreach {
+      Set(
+        TopCircuit.module("Leaf___Top_m1_l1"),
+        TopCircuit.module("Leaf___Top_m2_l1"),
+        TopCircuit.module("Leaf___Middle_l1"),
+        Leaf
+      ) should contain(_)
+    }
   }
 
   property("Hierarchical donttouch should be resolved properly") {
@@ -159,10 +166,10 @@ class EliminateTargetPathsSpec extends FirrtlPropSpec with FirrtlMatchers {
         |    m2.i <= m1.o
         |
       """.stripMargin
-    canonicalize(outputState.circuit).serialize should be (canonicalize(parse(check)).serialize)
+    canonicalize(outputState.circuit).serialize should be(canonicalize(parse(check)).serialize)
     outputState.annotations.collect {
       case x: DontTouchAnnotation => x.target
-    } should be (Seq(Top.circuitTarget.module("Leaf___Top_m1_l1").ref("a")))
+    } should be(Seq(Top.circuitTarget.module("Leaf___Top_m1_l1").ref("a")))
   }
 
   property("No name conflicts between old and new modules") {
@@ -199,7 +206,7 @@ class EliminateTargetPathsSpec extends FirrtlPropSpec with FirrtlMatchers {
     val outputState = new LowFirrtlCompiler().compile(inputState, customTransforms)
     val outputLines = outputState.circuit.serialize.split("\n")
     checks.foreach { line =>
-      outputLines should contain (line)
+      outputLines should contain(line)
     }
   }
 
@@ -239,7 +246,7 @@ class EliminateTargetPathsSpec extends FirrtlPropSpec with FirrtlMatchers {
     val outputLines = outputState.circuit.serialize.split("\n")
 
     checks.foreach { line =>
-      outputLines should contain (line)
+      outputLines should contain(line)
     }
     checks.foreach { line =>
       outputLines should not contain ("  module Middle :")
@@ -267,19 +274,19 @@ class EliminateTargetPathsSpec extends FirrtlPropSpec with FirrtlMatchers {
         |    m2.i <= m1.o
         |    o <= m2.o
       """.stripMargin
-    val e1 = the [CustomTransformException] thrownBy {
+    val e1 = the[CustomTransformException] thrownBy {
       val Top_m1 = Top.instOf("m1", "MiddleX")
       val inputState = CircuitState(parse(input), ChirrtlForm, Seq(DummyAnnotation(Top_m1)))
       new LowFirrtlCompiler().compile(inputState, customTransforms)
     }
-    e1.cause shouldBe a [NoSuchTargetException]
+    e1.cause shouldBe a[NoSuchTargetException]
 
-    val e2 = the [CustomTransformException] thrownBy {
+    val e2 = the[CustomTransformException] thrownBy {
       val Top_m2 = Top.instOf("x2", "Middle")
       val inputState = CircuitState(parse(input), ChirrtlForm, Seq(DummyAnnotation(Top_m2)))
       new LowFirrtlCompiler().compile(inputState, customTransforms)
     }
-    e2.cause shouldBe a [NoSuchTargetException]
+    e2.cause shouldBe a[NoSuchTargetException]
   }
 
   property("No name conflicts between two new modules") {
@@ -320,11 +327,12 @@ class EliminateTargetPathsSpec extends FirrtlPropSpec with FirrtlMatchers {
         |  module Leaf____Middle__l :""".stripMargin.split("\n")
     val Middle_l1 = CircuitTarget("Top").module("Middle").instOf("_l", "Leaf")
     val Middle_l2 = CircuitTarget("Top").module("Middle_").instOf("l", "Leaf")
-    val inputState = CircuitState(parse(input), ChirrtlForm, Seq(DummyAnnotation(Middle_l1), DummyAnnotation(Middle_l2)))
+    val inputState =
+      CircuitState(parse(input), ChirrtlForm, Seq(DummyAnnotation(Middle_l1), DummyAnnotation(Middle_l2)))
     val outputState = new LowFirrtlCompiler().compile(inputState, customTransforms)
     val outputLines = outputState.circuit.serialize.split("\n")
     checks.foreach { line =>
-      outputLines should contain (line)
+      outputLines should contain(line)
     }
   }
 
@@ -362,12 +370,12 @@ class EliminateTargetPathsSpec extends FirrtlPropSpec with FirrtlMatchers {
     val outputState = new VerilogCompiler().compile(inputState, customTransforms)
     val outputLines = outputState.circuit.serialize.split("\n")
     checks.foreach { line =>
-      outputLines should contain (line)
+      outputLines should contain(line)
     }
   }
 
   property("It should remove ResolvePaths annotations") {
-      val input =
+    val input =
       """|circuit Foo:
          |  module Bar:
          |    skip
@@ -378,7 +386,7 @@ class EliminateTargetPathsSpec extends FirrtlPropSpec with FirrtlMatchers {
     CircuitState(passes.ToWorkingIR.run(Parser.parse(input)), UnknownForm, Nil)
       .resolvePaths(Seq(CircuitTarget("Foo").module("Foo").instOf("bar", "Bar")))
       .annotations
-      .collect{ case a: firrtl.annotations.transforms.ResolvePaths => a } should be (empty)
+      .collect { case a: firrtl.annotations.transforms.ResolvePaths => a } should be(empty)
   }
 
   property("It should rename module annotations") {
@@ -404,16 +412,14 @@ class EliminateTargetPathsSpec extends FirrtlPropSpec with FirrtlMatchers {
 
     val parsedCheck = Parser.parse(check)
     info(output.circuit.serialize)
-    (output.circuit.serialize) should be (parsedCheck.serialize)
+    (output.circuit.serialize) should be(parsedCheck.serialize)
 
     val newBar_x = CircuitTarget("Foo").module("Bar___Foo_bar").ref("x")
 
-    output
-      .annotations
-      .filter{
-        case _: DeletedAnnotation => false
-        case _ => true
-      } should contain allOf (DontTouchAnnotation(newBar_x), DontTouchAnnotation(Bar_x))
+    (output.annotations.filter {
+      case _: DeletedAnnotation => false
+      case _ => true
+    } should contain).allOf(DontTouchAnnotation(newBar_x), DontTouchAnnotation(Bar_x))
   }
 
   property("It should not rename lone instances") {
@@ -440,10 +446,10 @@ class EliminateTargetPathsSpec extends FirrtlPropSpec with FirrtlMatchers {
 
     info(output.circuit.serialize)
 
-    output.circuit.serialize should be (inputCircuit.serialize)
-    output.annotations.collect {
+    output.circuit.serialize should be(inputCircuit.serialize)
+    (output.annotations.collect {
       case a: DontTouchAnnotation => a
-    } should contain allOf (
+    } should contain).allOf(
       DontTouchAnnotation(ModuleTarget("Foo", "Foo").ref("foo")),
       DontTouchAnnotation(ModuleTarget("Foo", "Bar").ref("foo")),
       DontTouchAnnotation(ModuleTarget("Foo", "Baz").ref("foo"))
@@ -481,12 +487,12 @@ class EliminateTargetPathsSpec extends FirrtlPropSpec with FirrtlMatchers {
 
     val outputLines = output.circuit.serialize.split("\n")
     checks.foreach { line =>
-      outputLines should contain (line)
+      outputLines should contain(line)
     }
 
-    output.annotations.collect {
+    (output.annotations.collect {
       case a: DontTouchAnnotation => a
-    } should contain allOf (
+    } should contain).allOf(
       DontTouchAnnotation(ModuleTarget("FooBar", "Bar___Foo_bar").ref("baz")),
       DontTouchAnnotation(ModuleTarget("FooBar", "Bar___Foo_barBar").ref("baz"))
     )
@@ -527,11 +533,11 @@ class EliminateTargetPathsSpec extends FirrtlPropSpec with FirrtlMatchers {
 
     val outputLines = output.circuit.serialize.split("\n")
     checks.foreach { line =>
-      outputLines should contain (line)
+      outputLines should contain(line)
     }
-    output.annotations.collect {
+    (output.annotations.collect {
       case a: DontTouchAnnotation => a
-    } should contain allOf (
+    } should contain).allOf(
       DontTouchAnnotation(ModuleTarget("Top", "Baz_0").ref("foo")),
       DontTouchAnnotation(ModuleTarget("Top", "Baz_1").ref("foo"))
     )
@@ -563,11 +569,13 @@ class EliminateTargetPathsSpec extends FirrtlPropSpec with FirrtlMatchers {
 
     info(output.circuit.serialize)
 
-    output.annotations.collect { case a: DontTouchAnnotation => a } should be (Seq(
-      DontTouchAnnotation(ModuleTarget("Top", "Baz___Bar_asdf").ref("foo")),
-      DontTouchAnnotation(ModuleTarget("Top", "Baz___Bar_lkj").ref("foo")),
-      DontTouchAnnotation(baz.ref("foo"))
-    ))
+    output.annotations.collect { case a: DontTouchAnnotation => a } should be(
+      Seq(
+        DontTouchAnnotation(ModuleTarget("Top", "Baz___Bar_asdf").ref("foo")),
+        DontTouchAnnotation(ModuleTarget("Top", "Baz___Bar_lkj").ref("foo")),
+        DontTouchAnnotation(baz.ref("foo"))
+      )
+    )
   }
 
   property("It should properly rename modules with multiple instances") {
@@ -600,6 +608,6 @@ class EliminateTargetPathsSpec extends FirrtlPropSpec with FirrtlMatchers {
     val checkDontTouches = (1 to 4).map { i =>
       DummyAnnotation(ModuleTarget("Top", s"Core___System_core_$i"))
     }
-    output.annotations.collect { case a: DummyAnnotation => a } should be (checkDontTouches)
+    output.annotations.collect { case a: DummyAnnotation => a } should be(checkDontTouches)
   }
 }

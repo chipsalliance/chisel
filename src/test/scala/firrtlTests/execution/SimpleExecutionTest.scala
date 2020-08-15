@@ -20,19 +20,19 @@ trait TestExecution {
 
 /**
   * A class that makes it easier to write execution-driven tests.
-  * 
+  *
   * By combining a DUT body (supplied as a string without an enclosing
   * module or circuit) with a sequence of test operations, an
   * executable, self-contained Verilog testbench may be automatically
   * created and checked.
-  * 
+  *
   * @note It is necessary to mix in a trait extending TestExecution
   * @note The DUT has two implicit ports, "clock" and "reset"
   * @note Execution of the command sequences begins after reset is deasserted
-  * 
+  *
   * @see [[firrtlTests.execution.TestExecution]]
   * @see [[firrtlTests.execution.VerilogExecution]]
-  * 
+  *
   * @example {{{
   * class AndTester extends SimpleExecutionTest with VerilogExecution {
   *   val body = "reg r : UInt<32>, clock with: (reset => (reset, UInt<32>(0)))"
@@ -64,9 +64,9 @@ abstract class SimpleExecutionTest extends FirrtlPropSpec {
   def commands: Seq[SimpleTestCommand]
 
   private def interpretCommand(eth: ExecutionTestHelper, cmd: SimpleTestCommand) = cmd match {
-    case Step(n) => eth.step(n)
-    case Invalidate(expStr) => eth.invalidate(expStr)
-    case Poke(expStr, value) => eth.poke(expStr, UIntLiteral(value))
+    case Step(n)               => eth.step(n)
+    case Invalidate(expStr)    => eth.invalidate(expStr)
+    case Poke(expStr, value)   => eth.poke(expStr, UIntLiteral(value))
     case Expect(expStr, value) => eth.expect(expStr, UIntLiteral(value))
   }
 

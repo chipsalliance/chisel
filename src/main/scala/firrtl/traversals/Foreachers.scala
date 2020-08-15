@@ -15,19 +15,19 @@ object Foreachers {
   }
   private object StmtForMagnet {
     implicit def forStmt(f: Statement => Unit): StmtForMagnet = new StmtForMagnet {
-      def foreach(stmt: Statement): Unit = stmt foreachStmt f
+      def foreach(stmt: Statement): Unit = stmt.foreachStmt(f)
     }
     implicit def forExp(f: Expression => Unit): StmtForMagnet = new StmtForMagnet {
-      def foreach(stmt: Statement): Unit = stmt foreachExpr f
+      def foreach(stmt: Statement): Unit = stmt.foreachExpr(f)
     }
     implicit def forType(f: Type => Unit): StmtForMagnet = new StmtForMagnet {
-      def foreach(stmt: Statement) : Unit = stmt foreachType f
+      def foreach(stmt: Statement): Unit = stmt.foreachType(f)
     }
     implicit def forString(f: String => Unit): StmtForMagnet = new StmtForMagnet {
-      def foreach(stmt: Statement): Unit = stmt foreachString f
+      def foreach(stmt: Statement): Unit = stmt.foreachString(f)
     }
     implicit def forInfo(f: Info => Unit): StmtForMagnet = new StmtForMagnet {
-      def foreach(stmt: Statement): Unit = stmt foreachInfo f
+      def foreach(stmt: Statement): Unit = stmt.foreachInfo(f)
     }
   }
   implicit class StmtForeach(val _stmt: Statement) extends AnyVal {
@@ -41,13 +41,13 @@ object Foreachers {
   }
   private object ExprForMagnet {
     implicit def forExpr(f: Expression => Unit): ExprForMagnet = new ExprForMagnet {
-      def foreach(expr: Expression): Unit = expr foreachExpr f
+      def foreach(expr: Expression): Unit = expr.foreachExpr(f)
     }
     implicit def forType(f: Type => Unit): ExprForMagnet = new ExprForMagnet {
-      def foreach(expr: Expression): Unit = expr foreachType f
+      def foreach(expr: Expression): Unit = expr.foreachType(f)
     }
     implicit def forWidth(f: Width => Unit): ExprForMagnet = new ExprForMagnet {
-      def foreach(expr: Expression): Unit = expr foreachWidth f
+      def foreach(expr: Expression): Unit = expr.foreachWidth(f)
     }
   }
   implicit class ExprForeach(val _expr: Expression) extends AnyVal {
@@ -60,10 +60,10 @@ object Foreachers {
   }
   private object TypeForMagnet {
     implicit def forType(f: Type => Unit): TypeForMagnet = new TypeForMagnet {
-      def foreach(tpe: Type): Unit = tpe foreachType f
+      def foreach(tpe: Type): Unit = tpe.foreachType(f)
     }
     implicit def forWidth(f: Width => Unit): TypeForMagnet = new TypeForMagnet {
-      def foreach(tpe: Type): Unit = tpe foreachWidth f
+      def foreach(tpe: Type): Unit = tpe.foreachWidth(f)
     }
   }
   implicit class TypeForeach(val _tpe: Type) extends AnyVal {
@@ -76,16 +76,16 @@ object Foreachers {
   }
   private object ModuleForMagnet {
     implicit def forStmt(f: Statement => Unit): ModuleForMagnet = new ModuleForMagnet {
-      def foreach(module: DefModule): Unit = module foreachStmt f
+      def foreach(module: DefModule): Unit = module.foreachStmt(f)
     }
     implicit def forPorts(f: Port => Unit): ModuleForMagnet = new ModuleForMagnet {
-      def foreach(module: DefModule): Unit = module foreachPort f
+      def foreach(module: DefModule): Unit = module.foreachPort(f)
     }
     implicit def forString(f: String => Unit): ModuleForMagnet = new ModuleForMagnet {
-      def foreach(module: DefModule): Unit = module foreachString f
+      def foreach(module: DefModule): Unit = module.foreachString(f)
     }
     implicit def forInfo(f: Info => Unit): ModuleForMagnet = new ModuleForMagnet {
-      def foreach(module: DefModule): Unit = module foreachInfo f
+      def foreach(module: DefModule): Unit = module.foreachInfo(f)
     }
   }
   implicit class ModuleForeach(val _module: DefModule) extends AnyVal {
@@ -98,13 +98,13 @@ object Foreachers {
   }
   private object CircuitForMagnet {
     implicit def forModules(f: DefModule => Unit): CircuitForMagnet = new CircuitForMagnet {
-      def foreach(circuit: Circuit): Unit = circuit foreachModule f
+      def foreach(circuit: Circuit): Unit = circuit.foreachModule(f)
     }
     implicit def forString(f: String => Unit): CircuitForMagnet = new CircuitForMagnet {
-      def foreach(circuit: Circuit): Unit = circuit foreachString f
+      def foreach(circuit: Circuit): Unit = circuit.foreachString(f)
     }
     implicit def forInfo(f: Info => Unit): CircuitForMagnet = new CircuitForMagnet {
-      def foreach(circuit: Circuit): Unit = circuit foreachInfo f
+      def foreach(circuit: Circuit): Unit = circuit.foreachInfo(f)
     }
   }
   implicit class CircuitForeach(val _circuit: Circuit) extends AnyVal {

@@ -6,7 +6,6 @@ import net.jcazevedo.moultingyaml._
 import java.io.{CharArrayWriter, File, PrintWriter}
 import firrtl.FileUtils
 
-
 object CustomYAMLProtocol extends DefaultYamlProtocol {
   // bottom depends on top
   implicit val _pin = yamlFormat1(Pin)
@@ -20,17 +19,15 @@ case class Source(name: String, module: String)
 case class Top(name: String)
 case class Config(pin: Pin, source: Source, top: Top)
 
-
 class YamlFileReader(file: String) {
-  def parse[A](implicit reader: YamlReader[A]) : Seq[A] = {
+  def parse[A](implicit reader: YamlReader[A]): Seq[A] = {
     if (new File(file).exists) {
       val yamlString = FileUtils.getText(file)
-      yamlString.parseYamls flatMap (x =>
-        try Some(reader read x)
+      yamlString.parseYamls.flatMap(x =>
+        try Some(reader.read(x))
         catch { case e: Exception => None }
       )
-    }
-    else sys.error("Yaml file doesn't exist!")
+    } else sys.error("Yaml file doesn't exist!")
   }
 }
 
@@ -38,11 +35,11 @@ class YamlFileWriter(file: String) {
   val outputBuffer = new CharArrayWriter
   val separator = "--- \n"
   def append(in: YamlValue): Unit = {
-    outputBuffer append s"$separator${in.prettyPrint}"
+    outputBuffer.append(s"$separator${in.prettyPrint}")
   }
   def dump(): Unit = {
     val outputFile = new PrintWriter(file)
-    outputFile write outputBuffer.toString
+    outputFile.write(outputBuffer.toString)
     outputFile.close()
   }
 }

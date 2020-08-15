@@ -7,12 +7,12 @@ import firrtl.stage.TransformManager
 import firrtl.{Transform, VerilogEmitter}
 
 /** A [[firrtl.stage.TransformManager TransformManager]] of
-  *
   */
 class Compiler(
-  targets: Seq[TransformManager.TransformDependency],
+  targets:      Seq[TransformManager.TransformDependency],
   currentState: Seq[TransformManager.TransformDependency] = Seq.empty,
-  knownObjects: Set[Transform] = Set.empty) extends TransformManager(targets, currentState, knownObjects) {
+  knownObjects: Set[Transform] = Set.empty)
+    extends TransformManager(targets, currentState, knownObjects) {
 
   override val wrappers = Seq(
     (a: Transform) => ExpandPrepares(a),
@@ -21,9 +21,10 @@ class Compiler(
   )
 
   override def customPrintHandling(
-    tab: String,
+    tab:     String,
     charSet: CharSet,
-    size: Int): Option[PartialFunction[(Transform, Int), Seq[String]]] = {
+    size:    Int
+  ): Option[PartialFunction[(Transform, Int), Seq[String]]] = {
 
     val (l, n, c) = (charSet.lastNode, charSet.notLastNode, charSet.continuation)
     val last = size - 1

@@ -14,26 +14,26 @@ import scopt.{OptionDef, OptionParser, Read}
   * @param shortOption an optional single-dash option
   * @param helpValueName a string to show as a placeholder argument in help text
   */
-final class ShellOption[A: Read] (
-  val longOption: String,
+final class ShellOption[A: Read](
+  val longOption:      String,
   val toAnnotationSeq: A => AnnotationSeq,
-  val helpText: String,
-  val shortOption: Option[String] = None,
-  val helpValueName: Option[String] = None
-) {
+  val helpText:        String,
+  val shortOption:     Option[String] = None,
+  val helpValueName:   Option[String] = None) {
 
   /** Add this specific shell (command line) option to an option parser
     * @param p an option parser
     */
   final def addOption(p: OptionParser[AnnotationSeq]): Unit = {
     val f = Seq(
-      (p: OptionDef[A, AnnotationSeq]) => p.action( (x, c) => toAnnotationSeq(x).reverse ++ c ),
+      (p: OptionDef[A, AnnotationSeq]) => p.action((x, c) => toAnnotationSeq(x).reverse ++ c),
       (p: OptionDef[A, AnnotationSeq]) => p.text(helpText),
-      (p: OptionDef[A, AnnotationSeq]) => p.unbounded()) ++
-      shortOption.map( a => (p: OptionDef[A, AnnotationSeq]) => p.abbr(a) ) ++
-      helpValueName.map( a => (p: OptionDef[A, AnnotationSeq]) => p.valueName(a) )
+      (p: OptionDef[A, AnnotationSeq]) => p.unbounded()
+    ) ++
+      shortOption.map(a => (p: OptionDef[A, AnnotationSeq]) => p.abbr(a)) ++
+      helpValueName.map(a => (p: OptionDef[A, AnnotationSeq]) => p.valueName(a))
 
-    f.foldLeft(p.opt[A](longOption))( (a, b) => b(a) )
+    f.foldLeft(p.opt[A](longOption))((a, b) => b(a))
   }
 }
 
@@ -55,13 +55,15 @@ trait HasShellOptions {
 /** A [[Transform]] that includes an option that should be exposed at the top level.
   *
   * @note To complete registration, include an entry in
-  * src/main/resources/META-INF/services/firrtl.options.RegisteredTransform */
+  * src/main/resources/META-INF/services/firrtl.options.RegisteredTransform
+  */
 trait RegisteredTransform extends HasShellOptions { this: Transform => }
 
 /** A class that includes options that should be exposed as a group at the top level.
   *
   * @note To complete registration, include an entry in
-  * src/main/resources/META-INF/services/firrtl.options.RegisteredLibrary */
+  * src/main/resources/META-INF/services/firrtl.options.RegisteredLibrary
+  */
 trait RegisteredLibrary extends HasShellOptions {
 
   /** The name of this library.

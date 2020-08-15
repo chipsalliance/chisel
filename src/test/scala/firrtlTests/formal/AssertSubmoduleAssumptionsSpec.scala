@@ -1,4 +1,3 @@
-
 package firrtlTests.formal
 
 import firrtl.{CircuitState, Parser, Transform, UnknownForm}
@@ -7,24 +6,25 @@ import firrtl.transforms.formal.AssertSubmoduleAssumptions
 import firrtl.stage.{Forms, TransformManager}
 
 class AssertSubmoduleAssumptionsSpec extends FirrtlFlatSpec {
-  behavior of "AssertSubmoduleAssumptions"
+  behavior.of("AssertSubmoduleAssumptions")
 
-  val transforms = new TransformManager(Forms.HighForm, Forms.MinimalHighForm)
-    .flattenedTransformOrder ++ Seq(new AssertSubmoduleAssumptions)
+  val transforms = new TransformManager(Forms.HighForm, Forms.MinimalHighForm).flattenedTransformOrder ++ Seq(
+    new AssertSubmoduleAssumptions
+  )
 
   def run(input: String, check: Seq[String], debug: Boolean = false): Unit = {
     val circuit = Parser.parse(input.split("\n").toIterator)
-    val result = transforms.foldLeft(CircuitState(circuit, UnknownForm)) {
-      (c: CircuitState, p: Transform) => p.runTransform(c)
+    val result = transforms.foldLeft(CircuitState(circuit, UnknownForm)) { (c: CircuitState, p: Transform) =>
+      p.runTransform(c)
     }
-    val lines = result.circuit.serialize.split("\n") map normalized
+    val lines = result.circuit.serialize.split("\n").map(normalized)
 
     if (debug) {
       println(lines.mkString("\n"))
     }
 
     for (ch <- check) {
-      lines should contain (ch)
+      lines should contain(ch)
     }
   }
 

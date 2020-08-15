@@ -20,10 +20,16 @@ private class FirrtlExpressionSemanticsSpec extends SMTBackendBaseSpec {
     sys.signals.head.e.toString
   }
 
-  def primop(signed: Boolean, op: String, resWidth: Int, inWidth: Seq[Int], consts: Seq[Int] = List(),
-             resAlwaysUnsigned: Boolean = false): String = {
-    val tpe = if(signed) "SInt" else "UInt"
-    val resTpe = if(resAlwaysUnsigned) "UInt" else tpe
+  def primop(
+    signed:            Boolean,
+    op:                String,
+    resWidth:          Int,
+    inWidth:           Seq[Int],
+    consts:            Seq[Int] = List(),
+    resAlwaysUnsigned: Boolean = false
+  ): String = {
+    val tpe = if (signed) "SInt" else "UInt"
+    val resTpe = if (resAlwaysUnsigned) "UInt" else tpe
     val inTpes = inWidth.map(w => s"$tpe<$w>")
     primop(op, s"$resTpe<$resWidth>", inTpes, consts)
   }
@@ -52,16 +58,24 @@ private class FirrtlExpressionSemanticsSpec extends SMTBackendBaseSpec {
 
   it should "correctly translate the `div` primitive operation" in {
     // division is a little bit more complicated because the result of division by zero is undefined
-    assert(primop(false, "div", 8, List(8, 8)) ==
-      "ite(eq(i1, 8'b0), RANDOM.res, udiv(i0, i1))")
-    assert(primop(false, "div", 8, List(8, 4)) ==
-      "ite(eq(i1, 4'b0), RANDOM.res, udiv(i0, zext(i1, 4)))")
+    assert(
+      primop(false, "div", 8, List(8, 8)) ==
+        "ite(eq(i1, 8'b0), RANDOM.res, udiv(i0, i1))"
+    )
+    assert(
+      primop(false, "div", 8, List(8, 4)) ==
+        "ite(eq(i1, 4'b0), RANDOM.res, udiv(i0, zext(i1, 4)))"
+    )
 
     // signed division increases result width by 1
-    assert(primop(true, "div", 8, List(7, 7)) ==
-      "ite(eq(i1, 7'b0), RANDOM.res, sdiv(sext(i0, 1), sext(i1, 1)))")
-    assert(primop(true, "div", 8, List(7, 4))
-      == "ite(eq(i1, 4'b0), RANDOM.res, sdiv(sext(i0, 1), sext(i1, 4)))")
+    assert(
+      primop(true, "div", 8, List(7, 7)) ==
+        "ite(eq(i1, 7'b0), RANDOM.res, sdiv(sext(i0, 1), sext(i1, 1)))"
+    )
+    assert(
+      primop(true, "div", 8, List(7, 4))
+        == "ite(eq(i1, 4'b0), RANDOM.res, sdiv(sext(i0, 1), sext(i1, 4)))"
+    )
   }
 
   it should "correctly translate the `rem` primitive operation" in {
@@ -134,15 +148,19 @@ private class FirrtlExpressionSemanticsSpec extends SMTBackendBaseSpec {
   it should "correctly translate the `dshl` primitive operation" in {
     assert(primop(false, "dshl", 31, List(16, 4)) == "logical_shift_left(zext(i0, 15), zext(i1, 27))")
     assert(primop(false, "dshl", 19, List(16, 2)) == "logical_shift_left(zext(i0, 3), zext(i1, 17))")
-    assert(primop("dshl", "SInt<19>", List("SInt<16>", "UInt<2>"), List()) ==
-      "logical_shift_left(sext(i0, 3), zext(i1, 17))")
+    assert(
+      primop("dshl", "SInt<19>", List("SInt<16>", "UInt<2>"), List()) ==
+        "logical_shift_left(sext(i0, 3), zext(i1, 17))"
+    )
   }
 
   it should "correctly translate the `dshr` primitive operation" in {
     assert(primop(false, "dshr", 16, List(16, 4)) == "logical_shift_right(i0, zext(i1, 12))")
     assert(primop(false, "dshr", 16, List(16, 2)) == "logical_shift_right(i0, zext(i1, 14))")
-    assert(primop("dshr", "SInt<16>", List("SInt<16>", "UInt<2>"), List()) ==
-      "arithmetic_shift_right(i0, zext(i1, 14))")
+    assert(
+      primop("dshr", "SInt<16>", List("SInt<16>", "UInt<2>"), List()) ==
+        "arithmetic_shift_right(i0, zext(i1, 14))"
+    )
   }
 
   it should "correctly translate the `cvt` primitive operation" in {
@@ -197,15 +215,15 @@ private class FirrtlExpressionSemanticsSpec extends SMTBackendBaseSpec {
   }
 
   it should "correctly translate the `bits` primitive operation" in {
-    assert(primop(false, "bits", 1, List(4), List(2,2)) == "i0[2]")
-    assert(primop(false, "bits", 2, List(4), List(2,1)) == "i0[2:1]")
-    assert(primop(false, "bits", 1, List(4), List(2,1)) == "i0[2:1][0]")
-    assert(primop(false, "bits", 3, List(4), List(2,1)) == "zext(i0[2:1], 1)")
+    assert(primop(false, "bits", 1, List(4), List(2, 2)) == "i0[2]")
+    assert(primop(false, "bits", 2, List(4), List(2, 1)) == "i0[2:1]")
+    assert(primop(false, "bits", 1, List(4), List(2, 1)) == "i0[2:1][0]")
+    assert(primop(false, "bits", 3, List(4), List(2, 1)) == "zext(i0[2:1], 1)")
 
-    assert(primop(true, "bits", 1, List(4), List(2,2), resAlwaysUnsigned = true) == "i0[2]")
-    assert(primop(true, "bits", 2, List(4), List(2,1), resAlwaysUnsigned = true) == "i0[2:1]")
-    assert(primop(true, "bits", 1, List(4), List(2,1), resAlwaysUnsigned = true) == "i0[2:1][0]")
-    assert(primop(true, "bits", 3, List(4), List(2,1), resAlwaysUnsigned = true) == "zext(i0[2:1], 1)")
+    assert(primop(true, "bits", 1, List(4), List(2, 2), resAlwaysUnsigned = true) == "i0[2]")
+    assert(primop(true, "bits", 2, List(4), List(2, 1), resAlwaysUnsigned = true) == "i0[2:1]")
+    assert(primop(true, "bits", 1, List(4), List(2, 1), resAlwaysUnsigned = true) == "i0[2:1][0]")
+    assert(primop(true, "bits", 3, List(4), List(2, 1), resAlwaysUnsigned = true) == "zext(i0[2:1], 1)")
   }
 
   it should "correctly translate the `head` primitive operation" in {

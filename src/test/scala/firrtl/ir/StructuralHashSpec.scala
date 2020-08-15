@@ -6,11 +6,11 @@ import firrtl.PrimOps._
 import org.scalatest.flatspec.AnyFlatSpec
 
 class StructuralHashSpec extends AnyFlatSpec {
-  private def hash(n: DefModule): HashCode = StructuralHash.sha256(n, n => n)
-  private def hash(c: Circuit): HashCode = StructuralHash.sha256Node(c)
+  private def hash(n: DefModule):  HashCode = StructuralHash.sha256(n, n => n)
+  private def hash(c: Circuit):    HashCode = StructuralHash.sha256Node(c)
   private def hash(e: Expression): HashCode = StructuralHash.sha256Node(e)
-  private def hash(t: Type): HashCode = StructuralHash.sha256Node(t)
-  private def hash(s: Statement): HashCode = StructuralHash.sha256Node(s)
+  private def hash(t: Type):       HashCode = StructuralHash.sha256Node(t)
+  private def hash(s: Statement):  HashCode = StructuralHash.sha256Node(s)
   private val highFirrtlCompiler = new firrtl.stage.transforms.Compiler(
     targets = firrtl.stage.Forms.HighForm
   )
@@ -24,18 +24,18 @@ class StructuralHashSpec extends AnyFlatSpec {
     highFirrtlCompiler.transform(firrtl.CircuitState(rawFirrtl, Seq())).circuit
   }
 
-  private val b0 = UIntLiteral(0,IntWidth(1))
-  private val b1 = UIntLiteral(1,IntWidth(1))
+  private val b0 = UIntLiteral(0, IntWidth(1))
+  private val b1 = UIntLiteral(1, IntWidth(1))
   private val add = DoPrim(Add, Seq(b0, b1), Seq(), UnknownType)
 
   it should "generate the same hash if the objects are structurally the same" in {
-    assert(hash(b0) == hash(UIntLiteral(0,IntWidth(1))))
-    assert(hash(b0) != hash(UIntLiteral(1,IntWidth(1))))
-    assert(hash(b0) != hash(UIntLiteral(1,IntWidth(2))))
+    assert(hash(b0) == hash(UIntLiteral(0, IntWidth(1))))
+    assert(hash(b0) != hash(UIntLiteral(1, IntWidth(1))))
+    assert(hash(b0) != hash(UIntLiteral(1, IntWidth(2))))
 
-    assert(hash(b1) == hash(UIntLiteral(1,IntWidth(1))))
-    assert(hash(b1) != hash(UIntLiteral(0,IntWidth(1))))
-    assert(hash(b1) != hash(UIntLiteral(1,IntWidth(2))))
+    assert(hash(b1) == hash(UIntLiteral(1, IntWidth(1))))
+    assert(hash(b1) != hash(UIntLiteral(0, IntWidth(1))))
+    assert(hash(b1) != hash(UIntLiteral(1, IntWidth(2))))
   }
 
   it should "ignore expression types" in {
@@ -84,15 +84,18 @@ class StructuralHashSpec extends AnyFlatSpec {
         |""".stripMargin
 
     assert(hash(parse(a)) != hash(parse(d)), "circuits with different names are always different")
-    assert(hash(parse(a).modules.head) == hash(parse(d).modules.head),
-      "modules with different names can be structurally different")
+    assert(
+      hash(parse(a).modules.head) == hash(parse(d).modules.head),
+      "modules with different names can be structurally different"
+    )
 
     // for the Dedup pass we do need a way to take the port names into account
-    assert(StructuralHash.sha256WithSignificantPortNames(parse(a).modules.head) !=
-      StructuralHash.sha256WithSignificantPortNames(parse(b).modules.head),
-      "renaming ports does affect the hash if we ask to")
+    assert(
+      StructuralHash.sha256WithSignificantPortNames(parse(a).modules.head) !=
+        StructuralHash.sha256WithSignificantPortNames(parse(b).modules.head),
+      "renaming ports does affect the hash if we ask to"
+    )
   }
-
 
   it should "not ignore port names if asked to" in {
     val e =
@@ -119,14 +122,20 @@ class StructuralHashSpec extends AnyFlatSpec {
         |    z <= x
         |""".stripMargin
 
-    assert(StructuralHash.sha256WithSignificantPortNames(parse(e).modules.head) !=
-      StructuralHash.sha256WithSignificantPortNames(parse(f).modules.head),
-      "renaming ports does affect the hash if we ask to")
-    assert(StructuralHash.sha256WithSignificantPortNames(parse(e).modules.head) ==
-      StructuralHash.sha256WithSignificantPortNames(parse(g).modules.head),
-      "renaming internal wires should never affect the hash")
-    assert(hash(parse(e).modules.head) == hash(parse(g).modules.head),
-      "renaming internal wires should never affect the hash")
+    assert(
+      StructuralHash.sha256WithSignificantPortNames(parse(e).modules.head) !=
+        StructuralHash.sha256WithSignificantPortNames(parse(f).modules.head),
+      "renaming ports does affect the hash if we ask to"
+    )
+    assert(
+      StructuralHash.sha256WithSignificantPortNames(parse(e).modules.head) ==
+        StructuralHash.sha256WithSignificantPortNames(parse(g).modules.head),
+      "renaming internal wires should never affect the hash"
+    )
+    assert(
+      hash(parse(e).modules.head) == hash(parse(g).modules.head),
+      "renaming internal wires should never affect the hash"
+    )
   }
 
   it should "not ignore port bundle names if asked to" in {
@@ -154,18 +163,25 @@ class StructuralHashSpec extends AnyFlatSpec {
         |    y.z <= x.x
         |""".stripMargin
 
-    assert(hash(parse(e).modules.head) == hash(parse(f).modules.head),
-      "renaming port bundles does normally not affect the hash")
-    assert(StructuralHash.sha256WithSignificantPortNames(parse(e).modules.head) !=
-      StructuralHash.sha256WithSignificantPortNames(parse(f).modules.head),
-      "renaming port bundles does affect the hash if we ask to")
-    assert(StructuralHash.sha256WithSignificantPortNames(parse(e).modules.head) ==
-      StructuralHash.sha256WithSignificantPortNames(parse(g).modules.head),
-      "renaming internal wire bundles should never affect the hash")
-    assert(hash(parse(e).modules.head) == hash(parse(g).modules.head),
-      "renaming internal wire bundles should never affect the hash")
+    assert(
+      hash(parse(e).modules.head) == hash(parse(f).modules.head),
+      "renaming port bundles does normally not affect the hash"
+    )
+    assert(
+      StructuralHash.sha256WithSignificantPortNames(parse(e).modules.head) !=
+        StructuralHash.sha256WithSignificantPortNames(parse(f).modules.head),
+      "renaming port bundles does affect the hash if we ask to"
+    )
+    assert(
+      StructuralHash.sha256WithSignificantPortNames(parse(e).modules.head) ==
+        StructuralHash.sha256WithSignificantPortNames(parse(g).modules.head),
+      "renaming internal wire bundles should never affect the hash"
+    )
+    assert(
+      hash(parse(e).modules.head) == hash(parse(g).modules.head),
+      "renaming internal wire bundles should never affect the hash"
+    )
   }
-
 
   it should "fail on Info" in {
     // it does not make sense to hash Info nodes
@@ -178,9 +194,9 @@ class StructuralHashSpec extends AnyFlatSpec {
     def parse(str: String): BundleType = {
       val src =
         s"""circuit c:
-          |  module c:
-          |    input z: $str
-          |""".stripMargin
+           |  module c:
+           |    input z: $str
+           |""".stripMargin
       val c = firrtl.Parser.parse(src)
       val tpe = c.modules.head.ports.head.tpe
       tpe.asInstanceOf[BundleType]
@@ -219,11 +235,15 @@ class StructuralHashSpec extends AnyFlatSpec {
     // Q: should extmodule portnames always be significant since they map to the verilog pins?
     // A: It would be a bug for two exmodules in the same circuit to have the same defname but different
     //    port names. This should be detected by an earlier pass and thus we do not have to deal with that situation.
-    assert(hash(parse(a).modules.head) == hash(parse(b).modules.head),
-      "two ext modules with the same defname and the same type and number of ports")
-    assert(StructuralHash.sha256WithSignificantPortNames(parse(a).modules.head) !=
-      StructuralHash.sha256WithSignificantPortNames(parse(b).modules.head),
-      "two ext modules with significant port names")
+    assert(
+      hash(parse(a).modules.head) == hash(parse(b).modules.head),
+      "two ext modules with the same defname and the same type and number of ports"
+    )
+    assert(
+      StructuralHash.sha256WithSignificantPortNames(parse(a).modules.head) !=
+        StructuralHash.sha256WithSignificantPortNames(parse(b).modules.head),
+      "two ext modules with significant port names"
+    )
   }
 
   "Blocks and empty statements" should "not affect structural equivalence" in {
@@ -269,9 +289,9 @@ class StructuralHashSpec extends AnyFlatSpec {
 }
 
 private case object DebugHasher extends Hasher {
-  override def update(b: Byte): Unit = println(s"b(${b.toInt & 0xff})")
-  override def update(i: Int): Unit = println(s"i(${i})")
-  override def update(l: Long): Unit = println(s"l(${l})")
-  override def update(s: String): Unit = println(s"s(${s})")
+  override def update(b: Byte):        Unit = println(s"b(${b.toInt & 0xff})")
+  override def update(i: Int):         Unit = println(s"i(${i})")
+  override def update(l: Long):        Unit = println(s"l(${l})")
+  override def update(s: String):      Unit = println(s"s(${s})")
   override def update(b: Array[Byte]): Unit = println(s"bytes(${b.map(x => x.toInt & 0xff).mkString(", ")})")
 }

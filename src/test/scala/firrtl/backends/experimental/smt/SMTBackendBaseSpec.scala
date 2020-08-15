@@ -3,7 +3,7 @@
 package firrtl.backends.experimental.smt
 
 import firrtl.annotations.Annotation
-import firrtl.{MemoryInitValue, ir}
+import firrtl.{ir, MemoryInitValue}
 import firrtl.stage.{Forms, TransformManager}
 import org.scalatest.flatspec.AnyFlatSpec
 
@@ -16,8 +16,12 @@ private abstract class SMTBackendBaseSpec extends AnyFlatSpec {
     compiler.runTransform(firrtl.CircuitState(c, annos)).circuit
   }
 
-  protected def toSys(src: String, mod: String = "m", presetRegs: Set[String] = Set(),
-                      memInit: Map[String, MemoryInitValue] = Map()): TransitionSystem = {
+  protected def toSys(
+    src:        String,
+    mod:        String = "m",
+    presetRegs: Set[String] = Set(),
+    memInit:    Map[String, MemoryInitValue] = Map()
+  ): TransitionSystem = {
     val circuit = compile(src)
     val module = circuit.modules.find(_.name == mod).get.asInstanceOf[ir.Module]
     // println(module.serialize)

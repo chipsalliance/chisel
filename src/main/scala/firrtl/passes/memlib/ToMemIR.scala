@@ -14,16 +14,17 @@ import firrtl.ir._
   *   - undefined read-under-write behavior
   */
 object ToMemIR extends Pass {
+
   /** Only annotate memories that are candidates for memory macro replacements
     * i.e. rw, w + r (read, write 1 cycle delay) and read-under-write "undefined."
     */
   import ReadUnderWrite._
   def updateStmts(s: Statement): Statement = s match {
-    case m @ DefMemory(_,_,_,_,1,1,r,w,rw,Undefined) if (w.length + rw.length) == 1 && r.length <= 1 =>
+    case m @ DefMemory(_, _, _, _, 1, 1, r, w, rw, Undefined) if (w.length + rw.length) == 1 && r.length <= 1 =>
       DefAnnotatedMemory(m)
-    case sx => sx map updateStmts
+    case sx => sx.map(updateStmts)
   }
 
-  def annotateModMems(m: DefModule) = m map updateStmts
-  def run(c: Circuit) = c copy (modules = c.modules map annotateModMems)
+  def annotateModMems(m: DefModule) = m.map(updateStmts)
+  def run(c:             Circuit) = c.copy(modules = c.modules.map(annotateModMems))
 }

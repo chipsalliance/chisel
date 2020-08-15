@@ -11,37 +11,37 @@ import firrtlTests.execution._
 class MemInitSpec extends FirrtlFlatSpec {
   def input(tpe: String): String =
     s"""
-      |circuit MemTest:
-      |  module MemTest:
-      |    input clock : Clock
-      |    input rAddr : UInt<5>
-      |    input rEnable : UInt<1>
-      |    input wAddr : UInt<5>
-      |    input wData : $tpe
-      |    input wEnable : UInt<1>
-      |    output rData : $tpe
-      |
-      |    mem m:
-      |      data-type => $tpe
-      |      depth => 32
-      |      reader => r
-      |      writer => w
-      |      read-latency => 1
-      |      write-latency => 1
-      |      read-under-write => new
-      |
-      |    m.r.clk <= clock
-      |    m.r.addr <= rAddr
-      |    m.r.en <= rEnable
-      |    rData <= m.r.data
-      |
-      |    m.w.clk <= clock
-      |    m.w.addr <= wAddr
-      |    m.w.en <= wEnable
-      |    m.w.data <= wData
-      |    m.w.mask is invalid
-      |
-      |""".stripMargin
+       |circuit MemTest:
+       |  module MemTest:
+       |    input clock : Clock
+       |    input rAddr : UInt<5>
+       |    input rEnable : UInt<1>
+       |    input wAddr : UInt<5>
+       |    input wData : $tpe
+       |    input wEnable : UInt<1>
+       |    output rData : $tpe
+       |
+       |    mem m:
+       |      data-type => $tpe
+       |      depth => 32
+       |      reader => r
+       |      writer => w
+       |      read-latency => 1
+       |      write-latency => 1
+       |      read-under-write => new
+       |
+       |    m.r.clk <= clock
+       |    m.r.addr <= rAddr
+       |    m.r.en <= rEnable
+       |    rData <= m.r.data
+       |
+       |    m.w.clk <= clock
+       |    m.w.addr <= wAddr
+       |    m.w.en <= wEnable
+       |    m.w.data <= wData
+       |    m.w.mask is invalid
+       |
+       |""".stripMargin
 
   val mRef = CircuitTarget("MemTest").module("MemTest").ref("m")
   def compile(annos: AnnotationSeq, tpe: String = "UInt<32>"): CircuitState = {
@@ -51,13 +51,13 @@ class MemInitSpec extends FirrtlFlatSpec {
   "NoAnnotation" should "create a randomized initialization" in {
     val annos = Seq()
     val result = compile(annos)
-    result should containLine ("    m[initvar] = _RAND_0[31:0];")
+    result should containLine("    m[initvar] = _RAND_0[31:0];")
   }
 
   "MemoryRandomInitAnnotation" should "create a randomized initialization" in {
     val annos = Seq(MemoryRandomInitAnnotation(mRef))
     val result = compile(annos)
-    result should containLine ("    m[initvar] = _RAND_0[31:0];")
+    result should containLine("    m[initvar] = _RAND_0[31:0];")
   }
 
   "MemoryScalarInitAnnotation w/ 0" should "create an initialization with all zeros" in {
@@ -79,8 +79,9 @@ class MemInitSpec extends FirrtlFlatSpec {
     val values = Seq.tabulate(32)(ii => 2 * ii + 5).map(BigInt(_))
     val annos = Seq(MemoryArrayInitAnnotation(mRef, values))
     val result = compile(annos)
-    values.zipWithIndex.foreach { case (value, addr) =>
-      result should containLine(s"  m[$addr] = $value;")
+    values.zipWithIndex.foreach {
+      case (value, addr) =>
+        result should containLine(s"  m[$addr] = $value;")
     }
   }
 
@@ -137,7 +138,9 @@ class MemInitSpec extends FirrtlFlatSpec {
       val annos = Seq(MemoryScalarInitAnnotation(mRef, 0))
       compile(annos, "{real: SInt<10>, imag: SInt<10>}")
     }
-    assert(caught.getMessage.endsWith("Cannot initialize memory m of non ground type { real : SInt<10>, imag : SInt<10>}"))
+    assert(
+      caught.getMessage.endsWith("Cannot initialize memory m of non ground type { real : SInt<10>, imag : SInt<10>}")
+    )
   }
 
   private def jsonAnno(name: String, suffix: String): String =
@@ -165,39 +168,46 @@ class MemInitSpec extends FirrtlFlatSpec {
 }
 
 abstract class MemInitExecutionSpec(values: Seq[Int], init: ReferenceTarget => Annotation)
-  extends SimpleExecutionTest with VerilogExecution {
+    extends SimpleExecutionTest
+    with VerilogExecution {
   override val body: String =
     s"""
-      |mem m:
-      |  data-type => UInt<32>
-      |  depth => ${values.length}
-      |  reader => r
-      |  read-latency => 1
-      |  write-latency => 1
-      |  read-under-write => new
-      |m.r.clk <= clock
-      |m.r.en <= UInt<1>(1)
-      |""".stripMargin
+       |mem m:
+       |  data-type => UInt<32>
+       |  depth => ${values.length}
+       |  reader => r
+       |  read-latency => 1
+       |  write-latency => 1
+       |  read-under-write => new
+       |m.r.clk <= clock
+       |m.r.en <= UInt<1>(1)
+       |""".stripMargin
 
   val mRef = CircuitTarget("dut").module("dut").ref("m")
   override val customAnnotations: AnnotationSeq = Seq(init(mRef))
 
-  override def commands: Seq[SimpleTestCommand] = (Seq(-1) ++  values).zipWithIndex.map { case (value, addr) =>
-    if(value == -1) { Seq(Poke("m.r.addr", addr)) }
-    else if(addr >= values.length) { Seq(Expect("m.r.data", value)) }
-    else { Seq(Poke("m.r.addr", addr), Expect("m.r.data", value)) }
+  override def commands: Seq[SimpleTestCommand] = (Seq(-1) ++ values).zipWithIndex.map {
+    case (value, addr) =>
+      if (value == -1) { Seq(Poke("m.r.addr", addr)) }
+      else if (addr >= values.length) { Seq(Expect("m.r.data", value)) }
+      else { Seq(Poke("m.r.addr", addr), Expect("m.r.data", value)) }
   }.flatMap(_ ++ Seq(Step(1)))
 }
 
-class MemScalarInit0ExecutionSpec extends MemInitExecutionSpec(
-  Seq.tabulate(31)(_ => 0), r => MemoryScalarInitAnnotation(r, 0)
-) {}
+class MemScalarInit0ExecutionSpec
+    extends MemInitExecutionSpec(
+      Seq.tabulate(31)(_ => 0),
+      r => MemoryScalarInitAnnotation(r, 0)
+    ) {}
 
-class MemScalarInit17ExecutionSpec extends MemInitExecutionSpec(
-  Seq.tabulate(31)(_ => 17), r => MemoryScalarInitAnnotation(r, 17)
-) {}
+class MemScalarInit17ExecutionSpec
+    extends MemInitExecutionSpec(
+      Seq.tabulate(31)(_ => 17),
+      r => MemoryScalarInitAnnotation(r, 17)
+    ) {}
 
-class MemArrayInitExecutionSpec extends MemInitExecutionSpec(
-  Seq.tabulate(31)(ii => ii * 5 + 7),
-  r => MemoryArrayInitAnnotation(r, Seq.tabulate(31)(ii => ii * 5 + 7).map(BigInt(_)))
-) {}
+class MemArrayInitExecutionSpec
+    extends MemInitExecutionSpec(
+      Seq.tabulate(31)(ii => ii * 5 + 7),
+      r => MemoryArrayInitAnnotation(r, Seq.tabulate(31)(ii => ii * 5 + 7).map(BigInt(_)))
+    ) {}

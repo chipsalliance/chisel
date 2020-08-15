@@ -10,13 +10,12 @@ import firrtl.testutils.FirrtlFlatSpec
 
 class IntervalSpec extends FirrtlFlatSpec {
   private def executeTest(input: String, expected: Seq[String], passes: Seq[Transform]) = {
-    val c = passes.foldLeft(Parser.parse(input.split("\n").toIterator)) {
-      (c: Circuit, p: Transform) => 
-        p.runTransform(CircuitState(c, UnknownForm, AnnotationSeq(Nil), None)).circuit
+    val c = passes.foldLeft(Parser.parse(input.split("\n").toIterator)) { (c: Circuit, p: Transform) =>
+      p.runTransform(CircuitState(c, UnknownForm, AnnotationSeq(Nil), None)).circuit
     }
-    val lines = c.serialize.split("\n") map normalized
+    val lines = c.serialize.split("\n").map(normalized)
 
-    expected foreach { e =>
+    expected.foreach { e =>
       lines should contain(e)
     }
   }
@@ -37,7 +36,7 @@ class IntervalSpec extends FirrtlFlatSpec {
         |    output out1 : Interval
         |    out0 <= add(in0, add(in1, add(in2, add(in3, add(in4, add(in5, in6))))))
         |    out1 <= add(in0, add(in1, add(in2, add(in3, add(in4, add(in5, in6))))))""".stripMargin
-    executeTest(input, input.split("\n") map normalized, passes)
+    executeTest(input, input.split("\n").map(normalized), passes)
   }
 
   "Interval types" should "infer bp correctly" in {
@@ -58,7 +57,7 @@ class IntervalSpec extends FirrtlFlatSpec {
         |    input in2 : Interval(-0.32, 10].2
         |    output out0 : Interval.4
         |    out0 <= add(in0, add(in1, in2))""".stripMargin
-    executeTest(input, check.split("\n") map normalized, passes)
+    executeTest(input, check.split("\n").map(normalized), passes)
   }
 
   "Interval types" should "trim known intervals correctly" in {
@@ -79,11 +78,12 @@ class IntervalSpec extends FirrtlFlatSpec {
         |    input in2 : Interval[-0.25, 10].2
         |    output out0 : Interval.4
         |    out0 <= add(in0, incp(add(in1, incp(in2, 1)), 1))""".stripMargin
-    executeTest(input, check.split("\n") map normalized, passes)
+    executeTest(input, check.split("\n").map(normalized), passes)
   }
 
   "Interval types" should "infer intervals correctly" in {
-    val passes = Seq(ToWorkingIR, InferTypes, ResolveFlows, new InferBinaryPoints(), new TrimIntervals(), new InferWidths())
+    val passes =
+      Seq(ToWorkingIR, InferTypes, ResolveFlows, new InferBinaryPoints(), new TrimIntervals(), new InferWidths())
     val input =
       """circuit Unit :
         |  module Unit :
@@ -100,11 +100,19 @@ class IntervalSpec extends FirrtlFlatSpec {
       """output out0 : Interval[-0.5625, 22.9375].4
         |output out1 : Interval[-74.53125, 298.125].9
         |output out2 : Interval[-10.6875, 12.8125].4""".stripMargin
-    executeTest(input, check.split("\n") map normalized, passes)
+    executeTest(input, check.split("\n").map(normalized), passes)
   }
 
   "Interval types" should "be removed correctly" in {
-    val passes = Seq(ToWorkingIR, InferTypes, ResolveFlows, new InferBinaryPoints(), new TrimIntervals(), new InferWidths(), new RemoveIntervals())
+    val passes = Seq(
+      ToWorkingIR,
+      InferTypes,
+      ResolveFlows,
+      new InferBinaryPoints(),
+      new TrimIntervals(),
+      new InferWidths(),
+      new RemoveIntervals()
+    )
     val input =
       """circuit Unit :
         |  module Unit :
@@ -129,209 +137,227 @@ class IntervalSpec extends FirrtlFlatSpec {
         |    out0 <= add(in0, shl(add(in1, shl(in2, 1)), 1))
         |    out1 <= mul(in0, mul(in1, in2))
         |    out2 <= sub(in0, shl(sub(in1, shl(in2, 1)), 1))""".stripMargin
-    executeTest(input, check.split("\n") map normalized, passes)
+    executeTest(input, check.split("\n").map(normalized), passes)
   }
 
-"Interval types" should "infer multiplication by zero correctly" in {
-  val passes = Seq(ToWorkingIR, InferTypes, ResolveFlows, new InferBinaryPoints(), new TrimIntervals(), new InferWidths())
+  "Interval types" should "infer multiplication by zero correctly" in {
+    val passes =
+      Seq(ToWorkingIR, InferTypes, ResolveFlows, new InferBinaryPoints(), new TrimIntervals(), new InferWidths())
     val input =
       s"""circuit Unit :
-      |  module Unit :
-      |    input  in1 : Interval[0, 0.5].1
-      |    input  in2 : Interval[0, 0].1
-      |    output mul : Interval
-      |    mul <= mul(in2, in1)
-      |    """.stripMargin
-  val check = s"""output mul : Interval[0, 0].2 """.stripMargin
-  executeTest(input, check.split("\n") map normalized, passes)
-}
+         |  module Unit :
+         |    input  in1 : Interval[0, 0.5].1
+         |    input  in2 : Interval[0, 0].1
+         |    output mul : Interval
+         |    mul <= mul(in2, in1)
+         |    """.stripMargin
+    val check = s"""output mul : Interval[0, 0].2 """.stripMargin
+    executeTest(input, check.split("\n").map(normalized), passes)
+  }
 
   "Interval types" should "infer muxes correctly" in {
-    val passes = Seq(ToWorkingIR, InferTypes, ResolveFlows, new InferBinaryPoints(), new TrimIntervals(), new InferWidths())
-      val input =
-        s"""circuit Unit :
-        |  module Unit :
-        |    input  p   : UInt<1>
-        |    input  in1 : Interval[0, 0.5].1
-        |    input  in2 : Interval[0, 0].1
-        |    output out : Interval
-        |    out <= mux(p, in2, in1)
-        |    """.stripMargin
+    val passes =
+      Seq(ToWorkingIR, InferTypes, ResolveFlows, new InferBinaryPoints(), new TrimIntervals(), new InferWidths())
+    val input =
+      s"""circuit Unit :
+         |  module Unit :
+         |    input  p   : UInt<1>
+         |    input  in1 : Interval[0, 0.5].1
+         |    input  in2 : Interval[0, 0].1
+         |    output out : Interval
+         |    out <= mux(p, in2, in1)
+         |    """.stripMargin
     val check = s"""output out : Interval[0, 0.5].1 """.stripMargin
-    executeTest(input, check.split("\n") map normalized, passes)
+    executeTest(input, check.split("\n").map(normalized), passes)
   }
   "Interval types" should "infer dshl correctly" in {
-    val passes = Seq(ToWorkingIR, InferTypes, ResolveKinds, ResolveFlows, new InferBinaryPoints(), new TrimIntervals, new InferWidths())
-      val input =
-        s"""circuit Unit :
-        |  module Unit :
-        |    input  p   : UInt<3>
-        |    input  in1 : Interval[-1, 1].0
-        |    output out : Interval
-        |    out <= dshl(in1, p)
-        |    """.stripMargin
+    val passes = Seq(
+      ToWorkingIR,
+      InferTypes,
+      ResolveKinds,
+      ResolveFlows,
+      new InferBinaryPoints(),
+      new TrimIntervals,
+      new InferWidths()
+    )
+    val input =
+      s"""circuit Unit :
+         |  module Unit :
+         |    input  p   : UInt<3>
+         |    input  in1 : Interval[-1, 1].0
+         |    output out : Interval
+         |    out <= dshl(in1, p)
+         |    """.stripMargin
     val check = s"""output out : Interval[-128, 128].0 """.stripMargin
-    executeTest(input, check.split("\n") map normalized, passes)
+    executeTest(input, check.split("\n").map(normalized), passes)
   }
   "Interval types" should "infer asInterval correctly" in {
     val passes = Seq(ToWorkingIR, InferTypes, ResolveFlows, new InferWidths())
-      val input =
-        s"""circuit Unit :
-        |  module Unit :
-        |    input  p   : UInt<3>
-        |    output out : Interval
-        |    out <= asInterval(p, 0, 4, 1)
-        |    """.stripMargin
+    val input =
+      s"""circuit Unit :
+         |  module Unit :
+         |    input  p   : UInt<3>
+         |    output out : Interval
+         |    out <= asInterval(p, 0, 4, 1)
+         |    """.stripMargin
     val check = s"""output out : Interval[0, 2].1 """.stripMargin
-    executeTest(input, check.split("\n") map normalized, passes)
+    executeTest(input, check.split("\n").map(normalized), passes)
   }
   "Interval types" should "do wrap/clip correctly" in {
     val passes = Seq(ToWorkingIR, new ResolveAndCheck())
-      val input =
-        s"""circuit Unit :
-        |  module Unit :
-        |    input  s:     SInt<2>
-        |    input  u:     UInt<3>
-        |    input  in1:   Interval[-3, 5].0
-        |    output wrap3: Interval
-        |    output wrap4: Interval
-        |    output wrap5: Interval
-        |    output wrap6: Interval
-        |    output wrap7: Interval
-        |    output clip3: Interval
-        |    output clip4: Interval
-        |    output clip5: Interval
-        |    output clip6: Interval
-        |    output clip7: Interval
-        |    wrap3 <= wrap(in1, asInterval(s, -2, 4, 0))
-        |    wrap4 <= wrap(in1, asInterval(s, -1, 1, 0))
-        |    wrap5 <= wrap(in1, asInterval(s, -4, 4, 0))
-        |    wrap6 <= wrap(in1, asInterval(s, -1, 7, 0))
-        |    wrap7 <= wrap(in1, asInterval(s, -4, 7, 0))
-        |    clip3 <= clip(in1, asInterval(s, -2, 4, 0))
-        |    clip4 <= clip(in1, asInterval(s, -1, 1, 0))
-        |    clip5 <= clip(in1, asInterval(s, -4, 4, 0))
-        |    clip6 <= clip(in1, asInterval(s, -1, 7, 0))
-        |    clip7 <= clip(in1, asInterval(s, -4, 7, 0))
+    val input =
+      s"""circuit Unit :
+         |  module Unit :
+         |    input  s:     SInt<2>
+         |    input  u:     UInt<3>
+         |    input  in1:   Interval[-3, 5].0
+         |    output wrap3: Interval
+         |    output wrap4: Interval
+         |    output wrap5: Interval
+         |    output wrap6: Interval
+         |    output wrap7: Interval
+         |    output clip3: Interval
+         |    output clip4: Interval
+         |    output clip5: Interval
+         |    output clip6: Interval
+         |    output clip7: Interval
+         |    wrap3 <= wrap(in1, asInterval(s, -2, 4, 0))
+         |    wrap4 <= wrap(in1, asInterval(s, -1, 1, 0))
+         |    wrap5 <= wrap(in1, asInterval(s, -4, 4, 0))
+         |    wrap6 <= wrap(in1, asInterval(s, -1, 7, 0))
+         |    wrap7 <= wrap(in1, asInterval(s, -4, 7, 0))
+         |    clip3 <= clip(in1, asInterval(s, -2, 4, 0))
+         |    clip4 <= clip(in1, asInterval(s, -1, 1, 0))
+         |    clip5 <= clip(in1, asInterval(s, -4, 4, 0))
+         |    clip6 <= clip(in1, asInterval(s, -1, 7, 0))
+         |    clip7 <= clip(in1, asInterval(s, -4, 7, 0))
         """.stripMargin
-        //|    output wrap1: Interval
-        //|    output wrap2: Interval
-        //|    output clip1: Interval
-        //|    output clip2: Interval
-        //|    wrap1 <= wrap(in1, u, 0)
-        //|    wrap2 <= wrap(in1, s, 0)
-        //|    clip1 <= clip(in1, u)
-        //|    clip2 <= clip(in1, s)
+    //|    output wrap1: Interval
+    //|    output wrap2: Interval
+    //|    output clip1: Interval
+    //|    output clip2: Interval
+    //|    wrap1 <= wrap(in1, u, 0)
+    //|    wrap2 <= wrap(in1, s, 0)
+    //|    clip1 <= clip(in1, u)
+    //|    clip2 <= clip(in1, s)
     val check = s"""
-        |    output wrap3 : Interval[-2, 4].0
-        |    output wrap4 : Interval[-1, 1].0
-        |    output wrap5 : Interval[-4, 4].0
-        |    output wrap6 : Interval[-1, 7].0
-        |    output wrap7 : Interval[-4, 7].0
-        |    output clip3 : Interval[-2, 4].0
-        |    output clip4 : Interval[-1, 1].0
-        |    output clip5 : Interval[-3, 4].0
-        |    output clip6 : Interval[-1, 5].0
-        |    output clip7 : Interval[-3, 5].0 """.stripMargin
-        // TODO: this optimization
-        //|    output wrap1 : Interval[0, 7].0
-        //|    output wrap2 : Interval[-2, 1].0
-        //|    output clip1 : Interval[0, 5].0
-        //|    output clip2 : Interval[-2, 1].0
-        //|    output wrap7 : Interval[-3, 5].0
-    executeTest(input, check.split("\n") map normalized, passes)
+                   |    output wrap3 : Interval[-2, 4].0
+                   |    output wrap4 : Interval[-1, 1].0
+                   |    output wrap5 : Interval[-4, 4].0
+                   |    output wrap6 : Interval[-1, 7].0
+                   |    output wrap7 : Interval[-4, 7].0
+                   |    output clip3 : Interval[-2, 4].0
+                   |    output clip4 : Interval[-1, 1].0
+                   |    output clip5 : Interval[-3, 4].0
+                   |    output clip6 : Interval[-1, 5].0
+                   |    output clip7 : Interval[-3, 5].0 """.stripMargin
+    // TODO: this optimization
+    //|    output wrap1 : Interval[0, 7].0
+    //|    output wrap2 : Interval[-2, 1].0
+    //|    output clip1 : Interval[0, 5].0
+    //|    output clip2 : Interval[-2, 1].0
+    //|    output wrap7 : Interval[-3, 5].0
+    executeTest(input, check.split("\n").map(normalized), passes)
   }
   "Interval types" should "remove wrap/clip correctly" in {
     val passes = Seq(ToWorkingIR, new ResolveAndCheck(), new RemoveIntervals())
-      val input =
-        s"""circuit Unit :
-        |  module Unit :
-        |    input  s:     SInt<2>
-        |    input  u:     UInt<3>
-        |    input  in1:   Interval[-3, 5].0
-        |    output wrap3: Interval
-        |    output wrap5: Interval
-        |    output wrap6: Interval
-        |    output wrap7: Interval
-        |    output clip3: Interval
-        |    output clip4: Interval
-        |    output clip5: Interval
-        |    output clip6: Interval
-        |    output clip7: Interval
-        |    wrap3 <= wrap(in1, asInterval(s, -2, 4, 0))
-        |    wrap5 <= wrap(in1, asInterval(s, -4, 4, 0))
-        |    wrap6 <= wrap(in1, asInterval(s, -1, 7, 0))
-        |    wrap7 <= wrap(in1, asInterval(s, -4, 7, 0))
-        |    clip3 <= clip(in1, asInterval(s, -2, 4, 0))
-        |    clip4 <= clip(in1, asInterval(s, -1, 1, 0))
-        |    clip5 <= clip(in1, asInterval(s, -4, 4, 0))
-        |    clip6 <= clip(in1, asInterval(s, -1, 7, 0))
-        |    clip7 <= clip(in1, asInterval(s, -4, 7, 0))
-        |    """.stripMargin
+    val input =
+      s"""circuit Unit :
+         |  module Unit :
+         |    input  s:     SInt<2>
+         |    input  u:     UInt<3>
+         |    input  in1:   Interval[-3, 5].0
+         |    output wrap3: Interval
+         |    output wrap5: Interval
+         |    output wrap6: Interval
+         |    output wrap7: Interval
+         |    output clip3: Interval
+         |    output clip4: Interval
+         |    output clip5: Interval
+         |    output clip6: Interval
+         |    output clip7: Interval
+         |    wrap3 <= wrap(in1, asInterval(s, -2, 4, 0))
+         |    wrap5 <= wrap(in1, asInterval(s, -4, 4, 0))
+         |    wrap6 <= wrap(in1, asInterval(s, -1, 7, 0))
+         |    wrap7 <= wrap(in1, asInterval(s, -4, 7, 0))
+         |    clip3 <= clip(in1, asInterval(s, -2, 4, 0))
+         |    clip4 <= clip(in1, asInterval(s, -1, 1, 0))
+         |    clip5 <= clip(in1, asInterval(s, -4, 4, 0))
+         |    clip6 <= clip(in1, asInterval(s, -1, 7, 0))
+         |    clip7 <= clip(in1, asInterval(s, -4, 7, 0))
+         |    """.stripMargin
     val check = s"""
-        |    wrap3 <= mux(gt(in1, SInt<4>("h4")), sub(in1, SInt<4>("h7")), mux(lt(in1, SInt<2>("h-2")), add(in1, SInt<4>("h7")), in1))
-        |    wrap5 <= mux(gt(in1, SInt<4>("h4")), sub(in1, SInt<5>("h9")), in1)
-        |    wrap6 <= mux(lt(in1, SInt<1>("h-1")), add(in1, SInt<5>("h9")), in1)
-        |    wrap7 <= in1
-        |    clip3 <= mux(gt(in1, SInt<4>("h4")), SInt<4>("h4"), mux(lt(in1, SInt<2>("h-2")), SInt<2>("h-2"), in1))
-        |    clip4 <= mux(gt(in1, SInt<2>("h1")), SInt<2>("h1"), mux(lt(in1, SInt<1>("h-1")), SInt<1>("h-1"), in1))
-        |    clip5 <= mux(gt(in1, SInt<4>("h4")), SInt<4>("h4"), in1)
-        |    clip6 <= mux(lt(in1, SInt<1>("h-1")), SInt<1>("h-1"), in1)
-        |    clip7 <= in1
+                   |    wrap3 <= mux(gt(in1, SInt<4>("h4")), sub(in1, SInt<4>("h7")), mux(lt(in1, SInt<2>("h-2")), add(in1, SInt<4>("h7")), in1))
+                   |    wrap5 <= mux(gt(in1, SInt<4>("h4")), sub(in1, SInt<5>("h9")), in1)
+                   |    wrap6 <= mux(lt(in1, SInt<1>("h-1")), add(in1, SInt<5>("h9")), in1)
+                   |    wrap7 <= in1
+                   |    clip3 <= mux(gt(in1, SInt<4>("h4")), SInt<4>("h4"), mux(lt(in1, SInt<2>("h-2")), SInt<2>("h-2"), in1))
+                   |    clip4 <= mux(gt(in1, SInt<2>("h1")), SInt<2>("h1"), mux(lt(in1, SInt<1>("h-1")), SInt<1>("h-1"), in1))
+                   |    clip5 <= mux(gt(in1, SInt<4>("h4")), SInt<4>("h4"), in1)
+                   |    clip6 <= mux(lt(in1, SInt<1>("h-1")), SInt<1>("h-1"), in1)
+                   |    clip7 <= in1
         """.stripMargin
-        //|    output wrap4: Interval
-        //|    wrap4 <= wrap(in1, asInterval(s, -1, 1, 0), 0)
-        //|    wrap4 <= add(rem(sub(in1, SInt<1>("h-1")), sub(SInt<2>("h1"), SInt<1>("h-1"))), SInt<1>("h-1"))
-    executeTest(input, check.split("\n") map normalized, passes)
+    //|    output wrap4: Interval
+    //|    wrap4 <= wrap(in1, asInterval(s, -1, 1, 0), 0)
+    //|    wrap4 <= add(rem(sub(in1, SInt<1>("h-1")), sub(SInt<2>("h1"), SInt<1>("h-1"))), SInt<1>("h-1"))
+    executeTest(input, check.split("\n").map(normalized), passes)
   }
   "Interval types" should "shift wrap/clip correctly" in {
     val passes = Seq(ToWorkingIR, new ResolveAndCheck, new RemoveIntervals())
-      val input =
-        s"""circuit Unit :
-        |  module Unit :
-        |    input  s:     SInt<2>
-        |    input  in1:   Interval[-3, 5].1
-        |    output wrap1: Interval
-        |    output clip1: Interval
-        |    wrap1 <= wrap(in1, asInterval(s, -2, 2, 0))
-        |    clip1 <= clip(in1, asInterval(s, -2, 2, 0))
-        |    """.stripMargin
+    val input =
+      s"""circuit Unit :
+         |  module Unit :
+         |    input  s:     SInt<2>
+         |    input  in1:   Interval[-3, 5].1
+         |    output wrap1: Interval
+         |    output clip1: Interval
+         |    wrap1 <= wrap(in1, asInterval(s, -2, 2, 0))
+         |    clip1 <= clip(in1, asInterval(s, -2, 2, 0))
+         |    """.stripMargin
     val check = s"""
-        |    wrap1 <= mux(gt(in1, SInt<4>("h4")), sub(in1, SInt<5>("h9")), mux(lt(in1, SInt<3>("h-4")), add(in1, SInt<5>("h9")), in1))
-        |    clip1 <= mux(gt(in1, SInt<4>("h4")), SInt<4>("h4"), mux(lt(in1, SInt<3>("h-4")), SInt<3>("h-4"), in1))
+                   |    wrap1 <= mux(gt(in1, SInt<4>("h4")), sub(in1, SInt<5>("h9")), mux(lt(in1, SInt<3>("h-4")), add(in1, SInt<5>("h9")), in1))
+                   |    clip1 <= mux(gt(in1, SInt<4>("h4")), SInt<4>("h4"), mux(lt(in1, SInt<3>("h-4")), SInt<3>("h-4"), in1))
         """.stripMargin
-    executeTest(input, check.split("\n") map normalized, passes)
+    executeTest(input, check.split("\n").map(normalized), passes)
   }
   "Interval types" should "infer negative binary points" in {
     val passes = Seq(ToWorkingIR, new ResolveAndCheck())
-      val input =
-        s"""circuit Unit :
-        |  module Unit :
-        |    input  in1:   Interval[-2, 4].-1
-        |    input  in2:   Interval[-4, 8].-2
-        |    output out: Interval
-        |    out <= add(in1, in2)
-        |    """.stripMargin
+    val input =
+      s"""circuit Unit :
+         |  module Unit :
+         |    input  in1:   Interval[-2, 4].-1
+         |    input  in2:   Interval[-4, 8].-2
+         |    output out: Interval
+         |    out <= add(in1, in2)
+         |    """.stripMargin
     val check = s"""
-        |    output out : Interval[-6, 12].-1
+                   |    output out : Interval[-6, 12].-1
         """.stripMargin
-    executeTest(input, check.split("\n") map normalized, passes)
+    executeTest(input, check.split("\n").map(normalized), passes)
   }
   "Interval types" should "remove negative binary points" in {
-    val passes = Seq(ToWorkingIR, InferTypes, ResolveFlows, new InferBinaryPoints(), new TrimIntervals(), new InferWidths(), new RemoveIntervals())
-      val input =
-        s"""circuit Unit :
-        |  module Unit :
-        |    input  in1:   Interval[-2, 4].-1
-        |    input  in2:   Interval[-4, 8].-2
-        |    output out: Interval.0
-        |    out <= add(in1, in2)
-        |    """.stripMargin
+    val passes = Seq(
+      ToWorkingIR,
+      InferTypes,
+      ResolveFlows,
+      new InferBinaryPoints(),
+      new TrimIntervals(),
+      new InferWidths(),
+      new RemoveIntervals()
+    )
+    val input =
+      s"""circuit Unit :
+         |  module Unit :
+         |    input  in1:   Interval[-2, 4].-1
+         |    input  in2:   Interval[-4, 8].-2
+         |    output out: Interval.0
+         |    out <= add(in1, in2)
+         |    """.stripMargin
     val check = s"""
-        |    output out : SInt<5>
-        |    out <= shl(add(in1, shl(in2, 1)), 1)
+                   |    output out : SInt<5>
+                   |    out <= shl(add(in1, shl(in2, 1)), 1)
         """.stripMargin
-    executeTest(input, check.split("\n") map normalized, passes)
+    executeTest(input, check.split("\n").map(normalized), passes)
   }
   "Interval types" should "implement squz properly" in {
     val passes = Seq(ToWorkingIR, new ResolveAndCheck)
@@ -372,7 +398,7 @@ class IntervalSpec extends FirrtlFlatSpec {
          |    output minOff : Interval[-1, 4].1
          |    output offMin : Interval[-1, 4].2
         """.stripMargin
-    executeTest(input, check.split("\n") map normalized, passes)
+    executeTest(input, check.split("\n").map(normalized), passes)
   }
   "Interval types" should "lower squz properly" in {
     val passes = Seq(ToWorkingIR, new ResolveAndCheck, new RemoveIntervals)
@@ -413,7 +439,7 @@ class IntervalSpec extends FirrtlFlatSpec {
          |    minOff <= asSInt(bits(min, 4, 0))
          |    offMin <= asSInt(bits(off, 5, 0))
         """.stripMargin
-    executeTest(input, check.split("\n") map normalized, passes)
+    executeTest(input, check.split("\n").map(normalized), passes)
   }
   "Assigning a larger interval to a smaller interval" should "error!" in {
     val passes = Seq(ToWorkingIR, new ResolveAndCheck, new RemoveIntervals)
@@ -424,7 +450,7 @@ class IntervalSpec extends FirrtlFlatSpec {
          |    output out: Interval[2, 3].1
          |    out <= in
          |    """.stripMargin
-    intercept[InvalidConnect]{
+    intercept[InvalidConnect] {
       executeTest(input, Nil, passes)
     }
   }
@@ -437,7 +463,7 @@ class IntervalSpec extends FirrtlFlatSpec {
          |    output out: Interval[2, 3].1
          |    out <= in
          |    """.stripMargin
-    intercept[InvalidConnect]{
+    intercept[InvalidConnect] {
       executeTest(input, Nil, passes)
     }
   }
@@ -511,7 +537,6 @@ class IntervalSpec extends FirrtlFlatSpec {
       """.stripMargin
     )
   }
-
 
   "Wrap with remainder" should "error" in {
     intercept[WrapWithRemainder] {

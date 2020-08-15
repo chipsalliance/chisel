@@ -16,9 +16,7 @@ import scala.collection.mutable
 class WriteOutputAnnotations extends Phase {
 
   override def prerequisites =
-    Seq( Dependency[GetIncludes],
-         Dependency[AddDefaults],
-         Dependency[Checks] )
+    Seq(Dependency[GetIncludes], Dependency[AddDefaults], Dependency[Checks])
 
   override def optionalPrerequisiteOf = Seq.empty
 
@@ -29,8 +27,10 @@ class WriteOutputAnnotations extends Phase {
     val sopts = Viewer[StageOptions].view(annotations)
     val filesWritten = mutable.HashMap.empty[String, Annotation]
     val serializable: AnnotationSeq = annotations.toSeq.flatMap {
-      case _: Unserializable     => None
-      case a: DeletedAnnotation  => if (sopts.writeDeleted) { Some(a) } else { None }
+      case _: Unserializable => None
+      case a: DeletedAnnotation =>
+        if (sopts.writeDeleted) { Some(a) }
+        else { None }
       case a: CustomFileEmission =>
         val filename = a.filename(annotations)
         val canonical = filename.getCanonicalPath()
@@ -38,7 +38,7 @@ class WriteOutputAnnotations extends Phase {
         filesWritten.get(canonical) match {
           case None =>
             val w = new BufferedWriter(new FileWriter(filename))
-            a.getBytes.foreach( w.write(_) )
+            a.getBytes.foreach(w.write(_))
             w.close()
             filesWritten(canonical) = a
           case Some(first) =>

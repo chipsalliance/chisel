@@ -9,15 +9,14 @@ import annotations._
 import wiring._
 
 class WiringTests extends FirrtlFlatSpec {
-  private def executeTest(input: String,
-    expected: String,
-    passes: Seq[Transform],
-    annos: Seq[Annotation]): Unit = {
-    val c = passes.foldLeft(CircuitState(Parser.parse(input.split("\n").toIterator), UnknownForm, annos)) {
-      (c: CircuitState, p: Transform) => p.runTransform(c)
-    }.circuit
+  private def executeTest(input: String, expected: String, passes: Seq[Transform], annos: Seq[Annotation]): Unit = {
+    val c = passes
+      .foldLeft(CircuitState(Parser.parse(input.split("\n").toIterator), UnknownForm, annos)) {
+        (c: CircuitState, p: Transform) => p.runTransform(c)
+      }
+      .circuit
 
-    (parse(c.serialize).serialize) should be (parse(expected).serialize)
+    (parse(c.serialize).serialize) should be(parse(expected).serialize)
   }
 
   private def executeTest(input: String, expected: String, passes: Seq[Transform]): Unit = {
@@ -405,8 +404,10 @@ class WiringTests extends FirrtlFlatSpec {
   }
 
   it should "wire multiple sinks in the same module" in {
-    val sinks = Seq(ComponentName("s", ModuleName("A", CircuitName("Top"))),
-                    ComponentName("t", ModuleName("A", CircuitName("Top"))))
+    val sinks = Seq(
+      ComponentName("s", ModuleName("A", CircuitName("Top"))),
+      ComponentName("t", ModuleName("A", CircuitName("Top")))
+    )
     val source = ComponentName("r", ModuleName("A", CircuitName("Top")))
     val sas = WiringInfo(source, sinks, "pin")
     val input =
@@ -741,8 +742,7 @@ class WiringTests extends FirrtlFlatSpec {
          |    bundle_0 <= bundle
          |  module B :
          |    input clock : Clock
-         |    input pin : {x : UInt<1>, y: UInt<1>, z: {zz : UInt<1>} }"""
-        .stripMargin
+         |    input pin : {x : UInt<1>, y: UInt<1>, z: {zz : UInt<1>} }""".stripMargin
 
     val wiringXForm = new WiringTransform()
     executeTest(input, check, passes :+ wiringXForm, Seq(source, sink))
@@ -753,9 +753,7 @@ class WiringTests extends FirrtlFlatSpec {
     val sourceX = ComponentName("r.x", ModuleName("A", CircuitName("Top")))
     val sinkY = Seq(ModuleName("Y", CircuitName("Top")))
     val sourceY = ComponentName("r.x", ModuleName("A", CircuitName("Top")))
-    val wiSeq = Seq(
-      WiringInfo(sourceX, sinkX, "pin"),
-      WiringInfo(sourceY, sinkY, "pin"))
+    val wiSeq = Seq(WiringInfo(sourceX, sinkX, "pin"), WiringInfo(sourceY, sinkY, "pin"))
     val input =
       """|circuit Top :
          |  module Top :
@@ -809,9 +807,7 @@ class WiringTests extends FirrtlFlatSpec {
     val sink = ComponentName("s", ModuleName("Top", CircuitName("Top")))
     val source1 = ComponentName("r", ModuleName("Top", CircuitName("Top")))
     val source2 = ComponentName("r2", ModuleName("Top", CircuitName("Top")))
-    val annos = Seq(SourceAnnotation(source1, "pin"),
-                    SourceAnnotation(source2, "pin"),
-                    SinkAnnotation(sink, "pin"))
+    val annos = Seq(SourceAnnotation(source1, "pin"), SourceAnnotation(source2, "pin"), SinkAnnotation(sink, "pin"))
     val input =
       """|circuit Top :
          |  module Top :
@@ -820,7 +816,7 @@ class WiringTests extends FirrtlFlatSpec {
          |    reg r: UInt<5>, clock
          |    reg r2: UInt<5>, clock
          |""".stripMargin
-    a [WiringException] shouldBe thrownBy {
+    a[WiringException] shouldBe thrownBy {
       executeTest(input, "", passes :+ new WiringTransform, annos)
     }
   }

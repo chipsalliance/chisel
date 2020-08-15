@@ -21,14 +21,14 @@ class LowerTypesSpec extends FirrtlFlatSpec {
   private def executeTest(input: String, expected: Seq[String]) = {
     val fir = Parser.parse(input.split("\n").toIterator)
     val c = compiler.runTransform(CircuitState(fir, Seq())).circuit
-    val lines = c.serialize.split("\n") map normalized
+    val lines = c.serialize.split("\n").map(normalized)
 
-    expected foreach { e =>
+    expected.foreach { e =>
       lines should contain(e)
     }
   }
 
-  behavior of "Lower Types"
+  behavior.of("Lower Types")
 
   it should "lower ports" in {
     val input =
@@ -39,9 +39,23 @@ class LowerTypesSpec extends FirrtlFlatSpec {
         |    input y : UInt<1>[4]
         |    input z : { c : { d : UInt<1>, e : UInt<1>}, f : UInt<1>[2] }[2]
       """.stripMargin
-    val expected = Seq("w", "x_a", "x_b", "y_0", "y_1", "y_2", "y_3", "z_0_c_d",
-      "z_0_c_e", "z_0_f_0", "z_0_f_1", "z_1_c_d", "z_1_c_e", "z_1_f_0",
-      "z_1_f_1") map (x => s"input $x : UInt<1>") map normalized
+    val expected = Seq(
+      "w",
+      "x_a",
+      "x_b",
+      "y_0",
+      "y_1",
+      "y_2",
+      "y_3",
+      "z_0_c_d",
+      "z_0_c_e",
+      "z_0_f_0",
+      "z_0_f_1",
+      "z_1_c_d",
+      "z_1_c_e",
+      "z_1_f_0",
+      "z_1_f_1"
+    ).map(x => s"input $x : UInt<1>").map(normalized)
 
     executeTest(input, expected)
   }
@@ -56,7 +70,7 @@ class LowerTypesSpec extends FirrtlFlatSpec {
     val expected = Seq(
       "output foo_0_a : UInt<1>",
       "input foo_0_b : UInt<1>"
-    ) map normalized
+    ).map(normalized)
 
     executeTest(input, expected)
   }
@@ -72,29 +86,47 @@ class LowerTypesSpec extends FirrtlFlatSpec {
         |    reg y : UInt<1>[4], clock
         |    reg z : { c : { d : UInt<1>, e : UInt<1>}, f : UInt<1>[2] }[2], clock
       """.stripMargin
-    val expected = Seq("w", "x_a", "x_b", "y_0", "y_1", "y_2", "y_3", "z_0_c_d",
-      "z_0_c_e", "z_0_f_0", "z_0_f_1", "z_1_c_d", "z_1_c_e", "z_1_f_0",
-      "z_1_f_1") map (x => s"reg $x : UInt<1>, clock with :") map normalized
+    val expected = Seq(
+      "w",
+      "x_a",
+      "x_b",
+      "y_0",
+      "y_1",
+      "y_2",
+      "y_3",
+      "z_0_c_d",
+      "z_0_c_e",
+      "z_0_f_0",
+      "z_0_f_1",
+      "z_1_c_d",
+      "z_1_c_e",
+      "z_1_f_0",
+      "z_1_f_1"
+    ).map(x => s"reg $x : UInt<1>, clock with :").map(normalized)
 
     executeTest(input, expected)
   }
 
   it should "lower registers with aggregate initialization" in {
     val input =
-     """circuit Test :
-       |  module Test :
-       |    input clock : Clock
-       |    input reset : UInt<1>
-       |    input init : { a : UInt<1>, b : UInt<1>}[2]
-       |    reg x : { a : UInt<1>, b : UInt<1>}[2], clock with :
-       |      reset => (reset, init)
+      """circuit Test :
+        |  module Test :
+        |    input clock : Clock
+        |    input reset : UInt<1>
+        |    input init : { a : UInt<1>, b : UInt<1>}[2]
+        |    reg x : { a : UInt<1>, b : UInt<1>}[2], clock with :
+        |      reset => (reset, init)
      """.stripMargin
     val expected = Seq(
-      "reg x_0_a : UInt<1>, clock with :", "reset => (reset, init_0_a)",
-      "reg x_0_b : UInt<1>, clock with :", "reset => (reset, init_0_b)",
-      "reg x_1_a : UInt<1>, clock with :", "reset => (reset, init_1_a)",
-      "reg x_1_b : UInt<1>, clock with :", "reset => (reset, init_1_b)"
-    ) map normalized
+      "reg x_0_a : UInt<1>, clock with :",
+      "reset => (reset, init_0_a)",
+      "reg x_0_b : UInt<1>, clock with :",
+      "reset => (reset, init_0_b)",
+      "reg x_1_a : UInt<1>, clock with :",
+      "reset => (reset, init_1_a)",
+      "reg x_1_b : UInt<1>, clock with :",
+      "reset => (reset, init_1_b)"
+    ).map(normalized)
 
     executeTest(input, expected)
   }
@@ -112,77 +144,87 @@ class LowerTypesSpec extends FirrtlFlatSpec {
     val expected = Seq(
       "reg foo : UInt<4>, clock_1 with :",
       "reset => (reset_a, init_3_b_1_d)"
-    ) map normalized
+    ).map(normalized)
 
     executeTest(input, expected)
   }
 
   it should "lower DefInstances (but not too far!)" in {
     val input =
-     """circuit Test :
-       |  module Other :
-       |    input a : { b : UInt<1>, c : UInt<1>}
-       |    output d : UInt<1>[2]
-       |    d[0] <= a.b
-       |    d[1] <= a.c
-       |  module Test :
-       |    input x : UInt<1>
-       |    inst mod of Other
-       |    mod.a.b <= x
-       |    mod.a.c <= x
-       |    node y = mod.d[0]
+      """circuit Test :
+        |  module Other :
+        |    input a : { b : UInt<1>, c : UInt<1>}
+        |    output d : UInt<1>[2]
+        |    d[0] <= a.b
+        |    d[1] <= a.c
+        |  module Test :
+        |    input x : UInt<1>
+        |    inst mod of Other
+        |    mod.a.b <= x
+        |    mod.a.c <= x
+        |    node y = mod.d[0]
      """.stripMargin
-    val expected = Seq(
-      "mod.a_b <= x",
-      "mod.a_c <= x",
-      "node y = mod.d_0") map normalized
+    val expected = Seq("mod.a_b <= x", "mod.a_c <= x", "node y = mod.d_0").map(normalized)
 
     executeTest(input, expected)
   }
 
   it should "lower aggregate memories" in {
     val input =
-     """circuit Test :
-       |  module Test :
-       |    input clock : Clock
-       |    mem m :
-       |      data-type => { a : UInt<8>, b : UInt<8>}[2]
-       |      depth => 32
-       |      read-latency => 0
-       |      write-latency => 1
-       |      reader => read
-       |      writer => write
-       |    m.read.clk <= clock
-       |    m.read.en <= UInt<1>(1)
-       |    m.read.addr is invalid
-       |    node x = m.read.data
-       |    node y = m.read.data[0].b
-       |
-       |    m.write.clk <= clock
-       |    m.write.en <= UInt<1>(0)
-       |    m.write.mask is invalid
-       |    m.write.addr is invalid
-       |    wire w : { a : UInt<8>, b : UInt<8>}[2]
-       |    w[0].a <= UInt<4>(2)
-       |    w[0].b <= UInt<4>(3)
-       |    w[1].a <= UInt<4>(4)
-       |    w[1].b <= UInt<4>(5)
-       |    m.write.data <= w
+      """circuit Test :
+        |  module Test :
+        |    input clock : Clock
+        |    mem m :
+        |      data-type => { a : UInt<8>, b : UInt<8>}[2]
+        |      depth => 32
+        |      read-latency => 0
+        |      write-latency => 1
+        |      reader => read
+        |      writer => write
+        |    m.read.clk <= clock
+        |    m.read.en <= UInt<1>(1)
+        |    m.read.addr is invalid
+        |    node x = m.read.data
+        |    node y = m.read.data[0].b
+        |
+        |    m.write.clk <= clock
+        |    m.write.en <= UInt<1>(0)
+        |    m.write.mask is invalid
+        |    m.write.addr is invalid
+        |    wire w : { a : UInt<8>, b : UInt<8>}[2]
+        |    w[0].a <= UInt<4>(2)
+        |    w[0].b <= UInt<4>(3)
+        |    w[1].a <= UInt<4>(4)
+        |    w[1].b <= UInt<4>(5)
+        |    m.write.data <= w
 
      """.stripMargin
     val expected = Seq(
-      "mem m_0_a :", "mem m_0_b :", "mem m_1_a :", "mem m_1_b :",
-      "m_0_a.read.clk <= clock", "m_0_b.read.clk <= clock",
-      "m_1_a.read.clk <= clock", "m_1_b.read.clk <= clock",
-      "m_0_a.read.addr is invalid", "m_0_b.read.addr is invalid",
-      "m_1_a.read.addr is invalid", "m_1_b.read.addr is invalid",
-      "node x_0_a = m_0_a.read.data", "node x_0_b = m_0_b.read.data",
-      "node x_1_a = m_1_a.read.data", "node x_1_b = m_1_b.read.data",
-      "m_0_a.write.mask is invalid", "m_0_b.write.mask is invalid",
-      "m_1_a.write.mask is invalid", "m_1_b.write.mask is invalid",
-      "m_0_a.write.data <= w_0_a", "m_0_b.write.data <= w_0_b",
-      "m_1_a.write.data <= w_1_a", "m_1_b.write.data <= w_1_b"
-    ) map normalized
+      "mem m_0_a :",
+      "mem m_0_b :",
+      "mem m_1_a :",
+      "mem m_1_b :",
+      "m_0_a.read.clk <= clock",
+      "m_0_b.read.clk <= clock",
+      "m_1_a.read.clk <= clock",
+      "m_1_b.read.clk <= clock",
+      "m_0_a.read.addr is invalid",
+      "m_0_b.read.addr is invalid",
+      "m_1_a.read.addr is invalid",
+      "m_1_b.read.addr is invalid",
+      "node x_0_a = m_0_a.read.data",
+      "node x_0_b = m_0_b.read.data",
+      "node x_1_a = m_1_a.read.data",
+      "node x_1_b = m_1_b.read.data",
+      "m_0_a.write.mask is invalid",
+      "m_0_b.write.mask is invalid",
+      "m_1_a.write.mask is invalid",
+      "m_1_b.write.mask is invalid",
+      "m_0_a.write.data <= w_0_a",
+      "m_0_b.write.data <= w_0_b",
+      "m_1_a.write.data <= w_1_a",
+      "m_1_b.write.data <= w_1_b"
+    ).map(normalized)
 
     executeTest(input, expected)
   }
@@ -192,12 +234,17 @@ class LowerTypesSpec extends FirrtlFlatSpec {
 class LowerTypesUniquifySpec extends FirrtlFlatSpec {
   private val compiler = new TransformManager(Seq(Dependency(firrtl.passes.LowerTypes)))
 
-  private def executeTest(input: String, expected: Seq[String]): Unit = executeTest(input, expected, Seq.empty, Seq.empty)
-  private def executeTest(input: String, expected: Seq[String],
-                          inputAnnos: Seq[Annotation], expectedAnnos: Seq[Annotation]): Unit = {
+  private def executeTest(input: String, expected: Seq[String]): Unit =
+    executeTest(input, expected, Seq.empty, Seq.empty)
+  private def executeTest(
+    input:         String,
+    expected:      Seq[String],
+    inputAnnos:    Seq[Annotation],
+    expectedAnnos: Seq[Annotation]
+  ): Unit = {
     val circuit = Parser.parse(input.split("\n").toIterator)
     val result = compiler.runTransform(CircuitState(circuit, inputAnnos))
-    val lines = result.circuit.serialize.split("\n") map normalized
+    val lines = result.circuit.serialize.split("\n").map(normalized)
 
     expected.map(normalized).foreach { e =>
       assert(lines.contains(e), f"Failed to find $e in ${lines.mkString("\n")}")
@@ -206,7 +253,7 @@ class LowerTypesUniquifySpec extends FirrtlFlatSpec {
     result.annotations.toSeq should equal(expectedAnnos)
   }
 
-  behavior of "LowerTypes"
+  behavior.of("LowerTypes")
 
   it should "rename colliding ports" in {
     val input =
@@ -221,17 +268,16 @@ class LowerTypesUniquifySpec extends FirrtlFlatSpec {
       "input a___0_c__0_d : UInt<2>",
       "output a___0_c__0_e : UInt<3>",
       "output a_0_c_ : UInt<5>",
-      "output a__0 : UInt<6>")
+      "output a__0 : UInt<6>"
+    )
 
     val m = CircuitTarget("Test").module("Test")
     val inputAnnos = Seq(
       DontTouchAnnotation(m.ref("a").index(0).field("b")),
-      DontTouchAnnotation(m.ref("a").index(0).field("c").index(0).field("e")))
+      DontTouchAnnotation(m.ref("a").index(0).field("c").index(0).field("e"))
+    )
 
-    val expectedAnnos = Seq(
-      DontTouchAnnotation(m.ref("a___0_b")),
-      DontTouchAnnotation(m.ref("a___0_c__0_e")))
-
+    val expectedAnnos = Seq(DontTouchAnnotation(m.ref("a___0_b")), DontTouchAnnotation(m.ref("a___0_c__0_e")))
 
     executeTest(input, expected, inputAnnos, expectedAnnos)
   }
@@ -250,7 +296,8 @@ class LowerTypesUniquifySpec extends FirrtlFlatSpec {
       "reg a___1_c__1_e : UInt<3>, clock with :",
       "reg a___0_c_1_e : UInt<4>, clock with :",
       "reg a_0_c_ : UInt<5>, clock with :",
-      "reg a__0 : UInt<6>, clock with :")
+      "reg a__0 : UInt<6>, clock with :"
+    )
 
     executeTest(input, expected)
   }
@@ -273,7 +320,6 @@ class LowerTypesUniquifySpec extends FirrtlFlatSpec {
 
     executeTest(input, expected)
   }
-
 
   it should "rename DefRegister expressions: clock, reset, and init" in {
     val input =
@@ -368,9 +414,7 @@ class LowerTypesUniquifySpec extends FirrtlFlatSpec {
         |    node foo = data.a
         |    node bar = data.b[1]
       """.stripMargin
-    val expected = Seq(
-      "node foo = data___a",
-      "node bar = data___b_1")
+    val expected = Seq("node foo = data___a", "node bar = data___b_1")
 
     executeTest(input, expected)
   }
@@ -439,7 +483,8 @@ class LowerTypesUniquifySpec extends FirrtlFlatSpec {
       "mem mem__0_b_0 :",
       "node mem_0_b_0 = mem__0_b_0.read.data",
       "node mem_0_b_1 = mem__0_b_1.read.data",
-      "mem__0_b_0.read.addr is invalid")
+      "mem__0_b_0.read.addr is invalid"
+    )
 
     executeTest(input, expected)
   }
@@ -467,12 +512,8 @@ class LowerTypesUniquifySpec extends FirrtlFlatSpec {
         |    mem.write.en <= UInt(0)
         |    mem.write.clk <= clock
       """.stripMargin
-    val expected = Seq(
-      "mem mem_a :",
-      "mem mem_b__0 :",
-      "mem mem_b__1 :",
-      "mem mem_b_0 :",
-      "node x = mem_b__0.read.data")
+    val expected =
+      Seq("mem mem_a :", "mem mem_b__0 :", "mem mem_b__1 :", "mem mem_b_0 :", "node x = mem_b__0.read.data")
 
     executeTest(input, expected)
   }
@@ -492,11 +533,7 @@ class LowerTypesUniquifySpec extends FirrtlFlatSpec {
         |    mod.a.c <= x
         |    node mod_a_b = mod.a_b
      """.stripMargin
-    val expected = Seq(
-      "inst mod_ of Other",
-      "mod_.a__b <= x",
-      "mod_.a__c <= x",
-      "node mod_a_b = mod_.a_b")
+    val expected = Seq("inst mod_ of Other", "mod_.a__b <= x", "mod_.a__c <= x", "node mod_a_b = mod_.a_b")
 
     executeTest(input, expected)
   }
@@ -515,7 +552,7 @@ class LowerTypesUniquifySpec extends FirrtlFlatSpec {
     // Run the "quick" test three times and choose the longest time as the basis.
     val nCalibrationRuns = 3
     def mkType(i: Int): String = {
-      if(i == 0) "UInt<8>" else s"{x: ${mkType(i - 1)}}"
+      if (i == 0) "UInt<8>" else s"{x: ${mkType(i - 1)}}"
     }
     val timesMs = (
       for (depth <- (List.fill(nCalibrationRuns)(1) :+ depth)) yield {
@@ -528,12 +565,11 @@ class LowerTypesUniquifySpec extends FirrtlFlatSpec {
         val (ms, _) = Utils.time(compileToVerilog(input))
         ms
       }
-      ).toArray
+    ).toArray
     // The baseMs will be the maximum of the first calibration runs
     val baseMs = timesMs.slice(0, nCalibrationRuns - 1).max
     val renameMs = timesMs(nCalibrationRuns)
     if (TestOptions.accurateTiming)
-      renameMs shouldBe < (baseMs * threshold)
+      renameMs shouldBe <(baseMs * threshold)
   }
 }
-

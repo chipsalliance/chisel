@@ -27,19 +27,25 @@ class CleanupNamedTargets extends Transform with DependencyAPIMigration {
 
   override def invalidates(a: Transform) = false
 
-  private def onStatement(statement: ir.Statement)
-                         (implicit references: ISet[ReferenceTarget],
-                          renameMap: RenameMap,
-                          module: ModuleTarget): Unit = statement match {
+  private def onStatement(
+    statement: ir.Statement
+  )(
+    implicit references: ISet[ReferenceTarget],
+    renameMap:           RenameMap,
+    module:              ModuleTarget
+  ): Unit = statement match {
     case ir.DefInstance(_, a, b, _) if references(module.instOf(a, b).asReference) =>
       renameMap.record(module.instOf(a, b).asReference, module.instOf(a, b))
     case a => statement.foreach(onStatement)
   }
 
-  private def onModule(module: ir.DefModule)
-                      (implicit references: ISet[ReferenceTarget],
-                       renameMap: RenameMap,
-                       circuit: CircuitTarget): Unit = {
+  private def onModule(
+    module: ir.DefModule
+  )(
+    implicit references: ISet[ReferenceTarget],
+    renameMap:           RenameMap,
+    circuit:             CircuitTarget
+  ): Unit = {
     implicit val mTarget = circuit.module(module.name)
     module.foreach(onStatement)
   }
@@ -49,7 +55,7 @@ class CleanupNamedTargets extends Transform with DependencyAPIMigration {
     implicit val rTargets: ISet[ReferenceTarget] = state.annotations.flatMap {
       case a: SingleTargetAnnotation[_] => Some(a.target)
       case a: MultiTargetAnnotation     => a.targets.flatten
-      case _                            => None
+      case _ => None
     }.collect {
       case a: ReferenceTarget => a
     }.toSet
