@@ -88,13 +88,20 @@ sealed trait ConstrainedBinding extends TopBinding {
 // A binding representing a data that cannot be (re)assigned to.
 sealed trait ReadOnlyBinding extends TopBinding
 
+// A component that can potentially be declared inside a 'when'
+sealed trait ConditionalDeclarable extends TopBinding {
+  def visibility: Option[WhenContext]
+}
+
 // TODO(twigg): Ops between unenclosed nodes can also be unenclosed
 // However, Chisel currently binds all op results to a module
-case class OpBinding(enclosure: RawModule) extends ConstrainedBinding with ReadOnlyBinding
-case class MemoryPortBinding(enclosure: RawModule) extends ConstrainedBinding
+
 case class PortBinding(enclosure: BaseModule) extends ConstrainedBinding
-case class RegBinding(enclosure: RawModule) extends ConstrainedBinding
-case class WireBinding(enclosure: RawModule) extends ConstrainedBinding
+
+case class OpBinding(enclosure: RawModule, visibility: Option[WhenContext]) extends ConstrainedBinding with ReadOnlyBinding with ConditionalDeclarable
+case class MemoryPortBinding(enclosure: RawModule, visibility: Option[WhenContext]) extends ConstrainedBinding with ConditionalDeclarable
+case class RegBinding(enclosure: RawModule, visibility: Option[WhenContext]) extends ConstrainedBinding with ConditionalDeclarable
+case class WireBinding(enclosure: RawModule, visibility: Option[WhenContext]) extends ConstrainedBinding with ConditionalDeclarable
 
 case class ChildBinding(parent: Data) extends Binding {
   def location: Option[BaseModule] = parent.topBinding.location

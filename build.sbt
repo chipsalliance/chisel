@@ -29,8 +29,7 @@ def javacOptionsVersion(scalaVersion: String): Seq[String] = {
 }
 
 val defaultVersions = Seq(
-  "edu.berkeley.cs" %% "firrtl" % "1.4-SNAPSHOT",
-  "edu.berkeley.cs" %% "treadle" % "1.3-SNAPSHOT"
+  "edu.berkeley.cs" %% "firrtl" % "1.4-SNAPSHOT"
 )
 
 lazy val commonSettings = Seq (
@@ -41,8 +40,8 @@ lazy val commonSettings = Seq (
   organization := "edu.berkeley.cs",
   version := "3.4-SNAPSHOT",
   autoAPIMappings := true,
-  scalaVersion := "2.12.11",
-  crossScalaVersions := Seq("2.12.11", "2.11.12"),
+  scalaVersion := "2.12.12",
+  crossScalaVersions := Seq("2.12.12", "2.11.12"),
   scalacOptions := Seq("-deprecation", "-feature") ++ scalacOptionsVersion(scalaVersion.value),
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full),
@@ -110,6 +109,7 @@ lazy val chiselSettings = Seq (
     "junit" % "junit" % "4.13" % "test",
     "org.scalatest" %% "scalatest" % "3.1.2" % "test",
     "org.scalatestplus" %% "scalacheck-1-14" % "3.1.1.1" % "test",
+    "edu.berkeley.cs" %% "treadle" % "1.3-SNAPSHOT" % "test",
     "com.github.scopt" %% "scopt" % "3.7.1"
   ),
   javacOptions ++= javacOptionsVersion(scalaVersion.value)
@@ -125,6 +125,55 @@ lazy val chiselSettings = Seq (
   }
 )
 
+autoCompilerPlugins := true
+
+// Plugin must be fully cross-versioned (published for Scala minor version)
+// The plugin only works in Scala 2.12+
+lazy val pluginScalaVersions = Seq(
+  "2.11.12", // Only to support chisel3 cross building for 2.11, plugin does nothing in 2.11
+  // scalamacros paradise version used is not published for 2.12.0 and 2.12.1
+  "2.12.2",
+  "2.12.3",
+  "2.12.4",
+  "2.12.5",
+  "2.12.6",
+  "2.12.7",
+  "2.12.8",
+  "2.12.9",
+  "2.12.10",
+  "2.12.11",
+  "2.12.12",
+)
+
+lazy val plugin = (project in file("plugin")).
+  settings(name := "chisel3-plugin").
+  settings(commonSettings: _*).
+  settings(publishSettings: _*).
+  settings(
+    libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value,
+    scalacOptions += "-Xfatal-warnings",
+    crossScalaVersions := pluginScalaVersions,
+    // Must be published for Scala minor version
+    crossVersion := CrossVersion.full,
+    crossTarget := {
+      // workaround for https://github.com/sbt/sbt/issues/5097
+      target.value / s"scala-${scalaVersion.value}"
+    },
+    // Only publish for Scala 2.12
+    publish / skip := !scalaVersion.value.startsWith("2.12")
+  )
+
+lazy val usePluginSettings = Seq(
+  scalacOptions in Compile ++= {
+    val jar = (plugin / Compile / Keys.`package`).value
+    val addPlugin = "-Xplugin:" + jar.getAbsolutePath
+    // add plugin timestamp to compiler options to trigger recompile of
+    // main after editing the plugin. (Otherwise a 'clean' is needed.)
+    val dummy = "-Jdummy=" + jar.lastModified
+    Seq(addPlugin, dummy)
+  }
+)
+
 lazy val macros = (project in file("macros")).
   settings(name := "chisel3-macros").
   settings(commonSettings: _*).
@@ -132,6 +181,12 @@ lazy val macros = (project in file("macros")).
 
 lazy val core = (project in file("core")).
   settings(commonSettings: _*).
+  enablePlugins(BuildInfoPlugin).
+  settings(
+    buildInfoPackage := "chisel3",
+    buildInfoUsePackageAsPath := true,
+    buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
+  ).
   settings(publishSettings: _*).
   settings(
     name := "chisel3-core",
@@ -152,19 +207,14 @@ lazy val core = (project in file("core")).
 lazy val root = RootProject(file("."))
 
 lazy val chisel = (project in file(".")).
-  enablePlugins(BuildInfoPlugin).
   enablePlugins(ScalaUnidocPlugin).
-  settings(
-    buildInfoPackage := name.value,
-    buildInfoUsePackageAsPath := true,
-    buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
-  ).
   settings(commonSettings: _*).
   settings(chiselSettings: _*).
   settings(publishSettings: _*).
+  settings(usePluginSettings: _*).
   dependsOn(macros).
   dependsOn(core).
-  aggregate(macros, core).
+  aggregate(macros, core, plugin).
   settings(
     scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
     scalacOptions in Compile in doc ++= Seq(

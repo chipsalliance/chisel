@@ -29,16 +29,6 @@ trait RunFirrtlTransform extends ChiselAnnotation {
   def transformClass: Class[_ <: Transform]
 }
 
-
-// This exists for implementation reasons, we don't want people using this type directly
-final case class ChiselLegacyAnnotation private[chisel3] (
-    component: InstanceId,
-    transformClass: Class[_ <: Transform],
-    value: String) extends ChiselAnnotation with RunFirrtlTransform {
-  def toFirrtl: Annotation = Annotation(component.toNamed, transformClass, value)
-}
-private[chisel3] object ChiselLegacyAnnotation
-
 object annotate {
   def apply(anno: ChiselAnnotation): Unit = {
     Builder.annotations += anno

@@ -21,7 +21,7 @@ object Select {
     * @return
     */
   def getLeafs(d: Data): Seq[Data] = d match {
-    case b: Bundle => b.getElements.flatMap(getLeafs)
+    case r: Record => r.getElements.flatMap(getLeafs)
     case v: Vec[_] => v.getElements.flatMap(getLeafs)
     case other => Seq(other)
   }
@@ -32,7 +32,7 @@ object Select {
     * @return
     */
   def getIntermediateAndLeafs(d: Data): Seq[Data] = d match {
-    case b: Bundle => b +: b.getElements.flatMap(getIntermediateAndLeafs)
+    case r: Record => r +: r.getElements.flatMap(getIntermediateAndLeafs)
     case v: Vec[_] => v +: v.getElements.flatMap(getIntermediateAndLeafs)
     case other => Seq(other)
   }
