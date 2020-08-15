@@ -14,7 +14,8 @@ import firrtl.PrimOps._
 import firrtl.WrappedExpression._
 import Utils._
 import MemPortUtils.{memPortField, memType}
-import firrtl.options.{HasShellOptions, CustomFileEmission, ShellOption, PhaseException}
+import firrtl.backends.experimental.smt.{Btor2Emitter, SMTLibEmitter}
+import firrtl.options.{CustomFileEmission, HasShellOptions, PhaseException, ShellOption}
 import firrtl.options.Viewer.view
 import firrtl.stage.{FirrtlFileAnnotation, FirrtlOptions, RunFirrtlTransformAnnotation, TransformManager}
 // Datastructures
@@ -49,9 +50,14 @@ object EmitCircuitAnnotation extends HasShellOptions {
                                            EmitCircuitAnnotation(classOf[VerilogEmitter]))
         case "sverilog"             => Seq(RunFirrtlTransformAnnotation(new SystemVerilogEmitter),
                                            EmitCircuitAnnotation(classOf[SystemVerilogEmitter]))
+        case "experimental-btor2"   => Seq(RunFirrtlTransformAnnotation(new Btor2Emitter),
+                                           EmitCircuitAnnotation(classOf[Btor2Emitter]))
+        case "experimental-smt2"    => Seq(RunFirrtlTransformAnnotation(new SMTLibEmitter),
+                                          EmitCircuitAnnotation(classOf[SMTLibEmitter]))
         case _                      => throw new PhaseException(s"Unknown emitter '$a'! (Did you misspell it?)") },
       helpText = "Run the specified circuit emitter (all modules in one file)",
       shortOption = Some("E"),
+      // the experimental options are intentionally excluded from the help message
       helpValueName = Some("<chirrtl|high|middle|low|verilog|mverilog|sverilog>") ) )
 
 }

@@ -38,12 +38,14 @@ jobs:
     # Because these write to the same install directory, they must run in the
     # same script
     - stage: prepare
-      name: "Install: [Verilator, Yosys]"
+      name: "Install: [Verilator, Yosys, Z3]"
       script:
         - bash .install_verilator.sh
         - verilator --version
         - bash .install_yosys.sh
         - yosys -V
+        - bash .install_z3.sh
+        - z3 -version
     - stage: prepare
       name: "Compile FIRRTL to share with subsequent stages"
       script:
