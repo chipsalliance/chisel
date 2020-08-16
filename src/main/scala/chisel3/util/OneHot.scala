@@ -70,7 +70,7 @@ object UIntToOH {
   * is set.
   *
   * @example {{{
-  * PriorityEncoderOH((false.B, true.B, true.B, false.B)) // results in (false.B, false.B, true.B, false.B)
+  * PriorityEncoderOH(Seq(false.B, true.B, true.B, false.B)) // results in Seq(false.B, true.B, false.B, false.B)
   * }}}
   */
 object PriorityEncoderOH {

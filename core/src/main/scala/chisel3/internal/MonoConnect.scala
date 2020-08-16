@@ -40,6 +40,10 @@ private[chisel3] object MonoConnect {
     MonoConnectException(": Source is unreadable from current module.")
   def UnwritableSinkException =
     MonoConnectException(": Sink is unwriteable by current module.")
+  def SourceEscapedWhenScopeException =
+    MonoConnectException(": Source has escaped the scope of the when in which it was constructed.")
+  def SinkEscapedWhenScopeException =
+    MonoConnectException(": Sink has escaped the scope of the when in which it was constructed.")
   def UnknownRelationException =
     MonoConnectException(": Sink or source unavailable to current module.")
   // These are when recursing down aggregate types
@@ -57,6 +61,14 @@ private[chisel3] object MonoConnect {
     MonoConnectException(": Analog cannot participate in a mono connection (source - RHS)")
   def AnalogMonoConnectionException =
     MonoConnectException(": Analog cannot participate in a mono connection (source and sink)")
+
+  def checkWhenVisibility(x: Data): Boolean = {
+    x.topBinding match {
+      case mp: MemoryPortBinding => true // TODO (albert-magyar): remove this "bridge" for odd enable logic of current CHIRRTL memories
+      case cd: ConditionalDeclarable => cd.visibility.map(_.active()).getOrElse(true)
+      case _ => true
+    }
+  }
 
   /** This function is what recursively tries to connect a sink and source together
   *
@@ -181,8 +193,19 @@ private[chisel3] object MonoConnect {
     val sink_mod: BaseModule   = sink.topBinding.location.getOrElse(throw UnwritableSinkException)
     val source_mod: BaseModule = source.topBinding.location.getOrElse(context_mod)
 
+    val sink_parent = Builder.retrieveParent(sink_mod, context_mod).getOrElse(None)
+    val source_parent = Builder.retrieveParent(source_mod, context_mod).getOrElse(None)
+
     val sink_direction = BindingDirection.from(sink.topBinding, sink.direction)
     val source_direction = BindingDirection.from(source.topBinding, source.direction)
+
+    if (!checkWhenVisibility(sink)) {
+      throw SinkEscapedWhenScopeException
+    }
+
+    if (!checkWhenVisibility(source)) {
+      throw SourceEscapedWhenScopeException
+    }
 
     // CASE: Context is same module that both left node and right node are in
     if( (context_mod == sink_mod) && (context_mod == source_mod) ) {
@@ -196,8 +219,7 @@ private[chisel3] object MonoConnect {
     }
 
     // CASE: Context is same module as sink node and right node is in a child module
-    else if( (sink_mod == context_mod) &&
-             (source_mod._parent.map(_ == context_mod).getOrElse(false)) ) {
+    else if((sink_mod == context_mod) && (source_parent == context_mod)) {
       // Thus, right node better be a port node and thus have a direction
       ((sink_direction, source_direction): @unchecked) match {
         //    SINK          SOURCE
@@ -219,8 +241,7 @@ private[chisel3] object MonoConnect {
     }
 
     // CASE: Context is same module as source node and sink node is in child module
-    else if( (source_mod == context_mod) &&
-             (sink_mod._parent.map(_ == context_mod).getOrElse(false)) ) {
+    else if((source_mod == context_mod) && (sink_parent == context_mod)) {
       // Thus, left node better be a port node and thus have a direction
       ((sink_direction, source_direction): @unchecked) match {
         //    SINK          SOURCE
@@ -234,9 +255,7 @@ private[chisel3] object MonoConnect {
     // CASE: Context is the parent module of both the module containing sink node
     //                                        and the module containing source node
     //   Note: This includes case when sink and source in same module but in parent
-    else if( (sink_mod._parent.map(_ == context_mod).getOrElse(false)) &&
-             (source_mod._parent.map(_ == context_mod).getOrElse(false))
-    ) {
+    else if((sink_parent == context_mod) && (source_parent == context_mod)) {
       // Thus both nodes must be ports and have a direction
       ((sink_direction, source_direction): @unchecked) match {
         //    SINK          SOURCE

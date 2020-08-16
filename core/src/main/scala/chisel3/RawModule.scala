@@ -42,7 +42,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
 
   private[chisel3] def namePorts(names: HashMap[HasId, String]): Unit = {
     for (port <- getModulePorts) {
-      port.suggestedName.orElse(names.get(port)) match {
+      port.computeName(None, None).orElse(names.get(port)) match {
         case Some(name) =>
           if (_namespace.contains(name)) {
             Builder.error(s"""Unable to name port $port to "$name" in $this,""" +
@@ -75,13 +75,21 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
     // All suggestions are in, force names to every node.
     for (id <- getIds) {
       id match {
-        case id: BaseModule => id.forceName(default=id.desiredName, _namespace)
-        case id: MemBase[_] => id.forceName(default="_T", _namespace)
+        case id: BaseModule => id.forceName(None, default=id.desiredName, _namespace)
+        case id: MemBase[_] => id.forceName(None, default="MEM", _namespace)
         case id: Data  =>
           if (id.isSynthesizable) {
             id.topBinding match {
-              case OpBinding(_) | MemoryPortBinding(_) | PortBinding(_) | RegBinding(_) | WireBinding(_) =>
-                id.forceName(default="_T", _namespace)
+              case OpBinding(_, _) =>
+                id.forceName(Some(""), default="T", _namespace)
+              case MemoryPortBinding(_, _) =>
+                id.forceName(None, default="MPORT", _namespace)
+              case PortBinding(_) =>
+                id.forceName(None, default="PORT", _namespace)
+              case RegBinding(_, _) =>
+                id.forceName(None, default="REG", _namespace)
+              case WireBinding(_, _) =>
+                id.forceName(Some(""), default="WIRE", _namespace)
               case _ =>  // don't name literals
             }
           } // else, don't name unbound types
@@ -152,8 +160,8 @@ trait RequireSyncReset extends MultiIOModule {
 abstract class MultiIOModule(implicit moduleCompileOptions: CompileOptions)
     extends RawModule {
   // Implicit clock and reset pins
-  final val clock: Clock = IO(Input(Clock()))
-  final val reset: Reset = IO(Input(mkReset))
+  final val clock: Clock = IO(Input(Clock())).autoSeed("clock")
+  final val reset: Reset = IO(Input(mkReset)).autoSeed("reset")
 
   private[chisel3] def mkReset: Reset = {
     // Top module and compatibility mode use Bool for reset
@@ -164,6 +172,7 @@ abstract class MultiIOModule(implicit moduleCompileOptions: CompileOptions)
   // Setup ClockAndReset
   Builder.currentClock = Some(clock)
   Builder.currentReset = Some(reset)
+  Builder.clearPrefix()
 
   private[chisel3] override def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
     implicit val sourceInfo = UnlocatableSourceInfo
@@ -191,10 +200,18 @@ package internal {
 
     // IO for this Module. At the Scala level (pre-FIRRTL transformations),
     // connections in and out of a Module may only go through `io` elements.
+    @deprecated("Removed for causing issues in Scala 2.12+. You remain free to define io Bundles " +
+      "in your Modules, but you cannot rely on an io field in every Module. " +
+      "For more information, see: https://github.com/freechipsproject/chisel3/pull/1550.",
+      "Chisel 3.4"
+    )
     def io: Record
 
+    // Private accessor to reduce number of deprecation warnings
+    private[chisel3] def _io: Record = io
+
     // Allow access to bindings from the compatibility package
-    protected def _compatIoPortBound() = portsContains(io)
+    protected def _compatIoPortBound() = portsContains(_io)
 
     private[chisel3] override def namePorts(names: HashMap[HasId, String]): Unit = {
       for (port <- getModulePorts) {
@@ -209,8 +226,8 @@ package internal {
       _compatAutoWrapPorts()  // pre-IO(...) compatibility hack
 
       // Restrict IO to just io, clock, and reset
-      require(io != null, "Module must have io")
-      require(portsContains(io), "Module must have io wrapped in IO(...)")
+      require(_io != null, "Module must have io")
+      require(portsContains(_io), "Module must have io wrapped in IO(...)")
       require((portsContains(clock)) && (portsContains(reset)), "Internal error, module did not have clock or reset as IO")
       require(portsSize == 3, "Module must only have io, clock, and reset as IO")
 
@@ -223,7 +240,7 @@ package internal {
       implicit val sourceInfo = UnlocatableSourceInfo
 
       if (!parentCompileOptions.explicitInvalidate) {
-        pushCommand(DefInvalid(sourceInfo, io.ref))
+        pushCommand(DefInvalid(sourceInfo, _io.ref))
       }
 
       clock := override_clock.getOrElse(Builder.forcedClock)

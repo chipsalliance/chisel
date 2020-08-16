@@ -283,6 +283,14 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     }
   }
 
+  override def autoSeed(name: String): this.type = {
+    topBindingOpt match {
+      // Ports are special in that the autoSeed will keep the first name, not the last name
+      case Some(PortBinding(m)) if hasAutoSeed && Builder.currentModule.contains(m) => this
+      case _ => super.autoSeed(name)
+    }
+  }
+
   // User-specified direction, local at this node only.
   // Note that the actual direction of this node can differ from child and parent specifiedDirection.
   private var _specifiedDirection: SpecifiedDirection = SpecifiedDirection.Unspecified
@@ -368,16 +376,16 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   // TODO Is this okay for sample_element? It *shouldn't* be visible to users
   protected def bindingToString: String = topBindingOpt match {
     case None => ""
-    case Some(OpBinding(enclosure)) => s"(OpResult in ${enclosure.desiredName})"
-    case Some(MemoryPortBinding(enclosure)) => s"(MemPort in ${enclosure.desiredName})"
+    case Some(OpBinding(enclosure, _)) => s"(OpResult in ${enclosure.desiredName})"
+    case Some(MemoryPortBinding(enclosure, _)) => s"(MemPort in ${enclosure.desiredName})"
     case Some(PortBinding(enclosure)) if !enclosure.isClosed => s"(IO in unelaborated ${enclosure.desiredName})"
     case Some(PortBinding(enclosure)) if enclosure.isClosed =>
       DataMirror.fullModulePorts(enclosure).find(_._2 eq this) match {
         case Some((name, _)) => s"(IO $name in ${enclosure.desiredName})"
         case None => s"(IO (unknown) in ${enclosure.desiredName})"
       }
-    case Some(RegBinding(enclosure)) => s"(Reg in ${enclosure.desiredName})"
-    case Some(WireBinding(enclosure)) => s"(Wire in ${enclosure.desiredName})"
+    case Some(RegBinding(enclosure, _)) => s"(Reg in ${enclosure.desiredName})"
+    case Some(WireBinding(enclosure, _)) => s"(Wire in ${enclosure.desiredName})"
     case Some(DontCareBinding()) => s"(DontCare)"
     case Some(ElementLitBinding(litArg)) => s"(unhandled literal)"
     case Some(BundleLitBinding(litMap)) => s"(unhandled bundle literal)"
@@ -438,9 +446,23 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     */
   private[chisel3] def typeEquivalent(that: Data): Boolean
 
+  private def requireVisible(): Unit = {
+    val mod = topBindingOpt.flatMap(_.location)
+    topBindingOpt match {
+      case Some(tb: TopBinding) if (mod == Builder.currentModule) =>
+      case Some(pb: PortBinding) if (mod.flatMap(Builder.retrieveParent(_,Builder.currentModule.get)) == Builder.currentModule) =>
+      case _ =>
+        throwException(s"operand is not visible from the current module")
+    }
+    if (!MonoConnect.checkWhenVisibility(this)) {
+      throwException(s"operand has escaped the scope of the when in which it was constructed")
+    }
+  }
+
   // Internal API: returns a ref that can be assigned to, if consistent with the binding
   private[chisel3] def lref: Node = {
     requireIsHardware(this)
+    requireVisible()
     topBindingOpt match {
       case Some(binding: ReadOnlyBinding) => throwException(s"internal error: attempted to generate LHS ref to ReadOnlyBinding $binding")
       case Some(binding: TopBinding) => Node(this)
@@ -452,6 +474,11 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   // Internal API: returns a ref, if bound. Literals should override this as needed.
   private[chisel3] def ref: Arg = {
     requireIsHardware(this)
+    if (Builder.currentModule.isDefined) {
+      // This is allowed (among other cases) for evaluating args of Printf / Assert / Printable, which are
+      // partially resolved *after* elaboration completes. If this is resolved, the check should be unconditional.
+      requireVisible()
+    }
     topBindingOpt match {
       case Some(binding: LitBinding) => throwException(s"internal error: can't handle literal binding $binding")
       case Some(binding: TopBinding) => Node(this)
@@ -490,7 +517,11 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     * @param that the $coll to connect to
     * @group Connect
     */
-  final def := (that: Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = this.connect(that)(sourceInfo, connectionCompileOptions)
+  final def := (that: => Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = {
+    prefix(this) {
+      this.connect(that)(sourceInfo, connectionCompileOptions)
+    }
+  }
 
   /** Connect this $coll to that $coll bi-directionally and element-wise.
     *
@@ -499,7 +530,11 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     * @param that the $coll to connect to
     * @group Connect
     */
-  final def <> (that: Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = this.bulkConnect(that)(sourceInfo, connectionCompileOptions)
+  final def <> (that: => Data)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Unit = {
+    prefix(this) {
+      this.bulkConnect(that)(sourceInfo, connectionCompileOptions)
+    }
+  }
 
   @chiselRuntimeDeprecated
   @deprecated("litArg is deprecated, use litOption or litTo*Option", "3.2")
@@ -579,7 +614,7 @@ trait WireFactory {
     val x = t.cloneTypeFull
 
     // Bind each element of x to being a Wire
-    x.bind(WireBinding(Builder.forcedUserModule))
+    x.bind(WireBinding(Builder.forcedUserModule, Builder.currentWhen()))
 
     pushCommand(DefWire(sourceInfo, x))
     if (!compileOptions.explicitInvalidate) {
