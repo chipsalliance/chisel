@@ -239,6 +239,21 @@ lazy val chisel = (project in file(".")).
     )
   )
 
+lazy val docs = project       // new documentation project
+  .in(file("docs-target")) // important: it must not be docs/
+  .dependsOn(chisel)
+  .enablePlugins(MdocPlugin)
+  .settings(commonSettings)
+  .settings(
+    scalacOptions += "-language:reflectiveCalls",
+    mdocIn := file("docs/src"),
+    mdocOut := file("docs/generated"),
+    mdocExtraArguments := Seq("--cwd", "docs"),
+    mdocVariables := Map(
+      "BUILD_DIR" -> "docs-target" // build dir for mdoc programs to dump temp files
+    )
+  )
+
 addCommandAlias("com", "all compile")
 addCommandAlias("lint", "; compile:scalafix --check ; test:scalafix --check")
 addCommandAlias("fix", "all compile:scalafix test:scalafix")
