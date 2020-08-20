@@ -195,10 +195,7 @@ lazy val core = (project in file("core")).
 // This will always be the root project, even if we are a sub-project.
 lazy val root = RootProject(file("."))
 
-lazy val treadleRef = ProjectRef(workspaceDirectory / "treadle", "treadle")
-
 lazy val chisel = (project in file(".")).
-  sourceDependency(treadleRef % "test", defaultVersions("treadle") % "test").
   enablePlugins(ScalaUnidocPlugin).
   settings(commonSettings: _*).
   settings(chiselSettings: _*).
@@ -208,6 +205,7 @@ lazy val chisel = (project in file(".")).
   dependsOn(core).
   aggregate(macros, core, plugin).
   settings(
+    libraryDependencies += defaultVersions("treadle") % "test",
     scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
     scalacOptions in Compile in doc ++= Seq(
       "-diagrams",
