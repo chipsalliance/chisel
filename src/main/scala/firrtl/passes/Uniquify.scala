@@ -329,7 +329,7 @@ object Uniquify extends Transform with DependencyAPIMigration {
             sinfo = sx.info
             if (nameMap.contains(sx.name)) {
               val node = nameMap(sx.name)
-              val newType = portTypeMap(m.name)
+              val newType = portTypeMap(sx.module)
               (Utils.create_exps(sx.name, sx.tpe).zip(Utils.create_exps(node.name, newType))).foreach {
                 case (from, to) => renames.rename(from.serialize, to.serialize)
               }

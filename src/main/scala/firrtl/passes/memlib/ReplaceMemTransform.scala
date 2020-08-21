@@ -116,7 +116,10 @@ class ReplSeqMem extends Transform with HasShellOptions with DependencyAPIMigrat
   override def prerequisites = Forms.MidForm
   override def optionalPrerequisites = Seq.empty
   override def optionalPrerequisiteOf = Forms.MidEmitters
-  override def invalidates(a: Transform) = false
+  override def invalidates(a: Transform) = a match {
+    case InferTypes | ResolveKinds | ResolveFlows | LowerTypes => true
+    case _                                                     => false
+  }
 
   val options = Seq(
     new ShellOption[String](
@@ -138,13 +141,7 @@ class ReplSeqMem extends Transform with HasShellOptions with DependencyAPIMigrat
       new ResolveMemoryReference,
       new CreateMemoryAnnotations(inConfigFile),
       new ReplaceMemMacros(outConfigFile),
-      new WiringTransform,
-      new SimpleMidTransform(RemoveEmpty),
-      new SimpleMidTransform(CheckInitialization),
-      new SimpleMidTransform(InferTypes),
-      Uniquify,
-      new SimpleMidTransform(ResolveKinds),
-      new SimpleMidTransform(ResolveFlows)
+      new WiringTransform
     )
 
   def execute(state: CircuitState): CircuitState = {
