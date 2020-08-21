@@ -147,8 +147,7 @@ jobs:
 
       - run:
           command: |
-            date > date.treadle
-            (sbt $SBT_ARGS "docs/mdoc")
+            sbt $SBT_ARGS "docs/mdoc"
 
   test-chisel-2_11:
     executor: chisel-executor
