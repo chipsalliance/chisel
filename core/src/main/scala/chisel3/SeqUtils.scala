@@ -113,10 +113,14 @@ private[chisel3] object SeqUtils {
             buildAndOrMultiplexor(sels.zip(inWidthMatched))
           }
 
-        case _: Aggregate =>
+        case agg: Aggregate =>
           val allDefineWidth = in.forall { case (_, element) => element.widthOption.isDefined }
-          if(allDefineWidth) {
-            buildAndOrMultiplexor(in)
+          if (allDefineWidth) {
+            val out = Wire(agg)
+            out.getElements.zipWithIndex.map { case (element, i) =>
+              element := oneHotMux(in.map(_._1) zip in.map(_._2.asInstanceOf[Aggregate].getElements(i)))
+            }
+            out.asInstanceOf[T]
           }
           else {
             throwException(s"Cannot Mux1H with aggregates with inferred widths")
