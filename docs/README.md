@@ -8,16 +8,21 @@ as part of the PR CI checks,
 forcing the documentation to remain current with the codebase.
 The `src` folder contains the source from which these are generated.
 
-For each topic, we categorize documentation as described in
+Previous Wiki documentation, now hosted by the website, is contained in the `src/wiki` directory.
+We are in the process of converting this documentation into the four categories as described in
 [Divio's documentation system](https://documentation.divio.com/).
 
-These directories contain 3 documentation types:
-* Tutorials
-* Explanation
-* How-To Guides
+The four documentation types are:
+ 1. Reference (source code scaladoc)
+ 1. Explanation (`src/explanations`)
+ 1. How-To Guides (`src/cookbooks`)
+ 1. Tutorials (currently not located here)
 
-Note that the 4th documentation type, "Reference", is omitted here.
-We are working on generating API documentation from the code.
+Our documentation strategy for this repository is as follows:
+ * Any new public API requires reference documentation.
+ * Any new user-facing feature requires explanation documentation.
+ * Any bugfixes, corner-cases, or answers to commonly asked questions requires a how-to guide.
+ * For now, tutorials are kept in a separate repository. We are working hosting them here.
+ * Old documentation is contained in the `src/wiki` directory and is being incrementally converted to these categories.
 
-## Topic Table of Contents:
-
+This documentation is hosted on the Chisel [website](https://www.chisel-lang.org).

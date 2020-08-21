@@ -139,6 +139,17 @@ jobs:
             - .m2
             - .sbt
 
+  test-chisel-docs:
+    executor: chisel-executor
+    steps:
+      - attach_workspace:
+          at: /home/chisel
+
+      - run:
+          command: |
+            date > date.treadle
+            (sbt $SBT_ARGS "docs/mdoc")
+
   test-chisel-2_11:
     executor: chisel-executor
     steps:
