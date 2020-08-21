@@ -7,7 +7,9 @@ Chisel 3 supports multiple clock domains as follows.
 
 Note that in order to cross clock domains safely, you will need appropriate synchronization logic (such as an asynchronous FIFO). You can use the [AsyncQueue library](https://github.com/ucb-bar/asyncqueue) to do this easily.
 
-```scala
+```scala mdoc:silent:reset
+import chisel3._
+
 class MultiClockModule extends Module {
   val io = IO(new Bundle {
     val clockB = Input(Clock())
@@ -33,7 +35,14 @@ class MultiClockModule extends Module {
 
 You can also instantiate modules in another clock domain:
 
-```scala
+```scala mdoc:silent:reset
+import chisel3._
+
+class ChildModule extends Module {
+  val io = IO(new Bundle{
+    val in = Input(Bool())
+  })
+}
 class MultiClockModule extends Module {
   val io = IO(new Bundle {
     val clockB = Input(Clock())
@@ -47,7 +56,9 @@ class MultiClockModule extends Module {
 
 If you only want to connect your clock to a new clock domain and use the regular implicit reset signal, you can use `withClock(clock)` instead of `withClockAndReset`.
 
-```scala
+```scala mdoc:silent:reset
+import chisel3._
+
 class MultiClockModule extends Module {
   val io = IO(new Bundle {
     val clockB = Input(Clock())
@@ -69,13 +80,19 @@ class MultiClockModule extends Module {
 }
 
 // Instantiate module in another clock domain with implicit reset.
-class MultiClockModule extends Module {
+class MultiClockModule2 extends Module {
   val io = IO(new Bundle {
     val clockB = Input(Clock())
     val stuff = Input(Bool())
   })
   val clockB_child = withClock(io.clockB) { Module(new ChildModule) }
   clockB_child.io.in := io.stuff
+}
+
+class ChildModule extends Module {
+  val io = IO(new Bundle{
+    val in = Input(Bool())
+  })
 }
 
 ```
