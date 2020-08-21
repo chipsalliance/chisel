@@ -4,7 +4,7 @@ package chisel3.stage.phases
 
 import firrtl.{AnnotationSeq, ExecutionOptionsManager, HasFirrtlOptions}
 import firrtl.annotations.NoTargetAnnotation
-import firrtl.options.{Dependency, OptionsException, OutputAnnotationFileAnnotation, Phase, PreservesAll, Unserializable}
+import firrtl.options.{Dependency, OptionsException, OutputAnnotationFileAnnotation, Phase, Unserializable}
 import firrtl.stage.{FirrtlCircuitAnnotation, RunFirrtlTransformAnnotation}
 import firrtl.stage.phases.DriverCompatibility.TopNameAnnotation
 
@@ -25,9 +25,12 @@ object DriverCompatibility {
     * the correct behavior before a circuit has been elaborated.
     * @note the output suffix is unspecified and will be set by the underlying [[firrtl.EmittedComponent]]
     */
-  private [chisel3] class AddImplicitOutputFile extends Phase with PreservesAll[Phase] {
+  private [chisel3] class AddImplicitOutputFile extends Phase {
 
-    override val dependents = Seq(Dependency[chisel3.stage.ChiselStage])
+    override def prerequisites = Seq.empty
+    override def optionalPrerequisites = Seq.empty
+    override def optionalPrerequisiteOf = Seq(Dependency[chisel3.stage.ChiselStage])
+    override def invalidates(a: Phase) = false
 
     def transform(annotations: AnnotationSeq): AnnotationSeq = {
       val hasOutputFile = annotations
@@ -49,9 +52,12 @@ object DriverCompatibility {
     * correct behavior before a circuit has been elaborated.
     * @note the output suffix is unspecified and will be set by [[firrtl.options.phases.WriteOutputAnnotations]]
     */
-  private[chisel3] class AddImplicitOutputAnnotationFile extends Phase with PreservesAll[Phase] {
+  private[chisel3] class AddImplicitOutputAnnotationFile extends Phase {
 
-    override val dependents = Seq(Dependency[chisel3.stage.ChiselStage])
+    override def prerequisites = Seq.empty
+    override def optionalPrerequisites = Seq.empty
+    override def optionalPrerequisiteOf = Seq(Dependency[chisel3.stage.ChiselStage])
+    override def invalidates(a: Phase) = false
 
     def transform(annotations: AnnotationSeq): AnnotationSeq =
       annotations
@@ -73,18 +79,24 @@ object DriverCompatibility {
     * situations where you need to do something between Chisel compilation and FIRRTL compilations, e.g., update a
     * mutable data structure.
     */
-  private[chisel3] class DisableFirrtlStage extends Phase with PreservesAll[Phase] {
+  private[chisel3] class DisableFirrtlStage extends Phase {
 
-    override val dependents = Seq(Dependency[ChiselStage])
+    override def prerequisites = Seq.empty
+    override def optionalPrerequisites = Seq.empty
+    override def optionalPrerequisiteOf = Seq(Dependency[ChiselStage])
+    override def invalidates(a: Phase) = false
 
     def transform(annotations: AnnotationSeq): AnnotationSeq = annotations
       .collectFirst { case NoRunFirrtlCompilerAnnotation => annotations                              }
       .getOrElse    { Seq(RunFirrtlCompilerAnnotation, NoRunFirrtlCompilerAnnotation) ++ annotations }
   }
 
-  private[chisel3] class ReEnableFirrtlStage extends Phase with PreservesAll[Phase] {
+  private[chisel3] class ReEnableFirrtlStage extends Phase {
 
-    override val prerequisites = Seq(Dependency[DisableFirrtlStage], Dependency[ChiselStage])
+    override def prerequisites = Seq(Dependency[DisableFirrtlStage], Dependency[ChiselStage])
+    override def optionalPrerequisites = Seq.empty
+    override def optionalPrerequisiteOf = Seq.empty
+    override def invalidates(a: Phase) = false
 
     def transform(annotations: AnnotationSeq): AnnotationSeq = annotations
       .collectFirst { case RunFirrtlCompilerAnnotation =>
@@ -106,11 +118,12 @@ object DriverCompatibility {
     * This is intended to be run between [[chisel3.stage.ChiselStage ChiselStage]] and [[firrtl.stage.FirrtlStage]] if
     * you want to have backwards compatibility with an [[firrtl.ExecutionOptionsManager]].
     */
-  private[chisel3] class MutateOptionsManager extends Phase with PreservesAll[Phase] {
+  private[chisel3] class MutateOptionsManager extends Phase {
 
-    override val prerequisites = Seq(Dependency[chisel3.stage.ChiselStage])
-
-    override val dependents = Seq(Dependency[ReEnableFirrtlStage])
+    override def prerequisites = Seq(Dependency[chisel3.stage.ChiselStage])
+    override def optionalPrerequisites = Seq.empty
+    override def optionalPrerequisiteOf = Seq(Dependency[ReEnableFirrtlStage])
+    override def invalidates(a: Phase) = false
 
     def transform(annotations: AnnotationSeq): AnnotationSeq = {
 
@@ -135,11 +148,12 @@ object DriverCompatibility {
   /** A [[Phase]] that lets us run
     * @todo a better solution than the current state hack below may be needed
     */
-  private [chisel3] class FirrtlPreprocessing extends Phase with PreservesAll[Phase] {
+  private [chisel3] class FirrtlPreprocessing extends Phase {
 
-    override val prerequisites = Seq(Dependency[ChiselStage], Dependency[MutateOptionsManager], Dependency[ReEnableFirrtlStage])
-
-    override val dependents = Seq(Dependency[MaybeFirrtlStage])
+    override def prerequisites = Seq(Dependency[ChiselStage], Dependency[MutateOptionsManager], Dependency[ReEnableFirrtlStage])
+    override def optionalPrerequisites = Seq.empty
+    override def optionalPrerequisiteOf = Seq(Dependency[MaybeFirrtlStage])
+    override def invalidates(a: Phase) = false
 
     private val phases =
       Seq( new firrtl.stage.phases.DriverCompatibility.AddImplicitOutputFile,

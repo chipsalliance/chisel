@@ -3,7 +3,7 @@
 package chisel3.stage
 
 import firrtl.{ir => fir, AnnotationSeq, EmittedFirrtlCircuitAnnotation, EmittedVerilogCircuitAnnotation}
-import firrtl.options.{Dependency, Phase, PhaseManager, PreservesAll, Shell, Stage, StageError, StageMain}
+import firrtl.options.{Dependency, Phase, PhaseManager, Shell, Stage, StageError, StageMain}
 import firrtl.options.phases.DeletedWrapper
 import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlCli}
 import firrtl.options.Viewer.view
@@ -13,7 +13,12 @@ import chisel3.internal.{firrtl => cir, ErrorLog}
 
 import java.io.{StringWriter, PrintWriter}
 
-class ChiselStage extends Stage with PreservesAll[Phase] {
+class ChiselStage extends Stage {
+
+  override def prerequisites = Seq.empty
+  override def optionalPrerequisites = Seq.empty
+  override def optionalPrerequisiteOf = Seq.empty
+  override def invalidates(a: Phase) = false
 
   val shell: Shell = new Shell("chisel") with ChiselCli with FirrtlCli
 
