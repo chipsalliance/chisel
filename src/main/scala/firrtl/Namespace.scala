@@ -3,6 +3,7 @@
 package firrtl
 
 import scala.collection.mutable
+import scala.annotation.tailrec
 import firrtl.ir._
 
 class Namespace private {
@@ -79,5 +80,21 @@ object Namespace {
     val namespace = new Namespace
     namespace.namespace ++= names
     namespace
+  }
+
+  /** Appends delim to prefix until no collisions of prefix + elts in names We don't add an _ in the collision check
+    * because elts could be Seq("") In this case, we're just really checking if prefix itself collides
+    */
+  def findValidPrefix(
+    prefix:    String,
+    elts:      Iterable[String],
+    namespace: String => Boolean
+  ): String = {
+    @tailrec
+    def rec(p: String): String = {
+      val found = elts.exists(elt => namespace(p + elt))
+      if (found) rec(p + "_") else p
+    }
+    rec(prefix)
   }
 }

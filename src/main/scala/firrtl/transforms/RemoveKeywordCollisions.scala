@@ -6,7 +6,6 @@ import firrtl._
 
 import firrtl.Utils.v_keywords
 import firrtl.options.Dependency
-import firrtl.passes.Uniquify
 
 /** Transform that removes collisions with reserved keywords
   * @param keywords a set of reserved words
@@ -23,7 +22,7 @@ class RemoveKeywordCollisions(keywords: Set[String]) extends ManipulateNames {
     */
   override def manipulate = (n: String, ns: Namespace) =>
     keywords.contains(n) match {
-      case true  => Some(Uniquify.findValidPrefix(n + inlineDelim, Seq(""), ns.cloneUnderlying ++ keywords))
+      case true  => Some(Namespace.findValidPrefix(n + inlineDelim, Seq(""), ns.cloneUnderlying ++ keywords))
       case false => None
     }
 

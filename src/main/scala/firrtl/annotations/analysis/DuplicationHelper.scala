@@ -72,7 +72,7 @@ case class DuplicationHelper(existingModules: Set[String]) {
         val prefix = path.last._2.value + "___"
         val postfix = top + "_" + path.map { case (i, m) => i.value }.mkString("_")
         val ns = mutable.HashSet(allModules.toSeq: _*)
-        val finalName = firrtl.passes.Uniquify.findValidPrefix(prefix, Seq(postfix), ns) + postfix
+        val finalName = firrtl.Namespace.findValidPrefix(prefix, Seq(postfix), ns) + postfix
         allModules += finalName
         cachedNames((top, path)) = finalName
         finalName
