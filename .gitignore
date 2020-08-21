@@ -6,6 +6,7 @@ generated/
 .idea_modules/
 .project
 target/
+docs-target/
 *.iml
 *.swp
 *.fir

@@ -8,7 +8,7 @@ as part of the PR CI checks,
 forcing the documentation to remain current with the codebase.
 The `src` folder contains the source from which these are generated.
 
-Previous Wiki documentation, now hosted by the website, is contained in the `src/wiki` directory.
+Previous Wiki documentation, now hosted by the website, is contained in the `src/wiki-deprecated` directory.
 We are in the process of converting this documentation into the four categories as described in
 [Divio's documentation system](https://documentation.divio.com/).
 
@@ -23,6 +23,11 @@ Our documentation strategy for this repository is as follows:
  * Any new user-facing feature requires explanation documentation.
  * Any bugfixes, corner-cases, or answers to commonly asked questions requires a how-to guide.
  * For now, tutorials are kept in a separate repository. We are working hosting them here.
- * Old documentation is contained in the `src/wiki` directory and is being incrementally converted to these categories.
+ * Old documentation is contained in the `src/wiki-deprecated` directory and is being incrementally converted to these
+ categories.
+
+To build the documentation, run `docs/mdoc` from SBT in the root directory. The generated documents
+will appear in the `docs/generated` folder. To iterate on the documentation, you can run `docs/mdoc --watch`. For
+more `mdoc` instructions you can visit their [website](https://scalameta.org/mdoc/).
 
 This documentation is hosted on the Chisel [website](https://www.chisel-lang.org).
