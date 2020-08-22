@@ -11,20 +11,25 @@ import firrtl.Utils.isCast
 //   - don't emit "always @(posedge <literal>)"
 //     Hitting this case is rare, but legal FIRRTL
 // TODO This should be unified with all Verilog legalization transforms
-object LegalizeClocksTransform {
+object LegalizeClocksAndAsyncResetsTransform {
 
   // Checks if an Expression is illegal in use in a @(posedge <Expression>) construct
   // Legality is defined here by what standard lint tools accept
   // Currently only looks for literals nested within casts
-  private def illegalClockExpr(expr: Expression): Boolean = expr match {
+  private def isLiteralExpression(expr: Expression): Boolean = expr match {
     case _: Literal => true
-    case DoPrim(op, args, _, _) if isCast(op) => args.exists(illegalClockExpr)
+    case DoPrim(op, args, _, _) if isCast(op) => args.exists(isLiteralExpression)
     case _                                    => false
   }
 
-  /** Legalize Clocks in a Statement
+  // Wraps the above function to check if a Rest is Async to avoid unneeded
+  // hoisting of sync reset literals.
+  private def isAsyncResetLiteralExpr(expr: Expression): Boolean =
+    if (expr.tpe == AsyncResetType) isLiteralExpression(expr) else false
+
+  /** Legalize Clocks and AsyncResets in a Statement
     *
-    * Enforces legal Verilog semantics on all Clock Expressions.
+    * Enforces legal Verilog semantics on all Clock and AsyncReset Expressions.
     * Legal is defined as what standard lint tools accept.
     * Currently only Literal Expressions (guarded by casts) are handled.
     *
@@ -33,19 +38,29 @@ object LegalizeClocksTransform {
   def onStmt(namespace: => Namespace)(stmt: Statement): Statement =
     stmt.map(onStmt(namespace)) match {
       // Proper union types would deduplicate this code
-      case r: DefRegister if illegalClockExpr(r.clock) =>
-        val node = DefNode(r.info, namespace.newTemp, r.clock)
-        val rx = r.copy(clock = WRef(node))
-        Block(Seq(node, rx))
-      case p: Print if illegalClockExpr(p.clk) =>
+      case r: DefRegister if (isLiteralExpression(r.clock) || isAsyncResetLiteralExpr(r.reset)) =>
+        val (clockNodeOpt, rxClock) = if (isLiteralExpression(r.clock)) {
+          val node = DefNode(r.info, namespace.newTemp, r.clock)
+          (Some(node), r.copy(clock = WRef(node)))
+        } else {
+          (None, r)
+        }
+        val (resetNodeOpt, rx) = if (isAsyncResetLiteralExpr(r.reset)) {
+          val node = DefNode(r.info, namespace.newTemp, r.reset)
+          (Some(node), rxClock.copy(reset = WRef(node)))
+        } else {
+          (None, rxClock)
+        }
+        Block(clockNodeOpt ++: resetNodeOpt ++: Seq(rx))
+      case p: Print if isLiteralExpression(p.clk) =>
         val node = DefNode(p.info, namespace.newTemp, p.clk)
         val px = p.copy(clk = WRef(node))
         Block(Seq(node, px))
-      case s: Stop if illegalClockExpr(s.clk) =>
+      case s: Stop if isLiteralExpression(s.clk) =>
         val node = DefNode(s.info, namespace.newTemp, s.clk)
         val sx = s.copy(clk = WRef(node))
         Block(Seq(node, sx))
-      case s: Verification if illegalClockExpr(s.clk) =>
+      case s: Verification if isLiteralExpression(s.clk) =>
         val node = DefNode(s.info, namespace.newTemp, s.clk)
         val sx = s.copy(clk = WRef(node))
         Block(Seq(node, sx))
@@ -62,8 +77,8 @@ object LegalizeClocksTransform {
   }
 }
 
-/** Ensure Clocks to be emitted are legal Verilog */
-class LegalizeClocksTransform extends Transform with DependencyAPIMigration {
+/** Ensure Clocks and AsyncResets to be emitted are legal Verilog */
+class LegalizeClocksAndAsyncResetsTransform extends Transform with DependencyAPIMigration {
 
   override def prerequisites = firrtl.stage.Forms.LowFormMinimumOptimized ++
     Seq(
@@ -81,7 +96,7 @@ class LegalizeClocksTransform extends Transform with DependencyAPIMigration {
   override def invalidates(a: Transform) = false
 
   def execute(state: CircuitState): CircuitState = {
-    val modulesx = state.circuit.modules.map(LegalizeClocksTransform.onMod(_))
+    val modulesx = state.circuit.modules.map(LegalizeClocksAndAsyncResetsTransform.onMod(_))
     state.copy(circuit = state.circuit.copy(modules = modulesx))
   }
 }

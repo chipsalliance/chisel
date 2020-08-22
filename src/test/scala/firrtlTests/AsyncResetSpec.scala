@@ -428,7 +428,6 @@ class AsyncResetSpec extends VerilogTransformSpec {
       "end",
       "end"
     )
-
   }
 }
 
