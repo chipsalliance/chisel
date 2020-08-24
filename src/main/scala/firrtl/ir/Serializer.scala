@@ -26,6 +26,7 @@ object Serializer {
       case n: Param       => s(n)(builder, indent)
       case n: DefModule   => s(n)(builder, indent)
       case n: Circuit     => s(n)(builder, indent)
+      case other => builder ++= other.serialize // Handle user-defined nodes
     }
     builder.toString()
   }
@@ -54,6 +55,7 @@ object Serializer {
         infos.zipWithIndex.foreach { case (f, i) => b ++= f.escaped; if (i < lastId) b += ' ' }
         b += ']'
       }
+    case other => b ++= other.serialize // Handle user-defined nodes
   }
 
   private def s(str: StringLit)(implicit b: StringBuilder, indent: Int): Unit = b ++= str.serialize
@@ -79,6 +81,7 @@ object Serializer {
     case firrtl.WVoid           => b ++= "VOID"
     case firrtl.WInvalid        => b ++= "INVALID"
     case firrtl.EmptyExpression => b ++= "EMPTY"
+    case other                  => b ++= other.serialize // Handle user-defined nodes
   }
 
   private def s(node: Statement)(implicit b: StringBuilder, indent: Int): Unit = node match {
@@ -149,6 +152,7 @@ object Serializer {
     case firrtl.WDefInstanceConnector(info, name, module, tpe, portCons) =>
       b ++= "inst "; b ++= name; b ++= " of "; b ++= module; b ++= " with "; s(tpe); b ++= " connected to ("
       s(portCons.map(_._2), ",  "); b += ')'; s(info)
+    case other => b ++= other.serialize // Handle user-defined nodes
   }
 
   private def s(node: Width)(implicit b: StringBuilder, indent: Int): Unit = node match {
@@ -156,6 +160,7 @@ object Serializer {
     case UnknownWidth    => // empty string
     case CalcWidth(arg)  => b ++= "calcw("; s(arg); b += ')'
     case VarWidth(name)  => b += '<'; b ++= name; b += '>'
+    case other           => b ++= other.serialize // Handle user-defined nodes
   }
 
   private def sPoint(node: Width)(implicit b: StringBuilder, indent: Int): Unit = node match {
@@ -163,11 +168,13 @@ object Serializer {
     case UnknownWidth    => // empty string
     case CalcWidth(arg)  => b ++= "calcw("; s(arg); b += ')'
     case VarWidth(name)  => b ++= "<<"; b ++= name; b ++= ">>"
+    case other           => b ++= other.serialize // Handle user-defined nodes
   }
 
   private def s(node: Orientation)(implicit b: StringBuilder, indent: Int): Unit = node match {
     case Default => // empty string
     case Flip    => b ++= "flip "
+    case other   => b ++= other.serialize // Handle user-defined nodes
   }
 
   private def s(node: Field)(implicit b: StringBuilder, indent: Int): Unit = node match {
@@ -188,11 +195,13 @@ object Serializer {
     case UnknownType             => b += '?'
     // the IntervalType has a complicated custom serialization method which does not recurse
     case i: IntervalType => b ++= i.serialize
+    case other => b ++= other.serialize // Handle user-defined nodes
   }
 
   private def s(node: Direction)(implicit b: StringBuilder, indent: Int): Unit = node match {
     case Input  => b ++= "input"
     case Output => b ++= "output"
+    case other  => b ++= other.serialize // Handle user-defined nodes
   }
 
   private def s(node: Port)(implicit b: StringBuilder, indent: Int): Unit = node match {
@@ -207,6 +216,7 @@ object Serializer {
     case RawStringParam(name, value) =>
       b ++= "parameter "; b ++= name; b ++= " = "
       b += '\''; b ++= value.replace("'", "\\'"); b += '\''
+    case other => b ++= other.serialize // Handle user-defined nodes
   }
 
   private def s(node: DefModule)(implicit b: StringBuilder, indent: Int): Unit = node match {
@@ -220,6 +230,7 @@ object Serializer {
       ports.foreach { p => newLineAndIndent(1); s(p) }
       newLineAndIndent(1); b ++= "defname = "; b ++= defname
       params.foreach { p => newLineAndIndent(1); s(p) }
+    case other => b ++= other.serialize // Handle user-defined nodes
   }
 
   private def s(node: Circuit)(implicit b: StringBuilder, indent: Int): Unit = node match {
@@ -239,7 +250,7 @@ object Serializer {
     case VarBound(name) => b ++= name
     case Open(value)    => b ++ "o("; b ++= value.toString; b += ')'
     case Closed(value)  => b ++ "c("; b ++= value.toString; b += ')'
-    case other          => other.serialize
+    case other          => b ++= other.serialize // Handle user-defined nodes
   }
 
   /** create a new line with the appropriate indent */
