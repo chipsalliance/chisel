@@ -2,10 +2,15 @@
 
 package chisel3.stage
 
-import firrtl.{ir => fir, AnnotationSeq, EmittedFirrtlCircuitAnnotation, EmittedVerilogCircuitAnnotation}
+import firrtl.{
+  ir => fir,
+  AnnotationSeq,
+  EmittedFirrtlCircuitAnnotation,
+  EmittedVerilogCircuitAnnotation,
+  HighFirrtlEmitter}
 import firrtl.options.{Dependency, Phase, PhaseManager, Shell, Stage, StageError, StageMain}
 import firrtl.options.phases.DeletedWrapper
-import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlCli}
+import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlCli, RunFirrtlTransformAnnotation}
 import firrtl.options.Viewer.view
 
 import chisel3.{ChiselException, RawModule}
@@ -22,7 +27,14 @@ class ChiselStage extends Stage {
 
   val shell: Shell = new Shell("chisel") with ChiselCli with FirrtlCli
 
-  final lazy val phaseManager = new ChiselPhase
+  val targets: Seq[PhaseManager.PhaseDependency] = ChiselPhase.targets
+
+  final lazy val phaseManager = {
+    val _targets = targets
+    new ChiselPhase {
+      override val targets = _targets
+    }
+  }
 
   def run(annotations: AnnotationSeq): AnnotationSeq = try {
     phaseManager.transform(annotations)
@@ -133,13 +145,13 @@ object ChiselStage {
     * @param gen a call-by-name Chisel module
     */
   def elaborate(gen: => RawModule): cir.Circuit = {
-    val stage = new ChiselStage {
+    val phase = new ChiselPhase {
       override val targets = Seq( Dependency[chisel3.stage.phases.Checks],
                                   Dependency[chisel3.stage.phases.Elaborate] )
     }
 
-    stage
-      .execute(Array("--no-run-firrtl"), Seq(ChiselGeneratorAnnotation(() => gen)))
+    phase
+      .transform(Seq(ChiselGeneratorAnnotation(() => gen), NoRunFirrtlCompilerAnnotation))
       .collectFirst {
         case ChiselCircuitAnnotation(a) => a
       }
@@ -150,7 +162,7 @@ object ChiselStage {
     * @param gen a call-by-name Chisel module
     */
   def convert(gen: => RawModule): fir.Circuit = {
-    val stage = new ChiselStage {
+    val phase = new ChiselPhase {
       override val targets = Seq(
         Dependency[chisel3.stage.phases.Checks],
         Dependency[chisel3.stage.phases.Elaborate],
@@ -160,12 +172,26 @@ object ChiselStage {
         Dependency[chisel3.stage.phases.Convert] )
     }
 
-    stage
-      .execute(Array("--no-run-firrtl"), Seq(ChiselGeneratorAnnotation(() => gen)))
+    phase
+      .transform(Seq(ChiselGeneratorAnnotation(() => gen)))
       .collectFirst {
         case FirrtlCircuitAnnotation(a) => a
       }
       .get
+  }
+
+  def emitChirrtl(gen: => RawModule): String = convert(gen).serialize
+
+  def emitFirrtl(gen: => RawModule): String = {
+    val phase = new PhaseManager(ChiselPhase.targets :+ Dependency[firrtl.stage.phases.Compiler])
+
+    phase
+      .transform(Seq(ChiselGeneratorAnnotation(() => gen), RunFirrtlTransformAnnotation(new HighFirrtlEmitter)))
+      .collectFirst {
+        case EmittedFirrtlCircuitAnnotation(a) => a
+      }.get
+      .value
+
   }
 
 }
