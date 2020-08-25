@@ -22,17 +22,7 @@ class ChiselStage extends Stage {
 
   val shell: Shell = new Shell("chisel") with ChiselCli with FirrtlCli
 
-  val targets: Seq[Dependency[Phase]] =
-    Seq( Dependency[chisel3.stage.phases.Checks],
-         Dependency[chisel3.stage.phases.AddImplicitOutputFile],
-         Dependency[chisel3.stage.phases.AddImplicitOutputAnnotationFile],
-         Dependency[chisel3.stage.phases.MaybeAspectPhase],
-         Dependency[chisel3.stage.phases.Convert],
-         Dependency[chisel3.stage.phases.MaybeFirrtlStage] )
-
-  final lazy val phaseManager = new PhaseManager(targets) {
-    override val wrappers = Seq( (a: Phase) => DeletedWrapper(a) )
-  }
+  final lazy val phaseManager = new ChiselPhase
 
   def run(annotations: AnnotationSeq): AnnotationSeq = try {
     phaseManager.transform(annotations)
