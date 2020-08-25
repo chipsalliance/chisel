@@ -110,7 +110,11 @@ object Forms {
       Dependency[firrtl.AddDescriptionNodes]
     )
 
-  val VerilogOptimized: Seq[TransformDependency] = LowFormOptimized ++ VerilogMinimumOptimized
+  val VerilogOptimized: Seq[TransformDependency] = LowFormOptimized ++
+    Seq(
+      Dependency[firrtl.transforms.InlineBooleanExpressions]
+    ) ++
+    VerilogMinimumOptimized
 
   val AssertsRemoved: Seq[TransformDependency] =
     Seq(

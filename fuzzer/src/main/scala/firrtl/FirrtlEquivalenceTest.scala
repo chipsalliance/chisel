@@ -1,17 +1,19 @@
 package firrtl.fuzzer
 
 import com.pholser.junit.quickcheck.From
+import com.pholser.junit.quickcheck.generator.{Generator, GenerationStatus}
+import com.pholser.junit.quickcheck.random.SourceOfRandomness
 
-import edu.berkeley.cs.jqf.fuzz.Fuzz;
-import edu.berkeley.cs.jqf.fuzz.JQF;
+import edu.berkeley.cs.jqf.fuzz.{Fuzz, JQF};
 
 import firrtl._
 import firrtl.annotations.{Annotation, CircuitTarget, ModuleTarget, Target}
 import firrtl.ir.Circuit
+import firrtl.options.Dependency
 import firrtl.stage.{FirrtlCircuitAnnotation, InfoModeAnnotation, OutputFileAnnotation, TransformManager}
 import firrtl.stage.Forms.{VerilogMinimumOptimized, VerilogOptimized}
 import firrtl.stage.phases.WriteEmitted
-import firrtl.transforms.ManipulateNames
+import firrtl.transforms.{InlineBooleanExpressions, ManipulateNames}
 import firrtl.util.BackendCompilationUtilities
 
 import java.io.{File, FileWriter, PrintWriter, StringWriter}
@@ -89,6 +91,32 @@ object FirrtlEquivalenceTestUtils {
   }
 }
 
+import ExprGen._
+class InlineBooleanExprsCircuitGenerator extends SingleExpressionCircuitGenerator (
+  ExprGenParams(
+    maxDepth = 50,
+    maxWidth = 31,
+    generators = ExprGenParams.defaultGenerators ++ Map(
+      LtDoPrimGen -> 10,
+      LeqDoPrimGen -> 10,
+      GtDoPrimGen -> 10,
+      GeqDoPrimGen -> 10,
+      EqDoPrimGen -> 10,
+      NeqDoPrimGen -> 10,
+      AndDoPrimGen -> 10,
+      OrDoPrimGen -> 10,
+      XorDoPrimGen -> 10,
+      AndrDoPrimGen -> 10,
+      OrrDoPrimGen -> 10,
+      XorrDoPrimGen -> 10,
+      BitsDoPrimGen -> 10,
+      HeadDoPrimGen -> 10,
+      TailDoPrimGen -> 10,
+      MuxGen -> 10
+    )
+  )
+)
+
 @RunWith(classOf[JQF])
 class FirrtlEquivalenceTests {
   private val lowFirrtlCompiler = new LowFirrtlCompiler()
@@ -103,8 +131,7 @@ class FirrtlEquivalenceTests {
   }
   private val baseTestDir = new File("fuzzer/test_run_dir")
 
-  @Fuzz
-  def compileSingleModule(@From(value = classOf[FirrtlSingleModuleGenerator]) c: Circuit) = {
+  private def runTest(c: Circuit, referenceCompiler: TransformManager, customCompiler: TransformManager) = {
     val testDir = new File(baseTestDir, f"${c.hashCode}%08x")
     testDir.mkdirs()
     val fileWriter = new FileWriter(new File(testDir, s"${c.main}.fir"))
@@ -113,9 +140,9 @@ class FirrtlEquivalenceTests {
     val passed = try {
       FirrtlEquivalenceTestUtils.firrtlEquivalenceTestPass(
         circuit = c,
-        referenceCompiler = new TransformManager(VerilogMinimumOptimized),
+        referenceCompiler = referenceCompiler,
         referenceAnnos = Seq(),
-        customCompiler = new TransformManager(VerilogOptimized),
+        customCompiler = customCompiler,
         customAnnos = Seq(),
         testDir = testDir
       )
@@ -130,5 +157,23 @@ class FirrtlEquivalenceTests {
       Assert.assertTrue(
         s"not equivalent to reference compiler on input ${testDir}:\n${c.serialize}\n", false)
     }
+  }
+
+  @Fuzz
+  def testOptimized(@From(value = classOf[FirrtlCompileCircuitGenerator]) c: Circuit) = {
+    runTest(
+      c = c,
+      referenceCompiler = new TransformManager(VerilogMinimumOptimized),
+      customCompiler = new TransformManager(VerilogOptimized)
+    )
+  }
+
+  @Fuzz
+  def testInlineBooleanExpressions(@From(value = classOf[InlineBooleanExprsCircuitGenerator]) c: Circuit) = {
+    runTest(
+      c = c,
+      referenceCompiler = new TransformManager(VerilogMinimumOptimized),
+      customCompiler = new TransformManager(VerilogMinimumOptimized :+ Dependency[InlineBooleanExpressions])
+    )
   }
 }

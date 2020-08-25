@@ -1,5 +1,8 @@
 package firrtl.fuzzer
 
+import com.pholser.junit.quickcheck.generator.{Generator, GenerationStatus}
+import com.pholser.junit.quickcheck.random.SourceOfRandomness
+
 import firrtl.{Namespace, Utils}
 import firrtl.ir._
 
@@ -17,15 +20,15 @@ sealed trait ExprGenParams {
     */
   def maxWidth: Int
 
-  /** A list of frequency/expression generator pairs
+  /** A mapping of expression generator to frequency
     *
     * The frequency number determines the probability that the corresponding
-    * generator will be chosen. i.e. for sequece Seq(1 -> A, 2 -> B, 3 -> C),
-    * the probabilities for A, B, and C are 1/6, 2/6, and 3/6 respectively.
-    * This sequency must be non-empty and all frequency numbers must be greater
-    * than zero.
+    * generator will be chosen. i.g. for Map(A -> 1, B -> 2, C -> B), the
+    * probabilities for A, B, and C are 1/6, 2/6, and 3/6 respectively.  This
+    * map must be non-empty and all frequency numbers must be greater than
+    * zero.
     */
-  def generators: Seq[(Int, ExprGen[_ <: Expression])]
+  def generators: Map[ExprGen[_ <: Expression], Int]
 
   /** The set of generated references that don't have a corresponding declaration
     */
@@ -102,10 +105,46 @@ sealed trait ExprGenParams {
 
 object ExprGenParams {
 
+  val defaultGenerators: Map[ExprGen[_ <: Expression], Int] = {
+    import ExprGen._
+    Map(
+      AddDoPrimGen -> 1,
+      SubDoPrimGen -> 1,
+      MulDoPrimGen -> 1,
+      DivDoPrimGen -> 1,
+      LtDoPrimGen -> 1,
+      LeqDoPrimGen -> 1,
+      GtDoPrimGen -> 1,
+      GeqDoPrimGen -> 1,
+      EqDoPrimGen -> 1,
+      NeqDoPrimGen -> 1,
+      PadDoPrimGen -> 1,
+      ShlDoPrimGen -> 1,
+      ShrDoPrimGen -> 1,
+      DshlDoPrimGen -> 1,
+      CvtDoPrimGen -> 1,
+      NegDoPrimGen -> 1,
+      NotDoPrimGen -> 1,
+      AndDoPrimGen -> 1,
+      OrDoPrimGen -> 1,
+      XorDoPrimGen -> 1,
+      AndrDoPrimGen -> 1,
+      OrrDoPrimGen -> 1,
+      XorrDoPrimGen -> 1,
+      CatDoPrimGen -> 1,
+      BitsDoPrimGen -> 1,
+      HeadDoPrimGen -> 1,
+      TailDoPrimGen -> 1,
+      AsUIntDoPrimGen -> 1,
+      AsSIntDoPrimGen -> 1,
+      MuxGen -> 1
+    )
+  }
+
   private case class ExprGenParamsImp(
     maxDepth: Int,
     maxWidth: Int,
-    generators: Seq[(Int, ExprGen[_ <: Expression])],
+    generators: Map[ExprGen[_ <: Expression], Int],
     protected val unboundRefs: Set[Reference],
     protected val namespace: Namespace) extends ExprGenParams {
 
@@ -119,7 +158,7 @@ object ExprGenParams {
   def apply(
     maxDepth: Int,
     maxWidth: Int,
-    generators: Seq[(Int, ExprGen[_ <: Expression])]
+    generators: Map[ExprGen[_ <: Expression], Int]
   ): ExprGenParams = {
     require(maxWidth > 0, "maxWidth must be greater than zero")
     ExprGenParamsImp(
@@ -190,7 +229,8 @@ object ExprGenParams {
         ))(tpe).map(e => e.get) // should be safe because leaf generators are defined for all types
 
         val branchGen: Type => StateGen[ExprGenParams, G, Expression] = (tpe: Type) => {
-          combineExprGens(s.generators)(tpe).flatMap {
+          val gens = s.generators.toSeq.map { case (gen, freq) => (freq, gen) }
+          combineExprGens(gens)(tpe).flatMap {
             case None => leafGen(tpe)
             case Some(e) => StateGen.pure(e)
           }
@@ -209,5 +249,12 @@ object ExprGenParams {
         }
       }
     }
+  }
+}
+
+abstract class SingleExpressionCircuitGenerator(val params: ExprGenParams) extends Generator[Circuit](classOf[Circuit]) {
+  override def generate(random: SourceOfRandomness, status: GenerationStatus): Circuit = {
+    implicit val r = random
+    params.generateSingleExprCircuit[SourceOfRandomnessGen]()
   }
 }
