@@ -21,7 +21,6 @@ class ChiselPlugin(val global: Global) extends Plugin {
 class ChiselComponent(val global: Global) extends PluginComponent with TypingTransformers {
   import global._
   val runsAfter = List[String]("typer")
-  override val runsRightAfter: Option[String] = Some("typer")
   val phaseName: String = "chiselcomponent"
   def newPhase(_prev: Phase): ChiselComponentPhase = new ChiselComponentPhase(_prev)
   class ChiselComponentPhase(prev: Phase) extends StdPhase(prev) {
