@@ -232,6 +232,11 @@ case class VRandom(width: BigInt) extends Expression {
 
 object VerilogEmitter {
 
+  private val unaryOps: Set[PrimOp] = Set(Andr, Orr, Xorr, Neg, Not)
+
+  // To make uses more self-documenting
+  private val isUnaryOp: PrimOp => Boolean = unaryOps
+
   /** Maps a [[PrimOp]] to a precedence number, lower number means higher precedence
     *
     * Only the [[PrimOp]]s contained in this map will be inlined. [[PrimOp]]s
@@ -241,7 +246,7 @@ object VerilogEmitter {
   private val precedenceMap: Map[PrimOp, Int] = {
     val precedenceSeq = Seq(
       Set(Head, Tail, Bits, Shr, Pad), // Shr and Pad emit as bit select
-      Set(Andr, Orr, Xorr, Neg, Not),
+      unaryOps,
       Set(Mul, Div, Rem),
       Set(Add, Sub, Addw, Subw),
       Set(Dshl, Dshlw, Dshr),
@@ -256,10 +261,10 @@ object VerilogEmitter {
     }
   }
 
-  /** true if op1 has greater or equal precendence than op2
+  /** true if op1 has equal precendence to op2
     */
-  private def precedenceGeq(op1: PrimOp, op2: PrimOp): Boolean = {
-    precedenceMap(op1) <= precedenceMap(op2)
+  private def precedenceEq(op1: PrimOp, op2: PrimOp): Boolean = {
+    precedenceMap(op1) == precedenceMap(op2)
   }
 
   /** true if op1 has greater precendence than op2
@@ -450,18 +455,16 @@ class VerilogEmitter extends SeqTransform with Emitter {
                 */
               case Seq(passthrough: Expression) => parenthesize(passthrough, isFirst)
 
-              /** If the expression is the first argument then it does not need
-                * parens if it's precedence is greather than or equal to the
-                * enclosing doprim, because verilog operators are left
-                * associative. All other args do not need parens only if the
-                * precedence is greater.
-                */
+              /* Parentheses are never needed if precedence is greater
+               * Otherwise, the first expression does not need parentheses if
+               * - it's precedence is equal AND
+               * - the ops are not unary operations (which all have equal precedence)
+               */
               case other =>
-                if (precedenceGt(e.op, doprim.op) || (precedenceGeq(e.op, doprim.op) && isFirst)) {
-                  other
-                } else {
-                  Seq("(", other, ")")
-                }
+                val noParens =
+                  precedenceGt(e.op, doprim.op) ||
+                    (isFirst && precedenceEq(e.op, doprim.op) && !isUnaryOp(e.op))
+                if (noParens) other else Seq("(", other, ")")
             }
 
           /** Mux args should always have parens because Mux has the lowest precedence
