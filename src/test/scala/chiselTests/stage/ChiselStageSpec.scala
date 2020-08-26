@@ -5,6 +5,8 @@ package chiselTests.stage
 import chisel3._
 import chisel3.stage.ChiselStage
 
+import chiselTests.Utils
+
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -21,7 +23,7 @@ object ChiselStageSpec {
 
 }
 
-class ChiselStageSpec extends AnyFlatSpec with Matchers {
+class ChiselStageSpec extends AnyFlatSpec with Matchers with Utils {
 
   import ChiselStageSpec._
 
@@ -50,13 +52,13 @@ class ChiselStageSpec extends AnyFlatSpec with Matchers {
   behavior of "ChiselStage$.elaborate"
 
   it should "generate a Chisel circuit from a Chisel module" in {
-    ChiselStage.elaborate(new Foo)
+    catchWrites { ChiselStage.elaborate(new Foo) } shouldBe a[Right[_, _]]
   }
 
   behavior of "ChiselStage$.convert"
 
   it should "generate a CHIRRTL circuit from a Chisel module" in {
-    ChiselStage.convert(new Foo)
+    catchWrites { ChiselStage.convert(new Foo) } shouldBe a[Right[_, _]]
   }
 
   behavior of "ChiselStage phase ordering"
