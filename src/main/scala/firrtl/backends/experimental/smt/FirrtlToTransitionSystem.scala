@@ -128,11 +128,12 @@ private class ModuleToTransitionSystem extends LazyLogging {
     // first pass over the module to convert expressions; discover state and I/O
     val scan = new ModuleScanner(makeRandom)
     m.foreachPort(scan.onPort)
+    m.foreachStmt(scan.onStatement)
+
     // multi-clock support requires the StutteringClock transform to be run
     if (scan.clocks.size > 1) {
       throw new MultiClockException(s"The module ${m.name} has more than one clock: ${scan.clocks.mkString(", ")}")
     }
-    m.foreachStmt(scan.onStatement)
 
     // turn wires and nodes into signals
     val outputs = scan.outputs.toSet
@@ -477,7 +478,10 @@ private class ModuleScanner(makeRandom: (String, Int) => BVExpr) extends LazyLog
         } else {
           inputs.append(BVSymbol(p.name, getWidth(p.tpe)))
         }
-      case ir.Output => outputs.append(p.name)
+      case ir.Output =>
+        if (!isClock(p.tpe)) { // we ignore clock outputs
+          outputs.append(p.name)
+        }
     }
   }
 
@@ -512,10 +516,12 @@ private class ModuleScanner(makeRandom: (String, Int) => BVExpr) extends LazyLog
       memories.append(m)
     case ir.Connect(info, loc, expr) =>
       if (!isGroundType(loc.tpe)) error("All connects should have been lowered to ground type!")
-      val name = loc.serialize
-      insertDummyAssignsForMemoryOutputs(expr)
-      infos.append(name -> info)
-      connects.append((name, onExpression(expr, getWidth(loc.tpe), name)))
+      if (!isClock(loc.tpe)) { // we ignore clock connections
+        val name = loc.serialize
+        insertDummyAssignsForMemoryOutputs(expr)
+        infos.append(name -> info)
+        connects.append((name, onExpression(expr, getWidth(loc.tpe), name)))
+      }
     case ir.IsInvalid(info, loc) =>
       if (!isGroundType(loc.tpe)) error("All connects should have been lowered to ground type!")
       val name = loc.serialize
@@ -529,17 +535,23 @@ private class ModuleScanner(makeRandom: (String, Int) => BVExpr) extends LazyLog
           "Please flatten your hierarchy if you want to include submodules in the formal model."
       )
       val ports = tpe.asInstanceOf[ir.BundleType].fields
-      // skip clock and async reset ports
-      ports.filterNot(p => isClock(p.tpe) || isAsyncReset(p.tpe)).foreach { p =>
+      // skip async reset ports
+      ports.filterNot(p => isAsyncReset(p.tpe)).foreach { p =>
         if (!p.tpe.isInstanceOf[ir.GroundType]) error(s"Instance $name of $module has an invalid port type: $p")
         val isOutput = p.flip == ir.Default
         val pName = name + "." + p.name
         infos.append(pName -> info)
         // outputs of the submodule become inputs to our module
         if (isOutput) {
-          inputs.append(BVSymbol(pName, getWidth(p.tpe)))
+          if (isClock(p.tpe)) {
+            clocks.add(pName)
+          } else {
+            inputs.append(BVSymbol(pName, getWidth(p.tpe)))
+          }
         } else {
-          outputs.append(pName)
+          if (!isClock(p.tpe)) { // we ignore clock outputs
+            outputs.append(pName)
+          }
         }
       }
     case s @ ir.Verification(op, info, _, pred, en, msg) =>

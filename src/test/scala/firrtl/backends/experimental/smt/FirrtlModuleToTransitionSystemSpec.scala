@@ -256,6 +256,43 @@ private class FirrtlModuleToTransitionSystemSpec extends SMTBackendBaseSpec {
     assert(random.head.width == 8)
   }
 
+  it should "ignore assignments, ports, wires and nodes of clock type" in {
+    // The transformation relies on the assumption that everything is connected to a single global clock
+    // thus any clock ports, wires, nodes and connects should be ignored.
+    val src =
+      """circuit m:
+        |  module m:
+        |    input clk : Clock
+        |    output o : Clock
+        |    wire w: Clock
+        |    node x = w
+        |    o <= x
+        |    w <= clk
+        |""".stripMargin
+    val sys = toSys(src)
+    assert(sys.inputs.isEmpty, "Clock inputs should be ignored.")
+    assert(sys.outputs.isEmpty, "Clock outputs should be ignored.")
+    assert(sys.signals.isEmpty, "Connects of clock type should be ignored.")
+  }
+
+  it should "treat clock outputs of submodules like a clock input" in {
+    // Since we treat any remaining submodules (that have not been inlined) as blackboxes, a clock output
+    // is like a clock input to our module.
+    val src =
+      """circuit m:
+        |  module c:
+        |    output clk: Clock
+        |    clk is invalid
+        |  module m:
+        |    input clk : Clock
+        |    inst c of c
+        |""".stripMargin
+    val err = intercept[MultiClockException] {
+      toSys(src)
+    }
+    assert(err.getMessage.contains("clk, c.clk"))
+  }
+
   it should "throw an error on async reset" in {
     val err = intercept[AsyncResetException] {
       toSys(
