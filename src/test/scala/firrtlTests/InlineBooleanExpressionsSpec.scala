@@ -1,4 +1,3 @@
-
 // See LICENSE for license details.
 
 package firrtlTests
@@ -14,13 +13,16 @@ import firrtl.stage.TransformManager
 class InlineBooleanExpressionsSpec extends FirrtlFlatSpec {
   val transform = new InlineBooleanExpressions
   val transforms: Seq[Transform] = new TransformManager(
-      transform.prerequisites
-    ).flattenedTransformOrder :+ transform
+    transform.prerequisites
+  ).flattenedTransformOrder :+ transform
 
   protected def exec(input: String, annos: Seq[Annotation] = Nil) = {
-    transforms.foldLeft(CircuitState(parse(input), UnknownForm, AnnotationSeq(annos))) {
-      (c: CircuitState, t: Transform) => t.runTransform(c)
-    }.circuit.serialize
+    transforms
+      .foldLeft(CircuitState(parse(input), UnknownForm, AnnotationSeq(annos))) { (c: CircuitState, t: Transform) =>
+        t.runTransform(c)
+      }
+      .circuit
+      .serialize
   }
 
   it should "inline mux operands" in {
@@ -47,7 +49,7 @@ class InlineBooleanExpressionsSpec extends FirrtlFlatSpec {
         |    node _y = mux(lt(x1, x2), head(x1, 1), head(x2, 1))
         |    out <= mux(lt(x1, x2), head(x1, 1), head(x2, 1))""".stripMargin
     val result = exec(input)
-    (result) should be (parse(check).serialize)
+    (result) should be(parse(check).serialize)
     firrtlEquivalenceTest(input, Seq(new InlineBooleanExpressions))
   }
 
@@ -87,7 +89,7 @@ class InlineBooleanExpressionsSpec extends FirrtlFlatSpec {
         |
         |    outB <= _y @[B]""".stripMargin
     val result = exec(input)
-    (result) should be (parse(check).serialize)
+    (result) should be(parse(check).serialize)
     firrtlEquivalenceTest(input, Seq(new InlineBooleanExpressions))
   }
 
@@ -128,7 +130,7 @@ class InlineBooleanExpressionsSpec extends FirrtlFlatSpec {
         |
         |    outB <= lt(andr(head(_c, 1)), x2)""".stripMargin
     val result = exec(input)
-    (result) should be (parse(check).serialize)
+    (result) should be(parse(check).serialize)
     firrtlEquivalenceTest(input, Seq(new InlineBooleanExpressions))
   }
 
@@ -173,7 +175,7 @@ class InlineBooleanExpressionsSpec extends FirrtlFlatSpec {
         |
         |    outB <= geq(x1, gt(x1, leq(x1, lt(x1, x2))))""".stripMargin
     val result = exec(input)
-    (result) should be (parse(check).serialize)
+    (result) should be(parse(check).serialize)
     firrtlEquivalenceTest(input, Seq(new InlineBooleanExpressions))
   }
 
@@ -219,7 +221,7 @@ class InlineBooleanExpressionsSpec extends FirrtlFlatSpec {
          |
          |    out <= or(or(or(_3, c_4), c_5), c_6)""".stripMargin
     val result = exec(input, Seq(InlineBooleanExpressionsMax(3)))
-    (result) should be (parse(check).serialize)
+    (result) should be(parse(check).serialize)
     firrtlEquivalenceTest(input, Seq(new InlineBooleanExpressions))
   }
 

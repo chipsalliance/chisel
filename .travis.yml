@@ -63,7 +63,7 @@ jobs:
       workspaces:
         use: firrtl_build
       script:
-        - sbt scalafmtCheck
+        - sbt scalafmtCheckAll
     - stage: test
       name: "Unidoc builds (no warnings)"
       workspaces:
