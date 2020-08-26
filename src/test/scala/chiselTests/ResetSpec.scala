@@ -73,14 +73,14 @@ class ResetSpec extends ChiselFlatSpec with Utils {
   behavior of "Users"
 
   they should "be able to force implicit reset to be synchronous" in {
-    val fir = (new ChiselStage).emitChirrtl(new MultiIOModule with RequireSyncReset {
+    val fir = ChiselStage.emitChirrtl(new MultiIOModule with RequireSyncReset {
       reset shouldBe a [Bool]
     })
     fir should include ("input reset : UInt<1>")
   }
 
   they should "be able to force implicit reset to be asynchronous" in {
-    val fir = (new ChiselStage).emitChirrtl(new MultiIOModule with RequireAsyncReset {
+    val fir = ChiselStage.emitChirrtl(new MultiIOModule with RequireAsyncReset {
       reset shouldBe an [AsyncReset]
     })
     fir should include ("input reset : AsyncReset")

@@ -33,20 +33,20 @@ class ChiselStageSpec extends AnyFlatSpec with Matchers with Utils {
 
   behavior of "ChiselStage.emitChirrtl"
 
-  it should "return a CHIRRTL string" in new ChiselStageFixture {
-    stage.emitChirrtl(new Foo) should include ("infer mport")
+  it should "return a CHIRRTL string" in {
+    ChiselStage.emitChirrtl(new Foo) should include ("infer mport")
   }
 
   behavior of "ChiselStage.emitFirrtl"
 
-  it should "return a High FIRRTL string" in new ChiselStageFixture {
-    stage.emitFirrtl(new Foo) should include ("mem bar")
+  it should "return a High FIRRTL string" in {
+    ChiselStage.emitFirrtl(new Foo) should include ("mem bar")
   }
 
   behavior of "ChiselStage.emitVerilog"
 
-  it should "return a Verilog string" in new ChiselStageFixture {
-    stage.emitVerilog(new Foo) should include ("endmodule")
+  it should "return a Verilog string" in {
+    ChiselStage.emitVerilog(new Foo) should include ("endmodule")
   }
 
   behavior of "ChiselStage$.elaborate"

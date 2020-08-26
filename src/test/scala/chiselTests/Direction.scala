@@ -240,7 +240,7 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
       assert(DataMirror.directionOf(flippedVecFlipped(index).b) == Direction.Output)
     }
 
-    val emitted: String = (new ChiselStage).emitChirrtl(new MyModule)
+    val emitted: String = ChiselStage.emitChirrtl(new MyModule)
     val firrtl: String = ChiselStage.convert(new MyModule).serialize
 
     // Check that emitted directions are correct.
@@ -307,7 +307,7 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
       assert(DataMirror.directionOf(vecOutputFlipped(index).b) == Direction.Output)
     }
 
-    val emitted: String = (new ChiselStage).emitChirrtl(new MyModule)
+    val emitted: String = ChiselStage.emitChirrtl(new MyModule)
     val firrtl: String = ChiselStage.convert(new MyModule).serialize
 
     // Check that emitted directions are correct.
