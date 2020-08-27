@@ -138,8 +138,8 @@ These are the base data types for defining circuit components:
 
 ![Image](https://raw.githubusercontent.com/freechipsproject/chisel3/master/doc/images/type_hierarchy.svg?sanitize=true)
 
-## Developer Documentation
-This section describes how to get started developing Chisel itself, including how to test your version locally against other projects that pull in Chisel using [sbt's managed dependencies](https://www.scala-sbt.org/1.x/docs/Library-Dependencies.html).
+## Contributor Documentation
+This section describes how to get started contributing to Chisel itself, including how to test your version locally against other projects that pull in Chisel using [sbt's managed dependencies](https://www.scala-sbt.org/1.x/docs/Library-Dependencies.html).
 
 ### Compiling and Testing Chisel
 
