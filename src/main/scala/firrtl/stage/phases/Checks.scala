@@ -31,14 +31,13 @@ class Checks extends Phase {
     * @throws firrtl.options.OptionsException if any checks fail
     */
   def transform(annos: AnnotationSeq): AnnotationSeq = {
-    val inF, inS, eam, ec, outF, comp, emitter, im, inC = collection.mutable.ListBuffer[Annotation]()
+    val inF, inS, eam, ec, outF, emitter, im, inC = collection.mutable.ListBuffer[Annotation]()
     annos.foreach(_ match {
       case a: FirrtlFileAnnotation     => a +=: inF
       case a: FirrtlSourceAnnotation   => a +=: inS
       case a: EmitAllModulesAnnotation => a +=: eam
       case a: EmitCircuitAnnotation    => a +=: ec
       case a: OutputFileAnnotation     => a +=: outF
-      case a: CompilerAnnotation       => a +=: comp
       case a: InfoModeAnnotation       => a +=: im
       case a: FirrtlCircuitAnnotation  => a +=: inC
       case a @ RunFirrtlTransformAnnotation(_: firrtl.Emitter) => a +=: emitter
@@ -81,13 +80,13 @@ class Checks extends Phase {
       )
     }
 
-    /* One mandatory compiler (or emitter) must be specified */
-    if (comp.size != 1 && emitter.isEmpty) {
-      val x = comp.map { case CompilerAnnotation(x) => x }
-      val (msg, suggest) = if (comp.size == 0) { ("none found", "forget one of") }
-      else { (s"""found '${x.mkString(", ")}'""", "use multiple of") }
-      throw new OptionsException(s"""|Exactly one compiler must be specified, but $msg. Did you $suggest the following?
-                                     |    - an option or annotation: -X, --compiler, CompilerAnnotation""".stripMargin)
+    /* At least one emitter must be specified */
+    if (emitter.isEmpty) {
+      throw new OptionsException(
+        s"""|At least one compiler must be specified, but none found. Specify a compiler via:
+            |    - a RunFirrtlTransformAnnotation targeting a specific emitter, e.g., VerilogEmitter
+            |    - a command line option: -X, --compiler""".stripMargin
+      )
     }
 
     /* One mandatory info mode must be specified */

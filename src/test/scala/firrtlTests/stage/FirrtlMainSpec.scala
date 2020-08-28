@@ -286,6 +286,12 @@ class FirrtlMainSpec
         args = Array("-X", "sverilog", "-E", "sverilog", "-o", "Foo"),
         stdout = defaultStdOut,
         files = Seq("Foo.sv")
+      ),
+      /* Test that an output is generated if no emitter is specified */
+      FirrtlMainTest(
+        args = Array("-X", "verilog", "-o", "Foo"),
+        stdout = defaultStdOut,
+        files = Seq("Foo.v")
       )
     )
       .foreach(runStageExpectFiles)

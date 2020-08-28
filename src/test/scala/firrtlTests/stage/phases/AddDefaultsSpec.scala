@@ -2,11 +2,11 @@
 
 package firrtlTests.stage.phases
 
-import firrtl.NoneCompiler
+import firrtl.ChirrtlEmitter
 import firrtl.annotations.Annotation
 import firrtl.stage.phases.AddDefaults
 import firrtl.transforms.BlackBoxTargetDirAnno
-import firrtl.stage.{CompilerAnnotation, InfoModeAnnotation, RunFirrtlTransformAnnotation}
+import firrtl.stage.{InfoModeAnnotation, RunFirrtlTransformAnnotation}
 import firrtl.options.{Dependency, Phase, TargetDirAnnotation}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -32,7 +32,11 @@ class AddDefaultsSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "not overwrite existing annotations" in new Fixture {
-    val input = Seq(BlackBoxTargetDirAnno("foo"), CompilerAnnotation(new NoneCompiler()), InfoModeAnnotation("ignore"))
+    val input = Seq(
+      BlackBoxTargetDirAnno("foo"),
+      RunFirrtlTransformAnnotation(new ChirrtlEmitter),
+      InfoModeAnnotation("ignore")
+    )
 
     phase.transform(input).toSeq should be(input)
   }

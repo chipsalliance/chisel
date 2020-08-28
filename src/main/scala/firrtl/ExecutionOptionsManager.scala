@@ -343,7 +343,7 @@ case class FirrtlExecutionOptions(
     List() ++ (if (inputFileNameOverride.nonEmpty) Seq(FirrtlFileAnnotation(inputFileNameOverride)) else Seq()) ++
       (if (outputFileNameOverride.nonEmpty) { Some(OutputFileAnnotation(outputFileNameOverride)) }
        else { None }) ++
-      Some(CompilerAnnotation(compilerName)) ++
+      Some(RunFirrtlTransformAnnotation.stringToEmitter(compilerName)) ++
       Some(InfoModeAnnotation(infoModeName)) ++
       firrtlSource.map(FirrtlSourceAnnotation(_)) ++
       customTransforms.map(t => RunFirrtlTransformAnnotation(t)) ++

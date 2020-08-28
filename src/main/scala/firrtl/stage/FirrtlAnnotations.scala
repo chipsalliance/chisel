@@ -152,28 +152,16 @@ object FirrtlSourceAnnotation extends HasShellOptions {
   *  - If unset, a [[CompilerAnnotation]] with the default [[VerilogCompiler]]
   * @param compiler compiler name
   */
+@deprecated("Use a RunFirrtlTransformAnnotation targeting a specific Emitter.", "FIRRTL 1.4.0")
 case class CompilerAnnotation(compiler: Compiler = new VerilogCompiler()) extends NoTargetAnnotation with FirrtlOption
 
+@deprecated("Use a RunFirrtlTransformAnnotation targeting a specific Emitter.", "FIRRTL 1.4.0")
 object CompilerAnnotation extends HasShellOptions {
-
-  private[firrtl] def apply(compilerName: String): CompilerAnnotation = {
-    val c = compilerName match {
-      case "none"     => new NoneCompiler()
-      case "high"     => new HighFirrtlCompiler()
-      case "low"      => new LowFirrtlCompiler()
-      case "middle"   => new MiddleFirrtlCompiler()
-      case "verilog"  => new VerilogCompiler()
-      case "mverilog" => new MinimumVerilogCompiler()
-      case "sverilog" => new SystemVerilogCompiler()
-      case _          => throw new OptionsException(s"Unknown compiler name '$compilerName'! (Did you misspell it?)")
-    }
-    CompilerAnnotation(c)
-  }
 
   val options = Seq(
     new ShellOption[String](
       longOption = "compiler",
-      toAnnotationSeq = a => Seq(CompilerAnnotation(a)),
+      toAnnotationSeq = a => Seq(RunFirrtlTransformAnnotation.stringToEmitter(a)),
       helpText = "The FIRRTL compiler to use (default: verilog)",
       shortOption = Some("X"),
       helpValueName = Some("<none|high|middle|low|verilog|mverilog|sverilog>")
@@ -193,6 +181,20 @@ object RunFirrtlTransformAnnotation extends HasShellOptions {
 
   def apply(transform: TransformDependency): RunFirrtlTransformAnnotation =
     RunFirrtlTransformAnnotation(transform.getObject)
+
+  private[firrtl] def stringToEmitter(a: String): RunFirrtlTransformAnnotation = {
+    val emitter = a match {
+      case "none"     => new ChirrtlEmitter
+      case "high"     => new HighFirrtlEmitter
+      case "low"      => new LowFirrtlEmitter
+      case "middle"   => new MiddleFirrtlEmitter
+      case "verilog"  => new VerilogEmitter
+      case "mverilog" => new MinimumVerilogEmitter
+      case "sverilog" => new SystemVerilogEmitter
+      case _          => throw new OptionsException(s"Unknown compiler name '$a'! (Did you misspell it?)")
+    }
+    RunFirrtlTransformAnnotation(emitter)
+  }
 
   val options = Seq(
     new ShellOption[Seq[String]](
@@ -225,6 +227,13 @@ object RunFirrtlTransformAnnotation extends HasShellOptions {
       },
       helpText = "Convert all FIRRTL names to a specific case",
       helpValueName = Some("<lower|upper>")
+    ),
+    new ShellOption[String](
+      longOption = "compiler",
+      toAnnotationSeq = a => Seq(stringToEmitter(a)),
+      helpText = "The FIRRTL compiler to use (default: verilog)",
+      shortOption = Some("X"),
+      helpValueName = Some("<none|high|middle|low|verilog|mverilog|sverilog>")
     )
   )
 

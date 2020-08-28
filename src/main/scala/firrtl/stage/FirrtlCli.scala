@@ -16,7 +16,6 @@ trait FirrtlCli { this: Shell =>
     OutputFileAnnotation,
     InfoModeAnnotation,
     FirrtlSourceAnnotation,
-    CompilerAnnotation,
     RunFirrtlTransformAnnotation,
     firrtl.EmitCircuitAnnotation,
     firrtl.EmitAllModulesAnnotation,

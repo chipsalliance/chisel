@@ -4,7 +4,7 @@ package firrtl.stage.phases
 
 import firrtl.stage._
 
-import firrtl.{AnnotationSeq, EmitAllModulesAnnotation, EmitCircuitAnnotation, FirrtlExecutionResult, Parser}
+import firrtl.{AnnotationSeq, EmitAllModulesAnnotation, EmitCircuitAnnotation, Emitter, FirrtlExecutionResult, Parser}
 import firrtl.annotations.NoTargetAnnotation
 import firrtl.FileUtils
 import firrtl.proto.FromProto
@@ -227,6 +227,9 @@ object DriverCompatibility {
           val b = RunFirrtlTransformAnnotation(a.compiler.emitter)
           if (splitModules) { Seq(a, b, EmitAllModulesAnnotation(c.emitter.getClass)) }
           else { Seq(a, b, EmitCircuitAnnotation(c.emitter.getClass)) }
+        case a @ RunFirrtlTransformAnnotation(e: Emitter) =>
+          if (splitModules) { Seq(a, EmitAllModulesAnnotation(e.getClass)) }
+          else { Seq(a, EmitCircuitAnnotation(e.getClass)) }
         case a => Seq(a)
       }
     }

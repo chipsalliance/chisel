@@ -6,7 +6,7 @@ import firrtl.{AnnotationSeq, VerilogEmitter}
 import firrtl.options.{Dependency, Phase, TargetDirAnnotation}
 import firrtl.stage.TransformManager.TransformDependency
 import firrtl.transforms.BlackBoxTargetDirAnno
-import firrtl.stage.{CompilerAnnotation, FirrtlOptions, InfoModeAnnotation, RunFirrtlTransformAnnotation}
+import firrtl.stage.{FirrtlOptions, InfoModeAnnotation, RunFirrtlTransformAnnotation}
 
 /** [[firrtl.options.Phase Phase]] that adds default [[FirrtlOption]] [[firrtl.annotations.Annotation Annotation]]s.
   * This is a part of the preprocessing done by [[FirrtlStage]].
@@ -23,10 +23,9 @@ class AddDefaults extends Phase {
 
   /** Append any missing default annotations to an annotation sequence */
   def transform(annotations: AnnotationSeq): AnnotationSeq = {
-    var bb, c, em, im = true
+    var bb, em, im = true
     annotations.foreach {
       case _: BlackBoxTargetDirAnno => bb = false
-      case _: CompilerAnnotation    => c = false
       case _: InfoModeAnnotation    => im = false
       case RunFirrtlTransformAnnotation(_: firrtl.Emitter) => em = false
       case _ =>
@@ -39,7 +38,7 @@ class AddDefaults extends Phase {
 
     (if (bb) Seq(BlackBoxTargetDirAnno(targetDir)) else Seq()) ++
       // if there is no compiler or emitter specified, add the default emitter
-      (if (c && em) Seq(RunFirrtlTransformAnnotation(DefaultEmitterTarget)) else Seq()) ++
+      (if (em) Seq(RunFirrtlTransformAnnotation(DefaultEmitterTarget)) else Seq()) ++
       (if (im) Seq(InfoModeAnnotation()) else Seq()) ++
       annotations
   }
