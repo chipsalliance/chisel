@@ -272,4 +272,16 @@ class FlattenTests extends LowTransformSpec {
       """.stripMargin
     execute(input, check, Seq(flatten("Top")))
   }
+
+  "The Flatten transform" should "work on modules with no instances" in {
+    val input = """
+                  |circuit Top :
+                  |  module Top :
+                  |    input a : UInt<32>
+                  |    output b : UInt<32>
+                  |    b <= a
+      """.stripMargin
+    val check = input
+    execute(input, check, Seq(flatten("Top")))
+  }
 }

@@ -264,10 +264,15 @@ class InlineInstances extends Transform with DependencyAPIMigration with Registe
         }
       }
 
-      val maxIdx = indexMap.values.max
-      val resultSeq = Seq.fill(maxIdx + 1)(RenameMap())
-      val resultMap = indexMap.mapValues(idx => resultSeq(maxIdx - idx))
-      (resultMap, resultSeq)
+      indexMap match {
+        case a if a.isEmpty =>
+          (Map.empty[(OfModule, Instance), RenameMap], Seq.empty[RenameMap])
+        case a =>
+          val maxIdx = indexMap.values.max
+          val resultSeq = Seq.fill(maxIdx + 1)(RenameMap())
+          val resultMap = indexMap.mapValues(idx => resultSeq(maxIdx - idx))
+          (resultMap, resultSeq)
+      }
     }
 
     def fixupRefs(
@@ -353,8 +358,8 @@ class InlineInstances extends Transform with DependencyAPIMigration with Registe
         Some(m.map(onStmt(ModuleName(m.name, CircuitName(c.main)))))
     })
 
-    val renames = renamesSeq.tail.foldLeft(renamesSeq.head)(_ andThen _)
+    val renames = renamesSeq.reduceLeftOption(_ andThen _)
 
-    CircuitState(flatCircuit, LowForm, annos, Some(renames))
+    CircuitState(flatCircuit, LowForm, annos, renames)
   }
 }
