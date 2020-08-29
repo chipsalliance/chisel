@@ -107,13 +107,13 @@ trait FirrtlRunners extends BackendCompilationUtilities {
     }
 
     val customName = s"${prefix}_custom"
-    val customAnnos = getBaseAnnos(customName) ++: toAnnos((new GetNamespace) +: customTransforms) ++: customAnnotations
+    val customAnnos = customAnnotations ++: toAnnos((new GetNamespace) +: customTransforms) ++: getBaseAnnos(customName)
 
     val customResult = (new firrtl.stage.FirrtlStage).execute(Array.empty, customAnnos)
     val nsAnno = customResult.collectFirst { case m: ModuleNamespaceAnnotation => m }.get
 
     val refSuggestedName = s"${prefix}_ref"
-    val refAnnos = getBaseAnnos(refSuggestedName) ++: Seq(RunFirrtlTransformAnnotation(new RenameModules), nsAnno)
+    val refAnnos = Seq(RunFirrtlTransformAnnotation(new RenameModules), nsAnno) ++: getBaseAnnos(refSuggestedName)
 
     val refResult = (new firrtl.stage.FirrtlStage).execute(Array.empty, refAnnos)
     val refName =
