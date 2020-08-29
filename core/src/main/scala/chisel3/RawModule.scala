@@ -87,7 +87,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
               case PortBinding(_) =>
                 id.forceName(None, default="PORT", _namespace)
               case RegBinding(_, _) =>
-                id.forceName(None, default="REG", _namespace)
+                id.forceName(Some(""), default="REG", _namespace)
               case WireBinding(_, _) =>
                 id.forceName(Some(""), default="WIRE", _namespace)
               case _ =>  // don't name literals
