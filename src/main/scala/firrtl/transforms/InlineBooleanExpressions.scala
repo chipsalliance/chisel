@@ -83,11 +83,22 @@ class InlineBooleanExpressions extends Transform with DependencyAPIMigration {
 
     /** Whether or not an can be inlined
       * @param refExpr the expression to check for inlining
+      * @param outerExpr the parent expression of refExpr, if any
       */
-    def canInline(refExpr: Expression): Boolean = {
-      refExpr match {
-        case _: Mux => false
-        case _ => refExpr.tpe == Utils.BoolType
+    def canInline(refExpr: Expression, outerExpr: Option[Expression]): Boolean = {
+      val contextInsensitiveDetOps: Set[PrimOp] = Set(Lt, Leq, Gt, Geq, Eq, Neq, Andr, Orr, Xorr)
+      outerExpr match {
+        case None => true
+        case Some(o) if (o.tpe == Utils.BoolType) =>
+          refExpr match {
+            case _: Mux => false
+            case e => e.tpe == Utils.BoolType
+          }
+        case Some(o) =>
+          refExpr match {
+            case DoPrim(op, _, _, Utils.BoolType) => contextInsensitiveDetOps(op)
+            case _                                => false
+          }
       }
     }
 
@@ -105,7 +116,8 @@ class InlineBooleanExpressions extends Transform with DependencyAPIMigration {
           netlist.get(we(ref)) match {
             case Some((refExpr, refInfo)) if sameFileAndLineInfo(info, refInfo) =>
               val inlineNum = inlineCounts.getOrElse(refKey, 1)
-              if (!outerExpr.isDefined || canInline(refExpr) && ((inlineNum + inlineCount) <= maxInlineCount)) {
+              val notTooDeep = !outerExpr.isDefined || ((inlineNum + inlineCount) <= maxInlineCount)
+              if (canInline(refExpr, outerExpr) && notTooDeep) {
                 inlineCount += inlineNum
                 refExpr
               } else {
