@@ -242,6 +242,32 @@ class InlineBooleanExpressionsSpec extends FirrtlFlatSpec {
     firrtlEquivalenceTest(input, Seq(new InlineBooleanExpressions))
   }
 
+  it should "emit parentheses in the correct places" in {
+    // should fail if any of these sub-expressions does not have parentheses
+    val input =
+      """
+        |circuit TestParentheses :
+        |  module TestParentheses :
+        |    input in : UInt<1>[3]
+        |    output out : UInt<1>[13]
+        |
+        |    out[0] <= mul(and(in[0], in[1]), in[2])
+        |    out[1] <= div(and(in[0], in[1]), in[2])
+        |    out[2] <= rem(and(in[0], in[1]), in[2])
+        |    out[3] <= add(and(in[0], in[1]), in[2])
+        |    out[4] <= sub(and(in[0], in[1]), in[2])
+        |    out[5] <= dshl(in[0], and(in[1], in[2]))
+        |    out[6] <= dshr(in[0], and(in[1], in[2]))
+        |    out[7] <= lt(and(in[0], in[1]), in[2])
+        |    out[8] <= gt(in[0], or(in[1], in[2]))
+        |    out[9] <= eq(in[0], or(in[1], in[2]))
+        |    out[10] <= neq(in[0], or(in[1], in[2]))
+        |    out[11] <= and(in[0], xor(in[1], in[2]))
+        |    out[12] <= xor(in[0], or(in[1], in[2]))
+    """.stripMargin
+    firrtlEquivalenceTest(input, Seq(new InlineBooleanExpressions))
+  }
+
   it should "avoid inlining when it would create context-sensitivity bugs" in {
     val input =
       """circuit AddNot:

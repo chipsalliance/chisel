@@ -8,6 +8,7 @@ import firrtl.annotations.TargetToken.{fromStringToTargetToken, OfModule, Ref}
 import firrtl.ir._
 import firrtl.passes.{InferTypes, LowerTypes, SplitExpressions}
 import firrtl.options.Dependency
+import firrtl.stage.Forms
 import firrtl.PrimOps._
 import firrtl.WrappedExpression._
 
@@ -41,6 +42,8 @@ class InlineBooleanExpressions extends Transform with DependencyAPIMigration {
   override def optionalPrerequisites = Seq(
     Dependency(SplitExpressions)
   )
+
+  override def optionalPrerequisiteOf = Forms.BackendEmitters
 
   override def invalidates(a: Transform) = a match {
     case _: DeadCodeElimination => true // this transform does not remove nodes that are unused after inlining

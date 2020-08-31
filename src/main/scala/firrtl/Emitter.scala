@@ -547,12 +547,12 @@ class VerilogEmitter extends SeqTransform with Emitter {
       // This simplifies handling of assignment of a signed expression to an unsigned LHS value
       //   which does not require a cast in Verilog
       case AsUInt | AsSInt | AsClock | AsAsyncReset => Seq(a0)
-      case Dshlw                                    => Seq(cast(a0), " << ", a1)
-      case Dshl                                     => Seq(cast(a0), " << ", a1)
+      case Dshlw                                    => Seq(cast(a0), " << ", parenthesize(a1, false))
+      case Dshl                                     => Seq(cast(a0), " << ", parenthesize(a1, false))
       case Dshr =>
         doprim.tpe match {
-          case (_: SIntType) => Seq(cast(a0), " >>> ", a1)
-          case (_) => Seq(cast(a0), " >> ", a1)
+          case (_: SIntType) => Seq(cast(a0), " >>> ", parenthesize(a1, false))
+          case (_) => Seq(cast(a0), " >> ", parenthesize(a1, false))
         }
       case Shl => if (c0 > 0) Seq("{", cast(a0), s", $c0'h0}") else Seq(cast(a0))
       case Shr if c0 >= bitWidth(a0.tpe) =>
@@ -579,7 +579,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
       case Bits                                                        => Seq(parenthesize(a0, true), "[", c0, ":", c1, "]")
       // If selecting zeroth bit and single-bit wire, just emit the wire
       case Head if c0 == 1 && bitWidth(a0.tpe) == BigInt(1) => Seq(a0)
-      case Head if c0 == 1                                  => Seq(a0, "[", bitWidth(a0.tpe) - 1, "]")
+      case Head if c0 == 1                                  => Seq(parenthesize(a0, true), "[", bitWidth(a0.tpe) - 1, "]")
       case Head =>
         val msb = bitWidth(a0.tpe) - 1
         val lsb = bitWidth(a0.tpe) - c0
