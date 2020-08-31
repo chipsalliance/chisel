@@ -203,5 +203,23 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
       y
     }
   }
+
+  "Nested val declarations" should "all be named" in {
+    class Test extends MultiIOModule {
+      {
+        val a = {
+          val b = {
+            val c = Wire(UInt(3.W))
+            Wire(UInt(3.W))
+          }
+          Wire(UInt(3.W))
+        }
+      }
+    }
+
+    aspectTest(() => new Test) {
+      top: Test => Select.wires(top).map(_.instanceName) should be (List("a_b_c", "a_b", "a"))
+    }
+  }
 }
 
