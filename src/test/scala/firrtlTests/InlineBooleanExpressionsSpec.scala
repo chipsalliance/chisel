@@ -3,7 +3,7 @@
 package firrtlTests
 
 import firrtl._
-import firrtl.annotations.Annotation
+import firrtl.annotations.{Annotation, ReferenceTarget}
 import firrtl.options.Dependency
 import firrtl.passes._
 import firrtl.transforms._
@@ -49,6 +49,40 @@ class InlineBooleanExpressionsSpec extends FirrtlFlatSpec {
         |    node _y = mux(lt(x1, x2), head(x1, 1), head(x2, 1))
         |    out <= mux(lt(x1, x2), head(x1, 1), head(x2, 1))""".stripMargin
     val result = exec(input)
+    (result) should be(parse(check).serialize)
+    firrtlEquivalenceTest(input, Seq(new InlineBooleanExpressions))
+  }
+
+  it should "not inline dontTouched signals" in {
+    val input =
+      """circuit Top :
+        |  module Top :
+        |    output out : UInt<1>
+        |    node x1 = UInt<1>(0)
+        |    node x2 = UInt<1>(1)
+        |    node _t = head(x1, 1)
+        |    node _f = head(x2, 1)
+        |    node _c = lt(x1, x2)
+        |    node _y = mux(_c, _t, _f)
+        |    out <= _y""".stripMargin
+    val check =
+      """circuit Top :
+        |  module Top :
+        |    output out : UInt<1>
+        |    node x1 = UInt<1>(0)
+        |    node x2 = UInt<1>(1)
+        |    node _t = head(x1, 1)
+        |    node _f = head(x2, 1)
+        |    node _c = lt(x1, x2)
+        |    node _y = mux(lt(x1, x2), _t, _f)
+        |    out <= mux(lt(x1, x2), _t, _f)""".stripMargin
+    val result = exec(
+      input,
+      Seq(
+        DontTouchAnnotation(ReferenceTarget("Top", "Top", Seq.empty, "_t", Seq.empty)),
+        DontTouchAnnotation(ReferenceTarget("Top", "Top", Seq.empty, "_f", Seq.empty))
+      )
+    )
     (result) should be(parse(check).serialize)
     firrtlEquivalenceTest(input, Seq(new InlineBooleanExpressions))
   }
