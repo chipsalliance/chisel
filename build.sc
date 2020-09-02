@@ -30,8 +30,6 @@ def getTestVersion(dep: String, org: String = "edu.berkeley.cs") = {
 
 // Since chisel contains submodule core and macros, a CommonModule is needed
 trait CommonModule extends CrossSbtModule with PublishModule {
-  override def millSourcePath = super.millSourcePath / os.up
-
   def firrtlModule: Option[PublishModule] = None
 
   def firrtlIvyDeps = if (firrtlModule.isEmpty) Agg(
@@ -99,23 +97,27 @@ trait CommonModule extends CrossSbtModule with PublishModule {
 
 class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule with BuildInfo {
   m =>
+  /** Default behavior assumes `build.sc` in the upper path of `src`.
+    * This override makes `src` folder stay with `build.sc` in the same directory,
+    * If chisel3 is used as a sub-project, [[millSourcePath]] should be overridden to the folder where `src` located.
+    */
+  override def millSourcePath = super.millSourcePath / os.up
+
   override def mainClass = T {
     Some("chisel3.stage.ChiselMain")
   }
 
   override def moduleDeps = super.moduleDeps ++ Seq(macros, core)
 
-  override def scalacPluginClasspath = super.scalacPluginClasspath() ++ Agg(
-    plugin.jar()
-  )
-
-  override def scalacOptions = T {
-    super.scalacOptions() ++ Seq(
-      s"-Xplugin:${plugin.jar().path}"
+  override def scalacPluginClasspath = T {
+    super.scalacPluginClasspath() ++ Agg(
+      plugin.jar()
     )
   }
 
   object test extends Tests {
+    override def scalacPluginClasspath: T[Loose.Agg[PathRef]] = m.scalacPluginClasspath
+
     private def ivyCrossDeps = majorVersion match {
       case i if i < 12 => Agg(ivy"junit:junit:4.13")
       case _ => Agg()
@@ -151,6 +153,7 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule wit
   }
 
   object macros extends CommonModule {
+    /** millOuterCtx.segment.pathSegments didn't detect error here. */
     override def millSourcePath = m.millSourcePath / "macros"
 
     override def crossScalaVersion = m.crossScalaVersion
@@ -159,6 +162,7 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule wit
   }
 
   object core extends CommonModule {
+    /** millOuterCtx.segment.pathSegments didn't detect error here. */
     override def millSourcePath = m.millSourcePath / "core"
 
     override def crossScalaVersion = m.crossScalaVersion
@@ -185,6 +189,7 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule wit
   }
 
   object plugin extends CommonModule {
+    /** millOuterCtx.segment.pathSegments didn't detect error here. */
     override def millSourcePath = m.millSourcePath / "plugin"
 
     override def crossScalaVersion = m.crossScalaVersion
