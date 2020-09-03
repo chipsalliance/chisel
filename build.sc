@@ -116,7 +116,7 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule wit
   }
 
   object test extends Tests {
-    override def scalacPluginClasspath: T[Loose.Agg[PathRef]] = m.scalacPluginClasspath
+    override def scalacPluginClasspath = m.scalacPluginClasspath
 
     private def ivyCrossDeps = majorVersion match {
       case i if i < 12 => Agg(ivy"junit:junit:4.13")
