@@ -52,6 +52,9 @@ object LegalizeClocksAndAsyncResetsTransform {
           (None, rxClock)
         }
         Block(clockNodeOpt ++: resetNodeOpt ++: Seq(rx))
+      case Connect(info, loc, rhs @ DoPrim(_, _, _, ClockType)) if (Utils.kind(loc) == MemKind) =>
+        val node = DefNode(info, namespace.newTemp, rhs)
+        Block(node, Connect(info, loc, WRef(node)))
       case p: Print if isLiteralExpression(p.clk) =>
         val node = DefNode(p.info, namespace.newTemp, p.clk)
         val px = p.copy(clk = WRef(node))
