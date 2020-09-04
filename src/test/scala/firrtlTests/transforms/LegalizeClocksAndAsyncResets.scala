@@ -49,6 +49,36 @@ class LegalizeClocksTransformSpec extends FirrtlFlatSpec {
     result.getEmittedCircuit.value shouldNot include("always @(posedge 1")
   }
 
+  it should "not emit @(posedge 1'h0) for mem" in {
+    val input =
+      """circuit test :
+        |  module test :
+        |    output rdata : UInt<8>
+        |    input wdata : UInt<8>
+        |    input addr : UInt<5>
+        |    mem m :
+        |      data-type => UInt<8>
+        |      depth => 32
+        |      read-latency => 0
+        |      write-latency => 1
+        |      reader => r
+        |      writer => w
+        |      read-under-write => undefined
+        |    m.r.clk <= asClock(UInt(0))
+        |    m.r.en <= UInt(1)
+        |    m.r.addr <= addr
+        |    rdata <= m.r.data
+        |    m.w.clk <= asClock(UInt(0))
+        |    m.w.en <= UInt(1)
+        |    m.w.mask <= UInt(1)
+        |    m.w.addr <= addr
+        |    m.w.data <= wdata
+        |""".stripMargin
+    val result = compile(input)
+    result should containLine(s"always @(posedge _GEN_1) begin")
+    result.getEmittedCircuit.value shouldNot include("always @(posedge 1")
+  }
+
   it should "not emit @(posedge clock or posedge 1'h0) for a constantly deasserted areset" in {
     val input = """circuit test :
                   |  module test :
