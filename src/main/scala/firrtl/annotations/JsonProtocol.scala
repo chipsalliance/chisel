@@ -10,7 +10,7 @@ import scala.util.{Failure, Try}
 import org.json4s._
 import org.json4s.native.JsonMethods._
 import org.json4s.native.Serialization
-import org.json4s.native.Serialization.{read, writePretty}
+import org.json4s.native.Serialization.{read, write, writePretty}
 
 trait HasSerializationHints {
   // For serialization of complicated constructor arguments, let the annotation
@@ -220,6 +220,13 @@ object JsonProtocol {
   /** Serialize annotations to a String for emission */
   def serialize(annos: Seq[Annotation]): String = serializeTry(annos).get
 
+  private def findUnserializeableAnnos(
+    annos: Seq[Annotation]
+  )(
+    implicit formats: Formats
+  ): Seq[(Annotation, Throwable)] =
+    annos.map(a => a -> Try(write(a))).collect { case (a, Failure(e)) => (a, e) }
+
   def serializeTry(annos: Seq[Annotation]): Try[String] = {
     val tags = annos
       .flatMap({
@@ -229,7 +236,11 @@ object JsonProtocol {
       .distinct
 
     implicit val formats = jsonFormat(tags)
-    Try(writePretty(annos))
+    Try(writePretty(annos)).recoverWith {
+      case e: org.json4s.MappingException =>
+        val badAnnos = findUnserializeableAnnos(annos)
+        Failure(if (badAnnos.isEmpty) e else UnserializableAnnotationException(badAnnos))
+    }
   }
 
   def deserialize(in: JsonInput): Seq[Annotation] = deserializeTry(in).get

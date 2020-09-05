@@ -18,6 +18,16 @@ case class AnnotationClassNotFoundException(className: String)
     extends FirrtlUserException(
       s"Annotation class $className not found! Please check spelling and classpath"
     )
+class UnserializableAnnotationException private (msg: String) extends FirrtlUserException(msg)
+object UnserializableAnnotationException {
+  private def toMessage(pair: (Annotation, Throwable)): String =
+    s"Failed to serialiaze annotation of type ${pair._1.getClass.getName} because '${pair._2.getMessage}'"
+  private[firrtl] def apply(badAnnos: Seq[(Annotation, Throwable)]) = {
+    require(badAnnos.nonEmpty)
+    val msg = badAnnos.map(toMessage).mkString("\n  ", "\n  ", "\n")
+    new UnserializableAnnotationException(msg)
+  }
+}
 
 object AnnotationUtils {
 
