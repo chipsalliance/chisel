@@ -5,6 +5,7 @@ package firrtlTests.transforms
 import firrtl.PrimOps._
 import firrtl._
 import firrtl.ir.DoPrim
+import firrtl.stage.PrettyNoExprInlining
 import firrtl.transforms.{CombineCats, MaxCatLenAnnotation}
 import firrtl.testutils.FirrtlFlatSpec
 import firrtl.testutils.FirrtlCheckers._
@@ -173,5 +174,23 @@ class CombineCatsSpec extends FirrtlFlatSpec {
       case DoPrim(Cat, Seq(_, DoPrim(Sub, _, _, _)), _, _)                            => true
       case DoPrim(Cat, Seq(_, DoPrim(Cat, Seq(_, DoPrim(Cat, _, _, _)), _, _)), _, _) => true
     }
+  }
+
+  "CombineCats" should s"respect --${PrettyNoExprInlining.longOption}" in {
+    val input =
+      """circuit test :
+        |  module test :
+        |    input in1 : UInt<1>
+        |    input in2 : UInt<2>
+        |    input in3 : UInt<3>
+        |    input in4 : UInt<4>
+        |    output out : UInt<10>
+        |
+        |    node _T_1 = cat(in1, in2)
+        |    node _T_2 = cat(_T_1, in3)
+        |    out <= cat(_T_2, in4)
+        |""".stripMargin
+    val result = execute(input, transforms, PrettyNoExprInlining :: Nil)
+    result.circuit.serialize should be(parse(input).serialize)
   }
 }

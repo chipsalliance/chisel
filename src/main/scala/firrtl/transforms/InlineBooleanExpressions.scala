@@ -3,6 +3,7 @@
 package firrtl
 package transforms
 
+import firrtl.stage.PrettyNoExprInlining
 import firrtl.annotations.{NoTargetAnnotation, Target}
 import firrtl.annotations.TargetToken.{fromStringToTargetToken, OfModule, Ref}
 import firrtl.ir._
@@ -159,26 +160,33 @@ class InlineBooleanExpressions extends Transform with DependencyAPIMigration {
   }
 
   def execute(state: CircuitState): CircuitState = {
-    val dontTouchMap: Map[OfModule, Set[Ref]] = {
-      val refTargets = state.annotations.flatMap {
-        case anno: HasDontTouches => anno.dontTouches
-        case o => Nil
+    val run = !state.annotations.contains(PrettyNoExprInlining)
+
+    if (run) {
+      val dontTouchMap: Map[OfModule, Set[Ref]] = {
+        val refTargets = state.annotations.flatMap {
+          case anno: HasDontTouches => anno.dontTouches
+          case o => Nil
+        }
+        val dontTouches: Seq[(OfModule, Ref)] = refTargets.map {
+          case r => Target.referringModule(r).module.OfModule -> r.ref.Ref
+        }
+        dontTouches.groupBy(_._1).mapValues(_.map(_._2).toSet).toMap
       }
-      val dontTouches: Seq[(OfModule, Ref)] = refTargets.map {
-        case r => Target.referringModule(r).module.OfModule -> r.ref.Ref
+
+      val maxInlineCount = state.annotations.collectFirst {
+        case InlineBooleanExpressionsMax(max) => max
+      }.getOrElse(InlineBooleanExpressions.defaultMax)
+
+      val modulesx = state.circuit.modules.map { m =>
+        val mapMethods = new MapMethods(maxInlineCount, dontTouchMap.getOrElse(m.name.OfModule, Set.empty[Ref]))
+        m.mapStmt(mapMethods.onStmt(_))
       }
-      dontTouches.groupBy(_._1).mapValues(_.map(_._2).toSet).toMap
+
+      state.copy(circuit = state.circuit.copy(modules = modulesx))
+    } else {
+      logger.info(s"--${PrettyNoExprInlining.longOption} specified, skipping...")
+      state
     }
-
-    val maxInlineCount = state.annotations.collectFirst {
-      case InlineBooleanExpressionsMax(max) => max
-    }.getOrElse(InlineBooleanExpressions.defaultMax)
-
-    val modulesx = state.circuit.modules.map { m =>
-      val mapMethods = new MapMethods(maxInlineCount, dontTouchMap.getOrElse(m.name.OfModule, Set.empty[Ref]))
-      m.mapStmt(mapMethods.onStmt(_))
-    }
-
-    state.copy(circuit = state.circuit.copy(modules = modulesx))
   }
 }

@@ -253,15 +253,30 @@ case class FirrtlCircuitAnnotation(circuit: Circuit) extends NoTargetAnnotation 
 
 /** Suppresses warning about Scala 2.11 deprecation
   *
-  *  - set with `--Wno-scala-version-warning`
+  *  - set with `--warn:no-scala-version-deprecation`
   */
-case object SuppressScalaVersionWarning extends NoTargetAnnotation with FirrtlOption with HasShellOptions {
-  def longOption: String = "Wno-scala-version-warning"
+case object WarnNoScalaVersionDeprecation extends NoTargetAnnotation with FirrtlOption with HasShellOptions {
+  def longOption: String = "warn:no-scala-version-deprecation"
   val options = Seq(
     new ShellOption[Unit](
       longOption = longOption,
       toAnnotationSeq = { _ => Seq(this) },
       helpText = "Suppress Scala 2.11 deprecation warning (ignored in Scala 2.12+)"
+    )
+  )
+}
+
+/** Turn off all expression inlining
+  *
+  * @note this primarily applies to emitted Verilog
+  */
+case object PrettyNoExprInlining extends NoTargetAnnotation with FirrtlOption with HasShellOptions {
+  def longOption: String = "pretty:no-expr-inlining"
+  val options = Seq(
+    new ShellOption[Unit](
+      longOption = longOption,
+      toAnnotationSeq = { _ => Seq(this) },
+      helpText = "Disable expression inlining"
     )
   )
 }

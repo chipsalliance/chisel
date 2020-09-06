@@ -10,7 +10,7 @@ import java.io.{File, PrintWriter}
 
 import firrtl.{BuildInfo, FileUtils}
 
-import firrtl.stage.{FirrtlMain, SuppressScalaVersionWarning}
+import firrtl.stage.{FirrtlMain, WarnNoScalaVersionDeprecation}
 import firrtl.stage.transforms.CheckScalaVersion
 import firrtl.util.BackendCompilationUtilities
 import org.scalatest.featurespec.AnyFeatureSpec
@@ -169,7 +169,7 @@ class FirrtlMainSpec
     */
   val defaultStdOut: Option[String] = BuildInfo.scalaVersion.split("\\.").toList match {
     case "2" :: v :: _ :: Nil if v.toInt <= 11 =>
-      Some(CheckScalaVersion.deprecationMessage("2.11", s"--${SuppressScalaVersionWarning.longOption}"))
+      Some(CheckScalaVersion.deprecationMessage("2.11", s"--${WarnNoScalaVersionDeprecation.longOption}"))
     case x =>
       None
   }

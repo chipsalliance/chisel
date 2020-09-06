@@ -8,7 +8,7 @@ import firrtl.options.Dependency
 import firrtl.passes._
 import firrtl.transforms._
 import firrtl.testutils._
-import firrtl.stage.TransformManager
+import firrtl.stage.{PrettyNoExprInlining, TransformManager}
 
 class InlineBooleanExpressionsSpec extends FirrtlFlatSpec {
   val transform = new InlineBooleanExpressions
@@ -311,5 +311,20 @@ class InlineBooleanExpressionsSpec extends FirrtlFlatSpec {
         |    output o: UInt<2>
         |    o <= add(a, not(b))""".stripMargin
     firrtlEquivalenceTest(input, Seq(new InlineBooleanExpressions))
+  }
+
+  it should s"respect --${PrettyNoExprInlining.longOption}" in {
+    val input =
+      """circuit Top :
+        |  module Top :
+        |    input a : UInt<1>
+        |    input b : UInt<1>
+        |    input c : UInt<1>
+        |    output out : UInt<1>
+        |
+        |    node _T_1 = and(a, b)
+        |    out <= and(_T_1, c)""".stripMargin
+    val result = exec(input, PrettyNoExprInlining :: Nil)
+    (result) should be(parse(input).serialize)
   }
 }

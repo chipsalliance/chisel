@@ -20,7 +20,8 @@ trait FirrtlCli { this: Shell =>
     firrtl.EmitCircuitAnnotation,
     firrtl.EmitAllModulesAnnotation,
     NoCircuitDedupAnnotation,
-    SuppressScalaVersionWarning
+    WarnNoScalaVersionDeprecation,
+    PrettyNoExprInlining
   )
     .map(_.addOptions(parser))
 

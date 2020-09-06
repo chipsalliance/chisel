@@ -3,7 +3,7 @@
 package firrtl.stage.transforms
 
 import firrtl.{BuildInfo, CircuitState, DependencyAPIMigration, Transform}
-import firrtl.stage.SuppressScalaVersionWarning
+import firrtl.stage.WarnNoScalaVersionDeprecation
 import firrtl.options.StageUtils.dramaticWarning
 
 object CheckScalaVersion {
@@ -27,9 +27,9 @@ class CheckScalaVersion extends Transform with DependencyAPIMigration {
   override def invalidates(a: Transform) = false
 
   def execute(state: CircuitState): CircuitState = {
-    def suppress = state.annotations.contains(SuppressScalaVersionWarning)
+    def suppress = state.annotations.contains(WarnNoScalaVersionDeprecation)
     if (getScalaMajorVersion == 11 && !suppress) {
-      val option = s"--${SuppressScalaVersionWarning.longOption}"
+      val option = s"--${WarnNoScalaVersionDeprecation.longOption}"
       dramaticWarning(deprecationMessage("2.11", option))
     }
     state

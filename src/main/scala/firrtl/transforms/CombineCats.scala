@@ -7,6 +7,7 @@ import firrtl.PrimOps._
 import firrtl.WrappedExpression._
 import firrtl.annotations.NoTargetAnnotation
 import firrtl.options.Dependency
+import firrtl.stage.PrettyNoExprInlining
 
 import scala.collection.mutable
 
@@ -74,11 +75,18 @@ class CombineCats extends Transform with DependencyAPIMigration {
   val defaultMaxCatLen = 10
 
   def execute(state: CircuitState): CircuitState = {
-    val maxCatLen = state.annotations.collectFirst {
-      case m: MaxCatLenAnnotation => m.maxCatLen
-    }.getOrElse(defaultMaxCatLen)
+    val run = !state.annotations.contains(PrettyNoExprInlining)
 
-    val modulesx = state.circuit.modules.map(CombineCats.onMod(maxCatLen))
-    state.copy(circuit = state.circuit.copy(modules = modulesx))
+    if (run) {
+      val maxCatLen = state.annotations.collectFirst {
+        case m: MaxCatLenAnnotation => m.maxCatLen
+      }.getOrElse(defaultMaxCatLen)
+
+      val modulesx = state.circuit.modules.map(CombineCats.onMod(maxCatLen))
+      state.copy(circuit = state.circuit.copy(modules = modulesx))
+    } else {
+      logger.info(s"--${PrettyNoExprInlining.longOption} specified, skipping...")
+      state
+    }
   }
 }
