@@ -1,0 +1,5 @@
+# This .wake file is used by the 'wake' build system.
+# Using this chisel3Root definition, other components can find where
+# the the chisel3 repository is located within a wake workspace.
+# 'here' resolves to the directory that this file resides.
+global def chisel3Root = here
