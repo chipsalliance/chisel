@@ -112,7 +112,7 @@ object loadMemoryFromFile {
     fileName: String,
     hexOrBinary: MemoryLoadFileType.FileType = MemoryLoadFileType.Hex
   ): Unit = {
-    annotate(ChiselLoadMemoryAnnotation(memory, fileName))
+    annotate(ChiselLoadMemoryAnnotation(memory, fileName, hexOrBinary))
   }
 }
 
