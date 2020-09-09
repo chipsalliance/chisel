@@ -10,7 +10,7 @@ import java.io.File
 
 import scopt.OptionParser
 
-sealed trait StageOption { this: Annotation => }
+sealed trait StageOption extends Unserializable { this: Annotation => }
 
 /** An annotation that should not be serialized automatically [[phases.WriteOutputAnnotations WriteOutputAnnotations]].
   * This usually means that this is an annotation that is used only internally to a [[Stage]].

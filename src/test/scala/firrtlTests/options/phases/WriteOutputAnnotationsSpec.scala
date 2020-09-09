@@ -12,6 +12,7 @@ import firrtl.options.{
   OutputAnnotationFileAnnotation,
   Phase,
   PhaseException,
+  StageOption,
   StageOptions,
   TargetDirAnnotation,
   WriteDeletedAnnotation
@@ -60,7 +61,7 @@ class WriteOutputAnnotationsSpec extends AnyFlatSpec with Matchers with firrtl.t
 
   behavior.of(classOf[WriteOutputAnnotations].toString)
 
-  it should "write annotations to a file (excluding DeletedAnnotations)" in new Fixture {
+  it should "write annotations to a file (excluding DeletedAnnotations and StageOptions)" in new Fixture {
     val file = new File(dir + "/should-write-annotations-to-a-file.anno.json")
     val annotations = Seq(
       OutputAnnotationFileAnnotation(file.toString),
@@ -70,12 +71,13 @@ class WriteOutputAnnotationsSpec extends AnyFlatSpec with Matchers with firrtl.t
       DeletedAnnotation("foo", WriteOutputAnnotationsSpec.FooAnnotation)
     )
     val expected = annotations.filter {
-      case a: DeletedAnnotation => false
-      case a => true
+      case _: DeletedAnnotation => false
+      case _: StageOption       => false
+      case _ => true
     }
     val out = phase.transform(annotations)
 
-    info("annotations are unmodified")
+    info("annotations should be as expected")
     out.toSeq should be(annotations)
 
     fileContainsAnnotations(file, expected)
@@ -96,7 +98,11 @@ class WriteOutputAnnotationsSpec extends AnyFlatSpec with Matchers with firrtl.t
     info("annotations are unmodified")
     out.toSeq should be(annotations)
 
-    fileContainsAnnotations(file, annotations)
+    val expected = annotations.filter {
+      case _: StageOption => false
+      case _ => true
+    }
+    fileContainsAnnotations(file, expected)
   }
 
   it should "do nothing if no output annotation file is specified" in new Fixture {
@@ -126,9 +132,10 @@ class WriteOutputAnnotationsSpec extends AnyFlatSpec with Matchers with firrtl.t
       WriteOutputAnnotationsSpec.Custom("hello!")
     )
     val serializedFileName = view[StageOptions](annotations).getBuildFileName("Custom", Some(".Emission"))
-    val expected = annotations.map {
-      case _: WriteOutputAnnotationsSpec.Custom => WriteOutputAnnotationsSpec.Replacement(serializedFileName)
-      case a => a
+    val expected = annotations.flatMap {
+      case _: WriteOutputAnnotationsSpec.Custom => Some(WriteOutputAnnotationsSpec.Replacement(serializedFileName))
+      case _: StageOption                       => None
+      case a => Some(a)
     }
 
     val out = phase.transform(annotations)
