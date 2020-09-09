@@ -106,6 +106,19 @@ class HasComplexMemory(memoryDepth: Int) extends Module {
   io.value := memory(io.address)
 }
 
+class HasBinarySupport(memoryDepth: Int, memoryType: Data) extends Module {
+  val io = IO(new Bundle {
+    val address = Input(UInt(memoryType.getWidth.W))
+    val value   = Output(memoryType)
+  })
+
+  val memory = Mem(memoryDepth, memoryType)
+
+  loadMemoryFromFile(memory, "./mem", MemoryLoadFileType.Binary)
+
+  io.value := memory(io.address)
+}
+
 
 /**
   * The following tests are a bit incomplete and check that the output verilog is properly constructed
@@ -174,6 +187,22 @@ class LoadMemoryFromFileSpec extends AnyFreeSpec with Matchers {
       file.delete()
     }
 
+  }
+
+  "Has binary format support" in {
+    val testDirName = "test_run_dir/binary_memory_load"
+
+    val result = (new ChiselStage).execute(
+      args = Array("-X", "verilog", "--target-dir", testDirName),
+      annotations = Seq(ChiselGeneratorAnnotation(() => new HasBinarySupport(memoryDepth = 8, memoryType = UInt(16.W))))
+    )
+
+    val dir = new File(testDirName)
+    val file = new File(dir, s"HasBinarySupport.HasBinarySupport.memory.v")
+    file.exists() should be (true)
+    val fileText = io.Source.fromFile(file).getLines().mkString("\n")
+    fileText should include (s"""$$readmemb("./mem", HasBinarySupport.memory);""")
+    file.delete()
   }
 
 }
