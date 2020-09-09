@@ -103,20 +103,53 @@ object ChiselGeneratorAnnotation extends HasShellOptions {
 case class ChiselCircuitAnnotation(circuit: Circuit)
     extends NoTargetAnnotation
     with ChiselOption
+    with Unserializable {
+  /* Caching the hashCode for a large circuit is necessary due to repeated queries.
+   * Not caching the hashCode will cause severe performance degredations for large [[Circuit]]s.
+   */
+  override lazy val hashCode: Int = circuit.hashCode
+}
+
+object CircuitSerializationAnnotation {
+  sealed trait Format {
+    def extension: String
+  }
+  case object FirrtlFileFormat extends Format {
+    def extension = ".fir"
+  }
+  case object ProtoBufFileFormat extends Format {
+    def extension = ".pb"
+  }
+}
+
+import CircuitSerializationAnnotation._
+
+/** Wraps a [[Circuit]] for serialization via [[CustomFileEmission]]
+  * @param circuit a Chisel Circuit
+  * @param filename name of destination file (excludes file extension)
+  * @param format serialization file format (sets file extension)
+  */
+case class CircuitSerializationAnnotation(circuit: Circuit, filename: String, format: Format)
+    extends NoTargetAnnotation
     with CustomFileEmission {
   /* Caching the hashCode for a large circuit is necessary due to repeated queries.
    * Not caching the hashCode will cause severe performance degredations for large [[Circuit]]s.
    */
   override lazy val hashCode: Int = circuit.hashCode
 
-  protected def baseFileName(annotations: AnnotationSeq): String = {
-    view[ChiselOptions](annotations).outputFile.getOrElse(circuit.name)
+  protected def baseFileName(annotations: AnnotationSeq): String = filename
+
+  protected def suffix: Option[String] = Some(format.extension)
+
+  // TODO Use lazy Iterables so that we don't have to materialize full intermediate data structures
+  override def getBytes: Iterable[Byte] = format match {
+    case FirrtlFileFormat => OldEmitter.emit(circuit).getBytes
+    case ProtoBufFileFormat =>
+      val ostream = new java.io.ByteArrayOutputStream
+      val modules = circuit.components.map(m => () => chisel3.internal.firrtl.Converter.convert(m))
+      firrtl.proto.ToProto.writeToStreamFast(ostream, firrtl.ir.NoInfo, modules, circuit.name)
+      ostream.toByteArray
   }
-
-  protected def suffix: Option[String] = Some(".fir")
-
-  override def getBytes: Iterable[Byte] = OldEmitter.emit(circuit).getBytes
-
 }
 
 case class ChiselOutputFileAnnotation(file: String) extends NoTargetAnnotation with ChiselOption with Unserializable

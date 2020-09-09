@@ -8,6 +8,7 @@ trait ChiselCli { this: Shell =>
   parser.note("Chisel Front End Options")
   Seq( NoRunFirrtlCompilerAnnotation,
        PrintFullStackTraceAnnotation,
+       ChiselOutputFileAnnotation,
        ChiselGeneratorAnnotation )
     .foreach(_.addOptions(parser))
 }
