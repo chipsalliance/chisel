@@ -117,8 +117,10 @@ private[chisel3] object SeqUtils {
           val allDefineWidth = in.forall { case (_, element) => element.widthOption.isDefined }
           if (allDefineWidth) {
             val out = Wire(agg)
-            out.getElements.zipWithIndex.map { case (element, i) =>
-              element := oneHotMux(in.map(_._1) zip in.map(_._2.asInstanceOf[Aggregate].getElements(i)))
+            val (sel, inData) = in.unzip
+            val inElts = inData.map(_.asInstanceOf[Aggregate].getElements)
+            out.getElements.zip(inElts).foreach { case (outElt, elts) =>
+              outElt := oneHotMux(sel.zip(elts))
             }
             out.asInstanceOf[T]
           }
