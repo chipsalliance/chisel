@@ -119,7 +119,8 @@ private[chisel3] object SeqUtils {
             val out = Wire(agg)
             val (sel, inData) = in.unzip
             val inElts = inData.map(_.asInstanceOf[Aggregate].getElements)
-            out.getElements.zip(inElts).foreach { case (outElt, elts) =>
+            // We want to iterate on the columns of inElts, so we transpose
+            out.getElements.zip(inElts.transpose).foreach { case (outElt, elts) =>
               outElt := oneHotMux(sel.zip(elts))
             }
             out.asInstanceOf[T]
