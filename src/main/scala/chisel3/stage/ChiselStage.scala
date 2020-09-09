@@ -18,6 +18,7 @@ import firrtl.options.Viewer.view
 
 import chisel3.{ChiselException, RawModule}
 import chisel3.internal.{firrtl => cir, ErrorLog}
+import chisel3.stage.CircuitSerializationAnnotation.FirrtlFileFormat
 
 import java.io.{StringWriter, PrintWriter}
 
@@ -72,7 +73,7 @@ class ChiselStage extends Stage {
 
     annos
       .collectFirst {
-        case a: ChiselCircuitAnnotation => a.getBytes
+        case a: ChiselCircuitAnnotation => CircuitSerializationAnnotation(a.circuit, "", FirrtlFileFormat).getBytes
       }
       .get
       .map(_.toChar)
