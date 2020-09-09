@@ -61,18 +61,19 @@ class InlineBooleanExpressions extends Transform with DependencyAPIMigration {
   }
 
   private val fileLineRegex = """(.*) ([0-9]+):[0-9]+""".r
-  private def sameFileAndLineInfo(info1: Info, info2: Info): Boolean = {
-    (info1, info2) match {
-      case (FileInfo(fileLineRegex(file1, line1)), FileInfo(fileLineRegex(file2, line2))) =>
-        (file1 == file2) && (line1 == line2)
-      case (MultiInfo(infos1), MultiInfo(infos2)) if infos1.size == infos2.size =>
-        infos1.zip(infos2).forall {
-          case (i1, i2) =>
-            sameFileAndLineInfo(i1, i2)
-        }
-      case (NoInfo, NoInfo) => true
-      case _                => false
+  private def getFileAndLineNumbers(info: Info): Set[(String, String)] = {
+    info match {
+      case FileInfo(fileLineRegex(file, line)) => Set(file -> line)
+      case FileInfo(file)                      => Set(file -> "0")
+      case MultiInfo(infos)                    => infos.flatMap(getFileAndLineNumbers).toSet
+      case NoInfo                              => Set.empty[(String, String)]
     }
+  }
+
+  private def sameFileAndLineInfo(info1: Info, info2: Info): Boolean = {
+    val set1 = getFileAndLineNumbers(info1)
+    val set2 = getFileAndLineNumbers(info2)
+    set1.subsetOf(set2)
   }
 
   /** A helper class to initialize and store mutable state that the expression
@@ -86,22 +87,34 @@ class InlineBooleanExpressions extends Transform with DependencyAPIMigration {
     var inlineCount: Int = 1
 
     /** Whether or not an can be inlined
+      * @param ref the WRef that references refExpr
       * @param refExpr the expression to check for inlining
       * @param outerExpr the parent expression of refExpr, if any
       */
-    def canInline(refExpr: Expression, outerExpr: Option[Expression]): Boolean = {
+    def canInline(ref: WRef, refExpr: Expression, outerExpr: Option[Expression]): Boolean = {
       val contextInsensitiveDetOps: Set[PrimOp] = Set(Lt, Leq, Gt, Geq, Eq, Neq, Andr, Orr, Xorr)
       outerExpr match {
         case None => true
-        case Some(o) if (o.tpe == Utils.BoolType) =>
-          refExpr match {
-            case _: Mux => false
-            case e => e.tpe == Utils.BoolType
-          }
         case Some(o) =>
-          refExpr match {
-            case DoPrim(op, _, _, Utils.BoolType) => contextInsensitiveDetOps(op)
-            case _                                => false
+          if ((refExpr.tpe != Utils.BoolType) || refExpr.isInstanceOf[Mux]) {
+            false
+          } else {
+            o match {
+              // if outer expression is also boolean context does not affect width
+              case o if o.tpe == Utils.BoolType => true
+
+              // mux condition argument is self-determined
+              case m: Mux if m.cond eq ref => true
+
+              // dshl/dshr second argument is self-determined
+              case DoPrim(Dshl | Dshlw | Dshr, Seq(_, shamt), _, _) if shamt eq ref => true
+
+              case o =>
+                refExpr match {
+                  case DoPrim(op, _, _, _) => contextInsensitiveDetOps(op)
+                  case _                   => false
+                }
+            }
           }
       }
     }
@@ -118,10 +131,10 @@ class InlineBooleanExpressions extends Transform with DependencyAPIMigration {
         case ref: WRef if !dontTouches.contains(ref.name.Ref) && ref.name.head == '_' =>
           val refKey = ref.name.Ref
           netlist.get(we(ref)) match {
-            case Some((refExpr, refInfo)) if sameFileAndLineInfo(info, refInfo) =>
+            case Some((refExpr, refInfo)) if sameFileAndLineInfo(refInfo, info) =>
               val inlineNum = inlineCounts.getOrElse(refKey, 1)
               val notTooDeep = !outerExpr.isDefined || ((inlineNum + inlineCount) <= maxInlineCount)
-              if (canInline(refExpr, outerExpr) && notTooDeep) {
+              if (canInline(ref, refExpr, outerExpr) && notTooDeep) {
                 inlineCount += inlineNum
                 refExpr
               } else {
