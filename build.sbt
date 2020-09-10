@@ -29,7 +29,7 @@ def javacOptionsVersion(scalaVersion: String): Seq[String] = {
 }
 
 val defaultVersions = Map(
-  "firrtl" -> "edu.berkeley.cs" %% "firrtl" % "1.4-SNAPSHOT",
+  "firrtl" -> "edu.berkeley.cs" %% "firrtl" % "1.4-20200728-SNAPSHOT",
   "treadle" -> "edu.berkeley.cs" %% "treadle" % "1.3-SNAPSHOT"
 )
 
