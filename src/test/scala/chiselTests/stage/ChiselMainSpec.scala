@@ -11,6 +11,9 @@ import org.scalatest.GivenWhenThen
 import org.scalatest.featurespec.AnyFeatureSpec
 import org.scalatest.matchers.should.Matchers
 
+import scala.io.Source
+import firrtl.Parser
+
 object ChiselMainSpec {
 
   /** A module that connects two different types together resulting in an elaboration error */
@@ -52,7 +55,7 @@ class ChiselMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
   }
 
   class TargetDirectoryFixture(dirName: String) {
-    val dir = new File(s"test_run_dir/FirrtlStageSpec/$dirName")
+    val dir = new File(s"test_run_dir/ChiselStageSpec/$dirName")
     val buildDir = new File(dir + "/build")
     dir.mkdirs()
   }
@@ -63,7 +66,8 @@ class ChiselMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
     files: Seq[String] = Seq.empty,
     stdout: Option[String] = None,
     stderr: Option[String] = None,
-    result: Int = 0) {
+    result: Int = 0,
+    fileChecks: Map[String, File => Unit] = Map.empty) {
     def testName: String = "args" + args.mkString("_")
     def argsString: String = args.mkString(" ")
   }
@@ -117,6 +121,7 @@ class ChiselMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
         And(s"file '$f' should be emitted in the target directory")
         val out = new File(td.buildDir + s"/$f")
         out should (exist)
+        p.fileChecks.get(f).map(_(out))
       }
     }
   }
@@ -146,6 +151,33 @@ class ChiselMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
                      stdout = Some("chisel3.internal.ChiselException"),
                      result = 1)
     ).foreach(runStageExpectFiles)
+  }
+
+  Feature("Specifying a custom output file") {
+    runStageExpectFiles(ChiselMainTest(
+      args = Array("--chisel-output-file", "Foo", "--no-run-firrtl"),
+      generator = Some(classOf[SameTypesModule]),
+      stdout = Some(""),
+      files = Seq("Foo.fir"),
+      fileChecks = Map(
+        "Foo.fir" -> { file =>
+          And("It should be valid FIRRTL")
+          Parser.parse(Source.fromFile(file).mkString)
+        }
+      )
+    ))
+    runStageExpectFiles(ChiselMainTest(
+      args = Array("--chisel-output-file", "Foo.pb", "--no-run-firrtl"),
+      generator = Some(classOf[SameTypesModule]),
+      stdout = Some(""),
+      files = Seq("Foo.pb"),
+      fileChecks = Map(
+        "Foo.pb" -> { file =>
+          And("It should be valid ProtoBuf")
+          firrtl.proto.FromProto.fromFile(file.toString)
+        }
+      )
+    ))
   }
 
   info("As an aspect writer")

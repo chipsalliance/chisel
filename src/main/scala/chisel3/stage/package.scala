@@ -6,6 +6,7 @@ import firrtl._
 import firrtl.options.OptionsView
 
 import chisel3.internal.firrtl.{Circuit => ChiselCircuit}
+import chisel3.stage.CircuitSerializationAnnotation.FirrtlFileFormat
 
 package object stage {
 
@@ -31,9 +32,12 @@ package object stage {
       var chirrtlCircuit: Option[String] = None
 
       options.foreach {
-        case a@ ChiselCircuitAnnotation(b) =>
+        case a @ ChiselCircuitAnnotation(b) =>
           chiselCircuit = Some(b)
-          chirrtlCircuit = Some(a.getBytes.map(_.toChar).mkString)
+          chirrtlCircuit = {
+            val anno = CircuitSerializationAnnotation(a.circuit, "", FirrtlFileFormat)
+            Some(anno.getBytes.map(_.toChar).mkString)
+          }
         case _ =>
       }
 
