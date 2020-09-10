@@ -90,9 +90,8 @@ class BetterNamingTests extends ChiselFlatSpec {
       }
       WireDefault(3.U)
     }
-    val stage = new ChiselStage
-    val withLits = stage.emitChirrtl(new MyModule(true))
-    val noLits = stage.emitChirrtl(new MyModule(false))
+    val withLits = ChiselStage.emitChirrtl(new MyModule(true))
+    val noLits = ChiselStage.emitChirrtl(new MyModule(false))
     withLits should equal (noLits)
   }
 }

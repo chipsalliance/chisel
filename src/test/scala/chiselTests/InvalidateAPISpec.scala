@@ -12,7 +12,7 @@ import org.scalatest.matchers.should.Matchers
 
 class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompilationUtilities with Utils {
 
-  def myGenerateFirrtl(t: => Module): String = (new ChiselStage).emitChirrtl(t)
+  def myGenerateFirrtl(t: => Module): String = ChiselStage.emitChirrtl(t)
   def compileFirrtl(t: => Module): Unit = {
     val testDir = createTestDirectory(this.getClass.getSimpleName)
 

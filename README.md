@@ -1,4 +1,4 @@
-![Chisel 3](https://raw.githubusercontent.com/freechipsproject/chisel3/master/doc/images/chisel_logo.svg?sanitize=true)
+![Chisel 3](https://raw.githubusercontent.com/freechipsproject/chisel3/master/docs/src/images/chisel_logo.svg?sanitize=true)
 
 ---
 
@@ -26,7 +26,7 @@ Chisel is powered by [FIRRTL (Flexible Intermediate Representation for RTL)](htt
 
 Consider an FIR filter that implements a convolution operation, as depicted in this block diagram:
 
-<img src="https://raw.githubusercontent.com/freechipsproject/chisel3/master/doc/images/fir_filter.svg?sanitize=true" width="512" />
+<img src="https://raw.githubusercontent.com/freechipsproject/chisel3/master/docs/src/images/fir_filter.svg?sanitize=true" width="512" />
 
 While Chisel provides similar base primitives as synthesizable Verilog, and *could* be used as such:
 
@@ -138,8 +138,8 @@ These are the base data types for defining circuit components:
 
 ![Image](https://raw.githubusercontent.com/freechipsproject/chisel3/master/doc/images/type_hierarchy.svg?sanitize=true)
 
-## Developer Documentation
-This section describes how to get started developing Chisel itself, including how to test your version locally against other projects that pull in Chisel using [sbt's managed dependencies](https://www.scala-sbt.org/1.x/docs/Library-Dependencies.html).
+## Contributor Documentation
+This section describes how to get started contributing to Chisel itself, including how to test your version locally against other projects that pull in Chisel using [sbt's managed dependencies](https://www.scala-sbt.org/1.x/docs/Library-Dependencies.html).
 
 ### Compiling and Testing Chisel
 
@@ -169,11 +169,11 @@ sbt test
 ### Running Projects Against Local Chisel
 
 To use the development version of Chisel (`master` branch), you will need to build from source and `publishLocal`.
-The repository version can be found in the build.sbt file.
+The repository version can be found in the [build.sbt](build.sbt) file.
 As of the time of writing it was:
 
 ```
-version := "3.2-SNAPSHOT"
+version := "3.4-SNAPSHOT"
 ```
 
 To publish your version of Chisel to the local Ivy (sbt's dependency manager) repository, run:
@@ -188,8 +188,31 @@ If you need to un-publish your local copy of Chisel, remove the directory genera
 In order to have your projects use this version of Chisel, you should update the `libraryDependencies` setting in your project's build.sbt file to:
 
 ```
-libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.2-SNAPSHOT"
+libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.4-SNAPSHOT"
 ```
+
+### Building Chisel with FIRRTL in the same SBT Project
+
+While we recommend using the library dependency approach as described above, it is possible to build Chisel and FIRRTL in a single SBT project.
+
+**Caveats**
+* This only works for the "main" configuration; you cannot build the Chisel tests this way because `treadle` is only supported as a library dependency.
+* Do not `publishLocal` when building this way. The published artifact will be missing the FIRRTL dependency.
+
+This works by using [sbt-sriracha](http://eed3si9n.com/hot-source-dependencies-using-sbt-sriracha), an SBT plugin for toggling between source and library dependencies.
+It provides two JVM system properties that, when set, will tell SBT to include FIRRTL as a source project:
+* `sbt.sourcemode` - when set to true, SBT will look for FIRRTL in the workspace
+* `sbt.workspace` - sets the root directory of the workspace
+
+Example use:
+```bash
+# From root of this repo
+git clone git@github.com:freechipsproject/firrtl.git
+sbt -Dsbt.sourcemode=true -Dsbt.workspace=$PWD
+```
+
+This is primarily useful for building projects that themselves want to include Chisel as a source dependency.
+As an example, see [Rocket Chip](https://github.com/chipsalliance/rocket-chip)
 
 ### Chisel3 Architecture Overview
 
