@@ -5,27 +5,26 @@ section: "chisel3"
 ---
 
 Historically, Chisel has had trouble reliably capturing the names of signals. The reasons for this are due to (1)
-primarily relying on reflection to find names, (2) using `@chiselName` macro which had unreliable behavior, and (3)
-when all else fails using the `.suggestName("foo")` API.
+primarily relying on reflection to find names, (2) using `@chiselName` macro which had unreliable behavior.
 
-With Chisel 3.4 and later, a custom Scala compiler plugin was introduced which enabled reliably and automatically
-capturing the names of signals, when they are declared. In addition, this release included prolific use of a new
-prefixing API which enabled more stable naming of signals programmatically generated from function calls.
+Chisel 3.4 introduced a custom Scala compiler plugin which enables reliabe and automatic capturing of signal names, when
+they are declared. In addition, this release includes prolific use of a new prefixing API which enables more stable
+naming of signals programmatically generated from function calls.
 
 This document explains how naming now works in Chisel for signal and module names. For cookbook examples on how to fix
 systemic name-stability issues, please refer to the naming [cookbook](../cookbooks/naming.md).
 
 ### Compiler Plugin
 
-```scala mdoc:invisible
-import chisel3.plugin._
+```scala mdoc
+import chisel3.internal.plugin._
 import chisel3._
 import chisel3.experimental.prefix
 import chisel3.experimental.noPrefix
 import chisel3.stage.ChiselStage
 ```
 
-With the release of Chisel 3.4, all users must add the following line to their build.sbt settings to get the improved
+With the release of Chisel 3.4, users should add the following line to their build.sbt settings to get the improved
 naming:
 
 ```scala
@@ -67,7 +66,7 @@ class Example2 extends MultiIOModule {
 
   val add = 3.U + inXin()
   // val add = autoNameRecursively("add", prefix("add")(3.U + inXin()))
-  // Note that the intermediate result of the first addition is prefixed with `add`
+  // Note that the intermediate result of the multiplication is prefixed with `add`
 
   out := add + 1.U
 }
@@ -75,7 +74,7 @@ class Example2 extends MultiIOModule {
 println(ChiselStage.emitVerilog(new Example2))
 ```
 
-Note that the naming also works if the hardware type is nested in an `Option` or an `Iterable`:
+Note that the naming also works if the hardware type is nested in an `Option` or a subtype of `Iterable`:
 
 ```scala mdoc
 class Example3 extends MultiIOModule {
@@ -207,6 +206,22 @@ vals in nested functions or scopes.
 
 If the plugin successfully names a signal, the reflection naming will do nothing. We plan to deprecate all reflection
 naming in a future Chisel release, but are leaving it to allow the plugin naming to be optional (but recommended).
+
+For example, the signals in the following module are in a nested scope; the plugin successfully names them, but
+reflection naming cannot:
+
+```scala mdoc
+class Example10 extends MultiIOModule {
+  {
+    val in = IO(Input(UInt(width.W)))
+    val out = IO(Output(UInt()))
+
+    val add = in + in
+
+    out := add
+  }
+}
+```
 
 ### @chiselName
 

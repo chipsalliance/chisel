@@ -1,4 +1,4 @@
 <plugin>
     <name>chiselplugin</name>
-    <classname>chisel3.plugin.ChiselPlugin</classname>
+    <classname>chisel3.internal.plugin.ChiselPlugin</classname>
 </plugin>

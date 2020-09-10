@@ -1,6 +1,6 @@
 // See LICENSE for license details.
 
-package chisel3
+package chisel3.internal
 
 package object plugin {
   /** Used by Chisel's compiler plugin to automatically name signals
