@@ -28,8 +28,9 @@ def javacOptionsVersion(scalaVersion: String): Seq[String] = {
   }
 }
 
-val defaultVersions = Seq(
-  "edu.berkeley.cs" %% "firrtl" % "1.4-SNAPSHOT"
+val defaultVersions = Map(
+  "firrtl" -> "edu.berkeley.cs" %% "firrtl" % "1.4-SNAPSHOT",
+  "treadle" -> "edu.berkeley.cs" %% "treadle" % "1.3-SNAPSHOT"
 )
 
 lazy val commonSettings = Seq (
@@ -45,20 +46,6 @@ lazy val commonSettings = Seq (
   scalacOptions := Seq("-deprecation", "-feature") ++ scalacOptionsVersion(scalaVersion.value),
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full),
-  // Use the root project's unmanaged base for all sub-projects.
-  unmanagedBase := (unmanagedBase in root).value,
-  // Since we want to examine the classpath to determine if a dependency on firrtl is required,
-  //  this has to be a Task setting.
-  //  Fortunately, allDependencies is a Task Setting, so we can modify that.
-  allDependencies := {
-    allDependencies.value ++ defaultVersions.collect {
-      // If we have an unmanaged jar file on the classpath, assume we're to use that,
-      case m: ModuleID if !(unmanagedClasspath in Compile).value.toString.contains(s"${m.name}.jar") =>
-        //  otherwise let sbt fetch the appropriate artifact, possibly with a specific revision.
-        val mWithRevision = m.withRevision(sys.props.getOrElse(m.name + "Version", m.revision))
-        mWithRevision
-    }
-  }
 )
 
 lazy val publishSettings = Seq (
@@ -109,7 +96,6 @@ lazy val chiselSettings = Seq (
     "junit" % "junit" % "4.13" % "test",
     "org.scalatest" %% "scalatest" % "3.1.2" % "test",
     "org.scalatestplus" %% "scalacheck-1-14" % "3.1.1.1" % "test",
-    "edu.berkeley.cs" %% "treadle" % "1.3-SNAPSHOT" % "test",
     "com.github.scopt" %% "scopt" % "3.7.1"
   ),
   javacOptions ++= javacOptionsVersion(scalaVersion.value)
@@ -179,7 +165,10 @@ lazy val macros = (project in file("macros")).
   settings(commonSettings: _*).
   settings(publishSettings: _*)
 
+lazy val firrtlRef = ProjectRef(workspaceDirectory / "firrtl", "firrtl")
+
 lazy val core = (project in file("core")).
+  sourceDependency(firrtlRef, defaultVersions("firrtl")).
   settings(commonSettings: _*).
   enablePlugins(BuildInfoPlugin).
   settings(
@@ -216,6 +205,7 @@ lazy val chisel = (project in file(".")).
   dependsOn(core).
   aggregate(macros, core, plugin).
   settings(
+    libraryDependencies += defaultVersions("treadle") % "test",
     scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
     scalacOptions in Compile in doc ++= Seq(
       "-diagrams",
