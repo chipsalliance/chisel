@@ -9,6 +9,8 @@ import nsc.plugins.PluginComponent
 import scala.reflect.internal.Flags
 import scala.tools.nsc.transform.TypingTransformers
 
+import scala.collection.mutable
+
 // The plugin to be run by the Scala compiler during compilation of Chisel code
 class ChiselPlugin(val global: Global) extends Plugin {
   val name = "chiselplugin"
@@ -36,6 +38,10 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
 
   class MyTypingTransformer(unit: CompilationUnit)
     extends TypingTransformer(unit) {
+
+    private val shouldMatchCache: mutable.Map[Seq[Tree], mutable.HashMap[Type, Boolean]] =
+      mutable.HashMap.empty.withDefaultValue(mutable.HashMap.empty)
+    //var max = 100L
 
     // Determines if the chisel plugin should match on this type
     def shouldMatch(q: Type, bases: Seq[Tree]): Boolean = {
@@ -68,14 +74,21 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
         !(t.matchesPattern(inferType(tq"Iterable[_]")) || t.matchesPattern(inferType(tq"Option[_]")))
       }
 
-      // First check if a match, then check early exit, then recurse
-      if(terminate(q)){
-        true
-      } else if(earlyExit(q)) {
-        false
-      } else {
-        recShouldMatch(q, Set.empty)
-      }
+      shouldMatchCache(bases).getOrElseUpdate(q, {
+        //val s = shouldMatchCache(bases).size
+        //if (s >= (max + 10)) {
+        //  max = s
+        //  println(s"Cache has hit size $s")
+        //}
+        // First check if a match, then check early exit, then recurse
+        if(terminate(q)){
+          true
+        } else if(earlyExit(q)) {
+          false
+        } else {
+          recShouldMatch(q, Set.empty)
+        }
+      })
     }
 
     // Given a type tree, infer the type and return it
