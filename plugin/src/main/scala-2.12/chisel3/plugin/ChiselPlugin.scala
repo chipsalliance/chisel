@@ -94,21 +94,19 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
     // Given a type tree, infer the type and return it
     def inferType(t: Tree): Type = localTyper.typed(t, nsc.Mode.TYPEmode).tpe
 
+    private val badFlags: Long =
+      Flag.PARAM |
+      Flag.SYNTHETIC |
+      Flag.DEFERRED |
+      Flags.TRIEDCOOKING |
+      Flags.CASEACCESSOR |
+      Flags.PARAMACCESSOR
+
     // Indicates whether a ValDef is properly formed to get name
     def okVal(dd: ValDef): Boolean = {
 
       // These were found through trial and error
-      def okFlags(mods: Modifiers): Boolean = {
-        val badFlags = Set(
-          Flag.PARAM,
-          Flag.SYNTHETIC,
-          Flag.DEFERRED,
-          Flags.TRIEDCOOKING,
-          Flags.CASEACCESSOR,
-          Flags.PARAMACCESSOR
-        )
-        badFlags.forall{ x => !mods.hasFlag(x)}
-      }
+      def okFlags(mods: Modifiers): Boolean = (mods.flags & badFlags) == 0L
 
       // Ensure expression isn't null, as you can't call `null.autoName("myname")`
       val isNull = dd.rhs match {
