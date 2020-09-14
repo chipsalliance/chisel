@@ -256,7 +256,7 @@ class DedupModuleTests extends HighTransformSpec {
     execute(diff_params, diff_params, Seq.empty)
   }
 
-  "Modules with aggregate ports that are bulk connected" should "NOT dedup if their port names differ" in {
+  "Modules with aggregate ports that are (partial)? connected" should "NOT dedup if their port names differ" in {
     val input =
       """
         |circuit FooAndBarModule :
@@ -271,13 +271,13 @@ class DedupModuleTests extends HighTransformSpec {
         |    inst foo of FooModule
         |    inst bar of BarModule
         |    io.foo <- foo.io
-        |    io.bar <- bar.io
+        |    io.bar <= bar.io
         |""".stripMargin
     val check = input
     execute(input, check, Seq.empty)
   }
 
-  "Modules with aggregate ports that are bulk connected" should "dedup if their port names are the same" in {
+  "Modules with aggregate ports that are (partial)? connected" should "dedup if their port names are the same" in {
     val input =
       """
         |circuit FooAndBarModule :
@@ -288,10 +288,10 @@ class DedupModuleTests extends HighTransformSpec {
         |    output io : {flip foo : UInt<1>, fuzz : UInt<1>}
         |    io.fuzz <= io.foo
         |  module FooAndBarModule :
-        |    output io : {foo : {flip foo : UInt<1>, fuzz : UInt<1>}, bar : {flip bar : UInt<1>, buzz : UInt<1>}}
+        |    output io : {foo : {flip foo : UInt<1>, fuzz : UInt<1>}, bar : {flip foo : UInt<1>, fuzz : UInt<1>}}
         |    inst foo of FooModule
         |    inst bar of BarModule
-        |    io.foo <- foo.io
+        |    io.foo <= foo.io
         |    io.bar <- bar.io
         |""".stripMargin
     val check =
@@ -301,10 +301,10 @@ class DedupModuleTests extends HighTransformSpec {
         |    output io : {flip foo : UInt<1>, fuzz : UInt<1>}
         |    io.fuzz <= io.foo
         |  module FooAndBarModule :
-        |    output io : {foo : {flip foo : UInt<1>, fuzz : UInt<1>}, bar : {flip bar : UInt<1>, buzz : UInt<1>}}
+        |    output io : {foo : {flip foo : UInt<1>, fuzz : UInt<1>}, bar : {flip foo : UInt<1>, fuzz : UInt<1>}}
         |    inst foo of FooModule
         |    inst bar of FooModule
-        |    io.foo <- foo.io
+        |    io.foo <= foo.io
         |    io.bar <- bar.io
         |""".stripMargin
     execute(input, check, Seq.empty)
