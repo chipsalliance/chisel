@@ -119,7 +119,7 @@ private[chisel3] trait HasId extends InstanceId {
     * @param seed Seed for the name of this component
     * @return this object
     */
-  def autoSeed(seed: String): this.type = {
+  private [chisel3] def autoSeed(seed: String): this.type = {
     auto_seed = Some(seed)
     for(hook <- auto_postseed_hooks) { hook(seed) }
     prefix_seed = Builder.getPrefix()

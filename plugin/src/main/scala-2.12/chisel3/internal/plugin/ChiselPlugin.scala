@@ -1,6 +1,6 @@
 // See LICENSE for license details.
 
-package chisel3.plugin
+package chisel3.internal.plugin
 
 import scala.tools.nsc
 import nsc.{Global, Phase}
@@ -13,14 +13,14 @@ import scala.tools.nsc.transform.TypingTransformers
 class ChiselPlugin(val global: Global) extends Plugin {
   val name = "chiselplugin"
   val description = "Plugin for Chisel 3 Hardware Description Language"
-  val components = List[PluginComponent](new ChiselComponent(global))
+  val components: List[PluginComponent] = List[PluginComponent](new ChiselComponent(global))
 }
 
 // The component of the chisel plugin. Not sure exactly what the difference is between
 //   a Plugin and a PluginComponent.
 class ChiselComponent(val global: Global) extends PluginComponent with TypingTransformers {
   import global._
-  val runsAfter = List[String]("typer")
+  val runsAfter: List[String] = List[String]("typer")
   val phaseName: String = "chiselcomponent"
   def newPhase(_prev: Phase): ChiselComponentPhase = new ChiselComponentPhase(_prev)
   class ChiselComponentPhase(prev: Phase) extends StdPhase(prev) {
@@ -115,21 +115,21 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
       // If a Data and in a Bundle, just get the name but not a prefix
       case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd, tq"chisel3.Data") && inBundle(dd) =>
         val TermName(str: String) = name
-        val newRHS = super.transform(rhs)
-        val named = q"chisel3.experimental.autoNameRecursively($str, $newRHS)"
+        val newRHS = transform(rhs)
+        val named = q"chisel3.internal.plugin.autoNameRecursively($str, $newRHS)"
         treeCopy.ValDef(dd, mods, name, tpt, localTyper typed named)
       // If a Data or a Memory, get the name and a prefix
       case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd, tq"chisel3.Data", tq"chisel3.MemBase[_]") =>
         val TermName(str: String) = name
-        val newRHS = super.transform(rhs)
+        val newRHS = transform(rhs)
         val prefixed = q"chisel3.experimental.prefix.apply[$tpt](name=$str)(f=$newRHS)"
-        val named = q"chisel3.experimental.autoNameRecursively($str, $prefixed)"
+        val named = q"chisel3.internal.plugin.autoNameRecursively($str, $prefixed)"
         treeCopy.ValDef(dd, mods, name, tpt, localTyper typed named)
       // If an instance, just get a name but no prefix
       case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd, tq"chisel3.experimental.BaseModule") =>
         val TermName(str: String) = name
-        val newRHS = super.transform(rhs)
-        val named = q"chisel3.experimental.autoNameRecursively($str, $newRHS)"
+        val newRHS = transform(rhs)
+        val named = q"chisel3.internal.plugin.autoNameRecursively($str, $newRHS)"
         treeCopy.ValDef(dd, mods, name, tpt, localTyper typed named)
       // Otherwise, continue
       case _ => super.transform(tree)

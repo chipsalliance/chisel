@@ -233,6 +233,7 @@ lazy val docs = project       // new documentation project
   .in(file("docs-target")) // important: it must not be docs/
   .dependsOn(chisel)
   .enablePlugins(MdocPlugin)
+  .settings(usePluginSettings: _*)
   .settings(commonSettings)
   .settings(
     scalacOptions += "-language:reflectiveCalls",
