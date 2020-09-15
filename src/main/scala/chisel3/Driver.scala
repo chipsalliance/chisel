@@ -85,7 +85,7 @@ case class ChiselExecutionSuccess(
 @deprecated("This will be removed in Chisel 3.5", "Chisel 3.4")
 case class ChiselExecutionFailure(message: String) extends ChiselExecutionResult
 
-@deprecated("Please switch to chisel3.stage.ChiselStage. Driver will be removed in 3.4.", "3.2.4")
+@deprecated("Please switch to chisel3.stage.ChiselStage", "3.2.4")
 object Driver extends BackendCompilationUtilities {
 
   /**
@@ -231,7 +231,8 @@ object Driver extends BackendCompilationUtilities {
            Dependency[DriverCompatibility.FirrtlPreprocessing],
            Dependency[chisel3.stage.phases.MaybeFirrtlStage] )
     val currentState =
-      Seq( Dependency[firrtl.stage.phases.DriverCompatibility.AddImplicitFirrtlFile] )
+      Seq( Dependency[firrtl.stage.phases.DriverCompatibility.AddImplicitFirrtlFile],
+           Dependency[chisel3.stage.phases.Convert] )
 
     val phases: Seq[Phase] = new PhaseManager(targets, currentState) {
       override val wrappers = Seq( DeletedWrapper(_: Phase) )

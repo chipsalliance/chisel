@@ -136,4 +136,9 @@ package object experimental {
       }
     }
   }
+
+  // Use to add a prefix to any component generated in input scope
+  val prefix = chisel3.internal.prefix
+  // Use to remove prefixes not in provided scope
+  val noPrefix = chisel3.internal.noPrefix
 }

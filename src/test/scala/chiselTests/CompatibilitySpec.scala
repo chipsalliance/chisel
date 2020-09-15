@@ -252,25 +252,6 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
     ChiselStage.elaborate { new SwappedConnectionModule() }
   }
 
-  "A Module with directionless connections when compiled with the Chisel compatibility package" should "not throw an exception" in {
-
-    class SimpleModule extends Module {
-      val io = new Bundle {
-        val in = (UInt(width = 3)).asInput
-        val out = (UInt(width = 4)).asOutput
-      }
-      val noDir = Wire(UInt(width = 3))
-    }
-
-    class DirectionLessConnectionModule extends SimpleModule {
-      val a = UInt(0, width = 3)
-      val b = Wire(UInt(width = 3))
-      val child = Module(new SimpleModule)
-      b := child.noDir
-    }
-    ChiselStage.elaborate { new DirectionLessConnectionModule() }
-  }
-
   "Vec ports" should "give default directions to children so they can be used in chisel3.util" in {
     import Chisel._
     ChiselStage.elaborate(new Module {

@@ -10,10 +10,13 @@ import chisel3._
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import chisel3.testers._
 import firrtl.{AnnotationSeq, CommonOptions, EmittedVerilogCircuitAnnotation, ExecutionOptionsManager, FirrtlExecutionFailure, FirrtlExecutionSuccess, HasFirrtlOptions}
-import firrtl.annotations.DeletedAnnotation
+import firrtl.annotations.{Annotation, DeletedAnnotation}
 import firrtl.util.BackendCompilationUtilities
 import java.io.ByteArrayOutputStream
 import java.security.Permission
+
+import chisel3.aop.Aspect
+import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage, NoRunFirrtlCompilerAnnotation, PrintFullStackTraceAnnotation}
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 import scala.reflect.ClassTag
 
@@ -23,7 +26,11 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
                 additionalVResources: Seq[String] = Seq(),
                 annotations: AnnotationSeq = Seq()
                ): Boolean = {
-    TesterDriver.execute(() => t, additionalVResources, annotations)
+    // Change this to enable Treadle as a backend
+    val defaultBackend = chisel3.testers.TesterDriver.defaultBackend
+    val hasBackend = TestUtils.containsBackend(annotations)
+    val annos: Seq[Annotation] = if (hasBackend) annotations else defaultBackend +: annotations
+    TesterDriver.execute(() => t, additionalVResources, annos)
   }
   def assertTesterPasses(t: => BasicTester,
                          additionalVResources: Seq[String] = Seq(),
@@ -75,7 +82,7 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
       .execute(Array("--target-dir", createTestDirectory(this.getClass.getSimpleName).toString),
                Seq(ChiselGeneratorAnnotation(() => t)))
       .collectFirst {
-        case DeletedAnnotation(_, EmittedVerilogCircuitAnnotation(a)) => a.value
+        case EmittedVerilogCircuitAnnotation(a) => a.value
       }.getOrElse(fail("No Verilog circuit was emitted by the FIRRTL compiler!"))
   }
 }
@@ -146,6 +153,20 @@ class ChiselPropSpec extends PropSpec with ChiselRunners with ScalaCheckProperty
 
   // Generator for small positive integers.
   val smallPosInts = Gen.choose(1, 4)
+
+  // Generator for positive (ascending or descending) ranges.
+  def posRange: Gen[Range] = for {
+    dir <- Gen.oneOf(true, false)
+    step <- Gen.choose(1, 3)
+    m <- Gen.choose(1, 10)
+    n <- Gen.choose(1, 10)
+  } yield {
+    if (dir) {
+      Range(m, (m+n)*step, step)
+    } else {
+      Range((m+n)*step, m, -step)
+    }
+  }
 
   // Generator for widths considered "safe".
   val safeUIntWidth = Gen.choose(1, 30)
@@ -270,6 +291,27 @@ trait Utils {
     }
   }
 
+
+  /** A tester which runs generator and uses an aspect to check the returned object
+    * @param gen function to generate a Chisel module
+    * @param f a function to check the Chisel module
+    * @tparam T the Chisel module class
+    */
+  def aspectTest[T <: RawModule](gen: () => T)(f: T => Unit)(implicit scalaMajorVersion: Int): Unit = {
+    // Runs chisel stage
+    def run[T <: RawModule](gen: () => T, annotations: AnnotationSeq): AnnotationSeq = {
+      new ChiselStage().run(Seq(ChiselGeneratorAnnotation(gen), NoRunFirrtlCompilerAnnotation, PrintFullStackTraceAnnotation) ++ annotations)
+    }
+    // Creates a wrapping aspect to contain checking function
+    case object BuiltAspect extends Aspect[T] {
+      override def toAnnotation(top: T): AnnotationSeq = {f(top); Nil}
+    }
+    val currentMajorVersion = scala.util.Properties.versionNumberString.split('.')(1).toInt
+    if(currentMajorVersion >= scalaMajorVersion) {
+      run(gen, Seq(BuiltAspect))
+    }
+  }
+
   /** Run some code and rethrow an exception with a specific type if an exception of that type occurs anywhere in the
     * stack trace.
     *
@@ -306,5 +348,4 @@ trait Utils {
     }
 
   }
-
 }
