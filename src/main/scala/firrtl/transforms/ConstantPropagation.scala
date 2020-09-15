@@ -100,7 +100,7 @@ object ConstantPropagation {
 
 }
 
-class ConstantPropagation extends Transform with DependencyAPIMigration with ResolvedAnnotationPaths {
+class ConstantPropagation extends Transform with DependencyAPIMigration {
   import ConstantPropagation._
 
   override def prerequisites =
@@ -123,8 +123,6 @@ class ConstantPropagation extends Transform with DependencyAPIMigration with Res
     case firrtl.passes.Legalize => true
     case _                      => false
   }
-
-  override val annotationClasses: Traversable[Class[_]] = Seq(classOf[DontTouchAnnotation])
 
   sealed trait SimplifyBinaryOp {
     def matchingArgsValue(e: DoPrim, arg: Expression): Expression
@@ -841,13 +839,15 @@ class ConstantPropagation extends Transform with DependencyAPIMigration with Res
   }
 
   def execute(state: CircuitState): CircuitState = {
-    val dontTouchRTs = state.annotations.flatMap {
-      case anno: HasDontTouches => anno.dontTouches
+    val dontTouches: Seq[(OfModule, String)] = state.annotations.flatMap {
+      case anno: HasDontTouches =>
+        anno.dontTouches
+          // We treat all ReferenceTargets as if they were local because of limitations of
+          // EliminateTargetPaths
+          .map(rt => OfModule(rt.encapsulatingModule) -> rt.ref)
       case o => Nil
     }
-    val dontTouches: Seq[(OfModule, String)] = dontTouchRTs.map {
-      case Target(_, Some(m), Seq(Ref(c))) => m.OfModule -> c
-    }
+
     // Map from module name to component names
     val dontTouchMap: Map[OfModule, Set[String]] =
       dontTouches.groupBy(_._1).mapValues(_.map(_._2).toSet).toMap

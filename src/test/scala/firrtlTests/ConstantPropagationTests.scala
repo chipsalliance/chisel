@@ -1528,6 +1528,41 @@ class ConstantPropagationIntegrationSpec extends LowTransformSpec {
     execute(input, check, Seq.empty)
   }
 
+  "ConstProp" should "compose with Dedup and not duplicate modules " in {
+    val input =
+      """circuit Top :
+        |  module child :
+        |    input x : UInt<1>
+        |    output z : UInt<1>
+        |    z <= not(x)
+        |  module child_1 :
+        |    input x : UInt<1>
+        |    output z : UInt<1>
+        |    z <= not(x)
+        |  module Top :
+        |    input x : UInt<1>
+        |    output z : UInt<1>
+        |    inst c of child
+        |    inst c_1 of child_1
+        |    c.x <= x
+        |    c_1.x <= x
+        |    z <= and(c.z, c_1.z)""".stripMargin
+    val check =
+      """circuit Top :
+        |  module child :
+        |    input x : UInt<1>
+        |    output z : UInt<1>
+        |    z <= not(x)
+        |  module Top :
+        |    input x : UInt<1>
+        |    output z : UInt<1>
+        |    inst c of child
+        |    inst c_1 of child
+        |    z <= and(c.z, c_1.z)
+        |    c.x <= x
+        |    c_1.x <= x""".stripMargin
+    execute(input, check, Seq(dontTouch("child.z"), dontTouch("child_1.z")))
+  }
 }
 
 class ConstantPropagationEquivalenceSpec extends FirrtlFlatSpec {

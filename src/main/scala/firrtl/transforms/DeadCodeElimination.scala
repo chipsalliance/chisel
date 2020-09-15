@@ -28,11 +28,7 @@ import collection.mutable
   * circumstances of their instantiation in their parent module, they will still not be removed. To
   * remove such modules, use the [[NoDedupAnnotation]] to prevent deduplication.
   */
-class DeadCodeElimination
-    extends Transform
-    with ResolvedAnnotationPaths
-    with RegisteredTransform
-    with DependencyAPIMigration {
+class DeadCodeElimination extends Transform with RegisteredTransform with DependencyAPIMigration {
 
   override def prerequisites = firrtl.stage.Forms.LowForm ++
     Seq(
@@ -368,12 +364,13 @@ class DeadCodeElimination
     state.copy(circuit = newCircuit, renames = Some(renames))
   }
 
-  override val annotationClasses: Traversable[Class[_]] =
-    Seq(classOf[DontTouchAnnotation], classOf[OptimizableExtModuleAnnotation])
-
   def execute(state: CircuitState): CircuitState = {
     val dontTouches: Seq[LogicNode] = state.annotations.flatMap {
-      case anno: HasDontTouches => anno.dontTouches.filter(_.isLocal).map(LogicNode(_))
+      case anno: HasDontTouches =>
+        anno.dontTouches
+          // We treat all ReferenceTargets as if they were local because of limitations of
+          // EliminateTargetPaths
+          .map(rt => LogicNode(rt.encapsulatingModule, rt.ref))
       case o => Nil
     }
     val doTouchExtMods: Seq[String] = state.annotations.collect {

@@ -121,55 +121,37 @@ class EliminateTargetPathsSpec extends FirrtlPropSpec with FirrtlMatchers {
     val outputState = new LowFirrtlCompiler().compile(inputState, customTransforms)
     val check =
       """circuit Top :
-        |  module Leaf___Top_m1_l1 :
-        |    input i : UInt<1>
-        |    output o : UInt<1>
-        |
-        |    node a = i
-        |    o <= i
-        |
         |  module Leaf :
         |    input i : UInt<1>
         |    output o : UInt<1>
-        |
-        |    skip
+
+        |    node a = i
         |    o <= i
-        |
-        |  module Middle___Top_m1 :
-        |    input i : UInt<1>
-        |    output o : UInt<1>
-        |
-        |    inst l1 of Leaf___Top_m1_l1
-        |    inst l2 of Leaf
-        |    o <= l2.o
-        |    l1.i <= i
-        |    l2.i <= l1.o
         |
         |  module Middle :
         |    input i : UInt<1>
         |    output o : UInt<1>
-        |
+
         |    inst l1 of Leaf
         |    inst l2 of Leaf
         |    o <= l2.o
         |    l1.i <= i
         |    l2.i <= l1.o
-        |
+
         |  module Top :
         |    input i : UInt<1>
         |    output o : UInt<1>
-        |
-        |    inst m1 of Middle___Top_m1
+
+        |    inst m1 of Middle
         |    inst m2 of Middle
         |    o <= m2.o
         |    m1.i <= i
-        |    m2.i <= m1.o
-        |
-      """.stripMargin
+        |    m2.i <= m1.o""".stripMargin
+
     canonicalize(outputState.circuit).serialize should be(canonicalize(parse(check)).serialize)
     outputState.annotations.collect {
       case x: DontTouchAnnotation => x.target
-    } should be(Seq(Top.circuitTarget.module("Leaf___Top_m1_l1").ref("a")))
+    } should be(Seq(Top.circuitTarget.module("Top").instOf("m1", "Middle").instOf("l1", "Leaf").ref("a")))
   }
 
   property("No name conflicts between old and new modules") {

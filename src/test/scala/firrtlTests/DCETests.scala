@@ -491,6 +491,42 @@ class DCETests extends FirrtlFlatSpec {
     (verilog shouldNot include).regex("""fwrite""")
     (verilog shouldNot include).regex("""fatal""")
   }
+
+  "DCE" should "not duplicate unnecessarily" in {
+    val input =
+      """circuit Top :
+        |  module child :
+        |    input x : UInt<1>
+        |    output z : UInt<1>
+        |    z <= not(x)
+        |  module Top :
+        |    input x : UInt<1>
+        |    output z : UInt<1>
+        |    inst c of child
+        |    inst c_1 of child
+        |    c.x <= x
+        |    c_1.x <= x
+        |    z <= and(c.z, c_1.z)""".stripMargin
+    val check =
+      """circuit Top :
+        |  module child :
+        |    input x : UInt<1>
+        |    output z : UInt<1>
+        |    z <= not(x)
+        |  module Top :
+        |    input x : UInt<1>
+        |    output z : UInt<1>
+        |    inst c of child
+        |    inst c_1 of child
+        |    z <= and(c.z, c_1.z)
+        |    c.x <= x
+        |    c_1.x <= x""".stripMargin
+    val top = CircuitTarget("Top").module("Top")
+    val annos =
+      Seq(top.instOf("c", "child").ref("z"), top.instOf("c_1", "child").ref("z"))
+        .map(DontTouchAnnotation(_))
+    exec(input, check, annos)
+  }
 }
 
 class DCECommandLineSpec extends FirrtlFlatSpec {
