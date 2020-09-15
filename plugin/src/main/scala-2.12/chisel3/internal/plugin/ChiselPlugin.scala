@@ -9,6 +9,8 @@ import nsc.plugins.PluginComponent
 import scala.reflect.internal.Flags
 import scala.tools.nsc.transform.TypingTransformers
 
+import scala.collection.mutable
+
 // The plugin to be run by the Scala compiler during compilation of Chisel code
 class ChiselPlugin(val global: Global) extends Plugin {
   val name = "chiselplugin"
@@ -37,11 +39,12 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
   class MyTypingTransformer(unit: CompilationUnit)
     extends TypingTransformer(unit) {
 
-    // Determines if the chisel plugin should match on this type
-    def shouldMatch(q: Type, bases: Seq[Tree]): Boolean = {
+    private def shouldMatchGen(bases: Tree*): ValDef => Boolean = {
+      val cache = mutable.HashMap.empty[Type, Boolean]
+      val baseTypes = bases.map(inferType)
 
-      // If subtype of Data or BaseModule, its a match!
-      def terminate(t: Type): Boolean = bases.exists { base => t <:< inferType(base) }
+      // If subtype of one of the base types, it's a match!
+      def terminate(t: Type): Boolean = baseTypes.exists(t <:< _)
 
       // Recurse through subtype hierarchy finding containers
       // Seen is only updated when we recurse into type parameters, thus it is typically small
@@ -68,21 +71,31 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
         !(t.matchesPattern(inferType(tq"Iterable[_]")) || t.matchesPattern(inferType(tq"Option[_]")))
       }
 
-      // First check if a match, then check early exit, then recurse
-      if(terminate(q)){
-        true
-      } else if(earlyExit(q)) {
-        false
-      } else {
-        recShouldMatch(q, Set.empty)
+      // Return function so that it captures the cache
+      { p: ValDef =>
+        val q = inferType(p.tpt)
+        cache.getOrElseUpdate(q, {
+          // First check if a match, then check early exit, then recurse
+          if(terminate(q)){
+            true
+          } else if(earlyExit(q)) {
+            false
+          } else {
+            recShouldMatch(q, Set.empty)
+          }
+        })
       }
     }
 
+    private val shouldMatchData      : ValDef => Boolean = shouldMatchGen(tq"chisel3.Data")
+    private val shouldMatchDataOrMem : ValDef => Boolean = shouldMatchGen(tq"chisel3.Data", tq"chisel3.MemBase[_]")
+    private val shouldMatchModule    : ValDef => Boolean = shouldMatchGen(tq"chisel3.experimental.BaseModule")
+
     // Given a type tree, infer the type and return it
-    def inferType(t: Tree): Type = localTyper.typed(t, nsc.Mode.TYPEmode).tpe
+    private def inferType(t: Tree): Type = localTyper.typed(t, nsc.Mode.TYPEmode).tpe
 
     // Indicates whether a ValDef is properly formed to get name
-    def okVal(dd: ValDef, bases: Tree*): Boolean = {
+    private def okVal(dd: ValDef): Boolean = {
 
       // These were found through trial and error
       def okFlags(mods: Modifiers): Boolean = {
@@ -102,35 +115,43 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
         case Literal(Constant(null)) => true
         case _ => false
       }
-      okFlags(dd.mods) && shouldMatch(inferType(dd.tpt), bases) && !isNull && dd.rhs != EmptyTree
+
+      okFlags(dd.mods) && !isNull && dd.rhs != EmptyTree
     }
 
     // Whether this val is directly enclosed by a Bundle type
-    def inBundle(dd: ValDef): Boolean = {
+    private def inBundle(dd: ValDef): Boolean = {
       dd.symbol.logicallyEnclosingMember.thisType <:< inferType(tq"chisel3.Bundle")
     }
 
     // Method called by the compiler to modify source tree
     override def transform(tree: Tree): Tree = tree match {
+      // Check if a subtree is a candidate
+      case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd) =>
       // If a Data and in a Bundle, just get the name but not a prefix
-      case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd, tq"chisel3.Data") && inBundle(dd) =>
-        val TermName(str: String) = name
-        val newRHS = transform(rhs)
-        val named = q"chisel3.internal.plugin.autoNameRecursively($str, $newRHS)"
-        treeCopy.ValDef(dd, mods, name, tpt, localTyper typed named)
-      // If a Data or a Memory, get the name and a prefix
-      case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd, tq"chisel3.Data", tq"chisel3.MemBase[_]") =>
-        val TermName(str: String) = name
-        val newRHS = transform(rhs)
-        val prefixed = q"chisel3.experimental.prefix.apply[$tpt](name=$str)(f=$newRHS)"
-        val named = q"chisel3.internal.plugin.autoNameRecursively($str, $prefixed)"
-        treeCopy.ValDef(dd, mods, name, tpt, localTyper typed named)
-      // If an instance, just get a name but no prefix
-      case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd, tq"chisel3.experimental.BaseModule") =>
-        val TermName(str: String) = name
-        val newRHS = transform(rhs)
-        val named = q"chisel3.internal.plugin.autoNameRecursively($str, $newRHS)"
-        treeCopy.ValDef(dd, mods, name, tpt, localTyper typed named)
+        if (shouldMatchData(dd) && inBundle(dd)) {
+          val TermName(str: String) = name
+          val newRHS = transform(rhs)  // chisel3.internal.plugin.autoNameRecursively
+          val named = q"chisel3.internal.plugin.autoNameRecursively($str, $newRHS)"
+          treeCopy.ValDef(dd, mods, name, tpt, localTyper typed named)
+        }
+        // If a Data or a Memory, get the name and a prefix
+        else if (shouldMatchDataOrMem(dd)) {
+          val TermName(str: String) = name
+          val newRHS = transform(rhs)
+          val prefixed = q"chisel3.experimental.prefix.apply[$tpt](name=$str)(f=$newRHS)"
+          val named = q"chisel3.internal.plugin.autoNameRecursively($str, $prefixed)"
+          treeCopy.ValDef(dd, mods, name, tpt, localTyper typed named)
+        // If an instance, just get a name but no prefix
+        } else if (shouldMatchModule(dd)) {
+          val TermName(str: String) = name
+          val newRHS = transform(rhs)
+          val named = q"chisel3.internal.plugin.autoNameRecursively($str, $newRHS)"
+          treeCopy.ValDef(dd, mods, name, tpt, localTyper typed named)
+        } else {
+          // Otherwise, continue
+          super.transform(tree)
+        }
       // Otherwise, continue
       case _ => super.transform(tree)
     }
