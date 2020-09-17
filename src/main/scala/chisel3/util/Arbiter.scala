@@ -101,7 +101,7 @@ class LockingArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T 
   * }}}
   */
 @chiselName
-class RRArbiter[T <: Data](gen:T, n: Int) extends LockingRRArbiter[T](gen, n, 1)
+class RRArbiter[T <: Data](val gen: T, val n: Int) extends LockingRRArbiter[T](gen, n, 1)
 
 /** Hardware module that is used to sequence n producers into 1 consumer.
   * Priority is given to lower producer.
@@ -117,7 +117,7 @@ class RRArbiter[T <: Data](gen:T, n: Int) extends LockingRRArbiter[T](gen, n, 1)
   * }}}
   */
 @chiselName
-class Arbiter[T <: Data](gen: T, n: Int) extends Module {
+class Arbiter[T <: Data](val gen: T, val n: Int) extends Module {
   val io = IO(new ArbiterIO(gen, n))
 
   io.chosen := (n-1).asUInt

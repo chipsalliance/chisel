@@ -28,8 +28,7 @@ class VerificationSpec extends ChiselPropSpec {
   }
 
   property("basic equality check should work") {
-    val stage = new ChiselStage
-    val fir = stage.emitFirrtl(new VerificationModule)
+    val fir = ChiselStage.emitFirrtl(new VerificationModule)
     val lines = fir.split("\n").map(_.trim)
     assertContains(lines, "cover(clock, _T, UInt<1>(\"h1\"), \"\") @[VerificationSpec.scala 16:15]")
     assertContains(lines, "assume(clock, _T_2, UInt<1>(\"h1\"), \"\") @[VerificationSpec.scala 18:18]")
