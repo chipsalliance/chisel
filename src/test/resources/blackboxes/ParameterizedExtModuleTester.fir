@@ -1,4 +1,4 @@
-; See LICENSE for license details.
+; SPDX-License-Identifier: Apache-2.0
 circuit ParameterizedExtModuleTester :
   extmodule ParameterizedExtModule_1 :
     input foo : UInt<16>

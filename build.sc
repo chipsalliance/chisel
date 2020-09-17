@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 import mill._
 import mill.scalalib._
 import mill.scalalib.publish._

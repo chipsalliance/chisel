@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 package firrtl.passes
 
 import firrtl.Utils.{create_exps, flow, kind, toWrappedExpression}

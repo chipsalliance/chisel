@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 package firrtl.testutils
 
 import firrtl.{ir, AnnotationSeq, CircuitState, EmitCircuitAnnotation}

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 package firrtl.transforms.formal
 
 import firrtl.ir.{Circuit, EmptyStmt, Statement, Verification}

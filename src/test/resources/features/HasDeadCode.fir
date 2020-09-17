@@ -1,3 +1,4 @@
+; SPDX-License-Identifier: Apache-2.0
 circuit HasDeadCode :
   module HasDeadCode :
     input i : UInt<1>

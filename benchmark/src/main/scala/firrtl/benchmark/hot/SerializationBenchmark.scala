@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 package firrtl.benchmark.hot
 
 import firrtl.benchmark.util._

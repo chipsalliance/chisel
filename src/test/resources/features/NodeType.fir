@@ -1,3 +1,4 @@
+; SPDX-License-Identifier: Apache-2.0
 circuit NodeType :
   module NodeType :
     input clock : Clock

@@ -1,4 +1,4 @@
-
+; SPDX-License-Identifier: Apache-2.0
 circuit AsyncResetTester :
   module AsyncResetTester :
     input clock : Clock

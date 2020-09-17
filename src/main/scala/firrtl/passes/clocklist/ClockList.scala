@@ -1,4 +1,4 @@
-// See license file for details
+// SPDX-License-Identifier: Apache-2.0
 
 package firrtl.passes
 package clocklist

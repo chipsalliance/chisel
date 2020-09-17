@@ -1,4 +1,5 @@
-circuit GCDTester : 
+; SPDX-License-Identifier: Apache-2.0
+circuit GCDTester :
   module DecoupledGCD : 
     input clock : Clock
     input reset : UInt<1>

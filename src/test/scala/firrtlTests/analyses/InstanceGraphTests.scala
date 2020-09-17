@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 package firrtlTests.analyses
 
 import firrtl.annotations.TargetToken.OfModule

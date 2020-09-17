@@ -1,3 +1,4 @@
+; SPDX-License-Identifier: Apache-2.0
 circuit Ops:
   module Ops:
     input sel: UInt<4>

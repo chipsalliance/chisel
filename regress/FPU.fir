@@ -1,3 +1,4 @@
+; SPDX-License-Identifier: Apache-2.0
 circuit FPU :
   module FPU : 
     input clock : Clock

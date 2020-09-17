@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 // Author: Kevin Laeufer <laeufer@cs.berkeley.edu>
 // Inspired by the uclid5 SMT library (https://github.com/uclid-org/uclid).
 // And the btor2 documentation (BTOR2 , BtorMC and Boolector 3.0 by Niemetz et.al.)

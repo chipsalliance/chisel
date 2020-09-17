@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 package firrtl.passes
 
 import firrtl.Utils.{create_exps, flow, get_field, get_valid_points, times, to_flip, to_flow}

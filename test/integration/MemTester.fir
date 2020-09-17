@@ -1,4 +1,4 @@
-
+; SPDX-License-Identifier: Apache-2.0
 circuit MemTester :
   module ReadWrite :
     input clock : Clock

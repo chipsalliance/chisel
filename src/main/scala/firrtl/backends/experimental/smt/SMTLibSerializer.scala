@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 // Author: Kevin Laeufer <laeufer@cs.berkeley.edu>
 
 package firrtl.backends.experimental.smt

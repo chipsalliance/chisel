@@ -1,4 +1,5 @@
-circuit RightShiftTester : 
+; SPDX-License-Identifier: Apache-2.0
+circuit RightShiftTester :
   module RightShift : 
     input clock : Clock
     input reset : UInt<1>

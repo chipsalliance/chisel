@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-# See LICENSE for license details.
+# SPDX-License-Identifier: Apache-2.0
+
 
 import subprocess
 from statistics import median, stdev

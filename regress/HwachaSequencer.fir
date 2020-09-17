@@ -1,4 +1,5 @@
-circuit HwachaSequencer : 
+; SPDX-License-Identifier: Apache-2.0
+circuit HwachaSequencer :
   module HwachaSequencer : 
     input clock : Clock
     input reset : UInt<1>

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 package firrtl.jqf
 
 import java.io.{File, FileNotFoundException, IOException}

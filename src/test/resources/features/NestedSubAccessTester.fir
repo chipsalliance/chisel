@@ -1,4 +1,4 @@
-; See LICENSE for license details.
+; SPDX-License-Identifier: Apache-2.0
 circuit NestedSubAccessTester :
   module NestedSubAccess :
     input foo : UInt<1>[4]

@@ -1,4 +1,4 @@
-# See LICENSE for license details.
+# SPDX-License-Identifier: Apache-2.0
 
 """
 Utilities for running a subprocess and collecting runtime and memory use information.
