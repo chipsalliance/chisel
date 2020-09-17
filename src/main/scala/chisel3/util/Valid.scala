@@ -168,7 +168,7 @@ object Pipe {
   * @see [[Queue]] and the [[Queue$ Queue factory]] for actual queues
   * @see The [[ShiftRegister$ ShiftRegister factory]] to generate a pipe without a [[Valid]] interface
   */
-class Pipe[T <: Data](gen: T, latency: Int = 1)(implicit compileOptions: CompileOptions) extends Module {
+class Pipe[T <: Data](val gen: T, val latency: Int = 1)(implicit compileOptions: CompileOptions) extends Module {
 
   /** Interface for [[Pipe]]s composed of a [[Valid]] input and [[Valid]] output
     * @define notAQueue

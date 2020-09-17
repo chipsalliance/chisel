@@ -85,7 +85,7 @@ case class ChiselExecutionSuccess(
 @deprecated("This will be removed in Chisel 3.5", "Chisel 3.4")
 case class ChiselExecutionFailure(message: String) extends ChiselExecutionResult
 
-@deprecated("Please switch to chisel3.stage.ChiselStage. Driver will be removed in 3.4.", "3.2.4")
+@deprecated("Please switch to chisel3.stage.ChiselStage", "3.2.4")
 object Driver extends BackendCompilationUtilities {
 
   /**

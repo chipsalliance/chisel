@@ -194,10 +194,10 @@ class QueueIO[T <: Data](private val gen: T, val entries: Int) extends Bundle
   * }}}
   */
 @chiselName
-class Queue[T <: Data](gen: T,
+class Queue[T <: Data](val gen: T,
                        val entries: Int,
-                       pipe: Boolean = false,
-                       flow: Boolean = false)
+                       val pipe: Boolean = false,
+                       val flow: Boolean = false)
                       (implicit compileOptions: chisel3.CompileOptions)
     extends Module() {
   require(entries > -1, "Queue must have non-negative number of entries")

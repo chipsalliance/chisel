@@ -31,7 +31,7 @@ class ClockSpec extends ChiselPropSpec {
   }
 
   property("Should be able to use withClock in a module with no reset") {
-    val circuit = (new ChiselStage).emitChirrtl(new WithClockAndNoReset)
+    val circuit = ChiselStage.emitChirrtl(new WithClockAndNoReset)
     circuit.contains("reg a : UInt<1>, clock2") should be (true)
   }
 }
