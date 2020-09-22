@@ -3,7 +3,12 @@
 package chiselTests
 
 import chisel3._
+<<<<<<< HEAD
 import chisel3.util._
+=======
+import chisel3.stage.ChiselStage
+import chisel3.util.{switch, is}
+>>>>>>> 9c4f14fb... Support using switch without importing SwitchContext (#1595)
 
 class SwitchSpec extends ChiselFlatSpec {
   "switch" should "require literal conditions" in {
