@@ -4,7 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.stage.ChiselStage
-import chisel3.util._
+import chisel3.util.{switch, is}
 
 class SwitchSpec extends ChiselFlatSpec with Utils {
   "switch" should "require literal conditions" in {

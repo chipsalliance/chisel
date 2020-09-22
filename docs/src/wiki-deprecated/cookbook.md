@@ -128,7 +128,7 @@ State transitions are then handled with [`switch`](https://www.chisel-lang.org/a
 
 ```scala mdoc:silent:reset
 import chisel3._
-import chisel3.util._
+import chisel3.util.{switch, is}
 import chisel3.experimental.ChiselEnum
 
 object DetectTwoOnes {
