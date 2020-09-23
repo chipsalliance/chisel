@@ -95,7 +95,6 @@ jobs:
         use: firrtl_build
       script:
         - verilator --version
-        - sbt $SBT_ARGS +publishLocal
         - bash .run_chisel_tests.sh
     - stage: test
       name: "Formal equivalence: RocketCore"
