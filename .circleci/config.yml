@@ -180,4 +180,6 @@ workflows:
           requires:
             - build-treadle
       - test-chisel-docs
+          requires:
+            - build-treadle
 
