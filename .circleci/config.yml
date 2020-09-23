@@ -141,6 +141,7 @@ jobs:
 
   test-chisel-docs:
     executor: chisel-executor
+
     steps:
       - attach_workspace:
           at: /home/chisel
@@ -178,4 +179,5 @@ workflows:
       - test-chisel-2_12:
           requires:
             - build-treadle
+      - test-chisel-docs
 
