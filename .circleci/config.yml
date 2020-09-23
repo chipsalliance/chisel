@@ -179,7 +179,7 @@ workflows:
       - test-chisel-2_12:
           requires:
             - build-treadle
-      - test-chisel-docs
+      - test-chisel-docs:
           requires:
             - build-treadle
 
