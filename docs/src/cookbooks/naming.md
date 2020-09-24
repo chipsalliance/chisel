@@ -58,5 +58,5 @@ class ExampleNoPrefix extends MultiIOModule {
   out := add
 }
 
-println(ChiselStage.emitVerilog(new Example7))
+println(ChiselStage.emitVerilog(new ExampleNoPrefix))
 ```
