@@ -148,7 +148,7 @@ jobs:
 
       - run:
           command: |
-            sbt $SBT_ARGS "docs/mdoc"
+            (cd chisel3 && cat /dev/null | sbt $SBT_ARGS "docs/mdoc")
 
   test-chisel-2_11:
     executor: chisel-executor
