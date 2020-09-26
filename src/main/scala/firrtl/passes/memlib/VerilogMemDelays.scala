@@ -110,7 +110,7 @@ class MemDelayAndReadwriteTransformer(m: DefModule) {
 
       val readStmts = (mem.readers ++ mem.readwriters).map {
         case r =>
-          def oldDriver(f: String) = netlist(we(memPortField(mem, r, f)))
+          def oldDriver(f: String) = swapMemRefs(netlist(we(memPortField(mem, r, f))))
           def newField(f:  String) = memPortField(newMem, rMap.getOrElse(r, r), f)
           val clk = oldDriver("clk")
 
@@ -139,7 +139,7 @@ class MemDelayAndReadwriteTransformer(m: DefModule) {
 
       val writeStmts = (mem.writers ++ mem.readwriters).map {
         case w =>
-          def oldDriver(f: String) = netlist(we(memPortField(mem, w, f)))
+          def oldDriver(f: String) = swapMemRefs(netlist(we(memPortField(mem, w, f))))
           def newField(f:  String) = memPortField(newMem, wMap.getOrElse(w, w), f)
           val clk = oldDriver("clk")
 
