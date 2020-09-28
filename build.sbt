@@ -98,8 +98,8 @@ lazy val publishSettings = Seq(
   pomExtra := <url>http://chisel.eecs.berkeley.edu/</url>
     <licenses>
       <license>
-        <name>BSD-style</name>
-        <url>http://www.opensource.org/licenses/bsd-license.php</url>
+        <name>apache_v2</name>
+        <url>https://opensource.org/licenses/Apache-2.0</url>
         <distribution>repo</distribution>
       </license>
     </licenses>
