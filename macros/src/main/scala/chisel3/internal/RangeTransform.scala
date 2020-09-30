@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 // Macro transforms that statically (at compile time) parse range specifiers and emit the raw
 // (non-human-friendly) range constructor calls.
