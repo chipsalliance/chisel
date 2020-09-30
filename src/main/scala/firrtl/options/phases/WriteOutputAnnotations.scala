@@ -6,7 +6,7 @@ import firrtl.AnnotationSeq
 import firrtl.annotations.{Annotation, DeletedAnnotation, JsonProtocol}
 import firrtl.options.{CustomFileEmission, Dependency, Phase, PhaseException, StageOptions, Unserializable, Viewer}
 
-import java.io.{File, FileOutputStream, PrintWriter}
+import java.io.{BufferedOutputStream, File, FileOutputStream, PrintWriter}
 
 import scala.collection.mutable
 
@@ -37,8 +37,11 @@ class WriteOutputAnnotations extends Phase {
 
         filesWritten.get(canonical) match {
           case None =>
-            val w = new FileOutputStream(filename)
-            a.getBytes.foreach(w.write(_))
+            val w = new BufferedOutputStream(new FileOutputStream(filename))
+            a.getBytes match {
+              case arr: mutable.WrappedArray[Byte] => w.write(arr.array.asInstanceOf[Array[Byte]])
+              case other => other.foreach(w.write(_))
+            }
             w.close()
             filesWritten(canonical) = a
           case Some(first) =>
