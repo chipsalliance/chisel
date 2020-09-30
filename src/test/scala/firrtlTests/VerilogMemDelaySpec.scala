@@ -5,10 +5,19 @@ package firrtlTests
 import firrtl._
 import firrtl.passes.memlib.VerilogMemDelays
 import firrtl.passes.CheckHighForm
+import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlSourceAnnotation, FirrtlStage}
+
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
 class VerilogMemDelaySpec extends AnyFreeSpec with Matchers {
+
+  private def compileTwice(input: String): Unit = {
+    val result1 = (new FirrtlStage).transform(Seq(FirrtlSourceAnnotation(input))).toSeq.collectFirst {
+      case fca: FirrtlCircuitAnnotation => (new FirrtlStage).transform(Seq(fca))
+    }
+  }
+
   "The following low FIRRTL should be parsed by VerilogMemDelays" in {
     val input =
       """
@@ -42,13 +51,7 @@ class VerilogMemDelaySpec extends AnyFreeSpec with Matchers {
         |    m.write.data <= w
       """.stripMargin
 
-    val circuit = Parser.parse(input)
-    val compiler = new LowFirrtlCompiler
-
-    val result = compiler.compile(CircuitState(circuit, ChirrtlForm), Seq.empty)
-    val result2 = VerilogMemDelays.run(result.circuit)
-    CheckHighForm.run(result2)
-    //result.circuit.serialize.length > 0 should be (true)
+    compileTwice(input)
   }
 
   "Using a read-first memory should be allowed in VerilogMemDelays" in {
@@ -92,11 +95,50 @@ class VerilogMemDelaySpec extends AnyFreeSpec with Matchers {
         |    rw_rdata <= m.rw.rdata
       """.stripMargin
 
-    val circuit = Parser.parse(input)
-    val compiler = new LowFirrtlCompiler
+    compileTwice(input)
+  }
 
-    val result = compiler.compile(CircuitState(circuit, ChirrtlForm), Seq.empty)
-    val result2 = VerilogMemDelays.run(result.circuit)
-    CheckHighForm.run(result2)
+  "Chained memories should generate correct FIRRTL" in {
+    val input =
+      """
+        |circuit Test :
+        |  module Test :
+        |    input clock : Clock
+        |    input addr : UInt<5>
+        |    input wdata : UInt<32>
+        |    input wmode : UInt<1>
+        |    output rdata : UInt<32>
+        |    mem m1 :
+        |      data-type => UInt<32>
+        |      depth => 32
+        |      read-latency => 1
+        |      write-latency => 1
+        |      read-under-write => old
+        |      readwriter => rw
+        |    m1.rw.clk <= clock
+        |    m1.rw.en <= UInt<1>(1)
+        |    m1.rw.addr <= addr
+        |    m1.rw.wmode <= wmode
+        |    m1.rw.wmask <= UInt<1>(1)
+        |    m1.rw.wdata <= wdata
+        |
+        |    mem m2 :
+        |      data-type => UInt<32>
+        |      depth => 32
+        |      read-latency => 1
+        |      write-latency => 1
+        |      read-under-write => old
+        |      readwriter => rw
+        |    m2.rw.clk <= clock
+        |    m2.rw.en <= UInt<1>(1)
+        |    m2.rw.addr <= addr
+        |    m2.rw.wmode <= wmode
+        |    m2.rw.wmask <= UInt<1>(1)
+        |    m2.rw.wdata <= m1.rw.rdata
+        |
+        |    rdata <= m2.rw.rdata
+        |""".stripMargin
+
+    compileTwice(input)
   }
 }
