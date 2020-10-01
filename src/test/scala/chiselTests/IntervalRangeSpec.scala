@@ -1,4 +1,4 @@
-// See README.md for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests
 
