@@ -17,7 +17,8 @@ import chisel3.internal.sourceinfo.UnlocatableSourceInfo
   * multiple IO() declarations.
   */
 abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
-    extends BaseModule {
+    extends BaseModule
+    with CommandMemoization {
   //
   // RTL construction internals
   //

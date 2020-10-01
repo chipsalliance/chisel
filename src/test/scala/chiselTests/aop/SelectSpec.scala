@@ -13,7 +13,8 @@ import firrtl.AnnotationSeq
 
 import scala.reflect.runtime.universe.TypeTag
 
-class SelectTester(results: Seq[Int]) extends BasicTester {
+class SelectTester(results: Seq[Int]) extends BasicTester
+    with chisel3.internal.DisableCommandMemoization {
   val values = VecInit(results.map(_.U))
   val counter = RegInit(0.U(results.length.W))
   val added = counter + 1.U

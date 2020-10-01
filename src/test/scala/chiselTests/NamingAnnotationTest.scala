@@ -65,7 +65,8 @@ class NonModule {
 }
 
 @chiselName
-class NamedModule extends NamedModuleTester {
+class NamedModule extends NamedModuleTester
+    with chisel3.internal.DisableCommandMemoization {
   @chiselName
   def FunctionMockupInner(): UInt = { // scalastyle:ignore method.name
     val my2A = 1.U
@@ -123,7 +124,8 @@ class NamedModule extends NamedModuleTester {
 }
 
 @chiselName
-class NameCollisionModule extends NamedModuleTester {
+class NameCollisionModule extends NamedModuleTester
+    with chisel3.internal.DisableCommandMemoization {
   @chiselName
   def repeatedCalls(id: Int): UInt = {
      val test = expectName(1.U + 3.U, s"test_$id")  // should disambiguate by invocation order
@@ -205,7 +207,8 @@ class PartialNamedModule extends NamedModuleTester {
 }
 
 @chiselName
-class NoChiselNamePrefixTester extends NamedModuleTester {
+class NoChiselNamePrefixTester extends NamedModuleTester
+    with chisel3.internal.DisableCommandMemoization {
   @chiselName
   class NoChiselNamePrefixClass extends chisel3.experimental.NoChiselNamePrefix {
     val a = expectName(1.U +& 2.U, "a")

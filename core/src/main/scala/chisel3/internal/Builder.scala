@@ -332,9 +332,21 @@ private[chisel3] object Builder {
     c
   }
   def pushOp[T <: Data](cmd: DefPrim[T]): T = {
-    // Bind each element of the returned Data to being a Op
-    cmd.id.bind(OpBinding(forcedUserModule))
-    pushCommand(cmd).id
+    def trulyPushOp[T <: Data](cmd: DefPrim[T]): T = {
+      // Bind each element of the returned Data to being a Op
+      cmd.id.bind(OpBinding(forcedUserModule))
+      pushCommand(cmd).id
+    }
+
+    val memoizableCmd = new MemoizableDefPrim(cmd)
+    forcedUserModule.getMemoizedCommand(memoizableCmd) match {
+      case Some(memoized: T @unchecked) => memoized
+      case _ =>
+        val res = trulyPushOp(cmd)
+        if (whenDepth == 0)
+          forcedUserModule.addMemoizableCommand(memoizableCmd, res)
+        res
+    }
   }
 
   // Called when Bundle construction begins, used to record a stack of open Bundle constructors to

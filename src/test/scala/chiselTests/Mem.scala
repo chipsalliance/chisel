@@ -33,7 +33,8 @@ class SyncReadMemTester extends BasicTester {
   }
 }
 
-class SyncReadMemWriteCollisionTester extends BasicTester {
+class SyncReadMemWriteCollisionTester extends BasicTester
+    with chisel3.internal.DisableCommandMemoization { // Work around Firrtl issue #1914
   val (cnt, _) = Counter(true.B, 5)
 
   // Write-first
