@@ -116,8 +116,8 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
   class InternalBore extends RawModule {
     val in = IO(Input(Bool()))
     val out = IO(Output(Bool()))
-    out := false.B
-    BoringUtils.bore(in, Seq(out))
+    out := true.B//false.B
+    //BoringUtils.bore(in, Seq(out))
   }
 
   class InternalBoreTester extends ShouldntAssertTester {
@@ -128,6 +128,51 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
 
   it should "work for an internal (same module) BoringUtils.bore" in {
     runTester(new InternalBoreTester, annotations = TesterDriver.verilatorOnly) should be (true)
+  }
+
+
+  class SourceModule extends RawModule {
+    val data = IO(Output(Bool()))
+    val interrupt = IO(Output(Bool()))
+    data := true.B
+    interrupt := true.B
+  }
+
+  class SinkModule extends MultiIOModule {
+    val data = IO(Input(Bool()))
+    val interrupt = IO(Input(Bool()))
+    printf("%d, %d", data, interrupt)
+  }
+
+  class BusModule extends MultiIOModule {
+    val dataSink = IO(Output(Bool()))
+    val dataSource = IO(Input(Bool()))
+    dataSink := dataSource
+    dontTouch(dataSink)
+    dontTouch(dataSource)
+  }
+
+  class TopModule extends MultiIOModule {
+    val source = Module(new SourceModule)
+    val sink = Module(new SinkModule)
+    val bus = Module(new BusModule)
+    bus.dataSource := source.data
+    sink.data := bus.dataSink
+    val midInterrupt = Wire(Bool())
+    midInterrupt := source.interrupt
+    sink.interrupt := midInterrupt
+  }
+
+  it should "work for an internal (same module) BoringUtils.bore with aspect" in {
+
+
+    val aspect = chisel3.util.experimental.BoringAspect(
+      (x: TopModule) => Seq(x),
+      (x: TopModule) => (x.source.interrupt, Seq(x.bus), x.midInterrupt, "interrupt")
+    )
+    val ret = compileWithAnnotations(new TopModule, annotations = Seq(aspect))
+
+    println(ret)
   }
 
 }
