@@ -735,6 +735,26 @@ class VerilogEmitterSpec extends FirrtlFlatSpec {
     result should containLine("assign z = _GEN_0[1:0];")
   }
 
+  it should "correctly emit addition with a negative literal with width > 32" in {
+    val result = compileBody(
+      """input x : SInt<34>
+        |output z : SInt<34>
+        |z <= asSInt(tail(add(x, SInt<34>(-2)), 1))
+        |""".stripMargin
+    )
+    result should containLine("assign z = $signed(x) - 34'sh2;")
+  }
+
+  it should "correctly emit conjunction with a negative literal with width > 32" in {
+    val result = compileBody(
+      """input x : SInt<34>
+        |output z : SInt<34>
+        |z <= asSInt(and(x, SInt<34>(-2)))
+        |""".stripMargin
+    )
+    result should containLine("assign z = $signed(x) & -34'sh2;")
+  }
+
   it should "emit FileInfo as Verilog comment" in {
     def result(info: String): CircuitState = compileBody(
       s"""input x : UInt<2>

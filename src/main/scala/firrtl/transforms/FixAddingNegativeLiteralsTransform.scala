@@ -17,7 +17,7 @@ object FixAddingNegativeLiterals {
     * @param width width of the negative number
     * @return maximum negative number
     */
-  def minNegValue(width: BigInt): BigInt = -(1 << (width.toInt - 1))
+  def minNegValue(width: BigInt): BigInt = -(BigInt(1) << (width.toInt - 1))
 
   /** Updates the type of the DoPrim from its arguments (e.g. if is UnknownType)
     * @param d input DoPrim
