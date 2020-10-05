@@ -213,7 +213,7 @@ reflection naming cannot:
 ```scala mdoc
 class Example10 extends MultiIOModule {
   {
-    val in = IO(Input(UInt(width.W)))
+    val in = IO(Input(UInt(3.W)))
     val out = IO(Output(UInt()))
 
     val add = in + in

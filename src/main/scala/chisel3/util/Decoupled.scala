@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 /** Wrappers for ready-valid (Decoupled) interfaces and associated circuit generators using them.
   */
