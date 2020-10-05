@@ -132,12 +132,12 @@ chiseltestTags = \
 	v0.2.2
 
 # Snapshot versions that will have their API published.
-firrtlSnapshot = v1.4-20200603-SNAPSHOT
-chiselSnapshot = v3.4-20200603-SNAPSHOT
-testersSnapshot = v1.5-20200603-SNAPSHOT
-treadleSnapshot = v1.3-20200603-SNAPSHOT
-diagrammerSnapshot = v1.3-20200603-SNAPSHOT
-chiseltestSnapshot = v0.3-20200603-SNAPSHOT
+firrtlSnapshot = v1.4.0-RC3
+chiselSnapshot = v3.4.0-RC3
+testersSnapshot = v1.5.0-RC3
+treadleSnapshot = v1.3.0-RC3
+diagrammerSnapshot = v1.3.0-RC3
+chiseltestSnapshot = v0.3.0-RC3
 
 # Get the latest version of some sequence of version strings
 # Usage: $(call getTags,$(foo))
