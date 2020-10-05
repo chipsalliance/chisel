@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 // This file contains macros for adding source locators at the point of invocation.
 //
