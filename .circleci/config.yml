@@ -141,13 +141,14 @@ jobs:
 
   test-chisel-docs:
     executor: chisel-executor
+
     steps:
       - attach_workspace:
           at: /home/chisel
 
       - run:
           command: |
-            sbt $SBT_ARGS "docs/mdoc"
+            (cd chisel3 && cat /dev/null | sbt $SBT_ARGS "docs/mdoc")
 
   test-chisel-2_11:
     executor: chisel-executor
@@ -176,6 +177,9 @@ workflows:
           requires:
             - build-treadle
       - test-chisel-2_12:
+          requires:
+            - build-treadle
+      - test-chisel-docs:
           requires:
             - build-treadle
 
