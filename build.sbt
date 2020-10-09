@@ -126,7 +126,7 @@ lazy val macros = (project in file("macros")).
   settings(name := "chisel3-macros").
   settings(commonSettings: _*).
   settings(publishSettings: _*).
-  settings(mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-macros" % "3.3.1"))
+  settings(mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-macros" % "3.3.2"))
 
 lazy val core = (project in file("core")).
   settings(commonSettings: _*).
@@ -143,7 +143,7 @@ lazy val core = (project in file("core")).
       "-Xlint:infer-any"
 //      "-Xlint:missing-interpolator"
     ),
-    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-core" % "3.3.1")
+    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-core" % "3.3.2")
   ).
   dependsOn(macros)
 
@@ -165,7 +165,7 @@ lazy val chisel = (project in file(".")).
   dependsOn(core).
   aggregate(macros, core).
   settings(
-    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3" % "3.3.1"),
+    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3" % "3.3.2"),
     scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
     scalacOptions in Compile in doc ++= Seq(
       "-diagrams",
