@@ -28,9 +28,11 @@ private[chisel3] object prefix { // scalastyle:ignore
     * @return The return value of the provided function
     */
   def apply[T](name: HasId)(f: => T): T = {
-    Builder.pushPrefix(name)
+    val pushed = Builder.pushPrefix(name)
     val ret = f
-    Builder.popPrefix()
+    if (pushed) {
+      Builder.popPrefix()
+    }
     ret
   }
 
