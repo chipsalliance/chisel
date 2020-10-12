@@ -25,7 +25,21 @@ pull_request_rules:
         strict: smart
         strict_method: merge
 
-  - name: backport to 3.3.x
+  - name: backport to 3.4.x
+    conditions:
+      - merged
+      - base=master
+      - milestone=3.4.x
+    actions:
+      backport:
+        branches:
+          - 3.4.x
+        ignore_conflicts: True
+        label_conflicts: "bp-conflict"
+      label:
+        add: [Backported]
+
+  - name: backport to 3.3.x and 3.4.x
     conditions:
       - merged
       - base=master
@@ -34,12 +48,13 @@ pull_request_rules:
       backport:
         branches:
           - 3.3.x
+          - 3.4.x
         ignore_conflicts: True
         label_conflicts: "bp-conflict"
       label:
         add: [Backported]
 
-  - name: backport to 3.2.x and 3.3.x
+  - name: backport to 3.2.x, 3.3.x, and 3.4.x
     conditions:
       - merged
       - base=master
@@ -49,6 +64,7 @@ pull_request_rules:
         branches:
           - 3.2.x
           - 3.3.x
+          - 3.4.x
         ignore_conflicts: True
         label_conflicts: "bp-conflict"
       label:
@@ -60,6 +76,25 @@ pull_request_rules:
     actions:
       label:
         add: [Backport]
+
+  - name: automatic squash-and-merge of 3.4.x backport PRs
+    conditions:
+      - "status-success=ci/circleci: build-firrtl"
+      - "status-success=ci/circleci: build-prep"
+      - "status-success=ci/circleci: test-chisel-2_11"
+      - "status-success=ci/circleci: test-chisel-2_12"
+      - "status-success=ci/circleci: check-binary-compatibility"
+      - status-success=license/cla
+      - "#changes-requested-reviews-by=0"
+      - base=3.4.x
+      - label="Backport"
+      - label!="DO NOT MERGE"
+      - label!="bp-conflict"
+    actions:
+      merge:
+        method: squash
+        strict: smart
+        strict_method: merge
 
   - name: automatic squash-and-merge of 3.3.x backport PRs
     conditions:
