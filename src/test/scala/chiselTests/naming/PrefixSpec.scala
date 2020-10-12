@@ -69,8 +69,6 @@ class PrefixSpec extends ChiselPropSpec with Utils {
 
   property("Prefixing seeded with signal") {
     class Test extends MultiIOModule {
-      @treedump
-      @dump
       def builder(): UInt = {
         val wire = Wire(UInt(3.W))
         wire := 3.U
@@ -344,5 +342,60 @@ class PrefixSpec extends ChiselPropSpec with Utils {
           "out_REG"
         ))
     }
+  }
+
+  property("Connections should use the non-prefixed name of the connected Data") {
+    class Test extends MultiIOModule {
+      prefix("foo") {
+        val x = Wire(UInt(8.W))
+        x := {
+          val w = Wire(UInt(8.W))
+          w := 3.U
+          w + 1.U
+        }
+      }
+    }
+    aspectTest(() => new Test) {
+      top: Test =>
+        Select.wires(top).map(_.instanceName) should be (List("foo_x", "foo_x_w"))
+    }
+  }
+
+  property("Connections to aggregate fields should use the non-prefixed aggregate name") {
+    class Test extends MultiIOModule {
+      prefix("foo") {
+        val x = Wire(new Bundle { val bar = UInt(8.W) })
+        x.bar := {
+          val w = Wire(new Bundle { val fizz = UInt(8.W) })
+          w.fizz := 3.U
+          w.fizz + 1.U
+        }
+      }
+    }
+    aspectTest(() => new Test) {
+      top: Test =>
+        Select.wires(top).map(_.instanceName) should be (List("foo_x", "foo_x_bar_w"))
+    }
+  }
+
+
+  property("Prefixing with wires in recursive functions should grow linearly") {
+    class Test extends MultiIOModule {
+      def func(bools: Seq[Bool]): Bool = {
+        if (bools.isEmpty) true.B
+        else {
+          val w = Wire(Bool())
+          w := bools.head && func(bools.tail)
+          w
+        }
+      }
+      val in = IO(Input(Vec(4, Bool())))
+      val x = func(in)
+    }
+    aspectTest(() => new Test) {
+      top: Test =>
+        Select.wires(top).map(_.instanceName) should be (List("x", "x_w_w", "x_w_w_w", "x_w_w_w_w"))
+    }
+
   }
 }
