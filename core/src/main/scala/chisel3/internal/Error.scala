@@ -164,6 +164,7 @@ private[chisel3] class ErrorLog {
       val chiselPrefixes = Set(
           "java.",
           "scala.",
+          "chisel3.",
           "chisel3.internal.",
           "chisel3.experimental.",
           "chisel3.package$"  // for some compatibility / deprecated types
