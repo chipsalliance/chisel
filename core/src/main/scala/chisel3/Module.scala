@@ -160,6 +160,8 @@ package experimental {
     */
   // TODO: seal this?
   abstract class BaseModule extends HasId {
+    _parent.foreach(_.addId(this))
+
     //
     // Builder Internals - this tracks which Module RTL construction belongs to.
     //
@@ -326,6 +328,17 @@ package experimental {
       }
 
       names
+    }
+
+    /** Invokes _onModuleClose on HasIds found via reflection but not bound to hardware
+      * (thus not part of _ids)
+      * This maintains old naming behavior for non-hardware Data
+      */
+    private[chisel3] def closeUnboundIds(names: HashMap[HasId, String]): Unit = {
+      val idLookup = _ids.toSet
+      for ((id, _) <- names if !idLookup(id)) {
+        id._onModuleClose
+      }
     }
 
     /** Compatibility function. Allows Chisel2 code which had ports without the IO wrapper to
