@@ -180,7 +180,7 @@ private[chisel3] trait HasId extends InstanceId {
  *
     * @return the current calculation of a name, if it exists
     */
-  private[chisel3] def seedOpt: Option[String] = suggested_seed.orElse(auto_seed)
+  def seedOpt: Option[String] = suggested_seed.orElse(auto_seed)
 
   /** @return Whether either autoName or suggestName has been called */
   def hasSeed: Boolean = seedOpt.isDefined
@@ -206,7 +206,7 @@ private[chisel3] trait HasId extends InstanceId {
   private[chisel3] def setRef(parent: HasId, index: Int): Unit = setRef(Index(Node(parent), ILit(index)))
   private[chisel3] def setRef(parent: HasId, index: UInt): Unit = setRef(Index(Node(parent), index.ref))
   private[chisel3] def getRef: Arg = _ref.get
-  private[chisel3] def getOptionRef: Option[Arg] = _ref
+  def getOptionRef: Option[Arg] = _ref
 
   // Implementation of public methods.
   def instanceName: String = _parent match {
@@ -371,13 +371,10 @@ private[chisel3] object Builder {
     */
   def pushPrefix(d: HasId): Boolean = {
     def buildAggName(id: HasId): Option[String] = {
-      // TODO This is slow, can we store this information upon binding?
-      def getSubName(field: Data, parent: Data): Option[String] = parent match {
-        case vec: Vec[_] =>
-          val idx = vec.indexOf(field)
-          if (idx >= 0) Some(idx.toString) else None
-        case rec: Record => rec.elements.collectFirst { case (name, d) if d == field => name }
-        case _ => Builder.exception(s"Shouldn't see non-Aggregate $parent as parent in ChildBinding!")
+      def getSubName(field: Data): Option[String] = field.getOptionRef.flatMap {
+        case Slot(_, field) => Some(field) // Record
+        case Index(_, ILit(n)) => Some(n.toString) // Vec
+        case _ => None // Vec dynamic indexing
       }
       def map2[A, B](a: Option[A], b: Option[A])(f: (A, A) => B): Option[B] =
         a.flatMap(ax => b.map(f(ax, _)))
@@ -386,7 +383,7 @@ private[chisel3] object Builder {
         case (_: WireBinding | _: RegBinding | _: MemoryPortBinding | _: OpBinding) => data.seedOpt
         case ChildBinding(parent) => recData(parent).map { p =>
           // And name of the field if we have one, we don't for dynamic indexing of Vecs
-          getSubName(data, parent).map(p + "_" + _).getOrElse(p)
+          getSubName(data).map(p + "_" + _).getOrElse(p)
         }
         case SampleElementBinding(parent) => recData(parent)
         case PortBinding(mod) if Builder.currentModule.contains(mod) => data.seedOpt
