@@ -23,7 +23,7 @@ abstract class Stage extends Phase {
     * @param annotations input annotations
     * @return output annotations
     */
-  def run(annotations: AnnotationSeq): AnnotationSeq
+  protected def run(annotations: AnnotationSeq): AnnotationSeq
 
   /** Execute this stage on some input annotations. Annotations will be read from any input annotation files.
     * @param annotations input annotations
