@@ -149,21 +149,6 @@ private[chisel3] trait HasId extends InstanceId {
     * @return the name, if it can be computed
     */
   def computeName(defaultPrefix: Option[String], defaultSeed: Option[String]): Option[String] = {
-    // Recursively builds a name if referenced fields of an aggregate type
-    def buildAggName(id: HasId): Option[String] = {
-      def recArg(node: Arg): Option[String] = node match {
-        case Slot(imm, name) => recArg(imm).map(_ + "_" + name)
-        case Index(imm, ILit(num)) => recArg(imm).map(_ + "_" + num)
-        case Index(imm, n: LitArg) => recArg(imm).map(_ + "_" + n.num)
-        case Index(imm, _: Node) => recArg(imm)
-        case Node(id) => recArg(id.getOptionRef.get)
-        case Ref(name) => Some(name)
-        case ModuleIO(mod, name) if _parent.contains(mod) => Some(name)
-        case ModuleIO(mod, name) => recArg(mod.getRef).map(_ + "_" + name)
-      }
-      id.getOptionRef.flatMap(recArg)
-    }
-
     /** Computes a name of this signal, given the seed and prefix
       * @param seed
       * @param prefix
@@ -173,18 +158,13 @@ private[chisel3] trait HasId extends InstanceId {
       val builder = new StringBuilder()
       prefix.foreach {
         case Left(s: String) => builder ++= s + "_"
-        case Right(d: HasId) =>
-          buildAggName(d) match {
-            case Some(n) => builder ++= n + "_"
-            case _ =>
-          }
-        case _ =>
+        case other           => Builder.exception(s"Only Strings should exist in Prefixes, got $other")
       }
       builder ++= seed
       builder.toString
     }
 
-    if(hasSeed) {
+    if (hasSeed) {
       Some(buildName(seedOpt.get, prefix_seed))
     } else {
       defaultSeed.map { default =>
@@ -379,19 +359,48 @@ private[chisel3] object Builder {
   def annotations: ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
   def namingStack: NamingStack = dynamicContext.namingStack
 
-  // Puts either a prefix string or hasId onto the prefix stack
-  def pushPrefix(d: Either[String, HasId]): Unit = {
-    chiselContext.get().prefixStack += d
-  }
-
   // Puts a prefix string onto the prefix stack
   def pushPrefix(d: String): Unit = {
     chiselContext.get().prefixStack += Left(d)
   }
 
-  // Puts a prefix data onto the prefix stack
-  def pushPrefix(d: HasId): Unit = {
-    chiselContext.get().prefixStack += Right(d)
+  /** Pushes the current name of a data onto the prefix stack
+    *
+    * @param d data to derive prefix from
+    * @return whether anything was pushed to the stack
+    */
+  def pushPrefix(d: HasId): Boolean = {
+    def buildAggName(id: HasId): Option[String] = {
+      // TODO This is slow, can we store this information upon binding?
+      def getSubName(field: Data, parent: Data): Option[String] = parent match {
+        case vec: Vec[_] =>
+          val idx = vec.indexOf(field)
+          if (idx >= 0) Some(idx.toString) else None
+        case rec: Record => rec.elements.collectFirst { case (name, d) if d == field => name }
+        case _ => Builder.exception(s"Shouldn't see non-Aggregate $parent as parent in ChildBinding!")
+      }
+      def map2[A, B](a: Option[A], b: Option[A])(f: (A, A) => B): Option[B] =
+        a.flatMap(ax => b.map(f(ax, _)))
+      // If the binding is None, this is an illegal connection and later logic will error
+      def recData(data: Data): Option[String] = data.binding.flatMap {
+        case (_: WireBinding | _: RegBinding | _: MemoryPortBinding | _: OpBinding) => data.seedOpt
+        case ChildBinding(parent) => recData(parent).map { p =>
+          // And name of the field if we have one, we don't for dynamic indexing of Vecs
+          getSubName(data, parent).map(p + "_" + _).getOrElse(p)
+        }
+        case SampleElementBinding(parent) => recData(parent)
+        case PortBinding(mod) if Builder.currentModule.contains(mod) => data.seedOpt
+        case PortBinding(mod) => map2(mod.seedOpt, data.seedOpt)(_ + "_" + _)
+        case (_: LitBinding | _: DontCareBinding) => None
+      }
+      id match {
+        case d: Data => recData(d)
+        case _ => None
+      }
+    }
+    buildAggName(d).map { name =>
+      chiselContext.get().prefixStack += Left(name)
+    }.isDefined
   }
 
   // Remove a prefix from top of the stack
@@ -598,7 +607,7 @@ private[chisel3] object Builder {
     * @param m exception message
     */
   @throws(classOf[ChiselException])
-  def exception(m: => String): Unit = {
+  def exception(m: => String): Nothing = {
     error(m)
     throwException(m)
   }

@@ -1,5 +1,7 @@
 // See LICENSE for license details.
 
+import com.typesafe.tools.mima.core._
+
 enablePlugins(SiteScaladocPlugin)
 
 def scalacOptionsVersion(scalaVersion: String): Seq[String] = {
@@ -186,7 +188,17 @@ lazy val core = (project in file("core")).
     buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
   ).
   settings(publishSettings: _*).
-  settings(mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-core" % "3.4.0")).
+  settings(
+    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-core" % "3.4.0"),
+    mimaBinaryIssueFilters ++= Seq(
+      // Modified package private methods (https://github.com/lightbend/mima/issues/53)
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("chisel3.internal.Builder.pushPrefix"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("chisel3.internal.Builder.pushPrefix"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("chisel3.internal.Builder.exception"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("chisel3.internal.Builder.pushPrefix"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("chisel3.internal.Builder.pushPrefix")
+    )
+  ).
   settings(
     name := "chisel3-core",
     scalacOptions := scalacOptions.value ++ Seq(
