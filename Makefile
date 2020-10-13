@@ -1,10 +1,18 @@
 buildDir ?= build
 subprojects = $(buildDir)/subprojects
 apis = $(buildDir)/api
+docs = $(buildDir)/docs
+
+www-docs = \
+    $(shell find chisel3/docs/ -name "*.md")
 
 www-src = \
-	$(shell find docs/src/main/tut/ -name "*.md") \
 	$(shell find docs/src/main/resources) \
+	docs/src/main/tut/chisel3/docs \
+	docs/src/main/tut/chisel3/index.md \
+	docs/src/main/tut/chisel3/explanations.md \
+	docs/src/main/tut/chisel3/cookbooks.md \
+	docs/src/main/tut/chisel3/wiki-deprecated.md \
 	chisel3/README.md \
 	firrtl/README.md \
 	chisel-testers/README.md \
@@ -203,7 +211,7 @@ apis-diagrammer: $(diagrammerTags:%=$(apis)/diagrammer/%/index.html) $(apis)/dia
 
 # Remove the output of all build targets
 clean:
-	rm -rf docs/target docs/src/main/tut/contributors.md
+	rm -rf docs/target docs/src/main/tut/contributors.md docs/src/main/tut/chisel3/docs
 
 # Remove everything
 mrproper:
@@ -269,6 +277,10 @@ $(apis)/diagrammer/%/index.html: $(subprojects)/diagrammer/%/.git | $(apis)/diag
 $(apis)/chiseltest/%/index.html: $(subprojects)/chiseltest/%/.git | $(apis)/chiseltest/%/
 	(cd $(subprojects)/chiseltest/$* && sbt doc)
 	find $(<D) -type d -name api -exec cp -r '{}'/. $(@D) ';'
+
+# Build docs in subproject with a specific tag.
+docs/src/main/tut/chisel3/docs: chisel3/.git $(www-docs)
+	(cd chisel3 && sbt docs/mdoc && cp -r docs/generated ../docs/src/main/tut/chisel3/docs && rm ../docs/src/main/tut/chisel3/docs/wiki-deprecated/index.md)
 
 # Copy *SNAPSHOT* API of subprojects into API directory
 docs/target/site/api/SNAPSHOT/index.html: $(apis)/chisel3/$(chiselSnapshot)/index.html | docs/target/site/api/SNAPSHOT/

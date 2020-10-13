@@ -2,117 +2,131 @@ options:
 
   # Chisel Site
   - title: Chisel3
+    menu_type: chisel3
+    menu_section: chisel3
     url: chisel3/
+  - title: Cookbooks
+    menu_type: chisel3
+    menu_section: chisel3
+    url: chisel3/cookbooks.html
+    nested_options:
+      - title: Naming
+        url: chisel3/docs/cookbooks/naming.html
+        menu_type: chisel3
+        menu_section: naming
+  - title: Explanations
+    url: chisel3/explanations.html
     menu_type: chisel3
     menu_section: chisel3
     nested_options:
-      - title: FAQs
-        url: chisel3/faqs.html
-      - title: Cookbook
-        url: chisel3/cookbook.html
-      - title: Troubleshooting
-        url: chisel3/troubleshooting
-      - title: Resources
-        url: chisel3/resources
-  - title: Introduction
-    url: chisel3/introduction.html
+      - title: Annotations
+        url: chisel3/docs/explanations/annotations.html
+        menu_type: chisel3
+        menu_section: annotations
+      - title: Blackboxes
+        url: chisel3/docs/explanations/blackboxes.html
+        menu_type: chisel3
+        menu_section: blackboxes
+      - title: Bundles and Vecs
+        url: chisel3/docs/explanations/bundles-and-vecs.html
+        menu_type: chisel3
+        menu_section: bundles-and-vecs
+      - title: Multiple Clock Domains
+        url: chisel3/docs/explanations/multi-clock.html
+        menu_type: chisel3
+        menu_section: multi-clock
+      - title: Naming
+        url: chisel3/docs/explanations/naming.html
+        menu_type: chisel3
+        menu_section: naming
+  - title: Wiki (Deprecated)
     menu_type: chisel3
-    menu_section: introduction
-  - title: Supported Hardware
-    url: chisel3/supported-hardware.html
-    menu_type: chisel3
-    menu_section: supported-hardware
-  - title: Data Types
-    url: chisel3/data-types.html
-    menu_type: chisel3
-    menu_section: data-types
-  - title: Combinational Circuits
-    url: chisel3/combinational-circuits.html
-    menu_type: chisel3
-    menu_section: combinational-circuits
-  - title: Operators
-    url: chisel3/operators.html
-    menu_type: chisel3
-    menu_section: operators
-  - title: Width Inference
-    url: chisel3/width-inference.html
-    menu_type: chisel3
-    menu_section: width-inference
-  - title: Functional Abstraction
-    url: chisel3/functional-abstraction.html
-    menu_type: chisel3
-    menu_section: functional-abstraction
-  - title: Bundles and Vecs
-    url: chisel3/bundles-and-vecs.html
-    menu_type: chisel3
-    menu_section: bundles-and-vecs
-  - title: Ports
-    url: chisel3/ports.html
-    menu_type: chisel3
-    menu_section: ports
-  - title: Modules
-    url: chisel3/modules.html
-    menu_type: chisel3
-    menu_section: modules
-  - title: Blackboxes
-    url: chisel3/blackboxes.html
-    menu_type: chisel3
-    menu_section: blackboxes
-  - title: Sequential Circuits
-    url: chisel3/sequential-circuits.html
-    menu_type: chisel3
-    menu_section: sequential-circuits
-  - title: Memories
-    url: chisel3/memories.html
-    menu_type: chisel3
-    menu_section: memories
-  - title: Interfaces and Connections
-    url: chisel3/interfaces-and-connections.html
-    menu_type: chisel3
-    menu_section: interfaces-and-connections
-  - title: Functional Module Creation
-    url: chisel3/functional-module-creation.html
-    menu_type: chisel3
-    menu_section: functional-module-creation
-  - title: Muxes and Input Selection
-    url: chisel3/muxes-and-input-selection.html
-    menu_type: chisel3
-    menu_section: muxes-and-input-selection
-  - title: Polymorphism and Parameterization
-    url: chisel3/polymorphism-and-parameterization.html
-    menu_type: chisel3
-    menu_section: polymorphism-and-parameterization
-  - title: Multiple Clock Domains
-    url: chisel3/multi-clock.html
-    menu_type: chisel3
-    menu_section: multi-clock
-  - title: Printing in Chisel
-    url: chisel3/printing.html
-    menu_type: chisel3
-    menu_section: printing
-  - title: Annotations
-    url: chisel3/annotations.html
-    menu_type: chisel3
-    menu_section: annotations
-  - title: Unconnected Wires
-    url: chisel3/unconnected-wires.html
-    menu_type: chisel3
-    menu_section: unconnected-wires
-  - title: Reset
-    url: chisel3/reset.html
-    menu_type: chisel3
-    menu_section: reset
-  - title: Appendix
-    url: chisel3/chisel3-vs-chisel2.html
-    menu_type: chisel3
-    menu_section: appendix
+    menu_section: chisel3
+    url: chisel3/wiki-deprecated.html
     nested_options:
-      - title: Chisel3 vs. Chisel2
-        url: chisel3/chisel3-vs-chisel2.html
-      - title: Experimental Features
-        url: chisel3/experimental-features.html
-      - title: Upgrading From Scala 2.11
-        url: chisel3/upgrading-from-scala-2-11.html
+      - title: Introduction
+        url: chisel3/docs/wiki-deprecated/introduction.html
+        menu_type: chisel3
+        menu_section: introduction
+      - title: Supported Hardware
+        url: chisel3/docs/wiki-deprecated/supported-hardware.html
+        menu_type: chisel3
+        menu_section: supported-hardware
+      - title: Data Types
+        url: chisel3/docs/wiki-deprecated/data-types.html
+        menu_type: chisel3
+        menu_section: data-types
+      - title: Combinational Circuits
+        url: chisel3/docs/wiki-deprecated/combinational-circuits.html
+        menu_type: chisel3
+        menu_section: combinational-circuits
+      - title: Operators
+        url: chisel3/docs/wiki-deprecated/operators.html
+        menu_type: chisel3
+        menu_section: operators
+      - title: Width Inference
+        url: chisel3/docs/wiki-deprecated/width-inference.html
+        menu_type: chisel3
+        menu_section: width-inference
+      - title: Functional Abstraction
+        url: chisel3/docs/wiki-deprecated/functional-abstraction.html
+        menu_type: chisel3
+        menu_section: functional-abstraction
+      - title: Ports
+        url: chisel3/docs/wiki-deprecated/ports.html
+        menu_type: chisel3
+        menu_section: ports
+      - title: Modules
+        url: chisel3/docs/wiki-deprecated/modules.html
+        menu_type: chisel3
+        menu_section: modules
+      - title: Sequential Circuits
+        url: chisel3/docs/wiki-deprecated/sequential-circuits.html
+        menu_type: chisel3
+        menu_section: sequential-circuits
+      - title: Memories
+        url: chisel3/docs/wiki-deprecated/memories.html
+        menu_type: chisel3
+        menu_section: memories
+      - title: Interfaces and Connections
+        url: chisel3/docs/wiki-deprecated/interfaces-and-connections.html
+        menu_type: chisel3
+        menu_section: interfaces-and-connections
+      - title: Functional Module Creation
+        url: chisel3/docs/wiki-deprecated/functional-module-creation.html
+        menu_type: chisel3
+        menu_section: functional-module-creation
+      - title: Muxes and Input Selection
+        url: chisel3/docs/wiki-deprecated/muxes-and-input-selection.html
+        menu_type: chisel3
+        menu_section: muxes-and-input-selection
+      - title: Polymorphism and Parameterization
+        url: chisel3/docs/wiki-deprecated/polymorphism-and-parameterization.html
+        menu_type: chisel3
+        menu_section: polymorphism-and-parameterization
+      - title: Printing in Chisel
+        url: chisel3/docs/wiki-deprecated/printing.html
+        menu_type: chisel3
+        menu_section: printing
+      - title: Unconnected Wires
+        url: chisel3/docs/wiki-deprecated/unconnected-wires.html
+        menu_type: chisel3
+        menu_section: unconnected-wires
+      - title: Reset
+        url: chisel3/docs/wiki-deprecated/reset.html
+        menu_type: chisel3
+        menu_section: reset
+      - title: Appendix
+        url: chisel3/docs/wiki-deprecated/chisel3-vs-chisel2.html
+        menu_type: chisel3
+        menu_section: appendix
+        nested_options:
+          - title: Chisel3 vs. Chisel2
+            url: chisel3/docs/wiki-deprecated/chisel3-vs-chisel2.html
+          - title: Experimental Features
+            url: chisel3/docs/wiki-deprecated/experimental-features.html
+          - title: Upgrading From Scala 2.11
+            url: chisel3/docs/wiki-deprecated/upgrading-from-scala-2-11.html
   - title: Developers
     url: chisel3/developers.html
     menu_type: chisel3
