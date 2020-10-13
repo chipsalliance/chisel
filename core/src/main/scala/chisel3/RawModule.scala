@@ -98,6 +98,8 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
       id._onModuleClose
     }
 
+    closeUnboundIds(names)
+
     val firrtlPorts = getModulePorts map { port: Data =>
       // Special case Vec to make FIRRTL emit the direction of its
       // element.
