@@ -1,8 +1,9 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests
 
 import chisel3._
+import chisel3.stage.ChiselStage
 import chisel3.util._
 
 class Risc extends Module {
@@ -54,7 +55,6 @@ class Risc extends Module {
   }
 }
 
-// scalastyle:off regex
 /*
 class RiscTester(c: Risc) extends Tester(c) {
   def wr(addr: BigInt, data: BigInt)  = {
@@ -76,7 +76,7 @@ class RiscTester(c: Risc) extends Tester(c) {
   def I (op: UInt, rc: Int, ra: Int, rb: Int) = {
     // val cr = Cat(op, rc.asUInt(8.W), ra.asUInt(8.W), rb.asUInt(8.W)).litValue()
     val cr = op.litValue() << 24 | rc << 16 | ra << 8 | rb
-    println("I = " + cr)    // scalastyle:ignore regex
+    println("I = " + cr)
     cr
   }
 
@@ -88,7 +88,7 @@ class RiscTester(c: Risc) extends Tester(c) {
   for (addr <- 0 until app.length)
     wr(addr, app(addr))
   def dump(k: Int) {
-    println("K = " + k)  // scalastyle:ignore regex
+    println("K = " + k)
     peek(c.ra)
     peek(c.rb)
     peek(c.rc)
@@ -112,12 +112,11 @@ class RiscTester(c: Risc) extends Tester(c) {
   expect(c.io.out, 4)
 }
 */
-// scalastyle:on regex
 
 class RiscSpec extends ChiselPropSpec {
 
   property("Risc should elaborate") {
-    elaborate { new Risc }
+    ChiselStage.elaborate { new Risc }
   }
 
   ignore("RiscTester should return the correct result") { }

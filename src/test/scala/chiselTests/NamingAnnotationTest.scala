@@ -1,10 +1,11 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests
 
 import chisel3._
 import chisel3.experimental.chiselName
 import chisel3.internal.InstanceId
+import chisel3.stage.ChiselStage
 
 import scala.collection.mutable.ListBuffer
 
@@ -47,11 +48,26 @@ trait NamedModuleTester extends MultiIOModule {
     failures.toList
   }
 }
+@chiselName
+class OuterNamedNonModule {
+  val value = Wire(Bool())
+}
+
+@chiselName
+class NonModule {
+  val value = Wire(Bool())
+  @chiselName
+  class InnerNamedNonModule {
+    val value = Wire(Bool())
+  }
+  val inner = new InnerNamedNonModule
+  val outer = new OuterNamedNonModule
+}
 
 @chiselName
 class NamedModule extends NamedModuleTester {
   @chiselName
-  def FunctionMockupInner(): UInt = { // scalastyle:ignore method.name
+  def FunctionMockupInner(): UInt = {
     val my2A = 1.U
     val my2B = expectName(my2A +& 2.U, "test_myNested_my2B")
     val my2C = my2B +& 3.U  // should get named at enclosing scope
@@ -59,7 +75,7 @@ class NamedModule extends NamedModuleTester {
   }
 
   @chiselName
-  def FunctionMockup(): UInt = { // scalastyle:ignore method.name
+  def FunctionMockup(): UInt = {
     val myNested = expectName(FunctionMockupInner(), "test_myNested")
     val myA = expectName(1.U + myNested, "test_myA")
     val myB = expectName(myA +& 2.U, "test_myB")
@@ -73,21 +89,25 @@ class NamedModule extends NamedModuleTester {
   }
 
   // chiselName "implicitly" applied
-  def ImplicitlyNamed(): UInt = { // scalastyle:ignore method.name
+  def ImplicitlyNamed(): UInt = {
     val implicitA = expectName(1.U + 2.U, "test3_implicitA")
     val implicitB = expectName(implicitA + 3.U, "test3_implicitB")
     implicitB + 2.U  // named at enclosing scope
   }
 
   // Ensure this applies a partial name if there is no return value
-  def NoReturnFunction() { // scalastyle:ignore method.name
+  def NoReturnFunction() {
     val noreturn = expectName(1.U + 2.U, "noreturn")
   }
-
 
   val test = expectName(FunctionMockup(), "test")
   val test2 = expectName(test +& 2.U, "test2")
   val test3 = expectName(ImplicitlyNamed(), "test3")
+
+  val test4 = new NonModule
+  expectName(test4.value, "test4_value")
+  expectName(test4.inner.value, "test4_inner_value")
+  expectName(test4.outer.value, "test4_outer_value")
 
   // Test that contents of for loops are named
   for (i <- 0 until 1) {
@@ -129,7 +149,7 @@ class NameCollisionModule extends NamedModuleTester {
   */
 class NonNamedModule extends NamedModuleTester {
   @chiselName
-  def NamedFunction(): UInt = { // scalastyle:ignore method.name
+  def NamedFunction(): UInt = {
     val myVal = 1.U + 2.U
     myVal
   }
@@ -142,18 +162,18 @@ class NonNamedModule extends NamedModuleTester {
   */
 object NonNamedHelper {
   @chiselName
-  def NamedFunction(): UInt = { // scalastyle:ignore method.name
+  def NamedFunction(): UInt = {
     val myVal = 1.U + 2.U
     myVal
   }
 
-  def NonNamedFunction() : UInt = { // scalastyle:ignore method.name
+  def NonNamedFunction() : UInt = {
     val myVal = NamedFunction()
     myVal
   }
 
   @chiselName
-  def NonBuilderFunction(): Int = { // scalastyle:ignore method.name
+  def NonBuilderFunction(): Int = {
     1 + 1
   }
 }
@@ -184,6 +204,32 @@ class PartialNamedModule extends NamedModuleTester {
   val test = innerNamedFunction()
 }
 
+@chiselName
+class NoChiselNamePrefixTester extends NamedModuleTester {
+  @chiselName
+  class NoChiselNamePrefixClass extends chisel3.experimental.NoChiselNamePrefix {
+    val a = expectName(1.U +& 2.U, "a")
+  }
+  val inst = new NoChiselNamePrefixClass
+  @chiselName
+  class NormalClass {
+    val b = 1.U +& 2.U
+  }
+  val foo = new NormalClass
+  expectName(foo.b, "foo_b")
+  val bar = new NormalClass with chisel3.experimental.NoChiselNamePrefix
+  expectName(bar.b, "b")
+
+  // Check that we're not matching by name but actual type
+  trait NoChiselNamePrefix
+  @chiselName
+  class FakeNoChiselNamePrefix extends NoChiselNamePrefix {
+    val c = 1.U +& 2.U
+  }
+  val fizz = new FakeNoChiselNamePrefix
+  expectName(fizz.c, "fizz_c")
+}
+
 
 /** A simple test that checks the recursive function val naming annotation both compiles and
   * generates the expected names.
@@ -192,33 +238,39 @@ class NamingAnnotationSpec extends ChiselPropSpec {
   property("NamedModule should have function hierarchical names") {
     // TODO: clean up test style
     var module: NamedModule = null
-    elaborate { module = new NamedModule; module }
+    ChiselStage.elaborate { module = new NamedModule; module }
     assert(module.getNameFailures() == Nil)
   }
 
   property("NameCollisionModule should disambiguate collisions") {
     // TODO: clean up test style
     var module: NameCollisionModule = null
-    elaborate { module = new NameCollisionModule; module }
+    ChiselStage.elaborate { module = new NameCollisionModule; module }
     assert(module.getNameFailures() == Nil)
   }
 
   property("PartialNamedModule should have partial names") {
     // TODO: clean up test style
     var module: PartialNamedModule = null
-    elaborate { module = new PartialNamedModule; module }
+    ChiselStage.elaborate { module = new PartialNamedModule; module }
     assert(module.getNameFailures() == Nil)
   }
 
   property("NonNamedModule should elaborate") {
-    elaborate { new NonNamedModule }
+    ChiselStage.elaborate { new NonNamedModule }
   }
 
   property("NonNamedFunction should elaborate") {
-    elaborate { new NonNamedFunction }
+    ChiselStage.elaborate { new NonNamedFunction }
   }
 
   property("NonBuilderFunction should run outside a Builder context") {
     NonNamedHelper.NonBuilderFunction() should be (2)
+  }
+
+  property("NoChiselNamePrefix should prevent prefixing when using @chiselName") {
+    var module: NoChiselNamePrefixTester = null
+    ChiselStage.elaborate { module = new NoChiselNamePrefixTester; module }
+    assert(module.getNameFailures().isEmpty)
   }
 }

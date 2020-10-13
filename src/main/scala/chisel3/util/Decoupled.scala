@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 /** Wrappers for ready-valid (Decoupled) interfaces and associated circuit generators using them.
   */
@@ -92,13 +92,22 @@ object Decoupled
   /** Wraps some Data with a DecoupledIO interface. */
   def apply[T <: Data](gen: T): DecoupledIO[T] = new DecoupledIO(gen)
 
+  // TODO: use a proper empty data type, this is a quick and dirty solution
+  private final class EmptyBundle extends Bundle
+
+  // Both of these methods return DecoupledIO parameterized by the most generic type: Data
+  /** Returns a [[DecoupledIO]] inteface with no payload */
+  def apply(): DecoupledIO[Data] = apply(new EmptyBundle)
+  /** Returns a [[DecoupledIO]] inteface with no payload */
+  def empty: DecoupledIO[Data] = Decoupled()
+
   /** Downconverts an IrrevocableIO output to a DecoupledIO, dropping guarantees of irrevocability.
     *
     * @note unsafe (and will error) on the producer (input) side of an IrrevocableIO
     */
   @chiselName
   def apply[T <: Data](irr: IrrevocableIO[T]): DecoupledIO[T] = {
-    require(DataMirror.directionOf(irr.bits) == Direction.Output, "Only safe to cast produced Irrevocable bits to Decoupled.") // scalastyle:ignore line.size.limit
+    require(DataMirror.directionOf(irr.bits) == Direction.Output, "Only safe to cast produced Irrevocable bits to Decoupled.")
     val d = Wire(new DecoupledIO(irr.bits))
     d.bits := irr.bits
     d.valid := irr.valid
@@ -129,7 +138,7 @@ object Irrevocable
     * @note unsafe (and will error) on the consumer (output) side of an DecoupledIO
     */
   def apply[T <: Data](dec: DecoupledIO[T]): IrrevocableIO[T] = {
-    require(DataMirror.directionOf(dec.bits) == Direction.Input, "Only safe to cast consumed Decoupled bits to Irrevocable.") // scalastyle:ignore line.size.limit
+    require(DataMirror.directionOf(dec.bits) == Direction.Input, "Only safe to cast consumed Decoupled bits to Irrevocable.")
     val i = Wire(new IrrevocableIO(dec.bits))
     dec.bits := i.bits
     dec.valid := i.valid
@@ -185,10 +194,10 @@ class QueueIO[T <: Data](private val gen: T, val entries: Int) extends Bundle
   * }}}
   */
 @chiselName
-class Queue[T <: Data](gen: T,
+class Queue[T <: Data](val gen: T,
                        val entries: Int,
-                       pipe: Boolean = false,
-                       flow: Boolean = false)
+                       val pipe: Boolean = false,
+                       val flow: Boolean = false)
                       (implicit compileOptions: chisel3.CompileOptions)
     extends Module() {
   require(entries > -1, "Queue must have non-negative number of entries")
@@ -206,16 +215,16 @@ class Queue[T <: Data](gen: T,
 
   val io = IO(new QueueIO(genType, entries))
 
-  private val ram = Mem(entries, genType)
-  private val enq_ptr = Counter(entries)
-  private val deq_ptr = Counter(entries)
-  private val maybe_full = RegInit(false.B)
+  val ram = Mem(entries, genType)
+  val enq_ptr = Counter(entries)
+  val deq_ptr = Counter(entries)
+  val maybe_full = RegInit(false.B)
 
-  private val ptr_match = enq_ptr.value === deq_ptr.value
-  private val empty = ptr_match && !maybe_full
-  private val full = ptr_match && maybe_full
-  private val do_enq = WireDefault(io.enq.fire())
-  private val do_deq = WireDefault(io.deq.fire())
+  val ptr_match = enq_ptr.value === deq_ptr.value
+  val empty = ptr_match && !maybe_full
+  val full = ptr_match && maybe_full
+  val do_enq = WireDefault(io.enq.fire())
+  val do_deq = WireDefault(io.deq.fire())
 
   when (do_enq) {
     ram(enq_ptr.value) := io.enq.bits
@@ -245,7 +254,7 @@ class Queue[T <: Data](gen: T,
     when (io.deq.ready) { io.enq.ready := true.B }
   }
 
-  private val ptr_diff = enq_ptr.value - deq_ptr.value
+  val ptr_diff = enq_ptr.value - deq_ptr.value
   if (isPow2(entries)) {
     io.count := Mux(maybe_full && ptr_match, entries.U, 0.U) | ptr_diff
   } else {
@@ -305,7 +314,7 @@ object Queue
       flow: Boolean = false): IrrevocableIO[T] = {    
     val deq = apply(enq, entries, pipe, flow)
     require(entries > 0, "Zero-entry queues don't guarantee Irrevocability")
-    val irr = Wire(new IrrevocableIO(deq.bits))
+    val irr = Wire(new IrrevocableIO(chiselTypeOf(deq.bits)))
     irr.bits := deq.bits
     irr.valid := deq.valid
     deq.ready := irr.ready

@@ -1,6 +1,8 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests
+
+import chisel3.stage.ChiselStage
 
 class ModuleExplicitResetSpec extends ChiselFlatSpec  {
 
@@ -15,7 +17,7 @@ class ModuleExplicitResetSpec extends ChiselFlatSpec  {
       io.done := false.B
     }
 
-    elaborate {
+    ChiselStage.elaborate {
       new ModuleExplicitReset(myReset)
     }
   }

@@ -1,14 +1,15 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests
 
 import chisel3._
-import chisel3.util._
+import chisel3.stage.ChiselStage
+import chisel3.util.{switch, is}
 
-class SwitchSpec extends ChiselFlatSpec {
+class SwitchSpec extends ChiselFlatSpec with Utils {
   "switch" should "require literal conditions" in {
-    a [java.lang.IllegalArgumentException] should be thrownBy {
-      elaborate(new Module {
+    a [java.lang.IllegalArgumentException] should be thrownBy extractCause[IllegalArgumentException] {
+      ChiselStage.elaborate(new Module {
         val io = IO(new Bundle {})
         val state = RegInit(0.U)
         val wire = WireDefault(0.U)
@@ -19,8 +20,8 @@ class SwitchSpec extends ChiselFlatSpec {
     }
   }
   it should "require mutually exclusive conditions" in {
-    a [java.lang.IllegalArgumentException] should be thrownBy {
-      elaborate(new Module {
+    a [java.lang.IllegalArgumentException] should be thrownBy extractCause[IllegalArgumentException] {
+      ChiselStage.elaborate(new Module {
         val io = IO(new Bundle {})
         val state = RegInit(0.U)
         switch (state) {

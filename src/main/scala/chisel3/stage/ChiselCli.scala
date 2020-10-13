@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chisel3.stage
 
@@ -8,6 +8,7 @@ trait ChiselCli { this: Shell =>
   parser.note("Chisel Front End Options")
   Seq( NoRunFirrtlCompilerAnnotation,
        PrintFullStackTraceAnnotation,
+       ChiselOutputFileAnnotation,
        ChiselGeneratorAnnotation )
     .foreach(_.addOptions(parser))
 }

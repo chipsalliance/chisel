@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests
 
@@ -30,6 +30,30 @@ class SyncReadMemTester extends BasicTester {
     is (2.U) { assert(rdata === 3.U) }
     is (3.U) { assert(rdata === 2.U) }
     is (4.U) { stop() }
+  }
+}
+
+class SyncReadMemWriteCollisionTester extends BasicTester {
+  val (cnt, _) = Counter(true.B, 5)
+
+  // Write-first
+  val m0 = SyncReadMem(2, UInt(2.W), SyncReadMem.WriteFirst)
+  val rd0 = m0.read(cnt)
+  m0.write(cnt, cnt)
+
+  // Read-first
+  val m1 = SyncReadMem(2, UInt(2.W), SyncReadMem.ReadFirst)
+  val rd1 = m1.read(cnt)
+  m1.write(cnt, cnt)
+
+  // Read data from address 0
+  when (cnt === 3.U) {
+    assert(rd0 === 2.U)
+    assert(rd1 === 0.U)
+  }
+
+  when (cnt === 4.U) {
+    stop()
   }
 }
 
@@ -79,6 +103,10 @@ class MemorySpec extends ChiselPropSpec {
 
   property("SyncReadMem should work") {
     assertTesterPasses { new SyncReadMemTester }
+  }
+
+  property("SyncReadMem write collision behaviors should work") {
+    assertTesterPasses { new SyncReadMemWriteCollisionTester }
   }
 
   property("SyncReadMem should work with zero width entry") {

@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 /** Circuit generators for working with one-hot representations.
   */
@@ -70,7 +70,7 @@ object UIntToOH {
   * is set.
   *
   * @example {{{
-  * PriorityEncoderOH((false.B, true.B, true.B, false.B)) // results in (false.B, false.B, true.B, false.B)
+  * PriorityEncoderOH(Seq(false.B, true.B, true.B, false.B)) // results in Seq(false.B, true.B, false.B, false.B)
   * }}}
   */
 object PriorityEncoderOH {

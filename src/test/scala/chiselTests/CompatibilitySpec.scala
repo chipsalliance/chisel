@@ -1,19 +1,30 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests
 
+import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
 
 import org.scalacheck.Gen
-import org.scalatest.prop.GeneratorDrivenPropertyChecks
+import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
-class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks {
+// Need separate import to override compile options from Chisel._
+object CompatibilityCustomCompileOptions {
+  import Chisel.{defaultCompileOptions => _, _}
+  implicit val customCompileOptions =
+    chisel3.ExplicitCompileOptions.NotStrict.copy(inferModuleReset = true)
+  class Foo extends Module {
+    val io = new Bundle {}
+  }
+}
+
+class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyChecks with Utils {
   import Chisel._
 
   behavior of "Chisel compatibility layer"
 
   it should "accept direction arguments" in {
-    elaborate(new Module {
+    ChiselStage.elaborate(new Module {
       // Choose a random direction
       val directionArgument: Direction = Gen.oneOf(INPUT, OUTPUT, NODIR).sample.get
       val expectedDirection = directionArgument match {
@@ -49,7 +60,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
     val value: Int = Gen.choose(2, 2048).sample.get
     log2Up(value) shouldBe (1 max BigInt(value - 1).bitLength)
     log2Ceil(value) shouldBe (BigInt(value - 1).bitLength)
-    log2Down(value) shouldBe ((1 max BigInt(value - 1).bitLength) - (if (value > 0 && ((value & (value - 1)) == 0)) 0 else 1)) // scalastyle:ignore line.size.limit
+    log2Down(value) shouldBe ((1 max BigInt(value - 1).bitLength) - (if (value > 0 && ((value & (value - 1)) == 0)) 0 else 1))
     log2Floor(value) shouldBe (BigInt(value - 1).bitLength - (if (value > 0 && ((value & (value - 1)) == 0)) 0 else 1))
     isPow2(BigInt(1) << value) shouldBe true
     isPow2((BigInt(1) << value) - 1) shouldBe false
@@ -116,7 +127,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
       Valid(data) shouldBe a [ValidIO[UInt]]
       Pipe(Wire(Valid(data)), 2) shouldBe a [ValidIO[UInt]]
     }
-    elaborate { new Dummy }
+    ChiselStage.elaborate { new Dummy }
   }
   // Verify we can elaborate a design expressed in Chisel2
   class Chisel2CompatibleRisc extends Module {
@@ -168,11 +179,11 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
   }
 
   it should "Chisel2CompatibleRisc should elaborate" in {
-    elaborate { new Chisel2CompatibleRisc }
+    ChiselStage.elaborate { new Chisel2CompatibleRisc }
   }
 
   it should "not try to assign directions to Analog" in {
-    elaborate(new Module {
+    ChiselStage.elaborate(new Module {
       val io = new Bundle {
         val port = chisel3.experimental.Analog(32.W)
       }
@@ -190,7 +201,6 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
     override def cloneType: this.type = (new BigBundle).asInstanceOf[this.type]
   }
 
-  // scalastyle:off line.size.limit
   "A Module with missing bundle fields when compiled with the Chisel compatibility package" should "not throw an exception" in {
 
     class ConnectFieldMismatchModule extends Module {
@@ -200,7 +210,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
       }
       io.out := io.in
     }
-    elaborate { new ConnectFieldMismatchModule() }
+    ChiselStage.elaborate { new ConnectFieldMismatchModule() }
   }
 
   "A Module in which a Reg is created with a bound type when compiled with the Chisel compatibility package" should "not throw an exception" in {
@@ -212,7 +222,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
       }
       val badReg = Reg(UInt(7, width=4))
     }
-    elaborate { new CreateRegFromBoundTypeModule() }
+    ChiselStage.elaborate { new CreateRegFromBoundTypeModule() }
   }
 
   "A Module with unwrapped IO when compiled with the Chisel compatibility package" should "not throw an exception" in {
@@ -224,7 +234,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
       }
       io.out := io.in(1)
     }
-    elaborate { new RequireIOWrapModule() }
+    ChiselStage.elaborate { new RequireIOWrapModule() }
   }
 
   "A Module connecting output as source to input as sink when compiled with the Chisel compatibility package" should "not throw an exception" in {
@@ -239,31 +249,12 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
       val child = Module(new SimpleModule)
       io.in := child.io.out
     }
-    elaborate { new SwappedConnectionModule() }
-  }
-
-  "A Module with directionless connections when compiled with the Chisel compatibility package" should "not throw an exception" in {
-
-    class SimpleModule extends Module {
-      val io = new Bundle {
-        val in = (UInt(width = 3)).asInput
-        val out = (UInt(width = 4)).asOutput
-      }
-      val noDir = Wire(UInt(width = 3))
-    }
-
-    class DirectionLessConnectionModule extends SimpleModule {
-      val a = UInt(0, width = 3)
-      val b = Wire(UInt(width = 3))
-      val child = Module(new SimpleModule)
-      b := child.noDir
-    }
-    elaborate { new DirectionLessConnectionModule() }
+    ChiselStage.elaborate { new SwappedConnectionModule() }
   }
 
   "Vec ports" should "give default directions to children so they can be used in chisel3.util" in {
     import Chisel._
-    elaborate(new Module {
+    ChiselStage.elaborate(new Module {
       val io = new Bundle {
         val in = Vec(1, UInt(width = 8)).flip
         val out = UInt(width = 8)
@@ -274,7 +265,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
 
   "Reset" should "still walk, talk, and quack like a Bool" in {
     import Chisel._
-    elaborate(new Module {
+    ChiselStage.elaborate(new Module {
       val io = new Bundle {
         val in = Bool(INPUT)
         val out = Bool(OUTPUT)
@@ -285,7 +276,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
 
   "Data.dir" should "give the correct direction for io" in {
     import Chisel._
-    elaborate(new Module {
+    ChiselStage.elaborate(new Module {
       val io = (new Bundle {
         val foo = Bool(OUTPUT)
         val bar = Bool().flip
@@ -298,8 +289,8 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
   // Note: This is a regression (see https://github.com/freechipsproject/chisel3/issues/668)
   it should "fail for Chisel types" in {
     import Chisel._
-    an [chisel3.ExpectedHardwareException] should be thrownBy {
-      elaborate(new Module {
+    an [chisel3.ExpectedHardwareException] should be thrownBy extractCause[chisel3.ExpectedHardwareException] {
+      ChiselStage.elaborate(new Module {
         val io = new Bundle { }
         UInt(INPUT).dir
       })
@@ -308,7 +299,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
 
   "Mux return value" should "be able to be used on the RHS" in {
     import Chisel._
-    elaborate(new Module {
+    ChiselStage.elaborate(new Module {
       val gen = new Bundle { val foo = UInt(width = 8) }
       val io = new Bundle {
         val a = Vec(2, UInt(width = 8)).asInput
@@ -326,7 +317,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
 
   "Chisel3 IO constructs" should "be useable in Chisel2" in {
     import Chisel._
-    elaborate(new Module {
+    ChiselStage.elaborate(new Module {
       val io = IO(new Bundle {
         val in = Input(Bool())
         val foo = Output(Bool())
@@ -337,7 +328,6 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
       Chisel.assert(io.bar.dir == INPUT)
     })
   }
-  // scalastyle:on line.size.limit
 
   behavior of "BitPat"
 
@@ -356,7 +346,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
       // (UInt(4) != bp) shouldBe a [Bool]
     }
 
-    elaborate(new Foo)
+    ChiselStage.elaborate(new Foo)
   }
 
   behavior of "Enum"
@@ -379,7 +369,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
       }.getMessage should include ("Bit width may no longer be specified for enums")
     }
 
-    elaborate(new Foo)
+    ChiselStage.elaborate(new Foo)
   }
 
   behavior of "Queue"
@@ -395,7 +385,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
       val explicit = Module(new Queue(UInt(), 4, false, false, Bool(true)))
     }
 
-    elaborate(new Foo)
+    ChiselStage.elaborate(new Foo)
   }
 
   behavior of "LFSR16"
@@ -414,7 +404,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
       lfsr.getWidth should be (16)
     }
 
-    elaborate(new Foo)
+    ChiselStage.elaborate(new Foo)
   }
 
   behavior of "Mem"
@@ -432,7 +422,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
       memInt shouldBe a [Mem[SInt]]
     }
 
-    elaborate(new Foo)
+    ChiselStage.elaborate(new Foo)
   }
 
   behavior of "SeqMem"
@@ -450,7 +440,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
       seqMemInt shouldBe a [SeqMem[UInt]]
     }
 
-    elaborate(new Foo)
+    ChiselStage.elaborate(new Foo)
   }
 
   behavior of "debug"
@@ -463,7 +453,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
       debug(data)
     }
 
-    elaborate(new Foo)
+    ChiselStage.elaborate(new Foo)
   }
 
   behavior of "Data methods"
@@ -481,7 +471,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
       Vec.fill(4)(wire).toBits.getWidth should be (wire.getWidth * 4)
     }
 
-    elaborate(new Foo)
+    ChiselStage.elaborate(new Foo)
   }
 
   behavior of "Wire"
@@ -503,7 +493,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
       third shouldBe a [UInt]
     }
 
-    elaborate(new Foo)
+    ChiselStage.elaborate(new Foo)
   }
 
   behavior of "Vec"
@@ -552,7 +542,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
       UInt(1).toBool shouldBe a [Bool]
     }
 
-    elaborate(new Foo)
+    ChiselStage.elaborate(new Foo)
   }
 
   behavior of "UInt"
@@ -565,7 +555,7 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
       (UInt(1) != UInt(1)) shouldBe a [Bool]
     }
 
-    elaborate(new Foo)
+    ChiselStage.elaborate(new Foo)
   }
 
   behavior of "SInt"
@@ -578,7 +568,14 @@ class CompatibiltySpec extends ChiselFlatSpec with GeneratorDrivenPropertyChecks
       (SInt(-1) != SInt(-1)) shouldBe a [Bool]
     }
 
-    elaborate(new Foo)
+    ChiselStage.elaborate(new Foo)
+  }
+
+  it should "properly propagate custom compileOptions in Chisel.Module" in {
+    import CompatibilityCustomCompileOptions._
+    var result: Foo = null
+    ChiselStage.elaborate({result = new Foo; result})
+    result.compileOptions should be theSameInstanceAs (customCompileOptions)
   }
 
 }

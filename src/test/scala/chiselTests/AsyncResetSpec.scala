@@ -1,8 +1,9 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests
 
 import chisel3._
+import chisel3.stage.ChiselStage
 import chisel3.util.{Counter, Queue}
 import chisel3.testers.BasicTester
 import firrtl.checks.CheckResets.NonLiteralAsyncResetValueException
@@ -119,18 +120,40 @@ class AsyncResetQueueTester extends BasicTester {
   }
 }
 
-class AsyncResetSpec extends ChiselFlatSpec {
+class AsyncResetDontCareModule extends RawModule {
+  import chisel3.util.Valid
+  val monoPort = IO(Output(AsyncReset()))
+  monoPort := DontCare
+  val monoWire = Wire(AsyncReset())
+  monoWire := DontCare
+  val monoAggPort = IO(Output(Valid(AsyncReset())))
+  monoAggPort := DontCare
+  val monoAggWire = Wire(Valid(AsyncReset()))
+  monoAggWire := DontCare
+
+  // Can't bulk connect to Wire so only ports here
+  val bulkPort = IO(Output(AsyncReset()))
+  bulkPort <> DontCare
+  val bulkAggPort = IO(Output(Valid(AsyncReset())))
+  bulkAggPort <> DontCare
+}
+
+class AsyncResetSpec extends ChiselFlatSpec with Utils {
 
   behavior of "AsyncReset"
 
+  it should "be able to be connected to DontCare" in {
+    ChiselStage.elaborate(new AsyncResetDontCareModule)
+  }
+
   it should "be allowed with literal reset values" in {
-    elaborate(new BasicTester {
+    ChiselStage.elaborate(new BasicTester {
       withReset(reset.asAsyncReset)(RegInit(123.U))
     })
   }
 
   it should "NOT be allowed with non-literal reset values" in {
-    a [NonLiteralAsyncResetValueException] shouldBe thrownBy {
+    a [NonLiteralAsyncResetValueException] should be thrownBy extractCause[NonLiteralAsyncResetValueException] {
       compile(new BasicTester {
         val x = WireInit(123.U + 456.U)
         withReset(reset.asAsyncReset)(RegInit(x))
@@ -139,8 +162,8 @@ class AsyncResetSpec extends ChiselFlatSpec {
   }
 
   it should "NOT be allowed to connect directly to a Bool" in {
-    a [ChiselException] shouldBe thrownBy {
-      elaborate(new BasicTester {
+    a [ChiselException] should be thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate(new BasicTester {
         val bool = Wire(Bool())
         val areset = reset.asAsyncReset
         bool := areset
@@ -157,7 +180,7 @@ class AsyncResetSpec extends ChiselFlatSpec {
   }
 
   it should "allow casting to and from Bool" in {
-    elaborate(new BasicTester {
+    ChiselStage.elaborate(new BasicTester {
       val r: Reset = reset
       val a: AsyncReset = WireInit(r.asAsyncReset)
       val b: Bool = a.asBool
@@ -169,4 +192,84 @@ class AsyncResetSpec extends ChiselFlatSpec {
     assertTesterPasses(new AsyncResetQueueTester)
   }
 
+  it should "support SInt regs" in {
+    assertTesterPasses(new BasicTester {
+      // Also check that it traces through wires
+      val initValue = Wire(SInt())
+      val reg = withReset(reset.asAsyncReset)(RegNext(initValue, 27.S))
+      initValue := -43.S
+      val (count, done) = Counter(true.B, 4)
+      when (count === 0.U) {
+        chisel3.assert(reg === 27.S)
+      } .otherwise {
+        chisel3.assert(reg === -43.S)
+      }
+      when (done) { stop() }
+    })
+  }
+
+  it should "support Fixed regs" in {
+    import chisel3.experimental.{withReset => _, _}
+    assertTesterPasses(new BasicTester {
+      val reg = withReset(reset.asAsyncReset)(RegNext(-6.0.F(2.BP), 3.F(2.BP)))
+      val (count, done) = Counter(true.B, 4)
+      when (count === 0.U) {
+        chisel3.assert(reg === 3.F(2.BP))
+      } .otherwise {
+        chisel3.assert(reg === -6.0.F(2.BP))
+      }
+      when (done) { stop() }
+    })
+  }
+
+  it should "support Interval regs" in {
+    import chisel3.experimental.{withReset => _, _}
+    assertTesterPasses(new BasicTester {
+      val reg = withReset(reset.asAsyncReset) {
+        val x = RegInit(Interval(range"[0,13]"), 13.I)
+        x := 7.I
+        x
+      }
+      val (count, done) = Counter(true.B, 4)
+      when (count === 0.U) {
+        chisel3.assert(reg === 13.I)
+      } .otherwise {
+        chisel3.assert(reg === 7.I)
+      }
+      when (done) { stop() }
+    })
+  }
+
+  it should "allow literals cast to Bundles as reset values" in {
+    class MyBundle extends Bundle {
+      val x = UInt(16.W)
+      val y = UInt(16.W)
+    }
+    assertTesterPasses(new BasicTester {
+      val reg = withReset(reset.asAsyncReset) {
+        RegNext(0xbad0cad0L.U.asTypeOf(new MyBundle), 0xdeadbeefL.U.asTypeOf(new MyBundle))
+      }
+      val (count, done) = Counter(true.B, 4)
+      when (count === 0.U) {
+        chisel3.assert(reg.asUInt === 0xdeadbeefL.U)
+      } .otherwise {
+        chisel3.assert(reg.asUInt === 0xbad0cad0L.U)
+      }
+      when (done) { stop() }
+    })
+  }
+  it should "allow literals cast to Vecs as reset values" in {
+    assertTesterPasses(new BasicTester {
+      val reg = withReset(reset.asAsyncReset) {
+        RegNext(0xbad0cad0L.U.asTypeOf(Vec(4, UInt(8.W))), 0xdeadbeefL.U.asTypeOf(Vec(4, UInt(8.W))))
+      }
+      val (count, done) = Counter(true.B, 4)
+      when (count === 0.U) {
+        chisel3.assert(reg.asUInt === 0xdeadbeefL.U)
+      } .otherwise {
+        chisel3.assert(reg.asUInt === 0xbad0cad0L.U)
+      }
+      when (done) { stop() }
+    })
+  }
 }

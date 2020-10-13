@@ -1,10 +1,10 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chisel3.stage.phases
 
 import firrtl.{AnnotationSeq, EmittedFirrtlCircuit, EmittedFirrtlCircuitAnnotation}
 import firrtl.annotations.DeletedAnnotation
-import firrtl.options.{Phase, StageOptions}
+import firrtl.options.{Dependency, Phase, StageOptions}
 import firrtl.options.Viewer.view
 
 import chisel3.internal.firrtl.{Emitter => OldEmitter}
@@ -24,16 +24,14 @@ import java.io.{File, FileWriter}
   */
 class Emitter extends Phase {
 
-  override val prerequisites =
-    Seq( classOf[Elaborate],
-         classOf[AddImplicitOutputFile],
-         classOf[AddImplicitOutputAnnotationFile],
-         classOf[MaybeAspectPhase] )
-
-  override def invalidates(phase: Phase): Boolean = phase match {
-    case _: Elaborate => true
-    case _ => false
-  }
+  override def prerequisites =
+    Seq( Dependency[Elaborate],
+         Dependency[AddImplicitOutputFile],
+         Dependency[AddImplicitOutputAnnotationFile],
+         Dependency[MaybeAspectPhase] )
+  override def optionalPrerequisites = Seq.empty
+  override def optionalPrerequisiteOf = Seq(Dependency[Convert])
+  override def invalidates(a: Phase) = false
 
   def transform(annotations: AnnotationSeq): AnnotationSeq = {
     val copts = view[ChiselOptions](annotations)

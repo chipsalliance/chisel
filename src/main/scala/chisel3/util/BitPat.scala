@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chisel3.util
 
@@ -14,7 +14,7 @@ object BitPat {
     * @return bits the literal value, with don't cares being 0
     * @return mask the mask bits, with don't cares being 0 and cares being 1
     * @return width the number of bits in the literal, including values and
-    * don't cares.
+    * don't cares, but not including the white space and underscores
     */
   private def parse(x: String): (BigInt, BigInt, Int) = {
     // Notes:
@@ -25,14 +25,17 @@ object BitPat {
     require(x.head == 'b', "BitPats must be in binary and be prefixed with 'b'")
     var bits = BigInt(0)
     var mask = BigInt(0)
+    var count = 0
     for (d <- x.tail) {
-      if (d != '_') {
+      if (! (d == '_' || d.isWhitespace)) {
         require("01?".contains(d), "Literal: " + x + " contains illegal character: " + d)
         mask = (mask << 1) + (if (d == '?') 0 else 1)
         bits = (bits << 1) + (if (d == '1') 1 else 0)
+        count += 1
       }
     }
-    (bits, mask, x.length - 1)
+
+    (bits, mask, count)
   }
 
   /** Creates a [[BitPat]] literal from a string.
@@ -83,16 +86,16 @@ object BitPat {
     final def =/= (that: BitPat): Bool = macro SourceInfoTransform.thatArg
 
     /** @group SourceInfoTransformMacro */
-    def do_=== (that: BitPat)  // scalastyle:ignore method.name
+    def do_=== (that: BitPat)
                (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that === x
     /** @group SourceInfoTransformMacro */
-    def do_=/= (that: BitPat)  // scalastyle:ignore method.name
+    def do_=/= (that: BitPat)
                (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that =/= x
 
     final def != (that: BitPat): Bool = macro SourceInfoTransform.thatArg
     @chiselRuntimeDeprecated
     @deprecated("Use '=/=', which avoids potential precedence problems", "3.0")
-    def do_!= (that: BitPat)  // scalastyle:ignore method.name
+    def do_!= (that: BitPat)
               (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that != x
   }
 }
@@ -112,12 +115,12 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) extends Sou
   def =/= (that: UInt): Bool = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_=== (that: UInt)  // scalastyle:ignore method.name
+  def do_=== (that: UInt)
       (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
     value.asUInt === (that & mask.asUInt)
   }
   /** @group SourceInfoTransformMacro */
-  def do_=/= (that: UInt)  // scalastyle:ignore method.name
+  def do_=/= (that: UInt)
       (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
     !(this === that)
   }
@@ -125,7 +128,7 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) extends Sou
   def != (that: UInt): Bool = macro SourceInfoTransform.thatArg
   @chiselRuntimeDeprecated
   @deprecated("Use '=/=', which avoids potential precedence problems", "3.0")
-  def do_!= (that: UInt)  // scalastyle:ignore method.name
+  def do_!= (that: UInt)
       (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
     this =/= that
   }

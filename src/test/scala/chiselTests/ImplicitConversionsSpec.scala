@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests
 
@@ -39,5 +39,10 @@ class ImplicitConversionsSpec extends ChiselFlatSpec {
     import chisel3.util._
     assertTypeError("Decoupled(UInt(8.W)).target")
   }
-}
 
+  "X.B for X not in [0,1]" should "throw an exception, even outside hardware context" in {
+    a [ChiselException] should be thrownBy {
+      65.B
+    }
+  }
+}

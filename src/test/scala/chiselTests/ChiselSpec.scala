@@ -1,17 +1,24 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests
 
 import org.scalatest._
 import org.scalatest.prop._
+import org.scalatest.flatspec.AnyFlatSpec
 import org.scalacheck._
 import chisel3._
+import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import chisel3.testers._
-import firrtl.options.OptionsException
-import firrtl.{AnnotationSeq, CommonOptions, ExecutionOptionsManager, FirrtlExecutionFailure, FirrtlExecutionSuccess, HasFirrtlOptions}
+import firrtl.{AnnotationSeq, CommonOptions, EmittedVerilogCircuitAnnotation, ExecutionOptionsManager, FirrtlExecutionFailure, FirrtlExecutionSuccess, HasFirrtlOptions}
+import firrtl.annotations.{Annotation, DeletedAnnotation}
 import firrtl.util.BackendCompilationUtilities
 import java.io.ByteArrayOutputStream
 import java.security.Permission
+
+import chisel3.aop.Aspect
+import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage, NoRunFirrtlCompilerAnnotation, PrintFullStackTraceAnnotation}
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
+import scala.reflect.ClassTag
 
 /** Common utility functions for Chisel unit tests. */
 trait ChiselRunners extends Assertions with BackendCompilationUtilities {
@@ -19,7 +26,11 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
                 additionalVResources: Seq[String] = Seq(),
                 annotations: AnnotationSeq = Seq()
                ): Boolean = {
-    TesterDriver.execute(() => t, additionalVResources, annotations)
+    // Change this to enable Treadle as a backend
+    val defaultBackend = chisel3.testers.TesterDriver.defaultBackend
+    val hasBackend = TestUtils.containsBackend(annotations)
+    val annos: Seq[Annotation] = if (hasBackend) annotations else defaultBackend +: annotations
+    TesterDriver.execute(() => t, additionalVResources, annos)
   }
   def assertTesterPasses(t: => BasicTester,
                          additionalVResources: Seq[String] = Seq(),
@@ -33,7 +44,6 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
                        ): Unit = {
     assert(!runTester(t, additionalVResources, annotations))
   }
-  def elaborate(t: => RawModule): Unit = Driver.elaborate(() => t)
 
   def assertKnownWidth(expected: Int)(gen: => Data): Unit = {
     assertTesterPasses(new BasicTester {
@@ -62,45 +72,29 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
     })
   }
 
-  /** Given a generator, return the Firrtl that it generates.
-    *
-    * @param t Module generator
-    * @return Firrtl representation as a String
-    */
-  def generateFirrtl(t: => RawModule): String = Driver.emit(() => t)
-
   /** Compiles a Chisel Module to Verilog
     * NOTE: This uses the "test_run_dir" as the default directory for generated code.
     * @param t the generator for the module
     * @return the Verilog code as a string.
     */
   def compile(t: => RawModule): String = {
-    val testDir = createTestDirectory(this.getClass.getSimpleName)
-    val manager = new ExecutionOptionsManager("compile") with HasFirrtlOptions
-                                                         with HasChiselExecutionOptions {
-      commonOptions = CommonOptions(targetDirName = testDir.toString)
-    }
-
-    Driver.execute(manager, () => t) match {
-      case ChiselExecutionSuccess(_, _, Some(firrtlExecRes)) =>
-        firrtlExecRes match {
-          case FirrtlExecutionSuccess(_, verilog) => verilog
-          case FirrtlExecutionFailure(msg) => fail(msg)
-        }
-      case ChiselExecutionSuccess(_, _, None) => fail() // This shouldn't happen
-      case ChiselExecutionFailure(msg) => fail(msg)
-    }
+    (new ChiselStage)
+      .execute(Array("--target-dir", createTestDirectory(this.getClass.getSimpleName).toString),
+               Seq(ChiselGeneratorAnnotation(() => t)))
+      .collectFirst {
+        case EmittedVerilogCircuitAnnotation(a) => a.value
+      }.getOrElse(fail("No Verilog circuit was emitted by the FIRRTL compiler!"))
   }
 }
 
 /** Spec base class for BDD-style testers. */
-abstract class ChiselFlatSpec extends FlatSpec with ChiselRunners with Matchers
+abstract class ChiselFlatSpec extends AnyFlatSpec with ChiselRunners with Matchers
 
 class ChiselTestUtilitiesSpec extends ChiselFlatSpec {
   import org.scalatest.exceptions.TestFailedException
   // Who tests the testers?
   "assertKnownWidth" should "error when the expected width is wrong" in {
-    val caught = intercept[OptionsException] {
+    val caught = intercept[ChiselException] {
       assertKnownWidth(7) {
         Wire(UInt(8.W))
       }
@@ -123,7 +117,7 @@ class ChiselTestUtilitiesSpec extends ChiselFlatSpec {
   }
 
   "assertInferredWidth" should "error if the width is known" in {
-    val caught = intercept[OptionsException] {
+    val caught = intercept[ChiselException] {
       assertInferredWidth(8) {
         Wire(UInt(8.W))
       }
@@ -151,7 +145,7 @@ class ChiselTestUtilitiesSpec extends ChiselFlatSpec {
 }
 
 /** Spec base class for property-based testers. */
-class ChiselPropSpec extends PropSpec with ChiselRunners with PropertyChecks with Matchers {
+class ChiselPropSpec extends PropSpec with ChiselRunners with ScalaCheckPropertyChecks with Matchers {
 
   // Constrain the default number of instances generated for every use of forAll.
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
@@ -159,6 +153,20 @@ class ChiselPropSpec extends PropSpec with ChiselRunners with PropertyChecks wit
 
   // Generator for small positive integers.
   val smallPosInts = Gen.choose(1, 4)
+
+  // Generator for positive (ascending or descending) ranges.
+  def posRange: Gen[Range] = for {
+    dir <- Gen.oneOf(true, false)
+    step <- Gen.choose(1, 3)
+    m <- Gen.choose(1, 10)
+    n <- Gen.choose(1, 10)
+  } yield {
+    if (dir) {
+      Range(m, (m+n)*step, step)
+    } else {
+      Range((m+n)*step, m, -step)
+    }
+  }
 
   // Generator for widths considered "safe".
   val safeUIntWidth = Gen.choose(1, 30)
@@ -283,4 +291,61 @@ trait Utils {
     }
   }
 
+
+  /** A tester which runs generator and uses an aspect to check the returned object
+    * @param gen function to generate a Chisel module
+    * @param f a function to check the Chisel module
+    * @tparam T the Chisel module class
+    */
+  def aspectTest[T <: RawModule](gen: () => T)(f: T => Unit)(implicit scalaMajorVersion: Int): Unit = {
+    // Runs chisel stage
+    def run[T <: RawModule](gen: () => T, annotations: AnnotationSeq): AnnotationSeq = {
+      new ChiselStage().run(Seq(ChiselGeneratorAnnotation(gen), NoRunFirrtlCompilerAnnotation, PrintFullStackTraceAnnotation) ++ annotations)
+    }
+    // Creates a wrapping aspect to contain checking function
+    case object BuiltAspect extends Aspect[T] {
+      override def toAnnotation(top: T): AnnotationSeq = {f(top); Nil}
+    }
+    val currentMajorVersion = scala.util.Properties.versionNumberString.split('.')(1).toInt
+    if(currentMajorVersion >= scalaMajorVersion) {
+      run(gen, Seq(BuiltAspect))
+    }
+  }
+
+  /** Run some code and rethrow an exception with a specific type if an exception of that type occurs anywhere in the
+    * stack trace.
+    *
+    * This is useful for "extracting" one exception that may be wrapped by other exceptions.
+    *
+    * Example usage:
+    * {{{
+    * a [ChiselException] should be thrownBy extractCause[ChiselException] { /* ... */ }
+    * }}}
+    *
+    * @param thunk some code to run
+    * @tparam A the type of the exception to extract
+    * @return nothing
+    */
+  def extractCause[A <: Throwable : ClassTag](thunk: => Any): Unit = {
+    def unrollCauses(a: Throwable): Seq[Throwable] = a match {
+      case null => Seq.empty
+      case _    => a +: unrollCauses(a.getCause)
+    }
+
+    val exceptions: Seq[_ <: Throwable] = try {
+      thunk
+      Seq.empty
+    } catch {
+      case a: Throwable => unrollCauses(a)
+    }
+
+    exceptions.collectFirst{ case a: A => a } match {
+      case Some(a) => throw a
+      case None => exceptions match {
+        case Nil    => Unit
+        case h :: t => throw h
+      }
+    }
+
+  }
 }

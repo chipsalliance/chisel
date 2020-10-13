@@ -1,10 +1,11 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests
 
 import chisel3._
 import chisel3.experimental._
-import chisel3.testers.BasicTester
+import chisel3.stage.ChiselStage
+import chisel3.testers.{BasicTester, TesterDriver}
 
 // Avoid collisions with regular BlackBox tests by putting ExtModule blackboxes
 // in their own scope.
@@ -61,14 +62,14 @@ class MultiExtModuleTester extends BasicTester {
 class ExtModuleSpec extends ChiselFlatSpec {
   "A ExtModule inverter" should "work" in {
     assertTesterPasses({ new ExtModuleTester },
-        Seq("/chisel3/BlackBoxTest.v"))
+        Seq("/chisel3/BlackBoxTest.v"), TesterDriver.verilatorOnly)
   }
   "Multiple ExtModules" should "work" in {
     assertTesterPasses({ new MultiExtModuleTester },
-        Seq("/chisel3/BlackBoxTest.v"))
+        Seq("/chisel3/BlackBoxTest.v"), TesterDriver.verilatorOnly)
   }
   "DataMirror.modulePorts" should "work with ExtModule" in {
-    elaborate(new Module {
+    ChiselStage.elaborate(new Module {
       val io = IO(new Bundle { })
       val m = Module(new ExtModule.BlackBoxPassthrough)
       assert(DataMirror.modulePorts(m) == Seq(

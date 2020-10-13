@@ -1,15 +1,16 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests.stage
 
-import org.scalatest.{FlatSpec, Matchers}
 
 import firrtl.options.Viewer.view
 
 import chisel3.stage._
 import chisel3.internal.firrtl.Circuit
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class ChiselOptionsViewSpec extends FlatSpec with Matchers {
+class ChiselOptionsViewSpec extends AnyFlatSpec with Matchers {
 
   behavior of ChiselOptionsView.getClass.getName
 

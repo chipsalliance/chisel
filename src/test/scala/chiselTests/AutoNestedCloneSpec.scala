@@ -1,9 +1,11 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests
 import Chisel.ChiselException
 import org.scalatest._
 import chisel3._
+import chisel3.stage.ChiselStage
+import org.scalatest.matchers.should.Matchers
 
 class BundleWithAnonymousInner(val w: Int) extends Bundle {
   val inner = new Bundle {
@@ -11,11 +13,11 @@ class BundleWithAnonymousInner(val w: Int) extends Bundle {
   }
 }
 
-class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers {
+class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers with Utils {
   behavior of "autoCloneType of inner Bundle in Chisel3"
 
   it should "clone a doubly-nested inner bundle successfully" in {
-    elaborate {
+    ChiselStage.elaborate {
       class Outer(val w: Int) extends Module {
         class Middle(val w: Int) {
           class InnerIOType extends Bundle {
@@ -31,7 +33,7 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers {
   }
 
   it should "clone an anonymous inner bundle successfully" in {
-    elaborate {
+    ChiselStage.elaborate {
       class TestTop(val w: Int) extends Module {
         val io = IO(new Bundle {})
         val myWire = Wire(new Bundle{ val a = UInt(w.W) })
@@ -41,7 +43,7 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers {
   }
 
   it should "pick the correct $outer instance for an anonymous inner bundle" in {
-    elaborate {
+    ChiselStage.elaborate {
       class Inner(val w: Int) extends Module {
         val io = IO(new Bundle{
           val in = Input(UInt(w.W))
@@ -63,7 +65,7 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers {
   }
 
   it should "clone an anonymous, bound, inner bundle of another bundle successfully" in {
-    elaborate {
+    ChiselStage.elaborate {
       class TestModule(w: Int) extends Module {
         val io = IO(new BundleWithAnonymousInner(w) )
         val w0 = WireDefault(io)
@@ -74,7 +76,7 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers {
   }
 
   it should "clone an anonymous, inner bundle of a Module, bound to another bundle successfully" in {
-    elaborate {
+    ChiselStage.elaborate {
       class TestModule(w: Int) extends Module {
         val bun = new Bundle {
           val foo = UInt(w.W)
@@ -90,7 +92,7 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers {
   }
 
   it should "clone a double-nested anonymous Bundle" in {
-    elaborate {
+    ChiselStage.elaborate {
       class TestModule() extends Module {
         val io = IO(new Bundle {
           val inner = Input(new Bundle {
@@ -104,7 +106,7 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers {
 
   // Test ignored because the compatibility null-inserting autoclonetype doesn't trip this
   ignore should "fail on anonymous doubly-nested inner bundle with clear error" in {
-    intercept[ChiselException] { elaborate {
+    intercept[ChiselException] { extractCause[ChiselException] { ChiselStage.elaborate {
       class Outer(val w: Int) extends Module {
         class Middle(val w: Int) {
           def getIO: Bundle = new Bundle {
@@ -115,6 +117,6 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers {
         val myWire = Wire((new Middle(w)).getIO)
       }
       new Outer(2)
-    }}.getMessage should include("Unable to determine instance")
+    }}}.getMessage should include("Unable to determine instance")
   }
 }

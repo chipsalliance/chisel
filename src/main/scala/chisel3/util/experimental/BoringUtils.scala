@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chisel3.util.experimental
 
@@ -181,8 +181,14 @@ object BoringUtils {
     * component
     */
   def bore(source: Data, sinks: Seq[Data]): String = {
-    lazy val genName = addSource(source, source.instanceName, true, true)
+    val boringName = try {
+      source.instanceName
+    } catch {
+      case _: Exception => "bore"
+    }
+    val genName = addSource(source, boringName, true, true)
     sinks.map(addSink(_, genName, true, true))
     genName
   }
+
 }

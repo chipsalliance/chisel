@@ -1,17 +1,19 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests
 
 import chisel3._
 import chisel3.util.Counter
-import chisel3.testers.BasicTester
+import chisel3.testers._
 import chisel3.experimental.{BaseModule, ChiselAnnotation, RunFirrtlTransform}
 import chisel3.util.experimental.BoringUtils
 
-import firrtl.{CircuitForm, CircuitState, ChirrtlForm, Transform}
+import firrtl.{CircuitForm, CircuitState, ChirrtlForm, DependencyAPIMigration, Transform}
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
+import firrtl.options.Dependency
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
-import firrtl.passes.wiring.WiringException
+import firrtl.passes.wiring.{WiringException, WiringTransform}
+import firrtl.stage.Forms
 
 abstract class ShouldntAssertTester(cyclesToWait: BigInt = 4) extends BasicTester {
   val dut: BaseModule
@@ -19,11 +21,14 @@ abstract class ShouldntAssertTester(cyclesToWait: BigInt = 4) extends BasicTeste
   when (done) { stop() }
 }
 
-class StripNoDedupAnnotation extends Transform {
-  def inputForm: CircuitForm = ChirrtlForm
-  def outputForm: CircuitForm = ChirrtlForm
-  def execute(state: CircuitState): CircuitState =
+class StripNoDedupAnnotation extends Transform with DependencyAPIMigration {
+  override def prerequisites = Forms.ChirrtlForm
+  override def optionalPrerequisites = Seq.empty
+  override def optionalPrerequisiteOf = Dependency[WiringTransform] +: Forms.ChirrtlEmitters
+  override def invalidates(a: Transform) = false
+  def execute(state: CircuitState): CircuitState = {
     state.copy(annotations = state.annotations.filter{ case _: NoDedupAnnotation => false; case _ => true })
+  }
 }
 
 class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
@@ -44,7 +49,8 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
   behavior of "BoringUtils.{addSink, addSource}"
 
   it should "connect two wires within a module" in {
-    runTester(new ShouldntAssertTester { val dut = Module(new BoringInverter) } ) should be (true)
+    runTester(new ShouldntAssertTester { val dut = Module(new BoringInverter) },
+      annotations = TesterDriver.verilatorOnly) should be (true)
   }
 
   trait WireX { this: BaseModule =>
@@ -98,12 +104,30 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
   behavior of "BoringUtils.bore"
 
   it should "connect across modules using BoringUtils.bore" in {
-    runTester(new TopTester) should be (true)
+    runTester(new TopTester, annotations = TesterDriver.verilatorOnly) should be (true)
   }
 
   it should "throw an exception if NoDedupAnnotations are removed" in {
-    intercept[WiringException] { runTester(new TopTester with FailViaDedup) }
+    intercept[WiringException] { runTester(new TopTester with FailViaDedup,
+      annotations = Seq(TesterDriver.VerilatorBackend)) }
       .getMessage should startWith ("Unable to determine source mapping for sink")
+  }
+
+  class InternalBore extends RawModule {
+    val in = IO(Input(Bool()))
+    val out = IO(Output(Bool()))
+    out := false.B
+    BoringUtils.bore(in, Seq(out))
+  }
+
+  class InternalBoreTester extends ShouldntAssertTester {
+    val dut = Module(new InternalBore)
+    dut.in := true.B
+    chisel3.assert(dut.out === true.B)
+  }
+
+  it should "work for an internal (same module) BoringUtils.bore" in {
+    runTester(new InternalBoreTester, annotations = TesterDriver.verilatorOnly) should be (true)
   }
 
 }
