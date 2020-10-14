@@ -180,7 +180,7 @@ private[chisel3] trait HasId extends InstanceId {
  *
     * @return the current calculation of a name, if it exists
     */
-  def seedOpt: Option[String] = suggested_seed.orElse(auto_seed)
+  private[chisel3] def seedOpt: Option[String] = suggested_seed.orElse(auto_seed)
 
   /** @return Whether either autoName or suggestName has been called */
   def hasSeed: Boolean = seedOpt.isDefined
@@ -201,12 +201,15 @@ private[chisel3] trait HasId extends InstanceId {
     }
 
   private var _ref: Option[Arg] = None
-  private[chisel3] def setRef(imm: Arg): Unit = _ref = Some(imm)
+  private[chisel3] def setRef(imm: Arg): Unit = {
+    assert(_ref.isEmpty, s"Internal Error, setRef for $this called twice! first ${_ref.get}, second $imm")
+    _ref = Some(imm)
+  }
   private[chisel3] def setRef(parent: HasId, name: String): Unit = setRef(Slot(Node(parent), name))
   private[chisel3] def setRef(parent: HasId, index: Int): Unit = setRef(Index(Node(parent), ILit(index)))
   private[chisel3] def setRef(parent: HasId, index: UInt): Unit = setRef(Index(Node(parent), index.ref))
   private[chisel3] def getRef: Arg = _ref.get
-  def getOptionRef: Option[Arg] = _ref
+  private[chisel3] def getOptionRef: Option[Arg] = _ref
 
   // Implementation of public methods.
   def instanceName: String = _parent match {
@@ -374,7 +377,7 @@ private[chisel3] object Builder {
       def getSubName(field: Data): Option[String] = field.getOptionRef.flatMap {
         case Slot(_, field) => Some(field) // Record
         case Index(_, ILit(n)) => Some(n.toString) // Vec
-        case _ => None // Vec dynamic indexing
+        case Index(_, _: Node) => None // Vec dynamic indexing
       }
       def map2[A, B](a: Option[A], b: Option[A])(f: (A, A) => B): Option[B] =
         a.flatMap(ax => b.map(f(ax, _)))
