@@ -128,14 +128,14 @@ options:
           - title: Upgrading From Scala 2.11
             url: chisel3/docs/wiki-deprecated/upgrading-from-scala-2-11.html
   - title: Developers
-    url: chisel3/developers.html
+    url: chisel3/docs/wiki-deprecated/developers.html
     menu_type: chisel3
     menu_section: developers
     nested_options:
       - title: sbt Subproject
-        url: chisel3/sbt-subproject.html
+        url: chisel3/docs/wiki-deprecated/sbt-subproject.html
       - title: Test Coverage
-        url: chisel3/test-coverage.html
+        url: chisel3/docs/wiki-deprecated/test-coverage.html
   - title: API Documentation
     url: api/latest/
     menu_type: chisel3
