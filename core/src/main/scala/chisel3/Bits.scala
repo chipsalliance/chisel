@@ -611,12 +611,16 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
     binop(sourceInfo, UInt(this.width.max(that.width)), BitAndOp, that)
 
   /** @group SourceInfoTransformMacro */
-  def do_|(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
-    binop(sourceInfo, UInt(this.width.max(that.width)), BitOrOp, that)
+  def do_|(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
+    def f = binop(sourceInfo, UInt(this.width.max(that.width)), BitOrOp, that)
+    constPropOr(that).getOrElse(f)
+  }
 
   /** @group SourceInfoTransformMacro */
-  def do_^(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
-    binop(sourceInfo, UInt(this.width.max(that.width)), BitXorOp, that)
+  def do_^(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
+    def f = binop(sourceInfo, UInt(this.width.max(that.width)), BitXorOp, that)
+    constPropOrXor(that).getOrElse(f)
+  }
 
   /** @group SourceInfoTransformMacro */
   def do_unary_~(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
@@ -697,12 +701,16 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
   final def ===(that: UInt): Bool = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_=/=(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
-    compop(sourceInfo, NotEqualOp, that)
+  def do_=/=(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
+    def f = compop(sourceInfo, NotEqualOp, that)
+    constPropBothLiteral(that, (v, w) => (v != w).B).getOrElse(f)
+  }
 
   /** @group SourceInfoTransformMacro */
-  def do_===(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
-    compop(sourceInfo, EqualOp, that)
+  def do_===(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
+    def f = compop(sourceInfo, EqualOp, that)
+    constPropBothLiteral(that, (v, w) => (v == w).B).getOrElse(f)
+  }
 
   /** Unary not
     *
@@ -872,6 +880,32 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
 
   private def subtractAsSInt(that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
     binop(sourceInfo, SInt((this.width.max(that.width)) + 1), SubOp, that)
+
+  private def constPropBothLiteral[T <: Data, U](that: T, f: (BigInt, BigInt) => U): Option[U] = {
+    if (this.isLit && that.isLit)
+      Some(f(this.litValue, that.litValue))
+    else
+      None
+  }
+
+  private def constPropOrXor(that: UInt): Option[UInt] = {
+    def widthsOK(discarded: UInt, kept: UInt): Boolean =
+      !discarded.isWidthKnown || kept.isWidthKnown && kept.getWidth >= discarded.getWidth
+
+    if (this.litOption == Some(BigInt(0)) && widthsOK(this, that))
+      Some(that)
+    else if (that.litOption == Some(BigInt(0)) && widthsOK(that, this))
+      Some(this)
+    else
+      None
+  }
+
+  private def constPropOr(that: UInt): Option[UInt] = {
+    if (this.isLit && that.isLit)
+      Some((this.litValue | that.litValue).U(this.width.max(that.width)))
+    else
+      constPropOrXor(that)
+  }
 }
 
 /** A data type for signed integers, represented as a binary bitvector. Defines arithmetic operations between other
@@ -1334,20 +1368,28 @@ sealed class Bool() extends UInt(1.W) with Reset {
   final def ^(that: Bool): Bool = macro SourceInfoTransform.thatArg
 
   /** @group SourceInfoTransformMacro */
-  def do_&(that: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
-    binop(sourceInfo, Bool(), BitAndOp, that)
+  def do_&(that: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
+    def f = binop(sourceInfo, Bool(), BitAndOp, that)
+    commutativeConstPropHelper(that)(_ => false.B, x => x)(f)
+  }
 
   /** @group SourceInfoTransformMacro */
-  def do_|(that: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
-    binop(sourceInfo, Bool(), BitOrOp, that)
+  def do_|(that: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
+    def f = binop(sourceInfo, Bool(), BitOrOp, that)
+    commutativeConstPropHelper(that)(x => x, _ => true.B)(f)
+  }
 
   /** @group SourceInfoTransformMacro */
-  def do_^(that: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
-    binop(sourceInfo, Bool(), BitXorOp, that)
+  def do_^(that: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
+    def f = binop(sourceInfo, Bool(), BitXorOp, that)
+    commutativeConstPropHelper(that)(x => x, x => ~x)(f)
+  }
 
   /** @group SourceInfoTransformMacro */
-  override def do_unary_~(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool =
-    unop(sourceInfo, Bool(), BitNotOp)
+  override def do_unary_~(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
+    def f = unop(sourceInfo, Bool(), BitNotOp)
+    commutativeConstPropHelper(this)(_ => true.B, _ => false.B)(f)
+  }
 
   /** Logical or operator
     *
@@ -1390,6 +1432,16 @@ sealed class Bool() extends UInt(1.W) with Reset {
   /** @group SourceInfoTransformMacro */
   def do_asAsyncReset(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): AsyncReset =
     pushOp(DefPrim(sourceInfo, AsyncReset(), AsAsyncResetOp, ref))
+
+  private def commutativeConstPropHelper(that: Bool)(fx: Bool => Bool, tx: Bool => Bool)(general: => Bool): Bool = {
+    (this.litOption, that.litOption) match {
+      case (Some(v), _) if v == 0 => fx(that)
+      case (Some(v), _) if v == 1 => tx(that)
+      case (_, Some(w)) if w == 0 => fx(this)
+      case (_, Some(w)) if w == 1 => tx(this)
+      case (None, None)           => general
+    }
+  }
 }
 
 package experimental {
