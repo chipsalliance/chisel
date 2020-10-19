@@ -99,7 +99,7 @@ private[chisel3] trait HasId extends InstanceId {
   private val construction_prefix: Prefix = Builder.getPrefix()
 
   // Prefix when the latest [[suggestSeed]] or [[autoSeed]] is called
-  private var prefix_seed: Prefix = List.empty[Either[String, Data]]
+  private var prefix_seed: Prefix = Nil
 
   // Post-seed hooks called to carry the suggested seeds to other candidates as needed
   private val suggest_postseed_hooks = scala.collection.mutable.ListBuffer.empty[String=>Unit]
@@ -156,21 +156,18 @@ private[chisel3] trait HasId extends InstanceId {
       */
     def buildName(seed: String, prefix: Prefix): String = {
       val builder = new StringBuilder()
-      prefix.foreach {
-        case Left(s: String) => builder ++= s + "_"
-        case other           => Builder.exception(s"Only Strings should exist in Prefixes, got $other")
-      }
+      prefix.foreach(builder ++= _ + "_")
       builder ++= seed
       builder.toString
     }
 
     if (hasSeed) {
-      Some(buildName(seedOpt.get, prefix_seed))
+      Some(buildName(seedOpt.get, prefix_seed.reverse))
     } else {
       defaultSeed.map { default =>
         defaultPrefix match {
-          case Some(p) => buildName(default, Left(p) +: construction_prefix)
-          case None => buildName(default, construction_prefix)
+          case Some(p) => buildName(default, p :: construction_prefix.reverse)
+          case None => buildName(default, construction_prefix.reverse)
         }
       }
     }
@@ -295,7 +292,7 @@ private[chisel3] class ChiselContext() {
   val bundleStack: ArrayBuffer[(Bundle, String, String, Int)] = ArrayBuffer()
 
   // Records the different prefixes which have been scoped at this point in time
-  val prefixStack: ArrayBuffer[Either[String, HasId]] = ArrayBuffer()
+  var prefixStack: Prefix = Nil
 }
 
 private[chisel3] class DynamicContext() {
@@ -322,7 +319,7 @@ private[chisel3] class DynamicContext() {
 private[chisel3] object Builder {
 
   // Represents the current state of the prefixes given
-  type Prefix = List[Either[String, Data]]
+  type Prefix = List[String]
 
   // All global mutable state must be referenced via dynamicContextVar!!
   private val dynamicContextVar = new DynamicVariable[Option[DynamicContext]](None)
@@ -361,7 +358,8 @@ private[chisel3] object Builder {
 
   // Puts a prefix string onto the prefix stack
   def pushPrefix(d: String): Unit = {
-    chiselContext.get().prefixStack += Left(d)
+    val context = chiselContext.get()
+    context.prefixStack = d :: context.prefixStack
   }
 
   /** Pushes the current name of a data onto the prefix stack
@@ -399,31 +397,30 @@ private[chisel3] object Builder {
       }
     }
     buildAggName(d).map { name =>
-      chiselContext.get().prefixStack += Left(name)
+      pushPrefix(name)
     }.isDefined
   }
 
   // Remove a prefix from top of the stack
-  def popPrefix(): Either[String, HasId] = {
-    val ps = chiselContext.get().prefixStack
-    ps.remove(ps.size - 1)
+  def popPrefix(): List[String] = {
+    val context = chiselContext.get()
+    val tail = context.prefixStack.tail
+    context.prefixStack = tail
+    tail
   }
 
   // Removes all prefixes from the prefix stack
   def clearPrefix(): Unit = {
-    val ps = chiselContext.get().prefixStack
-    ps.clear()
+    chiselContext.get().prefixStack = Nil
   }
 
   // Clears existing prefixes and sets to new prefix stack
   def setPrefix(prefix: Prefix): Unit = {
-    val ps = chiselContext.get().prefixStack
-    clearPrefix()
-    ps.insertAll(0, prefix)
+    chiselContext.get().prefixStack = prefix
   }
 
   // Returns the prefix stack at this moment
-  def getPrefix(): Prefix = chiselContext.get().prefixStack.toList.asInstanceOf[Prefix]
+  def getPrefix(): Prefix = chiselContext.get().prefixStack
 
   def currentModule: Option[BaseModule] = dynamicContextVar.value match {
     case Some(dyanmicContext) => dynamicContext.currentModule
