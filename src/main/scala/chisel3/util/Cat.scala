@@ -25,6 +25,7 @@ object Cat {
     * in the sequence forms the least significant bits.
     *
     * Equivalent to r(0) ## r(1) ## ... ## r(n-1).
+    * @note This returns a `0.U` if applied to a zero-element `Vec`.
     */
   def apply[T <: Bits](r: Seq[T]): UInt = SeqUtils.asUInt(r.reverse)
 }
