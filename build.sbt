@@ -196,7 +196,9 @@ lazy val core = (project in file("core")).
       ProblemFilters.exclude[IncompatibleResultTypeProblem]("chisel3.internal.Builder.pushPrefix"),
       ProblemFilters.exclude[IncompatibleResultTypeProblem]("chisel3.internal.Builder.exception"),
       ProblemFilters.exclude[IncompatibleResultTypeProblem]("chisel3.internal.Builder.pushPrefix"),
-      ProblemFilters.exclude[IncompatibleMethTypeProblem]("chisel3.internal.Builder.pushPrefix")
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("chisel3.internal.Builder.pushPrefix"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("chisel3.internal.Builder.popPrefix"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("chisel3.internal.ChiselContext.prefixStack")
     )
   ).
   settings(
