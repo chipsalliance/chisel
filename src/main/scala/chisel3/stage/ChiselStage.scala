@@ -6,7 +6,9 @@ import firrtl.{
   ir => fir,
   AnnotationSeq,
   EmittedFirrtlCircuitAnnotation,
+  EmittedFirrtlModuleAnnotation,
   EmittedVerilogCircuitAnnotation,
+  EmittedVerilogModuleAnnotation,
   HighFirrtlEmitter,
   VerilogEmitter,
   SystemVerilogEmitter
@@ -93,11 +95,11 @@ class ChiselStage extends Stage {
     annotations: AnnotationSeq = Seq.empty): String = {
 
     execute(Array("-X", "high") ++ args, ChiselGeneratorAnnotation(() => gen) +: annotations)
-      .collectFirst {
+      .collect {
         case EmittedFirrtlCircuitAnnotation(a) => a
-      }
-      .get
-      .value
+        case EmittedFirrtlModuleAnnotation(a)  => a
+      }.map(_.value)
+      .mkString("")
 
   }
 
@@ -115,9 +117,10 @@ class ChiselStage extends Stage {
     execute(Array("-X", "verilog") ++ args, ChiselGeneratorAnnotation(() => gen) +: annotations)
       .collectFirst {
         case EmittedVerilogCircuitAnnotation(a) => a
-      }
-      .get
-      .value
+        case EmittedVerilogModuleAnnotation(a)  => a
+      }.map(_.value)
+      .mkString("")
+
   }
 
   /** Convert a Chisel module to SystemVerilog
@@ -134,9 +137,10 @@ class ChiselStage extends Stage {
     execute(Array("-X", "sverilog") ++ args, ChiselGeneratorAnnotation(() => gen) +: annotations)
       .collectFirst {
         case EmittedVerilogCircuitAnnotation(a) => a
-      }
-      .get
-      .value
+        case EmittedVerilogModuleAnnotation(a)  => a
+      }.map(_.value)
+      .mkString("")
+
   }
 }
 
