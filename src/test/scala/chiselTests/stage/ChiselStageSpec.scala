@@ -4,6 +4,7 @@ package chiselTests.stage
 
 import chisel3._
 import chisel3.stage.ChiselStage
+import chisel3.testers.TesterDriver.createTestDirectory
 
 import chiselTests.Utils
 
@@ -52,8 +53,9 @@ class ChiselStageSpec extends AnyFlatSpec with Matchers with Utils {
   }
 
   it should "return a flattened FIRRTL string with '-e high'" in {
+    val args = Array("-e", "high", "-td", createTestDirectory(this.getClass.getSimpleName).toString)
     (new ChiselStage)
-      .emitFirrtl(new Foo, Array("-e", "high", "-td", "test_run_dir/ChiselStageSpec")) should include ("module Bar")
+      .emitFirrtl(new Foo, args) should include ("module Bar")
   }
 
   behavior of "ChiselStage.emitVerilog"
@@ -63,8 +65,9 @@ class ChiselStageSpec extends AnyFlatSpec with Matchers with Utils {
   }
 
   it should "return a flattened Verilog string with '-e verilog'" in {
+    val args = Array("-e", "verilog", "-td", createTestDirectory(this.getClass.getSimpleName).toString)
     (new ChiselStage)
-      .emitVerilog(new Foo, Array("-e", "verilog", "-td", "test_run_dir/ChiselStageSpec")) should include ("module Bar")
+      .emitVerilog(new Foo, args) should include ("module Bar")
   }
 
   behavior of "ChiselStage$.elaborate"
