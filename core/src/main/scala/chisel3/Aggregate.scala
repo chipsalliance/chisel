@@ -480,9 +480,9 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId with Source
   */
 abstract class Record(private[chisel3] implicit val compileOptions: CompileOptions) extends Aggregate {
 
-  // Doing this earlier than onModuleClose allows field names to be available for prefixing the names
-  // of hardware created when connecting to one of these elements
-  private def setElementRefs(): Unit = {
+  // This is almost always set during binding, with the exception of Mem types which have no binding
+  // but are used in emission of FIRRTL
+  private[chisel3] def setElementRefs(): Unit = {
     // Since elements is a map, it is impossible for two elements to have the same
     // identifier; however, Namespace sanitizes identifiers to make them legal for Firrtl/Verilog
     // which can cause collisions
@@ -643,13 +643,6 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
         that.elements.contains(name) &&
         (that.elements(name) typeEquivalent model)}
     case _ => false
-  }
-
-  private[chisel3] override def _onModuleClose: Unit = {
-    // This is usually done during binding, but these must still be set for unbound Records
-    if (this.binding.isEmpty) {
-      setElementRefs()
-    }
   }
 
   private[chisel3] final def allElements: Seq[Element] = elements.toIndexedSeq.flatMap(_._2.allElements)

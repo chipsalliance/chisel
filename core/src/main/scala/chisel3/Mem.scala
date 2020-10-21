@@ -34,6 +34,11 @@ object Mem {
       requireIsChiselType(t, "memory type")
     }
     val mt  = t.cloneTypeFull
+    // mt is used to create FIRRTL type so Aggregate elements needs their refs set
+    mt match {
+      case r: Record => r.setElementRefs()
+      case _ => // No need to set refs of Elements and Vecs set it in self
+    }
     val mem = new Mem(mt, size)
     pushCommand(DefMemory(sourceInfo, mem, mt, size))
     mem
@@ -173,6 +178,11 @@ object SyncReadMem {
       requireIsChiselType(t, "memory type")
     }
     val mt  = t.cloneTypeFull
+    // mt is used to create FIRRTL type so Aggregate elements needs their refs set
+    mt match {
+      case r: Record => r.setElementRefs()
+      case _ => // No need to set refs of Elements and Vecs set it in self
+    }
     val mem = new SyncReadMem(mt, size, ruw)
     pushCommand(DefSeqMemory(sourceInfo, mem, mt, size, ruw))
     mem

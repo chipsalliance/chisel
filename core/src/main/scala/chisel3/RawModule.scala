@@ -94,7 +94,6 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
             }
           } // else, don't name unbound types
       }
-      id._onModuleClose
     }
 
     val firrtlPorts = getModulePorts map { port: Data =>
