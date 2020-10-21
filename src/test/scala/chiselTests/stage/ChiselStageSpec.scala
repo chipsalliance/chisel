@@ -14,11 +14,19 @@ import firrtl.options.Dependency
 
 object ChiselStageSpec {
 
+  class Bar extends MultiIOModule {
+    val in = IO(Input(UInt(4.W)))
+    val out = IO(Output(UInt(4.W)))
+    out := ~in
+  }
+
   class Foo extends MultiIOModule {
     val addr = IO(Input(UInt(4.W)))
     val out = IO(Output(Bool()))
-    val bar = SyncReadMem(8, Bool())
-    out := bar(addr)
+    val memory = SyncReadMem(8, Bool())
+    val bar = Module(new Bar)
+    bar.in := addr
+    out := memory(bar.out)
   }
 
 }
@@ -40,13 +48,23 @@ class ChiselStageSpec extends AnyFlatSpec with Matchers with Utils {
   behavior of "ChiselStage.emitFirrtl"
 
   it should "return a High FIRRTL string" in {
-    ChiselStage.emitFirrtl(new Foo) should include ("mem bar")
+    ChiselStage.emitFirrtl(new Foo) should include ("mem memory")
+  }
+
+  it should "return a flattened FIRRTL string with '-e high'" in {
+    (new ChiselStage)
+      .emitFirrtl(new Foo, Array("-e", "high", "-td", "test_run_dir/ChiselStageSpec")) should include ("module Bar")
   }
 
   behavior of "ChiselStage.emitVerilog"
 
   it should "return a Verilog string" in {
     ChiselStage.emitVerilog(new Foo) should include ("endmodule")
+  }
+
+  it should "return a flattened Verilog string with '-e verilog'" in {
+    (new ChiselStage)
+      .emitVerilog(new Foo, Array("-e", "verilog", "-td", "test_run_dir/ChiselStageSpec")) should include ("module Bar")
   }
 
   behavior of "ChiselStage$.elaborate"
