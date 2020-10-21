@@ -201,8 +201,8 @@ private[chisel3] trait HasId extends InstanceId {
     }
 
   private var _ref: Option[Arg] = None
-  private[chisel3] def setRef(imm: Arg): Unit = {
-    assert(_ref.isEmpty, s"Internal Error, setRef for $this called twice! first ${_ref.get}, second $imm")
+  private[chisel3] def setRef(imm: Arg, force: Boolean = false): Unit = {
+    assert(force || _ref.isEmpty, s"Internal Error, setRef for $this called twice! first ${_ref.get}, second $imm")
     _ref = Some(imm)
   }
   private[chisel3] def setRef(parent: HasId, name: String): Unit = setRef(Slot(Node(parent), name))
@@ -376,8 +376,10 @@ private[chisel3] object Builder {
     def buildAggName(id: HasId): Option[String] = {
       def getSubName(field: Data): Option[String] = field.getOptionRef.flatMap {
         case Slot(_, field) => Some(field) // Record
-        case Index(_, ILit(n)) => Some(n.toString) // Vec
+        case Index(_, ILit(n)) => Some(n.toString) // Vec static indexing
+        case Index(_, ULit(n, _)) => Some(n.toString) // Vec lit indexing
         case Index(_, _: Node) => None // Vec dynamic indexing
+        case ModuleIO(_, n) => Some(n) // BlackBox port
       }
       def map2[A, B](a: Option[A], b: Option[A])(f: (A, A) => B): Option[B] =
         a.flatMap(ax => b.map(f(ax, _)))
