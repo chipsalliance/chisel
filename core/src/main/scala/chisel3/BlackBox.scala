@@ -74,6 +74,13 @@ package experimental {
         port.setRef(ModuleIO(this, _namespace.name(names(port))))
       }
 
+      // All suggestions are in, force names to every node.
+      // While BlackBoxes are not supposed to have an implementation, we still need to call
+      // _onModuleClose on all nodes (for example, Aggregates use it for recursive naming).
+      for (id <- getIds) {
+        id._onModuleClose
+      }
+
       val firrtlPorts = getModulePorts map {port => Port(port, port.specifiedDirection)}
       val component = DefBlackBox(this, name, firrtlPorts, SpecifiedDirection.Unspecified, params)
       _component = Some(component)
@@ -160,6 +167,14 @@ abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param
     for ((name, port) <- namedPorts) {
       // We have to force override the _ref because it was set during IO binding
       port.setRef(ModuleIO(this, _namespace.name(name)), force = true)
+    }
+
+    // We need to call forceName and onModuleClose on all of the sub-elements
+    // of the io bundle, but NOT on the io bundle itself.
+    // Doing so would cause the wrong names to be assigned, since their parent
+    // is now the module itself instead of the io bundle.
+    for (id <- getIds; if id ne _io) {
+      id._onModuleClose
     }
 
     val firrtlPorts = namedPorts map {namedPort => Port(namedPort._2, namedPort._2.specifiedDirection)}
