@@ -147,33 +147,33 @@ private[chisel3] trait HasId extends InstanceId {
     * @param defaultSeed Optionally provide default seed for computing the name
     * @return the name, if it can be computed
     */
-  @deprecated("This should never have been public", "Chisel 3.4.1")
-  def computeName(defaultPrefix: Option[String], defaultSeed: Option[String]): Option[String] =
-    _computeName(defaultPrefix, defaultSeed, "_")
-
-  private[chisel3] def _computeName(defaultPrefix: Option[String], defaultSeed: Option[String], sep: String): Option[String] = {
-      /** Computes a name of this signal, given the seed and prefix */
-      def buildName(seed: String, prefix: Prefix): String = {
-        val builder = new StringBuilder()
-        prefix.foreach {
-          case Left(s: String) => builder ++= s + sep
-          case other           => Builder.exception(s"Only Strings should exist in Prefixes, got $other")
-        }
-        builder ++= seed
-        builder.toString
+  def computeName(defaultPrefix: Option[String], defaultSeed: Option[String]): Option[String] = {
+    /** Computes a name of this signal, given the seed and prefix
+      * @param seed
+      * @param prefix
+      * @return
+      */
+    def buildName(seed: String, prefix: Prefix): String = {
+      val builder = new StringBuilder()
+      prefix.foreach {
+        case Left(s: String) => builder ++= s + "_"
+        case other           => Builder.exception(s"Only Strings should exist in Prefixes, got $other")
       }
+      builder ++= seed
+      builder.toString
+    }
 
-      if (hasSeed) {
-        Some(buildName(seedOpt.get, prefix_seed))
-      } else {
-        defaultSeed.map { default =>
-          defaultPrefix match {
-            case Some(p) => buildName(default, Left(p) +: construction_prefix)
-            case None => buildName(default, construction_prefix)
-          }
+    if (hasSeed) {
+      Some(buildName(seedOpt.get, prefix_seed))
+    } else {
+      defaultSeed.map { default =>
+        defaultPrefix match {
+          case Some(p) => buildName(default, Left(p) +: construction_prefix)
+          case None => buildName(default, construction_prefix)
         }
       }
     }
+  }
 
   /** This resolves the precedence of [[autoSeed]] and [[suggestName]]
  *
@@ -194,7 +194,7 @@ private[chisel3] trait HasId extends InstanceId {
   // (e.g. tried to suggest a name to part of a Record)
   private[chisel3] def forceName(prefix: Option[String], default: =>String, namespace: Namespace): Unit =
     if(_ref.isEmpty) {
-      val candidate_name = _computeName(prefix, Some(default), "_").get
+      val candidate_name = computeName(prefix, Some(default)).get
       val available_name = namespace.name(candidate_name)
       setRef(Ref(available_name))
     }
@@ -215,14 +215,7 @@ private[chisel3] trait HasId extends InstanceId {
     case Some(p) => p._component match {
       case Some(c) => _ref match {
         case Some(arg) => arg fullName c
-        // Non-hardware, doesn't have a real name
-        // For related discussion https://github.com/freechipsproject/chisel3/pull/853
-        case None =>
-          _computeName(None, None, ".").getOrElse {
-            val msg = "Data is not bound to hardware in the circuit so has no name. " +
-              "To emulate old naming behavior, use chisel3-plugin when compiling this code."
-            throwException(msg)
-          }
+        case None => computeName(None, None).get
       }
       case None => throwException("signalName/pathName should be called after circuit elaboration")
     }
