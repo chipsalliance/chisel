@@ -193,8 +193,6 @@ object ForceNamesTransform {
   *   - Renames instances as well (as well as port names)
   * Common usages:
   *   - Use to avoid prefixing behavior on specific instances whose enclosing modules are inlined
-  * TODO:
-  *   - Add all documentation
   */
 class ForceNamesTransform extends Transform with DependencyAPIMigration {
   override def optionalPrerequisites: Seq[TransformDependency] = Seq(Dependency[InlineInstances])
