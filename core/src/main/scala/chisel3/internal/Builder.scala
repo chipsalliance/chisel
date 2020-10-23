@@ -46,6 +46,17 @@ private[chisel3] class Namespace(keywords: Set[String]) {
       sanitized
     }
   }
+
+  // Removes name from namespace
+  def clear(name: String): Option[Long] = {
+    val long = names.get(name)
+    names.remove(name)
+    long
+  }
+
+  def set(name: String, long: Long): Unit = {
+    names(name) = long
+  }
 }
 
 private[chisel3] object Namespace {
@@ -627,7 +638,11 @@ private[chisel3] object Builder {
 
 
   def build[T <: RawModule](f: => T): (Circuit, T) = {
-    dynamicContextVar.withValue(Some(new DynamicContext())) {
+    build(f, new DynamicContext())
+  }
+
+  private [chisel3] def build[T <: RawModule](f: => T, dynamicContext: DynamicContext): (Circuit, T) = {
+    dynamicContextVar.withValue(Some(dynamicContext)) {
       checkScalaVersion()
       errors.info("Elaborating design...")
       val mod = f
