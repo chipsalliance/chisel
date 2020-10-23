@@ -52,16 +52,12 @@ abstract class InjectorAspect[T <: RawModule, M <: RawModule](
       dynamicContext.globalNamespace.name(n)
     }
     RunFirrtlTransformAnnotation(new InjectingTransform) +: modules.map { module =>
-      val name = module.name
-      val long = dynamicContext.globalNamespace.clear(name)
       val (chiselIR, _) = Builder.build(Module(new ModuleAspect(module) {
         module match {
           case x: MultiIOModule => withClockAndReset(x.clock, x.reset) { injection(module) }
           case x: RawModule => injection(module)
         }
       }), dynamicContext)
-
-      if(long.nonEmpty) dynamicContext.globalNamespace.set(name, long.get)
 
       val comps = chiselIR.components.map {
         case x: DefModule if x.name == module.name => x.copy(id = module)

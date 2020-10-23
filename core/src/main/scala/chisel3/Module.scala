@@ -251,7 +251,7 @@ package experimental {
 
     /** Legalized name of this module. */
     final lazy val name = try {
-      Builder.globalNamespace.name(desiredName)
+      if(this.isInstanceOf[ModuleAspect]) desiredName else Builder.globalNamespace.name(desiredName)
     } catch {
       case e: NullPointerException => throwException(
         s"Error: desiredName of ${this.getClass.getName} is null. Did you evaluate 'name' before all values needed by desiredName were available?", e)

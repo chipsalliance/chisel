@@ -46,17 +46,6 @@ private[chisel3] class Namespace(keywords: Set[String]) {
       sanitized
     }
   }
-
-  // Removes name from namespace
-  def clear(name: String): Option[Long] = {
-    val long = names.get(name)
-    names.remove(name)
-    long
-  }
-
-  def set(name: String, long: Long): Unit = {
-    names(name) = long
-  }
 }
 
 private[chisel3] object Namespace {
