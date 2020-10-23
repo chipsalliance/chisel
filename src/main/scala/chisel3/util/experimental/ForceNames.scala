@@ -17,11 +17,30 @@ import firrtl.stage.TransformManager.TransformDependency
 import scala.collection.mutable
 
 object forceName {
-  def apply(signal: => chisel3.Data, name: String): Unit = {
+
+  /** Force the name of this signal
+    * @param signal Signal to name
+    * @param name Name to force to
+    */
+  def apply(signal: => chisel3.Bits, name: String): Unit = {
     annotate(new ChiselAnnotation { def toFirrtl =
       ForceNameAnnotation(signal.toTarget, name)
     })
   }
+
+  /** Force the name of this signal to the name its given during Chisel compilation
+    * This will rename after potential renames from other Custom transforms during FIRRTL compilation
+    * @param signal Signal to name
+    */
+  def apply(signal: => chisel3.Bits): Unit = {
+    annotate(new ChiselAnnotation { def toFirrtl =
+      ForceNameAnnotation(signal.toTarget, signal.toTarget.ref)
+    })
+  }
+
+  /** Force the name of this instance to the name its given during Chisel compilation
+    * @param instance Instance to name
+    */
   def apply(instance: chisel3.experimental.BaseModule, name: String): Unit = {
     annotate(new ChiselAnnotation {
       def toFirrtl = {
@@ -30,6 +49,11 @@ object forceName {
       }
     })
   }
+
+  /** Force the name of this instance to the name its given during Chisel compilation
+    * This will rename after potential renames from other Custom transforms during FIRRTL compilation
+    * @param instance Signal to name
+    */
   def apply(instance: chisel3.experimental.BaseModule): Unit = {
     annotate(new ChiselAnnotation {
       def toFirrtl = {
@@ -40,18 +64,47 @@ object forceName {
   }
 }
 
+/** Links the user-specified name to force to, with the signal/instance in the FIRRTL design
+  * @throws CustomTransformException when the signal is renamed to >1 target
+  * @param target signal/instance to force the name
+  * @param name name to force it to be
+  */
 case class ForceNameAnnotation(target: IsMember, name: String)
     extends SingleTargetAnnotation[IsMember] {
   def duplicate(n: IsMember): ForceNameAnnotation = this.copy(target = n, name)
+
+  // Errors if renaming to multiple targets
+  override def update(renames: RenameMap): Seq[Annotation] = {
+    renames.get(target) match {
+      case None => List(this)
+      case Some(newTargets) if newTargets.size > 1 =>
+        throw CustomTransformException(
+          new FirrtlUserException(
+            s"Cannot force the name of $target to $name because it is renamed to $newTargets." +
+              " Perhaps $target is not a ground type?"
+          )
+        )
+      case Some(newTargets) => newTargets.map(t => duplicate(t))
+    }
+  }
 }
 
-
+/** Contains utility functions for [[ForceNamesTransform]] */
 object ForceNamesTransform {
+  /** Returns the [[IsModule]] which is referred to, or if a [[ReferenceTarget]], the enclosing [[IsModule]]
+    * @param a signal/instance/module
+    * @return referring IsModule
+    */
   def referringIsModule(a: IsMember): IsModule = a match {
     case b: ModuleTarget    => b
     case b: InstanceTarget  => b.targetParent
     case b: ReferenceTarget => b.copy(component = Nil).targetParent.asInstanceOf[IsModule]
   }
+
+  /** Returns a function which returns all instance paths to a given IsModule
+    * @param graph
+    * @return
+    */
   def allInstancePaths(graph: InstanceKeyGraph): IsModule => List[List[(Instance, OfModule)]] = {
     val lookup: String => List[List[(Instance, OfModule)]] =
       str => graph.findInstancesInHierarchy(str)
@@ -60,7 +113,13 @@ object ForceNamesTransform {
         .toList
     allInstancePaths(lookup) _
   }
-  // Use Lists because we want to recurse on inner List (head :: tail)-style
+
+  /** Returns a function which returns all instance paths to a given IsModule
+    * Uses Lists because we want to recurse on inner List (head :: tail)-style
+    * @param lookup given a module, return all paths to the module
+    * @param target target to get all instance paths to
+    * @return
+    */
   def allInstancePaths(lookup: String => List[List[(Instance, OfModule)]])
                       (target: IsModule): List[List[(Instance, OfModule)]] = {
     target match {
@@ -75,6 +134,12 @@ object ForceNamesTransform {
   }
 
 
+  /** Builds the map of module name to map of old signal/instance name to new signal/instance name
+    *
+    * @param state CircuitState to operate on
+    * @param igraph built instance key graph from state's circuit
+    * @return
+    */
   def buildForceNameMap(state: CircuitState,
                      igraph: => InstanceKeyGraph
                     ): Option[Map[String, Map[String, String]]] = {
@@ -113,32 +178,43 @@ object ForceNamesTransform {
     if (renames.nonEmpty) { Some(renames) } else None
   }
 
+  /** Returns a nice-looking instance path for error messages */
   def prettyPath(path: Seq[(Instance, OfModule)]): String =
     path.map { case (inst, of) => s"${inst.value}:${of.value}" }.mkString("/")
 }
 
-/** Prefixes all Modules (and SeqMem instances) with the prefix in a [[PrefixModulesAnnotation]]
-  *
-  * ReplSeqMems uses the name of the instance of the DefMemory, so we need to prefix that
-  *
-  * @note SeqMems are [[DefMemory]]s with readlatency = writelatency = 1
-  * @note Does NOT prefix ExtModules
-  * TODO
-  *  - Improve performance when prefixed modules don't have instances nor mems
+/** Forces the name of marked signals to a certain name
+  *   - If there is a conflict in the enclosing module's namespace, throws an exception
+  *   - Renames signals of ground types only. If you rename an intermediate module, it will throw an error
+  *   - Renames instances as well (as well as port names)
+  * Common usages:
+  *   - Use to avoid prefixing behavior on specific instances whose enclosing modules are inlined
+  * TODO:
+  *   - Add all documentation
   */
 class ForceNamesTransform extends Transform with DependencyAPIMigration {
-  // Must run before ExtractSeqMems and after ReplSeqMems
   override def optionalPrerequisites: Seq[TransformDependency] = Seq(Dependency[InlineInstances])
   override def optionalPrerequisiteOf: Seq[TransformDependency] = Forms.LowEmitters
-
   override def prerequisites: Seq[TransformDependency] = Seq(Dependency(LowerTypes))
-
   override def invalidates(a: Transform): Boolean = firrtl.passes.InferTypes == a
 
   import ForceNamesTransform._
 
-  private def forceNamesInModule(modToNames: Map[String, Map[String, String]], renameMap: RenameMap, ct: CircuitTarget, igraph: InstanceKeyGraph)
-                                (mod: DefModule): DefModule = {
+  /** Renames signals/instances in a module
+    *
+    * @throws FirrtlUserException
+    * @param modToNames Maps module name to map of old signal/instance name to new signal/instance name
+    * @param renameMap Record renames
+    * @param ct Circuit target
+    * @param igraph InstanceKeyGraph of parent circuit
+    * @param mod Enclosing module of the names to force
+    * @return
+    */
+  private def forceNamesInModule(
+    modToNames: Map[String, Map[String, String]],
+    renameMap: RenameMap,
+    ct: CircuitTarget, igraph: InstanceKeyGraph
+  )(mod: DefModule): DefModule = {
 
     val mt = ct.module(mod.name)
     val instToOfModule = mutable.HashMap[String, String]()
@@ -185,16 +261,22 @@ class ForceNamesTransform extends Transform with DependencyAPIMigration {
       }.isDefined
 
     if(childInstanceHasRename || modToNames.contains(mod.name)) {
-      mod.map(onPort).map(onStmt)
+      val ns = Namespace(mod)
+      val conflicts = names.values.collect { case k if ns.contains(k) => k }
+      if(conflicts.isEmpty) {
+        mod.map(onPort).map(onStmt)
+      } else {
+        throw new FirrtlUserException(s"Cannot force the following names in module ${mod.name} because they conflict: ${conflicts.mkString(",")}")
+      }
     } else mod
   }
 
   def execute(state: CircuitState): CircuitState = {
-    // Lazy so that it won't be calculated unless buildPrefixMap finds requisite annotations
+    // Lazy so that it won't be calculated unless buildForceNameMap finds names to force
     lazy val igraph = InstanceKeyGraph(state.circuit)
     buildForceNameMap(state, igraph) match {
       case None =>
-        logger.warn("No prefixes found, skipping...")
+        logger.warn("No force names found, skipping...")
         state
       case Some(names) =>
         val renames = RenameMap()

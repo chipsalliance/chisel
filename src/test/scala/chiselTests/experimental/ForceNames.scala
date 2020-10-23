@@ -2,19 +2,17 @@
 
 package chiselTests
 
-import org.scalatest._
 import firrtl._
 import chisel3._
-import java.io.File
-
+import chisel3.core.annotate
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
-import chisel3.util.experimental.InlineInstance
+import chisel3.util.experimental.{ForceNameAnnotation, ForceNamesTransform, InlineInstance, forceName}
+import firrtl.annotations.{Annotation, ReferenceTarget}
 import firrtl.options.{Dependency, TargetDirAnnotation}
 import firrtl.stage.RunFirrtlTransformAnnotation
 import logger.{LogLevel, LogLevelAnnotation}
 
-import scala.io.Source
-
+/** Object containing Modules used for testing */
 object ForceNamesHierarchy {
   class WrapperExample extends MultiIOModule {
     val IN = IO(Input(UInt(3.W)))
@@ -45,53 +43,67 @@ object ForceNamesHierarchy {
     OUT := inst.OUT
     forceName(inst.IN, "in")
   }
+  class ConflictingName extends MultiIOModule {
+    val IN = IO(Input(UInt(3.W)))
+    val OUT = IO(Output(UInt(3.W)))
+    OUT := IN
+    forceName(OUT, "IN")
+  }
+  class BundleName extends MultiIOModule {
+    val IN = IO(new Bundle {
+      val a = Input(UInt(3.W))
+      val b = Input(UInt(3.W))
+    })
+    val OUT = IO(Output(UInt(3.W)))
+    OUT := IN.a + IN.b
+  }
 }
 
-class ForceNamesSpec extends FlatSpec with Matchers with chisel3.BackendCompilationUtilities with Utils with Inside {
+class ForceNamesSpec extends ChiselFlatSpec {
 
-  val targetDir = clearTestDir(baseTestDir)
-
-  def recursiveListFiles(f: File): Seq[File] =
-    if (f.isDirectory) {
-      f.listFiles.flatMap(recursiveListFiles)
-    } else {
-      Seq(f)
+  def run[T <: RawModule](dut: => T, testName: String, inputAnnos: Seq[Annotation] = Nil, info: LogLevel.Value = LogLevel.None): Iterable[String] = {
+    def stage = new ChiselStage {
+      override val targets = Seq(
+        Dependency[chisel3.stage.phases.Elaborate],
+        Dependency[chisel3.stage.phases.Convert],
+        Dependency[firrtl.stage.phases.Compiler],
+      )
     }
 
-  def stage = new ChiselStage {
-    override val targets = Seq(
-      Dependency[chisel3.stage.phases.Elaborate],
-      Dependency[chisel3.stage.phases.Convert],
-      Dependency[firrtl.stage.phases.Compiler],
-    )
-  }
-
-  def run[T <: RawModule](dut: => T, testName: String, info: LogLevel.Value = LogLevel.None): List[String] = {
-    val testDir = targetDir.getAbsolutePath + s"/$testName"
     val annos = List(
-      TargetDirAnnotation(testDir),
+      TargetDirAnnotation("test_run_dir/ForceNames"),
       LogLevelAnnotation(info),
       RunFirrtlTransformAnnotation(new ForceNamesTransform),
       ChiselGeneratorAnnotation(() => dut)
-    )
+    ) ++ inputAnnos
 
-    stage.execute(Array(), annos)
+    val ret = stage.execute(Array(), annos)
+    val verilog = ret.collectFirst {
+      case e: EmittedVerilogCircuitAnnotation => e.value.value
+    }.get
 
-    val src = Source.fromFile(recursiveListFiles(new File(testDir)).head)
-    val list = src.getLines.toList
-    src.close()
-    list
-
+    verilog.split("\\\n")
   }
   "Force Names on a wrapping instance" should "work" in {
     val verilog = run(new ForceNamesHierarchy.WrapperExample, "wrapper")
     exactly(1, verilog) should include ("MyLeaf INST")
   }
   "Force Names on an instance port" should "work" in {
-    val verilog = run(new ForceNamesHierarchy.RenamePortsExample, "instports", LogLevel.Info)
+    val verilog = run(new ForceNamesHierarchy.RenamePortsExample, "instports")
     atLeast(1, verilog) should include ("input  [2:0] in")
   }
-  "Force Names with a conflicting name" should "work or error" in {
-
+  "Force Names with a conflicting name" should "error" in {
+    intercept[CustomTransformException] {
+      run(new ForceNamesHierarchy.ConflictingName, "conflicts")
+    }
+  }
+  "Force Names of an intermediate bundle" should "error" in {
+    intercept[CustomTransformException] {
+      run(
+        new ForceNamesHierarchy.BundleName,
+        "bundlename",
+        Seq(ForceNameAnnotation(ReferenceTarget("BundleName", "BundleName", Nil, "IN", Nil), "in"))
+      )
+    }
   }
 }
