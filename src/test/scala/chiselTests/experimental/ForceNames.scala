@@ -73,7 +73,6 @@ class ForceNamesSpec extends ChiselFlatSpec {
     val annos = List(
       TargetDirAnnotation("test_run_dir/ForceNames"),
       LogLevelAnnotation(info),
-      RunFirrtlTransformAnnotation(new ForceNamesTransform),
       ChiselGeneratorAnnotation(() => dut)
     ) ++ inputAnnos
 

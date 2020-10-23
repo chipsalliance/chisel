@@ -2,7 +2,7 @@
 
 package chisel3.util.experimental
 
-import chisel3.experimental.{annotate, ChiselAnnotation}
+import chisel3.experimental.{ChiselAnnotation, RunFirrtlTransform, annotate}
 import firrtl.Mappers._
 import firrtl._
 import firrtl.annotations._
@@ -23,8 +23,9 @@ object forceName {
     * @param name Name to force to
     */
   def apply(signal: => chisel3.Bits, name: String): Unit = {
-    annotate(new ChiselAnnotation { def toFirrtl =
-      ForceNameAnnotation(signal.toTarget, name)
+    annotate(new ChiselAnnotation with RunFirrtlTransform {
+      def toFirrtl = ForceNameAnnotation(signal.toTarget, name)
+      override def transformClass: Class[_ <: Transform] = classOf[ForceNamesTransform]
     })
   }
 
@@ -33,8 +34,9 @@ object forceName {
     * @param signal Signal to name
     */
   def apply(signal: => chisel3.Bits): Unit = {
-    annotate(new ChiselAnnotation { def toFirrtl =
-      ForceNameAnnotation(signal.toTarget, signal.toTarget.ref)
+    annotate(new ChiselAnnotation with RunFirrtlTransform {
+      def toFirrtl = ForceNameAnnotation(signal.toTarget, signal.toTarget.ref)
+      override def transformClass: Class[_ <: Transform] = classOf[ForceNamesTransform]
     })
   }
 
@@ -42,11 +44,12 @@ object forceName {
     * @param instance Instance to name
     */
   def apply(instance: chisel3.experimental.BaseModule, name: String): Unit = {
-    annotate(new ChiselAnnotation {
+    annotate(new ChiselAnnotation with RunFirrtlTransform  {
       def toFirrtl = {
         val t = instance.toAbsoluteTarget
         ForceNameAnnotation(t, name)
       }
+      override def transformClass: Class[_ <: Transform] = classOf[ForceNamesTransform]
     })
   }
 
@@ -55,11 +58,12 @@ object forceName {
     * @param instance Signal to name
     */
   def apply(instance: chisel3.experimental.BaseModule): Unit = {
-    annotate(new ChiselAnnotation {
+    annotate(new ChiselAnnotation with RunFirrtlTransform  {
       def toFirrtl = {
         val t = instance.toAbsoluteTarget
         ForceNameAnnotation(t, instance.instanceName)
       }
+      override def transformClass: Class[_ <: Transform] = classOf[ForceNamesTransform]
     })
   }
 }
