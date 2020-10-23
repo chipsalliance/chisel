@@ -15,47 +15,47 @@ import logger.{LogLevel, LogLevelAnnotation}
 /** Object containing Modules used for testing */
 object ForceNamesHierarchy {
   class WrapperExample extends MultiIOModule {
-    val IN = IO(Input(UInt(3.W)))
-    val OUT = IO(Output(UInt(3.W)))
+    val in = IO(Input(UInt(3.W)))
+    val out = IO(Output(UInt(3.W)))
     val inst = Module(new Wrapper)
-    inst.IN := IN
-    OUT := inst.OUT
-    forceName(OUT, "out")
+    inst.in := in
+    out := inst.out
+    forceName(out, "outt")
   }
   class Wrapper extends MultiIOModule with InlineInstance {
-    val IN = IO(Input(UInt(3.W)))
-    val OUT = IO(Output(UInt(3.W)))
+    val in = IO(Input(UInt(3.W)))
+    val out = IO(Output(UInt(3.W)))
     val inst = Module(new MyLeaf)
-    forceName(inst, "INST")
-    inst.IN := IN
-    OUT := inst.OUT
+    forceName(inst, "inst")
+    inst.in := in
+    out := inst.out
   }
   class MyLeaf extends MultiIOModule {
-    val IN = IO(Input(UInt(3.W)))
-    val OUT = IO(Output(UInt(3.W)))
-    OUT := IN
+    val in = IO(Input(UInt(3.W)))
+    val out = IO(Output(UInt(3.W)))
+    out := in
   }
   class RenamePortsExample extends MultiIOModule {
-    val IN = IO(Input(UInt(3.W)))
-    val OUT = IO(Output(UInt(3.W)))
+    val in = IO(Input(UInt(3.W)))
+    val out = IO(Output(UInt(3.W)))
     val inst = Module(new MyLeaf)
-    inst.IN := IN
-    OUT := inst.OUT
-    forceName(inst.IN, "in")
+    inst.in := in
+    out := inst.out
+    forceName(inst.in, "inn")
   }
   class ConflictingName extends MultiIOModule {
-    val IN = IO(Input(UInt(3.W)))
-    val OUT = IO(Output(UInt(3.W)))
-    OUT := IN
-    forceName(OUT, "IN")
+    val in = IO(Input(UInt(3.W)))
+    val out = IO(Output(UInt(3.W)))
+    out := in
+    forceName(out, "in")
   }
   class BundleName extends MultiIOModule {
-    val IN = IO(new Bundle {
+    val in = IO(new Bundle {
       val a = Input(UInt(3.W))
       val b = Input(UInt(3.W))
     })
-    val OUT = IO(Output(UInt(3.W)))
-    OUT := IN.a + IN.b
+    val out = IO(Output(UInt(3.W)))
+    out := in.a + in.b
   }
 }
 
@@ -85,11 +85,11 @@ class ForceNamesSpec extends ChiselFlatSpec {
   }
   "Force Names on a wrapping instance" should "work" in {
     val verilog = run(new ForceNamesHierarchy.WrapperExample, "wrapper")
-    exactly(1, verilog) should include ("MyLeaf INST")
+    exactly(1, verilog) should include ("MyLeaf inst")
   }
   "Force Names on an instance port" should "work" in {
     val verilog = run(new ForceNamesHierarchy.RenamePortsExample, "instports")
-    atLeast(1, verilog) should include ("input  [2:0] in")
+    atLeast(1, verilog) should include ("input  [2:0] inn")
   }
   "Force Names with a conflicting name" should "error" in {
     intercept[CustomTransformException] {
@@ -101,7 +101,7 @@ class ForceNamesSpec extends ChiselFlatSpec {
       run(
         new ForceNamesHierarchy.BundleName,
         "bundlename",
-        Seq(ForceNameAnnotation(ReferenceTarget("BundleName", "BundleName", Nil, "IN", Nil), "in"))
+        Seq(ForceNameAnnotation(ReferenceTarget("BundleName", "BundleName", Nil, "in", Nil), "inn"))
       )
     }
   }

@@ -19,28 +19,33 @@ import scala.collection.mutable
 object forceName {
 
   /** Force the name of this signal
+    *
     * @param signal Signal to name
     * @param name Name to force to
     */
-  def apply(signal: => chisel3.Bits, name: String): Unit = {
+  def apply[T <: chisel3.Element](signal: T, name: String): T = {
     annotate(new ChiselAnnotation with RunFirrtlTransform {
       def toFirrtl = ForceNameAnnotation(signal.toTarget, name)
       override def transformClass: Class[_ <: Transform] = classOf[ForceNamesTransform]
     })
+    signal
   }
 
   /** Force the name of this signal to the name its given during Chisel compilation
+    *
     * This will rename after potential renames from other Custom transforms during FIRRTL compilation
     * @param signal Signal to name
     */
-  def apply(signal: => chisel3.Bits): Unit = {
+  def apply[T <: chisel3.Element](signal: T): T = {
     annotate(new ChiselAnnotation with RunFirrtlTransform {
       def toFirrtl = ForceNameAnnotation(signal.toTarget, signal.toTarget.ref)
       override def transformClass: Class[_ <: Transform] = classOf[ForceNamesTransform]
     })
+    signal
   }
 
   /** Force the name of this instance to the name its given during Chisel compilation
+    *
     * @param instance Instance to name
     */
   def apply(instance: chisel3.experimental.BaseModule, name: String): Unit = {
@@ -54,6 +59,7 @@ object forceName {
   }
 
   /** Force the name of this instance to the name its given during Chisel compilation
+    *
     * This will rename after potential renames from other Custom transforms during FIRRTL compilation
     * @param instance Signal to name
     */
@@ -69,6 +75,7 @@ object forceName {
 }
 
 /** Links the user-specified name to force to, with the signal/instance in the FIRRTL design
+  *
   * @throws CustomTransformException when the signal is renamed to >1 target
   * @param target signal/instance to force the name
   * @param name name to force it to be
@@ -79,23 +86,27 @@ case class ForceNameAnnotation(target: IsMember, name: String)
 
   // Errors if renaming to multiple targets
   override def update(renames: RenameMap): Seq[Annotation] = {
-    renames.get(target) match {
-      case None => List(this)
-      case Some(newTargets) if newTargets.size > 1 =>
+    (target, renames.get(target)) match {
+      case (_, None) => List(this)
+      case (_: ReferenceTarget, Some(newTargets)) if newTargets.size > 1 =>
         throw CustomTransformException(
           new FirrtlUserException(
             s"Cannot force the name of $target to $name because it is renamed to $newTargets." +
               " Perhaps $target is not a ground type?"
           )
         )
-      case Some(newTargets) => newTargets.map(t => duplicate(t))
+      case (_, Some(newTargets)) => newTargets.map(t => duplicate(t))
     }
   }
 }
 
-/** Contains utility functions for [[ForceNamesTransform]] */
-object ForceNamesTransform {
+/** Contains utility functions for [[ForceNamesTransform]]
+  *
+  * Could (should?) be moved to FIRRTL.
+  */
+private object ForceNamesTransform {
   /** Returns the [[IsModule]] which is referred to, or if a [[ReferenceTarget]], the enclosing [[IsModule]]
+    *
     * @param a signal/instance/module
     * @return referring IsModule
     */
@@ -106,6 +117,7 @@ object ForceNamesTransform {
   }
 
   /** Returns a function which returns all instance paths to a given IsModule
+    *
     * @param graph
     * @return
     */
@@ -119,7 +131,7 @@ object ForceNamesTransform {
   }
 
   /** Returns a function which returns all instance paths to a given IsModule
-    * Uses Lists because we want to recurse on inner List (head :: tail)-style
+    *
     * @param lookup given a module, return all paths to the module
     * @param target target to get all instance paths to
     * @return
@@ -151,13 +163,13 @@ object ForceNamesTransform {
     val badNames = mutable.HashSet[ForceNameAnnotation]()
     val allNameMaps = forceNames.groupBy { case f => referringIsModule(f.target) }.mapValues { value =>
       value.flatMap {
-        case f@ForceNameAnnotation(rt: ReferenceTarget, name) if rt.component.nonEmpty =>
+        case f @ ForceNameAnnotation(rt: ReferenceTarget, name) if rt.component.nonEmpty =>
           badNames += f
           None
         case ForceNameAnnotation(rt: ReferenceTarget, name) => Some(rt.ref -> name)
         case ForceNameAnnotation(it: InstanceTarget, name) => Some(it.instance -> name)
       }.toMap
-    }
+    }.toSeq
     val renames: Map[String, Map[String, String]] = {
       val lookup = allInstancePaths(igraph)
       val seen = mutable.Map.empty[List[(Instance, OfModule)], Map[String, String]]
@@ -177,9 +189,9 @@ object ForceNamesTransform {
       }
       allNameMaps.map {
         case (isModule, nameMap) => Target.referringModule(isModule).module -> nameMap
-      }
+      }.toMap
     }
-    if (renames.nonEmpty) { Some(renames) } else None
+    if (renames.nonEmpty) Some(renames) else None
   }
 
   /** Returns a nice-looking instance path for error messages */
@@ -215,7 +227,8 @@ class ForceNamesTransform extends Transform with DependencyAPIMigration {
   private def forceNamesInModule(
     modToNames: Map[String, Map[String, String]],
     renameMap: RenameMap,
-    ct: CircuitTarget, igraph: InstanceKeyGraph
+    ct: CircuitTarget,
+    igraph: InstanceKeyGraph
   )(mod: DefModule): DefModule = {
 
     val mt = ct.module(mod.name)
@@ -223,8 +236,8 @@ class ForceNamesTransform extends Transform with DependencyAPIMigration {
     val names = modToNames.getOrElse(mod.name, Map.empty[String, String])
     // Need to find WRef referring to mems for prefixing
     def onExpr(expr: Expression): Expression = expr match {
-      case wref @ WRef(n, _,_,_) if names.contains(n) =>
-        wref.copy(name = names(n))
+      case ref @ Reference(n, _,_,_) if names.contains(n) =>
+        ref.copy(name = names(n))
       case sub @ SubField(WRef(i, _, _, _), p,_,_) if instToOfModule.contains(i) =>
         val newsub = modToNames.get(instToOfModule(i)) match {
           case Some(map) if map.contains(p) => sub.copy(name = map(p))
@@ -243,8 +256,6 @@ class ForceNamesTransform extends Transform with DependencyAPIMigration {
       case inst: DefInstance =>
         instToOfModule(inst.name) = inst.module
         inst
-      case error @ (_: WDefInstanceConnector) =>
-        throw new Exception(s"Unexpected instance object $error")
       // Prefix SeqMems because they result in Verilog modules
       case named: IsDeclaration if names.contains(named.name) =>
         renameMap.record(mt.ref(named.name), mt.ref(names(named.name)))
@@ -258,9 +269,9 @@ class ForceNamesTransform extends Transform with DependencyAPIMigration {
       } else port
     }
 
-    val childInstanceHasRename = igraph.getChildInstanceMap(OfModule(mod.name)).valuesIterator.collectFirst {
-        case o if modToNames.contains(o.value) => o
-      }.isDefined
+    val childInstanceHasRename = igraph.getChildInstanceMap(OfModule(mod.name)).exists {
+      o => modToNames.contains(o._2.value)
+    }
 
     if(childInstanceHasRename || modToNames.contains(mod.name)) {
       val ns = Namespace(mod)

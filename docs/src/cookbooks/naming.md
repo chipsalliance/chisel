@@ -69,24 +69,24 @@ In cases where a FIRRTL transform renames a signal/instance, you can use the `fo
 import chisel3.util.experimental.{forceName, InlineInstance}
 
 class WrapperExample extends MultiIOModule {
-  val IN = IO(Input(UInt(3.W)))
-  val OUT = IO(Output(UInt(3.W)))
+  val in = IO(Input(UInt(3.W)))
+  val out = IO(Output(UInt(3.W)))
   val inst = Module(new Wrapper)
-  inst.IN := IN
-  OUT := inst.OUT
+  inst.in := in
+  out := inst.out
 }
 class Wrapper extends MultiIOModule with InlineInstance {
-  val IN = IO(Input(UInt(3.W)))
-  val OUT = IO(Output(UInt(3.W)))
+  val in = IO(Input(UInt(3.W)))
+  val out = IO(Output(UInt(3.W)))
   val inst = Module(new MyLeaf)
-  forceName(inst, "INST")
-  inst.IN := IN
-  OUT := inst.OUT
+  forceName(inst, "inst")
+  inst.in := in
+  out := inst.out
 }
 class MyLeaf extends MultiIOModule {
-  val IN = IO(Input(UInt(3.W)))
-  val OUT = IO(Output(UInt(3.W)))
-  OUT := IN
+  val in = IO(Input(UInt(3.W)))
+  val out = IO(Output(UInt(3.W)))
+  out := in
 }
 
 println(ChiselStage.emitVerilog(new WrapperExample))
