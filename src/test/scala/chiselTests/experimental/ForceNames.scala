@@ -66,7 +66,7 @@ class ForceNamesSpec extends ChiselFlatSpec {
       override val targets = Seq(
         Dependency[chisel3.stage.phases.Elaborate],
         Dependency[chisel3.stage.phases.Convert],
-        Dependency[firrtl.stage.phases.Compiler],
+        Dependency[firrtl.stage.phases.Compiler]
       )
     }
 
