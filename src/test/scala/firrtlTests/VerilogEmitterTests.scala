@@ -5,10 +5,10 @@ package firrtlTests
 import java.io.File
 
 import firrtl._
+import firrtl.stage._
 import firrtl.annotations._
 import firrtl.passes._
-import firrtl.transforms.VerilogRename
-import firrtl.transforms.CombineCats
+import firrtl.transforms.{CombineCats, NoDCEAnnotation}
 import firrtl.testutils._
 import firrtl.testutils.FirrtlCheckers._
 import firrtl.util.BackendCompilationUtilities
@@ -441,32 +441,51 @@ class VerilogEmitterSpec extends FirrtlFlatSpec {
          |    node const = add(UInt<4>("h1"), UInt<3>("h1"))
          |    fork <= const
          |""".stripMargin
-    val check_firrtl =
-      """|circuit parameter_:
-         |  module parameter_:
-         |    input always____: UInt<1>
-         |    output always$: UInt<1>
-         |    inst assign_ of endmodule__
-         |    inst edge_ of endmodule_
-         |    node always_ = not(always____)
-         |    node always__ = and(always_, assign_.fork_)
-         |    node always___ = and(always__, edge_.fork_)
-         |    always$ <= always___
-         |  module endmodule__:
-         |    output fork_: UInt<1>
-         |    node const_ = add(UInt<4>("h1"), UInt<3>("h2"))
-         |    fork_ <= const_
-         |  module endmodule_:
-         |    output fork_: UInt<1>
-         |    node const_ = add(UInt<4>("h1"), UInt<3>("h1"))
-         |    fork_ <= const_
-         |""".stripMargin
-    val state = CircuitState(parse(input), UnknownForm, Seq.empty, None)
-    val output = Seq(ToWorkingIR, ResolveKinds, InferTypes, new VerilogRename)
-      .foldLeft(state) { case (c, tx) => tx.runTransform(c) }
-    Seq(CheckHighForm)
-      .foldLeft(output.circuit) { case (c, tx) => tx.run(c) }
-    output.circuit.serialize should be(parse(check_firrtl).serialize)
+    val check =
+      """module parameter_(
+        |  input   always____,
+        |  output  always$
+        |);
+        |  wire  assign__fork_;
+        |  wire  edge__fork_;
+        |  wire  always_ = ~always____;
+        |  wire  always__ = always_;
+        |  wire  always___ = 1'h0;
+        |  endmodule__ assign_ (
+        |    .fork_(assign__fork_)
+        |  );
+        |  endmodule_ edge_ (
+        |    .fork_(edge__fork_)
+        |  );
+        |  assign always$ = 1'h0;
+        |endmodule
+        |module endmodule__(
+        |  output  fork_
+        |);
+        |  wire [4:0] const_ = 5'h3;
+        |  assign fork_ = 1'h1;
+        |endmodule
+        |module endmodule_(
+        |  output  fork_
+        |);
+        |  wire [4:0] const_ = 5'h2;
+        |  assign fork_ = 1'h0;
+        |endmodule
+        |""".stripMargin.split('\n')
+    val circuit = parse(input)
+    val annotations = (new FirrtlStage).transform(
+      Seq(
+        FirrtlCircuitAnnotation(circuit),
+        NoDCEAnnotation,
+        EmitCircuitAnnotation(classOf[VerilogEmitter])
+      )
+    )
+    CircuitState(
+      annotations.collectFirst {
+        case FirrtlCircuitAnnotation(circuit) => circuit
+      }.get,
+      annotations
+    ) should containLines(check: _*)
   }
 
   behavior.of("Register Updates")
