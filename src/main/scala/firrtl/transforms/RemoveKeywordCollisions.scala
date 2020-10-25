@@ -47,6 +47,4 @@ class VerilogRename extends RemoveKeywordCollisions(v_keywords) {
 
   override def optionalPrerequisiteOf = Seq.empty
 
-  override def invalidates(a: Transform) = false
-
 }
