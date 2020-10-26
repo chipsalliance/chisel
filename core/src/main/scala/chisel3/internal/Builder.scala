@@ -627,7 +627,11 @@ private[chisel3] object Builder {
 
 
   def build[T <: RawModule](f: => T): (Circuit, T) = {
-    dynamicContextVar.withValue(Some(new DynamicContext())) {
+    build(f, new DynamicContext())
+  }
+
+  private [chisel3] def build[T <: RawModule](f: => T, dynamicContext: DynamicContext): (Circuit, T) = {
+    dynamicContextVar.withValue(Some(dynamicContext)) {
       checkScalaVersion()
       errors.info("Elaborating design...")
       val mod = f
