@@ -198,7 +198,8 @@ private[chisel3] trait HasId extends InstanceId {
     }
 
   private var _ref: Option[Arg] = None
-  private[chisel3] def setRef(imm: Arg, force: Boolean = false): Unit = {
+  private[chisel3] def setRef(imm: Arg): Unit = setRef(imm, false)
+  private[chisel3] def setRef(imm: Arg, force: Boolean): Unit = {
     assert(force || _ref.isEmpty, s"Internal Error, setRef for $this called twice! first ${_ref.get}, second $imm")
     _ref = Some(imm)
   }
