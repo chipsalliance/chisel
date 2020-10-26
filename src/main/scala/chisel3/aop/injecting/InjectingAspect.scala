@@ -46,6 +46,16 @@ abstract class InjectorAspect[T <: RawModule, M <: RawModule](
     toAnnotation(selectRoots(top), top.name, moduleNames)
   }
 
+ 
+  /** Returns annotations which contain all injection logic
+    *
+    * @param modules The modules to inject into
+    * @param circuit Top level circuit
+    * @return
+    */
+  @deprecated("Use other toAnnotation method to pass in names of all existing modules", "3.4.1")
+  final def toAnnotation(modules: Iterable[M], circuit: String): AnnotationSeq = toAnnotation(modules, circuit, Nil)
+ 
   /** Returns annotations which contain all injection logic
     *
     * @param modules The modules to inject into
