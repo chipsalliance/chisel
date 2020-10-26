@@ -249,6 +249,7 @@ class LoweringCompilersSpec extends AnyFlatSpec with Matchers {
       new firrtl.transforms.FlattenRegUpdate,
       firrtl.passes.VerilogModulusCleanup,
       new firrtl.transforms.VerilogRename,
+      firrtl.passes.InferTypes,
       firrtl.passes.VerilogPrep,
       new firrtl.AddDescriptionNodes
     )
@@ -273,6 +274,7 @@ class LoweringCompilersSpec extends AnyFlatSpec with Matchers {
       new firrtl.transforms.DeadCodeElimination,
       firrtl.passes.VerilogModulusCleanup,
       new firrtl.transforms.VerilogRename,
+      firrtl.passes.InferTypes,
       firrtl.passes.VerilogPrep,
       new firrtl.AddDescriptionNodes
     )
