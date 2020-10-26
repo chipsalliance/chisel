@@ -60,3 +60,36 @@ class ExampleNoPrefix extends MultiIOModule {
 
 println(ChiselStage.emitVerilog(new ExampleNoPrefix))
 ```
+
+### I am still not getting the name I want. For example, inlining an instance changes my name!
+
+In cases where a FIRRTL transform renames a signal/instance, you can use the `forcename` API:
+
+```scala mdoc
+import chisel3.util.experimental.{forceName, InlineInstance}
+
+class WrapperExample extends MultiIOModule {
+  val in = IO(Input(UInt(3.W)))
+  val out = IO(Output(UInt(3.W)))
+  val inst = Module(new Wrapper)
+  inst.in := in
+  out := inst.out
+}
+class Wrapper extends MultiIOModule with InlineInstance {
+  val in = IO(Input(UInt(3.W)))
+  val out = IO(Output(UInt(3.W)))
+  val inst = Module(new MyLeaf)
+  forceName(inst, "inst")
+  inst.in := in
+  out := inst.out
+}
+class MyLeaf extends MultiIOModule {
+  val in = IO(Input(UInt(3.W)))
+  val out = IO(Output(UInt(3.W)))
+  out := in
+}
+
+println(ChiselStage.emitVerilog(new WrapperExample))
+```
+
+This can be used to rename instances and non-aggregate typed signals.
