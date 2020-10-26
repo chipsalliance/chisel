@@ -99,7 +99,7 @@ private[chisel3] trait HasId extends InstanceId {
   private val construction_prefix: Prefix = Builder.getPrefix()
 
   // Prefix when the latest [[suggestSeed]] or [[autoSeed]] is called
-  private var prefix_seed: Prefix = List.empty[Either[String, Data]]
+  private var prefix_seed: Prefix = Nil
 
   // Post-seed hooks called to carry the suggested seeds to other candidates as needed
   private val suggest_postseed_hooks = scala.collection.mutable.ListBuffer.empty[String=>Unit]
@@ -149,21 +149,6 @@ private[chisel3] trait HasId extends InstanceId {
     * @return the name, if it can be computed
     */
   def computeName(defaultPrefix: Option[String], defaultSeed: Option[String]): Option[String] = {
-    // Recursively builds a name if referenced fields of an aggregate type
-    def buildAggName(id: HasId): Option[String] = {
-      def recArg(node: Arg): Option[String] = node match {
-        case Slot(imm, name) => recArg(imm).map(_ + "_" + name)
-        case Index(imm, ILit(num)) => recArg(imm).map(_ + "_" + num)
-        case Index(imm, n: LitArg) => recArg(imm).map(_ + "_" + n.num)
-        case Index(imm, _: Node) => recArg(imm)
-        case Node(id) => recArg(id.getOptionRef.get)
-        case Ref(name) => Some(name)
-        case ModuleIO(mod, name) if _parent.contains(mod) => Some(name)
-        case ModuleIO(mod, name) => recArg(mod.getRef).map(_ + "_" + name)
-      }
-      id.getOptionRef.flatMap(recArg)
-    }
-
     /** Computes a name of this signal, given the seed and prefix
       * @param seed
       * @param prefix
@@ -171,26 +156,18 @@ private[chisel3] trait HasId extends InstanceId {
       */
     def buildName(seed: String, prefix: Prefix): String = {
       val builder = new StringBuilder()
-      prefix.foreach {
-        case Left(s: String) => builder ++= s + "_"
-        case Right(d: HasId) =>
-          buildAggName(d) match {
-            case Some(n) => builder ++= n + "_"
-            case _ =>
-          }
-        case _ =>
-      }
+      prefix.foreach(builder ++= _ + "_")
       builder ++= seed
       builder.toString
     }
 
-    if(hasSeed) {
-      Some(buildName(seedOpt.get, prefix_seed))
+    if (hasSeed) {
+      Some(buildName(seedOpt.get, prefix_seed.reverse))
     } else {
       defaultSeed.map { default =>
         defaultPrefix match {
-          case Some(p) => buildName(default, Left(p) +: construction_prefix)
-          case None => buildName(default, construction_prefix)
+          case Some(p) => buildName(default, p :: construction_prefix.reverse)
+          case None => buildName(default, construction_prefix.reverse)
         }
       }
     }
@@ -221,7 +198,10 @@ private[chisel3] trait HasId extends InstanceId {
     }
 
   private var _ref: Option[Arg] = None
-  private[chisel3] def setRef(imm: Arg): Unit = _ref = Some(imm)
+  private[chisel3] def setRef(imm: Arg, force: Boolean = false): Unit = {
+    assert(force || _ref.isEmpty, s"Internal Error, setRef for $this called twice! first ${_ref.get}, second $imm")
+    _ref = Some(imm)
+  }
   private[chisel3] def setRef(parent: HasId, name: String): Unit = setRef(Slot(Node(parent), name))
   private[chisel3] def setRef(parent: HasId, index: Int): Unit = setRef(Index(Node(parent), ILit(index)))
   private[chisel3] def setRef(parent: HasId, index: UInt): Unit = setRef(Index(Node(parent), index.ref))
@@ -315,7 +295,7 @@ private[chisel3] class ChiselContext() {
   val bundleStack: ArrayBuffer[(Bundle, String, String, Int)] = ArrayBuffer()
 
   // Records the different prefixes which have been scoped at this point in time
-  val prefixStack: ArrayBuffer[Either[String, HasId]] = ArrayBuffer()
+  var prefixStack: Prefix = Nil
 }
 
 private[chisel3] class DynamicContext() {
@@ -342,7 +322,7 @@ private[chisel3] class DynamicContext() {
 private[chisel3] object Builder {
 
   // Represents the current state of the prefixes given
-  type Prefix = List[Either[String, Data]]
+  type Prefix = List[String]
 
   // All global mutable state must be referenced via dynamicContextVar!!
   private val dynamicContextVar = new DynamicVariable[Option[DynamicContext]](None)
@@ -379,42 +359,70 @@ private[chisel3] object Builder {
   def annotations: ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
   def namingStack: NamingStack = dynamicContext.namingStack
 
-  // Puts either a prefix string or hasId onto the prefix stack
-  def pushPrefix(d: Either[String, HasId]): Unit = {
-    chiselContext.get().prefixStack += d
-  }
-
   // Puts a prefix string onto the prefix stack
   def pushPrefix(d: String): Unit = {
-    chiselContext.get().prefixStack += Left(d)
+    val context = chiselContext.get()
+    context.prefixStack = d :: context.prefixStack
   }
 
-  // Puts a prefix data onto the prefix stack
-  def pushPrefix(d: HasId): Unit = {
-    chiselContext.get().prefixStack += Right(d)
+  /** Pushes the current name of a data onto the prefix stack
+    *
+    * @param d data to derive prefix from
+    * @return whether anything was pushed to the stack
+    */
+  def pushPrefix(d: HasId): Boolean = {
+    def buildAggName(id: HasId): Option[String] = {
+      def getSubName(field: Data): Option[String] = field.getOptionRef.flatMap {
+        case Slot(_, field) => Some(field) // Record
+        case Index(_, ILit(n)) => Some(n.toString) // Vec static indexing
+        case Index(_, ULit(n, _)) => Some(n.toString) // Vec lit indexing
+        case Index(_, _: Node) => None // Vec dynamic indexing
+        case ModuleIO(_, n) => Some(n) // BlackBox port
+      }
+      def map2[A, B](a: Option[A], b: Option[A])(f: (A, A) => B): Option[B] =
+        a.flatMap(ax => b.map(f(ax, _)))
+      // If the binding is None, this is an illegal connection and later logic will error
+      def recData(data: Data): Option[String] = data.binding.flatMap {
+        case (_: WireBinding | _: RegBinding | _: MemoryPortBinding | _: OpBinding) => data.seedOpt
+        case ChildBinding(parent) => recData(parent).map { p =>
+          // And name of the field if we have one, we don't for dynamic indexing of Vecs
+          getSubName(data).map(p + "_" + _).getOrElse(p)
+        }
+        case SampleElementBinding(parent) => recData(parent)
+        case PortBinding(mod) if Builder.currentModule.contains(mod) => data.seedOpt
+        case PortBinding(mod) => map2(mod.seedOpt, data.seedOpt)(_ + "_" + _)
+        case (_: LitBinding | _: DontCareBinding) => None
+      }
+      id match {
+        case d: Data => recData(d)
+        case _ => None
+      }
+    }
+    buildAggName(d).map { name =>
+      pushPrefix(name)
+    }.isDefined
   }
 
   // Remove a prefix from top of the stack
-  def popPrefix(): Either[String, HasId] = {
-    val ps = chiselContext.get().prefixStack
-    ps.remove(ps.size - 1)
+  def popPrefix(): List[String] = {
+    val context = chiselContext.get()
+    val tail = context.prefixStack.tail
+    context.prefixStack = tail
+    tail
   }
 
   // Removes all prefixes from the prefix stack
   def clearPrefix(): Unit = {
-    val ps = chiselContext.get().prefixStack
-    ps.clear()
+    chiselContext.get().prefixStack = Nil
   }
 
   // Clears existing prefixes and sets to new prefix stack
   def setPrefix(prefix: Prefix): Unit = {
-    val ps = chiselContext.get().prefixStack
-    clearPrefix()
-    ps.insertAll(0, prefix)
+    chiselContext.get().prefixStack = prefix
   }
 
   // Returns the prefix stack at this moment
-  def getPrefix(): Prefix = chiselContext.get().prefixStack.toList.asInstanceOf[Prefix]
+  def getPrefix(): Prefix = chiselContext.get().prefixStack
 
   def currentModule: Option[BaseModule] = dynamicContextVar.value match {
     case Some(dyanmicContext) => dynamicContext.currentModule
@@ -598,7 +606,7 @@ private[chisel3] object Builder {
     * @param m exception message
     */
   @throws(classOf[ChiselException])
-  def exception(m: => String): Unit = {
+  def exception(m: => String): Nothing = {
     error(m)
     throwException(m)
   }
