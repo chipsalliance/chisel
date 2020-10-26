@@ -101,7 +101,7 @@ class RWSmem extends Module {
 }
 ```
 
-(The `DontCare` is there to make Chisel's [unconnected wire detection](unconnected-wires.md) aware that reading while writing is undefined.)
+(The `DontCare` is there to make Chisel's [unconnected wire detection](unconnected-wires) aware that reading while writing is undefined.)
 
 Here is an example single read/write port waveform, with [masks](#masks) (again, generated signal names and number of arrays may differ):
 

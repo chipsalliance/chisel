@@ -12,7 +12,7 @@ they are declared. In addition, this release includes prolific use of a new pref
 naming of signals programmatically generated from function calls.
 
 This document explains how naming now works in Chisel for signal and module names. For cookbook examples on how to fix
-systemic name-stability issues, please refer to the naming [cookbook](../cookbooks/naming.md).
+systemic name-stability issues, please refer to the naming [cookbook](../cookbooks/naming).
 
 ### Compiler Plugin
 
