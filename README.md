@@ -136,7 +136,7 @@ If you are migrating from Chisel2, see [the migration guide](https://www.chisel-
 ### Data Types Overview
 These are the base data types for defining circuit components:
 
-![Image](https://raw.githubusercontent.com/freechipsproject/chisel3/master/doc/images/type_hierarchy.svg?sanitize=true)
+![Image](https://raw.githubusercontent.com/freechipsproject/chisel3/master/docs/src/images/type_hierarchy.svg?sanitize=true)
 
 ## Contributor Documentation
 This section describes how to get started contributing to Chisel itself, including how to test your version locally against other projects that pull in Chisel using [sbt's managed dependencies](https://www.scala-sbt.org/1.x/docs/Library-Dependencies.html).
