@@ -479,9 +479,21 @@ trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId with Source
   * RTL writers should use [[Bundle]].  See [[Record#elements]] for an example.
   */
 abstract class Record(private[chisel3] implicit val compileOptions: CompileOptions) extends Aggregate {
+
+  // Doing this earlier than onModuleClose allows field names to be available for prefixing the names
+  // of hardware created when connecting to one of these elements
+  private def setElementRefs(): Unit = {
+    // Since elements is a map, it is impossible for two elements to have the same
+    // identifier; however, Namespace sanitizes identifiers to make them legal for Firrtl/Verilog
+    // which can cause collisions
+    val _namespace = Namespace.empty
+    for ((name, elt) <- elements) { elt.setRef(this, _namespace.name(name, leadingDigitOk=true)) }
+  }
+
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
     try {
       super.bind(target, parentDirection)
+      setElementRefs()
     } catch {  // nasty compatibility mode shim, where anything flies
       case e: MixedDirectionAggregateException if !compileOptions.dontAssumeDirectionality =>
         val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
@@ -633,13 +645,11 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     case _ => false
   }
 
-  // NOTE: This sets up dependent references, it can be done before closing the Module
   private[chisel3] override def _onModuleClose: Unit = {
-    // Since Bundle names this via reflection, it is impossible for two elements to have the same
-    // identifier; however, Namespace sanitizes identifiers to make them legal for Firrtl/Verilog
-    // which can cause collisions
-    val _namespace = Namespace.empty
-    for ((name, elt) <- elements) { elt.setRef(this, _namespace.name(name, leadingDigitOk=true)) }
+    // This is usually done during binding, but these must still be set for unbound Records
+    if (this.binding.isEmpty) {
+      setElementRefs()
+    }
   }
 
   private[chisel3] final def allElements: Seq[Element] = elements.toIndexedSeq.flatMap(_._2.allElements)
