@@ -46,8 +46,17 @@ abstract class InjectorAspect[T <: RawModule, M <: RawModule](
     toAnnotation(selectRoots(top), top.name, moduleNames)
   }
 
+  /** Returns annotations which contain all injection logic
+    *
+    * @param modules The modules to inject into
+    * @param circuit Top level circuit
+    * @param moduleNames The names of all existing modules in the original circuit, to avoid name collisions
+    * @return
+    */
   final def toAnnotation(modules: Iterable[M], circuit: String, moduleNames: Seq[String]): AnnotationSeq = {
     val dynamicContext = new DynamicContext()
+    // Add existing module names into the namespace. If injection logic instantiates new modules
+    //  which would share the same name, they will get uniquified accordingly
     moduleNames.foreach { n =>
       dynamicContext.globalNamespace.name(n)
     }

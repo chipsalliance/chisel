@@ -251,6 +251,8 @@ package experimental {
 
     /** Legalized name of this module. */
     final lazy val name = try {
+      // If this is a module aspect, it should share the same name as the original module
+      // Thus, the desired name should be returned without uniquification
       if(this.isInstanceOf[ModuleAspect]) desiredName else Builder.globalNamespace.name(desiredName)
     } catch {
       case e: NullPointerException => throwException(

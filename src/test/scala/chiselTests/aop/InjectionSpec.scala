@@ -35,7 +35,6 @@ object InjectionHierarchy {
       stop()
     }.otherwise {
       when(reset.asBool() === false.B) {
-        printf("values(%d) = %d\n", counter, values(counter))
         assert(counter === values(counter))
       }
     }
@@ -75,6 +74,7 @@ class InjectionSpec extends ChiselFlatSpec with Utils {
   val duplicateSubmoduleAspect = InjectingAspect(
     {dut: SubmoduleManipulationTester => Seq(dut)},
     {_: SubmoduleManipulationTester =>
+      // By creating a second SubmoduleA, the module names would conflict unless they were uniquified
       val moduleSubmoduleA2 = Module(new SubmoduleA)
       //if we're here then we've elaborated correctly
       stop()
