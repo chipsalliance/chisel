@@ -31,12 +31,12 @@ renaming these signals with more context-dependent names, but it is a work in pr
 
 This is the infamous `Queue` instability problem. In general, these cases are best solved at the source - the module
 itself! If you overwrite `desiredName` to include parameter information (see the
-[explanation](../explanations/naming.md#set-a-module-name) for more info), then this can avoid this problem permanantly.
+[explanation](../explanations/naming#set-a-module-name) for more info), then this can avoid this problem permanantly.
 We've done this with some Chisel utilities with great results!
 
 ### I want to add some hardware or assertions, but each time I do all the signal names get bumped!
 
-This is the classic "ECO" problem, and we provide descriptions in [explanation](../explanations/naming.md). In short,
+This is the classic "ECO" problem, and we provide descriptions in [explanation](../explanations/naming). In short,
 we recommend wrapping all additional logic in a prefix scope, which enables a unique namespace. This should prevent
 name collisions, which are what triggers all those annoying signal name bumps!
 
