@@ -2,9 +2,9 @@
 
 package chisel3.aop.injecting
 
-import chisel3.{Module, ModuleAspect, experimental, withClockAndReset, RawModule, MultiIOModule}
+import chisel3.{Module, ModuleAspect, MultiIOModule, RawModule, experimental, withClockAndReset}
 import chisel3.aop._
-import chisel3.internal.Builder
+import chisel3.internal.{Builder, DynamicContext}
 import chisel3.internal.firrtl.DefModule
 import chisel3.stage.DesignAnnotation
 import firrtl.annotations.ModuleTarget
@@ -42,17 +42,32 @@ abstract class InjectorAspect[T <: RawModule, M <: RawModule](
     injection: M => Unit
 ) extends Aspect[T] {
   final def toAnnotation(top: T): AnnotationSeq = {
-    toAnnotation(selectRoots(top), top.name)
+    val moduleNames = Select.collectDeep(top) { case i => i.name }.toSeq
+    toAnnotation(selectRoots(top), top.name, moduleNames)
   }
 
-  final def toAnnotation(modules: Iterable[M], circuit: String): AnnotationSeq = {
+  /** Returns annotations which contain all injection logic
+    *
+    * @param modules The modules to inject into
+    * @param circuit Top level circuit
+    * @param moduleNames The names of all existing modules in the original circuit, to avoid name collisions
+    * @return
+    */
+  final def toAnnotation(modules: Iterable[M], circuit: String, moduleNames: Seq[String]): AnnotationSeq = {
+    val dynamicContext = new DynamicContext()
+    // Add existing module names into the namespace. If injection logic instantiates new modules
+    //  which would share the same name, they will get uniquified accordingly
+    moduleNames.foreach { n =>
+      dynamicContext.globalNamespace.name(n)
+    }
     RunFirrtlTransformAnnotation(new InjectingTransform) +: modules.map { module =>
       val (chiselIR, _) = Builder.build(Module(new ModuleAspect(module) {
         module match {
           case x: MultiIOModule => withClockAndReset(x.clock, x.reset) { injection(module) }
           case x: RawModule => injection(module)
         }
-      }))
+      }), dynamicContext)
+
       val comps = chiselIR.components.map {
         case x: DefModule if x.name == module.name => x.copy(id = module)
         case other => other
@@ -65,7 +80,7 @@ abstract class InjectorAspect[T <: RawModule, M <: RawModule](
         case m: firrtl.ir.Module if m.name == module.name =>
           stmts += m.body
           Nil
-        case other =>
+        case other: firrtl.ir.Module =>
           Seq(other)
       }
 
