@@ -3,42 +3,46 @@
 package chiselTests.aop
 
 import chisel3.testers.{BasicTester, TesterDriver}
-import chiselTests.ChiselFlatSpec
+import chiselTests.{ChiselFlatSpec, Utils}
 import chisel3._
 import chisel3.aop.injecting.InjectingAspect
+import logger.{LogLevel, LogLevelAnnotation}
 
-class SubmoduleManipulationTester extends BasicTester {
-  val moduleSubmoduleA = Module(new SubmoduleA)
-}
+object InjectionHierarchy {
 
-class SubmoduleA extends Module {
-  val io = IO(new Bundle {
-    val out = Output(Bool())
-  })
-  io.out := false.B
-}
+  class SubmoduleManipulationTester extends BasicTester {
+    val moduleSubmoduleA = Module(new SubmoduleA)
+  }
 
-class SubmoduleB extends Module {
-  val io = IO(new Bundle {
-    val in = Input(Bool())
-  })
-}
+  class SubmoduleA extends Module {
+    val io = IO(new Bundle {
+      val out = Output(Bool())
+    })
+    io.out := false.B
+  }
 
-class AspectTester(results: Seq[Int]) extends BasicTester {
-  val values = VecInit(results.map(_.U))
-  val counter = RegInit(0.U(results.length.W))
-  counter := counter + 1.U
-  when(counter >= values.length.U) {
-    stop()
-  }.otherwise {
-    when(reset.asBool() === false.B) {
-      printf("values(%d) = %d\n", counter, values(counter))
-      assert(counter === values(counter))
+  class SubmoduleB extends Module {
+    val io = IO(new Bundle {
+      val in = Input(Bool())
+    })
+  }
+
+  class AspectTester(results: Seq[Int]) extends BasicTester {
+    val values = VecInit(results.map(_.U))
+    val counter = RegInit(0.U(results.length.W))
+    counter := counter + 1.U
+    when(counter >= values.length.U) {
+      stop()
+    }.otherwise {
+      when(reset.asBool() === false.B) {
+        assert(counter === values(counter))
+      }
     }
   }
 }
 
-class InjectionSpec extends ChiselFlatSpec {
+class InjectionSpec extends ChiselFlatSpec with Utils {
+  import InjectionHierarchy._
   val correctValueAspect = InjectingAspect(
     {dut: AspectTester => Seq(dut)},
     {dut: AspectTester =>
@@ -67,6 +71,16 @@ class InjectionSpec extends ChiselFlatSpec {
     }
   )
 
+  val duplicateSubmoduleAspect = InjectingAspect(
+    {dut: SubmoduleManipulationTester => Seq(dut)},
+    {_: SubmoduleManipulationTester =>
+      // By creating a second SubmoduleA, the module names would conflict unless they were uniquified
+      val moduleSubmoduleA2 = Module(new SubmoduleA)
+      //if we're here then we've elaborated correctly
+      stop()
+    }
+  )
+
   "Test" should "pass if inserted the correct values" in {
     assertTesterPasses{ new AspectTester(Seq(0, 1, 2)) }
   }
@@ -87,5 +101,13 @@ class InjectionSpec extends ChiselFlatSpec {
 
   "Test" should "pass if the submodules in SubmoduleManipulationTester can be manipulated by manipulateSubmoduleAspect" in {
     assertTesterPasses({ new SubmoduleManipulationTester} , Nil, Seq(manipulateSubmoduleAspect) ++ TesterDriver.verilatorOnly)
+  }
+
+  "Module name collisions when adding a new module" should "be resolved" in {
+    assertTesterPasses(
+      { new SubmoduleManipulationTester},
+      Nil,
+      Seq(duplicateSubmoduleAspect) ++ TesterDriver.verilatorOnly
+    )
   }
 }
