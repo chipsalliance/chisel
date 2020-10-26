@@ -7,5 +7,5 @@ section: "chisel3"
 
 Tips and tricks for Chisel developers.
 
-* [Embedding Chisel as an sbt subproject](sbt-subproject.md)
-* [Test Coverage](test-coverage.md)
+* [Embedding Chisel as an sbt subproject](sbt-subproject)
+* [Test Coverage](test-coverage)
