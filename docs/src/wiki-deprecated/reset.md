@@ -117,7 +117,7 @@ You can also cast to force the concrete type of reset.
 * `.asAsyncReset` will reinterpret a `Reset` as `AsyncReset`.
 
 You can then use `withReset` to use a cast reset as the implicit reset.
-See ["Multiple Clock Domains"](multi-clock) for more information about `withReset`.
+See ["Multiple Clock Domains"](../explanations/multi-clock) for more information about `withReset`.
 
 
 The following will make `myReg` as well as both `resetAgnosticReg`s synchronously reset:

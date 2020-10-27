@@ -89,7 +89,7 @@ for instructions on preparing your Chisel2 designs for Chisel3.
 ## Unsupported constructs
 *  `Mem(..., orderedWrites)` is no longer supported,
 *  masked writes are only supported for `Mem[Vec[_]]`,
-* Chisel3 Vecs must all have the same type, unlike with Chisel2. Use `MixedVec` (see [Bundles and Vecs](bundles-and-vecs)) for Vecs where the elements are of different types.
+* Chisel3 Vecs must all have the same type, unlike with Chisel2. Use `MixedVec` (see [Bundles and Vecs](../explanations/bundles-and-vecs)) for Vecs where the elements are of different types.
 *  connections between `UInt` and `SInt` are illegal.
 *  the `Node` class and object no longer exist (the class should have been private in Chisel2)
 *  `printf()` is defined in the Chisel object and produces simulation printf()'s.
