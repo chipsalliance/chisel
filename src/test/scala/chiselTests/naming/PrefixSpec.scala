@@ -285,6 +285,7 @@ class PrefixSpec extends ChiselPropSpec with Utils {
         wire.y := RegNext(3.U)
         wire.vec(0) := RegNext(3.U)
         wire.vec(wire.x) := RegNext(3.U)
+        wire.vec(1.U) := RegNext(3.U)
       }
     }
     aspectTest(() => new Test) {
@@ -293,7 +294,8 @@ class PrefixSpec extends ChiselPropSpec with Utils {
           "wire_x_REG",
           "wire_y_REG",
           "wire_vec_0_REG",
-          "wire_vec_REG"
+          "wire_vec_REG",
+          "wire_vec_1_REG"
         ))
     }
   }

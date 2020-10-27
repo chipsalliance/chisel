@@ -198,7 +198,11 @@ lazy val core = (project in file("core")).
       ProblemFilters.exclude[IncompatibleResultTypeProblem]("chisel3.internal.Builder.pushPrefix"),
       ProblemFilters.exclude[IncompatibleMethTypeProblem]("chisel3.internal.Builder.pushPrefix"),
       ProblemFilters.exclude[IncompatibleResultTypeProblem]("chisel3.internal.Builder.popPrefix"),
-      ProblemFilters.exclude[IncompatibleResultTypeProblem]("chisel3.internal.ChiselContext.prefixStack")
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("chisel3.internal.ChiselContext.prefixStack"),
+      // Scala 2.11 only issue, new concrete methods in traits require recompilation of implementing classes
+      // Not a problem because HasId is package private so all implementers are in chisel3 itself
+      // Note there is no problem for user subtypes of Record because setRef is implemented by Data
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("chisel3.internal.HasId.setRef")
     )
   ).
   settings(
