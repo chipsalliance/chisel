@@ -79,7 +79,7 @@ endmodule
 ```
 
 ### Blackboxes with Verilog in a Resource File
-In order to deliver the verilog snippet above to the backend simulator, chisel3 provides the following tools based on the chisel/firrtl [annotation system](../explanations/annotations.md).  Add the trait ```HasBlackBoxResource``` to the declaration, and then call a function in the body to say where the system can find the verilog.  The Module now looks like
+In order to deliver the verilog snippet above to the backend simulator, chisel3 provides the following tools based on the chisel/firrtl [annotation system](../explanations/annotations).  Add the trait ```HasBlackBoxResource``` to the declaration, and then call a function in the body to say where the system can find the verilog.  The Module now looks like
 ```mdoc scala:silent:reset
 class BlackBoxRealAdd extends BlackBox with HasBlackBoxResource {
   val io = IO(new Bundle() {
