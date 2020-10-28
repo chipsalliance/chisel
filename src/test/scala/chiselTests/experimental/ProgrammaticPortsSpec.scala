@@ -54,7 +54,7 @@ class ProgrammaticPortsSpec extends ChiselFlatSpec with Utils {
         expectName(rdata.suggestName("bar"), "bar")
       })
     }
-    elaborate { module }
+    ChiselStage.elaborate { module }
     assert(module.ext_module.getNameFailures() == Nil)
   }
 
