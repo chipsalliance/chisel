@@ -493,7 +493,6 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
   private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
     try {
       super.bind(target, parentDirection)
-      setElementRefs()
     } catch {  // nasty compatibility mode shim, where anything flies
       case e: MixedDirectionAggregateException if !compileOptions.dontAssumeDirectionality =>
         val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
@@ -503,6 +502,7 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
           case _ => ActualDirection.Bidirectional(ActualDirection.Default)
         }
     }
+    setElementRefs()
   }
 
   /** Creates a Bundle literal of this type with specified values. this must be a chisel type.
