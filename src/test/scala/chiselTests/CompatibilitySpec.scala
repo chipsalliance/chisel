@@ -8,6 +8,8 @@ import chisel3.testers.BasicTester
 import org.scalacheck.Gen
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
+import scala.collection.immutable.ListMap
+
 // Need separate import to override compile options from Chisel._
 object CompatibilityCustomCompileOptions {
   import Chisel.{defaultCompileOptions => _, _}
@@ -576,6 +578,22 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
     var result: Foo = null
     ChiselStage.elaborate({result = new Foo; result})
     result.compileOptions should be theSameInstanceAs (customCompileOptions)
+  }
+
+  it should "properly set the refs of Records" in {
+    class MyRecord extends Record {
+      val foo = Vec(1, Bool()).asInput
+      val bar = Vec(1, Bool())
+      val elements = ListMap("in" -> foo, "out" -> bar)
+      def cloneType = (new MyRecord).asInstanceOf[this.type]
+    }
+    class Foo extends Module {
+      val io = IO(new MyRecord)
+      io.bar := io.foo
+    }
+    val verilog = ChiselStage.emitVerilog(new Foo)
+    // Check that the names are correct (and that the FIRRTL is valid)
+    verilog should include ("assign io_out_0 = io_in_0;")
   }
 
 }
