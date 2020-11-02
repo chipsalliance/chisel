@@ -81,7 +81,6 @@ class InjectionSpec extends ChiselFlatSpec with Utils {
     }
   )
 
-
   "Test" should "pass if inserted the correct values" in {
     assertTesterPasses{ new AspectTester(Seq(0, 1, 2)) }
   }
