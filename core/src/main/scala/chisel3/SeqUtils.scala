@@ -26,13 +26,13 @@ private[chisel3] object SeqUtils {
     } else if (in.tail.isEmpty) {
       in.head.asUInt
     } else {
-      val left = prefix("left") {
+      val lo = prefix("lo") {
         asUInt(in.slice(0, in.length/2))
-      }.autoSeed("left")
-      val right = prefix("right") {
+      }.autoSeed("lo")
+      val hi = prefix("hi") {
         asUInt(in.slice(in.length/2, in.length))
-      }.autoSeed("right")
-      right ## left
+      }.autoSeed("hi")
+      hi ## lo
     }
   }
 
