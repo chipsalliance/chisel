@@ -27,6 +27,19 @@ object InjectionHierarchy {
     })
   }
 
+  class SubmoduleC extends experimental.ExtModule with util.HasExtModuleInline {
+    val io = IO(new Bundle {
+      val in = Input(Bool())
+    })
+    //scalastyle:off regex
+    setInline("SubmoduleC.v", s"""
+                                   |module SubmoduleC(
+                                   |    input  io_in
+                                   |);
+                                   |endmodule
+    """.stripMargin)
+  }
+
   class AspectTester(results: Seq[Int]) extends BasicTester {
     val values = VecInit(results.map(_.U))
     val counter = RegInit(0.U(results.length.W))
@@ -81,6 +94,17 @@ class InjectionSpec extends ChiselFlatSpec with Utils {
     }
   )
 
+  val addingExternalModules = InjectingAspect(
+    {dut: SubmoduleManipulationTester => Seq(dut)},
+    {_: SubmoduleManipulationTester =>
+      // By creating a second SubmoduleA, the module names would conflict unless they were uniquified
+      val moduleSubmoduleC = Module(new SubmoduleC)
+      //if we're here then we've elaborated correctly
+      stop()
+    }
+  )
+
+
   "Test" should "pass if inserted the correct values" in {
     assertTesterPasses{ new AspectTester(Seq(0, 1, 2)) }
   }
@@ -108,6 +132,14 @@ class InjectionSpec extends ChiselFlatSpec with Utils {
       { new SubmoduleManipulationTester},
       Nil,
       Seq(duplicateSubmoduleAspect) ++ TesterDriver.verilatorOnly
+    )
+  }
+
+  "Adding external modules" should "work" in {
+    assertTesterPasses(
+      { new SubmoduleManipulationTester},
+      Nil,
+      Seq(addingExternalModules) ++ TesterDriver.verilatorOnly
     )
   }
 }
