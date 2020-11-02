@@ -90,7 +90,7 @@ abstract class InjectorAspect[T <: RawModule, M <: RawModule](
         case m: firrtl.ir.Module if m.name == module.name =>
           stmts += m.body
           Nil
-        case other: firrtl.ir.Module =>
+        case other: firrtl.ir.DefModule =>
           Seq(other)
       }
 
