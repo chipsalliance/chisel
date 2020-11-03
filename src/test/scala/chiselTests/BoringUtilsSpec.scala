@@ -143,6 +143,7 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
     val interrupt = Wire(Bool())
     interrupt := DontCare
     printf("%d, %d", data, interrupt)
+    chisel3.assert(interrupt === true.B, "BoringUtils didn't work")
   }
 
   class BusModule extends MultiIOModule {
@@ -162,10 +163,11 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
     BoringUtils.bore(source.interrupt, Seq(sink.interrupt), bus, "interruptSource", "interrupt", "interruptSink")
   }
 
+  class ModuleBoreTester extends ShouldntAssertTester {
+    val dut = Module(new TopModule)
+  }
+
   it should "work for going through another module" in {
-
-    val ret = compile(new TopModule)
-
-    println(ret)
+    runTester(new ModuleBoreTester, annotations = TesterDriver.verilatorOnly) should be (true)
   }
 }
