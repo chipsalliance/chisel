@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 // This file transform macro definitions to explicitly add implicit source info to Chisel method
 // calls.

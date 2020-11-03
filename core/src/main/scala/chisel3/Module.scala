@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chisel3
 
@@ -251,7 +251,9 @@ package experimental {
 
     /** Legalized name of this module. */
     final lazy val name = try {
-      Builder.globalNamespace.name(desiredName)
+      // If this is a module aspect, it should share the same name as the original module
+      // Thus, the desired name should be returned without uniquification
+      if(this.isInstanceOf[ModuleAspect]) desiredName else Builder.globalNamespace.name(desiredName)
     } catch {
       case e: NullPointerException => throwException(
         s"Error: desiredName of ${this.getClass.getName} is null. Did you evaluate 'name' before all values needed by desiredName were available?", e)

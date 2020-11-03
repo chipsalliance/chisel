@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 /** The Chisel compatibility package allows legacy users to continue using the `Chisel` (capital C) package name
   *  while moving to the more standard package naming convention `chisel3` (lowercase c).

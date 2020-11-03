@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chisel3
 
@@ -8,6 +8,8 @@ import chisel3.internal.Builder.pushCommand
 import chisel3.internal._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{DeprecatedSourceInfo, SourceInfo, SourceInfoTransform, UnlocatableSourceInfo}
+
+import scala.util.Try
 
 /** User-specified directions.
   */
@@ -374,7 +376,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   // Provides a unhelpful fallback for literals, which should have custom rendering per
   // Data-subtype.
   // TODO Is this okay for sample_element? It *shouldn't* be visible to users
-  protected def bindingToString: String = topBindingOpt match {
+  protected def bindingToString: String = Try(topBindingOpt match {
     case None => ""
     case Some(OpBinding(enclosure, _)) => s"(OpResult in ${enclosure.desiredName})"
     case Some(MemoryPortBinding(enclosure, _)) => s"(MemPort in ${enclosure.desiredName})"
@@ -389,7 +391,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     case Some(DontCareBinding()) => s"(DontCare)"
     case Some(ElementLitBinding(litArg)) => s"(unhandled literal)"
     case Some(BundleLitBinding(litMap)) => s"(unhandled bundle literal)"
-  }
+  }).getOrElse("")
 
   // Return ALL elements at root of this type.
   // Contasts with flatten, which returns just Bits

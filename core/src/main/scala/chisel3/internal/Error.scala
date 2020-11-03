@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chisel3.internal
 
@@ -164,6 +164,7 @@ private[chisel3] class ErrorLog {
       val chiselPrefixes = Set(
           "java.",
           "scala.",
+          "chisel3.",
           "chisel3.internal.",
           "chisel3.experimental.",
           "chisel3.package$"  // for some compatibility / deprecated types

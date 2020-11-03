@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chisel3
 
@@ -15,21 +15,24 @@ private[chisel3] object SeqUtils {
     * in the sequence forms the most significant bits.
     *
     * Equivalent to r(n-1) ## ... ## r(1) ## r(0).
+    * @note This returns a `0.U` if applied to a zero-element `Vec`.
     */
   def asUInt[T <: Bits](in: Seq[T]): UInt = macro SourceInfoTransform.inArg
 
   /** @group SourceInfoTransformMacros */
   def do_asUInt[T <: Bits](in: Seq[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
-    if (in.tail.isEmpty) {
+    if (in.isEmpty) {
+      0.U
+    } else if (in.tail.isEmpty) {
       in.head.asUInt
     } else {
-      val left = prefix("left") {
+      val lo = prefix("lo") {
         asUInt(in.slice(0, in.length/2))
-      }.autoSeed("left")
-      val right = prefix("right") {
+      }.autoSeed("lo")
+      val hi = prefix("hi") {
         asUInt(in.slice(in.length/2, in.length))
-      }.autoSeed("right")
-      right ## left
+      }.autoSeed("hi")
+      hi ## lo
     }
   }
 
