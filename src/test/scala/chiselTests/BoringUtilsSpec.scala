@@ -162,19 +162,6 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
     BoringUtils.bore(source.interrupt, Seq(sink.interrupt), bus, "interruptSource", "interrupt", "interruptSink")
   }
 
-//  it should "work for an internal (same module) BoringUtils.bore with aspect" in {
-//
-//
-//    val aspect = chisel3.util.experimental.BoringAspect(
-//      (x: TopModule) => Seq(x),
-//      (x: TopModule) => (x.source.interrupt, Seq(x.bus), x.midInterrupt, "interrupt")
-//    )
-//    val ret = compileWithAnnotations(new TopModule, annotations = Seq(aspect))
-//
-//    println(ret)
-//  }
-
-
   it should "work for going through another module" in {
 
     val ret = compile(new TopModule)
