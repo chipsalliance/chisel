@@ -133,14 +133,15 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
 
   class SourceModule extends RawModule {
     val data = IO(Output(Bool()))
-    val interrupt = IO(Output(Bool()))
+    val interrupt = Wire(Bool())
     data := true.B
     interrupt := true.B
   }
 
   class SinkModule extends MultiIOModule {
     val data = IO(Input(Bool()))
-    val interrupt = IO(Input(Bool()))
+    val interrupt = Wire(Bool())
+    interrupt := DontCare
     printf("%d, %d", data, interrupt)
   }
 
@@ -158,21 +159,26 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
     val bus = Module(new BusModule)
     bus.dataSource := source.data
     sink.data := bus.dataSink
-    val midInterrupt = Wire(Bool())
-    midInterrupt := source.interrupt
-    sink.interrupt := midInterrupt
+    BoringUtils.bore(source.interrupt, Seq(sink.interrupt), bus, "interruptSource", "interrupt", "interruptSink")
   }
 
-  it should "work for an internal (same module) BoringUtils.bore with aspect" in {
+//  it should "work for an internal (same module) BoringUtils.bore with aspect" in {
+//
+//
+//    val aspect = chisel3.util.experimental.BoringAspect(
+//      (x: TopModule) => Seq(x),
+//      (x: TopModule) => (x.source.interrupt, Seq(x.bus), x.midInterrupt, "interrupt")
+//    )
+//    val ret = compileWithAnnotations(new TopModule, annotations = Seq(aspect))
+//
+//    println(ret)
+//  }
 
 
-    val aspect = chisel3.util.experimental.BoringAspect(
-      (x: TopModule) => Seq(x),
-      (x: TopModule) => (x.source.interrupt, Seq(x.bus), x.midInterrupt, "interrupt")
-    )
-    val ret = compileWithAnnotations(new TopModule, annotations = Seq(aspect))
+  it should "work for going through another module" in {
+
+    val ret = compile(new TopModule)
 
     println(ret)
   }
-
 }

@@ -58,7 +58,7 @@ abstract class InjectorAspect[T <: RawModule, M <: RawModule](
         case other => other
       }
 
-      val annotations = chiselIR.annotations.map(_.toFirrtl).filterNot{ a => a.isInstanceOf[DesignAnnotation[_]] }
+      val annotations = chiselIR.annotations.flatMap(_.toAnnotationSeq).filterNot{ a => a.isInstanceOf[DesignAnnotation[_]] }
 
       val stmts = mutable.ArrayBuffer[ir.Statement]()
       val modules = Aspect.getFirrtl(chiselIR.copy(components = comps)).modules.flatMap {
@@ -69,6 +69,7 @@ abstract class InjectorAspect[T <: RawModule, M <: RawModule](
           Seq(other)
       }
 
+      println(annotations)
       InjectStatement(ModuleTarget(circuit, module.name), ir.Block(stmts), modules, annotations)
     }.toSeq
   }

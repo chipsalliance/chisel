@@ -5,7 +5,7 @@ package chisel3.experimental
 import scala.language.existentials
 import chisel3.internal.{Builder, InstanceId, LegacyModule}
 import chisel3.{CompileOptions, Data}
-import firrtl.Transform
+import firrtl.{AnnotationSeq, Transform}
 import firrtl.annotations._
 import firrtl.options.Unserializable
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
@@ -14,9 +14,19 @@ import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
   *
   * Defines a conversion to a corresponding FIRRTL Annotation
   */
-trait ChiselAnnotation {
+trait ChiselAnnotation extends ChiselAnnotationSeq {
   /** Conversion to FIRRTL Annotation */
   def toFirrtl: Annotation
+  override final def toAnnotationSeq: AnnotationSeq = AnnotationSeq(Seq(toFirrtl))
+}
+
+/** Interface for Annotations in Chisel
+  *
+  * Defines a conversion to a corresponding FIRRTL AnnotationSeq
+  */
+trait ChiselAnnotationSeq {
+  /** Conversion to FIRRTL Annotation */
+  def toAnnotationSeq: AnnotationSeq
 }
 
 /** Mixin for [[ChiselAnnotation]] that instantiates an associated FIRRTL Transform when this Annotation is present
@@ -31,6 +41,9 @@ trait RunFirrtlTransform extends ChiselAnnotation {
 
 object annotate {
   def apply(anno: ChiselAnnotation): Unit = {
+    Builder.annotations += anno
+  }
+  def apply(anno: ChiselAnnotationSeq): Unit = {
     Builder.annotations += anno
   }
 }

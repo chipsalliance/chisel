@@ -750,4 +750,4 @@ abstract class Component extends Arg {
 case class DefModule(id: RawModule, name: String, ports: Seq[Port], commands: Seq[Command]) extends Component
 case class DefBlackBox(id: BaseBlackBox, name: String, ports: Seq[Port], topDir: SpecifiedDirection, params: Map[String, Param]) extends Component
 
-case class Circuit(name: String, components: Seq[Component], annotations: Seq[ChiselAnnotation] = Seq.empty)
+case class Circuit(name: String, components: Seq[Component], annotations: Seq[ChiselAnnotationSeq] = Seq.empty)

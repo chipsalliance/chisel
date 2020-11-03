@@ -3,11 +3,15 @@
 package chisel3.util.experimental
 
 import chisel3._
-import chisel3.experimental.{ChiselAnnotation, RunFirrtlTransform, annotate}
+import chisel3.aop.injecting.{InjectStatement, InjectingAspect}
+import chisel3.experimental.{ChiselAnnotation, ChiselAnnotationSeq, RunFirrtlTransform, annotate}
 import chisel3.internal.{InstanceId, NamedComponent, Namespace, PortBinding}
+import firrtl.AnnotationSeq
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
 import firrtl.passes.wiring.{SinkAnnotation, SourceAnnotation, WiringTransform}
 import firrtl.annotations.{Annotation, ComponentName, ModuleName}
+import firrtl.options.Dependency
+import firrtl.stage.RunFirrtlTransformAnnotation
 
 import scala.concurrent.SyncVar
 
@@ -201,9 +205,9 @@ object BoringUtils {
     val annotations =
       Seq(new ChiselAnnotation with RunFirrtlTransform {
             def toFirrtl = {
-              component.binding match {
-                case Some(PortBinding)
-              }
+              //component.binding match {
+              //  case Some(PortBinding)
+              //}
               SinkAnnotation(component.toNamed, name)
             }
             def transformClass = classOf[WiringTransform] }) ++ maybeDedup
@@ -229,4 +233,34 @@ object BoringUtils {
     genName
   }
 
+  /** Connect a source to one or more sinks
+   * @param source a source component
+   * @param sinks one or more sink components
+   * @return the name of the signal used to connect the source to the
+   * sinks
+   * @note the returned name will be based on the name of the source
+   * component
+   */
+  def bore(source: Data, sinks: Seq[Data], through: RawModule, to: => String, at: => String, fro: => String): Unit = {
+    val boringName = try {
+      source.instanceName
+    } catch {
+      case _: Exception => "bore"
+    }
+    annotate(new ChiselAnnotationSeq {
+      /** Conversion to FIRRTL Annotation */
+      override def toAnnotationSeq: AnnotationSeq = {
+        RunFirrtlTransformAnnotation(Dependency[WiringTransform]) +: InjectingAspect({_: RawModule => Seq(through)}, {dut: RawModule =>
+          val bore = Wire(chiselTypeOf(source)).suggestName(at)
+          bore := DontCare
+          val genName = addSource(source, to, true, true)
+          println(s"genName: $genName")
+          addSink(bore, genName, true, true)
+          val retName = addSource(bore, fro, true, true)
+          println(s"genName: $genName, retName; $retName")
+          sinks.map(addSink(_, retName, true, true))
+        }).toAnnotation(through)
+      }
+    })
+  }
 }
