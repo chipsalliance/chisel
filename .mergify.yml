@@ -21,7 +21,21 @@ pull_request_rules:
         strict: smart
         strict_method: merge
 
-  - name: backport to 1.3.x
+  - name: backport to 1.4.x
+    conditions:
+      - merged
+      - base=master
+      - milestone=1.4.x
+    actions:
+      backport:
+        branches:
+          - 1.4.x
+        ignore_conflicts: True
+        label_conflicts: "bp-conflict"
+      label:
+        add: [Backported]
+
+  - name: backport to 1.3.x and 1.4.x
     conditions:
       - merged
       - base=master
@@ -30,12 +44,13 @@ pull_request_rules:
       backport:
         branches:
           - 1.3.x
+          - 1.4.x
         ignore_conflicts: True
         label_conflicts: "bp-conflict"
       label:
         add: [Backported]
 
-  - name: backport to 1.2.x and 1.3.x
+  - name: backport to 1.2.x, 1.3.x, and 1.4.x
     conditions:
       - merged
       - base=master
@@ -45,11 +60,11 @@ pull_request_rules:
         branches:
           - 1.2.x
           - 1.3.x
+          - 1.4.x
         ignore_conflicts: True
         label_conflicts: "bp-conflict"
       label:
         add: [Backported]
-
 
   - name: label Mergify backport PR
     conditions:
@@ -57,6 +72,20 @@ pull_request_rules:
     actions:
       label:
         add: [Backport]
+        
+  - name: automatic squash-and-merge of 1.4.x backport PRs
+    conditions:
+      - status-success=Travis CI - Pull Request
+      - "#changes-requested-reviews-by=0"
+      - base=1.4.x
+      - label="Backport"
+      - label!="DO NOT MERGE"
+      - label!="bp-conflict"
+    actions:
+      merge:
+        method: squash
+        strict: smart
+        strict_method: merge      
 
   - name: automatic squash-and-merge of 1.3.x backport PRs
     conditions:
