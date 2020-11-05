@@ -198,8 +198,11 @@ private[chisel3] trait HasId extends InstanceId {
     }
 
   private var _ref: Option[Arg] = None
-  private[chisel3] def setRef(imm: Arg): Unit = {
-    _ref = Some(imm)
+  private[chisel3] def setRef(imm: Arg): Unit = setRef(imm, false)
+  private[chisel3] def setRef(imm: Arg, force: Boolean): Unit = {
+    if (_ref.isEmpty || force) {
+      _ref = Some(imm)
+    }
   }
   private[chisel3] def setRef(parent: HasId, name: String): Unit = setRef(Slot(Node(parent), name))
   private[chisel3] def setRef(parent: HasId, index: Int): Unit = setRef(Index(Node(parent), ILit(index)))
