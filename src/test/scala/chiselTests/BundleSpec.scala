@@ -128,4 +128,17 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
       } }
     }).getMessage should include("aliased fields")
   }
+
+  "Unbound bundles sharing a field" should "not error" in {
+    ChiselStage.elaborate {
+      new RawModule {
+        val foo = new Bundle {
+          val x = UInt(8.W)
+        }
+        val bar = new Bundle {
+          val y = foo.x
+        }
+      }
+    }
+  }
 }
