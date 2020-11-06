@@ -141,4 +141,17 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
       }
     }
   }
+
+  "Bound Data" should "have priority in setting ref over unbound Data" in {
+    class MyModule extends RawModule {
+      val foo = IO(new Bundle {
+        val x = Output(UInt(8.W))
+      })
+      foo.x := 0.U // getRef on foo.x is None.get without fix
+      val bar = new Bundle {
+        val y = foo.x
+      }
+    }
+    ChiselStage.emitChirrtl(new MyModule)
+  }
 }
