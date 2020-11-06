@@ -172,26 +172,10 @@ object BoringUtils {
     * @throws BoringUtilsException if name is expected to exist and itdoesn't
     */
   def addSink(
-    component: Data,
+    component: InstanceId,
     name: String,
     disableDedup: Boolean = false,
     forceExists: Boolean = false): Unit = {
-    annotateSink(component, name, disableDedup, forceExists).map(annotate(_))
-  }
-
-  /** Add a named sink cross module reference. Multiple sinks may map to the same source.
-    * @param component sink circuit component
-    * @param name unique identifier for this sink that must resolve to
-    * @param disableDedup disable deduplication of this sink component (this should be true if you are trying to wire
-    * specific, identical sinks differently)
-    * @param forceExists if true, require that the provided `name` paramater already exists in the global namespace
-    * @throws BoringUtilsException if name is expected to exist and itdoesn't
-    */
-  private [chisel3] def annotateSink(
-    component: Data,
-    name: String,
-    disableDedup: Boolean,
-    forceExists: Boolean): Seq[ChiselAnnotation] = {
 
     if (forceExists && !checkName(name)) {
       throw new BoringUtilsException(s"Sink ID '$name' not found in BoringUtils ID namespace") }
@@ -204,12 +188,7 @@ object BoringUtils {
       else              { Seq[ChiselAnnotation]()                                                    }
     val annotations =
       Seq(new ChiselAnnotation with RunFirrtlTransform {
-            def toFirrtl = {
-              //component.binding match {
-              //  case Some(PortBinding)
-              //}
-              SinkAnnotation(component.toNamed, name)
-            }
+            def toFirrtl = SinkAnnotation(component.toNamed, name)
             def transformClass = classOf[WiringTransform] }) ++ maybeDedup
     annotations
   }
