@@ -116,8 +116,8 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
   class InternalBore extends RawModule {
     val in = IO(Input(Bool()))
     val out = IO(Output(Bool()))
-    out := true.B//false.B
-    //BoringUtils.bore(in, Seq(out))
+    out := false.B
+    BoringUtils.bore(in, Seq(out))
   }
 
   class InternalBoreTester extends ShouldntAssertTester {
