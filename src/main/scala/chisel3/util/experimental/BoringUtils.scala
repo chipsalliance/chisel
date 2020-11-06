@@ -128,8 +128,8 @@ object BoringUtils {
   def addSource(
     component: NamedComponent,
     name: String,
-    disableDedup: Boolean,
-    uniqueName: Boolean): String = {
+    disableDedup: Boolean = false,
+    uniqueName: Boolean = false): String = {
 
     val id = if (uniqueName) { newName(name) } else { name }
     val maybeDedup =
@@ -172,7 +172,7 @@ object BoringUtils {
       Seq(new ChiselAnnotation with RunFirrtlTransform {
             def toFirrtl = SinkAnnotation(component.toNamed, name)
             def transformClass = classOf[WiringTransform] }) ++ maybeDedup
-    annotations
+    annotations.map(annotate(_))
   }
 
   /** Connect a source to one or more sinks
@@ -216,10 +216,8 @@ object BoringUtils {
           val bore = Wire(chiselTypeOf(source)).suggestName(at)
           bore := DontCare
           val genName = addSource(source, to, true, true)
-          println(s"genName: $genName")
           addSink(bore, genName, true, true)
           val retName = addSource(bore, fro, true, true)
-          println(s"genName: $genName, retName; $retName")
           sinks.map(addSink(_, retName, true, true))
         }).toAnnotation(through)
       }

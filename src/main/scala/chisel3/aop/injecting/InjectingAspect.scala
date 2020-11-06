@@ -84,7 +84,6 @@ abstract class InjectorAspect[T <: RawModule, M <: RawModule](
           Seq(other)
       }
 
-      println(annotations)
       InjectStatement(ModuleTarget(circuit, module.name), ir.Block(stmts), modules, annotations)
     }.toSeq
   }
