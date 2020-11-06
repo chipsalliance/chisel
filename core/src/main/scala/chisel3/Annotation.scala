@@ -26,7 +26,7 @@ trait ChiselAnnotation {
   def toFirrtl: Annotation
 
   /** Conversion to FIRRTL AnnotationSeq */
-  def toAnnotationSeq: AnnotationSeq = Nil
+  protected def toAnnotationSeq: AnnotationSeq = Nil
 
   private[chisel3] def convert: AnnotationSeq = {
     toFirrtl match {

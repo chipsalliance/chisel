@@ -165,7 +165,7 @@ object Driver extends BackendCompilationUtilities {
   def dumpAnnotations(ir: Circuit, optName: Option[File]): File = {
     val f = optName.getOrElse(new File(ir.name + ".anno.json"))
     val w = new FileWriter(f)
-    w.write(JsonProtocol.serialize(ir.annotations.flatMap(_.toAnnotationSeq)))
+    w.write(JsonProtocol.serialize(ir.annotations.flatMap(_.convert)))
     w.close()
     f
   }
