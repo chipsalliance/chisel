@@ -128,27 +128,8 @@ object BoringUtils {
   def addSource(
     component: NamedComponent,
     name: String,
-    disableDedup: Boolean = false,
-    uniqueName: Boolean = false): String = {
-    val (id, annotations) = annotateSource(component, name, disableDedup, uniqueName)
-    annotations.map(annotate(_))
-    id
-  }
-
-  /** Add a named source cross module reference
-    * @param component source circuit component
-    * @param name unique identifier for this source
-    * @param disableDedup disable dedupblication of this source component (this should be true if you are trying to wire
-    * from specific identical sources differently)
-    * @param uniqueName if true, this will use a non-conflicting name from the global namespace
-    * @return the name used
-    * @note if a uniqueName is not specified, the returned name may differ from the user-provided name
-    */
-  private [chisel3] def annotateSource(
-    component: NamedComponent,
-    name: String,
     disableDedup: Boolean,
-    uniqueName: Boolean): (String, Seq[ChiselAnnotation]) = {
+    uniqueName: Boolean): String = {
 
     val id = if (uniqueName) { newName(name) } else { name }
     val maybeDedup =
@@ -160,7 +141,8 @@ object BoringUtils {
             def transformClass = classOf[WiringTransform] },
           new ChiselAnnotation { def toFirrtl = DontTouchAnnotation(component.toNamed) } ) ++ maybeDedup
 
-    (id, annotations)
+    annotations.map(annotate(_))
+    id
   }
 
   /** Add a named sink cross module reference. Multiple sinks may map to the same source.
