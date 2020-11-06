@@ -301,7 +301,7 @@ private[chisel3] class ChiselContext() {
 private[chisel3] class DynamicContext() {
   val globalNamespace = Namespace.empty
   val components = ArrayBuffer[Component]()
-  val annotations = ArrayBuffer[ChiselAnnotationSeq]()
+  val annotations = ArrayBuffer[ChiselAnnotation]()
   var currentModule: Option[BaseModule] = None
 
   /** Contains a mapping from a elaborated module to their aspect
@@ -356,7 +356,7 @@ private[chisel3] object Builder {
 
   def globalNamespace: Namespace = dynamicContext.globalNamespace
   def components: ArrayBuffer[Component] = dynamicContext.components
-  def annotations: ArrayBuffer[ChiselAnnotationSeq] = dynamicContext.annotations
+  def annotations: ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
   def namingStack: NamingStack = dynamicContext.namingStack
 
   // Puts a prefix string onto the prefix stack

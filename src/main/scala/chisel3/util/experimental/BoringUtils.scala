@@ -4,7 +4,7 @@ package chisel3.util.experimental
 
 import chisel3._
 import chisel3.aop.injecting.{InjectStatement, InjectingAspect}
-import chisel3.experimental.{ChiselAnnotation, ChiselAnnotationSeq, RunFirrtlTransform, annotate}
+import chisel3.experimental.{ChiselAnnotation, RunFirrtlTransform, annotate}
 import chisel3.internal.{InstanceId, NamedComponent, Namespace, PortBinding}
 import firrtl.AnnotationSeq
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
@@ -247,7 +247,8 @@ object BoringUtils {
     } catch {
       case _: Exception => "bore"
     }
-    annotate(new ChiselAnnotationSeq {
+    annotate(new ChiselAnnotation {
+      override def toFirrtl: Annotation = experimental.EmptyAnnotation
       /** Conversion to FIRRTL Annotation */
       override def toAnnotationSeq: AnnotationSeq = {
         RunFirrtlTransformAnnotation(Dependency[WiringTransform]) +: InjectingAspect({_: RawModule => Seq(through)}, {dut: RawModule =>
