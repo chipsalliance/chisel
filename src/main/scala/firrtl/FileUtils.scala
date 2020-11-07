@@ -91,7 +91,8 @@ object FileUtils {
     * Instead we try to run the executable itself (with innocuous arguments) and interpret any errors/exceptions
     *  as an indication that the executable is unavailable.
     */
-  lazy val isVCSAvailable: Boolean = isCommandAvailable(Seq("vcs", "-platform"))
+  lazy val isVCSAvailable: Boolean =
+    isCommandAvailable(Seq("vcs", "-platform")) || isCommandAvailable(Seq("vcs", "-full64", "-platform"))
 
   /** Read a text file and return it as a Seq of strings
     * Closes the file after read to avoid dangling file handles
