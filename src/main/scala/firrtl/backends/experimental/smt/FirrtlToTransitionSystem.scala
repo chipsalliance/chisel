@@ -18,6 +18,7 @@ import firrtl.{
   MemoryArrayInit,
   MemoryInitValue,
   MemoryScalarInit,
+  Namespace,
   Transform,
   Utils
 }
@@ -465,11 +466,14 @@ private class ModuleScanner(makeRandom: (String, Int) => BVExpr) extends LazyLog
   private[firrtl] val infos = mutable.ArrayBuffer[(String, ir.Info)]()
   // keeps track of unused memory (data) outputs so that we can see where they are first used
   private val unusedMemOutputs = mutable.LinkedHashMap[String, Int]()
+  // ensure unique names for assert/assume signals
+  private val namespace = Namespace()
 
   private[firrtl] def onPort(p: ir.Port): Unit = {
     if (isAsyncReset(p.tpe)) {
       throw new AsyncResetException(s"Found AsyncReset ${p.name}.")
     }
+    namespace.newName(p.name)
     infos.append(p.name -> p.info)
     p.direction match {
       case ir.Input =>
@@ -487,11 +491,13 @@ private class ModuleScanner(makeRandom: (String, Int) => BVExpr) extends LazyLog
 
   private[firrtl] def onStatement(s: ir.Statement): Unit = s match {
     case ir.DefWire(info, name, tpe) =>
+      namespace.newName(name)
       if (!isClock(tpe)) {
         infos.append(name -> info)
         wires.append(name)
       }
     case ir.DefNode(info, name, expr) =>
+      namespace.newName(name)
       if (!isClock(expr.tpe)) {
         insertDummyAssignsForMemoryOutputs(expr)
         infos.append(name -> info)
@@ -500,6 +506,7 @@ private class ModuleScanner(makeRandom: (String, Int) => BVExpr) extends LazyLog
         connects.append((name, e))
       }
     case ir.DefRegister(info, name, tpe, _, reset, init) =>
+      namespace.newName(name)
       insertDummyAssignsForMemoryOutputs(reset)
       insertDummyAssignsForMemoryOutputs(init)
       infos.append(name -> info)
@@ -508,6 +515,7 @@ private class ModuleScanner(makeRandom: (String, Int) => BVExpr) extends LazyLog
       val initExpr = onExpression(init, width, name + "_init")
       registers.append((name, width, resetExpr, initExpr))
     case m: ir.DefMemory =>
+      namespace.newName(m.name)
       infos.append(m.name -> m.info)
       val outputs = getMemOutputs(m)
       (getMemInputs(m) ++ outputs).foreach(memSignals.append(_))
@@ -528,6 +536,7 @@ private class ModuleScanner(makeRandom: (String, Int) => BVExpr) extends LazyLog
       infos.append(name -> info)
       connects.append((name, makeRandom(name + "_INVALID", getWidth(loc.tpe))))
     case ir.DefInstance(info, name, module, tpe) =>
+      namespace.newName(name)
       if (!tpe.isInstanceOf[ir.BundleType]) error(s"Instance $name of $module has an invalid type: ${tpe.serialize}")
       // we treat all instances as blackboxes
       logger.warn(
@@ -558,7 +567,7 @@ private class ModuleScanner(makeRandom: (String, Int) => BVExpr) extends LazyLog
       if (op == ir.Formal.Cover) {
         logger.warn(s"WARN: Cover statement was ignored: ${s.serialize}")
       } else {
-        val name = msgToName(op.toString, msg.string)
+        val name = namespace.newName(msgToName(op.toString, msg.string))
         val predicate = onExpression(pred, name + "_predicate")
         val enabled = onExpression(en, name + "_enabled")
         val e = BVImplies(enabled, predicate)

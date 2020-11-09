@@ -347,4 +347,40 @@ private class FirrtlModuleToTransitionSystemSpec extends SMTBackendBaseSpec {
     }
     assert(err.getMessage.contains("clk"))
   }
+
+  it should "automatically generate unique names for verification statements" in {
+    val src0 =
+      """circuit m:
+        |  module m:
+        |    input c : Clock
+        |    input i : UInt<1>
+        |    ; two asserts with the same message should get unique names
+        |    assert(c, i, UInt(1), "")
+        |    assert(c, i, UInt(1), "")
+        |""".stripMargin
+    assertUniqueSignalNames(toSys(src0))
+
+    val src1 =
+      """circuit m:
+        |  module m:
+        |    input c : Clock
+        |    input i : UInt<1>
+        |    ; assert name should not be the same as an existing signal name
+        |    assert(c, i, UInt(1), "")
+        |    node assert_ = i
+        |""".stripMargin
+    assertUniqueSignalNames(toSys(src1))
+  }
+
+  private def assertUniqueSignalNames(sys: TransitionSystem): Unit = {
+    val names = scala.collection.mutable.HashSet[String]()
+    sys.inputs.foreach { input =>
+      assert(!names.contains(input.name), s"Input name ${input.name} already taken!")
+      names.add(input.name)
+    }
+    sys.signals.foreach { signal =>
+      assert(!names.contains(signal.name), s"Signal name ${signal.name} already taken! (${signal.e})")
+      names.add(signal.name)
+    }
+  }
 }
