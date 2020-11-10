@@ -158,9 +158,11 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
     val source = Module(new SourceModule)
     val sink = Module(new SinkModule)
     val bus = Module(new BusModule)
+    val bus2 = Module(new BusModule)
     bus.dataSource := source.data
-    sink.data := bus.dataSink
-    BoringUtils.bore(source.interrupt, Seq(sink.interrupt), bus, "interruptSource", "interrupt", "interruptSink")
+    bus2.dataSource := bus.dataSink
+    sink.data := bus2.dataSink
+    BoringUtils.bore(source.interrupt, Seq(sink.interrupt), Seq(("interrupt", bus), ("interrupt", bus2)))
   }
 
   class ModuleBoreTester extends ShouldntAssertTester {
