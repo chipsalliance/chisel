@@ -110,4 +110,65 @@ class MemorySpec extends EndToEndSMTBaseSpec {
       annos = Seq(MemoryArrayInitAnnotation(m(4), Seq(1, 2, 2, 3)))
     )
   }
+
+  def collisionTest(assumption: String) = s"""
+                                             |circuit CollisionTest:
+                                             |  module CollisionTest:
+                                             |    input c : Clock
+                                             |    input preset: AsyncReset
+                                             |    input addr : UInt<8>
+                                             |    input data : UInt<32>
+                                             |    input aEn : UInt<1>
+                                             |    input bEn : UInt<1>
+                                             |
+                                             |    reg cycle: UInt<8>, c with: (reset => (preset, UInt(0)))
+                                             |    cycle <= add(cycle, UInt(1))
+                                             |    node pastValid = geq(cycle, UInt(1))
+                                             |
+                                             |    reg prevAddr: UInt<8>, c
+                                             |    prevAddr <= addr
+                                             |    reg prevData: UInt<32>, c
+                                             |    prevData <= data
+                                             |    reg prevEn: UInt<1>, c
+                                             |    prevEn <= or(aEn, bEn)
+                                             |
+                                             |    mem m:
+                                             |      data-type => UInt<32>
+                                             |      depth => 32
+                                             |      reader => r
+                                             |      writer => a, b
+                                             |      read-latency => 0
+                                             |      write-latency => 1
+                                             |      read-under-write => undefined
+                                             |
+                                             |    ; the readport is used to verify the written value
+                                             |    m.r.clk <= c
+                                             |    m.r.en <= UInt(1)
+                                             |    m.r.addr <= prevAddr
+                                             |
+                                             |    ; both read ports write to the same address and the same data
+                                             |    m.a.clk <= c
+                                             |    m.a.en <= aEn
+                                             |    m.a.addr <= addr
+                                             |    m.a.data <= data
+                                             |    m.a.mask <= UInt(1)
+                                             |    m.b.clk <= c
+                                             |    m.b.en <= bEn
+                                             |    m.b.addr <= addr
+                                             |    m.b.data <= data
+                                             |    m.b.mask <= UInt(1)
+                                             |
+                                             |    ; we assume that writes are mutually exclusive
+                                             |    ; => no collision should occur
+                                             |    assume(c, $assumption, UInt(1), "")
+                                             |
+                                             |    ; we check that we always read the last written value
+                                             |    assert(c, eq(m.r.data, prevData), and(pastValid, prevEn), "")
+                                             |""".stripMargin
+  "memory with two write ports" should "not have collisions when enables are mutually exclusive" taggedAs (RequiresZ3) in {
+    test(collisionTest("not(and(aEn, bEn))"), MCSuccess, kmax = 4)
+  }
+  "memory with two write ports" should "can have collisions when enables are unconstrained" taggedAs (RequiresZ3) in {
+    test(collisionTest("UInt(1)"), MCFail(1), kmax = 1)
+  }
 }
