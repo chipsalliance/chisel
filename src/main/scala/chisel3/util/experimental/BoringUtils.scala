@@ -194,9 +194,10 @@ object BoringUtils {
     genName
   }
 
-  /** Connect a source to one or more sinks
+  /** Connect a source to one or more sinks, through a list of modules
    * @param source a source component
    * @param sinks one or more sink components
+   * @param through a list of wire names, the modules to instantiate them in,
    * @return the name of the signal used to connect the source to the
    * sinks
    * @note the returned name will be based on the name of the source
