@@ -8,7 +8,6 @@ import java.io.Writer
 import scala.collection.mutable
 import scala.util.Try
 import scala.util.control.NonFatal
-
 import firrtl.annotations._
 import firrtl.ir.Circuit
 import firrtl.Utils.throwInternalError
@@ -420,7 +419,7 @@ trait Emitter extends Transform {
 
   override def invalidates(a: Transform) = false
 
-  @deprecated("Use emission annotations instead", "firrtl 1.0")
+  @deprecated("Use emission annotations instead", "FIRRTL 1.0")
   def emit(state: CircuitState, writer: Writer): Unit
 
   /** An output suffix to use if the output of this [[Emitter]] was written to a file */

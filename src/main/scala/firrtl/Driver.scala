@@ -34,14 +34,14 @@ import firrtl.options.phases.DeletedWrapper
   * @see firrtlTests/DriverSpec.scala in the test directory for a lot more examples
   * @see [[CompilerUtils.mergeTransforms]] to see how customTransformations are inserted
   */
-@deprecated("Use firrtl.stage.FirrtlStage", "1.2")
+@deprecated("Use firrtl.stage.FirrtlStage", "FIRRTL 1.2")
 object Driver {
 
   /** Print a warning message
     *
     * @param message error message
     */
-  @deprecated("Use firrtl.options.StageUtils.dramaticWarning", "1.2")
+  @deprecated("Use firrtl.options.StageUtils.dramaticWarning", "FIRRTL 1.2")
   def dramaticWarning(message: String): Unit = StageUtils.dramaticWarning(message)
 
   /**
@@ -49,14 +49,14 @@ object Driver {
     *
     * @param message error message
     */
-  @deprecated("Use firrtl.options.StageUtils.dramaticWarning", "1.2")
+  @deprecated("Use firrtl.options.StageUtils.dramaticWarning", "FIRRTL 1.2")
   def dramaticError(message: String): Unit = StageUtils.dramaticError(message)
 
   /** Load annotation file based on options
     * @param optionsManager use optionsManager config to load annotation file if it exists
     *                       update the firrtlOptions with new annotations if it does
     */
-  @deprecated("Use side-effect free getAnnotation instead", "1.1")
+  @deprecated("Use side-effect free getAnnotation instead", "FIRRTL 1.1")
   def loadAnnotations(optionsManager: ExecutionOptionsManager with HasFirrtlOptions): Unit = {
     val msg = "Driver.loadAnnotations is deprecated, use Driver.getAnnotations instead"
     Driver.dramaticWarning(msg)

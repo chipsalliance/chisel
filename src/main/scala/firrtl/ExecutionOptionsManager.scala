@@ -32,10 +32,10 @@ import scala.collection.Seq
   * '''NOTE''' In all derived trait/classes, if you intend on maintaining backwards compatibility,
   *  be sure to add new options at the end of the current ones and don't remove any existing ones.
   */
-@deprecated("Use firrtl.options.HasScoptOptions and/or library/transform registration", "1.2")
+@deprecated("Use firrtl.options.HasScoptOptions and/or library/transform registration", "FIRRTL 1.2")
 trait ComposableOptions
 
-@deprecated("Use firrtl.options.{ExecutionOptionsManager, TerminateOnExit, DuplicateHandling}", "1.2")
+@deprecated("Use firrtl.options.{ExecutionOptionsManager, TerminateOnExit, DuplicateHandling}", "FIRRTL 1.2")
 abstract class HasParser(applicationName: String) {
   final val parser = new OptionParser[Unit](applicationName) {
     var terminateOnExit = true
@@ -66,7 +66,7 @@ abstract class HasParser(applicationName: String) {
   * For example, in chisel, by deferring this it is possible for the execute there to first elaborate the
   * circuit and then set the topName from that if it has not already been set.
   */
-@deprecated("Use a FirrtlOptionsView, LoggerOptionsView, or construct your own view of an AnnotationSeq", "1.2")
+@deprecated("Use a FirrtlOptionsView, LoggerOptionsView, or construct your own view of an AnnotationSeq", "FIRRTL 1.2")
 case class CommonOptions(
   topName:        String = "",
   targetDirName:  String = ".",
@@ -96,7 +96,7 @@ case class CommonOptions(
     programArgs.map(a => ProgramArgsAnnotation(a))
 }
 
-@deprecated("Specify command line arguments in an Annotation mixing in HasScoptOptions", "1.2")
+@deprecated("Specify command line arguments in an Annotation mixing in HasScoptOptions", "FIRRTL 1.2")
 trait HasCommonOptions {
   self: ExecutionOptionsManager =>
   var commonOptions = CommonOptions()
@@ -210,7 +210,7 @@ final case class OneFilePerModule(targetDir: String) extends OutputConfig
   * @param compilerName           which compiler to use
   * @param annotations            annotations to pass to compiler
   */
-@deprecated("Use a FirrtlOptionsView or construct your own view of an AnnotationSeq", "1.2")
+@deprecated("Use a FirrtlOptionsView or construct your own view of an AnnotationSeq", "FIRRTL 1.2")
 case class FirrtlExecutionOptions(
   inputFileNameOverride:      String = "",
   outputFileNameOverride:     String = "",
@@ -330,7 +330,7 @@ case class FirrtlExecutionOptions(
     * @param optionsManager this is needed to access build function and its common options
     * @return
     */
-  @deprecated("Use FirrtlOptions.annotationFileNames instead", "1.1")
+  @deprecated("Use FirrtlOptions.annotationFileNames instead", "FIRRTL 1.1")
   def getAnnotationFileName(optionsManager: ExecutionOptionsManager): String = {
     optionsManager.getBuildFileName("anno", annotationFileNameOverride)
   }
@@ -363,7 +363,7 @@ case class FirrtlExecutionOptions(
   }
 }
 
-@deprecated("Specify command line arguments in an Annotation mixing in HasScoptOptions", "1.2")
+@deprecated("Specify command line arguments in an Annotation mixing in HasScoptOptions", "FIRRTL 1.2")
 trait HasFirrtlOptions {
   self: ExecutionOptionsManager =>
   var firrtlOptions = FirrtlExecutionOptions()
@@ -589,10 +589,10 @@ trait HasFirrtlOptions {
   parser.note("")
 }
 
-@deprecated("Use FirrtlStage and examine the output AnnotationSeq directly", "1.2")
+@deprecated("Use FirrtlStage and examine the output AnnotationSeq directly", "FIRRTL 1.2")
 sealed trait FirrtlExecutionResult
 
-@deprecated("Use FirrtlStage and examine the output AnnotationSeq directly", "1.2")
+@deprecated("Use FirrtlStage and examine the output AnnotationSeq directly", "FIRRTL 1.2")
 object FirrtlExecutionSuccess {
   def apply(
     emitType:     String,
@@ -613,7 +613,7 @@ object FirrtlExecutionSuccess {
   * "sverilog"
   * @param emitted   The emitted result of compilation
   */
-@deprecated("Use FirrtlStage and examine the output AnnotationSeq directly", "1.2")
+@deprecated("Use FirrtlStage and examine the output AnnotationSeq directly", "FIRRTL 1.2")
 class FirrtlExecutionSuccess(
   val emitType:     String,
   val emitted:      String,
@@ -625,13 +625,13 @@ class FirrtlExecutionSuccess(
   *
   * @param message  Some kind of hint as to what went wrong.
   */
-@deprecated("Use FirrtlStage and examine the output AnnotationSeq directly", "1.2")
+@deprecated("Use FirrtlStage and examine the output AnnotationSeq directly", "FIRRTL 1.2")
 case class FirrtlExecutionFailure(message: String) extends FirrtlExecutionResult
 
 /**
   * @param applicationName  The name shown in the usage
   */
-@deprecated("Use new FirrtlStage infrastructure", "1.2")
+@deprecated("Use new FirrtlStage infrastructure", "FIRRTL 1.2")
 class ExecutionOptionsManager(val applicationName: String) extends HasParser(applicationName) with HasCommonOptions {
 
   def parse(args: Array[String]): Boolean = {

@@ -16,9 +16,9 @@ import scala.collection.mutable
 import scala.util.Try
 
 object InferResets {
-  @deprecated("This is no longer in use and will be removed", "1.3")
+  @deprecated("This is no longer in use and will be removed", "FIRRTL 1.3")
   final class DifferingDriverTypesException private (msg: String) extends PassException(msg)
-  @deprecated("This is no longer in use and will be removed", "1.3")
+  @deprecated("This is no longer in use and will be removed", "FIRRTL 1.3")
   object DifferingDriverTypesException {
     def apply(target: ReferenceTarget, tpes: Seq[(Type, Seq[TypeDriver])]): DifferingDriverTypesException = {
       val xs = tpes.map { case (t, ds) => s"${ds.map(_.target().serialize).mkString(", ")} of type ${t.serialize}" }

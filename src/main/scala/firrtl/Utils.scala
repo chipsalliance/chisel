@@ -307,7 +307,7 @@ object Utils extends LazyLogging {
     onExp(expression)
     ReferenceTarget(main, module, Nil, ref, tokens.toSeq)
   }
-  @deprecated("get_flip is fundamentally slow, use to_flip(flow(expr))", "1.2")
+  @deprecated("get_flip is fundamentally slow, use to_flip(flow(expr))", "FIRRTL 1.2")
   def get_flip(t: Type, i: Int, f: Orientation): Orientation = {
     if (i >= get_size(t)) throwInternalError(s"get_flip: shouldn't be here - $i >= get_size($t)")
     t match {

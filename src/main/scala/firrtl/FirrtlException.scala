@@ -4,7 +4,7 @@ package firrtl
 
 import scala.util.control.NoStackTrace
 
-@deprecated("External users should use either FirrtlUserException or their own hierarchy", "1.2")
+@deprecated("External users should use either FirrtlUserException or their own hierarchy", "FIRRTL 1.2")
 object FIRRTLException {
   def defaultMessage(message: String, cause: Throwable) = {
     if (message != null) {
@@ -16,7 +16,7 @@ object FIRRTLException {
     }
   }
 }
-@deprecated("External users should use either FirrtlUserException or their own hierarchy", "1.2")
+@deprecated("External users should use either FirrtlUserException or their own hierarchy", "FIRRTL 1.2")
 class FIRRTLException(val str: String, cause: Throwable = null)
     extends RuntimeException(FIRRTLException.defaultMessage(str, cause), cause)
 

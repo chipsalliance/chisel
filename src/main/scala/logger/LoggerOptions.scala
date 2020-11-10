@@ -35,6 +35,6 @@ class LoggerOptions private[logger] (
   def getLogFileName(): Option[String] = if (!logToFile) None else logFileName.orElse(Some("a.log"))
 
   /** True if a [[Logger]] should be writing to a file */
-  @deprecated("logToFile was removed, use logFileName.nonEmpty", "1.2")
+  @deprecated("logToFile was removed, use logFileName.nonEmpty", "FIRRTL 1.2")
   def logToFile(): Boolean = logFileName.nonEmpty
 }
