@@ -280,7 +280,7 @@ $(apis)/chiseltest/%/index.html: $(subprojects)/chiseltest/%/.git | $(apis)/chis
 
 # Build docs in subproject with a specific tag.
 docs/src/main/tut/chisel3/docs: chisel3/.git $(www-docs)
-	(cd chisel3 && sbt docs/mdoc && cp -r docs/generated ../docs/src/main/tut/chisel3/docs && rm ../docs/src/main/tut/chisel3/docs/wiki-deprecated/index.md)
+	(cd chisel3 && sbt docs/mdoc && cp -r docs/generated ../docs/src/main/tut/chisel3/docs)
 
 # Copy *SNAPSHOT* API of subprojects into API directory
 docs/target/site/api/SNAPSHOT/index.html: $(apis)/chisel3/$(chiselSnapshot)/index.html | docs/target/site/api/SNAPSHOT/
