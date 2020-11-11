@@ -42,7 +42,7 @@ name collisions, which are what triggers all those annoying signal name bumps!
 
 ### I want to force a signal (or instance) name to something, how do I do that?
 
-Use the `.suggestName` method, which is on all classes which subtype 'Data'.
+Use the `.suggestName` method, which is on all classes which subtype `Data`.
 
 ### All this prefixing is annoying, how do I fix it?
 
