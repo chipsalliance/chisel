@@ -103,10 +103,10 @@ class MyFlippedModule extends RawModule {
 
 This generates the following Verilog:
 
-```scala mdoc
+```scala mdoc:verilog
 import chisel3.stage.ChiselStage
 
-println(ChiselStage.emitVerilog(new MyFlippedModule()))
+ChiselStage.emitVerilog(new MyFlippedModule())
 ```
 
 ### MixedVec
