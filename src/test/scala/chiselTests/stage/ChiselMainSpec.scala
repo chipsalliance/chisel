@@ -156,7 +156,7 @@ class ChiselMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
     Seq(
       ChiselMainTest(args = Array("-X", "none"),
         generator = Some(classOf[BuilderErrorModule]),
-        stdout = Some("ChiselMainSpec.scala:41: Invalid bit range (3,-1) in class chiselTests.stage.ChiselMainSpec$BuilderErrorModule"),
+        stdout = Some("ChiselMainSpec.scala:38: Invalid bit range (3,-1) in class chiselTests.stage.ChiselMainSpec$BuilderErrorModule"),
         result = 1)
     ).foreach(runStageExpectFiles)
   }
