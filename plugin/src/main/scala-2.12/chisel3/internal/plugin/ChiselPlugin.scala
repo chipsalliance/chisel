@@ -39,7 +39,7 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
   class MyTypingTransformer(unit: CompilationUnit)
     extends TypingTransformer(unit) {
 
-    private def shouldMatchGen(bases: Tree*): ValDef => Boolean = {
+    private def shouldMatchGen(bases: Tree*): Type => Boolean = {
       val cache = mutable.HashMap.empty[Type, Boolean]
       val baseTypes = bases.map(inferType)
 
@@ -72,8 +72,7 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
       }
 
       // Return function so that it captures the cache
-      { p: ValDef =>
-        val q = inferType(p.tpt)
+      { q: Type =>
         cache.getOrElseUpdate(q, {
           // First check if a match, then check early exit, then recurse
           if(terminate(q)){
@@ -87,9 +86,10 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
       }
     }
 
-    private val shouldMatchData      : ValDef => Boolean = shouldMatchGen(tq"chisel3.Data")
-    private val shouldMatchDataOrMem : ValDef => Boolean = shouldMatchGen(tq"chisel3.Data", tq"chisel3.MemBase[_]")
-    private val shouldMatchModule    : ValDef => Boolean = shouldMatchGen(tq"chisel3.experimental.BaseModule")
+
+    private val shouldMatchData      : Type => Boolean = shouldMatchGen(tq"chisel3.Data")
+    private val shouldMatchDataOrMem : Type => Boolean = shouldMatchGen(tq"chisel3.Data", tq"chisel3.MemBase[_]")
+    private val shouldMatchModule    : Type => Boolean = shouldMatchGen(tq"chisel3.experimental.BaseModule")
 
     // Given a type tree, infer the type and return it
     private def inferType(t: Tree): Type = localTyper.typed(t, nsc.Mode.TYPEmode).tpe
@@ -118,6 +118,50 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
 
       okFlags(dd.mods) && !isNull && dd.rhs != EmptyTree
     }
+    // TODO Unify with okVal
+    private def okUnapply(dd: ValDef): Boolean = {
+
+      // These were found through trial and error
+      def okFlags(mods: Modifiers): Boolean = {
+        val badFlags = Set(
+          Flag.PARAM,
+          Flag.DEFERRED,
+          Flags.TRIEDCOOKING,
+          Flags.CASEACCESSOR,
+          Flags.PARAMACCESSOR
+        )
+        val goodFlags = Set(
+          Flag.SYNTHETIC,
+          Flag.ARTIFACT
+        )
+        goodFlags.forall(f => mods.hasFlag(f)) && badFlags.forall(f => !mods.hasFlag(f))
+      }
+
+      // Ensure expression isn't null, as you can't call `null.autoName("myname")`
+      val isNull = dd.rhs match {
+        case Literal(Constant(null)) => true
+        case _ => false
+      }
+      val tpe = inferType(dd.tpt)
+      definitions.isTupleType(tpe) && okFlags(dd.mods) && !isNull && dd.rhs != EmptyTree
+    }
+
+    private def findUnapplyNames(tree: Tree): Option[List[String]] = {
+      val applyArgs: Option[List[Tree]] = tree match {
+        case Match(_, List(CaseDef(_, _, Apply(_, args)))) => Some(args)
+        case _ => None
+      }
+      applyArgs.flatMap { args =>
+        var ok = true
+        val result = mutable.ListBuffer[String]()
+        args.foreach {
+          case Ident(TermName(name)) => result += name
+          // Anything unexpected and we abort
+          case _                     => ok = false
+        }
+        if (ok) Some(result.toList) else None
+      }
+    }
 
     // Whether this val is directly enclosed by a Bundle type
     private def inBundle(dd: ValDef): Boolean = {
@@ -131,28 +175,45 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
     override def transform(tree: Tree): Tree = tree match {
       // Check if a subtree is a candidate
       case dd @ ValDef(mods, name, tpt, rhs) if okVal(dd) =>
+        val tpe = inferType(tpt)
       // If a Data and in a Bundle, just get the name but not a prefix
-        if (shouldMatchData(dd) && inBundle(dd)) {
+        if (shouldMatchData(tpe) && inBundle(dd)) {
           val str = stringFromTermName(name)
           val newRHS = transform(rhs)  // chisel3.internal.plugin.autoNameRecursively
-          val named = q"chisel3.internal.plugin.autoNameRecursively($str, $newRHS)"
+          val named = q"chisel3.internal.plugin.autoNameRecursively($str)($newRHS)"
           treeCopy.ValDef(dd, mods, name, tpt, localTyper typed named)
         }
         // If a Data or a Memory, get the name and a prefix
-        else if (shouldMatchDataOrMem(dd)) {
+        else if (shouldMatchDataOrMem(tpe)) {
           val str = stringFromTermName(name)
           val newRHS = transform(rhs)
           val prefixed = q"chisel3.experimental.prefix.apply[$tpt](name=$str)(f=$newRHS)"
-          val named = q"chisel3.internal.plugin.autoNameRecursively($str, $prefixed)"
+          val named = q"chisel3.internal.plugin.autoNameRecursively($str)($prefixed)"
           treeCopy.ValDef(dd, mods, name, tpt, localTyper typed named)
         // If an instance, just get a name but no prefix
-        } else if (shouldMatchModule(dd)) {
+        } else if (shouldMatchModule(tpe)) {
           val str = stringFromTermName(name)
           val newRHS = transform(rhs)
-          val named = q"chisel3.internal.plugin.autoNameRecursively($str, $newRHS)"
+          val named = q"chisel3.internal.plugin.autoNameRecursively($str)($newRHS)"
           treeCopy.ValDef(dd, mods, name, tpt, localTyper typed named)
         } else {
           // Otherwise, continue
+          super.transform(tree)
+        }
+      case dd @ ValDef(mods, name, tpt, rhs @ Match(_, _)) if okUnapply(dd) =>
+        val tpe = inferType(tpt)
+        val fieldsOfInterest: List[Boolean] = tpe.typeArgs.map(shouldMatchData)
+        // Only transform if at least one field is of interest
+        if (fieldsOfInterest.reduce(_ || _)) {
+          findUnapplyNames(rhs) match {
+            case Some(names) =>
+              val onames: List[Option[String]] = fieldsOfInterest.zip(names).map { case (ok, name) => if (ok) Some(name) else None }
+              val named = q"chisel3.internal.plugin.autoNameRecursivelyProduct($onames)($rhs)"
+              treeCopy.ValDef(dd, mods, name, tpt, localTyper typed named)
+            case None => // It's not clear how this could happen but we don't want to crash
+              super.transform(tree)
+          }
+        } else {
           super.transform(tree)
         }
       // Otherwise, continue
