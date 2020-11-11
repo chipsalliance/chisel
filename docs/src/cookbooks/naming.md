@@ -5,7 +5,6 @@ section: "chisel3"
 ---
 
 ```scala mdoc:invisible
-import chisel3.internal.plugin._
 import chisel3._
 import chisel3.experimental.prefix
 import chisel3.experimental.noPrefix
@@ -57,8 +56,9 @@ class ExampleNoPrefix extends MultiIOModule {
 
   out := add
 }
-
-println(ChiselStage.emitVerilog(new ExampleNoPrefix))
+```
+```scala mdoc:verilog
+ChiselStage.emitVerilog(new ExampleNoPrefix)
 ```
 
 ### I am still not getting the name I want. For example, inlining an instance changes my name!
@@ -88,8 +88,9 @@ class MyLeaf extends MultiIOModule {
   val out = IO(Output(UInt(3.W)))
   out := in
 }
-
-println(ChiselStage.emitVerilog(new WrapperExample))
+```
+```scala mdoc:verilog
+ChiselStage.emitVerilog(new WrapperExample)
 ```
 
 This can be used to rename instances and non-aggregate typed signals.
