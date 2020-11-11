@@ -136,11 +136,11 @@ class ChiselMainSpec extends FeatureSpec with GivenWhenThen with Matchers with c
                      result = 1)
     ).foreach(runStageExpectFiles)
   }
-  Feature("Builder.error source locator") {
+  feature("Builder.error source locator") {
     Seq(
       ChiselMainTest(args = Array("-X", "none"),
         generator = Some(classOf[BuilderErrorModule]),
-        stdout = Some("ChiselMainSpec.scala:41: Invalid bit range (3,-1) in class chiselTests.stage.ChiselMainSpec$BuilderErrorModule"),
+        stdout = Some("ChiselMainSpec.scala:29: Invalid bit range (3,-1) in class chiselTests.stage.ChiselMainSpec$BuilderErrorModule"),
         result = 1)
     ).foreach(runStageExpectFiles)
   }
