@@ -153,7 +153,7 @@ private class ModuleToTransitionSystem extends LazyLogging {
         onRegister(name, width, resetExpr, initExpr, nextExpr, presetRegs)
     }
     // turn memories into state
-    val memoryEncoding = new MemoryEncoding(makeRandom)
+    val memoryEncoding = new MemoryEncoding(makeRandom, scan.namespace)
     val memoryStatesAndOutputs = scan.memories.map(m => memoryEncoding.onMemory(m, scan.connects, memInit.get(m.name)))
     // replace pseudo assigns for memory outputs
     val memOutputs = memoryStatesAndOutputs.flatMap(_._2).toMap
@@ -248,7 +248,7 @@ private class ModuleToTransitionSystem extends LazyLogging {
   }
 }
 
-private class MemoryEncoding(makeRandom: (String, Int) => BVExpr) extends LazyLogging {
+private class MemoryEncoding(makeRandom: (String, Int) => BVExpr, namespace: Namespace) extends LazyLogging {
   type Connects = Iterable[(String, BVExpr)]
   def onMemory(
     defMem:    ir.DefMemory,
@@ -303,37 +303,46 @@ private class MemoryEncoding(makeRandom: (String, Int) => BVExpr) extends LazyLo
       readers.map { r =>
         // combinatorial read
         if (defMem.readUnderWrite != ir.ReadUnderWrite.New) {
-          //logger.warn(s"WARN: Memory ${m.name} with combinatorial read port will always return the most recently written entry." +
-          //  s" The read-under-write => ${defMem.readUnderWrite} setting will be ignored.")
+          logger.warn(
+            s"WARN: Memory ${m.name} with combinatorial read port will always return the most recently written entry." +
+              s" The read-under-write => ${defMem.readUnderWrite} setting will be ignored."
+          )
         }
         // since we do a combinatorial read, the "old" data is the current data
-        val data = r.readOld()
+        val data = r.read()
         r.data.name -> data
       }
     } else { Seq() }
-    val readPortStates = if (defMem.readLatency == 1) {
+    val readPortSignalsAndStates = if (defMem.readLatency == 1) {
       readers.map { r =>
-        // we create a register for the read port data
-        val next = defMem.readUnderWrite match {
+        defMem.readUnderWrite match {
           case ir.ReadUnderWrite.New =>
-            throw new UnsupportedFeatureException(
-              s"registered read ports that return the new value (${m.name}.${r.name})"
-            )
-          // the thing that makes this hard is to properly handle write conflicts
+            // create a state to save the address and the enable signal
+            val enPrev = BVSymbol(namespace.newName(r.en.name + "_prev"), r.en.width)
+            val addrPrev = BVSymbol(namespace.newName(r.addr.name + "_prev"), r.addr.width)
+            val signal = r.data.name -> r.read(addr = addrPrev, en = enPrev)
+            val states = Seq(State(enPrev, None, next = Some(r.en)), State(addrPrev, None, next = Some(r.addr)))
+            (Seq(signal), states)
           case ir.ReadUnderWrite.Undefined =>
+            // check for potential read/write conflicts in which case we need to return an arbitrary value
             val anyWriteToTheSameAddress = any(writers.map(_.doesConflict(r)))
-            if (anyWriteToTheSameAddress == False) { r.readOld() }
+            val next = if (anyWriteToTheSameAddress == False) { r.read() }
             else {
               val readUnderWriteData = r.makeRandomData("_read_under_write_undefined")
-              BVIte(anyWriteToTheSameAddress, readUnderWriteData, r.readOld())
+              BVIte(anyWriteToTheSameAddress, readUnderWriteData, r.read())
             }
-          case ir.ReadUnderWrite.Old => r.readOld()
+            (Seq(), Seq(State(r.data, init = None, next = Some(next))))
+          case ir.ReadUnderWrite.Old =>
+            // we create a register for the read port data
+            (Seq(), Seq(State(r.data, init = None, next = Some(r.read()))))
         }
-        State(r.data, init = None, next = Some(next))
       }
     } else { Seq() }
 
-    (state +: readPortStates, readPortSignals)
+    val allReadPortSignals = readPortSignals ++ readPortSignalsAndStates.flatMap(_._1)
+    val readPortStates = readPortSignalsAndStates.flatMap(_._2)
+
+    (state +: readPortStates, allReadPortSignals)
   }
 
   private def getInit(m: MemInfo, initValue: MemoryInitValue): ArrayExpr = initValue match {
@@ -385,7 +394,7 @@ private class MemoryEncoding(makeRandom: (String, Int) => BVExpr) extends LazyLo
     val enIsTrue: Boolean = inputs(en.name) == True
     def makeRandomData(suffix: String): BVExpr =
       makeRandom(memory.name + "_" + name + suffix, memory.dataWidth)
-    def readOld(): BVExpr = {
+    def read(addr: BVSymbol = addr, en: BVSymbol = en): BVExpr = {
       val canBeOutOfRange = !memory.fullAddressRange
       val canBeDisabled = !enIsTrue
       val data = ArrayRead(memory.sym, addr)
@@ -467,7 +476,7 @@ private class ModuleScanner(makeRandom: (String, Int) => BVExpr) extends LazyLog
   // keeps track of unused memory (data) outputs so that we can see where they are first used
   private val unusedMemOutputs = mutable.LinkedHashMap[String, Int]()
   // ensure unique names for assert/assume signals
-  private val namespace = Namespace()
+  private[firrtl] val namespace = Namespace()
 
   private[firrtl] def onPort(p: ir.Port): Unit = {
     if (isAsyncReset(p.tpe)) {

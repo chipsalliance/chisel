@@ -45,7 +45,7 @@ class MemorySpec extends EndToEndSMTBaseSpec {
        |    ${cmds.mkString("\n    ")}
        |""".stripMargin
 
-  "Registered test memory" should "return written data after two cycles" taggedAs (RequiresZ3) in {
+  "Registered read-first memory" should "return written data after two cycles" taggedAs (RequiresZ3) in {
     val cmds =
       """node past_past_valid = geq(cycle, UInt(2))
         |reg past_in: UInt<8>, clock
@@ -59,6 +59,30 @@ class MemorySpec extends EndToEndSMTBaseSpec {
         |assert(clock, eq(out, past_past_in), past_past_valid, "out = past(past(in))")
         |""".stripMargin
     test(registeredTestMem("Mem00", cmds, "old"), MCSuccess, kmax = 3)
+  }
+
+  "Registered read-first memory" should "not return written data after one cycle" taggedAs (RequiresZ3) in {
+    val cmds =
+      """
+        |reg past_in: UInt<8>, clock
+        |past_in <= in
+        |
+        |assume(clock, eq(read_addr, write_addr), UInt(1), "read_addr = write_addr")
+        |assert(clock, eq(out, past_in), past_valid, "out = past(in)")
+        |""".stripMargin
+    test(registeredTestMem("Mem00", cmds, "old"), MCFail(1), kmax = 3)
+  }
+
+  "Registered write-first memory" should "return written data after one cycle" taggedAs (RequiresZ3) in {
+    val cmds =
+      """
+        |reg past_in: UInt<8>, clock
+        |past_in <= in
+        |
+        |assume(clock, eq(read_addr, write_addr), UInt(1), "read_addr = write_addr")
+        |assert(clock, eq(out, past_in), past_valid, "out = past(in)")
+        |""".stripMargin
+    test(registeredTestMem("Mem00", cmds, "new"), MCSuccess, kmax = 3)
   }
 
   private def readOnlyMem(pred: String, num: Int) =
