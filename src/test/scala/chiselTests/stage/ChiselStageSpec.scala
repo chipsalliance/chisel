@@ -72,21 +72,21 @@ class ChiselStageSpec extends AnyFlatSpec with Matchers with Utils {
 
   behavior of "ChiselStage$.elaborate"
 
-  it should "generate a Chisel circuit from a Chisel module" in {
+  ignore should "generate a Chisel circuit from a Chisel module" in {
     info("no files were written")
     catchWrites { ChiselStage.elaborate(new Foo) } shouldBe a[Right[_, _]]
   }
 
   behavior of "ChiselStage$.convert"
 
-  it should "generate a CHIRRTL circuit from a Chisel module" in {
+  ignore should "generate a CHIRRTL circuit from a Chisel module" in {
     info("no files were written")
     catchWrites { ChiselStage.convert(new Foo) } shouldBe a[Right[_, _]]
   }
 
   behavior of "ChiselStage$.emitChirrtl"
 
-  it should "generate a CHIRRTL string from a Chisel module" in {
+  ignore should "generate a CHIRRTL string from a Chisel module" in {
     val wrapped = catchWrites { ChiselStage.emitChirrtl(new Foo) }
 
     info("no files were written")
@@ -98,7 +98,7 @@ class ChiselStageSpec extends AnyFlatSpec with Matchers with Utils {
 
   behavior of "ChiselStage$.emitFirrtl"
 
-  it should "generate a FIRRTL string from a Chisel module" in {
+  ignore should "generate a FIRRTL string from a Chisel module" in {
     val wrapped = catchWrites { ChiselStage.emitFirrtl(new Foo) }
 
     info("no files were written")
@@ -110,7 +110,7 @@ class ChiselStageSpec extends AnyFlatSpec with Matchers with Utils {
 
   behavior of "ChiselStage$.emitVerilog"
 
-  it should "generate a Verilog string from a Chisel module" in {
+  ignore should "generate a Verilog string from a Chisel module" in {
     val wrapped = catchWrites { ChiselStage.emitVerilog(new Foo) }
 
     info("no files were written")
@@ -122,7 +122,7 @@ class ChiselStageSpec extends AnyFlatSpec with Matchers with Utils {
 
   behavior of "ChiselStage$.emitSystemVerilog"
 
-  it should "generate a SystemvVerilog string from a Chisel module" in {
+  ignore should "generate a SystemvVerilog string from a Chisel module" in {
     val wrapped = catchWrites { ChiselStage.emitSystemVerilog(new Foo) }
     info("no files were written")
     wrapped shouldBe a[Right[_, _]]
