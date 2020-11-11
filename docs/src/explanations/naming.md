@@ -42,11 +42,11 @@ side with a call to `autoNameRecursively`, which names the signal/module.
 ```scala mdoc
 class MyBundle extends Bundle {
   val foo = Input(UInt(3.W))
-  // val foo = autoNameRecursively("foo", Input(UInt(3.W)))
+  // val foo = autoNameRecursively("foo")(Input(UInt(3.W)))
 }
 class Example1 extends MultiIOModule {
   val io = IO(new MyBundle())
-  // val io = autoNameRecursively("io", IO(new MyBundle()))
+  // val io = autoNameRecursively("io")(IO(new MyBundle()))
 }
 println(ChiselStage.emitVerilog(new Example1))
 ```
@@ -57,15 +57,15 @@ side of the val declaration:
 ```scala mdoc
 class Example2 extends MultiIOModule {
   val in = IO(Input(UInt(2.W)))
-  // val in = autoNameRecursively("in", prefix("in")(IO(Input(UInt(2.W)))))
+  // val in = autoNameRecursively("in")(prefix("in")(IO(Input(UInt(2.W)))))
 
   val out = IO(Output(UInt(2.W)))
-  // val out = autoNameRecursively("out", prefix("out")(IO(Output(UInt(2.W)))))
+  // val out = autoNameRecursively("out")(prefix("out")(IO(Output(UInt(2.W)))))
 
   def inXin() = in * in
 
   val add = 3.U + inXin()
-  // val add = autoNameRecursively("add", prefix("add")(3.U + inXin()))
+  // val add = autoNameRecursively("add")(prefix("add")(3.U + inXin()))
   // Note that the intermediate result of the multiplication is prefixed with `add`
 
   out := add + 1.U
@@ -79,22 +79,37 @@ Note that the naming also works if the hardware type is nested in an `Option` or
 ```scala mdoc
 class Example3 extends MultiIOModule {
   val in = IO(Input(UInt(2.W)))
-  // val in = autoNameRecursively("in", prefix("in")(IO(Input(UInt(2.W)))))
+  // val in = autoNameRecursively("in")(prefix("in")(IO(Input(UInt(2.W)))))
 
   val out = IO(Output(UInt()))
-  // val out = autoNameRecursively("out", prefix("out")(IO(Output(UInt(2.W)))))
+  // val out = autoNameRecursively("out")(prefix("out")(IO(Output(UInt(2.W)))))
 
   def inXin() = in * in
 
   val opt = Some(3.U + inXin())
   // Note that the intermediate result of the inXin() is prefixed with `opt`:
-  // val opt = autoNameRecursively("opt", prefix("opt")(Some(3.U + inXin())))
+  // val opt = autoNameRecursively("opt")(prefix("opt")(Some(3.U + inXin())))
 
   out := opt.get + 1.U
 }
 
 println(ChiselStage.emitVerilog(new Example3))
 ```
+
+There is also a slight variant (`autoNameRecursivelyProduct`) for naming hardware with names provided by an unapply:
+```scala mdoc
+class UnapplyExample extends MultiIOModule {
+  def mkIO() = (IO(Input(UInt(2.W))), IO(Output(UInt())))
+  val (in, out) = mkIO()
+  // val (in, out) = autoNameRecursivelyProduct(List(Some("in"), Some("out")))(mkIO())
+
+  out := in
+}
+
+println(ChiselStage.emitVerilog(new UnapplyExample))
+```
+Note that the compiler plugin will not insert a prefix in these cases because it is ambiguous what the prefix should be.
+Users who desire a prefix are encouraged to provide one as [described below](#prefixing).
 
 ### Prefixing
 
