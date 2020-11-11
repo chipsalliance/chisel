@@ -48,73 +48,14 @@ class ChiselStageSpec extends FlatSpec with Matchers {
 
   behavior of "ChiselStage$.elaborate"
 
-<<<<<<< HEAD
   it should "generate a Chisel circuit from a Chisel module" in {
     ChiselStage.elaborate(new Foo)
-=======
-  ignore should "generate a Chisel circuit from a Chisel module" in {
-    info("no files were written")
-    catchWrites { ChiselStage.elaborate(new Foo) } shouldBe a[Right[_, _]]
->>>>>>> 9f1d6cbb... Ignore tests using System.setSecurityManager (#1661)
   }
 
   behavior of "ChiselStage$.convert"
 
-<<<<<<< HEAD
   it should "generate a CHIRRTL circuit from a Chisel module" in {
     ChiselStage.convert(new Foo)
-=======
-  ignore should "generate a CHIRRTL circuit from a Chisel module" in {
-    info("no files were written")
-    catchWrites { ChiselStage.convert(new Foo) } shouldBe a[Right[_, _]]
-  }
-
-  behavior of "ChiselStage$.emitChirrtl"
-
-  ignore should "generate a CHIRRTL string from a Chisel module" in {
-    val wrapped = catchWrites { ChiselStage.emitChirrtl(new Foo) }
-
-    info("no files were written")
-    wrapped shouldBe a[Right[_, _]]
-
-    info("returned string looks like FIRRTL")
-    wrapped.right.get should include ("circuit")
-  }
-
-  behavior of "ChiselStage$.emitFirrtl"
-
-  ignore should "generate a FIRRTL string from a Chisel module" in {
-    val wrapped = catchWrites { ChiselStage.emitFirrtl(new Foo) }
-
-    info("no files were written")
-    wrapped shouldBe a[Right[_, _]]
-
-    info("returned string looks like FIRRTL")
-    wrapped.right.get should include ("circuit")
-  }
-
-  behavior of "ChiselStage$.emitVerilog"
-
-  ignore should "generate a Verilog string from a Chisel module" in {
-    val wrapped = catchWrites { ChiselStage.emitVerilog(new Foo) }
-
-    info("no files were written")
-    wrapped shouldBe a[Right[_, _]]
-
-    info("returned string looks like Verilog")
-    wrapped.right.get should include ("endmodule")
-  }
-
-  behavior of "ChiselStage$.emitSystemVerilog"
-
-  ignore should "generate a SystemvVerilog string from a Chisel module" in {
-    val wrapped = catchWrites { ChiselStage.emitSystemVerilog(new Foo) }
-    info("no files were written")
-    wrapped shouldBe a[Right[_, _]]
-
-    info("returned string looks like Verilog")
-    wrapped.right.get should include ("endmodule")
->>>>>>> 9f1d6cbb... Ignore tests using System.setSecurityManager (#1661)
   }
 
   behavior of "ChiselStage phase ordering"
