@@ -13,6 +13,7 @@ import firrtl.{
   VerilogEmitter,
   SystemVerilogEmitter
 }
+import firrtl.backends.experimental.smt._
 import firrtl.options.{Dependency, Phase, PhaseManager, Shell, Stage, StageError, StageMain}
 import firrtl.options.phases.DeletedWrapper
 import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlCli, RunFirrtlTransformAnnotation}
@@ -214,6 +215,29 @@ object ChiselStage {
         case EmittedFirrtlCircuitAnnotation(a) => a
       }.get
       .value
+
+  }
+
+  /** Return a SMTLIB string for a Chisel module
+  * @param gen a call-by-name Chisel module
+  */
+  def emitSMTLIB(gen: => RawModule): String = {
+    val phase = new PhaseManager(
+      Seq(
+        Dependency[chisel3.stage.phases.Checks],
+        Dependency[chisel3.stage.phases.Elaborate],
+        Dependency[chisel3.stage.phases.AddImplicitOutputFile],
+        Dependency[chisel3.stage.phases.AddImplicitOutputAnnotationFile],
+        Dependency[chisel3.stage.phases.MaybeAspectPhase],
+        Dependency[chisel3.stage.phases.Convert],
+        Dependency[firrtl.stage.phases.Compiler] )
+    )
+
+    phase
+      .transform(Seq(ChiselGeneratorAnnotation(() => gen), RunFirrtlTransformAnnotation(new SMTLibEmitter)))
+      .collectFirst {
+        case EmittedSMTModelAnnotation(_, a, _) => a
+      }.get
 
   }
 
