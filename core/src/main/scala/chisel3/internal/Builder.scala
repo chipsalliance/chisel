@@ -59,6 +59,7 @@ private[chisel3] class IdGen {
     counter += 1
     counter
   }
+  def value: Long = counter
 }
 
 /** Public API to access Node/Signal names.
@@ -119,7 +120,9 @@ private[chisel3] trait HasId extends InstanceId {
     * @param seed Seed for the name of this component
     * @return this object
     */
-  private [chisel3] def autoSeed(seed: String): this.type = {
+  private[chisel3] def autoSeed(seed: String): this.type = forceAutoSeed(seed)
+  // Bypass the overridden behavior of autoSeed in [[Data]], apply autoSeed even to ports
+  private[chisel3] def forceAutoSeed(seed: String): this.type = {
     auto_seed = Some(seed)
     for(hook <- auto_postseed_hooks) { hook(seed) }
     prefix_seed = Builder.getPrefix()
@@ -198,9 +201,11 @@ private[chisel3] trait HasId extends InstanceId {
     }
 
   private var _ref: Option[Arg] = None
-  private[chisel3] def setRef(imm: Arg, force: Boolean = false): Unit = {
-    assert(force || _ref.isEmpty, s"Internal Error, setRef for $this called twice! first ${_ref.get}, second $imm")
-    _ref = Some(imm)
+  private[chisel3] def setRef(imm: Arg): Unit = setRef(imm, false)
+  private[chisel3] def setRef(imm: Arg, force: Boolean): Unit = {
+    if (_ref.isEmpty || force) {
+      _ref = Some(imm)
+    }
   }
   private[chisel3] def setRef(parent: HasId, name: String): Unit = setRef(Slot(Node(parent), name))
   private[chisel3] def setRef(parent: HasId, index: Int): Unit = setRef(Index(Node(parent), ILit(index)))
