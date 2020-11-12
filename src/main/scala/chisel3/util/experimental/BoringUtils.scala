@@ -3,11 +3,15 @@
 package chisel3.util.experimental
 
 import chisel3._
+import chisel3.aop.injecting.{InjectStatement, InjectingAspect}
 import chisel3.experimental.{ChiselAnnotation, RunFirrtlTransform, annotate}
-import chisel3.internal.{InstanceId, NamedComponent, Namespace}
+import chisel3.internal.{Builder, InstanceId, NamedComponent, Namespace, PortBinding}
+import firrtl.AnnotationSeq
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
-import firrtl.passes.wiring.{WiringTransform, SourceAnnotation, SinkAnnotation}
-import firrtl.annotations.{ModuleName, ComponentName}
+import firrtl.passes.wiring.{SinkAnnotation, SourceAnnotation, WiringTransform}
+import firrtl.annotations.{Annotation, ComponentName, ModuleName}
+import firrtl.options.Dependency
+import firrtl.stage.RunFirrtlTransformAnnotation
 
 import scala.concurrent.SyncVar
 
@@ -45,8 +49,8 @@ class BoringUtilsException(message: String) extends Exception(message)
   *
   * ===Hierarchical Boring===
   *
-  * Hierarchcical boring involves connecting one sink instance to another source instance in a parent module. Below,
-  * module `Top` contains an instance of `Cosntant` and `Expect`. Using [[BoringUtils.bore]], we can connect
+  * Hierarchical boring involves connecting one sink instance to another source instance in a parent module. Below,
+  * module `Top` contains an instance of `Constant` and `Expect`. Using [[BoringUtils.bore]], we can connect
   * `constant.x` to `expect.y`.
   *
   * {{{
@@ -158,7 +162,6 @@ object BoringUtils {
     if (forceExists && !checkName(name)) {
       throw new BoringUtilsException(s"Sink ID '$name' not found in BoringUtils ID namespace") }
     def moduleName = component.toNamed match {
-      case c: ModuleName => c
       case c: ComponentName => c.module
       case _ => throw new ChiselException("Can only add a Module or Component sink", null)
     }
@@ -191,4 +194,46 @@ object BoringUtils {
     genName
   }
 
+  /** Connect a source to one or more sinks, through a list of modules
+   * @param source a source component
+   * @param sinks one or more sink components
+   * @param through a list of wire names, the modules to instantiate them in,
+   * @return the name of the signal used to connect the source to the
+   * sinks
+   * @note the returned name will be based on the name of the source
+   * component
+   */
+  def bore(source: Data, sinks: Seq[Data], through: Seq[(String, RawModule)]): Unit = {
+    val boringName = try {
+      source.instanceName
+    } catch {
+      case _: Exception => "bore"
+    }
+    val genName = addSource(source, boringName, true, true)
+    if(through.isEmpty) {
+      sinks.map(addSink(_, genName, true, true))
+    } else {
+      annotate(new ChiselAnnotation {
+        override def toFirrtl: Annotation = experimental.EmptyAnnotation
+        /** Conversion to FIRRTL Annotation */
+        override def toAnnotationSeq: AnnotationSeq = {
+          val xform = RunFirrtlTransformAnnotation(Dependency[WiringTransform])
+          val (retName, annos) = through.foldLeft((genName, Seq.empty[Annotation])) { case ((name, annos), (at, module)) =>
+            var retName: String = null
+            val newAnnos = InjectingAspect({_: RawModule => Seq(module)}, {dut: RawModule =>
+              val bore = Wire(chiselTypeOf(source)).suggestName(at)
+              bore := DontCare
+              addSink(bore, name, true, true)
+              retName = addSource(bore, at, true, true)
+            }).toAnnotation(module)
+            (retName, newAnnos ++ annos)
+          }
+          val sinkAnnos = InjectingAspect({x: RawModule => Seq(x)}, {dut: RawModule =>
+            sinks.map(addSink(_, retName, true, true))
+          }).toAnnotation(through.head._2)
+          xform +: (annos ++ sinkAnnos)
+        }
+      })
+    }
+  }
 }

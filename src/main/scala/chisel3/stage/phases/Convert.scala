@@ -30,7 +30,7 @@ class Convert extends Phase {
       a
         .circuit
         .annotations
-        .map(_.toFirrtl) ++
+        .flatMap(_.convert) ++
       a
         .circuit
         .annotations

@@ -5,18 +5,41 @@ package chisel3.experimental
 import scala.language.existentials
 import chisel3.internal.{Builder, InstanceId, LegacyModule}
 import chisel3.{CompileOptions, Data}
-import firrtl.Transform
+import firrtl.{AnnotationSeq, RenameMap, Transform}
 import firrtl.annotations._
 import firrtl.options.Unserializable
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
+
+/** An empty annotation which does nothing
+  *
+  * Is used to implement [[ChiselAnnotation.toFirrtl]] if you instead want to return an [[AnnotationSeq]] from
+  * [[ChiselAnnotation.toAnnotationSeq]]
+  */
+case object EmptyAnnotation extends Annotation {
+  override def update(renames: RenameMap): Seq[Annotation] = Seq(this)
+}
 
 /** Interface for Annotations in Chisel
   *
   * Defines a conversion to a corresponding FIRRTL Annotation
   */
 trait ChiselAnnotation {
-  /** Conversion to FIRRTL Annotation */
+
+  /** Conversion to FIRRTL Annotation
+    * Will be deprecated in 3.5 release
+    * Please use [[toAnnotationSeq]] instead, and return [[EmptyAnnotation]] here
+    */
   def toFirrtl: Annotation
+
+  /** Conversion to FIRRTL AnnotationSeq */
+  protected def toAnnotationSeq: AnnotationSeq = Nil
+
+  private[chisel3] def convert: AnnotationSeq = {
+    toFirrtl match {
+      case EmptyAnnotation => toAnnotationSeq
+      case other => Seq(other)
+    }
+  }
 }
 
 /** Mixin for [[ChiselAnnotation]] that instantiates an associated FIRRTL Transform when this Annotation is present
