@@ -10,6 +10,7 @@ import firrtl.traversals.Foreachers._
 import firrtl.WrappedExpression._
 import firrtl.graph.{CyclicException, MutableDiGraph}
 import firrtl.options.Dependency
+import firrtl.Utils.getGroundZero
 
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
@@ -128,8 +129,8 @@ class RemoveWires extends Transform with DependencyAPIMigration {
         case invalid @ IsInvalid(info, expr) =>
           kind(expr) match {
             case WireKind =>
-              val width = expr.tpe match { case GroundType(width) => width } // LowFirrtl
-              netlist(we(expr)) = (Seq(ValidIf(Utils.zero, UIntLiteral(BigInt(0), width), expr.tpe)), info)
+              val (tpe, width) = expr.tpe match { case g: GroundType => (g, g.width) } // LowFirrtl
+              netlist(we(expr)) = (Seq(ValidIf(Utils.zero, getGroundZero(tpe), tpe)), info)
             case _ => otherStmts += invalid
           }
         case other @ (_: Print | _: Stop | _: Attach | _: Verification) =>

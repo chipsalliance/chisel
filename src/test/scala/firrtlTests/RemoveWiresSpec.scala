@@ -6,6 +6,7 @@ import firrtl._
 import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.testutils._
+import FirrtlCheckers._
 
 import collection.mutable
 
@@ -185,6 +186,19 @@ class RemoveWiresSpec extends FirrtlFlatSpec {
                                  |""".stripMargin)
     // Check declaration before use is maintained
     firrtl.passes.CheckHighForm.execute(result)
+  }
+
+  it should "give nodes made from invalid wires the correct type" in {
+    val result = compileBody(
+      s"""|input  a   : SInt<4>
+          |input  sel : UInt<1>
+          |output z   : SInt<4>
+          |wire w : SInt<4>
+          |w is invalid
+          |z <= mux(sel, a, w)
+          |""".stripMargin
+    )
+    result should containLine("""node w = validif(UInt<1>("h0"), SInt<4>("h0"))""")
   }
 
 }

@@ -250,6 +250,24 @@ object Utils extends LazyLogging {
   val one = UIntLiteral(1)
   val zero = UIntLiteral(0)
 
+  private val ClockZero = DoPrim(PrimOps.AsClock, Seq(zero), Seq.empty, ClockType)
+  private val AsyncZero = DoPrim(PrimOps.AsAsyncReset, Seq(zero), Nil, AsyncResetType)
+
+  /** Returns an [[firrtl.ir.Expression Expression]] equal to zero for a given [[firrtl.ir.GroundType GroundType]]
+    * @note Does not support [[firrtl.ir.AnalogType AnalogType]] nor [[firrtl.ir.IntervalType IntervalType]]
+    */
+  def getGroundZero(tpe: GroundType): Expression = tpe match {
+    case u: UIntType  => UIntLiteral(0, u.width)
+    case s: SIntType  => SIntLiteral(0, s.width)
+    case f: FixedType => FixedLiteral(0, f.width, f.point)
+    // Default reset type is Bool
+    case ResetType      => Utils.zero
+    case ClockType      => ClockZero
+    case AsyncResetType => AsyncZero
+    // TODO Support IntervalType
+    case other => throwInternalError(s"Unexpected type $other")
+  }
+
   def create_exps(n: String, t: Type): Seq[Expression] =
     create_exps(WRef(n, t, ExpKind, UnknownFlow))
   def create_exps(e: Expression): Seq[Expression] = e match {
