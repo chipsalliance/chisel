@@ -1,0 +1,1 @@
+../firrtl/project/plugins.sbt

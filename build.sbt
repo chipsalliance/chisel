@@ -165,10 +165,10 @@ lazy val macros = (project in file("macros")).
   settings(commonSettings: _*).
   settings(publishSettings: _*)
 
-lazy val firrtlRef = ProjectRef(workspaceDirectory / "firrtl", "firrtl")
+lazy val firrtl = (project in file("firrtl"))
 
 lazy val core = (project in file("core")).
-  sourceDependency(firrtlRef, defaultVersions("firrtl")).
+  dependsOn(firrtl).
   settings(commonSettings: _*).
   enablePlugins(BuildInfoPlugin).
   settings(
