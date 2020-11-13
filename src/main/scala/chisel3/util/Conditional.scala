@@ -10,7 +10,7 @@ import scala.language.experimental.macros
 import scala.reflect.macros.blackbox._
 
 import chisel3._
-import chisel3.internal.sourceinfo.{SourceInfo}
+import chisel3.internal.sourceinfo.SourceInfo
 
 @deprecated("The unless conditional is deprecated, use when(!condition){...} instead", "3.2")
 object unless {

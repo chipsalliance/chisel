@@ -33,7 +33,7 @@ class SwitchSpec extends ChiselFlatSpec with Utils {
     }
   }
   it should "provide useful source locators" in {
-    val verilog = ChiselStage.emitVerilog(new Module {
+    val chirrtl = ChiselStage.emitChirrtl(new Module {
       val io = IO(new Bundle {
         val in = Input(UInt(2.W))
         val out = Output(UInt(2.W))
@@ -48,6 +48,6 @@ class SwitchSpec extends ChiselFlatSpec with Utils {
       }
     })
 
-    assert(!verilog.contains("Conditional.scala"))
+    chirrtl should not include "Conditional.scala"
   }
 }
