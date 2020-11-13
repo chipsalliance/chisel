@@ -49,6 +49,5 @@ class SwitchSpec extends ChiselFlatSpec with Utils {
     })
 
     assert(!verilog.contains("Conditional.scala"))
-    println(verilog)
   }
 }
