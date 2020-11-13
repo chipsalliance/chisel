@@ -23,6 +23,11 @@ object ChiselMainSpec {
     require(false)
   }
 
+  /** A module that triggers a Builder.error (as opposed to exception) */
+  class BuilderErrorModule extends RawModule {
+    val w = Wire(UInt(8.W))
+    w(3, -1)
+  }
 }
 
 class ChiselMainSpec extends FeatureSpec with GivenWhenThen with Matchers with chiselTests.Utils {
@@ -129,6 +134,14 @@ class ChiselMainSpec extends FeatureSpec with GivenWhenThen with Matchers with c
                      generator = Some(classOf[FailingRequirementModule]),
                      stdout = Some("chisel3.internal.ChiselException"),
                      result = 1)
+    ).foreach(runStageExpectFiles)
+  }
+  feature("Builder.error source locator") {
+    Seq(
+      ChiselMainTest(args = Array("-X", "none"),
+        generator = Some(classOf[BuilderErrorModule]),
+        stdout = Some("ChiselMainSpec.scala:29: Invalid bit range (3,-1) in class chiselTests.stage.ChiselMainSpec$BuilderErrorModule"),
+        result = 1)
     ).foreach(runStageExpectFiles)
   }
 
