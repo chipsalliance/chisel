@@ -85,7 +85,7 @@ lazy val antlrSettings = Seq(
   antlr4GenVisitor in Antlr4 := true,
   antlr4GenListener in Antlr4 := false,
   antlr4PackageName in Antlr4 := Option("firrtl.antlr"),
-  antlr4Version in Antlr4 := "4.7.1",
+  antlr4Version in Antlr4 := "4.8",
   javaSource in Antlr4 := (sourceManaged in Compile).value
 )
 
