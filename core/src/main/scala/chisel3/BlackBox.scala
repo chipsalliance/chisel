@@ -165,7 +165,8 @@ abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param
     // Long term solution will be to define BlackBox IO differently as part of
     //   it not descending from the (current) Module
     for ((name, port) <- namedPorts) {
-      port.setRef(ModuleIO(this, _namespace.name(name)))
+      // We have to force override the _ref because it was set during IO binding
+      port.setRef(ModuleIO(this, _namespace.name(name)), force = true)
     }
 
     // We need to call forceName and onModuleClose on all of the sub-elements

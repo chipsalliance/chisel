@@ -96,6 +96,51 @@ class HugeCMemTester(size: BigInt) extends BasicTester {
   }
 }
 
+class SyncReadMemBundleTester extends BasicTester {
+  val (cnt, _) = Counter(true.B, 5)
+  val tpe = new Bundle {
+    val foo = UInt(2.W)
+  }
+  val mem = SyncReadMem(2, tpe)
+  val rdata = mem.read(cnt - 1.U, cnt =/= 0.U)
+
+  switch (cnt) {
+    is (0.U) {
+      val w = Wire(tpe)
+      w.foo := 3.U
+      mem.write(cnt, w)
+    }
+    is (1.U) {
+      val w = Wire(tpe)
+      w.foo := 2.U
+      mem.write(cnt, w)
+    }
+    is (2.U) { assert(rdata.foo === 3.U) }
+    is (3.U) { assert(rdata.foo === 2.U) }
+    is (4.U) { stop() }
+  }
+}
+
+class MemBundleTester extends BasicTester {
+  val tpe = new Bundle {
+    val foo = UInt(2.W)
+  }
+  val mem = Mem(2, tpe)
+
+  // Circuit style tester is definitely the wrong abstraction here
+  val (cnt, wrap) = Counter(true.B, 2)
+  mem(0) := {
+    val w = Wire(tpe)
+    w.foo := 1.U
+    w
+  }
+
+  when (cnt === 1.U) {
+    assert(mem.read(0.U).foo === 1.U)
+    stop()
+  }
+}
+
 class MemorySpec extends ChiselPropSpec {
   property("Mem of Vec should work") {
     assertTesterPasses { new MemVecTester }
@@ -103,6 +148,14 @@ class MemorySpec extends ChiselPropSpec {
 
   property("SyncReadMem should work") {
     assertTesterPasses { new SyncReadMemTester }
+  }
+
+  property("SyncReadMems of Bundles should work") {
+    assertTesterPasses { new SyncReadMemBundleTester }
+  }
+
+  property("Mems of Bundles should work") {
+    assertTesterPasses { new MemBundleTester }
   }
 
   property("SyncReadMem write collision behaviors should work") {

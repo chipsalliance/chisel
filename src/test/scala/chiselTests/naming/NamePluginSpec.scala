@@ -166,11 +166,78 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
     }
   }
 
-  "Multiple names on a non-IO" should "get the last name" in {
+  "Multiple names on a non-IO" should "get the first name" in {
     class Test extends MultiIOModule {
       {
         val a = Wire(UInt(3.W))
         val b = a
+      }
+    }
+
+    aspectTest(() => new Test) {
+      top: Test =>
+        Select.wires(top).map(_.instanceName) should be (List("a"))
+    }
+  }
+
+  "Outer Expression, First Statement naming" should "apply to IO" in {
+    class Test extends RawModule {
+      {
+        val widthOpt: Option[Int] = Some(4)
+        val out = widthOpt.map { w =>
+          val port = IO(Output(UInt(w.W)))
+          port
+        }
+        val foo = out
+        val bar = out.get
+      }
+    }
+
+    aspectTest(() => new Test) {
+      top: Test =>
+        Select.ios(top).map(_.instanceName) should be (List("out"))
+    }
+  }
+
+  "Outer Expression, First Statement naming" should "apply to non-IO" in {
+    class Test extends RawModule {
+      {
+        val widthOpt: Option[Int] = Some(4)
+        val fizz = widthOpt.map { w =>
+          val wire = Wire(UInt(w.W))
+          wire
+        }
+        val foo = fizz
+        val bar = fizz.get
+      }
+    }
+
+    aspectTest(() => new Test) {
+      top: Test =>
+        Select.wires(top).map(_.instanceName) should be (List("fizz"))
+    }
+  }
+
+  "autoSeed" should "NOT override automatic naming for IO" in {
+    class Test extends RawModule {
+      {
+        val a = IO(Output(UInt(3.W)))
+        a.autoSeed("b")
+      }
+    }
+
+    aspectTest(() => new Test) {
+      top: Test =>
+        Select.ios(top).map(_.instanceName) should be (List("a"))
+    }
+  }
+
+
+  "autoSeed" should "override automatic naming for non-IO" in {
+    class Test extends MultiIOModule {
+      {
+        val a = Wire(UInt(3.W))
+        a.autoSeed("b")
       }
     }
 
@@ -190,6 +257,54 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
     aspectTest(() => new Test) {
       top: Test =>
         Select.wires(top).map(_.instanceName) should be (List("a", "b"))
+    }
+  }
+
+  "Unapply assignments" should "not override already named things" in {
+    class Test extends MultiIOModule {
+      {
+        val x = Wire(UInt(3.W))
+        val (a, b) = (x, Wire(UInt(3.W)))
+      }
+    }
+
+    aspectTest(() => new Test) {
+      top: Test =>
+        Select.wires(top).map(_.instanceName) should be (List("x", "b"))
+    }
+  }
+
+  "Case class unapply assignments" should "be named" in {
+    case class Foo(x: UInt, y: UInt)
+    class Test extends MultiIOModule {
+      {
+        def func() = Foo(Wire(UInt(3.W)), Wire(UInt(3.W)))
+        val Foo(a, b) = func()
+      }
+    }
+
+    aspectTest(() => new Test) {
+      top: Test =>
+        Select.wires(top).map(_.instanceName) should be (List("a", "b"))
+    }
+  }
+
+  "Complex unapply assignments" should "be named" in {
+    case class Foo(x: UInt, y: UInt)
+    class Test extends MultiIOModule {
+      {
+        val w = Wire(UInt(3.W))
+        def func() = {
+          val x = Foo(Wire(UInt(3.W)), Wire(UInt(3.W)))
+          (x, w) :: Nil
+        }
+        val ((Foo(a, _), c) :: Nil) = func()
+      }
+    }
+
+    aspectTest(() => new Test) {
+      top: Test =>
+        Select.wires(top).map(_.instanceName) should be (List("w", "a", "_WIRE"))
     }
   }
 

@@ -1,5 +1,7 @@
 // See LICENSE for license details.
 
+import com.typesafe.tools.mima.core._
+
 enablePlugins(SiteScaladocPlugin)
 
 def scalacOptionsVersion(scalaVersion: String): Seq[String] = {
@@ -147,7 +149,15 @@ lazy val plugin = (project in file("plugin")).
     },
     // Only publish for Scala 2.12
     publish / skip := !scalaVersion.value.startsWith("2.12")
+  ).
+  settings(
+    mimaPreviousArtifacts := {
+      // Not published for 2.11, do not try to check binary compatibility with a 2.11 artifact
+      if (scalaVersion.value.startsWith("2.11")) Set()
+      else Set("edu.berkeley.cs" % "chisel3-plugin" % "3.4.0" cross CrossVersion.full)
+    }
   )
+
 
 lazy val usePluginSettings = Seq(
   scalacOptions in Compile ++= {
@@ -163,7 +173,8 @@ lazy val usePluginSettings = Seq(
 lazy val macros = (project in file("macros")).
   settings(name := "chisel3-macros").
   settings(commonSettings: _*).
-  settings(publishSettings: _*)
+  settings(publishSettings: _*).
+  settings(mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-macros" % "3.4.0"))
 
 lazy val firrtlRef = ProjectRef(workspaceDirectory / "firrtl", "firrtl")
 
@@ -177,6 +188,24 @@ lazy val core = (project in file("core")).
     buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
   ).
   settings(publishSettings: _*).
+  settings(
+    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-core" % "3.4.0"),
+    mimaBinaryIssueFilters ++= Seq(
+      // Modified package private methods (https://github.com/lightbend/mima/issues/53)
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("chisel3.internal.Builder.pushPrefix"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("chisel3.internal.Builder.pushPrefix"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("chisel3.internal.Builder.exception"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("chisel3.internal.Builder.pushPrefix"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("chisel3.internal.Builder.pushPrefix"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("chisel3.internal.Builder.popPrefix"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("chisel3.internal.ChiselContext.prefixStack"),
+      // Scala 2.11 only issue, new concrete methods in traits require recompilation of implementing classes
+      // Not a problem because HasId is package private so all implementers are in chisel3 itself
+      // Note there is no problem for user subtypes of Record because setRef is implemented by Data
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("chisel3.internal.HasId.setRef"),
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("chisel3.internal.HasId.forceAutoSeed")
+    )
+  ).
   settings(
     name := "chisel3-core",
     scalacOptions := scalacOptions.value ++ Seq(
@@ -205,6 +234,7 @@ lazy val chisel = (project in file(".")).
   dependsOn(core).
   aggregate(macros, core, plugin).
   settings(
+    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3" % "3.4.0"),
     libraryDependencies += defaultVersions("treadle") % "test",
     scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
     scalacOptions in Compile in doc ++= Seq(
