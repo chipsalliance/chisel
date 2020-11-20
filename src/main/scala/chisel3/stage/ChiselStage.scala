@@ -221,7 +221,7 @@ object ChiselStage {
   /** Return a SMTLIB string for a Chisel module
   * @param gen a call-by-name Chisel module
   */
-  def emitSMTLIB(gen: => RawModule): String = {
+  def emitSMTLIB(gen: => RawModule): List[(String, String)] = {
     val phase = new PhaseManager(
       Seq(
         Dependency[chisel3.stage.phases.Checks],
@@ -235,9 +235,9 @@ object ChiselStage {
 
     phase
       .transform(Seq(ChiselGeneratorAnnotation(() => gen), RunFirrtlTransformAnnotation(new SMTLibEmitter)))
-      .collectFirst {
-        case EmittedSMTModelAnnotation(_, a, _) => a
-      }.get
+      .collect {
+        case EmittedSMTModelAnnotation(name, content, _) => (name, content)
+      }.toList
 
   }
 

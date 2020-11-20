@@ -130,6 +130,8 @@ private[chisel3] object Converter {
         case Formal.Assert => fir.Formal.Assert
         case Formal.Assume => fir.Formal.Assume
         case Formal.Cover => fir.Formal.Cover
+        case Formal.Ensure => fir.Formal.Ensure
+        case Formal.Require => fir.Formal.Require
       }
       Some(fir.Verification(firOp, convert(info), convert(clk, ctx),
         convert(pred, ctx), firrtl.Utils.one, fir.StringLit(msg)))

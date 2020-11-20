@@ -739,6 +739,8 @@ object Formal extends Enumeration {
   val Assert = Value("assert")
   val Assume = Value("assume")
   val Cover = Value("cover")
+  val Require = Value("require")
+  val Ensure = Value("ensure")
 }
 case class Verification(op: Formal.Value, sourceInfo: SourceInfo, clock: Arg,
                         predicate: Arg, message: String) extends Command

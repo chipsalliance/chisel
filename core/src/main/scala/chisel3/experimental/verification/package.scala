@@ -38,4 +38,26 @@ package object verification {
         predicate.ref, msg))
     }
   }
+
+  object require {
+    def apply(predicate: Bool, msg: String = "")(
+      implicit sourceInfo: SourceInfo,
+      compileOptions: CompileOptions): Unit = {
+      val clock = Builder.forcedClock
+      //push an assume to the parent
+      
+      pushCommand(Verification(Formal.Require, sourceInfo, clock.ref,
+        predicate.ref, msg))
+    }
+  }
+
+  object ensure {
+    def apply(predicate: Bool, msg: String = "")(
+      implicit sourceInfo: SourceInfo,
+      compileOptions: CompileOptions): Unit = {
+      val clock = Builder.forcedClock
+      pushCommand(Verification(Formal.Ensure, sourceInfo, clock.ref,
+        predicate.ref, msg))
+    }
+  }
 }
