@@ -20,23 +20,20 @@ import chisel3.internal.InstanceId
 
 import firrtl._
 import firrtl.annotations.{Annotation, SingleTargetAnnotation}
-import firrtl.annotations.{CircuitName, ComponentName, ModuleName, Named}
+import firrtl.annotations.{CircuitTarget, ModuleTarget, InstanceTarget, ReferenceTarget, Target}
 ```
 
 ### Define an `Annotation` and a `Transform`
 
-First, define an `Annotation` that contains a string associated with a `Named` thing in the Chisel circuit.
+First, define an `Annotation` that contains a string associated with a `Target` thing in the Chisel circuit.
 This `InfoAnnotation` extends [`SingleTargetAnnotation`](https://www.chisel-lang.org/api/firrtl/1.2.0/firrtl/annotations/SingleTargetAnnotation.html), an `Annotation` associated with *one* thing in a FIRRTL circuit:
 
 ```scala mdoc:silent
 /** An annotation that contains some string information */
-case class InfoAnnotation(target: Named, info: String) extends SingleTargetAnnotation[Named] {
-  def duplicate(newTarget: Named) = this.copy(target = newTarget)
+case class InfoAnnotation(target: Target, info: String) extends SingleTargetAnnotation[Target] {
+  def duplicate(newTarget: Target) = this.copy(target = newTarget)
 }
 ```
-
-> Note: `Named` is currently deprecated in favor of the more specific `Target`.
-> Currently, `Named` is still the advised approach for writing `Annotation`s.
 
 Second, define a `Transform` that consumes this `InfoAnnotation`.
 This `InfoTransform` simply reads all annotations, prints any `InfoAnnotation`s it finds, and removes them.
@@ -61,13 +58,16 @@ class InfoTransform() extends Transform with DependencyAPIMigration {
     println("Starting transform 'IdentityTransform'")
 
     val annotationsx = state.annotations.flatMap{
-      case InfoAnnotation(a: CircuitName, info) =>
+      case InfoAnnotation(a: CircuitTarget, info) =>
         println(s"  - Circuit '${a.serialize}' annotated with '$info'")
         None
-      case InfoAnnotation(a: ModuleName, info) =>
+      case InfoAnnotation(a: ModuleTarget, info) =>
         println(s"  - Module '${a.serialize}' annotated with '$info'")
         None
-      case InfoAnnotation(a: ComponentName, info) =>
+      case InfoAnnotation(a: InstanceTarget, info) =>
+        println(s"  - Instance '${a.serialize}' annotated with '$info'")
+        None
+      case InfoAnnotation(a: ReferenceTarget, info) =>
         println(s"  - Component '${a.serialize} annotated with '$info''")
         None
       case a =>
@@ -98,7 +98,7 @@ This annotator also mixes in the `RunFirrtlTransform` trait (abstract in the `tr
 object InfoAnnotator {
   def info(component: InstanceId, info: String): Unit = {
     annotate(new ChiselAnnotation with RunFirrtlTransform {
-      def toFirrtl: Annotation = InfoAnnotation(component.toNamed, info)
+      def toFirrtl: Annotation = InfoAnnotation(component.toTarget, info)
       def transformClass = classOf[InfoTransform]
     })
   }

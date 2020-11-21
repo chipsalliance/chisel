@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests
 
@@ -281,6 +281,7 @@ trait Utils {
     * or doesn't try to write at all.
     */
   def catchWrites[T](thunk: => T): Either[String, T] = {
+    throw new Exception("Do not use, not thread-safe")
     try {
       System.setSecurityManager(new ExceptOnWrite())
       Right(thunk)
