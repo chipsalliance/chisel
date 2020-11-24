@@ -1,4 +1,4 @@
-![Chisel 3](https://raw.githubusercontent.com/freechipsproject/chisel3/master/docs/src/images/chisel_logo.svg?sanitize=true)
+![Chisel 3](https://raw.githubusercontent.com/chipsalliance/chisel3/master/docs/src/images/chisel_logo.svg?sanitize=true)
 
 ---
 
@@ -10,9 +10,9 @@ Call-in info and meeting notes are available [here](https://docs.google.com/docu
 
 ---
 
-[![Join the chat at https://gitter.im/freechipsproject/chisel3](https://badges.gitter.im/freechipsproject/chisel3.svg)](https://gitter.im/freechipsproject/chisel3?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![CircleCI](https://circleci.com/gh/freechipsproject/chisel3/tree/master.svg?style=shield)](https://circleci.com/gh/freechipsproject/chisel3/tree/master)
-[![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/freechipsproject/chisel3.svg?label=release)](https://github.com/freechipsproject/chisel3/releases/latest)
+[![Join the chat at https://gitter.im/chipsalliance/chisel3](https://badges.gitter.im/chipsalliance/chisel3.svg)](https://gitter.im/chipsalliance/chisel3?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![CircleCI](https://circleci.com/gh/chipsalliance/chisel3/tree/master.svg?style=shield)](https://circleci.com/gh/chipsalliance/chisel3/tree/master)
+[![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/chipsalliance/chisel3.svg?label=release)](https://github.com/chipsalliance/chisel3/releases/latest)
 
 [**Chisel**](https://www.chisel-lang.org) is a hardware design language that facilitates **advanced circuit generation and design reuse for both ASIC and FPGA digital logic designs**.
 Chisel adds hardware construction primitives to the [Scala](https://www.scala-lang.org) programming language, providing designers with the power of a modern programming language to write complex, parameterizable circuit generators that produce synthesizable Verilog.
@@ -20,13 +20,13 @@ This generator methodology enables the creation of re-usable components and libr
 
 For more information on the benefits of Chisel see: ["What benefits does Chisel offer over classic Hardware Description Languages?"](https://stackoverflow.com/questions/53007782/what-benefits-does-chisel-offer-over-classic-hardware-description-languages)
 
-Chisel is powered by [FIRRTL (Flexible Intermediate Representation for RTL)](https://github.com/freechipsproject/firrtl), a hardware compiler framework that performs optimizations of Chisel-generated circuits and supports custom user-defined circuit transformations.
+Chisel is powered by [FIRRTL (Flexible Intermediate Representation for RTL)](https://github.com/chipsalliance/firrtl), a hardware compiler framework that performs optimizations of Chisel-generated circuits and supports custom user-defined circuit transformations.
 
 ## What does Chisel code look like?
 
 Consider an FIR filter that implements a convolution operation, as depicted in this block diagram:
 
-<img src="https://raw.githubusercontent.com/freechipsproject/chisel3/master/docs/src/images/fir_filter.svg?sanitize=true" width="512" />
+<img src="https://raw.githubusercontent.com/chipsalliance/chisel3/master/docs/src/images/fir_filter.svg?sanitize=true" width="512" />
 
 While Chisel provides similar base primitives as synthesizable Verilog, and *could* be used as such:
 
@@ -100,7 +100,7 @@ The [**classic Chisel tutorial**](https://github.com/ucb-bar/chisel-tutorial) co
 
 ### Build Your Own Chisel Projects
 
-See [the setup instructions](https://github.com/freechipsproject/chisel3/blob/master/SETUP.md) for how to set up your environment to run Chisel locally.
+See [the setup instructions](https://github.com/chipsalliance/chisel3/blob/master/SETUP.md) for how to set up your environment to run Chisel locally.
 
 When you're ready to build your own circuits in Chisel, **we recommend starting from the [Chisel Template](https://github.com/freechipsproject/chisel-template) repository**, which provides a pre-configured project, example design, and testbench. Follow the [chisel-template readme](https://github.com/freechipsproject/chisel-template) to get started.
 
@@ -126,9 +126,9 @@ These simulation-based verification tools are available for Chisel:
 ### Useful Resources
 
 - [**Cheat Sheet**](https://github.com/freechipsproject/chisel-cheatsheet/releases/latest/download/chisel_cheatsheet.pdf), a 2-page reference of the base Chisel syntax and libraries
-- [**Wiki**](https://github.com/freechipsproject/chisel3/wiki), which contains various feature-specific tutorials and frequently-asked questions.
+- [**Wiki**](https://github.com/chipsalliance/chisel3/wiki), which contains various feature-specific tutorials and frequently-asked questions.
 - [**ScalaDoc**](https://www.chisel-lang.org/api/latest/chisel3/index.html), a listing, description, and examples of the functionality exposed by Chisel
-- [**Gitter**](https://gitter.im/freechipsproject/chisel3), where you can ask questions or discuss anything Chisel
+- [**Gitter**](https://gitter.im/chipsalliance/chisel3), where you can ask questions or discuss anything Chisel
 - [**Website**](https://www.chisel-lang.org) ([source](https://github.com/freechipsproject/www.chisel-lang.org/))
 
 If you are migrating from Chisel2, see [the migration guide](https://www.chisel-lang.org/chisel3/chisel3-vs-chisel2.html).
@@ -136,18 +136,18 @@ If you are migrating from Chisel2, see [the migration guide](https://www.chisel-
 ### Data Types Overview
 These are the base data types for defining circuit components:
 
-![Image](https://raw.githubusercontent.com/freechipsproject/chisel3/master/docs/src/images/type_hierarchy.svg?sanitize=true)
+![Image](https://raw.githubusercontent.com/chipsalliance/chisel3/master/docs/src/images/type_hierarchy.svg?sanitize=true)
 
 ## Contributor Documentation
 This section describes how to get started contributing to Chisel itself, including how to test your version locally against other projects that pull in Chisel using [sbt's managed dependencies](https://www.scala-sbt.org/1.x/docs/Library-Dependencies.html).
 
 ### Compiling and Testing Chisel
 
-First, clone and build the master branch of [FIRRTL](https://github.com/freechipsproject/firrtl) and [Treadle](https://github.com/freechipsproject/treadle), as the master branch of Chisel may depend on unreleased changes in those projects:
+First, clone and build the master branch of [FIRRTL](https://github.com/chipsalliance/firrtl) and [Treadle](https://github.com/chipsalliance/treadle), as the master branch of Chisel may depend on unreleased changes in those projects:
 
 ```
-git clone https://github.com/freechipsproject/firrtl.git
-git clone https://github.com/freechipsproject/treadle.git
+git clone https://github.com/chipsalliance/firrtl.git
+git clone https://github.com/chipsalliance/treadle.git
 pushd firrtl; sbt publishLocal; popd
 pushd treadle; sbt publishLocal; popd
 ```
@@ -155,7 +155,7 @@ pushd treadle; sbt publishLocal; popd
 Clone and build the Chisel library:
 
 ```
-git clone https://github.com/freechipsproject/chisel3.git
+git clone https://github.com/chipsalliance/chisel3.git
 cd chisel3
 sbt compile
 ```
@@ -207,7 +207,7 @@ It provides two JVM system properties that, when set, will tell SBT to include F
 Example use:
 ```bash
 # From root of this repo
-git clone git@github.com:freechipsproject/firrtl.git
+git clone git@github.com:chipsalliance/firrtl.git
 sbt -Dsbt.sourcemode=true -Dsbt.workspace=$PWD
 ```
 
