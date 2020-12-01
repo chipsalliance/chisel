@@ -106,12 +106,8 @@ When you're ready to build your own circuits in Chisel, **we recommend starting 
 
 If you insist on setting up your own project, the magic SBT lines are:
 ```scala
-resolvers ++= Seq(
-  Resolver.sonatypeRepo("snapshots"),
-  Resolver.sonatypeRepo("releases")
-)
-libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.2-SNAPSHOT"
-libraryDependencies += "edu.berkeley.cs" %% "chisel-testers2" % "0.1-SNAPSHOT"
+libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.4.0"
+libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % "0.3.0" % "test"
 ```
 
 ### Design Verification
