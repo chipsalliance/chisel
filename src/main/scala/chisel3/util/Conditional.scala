@@ -10,6 +10,7 @@ import scala.language.experimental.macros
 import scala.reflect.macros.blackbox._
 
 import chisel3._
+import chisel3.internal.sourceinfo.SourceInfo
 
 @deprecated("The unless conditional is deprecated, use when(!condition){...} instead", "3.2")
 object unless {
@@ -25,7 +26,7 @@ object unless {
   * @note DO NOT USE. This API is subject to change without warning.
   */
 class SwitchContext[T <: Element](cond: T, whenContext: Option[WhenContext], lits: Set[BigInt]) {
-  def is(v: Iterable[T])(block: => Any): SwitchContext[T] = {
+  def is(v: Iterable[T])(block: => Any)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SwitchContext[T] = {
     if (!v.isEmpty) {
       val newLits = v.map { w =>
         require(w.litOption.isDefined, "is condition must be literal")
@@ -43,8 +44,8 @@ class SwitchContext[T <: Element](cond: T, whenContext: Option[WhenContext], lit
       this
     }
   }
-  def is(v: T)(block: => Any): SwitchContext[T] = is(Seq(v))(block)
-  def is(v: T, vr: T*)(block: => Any): SwitchContext[T] = is(v :: vr.toList)(block)
+  def is(v: T)(block: => Any)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SwitchContext[T] = is(Seq(v))(block)
+  def is(v: T, vr: T*)(block: => Any)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SwitchContext[T] = is(v :: vr.toList)(block)
 }
 
 /** Use to specify cases in a [[switch]] block, equivalent to a [[when$ when]] block comparing to
