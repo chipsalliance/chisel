@@ -31,7 +31,7 @@ class Expect extends MultiIOModule {
 }
 ```
 
-We can then connect `x` to `y` using [[BoringUtils]] without modifiying the Chisel IO of `Constant`, `Expect`, or
+We can then drive `y` with `x` using [[BoringUtils]] without modifying the Chisel IO of `Constant`, `Expect`, or
 modules that may instantiate them. There are two approaches to do this:
 
 1. Hierarchical boring using [[BoringUtils.bore]]
@@ -40,9 +40,9 @@ modules that may instantiate them. There are two approaches to do this:
 
 ### Hierarchical Boring
 
-Hierarchical boring involves connecting one sink instance to another source instance in a parent module. Below,
-module `Top` contains an instance of `Constant` and `Expect`. Using [[BoringUtils.bore]], we can connect
-`constant.x` to `expect.y`.
+Hierarchical boring involves driving one sink signal from a source signal, where the sink and source are not in the same module.
+Below, module `Top` contains an instance of `Constant`, called `constant`, and an instance of `Expect` called `expect`.
+Using [[BoringUtils.bore]], we can drive `expect.y` from `constant.x`.
 
 ```scala mdoc
 class Top extends MultiIOModule {
@@ -53,7 +53,8 @@ class Top extends MultiIOModule {
 println(ChiselStage.emitVerilog(new Top))
 ```
 
-In addition, you can specify additional modules to route the connection through:
+In addition, you can specify additional modules to route the connection through, where the strings "first" and "second"
+are the names of the intermediate wires instantiated in the modules we route through.
 
 ```scala mdoc
 class Dummy extends MultiIOModule { }
@@ -69,10 +70,11 @@ println(ChiselStage.emitVerilog(new TopThroughModules))
 
 ### Non-hierarchical Boring
 
-Non-hierarchical boring involves connections from sources to sinks that cannot see each other. Here, `x` is
-described as a source and given a name, `uniqueId`, and `y` is described as a sink with the same name. This is
+Non-hierarchical boring involves connections from sources to sinks that cannot both be referenced
+within the same module. In this example, we build up a source and sink pair called `uniqueId`.
+`x` is described as a source and associated with the name `uniqueId`, and `y` is described as a sink with the same name. This is
 equivalent to the hierarchical boring example above, but requires no modifications to `Top`.
-
+ 
 ```scala mdoc:reset
 import chisel3._
 import chisel3.util.experimental._
@@ -85,7 +87,7 @@ class Constant extends MultiIOModule {
 class Expect extends MultiIOModule {
   val y = Wire(UInt(6.W))
   y := 0.U
-  // This assertion will fail unless we bore!
+  // This assertion will fail unless we find a way to drive y!
   chisel3.assert(y === 42.U, "y should be 42 in module Expect")
   BoringUtils.addSink(y, "uniqueId")
 }
@@ -104,4 +106,8 @@ automatically. Non-hierarchical boring unsafely relies on user input to generate
 naming may result in naming conflicts that the user must handle.
 
 The automatic generation of hierarchical names relies on a global, mutable namespace. This is currently persistent
-across circuit elaborations.
+across circuit elaborations, which means multiple circuit elaborations in the same Scala program execution would share
+the same namespace.
+
+You can bore a one-to-many relationship from source to sinks, but not a many-to-many or many-to-one.
+
