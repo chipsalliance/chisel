@@ -3,11 +3,27 @@
 
 package firrtl.backends.experimental.smt
 
+import firrtl.backends.experimental.smt.Btor2Serializer.functionCallToArrayRead
+
 import scala.collection.mutable
 
 private object Btor2Serializer {
   def serialize(sys: TransitionSystem, skipOutput: Boolean = false): Iterable[String] = {
     new Btor2Serializer().run(sys, skipOutput)
+  }
+
+  private def functionCallToArrayRead(call: BVFunctionCall): BVExpr = {
+    if (call.args.isEmpty) {
+      BVSymbol(call.name, call.width)
+    } else {
+      val index = concat(call.args)
+      val a = ArraySymbol(call.name, indexWidth = index.width, dataWidth = call.width)
+      ArrayRead(a, index)
+    }
+  }
+  private def concat(e: Iterable[BVExpr]): BVExpr = {
+    require(e.nonEmpty)
+    e.reduce((a, b) => BVConcat(a, b))
   }
 }
 
@@ -65,6 +81,7 @@ private class Btor2Serializer private () {
     case BVComparison(Compare.GreaterEqual, a, b, true)  => binary("sgte", expr.width, a, b)
     case BVOp(op, a, b)                                  => binary(s(op), expr.width, a, b)
     case BVConcat(a, b)                                  => binary("concat", expr.width, a, b)
+    case call: BVFunctionCall => s(functionCallToArrayRead(call))
     case ArrayRead(array, index) =>
       line(s"read ${t(expr.width)} ${s(array)} ${s(index)}")
     case BVIte(cond, tru, fals) =>
@@ -162,6 +179,17 @@ private class Btor2Serializer private () {
     // declare inputs
     sys.inputs.foreach { ii =>
       declare(ii.name, line(s"input ${t(ii.width)} ${ii.name}"))
+    }
+
+    // declare uninterpreted functions a constant arrays
+    sys.ufs.foreach { foo =>
+      val sym = if (foo.argWidths.isEmpty) { BVSymbol(foo.name, foo.width) }
+      else {
+        ArraySymbol(foo.name, foo.argWidths.sum, foo.width)
+      }
+      comment(foo.toString)
+      declare(sym.name, line(s"state ${t(sym)} ${sym.name}"))
+      line(s"next ${t(sym)} ${s(sym)} ${s(sym)}")
     }
 
     // define state init

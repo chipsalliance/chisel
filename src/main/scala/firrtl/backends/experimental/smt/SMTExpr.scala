@@ -138,6 +138,17 @@ private case class BVIte(cond: BVExpr, tru: BVExpr, fals: BVExpr) extends BVExpr
   override def children: List[BVExpr] = List(cond, tru, fals)
 }
 
+/** apply bv arguments to a function which returns a result of bit vector type */
+private case class BVFunctionCall(name: String, args: List[BVExpr], width: Int) extends BVExpr {
+  override def children = args
+  def toSymbol:          BVFunctionSymbol = BVFunctionSymbol(name, args.map(_.width), width)
+  override def toString: String = args.mkString(name + "(", ", ", ")")
+}
+
+private case class BVFunctionSymbol(name: String, argWidths: List[Int], width: Int) {
+  override def toString: String = s"$name : " + (argWidths :+ width).map(w => s"bv<$w>").mkString(" -> ")
+}
+
 private sealed trait ArrayExpr extends SMTExpr { val indexWidth: Int; val dataWidth: Int }
 private case class ArraySymbol(name: String, indexWidth: Int, dataWidth: Int) extends ArrayExpr with SMTSymbol {
   assert(!name.contains("|"), s"Invalid id $name contains escape character `|`")

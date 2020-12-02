@@ -40,10 +40,12 @@ private case class TransitionSystem(
   assumes:  Set[String],
   asserts:  Set[String],
   fair:     Set[String],
+  ufs:      List[BVFunctionSymbol] = List(),
   comments: Map[String, String] = Map(),
   header:   Array[String] = Array()) {
   def serialize: String = {
     (Iterator(name) ++
+      ufs.map(u => u.toString) ++
       inputs.map(i => s"input ${i.name} : ${SMTExpr.serializeType(i)}") ++
       signals.map(s => s"${s.name} : ${SMTExpr.serializeType(s.e)} = ${s.e}") ++
       states.map(s => s"state ${s.sym} = [init] ${s.init} [next] ${s.next}")).mkString("\n")
@@ -79,15 +81,25 @@ object FirrtlToTransitionSystem extends Transform with DependencyAPIMigration {
       .map(a => a.target.ref -> a.initValue)
       .toMap
 
+    // module look up table
+    val modules = circuit.modules.map(m => m.name -> m).toMap
+
+    // collect uninterpreted module annotations
+    val uninterpreted = afterPreset.annotations.collect {
+      case a: UninterpretedModuleAnnotation =>
+        UninterpretedModuleAnnotation.checkModule(modules(a.target.module), a)
+        a.target.module -> a
+    }.toMap
+
     // convert the main module
-    val main = circuit.modules.find(_.name == circuit.main).get
+    val main = modules(circuit.main)
     val sys = main match {
       case x: ir.ExtModule =>
         throw new ExtModuleException(
           "External modules are not supported by the SMT backend. Use yosys if you need to convert Verilog."
         )
       case m: ir.Module =>
-        new ModuleToTransitionSystem().run(m, presetRegs = presetRegs, memInit = memInit)
+        new ModuleToTransitionSystem().run(m, presetRegs = presetRegs, memInit = memInit, uninterpreted = uninterpreted)
     }
 
     val sortedSys = TopologicalSort.run(sys)
@@ -122,12 +134,13 @@ private class MissingFeatureException(s: String)
 private class ModuleToTransitionSystem extends LazyLogging {
 
   def run(
-    m:          ir.Module,
-    presetRegs: Set[String] = Set(),
-    memInit:    Map[String, MemoryInitValue] = Map()
+    m:             ir.Module,
+    presetRegs:    Set[String] = Set(),
+    memInit:       Map[String, MemoryInitValue] = Map(),
+    uninterpreted: Map[String, UninterpretedModuleAnnotation] = Map()
   ): TransitionSystem = {
     // first pass over the module to convert expressions; discover state and I/O
-    val scan = new ModuleScanner(makeRandom)
+    val scan = new ModuleScanner(makeRandom, uninterpreted)
     m.foreachPort(scan.onPort)
     m.foreachStmt(scan.onStatement)
 
@@ -188,6 +201,10 @@ private class ModuleToTransitionSystem extends LazyLogging {
     val header = serializeInfo(m.info).map(InfoPrefix + _).toArray
 
     val fair = Set[String]() // as of firrtl 1.4 we do not support fairness constraints
+
+    // collect unique functions
+    val ufs = scan.functionCalls.groupBy(_.name).map(_._2.head).toList
+
     TransitionSystem(
       m.name,
       inputs.toArray,
@@ -197,6 +214,7 @@ private class ModuleToTransitionSystem extends LazyLogging {
       constraints,
       bad,
       fair,
+      ufs,
       comments.toMap,
       header
     )
@@ -456,7 +474,10 @@ private class MemoryEncoding(makeRandom: (String, Int) => BVExpr, namespace: Nam
 }
 
 // performas a first pass over the module collecting all connections, wires, registers, input and outputs
-private class ModuleScanner(makeRandom: (String, Int) => BVExpr) extends LazyLogging {
+private class ModuleScanner(
+  makeRandom:    (String, Int) => BVExpr,
+  uninterpreted: Map[String, UninterpretedModuleAnnotation])
+    extends LazyLogging {
   import FirrtlExpressionSemantics.getWidth
 
   private[firrtl] val inputs = mutable.ArrayBuffer[BVSymbol]()
@@ -473,10 +494,13 @@ private class ModuleScanner(makeRandom: (String, Int) => BVExpr) extends LazyLog
   private[firrtl] val assumes = mutable.ArrayBuffer[String]()
   // maps identifiers to their info
   private[firrtl] val infos = mutable.ArrayBuffer[(String, ir.Info)]()
-  // keeps track of unused memory (data) outputs so that we can see where they are first used
-  private val unusedMemOutputs = mutable.LinkedHashMap[String, Int]()
+  // Keeps track of (so far) unused memory (data) and uninterpreted module outputs.
+  // This is used in order to delay declaring them for as long as possible.
+  private val unusedOutputs = mutable.LinkedHashMap[String, BVExpr]()
   // ensure unique names for assert/assume signals
   private[firrtl] val namespace = Namespace()
+  // keep track of all uninterpreted functions called
+  private[firrtl] val functionCalls = mutable.ArrayBuffer[BVFunctionSymbol]()
 
   private[firrtl] def onPort(p: ir.Port): Unit = {
     if (isAsyncReset(p.tpe)) {
@@ -508,7 +532,7 @@ private class ModuleScanner(makeRandom: (String, Int) => BVExpr) extends LazyLog
     case ir.DefNode(info, name, expr) =>
       namespace.newName(name)
       if (!isClock(expr.tpe)) {
-        insertDummyAssignsForMemoryOutputs(expr)
+        insertDummyAssignsForUnusedOutputs(expr)
         infos.append(name -> info)
         val e = onExpression(expr, name)
         nodes.append(name)
@@ -516,8 +540,8 @@ private class ModuleScanner(makeRandom: (String, Int) => BVExpr) extends LazyLog
       }
     case ir.DefRegister(info, name, tpe, _, reset, init) =>
       namespace.newName(name)
-      insertDummyAssignsForMemoryOutputs(reset)
-      insertDummyAssignsForMemoryOutputs(init)
+      insertDummyAssignsForUnusedOutputs(reset)
+      insertDummyAssignsForUnusedOutputs(init)
       infos.append(name -> info)
       val width = getWidth(tpe)
       val resetExpr = onExpression(reset, 1, name + "_reset")
@@ -529,13 +553,13 @@ private class ModuleScanner(makeRandom: (String, Int) => BVExpr) extends LazyLog
       val outputs = getMemOutputs(m)
       (getMemInputs(m) ++ outputs).foreach(memSignals.append(_))
       val dataWidth = getWidth(m.dataType)
-      outputs.foreach(name => unusedMemOutputs(name) = dataWidth)
+      outputs.foreach(name => unusedOutputs(name) = BVSymbol(name, dataWidth))
       memories.append(m)
     case ir.Connect(info, loc, expr) =>
       if (!isGroundType(loc.tpe)) error("All connects should have been lowered to ground type!")
       if (!isClock(loc.tpe)) { // we ignore clock connections
         val name = loc.serialize
-        insertDummyAssignsForMemoryOutputs(expr)
+        insertDummyAssignsForUnusedOutputs(expr)
         infos.append(name -> info)
         connects.append((name, onExpression(expr, getWidth(loc.tpe), name)))
       }
@@ -544,40 +568,13 @@ private class ModuleScanner(makeRandom: (String, Int) => BVExpr) extends LazyLog
       val name = loc.serialize
       infos.append(name -> info)
       connects.append((name, makeRandom(name + "_INVALID", getWidth(loc.tpe))))
-    case ir.DefInstance(info, name, module, tpe) =>
-      namespace.newName(name)
-      if (!tpe.isInstanceOf[ir.BundleType]) error(s"Instance $name of $module has an invalid type: ${tpe.serialize}")
-      // we treat all instances as blackboxes
-      logger.warn(
-        s"WARN: treating instance $name of $module as blackbox. " +
-          "Please flatten your hierarchy if you want to include submodules in the formal model."
-      )
-      val ports = tpe.asInstanceOf[ir.BundleType].fields
-      // skip async reset ports
-      ports.filterNot(p => isAsyncReset(p.tpe)).foreach { p =>
-        if (!p.tpe.isInstanceOf[ir.GroundType]) error(s"Instance $name of $module has an invalid port type: $p")
-        val isOutput = p.flip == ir.Default
-        val pName = name + "." + p.name
-        infos.append(pName -> info)
-        // outputs of the submodule become inputs to our module
-        if (isOutput) {
-          if (isClock(p.tpe)) {
-            clocks.add(pName)
-          } else {
-            inputs.append(BVSymbol(pName, getWidth(p.tpe)))
-          }
-        } else {
-          if (!isClock(p.tpe)) { // we ignore clock outputs
-            outputs.append(pName)
-          }
-        }
-      }
+    case ir.DefInstance(info, name, module, tpe) => onInstance(info, name, module, tpe)
     case s @ ir.Verification(op, info, _, pred, en, msg) =>
       if (op == ir.Formal.Cover) {
         logger.warn(s"WARN: Cover statement was ignored: ${s.serialize}")
       } else {
-        insertDummyAssignsForMemoryOutputs(pred)
-        insertDummyAssignsForMemoryOutputs(en)
+        insertDummyAssignsForUnusedOutputs(pred)
+        insertDummyAssignsForUnusedOutputs(en)
         val name = namespace.newName(msgToName(op.toString, msg.string))
         val predicate = onExpression(pred, name + "_predicate")
         val enabled = onExpression(en, name + "_enabled")
@@ -604,6 +601,70 @@ private class ModuleScanner(makeRandom: (String, Int) => BVExpr) extends LazyLog
     case other => other.foreachStmt(onStatement)
   }
 
+  private def onInstance(info: ir.Info, name: String, module: String, tpe: ir.Type): Unit = {
+    namespace.newName(name)
+    if (!tpe.isInstanceOf[ir.BundleType]) error(s"Instance $name of $module has an invalid type: ${tpe.serialize}")
+    if (uninterpreted.contains(module)) {
+      onUninterpretedInstance(info: ir.Info, name: String, module: String, tpe: ir.Type)
+    } else {
+      // We treat all instances that aren't annotated as uninterpreted as blackboxes
+      // this means that their outputs could be any value, no matter what their inputs are.
+      logger.warn(
+        s"WARN: treating instance $name of $module as blackbox. " +
+          "Please flatten your hierarchy if you want to include submodules in the formal model."
+      )
+      val ports = tpe.asInstanceOf[ir.BundleType].fields
+      // skip async reset ports
+      ports.filterNot(p => isAsyncReset(p.tpe)).foreach { p =>
+        if (!p.tpe.isInstanceOf[ir.GroundType]) error(s"Instance $name of $module has an invalid port type: $p")
+        val isOutput = p.flip == ir.Default
+        val pName = name + "." + p.name
+        infos.append(pName -> info)
+        // outputs of the submodule become inputs to our module
+        if (isOutput) {
+          if (isClock(p.tpe)) {
+            clocks.add(pName)
+          } else {
+            inputs.append(BVSymbol(pName, getWidth(p.tpe)))
+          }
+        } else {
+          if (!isClock(p.tpe)) { // we ignore clock outputs
+            outputs.append(pName)
+          }
+        }
+      }
+    }
+  }
+
+  private def onUninterpretedInstance(info: ir.Info, instanceName: String, module: String, tpe: ir.Type): Unit = {
+    val anno = uninterpreted(module)
+
+    // sanity checks for ports were done already using the UninterpretedModule.checkModule function
+    val ports = tpe.asInstanceOf[ir.BundleType].fields
+
+    val outputs = ports.filter(_.flip == ir.Default).map(p => BVSymbol(p.name, getWidth(p.tpe)))
+    val inputs = ports.filterNot(_.flip == ir.Default).map(p => BVSymbol(p.name, getWidth(p.tpe)))
+
+    assert(anno.stateBits == 0, "TODO: implement support for uninterpreted stateful modules!")
+
+    // for state-less (i.e. combinatorial) circuits, the outputs only depend on the inputs
+    val args = inputs.map(i => BVSymbol(instanceName + "." + i.name, i.width)).toList
+    outputs.foreach { out =>
+      val functionName = anno.prefix + "." + out.name
+      val call = BVFunctionCall(functionName, args, out.width)
+      val wireName = instanceName + "." + out.name
+      // remember which functions were called
+      functionCalls.append(call.toSymbol)
+      // insert the output definition right before its first use in an attempt to get SSA
+      unusedOutputs(wireName) = call
+      // treat these outputs as wires
+      wires.append(wireName)
+    }
+
+    // we also treat the arguments as wires
+    wires ++= args.map(_.name)
+  }
+
   private val readInputFields = List("en", "addr")
   private val writeInputFields = List("en", "mask", "addr", "data")
   private def getMemInputs(m: ir.DefMemory): Iterable[String] = {
@@ -617,27 +678,27 @@ private class ModuleScanner(makeRandom: (String, Int) => BVExpr) extends LazyLog
     val p = m.name + "."
     m.readers.map(r => p + r + ".data")
   }
-  // inserts a dummy assign right before a memory output is used for the first time
+  // inserts a dummy assign right before a memory/uninterpreted module output is used for the first time
   // example:
   // m.r.data <= m.r.data ; this is the dummy assign
   // test <= m.r.data     ; this is the first use of m.r.data
-  private def insertDummyAssignsForMemoryOutputs(next: ir.Expression): Unit = if (unusedMemOutputs.nonEmpty) {
-    implicit val uses = mutable.ArrayBuffer[String]()
-    findUnusedMemoryOutputUse(next)
+  private def insertDummyAssignsForUnusedOutputs(next: ir.Expression): Unit = if (unusedOutputs.nonEmpty) {
+    val uses = mutable.ArrayBuffer[String]()
+    findUnusedOutputUse(next)(uses)
     if (uses.nonEmpty) {
       val useSet = uses.toSet
-      unusedMemOutputs.foreach {
-        case (name, width) =>
-          if (useSet.contains(name)) connects.append(name -> BVSymbol(name, width))
+      unusedOutputs.foreach {
+        case (name, value) =>
+          if (useSet.contains(name)) connects.append(name -> value)
       }
-      useSet.foreach(name => unusedMemOutputs.remove(name))
+      useSet.foreach(name => unusedOutputs.remove(name))
     }
   }
-  private def findUnusedMemoryOutputUse(e: ir.Expression)(implicit uses: mutable.ArrayBuffer[String]): Unit = e match {
+  private def findUnusedOutputUse(e: ir.Expression)(implicit uses: mutable.ArrayBuffer[String]): Unit = e match {
     case s: ir.SubField =>
       val name = s.serialize
-      if (unusedMemOutputs.contains(name)) uses.append(name)
-    case other => other.foreachExpr(findUnusedMemoryOutputUse)
+      if (unusedOutputs.contains(name)) uses.append(name)
+    case other => other.foreachExpr(findUnusedOutputUse)
   }
 
   private case class Context(baseName: String) extends TranslationContext {

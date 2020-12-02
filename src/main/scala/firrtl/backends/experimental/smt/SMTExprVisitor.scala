@@ -54,6 +54,11 @@ private object SMTExprVisitor {
     case old @ BVIte(a, b, c) =>
       val (nA, nB, nC) = (map(a, bv, ar), map(b, bv, ar), map(c, bv, ar))
       bv(if (nA.eq(a) && nB.eq(b) && nC.eq(c)) old else BVIte(nA, nB, nC))
+    // n-ary
+    case old @ BVFunctionCall(name, args, width) =>
+      val nArgs = args.map(a => map(a, bv, ar))
+      val noneNew = nArgs.zip(args).forall { case (n, o) => n.eq(o) }
+      bv(if (noneNew) old else BVFunctionCall(name, nArgs, width))
   }
 
   private def map(e: ArrayExpr, bv: BVFun, ar: ArrayFun): ArrayExpr = e match {

@@ -24,6 +24,11 @@ private object SMTLibSerializer {
     case a: ArrayExpr => serializeArrayType(a.indexWidth, a.dataWidth)
   }
 
+  def declareFunction(foo: BVFunctionSymbol): SMTCommand = {
+    val args = foo.argWidths.map(serializeBitVectorType)
+    DeclareFunction(BVSymbol(foo.name, foo.width), args)
+  }
+
   private def serialize(e: BVExpr): String = e match {
     case BVLiteral(value, width) =>
       val mask = (BigInt(1) << width) - 1
@@ -74,6 +79,7 @@ private object SMTLibSerializer {
     case BVConcat(a, b)                     => s"(concat ${asBitVector(a)} ${asBitVector(b)})"
     case ArrayRead(array, index)            => s"(select ${serialize(array)} ${asBitVector(index)})"
     case BVIte(cond, tru, fals)             => s"(ite ${serialize(cond)} ${serialize(tru)} ${serialize(fals)})"
+    case BVFunctionCall(name, args, _)      => args.map(serialize).mkString(s"($name ", " ", ")")
     case BVRawExpr(serialized, _)           => serialized
   }
 

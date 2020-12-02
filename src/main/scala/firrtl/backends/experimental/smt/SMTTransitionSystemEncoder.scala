@@ -20,6 +20,9 @@ private object SMTTransitionSystemEncoder {
     // emit header as comments
     cmds ++= sys.header.map(Comment)
 
+    // declare uninterpreted functions used in model
+    cmds ++= sys.ufs.map(SMTLibSerializer.declareFunction)
+
     // declare state type
     val stateType = id(name + "_s")
     cmds += DeclareUninterpretedSort(stateType)
