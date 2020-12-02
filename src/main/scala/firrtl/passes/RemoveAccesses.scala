@@ -47,8 +47,7 @@ object RemoveAccesses extends Pass {
     *   Seq(Location(a[0], UIntLiteral(0)), Location(a[1], UIntLiteral(1)))
     */
   private def getLocations(e: Expression): Seq[Location] = e match {
-    case e: WRef => create_exps(e).map(Location(_, one))
-    case e: WSubIndex =>
+    case e: SubIndex =>
       val ls = getLocations(e.expr)
       val start = get_point(e)
       val end = start + get_size(e.tpe)
@@ -57,7 +56,7 @@ object RemoveAccesses extends Pass {
         (l, i) <- ls.zipWithIndex
         if ((i % stride) >= start) & ((i % stride) < end)
       ) yield l
-    case e: WSubField =>
+    case e: SubField =>
       val ls = getLocations(e.expr)
       val start = get_point(e)
       val end = start + get_size(e.tpe)
@@ -66,17 +65,27 @@ object RemoveAccesses extends Pass {
         (l, i) <- ls.zipWithIndex
         if ((i % stride) >= start) & ((i % stride) < end)
       ) yield l
-    case e: WSubAccess =>
-      val ls = getLocations(e.expr)
-      val stride = get_size(e.tpe)
-      val wrap = e.expr.tpe.asInstanceOf[VectorType].size
-      ls.zipWithIndex.map {
-        case (l, i) =>
-          val c = (i / stride) % wrap
-          val basex = l.base
-          val guardx = AND(l.guard, EQV(UIntLiteral(c), e.index))
-          Location(basex, guardx)
+    case SubAccess(expr, index, tpe, _) =>
+      getLocations(expr).zipWithIndex.flatMap {
+        case (Location(exprBase, exprGuard), exprIndex) =>
+          getLocations(index).map {
+            case Location(indexBase, indexGuard) =>
+              Location(
+                exprBase,
+                AND(
+                  AND(
+                    indexGuard,
+                    exprGuard
+                  ),
+                  EQV(
+                    UIntLiteral((exprIndex / get_size(tpe)) % expr.tpe.asInstanceOf[VectorType].size),
+                    indexBase
+                  )
+                )
+              )
+          }
       }
+    case e => create_exps(e).map(Location(_, one))
   }
 
   /** Returns true if e contains a [[firrtl.WSubAccess]]

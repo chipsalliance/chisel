@@ -456,6 +456,23 @@ class LowerTypesUniquifySpec extends FirrtlFlatSpec {
     executeTest(input, expected)
   }
 
+  it should "remove index express in SubAccess" in {
+    val input =
+      s"""circuit Bug :
+         |  module Bug :
+         |    input in0 : UInt<1> [2][2]
+         |    input in1 : UInt<1> [2]
+         |    input in2 : UInt<1> [2]
+         |    output out : UInt<1>
+         |    out <= in0[in1[in2[0]]][in1[in2[1]]]
+         |""".stripMargin
+    val expected = Seq(
+      "out <= _in0_in1_in1_in2_1"
+    )
+
+    executeTest(input, expected)
+  }
+
   it should "rename memories" in {
     val input =
       """circuit Test :
