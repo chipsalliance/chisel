@@ -90,7 +90,7 @@ lazy val antlrSettings = Seq(
 )
 
 lazy val publishSettings = Seq(
-  // publishMavenStyle and publishTo handled by sbt-ci-release
+  publishMavenStyle := true,
   publishArtifact in Test := false,
   pomIncludeRepository := { x => false },
   // Don't add 'scm' elements if we have a git.remoteRepo definition,
@@ -114,6 +114,15 @@ lazy val publishSettings = Seq(
         <url>http://www.eecs.berkeley.edu/~jrb/</url>
       </developer>
     </developers>,
+  publishTo := {
+    val v = version.value
+    val nexus = "https://oss.sonatype.org/"
+    if (v.trim.endsWith("SNAPSHOT")) {
+      Some("snapshots" at nexus + "content/repositories/snapshots")
+    } else {
+      Some("releases" at nexus + "service/local/staging/deploy/maven2")
+    }
+  }
 )
 
 
