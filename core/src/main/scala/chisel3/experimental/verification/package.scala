@@ -6,7 +6,7 @@ package experimental
 import chisel3.{ Bool, CompileOptions }
 import chisel3.internal.Builder
 import chisel3.internal.Builder.{ pushCommand, pushOp }
-import chisel3.internal.firrtl.{ ILit, PrimOp, DefPrim, Formal, Verification }
+import chisel3.internal.firrtl.{ ILit, PrimOp, DefPrim, Formal, Verification, Methodology }
 import chisel3.internal.sourceinfo.SourceInfo
 
 package object verification {
