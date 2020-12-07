@@ -30,7 +30,7 @@ def javacOptionsVersion(scalaVersion: String): Seq[String] = {
 
 val defaultVersions = Map(
   "firrtl" -> "edu.berkeley.cs" %% "firrtl" % "1.4-SNAPSHOT",
-  "treadle" -> "edu.berkeley.cs" %% "treadle" % "1.3-SNAPSHOT"
+  "treadle" -> "edu.berkeley.cs" %% "treadle" % "1.5-SNAPSHOT"
 )
 
 lazy val commonSettings = Seq (
