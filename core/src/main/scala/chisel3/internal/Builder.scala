@@ -10,6 +10,7 @@ import chisel3.internal.firrtl._
 import chisel3.internal.naming._
 import _root_.firrtl.annotations.{CircuitName, ComponentName, IsMember, ModuleName, Named, ReferenceTarget}
 import chisel3.internal.Builder.Prefix
+import logger.LazyLogging
 
 import scala.collection.mutable
 
@@ -324,7 +325,7 @@ private[chisel3] class DynamicContext() {
   val namingStack = new NamingStack
 }
 
-private[chisel3] object Builder {
+private[chisel3] object Builder extends LazyLogging {
 
   // Represents the current state of the prefixes given
   type Prefix = List[String]
@@ -638,11 +639,11 @@ private[chisel3] object Builder {
   private [chisel3] def build[T <: RawModule](f: => T, dynamicContext: DynamicContext): (Circuit, T) = {
     dynamicContextVar.withValue(Some(dynamicContext)) {
       checkScalaVersion()
-      errors.info("Elaborating design...")
+      logger.warn("Elaborating design...")
       val mod = f
       mod.forceName(None, mod.name, globalNamespace)
       errors.checkpoint()
-      errors.info("Done elaborating.")
+      logger.warn("Done elaborating.")
 
       (Circuit(components.last.name, components, annotations), mod)
     }
