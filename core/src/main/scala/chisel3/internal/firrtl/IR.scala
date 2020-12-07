@@ -742,10 +742,6 @@ object Formal extends Enumeration {
   val Require = Value("require")
   val Ensure = Value("ensure")
 }
-object Methodology extends Enumeration {
-  val Trivial = Value("")
-  val MemoryInduction = Value("memoryInduction")
-}
 case class Verification(op: Formal.Value, sourceInfo: SourceInfo, clock: Arg,
                         predicate: Arg, message: String, method: Methodology.Value) extends Command
 abstract class Component extends Arg {

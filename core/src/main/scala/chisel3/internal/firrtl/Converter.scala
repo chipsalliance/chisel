@@ -134,7 +134,8 @@ private[chisel3] object Converter {
         case Formal.Require => fir.Formal.Require
       }
       val firMtd = mtd match {
-        case Methodology.Trivial => fir.Methodology.Trivial
+        case Methodology.NonInstantiated => fir.Methodology.NonInstantiated
+        case Methodology.Combinatorial => fir.Methodology.Combinatorial
         case Methodology.MemoryInduction => fir.Methodology.MemoryInduction
       }
       Some(fir.Verification(firOp, convert(info), convert(clk, ctx),
