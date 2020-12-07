@@ -20,6 +20,7 @@ case class PrimOp(name: String) {
 }
 
 object PrimOp {
+  val InOp = PrimOp("in")
   val AddOp = PrimOp("add")
   val SubOp = PrimOp("sub")
   val TailOp = PrimOp("tail")

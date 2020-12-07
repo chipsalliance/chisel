@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chisel3.experimental
+package chisel3
+package experimental
 
-import chisel3.{Bool, CompileOptions}
+import chisel3.{ Bool, CompileOptions }
 import chisel3.internal.Builder
-import chisel3.internal.Builder.pushCommand
-import chisel3.internal.firrtl.{Formal, Verification}
+import chisel3.internal.Builder.{ pushCommand, pushOp }
+import chisel3.internal.firrtl.{ ILit, PrimOp, DefPrim, Formal, Verification }
 import chisel3.internal.sourceinfo.SourceInfo
 
 
@@ -17,6 +18,14 @@ object Methodology extends Enumeration {
 }
 
 package object verification {
+  implicit class Delay[T <: Data](data: T) {
+    def in(delay: BigInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+      val clock = Builder.forcedClock
+      scala.Predef.require(delay > 0, "A signal can only be mesured in a positive amount of clock cycles")
+      requireIsHardware(data, "")
+      pushOp(DefPrim(sourceInfo, data.cloneTypeFull, PrimOp.InOp, data.ref, ILit(delay)))
+    }
+  }
   object assert {
     def apply(predicate: Bool, msg: String = "", mtd: Methodology.Value = Methodology.NonInstantiated)(
       implicit sourceInfo: SourceInfo,
