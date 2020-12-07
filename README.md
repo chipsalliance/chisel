@@ -7,7 +7,7 @@
 [![Mergify Status][mergify-status]][mergify]
 
 [mergify]: https://mergify.io
-[mergify-status]: https://gh.mergify.io/badges/:freechipsproject/:firrtl.png?style=cut
+[mergify-status]: https://img.shields.io/endpoint.svg?url=https://gh.mergify.io/badges/chipsalliance/firrtl&style=flat
 
 #### Flexible Internal Representation for RTL
 
