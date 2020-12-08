@@ -3,11 +3,10 @@
 package chisel3
 
 import scala.language.experimental.macros
-
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.{SourceInfo}
+import chisel3.internal.sourceinfo.{SourceInfo, UnlocatableSourceInfo}
 
 object when {
   /** Create a `when` condition block, where whether a block of logic is
@@ -29,7 +28,30 @@ object when {
     */
 
   def apply(cond: => Bool)(block: => Any)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): WhenContext = {
-    new WhenContext(sourceInfo, Some(() => cond), block)
+    new WhenContext(sourceInfo, Some(() => cond), block, 0, Nil)
+  }
+
+  /** Returns the current `when` condition
+    *
+    * This is the conjunction of conditions for all `whens` going up the call stack
+    * {{{
+    * when (a) {
+    *   when (b) {
+    *     when (c) {
+    *     }.otherwise {
+    *       when.cond // this is equal to: a && b && !c
+    *     }
+    *   }
+    * }
+    * }}}
+    *  */
+  def cond: Bool = {
+    implicit val compileOptions = ExplicitCompileOptions.Strict
+    implicit val sourceInfo = UnlocatableSourceInfo
+    val whens = Builder.whenStack
+    whens.foldRight(true.B) {
+      case (ctx, acc) => acc && ctx.localCond()
+    }
   }
 }
 
@@ -43,9 +65,31 @@ object when {
   *  succeeding elsewhen or otherwise; therefore, this information is
   *  added by preprocessing the command queue.
   */
-final class WhenContext(sourceInfo: SourceInfo, cond: Option[() => Bool], block: => Any, firrtlDepth: Int = 0) {
+final class WhenContext private[chisel3] (
+  sourceInfo: SourceInfo,
+  cond: Option[() => Bool],
+  block: => Any,
+  firrtlDepth: Int,
+  // For capturing conditions from prior whens or elsewhens
+  altConds: List[() => Bool]
+) {
+
+  @deprecated("Use when(...) { ... }, this should never have been public", "Chisel 3.4.2")
+  def this(sourceInfo: SourceInfo, cond: Option[() => Bool], block: => Any, firrtlDepth: Int = 0) =
+    this(sourceInfo, cond, block, firrtlDepth, Nil)
 
   private var scopeOpen = false
+
+  /** Returns the local condition, inverted for an otherwise */
+  private[chisel3] def localCond(): Bool = {
+    implicit val compileOptions = ExplicitCompileOptions.Strict
+    implicit val sourceInfo = UnlocatableSourceInfo
+    val alt = altConds.foldRight(true.B) {
+      case (c, acc) => acc & !c()
+    }
+    cond.map(alt && _())
+        .getOrElse(alt)
+  }
 
   /** This block of logic gets executed if above conditions have been
     * false and this condition is true. The lazy argument pattern
@@ -54,7 +98,7 @@ final class WhenContext(sourceInfo: SourceInfo, cond: Option[() => Bool], block:
     * the correct place.
     */
   def elsewhen (elseCond: => Bool)(block: => Any)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): WhenContext = {
-    new WhenContext(sourceInfo, Some(() => elseCond), block, firrtlDepth + 1)
+    new WhenContext(sourceInfo, Some(() => elseCond), block, firrtlDepth + 1, cond ++: altConds)
   }
 
   /** This block of logic gets executed only if the above conditions
@@ -65,7 +109,7 @@ final class WhenContext(sourceInfo: SourceInfo, cond: Option[() => Bool], block:
     * place.
     */
   def otherwise(block: => Any)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit =
-    new WhenContext(sourceInfo, None, block, firrtlDepth + 1)
+    new WhenContext(sourceInfo, None, block, firrtlDepth + 1, cond ++: altConds)
 
   def active(): Boolean = scopeOpen
 
@@ -79,13 +123,13 @@ final class WhenContext(sourceInfo: SourceInfo, cond: Option[() => Bool], block:
     scopeOpen = true
     block
   } catch {
-    case ret: scala.runtime.NonLocalReturnControl[_] =>
+    case _: scala.runtime.NonLocalReturnControl[_] =>
       throwException("Cannot exit from a when() block with a \"return\"!" +
         " Perhaps you meant to use Mux or a Wire as a return value?"
       )
   }
   scopeOpen = false
   Builder.popWhen()
-  cond.foreach( c => pushCommand(WhenEnd(sourceInfo,firrtlDepth)) )
+  cond.foreach(_ => pushCommand(WhenEnd(sourceInfo,firrtlDepth)))
   if (cond.isEmpty) { pushCommand(OtherwiseEnd(sourceInfo,firrtlDepth)) }
 }
