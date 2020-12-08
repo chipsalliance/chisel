@@ -87,7 +87,7 @@ trait CommonModule extends CrossSbtModule with PublishModule {
     description = artifactName(),
     organization = "edu.berkeley.cs",
     url = "https://www.chisel-lang.org",
-    licenses = Seq(License.`BSD-3-Clause`),
+    licenses = Seq(License.`Apache-2.0`),
     versionControl = VersionControl.github("freechipsproject", "chisel3"),
     developers = Seq(
       Developer("jackbackrack", "Jonathan Bachrach", "https://eecs.berkeley.edu/~jrb/")
