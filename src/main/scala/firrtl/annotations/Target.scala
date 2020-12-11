@@ -612,7 +612,7 @@ case class ModuleTarget(circuit: String, module: String) extends IsModule {
 }
 
 /** Target pointing to a declared named component in a [[firrtl.ir.DefModule]]
-  * This includes: [[firrtl.ir.Port]], [[firrtl.ir.DefWire]], [[firrtl.ir.DefRegister]], [[firrtl.ir.DefInstance]],
+  * This includes: [[firrtl.ir.Port]], [[firrtl.ir.DefWire]], [[firrtl.ir.DefRegister]],
   *   [[firrtl.ir.DefMemory]], [[firrtl.ir.DefNode]]
   * @param circuit Name of the encapsulating circuit
   * @param module Name of the root module of this reference
