@@ -2,10 +2,13 @@
 
 package firrtl.passes
 import firrtl.annotations.{CircuitTarget, IsMember}
+import firrtl.annotations.TargetToken.{Instance, OfModule}
+import firrtl.analyses.InstanceKeyGraph
 import firrtl.{CircuitState, RenameMap, Utils}
 import firrtl.options.Dependency
 import firrtl.stage.TransformManager
 import firrtl.stage.TransformManager.TransformDependency
+import firrtl.testutils.FirrtlMatchers
 import org.scalatest.flatspec.AnyFlatSpec
 
 /** Unit test style tests for [[LowerTypes]].
@@ -228,22 +231,35 @@ class LowerTypesRenamingSpec extends AnyFlatSpec {
 }
 
 /** Instances are a special case since they do not get completely destructed but instead become a 1-deep bundle. */
-class LowerTypesOfInstancesSpec extends AnyFlatSpec {
+class LowerTypesOfInstancesSpec extends AnyFlatSpec with FirrtlMatchers {
   import LowerTypesSpecUtils._
   private case class Lower(inst: firrtl.ir.DefInstance, fields: Seq[String], renameMap: RenameMap)
   private val m = CircuitTarget("m").module("m")
+  private val igraph = InstanceKeyGraph(
+    parse(
+      """circuit m:
+        |  module c:
+        |    skip
+        |  module m:
+        |    inst i of c
+        |""".stripMargin
+    )
+  )
   def resultToFieldSeq(res: Seq[(String, firrtl.ir.SubField)]): Seq[String] =
     res.map(_._2).map(r => s"${r.name} : ${r.tpe.serialize}")
   private def lower(
-    n:         String,
-    tpe:       String,
-    module:    String,
-    namespace: Set[String],
-    renames:   RenameMap = RenameMap()
+    n:            String,
+    tpe:          String,
+    module:       String,
+    namespace:    Set[String],
+    otherRenames: RenameMap = RenameMap()
   ): Lower = {
     val ref = firrtl.ir.DefInstance(firrtl.ir.NoInfo, n, module, parseType(tpe))
     val mutableSet = scala.collection.mutable.HashSet[String]() ++ namespace
-    val (newInstance, res) = DestructTypes.destructInstance(m, ref, mutableSet, renames, Set())
+    val instRenames = scala.collection.mutable.ListBuffer[(Instance, Instance)]()
+    val (newInstance, res) = DestructTypes.destructInstance(m, ref, mutableSet, instRenames, Set())
+    val instMap = Map(OfModule("m") -> instRenames.toMap)
+    val renames = RenameMap.fromInstanceRenames(igraph, instMap).andThen(otherRenames)
     Lower(newInstance, resultToFieldSeq(res), renames)
   }
   private def get(l: Lower, m: IsMember): Set[IsMember] = l.renameMap.get(m).get.toSet
@@ -305,7 +321,7 @@ class LowerTypesOfInstancesSpec extends AnyFlatSpec {
       assert(get(l, i) == Set(i_))
 
       // the ports renaming is also noted
-      val r = portRenames.andThen(otherRenames)
+      val r = portRenames.andThen(l.renameMap)
       assert(r.get(i.ref("b")).get == Seq(i_.ref("b__c")))
       assert(r.get(i.ref("b").field("c")).get == Seq(i_.ref("b__c")))
       assert(r.get(i.ref("b_c")).get == Seq(i_.ref("b_c")))

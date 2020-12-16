@@ -8,8 +8,10 @@ import firrtl.annotations.{
   MemoryInitAnnotation,
   MemoryRandomInitAnnotation,
   ModuleTarget,
-  ReferenceTarget
+  ReferenceTarget,
+  TargetToken
 }
+import TargetToken.{Instance, OfModule}
 import firrtl.{
   CircuitForm,
   CircuitState,
@@ -73,16 +75,18 @@ object LowerTypes extends Transform with DependencyAPIMigration {
     val memInitByModule = memInitAnnos.map(_.asInstanceOf[MemoryInitAnnotation]).groupBy(_.target.encapsulatingModule)
 
     val c = CircuitTarget(state.circuit.main)
-    val resultAndRenames = state.circuit.modules.map(m => onModule(c, m, memInitByModule.getOrElse(m.name, Seq())))
+    val refRenameMap = RenameMap()
+    val resultAndRenames =
+      state.circuit.modules.map(m => onModule(c, m, memInitByModule.getOrElse(m.name, Seq()), refRenameMap))
     val result = state.circuit.copy(modules = resultAndRenames.map(_._1))
 
     // memory init annotations could have been modified
     val newAnnos = otherAnnos ++ resultAndRenames.flatMap(_._3)
 
-    // chain module renames in topological order
-    val moduleRenames = resultAndRenames.map { case (m, r, _) => m.name -> r }.toMap
-    val moduleOrderBottomUp = InstanceKeyGraph(result).moduleOrder.reverseIterator
-    val renames = moduleOrderBottomUp.map(m => moduleRenames(m.name)).reduce((a, b) => a.andThen(b))
+    // Build RenameMap for instances
+    val moduleRenames = resultAndRenames.map { case (m, r, _) => OfModule(m.name) -> r }.toMap
+    val instRenameMap = RenameMap.fromInstanceRenames(InstanceKeyGraph(state.circuit), moduleRenames)
+    val renames = instRenameMap.andThen(refRenameMap)
 
     state.copy(circuit = result, renames = Some(renames), annotations = newAnnos)
   }
@@ -90,9 +94,9 @@ object LowerTypes extends Transform with DependencyAPIMigration {
   private def onModule(
     c:          CircuitTarget,
     m:          DefModule,
-    memoryInit: Seq[MemoryInitAnnotation]
-  ): (DefModule, RenameMap, Seq[MemoryInitAnnotation]) = {
-    val renameMap = RenameMap()
+    memoryInit: Seq[MemoryInitAnnotation],
+    renameMap:  RenameMap
+  ): (DefModule, Map[Instance, Instance], Seq[MemoryInitAnnotation]) = {
     val ref = c.module(m.name)
 
     // first we lower the ports in order to ensure that their names are independent of the module body
@@ -105,7 +109,9 @@ object LowerTypes extends Transform with DependencyAPIMigration {
     implicit val memInit: Seq[MemoryInitAnnotation] = memoryInit
     val newMod = mLoweredPorts.mapStmt(onStatement)
 
-    (newMod, renameMap, memInit)
+    val instRenames = symbols.getInstanceRenames.toMap
+
+    (newMod, instRenames, memInit)
   }
 
   // We lower ports in a separate pass in order to ensure that statements inside the module do not influence port names.
@@ -221,6 +227,7 @@ private class LoweringTable(
   private val namespace = mutable.HashSet[String]() ++ table.getSymbolNames
   // Serialized old access string to new ground type reference.
   private val nameToExprs = mutable.HashMap[String, Seq[RefLikeExpression]]() ++ portNameToExprs
+  private val instRenames = mutable.ListBuffer[(Instance, Instance)]()
 
   def lower(mem: DefMemory): Seq[DefMemory] = {
     val (mems, refs) = DestructTypes.destructMemory(m, mem, namespace, renameMap, portNames)
@@ -228,7 +235,7 @@ private class LoweringTable(
     mems
   }
   def lower(inst: DefInstance): DefInstance = {
-    val (newInst, refs) = DestructTypes.destructInstance(m, inst, namespace, renameMap, portNames)
+    val (newInst, refs) = DestructTypes.destructInstance(m, inst, namespace, instRenames, portNames)
     nameToExprs ++= refs.map { case (name, r) => name -> List(r) }
     newInst
   }
@@ -245,6 +252,7 @@ private class LoweringTable(
   }
 
   def getReferences(expr: RefLikeExpression): Seq[RefLikeExpression] = nameToExprs(serialize(expr))
+  def getInstanceRenames: List[(Instance, Instance)] = instRenames.toList
 
   // We could just use FirrtlNode.serialize here, but we want to make sure there are not SubAccess nodes left.
   private def serialize(expr: RefLikeExpression): String = expr match {
@@ -296,11 +304,11 @@ private object DestructTypes {
     *         instead of a flat Reference when turning them into access expressions.
     */
   def destructInstance(
-    m:         ModuleTarget,
-    instance:  DefInstance,
-    namespace: Namespace,
-    renameMap: RenameMap,
-    reserved:  Set[String]
+    m:           ModuleTarget,
+    instance:    DefInstance,
+    namespace:   Namespace,
+    instRenames: mutable.ListBuffer[(Instance, Instance)],
+    reserved:    Set[String]
   ): (DefInstance, Seq[(String, SubField)]) = {
     val (rename, _) = uniquify(Field(instance.name, Default, instance.tpe), namespace, reserved)
     val newName = rename.map(_.name).getOrElse(instance.name)
@@ -314,7 +322,7 @@ private object DestructTypes {
 
     // rename all references to the instance if necessary
     if (newName != instance.name) {
-      renameMap.record(m.instOf(instance.name, instance.module), m.instOf(newName, instance.module))
+      instRenames += Instance(instance.name) -> Instance(newName)
     }
     // The ports do not need to be explicitly renamed here. They are renamed when the module ports are lowered.
 

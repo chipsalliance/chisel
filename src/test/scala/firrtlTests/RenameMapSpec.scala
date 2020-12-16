@@ -5,6 +5,8 @@ package firrtlTests
 import firrtl.RenameMap
 import firrtl.RenameMap.IllegalRenameException
 import firrtl.annotations._
+import firrtl.annotations.TargetToken.{Instance, OfModule}
+import firrtl.analyses.InstanceKeyGraph
 import firrtl.testutils._
 
 class RenameMapSpec extends FirrtlFlatSpec {

@@ -4,7 +4,9 @@ package firrtl
 
 import annotations._
 import firrtl.RenameMap.IllegalRenameException
+import firrtl.analyses.InstanceKeyGraph
 import firrtl.annotations.TargetToken.{Field, Index, Instance, OfModule}
+import TargetUtils.{instKeyPathToTarget, unfoldInstanceTargets}
 
 import scala.collection.mutable
 
@@ -19,6 +21,58 @@ object RenameMap {
     val rm = new RenameMap
     rm.recordAll(map)
     rm
+  }
+
+  /** RenameMap factory for simple renaming of instances
+    *
+    * @param graph [[InstanceKeyGraph]] from *before* renaming
+    * @param renames Mapping of old instance name to new within Modules
+    */
+  private[firrtl] def fromInstanceRenames(
+    graph:   InstanceKeyGraph,
+    renames: Map[OfModule, Map[Instance, Instance]]
+  ): RenameMap = {
+    def renameAll(it: InstanceTarget): InstanceTarget = {
+      var prevMod = OfModule(it.module)
+      val pathx = it.path.map {
+        case (inst, of) =>
+          val instx = renames
+            .get(prevMod)
+            .flatMap(_.get(inst))
+            .getOrElse(inst)
+          prevMod = of
+          instx -> of
+      }
+      // Sanity check, the last one should always be a rename (or we wouldn't be calling this method)
+      val instx = renames(prevMod)(Instance(it.instance))
+      it.copy(path = pathx, instance = instx.value)
+    }
+    val underlying = new mutable.HashMap[CompleteTarget, Seq[CompleteTarget]]
+    val instOf: String => Map[String, String] =
+      graph.getChildInstances.toMap
+        // Laziness here is desirable, we only access each key once, some we don't access
+        .mapValues(_.map(k => k.name -> k.module).toMap)
+    for ((OfModule(module), instMapping) <- renames) {
+      val modLookup = instOf(module)
+      val parentInstances = graph.findInstancesInHierarchy(module)
+      for {
+        // For every instance of the Module where the renamed instance resides
+        parent <- parentInstances
+        parentTarget = instKeyPathToTarget(parent)
+        // Create the absolute InstanceTarget to be renamed
+        (Instance(from), _) <- instMapping // The to is given by renameAll
+        instMod = modLookup(from)
+        fromTarget = parentTarget.instOf(from, instMod)
+        // Ensure all renames apply to the InstanceTarget
+        toTarget = renameAll(fromTarget)
+        // RenameMap only allows 1 hit when looking up InstanceTargets, so rename all possible
+        //   paths to this instance
+        (fromx, tox) <- unfoldInstanceTargets(fromTarget).zip(unfoldInstanceTargets(toTarget))
+      } yield {
+        underlying(fromx) = List(tox)
+      }
+    }
+    new RenameMap(underlying)
   }
 
   /** Initialize a new RenameMap */
