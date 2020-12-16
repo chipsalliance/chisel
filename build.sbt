@@ -154,7 +154,11 @@ lazy val plugin = (project in file("plugin")).
     mimaPreviousArtifacts := {
       // Not published for 2.11, do not try to check binary compatibility with a 2.11 artifact
       if (scalaVersion.value.startsWith("2.11")) Set()
+<<<<<<< HEAD
       else Set("edu.berkeley.cs" % "chisel3-plugin" % "3.4.0" cross CrossVersion.full)
+=======
+      else Set()
+>>>>>>> 25a417f8... Switch to using Github Actions CI (#1690)
     }
   )
 
@@ -174,7 +178,11 @@ lazy val macros = (project in file("macros")).
   settings(name := "chisel3-macros").
   settings(commonSettings: _*).
   settings(publishSettings: _*).
+<<<<<<< HEAD
   settings(mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-macros" % "3.4.0"))
+=======
+  settings(mimaPreviousArtifacts := Set())
+>>>>>>> 25a417f8... Switch to using Github Actions CI (#1690)
 
 lazy val firrtlRef = ProjectRef(workspaceDirectory / "firrtl", "firrtl")
 
@@ -188,6 +196,7 @@ lazy val core = (project in file("core")).
     buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
   ).
   settings(publishSettings: _*).
+  settings(mimaPreviousArtifacts := Set()).
   settings(
     mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-core" % "3.4.0"),
     mimaBinaryIssueFilters ++= Seq(
@@ -234,7 +243,11 @@ lazy val chisel = (project in file(".")).
   dependsOn(core).
   aggregate(macros, core, plugin).
   settings(
+<<<<<<< HEAD
     mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3" % "3.4.0"),
+=======
+    mimaPreviousArtifacts := Set(),
+>>>>>>> 25a417f8... Switch to using Github Actions CI (#1690)
     libraryDependencies += defaultVersions("treadle") % "test",
     scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
     scalacOptions in Compile in doc ++= Seq(
