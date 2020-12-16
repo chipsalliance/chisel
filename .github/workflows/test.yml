@@ -1,0 +1,45 @@
+name: Continuous Integration
+
+on: [pull_request]
+
+jobs:
+  ci:
+    name: ci
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        scala: [2.12.12, 2.11.12]
+    container:
+      image: ucbbar/chisel3-tools
+      options: --user github --entrypoint /bin/bash
+    env:
+      CONTAINER_HOME: /home/github
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.8
+      - name: Cache Scala
+        uses: coursier/cache-action@v5
+      - name: Documentation (Scala 2.12 only)
+        if: matrix.scala == '2.12.12'
+        run: sbt ++${{ matrix.scala }} docs/mdoc
+      - name: Test
+        run: sbt ++${{ matrix.scala }} test
+      - name: Binary compatibility
+        run: sbt ++${{ matrix.scala }} mimaReportBinaryIssues
+
+
+  # Sentinel job to simplify how we specify which checks need to pass in branch
+  # protection and in Mergify
+  #
+  # When adding new jobs, please add them to `needs` below
+  all_tests_passed:
+    name: "all tests passed"
+    needs: [ci]
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo Success!

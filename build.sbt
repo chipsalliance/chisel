@@ -147,6 +147,13 @@ lazy val plugin = (project in file("plugin")).
     },
     // Only publish for Scala 2.12
     publish / skip := !scalaVersion.value.startsWith("2.12")
+  ).
+  settings(
+    mimaPreviousArtifacts := {
+      // Not published for 2.11, do not try to check binary compatibility with a 2.11 artifact
+      if (scalaVersion.value.startsWith("2.11")) Set()
+      else Set()
+    }
   )
 
 lazy val usePluginSettings = Seq(
@@ -163,7 +170,8 @@ lazy val usePluginSettings = Seq(
 lazy val macros = (project in file("macros")).
   settings(name := "chisel3-macros").
   settings(commonSettings: _*).
-  settings(publishSettings: _*)
+  settings(publishSettings: _*).
+  settings(mimaPreviousArtifacts := Set())
 
 lazy val firrtlRef = ProjectRef(workspaceDirectory / "firrtl", "firrtl")
 
@@ -177,6 +185,7 @@ lazy val core = (project in file("core")).
     buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
   ).
   settings(publishSettings: _*).
+  settings(mimaPreviousArtifacts := Set()).
   settings(
     name := "chisel3-core",
     scalacOptions := scalacOptions.value ++ Seq(
@@ -205,6 +214,7 @@ lazy val chisel = (project in file(".")).
   dependsOn(core).
   aggregate(macros, core, plugin).
   settings(
+    mimaPreviousArtifacts := Set(),
     libraryDependencies += defaultVersions("treadle") % "test",
     scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
     scalacOptions in Compile in doc ++= Seq(
