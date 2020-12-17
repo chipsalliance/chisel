@@ -11,11 +11,11 @@ object chisel3 extends mill.Cross[chisel3CrossModule]("2.11.12", "2.12.12")
 // Please retain it.
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
 val defaultVersions = Map(
-  "firrtl" -> "1.4-SNAPSHOT"
+  "firrtl" -> "1.5-SNAPSHOT"
 )
 
 val testDefaultVersions = Map(
-  "treadle" -> "1.3-SNAPSHOT"
+  "treadle" -> "1.5-SNAPSHOT"
 )
 
 def getVersion(dep: String, org: String = "edu.berkeley.cs") = {
@@ -46,7 +46,7 @@ trait CommonModule extends CrossSbtModule with PublishModule {
 
   override def ivyDeps = super.ivyDeps() ++ firrtlIvyDeps
 
-  def publishVersion = "3.4-SNAPSHOT"
+  def publishVersion = "3.5-SNAPSHOT"
 
   // 2.12.10 -> Array("2", "12", "10") -> "12" -> 12
   protected def majorVersion = crossScalaVersion.split('.')(1).toInt
