@@ -54,8 +54,6 @@ lazy val publishSettings = Seq (
   publishMavenStyle := true,
   publishArtifact in Test := false,
   pomIncludeRepository := { x => false },
-  // Don't add 'scm' elements if we have a git.remoteRepo definition,
-  //  but since we don't (with the removal of ghpages), add them in below.
   pomExtra := <url>http://chisel.eecs.berkeley.edu/</url>
     <licenses>
       <license>
@@ -64,10 +62,6 @@ lazy val publishSettings = Seq (
         <distribution>repo</distribution>
       </license>
     </licenses>
-    <scm>
-      <url>https://github.com/freechipsproject/chisel3.git</url>
-      <connection>scm:git:github.com/freechipsproject/chisel3.git</connection>
-    </scm>
     <developers>
       <developer>
         <id>jackbackrack</id>
