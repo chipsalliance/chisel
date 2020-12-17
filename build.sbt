@@ -123,91 +123,16 @@ lazy val chiselSettings = Seq (
   }
 )
 
-<<<<<<< HEAD
 lazy val coreMacros = (project in file("coreMacros")).
   settings(commonSettings: _*).
   // Prevent separate JARs from being generated for coreMacros.
   settings(skip in publish := true)
-=======
-autoCompilerPlugins := true
-
-// Plugin must be fully cross-versioned (published for Scala minor version)
-// The plugin only works in Scala 2.12+
-lazy val pluginScalaVersions = Seq(
-  "2.11.12", // Only to support chisel3 cross building for 2.11, plugin does nothing in 2.11
-  // scalamacros paradise version used is not published for 2.12.0 and 2.12.1
-  "2.12.2",
-  "2.12.3",
-  "2.12.4",
-  "2.12.5",
-  "2.12.6",
-  "2.12.7",
-  "2.12.8",
-  "2.12.9",
-  "2.12.10",
-  "2.12.11",
-  "2.12.12",
-)
-
-lazy val plugin = (project in file("plugin")).
-  settings(name := "chisel3-plugin").
-  settings(commonSettings: _*).
-  settings(publishSettings: _*).
-  settings(
-    libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value,
-    scalacOptions += "-Xfatal-warnings",
-    crossScalaVersions := pluginScalaVersions,
-    // Must be published for Scala minor version
-    crossVersion := CrossVersion.full,
-    crossTarget := {
-      // workaround for https://github.com/sbt/sbt/issues/5097
-      target.value / s"scala-${scalaVersion.value}"
-    },
-    // Only publish for Scala 2.12
-    publish / skip := !scalaVersion.value.startsWith("2.12")
-  ).
-  settings(
-    mimaPreviousArtifacts := {
-      // Not published for 2.11, do not try to check binary compatibility with a 2.11 artifact
-      if (scalaVersion.value.startsWith("2.11")) Set()
-      else Set()
-    }
-  )
-
-lazy val usePluginSettings = Seq(
-  scalacOptions in Compile ++= {
-    val jar = (plugin / Compile / Keys.`package`).value
-    val addPlugin = "-Xplugin:" + jar.getAbsolutePath
-    // add plugin timestamp to compiler options to trigger recompile of
-    // main after editing the plugin. (Otherwise a 'clean' is needed.)
-    val dummy = "-Jdummy=" + jar.lastModified
-    Seq(addPlugin, dummy)
-  }
-)
-
-lazy val macros = (project in file("macros")).
-  settings(name := "chisel3-macros").
-  settings(commonSettings: _*).
-  settings(publishSettings: _*).
-  settings(mimaPreviousArtifacts := Set())
->>>>>>> 25a417f8... Switch to using Github Actions CI (#1690)
 
 lazy val chiselFrontend = (project in file("chiselFrontend")).
   settings(commonSettings: _*).
   // Prevent separate JARs from being generated for chiselFrontend.
   settings(skip in publish := true).
   settings(
-<<<<<<< HEAD
-=======
-    buildInfoPackage := "chisel3",
-    buildInfoUsePackageAsPath := true,
-    buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
-  ).
-  settings(publishSettings: _*).
-  settings(mimaPreviousArtifacts := Set()).
-  settings(
-    name := "chisel3-core",
->>>>>>> 25a417f8... Switch to using Github Actions CI (#1690)
     scalacOptions := scalacOptions.value ++ Seq(
       "-deprecation",
       "-explaintypes",
@@ -247,11 +172,6 @@ lazy val chisel = (project in file(".")).
   settings(mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3" % "3.2.7")).
   settings(mimaCurrentClassfiles := (packageBin in Compile).value).
   settings(
-<<<<<<< HEAD
-=======
-    mimaPreviousArtifacts := Set(),
-    libraryDependencies += defaultVersions("treadle") % "test",
->>>>>>> 25a417f8... Switch to using Github Actions CI (#1690)
     scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
     scalacOptions in Compile in doc ++= Seq(
       "-diagrams",
