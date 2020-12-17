@@ -2,7 +2,7 @@ resolvers += Resolver.url("scalasbt", new URL("https://scalasbt.artifactoryonlin
 
 resolvers += Classpaths.sbtPluginReleases
 
-addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.7.0")
+addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.8.1")
 
 resolvers += "jgit-repo" at "https://download.eclipse.org/jgit/maven"
 
