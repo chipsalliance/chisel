@@ -29,8 +29,8 @@ def javacOptionsVersion(scalaVersion: String): Seq[String] = {
 }
 
 val defaultVersions = Map(
-  "firrtl" -> "edu.berkeley.cs" %% "firrtl" % "1.4-SNAPSHOT",
-  "treadle" -> "edu.berkeley.cs" %% "treadle" % "1.3-SNAPSHOT"
+  "firrtl" -> "edu.berkeley.cs" %% "firrtl" % "1.5-SNAPSHOT",
+  "treadle" -> "edu.berkeley.cs" %% "treadle" % "1.5-SNAPSHOT"
 )
 
 lazy val commonSettings = Seq (
@@ -39,7 +39,7 @@ lazy val commonSettings = Seq (
     Resolver.sonatypeRepo("releases")
   ),
   organization := "edu.berkeley.cs",
-  version := "3.4-SNAPSHOT",
+  version := "3.5-SNAPSHOT",
   autoAPIMappings := true,
   scalaVersion := "2.12.12",
   crossScalaVersions := Seq("2.12.12", "2.11.12"),
