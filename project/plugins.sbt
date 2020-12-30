@@ -2,7 +2,7 @@ resolvers += Resolver.url("scalasbt", new URL("https://scalasbt.artifactoryonlin
 
 resolvers += Classpaths.sbtPluginReleases
 
-addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.7.0")
+addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.8.1")
 
 resolvers += "jgit-repo" at "https://download.eclipse.org/jgit/maven"
 
@@ -17,3 +17,5 @@ addSbtPlugin("com.eed3si9n" % "sbt-buildinfo" % "0.9.0")
 addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.4.3")
 
 addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "3.0.0")
+
+addSbtPlugin("com.geirsson" % "sbt-ci-release" % "1.5.5")

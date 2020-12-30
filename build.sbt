@@ -63,8 +63,6 @@ lazy val publishSettings = Seq (
   publishMavenStyle := true,
   publishArtifact in Test := false,
   pomIncludeRepository := { x => false },
-  // Don't add 'scm' elements if we have a git.remoteRepo definition,
-  //  but since we don't (with the removal of ghpages), add them in below.
   pomExtra := <url>http://chisel.eecs.berkeley.edu/</url>
     <licenses>
       <license>
@@ -73,10 +71,6 @@ lazy val publishSettings = Seq (
         <distribution>repo</distribution>
       </license>
     </licenses>
-    <scm>
-      <url>https://github.com/freechipsproject/chisel3.git</url>
-      <connection>scm:git:github.com/freechipsproject/chisel3.git</connection>
-    </scm>
     <developers>
       <developer>
         <id>jackbackrack</id>
@@ -126,7 +120,7 @@ lazy val macros = (project in file("macros")).
   settings(name := "chisel3-macros").
   settings(commonSettings: _*).
   settings(publishSettings: _*).
-  settings(mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-macros" % "3.3.1"))
+  settings(mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-macros" % "3.3.2"))
 
 lazy val core = (project in file("core")).
   settings(commonSettings: _*).
@@ -143,7 +137,7 @@ lazy val core = (project in file("core")).
       "-Xlint:infer-any"
 //      "-Xlint:missing-interpolator"
     ),
-    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-core" % "3.3.1")
+    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-core" % "3.3.2")
   ).
   dependsOn(macros)
 
@@ -165,7 +159,7 @@ lazy val chisel = (project in file(".")).
   dependsOn(core).
   aggregate(macros, core).
   settings(
-    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3" % "3.3.1"),
+    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3" % "3.3.2"),
     scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
     scalacOptions in Compile in doc ++= Seq(
       "-diagrams",
