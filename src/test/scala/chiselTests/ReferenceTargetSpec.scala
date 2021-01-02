@@ -31,7 +31,7 @@ case class ReferenceTargetAnnotation(target: ReferenceTarget, value: String) ext
 /** ChiselAnnotation that corresponds to the [[ReferenceTargetAnnotation]] FIRRTL annotation
   *
   *  @param target the Data which will be converted to a FIRRTL ReferenceTarget
-  *  @praram value the documentation string which will be copied directly to the FIRRTL annotation
+  *  @param value the documentation string which will be copied directly to the FIRRTL annotation
   */
 case class ReferenceTargetChiselAnnotation(target: Data, value: String)
     extends ChiselAnnotation {
