@@ -3,14 +3,14 @@
 package chiselTests
 
 import chisel3._
-import chisel3.stage.ChiselStage
+import chisel3.stage.ChiselGeneratorAnnotation
 
-import org.scalatest._
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
+import org.scalatest.{
+  FreeSpec,
+  Matchers
+}
 
-
-class LiteralToTargetSpec extends AnyFreeSpec with Matchers {
+class LiteralToTargetSpec extends FreeSpec with Matchers {
 
   "Literal Data should fail to be converted to ReferenceTarget" in {
 
@@ -25,7 +25,7 @@ class LiteralToTargetSpec extends AnyFreeSpec with Matchers {
         bar.a.toTarget
       }
 
-      ChiselStage.elaborate(new Foo)
+      ChiselGeneratorAnnotation(() => new Foo).elaborate
     } should have message "Illegal component name: UInt<1>(\"h01\") (note: literals are illegal)"
   }
 }
