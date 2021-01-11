@@ -9,12 +9,7 @@ import chisel3.experimental._
 import chisel3.internal.firrtl._
 import chisel3.internal.naming._
 import _root_.firrtl.annotations.{CircuitName, ComponentName, IsMember, ModuleName, Named, ReferenceTarget}
-<<<<<<< HEAD
-=======
 import _root_.firrtl.annotations.AnnotationUtils.{validComponentName}
-import chisel3.internal.Builder.Prefix
-import logger.LazyLogging
->>>>>>> b578aa5e... Make `toTarget` fail if called on a Literal (or would otherwise not serialize properly) (#1714)
 
 import scala.collection.mutable
 
@@ -454,7 +449,7 @@ object DynamicNamingStack {
     }
     prefixRef
   }
-  
+
   def length() : Int = Builder.namingStackOption.get.length
 }
 
