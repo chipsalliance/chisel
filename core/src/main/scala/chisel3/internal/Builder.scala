@@ -9,6 +9,7 @@ import chisel3.experimental._
 import chisel3.internal.firrtl._
 import chisel3.internal.naming._
 import _root_.firrtl.annotations.{CircuitName, ComponentName, IsMember, ModuleName, Named, ReferenceTarget}
+import _root_.firrtl.annotations.AnnotationUtils.{validComponentName}
 import chisel3.internal.Builder.Prefix
 import logger.LazyLogging
 
@@ -276,6 +277,7 @@ private[chisel3] trait NamedComponent extends HasId {
     */
   final def toTarget: ReferenceTarget = {
     val name = this.instanceName
+    if (!validComponentName(name)) throwException(s"Illegal component name: $name (note: literals are illegal)")
     import _root_.firrtl.annotations.{Target, TargetToken}
     Target.toTargetTokens(name).toList match {
       case TargetToken.Ref(r) :: components => ReferenceTarget(this.circuitName, this.parentModName, Nil, r, components)
