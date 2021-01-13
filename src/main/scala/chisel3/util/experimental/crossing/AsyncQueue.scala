@@ -16,7 +16,6 @@ class AsyncDequeueIO[T <: Data](gen: T) extends Bundle {
   val sink: DecoupledIO[T] = Decoupled(gen)
 }
 
-
 /** Memory used for queue.
   * In ASIC, it will be synthesised to Flip-Flop
   *
@@ -53,32 +52,29 @@ class DataMemory[T <: Data](gen: T, depth: Int, narrow: Boolean) extends RawModu
   }
 }
 
-
 /** Sink of [[AsyncQueue]] constructor.
   *
   * @tparam T Hardware type to be converted.
   * @note SRAM-based clock-domain-crossing source.
   */
-class AsyncQueueSink[T <: Data](gen: T, depth: Int, sync: Int, safe: Boolean = true, narrow: Boolean = true) extends MultiIOModule {
+class AsyncQueueSink[T <: Data](gen: T, depth: Int, sync: Int, narrow: Boolean = true) extends MultiIOModule {
   require(depth > 0 && isPow2(depth), "todo")
   require(sync >= 2, "todo")
   private val depthWidth: Int = log2Ceil(depth)
   /** Dequeue Decoupled IO. */
   val dequeue: DecoupledIO[T] = IO(Decoupled(gen))
 
-  val sourceReady: Option[Bool] = if (safe) Some(IO(Input(Bool()))) else None
-
-  val readIndexGray: UInt = withReset(reset.asAsyncReset())(grayCounter(depthWidth + 1, dequeue.fire(), !sourceReady.getOrElse(true.B), "readIndex"))
+  val readIndexGray: UInt = withReset(reset.asAsyncReset())(grayCounter(depthWidth + 1, dequeue.fire(), false.B, "readIndex"))
   val readIndexGrayReg: UInt = withReset(reset.asAsyncReset())(RegNext(next = readIndexGray, init = 0.U).suggestName("readIndexReg"))
   val writeIndexGray: UInt = IO(Input(UInt((depthWidth + 1).W)))
 
   /** ready signal to indicate [[DecoupledIO]] this queue is not empty, can still dequeue new data. */
   val empty: Bool = readIndexGray === writeIndexGray
-  val valid: Bool = sourceReady.getOrElse(true.B) && !empty
+  val valid: Bool = !empty
   val validReg: Bool = withReset(reset.asAsyncReset())(RegNext(next = valid, init = false.B).suggestName("validReg"))
 
   // dequeue to [[DecoupledIO]]
-  dequeue.valid := validReg && sourceReady.getOrElse(true.B)
+  dequeue.valid := validReg
 
   // port to access memory
   val readEnable: Bool = IO(Output(Bool()))
@@ -109,26 +105,24 @@ class AsyncQueueSink[T <: Data](gen: T, depth: Int, sync: Int, safe: Boolean = t
   * @todo make sync optional, if None use async logic.
   *       add some verification codes.
   */
-class AsyncQueueSource[T <: Data](gen: T, depth: Int, sync: Int, safe: Boolean, narrow: Boolean) extends MultiIOModule {
+class AsyncQueueSource[T <: Data](gen: T, depth: Int, sync: Int) extends MultiIOModule {
   require(depth > 0 && isPow2(depth), "todo")
   require(sync >= 2, "todo")
   private val depthWidth: Int = log2Ceil(depth)
   /** Enqueue Decoupled IO. */
   val enqueue: DecoupledIO[T] = IO(Flipped(Decoupled(gen)))
 
-  val sinkReady: Option[Bool] = if (safe) Some(IO(Input(Bool()))) else None
-
-  val writeIndexGray: UInt = withReset(reset.asAsyncReset())(grayCounter(depthWidth + 1, enqueue.fire(), !sinkReady.getOrElse(true.B), "writeIndex"))
+  val writeIndexGray: UInt = withReset(reset.asAsyncReset())(grayCounter(depthWidth + 1, enqueue.fire(), false.B, "writeIndex"))
   val writeIndexGrayReg: UInt = withReset(reset.asAsyncReset())(RegNext(next = writeIndexGray, init = 0.U).suggestName("writeIndexReg"))
   val readIndexGray: UInt = IO(Input(UInt((depthWidth + 1).W)))
 
   /** ready signal to indicate [[DecoupledIO]] this queue is not full, can still enqueue new data. */
   val full: Bool = writeIndexGray === (readIndexGray ^ (depth | depth >> 1).U)
-  val ready: Bool = sinkReady.getOrElse(true.B) && !full
+  val ready: Bool = !full
   val readyReg: Bool = withReset(reset.asAsyncReset())(RegNext(next = ready, init = false.B).suggestName("readyReg"))
 
   // enqueue from [[DecoupledIO]]
-  enqueue.ready := readyReg && sinkReady.getOrElse(true.B)
+  enqueue.ready := readyReg
 
   // port to access memory
   val writeEnable: Bool = IO(Output(Bool()))
@@ -138,7 +132,6 @@ class AsyncQueueSource[T <: Data](gen: T, depth: Int, sync: Int, safe: Boolean, 
   val writeIndex: UInt = IO(Output(UInt(log2Ceil(depth).W)))
   writeIndex := writeIndexGrayReg(depthWidth, 0)
 }
-
 
 /** cross-clock-domain syncing asynchronous queue.
   *
@@ -152,15 +145,15 @@ class AsyncQueueSource[T <: Data](gen: T, depth: Int, sync: Int, safe: Boolean, 
   * }}}
   *
   */
-class AsyncQueue[T <: Data](gen: T, depth: Int = 8, sync: Int = 3, narrow: Boolean = true, safe: Boolean = true) extends MultiIOModule {
+class AsyncQueue[T <: Data](gen: T, depth: Int = 8, sync: Int = 3, narrow: Boolean = true) extends MultiIOModule {
   val enqueue: AsyncEnqueueIO[T] = IO(new AsyncEnqueueIO(gen))
   val sourceModule: AsyncQueueSource[T] =
-    withClockAndReset(enqueue.clock, enqueue.reset)(Module(new AsyncQueueSource(gen, depth, sync, safe, narrow)))
+    withClockAndReset(enqueue.clock, enqueue.reset)(Module(new AsyncQueueSource(gen, depth, sync)))
   sourceModule.enqueue <> enqueue.source
 
   val dequeue: AsyncDequeueIO[T] = IO(new AsyncDequeueIO(gen))
   val sinkModule: AsyncQueueSink[T] =
-    withClockAndReset(enqueue.clock, enqueue.reset)(Module(new AsyncQueueSink(gen, depth, sync, safe, narrow)))
+    withClockAndReset(enqueue.clock, enqueue.reset)(Module(new AsyncQueueSink(gen, depth, sync, narrow)))
   dequeue.sink <> sinkModule.dequeue
 
   // read/write index bidirectional sync
@@ -194,35 +187,4 @@ class AsyncQueue[T <: Data](gen: T, depth: Int = 8, sync: Int = 3, narrow: Boole
       sinkFullData := withClock(dequeue.clock)(RegNext(memoryFullData))
     case _ =>
   }
-
-  // reset sync to clear internal gray code index.
-  private def resetSync(clock: Clock, desc: String)(in: Bool): Bool = withClockAndReset(clock, (enqueue.reset || dequeue.reset).asAsyncReset()) {
-    val shiftRegisters: Seq[Bool] = ShiftRegisters(in, sync, false.B, true.B)
-    group(shiftRegisters, s"${desc}Module", desc)
-    shiftRegisters.last
-  }
-
-  sinkModule.sourceReady.foreach(_ :=
-    resetSync(dequeue.clock, "sinkValid")(
-      resetSync(dequeue.clock, "sinkExtend")(
-        resetSync(enqueue.clock, "sinkValid1")(
-          resetSync(enqueue.clock, "sinkValid0")(
-            true.B
-          )
-        )
-      )
-    )
-  )
-
-  sourceModule.sinkReady.foreach(_ :=
-    resetSync(enqueue.clock, "sourceValid")(
-      resetSync(enqueue.clock, "sourceExtend")(
-        resetSync(dequeue.clock, "sourceValid1")(
-          resetSync(dequeue.clock, "sourceValid0")(
-            true.B
-          )
-        )
-      )
-    )
-  )
 }
