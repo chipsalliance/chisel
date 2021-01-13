@@ -26,7 +26,7 @@ class AsyncDequeueIO[T <: Data](gen: T) extends Bundle {
   * not recommend for FPGA
   */
 class DataMemory[T <: Data](gen: T, depth: Int, narrow: Boolean) extends RawModule {
-  val dataQueue: Mem[T] = Mem(depth, gen)
+  val dataQueue: SyncReadMem[T] = SyncReadMem(depth, gen)
 
   // write IO
   val writeEnable: Bool = IO(Input(Bool()))
@@ -145,7 +145,7 @@ class AsyncQueueSource[T <: Data](gen: T, depth: Int, sync: Int) extends MultiIO
   * }}}
   *
   */
-class AsyncQueue[T <: Data](gen: T, depth: Int = 8, sync: Int = 3, narrow: Boolean = true) extends MultiIOModule {
+class AsyncQueue[T <: Data](gen: T, depth: Int, sync: Int, narrow: Boolean) extends MultiIOModule {
   val enqueue: AsyncEnqueueIO[T] = IO(new AsyncEnqueueIO(gen))
   val sourceModule: AsyncQueueSource[T] =
     withClockAndReset(enqueue.clock, enqueue.reset)(Module(new AsyncQueueSource(gen, depth, sync)))
@@ -170,7 +170,7 @@ class AsyncQueue[T <: Data](gen: T, depth: Int = 8, sync: Int = 3, narrow: Boole
       shiftRegisters.last
     }
 
-  val memoryModule: DataMemory[T] = Module(new DataMemory(gen, depth, narrow))
+  val memoryModule: DataMemory[T] = withClock(dequeue.clock)(Module(new DataMemory(gen, depth, narrow)))
   memoryModule.writeEnable := sourceModule.writeEnable
   memoryModule.writeData := sourceModule.writeData
   memoryModule.writeIndex := sourceModule.writeIndex
