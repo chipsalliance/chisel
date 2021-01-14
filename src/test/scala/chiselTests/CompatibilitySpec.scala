@@ -103,7 +103,6 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
       Reverse(wire) shouldBe a [UInt]
       Cat(wire, wire) shouldBe a [UInt]
       Log2(wire) shouldBe a [UInt]
-      unless(Bool(false)) {}
       // 'switch' and 'is' are tested below in Risc
       Counter(2) shouldBe a [Counter]
       DecoupledIO(wire) shouldBe a [DecoupledIO[UInt]]
@@ -353,13 +352,6 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
 
       info("Deprecated method DC hasn't been removed")
       val bp = BitPat.DC(4)
-
-      info("BitPat != UInt is a Bool")
-      (bp != UInt(4)) shouldBe a [Bool]
-
-      /* This test does not work, but I'm not sure it's supposed to? It does *not* work on chisel3. */
-      // info("UInt != BitPat is a Bool")
-      // (UInt(4) != bp) shouldBe a [Bool]
     }
 
     ChiselStage.elaborate(new Foo)
@@ -474,22 +466,6 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
 
   behavior of "Data methods"
 
-  it should "support legacy methods" in {
-    class Foo extends Module {
-      val io = IO(new Bundle{})
-
-      info("litArg works")
-      UInt(width=3).litArg() should be (None)
-      UInt(0, width=3).litArg() should be (Some(chisel3.internal.firrtl.ULit(0, 3.W)))
-
-      info("toBits works")
-      val wire = Wire(UInt(width=4))
-      Vec.fill(4)(wire).toBits.getWidth should be (wire.getWidth * 4)
-    }
-
-    ChiselStage.elaborate(new Foo)
-  }
-
   behavior of "Wire"
 
   it should "support legacy methods" in {
@@ -542,9 +518,6 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
       val u = UInt(8)
       val s = SInt(-4)
 
-      info("toBools works")
-      u.toBools shouldBe a [Seq[Bool]]
-
       info("asBits works")
       s.asBits shouldBe a [Bits]
 
@@ -553,35 +526,6 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
 
       info("toUInt works")
       s.toUInt shouldBe a [UInt]
-
-      info("toBool works")
-      UInt(1).toBool shouldBe a [Bool]
-    }
-
-    ChiselStage.elaborate(new Foo)
-  }
-
-  behavior of "UInt"
-
-  it should "support legacy methods" in {
-    class Foo extends Module {
-      val io = new Bundle{}
-
-      info("!= works")
-      (UInt(1) != UInt(1)) shouldBe a [Bool]
-    }
-
-    ChiselStage.elaborate(new Foo)
-  }
-
-  behavior of "SInt"
-
-  it should "support legacy methods" in {
-    class Foo extends Module {
-      val io = new Bundle{}
-
-      info("!= works")
-      (SInt(-1) != SInt(-1)) shouldBe a [Bool]
     }
 
     ChiselStage.elaborate(new Foo)

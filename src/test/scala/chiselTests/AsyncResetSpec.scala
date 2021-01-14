@@ -209,7 +209,6 @@ class AsyncResetSpec extends ChiselFlatSpec with Utils {
   }
 
   it should "support Fixed regs" in {
-    import chisel3.experimental.{withReset => _, _}
     assertTesterPasses(new BasicTester {
       val reg = withReset(reset.asAsyncReset)(RegNext(-6.0.F(2.BP), 3.F(2.BP)))
       val (count, done) = Counter(true.B, 4)
@@ -223,7 +222,7 @@ class AsyncResetSpec extends ChiselFlatSpec with Utils {
   }
 
   it should "support Interval regs" in {
-    import chisel3.experimental.{withReset => _, _}
+    import chisel3.experimental._
     assertTesterPasses(new BasicTester {
       val reg = withReset(reset.asAsyncReset) {
         val x = RegInit(Interval(range"[0,13]"), 13.I)

@@ -12,15 +12,6 @@ import scala.reflect.macros.blackbox._
 import chisel3._
 import chisel3.internal.sourceinfo.SourceInfo
 
-@deprecated("The unless conditional is deprecated, use when(!condition){...} instead", "3.2")
-object unless {
-  /** Does the same thing as [[when$ when]], but with the condition inverted.
-    */
-  def apply(c: Bool)(block: => Any) {
-    when (!c) { block }
-  }
-}
-
 /** Implementation details for [[switch]]. See [[switch]] and [[chisel3.util.is is]] for the
   * user-facing API.
   * @note DO NOT USE. This API is subject to change without warning.

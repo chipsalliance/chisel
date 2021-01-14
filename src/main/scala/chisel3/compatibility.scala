@@ -363,8 +363,6 @@ package object Chisel {
   implicit class fromIntToWidth(x: Int) extends chisel3.fromIntToWidth(x)
 
   type BackendCompilationUtilities = firrtl.util.BackendCompilationUtilities
-  @deprecated("Please switch to chisel3.stage.ChiselStage", "3.4")
-  val Driver = chisel3.Driver
   val ImplicitConversions = chisel3.util.ImplicitConversions
 
   // Deprecated as of Chisel3
@@ -455,7 +453,6 @@ package object Chisel {
 
   val Log2 = chisel3.util.Log2
 
-  val unless = chisel3.util.unless
   type SwitchContext[T <: Bits] = chisel3.util.SwitchContext[T]
   val is = chisel3.util.is
   val switch = chisel3.util.switch
