@@ -1,16 +1,23 @@
 package chisel3.util.experimental.decoder
 
 import chisel3._
+import chisel3.experimental.{annotate, ChiselAnnotation}
 import chisel3.util.{BitPat, Cat}
+import firrtl.annotations.NoTargetAnnotation
 
 import scala.annotation.tailrec
 import scala.collection.mutable
+
+case class KnownQMCDecodeTableAnnotation(table: Map[BigInt, Map[Term, Boolean]]) extends NoTargetAnnotation
 
 object QMCDecoder {
   def apply(): QMCDecoder = new QMCDecoder()
 
   /** decoder cache during a chisel elaboration. */
-  private val caches: mutable.Map[UInt, mutable.Map[Term, Bool]] = mutable.Map[UInt, mutable.Map[Term, Bool]]()
+  private val caches: mutable.Map[UInt, mutable.Map[Term, Bool]] = mutable.Map[UInt, mutable.Map[Term, Bool]]() ++
+    Module.annotationSeq.collect {
+      case KnownQMCDecodeTableAnnotation(table) => table
+    }.flatten.toMap.map { case (k, v) => k.U -> mutable.Map(v.toSeq.map(a => a._1 -> a._2.B): _*) }
 }
 
 class QMCDecoder extends Decoder {
@@ -173,7 +180,7 @@ class QMCDecoder extends Decoder {
           "DecodeLogic: keys " + t.head + " and " + u + " overlap"
         )
 
-    Cat(
+    val out = Cat(
       (0 until default.getWidth.max(values.map(_.getWidth).max))
         .map({ i: Int =>
           val mint: Seq[Term] =
@@ -192,5 +199,9 @@ class QMCDecoder extends Decoder {
         })
         .reverse
     )
+    annotate(new ChiselAnnotation{
+      def toFirrtl = KnownQMCDecodeTableAnnotation(Map(addr.litValue() -> cache.map(i => i._1 -> i._2.litToBoolean).toMap))
+    })
+    out
   }
 }
