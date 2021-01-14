@@ -29,15 +29,6 @@ private[chisel3] sealed trait ToBoolable extends Element {
 
   /** @group SourceInfoTransformMacro */
   def do_asBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
-
-  /** Casts this $coll to a [[Bool]]
-    *
-    * @note The width must be known and equal to 1
-    */
-  final def toBool(): Bool = macro SourceInfoWhiteboxTransform.noArg
-
-  /** @group SourceInfoTransformMacro */
-  def do_toBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
 }
 
 /** A data type for values represented by a single bitvector. This provides basic bitwise operations.
@@ -315,11 +306,6 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
   /** Returns the contents of this wire as a [[scala.collection.Seq]] of [[Bool]]. */
   final def toBools(): Seq[Bool] = macro SourceInfoTransform.noArg
 
-  /** @group SourceInfoTransformMacro */
-  @chiselRuntimeDeprecated
-  @deprecated("Use asBools instead", "3.2")
-  def do_toBools(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Seq[Bool] = do_asBools
-
   /** Returns the contents of this wire as a [[scala.collection.Seq]] of [[Bool]]. */
   final def asBools(): Seq[Bool] = macro SourceInfoTransform.noArg
 
@@ -368,10 +354,6 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
       case _ => throwException(s"can't covert ${this.getClass.getSimpleName}$width to Bool")
     }
   }
-
-  @chiselRuntimeDeprecated
-  @deprecated("Use asBool instead", "3.2")
-  final def do_toBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = do_asBool
 
   /** Concatenation operator
     *
@@ -590,10 +572,6 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
   override def do_> (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, GreaterOp, that)
   override def do_<= (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, LessEqOp, that)
   override def do_>= (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, GreaterEqOp, that)
-
-  @chiselRuntimeDeprecated
-  @deprecated("Use '=/=', which avoids potential precedence problems", "3.0")
-  final def != (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = this =/= that
 
   /** Dynamic not equals operator
     *
@@ -876,10 +854,6 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
   override def do_> (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, GreaterOp, that)
   override def do_<= (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, LessEqOp, that)
   override def do_>= (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, GreaterEqOp, that)
-
-  @chiselRuntimeDeprecated
-  @deprecated("Use '=/=', which avoids potential precedence problems", "3.0")
-  final def != (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = this =/= that
 
   /** Dynamic not equals operator
     *
