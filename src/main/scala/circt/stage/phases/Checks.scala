@@ -20,7 +20,8 @@ import firrtl.stage.{
   OutputFileAnnotation
 }
 
-private[stage] class Checks extends Phase {
+/** Check properties of an [[AnnotationSeq]] to look for errors before running CIRCT. */
+class Checks extends Phase {
 
   override def prerequisites = Seq.empty
   override def optionalPrerequisites = Seq.empty

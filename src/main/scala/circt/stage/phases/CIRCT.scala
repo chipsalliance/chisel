@@ -27,6 +27,10 @@ import firrtl.stage.FirrtlOptions
 
 import scala.sys.process._
 
+/** A phase that calls and runs CIRCT, specifically `firtool`, while preserving an [[AnnotationSeq]] API.
+  *
+  * This is analogous to [[firrtl.stage.phases.Compiler]].
+  */
 class CIRCT extends Phase {
 
   override def prerequisites = Seq(
@@ -63,6 +67,9 @@ class CIRCT extends Phase {
            case Some(CIRCTTarget.FIRRTL) => None
            case Some(CIRCTTarget.RTL) => Seq("-lower-to-rtl")
            case Some(CIRCTTarget.SystemVerilog) => Seq("-lower-to-rtl", "-verilog")
+           case None => throw new Exception(
+             "No 'circtOptions.target' specified. This should be impossible if dependencies are satisfied!"
+           )
          })
     ) #< new java.io.ByteArrayInputStream(input.getBytes)
 
@@ -76,6 +83,9 @@ class CIRCT extends Phase {
           Seq(EmittedMLIR(outputFileName, result, Some(".rtl.mlir")))
         case Some(CIRCTTarget.SystemVerilog) =>
           Seq(EmittedVerilogCircuitAnnotation(EmittedVerilogCircuit(outputFileName, result, ".sv")))
+        case None => throw new Exception(
+          "No 'circtOptions.target' specified. This should be impossible if dependencies are satisfied!"
+        )
       }
     } catch {
       case a: java.io.IOException =>

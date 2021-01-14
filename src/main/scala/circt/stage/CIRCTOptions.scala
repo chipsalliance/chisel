@@ -4,6 +4,13 @@ package circt.stage
 
 import java.io.File
 
+/** Options associated with CIRCT
+  *
+  * @param inputFile the name of an input FIRRTL IR file
+  * @param outputFile the name of the file where the result will be written
+  * @param disableLowerTypes causes CIRCT to not lower aggregate FIRRTL IR types
+  * @param target the specific IR or language target that CIRCT should compile to
+ */
 class CIRCTOptions private[stage](
   val inputFile: Option[File] = None,
   val outputFile: Option[File] = None,

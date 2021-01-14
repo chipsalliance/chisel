@@ -4,35 +4,16 @@ package circt.stage
 
 import chisel3.stage.ChiselGeneratorAnnotation
 
-import firrtl.{
-  AnnotationSeq,
-  EmittedVerilogCircuit,
-  EmittedVerilogCircuitAnnotation
-}
+import firrtl.AnnotationSeq
 import firrtl.options.{
   Dependency,
-  OptionsException,
   Phase,
   PhaseManager,
   Shell,
   Stage,
-  StageError,
-  StageMain,
-  StageOptions,
-  StageUtils
+  StageMain
 }
-import firrtl.options.Viewer.view
-import firrtl.stage.{
-  FirrtlCircuitAnnotation,
-  FirrtlCli,
-  FirrtlFileAnnotation,
-  FirrtlOptions,
-  OutputFileAnnotation
-}
-
-import java.io.File
-
-import scala.sys.process._
+import firrtl.stage.FirrtlCli
 
 trait CLI { this: Shell =>
   parser.note("CIRCT (MLIR FIRRTL Compiler) options")
@@ -43,6 +24,11 @@ trait CLI { this: Shell =>
   ).foreach(_.addOptions(parser))
 }
 
+/** A [[firrtl.options.Stage Stage]] used to compile FIRRTL IR using CIRCT. This is a drop-in replacement for
+  * [[firrtl.stage.FirrtlStage]].
+  *
+  * @see [[https://github.com/llvm/circt llvm/circt]]
+  */
 class CIRCTStage extends Stage {
 
   override def prerequisites = Seq.empty
@@ -65,4 +51,5 @@ class CIRCTStage extends Stage {
 
 }
 
+/** Command line utility for [[CIRCTStage]]. */
 object CIRCTMain extends StageMain(new CIRCTStage)

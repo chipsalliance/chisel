@@ -4,7 +4,6 @@ package circt.stage
 
 import chisel3.RawModule
 import chisel3.stage.{
-  ChiselCli,
   ChiselGeneratorAnnotation,
   NoRunFirrtlCompilerAnnotation
 }
@@ -21,8 +20,13 @@ import firrtl.options.{
   Stage,
   StageMain
 }
-import firrtl.stage.FirrtlCli
 
+/** Entry point for running Chisel with the CIRCT compiler.
+  *
+  * This is intended to be a replacement for [[chisel3.stage.ChiselStage]].
+  *
+  * @note The companion object, [[ChiselStage$]], has a cleaner API for compiling and returning a string.
+  */
 class ChiselStage extends Stage {
 
   override def prerequisites = Seq.empty
@@ -45,10 +49,13 @@ class ChiselStage extends Stage {
 
 }
 
+/** Utilities for compiling Chisel */
 object ChiselStage {
 
+  /** Elaborate a Chisel circuit into a CHIRRTL string */
   def emitCHIRRTL(gen: => RawModule): String = chisel3.stage.ChiselStage.emitChirrtl(gen)
 
+  /** A phase shared by all the CIRCT backends */
   private def phase = new PhaseManager(
     Seq(
       Dependency[chisel3.stage.phases.Checks],
@@ -60,6 +67,7 @@ object ChiselStage {
     )
   )
 
+  /** Compile a Chisel circuit to FIRRTL dialect */
   def emitFIRRTLDialect(gen: => RawModule): String = phase
     .transform(
       Seq(
@@ -70,6 +78,7 @@ object ChiselStage {
       case EmittedMLIR(_, a, _) => a
     }.get
 
+  /** Compile a Chisel circuit to RTL dialect */
   def emitRTLDialect(gen: => RawModule): String = phase
     .transform(
       Seq(
@@ -80,6 +89,7 @@ object ChiselStage {
       case EmittedMLIR(_, a, _) => a
     }.get
 
+  /** Compile a Chisel circuit to SystemVerilog */
   def emitSystemVerilog(gen: => RawModule): String = phase
     .transform(
       Seq(
@@ -93,4 +103,5 @@ object ChiselStage {
 
 }
 
+/** Command line entry point to [[ChiselStage]] */
 object ChiselMain extends StageMain(new ChiselStage)
