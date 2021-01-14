@@ -14,6 +14,7 @@ import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{InstTransform, SourceInfo, UnlocatableSourceInfo}
 import chisel3.experimental.BaseModule
 import _root_.firrtl.annotations.{IsModule, ModuleName, ModuleTarget}
+import _root_.firrtl.AnnotationSeq
 
 object Module extends SourceInfoDoc {
   /** A wrapper method that all Module instantiations must be wrapped in
@@ -84,6 +85,8 @@ object Module extends SourceInfoDoc {
   def reset: Reset = Builder.forcedReset
   /** Returns the current Module */
   def currentModule: Option[BaseModule] = Builder.currentModule
+  /** Returns the global Annotations */
+  def annotationSeq: AnnotationSeq = Builder.annotationSeq
 }
 
 /** Abstract base class for Modules, which behave much like Verilog modules.
