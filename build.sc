@@ -5,7 +5,7 @@ import coursier.maven.MavenRepository
 import $ivy.`com.lihaoyi::mill-contrib-buildinfo:$MILL_VERSION`
 import mill.contrib.buildinfo.BuildInfo
 
-object chisel3 extends mill.Cross[chisel3CrossModule]("2.11.12", "2.12.12")
+object chisel3 extends mill.Cross[chisel3CrossModule]("2.12.12")
 
 // The following stanza is searched for and used when preparing releases.
 // Please retain it.
@@ -56,25 +56,12 @@ trait CommonModule extends CrossSbtModule with PublishModule {
     MavenRepository("https://oss.sonatype.org/content/repositories/releases")
   )
 
-  private def scalacCrossOptions = majorVersion match {
-    case i if i < 12 => Seq()
-    case _ => Seq("-Xsource:2.11")
-  }
-
-  private def javacCrossOptions = majorVersion match {
-    case i if i < 12 => Seq("-source", "1.7", "-target", "1.7")
-    case _ => Seq("-source", "1.8", "-target", "1.8")
-  }
-
   override def scalacOptions = T {
     super.scalacOptions() ++ Agg(
       "-deprecation",
-      "-feature"
-    ) ++ scalacCrossOptions
-  }
-
-  override def javacOptions = T {
-    super.javacOptions() ++ javacCrossOptions
+      "-feature",
+      "-Xsource:2.11"
+    )
   }
 
   private val macroParadise = ivy"org.scalamacros:::paradise:2.1.1"
@@ -118,16 +105,11 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule wit
   object test extends Tests {
     override def scalacPluginClasspath = m.scalacPluginClasspath
 
-    private def ivyCrossDeps = majorVersion match {
-      case i if i < 12 => Agg(ivy"junit:junit:4.13.1")
-      case _ => Agg()
-    }
-
     override def ivyDeps = m.ivyDeps() ++ Agg(
       ivy"org.scalatest::scalatest:3.1.2",
       ivy"org.scalatestplus::scalacheck-1-14:3.1.1.1",
       ivy"com.github.scopt::scopt:3.7.1"
-    ) ++ ivyCrossDeps ++ m.treadleIvyDeps
+    ) ++ m.treadleIvyDeps
 
     override def moduleDeps = super.moduleDeps ++ treadleModule
 
