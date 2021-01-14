@@ -85,8 +85,6 @@ object Module extends SourceInfoDoc {
   def reset: Reset = Builder.forcedReset
   /** Returns the current Module */
   def currentModule: Option[BaseModule] = Builder.currentModule
-  /** Returns the global Annotations */
-  def annotationSeq: AnnotationSeq = Builder.annotationSeq
 }
 
 /** Abstract base class for Modules, which behave much like Verilog modules.
