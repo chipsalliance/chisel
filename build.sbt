@@ -2,32 +2,6 @@
 
 enablePlugins(SiteScaladocPlugin)
 
-def scalacOptionsVersion(scalaVersion: String): Seq[String] = {
-  Seq() ++ {
-    // If we're building with Scala > 2.11, enable the compile option
-    //  switch to support our anonymous Bundle definitions:
-    //  https://github.com/scala/bug/issues/10047
-    CrossVersion.partialVersion(scalaVersion) match {
-      case Some((2, scalaMajor: Long)) if scalaMajor < 12 => Seq()
-      case _ => Seq("-Xsource:2.11")
-    }
-  }
-}
-
-def javacOptionsVersion(scalaVersion: String): Seq[String] = {
-  Seq() ++ {
-    // Scala 2.12 requires Java 8. We continue to generate
-    //  Java 7 compatible code for Scala 2.11
-    //  for compatibility with old clients.
-    CrossVersion.partialVersion(scalaVersion) match {
-      case Some((2, scalaMajor: Long)) if scalaMajor < 12 =>
-        Seq("-source", "1.7", "-target", "1.7")
-      case _ =>
-        Seq("-source", "1.8", "-target", "1.8")
-    }
-  }
-}
-
 val defaultVersions = Map(
   "firrtl" -> "edu.berkeley.cs" %% "firrtl" % "1.5-SNAPSHOT",
   "treadle" -> "edu.berkeley.cs" %% "treadle" % "1.5-SNAPSHOT"
@@ -42,8 +16,13 @@ lazy val commonSettings = Seq (
   version := "3.5-SNAPSHOT",
   autoAPIMappings := true,
   scalaVersion := "2.12.12",
-  crossScalaVersions := Seq("2.12.12", "2.11.12"),
-  scalacOptions := Seq("-deprecation", "-feature") ++ scalacOptionsVersion(scalaVersion.value),
+  crossScalaVersions := Seq("2.12.12"),
+  scalacOptions := Seq("-deprecation", "-feature",
+    //  We're building with Scala > 2.11, enable the compile option
+    //  switch to support our anonymous Bundle definitions:
+    //  https://github.com/scala/bug/issues/10047
+    "-Xsource:2.11"
+  ),
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full),
 )
@@ -83,16 +62,11 @@ lazy val publishSettings = Seq (
 lazy val chiselSettings = Seq (
   name := "chisel3",
 
-// sbt 1.2.6 fails with `Symbol 'term org.junit' is missing from the classpath`
-// when compiling tests under 2.11.12
-// An explicit dependency on junit seems to alleviate this.
   libraryDependencies ++= Seq(
-    "junit" % "junit" % "4.13.1" % "test",
     "org.scalatest" %% "scalatest" % "3.1.2" % "test",
     "org.scalatestplus" %% "scalacheck-1-14" % "3.1.1.1" % "test",
     "com.github.scopt" %% "scopt" % "3.7.1"
   ),
-  javacOptions ++= javacOptionsVersion(scalaVersion.value)
 ) ++ (
   // Tests from other projects may still run concurrently
   //  if we're not running with -DminimalResources.
@@ -110,7 +84,6 @@ autoCompilerPlugins := true
 // Plugin must be fully cross-versioned (published for Scala minor version)
 // The plugin only works in Scala 2.12+
 lazy val pluginScalaVersions = Seq(
-  "2.11.12", // Only to support chisel3 cross building for 2.11, plugin does nothing in 2.11
   // scalamacros paradise version used is not published for 2.12.0 and 2.12.1
   "2.12.2",
   "2.12.3",
@@ -144,9 +117,7 @@ lazy val plugin = (project in file("plugin")).
   ).
   settings(
     mimaPreviousArtifacts := {
-      // Not published for 2.11, do not try to check binary compatibility with a 2.11 artifact
-      if (scalaVersion.value.startsWith("2.11")) Set()
-      else Set()
+      Set()
     }
   )
 
