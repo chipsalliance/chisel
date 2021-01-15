@@ -17,7 +17,7 @@ object Contributors {
       .repos
       .listContributors(repo.owner, repo.repo)
       .exec[cats.Id, HttpResponse[String]]() match {
-        case Left(e) => throw new Exception(s"Unable to fetch contributors for ${repo.serialize}. Did you misspell it?")
+        case Left(e) => throw new Exception(s"Unable to fetch contributors for ${repo.serialize}. Did you misspell it? Did the repository move?")
         case Right(r) => r.result
       }
 

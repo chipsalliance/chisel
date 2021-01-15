@@ -4,7 +4,7 @@ apis = $(buildDir)/api
 docs = $(buildDir)/docs
 
 www-docs = \
-    $(shell find chisel3/docs/ -name "*.md")
+	$(shell find chisel3/docs/ -name "*.md")
 
 www-src = \
 	$(shell find docs/src/main/resources) \
@@ -40,10 +40,13 @@ firrtlTags = \
 	v1.2.5 \
 	v1.2.6 \
 	v1.2.7 \
+	v1.2.8 \
 	v1.3.0 \
 	v1.3.1 \
 	v1.3.2 \
-	v1.4.0
+	v1.3.3 \
+	v1.4.0 \
+	v1.4.1
 chiselTags = \
 	v3.0.0 \
 	v3.0.1 \
@@ -65,10 +68,13 @@ chiselTags = \
 	v3.2.5 \
 	v3.2.6 \
 	v3.2.7 \
+	v3.2.8 \
 	v3.3.0 \
 	v3.3.1 \
 	v3.3.2 \
-	v3.4.0
+	v3.3.3 \
+	v3.4.0 \
+	v3.4.1
 testersTags = \
 	v1.1.0 \
 	v1.1.1 \
@@ -92,10 +98,13 @@ testersTags = \
 	v1.3.5 \
 	v1.3.6 \
 	v1.3.7 \
+	v1.3.8 \
 	v1.4.0 \
 	v1.4.1 \
 	v1.4.2 \
-	v1.5.0
+	v1.4.3 \
+	v1.5.0 \
+	v1.5.1
 treadleTags = \
 	v1.0.0 \
 	v1.0.1 \
@@ -111,10 +120,13 @@ treadleTags = \
 	v1.1.5 \
 	v1.1.6 \
 	v1.1.7 \
+	v1.1.8 \
 	v1.2.0 \
 	v1.2.1 \
 	v1.2.2 \
-	v1.3.0
+	v1.2.3 \
+	v1.3.0 \
+	v1.3.1
 diagrammerTags = \
 	v1.0.0 \
 	v1.0.1 \
@@ -127,10 +139,13 @@ diagrammerTags = \
 	v1.1.5 \
 	v1.1.6 \
 	v1.1.7 \
+	v1.1.8 \
 	v1.2.0 \
 	v1.2.1 \
 	v1.2.2 \
-	v1.3.0
+	v1.2.3 \
+	v1.3.0 \
+	v1.3.1
 chiseltestTags = \
 	v0.1.0 \
 	v0.1.1 \
@@ -142,15 +157,17 @@ chiseltestTags = \
 	v0.1.7 \
 	v0.2.0 \
 	v0.2.1 \
-	v0.3.0
+	v0.2.2 \
+	v0.3.0 \
+	v0.3.1
 
 # Snapshot versions that will have their API published.
-firrtlSnapshot = v1.4.0
-chiselSnapshot = v3.4.0
-testersSnapshot = v1.5.0
-treadleSnapshot = v1.3.0
-diagrammerSnapshot = v1.3.0
-chiseltestSnapshot = v0.3.0
+firrtlSnapshot = v1.4.1
+chiselSnapshot = v3.4.1
+testersSnapshot = v1.5.1
+treadleSnapshot = v1.3.1
+diagrammerSnapshot = v1.3.1
+chiseltestSnapshot = v0.3.1
 
 # Get the latest version of some sequence of version strings
 # Usage: $(call getTags,$(foo))

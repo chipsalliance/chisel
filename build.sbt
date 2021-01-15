@@ -111,12 +111,16 @@ lazy val contributors =
       determineContributors := {
         import java.io.{File, PrintWriter}
         val uniqueContributors =
-          Seq( GitHubRepository("ucb-bar", "chisel2-deprecated"),
-               GitHubRepository("freechipsproject", "chisel3"),
-               GitHubRepository("freechipsproject", "firrtl"),
+          Seq( GitHubRepository("chipsalliance", "chisel3"),
+               GitHubRepository("chipsalliance", "firrtl"),
+               GitHubRepository("chipsalliance", "treadle"),
+               GitHubRepository("ucb-bar", "chisel-testers2"),
+               GitHubRepository("ucb-bar", "chisel2-deprecated"),
+               GitHubRepository("freechipsproject", "chisel-bootcamp"),
+               GitHubRepository("freechipsproject", "chisel-template"),
                GitHubRepository("freechipsproject", "chisel-testers"),
-               GitHubRepository("freechipsproject", "treadle"),
                GitHubRepository("freechipsproject", "diagrammer"),
+               GitHubRepository("freechipsproject", "firrtl-interpreter"),
                GitHubRepository("freechipsproject", "www.chisel-lang.org") )
             .map(Contributors.contributors)
             .reduce(_ ++ _)
