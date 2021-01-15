@@ -6,7 +6,7 @@
 
 Chisel/FIRRTL development meetings happen every Monday and Tuesday from 1100--1200 PT.
 
-Call-in info and meeting notes are available [here](https://docs.google.com/document/d/1Mpnqigmx6F8jdC77YWP3akp9H2V1bS1b2XiYjVX0brE).
+Call-in info and meeting notes are available [here](https://docs.google.com/document/d/1BLP2DYt59DqI-FgFCcjw8Ddl4K-WU0nHmQu0sZ_wAGo/).
 
 ---
 
@@ -106,12 +106,8 @@ When you're ready to build your own circuits in Chisel, **we recommend starting 
 
 If you insist on setting up your own project, the magic SBT lines are:
 ```scala
-resolvers ++= Seq(
-  Resolver.sonatypeRepo("snapshots"),
-  Resolver.sonatypeRepo("releases")
-)
-libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.2-SNAPSHOT"
-libraryDependencies += "edu.berkeley.cs" %% "chisel-testers2" % "0.1-SNAPSHOT"
+libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.4.0"
+libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % "0.3.0" % "test"
 ```
 
 ### Design Verification

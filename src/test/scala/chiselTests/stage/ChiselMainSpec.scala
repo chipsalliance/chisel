@@ -132,6 +132,16 @@ class ChiselMainSpec extends AnyFeatureSpec with GivenWhenThen with Matchers wit
   }
 
   info("As a Chisel user")
+  info("I compile a design")
+  Feature("show elaborating message") {
+    runStageExpectFiles(
+      ChiselMainTest(args = Array("-X", "high"),
+        generator = Some(classOf[SameTypesModule]),
+        stdout = Some("Done elaborating.")
+      )
+    )
+  }
+
   info("I screw up and compile some bad code")
   Feature("Stack trace trimming") {
     Seq(
