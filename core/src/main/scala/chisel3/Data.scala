@@ -453,8 +453,9 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     topBindingOpt match {
       case Some(tb: TopBinding) if (mod == Builder.currentModule) =>
       case Some(pb: PortBinding) if (mod.flatMap(Builder.retrieveParent(_,Builder.currentModule.get)) == Builder.currentModule) =>
+      case Some(_: UnconstrainedBinding) =>
       case _ =>
-        throwException(s"operand is not visible from the current module")
+        throwException(s"operand '$this' is not visible from the current module")
     }
     if (!MonoConnect.checkWhenVisibility(this)) {
       throwException(s"operand has escaped the scope of the when in which it was constructed")
@@ -472,18 +473,33 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     }
   }
 
-
-  // Internal API: returns a ref, if bound. Literals should override this as needed.
-  private[chisel3] def ref: Arg = {
-    requireIsHardware(this)
-    if (Builder.currentModule.isDefined) {
-      // This is allowed (among other cases) for evaluating args of Printf / Assert / Printable, which are
-      // partially resolved *after* elaboration completes. If this is resolved, the check should be unconditional.
-      requireVisible()
+  // Internal API: returns a ref, if bound
+  private[chisel3] final def ref: Arg = {
+    def materializeWire(): Arg = {
+      if (!Builder.currentModule.isDefined) throwException(s"internal error: cannot materialize ref for $this")
+      implicit val compileOptions = ExplicitCompileOptions.Strict
+      implicit val sourceInfo = UnlocatableSourceInfo
+      WireDefault(this).ref
     }
+    requireIsHardware(this)
     topBindingOpt match {
-      case Some(binding: LitBinding) => throwException(s"internal error: can't handle literal binding $binding")
-      case Some(binding: TopBinding) => Node(this)
+      // Literals
+      case Some(ElementLitBinding(litArg)) => litArg
+      case Some(BundleLitBinding(litMap)) =>
+        litMap.get(this) match {
+          case Some(litArg) => litArg
+          case _ => materializeWire() // FIXME FIRRTL doesn't have Bundle literal expressions
+        }
+      case Some(DontCareBinding()) =>
+        materializeWire() // FIXME FIRRTL doesn't have a DontCare expression so materialize a Wire
+      // Non-literals
+      case Some(binding: TopBinding) =>
+        if (Builder.currentModule.isDefined) {
+          // This is allowed (among other cases) for evaluating args of Printf / Assert / Printable, which are
+          // partially resolved *after* elaboration completes. If this is resolved, the check should be unconditional.
+          requireVisible()
+        }
+        Node(this)
       case opt => throwException(s"internal error: unknown binding $opt in generating LHS ref")
     }
   }

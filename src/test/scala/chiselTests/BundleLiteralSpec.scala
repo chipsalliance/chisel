@@ -169,6 +169,54 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
     } }
   }
 
+  "Bundle literals" should "work as register reset values" in {
+    assertTesterPasses{ new BasicTester{
+      val r = RegInit((new MyBundle).Lit(_.a -> 42.U, _.b -> true.B, _.c -> MyEnum.sB))
+      r := (r.asUInt + 1.U).asTypeOf(new MyBundle) // prevent constprop
+
+      // check reset values on first cycle out of reset
+      chisel3.assert(r.a === 42.U)
+      chisel3.assert(r.b === true.B)
+      chisel3.assert(r.c === MyEnum.sB)
+      stop()
+    } }
+  }
+
+  "partially initialized Bundle literals" should "work as register reset values" in {
+    assertTesterPasses{  new BasicTester{
+      val r = RegInit((new MyBundle).Lit(_.a -> 42.U))
+      r.a := r.a + 1.U // prevent const prop
+      chisel3.assert(r.a === 42.U) // coming out of reset
+      stop()
+    } }
+  }
+
+  "Fields extracted from BundleLiterals" should "work as register reset values" in {
+    assertTesterPasses{  new BasicTester{
+      val r = RegInit((new MyBundle).Lit(_.a -> 42.U).a)
+      r := r + 1.U // prevent const prop
+      chisel3.assert(r === 42.U) // coming out of reset
+      stop()
+    } }
+  }
+
+  "DontCare fields extracted from BundleLiterals" should "work as register reset values" in {
+    assertTesterPasses{ new BasicTester{
+      val r = RegInit((new MyBundle).Lit(_.a -> 42.U).b)
+      r := reset.asBool
+      printf(p"r = $r\n") // Can't assert because reset value is DontCare
+      stop()
+    } }
+  }
+
+  "DontCare fields extracted from BundleLiterals" should "work in other Expressions" in {
+    assertTesterPasses{ new BasicTester{
+      val x = (new MyBundle).Lit(_.a -> 42.U).b || true.B
+      chisel3.assert(x === true.B)
+      stop()
+    } }
+  }
+
   "bundle literals with bad field specifiers" should "fail" in {
     val exc = intercept[BundleLiteralException] {
       extractCause[BundleLiteralException] {
