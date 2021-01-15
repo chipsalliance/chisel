@@ -1,0 +1,23 @@
+name: Scala CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/circt/images/circt:nightly
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup and run tests
+        run: |
+          apt install -y openjdk-8-jre-headless
+          curl -L https://github.com/sbt/sbt/releases/download/v1.4.5/sbt-1.4.5.tgz | tar xz
+          ./sbt/bin/sbt test
