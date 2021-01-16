@@ -35,6 +35,7 @@ package object stage {
             case OutputFileAnnotation(a)  => acc.copy(outputFile = Some(new File(a)))
             case CIRCTTargetAnnotation(a) => acc.copy(target = Some(a))
             case DisableLowerTypes        => acc.copy(disableLowerTypes = true)
+            case CIRCTHandover(a)         => acc.copy(handover = Some(a))
             case _                        => acc
           }
         }

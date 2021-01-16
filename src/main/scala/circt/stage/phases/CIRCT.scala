@@ -56,7 +56,7 @@ class CIRCT extends Phase {
 
     val binary = "firtool"
 
-    val cmd = (
+    val cmd =
       Seq(binary, "-format=fir") ++
         (circtOptions.disableLowerTypes match {
            case true  => None
@@ -71,10 +71,10 @@ class CIRCT extends Phase {
              "No 'circtOptions.target' specified. This should be impossible if dependencies are satisfied!"
            )
          })
-    ) #< new java.io.ByteArrayInputStream(input.getBytes)
 
     try {
-      val result = cmd.!!
+      logger.info(s"""Running CIRCT: '${cmd.mkString(" ")} < $$input'""")
+      val result = (cmd #< new java.io.ByteArrayInputStream(input.getBytes)).!!
 
       circtOptions.target match {
         case Some(CIRCTTarget.FIRRTL) =>

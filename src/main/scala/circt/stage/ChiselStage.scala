@@ -20,6 +20,11 @@ import firrtl.options.{
   Stage,
   StageMain
 }
+import firrtl.options.Viewer.view
+import firrtl.stage.{
+  Forms,
+  RunFirrtlTransformAnnotation
+}
 
 /** Entry point for running Chisel with the CIRCT compiler.
   *
@@ -37,13 +42,21 @@ class ChiselStage extends Stage {
   override val shell = new Shell("circt") with CLI
 
   override def run(annotations: AnnotationSeq): AnnotationSeq = {
+
     val pm = new PhaseManager(
-      Seq(
+      targets = Seq(
         Dependency[chisel3.stage.ChiselStage],
+        Dependency[firrtl.stage.phases.AddImplicitOutputFile],
+        Dependency[circt.stage.phases.AddDefaults],
+        Dependency[circt.stage.phases.Checks],
+        Dependency[circt.stage.phases.MaybeSFC],
         Dependency[circt.stage.CIRCTStage]
+      ),
+      currentState = Seq(
+        Dependency[firrtl.stage.phases.AddDefaults],
+        Dependency[firrtl.stage.phases.Checks]
       )
     )
-
     pm.transform(NoRunFirrtlCompilerAnnotation +: annotations)
   }
 
@@ -72,7 +85,8 @@ object ChiselStage {
     .transform(
       Seq(
         ChiselGeneratorAnnotation(() => gen),
-        CIRCTTargetAnnotation(CIRCTTarget.FIRRTL)
+        CIRCTTargetAnnotation(CIRCTTarget.FIRRTL),
+        CIRCTHandover(CIRCTHandover.CHIRRTL)
       )
     ).collectFirst {
       case EmittedMLIR(_, a, _) => a
@@ -83,7 +97,8 @@ object ChiselStage {
     .transform(
       Seq(
         ChiselGeneratorAnnotation(() => gen),
-        CIRCTTargetAnnotation(CIRCTTarget.RTL)
+        CIRCTTargetAnnotation(CIRCTTarget.RTL),
+        CIRCTHandover(CIRCTHandover.CHIRRTL)
       )
     ).collectFirst {
       case EmittedMLIR(_, a, _) => a
@@ -94,7 +109,8 @@ object ChiselStage {
     .transform(
       Seq(
         ChiselGeneratorAnnotation(() => gen),
-        CIRCTTargetAnnotation(CIRCTTarget.SystemVerilog)
+        CIRCTTargetAnnotation(CIRCTTarget.SystemVerilog),
+        CIRCTHandover(CIRCTHandover.CHIRRTL)
       )
     ).collectFirst {
       case EmittedVerilogCircuitAnnotation(a) => a

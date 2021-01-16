@@ -2,7 +2,10 @@
 
 package circt.stage.phases
 
-import circt.stage.CIRCTTargetAnnotation
+import circt.stage.{
+  CIRCTHandover,
+  CIRCTTargetAnnotation
+}
 
 import firrtl.{
   AnnotationSeq,
@@ -24,18 +27,19 @@ import firrtl.stage.{
 class Checks extends Phase {
 
   override def prerequisites = Seq.empty
-  override def optionalPrerequisites = Seq.empty
+  override def optionalPrerequisites = Seq(Dependency[circt.stage.phases.AddDefaults])
   override def optionalPrerequisiteOf = Seq(Dependency[circt.stage.phases.CIRCT])
   override def invalidates(a: Phase) = false
 
   override def transform(annotations: AnnotationSeq): AnnotationSeq = {
-    val transforms, outputFile, target = collection.mutable.ArrayBuffer[Annotation]()
+    val transforms, outputFile, target, handover = collection.mutable.ArrayBuffer[Annotation]()
 
     annotations.foreach {
       case a @ RunFirrtlTransformAnnotation(_: Emitter) =>
       case a: RunFirrtlTransformAnnotation => transforms += a
       case a: OutputFileAnnotation => outputFile += a
       case a: CIRCTTargetAnnotation => target += a
+      case a: CIRCTHandover => handover += a
       case _ =>
     }
 
@@ -49,6 +53,10 @@ class Checks extends Phase {
 
     if (target.size != 1) {
       throw new OptionsException("Exactly one CIRCT target must be specified")
+    }
+
+    if (handover.size != 1) {
+      throw new OptionsException("Exactly one handover must be specified")
     }
 
     annotations
