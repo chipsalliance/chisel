@@ -20,7 +20,8 @@ trait CLI { this: Shell =>
   Seq(
     CIRCTTargetAnnotation,
     DisableLowerTypes,
-    ChiselGeneratorAnnotation
+    ChiselGeneratorAnnotation,
+    CIRCTHandover
   ).foreach(_.addOptions(parser))
 }
 
@@ -32,7 +33,7 @@ trait CLI { this: Shell =>
 class CIRCTStage extends Stage {
 
   override def prerequisites = Seq.empty
-  override def optionalPrerequisites = Seq.empty
+  override def optionalPrerequisites = Seq(Dependency[firrtl.stage.phases.Compiler])
   override def optionalPrerequisiteOf = Seq.empty
   override def invalidates(a: Phase) = false
 
