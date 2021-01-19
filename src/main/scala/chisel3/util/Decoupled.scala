@@ -186,6 +186,7 @@ class QueueIO[T <: Data](private val gen: T, val entries: Int) extends Bundle
   * combinationally coupled.
   * @param flow True if the inputs can be consumed on the same cycle (the inputs "flow" through the queue immediately).
   * The ''valid'' signals are coupled.
+  * @param useSyncReadMem True uses SyncReadMem instead of Mem as an internal memory element.
   *
   * @example {{{
   * val q = Module(new Queue(UInt(), 16))
@@ -220,7 +221,7 @@ class Queue[T <: Data](val gen: T,
   
   val enq_ptr = Counter(entries)
   val deq_ptr = Counter(entries)
-  val deq_ptr_wire = WireDefault(deq_ptr.value)
+  val deq_ptr_value = if (useSyncReadMem) Some(WireDefault(deq_ptr.value)) else None
   
   val maybe_full = RegInit(false.B)
 
@@ -241,9 +242,10 @@ class Queue[T <: Data](val gen: T,
   }
   when (do_deq) {
     deq_ptr.inc()
-    deq_ptr_wire := Mux(deq_ptr.value === (entries.U - 1.U), 0.U, deq_ptr.value + 1.U)
+    if (useSyncReadMem)
+      deq_ptr_value.get := Mux(deq_ptr.value === (entries.U - 1.U), 0.U, deq_ptr.value + 1.U)
   }
-    
+  
   when (do_enq =/= do_deq) {
     maybe_full := do_enq
   }
@@ -252,7 +254,7 @@ class Queue[T <: Data](val gen: T,
   io.enq.ready := !full
   
   if (useSyncReadMem) {
-    io.deq.bits := ram.read(deq_ptr_wire)
+    io.deq.bits := ram.read(deq_ptr_value.get)
   }
   else {
     io.deq.bits := ram(deq_ptr.value)

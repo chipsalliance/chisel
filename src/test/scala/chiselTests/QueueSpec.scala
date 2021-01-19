@@ -202,70 +202,70 @@ class QueueSpec extends ChiselPropSpec {
   implicit val noShrinkInt = Shrink[Int](_ => Stream.empty)
 
   property("Queue should have things pass through") {
-    forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15), Gen.choose(0, 1)) { (depth, se, tap, isSync) =>
+    forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15), true) { (depth, se, tap, isSync) =>
       whenever(se._1 >= 1 && depth >= 1 && se._2.nonEmpty) {
         assertTesterPasses {
-          new ThingsPassThroughTester(se._2, depth, se._1, tap, isSync == 1)
+          new ThingsPassThroughTester(se._2, depth, se._1, tap, isSync)
         }
       }
     }
   }
   
   property("Queue should have reasonable ready/valid") {
-    forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15), Gen.choose(0, 1)) { (depth, se, tap, isSync) =>
+    forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15), Gen.oneOf(true, false)) { (depth, se, tap, isSync) =>
       whenever(se._1 >= 1 && depth >= 1 && se._2.nonEmpty) {
         assertTesterPasses {
-          new QueueReasonableReadyValid(se._2, depth, se._1, tap, isSync == 1)
+          new QueueReasonableReadyValid(se._2, depth, se._1, tap, isSync)
         }
       }
     }
   }
 
   property("Queue should have correct count") {
-    forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15), Gen.choose(0, 1)) { (depth, se, tap, isSync) =>
+    forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15), Gen.oneOf(true, false)) { (depth, se, tap, isSync) =>
       whenever(se._1 >= 1 && depth >= 1 && se._2.nonEmpty) {
         assertTesterPasses {
-          new CountIsCorrectTester(se._2, depth, se._1, tap, isSync == 1)
+          new CountIsCorrectTester(se._2, depth, se._1, tap, isSync)
         }
       }
     }
   }
   
   property("Queue pipe should work for 1-element queues") {
-    forAll(safeUIntN(20), Gen.choose(0, 15), Gen.choose(0, 1)) { (se, tap, isSync) =>
+    forAll(safeUIntN(20), Gen.choose(0, 15), Gen.oneOf(true, false)) { (se, tap, isSync) =>
       whenever(se._1 >= 1 && se._2.nonEmpty) {
         assertTesterPasses {
-          new QueueSinglePipeTester(se._2, se._1, tap, isSync == 1)
+          new QueueSinglePipeTester(se._2, se._1, tap, isSync)
         }
       }
     }
   }
 
   property("Queue pipe should work for more general queues") {
-    forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15), Gen.choose(0, 1)) { (depth, se, tap, isSync) =>
+    forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15), Gen.oneOf(true, false)) { (depth, se, tap, isSync) =>
       whenever(se._1 >= 1 && depth >= 1 && se._2.nonEmpty) {
         assertTesterPasses {
-          new QueuePipeTester(se._2, depth, se._1, tap, isSync == 1)
+          new QueuePipeTester(se._2, depth, se._1, tap, isSync)
         }
       }
     }
   }
 
   property("Queue flow should work") {
-    forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15), Gen.choose(0, 1)) { (depth, se, tap, isSync) =>
+    forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15), Gen.oneOf(true, false)) { (depth, se, tap, isSync) =>
       whenever(se._1 >= 1 && depth >= 1 && se._2.nonEmpty) {
         assertTesterPasses {
-          new QueueFlowTester(se._2, depth, se._1, tap, isSync == 1)
+          new QueueFlowTester(se._2, depth, se._1, tap, isSync)
         }
       }
     }
   }
 
   property("Queue companion object factory method should work") {
-    forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15), Gen.choose(0, 1)) { (depth, se, tap, isSync) =>
+    forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15), Gen.oneOf(true, false)) { (depth, se, tap, isSync) =>
       whenever(se._1 >= 1 && se._2.nonEmpty) {
         assertTesterPasses {
-          new QueueFactoryTester(se._2, depth, se._1, tap, isSync == 1)
+          new QueueFactoryTester(se._2, depth, se._1, tap, isSync)
         }
       }
     }
