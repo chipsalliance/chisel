@@ -102,6 +102,7 @@ private[chisel3] class ErrorLog {
     errors += new Warning(m, getUserLineNumber)
 
   /** Emit an informational message */
+  @deprecated("This method will be removed in 3.5", "3.4")
   def info(m: String): Unit =
     println(new Info("[%2.3f] %s".format(elapsedTime/1e3, m), None))
 
