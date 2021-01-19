@@ -1,0 +1,108 @@
+name: Continuous Integration
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - 1.4.x
+      - 1.3.x
+      - 1.2.x
+
+jobs:
+  test:
+    name: sbt test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        scala: [2.13.2, 2.12.12, 2.11.12]
+    container:
+      image: ucbbar/chisel3-tools
+      options: --user github --entrypoint /bin/bash
+    env:
+      CONTAINER_HOME: /home/github
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.8
+      - name: Cache Scala
+        uses: coursier/cache-action@v5
+      - name: Unidoc builds (Scala 2.12 only)
+        if: matrix.scala == '2.12.12'
+        run: sbt ++${{ matrix.scala }} unidoc
+      - name: Sanity check benchmarking scripts (Scala 2.12 only)
+        if: matrix.scala == '2.12.12'
+        run: |
+          benchmark/scripts/benchmark_cold_compile.py -N 2 --designs regress/ICache.fir --versions HEAD
+          benchmark/scripts/find_heap_bound.py -- -cp firrtl*jar firrtl.stage.FirrtlMain -i regress/ICache.fir -o out -X verilog
+      - name: Test
+        run: sbt ++${{ matrix.scala }} test
+      - name: Binary compatibility
+        run: sbt ++${{ matrix.scala }} mimaReportBinaryIssues
+
+  # TODO find better way to express Ops and AddNot as single test
+  equiv:
+    name: formal equivalence
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        design: [RocketCore, FPU, ICache, Ops, AddNot]
+    container:
+      image: ucbbar/chisel3-tools
+      options: --user github --entrypoint /bin/bash
+    env:
+      CONTAINER_HOME: /home/github
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.8
+      - name: Cache Scala
+        uses: coursier/cache-action@v5
+      - name: Run Formal Equivalence
+        run: ./.run_formal_checks.sh ${{ matrix.design }}
+
+  # Sentinel job to simplify how we specify which checks need to pass in branch
+  # protection and in Mergify
+  #
+  # When adding new jobs, please add them to `needs` below
+  all_tests_passed:
+    name: "all tests passed"
+    needs: [test, equiv]
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo Success!
+
+  # sbt ci-release publishes all cross versions so this job needs to be
+  # separate from a Scala versions build matrix to avoid duplicate publishing
+  publish:
+    needs: [all_tests_passed]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.8
+      - name: Cache Scala
+        uses: coursier/cache-action@v5
+      - name: Setup GPG (for Publish)
+        uses: olafurpg/setup-gpg@v3
+      - name: Publish
+        run: sbt ci-release
+        env:
+          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+          PGP_SECRET: ${{ secrets.PGP_SECRET }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+

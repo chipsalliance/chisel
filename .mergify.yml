@@ -1,116 +1,107 @@
 pull_request_rules:
-  - name: remove outdated reviews
-    conditions:
-      - base=master
-    actions:
-      dismiss_reviews:
+- name: automatic squash-and-merge on CI success and review
+  conditions:
+  - status-success=all tests passed
+  - '#approved-reviews-by>=1'
+  - '#changes-requested-reviews-by=0'
+  - base=master
+  - label="Please Merge"
+  - label!="DO NOT MERGE"
+  - label!="bp-conflict"
+  actions:
+    merge:
+      method: squash
+      strict: smart
+      strict_method: merge
+- name: backport to 1.4.x
+  conditions:
+  - merged
+  - base=master
+  - milestone=1.4.x
+  actions:
+    backport:
+      branches:
+      - 1.4.x
+      ignore_conflicts: true
+      label_conflicts: bp-conflict
+    label:
+      add:
+      - Backported
+- name: backport to 1.3.x, 1.4.x
+  conditions:
+  - merged
+  - base=master
+  - milestone=1.3.x
+  actions:
+    backport:
+      branches:
+      - 1.3.x
+      - 1.4.x
+      ignore_conflicts: true
+      label_conflicts: bp-conflict
+    label:
+      add:
+      - Backported
+- name: backport to 1.2.x, 1.3.x, 1.4.x
+  conditions:
+  - merged
+  - base=master
+  - milestone=1.2.x
+  actions:
+    backport:
+      branches:
+      - 1.2.x
+      - 1.3.x
+      - 1.4.x
+      ignore_conflicts: true
+      label_conflicts: bp-conflict
+    label:
+      add:
+      - Backported
+- name: label Mergify backport PR
+  conditions:
+  - body~=This is an automated backport of pull request \#\d+ done by Mergify
+  actions:
+    label:
+      add:
+      - Backport
+- name: automatic squash-and-mege of 1.2.x backport PRs
+  conditions:
+  - status-success=all tests passed
+  - '#changes-requested-reviews-by=0'
+  - base=1.2.x
+  - label="Backport"
+  - label!="DO NOT MERGE"
+  - label!="bp-conflict"
+  actions:
+    merge:
+      method: squash
+      strict: smart
+      strict_method: merge
+- name: automatic squash-and-mege of 1.3.x backport PRs
+  conditions:
+  - status-success=all tests passed
+  - '#changes-requested-reviews-by=0'
+  - base=1.3.x
+  - label="Backport"
+  - label!="DO NOT MERGE"
+  - label!="bp-conflict"
+  actions:
+    merge:
+      method: squash
+      strict: smart
+      strict_method: merge
+- name: automatic squash-and-mege of 1.4.x backport PRs
+  conditions:
+  - status-success=all tests passed
+  - '#changes-requested-reviews-by=0'
+  - base=1.4.x
+  - label="Backport"
+  - label!="DO NOT MERGE"
+  - label!="bp-conflict"
+  actions:
+    merge:
+      method: squash
+      strict: smart
+      strict_method: merge
 
-pull_request_rules:
-  - name: automatic squash-and-merge on CI success and review
-    conditions:
-      - status-success=Travis CI - Pull Request
-      - "#approved-reviews-by>=1"
-      - "#changes-requested-reviews-by=0"
-      - base=master
-      - label="Please Merge"
-      - label!="DO NOT MERGE"
-      - label!="bp-conflict"
-    actions:
-      merge:
-        method: squash
-        strict: smart
-        strict_method: merge
-
-  - name: backport to 1.4.x
-    conditions:
-      - merged
-      - base=master
-      - milestone=1.4.x
-    actions:
-      backport:
-        branches:
-          - 1.4.x
-        ignore_conflicts: True
-        label_conflicts: "bp-conflict"
-      label:
-        add: [Backported]
-
-  - name: backport to 1.3.x and 1.4.x
-    conditions:
-      - merged
-      - base=master
-      - milestone=1.3.x
-    actions:
-      backport:
-        branches:
-          - 1.3.x
-          - 1.4.x
-        ignore_conflicts: True
-        label_conflicts: "bp-conflict"
-      label:
-        add: [Backported]
-
-  - name: backport to 1.2.x, 1.3.x, and 1.4.x
-    conditions:
-      - merged
-      - base=master
-      - milestone=1.2.X
-    actions:
-      backport:
-        branches:
-          - 1.2.x
-          - 1.3.x
-          - 1.4.x
-        ignore_conflicts: True
-        label_conflicts: "bp-conflict"
-      label:
-        add: [Backported]
-
-  - name: label Mergify backport PR
-    conditions:
-      - body~=This is an automated backport of pull request \#\d+ done by Mergify
-    actions:
-      label:
-        add: [Backport]
-        
-  - name: automatic squash-and-merge of 1.4.x backport PRs
-    conditions:
-      - status-success=Travis CI - Pull Request
-      - "#changes-requested-reviews-by=0"
-      - base=1.4.x
-      - label="Backport"
-      - label!="DO NOT MERGE"
-      - label!="bp-conflict"
-    actions:
-      merge:
-        method: squash
-        strict: smart
-        strict_method: merge      
-
-  - name: automatic squash-and-merge of 1.3.x backport PRs
-    conditions:
-      - status-success=Travis CI - Pull Request
-      - "#changes-requested-reviews-by=0"
-      - base=1.3.x
-      - label="Backport"
-      - label!="DO NOT MERGE"
-      - label!="bp-conflict"
-    actions:
-      merge:
-        method: squash
-        strict: smart
-        strict_method: merge
-
-  - name: automatic squash-and-merge of 1.2.x backport PRs
-    conditions:
-      - status-success=Travis CI - Pull Request
-      - "#changes-requested-reviews-by=0"
-      - base=1.2.x
-      - label="Backport"
-      - label!="DO NOT MERGE"
-      - label!="bp-conflict"
-    actions:
-      merge:
-        method: squash
-        strict: smart
-        strict_method: merge
