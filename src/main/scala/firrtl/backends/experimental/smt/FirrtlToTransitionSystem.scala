@@ -10,18 +10,8 @@ import firrtl.options.Dependency
 import firrtl.passes.PassException
 import firrtl.stage.Forms
 import firrtl.stage.TransformManager.TransformDependency
-import firrtl.transforms.PropagatePresetAnnotations
-import firrtl.{
-  ir,
-  CircuitState,
-  DependencyAPIMigration,
-  MemoryArrayInit,
-  MemoryInitValue,
-  MemoryScalarInit,
-  Namespace,
-  Transform,
-  Utils
-}
+import firrtl.transforms.{DeadCodeElimination, PropagatePresetAnnotations}
+import firrtl.{CircuitState, DependencyAPIMigration, MemoryArrayInit, MemoryInitValue, MemoryScalarInit, Namespace, Transform, Utils, ir}
 import logger.LazyLogging
 
 import scala.collection.mutable
@@ -67,9 +57,12 @@ object FirrtlToTransitionSystem extends Transform with DependencyAPIMigration {
   // Verilog emission passes.
   // Ideally we would go in and enable the [[PropagatePresetAnnotations]] to only depend on LowForm.
   private val presetPass = new PropagatePresetAnnotations
+  // We also need to run the DeadCodeElimination since PropagatePresets does not remove possible remaining
+  // AsyncReset nodes.
+  private val deadCodeElimination = new DeadCodeElimination
   override protected def execute(state: CircuitState): CircuitState = {
     // run the preset pass to extract all preset registers and remove preset reset signals
-    val afterPreset = presetPass.execute(state)
+    val afterPreset = deadCodeElimination.execute(presetPass.execute(state))
     val circuit = afterPreset.circuit
     val presetRegs = afterPreset.annotations.collect {
       case PresetRegAnnotation(target) if target.module == circuit.main => target.ref
