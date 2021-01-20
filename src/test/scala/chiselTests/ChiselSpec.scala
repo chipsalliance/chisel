@@ -85,6 +85,16 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
         case EmittedVerilogCircuitAnnotation(a) => a.value
       }.getOrElse(fail("No Verilog circuit was emitted by the FIRRTL compiler!"))
   }
+
+  def compileWithAnnotations(t: => RawModule, annotations: Seq[Annotation]): String = {
+    (new ChiselStage)
+      .execute(Array("--target-dir", createTestDirectory(this.getClass.getSimpleName).toString),
+        Seq(ChiselGeneratorAnnotation(() => t)) ++ annotations)
+      .collectFirst {
+        case EmittedVerilogCircuitAnnotation(a) => a.value
+      }.getOrElse(fail("No Verilog circuit was emitted by the FIRRTL compiler!"))
+  }
+
 }
 
 /** Spec base class for BDD-style testers. */
