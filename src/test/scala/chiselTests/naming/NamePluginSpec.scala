@@ -11,7 +11,7 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
   implicit val minimumScalaVersion: Int = 12
 
   "Scala plugin" should "name internally scoped components" in {
-    class Test extends MultiIOModule {
+    class Test extends Module {
       { val mywire = Wire(UInt(3.W))}
     }
     aspectTest(() => new Test) {
@@ -20,8 +20,8 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
   }
 
   "Scala plugin" should "name internally scoped instances" in {
-    class Inner extends MultiIOModule { }
-    class Test extends MultiIOModule {
+    class Inner extends Module { }
+    class Test extends Module {
       { val myinstance = Module(new Inner) }
     }
     aspectTest(() => new Test) {
@@ -30,7 +30,7 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
   }
 
   "Scala plugin" should "interact with prefixing" in {
-    class Test extends MultiIOModule {
+    class Test extends Module {
       def builder() = {
         val wire = Wire(UInt(3.W))
       }
@@ -47,7 +47,7 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
   }
 
   "Scala plugin" should "interact with prefixing so last val name wins" in {
-    class Test extends MultiIOModule {
+    class Test extends Module {
       def builder() = {
         val wire1 = Wire(UInt(3.W))
         val wire2 = Wire(UInt(3.W))
@@ -71,7 +71,7 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
 
   "Naming on option" should "work" in {
 
-    class Test extends MultiIOModule {
+    class Test extends Module {
       def builder(): Option[UInt] = {
         val a = Wire(UInt(3.W))
         Some(a)
@@ -88,7 +88,7 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
 
   "Naming on iterables" should "work" in {
 
-    class Test extends MultiIOModule {
+    class Test extends Module {
       def builder(): Seq[UInt] = {
         val a = Wire(UInt(3.W))
         val b = Wire(UInt(3.W))
@@ -108,7 +108,7 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
 
   "Naming on nested iterables" should "work" in {
 
-    class Test extends MultiIOModule {
+    class Test extends Module {
       def builder(): Seq[Seq[UInt]] = {
         val a = Wire(UInt(3.W))
         val b = Wire(UInt(3.W))
@@ -137,7 +137,7 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
   "Naming on custom case classes" should "not work" in {
     case class Container(a: UInt, b: UInt)
 
-    class Test extends MultiIOModule {
+    class Test extends Module {
       def builder(): Container = {
         val a = Wire(UInt(3.W))
         val b = Wire(UInt(3.W))
@@ -167,7 +167,7 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
   }
 
   "Multiple names on a non-IO" should "get the first name" in {
-    class Test extends MultiIOModule {
+    class Test extends Module {
       {
         val a = Wire(UInt(3.W))
         val b = a
@@ -234,7 +234,7 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
 
 
   "autoSeed" should "override automatic naming for non-IO" in {
-    class Test extends MultiIOModule {
+    class Test extends Module {
       {
         val a = Wire(UInt(3.W))
         a.autoSeed("b")
@@ -248,7 +248,7 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
   }
 
   "Unapply assignments" should "still be named" in {
-    class Test extends MultiIOModule {
+    class Test extends Module {
       {
         val (a, b) = (Wire(UInt(3.W)), Wire(UInt(3.W)))
       }
@@ -261,7 +261,7 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
   }
 
   "Unapply assignments" should "not override already named things" in {
-    class Test extends MultiIOModule {
+    class Test extends Module {
       {
         val x = Wire(UInt(3.W))
         val (a, b) = (x, Wire(UInt(3.W)))
@@ -276,7 +276,7 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
 
   "Case class unapply assignments" should "be named" in {
     case class Foo(x: UInt, y: UInt)
-    class Test extends MultiIOModule {
+    class Test extends Module {
       {
         def func() = Foo(Wire(UInt(3.W)), Wire(UInt(3.W)))
         val Foo(a, b) = func()
@@ -291,7 +291,7 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
 
   "Complex unapply assignments" should "be named" in {
     case class Foo(x: UInt, y: UInt)
-    class Test extends MultiIOModule {
+    class Test extends Module {
       {
         val w = Wire(UInt(3.W))
         def func() = {
@@ -320,7 +320,7 @@ class NamePluginSpec extends ChiselFlatSpec with Utils {
   }
 
   "Nested val declarations" should "all be named" in {
-    class Test extends MultiIOModule {
+    class Test extends Module {
       {
         val a = {
           val b = {

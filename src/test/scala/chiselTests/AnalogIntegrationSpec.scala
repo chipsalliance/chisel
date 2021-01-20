@@ -31,15 +31,19 @@ class AnalogBlackBox(index: Int) extends BlackBox(Map("index" -> index)) {
   val io = IO(new AnalogBlackBoxIO(1))
 }
 
+trait AnalogBlackBoxModuleIntf extends Module {
+  def io: AnalogBlackBoxIO
+}
+
 // AnalogBlackBox wrapper, which extends Module to present the common io._ interface
-class AnalogBlackBoxModule(index: Int) extends Module {
+class AnalogBlackBoxModule(index: Int) extends AnalogBlackBoxModuleIntf {
   val io = IO(new AnalogBlackBoxIO(1))
   val impl = Module(new AnalogBlackBox(index))
   io <> impl.io
 }
 
 // Wraps up n blackboxes, connecing their buses and simply forwarding their ports up
-class AnalogBlackBoxWrapper(n: Int, idxs: Seq[Int]) extends Module {
+class AnalogBlackBoxWrapper(n: Int, idxs: Seq[Int]) extends AnalogBlackBoxModuleIntf {
   require(n > 0)
   val io = IO(new AnalogBlackBoxIO(n))
   val bbs = idxs.map(i => Module(new AnalogBlackBoxModule(i)))

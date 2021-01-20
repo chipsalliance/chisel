@@ -52,12 +52,11 @@ class ProgrammaticPortsSpec extends ChiselFlatSpec with Utils {
     doTest(new PortsWinTester)
   }
 
-  "LegacyModule" should "ignore suggestName on ports" in {
+  "Module" should "ignore suggestName on clock and reset" in {
     doTest(new Module with NamedModuleTester {
       val io = IO(new Bundle {
         val foo = Output(UInt(8.W))
       })
-      expectName(io.suggestName("cheese"), "io")
       expectName(clock.suggestName("tart"), "clock")
       expectName(reset.suggestName("teser"), "reset")
     })
@@ -65,7 +64,7 @@ class ProgrammaticPortsSpec extends ChiselFlatSpec with Utils {
 
   "SuggestName collisions on ports" should "be illegal" in {
     a [ChiselException] should be thrownBy extractCause[ChiselException] {
-      ChiselStage.elaborate(new MultiIOModule {
+      ChiselStage.elaborate(new Module {
         val foo = IO(UInt(8.W)).suggestName("apple")
         val bar = IO(UInt(8.W)).suggestName("apple")
       })

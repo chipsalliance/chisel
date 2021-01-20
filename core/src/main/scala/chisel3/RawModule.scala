@@ -142,45 +142,12 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
   }
 }
 
-trait RequireAsyncReset extends MultiIOModule {
+trait RequireAsyncReset extends Module {
   override private[chisel3] def mkReset: AsyncReset = AsyncReset()
 }
 
-trait RequireSyncReset extends MultiIOModule {
+trait RequireSyncReset extends Module {
   override private[chisel3] def mkReset: Bool = Bool()
-}
-
-/** Abstract base class for Modules, which behave much like Verilog modules.
-  * These may contain both logic and state which are written in the Module
-  * body (constructor).
-  * This abstract base class includes an implicit clock and reset.
-  *
-  * @note Module instantiations must be wrapped in a Module() call.
-  */
-abstract class MultiIOModule(implicit moduleCompileOptions: CompileOptions)
-    extends RawModule {
-  // Implicit clock and reset pins
-  final val clock: Clock = IO(Input(Clock())).autoSeed("clock")
-  final val reset: Reset = IO(Input(mkReset)).autoSeed("reset")
-
-  private[chisel3] def mkReset: Reset = {
-    // Top module and compatibility mode use Bool for reset
-    val inferReset = _parent.isDefined && moduleCompileOptions.inferModuleReset
-    if (inferReset) Reset() else Bool()
-  }
-
-  // Setup ClockAndReset
-  Builder.currentClock = Some(clock)
-  Builder.currentReset = Some(reset)
-  Builder.clearPrefix()
-
-  private[chisel3] override def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
-    implicit val sourceInfo = UnlocatableSourceInfo
-
-    super.initializeInParent(parentCompileOptions)
-    clock := Builder.forcedClock
-    reset := Builder.forcedReset
-  }
 }
 
 package internal {
@@ -192,12 +159,7 @@ package internal {
     * IO), the clock and reset constructors will be phased out. Recommendation is to wrap the module
     * in a withClock/withReset/withClockAndReset block, or directly hook up clock or reset IO pins.
     */
-  abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions)
-    extends MultiIOModule {
-    // These are to be phased out
-    protected var override_clock: Option[Clock] = None
-    protected var override_reset: Option[Bool] = None
-
+  abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions) extends Module {
     // IO for this Module. At the Scala level (pre-FIRRTL transformations),
     // connections in and out of a Module may only go through `io` elements.
     @deprecated("Removed for causing issues in Scala 2.12+. You remain free to define io Bundles " +
@@ -232,19 +194,6 @@ package internal {
       require(portsSize == 3, "Module must only have io, clock, and reset as IO")
 
       super.generateComponent()
-    }
-
-    private[chisel3] override def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
-      // Don't generate source info referencing parents inside a module, since this interferes with
-      // module de-duplication in FIRRTL emission.
-      implicit val sourceInfo = UnlocatableSourceInfo
-
-      if (!parentCompileOptions.explicitInvalidate) {
-        pushCommand(DefInvalid(sourceInfo, _io.ref))
-      }
-
-      clock := override_clock.getOrElse(Builder.forcedClock)
-      reset := override_reset.getOrElse(Builder.forcedReset)
     }
   }
 }

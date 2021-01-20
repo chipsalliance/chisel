@@ -2,7 +2,7 @@
 
 package chisel3.aop.injecting
 
-import chisel3.{Module, ModuleAspect, MultiIOModule, RawModule, experimental, withClockAndReset}
+import chisel3.{Module, ModuleAspect, RawModule, withClockAndReset}
 import chisel3.aop._
 import chisel3.internal.{Builder, DynamicContext}
 import chisel3.internal.firrtl.DefModule
@@ -63,7 +63,7 @@ abstract class InjectorAspect[T <: RawModule, M <: RawModule](
     RunFirrtlTransformAnnotation(new InjectingTransform) +: modules.map { module =>
       val (chiselIR, _) = Builder.build(Module(new ModuleAspect(module) {
         module match {
-          case x: MultiIOModule => withClockAndReset(x.clock, x.reset) { injection(module) }
+          case x: Module => withClockAndReset(x.clock, x.reset) { injection(module) }
           case x: RawModule => injection(module)
         }
       }), dynamicContext)

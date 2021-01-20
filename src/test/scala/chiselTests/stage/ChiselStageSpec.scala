@@ -15,13 +15,13 @@ import firrtl.options.Dependency
 
 object ChiselStageSpec {
 
-  class Bar extends MultiIOModule {
+  class Bar extends Module {
     val in = IO(Input(UInt(4.W)))
     val out = IO(Output(UInt(4.W)))
     out := ~in
   }
 
-  class Foo extends MultiIOModule {
+  class Foo extends Module {
     val addr = IO(Input(UInt(4.W)))
     val out = IO(Output(Bool()))
     val memory = SyncReadMem(8, Bool())

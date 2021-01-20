@@ -6,15 +6,14 @@ import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.collection.JavaConversions._
 import scala.language.experimental.macros
-
 import java.util.IdentityHashMap
 
 import chisel3.internal._
 import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.{InstTransform, SourceInfo}
+import chisel3.internal.sourceinfo.{InstTransform, SourceInfo, UnlocatableSourceInfo}
 import chisel3.experimental.BaseModule
-import _root_.firrtl.annotations.{ModuleName, ModuleTarget, IsModule}
+import _root_.firrtl.annotations.{IsModule, ModuleName, ModuleTarget}
 
 object Module extends SourceInfoDoc {
   /** A wrapper method that all Module instantiations must be wrapped in
@@ -87,6 +86,43 @@ object Module extends SourceInfoDoc {
   def currentModule: Option[BaseModule] = Builder.currentModule
 }
 
+/** Abstract base class for Modules, which behave much like Verilog modules.
+  * These may contain both logic and state which are written in the Module
+  * body (constructor).
+  * This abstract base class includes an implicit clock and reset.
+  *
+  * @note Module instantiations must be wrapped in a Module() call.
+  */
+abstract class Module(implicit moduleCompileOptions: CompileOptions) extends RawModule {
+  // Implicit clock and reset pins
+  final val clock: Clock = IO(Input(Clock())).suggestName("clock")
+  final val reset: Reset = IO(Input(mkReset)).suggestName("reset")
+
+  // These are to be phased out
+  protected var override_clock: Option[Clock] = None
+  protected var override_reset: Option[Bool] = None
+
+  private[chisel3] def mkReset: Reset = {
+    // Top module and compatibility mode use Bool for reset
+    val inferReset = _parent.isDefined && moduleCompileOptions.inferModuleReset
+    if (inferReset) Reset() else Bool()
+  }
+
+  // Setup ClockAndReset
+  Builder.currentClock = Some(clock)
+  Builder.currentReset = Some(reset)
+  Builder.clearPrefix()
+
+  private[chisel3] override def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
+    implicit val sourceInfo = UnlocatableSourceInfo
+
+    super.initializeInParent(parentCompileOptions)
+    clock := override_clock.getOrElse(Builder.forcedClock)
+    reset := override_reset.getOrElse(Builder.forcedReset)
+  }
+}
+
+
 package experimental {
 
   object IO {
@@ -145,7 +181,7 @@ package internal {
       if (!compileOptions.explicitInvalidate) {
         pushCommand(DefInvalid(sourceInfo, clonePorts.ref))
       }
-      if (proto.isInstanceOf[MultiIOModule]) {
+      if (proto.isInstanceOf[Module]) {
         clonePorts("clock") := Module.clock
         clonePorts("reset") := Module.reset
       }
