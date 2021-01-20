@@ -11,7 +11,17 @@ import firrtl.passes.PassException
 import firrtl.stage.Forms
 import firrtl.stage.TransformManager.TransformDependency
 import firrtl.transforms.{DeadCodeElimination, PropagatePresetAnnotations}
-import firrtl.{CircuitState, DependencyAPIMigration, MemoryArrayInit, MemoryInitValue, MemoryScalarInit, Namespace, Transform, Utils, ir}
+import firrtl.{
+  ir,
+  CircuitState,
+  DependencyAPIMigration,
+  MemoryArrayInit,
+  MemoryInitValue,
+  MemoryScalarInit,
+  Namespace,
+  Transform,
+  Utils
+}
 import logger.LazyLogging
 
 import scala.collection.mutable
