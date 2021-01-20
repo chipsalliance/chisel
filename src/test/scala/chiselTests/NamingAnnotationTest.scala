@@ -9,7 +9,7 @@ import chisel3.stage.ChiselStage
 
 import scala.collection.mutable.ListBuffer
 
-trait NamedModuleTester extends MultiIOModule {
+trait NamedModuleTesterBase {
   val expectedNameMap = ListBuffer[(InstanceId, String)]()
   val expectedModuleNameMap = ListBuffer[(Module, String)]()
 
@@ -63,6 +63,8 @@ class NonModule {
   val inner = new InnerNamedNonModule
   val outer = new OuterNamedNonModule
 }
+
+trait NamedModuleTester extends MultiIOModule with NamedModuleTesterBase
 
 @chiselName
 class NamedModule extends NamedModuleTester {
