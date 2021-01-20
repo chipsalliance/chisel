@@ -202,7 +202,7 @@ class QueueSpec extends ChiselPropSpec {
   implicit val noShrinkInt = Shrink[Int](_ => Stream.empty)
 
   property("Queue should have things pass through") {
-    forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15), true) { (depth, se, tap, isSync) =>
+    forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15), Gen.oneOf(true, false)) { (depth, se, tap, isSync) =>
       whenever(se._1 >= 1 && depth >= 1 && se._2.nonEmpty) {
         assertTesterPasses {
           new ThingsPassThroughTester(se._2, depth, se._1, tap, isSync)
@@ -210,7 +210,7 @@ class QueueSpec extends ChiselPropSpec {
       }
     }
   }
-  
+
   property("Queue should have reasonable ready/valid") {
     forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15), Gen.oneOf(true, false)) { (depth, se, tap, isSync) =>
       whenever(se._1 >= 1 && depth >= 1 && se._2.nonEmpty) {
@@ -230,7 +230,7 @@ class QueueSpec extends ChiselPropSpec {
       }
     }
   }
-  
+
   property("Queue pipe should work for 1-element queues") {
     forAll(safeUIntN(20), Gen.choose(0, 15), Gen.oneOf(true, false)) { (se, tap, isSync) =>
       whenever(se._1 >= 1 && se._2.nonEmpty) {
