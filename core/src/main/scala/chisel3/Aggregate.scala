@@ -834,18 +834,6 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
       }
     }
 
-    val isAnonFunc = ".*\\$\\$anonfun\\$\\d+$".r
-    // In Scala 2.11, anonymous functions were compiled to their own classes, while in Scala 2.12,
-    // they are directly compiled into the enclosing classes. This meant that checking the enclosing
-    // parent in 2.12 would work, but in 2.11 they wouldn't. This fix just looks for the first enclosing class
-    // which is not an anonymous function.
-    def getNonFuncClass(clz: Class[_]): Option[Class[_]] = {
-      clz.getName match {
-        case isAnonFunc() => getNonFuncClass(clz.getEnclosingClass)
-        case _ => Some(clz)
-      }
-    }
-
     val mirror = runtimeMirror(clazz.getClassLoader)
 
     val classSymbolOption = try {
@@ -857,7 +845,7 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     val enclosingClassOption = (clazz.getEnclosingClass, classSymbolOption) match {
       case (null, _) => None
       case (_, Some(classSymbol)) if classSymbol.isStatic => None  // allows support for members of companion objects
-      case (parent, _) => getNonFuncClass(parent)
+      case (outerClass, _) => Some(outerClass)
     }
 
     // For compatibility with pre-3.1, where null is tried as an argument to the constructor.
