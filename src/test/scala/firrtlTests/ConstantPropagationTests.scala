@@ -7,6 +7,7 @@ import firrtl.passes._
 import firrtl.transforms._
 import firrtl.testutils._
 import firrtl.annotations.Annotation
+import firrtl.stage.DisableFold
 
 class ConstantPropagationSpec extends FirrtlFlatSpec {
   val transforms: Seq[Transform] =
@@ -797,6 +798,17 @@ class ConstantPropagationSingleModule extends ConstantPropagationSpec {
     castCheck("SInt<4>", "asSInt")
     castCheck("Clock", "asClock")
     castCheck("AsyncReset", "asAsyncReset")
+  }
+
+  /* */
+  "The rule a / a -> 1" should "be ignored if division folds are disabled" in {
+    val input =
+      """circuit foo:
+        |  module foo:
+        |    input a: UInt<8>
+        |    output b: UInt<8>
+        |    b <= div(a, a)""".stripMargin
+    (parse(exec(input, Seq(DisableFold(PrimOps.Div))))) should be(parse(input))
   }
 }
 

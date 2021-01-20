@@ -280,3 +280,29 @@ case object PrettyNoExprInlining extends NoTargetAnnotation with FirrtlOption wi
     )
   )
 }
+
+/** Turn off folding a specific primitive operand
+  * @param op the op that should never be folded
+  */
+case class DisableFold(op: ir.PrimOp) extends NoTargetAnnotation with FirrtlOption
+
+object DisableFold extends HasShellOptions {
+
+  private val mapping: Map[String, ir.PrimOp] = PrimOps.builtinPrimOps.map { case op => op.toString -> op }.toMap
+
+  override val options = Seq(
+    new ShellOption[String](
+      longOption = "dont-fold",
+      toAnnotationSeq = a => {
+        mapping
+          .get(a)
+          .orElse(throw new OptionsException(s"Unknown primop '$a'. (Did you misspell it?)"))
+          .map(DisableFold(_))
+          .toSeq
+      },
+      helpText = "Disable folding of specific primitive operations",
+      helpValueName = Some("<primop>")
+    )
+  )
+
+}

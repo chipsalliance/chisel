@@ -34,6 +34,7 @@ package object stage {
           case a: CompilerAnnotation => logger.warn(s"Use of CompilerAnnotation is deprecated. Ignoring $a"); c
           case WarnNoScalaVersionDeprecation => c
           case PrettyNoExprInlining          => c
+          case _: DisableFold => c
         }
       }
   }
