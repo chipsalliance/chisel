@@ -60,7 +60,7 @@ pull_request_rules:
       - Backported
 - name: label Mergify backport PR
   conditions:
-  - body~=This is an automated backport of pull request \#\d+ done by Mergify
+  - title~=\(bp \#\d+\)
   actions:
     label:
       add:
