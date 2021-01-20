@@ -71,7 +71,7 @@ trait SingleTargetAnnotation[T <: Named] extends Annotation {
               case c: CircuitTarget => c.toNamed
               case other => throw Target.NamedException(s"Cannot convert $other to [[Named]]")
             }
-            Target.convertTarget2Named(result) match {
+            (Target.convertTarget2Named(result): @unchecked) match {
               case newTarget: T @unchecked =>
                 try {
                   duplicate(newTarget)

@@ -265,7 +265,7 @@ case class GenericTarget(circuitOpt: Option[String], moduleOpt: Option[String], 
         case GenericTarget(Some(c), Some(m), Instance(i) +: OfModule(o) +: Vector()) => InstanceTarget(c, m, Nil, i, o)
         case GenericTarget(Some(c), Some(m), component) =>
           val path = getPath.getOrElse(Nil)
-          (getRef, getInstanceOf) match {
+          ((getRef, getInstanceOf): @unchecked) match {
             case (Some((r, comps)), _) => ReferenceTarget(c, m, path, r, comps)
             case (None, Some((i, o)))  => InstanceTarget(c, m, path, i, o)
           }
@@ -516,6 +516,7 @@ trait IsComponent extends IsMember {
             case ("", Ref(name))        => name
             case (string, Field(value)) => s"$string.$value"
             case (string, Index(value)) => s"$string[$value]"
+            case (_, token)             => Utils.error(s"Unexpected token: $token")
           }
           ComponentName(name, mn)
         case Seq(Instance(name), OfModule(o)) => ComponentName(name, mn)
@@ -660,6 +661,7 @@ case class ReferenceTarget(
         case Index(idx)   => sub_type(baseType)
         case Field(field) => field_type(baseType, field)
         case _: Ref => baseType
+        case token => Utils.error(s"Unexpected token $token")
       }
       componentType(headType, tokens.tail)
     }

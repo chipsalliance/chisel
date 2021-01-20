@@ -20,8 +20,7 @@ sealed abstract class FirrtlEmitter(form: CircuitForm) extends Transform with Em
       // Use list instead of set to maintain order
       val modules = mutable.ArrayBuffer.empty[DefModule]
       def onStmt(stmt: Statement): Unit = stmt match {
-        case DefInstance(_, _, name, _)  => modules += map(name)
-        case WDefInstance(_, _, name, _) => modules += map(name)
+        case DefInstance(_, _, name, _) => modules += map(name)
         case _: WDefInstanceConnector => throwInternalError(s"unrecognized statement: $stmt")
         case other => other.foreach(onStmt)
       }
@@ -61,7 +60,7 @@ sealed abstract class FirrtlEmitter(form: CircuitForm) extends Transform with Em
   def emit(state: CircuitState, writer: Writer): Unit = writer.write(state.circuit.serialize)
 }
 
-class ChirrtlEmitter extends FirrtlEmitter(ChirrtlForm)
-class HighFirrtlEmitter extends FirrtlEmitter(HighForm)
-class MiddleFirrtlEmitter extends FirrtlEmitter(MidForm)
-class LowFirrtlEmitter extends FirrtlEmitter(LowForm)
+class ChirrtlEmitter extends FirrtlEmitter(CircuitForm.ChirrtlForm)
+class HighFirrtlEmitter extends FirrtlEmitter(CircuitForm.HighForm)
+class MiddleFirrtlEmitter extends FirrtlEmitter(CircuitForm.MidForm)
+class LowFirrtlEmitter extends FirrtlEmitter(CircuitForm.LowForm)

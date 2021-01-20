@@ -116,6 +116,14 @@ sealed abstract class CircuitForm(private val value: Int) extends Ordered[Circui
   /** Defines a suffix to use if this form is written to a file */
   def outputSuffix: String
 }
+private[firrtl] object CircuitForm {
+  // Private internal utils to reduce number of deprecation warnings
+  val ChirrtlForm = firrtl.ChirrtlForm
+  val HighForm = firrtl.HighForm
+  val MidForm = firrtl.MidForm
+  val LowForm = firrtl.LowForm
+  val UnknownForm = firrtl.UnknownForm
+}
 
 // These magic numbers give an ordering to CircuitForm
 /** Chirrtl Form
@@ -310,7 +318,7 @@ trait Transform extends TransformLike[CircuitState] with DependencyAPI[Transform
 
   def transform(state: CircuitState): CircuitState = execute(state)
 
-  import firrtl.{ChirrtlForm => C, HighForm => H, MidForm => M, LowForm => L, UnknownForm => U}
+  import firrtl.CircuitForm.{ChirrtlForm => C, HighForm => H, MidForm => M, LowForm => L, UnknownForm => U}
 
   override def prerequisites: Seq[Dependency[Transform]] = inputForm match {
     case C => Nil

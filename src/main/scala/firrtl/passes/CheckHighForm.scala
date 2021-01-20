@@ -243,8 +243,7 @@ trait CheckHighFormLike { this: Pass =>
           errors.append(new NegUIntException(info, mname))
         case ex: DoPrim => checkHighFormPrimop(info, mname, ex)
         case _: Reference | _: WRef | _: UIntLiteral | _: Mux | _: ValidIf =>
-        case ex: SubAccess  => validSubexp(info, mname)(ex.expr)
-        case ex: WSubAccess => validSubexp(info, mname)(ex.expr)
+        case ex: SubAccess => validSubexp(info, mname)(ex.expr)
         case ex => ex.foreach(validSubexp(info, mname))
       }
       e.foreach(checkHighFormW(info, mname + "/" + e.serialize))
@@ -284,7 +283,6 @@ trait CheckHighFormLike { this: Pass =>
           if (sx.depth <= 0)
             errors.append(new NegMemSizeException(info, mname))
         case sx:    DefInstance    => checkInstance(info, mname, sx.module)
-        case sx:    WDefInstance   => checkInstance(info, mname, sx.module)
         case sx:    Connect        => checkValidLoc(info, mname, sx.loc)
         case sx:    PartialConnect => checkValidLoc(info, mname, sx.loc)
         case sx:    Print          => checkFstring(info, mname, sx.string, sx.args.length)

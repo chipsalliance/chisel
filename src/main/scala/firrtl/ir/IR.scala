@@ -891,6 +891,7 @@ case class IntervalType(lower: Bound, upper: Bound, point: Width) extends Ground
         case x                    => Some(x.setScale(0, FLOOR) * prec)
       }
     case (Closed(a), Some(prec)) => Some((a / prec).setScale(0, FLOOR) * prec)
+    case _                       => None
   }
 
   def minAdjusted: Option[BigInt] = min.map(_ * BigDecimal(BigInt(1) << bp) match {

@@ -632,7 +632,6 @@ object Utils extends LazyLogging {
   def get_flow(s: Statement): Flow = s match {
     case sx: DefWire        => DuplexFlow
     case sx: DefRegister    => DuplexFlow
-    case sx: WDefInstance   => SourceFlow
     case sx: DefNode        => SourceFlow
     case sx: DefInstance    => SourceFlow
     case sx: DefMemory      => SourceFlow

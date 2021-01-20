@@ -164,12 +164,12 @@ class Visitor(infoMode: InfoMode) extends AbstractParseTreeVisitor[FirrtlNode] w
                 }
                 IntervalType(UnknownBound, UnknownBound, point)
               case 2 =>
-                val lower = (ctx.lowerBound.getText, ctx.boundValue(0).getText) match {
+                val lower = ((ctx.lowerBound.getText, ctx.boundValue(0).getText): @unchecked) match {
                   case (_, "?") => UnknownBound
                   case ("(", v) => Open(string2BigDecimal(v))
                   case ("[", v) => Closed(string2BigDecimal(v))
                 }
-                val upper = (ctx.upperBound.getText, ctx.boundValue(1).getText) match {
+                val upper = ((ctx.upperBound.getText, ctx.boundValue(1).getText): @unchecked) match {
                   case (_, "?") => UnknownBound
                   case (")", v) => Open(string2BigDecimal(v))
                   case ("]", v) => Closed(string2BigDecimal(v))

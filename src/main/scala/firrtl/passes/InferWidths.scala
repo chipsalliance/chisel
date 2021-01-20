@@ -110,6 +110,7 @@ class InferWidths extends Transform with ResolvedAnnotationPaths with Dependency
     case (AsyncResetType, AsyncResetType) => Nil
     case (ResetType, _)                   => Nil
     case (_, ResetType)                   => Nil
+    case _                                => throwInternalError("Shouldn't be here")
   }
 
   private def addExpConstraints(e: Expression)(implicit constraintSolver: ConstraintSolver): Expression =

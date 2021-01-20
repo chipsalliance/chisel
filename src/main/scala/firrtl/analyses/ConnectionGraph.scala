@@ -416,6 +416,7 @@ object ConnectionGraph {
         case firrtl.ir.Field(name, Default, tpe) => Utils.create_exps(Reference(name, tpe, PortKind, SourceFlow))
         // Module input
         case firrtl.ir.Field(name, Flip, tpe) => Utils.create_exps(Reference(name, tpe, PortKind, SinkFlow))
+        case x                                => Utils.error(s"Unexpected flip: ${x.flip}")
       }
       assert(instPorts.size == modulePorts.size)
       val o = m.circuitTarget.module(ofModule)

@@ -148,6 +148,9 @@ object FromProto {
     case ReadUnderWrite.UNDEFINED => ir.ReadUnderWrite.Undefined
     case ReadUnderWrite.OLD       => ir.ReadUnderWrite.Old
     case ReadUnderWrite.NEW       => ir.ReadUnderWrite.New
+    case ReadUnderWrite.UNRECOGNIZED =>
+      val msg = s"Unrecognized ReadUnderWrite value '$ruw', perhaps this version of FIRRTL is too old?"
+      throw new FirrtlUserException(msg)
   }
 
   def convert(dt: Firrtl.Statement.CMemory.TypeAndDepth): (ir.Type, BigInt) =
@@ -171,6 +174,10 @@ object FromProto {
     case MEMORY_PORT_DIRECTION_READ       => MRead
     case MEMORY_PORT_DIRECTION_WRITE      => MWrite
     case MEMORY_PORT_DIRECTION_READ_WRITE => MReadWrite
+    case MEMORY_PORT_DIRECTION_UNKNOWN    => MInfer
+    case UNRECOGNIZED =>
+      val msg = s"Unrecognized MemoryPort Direction value '$mportdir', perhaps this version of FIRRTL is too old?"
+      throw new FirrtlUserException(msg)
   }
 
   def convert(port: Firrtl.Statement.MemoryPort, info: Firrtl.SourceInfo): CDefMPort = {
@@ -191,6 +198,9 @@ object FromProto {
     case Formal.ASSERT => ir.Formal.Assert
     case Formal.ASSUME => ir.Formal.Assume
     case Formal.COVER  => ir.Formal.Cover
+    case Formal.UNRECOGNIZED =>
+      val msg = s"Unrecognized Formal value '$formal', perhaps this version of FIRRTL is too old?"
+      throw new FirrtlUserException(msg)
   }
 
   def convert(ver: Firrtl.Statement.Verification, info: Firrtl.SourceInfo): ir.Verification =
@@ -308,9 +318,13 @@ object FromProto {
   }
 
   def convert(dir: Firrtl.Port.Direction): ir.Direction = {
+    import Firrtl.Port.Direction._
     dir match {
-      case Firrtl.Port.Direction.PORT_DIRECTION_IN  => ir.Input
-      case Firrtl.Port.Direction.PORT_DIRECTION_OUT => ir.Output
+      case PORT_DIRECTION_IN  => ir.Input
+      case PORT_DIRECTION_OUT => ir.Output
+      case (PORT_DIRECTION_UNKNOWN | UNRECOGNIZED) =>
+        val msg = s"Unrecognized Port Direction value '$dir', perhaps this version of FIRRTL is too old?"
+        throw new FirrtlUserException(msg)
     }
   }
 
