@@ -448,7 +448,7 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
   override def do_/ (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     binop(sourceInfo, UInt(this.width), DivideOp, that)
   override def do_% (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
-    binop(sourceInfo, UInt(this.width), RemOp, that)
+    binop(sourceInfo, UInt(this.width min that.width), RemOp, that)
   override def do_* (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     binop(sourceInfo, UInt(this.width + that.width), TimesOp, that)
 
@@ -762,9 +762,9 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
   override def do_* (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
     binop(sourceInfo, SInt(this.width + that.width), TimesOp, that)
   override def do_/ (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
-    binop(sourceInfo, SInt(this.width), DivideOp, that)
+    binop(sourceInfo, SInt(this.width + 1), DivideOp, that)
   override def do_% (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
-    binop(sourceInfo, SInt(this.width), RemOp, that)
+    binop(sourceInfo, SInt(this.width min that.width), RemOp, that)
 
   /** Multiplication operator
     *
