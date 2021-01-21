@@ -3,6 +3,7 @@
 package chisel3
 
 import scala.collection.mutable.{ArrayBuffer, HashMap}
+import scala.util.Try
 import scala.collection.JavaConversions._
 import scala.language.experimental.macros
 
@@ -150,39 +151,61 @@ trait RequireSyncReset extends Module {
   override private[chisel3] def mkReset: Bool = Bool()
 }
 
-package internal {
+package object internal {
+
+  // Private reflective version of "val io" to maintain Chisel.Module semantics without having
+  // io as a virtual method. See https://github.com/freechipsproject/chisel3/pull/1550 for more
+  // information about the removal of "val io"
+  private def reflectivelyFindValIO(self: BaseModule): Record = {
+    // Java reflection is faster and works for the common case
+    def tryJavaReflect: Option[Record] = Try {
+      self.getClass.getMethod("io").invoke(self).asInstanceOf[Record]
+    }.toOption
+    // Anonymous subclasses don't work with Java reflection, so try slower, Scala reflection
+    def tryScalaReflect: Option[Record] = {
+      val ru = scala.reflect.runtime.universe
+      import ru.{Try => _, _}
+      val m = ru.runtimeMirror(self.getClass.getClassLoader)
+      val im = m.reflect(self)
+      val tpe = im.symbol.toType
+      // For some reason, in anonymous subclasses, looking up the Term by name (TermName("io"))
+      // hits an internal exception. Searching for the term seems to work though so we use that.
+      val ioTerm: Option[TermSymbol] = tpe.decls.collectFirst {
+        case d if d.name.toString == "io" && d.isTerm => d.asTerm
+      }
+      ioTerm.flatMap { term =>
+        Try {
+          im.reflectField(term).get.asInstanceOf[Record]
+        }.toOption
+      }
+    }
+
+    tryJavaReflect
+      .orElse(tryScalaReflect)
+      .map(_.autoSeed("io"))
+      .orElse {
+        // Fallback if reflection fails, user can wrap in IO(...)
+        self.findPort("io")
+          .collect { case r: Record => r }
+      }.getOrElse(throwException(
+        s"Compatibility mode Module '$this' must have a 'val io' Bundle. " +
+        "If there is such a field and you still see this error, autowrapping has failed (sorry!). " +
+        "Please wrap the Bundle declaration in IO(...)."
+      ))
+  }
 
   /** Legacy Module class that restricts IOs to just io, clock, and reset, and provides a constructor
     * for threading through explicit clock and reset.
     *
-    * While this class isn't planned to be removed anytime soon (there are benefits to restricting
-    * IO), the clock and reset constructors will be phased out. Recommendation is to wrap the module
-    * in a withClock/withReset/withClockAndReset block, or directly hook up clock or reset IO pins.
+    * This is only intended as a bridge from chisel3 to Chisel.Module, do not extend this in user
+    * code, use [[Module]]
     */
   abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions) extends Module {
-    // IO for this Module. At the Scala level (pre-FIRRTL transformations),
-    // connections in and out of a Module may only go through `io` elements.
-    @deprecated("Removed for causing issues in Scala 2.12+. You remain free to define io Bundles " +
-      "in your Modules, but you cannot rely on an io field in every Module. " +
-      "For more information, see: https://github.com/freechipsproject/chisel3/pull/1550.",
-      "Chisel 3.4"
-    )
-    def io: Record
 
-    // Private accessor to reduce number of deprecation warnings
-    private[chisel3] def _io: Record = io
+    private lazy val _io: Record = reflectivelyFindValIO(this)
 
     // Allow access to bindings from the compatibility package
     protected def _compatIoPortBound() = portsContains(_io)
-
-    private[chisel3] override def namePorts(names: HashMap[HasId, String]): Unit = {
-      for (port <- getModulePorts) {
-        // This should already have been caught
-        if (!names.contains(port)) throwException(s"Unable to name port $port in $this")
-        val name = names(port)
-        port.setRef(ModuleIO(this, _namespace.name(name)))
-      }
-    }
 
     private[chisel3] override def generateComponent(): Component = {
       _compatAutoWrapPorts()  // pre-IO(...) compatibility hack
@@ -194,6 +217,34 @@ package internal {
       require(portsSize == 3, "Module must only have io, clock, and reset as IO")
 
       super.generateComponent()
+    }
+
+    override def _compatAutoWrapPorts(): Unit = {
+      if (!_compatIoPortBound() && _io != null) {
+        _bindIoInPlace(_io)
+      }
+    }
+  }
+
+  import chisel3.experimental.Param
+
+  /** Legacy BlackBox class will reflectively autowrap val io
+    *
+    * '''Do not use this class in user code'''. Use whichever `Module` is imported by your wildcard
+    * import (preferably `import chisel3._`).
+    */
+  abstract class LegacyBlackBox(params: Map[String, Param] = Map.empty[String, Param])
+                               (implicit moduleCompileOptions: CompileOptions)
+      extends chisel3.BlackBox(params) {
+
+    override private[chisel3] lazy val _io: Record = reflectivelyFindValIO(this)
+
+    // This class auto-wraps the BlackBox with IO(...), allowing legacy code (where IO(...) wasn't
+    // required) to build.
+    override def _compatAutoWrapPorts(): Unit = {
+      if (!_compatIoPortBound()) {
+        _bindIoInPlace(_io)
+      }
     }
   }
 }

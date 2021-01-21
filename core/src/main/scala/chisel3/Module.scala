@@ -257,6 +257,11 @@ package experimental {
     // mainly for compatibility purposes.
     protected def portsContains(elem: Data): Boolean = _ports contains elem
 
+    // This is dangerous because it can be called before the module is closed and thus there could
+    // be more ports and names have not yet been finalized.
+    // This should only to be used during the process of closing when it is safe to do so.
+    private[chisel3] def findPort(name: String): Option[Data] = _ports.find(_.seedOpt.contains(name))
+
     protected def portsSize: Int = _ports.size
 
     /** Generates the FIRRTL Component (Module or Blackbox) of this Module.

@@ -31,6 +31,10 @@ class AnalogBlackBox(index: Int) extends BlackBox(Map("index" -> index)) {
   val io = IO(new AnalogBlackBoxIO(1))
 }
 
+// This interface exists to give a common interface type for AnalogBlackBoxModule and
+// AnalogBlackBoxWrapper. This is the standard way to deal with the deprecation and removal of the
+// Module.io virtual method (same for BlackBox.io).
+// See https://github.com/freechipsproject/chisel3/pull/1550 for more information
 trait AnalogBlackBoxModuleIntf extends Module {
   def io: AnalogBlackBoxIO
 }

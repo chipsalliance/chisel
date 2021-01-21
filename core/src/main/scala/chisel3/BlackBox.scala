@@ -134,15 +134,11 @@ package experimental {
   */
 abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param])(implicit compileOptions: CompileOptions) extends BaseBlackBox {
 
-  @deprecated("Removed for causing issues in Scala 2.12+. You remain free to define io Bundles " +
-    "in your BlackBoxes, but you cannot rely on an io field in every BlackBox. " +
-    "For more information, see: https://github.com/freechipsproject/chisel3/pull/1550.",
-    "Chisel 3.4"
-  )
-  def io: Record
-
-  // Private accessor to reduce number of deprecation warnings
-  private[chisel3] def _io: Record = io
+  // Find a Record port named "io" for purposes of stripping the prefix
+  private[chisel3] lazy val _io: Record =
+    this.findPort("io")
+        .collect { case r: Record => r } // Must be a Record
+        .getOrElse(null) // null handling occurs in generateComponent
 
   // Allow access to bindings from the compatibility package
   protected def _compatIoPortBound() = portsContains(_io)
@@ -150,8 +146,8 @@ abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param
   private[chisel3] override def generateComponent(): Component = {
     _compatAutoWrapPorts()  // pre-IO(...) compatibility hack
 
-    // Restrict IO to just io, clock, and reset
-    require(_io != null, "BlackBox must have io")
+  // Restrict IO to just io, clock, and reset
+    require(_io != null, "BlackBox must have a port named 'io' of type Record!")
     require(portsContains(_io), "BlackBox must have io wrapped in IO(...)")
     require(portsSize == 1, "BlackBox must only have io as IO")
 

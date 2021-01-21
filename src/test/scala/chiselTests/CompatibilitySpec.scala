@@ -239,6 +239,20 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
     ChiselStage.elaborate { new RequireIOWrapModule() }
   }
 
+  "A Module without val io" should "throw an exception" in {
+    class ModuleWithoutValIO extends Module {
+      val foo = new Bundle {
+        val in = UInt(width = 32).asInput
+        val out = Bool().asOutput
+      }
+      foo.out := foo.in(1)
+    }
+    val e = intercept[Exception](
+      ChiselStage.elaborate { new ModuleWithoutValIO }
+    )
+    e.getMessage should include("must have a 'val io' Bundle")
+  }
+
   "A Module connecting output as source to input as sink when compiled with the Chisel compatibility package" should "not throw an exception" in {
 
     class SimpleModule extends Module {

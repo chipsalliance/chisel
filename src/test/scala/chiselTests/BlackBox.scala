@@ -15,6 +15,16 @@ class BlackBoxInverter extends BlackBox {
   })
 }
 
+// Due to the removal of "val io", this technically works
+// This style is discouraged, please use "val io"
+class BlackBoxInverterSuggestName extends BlackBox {
+  override def desiredName: String = "BlackBoxInverter"
+  val foo = IO(new Bundle() {
+    val in = Input(Bool())
+    val out = Output(Bool())
+  }).suggestName("io")
+}
+
 class BlackBoxPassthrough extends BlackBox {
   val io = IO(new Bundle() {
     val in = Input(Bool())
@@ -47,6 +57,18 @@ class BlackBoxTester extends BasicTester {
 
   assert(blackBoxNeg.io.out === 1.U)
   assert(blackBoxPos.io.out === 0.U)
+  stop()
+}
+
+class BlackBoxTesterSuggestName extends BasicTester {
+  val blackBoxPos = Module(new BlackBoxInverterSuggestName)
+  val blackBoxNeg = Module(new BlackBoxInverterSuggestName)
+
+  blackBoxPos.foo.in := 1.U
+  blackBoxNeg.foo.in := 0.U
+
+  assert(blackBoxNeg.foo.out === 1.U)
+  assert(blackBoxPos.foo.out === 0.U)
   stop()
 }
 
@@ -186,5 +208,11 @@ class BlackBoxSpec extends ChiselFlatSpec {
         assert(DataMirror.modulePorts(m) == Seq("in" -> m.io.in, "out" -> m.io.out))
       }
     )
+  }
+  "A BlackBoxed using suggestName(\"io\")" should "work (but don't do this)" in {
+    assertTesterPasses(
+      {new BlackBoxTesterSuggestName},
+      Seq("/chisel3/BlackBoxTest.v"),
+      TesterDriver.verilatorOnly)
   }
 }

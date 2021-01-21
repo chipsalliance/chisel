@@ -259,16 +259,7 @@ package object Chisel {
 
   implicit def resetToBool(reset: Reset): Bool = reset.asBool
 
-  import chisel3.experimental.Param
-  abstract class BlackBox(params: Map[String, Param] = Map.empty[String, Param]) extends chisel3.BlackBox(params) {
-    // This class auto-wraps the BlackBox with IO(...), allowing legacy code (where IO(...) wasn't
-    // required) to build.
-    override def _compatAutoWrapPorts(): Unit = {
-      if (!_compatIoPortBound()) {
-        _bindIoInPlace(io)
-      }
-    }
-  }
+  type BlackBox = chisel3.internal.LegacyBlackBox
 
   type MemBase[T <: Data] = chisel3.MemBase[T]
 
@@ -321,12 +312,6 @@ package object Chisel {
       this(None, Option(_reset))(moduleCompileOptions)
     def this(_clock: Clock, _reset: Bool)(implicit moduleCompileOptions: CompileOptions) =
       this(Option(_clock), Option(_reset))(moduleCompileOptions)
-
-    override def _compatAutoWrapPorts(): Unit = {
-      if (!_compatIoPortBound() && io != null) {
-        _bindIoInPlace(io)
-      }
-    }
   }
 
   val Module = chisel3.Module
