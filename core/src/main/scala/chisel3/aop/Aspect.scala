@@ -12,6 +12,7 @@ import firrtl.AnnotationSeq
   * @tparam T Type of top-level module
   */
 abstract class Aspect[T <: RawModule] extends Annotation with Unserializable with NoTargetAnnotation {
+  var annotations: AnnotationSeq = Seq()
   /** Convert this Aspect to a seq of FIRRTL annotation
     * @param top
     * @return
@@ -22,7 +23,8 @@ abstract class Aspect[T <: RawModule] extends Annotation with Unserializable wit
     * @param top
     * @return
     */
-  private[chisel3] def resolveAspect(top: RawModule): AnnotationSeq = {
+  private[chisel3] def resolveAspect(top: RawModule, remainingAnnotations: AnnotationSeq): AnnotationSeq = {
+    annotations = remainingAnnotations
     toAnnotation(top.asInstanceOf[T])
   }
 }

@@ -4,7 +4,7 @@ package chiselTests
 
 import firrtl._
 import chisel3._
-import chisel3.core.annotate
+import chisel3.experimental.annotate
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import chisel3.util.experimental.{ForceNameAnnotation, ForceNamesTransform, InlineInstance, forceName}
 import firrtl.annotations.{Annotation, ReferenceTarget}

@@ -61,13 +61,6 @@ class ChiselException(message: String, cause: Throwable = null) extends Exceptio
     trimmedReverse.reverse.toArray
   }
 
-  /** trims the top of the stack of elements belonging to [[blacklistPackages]]
-    * then trims the bottom elements until it reaches [[builderName]]
-    * then continues trimming elements belonging to [[blacklistPackages]]
-    */
-  @deprecated("This method will be removed in 3.4", "3.3")
-  def trimmedStackTrace: Array[StackTraceElement] = trimmedStackTrace(this)
-
   def chiselStackTrace: String = {
     val trimmed = trimmedStackTrace(likelyCause)
 
