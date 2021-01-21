@@ -218,11 +218,8 @@ class Queue[T <: Data](val gen: T,
   val io = IO(new QueueIO(genType, entries))
 
   val ram = if (useSyncReadMem) SyncReadMem(entries, genType, SyncReadMem.WriteFirst) else Mem(entries, genType)
-
   val enq_ptr = Counter(entries)
   val deq_ptr = Counter(entries)
-  val deq_ptr_value = if (useSyncReadMem) Some(WireDefault(deq_ptr.value)) else None
-
   val maybe_full = RegInit(false.B)
 
   val ptr_match = enq_ptr.value === deq_ptr.value
@@ -235,13 +232,9 @@ class Queue[T <: Data](val gen: T,
     ram(enq_ptr.value) := io.enq.bits
     enq_ptr.inc()
   }
-
   when (do_deq) {
     deq_ptr.inc()
-    if (useSyncReadMem)
-      deq_ptr_value.get := Mux(deq_ptr.value === (entries.U - 1.U), 0.U, deq_ptr.value + 1.U)
   }
-
   when (do_enq =/= do_deq) {
     maybe_full := do_enq
   }
@@ -250,8 +243,9 @@ class Queue[T <: Data](val gen: T,
   io.enq.ready := !full
 
   if (useSyncReadMem) {
-    val deq_addr = WireDefault(deq_ptr_value.get)
-    io.deq.bits := ram.read(deq_addr)
+    val deq_ptr_next = Mux(deq_ptr.value === (entries.U - 1.U), 0.U, deq_ptr.value + 1.U)
+    val r_addr = WireDefault(Mux(do_deq, deq_ptr_next, deq_ptr.value))
+    io.deq.bits := ram.read(r_addr)
   }
   else {
     io.deq.bits := ram(deq_ptr.value)
