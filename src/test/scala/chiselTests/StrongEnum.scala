@@ -568,8 +568,8 @@ class StrongEnumAnnotationSpec extends AnyFreeSpec with Matchers {
       case ComponentName(name, _) => name == correct.targetName
       case _ => throw new Exception("Unknown target type in EnumComponentAnnotation")
     }) &&
-      (anno.enumTypeName == correct.typeName || anno.enumTypeName.endsWith("." + correct.typeName) ||
-        anno.enumTypeName.endsWith("$" + correct.typeName))
+      (anno.typeName == correct.typeName || anno.typeName.endsWith("." + correct.typeName) ||
+        anno.typeName.endsWith("$" + correct.typeName))
   }
 
   def isCorrect(anno: EnumVecAnnotation, correct: CorrectVecAnno): Boolean = {
