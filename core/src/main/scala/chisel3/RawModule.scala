@@ -197,10 +197,23 @@ package object internal {
   /** Legacy Module class that restricts IOs to just io, clock, and reset, and provides a constructor
     * for threading through explicit clock and reset.
     *
-    * This is only intended as a bridge from chisel3 to Chisel.Module, do not extend this in user
-    * code, use [[Module]]
+    * '''Do not use this class in user code'''. Use whichever `Module` is imported by your wildcard
+    * import (preferably `import chisel3._`).
     */
   abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions) extends Module {
+    // Provide a non-deprecated constructor
+    def this(override_clock: Option[Clock]=None, override_reset: Option[Bool]=None)
+      (implicit moduleCompileOptions: CompileOptions) = {
+      this()
+      this.override_clock = override_clock
+      this.override_reset = override_reset
+    }
+    def this(_clock: Clock)(implicit moduleCompileOptions: CompileOptions) =
+      this(Option(_clock), None)(moduleCompileOptions)
+    def this(_reset: Bool)(implicit moduleCompileOptions: CompileOptions)  =
+      this(None, Option(_reset))(moduleCompileOptions)
+    def this(_clock: Clock, _reset: Bool)(implicit moduleCompileOptions: CompileOptions) =
+      this(Option(_clock), Option(_reset))(moduleCompileOptions)
 
     private lazy val _io: Record = reflectivelyFindValIO(this)
 
