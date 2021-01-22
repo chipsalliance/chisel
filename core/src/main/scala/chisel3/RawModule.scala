@@ -202,7 +202,7 @@ package object internal {
     */
   abstract class LegacyModule(implicit moduleCompileOptions: CompileOptions) extends Module {
     // Provide a non-deprecated constructor
-    def this(override_clock: Option[Clock]=None, override_reset: Option[Bool]=None)
+    def this(override_clock: Option[Clock] = None, override_reset: Option[Bool]=None)
       (implicit moduleCompileOptions: CompileOptions) = {
       this()
       this.override_clock = override_clock
@@ -243,7 +243,7 @@ package object internal {
 
   /** Legacy BlackBox class will reflectively autowrap val io
     *
-    * '''Do not use this class in user code'''. Use whichever `Module` is imported by your wildcard
+    * '''Do not use this class in user code'''. Use whichever `BlackBox` is imported by your wildcard
     * import (preferably `import chisel3._`).
     */
   abstract class LegacyBlackBox(params: Map[String, Param] = Map.empty[String, Param])

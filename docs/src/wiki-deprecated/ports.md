@@ -30,8 +30,7 @@ provide powerful wiring constructs described later.
 
 (Chisel 3.2+)
 
-Chisel 3.2+ introduces an API `DataMirror.modulePorts` which can be used to inspect the IOs of any Chisel module, including Modules, RawModules, and BlackBoxes.
-
+Chisel 3.2 introduced `DataMirror.modulePorts` which can be used to inspect the IOs of any Chisel module (this includes modules in both `import chisel3._` and `import Chisel._`, as well as BlackBoxes from each package).
 Here is an example of how to use this API:
 
 ```scala

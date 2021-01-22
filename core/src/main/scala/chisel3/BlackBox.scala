@@ -146,10 +146,10 @@ abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param
   private[chisel3] override def generateComponent(): Component = {
     _compatAutoWrapPorts()  // pre-IO(...) compatibility hack
 
-  // Restrict IO to just io, clock, and reset
+    // Restrict IO to just io, clock, and reset
     require(_io != null, "BlackBox must have a port named 'io' of type Record!")
     require(portsContains(_io), "BlackBox must have io wrapped in IO(...)")
-    require(portsSize == 1, "BlackBox must only have io as IO")
+    require(portsSize == 1, "BlackBox must only have one IO, called `io`")
 
     require(!_closed, "Can't generate module more than once")
     _closed = true
