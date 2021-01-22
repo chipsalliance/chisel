@@ -18,14 +18,14 @@ object EnumAnnotations {
   /** An annotation for strong enum instances that are ''not'' inside of Vecs
     *
     * @param target the enum instance being annotated
-    * @param typeName the name of the enum's type (e.g. ''"mypackage.MyEnum"'')
+    * @param enumTypeName the name of the enum's type (e.g. ''"mypackage.MyEnum"'')
     */
-  case class EnumComponentAnnotation(target: Named, typeName: String) extends SingleTargetAnnotation[Named] {
+  case class EnumComponentAnnotation(target: Named, enumTypeName: String) extends SingleTargetAnnotation[Named] {
     def duplicate(n: Named): EnumComponentAnnotation = this.copy(target = n)
   }
 
-  case class EnumComponentChiselAnnotation(target: InstanceId, typeName: String) extends ChiselAnnotation {
-    def toFirrtl: EnumComponentAnnotation = EnumComponentAnnotation(target.toNamed, typeName)
+  case class EnumComponentChiselAnnotation(target: InstanceId, enumTypeName: String) extends ChiselAnnotation {
+    def toFirrtl: EnumComponentAnnotation = EnumComponentAnnotation(target.toNamed, enumTypeName)
   }
 
   /** An annotation for Vecs of strong enums.
