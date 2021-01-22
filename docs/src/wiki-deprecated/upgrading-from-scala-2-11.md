@@ -2,6 +2,8 @@
 layout: docs
 title:  "Upgrading From Scala 2.11"
 section: "chisel3"
+redirect_from:
+  - /chisel3/upgrading-from-scala-2-11.html
 ---
 
 <!-- Prelude -->
