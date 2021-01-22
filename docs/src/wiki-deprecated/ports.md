@@ -30,21 +30,21 @@ provide powerful wiring constructs described later.
 
 (Chisel 3.2+)
 
-Chisel 3.2+ introduces an API `DataMirror.modulePorts` which can be used to inspect the IOs of any Chisel module, including MultiIOModules, RawModules, and BlackBoxes.
+Chisel 3.2+ introduces an API `DataMirror.modulePorts` which can be used to inspect the IOs of any Chisel module, including Modules, RawModules, and BlackBoxes.
 
 Here is an example of how to use this API:
 
 ```scala
 import chisel3.experimental.DataMirror
 
-class Adder extends MultiIOModule {
+class Adder extends Module {
   val a = IO(Input(UInt(8.W)))
   val b = IO(Input(UInt(8.W)))
   val c = IO(Output(UInt(8.W)))
   c := a +& b
 }
 
-class Test extends MultiIOModule {
+class Test extends Module {
   val adder = Module(new Adder)
   // for debug only
   adder.a := DontCare
