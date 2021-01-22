@@ -272,7 +272,7 @@ class QueueSpec extends ChiselPropSpec {
   }
 
   property("Queue.irrevocable should elaborate") {
-    class IrrevocableQueue extends MultiIOModule {
+    class IrrevocableQueue extends Module {
       val in = Wire(Decoupled(Bool()))
       val iQueue = Queue.irrevocable(in, 1)
     }

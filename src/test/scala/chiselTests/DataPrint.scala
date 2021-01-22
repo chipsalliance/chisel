@@ -34,7 +34,7 @@ class DataPrintSpec extends ChiselFlatSpec with Matchers {
     } }
   }
 
-  class BoundDataModule extends MultiIOModule {  // not in the test to avoid anon naming suffixes
+  class BoundDataModule extends Module {  // not in the test to avoid anon naming suffixes
     Wire(UInt()).toString should be("UInt(Wire in BoundDataModule)")
     Reg(SInt()).toString should be("SInt(Reg in BoundDataModule)")
     val io = IO(Output(Bool()))  // needs a name so elaboration doesn't fail
@@ -44,7 +44,7 @@ class DataPrintSpec extends ChiselFlatSpec with Matchers {
     (2.U + 2.U).toString should be("UInt<2>(OpResult in BoundDataModule)")
     Wire(Vec(3, UInt(2.W))).toString should be ("UInt<2>[3](Wire in BoundDataModule)")
 
-    class InnerModule extends MultiIOModule {
+    class InnerModule extends Module {
       val io = IO(Output(new Bundle {
         val a = UInt(4.W)
       }))

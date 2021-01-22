@@ -143,7 +143,7 @@ class ModuleSpec extends ChiselPropSpec with Utils {
   property("DataMirror.modulePorts should work") {
     ChiselStage.elaborate(new Module {
       val io = IO(new Bundle { })
-      val m = Module(new chisel3.MultiIOModule {
+      val m = Module(new chisel3.Module {
         val a = IO(UInt(8.W))
         val b = IO(Bool())
       })

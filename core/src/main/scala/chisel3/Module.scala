@@ -6,15 +6,14 @@ import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.collection.JavaConversions._
 import scala.language.experimental.macros
-
 import java.util.IdentityHashMap
 
 import chisel3.internal._
 import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.{InstTransform, SourceInfo}
+import chisel3.internal.sourceinfo.{InstTransform, SourceInfo, UnlocatableSourceInfo}
 import chisel3.experimental.BaseModule
-import _root_.firrtl.annotations.{ModuleName, ModuleTarget, IsModule}
+import _root_.firrtl.annotations.{IsModule, ModuleName, ModuleTarget}
 
 object Module extends SourceInfoDoc {
   /** A wrapper method that all Module instantiations must be wrapped in
@@ -87,6 +86,56 @@ object Module extends SourceInfoDoc {
   def currentModule: Option[BaseModule] = Builder.currentModule
 }
 
+/** Abstract base class for Modules, which behave much like Verilog modules.
+  * These may contain both logic and state which are written in the Module
+  * body (constructor).
+  * This abstract base class includes an implicit clock and reset.
+  *
+  * @note Module instantiations must be wrapped in a Module() call.
+  */
+abstract class Module(implicit moduleCompileOptions: CompileOptions) extends RawModule {
+  // Implicit clock and reset pins
+  final val clock: Clock = IO(Input(Clock())).suggestName("clock")
+  final val reset: Reset = IO(Input(mkReset)).suggestName("reset")
+
+  // TODO It's hard to remove these deprecated override methods because they're used by
+  //   Chisel.QueueCompatibility which extends chisel3.Queue which extends chisel3.Module
+  private var _override_clock: Option[Clock] = None
+  private var _override_reset: Option[Bool] = None
+  @deprecated("Use withClock at Module instantiation", "Chisel 3.5")
+  protected def override_clock: Option[Clock] = _override_clock
+  @deprecated("Use withClock at Module instantiation", "Chisel 3.5")
+  protected def override_reset: Option[Bool] = _override_reset
+  @deprecated("Use withClock at Module instantiation", "Chisel 3.5")
+  protected def override_clock_=(rhs: Option[Clock]): Unit = {
+    _override_clock = rhs
+  }
+  @deprecated("Use withClock at Module instantiation", "Chisel 3.5")
+  protected def override_reset_=(rhs: Option[Bool]): Unit = {
+    _override_reset = rhs
+  }
+
+  private[chisel3] def mkReset: Reset = {
+    // Top module and compatibility mode use Bool for reset
+    val inferReset = _parent.isDefined && moduleCompileOptions.inferModuleReset
+    if (inferReset) Reset() else Bool()
+  }
+
+  // Setup ClockAndReset
+  Builder.currentClock = Some(clock)
+  Builder.currentReset = Some(reset)
+  Builder.clearPrefix()
+
+  private[chisel3] override def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
+    implicit val sourceInfo = UnlocatableSourceInfo
+
+    super.initializeInParent(parentCompileOptions)
+    clock := _override_clock.getOrElse(Builder.forcedClock)
+    reset := _override_reset.getOrElse(Builder.forcedReset)
+  }
+}
+
+
 package experimental {
 
   object IO {
@@ -145,7 +194,7 @@ package internal {
       if (!compileOptions.explicitInvalidate) {
         pushCommand(DefInvalid(sourceInfo, clonePorts.ref))
       }
-      if (proto.isInstanceOf[MultiIOModule]) {
+      if (proto.isInstanceOf[Module]) {
         clonePorts("clock") := Module.clock
         clonePorts("reset") := Module.reset
       }
@@ -207,6 +256,11 @@ package experimental {
     // These methods allow checking some properties of ports before the module is closed,
     // mainly for compatibility purposes.
     protected def portsContains(elem: Data): Boolean = _ports contains elem
+
+    // This is dangerous because it can be called before the module is closed and thus there could
+    // be more ports and names have not yet been finalized.
+    // This should only to be used during the process of closing when it is safe to do so.
+    private[chisel3] def findPort(name: String): Option[Data] = _ports.find(_.seedOpt.contains(name))
 
     protected def portsSize: Int = _ports.size
 

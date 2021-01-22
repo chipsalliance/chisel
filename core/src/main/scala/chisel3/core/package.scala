@@ -66,13 +66,13 @@ package object core {
   type RawModule = chisel3.RawModule
   @deprecated("Avoid importing from chisel3.core, these are not public APIs and may change at any time. " +
     "Use chisel3.MultiIOModule instead. This alias will be removed in 3.4.", "since the beginning of time")
-  type MultiIOModule = chisel3.MultiIOModule
+  type MultiIOModule = chisel3.Module
   @deprecated("Avoid importing from chisel3.core, these are not public APIs and may change at any time. " +
     " Use chisel3.RawModule instead. This alias will be removed in 3.4.", "since the beginning of time")
   type UserModule = chisel3.RawModule
   @deprecated("Avoid importing from chisel3.core, these are not public APIs and may change at any time. " +
     "Use chisel3.MultiIOModule instead. This alias will be removed in 3.4.", "since the beginning of time")
-  type ImplicitModule = chisel3.MultiIOModule
+  type ImplicitModule = chisel3.Module
 
   @deprecated("Use the version in chisel3._", "3.2")
   val Bits = chisel3.Bits

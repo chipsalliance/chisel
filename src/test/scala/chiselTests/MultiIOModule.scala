@@ -5,7 +5,7 @@ package chiselTests
 import chisel3._
 import chisel3.testers.BasicTester
 
-class MultiIOPlusOne extends MultiIOModule {
+class MultiIOPlusOne extends Module {
   val in  = IO(Input(UInt(32.W)))
   val out = IO(Output(UInt(32.W)))
 
@@ -20,20 +20,20 @@ class MultiIOTester extends BasicTester {
 }
 
 // Demonstrate multiple IOs with inheritance where the IO is assigned to internally
-trait LiteralOutputTrait extends MultiIOModule {
+trait LiteralOutputTrait extends Module {
   val myLiteralIO = IO(Output(UInt(32.W)))
   myLiteralIO := 2.U
 }
 
 // Demonstrate multiple IOs with inheritance where the IO is not assigned
 // (and must be assigned by what extends this trait).
-trait MultiIOTrait extends MultiIOModule {
+trait MultiIOTrait extends Module {
   val myTraitIO = IO(Output(UInt(32.W)))
 }
 
 // Composition of the two above traits, example of IO composition directly using multiple top-level
 // IOs rather than indirectly by constraining the type of the single .io field.
-class ComposedMultiIOModule extends MultiIOModule
+class ComposedMultiIOModule extends Module
     with LiteralOutputTrait with MultiIOTrait {
   val topModuleIO = IO(Input(UInt(32.W)))
   myTraitIO := topModuleIO
