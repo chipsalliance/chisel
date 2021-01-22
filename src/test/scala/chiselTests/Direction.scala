@@ -131,7 +131,7 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
   import chisel3.experimental.{DataMirror, Direction}
 
   property("Directions should be preserved through cloning and binding of Bundles") {
-    ChiselStage.elaborate(new MultiIOModule {
+    ChiselStage.elaborate(new Module {
       class MyBundle extends Bundle {
         val foo = Input(UInt(8.W))
         val bar = Output(UInt(8.W))
@@ -164,11 +164,11 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
       for ((data, dir) <- actualDirs) {
         DataMirror.directionOf(data) shouldBe (dir)
       }
-    }.asInstanceOf[MultiIOModule]) // The cast works around weird reflection behavior (bug?)
+    }.asInstanceOf[Module]) // The cast works around weird reflection behavior (bug?)
   }
 
   property("Directions should be preserved through cloning and binding of Vecs") {
-    ChiselStage.elaborate(new MultiIOModule {
+    ChiselStage.elaborate(new Module {
       val a = Vec(1, Input(UInt(8.W)))
       val b = Vec(1, a)
       val c = Vec(1, Flipped(a))
@@ -197,7 +197,7 @@ class DirectionSpec extends ChiselPropSpec with Matchers with Utils {
       for ((data, dir) <- actualDirs) {
         DataMirror.directionOf(data) shouldBe (dir)
       }
-    }.asInstanceOf[MultiIOModule]) // The cast works around weird reflection behavior (bug?)
+    }.asInstanceOf[Module]) // The cast works around weird reflection behavior (bug?)
   }
 
   property("Using Vec and Flipped together should calculate directions properly") {

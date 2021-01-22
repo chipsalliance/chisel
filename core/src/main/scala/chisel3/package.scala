@@ -167,7 +167,8 @@ package object chisel3 {
 
   type InstanceId = internal.InstanceId
 
-  type Module = chisel3.internal.LegacyModule
+  @deprecated("MultiIOModule is now just Module", "Chisel 3.5")
+  type MultiIOModule = chisel3.Module
 
   /** Implicit for custom Printable string interpolator */
   implicit class PrintableHelper(val sc: StringContext) extends AnyVal {

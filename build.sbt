@@ -18,10 +18,6 @@ lazy val commonSettings = Seq (
   scalaVersion := "2.12.12",
   crossScalaVersions := Seq("2.12.12"),
   scalacOptions := Seq("-deprecation", "-feature",
-    //  We're building with Scala > 2.11, enable the compile option
-    //  switch to support our anonymous Bundle definitions:
-    //  https://github.com/scala/bug/issues/10047
-    "-Xsource:2.11"
   ),
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full),

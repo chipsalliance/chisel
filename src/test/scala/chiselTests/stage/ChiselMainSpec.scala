@@ -24,7 +24,7 @@ object ChiselMainSpec {
   }
 
   /** A module that connects two of the same types together */
-  class SameTypesModule extends MultiIOModule {
+  class SameTypesModule extends Module {
     val in = IO(Input(UInt(1.W)))
     val out = IO(Output(UInt(1.W)))
     out := in
