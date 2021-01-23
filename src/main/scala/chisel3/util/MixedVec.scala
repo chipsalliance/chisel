@@ -91,6 +91,10 @@ final class MixedVec[T <: Data](private val eltsIn: Seq[T]) extends Record with 
     eltsIn.foreach(e => requireIsChiselType(e))
   }
 
+  // In Scala 2.13, this is protected in IndexedSeq, must override as public because it's public in
+  // Record
+  override def className: String = "MixedVec"
+
   // Clone the inputs so that we have our own references.
   private val elts: IndexedSeq[T] = eltsIn.map(_.cloneTypeFull).toIndexedSeq
 
