@@ -201,7 +201,7 @@ api-copy = \
 	$(diagrammerTags:v%=docs/target/site/api/diagrammer/%/index.html) docs/target/site/api/diagrammer/SNAPSHOT/index.html \
 
 .PHONY: all clean mrproper publish serve \
-	apis-chisel apis-firrtl apis-chisel-testers apis-treadle apis-diagrammer apis-chiseltest
+	apis-chisel3 apis-firrtl apis-chisel-testers apis-treadle apis-diagrammer apis-chiseltest
 .PRECIOUS: \
 	$(subprojects)/chisel3/%/.git $(subprojects)/chisel3/%/target/scala-$(scalaVersion)/unidoc/index.html \
 	$(subprojects)/firrtl/%/.git $(subprojects)/firrtl/%/target/scala-$(scalaVersion)/unidoc/index.html \
@@ -219,7 +219,7 @@ api-copy = \
 all: docs/target/site/index.html
 
 # Targets to build the legacy APIS of only a specific subproject
-apis-chisel: $(chiselTags:%=$(apis)/chisel3/%/index.html) $(apis)/chisel3/$(chiselSnapshot)/index.html
+apis-chisel3: $(chiselTags:%=$(apis)/chisel3/%/index.html) $(apis)/chisel3/$(chiselSnapshot)/index.html
 apis-firrtl: $(firrtlTags:%=$(apis)/firrtl/%/index.html) $(apis)/firrtl/$(firrtlSnapshot)/index.html
 apis-chisel-testers: $(testersTags:%=$(apis)/chisel-testers/%/index.html) $(apis)/chisel-testers/$(testersSnapshot)/index.html
 apis-chiseltest: $(chiseltestTags:%=$(apis)/chiseltest/%/index.html)
