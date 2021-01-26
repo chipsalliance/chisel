@@ -1,9 +1,18 @@
 import Dependencies._
 
 ThisBuild / scalaVersion     := "2.12.12"
-ThisBuild / version          := "0.1.0-SNAPSHOT"
 ThisBuild / organization     := "com.sifive"
 ThisBuild / organizationName := "SiFive"
+ThisBuild / homepage         := Some(url("https://github.com/sifive/chisel-circt"))
+ThisBuild / licenses         := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
+ThisBuild / developers       := List(
+  Developer(
+    "seldridge",
+    "Schuyler Eldridge",
+    "schuyler.eldridge@gmail.com",
+    url("https://www.seldridge.dev")
+  )
+)
 
 lazy val root = (project in file("."))
   .settings(
@@ -11,5 +20,3 @@ lazy val root = (project in file("."))
     libraryDependencies += scalaTest % Test,
     libraryDependencies += chisel3
   )
-
-// See https://www.scala-sbt.org/1.x/docs/Using-Sonatype.html for instructions on how to publish to Sonatype.
