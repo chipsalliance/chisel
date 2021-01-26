@@ -4,20 +4,34 @@ on:
   workflow_dispatch:
   push:
     branches: [ main ]
+    tags: ["*"]
   pull_request:
     branches: [ main ]
 
 jobs:
-  build:
-
+  test:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/circt/images/circt:nightly
-
     steps:
       - uses: actions/checkout@v2
+      - uses: olafurpg/setup-scala@v10
       - name: Setup and run tests
-        run: |
-          apt install -y openjdk-8-jre-headless
-          curl -L https://github.com/sbt/sbt/releases/download/v1.4.5/sbt-1.4.5.tgz | tar xz
-          ./sbt/bin/sbt test
+        run: sbt test
+
+  publish:
+    needs: [test]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v2.3.4
+        with:
+          fetch-depth: 0
+      - uses: olafurpg/setup-scala@v10
+      - uses: olafurpg/setup-gpg@v3
+      - run: sbt ci-release
+        env:
+          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+          PGP_SECRET: ${{ secrets.PGP_SECRET }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
