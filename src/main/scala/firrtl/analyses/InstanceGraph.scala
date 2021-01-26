@@ -45,7 +45,7 @@ class InstanceGraph(c: Circuit) {
     val topInstance = DefInstance(subTop, subTop)
     instanceQueue.enqueue(topInstance)
     while (instanceQueue.nonEmpty) {
-      val current = instanceQueue.dequeue
+      val current = instanceQueue.dequeue()
       instanceGraph.addVertex(current)
       for (child <- childInstances(current.module)) {
         if (!instanceGraph.contains(child)) {

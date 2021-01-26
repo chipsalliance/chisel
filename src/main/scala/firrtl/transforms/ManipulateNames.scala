@@ -464,7 +464,7 @@ abstract class ManipulateNames[A <: ManipulateNames[_]: ClassTag] extends Transf
 
     val block = state.annotations.collect {
       case ManipulateNamesBlocklistAnnotation(targetSeq, t) =>
-        t.getObject match {
+        t.getObject() match {
           case _: A => targetSeq
           case _ => Nil
         }
@@ -473,7 +473,7 @@ abstract class ManipulateNames[A <: ManipulateNames[_]: ClassTag] extends Transf
     val allow = {
       val allowx = state.annotations.collect {
         case ManipulateNamesAllowlistAnnotation(targetSeq, t) =>
-          t.getObject match {
+          t.getObject() match {
             case _: A => targetSeq
             case _ => Nil
           }
@@ -491,13 +491,13 @@ abstract class ManipulateNames[A <: ManipulateNames[_]: ClassTag] extends Transf
     val annotationsx = state.annotations.flatMap {
       /* Consume blocklist annotations */
       case foo @ ManipulateNamesBlocklistAnnotation(_, t) =>
-        t.getObject match {
+        t.getObject() match {
           case _: A => None
           case _ => Some(foo)
         }
       /* Convert allowlist annotations to result annotations */
       case foo @ ManipulateNamesAllowlistAnnotation(a, t) =>
-        t.getObject match {
+        t.getObject() match {
           case _: A =>
             (a, a.map(_.map(renames(_)).flatten)) match {
               case (a, b) => Some(ManipulateNamesAllowlistResultAnnotation(b, t, a))

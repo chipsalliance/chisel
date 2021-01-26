@@ -147,7 +147,7 @@ class ConnectionGraph protected (val circuit: Circuit, val digraph: DiGraph[Refe
     val bfsQueue = new mutable.PriorityQueue[ReferenceTarget]()(ordering)
     bfsQueue.enqueue(root)
     while (bfsQueue.nonEmpty) {
-      val u = bfsQueue.dequeue
+      val u = bfsQueue.dequeue()
       for (v <- getEdges(u)) {
         if (!prev.contains(v) && !blacklist.contains(v)) {
           prev(v) = u

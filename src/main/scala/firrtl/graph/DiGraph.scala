@@ -153,7 +153,7 @@ class DiGraph[T](private[graph] val edges: LinkedHashMap[T, LinkedHashSet[T]]) {
     val queue = new mutable.Queue[T]
     queue.enqueue(root)
     while (queue.nonEmpty) {
-      val u = queue.dequeue
+      val u = queue.dequeue()
       for (v <- getEdges(u)) {
         if (!prev.contains(v) && !blacklist.contains(v)) {
           prev(v) = u
@@ -257,7 +257,7 @@ class DiGraph[T](private[graph] val edges: LinkedHashMap[T, LinkedHashSet[T]]) {
         }
         frame.childCall = None
         while (frame.edgeIter.hasNext && frame.childCall.isEmpty) {
-          val w = frame.edgeIter.next
+          val w = frame.edgeIter.next()
           if (!indices.contains(w)) {
             frame.childCall = Some(w)
             callStack.push(new StrongConnectFrame(w, getEdges(w).iterator))
@@ -269,13 +269,13 @@ class DiGraph[T](private[graph] val edges: LinkedHashMap[T, LinkedHashSet[T]]) {
           if (lowlinks(v) == indices(v)) {
             val scc = new mutable.ArrayBuffer[T]
             do {
-              val w = stack.pop
+              val w = stack.pop()
               onstack -= w
               scc += w
             } while (scc.last != v);
             sccs.append(scc.toSeq)
           }
-          callStack.pop
+          callStack.pop()
         }
       }
     }
@@ -305,7 +305,7 @@ class DiGraph[T](private[graph] val edges: LinkedHashMap[T, LinkedHashSet[T]]) {
     queue += start
     queue ++= linearize.filter(reachable.contains(_))
     while (!queue.isEmpty) {
-      val current = queue.dequeue
+      val current = queue.dequeue()
       for (v <- getEdges(current)) {
         for (p <- paths(current)) {
           addBinding(v, p :+ v)

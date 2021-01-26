@@ -71,7 +71,7 @@ object FileUtils {
     val ioToDevNull = BasicIO(withIn = false, ProcessLogger(line => sb.append(line)))
 
     try {
-      cmd.run(ioToDevNull).exitValue == 0
+      cmd.run(ioToDevNull).exitValue() == 0
     } catch {
       case _: Throwable => false
     }

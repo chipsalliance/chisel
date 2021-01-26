@@ -158,7 +158,7 @@ object InstanceKeyGraph {
       val instanceQueue = new mutable.Queue[InstanceKey]
       instanceQueue.enqueue(topInstance)
       while (instanceQueue.nonEmpty) {
-        val current = instanceQueue.dequeue
+        val current = instanceQueue.dequeue()
         instanceGraph.addVertex(current)
         for (child <- childInstanceMap(current.module)) {
           if (!instanceGraph.contains(child)) {

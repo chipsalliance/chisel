@@ -647,7 +647,8 @@ class ConstantPropagation extends Transform with DependencyAPIMigration {
         case WRef(rname, _, kind, _) if betterName(lname, rname) && !swapMap.contains(rname) && kind != PortKind =>
           assert(!swapMap.contains(lname)) // <- Shouldn't be possible because lname is either a
           // node declaration or the single connection to a wire or register
-          swapMap += (lname -> rname, rname -> lname)
+          swapMap += lname -> rname
+          swapMap += rname -> lname
         case _ =>
       }
       nodeMap(lname) = InfoExpr.wrap(info, value)

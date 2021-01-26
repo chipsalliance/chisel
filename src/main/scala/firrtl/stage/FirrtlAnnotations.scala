@@ -180,7 +180,7 @@ case class RunFirrtlTransformAnnotation(transform: Transform) extends NoTargetAn
 object RunFirrtlTransformAnnotation extends HasShellOptions {
 
   def apply(transform: TransformDependency): RunFirrtlTransformAnnotation =
-    RunFirrtlTransformAnnotation(transform.getObject)
+    RunFirrtlTransformAnnotation(transform.getObject())
 
   private[firrtl] def stringToEmitter(a: String): RunFirrtlTransformAnnotation = {
     val emitter = a match {

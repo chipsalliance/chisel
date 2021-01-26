@@ -58,8 +58,8 @@ object DriverCompatibility {
     def addOptions(p: OptionParser[AnnotationSeq]): Unit = p
       .opt[Unit]("top-name")
       .abbr("tn")
-      .hidden
-      .unbounded
+      .hidden()
+      .unbounded()
       .action((_, _) => throw new OptionsException(optionRemoved("--top-name/-tn")))
   }
 
@@ -71,8 +71,8 @@ object DriverCompatibility {
     def addOptions(p: OptionParser[AnnotationSeq]): Unit = p
       .opt[Unit]("split-modules")
       .abbr("fsm")
-      .hidden
-      .unbounded
+      .hidden()
+      .unbounded()
       .action((_, _) => throw new OptionsException(optionRemoved("--split-modules/-fsm")))
 
   }

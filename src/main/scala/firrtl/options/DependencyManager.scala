@@ -91,7 +91,7 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
     }
 
     while (queue.nonEmpty) {
-      val u: Dependency[B] = queue.dequeue
+      val u: Dependency[B] = queue.dequeue()
       for (v <- extractor(dependencyToObject(u))) {
         if (!blacklist.contains(v) && !edges.contains(v)) {
           queue.enqueue(v)
@@ -193,13 +193,13 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
       )
   }
 
-  /** An ordering of [[firrtl.options.TransformLike TransformLike]]s that causes the requested [[DependencyManager.targets
-    * targets]] to be executed starting from the [[DependencyManager.currentState currentState]]. This ordering respects
+  /** An ordering of [[firrtl.options.TransformLike TransformLike]]s that causes the requested [[firrtl.options.DependencyManager.targets
+    * targets]] to be executed starting from the [[firrtl.options.DependencyManager.currentState currentState]]. This ordering respects
     * prerequisites, optionalPrerequisites, optionalPrerequisiteOf, and invalidates of all constituent
     * [[firrtl.options.TransformLike TransformLike]]s. This uses an algorithm that attempts to reduce the number of
-    * re-lowerings due to invalidations. Re-lowerings are implemented as new [[DependencyManager]]s.
-    * @throws DependencyManagerException if a cycle exists in either the [[DependencyManager.dependencyGraph
-    * dependencyGraph]] or the [[DependencyManager.invalidateGraph invalidateGraph]].
+    * re-lowerings due to invalidations. Re-lowerings are implemented as new [[firrtl.options.DependencyManager]]s.
+    * @throws firrtl.options.DependencyManagerException if a cycle exists in either the [[firrtl.options.DependencyManager.dependencyGraph
+    * dependencyGraph]] or the [[firrtl.options.DependencyManager.invalidateGraph invalidateGraph]].
     */
   lazy val transformOrder: Seq[B] = {
 
@@ -244,8 +244,8 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
     l ++ postprocessing
   }
 
-  /** A version of the [[DependencyManager.transformOrder transformOrder]] that flattens the transforms of any internal
-    * [[DependencyManager]]s.
+  /** A version of the [[firrtl.options.DependencyManager.transformOrder transformOrder]] that flattens the transforms of any internal
+    * [[firrtl.options.DependencyManager DependencyManager]]s.
     */
   lazy val flattenedTransformOrder: Seq[B] = transformOrder.flatMap {
     case p: DependencyManager[A, B] => p.flattenedTransformOrder

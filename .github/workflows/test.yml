@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        scala: [2.13.2, 2.12.12, 2.11.12]
+        scala: [2.13.4, 2.12.13, 2.11.12]
     container:
       image: ucbbar/chisel3-tools
       options: --user github --entrypoint /bin/bash
@@ -34,8 +34,7 @@ jobs:
       - name: Check Formatting (Scala 2.12 only)
         if: matrix.scala == '2.12.12'
         run: sbt ++${{ matrix.scala }} scalafmtCheckAll
-      - name: Unidoc builds (Scala 2.12 only)
-        if: matrix.scala == '2.12.12'
+      - name: Unidoc
         run: sbt ++${{ matrix.scala }} unidoc
       - name: Sanity check benchmarking scripts (Scala 2.12 only)
         if: matrix.scala == '2.12.12'

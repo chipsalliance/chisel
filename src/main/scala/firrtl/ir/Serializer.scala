@@ -99,7 +99,7 @@ object Serializer {
     case Block(stmts) =>
       val it = stmts.iterator
       while (it.hasNext) {
-        s(it.next)
+        s(it.next())
         if (it.hasNext) newLineAndIndent()
       }
     case Stop(info, ret, clk, en) =>
