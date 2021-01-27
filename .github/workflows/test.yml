@@ -64,7 +64,7 @@ jobs:
         uses: actions/setup-ruby@v1
       - name: Setup Jekyll
         run: |
-          gem install jekyll -v 3.8.5
+          gem install jekyll -v 4.2.0
           gem install jekyll-redirect-from
       - name: Download all built API docs
         uses: actions/download-artifact@v2

@@ -18,7 +18,7 @@ val technologies: String =
 val determineContributors = taskKey[Unit]("determine contributors for subprojects")
 
 lazy val micrositeSettings = Seq(
-  scalaVersion := "2.12.6",
+  scalaVersion := "2.12.12",
   micrositeName := "Chisel/FIRRTL",
   micrositeDescription := "Chisel/FIRRTL\nHardware Compiler Framework",
   micrositeUrl := "https://www.chisel-lang.org",
@@ -35,7 +35,6 @@ lazy val micrositeSettings = Seq(
   micrositeDocumentationUrl := "api/latest/",
   micrositeDocumentationLabelDescription := "API Documentation",
   micrositeGitterChannelUrl := "freechipsproject/chisel3",
-  micrositeCompilingDocsTool := WithMdoc,
   mdocIn := file("docs/src/main/tut"),
   /* Copy markdown files from each of the submodules to build out the website:
    * - Chisel3 README becomes the landing page
@@ -69,11 +68,13 @@ lazy val micrositeSettings = Seq(
           "section" -> "diagrammer",
           "position" -> "6"))
   ),
+  micrositeExtraMdFilesOutput := resourceManaged.value / "main" / "jekyll",
   micrositeStaticDirectory := file("docs/target/site/api"),
   /* Known colors:
    *   - Chisel logo: #212560
    *   - FIRRTL logo: #136527
    */
+  micrositeTheme := "pattern",
   micrositePalette := Map(
     "brand-primary"     -> "#7B95A2",
     "brand-secondary"   -> "#1A3C79",
@@ -97,7 +98,7 @@ lazy val micrositeSettings = Seq(
     new FileFilter{
       def accept(f: File) = (ghpagesRepository.value / "CNAME").getCanonicalPath == f.getCanonicalPath
     } || "versions.html",
-  addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
+  addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full)
 )
 
 resolvers ++= Seq(
