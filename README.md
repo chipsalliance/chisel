@@ -1,25 +1,45 @@
-# Compile Chisel using CIRCT
+# chisel-circt
 
-This library provides a `ChiselStage`-like interface for compiling Chisel using the MLIR-based [llvm/circt](https://github.com/llvm/circt) project.
+[![Maven Central](https://img.shields.io/maven-central/v/com.sifive/chisel-circt_2.12)](https://maven-badges.herokuapp.com/maven-central/com.sifive/chisel-circt_2.12)
+[![Sonatype Nexus (Snapshots)](https://img.shields.io/nexus/s/com.sifive/chisel-circt_2.12?server=https%3A%2F%2Foss.sonatype.org)](https://oss.sonatype.org/content/repositories/snapshots/com/sifive/chisel-circt_2.12/)
+[![Javadoc](https://javadoc.io/badge2/com.sifive/chisel-circt_2.12/javadoc.svg)](https://javadoc.io/doc/com.sifive/chisel-circt_2.12)
 
-**Note: this library and the CIRCT project are both works in progress!
-A large number of features are not supported in CIRCT, yet!**
+# Compile Chisel using CIRCT/MLIR
 
-## Requirements
+This library provides a `ChiselStage`-like interface for compiling a Chisel circuit using the MLIR-based [llvm/circt](https://github.com/llvm/circt) project.
 
-- Install `sbt` and create a base Chisel project
-- Build CIRCT and add it's binaries to your path (`firtool` should be on your path)
+**CIRCT is a work in progress! Not all Chisel and FIRRTL features are supported!**
+
+If you suspect a CIRCT bug or have questions, you can file an issue here, [post on Discourse](https://llvm.discourse.group/c/Projects-that-want-to-become-official-LLVM-Projects/circt/), or [file an issue on CIRCT](https://github.com/llvm/circt/issues/new/choose).
+
+## Setup
+
+Include the following in your `build.sbt`.
+See the badges above for latest release or snapshot version.
+
+``` scala
+libraryDependencies += "com.sifive" %% "chisel-circt" % "X.Y.Z"
+```
+
+Additionally, install CIRCT.
+You can either:
+
+1. Build and install from [source](https://github.com/llvm/circt)
+2. Use a [nightly docker image](https://github.com/orgs/circt/packages/container/package/images%2Fcirct) and the [`firtool` script](https://github.com/circt/images/blob/trunk/circt/utils/firtool)
+
+After CIRCT installation is complete, you should have `firtool` on your path.
+
+### Base Project
+
+Alternatively, a base project is provided in [sifive/chisel-circt-demo](https://github.com/sifive/chisel-circt-demo).
 
 ## Example
 
-This library provides a substitute for `chisel3.stage.ChiselStage` called `circt.stage.ChiselStage` which has similar behavior.
-You can then use this to compile Chisel circuits to one of the MLIR dialects or go all the way to Verilog.
+You can use `circt.stage.ChiselStage` *almost* exactly like `chsel3.stage.ChiselStage`.
+E.g., the following will compile a simple module using CIRCT.
 
 ``` scala
 import chisel3._
-
-/* The following stage behaves like chisel3.stage.ChiselStage, but uses CIRCT */
-import circt.stage.ChiselStage
 
 class Foo extends RawModule {
   val a = IO(Input(Bool()))
@@ -28,5 +48,17 @@ class Foo extends RawModule {
   b := ~a
 }
 
-println(ChiselStage.emitSystemVerilog(new Foo))
+/* Note: this is using circt.stage.ChiselStage */
+val verilogString = circt.stage.ChiselStage.emitSystemVerilog(new Foo)
+
+println(verilogString)
+/** This will return:
+  *
+  * module Foo(
+  *   input  a,
+  *   output b);
+  *
+  *   assign b = ~a;
+  * endmodule
+  */
 ```
