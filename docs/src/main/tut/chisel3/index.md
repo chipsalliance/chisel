@@ -2,6 +2,7 @@
 layout: docs
 title:  "Chisel3"
 section: "chisel3"
+position: 1
 ---
 
 This is a brief overview to the Chisel HDL.
