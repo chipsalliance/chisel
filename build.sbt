@@ -1,11 +1,13 @@
 import Dependencies._
 
-ThisBuild / scalaVersion     := "2.12.12"
-ThisBuild / organization     := "com.sifive"
-ThisBuild / organizationName := "SiFive"
-ThisBuild / homepage         := Some(url("https://github.com/sifive/chisel-circt"))
-ThisBuild / licenses         := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
-ThisBuild / developers       := List(
+ThisBuild / scalaVersion         := "2.12.12"
+ThisBuild / organization         := "com.sifive"
+ThisBuild / organizationName     := "SiFive"
+ThisBuild / organizationHomepage := Some(url("https://www.sifive.com/"))
+ThisBuild / description          := "Infrastructure to compile Chisel projects using MLIR-based infrastructure (CIRCT)"
+ThisBuild / homepage             := Some(url("https://github.com/sifive/chisel-circt"))
+ThisBuild / licenses             := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
+ThisBuild / developers           := List(
   Developer(
     "seldridge",
     "Schuyler Eldridge",
