@@ -259,16 +259,7 @@ package object Chisel {
 
   implicit def resetToBool(reset: Reset): Bool = reset.asBool
 
-  import chisel3.experimental.Param
-  abstract class BlackBox(params: Map[String, Param] = Map.empty[String, Param]) extends chisel3.BlackBox(params) {
-    // This class auto-wraps the BlackBox with IO(...), allowing legacy code (where IO(...) wasn't
-    // required) to build.
-    override def _compatAutoWrapPorts(): Unit = {
-      if (!_compatIoPortBound()) {
-        _bindIoInPlace(io)
-      }
-    }
-  }
+  type BlackBox = chisel3.internal.LegacyBlackBox
 
   type MemBase[T <: Data] = chisel3.MemBase[T]
 
@@ -302,35 +293,11 @@ package object Chisel {
   }
 
   import chisel3.CompileOptions
-  abstract class CompatibilityModule(implicit moduleCompileOptions: CompileOptions)
-      extends chisel3.internal.LegacyModule()(moduleCompileOptions) {
-    // This class auto-wraps the Module IO with IO(...), allowing legacy code (where IO(...) wasn't
-    // required) to build.
-    // Also provides the clock / reset constructors, which were used before withClock happened.
 
-    // Provide a non-deprecated constructor
-    def this(override_clock: Option[Clock]=None, override_reset: Option[Bool]=None)
-        (implicit moduleCompileOptions: CompileOptions) = {
-      this()
-      this.override_clock = override_clock
-      this.override_reset = override_reset
-    }
-    def this(_clock: Clock)(implicit moduleCompileOptions: CompileOptions) =
-      this(Option(_clock), None)(moduleCompileOptions)
-    def this(_reset: Bool)(implicit moduleCompileOptions: CompileOptions)  =
-      this(None, Option(_reset))(moduleCompileOptions)
-    def this(_clock: Clock, _reset: Bool)(implicit moduleCompileOptions: CompileOptions) =
-      this(Option(_clock), Option(_reset))(moduleCompileOptions)
-
-    override def _compatAutoWrapPorts(): Unit = {
-      if (!_compatIoPortBound() && io != null) {
-        _bindIoInPlace(io)
-      }
-    }
-  }
-
+  @deprecated("Use Chisel.Module", "Chisel 3.5")
+  type CompatibilityModule = chisel3.internal.LegacyModule
   val Module = chisel3.Module
-  type Module = CompatibilityModule
+  type Module = chisel3.internal.LegacyModule
 
   val printf = chisel3.printf
 

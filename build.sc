@@ -59,8 +59,7 @@ trait CommonModule extends CrossSbtModule with PublishModule {
   override def scalacOptions = T {
     super.scalacOptions() ++ Agg(
       "-deprecation",
-      "-feature",
-      "-Xsource:2.11"
+      "-feature"
     )
   }
 

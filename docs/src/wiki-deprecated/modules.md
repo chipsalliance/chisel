@@ -10,8 +10,8 @@ The hierarchical module namespace is accessible in downstream tools
 to aid in debugging and physical layout.  A user-defined module is
 defined as a *class* which:
 
- - inherits from ```Module```,
- - contains an interface wrapped in a Module's ```IO()``` method and stored in a port field named ```io```, and
+ - inherits from `Module`,
+ - contains at least one interface wrapped in a Module's `IO()` method (traditionally stored in a port field named ```io```), and
  - wires together subcircuits in its constructor.
 
 As an example, consider defining your own two-input multiplexer as a
@@ -86,24 +86,18 @@ new object.  We then wire them up to one another and to the ports of
 the ```Mux4``` interface.
 
 Note: Chisel `Module`s have an implicit clock (called `clock`) and
-an implicit reset (called `reset`). For different behavior, Chisel
-provides both `MultiIOModule` and `RawModule`.
+an implicit reset (called `reset`). To create modules without implicit
+clock and reset, Chisel provides `RawModule`.
 
-### `MultiIOModule`
-
-A `MultiIOModule` allows you to define as many different `IO` as needed
-and does not require you to implement an abstract member `io`.
-This can be useful when programmatically adding `IO` or adding `IO` via inheritance.
-An artifact of this is that Verilog generated from a `MultiIOModule` will
-*not* have the `io_` prefix. `MultiIOModule`s still have an implicit
-clock and reset like `Module`.
-
-<!-- TODO: Some example -->
+> Historical Note: Prior to Chisel 3.5, Modules were restricted to only
+having a single user-defined port named `io`. There was also a type called
+`MultiIOModule` that provided implicit clock and reset while allowing the
+user to define as many ports as they want. This is now the functionality
+of `Module`.
 
 ### `RawModule`
 
-A `RawModule` is a module that allows you to define as much `IO` as needed
-(like `MultiIOModule`) but **does not provide an implicit clock and reset.**
+A `RawModule` is a module that **does not provide an implicit clock and reset.**
 This can be useful when interfacing a Chisel module with a design that expects
 a specific naming convention for clock or reset.
 

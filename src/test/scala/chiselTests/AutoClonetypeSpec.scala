@@ -198,7 +198,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
   }
 
   "Wrapped IO construction without parent reference" should "not fail for autoclonetype" in {
-    class TestModule extends MultiIOModule {
+    class TestModule extends Module {
       def thunk[T](f: => T): T = f
       val works = thunk(IO(new Bundle {
         val x = Output(UInt(3.W))
@@ -208,7 +208,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
   }
 
   "Wrapped IO construction with parent references" should "not fail for autoclonetype" in {
-    class TestModule(blah: Int) extends MultiIOModule {
+    class TestModule(blah: Int) extends Module {
       // Note that this currently fails only if f: =>T on Scala 2.11.12
       // This works successfully with 2.12.11
       def thunk[T](f: => T): T = f
