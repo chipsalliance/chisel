@@ -127,7 +127,7 @@ object RegNext {
   * val x = Wire(UInt())
   * val y = Wire(UInt(8.W))
   * val r1 = RegInit(x) // width will be inferred
-  * val r2 = RegInit(y) // width is set to 8
+  * val r2 = RegInit(y) // width will be inferred
   * }}}
   *
   * 3. [[Aggregate]] initializer - width will be set to match the aggregate
