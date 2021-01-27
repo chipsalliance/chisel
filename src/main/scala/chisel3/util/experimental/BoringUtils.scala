@@ -19,7 +19,7 @@ class BoringUtilsException(message: String) extends Exception(message)
 /** Utilities for generating synthesizable cross module references that "bore" through the hierarchy. The underlying
   * cross module connects are handled by FIRRTL's Wiring Transform.
   *
-  * Consider the following exmple where you want to connect a component in one module to a component in another. Module
+  * Consider the following example where you want to connect a component in one module to a component in another. Module
   * `Constant` has a wire tied to `42` and `Expect` will assert unless connected to `42`:
   * {{{
   * class Constant extends Module {
@@ -45,8 +45,8 @@ class BoringUtilsException(message: String) extends Exception(message)
   *
   * ===Hierarchical Boring===
   *
-  * Hierarchcical boring involves connecting one sink instance to another source instance in a parent module. Below,
-  * module `Top` contains an instance of `Cosntant` and `Expect`. Using [[BoringUtils.bore]], we can connect
+  * Hierarchical boring involves connecting one sink instance to another source instance in a parent module. Below,
+  * module `Top` contains an instance of `Constant` and `Expect`. Using [[BoringUtils.bore]], we can connect
   * `constant.x` to `expect.y`.
   *
   * {{{
@@ -89,7 +89,7 @@ class BoringUtilsException(message: String) extends Exception(message)
   * ==Comments==
   *
   * Both hierarchical and non-hierarchical boring emit FIRRTL annotations that describe sources and sinks. These are
-  * matched by a `name` key that indicates they should be wired together. Hierarhical boring safely generates this name
+  * matched by a `name` key that indicates they should be wired together. Hierarchical boring safely generates this name
   * automatically. Non-hierarchical boring unsafely relies on user input to generate this name. Use of non-hierarchical
   * naming may result in naming conflicts that the user must handle.
   *
@@ -115,7 +115,7 @@ object BoringUtils {
   /** Add a named source cross module reference
     * @param component source circuit component
     * @param name unique identifier for this source
-    * @param disableDedup disable dedupblication of this source component (this should be true if you are trying to wire
+    * @param disableDedup disable deduplication of this source component (this should be true if you are trying to wire
     * from specific identical sources differently)
     * @param uniqueName if true, this will use a non-conflicting name from the global namespace
     * @return the name used
@@ -137,7 +137,7 @@ object BoringUtils {
             def transformClass = classOf[WiringTransform] },
           new ChiselAnnotation { def toFirrtl = DontTouchAnnotation(component.toNamed) } ) ++ maybeDedup
 
-    annotations.map(annotate(_))
+    annotations.foreach(annotate(_))
     id
   }
 
@@ -146,8 +146,8 @@ object BoringUtils {
     * @param name unique identifier for this sink that must resolve to
     * @param disableDedup disable deduplication of this sink component (this should be true if you are trying to wire
     * specific, identical sinks differently)
-    * @param forceExists if true, require that the provided `name` paramater already exists in the global namespace
-    * @throws BoringUtilsException if name is expected to exist and itdoesn't
+    * @param forceExists if true, require that the provided `name` parameter already exists in the global namespace
+    * @throws BoringUtilsException if name is expected to exist and it doesn't
     */
   def addSink(
     component: InstanceId,
@@ -169,7 +169,7 @@ object BoringUtils {
       Seq(new ChiselAnnotation with RunFirrtlTransform {
             def toFirrtl = SinkAnnotation(component.toNamed, name)
             def transformClass = classOf[WiringTransform] }) ++ maybeDedup
-    annotations.map(annotate(_))
+    annotations.foreach(annotate(_))
   }
 
   /** Connect a source to one or more sinks
@@ -187,7 +187,7 @@ object BoringUtils {
       case _: Exception => "bore"
     }
     val genName = addSource(source, boringName, true, true)
-    sinks.map(addSink(_, genName, true, true))
+    sinks.foreach(addSink(_, genName, true, true))
     genName
   }
 
