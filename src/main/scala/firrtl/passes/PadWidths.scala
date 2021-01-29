@@ -58,7 +58,7 @@ object PadWidths extends Pass {
     case ex: ValidIf => ex.copy(value = fixup(width(ex.tpe))(ex.value))
     case ex: DoPrim =>
       ex.op match {
-        case Lt | Leq | Gt | Geq | Eq | Neq | Not | And | Or | Xor | Add | Sub | Mul | Div | Rem | Shr =>
+        case Lt | Leq | Gt | Geq | Eq | Neq | Not | And | Or | Xor | Add | Sub | Rem | Shr =>
           // sensitive ops
           ex.map(fixup((ex.args.map(width).foldLeft(0))(math.max)))
         case Dshl =>

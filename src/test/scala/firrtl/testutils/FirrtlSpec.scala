@@ -122,6 +122,48 @@ trait FirrtlRunners extends BackendCompilationUtilities {
     assert(BackendCompilationUtilities.yosysExpectSuccess(customName, refName, testDir, timesteps))
   }
 
+  /** Check equivalence of Firrtl with reference Verilog
+   *
+    * @note the name of the reference Verilog module is grabbed via regex
+    * @param inputFirrtl string containing Firrtl source
+    * @param referenceVerilog Verilog that will be used as reference for LEC
+    * @param timesteps the maximum number of timesteps to consider
+    */
+  def firrtlEquivalenceWithVerilog(
+    inputFirrtl:       String,
+    referenceVerilog:  String,
+    timesteps:         Int = 1
+  ): Unit = {
+    val VerilogModule = """(?s).*module\s(\w+).*""".r
+    val refName = referenceVerilog match {
+      case VerilogModule(name) => name
+      case _ => throw new Exception(s"Reference Verilog must match simple regex! $VerilogModule")
+    }
+    val circuit = Parser.parse(inputFirrtl.split("\n").toIterator)
+    val inputName = circuit.main
+    require(refName != inputName, s"Name of reference Verilog must not match name of input FIRRTL: $refName")
+
+    val testDir = createTestDirectory(inputName + "_equivalence_test")
+
+    val annos = List(
+      TargetDirAnnotation(testDir.toString),
+      InfoModeAnnotation("ignore"),
+      stage.FirrtlCircuitAnnotation(circuit),
+      stage.RunFirrtlTransformAnnotation.stringToEmitter("verilog"),
+      stage.OutputFileAnnotation(inputName)
+    )
+
+    (new firrtl.stage.FirrtlStage).execute(Array(), annos)
+
+    // Write reference
+    val w = new FileWriter(new File(testDir, s"$refName.v"))
+    w.write(referenceVerilog)
+    w.close()
+
+    assert(BackendCompilationUtilities.yosysExpectSuccess(inputName, refName, testDir, timesteps))
+  }
+
+
   /** Compiles input Firrtl to Verilog */
   def compileToVerilog(input: String, annotations: AnnotationSeq = Seq.empty): String = {
     val circuit = Parser.parse(input.split("\n").toIterator)
