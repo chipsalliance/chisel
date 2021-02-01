@@ -38,6 +38,10 @@ jobs:
         run: sbt ++${{ matrix.scala }} test
       - name: Binary compatibility
         run: sbt ++${{ matrix.scala }} mimaReportBinaryIssues
+      # Chisel plugin not yet release for Scala 2.12.13, test with 2.12.12
+      - name: Binary compatibility (Plugin, Scala 2.12 only)
+        if: matrix.scala == '2.12.13'
+        run: sbt ++2.12.12 "plugin / mimaReportBinaryIssues"
 
   # Sentinel job to simplify how we specify which checks need to pass in branch
   # protection and in Mergify
