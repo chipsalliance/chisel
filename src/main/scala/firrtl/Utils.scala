@@ -659,19 +659,24 @@ object Utils extends LazyLogging {
     *   Given:   SubField(SubIndex(Ref("b"), 2), "c")
     *   Returns: (Ref("b"), SubField(SubIndex(EmptyExpression, 2), "c"))
     *   b[2].c -> (b, EMPTY[2].c)
-    * @note This function only supports WRef, WSubField, and WSubIndex
+    * @note This function only supports [[firrtl.ir.RefLikeExpression RefLikeExpression]]s: [[firrtl.ir.Reference
+    * Reference]], [[firrtl.ir.SubField SubField]], [[firrtl.ir.SubIndex SubIndex]], and [[firrtl.ir.SubAccess
+    * SubAccess]]
     */
   def splitRef(e: Expression): (WRef, Expression) = e match {
-    case e: WRef => (e, EmptyExpression)
-    case e: WSubIndex =>
+    case e: Reference => (e, EmptyExpression)
+    case e: SubIndex =>
       val (root, tail) = splitRef(e.expr)
-      (root, WSubIndex(tail, e.value, e.tpe, e.flow))
-    case e: WSubField =>
+      (root, SubIndex(tail, e.value, e.tpe, e.flow))
+    case e: SubField =>
       val (root, tail) = splitRef(e.expr)
       tail match {
-        case EmptyExpression => (root, WRef(e.name, e.tpe, root.kind, e.flow))
-        case exp             => (root, WSubField(tail, e.name, e.tpe, e.flow))
+        case EmptyExpression => (root, Reference(e.name, e.tpe, root.kind, e.flow))
+        case exp             => (root, SubField(tail, e.name, e.tpe, e.flow))
       }
+    case e: SubAccess =>
+      val (root, tail) = splitRef(e.expr)
+      (root, SubAccess(tail, e.index, e.tpe, e.flow))
   }
 
   /** Adds a root reference to some SubField/SubIndex chain */
