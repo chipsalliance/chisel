@@ -107,10 +107,9 @@ class ConstantPropagation extends Transform with DependencyAPIMigration {
   override def prerequisites =
     ((new mutable.LinkedHashSet())
       ++ firrtl.stage.Forms.LowForm
-      - Dependency(firrtl.passes.Legalize)
-      + Dependency(firrtl.passes.RemoveValidIf)).toSeq
+      - Dependency(firrtl.passes.Legalize)).toSeq
 
-  override def optionalPrerequisites = Seq.empty
+  override def optionalPrerequisites = Seq(Dependency(firrtl.passes.RemoveValidIf))
 
   override def optionalPrerequisiteOf =
     Seq(
