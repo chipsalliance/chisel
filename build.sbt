@@ -43,7 +43,7 @@ lazy val commonSettings = Seq (
   organization := "edu.berkeley.cs",
   version := "3.4-SNAPSHOT",
   autoAPIMappings := true,
-  scalaVersion := "2.12.12",
+  scalaVersion := "2.12.13",
   crossScalaVersions := Seq("2.12.12", "2.11.12"),
   scalacOptions := Seq("-deprecation", "-feature") ++ scalacOptionsVersion(scalaVersion.value),
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
@@ -125,6 +125,7 @@ lazy val pluginScalaVersions = Seq(
   "2.12.10",
   "2.12.11",
   "2.12.12",
+  "2.12.13",
 )
 
 lazy val plugin = (project in file("plugin")).
@@ -148,6 +149,8 @@ lazy val plugin = (project in file("plugin")).
     mimaPreviousArtifacts := {
       // Not published for 2.11, do not try to check binary compatibility with a 2.11 artifact
       if (scalaVersion.value.startsWith("2.11")) Set()
+      // Note yet published for 2.12.13, skip
+      else if (scalaVersion.value.startsWith("2.12.13")) Set()
       else Set("edu.berkeley.cs" % "chisel3-plugin" % "3.4.1" cross CrossVersion.full)
     }
   )
