@@ -117,7 +117,7 @@ class InferResets extends Transform with DependencyAPIMigration {
       Dependency(passes.InferTypes),
       Dependency(passes.ResolveFlows),
       Dependency[passes.InferWidths]
-    ) ++ stage.Forms.WorkingIR
+    ) ++ stage.Forms.MinimalHighForm
 
   override def invalidates(a: Transform): Boolean = a match {
     case _: checks.CheckResets | passes.CheckTypes => true

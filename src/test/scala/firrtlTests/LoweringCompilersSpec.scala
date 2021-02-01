@@ -155,7 +155,10 @@ class LoweringCompilersSpec extends AnyFlatSpec with Matchers {
 
   it should "replicate the old order" in {
     val tm = new TransformManager(Forms.WorkingIR, Forms.MinimalHighForm)
-    compare(legacyTransforms(new firrtl.IRToWorkingIR), tm)
+    val patches = Seq(
+      Del(1)
+    )
+    compare(legacyTransforms(new firrtl.IRToWorkingIR), tm, patches)
   }
 
   behavior.of("ResolveAndCheck")

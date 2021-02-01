@@ -35,7 +35,7 @@ object LegalizeAndReductionsTransform {
 class LegalizeAndReductionsTransform extends Transform with DependencyAPIMigration {
 
   override def prerequisites =
-    firrtl.stage.Forms.WorkingIR ++
+    firrtl.stage.Forms.MinimalHighForm ++
       Seq(Dependency(passes.CheckTypes), Dependency(passes.CheckWidths))
 
   override def optionalPrerequisites = Nil

@@ -9,7 +9,7 @@ import firrtl.traversals.Foreachers._
 
 object ResolveKinds extends Pass {
 
-  override def prerequisites = firrtl.stage.Forms.WorkingIR
+  override def prerequisites = firrtl.stage.Forms.MinimalHighForm
 
   override def invalidates(a: Transform) = false
 

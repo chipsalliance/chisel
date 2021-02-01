@@ -13,7 +13,7 @@ import firrtl.options.Dependency
 
 object CheckTypes extends Pass {
 
-  override def prerequisites = Dependency(InferTypes) +: firrtl.stage.Forms.WorkingIR
+  override def prerequisites = Dependency(InferTypes) +: firrtl.stage.Forms.MinimalHighForm
 
   override def optionalPrerequisiteOf =
     Seq(

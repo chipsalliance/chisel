@@ -31,7 +31,11 @@ class ChirrtlToHighFirrtl extends CoreTransform {
 class IRToWorkingIR extends CoreTransform {
   def inputForm = HighForm
   def outputForm = HighForm
-  def transforms = new TransformManager(Forms.WorkingIR, Forms.MinimalHighForm).flattenedTransformOrder
+  def transforms = Seq(
+    new Transform with firrtl.options.IdentityLike[CircuitState] with DependencyAPIMigration {
+      override def execute(a: CircuitState) = transform(a)
+    }
+  )
 }
 
 /** Resolves types, kinds, and flows, and checks the circuit legality.
@@ -44,7 +48,7 @@ class IRToWorkingIR extends CoreTransform {
 class ResolveAndCheck extends CoreTransform {
   def inputForm = HighForm
   def outputForm = HighForm
-  def transforms = new TransformManager(Forms.Resolved, Forms.WorkingIR).flattenedTransformOrder
+  def transforms = new TransformManager(Forms.Resolved, Forms.MinimalHighForm).flattenedTransformOrder
 }
 
 /** Expands aggregate connects, removes dynamic accesses, and when

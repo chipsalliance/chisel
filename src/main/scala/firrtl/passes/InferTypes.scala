@@ -10,7 +10,7 @@ import firrtl.options.Dependency
 
 object InferTypes extends Pass {
 
-  override def prerequisites = Dependency(ResolveKinds) +: firrtl.stage.Forms.WorkingIR
+  override def prerequisites = Dependency(ResolveKinds) +: firrtl.stage.Forms.MinimalHighForm
   override def invalidates(a: Transform) = false
 
   @deprecated("This should never have been public", "FIRRTL 1.3.2")

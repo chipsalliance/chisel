@@ -71,7 +71,7 @@ class InferWidths extends Transform with ResolvedAnnotationPaths with Dependency
       Dependency(passes.ResolveFlows),
       Dependency[passes.InferBinaryPoints],
       Dependency[passes.TrimIntervals]
-    ) ++ firrtl.stage.Forms.WorkingIR
+    ) ++ firrtl.stage.Forms.MinimalHighForm
   override def invalidates(a: Transform) = false
 
   val annotationClasses = Seq(classOf[WidthGeqConstraintAnnotation])

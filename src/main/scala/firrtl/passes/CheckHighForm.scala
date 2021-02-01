@@ -348,7 +348,7 @@ trait CheckHighFormLike { this: Pass =>
 
 object CheckHighForm extends Pass with CheckHighFormLike {
 
-  override def prerequisites = firrtl.stage.Forms.WorkingIR
+  override def prerequisites = firrtl.stage.Forms.MinimalHighForm
 
   override def optionalPrerequisiteOf =
     Seq(

@@ -35,7 +35,7 @@ import MemPortUtils.memType
 object Uniquify extends Transform with DependencyAPIMigration {
 
   override def prerequisites =
-    Seq(Dependency(ResolveKinds), Dependency(InferTypes)) ++ firrtl.stage.Forms.WorkingIR
+    Seq(Dependency(ResolveKinds), Dependency(InferTypes)) ++ firrtl.stage.Forms.MinimalHighForm
 
   override def invalidates(a: Transform): Boolean = a match {
     case ResolveKinds | InferTypes => true
