@@ -158,6 +158,7 @@ object Width {
 
 sealed abstract class Width {
   type W = Int
+  def min(that: Width): Width = this.op(that, _ min _)
   def max(that: Width): Width = this.op(that, _ max _)
   def + (that: Width): Width = this.op(that, _ + _)
   def + (that: Int): Width = this.op(this, (a, b) => a + that)
