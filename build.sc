@@ -5,7 +5,7 @@ import coursier.maven.MavenRepository
 import $ivy.`com.lihaoyi::mill-contrib-buildinfo:$MILL_VERSION`
 import mill.contrib.buildinfo.BuildInfo
 
-object chisel3 extends mill.Cross[chisel3CrossModule]("2.12.12")
+object chisel3 extends mill.Cross[chisel3CrossModule]("2.12.13")
 
 // The following stanza is searched for and used when preparing releases.
 // Please retain it.
