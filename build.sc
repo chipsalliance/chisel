@@ -5,7 +5,7 @@ import coursier.maven.MavenRepository
 import $ivy.`com.lihaoyi::mill-contrib-buildinfo:$MILL_VERSION`
 import mill.contrib.buildinfo.BuildInfo
 
-object chisel3 extends mill.Cross[chisel3CrossModule]("2.11.12", "2.12.12")
+object chisel3 extends mill.Cross[chisel3CrossModule]("2.11.12", "2.12.13")
 
 // The following stanza is searched for and used when preparing releases.
 // Please retain it.
@@ -87,7 +87,7 @@ trait CommonModule extends CrossSbtModule with PublishModule {
     description = artifactName(),
     organization = "edu.berkeley.cs",
     url = "https://www.chisel-lang.org",
-    licenses = Seq(License.`BSD-3-Clause`),
+    licenses = Seq(License.`Apache-2.0`),
     versionControl = VersionControl.github("freechipsproject", "chisel3"),
     developers = Seq(
       Developer("jackbackrack", "Jonathan Bachrach", "https://eecs.berkeley.edu/~jrb/")
