@@ -16,5 +16,5 @@ import chisel3.stage.{ChiselStage, NoRunFirrtlCompilerAnnotation, ChiselOutputFi
   * Primarily, this object includes [[firrtl.options.Phase Phase]]s that generate [[firrtl.annotations.Annotation]]s
   * derived from the deprecated [[firrtl.stage.phases.DriverCompatibility.TopNameAnnotation]].
   */
-@deprecated("This object contains no public members. This will be removed in FIRRTL 1.5.", "FIRRTL 1.5")
+@deprecated("This object contains no public members. This will be removed in Chisel 3.6.", "FIRRTL 3.4.3")
 object DriverCompatibility
