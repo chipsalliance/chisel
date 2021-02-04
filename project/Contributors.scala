@@ -34,10 +34,10 @@ object Contributors {
         case Right(r) => r
       }
 
-  def contributorsMarkdown(contributors: Seq[User]): String =
+  def contributorsMarkdown(contributors: Seq[(String, String)]): String =
     contributors
-      .sortWith((a: User, b: User) => a.login.toLowerCase < b.login.toLowerCase)
-      .map(a => s"- [`@${a.login}`](${a.html_url})")
+      .sortBy(_._1.toLowerCase)
+      .map { case (login, html_url) => s"- [`@${login}`](${html_url})" }
       .mkString("\n")
 
 }
