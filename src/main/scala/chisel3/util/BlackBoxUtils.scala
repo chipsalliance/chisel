@@ -9,9 +9,6 @@ import firrtl.transforms.{BlackBoxPathAnno, BlackBoxResourceAnno, BlackBoxInline
 trait HasBlackBoxResource extends BlackBox {
   self: BlackBox =>
 
-  @deprecated("Use addResource instead", "3.2")
-  def setResource(blackBoxResource: String): Unit = addResource(blackBoxResource)
-
   /** Copies a resource file to the target directory
     *
     * Resource files are located in project_root/src/main/resources/.
