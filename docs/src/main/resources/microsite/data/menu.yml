@@ -117,16 +117,16 @@ options:
         menu_type: chisel3
         menu_section: reset
   - title: Appendix
-    url: chisel3/docs/wiki-deprecated/chisel3-vs-chisel2.html
+    url: chisel3/docs/appendix/chisel3-vs-chisel2.html
     menu_type: chisel3
     menu_section: appendix
     nested_options:
       - title: Chisel3 vs. Chisel2
-        url: chisel3/docs/wiki-deprecated/chisel3-vs-chisel2.html
+        url: chisel3/docs/appendix/chisel3-vs-chisel2.html
       - title: Experimental Features
-        url: chisel3/docs/wiki-deprecated/experimental-features.html
+        url: chisel3/docs/appendix/experimental-features.html
       - title: Upgrading From Scala 2.11
-        url: chisel3/docs/wiki-deprecated/upgrading-from-scala-2-11.html
+        url: chisel3/docs/appendix/upgrading-from-scala-2-11.html
   - title: Developers
     url: chisel3/docs/wiki-deprecated/developers.html
     menu_type: chisel3
