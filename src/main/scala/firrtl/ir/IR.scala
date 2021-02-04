@@ -4,6 +4,7 @@ package firrtl
 package ir
 
 import Utils.{dec2string, trim}
+import dataclass.data
 import firrtl.constraint.{Constraint, IsKnown, IsVar}
 import org.apache.commons.text.translate.{AggregateTranslator, JavaUnicodeEscaper, LookupTranslator}
 
@@ -593,7 +594,7 @@ case class Attach(info: Info, exprs: Seq[Expression]) extends Statement with Has
   def foreachString(f: String => Unit):           Unit = ()
   def foreachInfo(f:   Info => Unit):             Unit = f(info)
 }
-case class Stop(info: Info, ret: Int, clk: Expression, en: Expression)
+@data class Stop(info: Info, ret: Int, clk: Expression, en: Expression)
     extends Statement
     with HasInfo
     with UseSerializer {
@@ -607,8 +608,16 @@ case class Stop(info: Info, ret: Int, clk: Expression, en: Expression)
   def foreachType(f:   Type => Unit):   Unit = ()
   def foreachString(f: String => Unit): Unit = ()
   def foreachInfo(f:   Info => Unit):   Unit = f(info)
+  def copy(info: Info = info, ret: Int = ret, clk: Expression = clk, en: Expression = en): Stop = {
+    Stop(info, ret, clk, en)
+  }
 }
-case class Print(
+object Stop {
+  def unapply(s: Stop): Some[(Info, Int, Expression, Expression)] = {
+    Some((s.info, s.ret, s.clk, s.en))
+  }
+}
+@data class Print(
   info:   Info,
   string: StringLit,
   args:   Seq[Expression],
@@ -627,6 +636,20 @@ case class Print(
   def foreachType(f:   Type => Unit):   Unit = ()
   def foreachString(f: String => Unit): Unit = ()
   def foreachInfo(f:   Info => Unit):   Unit = f(info)
+  def copy(
+    info:   Info = info,
+    string: StringLit = string,
+    args:   Seq[Expression] = args,
+    clk:    Expression = clk,
+    en:     Expression = en
+  ): Print = {
+    Print(info, string, args, clk, en)
+  }
+}
+object Print {
+  def unapply(s: Print): Some[(Info, StringLit, Seq[Expression], Expression, Expression)] = {
+    Some((s.info, s.string, s.args, s.clk, s.en))
+  }
 }
 
 // formal
@@ -636,7 +659,7 @@ object Formal extends Enumeration {
   val Cover = Value("cover")
 }
 
-case class Verification(
+@data class Verification(
   op:   Formal.Value,
   info: Info,
   clk:  Expression,
@@ -657,6 +680,21 @@ case class Verification(
   def foreachType(f:   Type => Unit):   Unit = ()
   def foreachString(f: String => Unit): Unit = ()
   def foreachInfo(f:   Info => Unit):   Unit = f(info)
+  def copy(
+    op:   Formal.Value = op,
+    info: Info = info,
+    clk:  Expression = clk,
+    pred: Expression = pred,
+    en:   Expression = en,
+    msg:  StringLit = msg
+  ): Verification = {
+    Verification(op, info, clk, pred, en, msg)
+  }
+}
+object Verification {
+  def unapply(s: Verification): Some[(Formal.Value, Info, Expression, Expression, Expression, StringLit)] = {
+    Some((s.op, s.info, s.clk, s.pred, s.en, s.msg))
+  }
 }
 // end formal
 

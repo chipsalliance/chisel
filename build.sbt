@@ -22,6 +22,11 @@ lazy val commonSettings = Seq(
   crossScalaVersions := Seq("2.13.4", "2.12.13", "2.11.12")
 )
 
+lazy val isAtLeastScala213 = Def.setting {
+  import Ordering.Implicits._
+  CrossVersion.partialVersion(scalaVersion.value).exists(_ >= (2, 13))
+}
+
 lazy val firrtlSettings = Seq(
   name := "firrtl",
   version := "1.5-SNAPSHOT",
@@ -42,8 +47,18 @@ lazy val firrtlSettings = Seq(
     "com.github.scopt" %% "scopt" % "3.7.1",
     "net.jcazevedo" %% "moultingyaml" % "0.4.2",
     "org.json4s" %% "json4s-native" % "3.6.9",
-    "org.apache.commons" % "commons-text" % "1.8"
+    "org.apache.commons" % "commons-text" % "1.8",
+    "io.github.alexarchambault" %% "data-class" % "0.2.5",
   ),
+  // macros for the data-class library
+  libraryDependencies ++= {
+    if (isAtLeastScala213.value) Nil
+    else Seq(compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full))
+  },
+  scalacOptions ++= {
+    if (isAtLeastScala213.value) Seq("-Ymacro-annotations")
+    else Nil
+  },
   // starting with scala 2.13 the parallel collections are separate from the standard library
   libraryDependencies ++= {
     CrossVersion.partialVersion(scalaVersion.value) match {
