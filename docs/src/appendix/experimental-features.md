@@ -12,7 +12,7 @@ are supported. Chisel allows both the width and binary point to be inferred by t
 circuit descriptions. See [FixedPointSpec](https://github.com/freechipsproject/chisel3/tree/master/src/test/scala/chiselTests/FixedPointSpec.scala)
 
 ### Module Variants
-The standard Chisel *Module* requires a ```val io = IO(...)```, the experimental package introduces several
+The standard Chisel *Module* requires a `val io = IO(...)`, the experimental package introduces several
 new ways of defining Modules
 - BaseModule: no contents, instantiable
 - BlackBox extends BaseModule
@@ -23,44 +23,63 @@ new ways of defining Modules
 
 ### Bundle Literals
 
-Chisel 3.2 introduces an experimental mechanism for Bundle literals in #820, but this feature is largely incomplete and not ready for user code yet. The following is provided as documentation for library writers who want to take a stab at using this mechanism for their library's bundles.
+Bundle literals can be constructed via an experimental import:
 
-```mdoc scala
+```scala mdoc
+import chisel3._
+import chisel3.experimental.BundleLiterals._
+
 class MyBundle extends Bundle {
   val a = UInt(8.W)
   val b = Bool()
+}
 
-  // Bundle literal constructor code, which will be auto-generated using macro annotations in
-  // the future.
-  import chisel3.core.BundleLitBinding
-  import chisel3.internal.firrtl.{ULit, Width}
-
-  // Full bundle literal constructor
-  def Lit(aVal: UInt, bVal: Bool): MyBundle = {
-    val clone = cloneType
-    clone.selfBind(BundleLitBinding(Map(
-      clone.a -> litArgOfBits(aVal),
-      clone.b -> litArgOfBits(bVal)
-    )))
-    clone
-  }
-
-  // Partial bundle literal constructor
-  def Lit(aVal: UInt): MyBundle = {
-    val clone = cloneType
-    clone.selfBind(BundleLitBinding(Map(
-      clone.a -> litArgOfBits(aVal)
-    )))
-    clone
-  }
+class Example extends RawModule {
+  val out = IO(Output(new MyBundle))
+  out := (new MyBundle).Lit(_.a -> 8.U, _.b -> true.B)
 }
 ```
 
-Example usage:
-
-```scala
-val outsideBundleLit = (new MyBundle).Lit(42.U, true.B)
+```scala mdoc:verilog
+chisel3.stage.ChiselStage.emitVerilog(new Example)
 ```
+
+Partial specification is allowed, defaulting any unconnected fields to 0 (regardless of type).
+
+```scala mdoc
+class Example2 extends RawModule {
+  val out = IO(Output(new MyBundle))
+  out := (new MyBundle).Lit(_.b -> true.B)
+}
+```
+
+```scala mdoc:verilog
+chisel3.stage.ChiselStage.emitVerilog(new Example2)
+```
+
+Bundle literals can also be nested arbitrarily.
+
+```scala mdoc
+class ChildBundle extends Bundle {
+  val foo = UInt(8.W)
+}
+
+class ParentBundle extends Bundle {
+  val a = UInt(8.W)
+  val b = new ChildBundle
+}
+
+class Example3 extends RawModule {
+  val out = IO(Output(new ParentBundle))
+  out := (new ParentBundle).Lit(_.a -> 123.U, _.b -> (new ChildBundle).Lit(_.foo -> 42.U))
+}
+```
+
+```scala mdoc:verilog
+chisel3.stage.ChiselStage.emitVerilog(new Example3)
+```
+
+Vec literals are not yet supported.
 
 ### Interval Type
 
