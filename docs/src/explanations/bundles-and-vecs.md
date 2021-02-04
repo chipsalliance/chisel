@@ -3,14 +3,12 @@ layout: docs
 title:  "Bundles and Vecs"
 section: "chisel3"
 ---
-```
-
-```
 
 `Bundle` and `Vec` are classes that allow the user to expand the set of Chisel datatypes with aggregates of other types.
 
 Bundles group together several named fields of potentially different types into a coherent unit, much like a `struct` in
 C. Users define their own bundles by defining a class as a subclass of `Bundle`.
+
 ```scala mdoc:silent
 import chisel3._
 class MyFloat extends Bundle {
@@ -25,24 +23,12 @@ class ModuleWithFloatWire extends RawModule {
 }
 ```
 
-> Currently, there is no way to create a bundle literal like ```8.U``` for ```UInt```s. Therefore, in order to create
->literals for bundles, we must declare a [[wire|Combinational-Circuits#wires]] of that bundle type, and then assign
->values to it. We are working on a way to declare bundle literals without requiring the creation of a Wire node and
->assigning to it.
+You can create literal Bundles using the experimental [Bundle Literals](../appendix/experimental-features#bundle-literals) feature.
 
-```scala mdoc:silent
-class ModuleWithFloatConstant extends RawModule {
-  // Floating point constant.
-  val floatConst = Wire(new MyFloat)
-  floatConst.sign := true.B
-  floatConst.exponent := 10.U
-  floatConst.significand := 128.U
-}
-```
-
-A Scala convention is to capitalize the name of new classes and we suggest you follow that convention in Chisel too.
+Scala convention is to name classes using UpperCamelCase, and we suggest you follow that convention in your Chisel code.
 
 Vecs create an indexable vector of elements, and are constructed as follows:
+
 ```scala mdoc:silent
 class ModuleWithVec extends RawModule {
   // Vector of 5 23-bit signed integers.
@@ -63,6 +49,7 @@ superclass, `Data`.  Every object that ultimately inherits from
 
 Bundles and Vecs can be arbitrarily nested to build complex data
 structures:
+
 ```scala mdoc:silent
 class BigBundle extends Bundle {
  // Vector of 5 23-bit signed integers.
@@ -152,6 +139,7 @@ Note that in the vast majority of cases, **this is not required** as Chisel can 
 automatically.
 
 Here is an example of a parametrized bundle (`ExampleBundle`) that features a custom `cloneType`.
+
 ```scala mdoc:silent
 class ExampleBundle(a: Int, b: Int) extends Bundle {
     val foo = UInt(a.W)
