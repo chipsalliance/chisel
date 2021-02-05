@@ -173,7 +173,7 @@ lazy val docSettings = Seq(
         } else {
           s"v${version.value}"
         }
-      s"https://github.com/freechipsproject/firrtl/tree/$branch€{FILE_PATH}.scala"
+      s"https://github.com/chipsalliance/firrtl/tree/$branch€{FILE_PATH_EXT}#L€{FILE_LINE}"
     }
   ) ++ scalacDocOptionsVersion(scalaVersion.value)
 )
