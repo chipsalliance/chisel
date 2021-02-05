@@ -184,7 +184,7 @@ class QMCDecoder extends Decoder {
           if (((defaultTerm.mask >> i) & 1) != 0) {
             logic(addr, addrWidth, cache, simplifyDC(mint, maxt, addrWidth))
           } else {
-            val defbit = (defaultTerm.value.toInt >> i) & 1
+            val defbit = (defaultTerm.value >> i) & 1
             val t = if (defbit == 0) mint else maxt
             val bit = logic(addr, addrWidth, cache, simplify(t, dc, addrWidth))
             if (defbit == 0) bit else ~bit
