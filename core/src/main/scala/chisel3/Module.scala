@@ -16,6 +16,27 @@ import chisel3.internal.sourceinfo.{InstTransform, SourceInfo}
 import chisel3.experimental.BaseModule
 import _root_.firrtl.annotations.{ModuleName, ModuleTarget, IsModule}
 
+private object LogMe {
+  private val t0 = System.currentTimeMillis
+
+  private var level = 0
+
+  def push(x: AnyRef) {
+    System.gc()
+    val l = "  " * level
+    val m = (Runtime.getRuntime.totalMemory - Runtime.getRuntime.freeMemory) >> 20
+    val n = x.getClass.getName
+    val t = System.currentTimeMillis - t0
+    println(f"$m%13d MB $t%10d ms $l%s $n%s")
+
+    level += 1
+  }
+
+  def pop() {
+    level -= 1
+  }
+}
+
 object Module extends SourceInfoDoc {
   /** A wrapper method that all Module instantiations must be wrapped in
     * (necessary to help Chisel track internal state).
@@ -52,6 +73,7 @@ object Module extends SourceInfoDoc {
     //   - reset whenStack to be empty
     //   - set currentClockAndReset
     val module: T = bc  // bc is actually evaluated here
+    LogMe.pop()
 
     if (Builder.whenDepth != 0) {
       throwException("Internal Error! when() scope depth is != 0, this should have been caught!")
@@ -160,6 +182,7 @@ package experimental {
     */
   // TODO: seal this?
   abstract class BaseModule extends HasId {
+    LogMe.push(this)
     //
     // Builder Internals - this tracks which Module RTL construction belongs to.
     //
