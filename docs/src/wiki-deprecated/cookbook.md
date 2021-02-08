@@ -282,12 +282,12 @@ class ModuleWithOptionalIOs(flag: Boolean) extends Module {
 }
 ```
 
-The following is an example for a `MultiIOModule` where an entire `IO` is optional:
+The following is an example where an entire `IO` is optional:
 
 ```scala mdoc:silent:reset
 import chisel3._
 
-class ModuleWithOptionalIO(flag: Boolean) extends MultiIOModule {
+class ModuleWithOptionalIO(flag: Boolean) extends Module {
   val in = if (flag) Some(IO(Input(Bool()))) else None
   val out = IO(Output(Bool()))
 

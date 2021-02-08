@@ -4,7 +4,7 @@ package chiselTests
 
 import firrtl._
 import chisel3._
-import chisel3.core.annotate
+import chisel3.experimental.annotate
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import chisel3.util.experimental.{ForceNameAnnotation, ForceNamesTransform, InlineInstance, forceName}
 import firrtl.annotations.{Annotation, ReferenceTarget}
@@ -14,7 +14,7 @@ import logger.{LogLevel, LogLevelAnnotation}
 
 /** Object containing Modules used for testing */
 object ForceNamesHierarchy {
-  class WrapperExample extends MultiIOModule {
+  class WrapperExample extends Module {
     val in = IO(Input(UInt(3.W)))
     val out = IO(Output(UInt(3.W)))
     val inst = Module(new Wrapper)
@@ -22,7 +22,7 @@ object ForceNamesHierarchy {
     out := inst.out
     forceName(out, "outt")
   }
-  class Wrapper extends MultiIOModule with InlineInstance {
+  class Wrapper extends Module with InlineInstance {
     val in = IO(Input(UInt(3.W)))
     val out = IO(Output(UInt(3.W)))
     val inst = Module(new MyLeaf)
@@ -30,12 +30,12 @@ object ForceNamesHierarchy {
     inst.in := in
     out := inst.out
   }
-  class MyLeaf extends MultiIOModule {
+  class MyLeaf extends Module {
     val in = IO(Input(UInt(3.W)))
     val out = IO(Output(UInt(3.W)))
     out := in
   }
-  class RenamePortsExample extends MultiIOModule {
+  class RenamePortsExample extends Module {
     val in = IO(Input(UInt(3.W)))
     val out = IO(Output(UInt(3.W)))
     val inst = Module(new MyLeaf)
@@ -43,13 +43,13 @@ object ForceNamesHierarchy {
     out := inst.out
     forceName(inst.in, "inn")
   }
-  class ConflictingName extends MultiIOModule {
+  class ConflictingName extends Module {
     val in = IO(Input(UInt(3.W)))
     val out = IO(Output(UInt(3.W)))
     out := in
     forceName(out, "in")
   }
-  class BundleName extends MultiIOModule {
+  class BundleName extends Module {
     val in = IO(new Bundle {
       val a = Input(UInt(3.W))
       val b = Input(UInt(3.W))

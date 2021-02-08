@@ -7,7 +7,7 @@ section: "chisel3"
 ```scala mdoc:invisible
 import chisel3._
 
-class Submodule extends MultiIOModule
+class Submodule extends Module
 ```
 
 As of Chisel 3.2.0, Chisel 3 supports both synchronous and asynchronous reset,
@@ -60,13 +60,13 @@ rather than relying on _Reset Inference_, you can mixin one of the following tra
 For example:
 
 ```scala mdoc:silent
-class MyAlwaysSyncResetModule extends MultiIOModule with RequireSyncReset {
+class MyAlwaysSyncResetModule extends Module with RequireSyncReset {
   val mySyncResetReg = RegInit(false.B) // reset is of type Bool
 }
 ```
 
 ```scala mdoc:silent
-class MyAlwaysAsyncResetModule extends MultiIOModule with RequireAsyncReset {
+class MyAlwaysAsyncResetModule extends Module with RequireAsyncReset {
   val myAsyncResetReg = RegInit(false.B) // reset is of type AsyncReset
 }
 ```
@@ -123,7 +123,7 @@ See ["Multiple Clock Domains"](../explanations/multi-clock) for more information
 The following will make `myReg` as well as both `resetAgnosticReg`s synchronously reset:
 
 ```scala mdoc:silent
-class ForcedSyncReset extends MultiIOModule {
+class ForcedSyncReset extends Module {
   // withReset's argument becomes the implicit reset in its scope
   withReset (reset.asBool) {
     val myReg = RegInit(0.U)
@@ -140,7 +140,7 @@ class ForcedSyncReset extends MultiIOModule {
 The following will make `myReg` as well as both `resetAgnosticReg`s asynchronously reset:
 
 ```scala mdoc:silent
-class ForcedAysncReset extends MultiIOModule {
+class ForcedAysncReset extends Module {
   // withReset's argument becomes the implicit reset in its scope
   withReset (reset.asAsyncReset){
     val myReg = RegInit(0.U)
@@ -164,7 +164,7 @@ It is **not** legal to override the reset type using last-connect semantics
 unless you are overriding a `DontCare`:
 
 ```scala mdoc:silent
-class MyModule extends MultiIOModule {
+class MyModule extends Module {
   val resetBool = Wire(Reset())
   resetBool := DontCare
   resetBool := false.B // this is fine

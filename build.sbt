@@ -15,13 +15,9 @@ lazy val commonSettings = Seq (
   organization := "edu.berkeley.cs",
   version := "3.5-SNAPSHOT",
   autoAPIMappings := true,
-  scalaVersion := "2.12.12",
-  crossScalaVersions := Seq("2.12.12"),
+  scalaVersion := "2.12.13",
+  crossScalaVersions := Seq("2.12.13"),
   scalacOptions := Seq("-deprecation", "-feature",
-    //  We're building with Scala > 2.11, enable the compile option
-    //  switch to support our anonymous Bundle definitions:
-    //  https://github.com/scala/bug/issues/10047
-    "-Xsource:2.11"
   ),
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full),
@@ -96,6 +92,7 @@ lazy val pluginScalaVersions = Seq(
   "2.12.10",
   "2.12.11",
   "2.12.12",
+  "2.12.13",
 )
 
 lazy val plugin = (project in file("plugin")).
@@ -199,7 +196,7 @@ lazy val chisel = (project in file(".")).
           } else {
             s"v${version.value}"
           }
-        s"https://github.com/freechipsproject/chisel3/tree/$branch/€{FILE_PATH}.scala"
+        s"https://github.com/chipsalliance/chisel3/tree/$branch€{FILE_PATH_EXT}#L€{FILE_LINE}"
       }
     )
   )

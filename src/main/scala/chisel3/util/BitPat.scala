@@ -91,12 +91,6 @@ object BitPat {
     /** @group SourceInfoTransformMacro */
     def do_=/= (that: BitPat)
                (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that =/= x
-
-    final def != (that: BitPat): Bool = macro SourceInfoTransform.thatArg
-    @chiselRuntimeDeprecated
-    @deprecated("Use '=/=', which avoids potential precedence problems", "3.0")
-    def do_!= (that: BitPat)
-              (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = that != x
   }
 }
 
@@ -125,11 +119,4 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) extends Sou
     !(this === that)
   }
 
-  def != (that: UInt): Bool = macro SourceInfoTransform.thatArg
-  @chiselRuntimeDeprecated
-  @deprecated("Use '=/=', which avoids potential precedence problems", "3.0")
-  def do_!= (that: UInt)
-      (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
-    this =/= that
-  }
 }
