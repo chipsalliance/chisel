@@ -9,8 +9,8 @@ import chisel3.testers.BasicTester
 import chisel3.util._
 import chisel3.util.random.LFSR
 
-class ThingsPassThroughTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int) extends BasicTester {
-  val q = Module(new Queue(UInt(bitWidth.W), queueDepth))
+class ThingsPassThroughTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean) extends BasicTester {
+  val q = Module(new Queue(UInt(bitWidth.W), queueDepth, useSyncReadMem = useSyncReadMem))
   val elems = VecInit(elements.map {
     _.asUInt()
   })
@@ -34,8 +34,8 @@ class ThingsPassThroughTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int
   }
 }
 
-class QueueReasonableReadyValid(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int) extends BasicTester {
-  val q = Module(new Queue(UInt(bitWidth.W), queueDepth))
+class QueueReasonableReadyValid(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean) extends BasicTester {
+  val q = Module(new Queue(UInt(bitWidth.W), queueDepth, useSyncReadMem = useSyncReadMem))
   val elems = VecInit(elements.map {
     _.asUInt()
   })
@@ -62,8 +62,8 @@ class QueueReasonableReadyValid(elements: Seq[Int], queueDepth: Int, bitWidth: I
   }
 }
 
-class CountIsCorrectTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int) extends BasicTester {
-  val q = Module(new Queue(UInt(bitWidth.W), queueDepth))
+class CountIsCorrectTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean) extends BasicTester {
+  val q = Module(new Queue(UInt(bitWidth.W), queueDepth, useSyncReadMem = useSyncReadMem))
   val elems = VecInit(elements.map {
     _.asUInt(bitWidth.W)
   })
@@ -89,8 +89,8 @@ class CountIsCorrectTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, t
   }
 }
 
-class QueueSinglePipeTester(elements: Seq[Int], bitWidth: Int, tap: Int) extends BasicTester {
-  val q = Module(new Queue(UInt(bitWidth.W), 1, pipe = true))
+class QueueSinglePipeTester(elements: Seq[Int], bitWidth: Int, tap: Int, useSyncReadMem: Boolean) extends BasicTester {
+  val q = Module(new Queue(UInt(bitWidth.W), 1, pipe = true, useSyncReadMem = useSyncReadMem))
   val elems = VecInit(elements.map {
     _.asUInt(bitWidth.W)
   })
@@ -115,8 +115,8 @@ class QueueSinglePipeTester(elements: Seq[Int], bitWidth: Int, tap: Int) extends
   }
 }
 
-class QueuePipeTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int) extends BasicTester {
-  val q = Module(new Queue(UInt(bitWidth.W), queueDepth, pipe = true))
+class QueuePipeTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean) extends BasicTester {
+  val q = Module(new Queue(UInt(bitWidth.W), queueDepth, pipe = true, useSyncReadMem = useSyncReadMem))
   val elems = VecInit(elements.map {
     _.asUInt(bitWidth.W)
   })
@@ -141,8 +141,8 @@ class QueuePipeTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: I
   }
 }
 
-class QueueFlowTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int) extends BasicTester {
-  val q = Module(new Queue(UInt(bitWidth.W), queueDepth, flow = true))
+class QueueFlowTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean) extends BasicTester {
+  val q = Module(new Queue(UInt(bitWidth.W), queueDepth, flow = true,  useSyncReadMem = useSyncReadMem))
   val elems = VecInit(elements.map {
     _.asUInt()
   })
@@ -169,9 +169,9 @@ class QueueFlowTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: I
   }
 }
 
-class QueueFactoryTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int) extends BasicTester {
+class QueueFactoryTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean) extends BasicTester {
   val enq = Wire(Decoupled(UInt(bitWidth.W)))
-  val deq = Queue(enq, queueDepth)
+  val deq = Queue(enq, queueDepth, useSyncReadMem = useSyncReadMem)
 
   val elems = VecInit(elements.map {
     _.asUInt()
@@ -202,70 +202,70 @@ class QueueSpec extends ChiselPropSpec {
   implicit val noShrinkInt = Shrink[Int](_ => Stream.empty)
 
   property("Queue should have things pass through") {
-    forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15)) { (depth, se, tap) =>
+    forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15), Gen.oneOf(true, false)) { (depth, se, tap, isSync) =>
       whenever(se._1 >= 1 && depth >= 1 && se._2.nonEmpty) {
         assertTesterPasses {
-          new ThingsPassThroughTester(se._2, depth, se._1, tap)
+          new ThingsPassThroughTester(se._2, depth, se._1, tap, isSync)
         }
       }
     }
   }
 
   property("Queue should have reasonable ready/valid") {
-    forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15)) { (depth, se, tap) =>
+    forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15), Gen.oneOf(true, false)) { (depth, se, tap, isSync) =>
       whenever(se._1 >= 1 && depth >= 1 && se._2.nonEmpty) {
         assertTesterPasses {
-          new QueueReasonableReadyValid(se._2, depth, se._1, tap)
+          new QueueReasonableReadyValid(se._2, depth, se._1, tap, isSync)
         }
       }
     }
   }
 
   property("Queue should have correct count") {
-    forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15)) { (depth, se, tap) =>
+    forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15), Gen.oneOf(true, false)) { (depth, se, tap, isSync) =>
       whenever(se._1 >= 1 && depth >= 1 && se._2.nonEmpty) {
         assertTesterPasses {
-          new CountIsCorrectTester(se._2, depth, se._1, tap)
+          new CountIsCorrectTester(se._2, depth, se._1, tap, isSync)
         }
       }
     }
   }
 
   property("Queue pipe should work for 1-element queues") {
-    forAll(safeUIntN(20), Gen.choose(0, 15)) { (se, tap) =>
+    forAll(safeUIntN(20), Gen.choose(0, 15), Gen.oneOf(true, false)) { (se, tap, isSync) =>
       whenever(se._1 >= 1 && se._2.nonEmpty) {
         assertTesterPasses {
-          new QueueSinglePipeTester(se._2, se._1, tap)
+          new QueueSinglePipeTester(se._2, se._1, tap, isSync)
         }
       }
     }
   }
 
   property("Queue pipe should work for more general queues") {
-    forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15)) { (depth, se, tap) =>
+    forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15), Gen.oneOf(true, false)) { (depth, se, tap, isSync) =>
       whenever(se._1 >= 1 && depth >= 1 && se._2.nonEmpty) {
         assertTesterPasses {
-          new QueuePipeTester(se._2, depth, se._1, tap)
+          new QueuePipeTester(se._2, depth, se._1, tap, isSync)
         }
       }
     }
   }
 
   property("Queue flow should work") {
-    forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15)) { (depth, se, tap) =>
+    forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15), Gen.oneOf(true, false)) { (depth, se, tap, isSync) =>
       whenever(se._1 >= 1 && depth >= 1 && se._2.nonEmpty) {
         assertTesterPasses {
-          new QueueFlowTester(se._2, depth, se._1, tap)
+          new QueueFlowTester(se._2, depth, se._1, tap, isSync)
         }
       }
     }
   }
 
   property("Queue companion object factory method should work") {
-    forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15)) { (depth, se, tap) =>
+    forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15), Gen.oneOf(true, false)) { (depth, se, tap, isSync) =>
       whenever(se._1 >= 1 && se._2.nonEmpty) {
         assertTesterPasses {
-          new QueueFactoryTester(se._2, depth, se._1, tap)
+          new QueueFactoryTester(se._2, depth, se._1, tap, isSync)
         }
       }
     }
