@@ -35,6 +35,7 @@ object Mem {
     }
     val mt  = t.cloneTypeFull
     val mem = new Mem(mt, size)
+    mt.bind(MemTypeBinding(mem))
     pushCommand(DefMemory(sourceInfo, mem, mt, size))
     mem
   }
@@ -45,6 +46,8 @@ object Mem {
 }
 
 sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt) extends HasId with NamedComponent with SourceInfoDoc {
+  _parent.foreach(_.addId(this))
+
   // REVIEW TODO: make accessors (static/dynamic, read/write) combinations consistent.
 
   /** Creates a read accessor into the memory with static addressing. See the
@@ -174,6 +177,7 @@ object SyncReadMem {
     }
     val mt  = t.cloneTypeFull
     val mem = new SyncReadMem(mt, size, ruw)
+    mt.bind(MemTypeBinding(mem))
     pushCommand(DefSeqMemory(sourceInfo, mem, mt, size, ruw))
     mem
   }
