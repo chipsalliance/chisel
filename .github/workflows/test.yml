@@ -35,7 +35,7 @@ jobs:
         if: matrix.scala == '2.12.13'
         run: sbt ++${{ matrix.scala }} docs/mdoc
       - name: Test
-        run: sbt ++${{ matrix.scala }} test
+        run: sbt ++${{ matrix.scala }} test noPluginTests/test
       - name: Binary compatibility
         run: sbt ++${{ matrix.scala }} mimaReportBinaryIssues
 
