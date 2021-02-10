@@ -339,13 +339,14 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   private[chisel3] final def isSynthesizable: Boolean = _binding.map {
     case ChildBinding(parent) => parent.isSynthesizable
     case _: TopBinding => true
-    case _: SampleElementBinding[_] => false
+    case (_: SampleElementBinding[_] | _: MemTypeBinding[_]) => false
   }.getOrElse(false)
 
   private[chisel3] def topBindingOpt: Option[TopBinding] = _binding.flatMap {
     case ChildBinding(parent) => parent.topBindingOpt
     case bindingVal: TopBinding => Some(bindingVal)
     case SampleElementBinding(parent) => parent.topBindingOpt
+    case _: MemTypeBinding[_] => None
   }
 
   private[chisel3] def topBinding: TopBinding = topBindingOpt.get
@@ -355,7 +356,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     * node is the top-level.
     * binding and direction are valid after this call completes.
     */
-  private[chisel3] def bind(target: Binding, parentDirection: SpecifiedDirection = SpecifiedDirection.Unspecified)
+  private[chisel3] def bind(target: Binding, parentDirection: SpecifiedDirection = SpecifiedDirection.Unspecified): Unit
 
   // Both _direction and _resolvedUserDirection are saved versions of computed variables (for
   // efficiency, avoid expensive recomputation of frequent operations).

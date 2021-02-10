@@ -201,6 +201,11 @@ lazy val chisel = (project in file(".")).
     )
   )
 
+lazy val noPluginTests = (project in file ("no-plugin-tests")).
+  dependsOn(chisel).
+  settings(commonSettings: _*).
+  settings(chiselSettings: _*)
+
 lazy val docs = project       // new documentation project
   .in(file("docs-target")) // important: it must not be docs/
   .dependsOn(chisel)
