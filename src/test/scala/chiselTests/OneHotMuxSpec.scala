@@ -37,26 +37,18 @@ class OneHotMuxSpec extends AnyFreeSpec with Matchers with ChiselRunners {
     }
   }
   "simple one hot mux with all fixed width bundles but with different bundles should Not work" in {
-    try {
+    intercept[IllegalArgumentException] {
       assertTesterPasses(new DifferentBundleOneHotTester)
-    } catch {
-      case a: ChiselException => a.getCause match {
-        case _: IllegalArgumentException =>
-      }
     }
   }
   "UIntToOH with output width greater than 2^(input width)" in {
     assertTesterPasses(new UIntToOHTester)
   }
   "UIntToOH should not accept width of zero (until zero-width wires are fixed" in {
-    try {
+    intercept[IllegalArgumentException] {
       assertTesterPasses(new BasicTester {
         val out = UIntToOH(0.U, 0)
       })
-    } catch {
-      case a: ChiselException => a.getCause match {
-        case _: IllegalArgumentException =>
-      }
     }
   }
 

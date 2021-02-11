@@ -30,6 +30,10 @@ object ChiselStageSpec {
     out := memory(bar.out)
   }
 
+  class UserExceptionModule extends RawModule {
+    assert(false, "User threw an exception")
+  }
+
 }
 
 class ChiselStageSpec extends AnyFlatSpec with Matchers with Utils {
@@ -40,13 +44,13 @@ class ChiselStageSpec extends AnyFlatSpec with Matchers with Utils {
     val stage = new ChiselStage
   }
 
-  behavior of "ChiselStage.emitChirrtl"
+  behavior of "ChiselStage$.emitChirrtl"
 
   it should "return a CHIRRTL string" in {
     ChiselStage.emitChirrtl(new Foo) should include ("infer mport")
   }
 
-  behavior of "ChiselStage.emitFirrtl"
+  behavior of "ChiselStage$.emitFirrtl"
 
   it should "return a High FIRRTL string" in {
     ChiselStage.emitFirrtl(new Foo) should include ("mem memory")
@@ -58,7 +62,7 @@ class ChiselStageSpec extends AnyFlatSpec with Matchers with Utils {
       .emitFirrtl(new Foo, args) should include ("module Bar")
   }
 
-  behavior of "ChiselStage.emitVerilog"
+  behavior of "ChiselStage$.emitVerilog"
 
   it should "return a Verilog string" in {
     ChiselStage.emitVerilog(new Foo) should include ("endmodule")
@@ -140,6 +144,60 @@ class ChiselStageSpec extends AnyFlatSpec with Matchers with Utils {
 
     info("Elaborate only runs once")
     exactly (1, order) should be (Dependency[chisel3.stage.phases.Elaborate])
+  }
+
+  behavior of "ChiselStage$ exception handling"
+
+  it should "truncate a user exception" in {
+    info("The user's java.lang.AssertionError was thrown")
+    val exception = intercept[java.lang.AssertionError] {
+      ChiselStage.emitChirrtl(new UserExceptionModule)
+    }
+
+    val message = exception.getMessage
+    info("The exception includes the user's message")
+    message should include ("User threw an exception")
+
+    info("The stack trace is trimmed")
+    exception.getStackTrace.mkString("\n") should not include ("java")
+  }
+
+  behavior of "ChiselStage exception handling"
+
+  it should "truncate a user exception" in {
+    info("The user's java.lang.AssertionError was thrown")
+    val exception = intercept[java.lang.AssertionError] {
+      (new ChiselStage).emitChirrtl(new UserExceptionModule)
+    }
+
+    info(s""" -  Exception was a ${exception.getClass.getName}""")
+
+    val message = exception.getMessage
+    info("The exception includes the user's message")
+    message should include ("User threw an exception")
+
+    val stackTrace = exception.getStackTrace.mkString("\n")
+    info("The stack trace is trimmed")
+    stackTrace should not include ("java")
+
+    info("The stack trace include information about running --full-stacktrace")
+    stackTrace should include ("--full-stacktrace")
+  }
+
+  it should """not truncate a user exception with "--full-stacktrace"""" in {
+    info("The user's java.lang.AssertionError was thrown")
+    val exception = intercept[java.lang.AssertionError] {
+      (new ChiselStage).emitChirrtl(new UserExceptionModule, Array("--full-stacktrace"))
+    }
+
+    info(s""" -  Exception was a ${exception.getClass.getName}""")
+
+    val message = exception.getMessage
+    info("The exception includes the user's message")
+    message should include ("User threw an exception")
+
+    info("The stack trace is not trimmed")
+    exception.getStackTrace.mkString("\n") should include ("java")
   }
 
 }
