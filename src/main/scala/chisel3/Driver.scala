@@ -5,7 +5,7 @@ package chisel3
 import chisel3.internal.ErrorLog
 import internal.firrtl._
 import firrtl._
-import firrtl.options.{Dependency, Phase, PhaseManager, StageError}
+import firrtl.options.{Dependency, Phase, PhaseManager}
 import firrtl.options.phases.DeletedWrapper
 import firrtl.options.Viewer.view
 import firrtl.annotations.JsonProtocol
@@ -241,10 +241,18 @@ object Driver extends BackendCompilationUtilities {
     val annosx = try {
       phases.foldLeft(annos)( (a, p) => p.transform(a) )
     } catch {
-      /* ChiselStage and FirrtlStage can throw StageError. Since Driver is not a StageMain, it cannot catch these. While
-       * Driver is deprecated and removed in 3.2.1+, the Driver catches all errors.
+      /* Catch all errors and show a fake stack trace. If the stack trace was minified elsewhere, e.g., in the Elaborate
+       * phase, then it will show up minified here. The Driver cannot fail for any reason. Instead, a
+       * ChiselExecutionFailure result will show up when trying to view the resulting annotation sequence.
        */
-      case e: StageError => annos
+      case scala.util.control.NonFatal(a) =>
+        val fakeStackTrace =
+          Predef
+            .augmentString(a.getStackTrace().view.mkString("\tat ", "\n\tat ", ""))
+            .lines
+            .mkString(s"${ErrorLog.errTag} ", s"\n${ErrorLog.errTag} ", "")
+        println(fakeStackTrace)
+        annos
     }
 
     view[ChiselExecutionResult](annosx)

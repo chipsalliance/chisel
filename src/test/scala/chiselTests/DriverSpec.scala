@@ -19,9 +19,10 @@ class DummyModule extends Module {
   io.out := io.in
 }
 
-class TypeErrorModule extends chisel3.MultiIOModule {
+class UserErrorModule extends chisel3.MultiIOModule {
   val in = IO(Input(UInt(1.W)))
   val out = IO(Output(SInt(1.W)))
+  assert(false, "The user wrote an assertion that failed")
   out := in
 }
 
@@ -86,9 +87,9 @@ class DriverSpec extends AnyFreeSpec with Matchers with chiselTests.Utils {
       val targetDir = "test_run_dir"
       val args = Array("--compiler", "low", "--target-dir", targetDir)
 
-      val (stdout, stderr, result) = grabStdOutErr { Driver.execute(args, () => new TypeErrorModule) }
+      val (stdout, stderr, result) = grabStdOutErr { Driver.execute(args, () => new UserErrorModule) }
 
-      info("stdout shows a trimmed stack trace")
+      info("""stdout should include "--full-stacktrace"""")
       stdout should include ("Stack trace trimmed to user code only")
 
       info("stdout does not include FIRRTL information")
