@@ -10,7 +10,9 @@ import nsc.plugins.{Plugin, PluginComponent}
 class ChiselPlugin(val global: Global) extends Plugin {
   val name = "chiselplugin"
   val description = "Plugin for Chisel 3 Hardware Description Language"
-  val components: List[PluginComponent] = List[PluginComponent](new ChiselComponent(global))
+  val components: List[PluginComponent] = List[PluginComponent](
+    new ChiselComponent(global),
+    new BundleComponent(global)
+  )
 }
-
 

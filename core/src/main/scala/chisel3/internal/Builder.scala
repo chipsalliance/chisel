@@ -311,6 +311,8 @@ private[chisel3] class DynamicContext(val annotationSeq: AnnotationSeq) {
   val components = ArrayBuffer[Component]()
   val annotations = ArrayBuffer[ChiselAnnotation]()
   var currentModule: Option[BaseModule] = None
+  // This is only used for testing, it can be removed if the plugin becomes mandatory
+  var allowReflectiveAutoCloneType = true
 
   /** Contains a mapping from a elaborated module to their aspect
     * Set by [[ModuleAspect]]
@@ -528,6 +530,12 @@ private[chisel3] object Builder extends LazyLogging {
   def currentReset: Option[Reset] = dynamicContext.currentReset
   def currentReset_=(newReset: Option[Reset]): Unit = {
     dynamicContext.currentReset = newReset
+  }
+
+  // This should only be used for testing
+  def allowReflectiveAutoCloneType: Boolean = dynamicContext.allowReflectiveAutoCloneType
+  def allowReflectiveAutoCloneType_=(value: Boolean): Unit = {
+    dynamicContext.allowReflectiveAutoCloneType = value
   }
 
   def forcedClock: Clock = currentClock.getOrElse(
