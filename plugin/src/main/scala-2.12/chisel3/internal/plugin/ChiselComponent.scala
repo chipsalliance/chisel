@@ -19,9 +19,10 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
   class ChiselComponentPhase(prev: Phase) extends StdPhase(prev) {
     override def name: String = phaseName
     def apply(unit: CompilationUnit): Unit = {
-      // This plugin doesn't work on Scala 2.11. Rather than complicate the sbt build flow,
+      // This plugin doesn't work on Scala 2.11 nor Scala 3. Rather than complicate the sbt build flow,
       // instead we just check the version and if its an early Scala version, the plugin does nothing
-      if(scala.util.Properties.versionNumberString.split('.')(1).toInt >= 12) {
+      val scalaVersion = scala.util.Properties.versionNumberString.split('.')
+      if (scalaVersion(0).toInt == 2 && scalaVersion(1).toInt >= 12) {
         unit.body = new MyTypingTransformer(unit).transform(unit.body)
       }
     }
