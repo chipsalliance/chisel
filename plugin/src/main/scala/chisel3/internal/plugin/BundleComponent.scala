@@ -9,6 +9,7 @@ import scala.tools.nsc.plugins.PluginComponent
 import scala.tools.nsc.symtab.Flags
 import scala.tools.nsc.transform.TypingTransformers
 
+<<<<<<< HEAD:plugin/src/main/scala/chisel3/internal/plugin/BundleComponent.scala
 /** Performs three operations
   * 1) Records that this plugin ran on a bundle by adding a method
   *    `override protected def _usingPlugin: Boolean = true`
@@ -22,6 +23,10 @@ import scala.tools.nsc.transform.TypingTransformers
 private[plugin] class BundleComponent(val global: Global, arguments: ChiselPluginArguments)
     extends PluginComponent
     with TypingTransformers {
+=======
+// TODO This component could also implement val elements in Bundles
+private[plugin] class BundleComponent(val global: Global) extends PluginComponent with TypingTransformers {
+>>>>>>> 14942312 ([plugin] Implement autoclonetype in the compiler plugin):plugin/src/main/scala-2.12/chisel3/internal/plugin/BundleComponent.scala
   import global._
 
   val phaseName: String = "chiselbundlephase"
@@ -31,7 +36,14 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
   private class BundlePhase(prev: Phase) extends StdPhase(prev) {
     override def name: String = phaseName
     def apply(unit: CompilationUnit): Unit = {
+<<<<<<< HEAD:plugin/src/main/scala/chisel3/internal/plugin/BundleComponent.scala
       if (ChiselPlugin.runComponent(global, arguments)(unit)) {
+=======
+      // This plugin doesn't work on Scala 2.11 nor Scala 3. Rather than complicate the sbt build flow,
+      // instead we just check the version and if its an early Scala version, the plugin does nothing
+      val scalaVersion = scala.util.Properties.versionNumberString.split('.')
+      if (scalaVersion(0).toInt == 2 && scalaVersion(1).toInt >= 12) {
+>>>>>>> 14942312 ([plugin] Implement autoclonetype in the compiler plugin):plugin/src/main/scala-2.12/chisel3/internal/plugin/BundleComponent.scala
         unit.body = new MyTypingTransformer(unit).transform(unit.body)
       }
     }
@@ -41,6 +53,7 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
 
     def inferType(t: Tree): Type = localTyper.typed(t, nsc.Mode.TYPEmode).tpe
 
+<<<<<<< HEAD:plugin/src/main/scala/chisel3/internal/plugin/BundleComponent.scala
     val bundleTpe:      Type = inferType(tq"chisel3.Bundle")
     val dataTpe:        Type = inferType(tq"chisel3.Data")
     val ignoreSeqTpe:   Type = inferType(tq"chisel3.IgnoreSeqInBundle")
@@ -76,6 +89,16 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
 
     // Cached because this is run on every argument to every Bundle
     val isDataCache = new mutable.HashMap[Type, Boolean]
+=======
+    val bundleTpe = inferType(tq"chisel3.Bundle")
+    val dataTpe = inferType(tq"chisel3.Data")
+
+    // Not cached because it should only be run once per class (thus once per Type)
+    def isBundle(sym: Symbol): Boolean = sym.tpe <:< bundleTpe
+
+    val isDataCache = new mutable.HashMap[Type, Boolean]
+    // Cached because this is run on every argument to every Bundle
+>>>>>>> 14942312 ([plugin] Implement autoclonetype in the compiler plugin):plugin/src/main/scala-2.12/chisel3/internal/plugin/BundleComponent.scala
     def isData(sym: Symbol): Boolean = isDataCache.getOrElseUpdate(sym.tpe, sym.tpe <:< dataTpe)
 
     def cloneTypeFull(tree: Tree): Tree =
@@ -93,38 +116,59 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
         case con: DefDef if con.symbol.isPrimaryConstructor =>
           primaryConstructor = Some(con)
         case d: DefDef if isNullaryMethodNamed("_cloneTypeImpl", d) =>
+<<<<<<< HEAD:plugin/src/main/scala/chisel3/internal/plugin/BundleComponent.scala
           val msg = "Users cannot override _cloneTypeImpl. Let the compiler plugin generate it."
           global.globalError(d.pos, msg)
         case d: DefDef if isNullaryMethodNamed("_elementsImpl", d) =>
           val msg = "Users cannot override _elementsImpl. Let the compiler plugin generate it."
+=======
+          val msg = "Users cannot override _cloneTypeImpl. Let the compiler plugin generate it. If you must, override cloneType instead."
+>>>>>>> 14942312 ([plugin] Implement autoclonetype in the compiler plugin):plugin/src/main/scala-2.12/chisel3/internal/plugin/BundleComponent.scala
           global.globalError(d.pos, msg)
         case d: DefDef if isNullaryMethodNamed("_usingPlugin", d) =>
           val msg = "Users cannot override _usingPlugin, it is for the compiler plugin's use only."
           global.globalError(d.pos, msg)
+<<<<<<< HEAD:plugin/src/main/scala/chisel3/internal/plugin/BundleComponent.scala
         case d: DefDef if isNullaryMethodNamed("cloneType", d) =>
           val msg = "Users cannot override cloneType.  Let the compiler plugin generate it."
           global.globalError(d.pos, msg)
+=======
+>>>>>>> 14942312 ([plugin] Implement autoclonetype in the compiler plugin):plugin/src/main/scala-2.12/chisel3/internal/plugin/BundleComponent.scala
         case _ =>
       }
       (primaryConstructor, paramAccessors.toList)
     }
 
+<<<<<<< HEAD:plugin/src/main/scala/chisel3/internal/plugin/BundleComponent.scala
     override def transform(tree: Tree): Tree = tree match {
 
       case bundle: ClassDef if isBundle(bundle.symbol) =>
+=======
+
+    override def transform(tree: Tree): Tree = tree match {
+
+      case bundle: ClassDef if isBundle(bundle.symbol) && !bundle.mods.hasFlag(Flag.ABSTRACT) =>
+
+>>>>>>> 14942312 ([plugin] Implement autoclonetype in the compiler plugin):plugin/src/main/scala-2.12/chisel3/internal/plugin/BundleComponent.scala
         // ==================== Generate _cloneTypeImpl ====================
         val (con, params) = getConstructorAndParams(bundle.impl.body)
         if (con.isEmpty) {
           global.reporter.warning(bundle.pos, "Unable to determine primary constructor!")
           return super.transform(tree)
         }
+<<<<<<< HEAD:plugin/src/main/scala/chisel3/internal/plugin/BundleComponent.scala
 
         val constructor = con.get
+=======
+        val constructor = con.get
+
+>>>>>>> 14942312 ([plugin] Implement autoclonetype in the compiler plugin):plugin/src/main/scala-2.12/chisel3/internal/plugin/BundleComponent.scala
         val thiz = gen.mkAttributedThis(bundle.symbol)
 
         // The params have spaces after them (Scalac implementation detail)
         val paramLookup: String => Symbol = params.map(sym => sym.name.toString.trim -> sym).toMap
 
+<<<<<<< HEAD:plugin/src/main/scala/chisel3/internal/plugin/BundleComponent.scala
         val cloneTypeImplOpt = if (!bundle.mods.hasFlag(Flag.ABSTRACT)) {
           // Create a this.<ref> for each field matching order of constructor arguments
           // List of Lists because we can have multiple parameter lists
@@ -241,6 +285,37 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
 
         val withMethods = deriveClassDef(bundle) { t =>
           deriveTemplate(t)(_ ++ cloneTypeImplOpt ++ usingPluginOpt ++ elementsImplOpt)
+=======
+        // Create a this.<ref> for each field matching order of constructor arguments
+        // List of Lists because we can have multiple parameter lists
+        val conArgs: List[List[Tree]] =
+          constructor.vparamss.map(_.map { vp =>
+            val p = paramLookup(vp.name.toString)
+            // Make this.<ref>
+            val select = gen.mkAttributedSelect(thiz, p)
+            // Clone any Data parameters to avoid field aliasing, need full clone to include direction
+            if (isData(vp.symbol)) cloneTypeFull(select) else select
+          })
+
+        val ttpe = Ident(bundle.symbol)
+        val neww = localTyper.typed(New(ttpe, conArgs))
+
+        // Create the symbol for the method and have it be associated with the Bundle class
+        val cloneTypeSym =  bundle.symbol.newMethod(TermName("_cloneTypeImpl"), bundle.symbol.pos.focus, Flag.OVERRIDE | Flag.PROTECTED)
+        // Handwritten cloneTypes don't have the Method flag set, unclear if it matters
+        cloneTypeSym.resetFlag(Flags.METHOD)
+        // Need to set the type to chisel3.Bundle for the override to work
+        cloneTypeSym.setInfo(NullaryMethodType(bundleTpe))
+
+        val cloneTypeImpl = localTyper.typed(DefDef(cloneTypeSym, neww))
+
+        // ==================== Generate _usingPlugin ====================
+        // Unclear why quasiquotes work here but didn't for cloneTypeSym, maybe they could.
+        val usingPlugin = localTyper.typed(q"override protected def _usingPlugin: Boolean = true")
+
+        val withMethods = deriveClassDef(bundle) { t =>
+          deriveTemplate(t)(_ :+ cloneTypeImpl :+ usingPlugin)
+>>>>>>> 14942312 ([plugin] Implement autoclonetype in the compiler plugin):plugin/src/main/scala-2.12/chisel3/internal/plugin/BundleComponent.scala
         }
 
         super.transform(localTyper.typed(withMethods))

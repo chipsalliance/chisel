@@ -30,12 +30,19 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
     override def name: String = phaseName
     def apply(unit: CompilationUnit): Unit = {
 <<<<<<< HEAD:plugin/src/main/scala/chisel3/internal/plugin/ChiselComponent.scala
+<<<<<<< HEAD:plugin/src/main/scala/chisel3/internal/plugin/ChiselComponent.scala
       if (ChiselPlugin.runComponent(global, arguments)(unit)) {
 =======
       // This plugin doesn't work on Scala 2.11. Rather than complicate the sbt build flow,
       // instead we just check the version and if its an early Scala version, the plugin does nothing
       if(scala.util.Properties.versionNumberString.split('.')(1).toInt >= 12) {
 >>>>>>> e80e9a3b ([plugin] Split ChiselComponent into its own file):plugin/src/main/scala-2.12/chisel3/internal/plugin/ChiselComponent.scala
+=======
+      // This plugin doesn't work on Scala 2.11 nor Scala 3. Rather than complicate the sbt build flow,
+      // instead we just check the version and if its an early Scala version, the plugin does nothing
+      val scalaVersion = scala.util.Properties.versionNumberString.split('.')
+      if (scalaVersion(0).toInt == 2 && scalaVersion(1).toInt >= 12) {
+>>>>>>> 14942312 ([plugin] Implement autoclonetype in the compiler plugin):plugin/src/main/scala-2.12/chisel3/internal/plugin/ChiselComponent.scala
         unit.body = new MyTypingTransformer(unit).transform(unit.body)
       }
     }
@@ -302,6 +309,7 @@ class ChiselComponent(val global: Global) extends PluginComponent with TypingTra
     }
   }
 <<<<<<< HEAD:plugin/src/main/scala/chisel3/internal/plugin/ChiselComponent.scala
+<<<<<<< HEAD:plugin/src/main/scala/chisel3/internal/plugin/ChiselComponent.scala
 }
 ========
 import scala.tools.nsc
@@ -320,3 +328,6 @@ class ChiselPlugin(val global: Global) extends Plugin {
 =======
 }
 >>>>>>> e80e9a3b ([plugin] Split ChiselComponent into its own file):plugin/src/main/scala-2.12/chisel3/internal/plugin/ChiselComponent.scala
+=======
+}
+>>>>>>> 14942312 ([plugin] Implement autoclonetype in the compiler plugin):plugin/src/main/scala-2.12/chisel3/internal/plugin/ChiselComponent.scala

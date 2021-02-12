@@ -3,7 +3,10 @@
 package chiselTests
 import chisel3._
 import chisel3.testers.TestUtils
+<<<<<<< HEAD
 import chisel3.stage.ChiselStage.elaborate
+=======
+>>>>>>> 14942312 ([plugin] Implement autoclonetype in the compiler plugin)
 import org.scalatest.matchers.should.Matchers
 
 class BundleWithAnonymousInner(val w: Int) extends Bundle {
@@ -12,9 +15,17 @@ class BundleWithAnonymousInner(val w: Int) extends Bundle {
   }
 }
 
+// TODO all `.suggestNames` are due to https://github.com/chipsalliance/chisel3/issues/1802
 class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers with Utils {
+<<<<<<< HEAD
 
   behavior.of("autoCloneType of inner Bundle in Chisel3")
+=======
+  val usingPlugin: Boolean = TestUtils.usingPlugin
+  val elaborate = TestUtils.elaborateNoReflectiveAutoCloneType _
+
+  behavior of "autoCloneType of inner Bundle in Chisel3"
+>>>>>>> 14942312 ([plugin] Implement autoclonetype in the compiler plugin)
 
   it should "clone a doubly-nested inner bundle successfully" in {
     elaborate {
@@ -25,7 +36,7 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers with Utils {
           }
           def getIO: InnerIOType = new InnerIOType
         }
-        val io = IO(new Bundle {})
+        val io = IO(new Bundle {}).suggestName("io")
         val myWire = Wire((new Middle(w)).getIO)
       }
       new Outer(2)
@@ -35,8 +46,13 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers with Utils {
   it should "clone an anonymous inner bundle successfully" in {
     elaborate {
       class TestTop(val w: Int) extends Module {
+<<<<<<< HEAD
         val io = IO(new Bundle {})
         val myWire = Wire(new Bundle { val a = UInt(w.W) })
+=======
+        val io = IO(new Bundle {}).suggestName("io")
+        val myWire = Wire(new Bundle{ val a = UInt(w.W) })
+>>>>>>> 14942312 ([plugin] Implement autoclonetype in the compiler plugin)
       }
       new TestTop(2)
     }
@@ -48,13 +64,13 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers with Utils {
         val io = IO(new Bundle {
           val in = Input(UInt(w.W))
           val out = Output(UInt(w.W))
-        })
+        }).suggestName("io")
       }
       class Outer(val w: Int) extends Module {
         val io = IO(new Bundle {
           val in = Input(UInt(w.W))
           val out = Output(UInt(w.W))
-        })
+        }).suggestName("io")
         val i = Module(new Inner(w))
         val iw = Wire(chiselTypeOf(i.io))
         iw <> io
@@ -67,7 +83,11 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers with Utils {
   it should "clone an anonymous, bound, inner bundle of another bundle successfully" in {
     elaborate {
       class TestModule(w: Int) extends Module {
+<<<<<<< HEAD
         val io = IO(new BundleWithAnonymousInner(w))
+=======
+        val io = IO(new BundleWithAnonymousInner(w) ).suggestName("io")
+>>>>>>> 14942312 ([plugin] Implement autoclonetype in the compiler plugin)
         val w0 = WireDefault(io)
         val w1 = WireDefault(io.inner)
       }
@@ -83,7 +103,7 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers with Utils {
         }
         val io = IO(new Bundle {
           val inner = Input(bun)
-        })
+        }).suggestName("io")
         val w0 = WireDefault(io)
         val w1 = WireDefault(io.inner)
       }
@@ -98,23 +118,37 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers with Utils {
           val inner = Input(new Bundle {
             val x = UInt(8.W)
           })
-        })
+        }).suggestName("io")
       }
       new TestModule()
     }
   }
 
+<<<<<<< HEAD
   it should "support an anonymous doubly-nested inner bundle" in {
     elaborate {
       class Outer(val w: Int) extends Module {
         class Middle(val w: Int) {
           def getIO: Bundle = new Bundle {
             val in = Input(UInt(w.W))
+=======
+  if (usingPlugin) {
+    // This works with the plugin, but is a null pointer exception when using reflective autoclonetype
+    it should "support an anonymous doubly-nested inner bundle" in {
+      elaborate {
+        class Outer(val w: Int) extends Module {
+          class Middle(val w: Int) {
+            def getIO: Bundle = new Bundle {
+              val in = Input(UInt(w.W))
+            }
+>>>>>>> 14942312 ([plugin] Implement autoclonetype in the compiler plugin)
           }
+          val io = IO(new Bundle {}).suggestName("io")
+          val myWire = Wire((new Middle(w)).getIO)
         }
-        val io = IO(new Bundle {})
-        val myWire = Wire((new Middle(w)).getIO)
+        new Outer(2)
       }
+<<<<<<< HEAD
       new Outer(2)
     }
   }
@@ -132,5 +166,23 @@ class AutoNestedCloneSpec extends ChiselFlatSpec with Matchers with Utils {
       val myWire2 = WireInit(io.bar)
       io.bar.x := io.foo.x
     })
+=======
+    }
+
+    it should "support anonymous Inner bundles that capture type parameters from outer Bundles" in {
+      elaborate(new MultiIOModule {
+        class MyBundle[T <: Data](n: Int, gen: T) extends Bundle {
+          val foo = new Bundle {
+            val x = Input(Vec(n, gen))
+          }
+          val bar = Output(Option(new { def mkBundle = new Bundle { val x = Vec(n, gen) }}).get.mkBundle)
+        }
+        val io = IO(new MyBundle(4, UInt(8.W)))
+        val myWire = WireInit(io.foo)
+        val myWire2 = WireInit(io.bar)
+        io.bar.x := io.foo.x
+      })
+    }
+>>>>>>> 14942312 ([plugin] Implement autoclonetype in the compiler plugin)
   }
 }
