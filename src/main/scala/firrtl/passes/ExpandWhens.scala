@@ -125,13 +125,13 @@ object ExpandWhens extends Pass {
         EmptyStmt
       // For simulation constructs, update simlist with predicated statement and return EmptyStmt
       case sx: Print =>
-        simlist += (if (weq(p, one)) sx else Print(sx.info, sx.string, sx.args, sx.clk, AND(p, sx.en)))
+        simlist += (if (weq(p, one)) sx else sx.withEn(AND(p, sx.en)))
         EmptyStmt
       case sx: Stop =>
-        simlist += (if (weq(p, one)) sx else Stop(sx.info, sx.ret, sx.clk, AND(p, sx.en)))
+        simlist += (if (weq(p, one)) sx else sx.withEn(AND(p, sx.en)))
         EmptyStmt
       case sx: Verification =>
-        simlist += (if (weq(p, one)) sx else sx.copy(en = AND(p, sx.en)))
+        simlist += (if (weq(p, one)) sx else sx.withEn(AND(p, sx.en)))
         EmptyStmt
       // Expand conditionally, see comments below
       case sx: Conditionally =>
