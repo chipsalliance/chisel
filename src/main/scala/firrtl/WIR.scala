@@ -119,6 +119,7 @@ case class WDefInstanceConnector(
   portCons: Seq[(Expression, Expression)])
     extends Statement
     with IsDeclaration
+    with CanBeReferenced
     with UseSerializer {
   def mapExpr(f: Expression => Expression): Statement =
     this.copy(portCons = portCons.map { case (e1, e2) => (f(e1), f(e2)) })
@@ -346,6 +347,7 @@ case class CDefMemory(
   readUnderWrite: ReadUnderWrite.Value = ReadUnderWrite.Undefined)
     extends Statement
     with HasInfo
+    with CanBeReferenced
     with UseSerializer {
   def mapExpr(f:       Expression => Expression): Statement = this
   def mapStmt(f:       Statement => Statement):   Statement = this
@@ -361,6 +363,7 @@ case class CDefMemory(
 case class CDefMPort(info: Info, name: String, tpe: Type, mem: String, exps: Seq[Expression], direction: MPortDir)
     extends Statement
     with HasInfo
+    with CanBeReferenced
     with UseSerializer {
   def mapExpr(f:       Expression => Expression): Statement = this.copy(exps = exps.map(f))
   def mapStmt(f:       Statement => Statement):   Statement = this

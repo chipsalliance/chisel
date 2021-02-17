@@ -321,6 +321,25 @@ class LowerTypesUniquifySpec extends FirrtlFlatSpec {
     executeTest(input, expected)
   }
 
+  it should "rename nodes colliding with labled statements" in {
+    val input =
+      """circuit Test :
+        |  module Test :
+        |    input clock : Clock
+        |    reg x : { b : UInt<1>, c : { d : UInt<2>, e : UInt<3>}[2], c_1_e : UInt<4>}[2], clock
+        |    node a = x
+        |    printf(clock, UInt(1), "") : a_0_c_
+        |    assert(clock, UInt(1), UInt(1), "") : a__0
+      """.stripMargin
+    val expected = Seq(
+      "node a___0_b = x_0_b",
+      "node a___1_c__1_e = x_1_c__1_e",
+      "node a___1_c_1_e = x_1_c_1_e"
+    )
+
+    executeTest(input, expected)
+  }
+
   it should "rename DefRegister expressions: clock, reset, and init" in {
     val input =
       """circuit Test :

@@ -384,6 +384,36 @@ class CheckSpec extends AnyFlatSpec with Matchers {
     }
   }
 
+  "Attempting to shadow a statement name" should "throw an error" in {
+    val input =
+      s"""|circuit scopes:
+          |  module scopes:
+          |    input c: Clock
+          |    input i: UInt<1>
+          |    output o: UInt<1>
+          |    wire x: UInt<1>
+          |    when i:
+          |      stop(c, UInt(1), 1) : x
+          |    o <= and(x, i)
+          |""".stripMargin
+    assertThrows[CheckHighForm.NotUniqueException] {
+      checkHighInput(input)
+    }
+  }
+
+  "Colliding statement names" should "throw an error" in {
+    val input =
+      s"""|circuit test:
+          |  module test:
+          |    input c: Clock
+          |    stop(c, UInt(1), 1) : x
+          |    stop(c, UInt(1), 1) : x
+          |""".stripMargin
+    assertThrows[CheckHighForm.NotUniqueException] {
+      checkHighInput(input)
+    }
+  }
+
   "Conditionally statements" should "create separate consequent and alternate scopes" in {
     val input =
       s"""|circuit scopes:
@@ -533,6 +563,20 @@ class CheckSpec extends AnyFlatSpec with Matchers {
       } catch {
         case e: firrtl.passes.PassExceptions => throw e.exceptions.head
       }
+    }
+  }
+
+  it should "throw an exception if a statement name is used as a reference" in {
+    val src = """
+                |circuit test:
+                |  module test:
+                |    input clock: Clock
+                |    output a: UInt<2>
+                |    stop(clock, UInt(1), 1) : hello
+                |    a <= hello
+                |""".stripMargin
+    assertThrows[CheckHighForm.UndeclaredReferenceException] {
+      checkHighInput(src)
     }
   }
 

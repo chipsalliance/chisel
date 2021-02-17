@@ -187,18 +187,23 @@ class InlineInstances extends Transform with DependencyAPIMigration with Registe
       renameMap:     RenameMap
     )(s:             Statement
     ): Statement = {
-      def onName(ofModuleOpt: Option[String])(name: String) = {
-        if (prefix.nonEmpty && !ns.tryName(prefix + name)) {
-          throw new Exception(s"Inlining failed. Inlined name '${prefix + name}' already exists")
+      def onName(ofModuleOpt: Option[String])(name: String): String = {
+        // Empty names are allowed for backwards compatibility reasons and
+        // indicate that the entity has essentially no name and thus cannot be prefixed.
+        if (name.isEmpty) { name }
+        else {
+          if (prefix.nonEmpty && !ns.tryName(prefix + name)) {
+            throw new Exception(s"Inlining failed. Inlined name '${prefix + name}' already exists")
+          }
+          ofModuleOpt match {
+            case None =>
+              renameMap.record(currentModule.ref(name), nextModule.ref(prefix + name))
+            case Some(ofModule) =>
+              renameMap.record(currentModule.instOf(name, ofModule), nextModule.instOf(prefix + name, ofModule))
+          }
+          renames(name) = prefix + name
+          prefix + name
         }
-        ofModuleOpt match {
-          case None =>
-            renameMap.record(currentModule.ref(name), nextModule.ref(prefix + name))
-          case Some(ofModule) =>
-            renameMap.record(currentModule.instOf(name, ofModule), nextModule.instOf(prefix + name, ofModule))
-        }
-        renames(name) = prefix + name
-        prefix + name
       }
 
       s match {

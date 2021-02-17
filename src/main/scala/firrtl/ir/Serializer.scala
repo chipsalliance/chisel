@@ -102,11 +102,13 @@ object Serializer {
         s(it.next())
         if (it.hasNext) newLineAndIndent()
       }
-    case Stop(info, ret, clk, en) =>
-      b ++= "stop("; s(clk); b ++= ", "; s(en); b ++= ", "; b ++= ret.toString; b += ')'; s(info)
-    case Print(info, string, args, clk, en) =>
+    case stop @ Stop(info, ret, clk, en) =>
+      b ++= "stop("; s(clk); b ++= ", "; s(en); b ++= ", "; b ++= ret.toString; b += ')'
+      sStmtName(stop.name); s(info)
+    case print @ Print(info, string, args, clk, en) =>
       b ++= "printf("; s(clk); b ++= ", "; s(en); b ++= ", "; b ++= string.escape
-      if (args.nonEmpty) b ++= ", "; s(args, ", "); b += ')'; s(info)
+      if (args.nonEmpty) b ++= ", "; s(args, ", "); b += ')'
+      sStmtName(print.name); s(info)
     case IsInvalid(info, expr)    => s(expr); b ++= " is invalid"; s(info)
     case DefWire(info, name, tpe) => b ++= "wire "; b ++= name; b ++= " : "; s(tpe); s(info)
     case DefRegister(info, name, tpe, clock, reset, init) =>
@@ -138,9 +140,9 @@ object Serializer {
     case Attach(info, exprs)             =>
       // exprs should never be empty since the attach statement takes *at least* two signals according to the spec
       b ++= "attach ("; s(exprs, ", "); b += ')'; s(info)
-    case Verification(op, info, clk, pred, en, msg) =>
+    case veri @ Verification(op, info, clk, pred, en, msg) =>
       b ++= op.toString; b += '('; s(List(clk, pred, en), ", ", false); b ++= msg.escape
-      b += ')'; s(info)
+      b += ')'; sStmtName(veri.name); s(info)
 
     // WIR
     case firrtl.CDefMemory(info, name, tpe, size, seq, readUnderWrite) =>
@@ -153,6 +155,10 @@ object Serializer {
       b ++= "inst "; b ++= name; b ++= " of "; b ++= module; b ++= " with "; s(tpe); b ++= " connected to ("
       s(portCons.map(_._2), ",  "); b += ')'; s(info)
     case other => b ++= other.serialize // Handle user-defined nodes
+  }
+
+  private def sStmtName(lbl: String)(implicit b: StringBuilder): Unit = {
+    if (lbl.nonEmpty) { b ++= s" : $lbl" }
   }
 
   private def s(node: Width)(implicit b: StringBuilder, indent: Int): Unit = node match {

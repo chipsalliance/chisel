@@ -989,10 +989,15 @@ is determined by their syntactic order in the enclosing module. The order of exe
 side-effect-having statements in different modules or with different clocks that trigger
 concurrently is undefined.
 
+The stop statement has an optional name attribute which can be used to
+attach metadata to the statement. The name is part of the module level
+namespace. However it can never be used in a reference since it is not of
+any valid type.
+
 \begin{lstlisting}
 wire clk:Clock
 wire halt:UInt<1>
-stop(clk,halt,42)
+stop(clk,halt,42) : optional_name
 ...
 \end{lstlisting}
 
@@ -1004,12 +1009,17 @@ A printf statement requires a clock signal, a print condition signal, a format s
 For information about execution ordering of clocked statements with observable environmental side
 effects, see section \ref{stop_stmt}.
 
+The printf statement has an optional name attribute which can be used to
+attach metadata to the statement. The name is part of the module level
+namespace. However it can never be used in a reference since it is not of
+any valid type.
+
 \begin{lstlisting}
 wire clk:Clock
 wire condition:UInt<1>
 wire a:UInt
 wire b:UInt
-printf(clk, condition, "a in hex: %x, b in decimal:%d.\n", a, b)
+printf(clk, condition, "a in hex: %x, b in decimal:%d.\n", a, b) : optional_name
 ...
 \end{lstlisting}
 
@@ -1043,6 +1053,11 @@ Backends are free to generate the corresponding model checking constructs in the
 For information about execution ordering of clocked statements with observable environmental side
 effects, see section \ref{stop_stmt}.
 
+Any verification statement has an optional name attribute which can be used to
+attach metadata to the statement. The name is part of the module level
+namespace. However it can never be used in a reference since it is not of
+any valid type.
+
 \subsubsection{Assert}
 
 The assert statement verifies that the predicate is true on the rising edge of any clock cycle when the enable is true. In other words, it verifies that enable implies predicate.
@@ -1053,7 +1068,7 @@ wire pred:UInt<1>
 wire en:UInt<1>
 pred <= eq(X, Y)
 en <= Z_valid
-assert(clk, pred, en, "X equals Y when Z is valid")
+assert(clk, pred, en, "X equals Y when Z is valid") : optional_name
 \end{lstlisting}
 
 \subsubsection{Assume}
@@ -1066,7 +1081,7 @@ wire pred:UInt<1>
 wire en:UInt<1>
 pred <= eq(X, Y)
 en <= Z_valid
-assume(clk, pred, en, "X equals Y when Z is valid")
+assume(clk, pred, en, "X equals Y when Z is valid") : optional_name
 \end{lstlisting}
 
 \subsubsection{Cover}
@@ -1079,7 +1094,7 @@ wire pred:UInt<1>
 wire en:UInt<1>
 pred <= eq(X, Y)
 en <= Z_valid
-cover(clk, pred, en, "X equals Y when Z is valid")
+cover(clk, pred, en, "X equals Y when Z is valid") : optional_name
 \end{lstlisting}
 
 \section{Expressions}
@@ -2108,8 +2123,8 @@ The concrete syntax of FIRRTL is defined in section \ref{syntax_tree}. Productio
                 &\pipe &\pd{exp} \vv{is invalid} \opt{\pd{info}}                                               &\text{Invalidate}\\
                 &\pipe &\vv{attach}\vv{(}\rpt{\pd{exp}}\vv{)} \opt{\pd{info}}                                  &\text{Attach}\\
                 &\pipe &\vv{when} \pd{exp} \vv{:} \opt{\pd{info}} \pd{stmt} \opt{\vv{else} \vv{:} \pd{stmt}}   &\text{Conditional}\\
-                &\pipe &\vv{stop(}\pd{exp}, \pd{exp}, \pd{int})\opt{\pd{info}}                                 &\text{Stop}\\
-                &\pipe &\vv{printf(}\pd{exp}, \pd{exp}, \pd{string}, \rpt{\pd{exp}}\vv{)} \opt{\pd{info}}      &\text{Printf}\\
+                &\pipe &\vv{stop(}\pd{exp}, \pd{exp}, \pd{int}) \opt{\vv{:}\pd{id}} \opt{\pd{info}}            &\text{Stop}\\
+                &\pipe &\vv{printf(}\pd{exp}, \pd{exp}, \pd{string}, \rpt{\pd{exp}}\vv{)} \opt{\vv{:}\pd{id}} \opt{\pd{info}}  &\text{Printf}\\
                 &\pipe &\vv{skip} \opt{\pd{info}}                                                              &\text{Empty}\\
                 &\pipe &\vv{(}\rpt{\pd{stmt}}\vv{)}                                                            &\text{Statement Group}\\
 \pd{ruw}        &=     &\vv{old} \pipe \vv{ new} \pipe \vv{ undefined}                                         &\text{Read Under Write Flag}\\

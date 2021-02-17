@@ -423,8 +423,7 @@ class DiGraph[T](private[graph] val edges: LinkedHashMap[T, LinkedHashSet[T]]) {
             rec(nextTab, nodex, nextMark + " ", acc)
         }
     }
-    this.findSources
-      .toList // Convert LinkedHashSet to List to avoid determinism issues
+    this.findSources.toList // Convert LinkedHashSet to List to avoid determinism issues
       .sortBy(_.toString) // Make order deterministic
       .foldLeft(Nil: List[String]) {
         case (acc, root) => rec("", root, "", acc)

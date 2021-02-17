@@ -123,21 +123,21 @@ trait FirrtlRunners extends BackendCompilationUtilities {
   }
 
   /** Check equivalence of Firrtl with reference Verilog
-   *
+    *
     * @note the name of the reference Verilog module is grabbed via regex
     * @param inputFirrtl string containing Firrtl source
     * @param referenceVerilog Verilog that will be used as reference for LEC
     * @param timesteps the maximum number of timesteps to consider
     */
   def firrtlEquivalenceWithVerilog(
-    inputFirrtl:       String,
-    referenceVerilog:  String,
-    timesteps:         Int = 1
+    inputFirrtl:      String,
+    referenceVerilog: String,
+    timesteps:        Int = 1
   ): Unit = {
     val VerilogModule = """(?s).*module\s(\w+).*""".r
     val refName = referenceVerilog match {
       case VerilogModule(name) => name
-      case _ => throw new Exception(s"Reference Verilog must match simple regex! $VerilogModule")
+      case _                   => throw new Exception(s"Reference Verilog must match simple regex! $VerilogModule")
     }
     val circuit = Parser.parse(inputFirrtl.split("\n").toIterator)
     val inputName = circuit.main
@@ -162,7 +162,6 @@ trait FirrtlRunners extends BackendCompilationUtilities {
 
     assert(BackendCompilationUtilities.yosysExpectSuccess(inputName, refName, testDir, timesteps))
   }
-
 
   /** Compiles input Firrtl to Verilog */
   def compileToVerilog(input: String, annotations: AnnotationSeq = Seq.empty): String = {

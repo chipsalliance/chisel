@@ -22,6 +22,10 @@ trait CheckHighFormLike { this: Pass =>
       moduleNS += name
       scopes.head += name
     }
+    // ensures that the name cannot be used again, but prevent references to this name
+    def addToNamespace(name: String): Unit = {
+      moduleNS += name
+    }
     def expandMPortVisibility(port: CDefMPort): Unit = {
       // Legacy CHIRRTL ports are visible in any scope where their parent memory is visible
       scopes.find(_.contains(port.mem)).getOrElse(scopes.head) += port.name
@@ -250,10 +254,19 @@ trait CheckHighFormLike { this: Pass =>
       e.foreach(checkHighFormE(info, mname, names))
     }
 
-    def checkName(info: Info, mname: String, names: ScopeView)(name: String): Unit = {
-      if (!names.legalDecl(name))
-        errors.append(new NotUniqueException(info, mname, name))
-      names.declare(name)
+    def checkName(info: Info, mname: String, names: ScopeView, canBeReference: Boolean)(name: String): Unit = {
+      // Empty names are allowed for backwards compatibility reasons and
+      // indicate that the entity has essentially no name.
+      if (name.isEmpty) { assert(!canBeReference, "A statement with an empty name cannot be used as a reference!") }
+      else {
+        if (!names.legalDecl(name))
+          errors.append(new NotUniqueException(info, mname, name))
+        if (canBeReference) {
+          names.declare(name)
+        } else {
+          names.addToNamespace(name)
+        }
+      }
     }
 
     def checkInstance(info: Info, child: String, parent: String): Unit = {
@@ -270,7 +283,11 @@ trait CheckHighFormLike { this: Pass =>
         case NoInfo => minfo
         case x      => x
       }
-      s.foreach(checkName(info, mname, names))
+      val canBeReference = s match {
+        case _: CanBeReferenced => true
+        case _ => false
+      }
+      s.foreach(checkName(info, mname, names, canBeReference))
       s match {
         case DefRegister(info, name, tpe, _, reset, init) =>
           if (hasFlip(tpe))

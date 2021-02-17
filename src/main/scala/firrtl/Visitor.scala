@@ -318,6 +318,7 @@ class Visitor(infoMode: InfoMode) extends AbstractParseTreeVisitor[FirrtlNode] w
   private def visitStmt(ctx: StmtContext): Statement = {
     val ctx_exp = ctx.exp.asScala
     val info = visitInfo(Option(ctx.info), ctx)
+    def stmtName = Option(ctx.stmtName).map(_.id.getText).getOrElse("")
     ctx.getChild(0) match {
       case when: WhenContext => visitWhen(when)
       case term: TerminalNode =>
@@ -346,7 +347,8 @@ class Visitor(infoMode: InfoMode) extends AbstractParseTreeVisitor[FirrtlNode] w
           case "inst" => DefInstance(info, ctx.id(0).getText, ctx.id(1).getText)
           case "node" => DefNode(info, ctx.id(0).getText, visitExp(ctx_exp(0)))
 
-          case "stop("  => Stop(info, string2Int(ctx.intLit().getText), visitExp(ctx_exp(0)), visitExp(ctx_exp(1)))
+          case "stop(" =>
+            Stop(info, string2Int(ctx.intLit().getText), visitExp(ctx_exp(0)), visitExp(ctx_exp(1)), name = stmtName)
           case "attach" => Attach(info, ctx_exp.map(visitExp).toSeq)
           case "printf(" =>
             Print(
@@ -354,7 +356,8 @@ class Visitor(infoMode: InfoMode) extends AbstractParseTreeVisitor[FirrtlNode] w
               visitStringLit(ctx.StringLit),
               ctx_exp.drop(2).map(visitExp).toSeq,
               visitExp(ctx_exp(0)),
-              visitExp(ctx_exp(1))
+              visitExp(ctx_exp(1)),
+              name = stmtName
             )
           // formal
           case "assert" =>
@@ -364,7 +367,8 @@ class Visitor(infoMode: InfoMode) extends AbstractParseTreeVisitor[FirrtlNode] w
               visitExp(ctx_exp(0)),
               visitExp(ctx_exp(1)),
               visitExp(ctx_exp(2)),
-              visitStringLit(ctx.StringLit)
+              visitStringLit(ctx.StringLit),
+              name = stmtName
             )
           case "assume" =>
             Verification(
@@ -373,7 +377,8 @@ class Visitor(infoMode: InfoMode) extends AbstractParseTreeVisitor[FirrtlNode] w
               visitExp(ctx_exp(0)),
               visitExp(ctx_exp(1)),
               visitExp(ctx_exp(2)),
-              visitStringLit(ctx.StringLit)
+              visitStringLit(ctx.StringLit),
+              name = stmtName
             )
           case "cover" =>
             Verification(
@@ -382,7 +387,8 @@ class Visitor(infoMode: InfoMode) extends AbstractParseTreeVisitor[FirrtlNode] w
               visitExp(ctx_exp(0)),
               visitExp(ctx_exp(1)),
               visitExp(ctx_exp(2)),
-              visitStringLit(ctx.StringLit)
+              visitStringLit(ctx.StringLit),
+              name = stmtName
             )
           // end formal
           case "skip" => EmptyStmt
