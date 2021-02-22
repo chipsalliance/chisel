@@ -392,6 +392,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     case Some(DontCareBinding()) => s"(DontCare)"
     case Some(ElementLitBinding(litArg)) => s"(unhandled literal)"
     case Some(BundleLitBinding(litMap)) => s"(unhandled bundle literal)"
+    case Some(VecLitBinding(litMap)) => s"(unhandled vec literal)"
   }).getOrElse("")
 
   // Return ALL elements at root of this type.
@@ -490,6 +491,11 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
         litMap.get(this) match {
           case Some(litArg) => litArg
           case _ => materializeWire() // FIXME FIRRTL doesn't have Bundle literal expressions
+        }
+      case Some(VecLitBinding(litMap)) =>
+        litMap.get(this) match {
+          case Some(litArg) => litArg
+          case _ => materializeWire() // FIXME FIRRTL doesn't have Vec literal expressions
         }
       case Some(DontCareBinding()) =>
         materializeWire() // FIXME FIRRTL doesn't have a DontCare expression so materialize a Wire

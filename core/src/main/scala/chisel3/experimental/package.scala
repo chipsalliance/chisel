@@ -2,6 +2,8 @@
 
 package chisel3
 
+import chisel3.internal.sourceinfo.SourceInfo
+
 /** Package for experimental features, which may have their API changed, be removed, etc.
   *
   * Because its contents won't necessarily have the same level of stability and support as
@@ -126,6 +128,32 @@ package object experimental {
     implicit class AddBundleLiteralConstructor[T <: Record](x: T) {
       def Lit(elems: (T => (Data, Data))*): T = {
         x._makeLit(elems: _*)
+      }
+    }
+  }
+
+  /** This class provides the `Lit` method needed to define a `Vec` literal
+    */
+  object VecLiterals {
+    implicit class AddVecLiteralConstructor[T <: Vec[_]](x: T) {
+      /** Given a generator of a list tuples of the form [Int, Data]
+        * constructs a Vec literal, parallel concept to `BundleLiteral`
+        *
+        * @param elems generates a lit of `(Int, Data)` where the I
+        * @return
+        */
+      def Lit(elems: (Int, Data)*): T = {
+        x._makeLit(elems: _*)
+      }
+    }
+
+    implicit class AddObjectLiteralConstructor[T <: Vec.type](x: T) {
+      def Lit[T <: Data](elems: T*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = {
+        require(elems.nonEmpty, s"Lit.Vec(...) must have at least one element")
+        val indexElements = elems.zipWithIndex.map { case (element, index) => (index, element)}
+        val widestElement = elems.sortBy(_.getWidth).last
+        val vec: Vec[T] = Vec.apply(indexElements.length, chiselTypeOf(widestElement))
+        vec.Lit(indexElements:_*)
       }
     }
   }
