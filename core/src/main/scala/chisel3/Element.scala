@@ -29,6 +29,10 @@ abstract class Element extends Data {
       case Some(litArg) => Some(ElementLitBinding(litArg))
       case _ => Some(DontCareBinding())
     }
+    case Some(VecLitBinding(litMap)) => litMap.get(this) match {
+      case Some(litArg) => Some(ElementLitBinding(litArg))
+      case _ => Some(DontCareBinding())
+    }
     case topBindingOpt => topBindingOpt
   }
 
@@ -36,6 +40,16 @@ abstract class Element extends Data {
     case Some(ElementLitBinding(litArg)) => Some(litArg)
     case _ => None
   }
+
+ //TODO: Delete this, looked like it might be necessary at some point but tests run fine without this.
+//  private[chisel3] def litArgOption: Option[LitArg] = {
+//    topBindingOpt match {
+//      case Some(ElementLitBinding(litArg)) => Some(litArg)
+//      case Some(VecLitBinding(vecLitBinding)) =>
+//        vecLitBinding.get(this)
+//      case _ => None
+//    }
+//  }
 
   override def litOption: Option[BigInt] = litArgOption.map(_.num)
   private[chisel3] def litIsForcedWidth: Option[Boolean] = litArgOption.map(_.forcedWidth)

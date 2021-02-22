@@ -130,6 +130,14 @@ package object experimental {
     }
   }
 
+  object VecLiterals {
+    implicit class AddVecLiteralConstructor[T <: Vec[_]](x: T) {
+      def Lit(elems: (Int, Data)*): T = {
+        x._makeLit(elems: _*)
+      }
+    }
+  }
+
   // Use to add a prefix to any component generated in input scope
   val prefix = chisel3.internal.prefix
   // Use to remove prefixes not in provided scope

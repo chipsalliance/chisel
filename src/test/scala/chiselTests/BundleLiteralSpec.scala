@@ -6,9 +6,8 @@ import chisel3._
 import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
 import chisel3.experimental.BundleLiterals._
-import chisel3.experimental.BundleLiteralException
-import chisel3.experimental.ChiselEnum
-import chisel3.experimental.FixedPoint
+import chisel3.experimental.VecLiterals.AddVecLiteralConstructor
+import chisel3.experimental.{BundleLiteralException, ChiselEnum, ChiselRange, FixedPoint, Interval}
 
 class BundleLiteralSpec extends ChiselFlatSpec with Utils {
   object MyEnum extends ChiselEnum {
@@ -47,6 +46,24 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
     } }
   }
 
+  "bundle literals" should "not pack when sparsely specified" in {
+    intercept[ChiselException] {
+      assertTesterPasses {
+        new BasicTester {
+          val bundleLit = (new MyBundle).Lit(_.a -> 42.U, _.c -> MyEnum.sB)
+          bundleLit.litOption should equal(None) // packed as 42 (8-bit), false=0 (1-bit), sB=1 (1-bit)
+          chisel3.assert(bundleLit.asUInt() === bundleLit.litOption.get.U) // sanity-check consistency with runtime
+
+          val longBundleLit = (new LongBundle).Lit(
+            _.a -> 0xDEADDEADBEEFL.U, _.c -> 4.5.F(16.W, 4.BP))
+          longBundleLit.litOption should be(None)
+          chisel3.assert(longBundleLit.asUInt() === longBundleLit.litOption.get.U)
+          stop()
+        }
+      }
+    }
+  }
+
   "bundle literals" should "work in RTL" in {
     val outsideBundleLit = (new MyBundle).Lit(_.a -> 42.U, _.b -> true.B, _.c -> MyEnum.sB)
     assertTesterPasses{ new BasicTester{
@@ -74,6 +91,24 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
 
       stop()
     } }
+  }
+
+  "bundle literals of vec literals" should "work" in {
+    assertTesterPasses(new BasicTester {
+      val range = range"[0,4].2"
+      val bundleWithVecs = new Bundle {
+        val a = Vec(2, UInt(4.W))
+        val b = Vec(2, Interval(range))
+      }.Lit(
+        _.a -> Vec(2, UInt(4.W)).Lit(0 -> 0xA.U, 1 -> 0xB.U),
+        _.b -> Vec(2, Interval(range)).Lit(0 -> (1.5).I(range), 1 -> (0.25).I(range))
+      )
+      chisel3.assert(bundleWithVecs.a(0) === 0xA.U)
+      chisel3.assert(bundleWithVecs.a(1) === 0xB.U)
+      chisel3.assert(bundleWithVecs.b(0) === (1.5).I(range))
+      chisel3.assert(bundleWithVecs.b(1) === (0.25).I(range))
+      stop()
+    })
   }
 
   "partial bundle literals" should "work in RTL" in {
