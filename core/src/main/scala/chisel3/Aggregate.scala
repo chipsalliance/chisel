@@ -491,7 +491,7 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     *   val b = Bool()
     * }
     *
-    * (mew MyBundle).Lit(
+    * (new MyBundle).Lit(
     *   _.a -> 42.U,
     *   _.b -> true.B
     * )
