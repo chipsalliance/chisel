@@ -756,7 +756,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
       val lines = noResetAlwaysBlocks.getOrElseUpdate(clk, ArrayBuffer[Seq[Any]]())
       if (weq(en, one)) lines += Seq(e, " <= ", value, ";")
       else {
-        lines += Seq("if(", en, ") begin")
+        lines += Seq("if (", en, ") begin")
         lines += Seq(tab, e, " <= ", value, ";", info)
         lines += Seq("end")
       }
