@@ -8,6 +8,8 @@ Chisel/FIRRTL development meetings happen every Monday and Tuesday from 1100--12
 
 Call-in info and meeting notes are available [here](https://docs.google.com/document/d/1BLP2DYt59DqI-FgFCcjw8Ddl4K-WU0nHmQu0sZ_wAGo/).
 
+**Chisel Community Conference 2021, Shanghai, China. 6/24/2021**
+
 ---
 
 [![Join the chat at https://gitter.im/chipsalliance/chisel3](https://badges.gitter.im/chipsalliance/chisel3.svg)](https://gitter.im/chipsalliance/chisel3?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
