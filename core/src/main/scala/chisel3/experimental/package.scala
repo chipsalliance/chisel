@@ -130,8 +130,16 @@ package object experimental {
     }
   }
 
+  /** This class provides the `Lit` method needed to define a `Vec` literal
+    */
   object VecLiterals {
     implicit class AddVecLiteralConstructor[T <: Vec[_]](x: T) {
+      /** Given a generator of a list tuples of the form [Int, Data]
+        * constructs a Vec literal, parallel concept to `BundleLiteral`
+        *
+        * @param elems generates a lit of `(Int, Data)` where the I
+        * @return
+        */
       def Lit(elems: (Int, Data)*): T = {
         x._makeLit(elems: _*)
       }

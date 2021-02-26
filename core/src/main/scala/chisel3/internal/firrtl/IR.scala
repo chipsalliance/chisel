@@ -91,6 +91,12 @@ abstract class LitArg(val num: BigInt, widthArg: Width) extends Arg {
     elem
   }
 
+  /** Provides a mechanism that LitArgs can have their width adjusted
+    * to match other members of a VecLiteral
+    *
+    * @param newWidth the new width for this
+    * @return
+    */
   def cloneWithWidth(newWidth: Width): this.type
 
   protected def minWidth: Int

@@ -89,19 +89,16 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
 
   "lowest of vec literal contains least significant bits and " in {
     val y = Vec(4, UInt(8.W)).Lit(0 -> 0xAB.U(8.W), 1 -> 0xCD.U(8.W), 2 -> 0xEF.U(8.W), 3 -> 0xFF.U(8.W))
-    // println(s"y: ${y.litValue().toString(16)}")
     y.litValue() should be(BigInt("FFEFCDAB", 16))
   }
 
   "the order lits are specified does not matter" in {
     val y = Vec(4, UInt(8.W)).Lit(3 -> 0xFF.U(8.W), 2 -> 0xEF.U(8.W), 1 -> 0xCD.U(8.W), 0 -> 0xAB.U(8.W))
-    // println(s"y: ${y.litValue().toString(16)}")
     y.litValue() should be(BigInt("FFEFCDAB", 16))
   }
 
   "regardless of the literals widths, packing should be done based on the width of the Vec's gen" in {
     val z = Vec(4, UInt(8.W)).Lit(0 -> 0x2.U, 1 -> 0x2.U, 2 -> 0x2.U, 3 -> 0x3.U)
-    // println(s"z: ${z.litValue().toString(16)}")
     z.litValue() should be(BigInt("03020202", 16))
   }
 
@@ -109,30 +106,15 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
     // missing sub-listeral for index 2
     val z = Vec(4, UInt(8.W)).Lit(0 -> 0x2.U, 1 -> 0x2.U, 3 -> 0x3.U)
 
-    println(s"sparse z: ${z.litOption}")
     z.litOption should be(None)
   }
 
   "registers can be initialized with a Vec literal" in {
     assertTesterPasses(new BasicTester {
       val y = RegInit(Vec(4, UInt(8.W)).Lit(0 -> 0xAB.U(8.W), 1 -> 0xCD.U(8.W), 2 -> 0xEF.U(8.W), 3 -> 0xFF.U(8.W)))
-      //printf("y = %x\n", y.asUInt)
       chisel3.assert(y.asUInt === BigInt("FFEFCDAB", 16).U)
       stop()
     })
-  }
-
-  "vec lits should work" in {
-    val y = Vec(4, UInt(8.W)).Lit(0 -> 0xAB.U(8.W), 1 -> 0xCD.U(8.W), 2 -> 0xEF.U(8.W), 3 -> 0xAB.U(8.W))
-    println(s"y(0).litOption: ${y(0).litOption}")
-    println(s"y(0).toString: ${y(0).toString}")
-
-    println(s"y.toString: ${y.toString}")
-    println(s"y.litOption: ${y.litOption}")
-    println(s"y.litOption: ${y.litOption.get.toString(16)}")
-
-    println(s"y(0).litOption: ${y(0).litOption}")
-    println(s"y.litValue: ${y.litValue()}")
   }
 
   "how does asUInt work" in {
@@ -152,18 +134,14 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
       val out2 = IO(Output(UInt(64.W)))
 
       val v1 = Vec(4, UInt(16.W)).Lit(0 -> 0xDD.U, 1 -> 0xCC.U, 2 -> 0xBB.U, 3 -> 0xAA.U)
-      printf("v1 %x\n", v1.asUInt)
       out1 := v1.asUInt
 
       val v2 = VecInit(0xDD.U(16.W), 0xCC.U, 0xBB.U, 0xAA.U)
-      printf("v2 %x\n", v1.asUInt)
       out2 := v2.asUInt
     }
-    println(ChiselStage.emitFirrtl(new M1))
 
     assertTesterPasses(new BasicTester {
       val m = Module(new M1)
-      printf("m.out1 %x  m.out2 %x\n", m.out1, m.out2)
       chisel3.assert(m.out1 === m.out2)
       stop()
     })
@@ -171,74 +149,57 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
 
   "VecLits should work properly with .asUInt" in {
     val outsideVecLit = Vec(4, UInt(16.W)).Lit(0 -> 0xDD.U, 1 -> 0xCC.U, 2 -> 0xBB.U, 3 -> 0xAA.U)
-    println(s"outsideVecLit ${outsideVecLit.litValue().toString(16)}")
 
     assertTesterPasses {
       new BasicTester {
-        // TODO: add direct bundle compare operations, when that feature is added
         chisel3.assert(outsideVecLit(0) === 0xDD.U, s"v(0)")
-        printf("VecList.litValue: %x\n", outsideVecLit.litValue().U)
-        val x = outsideVecLit.asUInt
-        printf("VecList.asUInt: %x\n", x)
         stop()
       }
     }
   }
 
-  "VecLits should work properly with .asUInt elaborated" in {
-    class M extends Module {
-      val outsideVecLit = Vec(4, UInt(16.W)).Lit(0 -> 0xDD.U, 1 -> 0xCC.U, 2 -> 0xBB.U, 3 -> 0xAA.U)
-      printf(s"outsideVecLit %x\n", outsideVecLit.asUInt)
-    }
-
-    println(ChiselStage.emitFirrtl(new M))
-  }
-
   "bundle literals should work in RTL" in {
     val outsideVecLit = Vec(4, UInt(16.W)).Lit(0 -> 0xDD.U, 1 -> 0xCC.U, 2 -> 0xBB.U, 3 -> 0xAA.U)
-    println(s"outsideVecLit ${outsideVecLit.litValue().toString(16)}")
 
     assertTesterPasses {
       new BasicTester {
-        // TODO: add direct bundle compare operations, when that feature is added
         chisel3.assert(outsideVecLit(0) === 0xDD.U, s"v(0)")
         chisel3.assert(outsideVecLit(1) === 0xCC.U)
         chisel3.assert(outsideVecLit(2) === 0xBB.U)
-      chisel3.assert(outsideVecLit(3) === 0xAA.U)
+        chisel3.assert(outsideVecLit(3) === 0xAA.U)
 
-      chisel3.printf("outsideVecLit.litValue() = %x outsideVecLit.asUInt() = %x\n",
-        outsideVecLit.litValue().U, outsideVecLit.asUInt)
-      chisel3.assert(outsideVecLit.litValue().U === outsideVecLit.asUInt())
+        chisel3.assert(outsideVecLit.litValue().U === outsideVecLit.asUInt())
 
-      val insideVecLit = Vec(4, UInt(16.W)).Lit(0 -> 0xDD.U, 1 -> 0xCC.U, 2 -> 0xBB.U, 3 -> 0xAA.U)
-      chisel3.assert(insideVecLit(0) === 0xDD.U)
-      chisel3.assert(insideVecLit(1) === 0xCC.U)
-      chisel3.assert(insideVecLit(2) === 0xBB.U)
-      chisel3.assert(insideVecLit(3) === 0xAA.U)
+        val insideVecLit = Vec(4, UInt(16.W)).Lit(0 -> 0xDD.U, 1 -> 0xCC.U, 2 -> 0xBB.U, 3 -> 0xAA.U)
+        chisel3.assert(insideVecLit(0) === 0xDD.U)
+        chisel3.assert(insideVecLit(1) === 0xCC.U)
+        chisel3.assert(insideVecLit(2) === 0xBB.U)
+        chisel3.assert(insideVecLit(3) === 0xAA.U)
 
-      chisel3.assert(insideVecLit(0) === outsideVecLit(0))
-      chisel3.assert(insideVecLit(1) === outsideVecLit(1))
-      chisel3.assert(insideVecLit(2) === outsideVecLit(2))
-      chisel3.assert(insideVecLit(3) === outsideVecLit(3))
+        chisel3.assert(insideVecLit(0) === outsideVecLit(0))
+        chisel3.assert(insideVecLit(1) === outsideVecLit(1))
+        chisel3.assert(insideVecLit(2) === outsideVecLit(2))
+        chisel3.assert(insideVecLit(3) === outsideVecLit(3))
 
-      val vecWire1 = Wire(Vec(4, UInt(16.W)))
-      vecWire1 := outsideVecLit
+        val vecWire1 = Wire(Vec(4, UInt(16.W)))
+        vecWire1 := outsideVecLit
 
-      chisel3.assert(vecWire1(0) === 0xDD.U)
-      chisel3.assert(vecWire1(1) === 0xCC.U)
-      chisel3.assert(vecWire1(2) === 0xBB.U)
-      chisel3.assert(vecWire1(3) === 0xAA.U)
+        chisel3.assert(vecWire1(0) === 0xDD.U)
+        chisel3.assert(vecWire1(1) === 0xCC.U)
+        chisel3.assert(vecWire1(2) === 0xBB.U)
+        chisel3.assert(vecWire1(3) === 0xAA.U)
 
-      val vecWire2 = Wire(Vec(4, UInt(16.W)))
-      vecWire2 := insideVecLit
+        val vecWire2 = Wire(Vec(4, UInt(16.W)))
+        vecWire2 := insideVecLit
 
-      chisel3.assert(vecWire2(0) === 0xDD.U)
-      chisel3.assert(vecWire2(1) === 0xCC.U)
-      chisel3.assert(vecWire2(2) === 0xBB.U)
-      chisel3.assert(vecWire2(3) === 0xAA.U)
+        chisel3.assert(vecWire2(0) === 0xDD.U)
+        chisel3.assert(vecWire2(1) === 0xCC.U)
+        chisel3.assert(vecWire2(2) === 0xBB.U)
+        chisel3.assert(vecWire2(3) === 0xAA.U)
 
-      stop()
-    }}
+        stop()
+      }
+    }
   }
 
   "partial vec literals should work in RTL" in {
@@ -296,23 +257,6 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
       stop()
     }
     }
-  }
-
-  "test this" in {
-    class M extends Module {
-      def vecFactory = Vec(2, FixedPoint(8.W, 4.BP))
-
-      val vecWire1 = Wire(Output(vecFactory))
-      val vecWire2 = Wire(Output(vecFactory))
-      //      vecWire1 := DontCare
-      val vecLit1 = vecFactory.Lit(0 -> (1.5).F(8.W, 4.BP))
-      val vecLit2 = vecFactory.Lit(1 -> (3.25).F(8.W, 4.BP))
-
-      vecWire1 := vecLit1
-      vecWire2 := vecLit2
-      printf("vw1(0) %x  vw1(1) %x\n", vecWire1(0).asUInt(), vecWire1(1).asUInt())
-    }
-    println(ChiselStage.emitFirrtl(new M))
   }
 
   //TODO: decide what behavior here should be

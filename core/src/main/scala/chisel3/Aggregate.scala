@@ -174,9 +174,6 @@ trait VecFactory extends SourceInfoDoc {
 sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
     extends Aggregate with VecLike[T] {
 
-  //TODO: what to do when lit widths are different than gen's width
-  //TODO: fix ordering problems with lits
-
   override def toString: String = {
     val bindingString = topBindingOpt match {
       case Some(VecLitBinding(vecLitBinding)) =>
