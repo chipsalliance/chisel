@@ -47,7 +47,7 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
   }
 
   "bundle literals" should "not pack when sparsely specified" in {
-    intercept[ChiselException] {
+    intercept[NoSuchElementException] {
       assertTesterPasses {
         new BasicTester {
           val bundleLit = (new MyBundle).Lit(_.a -> 42.U, _.c -> MyEnum.sB)
