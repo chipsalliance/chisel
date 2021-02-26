@@ -3,8 +3,10 @@
 package chiselTests
 
 import chisel3._
-import chisel3.stage.ChiselStage
 import chisel3.experimental.DataMirror
+import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage, NoRunFirrtlCompilerAnnotation}
+import firrtl.annotations.NoTargetAnnotation
+import firrtl.options.Unserializable
 
 class SimpleIO extends Bundle {
   val in  = Input(UInt(32.W))
@@ -140,6 +142,17 @@ class ModuleSpec extends ChiselPropSpec with Utils {
       assert(checkModule(this))
     })
   }
+
+  property("object chisel3.util.experimental.getAnnotations should return current annotations.") {
+    case class DummyAnnotation() extends NoTargetAnnotation with Unserializable
+    (new ChiselStage).transform(Seq(
+      ChiselGeneratorAnnotation(() => new RawModule {
+        assert(chisel3.util.experimental.getAnnotations().contains(DummyAnnotation()))
+      }),
+      DummyAnnotation(),
+      NoRunFirrtlCompilerAnnotation))
+  }
+
   property("DataMirror.modulePorts should work") {
     ChiselStage.elaborate(new Module {
       val io = IO(new Bundle { })

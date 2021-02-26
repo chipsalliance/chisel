@@ -56,11 +56,7 @@ case class ChiselGeneratorAnnotation(gen: () => RawModule) extends NoTargetAnnot
 
   /** Run elaboration on the Chisel module generator function stored by this [[firrtl.annotations.Annotation]]
     */
-  def elaborate: AnnotationSeq  = {
-    val (circuit, dut) = Builder.build(Module(gen()))
-    Seq(ChiselCircuitAnnotation(circuit), DesignAnnotation(dut))
-  }
-
+  def elaborate: AnnotationSeq = (new chisel3.stage.phases.Elaborate).transform(Seq(this))
 }
 
 object ChiselGeneratorAnnotation extends HasShellOptions {
