@@ -19,7 +19,8 @@ class AliasedAggregateFieldException(message: String) extends ChiselException(me
   * of) other Data objects.
   */
 sealed abstract class Aggregate extends Data {
-  private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection) {
+  private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
+    _parent.foreach(_.addId(this))
     binding = target
 
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
@@ -194,19 +195,19 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
     case _ => false
   }
 
-  private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection) {
-    try {
-      super.bind(target, parentDirection)
-    } catch {  // nasty compatibility mode shim, where anything flies
-      case e: MixedDirectionAggregateException  =>
-        val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
-        direction = resolvedDirection match {
-          case SpecifiedDirection.Unspecified => ActualDirection.Bidirectional(ActualDirection.Default)
-          case SpecifiedDirection.Flip => ActualDirection.Bidirectional(ActualDirection.Flipped)
-          case _ => ActualDirection.Bidirectional(ActualDirection.Default)
-        }
+  private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
+    _parent.foreach(_.addId(this))
+    binding = target
+
+    val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
+    sample_element.bind(SampleElementBinding(this), resolvedDirection)
+    for (child <- getElements) {  // assume that all children are the same
+      child.bind(ChildBinding(this), resolvedDirection)
     }
-//    setElementRefs()
+
+    // Since all children are the same, we can just use the sample_element rather than all children
+    // .get is safe because None means mixed directions, we only pass 1 so that's not possible
+    direction = ActualDirection.fromChildren(Set(sample_element.direction), resolvedDirection).get
   }
 
   // Note: the constructor takes a gen() function instead of a Seq to enforce
@@ -732,7 +733,7 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     *   val b = Bool()
     * }
     *
-    * (mew MyBundle).Lit(
+    * (new MyBundle).Lit(
     *   _.a -> 42.U,
     *   _.b -> true.B
     * )

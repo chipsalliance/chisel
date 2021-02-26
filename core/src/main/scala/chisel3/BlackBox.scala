@@ -81,6 +81,8 @@ package experimental {
         id._onModuleClose
       }
 
+      closeUnboundIds(names)
+
       val firrtlPorts = getModulePorts map {port => Port(port, port.specifiedDirection)}
       val component = DefBlackBox(this, name, firrtlPorts, SpecifiedDirection.Unspecified, params)
       _component = Some(component)
