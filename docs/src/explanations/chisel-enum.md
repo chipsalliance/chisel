@@ -6,7 +6,9 @@ The ChiselEnum type is an easy way to get away from value encodings and reduce t
 
 ```scala mdoc:silent
 import chisel3._
+import chisel3.stage.ChiselStage
 import chisel3.experimental.ChiselEnum
+
 ```
 
 ## Functionality and Examples
@@ -14,7 +16,7 @@ import chisel3.experimental.ChiselEnum
 Below we see ChiselEnum being used as mux select for a RISC-V core. While wrapping the object in a package is not required, it is highly recommended as it allows for the type to be used in multiple files more easily. 
 
 ```scala mdoc:silent
-package CPUTypes {
+// package CPUTypes {
     object AluMux1Sel extends ChiselEnum {
         val rs1out, pcout = Value
         /**
@@ -22,7 +24,7 @@ package CPUTypes {
             "pcout"  -> 1.U
         */
     }
-}
+// }
 ```
 
 Here we see a mux using the AluMux1Sel to select between different inputs. 
