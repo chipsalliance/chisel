@@ -33,22 +33,24 @@ Here we see a mux using the AluMux1Sel to select between different inputs.
 ```scala mdoc
 import AluMux1Sel._
 
-class AluMux1File extends Module {
-    val io = IO(new Bundle {
+class AluMux1Bundle extends Bundle {
         val aluMux1Sel =  Input( AluMux1Sel() )
         val rs1Out     =  Input(Bits(32.W))
         val pcOut      =  Input(Bits(32.W))
         val aluMux1Out = Output(Bits(32.W))
-    })
+}
+
+class AluMux1File extends Module {
+    val io = IO(new AluMux1Bundle)
 
     // Default value for aluMux1Out
     io.aluMux1Out := 0.U
 
     switch (io.aluMux1Sel) {
-        is (rs1out) {
+        is (selectRS1) {
             io.aluMux1Out  := io.rs1Out
         }
-        is (pcout) {
+        is (selectPC) {
             io.aluMux1Out  := io.pcOut
         }
     }
@@ -100,8 +102,8 @@ When testing your modules, the `.Type` and `.litValue` attributes allow for the 
 
 ```scala 
 def expectedSel(sel: AluMux1Sel.Type): Boolean = sel match {
-  case AluMux1Sel.rs1out => (sel.litValue == 0)
-  case AluMux1Sel.pcout  => (sel.litValue == 1)
+  case AluMux1Sel.selectRS1 => (sel.litValue == 0)
+  case AluMux1Sel.selectPC  => (sel.litValue == 1)
   case _                 => false
 }
 ```
