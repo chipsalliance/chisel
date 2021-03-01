@@ -177,4 +177,55 @@ circuit sram6t :
     // Check correctness of firrtl
     res should containLine(s"mem.rw.wmode <= wen")
   }
+
+  def sameAddr(ruw: String): String = {
+    s"""
+       |circuit sram6t :
+       |  module sram6t :
+       |    input clock : Clock
+       |    output io : { flip addr : UInt<11>, flip valid : UInt<1>, flip write : UInt<1>, flip dataIn : UInt<32>, dataOut : UInt<32>}
+       |
+       |    mem mem:
+       |      data-type => UInt<4>
+       |      depth => 64
+       |      reader => r
+       |      writer => w
+       |      read-latency => 1
+       |      write-latency => 1
+       |      read-under-write => ${ruw}
+       |
+       |    mem.r.clk <= clock
+       |    mem.r.addr <= io.addr
+       |    mem.r.en <= io.valid
+       |    io.dataOut <= mem.r.data
+       |
+       |    node wen = and(io.valid, io.write)
+       |    mem.w.clk <= clock
+       |    mem.w.addr <= io.addr
+       |    mem.w.en <= wen
+       |    mem.w.mask <= UInt(1)
+       |    mem.w.data <= io.dataIn""".stripMargin
+  }
+
+  "Infer ReadWrite Ports" should "infer readwrite ports from shared addresses with undefined readUnderWrite" in {
+    val input = sameAddr("undefined")
+    val annos = Seq(memlib.InferReadWriteAnnotation)
+    val res = compileAndEmit(CircuitState(parse(input), HighForm, annos))
+    // Check correctness of firrtl
+    res should containLine(s"mem.rw.wmode <= wen")
+  }
+
+  Seq("old", "new").foreach { ruw =>
+    "Infer ReadWrite Ports" should s"not infer readwrite ports from shared addresses with '${ruw}' readUnderWrite" in {
+      val input = sameAddr(ruw)
+      val annos = Seq(memlib.InferReadWriteAnnotation)
+      intercept[Exception] {
+        compileAndEmit(CircuitState(parse(input), ChirrtlForm, annos))
+      } match {
+        case CustomTransformException(_: InferReadWriteCheckException) => // success
+        case _ => fail()
+      }
+    }
+  }
+
 }
