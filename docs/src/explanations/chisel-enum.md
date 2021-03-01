@@ -59,7 +59,9 @@ ChiselStage.emitVerilog(new AluMux1File )
 ```
 
 ChiselEnum also allows for the user to define variables by passing in the value shown below. Note that the value must be increasing or else 
+
  > chisel3.internal.ChiselException: Exception thrown when elaborating ChiselGeneratorAnnotation
+
 is thrown during Verilog generation.
 
 ```scala 
