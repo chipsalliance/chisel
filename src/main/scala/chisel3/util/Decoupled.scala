@@ -107,8 +107,13 @@ object Decoupled
     */
   @chiselName
   def apply[T <: Data](irr: IrrevocableIO[T]): DecoupledIO[T] = {
+<<<<<<< HEAD
     require(DataMirror.directionOf(irr.bits) == Direction.Output, "Only safe to cast produced Irrevocable bits to Decoupled.") // scalastyle:ignore line.size.limit
     val d = Wire(new DecoupledIO(irr.bits))
+=======
+    require(DataMirror.directionOf(irr.bits) == Direction.Output, "Only safe to cast produced Irrevocable bits to Decoupled.")
+    val d = Wire(new DecoupledIO(chiselTypeOf(irr.bits)))
+>>>>>>> 43de37fd... Fix conversions between DecoupledIO and IrrevocableIO (#1781)
     d.bits := irr.bits
     d.valid := irr.valid
     irr.ready := d.ready
@@ -138,8 +143,13 @@ object Irrevocable
     * @note unsafe (and will error) on the consumer (output) side of an DecoupledIO
     */
   def apply[T <: Data](dec: DecoupledIO[T]): IrrevocableIO[T] = {
+<<<<<<< HEAD
     require(DataMirror.directionOf(dec.bits) == Direction.Input, "Only safe to cast consumed Decoupled bits to Irrevocable.") // scalastyle:ignore line.size.limit
     val i = Wire(new IrrevocableIO(dec.bits))
+=======
+    require(DataMirror.directionOf(dec.bits) == Direction.Input, "Only safe to cast consumed Decoupled bits to Irrevocable.")
+    val i = Wire(new IrrevocableIO(chiselTypeOf(dec.bits)))
+>>>>>>> 43de37fd... Fix conversions between DecoupledIO and IrrevocableIO (#1781)
     dec.bits := i.bits
     dec.valid := i.valid
     i.ready := dec.ready
