@@ -20,7 +20,8 @@ class AliasedAggregateFieldException(message: String) extends ChiselException(me
   * of) other Data objects.
   */
 sealed abstract class Aggregate extends Data {
-  private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection) {
+  private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
+    _parent.foreach(_.addId(this))
     binding = target
 
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
@@ -166,7 +167,8 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
     case _ => false
   }
 
-  private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection) {
+  private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
+    _parent.foreach(_.addId(this))
     binding = target
 
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
@@ -519,7 +521,7 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     *   val b = Bool()
     * }
     *
-    * (mew MyBundle).Lit(
+    * (new MyBundle).Lit(
     *   _.a -> 42.U,
     *   _.b -> true.B
     * )

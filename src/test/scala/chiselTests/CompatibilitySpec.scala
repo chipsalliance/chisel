@@ -451,6 +451,18 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
     ChiselStage.elaborate(new Foo)
   }
 
+  it should "support data-types of mixed directionality" in {
+    class Foo extends Module {
+      val io = IO(new Bundle {})
+      val tpe = new Bundle { val foo = UInt(OUTPUT, width = 4); val bar = UInt(width = 4) }
+      // NOTE for some reason, the old bug this hit did not occur when `tpe` is inlined
+      val mem = SeqMem(tpe, 8)
+      mem(3.U)
+
+    }
+    ChiselStage.elaborate((new Foo))
+  }
+
   behavior of "debug"
 
   it should "still exist" in {
