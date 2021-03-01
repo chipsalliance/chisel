@@ -2,18 +2,15 @@
 
 The ChiselEnum type can be used to reduce the chance of error when encoding mux selectors, opcodes, and functional unit operations. In contrast with`Chisel.util.Enum`, `ChiselEnum` are subclasses of `Data`, which means that they can be used to define fields in `Bundle`s, including in `IO`s.
 
-## Importing the ChiselEnum module
+
+## Functionality and Examples
 
 ```scala mdoc
+// Imports used in the following examples
 import chisel3._
 import chisel3.util._
 import chisel3.stage.ChiselStage
 import chisel3.experimental.ChiselEnum
-
-```
-
-## Functionality and Examples
-
 Below we see ChiselEnum being used as mux select for a RISC-V core. While wrapping the object in a package is not required, it is highly recommended as it allows for the type to be used in multiple files more easily. 
 
 ```scala mdoc
