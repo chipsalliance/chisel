@@ -19,10 +19,10 @@ Below we see ChiselEnum being used as mux select for a RISC-V core. While wrappi
 ```scala mdoc
 // package CPUTypes {
     object AluMux1Sel extends ChiselEnum {
-        val rs1out, pcout = Value
+        val selectRS1, selectPC = Value
         /**
-            "rs1out" -> 0.U,
-            "pcout"  -> 1.U
+            "selectRS1" -> 0.U,
+            "selectPC"  -> 1.U
         */
     }
 // }
