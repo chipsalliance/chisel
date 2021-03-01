@@ -106,7 +106,7 @@ def expectedSel(sel: AluMux1Sel.Type): Boolean = sel match {
 }
 ```
 
-The ChiselEnum type also has methods `.all` and `.getWidth` where all returns all of the enum instances and getWidth returns the width of the hardware type.
+The ChiselEnum type also has methods `.all` and `.getWidth` where `all` returns all of the enum instances and `getWidth` returns the width of the hardware type.
 
 ## Workarounds
 
