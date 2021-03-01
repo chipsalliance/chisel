@@ -6,7 +6,7 @@ The ChiselEnum type is an easy way to get away from value encodings and reduce t
 
 ```scala mdoc
 import chisel3._
-import chisel3.util.
+import chisel3.util._
 import chisel3.stage.ChiselStage
 import chisel3.experimental.ChiselEnum
 
