@@ -1,6 +1,6 @@
 # ChiselEnum
 
-The ChiselEnum type is an easy way to get away from value encodings and reduce the chance of error when encoding muxes, opcodes, and functional unit operations. As opposed to regular Enums, ChiselEnums allow for function names to be explicitly passed through Bundles like IO. 
+The ChiselEnum type is an easy way to get away from value encodings and reduce the chance of error when encoding muxes, opcodes, and functional unit operations. As opposed to the Chisel type Enums, ChiselEnums allow for names to be explicitly passed through Bundles like IO. 
 
 ## Importing the ChiselEnum module
 
@@ -54,11 +54,12 @@ class AluMux1File(val dl_size: Int) extends Module {
 ```
 ```scala mdoc:verilog
 import 
-ChiselStage.emitVerilog.emitVerilog(new AluMux1File(dl_size = 32) )
+ChiselStage.emitVerilog(new AluMux1File(dl_size = 32) )
 ```
 
-
-ChiselEnum also allows for the user to define variables by passing in the value shown below. Note that the value must be increasing.
+ChiselEnum also allows for the user to define variables by passing in the value shown below. Note that the value must be increasing or else 
+ > chisel3.internal.ChiselException: Exception thrown when elaborating ChiselGeneratorAnnotation
+is thrown during Verliog generation.
 
 ```scala mdoc:silent
 object Opcode extends ChiselEnum {
@@ -122,7 +123,7 @@ object StoreFunct3 extends ChiselEnum {
 }
 ```
 
-Additionally I don't believe that signed values are supported so if you want the value signed, you must cast the UInt with `.asSInt`.
+Signed values are not supported so if you want the value signed, you must cast the UInt with `.asSInt`.
 
 ## Additional Resources
 
