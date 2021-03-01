@@ -1,6 +1,6 @@
 # ChiselEnum
 
-The ChiselEnum type is an easy way to get away from value encodings and reduce the chance of error when encoding muxes, opcodes, and functional unit operations. As opposed to the Chisel type Enums, ChiselEnums allow for names to be explicitly passed through Bundles like IO. 
+The ChiselEnum type can be used to reduce the chance of error when encoding mux selectors, opcodes, and functional unit operations. In contrast with`Chisel.util.Enum`, `ChiselEnum` are subclasses of `Data`, which means that they can be used to define fields in `Bundle`s, including in `IO`s.
 
 ## Importing the ChiselEnum module
 
