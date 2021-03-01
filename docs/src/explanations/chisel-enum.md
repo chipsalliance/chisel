@@ -4,8 +4,9 @@ The ChiselEnum type is an easy way to get away from value encodings and reduce t
 
 ## Importing the ChiselEnum module
 
-```scala mdoc:silent
+```scala mdoc
 import chisel3._
+import chisel3.util.
 import chisel3.stage.ChiselStage
 import chisel3.experimental.ChiselEnum
 
@@ -15,7 +16,7 @@ import chisel3.experimental.ChiselEnum
 
 Below we see ChiselEnum being used as mux select for a RISC-V core. While wrapping the object in a package is not required, it is highly recommended as it allows for the type to be used in multiple files more easily. 
 
-```scala mdoc:silent
+```scala mdoc
 // package CPUTypes {
     object AluMux1Sel extends ChiselEnum {
         val rs1out, pcout = Value
@@ -29,16 +30,15 @@ Below we see ChiselEnum being used as mux select for a RISC-V core. While wrappi
 
 Here we see a mux using the AluMux1Sel to select between different inputs. 
 
-```scala mdoc:silent
-import CPUTypes.AluMux1Sel
-import CPUTypes.AluMux1Sel._
+```scala mdoc
+import AluMux1Sel._
 
-class AluMux1File(val dl_size: Int) extends Module {
+class AluMux1File extends Module {
     val io = IO(new Bundle {
         val aluMux1Sel =  Input( AluMux1Sel() )
-        val rs1Out     =  Input(Bits(dl_size.W))
-        val pcOut      =  Input(Bits(dl_size.W))
-        val aluMux1Out = Output(Bits(dl_size.W))
+        val rs1Out     =  Input(Bits(32.W))
+        val pcOut      =  Input(Bits(32.W))
+        val aluMux1Out = Output(Bits(32.W))
     })
 
     // Default value for aluMux1Out
@@ -55,15 +55,14 @@ class AluMux1File(val dl_size: Int) extends Module {
 }
 ```
 ```scala mdoc:verilog
-import 
-ChiselStage.emitVerilog(new AluMux1File(dl_size = 32) )
+ChiselStage.emitVerilog(new AluMux1File )
 ```
 
 ChiselEnum also allows for the user to define variables by passing in the value shown below. Note that the value must be increasing or else 
  > chisel3.internal.ChiselException: Exception thrown when elaborating ChiselGeneratorAnnotation
 is thrown during Verliog generation.
 
-```scala mdoc:silent
+```scala 
 object Opcode extends ChiselEnum {
     val load  = Value(0x03.U) // i load  -> 000_0011
     val imm   = Value(0x13.U) // i imm   -> 001_0011
@@ -79,7 +78,7 @@ object Opcode extends ChiselEnum {
 
 The user can 'jump' to a value and continue incrementing by passing a start point then using a regular Value assignment. 
 
-```scala mdoc:silent
+```scala 
 object BranchFunct3 extends ChiselEnum {
     val beq, bne = Value
     val blt = Value(4.U)
@@ -99,7 +98,7 @@ object BranchFunct3 extends ChiselEnum {
 
 When testing your modules, the `.Type` and `.litValue` attributes allow for the the objects to be passed as parameters and for the value to be converted to BigInt type. Note that BigInts cannot be casted to Int with `.asInstanceOf[Int]`, they use their own methods like `toInt`. Please review the [scala.math.BigInt](https://www.scala-lang.org/api/2.12.5/scala/math/BigInt.html) page for more details!
 
-```scala mdoc:silent
+```scala 
 def expectedSel(sel: AluMux1Sel.Type): Boolean = sel match {
   case AluMux1Sel.rs1out => (sel.litValue == 0)
   case AluMux1Sel.pcout  => (sel.litValue == 1)
@@ -113,7 +112,7 @@ The ChiselEnum type also has methods `.all` and `.getWidth` where all returns al
 
 As of 2/26/2021, the width of the values is always infered so to get around this, just add an extra state that forces the width that is desired. 
 
-```scala mdoc:silent
+```scala
 object StoreFunct3 extends ChiselEnum {
     val sb, sh, sw = Value
     val ukn = Value(7.U)
