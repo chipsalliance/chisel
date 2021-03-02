@@ -65,7 +65,7 @@ ChiselEnum also allows for the user to define variables by passing in the value 
 
 is thrown during Verilog generation.
 
-```scala 
+```scala mdoc
 object Opcode extends ChiselEnum {
     val load  = Value(0x03.U) // i load  -> 000_0011
     val imm   = Value(0x13.U) // i imm   -> 001_0011
