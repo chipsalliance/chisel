@@ -32,12 +32,12 @@ jobs:
       - name: Cache Scala
         uses: coursier/cache-action@v5
       - name: Check Formatting (Scala 2.12 only)
-        if: matrix.scala == '2.12.12'
+        if: startsWith(matrix.scala, '2.12')
         run: sbt ++${{ matrix.scala }} scalafmtCheckAll
       - name: Unidoc
         run: sbt ++${{ matrix.scala }} unidoc
-      - name: Sanity check benchmarking scripts (Scala 2.12 only)
-        if: matrix.scala == '2.12.12'
+      - name: Sanity check benchmarking scripts (Scala 2.13 only)
+        if: startsWith(matrix.scala, '2.13')
         run: |
           benchmark/scripts/benchmark_cold_compile.py -N 2 --designs regress/ICache.fir --versions HEAD
           benchmark/scripts/find_heap_bound.py -- -cp firrtl*jar firrtl.stage.FirrtlMain -i regress/ICache.fir -o out -X verilog

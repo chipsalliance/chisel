@@ -145,7 +145,8 @@ class ExpandWhensSpec extends FirrtlFlatSpec {
         |      assert(clock, eq(in, UInt<1>("h1")), UInt<1>("h1"), "assert0") : test_assert
         |    else :
         |      skip""".stripMargin
-    val check = "assert(clock, eq(in, UInt<1>(\"h1\")), and(and(UInt<1>(\"h1\"), p), UInt<1>(\"h1\")), \"assert0\") : test_assert"
+    val check =
+      "assert(clock, eq(in, UInt<1>(\"h1\")), and(and(UInt<1>(\"h1\"), p), UInt<1>(\"h1\")), \"assert0\") : test_assert"
     executeTest(input, check, true)
   }
   it should "handle stops" in {
