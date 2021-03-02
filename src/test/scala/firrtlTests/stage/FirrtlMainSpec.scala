@@ -164,16 +164,6 @@ class FirrtlMainSpec
          |""".stripMargin
   }
 
-  /** This returns a string containing the default standard out string based on the Scala version. E.g., if there are
-    * version-specific deprecation warnings, those are available here and can be passed to tests that should have them.
-    */
-  val defaultStdOut: Option[String] = BuildInfo.scalaVersion.split("\\.").toList match {
-    case "2" :: v :: _ :: Nil if v.toInt <= 11 =>
-      Some(CheckScalaVersion.deprecationMessage("2.11", s"--${WarnNoScalaVersionDeprecation.longOption}"))
-    case x =>
-      None
-  }
-
   info("As a FIRRTL command line user")
   info("I want to compile some FIRRTL")
   Feature("FirrtlMain command line interface") {
@@ -205,58 +195,48 @@ class FirrtlMainSpec
     Seq(
       /* Test all standard emitters with and without annotation file outputs */
       FirrtlMainTest(args = Array("-X", "none", "-E", "chirrtl"), files = Seq("Top.fir")),
-      FirrtlMainTest(args = Array("-X", "high", "-E", "high"), stdout = defaultStdOut, files = Seq("Top.hi.fir")),
+      FirrtlMainTest(args = Array("-X", "high", "-E", "high"), files = Seq("Top.hi.fir")),
       FirrtlMainTest(
         args = Array("-X", "middle", "-E", "middle", "-foaf", "Top"),
-        stdout = defaultStdOut,
         files = Seq("Top.mid.fir", "Top.anno.json")
       ),
       FirrtlMainTest(
         args = Array("-X", "low", "-E", "low", "-foaf", "annotations.anno.json"),
-        stdout = defaultStdOut,
         files = Seq("Top.lo.fir", "annotations.anno.json")
       ),
       FirrtlMainTest(
         args = Array("-X", "verilog", "-E", "verilog", "-foaf", "foo.anno"),
-        stdout = defaultStdOut,
         files = Seq("Top.v", "foo.anno.anno.json")
       ),
       FirrtlMainTest(
         args = Array("-X", "sverilog", "-E", "sverilog", "-foaf", "foo.json"),
-        stdout = defaultStdOut,
         files = Seq("Top.sv", "foo.json.anno.json")
       ),
       /* Test all one file per module emitters */
       FirrtlMainTest(args = Array("-X", "none", "-e", "chirrtl"), files = Seq("Top.fir", "Child.fir")),
       FirrtlMainTest(
         args = Array("-X", "high", "-e", "high"),
-        stdout = defaultStdOut,
         files = Seq("Top.hi.fir", "Child.hi.fir")
       ),
       FirrtlMainTest(
         args = Array("-X", "middle", "-e", "middle"),
-        stdout = defaultStdOut,
         files = Seq("Top.mid.fir", "Child.mid.fir")
       ),
       FirrtlMainTest(
         args = Array("-X", "low", "-e", "low"),
-        stdout = defaultStdOut,
         files = Seq("Top.lo.fir", "Child.lo.fir")
       ),
       FirrtlMainTest(
         args = Array("-X", "verilog", "-e", "verilog"),
-        stdout = defaultStdOut,
         files = Seq("Top.v", "Child.v")
       ),
       FirrtlMainTest(
         args = Array("-X", "sverilog", "-e", "sverilog"),
-        stdout = defaultStdOut,
         files = Seq("Top.sv", "Child.sv")
       ),
       /* Test mixing of -E with -e */
       FirrtlMainTest(
         args = Array("-X", "middle", "-E", "high", "-e", "middle"),
-        stdout = defaultStdOut,
         files = Seq("Top.hi.fir", "Top.mid.fir", "Child.mid.fir"),
         notFiles = Seq("Child.hi.fir")
       ),
@@ -264,33 +244,27 @@ class FirrtlMainSpec
       FirrtlMainTest(args = Array("-X", "none", "-E", "chirrtl", "-o", "foo"), files = Seq("foo.fir")),
       FirrtlMainTest(
         args = Array("-X", "high", "-E", "high", "-o", "foo"),
-        stdout = defaultStdOut,
         files = Seq("foo.hi.fir")
       ),
       FirrtlMainTest(
         args = Array("-X", "middle", "-E", "middle", "-o", "foo.middle"),
-        stdout = defaultStdOut,
         files = Seq("foo.middle.mid.fir")
       ),
       FirrtlMainTest(
         args = Array("-X", "low", "-E", "low", "-o", "foo.lo.fir"),
-        stdout = defaultStdOut,
         files = Seq("foo.lo.fir")
       ),
       FirrtlMainTest(
         args = Array("-X", "verilog", "-E", "verilog", "-o", "foo.sv"),
-        stdout = defaultStdOut,
         files = Seq("foo.sv.v")
       ),
       FirrtlMainTest(
         args = Array("-X", "sverilog", "-E", "sverilog", "-o", "Foo"),
-        stdout = defaultStdOut,
         files = Seq("Foo.sv")
       ),
       /* Test that an output is generated if no emitter is specified */
       FirrtlMainTest(
         args = Array("-X", "verilog", "-o", "Foo"),
-        stdout = defaultStdOut,
         files = Seq("Foo.v")
       )
     )

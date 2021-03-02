@@ -255,13 +255,18 @@ case class FirrtlCircuitAnnotation(circuit: Circuit) extends NoTargetAnnotation 
   *
   *  - set with `--warn:no-scala-version-deprecation`
   */
+@deprecated("Support for Scala 2.11 has been dropped, this object no longer does anything", "FIRRTL 1.5")
 case object WarnNoScalaVersionDeprecation extends NoTargetAnnotation with FirrtlOption with HasShellOptions {
   def longOption: String = "warn:no-scala-version-deprecation"
   val options = Seq(
     new ShellOption[Unit](
       longOption = longOption,
-      toAnnotationSeq = { _ => Seq(this) },
-      helpText = "Suppress Scala 2.11 deprecation warning (ignored in Scala 2.12+)"
+      toAnnotationSeq = { _ =>
+        val msg = s"'$longOption' no longer does anything and will be removed in FIRRTL 1.6"
+        firrtl.options.StageUtils.dramaticWarning(msg)
+        Seq(this)
+      },
+      helpText = "(deprecated, this option does nothing)"
     )
   )
 }

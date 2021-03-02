@@ -7,7 +7,7 @@ import mill.modules.Util
 import $ivy.`com.lihaoyi::mill-contrib-buildinfo:$MILL_VERSION`
 import mill.contrib.buildinfo.BuildInfo
 
-object firrtl extends mill.Cross[firrtlCrossModule]("2.11.12", "2.12.12", "2.13.2")
+object firrtl extends mill.Cross[firrtlCrossModule]("2.12.12", "2.13.2")
 
 class firrtlCrossModule(val crossScalaVersion: String) extends CrossSbtModule with PublishModule with BuildInfo {
   override def millSourcePath = super.millSourcePath / os.up
@@ -21,10 +21,7 @@ class firrtlCrossModule(val crossScalaVersion: String) extends CrossSbtModule wi
     Some("firrtl.stage.FirrtlMain")
   }
 
-  private def javacCrossOptions = majorVersion match {
-    case i if i < 12 => Seq("-source", "1.7", "-target", "1.7")
-    case _ => Seq("-source", "1.8", "-target", "1.8")
-  }
+  private def javacCrossOptions = Seq("-source", "1.8", "-target", "1.8")
 
   override def scalacOptions = T {
     super.scalacOptions() ++ Seq(
@@ -56,16 +53,11 @@ class firrtlCrossModule(val crossScalaVersion: String) extends CrossSbtModule wi
   }
 
   object test extends Tests {
-    private def ivyCrossDeps = majorVersion match {
-      case i if i < 12 => Agg(ivy"junit:junit:4.13.1")
-      case _ => Agg()
-    }
-
     override def ivyDeps = T {
       Agg(
         ivy"org.scalatest::scalatest:3.2.0",
         ivy"org.scalatestplus::scalacheck-1-14:3.1.3.0"
-      ) ++ ivyCrossDeps
+      )
     }
 
     def testFrameworks = T {

@@ -15,8 +15,7 @@ import scala.sys.process.{Process, ProcessLogger}
 class SMTCompilationTest extends AnyFlatSpec with LazyLogging {
   it should "generate valid SMTLib for AddNot" taggedAs (RequiresZ3) in { compileAndParse("AddNot") }
   it should "generate valid SMTLib for FPU" taggedAs (RequiresZ3) in { compileAndParse("FPU") }
-  // we get a stack overflow in Scala 2.11 because of a deeply nested and(...) expression in the sequencer
-  it should "generate valid SMTLib for HwachaSequencer" taggedAs (RequiresZ3) ignore {
+  it should "generate valid SMTLib for HwachaSequencer" taggedAs (RequiresZ3) in {
     compileAndParse("HwachaSequencer")
   }
   it should "generate valid SMTLib for ICache" taggedAs (RequiresZ3) in { compileAndParse("ICache") }

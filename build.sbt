@@ -2,24 +2,10 @@
 
 enablePlugins(SiteScaladocPlugin)
 
-def javacOptionsVersion(scalaVersion: String): Seq[String] = {
-  Seq() ++ {
-    // Scala 2.12 requires Java 8, but we continue to generate
-    //  Java 7 compatible code until we need Java 8 features
-    //  for compatibility with old clients.
-    CrossVersion.partialVersion(scalaVersion) match {
-      case Some((2, scalaMajor: Long)) if scalaMajor < 12 =>
-        Seq("-source", "1.7", "-target", "1.7")
-      case _ =>
-        Seq("-source", "1.8", "-target", "1.8")
-    }
-  }
-}
-
 lazy val commonSettings = Seq(
   organization := "edu.berkeley.cs",
   scalaVersion := "2.12.13",
-  crossScalaVersions := Seq("2.13.4", "2.12.13", "2.11.12")
+  crossScalaVersions := Seq("2.13.4", "2.12.13")
 )
 
 lazy val isAtLeastScala213 = Def.setting {
@@ -39,7 +25,8 @@ lazy val firrtlSettings = Seq(
     "-language:implicitConversions",
     "-Yrangepos",          // required by SemanticDB compiler plugin
   ),
-  javacOptions ++= javacOptionsVersion(scalaVersion.value),
+  // Always target Java8 for maximum compatibility
+  javacOptions ++= Seq("-source", "1.8", "-target", "1.8"),
   libraryDependencies ++= Seq(
     "org.scala-lang" % "scala-reflect" % scalaVersion.value,
     "org.scalatest" %% "scalatest" % "3.2.0" % "test",
@@ -142,22 +129,11 @@ lazy val publishSettings = Seq(
 )
 
 
-def scalacDocOptionsVersion(scalaVersion: String): Seq[String] = {
-  Seq() ++ {
-    // If we're building with Scala > 2.11, enable the compile option
-    //  to flag warnings as errors. This must be disabled for 2.11 since
-    //  references to the Java class library from Java 9 on generate warnings.
-    //  https://github.com/scala/bug/issues/10675
-    CrossVersion.partialVersion(scalaVersion) match {
-      case Some((2, scalaMajor: Long)) if scalaMajor < 12 => Seq()
-      case _ => Seq("-Xfatal-warnings")
-    }
-  }
-}
 lazy val docSettings = Seq(
   doc in Compile := (doc in ScalaUnidoc).value,
   autoAPIMappings := true,
   scalacOptions in Compile in doc ++= Seq(
+    "-Xfatal-warnings",
     "-feature",
     "-diagrams",
     "-diagrams-max-classes", "25",
@@ -175,7 +151,7 @@ lazy val docSettings = Seq(
         }
       s"https://github.com/chipsalliance/firrtl/tree/$branch€{FILE_PATH_EXT}#L€{FILE_LINE}"
     }
-  ) ++ scalacDocOptionsVersion(scalaVersion.value)
+  )
 )
 
 lazy val firrtl = (project in file("."))
