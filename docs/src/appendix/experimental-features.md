@@ -124,10 +124,10 @@ class Example3 extends RawModule {
 chisel3.stage.ChiselStage.emitVerilog(new Example3)
 ```
 
-Registers can be partialy initialized from Vec literals. Only specified elements will be assigned.
+Registers can be partially initialized from Vec literals. Only specified elements will be assigned.
 
 ```scala mdoc
-class 4 extends RawModule {
+class Example4 extends RawModule {
   val y = RegInit(
     Vec(4, UInt(8.W)).Lit(0 -> 0xAB.U(8.W), 2 -> 0xEF.U(8.W))
   )
@@ -135,7 +135,7 @@ class 4 extends RawModule {
 ```
 
 ```scala mdoc:verilog
-chisel3.stage.ChiselStage.emitVerilog(new 4)
+chisel3.stage.ChiselStage.emitVerilog(new Example4)
 ```
 
 
