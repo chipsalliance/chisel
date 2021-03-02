@@ -81,7 +81,7 @@ object Opcode extends ChiselEnum {
 
 The user can 'jump' to a value and continue incrementing by passing a start point then using a regular Value assignment. 
 
-```scala 
+```scala mdoc
 object BranchFunct3 extends ChiselEnum {
     val beq, bne = Value
     val blt = Value(4.U)
