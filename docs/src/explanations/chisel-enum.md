@@ -19,7 +19,7 @@ Below we see ChiselEnum being used as mux select for a RISC-V core. While wrappi
 // package CPUTypes {
     object AluMux1Sel extends ChiselEnum {
         val selectRS1, selectPC = Value
-        /**
+        /** How the values will be mapped
             "selectRS1" -> 0.U,
             "selectPC"  -> 1.U
         */
@@ -67,15 +67,15 @@ is thrown during Verilog generation.
 
 ```scala mdoc
 object Opcode extends ChiselEnum {
-    val load  = Value(0x03.U) // i load  -> 000_0011
-    val imm   = Value(0x13.U) // i imm   -> 001_0011
-    val auipc = Value(0x17.U) // u auipc -> 001_0111
-    val store = Value(0x23.U) // s store -> 010_0011
-    val reg   = Value(0x33.U) // r reg   -> 011_0011
-    val lui   = Value(0x37.U) // u lui   -> 011_0111
-    val br    = Value(0x63.U) // b br    -> 110_0011
-    val jalr  = Value(0x67.U) // i jalr  -> 110_0111
-    val jal   = Value(0x6F.U) // j jal   -> 110_1111
+    val load  = Value(0x03.U) // i "load"  -> 000_0011
+    val imm   = Value(0x13.U) // i "imm"   -> 001_0011
+    val auipc = Value(0x17.U) // u "auipc" -> 001_0111
+    val store = Value(0x23.U) // s "store" -> 010_0011
+    val reg   = Value(0x33.U) // r "reg"   -> 011_0011
+    val lui   = Value(0x37.U) // u "lui"   -> 011_0111
+    val br    = Value(0x63.U) // b "br"    -> 110_0011
+    val jalr  = Value(0x67.U) // i "jalr"  -> 110_0111
+    val jal   = Value(0x6F.U) // j "jal"   -> 110_1111
 }
 ```
 
@@ -86,7 +86,7 @@ object BranchFunct3 extends ChiselEnum {
     val beq, bne = Value
     val blt = Value(4.U)
     val bge, bltu, bgeu = Value
-    /**
+    /** How the values will be mapped
         "beq"  -> 0.U,
         "bne"  -> 1.U,
         "blt"  -> 4.U,
@@ -105,7 +105,7 @@ When testing your modules, the `.Type` and `.litValue` attributes allow for the 
 def expectedSel(sel: AluMux1Sel.Type): Boolean = sel match {
   case AluMux1Sel.selectRS1 => (sel.litValue == 0)
   case AluMux1Sel.selectPC  => (sel.litValue == 1)
-  case _                 => false
+  case _                    => false
 }
 ```
 
@@ -119,7 +119,7 @@ As of 2/26/2021, the width of the values is always inferred. To work around this
 object StoreFunct3 extends ChiselEnum {
     val sb, sh, sw = Value
     val ukn = Value(7.U)
-    /**
+    /** How the values will be mapped
         "sb" -> 0.U,
         "sh" -> 1.U,
         "sw" -> 2.U
