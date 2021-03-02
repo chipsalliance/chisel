@@ -520,7 +520,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
       }
     } // don't convert to a Map yet to preserve duplicate keys
 
-    clone.bind(VecLitBinding(vecLitLinkedMap))
+    clone.bind(VecLitBinding(ListMap(vecLitLinkedMap.toSeq:_*)))
     clone
   }
 }
