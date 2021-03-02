@@ -46,24 +46,6 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
     } }
   }
 
-  "bundle literals" should "not pack when sparsely specified" in {
-    intercept[NoSuchElementException] {
-      assertTesterPasses {
-        new BasicTester {
-          val bundleLit = (new MyBundle).Lit(_.a -> 42.U, _.c -> MyEnum.sB)
-          bundleLit.litOption should equal(None) // packed as 42 (8-bit), false=0 (1-bit), sB=1 (1-bit)
-          chisel3.assert(bundleLit.asUInt() === bundleLit.litOption.get.U) // sanity-check consistency with runtime
-
-          val longBundleLit = (new LongBundle).Lit(
-            _.a -> 0xDEADDEADBEEFL.U, _.c -> 4.5.F(16.W, 4.BP))
-          longBundleLit.litOption should be(None)
-          chisel3.assert(longBundleLit.asUInt() === longBundleLit.litOption.get.U)
-          stop()
-        }
-      }
-    }
-  }
-
   "bundle literals" should "work in RTL" in {
     val outsideBundleLit = (new MyBundle).Lit(_.a -> 42.U, _.b -> true.B, _.c -> MyEnum.sB)
     assertTesterPasses{ new BasicTester{
