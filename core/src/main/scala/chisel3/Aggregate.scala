@@ -50,38 +50,31 @@ sealed abstract class Aggregate extends Data {
     */
   override def litOption: Option[BigInt] = {
     // Shift the accumulated value by our width and add in our component, masked by our width.
-    def shiftAddBundle(accumulator: Option[BigInt], elt: Data): Option[BigInt] = (accumulator, elt.litOption()) match {
-      case (Some(accumulator), Some(eltLit)) =>
-        val width = elt.width.get
-        val masked = ((BigInt(1) << width) - 1) & eltLit  // also handles the negative case with two's complement
-        Some((accumulator << width) + masked)
-      case (None, _) => None
-      case (_, None) => None
-    }
-
-    // Shift the accumulated value by our width and add in our component, masked by width of Vec element.
-    def shiftAddVec(accumulator: Option[BigInt], data: Data, elt: LitArg): Option[BigInt] = {
-      (accumulator, elt) match {
-        case (Some(accumulator), eltLit) =>
-          val width = data.width.get
-          val masked = ((BigInt(1) << width) - 1) & eltLit.num  // also handles the negative case with two's complement
+    def shiftAdd(accumulator: Option[BigInt], elt: Data): Option[BigInt] = {
+      (accumulator, elt.litOption()) match {
+        case (Some(accumulator), Some(eltLit)) =>
+          val width = elt.width.get
+          val masked = ((BigInt(1) << width) - 1) & eltLit  // also handles the negative case with two's complement
           Some((accumulator << width) + masked)
         case (None, _) => None
-        case (_, _) => None
+        case (_, None) => None
       }
     }
+
     topBindingOpt match {
       case Some(BundleLitBinding(_)) =>
         getElements
           .reverse
-          .foldLeft[Option[BigInt]](Some(BigInt(0)))(shiftAddBundle)
+          .foldLeft[Option[BigInt]](Some(BigInt(0)))(shiftAdd)
       case Some(VecLitBinding(elementsToValue)) =>
         if (elementsToValue.size != this.asInstanceOf[Vec[_]].length) {
           None
         } else {
-          elementsToValue.toList.reverse.foldLeft[Option[BigInt]](Some(BigInt(0))) { case (accumulator, (data, litArg)) =>
-            shiftAddVec(accumulator, data, litArg)
-          }
+          elementsToValue
+            .toList
+            .map(_._1)
+            .reverse
+            .foldLeft[Option[BigInt]](Some(BigInt(0)))(shiftAdd)
         }
       case _ => None
     }
