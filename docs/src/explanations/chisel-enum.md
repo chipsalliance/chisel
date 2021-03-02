@@ -101,7 +101,7 @@ object BranchFunct3 extends ChiselEnum {
 
 When testing your modules, the `.Type` and `.litValue` attributes allow for the the objects to be passed as parameters and for the value to be converted to BigInt type. Note that BigInts cannot be casted to Int with `.asInstanceOf[Int]`, they use their own methods like `toInt`. Please review the [scala.math.BigInt](https://www.scala-lang.org/api/2.12.5/scala/math/BigInt.html) page for more details!
 
-```scala 
+```scala mdoc
 def expectedSel(sel: AluMux1Sel.Type): Boolean = sel match {
   case AluMux1Sel.selectRS1 => (sel.litValue == 0)
   case AluMux1Sel.selectPC  => (sel.litValue == 1)
