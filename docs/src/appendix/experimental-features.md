@@ -133,16 +133,17 @@ class ChildBundle extends Bundle {
   val foo = UInt(8.W)
 }
 
-class Example5 extends RawModule {
+class VecExample5 extends RawModule {
   val out = IO(Output(Vec(2, new ChildBundle)))
-  out := Vec(2, new ChildBundle)).Lit(
-    0 -> (new ChildBundle).Lit(_.foo -> 42.U))
-    1 -> (new ChildBundle).Lit(_.foo -> 7.U))
+  out := Vec(2, new ChildBundle).Lit(
+    0 -> (new ChildBundle).Lit(_.foo -> 42.U),
+    1 -> (new ChildBundle).Lit(_.foo -> 7.U)
+  )
 }
 ```
 
 ```scala mdoc:verilog
-chisel3.stage.ChiselStage.emitVerilog(new Example5)
+chisel3.stage.ChiselStage.emitVerilog(new VecExample5)
 ```
 
 ### Interval Type
