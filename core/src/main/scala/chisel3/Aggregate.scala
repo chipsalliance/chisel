@@ -5,7 +5,7 @@ package chisel3
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{HashSet, LinkedHashMap}
 import scala.language.experimental.macros
-import chisel3.experimental.{BaseModule, BundleLiteralException, EnumType, VecLiteralException}
+import chisel3.experimental.{BaseModule, BundleLiteralException, ChiselEnum, EnumType, VecLiteralException}
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
@@ -171,8 +171,8 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
   override def toString: String = {
     val bindingString = topBindingOpt match {
       case Some(VecLitBinding(vecLitBinding)) =>
-        val contents = vecLitBinding.map { case (data, lit) =>
-          s"$data=$lit"
+        val contents = vecLitBinding.zipWithIndex.map { case ((data, lit), index) =>
+          s"$index=$lit"
         }.mkString(", ")
         s"($contents"
       case _ => bindingToString

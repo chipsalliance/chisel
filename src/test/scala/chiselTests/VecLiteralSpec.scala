@@ -33,7 +33,7 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
       )
     }
 
-    "indices in vec literals myst not be repeated" in {
+    "indices in vec literals must not be repeated" in {
       val e = intercept[VecLiteralException] {
         Vec(2, UInt(4.W)).Lit(0 -> 1.U, 1 -> 2.U, 2 -> 3.U, 2 -> 3.U, 2 -> 3.U, 3 -> 4.U)
       }
@@ -56,11 +56,14 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
         "VecLit: Literal specified at index 0 (UInt<1>(1)) does not match Vec type SInt<4>"
       )
     }
+
     "all lits must be the same type but width can be equal or smaller than the Vec's element width" in {
       val v = Vec(2, SInt(4.W)).Lit(0 -> 1.S, 1 -> -2.S)
       v(0).toString should include(1.S(4.W).toString)
       v(1).toString should include(-2.S(4.W).toString)
+      v.toString should include ("SInt<4>[2](0=SLit(1,<4>), 1=SLit(-2,<4>)")
     }
+
     "all lits must be the same type but width cannot be greater than Vec's element width" in {
       val e = intercept[VecLiteralException] {
         val v = Vec(2, SInt(4.W)).Lit(0 -> 11.S, 1 -> -0xffff.S)
