@@ -110,14 +110,44 @@ class Example2 extends RawModule {
 chisel3.stage.ChiselStage.emitVerilog(new Example2)
 ```
 
-Bundle literals can also be nested arbitrarily.
+Registers can be initialized from Vec literals
+
+```scala mdoc
+class Example3 extends RawModule {
+  val y = RegInit(
+    Vec(4, UInt(8.W)).Lit(0 -> 0xAB.U(8.W), 1 -> 0xCD.U(8.W), 2 -> 0xEF.U(8.W), 3 -> 0xFF.U(8.W))
+  )
+}
+```
+
+```scala mdoc:verilog
+chisel3.stage.ChiselStage.emitVerilog(new Example3)
+```
+
+Registers can be partialy initialized from Vec literals. Only specified elements will be assigned.
+
+```scala mdoc
+class 4 extends RawModule {
+  val y = RegInit(
+    Vec(4, UInt(8.W)).Lit(0 -> 0xAB.U(8.W), 2 -> 0xEF.U(8.W))
+  )
+}
+```
+
+```scala mdoc:verilog
+chisel3.stage.ChiselStage.emitVerilog(new 4)
+```
+
+
+
+Vec literals can also be nested arbitrarily.
 
 ```scala mdoc
 class ChildBundle extends Bundle {
   val foo = UInt(8.W)
 }
 
-class Example3 extends RawModule {
+class Example5 extends RawModule {
   val out = IO(Output(Vec(2, new ChildBundle)))
   out := Vec(2, new ChildBundle)).Lit(
     0 -> (new ChildBundle).Lit(_.foo -> 42.U))
@@ -126,7 +156,7 @@ class Example3 extends RawModule {
 ```
 
 ```scala mdoc:verilog
-chisel3.stage.ChiselStage.emitVerilog(new Example3)
+chisel3.stage.ChiselStage.emitVerilog(new Example5)
 ```
 
 ### Interval Type
