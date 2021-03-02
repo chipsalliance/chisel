@@ -115,7 +115,7 @@ The ChiselEnum type also has methods `.all` and `.getWidth` where `all` returns 
 
 As of 2/26/2021, the width of the values is always inferred. To work around this, you can add an extra `Value` that forces the width that is desired. This is shown in the example below, where we add a field `ukn` to force the width to be 3 bits wide: 
 
-```scala
+```scala mdoc
 object StoreFunct3 extends ChiselEnum {
     val sb, sh, sw = Value
     val ukn = Value(7.U)
