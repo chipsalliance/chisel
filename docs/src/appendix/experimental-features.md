@@ -87,58 +87,44 @@ Vec literals can be constructed via an experimental import:
 import chisel3._
 import chisel3.experimental.VecLiterals._
 
-class Example extends RawModule {
-  val out = IO(Output(new Vec(2, UInt(4.W)))
+class VecExample1 extends Module {
+  val out = IO(Output(Vec(2, UInt(4.W))))
   out := Vec(2, UInt(4.W)).Lit(0 -> 1.U, 1 -> 2.U)
 }
 ```
 
 ```scala mdoc:verilog
-chisel3.stage.ChiselStage.emitVerilog(new Example)
+chisel3.stage.ChiselStage.emitVerilog(new VecExample1)
 ```
 
 Partial specification is allowed, defaulting any unconnected fields to 0 (regardless of type).
 
 ```scala mdoc
-class Example2 extends RawModule {
+class VecExample2 extends RawModule {
   val out = Vec(4, UInt(4.W))
   out := Vec(4, UInt(4.W)).Lit(0 -> 1.U, 3 -> 7.U)
 }
 ```
 
 ```scala mdoc:verilog
-chisel3.stage.ChiselStage.emitVerilog(new Example2)
+chisel3.stage.ChiselStage.emitVerilog(new VecExample2)
 ```
 
 Registers can be initialized from Vec literals
 
 ```scala mdoc
-class Example3 extends RawModule {
+class VecExample3 extends Module {
+  val out = IO(Output(Vec(4, UInt(8.W))))
   val y = RegInit(
     Vec(4, UInt(8.W)).Lit(0 -> 0xAB.U(8.W), 1 -> 0xCD.U(8.W), 2 -> 0xEF.U(8.W), 3 -> 0xFF.U(8.W))
   )
+  out := y
 }
 ```
 
 ```scala mdoc:verilog
-chisel3.stage.ChiselStage.emitVerilog(new Example3)
+chisel3.stage.ChiselStage.emitVerilog(new VecExample3)
 ```
-
-Registers can be partially initialized from Vec literals. Only specified elements will be assigned.
-
-```scala mdoc
-class Example4 extends RawModule {
-  val y = RegInit(
-    Vec(4, UInt(8.W)).Lit(0 -> 0xAB.U(8.W), 2 -> 0xEF.U(8.W))
-  )
-}
-```
-
-```scala mdoc:verilog
-chisel3.stage.ChiselStage.emitVerilog(new Example4)
-```
-
-
 
 Vec literals can also be nested arbitrarily.
 
