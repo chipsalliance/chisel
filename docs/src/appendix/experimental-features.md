@@ -79,7 +79,55 @@ class Example3 extends RawModule {
 chisel3.stage.ChiselStage.emitVerilog(new Example3)
 ```
 
-Vec literals are not yet supported.
+### Vec Literals
+
+Vec literals can be constructed via an experimental import:
+
+```scala mdoc
+import chisel3._
+import chisel3.experimental.VecLiterals._
+
+class Example extends RawModule {
+  val out = IO(Output(new Vec(2, UInt(4.W)))
+  out := Vec(2, UInt(4.W)).Lit(0 -> 1.U, 1 -> 2.U)
+}
+```
+
+```scala mdoc:verilog
+chisel3.stage.ChiselStage.emitVerilog(new Example)
+```
+
+Partial specification is allowed, defaulting any unconnected fields to 0 (regardless of type).
+
+```scala mdoc
+class Example2 extends RawModule {
+  val out = Vec(4, UInt(4.W))
+  out := Vec(4, UInt(4.W)).Lit(0 -> 1.U, 3 -> 7.U)
+}
+```
+
+```scala mdoc:verilog
+chisel3.stage.ChiselStage.emitVerilog(new Example2)
+```
+
+Bundle literals can also be nested arbitrarily.
+
+```scala mdoc
+class ChildBundle extends Bundle {
+  val foo = UInt(8.W)
+}
+
+class Example3 extends RawModule {
+  val out = IO(Output(Vec(2, new ChildBundle)))
+  out := Vec(2, new ChildBundle)).Lit(
+    0 -> (new ChildBundle).Lit(_.foo -> 42.U))
+    1 -> (new ChildBundle).Lit(_.foo -> 7.U))
+}
+```
+
+```scala mdoc:verilog
+chisel3.stage.ChiselStage.emitVerilog(new Example3)
+```
 
 ### Interval Type
 
