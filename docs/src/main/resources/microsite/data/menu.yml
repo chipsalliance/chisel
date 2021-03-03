@@ -31,6 +31,10 @@ options:
         url: chisel3/docs/explanations/bundles-and-vecs.html
         menu_type: chisel3
         menu_section: bundles-and-vecs
+      - title: Enumerations
+        url: chisel3/docs/explanations/chisel-enum.html
+        menu_type: chisel3
+        menu_section: enumerations
       - title: Multiple Clock Domains
         url: chisel3/docs/explanations/multi-clock.html
         menu_type: chisel3
