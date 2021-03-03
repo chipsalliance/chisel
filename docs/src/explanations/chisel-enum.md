@@ -1,3 +1,9 @@
+---                                                                                                                                                                             
+layout: docs
+title:  "Enumerations"
+section: "chisel3"
+---
+
 # ChiselEnum
 
 The ChiselEnum type can be used to reduce the chance of error when encoding mux selectors, opcodes, and functional unit operations. In contrast with`Chisel.util.Enum`, `ChiselEnum` are subclasses of `Data`, which means that they can be used to define fields in `Bundle`s, including in `IO`s.
