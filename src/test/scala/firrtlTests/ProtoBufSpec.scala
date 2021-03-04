@@ -218,6 +218,19 @@ class ProtoBufSpec extends FirrtlFlatSpec {
     FromProto.convert(ToProto.convert(vi).build) should equal(expected)
   }
 
+  it should "support Verification" in {
+    val clk = ir.Reference("clk", UnknownType)
+    val pred = ir.Reference("pred", UnknownType)
+    val en = ir.Reference("en", UnknownType)
+    val assert = ir.Verification(ir.Formal.Assert, ir.NoInfo, clk, pred, en, ir.StringLit("my assert message"))
+    val assume = ir.Verification(ir.Formal.Assume, ir.NoInfo, clk, pred, en, ir.StringLit("my assume message"))
+    val cover = ir.Verification(ir.Formal.Cover, ir.NoInfo, clk, pred, en, ir.StringLit("my cover message"))
+
+    FromProto.convert(ToProto.convert(assert).head.build) should equal(assert)
+    FromProto.convert(ToProto.convert(assume).head.build) should equal(assume)
+    FromProto.convert(ToProto.convert(cover).head.build) should equal(cover)
+  }
+
   it should "appropriately escape and unescape FileInfo strings" in {
     val pairs = Seq(
       "test\\ntest" -> "test\ntest",

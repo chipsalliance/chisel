@@ -276,6 +276,7 @@ message Firrtl {
       IsInvalid is_invalid = 17;
       MemoryPort memory_port = 18;
       Attach attach = 20;
+      Verification verification = 21;
     }
 
     SourceInfo source_info = 19;

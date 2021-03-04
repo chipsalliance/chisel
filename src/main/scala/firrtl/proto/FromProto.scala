@@ -258,9 +258,10 @@ object FromProto {
       case MEMORY_FIELD_NUMBER          => convert(stmt.getMemory, info)
       case IS_INVALID_FIELD_NUMBER =>
         ir.IsInvalid(convert(info), convert(stmt.getIsInvalid.getExpression))
-      case CMEMORY_FIELD_NUMBER     => convert(stmt.getCmemory, info)
-      case MEMORY_PORT_FIELD_NUMBER => convert(stmt.getMemoryPort, info)
-      case ATTACH_FIELD_NUMBER      => convert(stmt.getAttach, info)
+      case CMEMORY_FIELD_NUMBER      => convert(stmt.getCmemory, info)
+      case MEMORY_PORT_FIELD_NUMBER  => convert(stmt.getMemoryPort, info)
+      case ATTACH_FIELD_NUMBER       => convert(stmt.getAttach, info)
+      case VERIFICATION_FIELD_NUMBER => convert(stmt.getVerification, info)
     }
   }
 
