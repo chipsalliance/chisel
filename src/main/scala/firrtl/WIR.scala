@@ -13,6 +13,7 @@ trait Kind
 case object WireKind extends Kind
 case object PoisonKind extends Kind
 case object RegKind extends Kind
+case object RandomKind extends Kind
 case object InstanceKind extends Kind
 case object PortKind extends Kind
 case object NodeKind extends Kind

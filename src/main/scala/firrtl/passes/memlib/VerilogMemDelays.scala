@@ -177,7 +177,8 @@ class MemDelayAndReadwriteTransformer(m: DefModule) {
 
 object VerilogMemDelays extends Pass {
 
-  override def prerequisites = firrtl.stage.Forms.LowForm :+ Dependency(firrtl.passes.RemoveValidIf)
+  override def prerequisites = firrtl.stage.Forms.LowForm
+  override val optionalPrerequisites = Seq(Dependency(firrtl.passes.RemoveValidIf))
 
   override val optionalPrerequisiteOf =
     Seq(Dependency[VerilogEmitter], Dependency[SystemVerilogEmitter])

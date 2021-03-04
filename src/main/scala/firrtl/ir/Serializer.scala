@@ -2,6 +2,8 @@
 
 package firrtl.ir
 
+import firrtl.Utils
+import firrtl.backends.experimental.smt.random.DefRandom
 import firrtl.constraint.Constraint
 
 object Serializer {
@@ -114,6 +116,11 @@ object Serializer {
     case DefRegister(info, name, tpe, clock, reset, init) =>
       b ++= "reg "; b ++= name; b ++= " : "; s(tpe); b ++= ", "; s(clock); b ++= " with :"; newLineAndIndent(1)
       b ++= "reset => ("; s(reset); b ++= ", "; s(init); b += ')'; s(info)
+    case DefRandom(info, name, tpe, clock, en) =>
+      b ++= "rand "; b ++= name; b ++= " : "; s(tpe);
+      if (clock.isDefined) { b ++= ", "; s(clock.get); }
+      en match { case Utils.True() => case _ => b ++= " when "; s(en) }
+      s(info)
     case DefInstance(info, name, module, _) => b ++= "inst "; b ++= name; b ++= " of "; b ++= module; s(info)
     case DefMemory(
           info,

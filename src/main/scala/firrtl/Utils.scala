@@ -900,6 +900,79 @@ object Utils extends LazyLogging {
   def maskBigInt(value: BigInt, width: Int): BigInt = {
     value & ((BigInt(1) << width) - 1)
   }
+
+  /** Returns true iff the expression is a Literal or a Literal cast to a different type. */
+  def isLiteral(e: Expression): Boolean = e match {
+    case _: Literal => true
+    case DoPrim(op, args, _, _) if isCast(op) => args.exists(isLiteral)
+    case _                                    => false
+  }
+
+  /** Applies the firrtl And primop. Automatically constant propagates when one of the expressions is True or False. */
+  def and(e1: Expression, e2: Expression): Expression = {
+    assert(e1.tpe == e2.tpe)
+    (e1, e2) match {
+      case (a: UIntLiteral, b: UIntLiteral) => UIntLiteral(a.value | b.value, a.width)
+      case (True(), b)      => b
+      case (a, True())      => a
+      case (False(), _)     => False()
+      case (_, False())     => False()
+      case (a, b) if a == b => a
+      case (a, b)           => DoPrim(PrimOps.And, Seq(a, b), Nil, BoolType)
+    }
+  }
+
+  /** Applies the firrtl Eq primop. */
+  def eq(e1: Expression, e2: Expression): Expression = DoPrim(PrimOps.Eq, Seq(e1, e2), Nil, BoolType)
+
+  /** Applies the firrtl Or primop. Automatically constant propagates when one of the expressions is True or False. */
+  def or(e1: Expression, e2: Expression): Expression = {
+    assert(e1.tpe == e2.tpe)
+    (e1, e2) match {
+      case (a: UIntLiteral, b: UIntLiteral) => UIntLiteral(a.value | b.value, a.width)
+      case (True(), _)      => True()
+      case (_, True())      => True()
+      case (False(), b)     => b
+      case (a, False())     => a
+      case (a, b) if a == b => a
+      case (a, b)           => DoPrim(PrimOps.Or, Seq(a, b), Nil, BoolType)
+    }
+  }
+
+  /** Applies the firrtl Not primop. Automatically constant propagates when the expressions is True or False. */
+  def not(e: Expression): Expression = e match {
+    case True()  => False()
+    case False() => True()
+    case a       => DoPrim(PrimOps.Not, Seq(a), Nil, BoolType)
+  }
+
+  /** implies(e1, e2) = or(not(e1), e2). Automatically constant propagates when one of the expressions is True or False. */
+  def implies(e1: Expression, e2: Expression): Expression = or(not(e1), e2)
+
+  /** Builds a Mux expression with the correct type. */
+  def mux(cond: Expression, tval: Expression, fval: Expression): Expression = {
+    require(tval.tpe == fval.tpe)
+    Mux(cond, tval, fval, tval.tpe)
+  }
+
+  object True {
+    private val _True = UIntLiteral(1, IntWidth(1))
+
+    /** Matches `UInt<1>(1)` */
+    def unapply(e: UIntLiteral): Boolean = e.value == 1 && e.width == _True.width
+
+    /** Returns `UInt<1>(1)` */
+    def apply(): UIntLiteral = _True
+  }
+  object False {
+    private val _False = UIntLiteral(0, IntWidth(1))
+
+    /** Matches `UInt<1>(0)` */
+    def unapply(e: UIntLiteral): Boolean = e.value == 0 && e.width == _False.width
+
+    /** Returns `UInt<1>(0)` */
+    def apply(): UIntLiteral = _False
+  }
 }
 
 object MemoizedHash {
