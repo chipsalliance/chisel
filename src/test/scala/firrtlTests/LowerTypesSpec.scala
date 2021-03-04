@@ -486,7 +486,8 @@ class LowerTypesUniquifySpec extends FirrtlFlatSpec {
          |    out <= in0[in1[in2[0]]][in1[in2[1]]]
          |""".stripMargin
     val expected = Seq(
-      "out <= _in0_in1_in1_in2_1"
+      "node _in0_in1_in1 = _in0_in1_in1_in2_1",
+      "out <= _in0_in1_in1"
     )
 
     executeTest(input, expected)

@@ -57,6 +57,7 @@ object Forms {
   val MidForm: Seq[TransformDependency] = HighForm ++
     Seq(
       Dependency(passes.PullMuxes),
+      Dependency[firrtl.transforms.CSESubAccesses],
       Dependency(passes.ReplaceAccesses),
       Dependency(passes.ExpandConnects),
       Dependency(passes.RemoveAccesses),

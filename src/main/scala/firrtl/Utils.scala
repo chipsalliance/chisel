@@ -5,6 +5,7 @@ package firrtl
 import firrtl.ir._
 import firrtl.PrimOps._
 import firrtl.Mappers._
+import firrtl.traversals.Foreachers._
 import firrtl.WrappedExpression._
 
 import scala.collection.mutable
@@ -208,6 +209,24 @@ object Utils extends LazyLogging {
   def isBitExtract(expr: Expression): Boolean = expr match {
     case DoPrim(op, _, _, UIntType(_)) if isBitExtract(op) => true
     case _                                                 => false
+  }
+
+  /** Selects all the elements of this list ignoring the duplicates as determined by == after
+    * applying the transforming function f
+    *
+    * @note In Scala Standard Library starting in 2.13
+    */
+  def distinctBy[A, B](xs: List[A])(f: A => B): List[A] = {
+    val buf = new mutable.ListBuffer[A]
+    val seen = new mutable.HashSet[B]
+    for (x <- xs) {
+      val y = f(x)
+      if (!seen(y)) {
+        buf += x
+        seen += y
+      }
+    }
+    buf.toList
   }
 
   /** Provide a nice name to create a temporary * */
@@ -647,6 +666,19 @@ object Utils extends LazyLogging {
   def get_info(s: Statement): Info = s match {
     case s: HasInfo => s.info
     case _ => NoInfo
+  }
+
+  /** Finds all root References in a nested Expression */
+  def getAllRefs(expr: Expression): Seq[Reference] = {
+    val refs = mutable.ListBuffer.empty[Reference]
+    def rec(e: Expression): Unit = {
+      e match {
+        case ref: Reference => refs += ref
+        case other => other.foreach(rec)
+      }
+    }
+    rec(expr)
+    refs.toList
   }
 
   /** Splits an Expression into root Ref and tail

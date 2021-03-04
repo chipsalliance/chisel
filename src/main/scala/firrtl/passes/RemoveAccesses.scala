@@ -9,6 +9,7 @@ import firrtl.Mappers._
 import firrtl.Utils._
 import firrtl.WrappedExpression._
 import firrtl.options.Dependency
+import firrtl.transforms.CSESubAccesses
 
 import scala.collection.mutable
 
@@ -21,7 +22,8 @@ object RemoveAccesses extends Pass {
       Dependency(PullMuxes),
       Dependency(ZeroLengthVecs),
       Dependency(ReplaceAccesses),
-      Dependency(ExpandConnects)
+      Dependency(ExpandConnects),
+      Dependency[CSESubAccesses]
     ) ++ firrtl.stage.Forms.Deduped
 
   override def invalidates(a: Transform): Boolean = a match {
