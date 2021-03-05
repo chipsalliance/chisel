@@ -809,11 +809,11 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
   // (like the outer module or enclosing Bundles).
   private var _outerInst: Option[Object] = None
 
-  // For autoclonetype, record possible candidates for outer instance.
+  // For reflective autoclonetype, record possible candidates for outer instance.
   // _outerInst should always take precedence, since it should be propagated from the original
   // object which has the most accurate context.
-  private val _containingModule: Option[BaseModule] = Builder.currentModule
-  private val _containingBundles: Seq[Bundle] = Builder.updateBundleStack(this)
+  private val _containingModule: Option[BaseModule] = if (_usingPlugin) None else Builder.currentModule
+  private val _containingBundles: Seq[Bundle] = if (_usingPlugin) Nil else Builder.updateBundleStack(this)
 
   private def checkClone(clone: Bundle): Unit = {
     for ((name, field) <- elements) {
