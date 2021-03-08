@@ -195,4 +195,46 @@ class MemorySpec extends EndToEndSMTBaseSpec {
   "memory with two write ports" should "can have collisions when enables are unconstrained" taggedAs (RequiresZ3) in {
     test(collisionTest("UInt(1)"), MCFail(1), kmax = 1)
   }
+
+  private def readEnableSrc(pred: String, num: Int) =
+    s"""
+       |circuit ReadEnableTest$num:
+       |  module ReadEnableTest$num:
+       |    input c : Clock
+       |    input preset: AsyncReset
+       |
+       |    reg first: UInt<1>, c with: (reset => (preset, UInt(1)))
+       |    first <= UInt(0)
+       |
+       |    reg even: UInt<1>, c with: (reset => (preset, UInt(0)))
+       |    node odd = not(even)
+       |    even <= not(even)
+       |
+       |    mem m:
+       |      data-type => UInt<8>
+       |      depth => 4
+       |      reader => r
+       |      read-latency => 1
+       |      write-latency => 1
+       |      read-under-write => undefined
+       |
+       |    m.r.clk <= c
+       |    m.r.addr <= UInt(0)
+       |    ; the read port is enabled in even cycles
+       |    m.r.en <= even
+       |
+       |    assert(c, $pred, not(first), "")
+       |""".stripMargin
+
+  "a memory with read enable" should "supply valid data one cycle after en=1" in {
+    val init = Seq(MemoryScalarInitAnnotation(CircuitTarget(s"ReadEnableTest1").module(s"ReadEnableTest1").ref("m"), 0))
+    // the read port is enabled on even cycles, so on odd cycles we should reliably get zeros
+    test(readEnableSrc("or(not(odd), eq(m.r.data, UInt(0)))", 1), MCSuccess, kmax = 3, annos = init)
+  }
+
+  "a memory with read enable" should "supply invalid data one cycle after en=0" in {
+    val init = Seq(MemoryScalarInitAnnotation(CircuitTarget(s"ReadEnableTest2").module(s"ReadEnableTest2").ref("m"), 0))
+    // the read port is disabled on odd cycles, so on even cycles we should *NOT* reliably get zeros
+    test(readEnableSrc("or(not(even), eq(m.r.data, UInt(0)))", 2), MCFail(1), kmax = 1, annos = init)
+  }
 }
