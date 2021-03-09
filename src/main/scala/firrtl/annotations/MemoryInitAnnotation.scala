@@ -2,7 +2,14 @@
 
 package firrtl.annotations
 
-import firrtl.{MemoryArrayInit, MemoryEmissionOption, MemoryInitValue, MemoryRandomInit, MemoryScalarInit}
+import firrtl.{
+  MemoryArrayInit,
+  MemoryEmissionOption,
+  MemoryFileInlineInit,
+  MemoryInitValue,
+  MemoryRandomInit,
+  MemoryScalarInit
+}
 
 /**
   * Represents the initial value of the annotated memory.
@@ -31,5 +38,17 @@ case class MemoryScalarInitAnnotation(target: ReferenceTarget, value: BigInt) ex
 case class MemoryArrayInitAnnotation(target: ReferenceTarget, values: Seq[BigInt]) extends MemoryInitAnnotation {
   override def duplicate(n: ReferenceTarget): Annotation = copy(n)
   override def initValue:    MemoryInitValue = MemoryArrayInit(values)
+  override def isRandomInit: Boolean = false
+}
+
+/** Initialize the `target` memory with inline readmem[hb] statement. */
+case class MemoryFileInlineAnnotation(
+  target:      ReferenceTarget,
+  filename:    String,
+  hexOrBinary: MemoryLoadFileType.FileType = MemoryLoadFileType.Hex)
+    extends MemoryInitAnnotation {
+  require(filename.trim.nonEmpty, "empty filename not allowed in MemoryFileInlineAnnotation")
+  override def duplicate(n: ReferenceTarget): Annotation = copy(n)
+  override def initValue:    MemoryInitValue = MemoryFileInlineInit(filename, hexOrBinary)
   override def isRandomInit: Boolean = false
 }

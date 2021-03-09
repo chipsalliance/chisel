@@ -7,7 +7,7 @@ import firrtl.PrimOps._
 import firrtl.Utils._
 import firrtl.WrappedExpression._
 import firrtl.traversals.Foreachers._
-import firrtl.annotations.{CircuitTarget, ReferenceTarget, SingleTargetAnnotation}
+import firrtl.annotations.{CircuitTarget, MemoryLoadFileType, ReferenceTarget, SingleTargetAnnotation}
 import firrtl.passes.LowerTypes
 import firrtl.passes.MemPortUtils._
 import firrtl.stage.TransformManager
@@ -849,6 +849,16 @@ class VerilogEmitter extends SeqTransform with Emitter {
             rstring,
             ";"
           )
+        case MemoryFileInlineInit(filename, hexOrBinary) =>
+          val readmem = hexOrBinary match {
+            case MemoryLoadFileType.Binary => "$readmemb"
+            case MemoryLoadFileType.Hex    => "$readmemh"
+          }
+          val inlineLoad = s"""
+                              |initial begin
+                              |  $readmem("$filename", ${s.name});
+                              |end""".stripMargin
+          memoryInitials += Seq(inlineLoad)
       }
     }
 

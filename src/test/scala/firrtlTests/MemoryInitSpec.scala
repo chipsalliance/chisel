@@ -165,6 +165,23 @@ class MemInitSpec extends FirrtlFlatSpec {
     assert(annos == Seq(MemoryArrayInitAnnotation(mRef, largeSeq)))
   }
 
+  "MemoryFileInlineAnnotation" should "emit $readmemh for text.hex" in {
+    val annos = Seq(MemoryFileInlineAnnotation(mRef, filename = "text.hex"))
+    val result = compile(annos)
+    result should containLine("""$readmemh("text.hex", """ + mRef.name + """);""")
+  }
+
+  "MemoryFileInlineAnnotation" should "emit $readmemb for text.bin" in {
+    val annos = Seq(MemoryFileInlineAnnotation(mRef, filename = "text.bin", hexOrBinary = MemoryLoadFileType.Binary))
+    val result = compile(annos)
+    result should containLine("""$readmemb("text.bin", """ + mRef.name + """);""")
+  }
+
+  "MemoryFileInlineAnnotation" should "fail with blank filename" in {
+    assertThrows[Exception] {
+      compile(Seq(MemoryFileInlineAnnotation(mRef, filename = "")))
+    }
+  }
 }
 
 abstract class MemInitExecutionSpec(values: Seq[Int], init: ReferenceTarget => Annotation)
