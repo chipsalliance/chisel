@@ -62,7 +62,7 @@ object FirrtlToTransitionSystem extends Transform with DependencyAPIMigration {
   // TODO: We also would like to run some optimization passes, but RemoveValidIf won't allow us to model DontCare
   //       precisely and PadWidths emits ill-typed firrtl.
   override def prerequisites: Seq[Dependency[Transform]] = Forms.LowForm ++
-    Seq(Dependency(UndefinedMemoryBehaviorPass), Dependency(VerilogMemDelays))
+    Seq(Dependency(InvalidToRandomPass), Dependency(UndefinedMemoryBehaviorPass), Dependency(VerilogMemDelays))
   override def invalidates(a: Transform): Boolean = false
   // since this pass only runs on the main module, inlining needs to happen before
   override def optionalPrerequisites: Seq[TransformDependency] = Seq(Dependency[firrtl.passes.InlineInstances])
@@ -147,7 +147,7 @@ private class ModuleToTransitionSystem extends LazyLogging {
     uninterpreted: Map[String, UninterpretedModuleAnnotation] = Map()
   ): TransitionSystem = {
     // first pass over the module to convert expressions; discover state and I/O
-    val scan = new ModuleScanner(makeRandom, uninterpreted)
+    val scan = new ModuleScanner(uninterpreted)
     m.foreachPort(scan.onPort)
     m.foreachStmt(scan.onStatement)
 
@@ -200,8 +200,8 @@ private class ModuleToTransitionSystem extends LazyLogging {
         }
     }
 
-    // inputs are original module inputs and any "random" signal we need for modelling
-    val inputs = scan.inputs ++ randoms.values
+    // inputs are original module inputs and any DefRandom signal
+    val inputs = scan.inputs
 
     // module info to the comment header
     val header = serializeInfo(m.info).map(InfoPrefix + _).toArray
@@ -350,21 +350,10 @@ private class ModuleToTransitionSystem extends LazyLogging {
       if (infos.isEmpty) { None }
       else { Some(infos.map(_.escaped).mkString(InfoSeparator)) }
   }
-
-  private[firrtl] val randoms = mutable.LinkedHashMap[String, BVSymbol]()
-  private def makeRandom(baseName: String, width: Int): BVExpr = {
-    // TODO: actually ensure that there cannot be any name clashes with other identifiers
-    val suffixes = Iterator(baseName) ++ (0 until 200).map(ii => baseName + "_" + ii)
-    val name = suffixes.map(s => "RANDOM." + s).find(!randoms.contains(_)).get
-    val sym = BVSymbol(name, width)
-    randoms(name) = sym
-    sym
-  }
 }
 
 // performas a first pass over the module collecting all connections, wires, registers, input and outputs
 private class ModuleScanner(
-  makeRandom:    (String, Int) => BVExpr,
   uninterpreted: Map[String, UninterpretedModuleAnnotation])
     extends LazyLogging {
   import FirrtlExpressionSemantics.getWidth
@@ -429,7 +418,7 @@ private class ModuleScanner(
       if (!isClock(expr.tpe)) {
         insertDummyAssignsForUnusedOutputs(expr)
         infos.append(name -> info)
-        val e = onExpression(expr, name)
+        val e = onExpression(expr)
         nodes.append(name)
         connects.append((name, e))
       }
@@ -439,8 +428,8 @@ private class ModuleScanner(
       insertDummyAssignsForUnusedOutputs(init)
       infos.append(name -> info)
       val width = getWidth(tpe)
-      val resetExpr = onExpression(reset, 1, name + "_reset")
-      val initExpr = onExpression(init, width, name + "_init")
+      val resetExpr = onExpression(reset, 1)
+      val initExpr = onExpression(init, width)
       registers.append((name, width, resetExpr, initExpr))
     case m: ir.DefMemory =>
       namespace.newName(m.name)
@@ -456,13 +445,11 @@ private class ModuleScanner(
         val name = loc.serialize
         insertDummyAssignsForUnusedOutputs(expr)
         infos.append(name -> info)
-        connects.append((name, onExpression(expr, getWidth(loc.tpe), name)))
+        connects.append((name, onExpression(expr, getWidth(loc.tpe))))
       }
-    case ir.IsInvalid(info, loc) =>
+    case i @ ir.IsInvalid(info, loc) =>
       if (!isGroundType(loc.tpe)) error("All connects should have been lowered to ground type!")
-      val name = loc.serialize
-      infos.append(name -> info)
-      connects.append((name, makeRandom(name + "_INVALID", getWidth(loc.tpe))))
+      throw new UnsupportedFeatureException(s"IsInvalid statements are not supported: ${i.serialize}")
     case ir.DefInstance(info, name, module, tpe) => onInstance(info, name, module, tpe)
     case s @ ir.Verification(op, info, _, pred, en, msg) =>
       if (op == ir.Formal.Cover) {
@@ -471,8 +458,8 @@ private class ModuleScanner(
         insertDummyAssignsForUnusedOutputs(pred)
         insertDummyAssignsForUnusedOutputs(en)
         val name = namespace.newName(msgToName(op.toString, msg.string))
-        val predicate = onExpression(pred, name + "_predicate")
-        val enabled = onExpression(en, name + "_enabled")
+        val predicate = onExpression(pred)
+        val enabled = onExpression(en)
         val e = BVImplies(enabled, predicate)
         infos.append(name -> info)
         connects.append(name -> e)
@@ -596,16 +583,14 @@ private class ModuleScanner(
     case other => other.foreachExpr(findUnusedOutputUse)
   }
 
-  private case class Context(baseName: String) extends TranslationContext {
-    override def getRandom(width: Int): BVExpr = makeRandom(baseName, width)
-  }
+  private case class Context() extends TranslationContext {}
 
-  private def onExpression(e: ir.Expression, width: Int, randomPrefix: String): BVExpr = {
-    implicit val ctx: TranslationContext = Context(randomPrefix)
+  private def onExpression(e: ir.Expression, width: Int): BVExpr = {
+    implicit val ctx: TranslationContext = Context()
     FirrtlExpressionSemantics.toSMT(e, width, allowNarrow = false)
   }
-  private def onExpression(e: ir.Expression, randomPrefix: String): BVExpr = {
-    implicit val ctx: TranslationContext = Context(randomPrefix)
+  private def onExpression(e: ir.Expression): BVExpr = {
+    implicit val ctx: TranslationContext = Context()
     FirrtlExpressionSemantics.toSMT(e)
   }
 

@@ -9,8 +9,6 @@ import firrtl.passes.CheckWidths.WidthTooBig
 
 private trait TranslationContext {
   def getReference(name: String, tpe: ir.Type): BVExpr = BVSymbol(name, FirrtlExpressionSemantics.getWidth(tpe))
-  def getRandom(tpe:     ir.Type): BVExpr = getRandom(FirrtlExpressionSemantics.getWidth(tpe))
-  def getRandom(width:   Int): BVExpr
 }
 
 private object FirrtlExpressionSemantics {
@@ -34,9 +32,8 @@ private object FirrtlExpressionSemantics {
       case ir.Mux(cond, tval, fval, _) =>
         val width = List(tval, fval).map(getWidth).max
         BVIte(toSMT(cond), toSMT(tval, width), toSMT(fval, width))
-      case ir.ValidIf(cond, value, tpe) =>
-        val tru = toSMT(value)
-        BVIte(toSMT(cond), tru, ctx.getRandom(tpe))
+      case v: ir.ValidIf =>
+        throw new RuntimeException(s"Unsupported expression: ValidIf ${v.serialize}")
     }
     assert(
       eSMT.width == getWidth(e),
@@ -81,15 +78,7 @@ private object FirrtlExpressionSemantics {
         val (width, op) = if (isSigned(num)) {
           (getWidth(num) + 1, Op.SignedDiv)
         } else { (getWidth(num), Op.UnsignedDiv) }
-        // "The result of a division where den is zero is undefined."
-        val undef = ctx.getRandom(width)
-        val denSMT = toSMT(den)
-        val denIsZero = BVEqual(denSMT, BVLiteral(0, denSMT.width))
-        val numByDen = BVOp(op, toSMT(num, width), forceWidth(denSMT, isSigned(den), width))
-        BVIte(denIsZero, undef, numByDen)
-      case (PrimOps.Div, Seq(num, den), _) if isSigned(num) =>
-        val width = getWidth(num) + 1
-        BVOp(Op.SignedDiv, toSMT(num, width), toSMT(den, width))
+        BVOp(op, toSMT(num, width), forceWidth(toSMT(den), isSigned(den), width))
       case (PrimOps.Rem, Seq(num, den), _) =>
         val op = if (isSigned(num)) Op.SignedRem else Op.UnsignedRem
         val width = args.map(getWidth).max
