@@ -854,11 +854,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
             case MemoryLoadFileType.Binary => "$readmemb"
             case MemoryLoadFileType.Hex    => "$readmemh"
           }
-          val inlineLoad = s"""
-                              |initial begin
-                              |  $readmem("$filename", ${s.name});
-                              |end""".stripMargin
-          memoryInitials += Seq(inlineLoad)
+          memoryInitials += Seq(s"""$readmem("$filename", ${s.name});""")
       }
     }
 
