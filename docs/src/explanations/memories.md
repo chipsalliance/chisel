@@ -3,27 +3,32 @@ layout: docs
 title:  "Memories"
 section: "chisel3"
 ---
+
+# Memories
+
 Chisel provides facilities for creating both read only and read/write memories.
 
 ## ROM
 
 Users can define read only memories with a `Vec`:
-
-``` scala
+```scala mdoc:invisible
+import chisel3._
+```
+``` scala mdoc:compile-only
     VecInit(inits: Seq[T])
     VecInit(elt0: T, elts: T*)
 ```
 
 where `inits` is a sequence of initial `Data` literals that initialize the ROM. For example,  users cancreate a small ROM initialized to 1, 2, 4, 8 and loop through all values using a counter as an address generator as follows:
 
-``` scala
+``` scala mdoc:compile-only
     val m = VecInit(Array(1.U, 2.U, 4.U, 8.U))
     val r = m(counter(m.length.U))
 ```
 
 We can create an *n* value sine lookup table using a ROM initialized as follows:
 
-``` scala
+``` scala mdoc:silent
     def sinTable(amp: Double, n: Int) = {
       val times =
         (0 until n).map(i => (i*2*Pi)/(n.toDouble-1) - Pi)
@@ -37,7 +42,7 @@ We can create an *n* value sine lookup table using a ROM initialized as follows:
 
 where `amp` is used to scale the fixpoint values stored in the ROM.
 
-## Memories
+## Read-Write Memories
 
 Memories are given special treatment in Chisel since hardware implementations of memory vary greatly. For example, FPGA memories are instantiated quite differently from ASIC memories. Chisel defines a memory abstraction that can map to either simple Verilog behavioural descriptions or to instances of memory modules that are available from external memory generators provided by foundry or IP vendors.
 
@@ -168,3 +173,4 @@ class MaskedRWSmem extends Module {
   }
 }
 ```
+

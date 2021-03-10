@@ -5,6 +5,9 @@ section: "chisel3"
 ---
 
 # Chisel3 vs Chisel2
+```scala mdoc:invisible
+import chisel3._
+```
 
 ## Chisel2 Migration
 For those moving from Chisel2, there were some backwards incompatible changes
@@ -16,7 +19,7 @@ modifications are:
    val wire = UInt(width = 15)
    ```
    becomes (in Chisel3):
-   ```scala
+   ```scala mdoc:compile-only
    val wire = Wire(UInt(15.W))
    ```
 
@@ -25,7 +28,7 @@ modifications are:
    val done = Bool(OUTPUT)
    ```
    becomes (in Chisel3):
-   ```scala
+   ```scala mdoc:compile-only
    val wire = Output(Bool())
    ```
 
@@ -36,7 +39,7 @@ modifications are:
    val dout = when(enable) { mem(addr) }
    ```
    becomes (in Chisel3):
-   ```scala
+   ```scala mdoc:compile-only
    val addr = UInt()
    val mem = SyncReadMem(1024, UInt(8.W))
    val dout = mem.read(addr, enable)
@@ -54,7 +57,7 @@ modifications are:
    }
    ```
    becomes (in Chisel3):
-   ```scala
+   ```scala mdoc:compile-only
    object Hello {
      def main(args: Array[String]): Unit = {
        chisel3.Driver.execute(Array[String](), () => new Hello())
@@ -143,14 +146,14 @@ hardware objects), based on specific imports.
 This allows designs to move from less strict front end checks (largely compatible with Chisel2), to stricter checking,
 on a file by file basis, by adjusting specific import statements.
 
-```scala
-    import chisel3.core.ExplicitCompileOptions.Strict
+```scala mdoc:compile-only
+    import chisel3.ExplicitCompileOptions.Strict
 ```
 
 enables stricter connection and usage checks, while
 
-```scala
-    import chisel3.core.ExplicitCompileOptions.NotStrict
+```scala mdoc:compile-only
+    import chisel3.ExplicitCompileOptions.NotStrict
 ```
 
 defers these checks to the `firrtl` compiler.

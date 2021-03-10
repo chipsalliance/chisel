@@ -4,6 +4,8 @@ title:  "Reset"
 section: "chisel3"
 ---
 
+# Reset
+
 ```scala mdoc:invisible
 import chisel3._
 

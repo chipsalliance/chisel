@@ -3,6 +3,9 @@ layout: docs
 title:  "Printing"
 section: "chisel3"
 ---
+
+# Printing in Chisel
+
 Chisel provides the `printf` function for debugging purposes. It comes in two flavors:
 
 * [Scala-style](#scala-style)
@@ -12,14 +15,17 @@ Chisel provides the `printf` function for debugging purposes. It comes in two fl
 
 Chisel also supports printf in a style similar to [Scala's String Interpolation](http://docs.scala-lang.org/overviews/core/string-interpolation.html). Chisel provides a custom string interpolator `p` which can be used as follows:
 
-```scala
+```scala mdoc:invisible
+import chisel3._
+```
+```scala mdoc:compile-only
 val myUInt = 33.U
 printf(p"myUInt = $myUInt") // myUInt = 33
 ```
 
 Note that when concatenating `p"..."` strings, you need to start with a `p"..."` string:
 
-```scala
+```scala mdoc:compile-only
 // Does not interpolate the second string
 val myUInt = 33.U
 printf("my normal string" + p"myUInt = $myUInt")
@@ -29,7 +35,8 @@ printf("my normal string" + p"myUInt = $myUInt")
 
 Other formats are available as follows:
 
-```scala
+```scala mdoc:compile-only
+val myUInt = 33.U
 // Hexadecimal
 printf(p"myUInt = 0x${Hexadecimal(myUInt)}") // myUInt = 0x21
 // Binary
@@ -44,8 +51,8 @@ We recognize that the format specifiers are verbose, so we are working on a more
 
 Chisel provides default custom "pretty-printing" for Vecs and Bundles. The default printing of a Vec is similar to printing a Seq or List in Scala while printing a Bundle is similar to printing a Scala Map.
 
-```scala
-val myVec = Vec(5.U, 10.U, 13.U)
+```scala mdoc:compile-only
+val myVec = VecInit(5.U, 10.U, 13.U)
 printf(p"myVec = $myVec") // myVec = Vec(5, 10, 13)
 
 val myBundle = Wire(new Bundle {
@@ -61,7 +68,7 @@ printf(p"myBundle = $myBundle") // myBundle = Bundle(a -> 3, b -> 11)
 
 Chisel also provides the ability to specify _custom_ printing for user-defined Bundles.
 
-```scala
+```scala mdoc:compile-only
 class Message extends Bundle {
   val valid = Bool()
   val addr = UInt(32.W)
@@ -124,7 +131,7 @@ Note that single quotes do not require escaping, but are legal to escape.
 
 Thus printf can be used in a way very similar to how it is used in C:
 
-```scala
+```scala mdoc:compile-only
 val myUInt = 32.U
 printf("myUInt = %d", myUInt) // myUInt = 32
 ```

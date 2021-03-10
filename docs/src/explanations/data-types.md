@@ -4,6 +4,8 @@ title:  "Data Types"
 section: "chisel3"
 ---
 
+# Chisel Data Types
+
 Chisel datatypes are used to specify the type of values held in state
 elements or flowing on wires.  While hardware designs ultimately
 operate on vectors of binary digits, other more abstract
@@ -17,7 +19,7 @@ format.  Boolean values are represented as type ```Bool```.  Note
 that these types are distinct from Scala's builtin types such as
 ```Int``` or ```Boolean```.
 
-> There is a new experimental type **Interval** which gives the developer more control of the type by allowing the definition of an IntervalRange.  See: [Interval Type](interval-type)
+> There is a new experimental type **Interval** which gives the developer more control of the type by allowing the definition of an IntervalRange.  See: [Interval Type](../appendix/experimental-features#interval-type)
 
 Additionally, Chisel defines `Bundles` for making
 collections of values with named fields (similar to ```structs``` in
