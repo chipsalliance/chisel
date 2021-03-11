@@ -184,4 +184,40 @@ class CSESubAccessesSpec extends FirrtlFlatSpec {
     compile(input) should be(parse(expected).serialize)
   }
 
+  it should "ignore flipped LHS SubAccesses" in {
+    val input = circuit(
+      s"""|input in : { foo : UInt<8> }
+          |input idx : UInt<1>
+          |input out : { flip foo : UInt<8> }[2]
+          |out[0].foo <= UInt(0)
+          |out[1].foo <= UInt(0)
+          |out[idx].foo <= in.foo"""
+    )
+    val expected = circuit(
+      s"""|input in : { foo : UInt<8> }
+          |input idx : UInt<1>
+          |input out : { flip foo : UInt<8> }[2]
+          |out[0].foo <= UInt(0)
+          |out[1].foo <= UInt(0)
+          |out[idx].foo <= in.foo"""
+    )
+    compile(input) should be(parse(expected).serialize)
+  }
+
+  it should "ignore SubAccesses of bidirectional aggregates" in {
+    val input = circuit(
+      s"""|input in : { flip foo : UInt<8>, bar : UInt<8> }
+          |input idx : UInt<2>
+          |output out : { flip foo : UInt<8>, bar : UInt<8> }[4]
+          |out[idx] <= in"""
+    )
+    val expected = circuit(
+      s"""|input in : { flip foo : UInt<8>, bar : UInt<8> }
+          |input idx : UInt<2>
+          |output out : { flip foo : UInt<8>, bar : UInt<8> }[4]
+          |out[idx] <= in"""
+    )
+    compile(input) should be(parse(expected).serialize)
+  }
+
 }

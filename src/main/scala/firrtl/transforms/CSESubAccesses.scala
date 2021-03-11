@@ -21,7 +21,9 @@ object CSESubAccesses {
     val acc = new mutable.ListBuffer[(SubAccess, Info)]
     def onExpr(outer: Statement)(expr: Expression): Unit = {
       // Need postorder because we want to visit inner SubAccesses first
-      expr.foreach(onExpr(outer))
+      // Stop recursing on any non-Source because flips can make the SubAccess a Source despite the
+      //   overall Expression being a Sink
+      if (flow(expr) == SourceFlow) expr.foreach(onExpr(outer))
       expr match {
         case e: SubAccess if flow(e) == SourceFlow => acc += e -> get_info(outer)
         case _ => // Do nothing
@@ -42,6 +44,8 @@ object CSESubAccesses {
 
   // Replaces all right-hand side SubAccesses with References
   private def replaceOnSourceExpr(replace: SubAccess => Reference)(expr: Expression): Expression = expr match {
+    // Stop is we ever see a non-SourceFlow
+    case e if flow(e) != SourceFlow => e
     // Don't traverse children of SubAccess, just replace it
     // Nested SubAccesses are handled during creation of the nodes that the references refer to
     case acc: SubAccess if flow(acc) == SourceFlow => replace(acc)
