@@ -6,7 +6,7 @@ import java.io.File
 
 import chisel3._
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
-import chisel3.util.experimental.loadMemoryFromFile
+import chisel3.util.experimental.{loadMemoryFromFile,loadMemoryFromFileInline}
 import chisel3.util.log2Ceil
 import firrtl.FirrtlExecutionSuccess
 import firrtl.annotations.MemoryLoadFileType
@@ -27,6 +27,26 @@ class UsesThreeMems(memoryDepth: Int, memoryType: Data) extends Module {
   loadMemoryFromFile(memory1, "./mem1")
   loadMemoryFromFile(memory2, "./mem1")
   loadMemoryFromFile(memory3, "./mem1")
+
+  io.value1 := memory1(io.address)
+  io.value2 := memory2(io.address)
+  io.value3 := memory3(io.address)
+}
+
+class UsesThreeMemsInline(memoryDepth: Int, memoryType: Data, memoryFile: String, hexOrBinary: MemoryLoadFileType.FileType) extends Module {
+  val io = IO(new Bundle {
+    val address = Input(UInt(memoryType.getWidth.W))
+    val value1  = Output(memoryType)
+    val value2  = Output(memoryType)
+    val value3  = Output(memoryType)
+  })
+
+  val memory1 = Mem(memoryDepth, memoryType)
+  val memory2 = Mem(memoryDepth, memoryType)
+  val memory3 = Mem(memoryDepth, memoryType)
+  loadMemoryFromFileInline(memory1, memoryFile, hexOrBinary)
+  loadMemoryFromFileInline(memory2, memoryFile, hexOrBinary)
+  loadMemoryFromFileInline(memory3, memoryFile, hexOrBinary)
 
   io.value1 := memory1(io.address)
   io.value2 := memory2(io.address)
@@ -205,4 +225,35 @@ class LoadMemoryFromFileSpec extends AnyFreeSpec with Matchers {
     file.delete()
   }
 
+  "Module with more than one hex memory inline should work" in {
+    val testDirName = "test_run_dir/load_three_memory_spec_inline"
+
+    val result = (new ChiselStage).execute(
+      args = Array("-X", "verilog", "--target-dir", testDirName),
+      annotations = Seq(ChiselGeneratorAnnotation(() => new UsesThreeMemsInline(memoryDepth = 8, memoryType = UInt(16.W), "./testmem.h", MemoryLoadFileType.Hex)))
+    )
+    val dir = new File(testDirName)
+    val file = new File(dir, s"UsesThreeMemsInline.v")
+    file.exists() should be (true)
+    val fileText = io.Source.fromFile(file).getLines().mkString("\n")
+    fileText should include (s"""$$readmemh("./testmem.h", memory1);""")
+    fileText should include (s"""$$readmemh("./testmem.h", memory2);""")
+    fileText should include (s"""$$readmemh("./testmem.h", memory3);""")
+  }
+
+  "Module with more than one bin memory inline should work" in {
+    val testDirName = "test_run_dir/load_three_memory_spec_inline"
+
+    val result = (new ChiselStage).execute(
+      args = Array("-X", "verilog", "--target-dir", testDirName),
+      annotations = Seq(ChiselGeneratorAnnotation(() => new UsesThreeMemsInline(memoryDepth = 8, memoryType = UInt(16.W), "testmem.bin", MemoryLoadFileType.Binary)))
+    )
+    val dir = new File(testDirName)
+    val file = new File(dir, s"UsesThreeMemsInline.v")
+    file.exists() should be (true)
+    val fileText = io.Source.fromFile(file).getLines().mkString("\n")
+    fileText should include (s"""$$readmemb("testmem.bin", memory1);""")
+    fileText should include (s"""$$readmemb("testmem.bin", memory2);""")
+    fileText should include (s"""$$readmemb("testmem.bin", memory3);""")
+  }
 }
