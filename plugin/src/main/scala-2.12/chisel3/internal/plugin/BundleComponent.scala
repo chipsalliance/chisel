@@ -10,7 +10,9 @@ import scala.tools.nsc.symtab.Flags
 import scala.tools.nsc.transform.TypingTransformers
 
 // TODO This component could also implement val elements in Bundles
-private[plugin] class BundleComponent(val global: Global) extends PluginComponent with TypingTransformers {
+private[plugin] class BundleComponent(val global: Global, arguments: ChiselPluginArguments)
+    extends PluginComponent
+    with TypingTransformers {
   import global._
 
   val phaseName: String = "chiselbundlephase"
@@ -23,8 +25,17 @@ private[plugin] class BundleComponent(val global: Global) extends PluginComponen
       // This plugin doesn't work on Scala 2.11 nor Scala 3. Rather than complicate the sbt build flow,
       // instead we just check the version and if its an early Scala version, the plugin does nothing
       val scalaVersion = scala.util.Properties.versionNumberString.split('.')
-      if (scalaVersion(0).toInt == 2 && scalaVersion(1).toInt >= 12) {
+      val scalaVersionOk = scalaVersion(0).toInt == 2 && scalaVersion(1).toInt >= 12
+      if (scalaVersionOk && arguments.useBundlePlugin) {
         unit.body = new MyTypingTransformer(unit).transform(unit.body)
+      } else {
+        val reason = if (!scalaVersionOk) {
+          s"invalid Scala version '${scala.util.Properties.versionNumberString}'"
+        } else {
+          s"not enabled via '${arguments.useBundlePluginFullOpt}'"
+        }
+        // Enable this with scalacOption '-Ylog:chiselbundlephase'
+        global.log(s"Skipping BundleComponent on account of $reason.")
       }
     }
   }

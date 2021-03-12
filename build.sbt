@@ -232,6 +232,8 @@ lazy val chisel = (project in file(".")).
     mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3" % "3.4.2"),
     libraryDependencies += defaultVersions("treadle") % "test",
     scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
+    // Only used in Test for 3.4.x, used in Compile in 3.5
+    scalacOptions in Test += "-P:chiselplugin:useBundlePlugin",
     scalacOptions in Compile in doc ++= Seq(
       "-diagrams",
       "-groups",

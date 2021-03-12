@@ -4,6 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.testers.TestUtils
+import chisel3.util.QueueIO
 
 class BundleWithIntArg(val i: Int) extends Bundle {
   val out = UInt(i.W)
@@ -64,6 +65,11 @@ class NestedAnonymousBundle extends Bundle {
 // A Bundle with an argument that is also a field.
 // Not necessarily good style (and not necessarily recommended), but allowed to preserve compatibility.
 class BundleWithArgumentField(val x: Data, val y: Data) extends Bundle
+
+// Needs to be top-level so that reflective autoclonetype works
+class InheritingBundle extends QueueIO(UInt(8.W), 8) {
+  val error = Output(Bool())
+}
 
 // TODO all `.suggestNames` are due to https://github.com/chipsalliance/chisel3/issues/1802
 class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
@@ -253,10 +259,21 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
     elaborate(new MyModule(3))
   }
 
+  behavior of "Compiler Plugin Autoclonetype"
+
+  // Necessary test for 3.4.x, but we will break this (for non-plugin users) in 3.5
+  it should "NOT break code that extends chisel3.util Bundles (whether they use the plugin or not)" in {
+    class MyModule extends MultiIOModule {
+      val io = IO(new InheritingBundle)
+      io.deq <> io.enq
+      io.count := 0.U
+      io.error := true.B
+    }
+    elaborate(new MyModule)
+  }
+
   // New tests from the plugin
   if (usingPlugin) {
-    behavior of "Compiler Plugin Autoclonetype"
-
     it should "support Bundles with non-val parameters" in {
       class MyBundle(i: Int) extends Bundle {
         val foo = UInt(i.W)
