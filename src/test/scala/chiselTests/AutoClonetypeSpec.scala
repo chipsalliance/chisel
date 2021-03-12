@@ -5,10 +5,14 @@ package chiselTests
 import chisel3._
 import chisel3.testers.TestUtils
 <<<<<<< HEAD
+<<<<<<< HEAD
 import chisel3.util.QueueIO
 import chisel3.stage.ChiselStage.elaborate
 =======
 >>>>>>> 14942312 ([plugin] Implement autoclonetype in the compiler plugin)
+=======
+import chisel3.util.QueueIO
+>>>>>>> 3bea6167 ([plugin] Disable BundleComponent by default, add option to enable)
 
 class BundleWithIntArg(val i: Int) extends Bundle {
   val out = UInt(i.W)
@@ -71,11 +75,18 @@ class NestedAnonymousBundle extends Bundle {
 class BundleWithArgumentField(val x: Data, val y: Data) extends Bundle
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 3bea6167 ([plugin] Disable BundleComponent by default, add option to enable)
 // Needs to be top-level so that reflective autoclonetype works
 class InheritingBundle extends QueueIO(UInt(8.W), 8) {
   val error = Output(Bool())
 }
+<<<<<<< HEAD
 =======
+=======
+
+>>>>>>> 3bea6167 ([plugin] Disable BundleComponent by default, add option to enable)
 // TODO all `.suggestNames` are due to https://github.com/chipsalliance/chisel3/issues/1802
 class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
   val usingPlugin: Boolean = TestUtils.usingPlugin
@@ -401,9 +412,16 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
   }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
   behavior.of("Compiler Plugin Autoclonetype")
 
   it should "NOT break code that extends chisel3.util Bundles if they use the plugin" in {
+=======
+  behavior of "Compiler Plugin Autoclonetype"
+
+  // Necessary test for 3.4.x, but we will break this (for non-plugin users) in 3.5
+  it should "NOT break code that extends chisel3.util Bundles (whether they use the plugin or not)" in {
+>>>>>>> 3bea6167 ([plugin] Disable BundleComponent by default, add option to enable)
     class MyModule extends MultiIOModule {
       val io = IO(new InheritingBundle)
       io.deq <> io.enq
@@ -413,6 +431,7 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
     elaborate(new MyModule)
   }
 
+<<<<<<< HEAD
   it should "support Bundles with non-val parameters" in {
     class MyBundle(i: Int) extends Bundle {
       val foo = UInt(i.W)
@@ -446,10 +465,10 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
     elaborate {
       new MultiIOModule {
 =======
+=======
+>>>>>>> 3bea6167 ([plugin] Disable BundleComponent by default, add option to enable)
   // New tests from the plugin
   if (usingPlugin) {
-    behavior of "Compiler Plugin Autoclonetype"
-
     it should "support Bundles with non-val parameters" in {
       class MyBundle(i: Int) extends Bundle {
         val foo = UInt(i.W)
