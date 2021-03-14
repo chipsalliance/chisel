@@ -230,7 +230,7 @@ class ConstantPropagation extends Transform with DependencyAPIMigration {
     }
     def simplify(e: Expression, lhs: Literal, rhs: Expression) = lhs match {
       case UIntLiteral(v, _) if v == BigInt(0)                                            => rhs
-      case SIntLiteral(v, _) if v == BigInt(0)                                            => asUInt(rhs, e.tpe)
+      case SIntLiteral(v, _) if v == BigInt(0)                                            => asUInt(pad(rhs, e.tpe), e.tpe)
       case UIntLiteral(v, IntWidth(w)) if v == (BigInt(1) << bitWidth(rhs.tpe).toInt) - 1 => lhs
       case _                                                                              => e
     }

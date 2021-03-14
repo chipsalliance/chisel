@@ -1638,6 +1638,20 @@ class ConstantPropagationEquivalenceSpec extends FirrtlFlatSpec {
     firrtlEquivalenceTest(input, transforms)
   }
 
+  // https://github.com/chipsalliance/firrtl/issues/2034
+  "SInt OR with constant zero" should "have the correct widths" in {
+    val input =
+      s"""circuit WidthsOrSInt :
+         |  module WidthsOrSInt :
+         |    input in : SInt<1>
+         |    input in2 : SInt<4>
+         |    output out : UInt<8>
+         |    output out2 : UInt<8>
+         |    out <= or(in, SInt<8>(0))
+         |    out2 <= or(in2, SInt<8>(0))""".stripMargin
+    firrtlEquivalenceTest(input, transforms)
+  }
+
   "addition by zero width wires" should "have the correct widths" in {
     val input =
       s"""circuit ZeroWidthAdd:
