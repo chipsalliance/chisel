@@ -4,7 +4,8 @@ enablePlugins(SiteScaladocPlugin)
 
 val defaultVersions = Map(
   "firrtl" -> "edu.berkeley.cs" %% "firrtl" % "1.5-SNAPSHOT",
-  "treadle" -> "edu.berkeley.cs" %% "treadle" % "1.5-SNAPSHOT"
+  "treadle" -> "edu.berkeley.cs" %% "treadle" % "1.5-SNAPSHOT",
+  "chisel-circt" -> "com.sifive" %% "chisel-circt" % "0.1.0+2-13b9a9e7+20210311-1922-SNAPSHOT"
 )
 
 lazy val commonSettings = Seq (
@@ -144,7 +145,8 @@ lazy val core = (project in file("core")).
   settings(
     buildInfoPackage := "chisel3",
     buildInfoUsePackageAsPath := true,
-    buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
+    buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion),
+    libraryDependencies += defaultVersions("chisel-circt")
   ).
   settings(publishSettings: _*).
   settings(mimaPreviousArtifacts := Set()).

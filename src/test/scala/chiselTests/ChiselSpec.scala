@@ -78,7 +78,7 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
     * @return the Verilog code as a string.
     */
   def compile(t: => RawModule): String = {
-    (new ChiselStage)
+    (new circt.stage.ChiselStage)
       .execute(Array("--target-dir", createTestDirectory(this.getClass.getSimpleName).toString),
                Seq(ChiselGeneratorAnnotation(() => t)))
       .collectFirst {

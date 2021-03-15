@@ -51,7 +51,12 @@ object TesterDriver extends BackendCompilationUtilities {
         writeResourceToDirectory(name, path)
       })
 
-      (new FirrtlStage).execute(Array("--compiler", "verilog"), annotationsx)
+      // (new FirrtlStage).execute(Array("--compiler", "verilog"), annotationsx)
+
+      val annotationsxx = (new FirrtlStage).execute(Array("--compiler", "low"), annotationsx)
+
+      (new circt.stage.CIRCTStage)
+        .execute(Array("-ll", "info", "--target", "verilog"), annotationsxx)
 
       // Use sys.Process to invoke a bunch of backend stuff, then run the resulting exe
       if ((verilogToCpp(target, path, additionalVFiles, cppHarness) #&&
