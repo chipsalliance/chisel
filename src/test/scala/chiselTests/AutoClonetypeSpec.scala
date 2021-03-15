@@ -127,6 +127,10 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
     } }
   }
 
+  "Autoclonetype" should "work outside of a builder context" in {
+    new BundleWithIntArg(8).cloneType
+  }
+
   def checkSubBundleInvalid() = {
     elaborate { new Module {
       val io = IO(new Bundle{}).suggestName("io")

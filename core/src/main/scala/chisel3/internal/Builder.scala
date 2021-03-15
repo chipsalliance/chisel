@@ -532,8 +532,12 @@ private[chisel3] object Builder extends LazyLogging {
     dynamicContext.currentReset = newReset
   }
 
-  // This should only be used for testing
-  def allowReflectiveAutoCloneType: Boolean = dynamicContext.allowReflectiveAutoCloneType
+  // This should only be used for testing, must be true outside of Builder context
+  def allowReflectiveAutoCloneType: Boolean = {
+    dynamicContextVar.value
+                     .map(_.allowReflectiveAutoCloneType)
+                     .getOrElse(true)
+  }
   def allowReflectiveAutoCloneType_=(value: Boolean): Unit = {
     dynamicContext.allowReflectiveAutoCloneType = value
   }
