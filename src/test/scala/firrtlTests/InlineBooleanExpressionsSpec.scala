@@ -392,6 +392,22 @@ class InlineBooleanExpressionsSpec extends FirrtlFlatSpec {
     firrtlEquivalenceTest(input, Seq(new InlineBooleanExpressions))
   }
 
+  // https://github.com/chipsalliance/firrtl/issues/2035
+  // This is interesting because other ways of trying to express this get split out by
+  // SplitExpressions and don't get inlined again
+  // If we were to inline more expressions (ie. not just boolean ones) the issue this represents
+  // would come up more often
+  it should "handle cvt nested inside of a dshl" in {
+    val input =
+      """circuit DshlCvt:
+        |  module DshlCvt:
+        |    input a: UInt<4>
+        |    input b: SInt<1>
+        |    output o: UInt
+        |    o <= dshl(a, asUInt(cvt(b)))""".stripMargin
+    firrtlEquivalenceTest(input, Seq(new InlineBooleanExpressions))
+  }
+
   it should s"respect --${PrettyNoExprInlining.longOption}" in {
     val input =
       """circuit Top :

@@ -57,6 +57,13 @@ object VerilogEmitter {
   private def precedenceGt(op1: PrimOp, op2: PrimOp): Boolean = {
     precedenceMap(op1) < precedenceMap(op2)
   }
+
+  /** Identifies PrimOps that never need parentheses
+    *
+    * These PrimOps emit either {..., a0, ...} or a0 so they never need parentheses
+    */
+  private val neverParens: PrimOp => Boolean =
+    Set(Shl, Cat, Cvt, AsUInt, AsSInt, AsClock, AsAsyncReset, Pad)
 }
 
 class VerilogEmitter extends SeqTransform with Emitter {
@@ -229,8 +236,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
   // to ensure Verilog operations are signed.
   def op_stream(doprim: DoPrim): Seq[Any] = {
     def parenthesize(e: Expression, isFirst: Boolean): Any = doprim.op match {
-      // these PrimOps emit either {..., a0, ...} or a0 so they never need parentheses
-      case Shl | Cat | Cvt | AsUInt | AsSInt | AsClock | AsAsyncReset => e
+      case op if neverParens(op) => e
       case _ =>
         e match {
           case e: DoPrim =>
@@ -247,7 +253,8 @@ class VerilogEmitter extends SeqTransform with Emitter {
                */
               case other =>
                 val noParens =
-                  precedenceGt(e.op, doprim.op) ||
+                  neverParens(e.op) ||
+                    precedenceGt(e.op, doprim.op) ||
                     (isFirst && precedenceEq(e.op, doprim.op) && !isUnaryOp(e.op))
                 if (noParens) other else Seq("(", other, ")")
             }
