@@ -186,11 +186,11 @@ There is no simple answer to where to put this file. It's probably best to creat
 
 ### Aggregate memories
 Aggregate memories are supported but in bit of a clunky way. Since they will be split up into a memory per field, the following convention was adopted.  When specifying the file for such a memory the file name should be regarded as a template. If the memory is a Bundle e.g.
-```scala
-Bundle {
- val a = UInt(16.W)
- val b = UInt(32.W)
- val c = Bool()
+```scala mdoc:compile-only
+class MemDataType extends Bundle {
+  val a = UInt(16.W)
+  val b = UInt(32.W)
+  val c = Bool()
 }
 ```
 The memory will be split into `memory_a`, `memory_b`, and `memory_c`. Similarly if a load file is specified as `"memory-load.txt"` the simulation will expect that there will be three files, `"memory-load_a.txt"`, `"memory-load_b.txt"`, `"memory-load_c.txt"`
