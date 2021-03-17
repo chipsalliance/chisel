@@ -7,14 +7,7 @@ import scala.annotation.tailrec
 import scala.collection.mutable
 
 object QMCDecoder {
-  /** decoder cache during a chisel elaboration.
-    * UInt: addr (signal)
-    * @todo how to cache OR plane?
-    *       maybe need a Map[UInt -> DecodeTable]
-    */
-  private val caches: mutable.Map[UInt, mutable.Map[Term, Bool]] = mutable.Map[UInt, mutable.Map[Term, Bool]]()
-
-  /** @return A instance of[[QMCDecoder]] */
+  /** @return A instance of [[QMCDecoder]] */
   def apply(): QMCDecoder = new QMCDecoder()
 }
 
@@ -24,35 +17,22 @@ class QMCDecoder extends Decoder {
     /** The PLA-like logic which generates decode circuit from `terms` for `input` wire.
       * See [[https://en.wikipedia.org/wiki/Programmable_logic_array]]
       *
-      * @note `cache` can save logics if a [[Term]] in table is already calculated in other decoder logic.
-      *       `cache` makes [[QMCDecoder]] be able to share a line in AND plane in different logic.
-      *       Here is the trade off:
-      *       1. saves AND gate as much as possible
-      *       1. increase AND gate fan-out
-      *       1. if use cache between different decoders, buffer overhead maybe too large.
       * @todo move to [[Decoder]] object, since this can be commonly used by all decoder.
       *       remove global width
-      *       add option to enable and disable caches.
-      *       take care of cache.
       * @param input     Input wire signal to be decoded based on `terms`
-      * @param table     Simplified essential decode table, if `input` is covered by a element in `terms`.
       * @param addrWidth Number of 1-bit input values(tobe removed).
+      * @param table     Simplified essential decode table, if `input` is covered by a element in `terms`.
       * @return 1 bit decode result.
       */
-    def pla1Bit(input: UInt, addrWidth: Int, cache: mutable.Map[Term, Bool], table: Seq[Term]): Bool =
+    def pla1Bit(input: UInt, addrWidth: Int, table: Seq[Term]): Bool =
       if (table.isEmpty)
         false.B
       else
         VecInit(table.map { t =>
-          // share AND plane decode result.
-          cache
-            .getOrElseUpdate(
-              t,
-              // [[t]] in [[terms]] covers [[input]]
-              (input & t.value.U & (~t.mask.U(addrWidth.W)).asUInt())
-                // PLA AND plane
-                .andR()
-            )
+          // [[t]] in [[terms]] covers [[input]]
+          (input & t.value.U & (~t.mask.U(addrWidth.W)).asUInt())
+            // PLA AND plane
+            .andR()
         }).asUInt()
           // PLA OR plane
           .orR()
@@ -345,8 +325,6 @@ class QMCDecoder extends Decoder {
       }
     }
 
-    // get existing cache or create an empty one
-    val cache: mutable.Map[Term, Bool] = QMCDecoder.caches.getOrElseUpdate(addr, mutable.Map[Term, Bool]())
     val defaultTerm: Term = term(default)
     val mappingList: List[(BitPat, BitPat)] = mapping.toList
     // extract decode table to inputs and outputs
@@ -376,14 +354,14 @@ class QMCDecoder extends Decoder {
           // This bit is default to don't care
           if (defaultTerm.mask.testBit(i)) {
             // Use simplifyDC method
-            pla1Bit(addr, addrWidth, cache, simplifyDC(mint, maxt, addrWidth))
+            pla1Bit(addr, addrWidth, simplifyDC(mint, maxt, addrWidth))
           } else {
             // Default output of this bit
             val defbit = defaultTerm.value.testBit(i)
             // 0 -> mint, 1 -> maxt, the following lines are used to make sure we produce best result when truth table are not
             // fully specified.
             val t = if (defbit) maxt else mint
-            val bit = pla1Bit(addr, addrWidth, cache, simplify(t, dc, addrWidth))
+            val bit = pla1Bit(addr, addrWidth, simplify(t, dc, addrWidth))
             // Because `simplify` method in previous line expect mint (ORed together produce `1` as output), but when
             // `defbit == 1`, we actually provided `simplify` maxt, which would compose the "inverted" version of the
             // truth table, so we need to invert one more time to produce the correct output.
