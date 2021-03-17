@@ -15,55 +15,66 @@ and your RTL needs to be modified to work with Chisel3. The required
 modifications are:
 
  - Wire declaration style:
-   ```scala
-   val wire = UInt(width = 15)
-   ```
+```scala
+  val wire = UInt(width = 15)
+```
    becomes (in Chisel3):
-   ```scala mdoc:compile-only
-   val wire = Wire(UInt(15.W))
-   ```
+```scala mdoc:compile-only
+  val wire = Wire(UInt(15.W))
+```
 
  - I/O declaration style:
-   ```scala
+```scala
    val done = Bool(OUTPUT)
-   ```
+```
    becomes (in Chisel3):
-   ```scala mdoc:compile-only
+```scala mdoc:compile-only
    val wire = Output(Bool())
-   ```
+```
 
  - Sequential memories:
-   ```scala
+```scala mdoc:invisible
+import chisel3._
+val enable = Bool()
+```
+
+```scala
    val addr = Reg(UInt())
    val mem = Mem(UInt(8.W), 1024, seqRead = true)
    val dout = when(enable) { mem(addr) }
-   ```
+```
    becomes (in Chisel3):
-   ```scala mdoc:compile-only
+```scala mdoc:compile-only
    val addr = UInt()
    val mem = SyncReadMem(1024, UInt(8.W))
    val dout = mem.read(addr, enable)
-   ```
+```
 
    Notice the address register is now internal to the SyncReadMem(), but the data
    will still return on the subsequent cycle.
 
- - Generating Verilog with
-   ```scala
+ - Generating Verilog for a module:
+```scala mdoc:invisible
+import chisel3._
+class Hello extends RawModule
+```
+
+```scala
    object Hello {
      def main(args: Array[String]): Unit = {
        chiselMain(Array("--backend", "v"), () => Module(new Hello()))
      }
    }
-   ```
+```
    becomes (in Chisel3):
-   ```scala mdoc:compile-only
+```scala mdoc:compile-only
+   import chisel3.stage.ChiselStage
    object Hello {
      def main(args: Array[String]): Unit = {
-       chisel3.Driver.execute(Array[String](), () => new Hello())
+       (new ChiselStage).emitVerilog(new Hello())
      }
    }
-   ```
+```
 
  - Package changes:
    - Chisel.log2Ceil -> chisel3.util.log2Ceil
