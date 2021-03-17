@@ -246,7 +246,7 @@ println(theFirrtl)
 println("```")
 ```
 
-Alternatively, you can also use the sbt console to invoke the FIRRTL driver directly (replace HelloWorld with your module name):
+Alternatively, you can also use the sbt console to invoke the FIRRTL driver directly (replace MyFirrtlModule with your module name):
 
 ```
 $ sbt
