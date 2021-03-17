@@ -158,7 +158,7 @@ bash> sbt
 ```
 or as a one-liner:
 ```
-bash> sbt 'runMain intro.HelloWorld'
+bash> sbt 'runMain intro.VerilogMain'
 ```
 After either of the above there will be a HelloWorld.v file in the current directory:
 ```scala mdoc:invisible
