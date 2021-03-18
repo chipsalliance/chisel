@@ -22,7 +22,7 @@ Scala books to become more expert in Scala programming.
 For a tutorial covering both Chisel and Scala, see the 
 [**online Chisel Bootcamp**](https://mybinder.org/v2/gh/freechipsproject/chisel-bootcamp/master).
 
-For quick reference "How-To" guides see the [Cookbooks](cookbooks).
+For quick reference "How-To" guides see the [Cookbooks](cookbooks/cookbooks).
 
 For a deeper introduction to key concepts in  Chisel see the [Explanations](explanations/explanations).
 
