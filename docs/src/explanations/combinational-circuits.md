@@ -3,6 +3,9 @@ layout: docs
 title:  "Combinational Circuits"
 section: "chisel3"
 ---
+
+# Combinational Circuits
+
 A circuit is represented as a graph of nodes in Chisel.  Each node is
 a hardware operator that has zero or more inputs and that drives one
 output.  A literal, introduced above, is a degenerate kind of node

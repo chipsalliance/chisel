@@ -4,6 +4,8 @@ title:  "Test Coverage"
 section: "chisel3"
 ---
 
+# Test Coverage
+
 ## Test Coverage Setup
 
 Chisel's sbt build instructions contain the requisite plug-in (sbt-scoverage) for generating test coverage information. Please see the [sbt-scoverage web page](https://github.com/scoverage/sbt-scoverage) for details on the plug-in.

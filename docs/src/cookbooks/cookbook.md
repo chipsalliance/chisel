@@ -1,12 +1,13 @@
 ---
 layout: docs
-title:  "Cookbook"
+title:  "General Cookbook"
 section: "chisel3"
 ---
 
-Welcome to the Chisel cookbook. This cookbook is still in early stages. If you have any requests or examples to share, please [file an issue](https://github.com/ucb-bar/chisel3/issues/new) and let us know!
+# General Cookbook
 
-Please note that these examples make use of [Chisel's scala-style printing](printing#scala-style).
+
+Please note that these examples make use of [Chisel's scala-style printing](../explanations/printing#scala-style).
 
 * Converting Chisel Types to/from UInt
   * [How do I create a UInt from an instance of a Bundle?](#how-do-i-create-a-uint-from-an-instance-of-a-bundle)
@@ -368,7 +369,7 @@ However, if we use `@chiselName` then the register previously called `_T` is now
 ```
 ### How do I get Chisel to name the results of vector reads properly?
 Currently, name information is lost when using dynamic indexing. For example:
-```scala
+```scala mdoc:silent
 class Foo extends Module {
   val io = IO(new Bundle {
     val in = Input(Vec(4, Bool()))

@@ -1,9 +1,21 @@
-# Chisel Style Guide
+---
+layout: docs
+title:  "Style Guide"
+section: "chisel3"
+---
+
+# Chisel Developers Style Guide
+
+This document describes the syle used within the `chisel3`
+and related projects (`firrtl`, `treadle`, etc). It does not
+capture requirements for code which is written using these libraries,
+although projects may choose to adopt these guidelines.
 
 The Chisel style guide reflects the [Google Java style
 guide](http://google.github.io/styleguide/javaguide.html) and the [General Public Scala style
-guide](http://docs.scala-lang.org/style/). Specific rules below are to clarify
+guide](http://docs.scala-lang.org/style/). The specific rules below are to clarify
 the style used for the chisel3 repo and repos related to Chisel (Firrtl).
+
 
 **Goal:** Readability and consistency are the main purposes of the style guide.
 Writing your code so someone else (or yourself) can grok it later is important
@@ -134,8 +146,14 @@ val queueOut = Queue(
 ## Naming Conventions
 
 Chisel follows the [Scala Naming Conventions](http://docs.scala-lang.org/style/naming-conventions.html).
-In general, Chisel code should use CamelCase for naming (ie. the first letter
-of each word is capitalized except sometimes the first word).
+In general, Chisel code should use `lowerCamelCase` for variable naming (ie. the first letter
+of each word is capitalized except for the first word) and `UpperCamelCase` for class names.
+
+> Using these guidelines can result in verilog which is noncompliant with common verilog coding standards, e.g.
+the [lowRISC verilog coding style](https://github.com/lowRISC/style-guides/blob/master/VerilogCodingStyle.md#naming).
+Authors of Chisel code that translates to hardware constructs might therefore prefer to use `snake_case`. However,
+generated code can always be transformed to meet various emitted code requirements, so the official Chisel style
+guide follows the Scala convention.
 
 ### Why CamelCase instead of Snake\_Case?
 

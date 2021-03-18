@@ -4,7 +4,7 @@ title:  "Developers"
 section: "chisel3"
 ---
 
-## Chisel as an sbt subproject
+# Chisel as an sbt subproject
 
 In order to use the constructs defined in the Chisel3 library, those definitions must be made available to the Scala
 compiler at the time a project dependent on them is compiled.

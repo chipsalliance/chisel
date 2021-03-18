@@ -3,7 +3,9 @@ layout: docs
 title:  "Operators"
 section: "chisel3"
 ---
-### List of operators
+
+# Chisel Operators
+
 Chisel defines a set of hardware operators:
 
 | Operation        | Explanation |

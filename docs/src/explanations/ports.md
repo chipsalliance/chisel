@@ -3,6 +3,9 @@ layout: docs
 title:  "Ports"
 section: "chisel3"
 ---
+
+# Ports
+
 Ports are used as interfaces to hardware components.  A port is simply
 any `Data` object that has directions assigned to its members.
 
@@ -11,7 +14,10 @@ Chisel provides port constructors to allow a direction to be added
 constructors wrap the type of the port in `Input` or `Output`.
 
 An example port declaration is as follows:
-```scala
+```scala mdoc:invisible
+import chisel3._
+```
+```scala mdoc
 class Decoupled extends Bundle {
   val ready = Output(Bool())
   val data  = Input(UInt(32.W))
@@ -34,8 +40,9 @@ Chisel 3.2+ introduces an API `DataMirror.modulePorts` which can be used to insp
 
 Here is an example of how to use this API:
 
-```scala
+```scala mdoc
 import chisel3.experimental.DataMirror
+import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 
 class Adder extends MultiIOModule {
   val a = IO(Input(UInt(8.W)))
@@ -51,18 +58,11 @@ class Test extends MultiIOModule {
   adder.b := DontCare
 
   // Inspect ports of adder
-  // Prints something like this
-  /**
-    * Found port clock: Clock(IO clock in Adder)
-    * Found port reset: Bool(IO reset in Adder)
-    * Found port a: UInt<8>(IO a in Adder)
-    * Found port b: UInt<8>(IO b in Adder)
-    * Found port c: UInt<8>(IO c in Adder)
-    */
-  DataMirror.modulePorts(adder).foreach { case (name, port) => {
+  // See the result below.
+   DataMirror.modulePorts(adder).foreach { case (name, port) => {
     println(s"Found port $name: $port")
   }}
 }
 
-chisel3.Driver.execute(Array[String](), () => new Test)
+(new ChiselStage).execute(Array.empty, Seq(ChiselGeneratorAnnotation(() => new Test)))
 ```

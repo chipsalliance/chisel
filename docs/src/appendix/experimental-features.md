@@ -6,12 +6,18 @@ section: "chisel3"
 
 Chisel has a number of new features that are worth checking out.  This page is an informal list of these features and projects.
 
-### FixedPoint
+[FixedPoint](#fixed-point)
+[Module Variants](#module-variants)
+[Module Variants](#bundle-literals)
+[Interval Type](#interval-type)
+[Loading Memories in Simulation](#loading-memories)
+
+### FixedPoint  <a name="fixed-point"></a>
 FixedPoint numbers are basic *Data* type along side of UInt, SInt, etc.  Most common math and logic operations
 are supported. Chisel allows both the width and binary point to be inferred by the Firrtl compiler which can simplify
 circuit descriptions. See [FixedPointSpec](https://github.com/freechipsproject/chisel3/tree/master/src/test/scala/chiselTests/FixedPointSpec.scala)
 
-### Module Variants
+### Module Variants <a name="module-variants"></a>
 The standard Chisel *Module* requires a `val io = IO(...)`, the experimental package introduces several
 new ways of defining Modules
 - BaseModule: no contents, instantiable
@@ -21,7 +27,7 @@ new ways of defining Modules
 - RawModule: will be the user-facing version of UserDefinedModule
 - Module: type-aliases to ImplicitModule, the user-facing version of ImplicitModule.
 
-### Bundle Literals
+### Bundle Literals <a name="bundle-literals"></a>
 
 Bundle literals can be constructed via an experimental import:
 
@@ -81,7 +87,7 @@ chisel3.stage.ChiselStage.emitVerilog(new Example3)
 
 Vec literals are not yet supported.
 
-### Interval Type
+### Interval Type <a name="interval-type"></a>
 
 **Intervals** are a new experimental numeric type that comprises UInt, SInt and FixedPoint numbers.
 It augments these types with range information, i.e. upper and lower numeric bounds.
@@ -136,3 +142,57 @@ Consider a Interval with a binary point of 3: aaa.bbb
 | setBinaryPoint(2) | aaa.bb |  2 | X | X  | set the precision |
 | shiftLeftBinaryPoint(2) | a.aabbb |  5 | X | X  | increase the precision |
 | shiftRighBinaryPoint(2) | aaaa.b |  1 | X | X  | reduce the precision |
+
+## Loading Memories in simulation <a name="loading-memories"></a>
+
+Chisel now supports an experimental method for annotating memories to be loaded from a text file containing
+hex or binary numbers. When using verilog simulation it uses the `$readmemh` or `$readmemb`
+verilog extension. The treadle simulator can also load memories using the same annotation.
+
+### How to annotate
+Assuming you have a memory in a Module
+```scala mdoc:invisible
+import chisel3._
+val memoryDepth = 8
+val memoryType = Bool()
+```
+```scala
+val memory = Mem(memoryDepth, memoryType)
+```
+
+At the top of your file just add the import 
+```scala mdoc:silent
+import chisel3.util.experimental.loadMemoryFromFile
+```
+Now just add the memory annotation using
+```scala
+  loadMemoryFromFile(memory, "/workspace/workdir/mem1.txt")
+```
+The default is to use `$readmemh` (which assumes all numbers in the file are in ascii hex),
+bu to use ascii binary there is an optional third argument. You will need to add an additional import.
+```scala mdoc:silent
+import firrtl.annotations.MemoryLoadFileType
+```
+```scala
+  loadMemoryFromFile(memory, "/workspace/workdir/mem1.txt", MemoryLoadFileType.Binary)
+```
+See: [ComplexMemoryLoadingSpec.scala](https://freechipsproject/chisel-testers/src/test/scala/examples/ComplexMemoryLoadingSpec.scala) and
+[LoadMemoryFromFileSpec.scala](https://github.com/freechipsproject/chisel-testers/src/test/scala/examples/LoadMemoryFromFileSpec.scala)
+for working examples.
+
+### Notes on files
+There is no simple answer to where to put this file. It's probably best to create a resource directory somewhere and reference that through a full path. Because these files may be large, we did not want to copy them.
+> Don't forget there is no decimal option, so a 10 in an input file will be 16 decimal
+
+### Aggregate memories
+Aggregate memories are supported but in bit of a clunky way. Since they will be split up into a memory per field, the following convention was adopted.  When specifying the file for such a memory the file name should be regarded as a template. If the memory is a Bundle e.g.
+```scala mdoc:compile-only
+class MemDataType extends Bundle {
+  val a = UInt(16.W)
+  val b = UInt(32.W)
+  val c = Bool()
+}
+```
+The memory will be split into `memory_a`, `memory_b`, and `memory_c`. Similarly if a load file is specified as `"memory-load.txt"` the simulation will expect that there will be three files, `"memory-load_a.txt"`, `"memory-load_b.txt"`, `"memory-load_c.txt"`
+
+> Note: The use of `_` and that the memory field name is added before any file suffix. The suffix is optional but if present is considered to be the text after the last `.` in the file name.
