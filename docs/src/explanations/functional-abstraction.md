@@ -3,11 +3,19 @@ layout: docs
 title:  "Functional Abstraction"
 section: "chisel3"
 ---
+
+# Functional Abstraction
+
 We can define functions to factor out a repeated piece of logic that
 we later reuse multiple times in a design.  For example, we can wrap
 up our earlier example of a simple combinational logic block as
 follows:
-```scala
+
+```scala mdoc:invisible
+import chisel3._
+```
+
+```scala mdoc:silent
 def clb(a: UInt, b: UInt, c: UInt, d: UInt): UInt =
   (a & b) | (~c & d)
 ```
@@ -21,9 +29,6 @@ argument list.  The equals (```=})```sign separates the function argument list f
 definition.
 
 We can then use the block in another circuit as follows:
-```scala
+```scala mdoc:silent
 val out = clb(a,b,c,d)
 ```
-
-We will later describe many powerful ways to use functions to
-construct hardware using Scala's functional programming support.

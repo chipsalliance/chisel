@@ -3,10 +3,13 @@ layout: docs
 title:  "Unconnected Wires"
 section: "chisel3"
 ---
-The Invalidate API [(#645)](https://github.com/freechipsproject/chisel3/pull/645) adds support to chisel
+
+# Unconnected Wires
+
+The Invalidate API [(#645)](https://github.com/freechipsproject/chisel3/pull/645) adds support to Chisel
 for reporting unconnected wires as errors.
 
-Prior to this pull request, chisel automatically generated a firrtl `is invalid` for `Module IO()`, and each `Wire()` definition.
+Prior to this pull request, Chisel automatically generated a firrtl `is invalid` for `Module IO()`, and each `Wire()` definition.
 This made it difficult to detect cases where output signals were never driven.
 Chisel now supports a `DontCare` element, which may be connected to an output signal, indicating that that signal is intentionally not driven.
 Unless a signal is driven by hardware or connected to a `DontCare`, Firrtl will complain with a "not fully initialized" error.
@@ -14,23 +17,41 @@ Unless a signal is driven by hardware or connected to a `DontCare`, Firrtl will 
 ### API
 
 Output signals may be connected to DontCare, generating a `is invalid` when the corresponding firrtl is emitted.
-```scala
+
+```scala mdoc:invisible
+import chisel3._
+```
+```scala mdoc:silent
+
+class Out extends Bundle { 
+  val debug = Bool()
+  val debugOption = Bool()
+}
+val io = new Bundle { val out = new Out }
+```
+
+```scala mdoc:compile-only
 io.out.debug := true.B
 io.out.debugOption := DontCare
 ```
+
 This indicates that the signal `io.out.debugOption` is intentionally not driven and firrtl should not issue a "not fully initialized"
 error for this signal.
 
 This can be applied to aggregates as well as individual signals:
-```scala
-{
-  ...
+```scala mdoc:invisible
+import chisel3._
+```
+```scala mdoc:silent
+import chisel3._
+class ModWithVec extends Module {
+  // ...
   val nElements = 5
   val io = IO(new Bundle {
     val outs = Output(Vec(nElements, Bool()))
   })
   io.outs <> DontCare
-  ...
+  // ...
 }
 
 class TrivialInterface extends Bundle {
@@ -38,11 +59,11 @@ class TrivialInterface extends Bundle {
   val out = Output(Bool())
 }
 
-{
-  ...
+class ModWithTrivalInterface extends Module {
+  // ...
   val io = IO(new TrivialInterface)
   io <> DontCare
-  ...
+  // ...
 }
 ```
 
@@ -51,26 +72,31 @@ and `true` in `Strict` mode.
 
 You can selectively enable this for Chisel2 compatibility mode by providing your own explicit `compileOptions`,
 either for a group of Modules (via inheritance):
-```scala
-abstract class ExplicitInvalidateModule extends Module()(chisel3.core.ExplicitCompileOptions.NotStrict.copy(explicitInvalidate = true))
+```scala mdoc:silent
+abstract class ExplicitInvalidateModule extends Module()(chisel3.ExplicitCompileOptions.NotStrict.copy(explicitInvalidate = true))
 ```
 or on a per-Module basis:
-```scala
+```scala mdoc:silent
 class MyModule extends Module {
-  override val compileOptions = chisel3.core.ExplicitCompileOptions.NotStrict.copy(explicitInvalidate = true)
-  ...
+  override val compileOptions = chisel3.ExplicitCompileOptions.NotStrict.copy(explicitInvalidate = true)
+  val io = IO(new Bundle { /* ... */ } )
+  // ...
 }
 ```
 
 Or conversely, disable this stricter checking (which is now the default in pure chisel3):
-```scala
-abstract class ImplicitInvalidateModule extends Module()(chisel3.core.ExplicitCompileOptions.Strict.copy(explicitInvalidate = false))
+```scala mdoc:silent
+abstract class ImplicitInvalidateModule extends Module()(chisel3.ExplicitCompileOptions.Strict.copy(explicitInvalidate = false))
 ```
 or on a per-Module basis:
-```scala
+```scala mdoc:invisible:reset
+import chisel3._
+```
+```scala mdoc:silent
 class MyModule extends Module {
-  override val compileOptions = chisel3.core.ExplicitCompileOptions.Strict.copy(explicitInvalidate = false)
-  ...
+  override val compileOptions = chisel3.ExplicitCompileOptions.Strict.copy(explicitInvalidate = false)
+  val io = IO(new Bundle { /* ... */ } )
+  // ...
 }
 ```
 

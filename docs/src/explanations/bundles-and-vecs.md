@@ -64,7 +64,7 @@ Note that the builtin Chisel primitive and aggregate classes do not
 require the `new` when creating an instance, whereas new user
 datatypes will.  A Scala `apply` constructor can be defined so
 that a user datatype also does not require `new`, as described in
-[Function Constructor](../wiki-deprecated/functional-module-creation).
+[Function Constructor](../explanations/functional-module-creation).
 
 ### Flipping Bundles
 

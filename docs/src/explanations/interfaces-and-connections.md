@@ -3,6 +3,7 @@ layout: docs
 title:  "Interfaces and Connections"
 section: "chisel3"
 ---
+
 # Interfaces & Bulk Connections
 
 For more sophisticated modules it is often useful to define and instantiate interface classes while defining the IO for a module. First and foremost, interface classes promote reuse allowing users to capture once and for all common interfaces in a useful form.
@@ -15,7 +16,11 @@ Note that Chisel has some built-in standard interface which should be used whene
 
 As we saw earlier, users can define their own interfaces by defining a class that subclasses Bundle. For example, a user could define a simple link for hand-shaking data as follows:
 
-```scala
+```scala mdoc:invisible
+import chisel3._
+```
+
+```scala mdoc:silent
 class SimpleLink extends Bundle {
   val data = Output(UInt(16.W))
   val valid = Output(Bool())
@@ -23,7 +28,7 @@ class SimpleLink extends Bundle {
 ```
 
 We can then extend SimpleLink by adding parity bits using bundle inheritance:
-```scala
+```scala mdoc:silent
 class PLink extends SimpleLink {
   val parity = Output(UInt(5.W))
 }
@@ -31,7 +36,7 @@ class PLink extends SimpleLink {
 In general, users can organize their interfaces into hierarchies using inheritance.
 
 From there we can define a filter interface by nesting two PLinks into a new FilterIO bundle:
-```scala
+```scala mdoc:silent
 class FilterIO extends Bundle {
   val x = Flipped(new PLink)
   val y = new PLink
@@ -40,10 +45,10 @@ class FilterIO extends Bundle {
 where flip recursively changes the direction of a bundle, changing input to output and output to input.
 
 We can now define a filter by defining a filter class extending module:
-```scala
+```scala mdoc:silent
 class Filter extends Module {
   val io = IO(new FilterIO)
-  ...
+  // ...
 }
 ```
 where the io field contains FilterIO.
@@ -51,7 +56,7 @@ where the io field contains FilterIO.
 ## Bundle Vectors
 
 Beyond single elements, vectors of elements form richer hierarchical interfaces. For example, in order to create a crossbar with a vector of inputs, producing a vector of outputs, and selected by a UInt input, we utilize the Vec constructor:
-```scala
+```scala mdoc:silent
 import chisel3.util.log2Ceil
 class CrossbarIo(n: Int) extends Bundle {
   val in = Vec(n, Flipped(new PLink))
@@ -64,7 +69,7 @@ where Vec takes a size as the first argument and a block returning a port as the
 ## Bulk Connections
 
 We can now compose two filters into a filter block as follows:
-```scala
+```scala mdoc:silent
 class Block extends Module {
   val io = IO(new FilterIO)
   val f1 = Module(new Filter)
@@ -96,7 +101,7 @@ Usually, we use the utility function [`Decoupled()`](https://chisel.eecs.berkele
 
 Take a look at the following example Chisel code to better understand exactly what is generated:
 
-```scala
+```scala mdoc:silent:reset
 import chisel3._
 import chisel3.util.Decoupled
 
