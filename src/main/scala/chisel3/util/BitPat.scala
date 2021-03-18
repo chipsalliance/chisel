@@ -125,6 +125,14 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) extends Sou
     !(this === that)
   }
 
+  override def toString = {
+    "BitPat(" +
+      (0 until width).map(i =>
+        if (((mask >> i) & 1) == 1) if (((value >> i) & 1) == 1)  "1" else "0" else "?"
+      ).reverse.reduce(_ + _) +
+    ")"
+  }
+
   def != (that: UInt): Bool = macro SourceInfoTransform.thatArg
   @chiselRuntimeDeprecated
   @deprecated("Use '=/=', which avoids potential precedence problems", "3.0")
