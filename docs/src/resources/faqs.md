@@ -26,7 +26,7 @@ We recommend the [Chisel Bootcamp](https://github.com/freechipsproject/chisel-bo
 
 ### How do I do ... (e.g. like that in Verilog) in Chisel?
 
-See the [cookbooks](../cookbooks/cookbook.md).
+See the [cookbooks](../cookbooks/cookbook).
 
 ### How can I contribute to Chisel?
 
