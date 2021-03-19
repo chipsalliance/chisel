@@ -7,26 +7,26 @@ import chisel3.util._
 import chisel3.testers.BasicTester
 
 class MemVecTester extends BasicTester {
-  val mem = Mem(2, Vec(2, UInt(8.W)))
+  val memory = Mem(2, Vec(2, UInt(8.W)))
 
   // Circuit style tester is definitely the wrong abstraction here
   val (cnt, wrap) = Counter(true.B, 2)
-  mem(0)(0) := 1.U
+  memory(0)(0) := 1.U
 
   when (cnt === 1.U) {
-    assert(mem.read(0.U)(0) === 1.U)
+    assert(memory.read(0.U)(0) === 1.U)
     stop()
   }
 }
 
 class SyncReadMemTester extends BasicTester {
   val (cnt, _) = Counter(true.B, 5)
-  val mem = SyncReadMem(2, UInt(2.W))
-  val rdata = mem.read(cnt - 1.U, cnt =/= 0.U)
+  val memory = SyncReadMem(2, UInt(2.W))
+  val rdata = memory.read(cnt - 1.U, cnt =/= 0.U)
 
   switch (cnt) {
-    is (0.U) { mem.write(cnt, 3.U) }
-    is (1.U) { mem.write(cnt, 2.U) }
+    is (0.U) { memory.write(cnt, 3.U) }
+    is (1.U) { memory.write(cnt, 2.U) }
     is (2.U) { assert(rdata === 3.U) }
     is (3.U) { assert(rdata === 2.U) }
     is (4.U) { stop() }
@@ -59,8 +59,8 @@ class SyncReadMemWriteCollisionTester extends BasicTester {
 
 class SyncReadMemWithZeroWidthTester extends BasicTester {
   val (cnt, _) = Counter(true.B, 3)
-  val mem      = SyncReadMem(2, UInt(0.W))
-  val rdata    = mem.read(0.U, true.B)
+  val memory      = SyncReadMem(2, UInt(0.W))
+  val rdata    = memory.read(0.U, true.B)
 
   switch (cnt) {
     is (1.U) { assert(rdata === 0.U) }
@@ -71,12 +71,12 @@ class SyncReadMemWithZeroWidthTester extends BasicTester {
 // TODO this can't actually simulate with FIRRTL behavioral mems
 class HugeSMemTester(size: BigInt) extends BasicTester {
   val (cnt, _) = Counter(true.B, 5)
-  val mem = SyncReadMem(size, UInt(8.W))
-  val rdata = mem.read(cnt - 1.U, cnt =/= 0.U)
+  val memory = SyncReadMem(size, UInt(8.W))
+  val rdata = memory.read(cnt - 1.U, cnt =/= 0.U)
 
   switch (cnt) {
-    is (0.U) { mem.write(cnt, 3.U) }
-    is (1.U) { mem.write(cnt, 2.U) }
+    is (0.U) { memory.write(cnt, 3.U) }
+    is (1.U) { memory.write(cnt, 2.U) }
     is (2.U) { assert(rdata === 3.U) }
     is (3.U) { assert(rdata === 2.U) }
     is (4.U) { stop() }
@@ -84,12 +84,12 @@ class HugeSMemTester(size: BigInt) extends BasicTester {
 }
 class HugeCMemTester(size: BigInt) extends BasicTester {
   val (cnt, _) = Counter(true.B, 5)
-  val mem = Mem(size, UInt(8.W))
-  val rdata = mem.read(cnt)
+  val memory = Mem(size, UInt(8.W))
+  val rdata = memory.read(cnt)
 
   switch (cnt) {
-    is (0.U) { mem.write(cnt, 3.U) }
-    is (1.U) { mem.write(cnt, 2.U) }
+    is (0.U) { memory.write(cnt, 3.U) }
+    is (1.U) { memory.write(cnt, 2.U) }
     is (2.U) { assert(rdata === 3.U) }
     is (3.U) { assert(rdata === 2.U) }
     is (4.U) { stop() }
@@ -101,19 +101,19 @@ class SyncReadMemBundleTester extends BasicTester {
   val tpe = new Bundle {
     val foo = UInt(2.W)
   }
-  val mem = SyncReadMem(2, tpe)
-  val rdata = mem.read(cnt - 1.U, cnt =/= 0.U)
+  val memory = SyncReadMem(2, tpe)
+  val rdata = memory.read(cnt - 1.U, cnt =/= 0.U)
 
   switch (cnt) {
     is (0.U) {
       val w = Wire(tpe)
       w.foo := 3.U
-      mem.write(cnt, w)
+      memory.write(cnt, w)
     }
     is (1.U) {
       val w = Wire(tpe)
       w.foo := 2.U
-      mem.write(cnt, w)
+      memory.write(cnt, w)
     }
     is (2.U) { assert(rdata.foo === 3.U) }
     is (3.U) { assert(rdata.foo === 2.U) }
@@ -125,18 +125,18 @@ class MemBundleTester extends BasicTester {
   val tpe = new Bundle {
     val foo = UInt(2.W)
   }
-  val mem = Mem(2, tpe)
+  val memory = Mem(2, tpe)
 
   // Circuit style tester is definitely the wrong abstraction here
   val (cnt, wrap) = Counter(true.B, 2)
-  mem(0) := {
+  memory(0) := {
     val w = Wire(tpe)
     w.foo := 1.U
     w
   }
 
   when (cnt === 1.U) {
-    assert(mem.read(0.U).foo === 1.U)
+    assert(memory.read(0.U).foo === 1.U)
     stop()
   }
 }

@@ -75,7 +75,7 @@ class MultiClockMemTest extends BasicTester {
   cDiv := !cDiv
   val clock2 = cDiv.asClock
 
-  val mem = Mem(8, UInt(32.W))
+  val memory = Mem(8, UInt(32.W))
 
   val (cycle, done) = Counter(true.B, 20)
 
@@ -83,11 +83,11 @@ class MultiClockMemTest extends BasicTester {
   val waddr = RegInit(0.U(3.W))
   waddr := waddr + 1.U
   when (cycle < 8.U) {
-    mem(waddr) := 123.U
+    memory(waddr) := 123.U
   }
 
   val raddr = waddr - 1.U
-  val rdata = mem(raddr)
+  val rdata = memory(raddr)
 
   // Check each write from write port 1
   when (cycle > 0.U && cycle < 9.U) {
@@ -97,7 +97,7 @@ class MultiClockMemTest extends BasicTester {
   // Write port 2 walks through writing 456 on 2nd time through
   withClock(clock2) {
     when (cycle >= 8.U && cycle < 16.U) {
-      mem(waddr) := 456.U // write 456 to different address
+      memory(waddr) := 456.U // write 456 to different address
     }
   }
 

@@ -79,7 +79,7 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
     */
   def compile(t: => RawModule): String = {
     (new circt.stage.ChiselStage)
-      .execute(Array("--target-dir", createTestDirectory(this.getClass.getSimpleName).toString),
+      .execute(Array("--target", "verilog", "--target-dir", createTestDirectory(this.getClass.getSimpleName).toString),
                Seq(ChiselGeneratorAnnotation(() => t)))
       .collectFirst {
         case EmittedVerilogCircuitAnnotation(a) => a.value

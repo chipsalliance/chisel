@@ -53,8 +53,9 @@ case class SelectAspect[T <: RawModule, X](selector: T => Seq[X], desired: T => 
 class SelectSpec extends ChiselFlatSpec {
 
   def execute[T <: RawModule, X](dut: () => T, selector: T => Seq[X], desired: T => Seq[X])(implicit tTag: TypeTag[T]): Unit = {
-    val ret = new chisel3.stage.ChiselStage().run(
+    val ret = new circt.stage.ChiselStage().run(
       Seq(
+        circt.stage.CIRCTTargetAnnotation(circt.stage.CIRCTTarget.Verilog),
         new chisel3.stage.ChiselGeneratorAnnotation(dut),
         SelectAspect(selector, desired),
         new chisel3.stage.ChiselOutputFileAnnotation("test_run_dir/Select.fir")
@@ -154,4 +155,3 @@ class SelectSpec extends ChiselFlatSpec {
   }
 
 }
-

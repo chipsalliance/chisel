@@ -16,7 +16,7 @@ class InvalidateAPISpec extends ChiselPropSpec with Matchers with BackendCompila
   def compileFirrtl(t: => Module): Unit = {
     val testDir = createTestDirectory(this.getClass.getSimpleName)
 
-    (new ChiselStage).execute(Array[String]("-td", testDir.getAbsolutePath, "--compiler", "verilog"),
+    (new circt.stage.ChiselStage).execute(Array[String]("-td", testDir.getAbsolutePath, "--target", "verilog"),
                               Seq(ChiselGeneratorAnnotation(() => t)))
   }
   class TrivialInterface extends Bundle {

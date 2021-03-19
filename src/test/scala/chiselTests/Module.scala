@@ -145,12 +145,12 @@ class ModuleSpec extends ChiselPropSpec with Utils {
 
   property("object chisel3.util.experimental.getAnnotations should return current annotations.") {
     case class DummyAnnotation() extends NoTargetAnnotation with Unserializable
-    (new ChiselStage).transform(Seq(
+    (new circt.stage.ChiselStage).transform(Seq(
       ChiselGeneratorAnnotation(() => new RawModule {
         assert(chisel3.util.experimental.getAnnotations().contains(DummyAnnotation()))
       }),
       DummyAnnotation(),
-      NoRunFirrtlCompilerAnnotation))
+      circt.stage.CIRCTTargetAnnotation(circt.stage.CIRCTTarget.Verilog)))
   }
 
   property("DataMirror.modulePorts should work") {

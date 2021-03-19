@@ -102,7 +102,8 @@ class ExtModuleImplSpec extends FreeSpec with Matchers {
         TargetDirAnnotation(targetDir),
         ChiselGeneratorAnnotation(() => new UsesExtModuleAddViaInline)
       )
-      val newAnnotations = (new ChiselStage).transform(annotations)
+      (new ChiselStage).execute(Array("--no-run-firrtl"), annotations).foreach(println)
+      val newAnnotations = (new circt.stage.ChiselStage).transform(annotations)
 
       newAnnotations.exists(_.isInstanceOf[FirrtlCircuitAnnotation]) should be (true)
       val verilogOutput = new File(targetDir, "ExtModuleAdd.v")
@@ -116,7 +117,7 @@ class ExtModuleImplSpec extends FreeSpec with Matchers {
         TargetDirAnnotation(targetDir),
         ChiselGeneratorAnnotation(() => new UsesExtModuleMinusViaResource)
       )
-      val newAnnotations = (new ChiselStage).transform(annotations)
+      val newAnnotations = (new circt.stage.ChiselStage).transform(annotations)
 
       newAnnotations.exists(_.isInstanceOf[FirrtlCircuitAnnotation]) should be (true)
       val verilogOutput = new File(targetDir, "BlackBoxTest.v")
@@ -130,7 +131,7 @@ class ExtModuleImplSpec extends FreeSpec with Matchers {
         TargetDirAnnotation(targetDir),
         ChiselGeneratorAnnotation(() => new UsesExtModuleMinusViaPath)
       )
-      val newAnnotations = (new ChiselStage).transform(annotations)
+      val newAnnotations = (new circt.stage.ChiselStage).transform(annotations)
 
       newAnnotations.exists(_.isInstanceOf[FirrtlCircuitAnnotation]) should be (true)
       val verilogOutput = new File(targetDir, "BlackBoxTest.v")

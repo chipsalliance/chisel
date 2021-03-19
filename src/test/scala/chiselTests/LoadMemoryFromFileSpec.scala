@@ -160,8 +160,8 @@ class LoadMemoryFromFileSpec extends AnyFreeSpec with Matchers {
   "Users can specify a source file to load memory from" in {
     val testDirName = "test_run_dir/load_memory_spec"
 
-    val result = (new ChiselStage).execute(
-      args = Array("-X", "verilog", "--target-dir", testDirName),
+    val result = (new circt.stage.ChiselStage).execute(
+      args = Array("--target", "verilog", "--target-dir", testDirName),
       annotations = Seq(ChiselGeneratorAnnotation(() => new UsesMem(memoryDepth = 8, memoryType = UInt(16.W))))
     )
 
@@ -175,8 +175,8 @@ class LoadMemoryFromFileSpec extends AnyFreeSpec with Matchers {
   "Calling a module that loads memories from a file more than once should work" in {
     val testDirName = "test_run_dir/load_three_memory_spec"
 
-    val result = (new ChiselStage).execute(
-      args = Array("-X", "verilog", "--target-dir", testDirName),
+    val result = (new circt.stage.ChiselStage).execute(
+      args = Array("--target", "verilog", "--target-dir", testDirName),
       annotations = Seq(ChiselGeneratorAnnotation(() => new UsesThreeMems(memoryDepth = 8, memoryType = UInt(16.W))))
     )
 
@@ -191,8 +191,8 @@ class LoadMemoryFromFileSpec extends AnyFreeSpec with Matchers {
   "In this example the memory has a complex memory type containing a bundle" in {
     val complexTestDirName = "test_run_dir/complex_memory_load"
 
-    val result = (new ChiselStage).execute(
-      args = Array("-X", "verilog", "--target-dir", complexTestDirName),
+    val result = (new circt.stage.ChiselStage).execute(
+      args = Array("--target", "verilog", "--target-dir", complexTestDirName),
       annotations = Seq(ChiselGeneratorAnnotation(() => new HasComplexMemory(memoryDepth = 8)))
     )
 
@@ -212,8 +212,8 @@ class LoadMemoryFromFileSpec extends AnyFreeSpec with Matchers {
   "Has binary format support" in {
     val testDirName = "test_run_dir/binary_memory_load"
 
-    val result = (new ChiselStage).execute(
-      args = Array("-X", "verilog", "--target-dir", testDirName),
+    val result = (new circt.stage.ChiselStage).execute(
+      args = Array("--target", "verilog", "--target-dir", testDirName),
       annotations = Seq(ChiselGeneratorAnnotation(() => new HasBinarySupport(memoryDepth = 8, memoryType = UInt(16.W))))
     )
 
@@ -228,8 +228,8 @@ class LoadMemoryFromFileSpec extends AnyFreeSpec with Matchers {
   "Module with more than one hex memory inline should work" in {
     val testDirName = "test_run_dir/load_three_memory_spec_inline"
 
-    val result = (new ChiselStage).execute(
-      args = Array("-X", "verilog", "--target-dir", testDirName),
+    val result = (new circt.stage.ChiselStage).execute(
+      args = Array("--target", "verilog", "--target-dir", testDirName),
       annotations = Seq(ChiselGeneratorAnnotation(() => new UsesThreeMemsInline(memoryDepth = 8, memoryType = UInt(16.W), "./testmem.h", MemoryLoadFileType.Hex)))
     )
     val dir = new File(testDirName)
@@ -244,8 +244,8 @@ class LoadMemoryFromFileSpec extends AnyFreeSpec with Matchers {
   "Module with more than one bin memory inline should work" in {
     val testDirName = "test_run_dir/load_three_memory_spec_inline"
 
-    val result = (new ChiselStage).execute(
-      args = Array("-X", "verilog", "--target-dir", testDirName),
+    val result = (new circt.stage.ChiselStage).execute(
+      args = Array("--target", "verilog", "--target-dir", testDirName),
       annotations = Seq(ChiselGeneratorAnnotation(() => new UsesThreeMemsInline(memoryDepth = 8, memoryType = UInt(16.W), "testmem.bin", MemoryLoadFileType.Binary)))
     )
     val dir = new File(testDirName)

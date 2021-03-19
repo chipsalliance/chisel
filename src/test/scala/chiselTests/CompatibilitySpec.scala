@@ -561,7 +561,7 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
       val io = IO(new MyRecord)
       io.bar := io.foo
     }
-    val verilog = ChiselStage.emitVerilog(new Foo)
+    val verilog = circt.stage.ChiselStage.emitSystemVerilog(new Foo)
     // Check that the names are correct (and that the FIRRTL is valid)
     verilog should include ("assign io_out_0 = io_in_0;")
   }
