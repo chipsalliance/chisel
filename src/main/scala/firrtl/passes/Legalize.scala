@@ -3,11 +3,11 @@
 package firrtl.passes
 
 import firrtl.PrimOps._
-import firrtl.Utils.{error, zero, BoolType}
+import firrtl.Utils.{error, getGroundZero, zero, BoolType}
 import firrtl.ir._
 import firrtl.options.Dependency
 import firrtl.transforms.ConstantPropagation
-import firrtl.{bitWidth, Transform}
+import firrtl.{bitWidth, getWidth, Transform}
 import firrtl.Mappers._
 
 // Replace shr by amount >= arg width with 0 for UInts and MSB for SInts
@@ -56,6 +56,19 @@ object Legalize extends Pass {
       SIntLiteral(value, IntWidth(expr.consts.head))
     case _ => expr
   }
+  // Convert `-x` to `0 - x`
+  private def legalizeNeg(expr: DoPrim): Expression = {
+    val arg = expr.args.head
+    arg.tpe match {
+      case tpe: SIntType =>
+        val zero = getGroundZero(tpe)
+        DoPrim(Sub, Seq(zero, arg), Nil, expr.tpe)
+      case tpe: UIntType =>
+        val zero = getGroundZero(tpe)
+        val sub = DoPrim(Sub, Seq(zero, arg), Nil, UIntType(tpe.width + IntWidth(1)))
+        DoPrim(AsSInt, Seq(sub), Nil, expr.tpe)
+    }
+  }
   private def legalizeConnect(c: Connect): Statement = {
     val t = c.loc.tpe
     val w = bitWidth(t)
@@ -78,6 +91,7 @@ object Legalize extends Pass {
           case Shr                => legalizeShiftRight(prim)
           case Pad                => legalizePad(prim)
           case Bits | Head | Tail => legalizeBitExtract(prim)
+          case Neg                => legalizeNeg(prim)
           case _                  => prim
         }
       case e => e // respect pre-order traversal
