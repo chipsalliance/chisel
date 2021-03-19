@@ -111,7 +111,7 @@ import chisel3.{RawModule, withClockAndReset}
 class Foo extends Module {
   val io = IO(new Bundle{
     val a = Input(Bool())
-    val b = Output(Bool())
+    val b = Output(Bool()
   })
   io.b := !io.a
 }
@@ -119,8 +119,8 @@ class Foo extends Module {
 class FooWrapper extends RawModule {
   val a_i  = IO(Input(Bool()))
   val b_o  = IO(Output(Bool()))
-  val clk  = Input(Clock())
-  val rstn = Input(Bool())
+  val clk  = IO(Input(Clock()))
+  val rstn = IO(Input(Bool()))
 
   val foo = withClockAndReset(clk, !rstn){ Module(new Foo) }
 
