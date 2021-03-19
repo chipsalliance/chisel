@@ -10,9 +10,6 @@ www-src = \
 	$(shell find docs/src/main/resources) \
 	docs/src/main/tut/chisel3/docs \
 	docs/src/main/tut/chisel3/index.md \
-	docs/src/main/tut/chisel3/explanations.md \
-	docs/src/main/tut/chisel3/cookbooks.md \
-	docs/src/main/tut/chisel3/wiki-deprecated.md \
 	chisel3/README.md \
 	firrtl/README.md \
 	chisel-testers/README.md \
