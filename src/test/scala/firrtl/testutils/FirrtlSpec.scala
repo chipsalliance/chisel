@@ -165,10 +165,14 @@ trait FirrtlRunners extends BackendCompilationUtilities {
 
   /** Compiles input Firrtl to Verilog */
   def compileToVerilog(input: String, annotations: AnnotationSeq = Seq.empty): String = {
+    compileToVerilogCircuitState(input, annotations).getEmittedCircuit.value
+  }
+
+  /** Compiles input Firrtl to Verilog */
+  def compileToVerilogCircuitState(input: String, annotations: AnnotationSeq = Seq.empty): CircuitState = {
     val circuit = Parser.parse(input.split("\n").toIterator)
     val compiler = new VerilogCompiler
-    val res = compiler.compileAndEmit(CircuitState(circuit, HighForm, annotations), extraCheckTransforms)
-    res.getEmittedCircuit.value
+    compiler.compileAndEmit(CircuitState(circuit, HighForm, annotations), extraCheckTransforms)
   }
 
   /** Compile a Firrtl file
