@@ -3,6 +3,9 @@ layout: docs
 title:  "Width Inference"
 section: "chisel3"
 ---
+
+# Width Inference
+
 Chisel provides bit width inference to reduce design effort. Users are encouraged to manually specify widths of ports and registers to prevent any surprises, but otherwise unspecified widths will be inferred by the Firrtl compiler.
 
 For all circuit components declared with unspecified widths, the FIRRTL compiler will infer the minimum possible width that maintains the legality of all its incoming connections. Implicit here is that inference is done in a right to left fashion in the sense of an assignment statement in chisel, i.e. from the left hand side from the right hand side. If a component has no incoming connections, and the width is unspecified, then an error is thrown to indicate that the width could not be inferred.

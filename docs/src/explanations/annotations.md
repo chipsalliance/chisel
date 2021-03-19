@@ -4,6 +4,8 @@ title:  "Annotations"
 section: "chisel3"
 ---
 
+# Annotations
+
 `Annotation`s are metadata containers associated with zero or more "things" in a FIRRTL circuit.
 Commonly, `Annotation`s are used to communicate information from Chisel to a specific, custom FIRRTL `Transform`.
 In this way `Annotation`s can be viewed as the "arguments" that a specific `Transform` consumes.
@@ -132,10 +134,8 @@ class ModC(widthC: Int) extends Module {
 
 Compiling this circuit to Verilog will then result in the `InfoTransform` running and the added `println`s showing information about the components annotated.
 
-```scala mdoc
+```scala mdoc:compile-only
 import chisel3.stage.{ChiselStage, ChiselGeneratorAnnotation}
 
-// This currently doesn't work because of mdoc limitations. However, it will work
-// in your normal Scala code.
-//(new ChiselStage).execute(Array.empty, Seq(ChiselGeneratorAnnotation(() => new ModC(4))))
+(new ChiselStage).execute(Array.empty, Seq(ChiselGeneratorAnnotation(() => new ModC(4))))
 ```

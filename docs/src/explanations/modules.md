@@ -3,6 +3,9 @@ layout: docs
 title:  "Modules"
 section: "chisel3"
 ---
+
+# Modules
+
 Chisel *modules* are very similar to Verilog *modules* in
 defining a hierarchical structure in the generated circuit.
 
