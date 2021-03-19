@@ -111,7 +111,7 @@ import chisel3.{RawModule, withClockAndReset}
 class Foo extends Module {
   val io = IO(new Bundle{
     val a = Input(Bool())
-    val b = Output(Bool()
+    val b = Output(Bool())
   })
   io.b := !io.a
 }
