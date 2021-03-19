@@ -55,7 +55,7 @@ Please see [Chisel Motivation](../explanations/motivation)
 
 ### Does Chisel support X and Z logic values
 
-Chisel does not directly support Verilog logic values ```x``` *unknown* and ```z``` *high-impedance*.  There are a number of reasons to want to avoid these values.  See:[The Dangers of Living With An X](http://infocenter.arm.com/help/topic/com.arm.doc.arp0009a/Verilog_X_Bugs.pdf) and [Malicious LUT: A stealthy FPGA Trojan injected and triggered by the design flow](http://ieeexplore.ieee.org/document/7827620/).  Chisel has it's own eco-system of unit and functional testers that limit the need for ```x``` and ```z``` and their omission simplify language implementation, design, and testing.  The circuits created by chisel do not preclude developers from using ```x``` and ```z``` in downstream toolchains as they see fit.
+Chisel does not directly support Verilog logic values ```x``` *unknown* and ```z``` *high-impedance*.  There are a number of reasons to want to avoid these values.  See:[The Dangers of Living With An X](http://infocenter.arm.com/help/topic/com.arm.doc.arp0009a/Verilog_X_Bugs.pdf) and [Malicious LUT: A stealthy FPGA Trojan injected and triggered by the design flow](http://ieeexplore.ieee.org/document/7827620/).  Chisel has its own eco-system of unit and functional testers that limit the need for ```x``` and ```z``` and their omission simplify language implementation, design, and testing.  The circuits created by chisel do not preclude developers from using ```x``` and ```z``` in downstream toolchains as they see fit.
 
 ### Get me Verilog
 I wrote a module and I want to see the Verilog; what do I do?
@@ -147,7 +147,7 @@ ChiselStage.emitVerilog(new HelloWorld())
 
 ### Get me FIRRTL
 
-If for some reason you don't want the Verilog (e.g. maybe you want to run some custom transformations before exporting to Verilog), then use something along these lines (replace Multiplier with your module):
+If for some reason you don't want the Verilog (e.g. maybe you want to run some custom transformations before exporting to Verilog), then use something along these lines:
 
 ```scala
 package intro
