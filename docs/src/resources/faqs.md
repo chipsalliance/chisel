@@ -8,8 +8,8 @@ section: "chisel3"
 
 * [Where should I start if I want to learn Chisel?](#where-should-i-start-if-i-want-to-learn-chisel)
 * [How do I ... in Chisel?](#how-do-i-do--eg-like-that-in-verilog-in-chisel)
+* [What versions of the various projects work together?](#what-versions)
 * [How can I contribute to Chisel?](#how-can-i-contribute-to-chisel)
-* [What is the difference between release and master branches?](#what-is-the-difference-between-release-and-master-branches)
 * [Why DecoupledIO instead of ReadyValidIO?](#why-decoupledio-instead-of-readyvalidio)
 * [Why do I have to wrap module instantiations in `Module(...)`?](#why-do-i-have-to-wrap-module-instantiations-in-module)
 * [Why Chisel?](#why-chisel)
@@ -28,42 +28,13 @@ We recommend the [Chisel Bootcamp](https://github.com/freechipsproject/chisel-bo
 
 See the [cookbooks](../cookbooks/cookbook).
 
+### What versions of the various projects work together? <a name="what-versions"></a>
+
+See [Chisel Project Versioning](../appendix/versioning).
+
 ### How can I contribute to Chisel?
 
-A good to place to start is to fill out the [How Can I Contribute Form](https://docs.google.com/forms/d/e/1FAIpQLSfwTTY8GkfSZ2sU2T2mNpfNMpIM70GlXOrjqiHoC9ZBvwn_CA/viewform).
-
-### What is the difference between release and master branches?
-
-We have two main branches for each main Chisel project:
-
-- `master`
-- `release`
-
-`master` is the main development branch and it is updated frequently (often several times a day).
-Although we endeavour to keep the `master` branches in sync, they may drift out of sync for a day or two.
-We do not publish the `master` branches.
-If you wish to use them, you need to clone the GitHub repositories and use `sbt publishLocal` to make them available on your local machine.
-
-The `release` branches are updated less often (currently bi-weekly) and we try to guarantee they are in sync.
-We publish these to Sonatype/Maven on a bi-weekly basis.
-
-In general, you can not mix `release` and `master` branches and assume they will work.
-
-The default branches for the user-facing repositories (chisel-template and chisel-tutorial) are the `release` branches - these should always *just work* for new users as they use the `release` branches of chisel projects.
-
-If you want to use something more current than the `release` branch, you should `git checkout master` for all the chisel repos you intend to use, then `sbt publishLocal` them in this order:
-
-- firrtl
-- firrtl-interpreter
-- chisel3
-- chisel-testers
-
-Then, if you're working with the user-facing repositories:
-
-- chisel-tutorial
-- chisel-template
-
-Since this is a substantial amount of work (with no guarantee of success), unless you are actively involved in Chisel development, we encourage you to stick with the `release` branches and their respective dependencies.
+Check out the [Contributor Documentation](https://github.com/chipsalliance/chisel3#contributor-documentation) in the chisel3 repository.
 
 ### Why DecoupledIO instead of ReadyValidIO?
 
@@ -80,48 +51,11 @@ Chisel Modules are written by defining a [Scala class](http://docs.scala-lang.or
 
 ### Why Chisel?
 
-Borrowed from [Chisel Motivation](../explanations/motivation)
-
->We were motivated to develop a new hardware language by years of
-struggle with existing hardware description languages in our research
-projects and hardware design courses.  _Verilog_ and _VHDL_ were developed
-as hardware _simulation_ languages, and only later did they become
-a basis for hardware _synthesis_.  Much of the semantics of these
-languages are not appropriate for hardware synthesis and, in fact,
-many constructs are simply not synthesizable.  Other constructs are
-non-intuitive in how they map to hardware implementations, or their
-use can accidently lead to highly inefficient hardware structures.
-While it is possible to use a subset of these languages and still get
-acceptable results, they nonetheless present a cluttered and confusing
-specification model, particularly in an instructional setting.
-
->However, our strongest motivation for developing a new hardware
-language is our desire to change the way that electronic system design
-takes place.  We believe that it is important to not only teach
-students how to design circuits, but also to teach them how to design
-*circuit generators* ---programs that automatically generate
-designs from a high-level set of design parameters and constraints.
-Through circuit generators, we hope to leverage the hard work of
-design experts and raise the level of design abstraction for everyone.
-To express flexible and scalable circuit construction, circuit
-generators must employ sophisticated programming techniques to make
-decisions concerning how to best customize their output circuits
-according to high-level parameter values and constraints.  While
-Verilog and VHDL include some primitive constructs for programmatic
-circuit generation, they lack the powerful facilities present in
-modern programming languages, such as object-oriented programming,
-type inference, support for functional programming, and reflection.
-
->Instead of building a new hardware design language from scratch, we
-chose to embed hardware construction primitives within an existing
-language.  We picked Scala not only because it includes the
-programming features we feel are important for building circuit
-generators, but because it was specifically developed as a base for
-domain-specific languages.
+Please see [Chisel Motivation](../explanations/motivation)
 
 ### Does Chisel support X and Z logic values
 
-Chisel does not directly support Verilog logic values ```x``` *unknown* and ```z``` *high-impedance*.  There are a number of reasons to want to avoid these values.  See:[The Dangers of Living With An X](http://infocenter.arm.com/help/topic/com.arm.doc.arp0009a/Verilog_X_Bugs.pdf) and [Malicious LUT: A stealthy FPGA Trojan injected and triggered by the design flow](http://ieeexplore.ieee.org/document/7827620/).  Chisel has it's own eco-system of unit and functional testers that limit the need for ```x``` and ```z``` and their omission simplify language implementation, design, and testing.  The circuits created by chisel do not preclude developers from using ```x``` and ```z``` in downstream toolchains as they see fit.
+Chisel does not directly support Verilog logic values ```x``` *unknown* and ```z``` *high-impedance*.  There are a number of reasons to want to avoid these values.  See:[The Dangers of Living With An X](http://infocenter.arm.com/help/topic/com.arm.doc.arp0009a/Verilog_X_Bugs.pdf) and [Malicious LUT: A stealthy FPGA Trojan injected and triggered by the design flow](http://ieeexplore.ieee.org/document/7827620/).  Chisel has its own eco-system of unit and functional testers that limit the need for ```x``` and ```z``` and their omission simplify language implementation, design, and testing.  The circuits created by chisel do not preclude developers from using ```x``` and ```z``` in downstream toolchains as they see fit.
 
 ### Get me Verilog
 I wrote a module and I want to see the Verilog; what do I do?
@@ -213,7 +147,7 @@ ChiselStage.emitVerilog(new HelloWorld())
 
 ### Get me FIRRTL
 
-If for some reason you don't want the Verilog (e.g. maybe you want to run some custom transformations before exporting to Verilog), then use something along these lines (replace Multiplier with your module):
+If for some reason you don't want the Verilog (e.g. maybe you want to run some custom transformations before exporting to Verilog), then use something along these lines:
 
 ```scala
 package intro
@@ -263,8 +197,8 @@ res3: String = ...
 
 ### Why doesn't Chisel tell me which wires aren't connected?
 
-As of commit [c313e13](https://github.com/freechipsproject/chisel3/commit/c313e137d4e562ef20195312501840ceab8cbc6a) it can!
-Read more at [Unconnected Wires](../explanations/unconnected-wires) for details.
+As long as your code uses `import chisel3._` (and not `import Chisel._`), it does!
+See [Unconnected Wires](../explanations/unconnected-wires) for details.
 
 ### What does `Reference ... is not fully initialized.` mean?
 
