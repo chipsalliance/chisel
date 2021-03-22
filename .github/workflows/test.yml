@@ -46,6 +46,24 @@ jobs:
       - name: Binary compatibility
         run: sbt ++${{ matrix.scala }} mimaReportBinaryIssues
 
+  mill:
+    name: Mill Sanity Check
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        scala: [2.13.4, 2.12.13]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+      - name: Cache
+        uses: coursier/cache-action@v5
+      - name: Setup Mill
+        uses: jodersky/setup-mill@v0.2.3
+      - name: Mill sanity check
+        run: mill _[${{ matrix.scala }}].compile
+
   # TODO find better way to express Ops and AddNot as single test
   equiv:
     name: formal equivalence

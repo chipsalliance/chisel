@@ -7,7 +7,7 @@ import mill.modules.Util
 import $ivy.`com.lihaoyi::mill-contrib-buildinfo:$MILL_VERSION`
 import mill.contrib.buildinfo.BuildInfo
 
-object firrtl extends mill.Cross[firrtlCrossModule]("2.12.12", "2.13.2")
+object firrtl extends mill.Cross[firrtlCrossModule]("2.12.13", "2.13.4")
 
 class firrtlCrossModule(val crossScalaVersion: String) extends CrossSbtModule with PublishModule with BuildInfo {
   override def millSourcePath = super.millSourcePath / os.up
@@ -28,7 +28,7 @@ class firrtlCrossModule(val crossScalaVersion: String) extends CrossSbtModule wi
       "-deprecation",
       "-unchecked",
       "-Yrangepos" // required by SemanticDB compiler plugin
-    )
+    ) ++ (if (majorVersion == 13) Seq("-Ymacro-annotations") else Nil)
   }
 
   override def javacOptions = T {
@@ -42,15 +42,18 @@ class firrtlCrossModule(val crossScalaVersion: String) extends CrossSbtModule wi
       ivy"net.jcazevedo::moultingyaml:0.4.2",
       ivy"org.json4s::json4s-native:3.6.9",
       ivy"org.apache.commons:commons-text:1.8",
+      ivy"io.github.alexarchambault::data-class:0.2.5",
       ivy"org.antlr:antlr4-runtime:$antlr4Version",
       ivy"com.google.protobuf:protobuf-java:$protocVersion"
     ) ++ {
-      if (majorVersion > 12)
+      if (majorVersion == 13)
         Agg(ivy"org.scala-lang.modules::scala-parallel-collections:0.2.0")
       else
         Agg()
     }
   }
+
+  override def scalacPluginIvyDeps = if (majorVersion == 12) Agg(ivy"org.scalamacros:::paradise:2.1.1") else super.scalacPluginIvyDeps
 
   object test extends Tests {
     override def ivyDeps = T {
