@@ -12,13 +12,13 @@ import chisel3._
 ```
 <!-- End Prelude -->
 
-## Upgrading From Scala 2.11 to 2.12
+# Upgrading From Scala 2.11 to 2.12
 
 As the latest (and probably last) release of Scala 2.11 (2.11.12) was released on 2 November 2017, the time has come to deprecate support for Scala 2.11.
 Chisel 3.4 is the last version of Chisel that will support Scala 2.11, so users should upgrade to Scala 2.12
 This document is intended to help guide Chisel users through this process; both the "Why?" and the "How?".
 
-### Scala Versioning
+## Scala Versioning
 
 <!-- TODO, this should be discussed in a different document about "Building Chisel" or something-->
 
@@ -37,7 +37,7 @@ For more information, see the documentation on the Scala website:
 * [Binary Compatibility for Library Authoers](https://docs.scala-lang.org/overviews/core/binary-compatibility-for-library-authors.html)
 
 
-### How to Upgrade
+## How to Upgrade
 
 For most users, this is as simple as changing the `scalaVersion` field in your `build.sbt`:
 ```scala
@@ -49,7 +49,7 @@ scalaVersion := "2.12.12"
 ```
 Now, the next time you run SBT, it will be using the Scala 2.12 version of Chisel 3 (as well as any other dependencies you have).
 
-### Common Issues
+## Common Issues
 
 As mentioned in the [previous section](#scala-versioning), Scala does *not* maintain source compatibilty between major versions.
 Put another way, sometimes they break things in backwards incompatible ways.
@@ -57,7 +57,7 @@ This section includes some common issues that Chisel users run into and how to f
 
 For complete information about changes, please see the [release notes for Scala 2.12.0](https://www.scala-lang.org/news/2.12.0/).
 
-#### Value is not a member of chisel3.Bundle
+### Value is not a member of chisel3.Bundle
 
 The most common problem for Chisel users upgrading from Scala 2.11 to 2.12 is a change in Scala type inference.
 This usually occurs in the context of `io` `Bundles` in `Modules`, given:
