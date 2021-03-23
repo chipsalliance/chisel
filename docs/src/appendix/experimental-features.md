@@ -6,11 +6,11 @@ section: "chisel3"
 
 Chisel has a number of new features that are worth checking out.  This page is an informal list of these features and projects.
 
-[FixedPoint](#fixed-point)
-[Module Variants](#module-variants)
-[Module Variants](#bundle-literals)
-[Interval Type](#interval-type)
-[Loading Memories in Simulation](#loading-memories)
+- [FixedPoint](#fixed-point)
+- [Module Variants](#module-variants)
+- [Module Variants](#bundle-literals)
+- [Interval Type](#interval-type)
+- [Loading Memories in Simulation](#loading-memories)
 
 ### FixedPoint  <a name="fixed-point"></a>
 FixedPoint numbers are basic *Data* type along side of UInt, SInt, etc.  Most common math and logic operations
