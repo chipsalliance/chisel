@@ -14,12 +14,12 @@ Chisel has a number of new features that are worth checking out.  This page is a
 - [Interval Type](#interval-type)
 - [Loading Memories in Simulation](#loading-memories)
 
-### FixedPoint  <a name="fixed-point"></a>
+## FixedPoint  <a name="fixed-point"></a>
 FixedPoint numbers are basic *Data* type along side of UInt, SInt, etc.  Most common math and logic operations
 are supported. Chisel allows both the width and binary point to be inferred by the Firrtl compiler which can simplify
 circuit descriptions. See [FixedPointSpec](https://github.com/freechipsproject/chisel3/tree/master/src/test/scala/chiselTests/FixedPointSpec.scala)
 
-### Module Variants <a name="module-variants"></a>
+## Module Variants <a name="module-variants"></a>
 The standard Chisel *Module* requires a `val io = IO(...)`, the experimental package introduces several
 new ways of defining Modules
 - BaseModule: no contents, instantiable
@@ -29,7 +29,7 @@ new ways of defining Modules
 - RawModule: will be the user-facing version of UserDefinedModule
 - Module: type-aliases to ImplicitModule, the user-facing version of ImplicitModule.
 
-### Bundle Literals <a name="bundle-literals"></a>
+## Bundle Literals <a name="bundle-literals"></a>
 
 Bundle literals can be constructed via an experimental import:
 
@@ -89,7 +89,7 @@ chisel3.stage.ChiselStage.emitVerilog(new Example3)
 
 Vec literals are not yet supported.
 
-### Interval Type <a name="interval-type"></a>
+## Interval Type <a name="interval-type"></a>
 
 **Intervals** are a new experimental numeric type that comprises UInt, SInt and FixedPoint numbers.
 It augments these types with range information, i.e. upper and lower numeric bounds.
@@ -99,14 +99,14 @@ operations and earlier values in the circuit. Intervals support all the ordinary
 associated with UInt, SInt, and FixedPoint and adds the following methods for manipulating the range of
 a **source** Interval with the IntervalRange of **target** Interval
 
-#### Clip -- Fit the value **source** into the IntervalRange of **target**, saturate if out of bounds
+### Clip -- Fit the value **source** into the IntervalRange of **target**, saturate if out of bounds
 The clip method applied to an interval creates a new interval based on the argument to clip,
 and constructs the necessary hardware so that the source Interval's value will be mapped into the new Interval.
 Values that are outside the result range will be pegged to either maximum or minimum of result range as appropriate.
 
 > Generates necessary hardware to clip values, values greater than range are set to range.high, values lower than range are set to range min.
 
-#### Wrap -- Fit the value **source** into the IntervalRange of **target**, wrapping around if out of bounds
+### Wrap -- Fit the value **source** into the IntervalRange of **target**, wrapping around if out of bounds
 The wrap method applied to an interval creates a new interval based on the argument to wrap,
 and constructs the necessary
 hardware so that the source Interval's value will be mapped into the new Interval.
@@ -116,13 +116,13 @@ Values that are outside the result range will be wrapped until they fall within 
 
 > Does not handle out of range values that are less than half the minimum or greater than twice maximum
 
-#### Squeeze -- Fit the value **source** into the smallest IntervalRange based on source and target.
+### Squeeze -- Fit the value **source** into the smallest IntervalRange based on source and target.
 The squeeze method applied to an interval creates a new interval based on the argument to clip, the two ranges must overlap
 behavior of squeeze with inputs outside of the produced range is undefined.
 
 > Generates no hardware, strictly a sizing operation
 
-##### Range combinations
+#### Range combinations
 
 | Condition | A.clip(B) | A.wrap(B) | A.squeeze(B) |
 | --------- | --------------- | --------------- | --------------- |
@@ -135,7 +135,7 @@ behavior of squeeze with inputs outside of the produced range is undefined.
 | A strictly greater than B   | error               | error               | error               |
 
 
-#### Applying binary point operators to an Interval
+### Applying binary point operators to an Interval
 
 Consider a Interval with a binary point of 3: aaa.bbb
 
