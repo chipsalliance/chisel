@@ -11,7 +11,7 @@ Project versions are of the form `A.B.C` where `A.B` specifies the _Major_ versi
 Projects maintain _binary compatibility_ between minor versions of the same major version.
 For example, a project compiled against Chisel3 version 3.4.0 can be used with Chisel3 version 3.4.2 or 3.4.15 without recompilation.
 
-# Compatible Versions
+## Compatible Versions
 
 Historically, due to a mistake in versioning with chisel-iotesters as well as some projects originating later than others,
 the compatible versions of Chisel-related projects has not been obvious.
