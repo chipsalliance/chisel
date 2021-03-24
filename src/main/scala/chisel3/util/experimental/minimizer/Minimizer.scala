@@ -1,6 +1,47 @@
 package chisel3.util.experimental.minimizer
 
-import chisel3.util.BitPat
+import scala.collection.mutable
+
+import chisel3._
+import chisel3.util.{BitPat, Cat}
+
+object Minimizer {
+  private val caches: mutable.Map[UInt, mutable.Map[String, Bool]] = mutable.Map[UInt, mutable.Map[String, Bool]]()
+
+  def tableToPLA(inputs: UInt, default: BitPat, table: Seq[Seq[BitPat]]): UInt = {
+    val cache = caches.getOrElseUpdate(inputs, mutable.Map[String, Bool]())
+    val invInputs = ~inputs
+    Cat(table.zipWithIndex.map{ case (a, i) =>
+      val b: Bool =
+        if (a.isEmpty)
+          false.B
+        else {
+          VecInit(a.map { t =>
+            // share AND plane decode result.
+            cache
+              .getOrElseUpdate(
+                t.toString,
+                Cat((0 until t.getWidth).flatMap{ i =>
+                  if (t.mask.testBit(i)) {
+                    Some(
+                      if (t.value.testBit(i)) inputs(i)
+                      else invInputs(i)
+                    )
+                  } else {
+                    None
+                  }
+                })
+                  // PLA AND plane
+                  .andR()
+              )
+          }).asUInt()
+            // PLA OR plane
+            .orR()
+      }
+      if (default.mask.testBit(i) && default.value.testBit(i)) !b else b
+    }.reverse)
+  }
+}
 
 abstract class Minimizer {
   /** Minimize a multi-input multi-output logic function given by the truth table `table`, with function output values
