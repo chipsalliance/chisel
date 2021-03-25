@@ -3,13 +3,14 @@
 import mill._
 import mill.scalalib._
 import mill.scalalib.publish._
+import mill.scalalib.scalafmt._
 import mill.modules.Util
 import $ivy.`com.lihaoyi::mill-contrib-buildinfo:$MILL_VERSION`
 import mill.contrib.buildinfo.BuildInfo
 
 object firrtl extends mill.Cross[firrtlCrossModule]("2.12.13", "2.13.4")
 
-class firrtlCrossModule(val crossScalaVersion: String) extends CrossSbtModule with PublishModule with BuildInfo {
+class firrtlCrossModule(val crossScalaVersion: String) extends CrossSbtModule with ScalafmtModule with PublishModule with BuildInfo {
   override def millSourcePath = super.millSourcePath / os.up
 
   // 2.12.12 -> Array("2", "12", "12") -> "12" -> 12
