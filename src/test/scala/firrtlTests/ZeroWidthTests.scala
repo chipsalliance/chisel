@@ -237,6 +237,69 @@ class ZeroWidthTests extends FirrtlFlatSpec {
         |    z <= asUInt(y)""".stripMargin
     (parse(exec(input))) should be(parse(check))
   }
+
+  "Memories with zero-width data-type" should "be fully removed" in {
+    val input =
+      """circuit Foo:
+        |  module Foo:
+        |    input clock: Clock
+        |    input rAddr: UInt<4>
+        |    input rEn: UInt<1>
+        |    output rData: UInt<0>
+        |    input wAddr: UInt<4>
+        |    input wEn: UInt<1>
+        |    input wMask: UInt<1>
+        |    input wData: UInt<0>
+        |    input rwEn: UInt<1>
+        |    input rwMode: UInt<1>
+        |    input rwAddr: UInt<1>
+        |    input rwMask: UInt<1>
+        |    input rwDataIn: UInt<0>
+        |    output rwDataOut: UInt<0>
+        |
+        |    mem memory:
+        |      data-type => UInt<0>
+        |      depth => 16
+        |      reader => r
+        |      writer => w
+        |      readwriter => rw
+        |      read-latency => 0
+        |      write-latency => 1
+        |      read-under-write => undefined
+        |
+        |    memory.r.clk <= clock
+        |    memory.r.en <= rEn
+        |    memory.r.addr <= rAddr
+        |    rData <= memory.r.data
+        |    memory.w.clk <= clock
+        |    memory.w.en <= wEn
+        |    memory.w.addr <= wAddr
+        |    memory.w.mask <= wMask
+        |    memory.w.data <= wData
+        |    memory.rw.clk <= clock
+        |    memory.rw.en <= rwEn
+        |    memory.rw.addr <= rwAddr
+        |    memory.rw.wmode <= rwMode
+        |    memory.rw.wmask <= rwMask
+        |    memory.rw.wdata <= rwDataIn
+        |    rwDataOut <= memory.rw.rdata""".stripMargin
+    val check =
+      s"""circuit Foo:
+         |  module Foo:
+         |    input clock: Clock
+         |    input rAddr: UInt<4>
+         |    input rEn: UInt<1>
+         |    input wAddr: UInt<4>
+         |    input wEn: UInt<1>
+         |    input wMask: UInt<1>
+         |    input rwEn: UInt<1>
+         |    input rwMode: UInt<1>
+         |    input rwAddr: UInt<1>
+         |    input rwMask: UInt<1>
+         |
+         |${Seq.tabulate(17)(_ => "    skip").mkString("\n")}""".stripMargin
+    parse(exec(input)) should be(parse(check))
+  }
 }
 
 class ZeroWidthVerilog extends FirrtlFlatSpec {
