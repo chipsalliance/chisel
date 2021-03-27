@@ -14,7 +14,7 @@ The ShanghaiTech University and Institute of Software, Chinese Academy of Scienc
 
 This Summit is the annual international event promoting Chisel, the new hardware design language that facilitates advanced circuit generation and design reuse for both ASIC and FPGA digital logic designs. This conference brings together the new experience from community and industry with tutorials, exhibitions, and more.
 
-This year’s conference program will demonstrate exciting new features of Chisel and amazing projects implemented by Chisel/FIRRTL. The call for speakers for the Chisel Summit is open from Wednesday, March 24 and speakers will be notified in late April or early May.
+This year’s conference program will demonstrate exciting new features of Chisel and amazing projects implemented by Chisel/FIRRTL. The call for speakers for the Chisel Summit is open from Monday, March 29 and speakers will be notified in late April or early May.
 
 CFP Link will be updated soon.
 
