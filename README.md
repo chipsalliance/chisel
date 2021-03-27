@@ -4,9 +4,19 @@
 
 ## Upcoming Events
 
+### Chisel Dev Meeting
 Chisel/FIRRTL development meetings happen every Monday and Tuesday from 1100--1200 PT.
 
 Call-in info and meeting notes are available [here](https://docs.google.com/document/d/1BLP2DYt59DqI-FgFCcjw8Ddl4K-WU0nHmQu0sZ_wAGo/).
+
+### Chisel Community Conference 2021, Shanghai, China. 6/24/2021
+The ShanghaiTech University and Institute of Software, Chinese Academy of Sciences will hold the first annual RISC-V Summit China (https://riscvsummitchina.github.io/) at the ShanghaiTech Zhangjiang campus from June 22 to 24, 2021, and the Chisel Community Conference will follow this conference from June 25 to 26, 2021.
+
+This Summit is the annual international event promoting Chisel, the new hardware design language that facilitates advanced circuit generation and design reuse for both ASIC and FPGA digital logic designs. This conference brings together the new experience from community and industry with tutorials, exhibitions, and more.
+
+This year’s conference program will demonstrate exciting new features of Chisel and amazing projects implemented by Chisel/FIRRTL. The call for speakers for the Chisel Summit is open from Monday, March 29 and speakers will be notified in late April or early May.
+
+CFP Link will be updated soon.
 
 ---
 
