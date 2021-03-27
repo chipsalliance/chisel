@@ -798,17 +798,50 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     case _ => None
   }
 
+  /** Indicates if a concrete Bundle class was compiled using the compiler plugin
+    *
+    * Used for optimizing Chisel's performance and testing Chisel itself
+    * @note This should not be used in user code!
+    */
+  protected def _usingPlugin: Boolean = false
+
   // Memoize the outer instance for autoclonetype, especially where this is context-dependent
   // (like the outer module or enclosing Bundles).
   private var _outerInst: Option[Object] = None
 
-  // For autoclonetype, record possible candidates for outer instance.
+  // For reflective autoclonetype, record possible candidates for outer instance.
   // _outerInst should always take precedence, since it should be propagated from the original
   // object which has the most accurate context.
-  private val _containingModule: Option[BaseModule] = Builder.currentModule
-  private val _containingBundles: Seq[Bundle] = Builder.updateBundleStack(this)
+  private val _containingModule: Option[BaseModule] = if (_usingPlugin) None else Builder.currentModule
+  private val _containingBundles: Seq[Bundle] = if (_usingPlugin) Nil else Builder.updateBundleStack(this)
 
-  override def cloneType : this.type = {
+  private def checkClone(clone: Bundle): Unit = {
+    for ((name, field) <- elements) {
+      if (clone.elements(name) eq field) {
+        throw new AutoClonetypeException(
+          s"Automatically cloned $clone has field '$name' aliased with base $this." +
+          " In the future, this will be solved automatically by the compiler plugin." +
+          " For now, ensure Chisel types used in the Bundle definition are passed through constructor arguments," +
+          " or wrapped in Input(...), Output(...), or Flipped(...) if appropriate." +
+          " As a last resort, you can override cloneType manually."
+        )
+      }
+    }
+
+  }
+
+  override def cloneType: this.type = {
+    val clone = _cloneTypeImpl.asInstanceOf[this.type]
+    checkClone(clone)
+    clone
+  }
+
+  /** Implementation of cloneType using runtime reflection. This should _never_ be overridden or called in user-code
+    *
+    * @note This is overridden by the compiler plugin (it is never called when using the plugin)
+    */
+  protected def _cloneTypeImpl: Bundle = {
+    assert(Builder.allowReflectiveAutoCloneType, "reflective autoclonetype is disallowed, this should only happen in testing")
     // This attempts to infer constructor and arguments to clone this Bundle subtype without
     // requiring the user explicitly overriding cloneType.
     import scala.language.existentials
@@ -816,24 +849,19 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
 
     val clazz = this.getClass
 
-    def autoClonetypeError(desc: String): Nothing = {
-      throw new AutoClonetypeException(s"Unable to automatically infer cloneType on $clazz: $desc")
-    }
+    def autoClonetypeError(desc: String): Nothing =
+      throw new AutoClonetypeException(
+        s"Unable to automatically infer cloneType on $clazz. " +
+        "cloneType is now implemented by the Chisel compiler plugin so please ensure you are using it in your build. " +
+        "If you cannot use the compiler plugin or you are using it and you still see this message, please file an issue and let us know. " +
+        s"For those not using the plugin, here is the 'runtime reflection' cloneType error message: $desc"
+      )
 
     def validateClone(clone: Bundle, equivDiagnostic: String): Unit = {
       if (!clone.typeEquivalent(this)) {
         autoClonetypeError(s"Automatically cloned $clone not type-equivalent to base $this. " + equivDiagnostic)
       }
-
-      for ((name, field) <- elements) {
-        if (clone.elements(name) eq field) {
-          autoClonetypeError(s"Automatically cloned $clone has field $name aliased with base $this." +
-            " In the future, this can be solved by wrapping the field in Field(...)," +
-            " see https://github.com/freechipsproject/chisel3/pull/909." +
-            " For now, ensure Chisel types used in the Bundle definition are passed through constructor arguments," +
-            " or wrapped in Input(...), Output(...), or Flipped(...) if appropriate.")
-        }
-      }
+      checkClone(clone)
     }
 
     val mirror = runtimeMirror(clazz.getClassLoader)
