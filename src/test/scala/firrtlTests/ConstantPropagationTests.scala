@@ -908,6 +908,17 @@ class ConstantPropagationIntegrationSpec extends LowTransformSpec {
     execute(input, check, Seq(dontTouch("Child.in1")))
   }
 
+  it should "NOT optimize if no-constant-propagation is enabled" in {
+    val input =
+      """circuit Foo:
+        |  module Foo:
+        |    input a: UInt<1>
+        |    output b: UInt<1>
+        |    b <= and(UInt<1>(0), a)""".stripMargin
+    val check = parse(input).serialize
+    execute(input, check, Seq(NoConstantPropagationAnnotation))
+  }
+
   it should "still propagate constants even when there is name swapping" in {
     val input =
       """circuit Top :

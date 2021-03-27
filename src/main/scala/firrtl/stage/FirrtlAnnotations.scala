@@ -291,6 +291,7 @@ case object PrettyNoExprInlining extends NoTargetAnnotation with FirrtlOption wi
   */
 case class DisableFold(op: ir.PrimOp) extends NoTargetAnnotation with FirrtlOption
 
+@deprecated("will be removed and merged into ConstantPropagation in 1.5", "1.4")
 object DisableFold extends HasShellOptions {
 
   private val mapping: Map[String, ir.PrimOp] = PrimOps.builtinPrimOps.map { case op => op.toString -> op }.toMap

@@ -13,7 +13,7 @@ import firrtl.PrimOps._
 import firrtl.graph.DiGraph
 import firrtl.analyses.InstanceKeyGraph
 import firrtl.annotations.TargetToken.Ref
-import firrtl.options.Dependency
+import firrtl.options.{Dependency, RegisteredTransform, ShellOption}
 import firrtl.stage.DisableFold
 
 import annotation.tailrec
@@ -101,7 +101,7 @@ object ConstantPropagation {
 
 }
 
-class ConstantPropagation extends Transform with DependencyAPIMigration {
+class ConstantPropagation extends Transform with RegisteredTransform with DependencyAPIMigration {
   import ConstantPropagation._
 
   override def prerequisites =
@@ -123,6 +123,14 @@ class ConstantPropagation extends Transform with DependencyAPIMigration {
     case firrtl.passes.Legalize => true
     case _                      => false
   }
+
+  val options = Seq(
+    new ShellOption[Unit](
+      longOption = "no-constant-propagation",
+      toAnnotationSeq = _ => Seq(NoConstantPropagationAnnotation),
+      helpText = "Disable constant propagation elimination"
+    )
+  )
 
   sealed trait SimplifyBinaryOp {
     def matchingArgsValue(e: DoPrim, arg: Expression): Expression
@@ -869,6 +877,11 @@ class ConstantPropagation extends Transform with DependencyAPIMigration {
 
     val disabledOps = state.annotations.collect { case DisableFold(op) => op }.toSet
 
-    state.copy(circuit = run(state.circuit, dontTouchMap, disabledOps))
+    if (state.annotations.contains(NoConstantPropagationAnnotation)) {
+      logger.info("Skipping Constant Propagation")
+      state
+    } else {
+      state.copy(circuit = run(state.circuit, dontTouchMap, disabledOps))
+    }
   }
 }

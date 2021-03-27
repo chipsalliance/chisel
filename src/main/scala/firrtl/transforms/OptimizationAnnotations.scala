@@ -9,6 +9,9 @@ import firrtl.passes.PassException
 /** Indicate that DCE should not be run */
 case object NoDCEAnnotation extends NoTargetAnnotation
 
+/** Indicate that ConstantPropagation should not be run */
+case object NoConstantPropagationAnnotation extends NoTargetAnnotation
+
 /** Lets an annotation mark its ReferenceTarget members as DontTouch
   *
   * This permits a transform to run and remove its associated annotations,

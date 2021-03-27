@@ -3,3 +3,4 @@ firrtl.transforms.CheckCombLoops
 firrtl.passes.InlineInstances
 firrtl.passes.clocklist.ClockListTransform
 firrtl.transforms.formal.AssertSubmoduleAssumptions
+firrtl.transforms.ConstantPropagation
