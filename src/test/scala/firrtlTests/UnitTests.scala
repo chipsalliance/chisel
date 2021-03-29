@@ -189,14 +189,14 @@ class UnitTests extends FirrtlFlatSpec {
     //TODO(azidar): I realize this is brittle, but unfortunately there
     //  isn't a better way to test this pass
     val check = Seq(
-      """wire _table_1 : { a : UInt<8>}""",
-      """_table_1.a is invalid""",
+      """wire _table_1_a : UInt<8>""",
+      """_table_1_a is invalid""",
       """when UInt<1>("h1") :""",
-      """_table_1.a <= table[1].a""",
+      """_table_1_a <= table[1].a""",
       """wire _otherTable_table_1_a_a : UInt<8>""",
-      """when eq(UInt<1>("h0"), _table_1.a) :""",
+      """when eq(UInt<1>("h0"), _table_1_a) :""",
       """otherTable[0].a <= _otherTable_table_1_a_a""",
-      """when eq(UInt<1>("h1"), _table_1.a) :""",
+      """when eq(UInt<1>("h1"), _table_1_a) :""",
       """otherTable[1].a <= _otherTable_table_1_a_a""",
       """_otherTable_table_1_a_a <= UInt<1>("h0")"""
     )
