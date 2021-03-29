@@ -342,7 +342,7 @@ object VecInit extends SourceInfoDoc {
     // DummyImplicit or additional type parameter will break some code.
 
     // Check that types are homogeneous.  Width mismatch for Elements is safe.
-    require(!elts.isEmpty)
+    require(elts.nonEmpty, "Vec hardware values are not allowed to be empty")
     elts.foreach(requireIsHardware(_, "vec element"))
 
     val vec = Wire(Vec(elts.length, cloneSupertype(elts, "Vec")))
