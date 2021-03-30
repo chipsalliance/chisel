@@ -25,4 +25,4 @@ addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.8.1")
 addSbtPlugin("com.geirsson" % "sbt-ci-release" % "1.5.5")
 
 // From FIRRTL for building from source
-addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.9.19")
+addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.9.27")
