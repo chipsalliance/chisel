@@ -119,13 +119,57 @@ class firrtlCrossModule(val crossScalaVersion: String) extends CrossSbtModule wi
     millSourcePath / "src" / "main" / "proto" / "firrtl.proto"
   }
 
-  def downloadProtocJar = T.persistent {
-    Util.download(s"https://repo.maven.apache.org/maven2/com/github/os72/protoc-jar/$protocVersion/protoc-jar-$protocVersion.jar")
+  def architecture = T {
+    System.getProperty("os.arch")
+  }
+  def operationSystem = T {
+    System.getProperty("os.name")
+  }
+
+  def downloadProtoc = T.persistent {
+    val isMac = operationSystem().toLowerCase.startsWith("mac")
+    val isLinux = operationSystem().toLowerCase.startsWith("linux")
+    val isWindows = operationSystem().toLowerCase.startsWith("win")
+
+    val aarch_64 = architecture().equals("aarch64") | architecture().startsWith("armv8")
+    val ppcle_64 = architecture().equals("ppc64le")
+    val s390x = architecture().equals("s390x")
+    val x86_32 = architecture().matches("^(x8632|x86|i[3-6]86|ia32|x32)$")
+    val x86_64 = architecture().matches("^(x8664|amd64|ia32e|em64t|x64)$")
+
+    val protocBinary =
+      if (isMac)
+        if (aarch_64) "osx-x86_64"
+        else throw new Exception("mill cannot detect your architecture of your Mac")
+      else if (isLinux)
+        if (aarch_64) "linux-aarch_64"
+        else if (ppcle_64) "linux-ppcle_64"
+        else if (s390x) "linux-s390x"
+        else if (x86_32) "linux-x86_32"
+        else if (x86_64) "linux-x86_64"
+        else throw new Exception("mill cannot detect your architecture of your Linux")
+      else if (isWindows)
+        if (x86_32) "win32"
+        else if (x86_64) "win64"
+        else throw new Exception("mill cannot detect your architecture of your Windows")
+      else throw new Exception("mill cannot detect your operation system.")
+
+    val zip = Util.downloadUnpackZip(
+      s"https://github.com/protocolbuffers/protobuf/releases/download/v$protocVersion/protoc-$protocVersion-$protocBinary.zip"
+    )
+    val bin = if(isWindows)
+      zip.path / "bin" / "protoc.exe"
+    else
+      zip.path / "bin" / "protoc"
+
+    // Download Linux/Mac binary doesn't have x.
+    if (!isWindows) os.perms.set(bin, "--x------")
+    PathRef(bin)
   }
 
   def generatedProtoSources = T.sources {
-    os.proc("java",
-      "-jar", downloadProtocJar().path.toString,
+    os.proc(
+      downloadProtoc().path.toString,
       "-I", protobufSource().path / os.up,
       s"--java_out=${T.ctx.dest.toString}",
       protobufSource().path.toString()
