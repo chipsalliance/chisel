@@ -135,11 +135,12 @@ class firrtlCrossModule(val crossScalaVersion: String) extends CrossSbtModule wi
     val ppcle_64 = architecture().equals("ppc64le")
     val s390x = architecture().equals("s390x")
     val x86_32 = architecture().matches("^(x8632|x86|i[3-6]86|ia32|x32)$")
-    val x86_64 = architecture().matches("^(x8664|amd64|ia32e|em64t|x64)$")
+    val x86_64 = architecture().matches("^(x8664|amd64|ia32e|em64t|x64|x86_64)$")
 
     val protocBinary =
       if (isMac)
-        if (aarch_64) "osx-x86_64"
+        // MacOS ARM 64-bit still supports x86_64 binaries via Rosetta 2
+        if (aarch_64 || x86_64) "osx-x86_64"
         else throw new Exception("mill cannot detect your architecture of your Mac")
       else if (isLinux)
         if (aarch_64) "linux-aarch_64"
