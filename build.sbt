@@ -149,9 +149,7 @@ lazy val plugin = (project in file("plugin")).
     mimaPreviousArtifacts := {
       // Not published for 2.11, do not try to check binary compatibility with a 2.11 artifact
       if (scalaVersion.value.startsWith("2.11")) Set()
-      // Note yet published for 2.12.13, skip
-      else if (scalaVersion.value.startsWith("2.12.13")) Set()
-      else Set("edu.berkeley.cs" % "chisel3-plugin" % "3.4.1" cross CrossVersion.full)
+      else Set("edu.berkeley.cs" % "chisel3-plugin" % "3.4.2" cross CrossVersion.full)
     }
   )
 
@@ -171,7 +169,7 @@ lazy val macros = (project in file("macros")).
   settings(name := "chisel3-macros").
   settings(commonSettings: _*).
   settings(publishSettings: _*).
-  settings(mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-macros" % "3.4.1"))
+  settings(mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-macros" % "3.4.2"))
 
 lazy val firrtlRef = ProjectRef(workspaceDirectory / "firrtl", "firrtl")
 
@@ -186,7 +184,7 @@ lazy val core = (project in file("core")).
   ).
   settings(publishSettings: _*).
   settings(
-    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-core" % "3.4.1"),
+    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-core" % "3.4.2"),
     mimaBinaryIssueFilters ++= Seq(
       // Modified package private methods (https://github.com/lightbend/mima/issues/53)
       ProblemFilters.exclude[IncompatibleMethTypeProblem]("chisel3.internal.Builder.pushPrefix"),
@@ -231,9 +229,14 @@ lazy val chisel = (project in file(".")).
   dependsOn(core).
   aggregate(macros, core, plugin).
   settings(
-    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3" % "3.4.1"),
+    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3" % "3.4.2"),
     libraryDependencies += defaultVersions("treadle") % "test",
     scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
+    // Only used in Test for 3.4.x, used in Compile in 3.5
+    scalacOptions in Test ++= {
+      if (scalaVersion.value.startsWith("2.12")) Seq("-P:chiselplugin:useBundlePlugin")
+      else Nil
+    },
     scalacOptions in Compile in doc ++= Seq(
       "-diagrams",
       "-groups",
@@ -251,10 +254,15 @@ lazy val chisel = (project in file(".")).
           } else {
             s"v${version.value}"
           }
-        s"https://github.com/freechipsproject/chisel3/tree/$branch/€{FILE_PATH}.scala"
+        s"https://github.com/chipsalliance/chisel3/tree/$branch€{FILE_PATH_EXT}#L€{FILE_LINE}"
       }
     )
   )
+
+lazy val noPluginTests = (project in file ("no-plugin-tests")).
+  dependsOn(chisel).
+  settings(commonSettings: _*).
+  settings(chiselSettings: _*)
 
 lazy val docs = project       // new documentation project
   .in(file("docs-target")) // important: it must not be docs/

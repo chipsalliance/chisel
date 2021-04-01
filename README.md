@@ -4,9 +4,19 @@
 
 ## Upcoming Events
 
+### Chisel Dev Meeting
 Chisel/FIRRTL development meetings happen every Monday and Tuesday from 1100--1200 PT.
 
 Call-in info and meeting notes are available [here](https://docs.google.com/document/d/1Mpnqigmx6F8jdC77YWP3akp9H2V1bS1b2XiYjVX0brE).
+
+### Chisel Community Conference 2021, Shanghai, China. 6/24/2021
+The ShanghaiTech University and Institute of Software, Chinese Academy of Sciences will hold the first annual RISC-V Summit China (https://riscvsummitchina.github.io/) at the ShanghaiTech Zhangjiang campus from June 22 to 24, 2021, and the Chisel Community Conference will follow this conference from June 25 to 26, 2021.
+
+This Summit is the annual international event promoting Chisel, the new hardware design language that facilitates advanced circuit generation and design reuse for both ASIC and FPGA digital logic designs. This conference brings together the new experience from community and industry with tutorials, exhibitions, and more.
+
+This year’s conference program will demonstrate exciting new features of Chisel and amazing projects implemented by Chisel/FIRRTL. The call for speakers for the Chisel Summit is open from Monday, March 29 and speakers will be notified in late April or early May.
+
+CFP Link will be updated soon.
 
 ---
 
@@ -122,7 +132,6 @@ These simulation-based verification tools are available for Chisel:
 ### Useful Resources
 
 - [**Cheat Sheet**](https://github.com/freechipsproject/chisel-cheatsheet/releases/latest/download/chisel_cheatsheet.pdf), a 2-page reference of the base Chisel syntax and libraries
-- [**Wiki**](https://github.com/chipsalliance/chisel3/wiki), which contains various feature-specific tutorials and frequently-asked questions.
 - [**ScalaDoc**](https://www.chisel-lang.org/api/latest/chisel3/index.html), a listing, description, and examples of the functionality exposed by Chisel
 - [**Gitter**](https://gitter.im/chipsalliance/chisel3), where you can ask questions or discuss anything Chisel
 - [**Website**](https://www.chisel-lang.org) ([source](https://github.com/freechipsproject/www.chisel-lang.org/))
