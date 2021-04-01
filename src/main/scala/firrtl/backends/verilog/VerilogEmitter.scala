@@ -7,7 +7,14 @@ import firrtl.PrimOps._
 import firrtl.Utils._
 import firrtl.WrappedExpression._
 import firrtl.traversals.Foreachers._
-import firrtl.annotations.{CircuitTarget, MemoryLoadFileType, ReferenceTarget, SingleTargetAnnotation}
+import firrtl.annotations.{
+  CircuitTarget,
+  MemoryLoadFileType,
+  MemoryNoSynthInit,
+  MemorySynthInit,
+  ReferenceTarget,
+  SingleTargetAnnotation
+}
 import firrtl.passes.LowerTypes
 import firrtl.passes.MemPortUtils._
 import firrtl.stage.TransformManager
@@ -482,6 +489,21 @@ class VerilogEmitter extends SeqTransform with Emitter {
     def getConnectEmissionOption(target: ReferenceTarget): ConnectEmissionOption =
       connectEmissionOption(target)
 
+    // Defines the memory initialization based on the annotation
+    // Defaults to having the memories inside the `ifndef SYNTHESIS` block
+    def emitMemoryInitAsNoSynth: Boolean = {
+      val annos = annotations.collect { case a @ (MemoryNoSynthInit | MemorySynthInit) => a }
+      annos match {
+        case Seq()                  => true
+        case Seq(MemoryNoSynthInit) => true
+        case Seq(MemorySynthInit)   => false
+        case other =>
+          throw new FirrtlUserException(
+            "There should only be at most one memory initialization option annotation, got $other"
+          )
+      }
+    }
+
     private val emissionAnnos = annotations.collect {
       case m: SingleTargetAnnotation[ReferenceTarget] @unchecked with EmissionOption => m
     }
@@ -861,7 +883,14 @@ class VerilogEmitter extends SeqTransform with Emitter {
             case MemoryLoadFileType.Binary => "$readmemb"
             case MemoryLoadFileType.Hex    => "$readmemh"
           }
-          memoryInitials += Seq(s"""$readmem("$filename", ${s.name});""")
+          if (emissionOptions.emitMemoryInitAsNoSynth) {
+            memoryInitials += Seq(s"""$readmem("$filename", ${s.name});""")
+          } else {
+            val inlineLoad = s"""initial begin
+                                |    $readmem("$filename", ${s.name});
+                                |  end""".stripMargin
+            memoryInitials += Seq(inlineLoad)
+          }
       }
     }
 
@@ -1200,13 +1229,19 @@ class VerilogEmitter extends SeqTransform with Emitter {
         for (x <- initials) emit(Seq(tab, x))
         for (x <- asyncInitials) emit(Seq(tab, x))
         emit(Seq("  `endif // RANDOMIZE"))
-        for (x <- memoryInitials) emit(Seq(tab, x))
+
+        if (emissionOptions.emitMemoryInitAsNoSynth) {
+          for (x <- memoryInitials) emit(Seq(tab, x))
+        }
         emit(Seq("end // initial"))
         // User-defined macro of code to run after an initial block
         emit(Seq("`ifdef FIRRTL_AFTER_INITIAL"))
         emit(Seq("`FIRRTL_AFTER_INITIAL"))
         emit(Seq("`endif"))
         emit(Seq("`endif // SYNTHESIS"))
+        if (!emissionOptions.emitMemoryInitAsNoSynth) {
+          for (x <- memoryInitials) emit(Seq(tab, x))
+        }
       }
 
       if (formals.keys.nonEmpty) {

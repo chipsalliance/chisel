@@ -4,7 +4,7 @@ package firrtlTests
 
 import firrtl._
 import firrtl.annotations._
-import firrtl.testutils.FirrtlCheckers.containLine
+import firrtl.testutils.FirrtlCheckers.{containLine, containLines}
 import firrtl.testutils.FirrtlFlatSpec
 import firrtlTests.execution._
 
@@ -181,6 +181,44 @@ class MemInitSpec extends FirrtlFlatSpec {
     assertThrows[Exception] {
       compile(Seq(MemoryFileInlineAnnotation(mRef, filename = "")))
     }
+  }
+
+  "MemoryInitialization" should "emit readmem in `ifndef SYNTHESIS` block by default" in {
+    val annos = Seq(
+      MemoryFileInlineAnnotation(mRef, filename = "text.hex", hexOrBinary = MemoryLoadFileType.Hex)
+    )
+    val result = compile(annos)
+    result should containLines(
+      """`endif // RANDOMIZE""",
+      """$readmemh("text.hex", """ + mRef.name + """);""",
+      """end // initial"""
+    )
+  }
+
+  "MemoryInitialization" should "emit readmem outside `ifndef SYNTHESIS` block with MemorySynthInit annotation" in {
+    val annos = Seq(
+      MemoryFileInlineAnnotation(mRef, filename = "text.hex", hexOrBinary = MemoryLoadFileType.Hex)
+    ) ++ Seq(MemorySynthInit)
+    val result = compile(annos)
+    result should containLines(
+      """`endif // SYNTHESIS""",
+      """initial begin""",
+      """$readmemh("text.hex", """ + mRef.name + """);""",
+      """end"""
+    )
+  }
+
+  "MemoryInitialization" should "emit readmem outside `ifndef SYNTHESIS` block with MemoryNoSynthInit annotation" in {
+    val annos = Seq(
+      MemoryFileInlineAnnotation(mRef, filename = "text.hex", hexOrBinary = MemoryLoadFileType.Hex)
+    ) ++ Seq(MemoryNoSynthInit)
+
+    val result = compile(annos)
+    result should containLines(
+      """`endif // RANDOMIZE""",
+      """$readmemh("text.hex", """ + mRef.name + """);""",
+      """end // initial"""
+    )
   }
 }
 
