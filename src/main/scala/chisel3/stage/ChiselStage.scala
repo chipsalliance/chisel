@@ -172,6 +172,23 @@ object ChiselStage {
       .get
   }
 
+  def convert(chirrtl: cir.Circuit): fir.Circuit = {
+    val phase = new ChiselPhase {
+      override val targets = Seq(
+        Dependency[chisel3.stage.phases.AddImplicitOutputFile],
+        Dependency[chisel3.stage.phases.AddImplicitOutputAnnotationFile],
+        Dependency[chisel3.stage.phases.MaybeAspectPhase],
+        Dependency[chisel3.stage.phases.Convert] )
+    }
+
+    phase
+      .transform(Seq(ChiselCircuitAnnotation(chirrtl)))
+      .collectFirst {
+        case FirrtlCircuitAnnotation(a) => a
+      }
+      .get
+  }
+
   /** Return a CHIRRTL string for a Chisel module
     * @param gen a call-by-name Chisel module
     */
