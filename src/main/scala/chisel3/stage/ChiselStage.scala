@@ -9,18 +9,20 @@ import firrtl.{
   EmittedFirrtlModuleAnnotation,
   EmittedVerilogCircuitAnnotation,
   EmittedVerilogModuleAnnotation,
+  ExecutionOptionsManager,
+  HasFirrtlOptions,
   HighFirrtlEmitter,
   VerilogEmitter,
   SystemVerilogEmitter
 }
-import firrtl.options.{Dependency, Phase, PhaseManager, Shell, Stage, StageMain}
+import firrtl.options.{Dependency, Phase, PhaseManager, Shell, Stage, StageError, StageMain}
 import firrtl.options.phases.DeletedWrapper
 import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlCli, RunFirrtlTransformAnnotation}
 import firrtl.options.Viewer.view
-
-import chisel3.{ChiselException, RawModule}
+import chisel3.{ChiselException, ChiselExecutionResult, HasChiselExecutionOptions, RawModule}
 import chisel3.internal.{firrtl => cir, ErrorLog}
 import chisel3.stage.CircuitSerializationAnnotation.FirrtlFileFormat
+import chisel3.stage.phases.DriverCompatibility
 
 import java.io.{StringWriter, PrintWriter}
 
@@ -247,4 +249,42 @@ object ChiselStage {
       .value
   }
 
+  @deprecated("This will be removed in 3.5.", "3.4")
+  def execute(optionsManager: ExecutionOptionsManager with HasChiselExecutionOptions with HasFirrtlOptions,
+              dut: () => RawModule): ChiselExecutionResult = {
+
+    val annos: AnnotationSeq =
+      Seq(DriverCompatibility.OptionsManagerAnnotation(optionsManager), ChiselGeneratorAnnotation(dut)) ++
+        optionsManager.chiselOptions.toAnnotations ++
+        optionsManager.firrtlOptions.toAnnotations ++
+        optionsManager.commonOptions.toAnnotations
+
+    val targets =
+      Seq( Dependency[DriverCompatibility.AddImplicitOutputFile],
+        Dependency[DriverCompatibility.AddImplicitOutputAnnotationFile],
+        Dependency[DriverCompatibility.DisableFirrtlStage],
+        Dependency[ChiselStage],
+        Dependency[DriverCompatibility.MutateOptionsManager],
+        Dependency[DriverCompatibility.ReEnableFirrtlStage],
+        Dependency[DriverCompatibility.FirrtlPreprocessing],
+        Dependency[chisel3.stage.phases.MaybeFirrtlStage] )
+    val currentState =
+      Seq( Dependency[firrtl.stage.phases.DriverCompatibility.AddImplicitFirrtlFile],
+        Dependency[chisel3.stage.phases.Convert] )
+
+    val phases: Seq[Phase] = new PhaseManager(targets, currentState) {
+      override val wrappers = Seq( DeletedWrapper(_: Phase) )
+    }.transformOrder
+
+    val annosx = try {
+      phases.foldLeft(annos)( (a, p) => p.transform(a) )
+    } catch {
+      /* ChiselStage and FirrtlStage can throw StageError. Since Driver is not a StageMain, it cannot catch these. While
+       * Driver is deprecated and removed in 3.2.1+, the Driver catches all errors.
+       */
+      case e: StageError => annos
+    }
+
+    view[ChiselExecutionResult](annosx)
+  }
 }
