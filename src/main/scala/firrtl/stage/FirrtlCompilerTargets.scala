@@ -13,9 +13,7 @@ import firrtl.options.{HasShellOptions, ShellOption}
   * to any particular vendor; instead, they aim to emit simple Verilog that more closely reflects traditional
   * human-written definitions of synchronous-read memories.
   *
-  * 1) Add a [[firrtl.passes.memlib.PassthroughSimpleSyncReadMemsAnnotation]] to allow some synchronous-read memories
-  *    and readwrite ports to pass through [[firrtl.passes.memlib.VerilogMemDelays]] without introducing explicit
-  *    pipeline registers or splitting ports.
+  * 1) Enable the [[firrtl.passes.memlib.InferReadWrite]] transform to reduce port count, where applicable.
   *
   * 2) Use the [[firrtl.transforms.SimplifyMems]] transform to Lower aggregate-typed memories with always-high masks to
   *    packed memories without splitting them into multiple independent ground-typed memories.
@@ -30,7 +28,9 @@ import firrtl.options.{HasShellOptions, ShellOption}
   *    default. This eliminates the difficulty of inferring a RAM macro that matches the strict semantics of
   *    "write-first" ports.
   *
-  * 5) Enable the [[firrtl.passes.memlib.InferReadWrite]] transform to reduce port count, where applicable.
+  * 5) Add a [[firrtl.passes.memlib.PassthroughSimpleSyncReadMemsAnnotation]] to allow some synchronous-read memories
+  *    and readwrite ports to pass through [[firrtl.passes.memlib.VerilogMemDelays]] without introducing explicit
+  *    pipeline registers or splitting ports.
   */
 object OptimizeForFPGA extends HasShellOptions {
   private val fpgaAnnos = Seq(

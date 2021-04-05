@@ -6,6 +6,7 @@ package transforms
 import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.annotations._
+import firrtl.options.Dependency
 import firrtl.passes._
 import firrtl.passes.memlib._
 import firrtl.stage.Forms
@@ -21,7 +22,7 @@ import ResolveMaskGranularity._
 class SimplifyMems extends Transform with DependencyAPIMigration {
 
   override def prerequisites = Forms.MidForm
-  override def optionalPrerequisites = Seq.empty
+  override def optionalPrerequisites = Seq(Dependency[InferReadWrite])
   override def optionalPrerequisiteOf = Forms.MidEmitters
   override def invalidates(a: Transform) = a match {
     case InferTypes => true
