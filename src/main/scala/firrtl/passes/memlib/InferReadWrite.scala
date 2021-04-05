@@ -78,6 +78,16 @@ object InferReadWritePass extends Pass {
       case sx                             => sx
     }
 
+  /* If the ports share the same address in an undefined-collision SyncReadMem, reads issued while the write
+   * is enabled are *always* undefined; we may treat the read as if it were gated by the complement of w.en.
+   * Though not a strict requirement, this currently applies only to single-cycle read/write memories.
+   * N.B. for aggregate-typed memories, the spec is conservative and 'undefined' is not a function of the
+   * write mask, allowing optimization regardless of mask value. This must be revisited if the spec changes.
+   */
+  private def canOptimizeCollidingRW(mem: DefMemory): Boolean = {
+    mem.readUnderWrite == ReadUnderWrite.Undefined && mem.readLatency == 1 && mem.writeLatency == 1
+  }
+
   def inferReadWriteStmt(connects: Connects, repl: Netlist, stmts: Statements)(s: Statement): Statement = s match {
     // infer readwrite ports only for non combinational memories
     case mem: DefMemory if mem.readLatency > 0 =>
@@ -94,7 +104,10 @@ object InferReadWritePass extends Pass {
         val proofOfMutualExclusion = wenProductTerms.find(a => renProductTerms.exists(b => checkComplement(a, b)))
         val wclk = getOrigin(connects)(memPortField(mem, w, "clk"))
         val rclk = getOrigin(connects)(memPortField(mem, r, "clk"))
-        if (weq(wclk, rclk) && proofOfMutualExclusion.nonEmpty) {
+        val waddr = getOrigin(connects)(memPortField(mem, w, "addr"))
+        val raddr = getOrigin(connects)(memPortField(mem, r, "addr"))
+        val optimizeCollision = (weq(waddr, raddr) && canOptimizeCollidingRW(mem))
+        if (weq(wclk, rclk) && (proofOfMutualExclusion.nonEmpty || optimizeCollision)) {
           val rw = namespace.newName("rw")
           val rwExp = WSubField(WRef(mem.name), rw)
           readwriters += rw
@@ -104,28 +117,32 @@ object InferReadWritePass extends Pass {
           repl(memPortField(mem, r, "en")) = EmptyExpression
           repl(memPortField(mem, r, "addr")) = EmptyExpression
           repl(memPortField(mem, r, "data")) = WSubField(rwExp, "rdata")
-          repl(memPortField(mem, w, "clk")) = EmptyExpression
-          repl(memPortField(mem, w, "en")) = EmptyExpression
-          repl(memPortField(mem, w, "addr")) = EmptyExpression
+          repl(memPortField(mem, w, "clk")) = WSubField(rwExp, "clk")
           repl(memPortField(mem, w, "data")) = WSubField(rwExp, "wdata")
           repl(memPortField(mem, w, "mask")) = WSubField(rwExp, "wmask")
-          stmts += Connect(NoInfo, WSubField(rwExp, "wmode"), proofOfMutualExclusion.get)
-          stmts += Connect(NoInfo, WSubField(rwExp, "clk"), wclk)
           stmts += Connect(
             NoInfo,
             WSubField(rwExp, "en"),
             DoPrim(Or, Seq(connects(memPortField(mem, r, "en")), connects(memPortField(mem, w, "en"))), Nil, BoolType)
           )
-          stmts += Connect(
-            NoInfo,
-            WSubField(rwExp, "addr"),
-            Mux(
-              connects(memPortField(mem, w, "en")),
-              connects(memPortField(mem, w, "addr")),
-              connects(memPortField(mem, r, "addr")),
-              UnknownType
+          if (optimizeCollision) {
+            repl(memPortField(mem, w, "en")) = WSubField(rwExp, "wmode")
+            repl(memPortField(mem, w, "addr")) = WSubField(rwExp, "addr")
+          } else {
+            repl(memPortField(mem, w, "en")) = EmptyExpression
+            repl(memPortField(mem, w, "addr")) = EmptyExpression
+            stmts += Connect(NoInfo, WSubField(rwExp, "wmode"), proofOfMutualExclusion.get)
+            stmts += Connect(
+              NoInfo,
+              WSubField(rwExp, "addr"),
+              Mux(
+                connects(memPortField(mem, w, "en")),
+                connects(memPortField(mem, w, "addr")),
+                connects(memPortField(mem, r, "addr")),
+                UnknownType
+              )
             )
-          )
+          }
         }
       }
       if (readwriters.isEmpty) mem

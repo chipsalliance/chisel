@@ -10,11 +10,21 @@ import firrtl.Mappers._
 import firrtl.traversals.Foreachers._
 import firrtl.transforms
 import firrtl.options.Dependency
+import firrtl.annotations.NoTargetAnnotation
 
 import MemPortUtils._
 import WrappedExpression._
 
 import collection.mutable
+
+/**
+  * Adding this annotation will allow the [[VerilogMemDelays]] transform to let 'simple' synchronous-read memories to
+  * pass through without explicitly breaking them apart into combinational-read memories and pipeline registers. Here,
+  * 'simple' memories are defined as those that have one-cycle read and write latencies AND either no readwrite ports or
+  * read-under-write behavior that is either 'undefined' or 'old'. This second restriction avoids the particularly
+  * complex case of blending FIRRTL readwrite port semantics with cross-port 'bypassing' of new data on collisions.
+  */
+case object PassthroughSimpleSyncReadMemsAnnotation extends NoTargetAnnotation
 
 object MemDelayAndReadwriteTransformer {
   // Representation of a group of signals and associated valid signals
@@ -77,13 +87,14 @@ object MemDelayAndReadwriteTransformer {
   *
   * @note The final transformed module is found in the (sole public) field [[transformed]]
   */
-class MemDelayAndReadwriteTransformer(m: DefModule) {
+class MemDelayAndReadwriteTransformer(m: DefModule, passthroughSimpleSyncReadMems: Boolean = false) {
   import MemDelayAndReadwriteTransformer._
 
   private val ns = Namespace(m)
   private val netlist = new collection.mutable.HashMap[WrappedExpression, Expression]
   private val exprReplacements = new collection.mutable.HashMap[WrappedExpression, Expression]
   private val newConns = new mutable.ArrayBuffer[Connect]
+  private val passthroughMems = new collection.mutable.HashSet[WrappedExpression]
 
   private def findMemConns(s: Statement): Unit = s match {
     case Connect(_, loc, expr) if (kind(loc) == MemKind) => netlist(we(loc)) = expr
@@ -95,7 +106,15 @@ class MemDelayAndReadwriteTransformer(m: DefModule) {
     case ex => ex
   }
 
+  def canPassthrough(mem: DefMemory): Boolean = {
+    (mem.readLatency <= 1 && mem.writeLatency == 1 &&
+    (mem.readwriters.isEmpty || (mem.readLatency == 1 && mem.readUnderWrite != ReadUnderWrite.New)))
+  }
+
   private def transform(s: Statement): Statement = s.map(transform) match {
+    case mem: DefMemory if passthroughSimpleSyncReadMems && canPassthrough(mem) =>
+      passthroughMems += WRef(mem)
+      mem
     case mem: DefMemory =>
       // Per-memory bookkeeping
       val portNS = Namespace(mem.readers ++ mem.writers)
@@ -163,7 +182,13 @@ class MemDelayAndReadwriteTransformer(m: DefModule) {
 
       newConns ++= (readStmts ++ writeStmts).flatMap(_.conns)
       Block(newMem +: (readStmts ++ writeStmts).flatMap(_.decls))
-    case sx: Connect if kind(sx.loc) == MemKind => EmptyStmt // Filter old mem connections
+    case sx: Connect if kind(sx.loc) == MemKind =>
+      val (memRef, _) = Utils.splitRef(sx.loc)
+      // Filter old mem connections for *transformed* memories only
+      if (passthroughMems(WrappedExpression(memRef)))
+        sx
+      else
+        EmptyStmt
     case sx => sx.map(swapMemRefs)
   }
 
@@ -188,6 +213,14 @@ object VerilogMemDelays extends Pass {
     case _ => false
   }
 
-  def transform(m: DefModule): DefModule = (new MemDelayAndReadwriteTransformer(m)).transformed
-  def run(c:       Circuit):   Circuit = c.copy(modules = c.modules.map(transform))
+  private def transform(m: DefModule): DefModule = (new MemDelayAndReadwriteTransformer(m)).transformed
+
+  @deprecated("VerilogMemDelays will change from a Pass to a Transform in FIRRTL 1.6.", "FIRRTL 1.5")
+  def run(c: Circuit): Circuit = c.copy(modules = c.modules.map(transform))
+
+  override def execute(state: CircuitState): CircuitState = {
+    val enablePassthrough = state.annotations.contains(PassthroughSimpleSyncReadMemsAnnotation)
+    def transform(m: DefModule) = (new MemDelayAndReadwriteTransformer(m, enablePassthrough)).transformed
+    state.copy(circuit = state.circuit.copy(modules = state.circuit.modules.map(transform)))
+  }
 }
