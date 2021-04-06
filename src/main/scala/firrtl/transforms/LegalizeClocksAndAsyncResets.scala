@@ -91,7 +91,7 @@ class LegalizeClocksAndAsyncResetsTransform extends Transform with DependencyAPI
       Dependency[FixAddingNegativeLiterals],
       Dependency[ReplaceTruncatingArithmetic],
       Dependency[InlineBitExtractionsTransform],
-      Dependency[InlineCastsTransform]
+      Dependency[InlineAcrossCastsTransform]
     )
 
   override def optionalPrerequisites = firrtl.stage.Forms.LowFormOptimized

@@ -170,7 +170,7 @@ class FlattenRegUpdate extends Transform with DependencyAPIMigration {
       Dependency[FixAddingNegativeLiterals],
       Dependency[ReplaceTruncatingArithmetic],
       Dependency[InlineBitExtractionsTransform],
-      Dependency[InlineCastsTransform],
+      Dependency[InlineAcrossCastsTransform],
       Dependency[LegalizeClocksTransform]
     )
 

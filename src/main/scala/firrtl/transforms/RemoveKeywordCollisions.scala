@@ -37,7 +37,7 @@ class VerilogRename extends RemoveKeywordCollisions(v_keywords) {
       Dependency[FixAddingNegativeLiterals],
       Dependency[ReplaceTruncatingArithmetic],
       Dependency[InlineBitExtractionsTransform],
-      Dependency[InlineCastsTransform],
+      Dependency[InlineAcrossCastsTransform],
       Dependency[LegalizeClocksTransform],
       Dependency[FlattenRegUpdate],
       Dependency(passes.VerilogModulusCleanup)

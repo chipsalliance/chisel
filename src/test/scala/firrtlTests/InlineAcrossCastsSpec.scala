@@ -2,11 +2,11 @@
 
 package firrtlTests
 
-import firrtl.transforms.InlineCastsTransform
+import firrtl.transforms.InlineAcrossCastsTransform
 import firrtl.testutils.FirrtlFlatSpec
 import firrtl.testutils.FirrtlCheckers._
 
-class InlineCastsEquivalenceSpec extends FirrtlFlatSpec {
+class InlineAcrossCastsEquivalenceSpec extends FirrtlFlatSpec {
   /*
    * Note: InlineCasts is still part of mverilog, so this test must both:
    * - Test that the InlineCasts fix is effective given the current mverilog
@@ -25,7 +25,7 @@ class InlineCastsEquivalenceSpec extends FirrtlFlatSpec {
          |    output o: SInt<8>
          |    o <= pad(asSInt(UInt<2>("h1")), 8)
          |""".stripMargin
-    firrtlEquivalenceTest(input, Seq(new InlineCastsTransform))
+    firrtlEquivalenceTest(input, Seq(new InlineAcrossCastsTransform))
   }
 
   it should "not inline complex expressions into other complex expressions" in {

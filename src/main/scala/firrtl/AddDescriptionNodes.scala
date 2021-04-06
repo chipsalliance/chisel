@@ -136,7 +136,7 @@ class AddDescriptionNodes extends Transform with DependencyAPIMigration {
       Dependency[firrtl.transforms.ReplaceTruncatingArithmetic],
       Dependency[firrtl.transforms.InlineBitExtractionsTransform],
       Dependency[firrtl.transforms.PropagatePresetAnnotations],
-      Dependency[firrtl.transforms.InlineCastsTransform],
+      Dependency[firrtl.transforms.InlineAcrossCastsTransform],
       Dependency[firrtl.transforms.LegalizeClocksTransform],
       Dependency[firrtl.transforms.FlattenRegUpdate],
       Dependency(passes.VerilogModulusCleanup),

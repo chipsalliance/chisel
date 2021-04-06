@@ -101,7 +101,7 @@ object Forms {
       Dependency[firrtl.transforms.FixAddingNegativeLiterals],
       Dependency[firrtl.transforms.ReplaceTruncatingArithmetic],
       Dependency[firrtl.transforms.InlineBitExtractionsTransform],
-      Dependency[firrtl.transforms.InlineCastsTransform],
+      Dependency[firrtl.transforms.InlineAcrossCastsTransform],
       Dependency[firrtl.transforms.LegalizeClocksTransform],
       Dependency[firrtl.transforms.FlattenRegUpdate],
       Dependency(passes.VerilogModulusCleanup),

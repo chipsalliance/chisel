@@ -10,6 +10,7 @@ import firrtl.options.Dependency
 
 import firrtl.Utils.{isBitExtract, isCast, NodeMap}
 
+@deprecated("Replaced by InlineAcrossCastsTransform", "FIRRTL 1.4.3")
 object InlineCastsTransform {
 
   // Checks if an Expression is made up of only casts terminated by a Literal or Reference
@@ -54,7 +55,7 @@ object InlineCastsTransform {
     rec(false)(expr)
   }
 
-  /** Inline casts in a Statement
+  /** Inline across casts in a statement
     *
     * @param netlist a '''mutable''' HashMap mapping references to [[firrtl.ir.DefNode DefNode]]s to their connected
     * [[firrtl.ir.Expression Expression]]s. This function '''will''' mutate
@@ -71,11 +72,17 @@ object InlineCastsTransform {
       case other => other
     }
 
-  /** Replaces truncating arithmetic in a Module */
+  /** Inline across casts in a module */
   def onMod(mod: DefModule): DefModule = mod.map(onStmt(new NodeMap))
 }
 
-/** Inline nodes that are simple casts */
+/** Inline expressions into casts and inline casts into other expressions
+  *
+  * Because casts are no-ops in the emitted Verilog, this transform eliminates statements that
+  * simply contain a cast. It does so by greedily building larger expression trees that contain at
+  * most one expression that is neither a cast nor reference-like node.
+  */
+@deprecated("Replaced by InlineAcrossCastsTransform", "FIRRTL 1.4.3")
 class InlineCastsTransform extends Transform with DependencyAPIMigration {
 
   override def prerequisites = firrtl.stage.Forms.LowFormMinimumOptimized ++
