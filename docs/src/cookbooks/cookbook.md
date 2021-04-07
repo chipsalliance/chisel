@@ -66,6 +66,31 @@ class Foo extends RawModule {
 }
 ```
 
+### How can I tieoff a Bundle/Vec to 0?
+
+You can use `asTypeOf` as above, but also use `chiselTypeOf` rather than having to
+figure out the type of the LHS:
+
+```scala mdoc:silent:reset
+import chisel3._
+
+class MyBundle extends Bundle {
+  val foo = UInt(4.W)
+  val bar = Vec(4, UInt(1.W))
+}
+
+class Foo(gen: () => Data) extends RawModule {
+  val bundle = IO(Output(gen))
+  bundle := 0.U.asTypeOf(chiselTypeOf(gen))
+}
+
+class Bar extends RawModule {
+  val foo = Module(new Foo(new MyBundle()))
+}
+```
+
+0.U.asTypeOf(chiselTypeOf(a.bits))
+
 ### How do I create a Vec of Bools from a UInt?
 
 Use [`VecInit`](https://www.chisel-lang.org/api/latest/chisel3/VecInit$.html) given a `Seq[Bool]` generated using the [`asBools`](https://www.chisel-lang.org/api/latest/chisel3/UInt.html#asBools():Seq[chisel3.Bool]) method.
