@@ -11,9 +11,11 @@ Chisel provides facilities for creating both read only and read/write memories.
 ## ROM
 
 Users can define read only memories with a `Vec`:
+
 ```scala mdoc:invisible
 import chisel3._
 ```
+
 ``` scala mdoc:compile-only
     VecInit(inits: Seq[T])
     VecInit(elt0: T, elts: T*)
@@ -56,6 +58,7 @@ If the same memory address is both written and sequentially read on the same clo
 Values on the read data port are not guaranteed to be held until the next read cycle. If that is the desired behavior, external logic to hold the last read value must be added.
 
 #### Read port/write port
+
 Ports into `SyncReadMem`s are created by applying a `UInt` index.  A 1024-entry SRAM with one write port and one read port might be expressed as follows:
 
 ```scala mdoc:silent
@@ -79,9 +82,11 @@ class ReadWriteSmem extends Module {
 
 Below is an example waveform of the one write port/one read port `SyncReadMem` with [masks](#masks). Note that the signal names will differ from the exact wire names generated for the `SyncReadMem`. With masking, it is also possible that multiple RTL arrays will be generated with the behavior below.
 
-![read/write ports example waveform](https://svg.wavedrom.com/github/freechipsproject/www.chisel-lang.org/master/docs/src/main/tut/chisel3/memories_waveforms/smem_read_write.json)    
+![read/write ports example waveform](https://svg.wavedrom.com/github/freechipsproject/www.chisel-lang.org/master/docs/src/main/resources/json/smem_read_write.json)    
+
 
 #### Single-ported
+
 Single-ported SRAMs can be inferred when the read and write conditions are mutually exclusive in the same `when` chain:
 
 ```scala mdoc:silent
@@ -110,7 +115,7 @@ class RWSmem extends Module {
 
 Here is an example single read/write port waveform, with [masks](#masks) (again, generated signal names and number of arrays may differ):
 
-![read/write ports example waveform](https://svg.wavedrom.com/github/freechipsproject/www.chisel-lang.org/master/docs/src/main/tut/chisel3/memories_waveforms/smem_rw.json)
+![read/write ports example waveform](https://svg.wavedrom.com/github/freechipsproject/www.chisel-lang.org/master/docs/src/main/resources/json/smem_rw.json)
 
 ### `Mem`: combinational/asynchronous-read, sequential/synchronous-write
 
@@ -173,4 +178,10 @@ class MaskedRWSmem extends Module {
   }
 }
 ```
+
+### Memory Initialization
+
+Chisel memories can be initialized from an external `binary` or `hex` file emitting proper Verilog for synthesis or simulation. There are multiple modes of initialization.
+
+For more information, check the experimental docs on [Loading Memories](../appendix/experimental-features#loading-memories) feature.
 
