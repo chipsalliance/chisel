@@ -88,9 +88,6 @@ class Bar extends RawModule {
   val foo = Module(new Foo(new MyBundle()))
 }
 ```
-
-0.U.asTypeOf(chiselTypeOf(a.bits))
-
 ### How do I create a Vec of Bools from a UInt?
 
 Use [`VecInit`](https://www.chisel-lang.org/api/latest/chisel3/VecInit$.html) given a `Seq[Bool]` generated using the [`asBools`](https://www.chisel-lang.org/api/latest/chisel3/UInt.html#asBools():Seq[chisel3.Bool]) method.
