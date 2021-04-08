@@ -6,42 +6,6 @@ import chisel3._
 import chisel3.util.{BitPat, Cat}
 
 object Minimizer {
-  private val caches: mutable.Map[UInt, mutable.Map[String, Bool]] = mutable.Map[UInt, mutable.Map[String, Bool]]()
-
-  def tableToPLA(inputs: UInt, default: BitPat, table: Seq[Seq[BitPat]]): UInt = {
-    val cache = caches.getOrElseUpdate(inputs, mutable.Map[String, Bool]())
-    val invInputs = ~inputs
-    Cat(table.zipWithIndex.map{ case (a, i) =>
-      val b: Bool =
-        if (a.isEmpty)
-          false.B
-        else {
-          Cat(a.map { t =>
-            // share AND plane decode result.
-            cache
-              .getOrElseUpdate(
-                t.toString,
-                Cat((0 until t.getWidth).flatMap{ j => // TODO
-                  if (t.mask.testBit(j)) {
-                    Some(
-                      if (t.value.testBit(j)) inputs(j)
-                      else invInputs(j)
-                    )
-                  } else {
-                    None
-                  }
-                })
-                  // PLA AND plane
-                  .andR()
-              )
-          })
-            // PLA OR plane
-            .orR()
-      }
-      if (default.mask.testBit(i) && default.value.testBit(i)) !b else b
-    }.reverse)
-  }
-
   private[minimizer] implicit class Implicant(x: BitPat) {
     /** Check whether two implicants have the same value on all of the cared bits (intersection).
       *
