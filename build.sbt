@@ -32,9 +32,10 @@ lazy val micrositeSettings = Seq(
   micrositeGithubRepo := "chisel3",
   micrositeGithubLinks := false,
   micrositeShareOnSocial := false,
-  micrositeDocumentationUrl := "api/latest/",
-  micrositeDocumentationLabelDescription := "API Documentation",
+  micrositeDocumentationUrl := "chisel3/",
+  micrositeDocumentationLabelDescription := "Documentation",
   micrositeGitterChannelUrl := "freechipsproject/chisel3",
+  micrositeHighlightLanguages ++= Seq("verilog"),
   mdocIn := file("docs/src/main/tut"),
   /* Copy markdown files from each of the submodules to build out the website:
    * - Chisel3 README becomes the landing page
