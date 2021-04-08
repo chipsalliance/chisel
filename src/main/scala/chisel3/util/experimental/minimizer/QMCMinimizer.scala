@@ -71,7 +71,7 @@ object QMCMinimizer {
       *
       * @param a    Operand a
       * @param b    Operand b
-      * @return TODO
+      * @return `a` < `b`
       */
     def cheaper(a: Seq[BitPat], b: Seq[BitPat]): Boolean = {
       val ca = getCost(a)
@@ -107,9 +107,9 @@ object QMCMinimizer {
 
 /** The [[https://en.wikipedia.org/wiki/Quine-McCluskey_algorithm]] decoder implementation. */
 class QMCMinimizer extends Minimizer {
-  def minimize(default: BitPat, table: Seq[(BitPat, BitPat)]): Seq[Seq[BitPat]] = {
+  def minimize(default: BitPat, table: Seq[(BitPat, BitPat)]): Seq[(BitPat, BitPat)] = {
 
-    require(table.nonEmpty, "Truth table must not be empty") // TODO return `default`
+    require(table.nonEmpty, "Truth table must not be empty")
 
     // extract decode table to inputs and outputs
     val (inputs, outputs) = table.unzip
@@ -128,7 +128,7 @@ class QMCMinimizer extends Minimizer {
     val m = outputs.head.getWidth
 
     // for all outputs
-    (0 until m).map(i => {
+    (0 until m).flatMap(i => {
       // Minterms, implicants that makes the output to be 1
       val mint = table.filter { case (_, t) => t.mask.testBit(i) && t.value.testBit(i) }.map(_._1)
       // Maxterms, implicants that makes the output to be 0
@@ -171,7 +171,8 @@ class QMCMinimizer extends Minimizer {
           implicants
         )
 
-      essentialPrimeImplicants ++ QMCMinimizer.getCover(nonessentialPrimeImplicants, uncoveredImplicants)
+      val outputs = BitPat("b" + "?" * (m - i - 1) + "1" + "?" * i)
+      (essentialPrimeImplicants ++ QMCMinimizer.getCover(nonessentialPrimeImplicants, uncoveredImplicants)).map((_, outputs))
     })
   }
 }

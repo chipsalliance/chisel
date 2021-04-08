@@ -144,12 +144,21 @@ abstract class Minimizer {
     *
     * @param default  Default output values, can have don't cares
     * @param table    Truth table, can have don't cares in both inputs and outputs, specified as [(inputs, outputs), ...]
-    * @return         Minimized AND plane structure for each outputs TODO
+    * @return         Minimized truth table, [(inputs, outputs), ...]
     *
     * @example {{{
-    *            minimize(BitPat("b01?"), Seq(
-    *                   BitPat("b TODO
+    *          minimize(BitPat("b?"), Seq(
+    *              (BitPat("b000"), BitPat("b0")),
+    *              // (BitPat("b001"), BitPat("b?")),  // same as default, can be omitted
+    *              // (BitPat("b010"), BitPat("b?")),  // same as default, can be omitted
+    *              (BitPat("b011"), BitPat("b0")),
+    *              (BitPat("b100"), BitPat("b1")),
+    *              (BitPat("b101"), BitPat("b1")),
+    *              (BitPat("b110"), BitPat("b0")),
+    *              (BitPat("b111"), BitPat("b1")),
+    *          ))
     * }}}
     */
-  def minimize(default: BitPat, table: Seq[(BitPat, BitPat)]): Seq[Seq[BitPat]] // TODO
+  def minimize(default: BitPat, table: Seq[(BitPat, BitPat)]): Seq[(BitPat, BitPat)]
+
 }
