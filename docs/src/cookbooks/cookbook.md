@@ -12,7 +12,7 @@ Please note that these examples make use of [Chisel's scala-style printing](../e
 * Converting Chisel Types to/from UInt
   * [How do I create a UInt from an instance of a Bundle?](#how-do-i-create-a-uint-from-an-instance-of-a-bundle)
   * [How do I create a Bundle from a UInt?](#how-do-i-create-a-bundle-from-a-uint)
-  * [How can I tieoff a Bundle/Vec to 0?](#how-can-i-tieoff-a-bundle-vec-to-0)
+  * [How can I tieoff a Bundle/Vec to 0?](#how-can-i-tieoff-a-bundlevec-to-0)
   * [How do I create a Vec of Bools from a UInt?](#how-do-i-create-a-vec-of-bools-from-a-uint)
   * [How do I create a UInt from a Vec of Bool?](#how-do-i-create-a-uint-from-a-vec-of-bool)
 * Vectors and Registers
