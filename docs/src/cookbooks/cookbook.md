@@ -79,7 +79,7 @@ class MyBundle extends Bundle {
   val bar = Vec(4, UInt(1.W))
 }
 
-class Foo(gen: () => Data) extends RawModule {
+class Foo(gen: Data) extends RawModule {
   val bundle = IO(Output(gen))
   bundle := 0.U.asTypeOf(chiselTypeOf(gen))
 }
