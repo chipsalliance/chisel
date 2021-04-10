@@ -167,7 +167,11 @@ class QMCMinimizer extends Minimizer {
 
       val (essentialPrimeImplicants, nonessentialPrimeImplicants, uncoveredImplicants) =
         QMCMinimizer.getEssentialPrimeImplicants(
-          if (defaultToDc) primeImplicants.map(a => a.expand(maxt).reduce(_.mergeIfSimilar(_).getOrElse(a))) else primeImplicants,
+          if (defaultToDc)
+            primeImplicants.map { a =>
+              (a +: a.expand(maxt)).reduce(_.mergeIfSimilar(_).getOrElse(a))
+            }
+          else primeImplicants,
           implicants
         )
 
