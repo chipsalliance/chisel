@@ -51,7 +51,18 @@ object getWidth {
   def apply(e: Expression): Width = apply(e.tpe)
 }
 
+/**
+  * Helper object for computing the width of a firrtl type.
+  */
 object bitWidth {
+
+  /**
+    * Compute the width of a firrtl type.
+    * For example, a Vec of 4 UInts of width 8 should have a width of 32.
+    *
+    * @param dt firrtl type
+    * @return Width of the given type
+    */
   def apply(dt:           Type): BigInt = widthOf(dt)
   private def widthOf(dt: Type): BigInt = dt match {
     case t: VectorType => t.size * bitWidth(t.tpe)

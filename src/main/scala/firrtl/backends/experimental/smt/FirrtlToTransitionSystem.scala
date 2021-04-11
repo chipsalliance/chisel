@@ -4,6 +4,7 @@
 package firrtl.backends.experimental.smt
 
 import firrtl.annotations.{MemoryInitAnnotation, NoTargetAnnotation, PresetRegAnnotation}
+import firrtl.bitWidth
 import FirrtlExpressionSemantics.getWidth
 import firrtl.backends.experimental.smt.random._
 import firrtl.graph.MutableDiGraph
@@ -258,7 +259,7 @@ private class ModuleToTransitionSystem extends LazyLogging {
     val inputs = connects.filter(_._1.startsWith(m.name)).toMap
 
     // derive the type of the memory from the dataType and depth
-    val dataWidth = getWidth(m.dataType)
+    val dataWidth = bitWidth(m.dataType).toInt
     val indexWidth = Utils.getUIntWidth(m.depth - 1).max(1)
     val memSymbol = ArraySymbol(m.name, indexWidth, dataWidth)
 
@@ -391,7 +392,7 @@ private class ModuleScanner(
         if (isClock(p.tpe)) {
           clocks.add(p.name)
         } else {
-          inputs.append(BVSymbol(p.name, getWidth(p.tpe)))
+          inputs.append(BVSymbol(p.name, bitWidth(p.tpe).toInt))
         }
       case ir.Output =>
         if (!isClock(p.tpe)) { // we ignore clock outputs
@@ -406,7 +407,7 @@ private class ModuleScanner(
       assert(!isClock(tpe), "rand should never be a clock!")
       // we model random sources as inputs and ignore the enable signal
       infos.append(name -> info)
-      inputs.append(BVSymbol(name, getWidth(tpe)))
+      inputs.append(BVSymbol(name, bitWidth(tpe).toInt))
     case ir.DefWire(info, name, tpe) =>
       namespace.newName(name)
       if (!isClock(tpe)) {
@@ -427,7 +428,7 @@ private class ModuleScanner(
       insertDummyAssignsForUnusedOutputs(reset)
       insertDummyAssignsForUnusedOutputs(init)
       infos.append(name -> info)
-      val width = getWidth(tpe)
+      val width = bitWidth(tpe).toInt
       val resetExpr = onExpression(reset, 1)
       val initExpr = onExpression(init, width)
       registers.append((name, width, resetExpr, initExpr))
@@ -436,7 +437,7 @@ private class ModuleScanner(
       infos.append(m.name -> m.info)
       val outputs = getMemOutputs(m)
       (getMemInputs(m) ++ outputs).foreach(memSignals.append(_))
-      val dataWidth = getWidth(m.dataType)
+      val dataWidth = bitWidth(m.dataType).toInt
       outputs.foreach(name => unusedOutputs(name) = BVSymbol(name, dataWidth))
       memories.append(m)
     case ir.Connect(info, loc, expr) =>
@@ -445,7 +446,7 @@ private class ModuleScanner(
         val name = loc.serialize
         insertDummyAssignsForUnusedOutputs(expr)
         infos.append(name -> info)
-        connects.append((name, onExpression(expr, getWidth(loc.tpe))))
+        connects.append((name, onExpression(expr, bitWidth(loc.tpe).toInt)))
       }
     case i @ ir.IsInvalid(info, loc) =>
       if (!isGroundType(loc.tpe)) error("All connects should have been lowered to ground type!")
@@ -507,7 +508,7 @@ private class ModuleScanner(
           if (isClock(p.tpe)) {
             clocks.add(pName)
           } else {
-            inputs.append(BVSymbol(pName, getWidth(p.tpe)))
+            inputs.append(BVSymbol(pName, bitWidth(p.tpe).toInt))
           }
         } else {
           if (!isClock(p.tpe)) { // we ignore clock outputs
@@ -524,8 +525,8 @@ private class ModuleScanner(
     // sanity checks for ports were done already using the UninterpretedModule.checkModule function
     val ports = tpe.asInstanceOf[ir.BundleType].fields
 
-    val outputs = ports.filter(_.flip == ir.Default).map(p => BVSymbol(p.name, getWidth(p.tpe)))
-    val inputs = ports.filterNot(_.flip == ir.Default).map(p => BVSymbol(p.name, getWidth(p.tpe)))
+    val outputs = ports.filter(_.flip == ir.Default).map(p => BVSymbol(p.name, bitWidth(p.tpe).toInt))
+    val inputs = ports.filterNot(_.flip == ir.Default).map(p => BVSymbol(p.name, bitWidth(p.tpe).toInt))
 
     assert(anno.stateBits == 0, "TODO: implement support for uninterpreted stateful modules!")
 

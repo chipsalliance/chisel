@@ -8,19 +8,10 @@ import firrtl.PrimOps
 import firrtl.passes.CheckWidths.WidthTooBig
 
 private trait TranslationContext {
-  def getReference(name: String, tpe: ir.Type): BVExpr = BVSymbol(name, FirrtlExpressionSemantics.getWidth(tpe))
+  def getReference(name: String, tpe: ir.Type): BVExpr = BVSymbol(name, firrtl.bitWidth(tpe).toInt)
 }
 
 private object FirrtlExpressionSemantics {
-  def getWidth(tpe: ir.Type): Int = tpe match {
-    case ir.UIntType(ir.IntWidth(w))   => w.toInt
-    case ir.SIntType(ir.IntWidth(w))   => w.toInt
-    case ir.ClockType                  => 1
-    case ir.ResetType                  => 1
-    case ir.AnalogType(ir.IntWidth(w)) => w.toInt
-    case other                         => throw new RuntimeException(s"Cannot handle type $other")
-  }
-
   def toSMT(e: ir.Expression)(implicit ctx: TranslationContext): BVExpr = {
     val eSMT = e match {
       case ir.DoPrim(op, args, consts, _) => onPrim(op, args, consts)
@@ -183,5 +174,7 @@ private object FirrtlExpressionSemantics {
     case _: ir.SIntType => true
     case _ => false
   }
-  private def getWidth(e: ir.Expression): Int = getWidth(e.tpe)
+
+  // Helper function
+  private def getWidth(e: ir.Expression): Int = firrtl.bitWidth(e.tpe).toInt
 }
