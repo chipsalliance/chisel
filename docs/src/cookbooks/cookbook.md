@@ -12,6 +12,7 @@ Please note that these examples make use of [Chisel's scala-style printing](../e
 * Converting Chisel Types to/from UInt
   * [How do I create a UInt from an instance of a Bundle?](#how-do-i-create-a-uint-from-an-instance-of-a-bundle)
   * [How do I create a Bundle from a UInt?](#how-do-i-create-a-bundle-from-a-uint)
+  * [How can I tieoff a Bundle/Vec to 0?](#how-can-i-tieoff-a-bundlevec-to-0)
   * [How do I create a Vec of Bools from a UInt?](#how-do-i-create-a-vec-of-bools-from-a-uint)
   * [How do I create a UInt from a Vec of Bool?](#how-do-i-create-a-uint-from-a-vec-of-bool)
 * Vectors and Registers
@@ -66,6 +67,36 @@ class Foo extends RawModule {
 }
 ```
 
+### How can I tieoff a Bundle/Vec to 0?
+
+You can use `asTypeOf` as above. If you don't want to worry about the type of the thing
+you are tying off, you can use `chiselTypeOf`:
+
+```scala mdoc:silent:reset
+import chisel3._
+
+class MyBundle extends Bundle {
+  val foo = UInt(4.W)
+  val bar = Vec(4, UInt(1.W))
+}
+
+class Foo(typ: Data) extends RawModule {
+  val bundleA = IO(Output(typ))
+  val bundleB = IO(Output(typ))
+  
+  // typ is already a Chisel Data Type, so can use it directly here, but you 
+  // need to know that bundleA is of type typ
+  bundleA := 0.U.asTypeOf(typ)
+  
+  // bundleB is a Hardware data IO(Output(...)) so need to call chiselTypeOf,
+  // but this will work no matter the type of bundleB:
+  bundleB := 0.U.asTypeOf(chiselTypeOf(bundleB)) 
+}
+
+class Bar extends RawModule {
+  val foo = Module(new Foo(new MyBundle()))
+}
+```
 ### How do I create a Vec of Bools from a UInt?
 
 Use [`VecInit`](https://www.chisel-lang.org/api/latest/chisel3/VecInit$.html) given a `Seq[Bool]` generated using the [`asBools`](https://www.chisel-lang.org/api/latest/chisel3/UInt.html#asBools():Seq[chisel3.Bool]) method.
