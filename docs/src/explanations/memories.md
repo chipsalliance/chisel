@@ -15,21 +15,21 @@ Users can define read only memories with a `Vec`:
 ```scala mdoc:invisible
 import chisel3._
 ```
-``` scala mdoc:compile-only
+```scala mdoc:compile-only
 VecInit(inits: Seq[T])
 VecInit(elt0: T, elts: T*)
 ```
 
 where `inits` is a sequence of initial `Data` literals that initialize the ROM. For example,  users cancreate a small ROM initialized to 1, 2, 4, 8 and loop through all values using a counter as an address generator as follows:
 
-``` scala mdoc:compile-only
+```scala mdoc:compile-only
 val m = VecInit(Array(1.U, 2.U, 4.U, 8.U))
 val r = m(counter(m.length.U))
 ```
 
 We can create an *n* value sine lookup table using a ROM initialized as follows:
 
-``` scala mdoc:silent
+```scala mdoc:silent
 def sinTable(amp: Double, n: Int) = {
   val times =
     (0 until n).map(i => (i*2*Pi)/(n.toDouble-1) - Pi)
