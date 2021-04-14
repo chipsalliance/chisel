@@ -10,10 +10,16 @@ object Serializer {
   val NewLine = '\n'
   val Indent = "  "
 
-  /** Converts a `FirrtlNode` into its string representation. */
+  /** Converts a `FirrtlNode` into its string representation with
+    * default indentation.
+    */
   def serialize(node: FirrtlNode): String = {
+    serialize(node, 0)
+  }
+
+  /** Converts a `FirrtlNode` into its string representation. */
+  def serialize(node: FirrtlNode, indent: Int): String = {
     val builder = new StringBuilder()
-    val indent = 0
     node match {
       case n: Info        => s(n)(builder, indent)
       case n: StringLit   => s(n)(builder, indent)
