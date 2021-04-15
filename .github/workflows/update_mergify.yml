@@ -1,0 +1,53 @@
+name: Update .mergify.yml
+on:
+  schedule:
+    # Runs once an hour
+    - cron: "0 * * * *"
+
+jobs:
+  update-mergify:
+    name: Update .mergify.yml
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Checkout Chisel Repo Tools
+        uses: actions/checkout@v2
+        with:
+          repository:  ucb-bar/chisel-repo-tools
+          path: tools
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+      - name: Install Ammonite
+        run: sudo sh -c '(echo "#!/usr/bin/env sh" && curl -L https://github.com/com-lihaoyi/Ammonite/releases/download/2.3.8/2.13-2.3.8) > /usr/local/bin/amm && chmod +x /usr/local/bin/amm'
+      - name: Cache Scala
+        uses: coursier/cache-action@v6
+      - name: Generate .mergify.yml
+        id: gen
+        run: |
+          ./tools/scripts/mergify.sc .github/configs/mergify_config.yml > .mergify.yml
+          diff=$(git diff -- .mergify.yml)
+          echo "::set-output name=diff::$diff"
+      - name: Commit and Push
+        if: ${{ steps.gen.outputs.diff }}
+        run: |
+          BRANCH="actions/workflows/update-mergify"
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git checkout -B $BRANCH
+          git add .mergify.yml
+          git commit -m "Update .mergify.yml"
+          git push --follow-tags --force --set-upstream origin $BRANCH
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Open/Update Pull Request
+        if: ${{ steps.gen.outputs.diff }}
+        uses: vsoch/pull-request-action@1.0.15
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PULL_REQUEST_FROM_BRANCH: actions/workflows/update-mergify
+          PULL_REQUEST_BRANCH: master
+          PULL_REQUEST_TITLE: "Update .mergify.yml"
+          PULL_REQUEST_BODY: "This is an automated pull request by \"Update .mergify.yml\" workflow"
+          PASS_IF_EXISTS: true
+

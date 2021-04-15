@@ -30,7 +30,7 @@ jobs:
         with:
           java-version: adopt@1.8
       - name: Cache Scala
-        uses: coursier/cache-action@v5
+        uses: coursier/cache-action@v6
       - name: Check Formatting (Scala 2.12 only)
         if: startsWith(matrix.scala, '2.12')
         run: sbt ++${{ matrix.scala }} scalafmtCheckAll
@@ -95,7 +95,7 @@ jobs:
   # When adding new jobs, please add them to `needs` below
   all_tests_passed:
     name: "all tests passed"
-    needs: [test, equiv]
+    needs: [test, mill, equiv]
     runs-on: ubuntu-latest
     steps:
       - run: echo Success!
