@@ -55,9 +55,9 @@ object CheckTypes extends Pass {
   class RegReqClk(info: Info, mname: String, name: String)
       extends PassException(s"$info: [module $mname]  Register $name requires a clock typed signal.")
   class EnNotUInt(info: Info, mname: String)
-      extends PassException(s"$info: [module $mname]  Enable must be a UIntType typed signal.")
+      extends PassException(s"$info: [module $mname]  Enable must be a 1-bit UIntType typed signal.")
   class PredNotUInt(info: Info, mname: String)
-      extends PassException(s"$info: [module $mname]  Predicate not a UIntType.")
+      extends PassException(s"$info: [module $mname]  Predicate not a 1-bit UIntType.")
   class OpNotGround(info: Info, mname: String, op: String)
       extends PassException(s"$info: [module $mname]  Primop $op cannot operate on non-ground types.")
   class OpNotUInt(info: Info, mname: String, op: String, e: String)
@@ -81,7 +81,7 @@ object CheckTypes extends Pass {
   class MuxPassiveTypes(info: Info, mname: String)
       extends PassException(s"$info: [module $mname]  Must mux between passive types.")
   class MuxCondUInt(info: Info, mname: String)
-      extends PassException(s"$info: [module $mname]  A mux condition must be of type UInt.")
+      extends PassException(s"$info: [module $mname]  A mux condition must be of type 1-bit UInt.")
   class MuxClock(info: Info, mname: String)
       extends PassException(s"$info: [module $mname]  Firrtl does not support muxing clocks.")
   class ValidIfPassiveTypes(info: Info, mname: String)
@@ -117,6 +117,15 @@ object CheckTypes extends Pass {
     case UIntType(UnknownWidth)          =>
       // cannot catch here, though width may ultimately be wrong
       true
+    case _ => false
+  }
+
+  private def legalCondType(tpe: Type): Boolean = tpe match {
+    // If width is known, must be 1
+    case UIntType(IntWidth(w)) => w == 1
+    // Unknown width or variable widths (for width inference) are acceptable (checked in later run)
+    case UIntType(_) => true
+    // Any other type is not okay
     case _ => false
   }
 
@@ -165,7 +174,8 @@ object CheckTypes extends Pass {
     bulk_equals(con.loc.tpe, con.expr.tpe, Default, Default)
 
   //;---------------- Helper Functions --------------
-  def ut: UIntType = UIntType(UnknownWidth)
+  private val UIntUnknown = UIntType(UnknownWidth)
+  def ut: UIntType = UIntUnknown
   def st: SIntType = SIntType(UnknownWidth)
 
   def run(c: Circuit): Circuit = {
@@ -332,9 +342,8 @@ object CheckTypes extends Pass {
             errors.append(new MuxSameType(info, mname, e.tval.tpe.serialize, e.fval.tpe.serialize))
           if (!passive(e.tpe))
             errors.append(new MuxPassiveTypes(info, mname))
-          e.cond.tpe match {
-            case _: UIntType =>
-            case _ => errors.append(new MuxCondUInt(info, mname))
+          if (!legalCondType(e.cond.tpe)) {
+            errors.append(new MuxCondUInt(info, mname))
           }
         case (e: ValidIf) =>
           if (!passive(e.tpe))
@@ -375,7 +384,7 @@ object CheckTypes extends Pass {
           if (sx.clock.tpe != ClockType) {
             errors.append(new RegReqClk(info, mname, sx.name))
           }
-        case sx: Conditionally if wt(sx.pred.tpe) != wt(ut) =>
+        case sx: Conditionally if !legalCondType(sx.pred.tpe) =>
           errors.append(new PredNotUInt(info, mname))
         case sx: DefNode =>
           sx.value.tpe match {
@@ -396,16 +405,16 @@ object CheckTypes extends Pass {
           }
         case sx: Stop =>
           if (wt(sx.clk.tpe) != wt(ClockType)) errors.append(new ReqClk(info, mname))
-          if (wt(sx.en.tpe) != wt(ut)) errors.append(new EnNotUInt(info, mname))
+          if (!legalCondType(sx.en.tpe)) errors.append(new EnNotUInt(info, mname))
         case sx: Print =>
           if (sx.args.exists(x => wt(x.tpe) != wt(ut) && wt(x.tpe) != wt(st)))
             errors.append(new PrintfArgNotGround(info, mname))
           if (wt(sx.clk.tpe) != wt(ClockType)) errors.append(new ReqClk(info, mname))
-          if (wt(sx.en.tpe) != wt(ut)) errors.append(new EnNotUInt(info, mname))
+          if (!legalCondType(sx.en.tpe)) errors.append(new EnNotUInt(info, mname))
         case sx: Verification =>
           if (wt(sx.clk.tpe) != wt(ClockType)) errors.append(new ReqClk(info, mname))
-          if (wt(sx.pred.tpe) != wt(ut)) errors.append(new PredNotUInt(info, mname))
-          if (wt(sx.en.tpe) != wt(ut)) errors.append(new EnNotUInt(info, mname))
+          if (!legalCondType(sx.pred.tpe)) errors.append(new PredNotUInt(info, mname))
+          if (!legalCondType(sx.en.tpe)) errors.append(new EnNotUInt(info, mname))
         case sx: DefMemory =>
           sx.dataType match {
             case AnalogType(w) => errors.append(new IllegalAnalogDeclaration(info, mname, sx.name))

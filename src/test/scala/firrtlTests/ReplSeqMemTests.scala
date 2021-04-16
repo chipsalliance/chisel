@@ -422,7 +422,7 @@ circuit CustomMemory :
 circuit CustomMemory :
   module CustomMemory :
     input clock : Clock
-    output io : { flip en : UInt<1>, out : UInt<8>[2], flip raddr : UInt<10>, flip waddr : UInt<10>, flip wdata : UInt<8>[2], flip mask : UInt<8>[2] }
+    output io : { flip en : UInt<1>, out : UInt<8>[2], flip raddr : UInt<10>, flip waddr : UInt<10>, flip wdata : UInt<8>[2], flip mask : UInt<1>[2] }
 
     smem mem : UInt<8>[2][1024]
     read mport r = mem[io.raddr], clock
@@ -452,7 +452,7 @@ circuit CustomMemory :
 circuit CustomMemory :
   module CustomMemory :
     input clock : Clock
-    output io : { flip en : UInt<1>, out : UInt<8>[2], flip raddr : UInt<10>, flip waddr : UInt<10>, flip wdata : UInt<8>[2], flip mask : UInt<8>[2] }
+    output io : { flip en : UInt<1>, out : UInt<8>[2], flip raddr : UInt<10>, flip waddr : UInt<10>, flip wdata : UInt<8>[2], flip mask : UInt<1>[2] }
 
     io.out is invalid
 
