@@ -1531,22 +1531,29 @@ class ConstantPropagationIntegrationSpec extends LowTransformSpec {
     val input =
       s"""|circuit Foo:
           |  module Foo:
+          |    input in1: SInt<3>
           |    output out1: UInt<2>
           |    output out2: UInt<2>
           |    output out3: UInt<2>
+          |    output out4: UInt<4>
           |    out1 <= xor(SInt<2>(-1), SInt<2>(1))
           |    out2 <= or(SInt<2>(-1), SInt<2>(1))
           |    out3 <= and(SInt<2>(-1), SInt<2>(-2))
+          |    out4 <= xor(in1, SInt<4>(0))
           |""".stripMargin
     val check =
       s"""|circuit Foo:
           |  module Foo:
+          |    input in1: SInt<3>
           |    output out1: UInt<2>
           |    output out2: UInt<2>
           |    output out3: UInt<2>
+          |    output out4: UInt<4>
           |    out1 <= UInt<2>(2)
           |    out2 <= UInt<2>(3)
           |    out3 <= UInt<2>(2)
+          |    node _GEN_0 = pad(in1, 4)
+          |    out4 <= asUInt(_GEN_0)
           |""".stripMargin
     execute(input, check, Seq.empty)
   }
