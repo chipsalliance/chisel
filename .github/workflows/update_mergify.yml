@@ -11,6 +11,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          ref: master
       - name: Checkout Chisel Repo Tools
         uses: actions/checkout@v2
         with:
@@ -23,31 +25,21 @@ jobs:
       - name: Cache Scala
         uses: coursier/cache-action@v6
       - name: Generate .mergify.yml
-        id: gen
         run: |
           ./tools/scripts/mergify.sc .github/configs/mergify_config.yml > .mergify.yml
-          diff=$(git diff -- .mergify.yml)
-          echo "::set-output name=diff::$diff"
-      - name: Commit and Push
-        if: ${{ steps.gen.outputs.diff }}
-        run: |
-          BRANCH="actions/workflows/update-mergify"
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git checkout -B $BRANCH
-          git add .mergify.yml
-          git commit -m "Update .mergify.yml"
-          git push --follow-tags --force --set-upstream origin $BRANCH
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Open/Update Pull Request
-        if: ${{ steps.gen.outputs.diff }}
-        uses: vsoch/pull-request-action@1.0.15
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PULL_REQUEST_FROM_BRANCH: actions/workflows/update-mergify
-          PULL_REQUEST_BRANCH: master
-          PULL_REQUEST_TITLE: "Update .mergify.yml"
-          PULL_REQUEST_BODY: "This is an automated pull request by \"Update .mergify.yml\" workflow"
-          PASS_IF_EXISTS: true
+          # Delete tools so they don't get included in commit
+          rm -rf tools/
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v3.8.2
+        with:
+          # TODO Default GITHUB_TOKEN cannot trigger PR CI
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: Update .mergify.yml
+          branch: actions/workflows/update-mergify
+          delete-branch: true
+          title: Update .mergify.yml
+          body: |
+            This is an automated pull request by "Update .mergify.yml" workflow created with [create-pull-request][1].
+
+            [1]: https://github.com/peter-evans/create-pull-request
 
