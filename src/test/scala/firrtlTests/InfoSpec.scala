@@ -91,11 +91,11 @@ class InfoSpec extends FirrtlFlatSpec with FirrtlMatchers {
     result should containTree { case DefMemory(Info1, "m", _, _, _, _, _, _, _, _) => true }
     result should containLine(s"reg [7:0] m [0:31]; //$Info1")
     result should containLine(s"wire [7:0] m_r_data; //$Info1")
-    result should containLine(s"wire [4:0] m_r_addr = addr; //$Info1")
-    result should containLine(s"wire [7:0] m_w_data = 8'h0; //$Info1")
-    result should containLine(s"wire [4:0] m_w_addr = addr; //$Info1")
-    result should containLine(s"wire  m_w_mask = 1'h0; //$Info1")
-    result should containLine(s"wire  m_w_en = 1'h0; //$Info1")
+    result should containLine(s"wire [4:0] m_r_addr; //$Info1")
+    result should containLine(s"wire [7:0] m_w_data; //$Info1")
+    result should containLine(s"wire [4:0] m_w_addr; //$Info1")
+    result should containLine(s"wire  m_w_mask; //$Info1")
+    result should containLine(s"wire  m_w_en; //$Info1")
     result should containLine(s"assign m_r_data = m[m_r_addr]; //$Info1")
     result should containLine(s"m[m_w_addr] <= m_w_data; //$Info1")
   }

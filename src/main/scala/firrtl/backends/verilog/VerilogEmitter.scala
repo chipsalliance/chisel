@@ -1076,8 +1076,11 @@ class VerilogEmitter extends SeqTransform with Emitter {
                 "Alternatively, add the --repl-seq-mem flag to replace memories with blackboxes."
               ).mkString(" ")
             )
-          def createMemWire(name: String, tpe: Type, rhs: InfoExpr): Unit = {
-            declare("wire", name, tpe, MultiInfo(sx.info, rhs.info), rhs.expr)
+          def createMemWire(firrtlRef: Expression, rhs: InfoExpr): Unit = {
+            // Don't use declaration-assignment, since this assignment might be emitted earlier than the
+            // actual connection to the memory port field in the source FIRRTL
+            declare("wire", LowerTypes.loweredName(firrtlRef), firrtlRef.tpe, MultiInfo(sx.info, rhs.info))
+            assign(firrtlRef, rhs)
           }
 
           for (r <- sx.readers) {
@@ -1090,7 +1093,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
 
             val clkSource = netlist(memPortField(sx, r, "clk")).expr
 
-            createMemWire(LowerTypes.loweredName(en), en.tpe, netlist(en))
+            createMemWire(en, netlist(en))
 
             if (sx.readLatency == 1 && sx.readUnderWrite != ReadUnderWrite.Old) {
               val InfoExpr(addrInfo, addrDriver) = netlist(addr)
@@ -1098,7 +1101,7 @@ class VerilogEmitter extends SeqTransform with Emitter {
               initialize(WRef(LowerTypes.loweredName(addr), addr.tpe), zero, zero)
               update(addr, addrDriver, clkSource, en, addrInfo)
             } else {
-              createMemWire(LowerTypes.loweredName(addr), addr.tpe, netlist(addr))
+              createMemWire(addr, netlist(addr))
             }
 
             if (sx.readLatency == 1 && sx.readUnderWrite == ReadUnderWrite.Old) {
@@ -1122,10 +1125,10 @@ class VerilogEmitter extends SeqTransform with Emitter {
 
             val clkSource = netlist(memPortField(sx, w, "clk")).expr
 
-            createMemWire(LowerTypes.loweredName(data), data.tpe, netlist(data))
-            createMemWire(LowerTypes.loweredName(addr), addr.tpe, netlist(addr))
-            createMemWire(LowerTypes.loweredName(mask), mask.tpe, netlist(mask))
-            createMemWire(LowerTypes.loweredName(en), en.tpe, netlist(en))
+            createMemWire(data, netlist(data))
+            createMemWire(addr, netlist(addr))
+            createMemWire(mask, netlist(mask))
+            createMemWire(en, netlist(en))
 
             val memPort = WSubAccess(WRef(sx), addr, sx.dataType, UnknownFlow)
             update(memPort, data, clkSource, AND(en, mask), sx.info)
@@ -1142,11 +1145,11 @@ class VerilogEmitter extends SeqTransform with Emitter {
 
             val clkSource = netlist(memPortField(sx, rw, "clk")).expr
 
-            createMemWire(LowerTypes.loweredName(wdata), wdata.tpe, netlist(wdata))
-            createMemWire(LowerTypes.loweredName(addr), addr.tpe, netlist(addr))
-            createMemWire(LowerTypes.loweredName(wmode), wmode.tpe, netlist(wmode))
-            createMemWire(LowerTypes.loweredName(wmask), wmask.tpe, netlist(wmask))
-            createMemWire(LowerTypes.loweredName(en), en.tpe, netlist(en))
+            createMemWire(wdata, netlist(wdata))
+            createMemWire(addr, netlist(addr))
+            createMemWire(wmode, netlist(wmode))
+            createMemWire(wmask, netlist(wmask))
+            createMemWire(en, netlist(en))
 
             declare("reg", LowerTypes.loweredName(rdata), rdata.tpe, sx.info)
             initialize(WRef(LowerTypes.loweredName(rdata), rdata.tpe), zero, zero)
