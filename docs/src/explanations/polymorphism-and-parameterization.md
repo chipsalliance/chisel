@@ -4,7 +4,7 @@ title:  "Polymorphism and Parameterization"
 section: "chisel3"
 ---
 
-# Polymorphism and Paramterization
+# Polymorphism and Parameterization
 
 _This section is advanced and can be skipped at first reading._
 
