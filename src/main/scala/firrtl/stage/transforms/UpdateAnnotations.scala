@@ -19,7 +19,7 @@ class UpdateAnnotations(val underlying: Transform)
   }
 
   def internalTransform(b: (CircuitState, CircuitState)): (CircuitState, CircuitState) = {
-    val result = Transform.runTransform(name, underlying.transform(b._2), logger)
+    val result = underlying.transform(b._2)
     (b._1, result)
   }
 }

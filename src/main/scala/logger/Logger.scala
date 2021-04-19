@@ -47,6 +47,7 @@ object LogLevel extends Enumeration {
   */
 trait LazyLogging {
   protected val logger = new Logger(this.getClass.getName)
+  def getLogger: Logger = logger
 }
 
 /**

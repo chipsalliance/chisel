@@ -275,7 +275,14 @@ trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends 
                 |  prerequisites: ${prerequisites.mkString("\n    -", "\n    -", "")}""".stripMargin
           )
         }
-        (t.transform(a), ((state + wrapperToClass(t)).map(dToO).filterNot(t.invalidates).map(oToD)))
+        val logger = t.getLogger
+        logger.info(s"======== Starting ${t.name} ========")
+        val (timeMillis, annosx) = firrtl.Utils.time { t.transform(a) }
+        logger.info(s"""----------------------------${"-" * t.name.size}---------\n""")
+        logger.info(f"Time: $timeMillis%.1f ms")
+        logger.info(s"======== Finished ${t.name} ========")
+        val statex = (state + wrapperToClass(t)).map(dToO).filterNot(t.invalidates).map(oToD)
+        (annosx, statex)
     }._1
   }
 
