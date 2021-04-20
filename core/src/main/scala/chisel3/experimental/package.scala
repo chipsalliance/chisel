@@ -139,7 +139,7 @@ package object experimental {
       /** Given a generator of a list tuples of the form [Int, Data]
         * constructs a Vec literal, parallel concept to `BundleLiteral`
         *
-        * @param elems generates a lit of `(Int, Data)` where the I
+        * @param elems generates a lit of `(Int, Data)`
         * @return
         */
       def Lit(elems: (Int, Data)*): T = {
@@ -148,10 +148,13 @@ package object experimental {
     }
 
     implicit class AddObjectLiteralConstructor[T <: Vec.type](x: T) {
+      /** This provides an literal construction method for cases using
+        * object `Vec` as in `Vec.Lit(1.U, 2.U)`
+        */
       def Lit[T <: Data](elems: T*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = {
         require(elems.nonEmpty, s"Lit.Vec(...) must have at least one element")
         val indexElements = elems.zipWithIndex.map { case (element, index) => (index, element)}
-        val widestElement = elems.sortBy(_.getWidth).last
+        val widestElement = elems.tail.fold(elems.head) { case (a, b) => if(a.getWidth < b.getWidth) { b } else { a } }
         val vec: Vec[T] = Vec.apply(indexElements.length, chiselTypeOf(widestElement))
         vec.Lit(indexElements:_*)
       }

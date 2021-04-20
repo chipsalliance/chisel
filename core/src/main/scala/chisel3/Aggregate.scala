@@ -64,7 +64,7 @@ sealed abstract class Aggregate extends Data {
     }
 
     topBindingOpt match {
-      case Some(BundleLitBinding(_)) | Some(VecLitBinding(_))=>
+      case Some(BundleLitBinding(_)) | Some(VecLitBinding(_)) =>
         getElements
           .reverse
           .foldLeft[Option[BigInt]](Some(BigInt(0)))(shiftAdd)
