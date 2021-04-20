@@ -154,7 +154,7 @@ package object experimental {
       def Lit[T <: Data](elems: T*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = {
         require(elems.nonEmpty, s"Lit.Vec(...) must have at least one element")
         val indexElements = elems.zipWithIndex.map { case (element, index) => (index, element)}
-        val widestElement = elems.tail.fold(elems.head) { case (a, b) => if(a.getWidth < b.getWidth) { b } else { a } }
+        val widestElement = elems.maxBy(_.getWidth)
         val vec: Vec[T] = Vec.apply(indexElements.length, chiselTypeOf(widestElement))
         vec.Lit(indexElements:_*)
       }

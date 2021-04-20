@@ -75,7 +75,7 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
     } }
   }
 
-  "bundle literals of vec literals" should "work" in {
+  "bundle literals of bundle literals" should "work" in {
     assertTesterPasses(new BasicTester {
       val range = range"[0,4].2"
       val bundleWithVecs = new Bundle {

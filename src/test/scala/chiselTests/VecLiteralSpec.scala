@@ -8,6 +8,7 @@ import chisel3.experimental.VecLiterals._
 import chisel3.experimental.{ChiselEnum, FixedPoint, VecLiteralException}
 import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
+import chisel3.util.Counter
 
 class VecLiteralSpec extends ChiselFreeSpec with Utils {
   object MyEnum extends ChiselEnum {
@@ -81,13 +82,61 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
     val y = RegInit(initValue)
   }
 
-  "Vec literals should elaborate" in {
+  "Vec literals should work when used to initialize a reg of vec" in {
     val firrtl = (new ChiselStage).emitFirrtl(new HasVecInit, args = Array("--full-stacktrace"))
     firrtl should include("""_y_WIRE[0] <= UInt<8>("hab")""")
     firrtl should include("""_y_WIRE[1] <= UInt<8>("hcd")""")
     firrtl should include("""_y_WIRE[2] <= UInt<8>("hef")""")
     firrtl should include("""_y_WIRE[3] <= UInt<8>("hff")""")
     firrtl should include("""      reset => (reset, _y_WIRE)""".stripMargin)
+  }
+
+  //NOTE: I had problems where this would not work if this class declaration was inside test scope
+  class HasPartialVecInit extends Module {
+    val initValue = Vec(4, UInt(8.W)).Lit(0 -> 0xAB.U(8.W), 2 -> 0xEF.U(8.W), 3 -> 0xFF.U(8.W))
+    val y = RegInit(initValue)
+  }
+
+  "Vec literals should work when used to partially initialize a reg of vec" in {
+    val firrtl = (new ChiselStage).emitFirrtl(new HasPartialVecInit, args = Array("--full-stacktrace"))
+    firrtl should include("""_y_WIRE[0] <= UInt<8>("hab")""")
+    firrtl should include("""_y_WIRE[1] is invalid""")
+    firrtl should include("""_y_WIRE[2] <= UInt<8>("hef")""")
+    firrtl should include("""_y_WIRE[3] <= UInt<8>("hff")""")
+    firrtl should include("""      reset => (reset, _y_WIRE)""".stripMargin)
+  }
+
+  "Vec literals should only init specified fields when used to partially initialize a reg of vec" in {
+    assertTesterPasses(new BasicTester {
+      val m = Module(new Module {
+        val in = IO(Input(Vec(4, UInt(8.W))))
+        val out = IO(Output(Vec(4, UInt(8.W))))
+        val initValue = Vec(4, UInt(8.W)).Lit(0 -> 0xAB.U(8.W), 2 -> 0xEF.U(8.W), 3 -> 0xFF.U(8.W))
+        val y = RegInit(initValue)
+        when(in(1) > 0.U) {
+          y(1) := in(1)
+        }
+        out := y
+      })
+      val (counter, wrapped) = Counter(true.B, 8)
+      m.in := DontCare
+      when(counter < 2.U) {
+        m.in(1) := 0xff.U
+        m.in(2) := 0xff.U
+        chisel3.assert(m.out(1) === 0xff.U)
+        chisel3.assert(m.out(1) === 0xff.U)
+      }.elsewhen(counter === 3.U) {
+        m.in(1) := 0.U
+        m.reset := true.B
+      }.elsewhen(counter > 2.U) {
+        // m.out(1) should not be reset, m.out(2) should be reset
+        chisel3.assert(m.out(1) === 0xff.U)
+        chisel3.assert(m.out(2) === 0xEF.U)
+      }
+      when(wrapped) {
+        stop()
+      }
+    })
   }
 
   "lowest of vec literal contains least significant bits and " in {
