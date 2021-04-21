@@ -5,6 +5,7 @@ package chiselTests.aop
 import chisel3.testers.{BasicTester, TesterDriver}
 import chiselTests.{ChiselFlatSpec, Utils}
 import chisel3._
+import chisel3.aop.Select
 import chisel3.aop.injecting.InjectingAspect
 import logger.{LogLevel, LogLevelAnnotation}
 
@@ -12,6 +13,11 @@ object InjectionHierarchy {
 
   class SubmoduleManipulationTester extends BasicTester {
     val moduleSubmoduleA = Module(new SubmoduleA)
+  }
+
+  class MultiModuleInjectionTester extends BasicTester {
+    val subA0 = Module(new SubmoduleA)
+    val subA1 = Module(new SubmoduleA)
   }
 
   class SubmoduleA extends Module {
@@ -81,6 +87,31 @@ class InjectionSpec extends ChiselFlatSpec with Utils {
     }
   )
 
+<<<<<<< HEAD
+=======
+  val addingExternalModules = InjectingAspect(
+    {dut: SubmoduleManipulationTester => Seq(dut)},
+    {_: SubmoduleManipulationTester =>
+      // By creating a second SubmoduleA, the module names would conflict unless they were uniquified
+      val moduleSubmoduleC = Module(new SubmoduleC)
+      //if we're here then we've elaborated correctly
+      stop()
+    }
+  )
+
+  val multiModuleInjectionAspect = InjectingAspect(
+    { top: MultiModuleInjectionTester =>
+      Select.collectDeep(top) { case m: SubmoduleA => m }
+    },
+    { m: Module =>
+      val wire = Wire(Bool())
+      wire := m.reset.asBool()
+      dontTouch(wire)
+      stop()
+    }
+  )
+
+>>>>>>> 2c7264a6... fixing context bug (#1874)
   "Test" should "pass if inserted the correct values" in {
     assertTesterPasses{ new AspectTester(Seq(0, 1, 2)) }
   }
@@ -110,4 +141,23 @@ class InjectionSpec extends ChiselFlatSpec with Utils {
       Seq(duplicateSubmoduleAspect) ++ TesterDriver.verilatorOnly
     )
   }
+<<<<<<< HEAD
+=======
+
+  "Adding external modules" should "work" in {
+    assertTesterPasses(
+      { new SubmoduleManipulationTester},
+      Nil,
+      Seq(addingExternalModules) ++ TesterDriver.verilatorOnly
+    )
+  }
+
+  "Injection into multiple submodules of the same class" should "work" in {
+    assertTesterPasses(
+      {new MultiModuleInjectionTester},
+      Nil,
+      Seq(multiModuleInjectionAspect) ++ TesterDriver.verilatorOnly
+    )
+  }
+>>>>>>> 2c7264a6... fixing context bug (#1874)
 }
