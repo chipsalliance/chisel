@@ -156,6 +156,10 @@ The [**online Chisel Bootcamp**](https://mybinder.org/v2/gh/freechipsproject/chi
 
 The [**classic Chisel tutorial**](https://github.com/ucb-bar/chisel-tutorial) contains small exercises and runs on your computer.
 
+### A Textbook on Chisel
+
+If you like a textbook to learn Chisel and also a bit of digital design in general, you may be interested in reading [**Digital Design with Chisel**](http://www.imm.dtu.dk/~masca/chisel-book.html). It is available in English, Chinese, Japanese, and Vietnamese.
+
 ### Build Your Own Chisel Projects
 
 See [the setup instructions](https://github.com/chipsalliance/chisel3/blob/master/SETUP.md) for how to set up your environment to run Chisel locally.
