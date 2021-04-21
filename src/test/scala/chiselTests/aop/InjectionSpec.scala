@@ -5,8 +5,10 @@ package chiselTests.aop
 import chisel3.testers.BasicTester
 import chiselTests.ChiselFlatSpec
 import chisel3._
+import chisel3.aop.Select
 import chisel3.aop.injecting.InjectingAspect
 
+<<<<<<< HEAD
 class AspectTester(results: Seq[Int]) extends BasicTester {
   val values = VecInit(results.map(_.U))
   val counter = RegInit(0.U(results.length.W))
@@ -17,6 +19,55 @@ class AspectTester(results: Seq[Int]) extends BasicTester {
     when(reset.asBool() === false.B) {
       printf("values(%d) = %d\n", counter, values(counter))
       assert(counter === values(counter))
+=======
+object InjectionHierarchy {
+
+  class SubmoduleManipulationTester extends BasicTester {
+    val moduleSubmoduleA = Module(new SubmoduleA)
+  }
+
+  class MultiModuleInjectionTester extends BasicTester {
+    val subA0 = Module(new SubmoduleA)
+    val subA1 = Module(new SubmoduleA)
+  }
+
+  class SubmoduleA extends Module {
+    val io = IO(new Bundle {
+      val out = Output(Bool())
+    })
+    io.out := false.B
+  }
+
+  class SubmoduleB extends Module {
+    val io = IO(new Bundle {
+      val in = Input(Bool())
+    })
+  }
+
+  class SubmoduleC extends experimental.ExtModule with util.HasExtModuleInline {
+    val io = IO(new Bundle {
+      val in = Input(Bool())
+    })
+    //scalastyle:off regex
+    setInline("SubmoduleC.v", s"""
+                                   |module SubmoduleC(
+                                   |    input  io_in
+                                   |);
+                                   |endmodule
+    """.stripMargin)
+  }
+
+  class AspectTester(results: Seq[Int]) extends BasicTester {
+    val values = VecInit(results.map(_.U))
+    val counter = RegInit(0.U(results.length.W))
+    counter := counter + 1.U
+    when(counter >= values.length.U) {
+      stop()
+    }.otherwise {
+      when(reset.asBool() === false.B) {
+        assert(counter === values(counter))
+      }
+>>>>>>> 2c7264a6... fixing context bug (#1874)
     }
   }
 }
@@ -40,6 +91,51 @@ class InjectionSpec extends ChiselFlatSpec {
     }
   )
 
+<<<<<<< HEAD
+=======
+  val manipulateSubmoduleAspect = InjectingAspect(
+    {dut: SubmoduleManipulationTester => Seq(dut)},
+    {dut: SubmoduleManipulationTester =>
+      val moduleSubmoduleB = Module(new SubmoduleB)
+      moduleSubmoduleB.io.in := dut.moduleSubmoduleA.io.out
+      //if we're here then we've elaborated correctly
+      stop()
+    }
+  )
+
+  val duplicateSubmoduleAspect = InjectingAspect(
+    {dut: SubmoduleManipulationTester => Seq(dut)},
+    {_: SubmoduleManipulationTester =>
+      // By creating a second SubmoduleA, the module names would conflict unless they were uniquified
+      val moduleSubmoduleA2 = Module(new SubmoduleA)
+      //if we're here then we've elaborated correctly
+      stop()
+    }
+  )
+
+  val addingExternalModules = InjectingAspect(
+    {dut: SubmoduleManipulationTester => Seq(dut)},
+    {_: SubmoduleManipulationTester =>
+      // By creating a second SubmoduleA, the module names would conflict unless they were uniquified
+      val moduleSubmoduleC = Module(new SubmoduleC)
+      //if we're here then we've elaborated correctly
+      stop()
+    }
+  )
+
+  val multiModuleInjectionAspect = InjectingAspect(
+    { top: MultiModuleInjectionTester =>
+      Select.collectDeep(top) { case m: SubmoduleA => m }
+    },
+    { m: Module =>
+      val wire = Wire(Bool())
+      wire := m.reset.asBool()
+      dontTouch(wire)
+      stop()
+    }
+  )
+
+>>>>>>> 2c7264a6... fixing context bug (#1874)
   "Test" should "pass if inserted the correct values" in {
     assertTesterPasses{ new AspectTester(Seq(0, 1, 2)) }
   }
@@ -55,4 +151,35 @@ class InjectionSpec extends ChiselFlatSpec {
   "Test" should "fail if pass wrong values, then correct aspect, then wrong aspect" in {
     assertTesterFails({ new AspectTester(Seq(9, 9, 9))} , Nil, Seq(correctValueAspect, wrongValueAspect))
   }
+<<<<<<< HEAD
+=======
+
+  "Test" should "pass if the submodules in SubmoduleManipulationTester can be manipulated by manipulateSubmoduleAspect" in {
+    assertTesterPasses({ new SubmoduleManipulationTester} , Nil, Seq(manipulateSubmoduleAspect) ++ TesterDriver.verilatorOnly)
+  }
+
+  "Module name collisions when adding a new module" should "be resolved" in {
+    assertTesterPasses(
+      { new SubmoduleManipulationTester},
+      Nil,
+      Seq(duplicateSubmoduleAspect) ++ TesterDriver.verilatorOnly
+    )
+  }
+
+  "Adding external modules" should "work" in {
+    assertTesterPasses(
+      { new SubmoduleManipulationTester},
+      Nil,
+      Seq(addingExternalModules) ++ TesterDriver.verilatorOnly
+    )
+  }
+
+  "Injection into multiple submodules of the same class" should "work" in {
+    assertTesterPasses(
+      {new MultiModuleInjectionTester},
+      Nil,
+      Seq(multiModuleInjectionAspect) ++ TesterDriver.verilatorOnly
+    )
+  }
+>>>>>>> 2c7264a6... fixing context bug (#1874)
 }
