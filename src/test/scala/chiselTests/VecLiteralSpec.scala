@@ -124,7 +124,7 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
         m.in(1) := 0xff.U
         m.in(2) := 0xff.U
         chisel3.assert(m.out(1) === 0xff.U)
-        chisel3.assert(m.out(1) === 0xff.U)
+        chisel3.assert(m.out(2) === 0xff.U)
       }.elsewhen(counter === 3.U) {
         m.in(1) := 0.U
         m.reset := true.B
