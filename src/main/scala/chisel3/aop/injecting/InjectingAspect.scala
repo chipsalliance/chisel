@@ -45,8 +45,26 @@ abstract class InjectorAspect[T <: RawModule, M <: RawModule](
     toAnnotation(selectRoots(top), top.name)
   }
 
+<<<<<<< HEAD
   final def toAnnotation(modules: Iterable[M], circuit: String): AnnotationSeq = {
+=======
+  /** Returns annotations which contain all injection logic
+    *
+    * @param modules The modules to inject into
+    * @param circuit Top level circuit
+    * @param moduleNames The names of all existing modules in the original circuit, to avoid name collisions
+    * @return
+    */
+  final def toAnnotation(modules: Iterable[M], circuit: String, moduleNames: Seq[String]): AnnotationSeq = {
+>>>>>>> 2c7264a6... fixing context bug (#1874)
     RunFirrtlTransformAnnotation(new InjectingTransform) +: modules.map { module =>
+      val dynamicContext = new DynamicContext(annotationsInAspect)
+      // Add existing module names into the namespace. If injection logic instantiates new modules
+      //  which would share the same name, they will get uniquified accordingly
+      moduleNames.foreach { n =>
+        dynamicContext.globalNamespace.name(n)
+      }
+
       val (chiselIR, _) = Builder.build(Module(new ModuleAspect(module) {
         module match {
           case x: MultiIOModule => withClockAndReset(x.clock, x.reset) { injection(module) }
@@ -60,12 +78,20 @@ abstract class InjectorAspect[T <: RawModule, M <: RawModule](
 
       val annotations = chiselIR.annotations.map(_.toFirrtl).filterNot{ a => a.isInstanceOf[DesignAnnotation[_]] }
 
+      /** Statements to be injected via aspect. */
       val stmts = mutable.ArrayBuffer[ir.Statement]()
+      /** Modules to be injected via aspect. */
       val modules = Aspect.getFirrtl(chiselIR.copy(components = comps)).modules.flatMap {
+        // for "container" modules, inject their statements
         case m: firrtl.ir.Module if m.name == module.name =>
           stmts += m.body
           Nil
+<<<<<<< HEAD
         case other =>
+=======
+        // for modules to be injected
+        case other: firrtl.ir.DefModule =>
+>>>>>>> 2c7264a6... fixing context bug (#1874)
           Seq(other)
       }
 
