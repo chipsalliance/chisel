@@ -23,7 +23,7 @@ object CheckWidths extends Pass {
   val MaxWidth = 1000000
   val DshlMaxWidth = getUIntWidth(MaxWidth)
   class UninferredWidth(info: Info, target: String)
-      extends PassException(s"""|$info : Uninferred width for target below.serialize}. (Did you forget to assign to it?)
+      extends PassException(s"""|$info : Uninferred width for target below. (Did you forget to assign to it?)
                                 |$target""".stripMargin)
   class UninferredBound(info: Info, target: String, bound: String)
       extends PassException(s"""|$info : Uninferred $bound bound for target. (Did you forget to assign to it?)
