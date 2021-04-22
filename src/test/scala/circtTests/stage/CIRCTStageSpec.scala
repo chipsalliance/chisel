@@ -15,12 +15,12 @@ import java.io.{
   PrintWriter
 }
 
-import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 
 import scala.io.Source
 
-class CIRCTStageSpec extends AnyFlatSpec with Matchers {
+class CIRCTStageSpec extends AnyFunSpec with Matchers {
 
   private def writeFile(file: File, string: String): Unit = {
     val writer = {
@@ -31,42 +31,44 @@ class CIRCTStageSpec extends AnyFlatSpec with Matchers {
     writer.close()
   }
 
-  behavior of "CIRCTStage"
+  describe("CIRCTStage") {
 
-  it should "compile a FIRRTL file to Verilog" in {
+    it("should compile a FIRRTL file to Verilog") {
 
-    val input =
-      """|circuit Foo:
-         |  module Foo:
-         |    input a: UInt<1>
-         |    output b: UInt<1>
-         |    b <= not(a)
-         |""".stripMargin
+      val input =
+        """|circuit Foo:
+           |  module Foo:
+           |    input a: UInt<1>
+           |    output b: UInt<1>
+           |    b <= not(a)
+           |""".stripMargin
 
-    val targetDir = new File("test_run_dir/CIRCTStage")
-    val inputFile = new File(targetDir, "Foo.fir")
+      val targetDir = new File("test_run_dir/CIRCTStage")
+      val inputFile = new File(targetDir, "Foo.fir")
 
-    writeFile(inputFile, input)
+      writeFile(inputFile, input)
 
-    val outputFile = new File(targetDir, "Foo.sv")
-    outputFile.delete()
+      val outputFile = new File(targetDir, "Foo.sv")
+      outputFile.delete()
 
-    val stage = new CIRCTStage
+      val stage = new CIRCTStage
 
-    stage.execute(
-      Array(
-        "--target", "systemverilog",
-        "--target-dir", targetDir.toString,
-        "--input-file", inputFile.toString
-      ),
-      Seq.empty
-    )
+      stage.execute(
+        Array(
+          "--target", "systemverilog",
+          "--target-dir", targetDir.toString,
+          "--input-file", inputFile.toString
+        ),
+        Seq.empty
+      )
 
-    info(s"output file '$outputFile' was created")
-    outputFile should exist
+      info(s"output file '$outputFile' was created")
+      outputFile should exist
 
-    info(s"file looks like Verilog")
-    Source.fromFile(outputFile).getLines.mkString should include ("endmodule")
+      info(s"file looks like Verilog")
+      Source.fromFile(outputFile).getLines.mkString should include ("endmodule")
+
+    }
 
   }
 
