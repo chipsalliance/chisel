@@ -66,6 +66,7 @@ class CIRCT extends Phase {
         (circtOptions.target match {
            case Some(CIRCTTarget.FIRRTL) => None
            case Some(CIRCTTarget.RTL) => Seq("-lower-to-rtl")
+           case Some(CIRCTTarget.Verilog) => Seq("-lower-to-rtl", "-verilog")
            case Some(CIRCTTarget.SystemVerilog) => Seq("-lower-to-rtl", "-verilog")
            case None => throw new Exception(
              "No 'circtOptions.target' specified. This should be impossible if dependencies are satisfied!"
@@ -81,6 +82,8 @@ class CIRCT extends Phase {
           Seq(EmittedMLIR(outputFileName, result, Some(".fir.mlir")))
         case Some(CIRCTTarget.RTL) =>
           Seq(EmittedMLIR(outputFileName, result, Some(".rtl.mlir")))
+        case Some(CIRCTTarget.Verilog) =>
+          Seq(EmittedVerilogCircuitAnnotation(EmittedVerilogCircuit(outputFileName, result, ".v")))
         case Some(CIRCTTarget.SystemVerilog) =>
           Seq(EmittedVerilogCircuitAnnotation(EmittedVerilogCircuit(outputFileName, result, ".sv")))
         case None => throw new Exception(
