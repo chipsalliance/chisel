@@ -89,7 +89,7 @@ sealed abstract class Aggregate extends Data {
   }
 
   // Returns pairs of all fields, element-level and containers, in a Record and their path names
-  def getRecursiveFields(data: Data, path: String): Seq[(Data, String)] = data match {
+  private[chisel3] def getRecursiveFields(data: Data, path: String): Seq[(Data, String)] = data match {
     case data: Record =>
       data.elements.map { case (fieldName, fieldData) =>
         getRecursiveFields(fieldData, s"$path.$fieldName")
@@ -107,7 +107,7 @@ sealed abstract class Aggregate extends Data {
 
 
   // Returns pairs of corresponding fields between two Records of the same type
-  def getMatchedFields(x: Data, y: Data): Seq[(Data, Data)] = (x, y) match {
+  private[chisel3] def getMatchedFields(x: Data, y: Data): Seq[(Data, Data)] = (x, y) match {
     case (x: Element, y: Element) =>
       require(x typeEquivalent y)
       Seq(x -> y)

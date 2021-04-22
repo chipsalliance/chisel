@@ -120,7 +120,9 @@ chisel3.stage.ChiselStage.emitVerilog(new VecExample1a)
 ```
 
 The following examples all use the explicit form.
-With the explicit form partial specification is allowed, defaulting any unconnected fields to 0 (regardless of type).
+With the explicit form partial specification is allowed.
+When used with as a `Reg` `reset` value, only specified indices of the `Reg`'s `Vec`
+will be reset
 
 ```scala mdoc
 class VecExample2 extends RawModule {

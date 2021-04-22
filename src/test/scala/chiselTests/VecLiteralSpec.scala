@@ -43,19 +43,11 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
     }
     "lits must fit in vec element width" in {
       val e = intercept[VecLiteralException] {
-        Vec(2, SInt(4.W)).Lit(0 -> 0xab.U, 1 -> 0xbc.U)
+        Vec(2, SInt(4.W)).Lit(0 -> 0xab.S, 1 -> 0xbc.S)
       }
       e.getMessage should include(
         "VecLiteral: Vec[SInt<4>] has the following incorrectly typed or sized initializers: " +
-          "0 -> UInt<8>(171),1 -> UInt<8>(188)"
-      )
-    }
-    "all lits must be the same type" in {
-      val e = intercept[VecLiteralException] {
-        Vec(2, SInt(4.W)).Lit(0 -> 1.U, 1 -> 2.U)
-      }
-      e.getMessage should include(
-        "VecLiteral: Vec[SInt<4>] has the following incorrectly typed or sized initializers: 0 -> UInt<1>(1),1 -> UInt<2>(2)"
+          "0 -> SInt<9>(171),1 -> SInt<9>(188)"
       )
     }
 
@@ -106,27 +98,35 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
     firrtl should include("""      reset => (reset, _y_WIRE)""".stripMargin)
   }
 
+  class ResetRegWithPartialVecLiteral extends Module {
+    val in = IO(Input(Vec(4, UInt(8.W))))
+    val out = IO(Output(Vec(4, UInt(8.W))))
+    val initValue = Vec(4, UInt(8.W)).Lit(0 -> 0xAB.U(8.W), 2 -> 0xEF.U(8.W), 3 -> 0xFF.U(8.W))
+    val y = RegInit(initValue)
+    when(in(1) > 0.U) {
+      y(1) := in(1)
+    }
+    when(in(2) > 0.U) {
+      y(2) := in(2)
+    }
+    out := y
+  }
+
   "Vec literals should only init specified fields when used to partially initialize a reg of vec" in {
+    println(ChiselStage.emitFirrtl(new ResetRegWithPartialVecLiteral))
     assertTesterPasses(new BasicTester {
-      val m = Module(new Module {
-        val in = IO(Input(Vec(4, UInt(8.W))))
-        val out = IO(Output(Vec(4, UInt(8.W))))
-        val initValue = Vec(4, UInt(8.W)).Lit(0 -> 0xAB.U(8.W), 2 -> 0xEF.U(8.W), 3 -> 0xFF.U(8.W))
-        val y = RegInit(initValue)
-        when(in(1) > 0.U) {
-          y(1) := in(1)
-        }
-        out := y
-      })
+      val m = Module(new ResetRegWithPartialVecLiteral)
       val (counter, wrapped) = Counter(true.B, 8)
       m.in := DontCare
       when(counter < 2.U) {
         m.in(1) := 0xff.U
         m.in(2) := 0xff.U
+      }.elsewhen(counter === 2.U) {
         chisel3.assert(m.out(1) === 0xff.U)
         chisel3.assert(m.out(2) === 0xff.U)
       }.elsewhen(counter === 3.U) {
         m.in(1) := 0.U
+        m.in(2) := 0.U
         m.reset := true.B
       }.elsewhen(counter > 2.U) {
         // m.out(1) should not be reset, m.out(2) should be reset
