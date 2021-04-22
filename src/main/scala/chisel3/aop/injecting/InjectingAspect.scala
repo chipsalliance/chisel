@@ -64,17 +64,8 @@ abstract class InjectorAspect[T <: RawModule, M <: RawModule](
     * @return
     */
   final def toAnnotation(modules: Iterable[M], circuit: String, moduleNames: Seq[String]): AnnotationSeq = {
-<<<<<<< HEAD
-    val dynamicContext = new DynamicContext()
-    // Add existing module names into the namespace. If injection logic instantiates new modules
-    //  which would share the same name, they will get uniquified accordingly
-    moduleNames.foreach { n =>
-      dynamicContext.globalNamespace.name(n)
-    }
-=======
->>>>>>> 2c7264a6... fixing context bug (#1874)
     RunFirrtlTransformAnnotation(new InjectingTransform) +: modules.map { module =>
-      val dynamicContext = new DynamicContext(annotationsInAspect)
+      val dynamicContext = new DynamicContext()
       // Add existing module names into the namespace. If injection logic instantiates new modules
       //  which would share the same name, they will get uniquified accordingly
       moduleNames.foreach { n =>
