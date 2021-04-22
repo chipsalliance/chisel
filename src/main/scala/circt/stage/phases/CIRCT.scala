@@ -58,11 +58,7 @@ class CIRCT extends Phase {
 
     val cmd =
       Seq(binary, "-format=fir") ++
-        (circtOptions.disableLowerTypes match {
-           case true  => None
-           case false => Some("-enable-lower-types")
-         }) ++
-        circtOptions.disableLowerTypes.option("-enable-lower-types") ++
+        (!circtOptions.disableLowerTypes).option("-enable-lower-types") ++
         (circtOptions.target match {
            case Some(CIRCTTarget.FIRRTL) => None
            case Some(CIRCTTarget.RTL) => Seq("-lower-to-rtl")
