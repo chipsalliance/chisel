@@ -151,7 +151,7 @@ package object experimental {
       /** This provides an literal construction method for cases using
         * object `Vec` as in `Vec.Lit(1.U, 2.U)`
         */
-      def Lit[T <: Data](elems: T*): Vec[T] = {
+      def Lit[T <: Data](elems: T*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = {
         require(elems.nonEmpty, s"Lit.Vec(...) must have at least one element")
         val indexElements = elems.zipWithIndex.map { case (element, index) => (index, element)}
         val widestElement = elems.maxBy(_.getWidth)
