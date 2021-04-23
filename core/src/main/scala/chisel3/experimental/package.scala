@@ -126,7 +126,7 @@ package object experimental {
 
   object BundleLiterals {
     implicit class AddBundleLiteralConstructor[T <: Record](x: T) {
-      def Lit(elems: (T => (Data, Data))*): T = {
+      def Lit(elems: (T => (Data, Data))*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
         x._makeLit(elems: _*)
       }
     }
@@ -142,7 +142,7 @@ package object experimental {
         * @param elems tuples of an index and a literal value
         * @return
         */
-      def Lit(elems: (Int, T)*): Vec[T] = {
+      def Lit(elems: (Int, T)*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = {
         x._makeLit(elems: _*)
       }
     }

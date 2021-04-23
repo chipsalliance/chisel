@@ -387,7 +387,7 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
   "Fields extracted from Vec Literals should work as register reset values" in {
     assertTesterPasses {
       new BasicTester {
-        val r = RegInit(Vec(3, UInt(11.W)).Lit(0 -> 0xA.U, 2 -> 0xC.U)(0))
+        val r = RegInit(Vec(3, UInt(11.W)).Lit(0 -> 0xA.U, 2 -> 0xC.U).apply(0))
         r := r + 1.U // prevent const prop
         chisel3.assert(r === 0xA.U) // coming out of reset
         stop()
@@ -398,7 +398,7 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
   "DontCare fields extracted from Vec Literals should work as register reset values" in {
     assertTesterPasses {
       new BasicTester {
-        val r = RegInit(Vec(3, Bool()).Lit(0 -> true.B)(2))
+        val r = RegInit(Vec(3, Bool()).Lit(0 -> true.B).apply(2))
         r := reset.asBool
         printf(p"r = $r\n") // Can't assert because reset value is DontCare
         stop()
@@ -409,7 +409,7 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
   "DontCare fields extracted from Vec Literals should work in other Expressions" in {
     assertTesterPasses {
       new BasicTester {
-        val x = Vec(3, Bool()).Lit(0 -> true.B)(2) || true.B
+        val x = Vec(3, Bool()).Lit(0 -> true.B).apply(2) || true.B
         chisel3.assert(x === true.B)
         stop()
       }
