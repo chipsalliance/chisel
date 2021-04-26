@@ -206,7 +206,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
         val contents = vecLitBinding.zipWithIndex.map { case ((data, lit), index) =>
           s"$index=$lit"
         }.mkString(", ")
-        s"($contents"
+        s"($contents)"
       case _ => bindingToString
     }
     val elementType = sample_element.cloneType
@@ -386,7 +386,8 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
     * )
     * }}}
     */
-  private[chisel3] def _makeLit(elementInitializers: (Int, Data)*): this.type = {
+  private[chisel3] def _makeLit(elementInitializers: (Int, T)*)(implicit sourceInfo: SourceInfo,
+                                                                compileOptions: CompileOptions): this.type = {
 
     def checkLiteralConstruction(): Unit = {
       val dupKeys = elementInitializers.map { x => x._1 }.groupBy(x => x).flatMap { case (k, v) =>
@@ -402,20 +403,17 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
         )
       }
 
-      val outOfRangeIndices = elementInitializers.map(_._1).flatMap {
-        case fieldIndex if fieldIndex < 0 || fieldIndex >= length => Some(fieldIndex)
-        case _ => None
-      }
+      val outOfRangeIndices = elementInitializers.map(_._1).filter { case index => index < 0 || index >= length }
       if (outOfRangeIndices.nonEmpty) {
         throw new VecLiteralException(
           s"VecLiteral: The following indices (${outOfRangeIndices.mkString(",")}) " +
             s"are less than zero or greater or equal to than Vec length"
         )
       }
+      cloneSupertype(elementInitializers.map(_._2), s"Vec.Lit(...)")
 
+      // look for literals of this vec that are wider than the vec's type
       val badLits = elementInitializers.flatMap {
-        case (index, lit) if (!(gen.getClass == lit.getClass)) =>
-          Some(index -> lit)
         case (index, lit) =>
           (sample_element.width, lit.width) match {
             case (KnownWidth(m), KnownWidth(n)) =>
@@ -431,7 +429,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
       }
       if (badLits.nonEmpty) {
         throw new VecLiteralException(
-          s"VecLiteral: Vec[${gen}] has the following incorrectly typed or sized initializers: " +
+          s"VecLiteral: Vec[$gen] has the following incorrectly typed or sized initializers: " +
             badLits.map { case (a, b) => s"$a -> $b" }.mkString(",")
         )
       }
@@ -461,21 +459,12 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
 
       field match { // Get the litArg(s) for this field
         case bitField: Bits =>
-//          val adjustedBitField = if (bitField.isInstanceOf[Bool]) {
-//            bitField
-//          } else {
-//            bitField.cloneTypeWidth(field.getWidth.W)
-//          }
-//          val notSameClass = !field.typeEquivalent(adjustedBitField)
-
-//          val adjustedBitField = bitField
-
-          val notSameClass = !field.typeEquivalent(bitField)
-          if (notSameClass) { // TODO typeEquivalent is too strict because it checks width
+          if (!field.typeEquivalent(bitField)) {
             throw new VecLiteralException(
               s"VecLit: Literal specified at index $fieldIndex ($value) does not match Vec type $sample_element"
             )
-          } else if (bitField.getWidth > field.getWidth) {
+          }
+          if (bitField.getWidth > field.getWidth) {
             throw new VecLiteralException(
               s"VecLit: Literal specified at index $fieldIndex ($value) is too wide for Vec type $sample_element"
             )
@@ -517,6 +506,8 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
           }
           val litArg = valueBinding match {
             case ElementLitBinding(litArg) => litArg
+            case _ =>
+              throw new VecLiteralException(s"field $fieldIndex $enumField could not bematched with $valueBinding")
           }
           vecLitLinkedMap(field) = litArg
         }
@@ -798,6 +789,8 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
           }
           val litArg = valueBinding match {
             case ElementLitBinding(litArg) => litArg
+            case _ =>
+              throw new BundleLiteralException(s"field $fieldName $field could not be matched with $valueBinding")
           }
           Seq(field -> litArg)
         }

@@ -9,6 +9,7 @@ import chisel3.experimental.{ChiselEnum, FixedPoint, VecLiteralException}
 import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
 import chisel3.util.Counter
+import scala.language.reflectiveCalls
 
 class VecLiteralSpec extends ChiselFreeSpec with Utils {
   object MyEnum extends ChiselEnum {
@@ -427,19 +428,6 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
       }
     }
     exc.getMessage should include("field 0 specified with non-literal value UInt")
-  }
-
-  "vec literals with non-type-equivalent element fields should fail" in {
-    val exc = intercept[VecLiteralException] {
-      extractCause[VecLiteralException] {
-        ChiselStage.elaborate {
-          new RawModule {
-            (Vec(3, UInt(11.W)).Lit(0 -> true.B))
-          }
-        }
-      }
-    }
-    exc.getMessage should include("VecLiteral: Vec[UInt<11>] has the following incorrectly typed or sized initializers: 0 -> Bool(true)")
   }
 
   "vec literals are instantiated on connect" in {
