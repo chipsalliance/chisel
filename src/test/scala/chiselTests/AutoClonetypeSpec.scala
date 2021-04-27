@@ -265,19 +265,18 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
 
   behavior of "Compiler Plugin Autoclonetype"
 
-  // Necessary test for 3.4.x, but we will break this (for non-plugin users) in 3.5
-  it should "NOT break code that extends chisel3.util Bundles (whether they use the plugin or not)" in {
-    class MyModule extends MultiIOModule {
-      val io = IO(new InheritingBundle)
-      io.deq <> io.enq
-      io.count := 0.U
-      io.error := true.B
-    }
-    elaborate(new MyModule)
-  }
-
   // New tests from the plugin
   if (usingPlugin) {
+    it should "NOT break code that extends chisel3.util Bundles if they use the plugin" in {
+      class MyModule extends MultiIOModule {
+        val io = IO(new InheritingBundle)
+        io.deq <> io.enq
+        io.count := 0.U
+        io.error := true.B
+      }
+      elaborate(new MyModule)
+    }
+
     it should "support Bundles with non-val parameters" in {
       class MyBundle(i: Int) extends Bundle {
         val foo = UInt(i.W)

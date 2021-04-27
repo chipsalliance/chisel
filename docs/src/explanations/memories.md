@@ -3,41 +3,48 @@ layout: docs
 title:  "Memories"
 section: "chisel3"
 ---
+
+# Memories
+
 Chisel provides facilities for creating both read only and read/write memories.
 
 ## ROM
 
-Users can define read only memories with a `Vec`:
+Users can define read-only memories by constructing a `Vec` with `VecInit`.
+`VecInit` can except either a variable-argument number of `Data` literals or a `Seq[Data]` literals that initialize the ROM.
 
-``` scala
-    VecInit(inits: Seq[T])
-    VecInit(elt0: T, elts: T*)
+```scala mdoc:invisible
+import chisel3._
+// This is bad, don't do this, use a val
+def counter = util.Counter(true.B, 4)._1
+val Pi = 3.14
+def sin(t: Double): Double = t // What should this be?
 ```
 
-where `inits` is a sequence of initial `Data` literals that initialize the ROM. For example,  users cancreate a small ROM initialized to 1, 2, 4, 8 and loop through all values using a counter as an address generator as follows:
+For example, users can create a small ROM initialized to 1, 2, 4, 8 and loop through all values using a counter as an address generator as follows:
 
-``` scala
-    val m = VecInit(Array(1.U, 2.U, 4.U, 8.U))
-    val r = m(counter(m.length.U))
+```scala mdoc:compile-only
+val m = VecInit(1.U, 2.U, 4.U, 8.U)
+val r = m(counter(m.length.U))
 ```
 
 We can create an *n* value sine lookup table using a ROM initialized as follows:
 
-``` scala
-    def sinTable(amp: Double, n: Int) = {
-      val times =
-        (0 until n).map(i => (i*2*Pi)/(n.toDouble-1) - Pi)
-      val inits =
-        times.map(t => round(amp * sin(t)).asSInt(32.W))
-      VecInit(inits)
-    }
-    def sinWave(amp: Double, n: Int) =
-      sinTable(amp, n)(counter(n.U))
+```scala mdoc:compile-only
+def sinTable(amp: Double, n: Int) = {
+  val times =
+    (0 until n).map(i => (i*2*Pi)/(n.toDouble-1) - Pi)
+  val inits =
+    times.map(t => Math.round(amp * sin(t)).asSInt(32.W))
+  VecInit(inits)
+}
+def sinWave(amp: Double, n: Int) =
+  sinTable(amp, n)(counter(n.U))
 ```
 
 where `amp` is used to scale the fixpoint values stored in the ROM.
 
-## Memories
+## Read-Write Memories
 
 Memories are given special treatment in Chisel since hardware implementations of memory vary greatly. For example, FPGA memories are instantiated quite differently from ASIC memories. Chisel defines a memory abstraction that can map to either simple Verilog behavioural descriptions or to instances of memory modules that are available from external memory generators provided by foundry or IP vendors.
 
@@ -51,6 +58,7 @@ If the same memory address is both written and sequentially read on the same clo
 Values on the read data port are not guaranteed to be held until the next read cycle. If that is the desired behavior, external logic to hold the last read value must be added.
 
 #### Read port/write port
+
 Ports into `SyncReadMem`s are created by applying a `UInt` index.  A 1024-entry SRAM with one write port and one read port might be expressed as follows:
 
 ```scala mdoc:silent
@@ -74,9 +82,11 @@ class ReadWriteSmem extends Module {
 
 Below is an example waveform of the one write port/one read port `SyncReadMem` with [masks](#masks). Note that the signal names will differ from the exact wire names generated for the `SyncReadMem`. With masking, it is also possible that multiple RTL arrays will be generated with the behavior below.
 
-![read/write ports example waveform](https://svg.wavedrom.com/github/freechipsproject/www.chisel-lang.org/master/docs/src/main/tut/chisel3/memories_waveforms/smem_read_write.json)    
+![read/write ports example waveform](https://svg.wavedrom.com/github/freechipsproject/www.chisel-lang.org/master/docs/src/main/resources/json/smem_read_write.json)    
+
 
 #### Single-ported
+
 Single-ported SRAMs can be inferred when the read and write conditions are mutually exclusive in the same `when` chain:
 
 ```scala mdoc:silent
@@ -105,7 +115,7 @@ class RWSmem extends Module {
 
 Here is an example single read/write port waveform, with [masks](#masks) (again, generated signal names and number of arrays may differ):
 
-![read/write ports example waveform](https://svg.wavedrom.com/github/freechipsproject/www.chisel-lang.org/master/docs/src/main/tut/chisel3/memories_waveforms/smem_rw.json)
+![read/write ports example waveform](https://svg.wavedrom.com/github/freechipsproject/www.chisel-lang.org/master/docs/src/main/resources/json/smem_rw.json)
 
 ### `Mem`: combinational/asynchronous-read, sequential/synchronous-write
 
@@ -168,3 +178,10 @@ class MaskedRWSmem extends Module {
   }
 }
 ```
+
+### Memory Initialization
+
+Chisel memories can be initialized from an external `binary` or `hex` file emitting proper Verilog for synthesis or simulation. There are multiple modes of initialization.
+
+For more information, check the experimental docs on [Loading Memories](../appendix/experimental-features#loading-memories) feature.
+

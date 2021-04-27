@@ -5,8 +5,9 @@ package chisel3.internal.plugin
 import scala.tools.nsc
 import nsc.Global
 import nsc.plugins.{Plugin, PluginComponent}
+import scala.reflect.internal.util.NoPosition
 
-private[plugin] case class ChiselPluginArguments(var useBundlePlugin: Boolean = false) {
+private[plugin] case class ChiselPluginArguments(var useBundlePlugin: Boolean = true) {
   def useBundlePluginOpt = "useBundlePlugin"
   def useBundlePluginFullOpt = s"-P:chiselplugin:$useBundlePluginOpt"
 }
@@ -24,7 +25,8 @@ class ChiselPlugin(val global: Global) extends Plugin {
   override def init(options: List[String], error: String => Unit): Boolean = {
     for (option <- options) {
       if (option == arguments.useBundlePluginOpt) {
-        arguments.useBundlePlugin = true
+        val msg = s"'${arguments.useBundlePluginFullOpt}' is now default behavior, you can stop using the scalacOption."
+        global.reporter.warning(NoPosition, msg)
       } else {
         error(s"Option not understood: '$option'")
       }

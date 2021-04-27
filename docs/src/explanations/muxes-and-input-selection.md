@@ -3,19 +3,24 @@ layout: docs
 title:  "Muxes and Input Selection"
 section: "chisel3"
 ---
+
+# Muxes and Input Selection
+
 Selecting inputs is very useful in hardware description, and therefore Chisel provides several built-in generic input-selection implementations.
+
 ### Mux
 The first one is `Mux`. This is a 2-input selector. Unlike the `Mux2` example which was presented previously, the built-in `Mux` allows
 the inputs (`in0` and `in1`) to be any datatype as long as they are the same subclass of `Data`.
 
-by using the functional module creation feature presented in the previous section, we can create multi-input selector in a simple way:
+By using the functional module creation feature presented in the previous section, we can create multi-input selector in a simple way:
 
 ```scala
 Mux(c1, a, Mux(c2, b, Mux(..., default)))
 ```
 
 ### MuxCase
-However, this is not necessary since Chisel also provides the built-in `MuxCase`, which implements that exact feature.
+
+The nested `Mux` is not necessary since Chisel also provides the built-in `MuxCase`, which implements that exact feature.
 `MuxCase` is an n-way `Mux`, which can be used as follows:
 
 ```scala
@@ -44,13 +49,14 @@ MuxCase(default,
 Note that the conditions/cases/selectors (eg. c1, c2) must be in parentheses.
 
 ### Mux1H
-Another ```Mux``` utility is ```Mux1H``` that takes a sequence of selectors and values and returns the value associated with the one selector that is set. If zero or multiple selectors are set the behavior is undefined.  For example:
+Another ```Mux``` utility is the one-hot mux, ```Mux1H```. It takes a sequence of selectors and values and returns the value associated with the one selector that is set. If zero or multiple selectors are set the behavior is undefined.  For example:
+
 ```scala
-  val hotValue = chisel3.util.oneHotMux(Seq(
+  val hotValue = chisel3.util.Mux1H(Seq(
     io.selector(0) -> 2.U,
     io.selector(1) -> 4.U,
     io.selector(2) -> 8.U,
     io.selector(4) -> 11.U,
   ))
 ```
-```oneHotMux``` whenever possible generates *Firrtl* that is readily optimizable as low depth and/or tree.  This optimization is not possible when the values are of type ```FixedPoint``` or an aggregate type that contains ```FixedPoint```s and results instead as a simple ```Mux``` tree.  This behavior could be sub-optimal.  As ```FixedPoint``` is still *experimental* this behavior may change in the future.
+```Mux1H``` whenever possible generates *Firrtl* that is readily optimizable as low depth and/or tree.  This optimization is not possible when the values are of type ```FixedPoint``` or an aggregate type that contains ```FixedPoint```s and results instead as a simple ```Mux``` tree.  This behavior could be sub-optimal.  As ```FixedPoint``` is still *experimental* this behavior may change in the future.
