@@ -11,7 +11,7 @@ import chisel3._
 val in = Bool()
 ```
 The simplest form of state element supported by Chisel is a positive edge-triggered register, which can be instantiated as:
-``` scala mdoc:compile-only
+```scala mdoc:compile-only
 val reg = RegNext(in)
 ```
 This circuit has an output that is a copy of the input signal `in` delayed by one clock cycle. Note that we do not have to specify the type of Reg as it will be automatically inferred from its input when instantiated in this way. In the current version of Chisel, clock and reset are global signals that are implicitly included where needed.
