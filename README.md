@@ -10,17 +10,65 @@ Chisel/FIRRTL development meetings happen every Monday and Tuesday from 1100--12
 Call-in info and meeting notes are available [here](https://docs.google.com/document/d/1BLP2DYt59DqI-FgFCcjw8Ddl4K-WU0nHmQu0sZ_wAGo/).
 
 ### Chisel Community Conference 2021, Shanghai, China. 6/24/2021
-The ShanghaiTech University and Institute of Software, Chinese Academy of Sciences will hold the first annual RISC-V Summit China (https://riscvsummitchina.github.io/) at the ShanghaiTech Zhangjiang campus from June 22 to 24, 2021, and the Chisel Community Conference will follow this conference from June 25 to 26, 2021.
 
-This Summit is the annual international event promoting Chisel, the new hardware design language that facilitates advanced circuit generation and design reuse for both ASIC and FPGA digital logic designs. This conference brings together the new experience from community and industry with tutorials, exhibitions, and more.
+The Chisel Community Conference China 2021 (CCC2021) is planned for June 25,
+2021 at the ShanghaiTech University. CCC is an annual gathering of Chisel
+community enthusiasts and technical exchange workshop.
+With the support of the Chisel development community, this conference will
+bring together designers and developers with hands-on experience in Chisel
+from home and abroad to share cutting-edge results and experiences from the
+open source community and industry.
 
-This year’s conference program will demonstrate exciting new features of Chisel and amazing projects implemented by Chisel/FIRRTL. The call for speakers for the Chisel Summit is open from Monday, March 29 and speakers will be notified in late April or early May.
+Session topics include and are not limited to
+* CPU Core (recommended but not restricted to RISC-V) implementations
+* SoC implementations
+* Verification
+* Simulation
+* Synthesis
+* Education
+* Experience sharing
 
-CFP Link will be updated soon.
+Types of manuscripts.
+* Technical Presentations: case studies or problem-oriented presentations on
+original research, breakthrough ideas, or insights into future trends.
+Sessions should provide specific examples and include both practical and
+theoretical information. The length of time is about 20 minutes.
+* Lightning talks: 5 to 10 minutes, either pre-registered or on-site (depending
+on the time of the conference), can present and promote a specific Chisel
+project.
+
+The presentation submission language is required to be in English, and both
+English and Chinese are acceptable for the presentation language.
+Reviewers (subject to change at that time).
+* Jack Koenig
+* Adam Izraelevitz
+* Edward Wang
+* Jiuyang Liu
+
+Key Timeline.  
+Submission deadline: April 25, 2021  
+Manuscript topics and abstracts should be submitted by the submission
+deadline, and will be reviewed and selected by Chisel developers.  
+Notification of acceptance: by May 12, 2021  
+Final manuscript deadline: May 30, 2021  
+A full version of the manuscript should be submitted by the final deadline, and
+Chisel developers will quality review and suggest final changes.
+
+Mail submission method.
+```
+Subject: - [CCC] Your Topic
+CC: Jiuyang Liu <liu@jiuyang.me>
+CC: Jack Koenig <koenig@sifive.com>
+CC: Adam Izraelevitz <adam.izraelevitz@sifive.com>
+CC: Edward Wang <edwardw@csail.mit.edu>
+Body: Abstract of your paper.
+Attachment: pdf only slides
+All submissions are welcome.
+```
 
 ---
 
-[![Join the chat at https://gitter.im/chipsalliance/chisel3](https://badges.gitter.im/chipsalliance/chisel3.svg)](https://gitter.im/chipsalliance/chisel3?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Join the chat at https://gitter.im/freechipsproject/chisel3](https://badges.gitter.im/chipsalliance/chisel3.svg)](https://gitter.im/freechipsproject/chisel3?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 [![CircleCI](https://circleci.com/gh/chipsalliance/chisel3/tree/master.svg?style=shield)](https://circleci.com/gh/chipsalliance/chisel3/tree/master)
 [![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/chipsalliance/chisel3.svg?label=release)](https://github.com/chipsalliance/chisel3/releases/latest)
 
@@ -108,6 +156,10 @@ The [**online Chisel Bootcamp**](https://mybinder.org/v2/gh/freechipsproject/chi
 
 The [**classic Chisel tutorial**](https://github.com/ucb-bar/chisel-tutorial) contains small exercises and runs on your computer.
 
+### A Textbook on Chisel
+
+If you like a textbook to learn Chisel and also a bit of digital design in general, you may be interested in reading [**Digital Design with Chisel**](http://www.imm.dtu.dk/~masca/chisel-book.html). It is available in English, Chinese, Japanese, and Vietnamese.
+
 ### Build Your Own Chisel Projects
 
 See [the setup instructions](https://github.com/chipsalliance/chisel3/blob/master/SETUP.md) for how to set up your environment to run Chisel locally.
@@ -133,7 +185,7 @@ These simulation-based verification tools are available for Chisel:
 
 - [**Cheat Sheet**](https://github.com/freechipsproject/chisel-cheatsheet/releases/latest/download/chisel_cheatsheet.pdf), a 2-page reference of the base Chisel syntax and libraries
 - [**ScalaDoc**](https://www.chisel-lang.org/api/latest/chisel3/index.html), a listing, description, and examples of the functionality exposed by Chisel
-- [**Gitter**](https://gitter.im/chipsalliance/chisel3), where you can ask questions or discuss anything Chisel
+- [**Gitter**](https://gitter.im/freechipsproject/chisel3), where you can ask questions or discuss anything Chisel
 - [**Website**](https://www.chisel-lang.org) ([source](https://github.com/freechipsproject/www.chisel-lang.org/))
 
 If you are migrating from Chisel2, see [the migration guide](https://www.chisel-lang.org/chisel3/chisel3-vs-chisel2.html).

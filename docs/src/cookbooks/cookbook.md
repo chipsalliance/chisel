@@ -12,6 +12,7 @@ Please note that these examples make use of [Chisel's scala-style printing](../e
 * Converting Chisel Types to/from UInt
   * [How do I create a UInt from an instance of a Bundle?](#how-do-i-create-a-uint-from-an-instance-of-a-bundle)
   * [How do I create a Bundle from a UInt?](#how-do-i-create-a-bundle-from-a-uint)
+  * [How can I tieoff a Bundle/Vec to 0?](#how-can-i-tieoff-a-bundlevec-to-0)
   * [How do I create a Vec of Bools from a UInt?](#how-do-i-create-a-vec-of-bools-from-a-uint)
   * [How do I create a UInt from a Vec of Bool?](#how-do-i-create-a-uint-from-a-vec-of-bool)
 * Vectors and Registers
@@ -45,6 +46,10 @@ class Foo extends RawModule {
   bundle.foo := 0xc.U
   bundle.bar := 0x3.U
   val uint = bundle.asUInt
+  printf(p"$uint") // 195
+
+  // Test
+  assert(uint === 0xc3.U)
 }
 ```
 
@@ -63,9 +68,45 @@ class MyBundle extends Bundle {
 class Foo extends RawModule {
   val uint = 0xb4.U
   val bundle = uint.asTypeOf(new MyBundle)
+  
+  printf(p"$bundle") // Bundle(foo -> 11, bar -> 4)
+
+  // Test
+  assert(bundle.foo === 0xb.U)
+  assert(bundle.bar === 0x4.U)
 }
 ```
 
+### How can I tieoff a Bundle/Vec to 0?
+
+You can use `asTypeOf` as above. If you don't want to worry about the type of the thing
+you are tying off, you can use `chiselTypeOf`:
+
+```scala mdoc:silent:reset
+import chisel3._
+
+class MyBundle extends Bundle {
+  val foo = UInt(4.W)
+  val bar = Vec(4, UInt(1.W))
+}
+
+class Foo(typ: Data) extends RawModule {
+  val bundleA = IO(Output(typ))
+  val bundleB = IO(Output(typ))
+  
+  // typ is already a Chisel Data Type, so can use it directly here, but you 
+  // need to know that bundleA is of type typ
+  bundleA := 0.U.asTypeOf(typ)
+  
+  // bundleB is a Hardware data IO(Output(...)) so need to call chiselTypeOf,
+  // but this will work no matter the type of bundleB:
+  bundleB := 0.U.asTypeOf(chiselTypeOf(bundleB)) 
+}
+
+class Bar extends RawModule {
+  val foo = Module(new Foo(new MyBundle()))
+}
+```
 ### How do I create a Vec of Bools from a UInt?
 
 Use [`VecInit`](https://www.chisel-lang.org/api/latest/chisel3/VecInit$.html) given a `Seq[Bool]` generated using the [`asBools`](https://www.chisel-lang.org/api/latest/chisel3/UInt.html#asBools():Seq[chisel3.Bool]) method.
@@ -76,6 +117,14 @@ import chisel3._
 class Foo extends RawModule {
   val uint = 0xc.U
   val vec = VecInit(uint.asBools)
+
+  printf(p"$vec") // Vec(0, 0, 1, 1)
+
+  // Test
+  assert(vec(0) === false.B)
+  assert(vec(1) === false.B)
+  assert(vec(2) === true.B)
+  assert(vec(3) === true.B)
 }
 ```
 
@@ -89,6 +138,13 @@ import chisel3._
 class Foo extends RawModule {
   val vec = VecInit(true.B, false.B, true.B, true.B)
   val uint = vec.asUInt
+
+  printf(p"$uint") // 13
+
+  // Test
+  // (remember leftmost Bool in Vec is low order bit)
+  assert(0xd.U === uint)
+
 }
 ```
 
@@ -300,73 +356,8 @@ class ModuleWithOptionalIO(flag: Boolean) extends Module {
 
 ### How do I get Chisel to name signals properly in blocks like when/withClockAndReset?
 
-To get Chisel to name signals (wires and registers) declared inside of blocks like `when`, `withClockAndReset`, etc, use the [`@chiselName`](https://www.chisel-lang.org/api/latest/chisel3/experimental/package$$chiselName.html) annotation as shown below:
+Use the compiler plugin, and check out the [Naming Cookbook](#naming) if that still does not do what you want.
 
-```scala mdoc:silent:reset
-import chisel3._
-import chisel3.experimental.chiselName
-
-@chiselName
-class TestMod extends Module {
-  val io = IO(new Bundle {
-    val a = Input(Bool())
-    val b = Output(UInt(4.W))
-  })
-  when (io.a) {
-    val innerReg = RegInit(5.U(4.W))
-    innerReg := innerReg + 1.U
-    io.b := innerReg
-  } .otherwise {
-    io.b := 10.U
-  }
-}
-```
-
-Note that you will need to add the following line to your project's `build.sbt` file.
-
-```scala
-addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full)
-```
-
-If we compile this module *without* `@chiselName`, Chisel is not able to name `innerReg` correctly (notice the `_T`):
-
-```scala mdoc:passthrough
-import chisel3.stage.{ChiselStage, ChiselGeneratorAnnotation}
-import firrtl.annotations.DeletedAnnotation
-import firrtl.EmittedVerilogCircuitAnnotation
-
-class TestModWithout extends Module {
-  override val desiredName = "TestMod"
-  val io = IO(new Bundle {
-    val a = Input(Bool())
-    val b = Output(UInt(4.W))
-  })
-  when (io.a) {
-    val innerReg = RegInit(5.U(4.W))
-    innerReg := innerReg + 1.U
-    io.b := innerReg
-  } .otherwise {
-    io.b := 10.U
-  }
-}
-
-(new ChiselStage)
-  .execute(Array("-X", "verilog"), Seq(ChiselGeneratorAnnotation(() => new TestModWithout)))
-  .collectFirst{ case DeletedAnnotation(_, a: EmittedVerilogCircuitAnnotation) => a.value.value }
-  .foreach(a => println(s"""|```verilog
-                            |$a
-                            |```""".stripMargin))
-```
-
-However, if we use `@chiselName` then the register previously called `_T` is now `innerReg`:
-```scala mdoc:passthrough
-(new ChiselStage)
-  .execute(Array("-X", "verilog"), Seq(ChiselGeneratorAnnotation(() => new TestMod)))
-  .collectFirst{ case DeletedAnnotation(_, a: EmittedVerilogCircuitAnnotation) => a.value.value }
-  .foreach(a => println(s"""|```verilog
-                            |$a
-                            |```""".stripMargin))
-```
 ### How do I get Chisel to name the results of vector reads properly?
 Currently, name information is lost when using dynamic indexing. For example:
 ```scala mdoc:silent
