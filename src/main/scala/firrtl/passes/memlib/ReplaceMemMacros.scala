@@ -24,6 +24,7 @@ object ReplaceMemMacros {
   * This will not generate wmask ports if not needed.
   * Creates the minimum # of black boxes needed by the design.
   */
+@deprecated("ReplaceMemMacros will not take writer: ConfWriter as argument since 1.5.", "FIRRTL 1.4")
 class ReplaceMemMacros(writer: ConfWriter) extends Transform with DependencyAPIMigration {
 
   override def prerequisites = Forms.MidForm
@@ -121,11 +122,14 @@ class ReplaceMemMacros(writer: ConfWriter) extends Transform with DependencyAPIM
     })
   )
 
+  @deprecated("memToBundle will become private in 1.5.", "FIRRTL 1.4")
   def memToBundle(s: DefAnnotatedMemory) = BundleType(
     s.readers.map(Field(_, Flip, rPortToBundle(s))) ++
       s.writers.map(Field(_, Flip, wPortToBundle(s))) ++
       s.readwriters.map(Field(_, Flip, rwPortToBundle(s)))
   )
+
+  @deprecated("memToFlattenBundle will become private in 1.5.", "FIRRTL 1.4")
   def memToFlattenBundle(s: DefAnnotatedMemory) = BundleType(
     s.readers.map(Field(_, Flip, rPortToFlattenBundle(s))) ++
       s.writers.map(Field(_, Flip, wPortToFlattenBundle(s))) ++
@@ -136,6 +140,7 @@ class ReplaceMemMacros(writer: ConfWriter) extends Transform with DependencyAPIM
     *  The wrapper module has the same type as the memory it replaces
     *  The external module
     */
+  @deprecated("createMemModule will become private in 1.5.", "FIRRTL 1.4")
   def createMemModule(m: DefAnnotatedMemory, wrapperName: String): Seq[DefModule] = {
     assert(m.dataType != UnknownType)
     val wrapperIoType = memToBundle(m)
@@ -162,18 +167,22 @@ class ReplaceMemMacros(writer: ConfWriter) extends Transform with DependencyAPIM
 
   // TODO(shunshou): get rid of copy pasta
   // Connects the clk, en, and addr fields from the wrapperPort to the bbPort
+  @deprecated("defaultConnects will become private in 1.5.", "FIRRTL 1.4")
   def defaultConnects(wrapperPort: WRef, bbPort: WSubField): Seq[Connect] =
     Seq("clk", "en", "addr").map(f => connectFields(bbPort, f, wrapperPort, f))
 
   // Generates mask bits (concatenates an aggregate to ground type)
   // depending on mask granularity (# bits = data width / mask granularity)
+  @deprecated("maskBits will become private in 1.5.", "FIRRTL 1.4")
   def maskBits(mask: WSubField, dataType: Type, fillMask: Boolean): Expression =
     if (fillMask) toBitMask(mask, dataType) else toBits(mask)
 
+  @deprecated("adaptReader will become private in 1.5.", "FIRRTL 1.4")
   def adaptReader(wrapperPort: WRef, bbPort: WSubField): Seq[Statement] =
     defaultConnects(wrapperPort, bbPort) :+
       fromBits(WSubField(wrapperPort, "data"), WSubField(bbPort, "data"))
 
+  @deprecated("adaptWriter will become private in 1.5.", "FIRRTL 1.4")
   def adaptWriter(wrapperPort: WRef, bbPort: WSubField, hasMask: Boolean, fillMask: Boolean): Seq[Statement] = {
     val wrapperData = WSubField(wrapperPort, "data")
     val defaultSeq = defaultConnects(wrapperPort, bbPort) :+
@@ -189,6 +198,7 @@ class ReplaceMemMacros(writer: ConfWriter) extends Transform with DependencyAPIM
     }
   }
 
+  @deprecated("adaptReadWriter will become private in 1.5.", "FIRRTL 1.4")
   def adaptReadWriter(wrapperPort: WRef, bbPort: WSubField, hasMask: Boolean, fillMask: Boolean): Seq[Statement] = {
     val wrapperWData = WSubField(wrapperPort, "wdata")
     val defaultSeq = defaultConnects(wrapperPort, bbPort) ++ Seq(
@@ -211,6 +221,7 @@ class ReplaceMemMacros(writer: ConfWriter) extends Transform with DependencyAPIM
   private type NameMap = collection.mutable.HashMap[(String, String), String]
 
   /** Construct NameMap by assigning unique names for each memory blackbox */
+  @deprecated("constructNameMap will become private in 1.5.", "FIRRTL 1.4")
   def constructNameMap(namespace: Namespace, nameMap: NameMap, mname: String)(s: Statement): Statement = {
     s match {
       case m: DefAnnotatedMemory =>
@@ -223,6 +234,7 @@ class ReplaceMemMacros(writer: ConfWriter) extends Transform with DependencyAPIM
     s.map(constructNameMap(namespace, nameMap, mname))
   }
 
+  @deprecated("updateMemStmts will be private in 1.5.", "FIRRTL 1.4")
   def updateMemStmts(
     namespace:  Namespace,
     nameMap:    NameMap,
@@ -250,6 +262,7 @@ class ReplaceMemMacros(writer: ConfWriter) extends Transform with DependencyAPIM
     case sx => sx.map(updateMemStmts(namespace, nameMap, mname, memPortMap, memMods))
   }
 
+  @deprecated("updateMemMods will be private in 1.5.", "FIRRTL 1.4")
   def updateMemMods(namespace: Namespace, nameMap: NameMap, memMods: Modules)(m: DefModule) = {
     val memPortMap = new MemPortMap
 

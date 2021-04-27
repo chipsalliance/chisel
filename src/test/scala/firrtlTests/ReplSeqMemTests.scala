@@ -30,6 +30,7 @@ class ReplSeqMemSpec extends SimpleTransformSpec {
     }
   )
 
+  @deprecated("API will be changed in 1.5.", "FIRRTL 1.4")
   def checkMemConf(filename: String, mems: Set[MemConf]) {
     // Read the mem conf
     val text = FileUtils.getText(filename)

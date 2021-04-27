@@ -6,6 +6,7 @@ package memlib
 
 import firrtl.stage.Forms
 
+@deprecated("CreateMemoryAnnotations will not take reader: Option[YamlFileReader] as argument since 1.5.", "FIRRTL 1.4")
 class CreateMemoryAnnotations(reader: Option[YamlFileReader]) extends Transform with DependencyAPIMigration {
 
   override def prerequisites = Forms.MidForm
