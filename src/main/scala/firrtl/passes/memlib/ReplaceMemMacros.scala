@@ -3,15 +3,17 @@
 package firrtl.passes
 package memlib
 
-import firrtl._
-import firrtl.ir._
-import firrtl.Utils._
 import firrtl.Mappers._
-import MemPortUtils.{MemPortMap, Modules}
-import MemTransformUtils._
+import firrtl.Utils._
+import firrtl._
 import firrtl.annotations._
+import firrtl.ir._
+import firrtl.passes.MemPortUtils.{MemPortMap, Modules}
+import firrtl.passes.memlib.MemTransformUtils._
+import firrtl.passes.wiring._
 import firrtl.stage.Forms
-import wiring._
+
+import scala.collection.mutable.ListBuffer
 
 /** Annotates the name of the pins to add for WiringTransform */
 case class PinAnnotation(pins: Seq[String]) extends NoTargetAnnotation
@@ -24,9 +26,7 @@ object ReplaceMemMacros {
   * This will not generate wmask ports if not needed.
   * Creates the minimum # of black boxes needed by the design.
   */
-@deprecated("ReplaceMemMacros will not take writer: ConfWriter as argument since 1.5.", "FIRRTL 1.4")
-class ReplaceMemMacros(writer: ConfWriter) extends Transform with DependencyAPIMigration {
-
+class ReplaceMemMacros extends Transform with DependencyAPIMigration {
   override def prerequisites = Forms.MidForm
   override def optionalPrerequisites = Seq.empty
   override def optionalPrerequisiteOf = Forms.MidEmitters
@@ -122,15 +122,13 @@ class ReplaceMemMacros(writer: ConfWriter) extends Transform with DependencyAPIM
     })
   )
 
-  @deprecated("memToBundle will become private in 1.5.", "FIRRTL 1.4")
-  def memToBundle(s: DefAnnotatedMemory) = BundleType(
+  private def memToBundle(s: DefAnnotatedMemory) = BundleType(
     s.readers.map(Field(_, Flip, rPortToBundle(s))) ++
       s.writers.map(Field(_, Flip, wPortToBundle(s))) ++
       s.readwriters.map(Field(_, Flip, rwPortToBundle(s)))
   )
 
-  @deprecated("memToFlattenBundle will become private in 1.5.", "FIRRTL 1.4")
-  def memToFlattenBundle(s: DefAnnotatedMemory) = BundleType(
+  private def memToFlattenBundle(s: DefAnnotatedMemory) = BundleType(
     s.readers.map(Field(_, Flip, rPortToFlattenBundle(s))) ++
       s.writers.map(Field(_, Flip, wPortToFlattenBundle(s))) ++
       s.readwriters.map(Field(_, Flip, rwPortToFlattenBundle(s)))
@@ -140,8 +138,11 @@ class ReplaceMemMacros(writer: ConfWriter) extends Transform with DependencyAPIM
     *  The wrapper module has the same type as the memory it replaces
     *  The external module
     */
-  @deprecated("createMemModule will become private in 1.5.", "FIRRTL 1.4")
-  def createMemModule(m: DefAnnotatedMemory, wrapperName: String): Seq[DefModule] = {
+  private def createMemModule(
+    m:                       DefAnnotatedMemory,
+    wrapperName:             String,
+    annotatedMemoriesBuffer: ListBuffer[DefAnnotatedMemory]
+  ): Seq[DefModule] = {
     assert(m.dataType != UnknownType)
     val wrapperIoType = memToBundle(m)
     val wrapperIoPorts = wrapperIoType.fields.map(f => Port(NoInfo, f.name, Input, f.tpe))
@@ -161,29 +162,25 @@ class ReplaceMemMacros(writer: ConfWriter) extends Transform with DependencyAPIM
     // TODO: Annotate? -- use actual annotation map
 
     // add to conf file
-    writer.append(m)
+    annotatedMemoriesBuffer += m
     Seq(bb, wrapper)
   }
 
   // TODO(shunshou): get rid of copy pasta
   // Connects the clk, en, and addr fields from the wrapperPort to the bbPort
-  @deprecated("defaultConnects will become private in 1.5.", "FIRRTL 1.4")
-  def defaultConnects(wrapperPort: WRef, bbPort: WSubField): Seq[Connect] =
+  private def defaultConnects(wrapperPort: WRef, bbPort: WSubField): Seq[Connect] =
     Seq("clk", "en", "addr").map(f => connectFields(bbPort, f, wrapperPort, f))
 
   // Generates mask bits (concatenates an aggregate to ground type)
   // depending on mask granularity (# bits = data width / mask granularity)
-  @deprecated("maskBits will become private in 1.5.", "FIRRTL 1.4")
-  def maskBits(mask: WSubField, dataType: Type, fillMask: Boolean): Expression =
+  private def maskBits(mask: WSubField, dataType: Type, fillMask: Boolean): Expression =
     if (fillMask) toBitMask(mask, dataType) else toBits(mask)
 
-  @deprecated("adaptReader will become private in 1.5.", "FIRRTL 1.4")
-  def adaptReader(wrapperPort: WRef, bbPort: WSubField): Seq[Statement] =
+  private def adaptReader(wrapperPort: WRef, bbPort: WSubField): Seq[Statement] =
     defaultConnects(wrapperPort, bbPort) :+
       fromBits(WSubField(wrapperPort, "data"), WSubField(bbPort, "data"))
 
-  @deprecated("adaptWriter will become private in 1.5.", "FIRRTL 1.4")
-  def adaptWriter(wrapperPort: WRef, bbPort: WSubField, hasMask: Boolean, fillMask: Boolean): Seq[Statement] = {
+  private def adaptWriter(wrapperPort: WRef, bbPort: WSubField, hasMask: Boolean, fillMask: Boolean): Seq[Statement] = {
     val wrapperData = WSubField(wrapperPort, "data")
     val defaultSeq = defaultConnects(wrapperPort, bbPort) :+
       Connect(NoInfo, WSubField(bbPort, "data"), toBits(wrapperData))
@@ -198,8 +195,12 @@ class ReplaceMemMacros(writer: ConfWriter) extends Transform with DependencyAPIM
     }
   }
 
-  @deprecated("adaptReadWriter will become private in 1.5.", "FIRRTL 1.4")
-  def adaptReadWriter(wrapperPort: WRef, bbPort: WSubField, hasMask: Boolean, fillMask: Boolean): Seq[Statement] = {
+  private def adaptReadWriter(
+    wrapperPort: WRef,
+    bbPort:      WSubField,
+    hasMask:     Boolean,
+    fillMask:    Boolean
+  ): Seq[Statement] = {
     val wrapperWData = WSubField(wrapperPort, "wdata")
     val defaultSeq = defaultConnects(wrapperPort, bbPort) ++ Seq(
       fromBits(WSubField(wrapperPort, "rdata"), WSubField(bbPort, "rdata")),
@@ -221,8 +222,7 @@ class ReplaceMemMacros(writer: ConfWriter) extends Transform with DependencyAPIM
   private type NameMap = collection.mutable.HashMap[(String, String), String]
 
   /** Construct NameMap by assigning unique names for each memory blackbox */
-  @deprecated("constructNameMap will become private in 1.5.", "FIRRTL 1.4")
-  def constructNameMap(namespace: Namespace, nameMap: NameMap, mname: String)(s: Statement): Statement = {
+  private def constructNameMap(namespace: Namespace, nameMap: NameMap, mname: String)(s: Statement): Statement = {
     s match {
       case m: DefAnnotatedMemory =>
         m.memRef match {
@@ -234,14 +234,14 @@ class ReplaceMemMacros(writer: ConfWriter) extends Transform with DependencyAPIM
     s.map(constructNameMap(namespace, nameMap, mname))
   }
 
-  @deprecated("updateMemStmts will be private in 1.5.", "FIRRTL 1.4")
-  def updateMemStmts(
-    namespace:  Namespace,
-    nameMap:    NameMap,
-    mname:      String,
-    memPortMap: MemPortMap,
-    memMods:    Modules
-  )(s:          Statement
+  private def updateMemStmts(
+    namespace:               Namespace,
+    nameMap:                 NameMap,
+    mname:                   String,
+    memPortMap:              MemPortMap,
+    memMods:                 Modules,
+    annotatedMemoriesBuffer: ListBuffer[DefAnnotatedMemory]
+  )(s:                       Statement
   ): Statement = s match {
     case m: DefAnnotatedMemory =>
       if (m.maskGran.isEmpty) {
@@ -254,42 +254,49 @@ class ReplaceMemMacros(writer: ConfWriter) extends Transform with DependencyAPIM
           val newWrapperName = nameMap(mname -> m.name)
           val newMemBBName = namespace.newName(s"${newWrapperName}_ext")
           val newMem = m.copy(name = newMemBBName)
-          memMods ++= createMemModule(newMem, newWrapperName)
+          memMods ++= createMemModule(newMem, newWrapperName, annotatedMemoriesBuffer)
           WDefInstance(m.info, m.name, newWrapperName, UnknownType)
         case Some((module, mem)) =>
           WDefInstance(m.info, m.name, nameMap(module -> mem), UnknownType)
       }
-    case sx => sx.map(updateMemStmts(namespace, nameMap, mname, memPortMap, memMods))
+    case sx => sx.map(updateMemStmts(namespace, nameMap, mname, memPortMap, memMods, annotatedMemoriesBuffer))
   }
 
-  @deprecated("updateMemMods will be private in 1.5.", "FIRRTL 1.4")
-  def updateMemMods(namespace: Namespace, nameMap: NameMap, memMods: Modules)(m: DefModule) = {
+  private def updateMemMods(
+    namespace:               Namespace,
+    nameMap:                 NameMap,
+    memMods:                 Modules,
+    annotatedMemoriesBuffer: ListBuffer[DefAnnotatedMemory]
+  )(m:                       DefModule
+  ) = {
     val memPortMap = new MemPortMap
 
-    (m.map(updateMemStmts(namespace, nameMap, m.name, memPortMap, memMods))
+    (m.map(updateMemStmts(namespace, nameMap, m.name, memPortMap, memMods, annotatedMemoriesBuffer))
       .map(updateStmtRefs(memPortMap)))
   }
 
   def execute(state: CircuitState): CircuitState = {
+    val annotatedMemoriesBuffer: collection.mutable.ListBuffer[DefAnnotatedMemory] = ListBuffer[DefAnnotatedMemory]()
     val c = state.circuit
     val namespace = Namespace(c)
     val memMods = new Modules
     val nameMap = new NameMap
     c.modules.map(m => m.map(constructNameMap(namespace, nameMap, m.name)))
-    val modules = c.modules.map(updateMemMods(namespace, nameMap, memMods))
-    // print conf
-    writer.serialize()
-    val pannos = state.annotations.collect { case a: PinAnnotation => a }
-    val pins = pannos match {
-      case Seq()                    => Nil
-      case Seq(PinAnnotation(pins)) => pins
-      case _                        => throwInternalError("Something went wrong")
-    }
-    val annos = pins.foldLeft(Seq[Annotation]()) { (seq, pin) =>
-      seq ++ memMods.collect {
-        case m: ExtModule => SinkAnnotation(ModuleName(m.name, CircuitName(c.main)), pin)
-      }
-    } ++ state.annotations
-    state.copy(circuit = c.copy(modules = modules ++ memMods), annotations = annos)
+    val modules = c.modules.map(updateMemMods(namespace, nameMap, memMods, annotatedMemoriesBuffer))
+    state.copy(
+      circuit = c.copy(modules = modules ++ memMods),
+      annotations =
+        state.annotations ++
+          (state.annotations.collectFirst { case a: PinAnnotation => a } match {
+            case None => Nil
+            case Some(PinAnnotation(pins)) =>
+              pins.foldLeft(Seq[Annotation]()) { (seq, pin) =>
+                seq ++ memMods.collect {
+                  case m: ExtModule => SinkAnnotation(ModuleName(m.name, CircuitName(c.main)), pin)
+                }
+              }
+          }) :+
+          AnnotatedMemoriesAnnotation(annotatedMemoriesBuffer.toList)
+    )
   }
 }
