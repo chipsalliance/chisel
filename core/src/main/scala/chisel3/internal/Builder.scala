@@ -9,7 +9,8 @@ import chisel3.experimental._
 import chisel3.internal.firrtl._
 import chisel3.internal.naming._
 import _root_.firrtl.annotations.{CircuitName, ComponentName, IsMember, ModuleName, Named, ReferenceTarget}
-import _root_.firrtl.annotations.AnnotationUtils.{validComponentName}
+import _root_.firrtl.annotations.AnnotationUtils.validComponentName
+import _root_.firrtl.AnnotationSeq
 import chisel3.internal.Builder.Prefix
 import logger.LazyLogging
 
@@ -84,7 +85,6 @@ trait InstanceId {
 private[chisel3] trait HasId extends InstanceId {
   private[chisel3] def _onModuleClose: Unit = {}
   private[chisel3] val _parent: Option[BaseModule] = Builder.currentModule
-  _parent.foreach(_.addId(this))
 
   private[chisel3] val _id: Long = Builder.idGen.next
 
@@ -306,11 +306,13 @@ private[chisel3] class ChiselContext() {
   var prefixStack: Prefix = Nil
 }
 
-private[chisel3] class DynamicContext() {
+private[chisel3] class DynamicContext(val annotationSeq: AnnotationSeq) {
   val globalNamespace = Namespace.empty
   val components = ArrayBuffer[Component]()
   val annotations = ArrayBuffer[ChiselAnnotation]()
   var currentModule: Option[BaseModule] = None
+  // This is only used for testing, it can be removed if the plugin becomes mandatory
+  var allowReflectiveAutoCloneType = true
 
   /** Contains a mapping from a elaborated module to their aspect
     * Set by [[ModuleAspect]]
@@ -365,6 +367,7 @@ private[chisel3] object Builder extends LazyLogging {
   def globalNamespace: Namespace = dynamicContext.globalNamespace
   def components: ArrayBuffer[Component] = dynamicContext.components
   def annotations: ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
+  def annotationSeq: AnnotationSeq = dynamicContext.annotationSeq
   def namingStack: NamingStack = dynamicContext.namingStack
 
   // Puts a prefix string onto the prefix stack
@@ -529,6 +532,16 @@ private[chisel3] object Builder extends LazyLogging {
     dynamicContext.currentReset = newReset
   }
 
+  // This should only be used for testing, must be true outside of Builder context
+  def allowReflectiveAutoCloneType: Boolean = {
+    dynamicContextVar.value
+                     .map(_.allowReflectiveAutoCloneType)
+                     .getOrElse(true)
+  }
+  def allowReflectiveAutoCloneType_=(value: Boolean): Unit = {
+    dynamicContext.allowReflectiveAutoCloneType = value
+  }
+
   def forcedClock: Clock = currentClock.getOrElse(
     throwException("Error: No implicit clock.")
   )
@@ -631,11 +644,6 @@ private[chisel3] object Builder extends LazyLogging {
                 s"Please upgrade to Scala 2.12. See $url"
       deprecated(msg, Some(""))
     }
-  }
-
-
-  def build[T <: RawModule](f: => T): (Circuit, T) = {
-    build(f, new DynamicContext())
   }
 
   private [chisel3] def build[T <: RawModule](f: => T, dynamicContext: DynamicContext): (Circuit, T) = {
