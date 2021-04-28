@@ -451,12 +451,9 @@ Elaborating the Chisel module `Salt` yields our "desired names" for `Salt` and `
 ```scala mdoc:silent
 import chisel3.stage.ChiselStage
 
-(ChiselStage).emitVerilog(new Salt)
+ChiselStage.emitVerilog(new Salt)
 ```
 
-```scala mdoc:passthrough
-val a = (ChiselStage).emitVerilog(new Salt)
-println(s"""|```verilog
-            |$a
-            |```""".stripMargin)
+```scala mdoc:verilog
+ChiselStage.emitVerilog(new Salt)
 ```
