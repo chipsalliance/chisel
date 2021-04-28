@@ -16,7 +16,7 @@ addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.14.10")
 
 addSbtPlugin("com.simplytyped" % "sbt-antlr4" % "0.8.2")
 
-addSbtPlugin("com.github.gseitz" % "sbt-protobuf" % "0.6.5")
+addSbtPlugin("com.github.sbt" % "sbt-protobuf" % "0.7.0")
 
 addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.9.27")
 
