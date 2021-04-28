@@ -90,7 +90,7 @@ class firrtlCrossModule(val crossScalaVersion: String) extends CrossSbtModule wi
   }
 
   /* antlr4 */
-  def antlr4Version = "4.8"
+  def antlr4Version = "4.9.2"
 
   def antlrSource = T.source {
     millSourcePath / "src" / "main" / "antlr4" / "FIRRTL.g4"
