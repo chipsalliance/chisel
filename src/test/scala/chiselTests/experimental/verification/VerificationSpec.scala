@@ -30,8 +30,15 @@ class VerificationSpec extends ChiselPropSpec {
   property("basic equality check should work") {
     val fir = ChiselStage.emitChirrtl(new VerificationModule)
     val lines = fir.split("\n").map(_.trim)
+
+    // reset guard around the verification statement
+    assertContains(lines, "when _T_2 : @[VerificationSpec.scala 16:15]")
     assertContains(lines, "cover(clock, _T, UInt<1>(\"h1\"), \"\") @[VerificationSpec.scala 16:15]")
-    assertContains(lines, "assume(clock, _T_2, UInt<1>(\"h1\"), \"\") @[VerificationSpec.scala 18:18]")
-    assertContains(lines, "assert(clock, _T_3, UInt<1>(\"h1\"), \"\") @[VerificationSpec.scala 19:18]")
+
+    assertContains(lines, "when _T_6 : @[VerificationSpec.scala 18:18]")
+    assertContains(lines, "assume(clock, _T_4, UInt<1>(\"h1\"), \"\") @[VerificationSpec.scala 18:18]")
+
+    assertContains(lines, "when _T_9 : @[VerificationSpec.scala 19:18]")
+    assertContains(lines, "assert(clock, _T_7, UInt<1>(\"h1\"), \"\") @[VerificationSpec.scala 19:18]")
   }
 }
