@@ -4,7 +4,7 @@ package chisel3
 
 import chisel3.experimental.VecLiterals.AddVecLiteralConstructor
 
-import scala.collection.immutable.ListMap
+import scala.collection.immutable.{SeqMap, VectorMap}
 import scala.collection.mutable.{HashSet, LinkedHashMap}
 import scala.language.experimental.macros
 import chisel3.experimental.{BaseModule, BundleLiteralException, ChiselEnum, EnumType, VecLiteralException}
@@ -516,7 +516,7 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
       }
     }
 
-    clone.bind(VecLitBinding(ListMap(vecLitLinkedMap.toSeq:_*)))
+    clone.bind(VecLitBinding(VectorMap(vecLitLinkedMap.toSeq:_*)))
     clone
   }
 }
@@ -595,7 +595,7 @@ object VecInit extends SourceInfoDoc {
 /** A trait for [[Vec]]s containing common hardware generators for collection
   * operations.
   */
-trait VecLike[T <: Data] extends collection.IndexedSeq[T] with HasId with SourceInfoDoc {
+trait VecLike[T <: Data] extends IndexedSeq[T] with HasId with SourceInfoDoc {
   def apply(p: UInt): T = macro CompileOptionsTransform.pArg
 
   /** @group SourceInfoTransformMacro */
@@ -835,7 +835,7 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     s"$className$bindingString"
   }
 
-  val elements: ListMap[String, Data]
+  def elements: SeqMap[String, Data]
 
   /** Name for Pretty Printing */
   def className: String = this.getClass.getSimpleName
@@ -958,7 +958,7 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     *   assert(uint === "h12345678".U) // This will pass
     * }}}
     */
-  final lazy val elements: ListMap[String, Data] = {
+  final lazy val elements: SeqMap[String, Data] = {
     val nameMap = LinkedHashMap[String, Data]()
     for (m <- getPublicFields(classOf[Bundle])) {
       getBundleField(m) match {
@@ -985,7 +985,7 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
           }
       }
     }
-    ListMap(nameMap.toSeq sortWith { case ((an, a), (bn, b)) => (a._id > b._id) || ((a eq b) && (an > bn)) }: _*)
+    VectorMap(nameMap.toSeq sortWith { case ((an, a), (bn, b)) => (a._id > b._id) || ((a eq b) && (an > bn)) }: _*)
   }
 
   /**

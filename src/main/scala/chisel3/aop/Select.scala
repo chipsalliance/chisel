@@ -248,7 +248,7 @@ object Select {
         case other =>
       }
     })
-    predicatedConnects
+    predicatedConnects.toSeq
   }
 
   /** Selects all stop statements, and includes the predicates surrounding the stop statement
@@ -264,7 +264,7 @@ object Select {
         case other =>
       }
     })
-    stops
+    stops.toSeq
   }
 
   /** Selects all printf statements, and includes the predicates surrounding the printf statement
@@ -280,7 +280,7 @@ object Select {
         case other =>
       }
     })
-    printfs
+    printfs.toSeq
   }
 
   // Checks that a module has finished its construction
@@ -321,7 +321,7 @@ object Select {
     }
   } catch {
     case e: ChiselException => i.getOptionRef.get match {
-      case l: LitArg => l.num.intValue().toString
+      case l: LitArg => l.num.intValue.toString
     }
   }
 
