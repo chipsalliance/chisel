@@ -85,7 +85,87 @@ class Example3 extends RawModule {
 chisel3.stage.ChiselStage.emitVerilog(new Example3)
 ```
 
-Vec literals are not yet supported.
+### Vec Literals
+
+Vec literals are very similar to Bundle literals and can be constructed via an experimental import.
+They can be constructed in two forms, with type and length inferred as in: 
+
+```scala mdoc
+import chisel3._
+import chisel3.experimental.VecLiterals._
+
+class VecExample1 extends Module {
+  val out = IO(Output(Vec(2, UInt(4.W))))
+  out := Vec.Lit(0xa.U, 0xbb.U)
+}
+```
+```scala mdoc:verilog
+chisel3.stage.ChiselStage.emitVerilog(new VecExample1)
+```
+
+or explicitly as in:
+
+```scala mdoc
+import chisel3._
+import chisel3.experimental.VecLiterals._
+
+class VecExample1a extends Module {
+  val out = IO(Output(Vec(2, UInt(4.W))))
+  out := Vec(2, UInt(4.W)).Lit(0 -> 1.U, 1 -> 2.U)
+}
+```
+
+```scala mdoc:verilog
+chisel3.stage.ChiselStage.emitVerilog(new VecExample1a)
+```
+
+The following examples all use the explicit form.
+With the explicit form partial specification is allowed.
+When used with as a `Reg` `reset` value, only specified indices of the `Reg`'s `Vec`
+will be reset
+
+```scala mdoc
+class VecExample2 extends RawModule {
+  val out = IO(Output(Vec(4, UInt(4.W))))
+  out := Vec(4, UInt(4.W)).Lit(0 -> 1.U, 3 -> 7.U)
+}
+```
+
+```scala mdoc:verilog
+chisel3.stage.ChiselStage.emitVerilog(new VecExample2)
+```
+
+Registers can be initialized from Vec literals
+
+```scala mdoc
+class VecExample3 extends Module {
+  val out = IO(Output(Vec(4, UInt(8.W))))
+  val y = RegInit(
+    Vec(4, UInt(8.W)).Lit(0 -> 0xAB.U(8.W), 1 -> 0xCD.U(8.W), 2 -> 0xEF.U(8.W), 3 -> 0xFF.U(8.W))
+  )
+  out := y
+}
+```
+
+```scala mdoc:verilog
+chisel3.stage.ChiselStage.emitVerilog(new VecExample3)
+```
+
+Vec literals can also be nested arbitrarily.
+
+```scala mdoc
+class VecExample5 extends RawModule {
+  val out = IO(Output(Vec(2, new ChildBundle)))
+  out := Vec(2, new ChildBundle).Lit(
+    0 -> (new ChildBundle).Lit(_.foo -> 42.U),
+    1 -> (new ChildBundle).Lit(_.foo -> 7.U)
+  )
+}
+```
+
+```scala mdoc:verilog
+chisel3.stage.ChiselStage.emitVerilog(new VecExample5)
+```
 
 ### Interval Type <a name="interval-type"></a>
 

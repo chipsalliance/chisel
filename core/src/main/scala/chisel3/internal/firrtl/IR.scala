@@ -91,6 +91,14 @@ abstract class LitArg(val num: BigInt, widthArg: Width) extends Arg {
     elem
   }
 
+  /** Provides a mechanism that LitArgs can have their width adjusted
+    * to match other members of a VecLiteral
+    *
+    * @param newWidth the new width for this
+    * @return
+    */
+  def cloneWithWidth(newWidth: Width): this.type
+
   protected def minWidth: Int
   if (forcedWidth) {
     require(widthArg.get >= minWidth,
@@ -106,6 +114,10 @@ case class ULit(n: BigInt, w: Width) extends LitArg(n, w) {
   def name: String = "UInt" + width + "(\"h0" + num.toString(16) + "\")"
   def minWidth: Int = 1 max n.bitLength
 
+  def cloneWithWidth(newWidth: Width): this.type = {
+    ULit(n, newWidth).asInstanceOf[this.type]
+  }
+
   require(n >= 0, s"UInt literal ${n} is negative")
 }
 
@@ -115,6 +127,10 @@ case class SLit(n: BigInt, w: Width) extends LitArg(n, w) {
     s"asSInt(${ULit(unsigned, width).name})"
   }
   def minWidth: Int = 1 + n.bitLength
+
+  def cloneWithWidth(newWidth: Width): this.type = {
+    SLit(n, newWidth).asInstanceOf[this.type]
+  }
 }
 
 case class FPLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends LitArg(n, w) {
@@ -123,6 +139,10 @@ case class FPLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends LitArg(n
     s"asFixedPoint(${ULit(unsigned, width).name}, ${binaryPoint.asInstanceOf[KnownBinaryPoint].value})"
   }
   def minWidth: Int = 1 + n.bitLength
+
+  def cloneWithWidth(newWidth: Width): this.type = {
+    FPLit(n, newWidth, binaryPoint).asInstanceOf[this.type]
+  }
 }
 
 case class IntervalLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends LitArg(n, w) {
@@ -135,6 +155,10 @@ case class IntervalLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends Li
       IntervalRange.getBound(isClosed = true, BigDecimal(n)), IntervalRange.getRangeWidth(binaryPoint))
   }
   def minWidth: Int = 1 + n.bitLength
+
+  def cloneWithWidth(newWidth: Width): this.type = {
+    IntervalLit(n, newWidth, binaryPoint).asInstanceOf[this.type]
+  }
 }
 
 case class Ref(name: String) extends Arg

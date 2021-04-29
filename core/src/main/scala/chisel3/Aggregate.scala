@@ -2,17 +2,18 @@
 
 package chisel3
 
+import chisel3.experimental.VecLiterals.AddVecLiteralConstructor
+
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{HashSet, LinkedHashMap}
 import scala.language.experimental.macros
-
-import chisel3.experimental.BaseModule
-import chisel3.experimental.BundleLiteralException
-import chisel3.experimental.EnumType
+import chisel3.experimental.{BaseModule, BundleLiteralException, ChiselEnum, EnumType, VecLiteralException}
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo._
+
+import scala.collection.mutable
 
 class AliasedAggregateFieldException(message: String) extends ChiselException(message)
 
@@ -51,16 +52,19 @@ sealed abstract class Aggregate extends Data {
     */
   override def litOption: Option[BigInt] = {
     // Shift the accumulated value by our width and add in our component, masked by our width.
-    def shiftAdd(accumulator: Option[BigInt], elt: Data): Option[BigInt] = (accumulator, elt.litOption()) match {
-      case (Some(accumulator), Some(eltLit)) =>
-        val width = elt.width.get
-        val masked = ((BigInt(1) << width) - 1) & eltLit  // also handles the negative case with two's complement
-        Some((accumulator << width) + masked)
-      case (None, _) => None
-      case (_, None) => None
+    def shiftAdd(accumulator: Option[BigInt], elt: Data): Option[BigInt] = {
+      (accumulator, elt.litOption()) match {
+        case (Some(accumulator), Some(eltLit)) =>
+          val width = elt.width.get
+          val masked = ((BigInt(1) << width) - 1) & eltLit  // also handles the negative case with two's complement
+          Some((accumulator << width) + masked)
+        case (None, _) => None
+        case (_, None) => None
+      }
     }
+
     topBindingOpt match {
-      case Some(BundleLitBinding(_)) =>
+      case Some(BundleLitBinding(_)) | Some(VecLitBinding(_)) =>
         getElements
           .reverse
           .foldLeft[Option[BigInt]](Some(BigInt(0)))(shiftAdd)
@@ -73,6 +77,7 @@ sealed abstract class Aggregate extends Data {
   def getElements: Seq[Data]
 
   private[chisel3] def width: Width = getElements.map(_.width).foldLeft(0.W)(_ + _)
+
   private[chisel3] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
     // If the source is a DontCare, generate a DefInvalid for the sink,
     //  otherwise, issue a Connect.
@@ -83,11 +88,50 @@ sealed abstract class Aggregate extends Data {
     }
   }
 
+  // Returns pairs of all fields, element-level and containers, in a Record and their path names
+  private[chisel3] def getRecursiveFields(data: Data, path: String): Seq[(Data, String)] = data match {
+    case data: Record =>
+      data.elements.map { case (fieldName, fieldData) =>
+        getRecursiveFields(fieldData, s"$path.$fieldName")
+      }.fold(Seq(data -> path)) {
+        _ ++ _
+      }
+    case data: Vec[_] =>
+      data.getElements.zipWithIndex.map { case (fieldData, fieldIndex) =>
+        getRecursiveFields(fieldData, path = s"$path($fieldIndex)")
+      }.fold(Seq(data -> path)) {
+        _ ++ _
+      }
+    case data => Seq(data -> path) // we don't support or recurse into other Aggregate types here
+  }
+
+
+  // Returns pairs of corresponding fields between two Records of the same type
+  private[chisel3] def getMatchedFields(x: Data, y: Data): Seq[(Data, Data)] = (x, y) match {
+    case (x: Element, y: Element) =>
+      require(x typeEquivalent y)
+      Seq(x -> y)
+    case (x: Record, y: Record) =>
+      (x.elements zip y.elements).map { case ((xName, xElt), (yName, yElt)) =>
+        require(xName == yName) // assume fields returned in same, deterministic order
+        getMatchedFields(xElt, yElt)
+      }.fold(Seq(x -> y)) {
+        _ ++ _
+      }
+    case (x: Vec[_], y: Vec[_]) =>
+      (x.getElements zip y.getElements).map { case (xElt, yElt) =>
+        getMatchedFields(xElt, yElt)
+      }.fold(Seq(x -> y)) {
+        _ ++ _
+      }
+  }
+
   override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
     SeqUtils.do_asUInt(flatten.map(_.asUInt()))
   }
+
   private[chisel3] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,
-      compileOptions: CompileOptions): Unit = {
+                                                            compileOptions: CompileOptions): Unit = {
     var i = 0
     val bits = if (that.isLit) that else WireDefault(UInt(this.width), that) // handles width padding
     for (x <- flatten) {
@@ -155,9 +199,18 @@ trait VecFactory extends SourceInfoDoc {
   */
 sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
     extends Aggregate with VecLike[T] {
+
   override def toString: String = {
+    val bindingString = topBindingOpt match {
+      case Some(VecLitBinding(vecLitBinding)) =>
+        val contents = vecLitBinding.zipWithIndex.map { case ((data, lit), index) =>
+          s"$index=$lit"
+        }.mkString(", ")
+        s"($contents)"
+      case _ => bindingToString
+    }
     val elementType = sample_element.cloneType
-    s"$elementType[$length]$bindingToString"
+    s"$elementType[$length]$bindingString"
   }
 
   private[chisel3] override def typeEquivalent(that: Data): Boolean = that match {
@@ -317,6 +370,154 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
       ).toSeq)
     }
     curLayer(0)
+  }
+
+  /** Creates a Vec literal of this type with specified values. this must be a chisel type.
+    *
+    * @param elementInitializers literal values, specified as a pair of the Vec field to the literal value.
+    * The Vec field is specified as a function from an object of this type to the field.
+    * Fields that aren't initialized to DontCare, and assignment to a wire will overwrite any
+    * existing value with DontCare.
+    * @return a Vec literal of this type with subelement values specified
+    *
+    * Vec(2, UInt(8.W)).Lit(
+    *   1 -> 0x0A.U,
+    *   2 -> 0x0B.U
+    * )
+    * }}}
+    */
+  private[chisel3] def _makeLit(elementInitializers: (Int, T)*)(implicit sourceInfo: SourceInfo,
+                                                                compileOptions: CompileOptions): this.type = {
+
+    def checkLiteralConstruction(): Unit = {
+      val dupKeys = elementInitializers.map { x => x._1 }.groupBy(x => x).flatMap { case (k, v) =>
+        if (v.length > 1) {
+          Some(k, v.length)
+        } else {
+          None
+        }
+      }
+      if (dupKeys.nonEmpty) {
+        throw new VecLiteralException(
+          s"VecLiteral: has duplicated indices ${dupKeys.map { case (k, n) => s"$k($n times)" }.mkString(",")}"
+        )
+      }
+
+      val outOfRangeIndices = elementInitializers.map(_._1).filter { case index => index < 0 || index >= length }
+      if (outOfRangeIndices.nonEmpty) {
+        throw new VecLiteralException(
+          s"VecLiteral: The following indices (${outOfRangeIndices.mkString(",")}) " +
+            s"are less than zero or greater or equal to than Vec length"
+        )
+      }
+      cloneSupertype(elementInitializers.map(_._2), s"Vec.Lit(...)")
+
+      // look for literals of this vec that are wider than the vec's type
+      val badLits = elementInitializers.flatMap {
+        case (index, lit) =>
+          (sample_element.width, lit.width) match {
+            case (KnownWidth(m), KnownWidth(n)) =>
+              if (m < n) Some(index -> lit) else None
+            case (KnownWidth(_), _) =>
+              None
+            case (UnknownWidth(), _) =>
+              None
+            case _ =>
+              Some(index -> lit)
+          }
+        case _ => None
+      }
+      if (badLits.nonEmpty) {
+        throw new VecLiteralException(
+          s"VecLiteral: Vec[$gen] has the following incorrectly typed or sized initializers: " +
+            badLits.map { case (a, b) => s"$a -> $b" }.mkString(",")
+        )
+      }
+
+    }
+
+    requireIsChiselType(this, "vec literal constructor model")
+    checkLiteralConstruction()
+
+    val clone = cloneType
+    val cloneFields = getRecursiveFields(clone, "(vec root)").toMap
+
+    // Create the Vec literal binding from litArgs of arguments
+    val vecLitLinkedMap = new mutable.LinkedHashMap[Data, LitArg]()
+    elementInitializers.sortBy { case (a, _) => a }.foreach { case (fieldIndex, value) =>
+      val field = clone.apply(fieldIndex)
+      val fieldName = cloneFields.getOrElse(field,
+        throw new VecLiteralException(s"field $field (with value $value) is not a field," +
+          s" ensure the field is specified as a function returning a field on an object of class ${this.getClass}," +
+          s" eg '_.a' to select hypothetical bundle field 'a'")
+      )
+
+      val valueBinding = value.topBindingOpt match {
+        case Some(litBinding: LitBinding) => litBinding
+        case _ => throw new VecLiteralException(s"field $fieldIndex specified with non-literal value $value")
+      }
+
+      field match { // Get the litArg(s) for this field
+        case bitField: Bits =>
+          if (!field.typeEquivalent(bitField)) {
+            throw new VecLiteralException(
+              s"VecLit: Literal specified at index $fieldIndex ($value) does not match Vec type $sample_element"
+            )
+          }
+          if (bitField.getWidth > field.getWidth) {
+            throw new VecLiteralException(
+              s"VecLit: Literal specified at index $fieldIndex ($value) is too wide for Vec type $sample_element"
+            )
+          }
+          val litArg = valueBinding match {
+            case ElementLitBinding(litArg) => litArg
+            case BundleLitBinding(litMap) => litMap.getOrElse(value,
+              throw new BundleLiteralException(s"Field $fieldName specified with unspecified value")
+            )
+            case VecLitBinding(litMap) => litMap.getOrElse(value,
+              throw new VecLiteralException(s"Field $fieldIndex specified with unspecified value"))
+          }
+          val adjustedLitArg = litArg.cloneWithWidth(sample_element.width)
+          vecLitLinkedMap(bitField) = adjustedLitArg
+
+        case recordField: Record =>
+          if (!(recordField.typeEquivalent(value))) {
+            throw new VecLiteralException(s"field $fieldIndex $recordField specified with non-type-equivalent value $value")
+          }
+          // Copy the source BundleLitBinding with fields (keys) remapped to the clone
+          val remap = getMatchedFields(value, recordField).toMap
+          valueBinding.asInstanceOf[BundleLitBinding].litMap.map { case (valueField, valueValue) =>
+            vecLitLinkedMap(remap(valueField)) = valueValue
+          }
+
+        case vecField: Vec[_] =>
+          if (!(vecField typeEquivalent value)) {
+            throw new VecLiteralException(s"field $fieldIndex $vecField specified with non-type-equivalent value $value")
+          }
+          // Copy the source VecLitBinding with vecFields (keys) remapped to the clone
+          val remap = getMatchedFields(value, vecField).toMap
+          value.topBinding.asInstanceOf[VecLitBinding].litMap.map { case (valueField, valueValue) =>
+            vecLitLinkedMap(remap(valueField)) = valueValue
+          }
+
+        case enumField: EnumType => {
+          if (!(enumField typeEquivalent value)) {
+            throw new VecLiteralException(s"field $fieldIndex $enumField specified with non-type-equivalent enum value $value")
+          }
+          val litArg = valueBinding match {
+            case ElementLitBinding(litArg) => litArg
+            case _ =>
+              throw new VecLiteralException(s"field $fieldIndex $enumField could not bematched with $valueBinding")
+          }
+          vecLitLinkedMap(field) = litArg
+        }
+
+        case _ => throw new VecLiteralException(s"unsupported field $fieldIndex of type $field")
+      }
+    }
+
+    clone.bind(VecLitBinding(ListMap(vecLitLinkedMap.toSeq:_*)))
+    clone
   }
 }
 
@@ -528,25 +729,6 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
     * }}}
     */
   private[chisel3] def _makeLit(elems: (this.type => (Data, Data))*): this.type = {
-    // Returns pairs of all fields, element-level and containers, in a Record and their path names
-    def getRecursiveFields(data: Data, path: String): Seq[(Data, String)] = data match {
-      case data: Record => data.elements.map { case (fieldName, fieldData) =>
-        getRecursiveFields(fieldData, s"$path.$fieldName")
-      }.fold(Seq(data -> path)) { _ ++ _ }
-      case data => Seq(data -> path)  // we don't support or recurse into other Aggregate types here
-    }
-
-    // Returns pairs of corresponding fields between two Records of the same type
-    def getMatchedFields(x: Data, y: Data): Seq[(Data, Data)] = (x, y) match {
-      case (x: Element, y: Element) =>
-        require(x typeEquivalent y)
-        Seq(x -> y)
-      case (x: Record, y: Record) =>
-        (x.elements zip y.elements).map { case ((xName, xElt), (yName, yElt)) =>
-          require(xName == yName)  // assume fields returned in same, deterministic order
-          getMatchedFields(xElt, yElt)
-        }.fold(Seq(x -> y)) { _ ++ _ }
-    }
 
     requireIsChiselType(this, "bundle literal constructor model")
     val clone = cloneType
@@ -572,9 +754,15 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
           val litArg = valueBinding match {
             case ElementLitBinding(litArg) => litArg
             case BundleLitBinding(litMap) => litMap.getOrElse(value,
-                throw new BundleLiteralException(s"Field $fieldName specified with unspecified value"))
+                throw new BundleLiteralException(s"Field $fieldName specified with unspecified value")
+            )
+            case VecLitBinding(litMap) => litMap.getOrElse(value,
+              throw new VecLiteralException(s"Vec literal $fieldName specified with out literal values")
+            )
+
           }
           Seq(field -> litArg)
+
         case field: Record =>
           if (!(field typeEquivalent value)) {
             throw new BundleLiteralException(s"field $fieldName $field specified with non-type-equivalent value $value")
@@ -584,18 +772,33 @@ abstract class Record(private[chisel3] implicit val compileOptions: CompileOptio
           value.topBinding.asInstanceOf[BundleLitBinding].litMap.map { case (valueField, valueValue) =>
             remap(valueField) -> valueValue
           }
+
+        case vecField: Vec[_] =>
+          if (!(vecField typeEquivalent value)) {
+            throw new BundleLiteralException(s"field $fieldName $vecField specified with non-type-equivalent value $value")
+          }
+          // Copy the source BundleLitBinding with fields (keys) remapped to the clone
+          val remap = getMatchedFields(value, vecField).toMap
+          value.topBinding.asInstanceOf[VecLitBinding].litMap.map { case (valueField, valueValue) =>
+            remap(valueField) -> valueValue
+          }
+
         case field: EnumType => {
           if (!(field typeEquivalent value)) {
             throw new BundleLiteralException(s"field $fieldName $field specified with non-type-equivalent enum value $value")
           }
           val litArg = valueBinding match {
             case ElementLitBinding(litArg) => litArg
+            case _ =>
+              throw new BundleLiteralException(s"field $fieldName $field could not be matched with $valueBinding")
           }
           Seq(field -> litArg)
         }
         case _ => throw new BundleLiteralException(s"unsupported field $fieldName of type $field")
       }
-    }  // don't convert to a Map yet to preserve duplicate keys
+    }
+
+    // don't convert to a Map yet to preserve duplicate keys
     val duplicates = bundleLitMap.map(_._1).groupBy(identity).collect { case (x, elts) if elts.size > 1 => x }
     if (!duplicates.isEmpty) {
       val duplicateNames = duplicates.map(cloneFields(_)).mkString(", ")
@@ -694,6 +897,7 @@ class AutoClonetypeException(message: String) extends ChiselException(message)
 package experimental {
 
   class BundleLiteralException(message: String) extends ChiselException(message)
+  class VecLiteralException(message: String) extends ChiselException(message)
 
 }
 
