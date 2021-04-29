@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chisel3
 
@@ -8,6 +8,8 @@ import chisel3.internal.Builder.pushCommand
 import chisel3.internal._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{DeprecatedSourceInfo, SourceInfo, SourceInfoTransform, UnlocatableSourceInfo}
+
+import scala.util.Try
 
 /** User-specified directions.
   */
@@ -337,13 +339,14 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   private[chisel3] final def isSynthesizable: Boolean = _binding.map {
     case ChildBinding(parent) => parent.isSynthesizable
     case _: TopBinding => true
-    case _: SampleElementBinding[_] => false
+    case (_: SampleElementBinding[_] | _: MemTypeBinding[_]) => false
   }.getOrElse(false)
 
   private[chisel3] def topBindingOpt: Option[TopBinding] = _binding.flatMap {
     case ChildBinding(parent) => parent.topBindingOpt
     case bindingVal: TopBinding => Some(bindingVal)
     case SampleElementBinding(parent) => parent.topBindingOpt
+    case _: MemTypeBinding[_] => None
   }
 
   private[chisel3] def topBinding: TopBinding = topBindingOpt.get
@@ -353,7 +356,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     * node is the top-level.
     * binding and direction are valid after this call completes.
     */
-  private[chisel3] def bind(target: Binding, parentDirection: SpecifiedDirection = SpecifiedDirection.Unspecified)
+  private[chisel3] def bind(target: Binding, parentDirection: SpecifiedDirection = SpecifiedDirection.Unspecified): Unit
 
   // Both _direction and _resolvedUserDirection are saved versions of computed variables (for
   // efficiency, avoid expensive recomputation of frequent operations).
@@ -374,7 +377,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   // Provides a unhelpful fallback for literals, which should have custom rendering per
   // Data-subtype.
   // TODO Is this okay for sample_element? It *shouldn't* be visible to users
-  protected def bindingToString: String = topBindingOpt match {
+  protected def bindingToString: String = Try(topBindingOpt match {
     case None => ""
     case Some(OpBinding(enclosure, _)) => s"(OpResult in ${enclosure.desiredName})"
     case Some(MemoryPortBinding(enclosure, _)) => s"(MemPort in ${enclosure.desiredName})"
@@ -389,7 +392,8 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     case Some(DontCareBinding()) => s"(DontCare)"
     case Some(ElementLitBinding(litArg)) => s"(unhandled literal)"
     case Some(BundleLitBinding(litMap)) => s"(unhandled bundle literal)"
-  }
+    case Some(VecLitBinding(litMap)) => s"(unhandled vec literal)"
+  }).getOrElse("")
 
   // Return ALL elements at root of this type.
   // Contasts with flatten, which returns just Bits
@@ -451,8 +455,9 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     topBindingOpt match {
       case Some(tb: TopBinding) if (mod == Builder.currentModule) =>
       case Some(pb: PortBinding) if (mod.flatMap(Builder.retrieveParent(_,Builder.currentModule.get)) == Builder.currentModule) =>
+      case Some(_: UnconstrainedBinding) =>
       case _ =>
-        throwException(s"operand is not visible from the current module")
+        throwException(s"operand '$this' is not visible from the current module")
     }
     if (!MonoConnect.checkWhenVisibility(this)) {
       throwException(s"operand has escaped the scope of the when in which it was constructed")
@@ -470,18 +475,38 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     }
   }
 
-
-  // Internal API: returns a ref, if bound. Literals should override this as needed.
-  private[chisel3] def ref: Arg = {
-    requireIsHardware(this)
-    if (Builder.currentModule.isDefined) {
-      // This is allowed (among other cases) for evaluating args of Printf / Assert / Printable, which are
-      // partially resolved *after* elaboration completes. If this is resolved, the check should be unconditional.
-      requireVisible()
+  // Internal API: returns a ref, if bound
+  private[chisel3] final def ref: Arg = {
+    def materializeWire(): Arg = {
+      if (!Builder.currentModule.isDefined) throwException(s"internal error: cannot materialize ref for $this")
+      implicit val compileOptions = ExplicitCompileOptions.Strict
+      implicit val sourceInfo = UnlocatableSourceInfo
+      WireDefault(this).ref
     }
+    requireIsHardware(this)
     topBindingOpt match {
-      case Some(binding: LitBinding) => throwException(s"internal error: can't handle literal binding $binding")
-      case Some(binding: TopBinding) => Node(this)
+      // Literals
+      case Some(ElementLitBinding(litArg)) => litArg
+      case Some(BundleLitBinding(litMap)) =>
+        litMap.get(this) match {
+          case Some(litArg) => litArg
+          case _ => materializeWire() // FIXME FIRRTL doesn't have Bundle literal expressions
+        }
+      case Some(VecLitBinding(litMap)) =>
+        litMap.get(this) match {
+          case Some(litArg) => litArg
+          case _ => materializeWire() // FIXME FIRRTL doesn't have Vec literal expressions
+        }
+      case Some(DontCareBinding()) =>
+        materializeWire() // FIXME FIRRTL doesn't have a DontCare expression so materialize a Wire
+      // Non-literals
+      case Some(binding: TopBinding) =>
+        if (Builder.currentModule.isDefined) {
+          // This is allowed (among other cases) for evaluating args of Printf / Assert / Printable, which are
+          // partially resolved *after* elaboration completes. If this is resolved, the check should be unconditional.
+          requireVisible()
+        }
+        Node(this)
       case opt => throwException(s"internal error: unknown binding $opt in generating LHS ref")
     }
   }
@@ -534,14 +559,6 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     prefix(this) {
       this.bulkConnect(that)(sourceInfo, connectionCompileOptions)
     }
-  }
-
-  @chiselRuntimeDeprecated
-  @deprecated("litArg is deprecated, use litOption or litTo*Option", "3.2")
-  def litArg(): Option[LitArg] = topBindingOpt match {
-    case Some(ElementLitBinding(litArg)) => Some(litArg)
-    case Some(BundleLitBinding(litMap)) => None  // this API does not support Bundle literals
-    case _ => None
   }
 
   def isLit(): Boolean = litOption.isDefined

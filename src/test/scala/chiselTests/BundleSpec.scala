@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests
 
@@ -127,5 +127,31 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
         io.b := 1.U
       } }
     }).getMessage should include("aliased fields")
+  }
+
+  "Unbound bundles sharing a field" should "not error" in {
+    ChiselStage.elaborate {
+      new RawModule {
+        val foo = new Bundle {
+          val x = UInt(8.W)
+        }
+        val bar = new Bundle {
+          val y = foo.x
+        }
+      }
+    }
+  }
+
+  "Bound Data" should "have priority in setting ref over unbound Data" in {
+    class MyModule extends RawModule {
+      val foo = IO(new Bundle {
+        val x = Output(UInt(8.W))
+      })
+      foo.x := 0.U // getRef on foo.x is None.get without fix
+      val bar = new Bundle {
+        val y = foo.x
+      }
+    }
+    ChiselStage.emitChirrtl(new MyModule)
   }
 }

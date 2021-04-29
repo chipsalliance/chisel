@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 // Useful utilities for tests
 
@@ -20,7 +20,7 @@ trait AbstractPassthroughModule extends RawModule {
 }
 
 class PassthroughModule extends Module with AbstractPassthroughModule
-class PassthroughMultiIOModule extends MultiIOModule with AbstractPassthroughModule
+class PassthroughMultiIOModule extends Module with AbstractPassthroughModule
 class PassthroughRawModule extends RawModule with AbstractPassthroughModule
 
 case class ScalaIntervalSimulator(intervalRange: IntervalRange) {

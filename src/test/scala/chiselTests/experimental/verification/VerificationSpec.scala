@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests.experimental.verification
 
@@ -28,7 +28,7 @@ class VerificationSpec extends ChiselPropSpec {
   }
 
   property("basic equality check should work") {
-    val fir = ChiselStage.emitFirrtl(new VerificationModule)
+    val fir = ChiselStage.emitChirrtl(new VerificationModule)
     val lines = fir.split("\n").map(_.trim)
     assertContains(lines, "cover(clock, _T, UInt<1>(\"h1\"), \"\") @[VerificationSpec.scala 16:15]")
     assertContains(lines, "assume(clock, _T_2, UInt<1>(\"h1\"), \"\") @[VerificationSpec.scala 18:18]")

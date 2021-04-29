@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 /** Enum generators, allowing circuit constants to have more meaningful names.
   */

@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chisel3
 
@@ -17,7 +17,8 @@ abstract class Element extends Data {
   def widthKnown: Boolean = width.known
   def name: String = getRef.name
 
-  private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection) {
+  private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
+    _parent.foreach(_.addId(this))
     binding = target
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
     direction = ActualDirection.fromSpecified(resolvedDirection)
@@ -26,6 +27,10 @@ abstract class Element extends Data {
   private[chisel3] override def topBindingOpt: Option[TopBinding] = super.topBindingOpt match {
     // Translate Bundle lit bindings to Element lit bindings
     case Some(BundleLitBinding(litMap)) => litMap.get(this) match {
+      case Some(litArg) => Some(ElementLitBinding(litArg))
+      case _ => Some(DontCareBinding())
+    }
+    case Some(VecLitBinding(litMap)) => litMap.get(this) match {
       case Some(litArg) => Some(ElementLitBinding(litArg))
       case _ => Some(DontCareBinding())
     }
@@ -39,16 +44,6 @@ abstract class Element extends Data {
 
   override def litOption: Option[BigInt] = litArgOption.map(_.num)
   private[chisel3] def litIsForcedWidth: Option[Boolean] = litArgOption.map(_.forcedWidth)
-
-  // provide bits-specific literal handling functionality here
-  override private[chisel3] def ref: Arg = topBindingOpt match {
-    case Some(ElementLitBinding(litArg)) => litArg
-    case Some(BundleLitBinding(litMap)) => litMap.get(this) match {
-      case Some(litArg) => litArg
-      case _ => throwException(s"internal error: DontCare should be caught before getting ref")
-    }
-    case _ => super.ref
-  }
 
   private[chisel3] def legacyConnect(that: Data)(implicit sourceInfo: SourceInfo): Unit = {
     // If the source is a DontCare, generate a DefInvalid for the sink,

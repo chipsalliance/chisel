@@ -5,17 +5,17 @@ import coursier.maven.MavenRepository
 import $ivy.`com.lihaoyi::mill-contrib-buildinfo:$MILL_VERSION`
 import mill.contrib.buildinfo.BuildInfo
 
-object chisel3 extends mill.Cross[chisel3CrossModule]("2.11.12", "2.12.12")
+object chisel3 extends mill.Cross[chisel3CrossModule]("2.12.13")
 
 // The following stanza is searched for and used when preparing releases.
 // Please retain it.
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
 val defaultVersions = Map(
-  "firrtl" -> "1.4-SNAPSHOT"
+  "firrtl" -> "1.5-SNAPSHOT"
 )
 
 val testDefaultVersions = Map(
-  "treadle" -> "1.3-SNAPSHOT"
+  "treadle" -> "1.5-SNAPSHOT"
 )
 
 def getVersion(dep: String, org: String = "edu.berkeley.cs") = {
@@ -46,7 +46,7 @@ trait CommonModule extends CrossSbtModule with PublishModule {
 
   override def ivyDeps = super.ivyDeps() ++ firrtlIvyDeps
 
-  def publishVersion = "3.4-SNAPSHOT"
+  def publishVersion = "3.5-SNAPSHOT"
 
   // 2.12.10 -> Array("2", "12", "10") -> "12" -> 12
   protected def majorVersion = crossScalaVersion.split('.')(1).toInt
@@ -56,25 +56,11 @@ trait CommonModule extends CrossSbtModule with PublishModule {
     MavenRepository("https://oss.sonatype.org/content/repositories/releases")
   )
 
-  private def scalacCrossOptions = majorVersion match {
-    case i if i < 12 => Seq()
-    case _ => Seq("-Xsource:2.11")
-  }
-
-  private def javacCrossOptions = majorVersion match {
-    case i if i < 12 => Seq("-source", "1.7", "-target", "1.7")
-    case _ => Seq("-source", "1.8", "-target", "1.8")
-  }
-
   override def scalacOptions = T {
     super.scalacOptions() ++ Agg(
       "-deprecation",
       "-feature"
-    ) ++ scalacCrossOptions
-  }
-
-  override def javacOptions = T {
-    super.javacOptions() ++ javacCrossOptions
+    )
   }
 
   private val macroParadise = ivy"org.scalamacros:::paradise:2.1.1"
@@ -87,7 +73,7 @@ trait CommonModule extends CrossSbtModule with PublishModule {
     description = artifactName(),
     organization = "edu.berkeley.cs",
     url = "https://www.chisel-lang.org",
-    licenses = Seq(License.`BSD-3-Clause`),
+    licenses = Seq(License.`Apache-2.0`),
     versionControl = VersionControl.github("freechipsproject", "chisel3"),
     developers = Seq(
       Developer("jackbackrack", "Jonathan Bachrach", "https://eecs.berkeley.edu/~jrb/")
@@ -118,16 +104,11 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule wit
   object test extends Tests {
     override def scalacPluginClasspath = m.scalacPluginClasspath
 
-    private def ivyCrossDeps = majorVersion match {
-      case i if i < 12 => Agg(ivy"junit:junit:4.13")
-      case _ => Agg()
-    }
-
     override def ivyDeps = m.ivyDeps() ++ Agg(
       ivy"org.scalatest::scalatest:3.1.2",
-      ivy"org.scalatestplus::scalacheck-1-14:3.1.4.0",
-      ivy"com.github.scopt::scopt:3.7.1"
-    ) ++ ivyCrossDeps ++ m.treadleIvyDeps
+      ivy"org.scalatestplus::scalacheck-1-14:3.1.1.1",
+      ivy"com.github.scopt::scopt:4.0.1"
+    ) ++ m.treadleIvyDeps
 
     override def moduleDeps = super.moduleDeps ++ treadleModule
 

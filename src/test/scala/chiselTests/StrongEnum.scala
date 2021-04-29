@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests
 
@@ -77,7 +77,7 @@ class CastFromNonLit extends Module {
 class CastFromNonLitWidth(w: Option[Int] = None) extends Module {
   val width = if (w.isDefined) w.get.W else UnknownWidth()
 
-  override val io = IO(new Bundle {
+  val io = IO(new Bundle {
     val in = Input(UInt(width))
     val out = Output(EnumExample())
   })

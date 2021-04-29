@@ -6,7 +6,6 @@ generated/
 .idea_modules/
 .project
 target/
-docs-target/
 *.iml
 *.swp
 *.fir
@@ -16,3 +15,6 @@ test_run_dir
 *~
 \#*\#
 .\#*
+.metals
+.bloop
+metals.sbt

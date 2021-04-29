@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chisel3.stage
 
@@ -6,12 +6,14 @@ import firrtl.{
   ir => fir,
   AnnotationSeq,
   EmittedFirrtlCircuitAnnotation,
+  EmittedFirrtlModuleAnnotation,
   EmittedVerilogCircuitAnnotation,
+  EmittedVerilogModuleAnnotation,
   HighFirrtlEmitter,
   VerilogEmitter,
   SystemVerilogEmitter
 }
-import firrtl.options.{Dependency, Phase, PhaseManager, Shell, Stage, StageError, StageMain}
+import firrtl.options.{Dependency, Phase, PhaseManager, Shell, Stage, StageMain}
 import firrtl.options.phases.DeletedWrapper
 import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlCli, RunFirrtlTransformAnnotation}
 import firrtl.options.Viewer.view
@@ -26,7 +28,7 @@ class ChiselStage extends Stage {
 
   override def prerequisites = Seq.empty
   override def optionalPrerequisites = Seq.empty
-  override def optionalPrerequisiteOf = Seq.empty
+  override def optionalPrerequisiteOf = Seq(Dependency[firrtl.stage.FirrtlStage])
   override def invalidates(a: Phase) = false
 
   val shell: Shell = new Shell("chisel") with ChiselCli with FirrtlCli
@@ -40,23 +42,7 @@ class ChiselStage extends Stage {
     }
   }
 
-  def run(annotations: AnnotationSeq): AnnotationSeq = try {
-    phaseManager.transform(annotations)
-  } catch {
-    case ce: ChiselException =>
-      val stackTrace = if (!view[ChiselOptions](annotations).printFullStackTrace) {
-        ce.chiselStackTrace
-      } else {
-        val sw = new StringWriter
-        ce.printStackTrace(new PrintWriter(sw))
-        sw.toString
-      }
-      Predef
-        .augmentString(stackTrace)
-        .lines
-        .foreach(line => println(s"${ErrorLog.errTag} $line"))
-      throw new StageError(cause=ce)
-  }
+  def run(annotations: AnnotationSeq): AnnotationSeq = phaseManager.transform(annotations)
 
   /** Convert a Chisel module to a CHIRRTL string
     * @param gen a call-by-name Chisel module
@@ -93,11 +79,11 @@ class ChiselStage extends Stage {
     annotations: AnnotationSeq = Seq.empty): String = {
 
     execute(Array("-X", "high") ++ args, ChiselGeneratorAnnotation(() => gen) +: annotations)
-      .collectFirst {
+      .collect {
         case EmittedFirrtlCircuitAnnotation(a) => a
-      }
-      .get
-      .value
+        case EmittedFirrtlModuleAnnotation(a)  => a
+      }.map(_.value)
+      .mkString("")
 
   }
 
@@ -115,9 +101,10 @@ class ChiselStage extends Stage {
     execute(Array("-X", "verilog") ++ args, ChiselGeneratorAnnotation(() => gen) +: annotations)
       .collectFirst {
         case EmittedVerilogCircuitAnnotation(a) => a
-      }
-      .get
-      .value
+        case EmittedVerilogModuleAnnotation(a)  => a
+      }.map(_.value)
+      .mkString("")
+
   }
 
   /** Convert a Chisel module to SystemVerilog
@@ -134,9 +121,10 @@ class ChiselStage extends Stage {
     execute(Array("-X", "sverilog") ++ args, ChiselGeneratorAnnotation(() => gen) +: annotations)
       .collectFirst {
         case EmittedVerilogCircuitAnnotation(a) => a
-      }
-      .get
-      .value
+        case EmittedVerilogModuleAnnotation(a)  => a
+      }.map(_.value)
+      .mkString("")
+
   }
 }
 

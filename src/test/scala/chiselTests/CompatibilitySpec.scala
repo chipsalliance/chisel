@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests
 
@@ -7,6 +7,8 @@ import chisel3.testers.BasicTester
 
 import org.scalacheck.Gen
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
+
+import scala.collection.immutable.ListMap
 
 // Need separate import to override compile options from Chisel._
 object CompatibilityCustomCompileOptions {
@@ -101,7 +103,6 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
       Reverse(wire) shouldBe a [UInt]
       Cat(wire, wire) shouldBe a [UInt]
       Log2(wire) shouldBe a [UInt]
-      unless(Bool(false)) {}
       // 'switch' and 'is' are tested below in Risc
       Counter(2) shouldBe a [Counter]
       DecoupledIO(wire) shouldBe a [DecoupledIO[UInt]]
@@ -237,6 +238,20 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
     ChiselStage.elaborate { new RequireIOWrapModule() }
   }
 
+  "A Module without val io" should "throw an exception" in {
+    class ModuleWithoutValIO extends Module {
+      val foo = new Bundle {
+        val in = UInt(width = 32).asInput
+        val out = Bool().asOutput
+      }
+      foo.out := foo.in(1)
+    }
+    val e = intercept[Exception](
+      ChiselStage.elaborate { new ModuleWithoutValIO }
+    )
+    e.getMessage should include("must have a 'val io' Bundle")
+  }
+
   "A Module connecting output as source to input as sink when compiled with the Chisel compatibility package" should "not throw an exception" in {
 
     class SimpleModule extends Module {
@@ -337,13 +352,6 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
 
       info("Deprecated method DC hasn't been removed")
       val bp = BitPat.DC(4)
-
-      info("BitPat != UInt is a Bool")
-      (bp != UInt(4)) shouldBe a [Bool]
-
-      /* This test does not work, but I'm not sure it's supposed to? It does *not* work on chisel3. */
-      // info("UInt != BitPat is a Bool")
-      // (UInt(4) != bp) shouldBe a [Bool]
     }
 
     ChiselStage.elaborate(new Foo)
@@ -443,6 +451,18 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
     ChiselStage.elaborate(new Foo)
   }
 
+  it should "support data-types of mixed directionality" in {
+    class Foo extends Module {
+      val io = IO(new Bundle {})
+      val tpe = new Bundle { val foo = UInt(OUTPUT, width = 4); val bar = UInt(width = 4) }
+      // NOTE for some reason, the old bug this hit did not occur when `tpe` is inlined
+      val mem = SeqMem(tpe, 8)
+      mem(3.U)
+
+    }
+    ChiselStage.elaborate((new Foo))
+  }
+
   behavior of "debug"
 
   it should "still exist" in {
@@ -457,22 +477,6 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
   }
 
   behavior of "Data methods"
-
-  it should "support legacy methods" in {
-    class Foo extends Module {
-      val io = IO(new Bundle{})
-
-      info("litArg works")
-      UInt(width=3).litArg() should be (None)
-      UInt(0, width=3).litArg() should be (Some(chisel3.internal.firrtl.ULit(0, 3.W)))
-
-      info("toBits works")
-      val wire = Wire(UInt(width=4))
-      Vec.fill(4)(wire).toBits.getWidth should be (wire.getWidth * 4)
-    }
-
-    ChiselStage.elaborate(new Foo)
-  }
 
   behavior of "Wire"
 
@@ -526,9 +530,6 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
       val u = UInt(8)
       val s = SInt(-4)
 
-      info("toBools works")
-      u.toBools shouldBe a [Seq[Bool]]
-
       info("asBits works")
       s.asBits shouldBe a [Bits]
 
@@ -537,35 +538,6 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
 
       info("toUInt works")
       s.toUInt shouldBe a [UInt]
-
-      info("toBool works")
-      UInt(1).toBool shouldBe a [Bool]
-    }
-
-    ChiselStage.elaborate(new Foo)
-  }
-
-  behavior of "UInt"
-
-  it should "support legacy methods" in {
-    class Foo extends Module {
-      val io = new Bundle{}
-
-      info("!= works")
-      (UInt(1) != UInt(1)) shouldBe a [Bool]
-    }
-
-    ChiselStage.elaborate(new Foo)
-  }
-
-  behavior of "SInt"
-
-  it should "support legacy methods" in {
-    class Foo extends Module {
-      val io = new Bundle{}
-
-      info("!= works")
-      (SInt(-1) != SInt(-1)) shouldBe a [Bool]
     }
 
     ChiselStage.elaborate(new Foo)
@@ -576,6 +548,22 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
     var result: Foo = null
     ChiselStage.elaborate({result = new Foo; result})
     result.compileOptions should be theSameInstanceAs (customCompileOptions)
+  }
+
+  it should "properly set the refs of Records" in {
+    class MyRecord extends Record {
+      val foo = Vec(1, Bool()).asInput
+      val bar = Vec(1, Bool())
+      val elements = ListMap("in" -> foo, "out" -> bar)
+      def cloneType = (new MyRecord).asInstanceOf[this.type]
+    }
+    class Foo extends Module {
+      val io = IO(new MyRecord)
+      io.bar := io.foo
+    }
+    val verilog = ChiselStage.emitVerilog(new Foo)
+    // Check that the names are correct (and that the FIRRTL is valid)
+    verilog should include ("assign io_out_0 = io_in_0;")
   }
 
 }
