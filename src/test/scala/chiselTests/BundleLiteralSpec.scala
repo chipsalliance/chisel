@@ -6,9 +6,8 @@ import chisel3._
 import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
 import chisel3.experimental.BundleLiterals._
-import chisel3.experimental.BundleLiteralException
-import chisel3.experimental.ChiselEnum
-import chisel3.experimental.FixedPoint
+import chisel3.experimental.VecLiterals.AddVecLiteralConstructor
+import chisel3.experimental.{BundleLiteralException, ChiselEnum, ChiselRange, FixedPoint, Interval}
 
 class BundleLiteralSpec extends ChiselFlatSpec with Utils {
   object MyEnum extends ChiselEnum {
@@ -74,6 +73,24 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
 
       stop()
     } }
+  }
+
+  "bundle literals of vec literals" should "work" in {
+    assertTesterPasses(new BasicTester {
+      val range = range"[0,4].2"
+      val bundleWithVecs = new Bundle {
+        val a = Vec(2, UInt(4.W))
+        val b = Vec(2, Interval(range))
+      }.Lit(
+        _.a -> Vec(2, UInt(4.W)).Lit(0 -> 0xA.U, 1 -> 0xB.U),
+        _.b -> Vec(2, Interval(range)).Lit(0 -> (1.5).I(range), 1 -> (0.25).I(range))
+      )
+      chisel3.assert(bundleWithVecs.a(0) === 0xA.U)
+      chisel3.assert(bundleWithVecs.a(1) === 0xB.U)
+      chisel3.assert(bundleWithVecs.b(0) === (1.5).I(range))
+      chisel3.assert(bundleWithVecs.b(1) === (0.25).I(range))
+      stop()
+    })
   }
 
   "partial bundle literals" should "work in RTL" in {

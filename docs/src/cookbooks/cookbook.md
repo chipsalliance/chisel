@@ -447,16 +447,13 @@ class Salt extends Module {
 }
 ```
 
-Elaborating the Chisel module `Salt` yields our "desire name" for `Salt` and `Coffee` in the output Verilog:
-```scala mdoc:passthrough
-import chisel3.stage.{ChiselStage, ChiselGeneratorAnnotation}
-import firrtl.annotations.DeletedAnnotation
-import firrtl.EmittedVerilogCircuitAnnotation
+Elaborating the Chisel module `Salt` yields our "desired names" for `Salt` and `Coffee` in the output Verilog:
+```scala mdoc:silent
+import chisel3.stage.ChiselStage
 
-(new ChiselStage)
-  .execute(Array("-X", "verilog"), Seq(ChiselGeneratorAnnotation(() => new Salt)))
-  .collectFirst{ case DeletedAnnotation(_, a: EmittedVerilogCircuitAnnotation) => a.value.value }
-  .foreach(a => println(s"""|```verilog
-                            |$a
-                            |```""".stripMargin))
+ChiselStage.emitVerilog(new Salt)
+```
+
+```scala mdoc:verilog
+ChiselStage.emitVerilog(new Salt)
 ```
