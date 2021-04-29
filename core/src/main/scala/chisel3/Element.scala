@@ -30,6 +30,10 @@ abstract class Element extends Data {
       case Some(litArg) => Some(ElementLitBinding(litArg))
       case _ => Some(DontCareBinding())
     }
+    case Some(VecLitBinding(litMap)) => litMap.get(this) match {
+      case Some(litArg) => Some(ElementLitBinding(litArg))
+      case _ => Some(DontCareBinding())
+    }
     case topBindingOpt => topBindingOpt
   }
 

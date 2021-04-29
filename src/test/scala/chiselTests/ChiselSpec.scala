@@ -2,22 +2,22 @@
 
 package chiselTests
 
-import org.scalatest._
-import org.scalatest.prop._
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalacheck._
 import chisel3._
-import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
-import chisel3.testers._
-import firrtl.{AnnotationSeq, CommonOptions, EmittedVerilogCircuitAnnotation, ExecutionOptionsManager, FirrtlExecutionFailure, FirrtlExecutionSuccess, HasFirrtlOptions}
-import firrtl.annotations.{Annotation, DeletedAnnotation}
-import firrtl.util.BackendCompilationUtilities
-import java.io.ByteArrayOutputStream
-import java.security.Permission
-
 import chisel3.aop.Aspect
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage, NoRunFirrtlCompilerAnnotation, PrintFullStackTraceAnnotation}
+import chisel3.testers._
+import firrtl.annotations.Annotation
+import firrtl.util.BackendCompilationUtilities
+import firrtl.{AnnotationSeq, EmittedVerilogCircuitAnnotation}
+import org.scalacheck._
+import org.scalatest._
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should._
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
+
+import java.io.ByteArrayOutputStream
+import java.security.Permission
 import scala.reflect.ClassTag
 
 /** Common utility functions for Chisel unit tests. */
@@ -89,6 +89,9 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
 
 /** Spec base class for BDD-style testers. */
 abstract class ChiselFlatSpec extends AnyFlatSpec with ChiselRunners with Matchers
+
+/** Spec base class for BDD-style testers. */
+abstract class ChiselFreeSpec extends AnyFreeSpec with ChiselRunners with Matchers
 
 /** Spec base class for property-based testers. */
 abstract class ChiselPropSpec extends PropSpec with ChiselRunners with ScalaCheckPropertyChecks with Matchers {
