@@ -2,9 +2,8 @@
 
 package chisel3.experimental
 
-import chisel3.{Bool, CompileOptions}
+import chisel3._
 import chisel3.internal.Builder
-import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.{Formal, Verification}
 import chisel3.internal.sourceinfo.SourceInfo
 
@@ -13,9 +12,10 @@ package object verification {
     def apply(predicate: Bool, msg: String = "")(
       implicit sourceInfo: SourceInfo,
       compileOptions: CompileOptions): Unit = {
-      val clock = Builder.forcedClock
-      pushCommand(Verification(Formal.Assert, sourceInfo, clock.ref,
-        predicate.ref, msg))
+      when (!Module.reset.asBool) {
+        val clock = Module.clock
+        Builder.pushCommand(Verification(Formal.Assert, sourceInfo, clock.ref, predicate.ref, msg))
+      }
     }
   }
 
@@ -23,9 +23,10 @@ package object verification {
     def apply(predicate: Bool, msg: String = "")(
       implicit sourceInfo: SourceInfo,
       compileOptions: CompileOptions): Unit = {
-      val clock = Builder.forcedClock
-      pushCommand(Verification(Formal.Assume, sourceInfo, clock.ref,
-        predicate.ref, msg))
+      when (!Module.reset.asBool) {
+        val clock = Module.clock
+        Builder.pushCommand(Verification(Formal.Assume, sourceInfo, clock.ref, predicate.ref, msg))
+      }
     }
   }
 
@@ -33,9 +34,10 @@ package object verification {
     def apply(predicate: Bool, msg: String = "")(
       implicit sourceInfo: SourceInfo,
       compileOptions: CompileOptions): Unit = {
-      val clock = Builder.forcedClock
-      pushCommand(Verification(Formal.Cover, sourceInfo, clock.ref,
-        predicate.ref, msg))
+      val clock = Module.clock
+      when (!Module.reset.asBool) {
+        Builder.pushCommand(Verification(Formal.Cover, sourceInfo, clock.ref, predicate.ref, msg))
+      }
     }
   }
 }
