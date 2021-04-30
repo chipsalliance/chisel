@@ -34,6 +34,6 @@ object VendingMachineUtils {
         value += incValue
       }
     }
-    outputs
+    outputs.toSeq
   }
 }

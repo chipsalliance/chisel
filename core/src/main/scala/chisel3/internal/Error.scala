@@ -45,7 +45,7 @@ object ExceptionHelpers {
       }
 
       // Step 1: Remove elements from the top in the package trimlist
-      ((a: Array[StackTraceElement]) => a.view.dropWhile(inTrimlist))
+      ((a: Array[StackTraceElement]) => a.dropWhile(inTrimlist))
       // Step 2: Optionally remove elements from the bottom until the anchor
         .andThen(_.reverse)
         .andThen( a =>
@@ -125,10 +125,10 @@ class ChiselException(message: String, cause: Throwable = null) extends Exceptio
     }
 
     val trimmedLeft = throwable.getStackTrace().view.dropWhile(isBlacklisted)
-    val trimmedReverse = trimmedLeft.reverse
+    val trimmedReverse = trimmedLeft.toIndexedSeq.reverse.view
       .dropWhile(ste => !ste.getClassName.startsWith(builderName))
       .dropWhile(isBlacklisted)
-    trimmedReverse.reverse.toArray
+    trimmedReverse.toIndexedSeq.reverse.toArray
   }
 
   def chiselStackTrace: String = {

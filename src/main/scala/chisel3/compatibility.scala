@@ -398,8 +398,8 @@ package object Chisel {
   }
 
   // Deprecated as of Chsiel3
-  @throws(classOf[Exception])
   object throwException {
+    @throws(classOf[Exception])
     def apply(s: String, t: Throwable = null): Nothing = {
       val xcpt = new Exception(s, t)
       throw xcpt

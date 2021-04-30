@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        scala: [2.12.13]
+        scala: [2.13.5, 2.12.13]
     container:
       image: ucbbar/chisel3-tools
       options: --user github --entrypoint /bin/bash
