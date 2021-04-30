@@ -88,6 +88,13 @@ class ChiselStageSpec extends AnyFlatSpec with Matchers with Utils {
     catchWrites { ChiselStage.convert(new Foo) } shouldBe a[Right[_, _]]
   }
 
+  ignore should "generate a FIRRTL circuit from a CHIRRTL circuit" in {
+    info("no files were written")
+    catchWrites {
+      ChiselStage.convert(ChiselStage.elaborate(new Foo))
+    } shouldBe a[Right[_, _]]
+  }
+
   behavior of "ChiselStage$.emitChirrtl"
 
   ignore should "generate a CHIRRTL string from a Chisel module" in {
