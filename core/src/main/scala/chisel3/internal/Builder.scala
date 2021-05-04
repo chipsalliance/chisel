@@ -9,7 +9,9 @@ import chisel3.experimental._
 import chisel3.internal.firrtl._
 import chisel3.internal.naming._
 import _root_.firrtl.annotations.{CircuitName, ComponentName, IsMember, ModuleName, Named, ReferenceTarget}
+import _root_.firrtl.annotations.AnnotationUtils.{validComponentName}
 import chisel3.internal.Builder.Prefix
+import logger.LazyLogging
 
 import scala.collection.mutable
 
@@ -82,7 +84,6 @@ trait InstanceId {
 private[chisel3] trait HasId extends InstanceId {
   private[chisel3] def _onModuleClose: Unit = {}
   private[chisel3] val _parent: Option[BaseModule] = Builder.currentModule
-  _parent.foreach(_.addId(this))
 
   private[chisel3] val _id: Long = Builder.idGen.next
 
@@ -275,6 +276,7 @@ private[chisel3] trait NamedComponent extends HasId {
     */
   final def toTarget: ReferenceTarget = {
     val name = this.instanceName
+    if (!validComponentName(name)) throwException(s"Illegal component name: $name (note: literals are illegal)")
     import _root_.firrtl.annotations.{Target, TargetToken}
     Target.toTargetTokens(name).toList match {
       case TargetToken.Ref(r) :: components => ReferenceTarget(this.circuitName, this.parentModName, Nil, r, components)
@@ -308,6 +310,8 @@ private[chisel3] class DynamicContext() {
   val components = ArrayBuffer[Component]()
   val annotations = ArrayBuffer[ChiselAnnotation]()
   var currentModule: Option[BaseModule] = None
+  // This is only used for testing, it can be removed if the plugin becomes mandatory
+  var allowReflectiveAutoCloneType = true
 
   /** Contains a mapping from a elaborated module to their aspect
     * Set by [[ModuleAspect]]
@@ -324,7 +328,7 @@ private[chisel3] class DynamicContext() {
   val namingStack = new NamingStack
 }
 
-private[chisel3] object Builder {
+private[chisel3] object Builder extends LazyLogging {
 
   // Represents the current state of the prefixes given
   type Prefix = List[String]
@@ -526,6 +530,16 @@ private[chisel3] object Builder {
     dynamicContext.currentReset = newReset
   }
 
+  // This should only be used for testing, must be true outside of Builder context
+  def allowReflectiveAutoCloneType: Boolean = {
+    dynamicContextVar.value
+                     .map(_.allowReflectiveAutoCloneType)
+                     .getOrElse(true)
+  }
+  def allowReflectiveAutoCloneType_=(value: Boolean): Unit = {
+    dynamicContext.allowReflectiveAutoCloneType = value
+  }
+
   def forcedClock: Clock = currentClock.getOrElse(
     throwException("Error: No implicit clock.")
   )
@@ -638,11 +652,11 @@ private[chisel3] object Builder {
   private [chisel3] def build[T <: RawModule](f: => T, dynamicContext: DynamicContext): (Circuit, T) = {
     dynamicContextVar.withValue(Some(dynamicContext)) {
       checkScalaVersion()
-      errors.info("Elaborating design...")
+      logger.warn("Elaborating design...")
       val mod = f
       mod.forceName(None, mod.name, globalNamespace)
       errors.checkpoint()
-      errors.info("Done elaborating.")
+      logger.warn("Done elaborating.")
 
       (Circuit(components.last.name, components, annotations), mod)
     }

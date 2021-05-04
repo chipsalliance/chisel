@@ -108,7 +108,7 @@ object Decoupled
   @chiselName
   def apply[T <: Data](irr: IrrevocableIO[T]): DecoupledIO[T] = {
     require(DataMirror.directionOf(irr.bits) == Direction.Output, "Only safe to cast produced Irrevocable bits to Decoupled.")
-    val d = Wire(new DecoupledIO(irr.bits))
+    val d = Wire(new DecoupledIO(chiselTypeOf(irr.bits)))
     d.bits := irr.bits
     d.valid := irr.valid
     irr.ready := d.ready
@@ -139,7 +139,7 @@ object Irrevocable
     */
   def apply[T <: Data](dec: DecoupledIO[T]): IrrevocableIO[T] = {
     require(DataMirror.directionOf(dec.bits) == Direction.Input, "Only safe to cast consumed Decoupled bits to Irrevocable.")
-    val i = Wire(new IrrevocableIO(dec.bits))
+    val i = Wire(new IrrevocableIO(chiselTypeOf(dec.bits)))
     dec.bits := i.bits
     dec.valid := i.valid
     i.ready := dec.ready

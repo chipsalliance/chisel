@@ -43,7 +43,7 @@ lazy val commonSettings = Seq (
   organization := "edu.berkeley.cs",
   version := "3.4-SNAPSHOT",
   autoAPIMappings := true,
-  scalaVersion := "2.12.12",
+  scalaVersion := "2.12.13",
   crossScalaVersions := Seq("2.12.12", "2.11.12"),
   scalacOptions := Seq("-deprecation", "-feature") ++ scalacOptionsVersion(scalaVersion.value),
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
@@ -54,20 +54,14 @@ lazy val publishSettings = Seq (
   publishMavenStyle := true,
   publishArtifact in Test := false,
   pomIncludeRepository := { x => false },
-  // Don't add 'scm' elements if we have a git.remoteRepo definition,
-  //  but since we don't (with the removal of ghpages), add them in below.
   pomExtra := <url>http://chisel.eecs.berkeley.edu/</url>
     <licenses>
       <license>
-        <name>BSD-style</name>
-        <url>http://www.opensource.org/licenses/bsd-license.php</url>
+        <name>apache-v2</name>
+        <url>https://opensource.org/licenses/Apache-2.0</url>
         <distribution>repo</distribution>
       </license>
     </licenses>
-    <scm>
-      <url>https://github.com/freechipsproject/chisel3.git</url>
-      <connection>scm:git:github.com/freechipsproject/chisel3.git</connection>
-    </scm>
     <developers>
       <developer>
         <id>jackbackrack</id>
@@ -131,6 +125,7 @@ lazy val pluginScalaVersions = Seq(
   "2.12.10",
   "2.12.11",
   "2.12.12",
+  "2.12.13",
 )
 
 lazy val plugin = (project in file("plugin")).
@@ -154,7 +149,7 @@ lazy val plugin = (project in file("plugin")).
     mimaPreviousArtifacts := {
       // Not published for 2.11, do not try to check binary compatibility with a 2.11 artifact
       if (scalaVersion.value.startsWith("2.11")) Set()
-      else Set("edu.berkeley.cs" % "chisel3-plugin" % "3.4.0" cross CrossVersion.full)
+      else Set("edu.berkeley.cs" % "chisel3-plugin" % "3.4.2" cross CrossVersion.full)
     }
   )
 
@@ -174,7 +169,7 @@ lazy val macros = (project in file("macros")).
   settings(name := "chisel3-macros").
   settings(commonSettings: _*).
   settings(publishSettings: _*).
-  settings(mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-macros" % "3.4.0"))
+  settings(mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-macros" % "3.4.2"))
 
 lazy val firrtlRef = ProjectRef(workspaceDirectory / "firrtl", "firrtl")
 
@@ -189,7 +184,7 @@ lazy val core = (project in file("core")).
   ).
   settings(publishSettings: _*).
   settings(
-    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-core" % "3.4.0"),
+    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-core" % "3.4.2"),
     mimaBinaryIssueFilters ++= Seq(
       // Modified package private methods (https://github.com/lightbend/mima/issues/53)
       ProblemFilters.exclude[IncompatibleMethTypeProblem]("chisel3.internal.Builder.pushPrefix"),
@@ -199,6 +194,9 @@ lazy val core = (project in file("core")).
       ProblemFilters.exclude[IncompatibleMethTypeProblem]("chisel3.internal.Builder.pushPrefix"),
       ProblemFilters.exclude[IncompatibleResultTypeProblem]("chisel3.internal.Builder.popPrefix"),
       ProblemFilters.exclude[IncompatibleResultTypeProblem]("chisel3.internal.ChiselContext.prefixStack"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.internal.firrtl.Converter.convert"),
+      ProblemFilters.exclude[IncompatibleMethTypeProblem]("chisel3.internal.firrtl.Converter.extractType"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.internal.firrtl.Converter.extractType$default$2"),
       // Scala 2.11 only issue, new concrete methods in traits require recompilation of implementing classes
       // Not a problem because HasId is package private so all implementers are in chisel3 itself
       // Note there is no problem for user subtypes of Record because setRef is implemented by Data
@@ -234,9 +232,14 @@ lazy val chisel = (project in file(".")).
   dependsOn(core).
   aggregate(macros, core, plugin).
   settings(
-    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3" % "3.4.0"),
+    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3" % "3.4.2"),
     libraryDependencies += defaultVersions("treadle") % "test",
     scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
+    // Only used in Test for 3.4.x, used in Compile in 3.5
+    scalacOptions in Test ++= {
+      if (scalaVersion.value.startsWith("2.12")) Seq("-P:chiselplugin:useBundlePlugin")
+      else Nil
+    },
     scalacOptions in Compile in doc ++= Seq(
       "-diagrams",
       "-groups",
@@ -254,10 +257,15 @@ lazy val chisel = (project in file(".")).
           } else {
             s"v${version.value}"
           }
-        s"https://github.com/freechipsproject/chisel3/tree/$branch/€{FILE_PATH}.scala"
+        s"https://github.com/chipsalliance/chisel3/tree/$branch€{FILE_PATH_EXT}#L€{FILE_LINE}"
       }
     )
   )
+
+lazy val noPluginTests = (project in file ("no-plugin-tests")).
+  dependsOn(chisel).
+  settings(commonSettings: _*).
+  settings(chiselSettings: _*)
 
 lazy val docs = project       // new documentation project
   .in(file("docs-target")) // important: it must not be docs/

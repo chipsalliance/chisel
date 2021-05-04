@@ -110,6 +110,10 @@ case class ChildBinding(parent: Data) extends Binding {
 case class SampleElementBinding[T <: Data](parent: Vec[T]) extends Binding {
   def location = parent.topBinding.location
 }
+/** Special binding for Mem types */
+case class MemTypeBinding[T <: Data](parent: MemBase[T]) extends Binding {
+  def location: Option[BaseModule] = parent._parent
+}
 // A DontCare element has a specific Binding, somewhat like a literal.
 // It is a source (RHS). It may only be connected/applied to sinks.
 case class DontCareBinding() extends UnconstrainedBinding
