@@ -10,6 +10,7 @@ Please see the page about [Versioning](../../chisel3/docs/appendix/versioning.ht
 
 ### 1.3
 
+* [1.3.3](1.3.3/)
 * [1.3.2](1.3.2/)
 * [1.3.1](1.3.1/)
 * [1.3.0](1.3.0/)

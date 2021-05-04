@@ -10,6 +10,7 @@ Please see the page about [Versioning](../../chisel3/docs/appendix/versioning.ht
 
 ### 1.5
 
+* [1.5.3](1.5.3/)
 * [1.5.2](1.5.2/)
 * [1.5.1](1.5.1/)
 * [1.5.0](1.5.0/)
