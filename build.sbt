@@ -64,42 +64,42 @@ lazy val mimaSettings = Seq(
 )
 
 lazy val protobufSettings = Seq(
-  sourceDirectory in ProtobufConfig := baseDirectory.value / "src" / "main" / "proto",
-  protobufRunProtoc in ProtobufConfig := (args =>
+  ProtobufConfig / sourceDirectory := baseDirectory.value / "src" / "main" / "proto",
+  ProtobufConfig / protobufRunProtoc := (args =>
     com.github.os72.protocjar.Protoc.runProtoc("-v351" +: args.toArray)
   )
 )
 
 lazy val assemblySettings = Seq(
-  assemblyJarName in assembly := "firrtl.jar",
-  test in assembly := {},
-  assemblyOutputPath in assembly := file("./utils/bin/firrtl.jar")
+  assembly / assemblyJarName := "firrtl.jar",
+  assembly / test := {},
+  assembly / assemblyOutputPath := file("./utils/bin/firrtl.jar")
 )
 
 
 lazy val testAssemblySettings = Seq(
-  test in (Test, assembly) := {}, // Ditto above
-  assemblyMergeStrategy in (Test, assembly) := {
+  Test / assembly / test := {}, // Ditto above
+  Test / assembly / assemblyMergeStrategy := {
     case PathList("firrtlTests", xs @ _*) => MergeStrategy.discard
     case x =>
-      val oldStrategy = (assemblyMergeStrategy in (Test, assembly)).value
+      val oldStrategy = (Test / assembly / assemblyMergeStrategy).value
       oldStrategy(x)
   },
-  assemblyJarName in (Test, assembly) := s"firrtl-test.jar",
-  assemblyOutputPath in (Test, assembly) := file("./utils/bin/" + (Test / assembly / assemblyJarName).value)
+  Test / assembly / assemblyJarName := s"firrtl-test.jar",
+  Test / assembly / assemblyOutputPath := file("./utils/bin/" + (Test / assembly / assemblyJarName).value)
 )
 
 lazy val antlrSettings = Seq(
-  antlr4GenVisitor in Antlr4 := true,
-  antlr4GenListener in Antlr4 := false,
-  antlr4PackageName in Antlr4 := Option("firrtl.antlr"),
-  antlr4Version in Antlr4 := "4.9.2",
-  javaSource in Antlr4 := (sourceManaged in Compile).value
+  Antlr4 / antlr4GenVisitor := true,
+  Antlr4 / antlr4GenListener := false,
+  Antlr4 / antlr4PackageName := Option("firrtl.antlr"),
+  Antlr4 / antlr4Version := "4.9.2",
+  Antlr4 / javaSource := (Compile / sourceManaged).value
 )
 
 lazy val publishSettings = Seq(
   publishMavenStyle := true,
-  publishArtifact in Test := false,
+  Test / publishArtifact := false,
   pomIncludeRepository := { x => false },
   // scm is set by sbt-ci-release
   pomExtra := <url>http://chisel.eecs.berkeley.edu/</url>
@@ -130,9 +130,9 @@ lazy val publishSettings = Seq(
 
 
 lazy val docSettings = Seq(
-  doc in Compile := (doc in ScalaUnidoc).value,
+  Compile / doc := (ScalaUnidoc / doc).value,
   autoAPIMappings := true,
-  scalacOptions in Compile in doc ++= Seq(
+  Compile / doc / scalacOptions ++= Seq(
     "-Xfatal-warnings",
     "-feature",
     "-diagrams",
@@ -140,7 +140,7 @@ lazy val docSettings = Seq(
     "-doc-version", version.value,
     "-doc-title", name.value,
     "-doc-root-content", baseDirectory.value+"/root-doc.txt",
-    "-sourcepath", (baseDirectory in ThisBuild).value.toString,
+    "-sourcepath", (ThisBuild / baseDirectory).value.toString,
     "-doc-source-url",
     {
       val branch =
@@ -183,9 +183,9 @@ lazy val benchmark = (project in file("benchmark"))
   .dependsOn(firrtl)
   .settings(commonSettings)
   .settings(
-    assemblyJarName in assembly := "firrtl-benchmark.jar",
-    test in assembly := {},
-    assemblyOutputPath in assembly := file("./utils/bin/firrtl-benchmark.jar")
+    assembly / assemblyJarName := "firrtl-benchmark.jar",
+    assembly / test := {},
+    assembly / assemblyOutputPath := file("./utils/bin/firrtl-benchmark.jar")
   )
 
 val JQF_VERSION = "1.5"
@@ -228,9 +228,9 @@ lazy val fuzzer = (project in file("fuzzer"))
 
     jqfFuzz := (Def.inputTaskDyn {
       val (testClassName, testMethod, otherArgs) = testClassAndMethodParser.parsed
-      val outputDir = target.in(Compile).value / "JQF" / testClassName / testMethod
+      val outputDir = (Compile / target).value / "JQF" / testClassName / testMethod
       val classpath = (Compile / fullClasspathAsJars).toTask.value.files.mkString(":")
-      (jqf/runMain).in(Compile).toTask(
+      (Compile / (jqf / runMain)).toTask(
         s" firrtl.jqf.JQFFuzz " +
         s"--testClassName $testClassName " +
         s"--testMethod $testMethod " +
@@ -242,7 +242,7 @@ lazy val fuzzer = (project in file("fuzzer"))
     jqfRepro := (Def.inputTaskDyn {
       val (testClassName, testMethod, otherArgs) = testClassAndMethodParser.parsed
       val classpath = (Compile / fullClasspathAsJars).toTask.value.files.mkString(":")
-      (jqf/runMain).in(Compile).toTask(
+      (Compile / (jqf / runMain)).toTask(
         s" firrtl.jqf.JQFRepro " +
         s"--testClassName $testClassName " +
         s"--testMethod $testMethod " +
