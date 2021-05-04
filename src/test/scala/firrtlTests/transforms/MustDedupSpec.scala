@@ -264,4 +264,38 @@ class MustDedupSpec extends AnyFeatureSpec with FirrtlMatchers with GivenWhenThe
       (new firrtl.stage.FirrtlPhase).transform(annos)
     }
   }
+
+  Feature("When you have unused modules that should dedup, and they do") {
+    val text = """
+                 |circuit A :
+                 |  module B :
+                 |    output io : { flip in : UInt<8>, out : UInt<8> }
+                 |    io.out <= io.in
+                 |  module B_1 :
+                 |    output io : { flip in : UInt<8>, out : UInt<8> }
+                 |    io.out <= io.in
+                 |  module A :
+                 |    output io : { flip in : UInt<8>, out : UInt<8> }
+                 |    inst b of B
+                 |    inst b_1 of B_1
+                 |    b.io.in <= io.in
+                 |    b_1.io.in <= io.in
+                 |    io.out <= and(io.in, UInt(123))
+    """.stripMargin
+    val top = CircuitTarget("A")
+    val bdedup = MustDeduplicateAnnotation(Seq(top.module("B"), top.module("B_1")))
+
+    Scenario("MustDeduplicateAnnotation should be deleted gracefully") {
+      val testDir = createTestDirectory("must_dedup")
+      val annos = Seq(
+        TargetDirAnnotation(testDir.toString),
+        FirrtlSourceAnnotation(text),
+        RunFirrtlTransformAnnotation(new MustDeduplicateTransform),
+        bdedup
+      )
+
+      val resAnnos = (new firrtl.stage.FirrtlPhase).transform(annos)
+      resAnnos.collectFirst { case a: MustDeduplicateTransform => a } should be(None)
+    }
+  }
 }

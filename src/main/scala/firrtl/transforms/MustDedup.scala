@@ -14,18 +14,21 @@ import firrtl.graph.DiGraph
 import java.io.{File, FileWriter}
 
 /** Marks modules as "must deduplicate" */
-case class MustDeduplicateAnnotation(modules: Seq[IsModule]) extends MultiTargetAnnotation {
-  def targets: Seq[Seq[IsModule]] = modules.map(Seq(_))
+case class MustDeduplicateAnnotation(modules: Seq[IsModule]) extends Annotation {
 
-  def duplicate(n: Seq[Seq[Target]]): MustDeduplicateAnnotation = {
-    val newModules = n.map {
-      case Seq(mod: IsModule) => mod
-      case _ =>
-        val msg = "Something went wrong! This anno should only rename to single IsModules! " +
-          s"Got: $modules -> $n"
-        throw new Exception(msg)
+  def update(renames: RenameMap): Seq[MustDeduplicateAnnotation] = {
+    val newModules: Seq[IsModule] = modules.flatMap { m =>
+      renames.get(m) match {
+        case None        => Seq(m)
+        case Some(Seq()) => Seq()
+        case Some(Seq(one: IsModule)) => Seq(one)
+        case Some(many) =>
+          val msg = "Something went wrong! This anno's targets should only rename to IsModules! " +
+            s"Got: ${m.serialize} -> ${many.map(_.serialize).mkString(", ")}"
+          throw new Exception(msg)
+      }
     }
-    MustDeduplicateAnnotation(newModules)
+    if (newModules.isEmpty) Seq() else Seq(this.copy(newModules))
   }
 }
 
