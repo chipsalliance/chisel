@@ -42,14 +42,7 @@ object ShiftRegister
     * val regDelayTwo = ShiftRegister(nextVal, 2, ena)
     * }}}
     */
-  def apply[T <: Data](in: T, n: Int, en: Bool = true.B): T = {
-    // The order of tests reflects the expected use cases.
-    if (n != 0) {
-      RegEnable(apply(in, n-1, en), en)
-    } else {
-      in
-    }
-  }
+  def apply[T <: Data](in: T, n: Int, en: Bool = true.B): T = ShiftRegisters(in, n, en).last
 
   /** Returns the n-cycle delayed version of the input signal with reset initialization.
     *
@@ -62,12 +55,54 @@ object ShiftRegister
     * val regDelayTwoReset = ShiftRegister(nextVal, 2, 0.U, ena)
     * }}}
     */
-  def apply[T <: Data](in: T, n: Int, resetData: T, en: Bool): T = {
-    // The order of tests reflects the expected use cases.
+  def apply[T <: Data](in: T, n: Int, resetData: T, en: Bool): T = ShiftRegisters(in, n, resetData, en).last
+}
+
+
+object ShiftRegisters
+{
+  /** Returns a sequence of delayed input signal registers from 1 to n.
+    *
+    * @param in input to delay
+    * @param n number of cycles to delay
+    * @param en enable the shift
+    *
+    */
+  def apply[T <: Data](in: T, n: Int, en: Bool = true.B): Seq[T] = {
     if (n != 0) {
-      RegEnable(apply(in, n-1, resetData, en), resetData, en)
+      val rs = Seq.fill(n)(Reg(chiselTypeOf(in)))
+      when(en) {
+        rs.foldLeft(in)((in, out) => {
+          out := in
+          out
+        })
+      }
+      rs
     } else {
-      in
+      Seq(in)
+    }
+  }
+
+  /** Returns delayed input signal registers with reset initialization from 1 to n.
+    *
+    * @param in input to delay
+    * @param n number of cycles to delay
+    * @param resetData reset value for each register in the shift
+    * @param en enable the shift
+    *
+    */
+  def apply[T <: Data](in: T, n: Int, resetData: T, en: Bool): Seq[T] = {
+    if (n != 0) {
+      val rs = Seq.fill(n)(RegInit(chiselTypeOf(in), resetData))
+      when(en) {
+        rs.foldLeft(in)((in, out) => {
+          out := in
+          out
+        })
+      }
+      rs
+    } else {
+      Seq(in)
     }
   }
 }
