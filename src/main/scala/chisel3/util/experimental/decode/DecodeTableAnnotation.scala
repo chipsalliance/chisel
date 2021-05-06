@@ -6,8 +6,8 @@ import firrtl.annotations.{Annotation, ReferenceTarget, SingleTargetAnnotation}
 
 case class DecodeTableAnnotation(
   target:         ReferenceTarget,
-  truthTable:     TruthTable,
-  minimizedTable: TruthTable)
+  truthTable:     String,
+  minimizedTable: String)
     extends SingleTargetAnnotation[ReferenceTarget] {
   override def duplicate(n: ReferenceTarget): Annotation = this.copy(target = n)
 }
