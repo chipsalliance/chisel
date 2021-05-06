@@ -69,3 +69,21 @@ class ShiftRegisterSpec extends ChiselPropSpec {
     forAll(smallPosInts) { (shift: Int) => assertTesterPasses{ new ShiftResetTester(shift) } }
   }
 }
+
+class ShiftsTester(n: Int) extends BasicTester {
+  val (cntVal, done) = Counter(true.B, n)
+  val start = 23.U
+  val srs = ShiftRegisters(cntVal + start, n)
+  when(RegNext(done)) {
+    srs.zipWithIndex.foreach{ case (data, index) =>
+      assert(data === (23 + n - 1 - index).U)
+    }
+    stop()
+  }
+}
+
+class ShiftRegistersSpec extends ChiselPropSpec {
+  property("ShiftRegisters should shift") {
+    forAll(smallPosInts) { (shift: Int) => assertTesterPasses{ new ShiftsTester(shift) } }
+  }
+}
