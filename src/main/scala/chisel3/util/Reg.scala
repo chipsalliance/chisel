@@ -64,45 +64,21 @@ object ShiftRegisters
   /** Returns a sequence of delayed input signal registers from 1 to n.
     *
     * @param in input to delay
-    * @param n number of cycles to delay
+    * @param n  number of cycles to delay
     * @param en enable the shift
     *
     */
-  def apply[T <: Data](in: T, n: Int, en: Bool = true.B): Seq[T] = {
-    if (n != 0) {
-      val rs = Seq.fill(n)(Reg(chiselTypeOf(in)))
-      when(en) {
-        rs.foldLeft(in)((in, out) => {
-          out := in
-          out
-        })
-      }
-      rs
-    } else {
-      Seq(in)
-    }
-  }
+  def apply[T <: Data](in: T, n: Int, en: Bool = true.B): Seq[T] =
+    Seq.iterate(in, n + 1)(util.RegEnable(_, en)).drop(1)
 
   /** Returns delayed input signal registers with reset initialization from 1 to n.
     *
-    * @param in input to delay
-    * @param n number of cycles to delay
+    * @param in        input to delay
+    * @param n         number of cycles to delay
     * @param resetData reset value for each register in the shift
-    * @param en enable the shift
+    * @param en        enable the shift
     *
     */
-  def apply[T <: Data](in: T, n: Int, resetData: T, en: Bool): Seq[T] = {
-    if (n != 0) {
-      val rs = Seq.fill(n)(RegInit(chiselTypeOf(in), resetData))
-      when(en) {
-        rs.foldLeft(in)((in, out) => {
-          out := in
-          out
-        })
-      }
-      rs
-    } else {
-      Seq(in)
-    }
-  }
+  def apply[T <: Data](in: T, n: Int, resetData: T, en: Bool): Seq[T] =
+    Seq.iterate(in, n + 1)(util.RegEnable(_, resetData, en)).drop(1)
 }
