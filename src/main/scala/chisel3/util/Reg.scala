@@ -42,14 +42,7 @@ object ShiftRegister
     * val regDelayTwo = ShiftRegister(nextVal, 2, ena)
     * }}}
     */
-  def apply[T <: Data](in: T, n: Int, en: Bool = true.B): T = {
-    // The order of tests reflects the expected use cases.
-    if (n != 0) {
-      RegEnable(apply(in, n-1, en), en)
-    } else {
-      in
-    }
-  }
+  def apply[T <: Data](in: T, n: Int, en: Bool = true.B): T = ShiftRegisters(in, n, en).last
 
   /** Returns the n-cycle delayed version of the input signal with reset initialization.
     *
@@ -62,12 +55,30 @@ object ShiftRegister
     * val regDelayTwoReset = ShiftRegister(nextVal, 2, 0.U, ena)
     * }}}
     */
-  def apply[T <: Data](in: T, n: Int, resetData: T, en: Bool): T = {
-    // The order of tests reflects the expected use cases.
-    if (n != 0) {
-      RegEnable(apply(in, n-1, resetData, en), resetData, en)
-    } else {
-      in
-    }
-  }
+  def apply[T <: Data](in: T, n: Int, resetData: T, en: Bool): T = ShiftRegisters(in, n, resetData, en).last
+}
+
+
+object ShiftRegisters
+{
+  /** Returns a sequence of delayed input signal registers from 1 to n.
+    *
+    * @param in input to delay
+    * @param n  number of cycles to delay
+    * @param en enable the shift
+    *
+    */
+  def apply[T <: Data](in: T, n: Int, en: Bool = true.B): Seq[T] =
+    Seq.iterate(in, n + 1)(util.RegEnable(_, en)).drop(1)
+
+  /** Returns delayed input signal registers with reset initialization from 1 to n.
+    *
+    * @param in        input to delay
+    * @param n         number of cycles to delay
+    * @param resetData reset value for each register in the shift
+    * @param en        enable the shift
+    *
+    */
+  def apply[T <: Data](in: T, n: Int, resetData: T, en: Bool): Seq[T] =
+    Seq.iterate(in, n + 1)(util.RegEnable(_, resetData, en)).drop(1)
 }
