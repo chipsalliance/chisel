@@ -2,6 +2,8 @@
 
 package chisel3
 
+import chisel3.internal.sourceinfo.SourceInfo
+
 /** Package for experimental features, which may have their API changed, be removed, etc.
   *
   * Because its contents won't necessarily have the same level of stability and support as
@@ -124,8 +126,37 @@ package object experimental {
 
   object BundleLiterals {
     implicit class AddBundleLiteralConstructor[T <: Record](x: T) {
-      def Lit(elems: (T => (Data, Data))*): T = {
+      def Lit(elems: (T => (Data, Data))*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
         x._makeLit(elems: _*)
+      }
+    }
+  }
+
+  /** This class provides the `Lit` method needed to define a `Vec` literal
+    */
+  object VecLiterals {
+    implicit class AddVecLiteralConstructor[T <: Data](x: Vec[T]) {
+      /** Given a generator of a list tuples of the form [Int, Data]
+        * constructs a Vec literal, parallel concept to `BundleLiteral`
+        *
+        * @param elems tuples of an index and a literal value
+        * @return
+        */
+      def Lit(elems: (Int, T)*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = {
+        x._makeLit(elems: _*)
+      }
+    }
+
+    implicit class AddObjectLiteralConstructor(x: Vec.type) {
+      /** This provides an literal construction method for cases using
+        * object `Vec` as in `Vec.Lit(1.U, 2.U)`
+        */
+      def Lit[T <: Data](elems: T*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = {
+        require(elems.nonEmpty, s"Lit.Vec(...) must have at least one element")
+        val indexElements = elems.zipWithIndex.map { case (element, index) => (index, element)}
+        val widestElement = elems.maxBy(_.getWidth)
+        val vec: Vec[T] = Vec.apply(indexElements.length, chiselTypeOf(widestElement))
+        vec.Lit(indexElements:_*)
       }
     }
   }

@@ -8,9 +8,8 @@ import chisel3.experimental.NoChiselNamePrefix
 import scala.collection.mutable.Stack
 import scala.collection.mutable.ListBuffer
 
-import scala.collection.JavaConversions._
-
 import java.util.IdentityHashMap
+import scala.collection.JavaConverters._
 
 /** Recursive Function Namer overview
   *
@@ -81,7 +80,14 @@ class NamingContext extends NamingContextInterface {
   def addDescendant(ref: Any, descendant: NamingContext) {
     ref match {
       case ref: AnyRef =>
-        descendants.getOrElseUpdate(ref, ListBuffer[NamingContext]()) += descendant
+        // getOrElseUpdate
+        val l = descendants.get(ref)
+        val buf = if (l != null) l else {
+          val value = ListBuffer[NamingContext]()
+          descendants.put(ref, value)
+          value
+        }
+        buf += descendant
       case _ => anonymousDescendants += descendant
     }
   }
@@ -111,7 +117,7 @@ class NamingContext extends NamingContextInterface {
       }
     }
 
-    for (descendant <- descendants.values().flatten) {
+    for (descendant <- descendants.values.asScala.flatten) {
       // Where we have a broken naming link, just ignore the missing parts
       descendant.namePrefix(prefix)
     }
