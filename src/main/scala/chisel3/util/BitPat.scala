@@ -108,6 +108,13 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) extends Sou
   def === (that: UInt): Bool = macro SourceInfoTransform.thatArg
   def =/= (that: UInt): Bool = macro SourceInfoTransform.thatArg
 
+  override def equals(obj: Any): Boolean = {
+    obj match {
+      case y: BitPat => value == y.value && mask == y.mask && getWidth == y.getWidth
+      case _ => false
+    }
+  }
+
   /** @group SourceInfoTransformMacro */
   def do_=== (that: UInt)
       (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
