@@ -194,6 +194,7 @@ object QMCMinimizer extends Minimizer {
     if (minterms.nonEmpty) {
       // cover(i): nonessential prime implicants that covers `minterms(i)`
       val cover = minterms.map(m => implicants.filter(_.covers(m)))
+      // all subsets of `cover`, NP algorithm, O(2 ^ len(cover))
       val all = cover.tail.foldLeft(cover.head.map(Set(_)))((c0, c1) => c0.flatMap(a => c1.map(a + _)))
       all.map(_.toList).reduceLeft((a, b) => if (cheaper(a, b)) a else b)
     } else
@@ -247,6 +248,7 @@ object QMCMinimizer extends Minimizer {
         )
       )
 
+      // O(n ^ 3)
       for (i <- 0 to n) {
         for (j <- 0 until n - i) {
           mergeTable(i)(j).foreach(a => mergeTable(i + 1)(j) ++= mergeTable(i)(j + 1).filter(_ similar a).map(_ merge a))
@@ -273,6 +275,7 @@ object QMCMinimizer extends Minimizer {
 
       val primeImplicants = mergeTable.flatten.flatten.filter(_.isPrime).sortWith(_ < _)
 
+      // O(len(primeImplicants) ^ 4)
       val (essentialPrimeImplicants, nonessentialPrimeImplicants, uncoveredImplicants) =
         getEssentialPrimeImplicants(primeImplicants, implicants)
 
