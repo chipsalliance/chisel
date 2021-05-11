@@ -224,11 +224,11 @@ object QMCMinimizer extends Minimizer {
       val outputBp = BitPat("b" + "?" * (m - i - 1) + "1" + "?" * i)
 
       // Minterms, implicants that makes the output to be 1
-      val mint: Seq[Implicant] = table.table.filter { case (_, t) => t.mask.testBit(i) && t.value.testBit(i) }.map(_._1).map(toImplicant).toSeq
+      val mint: Seq[Implicant] = table.table.filter { case (_, t) => t.mask.testBit(i) && t.value.testBit(i) }.keys.map(toImplicant).toSeq
       // Maxterms, implicants that makes the output to be 0
-      val maxt: Seq[Implicant] = table.table.filter { case (_, t) => t.mask.testBit(i) && !t.value.testBit(i) }.map(_._1).map(toImplicant).toSeq
+      val maxt: Seq[Implicant] = table.table.filter { case (_, t) => t.mask.testBit(i) && !t.value.testBit(i) }.keys.map(toImplicant).toSeq
       // Don't cares, implicants that can produce either 0 or 1 as output
-      val dc: Seq[Implicant] = table.table.filter { case (_, t) => !t.mask.testBit(i) }.map(_._1).map(toImplicant).toSeq
+      val dc: Seq[Implicant] = table.table.filter { case (_, t) => !t.mask.testBit(i) }.keys.map(toImplicant).toSeq
 
       val (implicants, defaultToDc) = table.default match {
         case x if x.mask.testBit(i) && !x.value.testBit(i) => // default to 0
