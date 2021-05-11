@@ -2,7 +2,7 @@
 
 package chisel3.aop.injecting
 
-import chisel3.{Module, ModuleAspect, MultiIOModule, RawModule, experimental, withClockAndReset}
+import chisel3.{Module, ModuleAspect, RawModule, withClockAndReset}
 import chisel3.aop._
 import chisel3.internal.{Builder, DynamicContext}
 import chisel3.internal.firrtl.DefModule
@@ -54,16 +54,17 @@ abstract class InjectorAspect[T <: RawModule, M <: RawModule](
     * @return
     */
   final def toAnnotation(modules: Iterable[M], circuit: String, moduleNames: Seq[String]): AnnotationSeq = {
-    val dynamicContext = new DynamicContext()
-    // Add existing module names into the namespace. If injection logic instantiates new modules
-    //  which would share the same name, they will get uniquified accordingly
-    moduleNames.foreach { n =>
-      dynamicContext.globalNamespace.name(n)
-    }
     RunFirrtlTransformAnnotation(new InjectingTransform) +: modules.map { module =>
+      val dynamicContext = new DynamicContext(annotationsInAspect)
+      // Add existing module names into the namespace. If injection logic instantiates new modules
+      //  which would share the same name, they will get uniquified accordingly
+      moduleNames.foreach { n =>
+        dynamicContext.globalNamespace.name(n)
+      }
+
       val (chiselIR, _) = Builder.build(Module(new ModuleAspect(module) {
         module match {
-          case x: MultiIOModule => withClockAndReset(x.clock, x.reset) { injection(module) }
+          case x: Module => withClockAndReset(x.clock, x.reset) { injection(module) }
           case x: RawModule => injection(module)
         }
       }), dynamicContext)
@@ -75,16 +76,20 @@ abstract class InjectorAspect[T <: RawModule, M <: RawModule](
 
       val annotations = chiselIR.annotations.map(_.toFirrtl).filterNot{ a => a.isInstanceOf[DesignAnnotation[_]] }
 
+      /** Statements to be injected via aspect. */
       val stmts = mutable.ArrayBuffer[ir.Statement]()
+      /** Modules to be injected via aspect. */
       val modules = Aspect.getFirrtl(chiselIR.copy(components = comps)).modules.flatMap {
+        // for "container" modules, inject their statements
         case m: firrtl.ir.Module if m.name == module.name =>
           stmts += m.body
           Nil
+        // for modules to be injected
         case other: firrtl.ir.DefModule =>
           Seq(other)
       }
 
-      InjectStatement(ModuleTarget(circuit, module.name), ir.Block(stmts), modules, annotations)
+      InjectStatement(ModuleTarget(circuit, module.name), ir.Block(stmts.toSeq), modules, annotations)
     }.toSeq
   }
 }

@@ -8,7 +8,7 @@ import chisel3.util.{Queue, EnqIO, DeqIO, QueueIO, log2Ceil}
 import chisel3.experimental.{CloneModuleAsRecord, IO}
 import chisel3.testers.BasicTester
 
-class MultiIOQueue[T <: Data](gen: T, val entries: Int) extends MultiIOModule {
+class MultiIOQueue[T <: Data](gen: T, val entries: Int) extends Module {
   val clk = IO(Input(Clock()))
   val rst = IO(Input(Reset()))
   val enq = IO(Flipped(EnqIO(gen)))

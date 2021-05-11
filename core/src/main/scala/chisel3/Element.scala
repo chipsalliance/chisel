@@ -17,7 +17,8 @@ abstract class Element extends Data {
   def widthKnown: Boolean = width.known
   def name: String = getRef.name
 
-  private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection) {
+  private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
+    _parent.foreach(_.addId(this))
     binding = target
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
     direction = ActualDirection.fromSpecified(resolvedDirection)
@@ -26,6 +27,10 @@ abstract class Element extends Data {
   private[chisel3] override def topBindingOpt: Option[TopBinding] = super.topBindingOpt match {
     // Translate Bundle lit bindings to Element lit bindings
     case Some(BundleLitBinding(litMap)) => litMap.get(this) match {
+      case Some(litArg) => Some(ElementLitBinding(litArg))
+      case _ => Some(DontCareBinding())
+    }
+    case Some(VecLitBinding(litMap)) => litMap.get(this) match {
       case Some(litArg) => Some(ElementLitBinding(litArg))
       case _ => Some(DontCareBinding())
     }

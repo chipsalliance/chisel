@@ -122,6 +122,7 @@ object ActualDirection {
 }
 
 package experimental {
+  import chisel3.internal.requireIsHardware // Fix ambiguous import
 
   /** Experimental hardware construction reflection API
     */
@@ -339,13 +340,14 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   private[chisel3] final def isSynthesizable: Boolean = _binding.map {
     case ChildBinding(parent) => parent.isSynthesizable
     case _: TopBinding => true
-    case _: SampleElementBinding[_] => false
+    case (_: SampleElementBinding[_] | _: MemTypeBinding[_]) => false
   }.getOrElse(false)
 
   private[chisel3] def topBindingOpt: Option[TopBinding] = _binding.flatMap {
     case ChildBinding(parent) => parent.topBindingOpt
     case bindingVal: TopBinding => Some(bindingVal)
     case SampleElementBinding(parent) => parent.topBindingOpt
+    case _: MemTypeBinding[_] => None
   }
 
   private[chisel3] def topBinding: TopBinding = topBindingOpt.get
@@ -355,7 +357,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     * node is the top-level.
     * binding and direction are valid after this call completes.
     */
-  private[chisel3] def bind(target: Binding, parentDirection: SpecifiedDirection = SpecifiedDirection.Unspecified)
+  private[chisel3] def bind(target: Binding, parentDirection: SpecifiedDirection = SpecifiedDirection.Unspecified): Unit
 
   // Both _direction and _resolvedUserDirection are saved versions of computed variables (for
   // efficiency, avoid expensive recomputation of frequent operations).
@@ -391,6 +393,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     case Some(DontCareBinding()) => s"(DontCare)"
     case Some(ElementLitBinding(litArg)) => s"(unhandled literal)"
     case Some(BundleLitBinding(litMap)) => s"(unhandled bundle literal)"
+    case Some(VecLitBinding(litMap)) => s"(unhandled vec literal)"
   }).getOrElse("")
 
   // Return ALL elements at root of this type.
@@ -490,6 +493,11 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
           case Some(litArg) => litArg
           case _ => materializeWire() // FIXME FIRRTL doesn't have Bundle literal expressions
         }
+      case Some(VecLitBinding(litMap)) =>
+        litMap.get(this) match {
+          case Some(litArg) => litArg
+          case _ => materializeWire() // FIXME FIRRTL doesn't have Vec literal expressions
+        }
       case Some(DontCareBinding()) =>
         materializeWire() // FIXME FIRRTL doesn't have a DontCare expression so materialize a Wire
       // Non-literals
@@ -552,14 +560,6 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     prefix(this) {
       this.bulkConnect(that)(sourceInfo, connectionCompileOptions)
     }
-  }
-
-  @chiselRuntimeDeprecated
-  @deprecated("litArg is deprecated, use litOption or litTo*Option", "3.2")
-  def litArg(): Option[LitArg] = topBindingOpt match {
-    case Some(ElementLitBinding(litArg)) => Some(litArg)
-    case Some(BundleLitBinding(litMap)) => None  // this API does not support Bundle literals
-    case _ => None
   }
 
   def isLit(): Boolean = litOption.isDefined
@@ -764,35 +764,33 @@ object WireDefault {
   }
 }
 
-package internal {
-  /** RHS (source) for Invalidate API.
-    * Causes connection logic to emit a DefInvalid when connected to an output port (or wire).
-    */
-  private[chisel3] object InternalDontCare extends Element {
-    // This object should be initialized before we execute any user code that refers to it,
-    //  otherwise this "Chisel" object will end up on the UserModule's id list.
-    // We make it private to chisel3 so it has to be accessed through the package object.
+/** RHS (source) for Invalidate API.
+  * Causes connection logic to emit a DefInvalid when connected to an output port (or wire).
+  */
+final case object DontCare extends Element {
+  // This object should be initialized before we execute any user code that refers to it,
+  //  otherwise this "Chisel" object will end up on the UserModule's id list.
+  // We make it private to chisel3 so it has to be accessed through the package object.
 
-    private[chisel3] override val width: Width = UnknownWidth()
+  private[chisel3] override val width: Width = UnknownWidth()
 
-    bind(DontCareBinding(), SpecifiedDirection.Output)
-    override def cloneType: this.type = DontCare
+  bind(DontCareBinding(), SpecifiedDirection.Output)
+  override def cloneType: this.type = DontCare
 
-    override def toString: String = "DontCare()"
+  override def toString: String = "DontCare()"
 
-    override def litOption: Option[BigInt] = None
+  override def litOption: Option[BigInt] = None
 
-    def toPrintable: Printable = PString("DONTCARE")
+  def toPrintable: Printable = PString("DONTCARE")
 
-    private[chisel3] def connectFromBits(that: Bits)(implicit sourceInfo:  SourceInfo, compileOptions: CompileOptions): Unit = {
-      Builder.error("connectFromBits: DontCare cannot be a connection sink (LHS)")
-    }
-
-    def do_asUInt(implicit sourceInfo: chisel3.internal.sourceinfo.SourceInfo, compileOptions: CompileOptions): UInt = {
-      Builder.error("DontCare does not have a UInt representation")
-      0.U
-    }
-    // DontCare's only match themselves.
-    private[chisel3] def typeEquivalent(that: Data): Boolean = that == DontCare
+  private[chisel3] def connectFromBits(that: Bits)(implicit sourceInfo:  SourceInfo, compileOptions: CompileOptions): Unit = {
+    Builder.error("connectFromBits: DontCare cannot be a connection sink (LHS)")
   }
+
+  def do_asUInt(implicit sourceInfo: chisel3.internal.sourceinfo.SourceInfo, compileOptions: CompileOptions): UInt = {
+    Builder.error("DontCare does not have a UInt representation")
+    0.U
+  }
+  // DontCare's only match themselves.
+  private[chisel3] def typeEquivalent(that: Data): Boolean = that == DontCare
 }

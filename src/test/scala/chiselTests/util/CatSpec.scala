@@ -10,7 +10,7 @@ import chiselTests.ChiselFlatSpec
 
 object CatSpec {
 
-  class JackIsATypeSystemGod extends MultiIOModule {
+  class JackIsATypeSystemGod extends Module {
     val in  = IO(Input (Vec(0, UInt(8.W))))
     val out = IO(Output(UInt(8.W)))
 

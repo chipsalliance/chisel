@@ -15,16 +15,23 @@ lazy val commonSettings = Seq (
   organization := "edu.berkeley.cs",
   version := "3.5-SNAPSHOT",
   autoAPIMappings := true,
-  scalaVersion := "2.12.12",
-  crossScalaVersions := Seq("2.12.12"),
-  scalacOptions := Seq("-deprecation", "-feature",
-    //  We're building with Scala > 2.11, enable the compile option
-    //  switch to support our anonymous Bundle definitions:
-    //  https://github.com/scala/bug/issues/10047
-    "-Xsource:2.11"
-  ),
+  scalaVersion := "2.13.5",
+  crossScalaVersions := Seq("2.13.5", "2.12.13"),
+  scalacOptions := Seq("-deprecation", "-feature"),
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-  addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full),
+  // Macros paradise is integrated into 2.13 but requires a scalacOption
+  scalacOptions ++= {
+    CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, n)) if n >= 13 => "-Ymacro-annotations" :: Nil
+      case _ => Nil
+    }
+  },
+  libraryDependencies ++= {
+    CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, n)) if n >= 13 => Nil
+      case _ => compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full) :: Nil
+    }
+  }
 )
 
 lazy val publishSettings = Seq (
@@ -65,7 +72,7 @@ lazy val chiselSettings = Seq (
   libraryDependencies ++= Seq(
     "org.scalatest" %% "scalatest" % "3.1.4" % "test",
     "org.scalatestplus" %% "scalacheck-1-14" % "3.1.1.1" % "test",
-    "com.github.scopt" %% "scopt" % "3.7.1"
+    "com.github.scopt" %% "scopt" % "4.0.1"
   ),
 ) ++ (
   // Tests from other projects may still run concurrently
@@ -96,6 +103,13 @@ lazy val pluginScalaVersions = Seq(
   "2.12.10",
   "2.12.11",
   "2.12.12",
+  "2.12.13",
+  "2.13.0",
+  "2.13.1",
+  "2.13.2",
+  "2.13.3",
+  "2.13.4",
+  "2.13.5"
 )
 
 lazy val plugin = (project in file("plugin")).
@@ -111,9 +125,7 @@ lazy val plugin = (project in file("plugin")).
     crossTarget := {
       // workaround for https://github.com/sbt/sbt/issues/5097
       target.value / s"scala-${scalaVersion.value}"
-    },
-    // Only publish for Scala 2.12
-    publish / skip := !scalaVersion.value.startsWith("2.12")
+    }
   ).
   settings(
     mimaPreviousArtifacts := {
@@ -199,10 +211,15 @@ lazy val chisel = (project in file(".")).
           } else {
             s"v${version.value}"
           }
-        s"https://github.com/freechipsproject/chisel3/tree/$branch/€{FILE_PATH}.scala"
+        s"https://github.com/chipsalliance/chisel3/tree/$branch€{FILE_PATH_EXT}#L€{FILE_LINE}"
       }
     )
   )
+
+lazy val noPluginTests = (project in file ("no-plugin-tests")).
+  dependsOn(chisel).
+  settings(commonSettings: _*).
+  settings(chiselSettings: _*)
 
 lazy val docs = project       // new documentation project
   .in(file("docs-target")) // important: it must not be docs/

@@ -226,7 +226,7 @@ trait NumObject {
     */
   def toBigInt(x: BigDecimal, binaryPoint: Int): BigInt = {
     val multiplier = math.pow(2, binaryPoint)
-    val result = (x * multiplier).rounded.toBigInt()
+    val result = (x * multiplier).rounded.toBigInt
     result
   }
 

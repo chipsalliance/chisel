@@ -29,7 +29,7 @@ private class Emitter(circuit: Circuit) {
     case d: Clock => "Clock"
     case _: AsyncReset => "AsyncReset"
     case _: ResetType => "Reset"
-    case d: chisel3.core.EnumType => s"UInt${d.width}"
+    case d: chisel3.experimental.EnumType => s"UInt${d.width}"
     case d: UInt => s"UInt${d.width}"
     case d: SInt => s"SInt${d.width}"
     case d: FixedPoint => s"Fixed${d.width}${d.binaryPoint}"

@@ -5,7 +5,7 @@ import coursier.maven.MavenRepository
 import $ivy.`com.lihaoyi::mill-contrib-buildinfo:$MILL_VERSION`
 import mill.contrib.buildinfo.BuildInfo
 
-object chisel3 extends mill.Cross[chisel3CrossModule]("2.12.12")
+object chisel3 extends mill.Cross[chisel3CrossModule]("2.12.13")
 
 // The following stanza is searched for and used when preparing releases.
 // Please retain it.
@@ -59,8 +59,7 @@ trait CommonModule extends CrossSbtModule with PublishModule {
   override def scalacOptions = T {
     super.scalacOptions() ++ Agg(
       "-deprecation",
-      "-feature",
-      "-Xsource:2.11"
+      "-feature"
     )
   }
 
@@ -108,7 +107,7 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule wit
     override def ivyDeps = m.ivyDeps() ++ Agg(
       ivy"org.scalatest::scalatest:3.1.4",
       ivy"org.scalatestplus::scalacheck-1-14:3.1.1.1",
-      ivy"com.github.scopt::scopt:3.7.1"
+      ivy"com.github.scopt::scopt:4.0.1"
     ) ++ m.treadleIvyDeps
 
     override def moduleDeps = super.moduleDeps ++ treadleModule

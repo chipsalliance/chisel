@@ -48,7 +48,7 @@ Use the `.suggestName` method, which is on all classes which subtype `Data`.
 You can use the `noPrefix { ... }` to strip the prefix from all signals generated in that scope.
 
 ```scala mdoc
-class ExampleNoPrefix extends MultiIOModule {
+class ExampleNoPrefix extends Module {
   val in = IO(Input(UInt(2.W)))
   val out = IO(Output(UInt()))
 
@@ -68,14 +68,14 @@ In cases where a FIRRTL transform renames a signal/instance, you can use the `fo
 ```scala mdoc
 import chisel3.util.experimental.{forceName, InlineInstance}
 
-class WrapperExample extends MultiIOModule {
+class WrapperExample extends Module {
   val in = IO(Input(UInt(3.W)))
   val out = IO(Output(UInt(3.W)))
   val inst = Module(new Wrapper)
   inst.in := in
   out := inst.out
 }
-class Wrapper extends MultiIOModule with InlineInstance {
+class Wrapper extends Module with InlineInstance {
   val in = IO(Input(UInt(3.W)))
   val out = IO(Output(UInt(3.W)))
   val inst = Module(new MyLeaf)
@@ -83,7 +83,7 @@ class Wrapper extends MultiIOModule with InlineInstance {
   inst.in := in
   out := inst.out
 }
-class MyLeaf extends MultiIOModule {
+class MyLeaf extends Module {
   val in = IO(Input(UInt(3.W)))
   val out = IO(Output(UInt(3.W)))
   out := in
