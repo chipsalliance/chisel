@@ -9,12 +9,15 @@ object pla {
 
   /** Construct a [[https://en.wikipedia.org/wiki/Programmable_logic_array]] from specified table.
     * @param table A [[Seq]] of inputs -> outputs mapping
-    *              Each position in the input plane corresponds to an input variable where a `0` implies the corresponding
+    *              Each position in the input matrix corresponds to an input variable where a `0` implies the corresponding
     *              input literal appears complemented in the product term, a `1` implies the input literal appears un-
     *              complemented in the product term, and `?` implies the input literal does not appear in the product term.
     *              For each output, a `1` means this product term makes the function value a `1`, and a `0` or `?` means
     *              this product term has no meaning for the value of this function.
-    * @return (inputs, outputs) the input and output [[Wire]] of [[UInt]] of the constructed pla.
+    * @param invert A [[BitPat]] specify which bit of the output should be inverted. A `1` means the correspond position
+    *               of the output should be inverted in the PLA, a `0` or a `?` means direct output from the OR matrix.
+    * @return the input [[Wire]] of [[UInt]] of the constructed pla.
+    * @return the output [[Wire]] of [[UInt]] of the constructed pla.
     * @example A 1-of-8 decoder (like the 74xx138) can be constructed as follow
     *          {{{
     *            val (inputs, outputs) = pla(Seq(
@@ -29,7 +32,7 @@ object pla {
     *            ))
     *          }}}
     */
-  def apply(table: Seq[(BitPat, BitPat)], invert: UInt): (UInt, UInt) = {
+  def apply(table: Seq[(BitPat, BitPat)], invert: BitPat = BitPat("b0")): (UInt, UInt) = {
     require(table.nonEmpty, "pla table must not be empty")
 
     val (inputTerms, outputTerms) = table.unzip
@@ -38,19 +41,25 @@ object pla {
         inputTerms.tail.map(_.getWidth == inputTerms.head.getWidth).reduce(_ && _)
       else
         true,
-      "all `BitPat`s in input part of specified PLA table must have the same width"
+      "all `BitPat`s in the input part of specified PLA table must have the same width"
     )
     require(
       if (outputTerms.length > 1)
         outputTerms.tail.map(_.getWidth == outputTerms.head.getWidth).reduce(_ && _)
       else
         true,
-      "all `BitPat`s in output part of specified PLA table must have the same width"
+      "all `BitPat`s in the output part of specified PLA table must have the same width"
     )
 
     // now all inputs / outputs have the same width
     val numberOfInputs = inputTerms.head.getWidth
     val numberOfOutputs = outputTerms.head.getWidth
+
+    val inverterMask = invert.value & invert.mask
+    if (inverterMask.bitCount != 0)
+      require(invert.getWidth == numberOfOutputs,
+        "non-zero inverter mask must have the same width as the output part of specified PLA table"
+      )
 
     // input wires of the generated PLA
     val inputs = Wire(UInt(numberOfInputs.W))
@@ -59,10 +68,9 @@ object pla {
     // output wires of the generated PLA
     val outputs = Wire(UInt(numberOfOutputs.W))
 
-    /** construct the AND plane, return a Term -> result map
-      * reuse AND plane output lines
-      */
-    val andPlaneOutputs: Map[String, Bool] = inputTerms.map { t =>
+    // the AND matrix
+    // use `term -> AND line` map to reuse AND matrix output lines
+    val andMatrixOutputs: Map[String, Bool] = inputTerms.map { t =>
       val andLine = Cat(
         Seq
           .tabulate(numberOfInputs) { i =>
@@ -80,28 +88,35 @@ object pla {
       t.toString -> andLine
     }.toMap
 
-    /** construct the OR plane. */
-    val orPlaneOutputs: UInt = Cat(
+    // the OR matrix
+    val orMatrixOutputs: UInt = Cat(
         Seq
           .tabulate(numberOfOutputs) { i =>
-            val andPlaneLines = table
-              // OR plane composed by input terms which makes this output bit a `1`
+            val andMatrixLines = table
+              // OR matrix composed by input terms which makes this output bit a `1`
               .filter {
                 case (_, or) => or.mask.testBit(i) && or.value.testBit(i)
               }.map {
                 case (inputTerm, _) =>
-                  andPlaneOutputs(inputTerm.toString)
+                  andMatrixOutputs(inputTerm.toString)
               }
-            if (andPlaneLines.isEmpty) false.B
-            else Cat(andPlaneLines).orR()
+            if (andMatrixLines.isEmpty) false.B
+            else Cat(andMatrixLines).orR()
           }
           .reverse
       )
 
-    /** construct the OR plane. which should will be used by a decoder. */
-    val invPlaneOutputs = ???
+    // the INV matrix, useful for decoders
+    val invMatrixOutputs: UInt = Cat(
+      Seq
+        .tabulate(numberOfOutputs) { i =>
+          if (inverterMask.testBit(i)) ~orMatrixOutputs(i)
+          else                          orMatrixOutputs(i)
+        }
+        .reverse
+    )
 
-    outputs := invPlaneOutputs
+    outputs := invMatrixOutputs
 
     (inputs, outputs)
   }

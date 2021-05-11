@@ -29,6 +29,27 @@ class PlaSpec extends ChiselFlatSpec {
     })
   }
 
+  "An active-low 1-of-8 decoder (eg. inverted 74xx138 without enables)" should "be generated correctly" in {
+    assertTesterPasses(new BasicTester {
+      val table = Seq(
+        (BitPat("b000"), BitPat("b00000001")),
+        (BitPat("b001"), BitPat("b00000010")),
+        (BitPat("b010"), BitPat("b00000100")),
+        (BitPat("b011"), BitPat("b00001000")),
+        (BitPat("b100"), BitPat("b00010000")),
+        (BitPat("b101"), BitPat("b00100000")),
+        (BitPat("b110"), BitPat("b01000000")),
+        (BitPat("b111"), BitPat("b10000000")),
+      )
+      table.foreach { case (i, o) =>
+        val (plaIn, plaOut) = pla(table, BitPat("b11111111"))
+        plaIn := WireDefault(i.value.U(3.W))
+        chisel3.assert(plaOut === ~o.value.U(8.W), "Input " + i.toString + " produced incorrect output BitPat(%b)", plaOut)
+      }
+      stop()
+    })
+  }
+
   "A simple PLA" should "be generated correctly" in {
     assertTesterPasses(new BasicTester {
       val table = Seq(
