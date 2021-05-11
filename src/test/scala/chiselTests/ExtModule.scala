@@ -9,7 +9,7 @@ import chisel3.testers.{BasicTester, TesterDriver}
 
 // Avoid collisions with regular BlackBox tests by putting ExtModule blackboxes
 // in their own scope.
-package ExtModule {
+package extmoduletests {
 
   import chisel3.experimental.ExtModule
 
@@ -25,8 +25,8 @@ package ExtModule {
 }
 
 class ExtModuleTester extends BasicTester {
-  val blackBoxPos = Module(new ExtModule.BlackBoxInverter)
-  val blackBoxNeg = Module(new ExtModule.BlackBoxInverter)
+  val blackBoxPos = Module(new extmoduletests.BlackBoxInverter)
+  val blackBoxNeg = Module(new extmoduletests.BlackBoxInverter)
 
   blackBoxPos.in := 1.U
   blackBoxNeg.in := 0.U
@@ -42,10 +42,10 @@ class ExtModuleTester extends BasicTester {
   */
 
 class MultiExtModuleTester extends BasicTester {
-  val blackBoxInvPos = Module(new ExtModule.BlackBoxInverter)
-  val blackBoxInvNeg = Module(new ExtModule.BlackBoxInverter)
-  val blackBoxPassPos = Module(new ExtModule.BlackBoxPassthrough)
-  val blackBoxPassNeg = Module(new ExtModule.BlackBoxPassthrough)
+  val blackBoxInvPos = Module(new extmoduletests.BlackBoxInverter)
+  val blackBoxInvNeg = Module(new extmoduletests.BlackBoxInverter)
+  val blackBoxPassPos = Module(new extmoduletests.BlackBoxPassthrough)
+  val blackBoxPassNeg = Module(new extmoduletests.BlackBoxPassthrough)
 
   blackBoxInvPos.in := 1.U
   blackBoxInvNeg.in := 0.U
@@ -71,7 +71,7 @@ class ExtModuleSpec extends ChiselFlatSpec {
   "DataMirror.modulePorts" should "work with ExtModule" in {
     ChiselStage.elaborate(new Module {
       val io = IO(new Bundle { })
-      val m = Module(new ExtModule.BlackBoxPassthrough)
+      val m = Module(new extmoduletests.BlackBoxPassthrough)
       assert(DataMirror.modulePorts(m) == Seq(
           "in" -> m.in, "out" -> m.out))
     })

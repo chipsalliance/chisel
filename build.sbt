@@ -15,12 +15,23 @@ lazy val commonSettings = Seq (
   organization := "edu.berkeley.cs",
   version := "3.5-SNAPSHOT",
   autoAPIMappings := true,
-  scalaVersion := "2.12.13",
-  crossScalaVersions := Seq("2.12.13"),
-  scalacOptions := Seq("-deprecation", "-feature",
-  ),
+  scalaVersion := "2.13.5",
+  crossScalaVersions := Seq("2.13.5", "2.12.13"),
+  scalacOptions := Seq("-deprecation", "-feature"),
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-  addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full),
+  // Macros paradise is integrated into 2.13 but requires a scalacOption
+  scalacOptions ++= {
+    CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, n)) if n >= 13 => "-Ymacro-annotations" :: Nil
+      case _ => Nil
+    }
+  },
+  libraryDependencies ++= {
+    CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, n)) if n >= 13 => Nil
+      case _ => compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full) :: Nil
+    }
+  }
 )
 
 lazy val publishSettings = Seq (
@@ -93,6 +104,12 @@ lazy val pluginScalaVersions = Seq(
   "2.12.11",
   "2.12.12",
   "2.12.13",
+  "2.13.0",
+  "2.13.1",
+  "2.13.2",
+  "2.13.3",
+  "2.13.4",
+  "2.13.5"
 )
 
 lazy val plugin = (project in file("plugin")).
@@ -108,9 +125,7 @@ lazy val plugin = (project in file("plugin")).
     crossTarget := {
       // workaround for https://github.com/sbt/sbt/issues/5097
       target.value / s"scala-${scalaVersion.value}"
-    },
-    // Only publish for Scala 2.12
-    publish / skip := !scalaVersion.value.startsWith("2.12")
+    }
   ).
   settings(
     mimaPreviousArtifacts := {

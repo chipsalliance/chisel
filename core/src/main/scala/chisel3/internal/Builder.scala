@@ -655,7 +655,7 @@ private[chisel3] object Builder extends LazyLogging {
       errors.checkpoint()
       logger.warn("Done elaborating.")
 
-      (Circuit(components.last.name, components, annotations), mod)
+      (Circuit(components.last.name, components.toSeq, annotations.toSeq), mod)
     }
   }
   initializeSingletons()

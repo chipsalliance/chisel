@@ -1147,6 +1147,7 @@ sealed class Bool() extends UInt(1.W) with Reset {
 package experimental {
 
   import chisel3.internal.firrtl.BinaryPoint
+  import chisel3.internal.requireIsHardware // Fix ambiguous import
 
   /** Chisel types that have binary points support retrieving
     * literal values as `Double` or `BigDecimal`

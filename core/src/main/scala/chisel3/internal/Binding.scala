@@ -6,7 +6,7 @@ import chisel3._
 import chisel3.experimental.BaseModule
 import chisel3.internal.firrtl.LitArg
 
-import scala.collection.immutable.ListMap
+import scala.collection.immutable.VectorMap
 
 /** Requires that a node is hardware ("bound")
   */
@@ -126,4 +126,4 @@ case class ElementLitBinding(litArg: LitArg) extends LitBinding
 // Literal binding attached to the root of a Bundle, containing literal values of its children.
 case class BundleLitBinding(litMap: Map[Data, LitArg]) extends LitBinding
 // Literal binding attached to the root of a Vec, containing literal values of its children.
-case class VecLitBinding(litMap: ListMap[Data, LitArg]) extends LitBinding
+case class VecLitBinding(litMap: VectorMap[Data, LitArg]) extends LitBinding
