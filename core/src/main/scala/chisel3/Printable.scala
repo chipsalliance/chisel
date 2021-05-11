@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chisel3
 
@@ -60,7 +60,7 @@ sealed abstract class Printable {
 object Printable {
   /** Pack standard printf fmt, args* style into Printable
     */
-  def pack(fmt: String, data: Data*): Printable = { // scalastyle:ignore method.length
+  def pack(fmt: String, data: Data*): Printable = {
     val args = data.toIterator
 
     // Error handling

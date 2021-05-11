@@ -1,18 +1,76 @@
-![Chisel 3](https://raw.githubusercontent.com/freechipsproject/chisel3/master/doc/images/chisel_logo.svg?sanitize=true)
+![Chisel 3](https://raw.githubusercontent.com/chipsalliance/chisel3/master/docs/src/images/chisel_logo.svg?sanitize=true)
 
 ---
 
 ## Upcoming Events
 
-Chisel/FIRRTL development meetings happen every Monday from 1100--1300 PT.
+### Chisel Dev Meeting
+Chisel/FIRRTL development meetings happen every Monday and Tuesday from 1100--1200 PT.
 
-Call-in info and meeting notes are available [here](https://docs.google.com/document/d/1Mpnqigmx6F8jdC77YWP3akp9H2V1bS1b2XiYjVX0brE).
+Call-in info and meeting notes are available [here](https://docs.google.com/document/d/1BLP2DYt59DqI-FgFCcjw8Ddl4K-WU0nHmQu0sZ_wAGo/).
+
+### Chisel Community Conference 2021, Shanghai, China. 6/24/2021
+
+The Chisel Community Conference China 2021 (CCC2021) is planned for June 25,
+2021 at the ShanghaiTech University. CCC is an annual gathering of Chisel
+community enthusiasts and technical exchange workshop.
+With the support of the Chisel development community, this conference will
+bring together designers and developers with hands-on experience in Chisel
+from home and abroad to share cutting-edge results and experiences from the
+open source community and industry.
+
+Session topics include and are not limited to
+* CPU Core (recommended but not restricted to RISC-V) implementations
+* SoC implementations
+* Verification
+* Simulation
+* Synthesis
+* Education
+* Experience sharing
+
+Types of manuscripts.
+* Technical Presentations: case studies or problem-oriented presentations on
+original research, breakthrough ideas, or insights into future trends.
+Sessions should provide specific examples and include both practical and
+theoretical information. The length of time is about 20 minutes.
+* Lightning talks: 5 to 10 minutes, either pre-registered or on-site (depending
+on the time of the conference), can present and promote a specific Chisel
+project.
+
+The presentation submission language is required to be in English, and both
+English and Chinese are acceptable for the presentation language.
+Reviewers (subject to change at that time).
+* Jack Koenig
+* Adam Izraelevitz
+* Edward Wang
+* Jiuyang Liu
+
+Key Timeline.  
+Submission deadline: April 25, 2021  
+Manuscript topics and abstracts should be submitted by the submission
+deadline, and will be reviewed and selected by Chisel developers.  
+Notification of acceptance: by May 12, 2021  
+Final manuscript deadline: May 30, 2021  
+A full version of the manuscript should be submitted by the final deadline, and
+Chisel developers will quality review and suggest final changes.
+
+Mail submission method.
+```
+Subject: - [CCC] Your Topic
+CC: Jiuyang Liu <liu@jiuyang.me>
+CC: Jack Koenig <koenig@sifive.com>
+CC: Adam Izraelevitz <adam.izraelevitz@sifive.com>
+CC: Edward Wang <edwardw@csail.mit.edu>
+Body: Abstract of your paper.
+Attachment: pdf only slides
+All submissions are welcome.
+```
 
 ---
 
-[![Join the chat at https://gitter.im/freechipsproject/chisel3](https://badges.gitter.im/freechipsproject/chisel3.svg)](https://gitter.im/freechipsproject/chisel3?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![CircleCI](https://circleci.com/gh/freechipsproject/chisel3/tree/master.svg?style=shield)](https://circleci.com/gh/freechipsproject/chisel3/tree/master)
-[![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/freechipsproject/chisel3.svg?label=release)](https://github.com/freechipsproject/chisel3/releases/latest)
+[![Join the chat at https://gitter.im/freechipsproject/chisel3](https://badges.gitter.im/chipsalliance/chisel3.svg)](https://gitter.im/freechipsproject/chisel3?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![CircleCI](https://circleci.com/gh/chipsalliance/chisel3/tree/master.svg?style=shield)](https://circleci.com/gh/chipsalliance/chisel3/tree/master)
+[![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/chipsalliance/chisel3.svg?label=release)](https://github.com/chipsalliance/chisel3/releases/latest)
 
 [**Chisel**](https://www.chisel-lang.org) is a hardware design language that facilitates **advanced circuit generation and design reuse for both ASIC and FPGA digital logic designs**.
 Chisel adds hardware construction primitives to the [Scala](https://www.scala-lang.org) programming language, providing designers with the power of a modern programming language to write complex, parameterizable circuit generators that produce synthesizable Verilog.
@@ -20,13 +78,13 @@ This generator methodology enables the creation of re-usable components and libr
 
 For more information on the benefits of Chisel see: ["What benefits does Chisel offer over classic Hardware Description Languages?"](https://stackoverflow.com/questions/53007782/what-benefits-does-chisel-offer-over-classic-hardware-description-languages)
 
-Chisel is powered by [FIRRTL (Flexible Intermediate Representation for RTL)](https://github.com/freechipsproject/firrtl), a hardware compiler framework that performs optimizations of Chisel-generated circuits and supports custom user-defined circuit transformations.
+Chisel is powered by [FIRRTL (Flexible Intermediate Representation for RTL)](https://github.com/chipsalliance/firrtl), a hardware compiler framework that performs optimizations of Chisel-generated circuits and supports custom user-defined circuit transformations.
 
 ## What does Chisel code look like?
 
 Consider an FIR filter that implements a convolution operation, as depicted in this block diagram:
 
-<img src="https://raw.githubusercontent.com/freechipsproject/chisel3/master/doc/images/fir_filter.svg?sanitize=true" width="512" />
+<img src="https://raw.githubusercontent.com/chipsalliance/chisel3/master/docs/src/images/fir_filter.svg?sanitize=true" width="512" />
 
 While Chisel provides similar base primitives as synthesizable Verilog, and *could* be used as such:
 
@@ -98,20 +156,20 @@ The [**online Chisel Bootcamp**](https://mybinder.org/v2/gh/freechipsproject/chi
 
 The [**classic Chisel tutorial**](https://github.com/ucb-bar/chisel-tutorial) contains small exercises and runs on your computer.
 
+### A Textbook on Chisel
+
+If you like a textbook to learn Chisel and also a bit of digital design in general, you may be interested in reading [**Digital Design with Chisel**](http://www.imm.dtu.dk/~masca/chisel-book.html). It is available in English, Chinese, Japanese, and Vietnamese.
+
 ### Build Your Own Chisel Projects
 
-See [the setup instructions](https://github.com/freechipsproject/chisel3/blob/master/SETUP.md) for how to set up your environment to run Chisel locally.
+See [the setup instructions](https://github.com/chipsalliance/chisel3/blob/master/SETUP.md) for how to set up your environment to run Chisel locally.
 
 When you're ready to build your own circuits in Chisel, **we recommend starting from the [Chisel Template](https://github.com/freechipsproject/chisel-template) repository**, which provides a pre-configured project, example design, and testbench. Follow the [chisel-template readme](https://github.com/freechipsproject/chisel-template) to get started.
 
 If you insist on setting up your own project, the magic SBT lines are:
 ```scala
-resolvers ++= Seq(
-  Resolver.sonatypeRepo("snapshots"),
-  Resolver.sonatypeRepo("releases")
-)
-libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.2-SNAPSHOT"
-libraryDependencies += "edu.berkeley.cs" %% "chisel-testers2" % "0.1-SNAPSHOT"
+libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.4.0"
+libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % "0.3.0" % "test"
 ```
 
 ### Design Verification
@@ -126,7 +184,6 @@ These simulation-based verification tools are available for Chisel:
 ### Useful Resources
 
 - [**Cheat Sheet**](https://github.com/freechipsproject/chisel-cheatsheet/releases/latest/download/chisel_cheatsheet.pdf), a 2-page reference of the base Chisel syntax and libraries
-- [**Wiki**](https://github.com/freechipsproject/chisel3/wiki), which contains various feature-specific tutorials and frequently-asked questions.
 - [**ScalaDoc**](https://www.chisel-lang.org/api/latest/chisel3/index.html), a listing, description, and examples of the functionality exposed by Chisel
 - [**Gitter**](https://gitter.im/freechipsproject/chisel3), where you can ask questions or discuss anything Chisel
 - [**Website**](https://www.chisel-lang.org) ([source](https://github.com/freechipsproject/www.chisel-lang.org/))
@@ -136,16 +193,27 @@ If you are migrating from Chisel2, see [the migration guide](https://www.chisel-
 ### Data Types Overview
 These are the base data types for defining circuit components:
 
-![Image](https://raw.githubusercontent.com/freechipsproject/chisel3/master/doc/images/type_hierarchy.svg?sanitize=true)
+![Image](https://raw.githubusercontent.com/chipsalliance/chisel3/master/docs/src/images/type_hierarchy.svg?sanitize=true)
 
-## Developer Documentation
-This section describes how to get started developing Chisel itself, including how to test your version locally against other projects that pull in Chisel using [sbt's managed dependencies](https://www.scala-sbt.org/1.x/docs/Library-Dependencies.html).
+## Contributor Documentation
+This section describes how to get started contributing to Chisel itself, including how to test your version locally against other projects that pull in Chisel using [sbt's managed dependencies](https://www.scala-sbt.org/1.x/docs/Library-Dependencies.html).
 
 ### Compiling and Testing Chisel
 
-In the chisel3 repository directory compile the Chisel library:
+First, clone and build the master branch of [FIRRTL](https://github.com/chipsalliance/firrtl) and [Treadle](https://github.com/chipsalliance/treadle), as the master branch of Chisel may depend on unreleased changes in those projects:
 
 ```
+git clone https://github.com/chipsalliance/firrtl.git
+git clone https://github.com/chipsalliance/treadle.git
+pushd firrtl; sbt publishLocal; popd
+pushd treadle; sbt publishLocal; popd
+```
+
+Clone and build the Chisel library:
+
+```
+git clone https://github.com/chipsalliance/chisel3.git
+cd chisel3
 sbt compile
 ```
 
@@ -158,11 +226,11 @@ sbt test
 ### Running Projects Against Local Chisel
 
 To use the development version of Chisel (`master` branch), you will need to build from source and `publishLocal`.
-The repository version can be found in the build.sbt file.
+The repository version can be found in the [build.sbt](build.sbt) file.
 As of the time of writing it was:
 
 ```
-version := "3.2-SNAPSHOT"
+version := "3.4-SNAPSHOT"
 ```
 
 To publish your version of Chisel to the local Ivy (sbt's dependency manager) repository, run:
@@ -177,8 +245,31 @@ If you need to un-publish your local copy of Chisel, remove the directory genera
 In order to have your projects use this version of Chisel, you should update the `libraryDependencies` setting in your project's build.sbt file to:
 
 ```
-libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.2-SNAPSHOT"
+libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.4-SNAPSHOT"
 ```
+
+### Building Chisel with FIRRTL in the same SBT Project
+
+While we recommend using the library dependency approach as described above, it is possible to build Chisel and FIRRTL in a single SBT project.
+
+**Caveats**
+* This only works for the "main" configuration; you cannot build the Chisel tests this way because `treadle` is only supported as a library dependency.
+* Do not `publishLocal` when building this way. The published artifact will be missing the FIRRTL dependency.
+
+This works by using [sbt-sriracha](http://eed3si9n.com/hot-source-dependencies-using-sbt-sriracha), an SBT plugin for toggling between source and library dependencies.
+It provides two JVM system properties that, when set, will tell SBT to include FIRRTL as a source project:
+* `sbt.sourcemode` - when set to true, SBT will look for FIRRTL in the workspace
+* `sbt.workspace` - sets the root directory of the workspace
+
+Example use:
+```bash
+# From root of this repo
+git clone git@github.com:chipsalliance/firrtl.git
+sbt -Dsbt.sourcemode=true -Dsbt.workspace=$PWD
+```
+
+This is primarily useful for building projects that themselves want to include Chisel as a source dependency.
+As an example, see [Rocket Chip](https://github.com/chipsalliance/rocket-chip)
 
 ### Chisel3 Architecture Overview
 

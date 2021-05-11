@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 // This file contains part of the implementation of the naming static annotation system.
 
@@ -8,9 +8,8 @@ import chisel3.experimental.NoChiselNamePrefix
 import scala.collection.mutable.Stack
 import scala.collection.mutable.ListBuffer
 
-import scala.collection.JavaConversions._
-
 import java.util.IdentityHashMap
+import scala.collection.JavaConverters._
 
 /** Recursive Function Namer overview
   *
@@ -72,7 +71,7 @@ class NamingContext extends NamingContextInterface {
   val descendants = new IdentityHashMap[AnyRef, ListBuffer[NamingContext]]()
   val anonymousDescendants = ListBuffer[NamingContext]()
   val items = ListBuffer[(AnyRef, String)]()
-  var closed = false  // a sanity check to ensure no more name() calls are done after name_prefix
+  var closed = false  // a sanity check to ensure no more name() calls are done after namePrefix
 
   /** Adds a NamingContext object as a descendant - where its contained objects will have names
     * prefixed with the name given to the reference object, if the reference object is named in the
@@ -81,13 +80,20 @@ class NamingContext extends NamingContextInterface {
   def addDescendant(ref: Any, descendant: NamingContext) {
     ref match {
       case ref: AnyRef =>
-        descendants.getOrElseUpdate(ref, ListBuffer[NamingContext]()) += descendant
+        // getOrElseUpdate
+        val l = descendants.get(ref)
+        val buf = if (l != null) l else {
+          val value = ListBuffer[NamingContext]()
+          descendants.put(ref, value)
+          value
+        }
+        buf += descendant
       case _ => anonymousDescendants += descendant
     }
   }
 
   def name[T](obj: T, name: String): T = {
-    assert(!closed, "Can't name elements after name_prefix called")
+    assert(!closed, "Can't name elements after namePrefix called")
     obj match {
       case _: NoChiselNamePrefix => // Don't name things with NoChiselNamePrefix
       case ref: AnyRef => items += ((ref, name))
@@ -111,7 +117,7 @@ class NamingContext extends NamingContextInterface {
       }
     }
 
-    for (descendant <- descendants.values().flatten) {
+    for (descendant <- descendants.values.asScala.flatten) {
       // Where we have a broken naming link, just ignore the missing parts
       descendant.namePrefix(prefix)
     }
@@ -149,6 +155,6 @@ class NamingStack {
       namingStack.top.addDescendant(prefixRef, until)
     }
   }
-  
+
   def length() : Int = namingStack.length
 }

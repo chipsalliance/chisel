@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests
 
@@ -21,7 +21,6 @@ class CompileOptionsSpec extends ChiselFlatSpec with Utils {
     override def cloneType: this.type = (new BigBundle).asInstanceOf[this.type]
   }
 
-  // scalastyle:off line.size.limit
   "A Module with missing bundle fields when compiled with implicit Strict.CompileOption " should "throw an exception" in {
     a [ChiselException] should be thrownBy extractCause[ChiselException] {
       import chisel3.ExplicitCompileOptions.Strict
@@ -166,24 +165,4 @@ class CompileOptionsSpec extends ChiselFlatSpec with Utils {
     }
   }
 
-  "A Module with directionless connections when compiled with implicit NotStrict.CompileOption " should "not throw an exception" in {
-    import chisel3.ExplicitCompileOptions.NotStrict
-
-    class SimpleModule extends Module {
-      val io = IO(new Bundle {
-        val in = Input(UInt(3.W))
-        val out = Output(UInt(4.W))
-      })
-      val noDir = Wire(UInt(3.W))
-    }
-
-    class DirectionLessConnectionModule extends SimpleModule {
-      val a = 0.U(3.W)
-      val b = Wire(UInt(3.W))
-      val child = Module(new SimpleModule)
-      b := child.noDir
-    }
-    ChiselStage.elaborate { new DirectionLessConnectionModule() }
-  }
-  // scalastyle:on line.size.limit
 }

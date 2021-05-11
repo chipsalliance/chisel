@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chisel3.internal.firrtl
 
@@ -14,7 +14,6 @@ import _root_.firrtl.PrimOps
 import scala.collection.immutable.NumericRange
 import scala.math.BigDecimal.RoundingMode
 
-// scalastyle:off number.of.types
 
 case class PrimOp(name: String) {
   override def toString: String = name
@@ -73,11 +72,11 @@ abstract class Arg {
 case class Node(id: HasId) extends Arg {
   override def fullName(ctx: Component): String = id.getOptionRef match {
     case Some(arg) => arg.fullName(ctx)
-    case None => id.suggestedName.getOrElse("??")
+    case None => id.instanceName
   }
   def name: String = id.getOptionRef match {
     case Some(arg) => arg.name
-    case None => id.suggestedName.getOrElse("??")
+    case None => id.instanceName
   }
 }
 
@@ -92,10 +91,18 @@ abstract class LitArg(val num: BigInt, widthArg: Width) extends Arg {
     elem
   }
 
+  /** Provides a mechanism that LitArgs can have their width adjusted
+    * to match other members of a VecLiteral
+    *
+    * @param newWidth the new width for this
+    * @return
+    */
+  def cloneWithWidth(newWidth: Width): this.type
+
   protected def minWidth: Int
   if (forcedWidth) {
     require(widthArg.get >= minWidth,
-      s"The literal value ${num} was elaborated with a specified width of ${widthArg.get} bits, but at least ${minWidth} bits are required.") // scalastyle:ignore line.size.limit
+      s"The literal value ${num} was elaborated with a specified width of ${widthArg.get} bits, but at least ${minWidth} bits are required.")
   }
 }
 
@@ -107,6 +114,10 @@ case class ULit(n: BigInt, w: Width) extends LitArg(n, w) {
   def name: String = "UInt" + width + "(\"h0" + num.toString(16) + "\")"
   def minWidth: Int = 1 max n.bitLength
 
+  def cloneWithWidth(newWidth: Width): this.type = {
+    ULit(n, newWidth).asInstanceOf[this.type]
+  }
+
   require(n >= 0, s"UInt literal ${n} is negative")
 }
 
@@ -116,6 +127,10 @@ case class SLit(n: BigInt, w: Width) extends LitArg(n, w) {
     s"asSInt(${ULit(unsigned, width).name})"
   }
   def minWidth: Int = 1 + n.bitLength
+
+  def cloneWithWidth(newWidth: Width): this.type = {
+    SLit(n, newWidth).asInstanceOf[this.type]
+  }
 }
 
 case class FPLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends LitArg(n, w) {
@@ -124,6 +139,10 @@ case class FPLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends LitArg(n
     s"asFixedPoint(${ULit(unsigned, width).name}, ${binaryPoint.asInstanceOf[KnownBinaryPoint].value})"
   }
   def minWidth: Int = 1 + n.bitLength
+
+  def cloneWithWidth(newWidth: Width): this.type = {
+    FPLit(n, newWidth, binaryPoint).asInstanceOf[this.type]
+  }
 }
 
 case class IntervalLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends LitArg(n, w) {
@@ -136,6 +155,10 @@ case class IntervalLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends Li
       IntervalRange.getBound(isClosed = true, BigDecimal(n)), IntervalRange.getRangeWidth(binaryPoint))
   }
   def minWidth: Int = 1 + n.bitLength
+
+  def cloneWithWidth(newWidth: Width): this.type = {
+    IntervalLit(n, newWidth, binaryPoint).asInstanceOf[this.type]
+  }
 }
 
 case class Ref(name: String) extends Arg
@@ -159,6 +182,7 @@ object Width {
 
 sealed abstract class Width {
   type W = Int
+  def min(that: Width): Width = this.op(that, _ min _)
   def max(that: Width): Width = this.op(that, _ max _)
   def + (that: Width): Width = this.op(that, _ + _)
   def + (that: Int): Width = this.op(this, (a, b) => a + that)
@@ -359,7 +383,6 @@ object IntervalRange {
     }
   }
 
-  //scalastyle:off method.name
   def Unknown: IntervalRange = range"[?,?].?"
 }
 
@@ -390,7 +413,6 @@ sealed class IntervalRange(
     case _ =>
   }
 
-  //scalastyle:off cyclomatic.complexity
   override def toString: String = {
     val binaryPoint = firrtlBinaryPoint match {
       case firrtlir.IntWidth(n) => s"$n"
@@ -718,7 +740,6 @@ abstract class Definition extends Command {
   def id: HasId
   def name: String = id.getRef.name
 }
-// scalastyle:off line.size.limit
 case class DefPrim[T <: Data](sourceInfo: SourceInfo, id: T, op: PrimOp, args: Arg*) extends Definition
 case class DefInvalid(sourceInfo: SourceInfo, arg: Arg) extends Command
 case class DefWire(sourceInfo: SourceInfo, id: Data) extends Definition
@@ -739,6 +760,13 @@ case class ConnectInit(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Comm
 case class Stop(sourceInfo: SourceInfo, clock: Arg, ret: Int) extends Command
 case class Port(id: Data, dir: SpecifiedDirection)
 case class Printf(sourceInfo: SourceInfo, clock: Arg, pable: Printable) extends Command
+object Formal extends Enumeration {
+  val Assert = Value("assert")
+  val Assume = Value("assume")
+  val Cover = Value("cover")
+}
+case class Verification(op: Formal.Value, sourceInfo: SourceInfo, clock: Arg,
+                        predicate: Arg, message: String) extends Command
 abstract class Component extends Arg {
   def id: BaseModule
   def name: String

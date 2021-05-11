@@ -1,10 +1,12 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chisel3.internal
 
 import chisel3._
 import chisel3.experimental.BaseModule
 import chisel3.internal.firrtl.LitArg
+
+import scala.collection.immutable.VectorMap
 
 /** Requires that a node is hardware ("bound")
   */
@@ -88,13 +90,20 @@ sealed trait ConstrainedBinding extends TopBinding {
 // A binding representing a data that cannot be (re)assigned to.
 sealed trait ReadOnlyBinding extends TopBinding
 
+// A component that can potentially be declared inside a 'when'
+sealed trait ConditionalDeclarable extends TopBinding {
+  def visibility: Option[WhenContext]
+}
+
 // TODO(twigg): Ops between unenclosed nodes can also be unenclosed
 // However, Chisel currently binds all op results to a module
-case class OpBinding(enclosure: RawModule) extends ConstrainedBinding with ReadOnlyBinding
-case class MemoryPortBinding(enclosure: RawModule) extends ConstrainedBinding
+
 case class PortBinding(enclosure: BaseModule) extends ConstrainedBinding
-case class RegBinding(enclosure: RawModule) extends ConstrainedBinding
-case class WireBinding(enclosure: RawModule) extends ConstrainedBinding
+
+case class OpBinding(enclosure: RawModule, visibility: Option[WhenContext]) extends ConstrainedBinding with ReadOnlyBinding with ConditionalDeclarable
+case class MemoryPortBinding(enclosure: RawModule, visibility: Option[WhenContext]) extends ConstrainedBinding with ConditionalDeclarable
+case class RegBinding(enclosure: RawModule, visibility: Option[WhenContext]) extends ConstrainedBinding with ConditionalDeclarable
+case class WireBinding(enclosure: RawModule, visibility: Option[WhenContext]) extends ConstrainedBinding with ConditionalDeclarable
 
 case class ChildBinding(parent: Data) extends Binding {
   def location: Option[BaseModule] = parent.topBinding.location
@@ -102,6 +111,10 @@ case class ChildBinding(parent: Data) extends Binding {
 /** Special binding for Vec.sample_element */
 case class SampleElementBinding[T <: Data](parent: Vec[T]) extends Binding {
   def location = parent.topBinding.location
+}
+/** Special binding for Mem types */
+case class MemTypeBinding[T <: Data](parent: MemBase[T]) extends Binding {
+  def location: Option[BaseModule] = parent._parent
 }
 // A DontCare element has a specific Binding, somewhat like a literal.
 // It is a source (RHS). It may only be connected/applied to sinks.
@@ -112,3 +125,5 @@ sealed trait LitBinding extends UnconstrainedBinding with ReadOnlyBinding
 case class ElementLitBinding(litArg: LitArg) extends LitBinding
 // Literal binding attached to the root of a Bundle, containing literal values of its children.
 case class BundleLitBinding(litMap: Map[Data, LitArg]) extends LitBinding
+// Literal binding attached to the root of a Vec, containing literal values of its children.
+case class VecLitBinding(litMap: VectorMap[Data, LitArg]) extends LitBinding

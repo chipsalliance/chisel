@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chisel3.experimental
 
@@ -18,7 +18,7 @@ object EnumAnnotations {
   /** An annotation for strong enum instances that are ''not'' inside of Vecs
     *
     * @param target the enum instance being annotated
-    * @param typeName the name of the enum's type (e.g. ''"mypackage.MyEnum"'')
+    * @param enumTypeName the name of the enum's type (e.g. ''"mypackage.MyEnum"'')
     */
   case class EnumComponentAnnotation(target: Named, enumTypeName: String) extends SingleTargetAnnotation[Named] {
     def duplicate(n: Named): EnumComponentAnnotation = this.copy(target = n)
@@ -50,11 +50,11 @@ object EnumAnnotations {
     *
     */
   case class EnumVecAnnotation(target: Named, typeName: String, fields: Seq[Seq[String]]) extends SingleTargetAnnotation[Named] {
-    def duplicate(n: Named) = this.copy(target = n)
+    def duplicate(n: Named): EnumVecAnnotation = this.copy(target = n)
   }
 
   case class EnumVecChiselAnnotation(target: InstanceId, typeName: String, fields: Seq[Seq[String]]) extends ChiselAnnotation {
-    override def toFirrtl = EnumVecAnnotation(target.toNamed, typeName, fields)
+    override def toFirrtl: EnumVecAnnotation = EnumVecAnnotation(target.toNamed, typeName, fields)
   }
 
   /** An annotation for enum types (rather than enum ''instances'').
@@ -115,14 +115,12 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
   final def > (that: EnumType): Bool = macro SourceInfoTransform.thatArg
   final def >= (that: EnumType): Bool = macro SourceInfoTransform.thatArg
 
-  // scalastyle:off line.size.limit method.name
   def do_=== (that: EnumType)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, EqualOp, that)
   def do_=/= (that: EnumType)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, NotEqualOp, that)
   def do_< (that: EnumType)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, LessOp, that)
   def do_> (that: EnumType)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, GreaterOp, that)
   def do_<= (that: EnumType)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, LessEqOp, that)
   def do_>= (that: EnumType)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, GreaterEqOp, that)
-  // scalastyle:on line.size.limit method.name
 
   override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     pushOp(DefPrim(sourceInfo, UInt(width), AsUIntOp, ref))
@@ -227,11 +225,11 @@ abstract class EnumFactory {
   private[chisel3] var width: Width = 0.W
 
   private case class EnumRecord(inst: Type, name: String)
-  private val enum_records = mutable.ArrayBuffer.empty[EnumRecord]
+  private val enumRecords = mutable.ArrayBuffer.empty[EnumRecord]
 
-  private def enumNames = enum_records.map(_.name).toSeq
-  private def enumValues = enum_records.map(_.inst.litValue()).toSeq
-  private def enumInstances = enum_records.map(_.inst).toSeq
+  private def enumNames = enumRecords.map(_.name).toSeq
+  private def enumValues = enumRecords.map(_.inst.litValue()).toSeq
+  private def enumInstances = enumRecords.map(_.inst).toSeq
 
   private[chisel3] val enumTypeName = getClass.getName.init
 
@@ -243,11 +241,11 @@ abstract class EnumFactory {
   def all: Seq[Type] = enumInstances
 
   private[chisel3] def nameOfValue(id: BigInt): Option[String] = {
-    enum_records.find(_.inst.litValue() == id).map(_.name)
+    enumRecords.find(_.inst.litValue() == id).map(_.name)
   }
 
-  protected def Value: Type = macro EnumMacros.ValImpl // scalastyle:off method.name
-  protected def Value(id: UInt): Type = macro EnumMacros.ValCustomImpl // scalastyle:off method.name
+  protected def Value: Type = macro EnumMacros.ValImpl
+  protected def Value(id: UInt): Type = macro EnumMacros.ValCustomImpl
 
   protected def do_Value(name: String): Type = {
     val result = new Type
@@ -255,7 +253,7 @@ abstract class EnumFactory {
     // We have to use UnknownWidth here, because we don't actually know what the final width will be
     result.bindToLiteral(id, UnknownWidth())
 
-    enum_records.append(EnumRecord(result, name))
+    enumRecords.append(EnumRecord(result, name))
 
     width = (1 max id.bitLength).W
     id += 1
@@ -280,7 +278,6 @@ abstract class EnumFactory {
   def apply(): Type = new Type
 
   def apply(n: UInt)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Type = {
-    // scalastyle:off line.size.limit
     if (n.litOption.isDefined) {
       enumInstances.find(_.litValue == n.litValue) match {
         case Some(result) => result
@@ -300,12 +297,11 @@ abstract class EnumFactory {
       result
     }
   }
-  // scalastyle:on line.size.limit
 }
 
 
 private[chisel3] object EnumMacros {
-  def ValImpl(c: Context) : c.Tree = { // scalastyle:off method.name
+  def ValImpl(c: Context) : c.Tree = {
     import c.universe._
 
     // Much thanks to michael_s for this solution:
@@ -320,7 +316,7 @@ private[chisel3] object EnumMacros {
     q"""this.do_Value($name)"""
   }
 
-  def ValCustomImpl(c: Context)(id: c.Expr[UInt]): c.universe.Tree = { // scalastyle:off method.name
+  def ValCustomImpl(c: Context)(id: c.Expr[UInt]): c.universe.Tree = {
     import c.universe._
 
     val term = c.internal.enclosingOwner

@@ -1,16 +1,86 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chisel3.internal
 
 import scala.annotation.tailrec
 import scala.collection.mutable.{ArrayBuffer, LinkedHashMap}
 
-class ChiselException(message: String, cause: Throwable = null) extends Exception(message, cause) {
+object ExceptionHelpers {
+
+  /** Root packages that are not typically relevant to Chisel user code. */
+  final val packageTrimlist: Set[String] = Set("chisel3", "scala", "java", "jdk", "sun", "sbt")
+
+  /** The object name of Chisel's internal `Builder`. */
+  final val builderName: String = chisel3.internal.Builder.getClass.getName
+
+  /** Return a stack trace element that looks like `... (someMessage)`.
+    * @param message an optional message to include
+    */
+  def ellipsis(message: Option[String] = None): StackTraceElement =
+    new StackTraceElement("..", " ", message.getOrElse(""), -1)
+
+  /** Utility methods that can be added to exceptions.
+    */
+  implicit class ThrowableHelpers(throwable: Throwable) {
+
+    /** For an exception, mutably trim a stack trace to user code only.
+      *
+      * This does the following actions to the stack trace:
+      *
+      *   1. From the top, remove elements while the (root) package matches the packageTrimlist
+      *   2. Optionally, from the bottom, remove elements until the class matches an anchor
+      *   3. From the anchor (or the bottom), remove elements while the (root) package matches the packageTrimlist
+      *
+      * @param packageTrimlist packages that should be removed from the stack trace
+      * @param anchor an optional class name at which user execution might begin, e.g., a main object
+      * @return nothing as this mutates the exception directly
+      */
+    def trimStackTraceToUserCode(
+      packageTrimlist: Set[String] = packageTrimlist,
+      anchor: Option[String] = Some(builderName)
+    ): Unit = {
+      def inTrimlist(ste: StackTraceElement) = {
+        val packageName = ste.getClassName().takeWhile(_ != '.')
+        packageTrimlist.contains(packageName)
+      }
+
+      // Step 1: Remove elements from the top in the package trimlist
+      ((a: Array[StackTraceElement]) => a.dropWhile(inTrimlist))
+      // Step 2: Optionally remove elements from the bottom until the anchor
+        .andThen(_.reverse)
+        .andThen( a =>
+          anchor match {
+            case Some(b) => a.dropWhile(ste => !ste.getClassName.startsWith(b))
+            case None    => a
+          }
+        )
+      // Step 3: Remove elements from the bottom in the package trimlist
+        .andThen(_.dropWhile(inTrimlist))
+      // Step 4: Reverse back to the original order
+        .andThen(_.reverse.toArray)
+      // Step 5: Add ellipsis stack trace elements and "--full-stacktrace" info
+        .andThen(a =>
+          ellipsis() +:
+            a :+
+            ellipsis() :+
+            ellipsis(Some("Stack trace trimmed to user code only. Rerun with --full-stacktrace to see the full stack trace")))
+      // Step 5: Mutate the stack trace in this exception
+        .andThen(throwable.setStackTrace(_))
+        .apply(throwable.getStackTrace)
+    }
+
+  }
+
+}
+
+class ChiselException(message: String, cause: Throwable = null) extends Exception(message, cause, true, true) {
 
   /** Package names whose stack trace elements should be trimmed when generating a trimmed stack trace */
+  @deprecated("Use ExceptionHelpers.packageTrimlist. This will be removed in Chisel 3.6", "3.5")
   val blacklistPackages: Set[String] = Set("chisel3", "scala", "java", "sun", "sbt")
 
   /** The object name of Chisel's internal `Builder`. Everything stack trace element after this will be trimmed. */
+  @deprecated("Use ExceptionHelpers.builderName. This will be removed in Chisel 3.6", "3.5")
   val builderName: String = chisel3.internal.Builder.getClass.getName
 
   /** Examine a [[Throwable]], to extract all its causes. Innermost cause is first.
@@ -27,7 +97,7 @@ class ChiselException(message: String, cause: Throwable = null) extends Exceptio
   /** Returns true if an exception contains  */
   private def containsBuilder(throwable: Throwable): Boolean =
     throwable.getStackTrace().collectFirst {
-      case ste if ste.getClassName().startsWith(builderName) => throwable
+      case ste if ste.getClassName().startsWith(ExceptionHelpers.builderName) => throwable
     }.isDefined
 
   /** Examine this [[ChiselException]] and it's causes for the first [[Throwable]] that contains a stack trace including
@@ -55,18 +125,11 @@ class ChiselException(message: String, cause: Throwable = null) extends Exceptio
     }
 
     val trimmedLeft = throwable.getStackTrace().view.dropWhile(isBlacklisted)
-    val trimmedReverse = trimmedLeft.reverse
+    val trimmedReverse = trimmedLeft.toIndexedSeq.reverse.view
       .dropWhile(ste => !ste.getClassName.startsWith(builderName))
       .dropWhile(isBlacklisted)
-    trimmedReverse.reverse.toArray
+    trimmedReverse.toIndexedSeq.reverse.toArray
   }
-
-  /** trims the top of the stack of elements belonging to [[blacklistPackages]]
-    * then trims the bottom elements until it reaches [[builderName]]
-    * then continues trimming elements belonging to [[blacklistPackages]]
-    */
-  @deprecated("This method will be removed in 3.4", "3.3")
-  def trimmedStackTrace: Array[StackTraceElement] = trimmedStackTrace(this)
 
   def chiselStackTrace: String = {
     val trimmed = trimmedStackTrace(likelyCause)
@@ -75,7 +138,7 @@ class ChiselException(message: String, cause: Throwable = null) extends Exceptio
     sw.write(likelyCause.toString + "\n")
     sw.write("\t...\n")
     trimmed.foreach(ste => sw.write(s"\tat $ste\n"))
-    sw.write("\t... (Stack trace trimmed to user code only, rerun with --full-stacktrace if you wish to see the full stack trace)\n") // scalastyle:ignore line.size.limit
+    sw.write("\t... (Stack trace trimmed to user code only, rerun with --full-stacktrace if you wish to see the full stack trace)\n")
     sw.toString
   }
 }
@@ -102,8 +165,9 @@ private[chisel3] class ErrorLog {
     errors += new Warning(m, getUserLineNumber)
 
   /** Emit an informational message */
+  @deprecated("This method will be removed in 3.5", "3.4")
   def info(m: String): Unit =
-    println(new Info("[%2.3f] %s".format(elapsedTime/1e3, m), None))  // scalastyle:ignore regex
+    println(new Info("[%2.3f] %s".format(elapsedTime/1e3, m), None))
 
   /** Log a deprecation warning message */
   def deprecated(m: => String, location: Option[String]): Unit = {
@@ -121,7 +185,6 @@ private[chisel3] class ErrorLog {
 
   /** Throw an exception if any errors have yet occurred. */
   def checkpoint(): Unit = {
-    // scalastyle:off line.size.limit regex
     deprecations.foreach { case ((message, sourceLoc), count) =>
       println(s"${ErrorLog.depTag} $sourceLoc ($count calls): $message")
     }
@@ -149,12 +212,12 @@ private[chisel3] class ErrorLog {
     }
 
     if (!allErrors.isEmpty) {
-      throwException("Fatal errors during hardware elaboration")
+      throw new ChiselException("Fatal errors during hardware elaboration. Look above for error list.")
+          with scala.util.control.NoStackTrace
     } else {
       // No fatal errors, clear accumulated warnings since they've been reported
       errors.clear()
     }
-    // scalastyle:on line.size.limit regex
   }
 
   /** Returns the best guess at the first stack frame that belongs to user code.
@@ -166,6 +229,7 @@ private[chisel3] class ErrorLog {
       val chiselPrefixes = Set(
           "java.",
           "scala.",
+          "chisel3.",
           "chisel3.internal.",
           "chisel3.experimental.",
           "chisel3.package$"  // for some compatibility / deprecated types

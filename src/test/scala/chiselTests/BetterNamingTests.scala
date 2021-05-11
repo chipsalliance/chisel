@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests
 
@@ -36,12 +36,14 @@ class IterableNaming extends NamedModuleTester {
                         expectName(WireDefault(2.U), "optSet_2"),
                         expectName(WireDefault(3.U), "optSet_3")))
 
-  val stack = mutable.Stack[Module]()
-  for (i <- 0 until 4) {
-    val j = 3 - i
-    stack.push(expectName(Module(new Other(i)), s"stack_$j"))
+  val stack = {
+    val s = mutable.Stack[Module]()
+    for (i <- 0 until 4) {
+      val j = 3 - i
+      s.push(expectName(Module(new Other(i)), s"stack_$j"))
+    }
+    s
   }
-
   def streamFrom(x: Int): Stream[Module] =
     expectName(Module(new Other(x)), s"list_$x") #:: streamFrom(x + 1)
   val stream = streamFrom(0) // Check that we don't get into infinite loop
@@ -88,9 +90,8 @@ class BetterNamingTests extends ChiselFlatSpec {
       }
       WireDefault(3.U)
     }
-    val stage = new ChiselStage
-    val withLits = stage.emitChirrtl(new MyModule(true))
-    val noLits = stage.emitChirrtl(new MyModule(false))
+    val withLits = ChiselStage.emitChirrtl(new MyModule(true))
+    val noLits = ChiselStage.emitChirrtl(new MyModule(false))
     withLits should equal (noLits)
   }
 }

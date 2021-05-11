@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chisel3
 
@@ -14,7 +14,6 @@ import chisel3.internal.firrtl.PrimOp._
 import _root_.firrtl.{ir => firrtlir}
 import _root_.firrtl.{constraint => firrtlconstraint}
 
-// scalastyle:off method.name line.size.limit file.size.limit
 
 /** Exists to unify common interfaces of [[Bits]] and [[Reset]].
   *
@@ -30,15 +29,6 @@ private[chisel3] sealed trait ToBoolable extends Element {
 
   /** @group SourceInfoTransformMacro */
   def do_asBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
-
-  /** Casts this $coll to a [[Bool]]
-    *
-    * @note The width must be known and equal to 1
-    */
-  final def toBool(): Bool = macro SourceInfoWhiteboxTransform.noArg
-
-  /** @group SourceInfoTransformMacro */
-  def do_toBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
 }
 
 /** A data type for values represented by a single bitvector. This provides basic bitwise operations.
@@ -49,7 +39,7 @@ private[chisel3] sealed trait ToBoolable extends Element {
   * @define sumWidth       @note The width of the returned $coll is `width of this` + `width of that`.
   * @define unchangedWidth @note The width of the returned $coll is unchanged, i.e., the `width of this`.
   */
-sealed abstract class Bits(private[chisel3] val width: Width) extends Element with ToBoolable { //scalastyle:off number.of.methods
+sealed abstract class Bits(private[chisel3] val width: Width) extends Element with ToBoolable {
   // TODO: perhaps make this concrete?
   // Arguments for: self-checking code (can't do arithmetic on bits)
   // Arguments against: generates down to a FIRRTL UInt anyways
@@ -316,11 +306,6 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
   /** Returns the contents of this wire as a [[scala.collection.Seq]] of [[Bool]]. */
   final def toBools(): Seq[Bool] = macro SourceInfoTransform.noArg
 
-  /** @group SourceInfoTransformMacro */
-  @chiselRuntimeDeprecated
-  @deprecated("Use asBools instead", "3.2")
-  def do_toBools(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Seq[Bool] = do_asBools
-
   /** Returns the contents of this wire as a [[scala.collection.Seq]] of [[Bool]]. */
   final def asBools(): Seq[Bool] = macro SourceInfoTransform.noArg
 
@@ -369,10 +354,6 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
       case _ => throwException(s"can't covert ${this.getClass.getSimpleName}$width to Bool")
     }
   }
-
-  @chiselRuntimeDeprecated
-  @deprecated("Use asBool instead", "3.2")
-  final def do_toBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = do_asBool
 
   /** Concatenation operator
     *
@@ -449,7 +430,7 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
   override def do_/ (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     binop(sourceInfo, UInt(this.width), DivideOp, that)
   override def do_% (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
-    binop(sourceInfo, UInt(this.width), RemOp, that)
+    binop(sourceInfo, UInt(this.width min that.width), RemOp, that)
   override def do_* (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     binop(sourceInfo, UInt(this.width + that.width), TimesOp, that)
 
@@ -591,10 +572,6 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
   override def do_> (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, GreaterOp, that)
   override def do_<= (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, LessEqOp, that)
   override def do_>= (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, GreaterEqOp, that)
-
-  @chiselRuntimeDeprecated
-  @deprecated("Use '=/=', which avoids potential precedence problems", "3.0")
-  final def != (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = this =/= that
 
   /** Dynamic not equals operator
     *
@@ -763,9 +740,9 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
   override def do_* (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
     binop(sourceInfo, SInt(this.width + that.width), TimesOp, that)
   override def do_/ (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
-    binop(sourceInfo, SInt(this.width), DivideOp, that)
+    binop(sourceInfo, SInt(this.width + 1), DivideOp, that)
   override def do_% (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
-    binop(sourceInfo, SInt(this.width), RemOp, that)
+    binop(sourceInfo, SInt(this.width min that.width), RemOp, that)
 
   /** Multiplication operator
     *
@@ -877,10 +854,6 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
   override def do_> (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, GreaterOp, that)
   override def do_<= (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, LessEqOp, that)
   override def do_>= (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, GreaterEqOp, that)
-
-  @chiselRuntimeDeprecated
-  @deprecated("Use '=/=', which avoids potential precedence problems", "3.0")
-  final def != (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = this =/= that
 
   /** Dynamic not equals operator
     *
@@ -1174,6 +1147,7 @@ sealed class Bool() extends UInt(1.W) with Reset {
 package experimental {
 
   import chisel3.internal.firrtl.BinaryPoint
+  import chisel3.internal.requireIsHardware // Fix ambiguous import
 
   /** Chisel types that have binary points support retrieving
     * literal values as `Double` or `BigDecimal`
@@ -1212,7 +1186,6 @@ package experimental {
       */
     def litToBigDecimal: BigDecimal = litToBigDecimalOption.get
   }
-  //scalastyle:off number.of.methods
   /** A sealed class representing a fixed point number that has a bit width and a binary point The width and binary point
     * may be inferred.
     *
@@ -1625,7 +1598,6 @@ package experimental {
     }
   }
 
-  //scalastyle:off number.of.methods cyclomatic.complexity
   /**
     * A sealed class representing a fixed point number that has a range, an additional
     * parameter that can determine a minimum and maximum supported value.
@@ -1657,7 +1629,6 @@ package experimental {
     private[chisel3] override def cloneTypeWidth(w: Width): this.type =
       new Interval(range).asInstanceOf[this.type]
 
-    //scalastyle:off cyclomatic.complexity
     def toType: String = {
       val zdec1 = """([+\-]?[0-9]\d*)(\.[0-9]*[1-9])(0*)""".r
       val zdec2 = """([+\-]?[0-9]\d*)(\.0*)""".r

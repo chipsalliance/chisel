@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chisel3.stage.phases
 
@@ -29,7 +29,7 @@ class AspectPhase extends Phase {
       case other => Seq(other)
     }
     if(dut.isDefined) {
-      val newAnnotations = aspects.flatMap { _.resolveAspect(dut.get) }
+      val newAnnotations = aspects.flatMap { _.resolveAspect(dut.get, remainingAnnotations) }
       remainingAnnotations ++ newAnnotations
     } else annotations
   }

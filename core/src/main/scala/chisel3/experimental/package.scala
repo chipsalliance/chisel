@@ -1,13 +1,15 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chisel3
+
+import chisel3.internal.sourceinfo.SourceInfo
 
 /** Package for experimental features, which may have their API changed, be removed, etc.
   *
   * Because its contents won't necessarily have the same level of stability and support as
   * non-experimental, you must explicitly import this package to use its contents.
   */
-package object experimental {  // scalastyle:ignore object.name
+package object experimental {
   import scala.language.implicitConversions
   import chisel3.internal.BaseModule
 
@@ -19,13 +21,6 @@ package object experimental {  // scalastyle:ignore object.name
   implicit def fromStringToStringParam(x: String): StringParam = StringParam(x)
 
   type ChiselEnum = EnumFactory
-
-  @deprecated("Use the version in chisel3._", "3.2")
-  val withClockAndReset = chisel3.withClockAndReset
-  @deprecated("Use the version in chisel3._", "3.2")
-  val withClock = chisel3.withClock
-  @deprecated("Use the version in chisel3._", "3.2")
-  val withReset = chisel3.withReset
 
   // Rocket Chip-style clonemodule
 
@@ -44,7 +39,7 @@ package object experimental {  // scalastyle:ignore object.name
       * q2_io.enq <> q1.io.deq
       * }}}
       */
-    def apply(proto: BaseModule)(implicit sourceInfo: chisel3.internal.sourceinfo.SourceInfo, compileOptions: CompileOptions): ClonePorts = { // scalastyle:ignore line.size.limit
+    def apply(proto: BaseModule)(implicit sourceInfo: chisel3.internal.sourceinfo.SourceInfo, compileOptions: CompileOptions): ClonePorts = {
       BaseModule.cloneIORecord(proto)
     }
   }
@@ -69,8 +64,8 @@ package object experimental {  // scalastyle:ignore object.name
     def range(args: Any*): chisel3.internal.firrtl.IntervalRange = macro chisel3.internal.RangeTransform.apply
   }
 
-  class dump extends chisel3.internal.naming.dump  // scalastyle:ignore class.name
-  class treedump extends chisel3.internal.naming.treedump  // scalastyle:ignore class.name
+  class dump extends chisel3.internal.naming.dump
+  class treedump extends chisel3.internal.naming.treedump
   /** Experimental macro for naming Chisel hardware values
     *
     * By default, Chisel uses reflection for naming which only works for public fields of `Bundle`
@@ -96,7 +91,7 @@ package object experimental {  // scalastyle:ignore object.name
     * }
     * }}}
     */
-  class chiselName extends chisel3.internal.naming.chiselName  // scalastyle:ignore class.name
+  class chiselName extends chisel3.internal.naming.chiselName
   /** Do not name instances of this type in [[chiselName]]
     *
     * By default, `chiselName` will include `val` names of instances of annotated classes as a
@@ -131,10 +126,43 @@ package object experimental {  // scalastyle:ignore object.name
 
   object BundleLiterals {
     implicit class AddBundleLiteralConstructor[T <: Record](x: T) {
-      //scalastyle:off method.name
-      def Lit(elems: (T => (Data, Data))*): T = {
+      def Lit(elems: (T => (Data, Data))*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
         x._makeLit(elems: _*)
       }
     }
   }
+
+  /** This class provides the `Lit` method needed to define a `Vec` literal
+    */
+  object VecLiterals {
+    implicit class AddVecLiteralConstructor[T <: Data](x: Vec[T]) {
+      /** Given a generator of a list tuples of the form [Int, Data]
+        * constructs a Vec literal, parallel concept to `BundleLiteral`
+        *
+        * @param elems tuples of an index and a literal value
+        * @return
+        */
+      def Lit(elems: (Int, T)*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = {
+        x._makeLit(elems: _*)
+      }
+    }
+
+    implicit class AddObjectLiteralConstructor(x: Vec.type) {
+      /** This provides an literal construction method for cases using
+        * object `Vec` as in `Vec.Lit(1.U, 2.U)`
+        */
+      def Lit[T <: Data](elems: T*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = {
+        require(elems.nonEmpty, s"Lit.Vec(...) must have at least one element")
+        val indexElements = elems.zipWithIndex.map { case (element, index) => (index, element)}
+        val widestElement = elems.maxBy(_.getWidth)
+        val vec: Vec[T] = Vec.apply(indexElements.length, chiselTypeOf(widestElement))
+        vec.Lit(indexElements:_*)
+      }
+    }
+  }
+
+  // Use to add a prefix to any component generated in input scope
+  val prefix = chisel3.internal.prefix
+  // Use to remove prefixes not in provided scope
+  val noPrefix = chisel3.internal.noPrefix
 }

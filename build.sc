@@ -1,4 +1,3 @@
-// Build script for mill 0.6.0
 import mill._
 import mill.scalalib._
 import mill.scalalib.publish._
@@ -6,58 +5,63 @@ import coursier.maven.MavenRepository
 import $ivy.`com.lihaoyi::mill-contrib-buildinfo:$MILL_VERSION`
 import mill.contrib.buildinfo.BuildInfo
 
-object chisel3 extends mill.Cross[chisel3CrossModule]("2.11.12", "2.12.11") 
+object chisel3 extends mill.Cross[chisel3CrossModule]("2.12.13")
 
 // The following stanza is searched for and used when preparing releases.
 // Please retain it.
 // Provide a managed dependency on X if -DXVersion="" is supplied on the command line.
-val defaultVersions = Map("firrtl" -> "1.4-SNAPSHOT")
+val defaultVersions = Map(
+  "firrtl" -> "1.5-SNAPSHOT"
+)
+
+val testDefaultVersions = Map(
+  "treadle" -> "1.5-SNAPSHOT"
+)
 
 def getVersion(dep: String, org: String = "edu.berkeley.cs") = {
   val version = sys.env.getOrElse(dep + "Version", defaultVersions(dep))
   ivy"$org::$dep:$version"
 }
 
+def getTestVersion(dep: String, org: String = "edu.berkeley.cs") = {
+  val version = sys.env.getOrElse(dep + "Version", testDefaultVersions(dep))
+  ivy"$org::$dep:$version"
+}
+
 // Since chisel contains submodule core and macros, a CommonModule is needed
-trait CommonModule extends ScalaModule with SbtModule with PublishModule {
-  def firrtlModule: Option[PublishModule]
+trait CommonModule extends CrossSbtModule with PublishModule {
+  def firrtlModule: Option[PublishModule] = None
 
-  def publishVersion = "3.4-SNAPSHOT"
+  def firrtlIvyDeps = if (firrtlModule.isEmpty) Agg(
+    getVersion("firrtl")
+  ) else Agg.empty[Dep]
 
-  // 2.12.11 -> Array("2", "12", "10") -> "12" -> 12
-  protected def majorVersion = crossVersion.split('.')(1).toInt
+  def treadleModule: Option[PublishModule] = None
 
-  def crossVersion: String
+  def treadleIvyDeps = if (treadleModule.isEmpty) Agg(
+    getTestVersion("treadle")
+  ) else Agg.empty[Dep]
 
-  def scalaVersion = crossVersion
+  override def moduleDeps = super.moduleDeps ++ firrtlModule
 
-  def repositories() = super.repositories ++ Seq(
+  override def ivyDeps = super.ivyDeps() ++ firrtlIvyDeps
+
+  def publishVersion = "3.5-SNAPSHOT"
+
+  // 2.12.10 -> Array("2", "12", "10") -> "12" -> 12
+  protected def majorVersion = crossScalaVersion.split('.')(1).toInt
+
+  override def repositories = super.repositories ++ Seq(
     MavenRepository("https://oss.sonatype.org/content/repositories/snapshots"),
     MavenRepository("https://oss.sonatype.org/content/repositories/releases")
   )
 
-  private def scalacCrossOptions = majorVersion match {
-    case i if i < 12 => Seq()
-    case _ => Seq("-Xsource:2.11")
+  override def scalacOptions = T {
+    super.scalacOptions() ++ Agg(
+      "-deprecation",
+      "-feature"
+    )
   }
-  
-  def ivyDeps = if(firrtlModule.isEmpty) Agg(
-    getVersion("firrtl"),
-  ) else Agg.empty[Dep]
-
-  def moduleDeps = Seq() ++ firrtlModule
-
-  private def javacCrossOptions = majorVersion match {
-    case i if i < 12 => Seq("-source", "1.7", "-target", "1.7")
-    case _ => Seq("-source", "1.8", "-target", "1.8")
-  }
-
-  override def scalacOptions = super.scalacOptions() ++ Agg(
-    "-deprecation",
-    "-feature"
-  ) ++ scalacCrossOptions
-  
-  override def javacOptions = super.javacOptions() ++ javacCrossOptions
 
   private val macroParadise = ivy"org.scalamacros:::paradise:2.1.1"
 
@@ -69,7 +73,7 @@ trait CommonModule extends ScalaModule with SbtModule with PublishModule {
     description = artifactName(),
     organization = "edu.berkeley.cs",
     url = "https://www.chisel-lang.org",
-    licenses = Seq(License.`BSD-3-Clause`),
+    licenses = Seq(License.`Apache-2.0`),
     versionControl = VersionControl.github("freechipsproject", "chisel3"),
     developers = Seq(
       Developer("jackbackrack", "Jonathan Bachrach", "https://eecs.berkeley.edu/~jrb/")
@@ -77,35 +81,43 @@ trait CommonModule extends ScalaModule with SbtModule with PublishModule {
   )
 }
 
-class chisel3CrossModule(crossVersionValue: String) extends CommonModule with PublishModule with BuildInfo { m =>
-  // different scala version shares same sources
-  // mill use foo/2.11.12 foo/2.12.11 as millSourcePath by default
-  override def millSourcePath = super.millSourcePath / os.up / os.up
+class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule with BuildInfo {
+  m =>
+  /** Default behavior assumes `build.sc` in the upper path of `src`.
+    * This override makes `src` folder stay with `build.sc` in the same directory,
+    * If chisel3 is used as a sub-project, [[millSourcePath]] should be overridden to the folder where `src` located.
+    */
+  override def millSourcePath = super.millSourcePath / os.up
 
-  def crossVersion = crossVersionValue
+  override def mainClass = T {
+    Some("chisel3.stage.ChiselMain")
+  }
 
-  def mainClass = Some("chisel3.stage.ChiselMain")
+  override def moduleDeps = super.moduleDeps ++ Seq(macros, core)
 
-  def firrtlModule: Option[PublishModule] = None
+  override def scalacPluginClasspath = T {
+    super.scalacPluginClasspath() ++ Agg(
+      plugin.jar()
+    )
+  }
 
-  override def moduleDeps = super.moduleDeps ++ Seq(macros, core) ++ firrtlModule
-  
   object test extends Tests {
-    private def ivyCrossDeps = majorVersion match {
-      case i if i < 12 => Agg(ivy"junit:junit:4.13")
-      case _ => Agg()
+    override def scalacPluginClasspath = m.scalacPluginClasspath
+
+    override def ivyDeps = m.ivyDeps() ++ Agg(
+      ivy"org.scalatest::scalatest:3.1.2",
+      ivy"org.scalatestplus::scalacheck-1-14:3.1.4.0",
+      ivy"com.github.scopt::scopt:4.0.1"
+    ) ++ m.treadleIvyDeps
+
+    override def moduleDeps = super.moduleDeps ++ treadleModule
+
+    def testFrameworks = T {
+      Seq("org.scalatest.tools.Framework")
     }
 
-    def ivyDeps = Agg(
-      ivy"org.scalatest::scalatest:3.1.2",
-      ivy"org.scalatestplus::scalacheck-1-14:3.1.1.1",
-      ivy"com.github.scopt::scopt:3.7.1"
-    ) ++ ivyCrossDeps
-
-    def testFrameworks = Seq("org.scalatest.tools.Framework")
-
     // a sbt-like testOnly command.
-    // for example, mill -i "chisel3[2.12.11].test.testOnly" "chiselTests.BitwiseOpsSpec" 
+    // for example, mill -i "chisel3[2.12.12].test.testOnly" "chiselTests.BitwiseOpsSpec"
     def testOnly(args: String*) = T.command {
       super.runMain("org.scalatest.run", args: _*)
     }
@@ -113,7 +125,7 @@ class chisel3CrossModule(crossVersionValue: String) extends CommonModule with Pu
 
   override def buildInfoPackageName = Some("chisel3")
 
-  override def buildInfoMembers: T[Map[String, String]] = T {
+  override def buildInfoMembers = T {
     Map(
       "buildInfoPackage" -> artifactName(),
       "version" -> publishVersion(),
@@ -121,33 +133,63 @@ class chisel3CrossModule(crossVersionValue: String) extends CommonModule with Pu
     )
   }
 
-  override def generatedSources = T {
-    Seq(generatedBuildInfo()._2)
-  }
-
   object macros extends CommonModule {
-    def firrtlModule = m.firrtlModule
+    /** millOuterCtx.segment.pathSegments didn't detect error here. */
+    override def millSourcePath = m.millSourcePath / "macros"
 
-    def crossVersion = crossVersionValue
+    override def crossScalaVersion = m.crossScalaVersion
+
+    override def firrtlModule = m.firrtlModule
   }
 
-  object core extends CommonModule { 
-    def firrtlModule = m.firrtlModule
+  object core extends CommonModule {
+    /** millOuterCtx.segment.pathSegments didn't detect error here. */
+    override def millSourcePath = m.millSourcePath / "core"
 
-    def crossVersion = crossVersionValue
+    override def crossScalaVersion = m.crossScalaVersion
 
-    def moduleDeps = super.moduleDeps ++ Seq(macros) ++ firrtlModule
+    override def moduleDeps = super.moduleDeps ++ Seq(macros)
 
-    def scalacOptions = super.scalacOptions() ++ Seq(
-      "-deprecation",
-      "-explaintypes",
-      "-feature",
-      "-language:reflectiveCalls",
-      "-unchecked",
-      "-Xcheckinit",
-      "-Xlint:infer-any"
+    override def firrtlModule = m.firrtlModule
+
+    def scalacOptions = T {
+      super.scalacOptions() ++ Seq(
+        "-deprecation",
+        "-explaintypes",
+        "-feature",
+        "-language:reflectiveCalls",
+        "-unchecked",
+        "-Xcheckinit",
+        "-Xlint:infer-any"
+      )
+    }
+
+    override def generatedSources = T {
+      Seq(generatedBuildInfo()._2)
+    }
+  }
+
+  object plugin extends CommonModule {
+    /** millOuterCtx.segment.pathSegments didn't detect error here. */
+    override def millSourcePath = m.millSourcePath / "plugin"
+
+    override def crossScalaVersion = m.crossScalaVersion
+
+    override def firrtlModule = m.firrtlModule
+
+    override def ivyDeps = Agg(
+      ivy"${scalaOrganization()}:scala-library:$crossScalaVersion"
     )
+
+    def scalacOptions = T {
+      Seq(
+        "-Xfatal-warnings"
+      )
+    }
+
+    override def artifactName = "chisel3-plugin"
   }
+
   // make mill publish sbt compatible package
-  def artifactName = "chisel3"
+  override def artifactName = "chisel3"
 }

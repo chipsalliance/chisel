@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chisel3.aop
 
@@ -21,7 +21,7 @@ object Select {
     * @return
     */
   def getLeafs(d: Data): Seq[Data] = d match {
-    case b: Bundle => b.getElements.flatMap(getLeafs)
+    case r: Record => r.getElements.flatMap(getLeafs)
     case v: Vec[_] => v.getElements.flatMap(getLeafs)
     case other => Seq(other)
   }
@@ -32,7 +32,7 @@ object Select {
     * @return
     */
   def getIntermediateAndLeafs(d: Data): Seq[Data] = d match {
-    case b: Bundle => b +: b.getElements.flatMap(getIntermediateAndLeafs)
+    case r: Record => r +: r.getElements.flatMap(getIntermediateAndLeafs)
     case v: Vec[_] => v +: v.getElements.flatMap(getIntermediateAndLeafs)
     case other => Seq(other)
   }
@@ -248,7 +248,7 @@ object Select {
         case other =>
       }
     })
-    predicatedConnects
+    predicatedConnects.toSeq
   }
 
   /** Selects all stop statements, and includes the predicates surrounding the stop statement
@@ -264,7 +264,7 @@ object Select {
         case other =>
       }
     })
-    stops
+    stops.toSeq
   }
 
   /** Selects all printf statements, and includes the predicates surrounding the printf statement
@@ -280,7 +280,7 @@ object Select {
         case other =>
       }
     })
-    printfs
+    printfs.toSeq
   }
 
   // Checks that a module has finished its construction
@@ -321,7 +321,7 @@ object Select {
     }
   } catch {
     case e: ChiselException => i.getOptionRef.get match {
-      case l: LitArg => l.num.intValue().toString
+      case l: LitArg => l.num.intValue.toString
     }
   }
 

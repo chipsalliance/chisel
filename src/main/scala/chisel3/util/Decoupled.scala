@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 /** Wrappers for ready-valid (Decoupled) interfaces and associated circuit generators using them.
   */
@@ -21,7 +21,7 @@ abstract class ReadyValidIO[+T <: Data](gen: T) extends Bundle
 {
   // Compatibility hack for rocket-chip
   private val genType = (DataMirror.internal.isSynthesizable(gen), chisel3.internal.Builder.currentModule) match {
-    case (true, Some(module: MultiIOModule))
+    case (true, Some(module: Module))
         if !module.compileOptions.declaredTypeMustBeUnbound => chiselTypeOf(gen)
     case _ => gen
   }
@@ -107,8 +107,8 @@ object Decoupled
     */
   @chiselName
   def apply[T <: Data](irr: IrrevocableIO[T]): DecoupledIO[T] = {
-    require(DataMirror.directionOf(irr.bits) == Direction.Output, "Only safe to cast produced Irrevocable bits to Decoupled.") // scalastyle:ignore line.size.limit
-    val d = Wire(new DecoupledIO(irr.bits))
+    require(DataMirror.directionOf(irr.bits) == Direction.Output, "Only safe to cast produced Irrevocable bits to Decoupled.")
+    val d = Wire(new DecoupledIO(chiselTypeOf(irr.bits)))
     d.bits := irr.bits
     d.valid := irr.valid
     irr.ready := d.ready
@@ -138,8 +138,8 @@ object Irrevocable
     * @note unsafe (and will error) on the consumer (output) side of an DecoupledIO
     */
   def apply[T <: Data](dec: DecoupledIO[T]): IrrevocableIO[T] = {
-    require(DataMirror.directionOf(dec.bits) == Direction.Input, "Only safe to cast consumed Decoupled bits to Irrevocable.") // scalastyle:ignore line.size.limit
-    val i = Wire(new IrrevocableIO(dec.bits))
+    require(DataMirror.directionOf(dec.bits) == Direction.Input, "Only safe to cast consumed Decoupled bits to Irrevocable.")
+    val i = Wire(new IrrevocableIO(chiselTypeOf(dec.bits)))
     dec.bits := i.bits
     dec.valid := i.valid
     i.ready := dec.ready
@@ -186,6 +186,7 @@ class QueueIO[T <: Data](private val gen: T, val entries: Int) extends Bundle
   * combinationally coupled.
   * @param flow True if the inputs can be consumed on the same cycle (the inputs "flow" through the queue immediately).
   * The ''valid'' signals are coupled.
+  * @param useSyncReadMem True uses SyncReadMem instead of Mem as an internal memory element.
   *
   * @example {{{
   * val q = Module(new Queue(UInt(), 16))
@@ -194,10 +195,11 @@ class QueueIO[T <: Data](private val gen: T, val entries: Int) extends Bundle
   * }}}
   */
 @chiselName
-class Queue[T <: Data](gen: T,
+class Queue[T <: Data](val gen: T,
                        val entries: Int,
-                       pipe: Boolean = false,
-                       flow: Boolean = false)
+                       val pipe: Boolean = false,
+                       val flow: Boolean = false,
+                       val useSyncReadMem: Boolean = false)
                       (implicit compileOptions: chisel3.CompileOptions)
     extends Module() {
   require(entries > -1, "Queue must have non-negative number of entries")
@@ -215,7 +217,7 @@ class Queue[T <: Data](gen: T,
 
   val io = IO(new QueueIO(genType, entries))
 
-  val ram = Mem(entries, genType)
+  val ram = if (useSyncReadMem) SyncReadMem(entries, genType, SyncReadMem.WriteFirst) else Mem(entries, genType)
   val enq_ptr = Counter(entries)
   val deq_ptr = Counter(entries)
   val maybe_full = RegInit(false.B)
@@ -239,7 +241,15 @@ class Queue[T <: Data](gen: T,
 
   io.deq.valid := !empty
   io.enq.ready := !full
-  io.deq.bits := ram(deq_ptr.value)
+
+  if (useSyncReadMem) {
+    val deq_ptr_next = Mux(deq_ptr.value === (entries.U - 1.U), 0.U, deq_ptr.value + 1.U)
+    val r_addr = WireDefault(Mux(do_deq, deq_ptr_next, deq_ptr.value))
+    io.deq.bits := ram.read(r_addr)
+  }
+  else {
+    io.deq.bits := ram(deq_ptr.value)
+  }
 
   if (flow) {
     when (io.enq.valid) { io.deq.valid := true.B }
@@ -285,7 +295,8 @@ object Queue
       enq: ReadyValidIO[T],
       entries: Int = 2,
       pipe: Boolean = false,
-      flow: Boolean = false): DecoupledIO[T] = {
+      flow: Boolean = false,
+      useSyncReadMem: Boolean = false): DecoupledIO[T] = {
     if (entries == 0) {
       val deq = Wire(new DecoupledIO(chiselTypeOf(enq.bits)))
       deq.valid := enq.valid
@@ -293,7 +304,7 @@ object Queue
       enq.ready := deq.ready
       deq
     } else {
-      val q = Module(new Queue(chiselTypeOf(enq.bits), entries, pipe, flow))
+      val q = Module(new Queue(chiselTypeOf(enq.bits), entries, pipe, flow, useSyncReadMem))
       q.io.enq.valid := enq.valid // not using <> so that override is allowed
       q.io.enq.bits := enq.bits
       enq.ready := q.io.enq.ready
@@ -311,8 +322,9 @@ object Queue
       enq: ReadyValidIO[T],
       entries: Int = 2,
       pipe: Boolean = false,
-      flow: Boolean = false): IrrevocableIO[T] = {    
-    val deq = apply(enq, entries, pipe, flow)
+      flow: Boolean = false,
+      useSyncReadMem: Boolean = false): IrrevocableIO[T] = {
+    val deq = apply(enq, entries, pipe, flow, useSyncReadMem)
     require(entries > 0, "Zero-entry queues don't guarantee Irrevocability")
     val irr = Wire(new IrrevocableIO(chiselTypeOf(deq.bits)))
     irr.bits := deq.bits

@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chisel3
 
@@ -8,7 +8,6 @@ import chisel3.internal.firrtl.{BinaryPoint, KnownBinaryPoint}
 import scala.language.experimental.macros
 import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform}
 
-// scalastyle:off method.name
 
 // REVIEW TODO: Further discussion needed on what Num actually is.
 
@@ -227,7 +226,7 @@ trait NumObject {
     */
   def toBigInt(x: BigDecimal, binaryPoint: Int): BigInt = {
     val multiplier = math.pow(2, binaryPoint)
-    val result = (x * multiplier).rounded.toBigInt()
+    val result = (x * multiplier).rounded.toBigInt
     result
   }
 

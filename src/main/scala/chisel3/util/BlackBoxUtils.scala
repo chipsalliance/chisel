@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chisel3.util
 
@@ -8,9 +8,6 @@ import firrtl.transforms.{BlackBoxPathAnno, BlackBoxResourceAnno, BlackBoxInline
 
 trait HasBlackBoxResource extends BlackBox {
   self: BlackBox =>
-
-  @deprecated("Use addResource instead", "3.2")
-  def setResource(blackBoxResource: String): Unit = addResource(blackBoxResource)
 
   /** Copies a resource file to the target directory
     *
@@ -32,6 +29,11 @@ trait HasBlackBoxResource extends BlackBox {
 trait HasBlackBoxInline extends BlackBox {
   self: BlackBox =>
 
+  /** Creates a black box verilog file, from the contents of a local string
+    *
+    * @param blackBoxName   The black box module name, to create filename
+    * @param blackBoxInline The black box contents
+    */
   def setInline(blackBoxName: String, blackBoxInline: String): Unit = {
     val anno = new ChiselAnnotation with RunFirrtlTransform {
       def toFirrtl = BlackBoxInlineAnno(self.toNamed, blackBoxName, blackBoxInline)

@@ -1,20 +1,18 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chisel3
 
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer, HashMap}
-import scala.collection.JavaConversions._
 import scala.language.experimental.macros
-
-import java.util.IdentityHashMap
 
 import chisel3.internal._
 import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.{InstTransform, SourceInfo}
+import chisel3.internal.sourceinfo.{InstTransform, SourceInfo, UnlocatableSourceInfo}
 import chisel3.experimental.BaseModule
-import _root_.firrtl.annotations.{ModuleName, ModuleTarget, IsModule}
+import _root_.firrtl.annotations.{IsModule, ModuleName, ModuleTarget}
+import _root_.firrtl.AnnotationSeq
 
 object Module extends SourceInfoDoc {
   /** A wrapper method that all Module instantiations must be wrapped in
@@ -37,17 +35,19 @@ object Module extends SourceInfoDoc {
     Builder.readyForModuleConstr = true
 
     val parent = Builder.currentModule
-    val whenDepth: Int = Builder.whenDepth
+    val parentWhenStack = Builder.whenStack
 
     // Save then clear clock and reset to prevent leaking scope, must be set again in the Module
     val (saveClock, saveReset)  = (Builder.currentClock, Builder.currentReset)
+    val savePrefix = Builder.getPrefix()
+    Builder.clearPrefix()
     Builder.currentClock = None
     Builder.currentReset = None
 
     // Execute the module, this has the following side effects:
     //   - set currentModule
     //   - unset readyForModuleConstr
-    //   - reset whenDepth to 0
+    //   - reset whenStack to be empty
     //   - set currentClockAndReset
     val module: T = bc  // bc is actually evaluated here
 
@@ -60,12 +60,14 @@ object Module extends SourceInfoDoc {
                      sourceInfo.makeMessage(" See " + _))
     }
     Builder.currentModule = parent // Back to parent!
-    Builder.whenDepth = whenDepth
+    Builder.whenStack = parentWhenStack
     Builder.currentClock = saveClock   // Back to clock and reset scope
     Builder.currentReset = saveReset
 
     val component = module.generateComponent()
     Builder.components += component
+
+    Builder.setPrefix(savePrefix)
 
     // Handle connections at enclosing scope
     if(!Builder.currentModule.isEmpty) {
@@ -83,7 +85,59 @@ object Module extends SourceInfoDoc {
   def currentModule: Option[BaseModule] = Builder.currentModule
 }
 
+/** Abstract base class for Modules, which behave much like Verilog modules.
+  * These may contain both logic and state which are written in the Module
+  * body (constructor).
+  * This abstract base class includes an implicit clock and reset.
+  *
+  * @note Module instantiations must be wrapped in a Module() call.
+  */
+abstract class Module(implicit moduleCompileOptions: CompileOptions) extends RawModule {
+  // Implicit clock and reset pins
+  final val clock: Clock = IO(Input(Clock())).suggestName("clock")
+  final val reset: Reset = IO(Input(mkReset)).suggestName("reset")
+
+  // TODO It's hard to remove these deprecated override methods because they're used by
+  //   Chisel.QueueCompatibility which extends chisel3.Queue which extends chisel3.Module
+  private var _override_clock: Option[Clock] = None
+  private var _override_reset: Option[Bool] = None
+  @deprecated("Use withClock at Module instantiation", "Chisel 3.5")
+  protected def override_clock: Option[Clock] = _override_clock
+  @deprecated("Use withClock at Module instantiation", "Chisel 3.5")
+  protected def override_reset: Option[Bool] = _override_reset
+  @deprecated("Use withClock at Module instantiation", "Chisel 3.5")
+  protected def override_clock_=(rhs: Option[Clock]): Unit = {
+    _override_clock = rhs
+  }
+  @deprecated("Use withClock at Module instantiation", "Chisel 3.5")
+  protected def override_reset_=(rhs: Option[Bool]): Unit = {
+    _override_reset = rhs
+  }
+
+  private[chisel3] def mkReset: Reset = {
+    // Top module and compatibility mode use Bool for reset
+    val inferReset = _parent.isDefined && moduleCompileOptions.inferModuleReset
+    if (inferReset) Reset() else Bool()
+  }
+
+  // Setup ClockAndReset
+  Builder.currentClock = Some(clock)
+  Builder.currentReset = Some(reset)
+  Builder.clearPrefix()
+
+  private[chisel3] override def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
+    implicit val sourceInfo = UnlocatableSourceInfo
+
+    super.initializeInParent(parentCompileOptions)
+    clock := _override_clock.getOrElse(Builder.forcedClock)
+    reset := _override_reset.getOrElse(Builder.forcedReset)
+  }
+}
+
+
 package experimental {
+
+  import chisel3.internal.requireIsChiselType // Fix ambiguous import
 
   object IO {
     /** Constructs a port for the current Module
@@ -133,7 +187,7 @@ package internal {
     private[chisel3] def cloneIORecord(proto: BaseModule)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): ClonePorts = {
       require(proto.isClosed, "Can't clone a module before module close")
       val clonePorts = new ClonePorts(proto.getModulePorts: _*)
-      clonePorts.bind(WireBinding(Builder.forcedUserModule))
+      clonePorts.bind(WireBinding(Builder.forcedUserModule, Builder.currentWhen()))
       val cloneInstance = new DefInstance(sourceInfo, proto, proto._component.get.ports) {
         override def name = clonePorts.getRef.name
       }
@@ -141,7 +195,7 @@ package internal {
       if (!compileOptions.explicitInvalidate) {
         pushCommand(DefInvalid(sourceInfo, clonePorts.ref))
       }
-      if (proto.isInstanceOf[MultiIOModule]) {
+      if (proto.isInstanceOf[Module]) {
         clonePorts("clock") := Module.clock
         clonePorts("reset") := Module.reset
       }
@@ -156,6 +210,8 @@ package experimental {
     */
   // TODO: seal this?
   abstract class BaseModule extends HasId {
+    _parent.foreach(_.addId(this))
+
     //
     // Builder Internals - this tracks which Module RTL construction belongs to.
     //
@@ -165,7 +221,7 @@ package experimental {
     readyForModuleConstr = false
 
     Builder.currentModule = Some(this)
-    Builder.whenDepth = 0
+    Builder.whenStack = Nil
 
     //
     // Module Construction Internals
@@ -203,6 +259,11 @@ package experimental {
     // These methods allow checking some properties of ports before the module is closed,
     // mainly for compatibility purposes.
     protected def portsContains(elem: Data): Boolean = _ports contains elem
+
+    // This is dangerous because it can be called before the module is closed and thus there could
+    // be more ports and names have not yet been finalized.
+    // This should only to be used during the process of closing when it is safe to do so.
+    private[chisel3] def findPort(name: String): Option[Data] = _ports.find(_.seedOpt.contains(name))
 
     protected def portsSize: Int = _ports.size
 
@@ -247,10 +308,12 @@ package experimental {
 
     /** Legalized name of this module. */
     final lazy val name = try {
-      Builder.globalNamespace.name(desiredName)
+      // If this is a module aspect, it should share the same name as the original module
+      // Thus, the desired name should be returned without uniquification
+      if(this.isInstanceOf[ModuleAspect]) desiredName else Builder.globalNamespace.name(desiredName)
     } catch {
       case e: NullPointerException => throwException(
-        s"Error: desiredName of ${this.getClass.getName} is null. Did you evaluate 'name' before all values needed by desiredName were available?", e) // scalastyle:ignore line.size.limit
+        s"Error: desiredName of ${this.getClass.getName} is null. Did you evaluate 'name' before all values needed by desiredName were available?", e)
       case t: Throwable => throw t
     }
 
@@ -322,6 +385,17 @@ package experimental {
       names
     }
 
+    /** Invokes _onModuleClose on HasIds found via reflection but not bound to hardware
+      * (thus not part of _ids)
+      * This maintains old naming behavior for non-hardware Data
+      */
+    private[chisel3] def closeUnboundIds(names: HashMap[HasId, String]): Unit = {
+      val idLookup = _ids.toSet
+      for ((id, _) <- names if !idLookup(id)) {
+        id._onModuleClose
+      }
+    }
+
     /** Compatibility function. Allows Chisel2 code which had ports without the IO wrapper to
       * compile under Bindings checks. Does nothing in non-compatibility mode.
       *
@@ -329,12 +403,12 @@ package experimental {
       *
       * TODO: remove this, perhaps by removing Bindings checks in compatibility mode.
       */
-    def _compatAutoWrapPorts() {} // scalastyle:ignore method.name
+    def _compatAutoWrapPorts() {}
 
     /** Chisel2 code didn't require the IO(...) wrapper and would assign a Chisel type directly to
       * io, then do operations on it. This binds a Chisel type in-place (mutably) as an IO.
       */
-    protected def _bindIoInPlace(iodef: Data): Unit = { // scalastyle:ignore method.name
+    protected def _bindIoInPlace(iodef: Data): Unit = {
       // Compatibility code: Chisel2 did not require explicit direction on nodes
       // (unspecified treated as output, and flip on nothing was input).
       // This sets assigns the explicit directions required by newer semantics on
@@ -385,7 +459,7 @@ package experimental {
       * TODO(twigg): Specifically walk the Data definition to call out which nodes
       * are problematic.
       */
-    protected def IO[T <: Data](iodef: T): T = chisel3.experimental.IO.apply(iodef) // scalastyle:ignore method.name
+    protected def IO[T <: Data](iodef: T): T = chisel3.experimental.IO.apply(iodef)
 
     //
     // Internal Functions

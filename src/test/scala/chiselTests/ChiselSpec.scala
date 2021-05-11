@@ -1,20 +1,23 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests
 
-import org.scalatest._
-import org.scalatest.prop._
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalacheck._
 import chisel3._
-import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
+import chisel3.aop.Aspect
+import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage, NoRunFirrtlCompilerAnnotation, PrintFullStackTraceAnnotation}
 import chisel3.testers._
-import firrtl.{AnnotationSeq, CommonOptions, EmittedVerilogCircuitAnnotation, ExecutionOptionsManager, FirrtlExecutionFailure, FirrtlExecutionSuccess, HasFirrtlOptions}
-import firrtl.annotations.DeletedAnnotation
+import firrtl.annotations.Annotation
 import firrtl.util.BackendCompilationUtilities
+import firrtl.{AnnotationSeq, EmittedVerilogCircuitAnnotation}
+import org.scalacheck._
+import org.scalatest._
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should._
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
+
 import java.io.ByteArrayOutputStream
 import java.security.Permission
-import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 import scala.reflect.ClassTag
 
 /** Common utility functions for Chisel unit tests. */
@@ -23,7 +26,11 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
                 additionalVResources: Seq[String] = Seq(),
                 annotations: AnnotationSeq = Seq()
                ): Boolean = {
-    TesterDriver.execute(() => t, additionalVResources, annotations)
+    // Change this to enable Treadle as a backend
+    val defaultBackend = chisel3.testers.TesterDriver.defaultBackend
+    val hasBackend = TestUtils.containsBackend(annotations)
+    val annos: Seq[Annotation] = if (hasBackend) annotations else defaultBackend +: annotations
+    TesterDriver.execute(() => t, additionalVResources, annos)
   }
   def assertTesterPasses(t: => BasicTester,
                          additionalVResources: Seq[String] = Seq(),
@@ -75,7 +82,7 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
       .execute(Array("--target-dir", createTestDirectory(this.getClass.getSimpleName).toString),
                Seq(ChiselGeneratorAnnotation(() => t)))
       .collectFirst {
-        case DeletedAnnotation(_, EmittedVerilogCircuitAnnotation(a)) => a.value
+        case EmittedVerilogCircuitAnnotation(a) => a.value
       }.getOrElse(fail("No Verilog circuit was emitted by the FIRRTL compiler!"))
   }
 }
@@ -83,62 +90,11 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
 /** Spec base class for BDD-style testers. */
 abstract class ChiselFlatSpec extends AnyFlatSpec with ChiselRunners with Matchers
 
-class ChiselTestUtilitiesSpec extends ChiselFlatSpec {
-  import org.scalatest.exceptions.TestFailedException
-  // Who tests the testers?
-  "assertKnownWidth" should "error when the expected width is wrong" in {
-    val caught = intercept[ChiselException] {
-      assertKnownWidth(7) {
-        Wire(UInt(8.W))
-      }
-    }
-    assert(caught.getCause.isInstanceOf[TestFailedException])
-  }
-
-  it should "error when the width is unknown" in {
-    a [ChiselException] shouldBe thrownBy {
-      assertKnownWidth(7) {
-        Wire(UInt())
-      }
-    }
-  }
-
-  it should "work if the width is correct" in {
-    assertKnownWidth(8) {
-      Wire(UInt(8.W))
-    }
-  }
-
-  "assertInferredWidth" should "error if the width is known" in {
-    val caught = intercept[ChiselException] {
-      assertInferredWidth(8) {
-        Wire(UInt(8.W))
-      }
-    }
-    assert(caught.getCause.isInstanceOf[TestFailedException])
-  }
-
-  it should "error if the expected width is wrong" in {
-    a [TestFailedException] shouldBe thrownBy {
-      assertInferredWidth(8) {
-        val w = Wire(UInt())
-        w := 2.U(2.W)
-        w
-      }
-    }
-  }
-
-  it should "pass if the width is correct" in {
-    assertInferredWidth(4) {
-      val w = Wire(UInt())
-      w := 2.U(4.W)
-      w
-    }
-  }
-}
+/** Spec base class for BDD-style testers. */
+abstract class ChiselFreeSpec extends AnyFreeSpec with ChiselRunners with Matchers
 
 /** Spec base class for property-based testers. */
-class ChiselPropSpec extends PropSpec with ChiselRunners with ScalaCheckPropertyChecks with Matchers {
+abstract class ChiselPropSpec extends PropSpec with ChiselRunners with ScalaCheckPropertyChecks with Matchers {
 
   // Constrain the default number of instances generated for every use of forAll.
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
@@ -146,6 +102,20 @@ class ChiselPropSpec extends PropSpec with ChiselRunners with ScalaCheckProperty
 
   // Generator for small positive integers.
   val smallPosInts = Gen.choose(1, 4)
+
+  // Generator for positive (ascending or descending) ranges.
+  def posRange: Gen[Range] = for {
+    dir <- Gen.oneOf(true, false)
+    step <- Gen.choose(1, 3)
+    m <- Gen.choose(1, 10)
+    n <- Gen.choose(1, 10)
+  } yield {
+    if (dir) {
+      Range(m, (m+n)*step, step)
+    } else {
+      Range((m+n)*step, m, -step)
+    }
+  }
 
   // Generator for widths considered "safe".
   val safeUIntWidth = Gen.choose(1, 30)
@@ -260,6 +230,7 @@ trait Utils {
     * or doesn't try to write at all.
     */
   def catchWrites[T](thunk: => T): Either[String, T] = {
+    throw new Exception("Do not use, not thread-safe")
     try {
       System.setSecurityManager(new ExceptOnWrite())
       Right(thunk)
@@ -267,6 +238,27 @@ trait Utils {
       case WriteException(a) => Left(a)
     } finally {
       System.setSecurityManager(null)
+    }
+  }
+
+
+  /** A tester which runs generator and uses an aspect to check the returned object
+    * @param gen function to generate a Chisel module
+    * @param f a function to check the Chisel module
+    * @tparam T the Chisel module class
+    */
+  def aspectTest[T <: RawModule](gen: () => T)(f: T => Unit)(implicit scalaMajorVersion: Int): Unit = {
+    // Runs chisel stage
+    def run[T <: RawModule](gen: () => T, annotations: AnnotationSeq): AnnotationSeq = {
+      new ChiselStage().run(Seq(ChiselGeneratorAnnotation(gen), NoRunFirrtlCompilerAnnotation, PrintFullStackTraceAnnotation) ++ annotations)
+    }
+    // Creates a wrapping aspect to contain checking function
+    case object BuiltAspect extends Aspect[T] {
+      override def toAnnotation(top: T): AnnotationSeq = {f(top); Nil}
+    }
+    val currentMajorVersion = scala.util.Properties.versionNumberString.split('.')(1).toInt
+    if(currentMajorVersion >= scalaMajorVersion) {
+      run(gen, Seq(BuiltAspect))
     }
   }
 
@@ -300,11 +292,10 @@ trait Utils {
     exceptions.collectFirst{ case a: A => a } match {
       case Some(a) => throw a
       case None => exceptions match {
-        case Nil    => Unit
+        case Nil    => ()
         case h :: t => throw h
       }
     }
 
   }
-
 }

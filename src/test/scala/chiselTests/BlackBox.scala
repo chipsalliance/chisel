@@ -1,11 +1,11 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests
 
 import chisel3._
 import chisel3.experimental._
 import chisel3.stage.ChiselStage
-import chisel3.testers.BasicTester
+import chisel3.testers.{TesterDriver, BasicTester}
 import chisel3.util._
 
 class BlackBoxInverter extends BlackBox {
@@ -13,6 +13,16 @@ class BlackBoxInverter extends BlackBox {
     val in = Input(Bool())
     val out = Output(Bool())
   })
+}
+
+// Due to the removal of "val io", this technically works
+// This style is discouraged, please use "val io"
+class BlackBoxInverterSuggestName extends BlackBox {
+  override def desiredName: String = "BlackBoxInverter"
+  val foo = IO(new Bundle() {
+    val in = Input(Bool())
+    val out = Output(Bool())
+  }).suggestName("io")
 }
 
 class BlackBoxPassthrough extends BlackBox {
@@ -47,6 +57,18 @@ class BlackBoxTester extends BasicTester {
 
   assert(blackBoxNeg.io.out === 1.U)
   assert(blackBoxPos.io.out === 0.U)
+  stop()
+}
+
+class BlackBoxTesterSuggestName extends BasicTester {
+  val blackBoxPos = Module(new BlackBoxInverterSuggestName)
+  val blackBoxNeg = Module(new BlackBoxInverterSuggestName)
+
+  blackBoxPos.foo.in := 1.U
+  blackBoxNeg.foo.in := 0.U
+
+  assert(blackBoxNeg.foo.out === 1.U)
+  assert(blackBoxPos.foo.out === 0.U)
   stop()
 }
 
@@ -150,31 +172,47 @@ class BlackBoxWithParamsTester extends BasicTester {
 
 class BlackBoxSpec extends ChiselFlatSpec {
   "A BlackBoxed inverter" should "work" in {
-    assertTesterPasses({ new BlackBoxTester },
-        Seq("/chisel3/BlackBoxTest.v"))
+    assertTesterPasses(
+      {new BlackBoxTester},
+      Seq("/chisel3/BlackBoxTest.v"),
+      TesterDriver.verilatorOnly)
   }
   "A BlackBoxed with flipped IO" should "work" in {
-    assertTesterPasses({ new BlackBoxFlipTester },
-        Seq("/chisel3/BlackBoxTest.v"))
+    assertTesterPasses(
+      {new BlackBoxFlipTester},
+      Seq("/chisel3/BlackBoxTest.v"),
+      TesterDriver.verilatorOnly)
   }
   "Multiple BlackBoxes" should "work" in {
-    assertTesterPasses({ new MultiBlackBoxTester },
-        Seq("/chisel3/BlackBoxTest.v"))
+    assertTesterPasses(
+      {new MultiBlackBoxTester},
+      Seq("/chisel3/BlackBoxTest.v"),
+      TesterDriver.verilatorOnly)
   }
   "A BlackBoxed register" should "work" in {
-    assertTesterPasses({ new BlackBoxWithClockTester },
-        Seq("/chisel3/BlackBoxTest.v"))
+    assertTesterPasses(
+      {new BlackBoxWithClockTester},
+      Seq("/chisel3/BlackBoxTest.v"),
+      TesterDriver.verilatorOnly)
   }
   "BlackBoxes with parameters" should "work" in {
-    assertTesterPasses({ new BlackBoxWithParamsTester },
-        Seq("/chisel3/BlackBoxTest.v"))
+    assertTesterPasses(
+      {new BlackBoxWithParamsTester},
+      Seq("/chisel3/BlackBoxTest.v"),
+      TesterDriver.verilatorOnly)
   }
   "DataMirror.modulePorts" should "work with BlackBox" in {
     ChiselStage.elaborate(new Module {
-      val io = IO(new Bundle { })
-      val m = Module(new BlackBoxPassthrough)
-      assert(DataMirror.modulePorts(m) == Seq(
-          "in" -> m.io.in, "out" -> m.io.out))
-    })
+        val io = IO(new Bundle {})
+        val m = Module(new BlackBoxPassthrough)
+        assert(DataMirror.modulePorts(m) == Seq("in" -> m.io.in, "out" -> m.io.out))
+      }
+    )
+  }
+  "A BlackBoxed using suggestName(\"io\")" should "work (but don't do this)" in {
+    assertTesterPasses(
+      {new BlackBoxTesterSuggestName},
+      Seq("/chisel3/BlackBoxTest.v"),
+      TesterDriver.verilatorOnly)
   }
 }

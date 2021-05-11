@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chisel3
 
@@ -81,6 +81,8 @@ package experimental {
         id._onModuleClose
       }
 
+      closeUnboundIds(names)
+
       val firrtlPorts = getModulePorts map {port => Port(port, port.specifiedDirection)}
       val component = DefBlackBox(this, name, firrtlPorts, SpecifiedDirection.Unspecified, params)
       _component = Some(component)
@@ -132,49 +134,55 @@ package experimental {
   * }}}
   * @note The parameters API is experimental and may change
   */
-abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param])(implicit compileOptions: CompileOptions) extends BaseBlackBox { // scalastyle:ignore line.size.limit
-  def io: Record
+abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param])(implicit compileOptions: CompileOptions) extends BaseBlackBox {
+
+  // Find a Record port named "io" for purposes of stripping the prefix
+  private[chisel3] lazy val _io: Record =
+    this.findPort("io")
+        .collect { case r: Record => r } // Must be a Record
+        .getOrElse(null) // null handling occurs in generateComponent
 
   // Allow access to bindings from the compatibility package
-  protected def _compatIoPortBound() = portsContains(io) // scalastyle:ignore method.name
+  protected def _compatIoPortBound() = portsContains(_io)
 
   private[chisel3] override def generateComponent(): Component = {
     _compatAutoWrapPorts()  // pre-IO(...) compatibility hack
 
     // Restrict IO to just io, clock, and reset
-    require(io != null, "BlackBox must have io")
-    require(portsContains(io), "BlackBox must have io wrapped in IO(...)")
-    require(portsSize == 1, "BlackBox must only have io as IO")
+    require(_io != null, "BlackBox must have a port named 'io' of type Record!")
+    require(portsContains(_io), "BlackBox must have io wrapped in IO(...)")
+    require(portsSize == 1, "BlackBox must only have one IO, called `io`")
 
     require(!_closed, "Can't generate module more than once")
     _closed = true
 
-    val namedPorts = io.elements.toSeq.reverse  // ListMaps are stored in reverse order
+    val namedPorts = _io.elements.toSeq.reverse  // ListMaps are stored in reverse order
 
     // setRef is not called on the actual io.
     // There is a risk of user improperly attempting to connect directly with io
     // Long term solution will be to define BlackBox IO differently as part of
     //   it not descending from the (current) Module
     for ((name, port) <- namedPorts) {
-      port.setRef(ModuleIO(this, _namespace.name(name)))
+      // We have to force override the _ref because it was set during IO binding
+      port.setRef(ModuleIO(this, _namespace.name(name)), force = true)
     }
 
     // We need to call forceName and onModuleClose on all of the sub-elements
     // of the io bundle, but NOT on the io bundle itself.
     // Doing so would cause the wrong names to be assigned, since their parent
     // is now the module itself instead of the io bundle.
-    for (id <- getIds; if id ne io) {
+    for (id <- getIds; if id ne _io) {
       id._onModuleClose
     }
 
     val firrtlPorts = namedPorts map {namedPort => Port(namedPort._2, namedPort._2.specifiedDirection)}
-    val component = DefBlackBox(this, name, firrtlPorts, io.specifiedDirection, params)
+    val component = DefBlackBox(this, name, firrtlPorts, _io.specifiedDirection, params)
     _component = Some(component)
     component
   }
 
   private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
-    for ((_, port) <- io.elements) {
+    for ((_, port) <- _io.elements) {
       pushCommand(DefInvalid(UnlocatableSourceInfo, port.ref))
     }
   }

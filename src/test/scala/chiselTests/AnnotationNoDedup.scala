@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests
 
@@ -43,7 +43,6 @@ class UsesMuchUsedModule(addAnnos: Boolean) extends Module {
 
 class AnnotationNoDedup extends AnyFreeSpec with Matchers {
   val stage = new ChiselStage
-  // scalastyle:off line.size.limit
   "Firrtl provides transform that reduces identical modules to a single instance" - {
     "Annotations can be added which will prevent this deduplication for specific modules instances" in {
       val lowFirrtl = stage
@@ -72,5 +71,4 @@ class AnnotationNoDedup extends AnyFreeSpec with Matchers {
       lowFirrtl should not include "module MuchUsedModule_4 :"
     }
   }
-  // scalastyle:on line.size.limit
 }

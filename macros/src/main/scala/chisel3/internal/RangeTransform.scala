@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 // Macro transforms that statically (at compile time) parse range specifiers and emit the raw
 // (non-human-friendly) range constructor calls.
@@ -27,7 +27,6 @@ object RangeTransform {
   *
   * @param c contains the string context to be parsed
   */
-//scalastyle:off cyclomatic.complexity method.length
 class RangeTransform(val c: blackbox.Context) {
   import c.universe._
   def apply(args: c.Tree*): c.Tree = {

@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests
 
@@ -110,7 +110,7 @@ class LiteralExtractorSpec extends ChiselFlatSpec {
 
       // the following errors with "assertion failed"
 
-      println(outsideLiteral === insideLiteral) // scalastyle:ignore regex
+      println(outsideLiteral === insideLiteral)
       // chisel3.assert(outsideLiteral === insideLiteral)
 
       // the following lines of code error

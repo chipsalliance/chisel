@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests
 
@@ -77,7 +77,7 @@ class CastFromNonLit extends Module {
 class CastFromNonLitWidth(w: Option[Int] = None) extends Module {
   val width = if (w.isDefined) w.get.W else UnknownWidth()
 
-  override val io = IO(new Bundle {
+  val io = IO(new Bundle {
     val in = Input(UInt(width))
     val out = Output(EnumExample())
   })
@@ -255,7 +255,7 @@ class StrongEnumFSMTester extends BasicTester {
 
   // Inputs and expected results
   val inputs: Vec[Bool] = VecInit(false.B, true.B, false.B, true.B, true.B, true.B, false.B, true.B, true.B, false.B)
-  val expected: Vec[Bool] = VecInit(false.B, false.B, false.B, false.B, false.B, true.B, true.B, false.B, false.B, true.B) // scalastyle:ignore line.size.limit
+  val expected: Vec[Bool] = VecInit(false.B, false.B, false.B, false.B, false.B, true.B, true.B, false.B, false.B, true.B)
   val expected_state = VecInit(sNone, sNone, sOne1, sNone, sOne1, sTwo1s, sTwo1s, sNone, sOne1, sTwo1s)
 
   val cntr = Counter(inputs.length)
@@ -538,7 +538,6 @@ class StrongEnumAnnotationSpec extends AnyFreeSpec with Matchers {
     CorrectVecAnno("bund.inner_bundle1.v", enumExampleName, Set())
   )
 
-  // scalastyle:off regex
   def printAnnos(annos: Seq[Annotation]) {
     println("Enum definitions:")
     annos.foreach {
@@ -556,7 +555,6 @@ class StrongEnumAnnotationSpec extends AnyFreeSpec with Matchers {
       case _ =>
     }
   }
-  // scalastyle:on regex
 
   def isCorrect(anno: EnumDefAnnotation, correct: CorrectDefAnno): Boolean = {
     (anno.typeName == correct.typeName ||

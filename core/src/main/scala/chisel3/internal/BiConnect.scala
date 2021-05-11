@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chisel3.internal
 
@@ -24,7 +24,6 @@ import chisel3.internal.sourceinfo._
 */
 
 private[chisel3] object BiConnect {
-  // scalastyle:off method.name public.methods.have.type
   // These are all the possible exceptions that can be thrown.
   // These are from element-level connection
   def BothDriversException =
@@ -48,7 +47,6 @@ private[chisel3] object BiConnect {
     BiConnectException(sourceInfo.makeMessage(": Analog previously bulk connected at " + _))
   def DontCareCantBeSink =
     BiConnectException(": DontCare cannot be a connection sink (LHS)")
-  // scalastyle:on method.name public.methods.have.type
 
   /** This function is what recursively tries to connect a left and right together
   *
@@ -56,7 +54,7 @@ private[chisel3] object BiConnect {
   * during the recursive decent and then rethrow them with extra information added.
   * This gives the user a 'path' to where in the connections things went wrong.
   */
-  def connect(sourceInfo: SourceInfo, connectCompileOptions: CompileOptions, left: Data, right: Data, context_mod: RawModule): Unit = { // scalastyle:ignore line.size.limit cyclomatic.complexity method.length
+  def connect(sourceInfo: SourceInfo, connectCompileOptions: CompileOptions, left: Data, right: Data, context_mod: RawModule): Unit = {
     (left, right) match {
       // Handle element case (root case)
       case (left_a: Analog, right_a: Analog) =>
@@ -217,19 +215,21 @@ private[chisel3] object BiConnect {
 
   // This function checks if element-level connection operation allowed.
   // Then it either issues it or throws the appropriate exception.
-  def elemConnect(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions, left: Element, right: Element, context_mod: RawModule): Unit = { // scalastyle:ignore line.size.limit cyclomatic.complexity method.length
+  def elemConnect(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions, left: Element, right: Element, context_mod: RawModule): Unit = {
     import BindingDirection.{Internal, Input, Output} // Using extensively so import these
     // If left or right have no location, assume in context module
     // This can occur if one of them is a literal, unbound will error previously
     val left_mod: BaseModule  = left.topBinding.location.getOrElse(context_mod)
     val right_mod: BaseModule = right.topBinding.location.getOrElse(context_mod)
 
+    val left_parent = Builder.retrieveParent(left_mod, context_mod).getOrElse(None)
+    val right_parent = Builder.retrieveParent(right_mod, context_mod).getOrElse(None)
+
     val left_direction = BindingDirection.from(left.topBinding, left.direction)
     val right_direction = BindingDirection.from(right.topBinding, right.direction)
 
     // CASE: Context is same module as left node and right node is in a child module
-    if( (left_mod == context_mod) &&
-        (right_mod._parent.map(_ == context_mod).getOrElse(false)) ) {
+    if((left_mod == context_mod) && (right_parent == context_mod)) {
       // Thus, right node better be a port node and thus have a direction hint
       ((left_direction, right_direction): @unchecked) match {
         //    CURRENT MOD   CHILD MOD
@@ -246,8 +246,7 @@ private[chisel3] object BiConnect {
     }
 
     // CASE: Context is same module as right node and left node is in child module
-    else if( (right_mod == context_mod) &&
-             (left_mod._parent.map(_ == context_mod).getOrElse(false)) ) {
+    else if((right_mod == context_mod) && (left_parent == context_mod)) {
       // Thus, left node better be a port node and thus have a direction hint
       ((left_direction, right_direction): @unchecked) match {
         //    CHILD MOD     CURRENT MOD
@@ -290,9 +289,7 @@ private[chisel3] object BiConnect {
     // CASE: Context is the parent module of both the module containing left node
     //                                        and the module containing right node
     //   Note: This includes case when left and right in same module but in parent
-    else if( (left_mod._parent.map(_ == context_mod).getOrElse(false)) &&
-             (right_mod._parent.map(_ == context_mod).getOrElse(false))
-    ) {
+    else if((left_parent == context_mod) && (right_parent == context_mod)) {
       // Thus both nodes must be ports and have a direction hint
       ((left_direction, right_direction): @unchecked) match {
         //    CHILD MOD     CHILD MOD
