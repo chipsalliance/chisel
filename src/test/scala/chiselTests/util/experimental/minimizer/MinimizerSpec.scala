@@ -3,49 +3,36 @@
 package chiselTests.util.experimental.minimizer
 
 import chisel3._
-import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import chisel3.util._
 import chisel3.util.experimental.decode._
 import chisel3.util.pla
-import firrtl.backends.experimental.smt.EmittedSMTModelAnnotation
-import firrtl.options.TargetDirAnnotation
-import firrtl.util.BackendCompilationUtilities
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.matchers.should.Matchers
+import chiselTests.SMTModelCheckingSpec
 
-class MinimizerSpec extends AnyFlatSpec with Matchers {
-  class DecodeTestModule(minimizer: Minimizer, table: TruthTable, reference: TruthTable) extends Module {
-    val i = IO(Input(UInt(table.table.head._1.getWidth.W)))
-    val (plaI, plaO) = pla(reference.table.toSeq, BitPat(reference.default.value.U))
-    plaI := i
-    chisel3.experimental.verification.assert((decoder(minimizer, i, table) === plaO) | (i === reference.default))
-  }
+class DecodeTestModule(minimizer: Minimizer, table: TruthTable) extends Module {
+  val i = IO(Input(UInt(table.table.head._1.getWidth.W)))
+  val (unminimizedI, unminimizedO) = pla(table.table.toSeq)
+  unminimizedI := i
+  val minimizedO: UInt = decoder(minimizer, i, table)
 
-  def test(minimizer: Minimizer, testcase: (TruthTable, TruthTable)) = {
-    val testDir = os.pwd / "test_run_dir" / "MinimizerSpec" / BackendCompilationUtilities.timeStamp
-    os.makeDir.all(testDir)
-    val checkFile = testDir / "check.smt"
-    os.write(checkFile,
-      (new ChiselStage).execute(
-        Array("-E", "experimental-smt2"),
-        Seq(
-          ChiselGeneratorAnnotation(() => new DecodeTestModule(minimizer, table = testcase._1, testcase._2)),
-          TargetDirAnnotation(testDir.toString)
-        )
-      ).collectFirst {
-        case EmittedSMTModelAnnotation(_, smt, _) => smt
-      }.get +
-        """; combinational logic check
-          |(declare-fun s0 () DecodeTestModule_s)
-          |(assert (not (DecodeTestModule_a s0)))
-          |(check-sat)
-          |""".stripMargin
+  chisel3.experimental.verification.assert(
+    // for each instruction, if input matches, output should match, not no matched, fallback to default
+    (table.table.map { case (key, value) => (i === key) && (minimizedO === value) } ++
+      Seq(table.table.keys.map(i =/= _).reduce(_ && _) && minimizedO === table.default)).reduce(_ || _)
+  )
+}
+
+trait MinimizerSpec extends SMTModelCheckingSpec {
+  def minimizer: Minimizer
+
+  def minimizerTest(testcase: TruthTable, caseName: String) = {
+    test(
+      () => new DecodeTestModule(minimizer, table = testcase),
+      s"${minimizer.getClass.getSimpleName}.$caseName",
+      success
     )
-    os.proc("z3", checkFile).call().out.toString
   }
 
-  val case0 = (
-    TruthTable(
+  val case0 = TruthTable(
       Map(
         BitPat("b000") -> BitPat("b0"),
         // BitPat("b001") -> BitPat("b?"),  // same as default, can be omitted
@@ -57,18 +44,9 @@ class MinimizerSpec extends AnyFlatSpec with Matchers {
         BitPat("b111") -> BitPat("b1")
       ),
       BitPat("b?")
-    ),
-    TruthTable(
-      Map(
-        BitPat("b10?") -> BitPat("b1"),
-        BitPat("b1?1") -> BitPat("b1"),
-      ),
-      BitPat("b?")
     )
-  )
 
-  val case1 = (
-    TruthTable(
+  val case1 = TruthTable(
       Map(
         BitPat("b000") -> BitPat("b0"),
         BitPat("b001") -> BitPat("b0"),
@@ -80,13 +58,5 @@ class MinimizerSpec extends AnyFlatSpec with Matchers {
         BitPat("b111") -> BitPat("b0")
       ),
       BitPat("b?")
-    ),
-    TruthTable(
-      Map(
-        BitPat("b?10") -> BitPat("b1"),
-        // BitPat("b1?0") -> BitPat("b1"),  // both are ok
-      ),
-      BitPat("b?")
-    ),
-  )
+    )
 }
