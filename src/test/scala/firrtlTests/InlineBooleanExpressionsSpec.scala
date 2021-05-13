@@ -166,7 +166,7 @@ class InlineBooleanExpressionsSpec extends FirrtlFlatSpec {
         |    node _c = in_1 @[A 1:1]
         |    node _t = in_2 @[A 1:1]
         |    node _f = in_3 @[A 1:1]
-        |    out <= mux(in_1, in_2, in_3) @[A 1:1 A 2:2 A 3:3]""".stripMargin
+        |    out <= mux(in_1, in_2, in_3) @[A 1:1 2:2 3:3]""".stripMargin
     val result = exec(input)
     (result) should be(parse(check).serialize)
   }

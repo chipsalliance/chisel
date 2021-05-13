@@ -166,11 +166,11 @@ class InfoSpec extends FirrtlFlatSpec with FirrtlMatchers {
       """.stripMargin
 
     val result = (new LowFirrtlCompiler).compileAndEmit(CircuitState(parse(input), ChirrtlForm), List.empty)
-    result should containLine("node _GEN_0 = mux(_T_14, _T_16, x) @[GCD.scala 17:18 GCD.scala 17:22 GCD.scala 15:14]")
-    result should containLine("node _GEN_2 = mux(io_e, io_a, _GEN_0) @[GCD.scala 19:15 GCD.scala 19:19]")
+    result should containLine("node _GEN_0 = mux(_T_14, _T_16, x) @[GCD.scala 15:14 17:{18,22}]")
+    result should containLine("node _GEN_2 = mux(io_e, io_a, _GEN_0) @[GCD.scala 19:{15,19}]")
     result should containLine("x <= _GEN_2")
-    result should containLine("node _GEN_1 = mux(_T_18, _T_20, y) @[GCD.scala 18:18 GCD.scala 18:22 GCD.scala 16:14]")
-    result should containLine("node _GEN_3 = mux(io_e, io_b, _GEN_1) @[GCD.scala 19:15 GCD.scala 19:30]")
+    result should containLine("node _GEN_1 = mux(_T_18, _T_20, y) @[GCD.scala 16:14 18:{18,22}]")
+    result should containLine("node _GEN_3 = mux(io_e, io_b, _GEN_1) @[GCD.scala 19:{15,30}]")
     result should containLine("y <= _GEN_3")
   }
 
@@ -254,4 +254,71 @@ class InfoSpec extends FirrtlFlatSpec with FirrtlMatchers {
     parseInfo("test[\\][\\]test").unescaped should be("test[][]test")
   }
 
+  it should "be compressed in Verilog whenever possible" in {
+    def result(info1: String, info2: String, info3: String) = compileBody(
+      s"""output out:UInt<32>
+         |input b:UInt<32>
+         |input c:UInt<1>
+         |input d:UInt<32>
+         |wire a:UInt<32>
+         |when c : @[$info1]
+         |  a <= b @[$info2]
+         |else :
+         |  a <= d @[$info3]
+         |out <= add(a,a)""".stripMargin
+    )
+
+    // Keep different file infos separated
+    result("A 1:1", "B 1:1", "C 1:1") should containLine("  wire [31:0] a = c ? b : d; // @[A 1:1 B 1:1 C 1:1]")
+    // Compress only 2 FileInfos of the same file
+    result("A 1:1", "A 2:3", "C 1:1") should containLine("  wire [31:0] a = c ? b : d; // @[A 1:1 2:3 C 1:1]")
+    // Conmpress 3 lines from the same file into one single FileInfo
+    result("A 1:2", "A 2:4", "A 3:6") should containLine("  wire [31:0] a = c ? b : d; // @[A 1:2 2:4 3:6]")
+    // Compress two columns from the same line, and one different line into one FileInfo
+    result("A 1:2", "A 1:4", "A 2:3") should containLine("  wire [31:0] a = c ? b : d; // @[A 1:{2,4} 2:3]")
+    // Compress three (or more...) columns from the same line into one FileInfo
+    result("A 1:2", "A 1:3", "A 1:4") should containLine("  wire [31:0] a = c ? b : d; // @[A 1:{2,3,4}]")
+
+    // Ignore already-compressed MultiInfos - for when someone may serialize a module first and compile the parsed firrtl into Verilog
+    result("A 1:{2,3,4}", "", "") should containLine(
+      "  wire [31:0] a = c ? b : d; // @[A 1:{2,3,4}]"
+    )
+    // Merge additional FileInfos together, but ignore compressed MultiInfos if they are present
+    result("A 1:{2,3,4}", "B 2:3", "B 4:5") should containLine(
+      "  wire [31:0] a = c ? b : d; // @[A 1:{2,3,4} B 2:3 4:5]"
+    )
+    result("A 2:3", "B 1:{2,3,4}", "C 4:5") should containLine(
+      "  wire [31:0] a = c ? b : d; // @[B 1:{2,3,4} A 2:3 C 4:5]"
+    )
+  }
+
+  it should "not be compressed if it has a non-conforming format" in {
+    // Sample module from the firrtl spec for file info comments
+    val result = compileBody(
+      """output out:UInt @["myfile.txt: 16, 3"]
+        |input b:UInt<32> @["myfile.txt: 17, 3"]
+        |input c:UInt<1> @["myfile.txt: 18, 3"]
+        |input d:UInt<16> @["myfile.txt: 19, 3"]
+        |wire a:UInt @["myfile.txt: 21, 8"]
+        |when c : @["myfile.txt: 24, 8"]
+        |  a <= b @["myfile.txt: 27, 16"]
+        |else :
+        |  a <= d @["myfile.txt: 29, 17"]
+        |out <= add(a,a) @["myfile.txt: 34, 4"]
+        |""".stripMargin
+    )
+
+    // Should compile to the following lines in the test module
+    val check = Seq(
+      """  output [32:0] out, // @[\"myfile.txt: 16, 3\"]""",
+      """  input  [31:0] b, // @[\"myfile.txt: 17, 3\"]""",
+      """  input         c, // @[\"myfile.txt: 18, 3\"]""",
+      """  input  [15:0] d // @[\"myfile.txt: 19, 3\"]""",
+      """  wire [31:0] a = c ? b : {{16'd0}, d}; // @[\"myfile.txt: 24, 8\" \"myfile.txt: 27, 16\" \"myfile.txt: 29, 17\"]""",
+      """  assign out = a + a; // @[\"myfile.txt: 34, 4\"]"""
+    )
+
+    for (line <- check)
+      result should containLine(line)
+  }
 }
