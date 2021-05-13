@@ -5,49 +5,65 @@ package chisel3.util.experimental.decode
 import chisel3.util.BitPat
 import logger.LazyLogging
 
-class EspressoMinimizer extends Minimizer with LazyLogging {
-  def minimize(table: TruthTable): TruthTable = ???
+object EspressoMinimizer extends Minimizer with LazyLogging {
+  def minimize(table: TruthTable): TruthTable =
+    TruthTable.merge(TruthTable.split(table).map{case (table, indexes) => (espresso(table), indexes)})
 
   def espresso(table: TruthTable): TruthTable = {
-    import scala.sys.process._
-    require(true, "todo, require table.default has same types.")
-    // @todo match decodeType here.
-    val decodeType: String = ???
-    val espressoTempFile = java.io.File.createTempFile("pla", "txt")
-    espressoTempFile.deleteOnExit()
-    new java.io.PrintWriter(espressoTempFile) {
-      try {
-        write(table.pla)
-      } finally {
-        close()
+    def writeTable(table: TruthTable): String = {
+      def invert(string: String) = string
+        .replace('0', 't')
+        .replace('1', '0')
+        .replace('t', '1')
+      val defaultType: Char = {
+        val t = table.default.toString.drop(7).dropRight(1).toCharArray.distinct
+        require(t.length == 1, "Internal Error: espresso only accept unified default type.")
+        t.head
       }
+      val tableType: String = defaultType match {
+        case '?' => "fr"
+        case _ => "fd"
+      }
+      val rawTable = table
+        .toString
+        .split("\n")
+        .filter(_.contains("->"))
+        .mkString("\n")
+        .replace("->", " ")
+        .replace('?', '-')
+      // invert all output, since espresso cannot handle default is on.
+      val invertRawTable = rawTable
+        .split("\n")
+        .map(_.split(" "))
+        .map(row => s"${row(0)} ${invert(row(1))}")
+        .mkString("\n")
+      s""".i ${table.inputWidth}
+         |.o ${table.outputWidth}
+         |.type ${tableType}
+         |""".stripMargin ++ (if (defaultType == '1') invertRawTable else rawTable)
     }
-    logger.trace(s"espresso input:\n${scala.io.Source.fromFile(espressoTempFile)}")
-    Seq("espresso", espressoTempFile.getPath).!!.toTruthTable(decodeType)
-  }
 
-  private implicit class EspressoTruthTable(table: TruthTable) {
-    def pla: String =
-      s""".i ${table.table.head._1.getWidth}
-         |.o ${table.table.head._2.getWidth}
-         |.type ${// match table.default here
-      ???}
-         |""".stripMargin +
-        table.table.map((row: (BitPat, BitPat)) => s"${???}").mkString("\n")
-  }
+    def readTable(espressoTable: String): Map[BitPat, BitPat] = {
+      def bitPat(espresso: String): BitPat = BitPat("b" + espresso.replace('-', '?'))
 
-  private implicit class PLAToTruthTable(string: String) {
-    def toTruthTable(decodeType: String): TruthTable = {
-      // @todo: @yhr fix me
-      ???
+      espressoTable
+        .split("\n")
+        .filterNot(_.startsWith("."))
+        .map(_.split(' '))
+        .map(row => bitPat(row(0)) -> bitPat(row(1)))
+        .toMap
     }
+
+    // Since Espresso don't implements pipe, we use a temp file to do so.
+    val input = writeTable(table)
+    logger.trace(s"""espresso input table:
+                    |$input
+                    |""".stripMargin)
+    val f = os.temp(input)
+    val o = os.proc("espresso", f).call().out.chunks.mkString
+    logger.trace(s"""espresso output table:
+                    |$o
+                    |""".stripMargin)
+    TruthTable(readTable(o), table.default)
   }
-
-  private def split(table: TruthTable): (TruthTable, TruthTable, TruthTable) = ???
-
-  private def merge(
-    onTable:       TruthTable,
-    offTable:      TruthTable,
-    dontCareTable: TruthTable
-  ): TruthTable = ???
 }
