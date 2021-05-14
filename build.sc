@@ -48,7 +48,7 @@ class firrtlCrossModule(val crossScalaVersion: String) extends CrossSbtModule wi
       ivy"com.google.protobuf:protobuf-java:$protocVersion"
     ) ++ {
       if (majorVersion == 13)
-        Agg(ivy"org.scala-lang.modules::scala-parallel-collections:1.0.2")
+        Agg(ivy"org.scala-lang.modules::scala-parallel-collections:1.0.3")
       else
         Agg()
     }
