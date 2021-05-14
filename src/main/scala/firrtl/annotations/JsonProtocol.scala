@@ -5,7 +5,7 @@ package annotations
 
 import firrtl.ir._
 
-import scala.util.{Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 import org.json4s._
 import org.json4s.native.JsonMethods._
@@ -18,6 +18,9 @@ trait HasSerializationHints {
   // contained within
   def typeHints: Seq[Class[_]]
 }
+
+/** Wrapper [[Annotation]] for Annotations that cannot be serialized */
+case class UnserializeableAnnotation(error: String, content: String) extends NoTargetAnnotation
 
 object JsonProtocol {
   class TransformClassSerializer
@@ -227,13 +230,16 @@ object JsonProtocol {
   ): Seq[(Annotation, Throwable)] =
     annos.map(a => a -> Try(write(a))).collect { case (a, Failure(e)) => (a, e) }
 
-  def serializeTry(annos: Seq[Annotation]): Try[String] = {
-    val tags = annos
+  private def getTags(annos: Seq[Annotation]): Seq[Class[_]] =
+    annos
       .flatMap({
         case anno: HasSerializationHints => anno.getClass +: anno.typeHints
         case anno => Seq(anno.getClass)
       })
       .distinct
+
+  def serializeTry(annos: Seq[Annotation]): Try[String] = {
+    val tags = getTags(annos)
 
     implicit val formats = jsonFormat(tags)
     Try(writePretty(annos)).recoverWith {
@@ -241,6 +247,23 @@ object JsonProtocol {
         val badAnnos = findUnserializeableAnnos(annos)
         Failure(if (badAnnos.isEmpty) e else UnserializableAnnotationException(badAnnos))
     }
+  }
+
+  /** Serialize annotations to JSON while wrapping unserializeable ones with [[UnserializeableAnnotation]]
+    *
+    * @note this is slower than standard serialization
+    */
+  def serializeRecover(annos: Seq[Annotation]): String = {
+    val tags = classOf[UnserializeableAnnotation] +: getTags(annos)
+    implicit val formats = jsonFormat(tags)
+
+    val safeAnnos = annos.map { anno =>
+      Try(write(anno)) match {
+        case Success(_) => anno
+        case Failure(e) => UnserializeableAnnotation(e.getMessage, anno.toString)
+      }
+    }
+    writePretty(safeAnnos)
   }
 
   def deserialize(in: JsonInput): Seq[Annotation] = deserializeTry(in).get

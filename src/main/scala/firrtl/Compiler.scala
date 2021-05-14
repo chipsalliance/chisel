@@ -214,17 +214,7 @@ private[firrtl] object Transform {
     val remappedAnnotations = propagateAnnotations(name, logger, before.annotations, after.annotations, after.renames)
 
     logger.trace(s"Annotations:")
-    logger.trace {
-      JsonProtocol
-        .serializeTry(remappedAnnotations)
-        .recoverWith {
-          case NonFatal(e) =>
-            val msg = s"Exception thrown during Annotation serialization:\n  " +
-              e.toString.replaceAll("\n", "\n  ")
-            Try(msg)
-        }
-        .get
-    }
+    logger.trace(JsonProtocol.serializeRecover(remappedAnnotations))
 
     logger.trace(s"Circuit:\n${after.circuit.serialize}")
 
