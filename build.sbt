@@ -36,6 +36,7 @@ lazy val firrtlSettings = Seq(
     "org.json4s" %% "json4s-native" % "3.6.11",
     "org.apache.commons" % "commons-text" % "1.8",
     "io.github.alexarchambault" %% "data-class" % "0.2.5",
+    "com.lihaoyi" %% "os-lib" % "0.7.6",
   ),
   // macros for the data-class library
   libraryDependencies ++= {
