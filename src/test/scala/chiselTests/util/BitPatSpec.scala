@@ -16,6 +16,6 @@ class BitPatSpec extends AnyFlatSpec with Matchers {
   }
 
   it should "not fail if BitPat width is 0" in {
-    BitPat("b").toString
+    intercept[IllegalArgumentException]{BitPat("b")}
   }
 }
