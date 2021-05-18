@@ -78,6 +78,11 @@ object RenameMap {
   /** Initialize a new RenameMap */
   def apply(): RenameMap = new RenameMap
 
+  // This is a private internal API for transforms where the .distinct operation is very expensive
+  // (eg. LowerTypes). The onus is on the user of this API to be very careful and not inject
+  // duplicates. This is a bad, hacky API that no one should use
+  private[firrtl] def noDistinct(): RenameMap = new RenameMap(doDistinct = false)
+
   abstract class RenameTargetException(reason: String) extends Exception(reason)
   case class IllegalRenameException(reason: String) extends RenameTargetException(reason)
   case class CircularRenameException(reason: String) extends RenameTargetException(reason)
@@ -94,7 +99,11 @@ object RenameMap {
 final class RenameMap private (
   val underlying: mutable.HashMap[CompleteTarget, Seq[CompleteTarget]] =
     mutable.HashMap[CompleteTarget, Seq[CompleteTarget]](),
-  val chained: Option[RenameMap] = None) {
+  val chained: Option[RenameMap] = None,
+  // This is a private internal API for transforms where the .distinct operation is very expensive
+  // (eg. LowerTypes). The onus is on the user of this API to be very careful and not inject
+  // duplicates. This is a bad, hacky API that no one should use
+  doDistinct: Boolean = true) {
 
   /** Chain a [[RenameMap]] with this [[RenameMap]]
     * @param next the map to chain with this map
@@ -662,7 +671,10 @@ final class RenameMap private (
   private def completeRename(from: CompleteTarget, tos: Seq[CompleteTarget]): Unit = {
     tos.foreach { recordSensitivity(from, _) }
     val existing = underlying.getOrElse(from, Vector.empty)
-    val updated = (existing ++ tos).distinct
+    val updated = {
+      val all = (existing ++ tos)
+      if (doDistinct) all.distinct else all
+    }
     underlying(from) = updated
     traverseTokensCache.clear()
     traverseHierarchyCache.clear()

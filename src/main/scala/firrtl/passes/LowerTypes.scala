@@ -75,7 +75,12 @@ object LowerTypes extends Transform with DependencyAPIMigration {
     val memInitByModule = memInitAnnos.map(_.asInstanceOf[MemoryInitAnnotation]).groupBy(_.target.encapsulatingModule)
 
     val c = CircuitTarget(state.circuit.main)
-    val refRenameMap = RenameMap()
+    // By default, the RenameMap enforces a .distinct invariant for renames. This helps transform
+    // writers not mess up because violating that invariant can cause problems for transform
+    // writers. Unfortunately, when you have lots of renames, this is very expensive
+    // performance-wise. We use a private internal API that does not run .distinct to improve
+    // performance, but we must be careful to not insert any duplicates.
+    val refRenameMap = RenameMap.noDistinct()
     val resultAndRenames =
       state.circuit.modules.map(m => onModule(c, m, memInitByModule.getOrElse(m.name, Seq()), refRenameMap))
     val result = state.circuit.copy(modules = resultAndRenames.map(_._1))
