@@ -3,9 +3,9 @@
 package chiselTests
 
 import chisel3._
+import chisel3.stage._
 import chisel3.stage.NoRunFirrtlCompilerAnnotation
 import chisel3.util.HasBlackBoxInline
-import chisel3.util.experimental.ImplicitDriver
 import org.scalatest.flatspec.AnyFlatSpec
 
 class ImplicitDriverSpec extends AnyFlatSpec {
