@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chisel3.stage.NoRunFirrtlCompilerAnnotation
 import chisel3.util.HasBlackBoxInline
 import chisel3.util.experimental.ImplicitDriver
 import org.scalatest.flatspec.AnyFlatSpec
@@ -36,6 +37,12 @@ class ImplicitDriverSpec extends AnyFlatSpec {
   }
   "implicit driver" should "emit system verilog without error" in {
     (new GCD).toSystemVerilogString
+  }
+  "implicit driver" should "compile to low firrtl" in {
+    (new GCD).compile("-X", "low")
+  }
+  "implicit driver" should "execute with annotations" in {
+    (new GCD).execute()(Seq(NoRunFirrtlCompilerAnnotation))
   }
   "implicit driver" should "work under the builder context" in {
     (new InnerModule).toVerilogString
