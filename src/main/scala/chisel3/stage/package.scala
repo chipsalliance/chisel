@@ -63,7 +63,7 @@ package object stage {
     *   }
     * }}}
     */
-  implicit class ImplicitDriver(module: => Module) {
+  implicit class ImplicitDriver(module: => RawModule) {
     def toVerilogString = ChiselStage.emitVerilog(module)
 
     def toSystemVerilogString = ChiselStage.emitSystemVerilog(module)
