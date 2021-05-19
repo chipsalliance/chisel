@@ -64,13 +64,13 @@ package object stage {
     * }}}
     */
   implicit class ImplicitDriver(module: => RawModule) {
-    def toVerilogString = ChiselStage.emitVerilog(module)
+    def verilog = ChiselStage.emitVerilog(module)
 
-    def toSystemVerilogString = ChiselStage.emitSystemVerilog(module)
+    def systemVerilog = ChiselStage.emitSystemVerilog(module)
 
-    def toFirrtlString = ChiselStage.emitFirrtl(module)
+    def firrtl = ChiselStage.emitFirrtl(module)
 
-    def toChirrtlString = ChiselStage.emitChirrtl(module)
+    def chirrtl = ChiselStage.emitChirrtl(module)
 
     def execute(args: String*)(annos: AnnotationSeq = Nil): AnnotationSeq =
       (new ChiselStage)
