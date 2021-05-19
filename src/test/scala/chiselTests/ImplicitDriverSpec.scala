@@ -19,25 +19,25 @@ class ImplicitDriverSpec extends AnyFlatSpec {
     val io = IO(new GCDIO)
     class GCDBlackBox extends BlackBox with HasBlackBoxInline {
       val io = IO(new GCDIO)
-      setInline("gcd_blackbox.v", (new GCD).emitVerilog)
+      setInline("gcd_blackbox.v", (new GCD).toVerilogString)
     }
     val bb = Module(new GCDBlackBox)
     io <> bb.io
   }
 
   "implicit driver" should "emit verilog without error" in {
-    (new GCD).emitVerilog
+    (new GCD).toVerilogString
   }
   "implicit driver" should "emit firrtl without error" in {
-    (new GCD).emitFirrtl
+    (new GCD).toFirrtlString
   }
   "implicit driver" should "emit chirrtl without error" in {
-    (new GCD).emitChirrtl
+    (new GCD).toChirrtlString
   }
   "implicit driver" should "emit system verilog without error" in {
-    (new GCD).emitSystemVerilog
+    (new GCD).toSystemVerilogString
   }
   "implicit driver" should "work under the builder context" in {
-    (new InnerModule).emitVerilog
+    (new InnerModule).toVerilogString
   }
 }

@@ -1,6 +1,7 @@
 package chisel3.util
 
 import chisel3.Module
+import chisel3.stage.ChiselStage
 
 package object experimental {
 
@@ -15,20 +16,12 @@ package object experimental {
     * }}}
     */
   implicit class ImplicitDriver(module: => Module) {
-    def emitVerilog = {
-      chisel3.stage.ChiselStage.emitVerilog(module)
-    }
+    def toVerilogString = ChiselStage.emitVerilog(module)
 
-    def emitSystemVerilog = {
-      chisel3.stage.ChiselStage.emitSystemVerilog(module)
-    }
+    def toSystemVerilogString = ChiselStage.emitSystemVerilog(module)
 
-    def emitFirrtl = {
-      chisel3.stage.ChiselStage.emitFirrtl(module)
-    }
+    def toFirrtlString = ChiselStage.emitFirrtl(module)
 
-    def emitChirrtl = {
-      chisel3.stage.ChiselStage.emitChirrtl(module)
-    }
+    def toChirrtlString = ChiselStage.emitChirrtl(module)
   }
 }
