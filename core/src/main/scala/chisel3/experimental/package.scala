@@ -127,7 +127,7 @@ package object experimental {
   object BundleLiterals {
     implicit class AddBundleLiteralConstructor[T <: Record](x: T) {
       def Lit(elems: (T => (Data, Data))*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
-        x._makeLit(elems: _*)
+        (if(x.isSynthesizable) chiselTypeOf(x) else x)._makeLit(elems: _*)
       }
     }
   }
@@ -143,7 +143,7 @@ package object experimental {
         * @return
         */
       def Lit(elems: (Int, T)*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = {
-        x._makeLit(elems: _*)
+        (if(x.isSynthesizable) chiselTypeOf(x) else x)._makeLit(elems: _*)
       }
     }
 

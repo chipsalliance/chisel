@@ -31,16 +31,16 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
   "bundle literals" should "pack" in {
     assertTesterPasses{ new BasicTester {
       val bundleLit = (new MyBundle).Lit(_.a -> 42.U, _.b -> false.B, _.c -> MyEnum.sB)
-      bundleLit.litOption should equal (Some(169))  // packed as 42 (8-bit), false=0 (1-bit), sB=1 (1-bit)
-      chisel3.assert(bundleLit.asUInt() === bundleLit.litOption.get.U)  // sanity-check consistency with runtime
+      bundleLit.litOption() should equal (Some(169))  // packed as 42 (8-bit), false=0 (1-bit), sB=1 (1-bit)
+      chisel3.assert(bundleLit.asUInt() === bundleLit.litOption().get.U)  // sanity-check consistency with runtime
 
       val longBundleLit = (new LongBundle).Lit(
         _.a -> 0xDEADDEADBEEFL.U, _.b -> (-0x0BEEF00DL).S(32.W), _.c -> 4.5.F(16.W, 4.BP))
-      longBundleLit.litOption should equal (Some(
+      longBundleLit.litOption() should equal (Some(
         (BigInt(0xDEADDEADBEEFL) << 48)
         + (BigInt(0xFFFFFFFFL - 0xBEEF00DL + 1) << 16)
         + BigInt(72)))
-      chisel3.assert(longBundleLit.asUInt() === longBundleLit.litOption.get.U)
+      chisel3.assert(longBundleLit.asUInt() === longBundleLit.litOption().get.U)
 
       stop()
     } }
@@ -70,6 +70,32 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
       chisel3.assert(bundleWire.a === 42.U)
       chisel3.assert(bundleWire.b === true.B)
       chisel3.assert(bundleWire.c === MyEnum.sB)
+
+      stop()
+    } }
+  }
+
+  "bundle and vec literals from hardware" should "work in RTL" in {
+    assertTesterPasses{ new BasicTester{
+      val bundleWire = Wire(new MyBundle)
+      bundleWire := bundleWire.Lit(_.a -> 42.U, _.b -> true.B, _.c -> MyEnum.sB)
+      chisel3.assert(bundleWire.a === 42.U)
+      chisel3.assert(bundleWire.b === true.B)
+      chisel3.assert(bundleWire.c === MyEnum.sB)
+
+      val range = range"[0,4].2"
+      val bundleWireWithVecs = Wire(new Bundle {
+        val a = Vec(2, UInt(4.W))
+        val b = Vec(2, Interval(range))
+      })
+
+      bundleWireWithVecs.a := bundleWireWithVecs.a.Lit(0 -> 0xA.U, 1 -> 0xB.U)
+      bundleWireWithVecs.b := bundleWireWithVecs.b.Lit(0 -> (1.5).I(range), 1 -> (0.25).I(range))
+
+      chisel3.assert(bundleWireWithVecs.a(0) === 0xA.U)
+      chisel3.assert(bundleWireWithVecs.a(1) === 0xB.U)
+      chisel3.assert(bundleWireWithVecs.b(0) === (1.5).I(range))
+      chisel3.assert(bundleWireWithVecs.b(1) === (0.25).I(range))
 
       stop()
     } }
@@ -320,7 +346,7 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
   "partial bundle literals" should "fail to pack" in {
     ChiselStage.elaborate { new RawModule {
       val bundleLit = (new MyBundle).Lit(_.a -> 42.U)
-      bundleLit.litOption should equal (None)
+      bundleLit.litOption() should equal (None)
     } }
   }
 }
