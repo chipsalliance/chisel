@@ -3,8 +3,7 @@ package chiselTests.util.experimental
 import chisel3._
 import chisel3.stage.PrintFullStackTraceAnnotation
 import chisel3.testers.BasicTester
-import chisel3.util.BitPat
-import chisel3.util.experimental.pla
+import chisel3.util.{BitPat, pla}
 import chiselTests.ChiselFlatSpec
 
 class PlaSpec extends ChiselFlatSpec {
