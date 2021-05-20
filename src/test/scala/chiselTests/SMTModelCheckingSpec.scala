@@ -10,7 +10,7 @@ import logger.{LazyLogging, LogLevel, LogLevelAnnotation}
 import org.scalatest.flatspec.AnyFlatSpec
 import os._
 
-abstract class EndToEndSMTBaseSpec extends AnyFlatSpec {
+abstract class SMTModelCheckingSpec extends AnyFlatSpec {
   def success = MCSuccess
 
   def fail(k: Int) = MCFail(k)
