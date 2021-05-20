@@ -10,6 +10,11 @@ import logger.{LazyLogging, LogLevel, LogLevelAnnotation}
 import org.scalatest.flatspec.AnyFlatSpec
 import os._
 
+/** [[SMTModelCheckingSpec]] use z3 and [[firrtl.backends.experimental.smt]] library
+  * to solve `assert/assume` in [[chisel3.experimental.verification]],
+  * It is a copy&paste version from `firrtl.backends.experimental.smt.end2end.EndToEndSMTBaseSpec` from firrtl
+  * Useful to check combinational logic and some small test.
+  */
 abstract class SMTModelCheckingSpec extends AnyFlatSpec {
   def success = MCSuccess
 
