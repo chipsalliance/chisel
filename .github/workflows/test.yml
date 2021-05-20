@@ -16,21 +16,19 @@ jobs:
     strategy:
       matrix:
         scala: [2.13.6, 2.12.13]
-    container:
-      image: ucbbar/chisel3-tools
-      options: --user github --entrypoint /bin/bash
-    env:
-      CONTAINER_HOME: /home/github
+    container: archlinux/archlinux:latest
 
     steps:
+      - name: Install dependencies
+        run: |
+          echo -e '[archlinuxcn]\nServer = https://repo.archlinuxcn.org/$arch' >> /etc/pacman.conf
+          pacman-key --init
+          pacman -Syu --noconfirm archlinuxcn-keyring
+          pacman -Syu --noconfirm jdk11-graalvm-bin
+          pacman -Syu --noconfirm git sbt mill verilator z3 make clang
+          archlinux-java set java-11-graalvm
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Setup Scala
-        uses: olafurpg/setup-scala@v10
-        with:
-          java-version: adopt@1.8
-      - name: Cache Scala
-        uses: coursier/cache-action@v5
       - name: Documentation (Scala 2.12 only)
         if: matrix.scala == '2.12.13'
         run: sbt ++${{ matrix.scala }} docs/mdoc
@@ -55,19 +53,14 @@ jobs:
   publish:
     needs: [all_tests_passed]
     runs-on: ubuntu-latest
+    container: archlinux/archlinux:latest
     if: github.event_name == 'push'
 
     steps:
+      - name: Install dependencies
+        run: pacman -Syu --noconfirm git sbt gnupg
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Setup Scala
-        uses: olafurpg/setup-scala@v10
-        with:
-          java-version: adopt@1.8
-      - name: Cache Scala
-        uses: coursier/cache-action@v5
-      - name: Setup GPG (for Publish)
-        uses: olafurpg/setup-gpg@v3
       - name: Publish
         run: sbt ci-release
         env:
