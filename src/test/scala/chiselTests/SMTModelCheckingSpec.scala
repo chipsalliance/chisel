@@ -55,7 +55,8 @@ private object Z3ModelChecker extends LazyLogging {
         s"""${step(main, k)}
            |(check-sat)
            |""".stripMargin)
-      if (!executeStep(stepFile)) return MCFail(k)
+      val success = executeStep(stepFile)
+      if (!success) return MCFail(k)
     }
     MCSuccess
   }
