@@ -17,7 +17,7 @@ class PlaSpec extends ChiselFlatSpec {
         (BitPat("b100"), BitPat("b00010000")),
         (BitPat("b101"), BitPat("b00100000")),
         (BitPat("b110"), BitPat("b01000000")),
-        (BitPat("b111"), BitPat("b10000000")),
+        (BitPat("b111"), BitPat("b10000000"))
       )
       table.foreach { case (i, o) =>
         val (plaIn, plaOut) = pla(table)
@@ -38,7 +38,7 @@ class PlaSpec extends ChiselFlatSpec {
         (BitPat("b100"), BitPat("b00010000")),
         (BitPat("b101"), BitPat("b00100000")),
         (BitPat("b110"), BitPat("b01000000")),
-        (BitPat("b111"), BitPat("b10000000")),
+        (BitPat("b111"), BitPat("b10000000"))
       )
       table.foreach { case (i, o) =>
         val (plaIn, plaOut) = pla(table, BitPat("b11111111"))
@@ -67,7 +67,7 @@ class PlaSpec extends ChiselFlatSpec {
         (BitPat("b1100"), BitPat("b0")),
         (BitPat("b1101"), BitPat("b1")),
         (BitPat("b1110"), BitPat("b1")),
-        (BitPat("b1111"), BitPat("b1")),
+        (BitPat("b1111"), BitPat("b1"))
       )
       table.foreach { case (i, o) =>
         val (plaIn, plaOut) = pla(table)
