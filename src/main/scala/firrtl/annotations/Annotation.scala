@@ -48,6 +48,9 @@ trait NoTargetAnnotation extends Annotation {
 trait SingleTargetAnnotation[T <: Named] extends Annotation {
   val target: T
 
+  // we can implement getTargets more efficiently since we know that we have exactly one target
+  override def getTargets: Seq[Target] = Seq(target)
+
   /** Create another instance of this Annotation */
   def duplicate(n: T): Annotation
 
