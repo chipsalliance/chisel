@@ -63,7 +63,7 @@ object QMCMinimizer extends Minimizer {
       * @return A new term representing the merge result
       */
     def merge(y: Implicant): Implicant = {
-      require(similar(y), s"merge is only reasonable when $this similar $y")
+      require(similar(y), s"merge is only reasonable when $this is similar to $y")
 
       // if two term can be merged, then they both are not prime implicants.
       isPrime = false
