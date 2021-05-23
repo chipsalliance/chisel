@@ -36,4 +36,28 @@ class TruthTableSpec extends AnyFlatSpec {
   "TruthTable" should "deserialize" in {
     assert(TruthTable(str) == table)
   }
+  "TruthTable" should "merge same key" in {
+    assert(
+      TruthTable(
+        """001100->??1
+          |001100->1??
+          |???
+          |""".stripMargin
+      ) == TruthTable(
+        """001100->1?1
+          |???
+          |""".stripMargin
+      )
+    )
+  }
+  "TruthTable" should "crash when merging 0 and 1" in {
+    intercept[IllegalArgumentException] {
+      TruthTable(
+        """0->0
+          |0->1
+          |???
+          |""".stripMargin
+      )
+    }
+  }
 }

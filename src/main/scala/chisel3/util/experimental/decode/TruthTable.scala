@@ -4,9 +4,7 @@ package chisel3.util.experimental.decode
 
 import chisel3.util.BitPat
 
-class TruthTable(val table: Map[BitPat, BitPat], val default: BitPat) {
-  require(table.map(_._1.getWidth).toSet.size == 1, "input width not equal.")
-  require(table.map(_._2.getWidth).toSet.size == 1, "output width not equal.")
+sealed class TruthTable(val table: Map[BitPat, BitPat], val default: BitPat) {
 
   def inputWidth = table.head._1.getWidth
 
@@ -38,12 +36,31 @@ object TruthTable {
         .filter(_.contains("->"))
         .map(_.split("->").map(str => BitPat(s"b$str")))
         .map(bps => bps(0) -> bps(1))
-        .toMap,
+        .toSeq,
       BitPat(s"b${tableString.split("\n").filterNot(_.contains("->")).head.replace(" ", "")}")
     )
   }
 
-  def apply(table: Map[BitPat, BitPat], default: BitPat) = new TruthTable(table, default)
+  /** Convert a table and default output into a [[TruthTable]]. */
+  def apply(table: Iterable[(BitPat, BitPat)], default: BitPat) = {
+    require(table.map(_._1.getWidth).toSet.size == 1, "input width not equal.")
+    require(table.map(_._2.getWidth).toSet.size == 1, "output width not equal.")
+    val outputWidth = table.map(_._2.getWidth).head
+    new TruthTable(table.toSeq.groupBy(_._1).map { case (key, values) =>
+      // merge same input inputs.
+      key -> BitPat(s"b${
+        Seq.tabulate(outputWidth) { i =>
+          val outputSet = values.map(_._2)
+            .map(bpStr)
+            .map(_ (i))
+            .toSet
+            .filterNot(_ == '?')
+          require(outputSet.size != 2, s"TruthTable conflict in :\n${values.map { case (i, o) => s"${bpStr(i)}->${bpStr(o)}" }.mkString("\n")}")
+          outputSet.headOption.getOrElse('?')
+        }.mkString
+      }")
+    }, default)
+  }
 
 
   /** consume 1 table, split it into up to 3 tables with the same default bits.
