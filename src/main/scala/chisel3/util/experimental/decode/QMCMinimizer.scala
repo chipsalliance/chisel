@@ -220,7 +220,7 @@ object QMCMinimizer extends Minimizer {
     val m = outputs.head.getWidth
 
     // for all outputs
-    table.copy(table = (0 until m).flatMap(i => {
+    val minimized = (0 until m).flatMap(i => {
       val outputBp = BitPat("b" + "?" * (m - i - 1) + "1" + "?" * i)
 
       // Minterms, implicants that makes the output to be 1
@@ -277,6 +277,19 @@ object QMCMinimizer extends Minimizer {
         getEssentialPrimeImplicants(primeImplicants, implicants)
 
       (essentialPrimeImplicants ++ getCover(nonessentialPrimeImplicants, uncoveredImplicants)).map(a => (a.bp, outputBp))
-    }).toMap)
+    })
+
+    minimized.tail.foldLeft(table.copy(table = Map(minimized.head))) { case (tb, t) =>
+      if (tb.table.exists(x => x._1 == t._1)) {
+        tb.copy(table = tb.table.map { case (k, v) =>
+          if (k == t._1) {
+            def ones(bitPat: BitPat) = bitPat.toString.drop(7).dropRight(1).zipWithIndex.collect{case ('1', x) => x}
+            (k, BitPat("b" + (0 until v.getWidth).map(i => if ((ones(v) ++ ones(t._2)).contains(i)) "1" else "?").mkString))
+          } else (k, v)
+        })
+      } else {
+        tb.copy(table = tb.table + t)
+      }
+    }
   }
 }
