@@ -46,9 +46,9 @@ object TruthTable {
     require(table.map(_._1.getWidth).toSet.size == 1, "input width not equal.")
     require(table.map(_._2.getWidth).toSet.size == 1, "output width not equal.")
     val outputWidth = table.map(_._2.getWidth).head
-    new TruthTable(table.toSeq.groupBy(_._1).map { case (key, values) =>
+    new TruthTable(table.toSeq.groupBy(_._1.toString).map { case (key, values) =>
       // merge same input inputs.
-      key -> BitPat(s"b${
+      values.head._1 -> BitPat(s"b${
         Seq.tabulate(outputWidth) { i =>
           val outputSet = values.map(_._2)
             .map(bpStr)
