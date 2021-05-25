@@ -5,7 +5,7 @@ import coursier.maven.MavenRepository
 import $ivy.`com.lihaoyi::mill-contrib-buildinfo:$MILL_VERSION`
 import mill.contrib.buildinfo.BuildInfo
 
-object chisel3 extends mill.Cross[chisel3CrossModule]("2.12.13")
+object chisel3 extends mill.Cross[chisel3CrossModule]("2.13.6", "2.12.13")
 
 // The following stanza is searched for and used when preparing releases.
 // Please retain it.
@@ -62,14 +62,14 @@ trait CommonModule extends CrossSbtModule with PublishModule {
     super.scalacOptions() ++ Agg(
       "-deprecation",
       "-feature"
-    )
+    ) ++ (if (majorVersion == 13) Agg("-Ymacro-annotations") else Agg.empty[String])
   }
 
   private val macroParadise = ivy"org.scalamacros:::paradise:2.1.1"
 
-  override def compileIvyDeps = Agg(macroParadise)
+  override def compileIvyDeps = if(majorVersion == 13) super.compileIvyDeps else Agg(macroParadise)
 
-  override def scalacPluginIvyDeps = Agg(macroParadise)
+  override def scalacPluginIvyDeps = if(majorVersion == 13) super.compileIvyDeps else Agg(macroParadise)
 
   def pomSettings = PomSettings(
     description = artifactName(),
@@ -179,8 +179,8 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule wit
     override def firrtlModule = m.firrtlModule
 
     override def ivyDeps = Agg(
-      ivy"${scalaOrganization()}:scala-library:$crossScalaVersion"
-    )
+      ivy"${scalaOrganization()}:scala-library:$crossScalaVersion",
+    ) ++ (if (majorVersion == 13) Agg(ivy"${scalaOrganization()}:scala-compiler:$crossScalaVersion") else Agg.empty[Dep])
 
     def scalacOptions = T {
       Seq(
