@@ -25,7 +25,7 @@ jobs:
           pacman-key --init
           pacman -Syu --noconfirm archlinuxcn-keyring
           pacman -Syu --noconfirm jdk11-graalvm-bin
-          pacman -Syu --noconfirm git sbt mill verilator z3 make clang
+          pacman -Syu --noconfirm git sbt mill verilator z3 make gcc
           archlinux-java set java-11-graalvm
       - name: Checkout
         uses: actions/checkout@v2
