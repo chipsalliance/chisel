@@ -23,6 +23,7 @@ object BitPat {
     // If ? parsing is to be exposed, the return API needs further scrutiny
     // (especially with things like mask polarity).
     require(x.head == 'b', "BitPats must be in binary and be prefixed with 'b'")
+    require(x.length > 1, "BitPat width cannot be 0.")
     var bits = BigInt(0)
     var mask = BigInt(0)
     var count = 0
