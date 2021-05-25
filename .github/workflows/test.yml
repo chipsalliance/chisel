@@ -21,7 +21,12 @@ jobs:
     steps:
       - name: Install dependencies
         run: |
+          echo -e '[archlinuxcn]\nServer = https://repo.archlinuxcn.org/$arch' >> /etc/pacman.conf
+          pacman-key --init
+          pacman -Syu --noconfirm archlinuxcn-keyring
+          pacman -Syu --noconfirm jdk11-graalvm-bin
           pacman -Syu --noconfirm git sbt mill verilator z3 make clang
+          archlinux-java set java-11-graalvm
       - name: Checkout
         uses: actions/checkout@v2
       - name: Documentation (Scala 2.12 only)
