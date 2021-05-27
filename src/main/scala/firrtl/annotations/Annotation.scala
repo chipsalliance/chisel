@@ -5,6 +5,8 @@ package annotations
 
 import firrtl.options.StageUtils
 
+import scala.collection.Traversable
+
 case class AnnotationException(message: String) extends Exception(message)
 
 /** Base type of auxiliary information */
@@ -23,18 +25,19 @@ trait Annotation extends Product {
     * @param ls
     * @return
     */
-  private def extractComponents(ls: scala.collection.Traversable[_]): Seq[Target] = {
-    ls.collect {
+  private def extractComponents(ls: Traversable[_]): Traversable[Target] = {
+    ls.flatMap {
       case c: Target                          => Seq(c)
-      case o: Product                         => extractComponents(o.productIterator.toIterable)
       case x: scala.collection.Traversable[_] => extractComponents(x)
-    }.foldRight(Seq.empty[Target])((seq, c) => c ++ seq)
+      case o: Product                         => extractComponents(o.productIterator.toIterable)
+      case _ => Seq()
+    }
   }
 
   /** Returns all [[firrtl.annotations.Target Target]] members in this annotation
     * @return
     */
-  def getTargets: Seq[Target] = extractComponents(productIterator.toSeq)
+  def getTargets: Seq[Target] = extractComponents(productIterator.toIterable).toSeq
 }
 
 /** If an Annotation does not target any [[Named]] thing in the circuit, then all updates just
@@ -42,11 +45,16 @@ trait Annotation extends Product {
   */
 trait NoTargetAnnotation extends Annotation {
   def update(renames: RenameMap): Seq[NoTargetAnnotation] = Seq(this)
+
+  override def getTargets: Seq[Target] = Seq.empty
 }
 
 /** An Annotation that targets a single [[Named]] thing */
 trait SingleTargetAnnotation[T <: Named] extends Annotation {
   val target: T
+
+  // we can implement getTargets more efficiently since we know that we have exactly one target
+  override def getTargets: Seq[Target] = Seq(target)
 
   /** Create another instance of this Annotation */
   def duplicate(n: T): Annotation
@@ -99,6 +107,8 @@ trait MultiTargetAnnotation extends Annotation {
     * }}}
     */
   def targets: Seq[Seq[Target]]
+
+  override def getTargets: Seq[Target] = targets.flatten
 
   /** Create another instance of this Annotation
     *

@@ -6,9 +6,10 @@ package memlib
 import firrtl.Utils.error
 import firrtl._
 import firrtl.annotations._
-import firrtl.options.{CustomFileEmission, HasShellOptions, ShellOption}
+import firrtl.options.{CustomFileEmission, Dependency, HasShellOptions, ShellOption}
 import firrtl.passes.wiring._
 import firrtl.stage.{Forms, RunFirrtlTransformAnnotation}
+import firrtl.transforms.BlackBoxSourceHelper
 
 import java.io.{CharArrayWriter, PrintWriter}
 
@@ -45,6 +46,8 @@ object PassConfigUtil {
 }
 
 case class ReplSeqMemAnnotation(inputFileName: String, outputConfig: String) extends NoTargetAnnotation
+
+case class GenVerilogMemBehaviorModelAnno(genBlackBox: Boolean) extends NoTargetAnnotation
 
 /** Generate conf file for a sequence of [[DefAnnotatedMemory]]
   * @note file already has its suffix adding by `--replSeqMem`
@@ -131,6 +134,20 @@ class ReplSeqMem extends SeqTransform with HasShellOptions with DependencyAPIMig
       helpText = "Blackbox and emit a configuration file for each sequential memory",
       shortOption = Some("frsq"),
       helpValueName = Some("-c:<circuit>:-i:<file>:-o:<file>")
+    ),
+    new ShellOption[String](
+      longOption = "gen-mem-verilog",
+      toAnnotationSeq = (a: String) =>
+        Seq(
+          a match {
+            case "blackbox" => GenVerilogMemBehaviorModelAnno(genBlackBox = true)
+            case _          => GenVerilogMemBehaviorModelAnno(genBlackBox = false)
+          },
+          RunFirrtlTransformAnnotation(new ReplSeqMem)
+        ),
+      helpText = "Blackbox and emit a Verilog behavior model for each sequential memory",
+      shortOption = Some("gmv"),
+      helpValueName = Some("<blackbox|full>")
     )
   )
 
@@ -144,6 +161,7 @@ class ReplSeqMem extends SeqTransform with HasShellOptions with DependencyAPIMig
       new ResolveMemoryReference,
       new ReplaceMemMacros,
       new WiringTransform,
-      new DumpMemoryAnnotations
+      new DumpMemoryAnnotations,
+      new BlackBoxSourceHelper
     )
 }

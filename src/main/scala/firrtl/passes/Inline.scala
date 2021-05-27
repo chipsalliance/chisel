@@ -179,7 +179,7 @@ class InlineInstances extends Transform with DependencyAPIMigration with Registe
 
     /** Add a prefix to all declarations updating a [[Namespace]] and appending to a [[RenameMap]] */
     def appendNamePrefix(
-      currentModule: IsModule,
+      currentModule: InstanceTarget,
       nextModule:    IsModule,
       prefix:        String,
       ns:            Namespace,
@@ -197,8 +197,13 @@ class InlineInstances extends Transform with DependencyAPIMigration with Registe
           }
           ofModuleOpt match {
             case None =>
+              renameMap.record(currentModule.ofModuleTarget.ref(name), nextModule.ref(prefix + name))
               renameMap.record(currentModule.ref(name), nextModule.ref(prefix + name))
             case Some(ofModule) =>
+              renameMap.record(
+                currentModule.ofModuleTarget.instOf(name, ofModule),
+                nextModule.instOf(prefix + name, ofModule)
+              )
               renameMap.record(currentModule.instOf(name, ofModule), nextModule.instOf(prefix + name, ofModule))
           }
           renames(name) = prefix + name
@@ -348,7 +353,6 @@ class InlineInstances extends Transform with DependencyAPIMigration with Registe
             .map(appendRefPrefix(inlineTarget, prefixMap))
 
           renames.record(inlineTarget, currentModule)
-
           renamedBody
         case sx =>
           sx
