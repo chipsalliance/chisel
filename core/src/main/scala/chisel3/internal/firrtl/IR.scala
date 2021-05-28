@@ -744,7 +744,10 @@ case class DefPrim[T <: Data](sourceInfo: SourceInfo, id: T, op: PrimOp, args: A
 case class DefInvalid(sourceInfo: SourceInfo, arg: Arg) extends Command
 case class DefWire(sourceInfo: SourceInfo, id: Data) extends Definition
 case class DefReg(sourceInfo: SourceInfo, id: Data, clock: Arg, reset: Option[Arg], init: Option[Arg]) extends Definition {
-  assert((reset.isDefined && init.isDefined) || (reset.isEmpty && init.isEmpty))
+  assert(
+    (reset.isDefined && init.isDefined) || (reset.isEmpty && init.isEmpty),
+    "reset and init should exist(a register with init) or non-exist(a register without init) at the same time."
+  )
   val hasInit: Boolean = reset.isDefined
 }
 case class DefMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: BigInt) extends Definition
