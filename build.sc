@@ -68,12 +68,6 @@ class firrtlCrossModule(val crossScalaVersion: String) extends CrossSbtModule wi
     def testFrameworks = T {
       Seq("org.scalatest.tools.Framework")
     }
-
-    // a sbt-like testOnly command.
-    // for example, mill -i "firrtl[2.12.12].test.testOnly" "firrtlTests.AsyncResetSpec"
-    def testOnly(args: String*) = T.command {
-      super.runMain("org.scalatest.run", args: _*)
-    }
   }
 
   override def buildInfoPackageName = Some("firrtl")
