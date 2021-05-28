@@ -36,6 +36,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
   //
   // For debuggers/testers, TODO: refactor out into proper public API
   private var _firrtlPorts: Option[Seq[firrtl.Port]] = None
+  @deprecated("Use DataMirror.modulePorts instead.", "Chisel 3.5")
   lazy val getPorts = _firrtlPorts.get
 
   val compileOptions = moduleCompileOptions
