@@ -60,7 +60,7 @@ class firrtlCrossModule(val crossScalaVersion: String) extends CrossSbtModule wi
   object test extends Tests {
     override def ivyDeps = T {
       Agg(
-        ivy"org.scalatest::scalatest:3.2.8",
+        ivy"org.scalatest::scalatest:3.2.9",
         ivy"org.scalatestplus::scalacheck-1-14:3.1.3.0"
       )
     }
