@@ -743,13 +743,8 @@ abstract class Definition extends Command {
 case class DefPrim[T <: Data](sourceInfo: SourceInfo, id: T, op: PrimOp, args: Arg*) extends Definition
 case class DefInvalid(sourceInfo: SourceInfo, arg: Arg) extends Command
 case class DefWire(sourceInfo: SourceInfo, id: Data) extends Definition
-case class DefReg(sourceInfo: SourceInfo, id: Data, clock: Arg, reset: Option[Arg], init: Option[Arg]) extends Definition {
-  assert(
-    (reset.isDefined && init.isDefined) || (reset.isEmpty && init.isEmpty),
-    "reset and init should exist(a register with init) or non-exist(a register without init) at the same time."
-  )
-  val hasInit: Boolean = reset.isDefined
-}
+case class RegInitIR(reset: Arg, init: Arg)
+case class DefReg(sourceInfo: SourceInfo, id: Data, clock: Arg, regInit: Option[RegInitIR]) extends Definition
 case class DefMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: BigInt) extends Definition
 case class DefSeqMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: BigInt, readUnderWrite: fir.ReadUnderWrite.Value) extends Definition
 case class DefMemPort[T <: Data](sourceInfo: SourceInfo, id: T, source: Node, dir: MemPortDirection, index: Arg, clock: Arg) extends Definition
