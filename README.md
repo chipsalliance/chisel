@@ -9,62 +9,11 @@ Chisel/FIRRTL development meetings happen every Monday and Tuesday from 1100--12
 
 Call-in info and meeting notes are available [here](https://docs.google.com/document/d/1BLP2DYt59DqI-FgFCcjw8Ddl4K-WU0nHmQu0sZ_wAGo/).
 
-### Chisel Community Conference 2021, Shanghai, China. 6/24/2021
-
-The Chisel Community Conference China 2021 (CCC2021) is planned for June 25,
-2021 at the ShanghaiTech University. CCC is an annual gathering of Chisel
-community enthusiasts and technical exchange workshop.
-With the support of the Chisel development community, this conference will
-bring together designers and developers with hands-on experience in Chisel
-from home and abroad to share cutting-edge results and experiences from the
-open source community and industry.
-
-Session topics include and are not limited to
-* CPU Core (recommended but not restricted to RISC-V) implementations
-* SoC implementations
-* Verification
-* Simulation
-* Synthesis
-* Education
-* Experience sharing
-
-Types of manuscripts.
-* Technical Presentations: case studies or problem-oriented presentations on
-original research, breakthrough ideas, or insights into future trends.
-Sessions should provide specific examples and include both practical and
-theoretical information. The length of time is about 20 minutes.
-* Lightning talks: 5 to 10 minutes, either pre-registered or on-site (depending
-on the time of the conference), can present and promote a specific Chisel
-project.
-
-The presentation submission language is required to be in English, and both
-English and Chinese are acceptable for the presentation language.
-Reviewers (subject to change at that time).
-* Jack Koenig
-* Adam Izraelevitz
-* Edward Wang
-* Jiuyang Liu
-
-Key Timeline.  
-Submission deadline: April 25, 2021  
-Manuscript topics and abstracts should be submitted by the submission
-deadline, and will be reviewed and selected by Chisel developers.  
-Notification of acceptance: by May 12, 2021  
-Final manuscript deadline: May 30, 2021  
-A full version of the manuscript should be submitted by the final deadline, and
-Chisel developers will quality review and suggest final changes.
-
-Mail submission method.
-```
-Subject: - [CCC] Your Topic
-CC: Jiuyang Liu <liu@jiuyang.me>
-CC: Jack Koenig <koenig@sifive.com>
-CC: Adam Izraelevitz <adam.izraelevitz@sifive.com>
-CC: Edward Wang <edwardw@csail.mit.edu>
-Body: Abstract of your paper.
-Attachment: pdf only slides
-All submissions are welcome.
-```
+### Chisel Community Conference 2021, Shanghai, China. 6/26/2021(CST)
+The Chisel Community Conference China 2021 (CCC2021) is planned for June 26, 2021(CST) at the ShanghaiTech University. The schedule is available [here](https://docs.google.com/spreadsheets/d/1Gb4mMGRhs9exJW-l3NOS0IFi7fDplNQQnkXyAKzHlTg)  
+CCC is an annual gathering of Chisel community enthusiasts and technical exchange workshop. With the support of the Chisel development community and RISC-V World Conference China 2021 Committee, this conference will bring together designers and developers with hands-on experience in Chisel from home and abroad to share cutting-edge results and experiences from both the open source community as well as industry.  
+Online signup is not required. Zoom/YouTube/BiliBili streaming links will be added to the schedule before the start of the conference.  
+Offline signup [link](https://www.bagevent.com/event/registerTicket/7314534), Due to COVID-19 restrictions, offline registration is open only to current residents already present in mainland China.    
 
 ---
 
