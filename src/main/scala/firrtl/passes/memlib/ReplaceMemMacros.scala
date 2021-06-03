@@ -218,15 +218,18 @@ class ReplaceMemMacros extends Transform with DependencyAPIMigration {
     }
   }
 
-  /** Mapping from (module, memory name) pairs to blackbox names */
-  private type NameMap = collection.mutable.HashMap[(String, String), String]
+  /** Mapping from (module, memory name) pairs to pair of blackbox wrapper name and blackbox name */
+  private type NameMap = collection.mutable.HashMap[(String, String), (String, String)]
 
   /** Construct NameMap by assigning unique names for each memory blackbox */
   private def constructNameMap(namespace: Namespace, nameMap: NameMap, mname: String)(s: Statement): Statement = {
     s match {
       case m: DefAnnotatedMemory =>
         m.memRef match {
-          case None    => nameMap(mname -> m.name) = namespace.newName(m.name)
+          case None =>
+            val wrapperName = namespace.newName(m.name)
+            val blackboxName = namespace.newName(s"${wrapperName}_ext")
+            nameMap(mname -> m.name) = (wrapperName, blackboxName)
           case Some(_) =>
         }
       case _ =>
@@ -240,7 +243,9 @@ class ReplaceMemMacros extends Transform with DependencyAPIMigration {
     mname:                   String,
     memPortMap:              MemPortMap,
     memMods:                 Modules,
-    annotatedMemoriesBuffer: ListBuffer[DefAnnotatedMemory]
+    annotatedMemoriesBuffer: ListBuffer[DefAnnotatedMemory],
+    renameMap:               RenameMap,
+    circuit:                 String
   )(s:                       Statement
   ): Statement = s match {
     case m: DefAnnotatedMemory =>
@@ -248,30 +253,42 @@ class ReplaceMemMacros extends Transform with DependencyAPIMigration {
         m.writers.foreach { w => memPortMap(s"${m.name}.$w.mask") = EmptyExpression }
         m.readwriters.foreach { w => memPortMap(s"${m.name}.$w.wmask") = EmptyExpression }
       }
+      val moduleTarget = ModuleTarget(circuit, mname)
       m.memRef match {
         case None =>
           // prototype mem
-          val newWrapperName = nameMap(mname -> m.name)
-          val newMemBBName = namespace.newName(s"${newWrapperName}_ext")
+          val (newWrapperName, newMemBBName) = nameMap(mname -> m.name)
           val newMem = m.copy(name = newMemBBName)
           memMods ++= createMemModule(newMem, newWrapperName, annotatedMemoriesBuffer)
+          val renameFrom = moduleTarget.ref(m.name)
+          val renameTo = moduleTarget.instOf(m.name, newWrapperName).instOf(newMemBBName, newMemBBName)
+          renameMap.record(renameFrom, renameTo)
           WDefInstance(m.info, m.name, newWrapperName, UnknownType)
         case Some((module, mem)) =>
-          WDefInstance(m.info, m.name, nameMap(module -> mem), UnknownType)
+          val (memModuleName, newMemBBName) = nameMap(module -> mem)
+          val renameFrom = moduleTarget.ref(m.name)
+          val renameTo = moduleTarget.instOf(m.name, memModuleName).instOf(newMemBBName, newMemBBName)
+          renameMap.record(renameFrom, renameTo)
+          WDefInstance(m.info, m.name, memModuleName, UnknownType)
       }
-    case sx => sx.map(updateMemStmts(namespace, nameMap, mname, memPortMap, memMods, annotatedMemoriesBuffer))
+    case sx =>
+      sx.map(
+        updateMemStmts(namespace, nameMap, mname, memPortMap, memMods, annotatedMemoriesBuffer, renameMap, circuit)
+      )
   }
 
   private def updateMemMods(
     namespace:               Namespace,
     nameMap:                 NameMap,
     memMods:                 Modules,
-    annotatedMemoriesBuffer: ListBuffer[DefAnnotatedMemory]
+    annotatedMemoriesBuffer: ListBuffer[DefAnnotatedMemory],
+    renameMap:               RenameMap,
+    circuit:                 String
   )(m:                       DefModule
   ) = {
     val memPortMap = new MemPortMap
 
-    (m.map(updateMemStmts(namespace, nameMap, m.name, memPortMap, memMods, annotatedMemoriesBuffer))
+    (m.map(updateMemStmts(namespace, nameMap, m.name, memPortMap, memMods, annotatedMemoriesBuffer, renameMap, circuit))
       .map(updateStmtRefs(memPortMap)))
   }
 
@@ -282,7 +299,8 @@ class ReplaceMemMacros extends Transform with DependencyAPIMigration {
     val memMods = new Modules
     val nameMap = new NameMap
     c.modules.map(m => m.map(constructNameMap(namespace, nameMap, m.name)))
-    val modules = c.modules.map(updateMemMods(namespace, nameMap, memMods, annotatedMemoriesBuffer))
+    val renameMap = RenameMap()
+    val modules = c.modules.map(updateMemMods(namespace, nameMap, memMods, annotatedMemoriesBuffer, renameMap, c.main))
     state.copy(
       circuit = c.copy(modules = modules ++ memMods),
       annotations =
@@ -296,7 +314,8 @@ class ReplaceMemMacros extends Transform with DependencyAPIMigration {
                 }
               }
           }) :+
-          AnnotatedMemoriesAnnotation(annotatedMemoriesBuffer.toList)
+          AnnotatedMemoriesAnnotation(annotatedMemoriesBuffer.toList),
+      renames = Some(renameMap)
     )
   }
 }
