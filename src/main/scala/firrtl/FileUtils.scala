@@ -46,9 +46,10 @@ object FileUtils {
   /**
     * recursively delete all directories in a relative path
     * DO NOT DELETE absolute paths
-    * @todo deprecate java.io.File
+    *
     * @param file: a directory hierarchy to delete
     */
+  @deprecated("Use os-lib instead, this function will be removed in FIRRTL 1.6", "FIRRTL 1.5")
   def deleteDirectoryHierarchy(file: java.io.File, atTop: Boolean = true): Boolean = {
     if (
       file.getPath.split("/").last.isEmpty ||
@@ -118,9 +119,10 @@ object FileUtils {
 
   /** Read a text file and return it as  a Seq of strings
     * Closes the file after read to avoid dangling file handles
-    * @todo deprecate java.io.File
+    *
     * @param file a java File to be read
     */
+  @deprecated("Use os-lib instead, this function will be removed in FIRRTL 1.6", "FIRRTL 1.5")
   def getLines(file: java.io.File): Seq[String] = {
     val source = scala.io.Source.fromFile(file)
     val lines = source.getLines().toList
@@ -144,9 +146,10 @@ object FileUtils {
 
   /** Read a text file and return it as  a single string
     * Closes the file after read to avoid dangling file handles
-    * @todo deprecate java.io.File
+    *
     * @param file a java File to be read
     */
+  @deprecated("Use os-lib instead, this function will be removed in FIRRTL 1.6", "FIRRTL 1.5")
   def getText(file: java.io.File): String = {
     val source = scala.io.Source.fromFile(file)
     val text = source.mkString
