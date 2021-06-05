@@ -10,7 +10,7 @@ addSbtPlugin("com.eed3si9n" % "sbt-buildinfo" % "0.10.0")
 
 addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.4.3")
 
-addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.8.1")
+addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.8.2")
 
 addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "0.14.10")
 
@@ -18,7 +18,7 @@ addSbtPlugin("com.simplytyped" % "sbt-antlr4" % "0.8.2")
 
 addSbtPlugin("com.github.sbt" % "sbt-protobuf" % "0.7.0")
 
-addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.9.28")
+addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.9.29")
 
 addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "3.0.0")
 
