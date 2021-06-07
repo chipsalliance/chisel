@@ -8,6 +8,7 @@ import chisel3._
 import chisel3.util.{HasBlackBoxInline, HasBlackBoxResource, HasBlackBoxPath}
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import firrtl.FirrtlExecutionSuccess
+import firrtl.transforms.BlackBoxNotFoundException
 import org.scalacheck.Test.Failed
 import org.scalatest.Succeeded
 import org.scalatest.freespec.AnyFreeSpec
@@ -88,6 +89,15 @@ class UsesBlackBoxMinusViaPath extends Module {
   io.out := mod0.io.out
 }
 
+class BlackBoxResourceNotFound extends HasBlackBoxResource {
+  val io = IO(new Bundle{})
+  addResource("/missing.resource")
+}
+
+class UsesMissingBlackBoxResource extends RawModule {
+  val foo = Module(new BlackBoxResourceNotFound)
+}
+
 class BlackBoxImplSpec extends AnyFreeSpec with Matchers {
   val targetDir = "test_run_dir"
   val stage = new ChiselStage
@@ -113,6 +123,11 @@ class BlackBoxImplSpec extends AnyFreeSpec with Matchers {
       verilogOutput.exists() should be (true)
       verilogOutput.delete()
       Succeeded
+    }
+    "Resource files that do not exist produce Chisel errors" in {
+      assertThrows[BlackBoxNotFoundException]{
+        ChiselStage.emitChirrtl(new UsesMissingBlackBoxResource)
+      }
     }
   }
 }

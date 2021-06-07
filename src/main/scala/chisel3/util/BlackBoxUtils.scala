@@ -4,12 +4,31 @@ package chisel3.util
 
 import chisel3._
 import chisel3.experimental.{ChiselAnnotation, RunFirrtlTransform}
-import firrtl.transforms.{BlackBoxPathAnno, BlackBoxResourceAnno, BlackBoxInlineAnno, BlackBoxSourceHelper}
+import firrtl.transforms.{BlackBoxPathAnno, BlackBoxResourceAnno, BlackBoxInlineAnno, BlackBoxSourceHelper,
+  BlackBoxNotFoundException}
+import java.io.{File, FileNotFoundException}
+
+private[util] object ResourceHelpers {
+  case class ResourceResult(fileName: String, contents: String)
+
+  def getResourceAsString(resourceName: String): ResourceResult = {
+    val resource = getClass().getResource(resourceName)
+    val fileName = try {
+      new File(resource.getFile()).getName()
+    } catch {
+      case e @ (_: FileNotFoundException | _: NullPointerException) =>
+        throw new BlackBoxNotFoundException(resourceName, e.getMessage)
+    }
+    val contents = scala.io.Source.fromInputStream(resource.openStream()).mkString
+    ResourceResult(fileName, contents)
+  }
+}
 
 trait HasBlackBoxResource extends BlackBox {
   self: BlackBox =>
 
-  /** Copies a resource file to the target directory
+  /** Copies a Java resource containing some text into the output directory. This is typically used to copy a Verilog file
+    * to the final output directory, but may be used to copy any Java resource (e.g., a C++ testbench).
     *
     * Resource files are located in project_root/src/main/resources/.
     * Example of adding the resource file project_root/src/main/resources/blackbox.v:
@@ -19,7 +38,11 @@ trait HasBlackBoxResource extends BlackBox {
     */
   def addResource(blackBoxResource: String): Unit = {
     val anno = new ChiselAnnotation with RunFirrtlTransform {
-      def toFirrtl = BlackBoxResourceAnno(self.toNamed, blackBoxResource)
+      def toFirrtl = {
+        ResourceHelpers.getResourceAsString(blackBoxResource) match {
+          case ResourceHelpers.ResourceResult(fileName, contents) => BlackBoxInlineAnno(self.toNamed, fileName, contents)
+        }
+      }
       def transformClass = classOf[BlackBoxSourceHelper]
     }
     chisel3.experimental.annotate(anno)
