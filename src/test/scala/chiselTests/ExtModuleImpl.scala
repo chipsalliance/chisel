@@ -11,6 +11,7 @@ import chisel3.util.{HasExtModuleInline, HasExtModulePath, HasExtModuleResource}
 import firrtl.FirrtlExecutionSuccess
 import firrtl.options.TargetDirAnnotation
 import firrtl.stage.FirrtlCircuitAnnotation
+import firrtl.transforms.BlackBoxNotFoundException
 import org.scalacheck.Test.Failed
 import org.scalatest.{FreeSpec, Matchers, Succeeded}
 
@@ -92,6 +93,15 @@ class UsesExtModuleMinusViaPath extends Module {
   io.out := mod0.io.out
 }
 
+class ExtModuleResourceNotFound extends HasExtModuleResource {
+  val io = IO(new Bundle{})
+  addResource("/missing.resource")
+}
+
+class UsesMissingExtModuleResource extends RawModule {
+  val foo = Module(new ExtModuleResourceNotFound)
+}
+
 class ExtModuleImplSpec extends FreeSpec with Matchers {
   "ExtModule can have verilator source implementation" - {
 
@@ -136,6 +146,12 @@ class ExtModuleImplSpec extends FreeSpec with Matchers {
       val verilogOutput = new File(targetDir, "BlackBoxTest.v")
       verilogOutput.exists() should be(true)
       verilogOutput.delete()
+    }
+
+    "Resource files that do not exist produce Chisel errors" in {
+      assertThrows[BlackBoxNotFoundException]{
+        ChiselStage.emitChirrtl(new UsesMissingExtModuleResource)
+      }
     }
   }
 }
