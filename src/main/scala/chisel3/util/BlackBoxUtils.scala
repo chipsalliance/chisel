@@ -8,22 +8,6 @@ import firrtl.transforms.{BlackBoxPathAnno, BlackBoxResourceAnno, BlackBoxInline
   BlackBoxNotFoundException}
 import java.io.{File, FileNotFoundException}
 
-private[util] object ResourceHelpers {
-  case class ResourceResult(fileName: String, contents: String)
-
-  def getResourceAsString(resourceName: String): ResourceResult = {
-    val resource = getClass().getResource(resourceName)
-    val fileName = try {
-      new File(resource.getFile()).getName()
-    } catch {
-      case e @ (_: FileNotFoundException | _: NullPointerException) =>
-        throw new BlackBoxNotFoundException(resourceName, e.getMessage)
-    }
-    val contents = scala.io.Source.fromInputStream(resource.openStream()).mkString
-    ResourceResult(fileName, contents)
-  }
-}
-
 trait HasBlackBoxResource extends BlackBox {
   self: BlackBox =>
 
@@ -38,10 +22,12 @@ trait HasBlackBoxResource extends BlackBox {
     */
   def addResource(blackBoxResource: String): Unit = {
     val anno = new ChiselAnnotation with RunFirrtlTransform {
-      def toFirrtl = {
-        ResourceHelpers.getResourceAsString(blackBoxResource) match {
-          case ResourceHelpers.ResourceResult(fileName, contents) => BlackBoxInlineAnno(self.toNamed, fileName, contents)
-        }
+      def toFirrtl = try {
+        val blackBoxFile = os.resource / os.RelPath(blackBoxResource.dropWhile(_ == '/'))
+        BlackBoxInlineAnno(self.toNamed, blackBoxFile.last, os.read(blackBoxFile))
+      } catch {
+        case e: os.ResourceNotFoundException =>
+          throw new BlackBoxNotFoundException(blackBoxResource, e.getMessage)
       }
       def transformClass = classOf[BlackBoxSourceHelper]
     }
