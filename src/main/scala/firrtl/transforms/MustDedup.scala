@@ -7,7 +7,7 @@ import firrtl.annotations._
 import firrtl.annotations.TargetToken.OfModule
 import firrtl.analyses.InstanceKeyGraph
 import firrtl.analyses.InstanceKeyGraph.InstanceKey
-import firrtl.options.Dependency
+import firrtl.options.{Dependency, TargetDirAnnotation}
 import firrtl.stage.Forms
 import firrtl.graph.DiGraph
 
@@ -215,8 +215,10 @@ class MustDeduplicateTransform extends Transform with DependencyAPIMigration {
       }
 
       // Write reports and modules to disk
-      val dirName = state.annotations.collectFirst { case MustDeduplicateReportDirectory(dir) => dir }
-        .getOrElse("dedup_failures")
+      val dirName = state.annotations.collectFirst { case MustDeduplicateReportDirectory(dir) => dir }.getOrElse {
+        val targetDirName = state.annotations.collectFirst { case TargetDirAnnotation(dir) => dir }.getOrElse(".")
+        s"$targetDirName/dedup_failures"
+      }
       val dir = FileUtils.getPath(dirName)
       logger.error(s"Writing error report(s) to ${dir}...")
       FileUtils.makeDirectory(dir.toString)
