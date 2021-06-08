@@ -5,7 +5,6 @@ package chisel3.util
 import chisel3.experimental.{ChiselAnnotation, ExtModule, RunFirrtlTransform}
 import firrtl.transforms.{BlackBoxPathAnno, BlackBoxResourceAnno, BlackBoxInlineAnno, BlackBoxSourceHelper,
   BlackBoxNotFoundException}
-import java.io.{File, FileNotFoundException}
 
 trait HasExtModuleResource extends ExtModule {
   self: ExtModule =>
