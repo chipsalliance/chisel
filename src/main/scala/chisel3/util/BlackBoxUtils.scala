@@ -6,7 +6,6 @@ import chisel3._
 import chisel3.experimental.{ChiselAnnotation, RunFirrtlTransform}
 import firrtl.transforms.{BlackBoxPathAnno, BlackBoxResourceAnno, BlackBoxInlineAnno, BlackBoxSourceHelper,
   BlackBoxNotFoundException}
-import java.io.{File, FileNotFoundException}
 
 trait HasBlackBoxResource extends BlackBox {
   self: BlackBox =>
