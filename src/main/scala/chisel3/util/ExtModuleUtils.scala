@@ -20,10 +20,12 @@ trait HasExtModuleResource extends ExtModule {
     */
   def addResource(blackBoxResource: String): Unit = {
     val anno = new ChiselAnnotation with RunFirrtlTransform {
-      def toFirrtl = {
-        ResourceHelpers.getResourceAsString(blackBoxResource) match {
-          case ResourceHelpers.ResourceResult(fileName, contents) => BlackBoxInlineAnno(self.toNamed, fileName, contents)
-        }
+      def toFirrtl = try {
+        val blackBoxFile = os.resource / os.RelPath(blackBoxResource.dropWhile(_ == '/'))
+        BlackBoxInlineAnno(self.toNamed, blackBoxFile.last, os.read(blackBoxFile))
+      } catch {
+        case e: os.ResourceNotFoundException =>
+          throw new BlackBoxNotFoundException(blackBoxResource, e.getMessage)
       }
       def transformClass = classOf[BlackBoxSourceHelper]
     }
