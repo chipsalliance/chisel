@@ -16,10 +16,12 @@ private[util] object BlackBoxHelpers {
     def fromResource(resourceName: String, moduleName: ModuleName) = try {
       val blackBoxFile = os.resource / os.RelPath(resourceName.dropWhile(_ == '/'))
       val contents = os.read(blackBoxFile)
-      if (contents.size > BigInt(2).pow(20))
-        logger.warn(s"Included black box resource $resourceName, which will be converted to an inline annotation, is greater than 1 MiB. This may affect compiler performance. Consider including this resource via a black box path.")
-
-
+      if (contents.size > BigInt(2).pow(20)) {
+        val message =
+          s"Black box resource $resourceName, which will be converted to an inline annotation, is greater than 1 MiB." +
+            "This may affect compiler performance. Consider including this resource via a black box path."
+        logger.warn(message)
+      }
       BlackBoxInlineAnno(moduleName, blackBoxFile.last, contents)
     } catch {
       case e: os.ResourceNotFoundException =>
