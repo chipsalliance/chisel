@@ -6,6 +6,8 @@ import chisel3.experimental.{ChiselAnnotation, ExtModule, RunFirrtlTransform}
 import firrtl.transforms.{BlackBoxPathAnno, BlackBoxResourceAnno, BlackBoxInlineAnno, BlackBoxSourceHelper,
   BlackBoxNotFoundException}
 
+import BlackBoxHelpers._
+
 trait HasExtModuleResource extends ExtModule {
   self: ExtModule =>
 
@@ -19,13 +21,7 @@ trait HasExtModuleResource extends ExtModule {
     */
   def addResource(blackBoxResource: String): Unit = {
     val anno = new ChiselAnnotation with RunFirrtlTransform {
-      def toFirrtl = try {
-        val blackBoxFile = os.resource / os.RelPath(blackBoxResource.dropWhile(_ == '/'))
-        BlackBoxInlineAnno(self.toNamed, blackBoxFile.last, os.read(blackBoxFile))
-      } catch {
-        case e: os.ResourceNotFoundException =>
-          throw new BlackBoxNotFoundException(blackBoxResource, e.getMessage)
-      }
+      def toFirrtl = BlackBoxInlineAnno.fromResource(blackBoxResource, self.toNamed)
       def transformClass = classOf[BlackBoxSourceHelper]
     }
     chisel3.experimental.annotate(anno)
