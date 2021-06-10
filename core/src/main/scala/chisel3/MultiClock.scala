@@ -6,6 +6,41 @@ import chisel3.internal._
 
 import scala.language.experimental.macros
 
+object setClockAndReset {
+ /** Creates a new Clock and Reset scope in current Module
+    *
+    * @param clock the new implicit Clock
+    * @param reset the new implicit Reset
+    * @return Unit, affect current Module
+    */
+  def apply(clock: Clock, reset: Reset): Unit = {
+    setClock(clock)
+    setReset(reset)
+  }
+}
+
+object setClock {
+  /** Creates a new Clock scope in current Module
+    *
+    * @param clock the new implicit Clock
+    * @return Unit, affect current Module
+    */
+  def apply[T](clock: Clock): Unit =  {
+    Builder.currentClock = Some(clock)
+  }
+}
+
+object setReset {
+  /** Creates a new Reset scope in current Module
+    *
+    * @param reset the new implicit Reset
+    * @return Unit, affect current Module
+    */
+  def apply[T](reset: Reset): Unit = {
+    Builder.currentReset = Some(reset)
+  }
+}
+
 object withClockAndReset {
   /** Creates a new Clock and Reset scope
     *
