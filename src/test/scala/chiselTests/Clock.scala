@@ -24,6 +24,16 @@ class WithClockAndNoReset extends RawModule {
   out := a
 }
 
+class SetClockAndNoReset extends RawModule {
+  val clock1 = IO(Input(Clock()))
+  val clock2 = IO(Input(Clock()))
+  val in = IO(Input(Bool()))
+  val out = IO(Output(Bool()))
+  setClock(clock2)
+  val a = RegNext(in)
+
+  out := a
+}
 
 class ClockSpec extends ChiselPropSpec {
   property("Bool.asClock.asUInt should pass a signal through unaltered") {
@@ -34,4 +44,10 @@ class ClockSpec extends ChiselPropSpec {
     val circuit = ChiselStage.emitChirrtl(new WithClockAndNoReset)
     circuit.contains("reg a : UInt<1>, clock2") should be (true)
   }
+
+  property("Should be able to use setClock in a module with no reset") {
+    val circuit = ChiselStage.emitChirrtl(new SetClockAndNoReset)
+    circuit.contains("reg a : UInt<1>, clock2") should be (true)
+  }
+
 }
