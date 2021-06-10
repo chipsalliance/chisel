@@ -7,6 +7,7 @@ import chisel3.experimental.{ChiselAnnotation, RunFirrtlTransform}
 import firrtl.transforms.{BlackBoxPathAnno, BlackBoxResourceAnno, BlackBoxInlineAnno, BlackBoxSourceHelper,
   BlackBoxNotFoundException}
 import firrtl.annotations.ModuleName
+import java.io.{File, FileNotFoundException}
 import logger.LazyLogging
 
 private[util] object BlackBoxHelpers {
@@ -14,17 +15,18 @@ private[util] object BlackBoxHelpers {
   implicit class BlackBoxInlineAnnoHelpers(anno: BlackBoxInlineAnno.type) extends LazyLogging {
     /** Generate a BlackBoxInlineAnno from a Java Resource and a module name. */
     def fromResource(resourceName: String, moduleName: ModuleName) = try {
-      val blackBoxFile = os.resource / os.RelPath(resourceName.dropWhile(_ == '/'))
-      val contents = os.read(blackBoxFile)
+      val resource = getClass().getResource(resourceName)
+      val fileName = new File(resource.getFile()).getName()
+      val contents = scala.io.Source.fromInputStream(resource.openStream()).mkString
       if (contents.size > BigInt(2).pow(20)) {
         val message =
           s"Black box resource $resourceName, which will be converted to an inline annotation, is greater than 1 MiB." +
             "This may affect compiler performance. Consider including this resource via a black box path."
         logger.warn(message)
       }
-      BlackBoxInlineAnno(moduleName, blackBoxFile.last, contents)
+      BlackBoxInlineAnno(moduleName, fileName, contents)
     } catch {
-      case e: os.ResourceNotFoundException =>
+      case e @ (_: FileNotFoundException | _: NullPointerException) =>
         throw new BlackBoxNotFoundException(resourceName, e.getMessage)
     }
   }
@@ -35,15 +37,11 @@ import BlackBoxHelpers._
 trait HasBlackBoxResource extends BlackBox {
   self: BlackBox =>
 
-<<<<<<< HEAD
   @deprecated("Use addResource instead", "3.2")
   def setResource(blackBoxResource: String): Unit = addResource(blackBoxResource)
 
-  /** Copies a resource file to the target directory
-=======
   /** Copies a Java resource containing some text into the output directory. This is typically used to copy a Verilog file
     * to the final output directory, but may be used to copy any Java resource (e.g., a C++ testbench).
->>>>>>> 820200b7 (Stop Emitting BlackBoxResourceAnno (#1954))
     *
     * Resource files are located in project_root/src/main/resources/.
     * Example of adding the resource file project_root/src/main/resources/blackbox.v:
