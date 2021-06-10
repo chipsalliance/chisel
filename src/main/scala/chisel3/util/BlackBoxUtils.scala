@@ -6,6 +6,29 @@ import chisel3._
 import chisel3.experimental.{ChiselAnnotation, RunFirrtlTransform}
 import firrtl.transforms.{BlackBoxPathAnno, BlackBoxResourceAnno, BlackBoxInlineAnno, BlackBoxSourceHelper,
   BlackBoxNotFoundException}
+import firrtl.annotations.ModuleName
+import logger.LazyLogging
+
+private[util] object BlackBoxHelpers {
+
+  implicit class BlackBoxInlineAnnoHelpers(anno: BlackBoxInlineAnno.type) extends LazyLogging {
+    /** Generate a BlackBoxInlineAnno from a Java Resource and a module name. */
+    def fromResource(resourceName: String, moduleName: ModuleName) = try {
+      val blackBoxFile = os.resource / os.RelPath(resourceName.dropWhile(_ == '/'))
+      val contents = os.read(blackBoxFile)
+      if (contents.size > BigInt(2).pow(20))
+        logger.warn(s"Included black box resource $resourceName, which will be converted to an inline annotation, is greater than 1 MiB. This may affect compiler performance. Consider including this resource via a black box path.")
+
+
+      BlackBoxInlineAnno(moduleName, blackBoxFile.last, contents)
+    } catch {
+      case e: os.ResourceNotFoundException =>
+        throw new BlackBoxNotFoundException(resourceName, e.getMessage)
+    }
+  }
+}
+
+import BlackBoxHelpers._
 
 trait HasBlackBoxResource extends BlackBox {
   self: BlackBox =>
@@ -21,13 +44,7 @@ trait HasBlackBoxResource extends BlackBox {
     */
   def addResource(blackBoxResource: String): Unit = {
     val anno = new ChiselAnnotation with RunFirrtlTransform {
-      def toFirrtl = try {
-        val blackBoxFile = os.resource / os.RelPath(blackBoxResource.dropWhile(_ == '/'))
-        BlackBoxInlineAnno(self.toNamed, blackBoxFile.last, os.read(blackBoxFile))
-      } catch {
-        case e: os.ResourceNotFoundException =>
-          throw new BlackBoxNotFoundException(blackBoxResource, e.getMessage)
-      }
+      def toFirrtl = BlackBoxInlineAnno.fromResource(blackBoxResource, self.toNamed)
       def transformClass = classOf[BlackBoxSourceHelper]
     }
     chisel3.experimental.annotate(anno)
