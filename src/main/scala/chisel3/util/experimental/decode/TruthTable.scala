@@ -4,7 +4,7 @@ package chisel3.util.experimental.decode
 
 import chisel3.util.BitPat
 
-sealed class TruthTable(val table: Map[BitPat, BitPat], val default: BitPat) {
+final class TruthTable(val table: Map[BitPat, BitPat], val default: BitPat) {
 
   def inputWidth = table.head._1.getWidth
 
@@ -42,7 +42,7 @@ object TruthTable {
   }
 
   /** Convert a table and default output into a [[TruthTable]]. */
-  def apply(table: Iterable[(BitPat, BitPat)], default: BitPat) = {
+  def apply(table: Iterable[(BitPat, BitPat)], default: BitPat): TruthTable = {
     require(table.map(_._1.getWidth).toSet.size == 1, "input width not equal.")
     require(table.map(_._2.getWidth).toSet.size == 1, "output width not equal.")
     val outputWidth = table.map(_._2.getWidth).head
