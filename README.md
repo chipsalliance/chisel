@@ -248,7 +248,7 @@ Also included is:
 
 Chisel consists of 4 Scala projects; each is its own separate compilation unit:
 
-- [`core`](core) is the bulk of the source code of Chisel, depends on macros
+- [`core`](core) is the bulk of the source code of Chisel, depends on `macros`
 - [`src/main`](src/main) is the "main" that brings it all together and includes a [`util`](src/main/scala/chisel3/util) library, which depends on `core`
 - [`plugin`](plugin) is the compiler plugin, no internal dependencies
 - [`macros`](macros) is most of the macros used in Chisel, no internal dependencies
