@@ -212,6 +212,7 @@ package experimental {
   abstract class BaseModule extends HasId {
     _parent.foreach(_.addId(this))
 
+
     //
     // Builder Internals - this tracks which Module RTL construction belongs to.
     //
@@ -334,10 +335,15 @@ package experimental {
       * @note Should not be called until circuit elaboration is complete
       */
     final def toAbsoluteTarget: IsModule = {
+      //require(!isTemplate, "Cannot use toAbsoluteTarget on a template! Use other API I'm creating.")
       _parent match {
         case Some(parent) => parent.toAbsoluteTarget.instOf(this.instanceName, toTarget.module)
         case None => toTarget
       }
+    }
+
+    final def absoluteTarget(context: InstanceContext): IsModule = {
+      if(context.root == this) toTarget else context.toTarget.instOf(this.instanceName, toTarget.module)
     }
 
     /**

@@ -80,6 +80,7 @@ trait InstanceId {
   def toTarget: IsMember
   /** Returns a FIRRTL IsMember that refers to the absolute path to this object in the elaborated hardware graph */
   def toAbsoluteTarget: IsMember
+  def absoluteTarget(context: InstanceContext): IsMember
 }
 
 private[chisel3] trait HasId extends InstanceId {
@@ -286,6 +287,11 @@ private[chisel3] trait NamedComponent extends HasId {
     }
   }
 
+  final def absoluteTarget(context: InstanceContext): ReferenceTarget = {
+    val localTarget = toTarget
+    context.toTarget.ref(localTarget.ref).copy(component = localTarget.component)
+  }
+
   final def toAbsoluteTarget: ReferenceTarget = {
     val localTarget = toTarget
     _parent match {
@@ -340,6 +346,8 @@ private[chisel3] object Builder extends LazyLogging {
     require(dynamicContextVar.value.isDefined, "must be inside Builder context")
     dynamicContextVar.value.get
   }
+  def captureContext(): DynamicContext = dynamicContext
+  def restoreContext(dc: DynamicContext) = dynamicContextVar.value = Some(dc)
 
   // Ensure we have a thread-specific ChiselContext
   private val chiselContext = new ThreadLocal[ChiselContext]{
@@ -602,6 +610,7 @@ private[chisel3] object Builder extends LazyLogging {
     * (Note: Map is Iterable[Tuple2[_,_]] and thus excluded)
     */
   def nameRecursively(prefix: String, nameMe: Any, namer: (HasId, String) => Unit): Unit = nameMe match {
+    case (id: Instance[_]) => namer(id.ports, prefix)
     case (id: HasId) => namer(id, prefix)
     case Some(elt) => nameRecursively(prefix, elt, namer)
     case (iter: Iterable[_]) if iter.hasDefiniteSize =>
