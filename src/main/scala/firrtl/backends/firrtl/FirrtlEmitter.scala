@@ -61,6 +61,13 @@ sealed abstract class FirrtlEmitter(form: CircuitForm) extends Transform with Em
 }
 
 class ChirrtlEmitter extends FirrtlEmitter(CircuitForm.ChirrtlForm)
+class MinimumHighFirrtlEmitter extends FirrtlEmitter(CircuitForm.HighForm) {
+  override def prerequisites = stage.Forms.MinimalHighForm
+  override def optionalPrerequisites = Seq.empty
+  override def optionalPrerequisiteOf = Seq.empty
+  override def invalidates(a: Transform) = false
+  override val outputSuffix = ".mhi.fir"
+}
 class HighFirrtlEmitter extends FirrtlEmitter(CircuitForm.HighForm)
 class MiddleFirrtlEmitter extends FirrtlEmitter(CircuitForm.MidForm)
 class LowFirrtlEmitter extends FirrtlEmitter(CircuitForm.LowForm)

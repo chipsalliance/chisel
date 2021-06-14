@@ -30,6 +30,11 @@ object EmitCircuitAnnotation extends HasShellOptions {
         a match {
           case "chirrtl" =>
             Seq(RunFirrtlTransformAnnotation(new ChirrtlEmitter), EmitCircuitAnnotation(classOf[ChirrtlEmitter]))
+          case "mhigh" =>
+            Seq(
+              RunFirrtlTransformAnnotation(new MinimumHighFirrtlEmitter),
+              EmitCircuitAnnotation(classOf[MinimumHighFirrtlEmitter])
+            )
           case "high" =>
             Seq(RunFirrtlTransformAnnotation(new HighFirrtlEmitter), EmitCircuitAnnotation(classOf[HighFirrtlEmitter]))
           case "middle" =>
@@ -69,6 +74,11 @@ object EmitAllModulesAnnotation extends HasShellOptions {
         a match {
           case "chirrtl" =>
             Seq(RunFirrtlTransformAnnotation(new ChirrtlEmitter), EmitAllModulesAnnotation(classOf[ChirrtlEmitter]))
+          case "mhigh" =>
+            Seq(
+              RunFirrtlTransformAnnotation(new MinimumHighFirrtlEmitter),
+              EmitAllModulesAnnotation(classOf[MinimumHighFirrtlEmitter])
+            )
           case "high" =>
             Seq(
               RunFirrtlTransformAnnotation(new HighFirrtlEmitter),

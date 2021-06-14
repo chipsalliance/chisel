@@ -164,7 +164,7 @@ object CompilerAnnotation extends HasShellOptions {
       toAnnotationSeq = a => Seq(RunFirrtlTransformAnnotation.stringToEmitter(a)),
       helpText = "The FIRRTL compiler to use (default: verilog)",
       shortOption = Some("X"),
-      helpValueName = Some("<none|high|middle|low|verilog|mverilog|sverilog>")
+      helpValueName = Some("<none|mhigh|high|middle|low|verilog|mverilog|sverilog>")
     )
   )
 
@@ -185,6 +185,7 @@ object RunFirrtlTransformAnnotation extends HasShellOptions {
   private[firrtl] def stringToEmitter(a: String): RunFirrtlTransformAnnotation = {
     val emitter = a match {
       case "none"     => new ChirrtlEmitter
+      case "mhigh"    => new MinimumHighFirrtlEmitter
       case "high"     => new HighFirrtlEmitter
       case "low"      => new LowFirrtlEmitter
       case "middle"   => new MiddleFirrtlEmitter
