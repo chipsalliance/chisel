@@ -243,6 +243,17 @@ Also included is:
 - **Chisel Stage**, `chisel3.stage.*`, which contains compilation and test
   functions that are invoked in the standard Verilog generation and simulation
   testing infrastructure. These can also be used as part of custom flows.
+  
+### Chisel Sub-Projects
+
+Chisel consists of 4 Scala projects; each is its own separate compilation unit:
+
+- [`core`](core) is the bulk of the source code of Chisel, depends on `macros`
+- [`src/main`](src/main) is the "main" that brings it all together and includes a [`util`](src/main/scala/chisel3/util) library, which depends on `core`
+- [`plugin`](plugin) is the compiler plugin, no internal dependencies
+- [`macros`](macros) is most of the macros used in Chisel, no internal dependencies
+
+Code that touches lots of APIs that are private to the `chisel3` package should belong in `core`, while code that is pure Chisel should belong in `src/main`.
 
 ### Which version should I use?
 
