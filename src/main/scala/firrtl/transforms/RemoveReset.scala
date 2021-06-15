@@ -7,6 +7,7 @@ import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.traversals.Foreachers._
 import firrtl.WrappedExpression.we
+import firrtl.annotations.PresetRegAnnotation
 import firrtl.options.Dependency
 
 import scala.collection.{immutable, mutable}
@@ -47,11 +48,26 @@ object RemoveReset extends Transform with DependencyAPIMigration {
     invalids.toSet
   }
 
-  private def onModule(m: DefModule): DefModule = {
+  private def onModule(m: DefModule, isPreset: String => Boolean): DefModule = {
     val resets = mutable.HashMap.empty[String, Reset]
     val invalids = computeInvalids(m)
     def onStmt(stmt: Statement): Statement = {
       stmt match {
+        case reg @ DefRegister(_, name, _, _, reset, init) if isPreset(name) =>
+          // registers that are preset annotated should already be in canonical form
+          if (reset != Utils.False()) {
+            throw new RuntimeException(
+              s"[${m.name}] register `$name` has a PresetRegAnnotation, but the reset is not UInt(0)!"
+            )
+          }
+          if (!Utils.isLiteral(init)) {
+            throw new RuntimeException(
+              s"[${m.name}] register `$name` has a PresetRegAnnotation, " +
+                s"but the init value is not a literal! ${init.serialize}"
+            )
+          }
+          // no change necessary
+          reg
         /* A register is initialized to an invalid expression */
         case reg @ DefRegister(_, _, _, _, _, init) if invalids.contains(we(init)) =>
           reg.copy(reset = Utils.zero, init = WRef(reg))
@@ -74,7 +90,11 @@ object RemoveReset extends Transform with DependencyAPIMigration {
   }
 
   def execute(state: CircuitState): CircuitState = {
-    val c = state.circuit.map(onModule)
+    // If registers are annotated with the [[PresetRegAnnotation]], they will take on their
+    // reset value when the circuit "starts" (i.e. at the beginning of simulation or when the FPGA
+    // bit-stream is initialized) and thus we need to special-case them.
+    val presetRegs = PresetRegAnnotation.collect(state.annotations, state.circuit.main)
+    val c = state.circuit.mapModule(m => onModule(m, presetRegs.getOrElse(m.name, _ => false)))
     state.copy(circuit = c)
   }
 }
