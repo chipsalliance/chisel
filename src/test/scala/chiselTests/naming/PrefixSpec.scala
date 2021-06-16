@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests.naming
 
@@ -10,7 +10,7 @@ import chiselTests.{ChiselPropSpec, Utils}
 class PrefixSpec extends ChiselPropSpec with Utils {
   implicit val minimumMajorVersion: Int = 12
   property("Scala plugin should interact with prefixing so last plugin name wins?") {
-    class Test extends MultiIOModule {
+    class Test extends Module {
       def builder(): UInt = {
         val wire1 = Wire(UInt(3.W))
         val wire2 = Wire(UInt(3.W))
@@ -34,7 +34,7 @@ class PrefixSpec extends ChiselPropSpec with Utils {
   }
 
   property("Nested prefixes should work") {
-    class Test extends MultiIOModule {
+    class Test extends Module {
       def builder2(): UInt = {
         val wire1 = Wire(UInt(3.W))
         val wire2 = Wire(UInt(3.W))
@@ -68,9 +68,7 @@ class PrefixSpec extends ChiselPropSpec with Utils {
   }
 
   property("Prefixing seeded with signal") {
-    class Test extends MultiIOModule {
-      @treedump
-      @dump
+    class Test extends Module {
       def builder(): UInt = {
         val wire = Wire(UInt(3.W))
         wire := 3.U
@@ -95,7 +93,7 @@ class PrefixSpec extends ChiselPropSpec with Utils {
 
   property("Automatic prefixing should work") {
 
-    class Test extends MultiIOModule {
+    class Test extends Module {
       def builder(): UInt = {
         val a = Wire(UInt(3.W))
         val b = Wire(UInt(3.W))
@@ -115,7 +113,7 @@ class PrefixSpec extends ChiselPropSpec with Utils {
 
   property("No prefixing annotation on defs should work") {
 
-    class Test extends MultiIOModule {
+    class Test extends Module {
       def builder(): UInt = noPrefix {
         val a = Wire(UInt(3.W))
         val b = Wire(UInt(3.W))
@@ -132,7 +130,7 @@ class PrefixSpec extends ChiselPropSpec with Utils {
 
   property("Prefixing on temps should work") {
 
-    class Test extends MultiIOModule {
+    class Test extends Module {
       def builder(): UInt = {
         val a = Wire(UInt(3.W))
         val b = Wire(UInt(3.W))
@@ -151,13 +149,13 @@ class PrefixSpec extends ChiselPropSpec with Utils {
   }
 
   property("Prefixing should not leak into child modules") {
-    class Child extends MultiIOModule {
+    class Child extends Module {
       {
         val wire = Wire(UInt())
       }
     }
 
-    class Test extends MultiIOModule {
+    class Test extends Module {
       {
         val child = prefix("InTest") {
           Module(new Child)
@@ -171,13 +169,13 @@ class PrefixSpec extends ChiselPropSpec with Utils {
   }
 
   property("Prefixing should not leak into child modules, example 2") {
-    class Child extends MultiIOModule {
+    class Child extends Module {
       {
         val wire = Wire(UInt())
       }
     }
 
-    class Test extends MultiIOModule {
+    class Test extends Module {
       val x = IO(Input(UInt(3.W)))
       val y = {
         lazy val module = new Child
@@ -191,13 +189,13 @@ class PrefixSpec extends ChiselPropSpec with Utils {
   }
 
   property("Instance names should not be added to prefix") {
-    class Child(tpe: UInt) extends MultiIOModule {
+    class Child(tpe: UInt) extends Module {
       {
         val io = IO(Input(tpe))
       }
     }
 
-    class Test extends MultiIOModule {
+    class Test extends Module {
       {
         lazy val module = {
           val x = UInt(3.W)
@@ -214,7 +212,7 @@ class PrefixSpec extends ChiselPropSpec with Utils {
 
 
   property("Prefixing should not be caused by nested Iterable[Iterable[Any]]") {
-    class Test extends MultiIOModule {
+    class Test extends Module {
       {
         val iia = {
           val wire = Wire(UInt(3.W))
@@ -229,7 +227,7 @@ class PrefixSpec extends ChiselPropSpec with Utils {
   }
 
   property("Prefixing should be caused by nested Iterable[Iterable[Data]]") {
-    class Test extends MultiIOModule {
+    class Test extends Module {
       {
         val iia = {
           val wire = Wire(UInt(3.W))
@@ -244,7 +242,7 @@ class PrefixSpec extends ChiselPropSpec with Utils {
   }
 
   property("Prefixing should be the prefix during the last call to autoName/suggestName") {
-    class Test extends MultiIOModule {
+    class Test extends Module {
       {
         val wire = {
           val x = Wire(UInt(3.W)).suggestName("mywire")
@@ -260,7 +258,7 @@ class PrefixSpec extends ChiselPropSpec with Utils {
   }
 
   property("Prefixing have intuitive behavior") {
-    class Test extends MultiIOModule {
+    class Test extends Module {
       {
         val wire = {
           val x = Wire(UInt(3.W)).suggestName("mywire")
@@ -276,7 +274,7 @@ class PrefixSpec extends ChiselPropSpec with Utils {
   }
 
   property("Prefixing on connection to subfields work") {
-    class Test extends MultiIOModule {
+    class Test extends Module {
       {
         val wire = Wire(new Bundle {
           val x = UInt(3.W)
@@ -287,6 +285,7 @@ class PrefixSpec extends ChiselPropSpec with Utils {
         wire.y := RegNext(3.U)
         wire.vec(0) := RegNext(3.U)
         wire.vec(wire.x) := RegNext(3.U)
+        wire.vec(1.U) := RegNext(3.U)
       }
     }
     aspectTest(() => new Test) {
@@ -295,18 +294,19 @@ class PrefixSpec extends ChiselPropSpec with Utils {
           "wire_x_REG",
           "wire_y_REG",
           "wire_vec_0_REG",
-          "wire_vec_REG"
+          "wire_vec_REG",
+          "wire_vec_1_REG"
         ))
     }
   }
 
   property("Prefixing on connection to IOs should work") {
-    class Child extends MultiIOModule {
+    class Child extends Module {
       val in = IO(Input(UInt(3.W)))
       val out = IO(Output(UInt(3.W)))
       out := RegNext(in)
     }
-    class Test extends MultiIOModule {
+    class Test extends Module {
       {
         val child = Module(new Child)
         child.in := RegNext(3.U)
@@ -324,12 +324,12 @@ class PrefixSpec extends ChiselPropSpec with Utils {
   }
 
   property("Prefixing on bulk connects should work") {
-    class Child extends MultiIOModule {
+    class Child extends Module {
       val in = IO(Input(UInt(3.W)))
       val out = IO(Output(UInt(3.W)))
       out := RegNext(in)
     }
-    class Test extends MultiIOModule {
+    class Test extends Module {
       {
         val child = Module(new Child)
         child.in <> RegNext(3.U)
@@ -344,5 +344,60 @@ class PrefixSpec extends ChiselPropSpec with Utils {
           "out_REG"
         ))
     }
+  }
+
+  property("Connections should use the non-prefixed name of the connected Data") {
+    class Test extends Module {
+      prefix("foo") {
+        val x = Wire(UInt(8.W))
+        x := {
+          val w = Wire(UInt(8.W))
+          w := 3.U
+          w + 1.U
+        }
+      }
+    }
+    aspectTest(() => new Test) {
+      top: Test =>
+        Select.wires(top).map(_.instanceName) should be (List("foo_x", "foo_x_w"))
+    }
+  }
+
+  property("Connections to aggregate fields should use the non-prefixed aggregate name") {
+    class Test extends Module {
+      prefix("foo") {
+        val x = Wire(new Bundle { val bar = UInt(8.W) })
+        x.bar := {
+          val w = Wire(new Bundle { val fizz = UInt(8.W) })
+          w.fizz := 3.U
+          w.fizz + 1.U
+        }
+      }
+    }
+    aspectTest(() => new Test) {
+      top: Test =>
+        Select.wires(top).map(_.instanceName) should be (List("foo_x", "foo_x_bar_w"))
+    }
+  }
+
+
+  property("Prefixing with wires in recursive functions should grow linearly") {
+    class Test extends Module {
+      def func(bools: Seq[Bool]): Bool = {
+        if (bools.isEmpty) true.B
+        else {
+          val w = Wire(Bool())
+          w := bools.head && func(bools.tail)
+          w
+        }
+      }
+      val in = IO(Input(Vec(4, Bool())))
+      val x = func(in)
+    }
+    aspectTest(() => new Test) {
+      top: Test =>
+        Select.wires(top).map(_.instanceName) should be (List("x", "x_w_w", "x_w_w_w", "x_w_w_w_w"))
+    }
+
   }
 }

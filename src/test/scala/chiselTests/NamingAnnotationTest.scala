@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests
 
@@ -9,7 +9,7 @@ import chisel3.stage.ChiselStage
 
 import scala.collection.mutable.ListBuffer
 
-trait NamedModuleTester extends MultiIOModule {
+trait NamedModuleTester extends Module {
   val expectedNameMap = ListBuffer[(InstanceId, String)]()
   val expectedModuleNameMap = ListBuffer[(Module, String)]()
 

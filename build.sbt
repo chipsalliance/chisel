@@ -2,35 +2,9 @@
 
 enablePlugins(SiteScaladocPlugin)
 
-def scalacOptionsVersion(scalaVersion: String): Seq[String] = {
-  Seq() ++ {
-    // If we're building with Scala > 2.11, enable the compile option
-    //  switch to support our anonymous Bundle definitions:
-    //  https://github.com/scala/bug/issues/10047
-    CrossVersion.partialVersion(scalaVersion) match {
-      case Some((2, scalaMajor: Long)) if scalaMajor < 12 => Seq()
-      case _ => Seq("-Xsource:2.11")
-    }
-  }
-}
-
-def javacOptionsVersion(scalaVersion: String): Seq[String] = {
-  Seq() ++ {
-    // Scala 2.12 requires Java 8. We continue to generate
-    //  Java 7 compatible code for Scala 2.11
-    //  for compatibility with old clients.
-    CrossVersion.partialVersion(scalaVersion) match {
-      case Some((2, scalaMajor: Long)) if scalaMajor < 12 =>
-        Seq("-source", "1.7", "-target", "1.7")
-      case _ =>
-        Seq("-source", "1.8", "-target", "1.8")
-    }
-  }
-}
-
-val defaultVersions = Seq(
-  "edu.berkeley.cs" %% "firrtl" % "1.4-SNAPSHOT",
-  "edu.berkeley.cs" %% "treadle" % "1.3-SNAPSHOT"
+val defaultVersions = Map(
+  "firrtl" -> "edu.berkeley.cs" %% "firrtl" % "1.5-SNAPSHOT",
+  "treadle" -> "edu.berkeley.cs" %% "treadle" % "1.5-SNAPSHOT"
 )
 
 lazy val commonSettings = Seq (
@@ -39,25 +13,23 @@ lazy val commonSettings = Seq (
     Resolver.sonatypeRepo("releases")
   ),
   organization := "edu.berkeley.cs",
-  version := "3.4-SNAPSHOT",
+  version := "3.5-SNAPSHOT",
   autoAPIMappings := true,
-  scalaVersion := "2.12.11",
-  crossScalaVersions := Seq("2.12.11", "2.11.12"),
-  scalacOptions := Seq("-deprecation", "-feature") ++ scalacOptionsVersion(scalaVersion.value),
+  scalaVersion := "2.13.6",
+  crossScalaVersions := Seq("2.13.6", "2.12.13"),
+  scalacOptions := Seq("-deprecation", "-feature"),
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
-  addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full),
-  // Use the root project's unmanaged base for all sub-projects.
-  unmanagedBase := (unmanagedBase in root).value,
-  // Since we want to examine the classpath to determine if a dependency on firrtl is required,
-  //  this has to be a Task setting.
-  //  Fortunately, allDependencies is a Task Setting, so we can modify that.
-  allDependencies := {
-    allDependencies.value ++ defaultVersions.collect {
-      // If we have an unmanaged jar file on the classpath, assume we're to use that,
-      case m: ModuleID if !(unmanagedClasspath in Compile).value.toString.contains(s"${m.name}.jar") =>
-        //  otherwise let sbt fetch the appropriate artifact, possibly with a specific revision.
-        val mWithRevision = m.withRevision(sys.props.getOrElse(m.name + "Version", m.revision))
-        mWithRevision
+  // Macros paradise is integrated into 2.13 but requires a scalacOption
+  scalacOptions ++= {
+    CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, n)) if n >= 13 => "-Ymacro-annotations" :: Nil
+      case _ => Nil
+    }
+  },
+  libraryDependencies ++= {
+    CrossVersion.partialVersion(scalaVersion.value) match {
+      case Some((2, n)) if n >= 13 => Nil
+      case _ => compilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full) :: Nil
     }
   }
 )
@@ -66,20 +38,14 @@ lazy val publishSettings = Seq (
   publishMavenStyle := true,
   publishArtifact in Test := false,
   pomIncludeRepository := { x => false },
-  // Don't add 'scm' elements if we have a git.remoteRepo definition,
-  //  but since we don't (with the removal of ghpages), add them in below.
   pomExtra := <url>http://chisel.eecs.berkeley.edu/</url>
     <licenses>
       <license>
-        <name>BSD-style</name>
-        <url>http://www.opensource.org/licenses/bsd-license.php</url>
+        <name>apache-v2</name>
+        <url>https://opensource.org/licenses/Apache-2.0</url>
         <distribution>repo</distribution>
       </license>
     </licenses>
-    <scm>
-      <url>https://github.com/freechipsproject/chisel3.git</url>
-      <connection>scm:git:github.com/freechipsproject/chisel3.git</connection>
-    </scm>
     <developers>
       <developer>
         <id>jackbackrack</id>
@@ -103,16 +69,11 @@ lazy val publishSettings = Seq (
 lazy val chiselSettings = Seq (
   name := "chisel3",
 
-// sbt 1.2.6 fails with `Symbol 'term org.junit' is missing from the classpath`
-// when compiling tests under 2.11.12
-// An explicit dependency on junit seems to alleviate this.
   libraryDependencies ++= Seq(
-    "junit" % "junit" % "4.13" % "test",
     "org.scalatest" %% "scalatest" % "3.1.2" % "test",
-    "org.scalatestplus" %% "scalacheck-1-14" % "3.1.1.1" % "test",
-    "com.github.scopt" %% "scopt" % "3.7.1"
+    "org.scalatestplus" %% "scalacheck-1-14" % "3.2.2.0" % "test",
+    "com.lihaoyi" %% "os-lib" % "0.7.8",
   ),
-  javacOptions ++= javacOptionsVersion(scalaVersion.value)
 ) ++ (
   // Tests from other projects may still run concurrently
   //  if we're not running with -DminimalResources.
@@ -130,7 +91,6 @@ autoCompilerPlugins := true
 // Plugin must be fully cross-versioned (published for Scala minor version)
 // The plugin only works in Scala 2.12+
 lazy val pluginScalaVersions = Seq(
-  "2.11.12", // Only to support chisel3 cross building for 2.11, plugin does nothing in 2.11
   // scalamacros paradise version used is not published for 2.12.0 and 2.12.1
   "2.12.2",
   "2.12.3",
@@ -141,7 +101,15 @@ lazy val pluginScalaVersions = Seq(
   "2.12.8",
   "2.12.9",
   "2.12.10",
-  "2.12.11"
+  "2.12.11",
+  "2.12.12",
+  "2.12.13",
+  "2.13.0",
+  "2.13.1",
+  "2.13.2",
+  "2.13.3",
+  "2.13.4",
+  "2.13.5"
 )
 
 lazy val plugin = (project in file("plugin")).
@@ -157,9 +125,12 @@ lazy val plugin = (project in file("plugin")).
     crossTarget := {
       // workaround for https://github.com/sbt/sbt/issues/5097
       target.value / s"scala-${scalaVersion.value}"
-    },
-    // Only publish for Scala 2.12
-    publish / skip := !scalaVersion.value.startsWith("2.12")
+    }
+  ).
+  settings(
+    mimaPreviousArtifacts := {
+      Set()
+    }
   )
 
 lazy val usePluginSettings = Seq(
@@ -176,11 +147,22 @@ lazy val usePluginSettings = Seq(
 lazy val macros = (project in file("macros")).
   settings(name := "chisel3-macros").
   settings(commonSettings: _*).
-  settings(publishSettings: _*)
+  settings(publishSettings: _*).
+  settings(mimaPreviousArtifacts := Set())
+
+lazy val firrtlRef = ProjectRef(workspaceDirectory / "firrtl", "firrtl")
 
 lazy val core = (project in file("core")).
+  sourceDependency(firrtlRef, defaultVersions("firrtl")).
   settings(commonSettings: _*).
+  enablePlugins(BuildInfoPlugin).
+  settings(
+    buildInfoPackage := "chisel3",
+    buildInfoUsePackageAsPath := true,
+    buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
+  ).
   settings(publishSettings: _*).
+  settings(mimaPreviousArtifacts := Set()).
   settings(
     name := "chisel3-core",
     scalacOptions := scalacOptions.value ++ Seq(
@@ -200,13 +182,7 @@ lazy val core = (project in file("core")).
 lazy val root = RootProject(file("."))
 
 lazy val chisel = (project in file(".")).
-  enablePlugins(BuildInfoPlugin).
   enablePlugins(ScalaUnidocPlugin).
-  settings(
-    buildInfoPackage := name.value,
-    buildInfoUsePackageAsPath := true,
-    buildInfoKeys := Seq[BuildInfoKey](buildInfoPackage, version, scalaVersion, sbtVersion)
-  ).
   settings(commonSettings: _*).
   settings(chiselSettings: _*).
   settings(publishSettings: _*).
@@ -215,6 +191,8 @@ lazy val chisel = (project in file(".")).
   dependsOn(core).
   aggregate(macros, core, plugin).
   settings(
+    mimaPreviousArtifacts := Set(),
+    libraryDependencies += defaultVersions("treadle") % "test",
     scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
     scalacOptions in Compile in doc ++= Seq(
       "-diagrams",
@@ -233,8 +211,29 @@ lazy val chisel = (project in file(".")).
           } else {
             s"v${version.value}"
           }
-        s"https://github.com/freechipsproject/chisel3/tree/$branch/€{FILE_PATH}.scala"
+        s"https://github.com/chipsalliance/chisel3/tree/$branch€{FILE_PATH_EXT}#L€{FILE_LINE}"
       }
+    )
+  )
+
+lazy val noPluginTests = (project in file ("no-plugin-tests")).
+  dependsOn(chisel).
+  settings(commonSettings: _*).
+  settings(chiselSettings: _*)
+
+lazy val docs = project       // new documentation project
+  .in(file("docs-target")) // important: it must not be docs/
+  .dependsOn(chisel)
+  .enablePlugins(MdocPlugin)
+  .settings(usePluginSettings: _*)
+  .settings(commonSettings)
+  .settings(
+    scalacOptions += "-language:reflectiveCalls",
+    mdocIn := file("docs/src"),
+    mdocOut := file("docs/generated"),
+    mdocExtraArguments := Seq("--cwd", "docs"),
+    mdocVariables := Map(
+      "BUILD_DIR" -> "docs-target" // build dir for mdoc programs to dump temp files
     )
   )
 

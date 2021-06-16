@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests
 
@@ -71,7 +71,7 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
     out := x
   }
 
-  class Top(val width: Int) extends MultiIOModule {
+  class Top(val width: Int) extends Module {
     /* From the perspective of deduplication, all sources are identical and all sinks are identical. */
     val sources = Seq.fill(3)(Module(new Source))
     val sinks = Seq.fill(6)(Module(new Sink))

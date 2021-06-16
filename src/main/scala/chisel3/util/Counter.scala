@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chisel3.util
 
@@ -19,23 +19,45 @@ import chisel3.internal.naming.chiselName  // can't use chisel3_ version because
   *     ...
   *   }
   * }}}
+  * @example {{{
+  *   // Using Scala Range API
+  *   val (counterValue, counterWrap) = Counter(0 until 10 by 2)
+  *   when (counterValue === 4.U) {
+  *     ...
+  *   }
+  * }}}
   */
 @chiselName
-class Counter private (r: Range) {
+class Counter private (r: Range, oldN: Option[Int] = None) {
   require(r.length > 0, s"Counter range cannot be empty, got: $r")
   require(r.start >= 0 && r.end >= 0, s"Counter range must be positive, got: $r")
 
   private lazy val delta = math.abs(r.step)
   private lazy val width = math.max(log2Up(r.last + 1), log2Up(r.head + 1))
 
+  /** Number of counts before the counter resets
+    *
+    * @note Only defined for ranges starting at zero with steps of size 1. Use [[range]] for other
+    * use cases.
+    */
+  def n: Int = oldN match {
+    case Some(x) => x
+    case None =>
+      // Reasonable for typical ranges
+      require(r.start == 0 && r.step == 1,
+        s"Counter.n only defined on ranges starting at 0 with step == 1, got $r. " +
+        "Use underlying range.")
+      r.last + 1
+  }
+
   /** Creates a counter with the specified number of steps.
     *
     * @param n number of steps before the counter resets
     */
-  def this(n: Int) { this(0 until math.max(1, n)) }
+  def this(n: Int) { this(0 until math.max(1, n), Some(n)) }
 
   /** The current value of the counter. */
-  val value = if (r.length > 1) RegInit(r.head.U(width.W)) else r.head.U
+  val value = if (r.length > 1) RegInit(r.head.U(width.W)) else WireInit(r.head.U)
 
   /** The range of the counter values. */
   def range: Range = r
@@ -69,6 +91,11 @@ class Counter private (r: Range) {
       true.B
     }
   }
+
+  /** Resets the counter to its initial value */
+  def reset(): Unit = {
+    value := r.head.U
+  }
 }
 
 object Counter
@@ -96,14 +123,21 @@ object Counter
     *
     * @param r the range of counter values
     * @param enable controls whether the counter increments this cycle
+    * @param reset resets the counter to its initial value during this cycle
     * @return tuple of the counter value and whether the counter will wrap (the value is at
     * maximum and the condition is true).
     */
   @chiselName
-  def apply(r: Range, enable: Bool = true.B): (UInt, Bool) = {
+  def apply(r: Range, enable: Bool = true.B, reset: Bool = false.B): (UInt, Bool) = {
     val c = new Counter(r)
     val wrap = WireInit(false.B)
-    when (enable) { wrap := c.inc() }
+
+    when(reset) {
+      c.reset()
+    }.elsewhen(enable) {
+      wrap := c.inc()
+    }
+
     (c.value, wrap)
   }
 }

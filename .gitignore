@@ -8,7 +8,13 @@ generated/
 target/
 *.iml
 *.swp
+*.fir
+*.v
+*.json
 test_run_dir
 *~
 \#*\#
 .\#*
+.metals
+.bloop
+metals.sbt

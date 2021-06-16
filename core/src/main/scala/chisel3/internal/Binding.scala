@@ -1,10 +1,12 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chisel3.internal
 
 import chisel3._
 import chisel3.experimental.BaseModule
 import chisel3.internal.firrtl.LitArg
+
+import scala.collection.immutable.VectorMap
 
 /** Requires that a node is hardware ("bound")
   */
@@ -110,6 +112,10 @@ case class ChildBinding(parent: Data) extends Binding {
 case class SampleElementBinding[T <: Data](parent: Vec[T]) extends Binding {
   def location = parent.topBinding.location
 }
+/** Special binding for Mem types */
+case class MemTypeBinding[T <: Data](parent: MemBase[T]) extends Binding {
+  def location: Option[BaseModule] = parent._parent
+}
 // A DontCare element has a specific Binding, somewhat like a literal.
 // It is a source (RHS). It may only be connected/applied to sinks.
 case class DontCareBinding() extends UnconstrainedBinding
@@ -119,3 +125,5 @@ sealed trait LitBinding extends UnconstrainedBinding with ReadOnlyBinding
 case class ElementLitBinding(litArg: LitArg) extends LitBinding
 // Literal binding attached to the root of a Bundle, containing literal values of its children.
 case class BundleLitBinding(litMap: Map[Data, LitArg]) extends LitBinding
+// Literal binding attached to the root of a Vec, containing literal values of its children.
+case class VecLitBinding(litMap: VectorMap[Data, LitArg]) extends LitBinding

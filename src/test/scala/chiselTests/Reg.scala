@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests
 
@@ -7,6 +7,7 @@ import chisel3.util._
 import chisel3.experimental.DataMirror
 import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
+import org.scalacheck.Gen
 
 class RegSpec extends ChiselFlatSpec {
   "Reg" should "be of the same type and width as t" in {
@@ -55,17 +56,35 @@ class ShiftResetTester(n: Int) extends BasicTester {
   val start = 23.U
   val sr = ShiftRegister(cntVal + 23.U, n, 1.U, true.B)
   when(done) {
-    assert(sr === 1.U)
+    assert(sr === (if(n == 0) cntVal + 23.U else 1.U))
     stop()
   }
 }
 
 class ShiftRegisterSpec extends ChiselPropSpec {
   property("ShiftRegister should shift") {
-    forAll(smallPosInts) { (shift: Int) => assertTesterPasses{ new ShiftTester(shift) } }
+    forAll(Gen.choose(0, 4)) { (shift: Int) => assertTesterPasses{ new ShiftTester(shift) } }
   }
 
   property("ShiftRegister should reset all values inside") {
-    forAll(smallPosInts) { (shift: Int) => assertTesterPasses{ new ShiftResetTester(shift) } }
+    forAll(Gen.choose(0, 4)) { (shift: Int) => assertTesterPasses{ new ShiftResetTester(shift) } }
+  }
+}
+
+class ShiftsTester(n: Int) extends BasicTester {
+  val (cntVal, done) = Counter(true.B, n)
+  val start = 23.U
+  val srs = ShiftRegisters(cntVal + start, n)
+  when(RegNext(done)) {
+    srs.zipWithIndex.foreach{ case (data, index) =>
+      assert(data === (23 + n - 1 - index).U)
+    }
+    stop()
+  }
+}
+
+class ShiftRegistersSpec extends ChiselPropSpec {
+  property("ShiftRegisters should shift") {
+    forAll(Gen.choose(0, 4)) { (shift: Int) => assertTesterPasses{ new ShiftsTester(shift) } }
   }
 }

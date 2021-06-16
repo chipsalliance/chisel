@@ -1,10 +1,10 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chisel3.experimental
 
 import scala.language.existentials
 import chisel3.internal.{Builder, InstanceId, LegacyModule}
-import chisel3.{CompileOptions, Data}
+import chisel3.{CompileOptions, Data, RawModule}
 import firrtl.Transform
 import firrtl.annotations._
 import firrtl.options.Unserializable
@@ -28,16 +28,6 @@ trait ChiselAnnotation {
 trait RunFirrtlTransform extends ChiselAnnotation {
   def transformClass: Class[_ <: Transform]
 }
-
-
-// This exists for implementation reasons, we don't want people using this type directly
-final case class ChiselLegacyAnnotation private[chisel3] (
-    component: InstanceId,
-    transformClass: Class[_ <: Transform],
-    value: String) extends ChiselAnnotation with RunFirrtlTransform {
-  def toFirrtl: Annotation = Annotation(component.toNamed, transformClass, value)
-}
-private[chisel3] object ChiselLegacyAnnotation
 
 object annotate {
   def apply(anno: ChiselAnnotation): Unit = {
@@ -88,7 +78,7 @@ object doNotDedup {
     * @param module The module to be marked
     * @return Unmodified signal `module`
     */
-   def apply[T <: LegacyModule](module: T)(implicit compileOptions: CompileOptions): Unit = {
+   def apply[T <: RawModule](module: T)(implicit compileOptions: CompileOptions): Unit = {
     annotate(new ChiselAnnotation { def toFirrtl = NoDedupAnnotation(module.toNamed) })
   }
 }

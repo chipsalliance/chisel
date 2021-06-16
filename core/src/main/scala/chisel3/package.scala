@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 import chisel3.internal.firrtl.BinaryPoint
 
@@ -167,7 +167,8 @@ package object chisel3 {
 
   type InstanceId = internal.InstanceId
 
-  type Module = chisel3.internal.LegacyModule
+  @deprecated("MultiIOModule is now just Module", "Chisel 3.5")
+  type MultiIOModule = chisel3.Module
 
   /** Implicit for custom Printable string interpolator */
   implicit class PrintableHelper(val sc: StringContext) extends AnyVal {
@@ -206,9 +207,6 @@ package object chisel3 {
     a.allElements
   }
   def getModulePorts(m: Module): Seq[Port] = m.getPorts
-  // Invalidate API - a DontCare element for explicit assignment to outputs,
-  //  indicating the signal is intentionally not driven.
-  val DontCare = chisel3.internal.InternalDontCare
 
   class BindingException(message: String) extends ChiselException(message)
   /** A function expected a Chisel type but got a hardware object

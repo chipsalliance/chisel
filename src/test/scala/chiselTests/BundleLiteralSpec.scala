@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests
 
@@ -6,9 +6,8 @@ import chisel3._
 import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
 import chisel3.experimental.BundleLiterals._
-import chisel3.experimental.BundleLiteralException
-import chisel3.experimental.ChiselEnum
-import chisel3.experimental.FixedPoint
+import chisel3.experimental.VecLiterals.AddVecLiteralConstructor
+import chisel3.experimental.{BundleLiteralException, ChiselEnum, ChiselRange, FixedPoint, Interval}
 
 class BundleLiteralSpec extends ChiselFlatSpec with Utils {
   object MyEnum extends ChiselEnum {
@@ -74,6 +73,24 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
 
       stop()
     } }
+  }
+
+  "bundle literals of vec literals" should "work" in {
+    assertTesterPasses(new BasicTester {
+      val range = range"[0,4].2"
+      val bundleWithVecs = new Bundle {
+        val a = Vec(2, UInt(4.W))
+        val b = Vec(2, Interval(range))
+      }.Lit(
+        _.a -> Vec(2, UInt(4.W)).Lit(0 -> 0xA.U, 1 -> 0xB.U),
+        _.b -> Vec(2, Interval(range)).Lit(0 -> (1.5).I(range), 1 -> (0.25).I(range))
+      )
+      chisel3.assert(bundleWithVecs.a(0) === 0xA.U)
+      chisel3.assert(bundleWithVecs.a(1) === 0xB.U)
+      chisel3.assert(bundleWithVecs.b(0) === (1.5).I(range))
+      chisel3.assert(bundleWithVecs.b(1) === (0.25).I(range))
+      stop()
+    })
   }
 
   "partial bundle literals" should "work in RTL" in {
@@ -165,6 +182,54 @@ class BundleLiteralSpec extends ChiselFlatSpec with Utils {
       bundleWire := bundleLit
 
       chisel3.assert(bundleWire.a === 42.U)
+      stop()
+    } }
+  }
+
+  "Bundle literals" should "work as register reset values" in {
+    assertTesterPasses{ new BasicTester{
+      val r = RegInit((new MyBundle).Lit(_.a -> 42.U, _.b -> true.B, _.c -> MyEnum.sB))
+      r := (r.asUInt + 1.U).asTypeOf(new MyBundle) // prevent constprop
+
+      // check reset values on first cycle out of reset
+      chisel3.assert(r.a === 42.U)
+      chisel3.assert(r.b === true.B)
+      chisel3.assert(r.c === MyEnum.sB)
+      stop()
+    } }
+  }
+
+  "partially initialized Bundle literals" should "work as register reset values" in {
+    assertTesterPasses{  new BasicTester{
+      val r = RegInit((new MyBundle).Lit(_.a -> 42.U))
+      r.a := r.a + 1.U // prevent const prop
+      chisel3.assert(r.a === 42.U) // coming out of reset
+      stop()
+    } }
+  }
+
+  "Fields extracted from BundleLiterals" should "work as register reset values" in {
+    assertTesterPasses{  new BasicTester{
+      val r = RegInit((new MyBundle).Lit(_.a -> 42.U).a)
+      r := r + 1.U // prevent const prop
+      chisel3.assert(r === 42.U) // coming out of reset
+      stop()
+    } }
+  }
+
+  "DontCare fields extracted from BundleLiterals" should "work as register reset values" in {
+    assertTesterPasses{ new BasicTester{
+      val r = RegInit((new MyBundle).Lit(_.a -> 42.U).b)
+      r := reset.asBool
+      printf(p"r = $r\n") // Can't assert because reset value is DontCare
+      stop()
+    } }
+  }
+
+  "DontCare fields extracted from BundleLiterals" should "work in other Expressions" in {
+    assertTesterPasses{ new BasicTester{
+      val x = (new MyBundle).Lit(_.a -> 42.U).b || true.B
+      chisel3.assert(x === true.B)
       stop()
     } }
   }
