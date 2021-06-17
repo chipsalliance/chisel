@@ -2,9 +2,11 @@
 
 package firrtl.backends.experimental.smt
 
-private class FirrtlExpressionSemanticsSpec extends SMTBackendBaseSpec {
+import org.scalatest.flatspec.AnyFlatSpec
 
-  def primop(op: String, resTpe: String, inTpes: Seq[String], consts: Seq[Int]): String = {
+class FirrtlExpressionSemanticsSpec extends AnyFlatSpec {
+
+  private def primopSys(op: String, resTpe: String, inTpes: Seq[String], consts: Seq[Int]): TransitionSystem = {
     val inputs = inTpes.zipWithIndex.map { case (tpe, ii) => s"    input i$ii : $tpe" }.mkString("\n")
     val args = (inTpes.zipWithIndex.map { case (_, ii) => s"i$ii" } ++ consts.map(_.toString)).mkString(", ")
     val src =
@@ -15,9 +17,27 @@ private class FirrtlExpressionSemanticsSpec extends SMTBackendBaseSpec {
          |    res <= $op($args)
          |
          |""".stripMargin
-    val sys = toSys(src)
-    assert(sys.signals.length == 1)
-    sys.signals.head.e.toString
+    SMTBackendHelpers.toSys(src)
+  }
+
+  def primop(op: String, resTpe: String, inTpes: Seq[String], consts: Seq[Int]): String = {
+    val sys = primopSys(op, resTpe, inTpes, consts)
+    assert(sys.signals.length >= 1)
+    sys.signals.last.e.toString
+  }
+
+  private def primopSys(
+    signed:            Boolean,
+    op:                String,
+    resWidth:          Int,
+    inWidth:           Seq[Int],
+    consts:            Seq[Int],
+    resAlwaysUnsigned: Boolean
+  ): TransitionSystem = {
+    val tpe = if (signed) "SInt" else "UInt"
+    val resTpe = if (resAlwaysUnsigned) "UInt" else tpe
+    val inTpes = inWidth.map(w => s"$tpe<$w>")
+    primopSys(op, s"$resTpe<$resWidth>", inTpes, consts)
   }
 
   def primop(
@@ -28,10 +48,9 @@ private class FirrtlExpressionSemanticsSpec extends SMTBackendBaseSpec {
     consts:            Seq[Int] = List(),
     resAlwaysUnsigned: Boolean = false
   ): String = {
-    val tpe = if (signed) "SInt" else "UInt"
-    val resTpe = if (resAlwaysUnsigned) "UInt" else tpe
-    val inTpes = inWidth.map(w => s"$tpe<$w>")
-    primop(op, s"$resTpe<$resWidth>", inTpes, consts)
+    val sys = primopSys(signed, op, resWidth, inWidth, consts, resAlwaysUnsigned)
+    assert(sys.signals.length >= 1)
+    sys.signals.last.e.toString
   }
 
   it should "correctly translate the add primitive operation with different operand sizes" in {
@@ -58,23 +77,26 @@ private class FirrtlExpressionSemanticsSpec extends SMTBackendBaseSpec {
 
   it should "correctly translate the `div` primitive operation" in {
     // division is a little bit more complicated because the result of division by zero is undefined
+    //val sys = primopSys(false, "div", 8, List(8, 8), List(), false)
+    //println(sys.serialize)
+
     assert(
       primop(false, "div", 8, List(8, 8)) ==
-        "ite(eq(i1, 8'b0), RANDOM.res, udiv(i0, i1))"
+        "ite(res_invalid_cond, res_invalid, udiv(i0, i1))"
     )
     assert(
       primop(false, "div", 8, List(8, 4)) ==
-        "ite(eq(i1, 4'b0), RANDOM.res, udiv(i0, zext(i1, 4)))"
+        "ite(res_invalid_cond, res_invalid, udiv(i0, zext(i1, 4)))"
     )
 
     // signed division increases result width by 1
     assert(
       primop(true, "div", 8, List(7, 7)) ==
-        "ite(eq(i1, 7'b0), RANDOM.res, sdiv(sext(i0, 1), sext(i1, 1)))"
+        "ite(res_invalid_cond, res_invalid, sdiv(sext(i0, 1), sext(i1, 1)))"
     )
     assert(
       primop(true, "div", 8, List(7, 4))
-        == "ite(eq(i1, 4'b0), RANDOM.res, sdiv(sext(i0, 1), sext(i1, 4)))"
+        == "ite(res_invalid_cond, res_invalid, sdiv(sext(i0, 1), sext(i1, 4)))"
     )
   }
 
@@ -173,8 +195,8 @@ private class FirrtlExpressionSemanticsSpec extends SMTBackendBaseSpec {
   }
 
   it should "correctly translate the `neg` primitive operation" in {
-    assert(primop(true, "neg", 4, List(3)) == "neg(sext(i0, 1))")
-    assert(primop("neg", "SInt<4>", List("UInt<3>"), List()) == "neg(zext(i0, 1))")
+    assert(primop(true, "neg", 4, List(3)) == "sub(sext(3'b0, 1), sext(i0, 1))")
+    assert(primop("neg", "SInt<4>", List("UInt<3>"), List()) == "sub(zext(3'b0, 1), zext(i0, 1))")
   }
 
   it should "correctly translate the `not` primitive operation" in {

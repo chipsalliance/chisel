@@ -14,7 +14,7 @@ import firrtl.passes.PassException
 import firrtl.passes.memlib.VerilogMemDelays
 import firrtl.stage.Forms
 import firrtl.stage.TransformManager.TransformDependency
-import firrtl.transforms.{DeadCodeElimination, PropagatePresetAnnotations}
+import firrtl.transforms.{DeadCodeElimination, EnsureNamedStatements, PropagatePresetAnnotations}
 import firrtl.{
   ir,
   CircuitState,
@@ -63,7 +63,12 @@ object FirrtlToTransitionSystem extends Transform with DependencyAPIMigration {
   // TODO: We also would like to run some optimization passes, but RemoveValidIf won't allow us to model DontCare
   //       precisely and PadWidths emits ill-typed firrtl.
   override def prerequisites: Seq[Dependency[Transform]] = Forms.LowForm ++
-    Seq(Dependency(InvalidToRandomPass), Dependency(UndefinedMemoryBehaviorPass), Dependency(VerilogMemDelays))
+    Seq(
+      Dependency(InvalidToRandomPass),
+      Dependency(UndefinedMemoryBehaviorPass),
+      Dependency(VerilogMemDelays),
+      Dependency(EnsureNamedStatements) // this is required to give assert/assume statements good names
+    )
   override def invalidates(a: Transform): Boolean = false
   // since this pass only runs on the main module, inlining needs to happen before
   override def optionalPrerequisites: Seq[TransformDependency] = Seq(Dependency[firrtl.passes.InlineInstances])
@@ -458,7 +463,7 @@ private class ModuleScanner(
       } else {
         insertDummyAssignsForUnusedOutputs(pred)
         insertDummyAssignsForUnusedOutputs(en)
-        val name = namespace.newName(msgToName(op.toString, msg.string))
+        val name = s.name
         val predicate = onExpression(pred)
         val enabled = onExpression(en)
         val e = BVImplies(enabled, predicate)
@@ -595,10 +600,6 @@ private class ModuleScanner(
     FirrtlExpressionSemantics.toSMT(e)
   }
 
-  private def msgToName(prefix: String, msg: String): String = {
-    // TODO: ensure that we can generate unique names
-    prefix + "_" + msg.replace(" ", "_").replace("|", "")
-  }
   private def error(msg:        String):  Unit = throw new RuntimeException(msg)
   private def isGroundType(tpe: ir.Type): Boolean = tpe.isInstanceOf[ir.GroundType]
   private def isClock(tpe:      ir.Type): Boolean = tpe == ir.ClockType

@@ -3,8 +3,9 @@
 package firrtl.backends.experimental.smt
 
 import firrtl.{MemoryArrayInit, MemoryScalarInit, Utils}
+import org.scalatest.flatspec.AnyFlatSpec
 
-private class FirrtlModuleToTransitionSystemSpec extends SMTBackendBaseSpec {
+class FirrtlModuleToTransitionSystemSpec extends AnyFlatSpec {
   behavior.of("ModuleToTransitionSystem.run")
 
   it should "model registers as state" in {
@@ -24,7 +25,7 @@ private class FirrtlModuleToTransitionSystemSpec extends SMTBackendBaseSpec {
         |    out <= r
         |
         |""".stripMargin
-    val sys = toSys(src)
+    val sys = SMTBackendHelpers.toSys(src)
 
     assert(sys.signals.length == 2)
 
@@ -71,7 +72,7 @@ private class FirrtlModuleToTransitionSystemSpec extends SMTBackendBaseSpec {
        |""".stripMargin
 
   it should "model memories as state" in {
-    val sys = toSys(memCircuit())
+    val sys = SMTBackendHelpers.toSys(memCircuit())
 
     assert(sys.signals.length == 9 - 2 + 1, "9 connects - 2 clock connects + 1 combinatorial read port")
 
@@ -98,35 +99,35 @@ private class FirrtlModuleToTransitionSystemSpec extends SMTBackendBaseSpec {
   }
 
   it should "support scalar initialization of a memory to 0" in {
-    val sys = toSys(memCircuit(), memInit = Map("m" -> MemoryScalarInit(0)))
+    val sys = SMTBackendHelpers.toSys(memCircuit(), memInit = Map("m" -> MemoryScalarInit(0)))
     val m = sys.states.find(_.sym.name == "m").get
     assert(m.init.isDefined)
     assert(m.init.get.toString == "([8'b0] x 32)")
   }
 
   it should "support scalar initialization of a memory to 127" in {
-    val sys = toSys(memCircuit(31), memInit = Map("m" -> MemoryScalarInit(127)))
+    val sys = SMTBackendHelpers.toSys(memCircuit(31), memInit = Map("m" -> MemoryScalarInit(127)))
     val m = sys.states.find(_.sym.name == "m").get
     assert(m.init.isDefined)
     assert(m.init.get.toString == "([8'b1111111] x 32)")
   }
 
   it should "support array initialization of a memory to Seq(0, 1, 2, 3)" in {
-    val sys = toSys(memCircuit(4), memInit = Map("m" -> MemoryArrayInit(Seq(0, 1, 2, 3))))
+    val sys = SMTBackendHelpers.toSys(memCircuit(4), memInit = Map("m" -> MemoryArrayInit(Seq(0, 1, 2, 3))))
     val m = sys.states.find(_.sym.name == "m").get
     assert(m.init.isDefined)
     assert(m.init.get.toString == "([8'b0] x 4)[2'b1 := 8'b1][2'b10 := 8'b10][2'b11 := 8'b11]")
   }
 
   it should "support array initialization of a memory to Seq(1, 0, 1, 0)" in {
-    val sys = toSys(memCircuit(4), memInit = Map("m" -> MemoryArrayInit(Seq(1, 0, 1, 0))))
+    val sys = SMTBackendHelpers.toSys(memCircuit(4), memInit = Map("m" -> MemoryArrayInit(Seq(1, 0, 1, 0))))
     val m = sys.states.find(_.sym.name == "m").get
     assert(m.init.isDefined)
     assert(m.init.get.toString == "([8'b1] x 4)[2'b1 := 8'b0][2'b11 := 8'b0]")
   }
 
   it should "support array initialization of a memory to Seq(1, 0, 0, 0)" in {
-    val sys = toSys(memCircuit(4), memInit = Map("m" -> MemoryArrayInit(Seq(1, 0, 0, 0))))
+    val sys = SMTBackendHelpers.toSys(memCircuit(4), memInit = Map("m" -> MemoryArrayInit(Seq(1, 0, 0, 0))))
     val m = sys.states.find(_.sym.name == "m").get
     assert(m.init.isDefined)
     assert(m.init.get.toString == "([8'b0] x 4)[2'b0 := 8'b1]")
@@ -134,108 +135,6 @@ private class FirrtlModuleToTransitionSystemSpec extends SMTBackendBaseSpec {
 
   it should "support array initialization from a file" ignore {
     assert(false, "TODO")
-  }
-
-  it should "support memories with registered read port" in {
-    def src(readUnderWrite: String) =
-      s"""circuit m:
-         |  module m:
-         |    input reset : UInt<1>
-         |    input clock : Clock
-         |    input addr : UInt<5>
-         |    input in : UInt<8>
-         |    output out : UInt<8>
-         |
-         |    mem m:
-         |      data-type => UInt<8>
-         |      depth => 32
-         |      reader => r
-         |      writer => w1, w2
-         |      read-latency => 1
-         |      write-latency => 1
-         |      read-under-write => $readUnderWrite
-         |
-         |    m.w1.clk <= clock
-         |    m.w1.mask <= UInt(1)
-         |    m.w1.en <= UInt(1)
-         |    m.w1.data <= in
-         |    m.w1.addr <= addr
-         |    m.w2.clk <= clock
-         |    m.w2.mask <= UInt(1)
-         |    m.w2.en <= UInt(1)
-         |    m.w2.data <= in
-         |    m.w2.addr <= addr
-         |
-         |    m.r.clk <= clock
-         |    m.r.en <= UInt(1)
-         |    out <= m.r.data
-         |    m.r.addr <= addr
-         |
-         |""".stripMargin
-
-    val oldValue = toSys(src("old"))
-    val oldMData = oldValue.states.find(_.sym.name == "m.r.data").get
-    assert(oldMData.sym.toString == "m.r.data")
-    assert(oldMData.next.get.toString == "m[m.r.addr]", "we just need to read the current value")
-    val readDataSignal = oldValue.signals.find(_.name == "m.r.data")
-    assert(readDataSignal.isEmpty, s"${readDataSignal.map(_.toString)} should not exist")
-
-    val undefinedValue = toSys(src("undefined"))
-    val undefinedMData = undefinedValue.states.find(_.sym.name == "m.r.data").get
-    assert(undefinedMData.sym.toString == "m.r.data")
-    val undefined = "RANDOM.m_r_read_under_write_undefined"
-    assert(
-      undefinedMData.next.get.toString ==
-        s"ite(or(eq(m.r.addr, m.w1.addr), eq(m.r.addr, m.w2.addr)), $undefined, m[m.r.addr])",
-      "randomize result if there is a write"
-    )
-  }
-
-  it should "support memories with potential write-write conflicts" in {
-    val src =
-      s"""circuit m:
-         |  module m:
-         |    input reset : UInt<1>
-         |    input clock : Clock
-         |    input addr : UInt<5>
-         |    input in : UInt<8>
-         |    output out : UInt<8>
-         |
-         |    mem m:
-         |      data-type => UInt<8>
-         |      depth => 32
-         |      reader => r
-         |      writer => w1, w2
-         |      read-latency => 1
-         |      write-latency => 1
-         |      read-under-write => undefined
-         |
-         |    m.w1.clk <= clock
-         |    m.w1.mask <= UInt(1)
-         |    m.w1.en <= UInt(1)
-         |    m.w1.data <= in
-         |    m.w1.addr <= addr
-         |    m.w2.clk <= clock
-         |    m.w2.mask <= UInt(1)
-         |    m.w2.en <= UInt(1)
-         |    m.w2.data <= in
-         |    m.w2.addr <= addr
-         |
-         |    m.r.clk <= clock
-         |    m.r.en <= UInt(1)
-         |    out <= m.r.data
-         |    m.r.addr <= addr
-         |
-         |""".stripMargin
-
-    val sys = toSys(src)
-    val m = sys.states.find(_.sym.name == "m").get
-
-    val regularUpdate = "m[m.w1.addr := m.w1.data][m.w2.addr := m.w2.data]"
-    val collision = "eq(m.w1.addr, m.w2.addr)"
-    val collisionUpdate = "m[m.w1.addr := RANDOM.m_w1_write_write_collision]"
-
-    assert(m.next.get.toString == s"ite($collision, $collisionUpdate, $regularUpdate)")
   }
 
   it should "model invalid signals as inputs" in {
@@ -249,11 +148,11 @@ private class FirrtlModuleToTransitionSystemSpec extends SMTBackendBaseSpec {
         |    when en:
         |      o <= UInt<8>(0)
         |""".stripMargin
-    val sys = toSys(src)
+    val sys = SMTBackendHelpers.toSys(src)
     assert(sys.inputs.length == 2)
-    val random = sys.inputs.filter(_.name.contains("RANDOM"))
-    assert(random.length == 1)
-    assert(random.head.width == 8)
+    val invalids = sys.inputs.filter(_.name.contains("_invalid"))
+    assert(invalids.length == 1)
+    assert(invalids.head.width == 8)
   }
 
   it should "ignore assignments, ports, wires and nodes of clock type" in {
@@ -269,7 +168,7 @@ private class FirrtlModuleToTransitionSystemSpec extends SMTBackendBaseSpec {
         |    o <= x
         |    w <= clk
         |""".stripMargin
-    val sys = toSys(src)
+    val sys = SMTBackendHelpers.toSys(src)
     assert(sys.inputs.isEmpty, "Clock inputs should be ignored.")
     assert(sys.outputs.isEmpty, "Clock outputs should be ignored.")
     assert(sys.signals.isEmpty, "Connects of clock type should be ignored.")
@@ -288,14 +187,14 @@ private class FirrtlModuleToTransitionSystemSpec extends SMTBackendBaseSpec {
         |    inst c of c
         |""".stripMargin
     val err = intercept[MultiClockException] {
-      toSys(src)
+      SMTBackendHelpers.toSys(src)
     }
     assert(err.getMessage.contains("clk, c.clk"))
   }
 
   it should "throw an error on async reset" in {
     val err = intercept[AsyncResetException] {
-      toSys(
+      SMTBackendHelpers.toSys(
         """circuit m:
           |  module m:
           |    input reset : AsyncReset
@@ -307,7 +206,7 @@ private class FirrtlModuleToTransitionSystemSpec extends SMTBackendBaseSpec {
 
   it should "throw an error on casting to async reset" in {
     val err = intercept[AssertionError] {
-      toSys(
+      SMTBackendHelpers.toSys(
         """circuit m:
           |  module m:
           |    input reset : UInt<1>
@@ -320,7 +219,7 @@ private class FirrtlModuleToTransitionSystemSpec extends SMTBackendBaseSpec {
 
   it should "throw an error on multiple clocks" in {
     val err = intercept[MultiClockException] {
-      toSys(
+      SMTBackendHelpers.toSys(
         """circuit m:
           |  module m:
           |    input clk1 : Clock
@@ -335,7 +234,7 @@ private class FirrtlModuleToTransitionSystemSpec extends SMTBackendBaseSpec {
     // While this could potentially be supported in the future, for now we do not allow
     // a clock to be used for anything besides updating registers and memories.
     val err = intercept[AssertionError] {
-      toSys(
+      SMTBackendHelpers.toSys(
         """circuit m:
           |  module m:
           |    input clk : Clock
@@ -358,7 +257,7 @@ private class FirrtlModuleToTransitionSystemSpec extends SMTBackendBaseSpec {
         |    assert(c, i, UInt(1), "")
         |    assert(c, i, UInt(1), "")
         |""".stripMargin
-    assertUniqueSignalNames(toSys(src0))
+    assertUniqueSignalNames(SMTBackendHelpers.toSys(src0))
 
     val src1 =
       """circuit m:
@@ -369,7 +268,7 @@ private class FirrtlModuleToTransitionSystemSpec extends SMTBackendBaseSpec {
         |    assert(c, i, UInt(1), "")
         |    node assert_ = i
         |""".stripMargin
-    assertUniqueSignalNames(toSys(src1))
+    assertUniqueSignalNames(SMTBackendHelpers.toSys(src1))
   }
 
   private def assertUniqueSignalNames(sys: TransitionSystem): Unit = {

@@ -5,18 +5,17 @@ package firrtl.backends.experimental.smt
 import firrtl.annotations.Annotation
 import firrtl.{ir, MemoryInitValue}
 import firrtl.stage.{Forms, TransformManager}
-import org.scalatest.flatspec.AnyFlatSpec
 
-private abstract class SMTBackendBaseSpec extends AnyFlatSpec {
-  private val dependencies = Forms.LowForm
+private object SMTBackendHelpers {
+  private val dependencies = Forms.LowForm ++ FirrtlToTransitionSystem.prerequisites
   private val compiler = new TransformManager(dependencies)
 
-  protected def compile(src: String, annos: Seq[Annotation] = List()): ir.Circuit = {
+  def compile(src: String, annos: Seq[Annotation] = List()): ir.Circuit = {
     val c = firrtl.Parser.parse(src)
     compiler.runTransform(firrtl.CircuitState(c, annos)).circuit
   }
 
-  protected def toSys(
+  def toSys(
     src:        String,
     mod:        String = "m",
     presetRegs: Set[String] = Set(),
@@ -28,15 +27,15 @@ private abstract class SMTBackendBaseSpec extends AnyFlatSpec {
     new ModuleToTransitionSystem().run(module, presetRegs = presetRegs, memInit = memInit)
   }
 
-  protected def toBotr2(src: String, mod: String = "m"): Iterable[String] =
+  def toBotr2(src: String, mod: String = "m"): Iterable[String] =
     Btor2Serializer.serialize(toSys(src, mod))
 
-  protected def toBotr2Str(src: String, mod: String = "m"): String =
+  def toBotr2Str(src: String, mod: String = "m"): String =
     toBotr2(src, mod).mkString("\n") + "\n"
 
-  protected def toSMTLib(src: String, mod: String = "m"): Iterable[String] =
+  def toSMTLib(src: String, mod: String = "m"): Iterable[String] =
     SMTTransitionSystemEncoder.encode(toSys(src, mod)).map(SMTLibSerializer.serialize)
 
-  protected def toSMTLibStr(src: String, mod: String = "m"): String =
+  def toSMTLibStr(src: String, mod: String = "m"): String =
     toSMTLib(src, mod).mkString("\n") + "\n"
 }
