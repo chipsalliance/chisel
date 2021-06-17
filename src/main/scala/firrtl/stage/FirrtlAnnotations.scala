@@ -5,7 +5,7 @@ package firrtl.stage
 import firrtl._
 import firrtl.ir.Circuit
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
-import firrtl.options.{HasShellOptions, OptionsException, ShellOption, Unserializable}
+import firrtl.options.{Dependency, HasShellOptions, OptionsException, ShellOption, Unserializable}
 import java.io.FileNotFoundException
 import java.nio.file.NoSuchFileException
 
@@ -309,6 +309,49 @@ object DisableFold extends HasShellOptions {
       },
       helpText = "Disable folding of specific primitive operations",
       helpValueName = Some("<primop>")
+    )
+  )
+
+}
+
+/** Indicate to the FIRRTL compiler that specific transforms have already been run.
+  *
+  * The intended use of this is for advanced users who want to skip specific transforms in the FIRRTL compiler.  It is
+  * far safer for users to use the command line options to the FIRRTL compiler via `--start-from = <form>`.
+  * @param currentState a sequence of transforms that have already been run on the circuit
+  */
+case class CurrentFirrtlStateAnnotation(currentState: Seq[TransformDependency])
+    extends NoTargetAnnotation
+    with FirrtlOption
+
+private[stage] object CurrentFirrtlStateAnnotation extends HasShellOptions {
+
+  /** This is just the transforms necessary for resolving types and checking that everything is okay. */
+  private val dontSkip: Set[TransformDependency] = Set(
+    Dependency[firrtl.stage.transforms.CheckScalaVersion],
+    Dependency(passes.ResolveKinds),
+    Dependency(passes.InferTypes),
+    Dependency(passes.ResolveFlows)
+  ) ++ Forms.Checks
+
+  override val options = Seq(
+    new ShellOption[String](
+      longOption = "start-from",
+      toAnnotationSeq = a =>
+        (a match {
+          case "chirrtl" => Seq.empty
+          case "mhigh"   => Forms.MinimalHighForm
+          case "high"    => Forms.HighForm
+          case "middle"  => Forms.MidForm
+          case "low"     => Forms.LowForm
+          case "low-opt" => Forms.LowFormOptimized
+          case _         => throw new OptionsException(s"Unknown start-from argument '$a'! (Did you misspell it?)")
+        }).filterNot(dontSkip) match {
+          case b if a.isEmpty => Seq.empty
+          case b              => Seq(CurrentFirrtlStateAnnotation(b))
+        },
+      helpText = "",
+      helpValueName = Some("<chirrtl|mhigh|high|middle|low|low-opt>")
     )
   )
 

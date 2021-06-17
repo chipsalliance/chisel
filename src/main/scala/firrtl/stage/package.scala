@@ -35,6 +35,7 @@ package object stage {
           case WarnNoScalaVersionDeprecation => c
           case PrettyNoExprInlining          => c
           case _: DisableFold => c
+          case CurrentFirrtlStateAnnotation(a) => c
         }
       }
   }

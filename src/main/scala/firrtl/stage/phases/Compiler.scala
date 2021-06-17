@@ -4,23 +4,31 @@ package firrtl.stage.phases
 
 import firrtl.{AnnotationSeq, ChirrtlForm, CircuitState, Compiler => FirrtlCompiler, Transform, seqToAnnoSeq}
 import firrtl.options.{Dependency, Phase, PhasePrerequisiteException, Translator}
-import firrtl.stage.{CompilerAnnotation, FirrtlCircuitAnnotation, Forms, RunFirrtlTransformAnnotation}
+import firrtl.stage.{
+  CompilerAnnotation,
+  CurrentFirrtlStateAnnotation,
+  FirrtlCircuitAnnotation,
+  Forms,
+  RunFirrtlTransformAnnotation
+}
 import firrtl.stage.TransformManager.TransformDependency
 
 import scala.collection.mutable
 
 /** An encoding of the information necessary to run the FIRRTL compiler once */
 private[stage] case class CompilerRun(
-  stateIn:    CircuitState,
-  stateOut:   Option[CircuitState],
-  transforms: Seq[Transform],
-  compiler:   Option[FirrtlCompiler])
+  stateIn:      CircuitState,
+  stateOut:     Option[CircuitState],
+  transforms:   Seq[Transform],
+  compiler:     Option[FirrtlCompiler],
+  currentState: Seq[TransformDependency])
 
 /** An encoding of possible defaults for a [[CompilerRun]] */
 private[stage] case class Defaults(
-  annotations: AnnotationSeq = Seq.empty,
-  transforms:  Seq[Transform] = Seq.empty,
-  compiler:    Option[FirrtlCompiler] = None)
+  annotations:  AnnotationSeq = Seq.empty,
+  transforms:   Seq[Transform] = Seq.empty,
+  compiler:     Option[FirrtlCompiler] = None,
+  currentState: Seq[TransformDependency] = Seq.empty)
 
 /** Runs the FIRRTL compilers on an [[AnnotationSeq]]. If the input [[AnnotationSeq]] contains more than one circuit
   * (i.e., more than one [[firrtl.stage.FirrtlCircuitAnnotation FirrtlCircuitAnnotation]]), then annotations will be
@@ -64,7 +72,13 @@ class Compiler extends Phase with Translator[AnnotationSeq, Seq[CompilerRun]] {
     a.foldLeft(Defaults()) {
       case (d, FirrtlCircuitAnnotation(circuit)) =>
         foundFirstCircuit = true
-        CompilerRun(CircuitState(circuit, ChirrtlForm, d.annotations, None), None, d.transforms, d.compiler) +=: c
+        CompilerRun(
+          CircuitState(circuit, ChirrtlForm, d.annotations, None),
+          None,
+          d.transforms,
+          d.compiler,
+          d.currentState
+        ) +=: c
         d
       case (d, a) if foundFirstCircuit =>
         a match {
@@ -74,6 +88,9 @@ class Compiler extends Phase with Translator[AnnotationSeq, Seq[CompilerRun]] {
           case CompilerAnnotation(compiler) =>
             c(0) = c(0).copy(compiler = Some(compiler))
             d
+          case CurrentFirrtlStateAnnotation(currentState) =>
+            c(0) = c(0).copy(currentState = currentState ++ c(0).currentState)
+            d
           case annotation =>
             val state = c(0).stateIn
             c(0) = c(0).copy(stateIn = state.copy(annotations = annotation +: state.annotations))
@@ -81,9 +98,10 @@ class Compiler extends Phase with Translator[AnnotationSeq, Seq[CompilerRun]] {
         }
       case (d, a) if !foundFirstCircuit =>
         a match {
-          case RunFirrtlTransformAnnotation(transform) => d.copy(transforms = transform +: d.transforms)
-          case CompilerAnnotation(compiler)            => d.copy(compiler = Some(compiler))
-          case annotation                              => d.copy(annotations = annotation +: d.annotations)
+          case RunFirrtlTransformAnnotation(transform)    => d.copy(transforms = transform +: d.transforms)
+          case CompilerAnnotation(compiler)               => d.copy(compiler = Some(compiler))
+          case CurrentFirrtlStateAnnotation(currentState) => d.copy(currentState = currentState ++ d.currentState)
+          case annotation                                 => d.copy(annotations = annotation +: d.annotations)
         }
     }
     c.toSeq
@@ -110,7 +128,7 @@ class Compiler extends Phase with Translator[AnnotationSeq, Seq[CompilerRun]] {
             c.transforms.reverse.map(Dependency.fromTransform)
           }
       }
-      val tm = new firrtl.stage.transforms.Compiler(targets)
+      val tm = new firrtl.stage.transforms.Compiler(targets, c.currentState)
       /* Transform order is lazily evaluated. Force it here to remove its resolution time from actual compilation. */
       val (timeResolveDependencies, _) = firrtl.Utils.time { tm.flattenedTransformOrder }
       logger.info(f"Computed transform order in: $timeResolveDependencies%.1f ms")
