@@ -4,6 +4,7 @@ package chisel3.experimental
 
 import scala.language.existentials
 import chisel3.internal.{Builder, InstanceId, LegacyModule}
+import chisel3.InstanceContext
 import chisel3.{CompileOptions, Data, RawModule}
 import firrtl.Transform
 import firrtl.annotations._
@@ -15,6 +16,14 @@ import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
   * Defines a conversion to a corresponding FIRRTL Annotation
   */
 trait ChiselAnnotation {
+  val declaredContext: Option[InstanceContext] = Builder.instanceContext
+  final def contextualToFirrtl: Annotation = {
+    val currentCtx = Builder.instanceContext
+    Builder.setContext(declaredContext)
+    val ret = toFirrtl
+    Builder.setContext(currentCtx)
+    ret
+  }
   /** Conversion to FIRRTL Annotation */
   def toFirrtl: Annotation
 }

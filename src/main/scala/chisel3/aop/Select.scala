@@ -82,15 +82,15 @@ object Select {
     allAccessableModules
   }
 
-  def collectDeep[T](module: BaseModule, context: InstanceContext)
-                    (collector: PartialFunction[(BaseModule, InstanceContext), T]): Iterable[T] = {
-    check(module)
-    val myItems = collector.lift((module, context))
-    val deepChildrenItems = instances(module).flatMap {
-      case i => collectDeep(i, context.descend(i))(collector)
-    }
-    myItems ++ deepChildrenItems
-  }
+  //def collectDeep[T](module: BaseModule, context: InstanceContext)
+  //                  (collector: PartialFunction[(BaseModule, InstanceContext), T]): Iterable[T] = {
+  //  check(module)
+  //  val myItems = collector.lift((module, context))
+  //  val deepChildrenItems = instances(module).flatMap {
+  //    case i => collectDeep(i, context.descend(i))(collector)
+  //  }
+  //  myItems ++ deepChildrenItems
+  //}
 
   def instancesWithNames(module: BaseModule): Seq[(String, BaseModule)] = {
     check(module)

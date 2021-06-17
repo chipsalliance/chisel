@@ -4,7 +4,6 @@ package chisel3
 
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer, HashMap}
-import scala.collection.JavaConversions._
 import scala.language.experimental.macros
 
 import java.util.IdentityHashMap
@@ -28,9 +27,11 @@ object Template extends SourceInfoDoc {
 
   /** @group SourceInfoTransformMacro */
   def do_apply[T <: RawModule](bc: => T) (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
-    val (ir, module) = Builder.build(Module(bc), new DynamicContext())
+    val dynamicContext = new DynamicContext(Nil)
+    Builder.globalNamespace.copyTo(dynamicContext.globalNamespace)
+    val (ir, module) = Builder.build(Module(bc), dynamicContext)
     Builder.components ++= ir.components
-    println(module.desiredName)
+    dynamicContext.globalNamespace.copyTo(Builder.globalNamespace)
     module
   }
 }

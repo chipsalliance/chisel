@@ -342,10 +342,6 @@ package experimental {
       }
     }
 
-    final def absoluteTarget(context: InstanceContext): IsModule = {
-      if(context.root == this) toTarget else context.toTarget.instOf(this.instanceName, toTarget.module)
-    }
-
     /**
       * Internal API. Returns a list of this module's generated top-level ports as a map of a String
       * (FIRRTL name) to the IO object. Only valid after the module is closed.

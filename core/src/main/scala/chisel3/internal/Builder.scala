@@ -13,11 +13,13 @@ import _root_.firrtl.annotations.AnnotationUtils.validComponentName
 import _root_.firrtl.AnnotationSeq
 import chisel3.internal.Builder.Prefix
 import logger.LazyLogging
+import chisel3.InstanceContext
 
 import scala.collection.mutable
 
 private[chisel3] class Namespace(keywords: Set[String]) {
-  private val names = collection.mutable.HashMap[String, Long]()
+  private[chisel3] val names = collection.mutable.HashMap[String, Long]()
+  def copyTo(other: Namespace): Unit = other.names.addAll(names)
   for (keyword <- keywords)
     names(keyword) = 1
 
@@ -80,7 +82,6 @@ trait InstanceId {
   def toTarget: IsMember
   /** Returns a FIRRTL IsMember that refers to the absolute path to this object in the elaborated hardware graph */
   def toAbsoluteTarget: IsMember
-  def absoluteTarget(context: InstanceContext): IsMember
 }
 
 private[chisel3] trait HasId extends InstanceId {
@@ -267,6 +268,7 @@ private[chisel3] trait HasId extends InstanceId {
 }
 /** Holds the implementation of toNamed for Data and MemBase */
 private[chisel3] trait NamedComponent extends HasId {
+
   /** Returns a FIRRTL ComponentName that references this object
     * @note Should not be called until circuit elaboration is complete
     */
@@ -281,22 +283,26 @@ private[chisel3] trait NamedComponent extends HasId {
     if (!validComponentName(name)) throwException(s"Illegal component name: $name (note: literals are illegal)")
     import _root_.firrtl.annotations.{Target, TargetToken}
     Target.toTargetTokens(name).toList match {
-      case TargetToken.Ref(r) :: components => ReferenceTarget(this.circuitName, this.parentModName, Nil, r, components)
+      case TargetToken.Ref(r) :: components =>
+        val rt = ReferenceTarget(this.circuitName, this.parentModName, Nil, r, components)
+        Builder.instanceContext match {
+          case None => rt
+          case Some(ct) => ct.toInstanceTarget.ref(r).copy(component = components)
+        }
       case other =>
         throw _root_.firrtl.annotations.Target.NamedException(s"Cannot convert $name into [[ReferenceTarget]]: $other")
     }
   }
 
-  final def absoluteTarget(context: InstanceContext): ReferenceTarget = {
-    val localTarget = toTarget
-    context.toTarget.ref(localTarget.ref).copy(component = localTarget.component)
-  }
-
   final def toAbsoluteTarget: ReferenceTarget = {
     val localTarget = toTarget
-    _parent match {
-      case Some(parent) => parent.toAbsoluteTarget.ref(localTarget.ref).copy(component = localTarget.component)
-      case None => localTarget
+    Builder.instanceContext match {
+      case None =>
+        _parent match {
+          case Some(parent) => parent.toAbsoluteTarget.ref(localTarget.ref).copy(component = localTarget.component)
+          case None => localTarget
+        }
+      case Some(ct) => ct.toInstanceTarget.ref(localTarget.ref).copy(component = localTarget.component)
     }
   }
 }
@@ -310,6 +316,9 @@ private[chisel3] class ChiselContext() {
 
   // Records the different prefixes which have been scoped at this point in time
   var prefixStack: Prefix = Nil
+
+  // Records dotting into instances
+  var instanceContext: Option[InstanceContext] = None
 }
 
 private[chisel3] class DynamicContext(val annotationSeq: AnnotationSeq) {
@@ -377,6 +386,17 @@ private[chisel3] object Builder extends LazyLogging {
   def annotations: ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
   def annotationSeq: AnnotationSeq = dynamicContext.annotationSeq
   def namingStack: NamingStack = dynamicContext.namingStack
+
+  // Instance Context helpers
+  def instanceContext: Option[InstanceContext] = chiselContext.get.instanceContext
+  def descend(inst: HasId, b: BaseModule): Unit = {
+    val newContext = chiselContext.get.instanceContext.map(_.descend(inst, b)).getOrElse{
+      InstanceContext.getContext(b)
+    }
+    chiselContext.get.instanceContext = Some(newContext)
+  }
+  def ascend(): Unit = chiselContext.get.instanceContext = chiselContext.get.instanceContext.map(_.ascend())
+  def setContext(i: Option[InstanceContext]): Unit = chiselContext.get.instanceContext = i
 
   // Puts a prefix string onto the prefix stack
   def pushPrefix(d: String): Unit = {

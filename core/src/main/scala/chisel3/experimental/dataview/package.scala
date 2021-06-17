@@ -96,6 +96,7 @@ package object dataview {
       val result: V = view.cloneTypeFull
 
       val mapping = dataView.mapping(target, result)
+      println(s"HERE: $mapping")
       result match {
         case agg: Aggregate =>
           bindAgg(target, agg, mapping)
@@ -132,4 +133,7 @@ package object dataview {
       case ViewBinding(target) => reify(target, elt.topBinding)
       case _ => elt
     }
+
+
+  //implicit val instanceView = DataView[BaseModule, Instance[_]]
 }
