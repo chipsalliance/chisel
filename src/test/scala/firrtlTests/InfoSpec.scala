@@ -288,7 +288,7 @@ class InfoSpec extends FirrtlFlatSpec with FirrtlMatchers {
       "  wire [31:0] a = c ? b : d; // @[A 1:{2,3,4} B 2:3 4:5]"
     )
     result("A 2:3", "B 1:{2,3,4}", "C 4:5") should containLine(
-      "  wire [31:0] a = c ? b : d; // @[B 1:{2,3,4} A 2:3 C 4:5]"
+      "  wire [31:0] a = c ? b : d; // @[A 2:3 B 1:{2,3,4} C 4:5]"
     )
   }
 
@@ -320,5 +320,18 @@ class InfoSpec extends FirrtlFlatSpec with FirrtlMatchers {
 
     for (line <- check)
       result should containLine(line)
+  }
+
+  "Source Locators" should "not lose information when going through serialization + parsing" in {
+    def check(info: ir.Info): Unit = {
+      assert(Parser.parseInfo(info.serialize) == info)
+    }
+
+    check(ir.NoInfo)
+    check(ir.FileInfo("B"))
+    check(ir.FileInfo("A 4:5"))
+    check(ir.FileInfo("A 4:6"))
+    check(ir.MultiInfo(ir.FileInfo("A 4:5"), ir.FileInfo("B 5:5")))
+    check(ir.MultiInfo(ir.FileInfo("A 4:5"), ir.FileInfo("A 5:5")))
   }
 }
