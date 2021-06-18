@@ -135,6 +135,13 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
     }
   }
 
+  final def isOneOf(s: Seq[EnumType])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
+    VecInit(s.map(this === _)).asUInt().orR()
+  }
+
+  final def isOneOf(u1: EnumType, u2: EnumType*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
+    = isOneOf(u1 +: u2.toSeq)
+
   def next(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type = {
     if (litOption.isDefined) {
       val index = factory.all.indexOf(this)
