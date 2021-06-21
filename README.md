@@ -12,8 +12,12 @@ Call-in info and meeting notes are available [here](https://docs.google.com/docu
 ### Chisel Community Conference 2021, Shanghai, China. 6/26/2021(CST)
 The Chisel Community Conference China 2021 (CCC2021) is planned for June 26, 2021(CST) at the ShanghaiTech University. The schedule is available [here](https://docs.google.com/spreadsheets/d/1Gb4mMGRhs9exJW-l3NOS0IFi7fDplNQQnkXyAKzHlTg)  
 CCC is an annual gathering of Chisel community enthusiasts and technical exchange workshop. With the support of the Chisel development community and RISC-V World Conference China 2021 Committee, this conference will bring together designers and developers with hands-on experience in Chisel from home and abroad to share cutting-edge results and experiences from both the open source community as well as industry.  
-Online signup is not required. Zoom/YouTube/BiliBili streaming links will be added to the schedule before the start of the conference.  
-Offline signup [link](https://www.bagevent.com/event/registerTicket/7314534), Due to COVID-19 restrictions, offline registration is open only to current residents already present in mainland China.    
+You can join the meeting via streaming links below:
+- [Zoom](https://sifive.zoom.us/j/93495528878?pwd=L3IxYkdqWURGVk5pR0hMUDBEM0UzUT09)  
+  Meeting ID: 934 9552 8878  
+  Passcode: 820268  
+
+- [BiliBili](http://live.bilibili.com/22275404)
 
 ---
 
