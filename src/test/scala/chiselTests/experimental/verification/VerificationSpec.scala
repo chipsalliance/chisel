@@ -84,7 +84,9 @@ class VerificationSpec extends ChiselPropSpec with Matchers {
 
   property("annotation of verification constructs should work") {
     val testDir = new File("test_run_dir", "VerificationAnnotationTests")
-    (new ChiselStage).emitFirrtl(
+    // delete contents from past runs
+    testDir.listFiles.foreach(f => f.delete())
+    (new ChiselStage).emitSystemVerilog(
       gen = new VerificationAnnotationTest.AnnotationTest,
       args = Array ("-td", testDir.getPath)
     )
