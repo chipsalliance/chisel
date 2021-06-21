@@ -765,7 +765,7 @@ object Formal extends Enumeration {
   val Assume = Value("assume")
   val Cover = Value("cover")
 }
-case class Verification(op: Formal.Value, sourceInfo: SourceInfo, clock: Arg,
+case class Verification[T <: NamedComponent](id: T, op: Formal.Value, sourceInfo: SourceInfo, clock: Arg,
                         predicate: Arg, message: String) extends Command
 abstract class Component extends Arg {
   def id: BaseModule
