@@ -3,17 +3,19 @@
 package chisel3.experimental
 
 import chisel3._
-import chisel3.internal.{Builder, NamedComponent}
+import chisel3.internal.Builder
 import chisel3.internal.firrtl.{Formal, Verification}
 import chisel3.internal.sourceinfo.SourceInfo
 
 package object verification {
 
-  /** Base simulation-only component. */
-  abstract class BaseSim extends NamedComponent
-
+  /** Named class for assertions. */
   final class Assert(predicate: Bool, msg: String = "") extends BaseSim
+
+  /** Named class for assumes. */
   final class Assume(predicate: Bool, msg: String = "") extends BaseSim
+
+  /** Named class for covers. */
   final class Cover(predicate: Bool, msg: String = "") extends BaseSim
 
   object assert {

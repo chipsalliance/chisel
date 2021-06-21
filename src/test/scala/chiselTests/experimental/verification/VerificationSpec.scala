@@ -37,7 +37,7 @@ object VerificationAnnotationTest {
     /** Create annotation for a given verification component.
       * @param c component to be annotated
       */
-    def annotate(c: formal.BaseSim): Unit = {
+    def annotate(c: experimental.BaseSim): Unit = {
       chisel3.experimental.annotate(new ChiselAnnotation {
         def toFirrtl: VerifAnnotation = VerifAnnotation(c.toTarget)
       })
