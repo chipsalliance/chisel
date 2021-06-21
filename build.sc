@@ -107,7 +107,7 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule wit
     override def scalacPluginClasspath = m.scalacPluginClasspath
 
     override def ivyDeps = m.ivyDeps() ++ Agg(
-      ivy"org.scalatest::scalatest:3.1.2",
+      ivy"org.scalatest::scalatest:3.2.9",
       ivy"org.scalatestplus::scalacheck-1-14:3.2.2.0",
     ) ++ m.treadleIvyDeps
 
