@@ -101,6 +101,16 @@ class VerificationSpec extends ChiselPropSpec with Matchers {
     exactly(1, annoLines) should include ("~AnnotationTest|AnnotationTest>asst")
     exactly(1, annoLines) should include ("~AnnotationTest|AnnotationTest>assm")
     exactly(1, annoLines) should include ("~AnnotationTest|AnnotationTest>cov")
+
+    // read in FIRRTL file
+    val firFile = new File(testDir, "AnnotationTest.fir")
+    firFile.exists()
+    val firLines = scala.io.Source.fromFile(firFile).getLines.toList
+
+    // check that verification components have expected names
+    exactly(1, firLines) should include ("cover(clock, _T, UInt<1>(1), \"\") : cov")
+    exactly(1, firLines) should include ("assume(clock, _T_3, UInt<1>(1), \"\") : assm")
+    exactly(1, firLines) should include ("assert(clock, _T_6, UInt<1>(1), \"\") : asst")
   }
 
 }
