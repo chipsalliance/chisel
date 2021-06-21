@@ -18,7 +18,7 @@ Offline signup [link](https://www.bagevent.com/event/registerTicket/7314534), Du
 ---
 
 [![Join the chat at https://gitter.im/freechipsproject/chisel3](https://badges.gitter.im/chipsalliance/chisel3.svg)](https://gitter.im/freechipsproject/chisel3?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![CircleCI](https://circleci.com/gh/chipsalliance/chisel3/tree/master.svg?style=shield)](https://circleci.com/gh/chipsalliance/chisel3/tree/master)
+![CI](https://github.com/chipsalliance/chisel3/actions/workflows/test.yml/badge.svg)
 [![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/chipsalliance/chisel3.svg?label=release)](https://github.com/chipsalliance/chisel3/releases/latest)
 
 [**Chisel**](https://www.chisel-lang.org) is a hardware design language that facilitates **advanced circuit generation and design reuse for both ASIC and FPGA digital logic designs**.
