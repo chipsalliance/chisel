@@ -12,15 +12,15 @@ package object verification {
   /** Base simulation-only component. */
   abstract class BaseSim extends NamedComponent
 
-  case class Assert(predicate: Bool, msg: String = "") extends BaseSim
-  case class Assume(predicate: Bool, msg: String = "") extends BaseSim
-  case class Cover(predicate: Bool, msg: String = "") extends BaseSim
+  final class Assert(predicate: Bool, msg: String = "") extends BaseSim
+  final class Assume(predicate: Bool, msg: String = "") extends BaseSim
+  final class Cover(predicate: Bool, msg: String = "") extends BaseSim
 
   object assert {
     def apply(predicate: Bool, msg: String = "")(
       implicit sourceInfo: SourceInfo,
       compileOptions: CompileOptions): Assert = {
-      val a = Assert(predicate, msg)
+      val a = new Assert(predicate, msg)
       when (!Module.reset.asBool) {
         val clock = Module.clock
         Builder.pushCommand(Verification(a, Formal.Assert, sourceInfo, clock.ref, predicate.ref, msg))
@@ -33,7 +33,7 @@ package object verification {
     def apply(predicate: Bool, msg: String = "")(
       implicit sourceInfo: SourceInfo,
       compileOptions: CompileOptions): Assume = {
-      val a = Assume(predicate, msg)
+      val a = new Assume(predicate, msg)
       when (!Module.reset.asBool) {
         val clock = Module.clock
         Builder.pushCommand(Verification(a, Formal.Assume, sourceInfo, clock.ref, predicate.ref, msg))
@@ -47,7 +47,7 @@ package object verification {
       implicit sourceInfo: SourceInfo,
       compileOptions: CompileOptions): Cover = {
       val clock = Module.clock
-      val c = Cover(predicate, msg)
+      val c = new Cover(predicate, msg)
       when (!Module.reset.asBool) {
         Builder.pushCommand(Verification(c, Formal.Cover, sourceInfo, clock.ref, predicate.ref, msg))
       }
