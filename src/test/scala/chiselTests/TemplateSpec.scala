@@ -112,7 +112,7 @@ class TemplateSpec extends ChiselFlatSpec with Utils {
       handle(_.inst0(_.innerWire.mark("Instance0")))
       
       // Iterative instance accessing
-      handle(_.inst1)(_.innerWire.mark("Instance1"))
+      handle(_.inst1)(_.innerWire).mark("Instance1")
 
       chisel3.assert(handle(_.out) === 44.U)
       stop()
@@ -121,6 +121,14 @@ class TemplateSpec extends ChiselFlatSpec with Utils {
     println((new ChiselStage).emitVerilog(gen = new RecursiveTester))
     assertTesterPasses(new RecursiveTester)
   }
+  /*
+  Thoughts:
+   - We have different semantics calling toTarget through an Instance, than through a Module.
+   - Consider different bindings, e.g. CMR binding?
+
+   - summon instance, use macros to define extension methods on instance for each module member. call clonetype on any returned data, generating an XMR for non-ports
+   - 
+  */
   //{
   //  // Option 1
   //  val pc = core(_.cache)(_.pc)

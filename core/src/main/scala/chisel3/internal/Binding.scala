@@ -125,6 +125,10 @@ private[chisel3] case class ViewBinding(target: Element) extends UnconstrainedBi
 private[chisel3] case class AggregateViewBinding(childMap: Map[Data, Element]) extends UnconstrainedBinding
 
 
+case class XMRBinding(context: InstanceContext) extends TopBinding {
+  def location = None
+}
+
 sealed trait LitBinding extends UnconstrainedBinding with ReadOnlyBinding
 // Literal binding attached to a element that is not part of a Bundle.
 case class ElementLitBinding(litArg: LitArg) extends LitBinding

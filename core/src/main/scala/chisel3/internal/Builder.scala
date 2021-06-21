@@ -285,9 +285,14 @@ private[chisel3] trait NamedComponent extends HasId {
     Target.toTargetTokens(name).toList match {
       case TargetToken.Ref(r) :: components =>
         val rt = ReferenceTarget(this.circuitName, this.parentModName, Nil, r, components)
-        Builder.instanceContext match {
-          case None => rt
-          case Some(ct) => ct.toInstanceTarget.ref(r).copy(component = components)
+        this match {
+          case d: Data => d.binding match {
+            case Some(x: XMRBinding) =>
+              println(s"XMR Binding context: ${x.context}")
+              x.context.toInstanceTarget.ref(r).copy(component = components)
+            case _ => rt
+          }
+          case other => rt
         }
       case other =>
         throw _root_.firrtl.annotations.Target.NamedException(s"Cannot convert $name into [[ReferenceTarget]]: $other")
@@ -397,6 +402,21 @@ private[chisel3] object Builder extends LazyLogging {
   }
   def ascend(): Unit = chiselContext.get.instanceContext = chiselContext.get.instanceContext.map(_.ascend())
   def setContext(i: Option[InstanceContext]): Unit = chiselContext.get.instanceContext = i
+  def getContext(b: BaseModule): InstanceContext = {
+    // Options
+    // 1. In a module, dotting into submodule
+    // 2. In a module, dotting into an instance
+    // 3. In an instance, dotting into an instance
+    // First, get context of reference of submodule hierarchy
+    val templateReference = InstanceContext.getContext(b)
+    instanceContext.map { ic =>
+      ic.descend(templateReference)
+    }.getOrElse(templateReference)
+  }
+  def getTemplateContext(b: BaseModule): InstanceContext = {
+    val templateReference = InstanceContext.getContext(b)
+    templateReference
+  }
 
   // Puts a prefix string onto the prefix stack
   def pushPrefix(d: String): Unit = {

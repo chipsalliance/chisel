@@ -11,7 +11,7 @@ import java.util.IdentityHashMap
 import chisel3.internal._
 import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
-import chisel3.internal.sourceinfo.{InstTransform, SourceInfo}
+import chisel3.internal.sourceinfo.{InstTransform, SourceInfo, SourceInfoTransform}
 import chisel3.experimental.BaseModule
 import chisel3.experimental.dataview._
 import _root_.firrtl.annotations.{ModuleName, ModuleTarget, IsModule, IsMember, Named, Target}
@@ -30,7 +30,7 @@ object Instance extends SourceInfoDoc {
   def do_apply[T <: BaseModule, I <: Bundle](bc: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Instance[T] = {
     //require(bc.isTemplate, "Must pass a template to Instance(..)")
     val ports = experimental.CloneModuleAsRecord(bc)
-    Instance(bc, ports)
+    Instance(bc, ports, InstanceContext.getContext(ports._parent.get))
   }
   /*
   implicit class InstanceApplyToInstance[T <: BaseModule](i: Instance[T]) {
@@ -67,25 +67,21 @@ object Instance extends SourceInfoDoc {
   
 }
 
-case class Instance[T <: BaseModule] private [chisel3] (template: T, ports: BaseModule.ClonePorts, context: Option[InstanceContext] = None) extends NamedComponent {
+case class Instance[T <: BaseModule] private [chisel3] (template: T, ports: BaseModule.ClonePorts, context: InstanceContext) extends NamedComponent {
   override def instanceName = ports.instanceName
   
-  val io = ports
+  private [chisel3] val io = ports
   private [chisel3] val ioMap = template.getChiselPorts.map(_._2).zip(ports.elements.map(_._2)).toMap
-  def apply[X](f: T => X): X = {
-    val ctx = context.getOrElse(InstanceContext.getContext(io._parent.get))
-    //println(s"Apply on ${ports.instanceName}, ctx=$ctx")
-    val isEmpty = Builder.instanceContext.isEmpty
-    if(isEmpty) Builder.setContext(Some(ctx))
-    //if(isEmpty) Builder.setContext(Some(InstanceContext.getContext(ports._parent.get)))
-    Builder.descend(ports, template)
-    val ret = f(template)
-    Builder.ascend()
-    if(isEmpty) Builder.setContext(None)
+
+  def apply[X](that: T => X): X = macro SourceInfoTransform.thatArg
+  def do_apply[X](that: T => X)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): X = {
+    val descendingContext = context.descend(ports, template)
+    val ret = that(template)
     (ret match {
       case x: Data if ioMap.contains(x) => ioMap(x)
-      case x: Data => throwException(s"Cannot return a non-port data type from an instance handle! $x")
-      case x: Instance[_] => x.copy(context = Some(ctx.descend(io, template)))
+      case x: Data => XMR.do_apply(x, descendingContext.descend(InstanceContext.getContext(x._parent.get)))
+      case x: Instance[_] =>
+        x.copy(context = descendingContext.descend(x.context))
       case x: Unit => x
       case x => throwException(s"Cannot return this from an instance handle! $x")
     }).asInstanceOf[X]
@@ -99,9 +95,16 @@ case class Instance[T <: BaseModule] private [chisel3] (template: T, ports: Base
 
 case class InstanceContext(top: BaseModule, instances: Seq[(HasId, BaseModule)]) {
   import InstanceContext._
+  def localModule = if(instances.isEmpty) top else instances.last._2
   def descend(instanceName: HasId, module: BaseModule): InstanceContext = {
     val moduleContext = getContext(module)
     InstanceContext(top, instances ++ Seq((instanceName, moduleContext.top)) ++ moduleContext.instances)
+  }
+  def descend(ic: InstanceContext): InstanceContext = {
+    println(this)
+    println(ic)
+    require(localModule == ic.top, s"Descending into ${ic.top}, but local module is $localModule")
+    this.copy(top, instances ++ ic.instances)
   }
   def ascend(): InstanceContext = InstanceContext(top, instances.dropRight(1))
   def toInstanceTarget: IsModule =  {

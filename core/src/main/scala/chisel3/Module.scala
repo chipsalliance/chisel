@@ -43,6 +43,7 @@ object Module extends SourceInfoDoc {
     Builder.clearPrefix()
     Builder.currentClock = None
     Builder.currentReset = None
+    val isEmpty = Builder.instanceContext.isEmpty
 
     // Execute the module, this has the following side effects:
     //   - set currentModule
@@ -50,6 +51,8 @@ object Module extends SourceInfoDoc {
     //   - reset whenStack to be empty
     //   - set currentClockAndReset
     val module: T = bc  // bc is actually evaluated here
+
+    if(isEmpty) Builder.setContext(None)
 
     if (Builder.whenDepth != 0) {
       throwException("Internal Error! when() scope depth is != 0, this should have been caught!")
@@ -212,6 +215,12 @@ package experimental {
   abstract class BaseModule extends HasId {
     _parent.foreach(_.addId(this))
 
+    // If this is the top-most module, start the instance context
+    // We don't update instance context for other instances, because we don't have the name of the instance yet.
+    // When we do need the instance context for XMRs, we rebuild it from the _parent pointers
+    if(Builder.instanceContext.isEmpty) {
+      Builder.setContext(Some(InstanceContext(this, Nil)))
+    }
 
     //
     // Builder Internals - this tracks which Module RTL construction belongs to.

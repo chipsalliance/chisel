@@ -145,13 +145,3 @@ object DataView {
     c.abort(c.enclosingPosition, msg)
   }
 }
-
-trait ViewableAs[T <: Module, I <: Bundle] {
-  implicit val moduleView: DataView[T, I]
-  final implicit val instanceView: DataView[Instance[T], I] = {
-    DataView.mapping( { (target: Instance[T], value: I) =>
-      val pairs = moduleView.mapping(target.template, value)
-      pairs.map { case (moduleSignal: Data, interfaceSignal: Data) => target.apply[Data]{_: T => moduleSignal} -> interfaceSignal }
-    })
-  }
-}

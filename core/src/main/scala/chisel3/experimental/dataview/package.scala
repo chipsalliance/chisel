@@ -7,6 +7,7 @@ import chisel3.internal.{AggregateViewBinding, TopBinding, ViewBinding, requireI
 
 import scala.annotation.tailrec
 import scala.collection.mutable
+import chisel3.internal.sourceinfo.SourceInfo
 
 package object dataview {
   case class InvalidViewException(message: String) extends ChiselException(message)
@@ -135,5 +136,15 @@ package object dataview {
     }
 
 
+  trait ViewableAs[T <: Module, I <: Bundle] {
+    implicit val moduleView: DataView[T, I]
+    //implicit val srcInfo = UnlocatableSourceInfo
+    final implicit def instanceView(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): DataView[Instance[T], I] = {
+      DataView.mapping( { (target: Instance[T], value: I) =>
+        val pairs = moduleView.mapping(target.template, value)
+        pairs.map { case (moduleSignal: Data, interfaceSignal: Data) => target.do_apply[Data]{_: T => moduleSignal} -> interfaceSignal }
+      })
+    }
+  }
   //implicit val instanceView = DataView[BaseModule, Instance[_]]
 }
