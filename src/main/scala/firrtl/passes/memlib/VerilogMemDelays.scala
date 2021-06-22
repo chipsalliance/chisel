@@ -56,6 +56,14 @@ object MemDelayAndReadwriteTransformer {
   private val metaChars = raw"[\[\]\.]".r
   private def flatName(e: Expression) = metaChars.replaceAllIn(e.serialize, "_")
 
+  /** Determines if all `RefLikeExpression` in this Expression are of kind [[PortKind]] */
+  def allPortKinds(expr: Expression): Boolean = expr match {
+    case reflike: RefLikeExpression => kind(expr) == PortKind
+    case other =>
+      other.foreach { (e: Expression) => if (!allPortKinds(e)) return false } // Early out
+      true
+  }
+
   // Pipeline a group of signals with an associated valid signal. Gate registers when possible.
   def pipelineWithValid(
     ns:           Namespace
@@ -126,12 +134,28 @@ class MemDelayAndReadwriteTransformer(m: DefModule, passthroughSimpleSyncReadMem
       val rCmdDelay = if (mem.readUnderWrite == ReadUnderWrite.Old) 0 else mem.readLatency
       val rRespDelay = if (mem.readUnderWrite == ReadUnderWrite.Old) mem.readLatency else 0
       val wCmdDelay = mem.writeLatency - 1
+      val clockWires = new mutable.LinkedHashMap[WrappedExpression, (DefWire, Connect, Reference)]
+      // Memory port clocks may depend on something defined after the memory, create wires for clock
+      // Expressions that contain non-port references
+      def maybeInsertWire(expr: Expression): Expression = {
+        if (allPortKinds(expr)) expr
+        else {
+          def mkWire() = {
+            val wire = DefWire(NoInfo, ns.newName(s"${mem.name}_clock"), expr.tpe)
+            val ref = Reference(wire).copy(flow = SourceFlow)
+            val con = Connect(NoInfo, ref.copy(flow = SinkFlow), expr)
+            (wire, con, ref)
+          }
+          clockWires.getOrElseUpdate(we(expr), mkWire())._3
+        }
+      }
 
       val readStmts = (mem.readers ++ mem.readwriters).map {
         case r =>
           def oldDriver(f: String) = swapMemRefs(netlist(we(memPortField(mem, r, f))))
           def newField(f:  String) = memPortField(newMem, rMap.getOrElse(r, r), f)
-          val clk = oldDriver("clk")
+          // The memory port clock could depend on something defined after the memory
+          val clk = maybeInsertWire(oldDriver("clk"))
 
           // Pack sources of read command inputs into WithValid object -> different for readwriter
           val enSrc = if (rMap.contains(r)) AND(oldDriver("en"), NOT(oldDriver("wmode"))) else oldDriver("en")
@@ -160,7 +184,8 @@ class MemDelayAndReadwriteTransformer(m: DefModule, passthroughSimpleSyncReadMem
         case w =>
           def oldDriver(f: String) = swapMemRefs(netlist(we(memPortField(mem, w, f))))
           def newField(f:  String) = memPortField(newMem, wMap.getOrElse(w, w), f)
-          val clk = oldDriver("clk")
+          // The memory port clock could depend on something defined after the memory
+          val clk = maybeInsertWire(oldDriver("clk"))
 
           // Pack sources of write command inputs into WithValid object -> different for readwriter
           val cmdSrc = if (wMap.contains(w)) {
@@ -180,8 +205,9 @@ class MemDelayAndReadwriteTransformer(m: DefModule, passthroughSimpleSyncReadMem
           SplitStatements(cmdDecls, cmdConns ++ cmdPortConns)
       }
 
+      newConns ++= clockWires.values.map(_._2)
       newConns ++= (readStmts ++ writeStmts).flatMap(_.conns)
-      Block(newMem +: (readStmts ++ writeStmts).flatMap(_.decls))
+      Block(newMem +: clockWires.values.map(_._1) ++: (readStmts ++ writeStmts).flatMap(_.decls))
     case sx: Connect if kind(sx.loc) == MemKind =>
       val (memRef, _) = Utils.splitRef(sx.loc)
       // Filter old mem connections for *transformed* memories only

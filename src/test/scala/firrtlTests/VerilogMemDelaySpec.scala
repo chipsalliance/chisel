@@ -3,8 +3,9 @@
 package firrtlTests
 
 import firrtl._
-import firrtl.passes.memlib.VerilogMemDelays
-import firrtl.passes.CheckHighForm
+import firrtl.testutils._
+import firrtl.testutils.FirrtlCheckers._
+import firrtl.ir.Circuit
 import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlSourceAnnotation, FirrtlStage}
 
 import org.scalatest.freespec.AnyFreeSpec
@@ -12,11 +13,19 @@ import org.scalatest.matchers.should.Matchers
 
 class VerilogMemDelaySpec extends AnyFreeSpec with Matchers {
 
-  private def compileTwice(input: String): Unit = {
-    val result1 = (new FirrtlStage).transform(Seq(FirrtlSourceAnnotation(input))).toSeq.collectFirst {
-      case fca: FirrtlCircuitAnnotation => (new FirrtlStage).transform(Seq(fca))
-    }
+  private def compileTwiceReturnFirst(input: String): Circuit = {
+    (new FirrtlStage)
+      .transform(Seq(FirrtlSourceAnnotation(input)))
+      .toSeq
+      .collectFirst {
+        case fca: FirrtlCircuitAnnotation =>
+          (new FirrtlStage).transform(Seq(fca))
+          fca.circuit
+      }
+      .get
   }
+
+  private def compileTwice(input: String): Unit = compileTwiceReturnFirst(input)
 
   "The following low FIRRTL should be parsed by VerilogMemDelays" in {
     val input =
@@ -140,5 +149,53 @@ class VerilogMemDelaySpec extends AnyFreeSpec with Matchers {
         |""".stripMargin
 
     compileTwice(input)
+  }
+
+  "VerilogMemDelays should not violate use before declaration of clocks" in {
+    val input =
+      """
+        |circuit Test :
+        |  extmodule ClockMaker :
+        |    input in : UInt<8>
+        |    output clock : Clock
+        |  module Test :
+        |    input clock : Clock
+        |    input addr : UInt<5>
+        |    input mask : UInt<8>
+        |    input in : UInt<8>
+        |    output out : UInt<8>
+        |    mem m :
+        |      data-type => UInt<8>
+        |      depth => 32
+        |      read-latency => 1
+        |      write-latency => 2
+        |      reader => read
+        |      writer => write
+        |      read-under-write => old  ; this is important
+        |    inst cm of ClockMaker
+        |    m.read.clk <= cm.clock
+        |    m.read.en <= UInt<1>(1)
+        |    m.read.addr <= addr
+        |    out <= m.read.data
+        |    ; This makes this really funky for injected pipe ordering
+        |    node read = not(m.read.data)
+        |    cm.in <= and(read, UInt<8>("hf0"))
+        |
+        |    m.write.clk <= clock
+        |    m.write.en <= UInt<1>(1)
+        |    m.write.mask <= mask
+        |    m.write.addr <= addr
+        |    m.write.data <= in
+      """.stripMargin
+
+    val res = compileTwiceReturnFirst(input).serialize
+    // Inject a Wire when using a clock not derived from ports
+    res should include("wire m_clock : Clock")
+    res should include("m_clock <= cm.clock")
+    res should include("reg m_read_data_pipe_0 : UInt<8>, m_clock")
+    res should include("m.read.clk <= m_clock")
+    // No need to insert Wire when clock is derived from a port
+    res should include("m.write.clk <= clock")
+    res should include("reg m_write_data_pipe_0 : UInt<8>, clock")
   }
 }
