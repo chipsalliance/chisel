@@ -92,12 +92,12 @@ object ChiselStage {
       case EmittedMLIR(_, a, _) => a
     }.get
 
-  /** Compile a Chisel circuit to RTL dialect */
-  def emitRTLDialect(gen: => RawModule): String = phase
+  /** Compile a Chisel circuit to HWS dialect */
+  def emitHWDialect(gen: => RawModule): String = phase
     .transform(
       Seq(
         ChiselGeneratorAnnotation(() => gen),
-        CIRCTTargetAnnotation(CIRCTTarget.RTL),
+        CIRCTTargetAnnotation(CIRCTTarget.HW),
         CIRCTHandover(CIRCTHandover.CHIRRTL)
       )
     ).collectFirst {
