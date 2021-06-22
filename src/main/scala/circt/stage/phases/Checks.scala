@@ -18,10 +18,7 @@ import firrtl.options.{
   OptionsException,
   Phase
 }
-import firrtl.stage.{
-  RunFirrtlTransformAnnotation,
-  OutputFileAnnotation
-}
+import firrtl.stage.OutputFileAnnotation
 
 /** Check properties of an [[AnnotationSeq]] to look for errors before running CIRCT. */
 class Checks extends Phase {
@@ -32,19 +29,13 @@ class Checks extends Phase {
   override def invalidates(a: Phase) = false
 
   override def transform(annotations: AnnotationSeq): AnnotationSeq = {
-    val transforms, outputFile, target, handover = collection.mutable.ArrayBuffer[Annotation]()
+    val outputFile, target, handover = collection.mutable.ArrayBuffer[Annotation]()
 
     annotations.foreach {
-      case a @ RunFirrtlTransformAnnotation(_: Emitter) =>
-      case a: RunFirrtlTransformAnnotation => transforms += a
       case a: OutputFileAnnotation => outputFile += a
       case a: CIRCTTargetAnnotation => target += a
       case a: CIRCTHandover => handover += a
       case _ =>
-    }
-
-    if (!transforms.isEmpty) {
-      throw new OptionsException("CIRCT does not support any custom transforms")
     }
 
     if (outputFile.size != 1) {

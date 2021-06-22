@@ -75,6 +75,7 @@ object ChiselStage {
       Dependency[chisel3.stage.phases.Elaborate],
       Dependency[chisel3.stage.phases.Convert],
       Dependency[firrtl.stage.phases.AddImplicitOutputFile],
+      Dependency[chisel3.stage.phases.AddImplicitOutputAnnotationFile],
       Dependency[circt.stage.phases.Checks],
       Dependency[circt.stage.phases.CIRCT]
     )
