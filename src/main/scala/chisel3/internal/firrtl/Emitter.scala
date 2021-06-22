@@ -81,8 +81,7 @@ private class Emitter(circuit: Circuit) {
           "\"" + printf.format(fmt) + "\"") ++ args
         printfArgs mkString ("printf(", ", ", ")")
       case e: Verification[_] =>
-        val nameStr = if (e.name.isEmpty) "" else s" : ${e.name}"
-        s"""${e.op}(${e.clock.fullName(ctx)}, ${e.predicate.fullName(ctx)}, UInt<1>(1), "${printf.format(e.message)}")$nameStr"""
+        s"""${e.op}(${e.clock.fullName(ctx)}, ${e.predicate.fullName(ctx)}, UInt<1>(1), "${printf.format(e.message)}") : ${e.name}"""
       case e: DefInvalid => s"${e.arg.fullName(ctx)} is invalid"
       case e: DefInstance => s"inst ${e.name} of ${e.id.name}"
       case w: WhenBegin =>

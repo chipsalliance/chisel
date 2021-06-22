@@ -55,13 +55,13 @@ class VerificationSpec extends ChiselPropSpec with Matchers {
 
     // reset guard around the verification statement
     assertContains(lines, "when _T_2 : @[VerificationSpec.scala")
-    assertContains(lines, "cover(clock, _T, UInt<1>(\"h1\"), \"\") @[VerificationSpec.scala")
+    assertContains(lines, "cover(clock, _T, UInt<1>(\"h1\"), \"\")")
 
     assertContains(lines, "when _T_6 : @[VerificationSpec.scala")
-    assertContains(lines, "assume(clock, _T_4, UInt<1>(\"h1\"), \"\") @[VerificationSpec.scala")
+    assertContains(lines, "assume(clock, _T_4, UInt<1>(\"h1\"), \"\")")
 
     assertContains(lines, "when _T_9 : @[VerificationSpec.scala")
-    assertContains(lines, "assert(clock, _T_7, UInt<1>(\"h1\"), \"\") @[VerificationSpec.scala")
+    assertContains(lines, "assert(clock, _T_7, UInt<1>(\"h1\"), \"\")")
   }
 
   property("annotation of verification constructs should work") {
@@ -150,23 +150,5 @@ class VerificationSpec extends ChiselPropSpec with Matchers {
     // check that verification components have expected names
     exactly(1, firLines) should include ("assert(clock, _T, UInt<1>(1), \"\") : hello")
     exactly(1, firLines) should include ("assume(clock, _T_3, UInt<1>(1), \"\") : howdy")
-  }
-
-  property("annotation of verification constructs should fail") {
-    /** Circuit that attempts to annotate an unnamed cover. */
-    class AnnotationUnnamedFailureTest extends Module {
-      val io = IO(new Bundle{
-        val in = Input(UInt(8.W))
-        val out = Output(UInt(8.W))
-      })
-      io.out := io.in
-      VerifAnnotation.annotate(formal.cover(io.in === 3.U))
-    }
-
-    // check that compilation throws expected exception
-    val exc = intercept[ChiselException] {
-      ChiselStage.emitFirrtl(new AnnotationUnnamedFailureTest)
-    }
-    exc.getMessage should equal ("trying to access a name that cannot be computed")
   }
 }

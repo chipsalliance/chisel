@@ -766,12 +766,7 @@ object Formal extends Enumeration {
   val Cover = Value("cover")
 }
 case class Verification[T <: BaseSim](id: T, op: Formal.Value, sourceInfo: SourceInfo, clock: Arg,
-                        predicate: Arg, message: String) extends Command {
-  def name: String = id.getOptionRef match {
-    case Some(r) => r.name
-    case None => ""
-  }
-}
+                        predicate: Arg, message: String) extends Definition
 abstract class Component extends Arg {
   def id: BaseModule
   def name: String
