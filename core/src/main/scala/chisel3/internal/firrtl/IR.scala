@@ -9,7 +9,6 @@ import chisel3.internal.sourceinfo.SourceInfo
 import chisel3.experimental._
 import _root_.firrtl.{ir => firrtlir}
 import _root_.firrtl.PrimOps
-import chisel3.DontCare._parent
 
 import scala.collection.immutable.NumericRange
 import scala.math.BigDecimal.RoundingMode
