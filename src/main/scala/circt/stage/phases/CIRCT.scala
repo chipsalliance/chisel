@@ -61,9 +61,9 @@ class CIRCT extends Phase {
         (!circtOptions.disableLowerTypes).option("-lower-types") ++
         (circtOptions.target match {
            case Some(CIRCTTarget.FIRRTL) => None
-           case Some(CIRCTTarget.RTL) => Seq("-lower-to-rtl")
-           case Some(CIRCTTarget.Verilog) => Seq("-lower-to-rtl", "-verilog")
-           case Some(CIRCTTarget.SystemVerilog) => Seq("-lower-to-rtl", "-verilog")
+           case Some(CIRCTTarget.HW) => Seq("-lower-to-hw")
+           case Some(CIRCTTarget.Verilog) => Seq("-lower-to-hw", "-verilog")
+           case Some(CIRCTTarget.SystemVerilog) => Seq("-lower-to-hw", "-verilog")
            case None => throw new Exception(
              "No 'circtOptions.target' specified. This should be impossible if dependencies are satisfied!"
            )
@@ -76,8 +76,8 @@ class CIRCT extends Phase {
       circtOptions.target match {
         case Some(CIRCTTarget.FIRRTL) =>
           Seq(EmittedMLIR(outputFileName, result, Some(".fir.mlir")))
-        case Some(CIRCTTarget.RTL) =>
-          Seq(EmittedMLIR(outputFileName, result, Some(".rtl.mlir")))
+        case Some(CIRCTTarget.HW) =>
+          Seq(EmittedMLIR(outputFileName, result, Some(".hw.mlir")))
         case Some(CIRCTTarget.Verilog) =>
           Seq(EmittedVerilogCircuitAnnotation(EmittedVerilogCircuit(outputFileName, result, ".v")))
         case Some(CIRCTTarget.SystemVerilog) =>

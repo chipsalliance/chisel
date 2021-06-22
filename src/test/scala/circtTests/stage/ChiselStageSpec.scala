@@ -59,11 +59,11 @@ class ChiselStageSpec extends AnyFunSpec with Matchers {
       val targetDir = new File("test_run_dir/ChiselStageSpec")
 
       val args: Array[String] = Array(
-        "--target", "rtl",
+        "--target", "hw",
         "--target-dir", targetDir.toString
       )
 
-      val expectedOutput = new File(targetDir, "Foo.rtl.mlir")
+      val expectedOutput = new File(targetDir, "Foo.hw.mlir")
       expectedOutput.delete()
 
       (new ChiselStage).execute(args, Seq(ChiselGeneratorAnnotation(() => new ChiselStageSpec.Foo)))
@@ -251,9 +251,9 @@ class ChiselStageSpec extends AnyFunSpec with Matchers {
 
     }
 
-    it("should emit RTL dialect") {
+    it("should emit HW dialect") {
 
-      ChiselStage.emitRTLDialect(new ChiselStageSpec.Foo) should include (" rtl.module")
+      ChiselStage.emitHWDialect(new ChiselStageSpec.Foo) should include (" hw.module")
 
     }
 

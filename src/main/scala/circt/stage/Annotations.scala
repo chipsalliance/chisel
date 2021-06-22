@@ -44,8 +44,8 @@ object CIRCTTarget {
   /** The FIRRTL dialect */
   case object FIRRTL extends Type
 
-  /** The RTL dialect */
-  case object RTL extends Type
+  /** The HW dialect */
+  case object HW extends Type
 
   /** The Verilog language */
   case object Verilog extends Type
@@ -65,7 +65,7 @@ object CIRCTTargetAnnotation extends HasShellOptions {
       longOption = "target",
       toAnnotationSeq = _ match {
         case "firrtl"        => Seq(CIRCTTargetAnnotation(CIRCTTarget.FIRRTL))
-        case "rtl"           => Seq(CIRCTTargetAnnotation(CIRCTTarget.RTL))
+        case "hw"            => Seq(CIRCTTargetAnnotation(CIRCTTarget.HW))
         case "verilog"       => Seq(CIRCTTargetAnnotation(CIRCTTarget.Verilog))
         case "systemverilog" => Seq(CIRCTTargetAnnotation(CIRCTTarget.SystemVerilog))
         case a => throw new OptionsException(s"Unknown target name '$a'! (Did you misspell it?)")
