@@ -8,12 +8,11 @@ import chisel3._
 import chisel3.experimental.ExtModule
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import chisel3.util.{HasExtModuleInline, HasExtModulePath, HasExtModuleResource}
-import firrtl.FirrtlExecutionSuccess
 import firrtl.options.TargetDirAnnotation
 import firrtl.stage.FirrtlCircuitAnnotation
 import firrtl.transforms.BlackBoxNotFoundException
-import org.scalacheck.Test.Failed
-import org.scalatest.{FreeSpec, Matchers, Succeeded}
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
 //scalastyle:off magic.number
 
@@ -102,7 +101,7 @@ class UsesMissingExtModuleResource extends RawModule {
   val foo = Module(new ExtModuleResourceNotFound)
 }
 
-class ExtModuleImplSpec extends FreeSpec with Matchers {
+class ExtModuleImplSpec extends AnyFreeSpec with Matchers {
   "ExtModule can have verilator source implementation" - {
 
     "Implementations can be contained in-line" in {
