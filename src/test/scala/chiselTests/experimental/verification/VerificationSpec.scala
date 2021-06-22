@@ -24,39 +24,21 @@ class SimpleTest extends Module {
   }
 }
 
-/** The following test marks verification components with dummy annotations. */
-object VerificationAnnotationTest {
-  /** Dummy verification annotation.
-    * @param target target of component to be annotated
+/** Dummy verification annotation.
+  * @param target target of component to be annotated
+  */
+case class VerifAnnotation(target: ReferenceTarget) extends SingleTargetAnnotation[ReferenceTarget] {
+  def duplicate(n: ReferenceTarget): VerifAnnotation = this.copy(target = n)
+}
+
+object VerifAnnotation {
+  /** Create annotation for a given verification component.
+    * @param c component to be annotated
     */
-  case class VerifAnnotation(target: ReferenceTarget) extends SingleTargetAnnotation[ReferenceTarget] {
-    def duplicate(n: ReferenceTarget): VerifAnnotation = this.copy(target = n)
-  }
-
-  object VerifAnnotation {
-    /** Create annotation for a given verification component.
-      * @param c component to be annotated
-      */
-    def annotate(c: experimental.BaseSim): Unit = {
-      chisel3.experimental.annotate(new ChiselAnnotation {
-        def toFirrtl: VerifAnnotation = VerifAnnotation(c.toTarget)
-      })
-    }
-  }
-
-  /** Circuit that contains and annotates verification components. */
-  class AnnotationTest extends Module {
-    val io = IO(new Bundle{
-      val in = Input(UInt(8.W))
-      val out = Output(UInt(8.W))
+  def annotate(c: experimental.BaseSim): Unit = {
+    chisel3.experimental.annotate(new ChiselAnnotation {
+      def toFirrtl: VerifAnnotation = VerifAnnotation(c.toTarget)
     })
-    io.out := io.in
-    val cov = formal.cover(io.in === 3.U)
-    val assm = formal.assume(io.in =/= 2.U)
-    val asst = formal.assert(io.out === io.in)
-    VerifAnnotation.annotate(cov)
-    VerifAnnotation.annotate(assm)
-    VerifAnnotation.annotate(asst)
   }
 }
 
@@ -73,21 +55,36 @@ class VerificationSpec extends ChiselPropSpec with Matchers {
 
     // reset guard around the verification statement
     assertContains(lines, "when _T_2 : @[VerificationSpec.scala")
-    assertContains(lines, "cover(clock, _T, UInt<1>(\"h1\"), \"\")")
+    assertContains(lines, "cover(clock, _T, UInt<1>(\"h1\"), \"\") @[VerificationSpec.scala")
 
     assertContains(lines, "when _T_6 : @[VerificationSpec.scala")
-    assertContains(lines, "assume(clock, _T_4, UInt<1>(\"h1\"), \"\")")
+    assertContains(lines, "assume(clock, _T_4, UInt<1>(\"h1\"), \"\") @[VerificationSpec.scala")
 
     assertContains(lines, "when _T_9 : @[VerificationSpec.scala")
-    assertContains(lines, "assert(clock, _T_7, UInt<1>(\"h1\"), \"\")")
+    assertContains(lines, "assert(clock, _T_7, UInt<1>(\"h1\"), \"\") @[VerificationSpec.scala")
   }
 
   property("annotation of verification constructs should work") {
+    /** Circuit that contains and annotates verification nodes. */
+    class AnnotationTest extends Module {
+      val io = IO(new Bundle{
+        val in = Input(UInt(8.W))
+        val out = Output(UInt(8.W))
+      })
+      io.out := io.in
+      val cov = formal.cover(io.in === 3.U)
+      val assm = formal.assume(io.in =/= 2.U)
+      val asst = formal.assert(io.out === io.in)
+      VerifAnnotation.annotate(cov)
+      VerifAnnotation.annotate(assm)
+      VerifAnnotation.annotate(asst)
+    }
+
+    // compile circuit
     val testDir = new File("test_run_dir", "VerificationAnnotationTests")
     (new ChiselStage).emitSystemVerilog(
-      gen = new VerificationAnnotationTest.AnnotationTest,
-      args = Array("-td", testDir.getPath),
-      annotations = Seq(chisel3.stage.PrintFullStackTraceAnnotation)
+      gen = new AnnotationTest,
+      args = Array("-td", testDir.getPath)
     )
 
     // read in annotation file
@@ -96,7 +93,7 @@ class VerificationSpec extends ChiselPropSpec with Matchers {
     val annoLines = scala.io.Source.fromFile(annoFile).getLines.toList
 
     // check for expected verification annotations
-    exactly(3, annoLines) should include ("chiselTests.experimental.verification.VerificationAnnotationTest$VerifAnnotation")
+    exactly(3, annoLines) should include ("chiselTests.experimental.verification.VerifAnnotation")
     exactly(1, annoLines) should include ("~AnnotationTest|AnnotationTest>asst")
     exactly(1, annoLines) should include ("~AnnotationTest|AnnotationTest>assm")
     exactly(1, annoLines) should include ("~AnnotationTest|AnnotationTest>cov")
@@ -112,4 +109,64 @@ class VerificationSpec extends ChiselPropSpec with Matchers {
     exactly(1, firLines) should include ("assert(clock, _T_6, UInt<1>(1), \"\") : asst")
   }
 
+  property("annotation of verification constructs with suggested name should work") {
+    /** Circuit that annotates a renamed verification nodes. */
+    class AnnotationRenameTest extends Module {
+      val io = IO(new Bundle{
+        val in = Input(UInt(8.W))
+        val out = Output(UInt(8.W))
+      })
+      io.out := io.in
+
+      val goodbye = formal.assert(io.in === 1.U)
+      goodbye.suggestName("hello")
+      VerifAnnotation.annotate(goodbye)
+
+      VerifAnnotation.annotate(formal.assume(io.in =/= 2.U).suggestName("howdy"))
+    }
+
+    // compile circuit
+    val testDir = new File("test_run_dir", "VerificationAnnotationRenameTests")
+    (new ChiselStage).emitSystemVerilog(
+      gen = new AnnotationRenameTest,
+      args = Array("-td", testDir.getPath)
+    )
+
+    // read in annotation file
+    val annoFile = new File(testDir, "AnnotationRenameTest.anno.json")
+    annoFile.exists()
+    val annoLines = scala.io.Source.fromFile(annoFile).getLines.toList
+
+    // check for expected verification annotations
+    exactly(2, annoLines) should include ("chiselTests.experimental.verification.VerifAnnotation")
+    exactly(1, annoLines) should include ("~AnnotationRenameTest|AnnotationRenameTest>hello")
+    exactly(1, annoLines) should include ("~AnnotationRenameTest|AnnotationRenameTest>howdy")
+
+    // read in FIRRTL file
+    val firFile = new File(testDir, "AnnotationRenameTest.fir")
+    firFile.exists()
+    val firLines = scala.io.Source.fromFile(firFile).getLines.toList
+
+    // check that verification components have expected names
+    exactly(1, firLines) should include ("assert(clock, _T, UInt<1>(1), \"\") : hello")
+    exactly(1, firLines) should include ("assume(clock, _T_3, UInt<1>(1), \"\") : howdy")
+  }
+
+  property("annotation of verification constructs should fail") {
+    /** Circuit that attempts to annotate an unnamed cover. */
+    class AnnotationUnnamedFailureTest extends Module {
+      val io = IO(new Bundle{
+        val in = Input(UInt(8.W))
+        val out = Output(UInt(8.W))
+      })
+      io.out := io.in
+      VerifAnnotation.annotate(formal.cover(io.in === 3.U))
+    }
+
+    // check that compilation throws expected exception
+    val exc = intercept[ChiselException] {
+      ChiselStage.emitFirrtl(new AnnotationUnnamedFailureTest)
+    }
+    exc.getMessage should equal ("trying to access a name that cannot be computed")
+  }
 }

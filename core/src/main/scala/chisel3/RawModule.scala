@@ -76,9 +76,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
       id match {
         case id: BaseModule => id.forceName(None, default=id.desiredName, _namespace)
         case id: MemBase[_] => id.forceName(None, default="MEM", _namespace)
-        case id: BaseSim =>
-          id.forceName(None, default="SIM", _namespace)
-          println(s"forcename for BaseSim ${id.getRef.name}")
+        case id: BaseSim => id.forceOptionalName(_namespace)
         case id: Data  =>
           if (id.isSynthesizable) {
             id.topBinding match {

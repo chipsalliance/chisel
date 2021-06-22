@@ -202,6 +202,18 @@ private[chisel3] trait HasId extends InstanceId {
       setRef(Ref(available_name))
     }
 
+  /** Create a name only if a ref provided, a name is suggested, or
+    * [[autoSeed]] exists.
+    */
+  private[chisel3] def forceOptionalName(namespace: Namespace): Unit =
+    if(_ref.isEmpty) {
+      val candidate_name = computeName(None, None)
+      if (!candidate_name.isEmpty) {
+        val available_name = namespace.name(candidate_name.get)
+        setRef(Ref(available_name))
+      }
+    }
+
   private var _ref: Option[Arg] = None
   private[chisel3] def setRef(imm: Arg): Unit = setRef(imm, false)
   private[chisel3] def setRef(imm: Arg, force: Boolean): Unit = {
@@ -220,7 +232,10 @@ private[chisel3] trait HasId extends InstanceId {
     case Some(p) => p._component match {
       case Some(c) => _ref match {
         case Some(arg) => arg fullName c
-        case None => computeName(None, None).get
+        case None => computeName(None, None) match {
+          case Some(name) => name
+          case None => throwException("trying to access a name that cannot be computed")
+        }
       }
       case None => throwException("signalName/pathName should be called after circuit elaboration")
     }
