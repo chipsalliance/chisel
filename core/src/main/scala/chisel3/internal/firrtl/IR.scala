@@ -3,13 +3,13 @@
 package chisel3.internal.firrtl
 
 import firrtl.{ir => fir}
-
 import chisel3._
 import chisel3.internal._
 import chisel3.internal.sourceinfo.SourceInfo
 import chisel3.experimental._
 import _root_.firrtl.{ir => firrtlir}
 import _root_.firrtl.PrimOps
+import chisel3.DontCare._parent
 
 import scala.collection.immutable.NumericRange
 import scala.math.BigDecimal.RoundingMode
@@ -766,7 +766,7 @@ object Formal extends Enumeration {
   val Cover = Value("cover")
 }
 case class Verification[T <: NamedComponent](id: T, op: Formal.Value, sourceInfo: SourceInfo, clock: Arg,
-                        predicate: Arg, message: String) extends Command
+                        predicate: Arg, message: String) extends Definition
 abstract class Component extends Arg {
   def id: BaseModule
   def name: String

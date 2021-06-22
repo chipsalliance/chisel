@@ -52,10 +52,10 @@ object VerificationAnnotationTest {
     })
     io.out := io.in
     val cov = formal.cover(io.in === 3.U)
-    VerifAnnotation.annotate(cov)
     val assm = formal.assume(io.in =/= 2.U)
-    VerifAnnotation.annotate(assm)
     val asst = formal.assert(io.out === io.in)
+    VerifAnnotation.annotate(cov)
+    VerifAnnotation.annotate(assm)
     VerifAnnotation.annotate(asst)
   }
 }
@@ -73,22 +73,21 @@ class VerificationSpec extends ChiselPropSpec with Matchers {
 
     // reset guard around the verification statement
     assertContains(lines, "when _T_2 : @[VerificationSpec.scala")
-    assertContains(lines, "cover(clock, _T, UInt<1>(\"h1\"), \"\") @[VerificationSpec.scala")
+    assertContains(lines, "cover(clock, _T, UInt<1>(\"h1\"), \"\")")
 
     assertContains(lines, "when _T_6 : @[VerificationSpec.scala")
-    assertContains(lines, "assume(clock, _T_4, UInt<1>(\"h1\"), \"\") @[VerificationSpec.scala")
+    assertContains(lines, "assume(clock, _T_4, UInt<1>(\"h1\"), \"\")")
 
     assertContains(lines, "when _T_9 : @[VerificationSpec.scala")
-    assertContains(lines, "assert(clock, _T_7, UInt<1>(\"h1\"), \"\") @[VerificationSpec.scala")
+    assertContains(lines, "assert(clock, _T_7, UInt<1>(\"h1\"), \"\")")
   }
 
   property("annotation of verification constructs should work") {
     val testDir = new File("test_run_dir", "VerificationAnnotationTests")
-    // delete contents from past runs
-    testDir.listFiles.foreach(f => f.delete())
     (new ChiselStage).emitSystemVerilog(
       gen = new VerificationAnnotationTest.AnnotationTest,
-      args = Array ("-td", testDir.getPath)
+      args = Array("-td", testDir.getPath),
+      annotations = Seq(chisel3.stage.PrintFullStackTraceAnnotation)
     )
 
     // read in annotation file
