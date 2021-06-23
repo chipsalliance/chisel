@@ -96,6 +96,24 @@ trait MinimizerSpec extends SMTModelCheckingSpec {
     ), "caseMultiDefault")
   }
 
+  "case7SegDecoder" should "pass" in {
+    minimizerTest(TruthTable(
+      Map(
+        BitPat("b0000") -> BitPat("b111111001"),
+        BitPat("b0001") -> BitPat("b011000001"),
+        BitPat("b0010") -> BitPat("b110110101"),
+        BitPat("b0011") -> BitPat("b111100101"),
+        BitPat("b0100") -> BitPat("b011001101"),
+        BitPat("b0101") -> BitPat("b101101101"),
+        BitPat("b0110") -> BitPat("b101111101"),
+        BitPat("b0111") -> BitPat("b111000001"),
+        BitPat("b1000") -> BitPat("b111111101"),
+        BitPat("b1001") -> BitPat("b111101101"),
+      ),
+      BitPat("b???????10")
+    ), "case7SegDecoder")
+  }
+
   // A simple RV32I decode table example
   "caseRV32I" should "pass" in {
     val BEQ = "?????????????????000?????1100011"
