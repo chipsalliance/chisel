@@ -13,7 +13,8 @@ import org.scalacheck._
 import org.scalatest._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should._
+import org.scalatest.propspec.AnyPropSpec
+import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
 import java.io.ByteArrayOutputStream
@@ -94,7 +95,7 @@ abstract class ChiselFlatSpec extends AnyFlatSpec with ChiselRunners with Matche
 abstract class ChiselFreeSpec extends AnyFreeSpec with ChiselRunners with Matchers
 
 /** Spec base class for property-based testers. */
-abstract class ChiselPropSpec extends PropSpec with ChiselRunners with ScalaCheckPropertyChecks with Matchers {
+abstract class ChiselPropSpec extends AnyPropSpec with ChiselRunners with ScalaCheckPropertyChecks with Matchers {
 
   // Constrain the default number of instances generated for every use of forAll.
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
