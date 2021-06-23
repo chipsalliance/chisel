@@ -16,14 +16,6 @@ import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
   * Defines a conversion to a corresponding FIRRTL Annotation
   */
 trait ChiselAnnotation {
-  val declaredContext: Option[InstanceContext] = Builder.instanceContext
-  final def contextualToFirrtl: Annotation = {
-    val currentCtx = Builder.instanceContext
-    Builder.setContext(declaredContext)
-    val ret = toFirrtl
-    Builder.setContext(currentCtx)
-    ret
-  }
   /** Conversion to FIRRTL Annotation */
   def toFirrtl: Annotation
 }

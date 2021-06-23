@@ -9,33 +9,31 @@ import chisel3.experimental.dataview._
 import chisel3.aop.Select
 import chisel3.experimental.annotate
 
-
-class AddJuan extends Module {
-  val in  = IO(Input(UInt(32.W)))
-  val out = IO(Output(UInt(32.W)))
-  val innerWire = Wire(UInt(32.W))
-  innerWire := in + 1.U
-  out := innerWire
-}
-
-class AddTwwo extends Module {
-  val in  = IO(Input(UInt(32.W)))
-  val out = IO(Output(UInt(32.W)))
-  val template = Template(new AddJuan)
-  val i0 = Instance(template)
-  val i1 = Instance(template)
-  i0.in := in
-  i1.in := i0.out
-  out := i1.out
-}
-
-object AddJuan {
-  implicit class AddJuanHandle(i: Instance[AddJuan]) {
-    def in = i(_.in)
-    def out = i(_.out)
-    def innerWire = i(_.innerWire)
+object PlaygroundExamples {
+  class AddOne extends Module {
+    val in  = IO(Input(UInt(32.W)))
+    val out = IO(Output(UInt(32.W)))
+    val innerWire = Wire(UInt(32.W))
+    innerWire := in + 1.U
+    out := innerWire
   }
-  implicit class AddTwwoHandle(i: Instance[AddTwwo]) {
+  
+  class AddTwo extends Module {
+    val in  = IO(Input(UInt(32.W)))
+    val out = IO(Output(UInt(32.W)))
+    val template = Template(new AddOne)
+    val i0 = Instance(template)
+    val i1 = Instance(template)
+    i0.in := in
+    i1.in := i0.out
+    out := i1.out
+  }
+  implicit class AddJuanHandle(i: Instance[AddOne]) {
+    val in = i(_.in)
+    val out = i(_.out)
+    val innerWire = i(_.innerWire)
+  }
+  implicit class AddTwwoHandle(i: Instance[AddTwo]) {
     def in = i(_.in)
     def out = i(_.out)
     def i0 = i(_.i0)
@@ -45,10 +43,10 @@ object AddJuan {
 
 class InstancePlayground extends ChiselFlatSpec with Utils {
   import Instance._
+  import PlaygroundExamples._
   "Template/Instance" should "enable instantiating the same instance multiple times" in {
     class AddOneTester extends BasicTester {
-      val template = Template(new AddJuan)
-      import AddJuan._
+      val template = Template(new AddOne)
       val i0 = Instance(template)
       val i1 = Instance(template)
       i0.in := 42.U
@@ -62,8 +60,7 @@ class InstancePlayground extends ChiselFlatSpec with Utils {
   }
   "Template/Instance" should "enable instantiating nestingly" in {
     class AddOneTester extends BasicTester {
-      val template = Template(new AddTwwo)
-      import AddJuan._
+      val template = Template(new AddTwo)
       val i0 = Instance(template)
       val i1 = Instance(template)
       i0.in := 42.U
@@ -75,15 +72,10 @@ class InstancePlayground extends ChiselFlatSpec with Utils {
     println((new ChiselStage).emitChirrtlWithAnnotations(gen = new AddOneTester, args = Array("--full-stacktrace")))
     assertTesterPasses(new AddOneTester)
   }
-  //Annotation that has two targets in different hierarchies?
-  /*
-  Thoughts:
-   - We have different semantics calling toTarget through an Instance, than through a Module.
-   - Consider different bindings, e.g. CMR binding?
+  "Template/Instance" should "be viewable as bundle, same as module" in {}
+  "Template/Instance" should "be able to refactored to extend same interface as module" in {
 
-   - summon instance, use macros to define extension methods on instance for each module member. call clonetype on any returned data, generating an XMR for non-ports
-   - 
-  */
+  }
   //{
   //  // Option 1
   //  val pc = core(_.cache)(_.pc)

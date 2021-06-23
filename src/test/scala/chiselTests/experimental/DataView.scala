@@ -40,14 +40,19 @@ object HWTuple {
   import ProductDataProduct._
 
   class HWTuple2[A <: Data, B <: Data](val _1: A, val _2: B) extends Bundle
+  class HWTuple3[A <: Data, B <: Data, C <: Data](val _1: A, val _2: B, val _3: C) extends Bundle
 
   // Provide mapping from Tuple2 to HWTuple2
   implicit def view[A <: Data, B <: Data]: DataView[(A, B), HWTuple2[A, B]] =
     DataView(_._1 -> _._1, _._2 -> _._2)
+  implicit def view3[A <: Data, B <: Data, C <: Data]: DataView[(A, B, C), HWTuple3[A, B, C]] =
+    DataView(_._1 -> _._1, _._2 -> _._2, _._3 -> _._3)
 
   // Implicit conversion to make the code pretty
   implicit def tuple2hwtuple[A <: Data, B <: Data](tup: (A, B)): HWTuple2[A, B] =
     tup.viewAs(new HWTuple2(tup._1.cloneType, tup._2.cloneType))
+  implicit def tuple3hwtuple[A <: Data, B <: Data, C <: Data](tup: (A, B, C)): HWTuple3[A, B, C] =
+    tup.viewAs(new HWTuple3(tup._1.cloneType, tup._2.cloneType, tup._3.cloneType))
 }
 
 // This should become part of Chisel in a later PR

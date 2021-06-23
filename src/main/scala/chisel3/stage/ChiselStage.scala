@@ -77,7 +77,7 @@ class ChiselStage extends Stage {
   final def emitChirrtlWithAnnotations(
     gen: => RawModule,
     args: Array[String] = Array.empty,
-    annotations: AnnotationSeq = Seq.empty): String = {
+    annotations: AnnotationSeq = Seq.empty): (String, AnnotationSeq) = {
 
     val annos = execute(Array("--no-run-firrtl") ++ args, ChiselGeneratorAnnotation(() => gen) +: annotations)
 
@@ -98,9 +98,7 @@ class ChiselStage extends Stage {
         case a: _root_.firrtl.options.Unserializable => false
         case _ => true
       }
-      .map(_.serialize)
-      .mkString("\n")
-    chirrtl + "\n" + remaining
+    (chirrtl,remaining)
 
   }
 

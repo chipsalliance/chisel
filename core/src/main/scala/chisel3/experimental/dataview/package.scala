@@ -97,7 +97,6 @@ package object dataview {
       val result: V = view.cloneTypeFull
 
       val mapping = dataView.mapping(target, result)
-      println(s"HERE: $mapping")
       result match {
         case agg: Aggregate =>
           bindAgg(target, agg, mapping)

@@ -279,21 +279,39 @@ private[chisel3] trait NamedComponent extends HasId {
     * @note Should not be called until circuit elaboration is complete
     */
   final def toTarget: ReferenceTarget = {
-    val name = this.instanceName
+    def getXMR(d: HasId, me: Option[Data]): Option[XMRBinding] = {
+      d match {
+        case d: Data => d.binding match {
+          case Some(x: XMRBinding) => Some(x)
+          case Some(ChildBinding(parent: Data)) => getXMR(parent, Some(d))
+          case Some(ViewBinding(target: Element)) => getXMR(target, me)
+          case Some(AggregateViewBinding(childMap: Map[Data, Element])) =>
+            require(me.nonEmpty)
+            getXMR(childMap.collectFirst{ case (d, e) if d == me.get => e }.get, None)
+            //throwException("Not sure when I get here.....")
+          case Some(x) =>
+            println(s"Alternative: ${x.getClass.toString}")
+            None
+          case None => None
+        }
+        case _ => None
+      }
+    }
+    val isXMR = getXMR(this, None)
+    val name = (_parent.get._component, getOptionRef, isXMR) match {
+      case (None, _, _) => throwException("signalName/pathName should be called after circuit elaboration")
+      case (Some(c), None, _) => computeName(None, None).get
+      case (Some(c), Some(arg), Some(_)) => arg.name
+      case (Some(c), Some(arg), None) => arg fullName c
+    }
+    println(s"isXMR: $isXMR")
+    println(s"toTarget: $name")
     if (!validComponentName(name)) throwException(s"Illegal component name: $name (note: literals are illegal)")
     import _root_.firrtl.annotations.{Target, TargetToken}
     Target.toTargetTokens(name).toList match {
       case TargetToken.Ref(r) :: components =>
         val rt = ReferenceTarget(this.circuitName, this.parentModName, Nil, r, components)
-        this match {
-          case d: Data => d.binding match {
-            case Some(x: XMRBinding) =>
-              println(s"XMR Binding context: ${x.context}")
-              x.context.toInstanceTarget.ref(r).copy(component = components)
-            case _ => rt
-          }
-          case other => rt
-        }
+        isXMR.map(_.context.toInstanceTarget.ref(r).copy(component = components)).getOrElse(rt)
       case other =>
         throw _root_.firrtl.annotations.Target.NamedException(s"Cannot convert $name into [[ReferenceTarget]]: $other")
     }
@@ -301,13 +319,18 @@ private[chisel3] trait NamedComponent extends HasId {
 
   final def toAbsoluteTarget: ReferenceTarget = {
     val localTarget = toTarget
-    Builder.instanceContext match {
-      case None =>
-        _parent match {
-          case Some(parent) => parent.toAbsoluteTarget.ref(localTarget.ref).copy(component = localTarget.component)
-          case None => localTarget
-        }
-      case Some(ct) => ct.toInstanceTarget.ref(localTarget.ref).copy(component = localTarget.component)
+    lazy val nonXmrAbsoluteTarget = _parent match {
+      case Some(parent) => parent.toAbsoluteTarget.ref(localTarget.ref).copy(component = localTarget.component)
+      case None => localTarget
+    }
+    this match {
+      case d: Data => d.binding match {
+        case Some(x: XMRBinding) =>
+          println(s"XMR Binding context: ${x.context}")
+          x.context.toAbsoluteInstanceTarget.ref(localTarget.ref).copy(component = localTarget.component)
+        case _ => nonXmrAbsoluteTarget
+      }
+      case other => nonXmrAbsoluteTarget
     }
   }
 }
@@ -391,32 +414,6 @@ private[chisel3] object Builder extends LazyLogging {
   def annotations: ArrayBuffer[ChiselAnnotation] = dynamicContext.annotations
   def annotationSeq: AnnotationSeq = dynamicContext.annotationSeq
   def namingStack: NamingStack = dynamicContext.namingStack
-
-  // Instance Context helpers
-  def instanceContext: Option[InstanceContext] = chiselContext.get.instanceContext
-  def descend(inst: HasId, b: BaseModule): Unit = {
-    val newContext = chiselContext.get.instanceContext.map(_.descend(inst, b)).getOrElse{
-      InstanceContext.getContext(b)
-    }
-    chiselContext.get.instanceContext = Some(newContext)
-  }
-  def ascend(): Unit = chiselContext.get.instanceContext = chiselContext.get.instanceContext.map(_.ascend())
-  def setContext(i: Option[InstanceContext]): Unit = chiselContext.get.instanceContext = i
-  def getContext(b: BaseModule): InstanceContext = {
-    // Options
-    // 1. In a module, dotting into submodule
-    // 2. In a module, dotting into an instance
-    // 3. In an instance, dotting into an instance
-    // First, get context of reference of submodule hierarchy
-    val templateReference = InstanceContext.getContext(b)
-    instanceContext.map { ic =>
-      ic.descend(templateReference)
-    }.getOrElse(templateReference)
-  }
-  def getTemplateContext(b: BaseModule): InstanceContext = {
-    val templateReference = InstanceContext.getContext(b)
-    templateReference
-  }
 
   // Puts a prefix string onto the prefix stack
   def pushPrefix(d: String): Unit = {
