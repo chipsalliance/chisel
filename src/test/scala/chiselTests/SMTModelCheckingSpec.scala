@@ -9,6 +9,7 @@ import firrtl.util.BackendCompilationUtilities.timeStamp
 import logger.{LazyLogging, LogLevel, LogLevelAnnotation}
 import org.scalatest.flatspec.AnyFlatSpec
 import os._
+import scala.util.Properties
 
 /** [[SMTModelCheckingSpec]] use z3 and [[firrtl.backends.experimental.smt]] library
   * to solve `assert/assume` in [[chisel3.experimental.verification]],
@@ -64,8 +65,8 @@ private object Z3ModelChecker extends LazyLogging {
   private def executeStep(path: Path): Boolean = {
     val (out, ret) = executeCmd(path.toString)
     assert(ret == 0, s"expected success (0), not $ret: `$out`\nz3 ${path.toString}")
-    assert(out == "sat\n" || out == "unsat\n", s"Unexpected output: $out")
-    out == "unsat\n"
+    assert(out == "sat" + Properties.lineSeparator || out == "unsat" + Properties.lineSeparator, s"Unexpected output: $out")
+    out == "unsat" + Properties.lineSeparator
   }
 
   private def executeCmd(cmd: String): (String, Int) = {
