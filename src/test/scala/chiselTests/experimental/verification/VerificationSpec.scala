@@ -89,7 +89,7 @@ class VerificationSpec extends ChiselPropSpec with Matchers {
 
     // read in annotation file
     val annoFile = new File(testDir, "AnnotationTest.anno.json")
-    annoFile.exists()
+    annoFile should exist
     val annoLines = scala.io.Source.fromFile(annoFile).getLines.toList
 
     // check for expected verification annotations
@@ -100,7 +100,7 @@ class VerificationSpec extends ChiselPropSpec with Matchers {
 
     // read in FIRRTL file
     val firFile = new File(testDir, "AnnotationTest.fir")
-    firFile.exists()
+    firFile should exist
     val firLines = scala.io.Source.fromFile(firFile).getLines.toList
 
     // check that verification components have expected names
@@ -134,7 +134,7 @@ class VerificationSpec extends ChiselPropSpec with Matchers {
 
     // read in annotation file
     val annoFile = new File(testDir, "AnnotationRenameTest.anno.json")
-    annoFile.exists()
+    annoFile should exist
     val annoLines = scala.io.Source.fromFile(annoFile).getLines.toList
 
     // check for expected verification annotations
@@ -144,7 +144,7 @@ class VerificationSpec extends ChiselPropSpec with Matchers {
 
     // read in FIRRTL file
     val firFile = new File(testDir, "AnnotationRenameTest.fir")
-    firFile.exists()
+    firFile should exist
     val firLines = scala.io.Source.fromFile(firFile).getLines.toList
 
     // check that verification components have expected names
