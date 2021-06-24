@@ -74,6 +74,35 @@ object Select {
     myItems ++ deepChildrenItems
   }
 
+  def modules(module: BaseModule): Seq[BaseModule] = {
+    check(module)
+    val allAccessableModules = collectDeep(module) {
+      case x => x
+    }.toSeq.distinct
+    allAccessableModules
+  }
+
+  //def collectDeep[T](module: BaseModule, context: InstanceContext)
+  //                  (collector: PartialFunction[(BaseModule, InstanceContext), T]): Iterable[T] = {
+  //  check(module)
+  //  val myItems = collector.lift((module, context))
+  //  val deepChildrenItems = instances(module).flatMap {
+  //    case i => collectDeep(i, context.descend(i))(collector)
+  //  }
+  //  myItems ++ deepChildrenItems
+  //}
+
+  def instancesWithNames(module: BaseModule): Seq[(String, BaseModule)] = {
+    check(module)
+    module._component.get match {
+      case d: DefModule => d.commands.collect {
+        case i: DefInstance => (i.name, i.id)
+      }
+      case other => Nil
+    }
+  }
+
+
   /** Selects all instances directly instantiated within given module
     * @param module
     * @return

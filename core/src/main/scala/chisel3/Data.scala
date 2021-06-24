@@ -339,12 +339,14 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   private[chisel3] final def isSynthesizable: Boolean = _binding.map {
     case ChildBinding(parent) => parent.isSynthesizable
     case _: TopBinding => true
+    case _: XMRBinding => true
     case (_: SampleElementBinding[_] | _: MemTypeBinding[_]) => false
   }.getOrElse(false)
 
   private[chisel3] def topBindingOpt: Option[TopBinding] = _binding.flatMap {
     case ChildBinding(parent) => parent.topBindingOpt
     case bindingVal: TopBinding => Some(bindingVal)
+    //case _: XMRBinding => XM
     case SampleElementBinding(parent) => parent.topBindingOpt
     case _: MemTypeBinding[_] => None
   }
@@ -624,6 +626,22 @@ trait WireFactory {
       pushCommand(DefInvalid(sourceInfo, x.ref))
     }
 
+    x
+  }
+}
+
+object XMR {
+  /** Construct a [[XMR]] from a hardware
+    * @param t The template from which to construct this wire
+    */
+  def apply[T <: Data](that: T, ctx: InstanceContext): T = macro SourceInfoTransform.xmrArg
+  def do_apply[T <: Data](that: T, ctx: InstanceContext)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    requireIsHardware(that, "cross module reference type")
+    val x = that.cloneTypeFull
+    x.setRef(that.getRef, true)
+
+    // Bind each element of x to being a Wire
+    x.bind(internal.XMRBinding(ctx))
     x
   }
 }

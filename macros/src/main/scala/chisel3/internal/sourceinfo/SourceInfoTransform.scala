@@ -121,6 +121,10 @@ class SourceInfoTransform(val c: Context) extends AutoSourceTransform {
     q"$thisObj.$doFuncTerm($implicitSourceInfo, $implicitCompileOptions)"
   }
 
+  def xmrArg(that: c.Tree, ctx: c.Tree): c.Tree = {
+    q"$thisObj.$doFuncTerm($that, $ctx)($implicitSourceInfo, $implicitCompileOptions)"
+  }
+
   def thatArg(that: c.Tree): c.Tree = {
     q"$thisObj.$doFuncTerm($that)($implicitSourceInfo, $implicitCompileOptions)"
   }

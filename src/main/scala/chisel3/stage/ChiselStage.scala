@@ -23,6 +23,7 @@ import chisel3.internal.{firrtl => cir, ErrorLog}
 import chisel3.stage.CircuitSerializationAnnotation.FirrtlFileFormat
 
 import java.io.{StringWriter, PrintWriter}
+import firrtl.annotations.DeletedAnnotation
 
 class ChiselStage extends Stage {
 
@@ -64,6 +65,40 @@ class ChiselStage extends Stage {
       .get
       .map(_.toChar)
       .mkString
+
+  }
+
+  /** Convert a Chisel module to a CHIRRTL string
+    * @param gen a call-by-name Chisel module
+    * @param args additional command line arguments to pass to Chisel
+    * param annotations additional annotations to pass to Chisel
+    * @return a string containing the Verilog output
+    */
+  final def emitChirrtlWithAnnotations(
+    gen: => RawModule,
+    args: Array[String] = Array.empty,
+    annotations: AnnotationSeq = Seq.empty): (String, AnnotationSeq) = {
+
+    val annos = execute(Array("--no-run-firrtl") ++ args, ChiselGeneratorAnnotation(() => gen) +: annotations)
+
+    val chirrtl = annos
+      .collectFirst {
+        case a: ChiselCircuitAnnotation => CircuitSerializationAnnotation(a.circuit, "", FirrtlFileFormat).getBytes
+      }
+      .get
+      .map(_.toChar)
+      .mkString
+    val remaining = annos
+      .filter {
+        case a: ChiselCircuitAnnotation => false
+        case a: CircuitSerializationAnnotation => false
+        case a: FirrtlCircuitAnnotation => false
+        case a: DesignAnnotation[_] => false
+        case a: DeletedAnnotation => false
+        case a: _root_.firrtl.options.Unserializable => false
+        case _ => true
+      }
+    (chirrtl,remaining)
 
   }
 

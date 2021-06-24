@@ -45,7 +45,6 @@ object Module extends SourceInfoDoc {
     Builder.clearPrefix()
     Builder.currentClock = None
     Builder.currentReset = None
-
     // Execute the module, this has the following side effects:
     //   - set currentModule
     //   - unset readyForModuleConstr
@@ -279,6 +278,7 @@ package experimental {
       * @note Should not be called until circuit elaboration is complete
       */
     final def toAbsoluteTarget: IsModule = {
+      //require(!isTemplate, "Cannot use toAbsoluteTarget on a template! Use other API I'm creating.")
       _parent match {
         case Some(parent) => parent.toAbsoluteTarget.instOf(this.instanceName, toTarget.module)
         case None => toTarget

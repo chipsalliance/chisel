@@ -12,11 +12,13 @@ import _root_.firrtl.annotations.{CircuitName, ComponentName, IsMember, ModuleNa
 import _root_.firrtl.annotations.AnnotationUtils.{validComponentName}
 import chisel3.internal.Builder.Prefix
 import logger.LazyLogging
+import chisel3.InstanceContext
 
 import scala.collection.mutable
 
 private[chisel3] class Namespace(keywords: Set[String]) {
-  private val names = collection.mutable.HashMap[String, Long]()
+  private[chisel3] val names = collection.mutable.HashMap[String, Long]()
+  def copyTo(other: Namespace): Unit = other.names.addAll(names)
   for (keyword <- keywords)
     names(keyword) = 1
 
@@ -265,6 +267,7 @@ private[chisel3] trait HasId extends InstanceId {
 }
 /** Holds the implementation of toNamed for Data and MemBase */
 private[chisel3] trait NamedComponent extends HasId {
+
   /** Returns a FIRRTL ComponentName that references this object
     * @note Should not be called until circuit elaboration is complete
     */
@@ -275,11 +278,39 @@ private[chisel3] trait NamedComponent extends HasId {
     * @note Should not be called until circuit elaboration is complete
     */
   final def toTarget: ReferenceTarget = {
-    val name = this.instanceName
+    def getXMR(d: HasId, me: Option[Data]): Option[XMRBinding] = {
+      d match {
+        case d: Data => d.binding match {
+          case Some(x: XMRBinding) => Some(x)
+          case Some(ChildBinding(parent: Data)) => getXMR(parent, Some(d))
+          case Some(ViewBinding(target: Element)) => getXMR(target, me)
+          case Some(AggregateViewBinding(childMap: Map[Data, Element])) =>
+            require(me.nonEmpty)
+            getXMR(childMap.collectFirst{ case (d, e) if d == me.get => e }.get, None)
+            //throwException("Not sure when I get here.....")
+          case Some(x) =>
+            println(s"Alternative: ${x.getClass.toString}")
+            None
+          case None => None
+        }
+        case _ => None
+      }
+    }
+    val isXMR = getXMR(this, None)
+    val name = (_parent.get._component, getOptionRef, isXMR) match {
+      case (None, _, _) => throwException("signalName/pathName should be called after circuit elaboration")
+      case (Some(c), None, _) => computeName(None, None).get
+      case (Some(c), Some(arg), Some(_)) => arg.name
+      case (Some(c), Some(arg), None) => arg fullName c
+    }
+    println(s"isXMR: $isXMR")
+    println(s"toTarget: $name")
     if (!validComponentName(name)) throwException(s"Illegal component name: $name (note: literals are illegal)")
     import _root_.firrtl.annotations.{Target, TargetToken}
     Target.toTargetTokens(name).toList match {
-      case TargetToken.Ref(r) :: components => ReferenceTarget(this.circuitName, this.parentModName, Nil, r, components)
+      case TargetToken.Ref(r) :: components =>
+        val rt = ReferenceTarget(this.circuitName, this.parentModName, Nil, r, components)
+        isXMR.map(_.context.toInstanceTarget.ref(r).copy(component = components)).getOrElse(rt)
       case other =>
         throw _root_.firrtl.annotations.Target.NamedException(s"Cannot convert $name into [[ReferenceTarget]]: $other")
     }
@@ -287,9 +318,18 @@ private[chisel3] trait NamedComponent extends HasId {
 
   final def toAbsoluteTarget: ReferenceTarget = {
     val localTarget = toTarget
-    _parent match {
+    lazy val nonXmrAbsoluteTarget = _parent match {
       case Some(parent) => parent.toAbsoluteTarget.ref(localTarget.ref).copy(component = localTarget.component)
       case None => localTarget
+    }
+    this match {
+      case d: Data => d.binding match {
+        case Some(x: XMRBinding) =>
+          println(s"XMR Binding context: ${x.context}")
+          x.context.toAbsoluteInstanceTarget.ref(localTarget.ref).copy(component = localTarget.component)
+        case _ => nonXmrAbsoluteTarget
+      }
+      case other => nonXmrAbsoluteTarget
     }
   }
 }
@@ -303,6 +343,9 @@ private[chisel3] class ChiselContext() {
 
   // Records the different prefixes which have been scoped at this point in time
   var prefixStack: Prefix = Nil
+
+  // Records dotting into instances
+  var instanceContext: Option[InstanceContext] = None
 }
 
 private[chisel3] class DynamicContext() {
@@ -339,6 +382,8 @@ private[chisel3] object Builder extends LazyLogging {
     require(dynamicContextVar.value.isDefined, "must be inside Builder context")
     dynamicContextVar.value.get
   }
+  def captureContext(): DynamicContext = dynamicContext
+  def restoreContext(dc: DynamicContext) = dynamicContextVar.value = Some(dc)
 
   // Ensure we have a thread-specific ChiselContext
   private val chiselContext = new ThreadLocal[ChiselContext]{
@@ -599,6 +644,7 @@ private[chisel3] object Builder extends LazyLogging {
     * (Note: Map is Iterable[Tuple2[_,_]] and thus excluded)
     */
   def nameRecursively(prefix: String, nameMe: Any, namer: (HasId, String) => Unit): Unit = nameMe match {
+    case (id: Instance[_]) => namer(id.ports, prefix)
     case (id: HasId) => namer(id, prefix)
     case Some(elt) => nameRecursively(prefix, elt, namer)
     case (iter: Iterable[_]) if iter.hasDefiniteSize =>
