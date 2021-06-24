@@ -3,7 +3,6 @@
 package chisel3.internal.firrtl
 
 import firrtl.{ir => fir}
-
 import chisel3._
 import chisel3.internal._
 import chisel3.internal.sourceinfo.SourceInfo
@@ -765,8 +764,8 @@ object Formal extends Enumeration {
   val Assume = Value("assume")
   val Cover = Value("cover")
 }
-case class Verification(op: Formal.Value, sourceInfo: SourceInfo, clock: Arg,
-                        predicate: Arg, message: String) extends Command
+case class Verification[T <: BaseSim](id: T, op: Formal.Value, sourceInfo: SourceInfo, clock: Arg,
+                        predicate: Arg, message: String) extends Definition
 abstract class Component extends Arg {
   def id: BaseModule
   def name: String

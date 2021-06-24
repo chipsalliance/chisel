@@ -136,14 +136,14 @@ private[chisel3] object Converter {
       val (fmt, args) = unpack(pable, ctx)
       Some(fir.Print(convert(info), fir.StringLit(fmt),
                      args.map(a => convert(a, ctx, info)), convert(clock, ctx, info), firrtl.Utils.one))
-    case Verification(op, info, clk, pred, msg) =>
+    case e @ Verification(_, op, info, clk, pred, msg) =>
       val firOp = op match {
         case Formal.Assert => fir.Formal.Assert
         case Formal.Assume => fir.Formal.Assume
         case Formal.Cover => fir.Formal.Cover
       }
       Some(fir.Verification(firOp, convert(info), convert(clk, ctx, info),
-        convert(pred, ctx, info), firrtl.Utils.one, fir.StringLit(msg)))
+        convert(pred, ctx, info), firrtl.Utils.one, fir.StringLit(msg), e.name))
     case _ => None
   }
 
