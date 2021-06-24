@@ -64,13 +64,18 @@ object Module extends SourceInfoDoc {
     Builder.currentClock = saveClock   // Back to clock and reset scope
     Builder.currentReset = saveReset
 
-    val component = module.generateComponent()
-    Builder.components += component
+    // Only add the component if the module generates one
+    val componentOpt = module.generateComponent()
+    for (component <- componentOpt) {
+      Builder.components += component
+    }
 
     Builder.setPrefix(savePrefix)
 
     // Handle connections at enclosing scope
-    if(!Builder.currentModule.isEmpty) {
+    // We use _component because Modules that don't generate them may still have one
+    if (Builder.currentModule.isDefined && module._component.isDefined) {
+      val component = module._component.get
       pushCommand(DefInstance(sourceInfo, module, component.ports))
       module.initializeInParent(compileOptions)
     }
@@ -178,20 +183,73 @@ package internal {
   import chisel3.experimental.BaseModule
 
   object BaseModule {
-    private[chisel3] class ClonePorts (elts: Data*)(implicit compileOptions: CompileOptions) extends Record {
+    // Private internal class to serve as a _parent for Data in cloned ports
+    private[chisel3] class ModuleClone(proto: BaseModule) extends BaseModule {
+      // Don't generate a component, but point to the one for the cloned Module
+      private[chisel3] def generateComponent(): Option[Component] = {
+        _component = proto._component
+        None
+      }
+      // This module doesn't acutally exist in the FIRRTL so no initialization to do
+      private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = ()
+
+      override def desiredName: String = proto.name
+    }
+
+    /** Record type returned by CloneModuleAsRecord
+      *
+      * @note These are not true Data (the Record doesn't correspond to anything in the emitted
+      * FIRRTL yet its elements *do*) so have some very specialized behavior.
+      * @param proto Optional pointer to the Module we are a clone of. Set for first instance, unset
+      *              for clones
+      */
+    private[chisel3] class ClonePorts (proto: Option[BaseModule], elts: Data*)(implicit compileOptions: CompileOptions) extends Record {
       val elements = ListMap(elts.map(d => d.instanceName -> d.cloneTypeFull): _*)
       def apply(field: String) = elements(field)
-      override def cloneType = (new ClonePorts(elts: _*)).asInstanceOf[this.type]
+      override def cloneType = (new ClonePorts(None, elts: _*)).asInstanceOf[this.type]
+
+      // Because ClonePorts instances are *not* created inside of their parent module, but rather,
+      // their parent's parent, we have to intercept the standard setRef and replace it with our own
+      // special Ref type.
+      // This only applies to ClonePorts created in cloneIORecord, any clones of these Records have
+      // normal behavior.
+      // Also, the name of ClonePorts Records needs to be propagated to their parent ModuleClone
+      // since we have no other way of setting the instance name for those.
+      private[chisel3] override def setRef(imm: Arg, force: Boolean): Unit = {
+        val immx = (proto, imm) match {
+          case (Some(mod), Ref(name)) =>
+            // Our _parent is a ModuleClone that needs its ref to match ours for .toAbsoluteTarget
+            _parent.foreach(_.setRef(Ref(name), force=true))
+            // Return a specialize-ref that will do the right thing
+            ModuleCloneIO(mod, name)
+          case _ => imm
+        }
+        super.setRef(immx, force)
+      }
+    }
+
+    // Recursively set the parent of the start Data and any children (eg. in an Aggregate)
+    private def setAllParents(start: Data, parent: Option[BaseModule]): Unit = {
+      def rec(data: Data): Unit = {
+        data._parent = parent
+        data match {
+        case _: Element =>
+        case agg: Aggregate =>
+          agg.getElements.foreach(rec)
+        }
+      }
+      rec(start)
     }
 
     private[chisel3] def cloneIORecord(proto: BaseModule)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): ClonePorts = {
       require(proto.isClosed, "Can't clone a module before module close")
-      val clonePorts = new ClonePorts(proto.getModulePorts: _*)
-      clonePorts.bind(WireBinding(Builder.forcedUserModule, Builder.currentWhen()))
-      val cloneInstance = new DefInstance(sourceInfo, proto, proto._component.get.ports) {
-        override def name = clonePorts.getRef.name
-      }
-      pushCommand(cloneInstance)
+      // We don't create this inside the ModuleClone because we need the ref to be set by the
+      // currentModule (and not clonePorts)
+      val clonePorts = new ClonePorts(Some(proto), proto.getModulePorts: _*)
+      val cloneParent = Module(new ModuleClone(proto))
+      clonePorts.bind(PortBinding(cloneParent))
+      setAllParents(clonePorts, Some(cloneParent))
+      // Normally handled during Module construction but ClonePorts really lives in its parent's parent
       if (!compileOptions.explicitInvalidate) {
         pushCommand(DefInvalid(sourceInfo, clonePorts.ref))
       }
@@ -270,7 +328,7 @@ package experimental {
     /** Generates the FIRRTL Component (Module or Blackbox) of this Module.
       * Also closes the module so no more construction can happen inside.
       */
-    private[chisel3] def generateComponent(): Component
+    private[chisel3] def generateComponent(): Option[Component]
 
     /** Sets up this module in the parent context
       */
@@ -308,9 +366,12 @@ package experimental {
 
     /** Legalized name of this module. */
     final lazy val name = try {
-      // If this is a module aspect, it should share the same name as the original module
-      // Thus, the desired name should be returned without uniquification
-      if(this.isInstanceOf[ModuleAspect]) desiredName else Builder.globalNamespace.name(desiredName)
+      // ModuleAspects and ModuleClones are not "true modules" and thus should share
+      // their original modules names without uniquification
+      this match {
+        case (_: ModuleAspect | _: internal.BaseModule.ModuleClone) => desiredName
+        case _ => Builder.globalNamespace.name(desiredName)
+      }
     } catch {
       case e: NullPointerException => throwException(
         s"Error: desiredName of ${this.getClass.getName} is null. Did you evaluate 'name' before all values needed by desiredName were available?", e)
