@@ -24,15 +24,23 @@ private[chisel3] object Converter {
     case Percent => ("%%", List.empty)
   }
 
+  private def reportInternalError(msg: String): Nothing = {
+    val link = "https://github.com/chipsalliance/chisel3/issues/new"
+    val fullMsg = s"Internal Error! $msg This is a bug in Chisel, please file an issue at '$link'"
+    throwException(fullMsg)
+  }
+
   def getRef(id: HasId, sourceInfo: SourceInfo): Arg =
     id.getOptionRef.getOrElse {
       val module = id._parent.map(m => s" '$id' was defined in module '$m'.").getOrElse("")
       val loc = sourceInfo.makeMessage(" " + _)
-      val link = "https://github.com/chipsalliance/chisel3/issues/new"
-      val msg = s"Internal error! Could not get ref for '$id'$loc!$module " +
-                s"This is a bug in Chisel, please file an issue at '$link'."
-      throwException(msg)
+      reportInternalError(s"Could not get ref for '$id'$loc!$module")
     }
+
+  private def clonedModuleIOError(mod: BaseModule, name: String, sourceInfo: SourceInfo): Nothing = {
+    val loc = sourceInfo.makeMessage(" " + _)
+    reportInternalError(s"Trying to convert a cloned IO of $mod inside of $mod itself$loc!")
+  }
 
   def convert(info: SourceInfo): fir.Info = info match {
     case _: NoSourceInfo => fir.NoInfo
@@ -65,6 +73,9 @@ private[chisel3] object Converter {
     case ModuleIO(mod, name) =>
       if (mod eq ctx.id) fir.Reference(name, fir.UnknownType)
       else fir.SubField(fir.Reference(getRef(mod, info).name, fir.UnknownType), name, fir.UnknownType)
+    case ModuleCloneIO(mod, name) =>
+      if (mod eq ctx.id) clonedModuleIOError(mod, name, info)
+      else fir.Reference(name)
     case u @ ULit(n, UnknownWidth()) =>
       fir.UIntLiteral(n, fir.IntWidth(u.minWidth))
     case ULit(n, w) =>
