@@ -86,7 +86,7 @@ package experimental {
       val firrtlPorts = getModulePorts map {port => Port(port, port.specifiedDirection)}
       val component = DefBlackBox(this, name, firrtlPorts, SpecifiedDirection.Unspecified, params)
       _component = Some(component)
-      Some(component)
+      _component
     }
 
     private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
@@ -182,7 +182,7 @@ abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param
     val firrtlPorts = namedPorts map {namedPort => Port(namedPort._2, namedPort._2.specifiedDirection)}
     val component = DefBlackBox(this, name, firrtlPorts, _io.specifiedDirection, params)
     _component = Some(component)
-    Some(component)
+    _component
   }
 
   private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = {

@@ -132,7 +132,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
     }
     val component = DefModule(this, name, firrtlPorts, invalidateCommands ++ getCommands)
     _component = Some(component)
-    Some(component)
+    _component
   }
 
   private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
@@ -216,15 +216,6 @@ package internal {
 
     // Allow access to bindings from the compatibility package
     protected def _compatIoPortBound() = portsContains(_io)
-
-    private[chisel3] override def namePorts(names: HashMap[HasId, String]): Unit = {
-      for (port <- getModulePorts) {
-        // This should already have been caught
-        if (!names.contains(port)) throwException(s"Unable to name port $port in $this")
-        val name = names(port)
-        port.setRef(ModuleIO(this, _namespace.name(name)))
-      }
-    }
 
     private[chisel3] override def generateComponent(): Option[Component] = {
       _compatAutoWrapPorts()  // pre-IO(...) compatibility hack
