@@ -18,7 +18,9 @@ import scala.collection.mutable
 
 private[chisel3] class Namespace(keywords: Set[String]) {
   private[chisel3] val names = collection.mutable.HashMap[String, Long]()
-  def copyTo(other: Namespace): Unit = other.names.addAll(names)
+  def copyTo(other: Namespace): Unit = names.foreach { case (s: String, l: Long) =>
+    other.names(s) = l
+  }
   for (keyword <- keywords)
     names(keyword) = 1
 
@@ -283,11 +285,6 @@ private[chisel3] trait NamedComponent extends HasId {
         case d: Data => d.binding match {
           case Some(x: XMRBinding) => Some(x)
           case Some(ChildBinding(parent: Data)) => getXMR(parent, Some(d))
-          case Some(ViewBinding(target: Element)) => getXMR(target, me)
-          case Some(AggregateViewBinding(childMap: Map[Data, Element])) =>
-            require(me.nonEmpty)
-            getXMR(childMap.collectFirst{ case (d, e) if d == me.get => e }.get, None)
-            //throwException("Not sure when I get here.....")
           case Some(x) =>
             println(s"Alternative: ${x.getClass.toString}")
             None
@@ -303,8 +300,6 @@ private[chisel3] trait NamedComponent extends HasId {
       case (Some(c), Some(arg), Some(_)) => arg.name
       case (Some(c), Some(arg), None) => arg fullName c
     }
-    println(s"isXMR: $isXMR")
-    println(s"toTarget: $name")
     if (!validComponentName(name)) throwException(s"Illegal component name: $name (note: literals are illegal)")
     import _root_.firrtl.annotations.{Target, TargetToken}
     Target.toTargetTokens(name).toList match {

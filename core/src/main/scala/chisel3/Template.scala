@@ -27,7 +27,7 @@ object Template extends SourceInfoDoc {
 
   /** @group SourceInfoTransformMacro */
   def do_apply[T <: RawModule](bc: => T) (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
-    val dynamicContext = new DynamicContext(Nil)
+    val dynamicContext = new DynamicContext()
     Builder.globalNamespace.copyTo(dynamicContext.globalNamespace)
     val (ir, module) = Builder.build(Module(bc), dynamicContext)
     Builder.components ++= ir.components

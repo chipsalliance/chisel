@@ -13,7 +13,6 @@ import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{InstTransform, SourceInfo, SourceInfoTransform}
 import chisel3.experimental.BaseModule
-import chisel3.experimental.dataview._
 import _root_.firrtl.annotations.{ModuleName, ModuleTarget, IsModule, IsMember, Named, Target}
 
 object Instance extends SourceInfoDoc {
