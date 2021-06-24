@@ -79,9 +79,14 @@ trait InstanceId {
 }
 
 private[chisel3] trait HasId extends InstanceId {
+<<<<<<< HEAD
   private[chisel3] def _onModuleClose: Unit = {} // scalastyle:ignore method.name
   private[chisel3] val _parent: Option[BaseModule] = Builder.currentModule
   _parent.foreach(_.addId(this))
+=======
+  private[chisel3] def _onModuleClose: Unit = {}
+  private[chisel3] var _parent: Option[BaseModule] = Builder.currentModule
+>>>>>>> d3e13ce2 (Fix CloneModuleAsRecord support for .toTarget)
 
   private[chisel3] val _id: Long = Builder.idGen.next
 
