@@ -271,7 +271,7 @@ object WrappedType {
       case (_: IntervalType, _: IntervalType) => true
       // Analog totally skips out of the Firrtl type system.
       // The only way Analog can play with another Analog component is through Attach.
-      // Ohterwise, we'd need to special case it during ExpandWhens, Lowering,
+      // Otherwise, we'd need to special case it during ExpandWhens, Lowering,
       // ExpandConnects, etc.
       case (_: AnalogType, _: AnalogType) => false
       case (sink: VectorType, source: VectorType) =>
