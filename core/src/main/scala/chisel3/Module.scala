@@ -132,6 +132,7 @@ package internal {
       def isACloneOf(a: Any): Boolean = this == a || _proto == a
     }
     // Private internal class to serve as a _parent for Data in cloned ports
+<<<<<<< HEAD
     class ModuleClone[T <: BaseModule] private[chisel3] (val _proto: T) extends BaseModule with IsClone[T] {
       override def toString = s"ModuleClone(${_proto})"
       def getPorts = _portsRecord
@@ -143,6 +144,14 @@ package internal {
       private[chisel3] def generateComponent(): Option[Component] = {
         require(!_closed, "Can't generate module more than once")
         _closed = true
+=======
+    private[chisel3] class ModuleClone(_proto: BaseModule) extends BaseModule {
+      // ClonePorts that hold the bound ports for this module
+      // Used for setting the refs of both this module and the Record
+      private[BaseModule] var _portsRecord: Record = _
+      // Don't generate a component, but point to the one for the cloned Module
+      private[chisel3] def generateComponent(): Option[Component] = {
+>>>>>>> b87107a... Set refs for ModuleClone and ClonePorts in less hacky way
         _component = _proto._component
         None
       }
@@ -156,7 +165,10 @@ package internal {
       override def desiredName: String = _proto.name
 
       private[chisel3] def setRefAndPortsRef(namespace: Namespace): Unit = {
+<<<<<<< HEAD
         //require(this.getOptionRef.isEmpty)
+=======
+>>>>>>> b87107a... Set refs for ModuleClone and ClonePorts in less hacky way
         val record = _portsRecord
         // Use .forceName to re-use default name resolving behavior
         record.forceName(None, default=this.desiredName, namespace)
@@ -167,6 +179,7 @@ package internal {
         }
         // Set both the record and the module to have the same instance name
         record.setRef(ModuleCloneIO(_proto, instName), force=true) // force because we did .forceName first
+<<<<<<< HEAD
         //println(s"In setRefAndPortsRef: $instName")
         this.setRef(Ref(instName))
       }
@@ -193,6 +206,10 @@ package internal {
     // If we are cloning a non-module, we need another object which has the proper _parent set!
     final class InstantiableClone[T <: IsInstantiable] private[chisel3] (val _proto: T) extends IsClone[T] {
       private[chisel3] var _parent: Option[BaseModule] = internal.Builder.currentModule
+=======
+        this.setRef(Ref(instName))
+      }
+>>>>>>> b87107a... Set refs for ModuleClone and ClonePorts in less hacky way
     }
 
     /** Record type returned by CloneModuleAsRecord
@@ -222,6 +239,7 @@ package internal {
     private[chisel3] def createIORecord[T <: BaseModule](cloneParent: ModuleClone[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): ClonePorts = {
       val proto = cloneParent._proto
       require(proto.isClosed, "Can't clone a module before module close")
+<<<<<<< HEAD
       require(cloneParent.getOptionRef.isEmpty, "Can't have ref set already!")
       // Fake Module to serve as the _parent of the cloned ports
       // We don't create this inside the ModuleClone because we need the ref to be set by the
@@ -232,6 +250,19 @@ package internal {
         override def name = clonePorts.getRef.name
       }
       pushCommand(cloneInstance)
+=======
+      // Fake Module to serve as the _parent of the cloned ports
+      // We make this before clonePorts because we want it to come up first in naming in
+      // currentModule
+      val cloneParent = Module(new ModuleClone(proto))
+      // We don't create this inside the ModuleClone because we need the ref to be set by the
+      // currentModule (and not clonePorts)
+      val clonePorts = new ClonePorts(proto.getModulePorts: _*)
+      clonePorts.bind(PortBinding(cloneParent))
+      setAllParents(clonePorts, Some(cloneParent))
+      cloneParent._portsRecord = clonePorts
+      // Normally handled during Module construction but ClonePorts really lives in its parent's parent
+>>>>>>> b87107a... Set refs for ModuleClone and ClonePorts in less hacky way
       if (!compileOptions.explicitInvalidate) {
         pushCommand(DefInvalid(sourceInfo, clonePorts.ref))
       }

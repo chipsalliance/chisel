@@ -140,6 +140,10 @@ case class IntervalLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends Li
 }
 
 case class Ref(name: String) extends Arg
+/** Arg for ports of Modules
+  * @param mod the module this port belongs to
+  * @param name the name of the port
+  */
 case class ModuleIO(mod: BaseModule, name: String) extends Arg {
   override def contextualName(ctx: Component): String =
     if (mod eq ctx.id) name else s"${mod.getRef.name}.$name"
