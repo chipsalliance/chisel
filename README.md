@@ -153,9 +153,9 @@ This section describes how to get started contributing to Chisel itself, includi
 
 ### Useful Resources for Contributors
 
-The [Useful Resources](#useful-resources) for users are also helpful for contributors
+The [Useful Resources](#useful-resources) for users are also helpful for contributors.
 
-- [**Chisel Breakdown Slides**](https://docs.google.com/presentation/d/114YihixFBPCfUnv1inqAL8UjsiWfcNWdPHX7SeqlRQc/edit?usp=sharing), an introductory talk about Chisel's internals
+- [**Chisel Breakdown Slides**](https://docs.google.com/presentation/d/114YihixFBPCfUnv1inqAL8UjsiWfcNWdPHX7SeqlRQc), an introductory talk about Chisel's internals
 
 ### Compiling and Testing Chisel
 
