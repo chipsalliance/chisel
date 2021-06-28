@@ -7,6 +7,7 @@ import scala.util.Try
 import scala.language.experimental.macros
 import chisel3.experimental.{BaseModule, BaseSim}
 import chisel3.internal._
+import chisel3.internal.BaseModule.ModuleClone
 import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.UnlocatableSourceInfo
@@ -74,6 +75,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
     // All suggestions are in, force names to every node.
     for (id <- getIds) {
       id match {
+        case id: ModuleClone => id.setRefAndPortsRef(_namespace) // special handling
         case id: BaseModule => id.forceName(None, default=id.desiredName, _namespace)
         case id: MemBase[_] => id.forceName(None, default="MEM", _namespace)
         case id: BaseSim => id.forceName(None, default="SIM", _namespace)
