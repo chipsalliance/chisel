@@ -151,6 +151,12 @@ These are the base data types for defining circuit components:
 ## Contributor Documentation
 This section describes how to get started contributing to Chisel itself, including how to test your version locally against other projects that pull in Chisel using [sbt's managed dependencies](https://www.scala-sbt.org/1.x/docs/Library-Dependencies.html).
 
+### Useful Resources for Contributors
+
+The [Useful Resources](#useful-resources) for users are also helpful for contributors.
+
+- [**Chisel Breakdown Slides**](https://docs.google.com/presentation/d/114YihixFBPCfUnv1inqAL8UjsiWfcNWdPHX7SeqlRQc), an introductory talk about Chisel's internals
+
 ### Compiling and Testing Chisel
 
 First, clone and build the master branch of [FIRRTL](https://github.com/chipsalliance/firrtl) and [Treadle](https://github.com/chipsalliance/treadle), as the master branch of Chisel may depend on unreleased changes in those projects:
