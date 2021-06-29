@@ -84,7 +84,7 @@ trait InstanceId {
 
 private[chisel3] trait HasId extends InstanceId {
   private[chisel3] def _onModuleClose: Unit = {}
-  private[chisel3] val _parent: Option[BaseModule] = Builder.currentModule
+  private[chisel3] var _parent: Option[BaseModule] = Builder.currentModule
 
   private[chisel3] val _id: Long = Builder.idGen.next
 

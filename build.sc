@@ -45,7 +45,7 @@ trait CommonModule extends CrossSbtModule with PublishModule {
   override def moduleDeps = super.moduleDeps ++ firrtlModule
 
   override def ivyDeps = super.ivyDeps() ++ Agg(
-    ivy"com.lihaoyi::os-lib:0.7.7",
+    ivy"com.lihaoyi::os-lib:0.7.8",
   ) ++  firrtlIvyDeps
 
   def publishVersion = "3.5-SNAPSHOT"
@@ -107,7 +107,7 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule wit
     override def scalacPluginClasspath = m.scalacPluginClasspath
 
     override def ivyDeps = m.ivyDeps() ++ Agg(
-      ivy"org.scalatest::scalatest:3.1.2",
+      ivy"org.scalatest::scalatest:3.2.9",
       ivy"org.scalatestplus::scalacheck-1-14:3.2.2.0",
     ) ++ m.treadleIvyDeps
 
@@ -115,12 +115,6 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule wit
 
     def testFrameworks = T {
       Seq("org.scalatest.tools.Framework")
-    }
-
-    // a sbt-like testOnly command.
-    // for example, mill -i "chisel3[2.12.12].test.testOnly" "chiselTests.BitwiseOpsSpec"
-    def testOnly(args: String*) = T.command {
-      super.runMain("org.scalatest.run", args: _*)
     }
   }
 

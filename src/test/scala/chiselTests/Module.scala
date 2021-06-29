@@ -8,6 +8,8 @@ import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage, NoRunFirrtlCompile
 import firrtl.annotations.NoTargetAnnotation
 import firrtl.options.Unserializable
 
+import scala.io.Source
+
 class SimpleIO extends Bundle {
   val in  = Input(UInt(32.W))
   val out = Output(UInt(32.W))
@@ -186,5 +188,16 @@ class ModuleSpec extends ChiselPropSpec with Utils {
       assert(name.contains("_Anon"))
     }
     ChiselStage.elaborate(new RawModule with Foo)
+  }
+
+  property("getVerilogString(new PlusOne() should produce a valid Verilog string") {
+    val s = getVerilogString(new PlusOne())
+    assert(s.contains("assign io_out = io_in + 32'h1"))
+  }
+
+  property("emitVerilog((new PlusOne()..) shall produce a valid Verilog file in a subfolder") {
+   emitVerilog(new PlusOne(), Array("--target-dir", "generated"))
+    val s = Source.fromFile("generated/PlusOne.v").mkString("")
+    assert(s.contains("assign io_out = io_in + 32'h1"))
   }
 }

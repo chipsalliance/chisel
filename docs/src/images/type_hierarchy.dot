@@ -10,7 +10,10 @@ digraph TypeHierarchy {
       "Chisel Internal"
     }
     { node [fillcolor="#e5f5e0"]
-      Bool UInt SInt FixedPoint
+      Bool UInt SInt
+      FixedPoint Interval
+      Analog
+      Clock
       Reset
       AsyncReset
       Record
@@ -27,8 +30,9 @@ digraph TypeHierarchy {
       color=transparent
       Element
       Bits Num
-      Reset
-      Bool UInt SInt FixedPoint
+      Reset Clock Analog
+      UInt SInt FixedPoint Interval
+      Bool
       color=transparent
       Aggregate
       VecLike
@@ -37,10 +41,12 @@ digraph TypeHierarchy {
       Vec
 
       {Aggregate Element} -> Data
-      {Bits Reset} -> Element
-      {FixedPoint SInt UInt} -> {Bits Num}
+      {Bits Reset Clock Analog} -> Element
+      {UInt SInt FixedPoint Interval} -> {Bits Num}
       Bool -> {UInt Reset}
-      Ellipsis -> Bundle -> Record -> Aggregate
+      Ellipsis -> Bundle
+      Ellipsis -> Record -> Aggregate
+      Bundle -> Record
       Vec -> {Aggregate VecLike}
       AsyncReset -> {Element Reset}
     }

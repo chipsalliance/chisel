@@ -5,9 +5,9 @@ package chisel3
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.util.Try
 import scala.language.experimental.macros
-
-import chisel3.experimental.BaseModule
+import chisel3.experimental.{BaseModule, BaseSim}
 import chisel3.internal._
+import chisel3.internal.BaseModule.ModuleClone
 import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.UnlocatableSourceInfo
@@ -59,7 +59,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
   }
 
 
-  private[chisel3] override def generateComponent(): Component = {
+  private[chisel3] override def generateComponent(): Option[Component] = {
     require(!_closed, "Can't generate module more than once")
     _closed = true
 
@@ -76,8 +76,10 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
     // All suggestions are in, force names to every node.
     for (id <- getIds) {
       id match {
+        case id: ModuleClone => id.setRefAndPortsRef(_namespace) // special handling
         case id: BaseModule => id.forceName(None, default=id.desiredName, _namespace)
         case id: MemBase[_] => id.forceName(None, default="MEM", _namespace)
+        case id: BaseSim => id.forceName(None, default="SIM", _namespace)
         case id: Data  =>
           if (id.isSynthesizable) {
             id.topBinding match {
@@ -131,7 +133,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
     }
     val component = DefModule(this, name, firrtlPorts, invalidateCommands ++ getCommands)
     _component = Some(component)
-    component
+    _component
   }
 
   private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
@@ -222,7 +224,7 @@ package object internal {
     // Allow access to bindings from the compatibility package
     protected def _compatIoPortBound() = portsContains(_io)
 
-    private[chisel3] override def generateComponent(): Component = {
+    private[chisel3] override def generateComponent(): Option[Component] = {
       _compatAutoWrapPorts()  // pre-IO(...) compatibility hack
 
       // Restrict IO to just io, clock, and reset

@@ -9,67 +9,16 @@ Chisel/FIRRTL development meetings happen every Monday and Tuesday from 1100--12
 
 Call-in info and meeting notes are available [here](https://docs.google.com/document/d/1BLP2DYt59DqI-FgFCcjw8Ddl4K-WU0nHmQu0sZ_wAGo/).
 
-### Chisel Community Conference 2021, Shanghai, China. 6/24/2021
-
-The Chisel Community Conference China 2021 (CCC2021) is planned for June 25,
-2021 at the ShanghaiTech University. CCC is an annual gathering of Chisel
-community enthusiasts and technical exchange workshop.
-With the support of the Chisel development community, this conference will
-bring together designers and developers with hands-on experience in Chisel
-from home and abroad to share cutting-edge results and experiences from the
-open source community and industry.
-
-Session topics include and are not limited to
-* CPU Core (recommended but not restricted to RISC-V) implementations
-* SoC implementations
-* Verification
-* Simulation
-* Synthesis
-* Education
-* Experience sharing
-
-Types of manuscripts.
-* Technical Presentations: case studies or problem-oriented presentations on
-original research, breakthrough ideas, or insights into future trends.
-Sessions should provide specific examples and include both practical and
-theoretical information. The length of time is about 20 minutes.
-* Lightning talks: 5 to 10 minutes, either pre-registered or on-site (depending
-on the time of the conference), can present and promote a specific Chisel
-project.
-
-The presentation submission language is required to be in English, and both
-English and Chinese are acceptable for the presentation language.
-Reviewers (subject to change at that time).
-* Jack Koenig
-* Adam Izraelevitz
-* Edward Wang
-* Jiuyang Liu
-
-Key Timeline.  
-Submission deadline: April 25, 2021  
-Manuscript topics and abstracts should be submitted by the submission
-deadline, and will be reviewed and selected by Chisel developers.  
-Notification of acceptance: by May 12, 2021  
-Final manuscript deadline: May 30, 2021  
-A full version of the manuscript should be submitted by the final deadline, and
-Chisel developers will quality review and suggest final changes.
-
-Mail submission method.
-```
-Subject: - [CCC] Your Topic
-CC: Jiuyang Liu <liu@jiuyang.me>
-CC: Jack Koenig <koenig@sifive.com>
-CC: Adam Izraelevitz <adam.izraelevitz@sifive.com>
-CC: Edward Wang <edwardw@csail.mit.edu>
-Body: Abstract of your paper.
-Attachment: pdf only slides
-All submissions are welcome.
-```
+### Chisel Community Conference 2021, Shanghai, China.
+CCC is an annual gathering of Chisel community enthusiasts and technical exchange workshop. 
+This year with the support of the Chisel development community and RISC-V World Conference China 2021 Committee, we have brought together designers and developers with hands-on experience in Chisel from home and abroad to share cutting-edge results and experiences from both the open source community as well as industry.  
+English translated recordings version will be updated soon.  
+Looking forward to CCC 2022! See you then!
 
 ---
 
 [![Join the chat at https://gitter.im/freechipsproject/chisel3](https://badges.gitter.im/chipsalliance/chisel3.svg)](https://gitter.im/freechipsproject/chisel3?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![CircleCI](https://circleci.com/gh/chipsalliance/chisel3/tree/master.svg?style=shield)](https://circleci.com/gh/chipsalliance/chisel3/tree/master)
+![CI](https://github.com/chipsalliance/chisel3/actions/workflows/test.yml/badge.svg)
 [![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/chipsalliance/chisel3.svg?label=release)](https://github.com/chipsalliance/chisel3/releases/latest)
 
 [**Chisel**](https://www.chisel-lang.org) is a hardware design language that facilitates **advanced circuit generation and design reuse for both ASIC and FPGA digital logic designs**.
@@ -198,6 +147,12 @@ These are the base data types for defining circuit components:
 ## Contributor Documentation
 This section describes how to get started contributing to Chisel itself, including how to test your version locally against other projects that pull in Chisel using [sbt's managed dependencies](https://www.scala-sbt.org/1.x/docs/Library-Dependencies.html).
 
+### Useful Resources for Contributors
+
+The [Useful Resources](#useful-resources) for users are also helpful for contributors.
+
+- [**Chisel Breakdown Slides**](https://docs.google.com/presentation/d/114YihixFBPCfUnv1inqAL8UjsiWfcNWdPHX7SeqlRQc), an introductory talk about Chisel's internals
+
 ### Compiling and Testing Chisel
 
 First, clone and build the master branch of [FIRRTL](https://github.com/chipsalliance/firrtl) and [Treadle](https://github.com/chipsalliance/treadle), as the master branch of Chisel may depend on unreleased changes in those projects:
@@ -294,6 +249,17 @@ Also included is:
 - **Chisel Stage**, `chisel3.stage.*`, which contains compilation and test
   functions that are invoked in the standard Verilog generation and simulation
   testing infrastructure. These can also be used as part of custom flows.
+  
+### Chisel Sub-Projects
+
+Chisel consists of 4 Scala projects; each is its own separate compilation unit:
+
+- [`core`](core) is the bulk of the source code of Chisel, depends on `macros`
+- [`src/main`](src/main) is the "main" that brings it all together and includes a [`util`](src/main/scala/chisel3/util) library, which depends on `core`
+- [`plugin`](plugin) is the compiler plugin, no internal dependencies
+- [`macros`](macros) is most of the macros used in Chisel, no internal dependencies
+
+Code that touches lots of APIs that are private to the `chisel3` package should belong in `core`, while code that is pure Chisel should belong in `src/main`.
 
 ### Which version should I use?
 
