@@ -217,7 +217,6 @@ package internal {
     // Allow access to bindings from the compatibility package
     protected def _compatIoPortBound() = portsContains(_io)
 
-<<<<<<< HEAD
     private[chisel3] override def namePorts(names: HashMap[HasId, String]): Unit = {
       for (port <- getModulePorts) {
         // This should already have been caught
@@ -227,10 +226,7 @@ package internal {
       }
     }
 
-    private[chisel3] override def generateComponent(): Component = {
-=======
     private[chisel3] override def generateComponent(): Option[Component] = {
->>>>>>> d3e13ce2 (Fix CloneModuleAsRecord support for .toTarget)
       _compatAutoWrapPorts()  // pre-IO(...) compatibility hack
 
       // Restrict IO to just io, clock, and reset
