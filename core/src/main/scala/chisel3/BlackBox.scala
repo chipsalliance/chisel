@@ -62,7 +62,7 @@ package experimental {
     * @note The parameters API is experimental and may change
     */
   abstract class ExtModule(val params: Map[String, Param] = Map.empty[String, Param]) extends BaseBlackBox {
-    private[chisel3] override def generateComponent(): Component = {
+    private[chisel3] override def generateComponent(): Option[Component] = {
       require(!_closed, "Can't generate module more than once")
       _closed = true
 
@@ -86,7 +86,7 @@ package experimental {
       val firrtlPorts = getModulePorts map {port => Port(port, port.specifiedDirection)}
       val component = DefBlackBox(this, name, firrtlPorts, SpecifiedDirection.Unspecified, params)
       _component = Some(component)
-      component
+      _component
     }
 
     private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
@@ -145,7 +145,7 @@ abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param
   // Allow access to bindings from the compatibility package
   protected def _compatIoPortBound() = portsContains(_io)
 
-  private[chisel3] override def generateComponent(): Component = {
+  private[chisel3] override def generateComponent(): Option[Component] = {
     _compatAutoWrapPorts()  // pre-IO(...) compatibility hack
 
     // Restrict IO to just io, clock, and reset
@@ -178,7 +178,7 @@ abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param
     val firrtlPorts = namedPorts map {namedPort => Port(namedPort._2, namedPort._2.specifiedDirection)}
     val component = DefBlackBox(this, name, firrtlPorts, _io.specifiedDirection, params)
     _component = Some(component)
-    component
+    _component
   }
 
   private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = {

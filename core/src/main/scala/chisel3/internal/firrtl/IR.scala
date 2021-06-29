@@ -161,13 +161,28 @@ case class IntervalLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends Li
 }
 
 case class Ref(name: String) extends Arg
+/** Arg for ports of Modules
+  * @param mod the module this port belongs to
+  * @param name the name of the port
+  */
 case class ModuleIO(mod: BaseModule, name: String) extends Arg {
   override def fullName(ctx: Component): String =
     if (mod eq ctx.id) name else s"${mod.getRef.name}.$name"
 }
-case class Slot(imm: Node, name: String) extends Arg {
+/** Ports of cloned modules (CloneModuleAsRecord)
+  * @param mod The original module for which these ports are a clone
+  * @param name the name of the module instance
+  */
+case class ModuleCloneIO(mod: BaseModule, name: String) extends Arg {
   override def fullName(ctx: Component): String =
-    if (imm.fullName(ctx).isEmpty) name else s"${imm.fullName(ctx)}.${name}"
+    // NOTE: mod eq ctx.id only occurs in Target and Named-related APIs
+    if (mod eq ctx.id) "" else name
+}
+case class Slot(imm: Node, name: String) extends Arg {
+  override def fullName(ctx: Component): String = {
+    val immName = imm.fullName(ctx)
+    if (immName.isEmpty) name else s"$immName.$name"
+  }
 }
 case class Index(imm: Arg, value: Arg) extends Arg {
   def name: String = s"[$value]"
