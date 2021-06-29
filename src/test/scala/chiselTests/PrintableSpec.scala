@@ -226,8 +226,8 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
       })
       myBun.foo := 0.U
       myBun.bar := 0.U
-      printf(p"hi ${myBun}")
-      printf(p"hello ${myBun}").suggestName("howdy")
+      val howdy = printf(p"hello ${myBun}")
+      PrintfAnnotation.annotate(howdy)
       PrintfAnnotation.annotate(printf(p"goodbye $myBun"))
       PrintfAnnotation.annotate(printf(p"adieu $myBun").suggestName("farewell"))
     }
@@ -245,9 +245,10 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
     val annoLines = scala.io.Source.fromFile(annoFile).getLines.toList
 
     // check for expected annotations
-    exactly(2, annoLines) should include ("chiselTests.PrintfAnnotation")
+    exactly(3, annoLines) should include ("chiselTests.PrintfAnnotation")
     exactly(1, annoLines) should include ("~PrintfAnnotationTest|PrintfAnnotationTest>farewell")
     exactly(1, annoLines) should include ("~PrintfAnnotationTest|PrintfAnnotationTest>SIM")
+    exactly(1, annoLines) should include ("~PrintfAnnotationTest|PrintfAnnotationTest>howdy")
 
     // read in FIRRTL file
     val firFile = new File(testDir, "PrintfAnnotationTest.fir")
@@ -255,7 +256,6 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
     val firLines = scala.io.Source.fromFile(firFile).getLines.toList
 
     // check that verification components have expected names
-    exactly(1, firLines) should include ("""printf(clock, UInt<1>(1), "hi AnonymousBundle(foo -> %d, bar -> %d)", myBun.foo, myBun.bar): SIM""")
     exactly(1, firLines) should include ("""printf(clock, UInt<1>(1), "hello AnonymousBundle(foo -> %d, bar -> %d)", myBun.foo, myBun.bar): howdy""")
     exactly(1, firLines) should include ("""printf(clock, UInt<1>(1), "goodbye AnonymousBundle(foo -> %d, bar -> %d)", myBun.foo, myBun.bar): SIM""")
     exactly(1, firLines) should include ("""printf(clock, UInt<1>(1), "adieu AnonymousBundle(foo -> %d, bar -> %d)", myBun.foo, myBun.bar): farewell""")
