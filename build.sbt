@@ -1,5 +1,7 @@
 // See LICENSE for license details.
 
+import com.typesafe.tools.mima.core._
+
 enablePlugins(SiteScaladocPlugin)
 
 def scalacOptionsVersion(scalaVersion: String): Seq[String] = {
@@ -120,7 +122,7 @@ lazy val macros = (project in file("macros")).
   settings(name := "chisel3-macros").
   settings(commonSettings: _*).
   settings(publishSettings: _*).
-  settings(mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-macros" % "3.3.2"))
+  settings(mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-macros" % "3.3.3"))
 
 lazy val core = (project in file("core")).
   settings(commonSettings: _*).
@@ -137,7 +139,22 @@ lazy val core = (project in file("core")).
       "-Xlint:infer-any"
 //      "-Xlint:missing-interpolator"
     ),
-    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-core" % "3.3.2")
+    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-core" % "3.3.3"),
+    mimaBinaryIssueFilters ++= Seq(
+      // Modified package private methods (https://github.com/lightbend/mima/issues/53)
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("chisel3.RawModule.generateComponent"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("chisel3.BlackBox.generateComponent"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("chisel3.internal.LegacyModule.generateComponent"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("chisel3.experimental.BaseModule.generateComponent"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("chisel3.experimental.ExtModule.generateComponent"),
+      // Scala 2.11 only issue, new concrete methods in traits require recompilation of implementing classes
+      // Not a problem because HasId is package private so all implementers are in chisel3 itself
+      // Note there is no problem for user subtypes of Record because setRef is implemented by Data
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("chisel3.internal.HasId._parent_="),
+      // Not a problem because generateComponent is package private and unimplemented in BaseModule
+      // Users cannot practically extend BaseModule (they'd need to implement package private methods which they cannot)
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("chisel3.experimental.BaseModule.generateComponent")
+    )
   ).
   dependsOn(macros)
 
@@ -159,7 +176,7 @@ lazy val chisel = (project in file(".")).
   dependsOn(core).
   aggregate(macros, core).
   settings(
-    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3" % "3.3.2"),
+    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3" % "3.3.3"),
     scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
     scalacOptions in Compile in doc ++= Seq(
       "-diagrams",

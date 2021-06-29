@@ -3,7 +3,7 @@
 package chisel3.internal.firrtl
 import chisel3._
 import chisel3.experimental._
-import chisel3.internal.sourceinfo.{NoSourceInfo, SourceLine, SourceInfo}
+import chisel3.internal.sourceinfo.{NoSourceInfo, SourceLine, SourceInfo, UnlocatableSourceInfo}
 import firrtl.{ir => fir}
 import chisel3.internal.{castToInt, throwException}
 
@@ -22,6 +22,17 @@ private[chisel3] object Converter {
     case Name(data) => (data.ref.name, List.empty)
     case FullName(data) => (data.ref.fullName(ctx), List.empty)
     case Percent => ("%%", List.empty)
+  }
+
+  private def reportInternalError(msg: String): Nothing = {
+    val link = "https://github.com/chipsalliance/chisel3/issues/new"
+    val fullMsg = s"Internal Error! $msg This is a bug in Chisel, please file an issue at '$link'"
+    throwException(fullMsg)
+  }
+
+  private def clonedModuleIOError(mod: BaseModule, name: String, sourceInfo: SourceInfo): Nothing = {
+    val loc = sourceInfo.makeMessage(" " + _)
+    reportInternalError(s"Trying to convert a cloned IO of $mod inside of $mod itself$loc!")
   }
 
   def convert(info: SourceInfo): fir.Info = info match {
@@ -56,6 +67,9 @@ private[chisel3] object Converter {
       // scalastyle:off if.brace
       if (mod eq ctx.id) fir.Reference(name, fir.UnknownType)
       else fir.SubField(fir.Reference(mod.getRef.name, fir.UnknownType), name, fir.UnknownType)
+    case ModuleCloneIO(mod, name) =>
+      if (mod eq ctx.id) clonedModuleIOError(mod, name, UnlocatableSourceInfo) // info added in 3.4
+      else fir.Reference(name, fir.UnknownType)
     // scalastyle:on if.brace
     case u @ ULit(n, UnknownWidth()) =>
       fir.UIntLiteral(n, fir.IntWidth(u.minWidth))
