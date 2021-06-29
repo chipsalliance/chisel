@@ -184,12 +184,14 @@ package internal {
 
   object BaseModule {
     // Private internal class to serve as a _parent for Data in cloned ports
-    private[chisel3] class ModuleClone(_proto: BaseModule) extends BaseModule {
+    private[chisel3] class ModuleClone(private[chisel3] val _proto: BaseModule) extends BaseModule {
       // ClonePorts that hold the bound ports for this module
       // Used for setting the refs of both this module and the Record
       private[BaseModule] var _portsRecord: Record = _
       // Don't generate a component, but point to the one for the cloned Module
       private[chisel3] def generateComponent(): Option[Component] = {
+        require(!_closed, "Can't generate module more than once")
+        _closed = true
         _component = _proto._component
         None
       }
