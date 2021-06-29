@@ -169,8 +169,9 @@ git clone https://github.com/chipsalliance/chisel3.git
 cd chisel3
 sbt compile
 ```
-In order to run the following unit tests, make sure you have Verilator installed and loaded
-(Check this by running 'which verilator')
+
+In order to run the following unit tests, make sure you have Verilator installed and on your `PATH`
+(you can check this by running `which verilator`).
 
 If the compilation succeeded, you can then run the included unit tests by invoking:
 
