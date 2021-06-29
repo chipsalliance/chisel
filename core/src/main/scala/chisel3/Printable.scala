@@ -2,14 +2,11 @@
 
 package chisel3
 
+import chisel3.experimental.BaseSim
 import chisel3.internal.firrtl.Component
 
 import scala.collection.mutable
-
-import java.util.{
-  MissingFormatArgumentException,
-  UnknownFormatConversionException
-}
+import java.util.{MissingFormatArgumentException, UnknownFormatConversionException}
 
 /** Superclass of things that can be printed in the resulting circuit
   *
@@ -46,7 +43,7 @@ import java.util.{
 //   Currently impossible because unpack is called before the name is selected
 //   Could be implemented by adding a new format specifier to Firrtl (eg. %m)
 // TODO Should we provide more functions like map and mkPrintable?
-sealed abstract class Printable {
+sealed abstract class Printable extends BaseSim {
   /** Unpack into format String and a List of String arguments (identifiers)
     * @note This must be called after elaboration when Chisel nodes actually
     *   have names

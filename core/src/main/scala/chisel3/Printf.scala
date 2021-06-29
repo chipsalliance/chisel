@@ -3,10 +3,8 @@
 package chisel3
 
 import scala.language.experimental.macros
-
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
-import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.SourceInfo
 
 /** Prints a message in simulation
@@ -71,7 +69,7 @@ object printf {
     * @param fmt printf format string
     * @param data format string varargs containing data to print
     */
-  def apply(fmt: String, data: Bits*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit =
+  def apply(fmt: String, data: Bits*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Printable =
     apply(Printable.pack(fmt, data:_*))
   /** Prints a message in simulation
     *
@@ -87,16 +85,18 @@ object printf {
     * @see [[Printable]] documentation
     * @param pable [[Printable]] to print
     */
-  def apply(pable: Printable)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit = {
+  def apply(pable: Printable)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Printable = {
     when (!Module.reset.asBool) {
       printfWithoutReset(pable)
     }
+    pable
   }
 
-  private[chisel3] def printfWithoutReset(pable: Printable)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit = {
+  private[chisel3] def printfWithoutReset(pable: Printable)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Printable = {
     val clock = Builder.forcedClock
-    pushCommand(Printf(sourceInfo, clock.ref, pable))
+    pushCommand(chisel3.internal.firrtl.Printf(sourceInfo, clock.ref, pable))
+    pable
   }
-  private[chisel3] def printfWithoutReset(fmt: String, data: Bits*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit =
+  private[chisel3] def printfWithoutReset(fmt: String, data: Bits*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Printable =
     printfWithoutReset(Printable.pack(fmt, data:_*))
 }
