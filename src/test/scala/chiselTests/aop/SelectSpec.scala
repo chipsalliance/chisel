@@ -153,7 +153,7 @@ class SelectSpec extends ChiselFlatSpec {
     assert(bbs.size == 1)
   }
 
-  "CloneModuleAsRecord" should "show up in Select aspects as duplicates" in {
+  "CloneModuleAsRecord" should "NOT show up in Select aspects" in {
     import chisel3.experimental.CloneModuleAsRecord
     class Child extends RawModule {
       val in = IO(Input(UInt(8.W)))
@@ -174,8 +174,9 @@ class SelectSpec extends ChiselFlatSpec {
     }).elaborate
       .collectFirst { case DesignAnnotation(design: Top) => design }
       .get
-    val mods = Select.collectDeep(top) { case mod => mod }
-    mods should equal (Seq(top, top.inst0, top.inst0))
+    Select.collectDeep(top) { case x => x } should equal (Seq(top, top.inst0))
+    Select.getDeep(top)(x => Seq(x)) should equal (Seq(top, top.inst0))
+    Select.instances(top) should equal (Seq(top.inst0))
   }
 
 }
