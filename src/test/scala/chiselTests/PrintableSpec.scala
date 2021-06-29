@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.ChiselAnnotation
+import chisel3.experimental.{BaseSim, ChiselAnnotation}
 import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
 import firrtl.annotations.{ReferenceTarget, SingleTargetAnnotation}
@@ -23,7 +23,7 @@ object PrintfAnnotation {
   /** Create annotation for a given [[printf]].
     * @param c component to be annotated
     */
-  def annotate(c: experimental.BaseSim): Unit = {
+  def annotate(c: BaseSim): Unit = {
     chisel3.experimental.annotate(new ChiselAnnotation {
       def toFirrtl: PrintfAnnotation = PrintfAnnotation(c.toTarget)
     })
