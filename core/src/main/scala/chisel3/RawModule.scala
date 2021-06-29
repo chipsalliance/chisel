@@ -59,11 +59,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
   }
 
 
-<<<<<<< HEAD
-  private[chisel3] override def generateComponent(): Component = { // scalastyle:ignore cyclomatic.complexity
-=======
-  private[chisel3] override def generateComponent(): Option[Component] = {
->>>>>>> d3e13ce2 (Fix CloneModuleAsRecord support for .toTarget)
+  private[chisel3] override def generateComponent(): Option[Component] = { // scalastyle:ignore cyclomatic.complexity
     require(!_closed, "Can't generate module more than once")
     _closed = true
 
@@ -80,15 +76,9 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
     // All suggestions are in, force names to every node.
     for (id <- getIds) {
       id match {
-<<<<<<< HEAD
+        case id: ModuleClone => id.setRefAndPortsRef(_namespace) // special handling
         case id: BaseModule => id.forceName(default=id.desiredName, _namespace)
         case id: MemBase[_] => id.forceName(default="_T", _namespace)
-=======
-        case id: ModuleClone => id.setRefAndPortsRef(_namespace) // special handling
-        case id: BaseModule => id.forceName(None, default=id.desiredName, _namespace)
-        case id: MemBase[_] => id.forceName(None, default="MEM", _namespace)
-        case id: BaseSim => id.forceName(None, default="SIM", _namespace)
->>>>>>> b87107ad (Set refs for ModuleClone and ClonePorts in less hacky way)
         case id: Data  =>
           if (id.isSynthesizable) {
             id.topBinding match {

@@ -57,7 +57,7 @@ class QueueCloneTester(x: Int, multiIO: Boolean = false) extends BasicTester {
   }
 }
 
-class CloneModuleAsRecordAnnotate extends Module {
+class CloneModuleAsRecordAnnotate extends MultiIOModule {
   override def desiredName = "Top"
   val in = IO(Flipped(Decoupled(UInt(8.W))))
   val out = IO(Decoupled(UInt(8.W)))

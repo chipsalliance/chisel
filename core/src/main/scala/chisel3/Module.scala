@@ -146,15 +146,11 @@ package internal {
 
       private[chisel3] def setRefAndPortsRef(namespace: Namespace): Unit = {
         val record = _portsRecord
-        // Use .forceName to re-use default name resolving behavior
-        record.forceName(None, default=this.desiredName, namespace)
-        // Now take the Ref that forceName set and convert it to the correct Arg
-        val instName = record.getRef match {
-          case Ref(name) => name
-          case bad => throwException(s"Internal Error! Cloned-module Record $record has unexpected ref $bad")
-        }
+        // Had to duplicate logic from forceName due to differences in 3.4
+        val candidate_name = record.suggestedName.getOrElse(this.desiredName)
+        val instName = namespace.name(candidate_name)
         // Set both the record and the module to have the same instance name
-        record.setRef(ModuleCloneIO(_proto, instName), force=true) // force because we did .forceName first
+        record.setRef(ModuleCloneIO(_proto, instName)) // force because we did .forceName first
         this.setRef(Ref(instName))
       }
     }
@@ -185,21 +181,10 @@ package internal {
 
     private[chisel3] def cloneIORecord(proto: BaseModule)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): ClonePorts = {
       require(proto.isClosed, "Can't clone a module before module close")
-<<<<<<< HEAD
-<<<<<<< HEAD
-      val clonePorts = new ClonePorts(proto.getModulePorts: _*)
-      clonePorts.bind(WireBinding(Builder.forcedUserModule))
-      val cloneInstance = new DefInstance(sourceInfo, proto, proto._component.get.ports) {
-        override def name = clonePorts.getRef.name
-      }
-      pushCommand(cloneInstance)
-=======
-=======
       // Fake Module to serve as the _parent of the cloned ports
       // We make this before clonePorts because we want it to come up first in naming in
       // currentModule
       val cloneParent = Module(new ModuleClone(proto))
->>>>>>> b87107ad (Set refs for ModuleClone and ClonePorts in less hacky way)
       // We don't create this inside the ModuleClone because we need the ref to be set by the
       // currentModule (and not clonePorts)
       val clonePorts = new ClonePorts(proto.getModulePorts: _*)
@@ -207,7 +192,6 @@ package internal {
       setAllParents(clonePorts, Some(cloneParent))
       cloneParent._portsRecord = clonePorts
       // Normally handled during Module construction but ClonePorts really lives in its parent's parent
->>>>>>> d3e13ce2 (Fix CloneModuleAsRecord support for .toTarget)
       if (!compileOptions.explicitInvalidate) {
         pushCommand(DefInvalid(sourceInfo, clonePorts.ref))
       }
@@ -317,16 +301,12 @@ package experimental {
 
     /** Legalized name of this module. */
     final lazy val name = try {
-<<<<<<< HEAD
-      Builder.globalNamespace.name(desiredName)
-=======
-      // ModuleAspects and ModuleClones are not "true modules" and thus should share
+      // ModuleClones are not "true modules" and thus should share
       // their original modules names without uniquification
       this match {
-        case (_: ModuleAspect | _: internal.BaseModule.ModuleClone) => desiredName
+        case _: internal.BaseModule.ModuleClone => desiredName
         case _ => Builder.globalNamespace.name(desiredName)
       }
->>>>>>> d3e13ce2 (Fix CloneModuleAsRecord support for .toTarget)
     } catch {
       case e: NullPointerException => throwException(
         s"Error: desiredName of ${this.getClass.getName} is null. Did you evaluate 'name' before all values needed by desiredName were available?", e) // scalastyle:ignore line.size.limit
