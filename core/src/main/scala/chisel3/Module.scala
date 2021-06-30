@@ -190,6 +190,8 @@ package internal {
       private[BaseModule] var _portsRecord: Record = _
       // Don't generate a component, but point to the one for the cloned Module
       private[chisel3] def generateComponent(): Option[Component] = {
+        require(!_closed, "Can't generate module more than once")
+        _closed = true
         _component = _proto._component
         None
       }
