@@ -2,6 +2,7 @@
 
 package chisel3
 
+import chisel3.internal.NamedComponent
 import chisel3.internal.sourceinfo.SourceInfo
 
 /** Package for experimental features, which may have their API changed, be removed, etc.
@@ -165,4 +166,9 @@ package object experimental {
   val prefix = chisel3.internal.prefix
   // Use to remove prefixes not in provided scope
   val noPrefix = chisel3.internal.noPrefix
+
+  /** Base simulation-only component. */
+  abstract class BaseSim extends NamedComponent {
+    _parent.foreach(_.addId(this))
+  }
 }

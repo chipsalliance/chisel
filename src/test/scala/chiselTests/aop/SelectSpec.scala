@@ -153,5 +153,31 @@ class SelectSpec extends ChiselFlatSpec {
     assert(bbs.size == 1)
   }
 
+  "CloneModuleAsRecord" should "NOT show up in Select aspects" in {
+    import chisel3.experimental.CloneModuleAsRecord
+    class Child extends RawModule {
+      val in = IO(Input(UInt(8.W)))
+      val out = IO(Output(UInt(8.W)))
+      out := in
+    }
+    class Top extends MultiIOModule {
+      val in = IO(Input(UInt(8.W)))
+      val out = IO(Output(UInt(8.W)))
+      val inst0 = Module(new Child)
+      val inst1 = CloneModuleAsRecord(inst0)
+      inst0.in := in
+      inst1("in") := inst0.out
+      out := inst1("out")
+    }
+    val top = ChiselGeneratorAnnotation(() => {
+      new Top()
+    }).elaborate
+      .collectFirst { case DesignAnnotation(design: Top) => design }
+      .get
+    Select.collectDeep(top) { case x => x } should equal (Seq(top, top.inst0))
+    Select.getDeep(top)(x => Seq(x)) should equal (Seq(top, top.inst0))
+    Select.instances(top) should equal (Seq(top.inst0))
+  }
+
 }
 

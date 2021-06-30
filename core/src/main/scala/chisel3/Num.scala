@@ -156,7 +156,7 @@ trait Num[T <: Data] {
   /** Minimum operator
     *
     * @param that a hardware $coll
-    * @return a $numType with a value equal to the mimimum value of this $coll and `that`
+    * @return a $numType with a value equal to the minimum value of this $coll and `that`
     * $maxWidth
     * @group Arithmetic
     */
@@ -169,7 +169,7 @@ trait Num[T <: Data] {
   /** Maximum operator
     *
     * @param that a $numType
-    * @return a $numType with a value equal to the mimimum value of this $coll and `that`
+    * @return a $numType with a value equal to the minimum value of this $coll and `that`
     * $maxWidth
     * @group Arithmetic
     */
