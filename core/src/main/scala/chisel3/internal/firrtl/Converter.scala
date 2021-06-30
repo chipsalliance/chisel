@@ -143,7 +143,7 @@ private[chisel3] object Converter {
       Some(fir.DefInstance(convert(info), e.name, id.name))
     case Stop(info, clock, ret) =>
       Some(fir.Stop(convert(info), ret, convert(clock, ctx, info), firrtl.Utils.one))
-    case e @ Printf(info, clock, pable) =>
+    case e @ Printf(_, info, clock, pable) =>
       val (fmt, args) = unpack(pable, ctx)
       Some(fir.Print(convert(info), fir.StringLit(fmt),
                      args.map(a => convert(a, ctx, info)), convert(clock, ctx, info), firrtl.Utils.one, e.name))

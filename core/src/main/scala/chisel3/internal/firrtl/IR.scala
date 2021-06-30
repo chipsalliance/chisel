@@ -773,7 +773,7 @@ case class Attach(sourceInfo: SourceInfo, locs: Seq[Node]) extends Command
 case class ConnectInit(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
 case class Stop(sourceInfo: SourceInfo, clock: Arg, ret: Int) extends Command
 case class Port(id: Data, dir: SpecifiedDirection)
-case class Printf(sourceInfo: SourceInfo, clock: Arg, id: Printable) extends Definition
+case class Printf(id: PrintfId, sourceInfo: SourceInfo, clock: Arg, pable: Printable) extends Definition
 object Formal extends Enumeration {
   val Assert = Value("assert")
   val Assume = Value("assume")

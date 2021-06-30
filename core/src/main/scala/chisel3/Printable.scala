@@ -43,7 +43,7 @@ import java.util.{MissingFormatArgumentException, UnknownFormatConversionExcepti
 //   Currently impossible because unpack is called before the name is selected
 //   Could be implemented by adding a new format specifier to Firrtl (eg. %m)
 // TODO Should we provide more functions like map and mkPrintable?
-sealed abstract class Printable extends BaseSim {
+sealed abstract class Printable {
   /** Unpack into format String and a List of String arguments (identifiers)
     * @note This must be called after elaboration when Chisel nodes actually
     *   have names

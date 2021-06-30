@@ -6,6 +6,10 @@ import scala.language.experimental.macros
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.sourceinfo.SourceInfo
+import chisel3.experimental.BaseSim
+
+/** Named class for [[printf]]s. */
+final class PrintfId(val pable: Printable) extends BaseSim
 
 /** Prints a message in simulation
   *
@@ -69,7 +73,7 @@ object printf {
     * @param fmt printf format string
     * @param data format string varargs containing data to print
     */
-  def apply(fmt: String, data: Bits*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Printable =
+  def apply(fmt: String, data: Bits*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): PrintfId =
     apply(Printable.pack(fmt, data:_*))
   /** Prints a message in simulation
     *
@@ -85,18 +89,20 @@ object printf {
     * @see [[Printable]] documentation
     * @param pable [[Printable]] to print
     */
-  def apply(pable: Printable)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Printable = {
+  def apply(pable: Printable)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): PrintfId = {
+    var printfId: PrintfId = null
     when (!Module.reset.asBool) {
-      printfWithoutReset(pable)
+      printfId = printfWithoutReset(pable)
     }
-    pable
+    printfId
   }
 
-  private[chisel3] def printfWithoutReset(pable: Printable)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Printable = {
+  private[chisel3] def printfWithoutReset(pable: Printable)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): PrintfId = {
     val clock = Builder.forcedClock
-    pushCommand(chisel3.internal.firrtl.Printf(sourceInfo, clock.ref, pable))
-    pable
+    val printfId = new PrintfId(pable)
+    pushCommand(chisel3.internal.firrtl.Printf(printfId, sourceInfo, clock.ref, pable))
+    printfId
   }
-  private[chisel3] def printfWithoutReset(fmt: String, data: Bits*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Printable =
+  private[chisel3] def printfWithoutReset(fmt: String, data: Bits*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): PrintfId =
     printfWithoutReset(Printable.pack(fmt, data:_*))
 }

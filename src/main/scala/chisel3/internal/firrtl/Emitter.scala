@@ -76,7 +76,7 @@ private class Emitter(circuit: Circuit) {
       case e: Attach => e.locs.map(_.fullName(ctx)).mkString("attach (", ", ", ")")
       case e: Stop => s"stop(${e.clock.fullName(ctx)}, UInt<1>(1), ${e.ret})"
       case e: Printf =>
-        val (fmt, args) = e.id.unpack(ctx)
+        val (fmt, args) = e.pable.unpack(ctx)
         val printfArgs = Seq(e.clock.fullName(ctx), "UInt<1>(1)",
           "\"" + printf.format(fmt) + "\"") ++ args
         (printfArgs mkString ("printf(", ", ", ")")) + s": ${e.name}"
