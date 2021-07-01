@@ -414,9 +414,15 @@ private[chisel3] object Builder {
     dynamicContextVar.withValue(Some(new DynamicContext())) {
       errors.info("Elaborating design...")
       val mod = f
+<<<<<<< HEAD
       mod.forceName(mod.name, globalNamespace)
       errors.checkpoint()
       errors.info("Done elaborating.")
+=======
+      mod.forceName(None, mod.name, globalNamespace)
+      errors.checkpoint(logger)
+      logger.warn("Done elaborating.")
+>>>>>>> 04caf395 (Change Chisel warnings to use logger instead of println)
 
       (Circuit(components.last.name, components, annotations), mod)
     }
