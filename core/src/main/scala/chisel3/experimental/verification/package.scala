@@ -9,16 +9,10 @@ import chisel3.internal.sourceinfo.SourceInfo
 
 package object verification {
 
-  /** Named class for assertions. */
-  final class Assert(val predicate: Bool) extends BaseSim
-
-  /** Named class for assumes. */
-  final class Assume(val predicate: Bool) extends BaseSim
-
-  /** Named class for covers. */
-  final class Cover(val predicate: Bool) extends BaseSim
-
   object assert {
+    /** Named class for assertions. */
+    final class Assert(val predicate: Bool) extends BaseSim
+
     def apply(predicate: Bool, msg: String = "")(
       implicit sourceInfo: SourceInfo,
       compileOptions: CompileOptions): Assert = {
@@ -32,6 +26,9 @@ package object verification {
   }
 
   object assume {
+    /** Named class for assumes. */
+    final class Assume(val predicate: Bool) extends BaseSim
+
     def apply(predicate: Bool, msg: String = "")(
       implicit sourceInfo: SourceInfo,
       compileOptions: CompileOptions): Assume = {
@@ -45,6 +42,9 @@ package object verification {
   }
 
   object cover {
+    /** Named class for covers. */
+    final class Cover(val predicate: Bool) extends BaseSim
+
     def apply(predicate: Bool, msg: String = "")(
       implicit sourceInfo: SourceInfo,
       compileOptions: CompileOptions): Cover = {

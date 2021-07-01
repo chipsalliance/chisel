@@ -22,7 +22,7 @@ class SelectTester(results: Seq[Int]) extends BasicTester {
   val nreset = reset.asBool() === false.B
   val selected = values(counter)
   val zero = 0.U + 0.U
-  var p: PrintfId = null
+  var p: printf.Printf = null
   when(overflow) {
     counter := zero
     stop()

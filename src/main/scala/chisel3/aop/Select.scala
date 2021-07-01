@@ -413,7 +413,7 @@ object Select {
     * @param pable
     * @param clock
     */
-  case class Printf(id: PrintfId, preds: Seq[Predicate], pable: Printable, clock: Clock) extends Serializeable {
+  case class Printf(id: printf.Printf, preds: Seq[Predicate], pable: Printable, clock: Clock) extends Serializeable {
     def serialize: String = {
       s"printf when(${preds.map(_.serialize).mkString(" & ")}) on ${getName(clock)}: $pable"
     }
