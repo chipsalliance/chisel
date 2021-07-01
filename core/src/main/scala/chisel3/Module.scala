@@ -4,7 +4,6 @@ package chisel3
 
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer, HashMap}
-import scala.collection.JavaConversions._
 import scala.language.experimental.macros
 
 import java.util.IdentityHashMap
