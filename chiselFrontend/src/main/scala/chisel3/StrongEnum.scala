@@ -133,7 +133,7 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
     if (litOption.isDefined) {
       true.B
     } else {
-      factory.all.map(this === _).reduce(_ || _)
+      if (factory.isTotal) true.B else factory.all.map(this === _).reduce(_ || _)
     }
   }
 
@@ -235,6 +235,12 @@ abstract class EnumFactory {
 
   private[chisel3] val enumTypeName = getClass.getName.init
 
+  // Do all bitvectors of this Enum's width represent legal states?
+  private[chisel3] def isTotal: Boolean = {
+    (this.getWidth < 31) && // guard against Integer overflow
+      (enumRecords.size == (1 << this.getWidth))
+  }
+
   private[chisel3] def globalAnnotation: EnumDefChiselAnnotation =
     EnumDefChiselAnnotation(enumTypeName, (enumNames, enumValues).zipped.toMap)
 
@@ -279,8 +285,12 @@ abstract class EnumFactory {
 
   def apply(): Type = new Type
 
+<<<<<<< HEAD:chiselFrontend/src/main/scala/chisel3/StrongEnum.scala
   def apply(n: UInt)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Type = {
     // scalastyle:off line.size.limit
+=======
+  private def castImpl(n: UInt, warn: Boolean)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Type = {
+>>>>>>> 5fe539c7 (Add ChiselEnum.safe factory method and avoid warning):core/src/main/scala/chisel3/StrongEnum.scala
     if (n.litOption.isDefined) {
       enumInstances.find(_.litValue == n.litValue) match {
         case Some(result) => result
@@ -291,8 +301,9 @@ abstract class EnumFactory {
     } else if (n.getWidth > this.getWidth) {
       throwException(s"The UInt being cast to $enumTypeName is wider than $enumTypeName's width ($getWidth)")
     } else {
-      Builder.warning(s"Casting non-literal UInt to $enumTypeName. You can check that its value is legal by calling isValid")
-
+      if (warn && !this.isTotal) {
+        Builder.warning(s"Casting non-literal UInt to $enumTypeName. You can use $enumTypeName.safe to cast without this warning.")
+      }
       val glue = Wire(new UnsafeEnum(width))
       glue := n
       val result = Wire(new Type)
@@ -300,7 +311,29 @@ abstract class EnumFactory {
       result
     }
   }
+<<<<<<< HEAD:chiselFrontend/src/main/scala/chisel3/StrongEnum.scala
   // scalastyle:on line.size.limit
+=======
+
+  /** Cast an [[UInt]] to the type of this Enum
+    *
+    * @note will give a Chisel elaboration time warning if the argument could hit invalid states
+    * @param n the UInt to cast
+    * @return the equivalent Enum to the value of the cast UInt
+    */
+  def apply(n: UInt)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): Type = castImpl(n, warn = true)
+
+  /** Safely cast an [[UInt]] to the type of this Enum
+    *
+    * @param n the UInt to cast
+    * @return the equivalent Enum to the value of the cast UInt and a Bool indicating if the
+    *         Enum is valid
+    */
+  def safe(n: UInt)(implicit sourceInfo: SourceInfo, connectionCompileOptions: CompileOptions): (Type, Bool) = {
+    val t = castImpl(n, warn = false)
+    (t, t.isValid)
+  }
+>>>>>>> 5fe539c7 (Add ChiselEnum.safe factory method and avoid warning):core/src/main/scala/chisel3/StrongEnum.scala
 }
 
 
