@@ -652,7 +652,7 @@ private[chisel3] object Builder extends LazyLogging {
       logger.warn("Elaborating design...")
       val mod = f
       mod.forceName(None, mod.name, globalNamespace)
-      errors.checkpoint()
+      errors.checkpoint(logger)
       logger.warn("Done elaborating.")
 
       (Circuit(components.last.name, components.toSeq, annotations.toSeq), mod)
