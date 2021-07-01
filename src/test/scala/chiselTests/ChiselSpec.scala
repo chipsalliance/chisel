@@ -9,6 +9,7 @@ import chisel3.testers._
 import firrtl.annotations.Annotation
 import firrtl.util.BackendCompilationUtilities
 import firrtl.{AnnotationSeq, EmittedVerilogCircuitAnnotation}
+import _root_.logger.Logger
 import org.scalacheck._
 import org.scalatest._
 import org.scalatest.flatspec.AnyFlatSpec
@@ -17,7 +18,7 @@ import org.scalatest.propspec.AnyPropSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
-import java.io.ByteArrayOutputStream
+import java.io.{ByteArrayOutputStream, PrintStream}
 import java.security.Permission
 import scala.reflect.ClassTag
 
@@ -170,6 +171,20 @@ trait Utils {
     val stdout, stderr = new ByteArrayOutputStream()
     val ret = scala.Console.withOut(stdout) { scala.Console.withErr(stderr) { thunk } }
     (stdout.toString, stderr.toString, ret)
+  }
+
+  /** Run some Scala thunk and return all logged messages as Strings
+    * @param thunk some Scala code
+    * @return a tuple containing LOGGED, and what the thunk returns
+    */
+  def grabLog[T](thunk: => T): (String, T) = {
+    val baos = new ByteArrayOutputStream()
+    val stream = new PrintStream(baos, true, "utf-8")
+    val ret = Logger.makeScope(Nil) {
+      Logger.setOutput(stream)
+      thunk
+    }
+    (baos.toString, ret)
   }
 
   /** Encodes a System.exit exit code
