@@ -1,4 +1,4 @@
----                                                                                                                                                                             
+---
 layout: docs
 title:  "Enumerations"
 section: "chisel3"
@@ -6,8 +6,8 @@ section: "chisel3"
 
 # ChiselEnum
 
-The ChiselEnum type can be used to reduce the chance of error when encoding mux selectors, opcodes, and functional unit operations. In contrast with`Chisel.util.Enum`, `ChiselEnum` are subclasses of `Data`, which means that they can be used to define fields in `Bundle`s, including in `IO`s.
-
+The ChiselEnum type can be used to reduce the chance of error when encoding mux selectors, opcodes, and functional unit operations.
+In contrast with `Chisel.util.Enum`, `ChiselEnum` are subclasses of `Data`, which means that they can be used to define fields in `Bundle`s, including in `IO`s.
 
 ## Functionality and Examples
 
@@ -19,57 +19,68 @@ import chisel3.stage.ChiselStage
 import chisel3.experimental.ChiselEnum
 ```
 
-Below we see ChiselEnum being used as mux select for a RISC-V core. While wrapping the object in a package is not required, it is highly recommended as it allows for the type to be used in multiple files more easily. 
+```scala mdoc:invisible
+// Helper to print stdout from Chisel elab
+// May be related to: https://github.com/scalameta/mdoc/issues/517
+import java.io._
+import _root_.logger.Logger
+def grabLog[T](thunk: => T): (String, T) = {
+  val baos = new ByteArrayOutputStream()
+  val stream = new PrintStream(baos, true, "utf-8")
+  val ret = Logger.makeScope(Nil) {
+   Logger.setOutput(stream)
+   thunk
+  }
+  (baos.toString, ret)
+}
+```
+
+Below we see ChiselEnum being used as mux select for a RISC-V core. While wrapping the object in a package is not required, it is highly recommended as it allows for the type to be used in multiple files more easily.
 
 ```scala mdoc
 // package CPUTypes {
-    object AluMux1Sel extends ChiselEnum {
-        val selectRS1, selectPC = Value
-        /** How the values will be mapped
-            "selectRS1" -> 0.U,
-            "selectPC"  -> 1.U
-        */
-    }
-// }
+object AluMux1Sel extends ChiselEnum {
+  val selectRS1, selectPC = Value
+}
+// We can see the mapping by printing each Value
+AluMux1Sel.all.foreach(println)
 ```
 
-Here we see a mux using the AluMux1Sel to select between different inputs. 
+Here we see a mux using the AluMux1Sel to select between different inputs.
 
 ```scala mdoc
 import AluMux1Sel._
 
 class AluMux1Bundle extends Bundle {
-        val aluMux1Sel =  Input( AluMux1Sel() )
-        val rs1Out     =  Input(Bits(32.W))
-        val pcOut      =  Input(Bits(32.W))
-        val aluMux1Out = Output(Bits(32.W))
+  val aluMux1Sel = Input(AluMux1Sel())
+  val rs1Out     = Input(Bits(32.W))
+  val pcOut      = Input(Bits(32.W))
+  val aluMux1Out = Output(Bits(32.W))
 }
 
 class AluMux1File extends Module {
-    val io = IO(new AluMux1Bundle)
+  val io = IO(new AluMux1Bundle)
 
-    // Default value for aluMux1Out
-    io.aluMux1Out := 0.U
+  // Default value for aluMux1Out
+  io.aluMux1Out := 0.U
 
-    switch (io.aluMux1Sel) {
-        is (selectRS1) {
-            io.aluMux1Out  := io.rs1Out
-        }
-        is (selectPC) {
-            io.aluMux1Out  := io.pcOut
-        }
+  switch (io.aluMux1Sel) {
+    is (selectRS1) {
+      io.aluMux1Out := io.rs1Out
     }
+    is (selectPC) {
+      io.aluMux1Out := io.pcOut
+    }
+  }
 }
 ```
 ```scala mdoc:verilog
-ChiselStage.emitVerilog(new AluMux1File )
+ChiselStage.emitVerilog(new AluMux1File)
 ```
 
-ChiselEnum also allows for the user to define variables by passing in the value shown below. Note that the value must be increasing or else 
-
- > chisel3.internal.ChiselException: Exception thrown when elaborating ChiselGeneratorAnnotation
-
-is thrown during Verilog generation.
+ChiselEnum also allows for the user to directly set the Values by passing an `UInt` to `Value(...)`
+as shown below. Note that the magnitude of each `Value` must be strictly greater than the one before
+it.
 
 ```scala mdoc
 object Opcode extends ChiselEnum {
@@ -85,27 +96,81 @@ object Opcode extends ChiselEnum {
 }
 ```
 
-The user can 'jump' to a value and continue incrementing by passing a start point then using a regular Value assignment. 
+The user can 'jump' to a value and continue incrementing by passing a start point then using a regular Value definition.
 
 ```scala mdoc
 object BranchFunct3 extends ChiselEnum {
     val beq, bne = Value
     val blt = Value(4.U)
     val bge, bltu, bgeu = Value
-    /** How the values will be mapped
-        "beq"  -> 0.U,
-        "bne"  -> 1.U,
-        "blt"  -> 4.U,
-        "bge"  -> 5.U,
-        "bltu" -> 6.U,
-        "bgeu" -> 7.U
-    */
 }
+// We can see the mapping by printing each Value
+BranchFunct3.all.foreach(println)
+```
+
+## Casting
+
+You can cast an enum to a `UInt` using `.asUInt`:
+
+```scala mdoc
+class ToUInt extends RawModule {
+  val in = IO(Input(Opcode()))
+  val out = IO(Output(UInt()))
+  out := in.asUInt
+}
+```
+
+```scala mdoc:invisible
+// Always need to run Chisel to see if there are elaboration errors
+ChiselStage.emitVerilog(new ToUInt)
+```
+
+You can cast from a `UInt` to an enum by passing the `UInt` to the apply method of the `ChiselEnum` object:
+
+```scala mdoc
+class FromUInt extends Module {
+  val in = IO(Input(UInt(7.W)))
+  val out = IO(Output(Opcode()))
+  out := Opcode(in)
+}
+```
+
+However, if you cast from a `UInt` to an Enum type when there are undefined states in the Enum values
+that the `UInt` could hit, you will see a warning like the following:
+
+```scala mdoc:passthrough
+val (log, _) = grabLog(ChiselStage.emitChirrtl(new FromUInt))
+println(s"```$log```")
+```
+(Note that the name of the Enum is ugly as an artifact of our documentation generation flow, it will
+be cleaner in normal use).
+
+You can avoid this warning by using the `.safe` factory method which returns the cast Enum in addition
+to a `Bool` indicating if the Enum is in a valid state:
+
+```scala mdoc
+class SafeFromUInt extends Module {
+  val in = IO(Input(UInt(7.W)))
+  val out = IO(Output(Opcode()))
+  val (value, valid) = Opcode.safe(in)
+  assert(valid, "Enum state must be valid, got %d!", in)
+  out := value
+}
+```
+
+Now there will be no warning:
+
+```scala mdoc:passthrough
+val (log2, _) = grabLog(ChiselStage.emitChirrtl(new SafeFromUInt))
+println(s"```$log2```")
 ```
 
 ## Testing
 
-When testing your modules, the `.Type` and `.litValue` attributes allow for the the objects to be passed as parameters and for the value to be converted to BigInt type. Note that BigInts cannot be casted to Int with `.asInstanceOf[Int]`, they use their own methods like `toInt`. Please review the [scala.math.BigInt](https://www.scala-lang.org/api/2.12.5/scala/math/BigInt.html) page for more details!
+The _Type_ of the enums values is `<ChiselEnum Object>.Type` which can be useful for passing the values
+as parameters to a function (or any other time a type annotation is needed).
+Calling `.litValue` on an enum value will return the integer value of that object as a
+[`BigInt`](https://www.scala-lang.org/api/2.12.13/scala/math/BigInt.html).
 
 ```scala mdoc
 def expectedSel(sel: AluMux1Sel.Type): Boolean = sel match {
@@ -115,22 +180,23 @@ def expectedSel(sel: AluMux1Sel.Type): Boolean = sel match {
 }
 ```
 
-The ChiselEnum type also has methods `.all` and `.getWidth` where `all` returns all of the enum instances and `getWidth` returns the width of the hardware type.
+Some additional useful methods defined on the `ChiselEnum` object are:
+* `.all`: returns the enum values within the enumeration
+* `.getWidth`: returns the width of the hardware type
 
 ## Workarounds
 
-As of 2/26/2021, the width of the values is always inferred. To work around this, you can add an extra `Value` that forces the width that is desired. This is shown in the example below, where we add a field `ukn` to force the width to be 3 bits wide: 
+As of Chisel v3.4.3 (1 July 2020), the width of the values is always inferred.
+To work around this, you can add an extra `Value` that forces the width that is desired.
+This is shown in the example below, where we add a field `ukn` to force the width to be 3 bits wide:
 
 ```scala mdoc
 object StoreFunct3 extends ChiselEnum {
     val sb, sh, sw = Value
     val ukn = Value(7.U)
-    /** How the values will be mapped
-        "sb" -> 0.U,
-        "sh" -> 1.U,
-        "sw" -> 2.U
-    */
 }
+// We can see the mapping by printing each Value
+StoreFunct3.all.foreach(println)
 ```
 
 Signed values are not supported so if you want the value signed, you must cast the UInt with `.asSInt`.
