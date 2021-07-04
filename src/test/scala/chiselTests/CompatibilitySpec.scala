@@ -3,8 +3,7 @@
 package chiselTests
 
 import chisel3.stage.ChiselStage
-import chisel3.testers.BasicTester
-
+import chiselTests.testers.BasicTester
 import org.scalacheck.Gen
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 

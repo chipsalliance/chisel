@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.testers.BasicTester
+import chiselTests.testers.BasicTester
 
 class AdderTree[T <: Bits with Num[T]](genType: T, vecSize: Int) extends Module {
   val io = IO(new Bundle {

@@ -3,7 +3,7 @@ package chiselTests
 import org.scalacheck._
 
 import chisel3._
-import chisel3.testers.{BasicTester, TesterDriver}
+import chiselTests.testers.BasicTester
 import chisel3.util._
 import chisel3.util.random.LFSR
 import treadle.WriteVcdAnnotation

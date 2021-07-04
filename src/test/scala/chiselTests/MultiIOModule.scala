@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.testers.BasicTester
+import chiselTests.testers.BasicTester
 
 class MultiIOPlusOne extends Module {
   val in  = IO(Input(UInt(32.W)))

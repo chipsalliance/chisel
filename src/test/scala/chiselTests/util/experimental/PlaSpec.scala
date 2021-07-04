@@ -2,9 +2,9 @@ package chiselTests.util.experimental
 
 import chisel3._
 import chisel3.stage.PrintFullStackTraceAnnotation
-import chisel3.testers.BasicTester
 import chisel3.util.{BitPat, pla}
 import chiselTests.ChiselFlatSpec
+import chiselTests.testers.BasicTester
 
 class PlaSpec extends ChiselFlatSpec {
   "A 1-of-8 decoder (eg. 74xx138 without enables)" should "be generated correctly" in {

@@ -5,8 +5,8 @@ package chiselTests
 import chisel3._
 import chisel3.experimental.FixedPoint
 import chisel3.internal.ChiselException
-import chisel3.testers.BasicTester
 import chisel3.util.{Mux1H, UIntToOH}
+import chiselTests.testers.BasicTester
 import org.scalatest._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers

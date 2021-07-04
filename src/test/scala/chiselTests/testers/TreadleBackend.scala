@@ -4,7 +4,7 @@ package chiselTests.testers
 
 import chisel3._
 import chisel3.stage._
-import chisel3.testers.TesterDriver.createTestDirectory
+import chiselTests.testers.TesterDriver.createTestDirectory
 import firrtl.AnnotationSeq
 import firrtl.annotations.NoTargetAnnotation
 import firrtl.options.TargetDirAnnotation

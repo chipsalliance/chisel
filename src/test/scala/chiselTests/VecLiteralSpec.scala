@@ -7,8 +7,9 @@ import chisel3.experimental.BundleLiterals.AddBundleLiteralConstructor
 import chisel3.experimental.VecLiterals._
 import chisel3.experimental.{ChiselEnum, FixedPoint, VecLiteralException}
 import chisel3.stage.ChiselStage
-import chisel3.testers.BasicTester
 import chisel3.util.Counter
+import chiselTests.testers.BasicTester
+
 import scala.language.reflectiveCalls
 
 class VecLiteralSpec extends ChiselFreeSpec with Utils {
