@@ -12,17 +12,62 @@ on:
 jobs:
   ci:
     name: ci
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
-        scala: [2.13.6, 2.12.13]
-    container:
-      image: ucbbar/chisel3-tools
-      options: --user github --entrypoint /bin/bash
-    env:
-      CONTAINER_HOME: /home/github
+        scala: ["2.13.6", "2.12.13"]
+        verilator: ["4.204"]
+        z3: ["4.8.10"]
 
     steps:
+      - name: Install Z3 Build Dependencies
+        run: sudo apt-get install -y git make autoconf g++ flex bison libfl2 libfl-dev
+
+      - name: Cache Z3 ${{ matrix.z3 }}
+        uses: actions/cache@v2
+        id: cache-z3
+        with:
+          path: z3-z3-${{ matrix.z3 }}
+          key: ${{ runner.os }}-z3-${{ matrix.z3 }}
+      - name: Compile Z3
+        if: steps.cache-z3.outputs.cache-hit != 'true'
+        run: |
+          wget https://github.com/Z3Prover/z3/archive/refs/tags/z3-${{ matrix.z3 }}.tar.gz
+          tar xvf z3-${{ matrix.z3 }}.tar.gz
+          cd z3-z3-${{ matrix.z3 }}
+          mkdir -p build
+          cd build
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DZ3_LINK_TIME_OPTIMIZATION=1
+          make
+      - name: Install Z3 ${{ matrix.z3 }}
+        run: |
+          cd z3-z3-${{ matrix.z3 }}/build
+          sudo make install
+          z3 --version
+
+      - name: Cache Verilator ${{ matrix.verilator }}
+        uses: actions/cache@v2
+        id: cache-verilator
+        with:
+          path: verilator-${{ matrix.verilator }}
+          key: ${{ runner.os }}-verilator-${{ matrix.verilator }}
+      - name: Compile Verilator ${{ matrix.verilator }}
+        if: steps.cache-verilator.outputs.cache-hit != 'true'
+        run: |
+          wget https://github.com/verilator/verilator/archive/refs/tags/v${{ matrix.verilator }}.tar.gz
+          tar xvf v${{ matrix.verilator }}.tar.gz
+          cd verilator-${{ matrix.verilator }}
+          autoconf
+          ./configure
+          make
+      - name: Install Verilator ${{ matrix.verilator }}
+        run: |
+          cd verilator-${{ matrix.verilator }}
+          sudo make install
+          verilator --version
+
       - name: Checkout
         uses: actions/checkout@v2
       - name: Setup Scala
@@ -46,7 +91,7 @@ jobs:
   all_tests_passed:
     name: "all tests passed"
     needs: [ci]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
       - run: echo Success!
 
@@ -54,7 +99,7 @@ jobs:
   # separate from a Scala versions build matrix to avoid duplicate publishing
   publish:
     needs: [all_tests_passed]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     if: github.event_name == 'push'
 
     steps:
