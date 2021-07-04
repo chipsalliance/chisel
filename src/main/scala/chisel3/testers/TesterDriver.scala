@@ -13,6 +13,7 @@ import firrtl.options.{Dependency, Phase, PhaseManager, TargetDirAnnotation, Uns
 import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlStage}
 import firrtl.transforms.BlackBoxSourceHelper.writeResourceToDirectory
 
+@deprecated("This is not a User API, will be removed in Chisel 3.6", "3.5")
 object TesterDriver extends BackendCompilationUtilities {
 
   private[chisel3] trait Backend extends NoTargetAnnotation with Unserializable {
