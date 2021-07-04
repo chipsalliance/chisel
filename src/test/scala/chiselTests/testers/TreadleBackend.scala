@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package chisel3.testers
+package chiselTests.testers
 
-import TesterDriver.createTestDirectory
 import chisel3._
 import chisel3.stage._
+import chisel3.testers.TesterDriver.createTestDirectory
 import firrtl.AnnotationSeq
 import firrtl.annotations.NoTargetAnnotation
 import firrtl.options.TargetDirAnnotation
-import treadle.stage.TreadleTesterPhase
 import treadle.executable.StopException
+import treadle.stage.TreadleTesterPhase
 import treadle.{CallResetAtStartupAnnotation, TreadleTesterAnnotation, WriteVcdAnnotation}
 
 import java.io.File
