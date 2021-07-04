@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.testers.BasicTester
+import chiselTests.testers.BasicTester
 
 class BitwiseOpsTester(w: Int, _a: Int, _b: Int) extends BasicTester {
   val mask = (1 << w) - 1

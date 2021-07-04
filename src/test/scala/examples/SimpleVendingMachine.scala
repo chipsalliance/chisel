@@ -3,9 +3,10 @@
 package examples
 
 import chiselTests.ChiselFlatSpec
-import chisel3.testers.{BasicTester, TesterDriver}
+import chisel3.testers.TesterDriver
 import chisel3._
 import chisel3.util._
+import chiselTests.testers.BasicTester
 
 class SimpleVendingMachineIO extends Bundle {
   val nickel = Input(Bool())
@@ -90,6 +91,6 @@ class SimpleVendingMachineSpec extends ChiselFlatSpec {
   }
   "An Verilog implementation of a vending machine" should "work" in {
     assertTesterPasses(new SimpleVendingMachineTester(new VerilogVendingMachineWrapper),
-                       List("/chisel3/VerilogVendingMachine.v"), annotations = TesterDriver.verilatorOnly)
+                       List("/chisel3/VerilogVendingMachine.v"), annotations = chiselTests.testers.TesterDriver.verilatorOnly)
   }
 }

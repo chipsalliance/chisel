@@ -5,7 +5,7 @@ package chiselTests
 import chisel3._
 import chisel3.stage.ChiselStage
 import chisel3.util.{MuxLookup, log2Ceil}
-import chisel3.testers.BasicTester
+import chiselTests.testers.BasicTester
 
 class MuxTester extends BasicTester {
   assert(Mux(0.B, 1.U, 2.U) === 2.U)

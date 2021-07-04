@@ -2,11 +2,12 @@
 
 package chiselTests.aop
 
-import chisel3.testers.{BasicTester, TesterDriver}
+import chisel3.testers.TesterDriver
 import chiselTests.{ChiselFlatSpec, Utils}
 import chisel3._
 import chisel3.aop.Select
 import chisel3.aop.injecting.InjectingAspect
+import chiselTests.testers.BasicTester
 import logger.{LogLevel, LogLevelAnnotation}
 
 object InjectionHierarchy {
@@ -129,11 +130,11 @@ class InjectionSpec extends ChiselFlatSpec with Utils {
     assertTesterFails{ new AspectTester(Seq(9, 9, 9)) }
   }
   "Test" should "pass if pass wrong values, but correct with aspect" in {
-    assertTesterPasses({ new AspectTester(Seq(9, 9, 9))} , Nil, Seq(correctValueAspect) ++ TesterDriver.verilatorOnly)
+    assertTesterPasses({ new AspectTester(Seq(9, 9, 9))} , Nil, Seq(correctValueAspect) ++ chiselTests.testers.TesterDriver.verilatorOnly)
   }
   "Test" should "pass if pass wrong values, then wrong aspect, then correct aspect" in {
     assertTesterPasses(
-      new AspectTester(Seq(9, 9, 9)), Nil, Seq(wrongValueAspect, correctValueAspect) ++ TesterDriver.verilatorOnly
+      new AspectTester(Seq(9, 9, 9)), Nil, Seq(wrongValueAspect, correctValueAspect) ++ chiselTests.testers.TesterDriver.verilatorOnly
     )
   }
   "Test" should "fail if pass wrong values, then correct aspect, then wrong aspect" in {
@@ -141,14 +142,14 @@ class InjectionSpec extends ChiselFlatSpec with Utils {
   }
 
   "Test" should "pass if the submodules in SubmoduleManipulationTester can be manipulated by manipulateSubmoduleAspect" in {
-    assertTesterPasses({ new SubmoduleManipulationTester} , Nil, Seq(manipulateSubmoduleAspect) ++ TesterDriver.verilatorOnly)
+    assertTesterPasses({ new SubmoduleManipulationTester} , Nil, Seq(manipulateSubmoduleAspect) ++ chiselTests.testers.TesterDriver.verilatorOnly)
   }
 
   "Module name collisions when adding a new module" should "be resolved" in {
     assertTesterPasses(
       { new SubmoduleManipulationTester},
       Nil,
-      Seq(duplicateSubmoduleAspect) ++ TesterDriver.verilatorOnly
+      Seq(duplicateSubmoduleAspect) ++ chiselTests.testers.TesterDriver.verilatorOnly
     )
   }
 
@@ -156,7 +157,7 @@ class InjectionSpec extends ChiselFlatSpec with Utils {
     assertTesterPasses(
       { new SubmoduleManipulationTester},
       Nil,
-      Seq(addingExternalModules) ++ TesterDriver.verilatorOnly
+      Seq(addingExternalModules) ++ chiselTests.testers.TesterDriver.verilatorOnly
     )
   }
 
@@ -164,7 +165,7 @@ class InjectionSpec extends ChiselFlatSpec with Utils {
     assertTesterPasses(
       {new MultiModuleInjectionTester},
       Nil,
-      Seq(multiModuleInjectionAspect) ++ TesterDriver.verilatorOnly
+      Seq(multiModuleInjectionAspect) ++ chiselTests.testers.TesterDriver.verilatorOnly
     )
   }
 }

@@ -5,7 +5,7 @@ package chiselTests
 import chisel3._
 import chisel3.experimental.{BaseSim, ChiselAnnotation}
 import chisel3.stage.ChiselStage
-import chisel3.testers.BasicTester
+import chiselTests.testers.BasicTester
 import firrtl.annotations.{ReferenceTarget, SingleTargetAnnotation}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers

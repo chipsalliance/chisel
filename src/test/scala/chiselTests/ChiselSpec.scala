@@ -10,6 +10,7 @@ import firrtl.annotations.Annotation
 import firrtl.util.BackendCompilationUtilities
 import firrtl.{AnnotationSeq, EmittedVerilogCircuitAnnotation}
 import _root_.logger.Logger
+import chiselTests.testers.TestUtils
 import org.scalacheck._
 import org.scalatest._
 import org.scalatest.flatspec.AnyFlatSpec
@@ -24,23 +25,23 @@ import scala.reflect.ClassTag
 
 /** Common utility functions for Chisel unit tests. */
 trait ChiselRunners extends Assertions with BackendCompilationUtilities {
-  def runTester(t: => BasicTester,
+  def runTester(t: => chiselTests.testers.BasicTester,
                 additionalVResources: Seq[String] = Seq(),
                 annotations: AnnotationSeq = Seq()
                ): Boolean = {
     // Change this to enable Treadle as a backend
-    val defaultBackend = chisel3.testers.TesterDriver.defaultBackend
+    val defaultBackend = chiselTests.testers.TesterDriver.defaultBackend
     val hasBackend = TestUtils.containsBackend(annotations)
     val annos: Seq[Annotation] = if (hasBackend) annotations else defaultBackend +: annotations
-    TesterDriver.execute(() => t, additionalVResources, annos)
+    chiselTests.testers.TesterDriver.execute(() => t, additionalVResources, annos)
   }
-  def assertTesterPasses(t: => BasicTester,
+  def assertTesterPasses(t: => chiselTests.testers.BasicTester,
                          additionalVResources: Seq[String] = Seq(),
                          annotations: AnnotationSeq = Seq()
                         ): Unit = {
     assert(runTester(t, additionalVResources, annotations))
   }
-  def assertTesterFails(t: => BasicTester,
+  def assertTesterFails(t: => chiselTests.testers.BasicTester,
                         additionalVResources: Seq[String] = Seq(),
                         annotations: Seq[chisel3.aop.Aspect[_]] = Seq()
                        ): Unit = {
@@ -48,7 +49,7 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
   }
 
   def assertKnownWidth(expected: Int)(gen: => Data): Unit = {
-    assertTesterPasses(new BasicTester {
+    assertTesterPasses(new chiselTests.testers.BasicTester {
       val x = gen
       assert(x.getWidth === expected)
       // Sanity check that firrtl doesn't change the width
@@ -62,7 +63,7 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
   }
 
   def assertInferredWidth(expected: Int)(gen: => Data): Unit = {
-    assertTesterPasses(new BasicTester {
+    assertTesterPasses(new chiselTests.testers.BasicTester {
       val x = gen
       assert(!x.isWidthKnown, s"Asserting that width should be inferred yet width is known to Chisel!")
       x := 0.U.asTypeOf(chiselTypeOf(x))

@@ -4,7 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.util.Enum
-import chisel3.testers.BasicTester
+import chiselTests.testers.BasicTester
 
 class EnumSpec extends ChiselFlatSpec {
 

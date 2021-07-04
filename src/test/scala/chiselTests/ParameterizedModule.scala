@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.testers.BasicTester
+import chiselTests.testers.BasicTester
 
 class ParameterizedModule(invert: Boolean) extends Module {
   val io = IO(new Bundle {

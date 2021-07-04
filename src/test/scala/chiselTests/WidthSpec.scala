@@ -3,6 +3,7 @@
 package chiselTests
 
 import chisel3._
+import chiselTests.testers.BasicTester
 
 class SimpleBundle extends Bundle {
   val x = UInt(4.W)
@@ -202,7 +203,7 @@ class OpWidthSpec extends ChiselFlatSpec {
       (_ >> _, PrimOps.Dshr)
     )
 
-  assertTesterPasses(new chisel3.testers.BasicTester {
+  assertTesterPasses(new BasicTester {
     for (i <- 0 to maxWidth) {
       for (j <- 0 to maxWidth) {
         for ((cOp, fOp) <- uIntOps) {
@@ -228,7 +229,7 @@ class OpWidthSpec extends ChiselFlatSpec {
       (_ % _, PrimOps.Rem)
     )
 
-  assertTesterPasses(new chisel3.testers.BasicTester {
+  assertTesterPasses(new BasicTester {
     for (i <- 0 to maxWidth) {
       for (j <- 0 to maxWidth) {
         for ((cOp, fOp) <- sIntOps) {

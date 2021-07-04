@@ -4,7 +4,7 @@ package chiselTests
 
 import chisel3._
 import chisel3.util._
-import chisel3.testers.BasicTester
+import chiselTests.testers.BasicTester
 
 class MemVecTester extends BasicTester {
   val mem = Mem(2, Vec(2, UInt(8.W)))

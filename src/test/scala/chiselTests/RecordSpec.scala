@@ -4,9 +4,10 @@ package chiselTests
 
 import chisel3._
 import chisel3.stage.ChiselStage
-import chisel3.testers.BasicTester
 import chisel3.util.{Counter, Queue}
 import chisel3.experimental.{DataMirror, requireIsChiselType}
+import chiselTests.testers.BasicTester
+
 import scala.collection.immutable.ListMap
 
 // An example of how Record might be extended

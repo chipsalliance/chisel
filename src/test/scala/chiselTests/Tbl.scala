@@ -3,8 +3,8 @@
 package chiselTests
 
 import chisel3._
-import chisel3.testers.BasicTester
 import chisel3.util._
+import chiselTests.testers.BasicTester
 
 class Tbl(w: Int, n: Int) extends Module {
   val io = IO(new Bundle {

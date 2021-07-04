@@ -4,10 +4,9 @@ package chiselTests.util.random
 
 import chisel3._
 import chisel3.stage.ChiselStage
-import chisel3.testers.BasicTester
 import chisel3.util.Counter
 import chisel3.util.random.PRNG
-
+import chiselTests.testers.BasicTester
 import chiselTests.{ChiselFlatSpec, Utils}
 
 class CyclePRNG(width: Int, seed: Option[BigInt], step: Int, updateSeed: Boolean)

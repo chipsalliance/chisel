@@ -2,7 +2,7 @@
 
 package chiselTests
 import chisel3._
-import chisel3.testers.BasicTester
+import chiselTests.testers.BasicTester
 
 class Coord extends Bundle {
   val x = UInt(32.W)
