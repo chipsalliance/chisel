@@ -2,13 +2,13 @@
 
 package chiselTests.aop
 
-import chisel3.testers.BasicTester
 import chiselTests.ChiselFlatSpec
 import chisel3._
 import chisel3.aop.Select.{PredicatedConnect, When, WhenNot}
 import chisel3.aop.{Aspect, Select}
 import chisel3.experimental.ExtModule
 import chisel3.stage.{ChiselGeneratorAnnotation, DesignAnnotation}
+import chiselTests.testers.BasicTester
 import firrtl.AnnotationSeq
 
 import scala.reflect.runtime.universe.TypeTag

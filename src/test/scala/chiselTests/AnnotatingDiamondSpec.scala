@@ -6,14 +6,9 @@ import chisel3._
 import chisel3.experimental.{ChiselAnnotation, RunFirrtlTransform, annotate}
 import chisel3.internal.InstanceId
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
-import chisel3.testers.BasicTester
+import chiselTests.testers.BasicTester
 import firrtl.{CircuitForm, CircuitState, DependencyAPIMigration, LowForm, Transform}
-import firrtl.annotations.{
-  CircuitName,
-  CircuitTarget,
-  SingleTargetAnnotation,
-  Target
-}
+import firrtl.annotations.{CircuitName, CircuitTarget, SingleTargetAnnotation, Target}
 import firrtl.stage.Forms
 import org.scalatest._
 import org.scalatest.freespec.AnyFreeSpec

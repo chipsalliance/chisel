@@ -3,8 +3,8 @@
 package chiselTests
 
 import chisel3._
-import chisel3.testers.TestUtils
 import chisel3.util.QueueIO
+import chiselTests.testers.TestUtils
 
 class BundleWithIntArg(val i: Int) extends Bundle {
   val out = UInt(i.W)

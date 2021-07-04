@@ -8,7 +8,7 @@ import chisel3.internal.firrtl.UnknownWidth
 import chisel3.internal.naming.chiselName
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import chisel3.util._
-import chisel3.testers.BasicTester
+import chiselTests.testers.BasicTester
 import org.scalatest.Assertion
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers

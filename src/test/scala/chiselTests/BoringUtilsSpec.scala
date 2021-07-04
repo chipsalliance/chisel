@@ -7,15 +7,14 @@ import chisel3.util.Counter
 import chisel3.testers._
 import chisel3.experimental.{BaseModule, ChiselAnnotation, RunFirrtlTransform}
 import chisel3.util.experimental.BoringUtils
-
-import firrtl.{CircuitForm, CircuitState, ChirrtlForm, DependencyAPIMigration, Transform}
+import firrtl.{ChirrtlForm, CircuitForm, CircuitState, DependencyAPIMigration, Transform}
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.options.Dependency
 import firrtl.transforms.{DontTouchAnnotation, NoDedupAnnotation}
 import firrtl.passes.wiring.{WiringException, WiringTransform}
 import firrtl.stage.Forms
 
-abstract class ShouldntAssertTester(cyclesToWait: BigInt = 4) extends BasicTester {
+abstract class ShouldntAssertTester(cyclesToWait: BigInt = 4) extends chiselTests.testers.BasicTester {
   val dut: BaseModule
   val (_, done) = Counter(true.B, 2)
   when (done) { stop() }
@@ -50,7 +49,7 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
 
   it should "connect two wires within a module" in {
     runTester(new ShouldntAssertTester { val dut = Module(new BoringInverter) },
-      annotations = TesterDriver.verilatorOnly) should be (true)
+      annotations = chiselTests.testers.TesterDriver.verilatorOnly) should be (true)
   }
 
   trait WireX { this: BaseModule =>
@@ -104,12 +103,12 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
   behavior of "BoringUtils.bore"
 
   it should "connect across modules using BoringUtils.bore" in {
-    runTester(new TopTester, annotations = TesterDriver.verilatorOnly) should be (true)
+    runTester(new TopTester, annotations = chiselTests.testers.TesterDriver.verilatorOnly) should be (true)
   }
 
   it should "throw an exception if NoDedupAnnotations are removed" in {
     intercept[WiringException] { runTester(new TopTester with FailViaDedup,
-      annotations = Seq(TesterDriver.VerilatorBackend)) }
+      annotations = Seq(chiselTests.testers.VerilatorBackend)) }
       .getMessage should startWith ("Unable to determine source mapping for sink")
   }
 
@@ -127,7 +126,7 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
   }
 
   it should "work for an internal (same module) BoringUtils.bore" in {
-    runTester(new InternalBoreTester, annotations = TesterDriver.verilatorOnly) should be (true)
+    runTester(new InternalBoreTester, annotations = chiselTests.testers.TesterDriver.verilatorOnly) should be (true)
   }
 
 }

@@ -8,7 +8,7 @@ import chisel3._
 import chisel3.internal.firrtl.{IntervalRange, KnownBinaryPoint}
 import chisel3.internal.sourceinfo.{SourceInfo, UnlocatableSourceInfo}
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
-import chisel3.testers.BasicTester
+import chiselTests.testers.BasicTester
 import cookbook.CookbookTester
 import firrtl.options.TargetDirAnnotation
 import firrtl.passes.CheckTypes.InvalidConnect

@@ -3,8 +3,8 @@
 package chiselTests
 
 import chisel3._
-import chisel3.testers.BasicTester
 import chisel3.util._
+import chiselTests.testers.BasicTester
 import org.scalacheck.Shrink
 
 class Complex[T <: Data](val re: T, val im: T) extends Bundle {

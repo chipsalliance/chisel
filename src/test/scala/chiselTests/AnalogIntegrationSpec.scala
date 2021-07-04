@@ -3,9 +3,9 @@
 package chiselTests
 
 import chisel3._
-import chisel3.util._
-import chisel3.testers.{BasicTester, TesterDriver}
 import chisel3.experimental._
+import chisel3.util._
+import chiselTests.testers.BasicTester
 
 /* This test is different from AnalogSpec in that it uses more complicated black boxes that can each
  * drive the bidirectional bus. It was created to evaluate Analog with synthesis tools since the
@@ -137,7 +137,7 @@ class AnalogIntegrationSpec extends ChiselFlatSpec {
     assertTesterPasses(
       new AnalogIntegrationTester(new AnalogSmallDUT),
       Seq("/chisel3/AnalogBlackBox.v"),
-      TesterDriver.verilatorOnly
+      chiselTests.testers.TesterDriver.verilatorOnly
     )
   }
   // Use this test once Verilator supports alias
@@ -145,7 +145,7 @@ class AnalogIntegrationSpec extends ChiselFlatSpec {
     assertTesterPasses(
       new AnalogIntegrationTester(new AnalogDUT),
       Seq("/chisel3/AnalogBlackBox.v"),
-      TesterDriver.verilatorOnly
+      chiselTests.testers.TesterDriver.verilatorOnly
     )
   }
 }

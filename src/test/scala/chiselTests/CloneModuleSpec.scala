@@ -4,9 +4,9 @@ package chiselTests
 
 import chisel3._
 import chisel3.stage.ChiselStage
-import chisel3.util.{Decoupled, Queue, EnqIO, DeqIO, QueueIO, log2Ceil}
+import chisel3.util.{Decoupled, DeqIO, EnqIO, Queue, QueueIO, log2Ceil}
 import chisel3.experimental.{CloneModuleAsRecord, IO}
-import chisel3.testers.BasicTester
+import chiselTests.testers.BasicTester
 
 class MultiIOQueue[T <: Data](gen: T, val entries: Int) extends Module {
   val clk = IO(Input(Clock()))

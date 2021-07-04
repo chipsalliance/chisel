@@ -4,12 +4,12 @@ package chiselTests.testers
 
 import chisel3.stage.ChiselGeneratorAnnotation
 import chisel3.stage.phases.{Convert, Emitter}
-import chisel3.testers.TesterDriver._
-import chiselTests.testers.TesterDriver.{AddImplicitTesterDirectory, finishWrapper}
+import chiselTests.testers.TesterDriver.{AddImplicitTesterDirectory, cppToExe, executeExpectingSuccess, finishWrapper, verilogToCpp}
 import firrtl.AnnotationSeq
 import firrtl.options.{Dependency, PhaseManager, TargetDirAnnotation}
 import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlStage}
 import firrtl.transforms.BlackBoxSourceHelper.writeResourceToDirectory
+import firrtl.util.BackendCompilationUtilities.copyResourceToFile
 
 import java.io._
 

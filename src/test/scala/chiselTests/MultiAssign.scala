@@ -3,9 +3,9 @@
 package chiselTests
 
 import chisel3._
-import chisel3.testers.BasicTester
 import chisel3.stage.ChiselStage
 import chisel3.util._
+import chiselTests.testers.BasicTester
 
 class LastAssignTester() extends BasicTester {
   val countOnClockCycles = true.B
