@@ -11,7 +11,8 @@ package object verification {
 
   object assert {
     /** Named class for assertions. */
-    final class Assert(val predicate: Bool) extends BaseSim
+    final class Assert(private[chisel3] val predicate: Bool) extends BaseSim
+
 
     def apply(predicate: Bool, msg: String = "")(
       implicit sourceInfo: SourceInfo,
@@ -27,7 +28,7 @@ package object verification {
 
   object assume {
     /** Named class for assumes. */
-    final class Assume(val predicate: Bool) extends BaseSim
+    final class Assume(private[chisel3] val predicate: Bool) extends BaseSim
 
     def apply(predicate: Bool, msg: String = "")(
       implicit sourceInfo: SourceInfo,
@@ -43,7 +44,7 @@ package object verification {
 
   object cover {
     /** Named class for covers. */
-    final class Cover(val predicate: Bool) extends BaseSim
+    final class Cover(private[chisel3] val predicate: Bool) extends BaseSim
 
     def apply(predicate: Bool, msg: String = "")(
       implicit sourceInfo: SourceInfo,
