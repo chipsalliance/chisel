@@ -4,6 +4,7 @@ package chisel3.internal
 
 import scala.annotation.tailrec
 import scala.collection.mutable.{ArrayBuffer, LinkedHashMap}
+import _root_.logger.Logger
 
 object ExceptionHelpers {
 
@@ -184,31 +185,31 @@ private[chisel3] class ErrorLog {
   }
 
   /** Throw an exception if any errors have yet occurred. */
-  def checkpoint(): Unit = {
+  def checkpoint(logger: Logger): Unit = {
     deprecations.foreach { case ((message, sourceLoc), count) =>
-      println(s"${ErrorLog.depTag} $sourceLoc ($count calls): $message")
+      logger.warn(s"${ErrorLog.depTag} $sourceLoc ($count calls): $message")
     }
-    errors foreach println
+    errors.foreach(e => logger.error(e.toString))
 
     if (!deprecations.isEmpty) {
-      println(s"${ErrorLog.warnTag} ${Console.YELLOW}There were ${deprecations.size} deprecated function(s) used." +
+      logger.warn(s"${ErrorLog.warnTag} ${Console.YELLOW}There were ${deprecations.size} deprecated function(s) used." +
           s" These may stop compiling in a future release - you are encouraged to fix these issues.${Console.RESET}")
-      println(s"${ErrorLog.warnTag} Line numbers for deprecations reported by Chisel may be inaccurate; enable scalac compiler deprecation warnings via either of the following methods:")
-      println(s"${ErrorLog.warnTag}   In the sbt interactive console, enter:")
-      println(s"""${ErrorLog.warnTag}     set scalacOptions in ThisBuild ++= Seq("-unchecked", "-deprecation")""")
-      println(s"${ErrorLog.warnTag}   or, in your build.sbt, add the line:")
-      println(s"""${ErrorLog.warnTag}     scalacOptions := Seq("-unchecked", "-deprecation")""")
+      logger.warn(s"${ErrorLog.warnTag} Line numbers for deprecations reported by Chisel may be inaccurate; enable scalac compiler deprecation warnings via either of the following methods:")
+      logger.warn(s"${ErrorLog.warnTag}   In the sbt interactive console, enter:")
+      logger.warn(s"""${ErrorLog.warnTag}     set scalacOptions in ThisBuild ++= Seq("-unchecked", "-deprecation")""")
+      logger.warn(s"${ErrorLog.warnTag}   or, in your build.sbt, add the line:")
+      logger.warn(s"""${ErrorLog.warnTag}     scalacOptions := Seq("-unchecked", "-deprecation")""")
     }
 
     val allErrors = errors.filter(_.isFatal)
     val allWarnings = errors.filter(!_.isFatal)
 
     if (!allWarnings.isEmpty && !allErrors.isEmpty) {
-      println(s"${ErrorLog.errTag} There were ${Console.RED}${allErrors.size} error(s)${Console.RESET} and ${Console.YELLOW}${allWarnings.size} warning(s)${Console.RESET} during hardware elaboration.")
+      logger.warn(s"${ErrorLog.errTag} There were ${Console.RED}${allErrors.size} error(s)${Console.RESET} and ${Console.YELLOW}${allWarnings.size} warning(s)${Console.RESET} during hardware elaboration.")
     } else if (!allWarnings.isEmpty) {
-      println(s"${ErrorLog.warnTag} There were ${Console.YELLOW}${allWarnings.size} warning(s)${Console.RESET} during hardware elaboration.")
+      logger.warn(s"${ErrorLog.warnTag} There were ${Console.YELLOW}${allWarnings.size} warning(s)${Console.RESET} during hardware elaboration.")
     } else if (!allErrors.isEmpty) {
-      println(s"${ErrorLog.errTag} There were ${Console.RED}${allErrors.size} error(s)${Console.RESET} during hardware elaboration.")
+      logger.warn(s"${ErrorLog.errTag} There were ${Console.RED}${allErrors.size} error(s)${Console.RESET} during hardware elaboration.")
     }
 
     if (!allErrors.isEmpty) {
