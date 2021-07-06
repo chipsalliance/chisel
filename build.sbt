@@ -203,6 +203,7 @@ lazy val core = (project in file("core")).
       ProblemFilters.exclude[IncompatibleResultTypeProblem]("chisel3.internal.LegacyModule.generateComponent"),
       ProblemFilters.exclude[IncompatibleResultTypeProblem]("chisel3.experimental.BaseModule.generateComponent"),
       ProblemFilters.exclude[IncompatibleResultTypeProblem]("chisel3.experimental.ExtModule.generateComponent"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.internal.ErrorLog.checkpoint"),
       // Scala 2.11 only issue, new concrete methods in traits require recompilation of implementing classes
       // Not a problem because HasId is package private so all implementers are in chisel3 itself
       // Note there is no problem for user subtypes of Record because setRef is implemented by Data

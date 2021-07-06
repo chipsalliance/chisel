@@ -12,21 +12,8 @@ import chisel3.testers._
 import firrtl.{AnnotationSeq, CommonOptions, EmittedVerilogCircuitAnnotation, ExecutionOptionsManager, FirrtlExecutionFailure, FirrtlExecutionSuccess, HasFirrtlOptions}
 import firrtl.annotations.{Annotation, DeletedAnnotation}
 import firrtl.util.BackendCompilationUtilities
-<<<<<<< HEAD
-import java.io.ByteArrayOutputStream
-=======
-import firrtl.{AnnotationSeq, EmittedVerilogCircuitAnnotation}
 import _root_.logger.Logger
-import org.scalacheck._
-import org.scalatest._
-import org.scalatest.flatspec.AnyFlatSpec
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.propspec.AnyPropSpec
-import org.scalatest.matchers.should.Matchers
-import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
-
 import java.io.{ByteArrayOutputStream, PrintStream}
->>>>>>> 5fe539c7 (Add ChiselEnum.safe factory method and avoid warning)
 import java.security.Permission
 
 import chisel3.aop.Aspect

@@ -416,18 +416,20 @@ class StrongEnumSpec extends ChiselFlatSpec with Utils {
     assertTesterPasses(new StrongEnumFSMTester)
   }
 
+  val warnRegex = """warn.*Casting non-literal UInt to""".r
+
   "Casting a UInt to an Enum" should "warn if the UInt can express illegal states" in {
     object MyEnum extends ChiselEnum {
       val e0, e1, e2 = Value
     }
 
-    class MyModule extends Module {
+    class MyModule extends MultiIOModule {
       val in = IO(Input(UInt(2.W)))
       val out = IO(Output(MyEnum()))
       out := MyEnum(in)
     }
     val (log, _) = grabLog(ChiselStage.elaborate(new MyModule))
-    log should include ("warn")
+    log should include regex warnRegex
     log should include ("Casting non-literal UInt")
   }
 
@@ -436,13 +438,13 @@ class StrongEnumSpec extends ChiselFlatSpec with Utils {
       val e0, e1, e2, e3 = Value
     }
 
-    class MyModule extends Module {
+    class MyModule extends MultiIOModule {
       val in = IO(Input(UInt(2.W)))
       val out = IO(Output(TotalEnum()))
       out := TotalEnum(in)
     }
     val (log, _) = grabLog(ChiselStage.elaborate(new MyModule))
-    log should not include ("warn")
+    log shouldNot include regex warnRegex
   }
 
   "Casting a UInt to an Enum with .safe" should "NOT warn" in {
@@ -450,13 +452,13 @@ class StrongEnumSpec extends ChiselFlatSpec with Utils {
       val e0, e1, e2 = Value
     }
 
-    class MyModule extends Module {
+    class MyModule extends MultiIOModule {
       val in = IO(Input(UInt(2.W)))
       val out = IO(Output(MyEnum()))
       out := MyEnum.safe(in)._1
     }
     val (log, _) = grabLog(ChiselStage.elaborate(new MyModule))
-    log should not include ("warn")
+    log shouldNot include regex warnRegex
   }
 
   it should "NOT generate any validity logic if the Enum is total" in {
@@ -464,7 +466,7 @@ class StrongEnumSpec extends ChiselFlatSpec with Utils {
       val e0, e1, e2, e3 = Value
     }
 
-    class MyModule extends Module {
+    class MyModule extends MultiIOModule {
       val in = IO(Input(UInt(2.W)))
       val out = IO(Output(TotalEnum()))
       val (res, valid) = TotalEnum.safe(in)
@@ -472,7 +474,7 @@ class StrongEnumSpec extends ChiselFlatSpec with Utils {
       out := res
     }
     val (log, _) = grabLog(ChiselStage.elaborate(new MyModule))
-    log should not include ("warn")
+    log shouldNot include regex warnRegex
   }
 }
 

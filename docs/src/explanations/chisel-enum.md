@@ -128,7 +128,7 @@ ChiselStage.emitVerilog(new ToUInt)
 You can cast from a `UInt` to an enum by passing the `UInt` to the apply method of the `ChiselEnum` object:
 
 ```scala mdoc
-class FromUInt extends Module {
+class FromUInt extends MultiIOModule {
   val in = IO(Input(UInt(7.W)))
   val out = IO(Output(Opcode()))
   out := Opcode(in)
@@ -149,7 +149,7 @@ You can avoid this warning by using the `.safe` factory method which returns the
 to a `Bool` indicating if the Enum is in a valid state:
 
 ```scala mdoc
-class SafeFromUInt extends Module {
+class SafeFromUInt extends MultiIOModule {
   val in = IO(Input(UInt(7.W)))
   val out = IO(Output(Opcode()))
   val (value, valid) = Opcode.safe(in)
