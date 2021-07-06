@@ -26,12 +26,13 @@ private[chisel3] object SeqUtils {
     } else if (in.tail.isEmpty) {
       in.head.asUInt
     } else {
-      val lo = prefix("lo") {
-        asUInt(in.slice(0, in.length/2))
-      }.autoSeed("lo")
-      val hi = prefix("hi") {
-        asUInt(in.slice(in.length/2, in.length))
-      }.autoSeed("hi")
+      val in_lo = in.slice(0, in.length/2)
+      val in_hi = in.slice(in.length/2, in.length)
+      def wrapper(s: String, in: Seq[T]) = {
+        prefix(s) { asUInt(in) }.autoSeed(s)
+      }
+      val lo = if (in_lo.length > 1) wrapper("lo", in_lo) else asUInt(in_lo)
+      val hi = if (in_hi.length > 1) wrapper("hi", in_hi) else asUInt(in_hi)
       hi ## lo
     }
   }
