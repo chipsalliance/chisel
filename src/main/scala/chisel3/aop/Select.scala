@@ -281,7 +281,7 @@ object Select {
     val printfs = mutable.ArrayBuffer[Printf]()
     searchWhens(module, (cmd: Command, preds: Seq[Predicate]) => {
       cmd match {
-        case chisel3.internal.firrtl.Printf(_, clock, pable) => printfs += Printf(preds, pable, getId(clock).asInstanceOf[Clock])
+        case chisel3.internal.firrtl.Printf(id, _, clock, pable) => printfs += Printf(id, preds, pable, getId(clock).asInstanceOf[Clock])
         case other =>
       }
     })
@@ -418,7 +418,7 @@ object Select {
     * @param pable
     * @param clock
     */
-  case class Printf(preds: Seq[Predicate], pable: Printable, clock: Clock) extends Serializeable {
+  case class Printf(id: printf.Printf, preds: Seq[Predicate], pable: Printable, clock: Clock) extends Serializeable {
     def serialize: String = {
       s"printf when(${preds.map(_.serialize).mkString(" & ")}) on ${getName(clock)}: $pable"
     }

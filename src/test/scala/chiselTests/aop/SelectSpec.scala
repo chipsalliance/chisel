@@ -22,14 +22,16 @@ class SelectTester(results: Seq[Int]) extends BasicTester {
   val nreset = reset.asBool() === false.B
   val selected = values(counter)
   val zero = 0.U + 0.U
+  var p: printf.Printf = null
   when(overflow) {
     counter := zero
     stop()
   }.otherwise {
     when(nreset) {
       assert(counter === values(counter))
-      printf("values(%d) = %d\n", counter, selected)
+      p = printf("values(%d) = %d\n", counter, selected)
     }
+
   }
 }
 
@@ -81,17 +83,18 @@ class SelectSpec extends ChiselFlatSpec {
   "Test" should "pass if selecting correct printfs" in {
     execute(
       () => new SelectTester(Seq(0, 1, 2)),
-      { dut: SelectTester => Seq(Select.printfs(dut).last) },
+      { dut: SelectTester => Seq(Select.printfs(dut).last.toString) },
       { dut: SelectTester =>
         Seq(Select.Printf(
+          dut.p,
           Seq(
             When(Select.ops("eq")(dut).last.asInstanceOf[Bool]),
             When(dut.nreset),
             WhenNot(dut.overflow)
           ),
-          Printable.pack("values(%d) = %d\n", dut.counter, dut.selected),
+          dut.p.pable,
           dut.clock
-        ))
+        ).toString)
       }
     )
   }
