@@ -73,6 +73,9 @@ treadleLatest = $(call latest,$(treadleTags))
 diagrammerLatest = $(call latest,$(diagrammerTags))
 chiseltestLatest = $(call latest,$(chiseltestTags))
 
+# If NO_API is set, these variables will be supressed,
+# this makes building the website *much* faster for local development
+ifeq ($(NO_API),)
 api-latest = \
 	docs/target/site/api/latest \
 	docs/target/site/api/firrtl/latest \
@@ -87,7 +90,8 @@ api-copy = \
 	$(testersTags:v%=docs/target/site/api/chisel-testers/%/index.html) docs/target/site/api/chisel-testers/SNAPSHOT/index.html \
 	$(chiseltestTags:v%=docs/target/site/api/chiseltest/%/index.html) docs/target/site/api/chiseltest/SNAPSHOT/index.html \
 	$(treadleTags:v%=docs/target/site/api/treadle/%/index.html) docs/target/site/api/treadle/SNAPSHOT/index.html \
-	$(diagrammerTags:v%=docs/target/site/api/diagrammer/%/index.html) docs/target/site/api/diagrammer/SNAPSHOT/index.html \
+	$(diagrammerTags:v%=docs/target/site/api/diagrammer/%/index.html) docs/target/site/api/diagrammer/SNAPSHOT/index.html
+endif
 
 .PHONY: all clean mrproper publish serve \
 	apis-chisel3 apis-firrtl apis-chisel-testers apis-treadle apis-diagrammer apis-chiseltest

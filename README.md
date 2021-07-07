@@ -29,8 +29,12 @@ cd www.chisel-lang.org
 # Checkout submodules (the README.md of submodules are used to populate the site)
 git submodule update --init --recursive
 
-# (Optionally:) Download a copy of the API documentation (this speeds up the build)
+# (Optionally:) Download a copy of the API documentation (this speeds up the build if building with API docs)
 wget https://github.com/freechipsproject/www.chisel-lang.org/releases/latest/download/build.tgz -O - | tar -xz
+
+# (Optionally:) Set NO_API environment variable to exclude building the API docs.
+#   This makes building the website *much* faster but leaves the API docs as dead links in the locally served website.
+export NO_API=true
 
 # Build the website
 make
