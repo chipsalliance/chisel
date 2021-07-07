@@ -13,6 +13,7 @@ import org.scalatest.matchers.must.Matchers
 import os._
 
 import scala.sys.process._
+import scala.util.Properties
 
 class EndToEndSMTSpec extends EndToEndSMTBaseSpec with LazyLogging {
   "we" should "check if Z3 is available" taggedAs (RequiresZ3) in {
@@ -186,8 +187,11 @@ private object Z3ModelChecker extends LazyLogging {
   private def executeStep(path: Path): Boolean = {
     val (out, ret) = executeCmd(path.toString)
     assert(ret == 0, s"expected success (0), not $ret: `$out`\nz3 ${path.toString}")
-    assert(out == "sat\n" || out == "unsat\n", s"Unexpected output: $out")
-    out == "unsat\n"
+    assert(
+      out == "sat" + Properties.lineSeparator || out == "unsat" + Properties.lineSeparator,
+      s"Unexpected output: $out"
+    )
+    out == "unsat" + Properties.lineSeparator
   }
 
   private def executeCmd(cmd: String): (String, Int) = {
