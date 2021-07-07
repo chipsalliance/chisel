@@ -304,7 +304,7 @@ class StrongEnumFSMTester extends BasicTester {
   }
 }
 
-class isOneOfTester extends BasicTester {
+class IsOneOfTester extends BasicTester {
   import EnumExample._
 
   // is one of itself
@@ -503,7 +503,7 @@ class StrongEnumSpec extends ChiselFlatSpec with Utils {
   }
 
   it should "correctly check if the enumeration is one of the values in a given sequence" in {
-    assertTesterPasses(new isOneOfTester)
+    assertTesterPasses(new IsOneOfTester)
   }
 }
 
