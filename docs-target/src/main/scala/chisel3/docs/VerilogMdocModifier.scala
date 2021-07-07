@@ -27,7 +27,7 @@ class VerilogMdocModifier extends PostModifier {
         case (None, _) => None
       }
     result match {
-      case Some(content) => s"```verilog\n$content```"
+      case Some(content) => s"```verilog\n$content```\n"
       case None          => ""
     }
   }
