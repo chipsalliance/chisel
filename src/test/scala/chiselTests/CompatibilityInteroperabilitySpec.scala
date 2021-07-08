@@ -304,6 +304,7 @@ class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec {
       class Bar extends Bundle {
         val foo1 = new Foo
         val foo2 = Flipped(new Foo)
+        override def cloneType = (new Bar).asInstanceOf[this.type]
       }
       // Check every connection both ways to see that chisel3 <>'s commutativity holds
       class Child extends RawModule {
@@ -312,7 +313,7 @@ class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec {
         enq <> deq
         deq <> enq
       }
-      new RawModule {
+      class Top extends RawModule {
         val deq = IO(new Bar)
         val enq = IO(Flipped(new Bar))
         // Also important to check connections to child ports
@@ -325,6 +326,7 @@ class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec {
         deq <> c2.deq
         c2.deq <> deq
       }
+      new Top
     }
   }
 }
