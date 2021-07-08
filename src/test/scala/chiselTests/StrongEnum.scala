@@ -304,6 +304,41 @@ class StrongEnumFSMTester extends BasicTester {
   }
 }
 
+class IsOneOfTester extends BasicTester {
+  import EnumExample._
+
+  // is one of itself
+  assert(e0.isOneOf(e0))
+
+  // is one of Seq of itself
+  assert(e0.isOneOf(Seq(e0)))
+  assert(e0.isOneOf(Seq(e0, e0, e0, e0)))
+  assert(e0.isOneOf(e0, e0, e0, e0))
+
+  // is one of Seq of multiple elements
+  val subset = Seq(e0, e1, e2)
+  assert(e0.isOneOf(subset))
+  assert(e1.isOneOf(subset))
+  assert(e2.isOneOf(subset))
+
+  // is not element not in subset
+  assert(!e100.isOneOf(subset))
+  assert(!e101.isOneOf(subset))
+
+  // test multiple elements with variable number of arguments
+  assert(e0.isOneOf(e0, e1, e2))
+  assert(e1.isOneOf(e0, e1, e2))
+  assert(e2.isOneOf(e0, e1, e2))
+  assert(!e100.isOneOf(e0, e1, e2))
+  assert(!e101.isOneOf(e0, e1, e2))
+
+  // is not another value
+  assert(!e0.isOneOf(e1))
+  assert(!e2.isOneOf(e101))
+
+  stop()
+}
+
 class StrongEnumSpec extends ChiselFlatSpec with Utils {
   import chisel3.internal.ChiselException
 
@@ -473,6 +508,10 @@ class StrongEnumSpec extends ChiselFlatSpec with Utils {
     }
     val (log, _) = grabLog(ChiselStage.elaborate(new MyModule))
     log should not include ("warn")
+  }
+
+  it should "correctly check if the enumeration is one of the values in a given sequence" in {
+    assertTesterPasses(new IsOneOfTester)
   }
 }
 

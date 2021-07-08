@@ -182,6 +182,25 @@ def expectedSel(sel: AluMux1Sel.Type): Boolean = sel match {
 }
 ```
 
+The enum value type also defines some convenience methods for working with `ChiselEnum` values. For example, continuing with the RISC-V opcode
+example, one could easily create hardware signal that is only asserted on LOAD/STORE operations (when the enum value is equal to `Opcode.load`
+or `Opcode.store`) using the `.isOneOf` method:
+
+```scala mdoc
+class LoadStoreExample extends Module {
+  val io = IO(new Bundle {
+    val opcode = Input(Opcode())
+    val load_or_store = Output(Bool())
+  })
+  io.load_or_store := io.opcode.isOneOf(Opcode.load, Opcode.store)
+}
+```
+
+```scala mdoc:invisible
+// Always need to run Chisel to see if there are elaboration errors
+ChiselStage.emitVerilog(new LoadStoreExample)
+```
+
 Some additional useful methods defined on the `ChiselEnum` object are:
 
 * `.all`: returns the enum values within the enumeration
