@@ -74,6 +74,7 @@ class AluMux1File extends Module {
   }
 }
 ```
+
 ```scala mdoc:verilog
 ChiselStage.emitVerilog(new AluMux1File)
 ```
@@ -140,8 +141,9 @@ that the `UInt` could hit, you will see a warning like the following:
 
 ```scala mdoc:passthrough
 val (log, _) = grabLog(ChiselStage.emitChirrtl(new FromUInt))
-println(s"```$log```")
+println(s"```\n$log```")
 ```
+
 (Note that the name of the Enum is ugly as an artifact of our documentation generation flow, it will
 be cleaner in normal use).
 
@@ -162,7 +164,7 @@ Now there will be no warning:
 
 ```scala mdoc:passthrough
 val (log2, _) = grabLog(ChiselStage.emitChirrtl(new SafeFromUInt))
-println(s"```$log2```")
+println(s"```\n$log2```")
 ```
 
 ## Testing
@@ -181,6 +183,7 @@ def expectedSel(sel: AluMux1Sel.Type): Boolean = sel match {
 ```
 
 Some additional useful methods defined on the `ChiselEnum` object are:
+
 * `.all`: returns the enum values within the enumeration
 * `.getWidth`: returns the width of the hardware type
 
