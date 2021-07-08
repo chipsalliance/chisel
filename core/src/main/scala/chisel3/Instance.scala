@@ -124,7 +124,10 @@ object InstanceContext {
   def getContext(module: BaseModule): InstanceContext = {
     module._parent match {
       case None => InstanceContext(module, Nil)
-      case Some(parent) => getContext(parent).descend(module, module)
+      case Some(parent) if parent == module => InstanceContext(module, Nil)
+      case Some(parent) =>
+        val ctx = getContext(parent)
+        ctx.copy(instances = ctx.instances :+ ((module, module)))
     }
   }
 }
