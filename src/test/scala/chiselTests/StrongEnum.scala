@@ -313,6 +313,7 @@ class IsOneOfTester extends BasicTester {
   // is one of Seq of itself
   assert(e0.isOneOf(Seq(e0)))
   assert(e0.isOneOf(Seq(e0, e0, e0, e0)))
+  assert(e0.isOneOf(e0, e0, e0, e0))
 
   // is one of Seq of multiple elements
   val subset = Seq(e0, e1, e2)
@@ -323,6 +324,13 @@ class IsOneOfTester extends BasicTester {
   // is not element not in subset
   assert(!e100.isOneOf(subset))
   assert(!e101.isOneOf(subset))
+
+  // test multiple elements with variable number of arguments
+  assert(e0.isOneOf(e0, e1, e2))
+  assert(e1.isOneOf(e0, e1, e2))
+  assert(e2.isOneOf(e0, e1, e2))
+  assert(!e100.isOneOf(e0, e1, e2))
+  assert(!e101.isOneOf(e0, e1, e2))
 
   // is not another value
   assert(!e0.isOneOf(e1))
