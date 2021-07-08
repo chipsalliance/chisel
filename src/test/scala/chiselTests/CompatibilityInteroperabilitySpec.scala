@@ -289,5 +289,43 @@ class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec {
       }
     }
   }
+
+  "A chisel3 Bundle that instantiates a Chisel Bundle" should "bulk connect correctly" in {
+    compile {
+      object Compat {
+        import Chisel._
+        class Foo extends Bundle {
+          val a = Input(UInt(8.W))
+          val b = Output(UInt(8.W))
+        }
+      }
+      import chisel3._
+      import Compat._
+      class Bar extends Bundle {
+        val foo1 = new Foo
+        val foo2 = Flipped(new Foo)
+      }
+      // Check every connection both ways to see that chisel3 <>'s commutativity holds
+      class Child extends RawModule {
+        val deq = IO(new Bar)
+        val enq = IO(Flipped(new Bar))
+        enq <> deq
+        deq <> enq
+      }
+      new RawModule {
+        val deq = IO(new Bar)
+        val enq = IO(Flipped(new Bar))
+        // Also important to check connections to child ports
+        val c1 = Module(new Child)
+        val c2 = Module(new Child)
+        c1.enq <> enq
+        enq <> c1.enq
+        c2.enq <> c1.deq
+        c1.deq <> c2.enq
+        deq <> c2.deq
+        c2.deq <> deq
+      }
+    }
+  }
 }
 
