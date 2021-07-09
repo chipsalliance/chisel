@@ -113,14 +113,23 @@ private[chisel3] object BiConnect {
           }
         }
       }
-      // Handle Records defined in Chisel._ code (change to NotStrict)
-      case (left_r: Record, right_r: Record) => (left_r.compileOptions, right_r.compileOptions) match {
-        case (ExplicitCompileOptions.NotStrict, _) =>
-          left_r.bulkConnect(right_r)(sourceInfo, ExplicitCompileOptions.NotStrict)
-        case (_, ExplicitCompileOptions.NotStrict) =>
-          left_r.bulkConnect(right_r)(sourceInfo, ExplicitCompileOptions.NotStrict)
-        case _ => recordConnect(sourceInfo, connectCompileOptions, left_r, right_r, context_mod)
-      }
+      // Handle Records defined in Chisel._ code by emitting a FIRRTL partial connect
+      case pair @ (left_r: Record, right_r: Record) =>
+        val notStrict =
+          Seq(left_r.compileOptions, right_r.compileOptions).contains(ExplicitCompileOptions.NotStrict)
+        if (notStrict) {
+          // chisel3 <> is commutative but FIRRTL <- is not
+          val flipped = {
+            // Everything is flipped when it's the port of a child
+            val childPort = left_r._parent.get != context_mod
+            val isFlipped = left_r.direction == ActualDirection.Bidirectional(ActualDirection.Flipped)
+            isFlipped ^ childPort
+          }
+          val (newLeft, newRight) = if (flipped) pair.swap else pair
+          newLeft.bulkConnect(newRight)(sourceInfo, ExplicitCompileOptions.NotStrict)
+        } else {
+          recordConnect(sourceInfo, connectCompileOptions, left_r, right_r, context_mod)
+        }
 
       // Handle Records connected to DontCare (change to NotStrict)
       case (left_r: Record, DontCare) =>
