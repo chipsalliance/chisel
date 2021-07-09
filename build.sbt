@@ -285,7 +285,7 @@ lazy val docs = project       // new documentation project
   .settings(usePluginSettings: _*)
   .settings(commonSettings)
   .settings(
-    scalacOptions += "-language:reflectiveCalls",
+    scalacOptions ++= Seq("-language:reflectiveCalls", "-P:chiselplugin:useBundlePlugin"),
     mdocIn := file("docs/src"),
     mdocOut := file("docs/generated"),
     mdocExtraArguments := Seq("--cwd", "docs"),
