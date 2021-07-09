@@ -305,16 +305,11 @@ class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec {
       import chisel3._
       import Compat._
       class Bar extends Bundle {
-<<<<<<< HEAD
-        val foo1 = new Foo
-        val foo2 = Flipped(new Foo)
-        override def cloneType = (new Bar).asInstanceOf[this.type]
-=======
         val bidir1 = new BiDir
         val bidir2 = Flipped(new BiDir)
         val struct1 = Output(new Struct)
         val struct2 = Input(new Struct)
->>>>>>> 5183ef88 (Fix chisel3 <> for Bundles that contain compatibility Bundles (Take 2) (#2031))
+        override def cloneType = (new Bar).asInstanceOf[this.type]
       }
       // Check every connection both ways to see that chisel3 <>'s commutativity holds
       class Child extends RawModule {
