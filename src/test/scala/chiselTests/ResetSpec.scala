@@ -34,6 +34,13 @@ class AbstractResetDontCareModule extends RawModule {
   bulkAggPort <> DontCare
 }
 
+class ResetDriveConcrete(tpe: Reset) extends RawModule {
+  val in = IO(Input(tpe))
+  val out = IO(Output(tpe))
+  val w = Wire(Reset())
+  w := in
+  out := w
+}
 
 class ResetSpec extends ChiselFlatSpec {
 
@@ -44,23 +51,11 @@ class ResetSpec extends ChiselFlatSpec {
   }
 
   it should "be able to drive Bool" in {
-    ChiselStage.emitVerilog(new RawModule {
-      val in = IO(Input(Bool()))
-      val out = IO(Output(Bool()))
-      val w = Wire(Reset())
-      w := in
-      out := w
-    })
+    compile(new ResetDriveConcrete(Bool()))
   }
 
   it should "be able to drive AsyncReset" in {
-    ChiselStage.emitVerilog(new RawModule {
-      val in = IO(Input(AsyncReset()))
-      val out = IO(Output(AsyncReset()))
-      val w = Wire(Reset())
-      w := in
-      out := w
-    })
+    compile(new ResetDriveConcrete(AsyncReset()))
   }
 
   it should "allow writing modules that are reset agnostic" in {
