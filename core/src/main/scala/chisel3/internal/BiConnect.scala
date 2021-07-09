@@ -120,9 +120,10 @@ private[chisel3] object BiConnect {
         if (notStrict) {
           // chisel3 <> is commutative but FIRRTL <- is not
           val flipped = {
+            import ActualDirection._
             // Everything is flipped when it's the port of a child
             val childPort = left_r._parent.get != context_mod
-            val isFlipped = left_r.direction == ActualDirection.Bidirectional(ActualDirection.Flipped)
+            val isFlipped = Seq(Bidirectional(Flipped), Input).contains(left_r.direction)
             isFlipped ^ childPort
           }
           val (newLeft, newRight) = if (flipped) pair.swap else pair
