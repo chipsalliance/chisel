@@ -29,7 +29,7 @@ object Instance extends SourceInfoDoc {
   def do_apply[T <: BaseModule, I <: Bundle](bc: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Instance[T] = {
     //require(bc.isTemplate, "Must pass a template to Instance(..)")
     val ports = experimental.CloneModuleAsRecord(bc)
-    Instance(bc, ports, InstanceContext.getContext(ports._parent.get))
+    Instance(bc, Some(ports), InstanceContext.getContext(ports._parent.get))
   }
   /*
   implicit class InstanceApplyToInstance[T <: BaseModule](i: Instance[T]) {
@@ -66,27 +66,37 @@ object Instance extends SourceInfoDoc {
   
 }
 
-case class Instance[T <: BaseModule] private [chisel3] (template: T, ports: BaseModule.ClonePorts, context: InstanceContext) extends NamedComponent {
-  override def instanceName = ports.instanceName
+case class Instance[T <: BaseModule] private [chisel3] (template: T, ports: Option[BaseModule.ClonePorts], context: InstanceContext) extends NamedComponent {
+  override def instanceName = ports.map(_.instanceName).getOrElse(template.instanceName)
   
-  private [chisel3] val io = ports
-  private [chisel3] val ioMap = template.getChiselPorts.map(_._2).zip(ports.elements.map(_._2)).toMap
+  private [chisel3] val ioMap = ports match {
+    case Some(cp) => template.getChiselPorts.map(_._2).zip(cp.elements.map(_._2)).toMap
+    case None => template.getChiselPorts.map(x => x._2 -> x._2).toMap
+  }
   private [chisel3] val cache = HashMap[Data, Data]()
+  private [chisel3] val descendingContext = context.descend(ports.getOrElse(template), template)
 
+  def module[X <: BaseModule](that: T => X): Instance[X] = macro SourceInfoTransform.thatArg
+  def do_module[X <: BaseModule](that: T => X)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Instance[X] = {
+    val ret = that(template)
+    val inst = Instance(ret, None, descendingContext.descend(InstanceContext.getContext(ret)))
+    inst 
+  }
   def apply[X](that: T => X): X = macro SourceInfoTransform.thatArg
   def do_apply[X](that: T => X)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): X = {
-    val descendingContext = context.descend(ports, template)
     val ret = that(template)
     (ret match {
       case x: Data if ioMap.contains(x) => ioMap(x)
       case x: Data if cache.contains(x)=> cache(x)
       case x: Data =>
-        val xmr = XMR.do_apply(x, descendingContext.descend(InstanceContext.getContext(x._parent.get)))
+        val xContext = InstanceContext.getContext(x._parent.get)
+        val xmr = XMR.do_apply(x, descendingContext.descend(xContext))
         cache(x) = xmr
         xmr
       case x: Instance[_] =>
         x.copy(context = descendingContext.descend(x.context))
       case x: Unit => x
+      case x: BaseModule => throwException(s"Cannot return a module from the apply method, use module(..) instead! $x")
       case x => throwException(s"Cannot return this from an instance handle! $x")
     }).asInstanceOf[X]
   }
@@ -105,8 +115,17 @@ case class InstanceContext(top: BaseModule, instances: Seq[(HasId, BaseModule)])
     InstanceContext(top, instances ++ Seq((instanceName, moduleContext.top)) ++ moduleContext.instances)
   }
   def descend(ic: InstanceContext): InstanceContext = {
-    require(localModule == ic.top, s"Descending into ${ic.top}, but local module is $localModule")
-    this.copy(top, instances ++ ic.instances)
+    val moduleSeq = top +: (instances.map(_._2))
+    val indexOpt = moduleSeq.zipWithIndex.collectFirst {
+      case (m, index) if m == ic.top => index
+    }
+    indexOpt match {
+      case Some(0) => ic
+      case Some(x) => this.copy(top, instances.slice(0, x) ++ ic.instances)
+      case None =>
+        require(indexOpt.nonEmpty, s"Descending into ${ic}, but local context is $this")
+        ic
+    }
   }
   def ascend(): InstanceContext = InstanceContext(top, instances.dropRight(1))
   def toInstanceTarget: IsModule =  {

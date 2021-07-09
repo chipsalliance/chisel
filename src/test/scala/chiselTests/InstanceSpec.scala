@@ -23,7 +23,7 @@ object InstanceSpec {
       val out = IO(Output(UInt(32.W)))
       val template = Template(new AddOne)
       val i0 = Instance(template)
-      val i1 = Instance(template)
+      val i1 = Module(new AddOne)
       i0.in := in
       i1.in := i0.out
       out := i1.out
@@ -39,7 +39,7 @@ object InstanceSpec {
       def in = i(_.in)
       def out = i(_.out)
       def i0 = i(_.i0)
-      def i1 = i(_.i1)
+      def i1 = i.module(_.i1)
     }
   }
   object Annotations {
@@ -80,13 +80,15 @@ class InstanceSpec extends ChiselFlatSpec with Utils {
       val i1 = Instance(template)
       i0.in := 42.U
       i1.in := i0.out
+      mark(i0.i0.innerWire, "Adam Was Here")
       mark(i0.i1.innerWire, "Megan Was Here")
       chisel3.assert(i1.out === 46.U)
       stop()
     }
 
     val (output, annotations) = (new ChiselStage).emitChirrtlWithAnnotations(gen = new AddOneTester, args = Array("--full-stacktrace"))
-    annotations.toSeq should contain (MarkAnnotation(Target.deserialize("~AddOneTester|AddOneTester/i0:AddTwo/i1:AddOne>innerWire").asInstanceOf[ReferenceTarget], "Megan Was Here"))
+    annotations.toSeq should contain (MarkAnnotation(Target.deserialize("~AddOneTester|AddOneTester/i0:AddTwo/i0:AddOne>innerWire").asInstanceOf[ReferenceTarget], "Adam Was Here"))
+    annotations.toSeq should contain (MarkAnnotation(Target.deserialize("~AddOneTester|AddOneTester/i0:AddTwo/i1:AddOne_2>innerWire").asInstanceOf[ReferenceTarget], "Megan Was Here"))
     assertTesterPasses(new AddOneTester)
   }
 }
