@@ -294,16 +294,21 @@ class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec {
     compile {
       object Compat {
         import Chisel._
-        class Foo extends Bundle {
+        class BiDir extends Bundle {
           val a = Input(UInt(8.W))
           val b = Output(UInt(8.W))
+        }
+        class Struct extends Bundle {
+          val a = UInt(8.W)
         }
       }
       import chisel3._
       import Compat._
       class Bar extends Bundle {
-        val foo1 = new Foo
-        val foo2 = Flipped(new Foo)
+        val bidir1 = new BiDir
+        val bidir2 = Flipped(new BiDir)
+        val struct1 = Output(new Struct)
+        val struct2 = Input(new Struct)
       }
       // Check every connection both ways to see that chisel3 <>'s commutativity holds
       class Child extends RawModule {
