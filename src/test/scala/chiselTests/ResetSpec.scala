@@ -44,6 +44,26 @@ class ResetSpec extends ChiselFlatSpec with Utils {
     ChiselStage.elaborate(new AbstractResetDontCareModule)
   }
 
+  it should "be able to drive Bool" in {
+    ChiselStage.emitVerilog(new RawModule {
+      val in = IO(Input(Bool()))
+      val out = IO(Output(Bool()))
+      val w = Wire(Reset())
+      w := in
+      out := w
+    })
+  }
+
+  it should "be able to drive AsyncReset" in {
+    ChiselStage.emitVerilog(new RawModule {
+      val in = IO(Input(AsyncReset()))
+      val out = IO(Output(AsyncReset()))
+      val w = Wire(Reset())
+      w := in
+      out := w
+    })
+  }
+
   it should "allow writing modules that are reset agnostic" in {
     val sync = compile(new Module {
       val io = IO(new Bundle {
