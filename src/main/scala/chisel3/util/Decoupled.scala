@@ -163,8 +163,9 @@ object DeqIO {
 /** An I/O Bundle for Queues
   * @param gen The type of data to queue
   * @param entries The max number of entries in the queue.
+  * @param hasFlush A boolean for whether the generated Queue is flushable
   */
-class QueueIO[T <: Data](private val gen: T, val entries: Int) extends Bundle
+class QueueIO[T <: Data](private val gen: T, val entries: Int, val hasFlush: Boolean = false) extends Bundle
 { // See github.com/freechipsproject/chisel3/issues/765 for why gen is a private val and proposed replacement APIs.
 
   /* These may look inverted, because the names (enq/deq) are from the perspective of the client,
@@ -177,6 +178,9 @@ class QueueIO[T <: Data](private val gen: T, val entries: Int) extends Bundle
   val deq = Flipped(DeqIO(gen))
   /** The current amount of data in the queue */
   val count = Output(UInt(log2Ceil(entries + 1).W))
+  /** Input to choose if the queue should flush entries (Optional IO for a flushable Queue)*/ 
+  val flush = if (hasFlush) Some(Input(Bool())) else None
+
 }
 
 /** A hardware module implementing a Queue
@@ -187,7 +191,7 @@ class QueueIO[T <: Data](private val gen: T, val entries: Int) extends Bundle
   * @param flow True if the inputs can be consumed on the same cycle (the inputs "flow" through the queue immediately).
   * The ''valid'' signals are coupled.
   * @param useSyncReadMem True uses SyncReadMem instead of Mem as an internal memory element.
-  *
+  * @param hasFlush True if generated queue requires a flush feature
   * @example {{{
   * val q = Module(new Queue(UInt(), 16))
   * q.io.enq <> producer.io.out
@@ -199,7 +203,8 @@ class Queue[T <: Data](val gen: T,
                        val entries: Int,
                        val pipe: Boolean = false,
                        val flow: Boolean = false,
-                       val useSyncReadMem: Boolean = false)
+                       val useSyncReadMem: Boolean = false, 
+                       val hasFlush: Boolean = false)
                       (implicit compileOptions: chisel3.CompileOptions)
     extends Module() {
   require(entries > -1, "Queue must have non-negative number of entries")
@@ -215,7 +220,7 @@ class Queue[T <: Data](val gen: T,
     }
   }
 
-  val io = IO(new QueueIO(genType, entries))
+  val io = IO(new QueueIO(genType, entries, hasFlush))
 
   val ram = if (useSyncReadMem) SyncReadMem(entries, genType, SyncReadMem.WriteFirst) else Mem(entries, genType)
   val enq_ptr = Counter(entries)
@@ -237,6 +242,17 @@ class Queue[T <: Data](val gen: T,
   }
   when (do_enq =/= do_deq) {
     maybe_full := do_enq
+  }
+
+  if (hasFlush) { //flushable queue specific logic
+    when(io.flush.get) {
+      enq_ptr.reset()
+      deq_ptr.reset()
+    }
+
+    when(io.flush.get) {
+      maybe_full := false.B
+    }
   }
 
   io.deq.valid := !empty
@@ -265,14 +281,23 @@ class Queue[T <: Data](val gen: T,
   }
 
   val ptr_diff = enq_ptr.value - deq_ptr.value
+  val flush = Wire(Bool())
+
+  if (hasFlush) { 
+    flush := io.flush.get //to mitigate returning None from io.flush.get in logic below
+  } 
+  else { 
+    flush := false.B 
+  }
+
   if (isPow2(entries)) {
-    io.count := Mux(maybe_full && ptr_match, entries.U, 0.U) | ptr_diff
+    io.count := Mux(maybe_full && !flush && ptr_match, entries.U, 0.U) | ptr_diff
   } else {
     io.count := Mux(ptr_match,
-                    Mux(maybe_full,
-                      entries.asUInt, 0.U),
+                    Mux(maybe_full && !flush,
+                      entries.asUInt(), 0.U),
                     Mux(deq_ptr.value > enq_ptr.value,
-                      entries.asUInt + ptr_diff, ptr_diff))
+                      entries.asUInt() + ptr_diff, ptr_diff))
   }
 }
 
@@ -296,7 +321,8 @@ object Queue
       entries: Int = 2,
       pipe: Boolean = false,
       flow: Boolean = false,
-      useSyncReadMem: Boolean = false): DecoupledIO[T] = {
+      useSyncReadMem: Boolean = false,
+      hasFlush: Boolean = false): DecoupledIO[T] = {
     if (entries == 0) {
       val deq = Wire(new DecoupledIO(chiselTypeOf(enq.bits)))
       deq.valid := enq.valid
@@ -304,7 +330,7 @@ object Queue
       enq.ready := deq.ready
       deq
     } else {
-      val q = Module(new Queue(chiselTypeOf(enq.bits), entries, pipe, flow, useSyncReadMem))
+      val q = Module(new Queue(chiselTypeOf(enq.bits), entries, pipe, flow, useSyncReadMem, hasFlush))
       q.io.enq.valid := enq.valid // not using <> so that override is allowed
       q.io.enq.bits := enq.bits
       enq.ready := q.io.enq.ready
