@@ -178,7 +178,7 @@ class QueueIO[T <: Data](private val gen: T, val entries: Int, val hasFlush: Boo
   val deq = Flipped(DeqIO(gen))
   /** The current amount of data in the queue */
   val count = Output(UInt(log2Ceil(entries + 1).W))
-  /** Input to choose if the queue should flush entries (Optional IO for a flushable Queue)*/ 
+  /** When asserted, reset the enqueue and dequeue pointers, effectively flushing the queue (Optional IO for a flushable Queue)*/ 
   val flush = if (hasFlush) Some(Input(Bool())) else None
 
 }
