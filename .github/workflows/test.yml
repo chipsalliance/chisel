@@ -108,8 +108,16 @@ jobs:
       - name: Documentation (Scala 2.12 only)
         if: matrix.scala == '2.12.13'
         run: sbt ++${{ matrix.scala }} docs/mdoc
-      - name: Test
+      - name: Test with treadle (PR only)
+        if: github.event_name == 'pull_request'
         run: sbt ++${{ matrix.scala }} test noPluginTests/test
+        env:
+          TEST_BACKEND: treadle
+      - name: Test (Push only)
+        if: github.event_name == 'push'
+        run: sbt ++${{ matrix.scala }} test noPluginTests/test
+        env:
+          TEST_BACKEND: verilator
       - name: Binary compatibility
         run: sbt ++${{ matrix.scala }} mimaReportBinaryIssues
 
