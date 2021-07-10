@@ -19,6 +19,7 @@ jobs:
         scala: ["2.13.6", "2.12.13"]
         verilator: ["4.204"]
         z3: ["4.8.10"]
+        espresso: ["2.4"]
     runs-on: ${{ matrix.system }}
 
     steps:
@@ -73,6 +74,28 @@ jobs:
           cd verilator-${{ matrix.verilator }}
           sudo make install
           verilator --version
+
+      - name: Cache Espresso ${{ matrix.espresso }}
+        uses: actions/cache@v2
+        id: cache-espresso
+        with:
+          path: espresso-${{ matrix.espresso }}
+          key: ${{ matrix.system }}-espresso-${{ matrix.espresso }}
+      - name: Compile Espresso ${{ matrix.espresso }}
+        if: steps.cache-espresso.outputs.cache-hit != 'true'
+        run: |
+          wget https://github.com/chipsalliance/espresso/archive/refs/tags/v${{ matrix.espresso }}.tar.gz
+          tar xvf v${{ matrix.espresso }}.tar.gz
+          cd espresso-${{ matrix.espresso }}
+          mkdir -p build
+          cd build
+          cmake ..
+          make
+      - name: Install Espresso ${{ matrix.espresso }}
+        run: |
+          cd espresso-${{ matrix.espresso }}/build
+          sudo make install
+
 
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
