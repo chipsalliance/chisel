@@ -219,7 +219,11 @@ lazy val chisel = (project in file(".")).
 lazy val noPluginTests = (project in file ("no-plugin-tests")).
   dependsOn(chisel).
   settings(commonSettings: _*).
-  settings(chiselSettings: _*)
+  settings(chiselSettings: _*).
+  settings(Seq(
+    // Totally don't know why GitHub Action won't introduce FIRRTL to dependency.
+    libraryDependencies += defaultVersions("firrtl"),
+  ))
 
 lazy val docs = project       // new documentation project
   .in(file("docs-target")) // important: it must not be docs/
