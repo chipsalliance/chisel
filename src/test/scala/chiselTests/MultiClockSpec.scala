@@ -3,9 +3,8 @@
 package chiselTests
 
 import chisel3._
-import chisel3.util.Counter
-import chisel3.testers.TesterDriver
 import chisel3.stage.ChiselStage
+import chisel3.util.Counter
 import chiselTests.testers.BasicTester
 
 /** Multi-clock test of a Reg using a different clock via withClock */

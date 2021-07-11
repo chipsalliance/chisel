@@ -2,13 +2,11 @@
 
 package chiselTests.aop
 
-import chisel3.testers.TesterDriver
-import chiselTests.{ChiselFlatSpec, Utils}
 import chisel3._
 import chisel3.aop.Select
 import chisel3.aop.injecting.InjectingAspect
 import chiselTests.testers.BasicTester
-import logger.{LogLevel, LogLevelAnnotation}
+import chiselTests.{ChiselFlatSpec, Utils}
 
 object InjectionHierarchy {
 

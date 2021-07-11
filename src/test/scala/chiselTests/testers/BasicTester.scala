@@ -14,7 +14,8 @@ class BasicTester extends Module() {
   def popCount(n: Long): Int = n.toBinaryString.count(_=='1')
 
   def stop()(implicit sourceInfo: SourceInfo) {
-    assert(false.B)
+    // TODO: rewrite this using library-style SourceInfo passing.
+    chisel3.stop()
   }
 
   /** The finish method provides a hook that subclasses of BasicTester can use to

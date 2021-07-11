@@ -5,7 +5,6 @@ package chiselTests
 import chisel3._
 import chisel3.experimental._
 import chisel3.stage.ChiselStage
-import chisel3.testers.TesterDriver
 import chiselTests.testers.BasicTester
 
 // Avoid collisions with regular BlackBox tests by putting ExtModule blackboxes

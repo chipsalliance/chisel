@@ -17,7 +17,7 @@ object TestUtils {
   val usingPlugin: Boolean = (new Bundle { def check = _usingPlugin }).check
   def elaborateNoReflectiveAutoCloneType(f: => RawModule): Circuit = {
     ChiselStage.elaborate {
-      chisel3.internal.Builder.allowReflectiveAutoCloneType = !usingPlugin
+      chisel3.hack.Builder.allowReflectiveAutoCloneType = !usingPlugin
       f
     }
   }

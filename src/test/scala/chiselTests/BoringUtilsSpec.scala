@@ -108,7 +108,7 @@ class BoringUtilsSpec extends ChiselFlatSpec with ChiselRunners {
 
   it should "throw an exception if NoDedupAnnotations are removed" in {
     intercept[WiringException] { runTester(new TopTester with FailViaDedup,
-      annotations = Seq(chiselTests.testers.TesterDriver.VerilatorBackend)) }
+      annotations = Seq(chiselTests.testers.VerilatorBackend)) }
       .getMessage should startWith ("Unable to determine source mapping for sink")
   }
 

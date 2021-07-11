@@ -3,10 +3,9 @@
 package chiselTests
 
 import chisel3._
+import chisel3.experimental.{Analog, BaseModule, attach}
 import chisel3.stage.ChiselStage
 import chisel3.util._
-import chisel3.testers.TesterDriver
-import chisel3.experimental.{Analog, BaseModule, attach}
 import chiselTests.testers.BasicTester
 
 // IO for Modules that just connect bus to out

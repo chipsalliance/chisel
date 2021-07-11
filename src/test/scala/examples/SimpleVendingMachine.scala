@@ -2,10 +2,9 @@
 
 package examples
 
-import chiselTests.ChiselFlatSpec
-import chisel3.testers.TesterDriver
 import chisel3._
 import chisel3.util._
+import chiselTests.ChiselFlatSpec
 import chiselTests.testers.BasicTester
 
 class SimpleVendingMachineIO extends Bundle {
