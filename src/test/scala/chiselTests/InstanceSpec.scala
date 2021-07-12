@@ -39,7 +39,7 @@ object InstanceSpec {
       def in = i(_.in)
       def out = i(_.out)
       def i0 = i(_.i0)
-      def i1 = i.module(_.i1)
+      def i1 = i(_.i1)
     }
   }
   object Annotations {

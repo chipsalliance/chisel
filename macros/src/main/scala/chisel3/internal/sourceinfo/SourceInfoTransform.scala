@@ -46,6 +46,16 @@ class InstTransform(val c: Context) extends SourceInfoTransformMacro {
   }
 }
 
+object InstApplyTransform
+class InstApplyTransform(val c: whitebox.Context) {
+  import c.universe._
+  def thisObj: Tree = c.prefix.tree
+  def apply[A: c.WeakTypeTag, B: c.WeakTypeTag](that: c.Expr[A => B]) = {
+    println(showRaw(weakTypeOf[A]))
+    q"$thisObj.do_apply($that)(implicitly[_root_.chisel3.Lookupable[${weakTypeOf[A]},${weakTypeOf[B]}]])"
+  }
+}
+
 // Workaround for https://github.com/sbt/sbt/issues/3966
 object MemTransform
 class MemTransform(val c: Context) extends SourceInfoTransformMacro {
