@@ -5,6 +5,8 @@ package chisel3.util.experimental.decode
 import chisel3.util.BitPat
 import logger.LazyLogging
 
+case object EspressoNotFoundException extends Exception
+
 object EspressoMinimizer extends Minimizer with LazyLogging {
   def minimize(table: TruthTable): TruthTable =
     TruthTable.merge(TruthTable.split(table).map{case (table, indexes) => (espresso(table), indexes)})
@@ -60,7 +62,11 @@ object EspressoMinimizer extends Minimizer with LazyLogging {
                     |$input
                     |""".stripMargin)
     val f = os.temp(input)
-    val o = os.proc("espresso", f).call().out.chunks.mkString
+    val o = try {
+      os.proc("espresso", f).call().out.chunks.mkString
+    } catch {
+      case _ : java.io.IOException => throw EspressoNotFoundException
+    }
     logger.trace(s"""espresso output table:
                     |$o
                     |""".stripMargin)

@@ -63,7 +63,7 @@ object decoder extends LazyLogging {
     * @return decode table output.
     */
   def apply(input: UInt, truthTable: TruthTable): UInt = try espresso(input, truthTable) catch {
-    case _: java.io.IOException =>
+    case EspressoNotFoundException =>
       logger.error(
         """espresso is not found in your PATH, fall back to QMC.
           |Quine-McCluskey is a NP complete algorithm, may run forever or run out of memory in large decode tables.
