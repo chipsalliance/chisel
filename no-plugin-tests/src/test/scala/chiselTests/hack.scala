@@ -1,0 +1,1 @@
+../../../../../src/test/scala/chiselTests/testers/hack.scala
