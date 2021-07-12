@@ -224,6 +224,7 @@ lazy val noPluginTests = (project in file ("no-plugin-tests")).
   settings(Seq(
     // Totally don't know why GitHub Action won't introduce FIRRTL to dependency.
     libraryDependencies += defaultVersions("firrtl"),
+    libraryDependencies += defaultVersions("treadle") % "test",
   ))
 
 // tests elaborating and executing/formally verifying a Chisel circuit with chiseltest
