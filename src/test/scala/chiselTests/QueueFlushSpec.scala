@@ -11,9 +11,8 @@ class ThingsPassThroughFlushQueueTester(elements: Seq[Int], queueDepth: Int, bit
   
   val q = Module(new Queue(UInt(bitWidth.W), queueDepth, hasFlush = true))  
   q.io.flush.get := false.B
-  val elems = VecInit(elements.map {
-    _.asUInt()
-  })
+  val elems = VecInit(elements.map(_.U))
+
   val inCnt = Counter(elements.length + 1)
   val outCnt = Counter(elements.length + 1)
 

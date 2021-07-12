@@ -281,23 +281,25 @@ class Queue[T <: Data](val gen: T,
   }
 
   val ptr_diff = enq_ptr.value - deq_ptr.value
-  val flush = Wire(Bool())
+  val flush = io.flush.getOrElse(false.B) 
 
-  if (hasFlush) { 
-    flush := io.flush.get //to mitigate returning None from io.flush.get in logic below
-  } 
-  else { 
-    flush := false.B 
-  }
+  //val flush = Wire(Bool())
+
+  // if (hasFlush) { 
+  //   flush := io.flush.get //to mitigate returning None from io.flush.get in logic below
+  // } 
+  // else { 
+  //   flush := false.B 
+  // }
 
   if (isPow2(entries)) {
     io.count := Mux(maybe_full && !flush && ptr_match, entries.U, 0.U) | ptr_diff
   } else {
     io.count := Mux(ptr_match,
                     Mux(maybe_full && !flush,
-                      entries.asUInt(), 0.U),
+                      entries.asUInt, 0.U),
                     Mux(deq_ptr.value > enq_ptr.value,
-                      entries.asUInt() + ptr_diff, ptr_diff))
+                      entries.asUInt + ptr_diff, ptr_diff))
   }
 }
 
