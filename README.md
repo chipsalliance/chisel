@@ -9,11 +9,15 @@ Chisel/FIRRTL development meetings happen every Monday and Tuesday from 1100--12
 
 Call-in info and meeting notes are available [here](https://docs.google.com/document/d/1BLP2DYt59DqI-FgFCcjw8Ddl4K-WU0nHmQu0sZ_wAGo/).
 
-### Chisel Community Conference 2021, Shanghai, China.
-CCC is an annual gathering of Chisel community enthusiasts and technical exchange workshop. 
-This year with the support of the Chisel development community and RISC-V World Conference China 2021 Committee, we have brought together designers and developers with hands-on experience in Chisel from home and abroad to share cutting-edge results and experiences from both the open source community as well as industry.  
-English translated recordings version will be updated soon.  
-Looking forward to CCC 2022! See you then!
+### Chisel Community Conference 2021, Shanghai, China. 6/26/2021(CST)
+The Chisel Community Conference China 2021 (CCC2021) is planned for June 26, 2021(CST) at the ShanghaiTech University. The schedule is available [here](https://docs.google.com/spreadsheets/d/1Gb4mMGRhs9exJW-l3NOS0IFi7fDplNQQnkXyAKzHlTg)  
+CCC is an annual gathering of Chisel community enthusiasts and technical exchange workshop. With the support of the Chisel development community and RISC-V World Conference China 2021 Committee, this conference will bring together designers and developers with hands-on experience in Chisel from home and abroad to share cutting-edge results and experiences from both the open source community as well as industry.  
+You can join the meeting via streaming links below:
+- [Zoom](https://sifive.zoom.us/j/93495528878?pwd=L3IxYkdqWURGVk5pR0hMUDBEM0UzUT09)  
+  Meeting ID: 934 9552 8878  
+  Passcode: 820268  
+
+- [BiliBili](http://live.bilibili.com/22275404)
 
 ---
 
@@ -147,12 +151,6 @@ These are the base data types for defining circuit components:
 ## Contributor Documentation
 This section describes how to get started contributing to Chisel itself, including how to test your version locally against other projects that pull in Chisel using [sbt's managed dependencies](https://www.scala-sbt.org/1.x/docs/Library-Dependencies.html).
 
-### Useful Resources for Contributors
-
-The [Useful Resources](#useful-resources) for users are also helpful for contributors.
-
-- [**Chisel Breakdown Slides**](https://docs.google.com/presentation/d/114YihixFBPCfUnv1inqAL8UjsiWfcNWdPHX7SeqlRQc), an introductory talk about Chisel's internals
-
 ### Compiling and Testing Chisel
 
 First, clone and build the master branch of [FIRRTL](https://github.com/chipsalliance/firrtl) and [Treadle](https://github.com/chipsalliance/treadle), as the master branch of Chisel may depend on unreleased changes in those projects:
@@ -173,9 +171,6 @@ sbt compile
 ```
 In order to run the following unit tests, make sure you have Verilator installed and loaded
 (Check this by running 'which verilator')
-
-In order to run the following unit tests, make sure you have Verilator installed and on your `PATH`
-(you can check this by running `which verilator`).
 
 If the compilation succeeded, you can then run the included unit tests by invoking:
 
