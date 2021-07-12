@@ -84,7 +84,7 @@ trait InstanceId {
 
 private[chisel3] trait HasId extends InstanceId {
   private[chisel3] def _onModuleClose: Unit = {}
-  private[chisel3] val _parent: Option[BaseModule] = Builder.currentModule
+  private[chisel3] var _parent: Option[BaseModule] = Builder.currentModule
 
   private[chisel3] val _id: Long = Builder.idGen.next
 
@@ -652,7 +652,7 @@ private[chisel3] object Builder extends LazyLogging {
       logger.warn("Elaborating design...")
       val mod = f
       mod.forceName(None, mod.name, globalNamespace)
-      errors.checkpoint()
+      errors.checkpoint(logger)
       logger.warn("Done elaborating.")
 
       (Circuit(components.last.name, components.toSeq, annotations.toSeq), mod)

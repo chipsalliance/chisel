@@ -156,7 +156,9 @@ package experimental {
     // with compiled artifacts (vs. elaboration-time reflection)?
     def modulePorts(target: BaseModule): Seq[(String, Data)] = target.getChiselPorts
 
-    // Returns all module ports with underscore-qualified names
+    /** Returns all module ports with underscore-qualified names
+      * return includes [[Module.clock]] and [[Module.reset]]
+      */
     def fullModulePorts(target: BaseModule): Seq[(String, Data)] = {
       def getPortNames(name: String, data: Data): Seq[(String, Data)] = Seq(name -> data) ++ (data match {
         case _: Element => Seq()
