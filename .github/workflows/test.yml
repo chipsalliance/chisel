@@ -12,23 +12,29 @@ on:
 jobs:
   ci:
     name: ci
-    runs-on: ubuntu-20.04
     strategy:
       matrix:
+        system: ["ubuntu-20.04"]
+        jvm: ["adopt@1.8"]
         scala: ["2.13.6", "2.12.13"]
         verilator: ["4.204"]
         z3: ["4.8.10"]
+    runs-on: ${{ matrix.system }}
 
     steps:
-      - name: Install Z3 Build Dependencies
-        run: sudo apt-get install -y git make autoconf g++ flex bison libfl2 libfl-dev
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install Z3 Build Dependencies(Ubuntu)
+        if: matrix.system == 'ubuntu-20.04'
+        run: sudo apt-get install -y libfl2 libfl-dev
 
       - name: Cache Z3 ${{ matrix.z3 }}
         uses: actions/cache@v2
         id: cache-z3
         with:
           path: z3-z3-${{ matrix.z3 }}
-          key: ${{ runner.os }}-z3-${{ matrix.z3 }}
+          key: ${{ matrix.system }}-z3-${{ matrix.z3 }}
       - name: Compile Z3
         if: steps.cache-z3.outputs.cache-hit != 'true'
         run: |
@@ -52,7 +58,7 @@ jobs:
         id: cache-verilator
         with:
           path: verilator-${{ matrix.verilator }}
-          key: ${{ runner.os }}-verilator-${{ matrix.verilator }}
+          key: ${{ matrix.system }}-verilator-${{ matrix.verilator }}
       - name: Compile Verilator ${{ matrix.verilator }}
         if: steps.cache-verilator.outputs.cache-hit != 'true'
         run: |
@@ -68,12 +74,10 @@ jobs:
           sudo make install
           verilator --version
 
-      - name: Checkout
-        uses: actions/checkout@v2
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
         with:
-          java-version: adopt@1.8
+          java-version: ${{ matrix.jvm }}
       - name: Cache Scala
         uses: coursier/cache-action@v5
       - name: Documentation (Scala 2.12 only)
