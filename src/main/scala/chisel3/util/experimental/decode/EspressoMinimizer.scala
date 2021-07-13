@@ -65,7 +65,7 @@ object EspressoMinimizer extends Minimizer with LazyLogging {
     val o = try {
       os.proc("espresso", f).call().out.chunks.mkString
     } catch {
-      case _ : java.io.IOException => throw EspressoNotFoundException
+      case e: java.io.IOException if e.getMessage.contains("error=2, No such file or directory") => throw EspressoNotFoundException
     }
     logger.trace(s"""espresso output table:
                     |$o
