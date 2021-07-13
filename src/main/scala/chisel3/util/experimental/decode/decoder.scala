@@ -62,14 +62,22 @@ object decoder extends LazyLogging {
     * @param truthTable [[TruthTable]] to decode user input.
     * @return decode table output.
     */
-  def apply(input: UInt, truthTable: TruthTable): UInt = try espresso(input, truthTable) catch {
-    case EspressoNotFoundException =>
-      logger.error(
-        """espresso is not found in your PATH, fall back to QMC.
-          |Quine-McCluskey is a NP complete algorithm, may run forever or run out of memory in large decode tables.
-          |To get rid of this warning, please use `decoder.qmc` directly, or add espresso to your PATH.
-          |""".stripMargin
-      )
+  def apply(input: UInt, truthTable: TruthTable): UInt = {
+    def qmcFallBack(input: UInt, truthTable: TruthTable) = {
+      """fall back to QMC.
+        |Quine-McCluskey is a NP complete algorithm, may run forever or run out of memory in large decode tables.
+        |To get rid of this warning, please use `decoder.qmc` directly, or add espresso to your PATH.
+        |""".stripMargin
       qmc(input, truthTable)
+    }
+
+    try espresso(input, truthTable) catch {
+      case EspressoNotFoundException =>
+        logger.error(s"espresso is not found in your PATH:\n${sys.env("PATH").split(":").mkString("\n")}".stripMargin)
+        qmcFallBack(input, truthTable)
+      case e: java.io.IOException =>
+        logger.error(s"espresso failed to run with ${e.getMessage}")
+        qmcFallBack(input, truthTable)
+    }
   }
 }
