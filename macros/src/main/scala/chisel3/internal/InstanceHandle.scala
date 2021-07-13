@@ -6,7 +6,7 @@ import scala.reflect.macros.whitebox
 import scala.reflect.macros.blackbox
 
 
-class InstanceHandleMacro {
+object InstanceHandleMacro {
   def impl(c: blackbox.Context)(annottees: c.Expr[Any]*) = {
     import c.universe._
     val inputs = annottees.map(_.tree).toList
@@ -15,29 +15,46 @@ class InstanceHandleMacro {
       case (param: TypeDef) :: (rest @ (_ :: _)) => (param, rest)
       case _ => (EmptyTree, inputs)
     }
-    //println((annottee, expandees))
+    println((annottee, expandees))
     val outputs = expandees
     c.Expr[Any](Block(outputs, Literal(Constant(()))))
   }
 }
 object helloMacro {
-  def impl(c: blackbox.Context)(annottees: c.Expr[Any]*): c.Expr[Any] = {
+  def impl(c: whitebox.Context)(annottees: c.Expr[Any]*): c.Expr[Any] = {
     import c.universe._
     import Flag._
     val result = {
       annottees.map(_.tree).toList match {
-        case q"$mods class $tpname[..$tparams] $ctorMods(...$paramss) extends { ..$earlydefns } with ..$parents { $self => ..$stats }" :: Nil =>
+        case Seq(clz@q"$_ class $tpname[..$_] $_(...$_) extends { ..$_ } with ..$_ { $_ => ..$stats }") =>
           val name2 = TypeName(tpname.+(c.freshName()))
           val bodies = stats.collect {
             case q"@public val $tpname: $tpe = $other" => q"def $tpname: $tpe = module(_.$tpname)"
           }
+          val implicitClz = q"""implicit class $name2(module: Instance[$tpname]) { ..$bodies }"""
           q"""
-            $mods class $tpname[..$tparams] $ctorMods(...$paramss) extends { ..$earlydefns } with ..$parents { $self => ..$stats }
-            implicit class $name2(module: Instance[$tpname]) {
-              ..$bodies
+            $clz
+
+            object ${tpname.toTermName} {
+              implicit class $name2(module: Instance[$tpname]) { ..$bodies }
             }
           """
-        case List(x) => println(x); x
+        case Seq(clz@q"$_ class $tpname[..$_] $_(...$_) extends { ..$_ } with ..$_ { $_ => ..$stats }",
+                 obj@q"$mods object $tname extends { ..$earlydefns } with ..$parents { $self => ..$body }") =>
+          val name2 = TypeName(tpname.+(c.freshName()))
+          val bodies = stats.collect {
+            case q"@public val $tpname: $tpe = $other" => q"def $tpname: $tpe = module(_.$tpname)"
+          }
+          val implicitClz = q"""implicit class $name2(module: Instance[$tpname]) { ..$bodies }"""
+          q"""
+            $clz
+
+            $mods object $tname extends { ..$earlydefns } with ..$parents { $self =>
+              $implicitClz
+
+              ..$body
+            }
+          """
       }
     }
     c.Expr[Any](result)
@@ -47,4 +64,6 @@ object helloMacro {
 class interface extends StaticAnnotation {
   def macroTransform(annottees: Any*): Any = macro helloMacro.impl
 }
-class public extends StaticAnnotation
+class public extends StaticAnnotation {
+  def macroTransform(annottees: Any*): Any = macro InstanceHandleMacro.impl
+}
