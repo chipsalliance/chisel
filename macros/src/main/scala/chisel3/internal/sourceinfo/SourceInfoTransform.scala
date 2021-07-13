@@ -46,15 +46,18 @@ class InstTransform(val c: Context) extends SourceInfoTransformMacro {
   }
 }
 
-object InstApplyTransform
-class InstApplyTransform(val c: whitebox.Context) {
+object TemplateTransform
+// Module instantiation transform
+class TemplateTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._
-  def thisObj: Tree = c.prefix.tree
-  def apply[A: c.WeakTypeTag, B: c.WeakTypeTag](that: c.Expr[A => B]) = {
-    println(showRaw(weakTypeOf[A]))
-    q"$thisObj.do_apply($that)(implicitly[_root_.chisel3.Lookupable[${weakTypeOf[A]},${weakTypeOf[B]}]])"
+  def apply[T: c.WeakTypeTag](bc: c.Tree): c.Tree = {
+    q"$thisObj.do_apply($bc)($implicitSourceInfo, $implicitCompileOptions)"
   }
 }
+
+//class InstanceHandle() extends StaticAnnotation {
+//  def macroTransform(annottees: Any*): InstanceHandle = macro ???
+//}
 
 // Workaround for https://github.com/sbt/sbt/issues/3966
 object MemTransform

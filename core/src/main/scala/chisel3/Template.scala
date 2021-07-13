@@ -23,15 +23,17 @@ object Template extends SourceInfoDoc {
     *
     * @return the input module `m` with Chisel metadata properly set
     */
-  def apply[T <: RawModule](bc: => T): T = macro InstTransform.apply[T]
+  def apply[T <: RawModule](bc: => T): Template[T] = macro InstTransform.apply[T]
 
   /** @group SourceInfoTransformMacro */
-  def do_apply[T <: RawModule](bc: => T) (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+  def do_apply[T <: RawModule](bc: => T) (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Template[T] = {
     val dynamicContext = new DynamicContext()
     Builder.globalNamespace.copyTo(dynamicContext.globalNamespace)
     val (ir, module) = Builder.build(Module(bc), dynamicContext)
     Builder.components ++= ir.components
     dynamicContext.globalNamespace.copyTo(Builder.globalNamespace)
-    module
+    new Template(module, "blah")
   }
 }
+
+case class Template[T <: BaseModule] private (module: T, other: String)
