@@ -564,18 +564,25 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     }
   }
 
-  def isLit(): Boolean = litOption.isDefined
+  def isLit: Boolean = litOption.isDefined
+  @deprecated("Calling a nullary function with an empty argument list will be removed by official release", "chisel3")
+  def isLit(dummy: Int = 0): Boolean = isLit
+
 
   /**
    * If this is a literal that is representable as bits, returns the value as a BigInt.
    * If not a literal, or not representable as bits (for example, is or contains Analog), returns None.
    */
-  def litOption(): Option[BigInt]
+  def litOption: Option[BigInt]
+  @deprecated("Calling a nullary function with an empty argument list will be removed by official release", "chisel3")
+  def litOption(dummy: Int = 0): Option[BigInt] = litOption
 
   /**
    * Returns the literal value if this is a literal that is representable as bits, otherwise crashes.
    */
-  def litValue(): BigInt = litOption.get
+  def litValue: BigInt = litOption.get
+  @deprecated("Calling a nullary function with an empty argument list will be removed by official release", "chisel3")
+  def litValue(dummy: Int = 0): BigInt = litValue
 
   /** Returns the width, in bits, if currently known. */
   final def getWidth: Int =
@@ -598,7 +605,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   /** @group SourceInfoTransformMacro */
   def do_asTypeOf[T <: Data](that: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     val thatCloned = Wire(that.cloneTypeFull)
-    thatCloned.connectFromBits(this.asUInt())
+    thatCloned.connectFromBits(this.asUInt)
     thatCloned
   }
 
@@ -614,7 +621,9 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     * @note Aggregates are recursively packed with the first element appearing
     * in the least-significant bits of the result.
     */
-  final def asUInt(): UInt = macro SourceInfoTransform.noArg
+  final def asUInt: UInt = macro SourceInfoTransform.noArg
+  @deprecated("Calling a nullary function with an empty argument list will be removed by official release", "chisel3")
+  final def asUInt(dummy: Int*): UInt = macro SourceInfoTransform.noArgDummy
 
   /** @group SourceInfoTransformMacro */
   def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt
@@ -634,7 +643,7 @@ trait WireFactory {
     val x = t.cloneTypeFull
 
     // Bind each element of x to being a Wire
-    x.bind(WireBinding(Builder.forcedUserModule, Builder.currentWhen()))
+    x.bind(WireBinding(Builder.forcedUserModule, Builder.currentWhen))
 
     pushCommand(DefWire(sourceInfo, x))
     if (!compileOptions.explicitInvalidate) {

@@ -33,7 +33,8 @@ package object Chisel {
   implicit class AddDirectionToData[T<:Data](target: T) {
     def asInput: T = Input(target)
     def asOutput: T = Output(target)
-    def flip(): T = Flipped(target)
+    def flip: T = Flipped(target)
+    def flip(dummy: Int = 0): T = flip
   }
 
   implicit class AddDirMethodToData[T<:Data](target: T) {

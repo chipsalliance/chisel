@@ -117,7 +117,12 @@ object SourceInfoTransform
 class SourceInfoTransform(val c: Context) extends AutoSourceTransform {
   import c.universe._
 
-  def noArg(): c.Tree = {
+  def noArg: c.Tree = {
+    q"$thisObj.$doFuncTerm($implicitSourceInfo, $implicitCompileOptions)"
+  }
+
+  /** Necessary for dummy methods to auto-apply their arguments to this macro */
+  def noArgDummy(dummy: c.Tree*): c.Tree = {
     q"$thisObj.$doFuncTerm($implicitSourceInfo, $implicitCompileOptions)"
   }
 
@@ -176,7 +181,12 @@ object SourceInfoWhiteboxTransform
 class SourceInfoWhiteboxTransform(val c: whitebox.Context) extends AutoSourceTransform {
   import c.universe._
 
-  def noArg(): c.Tree = {
+  def noArg: c.Tree = {
+    q"$thisObj.$doFuncTerm($implicitSourceInfo, $implicitCompileOptions)"
+  }
+
+  /** Necessary for dummy methods to auto-apply their arguments to this macro */
+  def noArgDummy(dummy: c.Tree*): c.Tree = {
     q"$thisObj.$doFuncTerm($implicitSourceInfo, $implicitCompileOptions)"
   }
 

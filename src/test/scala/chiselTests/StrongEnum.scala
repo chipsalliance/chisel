@@ -257,8 +257,8 @@ class IsLitTester extends BasicTester {
   for (e <- EnumExample.all) {
     val wire = WireDefault(e)
 
-    assert(e.isLit())
-    assert(!wire.isLit())
+    assert(e.isLit)
+    assert(!wire.isLit)
   }
   stop()
 }

@@ -148,7 +148,9 @@ trait Num[T <: Data] {
     * $unchangedWidth
     * @group Arithmetic
     */
-  final def abs(): T = macro SourceInfoTransform.noArg
+  final def abs: T = macro SourceInfoTransform.noArg
+  @deprecated("Calling a nullary function with an empty argument list will be removed by official release", "chisel3")
+  final def abs(dummy: Int*): T = macro SourceInfoTransform.noArgDummy
 
   /** @group SourceInfoTransformMacro */
   def do_abs(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T

@@ -37,7 +37,9 @@ object ReadyValidIO {
 
     /** Indicates if IO is both ready and valid
      */
-    def fire(): Bool = target.ready && target.valid
+    def fire: Bool = target.ready && target.valid
+    @deprecated("Calling a nullary function with an empty argument list will be removed by official release", "chisel3")
+    def fire(dummy: Int = 0): Bool = fire
 
     /** Push dat onto the output bits of this interface to let the consumer know it has happened.
       * @param dat the values to assign to bits.
@@ -225,8 +227,8 @@ class Queue[T <: Data](val gen: T,
   val ptr_match = enq_ptr.value === deq_ptr.value
   val empty = ptr_match && !maybe_full
   val full = ptr_match && maybe_full
-  val do_enq = WireDefault(io.enq.fire())
-  val do_deq = WireDefault(io.deq.fire())
+  val do_enq = WireDefault(io.enq.fire)
+  val do_deq = WireDefault(io.deq.fire)
 
   when (do_enq) {
     ram(enq_ptr.value) := io.enq.bits

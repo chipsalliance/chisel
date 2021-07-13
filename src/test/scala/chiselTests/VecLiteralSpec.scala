@@ -142,17 +142,17 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
 
   "lowest of vec literal contains least significant bits and " in {
     val y = Vec(4, UInt(8.W)).Lit(0 -> 0xAB.U(8.W), 1 -> 0xCD.U(8.W), 2 -> 0xEF.U(8.W), 3 -> 0xFF.U(8.W))
-    y.litValue() should be(BigInt("FFEFCDAB", 16))
+    y.litValue should be(BigInt("FFEFCDAB", 16))
   }
 
   "the order lits are specified does not matter" in {
     val y = Vec(4, UInt(8.W)).Lit(3 -> 0xFF.U(8.W), 2 -> 0xEF.U(8.W), 1 -> 0xCD.U(8.W), 0 -> 0xAB.U(8.W))
-    y.litValue() should be(BigInt("FFEFCDAB", 16))
+    y.litValue should be(BigInt("FFEFCDAB", 16))
   }
 
   "regardless of the literals widths, packing should be done based on the width of the Vec's gen" in {
     val z = Vec(4, UInt(8.W)).Lit(0 -> 0x2.U, 1 -> 0x2.U, 2 -> 0x2.U, 3 -> 0x3.U)
-    z.litValue() should be(BigInt("03020202", 16))
+    z.litValue should be(BigInt("03020202", 16))
   }
 
   "packing sparse vec lits should not pack, litOption returns None" in {
@@ -221,7 +221,7 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
         chisel3.assert(outsideVecLit(2) === 0xBB.U)
         chisel3.assert(outsideVecLit(3) === 0xAA.U)
 
-        chisel3.assert(outsideVecLit.litValue().U === outsideVecLit.asUInt())
+        chisel3.assert(outsideVecLit.litValue.U === outsideVecLit.asUInt())
 
         val insideVecLit = Vec(4, UInt(16.W)).Lit(0 -> 0xDD.U, 1 -> 0xCC.U, 2 -> 0xBB.U, 3 -> 0xAA.U)
         chisel3.assert(insideVecLit(0) === 0xDD.U)
@@ -277,15 +277,15 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
       1 -> Vec(3, UInt(4.W)).Lit(0 -> 4.U, 1 -> 5.U, 2 -> 6.U)
     )
 
-    outerVec.litValue() should be (BigInt("654321", 16))
-    outerVec(0).litValue() should be (BigInt("321", 16))
-    outerVec(1).litValue() should be (BigInt("654", 16))
-    outerVec(0)(0).litValue() should be (BigInt(1))
-    outerVec(0)(1).litValue() should be (BigInt(2))
-    outerVec(0)(2).litValue() should be (BigInt(3))
-    outerVec(1)(0).litValue() should be (BigInt(4))
-    outerVec(1)(1).litValue() should be (BigInt(5))
-    outerVec(1)(2).litValue() should be (BigInt(6))
+    outerVec.litValue should be (BigInt("654321", 16))
+    outerVec(0).litValue should be (BigInt("321", 16))
+    outerVec(1).litValue should be (BigInt("654", 16))
+    outerVec(0)(0).litValue should be (BigInt(1))
+    outerVec(0)(1).litValue should be (BigInt(2))
+    outerVec(0)(2).litValue should be (BigInt(3))
+    outerVec(1)(0).litValue should be (BigInt(4))
+    outerVec(1)(1).litValue should be (BigInt(5))
+    outerVec(1)(2).litValue should be (BigInt(6))
   }
 
   "contained vecs should work" in {
@@ -473,19 +473,19 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
       0 -> (new SubBundle).Lit(_.foo -> 0xab.U, _.bar -> 0xc.U),
       1 -> (new SubBundle).Lit(_.foo -> 0xde.U, _.bar -> 0xf.U)
     )
-    vec.litValue().toString(16) should be("defabc")
+    vec.litValue.toString(16) should be("defabc")
   }
 
   "vec literals can have bundle children assembled incrementally" in {
     val bundle1 = (new SubBundle).Lit(_.foo -> 0xab.U, _.bar -> 0xc.U)
     val bundle2 = (new SubBundle).Lit(_.foo -> 0xde.U, _.bar -> 0xf.U)
 
-    bundle1.litValue().toString(16) should be("abc")
-    bundle2.litValue().toString(16) should be("def")
+    bundle1.litValue.toString(16) should be("abc")
+    bundle2.litValue.toString(16) should be("def")
 
     val vec = Vec(2, new SubBundle).Lit(0 -> bundle1, 1 -> bundle2)
 
-    vec.litValue().toString(16) should be("defabc")
+    vec.litValue.toString(16) should be("defabc")
   }
 
   "bundles can contain vec lits" in {
@@ -495,7 +495,7 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
       val foo = Vec(3, UInt(4.W))
       val bar = Vec(2, UInt(4.W))
     }).Lit(_.foo -> vec1, _.bar -> vec2)
-    bundle.litValue().toString(16) should be("cbaed")
+    bundle.litValue.toString(16) should be("cbaed")
   }
 
   "bundles can contain vec lits in-line" in {
@@ -506,21 +506,21 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
       _.foo -> Vec(3, UInt(4.W)).Lit(0 -> 0xa.U, 1 -> 0xb.U, 2 -> 0xc.U),
       _.bar -> Vec(2, UInt(4.W)).Lit(0 -> 0xd.U, 1 -> 0xe.U)
     )
-    bundle.litValue().toString(16) should be("cbaed")
+    bundle.litValue.toString(16) should be("cbaed")
   }
 
   "Vec.Lit is a trivial Vec literal factory" in {
     val vec = Vec.Lit(0xa.U, 0xb.U)
-    vec(0).litValue() should be(0xa)
-    vec(1).litValue() should be(0xb)
+    vec(0).litValue should be(0xa)
+    vec(1).litValue should be(0xb)
   }
 
   "Vec.Lit bases it's element width on the widest literal supplied" in {
     val vec = Vec.Lit(0xa.U, 0xbbbb.U)
-    vec(0).litValue() should be(0xa)
-    vec(1).litValue() should be(0xbbbb)
+    vec(0).litValue should be(0xa)
+    vec(1).litValue should be(0xbbbb)
     vec.length should be(2)
     vec.getWidth should be(16 * 2)
-    vec.litValue() should be(BigInt("bbbb000a", 16))
+    vec.litValue should be(BigInt("bbbb000a", 16))
   }
 }

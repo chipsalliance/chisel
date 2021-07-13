@@ -50,10 +50,15 @@ package object chisel3 {
 
     /** Int to UInt conversion, recommended style for variables.
       */
-    def asUInt(): UInt = UInt.Lit(bigint, Width())
+    def asUInt: UInt = UInt.Lit(bigint, Width())
+    @deprecated("Calling a nullary function with an empty argument list will be removed by official release", "chisel3")
+    def asUInt(dummy: Int = 0): UInt = asUInt
     /** Int to SInt conversion, recommended style for variables.
       */
-    def asSInt(): SInt = SInt.Lit(bigint, Width())
+    def asSInt: SInt = SInt.Lit(bigint, Width())
+    @deprecated("Calling a nullary function with an empty argument list will be removed by official release", "chisel3")
+    def asSInt(dummy: Int = 0): SInt = asSInt
+
     /** Int to UInt conversion with specified width, recommended style for variables.
       */
     def asUInt(width: Width): UInt = UInt.Lit(bigint, width)
@@ -68,17 +73,20 @@ package object chisel3 {
   implicit class fromStringToLiteral(str: String) {
     /** String to UInt parse, recommended style for constants.
       */
-    def U: UInt = str.asUInt()
+    def U: UInt = str.asUInt
     /** String to UInt parse with specified width, recommended style for constants.
       */
     def U(width: Width): UInt = str.asUInt(width)
 
     /** String to UInt parse, recommended style for variables.
       */
-    def asUInt(): UInt = {
+    def asUInt: UInt = {
       val bigInt = parse(str)
       UInt.Lit(bigInt, Width(bigInt.bitLength max 1))
     }
+    @deprecated("Calling a nullary function with an empty argument list will be removed by official release", "chisel3")
+    def asUInt(dummy: Int = 0): UInt = asUInt
+
     /** String to UInt parse with specified width, recommended style for variables.
       */
     def asUInt(width: Width): UInt = UInt.Lit(parse(str), width)
@@ -107,7 +115,9 @@ package object chisel3 {
 
     /** Boolean to Bool conversion, recommended style for variables.
       */
-    def asBool(): Bool = Bool.Lit(boolean)
+    def asBool: Bool = Bool.Lit(boolean)
+    @deprecated("Calling a nullary function with an empty argument list will be removed by official release", "chisel3")
+    def asBool(dummy: Int = 0): Bool = asBool
   }
 
   // Fixed Point is experimental for now, but we alias the implicit conversion classes here
