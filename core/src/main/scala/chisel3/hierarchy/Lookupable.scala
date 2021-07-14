@@ -45,22 +45,30 @@ object Lookupable {
       }
     }
   }
-  implicit def lookupOption[A <: BaseModule, B <: Data](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) = new Lookupable[A, Option[B]] {
-    type C = Option[B]
+  implicit def lookupSeq[A <: BaseModule, B](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions, lookupable: Lookupable[A, B]) = new Lookupable[A, Seq[B]] {
+    type C = Seq[lookupable.C]
+    def lookup(that: A => Seq[B], ih: Instance[A]): C = {
+      import ih._
+      val ret = that(template)
+      ret.map{ x: B => lookupable.lookup(_ => x, ih) }
+    }
+  }
+  implicit def lookupOption[A <: BaseModule, B](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions, lookupable: Lookupable[A, B]) = new Lookupable[A, Option[B]] {
+    type C = Option[lookupable.C]
     def lookup(that: A => Option[B], ih: Instance[A]): C = {
       import ih._
       val ret = that(template)
-      ret.map{ _ match {
-          case x: Data if ioMap.contains(x) => ioMap(x).asInstanceOf[B]
-          case x: Data if cache.contains(x)=> cache(x).asInstanceOf[B]
-          case x: Data =>
-            val xContext = InstanceContext.getContext(x._parent.get)
-            val xmr = XMR.do_apply(x, descendingContext(template).descend(xContext))
-            cache(x) = xmr
-            xmr.asInstanceOf[B]
-        }
-      }
+      ret.map{ x: B => lookupable.lookup(_ => x, ih) }
     }
+  }
+  implicit def lookupIsLookupable[A <: BaseModule, B <: IsLookupable](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) = new Lookupable[A, B] {
+    type C = B
+    def lookup(that: A => B, ih: Instance[A]): C = that(ih.template)
+  }
+  implicit def lookupString[A <: BaseModule](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) = new Lookupable[A, String] {
+    type B = String
+    type C = String
+    def lookup(that: A => B, ih: Instance[A]): C = that(ih.template)
   }
   implicit def lookupInt[A <: BaseModule](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) = new Lookupable[A, Int] {
     type B = Int
@@ -75,10 +83,6 @@ object Lookupable {
   implicit def lookupBigInt[A <: BaseModule](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) = new Lookupable[A, BigInt] {
     type B = BigInt
     type C = BigInt
-    def lookup(that: A => B, ih: Instance[A]): C = that(ih.template)
-  }
-  implicit def lookupIsLookupable[A <: BaseModule, B <: IsLookupable](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) = new Lookupable[A, B] {
-    type C = B
     def lookup(that: A => B, ih: Instance[A]): C = that(ih.template)
   }
 }

@@ -53,10 +53,10 @@ object instanceMacro {
           val extensions = scala.collection.mutable.ArrayBuffer[c.universe.Tree]()
           val newBodies = stats.flatMap {
             case x@q"@public val $tpname: $tpe = $name" if tpname.toString() == name.toString() =>
-              extensions += atPos(x.pos)(q"def $tpname: $tpe = module(_.$tpname)")
+              extensions += atPos(x.pos)(q"def $tpname = module(_.$tpname)")
               Nil
             case x@q"@public val $tpname: $tpe = $_" =>
-              extensions += atPos(x.pos)(q"def $tpname: $tpe = module(_.$tpname)")
+              extensions += atPos(x.pos)(q"def $tpname = module(_.$tpname)")
               Seq(x)
             case other => Seq(other)
           }

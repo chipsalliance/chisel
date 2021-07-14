@@ -226,6 +226,49 @@ class InstanceSpec extends ChiselFlatSpec with Utils {
     val (output, annotations) = (new ChiselStage).emitChirrtlWithAnnotations(gen = new AddZeroTester, args = Array("--full-stacktrace"))
     assertTesterPasses(new AddZeroTester)
    }
+  "Template/Instance" should "work with optional instances or modules" in {
+     // Doing typeclass derivation with chaining implicit defs.. let's see if it works!
+    @instance
+    class AddOne extends MultiIOModule {
+      @public val in  = IO(Input(UInt(32.W)))
+      @public val out = IO(Output(UInt(32.W)))
+      out := in + 1.U
+    }
+
+    @instance
+    class AddSome(first: Boolean, second: Boolean) extends MultiIOModule {
+      @public val in  = IO(Input(UInt(32.W)))
+      @public val out = IO(Output(UInt(32.W)))
+      @public val i0: Option[Instance[AddOne]] = if(first) Some(Instance(Template(new AddOne))) else None
+      @public val i1: Option[AddOne] = if(second) Some(Module(new AddOne)) else None
+      (i0, i1) match {
+        case (None, None) =>
+          out := in
+        case (Some(i), None) =>
+          i.in := in
+          out := i.out
+        case (None, Some(i)) =>
+          i.in := in
+          out := i.out
+        case (Some(i0), Some(i1)) =>
+          i0.in := in
+          i1.in := i0.out
+          out := i1.out
+      }
+    }
+
+    class AddSomeTester extends BasicTester {
+      val i = Instance(Template(new AddSome(true, false)))
+      i.in := 42.U
+      require(i.i0.nonEmpty)
+      chisel3.assert(i.out === 43.U)
+      stop()
+    }
+
+    val (output, annotations) = (new ChiselStage).emitChirrtlWithAnnotations(gen = new AddSomeTester, args = Array("--full-stacktrace"))
+    assertTesterPasses(new AddSomeTester)
+
+   }
    "Template/Instance" should "convert to an interface?" ignore {
     // Not sure if we should actually do this. I think its worth experimenting how far dataview can get us.
    }
