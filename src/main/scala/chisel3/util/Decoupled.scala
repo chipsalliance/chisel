@@ -244,7 +244,8 @@ class Queue[T <: Data](val gen: T,
     maybe_full := do_enq
   }
 
-  if (hasFlush) { //flushable queue specific logic
+  if (hasFlush) {
+  // when flush is on, empty the queue
     when(io.flush.get) {
       enq_ptr.reset()
       deq_ptr.reset()
