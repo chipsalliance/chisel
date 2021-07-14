@@ -99,7 +99,7 @@ object TruthTable {
     tables: Seq[(TruthTable, Seq[Int])]
   ): TruthTable = {
     def reIndex(bitPat: BitPat, table: TruthTable, indexes: Seq[Int]): Seq[(Char, Int)] =
-      bpStr(table.table.getOrElse(bitPat, BitPat.dontCare(indexes.size))).zip(indexes)
+      bpStr(table.table.map(a => a._1.toString -> a._2).getOrElse(bitPat.toString, BitPat.dontCare(indexes.size))).zip(indexes)
     def bitPat(indexedChar: Seq[(Char, Int)]) = BitPat(s"b${indexedChar
       .sortBy(_._2)
       .map(_._1)
