@@ -257,6 +257,7 @@ class Queue[T <: Data](val gen: T,
   }
 
   io.deq.valid := !empty
+// cannot enqueue elements while flush is active
   io.enq.ready := !full && !flush
 
   if (useSyncReadMem) {
