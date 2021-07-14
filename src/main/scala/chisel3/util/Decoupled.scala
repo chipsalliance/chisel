@@ -244,7 +244,8 @@ class Queue[T <: Data](val gen: T,
     maybe_full := do_enq
   }
 
-  if (hasFlush) { //flushable queue specific logic
+  if (hasFlush) {
+  // when flush is on, empty the queue
     when(io.flush.get) {
       enq_ptr.reset()
       deq_ptr.reset()
@@ -256,6 +257,7 @@ class Queue[T <: Data](val gen: T,
   }
 
   io.deq.valid := !empty
+// cannot enqueue elements while flush is active
   io.enq.ready := !full && !flush
 
   if (useSyncReadMem) {
@@ -281,8 +283,7 @@ class Queue[T <: Data](val gen: T,
   }
 
   val ptr_diff = enq_ptr.value - deq_ptr.value
-  
-
+ 
   if (isPow2(entries)) {
     io.count := Mux(maybe_full && !flush && ptr_match, entries.U, 0.U) | ptr_diff
   } else {
