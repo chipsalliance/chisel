@@ -7,6 +7,13 @@ import chisel3.testers.BasicTester
 import chisel3.util._
 import chisel3.util.random.LFSR
 
+/** Test elements can be enqueued and dequeued
+  * @param elements The sequence of elements used in the Queue
+  * @param queueDepth The max number of entries in the queue.
+  * @param bitWidth Integer size of the data type used in the Queue
+  * @param tap Integer tap('seed') for the LFSR
+  * @param useSyncReadMem True uses SyncReadMem instead of Mem as an internal memory element.
+  */
 class ThingsPassThroughFlushQueueTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean) extends BasicTester {
   
   val q = Module(new Queue(UInt(bitWidth.W), queueDepth, hasFlush = true))  
@@ -33,6 +40,13 @@ class ThingsPassThroughFlushQueueTester(elements: Seq[Int], queueDepth: Int, bit
   }
 }
 
+/** Test queue can flush at random times
+  * @param elements The sequence of elements used in the Queue
+  * @param queueDepth The max number of entries in the queue.
+  * @param bitWidth Integer size of the data type used in the Queue
+  * @param tap Integer tap('seed') for the LFSR
+  * @param useSyncReadMem True uses SyncReadMem instead of Mem as an internal memory element.
+  */
 class QueueGetsFlushedTester (elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean) extends BasicTester {
     val q = Module(new Queue(UInt(bitWidth.W), queueDepth, hasFlush = true))
     val elems = VecInit(elements.map(_.U))
@@ -59,8 +73,8 @@ class QueueGetsFlushedTester (elements: Seq[Int], queueDepth: Int, bitWidth: Int
 
   when(flush) {
     //check that queue gets flushed
-    assert((q.io.count === 0.U) || q.io.deq.valid, s"in count: ${q.io.count} and queue length: $queueDepth" ) 
-    assert(!q.io.enq.ready, s"in count: ${q.io.count} and queue length: $queueDepth") 
+    assert((q.io.count === 0.U) || q.io.deq.valid, s"Expected to be able to dequeue a flushed queue if it had elements prior to the flush, but got dequeue = ${q.io.deq.valid}.") 
+    assert(!q.io.enq.ready, s"Expected enqueue to not be ready when flush is active, but got enqueue ${q.io.enq.ready}.")
   } 
   
   when(inCnt.value === elements.length.U) { //stop when all entries are enqueued
@@ -68,6 +82,13 @@ class QueueGetsFlushedTester (elements: Seq[Int], queueDepth: Int, bitWidth: Int
   }
 }
 
+/** Test queue can flush when empty
+  * @param elements The sequence of elements used in the Queue
+  * @param queueDepth The max number of entries in the queue.
+  * @param bitWidth Integer size of the data type used in the Queue
+  * @param tap Integer tap('seed') for the LFSR
+  * @param useSyncReadMem True uses SyncReadMem instead of Mem as an internal memory element.
+  */
 class EmptyFlushEdgecaseTester (elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean) extends BasicTester {
     val q = Module(new Queue(UInt(bitWidth.W), queueDepth, hasFlush = true))
     val elems = VecInit(elements.map(_.U))
@@ -94,8 +115,8 @@ class EmptyFlushEdgecaseTester (elements: Seq[Int], queueDepth: Int, bitWidth: I
 
   when(flush) {
     //check that queue gets flushed at the beginning with no elements
-    assert(!q.io.deq.valid, s"in count: ${q.io.count} and queue length: $queueDepth" ) 
-    assert(!q.io.enq.ready, s"in count: ${q.io.count} and queue length: $queueDepth") 
+    assert(!q.io.deq.valid, s"Expected to not be able to dequeue a flushed queue because it should be empty, but got dequeue = ${q.io.deq.valid}.") 
+    assert(!q.io.enq.ready, s"Expected enqueue to not be ready when flush is active, but got enqueue ${q.io.enq.ready}.")
   } 
   
   when(inCnt.value === elements.length.U) { //stop when all entries are enqueued
@@ -103,6 +124,13 @@ class EmptyFlushEdgecaseTester (elements: Seq[Int], queueDepth: Int, bitWidth: I
   }
 }
 
+/** Test queue can flush when full
+  * @param elements The sequence of elements used in the Queue
+  * @param queueDepth The max number of entries in the queue.
+  * @param bitWidth Integer size of the data type used in the Queue
+  * @param tap Integer tap('seed') for the LFSR
+  * @param useSyncReadMem True uses SyncReadMem instead of Mem as an internal memory element.
+  */
 class FullQueueFlushEdgecaseTester (elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean) extends BasicTester {
     val q = Module(new Queue(UInt(bitWidth.W), queueDepth, hasFlush = true))
     val elems = VecInit(elements.map(_.U))
@@ -126,9 +154,8 @@ class FullQueueFlushEdgecaseTester (elements: Seq[Int], queueDepth: Int, bitWidt
   when(flush) {
     currDepthCnt.reset() //resets the number of items currently inside queue
     //check that queue gets flushed when queue is full
-    assert(q.io.deq.valid, s"in count: ${q.io.count} and queue length: $queueDepth" ) 
-    assert(!q.io.enq.ready, s"in count: ${q.io.count} and queue length: $queueDepth")
-    
+    assert(q.io.deq.valid, s"Expected to be able to dequeue a flushed queue if it had elements prior to the flush, but got dequeue = ${q.io.deq.valid}.") 
+    assert(!q.io.enq.ready, s"Expected enqueue to not be ready when flush is active, but got enqueue ${q.io.enq.ready}.")
   } 
   
   when(inCnt.value === elements.length.U) { //stop when all entries are enqueued
