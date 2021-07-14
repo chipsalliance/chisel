@@ -7,7 +7,7 @@ import chisel3.internal.{prefix, throwException}
 
 import scala.language.experimental.macros
 import chisel3.internal.sourceinfo._
-import chisel3.internal.plugin._
+import chisel3.internal.plugin.autoNameRecursively
 
 private[chisel3] object SeqUtils {
   /** Concatenates the data elements of the input sequence, in sequence order, together.
@@ -26,12 +26,12 @@ private[chisel3] object SeqUtils {
     } else if (in.tail.isEmpty) {
       in.head.asUInt
     } else {
-      val lo = autoNameRecursively("lo") {
+      val lo = autoNameRecursively("lo")(prefix("lo") {
         asUInt(in.slice(0, in.length/2))
-      }
-      val hi = autoNameRecursively("hi") {
+      })
+      val hi = autoNameRecursively("hi")(prefix("hi") {
         asUInt(in.slice(in.length/2, in.length))
-      }
+      })
       hi ## lo
     }
   }
