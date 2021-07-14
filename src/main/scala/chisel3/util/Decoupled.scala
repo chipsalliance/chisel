@@ -232,7 +232,7 @@ class Queue[T <: Data](val gen: T,
   val full = ptr_match && maybe_full
   val do_enq = WireDefault(io.enq.fire())
   val do_deq = WireDefault(io.deq.fire())
-
+  val flush = io.flush.getOrElse(false.B) 
   when (do_enq) {
     ram(enq_ptr.value) := io.enq.bits
     enq_ptr.inc()
@@ -256,7 +256,7 @@ class Queue[T <: Data](val gen: T,
   }
 
   io.deq.valid := !empty
-  io.enq.ready := !full
+  io.enq.ready := !full && !flush
 
   if (useSyncReadMem) {
     val deq_ptr_next = Mux(deq_ptr.value === (entries.U - 1.U), 0.U, deq_ptr.value + 1.U)
@@ -281,7 +281,7 @@ class Queue[T <: Data](val gen: T,
   }
 
   val ptr_diff = enq_ptr.value - deq_ptr.value
-  val flush = io.flush.getOrElse(false.B) 
+  
 
   if (isPow2(entries)) {
     io.count := Mux(maybe_full && !flush && ptr_match, entries.U, 0.U) | ptr_diff
