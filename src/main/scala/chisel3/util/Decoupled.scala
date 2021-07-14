@@ -283,8 +283,7 @@ class Queue[T <: Data](val gen: T,
   }
 
   val ptr_diff = enq_ptr.value - deq_ptr.value
-  
-
+ 
   if (isPow2(entries)) {
     io.count := Mux(maybe_full && !flush && ptr_match, entries.U, 0.U) | ptr_diff
   } else {
