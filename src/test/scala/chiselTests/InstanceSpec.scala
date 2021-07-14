@@ -49,7 +49,6 @@ object InstanceSpec {
           out := in + 1.U
       }
     }
-
     @instance
     class AddTwo extends MultiIOModule {
       @public val in  = IO(Input(UInt(32.W)))
@@ -62,7 +61,6 @@ object InstanceSpec {
       i1.in := i0.out
       out := i1.out
     }
-
   }
   object Annotations {
     case class MarkAnnotation(target: ReferenceTarget, tag: String) extends SingleTargetAnnotation[ReferenceTarget] {
@@ -172,9 +170,63 @@ class InstanceSpec extends ChiselFlatSpec with Utils {
     assertTesterPasses(new AddZeroTester)
   }
   "Template/Instance" should "work with public members of super classes" in {
-    // use the @public val x = x syntax
+    @instance
+    class AddZero extends MultiIOModule {
+      @public val in  = IO(Input(UInt(32.W)))
+      @public val out = IO(Output(UInt(32.W)))
+      @public val clock = clock
+      out := in
+    }
+
+    @instance
+    class AddZeroWithCompanionObject extends MultiIOModule {
+      @public val in  = IO(Input(UInt(32.W)))
+      @public val out = IO(Output(UInt(32.W)))
+      @public val clock = clock
+      out := in
+    }
+    object AddZeroWithCompanionObject {
+      def hello = "hello"
+    }
+    class AddZeroTester extends BasicTester {
+      val i0 = Instance(Template(new AddZero))
+      val i1 = Instance(Template(new AddZeroWithCompanionObject()))
+      i0.in := 42.U
+      i1.in := i0.out
+      chisel3.assert(i1.out === 42.U)
+      stop()
+    }
+
+    val (output, annotations) = (new ChiselStage).emitChirrtlWithAnnotations(gen = new AddZeroTester, args = Array("--full-stacktrace"))
+    assertTesterPasses(new AddZeroTester)
   }
-  "Template/Instance" should "work with interfaces" in {
+  "Template/Instance" should "access parameter case classes" in {
+    // Not sure how to do this. One option is to have marker trait IsAccessable or something, so we just define the lookupable for that
+    // Another option is to materialize the lookup somehow, but i think that requires the lookup to be implemented with a def macro 
+    // Going to try a marker trait first.
+    case class Parameters(word: String, number: Int) extends IsLookupable
+    @instance
+    class AddZero(val p: Parameters) extends MultiIOModule {
+      @public val in  = IO(Input(UInt(32.W)))
+      @public val out = IO(Output(UInt(32.W)))
+      @public val clock = clock
+      @public val p = p
+      out := in
+    }
+
+    class AddZeroTester extends BasicTester {
+      val i0 = Instance(Template(new AddZero(Parameters("hi", 13))))
+      i0.in := 42.U
+      assert(i0.p.word == "hi")
+      assert(i0.p.number == 13)
+      chisel3.assert(i0.out === 42.U)
+      stop()
+    }
+
+    val (output, annotations) = (new ChiselStage).emitChirrtlWithAnnotations(gen = new AddZeroTester, args = Array("--full-stacktrace"))
+    assertTesterPasses(new AddZeroTester)
+   }
+   "Template/Instance" should "convert to an interface?" ignore {
     // Not sure if we should actually do this. I think its worth experimenting how far dataview can get us.
    }
 }

@@ -5,6 +5,7 @@ import chisel3.internal.sourceinfo.SourceInfo
 import scala.annotation.implicitNotFound
 import chisel3._
 
+trait IsLookupable
 @implicitNotFound("@instance is only legal when @public is only on subtypes of Data, BaseModule or Instance[_]")
 sealed trait Lookupable[A, -B] {
   type C
@@ -74,6 +75,10 @@ object Lookupable {
   implicit def lookupBigInt[A <: BaseModule](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) = new Lookupable[A, BigInt] {
     type B = BigInt
     type C = BigInt
+    def lookup(that: A => B, ih: Instance[A]): C = that(ih.template)
+  }
+  implicit def lookupIsLookupable[A <: BaseModule, B <: IsLookupable](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) = new Lookupable[A, B] {
+    type C = B
     def lookup(that: A => B, ih: Instance[A]): C = that(ih.template)
   }
 }
