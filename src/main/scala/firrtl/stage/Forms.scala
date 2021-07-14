@@ -47,7 +47,11 @@ object Forms {
       Dependency[firrtl.transforms.InferResets]
     )
 
-  val Deduped: Seq[TransformDependency] = Resolved :+ Dependency[firrtl.transforms.DedupModules]
+  val Deduped: Seq[TransformDependency] = Resolved ++
+    Seq(
+      Dependency[firrtl.transforms.DedupModules],
+      Dependency[firrtl.transforms.DedupAnnotationsTransform]
+    )
 
   val HighForm: Seq[TransformDependency] = ChirrtlForm ++
     MinimalHighForm ++

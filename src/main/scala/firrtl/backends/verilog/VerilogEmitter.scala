@@ -9,6 +9,7 @@ import firrtl.WrappedExpression._
 import firrtl.traversals.Foreachers._
 import firrtl.annotations.{
   CircuitTarget,
+  MemoryInitAnnotation,
   MemoryLoadFileType,
   MemoryNoSynthInit,
   MemorySynthInit,
@@ -507,6 +508,18 @@ class VerilogEmitter extends SeqTransform with Emitter {
     private val emissionAnnos = annotations.collect {
       case m: SingleTargetAnnotation[ReferenceTarget] @unchecked with EmissionOption => m
     }
+
+    // Check for non-local memory annotations (error if found)
+    emissionAnnos.foreach {
+      case a: MemoryInitAnnotation => {
+        if (!a.target.isLocal)
+          throw new FirrtlUserException(
+            "At least one memory annotation did not deduplicate: got non-local annotation $a from [[DedupAnnotationsTransform]]"
+          )
+      }
+      case _ =>
+    }
+
     // using multiple foreach instead of a single partial function as an Annotation can gather multiple EmissionOptions for simplicity
     emissionAnnos.foreach {
       case a: MemoryEmissionOption => memoryEmissionOption += ((a.target, a))

@@ -38,6 +38,21 @@ trait Annotation extends Product {
     * @return
     */
   def getTargets: Seq[Target] = extractComponents(productIterator.toIterable).toSeq
+
+  /** Returns a deduplicable representation of this [[Annotation]]: a 3-tuple of the
+    * deduplicated annotation's "dedup key", the deduplicated [[Annotation]], and the
+    * [[firrtl.annotations.ReferenceTarget ReferenceTarget]](s) to the annotated objects.
+    *
+    * If two absolute instances of this [[Annotation]] would deduplicate to the same
+    * local form, both of their "dedup key"s must be equivalent.
+    *
+    * A deduplication key is typically taken to be a 2-tuple of the pathless target and
+    * the annotation's value.
+    *
+    * Returning None signifies this annotation will not deduplicate.
+    * @return
+    */
+  private[firrtl] def dedup: Option[(Any, Annotation, ReferenceTarget)] = None
 }
 
 /** If an Annotation does not target any [[Named]] thing in the circuit, then all updates just

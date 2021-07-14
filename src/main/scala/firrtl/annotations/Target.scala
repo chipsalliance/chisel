@@ -695,6 +695,15 @@ case class ReferenceTarget(
     }
   }
 
+  /** Returns the local form of this [[ReferenceTarget]]
+    *
+    * For example, given `~Top|Top/foo:Foo/bar:Bar>x`,
+    *
+    * `.pathlessTarget` returns `~Top|Bar>x`
+    *
+    * This is useful for cases in which annotations must point to the module itself rather than
+    *   an absolute *instance* of the module (e.g. deduplication).
+    */
   override def pathlessTarget: ReferenceTarget = ReferenceTarget(circuit, encapsulatingModule, Nil, ref, component)
 
   override def setPathTarget(newPath: IsModule): ReferenceTarget =
@@ -789,6 +798,15 @@ case class InstanceTarget(
 
   override def asPath: Seq[(Instance, OfModule)] = path :+ ((Instance(instance), OfModule(ofModule)))
 
+  /** Returns the local form of this [[InstanceTarget]]
+    *
+    * For example, given `~Top|Top/foo:Foo/bar:Bar`,
+    *
+    * `.pathlessTarget` returns `~Top|Foo/bar:Bar`
+    *
+    * This is useful for cases in which annotations must point to the module itself rather than
+    *   an absolute *instance* of the module (e.g. deduplication).
+    */
   override def pathlessTarget: InstanceTarget = InstanceTarget(circuit, encapsulatingModule, Nil, instance, ofModule)
 
   override def notPath = Seq(Instance(instance), OfModule(ofModule))

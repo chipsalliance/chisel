@@ -8,7 +8,8 @@ import firrtl.{
   MemoryFileInlineInit,
   MemoryInitValue,
   MemoryRandomInit,
-  MemoryScalarInit
+  MemoryScalarInit,
+  Utils
 }
 
 /**
@@ -25,6 +26,9 @@ case class MemoryRandomInitAnnotation(target: ReferenceTarget) extends MemoryIni
   override def duplicate(n: ReferenceTarget): Annotation = copy(n)
   override def initValue:    MemoryInitValue = MemoryRandomInit
   override def isRandomInit: Boolean = true
+  override private[firrtl] def dedup: Option[(Any, Annotation, ReferenceTarget)] = Some(
+    ((target.pathlessTarget, Nil), copy(target = target.pathlessTarget), target)
+  )
 }
 
 /** Initialize all entries of the `target` memory with the scalar `value`. */
@@ -32,6 +36,9 @@ case class MemoryScalarInitAnnotation(target: ReferenceTarget, value: BigInt) ex
   override def duplicate(n: ReferenceTarget): Annotation = copy(n)
   override def initValue:    MemoryInitValue = MemoryScalarInit(value)
   override def isRandomInit: Boolean = false
+  override private[firrtl] def dedup: Option[(Any, Annotation, ReferenceTarget)] = Some(
+    ((target.pathlessTarget, value), copy(target = target.pathlessTarget), target)
+  )
 }
 
 /** Initialize the `target` memory with the array of `values` which must be the same size as the memory depth. */
@@ -39,6 +46,9 @@ case class MemoryArrayInitAnnotation(target: ReferenceTarget, values: Seq[BigInt
   override def duplicate(n: ReferenceTarget): Annotation = copy(n)
   override def initValue:    MemoryInitValue = MemoryArrayInit(values)
   override def isRandomInit: Boolean = false
+  override private[firrtl] def dedup: Option[(Any, Annotation, ReferenceTarget)] = Some(
+    ((target.pathlessTarget, values), copy(target = target.pathlessTarget), target)
+  )
 }
 
 /** Initialize the `target` memory with inline readmem[hb] statement. */
@@ -51,6 +61,9 @@ case class MemoryFileInlineAnnotation(
   override def duplicate(n: ReferenceTarget): Annotation = copy(n)
   override def initValue:    MemoryInitValue = MemoryFileInlineInit(filename, hexOrBinary)
   override def isRandomInit: Boolean = false
+  override private[firrtl] def dedup: Option[(Any, Annotation, ReferenceTarget)] = Some(
+    ((target.pathlessTarget, filename), copy(target = target.pathlessTarget), target)
+  )
 }
 
 /** Initializes the memory inside the `ifndef SYNTHESIS` block (default) */

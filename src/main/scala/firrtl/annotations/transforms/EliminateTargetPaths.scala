@@ -12,6 +12,7 @@ import firrtl.ir._
 import firrtl.{AnnotationSeq, CircuitState, DependencyAPIMigration, FirrtlInternalException, RenameMap, Transform}
 import firrtl.stage.Forms
 import firrtl.transforms.DedupedResult
+import firrtl.transforms.DedupAnnotationsTransform
 
 import scala.collection.mutable
 
@@ -105,7 +106,7 @@ class EliminateTargetPaths extends Transform with DependencyAPIMigration {
   override def prerequisites = Forms.MinimalHighForm
   override def optionalPrerequisites = Seq.empty
   override def optionalPrerequisiteOf = Seq.empty
-  override def invalidates(a: Transform) = false
+  override def invalidates(a: Transform) = a.isInstanceOf[DedupAnnotationsTransform]
 
   /** Replaces old ofModules with new ofModules by calling dupMap methods
     * Updates oldUsedOfModules, newUsedOfModules
