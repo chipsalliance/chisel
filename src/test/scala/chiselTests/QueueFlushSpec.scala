@@ -8,11 +8,12 @@ import chisel3.util._
 import chisel3.util.random.LFSR
 
 /** Test elements can be enqueued and dequeued
-  * @param elements The sequence of elements used in the Queue
-  * @param queueDepth The max number of entries in the queue.
-  * @param bitWidth Integer size of the data type used in the Queue
+ * 
+  * @param elements The sequence of elements used in the queue
+  * @param queueDepth The max number of entries in the queue
+  * @param bitWidth Integer size of the data type used in the queue
   * @param tap Integer tap('seed') for the LFSR
-  * @param useSyncReadMem True uses SyncReadMem instead of Mem as an internal memory element.
+  * @param useSyncReadMem True uses SyncReadMem instead of Mem as an internal memory element
   */
 class ThingsPassThroughFlushQueueTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean) extends BasicTester {
   
@@ -41,11 +42,12 @@ class ThingsPassThroughFlushQueueTester(elements: Seq[Int], queueDepth: Int, bit
 }
 
 /** Test queue can flush at random times
-  * @param elements The sequence of elements used in the Queue
-  * @param queueDepth The max number of entries in the queue.
-  * @param bitWidth Integer size of the data type used in the Queue
+ * 
+  * @param elements The sequence of elements used in the queue
+  * @param queueDepth The max number of entries in the queue
+  * @param bitWidth Integer size of the data type used in the queue
   * @param tap Integer tap('seed') for the LFSR
-  * @param useSyncReadMem True uses SyncReadMem instead of Mem as an internal memory element.
+  * @param useSyncReadMem True uses SyncReadMem instead of Mem as an internal memory element
   */
 class QueueGetsFlushedTester (elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean) extends BasicTester {
     val q = Module(new Queue(UInt(bitWidth.W), queueDepth, hasFlush = true))
@@ -83,11 +85,12 @@ class QueueGetsFlushedTester (elements: Seq[Int], queueDepth: Int, bitWidth: Int
 }
 
 /** Test queue can flush when empty
-  * @param elements The sequence of elements used in the Queue
-  * @param queueDepth The max number of entries in the queue.
-  * @param bitWidth Integer size of the data type used in the Queue
+ * 
+  * @param elements The sequence of elements used in the queue
+  * @param queueDepth The max number of entries in the queue
+  * @param bitWidth Integer size of the data type used in the queue
   * @param tap Integer tap('seed') for the LFSR
-  * @param useSyncReadMem True uses SyncReadMem instead of Mem as an internal memory element.
+  * @param useSyncReadMem True uses SyncReadMem instead of Mem as an internal memory element
   */
 class EmptyFlushEdgecaseTester (elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean) extends BasicTester {
     val q = Module(new Queue(UInt(bitWidth.W), queueDepth, hasFlush = true))
@@ -125,11 +128,12 @@ class EmptyFlushEdgecaseTester (elements: Seq[Int], queueDepth: Int, bitWidth: I
 }
 
 /** Test queue can flush when full
-  * @param elements The sequence of elements used in the Queue
-  * @param queueDepth The max number of entries in the queue.
-  * @param bitWidth Integer size of the data type used in the Queue
+ * 
+  * @param elements The sequence of elements used in the queue
+  * @param queueDepth The max number of entries in the queue
+  * @param bitWidth Integer size of the data type used in the queue
   * @param tap Integer tap('seed') for the LFSR
-  * @param useSyncReadMem True uses SyncReadMem instead of Mem as an internal memory element.
+  * @param useSyncReadMem True uses SyncReadMem instead of Mem as an internal memory element
   */
 class FullQueueFlushEdgecaseTester (elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean) extends BasicTester {
     val q = Module(new Queue(UInt(bitWidth.W), queueDepth, hasFlush = true))
