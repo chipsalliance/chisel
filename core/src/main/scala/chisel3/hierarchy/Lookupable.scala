@@ -61,4 +61,19 @@ object Lookupable {
       }
     }
   }
+  implicit def lookupInt[A <: BaseModule](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) = new Lookupable[A, Int] {
+    type B = Int
+    type C = Int
+    def lookup(that: A => B, ih: Instance[A]): C = that(ih.template)
+  }
+  implicit def lookupBoolean[A <: BaseModule](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) = new Lookupable[A, Boolean] {
+    type B = Boolean
+    type C = Boolean
+    def lookup(that: A => B, ih: Instance[A]): C = that(ih.template)
+  }
+  implicit def lookupBigInt[A <: BaseModule](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) = new Lookupable[A, BigInt] {
+    type B = BigInt
+    type C = BigInt
+    def lookup(that: A => B, ih: Instance[A]): C = that(ih.template)
+  }
 }

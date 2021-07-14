@@ -26,8 +26,12 @@ object instanceMacro {
     import Flag._
     val result = {
       //println(annottees)
-      annottees.map(_.tree).toList match {
-        case Seq(clz@q"$mods class $tpname[..$tparams] $ctorMods(...$paramss) extends { ..$earlydefns } with ..$parents { $self => ..$stats }") =>
+      val (clz, objOpt) = annottees.map(_.tree).toList match {
+        case Seq(c, o) => (c, Some(o))
+        case Seq(c) => (c, None)
+      }
+      val (newClz, implicitClz, tpname) = clz match {
+        case clz@q"$mods class $tpname[..$tparams] $ctorMods(...$paramss) extends { ..$earlydefns } with ..$parents { $self => ..$stats }" =>
           val name2 = TypeName(tpname.+(c.freshName()))
           val extensions = scala.collection.mutable.ArrayBuffer[c.universe.Tree]()
           val newBodies = stats.flatMap {
@@ -39,30 +43,25 @@ object instanceMacro {
               Seq(x)
             case other => Seq(other)
           }
+          (q""" $mods class $tpname[..$tparams] $ctorMods(...$paramss) extends { ..$earlydefns } with ..$parents { $self => ..${newBodies.toSeq} } """,
+           q"""implicit class $name2(module: chisel3.Instance[$tpname]) { ..$extensions } """,
+           tpname)
+      }
+      val newObj = objOpt match {
+        case None => q"""object ${tpname.toTermName} { $implicitClz } """
+        case Some(obj@q"$mods object $tname extends { ..$earlydefns } with ..$parents { $self => ..$body }") =>
           q"""
-            $mods class $tpname[..$tparams] $ctorMods(...$paramss) extends { ..$earlydefns } with ..$parents { $self => ..${newBodies.toSeq} }
-
-            object ${tpname.toTermName} {
-              implicit class $name2(module: chisel3.Instance[$tpname]) { ..$extensions }
-            }
-          """
-        case Seq(clz@q"$_ class $tpname[..$_] $_(...$_) extends { ..$_ } with ..$_ { $_ => ..$stats }",
-                 obj@q"$mods object $tname extends { ..$earlydefns } with ..$parents { $self => ..$body }") =>
-          val name2 = TypeName(tpname.+(c.freshName()))
-          val bodies = stats.collect {
-            case q"@public val $tpname: $tpe = $other" => q"def $tpname: $tpe = module(_.$tpname)"
-          }
-          val implicitClz = q"""implicit class $name2(module: chisel3.Instance[$tpname]) { ..$bodies }"""
-          q"""
-            $clz
-
             $mods object $tname extends { ..$earlydefns } with ..$parents { $self =>
               $implicitClz
-
               ..$body
             }
           """
       }
+      q"""
+        $newClz
+
+        $newObj
+      """
     }
     c.Expr[Any](result)
   }
@@ -72,5 +71,5 @@ class instance extends StaticAnnotation {
   def macroTransform(annottees: Any*): Any = macro instanceMacro.impl
 }
 class public extends StaticAnnotation {
-  def macroTransform(annottees: Any*): Any = macro InstanceHandleMacro.impl
+  //def macroTransform(annottees: Any*): Any = macro InstanceHandleMacro.impl
 }
