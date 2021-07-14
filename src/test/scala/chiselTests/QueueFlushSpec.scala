@@ -142,7 +142,7 @@ class FullQueueFlushEdgecaseTester (elements: Seq[Int], queueDepth: Int, bitWidt
   val inCnt = Counter(elements.length + 1)
   val currDepthCnt = Counter(queueDepth + 1)
   
-  //testing a flush when queue is empty
+  //testing a flush when queue is full
   val flush = (currDepthCnt.value === queueDepth.U)
   q.io.flush.get := flush
 
