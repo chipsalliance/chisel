@@ -6,12 +6,37 @@ import chisel3._
 import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
 import chisel3.experimental.annotate
-import chisel3.internal.{interface, public}
+import chisel3.internal.{interface, instance, public}
 import _root_.firrtl.annotations._
+
+@instance
+class TopLevelDeclaration extends MultiIOModule {
+  @public val in  = IO(Input(UInt(32.W)))
+  @public val out = IO(Output(UInt(32.W)))
+  out := in
+}
+
+@instance
+class TopLevelDeclarationWithCompanionObject extends MultiIOModule {
+  @public val in  = IO(Input(UInt(32.W)))
+  @public val out = IO(Output(UInt(32.W)))
+  out := in
+}
+object TopLevelDeclarationWithCompanionObject {
+  def hello = "Hi"
+}
+
+object Interfaces {
+  trait AddInterface extends MultiIOModule {
+    val in  = UInt(32.W)
+    val out = UInt(32.W)
+  }
+
+}
 
 object InstanceSpec {
   object Examples {
-    @interface
+    @instance
     class AddOne(hasInner: Boolean) extends MultiIOModule {
       @public val in  = IO(Input(UInt(32.W)))
       @public val out = IO(Output(UInt(32.W)))
@@ -25,13 +50,7 @@ object InstanceSpec {
       }
     }
 
-    //implicit class AddOneHandle(i: Instance[AddOne]) {
-    //  val in = i.d(_.in)
-    //  val out = i.d(_.out)
-    //  val innerWire = i.d(_.innerWire)
-    //}
-  
-    @interface
+    @instance
     class AddTwo extends MultiIOModule {
       @public val in  = IO(Input(UInt(32.W)))
       @public val out = IO(Output(UInt(32.W)))
@@ -43,35 +62,6 @@ object InstanceSpec {
       i1.in := i0.out
       out := i1.out
     }
-    //implicit class AddTwoHandle(i: Instance[AddTwo]) {
-    //  def in = i.d(_.in)
-    //  def out = i.d(_.out)
-    //  def i0 = i.i(_.i0)
-    //  def i1 = i.m(_.i1)
-    //}
-
-    //class AddNoneOrTwo(addTwo: Boolean) extends MultiIOModule {
-    //  val in  = IO(Input(UInt(32.W)))
-    //  val out = IO(Output(UInt(32.W)))
-    //  val template = Template(new AddOne)
-    //  val i0Opt = if(addTwo) Some(Instance(template)) else None
-    //  val i1Opt = if(addTwo) Some(Module(new AddOne)) else None
-    //  i1Opt.zip(i0Opt) match {
-    //    case (i0, i1) =>
-    //      i0.in := in
-    //      i1.in := i0.out
-    //      out := i1.out
-    //    case _ =>
-    //      out := in
-    //  }
-    //}
-    //implicit class AddNoneOrTwoHandle(i: Instance[AddNoneOrTwo]) {
-    //  def in = i(_.in)
-    //  def out = i(_.out)
-    //  def i0Opt = i(_.i0Opt)
-    //  def i1Opt = i(_.i1Opt)
-    //}
-
 
   }
   object Annotations {
@@ -83,12 +73,33 @@ object InstanceSpec {
     }
     def mark(d: Data, tag: String): Unit = annotate(MarkChiselAnnotation(d, tag))
   }
+//  object HierarchyExamples {
+//    //implicit def convert(m: AddOne): Instance[AddZeroInterface] = { }
+//    @instance
+//    final class AddOne extends MultiIOModule with AddInterface {
+//      @public val in  = in
+//      @public val out = out
+//      @public val innerWire = Wire(UInt(32.W))
+//      innerWire := in + 1.U
+//      out := innerWire
+//    }
+//    @instance
+//    class AddTwo extends MultiIOModule with AddInterface {
+//      @public val in  = IO(Input(UInt(32.W)))
+//      @public val out = IO(Output(UInt(32.W)))
+//      @public val innerWire = Wire(UInt(32.W))
+//      @public val innerModule = Module(new Interfaces.AddZero)
+//      innerWire := in + 2.U
+//      out := innerWire
+//    }
+//  }
 }
 
 
+
 class InstanceSpec extends ChiselFlatSpec with Utils {
-  import InstanceSpec.Examples._
   "Template/Instance" should "enable instantiating the same instance multiple times" in {
+    import InstanceSpec.Examples._
     import InstanceSpec.Annotations._
     class AddOneTester extends BasicTester {
       val template: Template[AddOne] = Template(new AddOne(true))
@@ -105,6 +116,7 @@ class InstanceSpec extends ChiselFlatSpec with Utils {
     assertTesterPasses(new AddOneTester)
   }
   "Template/Instance" should "enable instantiating nestingly, with modules" in {
+    import InstanceSpec.Examples._
     import InstanceSpec.Annotations._
     class AddOneTester extends BasicTester {
       val template = Template(new AddTwo)
@@ -124,6 +136,7 @@ class InstanceSpec extends ChiselFlatSpec with Utils {
     assertTesterPasses(new AddOneTester)
   }
   "Template/Instance" should "implicitly convert modules to instances" in {
+    import InstanceSpec.Examples._
     import InstanceSpec.Annotations._
     def wireUp(i0: Instance[AddOne], i1: Instance[AddOne]): Unit = {
       i1.in := i0.out
@@ -142,4 +155,26 @@ class InstanceSpec extends ChiselFlatSpec with Utils {
     val (output, annotations) = (new ChiselStage).emitChirrtlWithAnnotations(gen = new AddOneTester, args = Array("--full-stacktrace"))
     assertTesterPasses(new AddOneTester)
   }
+  "Template/Instance" should "work with top level declarations" in {
+    import InstanceSpec.Examples._
+    class AddZeroTester extends BasicTester {
+      val template = Template(new TopLevelDeclaration())
+      val i0 = Instance(template)
+      val template2 = Template(new TopLevelDeclarationWithCompanionObject())
+      val i1 = Instance(template2)
+      i0.in := 42.U
+      i1.in := i0.out
+      chisel3.assert(i1.out === 42.U)
+      stop()
+    }
+
+    val (output, annotations) = (new ChiselStage).emitChirrtlWithAnnotations(gen = new AddZeroTester, args = Array("--full-stacktrace"))
+    assertTesterPasses(new AddZeroTester)
+  }
+  "Template/Instance" should "work with public members of super classes" in {
+    // use the @public val x = x syntax
+  }
+  "Template/Instance" should "work with interfaces" in {
+    // Not sure if we should actually do this. I think its worth experimenting how far dataview can get us.
+   }
 }
