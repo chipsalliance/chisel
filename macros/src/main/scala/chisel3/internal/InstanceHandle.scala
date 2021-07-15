@@ -58,6 +58,9 @@ object instanceMacro {
             case x@q"@public val $tpname: $tpe = $_" =>
               extensions += atPos(x.pos)(q"def $tpname = module(_.$tpname)")
               Seq(x)
+            case x@q"@public lazy val $tpname: $tpe = $_" =>
+              extensions += atPos(x.pos)(q"def $tpname = module(_.$tpname)")
+              Seq(x)
             case other => Seq(other)
           }
           (q""" $mods class $tpname[..$tparams] $ctorMods(...$paramss) extends { ..$earlydefns } with ..$parents { $self => ..${newBodies.toSeq} } """,

@@ -274,8 +274,6 @@ class InstanceSpec extends ChiselFlatSpec with Utils {
   }
   "@instance" should "work on non-modules" in {
     // Example is counter, which is not a module, but has values which are hardware and instance specific
-    // Also EventSet
-    // TODO!!! Make the context of the Instance[_] be the context of internal things accessed, not the context of the instance itself
     import InstanceSpec.Annotations._
     @instance
     case class Blah() extends IsInstantiable {
@@ -295,6 +293,37 @@ class InstanceSpec extends ChiselFlatSpec with Utils {
       i.in := 42.U
       chisel3.assert(i.out === 43.U)
       require(i.blah.x == "Hi")
+      mark(i.blah.w, "Adam Was Here")
+      stop()
+    }
+
+    val (output, annotations) = (new ChiselStage).emitChirrtlWithAnnotations(gen = new AddOneTester, args = Array("--full-stacktrace"))
+    println(output)
+    annotations.toSeq should contain (MarkAnnotation(Target.deserialize("~AddOneTester|AddOneTester/i:AddOne>w").asInstanceOf[ReferenceTarget], "Adam Was Here"))
+    assertTesterPasses(new AddOneTester)
+
+  }
+  "@instance" should "work on non-modules with delayed elaborated hardware" in {
+    // Should we expose defs? issue is when IsInstantiable classes have delayed references to things
+    // We can't call them as a val because they need to be elaborated later, but we right now require @public to be on a val
+    // We could make it a lazy val?
+    import InstanceSpec.Annotations._
+    @instance
+    case class Blah(wire: () => UInt) extends IsInstantiable {
+      @public lazy val w = wire()
+    }
+    @instance
+    class AddOne extends MultiIOModule {
+      @public val in  = IO(Input(UInt(32.W)))
+      @public val out = IO(Output(UInt(32.W)))
+      @public val blah = Blah(() => Wire(UInt(32.W)))
+      blah.w := in + 1.U
+      out := blah.w
+    }
+    class AddOneTester extends BasicTester {
+      val i = Instance(Template(new AddOne))
+      i.in := 42.U
+      chisel3.assert(i.out === 43.U)
       mark(i.blah.w, "Adam Was Here")
       stop()
     }
