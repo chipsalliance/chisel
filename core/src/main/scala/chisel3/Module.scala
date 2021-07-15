@@ -157,7 +157,7 @@ package experimental {
   /** Abstract base class for Modules, an instantiable organizational unit for RTL.
     */
   // TODO: seal this?
-  abstract class BaseModule extends HasId {
+  abstract class BaseModule extends HasId with IsInstantiable {
     _parent.foreach(_.addId(this))
 
     //

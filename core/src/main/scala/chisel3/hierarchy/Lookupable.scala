@@ -14,19 +14,19 @@ sealed trait Lookupable[A, -B] {
 }
 
 object Lookupable {
-  implicit def lookupModule[A, B <: BaseModule](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) = new Lookupable[A, B] {
-    type C = Instance[B]
-    def lookup(that: A => B, ih: Instance[A]): C = {
-      val ret = that(ih.template)
-      ih.template match {
-        case template: BaseModule =>
-          val inst = new Instance(() => ret.instanceName, ret, Instance.portMap(ret), ih.context.descend(InstanceContext.getContext(ret)), None)
-          inst 
-        case _ =>
-          new Instance(() => ret.instanceName, ret, Instance.portMap(ret), ih.context.descend(InstanceContext.getContext(ret)), None)
-      }
-    }
-  }
+  //implicit def lookupModule[A, B <: BaseModule](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) = new Lookupable[A, B] {
+  //  type C = Instance[B]
+  //  def lookup(that: A => B, ih: Instance[A]): C = {
+  //    val ret = that(ih.template)
+  //    ih.template match {
+  //      case template: BaseModule =>
+  //        val inst = new Instance(() => ret.instanceName, ret, Instance.portMap(ret), ih.context.descend(InstanceContext.getContext(ret)), None)
+  //        inst 
+  //      case _ =>
+  //        new Instance(() => ret.instanceName, ret, Instance.portMap(ret), ih.context.descend(InstanceContext.getContext(ret)), None)
+  //    }
+  //  }
+  //}
   implicit def lookupInstance[A, B <: BaseModule](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) = new Lookupable[A, Instance[B]] {
     type C = Instance[B]
     def lookup(that: A => Instance[B], ih: Instance[A]): C = {
@@ -84,7 +84,16 @@ object Lookupable {
     type C = Instance[B]
     def lookup(that: A => B, ih: Instance[A]): C = {
         val ret = that(ih.template)
-        new Instance(() => "", ret, Map.empty, ih.context, None)
+        ret match {
+            case retModule: BaseModule =>
+              ih.template match {
+                case template: BaseModule =>
+                  new Instance(() => retModule.instanceName, ret, Instance.portMap(retModule), ih.context.descend(InstanceContext.getContext(retModule)), None)
+                case _ =>
+                  new Instance(() => retModule.instanceName, ret, Instance.portMap(retModule), ih.context.descend(InstanceContext.getContext(retModule)), None)
+              }
+            case other => new Instance(() => "", ret, Map.empty, ih.context, None)
+        }
     }
   }
   implicit def lookupString[A](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) = new Lookupable[A, String] {
