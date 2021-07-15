@@ -29,7 +29,7 @@ object Instance extends SourceInfoDoc {
   def do_apply[T <: BaseModule, I <: Bundle](bc: Template[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Instance[T] = {
     //require(bc.isTemplate, "Must pass a template to Instance(..)")
     val ports = experimental.CloneModuleAsRecord(bc.module)
-    Instance(() => ports.instanceName, bc.module, portMap(ports, bc.module), InstanceContext.getContext(ports._parent.get), Some(ports))
+    Instance(() => ports.instanceName, bc.module, portMap(ports, bc.module), InstanceContext.getContext(ports._parent.get).descend(ports, bc.module), Some(ports))
   }
 
   def portMap(m: BaseModule): Map[Data, Data] = {
@@ -42,17 +42,14 @@ object Instance extends SourceInfoDoc {
   }
   import scala.language.implicitConversions
   implicit def toInstance[T <: BaseModule](m: T): Instance[T] = {
-    new Instance(() => m.instanceName, m, portMap(m), InstanceContext.getContext(m), None)
+    new Instance(() => m.instanceName, m, portMap(m), InstanceContext.getContext(m).descend(m, m), None)
   }
 }
 
 case class Instance[A] private [chisel3] (name: () => String, template: A, ioMap: Map[Data, Data], context: InstanceContext, ports: Option[BaseModule.ClonePorts]) extends NamedComponent {
-  override def instanceName = name()//ports.map(_.instanceName).getOrElse(name()template.instanceName)
+  override def instanceName = ports.map(_.instanceName).getOrElse(name())
   
   private [chisel3] val cache = HashMap[Data, Data]()
-  private [chisel3] def descendingContext[B <: BaseModule](x: B): InstanceContext = {
-    context.descend(ports.getOrElse(x), x)
-  }
 
   def apply[B, C](that: A => B)(implicit lookup: Lookupable[A, B]): lookup.C = {
     lookup.lookup(that, this)

@@ -268,8 +268,71 @@ class InstanceSpec extends ChiselFlatSpec with Utils {
     val (output, annotations) = (new ChiselStage).emitChirrtlWithAnnotations(gen = new AddSomeTester, args = Array("--full-stacktrace"))
     assertTesterPasses(new AddSomeTester)
 
-   }
-   "Template/Instance" should "convert to an interface?" ignore {
+  }
+  "@public" should "work on multi-vals" in {
+    // It already does automatically! just write a test
+  }
+  "@instance" should "work on non-modules" in {
+    // Example is counter, which is not a module, but has values which are hardware and instance specific
+    // Also EventSet
+    // TODO!!! Make the context of the Instance[_] be the context of internal things accessed, not the context of the instance itself
+    import InstanceSpec.Annotations._
+    @instance
+    case class Blah() extends IsInstantiable {
+      @public val w = Wire(UInt(32.W))
+      @public val x = "Hi"
+    }
+    @instance
+    class AddOne extends MultiIOModule {
+      @public val in  = IO(Input(UInt(32.W)))
+      @public val out = IO(Output(UInt(32.W)))
+      @public val blah = Blah()
+      blah.w := in + 1.U
+      out := blah.w
+    }
+    class AddOneTester extends BasicTester {
+      val i = Instance(Template(new AddOne))
+      i.in := 42.U
+      chisel3.assert(i.out === 43.U)
+      require(i.blah.x == "Hi")
+      mark(i.blah.w, "Adam Was Here")
+      stop()
+    }
+
+    val (output, annotations) = (new ChiselStage).emitChirrtlWithAnnotations(gen = new AddOneTester, args = Array("--full-stacktrace"))
+    println(output)
+    annotations.toSeq should contain (MarkAnnotation(Target.deserialize("~AddOneTester|AddOneTester/i:AddOne>w").asInstanceOf[ReferenceTarget], "Adam Was Here"))
+    assertTesterPasses(new AddOneTester)
+
+  }
+  "Template/Instance" should "convert to an interface?" ignore {
     // Not sure if we should actually do this. I think its worth experimenting how far dataview can get us.
-   }
+    // Update: Talked to henry, i do think it will be necessary, but can come later.
+    // Consider the (i: Instance[Class]).as[SuperClass] syntax, and forcing people to be explicit? Or maybe we can do an similar typeclass derivation
+    //case class Parameters(s: String) extends IsLookupable
+    //trait AddInterface { self: MultiIOModule =>
+    //  val in: UInt
+    //}
+    //trait AddIO extends Bundle { }
+    //@instance
+    //class AddOne extends MultiIOModule with AddInterface {
+    //  @public val in = IO(Input(UInt()))
+    //}
+    //@instance
+    //class AddTwo extends MultiIOModule with AddInterface {
+    //  @public val in = IO(Input(UInt()))
+    //}
+    //def g(i: Instance[AddInterface]): Unit = ???
+
+    //object AddOne {
+    //  def attach(m: AddOne) = ???
+    //}
+    //val t: Template[AddOne] = Template(new AddOne)
+    //val i: Instance[AddOne] = Instance(t)
+    //i.as[AddInterface]
+    //i.in
+    //val m: AddOne = Module(new AddOne)
+    //f(m)
+    //def f(m: Instance[AddOne])
+  }
 }
