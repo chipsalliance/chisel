@@ -293,8 +293,12 @@ class InstanceSpec extends ChiselFlatSpec with Utils {
       i.in := 42.U
       chisel3.assert(i.out === 43.U)
       require(i.blah.x == "Hi")
+      blahPrinter(i.blah)
       mark(i.blah.w, "Adam Was Here")
       stop()
+    }
+    def blahPrinter(b: Instance[Blah]): Unit = {
+      println(b.x)
     }
 
     val (output, annotations) = (new ChiselStage).emitChirrtlWithAnnotations(gen = new AddOneTester, args = Array("--full-stacktrace"))

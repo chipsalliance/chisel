@@ -41,8 +41,11 @@ object Instance extends SourceInfoDoc {
     //m.getChiselPorts.map{_._2).zip(ports.elements.map(_._2)).toMap
   }
   import scala.language.implicitConversions
-  implicit def toInstance[T <: BaseModule](m: T): Instance[T] = {
+  implicit def moduleToInstance[T <: BaseModule](m: T): Instance[T] = {
     new Instance(() => m.instanceName, m, portMap(m), InstanceContext.getContext(m).descend(m, m), None)
+  }
+  implicit def isInstantiabletoInstance[T <: IsInstantiable](m: T): Instance[T] = {
+    new Instance(() => "", m, Map.empty, InstanceContext.empty, None)
   }
 }
 

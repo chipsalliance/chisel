@@ -47,4 +47,5 @@ object InstanceContext {
         ctx.copy(instances = ctx.instances :+ ((module, module)))
     }
   }
+  def empty = InstanceContext(Builder.currentModule.get, Nil)
 }
