@@ -334,6 +334,31 @@ class InstanceSpec extends ChiselFlatSpec with Utils {
     assertTesterPasses(new AddOneTester)
 
   }
+  "@public" should "work on vecs" in {
+    // Should we expose defs? issue is when IsInstantiable classes have delayed references to things
+    // We can't call them as a val because they need to be elaborated later, but we right now require @public to be on a val
+    // We could make it a lazy val?
+    import InstanceSpec.Annotations._
+    @instance
+    class AddOne extends MultiIOModule {
+      @public val in  = IO(Input(UInt(32.W)))
+      @public val out = IO(Output(UInt(32.W)))
+      @public val vec = VecInit(1.U)
+      out := in + vec(0)
+    }
+    class AddOneTester extends BasicTester {
+      val i = Instance(Template(new AddOne))
+      i.in := 42.U
+      chisel3.assert(i.out === 43.U)
+      mark(i.vec, "Adam Was Here")
+      stop()
+    }
+
+    val (output, annotations) = (new ChiselStage).emitChirrtlWithAnnotations(gen = new AddOneTester, args = Array("--full-stacktrace"))
+    println(output)
+    annotations.toSeq should contain (MarkAnnotation(Target.deserialize("~AddOneTester|AddOneTester/i:AddOne>vec").asInstanceOf[ReferenceTarget], "Adam Was Here"))
+    assertTesterPasses(new AddOneTester)
+  }
   "Template/Instance" should "convert to an interface?" ignore {
     // Not sure if we should actually do this. I think its worth experimenting how far dataview can get us.
     // Update: Talked to henry, i do think it will be necessary, but can come later.

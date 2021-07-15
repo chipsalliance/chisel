@@ -60,9 +60,9 @@ object Lookupable {
       }
     }
   }
-  implicit def lookupSeq[A, B](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions, lookupable: Lookupable[A, B]) = new Lookupable[A, Seq[B]] {
-    type C = Seq[lookupable.C]
-    def lookup(that: A => Seq[B], ih: Instance[A]): C = {
+  implicit def lookupList[A, B](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions, lookupable: Lookupable[A, B]) = new Lookupable[A, List[B]] {
+    type C = List[lookupable.C]
+    def lookup(that: A => List[B], ih: Instance[A]): C = {
       import ih._
       val ret = that(template)
       ret.map{ x: B => lookupable.lookup(_ => x, ih) }
