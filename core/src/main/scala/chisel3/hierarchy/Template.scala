@@ -31,6 +31,7 @@ object Template extends SourceInfoDoc {
     Builder.globalNamespace.copyTo(dynamicContext.globalNamespace)
     val (ir, module) = Builder.build(Module(bc), dynamicContext)
     Builder.components ++= ir.components
+    Builder.annotations ++= ir.annotations
     dynamicContext.globalNamespace.copyTo(Builder.globalNamespace)
     new Template(module, "blah")
   }

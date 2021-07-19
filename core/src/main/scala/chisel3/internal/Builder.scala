@@ -297,7 +297,8 @@ private[chisel3] trait NamedComponent extends HasId {
     val name = (_parent.get._component, getOptionRef, isXMR) match {
       case (None, _, _) => throwException("signalName/pathName should be called after circuit elaboration")
       case (Some(c), None, _) => computeName(None, None).get
-      case (Some(c), Some(arg), Some(_)) => arg.name
+      case (Some(c), Some(arg: ModuleIO), Some(_)) => arg.name
+      case (Some(c), Some(arg), Some(_)) => arg.fullName(c)
       case (Some(c), Some(arg), None) => arg fullName c
     }
     if (!validComponentName(name)) throwException(s"Illegal component name: $name (note: literals are illegal)")

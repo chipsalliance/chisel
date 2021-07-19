@@ -314,6 +314,7 @@ class InstanceSpec extends ChiselFlatSpec with Utils {
     import InstanceSpec.Annotations._
     @instance
     case class Blah(wire: () => UInt) extends IsInstantiable {
+      @public val x = true
       @public lazy val w = wire()
     }
     @instance
@@ -384,6 +385,31 @@ class InstanceSpec extends ChiselFlatSpec with Utils {
     val (output, annotations) = (new ChiselStage).emitChirrtlWithAnnotations(gen = new AddOneTester, args = Array("--full-stacktrace"))
     //assertTesterPasses(new AddOneTester)
 
+  }
+  "@public" should "work on statically indexed vectors" in {
+    // Issue was in the toTarget logic for XMRs
+    import InstanceSpec.Annotations._
+    @instance
+    class AddOne extends MultiIOModule {
+      @public val in  = IO(Input(UInt(32.W)))
+      @public val out = IO(Output(UInt(32.W)))
+      val vec = VecInit(1.U)
+      @public val vec0 = VecInit(1.U)(0)
+      out := in + vec0
+      mark(vec0, "Chris Was Here")
+    }
+    class AddOneTester extends BasicTester {
+      val i = Instance(Template(new AddOne))
+      i.in := 42.U
+      chisel3.assert(i.out === 43.U)
+      mark(i.vec0, "Adam Was Here")
+      stop()
+    }
+
+    val (output, annotations) = (new ChiselStage).emitChirrtlWithAnnotations(gen = new AddOneTester, args = Array("--full-stacktrace"))
+    annotations.toSeq should contain (MarkAnnotation(Target.deserialize("~AddOneTester|AddOneTester/i:AddOne>_vec0_WIRE[0]").asInstanceOf[ReferenceTarget], "Adam Was Here"))
+    annotations.toSeq should contain (MarkAnnotation(Target.deserialize("~AddOne|AddOne>_vec0_WIRE[0]").asInstanceOf[ReferenceTarget], "Chris Was Here"))
+    assertTesterPasses(new AddOneTester)
   }
   "Template/Instance" should "convert to an interface?" ignore {
     // Not sure if we should actually do this. I think its worth experimenting how far dataview can get us.
