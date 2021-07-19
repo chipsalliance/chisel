@@ -221,44 +221,38 @@ class Queue[T <: Data](val gen: T,
   }
 
   val io = IO(new QueueIO(genType, entries, hasFlush))
-
   val ram = if (useSyncReadMem) SyncReadMem(entries, genType, SyncReadMem.WriteFirst) else Mem(entries, genType)
   val enq_ptr = Counter(entries)
   val deq_ptr = Counter(entries)
   val maybe_full = RegInit(false.B)
-
   val ptr_match = enq_ptr.value === deq_ptr.value
   val empty = ptr_match && !maybe_full
   val full = ptr_match && maybe_full
   val do_enq = WireDefault(io.enq.fire())
   val do_deq = WireDefault(io.deq.fire())
   val flush = io.flush.getOrElse(false.B) 
-  when (do_enq) {
-    ram(enq_ptr.value) := io.enq.bits
-    enq_ptr.inc()
-  }
-  when (do_deq) {
-    deq_ptr.inc()
-  }
-  when (do_enq =/= do_deq) {
-    maybe_full := do_enq
-  }
 
-  if (hasFlush) {
   // when flush is on, empty the queue
-    when(io.flush.get) {
-      enq_ptr.reset()
-      deq_ptr.reset()
+  // flush is the highest priority operation
+  when(flush) {
+    enq_ptr.reset()
+    deq_ptr.reset()
+    maybe_full := false.B
+  } .otherwise {
+    when (do_enq) {
+      ram(enq_ptr.value) := io.enq.bits
+      enq_ptr.inc()
     }
-
-    when(io.flush.get) {
-      maybe_full := false.B
+    when (do_deq) {
+      deq_ptr.inc()
+    }
+    when (do_enq =/= do_deq) {
+      maybe_full := do_enq
     }
   }
 
   io.deq.valid := !empty
-// cannot enqueue elements while flush is active
-  io.enq.ready := !full && !flush
+  io.enq.ready := !full
 
   if (useSyncReadMem) {
     val deq_ptr_next = Mux(deq_ptr.value === (entries.U - 1.U), 0.U, deq_ptr.value + 1.U)
@@ -283,12 +277,12 @@ class Queue[T <: Data](val gen: T,
   }
 
   val ptr_diff = enq_ptr.value - deq_ptr.value
- 
+
   if (isPow2(entries)) {
-    io.count := Mux(maybe_full && !flush && ptr_match, entries.U, 0.U) | ptr_diff
+    io.count := Mux(maybe_full && ptr_match, entries.U, 0.U) | ptr_diff
   } else {
     io.count := Mux(ptr_match,
-                    Mux(maybe_full && !flush,
+                    Mux(maybe_full,
                       entries.asUInt, 0.U),
                     Mux(deq_ptr.value > enq_ptr.value,
                       entries.asUInt + ptr_diff, ptr_diff))

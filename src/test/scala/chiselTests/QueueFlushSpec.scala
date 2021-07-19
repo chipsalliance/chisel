@@ -3,7 +3,7 @@ package chiselTests
 import org.scalacheck._
 
 import chisel3._
-import chisel3.testers.BasicTester
+import chisel3.testers.{BasicTester, TesterDriver}
 import chisel3.util._
 import chisel3.util.random.LFSR
 
@@ -61,6 +61,8 @@ class QueueGetsFlushedTester (elements: Seq[Int], queueDepth: Int, bitWidth: Int
   //testing a flush when 
   val flush = LFSR(16)((tap + 3) % 16)
   q.io.flush.get := flush
+  val flushRegister = RegInit(false.B)
+  flushRegister := flush
   q.io.enq.valid := (inCnt.value < elements.length.U)
   q.io.deq.ready := LFSR(16)(tap)
   cycleCounter.inc() //counts every cycle
@@ -68,15 +70,17 @@ class QueueGetsFlushedTester (elements: Seq[Int], queueDepth: Int, bitWidth: Int
   q.io.enq.bits := elems(inCnt.value)
   when(q.io.enq.fire()) {
     inCnt.inc()
+    inCnt.inc()
   }
   when(q.io.deq.fire()) {
     outCnt.inc()
   }
 
-  when(flush) {
-    //check that queue gets flushed
-    assert((q.io.count === 0.U) || q.io.deq.valid, s"Expected to be able to dequeue a flushed queue if it had elements prior to the flush, but got dequeue = ${q.io.deq.valid}.") 
-    assert(!q.io.enq.ready, s"Expected enqueue to not be ready when flush is active, but got enqueue ${q.io.enq.ready}.")
+  when(flushRegister) {
+    //check that queue gets flushed 
+    assert(!q.io.deq.valid, "Expected to not be able to dequeue a flushed queue because queue is empty") 
+    assert(q.io.enq.ready, "Expected enqueue to be ready when flush is high because queue is empty")
+    assert(q.io.count === 0.U)
   } 
   
   when(inCnt.value === elements.length.U) { //stop when all entries are enqueued
@@ -103,6 +107,8 @@ class EmptyFlushEdgecaseTester (elements: Seq[Int], queueDepth: Int, bitWidth: I
   //testing a flush when queue is empty
   val flush = (cycleCounter.value === 0.U && inCnt.value === 0.U) //flushed only before anything is enqueued  
   q.io.flush.get := flush
+  val flushRegister = RegInit(false.B)
+  flushRegister := flush
   cycleCounter.inc() //counts every cycle
 
   q.io.enq.valid := (inCnt.value < elements.length.U)
@@ -116,10 +122,11 @@ class EmptyFlushEdgecaseTester (elements: Seq[Int], queueDepth: Int, bitWidth: I
     outCnt.inc()
   }
 
-  when(flush) {
+  when(flushRegister) {
     //check that queue gets flushed at the beginning with no elements
-    assert(!q.io.deq.valid, s"Expected to not be able to dequeue a flushed queue because it should be empty, but got dequeue = ${q.io.deq.valid}.") 
-    assert(!q.io.enq.ready, s"Expected enqueue to not be ready when flush is active, but got enqueue ${q.io.enq.ready}.")
+    assert(!q.io.deq.valid, "Expected to not be able to dequeue a flushed queue because it should be empty") 
+    assert(q.io.enq.ready, "Expected enqueue to be ready when flush is high because queue is empty")
+    assert(q.io.count === 0.U)
   } 
   
   when(inCnt.value === elements.length.U) { //stop when all entries are enqueued
@@ -145,7 +152,8 @@ class FullQueueFlushEdgecaseTester (elements: Seq[Int], queueDepth: Int, bitWidt
   //testing a flush when queue is full
   val flush = (currDepthCnt.value === queueDepth.U)
   q.io.flush.get := flush
-
+  val flushRegister = RegInit(false.B)
+  flushRegister := flush
   q.io.enq.valid := (inCnt.value < elements.length.U)
   q.io.deq.ready := LFSR(16)(tap)
 
@@ -155,11 +163,13 @@ class FullQueueFlushEdgecaseTester (elements: Seq[Int], queueDepth: Int, bitWidt
     currDepthCnt.inc() //counts how many items have been enqueued
   }
 
-  when(flush) {
+  when(flushRegister) {
     currDepthCnt.reset() //resets the number of items currently inside queue
     //check that queue gets flushed when queue is full
-    assert(q.io.deq.valid, s"Expected to be able to dequeue a flushed queue if it had elements prior to the flush, but got dequeue = ${q.io.deq.valid}.") 
-    assert(!q.io.enq.ready, s"Expected enqueue to not be ready when flush is active, but got enqueue ${q.io.enq.ready}.")
+    assert(q.io.count === 0.U)
+    assert(!q.io.deq.valid, "Expected to not be able to dequeue a flushed queue if it had elements prior to the flush") 
+    assert(q.io.enq.ready, "Expected enqueue to be ready when flush is high because queue should be empty")
+    
   } 
   
   when(inCnt.value === elements.length.U) { //stop when all entries are enqueued
