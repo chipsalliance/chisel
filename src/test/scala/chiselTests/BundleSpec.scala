@@ -129,6 +129,17 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
     }).getMessage should include("aliased fields")
   }
 
+  "Bundles" should "not have bound hardware" in {
+    (the[ChiselException] thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate { new Module {
+        class MyBundle(val foo: UInt) extends Bundle
+        val in  = IO(Input(new MyBundle(123.U))) // This should error: value passed in instead of type
+        val out = IO(Output(new MyBundle(UInt(8.W))))
+
+        out := in
+      } }
+    }).getMessage should include("got value binding")
+  }
   "Unbound bundles sharing a field" should "not error" in {
     ChiselStage.elaborate {
       new RawModule {
@@ -142,7 +153,11 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
     }
   }
 
-  "Bound Data" should "have priority in setting ref over unbound Data" in {
+  /**
+   * Broken in Chisel 3.5
+   * Bundles should not be able to be instantiated using any kind of bound hardware.
+   */
+  /*"Bound Data" should "have priority in setting ref over unbound Data" in {
     class MyModule extends RawModule {
       val foo = IO(new Bundle {
         val x = Output(UInt(8.W))
@@ -153,5 +168,5 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
       }
     }
     ChiselStage.emitChirrtl(new MyModule)
-  }
+  }*/
 }
