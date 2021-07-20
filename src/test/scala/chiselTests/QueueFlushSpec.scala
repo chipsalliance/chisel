@@ -50,8 +50,8 @@ class ThingsPassThroughFlushQueueTester(elements: Seq[Int], queueDepth: Int, bit
   * @param useSyncReadMem True uses SyncReadMem instead of Mem as an internal memory element
   */
 class QueueGetsFlushedTester (elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean) extends BasicTester {
-    val q = Module(new Queue(UInt(bitWidth.W), queueDepth, hasFlush = true))
-    val elems = VecInit(elements.map(_.U))
+  val q = Module(new Queue(UInt(bitWidth.W), queueDepth, hasFlush = true))
+  val elems = VecInit(elements.map(_.U))
 
   val inCnt = Counter(elements.length + 1)
   val outCnt = Counter(elements.length + 1)
@@ -143,8 +143,8 @@ class EmptyFlushEdgecaseTester (elements: Seq[Int], queueDepth: Int, bitWidth: I
   * @param useSyncReadMem True uses SyncReadMem instead of Mem as an internal memory element
   */
 class FullQueueFlushEdgecaseTester (elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean) extends BasicTester {
-    val q = Module(new Queue(UInt(bitWidth.W), queueDepth, hasFlush = true))
-    val elems = VecInit(elements.map(_.U))
+  val q = Module(new Queue(UInt(bitWidth.W), queueDepth, hasFlush = true))
+  val elems = VecInit(elements.map(_.U))
 
   val inCnt = Counter(elements.length + 1)
   val currDepthCnt = Counter(queueDepth + 1)
@@ -169,7 +169,6 @@ class FullQueueFlushEdgecaseTester (elements: Seq[Int], queueDepth: Int, bitWidt
     assert(q.io.count === 0.U)
     assert(!q.io.deq.valid, "Expected to not be able to dequeue a flushed queue if it had elements prior to the flush") 
     assert(q.io.enq.ready, "Expected enqueue to be ready when flush is high because queue should be empty")
-    
   } 
   
   when(inCnt.value === elements.length.U) { //stop when all entries are enqueued
