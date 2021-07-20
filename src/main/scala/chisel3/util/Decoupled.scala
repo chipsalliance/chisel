@@ -233,23 +233,22 @@ class Queue[T <: Data](val gen: T,
   val flush = io.flush.getOrElse(false.B) 
 
   // when flush is on, empty the queue
-  // flush is the highest priority operation
+
+  when (do_enq) {
+    ram(enq_ptr.value) := io.enq.bits
+    enq_ptr.inc()
+  }
+  when (do_deq) {
+    deq_ptr.inc()
+  }
+  when (do_enq =/= do_deq) {
+    maybe_full := do_enq
+  }
   when(flush) {
     enq_ptr.reset()
     deq_ptr.reset()
     maybe_full := false.B
-  } .otherwise {
-    when (do_enq) {
-      ram(enq_ptr.value) := io.enq.bits
-      enq_ptr.inc()
-    }
-    when (do_deq) {
-      deq_ptr.inc()
-    }
-    when (do_enq =/= do_deq) {
-      maybe_full := do_enq
-    }
-  }
+  }  
 
   io.deq.valid := !empty
   io.enq.ready := !full
