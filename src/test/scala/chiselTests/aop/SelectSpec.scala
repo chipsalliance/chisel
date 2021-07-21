@@ -163,7 +163,7 @@ class SelectSpec extends ChiselFlatSpec {
       val out = IO(Output(UInt(8.W)))
       out := in
     }
-    class Top extends MultiIOModule {
+    class Top extends Module {
       val in = IO(Input(UInt(8.W)))
       val out = IO(Output(UInt(8.W)))
       val inst0 = Module(new Child)
@@ -180,6 +180,35 @@ class SelectSpec extends ChiselFlatSpec {
     Select.collectDeep(top) { case x => x } should equal (Seq(top, top.inst0))
     Select.getDeep(top)(x => Seq(x)) should equal (Seq(top, top.inst0))
     Select.instances(top) should equal (Seq(top.inst0))
+  }
+
+  "Using Definition/Instance with Injecting Aspects" should "throw an error" in {
+    import chisel3.experimental.CloneModuleAsRecord
+    import chisel3.experimental.hierarchy._
+    @instantiable
+    class Child extends RawModule {
+      @public val in = IO(Input(UInt(8.W)))
+      @public val out = IO(Output(UInt(8.W)))
+      out := in
+    }
+    class Top extends Module {
+      val in = IO(Input(UInt(8.W)))
+      val out = IO(Output(UInt(8.W)))
+      val definition = Definition(new Child)
+      val inst0 = Instance(definition)
+      val inst1 = Instance(definition)
+      inst0.in := in
+      inst1.in := inst0.out
+      out := inst1.out
+    }
+    val top = ChiselGeneratorAnnotation(() => {
+      new Top()
+    }).elaborate
+      .collectFirst { case DesignAnnotation(design: Top) => design }
+      .get
+    intercept[Exception] { Select.collectDeep(top) { case x => x } }
+    intercept[Exception] { Select.getDeep(top)(x => Seq(x)) }
+    intercept[Exception] { Select.instances(top) }
   }
 
 }
