@@ -38,8 +38,8 @@ Consider an FIR filter that implements a convolution operation, as depicted in t
 While Chisel provides similar base primitives as synthesizable Verilog, and *could* be used as such:
 
 ```scala
-// 3-point moving average implemented in the style of a FIR filter
-class MovingAverage3(bitWidth: Int) extends Module {
+// 3-point moving sum implemented in the style of a FIR filter
+class MovingSum3(bitWidth: Int) extends Module {
   val io = IO(new Bundle {
     val in = Input(UInt(bitWidth.W))
     val out = Output(UInt(bitWidth.W))
@@ -52,7 +52,7 @@ class MovingAverage3(bitWidth: Int) extends Module {
 }
 ```
 
-the power of Chisel comes from the ability to create generators, such as n FIR filter that is defined by the list of coefficients:
+the power of Chisel comes from the ability to create generators, such as an FIR filter that is defined by the list of coefficients:
 ```scala
 // Generalized FIR filter parameterized by the convolution coefficients
 class FirFilter(bitWidth: Int, coeffs: Seq[UInt]) extends Module {
@@ -77,7 +77,7 @@ class FirFilter(bitWidth: Int, coeffs: Seq[UInt]) extends Module {
 
 and use and re-use them across designs:
 ```scala
-val movingAverage3Filter = Module(new FirFilter(8, Seq(1.U, 1.U, 1.U)))  // same 3-point moving average filter as before
+val movingSum3Filter = Module(new FirFilter(8, Seq(1.U, 1.U, 1.U)))  // same 3-point moving sum filter as before
 val delayFilter = Module(new FirFilter(8, Seq(0.U, 1.U)))  // 1-cycle delay as a FIR filter
 val triangleFilter = Module(new FirFilter(8, Seq(1.U, 2.U, 3.U, 2.U, 1.U)))  // 5-point FIR filter with a triangle impulse response
 ```
