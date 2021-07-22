@@ -18,7 +18,7 @@ jobs:
         jvm: ["adopt@1.8"]
         scala: ["2.13.6", "2.12.13"]
         verilator: ["4.204"]
-        z3: ["4.8.10"]
+        z3: ["4.8.10", "4.8.12"]
         espresso: ["2.4"]
     runs-on: ${{ matrix.system }}
 
