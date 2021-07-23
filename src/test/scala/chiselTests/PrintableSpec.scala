@@ -139,7 +139,6 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
     }
     class MyBundle extends Bundle {
       val foo = UInt(32.W)
-      override def cloneType: this.type = (new MyBundle).asInstanceOf[this.type]
     }
     class MyModule extends BasicTester {
       override def desiredName: String = "MyModule"

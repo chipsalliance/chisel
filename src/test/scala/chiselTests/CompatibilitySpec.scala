@@ -195,11 +195,9 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
   class SmallBundle extends Bundle {
     val f1 = UInt(width = 4)
     val f2 = UInt(width = 5)
-    override def cloneType: this.type = (new SmallBundle).asInstanceOf[this.type]
   }
   class BigBundle extends SmallBundle {
     val f3 = UInt(width = 6)
-    override def cloneType: this.type = (new BigBundle).asInstanceOf[this.type]
   }
 
   "A Module with missing bundle fields when compiled with the Chisel compatibility package" should "not throw an exception" in {

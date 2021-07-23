@@ -29,8 +29,6 @@ class Valid[+T <: Data](gen: T) extends Bundle {
     * @return a Chisel [[Bool]] true if `valid` is asserted
     */
   def fire(dummy: Int = 0): Bool = valid
-
-  override def cloneType: this.type = Valid(gen).asInstanceOf[this.type]
 }
 
 /** Factory for generating "valid" interfaces. A "valid" interface is a data-communicating interface between a producer
