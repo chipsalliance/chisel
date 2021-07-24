@@ -175,7 +175,7 @@ sbt compile
 In order to run the following unit tests, you will need several tools on your `PATH`, namely
 [verilator](https://www.veripool.org/verilator/),
 [yosys](http://www.clifford.at/yosys/),
-[espresso](http://web.eecs.umich.edu/~ksewell/espresso/),
+[espresso](https://github.com/chipsalliance/espresso),
 and [z3](https://github.com/Z3Prover/z3).
 Check that each is installed on your `PATH` by running `which verilator` and so on.
 
