@@ -20,11 +20,11 @@ case class DependencyManagerException(message: String, cause: Throwable = null) 
 trait DependencyManager[A, B <: TransformLike[A] with DependencyAPI[B]] extends TransformLike[A] with DependencyAPI[B] {
   import DependencyManagerUtils.CharSet
 
-  override def prerequisites = currentState
+  override def prerequisites: Seq[Dependency[B]] = currentState
 
-  override def optionalPrerequisites = Seq.empty
+  override def optionalPrerequisites: Seq[Dependency[B]] = Seq.empty
 
-  override def optionalPrerequisiteOf = Seq.empty
+  override def optionalPrerequisiteOf: Seq[Dependency[B]] = Seq.empty
 
   override def invalidates(a: B): Boolean = (_currentState &~ _targets)(oToD(a))
 
