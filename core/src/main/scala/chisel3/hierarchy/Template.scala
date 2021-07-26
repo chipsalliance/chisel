@@ -15,7 +15,7 @@ import chisel3.internal.sourceinfo.{InstTransform, SourceInfo}
 import chisel3.experimental.BaseModule
 import _root_.firrtl.annotations.{ModuleName, ModuleTarget, IsModule}
 
-object Template extends SourceInfoDoc {
+object Definition extends SourceInfoDoc {
   /** A wrapper method that all Module instantiations must be wrapped in
     * (necessary to help Chisel track internal state).
     *
@@ -23,18 +23,18 @@ object Template extends SourceInfoDoc {
     *
     * @return the input module `m` with Chisel metadata properly set
     */
-  def apply[T <: RawModule](bc: => T): Template[T] = macro InstTransform.apply[T]
+  def apply[T <: RawModule](bc: => T): Definition[T] = macro InstTransform.apply[T]
 
   /** @group SourceInfoTransformMacro */
-  def do_apply[T <: RawModule](bc: => T) (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Template[T] = {
-    val dynamicContext = new DynamicContext()
+  def do_apply[T <: RawModule](bc: => T) (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Definition[T] = {
+    val dynamicContext = new DynamicContext(Nil)
     Builder.globalNamespace.copyTo(dynamicContext.globalNamespace)
     val (ir, module) = Builder.build(Module(bc), dynamicContext)
     Builder.components ++= ir.components
     Builder.annotations ++= ir.annotations
     dynamicContext.globalNamespace.copyTo(Builder.globalNamespace)
-    new Template(module, "blah")
+    new Definition(module, "blah")
   }
 }
 
-case class Template[T <: BaseModule] private (module: T, other: String)
+case class Definition[T <: BaseModule] private (module: T, other: String)

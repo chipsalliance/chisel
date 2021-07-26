@@ -11,7 +11,6 @@ import java.util.IdentityHashMap
 import chisel3._
 import chisel3.internal._
 import chisel3.internal.Builder._
-import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{InstTransform, SourceInfo, SourceInfoTransform}
 import chisel3.experimental.BaseModule
 
@@ -23,11 +22,10 @@ object Instance extends SourceInfoDoc {
     *
     * @return the input module `m` with Chisel metadata properly set
     */
-  def apply[T <: BaseModule, I <: Bundle](bc: Template[T]): Instance[T] = macro InstTransform.apply[T]
+  def apply[T <: BaseModule, I <: Bundle](bc: Definition[T]): Instance[T] = macro InstTransform.apply[T]
 
   /** @group SourceInfoTransformMacro */
-  def do_apply[T <: BaseModule, I <: Bundle](bc: Template[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Instance[T] = {
-    //require(bc.isTemplate, "Must pass a template to Instance(..)")
+  def do_apply[T <: BaseModule, I <: Bundle](bc: Definition[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Instance[T] = {
     val ports = experimental.CloneModuleAsRecord(bc.module)
     Instance(() => ports.instanceName, bc.module, portMap(ports, bc.module), InstanceContext.getContext(ports._parent.get).descend(ports, bc.module), Some(ports))
   }
@@ -56,7 +54,13 @@ object Instance extends SourceInfoDoc {
     def convert(that: T): Instance[T] = {
       that match {
         case m: BaseModule => new Instance(() => m.instanceName, that, portMap(m), InstanceContext.getContext(m).descend(m, m), None)
-        case _ => new Instance(() => "", that, Map.empty, InstanceContext.empty, None)
+        case _ => new Instance(
+          () => "",
+          that,
+          Map.empty,
+          Builder.currentModule.map(InstanceContext.getContext).getOrElse(InstanceContext.empty),
+          None
+        )
       }
     }
   }

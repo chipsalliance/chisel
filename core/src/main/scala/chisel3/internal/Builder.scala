@@ -285,9 +285,7 @@ private[chisel3] trait NamedComponent extends HasId {
         case d: Data => d.binding match {
           case Some(x: XMRBinding) => Some(x)
           case Some(ChildBinding(parent: Data)) => getXMR(parent, Some(d))
-          case Some(x) =>
-            println(s"Alternative: ${x.getClass.toString}")
-            None
+          case Some(x) => None
           case None => None
         }
         case _ => None

@@ -6,8 +6,10 @@ import chisel3._
 import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
 import chisel3.experimental.annotate
-import chisel3.internal.{interface, instance, public}
+import chisel3.internal.{instance, public}
 import _root_.firrtl.annotations._
+import chisel3.stage.DesignAnnotation
+import chisel3.stage.ChiselGeneratorAnnotation
 
 @instance
 class TopLevelDeclaration extends MultiIOModule {
@@ -35,6 +37,9 @@ object Interfaces {
 }
 
 object InstanceSpec {
+  implicit class Str2RefTarget(str: String) {
+    def rt = Target.deserialize(str).asInstanceOf[ReferenceTarget]
+  }
   object Examples {
     @instance
     class AddOne(hasInner: Boolean) extends MultiIOModule {
@@ -53,7 +58,7 @@ object InstanceSpec {
     class AddTwo extends MultiIOModule {
       @public val in  = IO(Input(UInt(32.W)))
       @public val out = IO(Output(UInt(32.W)))
-      val template = Template(new AddOne(true))
+      val template = Definition(new AddOne(true))
       @public val i0 = Instance(template)
       @public val i1 = Module(new AddOne(true))
       //@public val x = 10 //ERRORS!!!
@@ -96,11 +101,11 @@ object InstanceSpec {
 
 
 class InstanceSpec extends ChiselFlatSpec with Utils {
-  "Template/Instance" should "enable instantiating the same instance multiple times" in {
+  "Definition/Instance" should "enable instantiating the same instance multiple times" in {
     import InstanceSpec.Examples._
     import InstanceSpec.Annotations._
     class AddOneTester extends BasicTester {
-      val template: Template[AddOne] = Template(new AddOne(true))
+      val template: Definition[AddOne] = Definition(new AddOne(true))
       val i0: Instance[AddOne] = Instance(template)
       val i1: Instance[AddOne] = Instance(template)
       i0.in := 42.U
@@ -113,11 +118,11 @@ class InstanceSpec extends ChiselFlatSpec with Utils {
     annotations.toSeq should contain (MarkAnnotation(Target.deserialize("~AddOneTester|AddOneTester/i0:AddOne>innerWire").asInstanceOf[ReferenceTarget], "Jack Was Here"))
     assertTesterPasses(new AddOneTester)
   }
-  "Template/Instance" should "enable instantiating nestingly, with modules" in {
+  "Definition/Instance" should "enable instantiating nestingly, with modules" in {
     import InstanceSpec.Examples._
     import InstanceSpec.Annotations._
     class AddOneTester extends BasicTester {
-      val template = Template(new AddTwo)
+      val template = Definition(new AddTwo)
       val i0 = Instance(template)
       val i1 = Instance(template)
       i0.in := 42.U
@@ -133,14 +138,14 @@ class InstanceSpec extends ChiselFlatSpec with Utils {
     annotations.toSeq should contain (MarkAnnotation(Target.deserialize("~AddOneTester|AddOneTester/i0:AddTwo/i1:AddOne_2>innerWire").asInstanceOf[ReferenceTarget], "Megan Was Here"))
     assertTesterPasses(new AddOneTester)
   }
-  "Template/Instance" should "implicitly convert modules to instances" in {
+  "Definition/Instance" should "implicitly convert modules to instances" in {
     import InstanceSpec.Examples._
     import InstanceSpec.Annotations._
     def wireUp(i0: Instance[AddOne], i1: Instance[AddOne]): Unit = {
       i1.in := i0.out
     }
     class AddOneTester extends BasicTester {
-      val template = Template(new AddOne(false))
+      val template = Definition(new AddOne(false))
       val i0 = Instance(template)
       val i1 = Module(new AddOne(true))
       i0.in := 42.U
@@ -153,12 +158,12 @@ class InstanceSpec extends ChiselFlatSpec with Utils {
     val (output, annotations) = (new ChiselStage).emitChirrtlWithAnnotations(gen = new AddOneTester, args = Array("--full-stacktrace"))
     assertTesterPasses(new AddOneTester)
   }
-  "Template/Instance" should "work with top level declarations" in {
+  "Definition/Instance" should "work with top level declarations" in {
     import InstanceSpec.Examples._
     class AddZeroTester extends BasicTester {
-      val template = Template(new TopLevelDeclaration())
+      val template = Definition(new TopLevelDeclaration())
       val i0 = Instance(template)
-      val template2 = Template(new TopLevelDeclarationWithCompanionObject())
+      val template2 = Definition(new TopLevelDeclarationWithCompanionObject())
       val i1 = Instance(template2)
       i0.in := 42.U
       i1.in := i0.out
@@ -169,7 +174,7 @@ class InstanceSpec extends ChiselFlatSpec with Utils {
     val (output, annotations) = (new ChiselStage).emitChirrtlWithAnnotations(gen = new AddZeroTester, args = Array("--full-stacktrace"))
     assertTesterPasses(new AddZeroTester)
   }
-  "Template/Instance" should "work with public members of super classes" in {
+  "Definition/Instance" should "work with public members of super classes" in {
     @instance
     class AddZero extends MultiIOModule {
       @public val in  = IO(Input(UInt(32.W)))
@@ -189,8 +194,8 @@ class InstanceSpec extends ChiselFlatSpec with Utils {
       def hello = "hello"
     }
     class AddZeroTester extends BasicTester {
-      val i0 = Instance(Template(new AddZero))
-      val i1 = Instance(Template(new AddZeroWithCompanionObject()))
+      val i0 = Instance(Definition(new AddZero))
+      val i1 = Instance(Definition(new AddZeroWithCompanionObject()))
       i0.in := 42.U
       i1.in := i0.out
       chisel3.assert(i1.out === 42.U)
@@ -200,7 +205,7 @@ class InstanceSpec extends ChiselFlatSpec with Utils {
     val (output, annotations) = (new ChiselStage).emitChirrtlWithAnnotations(gen = new AddZeroTester, args = Array("--full-stacktrace"))
     assertTesterPasses(new AddZeroTester)
   }
-  "Template/Instance" should "access parameter case classes" in {
+  "Definition/Instance" should "access parameter case classes" in {
     // Not sure how to do this. One option is to have marker trait IsAccessable or something, so we just define the lookupable for that
     // Another option is to materialize the lookup somehow, but i think that requires the lookup to be implemented with a def macro 
     // Going to try a marker trait first.
@@ -215,7 +220,7 @@ class InstanceSpec extends ChiselFlatSpec with Utils {
     }
 
     class AddZeroTester extends BasicTester {
-      val i0 = Instance(Template(new AddZero(Parameters("hi", 13))))
+      val i0 = Instance(Definition(new AddZero(Parameters("hi", 13))))
       i0.in := 42.U
       assert(i0.p.word == "hi")
       assert(i0.p.number == 13)
@@ -226,7 +231,7 @@ class InstanceSpec extends ChiselFlatSpec with Utils {
     val (output, annotations) = (new ChiselStage).emitChirrtlWithAnnotations(gen = new AddZeroTester, args = Array("--full-stacktrace"))
     assertTesterPasses(new AddZeroTester)
    }
-  "Template/Instance" should "work with optional instances or modules" in {
+  "Definition/Instance" should "work with optional instances or modules" in {
      // Doing typeclass derivation with chaining implicit defs.. let's see if it works!
     @instance
     class AddOne extends MultiIOModule {
@@ -239,7 +244,7 @@ class InstanceSpec extends ChiselFlatSpec with Utils {
     class AddSome(first: Boolean, second: Boolean) extends MultiIOModule {
       @public val in  = IO(Input(UInt(32.W)))
       @public val out = IO(Output(UInt(32.W)))
-      @public val i0: Option[Instance[AddOne]] = if(first) Some(Instance(Template(new AddOne))) else None
+      @public val i0: Option[Instance[AddOne]] = if(first) Some(Instance(Definition(new AddOne))) else None
       @public val i1: Option[AddOne] = if(second) Some(Module(new AddOne)) else None
       (i0, i1) match {
         case (None, None) =>
@@ -258,7 +263,7 @@ class InstanceSpec extends ChiselFlatSpec with Utils {
     }
 
     class AddSomeTester extends BasicTester {
-      val i = Instance(Template(new AddSome(true, false)))
+      val i = Instance(Definition(new AddSome(true, false)))
       i.in := 42.U
       require(i.i0.nonEmpty)
       chisel3.assert(i.out === 43.U)
@@ -289,7 +294,7 @@ class InstanceSpec extends ChiselFlatSpec with Utils {
       out := blah.w
     }
     class AddOneTester extends BasicTester {
-      val i = Instance(Template(new AddOne))
+      val i = Instance(Definition(new AddOne))
       i.in := 42.U
       chisel3.assert(i.out === 43.U)
       require(i.blah.x == "Hi")
@@ -326,7 +331,7 @@ class InstanceSpec extends ChiselFlatSpec with Utils {
       out := blah.w
     }
     class AddOneTester extends BasicTester {
-      val i = Instance(Template(new AddOne))
+      val i = Instance(Definition(new AddOne))
       i.in := 42.U
       chisel3.assert(i.out === 43.U)
       mark(i.blah.w, "Adam Was Here")
@@ -352,7 +357,7 @@ class InstanceSpec extends ChiselFlatSpec with Utils {
       out := in + vec(0)
     }
     class AddOneTester extends BasicTester {
-      val i = Instance(Template(new AddOne))
+      val i = Instance(Definition(new AddOne))
       i.in := 42.U
       chisel3.assert(i.out === 43.U)
       mark(i.vec, "Adam Was Here")
@@ -399,7 +404,7 @@ class InstanceSpec extends ChiselFlatSpec with Utils {
       mark(vec0, "Chris Was Here")
     }
     class AddOneTester extends BasicTester {
-      val i = Instance(Template(new AddOne))
+      val i = Instance(Definition(new AddOne))
       i.in := 42.U
       chisel3.assert(i.out === 43.U)
       mark(i.vec0, "Adam Was Here")
@@ -411,7 +416,84 @@ class InstanceSpec extends ChiselFlatSpec with Utils {
     annotations.toSeq should contain (MarkAnnotation(Target.deserialize("~AddOne|AddOne>_vec0_WIRE[0]").asInstanceOf[ReferenceTarget], "Chris Was Here"))
     assertTesterPasses(new AddOneTester)
   }
-  "Template/Instance" should "convert to an interface?" ignore {
+  "To target" should "work outside of the builder context" in {
+    // Issue was in the toTarget logic for XMRs
+    import InstanceSpec.Annotations._
+    import InstanceSpec.Str2RefTarget
+    @instance
+    case class Blah() extends IsInstantiable {
+      @public val w = Wire(UInt(32.W))
+      @public val x = "Hi"
+    }
+    @instance
+    class AddOne extends MultiIOModule {
+      @public val in  = IO(Input(UInt(32.W)))
+      @public val out = IO(Output(UInt(32.W)))
+      @public val blah = Blah()
+      blah.w := in
+      out := blah.w + 1.U
+    }
+    class AddOneTester extends BasicTester {
+      val i = Instance(Definition(new AddOne))
+      i.in := 42.U
+      chisel3.assert(i.out === 43.U)
+      stop()
+    }
+    val annos = ChiselGeneratorAnnotation(() => new AddOneTester).elaborate
+    val addOneTester = annos.collectFirst { case d: DesignAnnotation[AddOneTester] => d.design }.get
+    val (output, _) = (new ChiselStage).emitChirrtlWithAnnotations(gen = new AddOneTester, args = Array("--full-stacktrace"))
+    println(output)
+    @instance
+    class Other extends MultiIOModule {
+      @public val x = addOneTester.i.in
+      mark(addOneTester.i.in, "addOneTester.i.in from Other")
+      mark(addOneTester.i.blah.w, "addOneTester.i.blah.w from Other")
+    }
+    class OtherTop extends MultiIOModule {
+      val i = Instance(Definition(new Other))
+      @public val x = i.x
+      mark(x, "blah")
+    }
+    val (_, annotations) = (new ChiselStage).emitChirrtlWithAnnotations(gen = new OtherTop, args = Array("--full-stacktrace"))
+    annotations.toSeq should contain (MarkAnnotation("~AddOneTester|AddOneTester/i:AddOne>in".rt, "addOneTester.i.in"))
+    annotations.toSeq should contain (MarkAnnotation("~AddOneTester|AddOneTester/i:AddOne>w".rt, "addOneTester.i.blah.w"))
+    annotations
+  }
+  "XMR of XMR" should "get proper context" in {
+    // Issue was in the toTarget logic for XMRs
+    import InstanceSpec.Annotations._
+    @instance
+    class AddOne extends MultiIOModule {
+      @public val in  = IO(Input(UInt(32.W)))
+      @public val out = IO(Output(UInt(32.W)))
+      out := in + 1.U
+    }
+    @instance
+    class AddTwo extends MultiIOModule {
+      @public val in  = IO(Input(UInt(32.W)))
+      @public val out = IO(Output(UInt(32.W)))
+      val t = Definition(new AddOne)
+      @public val i0 = Instance(t)
+      val i1 = Instance(t)
+      @public val x = i0.in
+      i0.in := in
+      i1.in := i0.out
+      out := i1.out
+    }
+    class AddTwoTester extends BasicTester {
+      val i = Instance(Definition(new AddTwo))
+      i.in := 42.U
+      chisel3.assert(i.out === 44.U)
+      stop()
+      mark(i.x, "i.x")
+      mark(i.i0.in, "i.i0.in")
+    }
+    val (output, annotations) = (new ChiselStage).emitChirrtlWithAnnotations(gen = new AddTwoTester, args = Array("--full-stacktrace"))
+    println(output)
+    annotations.toSeq should contain (MarkAnnotation(Target.deserialize("~AddTwoTester|AddTwoTester/i:AddTwo/i0:AddOne>in").asInstanceOf[ReferenceTarget], "i.x"))
+    annotations.toSeq should contain (MarkAnnotation(Target.deserialize("~AddTwoTester|AddTwoTester/i:AddTwo/i0:AddOne>in").asInstanceOf[ReferenceTarget], "i.i0.in"))
+  }
+  "Definition/Instance" should "convert to an interface?" ignore {
     // Not sure if we should actually do this. I think its worth experimenting how far dataview can get us.
     // Update: Talked to henry, i do think it will be necessary, but can come later.
     // Consider the (i: Instance[Class]).as[SuperClass] syntax, and forcing people to be explicit? Or maybe we can do an similar typeclass derivation
@@ -433,7 +515,7 @@ class InstanceSpec extends ChiselFlatSpec with Utils {
     //object AddOne {
     //  def attach(m: AddOne) = ???
     //}
-    //val t: Template[AddOne] = Template(new AddOne)
+    //val t: Definition[AddOne] = Definition(new AddOne)
     //val i: Instance[AddOne] = Instance(t)
     //i.as[AddInterface]
     //i.in

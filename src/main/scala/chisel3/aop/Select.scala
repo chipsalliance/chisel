@@ -2,9 +2,10 @@
 
 package chisel3.aop
 
-import chisel3._
-import chisel3.experimental.{BaseModule, FixedPoint}
-import chisel3.internal.HasId
+import chisel3.{Definition => DD, _}
+import chisel3.internal.{HasId}
+import chisel3.experimental.BaseModule
+import chisel3.experimental.FixedPoint
 import chisel3.internal.firrtl._
 import firrtl.annotations.ReferenceTarget
 
