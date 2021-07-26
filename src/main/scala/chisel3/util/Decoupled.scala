@@ -232,8 +232,8 @@ class Queue[T <: Data](val gen: T,
   val do_deq = WireDefault(io.deq.fire())
   val flush = io.flush.getOrElse(false.B) 
 
-  // when flush is on, empty the queue
-
+  // when flush is high, empty the queue
+  // Semantically, any enqueues happen before the flush.
   when (do_enq) {
     ram(enq_ptr.value) := io.enq.bits
     enq_ptr.inc()

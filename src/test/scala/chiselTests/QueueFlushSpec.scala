@@ -6,6 +6,7 @@ import chisel3._
 import chisel3.testers.{BasicTester, TesterDriver}
 import chisel3.util._
 import chisel3.util.random.LFSR
+import treadle.WriteVcdAnnotation
 
 /** Test elements can be enqueued and dequeued
  * 
@@ -17,10 +18,9 @@ import chisel3.util.random.LFSR
   */
 class ThingsPassThroughFlushQueueTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean) extends BasicTester {
   
-  val q = Module(new Queue(UInt(bitWidth.W), queueDepth, hasFlush = true))  
+  val q = Module(new Queue(UInt(bitWidth.W), queueDepth, hasFlush = true)) 
   q.io.flush.get := false.B
   val elems = VecInit(elements.map(_.U))
-
   val inCnt = Counter(elements.length + 1)
   val outCnt = Counter(elements.length + 1)
 
@@ -50,16 +50,16 @@ class ThingsPassThroughFlushQueueTester(elements: Seq[Int], queueDepth: Int, bit
   * @param useSyncReadMem True uses SyncReadMem instead of Mem as an internal memory element
   */
 class QueueGetsFlushedTester (elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean) extends BasicTester {
+  
   val q = Module(new Queue(UInt(bitWidth.W), queueDepth, hasFlush = true))
   val elems = VecInit(elements.map(_.U))
-
   val inCnt = Counter(elements.length + 1)
-  val outCnt = Counter(elements.length + 1)
-  
+  val outCnt = RegInit(0.U(log2Ceil(elements.length).W))
+  val currQCnt = RegInit(0.U(log2Ceil(5).W))
   val halfCnt = (queueDepth + 1)/2
   val cycleCounter = Counter(elements.length + 1)
-  //testing a flush when 
-  val flush = LFSR(16)((tap + 3) % 16)
+
+  val flush = LFSR(16)((tap + 3) % 16)  //testing a flush when flush is called randomly
   q.io.flush.get := flush
   val flushRegister = RegInit(false.B)
   flushRegister := flush
@@ -70,19 +70,28 @@ class QueueGetsFlushedTester (elements: Seq[Int], queueDepth: Int, bitWidth: Int
   q.io.enq.bits := elems(inCnt.value)
   when(q.io.enq.fire()) {
     inCnt.inc()
-    inCnt.inc()
+    currQCnt := currQCnt + 1.U //counts how many items have been enqueued
   }
   when(q.io.deq.fire()) {
-    outCnt.inc()
+    //ensure that what comes out is what comes in
+    assert(flushRegister === false.B)
+    assert(currQCnt <= queueDepth.U)
+    assert(elems(outCnt /*- 1.U*/) === q.io.deq.bits)
+    outCnt := outCnt + 1.U
+    when (currQCnt > 0.U) {
+      currQCnt := currQCnt - 1.U
+    }
   }
-
-  when(flushRegister) {
-    //check that queue gets flushed 
-    assert(!q.io.deq.valid, "Expected to not be able to dequeue a flushed queue because queue is empty") 
-    assert(q.io.enq.ready, "Expected enqueue to be ready when flush is high because queue is empty")
+  when(flush) {
+    outCnt := outCnt + Mux(q.io.enq.fire(), (currQCnt + 1.U), currQCnt)
+    currQCnt := 0.U //resets the number of items currently inside queue
+  }
+  when(flushRegister) { //Internal signal maybe_full is a register so some signals update on the next cycle
+    //check that queue gets flushed when queue is full
     assert(q.io.count === 0.U)
+    assert(!q.io.deq.valid, "Expected to not be able to dequeue a flushed queue if it had elements prior to the flush")
+    assert(q.io.enq.ready, "Expected enqueue to be ready when flush is high because queue should be empty")
   } 
-  
   when(inCnt.value === elements.length.U) { //stop when all entries are enqueued
     stop()
   }
@@ -101,9 +110,53 @@ class EmptyFlushEdgecaseTester (elements: Seq[Int], queueDepth: Int, bitWidth: I
     val elems = VecInit(elements.map(_.U))
 
   val inCnt = Counter(elements.length + 1)
-  val outCnt = Counter(elements.length + 1)
-  
+  val outCnt = RegInit(0.U(log2Ceil(elements.length).W))
   val cycleCounter = Counter(elements.length + 1)
+
+  //testing a flush when queue is empty
+  val flush = (cycleCounter.value === 0.U && inCnt.value === 0.U) //flushed only before anything is enqueued  
+  q.io.flush.get := flush
+  val flushRegister = RegInit(false.B)
+  flushRegister := flush
+  cycleCounter.inc() //counts every cycle
+
+  q.io.enq.valid := (inCnt.value < elements.length.U) && !flush
+  q.io.deq.ready := LFSR(16)(tap)
+
+  q.io.enq.bits := elems(inCnt.value)
+  when(q.io.enq.fire()) {
+    inCnt.inc()
+  }
+  when(q.io.deq.fire()) {
+    assert(elems(outCnt) === q.io.deq.bits)
+    outCnt := outCnt + 1.U
+  }
+  when(flushRegister) {
+    //check that queue gets flushed at the beginning with no elements
+    assert(!q.io.deq.valid, "Expected to not be able to dequeue a flushed queue because it should be empty")
+    assert(q.io.enq.ready, "Expected enqueue to be ready when flush is high because queue is empty")
+    assert(q.io.count === 0.U)
+  } 
+  when(inCnt.value === elements.length.U) { //stop when all entries are enqueued
+    stop()
+  }
+}
+
+/** Test queue can enqueue during a flush
+ * 
+  * @param elements The sequence of elements used in the queue
+  * @param queueDepth The max number of entries in the queue
+  * @param bitWidth Integer size of the data type used in the queue
+  * @param tap Integer tap('seed') for the LFSR
+  * @param useSyncReadMem True uses SyncReadMem instead of Mem as an internal memory element
+  */
+class EnqueueEmptyFlushEdgecaseTester (elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean) extends BasicTester {
+  val q = Module(new Queue(UInt(bitWidth.W), queueDepth, hasFlush = true))
+  val elems = VecInit(elements.map(_.U))
+  val inCnt = Counter(elements.length + 1)
+  val outCnt = Counter(elements.length + 1)
+  val cycleCounter = Counter(elements.length + 1)
+
   //testing a flush when queue is empty
   val flush = (cycleCounter.value === 0.U && inCnt.value === 0.U) //flushed only before anything is enqueued  
   q.io.flush.get := flush
@@ -119,16 +172,17 @@ class EmptyFlushEdgecaseTester (elements: Seq[Int], queueDepth: Int, bitWidth: I
     inCnt.inc()
   }
   when(q.io.deq.fire()) {
+    //flush and enqueue were both active on the first cycle, 
+    //so that element is flushed immediately which makes outCnt off by one
+    assert(elems(outCnt.value + 1.U) === q.io.deq.bits) //ensure that what comes out is what comes in
     outCnt.inc()
   }
-
   when(flushRegister) {
     //check that queue gets flushed at the beginning with no elements
     assert(!q.io.deq.valid, "Expected to not be able to dequeue a flushed queue because it should be empty") 
     assert(q.io.enq.ready, "Expected enqueue to be ready when flush is high because queue is empty")
     assert(q.io.count === 0.U)
   } 
-  
   when(inCnt.value === elements.length.U) { //stop when all entries are enqueued
     stop()
   }
@@ -145,32 +199,95 @@ class EmptyFlushEdgecaseTester (elements: Seq[Int], queueDepth: Int, bitWidth: I
 class FullQueueFlushEdgecaseTester (elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean) extends BasicTester {
   val q = Module(new Queue(UInt(bitWidth.W), queueDepth, hasFlush = true))
   val elems = VecInit(elements.map(_.U))
-
   val inCnt = Counter(elements.length + 1)
-  val currDepthCnt = Counter(queueDepth + 1)
-  
+  val outCnt = RegInit(0.U(log2Ceil(elements.length).W))
+  val currQCnt = RegInit(0.U(log2Ceil(5).W))
+
   //testing a flush when queue is full
-  val flush = (currDepthCnt.value === queueDepth.U)
-  q.io.flush.get := flush
+  val flush = (currQCnt === queueDepth.U)
   val flushRegister = RegInit(false.B)
+  q.io.flush.get := flush
   flushRegister := flush
   q.io.enq.valid := (inCnt.value < elements.length.U)
   q.io.deq.ready := LFSR(16)(tap)
-
   q.io.enq.bits := elems(inCnt.value)
+
   when(q.io.enq.fire()) {
     inCnt.inc()
-    currDepthCnt.inc() //counts how many items have been enqueued
+    currQCnt := currQCnt + 1.U //counts how many items have been enqueued
   }
-
-  when(flushRegister) {
-    currDepthCnt.reset() //resets the number of items currently inside queue
+  when(q.io.deq.fire()) {
+    //ensure that what comes out is what comes in
+    assert(currQCnt <= queueDepth.U)
+    assert(elems(outCnt) === q.io.deq.bits)
+    outCnt := outCnt + 1.U
+    when (currQCnt > 0.U) {
+      currQCnt := currQCnt - 1.U
+    }
+  }
+  when(flush) {
+    outCnt := outCnt + currQCnt
+    currQCnt := 0.U //resets the number of items currently inside queue
+  }
+  when(flushRegister) { //Internal signal maybe_full is a register so some signals update on the next cycle
     //check that queue gets flushed when queue is full
     assert(q.io.count === 0.U)
-    assert(!q.io.deq.valid, "Expected to not be able to dequeue a flushed queue if it had elements prior to the flush") 
+    assert(!q.io.deq.valid, "Expected to not be able to dequeue a flushed queue if it had elements prior to the flush")
+    assert(q.io.enq.ready, "Expected enqueue to be ready when flush is high because queue should be empty")
+  }
+  when(inCnt.value === elements.length.U) { //stop when all entries are enqueued
+    stop()
+  }
+}
+
+/** Test queue cannot dequeue when queue isn't empty
+ * 
+  * @param elements The sequence of elements used in the queue
+  * @param queueDepth The max number of entries in the queue
+  * @param bitWidth Integer size of the data type used in the queue
+  * @param tap Integer tap('seed') for the LFSR
+  * @param useSyncReadMem True uses SyncReadMem instead of Mem as an internal memory element
+  */
+class DequeueFullQueueEdgecaseTester (elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean) extends BasicTester {
+  val q = Module(new Queue(UInt(bitWidth.W), queueDepth, hasFlush = true))
+  //Queue should NOT be able to dequeue when not empty even when flush is high
+
+  val elems = VecInit(elements.map(_.U))
+  val inCnt = Counter(elements.length + 1)
+  val outCnt = RegInit(0.U(log2Ceil(elements.length).W))
+  val currQCnt = RegInit(0.U(log2Ceil(5).W))
+  //testing a flush when dequeue is called
+  val flush = currQCnt === (queueDepth/2).U
+  val flushRegister = RegInit(false.B)
+  q.io.flush.get := flush
+  flushRegister := flush
+  q.io.enq.valid := (inCnt.value < elements.length.U)
+  q.io.deq.ready := flushRegister
+
+  q.io.enq.bits := elems(inCnt.value)
+  when(q.io.enq.fire() && !flushRegister) {
+    inCnt.inc()
+    currQCnt := currQCnt + 1.U //counts how many items have been enqueued
+  }
+  when(flushRegister && q.io.deq.fire()) {
+    //ensure that what comes out is what comes in
+    assert(currQCnt <= queueDepth.U)
+    assert(elems(outCnt) === q.io.deq.bits)
+    assert(currQCnt > 0.U)
+    outCnt := outCnt + 1.U
+    when (currQCnt > 0.U) {
+      currQCnt := currQCnt - 1.U
+    }
+  }
+  when(flushRegister) {
+    outCnt := outCnt + currQCnt
+    currQCnt := 0.U //resets the number of items currently inside queue
+    //check that queue gets flushed when queue is full
+    assert(q.io.deq.fire() === false.B)
+    assert(q.io.count === 0.U)
+    assert(!q.io.deq.valid, "Expected to not be able to dequeue a flushed queue if it had elements prior to the flush")
     assert(q.io.enq.ready, "Expected enqueue to be ready when flush is high because queue should be empty")
   } 
-  
   when(inCnt.value === elements.length.U) { //stop when all entries are enqueued
     stop()
   }
@@ -190,12 +307,11 @@ class QueueFlushSpec extends ChiselPropSpec {
       }
     }
   }
-
   property("Queue should flush when requested") {
     forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15), Gen.oneOf(true, false)) { (depth, se, tap, isSync) =>
       whenever(se._1 >= 1 && depth >= 1 && se._2.nonEmpty) {
         assertTesterPasses {
-          new QueueGetsFlushedTester(se._2, depth, se._1, tap, isSync)
+          new QueueGetsFlushedTester(List(0, 2, 2, 4, 4, 6, 0, 5, 1, 0, 1, 4, 2, 0, 4, 2, 7, 2, 2, 7), 2, 3, 10, true)
         }
       }
     }
@@ -209,11 +325,38 @@ class QueueFlushSpec extends ChiselPropSpec {
       }
     }
   }
+  property("Test queue can enqueue during a flush") {
+    forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15), Gen.oneOf(true, false)) { (depth, se, tap, isSync) =>
+      whenever(se._1 >= 1 && depth >= 1 && se._2.nonEmpty) {
+        assertTesterPasses {
+          new EnqueueEmptyFlushEdgecaseTester(se._2, depth, se._1, tap, isSync)
+        }
+      }
+    }
+  }
   property("Queue flush when queue is full") {
     forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15), Gen.oneOf(true, false)) { (depth, se, tap, isSync) =>
       whenever(se._1 >= 1 && depth >= 1 && se._2.nonEmpty) {
         assertTesterPasses {
           new FullQueueFlushEdgecaseTester(se._2, depth, se._1, tap, isSync)
+        }
+      }
+    }
+  }
+  property("Queue should be able to enqueue when not full even when flush is high")  {
+    forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15), Gen.oneOf(true, false)) { (depth, se, tap, isSync) =>
+      whenever(se._1 >= 1 && depth >= 1 && se._2.nonEmpty) {
+        assertTesterPasses {
+          new EnqueueEmptyFlushEdgecaseTester(se._2, depth, se._1, tap, isSync)
+        }
+      }
+    }
+  }
+  property("Queue should not be able to dequeue when flush is high") {
+    forAll(Gen.choose(3, 5), safeUIntN(20), Gen.choose(0, 15), Gen.oneOf(true, false)) { (depth, se, tap, isSync) =>
+      whenever(se._1 >= 1 && depth >= 1 && se._2.nonEmpty) {
+        assertTesterPasses {
+          new DequeueFullQueueEdgecaseTester(se._2, depth, se._1, tap, isSync)
         }
       }
     }
