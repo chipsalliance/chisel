@@ -172,15 +172,27 @@ cd chisel3
 sbt compile
 ```
 
-In order to run the following unit tests, make sure you have Verilator installed and on your `PATH`
-(you can check this by running `which verilator`).
+In order to run the following unit tests, you will need several tools on your `PATH`, namely
+[verilator](https://www.veripool.org/verilator/),
+[yosys](http://www.clifford.at/yosys/),
+[espresso](https://github.com/chipsalliance/espresso),
+and [z3](https://github.com/Z3Prover/z3).
+Check that each is installed on your `PATH` by running `which verilator` and so on.
 
-If the compilation succeeded, you can then run the included unit tests by invoking:
+If the compilation succeeded and the dependencies noted above are installed, you can then run the included unit tests by invoking:
 
 ```
 sbt test
 ```
 
+
+
+If you would like to run the tests without the compiler plugin (less common), you can do so by first launching `sbt`,
+then running `noPluginTests / test`:
+```
+sbt
+> noPluginTests / test
+```
 ### Running Projects Against Local Chisel
 
 To use the development version of Chisel (`master` branch), you will need to build from source and `publishLocal`.
