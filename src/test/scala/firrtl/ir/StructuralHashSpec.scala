@@ -38,6 +38,16 @@ class StructuralHashSpec extends AnyFlatSpec {
     assert(hash(b1) != hash(UIntLiteral(1, IntWidth(2))))
   }
 
+  it should "generate the same hash String if the objects are structurally the same" in {
+    assert(hash(b0).toHashString == hash(UIntLiteral(0, IntWidth(1))).toHashString)
+    assert(hash(b0).toHashString != hash(UIntLiteral(1, IntWidth(1))).toHashString)
+    assert(hash(b0).toHashString != hash(UIntLiteral(1, IntWidth(2))).toHashString)
+
+    assert(hash(b1).toHashString == hash(UIntLiteral(1, IntWidth(1))).toHashString)
+    assert(hash(b1).toHashString != hash(UIntLiteral(0, IntWidth(1))).toHashString)
+    assert(hash(b1).toHashString != hash(UIntLiteral(1, IntWidth(2))).toHashString)
+  }
+
   it should "ignore expression types" in {
     assert(hash(add) == hash(DoPrim(Add, Seq(b0, b1), Seq(), UnknownType)))
     assert(hash(add) == hash(DoPrim(Add, Seq(b0, b1), Seq(), UIntType(UnknownWidth))))

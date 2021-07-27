@@ -115,16 +115,20 @@ object StructuralHash {
 }
 
 trait HashCode {
-  protected val str: String
-  override def hashCode(): Int = str.hashCode
+
+  /** String representation of the hash code.
+    * Two instances of [[HashCode]] are equal if and only if their toHashString values are equal.
+    */
+  def toHashString: String
+  override def hashCode(): Int = toHashString.hashCode
   override def equals(obj: Any): Boolean = obj match {
-    case hashCode: HashCode => this.str.equals(hashCode.str)
+    case hashCode: HashCode => this.toHashString.equals(hashCode.toHashString)
     case _ => false
   }
 }
 
 private class MDHashCode(code: Array[Byte]) extends HashCode {
-  protected override val str: String = code.map(b => f"${b.toInt & 0xff}%02x").mkString("")
+  override val toHashString: String = code.map(b => f"${b.toInt & 0xff}%02x").mkString("")
 }
 
 /** Generic hashing interface which allows us to use different backends to trade of speed and collision resistance */
