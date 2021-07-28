@@ -963,9 +963,7 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     for (m <- getPublicFields(classOf[Bundle])) {
       getBundleField(m) match {
         case Some(d: Data) =>
-          if (d.binding.nonEmpty) {
-            throwException(s"Bundle can only take type elements (got value binding '$d' on '${m.getName()}')")
-          }
+          requireIsChiselType(d)
 
           if (nameMap contains m.getName) {
             require(nameMap(m.getName) eq d)

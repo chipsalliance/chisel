@@ -138,7 +138,7 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
 
         out := in
       } }
-    }).getMessage should include("got value binding")
+    }).getMessage should include("must be a Chisel type, not hardware")
   }
   "Unbound bundles sharing a field" should "not error" in {
     ChiselStage.elaborate {
