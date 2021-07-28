@@ -140,6 +140,16 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
       } }
     }).getMessage should include("must be a Chisel type, not hardware")
   }
+  "Bundles" should "not recursively contain aggregates with bound hardware" in {
+    (the[ChiselException] thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate { new Module {
+        class MyBundle(val foo: UInt) extends Bundle
+        val out = IO(Output(Vec(2, UInt(8.W))))
+        val in  = IO(Input(new MyBundle(out(0)))) // This should error: Bound aggregate passed
+        out := in
+      } }
+    }).getMessage should include("must be a Chisel type, not hardware")
+  }
   "Unbound bundles sharing a field" should "not error" in {
     ChiselStage.elaborate {
       new RawModule {
