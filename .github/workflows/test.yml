@@ -45,13 +45,14 @@ jobs:
           mkdir -p build
           cd build
           cmake .. \
+            -GNinja \
             -DCMAKE_BUILD_TYPE=Release \
             -DZ3_LINK_TIME_OPTIMIZATION=1
-          make
+          ninja 
       - name: Install Z3 ${{ matrix.z3 }}
         run: |
           cd z3-z3-${{ matrix.z3 }}/build
-          sudo make install
+          sudo ninja install
           z3 --version
 
       - name: Cache Verilator ${{ matrix.verilator }}
