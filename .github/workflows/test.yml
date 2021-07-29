@@ -31,7 +31,7 @@ jobs:
         run: sudo apt-get install -y libfl2 libfl-dev ninja-build
 
       - name: Cache Z3 ${{ matrix.z3 }}
-        uses: actions/cache@v2
+        uses: actions/cache@v2.1.6
         id: cache-z3
         with:
           path: z3-z3-${{ matrix.z3 }}
@@ -56,7 +56,7 @@ jobs:
           z3 --version
 
       - name: Cache Verilator ${{ matrix.verilator }}
-        uses: actions/cache@v2
+        uses: actions/cache@v2.1.6
         id: cache-verilator
         with:
           path: verilator-${{ matrix.verilator }}
@@ -77,7 +77,7 @@ jobs:
           verilator --version
 
       - name: Cache Espresso ${{ matrix.espresso }}
-        uses: actions/cache@v2
+        uses: actions/cache@v2.1.6
         id: cache-espresso
         with:
           path: espresso-${{ matrix.espresso }}
@@ -96,7 +96,6 @@ jobs:
         run: |
           cd espresso-${{ matrix.espresso }}/build
           sudo make install
-
 
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
