@@ -35,7 +35,7 @@ jobs:
         id: cache-z3
         with:
           path: z3-z3-${{ matrix.z3 }}
-          key: ${{ matrix.system }}-z3-${{ matrix.z3 }}
+          key: ${{ matrix.system }}-z3-ninja-${{ matrix.z3 }}
       - name: Compile Z3
         if: steps.cache-z3.outputs.cache-hit != 'true'
         run: |
