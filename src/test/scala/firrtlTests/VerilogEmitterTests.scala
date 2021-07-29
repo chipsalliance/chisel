@@ -1004,6 +1004,316 @@ class VerilogDescriptionEmitterSpec extends FirrtlFlatSpec {
       assert(output.contains(c))
     }
   }
+
+  "Attribute annotations" should "be deduplicated" in {
+    val compiler = new VerilogCompiler
+    val input =
+      """
+        |circuit Top:
+        |  module Child:
+        |    input clock : Clock
+        |    input rAddr : UInt<5>
+        |    input rEnable : UInt<1>
+        |    input wAddr : UInt<5>
+        |    input wData : UInt<8>
+        |    input wEnable : UInt<1>
+        |    output rData : UInt<8>
+        |
+        |    mem m:
+        |      data-type => UInt<8>
+        |      depth => 32
+        |      reader => r
+        |      writer => w
+        |      read-latency => 1
+        |      write-latency => 1
+        |      read-under-write => new
+        |
+        |    m.r.clk <= clock
+        |    m.r.addr <= rAddr
+        |    m.r.en <= rEnable
+        |    rData <= m.r.data
+        |
+        |    m.w.clk <= clock
+        |    m.w.addr <= wAddr
+        |    m.w.en <= wEnable
+        |    m.w.data <= wData
+        |    m.w.mask is invalid
+        |
+        |  module Top:
+        |    input clock : Clock
+        |    input rAddr : UInt<5>
+        |    input rEnable : UInt<1>
+        |    input wAddr : UInt<5>
+        |    input wData : UInt<8>
+        |    input wEnable : UInt<1>
+        |    output rData : UInt<8>[2]
+        |
+        |    inst c1 of Child
+        |    c1.clock <= clock
+        |    c1.rAddr <= rAddr
+        |    c1.rEnable <= rEnable
+        |    c1.wAddr <= wAddr
+        |    c1.wData <= wData
+        |    c1.wEnable <= wEnable
+        |
+        |    inst c2 of Child
+        |    c2.clock <= clock
+        |    c2.rAddr <= rAddr
+        |    c2.rEnable <= rEnable
+        |    c2.wAddr <= wAddr
+        |    c2.wData <= wData
+        |    c2.wEnable <= wEnable
+        |
+        |    rData[0] <= c1.rData
+        |    rData[1] <= c2.rData
+        |""".stripMargin
+    val desc = "child module"
+    val child1MRef = CircuitTarget("Top").module("Top").instOf("c1", "Child").ref("m")
+    val child2MRef = CircuitTarget("Top").module("Top").instOf("c2", "Child").ref("m")
+    val annos = Seq(
+      AttributeAnnotation(child1MRef, desc),
+      AttributeAnnotation(child2MRef, desc)
+    )
+
+    val finalState = compiler.compileAndEmit(CircuitState(parse(input), ChirrtlForm, annos), Seq.empty)
+    val output = finalState.getEmittedCircuit.value
+    assert(output.contains(s"  (* $desc *)"))
+  }
+
+  "Doc string annotations" should "be deduplicated" in {
+    val compiler = new VerilogCompiler
+    val input =
+      """
+        |circuit Top:
+        |  module Child:
+        |    input clock : Clock
+        |    input rAddr : UInt<5>
+        |    input rEnable : UInt<1>
+        |    input wAddr : UInt<5>
+        |    input wData : UInt<8>
+        |    input wEnable : UInt<1>
+        |    output rData : UInt<8>
+        |
+        |    mem m:
+        |      data-type => UInt<8>
+        |      depth => 32
+        |      reader => r
+        |      writer => w
+        |      read-latency => 1
+        |      write-latency => 1
+        |      read-under-write => new
+        |
+        |    m.r.clk <= clock
+        |    m.r.addr <= rAddr
+        |    m.r.en <= rEnable
+        |    rData <= m.r.data
+        |
+        |    m.w.clk <= clock
+        |    m.w.addr <= wAddr
+        |    m.w.en <= wEnable
+        |    m.w.data <= wData
+        |    m.w.mask is invalid
+        |
+        |  module Top:
+        |    input clock : Clock
+        |    input rAddr : UInt<5>
+        |    input rEnable : UInt<1>
+        |    input wAddr : UInt<5>
+        |    input wData : UInt<8>
+        |    input wEnable : UInt<1>
+        |    output rData : UInt<8>[2]
+        |
+        |    inst c1 of Child
+        |    c1.clock <= clock
+        |    c1.rAddr <= rAddr
+        |    c1.rEnable <= rEnable
+        |    c1.wAddr <= wAddr
+        |    c1.wData <= wData
+        |    c1.wEnable <= wEnable
+        |
+        |    inst c2 of Child
+        |    c2.clock <= clock
+        |    c2.rAddr <= rAddr
+        |    c2.rEnable <= rEnable
+        |    c2.wAddr <= wAddr
+        |    c2.wData <= wData
+        |    c2.wEnable <= wEnable
+        |
+        |    rData[0] <= c1.rData
+        |    rData[1] <= c2.rData
+        |""".stripMargin
+    val check =
+      """  /* line1
+        |   *
+        |   * line2
+        |   */
+        |""".stripMargin
+
+    val child1MRef = CircuitTarget("Top").module("Top").instOf("c1", "Child").ref("m")
+    val child2MRef = CircuitTarget("Top").module("Top").instOf("c2", "Child").ref("m")
+    val annos = Seq(
+      DocStringAnnotation(child1MRef, "line1"),
+      DocStringAnnotation(child1MRef, "line2"),
+      DocStringAnnotation(child2MRef, "line1"),
+      DocStringAnnotation(child2MRef, "line2")
+    )
+
+    val finalState = compiler.compileAndEmit(CircuitState(parse(input), ChirrtlForm, annos), Seq.empty)
+    val output = finalState.getEmittedCircuit.value
+    assert(output.contains(check))
+  }
+
+  "AttributeAnnotation" should "fail dedup if not all instances have the annotation" in {
+    val compiler = new VerilogCompiler
+    val input =
+      """
+        |circuit Top:
+        |  module Child:
+        |    input clock : Clock
+        |    input rAddr : UInt<5>
+        |    input rEnable : UInt<1>
+        |    input wAddr : UInt<5>
+        |    input wData : UInt<8>
+        |    input wEnable : UInt<1>
+        |    output rData : UInt<8>
+        |
+        |    mem m:
+        |      data-type => UInt<8>
+        |      depth => 32
+        |      reader => r
+        |      writer => w
+        |      read-latency => 1
+        |      write-latency => 1
+        |      read-under-write => new
+        |
+        |    m.r.clk <= clock
+        |    m.r.addr <= rAddr
+        |    m.r.en <= rEnable
+        |    rData <= m.r.data
+        |
+        |    m.w.clk <= clock
+        |    m.w.addr <= wAddr
+        |    m.w.en <= wEnable
+        |    m.w.data <= wData
+        |    m.w.mask is invalid
+        |
+        |  module Top:
+        |    input clock : Clock
+        |    input rAddr : UInt<5>
+        |    input rEnable : UInt<1>
+        |    input wAddr : UInt<5>
+        |    input wData : UInt<8>
+        |    input wEnable : UInt<1>
+        |    output rData : UInt<8>[2]
+        |
+        |    inst c1 of Child
+        |    c1.clock <= clock
+        |    c1.rAddr <= rAddr
+        |    c1.rEnable <= rEnable
+        |    c1.wAddr <= wAddr
+        |    c1.wData <= wData
+        |    c1.wEnable <= wEnable
+        |
+        |    inst c2 of Child
+        |    c2.clock <= clock
+        |    c2.rAddr <= rAddr
+        |    c2.rEnable <= rEnable
+        |    c2.wAddr <= wAddr
+        |    c2.wData <= wData
+        |    c2.wEnable <= wEnable
+        |
+        |    rData[0] <= c1.rData
+        |    rData[1] <= c2.rData
+        |""".stripMargin
+    val desc = "child module"
+    val child1MRef = CircuitTarget("Top").module("Top").instOf("c1", "Child").ref("m")
+    val child2MRef = CircuitTarget("Top").module("Top").instOf("c2", "Child").ref("m")
+    val annos = Seq(
+      AttributeAnnotation(child1MRef, desc)
+    )
+
+    assertThrows[FirrtlUserException] {
+      val finalState = compiler.compileAndEmit(CircuitState(parse(input), ChirrtlForm, annos), Seq.empty)
+      val output = finalState.getEmittedCircuit.value
+    }
+  }
+
+  "DocStringAnnotation" should "fail dedup if not all instances share the annotation" in {
+    val compiler = new VerilogCompiler
+    val input =
+      """
+        |circuit Top:
+        |  module Child:
+        |    input clock : Clock
+        |    input rAddr : UInt<5>
+        |    input rEnable : UInt<1>
+        |    input wAddr : UInt<5>
+        |    input wData : UInt<8>
+        |    input wEnable : UInt<1>
+        |    output rData : UInt<8>
+        |
+        |    mem m:
+        |      data-type => UInt<8>
+        |      depth => 32
+        |      reader => r
+        |      writer => w
+        |      read-latency => 1
+        |      write-latency => 1
+        |      read-under-write => new
+        |
+        |    m.r.clk <= clock
+        |    m.r.addr <= rAddr
+        |    m.r.en <= rEnable
+        |    rData <= m.r.data
+        |
+        |    m.w.clk <= clock
+        |    m.w.addr <= wAddr
+        |    m.w.en <= wEnable
+        |    m.w.data <= wData
+        |    m.w.mask is invalid
+        |
+        |  module Top:
+        |    input clock : Clock
+        |    input rAddr : UInt<5>
+        |    input rEnable : UInt<1>
+        |    input wAddr : UInt<5>
+        |    input wData : UInt<8>
+        |    input wEnable : UInt<1>
+        |    output rData : UInt<8>[2]
+        |
+        |    inst c1 of Child
+        |    c1.clock <= clock
+        |    c1.rAddr <= rAddr
+        |    c1.rEnable <= rEnable
+        |    c1.wAddr <= wAddr
+        |    c1.wData <= wData
+        |    c1.wEnable <= wEnable
+        |
+        |    inst c2 of Child
+        |    c2.clock <= clock
+        |    c2.rAddr <= rAddr
+        |    c2.rEnable <= rEnable
+        |    c2.wAddr <= wAddr
+        |    c2.wData <= wData
+        |    c2.wEnable <= wEnable
+        |
+        |    rData[0] <= c1.rData
+        |    rData[1] <= c2.rData
+        |""".stripMargin
+    val desc = "child module"
+    val child1MRef = CircuitTarget("Top").module("Top").instOf("c1", "Child").ref("m")
+    val child2MRef = CircuitTarget("Top").module("Top").instOf("c2", "Child").ref("m")
+    val annos = Seq(
+      DocStringAnnotation(child1MRef, "line1"),
+      DocStringAnnotation(child2MRef, "line2"),
+      DocStringAnnotation(child1MRef, "line1")
+    )
+
+    assertThrows[FirrtlUserException] {
+      val finalState = compiler.compileAndEmit(CircuitState(parse(input), ChirrtlForm, annos), Seq.empty)
+      val output = finalState.getEmittedCircuit.value
+    }
+  }
 }
 
 class EmittedMacroSpec extends FirrtlPropSpec {

@@ -6,7 +6,7 @@ package transforms
 import firrtl.ir._
 import firrtl.Mappers._
 import firrtl.options.Dependency
-import firrtl.Utils.BoolType
+import firrtl.Utils.{groupByIntoSeq, BoolType}
 import firrtl.annotations.Annotation
 import scala.collection.mutable.Buffer
 import firrtl.annotations.MemoryFileInlineAnnotation
@@ -61,7 +61,7 @@ object DedupAnnotationsTransform {
     }
 
     // Partition the dedupable annotations into groups that *should* deduplicate into the same annotation
-    val shouldDedup: Map[Any, ArrayBuffer[DedupableRepr]] = canDedup.groupBy(_.dedupKey)
+    val shouldDedup: Seq[(Any, Seq[DedupableRepr])] = groupByIntoSeq(canDedup)(_.dedupKey)
     shouldDedup.foreach {
       case ((target: ReferenceTarget, _), dedupableAnnos) =>
         val originalAnnos = dedupableAnnos.map(_.original)
