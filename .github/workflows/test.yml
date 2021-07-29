@@ -28,7 +28,7 @@ jobs:
 
       - name: Install Z3 Build Dependencies(Ubuntu)
         if: matrix.system == 'ubuntu-20.04'
-        run: sudo apt-get install -y libfl2 libfl-dev
+        run: sudo apt-get install -y libfl2 libfl-dev ninja-build
 
       - name: Cache Z3 ${{ matrix.z3 }}
         uses: actions/cache@v2
