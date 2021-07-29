@@ -18,6 +18,7 @@ jobs:
         jvm: ["adopt@1.8"]
         scala: ["2.13.6", "2.12.13"]
         verilator: ["4.204"]
+        z3: ["4.8.10"]
         espresso: ["2.4"]
     runs-on: ${{ matrix.system }}
 
@@ -25,10 +26,32 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Install Z3
+      - name: Install Z3 Build Dependencies(Ubuntu)
         if: matrix.system == 'ubuntu-20.04'
+        run: sudo apt-get install -y libfl2 libfl-dev
+
+      - name: Cache Z3 ${{ matrix.z3 }}
+        uses: actions/cache@v2
+        id: cache-z3
+        with:
+          path: z3-z3-${{ matrix.z3 }}
+          key: ${{ matrix.system }}-z3-${{ matrix.z3 }}
+      - name: Compile Z3
+        if: steps.cache-z3.outputs.cache-hit != 'true'
         run: |
-          sudo apt-get install -y z3
+          wget https://github.com/Z3Prover/z3/archive/refs/tags/z3-${{ matrix.z3 }}.tar.gz
+          tar xvf z3-${{ matrix.z3 }}.tar.gz
+          cd z3-z3-${{ matrix.z3 }}
+          mkdir -p build
+          cd build
+          cmake .. \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DZ3_LINK_TIME_OPTIMIZATION=1
+          make
+      - name: Install Z3 ${{ matrix.z3 }}
+        run: |
+          cd z3-z3-${{ matrix.z3 }}/build
+          sudo make install
           z3 --version
 
       - name: Cache Verilator ${{ matrix.verilator }}
