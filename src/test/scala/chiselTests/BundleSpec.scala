@@ -129,6 +129,27 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
     }).getMessage should include("aliased fields")
   }
 
+  "Bundles" should "not have bound hardware" in {
+    (the[ChiselException] thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate { new Module {
+        class MyBundle(val foo: UInt) extends Bundle
+        val in  = IO(Input(new MyBundle(123.U))) // This should error: value passed in instead of type
+        val out = IO(Output(new MyBundle(UInt(8.W))))
+
+        out := in
+      } }
+    }).getMessage should include("must be a Chisel type, not hardware")
+  }
+  "Bundles" should "not recursively contain aggregates with bound hardware" in {
+    (the[ChiselException] thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate { new Module {
+        class MyBundle(val foo: UInt) extends Bundle
+        val out = IO(Output(Vec(2, UInt(8.W))))
+        val in  = IO(Input(new MyBundle(out(0)))) // This should error: Bound aggregate passed
+        out := in
+      } }
+    }).getMessage should include("must be a Chisel type, not hardware")
+  }
   "Unbound bundles sharing a field" should "not error" in {
     ChiselStage.elaborate {
       new RawModule {
@@ -140,18 +161,5 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
         }
       }
     }
-  }
-
-  "Bound Data" should "have priority in setting ref over unbound Data" in {
-    class MyModule extends RawModule {
-      val foo = IO(new Bundle {
-        val x = Output(UInt(8.W))
-      })
-      foo.x := 0.U // getRef on foo.x is None.get without fix
-      val bar = new Bundle {
-        val y = foo.x
-      }
-    }
-    ChiselStage.emitChirrtl(new MyModule)
   }
 }
