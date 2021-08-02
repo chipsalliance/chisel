@@ -21,14 +21,8 @@ if [ ! -z "$GITHUB_BASE_REF" ]; then
     git remote set-branches origin $GITHUB_BASE_REF && git fetch
     git checkout $GITHUB_BASE_REF
     git checkout -
-    # Skip if '[skip formal checks]' shows up in any of the commit messages in the PR
-    if git log --format=%B --no-merges $GITHUB_BASE_REF..HEAD | grep '\[skip formal checks\]'; then
-        echo "Commit message says to skip formal checks"
-        exit 0
-    else
-        cp regress/$DUT.fir $DUT.fir
-        ./scripts/formal_equiv.sh HEAD $GITHUB_BASE_REF $DUT
-    fi
+    cp regress/$DUT.fir $DUT.fir
+    ./scripts/formal_equiv.sh HEAD $GITHUB_BASE_REF $DUT
 else
     echo "Not a pull request, no formal check"
     exit 0
