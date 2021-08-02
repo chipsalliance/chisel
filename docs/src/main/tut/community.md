@@ -44,6 +44,7 @@ If you want to add your project to the list, let us know on the [Chisel users ma
 | [Quasar](https://github.com/Lampro-Mellon/Quasar)                                                                                            | CHISEL implementation of SweRV-EL2                              | [`@Lampro-Mellon`](https://github.com/Lampro-Mellon)                             | [Video](https://www.youtube.com/watch?v=R9eCNmGa5Vc)                                                         |
 | FP Divider [Pipelined](https://github.com/Ssavas/fp-division-pipelined) / [Not Pipelined](https://github.com/Ssavas/fp-division-no-pipeline) | IEEE binary 32-bit divider using Harmonized Parabolic Synthesis | [`@Ssavas`](https://github.com/Ssavas)                                           | [Paper](https://ieeexplore.ieee.org/abstract/document/7987504)                                               |
 | Square Root [Pipelined](https://github.com/Ssavas/sqrt-pipelined) / [Not Pipelined](https://github.com/Ssavas/sqrt-no-pipeline)              | Square Root using Harmonized Parabolic Synthesis                | [`@Ssavas`](https://github.com/Ssavas)                                           | [Paper](http://urn.kb.se/resolve?urn=urn:nbn:se:hh:diva-39322)                                               |
+| [Pillars](https://github.com/pku-dasys/pillars) | A Consistent CGRA Design Framework | [`@pku-dasys`](https://github.com/pku-dasys) | [Paper](https://woset-workshop.github.io/PDFs/2020/a22.pdf), [Video](https://www.youtube.com/watch?v=oNLyD6koB2g) |
 
 ### FIRRTL
 
