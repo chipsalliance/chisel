@@ -118,8 +118,8 @@ private object FirrtlExpressionSemantics {
         // the resulting value will be zero for unsigned types
         // and the sign bit for signed types"
         if (n >= width) {
-          if (isSigned(e)) { BV1BitZero }
-          else { BVSlice(toSMT(e), width - 1, width - 1) }
+          if (isSigned(e)) { BVSlice(toSMT(e), width - 1, width - 1) }
+          else { BV1BitZero }
         } else {
           BVSlice(toSMT(e), width - 1, n.toInt)
         }

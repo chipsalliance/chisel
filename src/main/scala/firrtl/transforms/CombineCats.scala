@@ -63,12 +63,11 @@ class CombineCats extends Transform with DependencyAPIMigration {
   override def prerequisites = firrtl.stage.Forms.LowForm ++
     Seq(
       Dependency(passes.RemoveValidIf),
-      Dependency[firrtl.transforms.ConstantPropagation],
       Dependency(firrtl.passes.memlib.VerilogMemDelays),
       Dependency(firrtl.passes.SplitExpressions)
     )
 
-  override def optionalPrerequisites = Seq.empty
+  override def optionalPrerequisites = Seq(Dependency[firrtl.transforms.ConstantPropagation])
 
   override def optionalPrerequisiteOf = Seq(Dependency[SystemVerilogEmitter], Dependency[VerilogEmitter])
 

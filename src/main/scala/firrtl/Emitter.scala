@@ -3,12 +3,11 @@
 package firrtl
 
 import java.io.File
-
 import firrtl.annotations.NoTargetAnnotation
 import firrtl.backends.experimental.smt.{Btor2Emitter, SMTLibEmitter}
 import firrtl.backends.proto.{Emitter => ProtoEmitter}
 import firrtl.options.Viewer.view
-import firrtl.options.{CustomFileEmission, HasShellOptions, PhaseException, ShellOption}
+import firrtl.options.{CustomFileEmission, Dependency, HasShellOptions, PhaseException, ShellOption}
 import firrtl.passes.PassException
 import firrtl.stage.{FirrtlFileAnnotation, FirrtlOptions, RunFirrtlTransformAnnotation}
 
@@ -45,6 +44,11 @@ object EmitCircuitAnnotation extends HasShellOptions {
             )
           case "low" =>
             Seq(RunFirrtlTransformAnnotation(new LowFirrtlEmitter), EmitCircuitAnnotation(classOf[LowFirrtlEmitter]))
+          case "low-opt" =>
+            Seq(
+              RunFirrtlTransformAnnotation(Dependency(LowFirrtlOptimizedEmitter)),
+              EmitCircuitAnnotation(LowFirrtlOptimizedEmitter.getClass)
+            )
           case "verilog" | "mverilog" =>
             Seq(RunFirrtlTransformAnnotation(new VerilogEmitter), EmitCircuitAnnotation(classOf[VerilogEmitter]))
           case "sverilog" =>

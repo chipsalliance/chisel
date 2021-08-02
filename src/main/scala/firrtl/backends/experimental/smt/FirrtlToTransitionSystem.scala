@@ -451,7 +451,7 @@ private class ModuleScanner(
         val name = loc.serialize
         insertDummyAssignsForUnusedOutputs(expr)
         infos.append(name -> info)
-        connects.append((name, onExpression(expr, bitWidth(loc.tpe).toInt)))
+        connects.append((name, onExpression(expr, bitWidth(loc.tpe).toInt, allowNarrow = true)))
       }
     case i @ ir.IsInvalid(info, loc) =>
       if (!isGroundType(loc.tpe)) error("All connects should have been lowered to ground type!")
@@ -591,9 +591,9 @@ private class ModuleScanner(
 
   private case class Context() extends TranslationContext {}
 
-  private def onExpression(e: ir.Expression, width: Int): BVExpr = {
+  private def onExpression(e: ir.Expression, width: Int, allowNarrow: Boolean = false): BVExpr = {
     implicit val ctx: TranslationContext = Context()
-    FirrtlExpressionSemantics.toSMT(e, width, allowNarrow = false)
+    FirrtlExpressionSemantics.toSMT(e, width, allowNarrow)
   }
   private def onExpression(e: ir.Expression): BVExpr = {
     implicit val ctx: TranslationContext = Context()

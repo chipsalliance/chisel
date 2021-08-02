@@ -98,7 +98,7 @@ class RemoveWiresSpec extends FirrtlFlatSpec {
     val (nodes, wires) = getNodesAndWires(result.circuit)
     wires.size should be(0)
     nodes.map(_.serialize) should be(
-      Seq("""node w = pad(UInt<2>("h2"), 8)""")
+      Seq("""node w = UInt<8>("h2")""")
     )
   }
 

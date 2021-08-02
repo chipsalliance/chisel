@@ -89,7 +89,7 @@ class LoweringCompilersSpec extends AnyFlatSpec with Matchers {
         firrtl.passes.InferTypes,
         firrtl.passes.ResolveFlows,
         new firrtl.passes.InferWidths,
-        firrtl.passes.Legalize,
+        firrtl.passes.LegalizeConnects,
         firrtl.transforms.RemoveReset,
         firrtl.passes.ResolveFlows,
         new firrtl.transforms.CheckCombLoops,
@@ -102,7 +102,7 @@ class LoweringCompilersSpec extends AnyFlatSpec with Matchers {
         new firrtl.transforms.ConstantPropagation,
         firrtl.passes.PadWidths,
         new firrtl.transforms.ConstantPropagation,
-        firrtl.passes.Legalize,
+        firrtl.passes.LegalizeConnects,
         firrtl.passes.memlib.VerilogMemDelays, // TODO move to Verilog emitter
         new firrtl.transforms.ConstantPropagation,
         firrtl.passes.SplitExpressions,
@@ -114,7 +114,7 @@ class LoweringCompilersSpec extends AnyFlatSpec with Matchers {
       Seq(
         firrtl.passes.RemoveValidIf,
         firrtl.passes.PadWidths,
-        firrtl.passes.Legalize,
+        firrtl.passes.LegalizeConnects,
         firrtl.passes.memlib.VerilogMemDelays, // TODO move to Verilog emitter
         firrtl.passes.SplitExpressions
       )
@@ -215,76 +215,6 @@ class LoweringCompilersSpec extends AnyFlatSpec with Matchers {
     compare(legacyTransforms(new MiddleFirrtlToLowFirrtl), tm, patches)
   }
 
-  behavior.of("MinimumLowFirrtlOptimization")
-
-  it should "replicate the old order" in {
-    val tm = new TransformManager(Forms.LowFormMinimumOptimized, Forms.LowForm)
-    val patches = Seq(
-      Add(4, Seq(Dependency(firrtl.passes.ResolveFlows))),
-      Add(6, Seq(Dependency[firrtl.transforms.LegalizeAndReductionsTransform], Dependency(firrtl.passes.ResolveKinds)))
-    )
-    compare(legacyTransforms(new MinimumLowFirrtlOptimization), tm, patches)
-  }
-
-  behavior.of("LowFirrtlOptimization")
-
-  it should "replicate the old order" in {
-    val tm = new TransformManager(Forms.LowFormOptimized, Forms.LowForm)
-    val patches = Seq(
-      Add(6, Seq(Dependency(firrtl.passes.ResolveFlows))),
-      Add(7, Seq(Dependency(firrtl.passes.Legalize))),
-      Add(8, Seq(Dependency[firrtl.transforms.LegalizeAndReductionsTransform], Dependency(firrtl.passes.ResolveKinds)))
-    )
-    compare(legacyTransforms(new LowFirrtlOptimization), tm, patches)
-  }
-
-  behavior.of("VerilogMinimumOptimized")
-
-  it should "replicate the old order" in {
-    val legacy = Seq(
-      new firrtl.transforms.BlackBoxSourceHelper,
-      new firrtl.transforms.FixAddingNegativeLiterals,
-      new firrtl.transforms.ReplaceTruncatingArithmetic,
-      new firrtl.transforms.InlineBitExtractionsTransform,
-      new firrtl.transforms.PropagatePresetAnnotations,
-      new firrtl.transforms.InlineAcrossCastsTransform,
-      new firrtl.transforms.LegalizeClocksTransform,
-      new firrtl.transforms.FlattenRegUpdate,
-      firrtl.passes.VerilogModulusCleanup,
-      new firrtl.transforms.VerilogRename,
-      firrtl.passes.InferTypes,
-      firrtl.passes.VerilogPrep,
-      new firrtl.AddDescriptionNodes
-    )
-    val tm = new TransformManager(Forms.VerilogMinimumOptimized, (new firrtl.VerilogEmitter).prerequisites)
-    compare(legacy, tm)
-  }
-
-  behavior.of("VerilogOptimized")
-
-  it should "replicate the old order" in {
-    val legacy = Seq(
-      new firrtl.transforms.InlineBooleanExpressions,
-      new firrtl.transforms.DeadCodeElimination,
-      new firrtl.transforms.BlackBoxSourceHelper,
-      new firrtl.transforms.FixAddingNegativeLiterals,
-      new firrtl.transforms.ReplaceTruncatingArithmetic,
-      new firrtl.transforms.InlineBitExtractionsTransform,
-      new firrtl.transforms.PropagatePresetAnnotations,
-      new firrtl.transforms.InlineAcrossCastsTransform,
-      new firrtl.transforms.LegalizeClocksTransform,
-      new firrtl.transforms.FlattenRegUpdate,
-      new firrtl.transforms.DeadCodeElimination,
-      firrtl.passes.VerilogModulusCleanup,
-      new firrtl.transforms.VerilogRename,
-      firrtl.passes.InferTypes,
-      firrtl.passes.VerilogPrep,
-      new firrtl.AddDescriptionNodes
-    )
-    val tm = new TransformManager(Forms.VerilogOptimized, Forms.LowFormOptimized)
-    compare(legacy, tm)
-  }
-
   behavior.of("Legacy Custom Transforms")
 
   it should "work for Chirrtl -> Chirrtl" in {
@@ -311,7 +241,7 @@ class LoweringCompilersSpec extends AnyFlatSpec with Matchers {
     compare(expected, tm)
   }
 
-  it should "work for Mid -> Mid" in {
+  it should "work for Mid -> Mid" ignore {
     val expected =
       new TransformManager(Forms.MidForm).flattenedTransformOrder ++
         Some(new Transforms.MidToMid) ++

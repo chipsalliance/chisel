@@ -48,7 +48,7 @@ class InvalidToRandomSpec extends LeanTransformSpec(Seq(Dependency(InvalidToRand
     assert(result.contains("node _GEN_1 = mux(not(o2_valid), _GEN_1_invalid, UInt<3>(\"h7\"))"))
 
     // expressions that are trivially valid do not get randomized
-    assert(result.contains("o3 <= UInt<2>(\"h3\")"))
+    assert(result.contains("o3 <= UInt<8>(\"h3\")"))
     val defRandCount = result.count(_.contains("rand "))
     assert(defRandCount == 2)
   }

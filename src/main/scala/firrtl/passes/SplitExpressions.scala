@@ -8,6 +8,7 @@ import firrtl.ir._
 import firrtl.options.Dependency
 import firrtl.Mappers._
 import firrtl.Utils.{flow, get_info, kind}
+import firrtl.transforms.InlineBooleanExpressions
 
 // Datastructures
 import scala.collection.mutable
@@ -16,15 +17,14 @@ import scala.collection.mutable
 //  and named intermediate nodes
 object SplitExpressions extends Pass {
 
-  override def prerequisites = firrtl.stage.Forms.LowForm ++
-    Seq(Dependency(firrtl.passes.RemoveValidIf), Dependency(firrtl.passes.memlib.VerilogMemDelays))
-
+  override def prerequisites = firrtl.stage.Forms.LowForm
   override def optionalPrerequisiteOf =
     Seq(Dependency[SystemVerilogEmitter], Dependency[VerilogEmitter])
 
   override def invalidates(a: Transform) = a match {
     case ResolveKinds => true
-    case _            => false
+    case _: InlineBooleanExpressions => true // SplitExpressions undoes the inlining!
+    case _ => false
   }
 
   private def onModule(m: Module): Module = {

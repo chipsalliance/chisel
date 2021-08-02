@@ -12,6 +12,7 @@ import firrtl.graph.{CyclicException, MutableDiGraph}
 import firrtl.options.Dependency
 import firrtl.Utils.getGroundZero
 import firrtl.backends.experimental.smt.random.DefRandom
+import firrtl.passes.PadWidths
 
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
@@ -27,10 +28,10 @@ class RemoveWires extends Transform with DependencyAPIMigration {
   override def prerequisites = firrtl.stage.Forms.MidForm ++
     Seq(
       Dependency(passes.LowerTypes),
-      Dependency(passes.Legalize),
       Dependency(passes.ResolveKinds),
       Dependency(transforms.RemoveReset),
-      Dependency[transforms.CheckCombLoops]
+      Dependency[transforms.CheckCombLoops],
+      Dependency(passes.LegalizeConnects)
     )
 
   override def optionalPrerequisites = Seq(Dependency[checks.CheckResets])
@@ -131,10 +132,13 @@ class RemoveWires extends Transform with DependencyAPIMigration {
         case con @ Connect(cinfo, lhs, rhs) =>
           kind(lhs) match {
             case WireKind =>
-              // Be sure to pad the rhs since nodes get their type from the rhs
-              val paddedRhs = ConstantPropagation.pad(rhs, lhs.tpe)
+              // be sure that connects have the same bit widths on rhs and lhs
+              assert(
+                bitWidth(lhs.tpe) == bitWidth(rhs.tpe),
+                "Connection widths should have been taken care of by LegalizeConnects!"
+              )
               val dinfo = wireInfo(lhs)
-              netlist(we(lhs)) = (Seq(paddedRhs), MultiInfo(dinfo, cinfo))
+              netlist(we(lhs)) = (Seq(rhs), MultiInfo(dinfo, cinfo))
             case _ => otherStmts += con // Other connections just pass through
           }
         case invalid @ IsInvalid(info, expr) =>

@@ -2,32 +2,22 @@
 
 package firrtlTests
 
-import firrtl._
 import firrtl.testutils._
-import firrtl.testutils.FirrtlCheckers._
 import firrtl.ir.Circuit
-import firrtl.stage.{FirrtlCircuitAnnotation, FirrtlSourceAnnotation, FirrtlStage}
+import firrtl.options.Dependency
+import firrtl.passes.memlib.VerilogMemDelays
 
-import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should.Matchers
-
-class VerilogMemDelaySpec extends AnyFreeSpec with Matchers {
+class VerilogMemDelaySpec extends LeanTransformSpec(Seq(Dependency(VerilogMemDelays))) {
+  behavior.of("VerilogMemDelaySpec")
 
   private def compileTwiceReturnFirst(input: String): Circuit = {
-    (new FirrtlStage)
-      .transform(Seq(FirrtlSourceAnnotation(input)))
-      .toSeq
-      .collectFirst {
-        case fca: FirrtlCircuitAnnotation =>
-          (new FirrtlStage).transform(Seq(fca))
-          fca.circuit
-      }
-      .get
+    val res0 = compile(input)
+    compile(res0.circuit.serialize).circuit
   }
 
   private def compileTwice(input: String): Unit = compileTwiceReturnFirst(input)
 
-  "The following low FIRRTL should be parsed by VerilogMemDelays" in {
+  it should "The following low FIRRTL should be parsed by VerilogMemDelays" in {
     val input =
       """
         |circuit Test :
@@ -63,7 +53,7 @@ class VerilogMemDelaySpec extends AnyFreeSpec with Matchers {
     compileTwice(input)
   }
 
-  "Using a read-first memory should be allowed in VerilogMemDelays" in {
+  it should "Using a read-first memory should be allowed in VerilogMemDelays" in {
     val input =
       """
         |circuit Test :
@@ -107,7 +97,7 @@ class VerilogMemDelaySpec extends AnyFreeSpec with Matchers {
     compileTwice(input)
   }
 
-  "Chained memories should generate correct FIRRTL" in {
+  it should "Chained memories should generate correct FIRRTL" in {
     val input =
       """
         |circuit Test :
@@ -151,7 +141,7 @@ class VerilogMemDelaySpec extends AnyFreeSpec with Matchers {
     compileTwice(input)
   }
 
-  "VerilogMemDelays should not violate use before declaration of clocks" in {
+  it should "VerilogMemDelays should not violate use before declaration of clocks" in {
     val input =
       """
         |circuit Test :
@@ -188,7 +178,7 @@ class VerilogMemDelaySpec extends AnyFreeSpec with Matchers {
         |    m.write.data <= in
       """.stripMargin
 
-    val res = compileTwiceReturnFirst(input).serialize
+    val res = compile(input).circuit.serialize
     // Inject a Wire when using a clock not derived from ports
     res should include("wire m_clock : Clock")
     res should include("m_clock <= cm.clock")

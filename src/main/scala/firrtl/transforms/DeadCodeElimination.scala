@@ -33,15 +33,7 @@ import collection.mutable
   */
 class DeadCodeElimination extends Transform with RegisteredTransform with DependencyAPIMigration {
 
-  override def prerequisites = firrtl.stage.Forms.LowForm ++
-    Seq(
-      Dependency(firrtl.passes.RemoveValidIf),
-      Dependency[firrtl.transforms.ConstantPropagation],
-      Dependency(firrtl.passes.memlib.VerilogMemDelays),
-      Dependency(firrtl.passes.SplitExpressions),
-      Dependency[firrtl.transforms.CombineCats],
-      Dependency(passes.CommonSubexpressionElimination)
-    )
+  override def prerequisites = firrtl.stage.Forms.LowForm
 
   override def optionalPrerequisites = Seq.empty
 

@@ -101,7 +101,7 @@ case class CombinationalPath(sink: ReferenceTarget, sources: Seq[ReferenceTarget
 class CheckCombLoops extends Transform with RegisteredTransform with DependencyAPIMigration {
 
   override def prerequisites = firrtl.stage.Forms.MidForm ++
-    Seq(Dependency(passes.LowerTypes), Dependency(passes.Legalize), Dependency(firrtl.transforms.RemoveReset))
+    Seq(Dependency(passes.LowerTypes), Dependency(firrtl.transforms.RemoveReset))
 
   override def optionalPrerequisites = Seq.empty
 

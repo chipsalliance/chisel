@@ -19,7 +19,7 @@ import scala.collection.{immutable, mutable}
 object RemoveReset extends Transform with DependencyAPIMigration {
 
   override def prerequisites = firrtl.stage.Forms.MidForm ++
-    Seq(Dependency(passes.LowerTypes), Dependency(passes.Legalize))
+    Seq(Dependency(passes.LowerTypes))
 
   override def optionalPrerequisites = Seq.empty
 

@@ -1,18 +1,21 @@
 package firrtl
 
 import java.io.Writer
-
 import firrtl.Utils._
 import firrtl.ir._
+import firrtl.stage.TransformManager.TransformDependency
 import firrtl.traversals.Foreachers._
 
 import scala.collection.mutable
 
-sealed abstract class FirrtlEmitter(form: CircuitForm) extends Transform with Emitter {
-  def inputForm = form
-  def outputForm = form
-
-  val outputSuffix: String = form.outputSuffix
+sealed abstract class FirrtlEmitter(form: Seq[TransformDependency], val outputSuffix: String)
+    extends Transform
+    with Emitter
+    with DependencyAPIMigration {
+  override def prerequisites = form
+  override def optionalPrerequisites = Seq.empty
+  override def optionalPrerequisiteOf = Seq.empty
+  override def invalidates(a: Transform) = false
 
   private def emitAllModules(circuit: Circuit): Seq[EmittedFirrtlModule] = {
     // For a given module, returns a Seq of all modules instantited inside of it
@@ -60,14 +63,9 @@ sealed abstract class FirrtlEmitter(form: CircuitForm) extends Transform with Em
   def emit(state: CircuitState, writer: Writer): Unit = writer.write(state.circuit.serialize)
 }
 
-class ChirrtlEmitter extends FirrtlEmitter(CircuitForm.ChirrtlForm)
-class MinimumHighFirrtlEmitter extends FirrtlEmitter(CircuitForm.HighForm) {
-  override def prerequisites = stage.Forms.MinimalHighForm
-  override def optionalPrerequisites = Seq.empty
-  override def optionalPrerequisiteOf = Seq.empty
-  override def invalidates(a: Transform) = false
-  override val outputSuffix = ".mhi.fir"
-}
-class HighFirrtlEmitter extends FirrtlEmitter(CircuitForm.HighForm)
-class MiddleFirrtlEmitter extends FirrtlEmitter(CircuitForm.MidForm)
-class LowFirrtlEmitter extends FirrtlEmitter(CircuitForm.LowForm)
+class ChirrtlEmitter extends FirrtlEmitter(stage.Forms.ChirrtlForm, ".fir")
+class MinimumHighFirrtlEmitter extends FirrtlEmitter(stage.Forms.MinimalHighForm, ".mhi.fir")
+class HighFirrtlEmitter extends FirrtlEmitter(stage.Forms.HighForm, ".hi.fir")
+class MiddleFirrtlEmitter extends FirrtlEmitter(stage.Forms.MidForm, ".mid.fir")
+class LowFirrtlEmitter extends FirrtlEmitter(stage.Forms.LowForm, ".lo.fir")
+object LowFirrtlOptimizedEmitter extends FirrtlEmitter(stage.Forms.LowFormOptimized, ".opt.lo.fir")

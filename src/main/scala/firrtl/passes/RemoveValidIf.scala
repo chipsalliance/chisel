@@ -31,7 +31,7 @@ object RemoveValidIf extends Pass {
     Seq(Dependency[SystemVerilogEmitter], Dependency[VerilogEmitter])
 
   override def invalidates(a: Transform): Boolean = a match {
-    case Legalize | _: firrtl.transforms.ConstantPropagation => true
+    case _: firrtl.transforms.ConstantPropagation => true // switching out the validifs allows for more constant prop
     case _ => false
   }
 

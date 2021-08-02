@@ -195,8 +195,8 @@ class FirrtlExpressionSemanticsSpec extends AnyFlatSpec {
   }
 
   it should "correctly translate the `neg` primitive operation" in {
-    assert(primop(true, "neg", 4, List(3)) == "sub(sext(3'b0, 1), sext(i0, 1))")
-    assert(primop("neg", "SInt<4>", List("UInt<3>"), List()) == "sub(zext(3'b0, 1), zext(i0, 1))")
+    assert(primop(true, "neg", 4, List(3)) == "neg(sext(i0, 1))")
+    assert(primop("neg", "SInt<4>", List("UInt<3>"), List()) == "neg(zext(i0, 1))")
   }
 
   it should "correctly translate the `not` primitive operation" in {
