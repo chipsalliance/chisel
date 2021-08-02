@@ -8,6 +8,16 @@ import chisel3.util._
 import chisel3.util.random.LFSR
 import treadle.WriteVcdAnnotation
 
+/** Test elements can be enqueued and dequeued when flush is tied to false
+ * 
+  * @param elements The sequence of elements used in the queue
+  * @param queueDepth The max number of entries in the queue
+  * @param bitWidth Integer size of the data type used in the queue
+  * @param tap Integer tap('seed') for the LFSR
+  * @param useSyncReadMem True uses SyncReadMem instead of Mem as an internal memory element
+  */
+class ThingsPassThroughFlushQueueTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean) extends ThingsPassThroughTester(elements, queueDepth, bitWidth, tap, useSyncReadMem, hasFlush = true) 
+
 /** Generic flush queue tester base class
  * 
   * @param elements The sequence of elements used in the queue
@@ -23,8 +33,9 @@ abstract class FlushQueueTesterBase(elements: Seq[Int], queueDepth: Int, bitWidt
   val outCnt = RegInit(0.U(log2Ceil(elements.length).W))
   val currQCnt = RegInit(0.U(log2Ceil(5).W))
 
-  val flush: Bool // Wire(Bool())//LFSR(16)((tap + 3) % 16)  //testing a flush when flush is called randomly
-  val flushRegister = RegInit(false.B)
+  val flush: Bool = WireInit(false.B)
+  val flushRegister = RegNext(flush, init = false.B)
+  q.io.flush.get := flush
   q.io.enq.valid := (inCnt.value < elements.length.U)
   q.io.deq.ready := LFSR(16)(tap)
 
@@ -46,38 +57,6 @@ abstract class FlushQueueTesterBase(elements: Seq[Int], queueDepth: Int, bitWidt
     stop()
   }
 }
-/** Test elements can be enqueued and dequeued
- * 
-  * @param elements The sequence of elements used in the queue
-  * @param queueDepth The max number of entries in the queue
-  * @param bitWidth Integer size of the data type used in the queue
-  * @param tap Integer tap('seed') for the LFSR
-  * @param useSyncReadMem True uses SyncReadMem instead of Mem as an internal memory element
-  */
-class ThingsPassThroughFlushQueueTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean) extends BasicTester {
-  
-  val q = Module(new Queue(UInt(bitWidth.W), queueDepth, hasFlush = true)) 
-  q.io.flush.get := false.B
-  val elems = VecInit(elements.map(_.U))
-  val inCnt = Counter(elements.length + 1)
-  val outCnt = Counter(elements.length + 1)
-
-  q.io.enq.valid := (inCnt.value < elements.length.U)
-  q.io.deq.ready := LFSR(16)(tap)
-
-  q.io.enq.bits := elems(inCnt.value)
-  when(q.io.enq.fire()) {
-    inCnt.inc()
-  }
-  when(q.io.deq.fire()) {
-    //ensure that what comes out is what comes in
-    assert(elems(outCnt.value) === q.io.deq.bits)
-    outCnt.inc()
-  }
-  when(outCnt.value === elements.length.U) {
-    stop()
-  }
-}
 
 /** Test queue can flush at random times
  * 
@@ -88,10 +67,8 @@ class ThingsPassThroughFlushQueueTester(elements: Seq[Int], queueDepth: Int, bit
   * @param useSyncReadMem True uses SyncReadMem instead of Mem as an internal memory element
   */
 class QueueGetsFlushedTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean) extends FlushQueueTesterBase(elements, queueDepth, bitWidth, tap, useSyncReadMem) {
-  val flush = LFSR(16)((tap + 3) % 16)  //testing a flush when flush is called randomly
+  flush := LFSR(16)((tap + 3) % 16)  //testing a flush when flush is called randomly
   val halfCnt = (queueDepth + 1)/2
-  q.io.flush.get := flush
-  flushRegister := flush
 
   when(q.io.deq.fire()) {
     //ensure that what comes out is what comes in
@@ -122,10 +99,7 @@ class EmptyFlushEdgecaseTester (elements: Seq[Int], queueDepth: Int, bitWidth: I
   cycleCounter.inc() //counts every cycle
 
   //testing a flush when queue is empty
-  val flush = (cycleCounter.value === 0.U && inCnt.value === 0.U) //flushed only before anything is enqueued  
-  q.io.flush.get := flush
-  flushRegister := flush
-
+  flush := (cycleCounter.value === 0.U && inCnt.value === 0.U) //flushed only before anything is enqueued  
   q.io.enq.valid := (inCnt.value < elements.length.U) && !flush
 
   when(q.io.deq.fire()) {
@@ -147,9 +121,7 @@ class EnqueueEmptyFlushEdgecaseTester (elements: Seq[Int], queueDepth: Int, bitW
   val outCounter = Counter(elements.length + 1)
 
   //testing an enqueue during a flush
-  val flush = (cycleCounter.value === 0.U && inCnt.value === 0.U) //flushed only before anything is enqueued  
-  q.io.flush.get := flush
-  flushRegister := flush
+  flush := (cycleCounter.value === 0.U && inCnt.value === 0.U) //flushed only before anything is enqueued  
   cycleCounter.inc() //counts every cycle
 
   when(q.io.deq.fire()) {
@@ -171,9 +143,7 @@ class EnqueueEmptyFlushEdgecaseTester (elements: Seq[Int], queueDepth: Int, bitW
 class FullQueueFlushEdgecaseTester (elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean) extends FlushQueueTesterBase(elements, queueDepth, bitWidth, tap, useSyncReadMem) {
 
   //testing a flush when queue is full
-  val flush = (currQCnt === queueDepth.U)
-  q.io.flush.get := flush
-  flushRegister := flush
+  flush := (currQCnt === queueDepth.U)
 
   when(q.io.deq.fire()) {
     //ensure that what comes out is what comes in
@@ -203,9 +173,7 @@ class DequeueFullQueueEdgecaseTester (elements: Seq[Int], queueDepth: Int, bitWi
   //Queue should be able to dequeue when queue is not empty and flush is high
 
   //testing a flush when dequeue is called
-  val flush = currQCnt === (queueDepth/2).U
-  q.io.flush.get := flush
-  flushRegister := flush
+  flush := currQCnt === (queueDepth/2).U
   q.io.enq.valid := !flushRegister
   q.io.deq.ready := flush
 
