@@ -1307,9 +1307,8 @@ A multiplexer expression is legal only if the following holds.
 \item The type of the selection signal is an unsigned integer.
 \item The width of the selection signal is any of:
   \begin{enumerate}
-  \item Unspecified
-  \item Zero-bit\footnote{A zero-bit width selection signal will be treated as a one-bit, zero-valued selection signal.  \emph{This means that a multiplexer expression with a zero-bit selection signal will always take the false path and will likely be optimized away by a FIRRTL compiler.}}
   \item One-bit
+  \item Unspecified, but will infer to one-bit
   \end{enumerate}
 \item The types of the two input expressions are equivalent.
 \item The types of the two input expressions are passive (see section \ref{passive_types}).
