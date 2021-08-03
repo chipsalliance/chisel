@@ -187,7 +187,7 @@ trait CheckHighFormLike { this: Pass =>
         case AsInterval =>
           correctNum(Option(1), 3)
         case Andr | Orr | Xorr | Neg =>
-          correctNum(None, 0)
+          correctNum(Option(1), 0)
       }
     }
 
