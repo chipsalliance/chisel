@@ -2,6 +2,8 @@
 
 package chiselTests
 
+import org.scalacheck._
+
 import chisel3._
 import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
@@ -104,6 +106,21 @@ class TabulateTester(n: Int) extends BasicTester {
   stop()
 }
 
+class FillTester(n: Int, value: Int) extends BasicTester {
+  val x = VecInit(Array.fill(n)(value.U))
+  val u = VecInit.fill(n)(value.U)
+
+  assert(x.asUInt() === u.asUInt(), s"Expected Vec to be filled like $x, instead VecInit.fill created $u")
+  stop()
+}
+
+class IterateTester(start: Int, len: Int)(f: UInt => UInt) extends BasicTester {
+  val controlVec = VecInit(Seq.iterate(start.U, len)(f))
+  val testVec = VecInit.iterate(start.U, len)(f)
+  assert(controlVec.asUInt() === testVec.asUInt(), s"Expected Vec to be filled like $controlVec, instead creaeted $testVec\n")
+  stop()
+}
+
 class ShiftRegisterTester(n: Int) extends BasicTester {
   val (cnt, wrap) = Counter(true.B, n*2)
   val shifter = Reg(Vec(n, UInt((log2Ceil(n) max 1).W)))
@@ -159,7 +176,6 @@ class PassthroughModuleTester extends Module {
   io.in := 123.U
   assert(io.out === 123.U)
 }
-
 
 class ModuleIODynamicIndexTester(n: Int) extends BasicTester {
   val duts = VecInit(Seq.fill(n)(Module(new PassthroughModule).io))
@@ -219,8 +235,16 @@ class VecSpec extends ChiselPropSpec with Utils {
     }
   }
 
-  property("Vecs should tabulate correctly") {
+  property("VecInit should tabulate correctly") {
     forAll(smallPosInts) { (n: Int) => assertTesterPasses{ new TabulateTester(n) } }
+  }
+
+  property("VecInit should fill correctly") {
+    forAll(smallPosInts, Gen.choose(0, 50)) { (n: Int, value: Int) => assertTesterPasses{ new FillTester(n, value) } }
+  }
+
+  property("VecInit should iterate correctly") {
+    forAll(Gen.choose(1, 10), smallPosInts) { (start: Int, len: Int) => assertTesterPasses{ new IterateTester(start, len)(x => x + 50.U)}}
   }
 
   property("Regs of vecs should be usable as shift registers") {
