@@ -16,12 +16,12 @@ Users can define read-only memories by constructing a `Vec` with `VecInit`.
 For example, users can create a small ROM initialized to 1, 2, 4, 8 and loop through all values using a counter as an address generator as follows:
 
 ```scala mdoc:compile-only
-  import chisel3._
-  import chisel3.util.Counter
-  val m = VecInit(1.U, 2.U, 4.U, 8.U)
-  val c = Counter(m.length)
-  c.inc()
-  val r = m(c.value)
+import chisel3._
+import chisel3.util.Counter
+val m = VecInit(1.U, 2.U, 4.U, 8.U)
+val c = Counter(m.length)
+c.inc()
+val r = m(c.value)
 ```
 
 We can create an *n* value sine lookup table generator using a ROM initialized as follows:
