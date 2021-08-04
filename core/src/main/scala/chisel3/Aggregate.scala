@@ -991,7 +991,7 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
       getBundleField(m) match {
         case Some(d: Data) =>
           requireIsChiselType(d)
-          
+
           if (nameMap contains m.getName) {
             require(nameMap(m.getName) eq d)
           } else {
