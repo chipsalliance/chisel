@@ -75,10 +75,8 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
           val msg = "Users cannot override _usingPlugin, it is for the compiler plugin's use only."
           global.globalError(d.pos, msg)
         case d: DefDef if isNullaryMethodNamed("cloneType", d) =>
-          val msg = "Users should not override def cloneType for Bundles when using the compiler plugin, as of Chisel 3.5. " +
-                    "This will be an error in the future."
-          // This should be made an error in the future, and the test in BundleSpec turned to "shouldNot compile" to match.
-          global.reporter.warning(d.pos, "msg")
+          val msg = "Users cannot override cloneType. Let the compiler plugin generate it."
+          global.globalError(d.pos, msg)
         case _ =>
       }
       (primaryConstructor, paramAccessors.toList)

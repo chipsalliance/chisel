@@ -8,9 +8,8 @@ import chisel3.testers.BasicTester
 
 trait BundleSpecUtils {
   class BundleFooBar extends Bundle {
-    val foo                           = UInt(16.W)
-    val bar                           = UInt(16.W)
-    override def cloneType: this.type = (new BundleFooBar).asInstanceOf[this.type]
+    val foo = UInt(16.W)
+    val bar = UInt(16.W)
   }
   class BundleBarFoo extends Bundle {
     val bar = UInt(16.W)
@@ -29,7 +28,7 @@ trait BundleSpecUtils {
 
   class MyModule(output: Bundle, input: Bundle) extends Module {
     val io = IO(new Bundle {
-      val in  = Input(input)
+      val in = Input(input)
       val out = Output(output)
     })
     io.out <> io.in
@@ -62,13 +61,13 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
   }
 
   "Bulk connect on Bundles" should "check that the fields match" in {
-    (the[ChiselException] thrownBy extractCause[ChiselException] {
+    (the [ChiselException] thrownBy extractCause[ChiselException] {
       ChiselStage.elaborate { new MyModule(new BundleFooBar, new BundleFoo) }
-    }).getMessage should include("Right Record missing field")
+    }).getMessage should include ("Right Record missing field")
 
-    (the[ChiselException] thrownBy extractCause[ChiselException] {
+    (the [ChiselException] thrownBy extractCause[ChiselException] {
       ChiselStage.elaborate { new MyModule(new BundleFoo, new BundleFooBar) }
-    }).getMessage should include("Left Record missing field")
+    }).getMessage should include ("Left Record missing field")
   }
 
   "Bundles" should "not be able to use Seq for constructing hardware" in {
@@ -101,8 +100,8 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
       new BasicTester {
         val m = Module(new Module {
           val io = IO(new Bundle {
-            val f          = Output(UInt(8.W))
-            val unrelated  = (0 to 10).toSeq
+            val f = Output(UInt(8.W))
+            val unrelated = (0 to 10).toSeq
             val unrelated2 = Seq("Hello", "World", "Chisel")
           })
           io.f := 0.U
@@ -114,42 +113,36 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
 
   "Bundles" should "not have aliased fields" in {
     (the[ChiselException] thrownBy extractCause[ChiselException] {
-      ChiselStage.elaborate {
-        new Module {
-          val io = IO(Output(new Bundle {
-            val a = UInt(8.W)
-            val b = a
-          }))
-          io.a := 0.U
-          io.b := 1.U
-        }
-      }
+      ChiselStage.elaborate { new Module {
+        val io = IO(Output(new Bundle {
+          val a = UInt(8.W)
+          val b = a
+        }))
+        io.a := 0.U
+        io.b := 1.U
+      } }
     }).getMessage should include("aliased fields")
   }
 
   "Bundles" should "not have bound hardware" in {
     (the[ChiselException] thrownBy extractCause[ChiselException] {
-      ChiselStage.elaborate {
-        new Module {
-          class MyBundle(val foo: UInt) extends Bundle
-          val in  = IO(Input(new MyBundle(123.U))) // This should error: value passed in instead of type
-          val out = IO(Output(new MyBundle(UInt(8.W))))
+      ChiselStage.elaborate { new Module {
+        class MyBundle(val foo: UInt) extends Bundle
+        val in  = IO(Input(new MyBundle(123.U))) // This should error: value passed in instead of type
+        val out = IO(Output(new MyBundle(UInt(8.W))))
 
-          out := in
-        }
-      }
+        out := in
+      } }
     }).getMessage should include("must be a Chisel type, not hardware")
   }
   "Bundles" should "not recursively contain aggregates with bound hardware" in {
     (the[ChiselException] thrownBy extractCause[ChiselException] {
-      ChiselStage.elaborate {
-        new Module {
-          class MyBundle(val foo: UInt) extends Bundle
-          val out = IO(Output(Vec(2, UInt(8.W))))
-          val in  = IO(Input(new MyBundle(out(0)))) // This should error: Bound aggregate passed
-          out := in
-        }
-      }
+      ChiselStage.elaborate { new Module {
+        class MyBundle(val foo: UInt) extends Bundle
+        val out = IO(Output(Vec(2, UInt(8.W))))
+        val in  = IO(Input(new MyBundle(out(0)))) // This should error: Bound aggregate passed
+        out := in
+      } }
     }).getMessage should include("must be a Chisel type, not hardware")
   }
   "Unbound bundles sharing a field" should "not error" in {
@@ -165,22 +158,13 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
     }
   }
 
-  class BundleBaz(w: Int) extends Bundle {
-    val baz = UInt(w.W)
-    // This is currently a compiler warning when using the plugin, which we test below.
-    // It will be made a compiler error in future releases.
-    override def cloneType = (new BundleBaz(w)).asInstanceOf[this.type]
-  }
-
   // This tests the interaction of override def cloneType and the plugin.
-  // As of now, this is only a compiler warning, which we can't really check with scalatest.
-  // Turn this to "shouldNot compile" once this is made an error in the plugin <link>
   """
-      ChiselStage.elaborate {
-        new Module {
-          val in = IO(Input(new BundleBaz(w = 3)))
-          val out = IO(Output(in.cloneType))
-        }
+      class BundleBaz(w: Int) extends Bundle {
+      val baz = UInt(w.W)
+        // This is a compiler error when using the plugin, which we test below.
+        override def cloneType = (new BundleBaz(w)).asInstanceOf[this.type]
       }
-  """ should compile
+  """ shouldNot compile
+
 }
