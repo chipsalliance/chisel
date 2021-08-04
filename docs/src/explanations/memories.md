@@ -13,14 +13,6 @@ Chisel provides facilities for creating both read only and read/write memories.
 Users can define read-only memories by constructing a `Vec` with `VecInit`.
 `VecInit` can accept either a variable-argument number of `Data` literals or a `Seq[Data]` literals that initialize the ROM.
 
-```scala mdoc:invisible
-import chisel3._
-// This is bad, don't do this, use a val
-def counter = util.Counter(true.B, 4)._1
-val Pi = 3.14
-def sin(t: Double): Double = t // What should this be?
-```
-
 For example, users can create a small ROM initialized to 1, 2, 4, 8 and loop through all values using a counter as an address generator as follows:
 
 ```scala mdoc:compile-only
