@@ -27,11 +27,12 @@ For example, users can create a small ROM initialized to 1, 2, 4, 8 and loop thr
 We can create an *n* value sine lookup table using a ROM initialized as follows:
 
 ```scala mdoc:compile-only
+val Pi = math.Pi
 def sinTable(amp: Double, n: Int) = {
   val times =
     (0 until n).map(i => (i*2*Pi)/(n.toDouble-1) - Pi)
   val inits =
-    times.map(t => Math.round(amp * sin(t)).asSInt(32.W))
+    times.map(t => Math.round(amp * math.sin(t)).asSInt(32.W))
   VecInit(inits)
 }
 def sinWave(amp: Double, n: Int) =
