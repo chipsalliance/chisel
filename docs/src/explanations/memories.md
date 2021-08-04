@@ -24,6 +24,8 @@ def sin(t: Double): Double = t // What should this be?
 For example, users can create a small ROM initialized to 1, 2, 4, 8 and loop through all values using a counter as an address generator as follows:
 
 ```scala mdoc:compile-only
+  import chisel3._
+  import chisel3.util.Counter
   val m = VecInit(1.U, 2.U, 4.U, 8.U)
   val c = Counter(m.length)
   c.inc()
