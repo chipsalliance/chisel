@@ -130,15 +130,17 @@ class ModuleProgrammaticMixedVec(x: Int, y: Int) extends Module {
 
 ### A note on `cloneType` (For Chisel < 3.5)
 
-NOTE: This section **only applies to Chisel before Chisel 3.5**. As of Chisel 3.5,
-`Bundle`s should **not** `override def cloneType`, as this will be
-ignored when using the chisel3 compiler plugin for inferring `cloneType`.
+NOTE: This section **only applies to Chisel before Chisel 3.5**.
+As of Chisel 3.5, `Bundle`s should **not** `override def cloneType`,
+as this is a compiler error when using the chisel3 compiler plugin for inferring `cloneType`.
 
-Since Chisel is built on top of Scala and the JVM, it needs to know how to construct copies of `Bundle`s for various
-purposes (creating wires, IOs, etc). If you have a parametrized `Bundle` and Chisel can't automatically figure out how to
+Since Chisel is built on top of Scala and the JVM,
+it needs to know how to construct copies of `Bundle`s for various
+purposes (creating wires, IOs, etc).
+If you have a parametrized `Bundle` and Chisel can't automatically figure out how to
 clone it, you will need to create a custom `cloneType` method in your bundle. 
-In the vast majority of cases, **this is not required** as Chisel can figure out how to clone most `Bundle`s
-automatically:
+In the vast majority of cases, **this is not required**
+as Chisel can figure out how to clone most `Bundle`s automatically:
 
 ```scala mdoc:silent
 class MyCloneTypeBundle(val bitwidth: Int) extends Bundle {
@@ -154,7 +156,8 @@ in which case you should make it a `private val`, and define a `cloneType` metho
 For example, consider the following `Bundle`. Because its `gen` variable is not a `private val`, the user has to
 explicitly define the `cloneType` method:
 
-```scala mdoc:silent
+<!-- Cannot compile this because the cloneType is now an error -->
+```scala
 import chisel3.util.{Decoupled, Irrevocable}
 class RegisterWriteIOExplicitCloneType[T <: Data](gen: T) extends Bundle {
   val request  = Flipped(Decoupled(gen))
@@ -171,3 +174,4 @@ class RegisterWriteIO[T <: Data](private val gen: T) extends Bundle {
   val response = Irrevocable(Bool())
 }
 ```
+
