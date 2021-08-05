@@ -892,19 +892,19 @@ mem mymem :
 
 In the example above, the type of \verb|mymem| is:
 \begin{lstlisting}
-{flip r1: {flip data: {real:SInt<16>, imag:SInt<16>},
-           addr: UInt<8>,
+{flip r1: {addr: UInt<8>,
            en: UInt<1>,
-           clk: Clock}
- flip r2: {flip data: {real:SInt<16>, imag:SInt<16>},
-           addr: UInt<8>,
+           clk: Clock,
+           flip data: {real:SInt<16>, imag:SInt<16>}}
+ flip r2: {addr: UInt<8>,
            en: UInt<1>,
-           clk: Clock}
- flip w: {data: {real:SInt<16>, imag:SInt<16>},
-          mask: {real:UInt<1>, imag:UInt<1>},
-          addr: UInt<8>,
+           clk: Clock,
+           flip data: {real:SInt<16>, imag:SInt<16>}}
+ flip w: {addr: UInt<8>,
           en: UInt<1>,
-          clk: Clock}}
+          clk: Clock},
+          data: {real:SInt<16>, imag:SInt<16>},
+          mask: {real:UInt<1>, imag:UInt<1>}}
 \end{lstlisting}
 
 The following sections describe how a memory's field types are calculated and the behavior of each type of memory port.
@@ -912,7 +912,7 @@ The following sections describe how a memory's field types are calculated and th
 \subsubsection{Read Ports}
 If a memory is declared with element type \verb|T|, has a size less than or equal to $2^N$, then its read ports have type:
 \begin{lstlisting}
-{flip data:T, addr:UInt<N>, en:UInt<1>, clk:Clock}
+{addr:UInt<N>, en:UInt<1>, clk:Clock, flip data:T}
 \end{lstlisting}
 
 If the \verb|en| field is high, then the element value associated with the address in the \verb|addr| field can be retrieved by reading from the \verb|data| field after the appropriate read latency. If the \verb|en| field is low, then the value in the \verb|data| field, after the appropriate read latency, is undefined. The port is driven by the clock signal in the \verb|clk| field.
@@ -920,7 +920,7 @@ If the \verb|en| field is high, then the element value associated with the addre
 \subsubsection{Write Ports}
 If a memory is declared with element type \verb|T|, has a size less than or equal to $2^N$, then its write ports have type:
 \begin{lstlisting}
-{data:T, mask:M, addr:UInt<N>, en:UInt<1>, clk:Clock}
+{addr:UInt<N>, en:UInt<1>, clk:Clock, data:T, mask:M}
 \end{lstlisting}
 where \verb|M| is the mask type calculated from the element type \verb|T|. Intuitively, the mask type mirrors the aggregate structure of the element type except with all ground types replaced with a single bit unsigned integer type. The {\em non-masked portion} of the data value is defined as the set of data value leaf sub-elements where the corresponding mask leaf sub-element is high.
 
@@ -929,8 +929,7 @@ If the \verb|en| field is high, then the non-masked portion of the \verb|data| f
 \subsubsection{Readwrite Ports}
 Finally, the readwrite ports have type:
 \begin{lstlisting}
-{wmode:UInt<1>, flip rdata:T, wdata:T, wmask:M,
- addr:UInt<N>, en:UInt<1>, clk:Clock}
+{addr:UInt<N>, en:UInt<1>, clk:Clock, flip rdata:T, wmode:UInt<1>, wdata:T, wmask:M}
 \end{lstlisting}
 A readwrite port is a single port that, on a given cycle, can be used either as a read or a write port. If the readwrite port is not in write mode (the \verb|wmode| field is low), then the \verb|rdata|, \verb|addr|, \verb|en|, and \verb|clk| fields constitute its read port fields, and should be used accordingly. If the readwrite port is in write mode (the \verb|wmode| field is high), then the \verb|wdata|, \verb|wmask|, \verb|addr|, \verb|en|, and \verb|clk| fields constitute its write port fields, and should be used accordingly.
 
