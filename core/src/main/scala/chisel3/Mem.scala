@@ -209,12 +209,13 @@ sealed class SyncReadMem[T <: Data] private (t: T, n: BigInt, val readUnderWrite
   /** @group SourceInfoTransformMacro */
   def do_read(addr: UInt, enable: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
     val a = Wire(UInt())
+    val port = Wire(t)
     a := DontCare
-    var port: Option[T] = None
+    port := DontCare
     when (enable) {
       a := addr
-      port = Some(read(a))
+      port := read(a)
     }
-    port.get
+    port
   }
 }
