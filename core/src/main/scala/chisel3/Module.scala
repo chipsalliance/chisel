@@ -65,13 +65,13 @@ object Module extends SourceInfoDoc {
     Builder.currentReset = saveReset
 
     val component = module.generateComponent()
-    Builder.components += component
+    if(component.nonEmpty) Builder.components += component.get
 
     Builder.setPrefix(savePrefix)
 
     // Handle connections at enclosing scope
     if(!Builder.currentModule.isEmpty) {
-      pushCommand(DefInstance(sourceInfo, module, component.ports))
+      if(component.nonEmpty) pushCommand(DefInstance(sourceInfo, module, component.get.ports))
       module.initializeInParent(compileOptions)
     }
     module
@@ -314,7 +314,7 @@ package experimental {
     /** Generates the FIRRTL Component (Module or Blackbox) of this Module.
       * Also closes the module so no more construction can happen inside.
       */
-    private[chisel3] def generateComponent(): Component
+    private[chisel3] def generateComponent(): Option[Component]
 
     /** Sets up this module in the parent context
       */

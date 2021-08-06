@@ -113,7 +113,7 @@ object Select {
     module._component.get match {
       case d: DefModule => d.commands.flatMap {
         case i: DefInstance => i.id match {
-          case _: ModuleClone[_] => None
+          case _: internal.BaseModule.ModuleClone[_] => None
           case other          => Some(other)
         }
         case _ => None

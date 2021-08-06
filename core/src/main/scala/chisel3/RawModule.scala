@@ -58,7 +58,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
   }
 
 
-  private[chisel3] override def generateComponent(): Component = {
+  private[chisel3] override def generateComponent(): Option[Component] = {
     require(!_closed, "Can't generate module more than once")
     _closed = true
 
@@ -132,7 +132,7 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
     }
     val component = DefModule(this, name, firrtlPorts, invalidateCommands ++ getCommands)
     _component = Some(component)
-    component
+    Some(component)
   }
 
   private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = {
@@ -226,7 +226,7 @@ package internal {
       }
     }
 
-    private[chisel3] override def generateComponent(): Component = {
+    private[chisel3] override def generateComponent(): Option[Component] = {
       _compatAutoWrapPorts()  // pre-IO(...) compatibility hack
 
       // Restrict IO to just io, clock, and reset
