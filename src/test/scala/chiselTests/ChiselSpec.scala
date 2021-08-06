@@ -12,7 +12,18 @@ import chisel3.testers._
 import firrtl.{AnnotationSeq, CommonOptions, EmittedVerilogCircuitAnnotation, ExecutionOptionsManager, FirrtlExecutionFailure, FirrtlExecutionSuccess, HasFirrtlOptions}
 import firrtl.annotations.{Annotation, DeletedAnnotation}
 import firrtl.util.BackendCompilationUtilities
-import java.io.ByteArrayOutputStream
+import firrtl.{AnnotationSeq, EmittedVerilogCircuitAnnotation}
+import _root_.logger.Logger
+import org.scalacheck._
+import org.scalatest._
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.propspec.AnyPropSpec
+import org.scalatest.matchers.should.Matchers
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
+
+import java.io.{ByteArrayOutputStream, PrintStream}
 import java.security.Permission
 
 import chisel3.aop.Aspect
@@ -89,6 +100,12 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
 
 /** Spec base class for BDD-style testers. */
 abstract class ChiselFlatSpec extends AnyFlatSpec with ChiselRunners with Matchers
+
+/** Spec base class for BDD-style testers. */
+abstract class ChiselFreeSpec extends AnyFreeSpec with ChiselRunners with Matchers
+
+/** Spec base class for BDD-style testers. */
+abstract class ChiselFunSpec extends AnyFunSpec with ChiselRunners with Matchers
 
 /** Spec base class for property-based testers. */
 abstract class ChiselPropSpec extends PropSpec with ChiselRunners with ScalaCheckPropertyChecks with Matchers {

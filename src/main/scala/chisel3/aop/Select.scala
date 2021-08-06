@@ -111,8 +111,12 @@ object Select {
   def instances(module: BaseModule): Seq[BaseModule] = {
     check(module)
     module._component.get match {
-      case d: DefModule => d.commands.collect {
-        case i: DefInstance => i.id
+      case d: DefModule => d.commands.flatMap {
+        case i: DefInstance => i.id match {
+          case _: ModuleClone[_] => None
+          case other          => Some(other)
+        }
+        case _ => None
       }
       case other => Nil
     }

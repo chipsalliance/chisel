@@ -118,7 +118,7 @@ case class MemTypeBinding[T <: Data](parent: MemBase[T]) extends Binding {
 // It is a source (RHS). It may only be connected/applied to sinks.
 case class DontCareBinding() extends UnconstrainedBinding
 
-case class XMRBinding(context: InstanceContext) extends TopBinding {
+case object XMRBinding extends TopBinding {
   def location = None
 }
 

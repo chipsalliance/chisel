@@ -87,7 +87,7 @@ object instanceMacro {
   }
 }
 
-class instance extends StaticAnnotation {
+class instantiable extends StaticAnnotation {
   def macroTransform(annottees: Any*): Any = macro instanceMacro.impl
 }
 class public extends StaticAnnotation {

@@ -8,8 +8,9 @@ import chisel3._
 import chisel3.experimental._
 import chisel3.internal.firrtl._
 import chisel3.internal.naming._
-import _root_.firrtl.annotations.{CircuitName, ComponentName, IsMember, ModuleName, Named, ReferenceTarget}
-import _root_.firrtl.annotations.AnnotationUtils.{validComponentName}
+import _root_.firrtl.annotations.{CircuitName, ComponentName, IsMember, ModuleName, Named, ReferenceTarget, ModuleTarget}
+import _root_.firrtl.annotations.AnnotationUtils.validComponentName
+import _root_.firrtl.AnnotationSeq
 import chisel3.internal.Builder.Prefix
 import logger.LazyLogging
 import chisel3.InstanceContext
@@ -86,8 +87,8 @@ trait InstanceId {
 }
 
 private[chisel3] trait HasId extends InstanceId {
+  private[chisel3] var _parent: Option[BaseModule] = internal.Builder.currentModule
   private[chisel3] def _onModuleClose: Unit = {}
-  private[chisel3] val _parent: Option[BaseModule] = Builder.currentModule
 
   private[chisel3] val _id: Long = Builder.idGen.next
 
@@ -219,15 +220,19 @@ private[chisel3] trait HasId extends InstanceId {
   private[chisel3] def getOptionRef: Option[Arg] = _ref
 
   // Implementation of public methods.
-  def instanceName: String = _parent match {
-    case Some(p) => p._component match {
-      case Some(c) => _ref match {
-        case Some(arg) => arg fullName c
+  def instanceName: String = {
+    //case Some(p) =>
+    //  (p._component, this) match {
+    //    case (Some(c), _) => _ref match {
+    //      case Some(arg) => arg fullName c
+    //      case None => computeName(None, None).get
+    //    }
+    //    case (None, d: Data) if d.binding == Some(XMRBinding) => _ref.get.name
+    //    case (None, _) => throwException(s"signalName/pathName should be called after circuit elaboration: $this, ${_parent}")
+      _ref match {
+        case Some(arg) => arg.localName //always calculate fullName, which give the local name.
         case None => computeName(None, None).get
       }
-      case None => throwException("signalName/pathName should be called after circuit elaboration")
-    }
-    case None => throwException("this cannot happen")
   }
   def pathName: String = _parent match {
     case None => instanceName
@@ -280,50 +285,22 @@ private[chisel3] trait NamedComponent extends HasId {
     * @note Should not be called until circuit elaboration is complete
     */
   final def toTarget: ReferenceTarget = {
-    def getXMR(d: HasId, me: Option[Data]): Option[XMRBinding] = {
-      d match {
-        case d: Data => d.binding match {
-          case Some(x: XMRBinding) => Some(x)
-          case Some(ChildBinding(parent: Data)) => getXMR(parent, Some(d))
-          case Some(x) => None
-          case None => None
-        }
-        case _ => None
-      }
-    }
-    val isXMR = getXMR(this, None)
-    val name = (_parent.get._component, getOptionRef, isXMR) match {
-      case (None, _, _) => throwException("signalName/pathName should be called after circuit elaboration")
-      case (Some(c), None, _) => computeName(None, None).get
-      case (Some(c), Some(arg: ModuleIO), Some(_)) => arg.name
-      case (Some(c), Some(arg), Some(_)) => arg.fullName(c)
-      case (Some(c), Some(arg), None) => arg fullName c
-    }
+    val name = this.instanceName
     if (!validComponentName(name)) throwException(s"Illegal component name: $name (note: literals are illegal)")
     import _root_.firrtl.annotations.{Target, TargetToken}
+    val root = _parent.get.toTarget
     Target.toTargetTokens(name).toList match {
-      case TargetToken.Ref(r) :: components =>
-        val rt = ReferenceTarget(this.circuitName, this.parentModName, Nil, r, components)
-        isXMR.map(_.context.toInstanceTarget.ref(r).copy(component = components)).getOrElse(rt)
+      case TargetToken.Ref(r) :: components => root.ref(r).copy(component = components)
       case other =>
         throw _root_.firrtl.annotations.Target.NamedException(s"Cannot convert $name into [[ReferenceTarget]]: $other")
     }
-  }
+  } 
 
   final def toAbsoluteTarget: ReferenceTarget = {
     val localTarget = toTarget
-    lazy val nonXmrAbsoluteTarget = _parent match {
+    _parent match {
       case Some(parent) => parent.toAbsoluteTarget.ref(localTarget.ref).copy(component = localTarget.component)
       case None => localTarget
-    }
-    this match {
-      case d: Data => d.binding match {
-        case Some(x: XMRBinding) =>
-          println(s"XMR Binding context: ${x.context}")
-          x.context.toAbsoluteInstanceTarget.ref(localTarget.ref).copy(component = localTarget.component)
-        case _ => nonXmrAbsoluteTarget
-      }
-      case other => nonXmrAbsoluteTarget
     }
   }
 }
@@ -638,7 +615,14 @@ private[chisel3] object Builder extends LazyLogging {
     * (Note: Map is Iterable[Tuple2[_,_]] and thus excluded)
     */
   def nameRecursively(prefix: String, nameMe: Any, namer: (HasId, String) => Unit): Unit = nameMe match {
-    case (id: Instance[_]) if id.ports.nonEmpty => namer(id.ports.get, prefix)
+    case (id: Instance[_]) =>
+      id.cloned match {
+        case Left(i) =>
+        case Right(m: internal.BaseModule.ModuleClone[_]) =>
+          namer(m.getPorts, prefix)
+      }
+      //println(id.ports.get)
+      //nameRecursively(prefix, id.ports.get, namer)
     case (id: HasId) => namer(id, prefix)
     case Some(elt) => nameRecursively(prefix, elt, namer)
     case (iter: Iterable[_]) if iter.hasDefiniteSize =>

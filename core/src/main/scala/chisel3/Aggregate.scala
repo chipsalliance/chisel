@@ -187,8 +187,10 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
   // simpler.
   private lazy val self: Seq[T] = {
     val _self = Vector.fill(length)(gen)
-    for ((elt, i) <- _self.zipWithIndex)
+    for ((elt, i) <- _self.zipWithIndex) {
       elt.setRef(this, i)
+      elt._parent = this._parent
+    }
     _self
   }
 

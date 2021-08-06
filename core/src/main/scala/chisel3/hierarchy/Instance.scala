@@ -11,9 +11,40 @@ import java.util.IdentityHashMap
 import chisel3._
 import chisel3.internal._
 import chisel3.internal.Builder._
+import chisel3.internal.BaseModule.{ModuleClone, InstanceClone, IsClone, InstantiableClone}
 import chisel3.internal.sourceinfo.{InstTransform, SourceInfo, SourceInfoTransform}
 import chisel3.experimental.BaseModule
+import _root_.firrtl.annotations.IsModule
 
+case class Instance[A] private [chisel3] (val cloned: Either[A, IsClone[A]]) {
+  def definition: A = cloned match {
+    case Left(value: A) => value
+    case Right(i: IsClone[A]) => i._proto
+  }
+  def getInnerDataContext: Option[BaseModule] = cloned match {
+    case Left(value: BaseModule)        => Some(value)
+    case Left(value: IsInstantiable)    => None
+    case Right(i: BaseModule)           => Some(i)
+    case Right(i: InstantiableClone[_]) => i._parent
+  }
+  def getClonedParent: Option[BaseModule] = cloned match {
+    case Left(value: BaseModule) => value._parent
+    case Right(i: BaseModule)           => i._parent
+    case Right(i: InstantiableClone[_]) => i._parent
+  }
+
+  private [chisel3] val cache = HashMap[Data, Data]()
+
+  def apply[B, C](that: A => B)(implicit lookup: Lookupable[A, B]): lookup.C = {
+    lookup.lookup(that, this)
+  }
+  def toTarget = cloned match {
+    case Left(x: BaseModule) => x.toTarget
+    case Right(x: chisel3.internal.BaseModule.ModuleClone[_]) => x.toTarget
+    case Right(x: chisel3.internal.BaseModule.InstanceClone[_]) => x.toTarget
+    case other => throw new Exception(s"toTarget is not supported on $this")
+  }
+}
 object Instance extends SourceInfoDoc {
   /** A wrapper method that all Module instantiations must be wrapped in
     * (necessary to help Chisel track internal state).
@@ -27,17 +58,12 @@ object Instance extends SourceInfoDoc {
   /** @group SourceInfoTransformMacro */
   def do_apply[T <: BaseModule, I <: Bundle](bc: Definition[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Instance[T] = {
     val ports = experimental.CloneModuleAsRecord(bc.module)
-    Instance(() => ports.instanceName, bc.module, portMap(ports, bc.module), InstanceContext.getContext(ports._parent.get).descend(ports, bc.module), Some(ports))
+    val clone = ports._parent.get.asInstanceOf[ModuleClone[T]]
+    //println(s"In do_apply: ports=$ports")
+    val inst = Instance(Right(clone))
+    inst
   }
 
-  def portMap(m: BaseModule): Map[Data, Data] = {
-    m.getChiselPorts.map{ x => x._2 -> x._2 }.toMap
-  }
-  def portMap(ports: BaseModule.ClonePorts, m: BaseModule): Map[Data, Data] = {
-    val name2Port = ports.elements
-    m.getChiselPorts.map { case (name, data) => data -> name2Port(name) }.toMap
-    //m.getChiselPorts.map{_._2).zip(ports.elements.map(_._2)).toMap
-  }
   import scala.language.implicitConversions
   //implicit def convertSeq[T <: IsInstantiable](i: T): Instance[T] = {
   //  i match {
@@ -50,19 +76,11 @@ object Instance extends SourceInfoDoc {
   }
   
   
+  implicit def moduleToInstance[T <: BaseModule] = new Convertable[T, Instance[T]] {
+    def convert(that: T): Instance[T] = new Instance(Left(that))
+  }
   implicit def isInstantiabletoInstance[T <: IsInstantiable] = new Convertable[T, Instance[T]] {
-    def convert(that: T): Instance[T] = {
-      that match {
-        case m: BaseModule => new Instance(() => m.instanceName, that, portMap(m), InstanceContext.getContext(m).descend(m, m), None)
-        case _ => new Instance(
-          () => "",
-          that,
-          Map.empty,
-          Builder.currentModule.map(InstanceContext.getContext).getOrElse(InstanceContext.empty),
-          None
-        )
-      }
-    }
+    def convert(that: T): Instance[T] = new Instance(Left(that))
   }
   implicit def convertSeq[T, R](implicit convertable: Convertable[T, R]) = new Convertable[Seq[T], Seq[R]] {
     def convert(that: Seq[T]): Seq[R] = that.map(convertable.convert)
@@ -74,12 +92,12 @@ object Instance extends SourceInfoDoc {
   implicit def convert[T, R](i: T)(implicit convertable: Convertable[T, R]): R = convertable.convert(i)
 }
 
-case class Instance[A] private [chisel3] (name: () => String, template: A, ioMap: Map[Data, Data], context: InstanceContext, ports: Option[BaseModule.ClonePorts]) extends NamedComponent {
-  override def instanceName = ports.map(_.instanceName).getOrElse(name())
-  
-  private [chisel3] val cache = HashMap[Data, Data]()
-
-  def apply[B, C](that: A => B)(implicit lookup: Lookupable[A, B]): lookup.C = {
-    lookup.lookup(that, this)
-  }
-}
+//case class Instance[A] private [chisel3] (name: () => String, template: A, ioMap: Map[Data, Data], context: InstanceContext, ports: Option[BaseModule.ClonePorts]) extends NamedComponent {
+//  override def instanceName = ports.map(_.instanceName).getOrElse(name())
+//  
+//  private [chisel3] val cache = HashMap[Data, Data]()
+//
+//  def apply[B, C](that: A => B)(implicit lookup: Lookupable[A, B]): lookup.C = {
+//    lookup.lookup(that, this)
+//  }
+//}
