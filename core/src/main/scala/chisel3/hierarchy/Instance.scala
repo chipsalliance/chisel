@@ -59,9 +59,9 @@ object Instance extends SourceInfoDoc {
   def do_apply[T <: BaseModule, I <: Bundle](bc: Definition[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Instance[T] = {
     val ports = experimental.CloneModuleAsRecord(bc.module)
     val clone = ports._parent.get.asInstanceOf[ModuleClone[T]]
+    clone._madeFromDefinition = true
     //println(s"In do_apply: ports=$ports")
-    val inst = Instance(Right(clone))
-    inst
+    new Instance(Right(clone))
   }
 
   import scala.language.implicitConversions

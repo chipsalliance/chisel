@@ -220,18 +220,15 @@ private[chisel3] trait HasId extends InstanceId {
   private[chisel3] def getOptionRef: Option[Arg] = _ref
 
   // Implementation of public methods.
-  def instanceName: String = {
-    //case Some(p) =>
-    //  (p._component, this) match {
-    //    case (Some(c), _) => _ref match {
-    //      case Some(arg) => arg fullName c
-    //      case None => computeName(None, None).get
-    //    }
-    //    case (None, d: Data) if d.binding == Some(XMRBinding) => _ref.get.name
-    //    case (None, _) => throwException(s"signalName/pathName should be called after circuit elaboration: $this, ${_parent}")
-      _ref match {
-        case Some(arg) => arg.localName //always calculate fullName, which give the local name.
-        case None => computeName(None, None).get
+  def instanceName: String = _parent match {
+    case Some(p) =>
+      (p._component, this) match {
+        case (Some(c), _) => _ref match {
+          case Some(arg) => arg fullName c
+          case None => computeName(None, None).get
+        }
+        case (None, d: Data) if d.binding == Some(XMRBinding) => _ref.get.localName
+        case (None, _) => throwException(s"signalName/pathName should be called after circuit elaboration: $this, ${_parent}")
       }
   }
   def pathName: String = _parent match {

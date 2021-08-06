@@ -138,6 +138,7 @@ package internal {
       // ClonePorts that hold the bound ports for this module
       // Used for setting the refs of both this module and the Record
       private[BaseModule] var _portsRecord: Record = _
+      private[chisel3]    var _madeFromDefinition: Boolean = false
       // Don't generate a component, but point to the one for the cloned Module
       private[chisel3] def generateComponent(): Option[Component] = {
         require(!_closed, "Can't generate module more than once")
@@ -375,7 +376,9 @@ package experimental {
       */
     def toTarget: IsModule = {
       this match {
-        case m: internal.BaseModule.IsClone[_] => m._parent.get.toTarget.instOf(instanceName, name)
+        case m: internal.BaseModule.InstanceClone[_] => m._parent.get.toTarget.instOf(instanceName, name)
+        case m: internal.BaseModule.ModuleClone[_] if m._madeFromDefinition => m._parent.get.toTarget.instOf(instanceName, name)
+        case m: internal.BaseModule.ModuleClone[_] => ModuleTarget(this.circuitName, this.name)
         case m => ModuleTarget(this.circuitName, this.name)
       }
     }
