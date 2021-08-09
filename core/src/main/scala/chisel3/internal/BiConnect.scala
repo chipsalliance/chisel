@@ -131,7 +131,7 @@ private[chisel3] object BiConnect {
           newLeft.bulkConnect(newRight)(sourceInfo, ExplicitCompileOptions.NotStrict)
         } else {
           // Check whether Records can be bulk connected (all elements can be connected)
-          if (left_r.elements.corresponds(right_r.elements)( (left, right) =>
+          if (left_r.elements.corresponds(right_r.elements)((left, right) =>
             (left._1 == right._1) && (left._2.getWidth == right._2.getWidth)
           )) {
             pushCommand(Connect(sourceInfo, right_r.lref, left_r.ref))

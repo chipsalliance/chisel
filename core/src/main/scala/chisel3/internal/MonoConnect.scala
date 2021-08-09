@@ -140,7 +140,7 @@ private[chisel3] object MonoConnect {
         if (sink_r.elements.corresponds(source_r.elements)( (sink, source) =>
           (sink._1 == source._1) && (sink._2.getWidth == source._2.getWidth)
         )) {
-          pushCommand(Connect(sourceInfo, source_r.lref, sink_r.ref))
+          pushCommand(Connect(sourceInfo, sink_r.lref, source_r.ref))
         } else {
           // For each field, descend with right
           for((field, sink_sub) <- sink_r.elements) {

@@ -26,7 +26,7 @@ trait RecordSpecUtils {
     io.out <> io.in
   }
 
-  class ConnectionModule(output: => Record, input: => Record) extends Module {
+  class ConnectionTestModule(output: => Record, input: => Record) extends Module {
     val io = IO(new Bundle {
       val inMono = Input(input)
       val outMono = Output(output)
@@ -115,9 +115,9 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
     ChiselStage.elaborate { new MyModule(new MyBundle, fooBarType) }
   }
 
-  they should "emit bulk connects in FIRRTL" in {
+  they should "emit bulk connects in FIRRTL when possible" in {
     val chirrtl = (new ChiselStage).emitChirrtl(
-      gen = new ConnectionModule(fooBarType, fooBarType)
+      gen = new ConnectionTestModule(fooBarType, fooBarType)
     )
     chirrtl should include ("io.inMono <= io.outMono @[RecordSpec.scala")
     chirrtl should include ("io.inBi <= io.outBi @[RecordSpec.scala")
