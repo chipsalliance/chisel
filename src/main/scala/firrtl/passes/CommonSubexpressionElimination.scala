@@ -2,18 +2,30 @@
 
 package firrtl.passes
 
-import firrtl._
-import firrtl.ir._
 import firrtl.Mappers._
-import firrtl.options.Dependency
+import firrtl._
+import firrtl.annotations.NoTargetAnnotation
+import firrtl.ir._
+import firrtl.options.{Dependency, HasShellOptions, RegisteredTransform, ShellOption}
 
-object CommonSubexpressionElimination extends Pass {
+/** Indicate that CommonSubexpressionElimination should not be run */
+case object NoCommonSubexpressionElimination extends NoTargetAnnotation
+
+object CommonSubexpressionElimination extends Transform with HasShellOptions with DependencyAPIMigration {
 
   override def prerequisites = firrtl.stage.Forms.LowForm
   override def optionalPrerequisiteOf =
     Seq(Dependency[SystemVerilogEmitter], Dependency[VerilogEmitter])
 
   override def invalidates(a: Transform) = false
+
+  val options = Seq(
+    new ShellOption[Unit](
+      longOption = "no-cse",
+      toAnnotationSeq = _ => Seq(NoCommonSubexpressionElimination),
+      helpText = "Disable common subexpression elimination"
+    )
+  )
 
   private def cse(s: Statement): Statement = {
     val expressions = collection.mutable.HashMap[MemoizedHash[Expression], String]()
@@ -46,11 +58,12 @@ object CommonSubexpressionElimination extends Pass {
     eliminateNodeRefs(s)
   }
 
-  def run(c: Circuit): Circuit = {
-    val modulesx = c.modules.map {
-      case m: ExtModule => m
-      case m: Module    => Module(m.info, m.name, m.ports, cse(m.body))
-    }
-    Circuit(c.info, modulesx, c.main)
-  }
+  override def execute(state: CircuitState): CircuitState =
+    if (state.annotations.contains(NoCommonSubexpressionElimination))
+      state
+    else
+      state.copy(circuit = state.circuit.copy(modules = state.circuit.modules.map({
+        case m: ExtModule => m
+        case m: Module    => Module(m.info, m.name, m.ports, cse(m.body))
+      })))
 }
