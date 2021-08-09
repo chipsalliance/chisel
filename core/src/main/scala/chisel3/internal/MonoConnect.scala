@@ -136,19 +136,26 @@ private[chisel3] object MonoConnect {
 
       // Handle Record case
       case (sink_r: Record, source_r: Record) =>
-        // For each field, descend with right
-        for((field, sink_sub) <- sink_r.elements) {
-          try {
-            source_r.elements.get(field) match {
-              case Some(source_sub) => connect(sourceInfo, connectCompileOptions, sink_sub, source_sub, context_mod)
-              case None => {
-                if (connectCompileOptions.connectFieldsMustMatch) {
-                  throw MissingFieldException(field)
+        // Check whether Records can be bulk connected (all elements can be connected)
+        if (sink_r.elements.corresponds(source_r.elements)( (sink, source) =>
+          (sink._1 == source._1) && (sink._2.getWidth == source._2.getWidth)
+        )) {
+          pushCommand(Connect(sourceInfo, source_r.lref, sink_r.ref))
+        } else {
+          // For each field, descend with right
+          for((field, sink_sub) <- sink_r.elements) {
+            try {
+              source_r.elements.get(field) match {
+                case Some(source_sub) => connect(sourceInfo, connectCompileOptions, sink_sub, source_sub, context_mod)
+                case None => {
+                  if (connectCompileOptions.connectFieldsMustMatch) {
+                    throw MissingFieldException(field)
+                  }
                 }
               }
+            } catch {
+              case MonoConnectException(message) => throw MonoConnectException(s".$field$message")
             }
-          } catch {
-            case MonoConnectException(message) => throw MonoConnectException(s".$field$message")
           }
         }
       // Handle Record connected to DontCare. Apply the DontCare to individual elements.

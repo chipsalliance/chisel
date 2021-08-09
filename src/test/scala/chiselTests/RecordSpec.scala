@@ -26,6 +26,17 @@ trait RecordSpecUtils {
     io.out <> io.in
   }
 
+  class ConnectionModule(output: => Record, input: => Record) extends Module {
+    val io = IO(new Bundle {
+      val inMono = Input(input)
+      val outMono = Output(output)
+      val inBi = Input(input)
+      val outBi = Output(output)
+    })
+    io.outMono := io.inMono
+    io.outBi <> io.inBi
+  }
+
   class RecordSerializationTest extends BasicTester {
     val recordType = new CustomBundle("fizz" -> UInt(16.W), "buzz" -> UInt(16.W))
     val record = Wire(recordType)
@@ -102,6 +113,14 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
 
   they should "bulk connect to Bundles" in {
     ChiselStage.elaborate { new MyModule(new MyBundle, fooBarType) }
+  }
+
+  they should "emit bulk connects in FIRRTL" in {
+    val chirrtl = (new ChiselStage).emitChirrtl(
+      gen = new ConnectionModule(fooBarType, fooBarType)
+    )
+    chirrtl should include ("io.inMono <= io.outMono @[RecordSpec.scala")
+    chirrtl should include ("io.inBi <= io.outBi @[RecordSpec.scala")
   }
 
   they should "follow UInt serialization/deserialization API" in {

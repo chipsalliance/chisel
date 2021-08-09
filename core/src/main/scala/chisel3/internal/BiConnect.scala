@@ -113,7 +113,8 @@ private[chisel3] object BiConnect {
           }
         }
       }
-      // Handle Records defined in Chisel._ code by emitting a FIRRTL partial connect
+      // Handle Records defined in Chisel._ code by emitting a FIRRTL bulk
+      // connect when possible and a partial connect otherwise
       case pair @ (left_r: Record, right_r: Record) =>
         val notStrict =
           Seq(left_r.compileOptions, right_r.compileOptions).contains(ExplicitCompileOptions.NotStrict)
@@ -129,7 +130,14 @@ private[chisel3] object BiConnect {
           val (newLeft, newRight) = if (flipped) pair.swap else pair
           newLeft.bulkConnect(newRight)(sourceInfo, ExplicitCompileOptions.NotStrict)
         } else {
-          recordConnect(sourceInfo, connectCompileOptions, left_r, right_r, context_mod)
+          // Check whether Records can be bulk connected (all elements can be connected)
+          if (left_r.elements.corresponds(right_r.elements)( (left, right) =>
+            (left._1 == right._1) && (left._2.getWidth == right._2.getWidth)
+          )) {
+            pushCommand(Connect(sourceInfo, right_r.lref, left_r.ref))
+          } else {
+            recordConnect(sourceInfo, connectCompileOptions, left_r, right_r, context_mod)
+          }
         }
 
       // Handle Records connected to DontCare (change to NotStrict)
