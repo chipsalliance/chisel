@@ -724,7 +724,7 @@ object VecInit extends SourceInfoDoc {
     }
     myVec
   }
-
+  
   /** Creates a new [[Vec]] of length `n` composed of the result of the given
    * function applied to an element of data type T.
    * 
@@ -1112,7 +1112,7 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
       getBundleField(m) match {
         case Some(d: Data) =>
           requireIsChiselType(d)
-
+          
           if (nameMap contains m.getName) {
             require(nameMap(m.getName) eq d)
           } else {

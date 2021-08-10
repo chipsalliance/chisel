@@ -102,6 +102,7 @@ class VecTransform(val c: Context) extends SourceInfoTransformMacro {
   def fill4D(n: c.Tree, m: c.Tree, p: c.Tree, q: c.Tree)(gen: c.Tree): c.Tree = {
     q"$thisObj.do_fill($n,$m,$p,$q)($gen)($implicitSourceInfo, $implicitCompileOptions)"
   }
+
   def iterate(start: c.Tree, len: c.Tree)(f: c.Tree): c.Tree = {
     q"$thisObj.do_iterate($start,$len)($f)($implicitSourceInfo, $implicitCompileOptions)"
   }
