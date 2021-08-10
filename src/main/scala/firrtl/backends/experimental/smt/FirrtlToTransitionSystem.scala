@@ -59,37 +59,24 @@ private case class TransitionSystem(
 private case class TransitionSystemAnnotation(sys: TransitionSystem) extends NoTargetAnnotation
 
 object FirrtlToTransitionSystem extends Transform with DependencyAPIMigration {
-  // TODO: We only really need [[Forms.MidForm]] + LowerTypes, but we also want to fail if there are CombLoops
-  // TODO: We also would like to run some optimization passes, but RemoveValidIf won't allow us to model DontCare
-  //       precisely and PadWidths emits ill-typed firrtl.
   override def prerequisites: Seq[Dependency[Transform]] = Forms.LowForm ++
     Seq(
-      Dependency(InvalidToRandomPass),
-      Dependency(UndefinedMemoryBehaviorPass),
       Dependency(VerilogMemDelays),
-      Dependency(EnsureNamedStatements) // this is required to give assert/assume statements good names
+      Dependency(EnsureNamedStatements), // this is required to give assert/assume statements good names
+      Dependency[PropagatePresetAnnotations]
     )
   override def invalidates(a: Transform): Boolean = false
   // since this pass only runs on the main module, inlining needs to happen before
   override def optionalPrerequisites: Seq[TransformDependency] = Seq(Dependency[firrtl.passes.InlineInstances])
 
-  // We run the propagate preset annotations pass manually since we do not want to remove ValidIfs and other
-  // Verilog emission passes.
-  // Ideally we would go in and enable the [[PropagatePresetAnnotations]] to only depend on LowForm.
-  private val presetPass = new PropagatePresetAnnotations
-  // We also need to run the DeadCodeElimination since PropagatePresets does not remove possible remaining
-  // AsyncReset nodes.
-  private val deadCodeElimination = new DeadCodeElimination
   override protected def execute(state: CircuitState): CircuitState = {
-    // run the preset pass to extract all preset registers and remove preset reset signals
-    val afterPreset = deadCodeElimination.execute(presetPass.execute(state))
-    val circuit = afterPreset.circuit
-    val presetRegs = afterPreset.annotations.collect {
+    val circuit = state.circuit
+    val presetRegs = state.annotations.collect {
       case PresetRegAnnotation(target) if target.module == circuit.main => target.ref
     }.toSet
 
     // collect all non-random memory initialization
-    val memInit = afterPreset.annotations.collect { case a: MemoryInitAnnotation if !a.isRandomInit => a }
+    val memInit = state.annotations.collect { case a: MemoryInitAnnotation if !a.isRandomInit => a }
       .filter(_.target.module == circuit.main)
       .map(a => a.target.ref -> a.initValue)
       .toMap
@@ -98,7 +85,7 @@ object FirrtlToTransitionSystem extends Transform with DependencyAPIMigration {
     val modules = circuit.modules.map(m => m.name -> m).toMap
 
     // collect uninterpreted module annotations
-    val uninterpreted = afterPreset.annotations.collect {
+    val uninterpreted = state.annotations.collect {
       case a: UninterpretedModuleAnnotation =>
         UninterpretedModuleAnnotation.checkModule(modules(a.target.module), a)
         a.target.module -> a
@@ -117,7 +104,7 @@ object FirrtlToTransitionSystem extends Transform with DependencyAPIMigration {
 
     val sortedSys = TopologicalSort.run(sys)
     val anno = TransitionSystemAnnotation(sortedSys)
-    state.copy(circuit = circuit, annotations = afterPreset.annotations :+ anno)
+    state.copy(circuit = circuit, annotations = state.annotations :+ anno)
   }
 }
 
@@ -415,13 +402,13 @@ private class ModuleScanner(
       inputs.append(BVSymbol(name, bitWidth(tpe).toInt))
     case ir.DefWire(info, name, tpe) =>
       namespace.newName(name)
-      if (!isClock(tpe)) {
+      if (!isClock(tpe) && !isAsyncReset(tpe)) {
         infos.append(name -> info)
         wires.append(name)
       }
     case ir.DefNode(info, name, expr) =>
       namespace.newName(name)
-      if (!isClock(expr.tpe)) {
+      if (!isClock(expr.tpe) && !isAsyncReset(expr.tpe)) {
         insertDummyAssignsForUnusedOutputs(expr)
         infos.append(name -> info)
         val e = onExpression(expr)

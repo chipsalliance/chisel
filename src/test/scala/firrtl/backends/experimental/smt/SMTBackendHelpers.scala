@@ -3,25 +3,39 @@
 package firrtl.backends.experimental.smt
 
 import firrtl.annotations.Annotation
+import firrtl.backends.experimental.smt.random.{InvalidToRandomPass, UndefinedMemoryBehaviorPass}
+import firrtl.options.Dependency
 import firrtl.{ir, MemoryInitValue}
-import firrtl.stage.{Forms, TransformManager}
+import firrtl.stage.{Forms, RunFirrtlTransformAnnotation, TransformManager}
 
 private object SMTBackendHelpers {
   private val dependencies = Forms.LowForm ++ FirrtlToTransitionSystem.prerequisites
   private val compiler = new TransformManager(dependencies)
+  private val undefCompiler = new TransformManager(
+    dependencies ++ Seq(
+      Dependency(InvalidToRandomPass),
+      Dependency(UndefinedMemoryBehaviorPass)
+    )
+  )
 
   def compile(src: String, annos: Seq[Annotation] = List()): ir.Circuit = {
     val c = firrtl.Parser.parse(src)
     compiler.runTransform(firrtl.CircuitState(c, annos)).circuit
   }
 
+  def compileUndef(src: String, annos: Seq[Annotation] = List()): ir.Circuit = {
+    val c = firrtl.Parser.parse(src)
+    undefCompiler.runTransform(firrtl.CircuitState(c, annos)).circuit
+  }
+
   def toSys(
     src:        String,
     mod:        String = "m",
     presetRegs: Set[String] = Set(),
-    memInit:    Map[String, MemoryInitValue] = Map()
+    memInit:    Map[String, MemoryInitValue] = Map(),
+    modelUndef: Boolean = false
   ): TransitionSystem = {
-    val circuit = compile(src)
+    val circuit = if (modelUndef) compileUndef(src) else compile(src)
     val module = circuit.modules.find(_.name == mod).get.asInstanceOf[ir.Module]
     // println(module.serialize)
     new ModuleToTransitionSystem().run(module, presetRegs = presetRegs, memInit = memInit)

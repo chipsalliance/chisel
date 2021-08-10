@@ -19,7 +19,7 @@ class UndefinedFirrtlSpec extends EndToEndSMTBaseSpec {
          |    assert(c, eq(d, UInt($dEq)), UInt(1), "d = $dEq")
          |""".stripMargin
     // we try to assert that (d = a / 0) is any fixed value which should be false
-    (0 until 4).foreach { ii => test(in(ii), MCFail(0), 0, s"d = a / 0 = $ii") }
+    (0 until 4).foreach { ii => test(in(ii), MCFail(0), 0, s"d = a / 0 = $ii", annos = InvalidToRandomAnnos) }
   }
 
   // TODO: rem should probably also be undefined, but the spec isn't 100% clear here
@@ -34,6 +34,6 @@ class UndefinedFirrtlSpec extends EndToEndSMTBaseSpec {
          |    assert(c, eq(a, UInt($aEq)), UInt(1), "a = $aEq")
          |""".stripMargin
     // a should not be equivalent to any fixed value (0, 1, 2 or 3)
-    (0 until 4).foreach { ii => test(in(ii), MCFail(0), 0, s"a = $ii") }
+    (0 until 4).foreach { ii => test(in(ii), MCFail(0), 0, s"a = $ii", annos = InvalidToRandomAnnos) }
   }
 }
