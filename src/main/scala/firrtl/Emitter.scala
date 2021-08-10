@@ -56,10 +56,10 @@ object EmitCircuitAnnotation extends HasShellOptions {
               RunFirrtlTransformAnnotation(new SystemVerilogEmitter),
               EmitCircuitAnnotation(classOf[SystemVerilogEmitter])
             )
-          case "experimental-btor2" =>
-            Seq(RunFirrtlTransformAnnotation(new Btor2Emitter), EmitCircuitAnnotation(classOf[Btor2Emitter]))
-          case "experimental-smt2" =>
-            Seq(RunFirrtlTransformAnnotation(new SMTLibEmitter), EmitCircuitAnnotation(classOf[SMTLibEmitter]))
+          case "experimental-btor2" | "btor2" =>
+            Seq(RunFirrtlTransformAnnotation(Dependency(Btor2Emitter)), EmitCircuitAnnotation(Btor2Emitter.getClass))
+          case "experimental-smt2" | "smt2" =>
+            Seq(RunFirrtlTransformAnnotation(Dependency(SMTLibEmitter)), EmitCircuitAnnotation(SMTLibEmitter.getClass))
           case _ => throw new PhaseException(s"Unknown emitter '$a'! (Did you misspell it?)")
         },
       helpText = "Run the specified circuit emitter (all modules in one file)",

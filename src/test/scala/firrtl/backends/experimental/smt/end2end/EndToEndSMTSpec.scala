@@ -146,8 +146,8 @@ abstract class EndToEndSMTBaseSpec extends AnyFlatSpec with Matchers {
       Array(),
       Seq(
         LogLevelAnnotation(LogLevel.Error), // silence warnings for tests
-        RunFirrtlTransformAnnotation(new SMTLibEmitter),
-        RunFirrtlTransformAnnotation(new Btor2Emitter),
+        RunFirrtlTransformAnnotation(Dependency(SMTLibEmitter)),
+        RunFirrtlTransformAnnotation(Dependency(Btor2Emitter)),
         FirrtlCircuitAnnotation(fir),
         TargetDirAnnotation(testDir.toString)
       ) ++ presetAnno ++ annos
