@@ -9,6 +9,7 @@ import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
 import chisel3.util._
 import org.scalacheck.Shrink
+import scala.annotation.tailrec
 
 class LitTesterMod(vecSize: Int) extends Module {
   val io = IO(new Bundle {
@@ -112,6 +113,84 @@ class FillTester(n: Int, value: Int) extends BasicTester {
 
   assert(x.asUInt() === u.asUInt(), s"Expected Vec to be filled like $x, instead VecInit.fill created $u")
   stop()
+}
+
+object VecMultiDimTester { 
+
+  @tailrec
+  def assert2DIsCorrect(n: Int, arr: Vec[Vec[UInt]], compVec: Vec[UInt]): Unit = {
+    if (n == 0) assert(arr(n).asUInt() === compVec.asUInt)
+    else  {
+      assert(arr(n).asUInt() === compVec.asUInt())
+      assert2DIsCorrect(n-1, arr, compVec)
+    }
+  }
+
+  @tailrec
+  private def assert3DIsCorrect(n: Int, m: Int, arr: Vec[Vec[Vec[UInt]]], compVec: Vec[Vec[UInt]]): Unit = {
+      if (n == 0) assert2DIsCorrect(m-1, arr(n), compVec(0))
+      else {
+        assert2DIsCorrect(m-1, arr(n), compVec(0))
+        assert3DIsCorrect(n-1, m, arr, compVec)
+      }
+  }
+
+  @tailrec
+  private def assert4DIsCorrect(n: Int, m: Int, p: Int, arr: Vec[Vec[Vec[Vec[UInt]]]], compVec: Vec[Vec[Vec[UInt]]]): Unit = {
+    if (n == 0) assert3DIsCorrect(m-1, p, arr(n), compVec(0))
+    else {
+      assert3DIsCorrect(m-1, p, arr(n), compVec(0))
+      assert4DIsCorrect(n-1, m, p, arr, compVec)
+    }
+  }
+
+  class TabulateTester2D(n: Int, m: Int) extends BasicTester {
+    val u = VecInit.tabulate(n, m){ i => (i*2).asUInt }
+    val compVec = VecInit(Array.tabulate(m){ i => (i*2).asUInt })
+  
+    assert2DIsCorrect(n-1, u, compVec)
+    stop()
+  }
+
+  class TabulateTester3D(n: Int, m: Int, p: Int) extends BasicTester {
+    val u = VecInit.tabulate(n, m, p){ i => (i*2).asUInt }
+    val compVec = VecInit.tabulate(m, p){i => (i*2).asUInt}
+  
+    assert3DIsCorrect(n-1, m, u, compVec)
+    stop()
+  }
+
+  class TabulateTester4D(n: Int, m: Int, p: Int, q: Int) extends BasicTester {
+    val u = VecInit.tabulate(n, m, p, q){ i => (i*2).asUInt }
+    val compVec = VecInit.tabulate(m, p, q){i => (i*2).asUInt}
+  
+    assert4DIsCorrect(n-1, m, p, u, compVec)
+    stop()
+  }
+
+  class Fill2DTester(n: Int, m: Int, value: Int) extends BasicTester {
+    val u = VecInit.fill(n,m)(value.U)
+    val compareVec = VecInit.fill(m)(value.U)
+    
+    assert2DIsCorrect(n-1, u, compareVec)
+    stop()
+  }
+
+  class Fill3DTester(n: Int, m: Int, p: Int, value: Int) extends BasicTester {
+    val u = VecInit.fill(n,m,p)(value.U)
+    val compareVec = VecInit.fill(m,p)(value.U)
+
+    assert3DIsCorrect(n-1, m, u, compareVec)
+    stop()
+  }
+
+  class Fill4DTester(n: Int, m: Int, p: Int, q: Int, value: Int) extends BasicTester {
+    val u = VecInit.fill(n, m, p, q)(value.U)
+    val compareVec = VecInit.fill(m, p, q)(value.U)
+
+    assert4DIsCorrect(n-1, m, p, u, compareVec)
+    stop()
+  }
 }
 
 class IterateTester(start: Int, len: Int)(f: UInt => UInt) extends BasicTester {
@@ -239,8 +318,32 @@ class VecSpec extends ChiselPropSpec with Utils {
     forAll(smallPosInts) { (n: Int) => assertTesterPasses{ new TabulateTester(n) } }
   }
 
+  property("VecInit should tabulate 2D vec correctly") {
+    forAll(smallPosInts, smallPosInts) { (n: Int, m: Int) => assertTesterPasses{ new VecMultiDimTester.TabulateTester2D(n, m) } }
+  }
+
+  property("VecInit should tabulate 3D vec correctly") {
+      forAll(smallPosInts, smallPosInts, smallPosInts) { (n: Int, m: Int, p: Int) => assertTesterPasses{ new VecMultiDimTester.TabulateTester3D(n, m, p) } }
+  }
+
+  property("VecInit should tabulate 4D vec correctly") {
+      forAll(smallPosInts, smallPosInts, smallPosInts, smallPosInts) { (n: Int, m: Int, p: Int, q: Int) => assertTesterPasses{ new VecMultiDimTester.TabulateTester4D(n, m, p, q) } }
+  }
+  
   property("VecInit should fill correctly") {
     forAll(smallPosInts, Gen.choose(0, 50)) { (n: Int, value: Int) => assertTesterPasses{ new FillTester(n, value) } }
+  }
+
+  property("VecInit should fill 2D vec correctly") {
+    forAll(smallPosInts, smallPosInts, Gen.choose(0, 50)) { (n: Int, m: Int, value: Int) => assertTesterPasses{ new VecMultiDimTester.Fill2DTester(n, m, value) } }
+  }
+  
+  property("VecInit should fill 3D vec correctly") {
+    forAll(smallPosInts, smallPosInts, smallPosInts, Gen.choose(0, 50)) { (n: Int, m: Int, p: Int, value: Int) => assertTesterPasses{ new VecMultiDimTester.Fill3DTester(n, m, p, value) } }
+  }
+
+  property("VecInit should fill 4D vec correctly") {
+    forAll(smallPosInts, smallPosInts, smallPosInts, smallPosInts, Gen.choose(0, 50)) { (n: Int, m: Int, p: Int, q: Int, value: Int) => assertTesterPasses{ new VecMultiDimTester.Fill4DTester(n, m, p, q, value) } }
   }
 
   property("VecInit should iterate correctly") {

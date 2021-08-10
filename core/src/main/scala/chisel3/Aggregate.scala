@@ -591,6 +591,67 @@ object VecInit extends SourceInfoDoc {
   def do_tabulate[T <: Data](n: Int)(gen: (Int) => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
     apply((0 until n).map(i => gen(i)))
 
+  /** Creates a new 2D [[Vec]] of length `n by m` composed of the results of the given
+    * function applied over a range of integer values starting from 0.
+    *
+    * @param n number of 1D vectors inside outer vector
+    * @param m number of elements in each 1D vector (the function is applied from
+    * 0 to `n-1`)
+    * @param gen function that takes in an Int (the index) and returns a
+    * [[Data]] that becomes the output element
+    */
+  def tabulate[T <: Data](n: Int, m: Int)(gen: (Int) => T): Vec[Vec[T]] = macro VecTransform.tabulate2D
+
+  /** @group SourceInfoTransformMacro */
+  def do_tabulate[T <: Data](n: Int, m: Int)(gen: (Int) => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[Vec[T]] = {
+    val myVec = Wire(Vec(n, Vec(m, cloneSupertype((0 until m).map(i => gen(i)), "Vec"))))
+    myVec.foreach {
+      _ := VecInit.tabulate(m)(gen)
+    }
+    myVec
+  }
+
+  /** Creates a new 3D [[Vec]] of length `n by m by p` composed of the results of the given
+    * function applied over a range of integer values starting from 0.
+    *
+    * @param n number of 2D vectors inside outer vector
+    * @param m number of 1D vectors in each 2D vector
+    * @param p number of elements in each 1D vector
+    * @param gen function that takes in an Int (the index) and returns a
+    * [[Data]] that becomes the output element
+    */
+  def tabulate[T <: Data](n: Int, m: Int, p: Int)(gen: (Int) => T): Vec[Vec[Vec[T]]] = macro VecTransform.tabulate3D
+
+  /** @group SourceInfoTransformMacro */
+  def do_tabulate[T <: Data](n: Int, m: Int, p: Int)(gen: (Int) => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[Vec[Vec[T]]] = {
+    val myVec = Wire(Vec(n, Vec(m, Vec(p, cloneSupertype((0 until p).map(i => gen(i)), "Vec")))))
+    myVec.foreach {
+      _ := VecInit.tabulate(m, p)(gen)
+    }
+    myVec
+  }
+
+  /** Creates a new 4D [[Vec]] of length `n by m by p by q` composed of the results of the given
+    * function applied over a range of integer values starting from 0.
+    *
+    * @param n number of 3D vectors inside outer vector
+    * @param m number of 2D vectors in each 3D vector
+    * @param p number of 1D vectors in each 2D vector
+    * @param q number of elements in each 1D vector
+    * @param gen function that takes in an Int (the index) and returns a
+    * [[Data]] that becomes the output element
+    */
+  def tabulate[T <: Data](n: Int, m: Int, p: Int, q: Int)(gen: (Int) => T): Vec[Vec[Vec[Vec[T]]]] = macro VecTransform.tabulate4D
+
+  /** @group SourceInfoTransformMacro */
+  def do_tabulate[T <: Data](n: Int, m: Int, p: Int, q: Int)(gen: (Int) => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[Vec[Vec[Vec[T]]]] = {
+    val myVec = Wire(Vec(n, Vec(m, Vec(p, Vec(q, cloneSupertype((0 until q).map(i => gen(i)), "Vec"))))))
+    myVec.foreach {
+      _ := VecInit.tabulate(m, p, q)(gen)
+    }
+    myVec
+  }
+
   /** Creates a new [[Vec]] of length `n` composed of the result of the given
    * function applied to an element of data type T.
    * 
@@ -603,6 +664,66 @@ object VecInit extends SourceInfoDoc {
   /** @group SourceInfoTransformMacro */
   def do_fill[T <: Data](n: Int)(gen: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
     apply(Seq.fill(n)(gen))
+
+  /** Creates a new 2D [[Vec]] of length `n by m` composed of the result of the given
+   * function applied to an element of data type T.
+   * 
+   * @param n number of inner vectors (rows) in the outer vector
+   * @param m number of elements in each inner vector (column)
+   * @param gen function that takes in an element T and returns an output 
+   * element of the same type
+   */
+  def fill[T <: Data](n: Int, m: Int)(gen: => T): Vec[Vec[T]] = macro VecTransform.fill2D
+
+  /** @group SourceInfoTransformMacro */
+  def do_fill[T <: Data](n: Int, m: Int)(gen: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[Vec[T]] = {
+    val myVec = Wire(Vec(n, Vec(m, cloneSupertype(Seq.fill(m)(gen), "Vec"))))
+    myVec.foreach {
+      _ := VecInit.fill(m)(gen)
+    }
+    myVec
+  }
+
+  /** Creates a new 3D [[Vec]] of length `n by m by p` composed of the result of the given
+   * function applied to an element of data type T.
+   * 
+   * @param n number of 2D vectors inside outer vector
+   * @param m number of 1D vectors in each 2D vector
+   * @param p number of elements in each 1D vector
+   * @param gen function that takes in an element T and returns an output 
+   * element of the same type
+   */
+  def fill[T <: Data](n: Int, m: Int, p: Int)(gen: => T): Vec[Vec[Vec[T]]] = macro VecTransform.fill3D
+
+  /** @group SourceInfoTransformMacro */
+  def do_fill[T <: Data](n: Int, m: Int, p: Int)(gen: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[Vec[Vec[T]]] = {
+    val myVec = Wire(Vec(n, Vec(m, Vec(p, cloneSupertype(Seq.fill(p)(gen), "Vec")))))
+    myVec.foreach { 
+      _ := VecInit.fill(m, p)(gen)
+    }
+    myVec
+  }
+
+  /** Creates a new 4D [[Vec]] of length `n by m by p by q` composed of the result of the given
+   * function applied to an element of data type T.
+   * 
+   * @param n number of 3D vectors inside outer vector
+   * @param m number of 2D vectors inside each 3D vector
+   * @param p number of 1D vectors in each 2D vector
+   * @param q number of elements in each 1D vector
+   * @param gen function that takes in an element T and returns an output 
+   * element of the same type
+   */
+  def fill[T <: Data](n: Int, m: Int, p: Int, q: Int)(gen: => T): Vec[Vec[Vec[Vec[T]]]] = macro VecTransform.fill4D
+
+  /** @group SourceInfoTransformMacro */
+  def do_fill[T <: Data](n: Int, m: Int, p: Int, q: Int)(gen: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[Vec[Vec[Vec[T]]]] = {
+    val myVec = Wire(Vec(n, Vec(m, Vec(p, Vec(q, cloneSupertype(Seq.fill(q)(gen), "Vec"))))))
+    myVec.foreach { 
+      _ := VecInit.fill(m, p, q)(gen)
+    }
+    myVec
+  }
 
   /** Creates a new [[Vec]] of length `n` composed of the result of the given
    * function applied to an element of data type T.
