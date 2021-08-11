@@ -5,7 +5,8 @@ package chisel3.internal
 import chisel3._
 import chisel3.experimental.{Analog, BaseModule, EnumType, FixedPoint, Interval, UnsafeEnum}
 import chisel3.internal.Builder.pushCommand
-import chisel3.internal.firrtl.{Connect, DefInvalid}
+import chisel3.internal.firrtl.{BulkConnect, Connect, DefInvalid}
+
 import scala.language.experimental.macros
 import chisel3.internal.sourceinfo.SourceInfo
 
@@ -140,7 +141,7 @@ private[chisel3] object MonoConnect {
         if (sink_r.elements.corresponds(source_r.elements)( (sink, source) =>
           (sink._1 == source._1) && (sink._2.getWidth == source._2.getWidth)
         )) {
-          pushCommand(Connect(sourceInfo, sink_r.lref, source_r.ref))
+          pushCommand(BulkConnect(sourceInfo, sink_r.lref, source_r.lref))
         } else {
           // For each field, descend with right
           for((field, sink_sub) <- sink_r.elements) {

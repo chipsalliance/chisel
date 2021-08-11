@@ -5,7 +5,8 @@ package chisel3.internal
 import chisel3._
 import chisel3.experimental.{Analog, BaseModule, attach}
 import chisel3.internal.Builder.pushCommand
-import chisel3.internal.firrtl.{Connect, DefInvalid}
+import chisel3.internal.firrtl.{BulkConnect, Connect, DefInvalid}
+
 import scala.language.experimental.macros
 import chisel3.internal.sourceinfo._
 
@@ -118,15 +119,15 @@ private[chisel3] object BiConnect {
       case pair @ (left_r: Record, right_r: Record) =>
         val notStrict =
           Seq(left_r.compileOptions, right_r.compileOptions).contains(ExplicitCompileOptions.NotStrict)
+        // chisel3 <> is commutative but FIRRTL <- is not
+        val flipped = {
+          import ActualDirection._
+          // Everything is flipped when it's the port of a child
+          val childPort = left_r._parent.get != context_mod
+          val isFlipped = Seq(Bidirectional(Flipped), Input).contains(left_r.direction)
+          isFlipped ^ childPort
+        }
         if (notStrict) {
-          // chisel3 <> is commutative but FIRRTL <- is not
-          val flipped = {
-            import ActualDirection._
-            // Everything is flipped when it's the port of a child
-            val childPort = left_r._parent.get != context_mod
-            val isFlipped = Seq(Bidirectional(Flipped), Input).contains(left_r.direction)
-            isFlipped ^ childPort
-          }
           val (newLeft, newRight) = if (flipped) pair.swap else pair
           newLeft.bulkConnect(newRight)(sourceInfo, ExplicitCompileOptions.NotStrict)
         } else {
@@ -134,7 +135,12 @@ private[chisel3] object BiConnect {
           if (left_r.elements.corresponds(right_r.elements)((left, right) =>
             (left._1 == right._1) && (left._2.getWidth == right._2.getWidth)
           )) {
-            pushCommand(Connect(sourceInfo, right_r.lref, left_r.ref))
+            // Flip BulkConnect if ports are flipped
+            if (flipped) {
+              pushCommand(BulkConnect(sourceInfo, right_r.lref, left_r.lref))
+            } else {
+              pushCommand(BulkConnect(sourceInfo, left_r.lref, right_r.lref))
+            }
           } else {
             recordConnect(sourceInfo, connectCompileOptions, left_r, right_r, context_mod)
           }

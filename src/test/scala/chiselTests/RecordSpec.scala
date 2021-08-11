@@ -119,8 +119,8 @@ class RecordSpec extends ChiselFlatSpec with RecordSpecUtils with Utils {
     val chirrtl = (new ChiselStage).emitChirrtl(
       gen = new ConnectionTestModule(fooBarType, fooBarType)
     )
-    chirrtl should include ("io.inMono <= io.outMono @[RecordSpec.scala")
-    chirrtl should include ("io.inBi <= io.outBi @[RecordSpec.scala")
+    chirrtl should include ("io.outMono <- io.inMono @[RecordSpec.scala")
+    chirrtl should include ("io.outBi <- io.inBi @[RecordSpec.scala")
   }
 
   they should "follow UInt serialization/deserialization API" in {
