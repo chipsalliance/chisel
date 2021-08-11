@@ -50,6 +50,25 @@ object IllegalRefSpec {
       io.o := io.i
     }
   }
+
+  class CrossWhenMPort(useConnect: Boolean) extends MultiIOModule {
+    val io = IO(new Bundle {
+      val i = Input(Bool())
+      val a = Input(Bool())
+      val o = Output(Bool())
+    })
+    private var mport: Option[Bool] = None
+    private val mem = SyncReadMem(2, Bool())
+    when (io.i) {
+      mport = Some(mem(io.a))
+    }
+    if (useConnect) {
+      io.o := mport.get
+    } else {
+      val z = mport.get & mport.get
+      io.o := io.i
+    }
+  }
 }
 
 class IllegalRefSpec extends ChiselFlatSpec with Utils {
@@ -69,6 +88,12 @@ class IllegalRefSpec extends ChiselFlatSpec with Utils {
         a [ChiselException] should be thrownBy extractCause[ChiselException] {
           ChiselStage.elaborate { new CrossWhenConnect(v) }
         }
+      }
+
+      s"Using a memory port that has escaped its enclosing when scope in ${k}" should "fail" in {
+        (the [ChiselException] thrownBy extractCause[ChiselException] {
+          ChiselStage.elaborate { new CrossWhenMPort(v) }
+        }).getMessage should include ("escaped the scope of the when in which it was constructed")
       }
   }
 }
