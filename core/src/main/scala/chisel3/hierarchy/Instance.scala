@@ -60,6 +60,7 @@ object Instance extends SourceInfoDoc {
     val ports = experimental.CloneModuleAsRecord(bc.module)
     val clone = ports._parent.get.asInstanceOf[ModuleClone[T]]
     clone._madeFromDefinition = true
+    require(clone._parent.nonEmpty, s"Clone's parent is empty! $this, $clone")
     //println(s"In do_apply: ports=$ports")
     new Instance(Right(clone))
   }

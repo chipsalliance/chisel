@@ -32,6 +32,7 @@ object Definition extends SourceInfoDoc {
     val (ir, module) = Builder.build(Module(bc), dynamicContext)
     Builder.components ++= ir.components
     Builder.annotations ++= ir.annotations
+    module._circuit = Builder.currentModule
     dynamicContext.globalNamespace.copyTo(Builder.globalNamespace)
     new Definition(module, "blah")
   }

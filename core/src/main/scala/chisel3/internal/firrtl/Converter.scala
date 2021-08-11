@@ -3,9 +3,9 @@
 package chisel3.internal.firrtl
 import chisel3._
 import chisel3.experimental._
-import chisel3.internal.sourceinfo.{NoSourceInfo, SourceLine, SourceInfo}
+import chisel3.internal.sourceinfo.{UnlocatableSourceInfo, NoSourceInfo, SourceLine, SourceInfo}
 import firrtl.{ir => fir}
-import chisel3.internal.{castToInt, throwException}
+import chisel3.internal.{castToInt, throwException, HasId}
 
 import scala.annotation.tailrec
 import scala.collection.immutable.Queue
@@ -24,8 +24,6 @@ private[chisel3] object Converter {
     case Percent => ("%%", List.empty)
   }
 
-<<<<<<< HEAD
-=======
   private def reportInternalError(msg: String): Nothing = {
     val link = "https://github.com/chipsalliance/chisel3/issues/new"
     val fullMsg = s"Internal Error! $msg This is a bug in Chisel, please file an issue at '$link'"
@@ -44,7 +42,6 @@ private[chisel3] object Converter {
     reportInternalError(s"Trying to convert a cloned IO of $mod inside of $mod itself$loc!")
   }
 
->>>>>>> d3e13ce... Fix CloneModuleAsRecord support for .toTarget
   def convert(info: SourceInfo): fir.Info = info match {
     case _: NoSourceInfo => fir.NoInfo
     case SourceLine(fn, line, col) => fir.FileInfo(fir.StringLit(s"$fn $line:$col"))
@@ -75,14 +72,10 @@ private[chisel3] object Converter {
       fir.SubAccess(convert(imm, ctx), convert(value, ctx), fir.UnknownType)
     case ModuleIO(mod, name) =>
       if (mod eq ctx.id) fir.Reference(name, fir.UnknownType)
-<<<<<<< HEAD
-      else fir.SubField(fir.Reference(mod.getRef.name, fir.UnknownType), name, fir.UnknownType)
-=======
-      else fir.SubField(fir.Reference(getRef(mod, info).name, fir.UnknownType), name, fir.UnknownType)
+      else fir.SubField(fir.Reference(getRef(mod, UnlocatableSourceInfo).name, fir.UnknownType), name, fir.UnknownType)
     case ModuleCloneIO(mod, name) =>
-      if (mod eq ctx.id) clonedModuleIOError(mod, name, info)
+      if (mod eq ctx.id) clonedModuleIOError(mod, name, UnlocatableSourceInfo)
       else fir.Reference(name)
->>>>>>> d3e13ce... Fix CloneModuleAsRecord support for .toTarget
     case u @ ULit(n, UnknownWidth()) =>
       fir.UIntLiteral(n, fir.IntWidth(u.minWidth))
     case ULit(n, w) =>

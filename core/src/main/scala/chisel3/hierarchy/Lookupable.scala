@@ -57,19 +57,18 @@ object Lookupable {
   def cloneModuleToContext[T <: BaseModule](child: Either[T, IsClone[T]], context: BaseModule)
                           (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Either[T, IsClone[T]] = {
     def rec[A <: BaseModule](m: A): Either[A, IsClone[A]] = {
-      (m._parent, context) match {
-        case (None, context) if context == m => Left(m)
-        case (None, context: IsClone[_]) if context.isACloneOf(m) => Right(context.asInstanceOf[IsClone[A]])
-        case (None, context) => Left(m) // this thing must be from somewhere else, so we don't clone it.
-        case (Some(parent), _) =>
-          cloneModuleToContext(Left(parent), context) match {
+      (m, context) match {
+        case (c, ctx) if ctx == c => Left(c)
+        case (c, ctx: IsClone[_]) if ctx.isACloneOf(c) => Right(ctx.asInstanceOf[IsClone[A]])
+        case (c, ctx) if c._parent.isEmpty => Left(c)
+        case (_, _) => 
+          cloneModuleToContext(Left(m._parent.get), context) match {
             case Left(p) => Left(m)
             case Right(p: BaseModule) =>
               val newChild = Module.do_apply(new internal.BaseModule.InstanceClone(m, () => m.instanceName))
               newChild._parent = Some(p)
               Right(newChild)
           }
-        case other => throw new Exception(s"Other: $other\nChild: $m")
       }
     }
     child match {

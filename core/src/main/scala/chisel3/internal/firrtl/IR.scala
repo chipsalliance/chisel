@@ -72,6 +72,10 @@ abstract class Arg {
 }
 
 case class Node(id: HasId) extends Arg {
+  override def localName: String = id.getOptionRef match {
+    case Some(arg) => arg.localName
+    case None => id.instanceName
+  }
   override def contextualName(ctx: Component): String = id.getOptionRef match {
     case Some(arg) => arg.contextualName(ctx)
     case None => id.instanceName
@@ -85,6 +89,7 @@ case class Node(id: HasId) extends Arg {
 abstract class LitArg(val num: BigInt, widthArg: Width) extends Arg {
   private[chisel3] def forcedWidth = widthArg.known
   private[chisel3] def width: Width = if (forcedWidth) widthArg else Width(minWidth)
+  override def localName: String = name
   override def contextualName(ctx: Component): String = name
   // Ensure the node representing this LitArg has a ref to it and a literal binding.
   def bindLitArg[T <: Element](elem: T): T = {
@@ -147,6 +152,7 @@ case class Ref(name: String) extends Arg
 case class ModuleIO(mod: BaseModule, name: String) extends Arg {
   override def contextualName(ctx: Component): String =
     if (mod eq ctx.id) name else s"${mod.getRef.name}.$name"
+  override def localName: String = name
 }
 /** Ports of cloned modules (CloneModuleAsRecord)
   * @param mod The original module for which these ports are a clone
@@ -156,6 +162,7 @@ case class ModuleCloneIO(mod: BaseModule, name: String) extends Arg {
   override def contextualName(ctx: Component): String =
     // NOTE: mod eq ctx.id only occurs in Target and Named-related APIs
     if (mod eq ctx.id) "" else name
+  override def localName: String = name
 }
 case class Slot(imm: Node, name: String) extends Arg {
   override def contextualName(ctx: Component): String = {

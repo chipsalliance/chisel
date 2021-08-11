@@ -88,6 +88,7 @@ trait InstanceId {
 
 private[chisel3] trait HasId extends InstanceId {
   private[chisel3] var _parent: Option[BaseModule] = internal.Builder.currentModule
+  private[chisel3] var _circuit: Option[BaseModule] = None
   private[chisel3] def _onModuleClose: Unit = {}
 
   private[chisel3] val _id: Long = Builder.idGen.next
@@ -227,7 +228,7 @@ private[chisel3] trait HasId extends InstanceId {
           case Some(arg) => arg fullName c
           case None => computeName(None, None).get
         }
-        case (None, d: Data) if d.binding == Some(XMRBinding) => _ref.get.localName
+        case (None, d: Data) if d.topBindingOpt == Some(XMRBinding) => _ref.get.localName
         case (None, _) => throwException(s"signalName/pathName should be called after circuit elaboration: $this, ${_parent}")
       }
   }
@@ -245,7 +246,10 @@ private[chisel3] trait HasId extends InstanceId {
   }
   // TODO Should this be public?
   protected def circuitName: String = _parent match {
-    case None => instanceName
+    case None => _circuit match {
+      case None => instanceName
+      case Some(o) => o.circuitName
+    }
     case Some(p) => p.circuitName
   }
 
@@ -283,7 +287,7 @@ private[chisel3] trait NamedComponent extends HasId {
     */
   final def toTarget: ReferenceTarget = {
     val name = this.instanceName
-    if (!validComponentName(name)) throwException(s"Illegal component name: $name (note: literals are illegal)")
+    if (!validComponentName(name)) throwException(s"Illegal component name: $name (note: literals are illegal); $this")
     import _root_.firrtl.annotations.{Target, TargetToken}
     val root = _parent.get.toTarget
     Target.toTargetTokens(name).toList match {
@@ -615,8 +619,8 @@ private[chisel3] object Builder extends LazyLogging {
     case (id: Instance[_]) =>
       id.cloned match {
         case Left(i) =>
-        case Right(m: internal.BaseModule.ModuleClone[_]) =>
-          namer(m.getPorts, prefix)
+        case Right(m: internal.BaseModule.ModuleClone[_]) => namer(m.getPorts, prefix)
+        case Right(m) =>
       }
       //println(id.ports.get)
       //nameRecursively(prefix, id.ports.get, namer)
