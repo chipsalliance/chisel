@@ -270,16 +270,14 @@ package object internal {
   }
 
   /** Internal API for [[ViewParent]] */
-  sealed private[chisel3] abstract class ViewParentAPI extends RawModule()(ExplicitCompileOptions.Strict) {
-    private[chisel3] def fakeComponent: Component
-    private[chisel3] def absoluteTarget: IsModule = ModuleTarget(this.circuitName, "_$$AbsoluteView$$_")
-  }
+  sealed private[chisel3] class ViewParentAPI extends RawModule()(ExplicitCompileOptions.Strict) with PseudoModule {
+    // We must provide `absoluteTarget` but not `toTarget` because otherwise they would be exactly
+    // the same and we'd have no way to distinguish the kind of target when renaming view targets in
+    // the Converter
+    // Note that this is not overriding .toAbsoluteTarget, that is a final def in BaseModule that delegates
+    // to this method
+    private[chisel3] val absoluteTarget: IsModule = ModuleTarget(this.circuitName, "_$$AbsoluteView$$_")
 
-  /** Special internal object representing the parent of all views
-    *
-    * @note this is a val instead of an object because of the need to wrap in Module(...)
-    */
-  private[chisel3] val ViewParent = Module.do_apply(new ViewParentAPI with PseudoModule {
     // This module is not instantiable
     override private[chisel3] def generateComponent(): Option[Component] = None
     override private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = ()
@@ -289,7 +287,12 @@ package object internal {
     // Sigil to mark views, starts with '_' to make it a legal FIRRTL target
     override def desiredName = "_$$View$$_"
 
-    private[chisel3] val fakeComponent = DefModule(this, desiredName, Nil, Nil)
+    private[chisel3] val fakeComponent: Component = DefModule(this, desiredName, Nil, Nil)
+  }
 
-  })(UnlocatableSourceInfo, ExplicitCompileOptions.Strict)
+  /** Special internal object representing the parent of all views
+    *
+    * @note this is a val instead of an object because of the need to wrap in Module(...)
+    */
+  private[chisel3] val ViewParent = Module.do_apply(new ViewParentAPI)(UnlocatableSourceInfo, ExplicitCompileOptions.Strict)
 }

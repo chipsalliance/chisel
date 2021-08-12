@@ -59,21 +59,6 @@ sealed class DataView[T : DataProduct, V <: Data] private[chisel3] (
     val name = if (total) "DataView" else "PartialDataView"
     s"$name(defined $loc)"
   }
-
-  /** Compose two `DataViews` together to construct a view from the target of this `DataView` to the
-    * view type of the second `DataView`
-    *
-    * @param g a DataView from `V` to new view-type `V2`
-    * @tparam V2 View type of `DataView` `g`
-    * @return a new `DataView` from the original `T` to new view-type `V2`
-    */
-  def andThen[V2 <: Data](g: DataView[V, V2])(implicit sourceInfo: SourceInfo): DataView[T, V2] = {
-    new DataView[T, V2](
-      t => g.mkView(mkView(t)),
-      { case (t, v2) => List(t.viewAs[V](this).viewAs[V2](g) -> v2) },
-      this.total && g.total
-    )
-  }
 }
 
 /** Factory methods for constructing [[DataView]]s, see class for example use */
@@ -129,6 +114,25 @@ object DataView {
   /** All Chisel Data are viewable as their own type */
   implicit def identityView[A <: Data](implicit sourceInfo: SourceInfo): DataView[A, A] =
     DataView[A, A](chiselTypeOf.apply, { case (x, y) => (x, y) })
+
+  /** Automatically composes two `DataViews` together to construct a view from the target of this
+    * `DataView` to the view type of the second `DataView`
+    */
+  implicit def composeViews[T : DataProduct, V <: Data, V2 <: Data](
+    implicit v1: DataView[T, V], v2: DataView[V, V2], sourceInfo: SourceInfo
+  ): DataView[T, V2] = {
+    new DataView[T, V2](
+      t => v2.mkView(v1.mkView(t)),
+      { case (t, v) => List(t.viewAs[V].viewAs[V2] -> v) },
+      v1.total && v2.total
+    ) {
+      override def toString: String = s"$v1 andThen $v2"
+    }
+  }
+
+
+
+  //def andThen[V2 <: Data](g: DataView[V, V2])(implicit sourceInfo: SourceInfo): DataView[T, V2] =
 }
 
 /** Factory methods for constructing non-total [[DataView]]s */

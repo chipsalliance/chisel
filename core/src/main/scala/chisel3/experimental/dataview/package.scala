@@ -13,14 +13,12 @@ import scala.collection.immutable.LazyList // Needed for 2.12 alias
 package object dataview {
   case class InvalidViewException(message: String) extends ChiselException(message)
 
-  // TODO should we move the `DataProduct` requirement to `viewAs`
   /** Provides `viewAs` for types that have an implementation of [[DataProduct]]
     *
     * Calling `viewAs` also requires an implementation of [[DataView]] for the target type
     */
-  implicit class DataViewable[T : DataProduct](target: T) {
-    //def viewAs[V <: Data](view: V)(implicit dataView: DataView[T, V]): V = {
-    def viewAs[V <: Data](implicit dataView: DataView[T, V]): V = {
+  implicit class DataViewable[T](target: T) {
+    def viewAs[V <: Data](implicit dataproduct: DataProduct[T], dataView: DataView[T, V]): V = {
       // TODO put a try catch here for ExpectedHardwareException and perhaps others
       // It's likely users will accidentally use chiselTypeOf or something that may error,
       // The right thing to use is DataMirror...chiselTypeClone because of composition with DataView.andThen

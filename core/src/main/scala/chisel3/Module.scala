@@ -395,7 +395,12 @@ package experimental {
       _parent match {
         case Some(parent) => parent.toAbsoluteTarget.instOf(this.instanceName, toTarget.module)
         case None =>
-          // FIXME Special handling for Views - evidence of weirdness of .toAbsoluteTarget
+          // FIXME Special handling for Views - evidence of "weirdness" of .toAbsoluteTarget
+          // In theory, .toAbsoluteTarget should not be necessary, .toTarget combined with the
+          // target disambiguation in FIRRTL's deduplication transform should ensure that .toTarget
+          // is always unambigous. However, legacy workarounds for Chisel's lack of an instance API
+          // have lead some to use .toAbsoluteTarget as a workaround. A proper instance API will make
+          // it possible to deprecate and remove .toAbsoluteTarget
           if (this == ViewParent) ViewParent.absoluteTarget else toTarget
       }
     }
