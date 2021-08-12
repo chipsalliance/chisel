@@ -56,20 +56,18 @@ object EspressoMinimizer extends Minimizer with LazyLogging {
         .toMap
     }
 
-    // Since Espresso don't implements pipe, we use a temp file to do so.
     val input = writeTable(table)
     logger.trace(s"""espresso input table:
                     |$input
                     |""".stripMargin)
-    val f = os.temp(input)
-    val o = try {
-      os.proc("espresso", f).call().out.chunks.mkString
+    val output = try {
+      os.proc("espresso").call(stdin = input).out.chunks.mkString
     } catch {
       case e: java.io.IOException if e.getMessage.contains("error=2, No such file or directory") => throw EspressoNotFoundException
     }
     logger.trace(s"""espresso output table:
-                    |$o
+                    |$output
                     |""".stripMargin)
-    TruthTable(readTable(o), table.default)
+    TruthTable(readTable(output), table.default)
   }
 }
