@@ -302,25 +302,25 @@ class DataViewSpec extends ChiselFlatSpec {
   }
 
   it should "be composable" in {
-    // Given DataView[Foo, Bar], DataView[Bar, Fizz], DataView[Fizz, Buzz], derive DataView[Foo, Buzz]
+    // Given DataView[A, B] and DataView[B, C], derive DataView[A, C]
     class Foo(val foo: UInt) extends Bundle
     class Bar(val bar: UInt) extends Bundle
     class Fizz(val fizz: UInt) extends Bundle
-    class Buzz(val buzz: UInt) extends Bundle
 
     implicit val foo2bar = DataView[Foo, Bar](f => new Bar(chiselTypeClone(f.foo)), _.foo -> _.bar)
     implicit val bar2fizz = DataView[Bar, Fizz](b => new Fizz(chiselTypeClone(b.bar)), _.bar -> _.fizz)
-    implicit val fizz2buzz = DataView[Fizz, Buzz](f => new Buzz(chiselTypeClone(f.fizz)), _.fizz -> _.buzz)
+
+    implicit val foo2fizz: DataView[Foo, Fizz] = foo2bar.andThen(bar2fizz)
 
     class MyModule extends Module {
       val a, b = IO(Input(new Foo(UInt(8.W))))
-      val y, z = IO(Output(new Buzz(UInt(8.W))))
-      y := a.viewAs[Buzz]
-      z := b.viewAs[Bar].viewAs[Fizz].viewAs[Buzz]
+      val y, z = IO(Output(new Fizz(UInt(8.W))))
+      y := a.viewAs[Fizz]
+      z := b.viewAs[Bar].viewAs[Fizz]
     }
     val chirrtl = ChiselStage.emitChirrtl(new MyModule)
-    chirrtl should include ("y.buzz <= a.foo")
-    chirrtl should include ("z.buzz <= b.foo")
+    chirrtl should include ("y.fizz <= a.foo")
+    chirrtl should include ("z.fizz <= b.foo")
   }
 
   // This example should be turned into a built-in feature
