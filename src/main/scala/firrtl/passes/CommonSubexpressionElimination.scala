@@ -9,7 +9,7 @@ import firrtl.ir._
 import firrtl.options.{Dependency, HasShellOptions, RegisteredTransform, ShellOption}
 
 /** Indicate that CommonSubexpressionElimination should not be run */
-case object NoCommonSubexpressionElimination extends NoTargetAnnotation
+case object NoCommonSubexpressionEliminationAnnotation extends NoTargetAnnotation
 
 object CommonSubexpressionElimination extends Transform with HasShellOptions with DependencyAPIMigration {
 
@@ -22,7 +22,7 @@ object CommonSubexpressionElimination extends Transform with HasShellOptions wit
   val options = Seq(
     new ShellOption[Unit](
       longOption = "no-cse",
-      toAnnotationSeq = _ => Seq(NoCommonSubexpressionElimination),
+      toAnnotationSeq = _ => Seq(NoCommonSubexpressionEliminationAnnotation),
       helpText = "Disable common subexpression elimination"
     )
   )
@@ -59,7 +59,7 @@ object CommonSubexpressionElimination extends Transform with HasShellOptions wit
   }
 
   override def execute(state: CircuitState): CircuitState =
-    if (state.annotations.contains(NoCommonSubexpressionElimination))
+    if (state.annotations.contains(NoCommonSubexpressionEliminationAnnotation))
       state
     else
       state.copy(circuit = state.circuit.copy(modules = state.circuit.modules.map({
