@@ -119,32 +119,28 @@ private[chisel3] object BiConnect {
       case pair @ (left_r: Record, right_r: Record) =>
         val notStrict =
           Seq(left_r.compileOptions, right_r.compileOptions).contains(ExplicitCompileOptions.NotStrict)
+
         // chisel3 <> is commutative but FIRRTL <- is not
-        val flipped = {
+        val flipped: Boolean = {
           import ActualDirection._
           // Everything is flipped when it's the port of a child
-          val childPort = left_r._parent.get != context_mod
-          val isFlipped = Seq(Bidirectional(Flipped), Input).contains(left_r.direction)
-          isFlipped ^ childPort
+          def isChildPort(rec: Record): Boolean = rec._parent.get != context_mod
+          def isFlipped(rec: Record): Boolean = Seq(Bidirectional(Flipped), Input).contains(rec.direction)
+          val leftFlip = isFlipped(left_r) ^ isChildPort(left_r)
+          val rightFlip = !(isFlipped(right_r) ^ isChildPort(right_r))
+          leftFlip || rightFlip
         }
-        if (notStrict) {
-          val (newLeft, newRight) = if (flipped) pair.swap else pair
+        val (newLeft, newRight) = if (flipped) (right_r, left_r) else (left_r, right_r)
+
+      // Check whether Records can be bulk connected (all elements can be connected)
+      if (MonoConnect.canBulkConnectRecords(newLeft, newRight, sourceInfo)) {
+        pushCommand(BulkConnect(sourceInfo, newLeft.lref, newRight.lref))
+      } else if (notStrict) {
+        val (newLeft, newRight) = if (flipped) pair.swap else pair
           newLeft.bulkConnect(newRight)(sourceInfo, ExplicitCompileOptions.NotStrict)
-        } else {
-          // Check whether Records can be bulk connected (all elements can be connected)
-          if (left_r.elements.corresponds(right_r.elements)((left, right) =>
-            (left._1 == right._1) && (left._2.getWidth == right._2.getWidth)
-          )) {
-            // Flip BulkConnect if ports are flipped
-            if (flipped) {
-              pushCommand(BulkConnect(sourceInfo, right_r.lref, left_r.lref))
-            } else {
-              pushCommand(BulkConnect(sourceInfo, left_r.lref, right_r.lref))
-            }
-          } else {
-            recordConnect(sourceInfo, connectCompileOptions, left_r, right_r, context_mod)
-          }
-        }
+      } else {
+        recordConnect(sourceInfo, connectCompileOptions, left_r, right_r, context_mod)
+      }
 
       // Handle Records connected to DontCare (change to NotStrict)
       case (left_r: Record, DontCare) =>

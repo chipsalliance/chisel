@@ -5,10 +5,12 @@ package chisel3.internal
 import chisel3._
 import chisel3.experimental.{Analog, BaseModule, EnumType, FixedPoint, Interval, UnsafeEnum}
 import chisel3.internal.Builder.pushCommand
-import chisel3.internal.firrtl.{BulkConnect, Connect, DefInvalid}
+import chisel3.internal.firrtl.{BulkConnect, Connect, Converter, DefInvalid}
 
 import scala.language.experimental.macros
 import chisel3.internal.sourceinfo.SourceInfo
+
+import _root_.firrtl.passes.CheckTypes
 
 /**
 * MonoConnect.connect executes a mono-directional connection element-wise.
@@ -137,10 +139,7 @@ private[chisel3] object MonoConnect {
 
       // Handle Record case
       case (sink_r: Record, source_r: Record) =>
-        // Check whether Records can be bulk connected (all elements can be connected)
-        if (sink_r.elements.corresponds(source_r.elements)( (sink, source) =>
-          (sink._1 == source._1) && (sink._2.getWidth == source._2.getWidth)
-        )) {
+        if (canBulkConnectRecords(sink_r, source_r, sourceInfo)) {
           pushCommand(BulkConnect(sourceInfo, sink_r.lref, source_r.lref))
         } else {
           // For each field, descend with right
@@ -183,6 +182,20 @@ private[chisel3] object MonoConnect {
       // Sink and source are different subtypes of data so fail
       case (sink, source) => throw MismatchedException(sink.toString, source.toString)
     }
+
+  /** Check whether two records can be bulk connected (<-) in FIRRTL. */
+  private[chisel3] def canBulkConnectRecords(sink_r: Record, source_r: Record, sourceInfo: SourceInfo): Boolean = {
+    val canWriteBinding = source_r.topBinding match {
+      case _: ReadOnlyBinding => false
+      case _ => true
+    }
+    val elemsMatch = sink_r.elements.corresponds(source_r.elements)(
+      (sink, source) => CheckTypes.validConnect(
+        Converter.extractType(sink._2, sourceInfo),
+        Converter.extractType(source._2, sourceInfo))
+    )
+    canWriteBinding && elemsMatch
+  }
 
   // This function (finally) issues the connection operation
   private def issueConnect(sink: Element, source: Element)(implicit sourceInfo: SourceInfo): Unit = {
