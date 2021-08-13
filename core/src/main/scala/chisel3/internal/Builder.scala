@@ -10,7 +10,8 @@ import chisel3.internal.firrtl._
 import chisel3.internal.naming._
 import _root_.firrtl.annotations.{CircuitName, ComponentName, IsMember, ModuleName, Named, ReferenceTarget}
 import _root_.firrtl.annotations.AnnotationUtils.validComponentName
-import _root_.firrtl.AnnotationSeq
+import _root_.firrtl.{AnnotationSeq, RenameMap}
+import chisel3.experimental.dataview.{reify, reifySingleData}
 import chisel3.internal.Builder.Prefix
 import logger.LazyLogging
 
@@ -215,32 +216,48 @@ private[chisel3] trait HasId extends InstanceId {
   private[chisel3] def getRef: Arg = _ref.get
   private[chisel3] def getOptionRef: Option[Arg] = _ref
 
+  private def localName(c: Component): String = _ref match {
+    case Some(arg) => arg fullName c
+    case None => computeName(None, None).get
+  }
+
+  // Helper for reifying views if they map to a single Target
+  private[chisel3] def reifyTarget: Option[Data] = this match {
+    case d: Data => reifySingleData(d) // Only Data can be views
+    case bad => throwException(s"This shouldn't be possible - got $bad with ${_parent}")
+  }
+
+  // Helper for reifying the parent of a view if the view maps to a single Target
+  private[chisel3] def reifyParent: BaseModule = reifyTarget.flatMap(_._parent).getOrElse(ViewParent)
+
   // Implementation of public methods.
   def instanceName: String = _parent match {
+    case Some(ViewParent) => reifyTarget.map(_.instanceName).getOrElse(this.localName(ViewParent.fakeComponent))
     case Some(p) => p._component match {
-      case Some(c) => _ref match {
-        case Some(arg) => arg fullName c
-        case None => computeName(None, None).get
-      }
+      case Some(c) => localName(c)
       case None => throwException("signalName/pathName should be called after circuit elaboration")
     }
     case None => throwException("this cannot happen")
   }
   def pathName: String = _parent match {
     case None => instanceName
+    case Some(ViewParent) => s"${reifyParent.pathName}.$instanceName"
     case Some(p) => s"${p.pathName}.$instanceName"
   }
   def parentPathName: String = _parent match {
+    case Some(ViewParent) => reifyParent.pathName
     case Some(p) => p.pathName
     case None => throwException(s"$instanceName doesn't have a parent")
   }
   def parentModName: String = _parent match {
+    case Some(ViewParent) => reifyParent.name
     case Some(p) => p.name
     case None => throwException(s"$instanceName doesn't have a parent")
   }
   // TODO Should this be public?
   protected def circuitName: String = _parent match {
     case None => instanceName
+    case Some(ViewParent) => reifyParent.circuitName
     case Some(p) => p.circuitName
   }
 
@@ -288,8 +305,10 @@ private[chisel3] trait NamedComponent extends HasId {
 
   final def toAbsoluteTarget: ReferenceTarget = {
     val localTarget = toTarget
+    def makeTarget(p: BaseModule) = p.toAbsoluteTarget.ref(localTarget.ref).copy(component = localTarget.component)
     _parent match {
-      case Some(parent) => parent.toAbsoluteTarget.ref(localTarget.ref).copy(component = localTarget.component)
+      case Some(ViewParent) => makeTarget(reifyParent)
+      case Some(parent) => makeTarget(parent)
       case None => localTarget
     }
   }
@@ -304,6 +323,11 @@ private[chisel3] class ChiselContext() {
 
   // Records the different prefixes which have been scoped at this point in time
   var prefixStack: Prefix = Nil
+
+  // Views belong to a separate namespace (for renaming)
+  // The namespace outside of Builder context is useless, but it ensures that views can still be created
+  // and the resulting .toTarget is very clearly useless (_$$View$$_...)
+  val viewNamespace = Namespace.empty
 }
 
 private[chisel3] class DynamicContext(val annotationSeq: AnnotationSeq) {
@@ -318,6 +342,9 @@ private[chisel3] class DynamicContext(val annotationSeq: AnnotationSeq) {
     * Set by [[ModuleAspect]]
     */
   val aspectModule: mutable.HashMap[BaseModule, BaseModule] = mutable.HashMap.empty[BaseModule, BaseModule]
+
+  // Views that do not correspond to a single ReferenceTarget and thus require renaming
+  val unnamedViews: ArrayBuffer[Data] = ArrayBuffer.empty
 
   // Set by object Module.apply before calling class Module constructor
   // Used to distinguish between no Module() wrapping, multiple wrappings, and rewrapping
@@ -370,6 +397,9 @@ private[chisel3] object Builder extends LazyLogging {
   def annotationSeq: AnnotationSeq = dynamicContext.annotationSeq
   def namingStack: NamingStack = dynamicContext.namingStack
 
+  def unnamedViews: ArrayBuffer[Data] = dynamicContext.unnamedViews
+  def viewNamespace: Namespace = chiselContext.get.viewNamespace
+
   // Puts a prefix string onto the prefix stack
   def pushPrefix(d: String): Unit = {
     val context = chiselContext.get()
@@ -403,6 +433,7 @@ private[chisel3] object Builder extends LazyLogging {
         case PortBinding(mod) if Builder.currentModule.contains(mod) => data.seedOpt
         case PortBinding(mod) => map2(mod.seedOpt, data.seedOpt)(_ + "_" + _)
         case (_: LitBinding | _: DontCareBinding) => None
+        case _ => Some("view_") // TODO implement
       }
       id match {
         case d: Data => recData(d)
@@ -646,8 +677,29 @@ private[chisel3] object Builder extends LazyLogging {
     }
   }
 
+  // Builds a RenameMap for all Views that do not correspond to a single Data
+  // These Data give a fake ReferenceTarget for .toTarget and .toReferenceTarget that the returned
+  // RenameMap can split into the constituent parts
+  private[chisel3] def makeViewRenameMap: RenameMap = {
+    val renames = RenameMap()
+    for (view <- unnamedViews) {
+      val localTarget = view.toTarget
+      val absTarget = view.toAbsoluteTarget
+      val elts = getRecursiveFields.lazily(view, "")
+        .collect { case (elt: Element, _) => elt }
+      for (elt <- elts) {
+        val targetOfView = reify(elt)
+        renames.record(localTarget, targetOfView.toTarget)
+        renames.record(absTarget, targetOfView.toAbsoluteTarget)
+      }
+    }
+    renames
+  }
+
   private [chisel3] def build[T <: RawModule](f: => T, dynamicContext: DynamicContext): (Circuit, T) = {
     dynamicContextVar.withValue(Some(dynamicContext)) {
+      ViewParent // Must initialize the singleton in a Builder context or weird things can happen
+                 // in tiny designs/testcases that never access anything in chisel3.internal
       checkScalaVersion()
       logger.warn("Elaborating design...")
       val mod = f
@@ -655,7 +707,7 @@ private[chisel3] object Builder extends LazyLogging {
       errors.checkpoint(logger)
       logger.warn("Done elaborating.")
 
-      (Circuit(components.last.name, components.toSeq, annotations.toSeq), mod)
+      (Circuit(components.last.name, components.toSeq, annotations.toSeq, makeViewRenameMap), mod)
     }
   }
   initializeSingletons()

@@ -11,6 +11,7 @@ import chisel3.internal.BaseModule.ModuleClone
 import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.UnlocatableSourceInfo
+import _root_.firrtl.annotations.{IsModule, ModuleTarget}
 
 /** Abstract base class for Modules that contain Chisel RTL.
   * This abstract base class is a user-defined module which does not include implicit clock and reset and supports
@@ -157,6 +158,9 @@ trait RequireSyncReset extends Module {
 
 package object internal {
 
+  /** Marker trait for modules that are not true modules */
+  private[chisel3] trait PseudoModule extends BaseModule
+
   // Private reflective version of "val io" to maintain Chisel.Module semantics without having
   // io as a virtual method. See https://github.com/freechipsproject/chisel3/pull/1550 for more
   // information about the removal of "val io"
@@ -264,4 +268,31 @@ package object internal {
       }
     }
   }
+
+  /** Internal API for [[ViewParent]] */
+  sealed private[chisel3] class ViewParentAPI extends RawModule()(ExplicitCompileOptions.Strict) with PseudoModule {
+    // We must provide `absoluteTarget` but not `toTarget` because otherwise they would be exactly
+    // the same and we'd have no way to distinguish the kind of target when renaming view targets in
+    // the Converter
+    // Note that this is not overriding .toAbsoluteTarget, that is a final def in BaseModule that delegates
+    // to this method
+    private[chisel3] val absoluteTarget: IsModule = ModuleTarget(this.circuitName, "_$$AbsoluteView$$_")
+
+    // This module is not instantiable
+    override private[chisel3] def generateComponent(): Option[Component] = None
+    override private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = ()
+    // This module is not really part of the circuit
+    _parent = None
+
+    // Sigil to mark views, starts with '_' to make it a legal FIRRTL target
+    override def desiredName = "_$$View$$_"
+
+    private[chisel3] val fakeComponent: Component = DefModule(this, desiredName, Nil, Nil)
+  }
+
+  /** Special internal object representing the parent of all views
+    *
+    * @note this is a val instead of an object because of the need to wrap in Module(...)
+    */
+  private[chisel3] val ViewParent = Module.do_apply(new ViewParentAPI)(UnlocatableSourceInfo, ExplicitCompileOptions.Strict)
 }
