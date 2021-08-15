@@ -90,6 +90,12 @@ object is {
   * }
   * }}}
   */
+@deprecated(
+  """switch-is has been deprecated in 3.4, it will be removed in 3.5
+    |if you are look for Verilog Case Statement, please use chisel3.util.experimental.decode.decoder
+    |switch-is results to a cascade `when` block, which leads to a priority mux in the final RTL.
+    |for parallel lookup, please use chisel3.util.Mux1H or chisel3.util.experimental.decode.decoder
+    |""".stripMargin, "3.4")
 object switch {
   def apply[T <: Element](cond: T)(x: => Any): Unit = macro impl
   def impl(c: Context)(cond: c.Tree)(x: c.Tree): c.Tree = { import c.universe._
