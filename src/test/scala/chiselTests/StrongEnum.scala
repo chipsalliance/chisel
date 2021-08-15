@@ -9,6 +9,7 @@ import chisel3.internal.naming.chiselName
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage}
 import chisel3.util._
 import chisel3.testers.BasicTester
+import chisel3.util.experimental.decode.decoder
 import org.scalatest.Assertion
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
@@ -116,51 +117,6 @@ class EnumOps(val xType: ChiselEnum, val yType: ChiselEnum) extends Module {
   io.ge := io.x >= io.y
   io.eq := io.x === io.y
   io.ne := io.x =/= io.y
-}
-
-object StrongEnumFSM {
-  object State extends ChiselEnum {
-    val sNone, sOne1, sTwo1s = Value
-
-    val correct_annotation_map = Map[String, BigInt]("sNone" -> 0, "sOne1" -> 1, "sTwo1s" -> 2)
-  }
-}
-
-class StrongEnumFSM extends Module {
-  import StrongEnumFSM.State
-  import StrongEnumFSM.State._
-
-  // This FSM detects two 1's one after the other
-  val io = IO(new Bundle {
-    val in = Input(Bool())
-    val out = Output(Bool())
-    val state = Output(State())
-  })
-
-  val state = RegInit(sNone)
-
-  io.out := (state === sTwo1s)
-  io.state := state
-
-  switch (state) {
-    is (sNone) {
-      when (io.in) {
-        state := sOne1
-      }
-    }
-    is (sOne1) {
-      when (io.in) {
-        state := sTwo1s
-      } .otherwise {
-        state := sNone
-      }
-    }
-    is (sTwo1s) {
-      when (!io.in) {
-        state := sNone
-      }
-    }
-  }
 }
 
 class CastToUIntTester extends BasicTester {

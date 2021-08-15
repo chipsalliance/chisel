@@ -2,10 +2,10 @@
 
 package examples
 
-import chiselTests.ChiselFlatSpec
-import chisel3.testers.{BasicTester, TesterDriver}
 import chisel3._
+import chisel3.testers.{BasicTester, TesterDriver}
 import chisel3.util._
+import chiselTests.ChiselFlatSpec
 
 class SimpleVendingMachineIO extends Bundle {
   val nickel = Input(Bool())
@@ -21,29 +21,55 @@ abstract class SimpleVendingMachine extends Module {
 
 // Vending machine implemented with a Finite State Machine
 class FSMVendingMachine extends SimpleVendingMachine {
+  // TODO: we really need a better State Machine API for both PPA and read ability
+  // General Synthesis Flow won't re-encode this.
+  // User should use Mux1H to write their own high-performance FSM
+  //  val sIdle = "b00001".U
+  //  val s5 = "b00010".U
+  //  val s10 = "b00100".U
+  //  val s15 = "b01000".U
+  //  val sOk = "b10000".U
+  //  val decode = decoder(state ## io.nickel ## io.dime, TruthTable(
+  //    """????100->000010
+  //      |????110->000100
+  //      |????101->001000
+  //      |????111->001000
+  //      |???1?00->000100
+  //      |???1?10->001000
+  //      |???1?01->010000
+  //      |???1?11->010000
+  //      |??1??00->010000
+  //      |??1??10->010000
+  //      |??1??01->100000
+  //      |??1??11->100000
+  //      |?1???00->010000
+  //      |?1???10->100000
+  //      |?1???01->100000
+  //      |?1???11->100000
+  //      |1??????->000011
+  //      |?????
+  //      |""".stripMargin
+  //  ))
+  //  state := decode(5,1)
+  //  io.dispense := decode(0)
+
   val sIdle :: s5 :: s10 :: s15 :: sOk :: Nil = Enum(5)
   val state = RegInit(sIdle)
 
-  switch (state) {
-    is (sIdle) {
-      when (io.nickel) { state := s5 }
-      when (io.dime)   { state := s10 }
-    }
-    is (s5) {
-      when (io.nickel) { state := s10 }
-      when (io.dime)   { state := s15 }
-    }
-    is (s10) {
-      when (io.nickel) { state := s15 }
-      when (io.dime)   { state := sOk }
-    }
-    is (s15) {
-      when (io.nickel) { state := sOk }
-      when (io.dime)   { state := sOk }
-    }
-    is (sOk) {
-      state := sIdle
-    }
+  when(state === sIdle) {
+    when(io.nickel) { state := s5 }
+    when(io.dime) { state := s10 }
+  }.elsewhen(state === s5) {
+    when(io.nickel) { state := s10 }
+    when(io.dime) { state := s15 }
+  }.elsewhen(state === s10) {
+    when(io.nickel) { state := s15 }
+    when(io.dime) { state := sOk }
+  }.elsewhen(state === s15) {
+    when(io.nickel) { state := sOk }
+    when(io.dime) { state := sOk }
+  }.elsewhen(state === sOk) {
+    state := sIdle
   }
   io.dispense := (state === sOk)
 }

@@ -165,10 +165,8 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
     } .elsewhen (io.boot) {
       pc := UInt(0)
     } .otherwise {
-      switch(op) {
-        is(add_op) { rc := ra +% rb }
-        is(imm_op) { rc := (rai << 8) | rbi }
-      }
+      when(op === add_op) { rc := ra +% rb }
+        .elsewhen(op === imm_op) { rc := (rai << 8) | rbi }
       io.out := rc
       when (rci === UInt(255)) {
         io.valid := Bool(true)

@@ -3,8 +3,8 @@
 package chiselTests
 
 import chisel3._
-import chisel3.util._
 import chisel3.testers.BasicTester
+import chisel3.util._
 
 class MemVecTester extends BasicTester {
   val mem = Mem(2, Vec(2, UInt(8.W)))
@@ -24,12 +24,16 @@ class SyncReadMemTester extends BasicTester {
   val mem = SyncReadMem(2, UInt(2.W))
   val rdata = mem.read(cnt - 1.U, cnt =/= 0.U)
 
-  switch (cnt) {
-    is (0.U) { mem.write(cnt, 3.U) }
-    is (1.U) { mem.write(cnt, 2.U) }
-    is (2.U) { assert(rdata === 3.U) }
-    is (3.U) { assert(rdata === 2.U) }
-    is (4.U) { stop() }
+  when(cnt === 0.U) {
+    mem.write(cnt, 3.U)
+  }.elsewhen(cnt === 1.U) {
+    mem.write(cnt, 2.U)
+  }.elsewhen(cnt === 2.U) {
+    assert(rdata === 3.U)
+  }.elsewhen(cnt === 3.U) {
+    assert(rdata === 2.U)
+  }.elsewhen(cnt === 4.U) {
+    stop()
   }
 }
 
@@ -62,9 +66,10 @@ class SyncReadMemWithZeroWidthTester extends BasicTester {
   val mem      = SyncReadMem(2, UInt(0.W))
   val rdata    = mem.read(0.U, true.B)
 
-  switch (cnt) {
-    is (1.U) { assert(rdata === 0.U) }
-    is (2.U) { stop() }
+  when(cnt === 1.U) {
+    assert(rdata === 0.U)
+  }.elsewhen { cnt === 2.U } {
+    stop()
   }
 }
 
@@ -74,12 +79,16 @@ class HugeSMemTester(size: BigInt) extends BasicTester {
   val mem = SyncReadMem(size, UInt(8.W))
   val rdata = mem.read(cnt - 1.U, cnt =/= 0.U)
 
-  switch (cnt) {
-    is (0.U) { mem.write(cnt, 3.U) }
-    is (1.U) { mem.write(cnt, 2.U) }
-    is (2.U) { assert(rdata === 3.U) }
-    is (3.U) { assert(rdata === 2.U) }
-    is (4.U) { stop() }
+  when(cnt === 0.U) {
+    mem.write(cnt, 3.U)
+  }.elsewhen(cnt === 1.U) {
+    mem.write(cnt, 2.U)
+  }.elsewhen(cnt === 2.U) {
+    assert(rdata === 3.U)
+  }.elsewhen(cnt === 3.U) {
+    assert(rdata === 2.U)
+  }.elsewhen(cnt === 4.U) {
+    stop()
   }
 }
 class HugeCMemTester(size: BigInt) extends BasicTester {
@@ -87,12 +96,16 @@ class HugeCMemTester(size: BigInt) extends BasicTester {
   val mem = Mem(size, UInt(8.W))
   val rdata = mem.read(cnt)
 
-  switch (cnt) {
-    is (0.U) { mem.write(cnt, 3.U) }
-    is (1.U) { mem.write(cnt, 2.U) }
-    is (2.U) { assert(rdata === 3.U) }
-    is (3.U) { assert(rdata === 2.U) }
-    is (4.U) { stop() }
+  when(cnt === 0.U) {
+    mem.write(cnt, 3.U)
+  }.elsewhen(cnt === 1.U) {
+    mem.write(cnt, 2.U)
+  }.elsewhen(cnt === 2.U) {
+    assert(rdata === 3.U)
+  }.elsewhen(cnt === 3.U) {
+    assert(rdata === 2.U)
+  }.elsewhen(cnt === 4.U) {
+    stop()
   }
 }
 
@@ -104,20 +117,20 @@ class SyncReadMemBundleTester extends BasicTester {
   val mem = SyncReadMem(2, tpe)
   val rdata = mem.read(cnt - 1.U, cnt =/= 0.U)
 
-  switch (cnt) {
-    is (0.U) {
-      val w = Wire(tpe)
-      w.foo := 3.U
-      mem.write(cnt, w)
-    }
-    is (1.U) {
-      val w = Wire(tpe)
-      w.foo := 2.U
-      mem.write(cnt, w)
-    }
-    is (2.U) { assert(rdata.foo === 3.U) }
-    is (3.U) { assert(rdata.foo === 2.U) }
-    is (4.U) { stop() }
+  when(cnt === 0.U) {
+    val w = Wire(tpe)
+    w.foo := 3.U
+    mem.write(cnt, w)
+  }.elsewhen(cnt === 1.U) {
+    val w = Wire(tpe)
+    w.foo := 2.U
+    mem.write(cnt, w)
+  }.elsewhen(cnt === 2.U) {
+    assert(rdata.foo === 3.U)
+  }.elsewhen(cnt === 3.U) {
+    assert(rdata.foo === 2.U)
+  }.elsewhen(cnt === 4.U) {
+    stop()
   }
 }
 

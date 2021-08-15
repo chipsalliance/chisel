@@ -26,23 +26,20 @@ class DetectTwoOnes extends Module {
 
   io.out := (state === State.sTwo1s)
 
-  switch (state) {
-    is (State.sNone) {
-      when (io.in) {
-        state := State.sOne1
-      }
+  when(state === State.sNone) {
+    when (io.in) {
+      state := State.sOne1
     }
-    is (State.sOne1) {
-      when (io.in) {
-        state := State.sTwo1s
-      } .otherwise {
-        state := State.sNone
-      }
+
+  }.elsewhen(state === State.sOne1) {
+    when (io.in) {
+      state := State.sTwo1s
+    } .otherwise {
+      state := State.sNone
     }
-    is (State.sTwo1s) {
-      when (!io.in) {
-        state := State.sNone
-      }
+  }.elsewhen(state === State.sTwo1s) {
+    when (!io.in) {
+      state := State.sNone
     }
   }
 }

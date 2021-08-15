@@ -41,9 +41,10 @@ class Risc extends Module {
   } .elsewhen (io.boot) {
     pc := 0.U
   } .otherwise {
-    switch(op) {
-      is(add_op) { rc := ra +% rb }
-      is(imm_op) { rc := (rai << 8) | rbi }
+    when(op === add_op) {
+      rc := ra +% rb
+    }.elsewhen(op === imm_op) {
+      rc := (rai << 8) | rbi
     }
     io.out := rc
     when (rci === 255.U) {
