@@ -453,10 +453,6 @@ package object Chisel {
 
   val Log2 = chisel3.util.Log2
 
-  type SwitchContext[T <: Bits] = chisel3.util.SwitchContext[T]
-  val is = chisel3.util.is
-  val switch = chisel3.util.switch
-
   type Counter = chisel3.util.Counter
   val Counter = chisel3.util.Counter
 
