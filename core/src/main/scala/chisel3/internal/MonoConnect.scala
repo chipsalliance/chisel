@@ -209,11 +209,15 @@ private[chisel3] object MonoConnect {
       case _: ReadOnlyBinding => false
       case _ => true
     }
-    val elemsMatch = sink_r.elements.corresponds(source_r.elements)(
-      (sink, source) => CheckTypes.validConnect(
-        Converter.extractType(sink._2, sourceInfo),
-        Converter.extractType(source._2, sourceInfo))
-    )
+    val elemsMatch = if(sink_r.elements.size == source_r.elements.size) {
+      val elemValidConnect = sink_r.elements.zip(source_r.elements).map {
+        case (sink, source) => CheckTypes.validConnect(
+          Converter.extractType(sink._2, sourceInfo),
+          Converter.extractType(source._2, sourceInfo))
+        case _ => false
+      }
+      elemValidConnect.foldLeft(true)(_ && _)
+    } else false
     canWriteBinding && elemsMatch
   }
 
