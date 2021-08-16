@@ -118,12 +118,16 @@ private[chisel3] object MonoConnect {
       // Handle Vec case
       case (sink_v: Vec[Data @unchecked], source_v: Vec[Data @unchecked]) =>
         if(sink_v.length != source_v.length) { throw MismatchedVecException }
-        for(idx <- 0 until sink_v.length) {
-          try {
-            implicit val compileOptions = connectCompileOptions
-            connect(sourceInfo, connectCompileOptions, sink_v(idx), source_v(idx), context_mod)
-          } catch {
-            case MonoConnectException(message) => throw MonoConnectException(s"($idx)$message")
+        if (canBulkConnectVecs(sink_v, source_v, sourceInfo)) {
+          pushCommand(BulkConnect(sourceInfo, sink_v.lref, source_v.lref))
+        } else {
+          for(idx <- 0 until sink_v.length) {
+            try {
+              implicit val compileOptions = connectCompileOptions
+              connect(sourceInfo, connectCompileOptions, sink_v(idx), source_v(idx), context_mod)
+            } catch {
+              case MonoConnectException(message) => throw MonoConnectException(s"($idx)$message")
+            }
           }
         }
       // Handle Vec connected to DontCare. Apply the DontCare to individual elements.
@@ -183,7 +187,22 @@ private[chisel3] object MonoConnect {
       case (sink, source) => throw MismatchedException(sink.toString, source.toString)
     }
 
-  /** Check whether two records can be bulk connected (<-) in FIRRTL. */
+  /** Check whether two [[Vec]]s can be bulk connected (<-) in FIRRTL. */
+  private[chisel3] def canBulkConnectVecs(sink_v: Vec[Data @unchecked],
+                                          source_v: Vec[Data @unchecked],
+                                          sourceInfo: SourceInfo): Boolean = {
+    val canWriteBinding = source_v.topBinding match {
+      case _: ReadOnlyBinding => false
+      case _ => true
+    }
+    val elemsMatch = CheckTypes.validConnect(
+      Converter.extractType(sink_v, sourceInfo),
+      Converter.extractType(source_v, sourceInfo),
+    )
+    canWriteBinding && elemsMatch
+  }
+
+  /** Check whether two [[Record]]s can be bulk connected (<-) in FIRRTL. */
   private[chisel3] def canBulkConnectRecords(sink_r: Record, source_r: Record, sourceInfo: SourceInfo): Boolean = {
     val canWriteBinding = source_r.topBinding match {
       case _: ReadOnlyBinding => false

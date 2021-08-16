@@ -83,12 +83,16 @@ private[chisel3] object BiConnect {
         if (left_v.length != right_v.length) {
           throw MismatchedVecException
         }
-        for (idx <- 0 until left_v.length) {
-          try {
-            implicit val compileOptions = connectCompileOptions
-            connect(sourceInfo, connectCompileOptions, left_v(idx), right_v(idx), context_mod)
-          } catch {
-            case BiConnectException(message) => throw BiConnectException(s"($idx)$message")
+        if (MonoConnect.canBulkConnectVecs(left_v, right_v, sourceInfo)) {
+          pushCommand(BulkConnect(sourceInfo, left_v.lref, right_v.lref))
+        } else {
+          for (idx <- 0 until left_v.length) {
+            try {
+              implicit val compileOptions = connectCompileOptions
+              connect(sourceInfo, connectCompileOptions, left_v(idx), right_v(idx), context_mod)
+            } catch {
+              case BiConnectException(message) => throw BiConnectException(s"($idx)$message")
+            }
           }
         }
       }
