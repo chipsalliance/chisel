@@ -3,11 +3,13 @@
 package chiselTests.util.experimental
 
 import chisel3.util.experimental.decode.{DecodeTableAnnotation, Minimizer, QMCMinimizer, TruthTable}
-import chiselTests.SMTModelCheckingSpec
 import chiselTests.util.experimental.minimizer.DecodeTestModule
 import firrtl.annotations.ReferenceTarget
+import org.scalatest.flatspec.AnyFlatSpec
+import chiseltest._
+import chiseltest.formal._
 
-class DecoderSpec extends SMTModelCheckingSpec {
+class DecoderSpec extends AnyFlatSpec with ChiselScalatestTester with Formal  {
   val xor = TruthTable(
     """10->1
       |01->1
@@ -16,46 +18,36 @@ class DecoderSpec extends SMTModelCheckingSpec {
   def minimizer: Minimizer = QMCMinimizer
 
   "decoder" should "pass without DecodeTableAnnotation" in {
-    test(
-      () => new DecodeTestModule(minimizer, table = xor),
-      s"${minimizer.getClass.getSimpleName}.noAnno",
-      success
-    )
+    verify(new DecodeTestModule(minimizer, table = xor), Seq(BoundedCheck(1)))
   }
 
   "decoder" should "fail with a incorrect DecodeTableAnnotation" in {
-    test(
-      () => new DecodeTestModule(minimizer, table = xor),
-      s"${minimizer.getClass.getSimpleName}.incorrectAnno",
-      fail(0),
-      annos = Seq(
-        DecodeTableAnnotation(ReferenceTarget("", "", Nil, "", Nil),
-          """10->1
-            |01->1
-            |    0""".stripMargin,
-          """10->1
-            |    0""".stripMargin
-        )
+    val annos = Seq(
+      DecodeTableAnnotation(ReferenceTarget("", "", Nil, "", Nil),
+        """10->1
+          |01->1
+          |    0""".stripMargin,
+        """10->1
+          |    0""".stripMargin
       )
     )
+    assertThrows[FailedBoundedCheckException] {
+      verify(new DecodeTestModule(minimizer, table = xor), BoundedCheck(1) +: annos)
+    }
   }
 
   "decoder" should "success with a correct DecodeTableAnnotation" in {
-    test(
-      () => new DecodeTestModule(minimizer, table = xor),
-      s"${minimizer.getClass.getSimpleName}.correctAnno",
-      success,
-      annos = Seq(
-        DecodeTableAnnotation(ReferenceTarget("", "", Nil, "", Nil),
+    val annos = Seq(
+      DecodeTableAnnotation(ReferenceTarget("", "", Nil, "", Nil),
+        """10->1
+          |01->1
+          |    0""".stripMargin,
+        QMCMinimizer.minimize(TruthTable(
           """10->1
             |01->1
-            |    0""".stripMargin,
-          QMCMinimizer.minimize(TruthTable(
-            """10->1
-              |01->1
-              |    0""".stripMargin)).toString
-        )
+            |    0""".stripMargin)).toString
       )
     )
+    verify(new DecodeTestModule(minimizer, table = xor), BoundedCheck(1) +: annos)
   }
 }

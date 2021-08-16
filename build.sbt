@@ -72,6 +72,7 @@ lazy val chiselSettings = Seq (
   libraryDependencies ++= Seq(
     "org.scalatest" %% "scalatest" % "3.2.9" % "test",
     "org.scalatestplus" %% "scalacheck-1-14" % "3.2.2.0" % "test",
+    "edu.berkeley.cs" %% "chiseltest" % "0.5-SNAPSHOT" % "test",
     "com.lihaoyi" %% "os-lib" % "0.7.8",
   ),
 ) ++ (
