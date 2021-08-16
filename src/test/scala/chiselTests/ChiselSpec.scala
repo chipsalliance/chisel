@@ -7,9 +7,11 @@ import chisel3.aop.Aspect
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage, NoRunFirrtlCompilerAnnotation, PrintFullStackTraceAnnotation}
 import chisel3.testers._
 import firrtl.annotations.Annotation
+import firrtl.ir.Circuit
 import firrtl.util.BackendCompilationUtilities
 import firrtl.{AnnotationSeq, EmittedVerilogCircuitAnnotation}
 import _root_.logger.Logger
+import firrtl.stage.FirrtlCircuitAnnotation
 import org.scalacheck._
 import org.scalatest._
 import org.scalatest.flatspec.AnyFlatSpec
@@ -86,6 +88,33 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
       .collectFirst {
         case EmittedVerilogCircuitAnnotation(a) => a.value
       }.getOrElse(fail("No Verilog circuit was emitted by the FIRRTL compiler!"))
+  }
+
+  def elaborateAndGetModule[A <: RawModule](t: => A): A = {
+    var res: Any = null
+    ChiselStage.elaborate {
+      res = t
+      res.asInstanceOf[A]
+    }
+    res.asInstanceOf[A]
+  }
+
+  /** Compiles a Chisel Module to FIRRTL
+    * NOTE: This uses the "test_run_dir" as the default directory for generated code.
+    * @param t the generator for the module
+    * @return The FIRRTL Circuit and Annotations _before_ FIRRTL compilation
+    */
+  def getFirrtlAndAnnos(t: => RawModule): (Circuit, Seq[Annotation]) = {
+    val args = Array(
+      "--target-dir",
+      createTestDirectory(this.getClass.getSimpleName).toString,
+      "--no-run-firrtl"
+    )
+    val annos = (new ChiselStage).execute(args, Seq(ChiselGeneratorAnnotation(() => t)))
+    val circuit = annos.collectFirst {
+      case FirrtlCircuitAnnotation(c) => c
+    }.getOrElse(fail("No FIRRTL Circuit found!!"))
+    (circuit, annos)
   }
 }
 
