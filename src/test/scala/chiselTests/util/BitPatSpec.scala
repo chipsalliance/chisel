@@ -18,4 +18,8 @@ class BitPatSpec extends AnyFlatSpec with Matchers {
   it should "not fail if BitPat width is 0" in {
     intercept[IllegalArgumentException]{BitPat("b")}
   }
+
+  it should "contact BitPat via ##" in {
+    (BitPat.Y(4) ## BitPat.dontCare(3) ## BitPat.N(2)).toString should be (s"BitPat(1111???00)")
+  }
 }
