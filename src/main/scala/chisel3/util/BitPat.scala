@@ -58,6 +58,22 @@ object BitPat {
     */
   def dontCare(width: Int): BitPat = BitPat("b" + ("?" * width))
 
+  /** Creates a [[BitPat]] of all 1 of the specified bitwidth.
+    *
+    * @example {{{
+    * val myY = BitPat.Y(4)  // equivalent to BitPat("b1111")
+    * }}}
+    */
+  def Y(width: Int = 1): BitPat = BitPat("b" + ("1" * width))
+
+  /** Creates a [[BitPat]] of all 0 of the specified bitwidth.
+    *
+    * @example {{{
+    * val myN = BitPat.N(4)  // equivalent to BitPat("b0000")
+    * }}}
+    */
+  def N(width: Int = 1): BitPat = BitPat("b" + ("0" * width))
+
   /** Allows BitPats to be used where a UInt is expected.
     *
     * @note the BitPat must not have don't care bits (will error out otherwise)
