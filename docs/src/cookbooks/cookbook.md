@@ -502,9 +502,8 @@ class CoercedRegConnect extends Module {
   
   // Make a Reg which contains all of the bundle's signals, regardless of their directionality
   val monitor = Reg(Output(chiselTypeOf(io.enq)))
-  monitor := io.enq // monoconnect will ignore directions of right-hand side
-  // dontTouch so that it shows up in the Verilog
-  dontTouch(monitor)
+  // Even though io.enq is bidirectional, := will drive all fields of monitor with the fields of io.enq
+  monitor := io.enq
 }
 ```
 
@@ -513,5 +512,7 @@ class CoercedRegConnect extends Module {
 ChiselStage.emitVerilog(new CoercedRegConnect {
   // Provide default connections that would just muddy the example
   io.enq.ready := true.B
+  // dontTouch so that it shows up in the Verilog
+  dontTouch(monitor)
 })
 ```
