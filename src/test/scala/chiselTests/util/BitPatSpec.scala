@@ -15,6 +15,11 @@ class BitPatSpec extends AnyFlatSpec with Matchers {
     BitPat("b" + testPattern).toString should be (s"BitPat($testPattern)")
   }
 
+  it should "convert a BitPat to raw form" in {
+    val testPattern = "0" * 32 + "1" * 32 + "?" * 32 + "?01" * 32
+    BitPat("b" + testPattern).rawString should be(testPattern)
+  }
+
   it should "not fail if BitPat width is 0" in {
     intercept[IllegalArgumentException]{BitPat("b")}
   }

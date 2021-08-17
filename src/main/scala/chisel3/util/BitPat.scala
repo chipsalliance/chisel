@@ -147,11 +147,14 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) extends Sou
     new BitPat((value << that.getWidth) + that.value, (mask << that.getWidth) + that.mask, this.width + that.getWidth)
   }
 
-  override def toString = {
-    "BitPat(" +
-      (0 until width).map(i =>
-        if (((mask >> i) & 1) == 1) if (((value >> i) & 1) == 1)  "1" else "0" else "?"
-      ).reverse.reduce(_ + _) +
-    ")"
-  }
+  /** Generate raw string of a BitPat. */
+  def rawString: String = Seq.tabulate(width) { i =>
+      (value.testBit(width - i - 1), mask.testBit(width - i - 1)) match {
+      case (true, true) => "1"
+      case (false, true) => "0"
+      case (_, false) => "?"
+    }
+  }.mkString("")
+
+  override def toString = s"BitPat($rawString)"
 }
