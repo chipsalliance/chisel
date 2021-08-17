@@ -8,6 +8,8 @@ import mill.modules.Util
 import $ivy.`com.lihaoyi::mill-contrib-buildinfo:$MILL_VERSION`
 import mill.contrib.buildinfo.BuildInfo
 
+import java.io.IOException
+
 object firrtl extends mill.Cross[firrtlCrossModule]("2.12.13", "2.13.4")
 
 class firrtlCrossModule(val crossScalaVersion: String) extends CrossSbtModule with ScalafmtModule with PublishModule with BuildInfo {
@@ -91,21 +93,55 @@ class firrtlCrossModule(val crossScalaVersion: String) extends CrossSbtModule wi
     millSourcePath / "src" / "main" / "antlr4" / "FIRRTL.g4"
   }
 
-  def downloadAntlr4Jar = T.persistent {
-    if (!os.isFile( T.ctx.dest / "antlr4" ))
-      Util.download(s"https://www.antlr.org/download/antlr-$antlr4Version-complete.jar", os.rel / "antlr4")
-    PathRef(T.ctx.dest / "antlr4")
+  /** override this to false will force FIRRTL using system protoc. */
+  val checkSystemAntlr4Version: Boolean = true
+
+  def antlr4Path = T.persistent {
+    // Linux distro package antlr4 as antlr4, while brew package as antlr
+    PathRef(Seq("antlr4", "antlr").flatMap { f =>
+      try {
+        val systemAntlr4Version = os.proc(f).call(check = false).out.lines.head.split(" ").last
+        if (systemAntlr4Version == antlr4Version || !checkSystemAntlr4Version)
+          Some(os.Path(os.proc("bash", "-c", s"command -v $f").call().out.lines.head))
+        else
+          None
+      } catch {
+        case _: IOException =>
+          None
+      }
+    }.headOption match {
+      case Some(bin) =>
+        println(s"Use system antlr4: $bin")
+        bin
+      case None =>
+        println("Download antlr4 from Internet")
+        if (!os.isFile(T.ctx.dest / "antlr4"))
+          Util.download(s"https://www.antlr.org/download/antlr-$antlr4Version-complete.jar", os.rel / "antlr4.jar")
+        T.ctx.dest / "antlr4.jar"
+    })
   }
 
   def generatedAntlr4Source = T.sources {
-    os.proc("java",
-      "-jar", downloadAntlr4Jar().path.toString,
-      "-o", T.ctx.dest.toString,
-      "-lib", antlrSource().path.toString,
-      "-package", "firrtl.antlr",
-      "-no-listener", "-visitor",
-      antlrSource().path.toString
-    ).call()
+    antlr4Path().path match {
+      case f if f.last == "antlr4.jar" =>
+        os.proc("java",
+          "-jar", f.toString,
+          "-o", T.ctx.dest.toString,
+          "-lib", antlrSource().path.toString,
+          "-package", "firrtl.antlr",
+          "-no-listener", "-visitor",
+          antlrSource().path.toString
+        ).call()
+      case _ =>
+        os.proc(antlr4Path().path.toString,
+          "-o", T.ctx.dest.toString,
+          "-lib", antlrSource().path.toString,
+          "-package", "firrtl.antlr",
+          "-no-listener", "-visitor",
+          antlrSource().path.toString
+        ).call()
+    }
+
     T.ctx.dest
   }
 
@@ -123,55 +159,81 @@ class firrtlCrossModule(val crossScalaVersion: String) extends CrossSbtModule wi
     System.getProperty("os.name")
   }
 
-  def downloadProtoc = T.persistent {
-    val isMac = operationSystem().toLowerCase.startsWith("mac")
-    val isLinux = operationSystem().toLowerCase.startsWith("linux")
-    val isWindows = operationSystem().toLowerCase.startsWith("win")
+  /** override this to false will force FIRRTL using system protoc. */
+  val checkSystemProtocVersion: Boolean = true
+  // For Mac users:
+  // MacOS ARM 64-bit supports native binaries via brew:
+  // you can install protoc via `brew install protobuf`,
+  // If you don't use brew installed protoc
+  // It still supports x86_64 binaries via Rosetta 2
+  // install via `/usr/sbin/softwareupdate --install-rosetta --agree-to-license`.
+  def protocPath = T.persistent {
+    PathRef({
+      try {
+        val systemProtocVersion = os.proc("protoc", "--version").call(check = false).out.lines.head.split(" ").last
+        if (systemProtocVersion == protocVersion || !checkSystemProtocVersion)
+          Some(os.Path(os.proc("bash", "-c", "command -v protoc").call().out.lines.head))
+        else
+          None
+      } catch {
+        case _: IOException =>
+          None
+      }
+    } match {
+      case Some(bin) =>
+        println(s"Use system protoc: $bin")
+        bin
+      case None =>
+        println("Download protoc from Internet")
+        val isMac = operationSystem().toLowerCase.startsWith("mac")
+        val isLinux = operationSystem().toLowerCase.startsWith("linux")
+        val isWindows = operationSystem().toLowerCase.startsWith("win")
 
-    val aarch_64 = architecture().equals("aarch64") | architecture().startsWith("armv8")
-    val ppcle_64 = architecture().equals("ppc64le")
-    val s390x = architecture().equals("s390x")
-    val x86_32 = architecture().matches("^(x8632|x86|i[3-6]86|ia32|x32)$")
-    val x86_64 = architecture().matches("^(x8664|amd64|ia32e|em64t|x64|x86_64)$")
+        val aarch_64 = architecture().equals("aarch64") | architecture().startsWith("armv8")
+        val ppcle_64 = architecture().equals("ppc64le")
+        val s390x = architecture().equals("s390x")
+        val x86_32 = architecture().matches("^(x8632|x86|i[3-6]86|ia32|x32)$")
+        val x86_64 = architecture().matches("^(x8664|amd64|ia32e|em64t|x64|x86_64)$")
 
-    val protocBinary =
-      if (isMac)
-        // MacOS ARM 64-bit still supports x86_64 binaries via Rosetta 2
-        if (aarch_64 || x86_64) "osx-x86_64"
-        else throw new Exception("mill cannot detect your architecture of your Mac")
-      else if (isLinux)
-        if (aarch_64) "linux-aarch_64"
-        else if (ppcle_64) "linux-ppcle_64"
-        else if (s390x) "linux-s390x"
-        else if (x86_32) "linux-x86_32"
-        else if (x86_64) "linux-x86_64"
-        else throw new Exception("mill cannot detect your architecture of your Linux")
-      else if (isWindows)
-        if (x86_32) "win32"
-        else if (x86_64) "win64"
-        else throw new Exception("mill cannot detect your architecture of your Windows")
-      else throw new Exception("mill cannot detect your operation system.")
+        val protocBinary =
+          if (isMac)
+            if (aarch_64 || x86_64) "osx-x86_64"
+            else throw new Exception("mill cannot detect your architecture of your Mac")
+          else if (isLinux)
+            if (aarch_64) "linux-aarch_64"
+            else if (ppcle_64) "linux-ppcle_64"
+            else if (s390x) "linux-s390x"
+            else if (x86_32) "linux-x86_32"
+            else if (x86_64) "linux-x86_64"
+            else throw new Exception("mill cannot detect your architecture of your Linux")
+          else if (isWindows)
+            if (x86_32) "win32"
+            else if (x86_64) "win64"
+            else throw new Exception("mill cannot detect your architecture of your Windows")
+          else throw new Exception("mill cannot detect your operation system.")
 
-    val unpackPath = os.rel / "unpacked"
+        val unpackPath = os.rel / "unpacked"
 
-    val bin = if(isWindows)
-      T.ctx.dest / unpackPath / "bin" / "protoc.exe"
-    else
-      T.ctx.dest / unpackPath / "bin" / "protoc"
+        val bin = if (isWindows)
+          T.ctx.dest / unpackPath / "bin" / "protoc.exe"
+        else
+          T.ctx.dest / unpackPath / "bin" / "protoc"
 
-    if (!os.exists(bin))
-      Util.downloadUnpackZip(
-        s"https://github.com/protocolbuffers/protobuf/releases/download/v$protocVersion/protoc-$protocVersion-$protocBinary.zip",
-        unpackPath
-      )
-    // Download Linux/Mac binary doesn't have x.
-    if (!isWindows) os.perms.set(bin, "rwx------")
-    PathRef(bin)
+        if (!os.exists(bin)) {
+          Util.downloadUnpackZip(
+            s"https://github.com/protocolbuffers/protobuf/releases/download/v$protocVersion/protoc-$protocVersion-$protocBinary.zip",
+            unpackPath
+          )
+        }
+        // Download Linux/Mac binary doesn't have x.
+        if (!isWindows) os.perms.set(bin, "rwx------")
+        bin
+    })
   }
 
   def generatedProtoSources = T.sources {
     os.proc(
-      downloadProtoc().path.toString,
+      protocPath().path.toString,
       "-I", protobufSource().path / os.up,
       s"--java_out=${T.ctx.dest.toString}",
       protobufSource().path.toString()
