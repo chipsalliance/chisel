@@ -124,7 +124,7 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) extends Sou
   def getWidth: Int = width
   def === (that: UInt): Bool = macro SourceInfoTransform.thatArg
   def =/= (that: UInt): Bool = macro SourceInfoTransform.thatArg
-
+  def ## (that: BitPat): BitPat = macro SourceInfoTransform.thatArg
   override def equals(obj: Any): Boolean = {
     obj match {
       case y: BitPat => value == y.value && mask == y.mask && getWidth == y.getWidth
@@ -141,6 +141,10 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) extends Sou
   def do_=/= (that: UInt)
       (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
     !(this === that)
+  }
+  /** @group SourceInfoTransformMacro */
+  def do_##(that: BitPat)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): BitPat = {
+    new BitPat((value << that.getWidth) + that.value, (mask << that.getWidth) + that.mask, this.width + that.getWidth)
   }
 
   override def toString = {
