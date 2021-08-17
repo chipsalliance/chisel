@@ -122,6 +122,8 @@ object BitPat {
   */
 sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) extends SourceInfoDoc {
   def getWidth: Int = width
+  def apply(x: Int): BitPat = macro SourceInfoTransform.xArg
+  def apply(x: Int, y: Int): BitPat = macro SourceInfoTransform.xyArg
   def === (that: UInt): Bool = macro SourceInfoTransform.thatArg
   def =/= (that: UInt): Bool = macro SourceInfoTransform.thatArg
   def ## (that: BitPat): BitPat = macro SourceInfoTransform.thatArg
@@ -130,6 +132,18 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) extends Sou
       case y: BitPat => value == y.value && mask == y.mask && getWidth == y.getWidth
       case _ => false
     }
+  }
+
+  /** @group SourceInfoTransformMacro */
+  def do_apply(x: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): BitPat = {
+    do_apply(x, x)
+  }
+
+  /** @group SourceInfoTransformMacro */
+  def do_apply(x: Int, y: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): BitPat = {
+    require(width > x && y >= 0, s"Invalid bit range ($x, $y), index should be bounded by (${width - 1}, 0)")
+    require(x >= y, s"Invalid bit range ($x, $y), x should be greater or equal to y.")
+    BitPat(s"b${rawString.slice(width - x - 1, width - y)}")
   }
 
   /** @group SourceInfoTransformMacro */
@@ -154,7 +168,7 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) extends Sou
       case (false, true) => "0"
       case (_, false) => "?"
     }
-  }.mkString("")
+  }.mkString
 
   override def toString = s"BitPat($rawString)"
 }

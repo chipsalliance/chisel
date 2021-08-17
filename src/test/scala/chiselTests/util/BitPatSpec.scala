@@ -27,4 +27,18 @@ class BitPatSpec extends AnyFlatSpec with Matchers {
   it should "contact BitPat via ##" in {
     (BitPat.Y(4) ## BitPat.dontCare(3) ## BitPat.N(2)).toString should be (s"BitPat(1111???00)")
   }
+
+  it should "index and return new BitPat" in {
+    val b = BitPat("b1001???")
+    b(0) should be(BitPat.dontCare(1))
+    b(6) should be(BitPat.Y())
+    b(5) should be(BitPat.N())
+  }
+
+  it should "slice and return new BitPat" in {
+    val b = BitPat("b1001???")
+    b(2, 0) should be(BitPat("b???"))
+    b(4, 3) should be(BitPat("b01"))
+    b(6, 6) should be(BitPat("b1"))
+  }
 }
