@@ -479,7 +479,8 @@ class BadRegConnect extends Module {
     val enq = Decoupled(UInt(8.W))
   })
   
-  val monitor = RegNext(io.enq)
+  val monitor = Reg(chiselTypeOf(io.enq))
+  monitor := io.enq
 }
 ```
 
@@ -487,8 +488,9 @@ class BadRegConnect extends Module {
 ChiselStage.emitVerilog(new BadRegConnect)
 ```
 
-While there is no construct to "strip direction" in Chisel3, wrapping a type in `Output(...)` will
-coerce the direction to `Output` (even if the input is bidirectional).
+While there is no construct to "strip direction" in Chisel3, wrapping a type in `Output(...)`
+(the default direction in Chisel3) will
+set all of the individual elements to output direction.
 This will have the desired result when used to construct a Register:
 
 ```scala mdoc:silent
@@ -498,7 +500,7 @@ class CoercedRegConnect extends Module {
     val enq = Flipped(Decoupled(UInt(8.W)))
   })
   
-  // Make a Reg of the correct type instead of using RegNext
+  // Make a Reg which contains all of the bundle's signals, regardless of their directionality
   val monitor = Reg(Output(chiselTypeOf(io.enq)))
   monitor := io.enq // monoconnect will ignore directions of right-hand side
   // dontTouch so that it shows up in the Verilog
