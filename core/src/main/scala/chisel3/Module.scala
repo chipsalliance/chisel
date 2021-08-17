@@ -64,13 +64,18 @@ object Module extends SourceInfoDoc {
     Builder.currentClock = saveClock   // Back to clock and reset scope
     Builder.currentReset = saveReset
 
-    val component = module.generateComponent()
-    Builder.components += component
+    // Only add the component if the module generates one
+    val componentOpt = module.generateComponent()
+    for (component <- componentOpt) {
+      Builder.components += component
+    }
 
     Builder.setPrefix(savePrefix)
 
     // Handle connections at enclosing scope
-    if(!Builder.currentModule.isEmpty) {
+    // We use _component because Modules that don't generate them may still have one
+    if (Builder.currentModule.isDefined && module._component.isDefined) {
+      val component = module._component.get
       pushCommand(DefInstance(sourceInfo, module, component.ports))
       module.initializeInParent(compileOptions)
     }
@@ -178,6 +183,43 @@ package internal {
   import chisel3.experimental.BaseModule
 
   object BaseModule {
+    // Private internal class to serve as a _parent for Data in cloned ports
+    private[chisel3] class ModuleClone(_proto: BaseModule) extends PseudoModule {
+      // ClonePorts that hold the bound ports for this module
+      // Used for setting the refs of both this module and the Record
+      private[BaseModule] var _portsRecord: Record = _
+      // Don't generate a component, but point to the one for the cloned Module
+      private[chisel3] def generateComponent(): Option[Component] = {
+        require(!_closed, "Can't generate module more than once")
+        _closed = true
+        _component = _proto._component
+        None
+      }
+      // This module doesn't actually exist in the FIRRTL so no initialization to do
+      private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = ()
+
+      override def desiredName: String = _proto.name
+
+      private[chisel3] def setRefAndPortsRef(namespace: Namespace): Unit = {
+        val record = _portsRecord
+        // Use .forceName to re-use default name resolving behavior
+        record.forceName(None, default=this.desiredName, namespace)
+        // Now take the Ref that forceName set and convert it to the correct Arg
+        val instName = record.getRef match {
+          case Ref(name) => name
+          case bad => throwException(s"Internal Error! Cloned-module Record $record has unexpected ref $bad")
+        }
+        // Set both the record and the module to have the same instance name
+        record.setRef(ModuleCloneIO(_proto, instName), force=true) // force because we did .forceName first
+        this.setRef(Ref(instName))
+      }
+    }
+
+    /** Record type returned by CloneModuleAsRecord
+      *
+      * @note These are not true Data (the Record doesn't correspond to anything in the emitted
+      * FIRRTL yet its elements *do*) so have some very specialized behavior.
+      */
     private[chisel3] class ClonePorts (elts: Data*)(implicit compileOptions: CompileOptions) extends Record {
       val elements = ListMap(elts.map(d => d.instanceName -> d.cloneTypeFull): _*)
       def apply(field: String) = elements(field)
@@ -186,12 +228,17 @@ package internal {
 
     private[chisel3] def cloneIORecord(proto: BaseModule)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): ClonePorts = {
       require(proto.isClosed, "Can't clone a module before module close")
+      // Fake Module to serve as the _parent of the cloned ports
+      // We make this before clonePorts because we want it to come up first in naming in
+      // currentModule
+      val cloneParent = Module(new ModuleClone(proto))
+      // We don't create this inside the ModuleClone because we need the ref to be set by the
+      // currentModule (and not clonePorts)
       val clonePorts = new ClonePorts(proto.getModulePorts: _*)
-      clonePorts.bind(WireBinding(Builder.forcedUserModule, Builder.currentWhen()))
-      val cloneInstance = new DefInstance(sourceInfo, proto, proto._component.get.ports) {
-        override def name = clonePorts.getRef.name
-      }
-      pushCommand(cloneInstance)
+      clonePorts.bind(PortBinding(cloneParent))
+      clonePorts.setAllParents(Some(cloneParent))
+      cloneParent._portsRecord = clonePorts
+      // Normally handled during Module construction but ClonePorts really lives in its parent's parent
       if (!compileOptions.explicitInvalidate) {
         pushCommand(DefInvalid(sourceInfo, clonePorts.ref))
       }
@@ -243,7 +290,15 @@ package experimental {
       }
     }
 
-    protected def getIds = {
+    // Returns the last id contained within a Module
+    private[chisel3] def _lastId: Long = _ids.last match {
+      case mod: BaseModule => mod._lastId
+      case _ =>
+        // Ideally we could just take last._id, but Records store and thus bind their Data in reverse order
+        _ids.maxBy(_._id)._id
+    }
+
+    private[chisel3] def getIds = {
       require(_closed, "Can't get ids before module close")
       _ids.toSeq
     }
@@ -270,7 +325,7 @@ package experimental {
     /** Generates the FIRRTL Component (Module or Blackbox) of this Module.
       * Also closes the module so no more construction can happen inside.
       */
-    private[chisel3] def generateComponent(): Component
+    private[chisel3] def generateComponent(): Option[Component]
 
     /** Sets up this module in the parent context
       */
@@ -308,9 +363,12 @@ package experimental {
 
     /** Legalized name of this module. */
     final lazy val name = try {
-      // If this is a module aspect, it should share the same name as the original module
-      // Thus, the desired name should be returned without uniquification
-      if(this.isInstanceOf[ModuleAspect]) desiredName else Builder.globalNamespace.name(desiredName)
+      // PseudoModules are not "true modules" and thus should share
+      // their original modules names without uniquification
+      this match {
+        case _: PseudoModule => desiredName
+        case _ => Builder.globalNamespace.name(desiredName)
+      }
     } catch {
       case e: NullPointerException => throwException(
         s"Error: desiredName of ${this.getClass.getName} is null. Did you evaluate 'name' before all values needed by desiredName were available?", e)
@@ -336,7 +394,14 @@ package experimental {
     final def toAbsoluteTarget: IsModule = {
       _parent match {
         case Some(parent) => parent.toAbsoluteTarget.instOf(this.instanceName, toTarget.module)
-        case None => toTarget
+        case None =>
+          // FIXME Special handling for Views - evidence of "weirdness" of .toAbsoluteTarget
+          // In theory, .toAbsoluteTarget should not be necessary, .toTarget combined with the
+          // target disambiguation in FIRRTL's deduplication transform should ensure that .toTarget
+          // is always unambigous. However, legacy workarounds for Chisel's lack of an instance API
+          // have lead some to use .toAbsoluteTarget as a workaround. A proper instance API will make
+          // it possible to deprecate and remove .toAbsoluteTarget
+          if (this == ViewParent) ViewParent.absoluteTarget else toTarget
       }
     }
 

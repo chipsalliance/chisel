@@ -9,16 +9,16 @@ Chisel/FIRRTL development meetings happen every Monday and Tuesday from 1100--12
 
 Call-in info and meeting notes are available [here](https://docs.google.com/document/d/1BLP2DYt59DqI-FgFCcjw8Ddl4K-WU0nHmQu0sZ_wAGo/).
 
-### Chisel Community Conference 2021, Shanghai, China. 6/26/2021(CST)
-The Chisel Community Conference China 2021 (CCC2021) is planned for June 26, 2021(CST) at the ShanghaiTech University. The schedule is available [here](https://docs.google.com/spreadsheets/d/1Gb4mMGRhs9exJW-l3NOS0IFi7fDplNQQnkXyAKzHlTg)  
-CCC is an annual gathering of Chisel community enthusiasts and technical exchange workshop. With the support of the Chisel development community and RISC-V World Conference China 2021 Committee, this conference will bring together designers and developers with hands-on experience in Chisel from home and abroad to share cutting-edge results and experiences from both the open source community as well as industry.  
-Online signup is not required. Zoom/YouTube/BiliBili streaming links will be added to the schedule before the start of the conference.  
-Offline signup [link](https://www.bagevent.com/event/registerTicket/7314534), Due to COVID-19 restrictions, offline registration is open only to current residents already present in mainland China.    
+### Chisel Community Conference 2021, Shanghai, China.
+CCC is an annual gathering of Chisel community enthusiasts and technical exchange workshop. 
+This year with the support of the Chisel development community and RISC-V World Conference China 2021 Committee, we have brought together designers and developers with hands-on experience in Chisel from home and abroad to share cutting-edge results and experiences from both the open source community as well as industry.  
+English translated recordings version will be updated soon.  
+Looking forward to CCC 2022! See you then!
 
 ---
 
 [![Join the chat at https://gitter.im/freechipsproject/chisel3](https://badges.gitter.im/chipsalliance/chisel3.svg)](https://gitter.im/freechipsproject/chisel3?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![CircleCI](https://circleci.com/gh/chipsalliance/chisel3/tree/master.svg?style=shield)](https://circleci.com/gh/chipsalliance/chisel3/tree/master)
+![CI](https://github.com/chipsalliance/chisel3/actions/workflows/test.yml/badge.svg)
 [![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/chipsalliance/chisel3.svg?label=release)](https://github.com/chipsalliance/chisel3/releases/latest)
 
 [**Chisel**](https://www.chisel-lang.org) is a hardware design language that facilitates **advanced circuit generation and design reuse for both ASIC and FPGA digital logic designs**.
@@ -38,8 +38,8 @@ Consider an FIR filter that implements a convolution operation, as depicted in t
 While Chisel provides similar base primitives as synthesizable Verilog, and *could* be used as such:
 
 ```scala
-// 3-point moving average implemented in the style of a FIR filter
-class MovingAverage3(bitWidth: Int) extends Module {
+// 3-point moving sum implemented in the style of a FIR filter
+class MovingSum3(bitWidth: Int) extends Module {
   val io = IO(new Bundle {
     val in = Input(UInt(bitWidth.W))
     val out = Output(UInt(bitWidth.W))
@@ -52,7 +52,7 @@ class MovingAverage3(bitWidth: Int) extends Module {
 }
 ```
 
-the power of Chisel comes from the ability to create generators, such as n FIR filter that is defined by the list of coefficients:
+the power of Chisel comes from the ability to create generators, such as an FIR filter that is defined by the list of coefficients:
 ```scala
 // Generalized FIR filter parameterized by the convolution coefficients
 class FirFilter(bitWidth: Int, coeffs: Seq[UInt]) extends Module {
@@ -77,7 +77,7 @@ class FirFilter(bitWidth: Int, coeffs: Seq[UInt]) extends Module {
 
 and use and re-use them across designs:
 ```scala
-val movingAverage3Filter = Module(new FirFilter(8, Seq(1.U, 1.U, 1.U)))  // same 3-point moving average filter as before
+val movingSum3Filter = Module(new FirFilter(8, Seq(1.U, 1.U, 1.U)))  // same 3-point moving sum filter as before
 val delayFilter = Module(new FirFilter(8, Seq(0.U, 1.U)))  // 1-cycle delay as a FIR filter
 val triangleFilter = Module(new FirFilter(8, Seq(1.U, 2.U, 3.U, 2.U, 1.U)))  // 5-point FIR filter with a triangle impulse response
 ```
@@ -147,6 +147,12 @@ These are the base data types for defining circuit components:
 ## Contributor Documentation
 This section describes how to get started contributing to Chisel itself, including how to test your version locally against other projects that pull in Chisel using [sbt's managed dependencies](https://www.scala-sbt.org/1.x/docs/Library-Dependencies.html).
 
+### Useful Resources for Contributors
+
+The [Useful Resources](#useful-resources) for users are also helpful for contributors.
+
+- [**Chisel Breakdown Slides**](https://docs.google.com/presentation/d/114YihixFBPCfUnv1inqAL8UjsiWfcNWdPHX7SeqlRQc), an introductory talk about Chisel's internals
+
 ### Compiling and Testing Chisel
 
 First, clone and build the master branch of [FIRRTL](https://github.com/chipsalliance/firrtl) and [Treadle](https://github.com/chipsalliance/treadle), as the master branch of Chisel may depend on unreleased changes in those projects:
@@ -166,12 +172,27 @@ cd chisel3
 sbt compile
 ```
 
-If the compilation succeeded, you can then run the included unit tests by invoking:
+In order to run the following unit tests, you will need several tools on your `PATH`, namely
+[verilator](https://www.veripool.org/verilator/),
+[yosys](http://www.clifford.at/yosys/),
+[espresso](https://github.com/chipsalliance/espresso),
+and [z3](https://github.com/Z3Prover/z3).
+Check that each is installed on your `PATH` by running `which verilator` and so on.
+
+If the compilation succeeded and the dependencies noted above are installed, you can then run the included unit tests by invoking:
 
 ```
 sbt test
 ```
 
+
+
+If you would like to run the tests without the compiler plugin (less common), you can do so by first launching `sbt`,
+then running `noPluginTests / test`:
+```
+sbt
+> noPluginTests / test
+```
 ### Running Projects Against Local Chisel
 
 To use the development version of Chisel (`master` branch), you will need to build from source and `publishLocal`.
@@ -243,6 +264,17 @@ Also included is:
 - **Chisel Stage**, `chisel3.stage.*`, which contains compilation and test
   functions that are invoked in the standard Verilog generation and simulation
   testing infrastructure. These can also be used as part of custom flows.
+  
+### Chisel Sub-Projects
+
+Chisel consists of 4 Scala projects; each is its own separate compilation unit:
+
+- [`core`](core) is the bulk of the source code of Chisel, depends on `macros`
+- [`src/main`](src/main) is the "main" that brings it all together and includes a [`util`](src/main/scala/chisel3/util) library, which depends on `core`
+- [`plugin`](plugin) is the compiler plugin, no internal dependencies
+- [`macros`](macros) is most of the macros used in Chisel, no internal dependencies
+
+Code that touches lots of APIs that are private to the `chisel3` package should belong in `core`, while code that is pure Chisel should belong in `src/main`.
 
 ### Which version should I use?
 

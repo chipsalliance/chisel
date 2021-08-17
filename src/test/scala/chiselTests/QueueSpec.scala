@@ -9,8 +9,8 @@ import chisel3.testers.BasicTester
 import chisel3.util._
 import chisel3.util.random.LFSR
 
-class ThingsPassThroughTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean) extends BasicTester {
-  val q = Module(new Queue(UInt(bitWidth.W), queueDepth, useSyncReadMem = useSyncReadMem))
+class ThingsPassThroughTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: Int, useSyncReadMem: Boolean, hasFlush: Boolean) extends BasicTester {
+  val q = Module(new Queue(UInt(bitWidth.W), queueDepth, useSyncReadMem = useSyncReadMem, hasFlush = hasFlush))
   val elems = VecInit(elements.map {
     _.asUInt()
   })
@@ -19,7 +19,7 @@ class ThingsPassThroughTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int
 
   q.io.enq.valid := (inCnt.value < elements.length.U)
   q.io.deq.ready := LFSR(16)(tap)
-
+  q.io.flush.foreach { _ := false.B } //Flush behavior is tested in QueueFlushSpec
   q.io.enq.bits := elems(inCnt.value)
   when(q.io.enq.fire()) {
     inCnt.inc()
@@ -205,7 +205,7 @@ class QueueSpec extends ChiselPropSpec {
     forAll(vecSizes, safeUIntN(20), Gen.choose(0, 15), Gen.oneOf(true, false)) { (depth, se, tap, isSync) =>
       whenever(se._1 >= 1 && depth >= 1 && se._2.nonEmpty) {
         assertTesterPasses {
-          new ThingsPassThroughTester(se._2, depth, se._1, tap, isSync)
+          new ThingsPassThroughTester(se._2, depth, se._1, tap, isSync, false)
         }
       }
     }

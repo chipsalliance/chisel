@@ -3,10 +3,32 @@
 package chiselTests
 
 import chisel3._
+import chisel3.experimental.{BaseSim, ChiselAnnotation}
 import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
+import firrtl.annotations.{ReferenceTarget, SingleTargetAnnotation}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+
+import java.io.File
+
+/** Dummy [[printf]] annotation.
+  * @param target target of component to be annotated
+  */
+case class PrintfAnnotation(target: ReferenceTarget) extends SingleTargetAnnotation[ReferenceTarget] {
+  def duplicate(n: ReferenceTarget): PrintfAnnotation = this.copy(target = n)
+}
+
+object PrintfAnnotation {
+  /** Create annotation for a given [[printf]].
+    * @param c component to be annotated
+    */
+  def annotate(c: BaseSim): Unit = {
+    chisel3.experimental.annotate(new ChiselAnnotation {
+      def toFirrtl: PrintfAnnotation = PrintfAnnotation(c.toTarget)
+    })
+  }
+}
 
 /* Printable Tests */
 class PrintableSpec extends AnyFlatSpec with Matchers {
@@ -193,5 +215,49 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
                Seq("myBun.foo", "myBun.bar"))) =>
       case e => fail()
     }
+  }
+  it should "get emitted with a name and annotated" in {
+
+    /** Test circuit containing annotated and renamed [[printf]]s. */
+    class PrintfAnnotationTest extends Module {
+      val myBun = Wire(new Bundle {
+        val foo = UInt(32.W)
+        val bar = UInt(32.W)
+      })
+      myBun.foo := 0.U
+      myBun.bar := 0.U
+      val howdy = printf(p"hello ${myBun}")
+      PrintfAnnotation.annotate(howdy)
+      PrintfAnnotation.annotate(printf(p"goodbye $myBun"))
+      PrintfAnnotation.annotate(printf(p"adieu $myBun").suggestName("farewell"))
+    }
+
+    // compile circuit
+    val testDir = new File("test_run_dir", "PrintfAnnotationTest")
+    (new ChiselStage).emitSystemVerilog(
+      gen = new PrintfAnnotationTest,
+      args = Array("-td", testDir.getPath)
+    )
+
+    // read in annotation file
+    val annoFile = new File(testDir, "PrintfAnnotationTest.anno.json")
+    annoFile should exist
+    val annoLines = scala.io.Source.fromFile(annoFile).getLines.toList
+
+    // check for expected annotations
+    exactly(3, annoLines) should include ("chiselTests.PrintfAnnotation")
+    exactly(1, annoLines) should include ("~PrintfAnnotationTest|PrintfAnnotationTest>farewell")
+    exactly(1, annoLines) should include ("~PrintfAnnotationTest|PrintfAnnotationTest>SIM")
+    exactly(1, annoLines) should include ("~PrintfAnnotationTest|PrintfAnnotationTest>howdy")
+
+    // read in FIRRTL file
+    val firFile = new File(testDir, "PrintfAnnotationTest.fir")
+    firFile should exist
+    val firLines = scala.io.Source.fromFile(firFile).getLines.toList
+
+    // check that verification components have expected names
+    exactly(1, firLines) should include ("""printf(clock, UInt<1>(1), "hello AnonymousBundle(foo -> %d, bar -> %d)", myBun.foo, myBun.bar): howdy""")
+    exactly(1, firLines) should include ("""printf(clock, UInt<1>(1), "goodbye AnonymousBundle(foo -> %d, bar -> %d)", myBun.foo, myBun.bar): SIM""")
+    exactly(1, firLines) should include ("""printf(clock, UInt<1>(1), "adieu AnonymousBundle(foo -> %d, bar -> %d)", myBun.foo, myBun.bar): farewell""")
   }
 }

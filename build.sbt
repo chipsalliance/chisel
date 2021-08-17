@@ -70,9 +70,9 @@ lazy val chiselSettings = Seq (
   name := "chisel3",
 
   libraryDependencies ++= Seq(
-    "org.scalatest" %% "scalatest" % "3.1.2" % "test",
+    "org.scalatest" %% "scalatest" % "3.2.9" % "test",
     "org.scalatestplus" %% "scalacheck-1-14" % "3.2.2.0" % "test",
-    "com.lihaoyi" %% "os-lib" % "0.7.7",
+    "com.lihaoyi" %% "os-lib" % "0.7.8",
   ),
 ) ++ (
   // Tests from other projects may still run concurrently
@@ -219,7 +219,11 @@ lazy val chisel = (project in file(".")).
 lazy val noPluginTests = (project in file ("no-plugin-tests")).
   dependsOn(chisel).
   settings(commonSettings: _*).
-  settings(chiselSettings: _*)
+  settings(chiselSettings: _*).
+  settings(Seq(
+    // Totally don't know why GitHub Action won't introduce FIRRTL to dependency.
+    libraryDependencies += defaultVersions("firrtl"),
+  ))
 
 lazy val docs = project       // new documentation project
   .in(file("docs-target")) // important: it must not be docs/
@@ -231,7 +235,8 @@ lazy val docs = project       // new documentation project
     scalacOptions += "-language:reflectiveCalls",
     mdocIn := file("docs/src"),
     mdocOut := file("docs/generated"),
-    mdocExtraArguments := Seq("--cwd", "docs"),
+    // None of our links are hygienic because they're primarily used on the website with .html
+    mdocExtraArguments := Seq("--cwd", "docs", "--no-link-hygiene"),
     mdocVariables := Map(
       "BUILD_DIR" -> "docs-target" // build dir for mdoc programs to dump temp files
     )

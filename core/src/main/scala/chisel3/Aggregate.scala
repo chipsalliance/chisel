@@ -3,6 +3,7 @@
 package chisel3
 
 import chisel3.experimental.VecLiterals.AddVecLiteralConstructor
+import chisel3.experimental.dataview.{InvalidViewException, isView}
 
 import scala.collection.immutable.{SeqMap, VectorMap}
 import scala.collection.mutable.{HashSet, LinkedHashMap}
@@ -86,44 +87,6 @@ sealed abstract class Aggregate extends Data {
     } else {
       pushCommand(BulkConnect(sourceInfo, Node(this), Node(that)))
     }
-  }
-
-  // Returns pairs of all fields, element-level and containers, in a Record and their path names
-  private[chisel3] def getRecursiveFields(data: Data, path: String): Seq[(Data, String)] = data match {
-    case data: Record =>
-      data.elements.map { case (fieldName, fieldData) =>
-        getRecursiveFields(fieldData, s"$path.$fieldName")
-      }.fold(Seq(data -> path)) {
-        _ ++ _
-      }
-    case data: Vec[_] =>
-      data.getElements.zipWithIndex.map { case (fieldData, fieldIndex) =>
-        getRecursiveFields(fieldData, path = s"$path($fieldIndex)")
-      }.fold(Seq(data -> path)) {
-        _ ++ _
-      }
-    case data => Seq(data -> path) // we don't support or recurse into other Aggregate types here
-  }
-
-
-  // Returns pairs of corresponding fields between two Records of the same type
-  private[chisel3] def getMatchedFields(x: Data, y: Data): Seq[(Data, Data)] = (x, y) match {
-    case (x: Element, y: Element) =>
-      require(x typeEquivalent y)
-      Seq(x -> y)
-    case (x: Record, y: Record) =>
-      (x.elements zip y.elements).map { case ((xName, xElt), (yName, yElt)) =>
-        require(xName == yName) // assume fields returned in same, deterministic order
-        getMatchedFields(xElt, yElt)
-      }.fold(Seq(x -> y)) {
-        _ ++ _
-      }
-    case (x: Vec[_], y: Vec[_]) =>
-      (x.getElements zip y.getElements).map { case (xElt, yElt) =>
-        getMatchedFields(xElt, yElt)
-      }.fold(Seq(x -> y)) {
-        _ ++ _
-      }
   }
 
   override def do_asUInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = {
@@ -297,6 +260,9 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
   def do_apply(p: UInt)(implicit compileOptions: CompileOptions): T = {
     requireIsHardware(this, "vec")
     requireIsHardware(p, "vec index")
+    if (isView(this)) {
+      throw InvalidViewException("Dynamic indexing of Views is not yet supported")
+    }
     val port = gen
 
     // Reconstruct the resolvedDirection (in Aggregate.bind), since it's not stored.
@@ -590,6 +556,33 @@ object VecInit extends SourceInfoDoc {
   /** @group SourceInfoTransformMacro */
   def do_tabulate[T <: Data](n: Int)(gen: (Int) => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
     apply((0 until n).map(i => gen(i)))
+
+  /** Creates a new [[Vec]] of length `n` composed of the result of the given
+   * function applied to an element of data type T.
+   * 
+   * @param n number of elements in the vector
+   * @param gen function that takes in an element T and returns an output 
+   * element of the same type
+   */
+  def fill[T <: Data](n: Int)(gen: => T): Vec[T] = macro VecTransform.fill
+
+  /** @group SourceInfoTransformMacro */
+  def do_fill[T <: Data](n: Int)(gen: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] =
+    apply(Seq.fill(n)(gen))
+
+  /** Creates a new [[Vec]] of length `n` composed of the result of the given
+   * function applied to an element of data type T.
+   * 
+   * @param start First element in the Vec
+   * @param len Lenth of elements in the Vec
+   * @param f Function that applies the element T from previous index and returns the output 
+   * element to the next index
+   */
+  def iterate[T <: Data](start: T, len: Int)(f: (T) => T): Vec[T] = macro VecTransform.iterate
+  
+  /** @group SourceInfoTransformMacro */
+  def do_iterate[T <: Data](start: T, len: Int)(f: (T) => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[T] = 
+    apply(Seq.iterate(start, len)(f)) 
 }
 
 /** A trait for [[Vec]]s containing common hardware generators for collection
@@ -963,6 +956,8 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     for (m <- getPublicFields(classOf[Bundle])) {
       getBundleField(m) match {
         case Some(d: Data) =>
+          requireIsChiselType(d)
+          
           if (nameMap contains m.getName) {
             require(nameMap(m.getName) eq d)
           } else {
@@ -1266,3 +1261,4 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     */
   override def toPrintable: Printable = toPrintableHelper(elements.toList.reverse)
 }
+

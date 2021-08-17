@@ -6,6 +6,7 @@ import chisel3._
 import chisel3.experimental.{BaseModule, FixedPoint}
 import chisel3.internal.HasId
 import chisel3.internal.firrtl._
+import chisel3.internal.BaseModule.ModuleClone
 import firrtl.annotations.ReferenceTarget
 
 import scala.collection.mutable
@@ -81,8 +82,12 @@ object Select {
   def instances(module: BaseModule): Seq[BaseModule] = {
     check(module)
     module._component.get match {
-      case d: DefModule => d.commands.collect {
-        case i: DefInstance => i.id
+      case d: DefModule => d.commands.flatMap {
+        case i: DefInstance => i.id match {
+          case _: ModuleClone => None
+          case other          => Some(other)
+        }
+        case _ => None
       }
       case other => Nil
     }
@@ -275,7 +280,7 @@ object Select {
     val printfs = mutable.ArrayBuffer[Printf]()
     searchWhens(module, (cmd: Command, preds: Seq[Predicate]) => {
       cmd match {
-        case chisel3.internal.firrtl.Printf(_, clock, pable) => printfs += Printf(preds, pable, getId(clock).asInstanceOf[Clock])
+        case chisel3.internal.firrtl.Printf(id, _, clock, pable) => printfs += Printf(id, preds, pable, getId(clock).asInstanceOf[Clock])
         case other =>
       }
     })
@@ -412,7 +417,7 @@ object Select {
     * @param pable
     * @param clock
     */
-  case class Printf(preds: Seq[Predicate], pable: Printable, clock: Clock) extends Serializeable {
+  case class Printf(id: printf.Printf, preds: Seq[Predicate], pable: Printable, clock: Clock) extends Serializeable {
     def serialize: String = {
       s"printf when(${preds.map(_.serialize).mkString(" & ")}) on ${getName(clock)}: $pable"
     }

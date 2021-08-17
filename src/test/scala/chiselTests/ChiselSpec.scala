@@ -7,16 +7,20 @@ import chisel3.aop.Aspect
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage, NoRunFirrtlCompilerAnnotation, PrintFullStackTraceAnnotation}
 import chisel3.testers._
 import firrtl.annotations.Annotation
+import firrtl.ir.Circuit
 import firrtl.util.BackendCompilationUtilities
 import firrtl.{AnnotationSeq, EmittedVerilogCircuitAnnotation}
+import _root_.logger.Logger
+import firrtl.stage.FirrtlCircuitAnnotation
 import org.scalacheck._
 import org.scalatest._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.freespec.AnyFreeSpec
-import org.scalatest.matchers.should._
+import org.scalatest.propspec.AnyPropSpec
+import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
-import java.io.ByteArrayOutputStream
+import java.io.{ByteArrayOutputStream, PrintStream}
 import java.security.Permission
 import scala.reflect.ClassTag
 
@@ -85,6 +89,33 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
         case EmittedVerilogCircuitAnnotation(a) => a.value
       }.getOrElse(fail("No Verilog circuit was emitted by the FIRRTL compiler!"))
   }
+
+  def elaborateAndGetModule[A <: RawModule](t: => A): A = {
+    var res: Any = null
+    ChiselStage.elaborate {
+      res = t
+      res.asInstanceOf[A]
+    }
+    res.asInstanceOf[A]
+  }
+
+  /** Compiles a Chisel Module to FIRRTL
+    * NOTE: This uses the "test_run_dir" as the default directory for generated code.
+    * @param t the generator for the module
+    * @return The FIRRTL Circuit and Annotations _before_ FIRRTL compilation
+    */
+  def getFirrtlAndAnnos(t: => RawModule): (Circuit, Seq[Annotation]) = {
+    val args = Array(
+      "--target-dir",
+      createTestDirectory(this.getClass.getSimpleName).toString,
+      "--no-run-firrtl"
+    )
+    val annos = (new ChiselStage).execute(args, Seq(ChiselGeneratorAnnotation(() => t)))
+    val circuit = annos.collectFirst {
+      case FirrtlCircuitAnnotation(c) => c
+    }.getOrElse(fail("No FIRRTL Circuit found!!"))
+    (circuit, annos)
+  }
 }
 
 /** Spec base class for BDD-style testers. */
@@ -94,7 +125,7 @@ abstract class ChiselFlatSpec extends AnyFlatSpec with ChiselRunners with Matche
 abstract class ChiselFreeSpec extends AnyFreeSpec with ChiselRunners with Matchers
 
 /** Spec base class for property-based testers. */
-abstract class ChiselPropSpec extends PropSpec with ChiselRunners with ScalaCheckPropertyChecks with Matchers {
+abstract class ChiselPropSpec extends AnyPropSpec with ChiselRunners with ScalaCheckPropertyChecks with Matchers {
 
   // Constrain the default number of instances generated for every use of forAll.
   implicit override val generatorDrivenConfig: PropertyCheckConfiguration =
@@ -169,6 +200,20 @@ trait Utils {
     val stdout, stderr = new ByteArrayOutputStream()
     val ret = scala.Console.withOut(stdout) { scala.Console.withErr(stderr) { thunk } }
     (stdout.toString, stderr.toString, ret)
+  }
+
+  /** Run some Scala thunk and return all logged messages as Strings
+    * @param thunk some Scala code
+    * @return a tuple containing LOGGED, and what the thunk returns
+    */
+  def grabLog[T](thunk: => T): (String, T) = {
+    val baos = new ByteArrayOutputStream()
+    val stream = new PrintStream(baos, true, "utf-8")
+    val ret = Logger.makeScope(Nil) {
+      Logger.setOutput(stream)
+      thunk
+    }
+    (baos.toString, ret)
   }
 
   /** Encodes a System.exit exit code

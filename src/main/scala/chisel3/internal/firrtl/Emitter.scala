@@ -74,13 +74,13 @@ private class Emitter(circuit: Circuit) {
       case e: BulkConnect => s"${e.loc1.fullName(ctx)} <- ${e.loc2.fullName(ctx)}"
       case e: Attach => e.locs.map(_.fullName(ctx)).mkString("attach (", ", ", ")")
       case e: Stop => s"stop(${e.clock.fullName(ctx)}, UInt<1>(1), ${e.ret})"
-      case e: Printf =>
+      case e: chisel3.internal.firrtl.Printf =>
         val (fmt, args) = e.pable.unpack(ctx)
         val printfArgs = Seq(e.clock.fullName(ctx), "UInt<1>(1)",
           "\"" + printf.format(fmt) + "\"") ++ args
-        printfArgs mkString ("printf(", ", ", ")")
-      case e: Verification => s"${e.op}(${e.clock.fullName(ctx)}, ${e.predicate.fullName(ctx)}, " +
-        s"UInt<1>(1), " + "\"" + s"${printf.format(e.message)}" + "\")"
+        (printfArgs mkString ("printf(", ", ", ")")) + s": ${e.name}"
+      case e: Verification[_] =>
+        s"""${e.op}(${e.clock.fullName(ctx)}, ${e.predicate.fullName(ctx)}, UInt<1>(1), "${printf.format(e.message)}") : ${e.name}"""
       case e: DefInvalid => s"${e.arg.fullName(ctx)} is invalid"
       case e: DefInstance => s"inst ${e.name} of ${e.id.name}"
       case w: WhenBegin =>
