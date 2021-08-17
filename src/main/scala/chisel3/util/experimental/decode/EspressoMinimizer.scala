@@ -18,7 +18,7 @@ object EspressoMinimizer extends Minimizer with LazyLogging {
         .replace('1', '0')
         .replace('t', '1')
       val defaultType: Char = {
-        val t = table.default.toString.drop(7).dropRight(1).toCharArray.distinct
+        val t = table.default.rawString.toCharArray.distinct
         require(t.length == 1, "Internal Error: espresso only accept unified default type.")
         t.head
       }
