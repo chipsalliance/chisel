@@ -286,7 +286,8 @@ class MixedVecSpec extends ChiselPropSpec with Utils {
         val inBi = Input(MixedVec(Seq(UInt(8.W), UInt(16.W), UInt(4.W), UInt(7.W))))
         val outBi = Output(MixedVec(Seq(UInt(8.W), UInt(16.W), UInt(4.W), UInt(7.W))))
       })
-      io.outMono := io.inMono
+      // Explicit upcast avoids weird issue where Scala 2.12 overloading resolution calls version of := accepting Seq[T] instead of normal Data version
+      io.outMono := (io.inMono: Data)
       io.outBi <> io.inBi
     })
     chirrtl should include ("io.outMono <- io.inMono @[MixedVecSpec.scala")
