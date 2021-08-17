@@ -6,7 +6,7 @@ import chisel3._
 import chisel3.experimental.dataview.reify
 import chisel3.experimental.{Analog, BaseModule, attach}
 import chisel3.internal.Builder.pushCommand
-import chisel3.internal.firrtl.{BulkConnect, Connect, DefInvalid}
+import chisel3.internal.firrtl.{Connect, DefInvalid}
 
 import scala.language.experimental.macros
 import chisel3.internal.sourceinfo._
@@ -85,7 +85,7 @@ private[chisel3] object BiConnect {
           throw MismatchedVecException
         }
         if (MonoConnect.canBulkConnectVecs(left_v, right_v, sourceInfo)) {
-          pushCommand(BulkConnect(sourceInfo, left_v.lref, right_v.lref))
+          pushCommand(Connect(sourceInfo, left_v.lref, right_v.lref))
         } else {
           for (idx <- 0 until left_v.length) {
             try {
@@ -139,7 +139,7 @@ private[chisel3] object BiConnect {
 
       // Check whether Records can be bulk connected (all elements can be connected)
       if (MonoConnect.canBulkConnectRecords(newLeft, newRight, sourceInfo)) {
-        pushCommand(BulkConnect(sourceInfo, newLeft.lref, newRight.lref))
+        pushCommand(Connect(sourceInfo, newLeft.lref, newRight.lref))
       } else if (notStrict) {
         val (newLeft, newRight) = if (flipped) pair.swap else pair
           newLeft.bulkConnect(newRight)(sourceInfo, ExplicitCompileOptions.NotStrict)

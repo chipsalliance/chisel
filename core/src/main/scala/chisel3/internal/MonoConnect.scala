@@ -5,7 +5,7 @@ package chisel3.internal
 import chisel3._
 import chisel3.experimental.{Analog, BaseModule, EnumType, FixedPoint, Interval, UnsafeEnum}
 import chisel3.internal.Builder.pushCommand
-import chisel3.internal.firrtl.{BulkConnect, Connect, Converter, DefInvalid}
+import chisel3.internal.firrtl.{Connect, Converter, DefInvalid}
 import chisel3.experimental.dataview.reify
 
 import scala.language.experimental.macros
@@ -120,7 +120,7 @@ private[chisel3] object MonoConnect {
       case (sink_v: Vec[Data @unchecked], source_v: Vec[Data @unchecked]) =>
         if(sink_v.length != source_v.length) { throw MismatchedVecException }
         if (canBulkConnectVecs(sink_v, source_v, sourceInfo)) {
-          pushCommand(BulkConnect(sourceInfo, sink_v.lref, source_v.lref))
+          pushCommand(Connect(sourceInfo, sink_v.lref, source_v.lref))
         } else {
           for(idx <- 0 until sink_v.length) {
             try {
@@ -145,7 +145,7 @@ private[chisel3] object MonoConnect {
       // Handle Record case
       case (sink_r: Record, source_r: Record) =>
         if (canBulkConnectRecords(sink_r, source_r, sourceInfo)) {
-          pushCommand(BulkConnect(sourceInfo, sink_r.lref, source_r.lref))
+          pushCommand(Connect(sourceInfo, sink_r.lref, source_r.lref))
         } else {
           // For each field, descend with right
           for((field, sink_sub) <- sink_r.elements) {

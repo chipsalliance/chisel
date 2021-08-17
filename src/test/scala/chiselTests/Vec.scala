@@ -320,7 +320,7 @@ class VecSpec extends ChiselPropSpec with Utils {
       io.outMono := io.inMono
       io.outBi <> io.inBi
     })
-    chirrtl should include ("io.outMono <- io.inMono @[Vec.scala")
-    chirrtl should include ("io.outBi <- io.inBi @[Vec.scala")
+    chirrtl should include ("io.outMono <= io.inMono @[Vec.scala")
+    chirrtl should include ("io.outBi <= io.inBi @[Vec.scala")
   }
 }
