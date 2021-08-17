@@ -42,7 +42,7 @@ object Reg {
     val clock = Node(Builder.forcedClock)
 
     reg.bind(RegBinding(Builder.forcedUserModule, Builder.currentWhen()))
-    pushCommand(DefReg(sourceInfo, reg, clock))
+    pushCommand(DefReg(sourceInfo, reg, clock, None))
     reg
   }
 
@@ -176,7 +176,7 @@ object RegInit {
 
     reg.bind(RegBinding(Builder.forcedUserModule, Builder.currentWhen()))
     requireIsHardware(init, "reg initializer")
-    pushCommand(DefRegInit(sourceInfo, reg, clock.ref, reset.ref, init.ref))
+    pushCommand(DefReg(sourceInfo, reg, clock.ref, Some(RegInitIR(reset.ref, init.ref))))
     reg
   }
 

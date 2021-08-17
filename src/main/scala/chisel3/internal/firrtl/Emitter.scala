@@ -66,8 +66,7 @@ private class Emitter(circuit: Circuit) {
     val firrtlLine = e match {
       case e: DefPrim[_] => s"node ${e.name} = ${e.op.name}(${e.args.map(_.fullName(ctx)).mkString(", ")})"
       case e: DefWire => s"wire ${e.name} : ${emitType(e.id)}"
-      case e: DefReg => s"reg ${e.name} : ${emitType(e.id)}, ${e.clock.fullName(ctx)}"
-      case e: DefRegInit => s"reg ${e.name} : ${emitType(e.id)}, ${e.clock.fullName(ctx)} with : (reset => (${e.reset.fullName(ctx)}, ${e.init.fullName(ctx)}))"
+      case e: DefReg => s"reg ${e.name} : ${emitType(e.id)}, ${e.clock.fullName(ctx)}${ if (e.regInit.isDefined) "with : (reset => (${e.reset.fullName(ctx)}, ${e.init.fullName(ctx)}))" else ""}"
       case e: DefMemory => s"cmem ${e.name} : ${emitType(e.t)}[${e.size}]"
       case e: DefSeqMemory => s"smem ${e.name} : ${emitType(e.t)}[${e.size}], ${e.readUnderWrite}"
       case e: DefMemPort[_] => s"${e.dir} mport ${e.name} = ${e.source.fullName(ctx)}[${e.index.fullName(ctx)}], ${e.clock.fullName(ctx)}"
