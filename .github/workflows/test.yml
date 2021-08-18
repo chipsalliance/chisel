@@ -48,7 +48,7 @@ jobs:
             -GNinja \
             -DCMAKE_BUILD_TYPE=Release \
             -DZ3_LINK_TIME_OPTIMIZATION=1
-          ninja 
+          ninja
       - name: Install Z3 ${{ matrix.z3 }}
         run: |
           cd z3-z3-${{ matrix.z3 }}/build
@@ -81,7 +81,7 @@ jobs:
         id: cache-espresso
         with:
           path: espresso-${{ matrix.espresso }}
-          key: ${{ matrix.system }}-espresso-${{ matrix.espresso }}
+          key: ${{ matrix.system }}-espresso-ninja-${{ matrix.espresso }}
       - name: Compile Espresso ${{ matrix.espresso }}
         if: steps.cache-espresso.outputs.cache-hit != 'true'
         run: |
@@ -90,12 +90,14 @@ jobs:
           cd espresso-${{ matrix.espresso }}
           mkdir -p build
           cd build
-          cmake ..
-          make
+          cmake .. \
+            -GNinja \
+            -DCMAKE_BUILD_TYPE=Release
+          ninja
       - name: Install Espresso ${{ matrix.espresso }}
         run: |
           cd espresso-${{ matrix.espresso }}/build
-          sudo make install
+          sudo ninja install
 
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
