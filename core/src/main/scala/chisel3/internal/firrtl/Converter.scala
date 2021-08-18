@@ -117,10 +117,10 @@ private[chisel3] object Converter {
       Some(fir.DefNode(convert(e.sourceInfo), e.name, expr))
     case e @ DefWire(info, id) =>
       Some(fir.DefWire(convert(info), e.name, extractType(id, info)))
-    case e @ DefReg(info, id, clock, None) =>
+    case e @ DefReg(info, id, clock) =>
       Some(fir.DefRegister(convert(info), e.name, extractType(id, info), convert(clock, ctx, info),
                            firrtl.Utils.zero, convert(getRef(id, info), ctx, info)))
-    case e @ DefReg(info, id, clock, Some(RegInitIR(reset, init))) =>
+    case e @ DefRegInit(info, id, clock, reset, init) =>
       Some(fir.DefRegister(convert(info), e.name, extractType(id, info), convert(clock, ctx, info),
                            convert(reset, ctx, info), convert(init, ctx, info)))
     case e @ DefMemory(info, id, t, size) =>
