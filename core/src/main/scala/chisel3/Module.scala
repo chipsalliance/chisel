@@ -184,7 +184,7 @@ package internal {
 
   object BaseModule {
     // Private internal class to serve as a _parent for Data in cloned ports
-    private[chisel3] class ModuleClone(_proto: BaseModule) extends BaseModule {
+    private[chisel3] class ModuleClone(_proto: BaseModule) extends PseudoModule {
       // ClonePorts that hold the bound ports for this module
       // Used for setting the refs of both this module and the Record
       private[BaseModule] var _portsRecord: Record = _
@@ -195,7 +195,7 @@ package internal {
         _component = _proto._component
         None
       }
-      // This module doesn't acutally exist in the FIRRTL so no initialization to do
+      // This module doesn't actually exist in the FIRRTL so no initialization to do
       private[chisel3] def initializeInParent(parentCompileOptions: CompileOptions): Unit = ()
 
       override def desiredName: String = _proto.name
@@ -226,19 +226,6 @@ package internal {
       override def cloneType = (new ClonePorts(elts: _*)).asInstanceOf[this.type]
     }
 
-    // Recursively set the parent of the start Data and any children (eg. in an Aggregate)
-    private def setAllParents(start: Data, parent: Option[BaseModule]): Unit = {
-      def rec(data: Data): Unit = {
-        data._parent = parent
-        data match {
-        case _: Element =>
-        case agg: Aggregate =>
-          agg.getElements.foreach(rec)
-        }
-      }
-      rec(start)
-    }
-
     private[chisel3] def cloneIORecord(proto: BaseModule)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): ClonePorts = {
       require(proto.isClosed, "Can't clone a module before module close")
       // Fake Module to serve as the _parent of the cloned ports
@@ -249,7 +236,7 @@ package internal {
       // currentModule (and not clonePorts)
       val clonePorts = new ClonePorts(proto.getModulePorts: _*)
       clonePorts.bind(PortBinding(cloneParent))
-      setAllParents(clonePorts, Some(cloneParent))
+      clonePorts.setAllParents(Some(cloneParent))
       cloneParent._portsRecord = clonePorts
       // Normally handled during Module construction but ClonePorts really lives in its parent's parent
       if (!compileOptions.explicitInvalidate) {
@@ -303,7 +290,15 @@ package experimental {
       }
     }
 
-    protected def getIds = {
+    // Returns the last id contained within a Module
+    private[chisel3] def _lastId: Long = _ids.last match {
+      case mod: BaseModule => mod._lastId
+      case _ =>
+        // Ideally we could just take last._id, but Records store and thus bind their Data in reverse order
+        _ids.maxBy(_._id)._id
+    }
+
+    private[chisel3] def getIds = {
       require(_closed, "Can't get ids before module close")
       _ids.toSeq
     }
@@ -368,10 +363,10 @@ package experimental {
 
     /** Legalized name of this module. */
     final lazy val name = try {
-      // ModuleAspects and ModuleClones are not "true modules" and thus should share
+      // PseudoModules are not "true modules" and thus should share
       // their original modules names without uniquification
       this match {
-        case (_: ModuleAspect | _: internal.BaseModule.ModuleClone) => desiredName
+        case _: PseudoModule => desiredName
         case _ => Builder.globalNamespace.name(desiredName)
       }
     } catch {
@@ -399,7 +394,14 @@ package experimental {
     final def toAbsoluteTarget: IsModule = {
       _parent match {
         case Some(parent) => parent.toAbsoluteTarget.instOf(this.instanceName, toTarget.module)
-        case None => toTarget
+        case None =>
+          // FIXME Special handling for Views - evidence of "weirdness" of .toAbsoluteTarget
+          // In theory, .toAbsoluteTarget should not be necessary, .toTarget combined with the
+          // target disambiguation in FIRRTL's deduplication transform should ensure that .toTarget
+          // is always unambigous. However, legacy workarounds for Chisel's lack of an instance API
+          // have lead some to use .toAbsoluteTarget as a workaround. A proper instance API will make
+          // it possible to deprecate and remove .toAbsoluteTarget
+          if (this == ViewParent) ViewParent.absoluteTarget else toTarget
       }
     }
 
