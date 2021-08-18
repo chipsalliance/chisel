@@ -101,6 +101,7 @@ object Select {
     check(module)
     module._component.get.asInstanceOf[DefModule].commands.collect {
       case r: DefReg => r.id
+      case r: DefRegInit => r.id
     }
   }
 
