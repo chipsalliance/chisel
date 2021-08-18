@@ -522,6 +522,22 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
 }
 
 object VecInit extends SourceInfoDoc {
+
+  def getConnectOpFromDirectionality[T <: Data](proto: T): (T, T) => Unit = macro VecTransform.get_connect_op
+
+  /** @group SourceInfoTransformMacro */
+  def do_getConnectOpFromDirectionality[T <: Data](proto: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): (T, T) => Unit = proto.direction match {
+    case ActualDirection.Input | ActualDirection.Output | ActualDirection.Unspecified =>
+      // When internal wires are involved, driver / sink must be specified explicitly, otherwise
+      // the system is unable to infer which is driver / sink
+      (x, y) => x := y
+    case ActualDirection.Bidirectional(_) =>
+      // For bidirectional, must issue a bulk connect so subelements are resolved correctly.
+      // Bulk connecting two wires may not succeed because Chisel frontend does not infer
+      // directions.
+      (x, y) => x <> y
+  }
+
   /** Creates a new [[Vec]] composed of elements of the input Seq of [[Data]]
     * nodes.
     *
@@ -547,18 +563,11 @@ object VecInit extends SourceInfoDoc {
     elts.foreach(requireIsHardware(_, "vec element"))
 
     val vec = Wire(Vec(elts.length, cloneSupertype(elts, "Vec")))
-
-    // TODO: try to remove the logic for this mess
-    elts.head.direction match {
-      case ActualDirection.Input | ActualDirection.Output | ActualDirection.Unspecified =>
-        // When internal wires are involved, driver / sink must be specified explicitly, otherwise
-        // the system is unable to infer which is driver / sink
-        (vec zip elts).foreach(x => x._1 := x._2)
-      case ActualDirection.Bidirectional(_) =>
-        // For bidirectional, must issue a bulk connect so subelements are resolved correctly.
-        // Bulk connecting two wires may not succeed because Chisel frontend does not infer
-        // directions.
-        (vec zip elts).foreach(x => x._1 <> x._2)
+    val tpe = cloneSupertype(elts, "Vec")
+    val op = getConnectOpFromDirectionality(vec.head) //elts.head
+    
+    (vec zip elts).foreach{ x => 
+      op(x._1, x._2)
     }
     vec
   }
@@ -600,15 +609,28 @@ object VecInit extends SourceInfoDoc {
     * @param gen function that takes in an Int (the index) and returns a
     * [[Data]] that becomes the output element
     */
-  def tabulate[T <: Data](n: Int, m: Int)(gen: (Int) => T): Vec[Vec[T]] = macro VecTransform.tabulate2D
+  def tabulate[T <: Data](n: Int, m: Int)(gen: (Int, Int) => T): Vec[Vec[T]] = macro VecTransform.tabulate2D
 
   /** @group SourceInfoTransformMacro */
-  def do_tabulate[T <: Data](n: Int, m: Int)(gen: (Int) => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[Vec[T]] = {
-    val myVec = Wire(Vec(n, Vec(m, cloneSupertype((0 until m).map(i => gen(i)), "Vec"))))
-    myVec.foreach {
-      _ := VecInit.tabulate(m)(gen)
-    }
-    myVec
+  def do_tabulate[T <: Data](n: Int, m: Int)(gen: (Int, Int) => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[Vec[T]] = {    
+    // TODO make this lazy (requires LazyList and cross compilation, beyond the scope of this PR)
+    val elts = Seq.tabulate(n, m)(gen)
+    val flatElts = elts.flatten
+
+    require(flatElts.nonEmpty, "Vec hardware values are not allowed to be empty")
+    flatElts.foreach(requireIsHardware(_, "vec element"))
+  
+    val tpe = cloneSupertype(flatElts, "Vec.tabulate")
+    val myVec = Wire(Vec(n, Vec(m, tpe)))
+    val op = getConnectOpFromDirectionality(myVec.head.head)
+    // We could get fancy here to have reuse across the multiple dimensions, but being more verbose is more clear
+    for(
+        (xs1D, ys1D) <- myVec zip elts;
+        (x, y) <- xs1D zip ys1D
+      ) { 
+        op(x, y) 
+      }
+    myVec 
   }
 
   /** Creates a new 3D [[Vec]] of length `n by m by p` composed of the results of the given
@@ -620,35 +642,29 @@ object VecInit extends SourceInfoDoc {
     * @param gen function that takes in an Int (the index) and returns a
     * [[Data]] that becomes the output element
     */
-  def tabulate[T <: Data](n: Int, m: Int, p: Int)(gen: (Int) => T): Vec[Vec[Vec[T]]] = macro VecTransform.tabulate3D
+  def tabulate[T <: Data](n: Int, m: Int, p: Int)(gen: (Int, Int, Int) => T): Vec[Vec[Vec[T]]] = macro VecTransform.tabulate3D
 
   /** @group SourceInfoTransformMacro */
-  def do_tabulate[T <: Data](n: Int, m: Int, p: Int)(gen: (Int) => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[Vec[Vec[T]]] = {
-    val myVec = Wire(Vec(n, Vec(m, Vec(p, cloneSupertype((0 until p).map(i => gen(i)), "Vec")))))
-    myVec.foreach {
-      _ := VecInit.tabulate(m, p)(gen)
-    }
-    myVec
-  }
+  def do_tabulate[T <: Data](n: Int, m: Int, p: Int)(gen: (Int, Int, Int) => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[Vec[Vec[T]]] = {
+     // TODO make this lazy (requires LazyList and cross compilation, beyond the scope of this PR)
+    val elts = Seq.tabulate(n, m, p)(gen)
+    val flatElts = elts.flatten.flatten
 
-  /** Creates a new 4D [[Vec]] of length `n by m by p by q` composed of the results of the given
-    * function applied over a range of integer values starting from 0.
-    *
-    * @param n number of 3D vectors inside outer vector
-    * @param m number of 2D vectors in each 3D vector
-    * @param p number of 1D vectors in each 2D vector
-    * @param q number of elements in each 1D vector
-    * @param gen function that takes in an Int (the index) and returns a
-    * [[Data]] that becomes the output element
-    */
-  def tabulate[T <: Data](n: Int, m: Int, p: Int, q: Int)(gen: (Int) => T): Vec[Vec[Vec[Vec[T]]]] = macro VecTransform.tabulate4D
+    require(flatElts.nonEmpty, "Vec hardware values are not allowed to be empty")
+    flatElts.foreach(requireIsHardware(_, "vec element"))
+    
+    val tpe = cloneSupertype(flatElts, "Vec.tabulate")
+    val myVec = Wire(Vec(n, Vec(m, Vec(p, tpe))))
+    val op = getConnectOpFromDirectionality(myVec.head.head.head)
+    
+    for(
+        (xs2D, ys2D) <- myVec zip elts;
+        (xs1D, ys1D) <- xs2D zip ys2D;
+        (x, y) <- xs1D zip ys1D
+      ) { 
+        op(x, y) 
+      }
 
-  /** @group SourceInfoTransformMacro */
-  def do_tabulate[T <: Data](n: Int, m: Int, p: Int, q: Int)(gen: (Int) => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[Vec[Vec[Vec[T]]]] = {
-    val myVec = Wire(Vec(n, Vec(m, Vec(p, Vec(q, cloneSupertype((0 until q).map(i => gen(i)), "Vec"))))))
-    myVec.foreach {
-      _ := VecInit.tabulate(m, p, q)(gen)
-    }
     myVec
   }
 
@@ -677,11 +693,7 @@ object VecInit extends SourceInfoDoc {
 
   /** @group SourceInfoTransformMacro */
   def do_fill[T <: Data](n: Int, m: Int)(gen: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[Vec[T]] = {
-    val myVec = Wire(Vec(n, Vec(m, cloneSupertype(Seq.fill(m)(gen), "Vec"))))
-    myVec.foreach {
-      _ := VecInit.fill(m)(gen)
-    }
-    myVec
+    do_tabulate(n, m)((_, _) => gen)
   }
 
   /** Creates a new 3D [[Vec]] of length `n by m by p` composed of the result of the given
@@ -697,32 +709,7 @@ object VecInit extends SourceInfoDoc {
 
   /** @group SourceInfoTransformMacro */
   def do_fill[T <: Data](n: Int, m: Int, p: Int)(gen: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[Vec[Vec[T]]] = {
-    val myVec = Wire(Vec(n, Vec(m, Vec(p, cloneSupertype(Seq.fill(p)(gen), "Vec")))))
-    myVec.foreach { 
-      _ := VecInit.fill(m, p)(gen)
-    }
-    myVec
-  }
-
-  /** Creates a new 4D [[Vec]] of length `n by m by p by q` composed of the result of the given
-   * function applied to an element of data type T.
-   * 
-   * @param n number of 3D vectors inside outer vector
-   * @param m number of 2D vectors inside each 3D vector
-   * @param p number of 1D vectors in each 2D vector
-   * @param q number of elements in each 1D vector
-   * @param gen function that takes in an element T and returns an output 
-   * element of the same type
-   */
-  def fill[T <: Data](n: Int, m: Int, p: Int, q: Int)(gen: => T): Vec[Vec[Vec[Vec[T]]]] = macro VecTransform.fill4D
-
-  /** @group SourceInfoTransformMacro */
-  def do_fill[T <: Data](n: Int, m: Int, p: Int, q: Int)(gen: => T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Vec[Vec[Vec[Vec[T]]]] = {
-    val myVec = Wire(Vec(n, Vec(m, Vec(p, Vec(q, cloneSupertype(Seq.fill(q)(gen), "Vec"))))))
-    myVec.foreach { 
-      _ := VecInit.fill(m, p, q)(gen)
-    }
-    myVec
+    do_tabulate(n, m, p)((_, _, _) => gen)
   }
   
   /** Creates a new [[Vec]] of length `n` composed of the result of the given

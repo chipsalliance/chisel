@@ -16,6 +16,7 @@ Please note that these examples make use of [Chisel's scala-style printing](../e
   * [How do I create a Vec of Bools from a UInt?](#how-do-i-create-a-vec-of-bools-from-a-uint)
   * [How do I create a UInt from a Vec of Bool?](#how-do-i-create-a-uint-from-a-vec-of-bool)
 * Vectors and Registers
+  * [Can I make a 2D or 3D Vector?](#can-i-make-a-2D-or-3D-Vector)
   * [How do I create a Vector of Registers?](#how-do-i-create-a-vector-of-registers)
   * [How do I create a Reg of type Vec?](#how-do-i-create-a-reg-of-type-vec)
 * [How do I create a finite state machine?](#how-do-i-create-a-finite-state-machine-fsm)
@@ -149,6 +150,39 @@ class Foo extends RawModule {
 ```
 
 ## Vectors and Registers
+
+### Can I make a 2D or 3D Vector?
+
+Yes. Using `VecInit` you can make Vectors that hold Vectors of Chisel types. Methods `fill` and `tabulate` make these multi-dimensional Vectors.
+
+```scala mdoc:silent:reset
+import chisel3._
+
+class MyBundle extends Bundle {
+  val foo = UInt(4.W)
+  val bar = UInt(4.W)
+}
+
+class Foo extends Module {
+  
+  val twoDVec = VecInit.fill(2,3)(5.U)
+  val threeDVec = VecInit.fill(1,2,4)(new MyBundle)
+
+  val indexTiedVec = VecInit.tabulate(2,2){ (x, y) => (x+y).asUInt }
+  assert(indexTiedVec(0)(0) === 0.U)
+  assert(indexTiedVec(0)(1) === 1.U)
+  assert(indexTiedVec(1)(0) === 1.U)
+  assert(indexTiedVec(1)(1) === 2.U)
+
+  val indexTiedVec3D = VecInit.tabulate(1,2,3){ (x, y, z) => (x*y*z).asUInt }
+  assert(indexTiedVec(0)(0)(0) === 0.U)
+  assert(indexTiedVec(1)(1)(1) === 1.U)
+  assert(indexTiedVec(1)(1)(2) === 2.U)
+  assert(indexTiedVec(1)(1)(3) === 3.U)
+  assert(indexTiedVec(1)(2)(3) === 6.U)
+
+}
+```
 
 ### How do I create a Vector of Registers?
 
