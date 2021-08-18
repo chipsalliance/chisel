@@ -489,6 +489,8 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
 
 object VecInit extends SourceInfoDoc {
 
+  /** Gets the correct operation (directed hardware assign or bulk connect) for element in Vec.
+    */
   def getConnectOpFromDirectionality[T <: Data](proto: T): (T, T) => Unit = macro VecTransform.get_connect_op
 
   /** @group SourceInfoTransformMacro */
