@@ -701,11 +701,11 @@ private[chisel3] object Builder extends LazyLogging {
       ViewParent // Must initialize the singleton in a Builder context or weird things can happen
                  // in tiny designs/testcases that never access anything in chisel3.internal
       checkScalaVersion()
-      logger.warn("Elaborating design...")
+      logger.info("Elaborating design...")
       val mod = f
       mod.forceName(None, mod.name, globalNamespace)
       errors.checkpoint(logger)
-      logger.warn("Done elaborating.")
+      logger.info("Done elaborating.")
 
       (Circuit(components.last.name, components.toSeq, annotations.toSeq, makeViewRenameMap), mod)
     }
