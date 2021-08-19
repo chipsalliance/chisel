@@ -175,13 +175,13 @@ class Foo extends Module {
   val twoDVec = VecInit.fill(2,3)(5.U)
   val threeDVec = VecInit.fill(1,2,4)(new MyBundle)
 
-  val indexTiedVec = VecInit.tabulate(2,2){ (x, y) => (x+y).asUInt }
+  val indexTiedVec = VecInit.tabulate(2, 2){ (x, y) => (x + y).U }
   assert(indexTiedVec(0)(0) === 0.U)
   assert(indexTiedVec(0)(1) === 1.U)
   assert(indexTiedVec(1)(0) === 1.U)
   assert(indexTiedVec(1)(1) === 2.U)
 
-  val indexTiedVec3D = VecInit.tabulate(1,2,3){ (x, y, z) => (x*y*z).asUInt }
+  val indexTiedVec3D = VecInit.tabulate(1, 2, 3){ (x, y, z) => (x * y * z).U }
   assert(indexTiedVec(0)(0)(0) === 0.U)
   assert(indexTiedVec(1)(1)(1) === 1.U)
   assert(indexTiedVec(1)(1)(2) === 2.U)
@@ -190,6 +190,11 @@ class Foo extends Module {
 
 }
 ```
+```scala mdoc:invisible
+// Hidden but will make sure this actually compiles
+ChiselStage.emitVerilog(new Foo)
+```
+
 
 ### How do I create a Vector of Registers?
 

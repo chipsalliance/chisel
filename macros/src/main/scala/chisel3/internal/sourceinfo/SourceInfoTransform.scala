@@ -72,9 +72,6 @@ class MuxTransform(val c: Context) extends SourceInfoTransformMacro {
 object VecTransform
 class VecTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._
-  def get_connect_op(proto: c.Tree): c.Tree = {
-    q"$thisObj.do_getConnectOpFromDirectionality($proto)($implicitSourceInfo, $implicitCompileOptions)"
-  }
   def apply_elts(elts: c.Tree): c.Tree = {
     q"$thisObj.do_apply($elts)($implicitSourceInfo, $implicitCompileOptions)"
   }

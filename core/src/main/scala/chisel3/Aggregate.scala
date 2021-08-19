@@ -489,12 +489,9 @@ sealed class Vec[T <: Data] private[chisel3] (gen: => T, val length: Int)
 
 object VecInit extends SourceInfoDoc {
 
-  /** Gets the correct operation (directed hardware assign or bulk connect) for element in Vec.
+  /** Gets the correct connect operation (directed hardware assign or bulk connect) for element in Vec.
     */
-  def getConnectOpFromDirectionality[T <: Data](proto: T): (T, T) => Unit = macro VecTransform.get_connect_op
-
-  /** @group SourceInfoTransformMacro */
-  def do_getConnectOpFromDirectionality[T <: Data](proto: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): (T, T) => Unit = proto.direction match {
+  private def getConnectOpFromDirectionality[T <: Data](proto: T)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): (T, T) => Unit = proto.direction match {
     case ActualDirection.Input | ActualDirection.Output | ActualDirection.Unspecified =>
       // When internal wires are involved, driver / sink must be specified explicitly, otherwise
       // the system is unable to infer which is driver / sink
@@ -532,7 +529,7 @@ object VecInit extends SourceInfoDoc {
 
     val vec = Wire(Vec(elts.length, cloneSupertype(elts, "Vec")))
     val tpe = cloneSupertype(elts, "Vec")
-    val op = getConnectOpFromDirectionality(vec.head) //elts.head
+    val op = getConnectOpFromDirectionality(vec.head)
     
     (vec zip elts).foreach{ x => 
       op(x._1, x._2)
@@ -591,13 +588,12 @@ object VecInit extends SourceInfoDoc {
     val tpe = cloneSupertype(flatElts, "Vec.tabulate")
     val myVec = Wire(Vec(n, Vec(m, tpe)))
     val op = getConnectOpFromDirectionality(myVec.head.head)
-    // We could get fancy here to have reuse across the multiple dimensions, but being more verbose is more clear
-    for(
-        (xs1D, ys1D) <- myVec zip elts;
-        (x, y) <- xs1D zip ys1D
-      ) { 
-        op(x, y) 
-      }
+    for (
+      (xs1D, ys1D) <- myVec zip elts;
+      (x, y) <- xs1D zip ys1D
+    ) { 
+      op(x, y) 
+    }
     myVec 
   }
 
@@ -625,13 +621,13 @@ object VecInit extends SourceInfoDoc {
     val myVec = Wire(Vec(n, Vec(m, Vec(p, tpe))))
     val op = getConnectOpFromDirectionality(myVec.head.head.head)
     
-    for(
-        (xs2D, ys2D) <- myVec zip elts;
-        (xs1D, ys1D) <- xs2D zip ys2D;
-        (x, y) <- xs1D zip ys1D
-      ) { 
-        op(x, y) 
-      }
+    for (
+      (xs2D, ys2D) <- myVec zip elts;
+      (xs1D, ys1D) <- xs2D zip ys2D;
+      (x, y) <- xs1D zip ys1D
+    ) { 
+      op(x, y) 
+    }
 
     myVec
   }

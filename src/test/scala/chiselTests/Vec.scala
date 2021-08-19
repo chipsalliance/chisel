@@ -169,13 +169,11 @@ object VecMultiDimTester {
   class BidirectionalTester2D(n: Int, m: Int) extends BasicTester {
     val mod = Module(new PassthroughModule)
     val vec2D = VecInit.fill(n, m)(mod.io)
-    val tester = Module(new PassthroughModuleTester)
     for {
-        vec1D <- vec2D
-        module <- vec1D
+      vec1D <- vec2D
+      module <- vec1D
     } yield {
-        module <> tester.io
-        assert(module.out === 123.U)
+      module <> (Module(new PassthroughModuleTester).io)
     }
     stop()
   }
