@@ -184,12 +184,12 @@ object VecMultiDimTester {
     val tester = Module(new PassthroughModuleTester)
     
     for {
-        vec2D <- vec3D
-        vec1D <- vec2D
-        module <- vec1D
+      vec2D <- vec3D
+      vec1D <- vec2D
+      module <- vec1D
     } yield {
-        module <> tester.io
-        assert(module.out === 123.U)
+      module <> tester.io
+      assert(module.out === 123.U)
     }
     stop()
   }
