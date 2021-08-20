@@ -133,9 +133,12 @@ case class CircuitSerializationAnnotation(circuit: Circuit, filename: String, fo
 
   protected def suffix: Option[String] = Some(format.extension)
 
-  // TODO Use lazy Iterables so that we don't have to materialize full intermediate data structures
   override def getBytes: Iterable[Byte] = format match {
-    case FirrtlFileFormat => OldEmitter.emit(circuit).getBytes
+    case FirrtlFileFormat =>
+      OldEmitter.emitLazily(circuit)
+                .map(_.getBytes)
+                .flatten
+    // TODO Use lazy Iterables so that we don't have to materialize full intermediate data structures
     case ProtoBufFileFormat =>
       val ostream = new java.io.ByteArrayOutputStream
       val modules = circuit.components.map(m => () => chisel3.internal.firrtl.Converter.convert(m))
