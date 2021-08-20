@@ -528,7 +528,6 @@ object VecInit extends SourceInfoDoc {
     elts.foreach(requireIsHardware(_, "vec element"))
 
     val vec = Wire(Vec(elts.length, cloneSupertype(elts, "Vec")))
-    val tpe = cloneSupertype(elts, "Vec")
     val op = getConnectOpFromDirectionality(vec.head)
     
     (vec zip elts).foreach{ x => 

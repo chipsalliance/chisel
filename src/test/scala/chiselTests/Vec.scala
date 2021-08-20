@@ -166,10 +166,24 @@ object VecMultiDimTester {
     stop()
   }
 
-  class BidirectionalTester2D(n: Int, m: Int) extends BasicTester {
+  class BidirectionalTester2DFill(n: Int, m: Int) extends BasicTester {
     val mod = Module(new PassthroughModule)
     val vec2D = VecInit.fill(n, m)(mod.io)
     for {
+      vec1D <- vec2D
+      module <- vec1D
+    } yield {
+      module <> Module(new PassthroughModuleTester).io
+    }
+    stop()
+  }
+
+  class BidirectionalTester3DFill(n: Int, m: Int, p: Int) extends BasicTester {
+    val mod = Module(new PassthroughModule)
+    val vec3D = VecInit.fill(n, m, p)(mod.io)
+    
+    for {
+      vec2D <- vec3D
       vec1D <- vec2D
       module <- vec1D
     } yield {
@@ -178,18 +192,39 @@ object VecMultiDimTester {
     stop()
   }
   
-  class BidirectionalTester3D(n: Int, m: Int, p: Int) extends BasicTester {
-    val mod = Module(new PassthroughModule)
-    val vec3D = VecInit.fill(n, m, p)(mod.io)
-    val tester = Module(new PassthroughModuleTester)
-    
+  class TabulateModuleTester(value: Int) extends Module {
+    val io = IO(Flipped(new PassthroughModuleIO))
+    // This drives the input of a PassthroughModule
+    io.in := value.U
+  }
+
+  class BidirectionalTester2DTabulate(n: Int, m: Int) extends BasicTester {
+    val vec2D = VecInit.tabulate(n, m) { (x, y) =>  Module(new TabulateModuleTester(x + y + 1)).io}
+
     for {
-      vec2D <- vec3D
-      vec1D <- vec2D
-      module <- vec1D
+      x <- 0 until n
+      y <- 0 until m 
     } yield {
-      module <> tester.io
-      assert(module.out === 123.U)
+      val value = x + y + 1
+      val receiveMod = Module(new PassthroughModule).io
+      vec2D(x)(y) <> receiveMod
+      assert(receiveMod.out === value.U)
+    }
+    stop()
+  }
+
+  class BidirectionalTester3DTabulate(n: Int, m: Int, p: Int) extends BasicTester {
+    val vec3D = VecInit.tabulate(n, m, p) { (x, y, z) => Module(new TabulateModuleTester(x + y + z + 1)).io }
+
+    for {
+      x <- 0 until n
+      y <- 0 until m
+      z <- 0 until p
+    } yield {
+      val value = x + y + z + 1
+      val receiveMod = Module(new PassthroughModule).io
+      vec3D(x)(y)(z) <> receiveMod
+      assert(receiveMod.out === value.U)
     }
     stop()
   }
@@ -340,12 +375,20 @@ class VecSpec extends ChiselPropSpec with Utils {
     forAll(smallPosInts, smallPosInts, smallPosInts, Gen.choose(0, 50)) { (n: Int, m: Int, p: Int, value: Int) => assertTesterPasses{ new VecMultiDimTester.Fill3DTester(n, m, p, value) } }
   }
 
-  property("VecInit should support 2D bidirectional wire connection") {
-    forAll(smallPosInts, smallPosInts) { (n: Int, m: Int) => assertTesterPasses{ new VecMultiDimTester.BidirectionalTester2D(n, m) }} 
+  property("VecInit should support 2D fill bidirectional wire connection") {
+    forAll(smallPosInts, smallPosInts) { (n: Int, m: Int) => assertTesterPasses{ new VecMultiDimTester.BidirectionalTester2DFill(n, m) }} 
   }
   
-  property("VecInit should support 3D bidirectional wire connection") {
-    forAll(smallPosInts, smallPosInts, smallPosInts) { (n: Int, m: Int, p: Int) => assertTesterPasses{ new VecMultiDimTester.BidirectionalTester3D(n, m, p) }} 
+  property("VecInit should support 3D fill bidirectional wire connection") {
+    forAll(smallPosInts, smallPosInts, smallPosInts) { (n: Int, m: Int, p: Int) => assertTesterPasses{ new VecMultiDimTester.BidirectionalTester3DFill(n, m, p) }}
+  }
+
+  property("VecInit should support 2D tabulate bidirectional wire connection") {
+    forAll(smallPosInts, smallPosInts) { (n: Int, m: Int) => assertTesterPasses{ new VecMultiDimTester.BidirectionalTester2DTabulate(n, m) }} 
+  }
+  
+  property("VecInit should support 3D tabulate bidirectional wire connection") {
+    forAll(smallPosInts, smallPosInts, smallPosInts) { (n: Int, m: Int, p: Int) => assertTesterPasses{ new VecMultiDimTester.BidirectionalTester3DTabulate(n, m, p) }}
   }
   
   property("VecInit should iterate correctly") {

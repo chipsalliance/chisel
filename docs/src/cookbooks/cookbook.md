@@ -171,23 +171,28 @@ class MyBundle extends Bundle {
 }
 
 class Foo extends Module {
-  
-  val twoDVec = VecInit.fill(2,3)(5.U)
-  val threeDVec = VecInit.fill(1,2,4)(new MyBundle)
+  //2D Fill
+  val twoDVec = VecInit.fill(2, 3)(5.U)
+  //3D Fill
+  val myBundle = Wire(new MyBundle)
+  myBundle.foo := 0xc.U
+  myBundle.bar := 0x3.U
+  val threeDVec = VecInit.fill(1, 2, 3)(myBundle)
+  assert(threeDVec(0)(0)(0).foo === 0xc.U && threeDVec(0)(0)(0).bar === 0x3.U)
 
+  //2D Tabulate
   val indexTiedVec = VecInit.tabulate(2, 2){ (x, y) => (x + y).U }
   assert(indexTiedVec(0)(0) === 0.U)
   assert(indexTiedVec(0)(1) === 1.U)
   assert(indexTiedVec(1)(0) === 1.U)
   assert(indexTiedVec(1)(1) === 2.U)
-
-  val indexTiedVec3D = VecInit.tabulate(1, 2, 3){ (x, y, z) => (x * y * z).U }
-  assert(indexTiedVec(0)(0)(0) === 0.U)
-  assert(indexTiedVec(1)(1)(1) === 1.U)
-  assert(indexTiedVec(1)(1)(2) === 2.U)
-  assert(indexTiedVec(1)(1)(3) === 3.U)
-  assert(indexTiedVec(1)(2)(3) === 6.U)
-
+  //3D Tabulate
+  val indexTiedVec3D = VecInit.tabulate(2, 3, 4){ (x, y, z) => (x + y * z).U }
+  assert(indexTiedVec3D(0)(0)(0) === 0.U)
+  assert(indexTiedVec3D(1)(1)(1) === 2.U)
+  assert(indexTiedVec3D(1)(1)(2) === 3.U)
+  assert(indexTiedVec3D(1)(1)(3) === 4.U)
+  assert(indexTiedVec3D(1)(2)(3) === 7.U)
 }
 ```
 ```scala mdoc:invisible
