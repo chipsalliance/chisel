@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 package chisel3.internal.firrtl
-import firrtl.{ir => fir}
+
+import scala.collection.immutable.LazyList // Needed for 2.12 alias
+import firrtl.ir.Serializer
 
 private[chisel3] object Emitter {
 <<<<<<< HEAD
@@ -105,8 +107,21 @@ private class Emitter(circuit: Circuit) {
 =======
   def emit(circuit: Circuit): String = {
     val fcircuit = Converter.convertLazily(circuit)
+<<<<<<< HEAD
     fir.Serializer.serialize(fcircuit)
 >>>>>>> 73bd4ee6 (Remove chisel3's own firrtl Emitter, use firrtl Serializer)
+=======
+    Serializer.serialize(fcircuit)
+  }
+
+  def emitLazily(circuit: Circuit): Iterable[String] = {
+    val result = LazyList(s"circuit ${circuit.name} :\n")
+    val modules = circuit.components.view.map(Converter.convert)
+    val moduleStrings = modules.flatMap { m =>
+      Array(Serializer.serialize(m, 1), "\n\n")
+    }
+    result ++ moduleStrings
+>>>>>>> d9c30ea0 (Emit .fir lazily, overcomes JVM 2 GiB String limit)
   }
 }
 
