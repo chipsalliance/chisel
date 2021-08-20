@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 package chisel3.internal.firrtl
-import chisel3._
-import chisel3.experimental.{Interval, _}
-import chisel3.internal.BaseBlackBox
+import firrtl.{ir => fir}
 
 private[chisel3] object Emitter {
+<<<<<<< HEAD
   def emit(circuit: Circuit): String = new Emitter(circuit).toString
 }
 
@@ -103,92 +102,11 @@ private class Emitter(circuit: Circuit) {
         s"skip"
     }
     firrtlLine + e.sourceInfo.makeMessage(" " + _)
+=======
+  def emit(circuit: Circuit): String = {
+    val fcircuit = Converter.convertLazily(circuit)
+    fir.Serializer.serialize(fcircuit)
+>>>>>>> 73bd4ee6 (Remove chisel3's own firrtl Emitter, use firrtl Serializer)
   }
-
-  private def emitParam(name: String, p: Param): String = {
-    val str = p match {
-      case IntParam(value) => value.toString
-      case DoubleParam(value) => value.toString
-      case StringParam(str) => "\"" + str + "\""
-      case RawParam(str) => "'" + str + "'"
-    }
-    s"parameter $name = $str"
-  }
-
-  /** Generates the FIRRTL module declaration.
-    */
-  private def moduleDecl(m: Component): String = m.id match {
-    case _: BaseBlackBox => newline + s"extmodule ${m.name} : "
-    case _: RawModule => newline + s"module ${m.name} : "
-  }
-
-  /** Generates the FIRRTL module definition.
-    */
-  private def moduleDefn(m: Component): String = {
-    val body = new StringBuilder
-    withIndent {
-      for (p <- m.ports) {
-        val portDef = m match {
-          case bb: DefBlackBox => emitPort(p, bb.topDir)
-          case mod: DefModule => emitPort(p)
-        }
-        body ++= newline + portDef
-      }
-      body ++= newline
-
-      m match {
-        case bb: DefBlackBox =>
-          // Firrtl extmodule can overrule name
-          body ++= newline + s"defname = ${bb.id.desiredName}"
-          body ++= newline + (bb.params map { case (n, p) => emitParam(n, p) } mkString newline)
-        case mod: DefModule => {
-          // Preprocess whens & elsewhens, marking those that have no alternative
-          val procMod = mod.copy(commands = processWhens(mod.commands))
-          for (cmd <- procMod.commands) { body ++= newline + emit(cmd, procMod)}
-        }
-      }
-      body ++= newline
-    }
-    body.toString()
-  }
-
-  /** Returns the FIRRTL declaration and body of a module, or nothing if it's a
-    * duplicate of something already emitted (on the basis of simple string
-    * matching).
-    */
-  private def emit(m: Component): String = {
-    // Generate the body.
-    val sb = new StringBuilder
-    sb.append(moduleDecl(m))
-    sb.append(moduleDefn(m))
-    sb.result
-  }
-
-  /** Preprocess the command queue, marking when/elsewhen statements
-    * that have no alternatives (elsewhens or otherwise). These
-    * alternative-free statements reset the indent level to the
-    * enclosing block upon emission.
-    */
-  private def processWhens(cmds: Seq[Command]): Seq[Command] = {
-    if (cmds.isEmpty) {
-      Seq.empty
-    } else {
-      cmds.zip(cmds.tail).map{
-        case (a: WhenEnd, b: AltBegin) => a.copy(hasAlt = true)
-        case (a, b) => a
-      } ++ cmds.lastOption
-    }
-  }
-
-  private var indentLevel = 0
-  private def newline = "\n" + ("  " * indentLevel)
-  private def indent(): Unit = indentLevel += 1
-  private def unindent() { require(indentLevel > 0); indentLevel -= 1 }
-  private def withIndent(f: => Unit) { indent(); f; unindent() }
-
-  private val res = new StringBuilder()
-  res ++= s";${BuildInfo.toString}\n"
-  res ++= s"circuit ${circuit.name} : "
-  withIndent { circuit.components.foreach(c => res ++= emit(c)) }
-  res ++= newline
 }
+

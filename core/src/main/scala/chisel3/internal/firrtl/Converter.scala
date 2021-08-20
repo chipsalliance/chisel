@@ -9,6 +9,7 @@ import chisel3.internal.{HasId, castToInt, throwException}
 
 import scala.annotation.tailrec
 import scala.collection.immutable.Queue
+import scala.collection.immutable.LazyList // Needed for 2.12 alias
 
 private[chisel3] object Converter {
   // TODO modeled on unpack method on Printable, refactor?
@@ -301,5 +302,11 @@ private[chisel3] object Converter {
 
   def convert(circuit: Circuit): fir.Circuit =
     fir.Circuit(fir.NoInfo, circuit.components.map(convert), circuit.name)
+
+  // TODO Unclear if this should just be the default
+  def convertLazily(circuit: Circuit): fir.Circuit = {
+    val lazyModules = LazyList() ++ circuit.components
+    fir.Circuit(fir.NoInfo, lazyModules.map(convert), circuit.name)
+  }
 }
 
