@@ -240,24 +240,24 @@ object Serializer {
 
   private def s(node: DefModule)(implicit b: StringBuilder, indent: Int): Unit = node match {
     case Module(info, name, ports, body) =>
-      b ++= "module "; b ++= name; b ++= " :"; s(info)
+      doIndent(0); b ++= "module "; b ++= name; b ++= " :"; s(info)
       ports.foreach { p => newLineAndIndent(1); s(p) }
       newLineNoIndent() // add a new line between port declaration and body
       newLineAndIndent(1); s(body)(b, indent + 1)
     case ExtModule(info, name, ports, defname, params) =>
-      b ++= "extmodule "; b ++= name; b ++= " :"; s(info)
+      doIndent(0); b ++= "extmodule "; b ++= name; b ++= " :"; s(info)
       ports.foreach { p => newLineAndIndent(1); s(p) }
       newLineAndIndent(1); b ++= "defname = "; b ++= defname
       params.foreach { p => newLineAndIndent(1); s(p) }
-    case other => b ++= other.serialize // Handle user-defined nodes
+    case other => doIndent(0); b ++= other.serialize // Handle user-defined nodes
   }
 
   private def s(node: Circuit)(implicit b: StringBuilder, indent: Int): Unit = node match {
     case Circuit(info, modules, main) =>
       b ++= "circuit "; b ++= main; b ++= " :"; s(info)
       if (modules.nonEmpty) {
-        newLineAndIndent(1); s(modules.head)(b, indent + 1)
-        modules.drop(1).foreach { m => newLineNoIndent(); newLineAndIndent(1); s(m)(b, indent + 1) }
+        newLineNoIndent(); s(modules.head)(b, indent + 1)
+        modules.drop(1).foreach { m => newLineNoIndent(); newLineNoIndent(); s(m)(b, indent + 1) }
       }
       newLineNoIndent()
   }

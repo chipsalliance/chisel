@@ -4,7 +4,7 @@ package firrtlTests
 
 import org.scalatest._
 import firrtl.ir._
-import firrtl.Utils
+import firrtl.{Parser, Utils}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -33,6 +33,37 @@ object SerializerSpec {
     def mapType(f:      Type => Type):             Expression = this.copy(expr.mapType(f))
     def mapWidth(f:     Width => Width):           Expression = this.copy(expr.mapWidth(f))
   }
+
+  private def tab(s: String): String = {
+    // Careful to only tab non-empty lines
+    s.split("\n")
+      .map { line =>
+        if (line.nonEmpty) Serializer.Indent + line else line
+      }
+      .mkString("\n")
+  }
+
+  val testModule: String =
+    """module test :
+      |  input in : UInt<8>
+      |  output out : UInt<8>
+      |
+      |  inst c of child
+      |  c.in <= in
+      |  out <= c.out""".stripMargin
+
+  val testModuleTabbed: String = tab(testModule)
+
+  val childModule: String =
+    """extmodule child :
+      |  input in : UInt<8>
+      |  output out : UInt<8>
+      |  defname = child""".stripMargin
+
+  val childModuleTabbed: String = tab(childModule)
+
+  val simpleCircuit: String =
+    "circuit test :\n" + childModuleTabbed + "\n\n" + testModuleTabbed + "\n"
 }
 
 class SerializerSpec extends AnyFlatSpec with Matchers {
@@ -56,6 +87,33 @@ class SerializerSpec extends AnyFlatSpec with Matchers {
     val stmts = Block(stmt :: Nil)
     val ser = "wrap(node n = wrap(foo).bar)"
     Serializer.serialize(stmts) should be(ser)
+  }
+
+  it should "support emitting circuits" in {
+    val parsed = Parser.parse(simpleCircuit)
+    val serialized = Serializer.serialize(parsed)
+    serialized should be(simpleCircuit)
+  }
+
+  it should "support emitting individual modules" in {
+    val parsed = Parser.parse(simpleCircuit)
+    val m = parsed.modules.find(_.name == "test").get
+    val serialized = Serializer.serialize(m)
+    serialized should be(testModule)
+  }
+
+  it should "support emitting indented individual modules" in {
+    val parsed = Parser.parse(simpleCircuit)
+    val m = parsed.modules.find(_.name == "test").get
+    val serialized = Serializer.serialize(m, 1)
+    serialized should be(testModuleTabbed)
+  }
+
+  it should "support emitting indented individual extmodules" in {
+    val parsed = Parser.parse(simpleCircuit)
+    val m = parsed.modules.find(_.name == "child").get
+    val serialized = Serializer.serialize(m, 1)
+    serialized should be(childModuleTabbed)
   }
 
 }
