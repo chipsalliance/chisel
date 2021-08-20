@@ -461,10 +461,10 @@ class VecLiteralSpec extends ChiselFreeSpec with Utils {
 
   "vec literals can contain bundles" in {
     val chirrtl = (new chisel3.stage.ChiselStage).emitChirrtl(new VecExample, args = Array("--full-stacktrace"))
-    chirrtl should include("""out[0].bar <= UInt<5>("h016")""")
-    chirrtl should include("""out[0].foo <= UInt<6>("h02a")""")
-    chirrtl should include("""out[1].bar <= UInt<2>("h03")""")
-    chirrtl should include("""out[1].foo <= UInt<3>("h07")""")
+    chirrtl should include("""out[0].bar <= UInt<5>("h16")""")
+    chirrtl should include("""out[0].foo <= UInt<6>("h2a")""")
+    chirrtl should include("""out[1].bar <= UInt<2>("h3")""")
+    chirrtl should include("""out[1].foo <= UInt<3>("h7")""")
 
   }
 
