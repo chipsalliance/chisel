@@ -3,7 +3,7 @@
 package chisel3.stage
 
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
-import firrtl.options.{CustomFileEmission, HasShellOptions, OptionsException, ShellOption, StageOptions, Unserializable}
+import firrtl.options.{BufferedCustomFileEmission, CustomFileEmission, HasShellOptions, OptionsException, ShellOption, StageOptions, Unserializable}
 import firrtl.options.Viewer.view
 import chisel3.{ChiselException, Module}
 import chisel3.RawModule
@@ -123,7 +123,7 @@ import CircuitSerializationAnnotation._
   */
 case class CircuitSerializationAnnotation(circuit: Circuit, filename: String, format: Format)
     extends NoTargetAnnotation
-    with CustomFileEmission {
+    with BufferedCustomFileEmission {
   /* Caching the hashCode for a large circuit is necessary due to repeated queries.
    * Not caching the hashCode will cause severe performance degredations for large [[Circuit]]s.
    */
@@ -133,17 +133,16 @@ case class CircuitSerializationAnnotation(circuit: Circuit, filename: String, fo
 
   protected def suffix: Option[String] = Some(format.extension)
 
-  override def getBytes: Iterable[Byte] = format match {
+  override def getBytesBuffered: Iterable[Array[Byte]] = format match {
     case FirrtlFileFormat =>
       OldEmitter.emitLazily(circuit)
                 .map(_.getBytes)
-                .flatten
     // TODO Use lazy Iterables so that we don't have to materialize full intermediate data structures
     case ProtoBufFileFormat =>
       val ostream = new java.io.ByteArrayOutputStream
       val modules = circuit.components.map(m => () => chisel3.internal.firrtl.Converter.convert(m))
       firrtl.proto.ToProto.writeToStreamFast(ostream, firrtl.ir.NoInfo, modules, circuit.name)
-      ostream.toByteArray
+      List(ostream.toByteArray)
   }
 }
 
