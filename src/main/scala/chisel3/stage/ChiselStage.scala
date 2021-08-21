@@ -47,7 +47,7 @@ class ChiselStage extends Stage {
   /** Convert a Chisel module to a CHIRRTL string
     * @param gen a call-by-name Chisel module
     * @param args additional command line arguments to pass to Chisel
-    * param annotations additional annotations to pass to Chisel
+    * @param annotations additional annotations to pass to Chisel
     * @return a string containing the Verilog output
     */
   final def emitChirrtl(
@@ -70,7 +70,7 @@ class ChiselStage extends Stage {
   /** Convert a Chisel module to a FIRRTL string
     * @param gen a call-by-name Chisel module
     * @param args additional command line arguments to pass to Chisel
-    * param annotations additional annotations to pass to Chisel
+    * @param annotations additional annotations to pass to Chisel
     * @return a string containing the FIRRTL output
     */
   final def emitFirrtl(
@@ -90,7 +90,7 @@ class ChiselStage extends Stage {
   /** Convert a Chisel module to Verilog
     * @param gen a call-by-name Chisel module
     * @param args additional command line arguments to pass to Chisel
-    * param annotations additional annotations to pass to Chisel
+    * @param annotations additional annotations to pass to Chisel
     * @return a string containing the Verilog output
     */
   final def emitVerilog(
@@ -110,7 +110,7 @@ class ChiselStage extends Stage {
   /** Convert a Chisel module to SystemVerilog
     * @param gen a call-by-name Chisel module
     * @param args additional command line arguments to pass to Chisel
-    * param annotations additional annotations to pass to Chisel
+    * @param annotations additional annotations to pass to Chisel
     * @return a string containing the SystemVerilog output
     */
   final def emitSystemVerilog(
