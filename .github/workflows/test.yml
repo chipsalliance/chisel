@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         system: ["ubuntu-20.04"]
-        jvm: ["graalvm@21.1.0"]
+        jvm: ["graalvm@21.1.0", "adopt@1.8"]
         scala: ["2.13.6", "2.12.13"]
         verilator: ["4.204"]
         z3: ["4.8.10"]
