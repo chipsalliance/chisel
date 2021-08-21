@@ -71,7 +71,33 @@ trait CustomFileEmission { this: Annotation =>
     val name = view[StageOptions](annotations).getBuildFileName(baseFileName(annotations), suffix)
     new File(name)
   }
+}
 
+/** A buffered version of [[CustomFileEmission]]
+  *
+  * This is especially useful for serializing large data structures. When emitting Strings, it makes
+  * it much easier to avoid materializing the entire serialized String in memory. It also helps
+  * avoid materializing intermediate datastructures in memory. Finally, it reduces iteration
+  * overhead and helps optimize I/O performance.
+  *
+  * It may seem strange to use `Array[Byte]` in an otherwise immutable API, but for maximal
+  * performance it is best to use the JVM primitive that file I/O uses. These Arrays should only
+  * used immutably even though the Java API technically does allow mutating them.
+  */
+trait BufferedCustomFileEmission extends CustomFileEmission { this: Annotation =>
+
+  /** A buffered version of [[getBytes]] for more efficient serialization
+    *
+    * If you only need to serialize an `Iterable[String]`, you can use the `String.getBytes` method.
+    * It's also helpful to create a `view` which will do the `.map` lazily instead of eagerly,
+    * improving GC performance.
+    * {{{
+    *  def getBytesBuffered: Iterable[Array[Byte]] = myListString.view.map(_.getBytes)
+    * }}}
+    */
+  def getBytesBuffered: Iterable[Array[Byte]]
+
+  final def getBytes: Iterable[Byte] = getBytesBuffered.flatten
 }
 
 /** Holds the name of the target directory

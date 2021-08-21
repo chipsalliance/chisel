@@ -4,7 +4,16 @@ package firrtl.options.phases
 
 import firrtl.AnnotationSeq
 import firrtl.annotations.{Annotation, DeletedAnnotation, JsonProtocol}
-import firrtl.options.{CustomFileEmission, Dependency, Phase, PhaseException, StageOptions, Unserializable, Viewer}
+import firrtl.options.{
+  BufferedCustomFileEmission,
+  CustomFileEmission,
+  Dependency,
+  Phase,
+  PhaseException,
+  StageOptions,
+  Unserializable,
+  Viewer
+}
 
 import java.io.{BufferedOutputStream, File, FileOutputStream, PrintWriter}
 
@@ -38,9 +47,17 @@ class WriteOutputAnnotations extends Phase {
         filesWritten.get(canonical) match {
           case None =>
             val w = new BufferedOutputStream(new FileOutputStream(filename))
-            a.getBytes match {
-              case arr: mutable.WrappedArray[Byte] => w.write(arr.array.asInstanceOf[Array[Byte]])
-              case other => other.foreach(w.write(_))
+            a match {
+              // Further optimized emission
+              case buf: BufferedCustomFileEmission =>
+                val it = buf.getBytesBuffered
+                it.foreach(bytearr => w.write(bytearr))
+              // Regular emission
+              case _ =>
+                a.getBytes match {
+                  case arr: mutable.WrappedArray[Byte] => w.write(arr.array.asInstanceOf[Array[Byte]])
+                  case other => other.foreach(w.write(_))
+                }
             }
             w.close()
             filesWritten(canonical) = a

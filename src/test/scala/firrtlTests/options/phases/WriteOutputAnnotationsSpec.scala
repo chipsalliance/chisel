@@ -7,6 +7,7 @@ import java.io.File
 import firrtl.AnnotationSeq
 import firrtl.annotations.{DeletedAnnotation, NoTargetAnnotation}
 import firrtl.options.{
+  BufferedCustomFileEmission,
   CustomFileEmission,
   InputAnnotationFileAnnotation,
   OutputAnnotationFileAnnotation,
@@ -171,6 +172,25 @@ class WriteOutputAnnotationsSpec extends AnyFlatSpec with Matchers with firrtl.t
     result should equal(data)
   }
 
+  it should "write BufferedCustomFileEmission annotations" in new Fixture {
+    val file = new File("write-CustomFileEmission-annotations.anno.json")
+    val data = List("hi", "bye", "yo")
+    val annotations = Seq(
+      TargetDirAnnotation(dir),
+      OutputAnnotationFileAnnotation(file.toString),
+      WriteOutputAnnotationsSpec.Buffered(data)
+    )
+    val serializedFileName = view[StageOptions](annotations).getBuildFileName("Buffered", Some(".Emission"))
+    val out = phase.transform(annotations)
+
+    info(s"file '$serializedFileName' exists")
+    new File(serializedFileName) should (exist)
+
+    info(s"file '$serializedFileName' is correct")
+    val result = scala.io.Source.fromFile(serializedFileName).mkString
+    result should equal(data.mkString)
+  }
+
   it should "error if multiple annotations try to write to the same file" in new Fixture {
     val file = new File("write-CustomFileEmission-annotations-error.anno.json")
     val annotations = Seq(
@@ -215,4 +235,12 @@ private object WriteOutputAnnotationsSpec {
 
   case class Replacement(file: String) extends NoTargetAnnotation
 
+  case class Buffered(content: List[String]) extends NoTargetAnnotation with BufferedCustomFileEmission {
+
+    override protected def baseFileName(a: AnnotationSeq): String = "Buffered"
+
+    override protected def suffix: Option[String] = Some(".Emission")
+
+    override def getBytesBuffered: Iterable[Array[Byte]] = content.view.map(_.getBytes)
+  }
 }
