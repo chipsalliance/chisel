@@ -81,8 +81,23 @@ class VecTransform(val c: Context) extends SourceInfoTransformMacro {
   def tabulate(n: c.Tree)(gen: c.Tree): c.Tree = {
     q"$thisObj.do_tabulate($n)($gen)($implicitSourceInfo, $implicitCompileOptions)"
   }
+  def tabulate2D(n: c.Tree, m: c.Tree)(gen: c.Tree): c.Tree = {
+    q"$thisObj.do_tabulate($n,$m)($gen)($implicitSourceInfo, $implicitCompileOptions)"
+  }
+  def tabulate3D(n: c.Tree, m: c.Tree, p: c.Tree)(gen: c.Tree): c.Tree = {
+    q"$thisObj.do_tabulate($n,$m,$p)($gen)($implicitSourceInfo, $implicitCompileOptions)"
+  }
   def fill(n: c.Tree)(gen: c.Tree): c.Tree = {
     q"$thisObj.do_fill($n)($gen)($implicitSourceInfo, $implicitCompileOptions)"
+  }
+  def fill2D(n: c.Tree, m: c.Tree)(gen: c.Tree): c.Tree = {
+    q"$thisObj.do_fill($n,$m)($gen)($implicitSourceInfo, $implicitCompileOptions)"
+  }
+  def fill3D(n: c.Tree, m: c.Tree, p: c.Tree)(gen: c.Tree): c.Tree = {
+    q"$thisObj.do_fill($n,$m,$p)($gen)($implicitSourceInfo, $implicitCompileOptions)"
+  }
+  def fill4D(n: c.Tree, m: c.Tree, p: c.Tree, q: c.Tree)(gen: c.Tree): c.Tree = {
+    q"$thisObj.do_fill($n,$m,$p,$q)($gen)($implicitSourceInfo, $implicitCompileOptions)"
   }
   def iterate(start: c.Tree, len: c.Tree)(f: c.Tree): c.Tree = {
     q"$thisObj.do_iterate($start,$len)($f)($implicitSourceInfo, $implicitCompileOptions)"

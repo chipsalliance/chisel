@@ -17,6 +17,7 @@ Please note that these examples make use of [Chisel's scala-style printing](../e
   * [How do I create a UInt from a Vec of Bool?](#how-do-i-create-a-uint-from-a-vec-of-bool)
   * [How do I connect a subset of Bundle fields?](#how-do-i-connect-a-subset-of-bundle-fields)
 * Vectors and Registers
+  * [Can I make a 2D or 3D Vector?](#can-i-make-a-2D-or-3D-Vector)
   * [How do I create a Vector of Registers?](#how-do-i-create-a-vector-of-registers)
   * [How do I create a Reg of type Vec?](#how-do-i-create-a-reg-of-type-vec)
 * [How do I create a finite state machine?](#how-do-i-create-a-finite-state-machine-fsm)
@@ -156,6 +157,51 @@ class Foo extends RawModule {
 See the [DataView cookbook](dataview#how-do-i-connect-a-subset-of-bundle-fields).
 
 ## Vectors and Registers
+
+### Can I make a 2D or 3D Vector?
+
+Yes. Using `VecInit` you can make Vectors that hold Vectors of Chisel types. Methods `fill` and `tabulate` make these multi-dimensional Vectors.
+
+```scala mdoc:silent:reset
+import chisel3._
+
+class MyBundle extends Bundle {
+  val foo = UInt(4.W)
+  val bar = UInt(4.W)
+}
+
+class Foo extends Module {
+  //2D Fill
+  val twoDVec = VecInit.fill(2, 3)(5.U)
+  //3D Fill
+  val myBundle = Wire(new MyBundle)
+  myBundle.foo := 0xc.U
+  myBundle.bar := 0x3.U
+  val threeDVec = VecInit.fill(1, 2, 3)(myBundle)
+  assert(threeDVec(0)(0)(0).foo === 0xc.U && threeDVec(0)(0)(0).bar === 0x3.U)
+
+  //2D Tabulate
+  val indexTiedVec = VecInit.tabulate(2, 2){ (x, y) => (x + y).U }
+  assert(indexTiedVec(0)(0) === 0.U)
+  assert(indexTiedVec(0)(1) === 1.U)
+  assert(indexTiedVec(1)(0) === 1.U)
+  assert(indexTiedVec(1)(1) === 2.U)
+  //3D Tabulate
+  val indexTiedVec3D = VecInit.tabulate(2, 3, 4){ (x, y, z) => (x + y * z).U }
+  assert(indexTiedVec3D(0)(0)(0) === 0.U)
+  assert(indexTiedVec3D(1)(1)(1) === 2.U)
+  assert(indexTiedVec3D(1)(1)(2) === 3.U)
+  assert(indexTiedVec3D(1)(1)(3) === 4.U)
+  assert(indexTiedVec3D(1)(2)(3) === 7.U)
+}
+```
+```scala mdoc:invisible
+// Hidden but will make sure this actually compiles
+import chisel3.stage.ChiselStage
+
+ChiselStage.emitVerilog(new Foo)
+```
+
 
 ### How do I create a Vector of Registers?
 
