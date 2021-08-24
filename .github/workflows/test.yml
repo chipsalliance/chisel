@@ -115,9 +115,6 @@ jobs:
 
   integration:
     name: Integration Tests (w/ chiseltest)
-    strategy:
-      matrix:
-        scala: [ "2.13.6", "2.12.13" ]
     runs-on: ubuntu-20.04
     steps:
       - name: Checkout
@@ -134,7 +131,7 @@ jobs:
       - name: Cache Scala
         uses: coursier/cache-action@v5
       - name: Integration Tests
-        run: sbt ++${{ matrix.scala }} integrationTests/test
+        run: sbt integrationTests/test
 
   # Sentinel job to simplify how we specify which checks need to pass in branch
   # protection and in Mergify
