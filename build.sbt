@@ -244,6 +244,14 @@ lazy val chisel = (project in file(".")).
   aggregate(macros, core, plugin).
   settings(
     mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3" % "3.4.3"),
+    mimaBinaryIssueFilters ++= Seq(
+      // Private class
+      ProblemFilters.exclude[FinalClassProblem]("chisel3.internal.firrtl.Emitter"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.internal.firrtl.Emitter.this"),
+      ProblemFilters.exclude[DirectMissingMethodProblem]("chisel3.internal.firrtl.Emitter.chisel3$internal$firrtl$Emitter$$emitPort$default$2"),
+      // Case classes should not be extended
+      ProblemFilters.exclude[FinalMethodProblem]("chisel3.stage.CircuitSerializationAnnotation.getBytes"),
+    ),
     libraryDependencies += defaultVersions("treadle") % "test",
     scalacOptions in Test ++= Seq("-language:reflectiveCalls"),
     // Only used in Test for 3.4.x, used in Compile in 3.5
