@@ -110,15 +110,31 @@ jobs:
         run: sbt ++${{ matrix.scala }} docs/mdoc
       - name: Test
         run: sbt ++${{ matrix.scala }} test noPluginTests/test
-      - name: Integration Tests
-        # This is here instead of on the whole job because if a job is skipped, so are dependent jobs
-        # If this job were skipped, all_tests_passed would be skipped to
-        # By having this "if" here, this job returns success so that all_tests_passed will succeed too
-        if: github.event_name == 'pull_request' &&
-          ! contains(github.event.pull_request.labels.*.name, 'Skip Integration Tests')
-        run: sbt ++${{ matrix.scala }} integrationTests/test
       - name: Binary compatibility
         run: sbt ++${{ matrix.scala }} mimaReportBinaryIssues
+
+  integration:
+    name: Integration Tests (w/ chiseltest)
+    strategy:
+      matrix:
+        scala: [ "2.13.6", "2.12.13" ]
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install Verilator and Z3
+        run: |
+          sudo apt-get install -y verilator z3
+          verilator --version
+          z3 --version
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: "adopt@1.11"
+      - name: Cache Scala
+        uses: coursier/cache-action@v5
+      - name: Integration Tests
+        run: sbt ++${{ matrix.scala }} integrationTests/test
 
   # Sentinel job to simplify how we specify which checks need to pass in branch
   # protection and in Mergify
@@ -126,7 +142,7 @@ jobs:
   # When adding new jobs, please add them to `needs` below
   all_tests_passed:
     name: "all tests passed"
-    needs: [ci]
+    needs: [ci, integration]
     runs-on: ubuntu-20.04
     steps:
       - run: echo Success!
