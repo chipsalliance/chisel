@@ -150,7 +150,6 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
       printf(p"${FullName(myInst.io.fizz)}")
     }
     val firrtl = ChiselStage.emitChirrtl(new MyModule)
-    println(firrtl)
     getPrintfs(firrtl) match {
       case Seq(Printf("foo", Seq()),
                Printf("myWire.foo", Seq()),
@@ -256,8 +255,8 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
     val firLines = scala.io.Source.fromFile(firFile).getLines.toList
 
     // check that verification components have expected names
-    exactly(1, firLines) should include ("""printf(clock, UInt<1>(1), "hello AnonymousBundle(foo -> %d, bar -> %d)", myBun.foo, myBun.bar): howdy""")
-    exactly(1, firLines) should include ("""printf(clock, UInt<1>(1), "goodbye AnonymousBundle(foo -> %d, bar -> %d)", myBun.foo, myBun.bar): SIM""")
-    exactly(1, firLines) should include ("""printf(clock, UInt<1>(1), "adieu AnonymousBundle(foo -> %d, bar -> %d)", myBun.foo, myBun.bar): farewell""")
+    exactly(1, firLines) should include ("""printf(clock, UInt<1>("h1"), "hello AnonymousBundle(foo -> %d, bar -> %d)", myBun.foo, myBun.bar) : howdy""")
+    exactly(1, firLines) should include ("""printf(clock, UInt<1>("h1"), "goodbye AnonymousBundle(foo -> %d, bar -> %d)", myBun.foo, myBun.bar) : SIM""")
+    exactly(1, firLines) should include ("""printf(clock, UInt<1>("h1"), "adieu AnonymousBundle(foo -> %d, bar -> %d)", myBun.foo, myBun.bar) : farewell""")
   }
 }
