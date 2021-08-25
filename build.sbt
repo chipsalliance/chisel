@@ -231,6 +231,7 @@ lazy val integrationTests = (project in file ("integration-tests")).
   dependsOn(chisel).
   settings(commonSettings: _*).
   settings(chiselSettings: _*).
+  settings(usePluginSettings: _*).
   settings(Seq(
     libraryDependencies += defaultVersions("chiseltest") % "test",
   ))
