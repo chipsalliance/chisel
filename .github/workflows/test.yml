@@ -113,13 +113,40 @@ jobs:
       - name: Binary compatibility
         run: sbt ++${{ matrix.scala }} mimaReportBinaryIssues
 
+  integration:
+    name: Integration Tests (w/ chiseltest)
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install Verilator and Z3
+        run: |
+          sudo apt-get install -y verilator z3
+          verilator --version
+          z3 --version
+      - name: Install Espresso
+        run: |
+          cd /tmp
+          wget https://github.com/chipsalliance/espresso/releases/download/v2.4/x86_64-linux-gnu-espresso
+          chmod +x x86_64-linux-gnu-espresso
+          sudo mv x86_64-linux-gnu-espresso /usr/local/bin/espresso
+          espresso || true
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: "adopt@1.11"
+      - name: Cache Scala
+        uses: coursier/cache-action@v5
+      - name: Integration Tests
+        run: sbt integrationTests/test
+
   # Sentinel job to simplify how we specify which checks need to pass in branch
   # protection and in Mergify
   #
   # When adding new jobs, please add them to `needs` below
   all_tests_passed:
     name: "all tests passed"
-    needs: [ci]
+    needs: [ci, integration]
     runs-on: ubuntu-20.04
     steps:
       - run: echo Success!
