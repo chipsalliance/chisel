@@ -238,6 +238,23 @@ class ZeroWidthTests extends FirrtlFlatSpec {
     (parse(exec(input))) should be(parse(check))
   }
 
+  "dshl with zero-width" should "canonicalize to the un-shifted expression" in {
+    val input =
+      """circuit Top :
+        |  module Top :
+        |    input x : UInt<0>
+        |    input y : SInt<1>
+        |    output z : SInt<1>
+        |    z <= dshl(y, x)""".stripMargin
+    val check =
+      """circuit Top :
+        |  module Top :
+        |    input y : SInt<1>
+        |    output z : SInt<1>
+        |    z <= y""".stripMargin
+    (parse(exec(input))) should be(parse(check))
+  }
+
   "Memories with zero-width data-type" should "be fully removed" in {
     val input =
       """circuit Foo:

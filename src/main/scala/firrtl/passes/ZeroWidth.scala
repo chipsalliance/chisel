@@ -132,6 +132,10 @@ object ZeroWidth extends Transform with DependencyAPIMigration {
         case seq    => DoPrim(Cat, seq, consts, tpe).map(onExp)
       }
     case DoPrim(Andr, Seq(x), _, _) if (bitWidth(x.tpe) == 0) => UIntLiteral(1) // nothing false
+    // The width of the result type of dshl is a function of the width of the shift.  This has to be special cased for
+    // the zero-width shift case to prevent increasing the result width.  Canonicalize a dshl by a zero-width element as
+    // just returning the unshifted expression.
+    case DoPrim(Dshl, Seq(x, a), _, _) if (bitWidth(a.tpe) == 0) => x
     case other =>
       other.tpe match {
         case UIntType(IntWidth(ZERO)) => UIntLiteral(ZERO, IntWidth(BigInt(1)))
