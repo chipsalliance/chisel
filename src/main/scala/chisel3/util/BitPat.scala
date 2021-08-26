@@ -23,6 +23,7 @@ object BitPat {
     // If ? parsing is to be exposed, the return API needs further scrutiny
     // (especially with things like mask polarity).
     require(x.head == 'b', "BitPats must be in binary and be prefixed with 'b'")
+    require(x.length > 1, "BitPat width cannot be 0.")
     var bits = BigInt(0)
     var mask = BigInt(0)
     var count = 0
@@ -131,8 +132,6 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) extends Sou
   def apply(x: Int, y: Int): BitPat = macro SourceInfoTransform.xyArg
   def === (that: UInt): Bool = macro SourceInfoTransform.thatArg
   def =/= (that: UInt): Bool = macro SourceInfoTransform.thatArg
-<<<<<<< HEAD
-=======
   def ## (that: BitPat): BitPat = macro SourceInfoTransform.thatArg
   override def equals(obj: Any): Boolean = {
     obj match {
@@ -140,7 +139,6 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) extends Sou
       case _ => false
     }
   }
->>>>>>> e74b978d (add new APIs to BitPat (#2076))
 
   /** @group SourceInfoTransformMacro */
   def do_apply(x: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): BitPat = {
@@ -164,19 +162,9 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) extends Sou
       (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
     !(this === that)
   }
-<<<<<<< HEAD
-
-  def != (that: UInt): Bool = macro SourceInfoTransform.thatArg
-  @chiselRuntimeDeprecated
-  @deprecated("Use '=/=', which avoids potential precedence problems", "3.0")
-  def do_!= (that: UInt)
-      (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
-    this =/= that
-=======
   /** @group SourceInfoTransformMacro */
   def do_##(that: BitPat)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): BitPat = {
     new BitPat((value << that.getWidth) + that.value, (mask << that.getWidth) + that.mask, this.width + that.getWidth)
->>>>>>> e74b978d (add new APIs to BitPat (#2076))
   }
 
   /** Generate raw string of a BitPat. */
@@ -189,4 +177,12 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) extends Sou
   }.mkString
 
   override def toString = s"BitPat($rawString)"
+
+  def != (that: UInt): Bool = macro SourceInfoTransform.thatArg
+  @chiselRuntimeDeprecated
+  @deprecated("Use '=/=', which avoids potential precedence problems", "3.0")
+  def do_!= (that: UInt)
+      (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
+    this =/= that
+  }
 }
