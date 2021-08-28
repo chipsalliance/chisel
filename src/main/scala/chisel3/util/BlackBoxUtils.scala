@@ -4,8 +4,8 @@ package chisel3.util
 
 import chisel3._
 import chisel3.experimental.{ChiselAnnotation, RunFirrtlTransform}
-import firrtl.transforms.{BlackBoxPathAnno, BlackBoxResourceAnno, BlackBoxInlineAnno, BlackBoxSourceHelper,
-  BlackBoxNotFoundException}
+import chisel3.internal.BaseBlackBox
+import firrtl.transforms.{BlackBoxInlineAnno, BlackBoxNotFoundException, BlackBoxPathAnno, BlackBoxResourceAnno, BlackBoxSourceHelper}
 import firrtl.annotations.ModuleName
 import logger.LazyLogging
 
@@ -32,8 +32,8 @@ private[util] object BlackBoxHelpers {
 
 import BlackBoxHelpers._
 
-trait HasBlackBoxResource extends BlackBox {
-  self: BlackBox =>
+trait HasBlackBoxResource extends BaseBlackBox {
+  self: BaseBlackBox =>
 
   /** Copies a Java resource containing some text into the output directory. This is typically used to copy a Verilog file
     * to the final output directory, but may be used to copy any Java resource (e.g., a C++ testbench).
@@ -53,8 +53,8 @@ trait HasBlackBoxResource extends BlackBox {
   }
 }
 
-trait HasBlackBoxInline extends BlackBox {
-  self: BlackBox =>
+trait HasBlackBoxInline extends BaseBlackBox {
+  self: BaseBlackBox =>
 
   /** Creates a black box verilog file, from the contents of a local string
     *
@@ -70,8 +70,8 @@ trait HasBlackBoxInline extends BlackBox {
   }
 }
 
-trait HasBlackBoxPath extends BlackBox {
-  self: BlackBox =>
+trait HasBlackBoxPath extends BaseBlackBox {
+  self: BaseBlackBox =>
 
   /** Copies a file to the target directory
     *
