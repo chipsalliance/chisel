@@ -446,7 +446,7 @@ private class ModuleScanner(
     case ir.DefInstance(info, name, module, tpe) => onInstance(info, name, module, tpe)
     case s @ ir.Verification(op, info, _, pred, en, msg) =>
       if (op == ir.Formal.Cover) {
-        logger.warn(s"WARN: Cover statement was ignored: ${s.serialize}")
+        logger.info(s"[info] Cover statement was ignored: ${s.serialize}")
       } else {
         insertDummyAssignsForUnusedOutputs(pred)
         insertDummyAssignsForUnusedOutputs(en)
@@ -469,10 +469,21 @@ private class ModuleScanner(
     case s: ir.Attach =>
       error(s"Analog wires are not supported in the SMT backend: ${s.serialize}")
     case s: ir.Stop =>
-      // we could wire up the stop condition as output for debug reasons
-      logger.warn(s"WARN: Stop statements are currently not supported. Ignoring: ${s.serialize}")
+      if (s.ret == 0) {
+        logger.info(
+          s"[info] Stop statements with a return code of 0 are currently not supported. Ignoring: ${s.serialize}"
+        )
+      } else {
+        // we treat Stop statements with a non-zero exit value as assertions that en will always be false!
+        insertDummyAssignsForUnusedOutputs(s.en)
+        val name = s.name
+        infos.append(name -> s.info)
+        val enabled = onExpression(s.en)
+        connects.append(name -> BVNot(enabled))
+        asserts.append(name)
+      }
     case s: ir.Print =>
-      logger.warn(s"WARN: Print statements are not supported. Ignoring: ${s.serialize}")
+      logger.info(s"Info: ignoring: ${s.serialize}")
     case other => other.foreachStmt(onStatement)
   }
 
