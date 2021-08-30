@@ -278,7 +278,7 @@ Code that touches lots of APIs that are private to the `chisel3` package should 
 
 ### Which version should I use?
 
-The chisel eco-system (`chisel3`, `firttl`, `dsptools`, `firrtl-interpreter`, `treadle`, `diagrammer`) use a form of semantic versioning:
+The chisel eco-system (`chisel3`, `firrtl`, `dsptools`, `firrtl-interpreter`, `treadle`, `diagrammer`) use a form of semantic versioning:
  major versions are identified by two leading numbers, separated by a dot (i.e., `3.2`), minor versions by a single number following the major version, separated by a dot.
  We maintain API compatibility within a major version (i.e., `3.2.12` should be API-compatible with `3.2.0`), but do not guarantee API compatibility between major versions
  (i.e., APIs may change between `3.1.8` and `3.2.0`).
