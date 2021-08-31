@@ -99,9 +99,9 @@ stmt
   | mdir 'mport' id '=' id '[' exp ']' exp info?
   | 'inst' id 'of' id info?
   | 'node' id '=' exp info?
-  | exp '<=' exp info?
-  | exp '<-' exp info?
-  | exp 'is' 'invalid' info?
+  | ref '<=' exp info?
+  | ref '<-' exp info?
+  | ref 'is' 'invalid' info?
   | when
   | 'stop(' exp exp intLit ')' stmtName? info?
   | 'printf(' exp exp StringLit ( exp)* ')' stmtName? info?
@@ -167,14 +167,20 @@ ruw
 exp
   : 'UInt' ('<' intLit '>')? '(' intLit ')'
   | 'SInt' ('<' intLit '>')? '(' intLit ')'
-  | id    // Ref
-  | exp '.' fieldId
-  | exp '.' DoubleLit // TODO Workaround for #470
-  | exp '[' intLit ']'
-  | exp '[' exp ']'
+  | ref
   | 'mux(' exp exp exp ')'
   | 'validif(' exp exp ')'
   | primop exp* intLit*  ')'
+  ;
+
+ref
+  : id subref?
+  ;
+
+subref
+  : '.' fieldId subref?
+  | '.' DoubleLit subref? // TODO Workaround for #470
+  | '[' (intLit | exp) ']' subref?
   ;
 
 id
