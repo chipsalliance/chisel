@@ -6,6 +6,7 @@ import org.antlr.v4.runtime._
 import org.antlr.v4.runtime.atn._
 import logger.LazyLogging
 import firrtl.ir._
+import firrtl.parser.Listener
 import firrtl.Utils.time
 import firrtl.antlr.{FIRRTLParser, _}
 
@@ -29,29 +30,24 @@ object Parser extends LazyLogging {
 
   /** Parses a org.antlr.v4.runtime.CharStream and returns a parsed [[firrtl.ir.Circuit Circuit]] */
   def parseCharStream(charStream: CharStream, infoMode: InfoMode): Circuit = {
-    val (parseTimeMillis, cst) = time {
+    val (parseTimeMillis, ast) = time {
       val parser = {
         val lexer = new FIRRTLLexer(charStream)
         new FIRRTLParser(new CommonTokenStream(lexer))
       }
 
+      val listener = new Listener(infoMode)
+
       parser.getInterpreter.setPredictionMode(PredictionMode.SLL)
+      parser.addParseListener(listener)
 
       // Concrete Syntax Tree
-      val cst = parser.circuit
+      parser.circuit
 
       val numSyntaxErrors = parser.getNumberOfSyntaxErrors
       if (numSyntaxErrors > 0) throw new SyntaxErrorsException(s"$numSyntaxErrors syntax error(s) detected")
-      cst
-    }
 
-    val visitor = new Visitor(infoMode)
-    val (visitTimeMillis, visit) = time {
-      visitor.visit(cst)
-    }
-    val ast = visit match {
-      case c: Circuit => c
-      case x => throw new ClassCastException("Error! AST not rooted with Circuit node!")
+      listener.getCircuit
     }
 
     ast

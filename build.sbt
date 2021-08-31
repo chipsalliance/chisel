@@ -89,7 +89,7 @@ lazy val testAssemblySettings = Seq(
 
 lazy val antlrSettings = Seq(
   Antlr4 / antlr4GenVisitor := true,
-  Antlr4 / antlr4GenListener := false,
+  Antlr4 / antlr4GenListener := true,
   Antlr4 / antlr4PackageName := Option("firrtl.antlr"),
   Antlr4 / antlr4Version := "4.9.3",
   Antlr4 / javaSource := (Compile / sourceManaged).value
