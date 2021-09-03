@@ -20,9 +20,7 @@ def get_firrtl_repo():
 
 firrtl_repo = get_firrtl_repo()
 
-def run_firrtl(java, jar, design):
-    java_cmd = java.split()
-    cmd = java_cmd + ['-cp', jar, 'firrtl.stage.FirrtlMain', '-i', design,'-o','out.v','-X','verilog']
+def run_firrtl(cmd):
     print(' '.join(cmd))
     resource_use = monitor_job(cmd)
     size = resource_use.maxrss // 1024 # KiB -> MiB
@@ -37,6 +35,9 @@ def parseargs():
                         help='Number of times to run each benchmark')
     parser.add_argument('--jvms', type=str, nargs='+', default=['java'],
                         help='JVMs to use')
+    parser.add_argument('--cmd', type=str,
+                        default='-cp {jar} firrtl.stage.FirrtlMain -i {design} -o out -X verilog',
+                        help='Command to run, will sub {jar} and {design}')
     group = parser.add_mutually_exclusive_group()
     group.add_argument('--versions', type=str, nargs='+', default=['HEAD'],
                         help='FIRRTL commit hashes to benchmark')
@@ -106,6 +107,7 @@ def main():
             jars[os.path.basename(jar)] = jar
     jvms = args.jvms
     N = args.iterations
+    base_cmd = args.cmd
     info = [['java', 'revision', 'design', 'max heap (MiB)', 'SD', 'runtime (s)', 'SD']]
     for java in jvms:
         print("Running with '{}'".format(java))
@@ -115,7 +117,8 @@ def main():
             java_title = java
             for design in designs:
                 print('Running {}...'.format(design))
-                (sizes, runtimes) = zip(*[run_firrtl(java, jar, design) for i in range(N)])
+                cmd = java.split() + base_cmd.format(jar=jar, design=design).split()
+                (sizes, runtimes) = zip(*[run_firrtl(cmd) for i in range(N)])
                 info.append([java_title, revision, design, median(sizes), stdev(sizes), median(runtimes), stdev(runtimes)])
                 java_title = ''
                 revision = ''
