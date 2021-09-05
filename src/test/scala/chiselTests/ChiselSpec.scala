@@ -16,6 +16,7 @@ import org.scalacheck._
 import org.scalatest._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.propspec.AnyPropSpec
 import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
@@ -104,13 +105,14 @@ trait ChiselRunners extends Assertions with BackendCompilationUtilities {
     * @param t the generator for the module
     * @return The FIRRTL Circuit and Annotations _before_ FIRRTL compilation
     */
-  def getFirrtlAndAnnos(t: => RawModule): (Circuit, Seq[Annotation]) = {
+  def getFirrtlAndAnnos(t: => RawModule, providedAnnotations: Seq[Annotation] = Nil): (Circuit, Seq[Annotation]) = {
     val args = Array(
       "--target-dir",
       createTestDirectory(this.getClass.getSimpleName).toString,
-      "--no-run-firrtl"
+      "--no-run-firrtl",
+      "--full-stacktrace"
     )
-    val annos = (new ChiselStage).execute(args, Seq(ChiselGeneratorAnnotation(() => t)))
+    val annos = (new ChiselStage).execute(args, Seq(ChiselGeneratorAnnotation(() => t)) ++ providedAnnotations)
     val circuit = annos.collectFirst {
       case FirrtlCircuitAnnotation(c) => c
     }.getOrElse(fail("No FIRRTL Circuit found!!"))
@@ -123,6 +125,9 @@ abstract class ChiselFlatSpec extends AnyFlatSpec with ChiselRunners with Matche
 
 /** Spec base class for BDD-style testers. */
 abstract class ChiselFreeSpec extends AnyFreeSpec with ChiselRunners with Matchers
+
+/** Spec base class for BDD-style testers. */
+abstract class ChiselFunSpec extends AnyFunSpec with ChiselRunners with Matchers
 
 /** Spec base class for property-based testers. */
 abstract class ChiselPropSpec extends AnyPropSpec with ChiselRunners with ScalaCheckPropertyChecks with Matchers {

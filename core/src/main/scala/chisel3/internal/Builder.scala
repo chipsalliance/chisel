@@ -6,6 +6,7 @@ import scala.util.DynamicVariable
 import scala.collection.mutable.ArrayBuffer
 import chisel3._
 import chisel3.experimental._
+import chisel3.experimental.hierarchy.Instance
 import chisel3.internal.firrtl._
 import chisel3.internal.naming._
 import _root_.firrtl.annotations.{CircuitName, ComponentName, IsMember, ModuleName, Named, ReferenceTarget}
@@ -19,6 +20,7 @@ import scala.collection.mutable
 
 private[chisel3] class Namespace(keywords: Set[String]) {
   private val names = collection.mutable.HashMap[String, Long]()
+  def copyTo(other: Namespace): Unit = names.foreach { case (s: String, l: Long) => other.names(s) = l }
   for (keyword <- keywords)
     names(keyword) = 1
 
@@ -86,6 +88,9 @@ trait InstanceId {
 private[chisel3] trait HasId extends InstanceId {
   private[chisel3] def _onModuleClose: Unit = {}
   private[chisel3] var _parent: Option[BaseModule] = Builder.currentModule
+
+  // Set if the returned top-level module of a nested call to the Chisel Builder, see Definition.apply
+  private[chisel3] var _circuit: Option[BaseModule] = None
 
   private[chisel3] val _id: Long = Builder.idGen.next
 
@@ -216,7 +221,7 @@ private[chisel3] trait HasId extends InstanceId {
   private[chisel3] def getRef: Arg = _ref.get
   private[chisel3] def getOptionRef: Option[Arg] = _ref
 
-  private def localName(c: Component): String = _ref match {
+  private def refName(c: Component): String = _ref match {
     case Some(arg) => arg fullName c
     case None => computeName(None, None).get
   }
@@ -232,11 +237,13 @@ private[chisel3] trait HasId extends InstanceId {
 
   // Implementation of public methods.
   def instanceName: String = _parent match {
-    case Some(ViewParent) => reifyTarget.map(_.instanceName).getOrElse(this.localName(ViewParent.fakeComponent))
-    case Some(p) => p._component match {
-      case Some(c) => localName(c)
-      case None => throwException("signalName/pathName should be called after circuit elaboration")
-    }
+    case Some(ViewParent) => reifyTarget.map(_.instanceName).getOrElse(this.refName(ViewParent.fakeComponent))
+    case Some(p) =>
+      (p._component, this) match {
+        case (Some(c), _) => refName(c)
+        case (None, d: Data) if d.topBindingOpt == Some(CrossModuleBinding) => _ref.get.localName
+        case (None, _) => throwException(s"signalName/pathName should be called after circuit elaboration: $this, ${_parent}")
+      }
     case None => throwException("this cannot happen")
   }
   def pathName: String = _parent match {
@@ -256,7 +263,10 @@ private[chisel3] trait HasId extends InstanceId {
   }
   // TODO Should this be public?
   protected def circuitName: String = _parent match {
-    case None => instanceName
+    case None => _circuit match {
+      case None => instanceName
+      case Some(o) => o.circuitName
+    }
     case Some(ViewParent) => reifyParent.circuitName
     case Some(p) => p.circuitName
   }
@@ -296,8 +306,12 @@ private[chisel3] trait NamedComponent extends HasId {
     val name = this.instanceName
     if (!validComponentName(name)) throwException(s"Illegal component name: $name (note: literals are illegal)")
     import _root_.firrtl.annotations.{Target, TargetToken}
+    val root = _parent.map {
+      case ViewParent => reifyParent
+      case other => other
+    }.get.toTarget // All NamedComponents will have a parent, only the top module can have None here
     Target.toTargetTokens(name).toList match {
-      case TargetToken.Ref(r) :: components => ReferenceTarget(this.circuitName, this.parentModName, Nil, r, components)
+      case TargetToken.Ref(r) :: components => root.ref(r).copy(component = components)
       case other =>
         throw _root_.firrtl.annotations.Target.NamedException(s"Cannot convert $name into [[ReferenceTarget]]: $other")
     }
@@ -354,6 +368,8 @@ private[chisel3] class DynamicContext(val annotationSeq: AnnotationSeq) {
   var currentReset: Option[Reset] = None
   val errors = new ErrorLog
   val namingStack = new NamingStack
+  // Used to indicate if this is the top-level module of full elaboration, or from a Definition
+  var inDefinition: Boolean = false
 }
 
 private[chisel3] object Builder extends LazyLogging {
@@ -367,6 +383,11 @@ private[chisel3] object Builder extends LazyLogging {
     require(dynamicContextVar.value.isDefined, "must be inside Builder context")
     dynamicContextVar.value.get
   }
+
+  // Returns the current dynamic context
+  def captureContext(): DynamicContext = dynamicContext
+  // Sets the current dynamic contents
+  def restoreContext(dc: DynamicContext) = dynamicContextVar.value = Some(dc)
 
   // Ensure we have a thread-specific ChiselContext
   private val chiselContext = new ThreadLocal[ChiselContext]{
@@ -563,6 +584,12 @@ private[chisel3] object Builder extends LazyLogging {
     dynamicContext.currentReset = newReset
   }
 
+  def inDefinition: Boolean = {
+    dynamicContextVar.value
+                     .map(_.inDefinition)
+                     .getOrElse(false)
+  }
+
   // This should only be used for testing, must be true outside of Builder context
   def allowReflectiveAutoCloneType: Boolean = {
     dynamicContextVar.value
@@ -632,6 +659,10 @@ private[chisel3] object Builder extends LazyLogging {
     * (Note: Map is Iterable[Tuple2[_,_]] and thus excluded)
     */
   def nameRecursively(prefix: String, nameMe: Any, namer: (HasId, String) => Unit): Unit = nameMe match {
+    case (id: Instance[_]) => id.cloned match {
+      case Right(m: internal.BaseModule.ModuleClone[_]) => namer(m.getPorts, prefix)
+      case _ =>
+    }
     case (id: HasId) => namer(id, prefix)
     case Some(elt) => nameRecursively(prefix, elt, namer)
     case (iter: Iterable[_]) if iter.hasDefiniteSize =>
@@ -696,7 +727,7 @@ private[chisel3] object Builder extends LazyLogging {
     renames
   }
 
-  private [chisel3] def build[T <: RawModule](f: => T, dynamicContext: DynamicContext): (Circuit, T) = {
+  private [chisel3] def build[T <: BaseModule](f: => T, dynamicContext: DynamicContext): (Circuit, T) = {
     dynamicContextVar.withValue(Some(dynamicContext)) {
       ViewParent // Must initialize the singleton in a Builder context or weird things can happen
                  // in tiny designs/testcases that never access anything in chisel3.internal
