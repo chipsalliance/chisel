@@ -47,6 +47,36 @@ class InstTransform(val c: Context) extends SourceInfoTransformMacro {
 }
 
 // Workaround for https://github.com/sbt/sbt/issues/3966
+object DefinitionTransform
+// Module instantiation transform
+class DefinitionTransform(val c: Context) extends SourceInfoTransformMacro {
+  import c.universe._
+  def apply[T: c.WeakTypeTag](proto: c.Tree): c.Tree = {
+    q"$thisObj.do_apply($proto)($implicitSourceInfo, $implicitCompileOptions)"
+  }
+}
+
+object DefinitionWrapTransform
+// Module instantiation transform
+class DefinitionWrapTransform(val c: Context) extends SourceInfoTransformMacro {
+  import c.universe._
+  def wrap[T: c.WeakTypeTag](proto: c.Tree): c.Tree = {
+    q"$thisObj.do_wrap($proto)($implicitSourceInfo)"
+  }
+}
+
+
+// Workaround for https://github.com/sbt/sbt/issues/3966
+object InstanceTransform
+// Module instantiation transform
+class InstanceTransform(val c: Context) extends SourceInfoTransformMacro {
+  import c.universe._
+  def apply[T: c.WeakTypeTag](definition: c.Tree): c.Tree = {
+    q"$thisObj.do_apply($definition)($implicitSourceInfo, $implicitCompileOptions)"
+  }
+}
+
+// Workaround for https://github.com/sbt/sbt/issues/3966
 object MemTransform
 class MemTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._

@@ -65,13 +65,19 @@ object PrimOp {
 }
 
 abstract class Arg {
-  def fullName(ctx: Component): String = name
+  def localName: String = name
+  def contextualName(ctx: Component): String = name
+  def fullName(ctx: Component): String = contextualName(ctx)
   def name: String
 }
 
 case class Node(id: HasId) extends Arg {
-  override def fullName(ctx: Component): String = id.getOptionRef match {
-    case Some(arg) => arg.fullName(ctx)
+  override def contextualName(ctx: Component): String = id.getOptionRef match {
+    case Some(arg) => arg.contextualName(ctx)
+    case None => id.instanceName
+  }
+  override def localName: String = id.getOptionRef match {
+    case Some(arg) => arg.localName
     case None => id.instanceName
   }
   def name: String = id.getOptionRef match {
@@ -83,7 +89,7 @@ case class Node(id: HasId) extends Arg {
 abstract class LitArg(val num: BigInt, widthArg: Width) extends Arg {
   private[chisel3] def forcedWidth = widthArg.known
   private[chisel3] def width: Width = if (forcedWidth) widthArg else Width(minWidth)
-  override def fullName(ctx: Component): String = name
+  override def contextualName(ctx: Component): String = name
   // Ensure the node representing this LitArg has a ref to it and a literal binding.
   def bindLitArg[T <: Element](elem: T): T = {
     elem.bind(ElementLitBinding(this))
@@ -167,7 +173,7 @@ case class Ref(name: String) extends Arg
   * @param name the name of the port
   */
 case class ModuleIO(mod: BaseModule, name: String) extends Arg {
-  override def fullName(ctx: Component): String =
+  override def contextualName(ctx: Component): String =
     if (mod eq ctx.id) name else s"${mod.getRef.name}.$name"
 }
 /** Ports of cloned modules (CloneModuleAsRecord)
@@ -175,19 +181,25 @@ case class ModuleIO(mod: BaseModule, name: String) extends Arg {
   * @param name the name of the module instance
   */
 case class ModuleCloneIO(mod: BaseModule, name: String) extends Arg {
-  override def fullName(ctx: Component): String =
+  override def localName = ""
+  override def contextualName(ctx: Component): String =
     // NOTE: mod eq ctx.id only occurs in Target and Named-related APIs
-    if (mod eq ctx.id) "" else name
+    if (mod eq ctx.id) localName else name
 }
 case class Slot(imm: Node, name: String) extends Arg {
-  override def fullName(ctx: Component): String = {
-    val immName = imm.fullName(ctx)
+  override def contextualName(ctx: Component): String = {
+    val immName = imm.contextualName(ctx)
+    if (immName.isEmpty) name else s"$immName.$name"
+  }
+  override def localName: String = {
+    val immName = imm.localName
     if (immName.isEmpty) name else s"$immName.$name"
   }
 }
 case class Index(imm: Arg, value: Arg) extends Arg {
   def name: String = s"[$value]"
-  override def fullName(ctx: Component): String = s"${imm.fullName(ctx)}[${value.fullName(ctx)}]"
+  override def contextualName(ctx: Component): String = s"${imm.contextualName(ctx)}[${value.contextualName(ctx)}]"
+  override def localName: String = s"${imm.localName}[${value.localName}]"
 }
 
 object Width {
@@ -792,4 +804,5 @@ case class DefBlackBox(id: BaseBlackBox, name: String, ports: Seq[Port], topDir:
 
 case class Circuit(name: String, components: Seq[Component], annotations: Seq[ChiselAnnotation], renames: RenameMap) {
   def firrtlAnnotations: Iterable[Annotation] = annotations.flatMap(_.toFirrtl.update(renames))
+
 }

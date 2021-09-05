@@ -29,6 +29,27 @@ object VecBundleDataView {
   implicit val v2 = v1.invert(_ => new MyBundle)
 }
 
+object FlatDecoupledDataView {
+  class FizzBuzz extends Bundle {
+    val fizz = UInt(8.W)
+    val buzz = UInt(8.W)
+  }
+  class FlatDecoupled extends Bundle {
+    val valid = Output(Bool())
+    val ready = Input(Bool())
+    val fizz = Output(UInt(8.W))
+    val buzz = Output(UInt(8.W))
+  }
+  implicit val view = DataView[FlatDecoupled, DecoupledIO[FizzBuzz]](
+    _ => Decoupled(new FizzBuzz),
+    _.valid -> _.valid,
+    _.ready -> _.ready,
+    _.fizz -> _.bits.fizz,
+    _.buzz -> _.bits.buzz
+  )
+  implicit val view2 = view.invert(_ => new FlatDecoupled)
+}
+
 // This should become part of Chisel in a later PR
 object Tuple2DataProduct {
   implicit def tuple2DataProduct[A : DataProduct, B : DataProduct] = new DataProduct[(A, B)] {
@@ -177,24 +198,7 @@ class DataViewSpec extends ChiselFlatSpec {
   }
 
   it should "work with bidirectional connections for nested types" in {
-    class FizzBuzz extends Bundle {
-      val fizz = UInt(8.W)
-      val buzz = UInt(8.W)
-    }
-    class FlatDecoupled extends Bundle {
-      val valid = Output(Bool())
-      val ready = Input(Bool())
-      val fizz = Output(UInt(8.W))
-      val buzz = Output(UInt(8.W))
-    }
-    implicit val view = DataView[FlatDecoupled, DecoupledIO[FizzBuzz]](
-      _ => Decoupled(new FizzBuzz),
-      _.valid -> _.valid,
-      _.ready -> _.ready,
-      _.fizz -> _.bits.fizz,
-      _.buzz -> _.bits.buzz
-    )
-    implicit val view2 = view.invert(_ => new FlatDecoupled)
+    import FlatDecoupledDataView._
     class MyModule extends Module {
       val enq = IO(Flipped(Decoupled(new FizzBuzz)))
       val deq = IO(new FlatDecoupled)
