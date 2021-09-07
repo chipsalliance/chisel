@@ -52,14 +52,13 @@ class PlaSpec extends ChiselFlatSpec {
   "#2112" should "be generated correctly" in {
     assertTesterPasses(new BasicTester {
       val table = Seq(
-        (BitPat("b0"), BitPat("b?0")),
-        (BitPat("b1"), BitPat("b?1")),
-        (BitPat("b?"), BitPat("b1?")),
+        (BitPat("b000"), BitPat("b?01")),
+        (BitPat("b111"), BitPat("b?01")),
       )
       table.foreach { case (i, o) =>
         val (plaIn, plaOut) = pla(table)
         plaIn := WireDefault(i.value.U(3.W))
-        chisel3.assert(plaOut === o.value.U(8.W), "Input " + i.toString + " produced incorrect output BitPat(%b)", plaOut)
+        chisel3.assert(o === plaOut, "Input " + i.toString + " produced incorrect output BitPat(%b)", plaOut)
       }
       stop()
     })
