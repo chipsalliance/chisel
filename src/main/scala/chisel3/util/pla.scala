@@ -17,6 +17,20 @@ object pla {
     * a `1` means this product term makes the function value to `1`
     * and a `0` or `?` means this product term make the function value to `0`
     *
+    * @note There is one special case which we call it `? -> 1`. In this scenario, for some of the output functions (bits),
+    * all input terms that make this function value to `1` is purely composed by `?`. In a real pla, this will result in
+    * no connection to the gates in the AND Plane (verilog `z` on gate inputs), which in turn makes the outputs of the
+    * AND Plane undetermined (verilog `x` on outputs). This is not desired behavior in most cases, for example the
+    * minimization result of following truth table:
+    * 0 -> 1
+    * 1 -> 1
+    * which is:
+    * ? -> 1
+    * actually means something other than a verilog `x`. To ease the generation of minimized truth tables, this pla
+    * generation api will hard wire outputs to a `1` on this special case.
+    * This behavior is formally described as: if product terms that make one function value to `1` is solely consisted
+    * of don't-cares (`?`s), then this function is implemented as a constant `1`.
+    *
     * @param table A [[Seq]] of inputs -> outputs mapping
     * @param invert A [[BitPat]] specify which bit of the output should be inverted. `1` means the correspond position
     *               of the output should be inverted in the PLA, a `0` or a `?` means direct output from the OR matrix.
@@ -68,20 +82,19 @@ object pla {
     // the AND matrix
     // use `term -> AND line` map to reuse AND matrix output lines
     val andMatrixOutputs: Map[String, Bool] = inputTerms.map { t =>
-      t.toString -> Cat(
-        Seq
-          .tabulate(numberOfInputs) { i =>
-            if (t.mask.testBit(i)) {
-              Some(
-                if (t.value.testBit(i)) inputs(i)
-                else invInputs(i)
-              )
-            } else {
-              None
-            }
+      val andMatrixInput = Seq
+        .tabulate(numberOfInputs) { i =>
+          if (t.mask.testBit(i)) {
+            Some(
+              if (t.value.testBit(i)) inputs(i)
+              else invInputs(i)
+            )
+          } else {
+            None
           }
-          .flatten
-      ).andR()
+        }
+        .flatten
+      if (andMatrixInput.nonEmpty) t.toString -> Cat(andMatrixInput).andR() else t.toString -> true.B
     }.toMap
 
     // the OR matrix
