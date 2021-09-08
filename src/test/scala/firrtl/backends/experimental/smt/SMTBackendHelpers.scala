@@ -38,7 +38,7 @@ private object SMTBackendHelpers {
     val circuit = if (modelUndef) compileUndef(src) else compile(src)
     val module = circuit.modules.find(_.name == mod).get.asInstanceOf[ir.Module]
     // println(module.serialize)
-    new ModuleToTransitionSystem().run(module, presetRegs = presetRegs, memInit = memInit)
+    new ModuleToTransitionSystem(presetRegs = presetRegs, memInit = memInit, uninterpreted = Map()).run(module)
   }
 
   def toBotr2(src: String, mod: String = "m"): Iterable[String] =

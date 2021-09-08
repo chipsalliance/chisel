@@ -94,8 +94,7 @@ class FirrtlModuleToTransitionSystemSpec extends AnyFlatSpec {
     assert(sym.indexWidth == 5)
     assert(sym.dataWidth == 8)
     assert(m.init.isEmpty)
-    //assert(m.next.get.toString.contains("m[m.w.addr := m.w.data]"))
-    assert(m.next.get.toString == "m[m.w.addr := m.w.data]")
+    assert(m.next.get.toString.contains("m[m.w.addr := m.w.data]"))
   }
 
   it should "support scalar initialization of a memory to 0" in {
@@ -170,7 +169,8 @@ class FirrtlModuleToTransitionSystemSpec extends AnyFlatSpec {
         |""".stripMargin
     val sys = SMTBackendHelpers.toSys(src)
     assert(sys.inputs.isEmpty, "Clock inputs should be ignored.")
-    assert(sys.outputs.isEmpty, "Clock outputs should be ignored.")
+    val outputs = sys.signals.filter(_.lbl == IsOutput)
+    assert(outputs.isEmpty, "Clock outputs should be ignored.")
     assert(sys.signals.isEmpty, "Connects of clock type should be ignored.")
   }
 

@@ -26,9 +26,8 @@ class Btor2Spec extends AnyFlatSpec {
         |5 output 4 ; b
         |6 sort bitvec 1
         |7 uext 3 2 8
-        |8 eq 6 7 4
-        |9 not 6 8
-        |10 bad 9 ; a_eq_b
+        |8 neq 6 7 4
+        |9 bad 8 ; a_eq_b
         |""".stripMargin
 
     assert(SMTBackendHelpers.toBotr2Str(src) == expected)
@@ -46,17 +45,16 @@ class Btor2Spec extends AnyFlatSpec {
         |""".stripMargin
 
     val expected =
-      """; @ module 0:0
+      """; @[module 0:0]
         |1 sort bitvec 8
-        |2 input 1 a ; @ a 0:0
+        |2 input 1 a ; @[a 0:0]
         |3 sort bitvec 16
         |4 uext 3 2 8
-        |5 output 4 ; b @ b 0:0, b_a 0:0
+        |5 output 4 ; b @[b 0:0], @[b_a 0:0]
         |6 sort bitvec 1
         |7 uext 3 2 8
-        |8 eq 6 7 4
-        |9 not 6 8
-        |10 bad 9 ; assert_0 @ assert 0:0
+        |8 neq 6 7 4
+        |9 bad 8 ; assert_0 @[assert 0:0]
         |""".stripMargin
 
     assert(SMTBackendHelpers.toBotr2Str(src) == expected)

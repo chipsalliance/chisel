@@ -3,13 +3,14 @@
 
 package firrtl.backends.experimental.smt
 
-import firrtl.{ir, CircuitState, DependencyAPIMigration, Namespace, PrimOps, RenameMap, Transform, Utils}
-import firrtl.annotations.{Annotation, CircuitTarget, PresetAnnotation, ReferenceTarget, SingleTargetAnnotation}
+import firrtl._
+import firrtl.annotations._
 import firrtl.ir.EmptyStmt
 import firrtl.options.Dependency
 import firrtl.passes.PassException
 import firrtl.stage.Forms
 import firrtl.stage.TransformManager.TransformDependency
+import firrtl.transforms.PropagatePresetAnnotations
 
 import scala.collection.mutable
 
@@ -30,7 +31,10 @@ class StutteringClockTransform extends Transform with DependencyAPIMigration {
   // this pass needs to run *before* converting to a transition system
   override def optionalPrerequisiteOf: Seq[TransformDependency] = Seq(Dependency(FirrtlToTransitionSystem))
   // since this pass only runs on the main module, inlining needs to happen before
-  override def optionalPrerequisites: Seq[TransformDependency] = Seq(Dependency[firrtl.passes.InlineInstances])
+  override def optionalPrerequisites: Seq[TransformDependency] = Seq(
+    Dependency[firrtl.passes.InlineInstances],
+    Dependency[PropagatePresetAnnotations]
+  )
 
   override protected def execute(state: CircuitState): CircuitState = {
     if (state.circuit.modules.size > 1) {
@@ -66,10 +70,10 @@ class StutteringClockTransform extends Transform with DependencyAPIMigration {
     // replace all other clocks with enable signals, unless they are the global clock
     val clocks = portsWithGlobalClock.filter(p => p.tpe == ir.ClockType && p.name != globalClock).map(_.name)
     val clockToEnable = clocks.map { c =>
-      c -> ir.Reference(namespace.newName(c + "_en"), Bool, firrtl.PortKind, firrtl.SourceFlow)
+      c -> ir.Reference(namespace.newName(c + "_en"), Utils.BoolType, firrtl.PortKind, firrtl.SourceFlow)
     }.toMap
     val portsWithEnableSignals = portsWithGlobalClock.map { p =>
-      if (clockToEnable.contains(p.name)) { p.copy(name = clockToEnable(p.name).name, tpe = Bool) }
+      if (clockToEnable.contains(p.name)) { p.copy(name = clockToEnable(p.name).name, tpe = Utils.BoolType) }
       else { p }
     }
     // replace async reset with synchronous reset (since everything will we synchronous with the global clock)
@@ -78,9 +82,12 @@ class StutteringClockTransform extends Transform with DependencyAPIMigration {
     val isPresetReset = state.annotations.collect { case PresetAnnotation(r) if r.module == main.name => r.ref }.toSet
     val resetsToChange = asyncResets.filterNot(isPresetReset).toSet
     val portsWithSyncReset = portsWithEnableSignals.map { p =>
-      if (resetsToChange.contains(p.name)) { p.copy(tpe = Bool) }
+      if (resetsToChange.contains(p.name)) { p.copy(tpe = Utils.BoolType) }
       else { p }
     }
+    val presetRegs = state.annotations.collect {
+      case PresetRegAnnotation(target) if target.module == mainName => target.ref
+    }.toSet
 
     // discover clock and reset connections
     val scan = scanClocks(main, clockToEnable, resetsToChange)
@@ -94,7 +101,7 @@ class StutteringClockTransform extends Transform with DependencyAPIMigration {
     }
 
     // make changes
-    implicit val ctx: Context = new Context(globalClock, scan)
+    implicit val ctx: Context = new Context(globalClock, scan, presetRegs)
     val newMain = main.copy(ports = portsWithSyncReset).mapStmt(onStatement)
 
     val nonMainModules = state.circuit.modules.filterNot(_.name == state.circuit.main)
@@ -119,15 +126,19 @@ class StutteringClockTransform extends Transform with DependencyAPIMigration {
           // for write ports we guard the write enable with the clock enable signal, similar to registers
           if (isWritePort) {
             val clockEn = ctx.memPortToClockEnable(mem + "." + port)
-            val guardedEnable = and(clockEn, c.expr)
+            val guardedEnable = Utils.and(clockEn, c.expr)
             c.copy(expr = guardedEnable)
           } else { c }
         } else { c }
       // register field connects
       case c @ ir.Connect(_, r: ir.Reference, next) if ctx.registerToEnable.contains(r.name) =>
         val clockEnable = ctx.registerToEnable(r.name)
-        val guardedNext = mux(clockEnable, next, r)
-        c.copy(expr = guardedNext)
+        val guardedNext = Utils.mux(clockEnable, next, r)
+        val withReset = ctx.registerToAsyncReset.get(r.name) match {
+          case None                     => guardedNext
+          case Some((asyncReset, init)) => Utils.mux(asyncReset, init, guardedNext)
+        }
+        c.copy(expr = withReset)
       // remove other clock wires and nodes
       case ir.Connect(_, loc, expr) if expr.tpe == ir.ClockType && ctx.isRemovedClock(loc.serialize) => EmptyStmt
       case ir.DefNode(_, name, value) if value.tpe == ir.ClockType && ctx.isRemovedClock(name)       => EmptyStmt
@@ -135,21 +146,16 @@ class StutteringClockTransform extends Transform with DependencyAPIMigration {
       // change async reset to synchronous reset
       case ir.Connect(info, loc: ir.Reference, expr: ir.Reference)
           if expr.tpe == ir.AsyncResetType && ctx.isResetToChange(loc.serialize) =>
-        ir.Connect(info, loc.copy(tpe = Bool), expr.copy(tpe = Bool))
+        ir.Connect(info, loc.copy(tpe = Utils.BoolType), expr.copy(tpe = Utils.BoolType))
       case d @ ir.DefNode(_, name, value: ir.Reference)
           if value.tpe == ir.AsyncResetType && ctx.isResetToChange(name) =>
-        d.copy(value = value.copy(tpe = Bool))
-      case d @ ir.DefWire(_, name, tpe) if tpe == ir.AsyncResetType && ctx.isResetToChange(name) => d.copy(tpe = Bool)
+        d.copy(value = value.copy(tpe = Utils.BoolType))
+      case d @ ir.DefWire(_, name, tpe) if tpe == ir.AsyncResetType && ctx.isResetToChange(name) =>
+        d.copy(tpe = Utils.BoolType)
       // change memory clock and synchronize reset
-      case ir.DefRegister(info, name, tpe, clock, reset, init) if ctx.registerToEnable.contains(name) =>
-        val clockEnable = ctx.registerToEnable(name)
-        val newReset = reset match {
-          case r @ ir.Reference(name, _, _, _) if ctx.isResetToChange(name) => r.copy(tpe = Bool)
-          case other                                                        => other
-        }
-        val synchronizedReset = if (reset.tpe == ir.AsyncResetType) { newReset }
-        else { and(newReset, clockEnable) }
-        ir.DefRegister(info, name, tpe, ctx.globalClock, synchronizedReset, init)
+      case ir.DefRegister(info, name, tpe, _, _, init) if ctx.registerToEnable.contains(name) =>
+        val newInit = if (ctx.isPresetReg(name)) init else ir.Reference(name, tpe, RegKind, SourceFlow)
+        ir.DefRegister(info, name, tpe, ctx.globalClock, Utils.False(), newInit)
       case other => other.mapStmt(onStatement)
     }
   }
@@ -189,9 +195,13 @@ class StutteringClockTransform extends Transform with DependencyAPIMigration {
       case ir.DefNode(_, name, value) if value.tpe == ir.AsyncResetType && ctx.resetsToChange(value.serialize) =>
         ctx.resetsToChange.add(name)
       // modify clocked elements
-      case ir.DefRegister(_, name, _, clock, _, _) =>
+      case ir.DefRegister(_, name, _, clock, reset, init) =>
         ctx.clockToEnable.get(clock.serialize).foreach { clockEnable =>
           ctx.registerToEnable.append(name -> clockEnable)
+        }
+        reset match {
+          case Utils.False() =>
+          case other         => ctx.registerToAsyncReset.append(name -> (other, init))
         }
       case m: ir.DefMemory =>
         assert(m.readwriters.isEmpty, "Combined read/write ports are not supported!")
@@ -229,18 +239,22 @@ class StutteringClockTransform extends Transform with DependencyAPIMigration {
     val resetsToChange = mutable.HashSet[String]() ++ initialResetsToChange
     // registers whose next function needs to be guarded with a clock enable
     val registerToEnable = mutable.ArrayBuffer[(String, ir.Reference)]()
+    // registers with asynchronous reset
+    val registerToAsyncReset = mutable.ArrayBuffer[(String, (ir.Expression, ir.Expression))]()
     // memory enables which need to be guarded with clock enables
     val memPortToClockEnable = mutable.ArrayBuffer[(String, ir.Reference)]()
     // keep track of memory names
     val mems = mutable.HashMap[String, ir.DefMemory]()
   }
 
-  private class Context(globalClockName: String, scanResults: ScanCtx) {
+  private class Context(globalClockName: String, scanResults: ScanCtx, val isPresetReg: String => Boolean) {
     val globalClock: ir.Reference = ir.Reference(globalClockName, ir.ClockType, firrtl.PortKind, firrtl.SourceFlow)
     // keeps track of which clock signals will be replaced by which clock enable signal
     val isRemovedClock: String => Boolean = scanResults.clockToEnable.contains
     // registers whose next function needs to be guarded with a clock enable
     val registerToEnable: Map[String, ir.Reference] = scanResults.registerToEnable.toMap
+    // registers with asynchronous reset
+    val registerToAsyncReset: Map[String, (ir.Expression, ir.Expression)] = scanResults.registerToAsyncReset.toMap
     // memory enables which need to be guarded with clock enables
     val memPortToClockEnable: Map[String, ir.Reference] = scanResults.memPortToClockEnable.toMap
     // keep track of memory names
@@ -252,13 +266,6 @@ class StutteringClockTransform extends Transform with DependencyAPIMigration {
   private var mainName: String = "" // for debugging
   private def unsupportedError(msg: String): Nothing =
     throw new UnsupportedFeatureException(s"StutteringClockTransform: [$mainName] $msg")
-
-  private def mux(cond: ir.Expression, a: ir.Expression, b: ir.Expression): ir.Expression = {
-    ir.Mux(cond, a, b, Utils.mux_type_and_widths(a, b))
-  }
-  private def and(a: ir.Expression, b: ir.Expression): ir.Expression =
-    ir.DoPrim(PrimOps.And, List(a, b), List(), Bool)
-  private val Bool = ir.UIntType(ir.IntWidth(1))
 }
 
 private class UnsupportedFeatureException(s: String) extends PassException(s)

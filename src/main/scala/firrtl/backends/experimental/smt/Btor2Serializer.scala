@@ -3,27 +3,11 @@
 
 package firrtl.backends.experimental.smt
 
-import firrtl.backends.experimental.smt.Btor2Serializer.functionCallToArrayRead
-
 import scala.collection.mutable
 
 private object Btor2Serializer {
   def serialize(sys: TransitionSystem, skipOutput: Boolean = false): Iterable[String] = {
     new Btor2Serializer().run(sys, skipOutput)
-  }
-
-  private def functionCallToArrayRead(call: BVFunctionCall): BVExpr = {
-    if (call.args.isEmpty) {
-      BVSymbol(call.name, call.width)
-    } else {
-      val index = concat(call.args)
-      val a = ArraySymbol(call.name, indexWidth = index.width, dataWidth = call.width)
-      ArrayRead(a, index)
-    }
-  }
-  private def concat(e: Iterable[BVExpr]): BVExpr = {
-    require(e.nonEmpty)
-    e.reduce((a, b) => BVConcat(a, b))
   }
 }
 
@@ -55,7 +39,7 @@ private class Btor2Serializer private () {
   // bit vector expression serialization
   private def s(expr: BVExpr): Int = expr match {
     case BVLiteral(value, width) => lit(value, width)
-    case BVSymbol(name, _)       => symbols(name)
+    case BVSymbol(name, _)       => symbols.getOrElse(name, throw new RuntimeException(s"Unknown symbol: $name"))
     case BVExtend(e, 0, _)       => s(e)
     case BVExtend(e, by, true)   => line(s"sext ${t(expr.width)} ${s(e)} $by")
     case BVExtend(e, by, false)  => line(s"uext ${t(expr.width)} ${s(e)} $by")
@@ -86,13 +70,13 @@ private class Btor2Serializer private () {
       line(s"read ${t(expr.width)} ${s(array)} ${s(index)}")
     case BVIte(cond, tru, fals) =>
       line(s"ite ${t(expr.width)} ${s(cond)} ${s(tru)} ${s(fals)}")
-    case r: BVRawExpr =>
-      throw new RuntimeException(s"Raw expressions should never reach the btor2 encoder!: ${r.serialized}")
+    case b @ BVAnd(terms) => variadic("and", b.width, terms)
+    case b @ BVOr(terms)  => variadic("or", b.width, terms)
+    case forall: BVForall =>
+      throw new RuntimeException(s"Quantifiers are not supported by the btor2 format: ${forall}")
   }
 
   private def s(op: Op.Value): String = op match {
-    case Op.And                  => "and"
-    case Op.Or                   => "or"
     case Op.Xor                  => "xor"
     case Op.ArithmeticShiftRight => "sra"
     case Op.ShiftRight           => "srl"
@@ -111,6 +95,14 @@ private class Btor2Serializer private () {
 
   private def binary(op: String, width: Int, a: BVExpr, b: BVExpr): Int =
     line(s"$op ${t(width)} ${s(a)} ${s(b)}")
+
+  private def variadic(op: String, width: Int, terms: List[BVExpr]): Int = terms match {
+    case Seq() | Seq(_) => throw new RuntimeException(s"expected at least two elements in variadic op $op")
+    case Seq(a, b)      => binary(op, width, a, b)
+    case head :: tail =>
+      val tailId = variadic(op, width, tail)
+      line(s"$op ${t(width)} ${s(head)} ${tailId}")
+  }
 
   private def lit(value: BigInt, w: Int): Int = {
     val typ = t(w)
@@ -141,10 +133,24 @@ private class Btor2Serializer private () {
       // While the spec does not seem to allow array ite, it seems to be supported in practice.
       // It is essential to model memories, so any support in the wild should be fairly well tested.
       line(s"ite ${t(expr.indexWidth, expr.dataWidth)} ${s(cond)} ${s(tru)} ${s(fals)}")
-    case ArrayConstant(e, _) => s(e)
-    case r: ArrayRawExpr =>
-      throw new RuntimeException(s"Raw expressions should never reach the btor2 encoder!: ${r.serialized}")
+    case ArrayConstant(e, indexWidth) =>
+      // The problem we are facing here is that the only way to create a constant array from a bv expression
+      // seems to be to use the bv expression as the init value of a state variable.
+      // Thus we need to create a fake state for every array init expression.
+      arrayConstants.getOrElseUpdate(
+        e.toString, {
+          comment(s"$expr")
+          val eId = s(e)
+          val tpeId = t(indexWidth, e.width)
+          val state = line(s"state $tpeId")
+          line(s"init $tpeId $state $eId")
+          state
+        }
+      )
+    case f: ArrayFunctionCall =>
+      throw new RuntimeException(s"The btor2 format does not support uninterpreted functions that return arrays!: $f")
   }
+  private val arrayConstants = mutable.HashMap[String, Int]()
 
   private def s(expr: SMTExpr): Int = expr match {
     case b: BVExpr    => s(b)
@@ -157,38 +163,62 @@ private class Btor2Serializer private () {
     case a: ArrayExpr => t(a.indexWidth, a.dataWidth)
   }
 
+  private def functionCallToArrayRead(call: BVFunctionCall): BVExpr = {
+    if (call.args.isEmpty) {
+      BVSymbol(call.name, call.width)
+    } else {
+      val args: List[BVExpr] = call.args.map {
+        case b: BVExpr => b
+        case other => throw new RuntimeException(s"Unsupported call argument: $other in $call")
+      }
+      val index = concat(args)
+      val a = ArraySymbol(call.name, indexWidth = index.width, dataWidth = call.width)
+      ArrayRead(a, index)
+    }
+  }
+  private def concat(e: Iterable[BVExpr]): BVExpr = {
+    require(e.nonEmpty)
+    e.reduce((a, b) => BVConcat(a, b))
+  }
+
   def run(sys: TransitionSystem, skipOutput: Boolean): Iterable[String] = {
-    def declare(name: String, expr: => Int): Unit = {
+    def declare(name: String, lbl: Option[SignalLabel], expr: => Int): Unit = {
       assert(!symbols.contains(name), s"Trying to redeclare `$name`")
       val id = expr
       symbols(name) = id
-      if (!skipOutput && sys.outputs.contains(name)) line(s"output $id ; $name")
-      if (sys.assumes.contains(name)) line(s"constraint $id ; $name")
-      if (sys.asserts.contains(name)) {
-        val invertedId = line(s"not ${t(1)} $id")
-        line(s"bad $invertedId ; $name")
+      // add label
+      lbl match {
+        case Some(IsOutput)     => if (!skipOutput) line(s"output $id ; $name")
+        case Some(IsConstraint) => line(s"constraint $id ; $name")
+        case Some(IsBad)        => line(s"bad $id ; $name")
+        case Some(IsFair)       => line(s"fair $id ; $name")
+        case _                  =>
       }
-      if (sys.fair.contains(name)) line(s"fair $id ; $name")
       // add trailing comment
       sys.comments.get(name).foreach(trailingComment)
     }
 
     // header
-    sys.header.foreach(comment)
+    if (sys.header.nonEmpty) {
+      sys.header.split('\n').foreach(comment)
+    }
 
     // declare inputs
     sys.inputs.foreach { ii =>
-      declare(ii.name, line(s"input ${t(ii.width)} ${ii.name}"))
+      declare(ii.name, None, line(s"input ${t(ii.width)} ${ii.name}"))
     }
 
     // declare uninterpreted functions a constant arrays
-    sys.ufs.foreach { foo =>
-      val sym = if (foo.argWidths.isEmpty) { BVSymbol(foo.name, foo.width) }
+    val ufs = TransitionSystem.findUninterpretedFunctions(sys)
+    ufs.foreach { foo =>
+      // only functions returning bit-vectors are supported!
+      val bvSym = foo.sym.asInstanceOf[BVSymbol]
+      val sym = if (foo.args.isEmpty) { bvSym }
       else {
-        ArraySymbol(foo.name, foo.argWidths.sum, foo.width)
+        ArraySymbol(bvSym.name, foo.args.map(_.asInstanceOf[BVExpr].width).sum, bvSym.width)
       }
       comment(foo.toString)
-      declare(sym.name, line(s"state ${t(sym)} ${sym.name}"))
+      declare(sym.name, None, line(s"state ${t(sym)} ${sym.name}"))
       line(s"next ${t(sym)} ${s(sym)} ${s(sym)}")
     }
 
@@ -196,14 +226,18 @@ private class Btor2Serializer private () {
     sys.states.foreach { st =>
       // calculate init expression before declaring the state
       // this is required by btormc (presumably to avoid cycles in the init expression)
-      val initId = st.init.map { init => comment(s"${st.sym}.init"); s(init) }
-      declare(st.sym.name, line(s"state ${t(st.sym)} ${st.sym.name}"))
+      val initId = st.init.map {
+        // only in the context of initializing a state can we use a bv expression to model an array
+        case ArrayConstant(e, _) => comment(s"${st.sym}.init"); s(e)
+        case init                => comment(s"${st.sym}.init"); s(init)
+      }
+      declare(st.sym.name, None, line(s"state ${t(st.sym)} ${st.sym.name}"))
       st.init.foreach { init => line(s"init ${t(init)} ${s(st.sym)} ${initId.get}") }
     }
 
     // define all other signals
     sys.signals.foreach { signal =>
-      declare(signal.name, s(signal.e))
+      declare(signal.name, Some(signal.lbl), s(signal.e))
     }
 
     // define state next

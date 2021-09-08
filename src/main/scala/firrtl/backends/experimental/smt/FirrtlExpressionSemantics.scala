@@ -7,17 +7,11 @@ import firrtl.ir
 import firrtl.PrimOps
 import firrtl.passes.CheckWidths.WidthTooBig
 
-private trait TranslationContext {
-  def getReference(name: String, tpe: ir.Type): BVExpr = BVSymbol(name, firrtl.bitWidth(tpe).toInt)
-}
-
 private object FirrtlExpressionSemantics {
-  def toSMT(e: ir.Expression)(implicit ctx: TranslationContext): BVExpr = {
+  def toSMT(e: ir.Expression): BVExpr = {
     val eSMT = e match {
       case ir.DoPrim(op, args, consts, _) => onPrim(op, args, consts)
-      case r: ir.Reference => ctx.getReference(r.serialize, r.tpe)
-      case r: ir.SubField  => ctx.getReference(r.serialize, r.tpe)
-      case r: ir.SubIndex  => ctx.getReference(r.serialize, r.tpe)
+      case r: ir.RefLikeExpression => BVSymbol(r.serialize, getWidth(r))
       case ir.UIntLiteral(value, ir.IntWidth(width)) => BVLiteral(value, width.toInt)
       case ir.SIntLiteral(value, ir.IntWidth(width)) => BVLiteral(value, width.toInt)
       case ir.Mux(cond, tval, fval, _) =>
@@ -34,7 +28,7 @@ private object FirrtlExpressionSemantics {
   }
 
   /** Ensures that the result has the desired width by appropriately extending it. */
-  def toSMT(e: ir.Expression, width: Int, allowNarrow: Boolean = false)(implicit ctx: TranslationContext): BVExpr =
+  def toSMT(e: ir.Expression, width: Int, allowNarrow: Boolean = false): BVExpr =
     forceWidth(toSMT(e), isSigned(e), width, allowNarrow)
 
   private def forceWidth(eSMT: BVExpr, eSigned: Boolean, width: Int, allowNarrow: Boolean = false): BVExpr = {
@@ -52,8 +46,6 @@ private object FirrtlExpressionSemantics {
     op:     ir.PrimOp,
     args:   Seq[ir.Expression],
     consts: Seq[BigInt]
-  )(
-    implicit ctx: TranslationContext
   ): BVExpr = {
     (op, args, consts) match {
       case (PrimOps.Add, Seq(e1, e2), _) =>
@@ -137,10 +129,10 @@ private object FirrtlExpressionSemantics {
       case (PrimOps.Not, Seq(e), _) => BVNot(toSMT(e))
       case (PrimOps.And, Seq(e1, e2), _) =>
         val width = args.map(getWidth).max
-        BVOp(Op.And, toSMT(e1, width), toSMT(e2, width))
+        BVAnd(toSMT(e1, width), toSMT(e2, width))
       case (PrimOps.Or, Seq(e1, e2), _) =>
         val width = args.map(getWidth).max
-        BVOp(Op.Or, toSMT(e1, width), toSMT(e2, width))
+        BVOr(toSMT(e1, width), toSMT(e2, width))
       case (PrimOps.Xor, Seq(e1, e2), _) =>
         val width = args.map(getWidth).max
         BVOp(Op.Xor, toSMT(e1, width), toSMT(e2, width))
@@ -170,7 +162,7 @@ private object FirrtlExpressionSemantics {
 
   private val BV1BitZero = BVLiteral(0, 1)
 
-  def isSigned(e: ir.Expression): Boolean = e.tpe match {
+  private def isSigned(e: ir.Expression): Boolean = e.tpe match {
     case _: ir.SIntType => true
     case _ => false
   }
