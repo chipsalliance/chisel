@@ -469,17 +469,29 @@ package experimental {
       *
       * @note Should not be called until circuit elaboration is complete
       */
-    final def toTarget: IsModule = {
-      this match {
-        case m: internal.BaseModule.InstanceClone[_] if m._parent.nonEmpty => m._parent.get.toTarget.instOf(instanceName, name)
-        case m: internal.BaseModule.InstanceClone[_] => ModuleTarget(this.circuitName, this.name)
-        case m: internal.BaseModule.ModuleClone[_] if m._madeFromDefinition => m._parent.get.toTarget.instOf(instanceName, name)
-        case m: internal.BaseModule.ModuleClone[_] => ModuleTarget(this.circuitName, this.name)
-        // Without this, we get the wrong CircuitName for the Definition
-        case m: internal.BaseModule.DefinitionClone[_] if m._circuit.nonEmpty => ModuleTarget(this._circuit.get.circuitName, this.name)
-        case m: internal.BaseModule.DefinitionClone[_] => ModuleTarget(this.circuitName, this.name)
-        case m => ModuleTarget(this.circuitName, this.name)
-      }
+    final def toTarget: ModuleTarget = this match {
+      case m: internal.BaseModule.InstanceClone[_] => throwException(s"Internal Error! It's not legal to call .toTarget on an InstanceClone. $m")
+      case m: internal.BaseModule.DefinitionClone[_] => throwException(s"Internal Error! It's not legal to call .toTarget on an DefinitionClone. $m")
+      case _ => ModuleTarget(this.circuitName, this.name)
+    }
+
+    /** Returns the real target of a Module which may be an [[InstanceTarget]]
+      *
+      * BaseModule.toTarget returns a ModuleTarget because the classic Module(new MyModule) API elaborates
+      * Modules in a way that there is a 1:1 relationship between instances and elaborated definitions
+      *
+      * Instance/Definition introduced special internal modules [[InstanceClone]] and [[ModuleClone]] that
+      * do not have this 1:1 relationship so need the ability to return [[InstanceTarget]]s.
+      * Because users can never actually get references to these underlying objects, we can maintain
+      * BaseModule.toTarget's API returning [[ModuleTarget]] while providing an internal API for getting
+      * the correct [[InstanceTarget]]s whenever using the Definition/Instance API.
+      */
+    private[chisel3] def getTarget: IsModule = this match {
+      case m: internal.BaseModule.InstanceClone[_] if m._parent.nonEmpty => m._parent.get.getTarget.instOf(instanceName, name)
+      case m: internal.BaseModule.ModuleClone[_] if m._madeFromDefinition => m._parent.get.getTarget.instOf(instanceName, name)
+      // Without this, we get the wrong CircuitName for the Definition
+      case m: internal.BaseModule.DefinitionClone[_] if m._circuit.nonEmpty => ModuleTarget(this._circuit.get.circuitName, this.name)
+      case _ => this.toTarget
     }
 
     /** Returns a FIRRTL ModuleTarget that references this object
@@ -496,7 +508,7 @@ package experimental {
           // is always unambigous. However, legacy workarounds for Chisel's lack of an instance API
           // have lead some to use .toAbsoluteTarget as a workaround. A proper instance API will make
           // it possible to deprecate and remove .toAbsoluteTarget
-          if (this == ViewParent) ViewParent.absoluteTarget else toTarget
+          if (this == ViewParent) ViewParent.absoluteTarget else getTarget
       }
     }
 
