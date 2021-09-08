@@ -978,6 +978,65 @@ object Utils extends LazyLogging {
     map.view.map({ case (k, vs) => k -> vs.toList }).toList
   }
 
+  // For a given module, returns a Seq of all instantiated modules inside of it
+  private[firrtl] def collectInstantiatedModules(mod: Module, map: Map[String, DefModule]): Seq[DefModule] = {
+    // Use list instead of set to maintain order
+    val modules = mutable.ArrayBuffer.empty[DefModule]
+    def onStmt(stmt: Statement): Unit = stmt match {
+      case DefInstance(_, _, name, _) => modules += map(name)
+      case _: WDefInstanceConnector => throwInternalError(s"unrecognized statement: $stmt")
+      case other => other.foreach(onStmt)
+    }
+    onStmt(mod.body)
+    modules.distinct.toSeq
+  }
+
+  /** Checks if two circuits are equal regardless of their ordering of module definitions */
+  def orderAgnosticEquality(a: Circuit, b: Circuit): Boolean =
+    a.copy(modules = a.modules.sortBy(_.name)) == b.copy(modules = b.modules.sortBy(_.name))
+
+  /** Combines several separate circuit modules (typically emitted by -e or -p compiler options) into a single circuit */
+  def combine(circuits: Seq[Circuit]): Circuit = {
+    def dedup(modules: Seq[DefModule]): Seq[Either[Module, DefModule]] = {
+      // Left means module with no ExtModules, Right means child modules or lone ExtModules
+      val module: Option[Module] = {
+        val found: Seq[Module] = modules.collect { case m: Module => m }
+        assert(
+          found.size <= 1,
+          s"Module definitions should have unique names, found ${found.size} definitions named ${found.head.name}"
+        )
+        found.headOption
+      }
+      val extModules: Seq[ExtModule] = modules.collect { case e: ExtModule => e }.distinct
+
+      // If the module is a lone module (no extmodule references in any other file)
+      if (extModules.isEmpty && !module.isEmpty)
+        Seq(Left(module.get))
+      // If a module has extmodules, but no other file contains the implementation
+      else if (!extModules.isEmpty && module.isEmpty)
+        extModules.map(Right(_))
+      // Otherwise there is a module implementation with extmodule references
+      else
+        Seq(Right(module.get))
+    }
+
+    // 1. Combine modules
+    val grouped: Seq[(String, Seq[DefModule])] = groupByIntoSeq(circuits.flatMap(_.modules))({
+      case mod: Module    => mod.name
+      case ext: ExtModule => ext.defname
+    })
+    val deduped: Iterable[Either[Module, DefModule]] = grouped.flatMap { case (_, insts) => dedup(insts) }
+
+    // 2. Determine top
+    val top = {
+      val found = deduped.collect { case Left(m) => m }
+      assert(found.size == 1, s"There should only be 1 top module, got: ${found.map(_.name).mkString(", ")}")
+      found.head
+    }
+    val res = deduped.collect { case Right(m) => m }
+    ir.Circuit(NoInfo, top +: res.toSeq, top.name)
+  }
+
   object True {
     private val _True = UIntLiteral(1, IntWidth(1))
 

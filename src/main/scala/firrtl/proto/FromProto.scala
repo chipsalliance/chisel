@@ -9,6 +9,11 @@ import collection.JavaConverters._
 import FirrtlProtos._
 import com.google.protobuf.CodedInputStream
 import Firrtl.Statement.{Formal, ReadUnderWrite}
+import firrtl.ir.DefModule
+import Utils.combine
+import java.io.FileNotFoundException
+import firrtl.options.OptionsException
+import java.nio.file.NotDirectoryException
 
 object FromProto {
 
@@ -31,6 +36,26 @@ object FromProto {
     cistream.setRecursionLimit(Integer.MAX_VALUE) // Disable recursion depth check
     val pb = firrtl.FirrtlProtos.Firrtl.parseFrom(cistream)
     proto.FromProto.convert(pb)
+  }
+
+  /** Deserialize all the ProtoBuf representations of [[ir.Circuit]] in @dir
+    *
+    * @param dir directory containing ProtoBuf representation(s)
+    * @return Deserialized FIRRTL Circuit
+    * @throws java.io.FileNotFoundException if dir does not exist
+    * @throws java.nio.file.NotDirectoryException if dir exists but is not a directory
+    */
+  def fromDirectory(dir: String): ir.Circuit = {
+    val d = new File(dir)
+    if (!d.exists) {
+      throw new FileNotFoundException(s"Specified directory '$d' does not exist!")
+    }
+    if (!d.isDirectory) {
+      throw new NotDirectoryException(s"'$d' is not a directory!")
+    }
+
+    val fileList = d.listFiles.filter(_.isFile).toList
+    combine(fileList.map(f => fromInputStream(new FileInputStream(f))))
   }
 
   // Convert from ProtoBuf message repeated Statements to FIRRRTL Block

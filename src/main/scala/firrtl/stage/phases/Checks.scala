@@ -31,34 +31,39 @@ class Checks extends Phase {
     * @throws firrtl.options.OptionsException if any checks fail
     */
   def transform(annos: AnnotationSeq): AnnotationSeq = {
-    val inF, inS, eam, ec, outF, emitter, im, inC = collection.mutable.ListBuffer[Annotation]()
+    val inF, inS, inD, eam, ec, outF, emitter, im, inC = collection.mutable.ListBuffer[Annotation]()
     annos.foreach(_ match {
-      case a: FirrtlFileAnnotation     => a +=: inF
-      case a: FirrtlSourceAnnotation   => a +=: inS
-      case a: EmitAllModulesAnnotation => a +=: eam
-      case a: EmitCircuitAnnotation    => a +=: ec
-      case a: OutputFileAnnotation     => a +=: outF
-      case a: InfoModeAnnotation       => a +=: im
-      case a: FirrtlCircuitAnnotation  => a +=: inC
+      case a: FirrtlFileAnnotation      => a +=: inF
+      case a: FirrtlSourceAnnotation    => a +=: inS
+      case a: FirrtlDirectoryAnnotation => a +=: inD
+      case a: EmitAllModulesAnnotation  => a +=: eam
+      case a: EmitCircuitAnnotation     => a +=: ec
+      case a: OutputFileAnnotation      => a +=: outF
+      case a: InfoModeAnnotation        => a +=: im
+      case a: FirrtlCircuitAnnotation   => a +=: inC
       case a @ RunFirrtlTransformAnnotation(_: firrtl.Emitter) => a +=: emitter
       case _ =>
     })
 
     /* At this point, only a FIRRTL Circuit should exist */
-    if (inF.isEmpty && inS.isEmpty && inC.isEmpty) {
-      throw new OptionsException(s"""|Unable to determine FIRRTL source to read. None of the following were found:
-                                     |    - an input file:  -i, --input-file,    FirrtlFileAnnotation
-                                     |    - FIRRTL source:      --firrtl-source, FirrtlSourceAnnotation
-                                     |    - FIRRTL circuit:                      FirrtlCircuitAnnotation""".stripMargin)
+    if (inF.isEmpty && inS.isEmpty && inD.isEmpty && inC.isEmpty) {
+      throw new OptionsException(
+        s"""|Unable to determine FIRRTL source to read. None of the following were found:
+            |    - an input file:  -i, --input-file,      FirrtlFileAnnotation
+            |    - an input dir:   -I, --input-directory, FirrtlDirectoryAnnotation
+            |    - FIRRTL source:      --firrtl-source,   FirrtlSourceAnnotation
+            |    - FIRRTL circuit:                        FirrtlCircuitAnnotation""".stripMargin
+      )
     }
 
     /* Only one FIRRTL input can exist */
     if (inF.size + inS.size + inC.size > 1) {
       throw new OptionsException(
         s"""|Multiply defined input FIRRTL sources. More than one of the following was found:
-            |    - an input file (${inF.size} times):  -i, --input-file,    FirrtlFileAnnotation
-            |    - FIRRTL source (${inS.size} times):      --firrtl-source, FirrtlSourceAnnotation
-            |    - FIRRTL circuit (${inC.size} times):                      FirrtlCircuitAnnotation""".stripMargin
+            |    - an input file (${inF.size} times):  -i, --input-file,      FirrtlFileAnnotation
+            |    - an input dir (${inD.size} times):   -I, --input-directory, FirrtlDirectoryAnnotation
+            |    - FIRRTL source (${inS.size} times):      --firrtl-source,   FirrtlSourceAnnotation
+            |    - FIRRTL circuit (${inC.size} times):                        FirrtlCircuitAnnotation""".stripMargin
       )
     }
 

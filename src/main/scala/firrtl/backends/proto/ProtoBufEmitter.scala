@@ -1,15 +1,18 @@
 // SPDX-License-Identifier: Apache-2.0
 package firrtl.backends.proto
 
-import firrtl.{AnnotationSeq, CircuitState, DependencyAPIMigration, Transform}
-import firrtl.ir
+import firrtl._
+import firrtl.ir._
 import firrtl.annotations.NoTargetAnnotation
 import firrtl.options.CustomFileEmission
 import firrtl.options.Viewer.view
 import firrtl.proto.ToProto
 import firrtl.stage.{FirrtlOptions, Forms}
 import firrtl.stage.TransformManager.TransformDependency
+import firrtl.traversals.Foreachers._
 import java.io.{ByteArrayOutputStream, Writer}
+import scala.collection.mutable.ArrayBuffer
+import Utils.{collectInstantiatedModules, throwInternalError}
 
 /** This object defines Annotations that are used by Protocol Buffer emission.
   */
@@ -59,10 +62,35 @@ sealed abstract class ProtoBufEmitter(prereqs: Seq[TransformDependency])
   override def optionalPrerequisiteOf = Seq.empty
   override def invalidates(a: Transform) = false
 
-  override def execute(state: CircuitState) =
-    state.copy(annotations = state.annotations :+ Annotation.ProtoBufSerialization(state.circuit, Some(outputSuffix)))
+  private def emitAllModules(circuit: Circuit): Seq[Annotation.ProtoBufSerialization] = {
+    val modMap = circuit.modules.map(m => m.name -> m).toMap
+    // Turn each module into it's own circuit with it as the top and all instantied modules as ExtModules
+    circuit.modules.collect {
+      case m: Module =>
+        val instModules = collectInstantiatedModules(m, modMap)
+        val extModules = instModules.map {
+          case Module(info, name, ports, _) => ExtModule(info, name, ports, name, Seq.empty)
+          case ext: ExtModule => ext
+        }
+        val newCircuit = Circuit(m.info, extModules :+ m, m.name)
+        Annotation.ProtoBufSerialization(newCircuit, Some(outputSuffix))
+    }
+  }
 
-  override def emit(state: CircuitState, writer: Writer): Unit = {
+  override def execute(state: CircuitState) = {
+    val newAnnos = state.annotations.flatMap {
+      case EmitCircuitAnnotation(a) if this.getClass == a =>
+        Seq(
+          Annotation.ProtoBufSerialization(state.circuit, Some(outputSuffix))
+        )
+      case EmitAllModulesAnnotation(a) if this.getClass == a =>
+        emitAllModules(state.circuit)
+      case _ => Seq()
+    }
+    state.copy(annotations = newAnnos ++ state.annotations)
+  }
+
+  def emit(state: CircuitState, writer: Writer): Unit = {
     val ostream = new java.io.ByteArrayOutputStream
     ToProto.writeToStream(ostream, state.circuit)
     writer.write(ostream.toString())

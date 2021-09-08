@@ -18,18 +18,6 @@ sealed abstract class FirrtlEmitter(form: Seq[TransformDependency], val outputSu
   override def invalidates(a: Transform) = false
 
   private def emitAllModules(circuit: Circuit): Seq[EmittedFirrtlModule] = {
-    // For a given module, returns a Seq of all modules instantited inside of it
-    def collectInstantiatedModules(mod: Module, map: Map[String, DefModule]): Seq[DefModule] = {
-      // Use list instead of set to maintain order
-      val modules = mutable.ArrayBuffer.empty[DefModule]
-      def onStmt(stmt: Statement): Unit = stmt match {
-        case DefInstance(_, _, name, _) => modules += map(name)
-        case _: WDefInstanceConnector => throwInternalError(s"unrecognized statement: $stmt")
-        case other => other.foreach(onStmt)
-      }
-      onStmt(mod.body)
-      modules.distinct.toSeq
-    }
     val modMap = circuit.modules.map(m => m.name -> m).toMap
     // Turn each module into it's own circuit with it as the top and all instantied modules as ExtModules
     circuit.modules.collect {

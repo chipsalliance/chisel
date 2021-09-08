@@ -99,7 +99,7 @@ object EmitCircuitAnnotation extends HasShellOptions {
           case "low-opt" =>
             Seq(
               RunFirrtlTransformAnnotation(new ProtoEmitter.OptLow),
-              EmitCircuitAnnotation(classOf[ProtoEmitter.Low])
+              EmitCircuitAnnotation(classOf[ProtoEmitter.OptLow])
             )
           case _ => throw new PhaseException(s"Unknown emitter '$a'! (Did you misspell it?)")
         },
@@ -151,6 +151,43 @@ object EmitAllModulesAnnotation extends HasShellOptions {
       helpText = "Run the specified module emitter (one file per module)",
       shortOption = Some("e"),
       helpValueName = Some("<chirrtl|high|middle|low|verilog|mverilog|sverilog>")
+    ),
+    new ShellOption[String](
+      longOption = "emit-modules-protobuf",
+      toAnnotationSeq = (a: String) =>
+        a match {
+          case "chirrtl" =>
+            Seq(
+              RunFirrtlTransformAnnotation(new ProtoEmitter.Chirrtl),
+              EmitAllModulesAnnotation(classOf[ProtoEmitter.Chirrtl])
+            )
+          case "mhigh" =>
+            Seq(
+              RunFirrtlTransformAnnotation(new ProtoEmitter.MHigh),
+              EmitAllModulesAnnotation(classOf[ProtoEmitter.MHigh])
+            )
+          case "high" =>
+            Seq(
+              RunFirrtlTransformAnnotation(new ProtoEmitter.High),
+              EmitAllModulesAnnotation(classOf[ProtoEmitter.High])
+            )
+          case "middle" =>
+            Seq(
+              RunFirrtlTransformAnnotation(new ProtoEmitter.Middle),
+              EmitAllModulesAnnotation(classOf[ProtoEmitter.Middle])
+            )
+          case "low" =>
+            Seq(RunFirrtlTransformAnnotation(new ProtoEmitter.Low), EmitAllModulesAnnotation(classOf[ProtoEmitter.Low]))
+          case "low-opt" =>
+            Seq(
+              RunFirrtlTransformAnnotation(new ProtoEmitter.OptLow),
+              EmitAllModulesAnnotation(classOf[ProtoEmitter.OptLow])
+            )
+          case _ => throw new PhaseException(s"Unknown emitter '$a'! (Did you misspell it?)")
+        },
+      helpText = "Run the specified module emitter (one protobuf per module)",
+      shortOption = Some("p"),
+      helpValueName = Some("<chirrtl|mhigh|high|middle|low|low-opt>")
     )
   )
 
