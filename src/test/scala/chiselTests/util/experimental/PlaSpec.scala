@@ -53,7 +53,7 @@ class PlaSpec extends ChiselFlatSpec {
     assertTesterPasses(new BasicTester {
       val table = Seq(
         (BitPat("b000"), BitPat("b?01")),
-        (BitPat("b111"), BitPat("b?01")),
+        (BitPat("b111"), BitPat("b?01"))
       )
       table.foreach { case (i, o) =>
         val (plaIn, plaOut) = pla(table)
