@@ -66,13 +66,14 @@ object SMTLibEmitter extends SMTEmitter {
   override def outputSuffix: String = ".smt2"
   override protected def serialize(sys: TransitionSystem): Annotation = {
     val hasMemory = sys.states.exists(_.sym.isInstanceOf[ArrayExpr])
-    val logic = SMTLibSerializer.setLogic(hasMemory) + "\n"
+    val logic = if (hasMemory) "QF_AUFBV" else "QF_UFBV"
+    val logicCmd = SMTLibSerializer.serialize(SetLogic(logic)) + "\n"
     val header = if (hasMemory) {
       "; We have to disable the logic for z3 to accept the non-standard \"as const\"\n" +
         "; see https://github.com/Z3Prover/z3/issues/1803\n" +
         "; for CVC4 you probably want to include the logic\n" +
-        ";" + logic
-    } else { logic }
+        ";" + logicCmd
+    } else { logicCmd }
     val smt = generatedHeader("SMT-LIBv2", sys.name) + header +
       SMTTransitionSystemEncoder.encode(sys).map(SMTLibSerializer.serialize).mkString("\n") + "\n"
     EmittedSMTModelAnnotation(sys.name, smt, outputSuffix)

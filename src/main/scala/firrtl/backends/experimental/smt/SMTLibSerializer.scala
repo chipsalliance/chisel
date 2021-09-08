@@ -11,9 +11,7 @@ import scala.util.matching.Regex
   *  before serializing!
   *  Automatically converts 1-bit vectors to bool.
   */
-private object SMTLibSerializer {
-  def setLogic(hasMem: Boolean) = "(set-logic QF_" + (if (hasMem) "A" else "") + "UFBV)"
-
+object SMTLibSerializer {
   def serialize(e: SMTExpr): String = e match {
     case b: BVExpr    => serialize(b)
     case a: ArrayExpr => serialize(a)

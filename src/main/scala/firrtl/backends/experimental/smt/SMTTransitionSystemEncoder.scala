@@ -11,7 +11,7 @@ import scala.collection.mutable
   * prevents this encoding from working with boolector.
   * For simplicity reasons, we do not support hierarchical designs (no `_h` function).
   */
-private object SMTTransitionSystemEncoder {
+object SMTTransitionSystemEncoder {
 
   def encode(sys: TransitionSystem): Iterable[SMTCommand] = {
     val cmds = mutable.ArrayBuffer[SMTCommand]()

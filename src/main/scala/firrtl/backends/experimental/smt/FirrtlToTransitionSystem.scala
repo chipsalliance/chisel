@@ -17,7 +17,7 @@ import logger.LazyLogging
 
 import scala.collection.mutable
 
-private case class TransitionSystemAnnotation(sys: TransitionSystem) extends NoTargetAnnotation
+case class TransitionSystemAnnotation(sys: TransitionSystem) extends NoTargetAnnotation
 
 /** Contains code to convert a flat firrtl module into a functional transition system which
   * can then be exported as SMTLib or Btor2 file.

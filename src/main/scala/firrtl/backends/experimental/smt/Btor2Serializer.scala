@@ -5,7 +5,7 @@ package firrtl.backends.experimental.smt
 
 import scala.collection.mutable
 
-private object Btor2Serializer {
+object Btor2Serializer {
   def serialize(sys: TransitionSystem, skipOutput: Boolean = false): Iterable[String] = {
     new Btor2Serializer().run(sys, skipOutput)
   }

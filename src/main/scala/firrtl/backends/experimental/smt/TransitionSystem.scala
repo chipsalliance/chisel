@@ -6,14 +6,14 @@ package firrtl.backends.experimental.smt
 import firrtl.graph.MutableDiGraph
 import scala.collection.mutable
 
-private case class State(sym: SMTSymbol, init: Option[SMTExpr], next: Option[SMTExpr]) {
+case class State(sym: SMTSymbol, init: Option[SMTExpr], next: Option[SMTExpr]) {
   def name: String = sym.name
 }
-private case class Signal(name: String, e: SMTExpr, lbl: SignalLabel = IsNode) {
+case class Signal(name: String, e: SMTExpr, lbl: SignalLabel = IsNode) {
   def toSymbol: SMTSymbol = SMTSymbol.fromExpr(name, e)
   def sym:      SMTSymbol = toSymbol
 }
-private case class TransitionSystem(
+case class TransitionSystem(
   name:     String,
   inputs:   List[BVSymbol],
   states:   List[State],
@@ -23,23 +23,23 @@ private case class TransitionSystem(
   def serialize: String = TransitionSystem.serialize(this)
 }
 
-private sealed trait SignalLabel
-private case object IsNode extends SignalLabel
-private case object IsOutput extends SignalLabel
-private case object IsConstraint extends SignalLabel
-private case object IsBad extends SignalLabel
-private case object IsFair extends SignalLabel
-private case object IsNext extends SignalLabel
-private case object IsInit extends SignalLabel
+sealed trait SignalLabel
+case object IsNode extends SignalLabel
+case object IsOutput extends SignalLabel
+case object IsConstraint extends SignalLabel
+case object IsBad extends SignalLabel
+case object IsFair extends SignalLabel
+case object IsNext extends SignalLabel
+case object IsInit extends SignalLabel
 
-private object SignalLabel {
+object SignalLabel {
   private val labels = Seq(IsNode, IsOutput, IsConstraint, IsBad, IsFair, IsNext, IsInit)
   val labelStrings = Seq("node", "output", "constraint", "bad", "fair", "next", "init")
   val labelToString: SignalLabel => String = labels.zip(labelStrings).toMap
   val stringToLabel: String => SignalLabel = labelStrings.zip(labels).toMap
 }
 
-private object TransitionSystem {
+object TransitionSystem {
   def serialize(sys: TransitionSystem): String = {
     (Iterator(sys.name) ++
       sys.inputs.map(i => s"input ${i.name} : ${SMTExpr.serializeType(i)}") ++
