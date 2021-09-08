@@ -13,7 +13,7 @@ Note that both [PeekPokeTester](https://github.com/freechipsproject/chisel-teste
     sudo apt-get install default-jdk	
     ```
    	
-1.  Install sbt according to the instructions from [sbt download](https://www.scala-sbt.org/download.html)
+1.  Install sbt according to the instructions from [sbt download](https://www.scala-sbt.org/download.html).
     
 1.  Install Verilator.	
     We currently recommend Verilator version 4.016.	
