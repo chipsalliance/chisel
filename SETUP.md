@@ -13,14 +13,7 @@ Note that both [PeekPokeTester](https://github.com/freechipsproject/chisel-teste
     sudo apt-get install default-jdk	
     ```
    	
-1.  [Install sbt](http://www.scala-sbt.org/release/docs/Installing-sbt-on-Linux.html),	
-    which isn't available by default in the system package manager:	
-    ```	
-    echo "deb https://dl.bintray.com/sbt/debian /" | sudo tee -a /etc/apt/sources.list.d/sbt.list	
-    sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 642AC823	
-    sudo apt-get update	
-    sudo apt-get install sbt	
-    ```
+1.  Install sbt according to the instructions from [sbt download](https://www.scala-sbt.org/download.html).
     
 1.  Install Verilator.	
     We currently recommend Verilator version 4.016.	
