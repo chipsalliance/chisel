@@ -309,7 +309,7 @@ private[chisel3] trait NamedComponent extends HasId {
     val root = _parent.map {
       case ViewParent => reifyParent
       case other => other
-    }.get.toTarget // All NamedComponents will have a parent, only the top module can have None here
+    }.get.getTarget // All NamedComponents will have a parent, only the top module can have None here
     Target.toTargetTokens(name).toList match {
       case TargetToken.Ref(r) :: components => root.ref(r).copy(component = components)
       case other =>

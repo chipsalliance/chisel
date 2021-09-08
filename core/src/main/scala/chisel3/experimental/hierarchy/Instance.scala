@@ -4,11 +4,11 @@ package chisel3.experimental.hierarchy
 
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.language.experimental.macros
-
 import chisel3._
-import chisel3.internal.BaseModule.{ModuleClone, IsClone, InstantiableClone}
+import chisel3.internal.BaseModule.{InstantiableClone, IsClone, ModuleClone}
 import chisel3.internal.sourceinfo.{InstanceTransform, SourceInfo}
 import chisel3.experimental.BaseModule
+import firrtl.annotations.IsModule
 
 /** User-facing Instance type.
   * Represents a unique instance of type [[A]] which are marked as @instantiable 
@@ -75,15 +75,15 @@ object Instance extends SourceInfoDoc {
     /** If this is an instance of a Module, returns the toTarget of this instance
       * @return target of this instance
       */
-    def toTarget = i.cloned match {
-      case Left(x: BaseModule) => x.toTarget
-      case Right(x: IsClone[_] with BaseModule) => x.toTarget
+    def toTarget: IsModule = i.cloned match {
+      case Left(x: BaseModule) => x.getTarget
+      case Right(x: IsClone[_] with BaseModule) => x.getTarget
     }
 
     /** If this is an instance of a Module, returns the toAbsoluteTarget of this instance
       * @return absoluteTarget of this instance
       */
-    def toAbsoluteTarget = i.cloned match {
+    def toAbsoluteTarget: IsModule = i.cloned match {
       case Left(x) => x.toAbsoluteTarget
       case Right(x: IsClone[_] with BaseModule) => x.toAbsoluteTarget
     }

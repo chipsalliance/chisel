@@ -3,13 +3,14 @@
 package chisel3.experimental.hierarchy
 
 import scala.language.experimental.macros
-
 import chisel3._
+
 import scala.collection.mutable.HashMap
 import chisel3.internal.{Builder, DynamicContext}
 import chisel3.internal.sourceinfo.{DefinitionTransform, DefinitionWrapTransform, SourceInfo}
 import chisel3.experimental.BaseModule
 import chisel3.internal.BaseModule.IsClone
+import firrtl.annotations.{IsModule, ModuleTarget}
 
 /** User-facing Definition type.
   * Represents a definition of an object of type [[A]] which are marked as @instantiable 
@@ -64,12 +65,12 @@ object Definition extends SourceInfoDoc {
     /** If this is an instance of a Module, returns the toTarget of this instance
       * @return target of this instance
       */
-    def toTarget = d.proto.toTarget
+    def toTarget: ModuleTarget = d.proto.toTarget
 
     /** If this is an instance of a Module, returns the toAbsoluteTarget of this instance
       * @return absoluteTarget of this instance
       */
-    def toAbsoluteTarget = d.proto.toAbsoluteTarget
+    def toAbsoluteTarget: IsModule = d.proto.toAbsoluteTarget
   }
   /** A construction method to build a Definition of a Module
     *
