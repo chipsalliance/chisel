@@ -69,7 +69,7 @@ case class MemLibOutConfigFileAnnotation(file: String, annotatedMemories: Seq[De
       m.readwriters.length,
       m.maskGran.map(_.toInt)
     ).toString
-  }.mkString("\n").getBytes
+  }.mkString.getBytes
 }
 
 private[memlib] case class AnnotatedMemoriesAnnotation(annotatedMemories: List[DefAnnotatedMemory])
