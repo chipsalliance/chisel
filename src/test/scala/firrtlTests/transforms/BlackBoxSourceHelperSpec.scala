@@ -2,16 +2,37 @@
 
 package firrtlTests.transforms
 
-import firrtl.annotations.{CircuitName, ModuleName}
+import firrtl.annotations._
 import firrtl.transforms._
-import firrtl.{Transform, VerilogEmitter}
+import firrtl._
 import firrtl.FileUtils
 import firrtl.testutils.LowTransformSpec
+import firrtl.stage._
+import firrtl.options.Dependency
+import java.io.File
+import firrtl.util.BackendCompilationUtilities.createTestDirectory
+import _root_.logger._
+
+class ChangeBlackBoxTargetDir extends Transform with DependencyAPIMigration {
+  override def prerequisites =
+    Dependency[firrtl.passes.memlib.ReplSeqMem] +: Forms.LowFormOptimized
+  override def optionalPrerequisiteOf = Forms.BackendEmitters
+  override def invalidates(a: Transform): Boolean = false
+
+  def execute(state: CircuitState): CircuitState = {
+    val annosx = state.annotations.map {
+      case BlackBoxTargetDirAnno(dir) => BlackBoxTargetDirAnno(s"$dir/subdir")
+      case other                      => other
+    }
+    state.copy(annotations = annosx)
+  }
+}
 
 class BlacklBoxSourceHelperTransformSpec extends LowTransformSpec {
   def transform: Transform = new BlackBoxSourceHelper
 
   private val moduleName = ModuleName("Top", CircuitName("Top"))
+  private val bbTarget = CircuitTarget("Top").module("AdderExtModule")
   private val input = """
                         |circuit Top :
                         |
@@ -150,4 +171,26 @@ class BlacklBoxSourceHelperTransformSpec extends LowTransformSpec {
     )
   }
 
+  "BlackBoxSourceHelper" should "not run until late" in {
+    val name = "BlackBoxSourceHelper_late"
+
+    val dir = createTestDirectory(name)
+    val subdir = new File(dir, "subdir")
+
+    val filename = "BFFAdd.v"
+
+    val annos = List(
+      FirrtlSourceAnnotation(input),
+      RunFirrtlTransformAnnotation(new ChangeBlackBoxTargetDir),
+      BlackBoxTargetDirAnno(dir.toString),
+      BlackBoxInlineAnno(bbTarget, filename, "<contentx>"),
+      EmitCircuitAnnotation(classOf[VerilogEmitter]),
+      LogLevelAnnotation(LogLevel.Debug)
+    )
+
+    (new FirrtlPhase).transform(annos)
+
+    new File(subdir, filename) should exist
+    new File(dir, filename) shouldNot exist
+  }
 }

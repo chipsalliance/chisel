@@ -9,7 +9,6 @@ import firrtl.annotations._
 import firrtl.options.{CustomFileEmission, Dependency, HasShellOptions, ShellOption}
 import firrtl.passes.wiring._
 import firrtl.stage.{Forms, RunFirrtlTransformAnnotation}
-import firrtl.transforms.BlackBoxSourceHelper
 
 import java.io.{CharArrayWriter, PrintWriter}
 
@@ -161,7 +160,6 @@ class ReplSeqMem extends SeqTransform with HasShellOptions with DependencyAPIMig
       new ResolveMemoryReference,
       new ReplaceMemMacros,
       new WiringTransform,
-      new DumpMemoryAnnotations,
-      new BlackBoxSourceHelper
+      new DumpMemoryAnnotations
     )
 }

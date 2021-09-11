@@ -39,7 +39,8 @@ class ReplSeqMemSpec extends SimpleTransformSpec {
       def outputForm = LowForm
       def transforms =
         Seq(new ConstantPropagation, CommonSubexpressionElimination, new DeadCodeElimination, RemoveEmpty)
-    }
+    },
+    new BlackBoxSourceHelper
   )
 
   def checkMemConf(circuitState: CircuitState, mems: Set[MemConf]) {
