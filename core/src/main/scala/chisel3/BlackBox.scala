@@ -158,11 +158,12 @@ abstract class BlackBox(val params: Map[String, Param] = Map.empty[String, Param
 
     val namedPorts = _io.elements.toSeq.reverse  // ListMaps are stored in reverse order
 
-    // setRef is not called on the actual io.
     // There is a risk of user improperly attempting to connect directly with io
     // Long term solution will be to define BlackBox IO differently as part of
     //   it not descending from the (current) Module
     for ((name, port) <- namedPorts) {
+      // We are setting a 'fake' ref for io, so that cloneType works but if a user connects to io, it still fails.
+      this.findPort("io").get.setRef(ModuleIO(internal.ViewParent, ""), force = true)
       // We have to force override the _ref because it was set during IO binding
       port.setRef(ModuleIO(this, _namespace.name(name)), force = true)
     }
