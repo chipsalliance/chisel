@@ -342,7 +342,7 @@ class FirrtlMainSpec
 
       And("some input multi-module FIRRTL IR")
       val inputFile: Array[String] = {
-        val in = new File(td.dir, c.main)
+        val in = new File(td.dir, s"${c.main}.fir")
         val pw = new PrintWriter(in)
         pw.write(c.input)
         pw.close()
@@ -360,18 +360,20 @@ class FirrtlMainSpec
         out should (exist)
       }
 
+      // NOTE the .fir out needs to be a different directory than the multi proto out because
+      // reruns will pick up the .fir and try to parse as .pb
       When("the user compiles the Protobufs to a single FIRRTL IR")
       f.stage.main(
-        Array("-I", td.buildDir.toString, "-X", "none", "-E", "chirrtl", "-td", td.buildDir.toString, "-o", "Foo")
+        Array("-I", td.buildDir.toString, "-X", "none", "-E", "chirrtl", "-td", td.dir.toString, "-o", "Foo")
       )
 
       Then("one single FIRRTL file should be emitted")
-      val outFile = new File(td.buildDir + "/Foo.fir")
+      val outFile = new File(td.dir + "/Foo.fir")
       outFile should (exist)
       And("it should be the same as using FIRRTL input")
       firrtl.Utils.orderAgnosticEquality(
         firrtl.Parser.parse(c.input),
-        firrtl.Parser.parseFile(td.buildDir + "/Foo.fir", firrtl.Parser.IgnoreInfo)
+        firrtl.Parser.parseFile(td.dir + "/Foo.fir", firrtl.Parser.IgnoreInfo)
       ) should be(true)
     }
 
