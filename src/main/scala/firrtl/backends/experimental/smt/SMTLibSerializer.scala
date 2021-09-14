@@ -145,7 +145,7 @@ object SMTLibSerializer {
     else { s"(ite ${serialize(e)} $bvOne $bvZero)" }
 
   // See <simple_symbol> definition in the Concrete Syntax Appendix of the SMTLib Spec
-  private val simple: Regex = raw"[a-zA-Z\+-/\*\=%\?!\.\$$_~&\^<>@][a-zA-Z0-9\+-/\*\=%\?!\.\$$_~&\^<>@]*".r
+  private val simple: Regex = raw"[a-zA-Z\+-/\*\=%\?!\.$$_~&\^<>@][a-zA-Z0-9\+-/\*\=%\?!\.$$_~&\^<>@]*".r
   def escapeIdentifier(name: String): String = name match {
     case simple() => name
     case _        => if (name.startsWith("|") && name.endsWith("|")) name else s"|$name|"

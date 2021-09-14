@@ -10,7 +10,7 @@ import mill.contrib.buildinfo.BuildInfo
 
 import java.io.IOException
 
-object firrtl extends mill.Cross[firrtlCrossModule]("2.12.13", "2.13.4")
+object firrtl extends mill.Cross[firrtlCrossModule]("2.12.14", "2.13.6")
 
 class firrtlCrossModule(val crossScalaVersion: String) extends CrossSbtModule with ScalafmtModule with PublishModule with BuildInfo {
   override def millSourcePath = super.millSourcePath / os.up
