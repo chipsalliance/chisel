@@ -142,6 +142,8 @@ private[chisel3] object Converter {
       Some(fir.IsInvalid(convert(info), convert(arg, ctx, info)))
     case e @ DefInstance(info, id, _) =>
       Some(fir.DefInstance(convert(info), e.name, id.name))
+    case e @ DefTypedInstance(info, id, _, _) =>
+      Some(fir.DefInstance(convert(info), e.name, id.name))
     case Stop(info, clock, ret) =>
       Some(fir.Stop(convert(info), ret, convert(clock, ctx, info), firrtl.Utils.one))
     case e @ Printf(_, info, clock, pable) =>

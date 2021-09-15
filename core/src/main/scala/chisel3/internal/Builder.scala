@@ -271,6 +271,8 @@ private[chisel3] trait HasId extends InstanceId {
     case Some(p) => p.circuitName
   }
 
+  private[chisel3] def getCircuit: BaseModule = _circuit.getOrElse(_parent.get.getCircuit)
+
   private[chisel3] def getPublicFields(rootClass: Class[_]): Seq[java.lang.reflect.Method] = {
     // Suggest names to nodes using runtime reflection
     def getValNames(c: Class[_]): Set[String] = {
@@ -383,6 +385,8 @@ private[chisel3] object Builder extends LazyLogging {
     require(dynamicContextVar.value.isDefined, "must be inside Builder context")
     dynamicContextVar.value.get
   }
+
+  def hasDynamicContext: Boolean = dynamicContextVar.value.isDefined
 
   // Returns the current dynamic context
   def captureContext(): DynamicContext = dynamicContext

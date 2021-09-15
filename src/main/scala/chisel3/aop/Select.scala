@@ -4,9 +4,10 @@ package chisel3.aop
 
 import chisel3._
 import chisel3.internal.{HasId}
+import chisel3.experimental.hierarchy.{Definition, Instance}
 import chisel3.experimental.BaseModule
 import chisel3.experimental.FixedPoint
-import chisel3.internal.firrtl._
+import chisel3.internal.firrtl.{Definition => IRDefinition, _}
 import chisel3.internal.PseudoModule
 import chisel3.internal.BaseModule.ModuleClone
 import firrtl.annotations.ReferenceTarget
@@ -213,11 +214,11 @@ object Select {
     * @param module
     * @return
     */
-  def attachedTo(module: BaseModule)(signal: Data): Set[Data] = {
+  def attachedTo(module: BaseModule)(signal: Data): Seq[Data] = {
     check(module)
     module._component.get.asInstanceOf[DefModule].commands.collect {
       case Attach(_, seq) if seq.contains(signal) => seq
-    }.flatMap { seq => seq.map(_.id.asInstanceOf[Data]) }.toSet
+    }.flatMap { seq => seq.map(_.id.asInstanceOf[Data]) }
   }
 
   /** Selects all connections to a signal or its parent signal(s) (if the signal is an element of an aggregate signal)
@@ -237,7 +238,7 @@ object Select {
     var seenDef = isPort
     searchWhens(module, (cmd: Command, preds) => {
       cmd match {
-        case cmd: Definition if cmd.id.isInstanceOf[Data] =>
+        case cmd: IRDefinition if cmd.id.isInstanceOf[Data] =>
           val x = getIntermediateAndLeafs(cmd.id.asInstanceOf[Data])
           if(x.contains(signal)) prePredicates = preds
         case Connect(_, loc@Node(d: Data), exp) =>

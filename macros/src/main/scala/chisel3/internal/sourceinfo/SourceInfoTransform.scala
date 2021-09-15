@@ -51,7 +51,7 @@ object DefinitionTransform
 // Module instantiation transform
 class DefinitionTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._
-  def apply[T: c.WeakTypeTag](proto: c.Tree): c.Tree = {
+  def apply(proto: c.Tree): c.Tree = {
     q"$thisObj.do_apply($proto)($implicitSourceInfo, $implicitCompileOptions)"
   }
 }
@@ -71,7 +71,7 @@ object InstanceTransform
 // Module instantiation transform
 class InstanceTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._
-  def apply[T: c.WeakTypeTag](definition: c.Tree): c.Tree = {
+  def apply(definition: c.Tree): c.Tree = {
     q"$thisObj.do_apply($definition)($implicitSourceInfo, $implicitCompileOptions)"
   }
 }

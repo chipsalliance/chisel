@@ -10,6 +10,8 @@ import chisel3.aop.{Aspect, Select}
 import chisel3.experimental.ExtModule
 import chisel3.stage.{ChiselGeneratorAnnotation, DesignAnnotation}
 import firrtl.AnnotationSeq
+import chisel3.experimental.hierarchy._
+import chisel3.experimental.CloneModuleAsRecord
 
 import scala.reflect.runtime.universe.TypeTag
 
@@ -34,7 +36,12 @@ class SelectTester(results: Seq[Int]) extends BasicTester {
 
   }
 }
-
+@instantiable
+class Child extends RawModule {
+  @public val in = IO(Input(UInt(8.W)))
+  @public val out = IO(Output(UInt(8.W)))
+  out := in
+}
 case class SelectAspect[T <: RawModule, X](selector: T => Seq[X], desired: T => Seq[X]) extends Aspect[T] {
   override def toAnnotation(top: T): AnnotationSeq = {
     val results = selector(top)
@@ -183,14 +190,6 @@ class SelectSpec extends ChiselFlatSpec {
   }
 
   "Using Definition/Instance with Injecting Aspects" should "throw an error" in {
-    import chisel3.experimental.CloneModuleAsRecord
-    import chisel3.experimental.hierarchy._
-    @instantiable
-    class Child extends RawModule {
-      @public val in = IO(Input(UInt(8.W)))
-      @public val out = IO(Output(UInt(8.W)))
-      out := in
-    }
     class Top extends Module {
       val in = IO(Input(UInt(8.W)))
       val out = IO(Output(UInt(8.W)))

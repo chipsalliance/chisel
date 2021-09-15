@@ -6,6 +6,7 @@ package experimental.hierarchy
 import chisel3._
 import chisel3.experimental.BaseModule
 import chisel3.experimental.hierarchy.{Definition, Instance, instantiable, public}
+import scala.reflect.runtime.universe.TypeTag
 
 // TODO/Notes
 // - In backport, clock/reset are not automatically assigned. I think this is fixed in 3.5
@@ -323,23 +324,6 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
     }
   }
   describe("6: @instantiable traits should work as expected") {
-    class MyBundle extends Bundle {
-      val in = Input(UInt(8.W))
-      val out = Output(UInt(8.W))
-    }
-    @instantiable
-    trait ModuleIntf extends BaseModule {
-      @public val io = IO(new MyBundle)
-    }
-    @instantiable
-    class ModuleWithCommonIntf(suffix: String = "") extends Module with ModuleIntf {
-      override def desiredName: String = super.desiredName + suffix
-      @public val sum = io.in + 1.U
-
-      io.out := sum
-    }
-    class BlackBoxWithCommonIntf extends BlackBox with ModuleIntf
-
     it("6.0: A Module that implements an @instantiable trait should be definable as that trait") {
       class Top extends Module {
         val i: Definition[ModuleIntf] = Definition(new ModuleWithCommonIntf)
@@ -414,19 +398,10 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
   describe("7: @instantiable and @public should compose with DataView") {
     import chisel3.experimental.dataview._
     ignore("7.0: should work on simple Views") {
-      @instantiable
-      class MyModule extends RawModule {
-        val in = IO(Input(UInt(8.W)))
-        @public val out = IO(Output(UInt(8.W)))
-        val sum = in + 1.U
-        out := sum + 1.U
-        @public val foo = in.viewAs[UInt]
-        @public val bar = sum.viewAs[UInt]
-      }
       class Top extends RawModule {
         val foo = IO(Input(UInt(8.W)))
         val bar = IO(Output(UInt(8.W)))
-        val d = Definition(new MyModule)
+        val d = Definition(new MyDataViewModule)
         val i = Instance(d)
         i.foo := foo
         bar := i.out
@@ -435,9 +410,9 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
         mark(d.bar, "bar")
       }
       val expectedAnnos = List(
-        "~Top|MyModule>out".rt -> "out",
-        "~Top|MyModule>in".rt -> "foo",
-        "~Top|MyModule>sum".rt -> "bar"
+        "~Top|MyDataViewModule>out".rt -> "out",
+        "~Top|MyDataViewModule>in".rt -> "foo",
+        "~Top|MyDataViewModule>sum".rt -> "bar"
       )
       val expectedLines = List(
         "i.in <= foo",
@@ -454,18 +429,10 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
     }
     ignore("7.1: should work on Aggregate Views that are mapped 1:1") {
       import chiselTests.experimental.SimpleBundleDataView._
-      @instantiable
-      class MyModule extends RawModule {
-        private val a = IO(Input(new BundleA(8)))
-        private val b = IO(Output(new BundleA(8)))
-        @public val in = a.viewAs[BundleB]
-        @public val out = b.viewAs[BundleB]
-        out := in
-      }
       class Top extends RawModule {
         val foo = IO(Input(new BundleB(8)))
         val bar = IO(Output(new BundleB(8)))
-        val d = Definition(new MyModule)
+        val d = Definition(new MyAggDataViewModule)
         val i = Instance(d)
         i.in := foo
         bar.bar := i.out.bar
@@ -473,8 +440,8 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
         mark(d.in.bar, "in_bar")
       }
       val expectedAnnos = List(
-        "~Top|MyModule>a".rt -> "in",
-        "~Top|MyModule>a.foo".rt -> "in_bar",
+        "~Top|MyAggDataViewModule>a".rt -> "in",
+        "~Top|MyAggDataViewModule>a.foo".rt -> "in_bar",
       )
       val expectedLines = List(
         "i.a <= foo",

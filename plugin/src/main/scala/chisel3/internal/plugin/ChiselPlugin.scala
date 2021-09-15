@@ -20,6 +20,7 @@ class ChiselPlugin(val global: Global) extends Plugin {
   val components: List[PluginComponent] = List[PluginComponent](
     new ChiselComponent(global),
     new BundleComponent(global, arguments)
+    //new InstanceComponent(global)
   )
 
   override def init(options: List[String], error: String => Unit): Boolean = {

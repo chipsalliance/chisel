@@ -35,20 +35,30 @@ private[chisel3] object instantiableMacro {
       }
       val (newClz, implicitClzs, tpname) = clz match {
         case q"$mods class $tpname[..$tparams] $ctorMods(...$paramss) extends { ..$earlydefns } with ..$parents { $self => ..$stats }" =>
+          if(!c.internal.enclosingOwner.isStatic) {
+            c.error(c.enclosingPosition, "@instantiable must be used non-inner classes or traits")
+          }
+          //if(mods.annotations.map(_.toString).contains("new debugMe()")) {
+          //  val bool = c.internal.enclosingOwner.isStatic
+          //  c.error(c.enclosingPosition, show(c.internal.enclosingOwner) + bool )
+          //}
+          //c.error(c.enclosingPosition, mods.annotations.map(_.toString).mkString(","))
           val defname = TypeName(tpname + c.freshName())
           val instname = TypeName(tpname + c.freshName())
           val (newStats, extensions) = processBody(stats)
+          val argTParams = tparams.map(_.name)
           (q""" $mods class $tpname[..$tparams] $ctorMods(...$paramss) extends { ..$earlydefns } with ..$parents with chisel3.experimental.hierarchy.IsInstantiable { $self => ..$newStats } """,
-           Seq(q"""implicit class $defname(module: chisel3.experimental.hierarchy.Definition[$tpname]) { ..$extensions }""",
-               q"""implicit class $instname(module: chisel3.experimental.hierarchy.Instance[$tpname]) { ..$extensions } """),
+           Seq(q"""implicit class $defname[..$tparams](module: chisel3.experimental.hierarchy.Definition[$tpname[..$argTParams]]) { ..$extensions }""",
+               q"""implicit class $instname[..$tparams](module: chisel3.experimental.hierarchy.Instance[$tpname[..$argTParams]]) { ..$extensions } """),
            tpname)
         case q"$mods trait $tpname[..$tparams] extends { ..$earlydefns } with ..$parents { $self => ..$stats }" =>
           val defname = TypeName(tpname + c.freshName())
           val instname = TypeName(tpname + c.freshName())
           val (newStats, extensions) = processBody(stats)
+          val argTParams = tparams.map(_.name)
           (q"$mods trait $tpname[..$tparams] extends { ..$earlydefns } with ..$parents with chisel3.experimental.hierarchy.IsInstantiable { $self => ..$newStats }",
-           Seq(q"""implicit class $defname(module: chisel3.experimental.hierarchy.Definition[$tpname]) { ..$extensions }""",
-               q"""implicit class $instname(module: chisel3.experimental.hierarchy.Instance[$tpname]) { ..$extensions } """),
+           Seq(q"""implicit class $defname[..$tparams](module: chisel3.experimental.hierarchy.Definition[$tpname[..$argTParams]]) { ..$extensions }""",
+               q"""implicit class $instname[..$tparams](module: chisel3.experimental.hierarchy.Instance[$tpname[..$argTParams]]) { ..$extensions } """),
            tpname)
       }
       val newObj = objOpt match {
@@ -75,3 +85,5 @@ private[chisel3] class instantiable extends StaticAnnotation {
   def macroTransform(annottees: Any*): Any = macro instantiableMacro.impl
 }
 private[chisel3] class public extends StaticAnnotation
+class debugMe extends StaticAnnotation
+

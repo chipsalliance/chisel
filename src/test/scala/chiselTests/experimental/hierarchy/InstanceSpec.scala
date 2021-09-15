@@ -5,8 +5,14 @@ package experimental.hierarchy
 
 import chisel3._
 import chisel3.experimental.BaseModule
+import chisel3.experimental.BaseModule.BaseModuleExtensions
+import chisel3.aop.{Select2, Select, Aspect}
+import _root_.firrtl.annotations._
+import _root_.firrtl.AnnotationSeq
 import chisel3.experimental.hierarchy.{Definition, Instance, instantiable, public}
 import chisel3.util.{DecoupledIO, Valid}
+import scala.language.experimental.macros
+import scala.reflect.runtime.universe.{WeakTypeTag, TypeTag}
 
 
 // TODO/Notes
@@ -43,6 +49,70 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       }
       val (chirrtl, _) = getFirrtlAndAnnos(new Top)
       chirrtl.serialize should include ("inst i0 of AddOne")
+    }
+    it("0.3: extension methods work on type-parameterized modules") {
+      class Top extends Module {
+        val d = Definition(new SelectParameterized[UInt](UInt(3.W)))
+        val i0 = Instance(d)
+        i0.i0
+      }
+      val (chirrtl, _) = getFirrtlAndAnnos(new Top)
+      chirrtl.serialize should include ("inst i0 of AddOne")
+    }
+    it("0.4: @instantiable will error if on inner class") {
+      // Uncommenting this code will result in a compile-time error:
+      // >  @instantiable must be used non-inner classes or traits
+      //@instantiable
+      //class Top extends Module { }
+    }
+    describe("0.5: trying to fool typetags") {
+      it("0.5.a: casting Definition before Instance is not an error") {
+        //val e = intercept[IllegalArgumentException] {
+          class Top extends Module {
+            val d = Definition(new SelectParameterized[UInt](UInt(3.W)))
+            val i1 = Instance(d.asInstanceOf[Definition[BaseModule]])
+            require(i1.isA[SelectParameterized[UInt]])
+          }
+          val (chirrtl, _) = getFirrtlAndAnnos(new Top)
+        //}
+        //e.getMessage() shouldBe (
+        //  "requirement failed: Expected type of Instance[chisel3.experimental.BaseModule] is not the same as underlying type of " +
+        //  "Definition[chiselTests.experimental.hierarchy.Examples.SelectParameterized[chisel3.UInt]]"
+        //)
+      }
+      it("0.5.b: casting Module before Definition is not an error") {
+        //val e = intercept[IllegalArgumentException] {
+          class Top extends Module {
+            val d = Definition(new SelectParameterized[UInt](UInt(3.W)).asInstanceOf[BaseModule])
+            val i0: Instance[BaseModule] = Instance(d)
+            require(!i0.isA[SelectParameterized[UInt]])
+          }
+          val (chirrtl, _) = getFirrtlAndAnnos(new Top)
+        //}
+        //e.getMessage() shouldBe (
+          //"requirement failed: Expected type of Definition[chisel3.experimental.BaseModule] " +
+          //"does not match the module class constructed: chiselTests.experimental.hierarchy.Examples.SelectParameterized"
+        //)
+      }
+      it("0.5.c: casting Instance after it is declared is ok") {
+        class Top extends Module {
+          val d = Definition(new SelectParameterized[UInt](UInt(3.W)))
+          val i0: Instance[BaseModule] = Instance(d)
+          require(i0.isA[SelectParameterized[UInt]])
+        }
+        val (chirrtl, _) = getFirrtlAndAnnos(new Top)
+        chirrtl.serialize should include ("inst i0 of SelectParameterized")
+      }
+      it("0.5.d: casting a Module's type parameter... not sure") {
+        class Top extends Module {
+          val d = Definition(new SelectParameterized[UInt](UInt(3.W)).asInstanceOf[SelectParameterized[Data]])
+          val i0 = Instance(d)
+          require(!i0.isA[SelectParameterized[UInt]])
+          require(i0.isA[SelectParameterized[Data]])
+        }
+        val (chirrtl, _) = getFirrtlAndAnnos(new Top)
+        chirrtl.serialize should include ("inst i0 of SelectParameterized")
+      }
     }
   }
   describe("1: Annotations on instances in same chisel compilation") {
@@ -230,6 +300,14 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos should contain(MarkAnnotation("~Top|Top/i:HasVec>x".rt, "blah"))
     }
+    it("3.6.b: should work on vecs of bundles") {
+      class Top() extends Module {
+        val i = Instance(Definition(new HasVecOfBundle()))
+        mark(i.x, "blah")
+      }
+      val (_, annos) = getFirrtlAndAnnos(new Top)
+      annos should contain(MarkAnnotation("~Top|Top/i:HasVecOfBundle>x".rt, "blah"))
+    }
     it("3.7: should work on statically indexed vectors external to module") {
       class Top() extends Module {
         val i = Instance(Definition(new HasVec()))
@@ -364,22 +442,12 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       annos should contain(MarkAnnotation("~Top|Top/i:InstantiatesHasVec/i1:HasVec_2>x[0]".rt, "blah"))
     }
     it("5.4: toAbsoluteTarget on a submodule's data, in an aggregate, within an instance, ILit") {
-      class MyBundle extends Bundle { val x = UInt(3.W) }
-      @instantiable
-      class HasVec() extends Module {
-        @public val x = Wire(Vec(3, new MyBundle()))
-      }
-      @instantiable
-      class InstantiatesHasVec() extends Module {
-        @public val i0 = Instance(Definition(new HasVec()))
-        @public val i1 = Module(new HasVec())
-      }
       class Top() extends Module {
-        val i = Instance(Definition(new InstantiatesHasVec()))
+        val i = Instance(Definition(new InstantiatesHasVecOfBundle()))
         amark(i.i1.x.head.x, "blah")
       }
       val (_, annos) = getFirrtlAndAnnos(new Top)
-      annos should contain(MarkAnnotation("~Top|Top/i:InstantiatesHasVec/i1:HasVec_2>x[0].x".rt, "blah"))
+      annos should contain(MarkAnnotation("~Top|Top/i:InstantiatesHasVecOfBundle/i1:HasVecOfBundle_2>x[0].x".rt, "blah"))
     }
     it("5.5: toAbsoluteTarget on a subinstance") {
       class Top() extends Module {
@@ -403,19 +471,6 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       val in = Input(UInt(8.W))
       val out = Output(UInt(8.W))
     }
-    @instantiable
-    trait ModuleIntf extends BaseModule {
-      @public val io = IO(new MyBundle)
-    }
-    @instantiable
-    class ModuleWithCommonIntf(suffix: String = "") extends Module with ModuleIntf {
-      override def desiredName: String = super.desiredName + suffix
-      @public val sum = io.in + 1.U
-
-      io.out := sum
-    }
-    class BlackBoxWithCommonIntf extends BlackBox with ModuleIntf
-
     it("6.0: A Module that implements an @instantiable trait should be instantiable as that trait") {
       class Top extends Module {
         val i: Instance[ModuleIntf] = Instance(Definition(new ModuleWithCommonIntf))
@@ -449,6 +504,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       }
     }
     it("6.2 A BlackBox that implements an @instantiable trait should be instantiable as that trait") {
+      import BaseModule.BaseModuleExtensions
       class Top extends Module {
         val i: Instance[ModuleIntf] = Module(new BlackBoxWithCommonIntf).toInstance
         mark(i.io.in, "gotcha")
@@ -490,19 +546,10 @@ class InstanceSpec extends ChiselFunSpec with Utils {
   describe("7: @instantiable and @public should compose with DataView") {
     import chisel3.experimental.dataview._
     it("7.0: should work on simple Views") {
-      @instantiable
-      class MyModule extends RawModule {
-        val in = IO(Input(UInt(8.W)))
-        @public val out = IO(Output(UInt(8.W)))
-        val sum = in + 1.U
-        out := sum + 1.U
-        @public val foo = in.viewAs[UInt]
-        @public val bar = sum.viewAs[UInt]
-      }
       class Top extends RawModule {
         val foo = IO(Input(UInt(8.W)))
         val bar = IO(Output(UInt(8.W)))
-        val i = Instance(Definition(new MyModule))
+        val i = Instance(Definition(new SimpleViews))
         i.foo := foo
         bar := i.out
         mark(i.out, "out")
@@ -510,9 +557,9 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         mark(i.bar, "bar")
       }
       val expectedAnnos = List(
-        "~Top|Top/i:MyModule>out".rt -> "out",
-        "~Top|Top/i:MyModule>in".rt -> "foo",
-        "~Top|Top/i:MyModule>sum".rt -> "bar"
+        "~Top|Top/i:SimpleViews>out".rt -> "out",
+        "~Top|Top/i:SimpleViews>in".rt -> "foo",
+        "~Top|Top/i:SimpleViews>sum".rt -> "bar"
       )
       val expectedLines = List(
         "i.in <= foo",
@@ -530,20 +577,10 @@ class InstanceSpec extends ChiselFunSpec with Utils {
 
     ignore("7.1: should work on Aggregate Views") {
       import chiselTests.experimental.FlatDecoupledDataView._
-      type RegDecoupled = DecoupledIO[FizzBuzz]
-      @instantiable
-      class MyModule extends RawModule {
-        private val a = IO(Flipped(new FlatDecoupled))
-        private val b = IO(new FlatDecoupled)
-        @public val enq = a.viewAs[RegDecoupled]
-        @public val deq = b.viewAs[RegDecoupled]
-        @public val enq_valid = enq.valid // Also return a subset of the view
-        deq <> enq
-      }
       class Top extends RawModule {
         val foo = IO(Flipped(new RegDecoupled(new FizzBuzz)))
         val bar = IO(new RegDecoupled(new FizzBuzz))
-        val i = Instance(Definition(new MyModule))
+        val i = Instance(Definition(new AggViewsModule))
         i.enq <> foo
         i.enq_valid := foo.valid // Make sure connections also work for @public on elements of a larger Aggregate
         i.deq.ready := bar.ready
@@ -555,11 +592,11 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         mark(i.enq_valid, "enq_valid")
       }
       val expectedAnnos = List(
-        "~Top|Top/i:MyModule>a".rt -> "enq", // Not split, checks 1:1
-        "~Top|Top/i:MyModule>a.fizz".rt -> "enq.bits", // Split, checks non-1:1 inner Aggregate
-        "~Top|Top/i:MyModule>a.buzz".rt -> "enq.bits",
-        "~Top|Top/i:MyModule>b.fizz".rt -> "deq.bits.fizz", // Checks 1 inner Element
-        "~Top|Top/i:MyModule>a.valid".rt -> "enq_valid"
+        "~Top|Top/i:AggViewsModule>a".rt -> "enq", // Not split, checks 1:1
+        "~Top|Top/i:AggViewsModule>a.fizz".rt -> "enq.bits", // Split, checks non-1:1 inner Aggregate
+        "~Top|Top/i:AggViewsModule>a.buzz".rt -> "enq.bits",
+        "~Top|Top/i:AggViewsModule>b.fizz".rt -> "deq.bits.fizz", // Checks 1 inner Element
+        "~Top|Top/i:AggViewsModule>a.valid".rt -> "enq_valid"
       )
       val expectedLines = List(
         "i.a.valid <= foo.valid",
@@ -583,18 +620,10 @@ class InstanceSpec extends ChiselFunSpec with Utils {
 
     it("7.2: should work on views of views") {
       import chiselTests.experimental.SimpleBundleDataView._
-      @instantiable
-      class MyModule extends RawModule {
-        private val a = IO(Input(UInt(8.W)))
-        private val b = IO(Output(new BundleA(8)))
-        @public val in = a.viewAs[UInt].viewAs[UInt]
-        @public val out = b.viewAs[BundleB].viewAs[BundleA].viewAs[BundleB]
-        out.bar := in
-      }
       class Top extends RawModule {
         val foo = IO(Input(UInt(8.W)))
         val bar = IO(Output(new BundleB(8)))
-        val i = Instance(Definition(new MyModule))
+        val i = Instance(Definition(new ViewOfViews))
         i.in := foo
         bar := i.out
         bar.bar := i.out.bar
@@ -602,8 +631,8 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         mark(i.out.bar, "out_bar")
       }
       val expected = List(
-        "~Top|Top/i:MyModule>a".rt -> "in",
-        "~Top|Top/i:MyModule>b.foo".rt -> "out_bar",
+        "~Top|Top/i:ViewOfViews>a".rt -> "in",
+        "~Top|Top/i:ViewOfViews>b.foo".rt -> "out_bar",
       )
       val lines = List(
         "i.a <= foo",
@@ -621,24 +650,17 @@ class InstanceSpec extends ChiselFunSpec with Utils {
 
     it("7.3: should work with DataView + implicit conversion") {
       import chiselTests.experimental.SeqToVec._
-      @instantiable
-      class MyModule extends RawModule {
-        private val a = IO(Input(UInt(8.W)))
-        private val b = IO(Output(UInt(8.W)))
-        @public val ports = Seq(a, b)
-        b := a
-      }
       class Top extends RawModule {
         val foo = IO(Input(UInt(8.W)))
         val bar = IO(Output(UInt(8.W)))
-        val i = Instance(Definition(new MyModule))
+        val i = Instance(Definition(new ImplicitAndDataView))
         i.ports <> Seq(foo, bar)
         mark(i.ports, "i.ports")
       }
       val expected = List(
         // Not 1:1 so will get split out
-        "~Top|Top/i:MyModule>a".rt -> "i.ports",
-        "~Top|Top/i:MyModule>b".rt -> "i.ports",
+        "~Top|Top/i:ImplicitAndDataView>a".rt -> "i.ports",
+        "~Top|Top/i:ImplicitAndDataView>b".rt -> "i.ports",
       )
       val lines = List(
         "i.a <= foo",
@@ -657,13 +679,6 @@ class InstanceSpec extends ChiselFunSpec with Utils {
 
   describe("8: @instantiable and @public should compose with CloneModuleAsRecord") {
     it("8.0: it should support @public on a CMAR Record in Definitions") {
-      @instantiable
-      class HasCMAR extends Module {
-        @public val in = IO(Input(UInt(8.W)))
-        @public val out = IO(Output(UInt(8.W)))
-        @public val m = Module(new AggregatePortModule)
-        @public val c = experimental.CloneModuleAsRecord(m)
-      }
       class Top extends Module {
         val d = Definition(new HasCMAR)
         mark(d.c("io"), "c.io")
@@ -681,13 +696,6 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       }
     }
     it("8.1: it should support @public on a CMAR Record in Instances") {
-      @instantiable
-      class HasCMAR extends Module {
-        @public val in = IO(Input(UInt(8.W)))
-        @public val out = IO(Output(UInt(8.W)))
-        @public val m = Module(new AggregatePortModule)
-        @public val c = experimental.CloneModuleAsRecord(m)
-      }
       class Top extends Module {
         val i = Instance(Definition(new HasCMAR))
         mark(i.c("io"), "i.c.io")
@@ -705,5 +713,88 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       }
     }
   }
+
+  describe("9: @instantiable and @public should compose with Select and Aspect APIs") {
+    case class SelectAspect[T <: RawModule : TypeTag, X](selector: Definition[T] => Seq[CompleteTarget], desired: Seq[CompleteTarget]) extends Aspect[T] {
+      override def toAnnotation(top: T): AnnotationSeq = {
+        val results = selector(top.toDefinition)
+        assert(results.length == desired.length, s"Failure! Results $results have different length than desired $desired!")
+        val mismatches = results.zip(desired).flatMap {
+          case (res, des) if res != des => Seq((res, des))
+          case other => Nil
+        }
+        assert(mismatches.isEmpty,s"Failure! The following selected items do not match their desired item:\n" + mismatches.map{
+          case (res: Select.Serializeable, des: Select.Serializeable) => s"  ${res.serialize} does not match:\n  ${des.serialize}"
+          case (res, des) => s"  $res does not match:\n  $des"
+        }.mkString("\n"))
+        Nil
+      }
+    }
+
+    it("9.0: Select instances") {
+      val instancesInTest = SelectAspect({top: Definition[SelectTop] => Select2.instances(top).map(_.toTarget)}, Seq("~SelectTop|SelectTop/i0:AddTwo".it, "~SelectTop|SelectTop/i1:AddTwo".it))
+      getFirrtlAndAnnos(new SelectTop, Seq(instancesInTest))
+    }
+
+    it("9.1: Collect instances") {
+      val collectOverHierarchy = SelectAspect(
+        {top: Definition[SelectTop] =>
+          println(Select2.instancesOf[AddTwo](top).map(_.in.toTarget))
+          Select2.instancesOf[AddTwo](top).map(_.toTarget).toList},
+        Seq(
+          "~SelectTop|SelectTop/i0:AddTwo".it,
+          "~SelectTop|SelectTop/i1:AddTwo".it
+        )
+      )
+      getFirrtlAndAnnos(new SelectTop, Seq(collectOverHierarchy))
+    }
+    it("9.2: Collect type-parameterized instances") {
+      val collectOverHierarchy = SelectAspect(
+        {top: Definition[SelectTopParameterized] =>
+          Select2.instancesOf[SelectParameterized[Data]](top).toList.map(_.toTarget)
+        },
+        Seq(
+          "~SelectTopParameterized|SelectTopParameterized/i0:SelectParameterized".it,
+          "~SelectTopParameterized|SelectTopParameterized/i1:SelectParameterized".it
+        )
+      )
+      getFirrtlAndAnnos(new SelectTopParameterized, Seq(collectOverHierarchy))
+    }
+  }
+  //describe("10: @adam") {
+  //  it("test") {
+
+  //    import scala.reflect.runtime.universe._
+  //    
+  //    
+  //    class Boxy[A](val a: A)(implicit tag: TypeTag[A]) {
+  //     def getTag = tag
+  //      
+  //      def isA[B : TypeTag]: Boolean = tag.tpe =:= typeOf[B]
+  //      def isAn[B : TypeTag]: Boolean = isA[B]
+  //    }
+  //    
+  //    // Want to compile this
+  //    def erased[A](box: Boxy[A]): Int = box match {
+  //      case bs: Boxy[String] => bs.a.toInt
+  //      case bi: Boxy[Int] => println(10);bi.a
+  //    }
+  //    // To this
+  //    import chisel3.internal.adam
+
+  //    def erased2[A](box: Boxy[A]): Int = box match {
+  //      case bs: Boxy[String] @adam if box.isA[String] => bs.a.toInt
+  //      case bi: Boxy[Int @ unchecked] if box.isAn[Int] => bi.a
+  //    }
+  //    def erased3[A](list: List[Boxy[A]]): Int = list match {
+  //      case List(_: Boxy[String]) if list.head.isA[String] => bs.a.toInt
+  //      case List(_: Boxy[Int]) if list.head.isA[Int] => bs.a.toInt
+  //    }
+  //    
+  //    println(erased2(new Boxy(4)))
+  //    println(erased2(new Boxy("33")))
+  //    val x = 10
+  //  }
+  //}
 }
 

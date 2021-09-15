@@ -3,9 +3,11 @@
 package chiselTests.experimental.hierarchy
 
 import chisel3._
-import chisel3.util.Valid
+import chisel3.util.{DecoupledIO, Valid}
 import chisel3.experimental.hierarchy._
 import chisel3.experimental.BaseModule
+import chisel3.experimental.dataview._
+import chiselTests.experimental.SimpleBundleDataView._
 
 object Examples {
   import Annotations._
@@ -157,6 +159,11 @@ object Examples {
   class HasVec() extends Module {
     @public val x = VecInit(1.U, 2.U, 3.U)
   }
+  class MyBundle extends Bundle { val x = UInt(3.W) }
+  @instantiable
+  class HasVecOfBundle() extends Module {
+    @public val x = Wire(Vec(3, new MyBundle()))
+  }
   @instantiable
   class HasIndexedVec() extends Module {
     val x = VecInit(1.U, 2.U, 3.U)
@@ -178,9 +185,107 @@ object Examples {
     @public val i1 = Module(new HasVec())
   }
   @instantiable
+  class InstantiatesHasVecOfBundle() extends Module {
+    @public val i0 = Instance(Definition(new HasVecOfBundle()))
+    @public val i1 = Module(new HasVecOfBundle())
+  }
+  @instantiable
   class HasUninferredReset() extends Module {
     @public val in = IO(Input(UInt(3.W)))
     @public val out = IO(Output(UInt(3.W)))
     out := RegNext(in)
+  }
+  class InOutBundle extends Bundle {
+    val in = Input(UInt(8.W))
+    val out = Output(UInt(8.W))
+  }
+  @instantiable
+  trait ModuleIntf extends BaseModule {
+    @public val io = IO(new InOutBundle)
+  }
+  @instantiable
+  class ModuleWithCommonIntf(suffix: String = "") extends Module with ModuleIntf {
+    override def desiredName: String = super.desiredName + suffix
+    @public val sum = io.in + 1.U
+
+    io.out := sum
+  }
+  class BlackBoxWithCommonIntf extends BlackBox with ModuleIntf
+  class SelectTop extends Module {
+    val d = Definition(new AddTwo)
+    val i0 = Instance(d)
+    val i1 = Instance(d)
+  }
+
+  @instantiable
+  class SelectParameterized[+T <: Data](gen: T) extends Module {
+    val d = Definition(new AddOne)
+    @public val i0 = Instance(d)
+    @public val i1 = Instance(d)
+  }
+
+  class SelectTopParameterized extends Module {
+    val d = Definition(new SelectParameterized[UInt](UInt(3.W)))
+    val i0 = Instance(d)
+    val i1 = Instance(d)
+  }
+  @instantiable
+  class HasCMAR extends Module {
+    @public val in = IO(Input(UInt(8.W)))
+    @public val out = IO(Output(UInt(8.W)))
+    @public val m = Module(new AggregatePortModule)
+    @public val c = experimental.CloneModuleAsRecord(m)
+  }
+  @instantiable
+  class MyAggDataViewModule extends RawModule {
+    private val a = IO(Input(new BundleA(8)))
+    private val b = IO(Output(new BundleA(8)))
+    @public val in = a.viewAs[BundleB]
+    @public val out = b.viewAs[BundleB]
+    out := in
+  }
+  @instantiable
+  class MyDataViewModule extends RawModule {
+    val in = IO(Input(UInt(8.W)))
+    @public val out = IO(Output(UInt(8.W)))
+    val sum = in + 1.U
+    out := sum + 1.U
+    @public val foo = in.viewAs[UInt]
+    @public val bar = sum.viewAs[UInt]
+  }
+  import chiselTests.experimental.FlatDecoupledDataView._
+  type RegDecoupled = DecoupledIO[FizzBuzz]
+  @instantiable
+  class AggViewsModule extends RawModule {
+    private val a = IO(Flipped(new FlatDecoupled))
+    private val b = IO(new FlatDecoupled)
+    @public val enq = a.viewAs[RegDecoupled]
+    @public val deq = b.viewAs[RegDecoupled]
+    @public val enq_valid = enq.valid // Also return a subset of the view
+    deq <> enq
+  }
+  @instantiable
+  class SimpleViews extends RawModule {
+    val in = IO(Input(UInt(8.W)))
+    @public val out = IO(Output(UInt(8.W)))
+    val sum = in + 1.U
+    out := sum + 1.U
+    @public val foo = in.viewAs[UInt]
+    @public val bar = sum.viewAs[UInt]
+  }
+  @instantiable
+  class ViewOfViews extends RawModule {
+    private val a = IO(Input(UInt(8.W)))
+    private val b = IO(Output(new BundleA(8)))
+    @public val in = a.viewAs[UInt].viewAs[UInt]
+    @public val out = b.viewAs[BundleB].viewAs[BundleA].viewAs[BundleB]
+    out.bar := in
+  }
+  @instantiable
+  class ImplicitAndDataView extends RawModule {
+    private val a = IO(Input(UInt(8.W)))
+    private val b = IO(Output(UInt(8.W)))
+    @public val ports = Seq(a, b)
+    b := a
   }
 }

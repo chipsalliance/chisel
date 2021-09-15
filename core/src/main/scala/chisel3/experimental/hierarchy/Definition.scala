@@ -3,6 +3,7 @@
 package chisel3.experimental.hierarchy
 
 import scala.language.experimental.macros
+import scala.reflect.runtime.universe.{WeakTypeTag, TypeTag}
 
 import chisel3._
 import scala.collection.mutable.HashMap
@@ -19,16 +20,16 @@ import chisel3.internal.BaseModule.IsClone
   *
   * @param cloned The internal representation of the instance, which may be either be directly the object, or a clone of an object
   */
-case class Definition[+A] private[chisel3] (private[chisel3] cloned: Either[A, IsClone[A]]) extends IsLookupable {
-  private[chisel3] def proto: A = cloned match {
-    case Left(value: A) => value
-    case Right(i: IsClone[A]) => i._proto
-  }
+case class Definition[+A] private[chisel3] (private[chisel3] cloned: Either[A, IsClone[A]], private[chisel3] definitionTypeTag: TypeTag[_]) extends IsLookupable with Hierarchy[A] {
+  private[chisel3] def protoClassString: String = getProto.getClass().getCanonicalName
+  private[chisel3] def protoTypeString: String = definitionTypeTag.tpe.toString
+
+  //require(protoTypeString.startsWith(protoClassString), s"Expected type of Definition[${tpeTagString}] does not match the module class constructed: ${protoClassString}")
   /** Used by Chisel's internal macros. DO NOT USE in your normal Chisel code!!!
     * Instead, mark the field you are accessing with [[@public]]
     *
     * Given a selector function (that) which selects a member from the original, return the
-    *   corresponding member from the instance.
+    *   corresponding member from the definition.
     *
     * Our @instantiable and @public macros generate the calls to this apply method
     *
@@ -42,20 +43,22 @@ case class Definition[+A] private[chisel3] (private[chisel3] cloned: Either[A, I
     lookup.definitionLookup(that, this)
   }
 
-  /** Updated by calls to [[apply]], to avoid recloning returned Data's */
-  private [chisel3] val cache = HashMap[Data, Data]()
-
-
   /** @return the context of any Data's return from inside the instance */
-  private[chisel3] def getInnerDataContext: Option[BaseModule] = proto match {
+  private[chisel3] def getInnerDataContext: Option[BaseModule] = getProto match {
     case value: BaseModule =>
-      val newChild = Module.do_apply(new internal.BaseModule.DefinitionClone(value))(chisel3.internal.sourceinfo.UnlocatableSourceInfo, chisel3.ExplicitCompileOptions.Strict)
+      val newChild = new internal.BaseModule.DefinitionClone(value.asInstanceOf[A with BaseModule])
       newChild._circuit = value._circuit.orElse(Some(value))
       newChild._parent = None
       Some(newChild)
     case value: IsInstantiable => None
   }
 
+  def toInstance: Instance[A] = new Instance(Left(getProto), definitionTypeTag)
+
+  // SCALA Reflection API
+  def isA[B : WeakTypeTag]: Boolean = {
+    implicitly[WeakTypeTag[B]].tpe <:< definitionTypeTag.tpe
+  }
 }
 
 /** Factory methods for constructing [[Definition]]s */
@@ -64,12 +67,12 @@ object Definition extends SourceInfoDoc {
     /** If this is an instance of a Module, returns the toTarget of this instance
       * @return target of this instance
       */
-    def toTarget = d.proto.toTarget
+    def toTarget = d.getProto.toTarget
 
     /** If this is an instance of a Module, returns the toAbsoluteTarget of this instance
       * @return absoluteTarget of this instance
       */
-    def toAbsoluteTarget = d.proto.toAbsoluteTarget
+    def toAbsoluteTarget = d.getProto.toAbsoluteTarget
   }
   /** A construction method to build a Definition of a Module
     *
@@ -77,7 +80,7 @@ object Definition extends SourceInfoDoc {
     *
     * @return the input module as a Definition
     */
-  def apply[T <: BaseModule with IsInstantiable](proto: => T): Definition[T] = macro DefinitionTransform.apply[T]
+  //def apply[T <: BaseModule with IsInstantiable](proto: => T): Definition[T] = macro DefinitionTransform.apply
 
   /** A construction method to build a Definition of a Module
     *
@@ -85,7 +88,7 @@ object Definition extends SourceInfoDoc {
     *
     * @return the input module as a Definition
     */
-  def do_apply[T <: BaseModule with IsInstantiable](proto: => T) (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Definition[T] = {
+  def apply[T <: BaseModule with IsInstantiable : TypeTag](proto: => T) (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Definition[T] = {
     val dynamicContext = new DynamicContext(Nil)
     Builder.globalNamespace.copyTo(dynamicContext.globalNamespace)
     dynamicContext.inDefinition = true
@@ -94,6 +97,6 @@ object Definition extends SourceInfoDoc {
     Builder.annotations ++= ir.annotations
     module._circuit = Builder.currentModule
     dynamicContext.globalNamespace.copyTo(Builder.globalNamespace)
-    new Definition(Left(module))
+    new Definition(Left(module), implicitly[TypeTag[T]])
   }
 }

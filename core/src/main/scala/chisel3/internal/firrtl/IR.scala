@@ -13,6 +13,7 @@ import _root_.firrtl.annotations.Annotation
 
 import scala.collection.immutable.NumericRange
 import scala.math.BigDecimal.RoundingMode
+import scala.reflect.runtime.universe.TypeTag
 
 
 case class PrimOp(name: String) {
@@ -776,6 +777,7 @@ case class DefMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: BigInt) e
 case class DefSeqMemory(sourceInfo: SourceInfo, id: HasId, t: Data, size: BigInt, readUnderWrite: fir.ReadUnderWrite.Value) extends Definition
 case class DefMemPort[T <: Data](sourceInfo: SourceInfo, id: T, source: Node, dir: MemPortDirection, index: Arg, clock: Arg) extends Definition
 case class DefInstance(sourceInfo: SourceInfo, id: BaseModule, ports: Seq[Port]) extends Definition
+case class DefTypedInstance[T <: BaseModule](sourceInfo: SourceInfo, id: internal.BaseModule.ModuleClone[T], ports: Seq[Port], tag: TypeTag[_]) extends Definition
 case class WhenBegin(sourceInfo: SourceInfo, pred: Arg) extends Command
 case class WhenEnd(sourceInfo: SourceInfo, firrtlDepth: Int, hasAlt: Boolean = false) extends Command
 case class AltBegin(sourceInfo: SourceInfo) extends Command

@@ -5,12 +5,14 @@ package chisel3
 import scala.collection.immutable.ListMap
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.language.experimental.macros
+import scala.reflect.runtime.universe.TypeTag
 
 import chisel3.internal._
 import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{InstTransform, SourceInfo, UnlocatableSourceInfo}
 import chisel3.experimental.BaseModule
+import chisel3.experimental.hierarchy.IsInstantiable
 import _root_.firrtl.annotations.{IsModule, ModuleName, ModuleTarget}
 import _root_.firrtl.AnnotationSeq
 
@@ -24,8 +26,37 @@ object Module extends SourceInfoDoc {
     */
   def apply[T <: BaseModule](bc: => T): T = macro InstTransform.apply[T]
 
-  /** @group SourceInfoTransformMacro */
+  private[chisel3] def typedApply[T <: BaseModule](bc: => internal.BaseModule.ModuleClone[T], tag: TypeTag[_])
+                               (implicit sourceInfo: SourceInfo,
+                                         compileOptions: CompileOptions): internal.BaseModule.ModuleClone[T] = {
+    val module = doingTheApply(bc)
+    if (Builder.currentModule.isDefined && module._component.isDefined) {
+      val component = module._component.get
+      pushCommand(DefTypedInstance(sourceInfo, module, component.ports, tag))
+
+      module.initializeInParent(compileOptions)
+    }
+    module
+  }
+
+  // untyped apply
   def do_apply[T <: BaseModule](bc: => T)
+                               (implicit sourceInfo: SourceInfo,
+                                         compileOptions: CompileOptions): T = {
+    // Handle connections at enclosing scope
+    // We use _component because Modules that don't generate them may still have one
+    val module = doingTheApply(bc)
+    if (Builder.currentModule.isDefined && module._component.isDefined) {
+      val component = module._component.get
+      pushCommand(DefInstance(sourceInfo, module, component.ports))
+
+      module.initializeInParent(compileOptions)
+    }
+    module
+  }
+
+  /** @group SourceInfoTransformMacro */
+  private[chisel3] def doingTheApply[T <: BaseModule](bc: => T)
                                (implicit sourceInfo: SourceInfo,
                                          compileOptions: CompileOptions): T = {
     if (Builder.readyForModuleConstr) {
@@ -72,13 +103,6 @@ object Module extends SourceInfoDoc {
 
     Builder.setPrefix(savePrefix)
 
-    // Handle connections at enclosing scope
-    // We use _component because Modules that don't generate them may still have one
-    if (Builder.currentModule.isDefined && module._component.isDefined) {
-      val component = module._component.get
-      pushCommand(DefInstance(sourceInfo, module, component.ports))
-      module.initializeInParent(compileOptions)
-    }
     module
   }
 
@@ -88,6 +112,7 @@ object Module extends SourceInfoDoc {
   def reset: Reset = Builder.forcedReset
   /** Returns the current Module */
   def currentModule: Option[BaseModule] = Builder.currentModule
+
 }
 
 /** Abstract base class for Modules, which behave much like Verilog modules.
@@ -193,16 +218,24 @@ package internal {
       // Underlying object of which this is a clone of
       val _proto: T
       def getProto: T = _proto
-      def isACloneOf(a: Any): Boolean = this == a || _proto == a
+      def isACloneOf(a: Any): Boolean = {
+        val aProto = a match {
+          case x: IsClone[BaseModule] =>
+            x._proto
+          case o => o
+        }
+        this == aProto || _proto == aProto
+      }
     }
 
     // Private internal class to serve as a _parent for Data in cloned ports
     private[chisel3] class ModuleClone[T <: BaseModule] (val _proto: T) extends PseudoModule with IsClone[T] {
+  //println(s"Instantiating $this with type tag" + implicitly[TypeTag[T]].tpe)
       override def toString = s"ModuleClone(${_proto})"
       def getPorts = _portsRecord
       // ClonePorts that hold the bound ports for this module
       // Used for setting the refs of both this module and the Record
-      private[BaseModule] var _portsRecord: Record = _
+      private[chisel3] var _portsRecord: Record = _
       // This is necessary for correctly supporting .toTarget on a Module Clone. If it is made from the
       // Instance/Definition API, it should return an instanceTarget. If made from CMAR, it should return a
       // ModuleTarget.
@@ -250,6 +283,7 @@ package internal {
       * for ModuleClone.
       */
     private[chisel3] final class InstanceClone[T <: BaseModule] (val _proto: T, val instName: () => String) extends PseudoModule with IsClone[T] {
+  //println(s"Instantiating $this with type tag" + implicitly[TypeTag[T]].tpe)
       override def toString = s"InstanceClone(${_proto})"
       // No addition components are generated
       private[chisel3] def generateComponent(): Option[Component] = None
@@ -272,6 +306,7 @@ package internal {
       * InstanceClone (which represents the returned module).
       */
     private[chisel3] class DefinitionClone[T <: BaseModule] (val _proto: T) extends PseudoModule with IsClone[T] {
+  //println(s"Instantiating $this with type tag" + implicitly[TypeTag[T]].tpe)
       override def toString = s"DefinitionClone(${_proto})"
       // No addition components are generated
       private[chisel3] def generateComponent(): Option[Component] = None
@@ -284,6 +319,7 @@ package internal {
     /** @note If we are cloning a non-module, we need another object which has the proper _parent set!
       */
     private[chisel3] final class InstantiableClone[T <: IsInstantiable] (val _proto: T) extends IsClone[T] {
+  //println(s"Instantiating $this with type tag" + implicitly[TypeTag[T]].tpe)
       private[chisel3] var _parent: Option[BaseModule] = internal.Builder.currentModule
     }
 
@@ -329,14 +365,6 @@ package internal {
 package experimental {
 
   import chisel3.experimental.hierarchy.IsInstantiable
-
-  object BaseModule {
-    implicit class BaseModuleExtensions[T <: BaseModule](b: T) {
-      import chisel3.experimental.hierarchy.{Instance, Definition}
-      def toInstance: Instance[T] = new Instance(Left(b))
-      def toDefinition: Definition[T] = new Definition(Left(b))
-    }
-  }
   /** Abstract base class for Modules, an instantiable organizational unit for RTL.
     */
   // TODO: seal this?
@@ -346,13 +374,19 @@ package experimental {
     //
     // Builder Internals - this tracks which Module RTL construction belongs to.
     //
-    if (!Builder.readyForModuleConstr) {
-      throwException("Error: attempted to instantiate a Module without wrapping it in Module().")
+    this match {
+      case _: PseudoModule =>
+      case other =>
+        if (!Builder.readyForModuleConstr) {
+          throwException("Error: attempted to instantiate a Module without wrapping it in Module().")
+        }
     }
-    readyForModuleConstr = false
+    if(Builder.hasDynamicContext) {
+      Builder.readyForModuleConstr = false
 
-    Builder.currentModule = Some(this)
-    Builder.whenStack = Nil
+      Builder.currentModule = Some(this)
+      Builder.whenStack = Nil
+    }
 
     //
     // Module Construction Internals
@@ -635,5 +669,13 @@ package experimental {
         case Some(c) => getRef fullName c
       }
 
+  }
+
+  object BaseModule {
+    implicit class BaseModuleExtensions[T <: BaseModule : TypeTag](b: T) {
+      import chisel3.experimental.hierarchy.{Instance, Definition}
+      def toInstance: Instance[T] = new Instance(Left(b), implicitly[TypeTag[T]])
+      def toDefinition: Definition[T] = new Definition(Left(b), implicitly[TypeTag[T]])
+    }
   }
 }

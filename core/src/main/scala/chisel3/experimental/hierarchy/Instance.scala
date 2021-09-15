@@ -9,6 +9,7 @@ import chisel3._
 import chisel3.internal.BaseModule.{ModuleClone, IsClone, InstantiableClone}
 import chisel3.internal.sourceinfo.{InstanceTransform, SourceInfo}
 import chisel3.experimental.BaseModule
+import scala.reflect.runtime.universe.{WeakTypeTag, TypeTag}
 
 /** User-facing Instance type.
   * Represents a unique instance of type [[A]] which are marked as @instantiable 
@@ -16,17 +17,10 @@ import chisel3.experimental.BaseModule
   *
   * @param cloned The internal representation of the instance, which may be either be directly the object, or a clone of an object
   */
-case class Instance[+A] private [chisel3] (private[chisel3] cloned: Either[A, IsClone[A]]) {
+case class Instance[+A] private [chisel3] (private[chisel3] cloned: Either[A, IsClone[A]], private[chisel3] definitionTypeTag: TypeTag[_]) extends Hierarchy[A] {
+  println(s"Instance: Instantiating $this with type tag" + definitionTypeTag)
 
-  /** Returns the original object which is instantiated here.
-    * If this is an instance of a clone, return that clone's original proto
-    *
-    * @return the original object which was instantiated
-    */
-  private[chisel3] def proto: A = cloned match {
-    case Left(value: A) => value
-    case Right(i: IsClone[A]) => i._proto
-  }
+  private[chisel3] def protoTypeString: String = definitionTypeTag.tpe.toString
 
   /** @return the context of any Data's return from inside the instance */
   private[chisel3] def getInnerDataContext: Option[BaseModule] = cloned match {
@@ -42,9 +36,6 @@ case class Instance[+A] private [chisel3] (private[chisel3] cloned: Either[A, Is
     case Right(i: BaseModule)           => i._parent
     case Right(i: InstantiableClone[_]) => i._parent
   }
-
-  /** Updated by calls to [[apply]], to avoid recloning returned Data's */
-  private [chisel3] val cache = HashMap[Data, Data]()
 
   /** Used by Chisel's internal macros. DO NOT USE in your normal Chisel code!!!
     * Instead, mark the field you are accessing with [[@public]]
@@ -65,8 +56,18 @@ case class Instance[+A] private [chisel3] (private[chisel3] cloned: Either[A, Is
   }
 
   /** Returns the definition of this Instance */
-  def toDefinition: Definition[A] = new Definition(Left(proto))
+  def toDefinition: Definition[A] = new Definition(Left(getProto), definitionTypeTag)
 
+  def sharesDefinition[A](other: Instance[A]): Boolean = toDefinition == other.toDefinition
+
+
+  // SCALA Reflection API
+  def isA[B : WeakTypeTag]: Boolean = {
+    val bTpe = implicitly[WeakTypeTag[B]].tpe
+    val ret = definitionTypeTag.tpe <:< bTpe
+    println("IsA: ", bTpe, definitionTypeTag.tpe, ret)
+    ret
+  }
 }
 
 /** Factory methods for constructing [[Instance]]s */
@@ -87,25 +88,55 @@ object Instance extends SourceInfoDoc {
       case Left(x) => x.toAbsoluteTarget
       case Right(x: IsClone[_] with BaseModule) => x.toAbsoluteTarget
     }
-
   }
-  /** A constructs an [[Instance]] from a [[Definition]]
-    *
-    * @param definition the Module being created
-    * @return an instance of the module definition
-    */
-  def apply[T <: BaseModule with IsInstantiable](definition: Definition[T]): Instance[T] = macro InstanceTransform.apply[T]
 
   /** A constructs an [[Instance]] from a [[Definition]]
     *
     * @param definition the Module being created
     * @return an instance of the module definition
     */
-  def do_apply[T <: BaseModule with IsInstantiable](definition: Definition[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Instance[T] = {
-    val ports = experimental.CloneModuleAsRecord(definition.proto)
+  //def apply[T <: BaseModule with IsInstantiable](definition: Definition[T]): Instance[T] = macro InstanceTransform.apply
+
+  /** A constructs an [[Instance]] from a [[Definition]]
+    *
+    * @param definition the Module being created
+    * @return an instance of the module definition
+    */
+  def apply[T <: BaseModule with IsInstantiable : TypeTag](definition: Definition[T])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Instance[T] = {
+    import chisel3.internal.BaseModule.ClonePorts
+    import chisel3.internal.PortBinding
+    import chisel3.internal.firrtl.DefInvalid
+    val proto = definition.getProto
+      require(proto.isClosed, "Can't clone a module before module close")
+      // Fake Module to serve as the _parent of the cloned ports
+      // We make this before clonePorts because we want it to come up first in naming in
+      // currentModule
+      val cloneParent = Module.typedApply(new ModuleClone(proto), definition.definitionTypeTag)
+      require(proto.isClosed, "Can't clone a module before module close")
+      require(cloneParent.getOptionRef.isEmpty, "Can't have ref set already!")
+      // Fake Module to serve as the _parent of the cloned ports
+      // We don't create this inside the ModuleClone because we need the ref to be set by the
+      // currentModule (and not clonePorts)
+      val clonePorts = new ClonePorts(proto.getModulePorts: _*)
+      clonePorts.bind(PortBinding(cloneParent))
+      clonePorts.setAllParents(Some(cloneParent))
+      cloneParent._portsRecord = clonePorts
+      // Normally handled during Module construction but ClonePorts really lives in its parent's parent
+      if (!compileOptions.explicitInvalidate) {
+        internal.Builder.pushCommand(DefInvalid(sourceInfo, clonePorts.ref))
+      }
+      if (proto.isInstanceOf[Module]) {
+        clonePorts("clock") := Module.clock
+        clonePorts("reset") := Module.reset
+      }
+    val ports = clonePorts
+    //val ports = experimental.CloneModuleAsRecord(definition.proto)
     val clone = ports._parent.get.asInstanceOf[ModuleClone[T]]
     clone._madeFromDefinition = true
-    new Instance(Right(clone))
+    //require(tpeTagString.startsWith(classString), s"$tpeTagString != $classString")
+    val inst = new Instance(Right(clone), definition.definitionTypeTag)
+    //require(inst.protoTypeString == definition.protoTypeString, s"Expected type of Instance[${inst.protoTypeString}] is not the same as underlying type of Definition[${definition.protoTypeString}]")
+    inst
   }
 
 }
