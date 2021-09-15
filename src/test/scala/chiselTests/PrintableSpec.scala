@@ -128,7 +128,6 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
       printf(p"${FullName(myInst.io.fizz)}")
     }
     val firrtl = ChiselStage.emitChirrtl(new MyModule)
-    println(firrtl)
     getPrintfs(firrtl) match {
       case Seq(Printf("foo", Seq()),
                Printf("myWire.foo", Seq()),

@@ -289,5 +289,77 @@ class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec {
       }
     }
   }
+
+  "A chisel3 Bundle that instantiates a Chisel Bundle" should "bulk connect correctly" in {
+    compile {
+      object Compat {
+        import Chisel._
+        class BiDir extends Bundle {
+          val a = Input(UInt(8.W))
+          val b = Output(UInt(8.W))
+        }
+        class Struct extends Bundle {
+          val a = UInt(8.W)
+        }
+      }
+      import chisel3._
+      import Compat._
+      class Bar extends Bundle {
+        val bidir1 = new BiDir
+        val bidir2 = Flipped(new BiDir)
+        val struct1 = Output(new Struct)
+        val struct2 = Input(new Struct)
+        override def cloneType = (new Bar).asInstanceOf[this.type]
+      }
+      // Check every connection both ways to see that chisel3 <>'s commutativity holds
+      class Child extends RawModule {
+        val deq = IO(new Bar)
+        val enq = IO(Flipped(new Bar))
+        enq <> deq
+        deq <> enq
+      }
+      class Top extends RawModule {
+        val deq = IO(new Bar)
+        val enq = IO(Flipped(new Bar))
+        // Also important to check connections to child ports
+        val c1 = Module(new Child)
+        val c2 = Module(new Child)
+        c1.enq <> enq
+        enq <> c1.enq
+        c2.enq <> c1.deq
+        c1.deq <> c2.enq
+        deq <> c2.deq
+        c2.deq <> deq
+      }
+      new Top
+    }
+  }
+
+  "A unidirectional but flipped Bundle" should "bulk connect in import chisel3._ code correctly" in {
+    object Compat {
+      import Chisel._
+      class MyBundle(extraFlip: Boolean) extends Bundle {
+        private def maybeFlip[T <: Data](t: T): T = if (extraFlip) t.flip else t
+        val foo = maybeFlip(new Bundle {
+          val bar = UInt(INPUT, width = 8)
+        })
+        override def cloneType = (new MyBundle(extraFlip)).asInstanceOf[this.type]
+      }
+    }
+    import chisel3._
+    import Compat._
+    class Top(extraFlip: Boolean) extends RawModule {
+      val port = IO(new MyBundle(extraFlip))
+      val wire = Wire(new MyBundle(extraFlip))
+      port <> DontCare
+      wire <> DontCare
+      port <> wire
+      wire <> port
+      port.foo <> wire.foo
+      wire.foo <> port.foo
+    }
+    compile(new Top(true))
+    compile(new Top(false))
+  }
 }
 

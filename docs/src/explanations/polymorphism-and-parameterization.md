@@ -4,7 +4,7 @@ title:  "Polymorphism and Parameterization"
 section: "chisel3"
 ---
 
-# Polymorphism and Paramterization
+# Polymorphism and Parameterization
 
 _This section is advanced and can be skipped at first reading._
 
@@ -231,7 +231,10 @@ class X[T <: BaseModule with MyAdder](genT: => T) extends Module {
 println(ChiselStage.emitVerilog(new X(new Mod1)))
 println(ChiselStage.emitVerilog(new X(new Mod2)))
 ```
-```scala mdoc:passthrough
-println(ChiselStage.emitVerilog(new X(new Mod1)))
-println(ChiselStage.emitVerilog(new X(new Mod2)))
+
+Output:
+
+```scala mdoc:verilog
+ChiselStage.emitVerilog(new X(new Mod1))
+ChiselStage.emitVerilog(new X(new Mod2))
 ```

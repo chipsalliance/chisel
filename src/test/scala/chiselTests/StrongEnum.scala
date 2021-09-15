@@ -74,6 +74,18 @@ class CastFromNonLit extends Module {
   io.valid := io.out.isValid
 }
 
+class SafeCastFromNonLit extends Module {
+  val io = IO(new Bundle {
+    val in = Input(UInt(EnumExample.getWidth.W))
+    val out = Output(EnumExample())
+    val valid = Output(Bool())
+  })
+
+  val (enum, valid) = EnumExample.safe(io.in)
+  io.out := enum
+  io.valid := valid
+}
+
 class CastFromNonLitWidth(w: Option[Int] = None) extends Module {
   val width = if (w.isDefined) w.get.W else UnknownWidth()
 
@@ -191,6 +203,28 @@ class CastFromNonLitTester extends BasicTester {
   stop()
 }
 
+class SafeCastFromNonLitTester extends BasicTester {
+  for ((enum,lit) <- EnumExample.all zip EnumExample.litValues) {
+    val mod = Module(new SafeCastFromNonLit)
+    mod.io.in := lit
+    assert(mod.io.out === enum)
+    assert(mod.io.valid === true.B)
+  }
+
+  val invalid_values = (1 until (1 << EnumExample.getWidth)).
+    filter(!EnumExample.litValues.map(_.litValue).contains(_)).
+    map(_.U)
+
+  for (invalid_val <- invalid_values) {
+    val mod = Module(new SafeCastFromNonLit)
+    mod.io.in := invalid_val
+
+    assert(mod.io.valid === false.B)
+  }
+
+  stop()
+}
+
 class CastToInvalidEnumTester extends BasicTester {
   val invalid_value: UInt = EnumExample.litValues.last + 1.U
   Module(new CastFromLit(invalid_value))
@@ -270,6 +304,41 @@ class StrongEnumFSMTester extends BasicTester {
   }
 }
 
+class IsOneOfTester extends BasicTester {
+  import EnumExample._
+
+  // is one of itself
+  assert(e0.isOneOf(e0))
+
+  // is one of Seq of itself
+  assert(e0.isOneOf(Seq(e0)))
+  assert(e0.isOneOf(Seq(e0, e0, e0, e0)))
+  assert(e0.isOneOf(e0, e0, e0, e0))
+
+  // is one of Seq of multiple elements
+  val subset = Seq(e0, e1, e2)
+  assert(e0.isOneOf(subset))
+  assert(e1.isOneOf(subset))
+  assert(e2.isOneOf(subset))
+
+  // is not element not in subset
+  assert(!e100.isOneOf(subset))
+  assert(!e101.isOneOf(subset))
+
+  // test multiple elements with variable number of arguments
+  assert(e0.isOneOf(e0, e1, e2))
+  assert(e1.isOneOf(e0, e1, e2))
+  assert(e2.isOneOf(e0, e1, e2))
+  assert(!e100.isOneOf(e0, e1, e2))
+  assert(!e101.isOneOf(e0, e1, e2))
+
+  // is not another value
+  assert(!e0.isOneOf(e1))
+  assert(!e2.isOneOf(e101))
+
+  stop()
+}
+
 class StrongEnumSpec extends ChiselFlatSpec with Utils {
   import chisel3.internal.ChiselException
 
@@ -318,6 +387,10 @@ class StrongEnumSpec extends ChiselFlatSpec with Utils {
 
   it should "cast non-literal UInts to enums correctly and detect illegal casts" in {
     assertTesterPasses(new CastFromNonLitTester)
+  }
+
+  it should "safely cast non-literal UInts to enums correctly and detect illegal casts" in {
+    assertTesterPasses(new SafeCastFromNonLitTester)
   }
 
   it should "prevent illegal literal casts to enums" in {
@@ -376,6 +449,71 @@ class StrongEnumSpec extends ChiselFlatSpec with Utils {
 
   "StrongEnum FSM" should "work" in {
     assertTesterPasses(new StrongEnumFSMTester)
+  }
+
+  val warnRegex = """warn.*Casting non-literal UInt to""".r
+
+  "Casting a UInt to an Enum" should "warn if the UInt can express illegal states" in {
+    object MyEnum extends ChiselEnum {
+      val e0, e1, e2 = Value
+    }
+
+    class MyModule extends MultiIOModule {
+      val in = IO(Input(UInt(2.W)))
+      val out = IO(Output(MyEnum()))
+      out := MyEnum(in)
+    }
+    val (log, _) = grabLog(ChiselStage.elaborate(new MyModule))
+    log should include regex warnRegex
+    log should include ("Casting non-literal UInt")
+  }
+
+  it should "NOT warn if the Enum is total" in {
+    object TotalEnum extends ChiselEnum {
+      val e0, e1, e2, e3 = Value
+    }
+
+    class MyModule extends MultiIOModule {
+      val in = IO(Input(UInt(2.W)))
+      val out = IO(Output(TotalEnum()))
+      out := TotalEnum(in)
+    }
+    val (log, _) = grabLog(ChiselStage.elaborate(new MyModule))
+    log shouldNot include regex warnRegex
+  }
+
+  "Casting a UInt to an Enum with .safe" should "NOT warn" in {
+    object MyEnum extends ChiselEnum {
+      val e0, e1, e2 = Value
+    }
+
+    class MyModule extends MultiIOModule {
+      val in = IO(Input(UInt(2.W)))
+      val out = IO(Output(MyEnum()))
+      out := MyEnum.safe(in)._1
+    }
+    val (log, _) = grabLog(ChiselStage.elaborate(new MyModule))
+    log shouldNot include regex warnRegex
+  }
+
+  it should "NOT generate any validity logic if the Enum is total" in {
+    object TotalEnum extends ChiselEnum {
+      val e0, e1, e2, e3 = Value
+    }
+
+    class MyModule extends MultiIOModule {
+      val in = IO(Input(UInt(2.W)))
+      val out = IO(Output(TotalEnum()))
+      val (res, valid) = TotalEnum.safe(in)
+      assert(valid.litToBoolean, "It should be true.B")
+      out := res
+    }
+    val (log, _) = grabLog(ChiselStage.elaborate(new MyModule))
+    log shouldNot include regex warnRegex
+  }
+
+  it should "correctly check if the enumeration is one of the values in a given sequence" in {
+    assertTesterPasses(new IsOneOfTester)
   }
 }
 

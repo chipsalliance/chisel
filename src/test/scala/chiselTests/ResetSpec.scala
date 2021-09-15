@@ -35,6 +35,13 @@ class AbstractResetDontCareModule extends RawModule {
   bulkAggPort <> DontCare
 }
 
+class ResetDriveConcrete(tpe: Reset) extends RawModule {
+  val in = IO(Input(tpe))
+  val out = IO(Output(tpe))
+  val w = Wire(Reset())
+  w := in
+  out := w
+}
 
 class ResetSpec extends ChiselFlatSpec with Utils {
 
@@ -42,6 +49,14 @@ class ResetSpec extends ChiselFlatSpec with Utils {
 
   it should "be able to be connected to DontCare" in {
     ChiselStage.elaborate(new AbstractResetDontCareModule)
+  }
+
+  it should "be able to drive Bool" in {
+    compile(new ResetDriveConcrete(Bool()))
+  }
+
+  it should "be able to drive AsyncReset" in {
+    compile(new ResetDriveConcrete(AsyncReset()))
   }
 
   it should "allow writing modules that are reset agnostic" in {

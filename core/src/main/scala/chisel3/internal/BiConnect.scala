@@ -9,6 +9,8 @@ import chisel3.internal.firrtl.{Connect, DefInvalid}
 import scala.language.experimental.macros
 import chisel3.internal.sourceinfo._
 
+import scala.annotation.tailrec
+
 /**
 * BiConnect.connect executes a bidirectional connection element-wise.
 *
@@ -113,14 +115,33 @@ private[chisel3] object BiConnect {
           }
         }
       }
-      // Handle Records defined in Chisel._ code (change to NotStrict)
-      case (left_r: Record, right_r: Record) => (left_r.compileOptions, right_r.compileOptions) match {
-        case (ExplicitCompileOptions.NotStrict, _) =>
-          left_r.bulkConnect(right_r)(sourceInfo, ExplicitCompileOptions.NotStrict)
-        case (_, ExplicitCompileOptions.NotStrict) =>
-          left_r.bulkConnect(right_r)(sourceInfo, ExplicitCompileOptions.NotStrict)
-        case _ => recordConnect(sourceInfo, connectCompileOptions, left_r, right_r, context_mod)
-      }
+      // Handle Records defined in Chisel._ code by emitting a FIRRTL partial connect
+      case pair @ (left_r: Record, right_r: Record) =>
+        val notStrict =
+          Seq(left_r.compileOptions, right_r.compileOptions).contains(ExplicitCompileOptions.NotStrict)
+        if (notStrict) {
+          // Traces flow from a child Data to its parent
+          @tailrec def traceFlow(currentlyFlipped: Boolean, data: Data): Boolean = {
+            import SpecifiedDirection.{Input => SInput, Flip => SFlip}
+            val sdir = data.specifiedDirection
+            val flipped = sdir == SInput || sdir == SFlip
+            data.binding.get match {
+              case ChildBinding(parent) => traceFlow(flipped ^ currentlyFlipped, parent)
+              case PortBinding(enclosure) =>
+                val childPort = enclosure != context_mod
+                childPort ^ flipped ^ currentlyFlipped
+              case _ => true
+            }
+          }
+          def canBeSink(data: Data): Boolean = traceFlow(true, data)
+          def canBeSource(data: Data): Boolean = traceFlow(false, data)
+          // chisel3 <> is commutative but FIRRTL <- is not
+          val flipConnection = !canBeSink(left_r) || !canBeSource(right_r)
+          val (newLeft, newRight) = if (flipConnection) pair.swap else pair
+          newLeft.bulkConnect(newRight)(sourceInfo, ExplicitCompileOptions.NotStrict)
+        } else {
+          recordConnect(sourceInfo, connectCompileOptions, left_r, right_r, context_mod)
+        }
 
       // Handle Records connected to DontCare (change to NotStrict)
       case (left_r: Record, DontCare) =>

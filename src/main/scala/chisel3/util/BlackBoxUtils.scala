@@ -4,7 +4,35 @@ package chisel3.util
 
 import chisel3._
 import chisel3.experimental.{ChiselAnnotation, RunFirrtlTransform}
-import firrtl.transforms.{BlackBoxPathAnno, BlackBoxResourceAnno, BlackBoxInlineAnno, BlackBoxSourceHelper}
+import firrtl.transforms.{BlackBoxPathAnno, BlackBoxResourceAnno, BlackBoxInlineAnno, BlackBoxSourceHelper,
+  BlackBoxNotFoundException}
+import firrtl.annotations.ModuleName
+import java.io.{File, FileNotFoundException}
+import logger.LazyLogging
+
+private[util] object BlackBoxHelpers {
+
+  implicit class BlackBoxInlineAnnoHelpers(anno: BlackBoxInlineAnno.type) extends LazyLogging {
+    /** Generate a BlackBoxInlineAnno from a Java Resource and a module name. */
+    def fromResource(resourceName: String, moduleName: ModuleName) = try {
+      val resource = getClass().getResource(resourceName)
+      val fileName = new File(resource.getFile()).getName()
+      val contents = scala.io.Source.fromInputStream(resource.openStream()).mkString
+      if (contents.size > BigInt(2).pow(20)) {
+        val message =
+          s"Black box resource $resourceName, which will be converted to an inline annotation, is greater than 1 MiB." +
+            "This may affect compiler performance. Consider including this resource via a black box path."
+        logger.warn(message)
+      }
+      BlackBoxInlineAnno(moduleName, fileName, contents)
+    } catch {
+      case e @ (_: FileNotFoundException | _: NullPointerException) =>
+        throw new BlackBoxNotFoundException(resourceName, e.getMessage)
+    }
+  }
+}
+
+import BlackBoxHelpers._
 
 trait HasBlackBoxResource extends BlackBox {
   self: BlackBox =>
@@ -12,7 +40,8 @@ trait HasBlackBoxResource extends BlackBox {
   @deprecated("Use addResource instead", "3.2")
   def setResource(blackBoxResource: String): Unit = addResource(blackBoxResource)
 
-  /** Copies a resource file to the target directory
+  /** Copies a Java resource containing some text into the output directory. This is typically used to copy a Verilog file
+    * to the final output directory, but may be used to copy any Java resource (e.g., a C++ testbench).
     *
     * Resource files are located in project_root/src/main/resources/.
     * Example of adding the resource file project_root/src/main/resources/blackbox.v:
@@ -22,7 +51,7 @@ trait HasBlackBoxResource extends BlackBox {
     */
   def addResource(blackBoxResource: String): Unit = {
     val anno = new ChiselAnnotation with RunFirrtlTransform {
-      def toFirrtl = BlackBoxResourceAnno(self.toNamed, blackBoxResource)
+      def toFirrtl = BlackBoxInlineAnno.fromResource(blackBoxResource, self.toNamed)
       def transformClass = classOf[BlackBoxSourceHelper]
     }
     chisel3.experimental.annotate(anno)
