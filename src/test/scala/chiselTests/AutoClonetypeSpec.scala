@@ -348,5 +348,18 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
       elaborate(new MyModule(UInt(8.W)))
     }
 
+    it should "work for higher-kinded types" in {
+      class DataGen[T <: Data](gen: T) {
+        def newType: T = gen.cloneType
+      }
+      class MyBundle[A <: Data, B <: DataGen[A]](gen: B) extends Bundle {
+        val foo = gen.newType
+      }
+      class MyModule extends MultiIOModule {
+        val io = IO(Output(new MyBundle[UInt, DataGen[UInt]](new DataGen(UInt(3.W)))))
+        io.foo := 0.U
+      }
+      elaborate(new MyModule)
+    }
   }
 }
