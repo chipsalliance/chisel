@@ -171,4 +171,66 @@ sealed class BitPat(val value: BigInt, val mask: BigInt, width: Int) extends Sou
   }.mkString
 
   override def toString = s"BitPat($rawString)"
+
+  /**
+    * If a BitPat overlaps with another BitPat, i.e., exists x : UInt that (x === this) && (x === rhs)
+    *
+    * (lhs overlap rhs) iff bitwise: both care (lhs.mask & rhs.mask) => both equal (lhs.value == rhs.value)
+    */
+  def overlap(rhs: BitPat): Boolean = ((mask & rhs.mask) & (value ^ rhs.value)) == 0
+  /**
+    * If a BitPat contains another BitPat
+    *
+    * (lhs contain rhs) iff bitwise: lhs care => rhs also care && equal (~(rhs.mask & (value xnor rhs.value)))
+    */
+  def contain(rhs: BitPat): Boolean = (mask & (~rhs.mask | (value ^ rhs.value))) == 0
+
+  /**
+    * Calculate intersection of two BitPats
+    * @return A Set of BitPat as the result may not be represented by a single BitPat
+    */
+  def intersect(rhs: BitPat): Set[BitPat] = {
+    if (!overlap(rhs)) {
+      Set()
+    } else {
+      // intersection => any of them care
+      val r_value = this.value | rhs.value
+      val r_mask = this.mask | rhs.mask
+      // as === is zero extended, the intersection should have be the wider one
+      val r_width = this.getWidth max rhs.getWidth
+      Set(new BitPat(r_value, r_mask, r_width))
+   }
+  }
+
+  /**
+    * Subtract BitPat rhs from this
+    * @return A Set of BitPat as the result may not be represented by a single BitPat
+    */
+  def subtract(rhs: BitPat): Set[BitPat] = {
+    def enumerateBits (mask: BigInt): Seq[BigInt] = {
+        if (mask == 0) {
+          Nil
+        } else {
+          // bits comes after the first '1' in a number are inverted in its two's complement.
+          // therefore bit is always the first '1' in x (counting from least significant bit).
+          val bit = mask & (-mask)
+          bit +: enumerateBits(mask & ~bit)
+      }
+    }
+
+    val intersection = intersect(rhs)
+    if (intersection.isEmpty) {
+      Set(this)
+    } else {
+      intersection.flatMap { remove =>
+        enumerateBits(~this.mask & remove.mask).map { bit =>
+          // Only care about higher than current bit in remove
+          val nmask = (this.mask | ~(bit - 1)) & remove.mask
+          val nvalue = (remove.value ^ bit) & nmask
+          new BitPat(nvalue, nmask, remove.getWidth)
+        }
+      }
+    }
+  }
+
 }
