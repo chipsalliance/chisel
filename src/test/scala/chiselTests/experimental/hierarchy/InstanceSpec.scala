@@ -67,32 +67,20 @@ class InstanceSpec extends ChiselFunSpec with Utils {
     }
     describe("0.5: trying to fool typetags") {
       it("0.5.a: casting Definition before Instance is not an error") {
-        //val e = intercept[IllegalArgumentException] {
-          class Top extends Module {
-            val d = Definition(new SelectParameterized[UInt](UInt(3.W)))
-            val i1 = Instance(d.asInstanceOf[Definition[BaseModule]])
-            require(i1.isA[SelectParameterized[UInt]])
-          }
-          val (chirrtl, _) = getFirrtlAndAnnos(new Top)
-        //}
-        //e.getMessage() shouldBe (
-        //  "requirement failed: Expected type of Instance[chisel3.experimental.BaseModule] is not the same as underlying type of " +
-        //  "Definition[chiselTests.experimental.hierarchy.Examples.SelectParameterized[chisel3.UInt]]"
-        //)
+        class Top extends Module {
+          val d = Definition(new SelectParameterized[UInt](UInt(3.W)))
+          val i1 = Instance(d.asInstanceOf[Definition[BaseModule]])
+          require(i1.isA[SelectParameterized[UInt]])
+        }
+        val (chirrtl, _) = getFirrtlAndAnnos(new Top)
       }
       it("0.5.b: casting Module before Definition is not an error") {
-        //val e = intercept[IllegalArgumentException] {
-          class Top extends Module {
-            val d = Definition(new SelectParameterized[UInt](UInt(3.W)).asInstanceOf[BaseModule])
-            val i0: Instance[BaseModule] = Instance(d)
-            require(!i0.isA[SelectParameterized[UInt]])
-          }
-          val (chirrtl, _) = getFirrtlAndAnnos(new Top)
-        //}
-        //e.getMessage() shouldBe (
-          //"requirement failed: Expected type of Definition[chisel3.experimental.BaseModule] " +
-          //"does not match the module class constructed: chiselTests.experimental.hierarchy.Examples.SelectParameterized"
-        //)
+        class Top extends Module {
+          val d = Definition(new SelectParameterized[UInt](UInt(3.W)).asInstanceOf[BaseModule])
+          val i0: Instance[BaseModule] = Instance(d)
+          require(!i0.isA[SelectParameterized[UInt]])
+        }
+        val (chirrtl, _) = getFirrtlAndAnnos(new Top)
       }
       it("0.5.c: casting Instance after it is declared is ok") {
         class Top extends Module {
@@ -761,40 +749,5 @@ class InstanceSpec extends ChiselFunSpec with Utils {
       getFirrtlAndAnnos(new SelectTopParameterized, Seq(collectOverHierarchy))
     }
   }
-  //describe("10: @adam") {
-  //  it("test") {
-
-  //    import scala.reflect.runtime.universe._
-  //    
-  //    
-  //    class Boxy[A](val a: A)(implicit tag: TypeTag[A]) {
-  //     def getTag = tag
-  //      
-  //      def isA[B : TypeTag]: Boolean = tag.tpe =:= typeOf[B]
-  //      def isAn[B : TypeTag]: Boolean = isA[B]
-  //    }
-  //    
-  //    // Want to compile this
-  //    def erased[A](box: Boxy[A]): Int = box match {
-  //      case bs: Boxy[String] => bs.a.toInt
-  //      case bi: Boxy[Int] => println(10);bi.a
-  //    }
-  //    // To this
-  //    import chisel3.internal.adam
-
-  //    def erased2[A](box: Boxy[A]): Int = box match {
-  //      case bs: Boxy[String] @adam if box.isA[String] => bs.a.toInt
-  //      case bi: Boxy[Int @ unchecked] if box.isAn[Int] => bi.a
-  //    }
-  //    def erased3[A](list: List[Boxy[A]]): Int = list match {
-  //      case List(_: Boxy[String]) if list.head.isA[String] => bs.a.toInt
-  //      case List(_: Boxy[Int]) if list.head.isA[Int] => bs.a.toInt
-  //    }
-  //    
-  //    println(erased2(new Boxy(4)))
-  //    println(erased2(new Boxy("33")))
-  //    val x = 10
-  //  }
-  //}
 }
 

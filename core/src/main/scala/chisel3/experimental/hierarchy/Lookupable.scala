@@ -219,23 +219,19 @@ private[chisel3] object Lookupable {
     * @param context new context
     * @return original or clone in the new context
     */
-  private[chisel3] def cloneModuleToContext[T <: BaseModule : TypeTag](module: Either[T, IsClone[T]], context: BaseModule)
+  private[chisel3] def cloneModuleToContext[T <: BaseModule](module: Either[T, IsClone[T]], context: BaseModule)
       (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Either[T, IsClone[T]] = {
     // Recursive call
-    def rec[A <: BaseModule : TypeTag](m: A): Either[A, IsClone[A]] = {
+    def rec[A <: BaseModule](m: A): Either[A, IsClone[A]] = {
       def clone(x: A, p: Option[BaseModule], name: () => String): Either[A, IsClone[A]] = {
         val newChild = new internal.BaseModule.InstanceClone(x, name)
         newChild._parent = p
         Right(newChild)
       }
       (m, context) match {
-        case (c, ctx) if ctx == c =>
-          println("ctx equals branch")
-          Left(c)
+        case (c, ctx) if ctx == c => Left(c)
         case (c, ctx: IsClone[_]) if ctx.isACloneOf(c) => Right(ctx.asInstanceOf[IsClone[A]])
-        case (c, ctx) if c._parent.isEmpty =>
-          println(s"no parent branch: $c not clone of $ctx")
-          Left(c)
+        case (c, ctx) if c._parent.isEmpty => Left(c)
         case (_, _) => 
           cloneModuleToContext(Left(m._parent.get), context) match {
             case Left(p) => Left(m)
@@ -245,17 +241,15 @@ private[chisel3] object Lookupable {
     }
     module match {
       case Left(m) => rec(m)
-      case Right(m: ModuleClone[T]) =>
+      case Right(m: ModuleClone[_]) =>
         rec(m) match {
-          case Left(mx) =>
-            println("Right rec")
-            Right(mx)
-          case Right(i: InstanceClone[T]) =>
+          case Left(mx) => Right(mx)
+          case Right(i: InstanceClone[_]) =>
             val newChild = new InstanceClone(m._proto, () => m.instanceName)
             newChild._parent = i._parent
             Right(newChild)
         }
-      case Right(m: InstanceClone[T]) =>
+      case Right(m: InstanceClone[_]) =>
         rec(m) match {
           case Left(mx) => Right(mx)
           case Right(i: InstanceClone[_]) =>
@@ -273,7 +267,7 @@ private[chisel3] object Lookupable {
     def instanceLookup[A](that: A => B, instance: Instance[A]): C = that(instance.getProto)
   }
 
-  implicit def lookupInstance[B <: BaseModule : TypeTag](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) = new Lookupable[Instance[B]] {
+  implicit def lookupInstance[B <: BaseModule](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) = new Lookupable[Instance[B]] {
     type C = Instance[B]
     def definitionLookup[A](that: A => Instance[B], definition: Definition[A]): C = {
       val ret = that(definition.getProto)
@@ -299,16 +293,14 @@ private[chisel3] object Lookupable {
       val ret = that(instance.getProto)
       instance.cloned match {
         // If instance is just a normal module, no changing of context is necessary
-        case Left(_)  =>
-          new Instance(Left(ret), implicitly[TypeTag[B]])
+        case Left(_)  => new Instance(Left(ret), implicitly[TypeTag[B]])
         case Right(_) =>
           ret match {
-            case i: IsClone[B] =>
+            case i: IsClone[B] @unchecked =>
               val x = cloneModuleToContext(Right(i), instance.getInnerDataContext.get)
               new Instance(x, implicitly[TypeTag[B]])
             case m => new Instance(cloneModuleToContext(Left(m), instance.getInnerDataContext.get), implicitly[TypeTag[B]])
           }
-          //new Instance(cloneModuleToContext(Left(ret), instance.getInnerDataContext.get))
       }
     }
   }

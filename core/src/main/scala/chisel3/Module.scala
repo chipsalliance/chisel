@@ -112,7 +112,6 @@ object Module extends SourceInfoDoc {
   def reset: Reset = Builder.forcedReset
   /** Returns the current Module */
   def currentModule: Option[BaseModule] = Builder.currentModule
-
 }
 
 /** Abstract base class for Modules, which behave much like Verilog modules.
@@ -230,7 +229,6 @@ package internal {
 
     // Private internal class to serve as a _parent for Data in cloned ports
     private[chisel3] class ModuleClone[T <: BaseModule] (val _proto: T) extends PseudoModule with IsClone[T] {
-  //println(s"Instantiating $this with type tag" + implicitly[TypeTag[T]].tpe)
       override def toString = s"ModuleClone(${_proto})"
       def getPorts = _portsRecord
       // ClonePorts that hold the bound ports for this module
@@ -283,7 +281,6 @@ package internal {
       * for ModuleClone.
       */
     private[chisel3] final class InstanceClone[T <: BaseModule] (val _proto: T, val instName: () => String) extends PseudoModule with IsClone[T] {
-  //println(s"Instantiating $this with type tag" + implicitly[TypeTag[T]].tpe)
       override def toString = s"InstanceClone(${_proto})"
       // No addition components are generated
       private[chisel3] def generateComponent(): Option[Component] = None
@@ -306,7 +303,6 @@ package internal {
       * InstanceClone (which represents the returned module).
       */
     private[chisel3] class DefinitionClone[T <: BaseModule] (val _proto: T) extends PseudoModule with IsClone[T] {
-  //println(s"Instantiating $this with type tag" + implicitly[TypeTag[T]].tpe)
       override def toString = s"DefinitionClone(${_proto})"
       // No addition components are generated
       private[chisel3] def generateComponent(): Option[Component] = None
@@ -319,7 +315,6 @@ package internal {
     /** @note If we are cloning a non-module, we need another object which has the proper _parent set!
       */
     private[chisel3] final class InstantiableClone[T <: IsInstantiable] (val _proto: T) extends IsClone[T] {
-  //println(s"Instantiating $this with type tag" + implicitly[TypeTag[T]].tpe)
       private[chisel3] var _parent: Option[BaseModule] = internal.Builder.currentModule
     }
 
@@ -365,6 +360,14 @@ package internal {
 package experimental {
 
   import chisel3.experimental.hierarchy.IsInstantiable
+
+  object BaseModule {
+    implicit class BaseModuleExtensions[T <: BaseModule : TypeTag](b: T) {
+      import chisel3.experimental.hierarchy.{Instance, Definition}
+      def toInstance: Instance[T] = new Instance(Left(b), implicitly[TypeTag[T]])
+      def toDefinition: Definition[T] = new Definition(Left(b), implicitly[TypeTag[T]])
+    }
+  }
   /** Abstract base class for Modules, an instantiable organizational unit for RTL.
     */
   // TODO: seal this?
@@ -669,13 +672,5 @@ package experimental {
         case Some(c) => getRef fullName c
       }
 
-  }
-
-  object BaseModule {
-    implicit class BaseModuleExtensions[T <: BaseModule : TypeTag](b: T) {
-      import chisel3.experimental.hierarchy.{Instance, Definition}
-      def toInstance: Instance[T] = new Instance(Left(b), implicitly[TypeTag[T]])
-      def toDefinition: Definition[T] = new Definition(Left(b), implicitly[TypeTag[T]])
-    }
   }
 }

@@ -8,9 +8,10 @@ import scala.reflect.runtime.universe.{WeakTypeTag, TypeTag}
 import chisel3._
 import scala.collection.mutable.HashMap
 import chisel3.internal.{Builder, DynamicContext}
-import chisel3.internal.sourceinfo.{DefinitionTransform, DefinitionWrapTransform, SourceInfo}
+import chisel3.internal.sourceinfo.SourceInfo
 import chisel3.experimental.BaseModule
 import chisel3.internal.BaseModule.IsClone
+import scala.language.existentials
 
 /** User-facing Definition type.
   * Represents a definition of an object of type [[A]] which are marked as @instantiable 
@@ -21,10 +22,7 @@ import chisel3.internal.BaseModule.IsClone
   * @param cloned The internal representation of the instance, which may be either be directly the object, or a clone of an object
   */
 case class Definition[+A] private[chisel3] (private[chisel3] cloned: Either[A, IsClone[A]], private[chisel3] definitionTypeTag: TypeTag[_]) extends IsLookupable with Hierarchy[A] {
-  private[chisel3] def protoClassString: String = getProto.getClass().getCanonicalName
-  private[chisel3] def protoTypeString: String = definitionTypeTag.tpe.toString
 
-  //require(protoTypeString.startsWith(protoClassString), s"Expected type of Definition[${tpeTagString}] does not match the module class constructed: ${protoClassString}")
   /** Used by Chisel's internal macros. DO NOT USE in your normal Chisel code!!!
     * Instead, mark the field you are accessing with [[@public]]
     *
@@ -46,7 +44,7 @@ case class Definition[+A] private[chisel3] (private[chisel3] cloned: Either[A, I
   /** @return the context of any Data's return from inside the instance */
   private[chisel3] def getInnerDataContext: Option[BaseModule] = getProto match {
     case value: BaseModule =>
-      val newChild = new internal.BaseModule.DefinitionClone(value.asInstanceOf[A with BaseModule])
+      val newChild = new internal.BaseModule.DefinitionClone(value)
       newChild._circuit = value._circuit.orElse(Some(value))
       newChild._parent = None
       Some(newChild)
@@ -55,10 +53,7 @@ case class Definition[+A] private[chisel3] (private[chisel3] cloned: Either[A, I
 
   def toInstance: Instance[A] = new Instance(Left(getProto), definitionTypeTag)
 
-  // SCALA Reflection API
-  def isA[B : WeakTypeTag]: Boolean = {
-    implicitly[WeakTypeTag[B]].tpe <:< definitionTypeTag.tpe
-  }
+  def isA[B : WeakTypeTag]: Boolean = definitionTypeTag.tpe <:< implicitly[WeakTypeTag[B]].tpe 
 }
 
 /** Factory methods for constructing [[Definition]]s */
@@ -74,17 +69,10 @@ object Definition extends SourceInfoDoc {
       */
     def toAbsoluteTarget = d.getProto.toAbsoluteTarget
   }
-  /** A construction method to build a Definition of a Module
-    *
-    * @param proto the Module being defined
-    *
-    * @return the input module as a Definition
-    */
-  //def apply[T <: BaseModule with IsInstantiable](proto: => T): Definition[T] = macro DefinitionTransform.apply
 
   /** A construction method to build a Definition of a Module
     *
-    * @param bc the Module being defined
+    * @param proto the Module being defined
     *
     * @return the input module as a Definition
     */

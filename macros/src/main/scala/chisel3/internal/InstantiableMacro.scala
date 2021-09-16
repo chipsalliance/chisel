@@ -38,11 +38,6 @@ private[chisel3] object instantiableMacro {
           if(!c.internal.enclosingOwner.isStatic) {
             c.error(c.enclosingPosition, "@instantiable must be used non-inner classes or traits")
           }
-          //if(mods.annotations.map(_.toString).contains("new debugMe()")) {
-          //  val bool = c.internal.enclosingOwner.isStatic
-          //  c.error(c.enclosingPosition, show(c.internal.enclosingOwner) + bool )
-          //}
-          //c.error(c.enclosingPosition, mods.annotations.map(_.toString).mkString(","))
           val defname = TypeName(tpname + c.freshName())
           val instname = TypeName(tpname + c.freshName())
           val (newStats, extensions) = processBody(stats)
@@ -85,5 +80,3 @@ private[chisel3] class instantiable extends StaticAnnotation {
   def macroTransform(annottees: Any*): Any = macro instantiableMacro.impl
 }
 private[chisel3] class public extends StaticAnnotation
-class debugMe extends StaticAnnotation
-
