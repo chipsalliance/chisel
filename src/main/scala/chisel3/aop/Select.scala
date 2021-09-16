@@ -3,13 +3,16 @@
 package chisel3.aop
 
 import chisel3._
-import chisel3.experimental.{BaseModule, FixedPoint}
-import chisel3.internal.HasId
+import chisel3.internal.{HasId}
+import chisel3.experimental.BaseModule
+import chisel3.experimental.FixedPoint
 import chisel3.internal.firrtl._
+import chisel3.internal.PseudoModule
 import chisel3.internal.BaseModule.ModuleClone
 import firrtl.annotations.ReferenceTarget
 
 import scala.collection.mutable
+import chisel3.internal.naming.chiselName
 
 /** Use to select Chisel components in a module, after that module has been constructed
   * Useful for adding additional Chisel annotations or for use within an [[Aspect]]
@@ -84,7 +87,8 @@ object Select {
     module._component.get match {
       case d: DefModule => d.commands.flatMap {
         case i: DefInstance => i.id match {
-          case _: ModuleClone => None
+          case m: ModuleClone[_] if !m._madeFromDefinition => None
+          case _: PseudoModule => throw new Exception("Aspect APIs are currently incompatible with Definition/Instance")
           case other          => Some(other)
         }
         case _ => None
@@ -281,7 +285,7 @@ object Select {
     val printfs = mutable.ArrayBuffer[Printf]()
     searchWhens(module, (cmd: Command, preds: Seq[Predicate]) => {
       cmd match {
-        case chisel3.internal.firrtl.Printf(_, clock, pable) => printfs += Printf(preds, pable, getId(clock).asInstanceOf[Clock])
+        case chisel3.internal.firrtl.Printf(id, _, clock, pable) => printfs += Printf(id, preds, pable, getId(clock).asInstanceOf[Clock])
         case other =>
       }
     })
@@ -418,7 +422,7 @@ object Select {
     * @param pable
     * @param clock
     */
-  case class Printf(preds: Seq[Predicate], pable: Printable, clock: Clock) extends Serializeable {
+  case class Printf(id: printf.Printf, preds: Seq[Predicate], pable: Printable, clock: Clock) extends Serializeable {
     def serialize: String = {
       s"printf when(${preds.map(_.serialize).mkString(" & ")}) on ${getName(clock)}: $pable"
     }

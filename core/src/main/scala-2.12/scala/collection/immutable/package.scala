@@ -10,4 +10,7 @@ package object immutable {
 
   val VectorMap = ListMap
   type VectorMap[K, +V] = ListMap[K, V]
+
+  val LazyList = Stream
+  type LazyList[+A] = Stream[A]
 }

@@ -16,13 +16,13 @@ addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.9.15")
 
 addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "3.0.0")
 
-addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.2.21" )
+addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.2.23" )
 
 addSbtPlugin("com.eed3si9n" % "sbt-sriracha" % "0.1.0")
 
-addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.9.2")
+addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "1.0.0")
 
 addSbtPlugin("com.geirsson" % "sbt-ci-release" % "1.5.7")
 
 // From FIRRTL for building from source
-addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.9.29")
+addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.9.30")

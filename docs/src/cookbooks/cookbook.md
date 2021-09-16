@@ -9,13 +9,15 @@ section: "chisel3"
 
 Please note that these examples make use of [Chisel's scala-style printing](../explanations/printing#scala-style).
 
-* Converting Chisel Types to/from UInt
+* Type Conversions
   * [How do I create a UInt from an instance of a Bundle?](#how-do-i-create-a-uint-from-an-instance-of-a-bundle)
   * [How do I create a Bundle from a UInt?](#how-do-i-create-a-bundle-from-a-uint)
   * [How can I tieoff a Bundle/Vec to 0?](#how-can-i-tieoff-a-bundlevec-to-0)
   * [How do I create a Vec of Bools from a UInt?](#how-do-i-create-a-vec-of-bools-from-a-uint)
   * [How do I create a UInt from a Vec of Bool?](#how-do-i-create-a-uint-from-a-vec-of-bool)
+  * [How do I connect a subset of Bundle fields?](#how-do-i-connect-a-subset-of-bundle-fields)
 * Vectors and Registers
+  * [Can I make a 2D or 3D Vector?](#can-i-make-a-2D-or-3D-Vector)
   * [How do I create a Vector of Registers?](#how-do-i-create-a-vector-of-registers)
   * [How do I create a Reg of type Vec?](#how-do-i-create-a-reg-of-type-vec)
 * [How do I create a finite state machine?](#how-do-i-create-a-finite-state-machine-fsm)
@@ -26,8 +28,10 @@ Please note that these examples make use of [Chisel's scala-style printing](../e
   * [How do I get Chisel to name signals properly in blocks like when/withClockAndReset?](#how-do-i-get-chisel-to-name-signals-properly-in-blocks-like-whenwithclockandreset)
   * [How do I get Chisel to name the results of vector reads properly?](#how-do-i-get-chisel-to-name-the-results-of-vector-reads-properly)
   * [How can I dynamically set/parametrize the name of a module?](#how-can-i-dynamically-setparametrize-the-name-of-a-module)
+* Directionality
+  * [How do I strip directions from a bidirectional Bundle (or other Data)?](#how-do-i-strip-directions-from-a-bidirectional-bundle-or-other-data)
 
-## Converting Chisel Types to/from UInt
+## Type Conversions
 
 ### How do I create a UInt from an instance of a Bundle?
 
@@ -148,7 +152,56 @@ class Foo extends RawModule {
 }
 ```
 
+### How do I connect a subset of Bundle fields?
+
+See the [DataView cookbook](dataview#how-do-i-connect-a-subset-of-bundle-fields).
+
 ## Vectors and Registers
+
+### Can I make a 2D or 3D Vector?
+
+Yes. Using `VecInit` you can make Vectors that hold Vectors of Chisel types. Methods `fill` and `tabulate` make these multi-dimensional Vectors.
+
+```scala mdoc:silent:reset
+import chisel3._
+
+class MyBundle extends Bundle {
+  val foo = UInt(4.W)
+  val bar = UInt(4.W)
+}
+
+class Foo extends Module {
+  //2D Fill
+  val twoDVec = VecInit.fill(2, 3)(5.U)
+  //3D Fill
+  val myBundle = Wire(new MyBundle)
+  myBundle.foo := 0xc.U
+  myBundle.bar := 0x3.U
+  val threeDVec = VecInit.fill(1, 2, 3)(myBundle)
+  assert(threeDVec(0)(0)(0).foo === 0xc.U && threeDVec(0)(0)(0).bar === 0x3.U)
+
+  //2D Tabulate
+  val indexTiedVec = VecInit.tabulate(2, 2){ (x, y) => (x + y).U }
+  assert(indexTiedVec(0)(0) === 0.U)
+  assert(indexTiedVec(0)(1) === 1.U)
+  assert(indexTiedVec(1)(0) === 1.U)
+  assert(indexTiedVec(1)(1) === 2.U)
+  //3D Tabulate
+  val indexTiedVec3D = VecInit.tabulate(2, 3, 4){ (x, y, z) => (x + y * z).U }
+  assert(indexTiedVec3D(0)(0)(0) === 0.U)
+  assert(indexTiedVec3D(1)(1)(1) === 2.U)
+  assert(indexTiedVec3D(1)(1)(2) === 3.U)
+  assert(indexTiedVec3D(1)(1)(3) === 4.U)
+  assert(indexTiedVec3D(1)(2)(3) === 7.U)
+}
+```
+```scala mdoc:invisible
+// Hidden but will make sure this actually compiles
+import chisel3.stage.ChiselStage
+
+ChiselStage.emitVerilog(new Foo)
+```
+
 
 ### How do I create a Vector of Registers?
 
@@ -456,4 +509,56 @@ ChiselStage.emitVerilog(new Salt)
 
 ```scala mdoc:verilog
 ChiselStage.emitVerilog(new Salt)
+```
+
+## Directionality
+
+### How do I strip directions from a bidirectional Bundle (or other Data)?
+
+Given a bidirectional port like a `Decoupled`, you will get an error if you try to connect it directly
+to a register:
+
+```scala mdoc:silent
+import chisel3.util.Decoupled
+class BadRegConnect extends Module {
+  val io = IO(new Bundle {
+    val enq = Decoupled(UInt(8.W))
+  })
+  
+  val monitor = Reg(chiselTypeOf(io.enq))
+  monitor := io.enq
+}
+```
+
+```scala mdoc:crash
+ChiselStage.emitVerilog(new BadRegConnect)
+```
+
+While there is no construct to "strip direction" in Chisel3, wrapping a type in `Output(...)`
+(the default direction in Chisel3) will
+set all of the individual elements to output direction.
+This will have the desired result when used to construct a Register:
+
+```scala mdoc:silent
+import chisel3.util.Decoupled
+class CoercedRegConnect extends Module {
+  val io = IO(new Bundle {
+    val enq = Flipped(Decoupled(UInt(8.W)))
+  })
+  
+  // Make a Reg which contains all of the bundle's signals, regardless of their directionality
+  val monitor = Reg(Output(chiselTypeOf(io.enq)))
+  // Even though io.enq is bidirectional, := will drive all fields of monitor with the fields of io.enq
+  monitor := io.enq
+}
+```
+
+<!-- Just make sure it actually works -->
+```scala mdoc:invisible
+ChiselStage.emitVerilog(new CoercedRegConnect {
+  // Provide default connections that would just muddy the example
+  io.enq.ready := true.B
+  // dontTouch so that it shows up in the Verilog
+  dontTouch(monitor)
+})
 ```

@@ -3,11 +3,15 @@
 package chisel3.internal
 
 import chisel3._
+import chisel3.experimental.dataview.reify
 import chisel3.experimental.{Analog, BaseModule, attach}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.firrtl.{Connect, DefInvalid}
+
 import scala.language.experimental.macros
 import chisel3.internal.sourceinfo._
+
+import scala.annotation.tailrec
 
 /**
 * BiConnect.connect executes a bidirectional connection element-wise.
@@ -113,14 +117,33 @@ private[chisel3] object BiConnect {
           }
         }
       }
-      // Handle Records defined in Chisel._ code (change to NotStrict)
-      case (left_r: Record, right_r: Record) => (left_r.compileOptions, right_r.compileOptions) match {
-        case (ExplicitCompileOptions.NotStrict, _) =>
-          left_r.bulkConnect(right_r)(sourceInfo, ExplicitCompileOptions.NotStrict)
-        case (_, ExplicitCompileOptions.NotStrict) =>
-          left_r.bulkConnect(right_r)(sourceInfo, ExplicitCompileOptions.NotStrict)
-        case _ => recordConnect(sourceInfo, connectCompileOptions, left_r, right_r, context_mod)
-      }
+      // Handle Records defined in Chisel._ code by emitting a FIRRTL partial connect
+      case pair @ (left_r: Record, right_r: Record) =>
+        val notStrict =
+          Seq(left_r.compileOptions, right_r.compileOptions).contains(ExplicitCompileOptions.NotStrict)
+        if (notStrict) {
+          // Traces flow from a child Data to its parent
+          @tailrec def traceFlow(currentlyFlipped: Boolean, data: Data): Boolean = {
+            import SpecifiedDirection.{Input => SInput, Flip => SFlip}
+            val sdir = data.specifiedDirection
+            val flipped = sdir == SInput || sdir == SFlip
+            data.binding.get match {
+              case ChildBinding(parent) => traceFlow(flipped ^ currentlyFlipped, parent)
+              case PortBinding(enclosure) =>
+                val childPort = enclosure != context_mod
+                childPort ^ flipped ^ currentlyFlipped
+              case _ => true
+            }
+          }
+          def canBeSink(data: Data): Boolean = traceFlow(true, data)
+          def canBeSource(data: Data): Boolean = traceFlow(false, data)
+          // chisel3 <> is commutative but FIRRTL <- is not
+          val flipConnection = !canBeSink(left_r) || !canBeSource(right_r)
+          val (newLeft, newRight) = if (flipConnection) pair.swap else pair
+          newLeft.bulkConnect(newRight)(sourceInfo, ExplicitCompileOptions.NotStrict)
+        } else {
+          recordConnect(sourceInfo, connectCompileOptions, left_r, right_r, context_mod)
+        }
 
       // Handle Records connected to DontCare (change to NotStrict)
       case (left_r: Record, DontCare) =>
@@ -215,8 +238,10 @@ private[chisel3] object BiConnect {
 
   // This function checks if element-level connection operation allowed.
   // Then it either issues it or throws the appropriate exception.
-  def elemConnect(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions, left: Element, right: Element, context_mod: RawModule): Unit = {
+  def elemConnect(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions, _left: Element, _right: Element, context_mod: RawModule): Unit = {
     import BindingDirection.{Internal, Input, Output} // Using extensively so import these
+    val left = reify(_left)
+    val right = reify(_right)
     // If left or right have no location, assume in context module
     // This can occur if one of them is a literal, unbound will error previously
     val left_mod: BaseModule  = left.topBinding.location.getOrElse(context_mod)

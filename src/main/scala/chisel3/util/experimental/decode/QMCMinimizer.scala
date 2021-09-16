@@ -286,7 +286,7 @@ object QMCMinimizer extends Minimizer {
       if (tb.table.exists(x => x._1 == t._1)) {
         tb.copy(table = tb.table.map { case (k, v) =>
           if (k == t._1) {
-            def ones(bitPat: BitPat) = bitPat.toString.drop(7).dropRight(1).zipWithIndex.collect{case ('1', x) => x}
+            def ones(bitPat: BitPat) = bitPat.rawString.zipWithIndex.collect{case ('1', x) => x}
             (k, BitPat("b" + (0 until v.getWidth).map(i => if ((ones(v) ++ ones(t._2)).contains(i)) "1" else "?").mkString))
           } else (k, v)
         })
