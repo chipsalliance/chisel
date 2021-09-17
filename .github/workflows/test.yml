@@ -18,7 +18,6 @@ jobs:
         jvm: ["adopt@1.8"]
         scala: ["2.13.6", "2.12.14"]
         verilator: ["4.204"]
-        z3: ["4.8.10"]
         espresso: ["2.4"]
     runs-on: ${{ matrix.system }}
 
@@ -26,33 +25,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Install Z3 Build Dependencies(Ubuntu)
+      - name: Install Z3
         if: matrix.system == 'ubuntu-20.04'
-        run: sudo apt-get install -y libfl2 libfl-dev ninja-build
-
-      - name: Cache Z3 ${{ matrix.z3 }}
-        uses: actions/cache@v2.1.6
-        id: cache-z3
-        with:
-          path: z3-z3-${{ matrix.z3 }}
-          key: ${{ matrix.system }}-z3-ninja-${{ matrix.z3 }}
-      - name: Compile Z3
-        if: steps.cache-z3.outputs.cache-hit != 'true'
         run: |
-          wget https://github.com/Z3Prover/z3/archive/refs/tags/z3-${{ matrix.z3 }}.tar.gz
-          tar xvf z3-${{ matrix.z3 }}.tar.gz
-          cd z3-z3-${{ matrix.z3 }}
-          mkdir -p build
-          cd build
-          cmake .. \
-            -GNinja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DZ3_LINK_TIME_OPTIMIZATION=1
-          ninja
-      - name: Install Z3 ${{ matrix.z3 }}
-        run: |
-          cd z3-z3-${{ matrix.z3 }}/build
-          sudo ninja install
+          sudo apt-get install -y z3
           z3 --version
 
       - name: Cache Verilator ${{ matrix.verilator }}
@@ -76,28 +52,13 @@ jobs:
           sudo make install
           verilator --version
 
-      - name: Cache Espresso ${{ matrix.espresso }}
-        uses: actions/cache@v2.1.6
-        id: cache-espresso
-        with:
-          path: espresso-${{ matrix.espresso }}
-          key: ${{ matrix.system }}-espresso-ninja-${{ matrix.espresso }}
-      - name: Compile Espresso ${{ matrix.espresso }}
-        if: steps.cache-espresso.outputs.cache-hit != 'true'
+      - name: Install Espresso
         run: |
-          wget https://github.com/chipsalliance/espresso/archive/refs/tags/v${{ matrix.espresso }}.tar.gz
-          tar xvf v${{ matrix.espresso }}.tar.gz
-          cd espresso-${{ matrix.espresso }}
-          mkdir -p build
-          cd build
-          cmake .. \
-            -GNinja \
-            -DCMAKE_BUILD_TYPE=Release
-          ninja
-      - name: Install Espresso ${{ matrix.espresso }}
-        run: |
-          cd espresso-${{ matrix.espresso }}/build
-          sudo ninja install
+          cd /tmp
+          wget https://github.com/chipsalliance/espresso/releases/download/v${{ matrix.espresso }}/x86_64-linux-gnu-espresso
+          chmod +x x86_64-linux-gnu-espresso
+          sudo mv x86_64-linux-gnu-espresso /usr/local/bin/espresso
+          espresso || true
 
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
