@@ -34,7 +34,9 @@ package object Chisel {
     def asInput: T = Input(target)
     def asOutput: T = Output(target)
     def flip: T = Flipped(target)
-    def flip(dummy: Int = 0): T = flip
+
+    @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "3.5")
+    def flip(dummy: Int*): T = flip
   }
 
   implicit class AddDirMethodToData[T<:Data](target: T) {

@@ -149,7 +149,8 @@ trait Num[T <: Data] {
     * @group Arithmetic
     */
   final def abs: T = macro SourceInfoTransform.noArg
-  @deprecated("Calling a nullary function with an empty argument list will be removed by official release", "chisel3")
+
+  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "3.5")
   final def abs(dummy: Int*): T = macro SourceInfoTransform.noArgDummy
 
   /** @group SourceInfoTransformMacro */

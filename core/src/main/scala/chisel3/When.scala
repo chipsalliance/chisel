@@ -112,8 +112,9 @@ final class WhenContext private[chisel3] (
     new WhenContext(sourceInfo, None, block, firrtlDepth + 1, cond ++: altConds)
 
   def active: Boolean = scopeOpen
-  @deprecated("Calling a nullary function with an empty argument list will be removed by official release", "chisel3")
-  def active(dummy: Int = 0): Boolean = active
+
+  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "3.5")
+  def active(dummy: Int*): Boolean = active
 
   /*
    *
