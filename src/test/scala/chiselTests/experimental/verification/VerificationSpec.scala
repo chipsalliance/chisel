@@ -104,9 +104,9 @@ class VerificationSpec extends ChiselPropSpec with Matchers {
     val firLines = scala.io.Source.fromFile(firFile).getLines.toList
 
     // check that verification components have expected names
-    exactly(1, firLines) should include ("cover(clock, _T, UInt<1>(1), \"\") : cov")
-    exactly(1, firLines) should include ("assume(clock, _T_3, UInt<1>(1), \"\") : assm")
-    exactly(1, firLines) should include ("assert(clock, _T_6, UInt<1>(1), \"\") : asst")
+    exactly(1, firLines) should include ("cover(clock, _T, UInt<1>(\"h1\"), \"\") : cov")
+    exactly(1, firLines) should include ("assume(clock, _T_3, UInt<1>(\"h1\"), \"\") : assm")
+    exactly(1, firLines) should include ("assert(clock, _T_6, UInt<1>(\"h1\"), \"\") : asst")
   }
 
   property("annotation of verification constructs with suggested name should work") {
@@ -148,7 +148,7 @@ class VerificationSpec extends ChiselPropSpec with Matchers {
     val firLines = scala.io.Source.fromFile(firFile).getLines.toList
 
     // check that verification components have expected names
-    exactly(1, firLines) should include ("assert(clock, _T, UInt<1>(1), \"\") : hello")
-    exactly(1, firLines) should include ("assume(clock, _T_3, UInt<1>(1), \"\") : howdy")
+    exactly(1, firLines) should include ("assert(clock, _T, UInt<1>(\"h1\"), \"\") : hello")
+    exactly(1, firLines) should include ("assume(clock, _T_3, UInt<1>(\"h1\"), \"\") : howdy")
   }
 }

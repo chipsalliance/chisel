@@ -135,6 +135,24 @@ abstract class EnumType(private val factory: EnumFactory, selfAnnotating: Boolea
     }
   }
 
+  /** Test if this enumeration is equal to any of the values in a given sequence
+    *
+    * @param s a [[scala.collection.Seq$ Seq]] of enumeration values to look for
+    * @return a hardware [[Bool]] that indicates if this value matches any of the given values
+    */
+  final def isOneOf(s: Seq[EnumType])(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = {
+    VecInit(s.map(this === _)).asUInt().orR()
+  }
+
+  /** Test if this enumeration is equal to any of the values given as arguments
+    *
+    * @param u1 the first value to look for
+    * @param u2 zero or more additional values to look for
+    * @return a hardware [[Bool]] that indicates if this value matches any of the given values
+    */
+  final def isOneOf(u1: EnumType, u2: EnumType*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
+    = isOneOf(u1 +: u2.toSeq)
+
   def next(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): this.type = {
     if (litOption.isDefined) {
       val index = factory.all.indexOf(this)
