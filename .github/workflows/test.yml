@@ -16,7 +16,7 @@ jobs:
       matrix:
         system: ["ubuntu-20.04"]
         jvm: ["adopt@1.8"]
-        scala: ["2.13.6", "2.12.14"]
+        scala: ["2.13.6", "2.12.15"]
         verilator: ["4.204"]
         espresso: ["2.4"]
     runs-on: ${{ matrix.system }}
@@ -67,7 +67,7 @@ jobs:
       - name: Cache Scala
         uses: coursier/cache-action@v5
       - name: Documentation (Scala 2.12 only)
-        if: matrix.scala == '2.12.14'
+        if: startsWith(matrix.scala, '2.12')
         run: sbt ++${{ matrix.scala }} docs/mdoc
       - name: Test
         run: sbt ++${{ matrix.scala }} test noPluginTests/test
