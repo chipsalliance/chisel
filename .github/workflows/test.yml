@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        scala: [2.12.13, 2.11.12]
+        scala: [2.12.15, 2.11.12]
     container:
       image: ucbbar/chisel3-tools
       options: --user github --entrypoint /bin/bash
@@ -32,16 +32,16 @@ jobs:
       - name: Cache Scala
         uses: coursier/cache-action@v5
       - name: Documentation (Scala 2.12 only)
-        if: matrix.scala == '2.12.13'
+        if: startsWith(matrix.scala, '2.12')
         run: sbt ++${{ matrix.scala }} docs/mdoc
       - name: Test
         run: sbt ++${{ matrix.scala }} test noPluginTests/test
       - name: Binary compatibility
         run: sbt ++${{ matrix.scala }} mimaReportBinaryIssues
-      # Chisel plugin not yet release for Scala 2.12.13, test with 2.12.12
+      # Chisel plugin not yet released for Scala 2.12.14 and 2.12.15
       - name: Binary compatibility (Plugin, Scala 2.12 only)
-        if: matrix.scala == '2.12.13'
-        run: sbt ++2.12.12 "plugin / mimaReportBinaryIssues"
+        if: startsWith(matrix.scala, '2.12')
+        run: sbt ++2.12.13 "plugin / mimaReportBinaryIssues"
 
   # Sentinel job to simplify how we specify which checks need to pass in branch
   # protection and in Mergify
