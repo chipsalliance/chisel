@@ -43,8 +43,8 @@ lazy val commonSettings = Seq (
   organization := "edu.berkeley.cs",
   version := "3.4-SNAPSHOT",
   autoAPIMappings := true,
-  scalaVersion := "2.12.13",
-  crossScalaVersions := Seq("2.12.12", "2.11.12"),
+  scalaVersion := "2.12.15",
+  crossScalaVersions := Seq("2.12.15", "2.11.12"),
   scalacOptions := Seq("-deprecation", "-feature") ++ scalacOptionsVersion(scalaVersion.value),
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   addCompilerPlugin("org.scalamacros" % "paradise" % "2.1.1" cross CrossVersion.full),
@@ -126,6 +126,8 @@ lazy val pluginScalaVersions = Seq(
   "2.12.11",
   "2.12.12",
   "2.12.13",
+  "2.12.14",
+  "2.12.15",
 )
 
 lazy val plugin = (project in file("plugin")).
@@ -147,9 +149,12 @@ lazy val plugin = (project in file("plugin")).
   ).
   settings(
     mimaPreviousArtifacts := {
-      // Not published for 2.11, do not try to check binary compatibility with a 2.11 artifact
-      if (scalaVersion.value.startsWith("2.11")) Set()
-      else Set("edu.berkeley.cs" % "chisel3-plugin" % "3.4.3" cross CrossVersion.full)
+      // Only check plugin against versions it's published for
+      if (VersionNumber(scalaVersion.value) matchesSemVer SemanticSelector("2.12.2 - 2.12.13")) {
+        Set("edu.berkeley.cs" % "chisel3-plugin" % "3.4.4" cross CrossVersion.full)
+      } else {
+        Set()
+      }
     }
   )
 
@@ -169,7 +174,7 @@ lazy val macros = (project in file("macros")).
   settings(name := "chisel3-macros").
   settings(commonSettings: _*).
   settings(publishSettings: _*).
-  settings(mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-macros" % "3.4.3"))
+  settings(mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-macros" % "3.4.4"))
 
 lazy val firrtlRef = ProjectRef(workspaceDirectory / "firrtl", "firrtl")
 
@@ -184,7 +189,7 @@ lazy val core = (project in file("core")).
   ).
   settings(publishSettings: _*).
   settings(
-    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-core" % "3.4.3"),
+    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3-core" % "3.4.4"),
     mimaBinaryIssueFilters ++= Seq(
       // Modified package private methods (https://github.com/lightbend/mima/issues/53)
       ProblemFilters.exclude[IncompatibleMethTypeProblem]("chisel3.internal.Builder.pushPrefix"),
@@ -243,7 +248,7 @@ lazy val chisel = (project in file(".")).
   dependsOn(core).
   aggregate(macros, core, plugin).
   settings(
-    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3" % "3.4.3"),
+    mimaPreviousArtifacts := Set("edu.berkeley.cs" %% "chisel3" % "3.4.4"),
     mimaBinaryIssueFilters ++= Seq(
       // Private class
       ProblemFilters.exclude[FinalClassProblem]("chisel3.internal.firrtl.Emitter"),
