@@ -3,13 +3,13 @@
 package chisel3.internal.firrtl
 
 import firrtl.{ir => fir}
-
 import chisel3._
 import chisel3.internal._
 import chisel3.internal.sourceinfo.SourceInfo
 import chisel3.experimental._
 import _root_.firrtl.{ir => firrtlir}
-import _root_.firrtl.PrimOps
+import _root_.firrtl.{PrimOps, RenameMap}
+import _root_.firrtl.annotations.Annotation
 
 import scala.collection.immutable.NumericRange
 import scala.math.BigDecimal.RoundingMode
@@ -65,13 +65,19 @@ object PrimOp {
 }
 
 abstract class Arg {
-  def fullName(ctx: Component): String = name
+  def localName: String = name
+  def contextualName(ctx: Component): String = name
+  def fullName(ctx: Component): String = contextualName(ctx)
   def name: String
 }
 
 case class Node(id: HasId) extends Arg {
-  override def fullName(ctx: Component): String = id.getOptionRef match {
-    case Some(arg) => arg.fullName(ctx)
+  override def contextualName(ctx: Component): String = id.getOptionRef match {
+    case Some(arg) => arg.contextualName(ctx)
+    case None => id.instanceName
+  }
+  override def localName: String = id.getOptionRef match {
+    case Some(arg) => arg.localName
     case None => id.instanceName
   }
   def name: String = id.getOptionRef match {
@@ -83,13 +89,21 @@ case class Node(id: HasId) extends Arg {
 abstract class LitArg(val num: BigInt, widthArg: Width) extends Arg {
   private[chisel3] def forcedWidth = widthArg.known
   private[chisel3] def width: Width = if (forcedWidth) widthArg else Width(minWidth)
-  override def fullName(ctx: Component): String = name
+  override def contextualName(ctx: Component): String = name
   // Ensure the node representing this LitArg has a ref to it and a literal binding.
   def bindLitArg[T <: Element](elem: T): T = {
     elem.bind(ElementLitBinding(this))
     elem.setRef(this)
     elem
   }
+
+  /** Provides a mechanism that LitArgs can have their width adjusted
+    * to match other members of a VecLiteral
+    *
+    * @param newWidth the new width for this
+    * @return
+    */
+  def cloneWithWidth(newWidth: Width): this.type
 
   protected def minWidth: Int
   if (forcedWidth) {
@@ -106,6 +120,10 @@ case class ULit(n: BigInt, w: Width) extends LitArg(n, w) {
   def name: String = "UInt" + width + "(\"h0" + num.toString(16) + "\")"
   def minWidth: Int = 1 max n.bitLength
 
+  def cloneWithWidth(newWidth: Width): this.type = {
+    ULit(n, newWidth).asInstanceOf[this.type]
+  }
+
   require(n >= 0, s"UInt literal ${n} is negative")
 }
 
@@ -115,6 +133,10 @@ case class SLit(n: BigInt, w: Width) extends LitArg(n, w) {
     s"asSInt(${ULit(unsigned, width).name})"
   }
   def minWidth: Int = 1 + n.bitLength
+
+  def cloneWithWidth(newWidth: Width): this.type = {
+    SLit(n, newWidth).asInstanceOf[this.type]
+  }
 }
 
 case class FPLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends LitArg(n, w) {
@@ -123,6 +145,10 @@ case class FPLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends LitArg(n
     s"asFixedPoint(${ULit(unsigned, width).name}, ${binaryPoint.asInstanceOf[KnownBinaryPoint].value})"
   }
   def minWidth: Int = 1 + n.bitLength
+
+  def cloneWithWidth(newWidth: Width): this.type = {
+    FPLit(n, newWidth, binaryPoint).asInstanceOf[this.type]
+  }
 }
 
 case class IntervalLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends LitArg(n, w) {
@@ -135,20 +161,45 @@ case class IntervalLit(n: BigInt, w: Width, binaryPoint: BinaryPoint) extends Li
       IntervalRange.getBound(isClosed = true, BigDecimal(n)), IntervalRange.getRangeWidth(binaryPoint))
   }
   def minWidth: Int = 1 + n.bitLength
+
+  def cloneWithWidth(newWidth: Width): this.type = {
+    IntervalLit(n, newWidth, binaryPoint).asInstanceOf[this.type]
+  }
 }
 
 case class Ref(name: String) extends Arg
+/** Arg for ports of Modules
+  * @param mod the module this port belongs to
+  * @param name the name of the port
+  */
 case class ModuleIO(mod: BaseModule, name: String) extends Arg {
-  override def fullName(ctx: Component): String =
+  override def contextualName(ctx: Component): String =
     if (mod eq ctx.id) name else s"${mod.getRef.name}.$name"
 }
+/** Ports of cloned modules (CloneModuleAsRecord)
+  * @param mod The original module for which these ports are a clone
+  * @param name the name of the module instance
+  */
+case class ModuleCloneIO(mod: BaseModule, name: String) extends Arg {
+  override def localName = ""
+  override def contextualName(ctx: Component): String =
+    // NOTE: mod eq ctx.id only occurs in Target and Named-related APIs
+    if (mod eq ctx.id) localName else name
+}
 case class Slot(imm: Node, name: String) extends Arg {
-  override def fullName(ctx: Component): String =
-    if (imm.fullName(ctx).isEmpty) name else s"${imm.fullName(ctx)}.${name}"
+  override def contextualName(ctx: Component): String = {
+    val immName = imm.contextualName(ctx)
+    if (immName.isEmpty) name else s"$immName.$name"
+  }
+  override def localName: String = {
+    val immName = imm.localName
+    if (immName.isEmpty) name else s"$immName.$name"
+  }
 }
 case class Index(imm: Arg, value: Arg) extends Arg {
   def name: String = s"[$value]"
-  override def fullName(ctx: Component): String = s"${imm.fullName(ctx)}[${value.fullName(ctx)}]"
+  override def contextualName(ctx: Component): String = s"${imm.contextualName(ctx)}[${value.contextualName(ctx)}]"
+  override def localName: String = s"${imm.localName}[${value.localName}]"
 }
 
 object Width {
@@ -158,6 +209,7 @@ object Width {
 
 sealed abstract class Width {
   type W = Int
+  def min(that: Width): Width = this.op(that, _ min _)
   def max(that: Width): Width = this.op(that, _ max _)
   def + (that: Width): Width = this.op(that, _ + _)
   def + (that: Int): Width = this.op(this, (a, b) => a + that)
@@ -734,14 +786,14 @@ case class Attach(sourceInfo: SourceInfo, locs: Seq[Node]) extends Command
 case class ConnectInit(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
 case class Stop(sourceInfo: SourceInfo, clock: Arg, ret: Int) extends Command
 case class Port(id: Data, dir: SpecifiedDirection)
-case class Printf(sourceInfo: SourceInfo, clock: Arg, pable: Printable) extends Command
+case class Printf(id: printf.Printf, sourceInfo: SourceInfo, clock: Arg, pable: Printable) extends Definition
 object Formal extends Enumeration {
   val Assert = Value("assert")
   val Assume = Value("assume")
   val Cover = Value("cover")
 }
-case class Verification(op: Formal.Value, sourceInfo: SourceInfo, clock: Arg,
-                        predicate: Arg, message: String) extends Command
+case class Verification[T <: BaseSim](id: T, op: Formal.Value, sourceInfo: SourceInfo, clock: Arg,
+                        predicate: Arg, message: String) extends Definition
 abstract class Component extends Arg {
   def id: BaseModule
   def name: String
@@ -750,4 +802,7 @@ abstract class Component extends Arg {
 case class DefModule(id: RawModule, name: String, ports: Seq[Port], commands: Seq[Command]) extends Component
 case class DefBlackBox(id: BaseBlackBox, name: String, ports: Seq[Port], topDir: SpecifiedDirection, params: Map[String, Param]) extends Component
 
-case class Circuit(name: String, components: Seq[Component], annotations: Seq[ChiselAnnotation] = Seq.empty)
+case class Circuit(name: String, components: Seq[Component], annotations: Seq[ChiselAnnotation], renames: RenameMap) {
+  def firrtlAnnotations: Iterable[Annotation] = annotations.flatMap(_.toFirrtl.update(renames))
+
+}

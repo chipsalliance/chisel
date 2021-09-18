@@ -22,14 +22,16 @@ class SelectTester(results: Seq[Int]) extends BasicTester {
   val nreset = reset.asBool() === false.B
   val selected = values(counter)
   val zero = 0.U + 0.U
+  var p: printf.Printf = null
   when(overflow) {
     counter := zero
     stop()
   }.otherwise {
     when(nreset) {
       assert(counter === values(counter))
-      printf("values(%d) = %d\n", counter, selected)
+      p = printf("values(%d) = %d\n", counter, selected)
     }
+
   }
 }
 
@@ -81,17 +83,18 @@ class SelectSpec extends ChiselFlatSpec {
   "Test" should "pass if selecting correct printfs" in {
     execute(
       () => new SelectTester(Seq(0, 1, 2)),
-      { dut: SelectTester => Seq(Select.printfs(dut).last) },
+      { dut: SelectTester => Seq(Select.printfs(dut).last.toString) },
       { dut: SelectTester =>
         Seq(Select.Printf(
+          dut.p,
           Seq(
             When(Select.ops("eq")(dut).last.asInstanceOf[Bool]),
             When(dut.nreset),
             WhenNot(dut.overflow)
           ),
-          Printable.pack("values(%d) = %d\n", dut.counter, dut.selected),
+          dut.p.pable,
           dut.clock
-        ))
+        ).toString)
       }
     )
   }
@@ -151,6 +154,61 @@ class SelectSpec extends ChiselFlatSpec {
     }).elaborate(1).asInstanceOf[DesignAnnotation[Top]].design
     val bbs = Select.collectDeep(top) { case b: BB => b }
     assert(bbs.size == 1)
+  }
+
+  "CloneModuleAsRecord" should "NOT show up in Select aspects" in {
+    import chisel3.experimental.CloneModuleAsRecord
+    class Child extends RawModule {
+      val in = IO(Input(UInt(8.W)))
+      val out = IO(Output(UInt(8.W)))
+      out := in
+    }
+    class Top extends Module {
+      val in = IO(Input(UInt(8.W)))
+      val out = IO(Output(UInt(8.W)))
+      val inst0 = Module(new Child)
+      val inst1 = CloneModuleAsRecord(inst0)
+      inst0.in := in
+      inst1("in") := inst0.out
+      out := inst1("out")
+    }
+    val top = ChiselGeneratorAnnotation(() => {
+      new Top()
+    }).elaborate
+      .collectFirst { case DesignAnnotation(design: Top) => design }
+      .get
+    Select.collectDeep(top) { case x => x } should equal (Seq(top, top.inst0))
+    Select.getDeep(top)(x => Seq(x)) should equal (Seq(top, top.inst0))
+    Select.instances(top) should equal (Seq(top.inst0))
+  }
+
+  "Using Definition/Instance with Injecting Aspects" should "throw an error" in {
+    import chisel3.experimental.CloneModuleAsRecord
+    import chisel3.experimental.hierarchy._
+    @instantiable
+    class Child extends RawModule {
+      @public val in = IO(Input(UInt(8.W)))
+      @public val out = IO(Output(UInt(8.W)))
+      out := in
+    }
+    class Top extends Module {
+      val in = IO(Input(UInt(8.W)))
+      val out = IO(Output(UInt(8.W)))
+      val definition = Definition(new Child)
+      val inst0 = Instance(definition)
+      val inst1 = Instance(definition)
+      inst0.in := in
+      inst1.in := inst0.out
+      out := inst1.out
+    }
+    val top = ChiselGeneratorAnnotation(() => {
+      new Top()
+    }).elaborate
+      .collectFirst { case DesignAnnotation(design: Top) => design }
+      .get
+    intercept[Exception] { Select.collectDeep(top) { case x => x } }
+    intercept[Exception] { Select.getDeep(top)(x => Seq(x)) }
+    intercept[Exception] { Select.instances(top) }
   }
 
 }

@@ -2,13 +2,16 @@
 
 package chisel3
 
+import chisel3.experimental.dataview.reify
+
 import scala.language.experimental.macros
-import chisel3.experimental.{Analog, DataMirror, FixedPoint, Interval}
+import chisel3.experimental.{Analog, BaseModule, DataMirror, FixedPoint, Interval}
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.{DeprecatedSourceInfo, SourceInfo, SourceInfoTransform, UnlocatableSourceInfo}
 
+import scala.collection.immutable.LazyList // Needed for 2.12 alias
 import scala.util.Try
 
 /** User-specified directions.
@@ -122,6 +125,7 @@ object ActualDirection {
 }
 
 package experimental {
+  import chisel3.internal.requireIsHardware // Fix ambiguous import
 
   /** Experimental hardware construction reflection API
     */
@@ -155,7 +159,9 @@ package experimental {
     // with compiled artifacts (vs. elaboration-time reflection)?
     def modulePorts(target: BaseModule): Seq[(String, Data)] = target.getChiselPorts
 
-    // Returns all module ports with underscore-qualified names
+    /** Returns all module ports with underscore-qualified names
+      * return includes [[Module.clock]] and [[Module.reset]]
+      */
     def fullModulePorts(target: BaseModule): Seq[(String, Data)] = {
       def getPortNames(name: String, data: Data): Seq[(String, Data)] = Seq(name -> data) ++ (data match {
         case _: Element => Seq()
@@ -230,6 +236,62 @@ private[chisel3] object cloneSupertype {
       }
       filteredElts.head.cloneTypeFull
     }
+  }
+}
+
+// Returns pairs of all fields, element-level and containers, in a Record and their path names
+private[chisel3] object getRecursiveFields {
+  def apply(data: Data, path: String): Seq[(Data, String)] = data match {
+    case data: Record =>
+      data.elements.map { case (fieldName, fieldData) =>
+        getRecursiveFields(fieldData, s"$path.$fieldName")
+      }.fold(Seq(data -> path)) {
+        _ ++ _
+      }
+    case data: Vec[_] =>
+      data.getElements.zipWithIndex.map { case (fieldData, fieldIndex) =>
+        getRecursiveFields(fieldData, path = s"$path($fieldIndex)")
+      }.fold(Seq(data -> path)) {
+        _ ++ _
+      }
+    case data: Element => Seq(data -> path)
+  }
+
+  def lazily(data: Data, path: String): Seq[(Data, String)] = data match {
+    case data: Record =>
+      LazyList(data -> path) ++
+        data.elements.view.flatMap { case (fieldName, fieldData) =>
+          getRecursiveFields(fieldData, s"$path.$fieldName")
+        }
+    case data: Vec[_] =>
+      LazyList(data -> path) ++
+        data.getElements.view.zipWithIndex.flatMap { case (fieldData, fieldIndex) =>
+          getRecursiveFields(fieldData, path = s"$path($fieldIndex)")
+        }
+    case data: Element => LazyList(data -> path)
+  }
+}
+
+// Returns pairs of corresponding fields between two Records of the same type
+// TODO it seems wrong that Elements are checked for typeEquivalence in Bundle and Vec lit creation
+private[chisel3] object getMatchedFields {
+  def apply(x: Data, y: Data): Seq[(Data, Data)] = (x, y) match {
+    case (x: Element, y: Element) =>
+      require(x typeEquivalent y)
+      Seq(x -> y)
+    case (x: Record, y: Record) =>
+      (x.elements zip y.elements).map { case ((xName, xElt), (yName, yElt)) =>
+        require(xName == yName) // assume fields returned in same, deterministic order
+        getMatchedFields(xElt, yElt)
+      }.fold(Seq(x -> y)) {
+        _ ++ _
+      }
+    case (x: Vec[_], y: Vec[_]) =>
+      (x.getElements zip y.getElements).map { case (xElt, yElt) =>
+        getMatchedFields(xElt, yElt)
+      }.fold(Seq(x -> y)) {
+        _ ++ _
+      }
   }
 }
 
@@ -339,13 +401,14 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   private[chisel3] final def isSynthesizable: Boolean = _binding.map {
     case ChildBinding(parent) => parent.isSynthesizable
     case _: TopBinding => true
-    case _: SampleElementBinding[_] => false
+    case (_: SampleElementBinding[_] | _: MemTypeBinding[_]) => false
   }.getOrElse(false)
 
   private[chisel3] def topBindingOpt: Option[TopBinding] = _binding.flatMap {
     case ChildBinding(parent) => parent.topBindingOpt
     case bindingVal: TopBinding => Some(bindingVal)
     case SampleElementBinding(parent) => parent.topBindingOpt
+    case _: MemTypeBinding[_] => None
   }
 
   private[chisel3] def topBinding: TopBinding = topBindingOpt.get
@@ -355,7 +418,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     * node is the top-level.
     * binding and direction are valid after this call completes.
     */
-  private[chisel3] def bind(target: Binding, parentDirection: SpecifiedDirection = SpecifiedDirection.Unspecified)
+  private[chisel3] def bind(target: Binding, parentDirection: SpecifiedDirection = SpecifiedDirection.Unspecified): Unit
 
   // Both _direction and _resolvedUserDirection are saved versions of computed variables (for
   // efficiency, avoid expensive recomputation of frequent operations).
@@ -391,6 +454,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     case Some(DontCareBinding()) => s"(DontCare)"
     case Some(ElementLitBinding(litArg)) => s"(unhandled literal)"
     case Some(BundleLitBinding(litMap)) => s"(unhandled bundle literal)"
+    case Some(VecLitBinding(litMap)) => s"(unhandled vec literal)"
   }).getOrElse("")
 
   // Return ALL elements at root of this type.
@@ -483,12 +547,25 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     }
     requireIsHardware(this)
     topBindingOpt match {
+      // DataView
+      case Some(ViewBinding(target)) => reify(target).ref
+      case Some(AggregateViewBinding(viewMap, _)) =>
+        viewMap.get(this) match {
+          case None => materializeWire() // FIXME FIRRTL doesn't have Aggregate Init expressions
+          // This should not be possible because Element does the lookup in .topBindingOpt
+          case x: Some[_] => throwException(s"Internal Error: In .ref for $this got '$topBindingOpt' and '$x'")
+        }
       // Literals
       case Some(ElementLitBinding(litArg)) => litArg
       case Some(BundleLitBinding(litMap)) =>
         litMap.get(this) match {
           case Some(litArg) => litArg
           case _ => materializeWire() // FIXME FIRRTL doesn't have Bundle literal expressions
+        }
+      case Some(VecLitBinding(litMap)) =>
+        litMap.get(this) match {
+          case Some(litArg) => litArg
+          case _ => materializeWire() // FIXME FIRRTL doesn't have Vec literal expressions
         }
       case Some(DontCareBinding()) =>
         materializeWire() // FIXME FIRRTL doesn't have a DontCare expression so materialize a Wire
@@ -502,6 +579,20 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
         Node(this)
       case opt => throwException(s"internal error: unknown binding $opt in generating LHS ref")
     }
+  }
+
+
+  // Recursively set the parent of the start Data and any children (eg. in an Aggregate)
+  private[chisel3] def setAllParents(parent: Option[BaseModule]): Unit = {
+    def rec(data: Data): Unit = {
+      data._parent = parent
+      data match {
+      case _: Element =>
+      case agg: Aggregate =>
+        agg.getElements.foreach(rec)
+      }
+    }
+    rec(this)
   }
 
   private[chisel3] def width: Width
@@ -552,14 +643,6 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     prefix(this) {
       this.bulkConnect(that)(sourceInfo, connectionCompileOptions)
     }
-  }
-
-  @chiselRuntimeDeprecated
-  @deprecated("litArg is deprecated, use litOption or litTo*Option", "3.2")
-  def litArg(): Option[LitArg] = topBindingOpt match {
-    case Some(ElementLitBinding(litArg)) => Some(litArg)
-    case Some(BundleLitBinding(litMap)) => None  // this API does not support Bundle literals
-    case _ => None
   }
 
   def isLit(): Boolean = litOption.isDefined
@@ -764,35 +847,33 @@ object WireDefault {
   }
 }
 
-package internal {
-  /** RHS (source) for Invalidate API.
-    * Causes connection logic to emit a DefInvalid when connected to an output port (or wire).
-    */
-  private[chisel3] object InternalDontCare extends Element {
-    // This object should be initialized before we execute any user code that refers to it,
-    //  otherwise this "Chisel" object will end up on the UserModule's id list.
-    // We make it private to chisel3 so it has to be accessed through the package object.
+/** RHS (source) for Invalidate API.
+  * Causes connection logic to emit a DefInvalid when connected to an output port (or wire).
+  */
+final case object DontCare extends Element {
+  // This object should be initialized before we execute any user code that refers to it,
+  //  otherwise this "Chisel" object will end up on the UserModule's id list.
+  // We make it private to chisel3 so it has to be accessed through the package object.
 
-    private[chisel3] override val width: Width = UnknownWidth()
+  private[chisel3] override val width: Width = UnknownWidth()
 
-    bind(DontCareBinding(), SpecifiedDirection.Output)
-    override def cloneType: this.type = DontCare
+  bind(DontCareBinding(), SpecifiedDirection.Output)
+  override def cloneType: this.type = DontCare
 
-    override def toString: String = "DontCare()"
+  override def toString: String = "DontCare()"
 
-    override def litOption: Option[BigInt] = None
+  override def litOption: Option[BigInt] = None
 
-    def toPrintable: Printable = PString("DONTCARE")
+  def toPrintable: Printable = PString("DONTCARE")
 
-    private[chisel3] def connectFromBits(that: Bits)(implicit sourceInfo:  SourceInfo, compileOptions: CompileOptions): Unit = {
-      Builder.error("connectFromBits: DontCare cannot be a connection sink (LHS)")
-    }
-
-    def do_asUInt(implicit sourceInfo: chisel3.internal.sourceinfo.SourceInfo, compileOptions: CompileOptions): UInt = {
-      Builder.error("DontCare does not have a UInt representation")
-      0.U
-    }
-    // DontCare's only match themselves.
-    private[chisel3] def typeEquivalent(that: Data): Boolean = that == DontCare
+  private[chisel3] def connectFromBits(that: Bits)(implicit sourceInfo:  SourceInfo, compileOptions: CompileOptions): Unit = {
+    Builder.error("connectFromBits: DontCare cannot be a connection sink (LHS)")
   }
+
+  def do_asUInt(implicit sourceInfo: chisel3.internal.sourceinfo.SourceInfo, compileOptions: CompileOptions): UInt = {
+    Builder.error("DontCare does not have a UInt representation")
+    0.U
+  }
+  // DontCare's only match themselves.
+  private[chisel3] def typeEquivalent(that: Data): Boolean = that == DontCare
 }

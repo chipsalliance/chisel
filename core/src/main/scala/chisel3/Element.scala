@@ -17,7 +17,8 @@ abstract class Element extends Data {
   def widthKnown: Boolean = width.known
   def name: String = getRef.name
 
-  private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection) {
+  private[chisel3] override def bind(target: Binding, parentDirection: SpecifiedDirection): Unit = {
+    _parent.foreach(_.addId(this))
     binding = target
     val resolvedDirection = SpecifiedDirection.fromParent(parentDirection, specifiedDirection)
     direction = ActualDirection.fromSpecified(resolvedDirection)
@@ -28,6 +29,14 @@ abstract class Element extends Data {
     case Some(BundleLitBinding(litMap)) => litMap.get(this) match {
       case Some(litArg) => Some(ElementLitBinding(litArg))
       case _ => Some(DontCareBinding())
+    }
+    case Some(VecLitBinding(litMap)) => litMap.get(this) match {
+      case Some(litArg) => Some(ElementLitBinding(litArg))
+      case _ => Some(DontCareBinding())
+    }
+    case Some(b @ AggregateViewBinding(viewMap, _)) => viewMap.get(this) match {
+      case Some(elt) => Some(ViewBinding(elt))
+      case _ => throwException(s"Internal Error! $this missing from topBinding $b")
     }
     case topBindingOpt => topBindingOpt
   }

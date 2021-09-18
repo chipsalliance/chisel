@@ -3,8 +3,12 @@
 package chiselTests
 
 import chisel3._
-import chisel3.stage.ChiselStage
 import chisel3.experimental.DataMirror
+import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage, NoRunFirrtlCompilerAnnotation}
+import firrtl.annotations.NoTargetAnnotation
+import firrtl.options.Unserializable
+
+import scala.io.Source
 
 class SimpleIO extends Bundle {
   val in  = Input(UInt(32.W))
@@ -140,6 +144,17 @@ class ModuleSpec extends ChiselPropSpec with Utils {
       assert(checkModule(this))
     })
   }
+
+  property("object chisel3.util.experimental.getAnnotations should return current annotations.") {
+    case class DummyAnnotation() extends NoTargetAnnotation with Unserializable
+    (new ChiselStage).transform(Seq(
+      ChiselGeneratorAnnotation(() => new RawModule {
+        assert(chisel3.util.experimental.getAnnotations().contains(DummyAnnotation()))
+      }),
+      DummyAnnotation(),
+      NoRunFirrtlCompilerAnnotation))
+  }
+
   property("DataMirror.modulePorts should work") {
     ChiselStage.elaborate(new Module {
       val io = IO(new Bundle { })
@@ -173,5 +188,16 @@ class ModuleSpec extends ChiselPropSpec with Utils {
       assert(name.contains("_Anon"))
     }
     ChiselStage.elaborate(new RawModule with Foo)
+  }
+
+  property("getVerilogString(new PlusOne() should produce a valid Verilog string") {
+    val s = getVerilogString(new PlusOne())
+    assert(s.contains("assign io_out = io_in + 32'h1"))
+  }
+
+  property("emitVerilog((new PlusOne()..) shall produce a valid Verilog file in a subfolder") {
+   emitVerilog(new PlusOne(), Array("--target-dir", "generated"))
+    val s = Source.fromFile("generated/PlusOne.v").mkString("")
+    assert(s.contains("assign io_out = io_in + 32'h1"))
   }
 }

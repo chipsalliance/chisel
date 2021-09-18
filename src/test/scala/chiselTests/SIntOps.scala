@@ -116,4 +116,36 @@ class SIntOpsSpec extends ChiselPropSpec with Utils {
     assertTesterPasses(new SIntLitExtractTester)
   }
 
+  // We use WireDefault with 2 arguments because of
+  // https://www.chisel-lang.org/api/3.4.1/chisel3/WireDefault$.html
+  //   Single Argument case 2
+  property("modulo divide should give min width of arguments") {
+    assertKnownWidth(4) {
+      val x = WireDefault(SInt(8.W), DontCare)
+      val y = WireDefault(SInt(4.W), DontCare)
+      val op = x % y
+      WireDefault(chiselTypeOf(op), op)
+    }
+    assertKnownWidth(4) {
+      val x = WireDefault(SInt(4.W), DontCare)
+      val y = WireDefault(SInt(8.W), DontCare)
+      val op = x % y
+      WireDefault(chiselTypeOf(op), op)
+    }
+  }
+
+  property("division should give the width of the numerator + 1") {
+    assertKnownWidth(9) {
+      val x = WireDefault(SInt(8.W), DontCare)
+      val y = WireDefault(SInt(4.W), DontCare)
+      val op = x / y
+      WireDefault(chiselTypeOf(op), op)
+    }
+    assertKnownWidth(5) {
+      val x = WireDefault(SInt(4.W), DontCare)
+      val y = WireDefault(SInt(8.W), DontCare)
+      val op = x / y
+      WireDefault(chiselTypeOf(op), op)
+    }
+  }
 }

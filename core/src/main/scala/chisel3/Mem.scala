@@ -35,6 +35,7 @@ object Mem {
     }
     val mt  = t.cloneTypeFull
     val mem = new Mem(mt, size)
+    mt.bind(MemTypeBinding(mem))
     pushCommand(DefMemory(sourceInfo, mem, mt, size))
     mem
   }
@@ -45,6 +46,8 @@ object Mem {
 }
 
 sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt) extends HasId with NamedComponent with SourceInfoDoc {
+  _parent.foreach(_.addId(this))
+
   // REVIEW TODO: make accessors (static/dynamic, read/write) combinations consistent.
 
   /** Creates a read accessor into the memory with static addressing. See the
@@ -174,6 +177,7 @@ object SyncReadMem {
     }
     val mt  = t.cloneTypeFull
     val mem = new SyncReadMem(mt, size, ruw)
+    mt.bind(MemTypeBinding(mem))
     pushCommand(DefSeqMemory(sourceInfo, mem, mt, size, ruw))
     mem
   }
@@ -209,8 +213,14 @@ sealed class SyncReadMem[T <: Data] private (t: T, n: BigInt, val readUnderWrite
     var port: Option[T] = None
     when (enable) {
       a := addr
-      port = Some(read(a))
+      port = Some(super.do_read(a))
     }
     port.get
   }
+
+  /** @group SourceInfoTransformMacro*/
+  override def do_read(idx: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) =
+    do_read(addr = idx, enable = true.B)
+  // note: we implement do_read(addr) for SyncReadMem in terms of do_read(addr, en) in order to ensure that
+  //       `mem.read(addr)` will always behave the same as `mem.read(addr, true.B)`
 }

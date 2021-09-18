@@ -5,7 +5,7 @@ import coursier.maven.MavenRepository
 import $ivy.`com.lihaoyi::mill-contrib-buildinfo:$MILL_VERSION`
 import mill.contrib.buildinfo.BuildInfo
 
-object chisel3 extends mill.Cross[chisel3CrossModule]("2.12.12")
+object chisel3 extends mill.Cross[chisel3CrossModule]("2.13.6", "2.12.14")
 
 // The following stanza is searched for and used when preparing releases.
 // Please retain it.
@@ -44,7 +44,9 @@ trait CommonModule extends CrossSbtModule with PublishModule {
 
   override def moduleDeps = super.moduleDeps ++ firrtlModule
 
-  override def ivyDeps = super.ivyDeps() ++ firrtlIvyDeps
+  override def ivyDeps = super.ivyDeps() ++ Agg(
+    ivy"com.lihaoyi::os-lib:0.7.8",
+  ) ++  firrtlIvyDeps
 
   def publishVersion = "3.5-SNAPSHOT"
 
@@ -60,14 +62,14 @@ trait CommonModule extends CrossSbtModule with PublishModule {
     super.scalacOptions() ++ Agg(
       "-deprecation",
       "-feature"
-    )
+    ) ++ (if (majorVersion == 13) Agg("-Ymacro-annotations") else Agg.empty[String])
   }
 
   private val macroParadise = ivy"org.scalamacros:::paradise:2.1.1"
 
-  override def compileIvyDeps = Agg(macroParadise)
+  override def compileIvyDeps = if(majorVersion == 13) super.compileIvyDeps else Agg(macroParadise)
 
-  override def scalacPluginIvyDeps = Agg(macroParadise)
+  override def scalacPluginIvyDeps = if(majorVersion == 13) super.compileIvyDeps else Agg(macroParadise)
 
   def pomSettings = PomSettings(
     description = artifactName(),
@@ -105,21 +107,14 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule wit
     override def scalacPluginClasspath = m.scalacPluginClasspath
 
     override def ivyDeps = m.ivyDeps() ++ Agg(
-      ivy"org.scalatest::scalatest:3.1.2",
-      ivy"org.scalatestplus::scalacheck-1-14:3.1.1.1",
-      ivy"com.github.scopt::scopt:3.7.1"
+      ivy"org.scalatest::scalatest:3.2.9",
+      ivy"org.scalatestplus::scalacheck-1-14:3.2.2.0",
     ) ++ m.treadleIvyDeps
 
     override def moduleDeps = super.moduleDeps ++ treadleModule
 
     def testFrameworks = T {
       Seq("org.scalatest.tools.Framework")
-    }
-
-    // a sbt-like testOnly command.
-    // for example, mill -i "chisel3[2.12.12].test.testOnly" "chiselTests.BitwiseOpsSpec"
-    def testOnly(args: String*) = T.command {
-      super.runMain("org.scalatest.run", args: _*)
     }
   }
 
@@ -178,8 +173,8 @@ class chisel3CrossModule(val crossScalaVersion: String) extends CommonModule wit
     override def firrtlModule = m.firrtlModule
 
     override def ivyDeps = Agg(
-      ivy"${scalaOrganization()}:scala-library:$crossScalaVersion"
-    )
+      ivy"${scalaOrganization()}:scala-library:$crossScalaVersion",
+    ) ++ (if (majorVersion == 13) Agg(ivy"${scalaOrganization()}:scala-compiler:$crossScalaVersion") else Agg.empty[Dep])
 
     def scalacOptions = T {
       Seq(

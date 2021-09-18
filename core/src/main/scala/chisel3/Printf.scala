@@ -3,11 +3,10 @@
 package chisel3
 
 import scala.language.experimental.macros
-
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
-import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.SourceInfo
+import chisel3.experimental.BaseSim
 
 /** Prints a message in simulation
   *
@@ -33,6 +32,9 @@ object printf {
     }
     formatIn map escaped mkString ""
   }
+
+  /** Named class for [[printf]]s. */
+  final class Printf(val pable: Printable) extends BaseSim
 
   /** Prints a message in simulation
     *
@@ -71,7 +73,7 @@ object printf {
     * @param fmt printf format string
     * @param data format string varargs containing data to print
     */
-  def apply(fmt: String, data: Bits*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit =
+  def apply(fmt: String, data: Bits*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Printf =
     apply(Printable.pack(fmt, data:_*))
   /** Prints a message in simulation
     *
@@ -87,16 +89,20 @@ object printf {
     * @see [[Printable]] documentation
     * @param pable [[Printable]] to print
     */
-  def apply(pable: Printable)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit = {
+  def apply(pable: Printable)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Printf = {
+    var printfId: Printf = null
     when (!Module.reset.asBool) {
-      printfWithoutReset(pable)
+      printfId = printfWithoutReset(pable)
     }
+    printfId
   }
 
-  private[chisel3] def printfWithoutReset(pable: Printable)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit = {
+  private[chisel3] def printfWithoutReset(pable: Printable)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Printf = {
     val clock = Builder.forcedClock
-    pushCommand(Printf(sourceInfo, clock.ref, pable))
+    val printfId = new Printf(pable)
+    pushCommand(chisel3.internal.firrtl.Printf(printfId, sourceInfo, clock.ref, pable))
+    printfId
   }
-  private[chisel3] def printfWithoutReset(fmt: String, data: Bits*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit =
+  private[chisel3] def printfWithoutReset(fmt: String, data: Bits*)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Printf =
     printfWithoutReset(Printable.pack(fmt, data:_*))
 }

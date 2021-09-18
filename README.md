@@ -4,14 +4,21 @@
 
 ## Upcoming Events
 
+### Chisel Dev Meeting
 Chisel/FIRRTL development meetings happen every Monday and Tuesday from 1100--1200 PT.
 
 Call-in info and meeting notes are available [here](https://docs.google.com/document/d/1BLP2DYt59DqI-FgFCcjw8Ddl4K-WU0nHmQu0sZ_wAGo/).
 
+### Chisel Community Conference 2021, Shanghai, China.
+CCC is an annual gathering of Chisel community enthusiasts and technical exchange workshop. 
+This year with the support of the Chisel development community and RISC-V World Conference China 2021 Committee, we have brought together designers and developers with hands-on experience in Chisel from home and abroad to share cutting-edge results and experiences from both the open source community as well as industry.  
+English translated recordings version will be updated soon.  
+Looking forward to CCC 2022! See you then!
+
 ---
 
-[![Join the chat at https://gitter.im/chipsalliance/chisel3](https://badges.gitter.im/chipsalliance/chisel3.svg)](https://gitter.im/chipsalliance/chisel3?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![CircleCI](https://circleci.com/gh/chipsalliance/chisel3/tree/master.svg?style=shield)](https://circleci.com/gh/chipsalliance/chisel3/tree/master)
+[![Join the chat at https://gitter.im/freechipsproject/chisel3](https://badges.gitter.im/chipsalliance/chisel3.svg)](https://gitter.im/freechipsproject/chisel3?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+![CI](https://github.com/chipsalliance/chisel3/actions/workflows/test.yml/badge.svg)
 [![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/chipsalliance/chisel3.svg?label=release)](https://github.com/chipsalliance/chisel3/releases/latest)
 
 [**Chisel**](https://www.chisel-lang.org) is a hardware design language that facilitates **advanced circuit generation and design reuse for both ASIC and FPGA digital logic designs**.
@@ -31,8 +38,8 @@ Consider an FIR filter that implements a convolution operation, as depicted in t
 While Chisel provides similar base primitives as synthesizable Verilog, and *could* be used as such:
 
 ```scala
-// 3-point moving average implemented in the style of a FIR filter
-class MovingAverage3(bitWidth: Int) extends Module {
+// 3-point moving sum implemented in the style of a FIR filter
+class MovingSum3(bitWidth: Int) extends Module {
   val io = IO(new Bundle {
     val in = Input(UInt(bitWidth.W))
     val out = Output(UInt(bitWidth.W))
@@ -45,7 +52,7 @@ class MovingAverage3(bitWidth: Int) extends Module {
 }
 ```
 
-the power of Chisel comes from the ability to create generators, such as n FIR filter that is defined by the list of coefficients:
+the power of Chisel comes from the ability to create generators, such as an FIR filter that is defined by the list of coefficients:
 ```scala
 // Generalized FIR filter parameterized by the convolution coefficients
 class FirFilter(bitWidth: Int, coeffs: Seq[UInt]) extends Module {
@@ -70,7 +77,7 @@ class FirFilter(bitWidth: Int, coeffs: Seq[UInt]) extends Module {
 
 and use and re-use them across designs:
 ```scala
-val movingAverage3Filter = Module(new FirFilter(8, Seq(1.U, 1.U, 1.U)))  // same 3-point moving average filter as before
+val movingSum3Filter = Module(new FirFilter(8, Seq(1.U, 1.U, 1.U)))  // same 3-point moving sum filter as before
 val delayFilter = Module(new FirFilter(8, Seq(0.U, 1.U)))  // 1-cycle delay as a FIR filter
 val triangleFilter = Module(new FirFilter(8, Seq(1.U, 2.U, 3.U, 2.U, 1.U)))  // 5-point FIR filter with a triangle impulse response
 ```
@@ -98,6 +105,10 @@ The [**online Chisel Bootcamp**](https://mybinder.org/v2/gh/freechipsproject/chi
 
 The [**classic Chisel tutorial**](https://github.com/ucb-bar/chisel-tutorial) contains small exercises and runs on your computer.
 
+### A Textbook on Chisel
+
+If you like a textbook to learn Chisel and also a bit of digital design in general, you may be interested in reading [**Digital Design with Chisel**](http://www.imm.dtu.dk/~masca/chisel-book.html). It is available in English, Chinese, Japanese, and Vietnamese.
+
 ### Build Your Own Chisel Projects
 
 See [the setup instructions](https://github.com/chipsalliance/chisel3/blob/master/SETUP.md) for how to set up your environment to run Chisel locally.
@@ -122,9 +133,8 @@ These simulation-based verification tools are available for Chisel:
 ### Useful Resources
 
 - [**Cheat Sheet**](https://github.com/freechipsproject/chisel-cheatsheet/releases/latest/download/chisel_cheatsheet.pdf), a 2-page reference of the base Chisel syntax and libraries
-- [**Wiki**](https://github.com/chipsalliance/chisel3/wiki), which contains various feature-specific tutorials and frequently-asked questions.
 - [**ScalaDoc**](https://www.chisel-lang.org/api/latest/chisel3/index.html), a listing, description, and examples of the functionality exposed by Chisel
-- [**Gitter**](https://gitter.im/chipsalliance/chisel3), where you can ask questions or discuss anything Chisel
+- [**Gitter**](https://gitter.im/freechipsproject/chisel3), where you can ask questions or discuss anything Chisel
 - [**Website**](https://www.chisel-lang.org) ([source](https://github.com/freechipsproject/www.chisel-lang.org/))
 
 If you are migrating from Chisel2, see [the migration guide](https://www.chisel-lang.org/chisel3/chisel3-vs-chisel2.html).
@@ -136,6 +146,12 @@ These are the base data types for defining circuit components:
 
 ## Contributor Documentation
 This section describes how to get started contributing to Chisel itself, including how to test your version locally against other projects that pull in Chisel using [sbt's managed dependencies](https://www.scala-sbt.org/1.x/docs/Library-Dependencies.html).
+
+### Useful Resources for Contributors
+
+The [Useful Resources](#useful-resources) for users are also helpful for contributors.
+
+- [**Chisel Breakdown Slides**](https://docs.google.com/presentation/d/114YihixFBPCfUnv1inqAL8UjsiWfcNWdPHX7SeqlRQc), an introductory talk about Chisel's internals
 
 ### Compiling and Testing Chisel
 
@@ -156,12 +172,27 @@ cd chisel3
 sbt compile
 ```
 
-If the compilation succeeded, you can then run the included unit tests by invoking:
+In order to run the following unit tests, you will need several tools on your `PATH`, namely
+[verilator](https://www.veripool.org/verilator/),
+[yosys](http://www.clifford.at/yosys/),
+[espresso](https://github.com/chipsalliance/espresso),
+and [z3](https://github.com/Z3Prover/z3).
+Check that each is installed on your `PATH` by running `which verilator` and so on.
+
+If the compilation succeeded and the dependencies noted above are installed, you can then run the included unit tests by invoking:
 
 ```
 sbt test
 ```
 
+
+
+If you would like to run the tests without the compiler plugin (less common), you can do so by first launching `sbt`,
+then running `noPluginTests / test`:
+```
+sbt
+> noPluginTests / test
+```
 ### Running Projects Against Local Chisel
 
 To use the development version of Chisel (`master` branch), you will need to build from source and `publishLocal`.
@@ -233,10 +264,21 @@ Also included is:
 - **Chisel Stage**, `chisel3.stage.*`, which contains compilation and test
   functions that are invoked in the standard Verilog generation and simulation
   testing infrastructure. These can also be used as part of custom flows.
+  
+### Chisel Sub-Projects
+
+Chisel consists of 4 Scala projects; each is its own separate compilation unit:
+
+- [`core`](core) is the bulk of the source code of Chisel, depends on `macros`
+- [`src/main`](src/main) is the "main" that brings it all together and includes a [`util`](src/main/scala/chisel3/util) library, which depends on `core`
+- [`plugin`](plugin) is the compiler plugin, no internal dependencies
+- [`macros`](macros) is most of the macros used in Chisel, no internal dependencies
+
+Code that touches lots of APIs that are private to the `chisel3` package should belong in `core`, while code that is pure Chisel should belong in `src/main`.
 
 ### Which version should I use?
 
-The chisel eco-system (`chisel3`, `firttl`, `dsptools`, `firrtl-interpreter`, `treadle`, `diagrammer`) use a form of semantic versioning:
+The chisel eco-system (`chisel3`, `firrtl`, `dsptools`, `firrtl-interpreter`, `treadle`, `diagrammer`) use a form of semantic versioning:
  major versions are identified by two leading numbers, separated by a dot (i.e., `3.2`), minor versions by a single number following the major version, separated by a dot.
  We maintain API compatibility within a major version (i.e., `3.2.12` should be API-compatible with `3.2.0`), but do not guarantee API compatibility between major versions
  (i.e., APIs may change between `3.1.8` and `3.2.0`).
