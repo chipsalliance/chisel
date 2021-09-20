@@ -5,7 +5,7 @@ package chisel3
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.util.Try
 import scala.language.experimental.macros
-import chisel3.experimental.{BaseModule, BaseSim}
+import chisel3.experimental.BaseModule
 import chisel3.internal._
 import chisel3.internal.BaseModule.{ModuleClone, InstanceClone}
 import chisel3.internal.Builder._
@@ -81,7 +81,11 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
         case id: InstanceClone[_] => id.setAsInstanceRef()
         case id: BaseModule => id.forceName(None, default=id.desiredName, _namespace)
         case id: MemBase[_] => id.forceName(None, default="MEM", _namespace)
-        case id: BaseSim => id.forceName(None, default="SIM", _namespace)
+        case id: stop.Stop => id.forceName(None, default="stop", _namespace)
+        case id: assert.Assert => id.forceName(None, default="assert", _namespace)
+        case id: assume.Assume => id.forceName(None, default="assume", _namespace)
+        case id: cover.Cover => id.forceName(None, default="cover", _namespace)
+        case id: printf.Printf => id.forceName(None, default="printf", _namespace)
         case id: Data  =>
           if (id.isSynthesizable) {
             id.topBinding match {
