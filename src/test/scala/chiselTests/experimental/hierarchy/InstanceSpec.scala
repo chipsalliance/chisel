@@ -70,7 +70,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         class Top extends Module {
           val d = Definition(new SelectParameterized[UInt](UInt(3.W)))
           val i1 = Instance(d.asInstanceOf[Definition[BaseModule]])
-          require(i1.isA[SelectParameterized[UInt]])
+          require(i1.isA[SelectParameterized[_]])
         }
         val (chirrtl, _) = getFirrtlAndAnnos(new Top)
       }
@@ -78,7 +78,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         class Top extends Module {
           val d = Definition(new SelectParameterized[UInt](UInt(3.W)).asInstanceOf[BaseModule])
           val i0: Instance[BaseModule] = Instance(d)
-          require(!i0.isA[SelectParameterized[UInt]])
+          require(!i0.isA[SelectParameterized[_]])
         }
         val (chirrtl, _) = getFirrtlAndAnnos(new Top)
       }
@@ -86,7 +86,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         class Top extends Module {
           val d = Definition(new SelectParameterized[UInt](UInt(3.W)))
           val i0: Instance[BaseModule] = Instance(d)
-          require(i0.isA[SelectParameterized[UInt]])
+          require(i0.isA[SelectParameterized[_]])
         }
         val (chirrtl, _) = getFirrtlAndAnnos(new Top)
         chirrtl.serialize should include ("inst i0 of SelectParameterized")
@@ -95,8 +95,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
         class Top extends Module {
           val d = Definition(new SelectParameterized[UInt](UInt(3.W)).asInstanceOf[SelectParameterized[Data]])
           val i0 = Instance(d)
-          require(!i0.isA[SelectParameterized[UInt]])
-          require(i0.isA[SelectParameterized[Data]])
+          require(i0.isA[SelectParameterized[_]])
         }
         val (chirrtl, _) = getFirrtlAndAnnos(new Top)
         chirrtl.serialize should include ("inst i0 of SelectParameterized")
@@ -739,7 +738,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
     it("9.2: Collect type-parameterized instances") {
       val collectOverHierarchy = SelectAspect(
         {top: Definition[SelectTopParameterized] =>
-          Select2.instancesOf[SelectParameterized[Data]](top).toList.map(_.toTarget)
+          Select2.instancesOf[SelectParameterized[_]](top).toList.map(_.toTarget)
         },
         Seq(
           "~SelectTopParameterized|SelectTopParameterized/i0:SelectParameterized".it,

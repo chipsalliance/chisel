@@ -299,5 +299,5 @@ package object internal {
     *
     * @note this is a val instead of an object because of the need to wrap in Module(...)
     */
-  private[chisel3] val ViewParent = Module.do_apply(new ViewParentAPI)(UnlocatableSourceInfo, ExplicitCompileOptions.Strict)
+  private[chisel3] val ViewParent = Module.untypedApply(new ViewParentAPI, UnlocatableSourceInfo, ExplicitCompileOptions.Strict)
 }

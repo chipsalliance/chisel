@@ -58,7 +58,13 @@ case class Instance[+A] private [chisel3] (private[chisel3] cloned: Either[A, Is
 
   def sharesDefinition[A](other: Instance[A]): Boolean = toDefinition == other.toDefinition
 
-  def isA[B : WeakTypeTag]: Boolean = definitionTypeTag.tpe <:< implicitly[WeakTypeTag[B]].tpe
+  def isA[B : WeakTypeTag]: Boolean = {
+    val btt = implicitly[WeakTypeTag[B]]
+    val allAny = btt.tpe.typeArgs.forall { ta => ta.toString == "Any" }
+    require(allAny, s"Provided type ${btt.tpe} must not restrict type parameters; try using ${btt.tpe.toString.split('[').head}[${btt.tpe.typeArgs.map(x => "_").mkString(",")}] instead?")
+
+    definitionTypeTag.tpe <:< btt.tpe
+  }
 }
 
 /** Factory methods for constructing [[Instance]]s */

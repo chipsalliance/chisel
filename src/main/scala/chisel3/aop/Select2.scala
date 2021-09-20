@@ -54,15 +54,11 @@ object Select2 {
     check(parent)
     val ttag = implicitly[TypeTag[T]]
     parent.getProto._component.get match {
-      case d: DefModule => d.commands.collect {
-        case d: DefTypedInstance[ModuleClone[BaseModule]] if d.tag.tpe <:< ttag.tpe =>
-          val x = d.id match {
-            case m: ModuleClone[T] => parent._lookup { x =>
-              Instance(Right(m.asInstanceOf[ModuleClone[T]]), d.tag)
-            }
-            case other: T => parent._lookup(x => other)
-          }
-          x.asInstanceOf[Instance[T]]
+      case d: DefModule => d.commands.flatMap {
+        case d: DefTypedInstance[T] =>
+          val inst = new Instance[T](Right(d.id), d.tag)
+          if(inst.isA[T]) Some(parent._lookup { x => inst }) else None
+        case other => None
       }
       case other => Nil
     }

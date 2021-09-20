@@ -26,6 +26,20 @@ object Module extends SourceInfoDoc {
     */
   def apply[T <: BaseModule](bc: => T): T = macro InstTransform.apply[T]
 
+  // untyped apply
+  def untypedApply[T <: BaseModule](bc: => T, sourceInfo: SourceInfo, compileOptions: CompileOptions): T = {
+    // Handle connections at enclosing scope
+    // We use _component because Modules that don't generate them may still have one
+    val module = doingTheApply(bc)(sourceInfo, compileOptions)
+    if (Builder.currentModule.isDefined && module._component.isDefined) {
+      val component = module._component.get
+      pushCommand(DefInstance(sourceInfo, module, component.ports))
+
+      module.initializeInParent(compileOptions)
+    }
+    module
+  }
+
   private[chisel3] def typedApply[T <: BaseModule](bc: => internal.BaseModule.ModuleClone[T], tag: TypeTag[_])
                                (implicit sourceInfo: SourceInfo,
                                          compileOptions: CompileOptions): internal.BaseModule.ModuleClone[T] = {
@@ -33,22 +47,6 @@ object Module extends SourceInfoDoc {
     if (Builder.currentModule.isDefined && module._component.isDefined) {
       val component = module._component.get
       pushCommand(DefTypedInstance(sourceInfo, module, component.ports, tag))
-
-      module.initializeInParent(compileOptions)
-    }
-    module
-  }
-
-  // untyped apply
-  def do_apply[T <: BaseModule](bc: => T)
-                               (implicit sourceInfo: SourceInfo,
-                                         compileOptions: CompileOptions): T = {
-    // Handle connections at enclosing scope
-    // We use _component because Modules that don't generate them may still have one
-    val module = doingTheApply(bc)
-    if (Builder.currentModule.isDefined && module._component.isDefined) {
-      val component = module._component.get
-      pushCommand(DefInstance(sourceInfo, module, component.ports))
 
       module.initializeInParent(compileOptions)
     }
