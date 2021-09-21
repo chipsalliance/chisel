@@ -108,8 +108,10 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
             if (isData(vp.symbol)) cloneTypeFull(select) else select
           })
 
-        val ttpe = Ident(bundle.symbol)
-        val neww = localTyper.typed(New(ttpe, conArgs))
+        val tparamList = bundle.tparams.map{ t => Ident(t.symbol) }
+        val ttpe = if(tparamList.nonEmpty) AppliedTypeTree(Ident(bundle.symbol), tparamList) else Ident(bundle.symbol)
+        val newUntyped = New(ttpe, conArgs)
+        val neww = localTyper.typed(newUntyped)
 
         // Create the symbol for the method and have it be associated with the Bundle class
         val cloneTypeSym =  bundle.symbol.newMethod(TermName("_cloneTypeImpl"), bundle.symbol.pos.focus, Flag.OVERRIDE | Flag.PROTECTED)
