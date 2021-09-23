@@ -19,19 +19,28 @@ object ConvertAsserts extends Transform with DependencyAPIMigration {
 
   override def invalidates(a: Transform): Boolean = false
 
-  def convertAsserts(stmt: Statement): Statement = stmt match {
-    case Verification(Formal.Assert, i, clk, pred, en, msg) =>
-      val nPred = DoPrim(PrimOps.Not, Seq(pred), Nil, pred.tpe)
-      val gatedNPred = DoPrim(PrimOps.And, Seq(nPred, en), Nil, pred.tpe)
-      val stop = Stop(i, 1, clk, gatedNPred)
-      msg match {
+  def convertAsserts(namespace: Namespace, stmt: Statement): Statement = stmt match {
+    case v: Verification if v.op == Formal.Assert =>
+      val nPred = DoPrim(PrimOps.Not, Seq(v.pred), Nil, v.pred.tpe)
+      val gatedNPred = DoPrim(PrimOps.And, Seq(nPred, v.en), Nil, v.pred.tpe)
+      val name = if (v.name.nonEmpty) { v.name }
+      else { namespace.newName("assert") }
+      val stop = Stop(v.info, 1, v.clk, gatedNPred, name)
+      v.msg match {
         case StringLit("") => stop
-        case _             => Block(Print(i, msg, Nil, clk, gatedNPred), stop)
+        case msg =>
+          val printName = namespace.newName(name + "_print")
+          Block(Print(v.info, msg, Nil, v.clk, gatedNPred, printName), stop)
       }
-    case s => s.mapStmt(convertAsserts)
+    case s => s.mapStmt(convertAsserts(namespace, _))
   }
 
   def execute(state: CircuitState): CircuitState = {
-    state.copy(circuit = state.circuit.mapModule(m => m.mapStmt(convertAsserts)))
+    state.copy(circuit = state.circuit.mapModule { m =>
+      val namespace = Namespace(m)
+      // make sure the name assert is reserved
+      if (!namespace.contains("assert")) { namespace.newName("assert") }
+      m.mapStmt(convertAsserts(namespace, _))
+    })
   }
 }

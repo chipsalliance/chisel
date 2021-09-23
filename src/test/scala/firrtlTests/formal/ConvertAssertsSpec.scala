@@ -24,11 +24,12 @@ class ConvertAssertsSpec extends FirrtlFlatSpec {
         |""".stripMargin
 
     val ref = preamble +
-      """    printf(clock, and(not(ne5), not(reset)), "x should not equal 5")
-        |    stop(clock, and(not(ne5), not(reset)), 1)
+      """    printf(clock, and(not(ne5), not(reset)), "x should not equal 5") : assert_0_print
+        |    stop(clock, and(not(ne5), not(reset)), 1) : assert_0
         |""".stripMargin
 
-    val outputCS = ConvertAsserts.execute(CircuitState(parse(input), Nil))
+    val state = CircuitState(parse(input), Nil)
+    val outputCS = ConvertAsserts.execute(state)
     (parse(outputCS.circuit.serialize)) should be(parse(ref))
   }
 
@@ -38,7 +39,7 @@ class ConvertAssertsSpec extends FirrtlFlatSpec {
         |""".stripMargin
 
     val ref = preamble +
-      """    stop(clock, and(not(ne5), not(reset)), 1)
+      """    stop(clock, and(not(ne5), not(reset)), 1) : assert_0
         |""".stripMargin
 
     val outputCS = ConvertAsserts.execute(CircuitState(parse(input), Nil))
