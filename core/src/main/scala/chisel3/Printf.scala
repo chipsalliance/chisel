@@ -6,7 +6,6 @@ import scala.language.experimental.macros
 import chisel3.internal._
 import chisel3.internal.Builder.pushCommand
 import chisel3.internal.sourceinfo.SourceInfo
-import chisel3.experimental.BaseSim
 
 /** Prints a message in simulation
   *
@@ -34,7 +33,7 @@ object printf {
   }
 
   /** Named class for [[printf]]s. */
-  final class Printf(val pable: Printable) extends BaseSim
+  final class Printf private[chisel3](val pable: Printable) extends VerificationStatement
 
   /** Prints a message in simulation
     *

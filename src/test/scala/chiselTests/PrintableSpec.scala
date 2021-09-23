@@ -3,7 +3,7 @@
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.{BaseSim, ChiselAnnotation}
+import chisel3.experimental.ChiselAnnotation
 import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
 import firrtl.annotations.{ReferenceTarget, SingleTargetAnnotation}
@@ -23,7 +23,7 @@ object PrintfAnnotation {
   /** Create annotation for a given [[printf]].
     * @param c component to be annotated
     */
-  def annotate(c: BaseSim): Unit = {
+  def annotate(c: VerificationStatement): Unit = {
     chisel3.experimental.annotate(new ChiselAnnotation {
       def toFirrtl: PrintfAnnotation = PrintfAnnotation(c.toTarget)
     })
@@ -246,7 +246,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
     // check for expected annotations
     exactly(3, annoLines) should include ("chiselTests.PrintfAnnotation")
     exactly(1, annoLines) should include ("~PrintfAnnotationTest|PrintfAnnotationTest>farewell")
-    exactly(1, annoLines) should include ("~PrintfAnnotationTest|PrintfAnnotationTest>SIM")
+    exactly(1, annoLines) should include ("~PrintfAnnotationTest|PrintfAnnotationTest>printf")
     exactly(1, annoLines) should include ("~PrintfAnnotationTest|PrintfAnnotationTest>howdy")
 
     // read in FIRRTL file
@@ -256,7 +256,7 @@ class PrintableSpec extends AnyFlatSpec with Matchers {
 
     // check that verification components have expected names
     exactly(1, firLines) should include ("""printf(clock, UInt<1>("h1"), "hello AnonymousBundle(foo -> %d, bar -> %d)", myBun.foo, myBun.bar) : howdy""")
-    exactly(1, firLines) should include ("""printf(clock, UInt<1>("h1"), "goodbye AnonymousBundle(foo -> %d, bar -> %d)", myBun.foo, myBun.bar) : SIM""")
+    exactly(1, firLines) should include ("""printf(clock, UInt<1>("h1"), "goodbye AnonymousBundle(foo -> %d, bar -> %d)", myBun.foo, myBun.bar) : printf""")
     exactly(1, firLines) should include ("""printf(clock, UInt<1>("h1"), "adieu AnonymousBundle(foo -> %d, bar -> %d)", myBun.foo, myBun.bar) : farewell""")
   }
 }

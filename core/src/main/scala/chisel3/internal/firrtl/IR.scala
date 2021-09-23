@@ -784,7 +784,7 @@ case class Connect(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
 case class BulkConnect(sourceInfo: SourceInfo, loc1: Node, loc2: Node) extends Command
 case class Attach(sourceInfo: SourceInfo, locs: Seq[Node]) extends Command
 case class ConnectInit(sourceInfo: SourceInfo, loc: Node, exp: Arg) extends Command
-case class Stop(sourceInfo: SourceInfo, clock: Arg, ret: Int) extends Command
+case class Stop(id: stop.Stop, sourceInfo: SourceInfo, clock: Arg, ret: Int) extends Definition
 case class Port(id: Data, dir: SpecifiedDirection)
 case class Printf(id: printf.Printf, sourceInfo: SourceInfo, clock: Arg, pable: Printable) extends Definition
 object Formal extends Enumeration {
@@ -792,7 +792,7 @@ object Formal extends Enumeration {
   val Assume = Value("assume")
   val Cover = Value("cover")
 }
-case class Verification[T <: BaseSim](id: T, op: Formal.Value, sourceInfo: SourceInfo, clock: Arg,
+case class Verification[T <: VerificationStatement](id: T, op: Formal.Value, sourceInfo: SourceInfo, clock: Arg,
                         predicate: Arg, message: String) extends Definition
 abstract class Component extends Arg {
   def id: BaseModule
