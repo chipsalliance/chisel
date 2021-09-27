@@ -16,15 +16,17 @@ jobs:
     strategy:
       matrix:
         scala: [2.13.6, 2.12.14]
-    container:
-      image: ucbbar/chisel3-tools
-      options: --user github --entrypoint /bin/bash
-    env:
-      CONTAINER_HOME: /home/github
 
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+      - name: Install Tabby OSS Cad Suite (from YosysHQ)
+        run: |
+          cd /home/runner/work/
+          wget https://github.com/YosysHQ/oss-cad-suite-build/releases/download/2021-09-23/oss-cad-suite-linux-x64-20210923.tgz
+          tar -xf oss-cad-suite-linux-x64-20210923.tgz
+          ls /home/runner/work/oss-cad-suite/bin
+          echo "/home/runner/work/oss-cad-suite/bin" >> $GITHUB_PATH
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
         with:
@@ -71,15 +73,17 @@ jobs:
     strategy:
       matrix:
         design: [RocketCore, FPU, ICache, Ops, AddNot]
-    container:
-      image: ucbbar/chisel3-tools
-      options: --user github --entrypoint /bin/bash
-    env:
-      CONTAINER_HOME: /home/github
 
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+      - name: Install Tabby OSS Cad Suite (from YosysHQ)
+        run: |
+          cd /home/runner/work/
+          wget https://github.com/YosysHQ/oss-cad-suite-build/releases/download/2021-09-23/oss-cad-suite-linux-x64-20210923.tgz
+          tar -xf oss-cad-suite-linux-x64-20210923.tgz
+          ls /home/runner/work/oss-cad-suite/bin
+          echo "/home/runner/work/oss-cad-suite/bin" >> $GITHUB_PATH
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
         with:
