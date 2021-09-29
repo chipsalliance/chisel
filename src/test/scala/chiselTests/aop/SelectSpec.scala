@@ -133,11 +133,10 @@ class SelectSpec extends ChiselFlatSpec {
       { dut: SelectTester =>
         Seq(Select.Stop(
           Seq(
-            When(Select.ops("eq")(dut).dropRight(1).last.asInstanceOf[Bool]),
-            When(dut.nreset),
-            WhenNot(dut.overflow)
+            When(Select.ops("eq")(dut)(1).asInstanceOf[Bool]),
+            When(dut.overflow)
           ),
-          1,
+          0,
           dut.clock
         ))
       }

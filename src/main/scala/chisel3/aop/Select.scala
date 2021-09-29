@@ -269,7 +269,7 @@ object Select {
     val stops = mutable.ArrayBuffer[Stop]()
     searchWhens(module, (cmd: Command, preds: Seq[Predicate]) => {
       cmd match {
-        case chisel3.internal.firrtl.Stop(_, clock, ret) => stops += Stop(preds, ret, getId(clock).asInstanceOf[Clock])
+        case chisel3.internal.firrtl.Stop(_, _, clock, ret) => stops += Stop(preds, ret, getId(clock).asInstanceOf[Clock])
         case other =>
       }
     })
