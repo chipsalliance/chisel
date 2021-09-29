@@ -68,8 +68,11 @@ class TopWiringTransform extends Transform with DependencyAPIMigration {
     state:         CircuitState
   )(s:             Statement
   ): Statement = s match {
-    // If target wire, add name and size to to sourceMap
-    case w: IsDeclaration =>
+    // Declarations with non-empty names can be sources. However, some
+    // side-affecting statements may given the empty string as name. Filter
+    // these out before they are rejected by ComponentName's constructor, since
+    // they cannot be named as a source in a TopWiring annotation anyways.
+    case w: IsDeclaration if w.name != "" =>
       if (sourceList.keys.toSeq.contains(ComponentName(w.name, currentmodule))) {
         val (isport, tpe, prefix) = w match {
           case d: DefWire     => (false, d.tpe, sourceList(ComponentName(w.name, currentmodule)))

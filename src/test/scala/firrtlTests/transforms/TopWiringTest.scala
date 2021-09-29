@@ -635,6 +635,17 @@ class TopWiringTests extends MiddleTransformSpec with TopWiringTestsCommon {
     outputState.circuit.serialize should include("output bar_foo")
     outputState.annotations.toSeq should be(empty)
   }
+
+  "Unnamed side-affecting statements" should s"not be included as potential sources" in {
+    val input =
+      """circuit Top :
+        |  module Top :
+        |    input clock : Clock
+        |    printf(clock, UInt<1>(1), "")
+        |    stop(clock, UInt<1>(1), 1)
+        |""".stripMargin
+    execute(input, input, Seq())
+  }
 }
 
 class AggregateTopWiringTests extends MiddleTransformSpec with TopWiringTestsCommon {
