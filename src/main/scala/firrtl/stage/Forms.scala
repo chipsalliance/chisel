@@ -3,6 +3,7 @@
 package firrtl.stage
 
 import firrtl._
+import firrtl.backends.experimental.rtlil.RtlilEmitter
 import firrtl.backends.experimental.smt.{Btor2Emitter, SMTLibEmitter}
 import firrtl.options.Dependency
 import firrtl.stage.TransformManager.TransformDependency
@@ -136,7 +137,8 @@ object Forms {
       Dependency[MinimumVerilogEmitter],
       Dependency[SystemVerilogEmitter],
       Dependency(SMTLibEmitter),
-      Dependency(Btor2Emitter)
+      Dependency(Btor2Emitter),
+      Dependency[RtlilEmitter]
     )
 
   val LowEmitters = Dependency[LowFirrtlEmitter] +: BackendEmitters
