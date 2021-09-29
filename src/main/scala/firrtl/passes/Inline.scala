@@ -369,6 +369,11 @@ class InlineInstances extends Transform with DependencyAPIMigration with Registe
 
     val renames = renamesSeq.reduceLeftOption(_ andThen _)
 
-    CircuitState(flatCircuit, LowForm, annos, renames)
+    val cleanedAnnos = annos.filterNot {
+      case InlineAnnotation(_) => true
+      case _                   => false
+    }
+
+    CircuitState(flatCircuit, LowForm, cleanedAnnos, renames)
   }
 }

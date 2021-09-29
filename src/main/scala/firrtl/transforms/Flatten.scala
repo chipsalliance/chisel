@@ -132,7 +132,14 @@ class Flatten extends Transform with DependencyAPIMigration {
         val (modNames, instNames) = collectAnns(state.circuit, myAnnotations)
         // take incoming annotation and produce annotations for InlineInstances, i.e. traverse circuit down to find all instances to inline
         val (newc, modsToInline) = duplicateSubCircuitsFromAnno(state.circuit, modNames, instNames)
-        inlineTransform.run(newc, modsToInline.toSet, Set.empty[ComponentName], state.annotations)
+        val flattenedState = inlineTransform.run(newc, modsToInline.toSet, Set.empty[ComponentName], state.annotations)
+
+        val cleanedAnnos = flattenedState.annotations.filterNot {
+          case FlattenAnnotation(_) => true
+          case _                    => false
+        }
+
+        flattenedState.copy(annotations = cleanedAnnos)
     }
   }
 }
