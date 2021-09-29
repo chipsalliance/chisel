@@ -2,7 +2,7 @@
 
 package chisel3
 
-import chisel3.internal.Builder
+import chisel3.internal.{Builder, PseudoModule}
 
 /** Used by Chisel Aspects to inject Chisel code into modules, after they have been elaborated.
   * This is an internal API - don't use!
@@ -13,7 +13,7 @@ import chisel3.internal.Builder
   * @param moduleCompileOptions
   */
 abstract class ModuleAspect private[chisel3] (module: RawModule)
-                                             (implicit moduleCompileOptions: CompileOptions) extends RawModule {
+                                             (implicit moduleCompileOptions: CompileOptions) extends RawModule with PseudoModule {
 
   Builder.addAspect(module, this)
 

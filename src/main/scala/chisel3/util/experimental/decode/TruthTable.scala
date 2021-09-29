@@ -12,9 +12,9 @@ final class TruthTable(val table: Map[BitPat, BitPat], val default: BitPat) {
 
   override def toString: String = {
     def writeRow(map: (BitPat, BitPat)): String =
-      s"${TruthTable.bpStr(map._1)}->${TruthTable.bpStr(map._2)}"
+      s"${map._1.rawString}->${map._2.rawString}"
 
-    (table.map(writeRow) ++ Seq(s"${" "*(inputWidth + 2)}${TruthTable.bpStr(default)}")).toSeq.sorted.mkString("\n")
+    (table.map(writeRow) ++ Seq(s"${" "*(inputWidth + 2)}${default.rawString}")).toSeq.sorted.mkString("\n")
   }
 
   def copy(table: Map[BitPat, BitPat] = this.table, default: BitPat = this.default) = new TruthTable(table, default)
@@ -51,11 +51,11 @@ object TruthTable {
       values.head._1 -> BitPat(s"b${
         Seq.tabulate(outputWidth) { i =>
           val outputSet = values.map(_._2)
-            .map(bpStr)
+            .map(_.rawString)
             .map(_ (i))
             .toSet
             .filterNot(_ == '?')
-          require(outputSet.size != 2, s"TruthTable conflict in :\n${values.map { case (i, o) => s"${bpStr(i)}->${bpStr(o)}" }.mkString("\n")}")
+          require(outputSet.size != 2, s"TruthTable conflict in :\n${values.map { case (i, o) => s"${i.rawString}->${o.rawString}" }.mkString("\n")}")
           outputSet.headOption.getOrElse('?')
         }.mkString
       }")
@@ -74,7 +74,7 @@ object TruthTable {
     table: TruthTable
   ): Seq[(TruthTable, Seq[Int])] = {
     def bpFilter(bitPat: BitPat, indexes: Seq[Int]): BitPat =
-      BitPat(s"b${bpStr(bitPat).zipWithIndex.filter(b => indexes.contains(b._2)).map(_._1).mkString}")
+      BitPat(s"b${bitPat.rawString.zipWithIndex.filter(b => indexes.contains(b._2)).map(_._1).mkString}")
 
     def tableFilter(indexes: Seq[Int]): Option[(TruthTable, Seq[Int])] = {
       if(indexes.nonEmpty) Some((TruthTable(
@@ -84,7 +84,7 @@ object TruthTable {
     }
 
     def index(bitPat: BitPat, bpType: Char): Seq[Int] =
-      bpStr(bitPat).zipWithIndex.filter(_._1 == bpType).map(_._2)
+      bitPat.rawString.zipWithIndex.filter(_._1 == bpType).map(_._2)
 
     Seq('1', '0', '?').flatMap(t => tableFilter(index(table.default, t)))
   }
@@ -99,7 +99,7 @@ object TruthTable {
     tables: Seq[(TruthTable, Seq[Int])]
   ): TruthTable = {
     def reIndex(bitPat: BitPat, table: TruthTable, indexes: Seq[Int]): Seq[(Char, Int)] =
-      bpStr(table.table.map(a => a._1.toString -> a._2).getOrElse(bitPat.toString, BitPat.dontCare(indexes.size))).zip(indexes)
+      (table.table.map(a => a._1.toString -> a._2).getOrElse(bitPat.toString, BitPat.dontCare(indexes.size))).rawString.zip(indexes)
     def bitPat(indexedChar: Seq[(Char, Int)]) = BitPat(s"b${indexedChar
       .sortBy(_._2)
       .map(_._1)
@@ -111,9 +111,7 @@ object TruthTable {
           key -> bitPat(tables.flatMap { case (table, indexes) => reIndex(key, table, indexes) })
         }
         .toMap,
-      bitPat(tables.flatMap { case (table, indexes) => bpStr(table.default).zip(indexes) })
+      bitPat(tables.flatMap { case (table, indexes) => table.default.rawString.zip(indexes) })
     )
   }
-
-  private def bpStr(bitPat: BitPat) = bitPat.toString.drop(7).dropRight(1)
 }

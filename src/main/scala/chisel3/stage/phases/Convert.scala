@@ -29,8 +29,7 @@ class Convert extends Phase {
       /* Convert all Chisel Annotations to FIRRTL Annotations */
       a
         .circuit
-        .annotations
-        .map(_.toFirrtl) ++
+        .firrtlAnnotations ++
       a
         .circuit
         .annotations

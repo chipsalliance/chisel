@@ -120,6 +120,20 @@ case class MemTypeBinding[T <: Data](parent: MemBase[T]) extends Binding {
 // It is a source (RHS). It may only be connected/applied to sinks.
 case class DontCareBinding() extends UnconstrainedBinding
 
+// Views currently only support 1:1 Element-level mappings
+private[chisel3] case class ViewBinding(target: Element) extends UnconstrainedBinding
+/** Binding for Aggregate Views
+  * @param childMap Mapping from children of this view to each child's target
+  * @param target Optional Data this Aggregate views if the view is total and the target is a Data
+  */
+private[chisel3] case class AggregateViewBinding(childMap: Map[Data, Element], target: Option[Data]) extends UnconstrainedBinding
+
+
+/** Binding for Data's returned from accessing an Instance/Definition members, if not readable/writable port */
+private[chisel3] case object CrossModuleBinding extends TopBinding {
+  def location = None
+}
+
 sealed trait LitBinding extends UnconstrainedBinding with ReadOnlyBinding
 // Literal binding attached to a element that is not part of a Bundle.
 case class ElementLitBinding(litArg: LitArg) extends LitBinding

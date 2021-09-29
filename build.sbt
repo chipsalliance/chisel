@@ -4,7 +4,8 @@ enablePlugins(SiteScaladocPlugin)
 
 val defaultVersions = Map(
   "firrtl" -> "edu.berkeley.cs" %% "firrtl" % "1.5-SNAPSHOT",
-  "treadle" -> "edu.berkeley.cs" %% "treadle" % "1.5-SNAPSHOT"
+  "treadle" -> "edu.berkeley.cs" %% "treadle" % "1.5-SNAPSHOT",
+  "chiseltest" -> "edu.berkeley.cs" %% "chiseltest" % "0.5-SNAPSHOT",
 )
 
 lazy val commonSettings = Seq (
@@ -15,8 +16,8 @@ lazy val commonSettings = Seq (
   organization := "edu.berkeley.cs",
   version := "3.5-SNAPSHOT",
   autoAPIMappings := true,
-  scalaVersion := "2.13.6",
-  crossScalaVersions := Seq("2.13.6", "2.12.13"),
+  scalaVersion := "2.12.15",
+  crossScalaVersions := Seq("2.13.6", "2.12.15"),
   scalacOptions := Seq("-deprecation", "-feature"),
   libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value,
   // Macros paradise is integrated into 2.13 but requires a scalacOption
@@ -104,12 +105,15 @@ lazy val pluginScalaVersions = Seq(
   "2.12.11",
   "2.12.12",
   "2.12.13",
+  "2.12.14",
+  "2.12.15",
   "2.13.0",
   "2.13.1",
   "2.13.2",
   "2.13.3",
   "2.13.4",
-  "2.13.5"
+  "2.13.5",
+  "2.13.6"
 )
 
 lazy val plugin = (project in file("plugin")).
@@ -225,6 +229,16 @@ lazy val noPluginTests = (project in file ("no-plugin-tests")).
     libraryDependencies += defaultVersions("firrtl"),
   ))
 
+// tests elaborating and executing/formally verifying a Chisel circuit with chiseltest
+lazy val integrationTests = (project in file ("integration-tests")).
+  dependsOn(chisel).
+  settings(commonSettings: _*).
+  settings(chiselSettings: _*).
+  settings(usePluginSettings: _*).
+  settings(Seq(
+    libraryDependencies += defaultVersions("chiseltest") % "test",
+  ))
+
 lazy val docs = project       // new documentation project
   .in(file("docs-target")) // important: it must not be docs/
   .dependsOn(chisel)
@@ -235,7 +249,8 @@ lazy val docs = project       // new documentation project
     scalacOptions += "-language:reflectiveCalls",
     mdocIn := file("docs/src"),
     mdocOut := file("docs/generated"),
-    mdocExtraArguments := Seq("--cwd", "docs"),
+    // None of our links are hygienic because they're primarily used on the website with .html
+    mdocExtraArguments := Seq("--cwd", "docs", "--no-link-hygiene"),
     mdocVariables := Map(
       "BUILD_DIR" -> "docs-target" // build dir for mdoc programs to dump temp files
     )

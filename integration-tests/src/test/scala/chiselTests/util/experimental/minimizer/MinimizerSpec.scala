@@ -6,7 +6,9 @@ import chisel3._
 import chisel3.util._
 import chisel3.util.experimental.decode._
 import chisel3.util.pla
-import chiselTests.SMTModelCheckingSpec
+import chiseltest._
+import chiseltest.formal._
+import org.scalatest.flatspec.AnyFlatSpec
 
 class DecodeTestModule(minimizer: Minimizer, table: TruthTable) extends Module {
   val i = IO(Input(UInt(table.table.head._1.getWidth.W)))
@@ -21,15 +23,11 @@ class DecodeTestModule(minimizer: Minimizer, table: TruthTable) extends Module {
   )
 }
 
-trait MinimizerSpec extends SMTModelCheckingSpec {
+trait MinimizerSpec extends AnyFlatSpec with ChiselScalatestTester with Formal {
   def minimizer: Minimizer
 
-  def minimizerTest(testcase: TruthTable, caseName: String) = {
-    test(
-      () => new DecodeTestModule(minimizer, table = testcase),
-      s"${minimizer.getClass.getSimpleName}.$caseName",
-      success
-    )
+  def minimizerTest(testcase: TruthTable) = {
+    verify(new DecodeTestModule(minimizer, table = testcase), Seq(BoundedCheck(1)))
   }
 
   // Term that being commented out is the result of which is same as default,
@@ -48,7 +46,7 @@ trait MinimizerSpec extends SMTModelCheckingSpec {
         BitPat("b111") -> BitPat("b1")
       ),
       BitPat("b0")
-    ), "case0")
+    ))
   }
 
   "case1" should "pass" in {
@@ -64,7 +62,7 @@ trait MinimizerSpec extends SMTModelCheckingSpec {
         // BitPat("b111") -> BitPat("b1")
       ),
       BitPat("b1")
-    ), "case1")
+    ))
   }
 
   "caseX" should "pass" in {
@@ -80,7 +78,7 @@ trait MinimizerSpec extends SMTModelCheckingSpec {
         BitPat("b111") -> BitPat("b1")
       ),
       BitPat("b?")
-    ), "caseX")
+    ))
   }
 
   "caseMultiDefault" should "pass" in {
@@ -93,7 +91,7 @@ trait MinimizerSpec extends SMTModelCheckingSpec {
         BitPat("b111") -> BitPat("b1101")
       ),
       BitPat("b?100")
-    ), "caseMultiDefault")
+    ))
   }
 
   "case7SegDecoder" should "pass" in {
@@ -111,7 +109,7 @@ trait MinimizerSpec extends SMTModelCheckingSpec {
         BitPat("b1001") -> BitPat("b111101101"),
       ),
       BitPat("b???????10")
-    ), "case7SegDecoder")
+    ))
   }
 
   // A simple RV32I decode table example
@@ -272,6 +270,6 @@ trait MinimizerSpec extends SMTModelCheckingSpec {
         SRAI_RV32 -> Seq(Y, N, N, N, N, N, N, Y, N, A2_IMM, A1_RS1, IMM_I, DW_XPR, FN_SRA, N, M_X, N, N, N, N, N, N, Y, CSR_N, N, N, N, N),
       ).map { case (k, v) => BitPat(s"b$k") -> BitPat(s"b${v.reduce(_ + _)}") },
       BitPat(s"b${Seq(N, X, X, X, X, X, X, X, X, A2_X, A1_X, IMM_X, DW_X, FN_X, N, M_X, X, X, X, X, X, X, X, CSR_X, X, X, X, X).reduce(_ + _)}")
-    ), "rv32i")
+    ))
   }
 }
