@@ -44,7 +44,7 @@ class SIntOps extends Module {
   io.noteqout := (a =/= b)
   io.lesseqout := a <= b
   io.greateqout := a >= b
-  // io.negout := -a(15, 0).toSInt
+  io.negout := -a(15, 0).asSInt
   io.negout := (0.S -% a)
 }
 

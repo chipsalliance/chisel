@@ -767,9 +767,9 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
   final def unary_-%(dummy: Int*): SInt = macro SourceInfoTransform.noArgDummy
 
   /** @group SourceInfoTransformMacro */
-  def unary_- (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt = 0.S - this
+  def do_unary_- (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt = 0.S - this
   /** @group SourceInfoTransformMacro */
-  def unary_-% (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt = 0.S -% this
+  def do_unary_-% (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt = 0.S -% this
 
   /** add (default - no growth) operator */
   override def do_+ (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
@@ -919,7 +919,7 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
 //  final def abs(): UInt = macro SourceInfoTransform.noArgDummy
 
   def do_abs(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt = {
-    Mux(this < 0.S, (this.unary_-(sourceInfo, compileOptions)), this)
+    Mux(this < 0.S, -this, this)
   }
 
   override def do_<< (that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
