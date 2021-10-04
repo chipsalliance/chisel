@@ -150,7 +150,7 @@ trait Num[T <: Data] {
     */
   final def abs: T = macro SourceInfoTransform.noArg
 
-  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "3.5")
+  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
   final def abs(dummy: Int*): T = macro SourceInfoTransform.noArgDummy
 
   /** @group SourceInfoTransformMacro */

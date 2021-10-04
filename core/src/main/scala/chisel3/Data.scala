@@ -646,7 +646,8 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
   }
 
   def isLit: Boolean = litOption.isDefined
-  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "3.5")
+
+  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
   def isLit(dummy: Int*): Boolean = isLit
 
 
@@ -656,7 +657,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
    */
   def litOption: Option[BigInt]
 
-  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "3.5")
+  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
   def litOption(dummy: Int*): Option[BigInt] = litOption
 
   /**
@@ -664,7 +665,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
    */
   def litValue: BigInt = litOption.get
 
-  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "3.5")
+  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
   def litValue(dummy: Int*): BigInt = litValue
 
   /** Returns the width, in bits, if currently known. */
@@ -706,7 +707,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     */
   final def asUInt: UInt = macro SourceInfoTransform.noArg
 
-  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "3.5")
+  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
   final def asUInt(dummy: Int*): UInt = macro SourceInfoTransform.noArgDummy
 
   /** @group SourceInfoTransformMacro */

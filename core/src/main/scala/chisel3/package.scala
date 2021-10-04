@@ -52,14 +52,14 @@ package object chisel3 {
       */
     def asUInt: UInt = UInt.Lit(bigint, Width())
 
-    @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "3.5")
+    @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
     def asUInt(dummy: Int*): UInt = asUInt
 
     /** Int to SInt conversion, recommended style for variables.
       */
     def asSInt: SInt = SInt.Lit(bigint, Width())
 
-    @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "3.5")
+    @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
     def asSInt(dummy: Int*): SInt = asSInt
 
     /** Int to UInt conversion with specified width, recommended style for variables.
@@ -88,7 +88,7 @@ package object chisel3 {
       UInt.Lit(bigInt, Width(bigInt.bitLength max 1))
     }
 
-    @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "3.5")
+    @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
     def asUInt(dummy: Int*): UInt = asUInt
 
     /** String to UInt parse with specified width, recommended style for variables.
@@ -121,7 +121,7 @@ package object chisel3 {
       */
     def asBool: Bool = Bool.Lit(boolean)
 
-    @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "3.5")
+    @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
     def asBool(dummy: Int*): Bool = asBool
   }
 

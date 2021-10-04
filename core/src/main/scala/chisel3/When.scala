@@ -113,7 +113,7 @@ final class WhenContext private[chisel3] (
 
   def active: Boolean = scopeOpen
 
-  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "3.5")
+  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
   def active(dummy: Int*): Boolean = active
 
   /*

@@ -34,7 +34,7 @@ sealed class Clock(private[chisel3] val width: Width = Width(1)) extends Element
   /** Returns the contents of the clock wire as a [[Bool]]. */
   final def asBool: Bool = macro SourceInfoTransform.noArg
 
-  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "3.5")
+  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
   final def asBool(dummy: Int*): Bool = macro SourceInfoTransform.noArgDummy
 
   def do_asBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = this.asUInt.asBool
