@@ -246,7 +246,11 @@ lazy val docs = project       // new documentation project
   .settings(usePluginSettings: _*)
   .settings(commonSettings)
   .settings(
-    scalacOptions += "-language:reflectiveCalls",
+    scalacOptions ++= Seq(
+      "-Xfatal-warnings",
+      "-language:reflectiveCalls",
+      "-language:implicitConversions"
+    ),
     mdocIn := file("docs/src"),
     mdocOut := file("docs/generated"),
     // None of our links are hygienic because they're primarily used on the website with .html
