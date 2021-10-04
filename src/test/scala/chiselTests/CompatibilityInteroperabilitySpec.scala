@@ -337,7 +337,6 @@ class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec {
         val foo = maybeFlip(new Bundle {
           val bar = UInt(INPUT, width = 8)
         })
-        override def cloneType = (new MyBundle(extraFlip)).asInstanceOf[this.type]
       }
     }
     import chisel3._
