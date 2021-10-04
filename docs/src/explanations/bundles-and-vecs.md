@@ -169,6 +169,7 @@ class RegisterWriteIOExplicitCloneType[T <: Data](gen: T) extends Bundle {
 We can make this this infer cloneType by making `gen` private since it is a "type parameter":
 
 ```scala mdoc:silent
+import chisel3.util.{Decoupled, Irrevocable}
 class RegisterWriteIO[T <: Data](private val gen: T) extends Bundle {
   val request  = Flipped(Decoupled(gen))
   val response = Irrevocable(Bool())
