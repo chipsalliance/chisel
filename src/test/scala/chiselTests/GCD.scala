@@ -1,8 +1,9 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests
 
 import chisel3._
+import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
 
 class GCD extends Module {
@@ -47,7 +48,7 @@ class GCDSpec extends ChiselPropSpec {
     ( 48,  64,  16))
 
   property("GCD should elaborate") {
-    elaborate { new GCD }
+    ChiselStage.elaborate { new GCD }
   }
 
   property("GCDTester should return the correct result") {

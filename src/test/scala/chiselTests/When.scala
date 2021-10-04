@@ -1,8 +1,9 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests
 
 import chisel3._
+import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
 import chisel3.util._
 
@@ -91,7 +92,43 @@ class SubmoduleWhenTester extends BasicTester {
   }
 }
 
-class WhenSpec extends ChiselFlatSpec {
+class WhenCondTester extends BasicTester {
+  val pred = Wire(Vec(4, Bool()))
+  val (cycle, done) = Counter(true.B, 1 << pred.size)
+  // Cycle through every predicate
+  pred := cycle.asBools
+  val Seq(a, b, c, d) = pred  // Just for nicer accessors
+  // When want the when predicates on connection to optimize away,
+  //   it's not necessary but it makes the Verilog prettier
+  val w1, w2, w3, w4, w5, w6, w7 = WireInit(Bool(), DontCare)
+  when (a) {
+    w1 := when.cond
+    when (b) {
+      w2 := when.cond
+    }.elsewhen (c) {
+      w3 := when.cond
+    }.elsewhen (d) {
+      w4 := when.cond
+    }.otherwise {
+      w5 := when.cond
+    }
+  }.otherwise {
+    w6 := when.cond
+  }
+  w7 := when.cond
+
+  assert(w1 === a)
+  assert(w2 === (a && b))
+  assert(w3 === (a && !b && c))
+  assert(w4 === (a && !b && !c && d))
+  assert(w5 === (a && !b && !c && !d))
+  assert(w6 === !a)
+  assert(w7)
+
+  when (done) { stop() }
+}
+
+class WhenSpec extends ChiselFlatSpec with Utils {
   "When, elsewhen, and otherwise with orthogonal conditions" should "work" in {
     assertTesterPasses{ new WhenTester }
   }
@@ -104,10 +141,13 @@ class WhenSpec extends ChiselFlatSpec {
   "Conditional connections to submodule ports" should "be handled properly" in {
     assertTesterPasses(new SubmoduleWhenTester)
   }
+  "when.cond" should "give the current when condition" in {
+    assertTesterPasses(new WhenCondTester)
+  }
 
   "Returning in a when scope" should "give a reasonable error message" in {
-    val e = the [ChiselException] thrownBy {
-      elaborate(new Module {
+    val e = the [ChiselException] thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate(new Module {
         val io = IO(new Bundle {
           val foo = Input(UInt(8.W))
           val bar = Input(UInt(8.W))

@@ -1,10 +1,10 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests
 
 import chisel3._
 import chisel3.util._
-import chisel3.testers.BasicTester
+import chisel3.testers.{BasicTester, TesterDriver}
 import chisel3.experimental._
 
 /* This test is different from AnalogSpec in that it uses more complicated black boxes that can each
@@ -31,15 +31,23 @@ class AnalogBlackBox(index: Int) extends BlackBox(Map("index" -> index)) {
   val io = IO(new AnalogBlackBoxIO(1))
 }
 
+// This interface exists to give a common interface type for AnalogBlackBoxModule and
+// AnalogBlackBoxWrapper. This is the standard way to deal with the deprecation and removal of the
+// Module.io virtual method (same for BlackBox.io).
+// See https://github.com/freechipsproject/chisel3/pull/1550 for more information
+trait AnalogBlackBoxModuleIntf extends Module {
+  def io: AnalogBlackBoxIO
+}
+
 // AnalogBlackBox wrapper, which extends Module to present the common io._ interface
-class AnalogBlackBoxModule(index: Int) extends Module {
+class AnalogBlackBoxModule(index: Int) extends AnalogBlackBoxModuleIntf {
   val io = IO(new AnalogBlackBoxIO(1))
   val impl = Module(new AnalogBlackBox(index))
   io <> impl.io
 }
 
 // Wraps up n blackboxes, connecing their buses and simply forwarding their ports up
-class AnalogBlackBoxWrapper(n: Int, idxs: Seq[Int]) extends Module {
+class AnalogBlackBoxWrapper(n: Int, idxs: Seq[Int]) extends AnalogBlackBoxModuleIntf {
   require(n > 0)
   val io = IO(new AnalogBlackBoxIO(n))
   val bbs = idxs.map(i => Module(new AnalogBlackBoxModule(i)))
@@ -126,10 +134,18 @@ class AnalogIntegrationTester(mod: => AnalogDUTModule) extends BasicTester {
 class AnalogIntegrationSpec extends ChiselFlatSpec {
   behavior of "Verilator"
   it should "support simple bidirectional wires" in {
-    assertTesterPasses(new AnalogIntegrationTester(new AnalogSmallDUT), Seq("/chisel3/AnalogBlackBox.v"))
+    assertTesterPasses(
+      new AnalogIntegrationTester(new AnalogSmallDUT),
+      Seq("/chisel3/AnalogBlackBox.v"),
+      TesterDriver.verilatorOnly
+    )
   }
   // Use this test once Verilator supports alias
   ignore should "support arbitrary bidirectional wires" in {
-    assertTesterPasses(new AnalogIntegrationTester(new AnalogDUT), Seq("/chisel3/AnalogBlackBox.v"))
+    assertTesterPasses(
+      new AnalogIntegrationTester(new AnalogDUT),
+      Seq("/chisel3/AnalogBlackBox.v"),
+      TesterDriver.verilatorOnly
+    )
   }
 }

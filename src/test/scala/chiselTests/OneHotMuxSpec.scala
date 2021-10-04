@@ -1,16 +1,18 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests
 
 import chisel3._
 import chisel3.experimental.FixedPoint
+import chisel3.internal.ChiselException
 import chisel3.testers.BasicTester
 import chisel3.util.{Mux1H, UIntToOH}
 import org.scalatest._
+import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.matchers.should.Matchers
 
-//scalastyle:off magic.number
 
-class OneHotMuxSpec extends FreeSpec with Matchers with ChiselRunners {
+class OneHotMuxSpec extends AnyFreeSpec with Matchers with ChiselRunners {
   "simple one hot mux with uint should work" in {
     assertTesterPasses(new SimpleOneHotTester)
   }
@@ -24,14 +26,13 @@ class OneHotMuxSpec extends FreeSpec with Matchers with ChiselRunners {
     assertTesterPasses(new AllSameFixedPointOneHotTester)
   }
   "simple one hot mux with all same parameterized sint values should work" in {
-    val values: Seq[SInt] = Seq((-3).S, (-5).S, (-7).S, (-11).S)
-    assertTesterPasses(new ParameterizedOneHotTester(values, SInt(8.W), -5.S(8.W)))
+    assertTesterPasses(new ParameterizedOneHotTester)
   }
   "simple one hot mux with all same parameterized aggregates containing fixed values should work" in {
     assertTesterPasses(new ParameterizedAggregateOneHotTester)
   }
   "simple one hot mux with all aggregates containing inferred width fixed values should NOT work" in {
-    intercept[ChiselException] {
+    intercept [ChiselException] {
       assertTesterPasses(new InferredWidthAggregateOneHotTester)
     }
   }
@@ -44,7 +45,7 @@ class OneHotMuxSpec extends FreeSpec with Matchers with ChiselRunners {
     assertTesterPasses(new UIntToOHTester)
   }
   "UIntToOH should not accept width of zero (until zero-width wires are fixed" in {
-    intercept[java.lang.IllegalArgumentException] {
+    intercept[IllegalArgumentException] {
       assertTesterPasses(new BasicTester {
         val out = UIntToOH(0.U, 0)
       })
@@ -111,14 +112,14 @@ class AllSameFixedPointOneHotTester extends BasicTester {
   stop()
 }
 
-class ParameterizedOneHotTester[T <: Data](values: Seq[T], outGen: T, expected: T) extends BasicTester {
-  val dut = Module(new ParameterizedOneHot(values, outGen))
-  dut.io.selectors(0) := false.B
-  dut.io.selectors(1) := true.B
-  dut.io.selectors(2) := false.B
-  dut.io.selectors(3) := false.B
+class ParameterizedOneHotTester extends BasicTester {
+  val values: Seq[Int] = Seq(-3, -5, -7, -11)
+  for ((v, i) <- values.zipWithIndex) {
+    val dut = Module(new ParameterizedOneHot(values.map(_.S), SInt(8.W)))
+    dut.io.selectors := (1 << i).U(4.W).asBools
 
-  assert(dut.io.out.asUInt() === expected.asUInt())
+    assert(dut.io.out.asUInt() === v.S(8.W).asUInt())
+  }
 
   stop()
 }
@@ -168,14 +169,12 @@ object Agg2 extends HasMakeLit[Agg2] {
 
 class ParameterizedAggregateOneHotTester extends BasicTester {
   val values = (0 until 4).map { n => Agg1.makeLit(n) }
+  for ((v, i) <- values.zipWithIndex) {
+    val dut = Module(new ParameterizedAggregateOneHot(Agg1, new Agg1))
+    dut.io.selectors := (1 << i).U(4.W).asBools
 
-  val dut = Module(new ParameterizedAggregateOneHot(Agg1, new Agg1))
-  dut.io.selectors(0) := false.B
-  dut.io.selectors(1) := true.B
-  dut.io.selectors(2) := false.B
-  dut.io.selectors(3) := false.B
-
-  assert(dut.io.out.asUInt() === values(1).asUInt())
+    assert(dut.io.out.asUInt() === values(i).asUInt())
+  }
 
   stop()
 }
@@ -305,4 +304,3 @@ class UIntToOHTester extends BasicTester {
 
   stop()
 }
-

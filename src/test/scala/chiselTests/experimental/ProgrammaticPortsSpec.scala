@@ -1,10 +1,10 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests
 package experimental
 
 import chisel3._
-import chisel3.experimental.MultiIOModule
+import chisel3.stage.ChiselStage
 
 // NOTE This is currently an experimental API and subject to change
 // Example using a private port
@@ -32,11 +32,11 @@ class PortsWinTester extends NamedModuleTester {
   val output = expectName(IO(Output(UInt())).suggestName("wire"), "wire")
 }
 
-class ProgrammaticPortsSpec extends ChiselFlatSpec {
+class ProgrammaticPortsSpec extends ChiselFlatSpec with Utils {
 
   private def doTest(testMod: => NamedModuleTester): Unit = {
     var module: NamedModuleTester = null
-    elaborate { module = testMod; module }
+    ChiselStage.elaborate { module = testMod; module }
     assert(module.getNameFailures() == Nil)
   }
 
@@ -52,24 +52,22 @@ class ProgrammaticPortsSpec extends ChiselFlatSpec {
     doTest(new PortsWinTester)
   }
 
-  "LegacyModule" should "ignore suggestName on ports" in {
+  "Module" should "ignore suggestName on clock and reset" in {
     doTest(new Module with NamedModuleTester {
       val io = IO(new Bundle {
         val foo = Output(UInt(8.W))
       })
-      expectName(io.suggestName("cheese"), "io")
       expectName(clock.suggestName("tart"), "clock")
       expectName(reset.suggestName("teser"), "reset")
     })
   }
 
   "SuggestName collisions on ports" should "be illegal" in {
-    a [ChiselException] should be thrownBy {
-      elaborate(new MultiIOModule {
+    a [ChiselException] should be thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate(new Module {
         val foo = IO(UInt(8.W)).suggestName("apple")
         val bar = IO(UInt(8.W)).suggestName("apple")
       })
     }
   }
 }
-

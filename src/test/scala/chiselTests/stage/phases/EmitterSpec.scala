@@ -1,10 +1,9 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests.stage.phases
 
-import org.scalatest.{FlatSpec, Matchers}
 
-import chisel3.experimental.RawModule
+import chisel3.RawModule
 import chisel3.stage.{ChiselCircuitAnnotation, ChiselGeneratorAnnotation, ChiselOutputFileAnnotation}
 import chisel3.stage.phases.{Convert, Elaborate, Emitter}
 
@@ -13,8 +12,10 @@ import firrtl.annotations.DeletedAnnotation
 import firrtl.options.{Phase, TargetDirAnnotation}
 
 import java.io.File
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class EmitterSpec extends FlatSpec with Matchers {
+class EmitterSpec extends AnyFlatSpec with Matchers {
 
   class FooModule extends RawModule { override val desiredName = "Foo" }
   class BarModule extends RawModule { override val desiredName = "Bar" }

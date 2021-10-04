@@ -1,15 +1,16 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests
 
 import chisel3._
-import chisel3.util.{Queue, EnqIO, DeqIO, QueueIO, log2Ceil}
-import chisel3.experimental.{CloneModuleAsRecord, IO, MultiIOModule}
+import chisel3.stage.ChiselStage
+import chisel3.util.{Decoupled, Queue, EnqIO, DeqIO, QueueIO, log2Ceil}
+import chisel3.experimental.{CloneModuleAsRecord, IO}
 import chisel3.testers.BasicTester
 
-class MultiIOQueue[T <: Data](gen: T, val entries: Int) extends MultiIOModule {
+class MultiIOQueue[T <: Data](gen: T, val entries: Int) extends Module {
   val clk = IO(Input(Clock()))
-  val rst = IO(Input(Bool()))
+  val rst = IO(Input(Reset()))
   val enq = IO(Flipped(EnqIO(gen)))
   val deq = IO(Flipped(DeqIO(gen)))
   val count = IO(Output(UInt(log2Ceil(entries + 1).W)))
@@ -28,7 +29,7 @@ class QueueClone(multiIO: Boolean = false) extends Module {
     q1.rst := reset
     q1.enq <> io.enq
     q2_io("clk").asInstanceOf[Clock] := clock
-    q2_io("rst").asInstanceOf[Bool] := reset
+    q2_io("rst").asInstanceOf[Reset] := reset
     q2_io("enq").asInstanceOf[q1.enq.type] <> q1.deq
     io.deq <> q2_io("deq").asInstanceOf[q1.deq.type]
     io.count := q1.count + q2_io("count").asInstanceOf[q1.count.type]
@@ -56,6 +57,26 @@ class QueueCloneTester(x: Int, multiIO: Boolean = false) extends BasicTester {
   }
 }
 
+class CloneModuleAsRecordAnnotate extends Module {
+  override def desiredName = "Top"
+  val in = IO(Flipped(Decoupled(UInt(8.W))))
+  val out = IO(Decoupled(UInt(8.W)))
+
+  val q1 = Module(new Queue(UInt(8.W), 4))
+  val q2 = CloneModuleAsRecord(q1)
+  val q2_io = q2("io").asInstanceOf[q1.io.type]
+  // Also make a wire to check that cloning works, can be connected to, and annotated
+  val q2_wire = {
+    val w = Wire(chiselTypeOf(q2))
+    w <> q2
+    w
+  }
+  // But connect to the original (using last connect semantics to override connects to wire
+  q1.io.enq <> in
+  q2_io.enq <> q1.io.deq
+  out <> q2_io.deq
+}
+
 class CloneModuleSpec extends ChiselPropSpec {
 
   val xVals = Table(
@@ -71,7 +92,7 @@ class CloneModuleSpec extends ChiselPropSpec {
   }
 
   property("QueueClone's cloned queues should share the same module") {
-    val c = Driver.toFirrtl(Driver.elaborate(() => new QueueClone))
+    val c = ChiselStage.convert(new QueueClone)
     assert(c.modules.length == 2)
   }
 
@@ -82,8 +103,52 @@ class CloneModuleSpec extends ChiselPropSpec {
   }
 
   property("Clones of MultiIOModules should share the same module") {
-    val c = Driver.toFirrtl(Driver.elaborate(() => new QueueClone(multiIO=true)))
+    val c = ChiselStage.convert(new QueueClone(multiIO=true))
     assert(c.modules.length == 3)
+  }
+
+  property("Cloned Modules should annotate correctly") {
+    // Hackily get the actually Module object out
+    var mod: CloneModuleAsRecordAnnotate = null
+    val res = ChiselStage.convert {
+      mod = new CloneModuleAsRecordAnnotate
+      mod
+    }
+    // ********** Checking the output of CloneModuleAsRecord **********
+    // Note that we overrode desiredName so that Top is named "Top"
+    mod.q1.io.enq.toTarget.serialize should be ("~Top|Queue>io.enq")
+    mod.q2_io.deq.toTarget.serialize should be ("~Top|Queue>io.deq")
+    mod.q1.io.enq.toAbsoluteTarget.serialize should be ("~Top|Top/q1:Queue>io.enq")
+    mod.q2_io.deq.toAbsoluteTarget.serialize should be ("~Top|Top/q2:Queue>io.deq")
+    // Legacy APIs that nevertheless were tricky to get right
+    mod.q1.io.enq.toNamed.serialize should be ("Top.Queue.io.enq")
+    mod.q2_io.deq.toNamed.serialize should be ("Top.Queue.io.deq")
+    mod.q1.io.enq.instanceName should be ("io.enq")
+    mod.q2_io.deq.instanceName should be ("io.deq")
+    mod.q1.io.enq.pathName should be ("Top.q1.io.enq")
+    mod.q2_io.deq.pathName should be ("Top.q2.io.deq")
+    mod.q1.io.enq.parentPathName should be ("Top.q1")
+    mod.q2_io.deq.parentPathName should be ("Top.q2")
+    mod.q1.io.enq.parentModName should be ("Queue")
+    mod.q2_io.deq.parentModName should be ("Queue")
+
+    // ********** Checking the wire cloned from the output of CloneModuleAsRecord **********
+    val wire_io = mod.q2_wire("io").asInstanceOf[QueueIO[UInt]]
+    mod.q2_wire.toTarget.serialize should be ("~Top|Top>q2_wire")
+    wire_io.enq.toTarget.serialize should be ("~Top|Top>q2_wire.io.enq")
+    mod.q2_wire.toAbsoluteTarget.serialize should be ("~Top|Top>q2_wire")
+    wire_io.enq.toAbsoluteTarget.serialize should be ("~Top|Top>q2_wire.io.enq")
+    // Legacy APIs
+    mod.q2_wire.toNamed.serialize should be ("Top.Top.q2_wire")
+    wire_io.enq.toNamed.serialize should be ("Top.Top.q2_wire.io.enq")
+    mod.q2_wire.instanceName should be ("q2_wire")
+    wire_io.enq.instanceName should be ("q2_wire.io.enq")
+    mod.q2_wire.pathName should be ("Top.q2_wire")
+    wire_io.enq.pathName should be ("Top.q2_wire.io.enq")
+    mod.q2_wire.parentPathName should be ("Top")
+    wire_io.enq.parentPathName should be ("Top")
+    mod.q2_wire.parentModName should be ("Top")
+    wire_io.enq.parentModName should be ("Top")
   }
 
 }

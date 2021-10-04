@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chisel3.util.random
 
@@ -47,19 +47,24 @@ trait LFSR extends PRNG {
     */
   def reduction: LFSRReduce
 
-  seed match {
-    case Some(s) =>
-      reduction match {
+  override protected def resetValue: Vec[Bool] = seed match {
+    case Some(s) => reduction match {
         case XOR  => require(s != 0, "Seed cannot be zero")
         case XNOR => require(s != BigInt(2).pow(width) - 1, "Seed cannot be all ones (max value)")
       }
-    case None =>
-      reduction match {
-        case XOR  => when (reset.toBool) { state(0) := 1.U }
-        case XNOR => when (reset.toBool) { state(0) := 0.U }
-      }
-  }
+      super.resetValue
 
+    case None => {
+      val res = WireDefault(Vec(width, Bool()), DontCare)
+
+      reduction match {
+        case XOR  => res(0) := true.B
+        case XNOR => res(0) := false.B
+      }
+
+      res
+    }
+  }
 }
 
 /** Utilities related to psuedorandom number generation using Linear Feedback Shift Registers (LFSRs).
@@ -98,7 +103,7 @@ object LFSR {
   lazy val tapsMaxPeriod: Map[Int, Seq[Set[Int]]] = tapsFirst ++ tapsSecond
 
   /** First portion of known taps (a combined map hits the 64KB JVM method limit) */
-  private def tapsFirst = Map( // scalastyle:off magic.number
+  private def tapsFirst = Map(
     2    -> Seq(Set(2, 1)),
     3    -> Seq(Set(3, 2)),
     4    -> Seq(Set(4, 3)),
@@ -889,6 +894,6 @@ object LFSR {
     786  -> Seq(Set(786, 782, 780, 771)),
     1024 -> Seq(Set(1024, 1015, 1002, 1001)),
     2048 -> Seq(Set(2048, 2035, 2034, 2029)),
-    4096 -> Seq(Set(4096, 4095, 4081, 4069)) ) // scalastyle:on magic.number
+    4096 -> Seq(Set(4096, 4095, 4081, 4069)) )
 
 }

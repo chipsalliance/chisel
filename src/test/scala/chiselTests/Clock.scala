@@ -1,13 +1,14 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests
 
 import chisel3._
-import chisel3.experimental.RawModule
+import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
 
 class ClockAsUIntTester extends BasicTester {
   assert(true.B.asClock.asUInt === 1.U)
+  assert(true.B.asClock.asBool === true.B)
   stop()
 }
 
@@ -19,6 +20,7 @@ class WithClockAndNoReset extends RawModule {
   val a = withClock(clock2) {
     RegNext(in)
   }
+
   out := a
 }
 
@@ -29,7 +31,7 @@ class ClockSpec extends ChiselPropSpec {
   }
 
   property("Should be able to use withClock in a module with no reset") {
-    val circuit = Driver.emit { () => new WithClockAndNoReset }
+    val circuit = ChiselStage.emitChirrtl(new WithClockAndNoReset)
     circuit.contains("reg a : UInt<1>, clock2") should be (true)
   }
 }

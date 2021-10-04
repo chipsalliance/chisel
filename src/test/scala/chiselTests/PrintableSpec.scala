@@ -1,13 +1,37 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests
 
-import org.scalatest.{FlatSpec, Matchers}
 import chisel3._
+import chisel3.experimental.ChiselAnnotation
+import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
+import firrtl.annotations.{ReferenceTarget, SingleTargetAnnotation}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
+
+import java.io.File
+
+/** Dummy [[printf]] annotation.
+  * @param target target of component to be annotated
+  */
+case class PrintfAnnotation(target: ReferenceTarget) extends SingleTargetAnnotation[ReferenceTarget] {
+  def duplicate(n: ReferenceTarget): PrintfAnnotation = this.copy(target = n)
+}
+
+object PrintfAnnotation {
+  /** Create annotation for a given [[printf]].
+    * @param c component to be annotated
+    */
+  def annotate(c: VerificationStatement): Unit = {
+    chisel3.experimental.annotate(new ChiselAnnotation {
+      def toFirrtl: PrintfAnnotation = PrintfAnnotation(c.toTarget)
+    })
+  }
+}
 
 /* Printable Tests */
-class PrintableSpec extends FlatSpec with Matchers {
+class PrintableSpec extends AnyFlatSpec with Matchers {
   // This regex is brittle, it specifically finds the clock and enable signals followed by commas
   private val PrintfRegex = """\s*printf\(\w+, [^,]+,(.*)\).*""".r
   private val StringRegex = """([^"]*)"(.*?)"(.*)""".r
@@ -36,7 +60,7 @@ class PrintableSpec extends FlatSpec with Matchers {
     class MyModule extends BasicTester {
       printf(p"An exact string")
     }
-    val firrtl = Driver.emit(() => new MyModule)
+    val firrtl = ChiselStage.emitChirrtl(new MyModule)
     getPrintfs(firrtl) match {
       case Seq(Printf("An exact string", Seq())) =>
       case e => fail()
@@ -46,7 +70,7 @@ class PrintableSpec extends FlatSpec with Matchers {
     class MyModule extends BasicTester {
       printf(p"First " + PString("Second ") + "Third")
     }
-    val firrtl = Driver.emit(() => new MyModule)
+    val firrtl = ChiselStage.emitChirrtl(new MyModule)
     getPrintfs(firrtl) match {
       case Seq(Printf("First Second Third", Seq())) =>
       case e => fail()
@@ -57,7 +81,7 @@ class PrintableSpec extends FlatSpec with Matchers {
       val myInt = 1234
       printf(p"myInt = $myInt")
     }
-    val firrtl = Driver.emit(() => new MyModule)
+    val firrtl = ChiselStage.emitChirrtl(new MyModule)
     getPrintfs(firrtl) match {
       case Seq(Printf("myInt = 1234", Seq())) =>
       case e => fail()
@@ -68,7 +92,7 @@ class PrintableSpec extends FlatSpec with Matchers {
       val myWire = WireDefault(1234.U)
       printf(p"myWire = ${Decimal(myWire)}")
     }
-    val firrtl = Driver.emit(() => new MyModule)
+    val firrtl = ChiselStage.emitChirrtl(new MyModule)
     getPrintfs(firrtl) match {
       case Seq(Printf("myWire = %d", Seq("myWire"))) =>
       case e => fail()
@@ -78,7 +102,7 @@ class PrintableSpec extends FlatSpec with Matchers {
     class MyModule extends BasicTester {
       printf(Decimal(10.U(32.W)))
     }
-    val firrtl = Driver.emit(() => new MyModule)
+    val firrtl = ChiselStage.emitChirrtl(new MyModule)
     getPrintfs(firrtl) match {
       case Seq(Printf("%d", Seq(lit))) =>
         assert(lit contains "UInt<32>")
@@ -89,9 +113,19 @@ class PrintableSpec extends FlatSpec with Matchers {
     class MyModule extends BasicTester {
       printf(p"%")
     }
-    val firrtl = Driver.emit(() => new MyModule)
+    val firrtl = ChiselStage.emitChirrtl(new MyModule)
     getPrintfs(firrtl) match {
       case Seq(Printf("%%", Seq())) =>
+      case e => fail()
+    }
+  }
+  it should "correctly emit tab" in {
+    class MyModule extends BasicTester {
+      printf(p"\t")
+    }
+    val firrtl = ChiselStage.emitChirrtl(new MyModule)
+    getPrintfs(firrtl) match {
+      case Seq(Printf("\\t", Seq())) =>
       case e => fail()
     }
   }
@@ -115,8 +149,7 @@ class PrintableSpec extends FlatSpec with Matchers {
       printf(p"${FullName(myWire.foo)}")
       printf(p"${FullName(myInst.io.fizz)}")
     }
-    val firrtl = Driver.emit(() => new MyModule)
-    println(firrtl) // scalastyle:ignore regex
+    val firrtl = ChiselStage.emitChirrtl(new MyModule)
     getPrintfs(firrtl) match {
       case Seq(Printf("foo", Seq()),
                Printf("myWire.foo", Seq()),
@@ -134,7 +167,7 @@ class PrintableSpec extends FlatSpec with Matchers {
       val myInst = Module(new MySubModule)
       printf(p"${myInst.io.fizz}")
     }
-    val firrtl = Driver.emit(() => new MyModule)
+    val firrtl = ChiselStage.emitChirrtl(new MyModule)
     getPrintfs(firrtl) match {
       case Seq(Printf("%d", Seq("myInst.io.fizz"))) =>
       case e => fail()
@@ -146,7 +179,7 @@ class PrintableSpec extends FlatSpec with Matchers {
       val mySInt = WireDefault(-1.S)
       printf(p"$myUInt & $mySInt")
     }
-    val firrtl = Driver.emit(() => new MyModule)
+    val firrtl = ChiselStage.emitChirrtl(new MyModule)
     getPrintfs(firrtl) match {
       case Seq(Printf("%d & %d", Seq("myUInt", "mySInt"))) =>
       case e => fail()
@@ -158,7 +191,7 @@ class PrintableSpec extends FlatSpec with Matchers {
       myVec foreach (_ := 0.U)
       printf(p"$myVec")
     }
-    val firrtl = Driver.emit(() => new MyModule)
+    val firrtl = ChiselStage.emitChirrtl(new MyModule)
     getPrintfs(firrtl) match {
       case Seq(Printf("Vec(%d, %d, %d, %d)",
                Seq("myVec[0]", "myVec[1]", "myVec[2]", "myVec[3]"))) =>
@@ -175,11 +208,55 @@ class PrintableSpec extends FlatSpec with Matchers {
       myBun.bar := 0.U
       printf(p"$myBun")
     }
-    val firrtl = Driver.emit(() => new MyModule)
+    val firrtl = ChiselStage.emitChirrtl(new MyModule)
     getPrintfs(firrtl) match {
       case Seq(Printf("AnonymousBundle(foo -> %d, bar -> %d)",
                Seq("myBun.foo", "myBun.bar"))) =>
       case e => fail()
     }
+  }
+  it should "get emitted with a name and annotated" in {
+
+    /** Test circuit containing annotated and renamed [[printf]]s. */
+    class PrintfAnnotationTest extends Module {
+      val myBun = Wire(new Bundle {
+        val foo = UInt(32.W)
+        val bar = UInt(32.W)
+      })
+      myBun.foo := 0.U
+      myBun.bar := 0.U
+      val howdy = printf(p"hello ${myBun}")
+      PrintfAnnotation.annotate(howdy)
+      PrintfAnnotation.annotate(printf(p"goodbye $myBun"))
+      PrintfAnnotation.annotate(printf(p"adieu $myBun").suggestName("farewell"))
+    }
+
+    // compile circuit
+    val testDir = new File("test_run_dir", "PrintfAnnotationTest")
+    (new ChiselStage).emitSystemVerilog(
+      gen = new PrintfAnnotationTest,
+      args = Array("-td", testDir.getPath)
+    )
+
+    // read in annotation file
+    val annoFile = new File(testDir, "PrintfAnnotationTest.anno.json")
+    annoFile should exist
+    val annoLines = scala.io.Source.fromFile(annoFile).getLines.toList
+
+    // check for expected annotations
+    exactly(3, annoLines) should include ("chiselTests.PrintfAnnotation")
+    exactly(1, annoLines) should include ("~PrintfAnnotationTest|PrintfAnnotationTest>farewell")
+    exactly(1, annoLines) should include ("~PrintfAnnotationTest|PrintfAnnotationTest>printf")
+    exactly(1, annoLines) should include ("~PrintfAnnotationTest|PrintfAnnotationTest>howdy")
+
+    // read in FIRRTL file
+    val firFile = new File(testDir, "PrintfAnnotationTest.fir")
+    firFile should exist
+    val firLines = scala.io.Source.fromFile(firFile).getLines.toList
+
+    // check that verification components have expected names
+    exactly(1, firLines) should include ("""printf(clock, UInt<1>("h1"), "hello AnonymousBundle(foo -> %d, bar -> %d)", myBun.foo, myBun.bar) : howdy""")
+    exactly(1, firLines) should include ("""printf(clock, UInt<1>("h1"), "goodbye AnonymousBundle(foo -> %d, bar -> %d)", myBun.foo, myBun.bar) : printf""")
+    exactly(1, firLines) should include ("""printf(clock, UInt<1>("h1"), "adieu AnonymousBundle(foo -> %d, bar -> %d)", myBun.foo, myBun.bar) : farewell""")
   }
 }

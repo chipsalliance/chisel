@@ -1,13 +1,12 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chisel3
 
 import firrtl._
-import firrtl.annotations.DeletedAnnotation
 import firrtl.options.OptionsView
 
 import chisel3.internal.firrtl.{Circuit => ChiselCircuit}
-import chisel3.stage.phases.{Convert, Emitter}
+import chisel3.stage.CircuitSerializationAnnotation.FirrtlFileFormat
 
 package object stage {
 
@@ -28,18 +27,17 @@ package object stage {
 
   private[chisel3] implicit object ChiselExecutionResultView extends OptionsView[ChiselExecutionResult] {
 
-    lazy val dummyWriteEmitted = new firrtl.stage.phases.WriteEmitted
-    lazy val dummyConvert = new Convert
-    lazy val dummyEmitter = new Emitter
-
     def view(options: AnnotationSeq): ChiselExecutionResult = {
       var chiselCircuit: Option[ChiselCircuit] = None
       var chirrtlCircuit: Option[String] = None
 
       options.foreach {
-        case DeletedAnnotation(dummyConvert.name, ChiselCircuitAnnotation(a)) => chiselCircuit = Some(a)
-        case DeletedAnnotation(dummyEmitter.name, EmittedFirrtlCircuitAnnotation(EmittedFirrtlCircuit(_, a, _))) =>
-          chirrtlCircuit = Some(a)
+        case a @ ChiselCircuitAnnotation(b) =>
+          chiselCircuit = Some(b)
+          chirrtlCircuit = {
+            val anno = CircuitSerializationAnnotation(a.circuit, "", FirrtlFileFormat)
+            Some(anno.getBytes.map(_.toChar).mkString)
+          }
         case _ =>
       }
 

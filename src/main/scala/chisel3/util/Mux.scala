@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 /** Mux circuit generators.
   */
@@ -19,7 +19,7 @@ import chisel3._
   * ))
   * }}}
   *
-  * @note results undefined if multiple select signals are simultaneously high
+  * @note results unspecified unless exactly one select signal is high
   */
 object Mux1H {
   def apply[T <: Data](sel: Seq[Bool], in: Seq[T]): T =
@@ -63,10 +63,21 @@ object MuxLookup {
     * @return the value found or the default if not
     */
   def apply[S <: UInt, T <: Data] (key: S, default: T, mapping: Seq[(S, T)]): T = {
-    var res = default
-    for ((k, v) <- mapping.reverse)
-      res = Mux(k === key, v, res)
-    res
+    /* If the mapping is defined for all possible values of the key, then don't use the default value */
+    val (defaultx, mappingx) = key.widthOption match {
+      case Some(width) =>
+        val keySetSize = BigInt(1) << width
+        val keyMask = keySetSize - 1
+        val distinctLitKeys = mapping.flatMap(_._1.litOption).map(_ & keyMask).distinct
+        if (distinctLitKeys.size == keySetSize) {
+          (mapping.head._2, mapping.tail)
+        } else {
+          (default, mapping)
+        }
+      case None => (default, mapping)
+    }
+
+    mappingx.foldLeft(defaultx){ case (d, (k, v)) => Mux(k === key, v, d) }
   }
 }
 

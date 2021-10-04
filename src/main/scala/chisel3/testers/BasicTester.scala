@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chisel3.testers
 import chisel3._
@@ -21,12 +21,7 @@ class BasicTester extends Module() {
     * reset). If your definition of reset is not the encapsulating Module's
     * reset, you will need to gate this externally.
     */
-  def stop()(implicit sourceInfo: SourceInfo) {
-    // TODO: rewrite this using library-style SourceInfo passing.
-    when (!reset.asBool) {
-      pushCommand(Stop(sourceInfo, clock.ref, 0))
-    }
-  }
+  def stop()(implicit sourceInfo: SourceInfo): Unit = chisel3.stop()
 
   /** The finish method provides a hook that subclasses of BasicTester can use to
     * alter a circuit after their constructor has been called.

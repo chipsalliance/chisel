@@ -47,8 +47,15 @@ int main(int argc, char** argv) {
   cout << "Starting simulation!\n";
 
   while (!Verilated::gotFinish() && main_time < timeout) {
-    if (main_time > 10) {
-      top->reset = 0;   // Deassert reset
+    // Deassert reset on timestep 10.  This needs to occur before the clock
+    // asserts on timestep 11 because there is a single call to top->eval() in
+    // this loop.  Verilator evaluates sequential logic (always blocks) before
+    // combinational logic during top->eval().  Staggering the reset update is
+    // necessary to produce the same simulation behavior independent of whether
+    // or not the generated Verilog puts synchronous reset logic inside or
+    // outside its associated always block.
+    if (main_time == 10) {
+      top->reset = 0;
     }
     if ((main_time % 10) == 1) {
       top->clock = 1;       // Toggle clock
@@ -92,4 +99,3 @@ int main(int argc, char** argv) {
     if (tfp) tfp->close();
 #endif
 }
-

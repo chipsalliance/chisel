@@ -1,22 +1,25 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests.stage.phases
 
-import org.scalatest.{FlatSpec, Matchers}
 
 import chisel3._
-import chisel3.experimental.{ChiselAnnotation, RawModule, RunFirrtlTransform}
+import chisel3.experimental.{ChiselAnnotation, RunFirrtlTransform}
 import chisel3.stage.ChiselGeneratorAnnotation
 import chisel3.stage.phases.{Convert, Elaborate}
 
-import firrtl.{AnnotationSeq, CircuitForm, CircuitState, Transform, UnknownForm}
+import firrtl.{AnnotationSeq, CircuitForm, CircuitState, DependencyAPIMigration, Transform, UnknownForm}
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
 import firrtl.options.Phase
 import firrtl.stage.{FirrtlCircuitAnnotation, RunFirrtlTransformAnnotation}
+import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.matchers.should.Matchers
 
-class ConvertSpecFirrtlTransform extends Transform {
-  def inputForm: CircuitForm = UnknownForm
-  def outputForm: CircuitForm = UnknownForm
+class ConvertSpecFirrtlTransform extends Transform with DependencyAPIMigration {
+  override def prerequisites = Seq.empty
+  override def optionalPrerequisites = Seq.empty
+  override def optionalPrerequisiteOf = Seq.empty
+  override def invalidates(a: Transform) = false
   def execute(state: CircuitState): CircuitState = state
 }
 
@@ -36,7 +39,7 @@ class ConvertSpecFoo extends RawModule {
   experimental.annotate(ConvertSpecChiselAnnotation("bar"))
 }
 
-class ConvertSpec extends FlatSpec with Matchers {
+class ConvertSpec extends AnyFlatSpec with Matchers {
 
   class Fixture { val phase: Phase = new Convert }
 

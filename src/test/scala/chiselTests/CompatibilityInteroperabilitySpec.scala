@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests
 
@@ -242,6 +242,122 @@ class CompatibiltyInteroperabilitySpec extends ChiselFlatSpec {
         }
       }
     }
+  }
+
+  "Compatibility Modules" should "have Bool as their reset type" in {
+    compile {
+      import Chisel._
+      class Intf extends Bundle {
+        val in = Bool(INPUT)
+        val en = Bool(INPUT)
+        val out = Bool(OUTPUT)
+      }
+      class Child extends Module {
+        val io = new Intf
+        io.out := Mux(io.en, io.in, reset)
+      }
+      new Module {
+        val io = new Intf
+        val child = Module(new Child)
+        io <> child.io
+      }
+    }
+  }
+
+  "Compatibility Modules" should "be instantiable inside chisel3 Modules" in {
+    compile {
+      object Compat {
+        import Chisel._
+        class Intf extends Bundle {
+          val in = Input(UInt(8.W))
+          val out = Output(UInt(8.W))
+        }
+        class OldMod extends Module {
+          val io = IO(new Intf)
+          io.out := Reg(next = io.in)
+        }
+      }
+      import chisel3._
+      import Compat._
+      new Module {
+        val io = IO(new Intf)
+        io <> Module(new Module {
+          val io = IO(new Intf)
+          val inst = Module(new OldMod)
+          io <> inst.io
+        }).io
+      }
+    }
+  }
+
+  "A chisel3 Bundle that instantiates a Chisel Bundle" should "bulk connect correctly" in {
+    compile {
+      object Compat {
+        import Chisel._
+        class BiDir extends Bundle {
+          val a = Input(UInt(8.W))
+          val b = Output(UInt(8.W))
+        }
+        class Struct extends Bundle {
+          val a = UInt(8.W)
+        }
+      }
+      import chisel3._
+      import Compat._
+      class Bar extends Bundle {
+        val bidir1 = new BiDir
+        val bidir2 = Flipped(new BiDir)
+        val struct1 = Output(new Struct)
+        val struct2 = Input(new Struct)
+      }
+      // Check every connection both ways to see that chisel3 <>'s commutativity holds
+      class Child extends RawModule {
+        val deq = IO(new Bar)
+        val enq = IO(Flipped(new Bar))
+        enq <> deq
+        deq <> enq
+      }
+      new RawModule {
+        val deq = IO(new Bar)
+        val enq = IO(Flipped(new Bar))
+        // Also important to check connections to child ports
+        val c1 = Module(new Child)
+        val c2 = Module(new Child)
+        c1.enq <> enq
+        enq <> c1.enq
+        c2.enq <> c1.deq
+        c1.deq <> c2.enq
+        deq <> c2.deq
+        c2.deq <> deq
+      }
+    }
+  }
+
+  "A unidirectional but flipped Bundle" should "bulk connect in import chisel3._ code correctly" in {
+    object Compat {
+      import Chisel._
+      class MyBundle(extraFlip: Boolean) extends Bundle {
+        private def maybeFlip[T <: Data](t: T): T = if (extraFlip) t.flip else t
+        val foo = maybeFlip(new Bundle {
+          val bar = UInt(INPUT, width = 8)
+        })
+        override def cloneType = (new MyBundle(extraFlip)).asInstanceOf[this.type]
+      }
+    }
+    import chisel3._
+    import Compat._
+    class Top(extraFlip: Boolean) extends RawModule {
+      val port = IO(new MyBundle(extraFlip))
+      val wire = Wire(new MyBundle(extraFlip))
+      port <> DontCare
+      wire <> DontCare
+      port <> wire
+      wire <> port
+      port.foo <> wire.foo
+      wire.foo <> port.foo
+    }
+    compile(new Top(true))
+    compile(new Top(false))
   }
 }
 

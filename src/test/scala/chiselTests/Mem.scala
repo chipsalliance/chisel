@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests
 
@@ -30,6 +30,30 @@ class SyncReadMemTester extends BasicTester {
     is (2.U) { assert(rdata === 3.U) }
     is (3.U) { assert(rdata === 2.U) }
     is (4.U) { stop() }
+  }
+}
+
+class SyncReadMemWriteCollisionTester extends BasicTester {
+  val (cnt, _) = Counter(true.B, 5)
+
+  // Write-first
+  val m0 = SyncReadMem(2, UInt(2.W), SyncReadMem.WriteFirst)
+  val rd0 = m0.read(cnt)
+  m0.write(cnt, cnt)
+
+  // Read-first
+  val m1 = SyncReadMem(2, UInt(2.W), SyncReadMem.ReadFirst)
+  val rd1 = m1.read(cnt)
+  m1.write(cnt, cnt)
+
+  // Read data from address 0
+  when (cnt === 3.U) {
+    assert(rd0 === 2.U)
+    assert(rd1 === 0.U)
+  }
+
+  when (cnt === 4.U) {
+    stop()
   }
 }
 
@@ -72,6 +96,51 @@ class HugeCMemTester(size: BigInt) extends BasicTester {
   }
 }
 
+class SyncReadMemBundleTester extends BasicTester {
+  val (cnt, _) = Counter(true.B, 5)
+  val tpe = new Bundle {
+    val foo = UInt(2.W)
+  }
+  val mem = SyncReadMem(2, tpe)
+  val rdata = mem.read(cnt - 1.U, cnt =/= 0.U)
+
+  switch (cnt) {
+    is (0.U) {
+      val w = Wire(tpe)
+      w.foo := 3.U
+      mem.write(cnt, w)
+    }
+    is (1.U) {
+      val w = Wire(tpe)
+      w.foo := 2.U
+      mem.write(cnt, w)
+    }
+    is (2.U) { assert(rdata.foo === 3.U) }
+    is (3.U) { assert(rdata.foo === 2.U) }
+    is (4.U) { stop() }
+  }
+}
+
+class MemBundleTester extends BasicTester {
+  val tpe = new Bundle {
+    val foo = UInt(2.W)
+  }
+  val mem = Mem(2, tpe)
+
+  // Circuit style tester is definitely the wrong abstraction here
+  val (cnt, wrap) = Counter(true.B, 2)
+  mem(0) := {
+    val w = Wire(tpe)
+    w.foo := 1.U
+    w
+  }
+
+  when (cnt === 1.U) {
+    assert(mem.read(0.U).foo === 1.U)
+    stop()
+  }
+}
+
 class MemorySpec extends ChiselPropSpec {
   property("Mem of Vec should work") {
     assertTesterPasses { new MemVecTester }
@@ -79,6 +148,18 @@ class MemorySpec extends ChiselPropSpec {
 
   property("SyncReadMem should work") {
     assertTesterPasses { new SyncReadMemTester }
+  }
+
+  property("SyncReadMems of Bundles should work") {
+    assertTesterPasses { new SyncReadMemBundleTester }
+  }
+
+  property("Mems of Bundles should work") {
+    assertTesterPasses { new MemBundleTester }
+  }
+
+  property("SyncReadMem write collision behaviors should work") {
+    assertTesterPasses { new SyncReadMemWriteCollisionTester }
   }
 
   property("SyncReadMem should work with zero width entry") {

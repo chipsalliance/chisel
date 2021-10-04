@@ -1,8 +1,9 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests
 
 import chisel3._
+import chisel3.stage.ChiselStage
 import chisel3.util.Queue
 
 class InstanceNameModule extends Module {
@@ -25,7 +26,7 @@ class InstanceNameSpec extends ChiselFlatSpec {
   behavior of "instanceName"
   val moduleName = "InstanceNameModule"
   var m: InstanceNameModule = _
-  elaborate { m = new InstanceNameModule; m }
+  ChiselStage.elaborate { m = new InstanceNameModule; m }
 
   it should "work with module IO" in {
     val io = m.io.pathName

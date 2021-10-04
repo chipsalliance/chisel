@@ -1,22 +1,28 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chisel3.stage
 
 import firrtl.annotations.{Annotation, NoTargetAnnotation}
-import firrtl.options.{HasShellOptions, OptionsException, ShellOption, Unserializable}
-
+import firrtl.options.{BufferedCustomFileEmission, CustomFileEmission, HasShellOptions, OptionsException, ShellOption, StageOptions, Unserializable}
+import firrtl.options.Viewer.view
 import chisel3.{ChiselException, Module}
-import chisel3.experimental.RawModule
+import chisel3.RawModule
 import chisel3.internal.Builder
-import chisel3.internal.firrtl.Circuit
+import chisel3.internal.firrtl.{Circuit, Emitter => OldEmitter}
+import firrtl.AnnotationSeq
+import java.io.File
 
 /** Mixin that indicates that this is an [[firrtl.annotations.Annotation]] used to generate a [[ChiselOptions]] view.
   */
-sealed trait ChiselOption extends Unserializable { this: Annotation => }
+sealed trait ChiselOption { this: Annotation => }
 
 /** Disable the execution of the FIRRTL compiler by Chisel
   */
-case object NoRunFirrtlCompilerAnnotation extends NoTargetAnnotation with ChiselOption with HasShellOptions {
+case object NoRunFirrtlCompilerAnnotation
+    extends NoTargetAnnotation
+    with ChiselOption
+    with HasShellOptions
+    with Unserializable {
 
   val options = Seq(
     new ShellOption[Unit](
@@ -29,7 +35,11 @@ case object NoRunFirrtlCompilerAnnotation extends NoTargetAnnotation with Chisel
 
 /** On an exception, this will cause the full stack trace to be printed as opposed to a pruned stack trace.
   */
-case object PrintFullStackTraceAnnotation extends NoTargetAnnotation with ChiselOption with HasShellOptions {
+case object PrintFullStackTraceAnnotation
+    extends NoTargetAnnotation
+    with ChiselOption
+    with HasShellOptions
+    with Unserializable {
 
   val options = Seq(
     new ShellOption[Unit](
@@ -46,14 +56,7 @@ case class ChiselGeneratorAnnotation(gen: () => RawModule) extends NoTargetAnnot
 
   /** Run elaboration on the Chisel module generator function stored by this [[firrtl.annotations.Annotation]]
     */
-  def elaborate: ChiselCircuitAnnotation = try {
-    ChiselCircuitAnnotation(Builder.build(Module(gen())))
-  } catch {
-    case e @ (_: OptionsException | _: ChiselException) => throw e
-    case e: Throwable =>
-      throw new OptionsException(s"Exception thrown when elaborating ChiselGeneratorAnnotation", e)
-  }
-
+  def elaborate: AnnotationSeq = (new chisel3.stage.phases.Elaborate).transform(Seq(this))
 }
 
 object ChiselGeneratorAnnotation extends HasShellOptions {
@@ -89,9 +92,61 @@ object ChiselGeneratorAnnotation extends HasShellOptions {
 /** Stores a Chisel Circuit
   * @param circuit a Chisel Circuit
   */
-case class ChiselCircuitAnnotation(circuit: Circuit) extends NoTargetAnnotation with ChiselOption
+case class ChiselCircuitAnnotation(circuit: Circuit)
+    extends NoTargetAnnotation
+    with ChiselOption
+    with Unserializable {
+  /* Caching the hashCode for a large circuit is necessary due to repeated queries.
+   * Not caching the hashCode will cause severe performance degredations for large [[Circuit]]s.
+   */
+  override lazy val hashCode: Int = circuit.hashCode
+}
 
-case class ChiselOutputFileAnnotation(file: String) extends NoTargetAnnotation with ChiselOption
+object CircuitSerializationAnnotation {
+  sealed trait Format {
+    def extension: String
+  }
+  case object FirrtlFileFormat extends Format {
+    def extension = ".fir"
+  }
+  case object ProtoBufFileFormat extends Format {
+    def extension = ".pb"
+  }
+}
+
+import CircuitSerializationAnnotation._
+
+/** Wraps a [[Circuit]] for serialization via [[CustomFileEmission]]
+  * @param circuit a Chisel Circuit
+  * @param filename name of destination file (excludes file extension)
+  * @param format serialization file format (sets file extension)
+  */
+case class CircuitSerializationAnnotation(circuit: Circuit, filename: String, format: Format)
+    extends NoTargetAnnotation
+    with BufferedCustomFileEmission {
+  /* Caching the hashCode for a large circuit is necessary due to repeated queries.
+   * Not caching the hashCode will cause severe performance degredations for large [[Circuit]]s.
+   */
+  override lazy val hashCode: Int = circuit.hashCode
+
+  protected def baseFileName(annotations: AnnotationSeq): String = filename
+
+  protected def suffix: Option[String] = Some(format.extension)
+
+  override def getBytesBuffered: Iterable[Array[Byte]] = format match {
+    case FirrtlFileFormat =>
+      OldEmitter.emitLazily(circuit)
+                .map(_.getBytes)
+    // TODO Use lazy Iterables so that we don't have to materialize full intermediate data structures
+    case ProtoBufFileFormat =>
+      val ostream = new java.io.ByteArrayOutputStream
+      val modules = circuit.components.map(m => () => chisel3.internal.firrtl.Converter.convert(m))
+      firrtl.proto.ToProto.writeToStreamFast(ostream, firrtl.ir.NoInfo, modules, circuit.name)
+      List(ostream.toByteArray)
+  }
+}
+
+case class ChiselOutputFileAnnotation(file: String) extends NoTargetAnnotation with ChiselOption with Unserializable
 
 object ChiselOutputFileAnnotation extends HasShellOptions {
 
@@ -103,3 +158,11 @@ object ChiselOutputFileAnnotation extends HasShellOptions {
       helpValueName = Some("<file>") ) )
 
 }
+
+/** Contains the top-level elaborated Chisel design.
+  *
+  * By default is created during Chisel elaboration and passed to the FIRRTL compiler.
+  * @param design top-level Chisel design
+  * @tparam DUT Type of the top-level Chisel design
+  */
+case class DesignAnnotation[DUT <: RawModule](design: DUT) extends NoTargetAnnotation with Unserializable

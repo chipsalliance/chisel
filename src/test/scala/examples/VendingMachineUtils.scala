@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package examples
 
@@ -34,6 +34,6 @@ object VendingMachineUtils {
         value += incValue
       }
     }
-    outputs
+    outputs.toSeq
   }
 }

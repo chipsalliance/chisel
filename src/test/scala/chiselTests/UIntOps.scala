@@ -1,11 +1,13 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests
 
 import chisel3._
 import org.scalatest._
+import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
 import org.scalacheck.Shrink
+import org.scalatest.matchers.should.Matchers
 
 class UIntOps extends Module {
   val io = IO(new Bundle {
@@ -149,21 +151,21 @@ class UIntLitExtractTester extends BasicTester {
   stop()
 }
 
-class UIntOpsSpec extends ChiselPropSpec with Matchers {
+class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
   // Disable shrinking on error.
   implicit val noShrinkListVal = Shrink[List[Int]](_ => Stream.empty)
   implicit val noShrinkInt = Shrink[Int](_ => Stream.empty)
 
   property("Bools can be created from 1 bit UInts") {
-    elaborate(new GoodBoolConversion)
+    ChiselStage.elaborate(new GoodBoolConversion)
   }
 
   property("Bools cannot be created from >1 bit UInts") {
-    a [Exception] should be thrownBy { elaborate(new BadBoolConversion) }
+    a [Exception] should be thrownBy extractCause[Exception] { ChiselStage.elaborate(new BadBoolConversion) }
   }
 
   property("UIntOps should elaborate") {
-    elaborate { new UIntOps }
+    ChiselStage.elaborate { new UIntOps }
   }
 
   property("UIntOpsTester should return the correct result") {
@@ -171,7 +173,9 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers {
   }
 
   property("Negative shift amounts are invalid") {
-    a [ChiselException] should be thrownBy { elaborate(new NegativeShift(UInt())) }
+    a [ChiselException] should be thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate(new NegativeShift(UInt()))
+    }
   }
 
   property("rotateRight should work for all dynamic and static shift values") {
@@ -187,7 +191,7 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers {
   }
 
   property("asBools should support chained apply") {
-    elaborate(new Module {
+    ChiselStage.elaborate(new Module {
       val io = IO(new Bundle {
         val in = Input(UInt(8.W))
         val out = Output(Bool())
@@ -195,5 +199,37 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers {
       io.out := io.in.asBools()(2)
     })
   }
-}
 
+  // We use WireDefault with 2 arguments because of
+  // https://www.chisel-lang.org/api/3.4.1/chisel3/WireDefault$.html
+  //   Single Argument case 2
+  property("modulo divide should give min width of arguments") {
+    assertKnownWidth(4) {
+      val x = WireDefault(UInt(8.W), DontCare)
+      val y = WireDefault(UInt(4.W), DontCare)
+      val op = x % y
+      WireDefault(chiselTypeOf(op), op)
+    }
+    assertKnownWidth(4) {
+      val x = WireDefault(UInt(4.W), DontCare)
+      val y = WireDefault(UInt(8.W), DontCare)
+      val op = x % y
+      WireDefault(chiselTypeOf(op), op)
+    }
+  }
+
+  property("division should give the width of the numerator") {
+    assertKnownWidth(8) {
+      val x = WireDefault(UInt(8.W), DontCare)
+      val y = WireDefault(UInt(4.W), DontCare)
+      val op = x / y
+      WireDefault(chiselTypeOf(op), op)
+    }
+    assertKnownWidth(4) {
+      val x = WireDefault(UInt(4.W), DontCare)
+      val y = WireDefault(UInt(8.W), DontCare)
+      val op = x / y
+      WireDefault(chiselTypeOf(op), op)
+    }
+  }
+}

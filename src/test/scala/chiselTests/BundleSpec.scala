@@ -1,8 +1,9 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests
 
 import chisel3._
+import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
 
 trait BundleSpecUtils {
@@ -55,9 +56,9 @@ trait BundleSpecUtils {
   }
 }
 
-class BundleSpec extends ChiselFlatSpec with BundleSpecUtils {
+class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
   "Bundles with the same fields but in different orders" should "bulk connect" in {
-    elaborate { new MyModule(new BundleFooBar, new BundleBarFoo) }
+    ChiselStage.elaborate { new MyModule(new BundleFooBar, new BundleBarFoo) }
   }
 
   "Bundles" should "follow UInt serialization/deserialization API" in {
@@ -65,18 +66,18 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils {
   }
 
   "Bulk connect on Bundles" should "check that the fields match" in {
-    (the [ChiselException] thrownBy {
-      elaborate { new MyModule(new BundleFooBar, new BundleFoo) }
+    (the [ChiselException] thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate { new MyModule(new BundleFooBar, new BundleFoo) }
     }).getMessage should include ("Right Record missing field")
 
-    (the [ChiselException] thrownBy {
-      elaborate { new MyModule(new BundleFoo, new BundleFooBar) }
+    (the [ChiselException] thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate { new MyModule(new BundleFoo, new BundleFooBar) }
     }).getMessage should include ("Left Record missing field")
   }
 
   "Bundles" should "not be able to use Seq for constructing hardware" in {
-    (the[ChiselException] thrownBy {
-      elaborate {
+    (the[ChiselException] thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate {
         new Module {
           val io = IO(new Bundle {
             val b = new BadSeqBundle
@@ -116,8 +117,8 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils {
   }
 
   "Bundles" should "not have aliased fields" in {
-    (the[ChiselException] thrownBy {
-      elaborate { new Module {
+    (the[ChiselException] thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate { new Module {
         val io = IO(Output(new Bundle {
           val a = UInt(8.W)
           val b = a
@@ -126,5 +127,39 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils {
         io.b := 1.U
       } }
     }).getMessage should include("aliased fields")
+  }
+
+  "Bundles" should "not have bound hardware" in {
+    (the[ChiselException] thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate { new Module {
+        class MyBundle(val foo: UInt) extends Bundle
+        val in  = IO(Input(new MyBundle(123.U))) // This should error: value passed in instead of type
+        val out = IO(Output(new MyBundle(UInt(8.W))))
+
+        out := in
+      } }
+    }).getMessage should include("must be a Chisel type, not hardware")
+  }
+  "Bundles" should "not recursively contain aggregates with bound hardware" in {
+    (the[ChiselException] thrownBy extractCause[ChiselException] {
+      ChiselStage.elaborate { new Module {
+        class MyBundle(val foo: UInt) extends Bundle
+        val out = IO(Output(Vec(2, UInt(8.W))))
+        val in  = IO(Input(new MyBundle(out(0)))) // This should error: Bound aggregate passed
+        out := in
+      } }
+    }).getMessage should include("must be a Chisel type, not hardware")
+  }
+  "Unbound bundles sharing a field" should "not error" in {
+    ChiselStage.elaborate {
+      new RawModule {
+        val foo = new Bundle {
+          val x = UInt(8.W)
+        }
+        val bar = new Bundle {
+          val y = foo.x
+        }
+      }
+    }
   }
 }

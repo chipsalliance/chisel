@@ -1,0 +1,141 @@
+name: Continuous Integration
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+      - 3.4.x
+      - 3.3.x
+      - 3.2.x
+
+jobs:
+  ci:
+    name: ci
+    strategy:
+      matrix:
+        system: ["ubuntu-20.04"]
+        jvm: ["adopt@1.8"]
+        scala: ["2.13.6", "2.12.15"]
+        verilator: ["4.204"]
+        espresso: ["2.4"]
+    runs-on: ${{ matrix.system }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install Z3
+        if: matrix.system == 'ubuntu-20.04'
+        run: |
+          sudo apt-get install -y z3
+          z3 --version
+
+      - name: Cache Verilator ${{ matrix.verilator }}
+        uses: actions/cache@v2.1.6
+        id: cache-verilator
+        with:
+          path: verilator-${{ matrix.verilator }}
+          key: ${{ matrix.system }}-verilator-${{ matrix.verilator }}
+      - name: Compile Verilator ${{ matrix.verilator }}
+        if: steps.cache-verilator.outputs.cache-hit != 'true'
+        run: |
+          wget https://github.com/verilator/verilator/archive/refs/tags/v${{ matrix.verilator }}.tar.gz
+          tar xvf v${{ matrix.verilator }}.tar.gz
+          cd verilator-${{ matrix.verilator }}
+          autoconf
+          ./configure
+          make
+      - name: Install Verilator ${{ matrix.verilator }}
+        run: |
+          cd verilator-${{ matrix.verilator }}
+          sudo make install
+          verilator --version
+
+      - name: Install Espresso
+        run: |
+          cd /tmp
+          wget https://github.com/chipsalliance/espresso/releases/download/v${{ matrix.espresso }}/x86_64-linux-gnu-espresso
+          chmod +x x86_64-linux-gnu-espresso
+          sudo mv x86_64-linux-gnu-espresso /usr/local/bin/espresso
+          espresso || true
+
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: ${{ matrix.jvm }}
+      - name: Cache Scala
+        uses: coursier/cache-action@v5
+      - name: Documentation (Scala 2.12 only)
+        if: startsWith(matrix.scala, '2.12')
+        run: sbt ++${{ matrix.scala }} docs/mdoc
+      - name: Test
+        run: sbt ++${{ matrix.scala }} test noPluginTests/test
+      - name: Binary compatibility
+        run: sbt ++${{ matrix.scala }} mimaReportBinaryIssues
+
+  integration:
+    name: Integration Tests (w/ chiseltest)
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install Verilator and Z3
+        run: |
+          sudo apt-get install -y verilator z3
+          verilator --version
+          z3 --version
+      - name: Install Espresso
+        run: |
+          cd /tmp
+          wget https://github.com/chipsalliance/espresso/releases/download/v2.4/x86_64-linux-gnu-espresso
+          chmod +x x86_64-linux-gnu-espresso
+          sudo mv x86_64-linux-gnu-espresso /usr/local/bin/espresso
+          espresso || true
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: "adopt@1.11"
+      - name: Cache Scala
+        uses: coursier/cache-action@v5
+      - name: Integration Tests
+        run: sbt integrationTests/test
+
+  # Sentinel job to simplify how we specify which checks need to pass in branch
+  # protection and in Mergify
+  #
+  # When adding new jobs, please add them to `needs` below
+  all_tests_passed:
+    name: "all tests passed"
+    needs: [ci, integration]
+    runs-on: ubuntu-20.04
+    steps:
+      - run: echo Success!
+
+  # sbt ci-release publishes all cross versions so this job needs to be
+  # separate from a Scala versions build matrix to avoid duplicate publishing
+  publish:
+    needs: [all_tests_passed]
+    runs-on: ubuntu-20.04
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.8
+      - name: Cache Scala
+        uses: coursier/cache-action@v5
+      - name: Setup GPG (for Publish)
+        uses: olafurpg/setup-gpg@v3
+      - name: Publish
+        run: sbt ci-release
+        env:
+          PGP_PASSPHRASE: ${{ secrets.PGP_PASSPHRASE }}
+          PGP_SECRET: ${{ secrets.PGP_SECRET }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+
+
