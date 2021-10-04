@@ -625,8 +625,9 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
   final def rotateLeft(that: Int): UInt =  macro SourceInfoWhiteboxTransform.thatArg
 
   def do_rotateLeft(n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = width match {
-    case KnownWidth(w) if n >= w => do_rotateLeft(n % w)
     case _ if (n == 0) => this
+    case KnownWidth(w) if (w <= 1) => this
+    case KnownWidth(w) if n >= w => do_rotateLeft(n % w)
     case _ if (n < 0) => do_rotateRight(-n)
     case _ => tail(n) ## head(n)
   }
@@ -639,8 +640,9 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
   final def rotateRight(that: Int): UInt =  macro SourceInfoWhiteboxTransform.thatArg
 
   def do_rotateRight(n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = width match {
-    case KnownWidth(w) if n >= w => do_rotateRight(n % w)
     case _ if (n <= 0) => do_rotateLeft(-n)
+    case KnownWidth(w) if (w <= 1) => this
+    case KnownWidth(w) if n >= w => do_rotateRight(n % w)
     case _ => this(n - 1, 0) ## (this >> n)
   }
 
