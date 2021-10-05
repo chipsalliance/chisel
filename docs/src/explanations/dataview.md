@@ -285,7 +285,6 @@ class BundleB extends Bundle {
 ```
 
 ```scala mdoc:crash
-{ // Using an extra scope here to avoid a bug in mdoc (documentation generation)
 // We forgot BundleA.foo in the mapping!
 implicit val myView = DataView[BundleA, BundleB](_ => new BundleB, _.bar -> _.fizz)
 class BadMapping extends Module {
@@ -295,7 +294,6 @@ class BadMapping extends Module {
 }
 // We must run Chisel to see the error
 emitVerilog(new BadMapping)
-}
 ```
 
 As that error suggests, if we *want* the view to be non-total, we can use a `PartialDataView`:
@@ -321,7 +319,6 @@ This has the consequence that `PartialDataViews` are **not** invertible in the s
 For example:
 
 ```scala mdoc:crash
-{ // Using an extra scope here to avoid a bug in mdoc (documentation generation)
 implicit val myView2 = myView.invert(_ => new BundleA)
 class PartialDataViewModule2 extends Module {
    val in = IO(Input(new BundleA))
@@ -331,7 +328,6 @@ class PartialDataViewModule2 extends Module {
 }
 // We must run Chisel to see the error
 emitVerilog(new PartialDataViewModule2)
-}
 ```
 
 As noted, the mapping must **always** be total for the `View`.
