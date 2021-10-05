@@ -7,7 +7,10 @@ import chisel3.testers.BasicTester
 import chisel3.util._
 import org.scalacheck.Shrink
 
-class Complex[T <: Data](val re: T, val im: T) extends Bundle
+class Complex[T <: Data](val re: T, val im: T) extends Bundle {
+  override def cloneType: this.type =
+    new Complex(re.cloneType, im.cloneType).asInstanceOf[this.type]
+}
 
 class ComplexAssign(w: Int) extends Module {
   val io = IO(new Bundle {

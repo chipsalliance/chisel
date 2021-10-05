@@ -12,6 +12,7 @@ trait RecordSpecUtils {
   class MyBundle extends Bundle {
     val foo = UInt(32.W)
     val bar = UInt(32.W)
+    override def cloneType: this.type = (new MyBundle).asInstanceOf[this.type]
   }
   // Useful for constructing types from CustomBundle
   // This is a def because each call to this needs to return a new instance
