@@ -58,7 +58,10 @@ trait BundleSpecUtils {
 
 class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
   "Bundles with the same fields but in different orders" should "bulk connect" in {
-    ChiselStage.elaborate { new MyModule(new BundleFooBar, new BundleBarFoo) }
+  val (log, _) = grabLog(
+      ChiselStage.elaborate { new MyModule(new BundleFooBar, new BundleBarFoo) }
+    )
+    log shouldNot include ("The runtime reflection inference for cloneType")
   }
 
   "Bundles" should "follow UInt serialization/deserialization API" in {
