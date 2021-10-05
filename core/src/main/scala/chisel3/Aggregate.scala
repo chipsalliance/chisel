@@ -54,7 +54,7 @@ sealed abstract class Aggregate extends Data {
   override def litOption: Option[BigInt] = {
     // Shift the accumulated value by our width and add in our component, masked by our width.
     def shiftAdd(accumulator: Option[BigInt], elt: Data): Option[BigInt] = {
-      (accumulator, elt.litOption()) match {
+      (accumulator, elt.litOption) match {
         case (Some(accumulator), Some(eltLit)) =>
           val width = elt.width.get
           val masked = ((BigInt(1) << width) - 1) & eltLit  // also handles the negative case with two's complement
@@ -1146,6 +1146,10 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     */
   protected def _cloneTypeImpl: Bundle = {
     assert(Builder.allowReflectiveAutoCloneType, "reflective autoclonetype is disallowed, this should only happen in testing")
+    Builder.deprecated(
+      "The runtime reflection inference for cloneType (_cloneTypeImpl) is deprecated as of Chisel 3.5:  " +
+      "Use the Compiler Plugin to infer cloneType"
+    )
     // This attempts to infer constructor and arguments to clone this Bundle subtype without
     // requiring the user explicitly overriding cloneType.
     import scala.language.existentials

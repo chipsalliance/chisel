@@ -50,7 +50,7 @@ object when {
     implicit val sourceInfo = UnlocatableSourceInfo
     val whens = Builder.whenStack
     whens.foldRight(true.B) {
-      case (ctx, acc) => acc && ctx.localCond()
+      case (ctx, acc) => acc && ctx.localCond
     }
   }
 }
@@ -81,7 +81,7 @@ final class WhenContext private[chisel3] (
   private var scopeOpen = false
 
   /** Returns the local condition, inverted for an otherwise */
-  private[chisel3] def localCond(): Bool = {
+  private[chisel3] def localCond: Bool = {
     implicit val compileOptions = ExplicitCompileOptions.Strict
     implicit val sourceInfo = UnlocatableSourceInfo
     val alt = altConds.foldRight(true.B) {
@@ -111,7 +111,10 @@ final class WhenContext private[chisel3] (
   def otherwise(block: => Any)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Unit =
     new WhenContext(sourceInfo, None, block, firrtlDepth + 1, cond ++: altConds)
 
-  def active(): Boolean = scopeOpen
+  def active: Boolean = scopeOpen
+
+  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+  def active(dummy: Int*): Boolean = active
 
   /*
    *
