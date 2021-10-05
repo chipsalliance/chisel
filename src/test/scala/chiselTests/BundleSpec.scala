@@ -155,13 +155,31 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
     ChiselStage.emitChirrtl(new MyModule)
   }
 
-  // This tests the interaction of override def cloneType and the plugin.
-  """
-       class BundleBaz(w: Int) extends Bundle {
-         val baz = UInt(w.W)
-         // This is a compiler deprecation warning when using the plugin, which we test below.
+
+  // This should compile (just a warning, not an error, but we can't check for compile warnings in scalatest)
+  """class BundleBaz(w: Int) extends Bundle {
+      val baz = UInt(w.W)
          override def cloneType = (new BundleBaz(w)).asInstanceOf[this.type]
        }
-   """ should compile
+  """ should compile
+
+   
+  "No override def cloneType" should "not give a runtime deprecation warning with compiler plugin" in {
+
+     class BundleBaz(w: Int) extends Bundle {
+      val baz = UInt(w.W)
+      // Don't define this, but don't rely on runtime reflection either:
+      //override def cloneType = (new BundleBaz(w)).asInstanceOf[this.type]
+    }
+
+    class MyModule extends MultiIOModule {
+      val in = IO(Input(new BundleBaz(w = 3)))
+      val out = IO(Output(in.cloneType))
+    }
+    val (log, _) = grabLog(
+        ChiselStage.elaborate(new MyModule())
+    )
+    log shouldNot include ("The runtime reflection inference for cloneType")
+  }
 
 }
