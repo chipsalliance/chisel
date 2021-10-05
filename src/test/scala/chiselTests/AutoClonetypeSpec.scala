@@ -327,7 +327,6 @@ class AutoClonetypeSpec extends ChiselFlatSpec with Utils {
     it should "support Bundles that implement their own cloneType" in {
       class MyBundle(i: Int) extends Bundle {
         val foo = UInt(i.W)
-        override def cloneType = new MyBundle(i).asInstanceOf[this.type]
       }
       elaborate { new MultiIOModule {
         val in = IO(Input(new MyBundle(8)))
