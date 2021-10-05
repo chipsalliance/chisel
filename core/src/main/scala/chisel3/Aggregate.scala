@@ -1146,6 +1146,10 @@ abstract class Bundle(implicit compileOptions: CompileOptions) extends Record {
     */
   protected def _cloneTypeImpl: Bundle = {
     assert(Builder.allowReflectiveAutoCloneType, "reflective autoclonetype is disallowed, this should only happen in testing")
+    Builder.deprecated(
+      "The runtime reflection inference for cloneType (_cloneTypeImpl) is deprecated as of Chisel 3.5:  " +
+      "Use the Compiler Plugin to infer cloneType"
+    )
     // This attempts to infer constructor and arguments to clone this Bundle subtype without
     // requiring the user explicitly overriding cloneType.
     import scala.language.existentials

@@ -71,7 +71,7 @@ lazy val chiselSettings = Seq (
   name := "chisel3",
 
   libraryDependencies ++= Seq(
-    "org.scalatest" %% "scalatest" % "3.2.9" % "test",
+    "org.scalatest" %% "scalatest" % "3.2.10" % "test",
     "org.scalatestplus" %% "scalacheck-1-14" % "3.2.2.0" % "test",
     "com.lihaoyi" %% "os-lib" % "0.7.8",
   ),
@@ -246,7 +246,11 @@ lazy val docs = project       // new documentation project
   .settings(usePluginSettings: _*)
   .settings(commonSettings)
   .settings(
-    scalacOptions += "-language:reflectiveCalls",
+    scalacOptions ++= Seq(
+      "-Xfatal-warnings",
+      "-language:reflectiveCalls",
+      "-language:implicitConversions"
+    ),
     mdocIn := file("docs/src"),
     mdocOut := file("docs/generated"),
     // None of our links are hygienic because they're primarily used on the website with .html
