@@ -672,4 +672,25 @@ circuit Top :
     )
     resAnnos should be(expected)
   }
+
+  "ReplSeqMem" should "not crash if there are aggregate registers in the design that require padding (see #2379)" in {
+
+    val input =
+      """|circuit Foo:
+         |  module Foo:
+         |    input clock: Clock
+         |    input reset: UInt<1>
+         |    input a: UInt<1>[1]
+         |    output b: UInt<2>[1]
+         |
+         |    wire init: UInt<1>[1]
+         |    init <= a
+         |
+         |    reg r : UInt<2>[1], clock with :
+         |      reset => (reset, init)
+         |
+         |    b <= r
+         |""".stripMargin
+    compileAndEmit(CircuitState(parse(input), ChirrtlForm))
+  }
 }
