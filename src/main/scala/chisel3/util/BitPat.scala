@@ -4,7 +4,6 @@ package chisel3.util
 
 import scala.language.experimental.macros
 import chisel3._
-import chisel3.internal.chiselRuntimeDeprecated
 import chisel3.internal.sourceinfo.{SourceInfo, SourceInfoTransform}
 
 

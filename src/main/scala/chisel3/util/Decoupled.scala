@@ -82,9 +82,6 @@ object ReadyValidIO {
   * @param gen the type of data to be wrapped in DecoupledIO
   */
 class DecoupledIO[+T <: Data](gen: T) extends ReadyValidIO[T](gen)
-{
-  override def cloneType: this.type = new DecoupledIO(gen).asInstanceOf[this.type]
-}
 
 /** This factory adds a decoupled handshaking protocol to a data bundle. */
 object Decoupled
@@ -123,9 +120,6 @@ object Decoupled
   * @param gen the type of data to be wrapped in IrrevocableIO
   */
 class IrrevocableIO[+T <: Data](gen: T) extends ReadyValidIO[T](gen)
-{
-  override def cloneType: this.type = new IrrevocableIO(gen).asInstanceOf[this.type]
-}
 
 /** Factory adds an irrevocable handshaking protocol to a data bundle. */
 object Irrevocable

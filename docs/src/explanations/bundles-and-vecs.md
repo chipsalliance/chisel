@@ -128,48 +128,19 @@ class ModuleProgrammaticMixedVec(x: Int, y: Int) extends Module {
 }
 ```
 
-### A note on `cloneType`
+### A note on `cloneType` (For Chisel < 3.5)
 
-Since Chisel is built on top of Scala and the JVM, it needs to know how to construct copies of bundles for various
-purposes (creating wires, IOs, etc). If you have a parametrized bundle and Chisel can't automatically figure out how to
-clone your bundle, you will need to create a custom `cloneType` method in your bundle. Most of the time, this is as
-simple as `override def cloneType = (new YourBundleHere(...)).asInstanceOf[this.type]`.
+NOTE: This section **only applies to Chisel before Chisel 3.5**.
+As of Chisel 3.5, `Bundle`s should **not** `override def cloneType`,
+as this is a compiler error when using the chisel3 compiler plugin for inferring `cloneType`.
 
-Note that in the vast majority of cases, **this is not required** as Chisel can figure out how to clone most bundles
-automatically.
-
-Here is an example of a parametrized bundle (`ExampleBundle`) that features a custom `cloneType`.
-
-```scala mdoc:silent
-class ExampleBundle(a: Int, b: Int) extends Bundle {
-    val foo = UInt(a.W)
-    val bar = UInt(b.W)
-    override def cloneType = (new ExampleBundle(a, b)).asInstanceOf[this.type]
-}
-
-class ExampleBundleModule(btype: ExampleBundle) extends Module {
-    val io = IO(new Bundle {
-        val out = Output(UInt(32.W))
-        val b = Input(chiselTypeOf(btype))
-    })
-    io.out := io.b.foo + io.b.bar
-}
-
-class Top extends Module {
-    val io = IO(new Bundle {
-        val out = Output(UInt(32.W))
-        val in = Input(UInt(17.W))
-    })
-    val x = Wire(new ExampleBundle(31, 17))
-    x := DontCare
-    val m = Module(new ExampleBundleModule(x))
-    m.io.b.foo := io.in
-    m.io.b.bar := io.in
-    io.out := m.io.out
-}
-```
-
-Generally cloneType can be automatically defined if all arguments to the Bundle are vals e.g.
+Since Chisel is built on top of Scala and the JVM,
+it needs to know how to construct copies of `Bundle`s for various
+purposes (creating wires, IOs, etc).
+If you have a parametrized `Bundle` and Chisel can't automatically figure out how to
+clone it, you will need to create a custom `cloneType` method in your bundle. 
+In the vast majority of cases, **this is not required**
+as Chisel can figure out how to clone most `Bundle`s automatically:
 
 ```scala mdoc:silent
 class MyCloneTypeBundle(val bitwidth: Int) extends Bundle {
@@ -178,13 +149,15 @@ class MyCloneTypeBundle(val bitwidth: Int) extends Bundle {
 }
 ```
 
-The only caveat is if you are passing something of type Data as a "generator" parameter, in which case you should make
-it a `private val`.
+The only caveat is if you are passing something of type `Data` as a "generator" parameter,
+in which case you should make it a `private val`, and define a `cloneType` method with
+`override def cloneType = (new YourBundleHere(...)).asInstanceOf[this.type]`.
 
-For example, consider the following Bundle. Because its `gen` variable is not a `private val`, the user has to
-explicitly define the `cloneType` method.
+For example, consider the following `Bundle`. Because its `gen` variable is not a `private val`, the user has to
+explicitly define the `cloneType` method:
 
-```scala mdoc:silent
+<!-- Cannot compile this because the cloneType is now an error -->
+```scala
 import chisel3.util.{Decoupled, Irrevocable}
 class RegisterWriteIOExplicitCloneType[T <: Data](gen: T) extends Bundle {
   val request  = Flipped(Decoupled(gen))
@@ -196,8 +169,10 @@ class RegisterWriteIOExplicitCloneType[T <: Data](gen: T) extends Bundle {
 We can make this this infer cloneType by making `gen` private since it is a "type parameter":
 
 ```scala mdoc:silent
+import chisel3.util.{Decoupled, Irrevocable}
 class RegisterWriteIO[T <: Data](private val gen: T) extends Bundle {
   val request  = Flipped(Decoupled(gen))
   val response = Irrevocable(Bool())
 }
 ```
+
