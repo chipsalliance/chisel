@@ -105,7 +105,7 @@ private[chisel3] trait HasId extends InstanceId {
   private var auto_seed: Option[String] = None
 
   // Prefix at time when this class is constructed
-  private val construction_prefix: Prefix = Builder.getPrefix()
+  private val construction_prefix: Prefix = Builder.getPrefix
 
   // Prefix when the latest [[suggestSeed]] or [[autoSeed]] is called
   private var prefix_seed: Prefix = Nil
@@ -133,7 +133,7 @@ private[chisel3] trait HasId extends InstanceId {
   private[chisel3] def forceAutoSeed(seed: String): this.type = {
     auto_seed = Some(seed)
     for(hook <- auto_postseed_hooks) { hook(seed) }
-    prefix_seed = Builder.getPrefix()
+    prefix_seed = Builder.getPrefix
     this
   }
 
@@ -149,7 +149,7 @@ private[chisel3] trait HasId extends InstanceId {
     */
   def suggestName(seed: =>String): this.type = {
     if(suggested_seed.isEmpty) suggested_seed = Some(seed)
-    prefix_seed = Builder.getPrefix()
+    prefix_seed = Builder.getPrefix
     for(hook <- suggest_postseed_hooks) { hook(seed) }
     this
   }
@@ -485,7 +485,7 @@ private[chisel3] object Builder extends LazyLogging {
   }
 
   // Returns the prefix stack at this moment
-  def getPrefix(): Prefix = chiselContext.get().prefixStack
+  def getPrefix: Prefix = chiselContext.get().prefixStack
 
   def currentModule: Option[BaseModule] = dynamicContextVar.value match {
     case Some(dyanmicContext) => dynamicContext.currentModule
@@ -572,7 +572,7 @@ private[chisel3] object Builder extends LazyLogging {
     dynamicContext.whenStack = s
   }
 
-  def currentWhen(): Option[WhenContext] = dynamicContext.whenStack.headOption
+  def currentWhen: Option[WhenContext] = dynamicContext.whenStack.headOption
 
   def currentClock: Option[Clock] = dynamicContext.currentClock
   def currentClock_=(newClock: Option[Clock]): Unit = {
@@ -615,7 +615,7 @@ private[chisel3] object Builder extends LazyLogging {
   }
   def pushOp[T <: Data](cmd: DefPrim[T]): T = {
     // Bind each element of the returned Data to being a Op
-    cmd.id.bind(OpBinding(forcedUserModule, currentWhen()))
+    cmd.id.bind(OpBinding(forcedUserModule, currentWhen))
     pushCommand(cmd).id
   }
 

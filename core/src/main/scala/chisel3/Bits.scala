@@ -25,7 +25,10 @@ private[chisel3] sealed trait ToBoolable extends Element {
     *
     * @note The width must be known and equal to 1
     */
-  final def asBool(): Bool = macro SourceInfoWhiteboxTransform.noArg
+  final def asBool: Bool = macro SourceInfoWhiteboxTransform.noArg
+
+  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+  final def asBool(dummy: Int*): Bool = macro SourceInfoWhiteboxTransform.noArgDummy
 
   /** @group SourceInfoTransformMacro */
   def do_asBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool
@@ -222,7 +225,10 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     * @return this $coll with each bit inverted
     * @group Bitwise
     */
-  final def unary_~ (): Bits = macro SourceInfoWhiteboxTransform.noArg
+  final def unary_~ : Bits = macro SourceInfoWhiteboxTransform.noArg
+
+  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+  final def unary_~(dummy: Int*): Bits = macro SourceInfoWhiteboxTransform.noArgDummy
 
   /** @group SourceInfoTransformMacro */
   def do_unary_~ (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
@@ -304,10 +310,16 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
   def do_>> (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bits
 
   /** Returns the contents of this wire as a [[scala.collection.Seq]] of [[Bool]]. */
-  final def toBools(): Seq[Bool] = macro SourceInfoTransform.noArg
+  final def toBools: Seq[Bool] = macro SourceInfoTransform.noArg
+
+  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+  final def toBools(dummy: Int*): Seq[Bool] = macro SourceInfoWhiteboxTransform.noArgDummy
 
   /** Returns the contents of this wire as a [[scala.collection.Seq]] of [[Bool]]. */
-  final def asBools(): Seq[Bool] = macro SourceInfoTransform.noArg
+  final def asBools: Seq[Bool] = macro SourceInfoTransform.noArg
+
+  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+  final def asBools(dummy: Int*): Seq[Bool] = macro SourceInfoWhiteboxTransform.noArgDummy
 
   /** @group SourceInfoTransformMacro */
   def do_asBools(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Seq[Bool] =
@@ -318,7 +330,10 @@ sealed abstract class Bits(private[chisel3] val width: Width) extends Element wi
     * @note The arithmetic value is not preserved if the most-significant bit is set. For example, a [[UInt]] of
     * width 3 and value 7 (0b111) would become an [[SInt]] of width 3 and value -1.
     */
-  final def asSInt(): SInt = macro SourceInfoTransform.noArg
+  final def asSInt: SInt = macro SourceInfoTransform.noArg
+
+  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+  final def asSInt(dummy: Int*): SInt = macro SourceInfoWhiteboxTransform.noArgDummy
 
   /** @group SourceInfoTransformMacro */
   def do_asSInt(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt
@@ -410,7 +425,10 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
     * $constantWidth
     * @group Arithmetic
     */
-  final def unary_- (): UInt = macro SourceInfoTransform.noArg
+  final def unary_- : UInt = macro SourceInfoTransform.noArg
+
+  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+  final def unary_-(dummy: Int*): UInt = macro SourceInfoTransform.noArgDummy
 
   /** Unary negation (constant width)
     *
@@ -418,7 +436,10 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
     * $constantWidth
     * @group Arithmetic
     */
-  final def unary_-% (): UInt = macro SourceInfoTransform.noArg
+  final def unary_-% : UInt = macro SourceInfoTransform.noArg
+
+  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+  final def unary_%(dummy: Int*): UInt = macro SourceInfoTransform.noArgDummy
 
   /** @group SourceInfoTransformMacro */
   def do_unary_- (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) : UInt = 0.U - this
@@ -522,7 +543,7 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
     */
   final def ^ (that: UInt): UInt = macro SourceInfoTransform.thatArg
 
-  //  override def abs: UInt = macro SourceInfoTransform.noArg
+  //  override def abs: UInt = macro SourceInfoTransform.noArgDummy
   def do_abs(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = this
 
   /** @group SourceInfoTransformMacro */
@@ -545,21 +566,30 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
     * @return a hardware [[Bool]] resulting from every bit of this $coll or'd together
     * @group Bitwise
     */
-  final def orR(): Bool = macro SourceInfoTransform.noArg
+  final def orR: Bool = macro SourceInfoTransform.noArg
+
+  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+  final def orR(dummy: Int*): Bool = macro SourceInfoTransform.noArgDummy
 
   /** And reduction operator
     *
     * @return a hardware [[Bool]] resulting from every bit of this $coll and'd together
     * @group Bitwise
     */
-  final def andR(): Bool = macro SourceInfoTransform.noArg
+  final def andR: Bool = macro SourceInfoTransform.noArg
+
+  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+  final def andR(dummy: Int*): Bool = macro SourceInfoTransform.noArgDummy
 
   /** Exclusive or (xor) reduction operator
     *
     * @return a hardware [[Bool]] resulting from every bit of this $coll xor'd together
     * @group Bitwise
     */
-  final def xorR(): Bool = macro SourceInfoTransform.noArg
+  final def xorR: Bool = macro SourceInfoTransform.noArg
+
+  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+  final def xorR(dummy: Int*): Bool = macro SourceInfoTransform.noArgDummy
 
   /** @group SourceInfoTransformMacro */
   def do_orR(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = redop(sourceInfo, OrReduceOp)
@@ -599,7 +629,10 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
     * @return a hardware [[Bool]] asserted if this $coll equals zero
     * @group Bitwise
     */
-  final def unary_! () : Bool = macro SourceInfoTransform.noArg
+  final def unary_! : Bool = macro SourceInfoTransform.noArg
+
+  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+  final def unary_! (dummy: Int*): Bool = macro SourceInfoTransform.noArgDummy
 
   /** @group SourceInfoTransformMacro */
   def do_unary_! (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) : Bool = this === 0.U(1.W)
@@ -639,7 +672,11 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
     * @return an [[SInt]] equal to this $coll with an additional zero in its most significant bit
     * @note The width of the returned [[SInt]] is `width of this` + `1`.
     */
-  final def zext(): SInt = macro SourceInfoTransform.noArg
+  final def zext: SInt = macro SourceInfoTransform.noArg
+
+  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+  final def zext(dummy: Int*): SInt = macro SourceInfoTransform.noArgDummy
+
   /** @group SourceInfoTransformMacro */
   def do_zext(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
     pushOp(DefPrim(sourceInfo, SInt(width + 1), ConvertOp, ref))
@@ -716,7 +753,10 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
     * $constantWidth
     * @group Arithmetic
     */
-  final def unary_- (): SInt = macro SourceInfoTransform.noArg
+  final def unary_- : SInt = macro SourceInfoTransform.noArg
+
+  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+  final def unary_-(dummy: Int*): SInt = macro SourceInfoTransform.noArgDummy
 
   /** Unary negation (constant width)
     *
@@ -724,12 +764,15 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
     * $constantWidth
     * @group Arithmetic
     */
-  final def unary_-% (): SInt = macro SourceInfoTransform.noArg
+  final def unary_-% : SInt = macro SourceInfoTransform.noArg
+
+  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+  final def unary_-%(dummy: Int*): SInt = macro SourceInfoTransform.noArgDummy
 
   /** @group SourceInfoTransformMacro */
-  def unary_- (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt = 0.S - this
+  def do_unary_- (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt = 0.S - this
   /** @group SourceInfoTransformMacro */
-  def unary_-% (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt = 0.S -% this
+  def do_unary_-% (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt = 0.S -% this
 
   /** add (default - no growth) operator */
   override def do_+ (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
@@ -755,7 +798,7 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
   final def * (that: UInt): SInt = macro SourceInfoTransform.thatArg
   /** @group SourceInfoTransformMacro */
   def do_* (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt = {
-    val thatToSInt = that.zext()
+    val thatToSInt = that.zext
     val result = binop(sourceInfo, SInt(this.width + thatToSInt.width), TimesOp, thatToSInt)
     result.tail(1).asSInt
   }
@@ -876,10 +919,10 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
   /** @group SourceInfoTransformMacro */
   def do_=== (that: SInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, EqualOp, that)
 
-//  final def abs(): UInt = macro SourceInfoTransform.noArg
+//  final def abs(): UInt = macro SourceInfoTransform.noArgDummy
 
   def do_abs(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt = {
-    Mux(this < 0.S, (-this), this)
+    Mux(this < 0.S, -this, this)
   }
 
   override def do_<< (that: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): SInt =
@@ -938,7 +981,10 @@ sealed class SInt private[chisel3] (width: Width) extends Bits(width) with Num[S
 
 sealed trait Reset extends Element with ToBoolable {
   /** Casts this $coll to an [[AsyncReset]] */
-  final def asAsyncReset(): AsyncReset = macro SourceInfoWhiteboxTransform.noArg
+  final def asAsyncReset: AsyncReset = macro SourceInfoWhiteboxTransform.noArg
+
+  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+  final def asAsyncReset(dummy: Int*): AsyncReset = macro SourceInfoTransform.noArgDummy
 
   /** @group SourceInfoTransformMacro */
   def do_asAsyncReset(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): AsyncReset
@@ -1124,7 +1170,10 @@ sealed class Bool() extends UInt(1.W) with Reset {
   def do_&& (that: Bool)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = this & that
 
   /** Reinterprets this $coll as a clock */
-  def asClock(): Clock = macro SourceInfoTransform.noArg
+  def asClock: Clock = macro SourceInfoTransform.noArg
+
+  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+  def asClock(dummy: Int*): Clock = macro SourceInfoTransform.noArgDummy
 
   /** @group SourceInfoTransformMacro */
   def do_asClock(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Clock = pushOp(DefPrim(sourceInfo, Clock(), AsClockOp, ref))
@@ -1220,7 +1269,10 @@ package experimental {
       *         $expandingWidth
       * @group Arithmetic
       */
-    final def unary_- (): FixedPoint = macro SourceInfoTransform.noArg
+    final def unary_- : FixedPoint = macro SourceInfoTransform.noArg
+
+    @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+    final def unary_-(dummy: Int*): FixedPoint = macro SourceInfoTransform.noArgDummy
 
     /** Unary negation (constant width)
       *
@@ -1228,7 +1280,9 @@ package experimental {
       *         $constantWidth
       * @group Arithmetic
       */
-    final def unary_-% (): FixedPoint = macro SourceInfoTransform.noArg
+    final def unary_-% : FixedPoint = macro SourceInfoTransform.noArg
+    @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+    final def unary_-%(dummy: Int*): FixedPoint = macro SourceInfoTransform.noArgDummy
 
     /** @group SourceInfoTransformMacro */
     def unary_- (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint = FixedPoint.fromBigInt(0) - this
@@ -1663,8 +1717,15 @@ package experimental {
       }
     }
 
-    final def unary_-(): Interval = macro SourceInfoTransform.noArg
-    final def unary_-%(): Interval = macro SourceInfoTransform.noArg
+    final def unary_- : Interval = macro SourceInfoTransform.noArg
+
+    @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+    final def unary_-(dummy: Int*): Interval = macro SourceInfoTransform.noArgDummy
+
+    final def unary_-% : Interval = macro SourceInfoTransform.noArg
+
+    @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+    final def unary_-%(dummy: Int*): Interval = macro SourceInfoTransform.noArgDummy
 
     def unary_-(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
       Interval.Zero - this
@@ -1779,7 +1840,7 @@ package experimental {
     def do_=/= (that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, NotEqualOp, that)
     def do_=== (that: Interval)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = compop(sourceInfo, EqualOp, that)
 
-    //  final def abs(): UInt = macro SourceInfoTransform.noArg
+    //  final def abs(): UInt = macro SourceInfoTransform.noArgDummy
 
     def do_abs(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
       Mux(this < Interval.Zero, (Interval.Zero - this), this)
