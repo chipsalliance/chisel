@@ -298,15 +298,12 @@ lazy val docs = project       // new documentation project
   .settings(usePluginSettings: _*)
   .settings(commonSettings)
   .settings(
-<<<<<<< HEAD
-    scalacOptions ++= Seq("-language:reflectiveCalls", "-P:chiselplugin:useBundlePlugin"),
-=======
     scalacOptions ++= Seq(
+      "-P:chiselplugin:useBundlePlugin",
       "-Xfatal-warnings",
       "-language:reflectiveCalls",
       "-language:implicitConversions"
     ),
->>>>>>> df76831c (Turn on fatal warnings in mdoc documentation (#2146))
     mdocIn := file("docs/src"),
     mdocOut := file("docs/generated"),
     mdocExtraArguments := Seq("--cwd", "docs"),
