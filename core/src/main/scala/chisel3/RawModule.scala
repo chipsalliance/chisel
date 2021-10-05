@@ -199,7 +199,7 @@ package object internal {
 
     tryJavaReflect
       .orElse(tryScalaReflect)
-      .map(_.autoSeed("io"))
+      .map(_.forceFinalName("io"))
       .orElse {
         // Fallback if reflection fails, user can wrap in IO(...)
         self.findPort("io")

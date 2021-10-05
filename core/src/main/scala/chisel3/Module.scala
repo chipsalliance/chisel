@@ -39,7 +39,7 @@ object Module extends SourceInfoDoc {
 
     // Save then clear clock and reset to prevent leaking scope, must be set again in the Module
     val (saveClock, saveReset)  = (Builder.currentClock, Builder.currentReset)
-    val savePrefix = Builder.getPrefix()
+    val savePrefix = Builder.getPrefix
     Builder.clearPrefix()
     Builder.currentClock = None
     Builder.currentReset = None
