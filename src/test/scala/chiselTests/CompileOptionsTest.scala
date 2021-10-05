@@ -14,11 +14,9 @@ class CompileOptionsSpec extends ChiselFlatSpec with Utils {
   class SmallBundle extends Bundle {
     val f1 = UInt(4.W)
     val f2 = UInt(5.W)
-    override def cloneType: this.type = (new SmallBundle).asInstanceOf[this.type]
   }
   class BigBundle extends SmallBundle {
     val f3 = UInt(6.W)
-    override def cloneType: this.type = (new BigBundle).asInstanceOf[this.type]
   }
 
   "A Module with missing bundle fields when compiled with implicit Strict.CompileOption " should "throw an exception" in {
