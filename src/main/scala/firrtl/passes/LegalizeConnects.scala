@@ -29,3 +29,23 @@ object LegalizeConnects extends Pass {
     c.copy(modules = c.modules.map(_.mapStmt(onStmt)))
   }
 }
+
+/** Ensure that all connects have the same bit-width on the RHS and the LHS.
+  */
+private[firrtl] object LegalizeConnectsOnly extends Pass {
+
+  override def prerequisites = Seq(Dependency(ExpandConnects))
+  override def optionalPrerequisites = Seq.empty
+  override def optionalPrerequisiteOf = Seq.empty
+  override def invalidates(a: Transform) = false
+
+  def onStmt(s: Statement): Statement = s match {
+    case c: Connect =>
+      c.copy(expr = PadWidths.forceWidth(bitWidth(c.loc.tpe).toInt)(c.expr))
+    case other => other.mapStmt(onStmt)
+  }
+
+  def run(c: Circuit): Circuit = {
+    c.copy(modules = c.modules.map(_.mapStmt(onStmt)))
+  }
+}

@@ -152,7 +152,7 @@ class ReplSeqMem extends SeqTransform with HasShellOptions with DependencyAPIMig
 
   val transforms: Seq[Transform] =
     Seq(
-      new SimpleMidTransform(LegalizeConnects),
+      new SimpleMidTransform(LegalizeConnectsOnly),
       new SimpleMidTransform(ToMemIR),
       new SimpleMidTransform(ResolveMaskGranularity),
       new SimpleMidTransform(RenameAnnotatedMemoryPorts),
