@@ -564,4 +564,32 @@ class CompatibiltySpec extends ChiselFlatSpec with ScalaCheckDrivenPropertyCheck
     verilog should include ("assign io_out_0 = io_in_0;")
   }
 
+  it should "ignore .suggestName on field io" in {
+    class MyModule extends Module {
+      val io = new Bundle {
+        val foo = UInt(width = 8).asInput
+        val bar = UInt(width = 8).asOutput
+      }
+      io.suggestName("potato")
+      io.bar := io.foo
+    }
+    val verilog = ChiselStage.emitVerilog(new MyModule)
+    verilog should include ("input  [7:0] io_foo")
+    verilog should include ("output [7:0] io_bar")
+  }
+
+  it should "properly name field io" in {
+    class MyModule extends Module {
+      val io = new Bundle {
+        val foo = UInt(width = 8).asInput
+        val bar = UInt(width = 8).asOutput
+      }
+      val wire = Wire(init = io.foo)
+      io.bar := wire
+    }
+    val verilog = ChiselStage.emitVerilog(new MyModule)
+    verilog should include ("input  [7:0] io_foo")
+    verilog should include ("output [7:0] io_bar")
+  }
+
 }
