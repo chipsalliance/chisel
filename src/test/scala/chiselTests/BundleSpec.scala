@@ -137,7 +137,6 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
     }
   }
 
-<<<<<<< HEAD
   "Bound Data" should "have priority in setting ref over unbound Data" in {
     class MyModule extends RawModule {
       val foo = IO(new Bundle {
@@ -150,17 +149,14 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
     }
     ChiselStage.emitChirrtl(new MyModule)
   }
-=======
-  // This tests the interaction of override def cloneType and the plugin.
-  // We are commenting it for now because although this code fails to compile
-  // as expected when just copied here, the test version is not seeing the failure.
-  // """
-  //     class BundleBaz(w: Int) extends Bundle {
-  //       val baz = UInt(w.W)
-  //       // This is a compiler error when using the plugin, which we test below.
-  //       override def cloneType = (new BundleBaz(w)).asInstanceOf[this.type]
-  //     }
-  // """ shouldNot compile
 
->>>>>>> ce15ad50 (Remove all Bundle cloneTypes and chiselRuntimeDeprecate its use (#2052))
+  // This tests the interaction of override def cloneType and the plugin.
+  """
+       class BundleBaz(w: Int) extends Bundle {
+         val baz = UInt(w.W)
+         // This is a compiler deprecation warning when using the plugin, which we test below.
+         override def cloneType = (new BundleBaz(w)).asInstanceOf[this.type]
+       }
+   """ should compile
+
 }
