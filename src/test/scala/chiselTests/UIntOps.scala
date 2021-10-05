@@ -6,6 +6,7 @@ import chisel3._
 import org.scalatest._
 import chisel3.stage.ChiselStage
 import chisel3.testers.BasicTester
+import chisel3.util._
 import org.scalacheck.Shrink
 import org.scalatest.matchers.should.Matchers
 
@@ -22,6 +23,8 @@ class UIntOps extends Module {
     val modout = Output(UInt(32.W))
     val lshiftout = Output(UInt(32.W))
     val rshiftout = Output(UInt(32.W))
+    val lrotateout = Output(UInt(32.W))
+    val rrotateout = Output(UInt(32.W))
     val lessout = Output(Bool())
     val greatout = Output(Bool())
     val eqout = Output(Bool())
@@ -29,6 +32,8 @@ class UIntOps extends Module {
     val lesseqout = Output(Bool())
     val greateqout = Output(Bool())
   })
+
+  dontTouch(io)
 
   val a = io.a
   val b = io.b
@@ -42,6 +47,8 @@ class UIntOps extends Module {
   io.modout := a % b
   io.lshiftout := (a << b(3, 0))(31, 0)
   io.rshiftout := a >> b
+  io.lrotateout := a.rotateLeft(5)
+  io.rrotateout := a.rotateRight(5)
   io.lessout := a < b
   io.greatout := a > b
   io.eqout := a === b
@@ -67,6 +74,14 @@ class UIntOpsTester(a: Long, b: Long) extends BasicTester {
   assert(dut.io.modout === (a % (b max 1)).U(32.W))
   assert(dut.io.lshiftout === (a << (b % 16)).U(32.W))
   assert(dut.io.rshiftout === (a >> b).U(32.W))
+  assert(
+    dut.io.lrotateout === s"h${Integer.rotateLeft(a.toInt, 5).toHexString}"
+      .U(32.W)
+  )
+  assert(
+    dut.io.rrotateout === s"h${Integer.rotateRight(a.toInt, 5).toHexString}"
+      .U(32.W)
+  )
   assert(dut.io.lessout === (a < b).B)
   assert(dut.io.greatout === (a > b).B)
   assert(dut.io.eqout === (a == b).B)
@@ -96,6 +111,65 @@ class BadBoolConversion extends Module {
 class NegativeShift(t: => Bits) extends Module {
   val io = IO(new Bundle {})
   Reg(t) >> -1
+}
+
+class BasicRotate extends BasicTester {
+  val shiftAmount = random.LFSR(4)
+  val ctr = RegInit(0.U(4.W))
+
+  
+  val rotL = 1.U(3.W).rotateLeft(shiftAmount)
+  val rotR = 1.U(3.W).rotateRight(shiftAmount)
+
+  printf("Shift amount: %d rotateLeft:%b rotateRight:%b\n", shiftAmount, rotL, rotR)
+
+  switch(shiftAmount % 3.U) {
+    is(0.U, 3.U) {
+      assert(rotL === "b001".U)
+      assert(rotR === "b001".U)
+    }
+    is(1.U) {
+      assert(rotL === "b010".U)
+      assert(rotR === "b100".U)
+    }
+    is(2.U) {
+      assert(rotL === "b100".U)
+      assert(rotR === "b010".U)
+    }
+  }
+
+  ctr := ctr + 1.U
+
+  when (ctr === 15.U){
+    stop()
+  }
+}
+
+/** rotating a w-bit word left by n should be equivalent to rotating it by w - n
+  * to the left
+  */
+class MatchedRotateLeftAndRight(w: Int = 13) extends BasicTester {
+  val initValue = BigInt(w, scala.util.Random)
+  println(s"Initial value: ${initValue.toString(2)}")
+
+  val maxWidthBits = log2Ceil(w + 1)
+  val shiftAmount1 = RegInit(0.U(w.W))
+  val shiftAmount2 = RegInit(w.U(w.W))
+  shiftAmount1 := shiftAmount1 + 1.U
+  shiftAmount2 := shiftAmount2 - 1.U
+
+  val value = RegInit(initValue.U(w.W))
+
+  val out1 = value.rotateLeft(shiftAmount1)
+  val out2 = value.rotateRight(shiftAmount2)
+
+  printf("rotateLeft by %d: %b\n", shiftAmount1, out1)
+
+  assert(out1 === out2)
+  when(shiftAmount1 === w.U) {
+    assert(out1 === initValue.U)
+    stop()
+  }
 }
 
 class UIntLitExtractTester extends BasicTester {
@@ -138,6 +212,16 @@ class UIntOpsSpec extends ChiselPropSpec with Matchers with Utils {
     a [ChiselException] should be thrownBy extractCause[ChiselException] {
       ChiselStage.elaborate(new NegativeShift(UInt()))
     }
+  }
+
+  property("rotateLeft and rotateRight should work for dynamic shift values") {
+    assertTesterPasses(new BasicRotate)
+  }
+
+  property(
+    "rotateLeft and rotateRight should be consistent for dynamic shift values"
+  ) {
+    assertTesterPasses(new MatchedRotateLeftAndRight)
   }
 
   property("Bit extraction on literals should work for all non-negative indices") {

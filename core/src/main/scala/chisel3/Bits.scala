@@ -650,6 +650,51 @@ sealed class UInt private[chisel3] (width: Width) extends Bits(width) with Num[U
   override def do_>> (that: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
     binop(sourceInfo, UInt(this.width), DynamicShiftRightOp, that)
 
+  /**
+   * Circular shift to the left
+   * @param that number of bits to rotate
+   * @return UInt of same width rotated left n bits
+   */
+  final def rotateLeft(that: Int): UInt =  macro SourceInfoWhiteboxTransform.thatArg
+
+  def do_rotateLeft(n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = width match {
+    case _ if (n == 0) => this
+    case KnownWidth(w) if (w <= 1) => this
+    case KnownWidth(w) if n >= w => do_rotateLeft(n % w)
+    case _ if (n < 0) => do_rotateRight(-n)
+    case _ => tail(n) ## head(n)
+  }
+
+  /**
+   * Circular shift to the right
+   * @param that number of bits to rotate
+   * @return UInt of same width rotated right n bits
+   */
+  final def rotateRight(that: Int): UInt =  macro SourceInfoWhiteboxTransform.thatArg
+
+  def do_rotateRight(n: Int)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt = width match {
+    case _ if (n <= 0) => do_rotateLeft(-n)
+    case KnownWidth(w) if (w <= 1) => this
+    case KnownWidth(w) if n >= w => do_rotateRight(n % w)
+    case _ => this(n - 1, 0) ## (this >> n)
+  }
+
+  final def rotateRight(that: UInt): UInt =  macro SourceInfoWhiteboxTransform.thatArg
+
+  private def dynamicShift(n: UInt, staticShift: (UInt,Int) => UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) : UInt =
+    n.asBools().zipWithIndex.foldLeft(this){
+      case (in, (en, sh)) => Mux(en, staticShift(in,  1 << sh), in)
+    }
+
+  def do_rotateRight(n: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
+    dynamicShift(n, _ rotateRight _)
+
+  final def rotateLeft(that: UInt): UInt =  macro SourceInfoWhiteboxTransform.thatArg
+
+  def do_rotateLeft(n: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): UInt =
+    dynamicShift(n, _ rotateLeft _)
+
+
   /** Conditionally set or clear a bit
     *
     * @param off a dynamic offset
