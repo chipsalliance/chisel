@@ -69,14 +69,14 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
         case con: DefDef if con.symbol.isPrimaryConstructor =>
           primaryConstructor = Some(con)
         case d: DefDef if isNullaryMethodNamed("_cloneTypeImpl", d) =>
-          val msg = "Users cannot override _cloneTypeImpl. Let the compiler plugin generate it."
+          val msg = "Users cannot override _cloneTypeImpl. Let the compiler plugin generate it. If you must, override cloneType instead."
           global.globalError(d.pos, msg)
         case d: DefDef if isNullaryMethodNamed("_usingPlugin", d) =>
           val msg = "Users cannot override _usingPlugin, it is for the compiler plugin's use only."
           global.globalError(d.pos, msg)
         case d: DefDef if isNullaryMethodNamed("cloneType", d) =>
-          val msg = "Users cannot override cloneType. Let the compiler plugin generate it."
-          global.globalError(d.pos, msg)
+          val msg = "Override cloneType is deprecated as of Chisel 3.4.4 and will be an error in Chisel 3.5.0. Use the compiler plugin and let the compiler plugin generate it."
+          global.reporter.warning(d.pos, msg)
         case _ =>
       }
       (primaryConstructor, paramAccessors.toList)
