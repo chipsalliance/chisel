@@ -58,10 +58,7 @@ trait BundleSpecUtils {
 
 class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
   "Bundles with the same fields but in different orders" should "bulk connect" in {
-  val (log, _) = grabLog(
-      ChiselStage.elaborate { new MyModule(new BundleFooBar, new BundleBarFoo) }
-    )
-    log shouldNot include ("The runtime reflection inference for cloneType")
+    ChiselStage.elaborate { new MyModule(new BundleFooBar, new BundleBarFoo) }
   }
 
   "Bundles" should "follow UInt serialization/deserialization API" in {
@@ -91,29 +88,32 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
   }
 
   "Bundles" should "be allowed to have Seq if need be" in {
-      val (log, _) = grabLog(
-      ChiselStage.elaborate {
-      new Module {
+    assertTesterPasses {
+      new BasicTester {
+        val m = Module(new Module {
           val io = IO(new Bundle {
             val b = new BadSeqBundle with IgnoreSeqInBundle
           })
-        }
+        })
+        stop()
       }
-    )
-    log shouldNot include ("The runtime reflection inference for cloneType")
+    }
   }
 
   "Bundles" should "be allowed to have non-Chisel Seqs" in {
-     val (log, _) = grabLog(
-      ChiselStage.elaborate {new Module {
+    assertTesterPasses {
+      new BasicTester {
+        val m = Module(new Module {
           val io = IO(new Bundle {
             val f = Output(UInt(8.W))
             val unrelated = (0 to 10).toSeq
             val unrelated2 = Seq("Hello", "World", "Chisel")
           })
           io.f := 0.U
-        }})
-    log shouldNot include ("The runtime reflection inference for cloneType")
+        })
+        stop()
+      }
+    }
   }
 
   "Bundles" should "not have aliased fields" in {
@@ -162,24 +162,5 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
          override def cloneType = (new BundleBaz(w)).asInstanceOf[this.type]
        }
   """ should compile
-
-   
-  "No override def cloneType" should "not give a runtime deprecation warning with compiler plugin" in {
-
-     class BundleBaz(w: Int) extends Bundle {
-      val baz = UInt(w.W)
-      // Don't define this, but don't rely on runtime reflection either:
-      //override def cloneType = (new BundleBaz(w)).asInstanceOf[this.type]
-    }
-
-    class MyModule extends MultiIOModule {
-      val in = IO(Input(new BundleBaz(w = 3)))
-      val out = IO(Output(in.cloneType))
-    }
-    val (log, _) = grabLog(
-        ChiselStage.elaborate(new MyModule())
-    )
-    log shouldNot include ("The runtime reflection inference for cloneType")
-  }
 
 }
