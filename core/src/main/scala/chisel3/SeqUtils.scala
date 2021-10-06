@@ -81,7 +81,7 @@ private[chisel3] object SeqUtils {
       val output = cloneSupertype(in.toSeq map { _._2}, "oneHotMux")
 
       def buildAndOrMultiplexor[TT <: Data](inputs: Iterable[(Bool, TT)]): T = {
-        val masked = for ((s, i) <- inputs) yield Mux(s, i.asUInt(), 0.U)
+        val masked = for ((s, i) <- inputs) yield Mux(s, i.asUInt, 0.U)
         masked.reduceLeft(_ | _).asTypeOf(output)
       }
 
