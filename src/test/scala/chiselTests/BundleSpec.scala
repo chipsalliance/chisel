@@ -154,4 +154,13 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
     }
     ChiselStage.emitChirrtl(new MyModule)
   }
+
+
+  // This should compile (just a warning, not an error, but we can't check for compile warnings in scalatest)
+  """class BundleBaz(w: Int) extends Bundle {
+      val baz = UInt(w.W)
+         override def cloneType = (new BundleBaz(w)).asInstanceOf[this.type]
+       }
+  """ should compile
+
 }
