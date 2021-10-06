@@ -91,32 +91,29 @@ class BundleSpec extends ChiselFlatSpec with BundleSpecUtils with Utils {
   }
 
   "Bundles" should "be allowed to have Seq if need be" in {
-    assertTesterPasses {
-      new BasicTester {
-        val m = Module(new Module {
+      val (log, _) = grabLog(
+      ChiselStage.elaborate {
+      new Module {
           val io = IO(new Bundle {
             val b = new BadSeqBundle with IgnoreSeqInBundle
           })
-        })
-        stop()
+        }
       }
-    }
+    )
+    log shouldNot include ("The runtime reflection inference for cloneType")
   }
 
   "Bundles" should "be allowed to have non-Chisel Seqs" in {
-    assertTesterPasses {
-      new BasicTester {
-        val m = Module(new Module {
+     val (log, _) = grabLog(
+      ChiselStage.elaborate {new Module {
           val io = IO(new Bundle {
             val f = Output(UInt(8.W))
             val unrelated = (0 to 10).toSeq
             val unrelated2 = Seq("Hello", "World", "Chisel")
           })
           io.f := 0.U
-        })
-        stop()
-      }
-    }
+        }})
+    log shouldNot include ("The runtime reflection inference for cloneType")
   }
 
   "Bundles" should "not have aliased fields" in {
