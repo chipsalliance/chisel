@@ -1330,9 +1330,9 @@ package experimental {
     final def unary_-%(dummy: Int*): FixedPoint = macro SourceInfoTransform.noArgDummy
 
     /** @group SourceInfoTransformMacro */
-    def unary_- (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint = FixedPoint.fromBigInt(0) - this
+    def do_unary_- (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint = FixedPoint.fromBigInt(0) - this
     /** @group SourceInfoTransformMacro */
-    def unary_-% (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint = FixedPoint.fromBigInt(0) -% this
+    def do_unary_-% (implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint = FixedPoint.fromBigInt(0) -% this
 
     /** add (default - no growth) operator */
     override def do_+ (that: FixedPoint)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): FixedPoint =
@@ -1772,10 +1772,11 @@ package experimental {
     @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
     final def unary_-%(dummy: Int*): Interval = macro SourceInfoTransform.noArgDummy
 
-    def unary_-(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    /** @group SourceInfoTransformMacro */
+    def do_unary_-(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
       Interval.Zero - this
     }
-    def unary_-%(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
+    def do_unary_-%(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Interval = {
       Interval.Zero -% this
     }
 
