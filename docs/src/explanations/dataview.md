@@ -390,7 +390,7 @@ resolution error.
 
 
 This section draws heavily from [[1]](https://stackoverflow.com/a/5598107/2483329) and
-[[2]](https://stackoverflow.com/a/5598107/2483329).
+[[2]](https://stackoverflow.com/a/8694558/2483329).
 In particular, see [1] for examples.
 
 #### Implicit Resolution Example
