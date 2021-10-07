@@ -200,4 +200,43 @@ class ModuleSpec extends ChiselPropSpec with Utils {
     val s = Source.fromFile("generated/PlusOne.v").mkString("")
     assert(s.contains("assign io_out = io_in + 32'h1"))
   }
+
+  property("withModulePrefix should prefix modules within it") {
+    val m = ChiselStage.construct(new Module {
+      val io = IO(new Bundle { })
+      val child = withModulePrefix("Foo") {
+        Module(new chisel3.Module {
+          Module.currentPrefix should be ("Foo")
+
+          val io = IO(new Bundle { })
+          override val desiredName = "Module"
+        })
+      }
+    })
+
+    m.child.name should be ("FooModule")
+  }
+
+  property("withModulePrefix should support nested module prefixing") {
+    val m = ChiselStage.construct(new Module {
+      val io = IO(new Bundle { })
+      val child = withModulePrefix("Foo") {
+        Module(new chisel3.Module {
+          Module.currentPrefix should be ("Foo")
+
+          val io = IO(new Bundle { })
+          val nestedChild = withModulePrefix("Bar") {
+            Module(new chisel3.Module {
+              Module.currentPrefix should be ("FooBar")
+
+              val io = IO(new Bundle { })
+              override val desiredName = "Module"
+            })
+          }
+        })
+      }
+    })
+
+    m.child.nestedChild.name should be ("FooBarModule")
+  }
 }

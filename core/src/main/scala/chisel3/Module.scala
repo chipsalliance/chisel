@@ -88,6 +88,8 @@ object Module extends SourceInfoDoc {
   def reset: Reset = Builder.forcedReset
   /** Returns the current Module */
   def currentModule: Option[BaseModule] = Builder.currentModule
+  /** Returns the current nested module prefix */
+  def currentPrefix: String = Builder.getModulePrefix
 }
 
 /** Abstract base class for Modules, which behave much like Verilog modules.
@@ -140,6 +142,21 @@ abstract class Module(implicit moduleCompileOptions: CompileOptions) extends Raw
   }
 }
 
+object withModulePrefix {
+  /** Creates a new Module prefix scope
+    *
+    * @param prefix the prefix to add to all modules in the scope
+    * @param block the block of code to run with the new prefix
+    * @return the result of the block
+    */
+  def apply[T](prefix: String)(block: => T): T = {
+    Builder.pushModulePrefix(prefix)
+    val res = block // execute block
+    Builder.popModulePrefix() 
+    res
+  }
+
+}
 
 package experimental {
 
@@ -449,10 +466,12 @@ package experimental {
     final lazy val name = try {
       // PseudoModules are not "true modules" and thus should share
       // their original modules names without uniquification
-      this match {
+      val unprefixed = this match {
         case _: PseudoModule => desiredName
         case _ => Builder.globalNamespace.name(desiredName)
       }
+      // Prefix this module name with the combined prefixes of the current chisel context
+      Module.currentPrefix + unprefixed
     } catch {
       case e: NullPointerException => throwException(
         s"Error: desiredName of ${this.getClass.getName} is null. Did you evaluate 'name' before all values needed by desiredName were available?", e)

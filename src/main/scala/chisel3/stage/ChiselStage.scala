@@ -23,6 +23,7 @@ import chisel3.internal.{firrtl => cir, ErrorLog}
 import chisel3.stage.CircuitSerializationAnnotation.FirrtlFileFormat
 
 import java.io.{StringWriter, PrintWriter}
+import chisel3.Module
 
 class ChiselStage extends Stage {
 
@@ -146,6 +147,23 @@ object ChiselStage {
       .transform(Seq(ChiselGeneratorAnnotation(() => gen), NoRunFirrtlCompilerAnnotation))
       .collectFirst {
         case ChiselCircuitAnnotation(a) => a
+      }
+      .get
+  }
+  
+  /** Elaborates a Chisel module into a circuit, but return that circuit in module form
+    * @param gen a call-by-name Chisel module
+    */
+  def construct[T <: RawModule](gen: => T): T = {
+    val phase = new ChiselPhase {
+      override val targets = Seq( Dependency[chisel3.stage.phases.Checks],
+                                  Dependency[chisel3.stage.phases.Elaborate] )
+    }
+
+    phase
+      .transform(Seq(ChiselGeneratorAnnotation(() => gen), NoRunFirrtlCompilerAnnotation))
+      .collectFirst {
+        case DesignAnnotation(a) => a.asInstanceOf[T]
       }
       .get
   }
