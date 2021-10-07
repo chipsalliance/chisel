@@ -406,6 +406,13 @@ class IntervalChainedSubTester extends BasicTester {
   assert(intervalResult1 === 5.I)
   assert(intervalResult2 === 5.I)
 
+  val negativeInterval = (-3.5).I(4.BP)
+  val positiveInterval = 3.5.I(4.BP)
+
+  assert(negativeInterval =/= positiveInterval)
+  assert(-negativeInterval === positiveInterval)
+  assert(negativeInterval === -positiveInterval)
+
   stop()
 }
 
