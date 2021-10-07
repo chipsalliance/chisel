@@ -17,7 +17,6 @@ jobs:
         system: ["ubuntu-20.04"]
         jvm: ["adopt@1.8"]
         scala: ["2.13.6", "2.12.15"]
-        verilator: ["4.204"]
         espresso: ["2.4"]
     runs-on: ${{ matrix.system }}
 
@@ -25,32 +24,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Install Z3
-        if: matrix.system == 'ubuntu-20.04'
+      - name: Install Tabby OSS Cad Suite (from YosysHQ)
         run: |
-          sudo apt-get install -y z3
-          z3 --version
-
-      - name: Cache Verilator ${{ matrix.verilator }}
-        uses: actions/cache@v2.1.6
-        id: cache-verilator
-        with:
-          path: verilator-${{ matrix.verilator }}
-          key: ${{ matrix.system }}-verilator-${{ matrix.verilator }}
-      - name: Compile Verilator ${{ matrix.verilator }}
-        if: steps.cache-verilator.outputs.cache-hit != 'true'
-        run: |
-          wget https://github.com/verilator/verilator/archive/refs/tags/v${{ matrix.verilator }}.tar.gz
-          tar xvf v${{ matrix.verilator }}.tar.gz
-          cd verilator-${{ matrix.verilator }}
-          autoconf
-          ./configure
-          make
-      - name: Install Verilator ${{ matrix.verilator }}
-        run: |
-          cd verilator-${{ matrix.verilator }}
-          sudo make install
-          verilator --version
+          cd /home/runner/work/
+          wget https://github.com/YosysHQ/oss-cad-suite-build/releases/download/2021-09-23/oss-cad-suite-linux-x64-20210923.tgz
+          tar -xf oss-cad-suite-linux-x64-20210923.tgz
+          ls /home/runner/work/oss-cad-suite/bin
+          echo "/home/runner/work/oss-cad-suite/bin" >> $GITHUB_PATH
 
       - name: Install Espresso
         run: |
@@ -80,11 +60,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Install Verilator and Z3
+      - name: Install Tabby OSS Cad Suite (from YosysHQ)
         run: |
-          sudo apt-get install -y verilator z3
-          verilator --version
-          z3 --version
+          cd /home/runner/work/
+          wget https://github.com/YosysHQ/oss-cad-suite-build/releases/download/2021-09-23/oss-cad-suite-linux-x64-20210923.tgz
+          tar -xf oss-cad-suite-linux-x64-20210923.tgz
+          ls /home/runner/work/oss-cad-suite/bin
+          echo "/home/runner/work/oss-cad-suite/bin" >> $GITHUB_PATH
       - name: Install Espresso
         run: |
           cd /tmp
