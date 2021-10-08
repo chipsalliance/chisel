@@ -21,10 +21,10 @@ class ThingsPassThroughTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int
   q.io.deq.ready := LFSR(16)(tap)
   q.io.flush.foreach { _ := false.B } //Flush behavior is tested in QueueFlushSpec
   q.io.enq.bits := elems(inCnt.value)
-  when(q.io.enq.fire()) {
+  when(q.io.enq.fire) {
     inCnt.inc()
   }
-  when(q.io.deq.fire()) {
+  when(q.io.deq.fire) {
     //ensure that what comes out is what comes in
     assert(elems(outCnt.value) === q.io.deq.bits)
     outCnt.inc()
@@ -51,10 +51,10 @@ class QueueReasonableReadyValid(elements: Seq[Int], queueDepth: Int, bitWidth: I
   assert(q.io.deq.valid || q.io.count === 0.U)
 
   q.io.enq.bits := elems(inCnt.value)
-  when(q.io.enq.fire()) {
+  when(q.io.enq.fire) {
     inCnt.inc()
   }
-  when(q.io.deq.fire()) {
+  when(q.io.deq.fire) {
     outCnt.inc()
   }
   when(outCnt.value === elements.length.U) {
@@ -74,11 +74,11 @@ class CountIsCorrectTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, t
   q.io.deq.ready := LFSR(16)(tap)
 
   q.io.enq.bits := elems(inCnt.value)
-  when(q.io.enq.fire()) {
+  when(q.io.enq.fire) {
     inCnt.inc()
     assert(q.io.count === (inCnt.value - outCnt.value))
   }
-  when(q.io.deq.fire()) {
+  when(q.io.deq.fire) {
     outCnt.inc()
     assert(q.io.count === (inCnt.value - outCnt.value))
   }
@@ -103,10 +103,10 @@ class QueueSinglePipeTester(elements: Seq[Int], bitWidth: Int, tap: Int, useSync
   assert(q.io.enq.ready || (q.io.count === 1.U && !q.io.deq.ready))
 
   q.io.enq.bits := elems(inCnt.value)
-  when(q.io.enq.fire()) {
+  when(q.io.enq.fire) {
     inCnt.inc()
   }
-  when(q.io.deq.fire()) {
+  when(q.io.deq.fire) {
     outCnt.inc()
   }
 
@@ -129,10 +129,10 @@ class QueuePipeTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: I
   assert(q.io.enq.ready || (q.io.count === queueDepth.U && !q.io.deq.ready))
 
   q.io.enq.bits := elems(inCnt.value)
-  when(q.io.enq.fire()) {
+  when(q.io.enq.fire) {
     inCnt.inc()
   }
-  when(q.io.deq.fire()) {
+  when(q.io.deq.fire) {
     outCnt.inc()
   }
 
@@ -155,13 +155,13 @@ class QueueFlowTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap: I
 
   q.io.deq.ready := LFSR(16)(tap)
   //Queue should be empty or valid
-  assert(q.io.deq.valid || (q.io.count === 0.U && !q.io.enq.fire()))
+  assert(q.io.deq.valid || (q.io.count === 0.U && !q.io.enq.fire))
 
   q.io.enq.bits := elems(inCnt.value)
-  when(q.io.enq.fire()) {
+  when(q.io.enq.fire) {
     inCnt.inc()
   }
-  when(q.io.deq.fire()) {
+  when(q.io.deq.fire) {
     outCnt.inc()
   }
   when(outCnt.value === elements.length.U) {
@@ -183,10 +183,10 @@ class QueueFactoryTester(elements: Seq[Int], queueDepth: Int, bitWidth: Int, tap
   deq.ready := LFSR(16)(tap)
 
   enq.bits := elems(inCnt.value)
-  when(enq.fire()) {
+  when(enq.fire) {
     inCnt.inc()
   }
-  when(deq.fire()) {
+  when(deq.fire) {
     //ensure that what comes out is what comes in
     assert(elems(outCnt.value) === deq.bits)
     outCnt.inc()

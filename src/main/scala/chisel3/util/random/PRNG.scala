@@ -62,7 +62,7 @@ abstract class PRNG(val width: Int, val seed: Option[BigInt], step: Int = 1, upd
     state := nextState(state)
   }
 
-  when (io.seed.fire()) {
+  when (io.seed.fire) {
     state := (if (updateSeed) { nextState(io.seed.bits) } else { io.seed.bits })
   }
 
