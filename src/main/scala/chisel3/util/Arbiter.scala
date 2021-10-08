@@ -47,7 +47,7 @@ abstract class LockingArbiterLike[T <: Data](gen: T, n: Int, count: Int, needsLo
     val locked = lockCount.value =/= 0.U
     val wantsLock = needsLock.map(_(io.out.bits)).getOrElse(true.B)
 
-    when (io.out.fire() && wantsLock) {
+    when (io.out.fire && wantsLock) {
       lockIdx := io.chosen
       lockCount.inc()
     }
@@ -63,7 +63,7 @@ abstract class LockingArbiterLike[T <: Data](gen: T, n: Int, count: Int, needsLo
 
 class LockingRRArbiter[T <: Data](gen: T, n: Int, count: Int, needsLock: Option[T => Bool] = None)
     extends LockingArbiterLike[T](gen, n, count, needsLock) {
-  lazy val lastGrant = RegEnable(io.chosen, io.out.fire())
+  lazy val lastGrant = RegEnable(io.chosen, io.out.fire)
   lazy val grantMask = (0 until n).map(_.asUInt > lastGrant)
   lazy val validMask = io.in zip grantMask map { case (in, g) => in.valid && g }
 
