@@ -6,7 +6,7 @@ package experimental.hierarchy
 import chisel3._
 import chisel3.experimental.BaseModule
 import chisel3.experimental.BaseModule.BaseModuleExtensions
-import chisel3.aop.{Select2, Select, Aspect}
+import chisel3.aop.{Select, Aspect}
 import _root_.firrtl.annotations._
 import _root_.firrtl.AnnotationSeq
 import chisel3.experimental.hierarchy.{Definition, Instance, instantiable, public}
@@ -719,15 +719,15 @@ class InstanceSpec extends ChiselFunSpec with Utils {
     }
 
     it("9.0: Select instances") {
-      val instancesInTest = SelectAspect({top: Definition[SelectTop] => Select2.instances(top).map(_.toTarget)}, Seq("~SelectTop|SelectTop/i0:AddTwo".it, "~SelectTop|SelectTop/i1:AddTwo".it))
+      val instancesInTest = SelectAspect({top: Definition[SelectTop] => Select.instances(top).map(_.toTarget)}, Seq("~SelectTop|SelectTop/i0:AddTwo".it, "~SelectTop|SelectTop/i1:AddTwo".it))
       getFirrtlAndAnnos(new SelectTop, Seq(instancesInTest))
     }
 
     it("9.1: Collect instances") {
       val collectOverHierarchy = SelectAspect(
         {top: Definition[SelectTop] =>
-          println(Select2.instancesOf[AddTwo](top).map(_.in.toTarget))
-          Select2.instancesOf[AddTwo](top).map(_.toTarget).toList},
+          println(Select.instancesOf[AddTwo](top).map(_.in.toTarget))
+          Select.instancesOf[AddTwo](top).map(_.toTarget).toList},
         Seq(
           "~SelectTop|SelectTop/i0:AddTwo".it,
           "~SelectTop|SelectTop/i1:AddTwo".it
@@ -738,7 +738,7 @@ class InstanceSpec extends ChiselFunSpec with Utils {
     it("9.2: Collect type-parameterized instances") {
       val collectOverHierarchy = SelectAspect(
         {top: Definition[SelectTopParameterized] =>
-          Select2.instancesOf[SelectParameterized[_]](top).toList.map(_.toTarget)
+          Select.instancesOf[SelectParameterized[_]](top).toList.map(_.toTarget)
         },
         Seq(
           "~SelectTopParameterized|SelectTopParameterized/i0:SelectParameterized".it,

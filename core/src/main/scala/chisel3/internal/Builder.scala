@@ -6,7 +6,7 @@ import scala.util.DynamicVariable
 import scala.collection.mutable.ArrayBuffer
 import chisel3._
 import chisel3.experimental._
-import chisel3.experimental.hierarchy.Instance
+import chisel3.experimental.hierarchy.{Instance, Definition}
 import chisel3.internal.firrtl._
 import chisel3.internal.naming._
 import _root_.firrtl.annotations.{CircuitName, ComponentName, IsMember, ModuleName, Named, ReferenceTarget}
@@ -17,6 +17,7 @@ import chisel3.internal.Builder.Prefix
 import logger.LazyLogging
 
 import scala.collection.mutable
+import scala.reflect.runtime.universe.TypeTag
 
 private[chisel3] class Namespace(keywords: Set[String]) {
   private val names = collection.mutable.HashMap[String, Long]()
@@ -743,6 +744,21 @@ private[chisel3] object Builder extends LazyLogging {
       logger.info("Done elaborating.")
 
       (Circuit(components.last.name, components.toSeq, annotations.toSeq, makeViewRenameMap), mod)
+    }
+  }
+
+  private [chisel3] def define[T <: BaseModule](f: => Definition[T], dynamicContext: DynamicContext): (Circuit, Definition[T]) = {
+    dynamicContextVar.withValue(Some(dynamicContext)) {
+      ViewParent // Must initialize the singleton in a Builder context or weird things can happen
+                 // in tiny designs/testcases that never access anything in chisel3.internal
+      checkScalaVersion()
+      logger.info("Elaborating design...")
+      val definition = f
+      definition.getProto.forceName(None, definition.getProto.name, globalNamespace)
+      errors.checkpoint(logger)
+      logger.info("Done elaborating.")
+
+      (Circuit(components.last.name, components.toSeq, annotations.toSeq, makeViewRenameMap), definition)
     }
   }
   initializeSingletons()

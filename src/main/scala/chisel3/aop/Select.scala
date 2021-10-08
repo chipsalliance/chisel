@@ -4,22 +4,24 @@ package chisel3.aop
 
 import chisel3._
 import chisel3.internal.{HasId}
-import chisel3.experimental.hierarchy.{Definition, Instance}
+import chisel3.experimental.hierarchy.{Definition, Instance, Hierarchy}
 import chisel3.experimental.BaseModule
 import chisel3.experimental.FixedPoint
 import chisel3.internal.firrtl.{Definition => IRDefinition, _}
 import chisel3.internal.PseudoModule
 import chisel3.internal.BaseModule.ModuleClone
 import firrtl.annotations.ReferenceTarget
+import chisel3.internal.sourceinfo.SourceInfo
 
 import scala.collection.mutable
+import scala.reflect.runtime.universe.TypeTag
 import chisel3.internal.naming.chiselName
 
 /** Use to select Chisel components in a module, after that module has been constructed
   * Useful for adding additional Chisel annotations or for use within an [[Aspect]]
   */
 object Select {
-
+  private implicit val mg = new chisel3.internal.MacroGenerated {}
   /** Return just leaf components of expanded node
     *
     * @param d Component to find leafs if aggregate typed. Intermediate fields/indicies are not included
@@ -42,61 +44,113 @@ object Select {
     case other => Seq(other)
   }
 
-
-  /** Collects all components selected by collector within module and all children modules it instantiates
-    *   directly or indirectly
-    * Accepts a collector function, rather than a collector partial function (see [[collectDeep]])
-    * @param module Module to collect components, as well as all children module it directly and indirectly instantiates
-    * @param collector Collector function to pick, given a module, which components to collect
-    * @param tag Required for generics to work, should ignore this
-    * @tparam T Type of the component that will be collected
-    * @return
-    */
-  def getDeep[T](module: BaseModule)(collector: BaseModule => Seq[T]): Seq[T] = {
-    check(module)
-    val myItems = collector(module)
-    val deepChildrenItems = instances(module).flatMap {
-      i => getDeep(i)(collector)
+  def instancesOf[T <: BaseModule : TypeTag](parent: Hierarchy[BaseModule]): Seq[Instance[T]] = {
+    check(parent)
+    val ttag = implicitly[TypeTag[T]]
+    parent.getProto._component.get match {
+      case d: DefModule => d.commands.flatMap {
+        case d: DefTypedInstance[T] =>
+          val inst = new Instance[T](Right(d.id), d.tag)
+          if(inst.isA[T]) Some(parent._lookup { x => inst }) else None
+        case other => None
+      }
+      case other => Nil
     }
-    myItems ++ deepChildrenItems
   }
 
-  /** Collects all components selected by collector within module and all children modules it instantiates
-    *   directly or indirectly
-    * Accepts a collector partial function, rather than a collector function (see [[getDeep]])
-    * @param module Module to collect components, as well as all children module it directly and indirectly instantiates
-    * @param collector Collector partial function to pick, given a module, which components to collect
-    * @param tag Required for generics to work, should ignore this
-    * @tparam T Type of the component that will be collected
+  def allInstancesOf[T <: BaseModule : TypeTag](root: Hierarchy[BaseModule]): Seq[Instance[T]] = {
+    val locals = instancesOf[T](root)
+    val allLocalInstances = instances(root)
+    locals ++ (allLocalInstances.flatMap(allInstancesOf[T]))
+  }
+
+
+  /** Selects all instances directly instantiated within given definition
+    * @param module
     * @return
     */
-  def collectDeep[T](module: BaseModule)(collector: PartialFunction[BaseModule, T]): Iterable[T] = {
-    check(module)
-    val myItems = collector.lift(module)
-    val deepChildrenItems = instances(module).flatMap {
-      i => collectDeep(i)(collector)
+  def instances(instance: Hierarchy[BaseModule]): Seq[Instance[BaseModule]] = {
+    check(instance)
+    instance.getProto._component.get match {
+      case d: DefModule => d.commands.flatMap {
+        case d: DefTypedInstance[BaseModule] =>
+          val x = d.id match {
+            case m: ModuleClone[BaseModule] => instance._lookup{x => Instance(Right(m), d.tag) }
+            case other => instance._lookup(x => other)
+          }
+          Some(x)
+        case _ => None
+      }
+      case other => Nil
     }
-    myItems ++ deepChildrenItems
+  }
+
+  /** Selects all instances directly and indirectly instantiated within given module
+    * @param module
+    * @return
+    */
+  def definitionsOf[T <: BaseModule : TypeTag](parent: Hierarchy[BaseModule]): Seq[Definition[T]] = {
+    type DefType = Definition[T]
+    check(parent.getProto)
+    val ttag = implicitly[TypeTag[T]]
+    val defs = parent.getProto._component.get match {
+      case d: DefModule => d.commands.collect {
+        case d: DefTypedInstance[ModuleClone[BaseModule]] if d.tag.tpe <:< ttag.tpe =>
+          val x = d.id match {
+            case m: ModuleClone[T] => parent._lookup { x =>
+              Definition(Right(m.asInstanceOf[ModuleClone[T]]), d.tag)
+            }
+            case other: T => parent._lookup(x => other)
+          }
+          x.asInstanceOf[Definition[T]]
+      }
+    }
+    val (_, defList) = defs.foldLeft((Set.empty[DefType], List.empty[DefType])) { case ((set, list), definition: Definition[T]) =>
+      if(set.contains(definition)) (set, list) else (set + definition, definition +: list)
+    }
+    defList
+  }
+
+  /** Selects all instances directly and indirectly instantiated within given module
+    * @param module
+    * @return
+    */
+  def allDefinitionsOf[T <: BaseModule : TypeTag](root: Hierarchy[BaseModule]): Seq[Definition[T]] = {
+    type DefType = Definition[T]
+    val defSet = mutable.HashSet[DefType]()
+    val defList = mutable.ArrayBuffer[DefType]()
+    def rec(hier: Hierarchy[BaseModule]): Unit = {
+      val returnedDefs = definitionsOf[T](hier)
+      returnedDefs.foreach { case d if !defSet.contains(d) =>
+        defSet += d
+        defList += d
+        rec(d)
+      }
+    }
+    rec(root)
+    defList.toList
   }
 
   /** Selects all instances directly instantiated within given module
     * @param module
     * @return
     */
-  def instances(module: BaseModule): Seq[BaseModule] = {
-    check(module)
-    module._component.get match {
+  def definitions(module: Hierarchy[BaseModule]): Seq[Definition[BaseModule]] = {
+    type DefType = Definition[BaseModule]
+    check(module.getProto)
+    val defs = module.getProto._component.get match {
       case d: DefModule => d.commands.flatMap {
-        case i: DefInstance => i.id match {
-          case m: ModuleClone[_] if !m._madeFromDefinition => None
-          case _: PseudoModule => throw new Exception("Aspect APIs are currently incompatible with Definition/Instance")
-          case other          => Some(other)
-        }
+        case i: DefTypedInstance[BaseModule] => Some(new Definition(Right(i.id), i.tag))
         case _ => None
       }
       case other => Nil
     }
+    val (_, defList) = defs.foldLeft((Set.empty[DefType], List.empty[DefType])) { case ((set, list), definition: Definition[BaseModule]) =>
+      if(set.contains(definition)) (set, list) else (set + definition, definition +: list)
+    }
+    defList
   }
+
 
   /** Selects all registers directly instantiated within given module
     * @param module
@@ -298,6 +352,7 @@ object Select {
     require(module.isClosed, "Can't use Selector on modules that have not finished construction!")
     require(module._component.isDefined, "Can't use Selector on modules that don't have components!")
   }
+  private def check(module: Hierarchy[BaseModule]): Unit = check(module.getProto)
 
   // Given a loc, return all subcomponents of id that could be assigned to in connect
   private def getEffected(a: Arg): Seq[Data] = a match {
@@ -427,5 +482,25 @@ object Select {
     def serialize: String = {
       s"printf when(${preds.map(_.serialize).mkString(" & ")}) on ${getName(clock)}: $pable"
     }
+  }
+  implicit def lookupAOPSerializable[B <: aop.Select.Serializeable](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) = new chisel3.experimental.hierarchy.Lookupable[B] {
+    type C = B
+    def definitionLookup[A](that: A => B, definition: Definition[A]): C = {
+      val ret = that(definition.getProto)
+      ret match {
+        case When(bool) =>
+          val lookupable = implicitly[experimental.hierarchy.Lookupable[Bool]]
+          val newBool = lookupable.definitionLookup[A]( {_: A => bool}, definition)
+          When(newBool.asInstanceOf[Bool]).asInstanceOf[C]
+        case WhenNot(bool) => ???
+        case PredicatedConnect(preds, loc, exp, isBulk) => ???
+        case Stop(preds, ret, clock) => ???
+        case Printf(id, preds, pable, clock) => ???
+          val lookupable = implicitly[experimental.hierarchy.Lookupable[Bool]]
+          val newBool = lookupable.definitionLookup[A]( {_: A => bool}, definition)
+          When(newBool.asInstanceOf[Bool]).asInstanceOf[C]
+      }
+    }
+    def instanceLookup[A](that: A => B, instance: Instance[A]): C = ???
   }
 }

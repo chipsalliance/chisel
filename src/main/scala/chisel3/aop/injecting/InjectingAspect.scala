@@ -4,15 +4,17 @@ package chisel3.aop.injecting
 
 import chisel3.{Module, ModuleAspect, RawModule, withClockAndReset}
 import chisel3.aop._
-import chisel3.experimental.hierarchy.IsInstantiable
+import chisel3.experimental.hierarchy.{IsInstantiable, Instance, Definition}
+import chisel3.experimental.BaseModule
 import chisel3.internal.{Builder, DynamicContext}
 import chisel3.internal.firrtl.DefModule
 import chisel3.stage.DesignAnnotation
-import firrtl.annotations.ModuleTarget
+import firrtl.annotations.{ModuleTarget, Target}
 import firrtl.stage.RunFirrtlTransformAnnotation
 import firrtl.{ir, _}
 
 import scala.collection.mutable
+import scala.reflect.runtime.universe.TypeTag
 
 /** Aspect to inject Chisel code into a module of type M
   *
@@ -22,7 +24,7 @@ import scala.collection.mutable
   * @tparam T Type of top-level module
   * @tparam M Type of root module (join point)
   */
-case class InjectingAspect[T <: RawModule, M <: RawModule](
+case class InjectingAspect[T <: RawModule : TypeTag, M <: RawModule](
     selectRoots: T => Iterable[M],
     injection: M => Unit
 ) extends InjectorAspect[T, M](
@@ -38,12 +40,12 @@ case class InjectingAspect[T <: RawModule, M <: RawModule](
   * @tparam T Type of top-level module
   * @tparam M Type of root module (join point)
   */
-abstract class InjectorAspect[T <: RawModule, M <: RawModule](
+abstract class InjectorAspect[T <: RawModule : TypeTag, M <: RawModule](
     selectRoots: T => Iterable[M],
     injection: M => Unit
 ) extends Aspect[T] {
   final def toAnnotation(top: T): AnnotationSeq = {
-    val moduleNames = Select.collectDeep(top) { case i => i.name }.toSeq
+    val moduleNames = Select.allInstancesOf[BaseModule](top.toDefinition).collect { case i: Instance[BaseModule] => Target.referringModule(i.toTarget).module }.toSeq
     toAnnotation(selectRoots(top), top.name, moduleNames)
   }
 

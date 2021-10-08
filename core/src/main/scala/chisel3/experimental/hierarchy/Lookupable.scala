@@ -20,7 +20,7 @@ import chisel3.internal.{AggregateViewBinding, Builder, ChildBinding, ViewBindin
   */
 @implicitNotFound("@public is only legal within a class marked @instantiable and only on vals of type" +
   " Data, BaseModule, IsInstantiable, IsLookupable, or Instance[_], or in an Iterable or Option")
-sealed trait Lookupable[-B] {
+trait Lookupable[-B] {
   type C // Return type of the lookup
   /** Function called to modify the returned value of type B from A, into C
     * 
@@ -28,7 +28,7 @@ sealed trait Lookupable[-B] {
     * @param instance Instance of A, used to determine C's context
     * @return
     */
-  def instanceLookup[A](that: A => B, instance: Instance[A]): C
+  private[chisel3] def instanceLookup[A](that: A => B, instance: Instance[A]): C
 
   /** Function called to modify the returned value of type B from A, into C
     *
@@ -36,7 +36,7 @@ sealed trait Lookupable[-B] {
     * @param definition Definition of A, used to determine C's context
     * @return
     */
-  def definitionLookup[A](that: A => B, definition: Definition[A]): C
+  private[chisel3] def definitionLookup[A](that: A => B, definition: Definition[A]): C
 }
 
 private[chisel3] object Lookupable {
@@ -383,4 +383,5 @@ private[chisel3] object Lookupable {
   implicit val lookupString = new SimpleLookupable[String]()
   implicit val lookupBoolean = new SimpleLookupable[Boolean]()
   implicit val lookupBigInt = new SimpleLookupable[BigInt]()
+
 }
