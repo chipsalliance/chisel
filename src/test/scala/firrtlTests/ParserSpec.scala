@@ -48,8 +48,11 @@ class ParserSpec extends FirrtlFlatSpec {
       "SInt",
       "Analog",
       "Fixed",
+      "Interval",
       "flip",
       "Clock",
+      "Reset",
+      "AsyncReset",
       "wire",
       "reg",
       "reset",
@@ -80,7 +83,11 @@ class ParserSpec extends FirrtlFlatSpec {
       "infer",
       "read",
       "write",
-      "rdwr"
+      "rdwr",
+      "attach",
+      "assert",
+      "assume",
+      "cover"
     ) ++ PrimOps.listing
   }
 
@@ -180,6 +187,15 @@ class ParserSpec extends FirrtlFlatSpec {
     import KeywordTests._
     keywords.foreach { keyword =>
       firrtl.Parser.parse((prelude ++ Seq(s"      wire ${keyword} : UInt", s"      ${keyword} <= ${keyword}")))
+    }
+  }
+
+  they should "be allowed as names for side effecting statements" in {
+    import KeywordTests._
+    keywords.foreach { keyword =>
+      firrtl.Parser.parse {
+        prelude :+ s"""    assert($keyword, UInt(1), UInt(1), "") : $keyword"""
+      }
     }
   }
 

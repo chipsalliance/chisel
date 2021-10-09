@@ -225,8 +225,11 @@ keywordAsId
   | 'UInt'
   | 'SInt'
   | 'Clock'
+  | 'Reset'
+  | 'AsyncReset'
   | 'Analog'
   | 'Fixed'
+  | 'Interval'
   | 'flip'
   | 'wire'
   | 'reg'
@@ -259,6 +262,10 @@ keywordAsId
   | 'read'
   | 'write'
   | 'rdwr'
+  | 'attach'
+  | 'assert'
+  | 'assume'
+  | 'cover'
   ;
 
 // Parentheses are added as part of name because semantics require no space between primop and open parentheses
