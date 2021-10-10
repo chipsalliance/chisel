@@ -10,7 +10,7 @@ import chisel3.experimental.prefix
 import chisel3.experimental.noPrefix
 import chisel3.stage.ChiselStage
 ```
-
+# Naming Cookbook
 ### I still have _T signals, can this be fixed?
 
 First check - is the compiler plugin properly enabled? Scalac plugins are enabled via the scalac option
