@@ -217,7 +217,6 @@ class ModuleSpec extends ChiselPropSpec with Utils {
 
   property("withModulePrefix should support nested module prefixing") {
     val m = elaborateAndGetModule(new Module {
-      val io = IO(new Bundle { })
       val child = withModulePrefix("Foo") {
         Module(new chisel3.Module {
           Module.currentPrefix should be ("Foo")
@@ -234,5 +233,18 @@ class ModuleSpec extends ChiselPropSpec with Utils {
     })
 
     m.child.nestedChild.name should be ("FooBarModule")
+  }
+
+  property("withModulePrefix should not prefix if given an empty argument") {
+    val m = elaborateAndGetModule(new Module {
+      val child = withModulePrefix("") {
+        Module(new chisel3.Module {
+          Module.currentPrefix should be ("")
+          override val desiredName = "NoPrefixModule"
+        })
+      }
+    })
+
+    m.child.name should be ("NoPrefixModule")
   }
 }
