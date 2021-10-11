@@ -3,6 +3,9 @@ layout: docs
 title:  "Blackboxes"
 section: "chisel3"
 ---
+
+# BlackBoxes
+
 Chisel *BlackBoxes* are used to instantiate externally defined modules. This construct is useful
 for hardware constructs that cannot be described in Chisel and for connecting to FPGA or other IP not defined in Chisel.
 
