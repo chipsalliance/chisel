@@ -205,7 +205,7 @@ class ModuleSpec extends ChiselPropSpec with Utils {
     val m = elaborateAndGetModule(new Module {
       val child = withModulePrefix("Foo") {
         Module(new chisel3.Module {
-          Module.currentPrefix should be ("Foo")
+          Module.currentModulePrefix should be ("Foo")
 
           override val desiredName = "Module"
         })
@@ -219,11 +219,11 @@ class ModuleSpec extends ChiselPropSpec with Utils {
     val m = elaborateAndGetModule(new Module {
       val child = withModulePrefix("Foo") {
         Module(new chisel3.Module {
-          Module.currentPrefix should be ("Foo")
+          Module.currentModulePrefix should be ("Foo")
 
           val nestedChild = withModulePrefix("Bar") {
             Module(new chisel3.Module {
-              Module.currentPrefix should be ("FooBar")
+              Module.currentModulePrefix should be ("FooBar")
 
               override val desiredName = "Module"
             })
@@ -239,7 +239,7 @@ class ModuleSpec extends ChiselPropSpec with Utils {
     val m = elaborateAndGetModule(new Module {
       val child = withModulePrefix("") {
         Module(new chisel3.Module {
-          Module.currentPrefix should be ("")
+          Module.currentModulePrefix should be ("")
           override val desiredName = "NoPrefixModule"
         })
       }
