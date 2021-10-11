@@ -142,6 +142,37 @@ abstract class Module(implicit moduleCompileOptions: CompileOptions) extends Raw
   }
 }
 
+/** Creates a new module prefix scope that prefixes all instantiated modules 
+  *
+  * @example {{{
+  * val m = Module(new Module {
+  *   val child = withModulePrefix("Foo") {
+  *     Module(new Module {
+  *       override val desiredName = "Module"
+  *     })
+  *   }
+  * })
+  *
+  * // m.child.name will be equal to "FooModule"
+  * }}}
+  *
+  * Module prefixes can be nested within each other, like so:
+  * @example {{{
+  * val m = ChiselStage.construct(new Module {
+  *   val child = withModulePrefix("Foo") {
+  *     Module(new chisel3.Module {
+  *       val nestedChild = withModulePrefix("Bar") {
+  *         Module(new chisel3.Module {
+  *           override val desiredName = "Module"
+  *         })
+  *       }
+  *     })
+  *   }
+  * })
+  *
+  * // m.child.nestedChild.name will be equal to "FooBarModule"
+  * }}}
+  */
 object withModulePrefix {
   /** Creates a new Module prefix scope
     *
