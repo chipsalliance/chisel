@@ -89,7 +89,7 @@ object Module extends SourceInfoDoc {
   /** Returns the current Module */
   def currentModule: Option[BaseModule] = Builder.currentModule
   /** Returns the current nested module prefix */
-  def currentPrefix: String = Builder.getModulePrefix
+  def currentModulePrefix: String = Builder.getModulePrefix
 }
 
 /** Abstract base class for Modules, which behave much like Verilog modules.
@@ -502,7 +502,7 @@ package experimental {
         case _ => Builder.globalNamespace.name(desiredName)
       }
       // Prefix this module name with the combined prefixes of the current chisel context
-      Module.currentPrefix + unprefixed
+      Module.currentModulePrefix + unprefixed
     } catch {
       case e: NullPointerException => throwException(
         s"Error: desiredName of ${this.getClass.getName} is null. Did you evaluate 'name' before all values needed by desiredName were available?", e)
