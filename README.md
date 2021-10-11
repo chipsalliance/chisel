@@ -171,8 +171,6 @@ If the compilation succeeded, you can then run the included unit tests by invoki
 sbt test
 ```
 
-<<<<<<< HEAD
-=======
 If you would like to run the tests without the compiler plugin (less common), you can do so by first launching `sbt`,
 then running `noPluginTests / test`:
 ```
@@ -180,7 +178,6 @@ sbt
 > noPluginTests / test
 ```
 
->>>>>>> 3643b7ba (Update developer documentation in README (#2160))
 ### Running Projects Against Local Chisel
 
 To use the development version of Chisel (`master` branch), you will need to build from source and `publishLocal`.
