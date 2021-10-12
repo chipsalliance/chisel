@@ -25,7 +25,7 @@ Our documentation strategy for this repository is as follows:
 
 This documentation is hosted on the Chisel [website](https://www.chisel-lang.org).
 Currently, edits to this repo which are backported to the most recent stable branch
-(`3.4.x` at time of writing) will be picked up automatically by
+(`3.4.x` at time of writing) will be picked up automatically by the
 website [repository](https://github.com/freechipsproject/www.chisel-lang.org) and pushed live within
 a day or so.
 If you create a *new* document page, you probably also want to:
