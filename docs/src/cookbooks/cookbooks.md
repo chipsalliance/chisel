@@ -13,3 +13,5 @@ please [file an issue](https://github.com/chipsalliance/chisel3/issues/new) and 
 * [General Cookbooks](cookbook)
 * [Naming Cookbook](naming)
 * [Troubleshooting Guide](troubleshooting)
+* [Hierarchy Cookbook](hierarchy)
+* [DataView Cookbook](dataview)
