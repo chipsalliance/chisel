@@ -4,7 +4,7 @@ title:  "Bundles and Vecs"
 section: "chisel3"
 ---
 
-# Bundles & Vecs
+# Bundles and Vecs
 
 `Bundle` and `Vec` are classes that allow the user to expand the set of Chisel datatypes with aggregates of other types.
 
