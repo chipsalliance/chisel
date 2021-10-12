@@ -3,7 +3,7 @@ layout: docs
 title:  "Experimental Features"
 section: "chisel3"
 ---
-## Experimental Features
+# Experimental Features
 Chisel has a number of new features that are worth checking out.  This page is an informal list of these features and projects.
 
 - [FixedPoint](#fixed-point)
