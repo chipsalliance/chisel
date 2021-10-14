@@ -189,7 +189,7 @@ package internal {
       *
       * @note We don't actually "clone" anything in the traditional sense but is a placeholder so we lazily clone internal state
       */
-    private [chisel3] trait IsClone[+T] {
+    trait IsClone[+T] {
       // Underlying object of which this is a clone of
       val _proto: T
       def getProto: T = _proto
