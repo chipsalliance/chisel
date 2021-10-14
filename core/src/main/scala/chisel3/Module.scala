@@ -498,8 +498,8 @@ package experimental {
       // PseudoModules are not "true modules" and thus should share
       // their original modules names without uniquification
       this match {
-        case _: BlackBox     => desiredName
         case _: PseudoModule => Module.currentModulePrefix + desiredName
+        case _: BlackBox     => Builder.globalNamespace.name(desiredName)
         case _               => Module.currentModulePrefix + Builder.globalNamespace.name(desiredName)
       }
     } catch {
