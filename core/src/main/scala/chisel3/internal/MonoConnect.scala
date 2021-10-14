@@ -119,7 +119,7 @@ private[chisel3] object MonoConnect {
       // Handle Vec case
       case (sink_v: Vec[Data @unchecked], source_v: Vec[Data @unchecked]) =>
         if(sink_v.length != source_v.length) { throw MismatchedVecException }
-        if (canBulkConnectVecs(sink_v, source_v, sourceInfo)) {
+        if (canBulkConnectVecs(sink_v, source_v, sourceInfo, connectCompileOptions, context_mod)) {
           pushCommand(Connect(sourceInfo, sink_v.lref, source_v.lref))
         } else {
           for(idx <- 0 until sink_v.length) {
@@ -144,7 +144,7 @@ private[chisel3] object MonoConnect {
 
       // Handle Record case
       case (sink_r: Record, source_r: Record) =>
-        if (canBulkConnectRecords(sink_r, source_r, sourceInfo)) {
+        if (canBulkConnectRecords(sink_r, source_r, sourceInfo, connectCompileOptions, context_mod)) {
           pushCommand(Connect(sourceInfo, sink_r.lref, source_r.lref))
         } else {
           // For each field, descend with right
@@ -188,37 +188,137 @@ private[chisel3] object MonoConnect {
       case (sink, source) => throw MismatchedException(sink.toString, source.toString)
     }
 
-  /** Check whether two [[Vec]]s can be bulk connected (<-) in FIRRTL. */
+  /** Check [[Aggregate]] visibility. */
+  private def aggregatesCanConnect(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions,
+                                   sink: Aggregate, source: Aggregate, context_mod: RawModule): Boolean = {
+    import BindingDirection.{Internal, Input, Output} // Using extensively so import these
+    // If source has no location, assume in context module
+    // This can occur if is a literal, unbound will error previously
+    val sink_mod: BaseModule   = sink.topBinding.location.getOrElse(throw UnwritableSinkException)
+    val source_mod: BaseModule = source.topBinding.location.getOrElse(context_mod)
+
+    val sink_parent = Builder.retrieveParent(sink_mod, context_mod).getOrElse(None)
+    val source_parent = Builder.retrieveParent(source_mod, context_mod).getOrElse(None)
+
+//    val sink_direction = BindingDirection.from(sink.topBinding, sink.direction)
+//    val source_direction = BindingDirection.from(source.topBinding, source.direction)
+
+    if (!checkWhenVisibility(sink)) {
+      throw SinkEscapedWhenScopeException
+    }
+
+    if (!checkWhenVisibility(source)) {
+      throw SourceEscapedWhenScopeException
+    }
+
+    /** Checks that elements in an aggregate are not of a certain direction. */
+    def aggregateElementsNotofDirection(agg: Aggregate, direction: BindingDirection): Boolean = {
+      agg.allElements.map { elem =>
+        if (BindingDirection.from(elem.topBinding, elem.direction) == direction) false
+        else true
+      }.foldLeft(true)(_ && _)
+    }
+
+    // CASE: Context is same module that both sink node and source node are in
+    if( (context_mod == sink_mod) && (context_mod == source_mod) ) {
+      // elements in sink aggregate cannot be module inputs
+      aggregateElementsNotofDirection(sink, Input)
+    }
+
+    // CASE: Context is same module as sink node and source node is in a child module
+    else if((sink_mod == context_mod) && (source_parent == context_mod)) {
+      // elements in sink aggregate cannot be module inputs
+      // elements in source aggregate cannot be internal
+      aggregateElementsNotofDirection(sink, Input) && aggregateElementsNotofDirection(source, Internal)
+    }
+
+    // CASE: Context is same module as source node and sink node is in child module
+    else if((source_mod == context_mod) && (sink_parent == context_mod)) {
+      (sink.allElements ++ source.allElements).map { elem =>
+        if (BindingDirection.from(elem.topBinding, elem.direction) == Input) false
+        else true
+      }.foldLeft(true)(_ && _)
+    }
+
+    // CASE: Context is the parent module of both the module containing sink node
+    //                                        and the module containing source node
+    //   Note: This includes case when sink and source in same module but in parent
+    else if((sink_parent == context_mod) && (source_parent == context_mod)) {
+      // sinks cannot be outputs or internal
+      (sink.allElements ++ source.allElements).map { elem =>
+        if (BindingDirection.from(elem.topBinding, elem.direction) == Output ||
+            BindingDirection.from(elem.topBinding, elem.direction) == Internal) false
+        else true
+      }.foldLeft(true)(_ && _)
+    }
+
+    // Not quite sure where sink and source are compared to current module
+    else false
+  }
+
+  /** Check whether two [[Vec]]s can be bulk connected (<-) in FIRRTL. All
+    * elements must be able to connect 1:1 for valid bulk connection.
+    */
   private[chisel3] def canBulkConnectVecs(sink_v: Vec[Data @unchecked],
                                           source_v: Vec[Data @unchecked],
-                                          sourceInfo: SourceInfo): Boolean = {
+                                          sourceInfo: SourceInfo,
+                                          connectCompileOptions: CompileOptions,
+                                          context_mod: RawModule): Boolean = {
+    // check source bindings are not read-only
     val canWriteBinding = source_v.topBinding match {
       case _: ReadOnlyBinding => false
       case _ => true
     }
+
+    // check corresponding elements can connect
     val elemsMatch = CheckTypes.validConnect(
       Converter.extractType(sink_v, sourceInfo),
       Converter.extractType(source_v, sourceInfo),
     )
-    canWriteBinding && elemsMatch
+
+    // check that vector lengths are the same
+    val lengthsMatch = sink_v.length == source_v.length
+
+    // check directionality of flows TODO
+   // val flowsValid = sink_v.direction =
+
+
+    // check records live in appropriate contexts FIXME
+    val contextCheck = aggregatesCanConnect(sourceInfo, connectCompileOptions, sink_v, source_v, context_mod)
+
+    canWriteBinding && lengthsMatch && elemsMatch && contextCheck
   }
 
-  /** Check whether two [[Record]]s can be bulk connected (<-) in FIRRTL. */
-  private[chisel3] def canBulkConnectRecords(sink_r: Record, source_r: Record, sourceInfo: SourceInfo): Boolean = {
+  /** Check whether two [[Record]]s can be bulk connected (<-) in FIRRTL. All
+    * elements must be able to connect 1:1 for valid bulk connection.
+    */
+  private[chisel3] def canBulkConnectRecords(sink_r: Record, source_r: Record,
+                                             sourceInfo: SourceInfo,
+                                             connectCompileOptions: CompileOptions,
+                                             context_mod: RawModule): Boolean = {
+    // check bindings are not read-only
     val canWriteBinding = source_r.topBinding match {
       case _: ReadOnlyBinding => false
       case _ => true
     }
+    // check corresponding elements can connect
+    // TODO needs to be recursive unless base data type
     val elemsMatch = if(sink_r.elements.size == source_r.elements.size) {
       val elemValidConnect = sink_r.elements.zip(source_r.elements).map {
         case (sink, source) => CheckTypes.validConnect(
-          Converter.extractType(sink._2, sourceInfo),
-          Converter.extractType(source._2, sourceInfo))
+            Converter.extractType(sink._2, sourceInfo),
+            Converter.extractType(source._2, sourceInfo))
         case _ => false
       }
       elemValidConnect.foldLeft(true)(_ && _)
     } else false
-    canWriteBinding && elemsMatch
+    // check directionality of flows TODO
+
+
+    // check records live in appropriate contexts FIXME
+    val contextCheck = true //aggregatesCanConnect(sourceInfo, connectCompileOptions, sink_r, source_r, context_mod)
+
+    canWriteBinding && elemsMatch && contextCheck
   }
 
   // This function (finally) issues the connection operation
