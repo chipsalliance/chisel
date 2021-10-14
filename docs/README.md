@@ -24,6 +24,14 @@ Our documentation strategy for this repository is as follows:
  * Tutorials are kept in a separate repository.
 
 This documentation is hosted on the Chisel [website](https://www.chisel-lang.org).
+Currently, edits to this repo which are backported to the most recent stable branch
+(`3.4.x` at time of writing) will be picked up automatically by the
+website [repository](https://github.com/freechipsproject/www.chisel-lang.org) and pushed live within
+a day or so.
+If you create a *new* document page, you probably also want to:
+  1. Make sure to add it to the "Contents" page of the corresponding directory [cookbooks](src/cookbooks/cookbooks.md),
+   [explanations](src/explanations/explanations.md), etc.
+  1. Update the sidebar on the website [here](https://github.com/freechipsproject/www.chisel-lang.org/blob/master/docs/src/main/resources/microsite/data/menu.yml).
 
 ## mdoc
 
