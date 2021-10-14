@@ -51,7 +51,7 @@ private[chisel3] object prefix { // scalastyle:ignore
     // This causes extra prefixes to be added, and subsequently cleared in the
     // Module constructor. Thus, we need to just make sure if the previous push
     // was an incorrect one, to not pop off an empty stack
-    if(Builder.getPrefix().nonEmpty) Builder.popPrefix()
+    if(Builder.getPrefix.nonEmpty) Builder.popPrefix()
     ret
   }
 }
@@ -77,7 +77,7 @@ private[chisel3] object noPrefix {
     * @return The return value of the provided function
     */
   def apply[T](f: => T): T = {
-    val prefix = Builder.getPrefix()
+    val prefix = Builder.getPrefix
     Builder.clearPrefix()
     val ret = f
     Builder.setPrefix(prefix)

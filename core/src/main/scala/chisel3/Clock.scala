@@ -32,8 +32,12 @@ sealed class Clock(private[chisel3] val width: Width = Width(1)) extends Element
   def toPrintable: Printable = PString("CLOCK")
 
   /** Returns the contents of the clock wire as a [[Bool]]. */
-  final def asBool(): Bool = macro SourceInfoTransform.noArg
-  def do_asBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = this.asUInt().asBool()
+  final def asBool: Bool = macro SourceInfoTransform.noArg
+
+  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+  final def asBool(dummy: Int*): Bool = macro SourceInfoTransform.noArgDummy
+
+  def do_asBool(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions): Bool = this.asUInt.asBool
 
   override def do_asUInt(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions): UInt = pushOp(DefPrim(sourceInfo, UInt(this.width), AsUIntOp, ref))
   private[chisel3] override def connectFromBits(that: Bits)(implicit sourceInfo: SourceInfo,

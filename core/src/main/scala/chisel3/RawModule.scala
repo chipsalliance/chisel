@@ -5,9 +5,9 @@ package chisel3
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 import scala.util.Try
 import scala.language.experimental.macros
-import chisel3.experimental.{BaseModule, BaseSim}
+import chisel3.experimental.BaseModule
 import chisel3.internal._
-import chisel3.internal.BaseModule.ModuleClone
+import chisel3.internal.BaseModule.{ModuleClone, InstanceClone}
 import chisel3.internal.Builder._
 import chisel3.internal.firrtl._
 import chisel3.internal.sourceinfo.UnlocatableSourceInfo
@@ -77,10 +77,15 @@ abstract class RawModule(implicit moduleCompileOptions: CompileOptions)
     // All suggestions are in, force names to every node.
     for (id <- getIds) {
       id match {
-        case id: ModuleClone => id.setRefAndPortsRef(_namespace) // special handling
+        case id: ModuleClone[_] => id.setRefAndPortsRef(_namespace) // special handling
+        case id: InstanceClone[_] => id.setAsInstanceRef()
         case id: BaseModule => id.forceName(None, default=id.desiredName, _namespace)
         case id: MemBase[_] => id.forceName(None, default="MEM", _namespace)
-        case id: BaseSim => id.forceName(None, default="SIM", _namespace)
+        case id: stop.Stop => id.forceName(None, default="stop", _namespace)
+        case id: assert.Assert => id.forceName(None, default="assert", _namespace)
+        case id: assume.Assume => id.forceName(None, default="assume", _namespace)
+        case id: cover.Cover => id.forceName(None, default="cover", _namespace)
+        case id: printf.Printf => id.forceName(None, default="printf", _namespace)
         case id: Data  =>
           if (id.isSynthesizable) {
             id.topBinding match {
@@ -158,6 +163,10 @@ trait RequireSyncReset extends Module {
 
 package object internal {
 
+  import scala.annotation.implicitNotFound
+  @implicitNotFound("You are trying to access a macro-only API. Please use the @public annotation instead.")
+  trait MacroGenerated
+
   /** Marker trait for modules that are not true modules */
   private[chisel3] trait PseudoModule extends BaseModule
 
@@ -190,7 +199,7 @@ package object internal {
 
     tryJavaReflect
       .orElse(tryScalaReflect)
-      .map(_.autoSeed("io"))
+      .map(_.forceFinalName("io"))
       .orElse {
         // Fallback if reflection fails, user can wrap in IO(...)
         self.findPort("io")

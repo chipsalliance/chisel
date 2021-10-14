@@ -12,8 +12,6 @@ object CompatibilityComponents {
   class ChiselBundle extends Bundle {
     val a = UInt(width = 32)
     val b = UInt(width = 32).flip
-
-    override def cloneType: this.type = (new ChiselBundle).asInstanceOf[this.type]
   }
   class ChiselRecord extends Record {
     val elements = ListMap("a" -> UInt(width = 32), "b" -> UInt(width = 32).flip)
@@ -48,8 +46,6 @@ object Chisel3Components {
   class Chisel3Bundle extends Bundle {
     val a = Output(UInt(32.W))
     val b = Input(UInt(32.W))
-
-    override def cloneType: this.type = (new Chisel3Bundle).asInstanceOf[this.type]
   }
 
   class Chisel3Record extends Record {
@@ -331,6 +327,32 @@ class CompatibilityInteroperabilitySpec extends ChiselFlatSpec {
         c2.deq <> deq
       }
     }
+  }
+
+  "A unidirectional but flipped Bundle" should "bulk connect in import chisel3._ code correctly" in {
+    object Compat {
+      import Chisel._
+      class MyBundle(extraFlip: Boolean) extends Bundle {
+        private def maybeFlip[T <: Data](t: T): T = if (extraFlip) t.flip else t
+        val foo = maybeFlip(new Bundle {
+          val bar = UInt(INPUT, width = 8)
+        })
+      }
+    }
+    import chisel3._
+    import Compat._
+    class Top(extraFlip: Boolean) extends RawModule {
+      val port = IO(new MyBundle(extraFlip))
+      val wire = Wire(new MyBundle(extraFlip))
+      port <> DontCare
+      wire <> DontCare
+      port <> wire
+      wire <> port
+      port.foo <> wire.foo
+      wire.foo <> port.foo
+    }
+    compile(new Top(true))
+    compile(new Top(false))
   }
 }
 

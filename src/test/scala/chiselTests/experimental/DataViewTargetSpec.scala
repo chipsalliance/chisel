@@ -1,4 +1,4 @@
-// See LICENSE for license details.
+// SPDX-License-Identifier: Apache-2.0
 
 package chiselTests.experimental
 
@@ -166,4 +166,6 @@ class DataViewTargetSpec extends ChiselFlatSpec {
     )
     pairs should equal (expected)
   }
+
+  // TODO check these properties when using @instance API (especially preservation of totality)
 }

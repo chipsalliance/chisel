@@ -6,6 +6,7 @@ import scala.util.DynamicVariable
 import scala.collection.mutable.ArrayBuffer
 import chisel3._
 import chisel3.experimental._
+import chisel3.experimental.hierarchy.Instance
 import chisel3.internal.firrtl._
 import chisel3.internal.naming._
 import _root_.firrtl.annotations.{CircuitName, ComponentName, IsMember, ModuleName, Named, ReferenceTarget}
@@ -19,6 +20,7 @@ import scala.collection.mutable
 
 private[chisel3] class Namespace(keywords: Set[String]) {
   private val names = collection.mutable.HashMap[String, Long]()
+  def copyTo(other: Namespace): Unit = names.foreach { case (s: String, l: Long) => other.names(s) = l }
   for (keyword <- keywords)
     names(keyword) = 1
 
@@ -87,6 +89,9 @@ private[chisel3] trait HasId extends InstanceId {
   private[chisel3] def _onModuleClose: Unit = {}
   private[chisel3] var _parent: Option[BaseModule] = Builder.currentModule
 
+  // Set if the returned top-level module of a nested call to the Chisel Builder, see Definition.apply
+  private[chisel3] var _circuit: Option[BaseModule] = None
+
   private[chisel3] val _id: Long = Builder.idGen.next
 
   // TODO: remove this, but its removal seems to cause a nasty Scala compiler crash.
@@ -100,7 +105,7 @@ private[chisel3] trait HasId extends InstanceId {
   private var auto_seed: Option[String] = None
 
   // Prefix at time when this class is constructed
-  private val construction_prefix: Prefix = Builder.getPrefix()
+  private val construction_prefix: Prefix = Builder.getPrefix
 
   // Prefix when the latest [[suggestSeed]] or [[autoSeed]] is called
   private var prefix_seed: Prefix = Nil
@@ -128,7 +133,7 @@ private[chisel3] trait HasId extends InstanceId {
   private[chisel3] def forceAutoSeed(seed: String): this.type = {
     auto_seed = Some(seed)
     for(hook <- auto_postseed_hooks) { hook(seed) }
-    prefix_seed = Builder.getPrefix()
+    prefix_seed = Builder.getPrefix
     this
   }
 
@@ -144,9 +149,20 @@ private[chisel3] trait HasId extends InstanceId {
     */
   def suggestName(seed: =>String): this.type = {
     if(suggested_seed.isEmpty) suggested_seed = Some(seed)
-    prefix_seed = Builder.getPrefix()
+    prefix_seed = Builder.getPrefix
     for(hook <- suggest_postseed_hooks) { hook(seed) }
     this
+  }
+
+  // Internal version of .suggestName that can override a user-suggested name
+  // This only exists for maintaining "val io" naming in compatibility-mode Modules without IO
+  // wrapping
+  private[chisel3] def forceFinalName(seed: String): this.type = {
+    // This could be called with user prefixes, ignore them
+    noPrefix {
+      suggested_seed = Some(seed)
+      this.suggestName(seed)
+    }
   }
 
   /** Computes the name of this HasId, if one exists
@@ -216,7 +232,7 @@ private[chisel3] trait HasId extends InstanceId {
   private[chisel3] def getRef: Arg = _ref.get
   private[chisel3] def getOptionRef: Option[Arg] = _ref
 
-  private def localName(c: Component): String = _ref match {
+  private def refName(c: Component): String = _ref match {
     case Some(arg) => arg fullName c
     case None => computeName(None, None).get
   }
@@ -232,11 +248,13 @@ private[chisel3] trait HasId extends InstanceId {
 
   // Implementation of public methods.
   def instanceName: String = _parent match {
-    case Some(ViewParent) => reifyTarget.map(_.instanceName).getOrElse(this.localName(ViewParent.fakeComponent))
-    case Some(p) => p._component match {
-      case Some(c) => localName(c)
-      case None => throwException("signalName/pathName should be called after circuit elaboration")
-    }
+    case Some(ViewParent) => reifyTarget.map(_.instanceName).getOrElse(this.refName(ViewParent.fakeComponent))
+    case Some(p) =>
+      (p._component, this) match {
+        case (Some(c), _) => refName(c)
+        case (None, d: Data) if d.topBindingOpt == Some(CrossModuleBinding) => _ref.get.localName
+        case (None, _) => throwException(s"signalName/pathName should be called after circuit elaboration: $this, ${_parent}")
+      }
     case None => throwException("this cannot happen")
   }
   def pathName: String = _parent match {
@@ -256,7 +274,10 @@ private[chisel3] trait HasId extends InstanceId {
   }
   // TODO Should this be public?
   protected def circuitName: String = _parent match {
-    case None => instanceName
+    case None => _circuit match {
+      case None => instanceName
+      case Some(o) => o.circuitName
+    }
     case Some(ViewParent) => reifyParent.circuitName
     case Some(p) => p.circuitName
   }
@@ -296,8 +317,12 @@ private[chisel3] trait NamedComponent extends HasId {
     val name = this.instanceName
     if (!validComponentName(name)) throwException(s"Illegal component name: $name (note: literals are illegal)")
     import _root_.firrtl.annotations.{Target, TargetToken}
+    val root = _parent.map {
+      case ViewParent => reifyParent
+      case other => other
+    }.get.getTarget // All NamedComponents will have a parent, only the top module can have None here
     Target.toTargetTokens(name).toList match {
-      case TargetToken.Ref(r) :: components => ReferenceTarget(this.circuitName, this.parentModName, Nil, r, components)
+      case TargetToken.Ref(r) :: components => root.ref(r).copy(component = components)
       case other =>
         throw _root_.firrtl.annotations.Target.NamedException(s"Cannot convert $name into [[ReferenceTarget]]: $other")
     }
@@ -354,6 +379,8 @@ private[chisel3] class DynamicContext(val annotationSeq: AnnotationSeq) {
   var currentReset: Option[Reset] = None
   val errors = new ErrorLog
   val namingStack = new NamingStack
+  // Used to indicate if this is the top-level module of full elaboration, or from a Definition
+  var inDefinition: Boolean = false
 }
 
 private[chisel3] object Builder extends LazyLogging {
@@ -367,6 +394,11 @@ private[chisel3] object Builder extends LazyLogging {
     require(dynamicContextVar.value.isDefined, "must be inside Builder context")
     dynamicContextVar.value.get
   }
+
+  // Returns the current dynamic context
+  def captureContext(): DynamicContext = dynamicContext
+  // Sets the current dynamic contents
+  def restoreContext(dc: DynamicContext) = dynamicContextVar.value = Some(dc)
 
   // Ensure we have a thread-specific ChiselContext
   private val chiselContext = new ThreadLocal[ChiselContext]{
@@ -464,7 +496,7 @@ private[chisel3] object Builder extends LazyLogging {
   }
 
   // Returns the prefix stack at this moment
-  def getPrefix(): Prefix = chiselContext.get().prefixStack
+  def getPrefix: Prefix = chiselContext.get().prefixStack
 
   def currentModule: Option[BaseModule] = dynamicContextVar.value match {
     case Some(dyanmicContext) => dynamicContext.currentModule
@@ -551,7 +583,7 @@ private[chisel3] object Builder extends LazyLogging {
     dynamicContext.whenStack = s
   }
 
-  def currentWhen(): Option[WhenContext] = dynamicContext.whenStack.headOption
+  def currentWhen: Option[WhenContext] = dynamicContext.whenStack.headOption
 
   def currentClock: Option[Clock] = dynamicContext.currentClock
   def currentClock_=(newClock: Option[Clock]): Unit = {
@@ -561,6 +593,12 @@ private[chisel3] object Builder extends LazyLogging {
   def currentReset: Option[Reset] = dynamicContext.currentReset
   def currentReset_=(newReset: Option[Reset]): Unit = {
     dynamicContext.currentReset = newReset
+  }
+
+  def inDefinition: Boolean = {
+    dynamicContextVar.value
+                     .map(_.inDefinition)
+                     .getOrElse(false)
   }
 
   // This should only be used for testing, must be true outside of Builder context
@@ -588,7 +626,7 @@ private[chisel3] object Builder extends LazyLogging {
   }
   def pushOp[T <: Data](cmd: DefPrim[T]): T = {
     // Bind each element of the returned Data to being a Op
-    cmd.id.bind(OpBinding(forcedUserModule, currentWhen()))
+    cmd.id.bind(OpBinding(forcedUserModule, currentWhen))
     pushCommand(cmd).id
   }
 
@@ -632,6 +670,10 @@ private[chisel3] object Builder extends LazyLogging {
     * (Note: Map is Iterable[Tuple2[_,_]] and thus excluded)
     */
   def nameRecursively(prefix: String, nameMe: Any, namer: (HasId, String) => Unit): Unit = nameMe match {
+    case (id: Instance[_]) => id.cloned match {
+      case Right(m: internal.BaseModule.ModuleClone[_]) => namer(m.getPorts, prefix)
+      case _ =>
+    }
     case (id: HasId) => namer(id, prefix)
     case Some(elt) => nameRecursively(prefix, elt, namer)
     case (iter: Iterable[_]) if iter.hasDefiniteSize =>
@@ -696,16 +738,16 @@ private[chisel3] object Builder extends LazyLogging {
     renames
   }
 
-  private [chisel3] def build[T <: RawModule](f: => T, dynamicContext: DynamicContext): (Circuit, T) = {
+  private [chisel3] def build[T <: BaseModule](f: => T, dynamicContext: DynamicContext): (Circuit, T) = {
     dynamicContextVar.withValue(Some(dynamicContext)) {
       ViewParent // Must initialize the singleton in a Builder context or weird things can happen
                  // in tiny designs/testcases that never access anything in chisel3.internal
       checkScalaVersion()
-      logger.warn("Elaborating design...")
+      logger.info("Elaborating design...")
       val mod = f
       mod.forceName(None, mod.name, globalNamespace)
       errors.checkpoint(logger)
-      logger.warn("Done elaborating.")
+      logger.info("Done elaborating.")
 
       (Circuit(components.last.name, components.toSeq, annotations.toSeq, makeViewRenameMap), mod)
     }

@@ -28,9 +28,10 @@ class Valid[+T <: Data](gen: T) extends Bundle {
   /** True when `valid` is asserted
     * @return a Chisel [[Bool]] true if `valid` is asserted
     */
-  def fire(dummy: Int = 0): Bool = valid
+  def fire: Bool = valid
 
-  override def cloneType: this.type = Valid(gen).asInstanceOf[this.type]
+  @deprecated("Calling this function with an empty argument list is invalid in Scala 3. Use the form without parentheses instead", "Chisel 3.5")
+  def fire(dummy: Int = 0): Bool = valid
 }
 
 /** Factory for generating "valid" interfaces. A "valid" interface is a data-communicating interface between a producer

@@ -69,10 +69,13 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
         case con: DefDef if con.symbol.isPrimaryConstructor =>
           primaryConstructor = Some(con)
         case d: DefDef if isNullaryMethodNamed("_cloneTypeImpl", d) =>
-          val msg = "Users cannot override _cloneTypeImpl. Let the compiler plugin generate it. If you must, override cloneType instead."
+          val msg = "Users cannot override _cloneTypeImpl. Let the compiler plugin generate it."
           global.globalError(d.pos, msg)
         case d: DefDef if isNullaryMethodNamed("_usingPlugin", d) =>
           val msg = "Users cannot override _usingPlugin, it is for the compiler plugin's use only."
+          global.globalError(d.pos, msg)
+        case d: DefDef if isNullaryMethodNamed("cloneType", d) =>
+          val msg = "Users cannot override cloneType. Let the compiler plugin generate it."
           global.globalError(d.pos, msg)
         case _ =>
       }
@@ -108,8 +111,10 @@ private[plugin] class BundleComponent(val global: Global, arguments: ChiselPlugi
             if (isData(vp.symbol)) cloneTypeFull(select) else select
           })
 
-        val ttpe = Ident(bundle.symbol)
-        val neww = localTyper.typed(New(ttpe, conArgs))
+        val tparamList = bundle.tparams.map{ t => Ident(t.symbol) }
+        val ttpe = if(tparamList.nonEmpty) AppliedTypeTree(Ident(bundle.symbol), tparamList) else Ident(bundle.symbol)
+        val newUntyped = New(ttpe, conArgs)
+        val neww = localTyper.typed(newUntyped)
 
         // Create the symbol for the method and have it be associated with the Bundle class
         val cloneTypeSym =  bundle.symbol.newMethod(TermName("_cloneTypeImpl"), bundle.symbol.pos.focus, Flag.OVERRIDE | Flag.PROTECTED)

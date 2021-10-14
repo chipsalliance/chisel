@@ -47,6 +47,36 @@ class InstTransform(val c: Context) extends SourceInfoTransformMacro {
 }
 
 // Workaround for https://github.com/sbt/sbt/issues/3966
+object DefinitionTransform
+// Module instantiation transform
+class DefinitionTransform(val c: Context) extends SourceInfoTransformMacro {
+  import c.universe._
+  def apply[T: c.WeakTypeTag](proto: c.Tree): c.Tree = {
+    q"$thisObj.do_apply($proto)($implicitSourceInfo, $implicitCompileOptions)"
+  }
+}
+
+object DefinitionWrapTransform
+// Module instantiation transform
+class DefinitionWrapTransform(val c: Context) extends SourceInfoTransformMacro {
+  import c.universe._
+  def wrap[T: c.WeakTypeTag](proto: c.Tree): c.Tree = {
+    q"$thisObj.do_wrap($proto)($implicitSourceInfo)"
+  }
+}
+
+
+// Workaround for https://github.com/sbt/sbt/issues/3966
+object InstanceTransform
+// Module instantiation transform
+class InstanceTransform(val c: Context) extends SourceInfoTransformMacro {
+  import c.universe._
+  def apply[T: c.WeakTypeTag](definition: c.Tree): c.Tree = {
+    q"$thisObj.do_apply($definition)($implicitSourceInfo, $implicitCompileOptions)"
+  }
+}
+
+// Workaround for https://github.com/sbt/sbt/issues/3966
 object MemTransform
 class MemTransform(val c: Context) extends SourceInfoTransformMacro {
   import c.universe._
@@ -81,8 +111,23 @@ class VecTransform(val c: Context) extends SourceInfoTransformMacro {
   def tabulate(n: c.Tree)(gen: c.Tree): c.Tree = {
     q"$thisObj.do_tabulate($n)($gen)($implicitSourceInfo, $implicitCompileOptions)"
   }
+  def tabulate2D(n: c.Tree, m: c.Tree)(gen: c.Tree): c.Tree = {
+    q"$thisObj.do_tabulate($n,$m)($gen)($implicitSourceInfo, $implicitCompileOptions)"
+  }
+  def tabulate3D(n: c.Tree, m: c.Tree, p: c.Tree)(gen: c.Tree): c.Tree = {
+    q"$thisObj.do_tabulate($n,$m,$p)($gen)($implicitSourceInfo, $implicitCompileOptions)"
+  }
   def fill(n: c.Tree)(gen: c.Tree): c.Tree = {
     q"$thisObj.do_fill($n)($gen)($implicitSourceInfo, $implicitCompileOptions)"
+  }
+  def fill2D(n: c.Tree, m: c.Tree)(gen: c.Tree): c.Tree = {
+    q"$thisObj.do_fill($n,$m)($gen)($implicitSourceInfo, $implicitCompileOptions)"
+  }
+  def fill3D(n: c.Tree, m: c.Tree, p: c.Tree)(gen: c.Tree): c.Tree = {
+    q"$thisObj.do_fill($n,$m,$p)($gen)($implicitSourceInfo, $implicitCompileOptions)"
+  }
+  def fill4D(n: c.Tree, m: c.Tree, p: c.Tree, q: c.Tree)(gen: c.Tree): c.Tree = {
+    q"$thisObj.do_fill($n,$m,$p,$q)($gen)($implicitSourceInfo, $implicitCompileOptions)"
   }
   def iterate(start: c.Tree, len: c.Tree)(f: c.Tree): c.Tree = {
     q"$thisObj.do_iterate($start,$len)($f)($implicitSourceInfo, $implicitCompileOptions)"
@@ -120,7 +165,12 @@ object SourceInfoTransform
 class SourceInfoTransform(val c: Context) extends AutoSourceTransform {
   import c.universe._
 
-  def noArg(): c.Tree = {
+  def noArg: c.Tree = {
+    q"$thisObj.$doFuncTerm($implicitSourceInfo, $implicitCompileOptions)"
+  }
+
+  /** Necessary for dummy methods to auto-apply their arguments to this macro */
+  def noArgDummy(dummy: c.Tree*): c.Tree = {
     q"$thisObj.$doFuncTerm($implicitSourceInfo, $implicitCompileOptions)"
   }
 
@@ -179,7 +229,12 @@ object SourceInfoWhiteboxTransform
 class SourceInfoWhiteboxTransform(val c: whitebox.Context) extends AutoSourceTransform {
   import c.universe._
 
-  def noArg(): c.Tree = {
+  def noArg: c.Tree = {
+    q"$thisObj.$doFuncTerm($implicitSourceInfo, $implicitCompileOptions)"
+  }
+
+  /** Necessary for dummy methods to auto-apply their arguments to this macro */
+  def noArgDummy(dummy: c.Tree*): c.Tree = {
     q"$thisObj.$doFuncTerm($implicitSourceInfo, $implicitCompileOptions)"
   }
 

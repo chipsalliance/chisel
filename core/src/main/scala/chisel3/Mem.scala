@@ -130,7 +130,7 @@ sealed abstract class MemBase[T <: Data](val t: T, val length: BigInt) extends H
        t.cloneTypeFull, Node(this), dir, i.ref, Builder.forcedClock.ref)
     ).id
     // Bind each element of port to being a MemoryPort
-    port.bind(MemoryPortBinding(Builder.forcedUserModule, Builder.currentWhen()))
+    port.bind(MemoryPortBinding(Builder.forcedUserModule, Builder.currentWhen))
     port
   }
 }
@@ -213,8 +213,14 @@ sealed class SyncReadMem[T <: Data] private (t: T, n: BigInt, val readUnderWrite
     var port: Option[T] = None
     when (enable) {
       a := addr
-      port = Some(read(a))
+      port = Some(super.do_read(a))
     }
     port.get
   }
+
+  /** @group SourceInfoTransformMacro*/
+  override def do_read(idx: UInt)(implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) =
+    do_read(addr = idx, enable = true.B)
+  // note: we implement do_read(addr) for SyncReadMem in terms of do_read(addr, en) in order to ensure that
+  //       `mem.read(addr)` will always behave the same as `mem.read(addr, true.B)`
 }

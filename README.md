@@ -111,14 +111,14 @@ If you like a textbook to learn Chisel and also a bit of digital design in gener
 
 ### Build Your Own Chisel Projects
 
-See [the setup instructions](https://github.com/chipsalliance/chisel3/blob/master/SETUP.md) for how to set up your environment to run Chisel locally.
+See [the setup instructions](SETUP.md) for how to set up your environment to build Chisel locally.
 
 When you're ready to build your own circuits in Chisel, **we recommend starting from the [Chisel Template](https://github.com/freechipsproject/chisel-template) repository**, which provides a pre-configured project, example design, and testbench. Follow the [chisel-template readme](https://github.com/freechipsproject/chisel-template) to get started.
 
 If you insist on setting up your own project, the magic SBT lines are:
 ```scala
-libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.4.0"
-libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % "0.3.0" % "test"
+libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.4.4"
+libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % "0.3.4" % "test"
 ```
 
 ### Design Verification
@@ -155,18 +155,11 @@ The [Useful Resources](#useful-resources) for users are also helpful for contrib
 
 ### Compiling and Testing Chisel
 
-First, clone and build the master branch of [FIRRTL](https://github.com/chipsalliance/firrtl) and [Treadle](https://github.com/chipsalliance/treadle), as the master branch of Chisel may depend on unreleased changes in those projects:
-
-```
-git clone https://github.com/chipsalliance/firrtl.git
-git clone https://github.com/chipsalliance/treadle.git
-pushd firrtl; sbt publishLocal; popd
-pushd treadle; sbt publishLocal; popd
-```
+You must first install required dependencies to build Chisel locally, please see [the setup instructions](SETUP.md).
 
 Clone and build the Chisel library:
 
-```
+```bash
 git clone https://github.com/chipsalliance/chisel3.git
 cd chisel3
 sbt compile
@@ -185,14 +178,13 @@ If the compilation succeeded and the dependencies noted above are installed, you
 sbt test
 ```
 
-
-
 If you would like to run the tests without the compiler plugin (less common), you can do so by first launching `sbt`,
 then running `noPluginTests / test`:
 ```
 sbt
 > noPluginTests / test
 ```
+
 ### Running Projects Against Local Chisel
 
 To use the development version of Chisel (`master` branch), you will need to build from source and `publishLocal`.
@@ -278,7 +270,7 @@ Code that touches lots of APIs that are private to the `chisel3` package should 
 
 ### Which version should I use?
 
-The chisel eco-system (`chisel3`, `firttl`, `dsptools`, `firrtl-interpreter`, `treadle`, `diagrammer`) use a form of semantic versioning:
+The chisel eco-system (`chisel3`, `firrtl`, `dsptools`, `firrtl-interpreter`, `treadle`, `diagrammer`) use a form of semantic versioning:
  major versions are identified by two leading numbers, separated by a dot (i.e., `3.2`), minor versions by a single number following the major version, separated by a dot.
  We maintain API compatibility within a major version (i.e., `3.2.12` should be API-compatible with `3.2.0`), but do not guarantee API compatibility between major versions
  (i.e., APIs may change between `3.1.8` and `3.2.0`).

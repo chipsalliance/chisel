@@ -16,8 +16,7 @@ jobs:
       matrix:
         system: ["ubuntu-20.04"]
         jvm: ["adopt@1.8"]
-        scala: ["2.13.6", "2.12.13"]
-        verilator: ["4.204"]
+        scala: ["2.13.6", "2.12.15"]
         espresso: ["2.4"]
     runs-on: ${{ matrix.system }}
 
@@ -25,54 +24,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Install Z3
-        if: matrix.system == 'ubuntu-20.04'
+      - name: Install Tabby OSS Cad Suite (from YosysHQ)
         run: |
-          sudo apt-get install -y z3
-          z3 --version
+          cd /home/runner/work/
+          wget https://github.com/YosysHQ/oss-cad-suite-build/releases/download/2021-09-23/oss-cad-suite-linux-x64-20210923.tgz
+          tar -xf oss-cad-suite-linux-x64-20210923.tgz
+          ls /home/runner/work/oss-cad-suite/bin
+          echo "/home/runner/work/oss-cad-suite/bin" >> $GITHUB_PATH
 
-      - name: Cache Verilator ${{ matrix.verilator }}
-        uses: actions/cache@v2
-        id: cache-verilator
-        with:
-          path: verilator-${{ matrix.verilator }}
-          key: ${{ matrix.system }}-verilator-${{ matrix.verilator }}
-      - name: Compile Verilator ${{ matrix.verilator }}
-        if: steps.cache-verilator.outputs.cache-hit != 'true'
+      - name: Install Espresso
         run: |
-          wget https://github.com/verilator/verilator/archive/refs/tags/v${{ matrix.verilator }}.tar.gz
-          tar xvf v${{ matrix.verilator }}.tar.gz
-          cd verilator-${{ matrix.verilator }}
-          autoconf
-          ./configure
-          make
-      - name: Install Verilator ${{ matrix.verilator }}
-        run: |
-          cd verilator-${{ matrix.verilator }}
-          sudo make install
-          verilator --version
-
-      - name: Cache Espresso ${{ matrix.espresso }}
-        uses: actions/cache@v2
-        id: cache-espresso
-        with:
-          path: espresso-${{ matrix.espresso }}
-          key: ${{ matrix.system }}-espresso-${{ matrix.espresso }}
-      - name: Compile Espresso ${{ matrix.espresso }}
-        if: steps.cache-espresso.outputs.cache-hit != 'true'
-        run: |
-          wget https://github.com/chipsalliance/espresso/archive/refs/tags/v${{ matrix.espresso }}.tar.gz
-          tar xvf v${{ matrix.espresso }}.tar.gz
-          cd espresso-${{ matrix.espresso }}
-          mkdir -p build
-          cd build
-          cmake ..
-          make
-      - name: Install Espresso ${{ matrix.espresso }}
-        run: |
-          cd espresso-${{ matrix.espresso }}/build
-          sudo make install
-
+          cd /tmp
+          wget https://github.com/chipsalliance/espresso/releases/download/v${{ matrix.espresso }}/x86_64-linux-gnu-espresso
+          chmod +x x86_64-linux-gnu-espresso
+          sudo mv x86_64-linux-gnu-espresso /usr/local/bin/espresso
+          espresso || true
 
       - name: Setup Scala
         uses: olafurpg/setup-scala@v10
@@ -81,12 +47,41 @@ jobs:
       - name: Cache Scala
         uses: coursier/cache-action@v5
       - name: Documentation (Scala 2.12 only)
-        if: matrix.scala == '2.12.13'
+        if: startsWith(matrix.scala, '2.12')
         run: sbt ++${{ matrix.scala }} docs/mdoc
       - name: Test
         run: sbt ++${{ matrix.scala }} test noPluginTests/test
       - name: Binary compatibility
         run: sbt ++${{ matrix.scala }} mimaReportBinaryIssues
+
+  integration:
+    name: Integration Tests (w/ chiseltest)
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Install Tabby OSS Cad Suite (from YosysHQ)
+        run: |
+          cd /home/runner/work/
+          wget https://github.com/YosysHQ/oss-cad-suite-build/releases/download/2021-09-23/oss-cad-suite-linux-x64-20210923.tgz
+          tar -xf oss-cad-suite-linux-x64-20210923.tgz
+          ls /home/runner/work/oss-cad-suite/bin
+          echo "/home/runner/work/oss-cad-suite/bin" >> $GITHUB_PATH
+      - name: Install Espresso
+        run: |
+          cd /tmp
+          wget https://github.com/chipsalliance/espresso/releases/download/v2.4/x86_64-linux-gnu-espresso
+          chmod +x x86_64-linux-gnu-espresso
+          sudo mv x86_64-linux-gnu-espresso /usr/local/bin/espresso
+          espresso || true
+      - name: Setup Scala
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: "adopt@1.11"
+      - name: Cache Scala
+        uses: coursier/cache-action@v5
+      - name: Integration Tests
+        run: sbt integrationTests/test
 
   # Sentinel job to simplify how we specify which checks need to pass in branch
   # protection and in Mergify
@@ -94,7 +89,7 @@ jobs:
   # When adding new jobs, please add them to `needs` below
   all_tests_passed:
     name: "all tests passed"
-    needs: [ci]
+    needs: [ci, integration]
     runs-on: ubuntu-20.04
     steps:
       - run: echo Success!
