@@ -3,6 +3,7 @@ layout: docs
 title:  "Experimental Features"
 section: "chisel3"
 ---
+# Experimental Features
 
 Chisel has a number of new features that are worth checking out.  This page is an informal list of these features and projects.
 
@@ -11,6 +12,7 @@ Chisel has a number of new features that are worth checking out.  This page is a
 - [Module Variants](#bundle-literals)
 - [Interval Type](#interval-type)
 - [Loading Memories for simulation or FPGA initialization](#loading-memories)
+
 
 ### FixedPoint  <a name="fixed-point"></a>
 FixedPoint numbers are basic *Data* type along side of UInt, SInt, etc.  Most common math and logic operations
