@@ -258,6 +258,17 @@ class DefinitionSpec extends ChiselFunSpec with Utils {
       val (_, annos) = getFirrtlAndAnnos(new Top)
       annos should contain(MarkAnnotation("~Top|HasPublicConstructorArgs>x".rt, "10"))
     }
+    it("3.10: should work on unimplemented vals in abstract classes/traits") {
+      class Top() extends Module {
+        val i = Definition(new ConcreteHasBlah())
+        def f(d: Definition[HasBlah]): Unit = {
+          mark(d, d.blah.toString)
+        }
+        f(i)
+      }
+      val (_, annos) = getFirrtlAndAnnos(new Top)
+      annos should contain(MarkAnnotation("~Top|ConcreteHasBlah".mt, "10"))
+    }
   }
   describe("4: toDefinition") {
     it("4.0: should work on modules") {
