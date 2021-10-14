@@ -497,12 +497,11 @@ package experimental {
     final lazy val name = try {
       // PseudoModules are not "true modules" and thus should share
       // their original modules names without uniquification
-      val unprefixed = this match {
-        case _: PseudoModule => desiredName
-        case _ => Builder.globalNamespace.name(desiredName)
+      this match {
+        case _: BlackBox     => desiredName
+        case _: PseudoModule => Module.currentModulePrefix + desiredName
+        case _               => Module.currentModulePrefix + Builder.globalNamespace.name(desiredName)
       }
-      // Prefix this module name with the combined prefixes of the current chisel context
-      Module.currentModulePrefix + unprefixed
     } catch {
       case e: NullPointerException => throwException(
         s"Error: desiredName of ${this.getClass.getName} is null. Did you evaluate 'name' before all values needed by desiredName were available?", e)

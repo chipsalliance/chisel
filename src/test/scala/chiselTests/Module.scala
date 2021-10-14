@@ -5,6 +5,7 @@ package chiselTests
 import chisel3._
 import chisel3.experimental.DataMirror
 import chisel3.stage.{ChiselGeneratorAnnotation, ChiselStage, NoRunFirrtlCompilerAnnotation}
+import chisel3.util.HasBlackBoxInline
 import firrtl.annotations.NoTargetAnnotation
 import firrtl.options.Unserializable
 
@@ -246,5 +247,38 @@ class ModuleSpec extends ChiselPropSpec with Utils {
     })
 
     m.child.name should be ("NoPrefixModule")
+  }
+
+  property("withModulePrefix should not prefix blackboxes") {
+    val m = elaborateAndGetModule(new Module {
+      val bb = withModulePrefix("Foo") {
+        Module(new BlackBox {
+          val io = IO(new Bundle { })
+          override val desiredName = "BlackBox"
+        })
+      }
+    })
+
+    m.bb.name should be ("BlackBox")
+  }
+
+  property("withModulePrefix should not prefix inlined blackboxes") {
+    val m = elaborateAndGetModule(new Module {
+      val bb = withModulePrefix("Foo") {
+        Module(new BlackBox with HasBlackBoxInline {
+          val io = IO(new Bundle { })
+          override val desiredName = "InlineBlackBox"
+
+          setInline("InlineBlackBox.v",
+            s"""
+              |module InlineBlackBox ();
+              |
+              |endmodule
+            """.stripMargin)
+        })
+      }
+    })
+
+    m.bb.name should be ("InlineBlackBox")
   }
 }
