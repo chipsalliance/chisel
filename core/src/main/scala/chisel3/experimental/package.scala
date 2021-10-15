@@ -77,7 +77,7 @@ package object experimental {
     * import chisel3._
     * import chisel3.experimental.chiselName
     *
-    * @chiselName
+    
     * class MyModule extends Module {
     *   val io = IO(new Bundle {
     *     val in = Input(UInt(8.W))
@@ -104,13 +104,13 @@ package object experimental {
     * import chisel3.experimental.{chiselName, NoChiselNamePrefix}
     *
     * // Note that this is not a Module
-    * @chiselName
+    
     * class Counter(w: Int) {
     *   val myReg = RegInit(0.U(w.W))
     *   myReg := myReg + 1.U
     * }
     *
-    * @chiselName
+    
     * class MyModule extends Module {
     *   val io = IO(new Bundle {
     *     val out = Output(UInt(8.W))
