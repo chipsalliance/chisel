@@ -325,8 +325,6 @@ object Queue
     * Irrevocable semantics; we didn't want to change the return type of
     * apply() for backwards compatibility reasons.
     */
-
- 
  def irrevocable[T <: Data](
       enq: ReadyValidIO[T],
       entries: Int = 2,
