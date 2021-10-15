@@ -105,7 +105,7 @@ object Decoupled
     *
     * @note unsafe (and will error) on the producer (input) side of an IrrevocableIO
     */
-  @chiselName
+  
   def apply[T <: Data](irr: IrrevocableIO[T]): DecoupledIO[T] = {
     require(DataMirror.directionOf(irr.bits) == Direction.Output, "Only safe to cast produced Irrevocable bits to Decoupled.")
     val d = Wire(new DecoupledIO(chiselTypeOf(irr.bits)))
@@ -195,7 +195,7 @@ class QueueIO[T <: Data](private val gen: T, val entries: Int, val hasFlush: Boo
   * consumer.io.in <> q.io.deq
   * }}}
   */
-@chiselName
+
 class Queue[T <: Data](val gen: T,
                        val entries: Int,
                        val pipe: Boolean = false,
@@ -299,8 +299,8 @@ class Queue[T <: Data](val gen: T,
 object Queue
 {
   /** Create a queue and supply a DecoupledIO containing the product. */
-  @chiselName
-  def apply[T <: Data](
+
+ def apply[T <: Data](
       enq: ReadyValidIO[T],
       entries: Int = 2,
       pipe: Boolean = false,
@@ -327,8 +327,9 @@ object Queue
     * Irrevocable semantics; we didn't want to change the return type of
     * apply() for backwards compatibility reasons.
     */
-  @chiselName
-  def irrevocable[T <: Data](
+
+ 
+ def irrevocable[T <: Data](
       enq: ReadyValidIO[T],
       entries: Int = 2,
       pipe: Boolean = false,
