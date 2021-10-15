@@ -125,7 +125,6 @@ object Counter
     * @return tuple of the counter value and whether the counter will wrap (the value is at
     * maximum and the condition is true).
     */
-  
   def apply(r: Range, enable: Bool = true.B, reset: Bool = false.B): (UInt, Bool) = {
     val c = new Counter(r)
     val wrap = WireInit(false.B)
