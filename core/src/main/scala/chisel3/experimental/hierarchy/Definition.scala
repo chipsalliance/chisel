@@ -20,8 +20,8 @@ import firrtl.annotations.{IsModule, ModuleTarget}
   *
   * @param cloned The internal representation of the instance, which may be either be directly the object, or a clone of an object
   */
-case class Definition[+A] private[chisel3] (private[chisel3] cloned: Either[A, IsClone[A]]) extends IsLookupable {
-  private[chisel3] def proto: A = cloned match {
+case class Definition[+A] (cloned: Either[A, IsClone[A]]) extends IsLookupable {
+  def proto: A = cloned match {
     case Left(value: A) => value
     case Right(i: IsClone[A]) => i._proto
   }

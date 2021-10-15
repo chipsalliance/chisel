@@ -36,6 +36,14 @@ trait Lookupable[-B] {
     * @return
     */
   def definitionLookup[A](that: A => B, definition: Definition[A]): C
+  def getProto[A](definition: Definition[A]): A = definition.proto
+  def getProto[A](instance: Instance[A]): A = instance.proto
+}
+trait CustomLookupable[X] extends Lookupable[X] {
+  type B = X
+  type C = X
+  def definitionLookup[A](that: A => B, definition: Definition[A]): C
+  def instanceLookup[A](that: A => B, instance: Instance[A]): C
 }
 
 
@@ -249,13 +257,12 @@ object Lookupable {
     }
   }
 
-  class SimpleLookupable[X] extends Lookupable[X] {
+  sealed class SimpleLookupable[X] extends Lookupable[X] {
     type B = X
     type C = X
     def definitionLookup[A](that: A => B, definition: Definition[A]): C = that(definition.proto)
     def instanceLookup[A](that: A => B, instance: Instance[A]): C = that(instance.proto)
   }
-
   implicit def lookupInstance[B <: BaseModule](implicit sourceInfo: SourceInfo, compileOptions: CompileOptions) = new Lookupable[Instance[B]] {
     type C = Instance[B]
     def definitionLookup[A](that: A => Instance[B], definition: Definition[A]): C = {

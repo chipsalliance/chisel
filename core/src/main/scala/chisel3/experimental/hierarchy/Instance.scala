@@ -16,14 +16,14 @@ import firrtl.annotations.IsModule
   *
   * @param cloned The internal representation of the instance, which may be either be directly the object, or a clone of an object
   */
-case class Instance[+A] private [chisel3] (private[chisel3] cloned: Either[A, IsClone[A]]) {
+case class Instance[+A] (cloned: Either[A, IsClone[A]]) {
 
   /** Returns the original object which is instantiated here.
     * If this is an instance of a clone, return that clone's original proto
     *
     * @return the original object which was instantiated
     */
-  private[chisel3] def proto: A = cloned match {
+  def proto: A = cloned match {
     case Left(value: A) => value
     case Right(i: IsClone[A]) => i._proto
   }
