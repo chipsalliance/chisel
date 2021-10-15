@@ -104,7 +104,6 @@ object Counter
   def apply(n: Int): Counter = new Counter(n)
 
   /** Instantiate a [[Counter! counter]] with the specified number of counts and a gate.
-   *
     * @param cond condition that controls whether the counter increments this cycle
     * @param n number of counts before the counter resets
     * @return tuple of the counter value and whether the counter will wrap (the value is at
