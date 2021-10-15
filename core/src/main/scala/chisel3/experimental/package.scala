@@ -102,7 +102,6 @@ package object experimental {
     * import chisel3.experimental.{chiselName, NoChiselNamePrefix}
     *
     * // Note that this is not a Module
-    
     * class Counter(w: Int) {
     *   val myReg = RegInit(0.U(w.W))
     *   myReg := myReg + 1.U
