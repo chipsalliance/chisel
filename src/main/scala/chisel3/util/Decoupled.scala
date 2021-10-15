@@ -297,7 +297,6 @@ class Queue[T <: Data](val gen: T,
 object Queue
 {
   /** Create a queue and supply a DecoupledIO containing the product. */
-
  def apply[T <: Data](
       enq: ReadyValidIO[T],
       entries: Int = 2,
