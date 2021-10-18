@@ -435,27 +435,79 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
     _direction = Some(actualDirection)
   }
 
+  private[chisel3] def stringAccessor(chiselType: Option[String], vals: Option[String]): String = {
+    if (this.isLit) {
+      (chiselTypeStrOpt(chiselType),
+        valuesStrOpt(vals)) match {
+        case (Some(a), Some(b)) => s"$a($b)"
+        case (None, None) => ""
+        case (Some(a), _) => s"$a"
+        case (_, Some(b)) => s"$b"
+      }
+    } else {
+      (parentStrOpt,
+        nameStrOpt,
+        subcomponentStrOpt(topBindingOpt.flatMap(_.location)),
+        bindingToStringOpt(),
+        chiselTypeStrOpt(chiselType),
+        valuesStrOpt(vals)) match {
+        //    parent   name     subcomp  binding  type     values
+        case (Some(a), Some(b), Some(c), Some(d), Some(e), Some(f)) => s"$a.$b$c: $d[$e]($f)"
+        case (Some(a), Some(b), Some(c), Some(d), Some(e), None) => s"$a.$b$c: $d[$e]"
+        case (Some(a), None, None, Some(d), Some(e), None) => s"$a: $d[$e]"
+        case (Some(a), None, Some(c), Some(d), Some(e), None) => s"$a.$c: $d[$e]"
+        case (Some(a), Some(b), None, None, Some(e), None) => s"$a.$b: $e"
+        case (_, _, None, None, Some(e), None) => s"$e"
+        case (Some(a), Some(b), _, Some(d), Some(e), _) => s"$a.$b: $d[$e]"
+        case (Some(a), None, None, Some(d), Some(e), Some(f)) => s"$a: $d[$e]($f)"
+        case (None, None, None, None, None, None) => s""
+      }
+    }
+  }
+
   // User-friendly representation of the binding as a helper function for toString.
   // Provides a unhelpful fallback for literals, which should have custom rendering per
   // Data-subtype.
   // TODO Is this okay for sample_element? It *shouldn't* be visible to users
-  protected def bindingToString: String = Try(topBindingOpt match {
-    case None => ""
-    case Some(OpBinding(enclosure, _)) => s"(OpResult in ${enclosure.desiredName})"
-    case Some(MemoryPortBinding(enclosure, _)) => s"(MemPort in ${enclosure.desiredName})"
-    case Some(PortBinding(enclosure)) if !enclosure.isClosed => s"(IO in unelaborated ${enclosure.desiredName})"
-    case Some(PortBinding(enclosure)) if enclosure.isClosed =>
-      DataMirror.fullModulePorts(enclosure).find(_._2 eq this) match {
-        case Some((name, _)) => s"(IO $name in ${enclosure.desiredName})"
-        case None => s"(IO (unknown) in ${enclosure.desiredName})"
-      }
-    case Some(RegBinding(enclosure, _)) => s"(Reg in ${enclosure.desiredName})"
-    case Some(WireBinding(enclosure, _)) => s"(Wire in ${enclosure.desiredName})"
-    case Some(DontCareBinding()) => s"(DontCare)"
-    case Some(ElementLitBinding(litArg)) => s"(unhandled literal)"
-    case Some(BundleLitBinding(litMap)) => s"(unhandled bundle literal)"
-    case Some(VecLitBinding(litMap)) => s"(unhandled vec literal)"
-  }).getOrElse("")
+  @deprecated("This was never intended to be visible to user-defined types", "Chisel 3.5.0")
+  protected def bindingToString: String = bindingToStringOpt().getOrElse("")
+
+  private[chisel3] def bindingToStringOpt(topBindingOpt: Option[TopBinding] = this.topBindingOpt) =
+    Try({this.topBindingOpt match {
+      case None => None
+      case Some(OpBinding(_, _)) => Some("OpResult")
+      case Some(MemoryPortBinding(_, _)) => Some("MemPort")
+      case Some(PortBinding(_)) => Some("IO")
+      case Some(RegBinding(_, _)) => Some("Reg")
+      case Some(WireBinding(_, _)) => Some("Wire")
+      case Some(DontCareBinding()) => Some("(DontCare)")
+      case Some(ElementLitBinding(litArg)) => Some("(unhandled literal)")
+      case Some(BundleLitBinding(litMap)) => Some("(unhandled bundle literal)")
+      case Some(VecLitBinding(litMap)) => Some("(unhandled vec literal)")
+    }}).getOrElse(None)
+
+  private[chisel3] def nameStrOpt: Option[String] = {
+    val computedName: Option[String] = _computeName(None, Some(""), ".")
+    computedName match {
+      case Some(".") | Some("") => None
+      case _ => computedName
+    }
+  }
+
+  private[chisel3] def subcomponentStrOpt(enclosure: Option[BaseModule]): Option[String] = enclosure match {
+    case None => None
+    case Some(enc) => this.getOptionRef match {
+      case None => None
+      case Some(Index(imm, value)) => Some(s"${imm.simpleName}[${value.localName}]")
+      case _ => None
+    }
+  }
+
+  private[chisel3] def chiselTypeStrOpt(chiselType: Option[String]): Option[String] = chiselType.map(_.toString)
+
+  private[chisel3] def parentStrOpt: Option[String] = this._parent.map(_.name)
+
+  private[chisel3] def valuesStrOpt(vals: Option[String]): Option[String] = vals.map(_.toString)
 
   // Return ALL elements at root of this type.
   // Contasts with flatten, which returns just Bits

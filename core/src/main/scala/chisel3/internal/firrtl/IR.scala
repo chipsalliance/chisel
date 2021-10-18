@@ -66,6 +66,7 @@ object PrimOp {
 
 abstract class Arg {
   def localName: String = name
+  def simpleName: String = name
   def contextualName(ctx: Component): String = name
   def fullName(ctx: Component): String = contextualName(ctx)
   def name: String
@@ -83,6 +84,10 @@ case class Node(id: HasId) extends Arg {
   def name: String = id.getOptionRef match {
     case Some(arg) => arg.name
     case None => id.instanceName
+  }
+  override def simpleName: String = id.getOptionRef match {
+    case Some(arg) => arg.name
+    case None => "?"
   }
 }
 
