@@ -3,8 +3,9 @@
 package chisel3.util.experimental.decode
 
 import chisel3.util.BitPat
+import scala.collection.immutable.ListMap
 
-final class TruthTable(val table: Map[BitPat, BitPat], val default: BitPat) {
+final class TruthTable(val table: ListMap[BitPat, BitPat], val default: BitPat) {
 
   def inputWidth = table.head._1.getWidth
 
@@ -17,7 +18,7 @@ final class TruthTable(val table: Map[BitPat, BitPat], val default: BitPat) {
     (table.map(writeRow) ++ Seq(s"${" "*(inputWidth + 2)}${default.rawString}")).toSeq.sorted.mkString("\n")
   }
 
-  def copy(table: Map[BitPat, BitPat] = this.table, default: BitPat = this.default) = new TruthTable(table, default)
+  def copy(table: ListMap[BitPat, BitPat] = this.table, default: BitPat = this.default) = new TruthTable(table, default)
 
   override def equals(y: Any): Boolean = {
     y match {
@@ -46,8 +47,12 @@ object TruthTable {
     require(table.map(_._1.getWidth).toSet.size == 1, "input width not equal.")
     require(table.map(_._2.getWidth).toSet.size == 1, "output width not equal.")
     val outputWidth = table.map(_._2.getWidth).head
-    new TruthTable(table.toSeq.groupBy(_._1.toString).map { case (key, values) =>
+
+    // Map[String -> Seq[(BitPat, BitPat)]]
+    val valueMap = table.toSeq.groupBy(_._1.toString)
+    val mergedTable = table.toSeq.map(_._1.toString).distinct.map(key => {
       // merge same input inputs.
+      val values = valueMap(key)
       values.head._1 -> BitPat(s"b${
         Seq.tabulate(outputWidth) { i =>
           val outputSet = values.map(_._2)
@@ -59,7 +64,8 @@ object TruthTable {
           outputSet.headOption.getOrElse('?')
         }.mkString
       }")
-    }, default)
+    })
+    new TruthTable(ListMap(mergedTable: _*), default)
   }
 
 

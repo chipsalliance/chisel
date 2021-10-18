@@ -3,6 +3,7 @@
 package chisel3.util
 
 import chisel3._
+import scala.collection.immutable.ListMap
 
 object pla {
 
@@ -81,7 +82,7 @@ object pla {
 
     // the AND matrix
     // use `term -> AND line` map to reuse AND matrix output lines
-    val andMatrixOutputs: Map[String, Bool] = inputTerms.map { t =>
+    val andMatrixOutputs = ListMap(inputTerms.map { t =>
       val andMatrixInput = Seq
         .tabulate(numberOfInputs) { i =>
           if (t.mask.testBit(i)) {
@@ -95,7 +96,7 @@ object pla {
         }
         .flatten
       if (andMatrixInput.nonEmpty) t.toString -> Cat(andMatrixInput).andR() else t.toString -> true.B
-    }.toMap
+    }: _*)
 
     // the OR matrix
     val orMatrixOutputs: UInt = Cat(

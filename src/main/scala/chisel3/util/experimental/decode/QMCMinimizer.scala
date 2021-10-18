@@ -5,6 +5,7 @@ package chisel3.util.experimental.decode
 import chisel3.util.BitPat
 
 import scala.annotation.tailrec
+import scala.collection.immutable.ListMap
 import scala.math.Ordered.orderingToOrdered
 import scala.language.implicitConversions
 
@@ -282,7 +283,7 @@ object QMCMinimizer extends Minimizer {
       (essentialPrimeImplicants ++ getCover(nonessentialPrimeImplicants, uncoveredImplicants)).map(a => (a.bp, outputBp))
     })
 
-    minimized.tail.foldLeft(table.copy(table = Map(minimized.head))) { case (tb, t) =>
+    minimized.tail.foldLeft(table.copy(table = ListMap(minimized.head))) { case (tb, t) =>
       if (tb.table.exists(x => x._1 == t._1)) {
         tb.copy(table = tb.table.map { case (k, v) =>
           if (k == t._1) {
