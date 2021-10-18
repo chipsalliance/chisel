@@ -45,13 +45,13 @@ class WriteEmitted extends Phase {
     annotations.flatMap {
       case a: EmittedModuleAnnotation[_] =>
         val target = FileUtils.getPath(sopts.getBuildFileName(a.value.name, Some(a.value.outputSuffix)))
-        os.write(target, a.value.value)
+        os.write.over(target, a.value.value)
         None
       case a: EmittedCircuitAnnotation[_] =>
         val target = FileUtils.getPath(
           sopts.getBuildFileName(fopts.outputFileName.getOrElse(a.value.name), Some(a.value.outputSuffix))
         )
-        os.write(target, a.value.value)
+        os.write.over(target, a.value.value)
         None
       case a => Some(a)
     }
