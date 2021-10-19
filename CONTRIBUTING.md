@@ -9,6 +9,6 @@
 
 4. You will also need to join the [gitter](https://gitter.im/freechipsproject/chisel3) forum. if you have worries with anything, you can table it there.
 
-5. You can do your own pass of the website looking for pages missing their titles. The website referred to is [here](https://www.chisel-lang.org/chisel3/docs/introduction.html). The sources for the website are [here](https://github.com/chipsalliance/chisel3/tree/master/docs).
+5. You can do your own pass of the [website](https://www.chisel-lang.org/chisel3/docs/introduction.html) looking for pages missing their titles. The sources for the website are [here](https://github.com/chipsalliance/chisel3/tree/master/docs).
 
-6. Understanding about [verilog](http://www.asic-world.com/verilog/veritut.html is a good) will be helpful too.
+6. Understanding about [verilog](http://www.asic-world.com/verilog/veritut.html) will be helpful too.
