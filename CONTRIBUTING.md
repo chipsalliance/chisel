@@ -1,4 +1,5 @@
-## GUIDES TO CONTRIBUTING 
+## GUIDE TO CONTRIBUTING
+
 1. If you need help on making a pull request, follow this [guide](https://docs.github.com/en/github/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests).
 
 2. To understand how to compile and test chisel3 from the source code, follow the instructions in [SETUP.md](https://github.com/chipsalliance/chisel3/blob/master/SETUP.md).
