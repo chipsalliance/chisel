@@ -191,7 +191,7 @@ private[chisel3] object MonoConnect {
   /** Check [[Aggregate]] visibility. */
   private def aggregateConnectContextCheck(implicit sourceInfo: SourceInfo, connectCompileOptions: CompileOptions,
                                    sink: Aggregate, source: Aggregate, context_mod: RawModule): Boolean = {
-    import BindingDirection.{Internal, Input, Output} // Using extensively so import these
+    import ActualDirection.{Input, Output}
     // If source has no location, assume in context module
     // This can occur if is a literal, unbound will error previously
     val sink_mod: BaseModule   = sink.topBinding.location.getOrElse(throw UnwritableSinkException)
@@ -200,8 +200,14 @@ private[chisel3] object MonoConnect {
     val sink_parent = Builder.retrieveParent(sink_mod, context_mod).getOrElse(None)
     val source_parent = Builder.retrieveParent(source_mod, context_mod).getOrElse(None)
 
-    val sink_direction = BindingDirection.from(sink.topBinding, sink.direction)
-    val source_direction = BindingDirection.from(source.topBinding, source.direction)
+    val sink_is_port = sink.topBinding match {
+      case PortBinding(_) => true
+      case _ => false
+    }
+    val source_is_port = source.topBinding match {
+      case PortBinding(_) => true
+      case _ => false
+    }
 
     // TODO do i need these checks?
     if (!checkWhenVisibility(sink)) {
@@ -212,78 +218,41 @@ private[chisel3] object MonoConnect {
       throw SourceEscapedWhenScopeException
     }
 
-    sink.allElements.zip(source.allElements).map { case (sink_elem, source_elem) =>
-      // CASE: Context is same module that both sink node and source node are in
-      if( (context_mod == sink_mod) && (context_mod == source_mod) ) {
-        ((sink_direction, source_direction): @unchecked) match {
-          //    SINK          SOURCE
-          //    CURRENT MOD   CURRENT MOD
-          case (Output,       _) => true
-          case (Internal,     _) => true
-          case (Input,        _) => false
-        }
-      }
+    // CASE: Context is same module that both sink node and source node are in
+    if( (context_mod == sink_mod) && (context_mod == source_mod) ) {
+      sink.direction != Input
+    }
 
-      // CASE: Context is same module as sink node and right node is in a child module
-      else if((sink_mod == context_mod) && (source_parent == context_mod)) {
-        // Thus, right node better be a port node and thus have a direction
-        ((sink_direction, source_direction): @unchecked) match {
-          //    SINK          SOURCE
-          //    CURRENT MOD   CHILD MOD
-          case (Internal,     Output) => true
-          case (Internal,     Input)  => true
-          case (Output,       Output) => true
-          case (Output,       Input)  => true
-          case (_,            Internal) => {
-            if (!(connectCompileOptions.dontAssumeDirectionality)) {
-              true
-            } else {
-              false
-            }
-          }
-          case (Input,        Output) if (!(connectCompileOptions.dontTryConnectionsSwapped)) => true
-          case (Input,        _)    => false
-        }
+    // CASE: Context is same module as sink node and source node is in a child module
+    else if((sink_mod == context_mod) && (source_parent == context_mod)) {
+      // Thus, right node better be a port node and thus have a direction
+      if (!source_is_port) { !connectCompileOptions.dontAssumeDirectionality }
+      else if (sink.direction == Input) {
+        if (source.direction == Output) {
+          !connectCompileOptions.dontTryConnectionsSwapped
+        } else { false }
       }
+      else  { true }
+    }
 
-      // CASE: Context is same module as source node and sink node is in child module
-      else if((source_mod == context_mod) && (sink_parent == context_mod)) {
-        // Thus, left node better be a port node and thus have a direction
-        ((sink_direction, source_direction): @unchecked) match {
-          //    SINK          SOURCE
-          //    CHILD MOD     CURRENT MOD
-          case (Input,        _) => true
-          case (Output,       _) => false
-          case (Internal,     _) => false
-        }
-      }
+    // CASE: Context is same module as source node and sink node is in child module
+    else if((source_mod == context_mod) && (sink_parent == context_mod)) {
+      sink.direction == Input
+    }
 
-      // CASE: Context is the parent module of both the module containing sink node
-      //                                        and the module containing source node
-      //   Note: This includes case when sink and source in same module but in parent
-      else if((sink_parent == context_mod) && (source_parent == context_mod)) {
-        // Thus both nodes must be ports and have a direction
-        ((sink_direction, source_direction): @unchecked) match {
-          //    SINK          SOURCE
-          //    CHILD MOD     CHILD MOD
-          case (Input,        Input)  => true
-          case (Input,        Output) => true
-          case (Output,       _)      => false
-          case (_,            Internal) => {
-            if (!(connectCompileOptions.dontAssumeDirectionality)) {
-              true
-            } else {
-              false
-            }
-          }
-          case (Internal,     _)      => false
-        }
-      }
+    // CASE: Context is the parent module of both the module containing sink node
+    //                                        and the module containing source node
+    //   Note: This includes case when sink and source in same module but in parent
+    else if((sink_parent == context_mod) && (source_parent == context_mod)) {
+      // Thus both nodes must be ports and have a direction
+      if (!source_is_port) { !connectCompileOptions.dontAssumeDirectionality }
+      else if (sink_is_port)  { sink.direction == Input }
+      else { false }
+    }
 
-      // Not quite sure where left and right are compared to current module
-      // so just error out
-      else false
-    }.foldLeft(true)(_ && _)
+    // Not quite sure where left and right are compared to current module
+    // so just error out
+    else false
   }
 
   /** Trace flow from child Data to its parent. */
