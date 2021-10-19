@@ -19,8 +19,14 @@ import java.io.{BufferedOutputStream, File, FileOutputStream, PrintWriter}
 
 import scala.collection.mutable
 
-/** [[firrtl.options.Phase Phase]] that writes an [[AnnotationSeq]] to a file. A file is written if and only if a
-  * [[StageOptions]] view has a non-empty [[StageOptions.annotationFileOut annotationFileOut]].
+/** [[firrtl.options.Phase Phase]] that writes an [[AnnotationSeq]] to the filesystem,
+  *  according to the following rules:
+  *  1) Annotations which extend [[CustomFileEmission]] are written seperately to their prescribed
+  *     destinations and replaced per [[[CustomFileEmission.replacements replacements]].
+  *  2) All remaining annotations are written to destination specified by
+  *    [[StageOptions.annotationFileOut annotationFileOut]], iff the stage option is set, with the following exceptions:
+  *    a) Annotations extending [[Unserializable]] are not written
+  *    b) Deleted annotations are not written unless [[StageOptions.writeDeleted writeDeleted]] is set
   */
 class WriteOutputAnnotations extends Phase {
 

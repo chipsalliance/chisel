@@ -4,7 +4,6 @@ package firrtl
 
 import firrtl.annotations.DeletedAnnotation
 import firrtl.options.OptionsView
-import firrtl.stage.phases.WriteEmitted
 import logger.LazyLogging
 
 /** The [[stage]] package provides an implementation of the FIRRTL compiler using the [[firrtl.options]] package. This
