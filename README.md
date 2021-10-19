@@ -99,6 +99,9 @@ println(verilogString)
 
 ## Getting Started
 
+### Guide For new Contributors
+If you are trying to make a contribution to this project, follow this [link](https://github.com/Burnleydev1/chisel3/edit/master/CONTRIBUTING.md)
+
 ### Bootcamp Interactive Tutorial
 The [**online Chisel Bootcamp**](https://mybinder.org/v2/gh/freechipsproject/chisel-bootcamp/master) is the recommended way to get started with and learn Chisel.
 **No setup is required** (it runs in the browser), nor does it assume any prior knowledge of Scala.
