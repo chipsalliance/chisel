@@ -1,7 +1,7 @@
 ## GUIDES TO CONTRIBUTING 
 1. If you need help on making a pull request, follow this [guide](https://docs.github.com/en/github/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests).
 
-2. If you need help on compiling and testing chisel3, follow this [link](https://github.com/chipsalliance/chisel3/blob/master/SETUP.md).
+2. To understand how to compile and test chisel3 from the source code, follow the instructions in [SETUP.md](https://github.com/chipsalliance/chisel3/blob/master/SETUP.md).
 
 3. In order to contribute to chisel3, you'll need to sign the CLA agreement. You will be asked to sign it upon your first pull request.
 
