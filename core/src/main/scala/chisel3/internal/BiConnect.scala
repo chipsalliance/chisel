@@ -11,8 +11,6 @@ import chisel3.internal.firrtl.{Connect, DefInvalid}
 import scala.language.experimental.macros
 import chisel3.internal.sourceinfo._
 
-import scala.annotation.tailrec
-
 /**
 * BiConnect.connect executes a bidirectional connection element-wise.
 *
@@ -86,7 +84,7 @@ private[chisel3] object BiConnect {
         if (left_v.length != right_v.length) {
           throw MismatchedVecException
         }
-        if (MonoConnect.canBulkConnectVecs(left_v, right_v, sourceInfo, connectCompileOptions, context_mod)) {
+        if (MonoConnect.canBulkConnectAggregates(left_v, right_v, sourceInfo, connectCompileOptions, context_mod)) {
           pushCommand(Connect(sourceInfo, left_v.lref, right_v.lref))
         } else {
           for (idx <- 0 until left_v.length) {
@@ -127,27 +125,12 @@ private[chisel3] object BiConnect {
         val notStrict =
           Seq(left_r.compileOptions, right_r.compileOptions).contains(ExplicitCompileOptions.NotStrict)
 
-        // Traces flow from a child Data to its parent
-        @tailrec def traceFlow(currentlyFlipped: Boolean, data: Data): Boolean = {
-          import SpecifiedDirection.{Input => SInput, Flip => SFlip}
-          val sdir = data.specifiedDirection
-          val flipped = sdir == SInput || sdir == SFlip
-          data.binding.get match {
-            case ChildBinding(parent) => traceFlow(flipped ^ currentlyFlipped, parent)
-            case PortBinding(enclosure) =>
-              val childPort = enclosure != context_mod
-              childPort ^ flipped ^ currentlyFlipped
-            case _ => true
-          }
-        }
-        def canBeSink(data: Data): Boolean = traceFlow(true, data)
-        def canBeSource(data: Data): Boolean = traceFlow(false, data)
         // chisel3 <> is commutative but FIRRTL <- is not
-        val flipConnection = !canBeSink(left_r) || !canBeSource(right_r)
+        val flipConnection = !MonoConnect.canBeSink(left_r, context_mod) || !MonoConnect.canBeSource(right_r, context_mod)
         val (newLeft, newRight) = if (flipConnection) (right_r, left_r) else (left_r, right_r)
 
         // Check whether Records can be bulk connected (all elements can be connected)
-        if (MonoConnect.canBulkConnectRecords(newLeft, newRight, sourceInfo, connectCompileOptions, context_mod)) {
+        if (MonoConnect.canBulkConnectAggregates(newLeft, newRight, sourceInfo, connectCompileOptions, context_mod)) {
           pushCommand(Connect(sourceInfo, newLeft.lref, newRight.lref))
         } else if (notStrict) {
           newLeft.bulkConnect(newRight)(sourceInfo, ExplicitCompileOptions.NotStrict)
