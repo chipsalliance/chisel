@@ -99,7 +99,7 @@ println(verilogString)
 
 ## Getting Started
 
-### Guide For new Contributors
+### Guide For New Contributors
 If you are trying to make a contribution to this project, please read [CONTRIBUTING.md](https://github.com/Burnleydev1/chisel3/blob/recent_PR/CONTRIBUTING.md)
 
 ### Bootcamp Interactive Tutorial
