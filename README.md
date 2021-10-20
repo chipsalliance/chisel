@@ -99,9 +99,6 @@ println(verilogString)
 
 ## Getting Started
 
-### Guide For New Contributors
-If you are trying to make a contribution to this project, please read [CONTRIBUTING.md](https://github.com/Burnleydev1/chisel3/blob/recent_PR/CONTRIBUTING.md)
-
 ### Bootcamp Interactive Tutorial
 The [**online Chisel Bootcamp**](https://mybinder.org/v2/gh/freechipsproject/chisel-bootcamp/master) is the recommended way to get started with and learn Chisel.
 **No setup is required** (it runs in the browser), nor does it assume any prior knowledge of Scala.
@@ -123,6 +120,8 @@ If you insist on setting up your own project, the magic SBT lines are:
 libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.4.4"
 libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % "0.3.4" % "test"
 ```
+### Guide For New Contributors
+If you are trying to make a contribution to this project, please read [CONTRIBUTING.md](https://github.com/Burnleydev1/chisel3/blob/recent_PR/CONTRIBUTING.md)
 
 ### Design Verification
 
