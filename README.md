@@ -100,7 +100,7 @@ println(verilogString)
 ## Getting Started
 
 ### Guide For new Contributors
-If you are trying to make a contribution to this project, please read [https://github.com/Burnleydev1/chisel3/blob/recent_PR/CONTRIBUTING.md)
+If you are trying to make a contribution to this project, please read this [guide](https://github.com/Burnleydev1/chisel3/blob/recent_PR/CONTRIBUTING.md)
 
 ### Bootcamp Interactive Tutorial
 The [**online Chisel Bootcamp**](https://mybinder.org/v2/gh/freechipsproject/chisel-bootcamp/master) is the recommended way to get started with and learn Chisel.
