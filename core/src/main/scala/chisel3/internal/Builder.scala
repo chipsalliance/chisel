@@ -147,7 +147,7 @@ private[chisel3] trait HasId extends InstanceId {
     this
   }
 
-  @deprecated("This should have never been public", "3.4")
+  @deprecated("This should have never been public", "Chisel 3.4.5")
   def computeName(defaultPrefix: Option[String], defaultSeed: Option[String]) =
     _computeName(defaultPrefix, defaultSeed)
 
