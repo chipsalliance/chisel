@@ -147,6 +147,10 @@ private[chisel3] trait HasId extends InstanceId {
     this
   }
 
+  @deprecated("This should have never been public", "Chisel 3.4.5")
+  def computeName(defaultPrefix: Option[String], defaultSeed: Option[String]) =
+    _computeName(defaultPrefix, defaultSeed)
+
   /** Computes the name of this HasId, if one exists
     * @param defaultPrefix Optionally provide a default prefix for computing the name
     * @param defaultSeed Optionally provide default seed for computing the name
@@ -214,29 +218,12 @@ private[chisel3] trait HasId extends InstanceId {
   private[chisel3] def getRef: Arg = _ref.get
   private[chisel3] def getOptionRef: Option[Arg] = _ref
 
-<<<<<<< HEAD
-=======
-  private def refName(c: Component): String = _ref match {
-    case Some(arg) => arg fullName c
-    case None => _computeName(None, None).get
-  }
-
-  // Helper for reifying views if they map to a single Target
-  private[chisel3] def reifyTarget: Option[Data] = this match {
-    case d: Data => reifySingleData(d) // Only Data can be views
-    case bad => throwException(s"This shouldn't be possible - got $bad with ${_parent}")
-  }
-
-  // Helper for reifying the parent of a view if the view maps to a single Target
-  private[chisel3] def reifyParent: BaseModule = reifyTarget.flatMap(_._parent).getOrElse(ViewParent)
-
->>>>>>> d6907893 (Update computeName and callsites (#2192))
   // Implementation of public methods.
   def instanceName: String = _parent match {
     case Some(p) => p._component match {
       case Some(c) => _ref match {
         case Some(arg) => arg fullName c
-        case None => computeName(None, None).get
+        case None => _computeName(None, None).get
       }
       case None => throwException("signalName/pathName should be called after circuit elaboration")
     }
