@@ -183,4 +183,13 @@ object Examples {
     @public val out = IO(Output(UInt(3.W)))
     out := RegNext(in)
   }
+  @instantiable
+  abstract class HasBlah() extends Module {
+    @public val blah: Int
+  }
+
+  @instantiable
+  class ConcreteHasBlah() extends HasBlah {
+    val blah = 10
+  }
 }

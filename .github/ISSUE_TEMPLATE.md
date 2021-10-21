@@ -13,7 +13,7 @@ Please select the item best describing the issue in each category and delete the
 **Development Phase**: request | proposal
 
 **Other information**
- <!-- include detailed explanation, stacktraces, related issues, suggestions how to fix, links for us to have context, eg. Stack Overflow, gitter, etc -->
+ <!-- include detailed explanation, stacktraces, related issues, suggestions how to fix, links for us to have context, eg. Stack Overflow, gitter, Scastie (https://scastie.scala-lang.org/KtzZQ3nFTea9KoNh0tRqtg) -->
 
 **If the current behavior is a bug, please provide the steps to reproduce the problem:**
 

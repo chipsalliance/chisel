@@ -21,10 +21,14 @@ private[chisel3] object instantiableMacro {
         case x @ q"@public val $tpname: $tpe = $_" =>
           extensions += atPos(x.pos)(q"def $tpname = module._lookup(_.$tpname)")
           Seq(x)
+        case x @ q"@public val $tpname: $tpe" =>
+          extensions += atPos(x.pos)(q"def $tpname = module._lookup(_.$tpname)")
+          Seq(x)
         case x @ q"@public lazy val $tpname: $tpe = $_" =>
           extensions += atPos(x.pos)(q"def $tpname = module._lookup(_.$tpname)")
           Seq(x)
-        case other => Seq(other)
+        case other =>
+          Seq(other)
       }
       (resultStats, extensions)
     }
