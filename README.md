@@ -120,6 +120,8 @@ If you insist on setting up your own project, the magic SBT lines are:
 libraryDependencies += "edu.berkeley.cs" %% "chisel3" % "3.4.4"
 libraryDependencies += "edu.berkeley.cs" %% "chiseltest" % "0.3.4" % "test"
 ```
+### Guide For New Contributors
+If you are trying to make a contribution to this project, please read [CONTRIBUTING.md](https://github.com/Burnleydev1/chisel3/blob/recent_PR/CONTRIBUTING.md)
 
 ### Design Verification
 
@@ -136,6 +138,7 @@ These simulation-based verification tools are available for Chisel:
 - [**ScalaDoc**](https://www.chisel-lang.org/api/latest/chisel3/index.html), a listing, description, and examples of the functionality exposed by Chisel
 - [**Gitter**](https://gitter.im/freechipsproject/chisel3), where you can ask questions or discuss anything Chisel
 - [**Website**](https://www.chisel-lang.org) ([source](https://github.com/freechipsproject/www.chisel-lang.org/))
+- [**asic-world**](http://www.asic-world.com/verilog/veritut.html) If you aren't familiar with verilog, this is a good tutorial.
 
 If you are migrating from Chisel2, see [the migration guide](https://www.chisel-lang.org/chisel3/chisel3-vs-chisel2.html).
 
