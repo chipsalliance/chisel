@@ -215,6 +215,8 @@ lazy val core = (project in file("core")).
       ProblemFilters.exclude[ReversedMissingMethodProblem]("chisel3.internal.HasId.setRef"),
       ProblemFilters.exclude[ReversedMissingMethodProblem]("chisel3.internal.HasId.forceAutoSeed"),
       ProblemFilters.exclude[ReversedMissingMethodProblem]("chisel3.internal.HasId._parent_="),
+      // Not a problem since _computeName is package private from 3.4.5
+      ProblemFilters.exclude[ReversedMissingMethodProblem]("chisel3.internal.HasId._computeName"),
       // Not a problem because generateComponent is package private and unimplemented in BaseModule
       // Users cannot practically extend BaseModule (they'd need to implement package private methods which they cannot)
       ProblemFilters.exclude[ReversedMissingMethodProblem]("chisel3.experimental.BaseModule.generateComponent")
