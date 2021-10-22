@@ -29,7 +29,7 @@ case class Instance[+A] (cloned: Either[A, IsClone[A]]) {
   }
 
   /** @return the context of any Data's return from inside the instance */
-  private[chisel3] def getInnerDataContext: Option[BaseModule] = cloned match {
+  def getInnerDataContext: Option[BaseModule] = cloned match {
     case Left(value: BaseModule)        => Some(value)
     case Left(value: IsInstantiable)    => None
     case Right(i: BaseModule)           => Some(i)

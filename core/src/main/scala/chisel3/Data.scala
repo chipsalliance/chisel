@@ -519,7 +519,7 @@ abstract class Data extends HasId with NamedComponent with SourceInfoDoc {
       case Some(pb: PortBinding) if (mod.flatMap(Builder.retrieveParent(_,Builder.currentModule.get)) == Builder.currentModule) =>
       case Some(_: UnconstrainedBinding) =>
       case _ =>
-        throwException(s"operand '$this' is not visible from the current module")
+        throwException(s"operand '$this' in ${this._parent} is not visible from current module ${Builder.currentModule}")
     }
     if (!MonoConnect.checkWhenVisibility(this)) {
       throwException(s"operand has escaped the scope of the when in which it was constructed")

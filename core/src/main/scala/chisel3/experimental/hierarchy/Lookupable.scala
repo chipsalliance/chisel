@@ -350,13 +350,17 @@ object Lookupable {
     type C = Instance[B]
     def definitionLookup[A](that: A => B, definition: Definition[A]): C = {
       val ret = that(definition.proto)
-      val cloned = new InstantiableClone(ret)
+      val cloned = new InstantiableClone[B] {
+        val _proto = ret
+      }
       cloned._parent = definition.getInnerDataContext
       new Instance(Right(cloned))
     }
     def instanceLookup[A](that: A => B, instance: Instance[A]): C = {
       val ret = that(instance.proto)
-      val cloned = new InstantiableClone(ret)
+      val cloned = new InstantiableClone[B] {
+        val _proto = ret
+      }
       cloned._parent = instance.getInnerDataContext
       new Instance(Right(cloned))
     }

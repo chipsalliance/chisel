@@ -283,8 +283,9 @@ package internal {
 
     /** @note If we are cloning a non-module, we need another object which has the proper _parent set!
       */
-    private[chisel3] final class InstantiableClone[T <: IsInstantiable] (val _proto: T) extends IsClone[T] {
-      private[chisel3] var _parent: Option[BaseModule] = internal.Builder.currentModule
+    trait InstantiableClone[T <: IsInstantiable] extends IsClone[T] {
+      val _proto: T
+      var _parent: Option[BaseModule] = internal.Builder.currentModule
     }
 
     /** Record type returned by CloneModuleAsRecord
