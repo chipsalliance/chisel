@@ -3,6 +3,7 @@ layout: docs
 title:  "Naming"
 section: "chisel3"
 ---
+# Naming
 
 Historically, Chisel has had trouble reliably capturing the names of signals. The reasons for this are due to (1)
 primarily relying on reflection to find names, (2) using `@chiselName` macro which had unreliable behavior.
